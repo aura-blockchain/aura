@@ -1,0 +1,141 @@
+syntax = "proto3";
+package aura.identitychange.v1beta1;
+
+import "cosmos/base/query/v1beta1/pagination.proto";
+
+option go_package = "github.com/aequitas/aura/chain/x/identitychange/types";
+
+enum IdentityChangeStatus {
+  IDENTITY_CHANGE_STATUS_UNSPECIFIED = 0;
+  IDENTITY_CHANGE_STATUS_IDLE = 1;
+  IDENTITY_CHANGE_STATUS_PENDING_VERIFICATION = 2;
+  IDENTITY_CHANGE_STATUS_READY_TO_APPLY = 3;
+  IDENTITY_CHANGE_STATUS_REJECTED = 4;
+  IDENTITY_CHANGE_STATUS_APPLIED = 5;
+  IDENTITY_CHANGE_STATUS_SUSPENDED = 6;
+}
+
+message IdentityRecord {
+  string did = 1;
+  string owner = 2;
+  int64 confidence_score = 3;
+  string metadata_hash = 4;
+  string latest_ir_version = 5;
+  int64 last_changed_height = 6;
+  IdentityChangeStatus status = 7;
+}
+
+message IdentityChangeRequest {
+  string request_id = 1;
+  string target_did = 2;
+  string requester = 3;
+  string assistant = 4;
+  string ir_id = 5;
+  string proof_hash = 6;
+  string request_meta_hash = 7;
+  IdentityChangeStatus status = 8;
+  string reason = 9;
+  int64 created_height = 10;
+  int64 verdict_height = 11;
+}
+
+message IdentityChangeHistory {
+  string request_id = 1;
+  string target_did = 2;
+  int64 prev_confidence_score = 3;
+  int64 new_confidence_score = 4;
+  string transition_reason = 5;
+  int64 changed_height = 6;
+}
+
+message Params {
+  int32 max_requests_per_wallet_per_month = 1;
+  int32 min_confidence_after_change = 2;
+  int64 staleness_height_threshold = 3;
+  bool assistant_slash_on_false_positive = 4;
+  string staleness_investigator_chain = 5;
+}
+
+message MsgRequestIdentityChange {
+  string requester = 1;
+  string target_did = 2;
+  string metadata_hash = 3;
+  string ir_id = 4;
+  string proof_hash = 5;
+}
+
+message MsgRequestIdentityChangeResponse {
+  string request_id = 1;
+}
+
+message MsgSubmitAssistantProof {
+  string assistant = 1;
+  string request_id = 2;
+  string proof_hash = 3;
+  int64 confidence_delta = 4;
+  bool success = 5;
+}
+
+message MsgSubmitAssistantProofResponse {}
+
+message MsgApplyIdentityChange {
+  string requester = 1;
+  string request_id = 2;
+}
+
+message MsgApplyIdentityChangeResponse {}
+
+message MsgRejectIdentityChange {
+  string actor = 1;
+  string request_id = 2;
+  string reason = 3;
+}
+
+message MsgRejectIdentityChangeResponse {}
+
+message MsgSuspendIdentityChanges {
+  string authority = 1;
+  string reason = 2;
+}
+
+message MsgSuspendIdentityChangesResponse {}
+
+service Msg {
+  rpc RequestIdentityChange(MsgRequestIdentityChange) returns (MsgRequestIdentityChangeResponse);
+  rpc SubmitAssistantProof(MsgSubmitAssistantProof) returns (MsgSubmitAssistantProofResponse);
+  rpc ApplyIdentityChange(MsgApplyIdentityChange) returns (MsgApplyIdentityChangeResponse);
+  rpc RejectIdentityChange(MsgRejectIdentityChange) returns (MsgRejectIdentityChangeResponse);
+  rpc SuspendIdentityChanges(MsgSuspendIdentityChanges) returns (MsgSuspendIdentityChangesResponse);
+}
+
+message QueryIdentityRecordRequest {
+  string did = 1;
+}
+
+message QueryIdentityRecordResponse {
+  IdentityRecord record = 1;
+}
+
+message QueryIdentityChangeRequestRequest {
+  string request_id = 1;
+}
+
+message QueryIdentityChangeRequestResponse {
+  IdentityChangeRequest request = 1;
+}
+
+message QueryIdentityChangeHistoryRequest {
+  string did = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+message QueryIdentityChangeHistoryResponse {
+  repeated IdentityChangeHistory entries = 1;
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+service Query {
+  rpc IdentityRecord(QueryIdentityRecordRequest) returns (QueryIdentityRecordResponse);
+  rpc IdentityChangeRequest(QueryIdentityChangeRequestRequest) returns (QueryIdentityChangeRequestResponse);
+  rpc IdentityChangeHistory(QueryIdentityChangeHistoryRequest) returns (QueryIdentityChangeHistoryResponse);
+}
