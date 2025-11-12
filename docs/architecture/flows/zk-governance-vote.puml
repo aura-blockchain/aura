@@ -1,0 +1,23 @@
+@startuml
+title ZK Governance Vote Flow
+
+actor Voter
+participant "Wallet dApp" as WAL
+participant "ZK Prover" as PROVER
+participant "Governance Module" as GOV
+participant "Nullifier Registry" as NULL
+participant "Proposal Store" as PROP
+
+Voter -> WAL: Select proposal & vote option
+WAL -> PROVER: Request attested vote proof
+PROVER -> PROVER: Build SNARK (identity, stake, choice)
+PROVER --> WAL: Proof + nullifier
+WAL -> GOV: MsgSubmitZKVote(proof,nullifier,choice)
+GOV -> NULL: Check nullifier unused
+NULL --> GOV: ok / reject
+GOV -> GOV: Verify zk proof & stake commitment
+GOV -> PROP: Append encrypted vote payload
+GOV -> NULL: Mark nullifier consumed
+PROP --> WAL: Emit VoteAccepted event
+
+@enduml

@@ -1,0 +1,13 @@
+timestamp,request_id,assistant_id,verifier_id,locale,fee_aeq
+2025-09-01T07:22:08Z,REQ-20250901-0001,asst-na-02,vfy-nightowl,us-east,0.88
+2025-09-01T18:40:14Z,REQ-20250901-0002,asst-apac-01,vfy-kycbar,ap-southeast,0.94
+2025-09-02T12:30:45Z,REQ-20250902-0003,asst-na-03,vfy-delivery,us-west,0.90
+2025-09-02T22:14:29Z,REQ-20250902-0004,asst-eu-02,vfy-bistro,eu-west,0.97
+2025-09-03T14:05:51Z,REQ-20250903-0005,asst-na-02,vfy-nightowl,us-east,0.91
+2025-09-04T09:42:33Z,REQ-20250904-0006,asst-apac-01,vfy-ticketing,ap-southeast,0.95
+2025-09-05T11:18:10Z,REQ-20250905-0007,asst-na-03,vfy-web3dex,us-west,0.89
+2025-09-06T16:37:55Z,REQ-20250906-0008,asst-eu-02,vfy-cryptoatm,eu-central,0.99
+2025-09-08T08:27:41Z,REQ-20250908-0009,asst-na-02,vfy-nightowl,us-east,0.92
+2025-09-09T20:11:24Z,REQ-20250909-0010,asst-apac-01,vfy-kycbar,ap-southeast,0.96
+2025-09-10T13:44:19Z,REQ-20250910-0011,asst-na-03,vfy-delivery,us-west,0.90
+2025-09-11T18:59:33Z,REQ-20250911-0012,asst-eu-02,vfy-bistro,eu-central,1.02

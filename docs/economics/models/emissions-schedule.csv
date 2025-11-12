@@ -1,0 +1,11 @@
+Year,Percent_of_Supply,Minted_AEQ,Validator_AEQ,Assistant_AEQ,Cumulative_AEQ,Cumulative_Percent,Notes
+1,0.12,120000000,72000000,48000000,120000000,0.12,Front-loaded security boost
+2,0.08,80000000,48000000,32000000,200000000,0.2,Ramps down as network stabilizes
+3,0.04,40000000,24000000,16000000,240000000,0.24,Baseline emission plateau begins
+4,0.04,40000000,24000000,16000000,280000000,0.28,Baseline emission plateau continues
+5,0.04,40000000,24000000,16000000,320000000,0.32,Baseline emission plateau continues
+6,0.016,16000000,9600000,6400000,336000000,0.336,Tail emission starts to reduce inflation
+7,0.016,16000000,9600000,6400000,352000000,0.352,Tail emission sustains rewards
+8,0.016,16000000,9600000,6400000,368000000,0.368,Tail emission sustains rewards
+9,0.016,16000000,9600000,6400000,384000000,0.384,Tail emission sustains rewards
+10,0.016,16000000,9600000,6400000,400000000,0.4,Total validator+assistant allocation reached

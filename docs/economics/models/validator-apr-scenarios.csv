@@ -1,0 +1,5 @@
+Scenario,Year,Minted_AEQ_Total,Validator_Pool_AEQ,Total_Bonded_AEQ,Validator_Stake_AEQ,Uptime,Commission_Pct,SelfBond_Pct,Gross_AEQ,Earned_AEQ_Validator,Earned_AEQ_Delegators,Validator_APR_Pct,Delegator_APR_Pct,Gross_USD,Notes
+yr1_top_validator,1,120000000,72000000,400000000,5000000,0.99,0.05,0.10,891000.00,129195.00,761805.00,25.84,16.93,445500.00,"High-perf validator w/ 10% self-bond"
+yr1_mid_validator,1,120000000,72000000,400000000,2000000,0.97,0.03,0.07,349200.00,34186.68,315013.32,24.42,16.94,174600.00,"Smaller stake, lower commission"
+yr5_tail_validator,5,40000000,24000000,500000000,3000000,0.98,0.05,0.10,141120.00,20462.40,120657.60,6.82,4.47,70560.00,"Year 5 tail emissions"
+yr8_low_price,8,16000000,9600000,550000000,1500000,0.95,0.07,0.12,24873.60,4517.05,20357.55,2.51,1.54,12436.80,"Late tail rewards w/ higher commission"
