@@ -13,7 +13,7 @@ The Cosmos SDK `identitychange` module tracks holder-driven DID rotations, metad
 - Governance will invoke `SuspendIdentityChanges` before upgrades or security events to halt request intake.
 
 ## Next work
-1. Wire the stub `MsgServer`/`QueryServer` (already added) into a full Cosmos module with Protobuf-generated bindings.
+1. Keep the tracked protobuf artifacts under `proto/aura/identitychange/v1beta1` aligned with `buf`/`protoc` output so the module can swap in the generated `MsgServer`/`QueryServer` implementations once the Cosmos SDK dependencies arrive.
 2. Add parameter store wiring and config validation once the Cosmos `params` module is available.
-3. Hook the module into the app’s module manager and register gRPC query routes.
-4. Implement the message handlers described in the RFC (`RequestIdentityChange`, `SubmitAssistantProof`, `ApplyIdentityChange`, `RejectIdentityChange`, `SuspendIdentityChanges`) plus the unit/integration tests outlined in the RFC.
+3. Hook the module into the app's module manager and register gRPC query routes.
+4. Expand the handler tests to cover the lifecycle transitions described in the RFC (`RequestIdentityChange`, `SubmitAssistantProof`, `ApplyIdentityChange`, `RejectIdentityChange`, `SuspendIdentityChanges`).

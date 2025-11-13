@@ -13,4 +13,5 @@ Anchor the identity manager, inclusion routine registry, and confidence scoring 
 2. Implement CRUD handlers with governance gating, event emission, and query surfaces for wallets/assistants.
 3. Build unit/fuzz tests for lifecycle transitions (draft, active, suspended, retired) and prerequisite DAG validation.
 4. Integrate with the AI assistant attestation pipeline once the on-chain/off-chain complementing contracts are ready.
-
+5. When a real Cosmos SDK application exists, hook `chain/app/module_manager.go` into the app so `RegisterGRPCServices` wires the `identitychange` Msg/Query servers into the canonical gRPC server used by wallets and assistants.
+- The minimal Cosmos SDK app shell lives under `chain/app` (`CosmosApp` + `ModuleManager`) so you can boot up a baseapp instance, register the module’s Msg/Query gRPC services, and expose the gRPC server for transport wiring.

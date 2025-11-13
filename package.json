@@ -1,0 +1,17 @@
+{
+  "name": "aequitas-aura",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "prepare": "husky install",
+    "php-checks": "php tools/bin/composer.phar run test && php tools/bin/composer.phar run phpcs"
+  },
+  "devDependencies": {
+    "husky": "^8.0.0"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "npm run php-checks"
+    }
+  }
+}

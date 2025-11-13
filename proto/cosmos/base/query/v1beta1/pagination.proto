@@ -1,0 +1,17 @@
+syntax = "proto3";
+package cosmos.base.query.v1beta1;
+
+option go_package = "github.com/cosmos/cosmos-sdk/types/query";
+
+message PageRequest {
+  bytes key = 1;
+  uint64 offset = 2;
+  uint64 limit = 3;
+  bool count_total = 4;
+  bool reverse = 5;
+}
+
+message PageResponse {
+  bytes next_key = 1;
+  uint64 total = 2;
+}

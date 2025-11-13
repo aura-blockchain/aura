@@ -7,18 +7,19 @@ import (
 	"github.com/aequitas/aura/chain/x/identitychange/keeper"
 	"github.com/aequitas/aura/chain/x/identitychange/params"
 	"github.com/aequitas/aura/chain/x/identitychange/types"
+	identitychangepb "github.com/aequitas/aura/proto/aura/identitychange/v1beta1"
 )
 
 type testServices struct {
-	receivedMsg   identitychange.MsgServer
-	receivedQuery identitychange.QueryServer
+	receivedMsg   identitychangepb.MsgServer
+	receivedQuery identitychangepb.QueryServer
 }
 
-func (s *testServices) RegisterMsgServer(server identitychange.MsgServer) {
+func (s *testServices) RegisterMsgServer(server identitychangepb.MsgServer) {
 	s.receivedMsg = server
 }
 
-func (s *testServices) RegisterQueryServer(server identitychange.QueryServer) {
+func (s *testServices) RegisterQueryServer(server identitychangepb.QueryServer) {
 	s.receivedQuery = server
 }
 

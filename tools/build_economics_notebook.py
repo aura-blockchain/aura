@@ -245,10 +245,85 @@ cells = [
     ),
     md(
         """
-        ## 7. TODO
-        - Automate pulling verifier fee event CSVs from the verifier portal telemetry bucket.
-        - Add probabilistic modeling (Monte Carlo) for assistant utilization + APR sensitivity.
-        - Export results as CSV/JSON for governance dashboards.
+        ## 7. Monte Carlo & Automation
+        The following Monte Carlo sweep samples validator uptimes/fees and exports the results so governance dashboards can absorb the range of outcomes while `tools/sync_verifier_fee_events.py` keeps the fee telemetry fresh.
+        """
+    ),
+    code(
+        """
+        import csv
+        import random
+        from statistics import median
+        from pathlib import Path
+
+        MONTE_CARLO_TRIALS = 500
+        MONTE_CARLO_OUTPUT = Path('docs/economics/models/validator-apr-montecarlo.csv')
+
+        def clamp(value, minimum=0.0, maximum=1.0):
+            return min(max(value, minimum), maximum)
+
+        monte_carlo_rows = []
+        for row in validator_apr:
+            scenario = row['Scenario']
+            stake = float(row['Validator_Stake_AEQ'])
+            total_bonded = float(row['Total_Bonded_AEQ'])
+            gross_minted = float(row['Gross_AEQ'])
+            commission = float(row['Commission_Pct'])
+            self_pct = float(row['SelfBond_Pct'])
+            for trial in range(MONTE_CARLO_TRIALS):
+                uptime = clamp(random.normalvariate(float(row['Uptime']), 0.03))
+                fee_component = ANNUAL_VALIDATOR_FEE_POOL * (stake / total_bonded) * uptime
+                gross = gross_minted + fee_component
+                selfbond = stake * self_pct
+                delegator_stake = max(stake - selfbond, 0.0)
+                validator_self_rewards = gross * (selfbond / stake) if stake else 0
+                delegator_rewards = gross * (delegator_stake / stake) if stake else 0
+                commission_rewards = delegator_rewards * commission
+                validator_earn = validator_self_rewards + commission_rewards
+                delegator_earn = delegator_rewards * (1 - commission)
+                validator_apr_pct = (validator_earn / selfbond) * 100 if selfbond else 0
+                delegator_apr_pct = (delegator_earn / delegator_stake) * 100 if delegator_stake else 0
+                monte_carlo_rows.append({
+                    "Scenario": scenario,
+                    "Trial": trial + 1,
+                    "Uptime": uptime,
+                    "Fee_Component_AEQ": fee_component,
+                    "Validator_APR": validator_apr_pct,
+                    "Delegator_APR": delegator_apr_pct,
+                })
+
+        if monte_carlo_rows:
+            MONTE_CARLO_OUTPUT.parent.mkdir(parents=True, exist_ok=True)
+            fieldnames = [
+                "Scenario",
+                "Trial",
+                "Uptime",
+                "Fee_Component_AEQ",
+                "Validator_APR",
+                "Delegator_APR",
+            ]
+            with MONTE_CARLO_OUTPUT.open("w", newline="") as fh:
+                writer = csv.DictWriter(fh, fieldnames=fieldnames)
+                writer.writeheader()
+                writer.writerows(monte_carlo_rows)
+
+            for scenario in sorted({row['Scenario'] for row in monte_carlo_rows}):
+                subset = [row for row in monte_carlo_rows if row['Scenario'] == scenario]
+                print(
+                    f"{scenario}: validator APR median={median(row['Validator_APR'] for row in subset):.2f}% "
+                    f"delegator APR median={median(row['Delegator_APR'] for row in subset):.2f}% "
+                    f"uptime median={median(row['Uptime'] for row in subset):.2f}"
+                )
+        else:
+            print("No validator APR scenarios available for Monte Carlo sampling.")
+        """
+    ),
+    md(
+        """
+        ## 8. Next steps
+        - Schedule `tools/sync_verifier_fee_events.py` to run before this notebook so telemetry always feeds the aggregates.
+        - Surface `docs/economics/models/validator-apr-montecarlo.csv` in governance dashboards or tooling that trims APR ranges.
+        - Extend the Monte Carlo sweep with assistant ROI/telemetry inputs so the aggregated fees drive emissions planning.
         """
     ),
 ]

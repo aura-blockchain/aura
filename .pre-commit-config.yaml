@@ -1,0 +1,18 @@
+repos:
+  - repo: local
+    hooks:
+      - id: go-test
+        name: Go unit tests
+        entry: go test ./...
+        language: system
+        stages: [pre-commit]
+      - id: php-stan
+        name: PHPStan
+        entry: php tools/bin/composer.phar run phpstan
+        language: system
+        stages: [pre-commit]
+      - id: phpcs
+        name: PHPCS
+        entry: php tools/bin/composer.phar run phpcs
+        language: system
+        stages: [pre-commit]

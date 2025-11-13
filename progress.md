@@ -16,6 +16,7 @@
 3. Replace CI placeholders with concrete build, lint, and test commands as modules materialize.
 4. Coordinate genesis preparation and custodian confirmations ahead of validator/assistant launch dry runs.
 5. Continue integrating the identity change module into the app (params wiring, proto bindings, proper routing).
+6. Scaffold a minimal Cosmos SDK application shell so the ModuleManager can register the new identitychange gRPC services and bring the Msg/Query routes online.
 
 ## Next Steps
 - Share the updated RFC set with reviewers, capture feedback, and freeze the specs for implementation.

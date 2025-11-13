@@ -5,11 +5,12 @@ import (
 
 	"github.com/aequitas/aura/chain/x/identitychange/keeper"
 	"github.com/aequitas/aura/chain/x/identitychange/types"
+	identitychangepb "github.com/aequitas/aura/proto/aura/identitychange/v1beta1"
 )
 
 type ModuleServices interface {
-	RegisterMsgServer(MsgServer)
-	RegisterQueryServer(QueryServer)
+	RegisterMsgServer(identitychangepb.MsgServer)
+	RegisterQueryServer(identitychangepb.QueryServer)
 }
 
 type AppModuleBasic struct{}

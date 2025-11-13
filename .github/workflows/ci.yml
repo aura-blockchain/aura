@@ -1,49 +1,43 @@
 name: CI
 
 on:
-  pull_request:
   push:
-    branches: [ main, develop ]
+    branches: ["master", "main"]
+  pull_request:
+    branches: ["master", "main"]
 
 jobs:
-  chain:
+  build:
+    name: Go + PHP checks
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: chain
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
         with:
-          go-version: 1.22
-      - name: Install deps
-        run: go mod download || true
-      - name: Lint & Test
+          go-version: 1.25
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: curl
+
+      - name: Install Composer dependencies
         run: |
-          go test ./...
+          php tools/bin/composer.phar install --no-progress --prefer-dist
 
-  wallet:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: wallet
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - run: npm install || true
-      - run: npm test || true
+      - name: Run Go tests
+        run: go test ./...
 
-  ai-assistant:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ai-assistant
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - run: pip install -r requirements.txt || true
-      - run: pytest || true
+      - name: Run PHPCS
+        run: php tools/bin/composer.phar run phpcs
+
+      - name: Run PHPStan
+        run: php tools/bin/composer.phar run phpstan
+
+      - name: Run PHPUnit
+        run: php tools/bin/composer.phar run phpunit

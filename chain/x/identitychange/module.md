@@ -22,4 +22,5 @@ This document outlines how the `identitychange` module should be wired into the 
 ## Next Actions
 
 - Generate the real protobuf bindings from `proto/aura/identitychange/v1beta1/identity_change.proto` using `buf generate` or `protoc` so the module shares the same message/query contract as other SDK modules.
-- Replace the placeholder `proto_stub.go` with the generated file and rerun `go test ./...` once the Cosmos SDK dependencies have been added to `chain/go.mod`.
+- Replace the tracked stub with the `buf`/`protoc`-generated bindings under `proto/aura/identitychange/v1beta1/` and refresh the module once the Cosmos SDK dependencies land in `chain/go.mod`.
+- Use `scripts/generate_identitychange_proto.sh` after installing `buf` or the Go `protoc-gen-go` plugin (and the `proto/cosmos/base/query/v1beta1/pagination.proto` dep) to regenerate the real bindings and keep them checked into the module.

@@ -3,7 +3,7 @@ package aura.identitychange.v1beta1;
 
 import "cosmos/base/query/v1beta1/pagination.proto";
 
-option go_package = "github.com/aequitas/aura/chain/x/identitychange/types";
+option go_package = "github.com/aequitas/aura/proto/aura/identitychange/v1beta1;identitychangepb";
 
 enum IdentityChangeStatus {
   IDENTITY_CHANGE_STATUS_UNSPECIFIED = 0;
