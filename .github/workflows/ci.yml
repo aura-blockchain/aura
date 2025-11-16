@@ -26,6 +26,12 @@ jobs:
           php-version: '8.4'
           extensions: curl
 
+      - name: Download Composer
+        run: |
+          mkdir -p tools/bin
+          curl -sS https://getcomposer.org/installer | php -- --install-dir=tools/bin --filename=composer.phar
+          chmod +x tools/bin/composer.phar
+
       - name: Install Composer dependencies
         run: |
           php tools/bin/composer.phar install --no-progress --prefer-dist
