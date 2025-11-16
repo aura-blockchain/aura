@@ -12,7 +12,6 @@ import (
 )
 
 type msgServer struct {
-	types.UnimplementedMsgServer
 	vcregistrypb.UnimplementedMsgServer
 	keeper *keeper.Keeper
 }

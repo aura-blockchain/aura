@@ -9,8 +9,6 @@ import (
 )
 
 // QueryServer implements the economic security module's Query service
-type QueryServer struct {
-	types.UnimplementedQueryServer
 	keeper *keeper.Keeper
 	economicsecuritypb.UnimplementedQueryServer
 }
@@ -72,7 +70,7 @@ func (s *QueryServer) VoteLock(ctx context.Context, req *economicsecuritypb.Quer
 // VoteLocksByOwner queries all vote locks for an owner
 func (s *QueryServer) VoteLocksByOwner(ctx context.Context, req *economicsecuritypb.QueryVoteLocksByOwnerRequest) (*economicsecuritypb.QueryVoteLocksByOwnerResponse, error) {
 	locks := s.keeper.GetUserVoteLocks(req.Owner)
-	votingPower, totalLocked, activeLocks := s.keeper.GetVotingPower(req.Owner)
+	votingPower, totalLocked, _ := s.keeper.GetVotingPower(req.Owner)
 
 	return &economicsecuritypb.QueryVoteLocksByOwnerResponse{
 		Locks:            locks,
@@ -120,7 +118,7 @@ func (s *QueryServer) InflationMetrics(ctx context.Context, req *economicsecurit
 	return &economicsecuritypb.QueryInflationMetricsResponse{
 		CurrentInflationRate: params.Tokenomics.InflationRate,
 		TargetInflationRate:  params.Tokenomics.TargetInflationRate,
-		InflationChange24h:   0, // Would calculate from historical data
+		InflationChange_24H:   0, // Would calculate from historical data
 		LastAdjustment:       params.Tokenomics.LastInflationAdjustment,
 		NextCheck:            params.Tokenomics.LastInflationCheck,
 	}, nil
@@ -184,7 +182,7 @@ func (s *QueryServer) TokenomicsStats(ctx context.Context, req *economicsecurity
 	params := s.keeper.GetParams()
 	totalVested, totalVesting := s.keeper.GetTotalVesting()
 	totalLocked := s.keeper.GetTotalLockedGovernance()
-	whaleTriggers := s.keeper.GetWhaleProtectionTriggers24h()
+	whaleTriggers := s.keeper.GetWhaleProtectionTriggers_24H()
 	taxCollected := s.keeper.GetTaxCollected24h()
 
 	return &economicsecuritypb.QueryTokenomicsStatsResponse{
@@ -196,7 +194,7 @@ func (s *QueryServer) TokenomicsStats(ctx context.Context, req *economicsecurity
 		TreasuryBalance:            "0", // Would fetch from bank module
 		CurrentInflationRate:       params.Tokenomics.InflationRate,
 		TotalBurned:                "0", // Would track
-		WhaleProtectionTriggers24h: whaleTriggers,
-		TransferTaxCollected24h:    taxCollected,
+		WhaleProtectionTriggers_24H: whaleTriggers,
+		TransferTaxCollected_24H:    taxCollected,
 	}, nil
 }

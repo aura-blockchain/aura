@@ -8,8 +8,6 @@ import (
 )
 
 // MsgServer implements the economic security module's Msg service
-type MsgServer struct {
-	types.UnimplementedMsgServer
 	keeper *keeper.Keeper
 	economicsecuritypb.UnimplementedMsgServer
 }

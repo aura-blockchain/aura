@@ -28,7 +28,7 @@ func (s *Store) GetParams() types.Params {
 
 // SetParams updates the parameters
 func (s *Store) SetParams(params types.Params) error {
-	if err := params.Validate(); err != nil {
+	if err := types.ValidateParams(&params); err != nil {
 		return err
 	}
 

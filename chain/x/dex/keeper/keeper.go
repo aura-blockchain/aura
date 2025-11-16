@@ -5,6 +5,7 @@ import (
 
 	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
@@ -94,7 +95,7 @@ func (k Keeper) SetParams(ctx sdk.Context, params types.Params) error {
 // ============================================================================
 
 // GetAuraPrice returns current AURA price in USD from USDT pool
-func (k Keeper) GetAuraPrice(ctx sdk.Context) sdk.Dec {
+func (k Keeper) GetAuraPrice(ctx sdk.Context) sdkmath.LegacyDec {
 	// Get AURA/USDT pool (pool ID "aura-usdt")
 	pool := k.GetPoolByDenoms(ctx, "uaura", "usdt")
 
@@ -112,7 +113,7 @@ func (k Keeper) GetAuraPrice(ctx sdk.Context) sdk.Dec {
 }
 
 // GetCurrentMinimumLiquidity returns minimum liquidity based on current AURA price
-func (k Keeper) GetCurrentMinimumLiquidity(ctx sdk.Context) sdk.Dec {
+func (k Keeper) GetCurrentMinimumLiquidity(ctx sdk.Context) sdkmath.LegacyDec {
 	params := k.GetParams(ctx)
 	auraPrice := k.GetAuraPrice(ctx)
 
@@ -205,7 +206,7 @@ func (k Keeper) IsUserVerified(ctx sdk.Context, address string) bool {
 }
 
 // CalculateFeeBoost returns fee boost percentage for user
-func (k Keeper) CalculateFeeBoost(ctx sdk.Context, address string) sdk.Dec {
+func (k Keeper) CalculateFeeBoost(ctx sdk.Context, address string) sdkmath.LegacyDec {
 	params := k.GetParams(ctx)
 
 	if !params.IrBoostEnabled {
@@ -224,8 +225,8 @@ func (k Keeper) CalculateFeeBoost(ctx sdk.Context, address string) sdk.Dec {
 func (k Keeper) CalculateEffectiveFee(
 	ctx sdk.Context,
 	address string,
-	baseFee sdk.Dec,
-) sdk.Dec {
+	baseFee sdkmath.LegacyDec,
+) sdkmath.LegacyDec {
 	boost := k.CalculateFeeBoost(ctx, address)
 
 	// Effective fee = base_fee × (1 + boost)

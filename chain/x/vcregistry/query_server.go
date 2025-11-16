@@ -12,7 +12,6 @@ import (
 )
 
 type queryServer struct {
-	types.UnimplementedQueryServer
 	vcregistrypb.UnimplementedQueryServer
 	keeper *keeper.Keeper
 }
