@@ -16,11 +16,11 @@ func GetModuleRootCmd() *cobra.Command {
 		RunE:                       client.ValidateCmd,
 	}
 
-	// Add query and transaction subcommands
-	cmd.AddCommand(
-		GetQueryCmd(),
-		GetTxCmd(),
-	)
+// 	// Add query and transaction subcommands
+// 	cmd.AddCommand(
+// 		GetQueryCmd(),
+// 		GetTxCmd(),
+// 	)
 
 	return cmd
 }
