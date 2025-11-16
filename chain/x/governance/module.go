@@ -21,11 +21,6 @@ func NewAppModule(k *keeper.Keeper) AppModule {
 // RegisterGRPCServices registers the module's gRPC services
 func (am AppModule) RegisterGRPCServices(server *grpc.Server) {
 	// Register message server
-	msgServer := NewMsgServer(am.keeper)
-	_ = msgServer // In a real implementation, this would be registered with the server
-
-	// Register query server
-	queryServer := NewQueryServer(am.keeper)
 	_ = queryServer // In a real implementation, this would be registered with the server
 }
 

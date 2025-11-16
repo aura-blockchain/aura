@@ -8,6 +8,7 @@ import (
 )
 
 // MsgServer implements the economic security module's Msg service
+type MsgServer struct {
 	keeper *keeper.Keeper
 	economicsecuritypb.UnimplementedMsgServer
 }
@@ -16,8 +17,6 @@ import (
 func NewMsgServer(k *keeper.Keeper) economicsecuritypb.MsgServer {
 	return &MsgServer{keeper: k}
 }
-
-// CreateVestingSchedule creates a new vesting schedule
 func (s *MsgServer) CreateVestingSchedule(ctx context.Context, msg *economicsecuritypb.MsgCreateVestingSchedule) (*economicsecuritypb.MsgCreateVestingScheduleResponse, error) {
 	scheduleID, err := s.keeper.CreateVestingSchedule(
 		msg.BeneficiaryAddress,

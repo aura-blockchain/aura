@@ -9,6 +9,7 @@ import (
 )
 
 // QueryServer implements the economic security module's Query service
+type QueryServer struct {
 	keeper *keeper.Keeper
 	economicsecuritypb.UnimplementedQueryServer
 }
@@ -17,7 +18,6 @@ import (
 func NewQueryServer(k *keeper.Keeper) economicsecuritypb.QueryServer {
 	return &QueryServer{keeper: k}
 }
-
 // Params queries the module parameters
 func (s *QueryServer) Params(ctx context.Context, req *economicsecuritypb.QueryParamsRequest) (*economicsecuritypb.QueryParamsResponse, error) {
 	params := s.keeper.GetParams()
