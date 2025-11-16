@@ -24,7 +24,7 @@ func (k Keeper) CreatePool(
 	denomB string,
 	amountA sdk.Coin,
 	amountB sdk.Coin,
-) (*types.LiquidityPool, sdk.Int, error) {
+) (*types.LiquidityPool, sdkmath.Int, error) {
 	// Generate pool ID
 	poolID := k.GeneratePoolID(denomA, denomB)
 
@@ -122,7 +122,7 @@ func (k Keeper) AddLiquidity(
 	poolID string,
 	amountA sdk.Coin,
 	amountB sdk.Coin,
-) (sdk.Int, sdk.Dec, error) {
+) (sdkmath.Int, sdk.Dec, error) {
 	// Get pool
 	pool := k.GetPool(ctx, poolID)
 	if pool == nil {
@@ -237,7 +237,7 @@ func (k Keeper) RemoveLiquidity(
 	ctx sdk.Context,
 	provider string,
 	poolID string,
-	lpTokens sdk.Int,
+	lpTokens sdkmath.Int,
 ) (sdk.Coin, sdk.Coin, error) {
 	// Get pool
 	pool := k.GetPool(ctx, poolID)
@@ -345,9 +345,9 @@ func (k Keeper) SwapExactIn(
 	sender string,
 	poolID string,
 	coinIn sdk.Coin,
-	minAmountOut sdk.Int,
+	minAmountOut sdkmath.Int,
 	maxSlippageBps uint64,
-) (sdk.Int, sdk.Dec, sdk.Dec, error) {
+) (sdkmath.Int, sdk.Dec, sdk.Dec, error) {
 	// Get pool
 	pool := k.GetPool(ctx, poolID)
 	if pool == nil {
@@ -360,8 +360,8 @@ func (k Keeper) SwapExactIn(
 
 	// Determine which way we're swapping
 	var (
-		reserveIn  sdk.Int
-		reserveOut sdk.Int
+		reserveIn  sdkmath.Int
+		reserveOut sdkmath.Int
 		denomOut   string
 		isAtoB     bool
 	)
@@ -502,8 +502,8 @@ func (k Keeper) GetQuote(
 	ctx sdk.Context,
 	poolID string,
 	denomIn string,
-	amountIn sdk.Int,
-) (sdk.Int, sdk.Dec, sdk.Dec, sdk.Int, error) {
+	amountIn sdkmath.Int,
+) (sdkmath.Int, sdk.Dec, sdk.Dec, sdkmath.Int, error) {
 	pool := k.GetPool(ctx, poolID)
 	if pool == nil {
 		return sdk.ZeroInt(), sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroInt(),
@@ -511,7 +511,7 @@ func (k Keeper) GetQuote(
 	}
 
 	// Same logic as SwapExactIn but without state changes
-	var reserveIn, reserveOut sdk.Int
+	var reserveIn, reserveOut sdkmath.Int
 
 	if denomIn == pool.DenomA {
 		reserveIn = pool.ReserveA
@@ -547,8 +547,8 @@ func (k Keeper) GetQuote(
 func (k Keeper) RecordSwapStats(
 	ctx sdk.Context,
 	poolID string,
-	amountIn sdk.Int,
-	amountOut sdk.Int,
+	amountIn sdkmath.Int,
+	amountOut sdkmath.Int,
 	timestamp time.Time,
 ) {
 	// Store swap stats for market price tracking

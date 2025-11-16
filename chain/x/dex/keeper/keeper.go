@@ -135,7 +135,7 @@ func (k Keeper) GetCurrentMinimumLiquidity(ctx sdk.Context) sdkmath.LegacyDec {
 }
 
 // CalculateMinimumAuraRequired returns minimum AURA needed based on USD minimum
-func (k Keeper) CalculateMinimumAuraRequired(ctx sdk.Context) sdk.Int {
+func (k Keeper) CalculateMinimumAuraRequired(ctx sdk.Context) sdkmath.Int {
 	minUSD := k.GetCurrentMinimumLiquidity(ctx)
 	auraPrice := k.GetAuraPrice(ctx)
 
@@ -168,7 +168,7 @@ func (k Keeper) CheckMinimumLiquidity(
 	ctx sdk.Context,
 	provider string,
 	poolID string,
-	amountA sdk.Int,
+	amountA sdkmath.Int,
 ) error {
 	// Existing LPs are grandfathered - they can add ANY amount!
 	if k.IsExistingLP(ctx, provider, poolID) {
