@@ -1,0 +1,94 @@
+syntax = "proto3";
+package aura.dataregistry.v1beta1;
+
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "aura/dataregistry/v1beta1/data_registry.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/dataregistry/v1beta1;dataregistrypb";
+
+// ============================
+// QUERY SERVICE
+// ============================
+
+// QueryDataItemRequest retrieves a specific data item
+message QueryDataItemRequest {
+  string data_id = 1;
+  string requester = 2;                     // For access control check
+}
+
+message QueryDataItemResponse {
+  DataItem data_item = 1;
+  bool exists = 2;
+  bool has_access = 3;                      // Whether requester can view
+}
+
+// QueryUserDataItemsRequest lists all data items for a user
+message QueryUserDataItemsRequest {
+  string owner_address = 1;
+  DataItemType type_filter = 2;             // Optional filter
+  DataItemStatus status_filter = 3;         // Optional filter
+  cosmos.base.query.v1beta1.PageRequest pagination = 4;
+}
+
+message QueryUserDataItemsResponse {
+  repeated DataItem data_items = 1;
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QuerySearchDataItemsRequest searches for data items
+message QuerySearchDataItemsRequest {
+  string search_query = 1;
+  repeated string tags = 2;
+  DataItemType type_filter = 3;
+  GeoLocation near_location = 4;            // Optional geo search
+  double radius_km = 5;                     // Radius for geo search
+  string requester = 6;                     // For access control
+  cosmos.base.query.v1beta1.PageRequest pagination = 7;
+}
+
+message QuerySearchDataItemsResponse {
+  repeated DataItem data_items = 1;
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryDataItemVerificationsRequest gets verifications for a data item
+message QueryDataItemVerificationsRequest {
+  string data_id = 1;
+}
+
+message QueryDataItemVerificationsResponse {
+  repeated Verification verifications = 1;
+}
+
+// QueryStatsRequest retrieves registry statistics
+message QueryStatsRequest {}
+
+message QueryStatsResponse {
+  uint64 total_data_items = 1;
+  uint64 total_verified_items = 2;
+  uint64 total_storage_bytes = 3;
+  map<string, uint64> items_by_type = 4;    // Type -> count
+  uint64 total_verifications = 5;
+}
+
+// QueryParamsRequest retrieves module parameters
+message QueryParamsRequest {}
+
+message QueryParamsResponse {
+  Params params = 1;
+}
+
+// Query service defines read-only queries
+service Query {
+  // Data item queries
+  rpc DataItem(QueryDataItemRequest) returns (QueryDataItemResponse);
+  rpc UserDataItems(QueryUserDataItemsRequest) returns (QueryUserDataItemsResponse);
+  rpc SearchDataItems(QuerySearchDataItemsRequest) returns (QuerySearchDataItemsResponse);
+
+  // Verification queries
+  rpc DataItemVerifications(QueryDataItemVerificationsRequest) returns (QueryDataItemVerificationsResponse);
+
+  // Stats and params
+  rpc Stats(QueryStatsRequest) returns (QueryStatsResponse);
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse);
+}

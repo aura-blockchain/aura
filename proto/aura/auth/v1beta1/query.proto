@@ -1,0 +1,208 @@
+syntax = "proto3";
+package aura.auth.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "aura/auth/v1beta1/auth.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/auth/v1beta1";
+
+// Query defines the gRPC query service for the auth module
+service Query {
+  // GetRole queries a role by name
+  rpc GetRole(QueryGetRoleRequest) returns (QueryGetRoleResponse);
+
+  // ListRoles lists all roles
+  rpc ListRoles(QueryListRolesRequest) returns (QueryListRolesResponse);
+
+  // GetRoleAssignments queries role assignments for an address
+  rpc GetRoleAssignments(QueryGetRoleAssignmentsRequest) returns (QueryGetRoleAssignmentsResponse);
+
+  // HasPermission checks if an address has a specific permission
+  rpc HasPermission(QueryHasPermissionRequest) returns (QueryHasPermissionResponse);
+
+  // GetMultisigWallet queries a multisig wallet
+  rpc GetMultisigWallet(QueryGetMultisigWalletRequest) returns (QueryGetMultisigWalletResponse);
+
+  // ListMultisigWallets lists all multisig wallets
+  rpc ListMultisigWallets(QueryListMultisigWalletsRequest) returns (QueryListMultisigWalletsResponse);
+
+  // GetMultisigProposal queries a multisig proposal
+  rpc GetMultisigProposal(QueryGetMultisigProposalRequest) returns (QueryGetMultisigProposalResponse);
+
+  // ListMultisigProposals lists multisig proposals for a wallet
+  rpc ListMultisigProposals(QueryListMultisigProposalsRequest) returns (QueryListMultisigProposalsResponse);
+
+  // GetTimeLockedAction queries a time-locked action
+  rpc GetTimeLockedAction(QueryGetTimeLockedActionRequest) returns (QueryGetTimeLockedActionResponse);
+
+  // ListTimeLockedActions lists all time-locked actions
+  rpc ListTimeLockedActions(QueryListTimeLockedActionsRequest) returns (QueryListTimeLockedActionsResponse);
+
+  // GetEmergencyAdmin queries emergency admin status
+  rpc GetEmergencyAdmin(QueryGetEmergencyAdminRequest) returns (QueryGetEmergencyAdminResponse);
+
+  // ListEmergencyAdmins lists all emergency admins
+  rpc ListEmergencyAdmins(QueryListEmergencyAdminsRequest) returns (QueryListEmergencyAdminsResponse);
+
+  // GetValidatorKeyRotation queries validator key rotation status
+  rpc GetValidatorKeyRotation(QueryGetValidatorKeyRotationRequest) returns (QueryGetValidatorKeyRotationResponse);
+
+  // GetSession queries a session
+  rpc GetSession(QueryGetSessionRequest) returns (QueryGetSessionResponse);
+
+  // ListSessions lists sessions for a user
+  rpc ListSessions(QueryListSessionsRequest) returns (QueryListSessionsResponse);
+
+  // GetRateLimitStatus queries rate limit status for a user
+  rpc GetRateLimitStatus(QueryGetRateLimitStatusRequest) returns (QueryGetRateLimitStatusResponse);
+
+  // GetAuditLogs queries audit logs
+  rpc GetAuditLogs(QueryGetAuditLogsRequest) returns (QueryGetAuditLogsResponse);
+
+  // GetParams queries the auth module parameters
+  rpc GetParams(QueryGetParamsRequest) returns (QueryGetParamsResponse);
+}
+
+message QueryGetRoleRequest {
+  string name = 1;
+}
+
+message QueryGetRoleResponse {
+  Role role = 1;
+}
+
+message QueryListRolesRequest {}
+
+message QueryListRolesResponse {
+  repeated Role roles = 1;
+}
+
+message QueryGetRoleAssignmentsRequest {
+  string address = 1;
+}
+
+message QueryGetRoleAssignmentsResponse {
+  repeated RoleAssignment assignments = 1;
+}
+
+message QueryHasPermissionRequest {
+  string address = 1;
+  string permission = 2;
+}
+
+message QueryHasPermissionResponse {
+  bool has_permission = 1;
+  repeated string matching_roles = 2;
+}
+
+message QueryGetMultisigWalletRequest {
+  string id = 1;
+}
+
+message QueryGetMultisigWalletResponse {
+  MultisigWallet wallet = 1;
+}
+
+message QueryListMultisigWalletsRequest {}
+
+message QueryListMultisigWalletsResponse {
+  repeated MultisigWallet wallets = 1;
+}
+
+message QueryGetMultisigProposalRequest {
+  string id = 1;
+}
+
+message QueryGetMultisigProposalResponse {
+  MultisigProposal proposal = 1;
+}
+
+message QueryListMultisigProposalsRequest {
+  string wallet_id = 1;
+  ProposalStatus status = 2; // Optional filter
+}
+
+message QueryListMultisigProposalsResponse {
+  repeated MultisigProposal proposals = 1;
+}
+
+message QueryGetTimeLockedActionRequest {
+  string id = 1;
+}
+
+message QueryGetTimeLockedActionResponse {
+  TimeLockedAction action = 1;
+}
+
+message QueryListTimeLockedActionsRequest {
+  ActionStatus status = 1; // Optional filter
+}
+
+message QueryListTimeLockedActionsResponse {
+  repeated TimeLockedAction actions = 1;
+}
+
+message QueryGetEmergencyAdminRequest {
+  string address = 1;
+}
+
+message QueryGetEmergencyAdminResponse {
+  EmergencyAdmin admin = 1;
+}
+
+message QueryListEmergencyAdminsRequest {}
+
+message QueryListEmergencyAdminsResponse {
+  repeated EmergencyAdmin admins = 1;
+}
+
+message QueryGetValidatorKeyRotationRequest {
+  string validator_address = 1;
+}
+
+message QueryGetValidatorKeyRotationResponse {
+  ValidatorKeyRotation rotation = 1;
+}
+
+message QueryGetSessionRequest {
+  string session_id = 1;
+}
+
+message QueryGetSessionResponse {
+  Session session = 1;
+}
+
+message QueryListSessionsRequest {
+  string user_address = 1;
+}
+
+message QueryListSessionsResponse {
+  repeated Session sessions = 1;
+}
+
+message QueryGetRateLimitStatusRequest {
+  string user_address = 1;
+}
+
+message QueryGetRateLimitStatusResponse {
+  RateLimitConfig config = 1;
+  bool is_limited = 2;
+}
+
+message QueryGetAuditLogsRequest {
+  string actor = 1; // Optional filter
+  string action = 2; // Optional filter
+  int64 start_time = 3; // Unix timestamp
+  int64 end_time = 4; // Unix timestamp
+  uint64 limit = 5;
+}
+
+message QueryGetAuditLogsResponse {
+  repeated AuditLog logs = 1;
+}
+
+message QueryGetParamsRequest {}
+
+message QueryGetParamsResponse {
+  Params params = 1;
+}

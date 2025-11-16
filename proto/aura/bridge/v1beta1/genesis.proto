@@ -1,0 +1,55 @@
+syntax = "proto3";
+package aura.bridge.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "aura/bridge/v1beta1/bridge.proto";
+
+option go_package = "github.com/aequitas/aura/x/bridge/types";
+
+// GenesisState defines the bridge module's genesis state
+message GenesisState {
+  // Module parameters
+  BridgeParams params = 1 [(gogoproto.nullable) = false];
+
+  // Cross-chain transfers in progress
+  repeated CrossChainTransfer transfers = 2 [(gogoproto.nullable) = false];
+
+  // Chain configurations
+  repeated ChainConfig chain_configs = 3 [(gogoproto.nullable) = false];
+
+  // Bridge validators
+  repeated BridgeValidator validators = 4 [(gogoproto.nullable) = false];
+
+  // Wrapped tokens
+  repeated WrappedToken wrapped_tokens = 5 [(gogoproto.nullable) = false];
+
+  // Shared identities
+  repeated SharedIdentity shared_identities = 6 [(gogoproto.nullable) = false];
+
+  // Cross-chain swaps
+  repeated CrossChainSwap cross_chain_swaps = 7 [(gogoproto.nullable) = false];
+
+  // Relayer stats
+  repeated RelayerStats relayer_stats = 8 [(gogoproto.nullable) = false];
+}
+
+// BridgeParams defines the parameters for the bridge module
+message BridgeParams {
+  // Minimum confirmations for transfers
+  uint64 min_confirmations = 1;
+
+  // Bridge fee percentage (basis points, e.g., 30 = 0.3%)
+  uint64 bridge_fee_basis_points = 2;
+
+  // Maximum transfer amount per transaction
+  string max_transfer_amount = 3 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Bridge enabled
+  bool enabled = 4;
+
+  // Required validator threshold for confirmations (percentage)
+  uint64 validator_threshold_percentage = 5;
+}

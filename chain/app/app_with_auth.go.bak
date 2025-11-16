@@ -1,0 +1,114 @@
+package app
+
+import (
+	"github.com/aequitas/aura/chain/x/auth"
+	authkeeper "github.com/aequitas/aura/chain/x/auth/keeper"
+	authtypes "github.com/aequitas/aura/chain/x/auth/types"
+	"github.com/aequitas/aura/chain/x/bridge"
+	"github.com/aequitas/aura/chain/x/confidencescore"
+	cskeeper "github.com/aequitas/aura/chain/x/confidencescore/keeper"
+	csparams "github.com/aequitas/aura/chain/x/confidencescore/params"
+	cstypes "github.com/aequitas/aura/chain/x/confidencescore/types"
+	"github.com/aequitas/aura/chain/x/dataregistry"
+	"github.com/aequitas/aura/chain/x/dex"
+	drkeeper "github.com/aequitas/aura/chain/x/dataregistry/keeper"
+	drparams "github.com/aequitas/aura/chain/x/dataregistry/params"
+	drtypes "github.com/aequitas/aura/chain/x/dataregistry/types"
+	"github.com/aequitas/aura/chain/x/identitychange"
+	idkeeper "github.com/aequitas/aura/chain/x/identitychange/keeper"
+	idparams "github.com/aequitas/aura/chain/x/identitychange/params"
+	idtypes "github.com/aequitas/aura/chain/x/identitychange/types"
+	"github.com/aequitas/aura/chain/x/inclusionroutines"
+	irkeeper "github.com/aequitas/aura/chain/x/inclusionroutines/keeper"
+	irparams "github.com/aequitas/aura/chain/x/inclusionroutines/params"
+	irtypes "github.com/aequitas/aura/chain/x/inclusionroutines/types"
+	"github.com/aequitas/aura/chain/x/vcregistry"
+	vckeeper "github.com/aequitas/aura/chain/x/vcregistry/keeper"
+	vcparams "github.com/aequitas/aura/chain/x/vcregistry/params"
+	vctypes "github.com/aequitas/aura/chain/x/vcregistry/types"
+	"google.golang.org/grpc"
+)
+
+// AppWithAuth extends the base App with authentication and authorization capabilities
+type AppWithAuth struct {
+	moduleManager ModuleManager
+	grpcServer    *grpc.Server
+	authKeeper    *authkeeper.Keeper
+}
+
+// NewAppWithAuth builds the shell with all modules including auth
+func NewAppWithAuth() *AppWithAuth {
+	// Initialize auth module first (for access control across all modules)
+	authParams := authtypes.DefaultParams()
+	authKeeper := authkeeper.NewKeeper(authParams)
+	authModule := auth.NewAppModule(authKeeper)
+
+	// Initialize identitychange module
+	idParamsStore := idparams.NewStore(idtypes.DefaultParams())
+	idKeeper := idkeeper.NewKeeper(idParamsStore)
+	idModule := identitychange.NewAppModule(idKeeper)
+
+	// Initialize inclusionroutines module
+	irParamsStore := irparams.NewStore(irtypes.DefaultParams())
+	irKeeper := irkeeper.NewKeeper(irParamsStore)
+	irModule := inclusionroutines.NewAppModule(irKeeper)
+
+	// Initialize confidencescore module (needs IR keeper as dependency)
+	csParamsStore := csparams.NewStore(cstypes.DefaultParams())
+	csKeeper := cskeeper.NewKeeper(csParamsStore)
+	csKeeper.SetIRRegistry(irKeeper)
+	csModule := confidencescore.NewAppModule(csKeeper)
+
+	// Initialize vcregistry module (needs CS keeper as dependency)
+	vcParamsStore := vcparams.NewStore(vctypes.DefaultParams())
+	vcKeeper := vckeeper.NewKeeper(vcParamsStore)
+	vcKeeper.SetConfidenceScoreKeeper(csKeeper)
+	vcModule := vcregistry.NewAppModule(vcKeeper)
+
+	// Initialize dataregistry module
+	drParamsStore := drparams.NewStore(drtypes.DefaultParams())
+	drKeeper := drkeeper.NewKeeper(drParamsStore)
+	drModule := dataregistry.NewAppModule(drKeeper)
+
+	// TODO: Initialize DEX module when Cosmos SDK keepers are available
+	var dexModules []dex.AppModule
+
+	// TODO: Initialize Bridge module when Cosmos SDK keepers are available
+	var bridgeModules []bridge.AppModule
+
+	// Create module manager with all modules including auth
+	manager := NewModuleManagerWithAuth(
+		[]auth.AppModule{authModule},
+		[]identitychange.AppModule{idModule},
+		[]inclusionroutines.AppModule{irModule},
+		[]confidencescore.AppModule{csModule},
+		[]vcregistry.AppModule{vcModule},
+		[]dataregistry.AppModule{drModule},
+		dexModules,
+		bridgeModules,
+	)
+
+	server := grpc.NewServer()
+	app := &AppWithAuth{
+		moduleManager: manager,
+		grpcServer:    server,
+		authKeeper:    authKeeper,
+	}
+	app.RegisterGRPCServices()
+	return app
+}
+
+// RegisterGRPCServices wires the module manager into the underlying gRPC server registrar
+func (a *AppWithAuth) RegisterGRPCServices() {
+	a.moduleManager.RegisterGRPCServices(a.grpcServer)
+}
+
+// GRPCServer exposes the underlying gRPC server
+func (a *AppWithAuth) GRPCServer() *grpc.Server {
+	return a.grpcServer
+}
+
+// AuthKeeper exposes the auth keeper for access control checks
+func (a *AppWithAuth) AuthKeeper() *authkeeper.Keeper {
+	return a.authKeeper
+}

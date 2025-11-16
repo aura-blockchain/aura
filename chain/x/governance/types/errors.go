@@ -1,0 +1,33 @@
+package types
+
+import "fmt"
+
+// Governance module errors
+var (
+	ErrInvalidProposal           = fmt.Errorf("invalid proposal")
+	ErrInsufficientDeposit       = fmt.Errorf("insufficient deposit")
+	ErrInvalidVote               = fmt.Errorf("invalid vote")
+	ErrProposalNotFound          = fmt.Errorf("proposal not found")
+	ErrInvalidProposalStatus     = fmt.Errorf("invalid proposal status")
+	ErrVotingPeriodEnded         = fmt.Errorf("voting period has ended")
+	ErrVotingPeriodNotStarted    = fmt.Errorf("voting period has not started")
+	ErrAlreadyVoted              = fmt.Errorf("already voted")
+	ErrInvalidDeposit            = fmt.Errorf("invalid deposit")
+	ErrDepositPeriodEnded        = fmt.Errorf("deposit period has ended")
+	ErrUnauthorizedVeto          = fmt.Errorf("unauthorized veto")
+	ErrInsufficientVetoCosigners = fmt.Errorf("insufficient veto cosigners")
+	ErrExecutionDelayNotPassed   = fmt.Errorf("execution delay has not passed")
+	ErrProposalNotPassed         = fmt.Errorf("proposal has not passed")
+	ErrAlreadyExecuted           = fmt.Errorf("proposal already executed")
+	ErrInvalidDelegation         = fmt.Errorf("invalid vote delegation")
+	ErrDelegationNotFound        = fmt.Errorf("vote delegation not found")
+	ErrInsufficientTokens        = fmt.Errorf("insufficient tokens for lock")
+	ErrTokensLocked              = fmt.Errorf("tokens are locked")
+	ErrInvalidSnapshot           = fmt.Errorf("invalid snapshot vote")
+	ErrInvalidReveal             = fmt.Errorf("invalid vote reveal")
+	ErrRevealPeriodNotStarted    = fmt.Errorf("reveal period has not started")
+	ErrRevealPeriodEnded         = fmt.Errorf("reveal period has ended")
+	ErrInvalidCommitment         = fmt.Errorf("invalid vote commitment")
+	ErrWeightedVoteNotEnabled    = fmt.Errorf("weighted voting not enabled")
+	ErrInvalidWeight             = fmt.Errorf("invalid vote weight")
+)

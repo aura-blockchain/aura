@@ -30,8 +30,15 @@ jobs:
         run: |
           php tools/bin/composer.phar install --no-progress --prefer-dist
 
+      - name: Build Go modules
+        run: |
+          cd chain && go build ./...
+          cd ../proto && go build ./...
+
       - name: Run Go tests
-        run: go test ./...
+        run: |
+          cd chain && go test ./... -v
+          cd ../proto && go test ./... -v
 
       - name: Run PHPCS
         run: php tools/bin/composer.phar run phpcs

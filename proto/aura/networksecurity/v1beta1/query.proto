@@ -1,0 +1,137 @@
+syntax = "proto3";
+package aura.networksecurity.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "aura/networksecurity/v1beta1/networksecurity.proto";
+
+option go_package = "github.com/aura/chain/x/networksecurity/types";
+
+// Query defines the gRPC querier service
+service Query {
+  // Params queries the module parameters
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/aura/networksecurity/v1beta1/params";
+  }
+
+  // PeerInfo queries information about a specific peer
+  rpc PeerInfo(QueryPeerInfoRequest) returns (QueryPeerInfoResponse) {
+    option (google.api.http).get = "/aura/networksecurity/v1beta1/peer/{peer_id}";
+  }
+
+  // AllPeers queries information about all connected peers
+  rpc AllPeers(QueryAllPeersRequest) returns (QueryAllPeersResponse) {
+    option (google.api.http).get = "/aura/networksecurity/v1beta1/peers";
+  }
+
+  // TrustedPeers queries all trusted peers
+  rpc TrustedPeers(QueryTrustedPeersRequest) returns (QueryTrustedPeersResponse) {
+    option (google.api.http).get = "/aura/networksecurity/v1beta1/trusted_peers";
+  }
+
+  // PeerReputation queries reputation for a specific peer
+  rpc PeerReputation(QueryPeerReputationRequest) returns (QueryPeerReputationResponse) {
+    option (google.api.http).get = "/aura/networksecurity/v1beta1/reputation/{peer_id}";
+  }
+
+  // RateLimitStatus queries rate limit status for a peer
+  rpc RateLimitStatus(QueryRateLimitStatusRequest) returns (QueryRateLimitStatusResponse) {
+    option (google.api.http).get = "/aura/networksecurity/v1beta1/ratelimit/{peer_id}";
+  }
+
+  // MempoolStats queries current mempool statistics
+  rpc MempoolStats(QueryMempoolStatsRequest) returns (QueryMempoolStatsResponse) {
+    option (google.api.http).get = "/aura/networksecurity/v1beta1/mempool/stats";
+  }
+
+  // ForkAlerts queries active fork alerts
+  rpc ForkAlerts(QueryForkAlertsRequest) returns (QueryForkAlertsResponse) {
+    option (google.api.http).get = "/aura/networksecurity/v1beta1/fork_alerts";
+  }
+
+  // PartitionAlerts queries active partition alerts
+  rpc PartitionAlerts(QueryPartitionAlertsRequest) returns (QueryPartitionAlertsResponse) {
+    option (google.api.http).get = "/aura/networksecurity/v1beta1/partition_alerts";
+  }
+
+  // NetworkHealth queries overall network health status
+  rpc NetworkHealth(QueryNetworkHealthRequest) returns (QueryNetworkHealthResponse) {
+    option (google.api.http).get = "/aura/networksecurity/v1beta1/health";
+  }
+}
+
+message QueryParamsRequest {}
+
+message QueryParamsResponse {
+  Params params = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryPeerInfoRequest {
+  string peer_id = 1;
+}
+
+message QueryPeerInfoResponse {
+  PeerInfo peer = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryAllPeersRequest {}
+
+message QueryAllPeersResponse {
+  repeated PeerInfo peers = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryTrustedPeersRequest {}
+
+message QueryTrustedPeersResponse {
+  repeated TrustedPeer peers = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryPeerReputationRequest {
+  string peer_id = 1;
+}
+
+message QueryPeerReputationResponse {
+  NodeReputation reputation = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryRateLimitStatusRequest {
+  string peer_id = 1;
+}
+
+message QueryRateLimitStatusResponse {
+  RateLimitEntry status = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryMempoolStatsRequest {}
+
+message QueryMempoolStatsResponse {
+  MempoolStats stats = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryForkAlertsRequest {
+  bool include_resolved = 1;
+}
+
+message QueryForkAlertsResponse {
+  repeated ForkAlert alerts = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryPartitionAlertsRequest {
+  bool include_resolved = 1;
+}
+
+message QueryPartitionAlertsResponse {
+  repeated PartitionAlert alerts = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryNetworkHealthRequest {}
+
+message QueryNetworkHealthResponse {
+  uint32 connected_peers = 1;
+  uint32 healthy_peers = 2;
+  uint32 banned_peers = 3;
+  int64 average_reputation = 4;
+  bool is_partitioned = 5;
+  bool has_active_forks = 6;
+  MempoolStats mempool_stats = 7 [(gogoproto.nullable) = false];
+}

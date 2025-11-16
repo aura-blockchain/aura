@@ -1,0 +1,287 @@
+package app
+
+import (
+	// Existing modules
+	"github.com/aequitas/aura/chain/x/bridge"
+	"github.com/aequitas/aura/chain/x/confidencescore"
+	cskeeper "github.com/aequitas/aura/chain/x/confidencescore/keeper"
+	csparams "github.com/aequitas/aura/chain/x/confidencescore/params"
+	cstypes "github.com/aequitas/aura/chain/x/confidencescore/types"
+	"github.com/aequitas/aura/chain/x/dataregistry"
+	"github.com/aequitas/aura/chain/x/dex"
+	drkeeper "github.com/aequitas/aura/chain/x/dataregistry/keeper"
+	drparams "github.com/aequitas/aura/chain/x/dataregistry/params"
+	drtypes "github.com/aequitas/aura/chain/x/dataregistry/types"
+	"github.com/aequitas/aura/chain/x/governance"
+	govkeeper "github.com/aequitas/aura/chain/x/governance/keeper"
+	govtypes "github.com/aequitas/aura/chain/x/governance/types"
+	"github.com/aequitas/aura/chain/x/identitychange"
+	idkeeper "github.com/aequitas/aura/chain/x/identitychange/keeper"
+	idparams "github.com/aequitas/aura/chain/x/identitychange/params"
+	idtypes "github.com/aequitas/aura/chain/x/identitychange/types"
+	"github.com/aequitas/aura/chain/x/inclusionroutines"
+	irkeeper "github.com/aequitas/aura/chain/x/inclusionroutines/keeper"
+	irparams "github.com/aequitas/aura/chain/x/inclusionroutines/params"
+	irtypes "github.com/aequitas/aura/chain/x/inclusionroutines/types"
+	"github.com/aequitas/aura/chain/x/vcregistry"
+	vckeeper "github.com/aequitas/aura/chain/x/vcregistry/keeper"
+	vcparams "github.com/aequitas/aura/chain/x/vcregistry/params"
+	vctypes "github.com/aequitas/aura/chain/x/vcregistry/types"
+
+	// NEW SECURITY MODULES
+	// Access Control & Authentication
+	authkeeper "github.com/aequitas/aura/chain/x/auth/keeper"
+	authtypes "github.com/aequitas/aura/chain/x/auth/types"
+
+	// Cryptography Module
+	cryptokeeper "github.com/aequitas/aura/chain/x/cryptography/keeper"
+	cryptotypes "github.com/aequitas/aura/chain/x/cryptography/types"
+
+	// Economic Security
+	ecoseckeeper "github.com/aequitas/aura/chain/x/economicsecurity/keeper"
+	ecosectypes "github.com/aequitas/aura/chain/x/economicsecurity/types"
+
+	// Network Security
+	netseckeeper "github.com/aequitas/aura/chain/x/networksecurity/keeper"
+	netsectypes "github.com/aequitas/aura/chain/x/networksecurity/types"
+
+	// Validator Security
+	valseckeeper "github.com/aequitas/aura/chain/x/validatorsecurity/keeper"
+	valsectypes "github.com/aequitas/aura/chain/x/validatorsecurity/types"
+
+	// Monitoring & Alerting
+	monkeeper "github.com/aequitas/aura/chain/x/monitoring/keeper"
+	montypes "github.com/aequitas/aura/chain/x/monitoring/types"
+
+	// Compliance
+	compkeeper "github.com/aequitas/aura/chain/x/compliance/keeper"
+	comptypes "github.com/aequitas/aura/chain/x/compliance/types"
+
+	// Wallet Security
+	walletseckeeper "github.com/aequitas/aura/chain/x/walletsecurity/keeper"
+	walletsectypes "github.com/aequitas/aura/chain/x/walletsecurity/types"
+
+	// Privacy & Anonymity
+	privkeeper "github.com/aequitas/aura/chain/x/privacy/keeper"
+	privtypes "github.com/aequitas/aura/chain/x/privacy/types"
+
+	// Incident Response
+	inckeeper "github.com/aequitas/aura/chain/x/incidentresponse/keeper"
+	inctypes "github.com/aequitas/aura/chain/x/incidentresponse/types"
+
+	"google.golang.org/grpc"
+)
+
+// AppWithSecurity extends the original app with all security modules integrated
+type AppWithSecurity struct {
+	moduleManager ModuleManager
+	grpcServer    *grpc.Server
+
+	// Keepers for all modules
+	IDKeeper         *idkeeper.Keeper
+	IRKeeper         *irkeeper.Keeper
+	CSKeeper         *cskeeper.Keeper
+	VCKeeper         *vckeeper.Keeper
+	DRKeeper         *drkeeper.Keeper
+	GovKeeper        *govkeeper.Keeper
+	AuthKeeper       *authkeeper.Keeper
+	CryptoKeeper     *cryptokeeper.Keeper
+	EcoSecKeeper     *ecoseckeeper.Keeper
+	NetSecKeeper     *netseckeeper.Keeper
+	ValSecKeeper     *valseckeeper.Keeper
+	MonKeeper        *monkeeper.Keeper
+	CompKeeper       *compkeeper.Keeper
+	WalletSecKeeper  *walletseckeeper.Keeper
+	PrivKeeper       *privkeeper.Keeper
+	IncKeeper        *inckeeper.Keeper
+}
+
+// NewAppWithSecurity creates a new app with all security features enabled
+func NewAppWithSecurity() *AppWithSecurity {
+	app := &AppWithSecurity{
+		grpcServer: grpc.NewServer(),
+	}
+
+	// PHASE 1: Initialize foundation modules (no dependencies)
+
+	// 1. Identity Change (foundation)
+	idParamsStore := idparams.NewStore(idtypes.DefaultParams())
+	app.IDKeeper = idkeeper.NewKeeper(idParamsStore)
+
+	// 2. Inclusion Routines (foundation)
+	irParamsStore := irparams.NewStore(irtypes.DefaultParams())
+	app.IRKeeper = irkeeper.NewKeeper(irParamsStore)
+
+	// 3. Confidence Score (depends on IR)
+	csParamsStore := csparams.NewStore(cstypes.DefaultParams())
+	app.CSKeeper = cskeeper.NewKeeper(csParamsStore)
+	app.CSKeeper.SetIRRegistry(app.IRKeeper)
+
+	// 4. VC Registry (depends on CS)
+	vcParamsStore := vcparams.NewStore(vctypes.DefaultParams())
+	app.VCKeeper = vckeeper.NewKeeper(vcParamsStore)
+	app.VCKeeper.SetConfidenceScoreKeeper(app.CSKeeper)
+
+	// 5. Data Registry
+	drParamsStore := drparams.NewStore(drtypes.DefaultParams())
+	app.DRKeeper = drkeeper.NewKeeper(drParamsStore)
+
+	// PHASE 2: Initialize security foundation modules
+
+	// 6. Cryptography Module (foundation for security)
+	app.CryptoKeeper = cryptokeeper.NewKeeper(
+		nil, // codec - TODO: add when Cosmos SDK integrated
+		nil, // store key - TODO: add when Cosmos SDK integrated
+		cryptotypes.DefaultParams(),
+	)
+
+	// 7. Access Control & Authentication
+	app.AuthKeeper = authkeeper.NewKeeper(
+		nil, // codec - TODO: add when Cosmos SDK integrated
+		nil, // store key - TODO: add when Cosmos SDK integrated
+	)
+
+	// 8. Network Security
+	app.NetSecKeeper = netseckeeper.NewKeeper(
+		nil, // codec - TODO: add when Cosmos SDK integrated
+		nil, // store key - TODO: add when Cosmos SDK integrated
+		netsectypes.DefaultParams(),
+	)
+
+	// 9. Validator Security
+	// TODO: Needs integration with Cosmos SDK staking module
+	app.ValSecKeeper = valseckeeper.NewKeeper(
+		nil, // codec - TODO
+		nil, // store key - TODO
+		nil, // staking keeper - TODO
+		nil, // slashing keeper - TODO
+		valsectypes.DefaultParams(),
+	)
+
+	// PHASE 3: Initialize governance and economic modules
+
+	// 10. Governance with security features
+	app.GovKeeper = govkeeper.NewKeeper(govtypes.DefaultParams())
+
+	// 11. Economic Security
+	app.EcoSecKeeper = ecoseckeeper.NewKeeper(
+		nil, // codec - TODO
+		nil, // store key - TODO
+		ecosectypes.DefaultParams(),
+	)
+
+	// PHASE 4: Initialize operational security modules
+
+	// 12. Monitoring & Alerting
+	app.MonKeeper = monkeeper.NewKeeper(
+		nil, // codec - TODO
+		nil, // store key - TODO
+		montypes.DefaultParams(),
+	)
+
+	// 13. Incident Response
+	app.IncKeeper = inckeeper.NewKeeper(
+		nil, // codec - TODO
+		nil, // store key - TODO
+		inctypes.DefaultParams(),
+	)
+
+	// PHASE 5: Initialize compliance and privacy modules
+
+	// 14. Compliance
+	app.CompKeeper = compkeeper.NewKeeper(
+		nil, // codec - TODO
+		nil, // store key - TODO
+		comptypes.DefaultParams(),
+	)
+
+	// 15. Wallet Security
+	app.WalletSecKeeper = walletseckeeper.NewKeeper(
+		nil, // codec - TODO
+		nil, // store key - TODO
+		walletsectypes.DefaultParams(),
+	)
+
+	// 16. Privacy & Anonymity
+	app.PrivKeeper = privkeeper.NewKeeper()
+
+	// NOTE: Bridge and DEX modules commented out until full Cosmos SDK integration
+	// They require BankKeeper, AccountKeeper, and other Cosmos SDK dependencies
+
+	// Create module manager with all modules
+	// TODO: Add actual module instances when keepers are fully initialized
+	manager := NewModuleManager(
+		[]identitychange.AppModule{identitychange.NewAppModule(app.IDKeeper)},
+		[]inclusionroutines.AppModule{inclusionroutines.NewAppModule(app.IRKeeper)},
+		[]confidencescore.AppModule{confidencescore.NewAppModule(app.CSKeeper)},
+		[]vcregistry.AppModule{vcregistry.NewAppModule(app.VCKeeper)},
+		[]dataregistry.AppModule{dataregistry.NewAppModule(app.DRKeeper)},
+		[]governance.AppModule{governance.NewAppModule(app.GovKeeper)},
+		[]dex.AppModule{},     // TODO: Enable when BankKeeper available
+		[]bridge.AppModule{},  // TODO: Enable when BankKeeper available
+	)
+
+	app.moduleManager = manager
+	app.RegisterGRPCServices()
+	return app
+}
+
+// RegisterGRPCServices wires the module manager into the underlying gRPC server registrar.
+func (a *AppWithSecurity) RegisterGRPCServices() {
+	a.moduleManager.RegisterGRPCServices(a.grpcServer)
+}
+
+// GRPCServer exposes the underlying gRPC server
+func (a *AppWithSecurity) GRPCServer() *grpc.Server {
+	return a.grpcServer
+}
+
+// GetAuthKeeper returns the auth keeper
+func (a *AppWithSecurity) GetAuthKeeper() *authkeeper.Keeper {
+	return a.AuthKeeper
+}
+
+// GetCryptoKeeper returns the cryptography keeper
+func (a *AppWithSecurity) GetCryptoKeeper() *cryptokeeper.Keeper {
+	return a.CryptoKeeper
+}
+
+// GetMonitoringKeeper returns the monitoring keeper
+func (a *AppWithSecurity) GetMonitoringKeeper() *monkeeper.Keeper {
+	return a.MonKeeper
+}
+
+// GetNetworkSecurityKeeper returns the network security keeper
+func (a *AppWithSecurity) GetNetworkSecurityKeeper() *netseckeeper.Keeper {
+	return a.NetSecKeeper
+}
+
+// GetValidatorSecurityKeeper returns the validator security keeper
+func (a *AppWithSecurity) GetValidatorSecurityKeeper() *valseckeeper.Keeper {
+	return a.ValSecKeeper
+}
+
+// GetEconomicSecurityKeeper returns the economic security keeper
+func (a *AppWithSecurity) GetEconomicSecurityKeeper() *ecoseckeeper.Keeper {
+	return a.EcoSecKeeper
+}
+
+// GetComplianceKeeper returns the compliance keeper
+func (a *AppWithSecurity) GetComplianceKeeper() *compkeeper.Keeper {
+	return a.CompKeeper
+}
+
+// GetWalletSecurityKeeper returns the wallet security keeper
+func (a *AppWithSecurity) GetWalletSecurityKeeper() *walletseckeeper.Keeper {
+	return a.WalletSecKeeper
+}
+
+// GetPrivacyKeeper returns the privacy keeper
+func (a *AppWithSecurity) GetPrivacyKeeper() *privkeeper.Keeper {
+	return a.PrivKeeper
+}
+
+// GetIncidentResponseKeeper returns the incident response keeper
+func (a *AppWithSecurity) GetIncidentResponseKeeper() *inckeeper.Keeper {
+	return a.IncKeeper
+}

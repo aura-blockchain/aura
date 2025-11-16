@@ -1,0 +1,159 @@
+syntax = "proto3";
+package aura.governance.v1beta1;
+
+import "aura/governance/v1beta1/governance.proto";
+import "google/protobuf/duration.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/governance/v1beta1";
+
+// Msg defines the governance Msg service
+service Msg {
+  // SubmitProposal submits a new governance proposal
+  rpc SubmitProposal(MsgSubmitProposal) returns (MsgSubmitProposalResponse);
+
+  // Deposit adds a deposit to a proposal
+  rpc Deposit(MsgDeposit) returns (MsgDepositResponse);
+
+  // Vote casts a vote on a proposal
+  rpc Vote(MsgVote) returns (MsgVoteResponse);
+
+  // VoteWeighted casts a weighted vote on a proposal
+  rpc VoteWeighted(MsgVoteWeighted) returns (MsgVoteWeightedResponse);
+
+  // DelegateVote delegates voting power to another address
+  rpc DelegateVote(MsgDelegateVote) returns (MsgDelegateVoteResponse);
+
+  // UndelegateVote removes vote delegation
+  rpc UndelegateVote(MsgUndelegateVote) returns (MsgUndelegateVoteResponse);
+
+  // SubmitVeto submits a veto request
+  rpc SubmitVeto(MsgSubmitVeto) returns (MsgSubmitVetoResponse);
+
+  // CosignVeto cosigns an existing veto request
+  rpc CosignVeto(MsgCosignVeto) returns (MsgCosignVetoResponse);
+
+  // ExecuteProposal executes a passed proposal after time-lock
+  rpc ExecuteProposal(MsgExecuteProposal) returns (MsgExecuteProposalResponse);
+
+  // SubmitSnapshotVote submits an off-chain snapshot vote
+  rpc SubmitSnapshotVote(MsgSubmitSnapshotVote) returns (MsgSubmitSnapshotVoteResponse);
+
+  // RevealSecretVote reveals a secret ballot vote
+  rpc RevealSecretVote(MsgRevealSecretVote) returns (MsgRevealSecretVoteResponse);
+}
+
+// MsgSubmitProposal defines a message to submit a proposal
+message MsgSubmitProposal {
+  string title = 1;
+  string description = 2;
+  ProposalCategory category = 3;
+  string proposer = 4;
+  string initial_deposit = 5;
+  bool is_emergency = 6;
+}
+
+message MsgSubmitProposalResponse {
+  uint64 proposal_id = 1;
+}
+
+// MsgDeposit defines a message to add a deposit to a proposal
+message MsgDeposit {
+  uint64 proposal_id = 1;
+  string depositor = 2;
+  string amount = 3;
+}
+
+message MsgDepositResponse {}
+
+// MsgVote defines a message to cast a vote
+message MsgVote {
+  uint64 proposal_id = 1;
+  string voter = 2;
+  VoteOption option = 3;
+  bool is_secret = 4;
+  string vote_commitment = 5;  // For secret ballots
+}
+
+message MsgVoteResponse {}
+
+// WeightedVoteOption defines a vote option with weight
+message WeightedVoteOption {
+  VoteOption option = 1;
+  string weight = 2;  // Weight between 0 and 1
+}
+
+// MsgVoteWeighted defines a message to cast a weighted vote
+message MsgVoteWeighted {
+  uint64 proposal_id = 1;
+  string voter = 2;
+  repeated WeightedVoteOption options = 3;
+}
+
+message MsgVoteWeightedResponse {}
+
+// MsgDelegateVote defines a message to delegate voting power
+message MsgDelegateVote {
+  string delegator = 1;
+  string delegate = 2;
+  repeated ProposalCategory categories = 3;  // Empty means all categories
+}
+
+message MsgDelegateVoteResponse {}
+
+// MsgUndelegateVote defines a message to remove vote delegation
+message MsgUndelegateVote {
+  string delegator = 1;
+  string delegate = 2;
+  repeated ProposalCategory categories = 3;  // Empty means all categories
+}
+
+message MsgUndelegateVoteResponse {}
+
+// MsgSubmitVeto defines a message to submit a veto request
+message MsgSubmitVeto {
+  uint64 proposal_id = 1;
+  string vetoer = 2;
+  string reason = 3;
+}
+
+message MsgSubmitVetoResponse {
+  bool veto_executed = 1;  // True if enough cosigners already
+}
+
+// MsgCosignVeto defines a message to cosign a veto request
+message MsgCosignVeto {
+  uint64 proposal_id = 1;
+  string cosigner = 2;
+}
+
+message MsgCosignVetoResponse {
+  bool veto_executed = 1;
+}
+
+// MsgExecuteProposal defines a message to execute a passed proposal
+message MsgExecuteProposal {
+  uint64 proposal_id = 1;
+  string executor = 2;
+}
+
+message MsgExecuteProposalResponse {}
+
+// MsgSubmitSnapshotVote defines a message to submit a snapshot vote
+message MsgSubmitSnapshotVote {
+  uint64 proposal_id = 1;
+  string voter = 2;
+  VoteOption option = 3;
+  string signature = 4;
+}
+
+message MsgSubmitSnapshotVoteResponse {}
+
+// MsgRevealSecretVote defines a message to reveal a secret ballot vote
+message MsgRevealSecretVote {
+  uint64 proposal_id = 1;
+  string voter = 2;
+  VoteOption option = 3;
+  string reveal_key = 4;
+}
+
+message MsgRevealSecretVoteResponse {}

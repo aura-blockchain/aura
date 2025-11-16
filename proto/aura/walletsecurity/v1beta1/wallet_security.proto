@@ -1,0 +1,328 @@
+syntax = "proto3";
+package aura.walletsecurity.v1beta1;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/walletsecurity/v1beta1";
+
+// HardwareWalletType represents supported hardware wallet types
+enum HardwareWalletType {
+  HARDWARE_WALLET_TYPE_UNSPECIFIED = 0;
+  HARDWARE_WALLET_TYPE_LEDGER = 1;
+  HARDWARE_WALLET_TYPE_TREZOR = 2;
+  HARDWARE_WALLET_TYPE_KEEPKEY = 3;
+  HARDWARE_WALLET_TYPE_COLDCARD = 4;
+}
+
+// HardwareWalletConfig stores hardware wallet configuration
+message HardwareWalletConfig {
+  string wallet_id = 1;
+  string address = 2;
+  HardwareWalletType type = 3;
+  string device_id = 4;
+  string firmware_version = 5;
+  string derivation_path = 6;
+  bool requires_pin = 7;
+  bool requires_passphrase = 8;
+  google.protobuf.Timestamp registered_at = 9;
+  google.protobuf.Timestamp last_used_at = 10;
+  int32 signature_count = 11;
+  map<string, string> metadata = 12;
+}
+
+// MultiSigWallet represents a multi-signature wallet
+message MultiSigWallet {
+  string wallet_id = 1;
+  repeated string signers = 2;
+  int32 threshold = 3;
+  int32 total_signers = 4;
+  google.protobuf.Timestamp created_at = 5;
+  string creator = 6;
+  map<string, int32> signer_weights = 7; // Optional weighted multisig
+  int32 weight_threshold = 8; // For weighted multisig
+  bool time_locked = 9;
+  google.protobuf.Timestamp unlock_time = 10;
+  repeated string pending_signers = 11; // Signers pending confirmation
+}
+
+// PendingMultiSigTransaction represents a transaction awaiting signatures
+message PendingMultiSigTransaction {
+  string tx_id = 1;
+  string wallet_id = 2;
+  bytes tx_data = 3;
+  repeated string signatures = 4;
+  repeated string signed_by = 5;
+  int32 current_weight = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp expires_at = 8;
+  string tx_type = 9;
+  string description = 10;
+  TransactionSimulation simulation_result = 11;
+}
+
+// SocialRecoveryConfig represents social recovery settings
+message SocialRecoveryConfig {
+  string wallet_id = 1;
+  repeated Guardian guardians = 2;
+  int32 recovery_threshold = 3;
+  google.protobuf.Duration recovery_delay = 4;
+  bool enabled = 5;
+  google.protobuf.Timestamp configured_at = 6;
+  google.protobuf.Timestamp last_modified = 7;
+  int32 max_guardians = 8;
+}
+
+// Guardian represents a social recovery guardian
+message Guardian {
+  string address = 1;
+  string name = 2;
+  string contact_hash = 3; // Hash of email/phone for privacy
+  bool confirmed = 4;
+  google.protobuf.Timestamp added_at = 5;
+  google.protobuf.Timestamp confirmed_at = 6;
+  int32 recovery_requests_count = 7;
+}
+
+// RecoveryRequest represents an active recovery request
+message RecoveryRequest {
+  string request_id = 1;
+  string wallet_id = 2;
+  string new_address = 3;
+  repeated string approvals = 4;
+  int32 approvals_count = 5;
+  google.protobuf.Timestamp initiated_at = 6;
+  google.protobuf.Timestamp executable_at = 7;
+  google.protobuf.Timestamp executed_at = 8;
+  RecoveryStatus status = 9;
+  string initiator = 10;
+}
+
+// RecoveryStatus represents the status of a recovery request
+enum RecoveryStatus {
+  RECOVERY_STATUS_UNSPECIFIED = 0;
+  RECOVERY_STATUS_PENDING = 1;
+  RECOVERY_STATUS_APPROVED = 2;
+  RECOVERY_STATUS_EXECUTED = 3;
+  RECOVERY_STATUS_CANCELLED = 4;
+  RECOVERY_STATUS_EXPIRED = 5;
+}
+
+// TransactionSimulation represents the result of transaction simulation
+message TransactionSimulation {
+  bool success = 1;
+  string error_message = 2;
+  int64 gas_used = 3;
+  int64 gas_wanted = 4;
+  repeated StateChange state_changes = 5;
+  repeated BalanceChange balance_changes = 6;
+  repeated string warnings = 7;
+  google.protobuf.Timestamp simulated_at = 8;
+  SimulationRisk risk_level = 9;
+}
+
+// StateChange represents a state change from simulation
+message StateChange {
+  string key = 1;
+  bytes old_value = 2;
+  bytes new_value = 3;
+  string module = 4;
+}
+
+// BalanceChange represents a balance change from simulation
+message BalanceChange {
+  string address = 1;
+  string denom = 2;
+  string amount_before = 3;
+  string amount_after = 4;
+  string delta = 5;
+}
+
+// SimulationRisk represents risk level from simulation
+enum SimulationRisk {
+  SIMULATION_RISK_UNSPECIFIED = 0;
+  SIMULATION_RISK_LOW = 1;
+  SIMULATION_RISK_MEDIUM = 2;
+  SIMULATION_RISK_HIGH = 3;
+  SIMULATION_RISK_CRITICAL = 4;
+}
+
+// DomainVerification represents verified domain information
+message DomainVerification {
+  string domain = 1;
+  bool verified = 2;
+  google.protobuf.Timestamp verified_at = 3;
+  google.protobuf.Timestamp expires_at = 4;
+  string certificate_hash = 5;
+  repeated string trusted_addresses = 6;
+  string verifier = 7;
+}
+
+// PhishingProtectionConfig represents phishing protection settings
+message PhishingProtectionConfig {
+  bool enabled = 1;
+  repeated string whitelisted_domains = 2;
+  repeated string blacklisted_domains = 3;
+  bool require_domain_verification = 4;
+  bool check_ssl_certificates = 5;
+  bool validate_contract_addresses = 6;
+  int32 suspicious_transaction_threshold = 7;
+}
+
+// SpendingLimit represents spending limit configuration
+message SpendingLimit {
+  string wallet_id = 1;
+  string denom = 2;
+  string daily_limit = 3;
+  string weekly_limit = 4;
+  string monthly_limit = 5;
+  string current_daily_spent = 6;
+  string current_weekly_spent = 7;
+  string current_monthly_spent = 8;
+  google.protobuf.Timestamp daily_reset_at = 9;
+  google.protobuf.Timestamp weekly_reset_at = 10;
+  google.protobuf.Timestamp monthly_reset_at = 11;
+  bool enabled = 12;
+}
+
+// SessionConfig represents wallet session configuration
+message SessionConfig {
+  string session_id = 1;
+  string wallet_id = 2;
+  google.protobuf.Timestamp started_at = 3;
+  google.protobuf.Timestamp last_activity = 4;
+  google.protobuf.Duration timeout_duration = 5;
+  google.protobuf.Timestamp expires_at = 6;
+  bool auto_lock_enabled = 7;
+  int32 inactivity_threshold_seconds = 8;
+  string device_fingerprint = 9;
+  bool locked = 10;
+}
+
+// BiometricAuth represents biometric authentication configuration
+message BiometricAuth {
+  string wallet_id = 1;
+  BiometricType type = 2;
+  string enrollment_hash = 3;
+  google.protobuf.Timestamp enrolled_at = 4;
+  bool enabled = 5;
+  int32 failed_attempts = 6;
+  google.protobuf.Timestamp last_attempt = 7;
+  bool locked_out = 8;
+  google.protobuf.Timestamp lockout_until = 9;
+}
+
+// BiometricType represents types of biometric authentication
+enum BiometricType {
+  BIOMETRIC_TYPE_UNSPECIFIED = 0;
+  BIOMETRIC_TYPE_FINGERPRINT = 1;
+  BIOMETRIC_TYPE_FACE = 2;
+  BIOMETRIC_TYPE_IRIS = 3;
+  BIOMETRIC_TYPE_VOICE = 4;
+}
+
+// SecureEnclaveConfig represents secure enclave storage configuration
+message SecureEnclaveConfig {
+  string wallet_id = 1;
+  string enclave_id = 2;
+  EnclaveType enclave_type = 3;
+  bytes encrypted_key_material = 4;
+  string key_derivation_algorithm = 5;
+  google.protobuf.Timestamp created_at = 6;
+  bool hardware_backed = 7;
+  string attestation_certificate = 8;
+}
+
+// EnclaveType represents types of secure enclaves
+enum EnclaveType {
+  ENCLAVE_TYPE_UNSPECIFIED = 0;
+  ENCLAVE_TYPE_TEE = 1; // Trusted Execution Environment
+  ENCLAVE_TYPE_SGX = 2; // Intel SGX
+  ENCLAVE_TYPE_KEYCHAIN = 3; // iOS Keychain
+  ENCLAVE_TYPE_KEYSTORE = 4; // Android Keystore
+  ENCLAVE_TYPE_TPM = 5; // Trusted Platform Module
+}
+
+// EncryptedBackup represents encrypted seed phrase backup
+message EncryptedBackup {
+  string backup_id = 1;
+  string wallet_id = 2;
+  bytes encrypted_seed = 3;
+  string encryption_algorithm = 4;
+  string key_derivation_function = 5;
+  bytes salt = 6;
+  int32 iterations = 7;
+  google.protobuf.Timestamp created_at = 8;
+  google.protobuf.Timestamp last_verified = 9;
+  BackupLocation location = 10;
+  string checksum = 11;
+  int32 version = 12;
+}
+
+// BackupLocation represents where backup is stored
+enum BackupLocation {
+  BACKUP_LOCATION_UNSPECIFIED = 0;
+  BACKUP_LOCATION_LOCAL = 1;
+  BACKUP_LOCATION_CLOUD = 2;
+  BACKUP_LOCATION_HARDWARE = 3;
+  BACKUP_LOCATION_PAPER = 4;
+}
+
+// DustAttackFilter represents dust attack filtering configuration
+message DustAttackFilter {
+  string wallet_id = 1;
+  bool enabled = 2;
+  string minimum_amount = 3; // Minimum amount to accept
+  int32 max_dust_transactions_per_block = 4;
+  repeated string blocked_senders = 5;
+  int32 suspicious_pattern_threshold = 6;
+  google.protobuf.Timestamp last_updated = 7;
+}
+
+// DustTransaction represents a detected dust transaction
+message DustTransaction {
+  string tx_hash = 1;
+  string from_address = 2;
+  string to_address = 3;
+  string amount = 4;
+  string denom = 5;
+  google.protobuf.Timestamp detected_at = 6;
+  bool blocked = 7;
+  string reason = 8;
+  int32 pattern_score = 9; // How suspicious the pattern is
+}
+
+// WalletSecurityMetrics represents security metrics for a wallet
+message WalletSecurityMetrics {
+  string wallet_id = 1;
+  int32 security_score = 2;
+  bool hardware_wallet_enabled = 3;
+  bool multisig_enabled = 4;
+  bool social_recovery_enabled = 5;
+  bool spending_limits_enabled = 6;
+  bool session_timeout_enabled = 7;
+  bool biometric_enabled = 8;
+  bool secure_enclave_enabled = 9;
+  bool backup_verified = 10;
+  bool dust_filter_enabled = 11;
+  google.protobuf.Timestamp last_security_audit = 12;
+  repeated string security_warnings = 13;
+}
+
+// AddressChecksum represents address checksum validation
+message AddressChecksum {
+  string address = 1;
+  string checksum = 2;
+  ChecksumAlgorithm algorithm = 3;
+  bool valid = 4;
+  google.protobuf.Timestamp validated_at = 5;
+}
+
+// ChecksumAlgorithm represents checksum algorithms
+enum ChecksumAlgorithm {
+  CHECKSUM_ALGORITHM_UNSPECIFIED = 0;
+  CHECKSUM_ALGORITHM_EIP55 = 1; // Ethereum EIP-55
+  CHECKSUM_ALGORITHM_BECH32 = 2; // Bitcoin Bech32
+  CHECKSUM_ALGORITHM_BASE58CHECK = 3; // Bitcoin Base58Check
+  CHECKSUM_ALGORITHM_CRC32 = 4;
+}

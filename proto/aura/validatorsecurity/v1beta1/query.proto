@@ -1,0 +1,105 @@
+syntax = "proto3";
+package aura.validatorsecurity.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "aura/validatorsecurity/v1beta1/validator_security.proto";
+
+option go_package = "github.com/aura/aura/x/validatorsecurity/types";
+
+// Query defines the gRPC querier service
+service Query {
+  // Params queries the module parameters
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/aura/validatorsecurity/v1beta1/params";
+  }
+
+  // ValidatorSecurityInfo queries security info for a validator
+  rpc ValidatorSecurityInfo(QueryValidatorSecurityInfoRequest) returns (QueryValidatorSecurityInfoResponse) {
+    option (google.api.http).get = "/aura/validatorsecurity/v1beta1/validators/{validator_address}";
+  }
+
+  // AllValidators queries all validator security info
+  rpc AllValidators(QueryAllValidatorsRequest) returns (QueryAllValidatorsResponse) {
+    option (google.api.http).get = "/aura/validatorsecurity/v1beta1/validators";
+  }
+
+  // JailedValidators queries all jailed validators
+  rpc JailedValidators(QueryJailedValidatorsRequest) returns (QueryJailedValidatorsResponse) {
+    option (google.api.http).get = "/aura/validatorsecurity/v1beta1/jailed";
+  }
+
+  // TombstonedValidators queries all tombstoned validators
+  rpc TombstonedValidators(QueryTombstonedValidatorsRequest) returns (QueryTombstonedValidatorsResponse) {
+    option (google.api.http).get = "/aura/validatorsecurity/v1beta1/tombstoned";
+  }
+
+  // DoubleSignEvidences queries all double sign evidences
+  rpc DoubleSignEvidences(QueryDoubleSignEvidencesRequest) returns (QueryDoubleSignEvidencesResponse) {
+    option (google.api.http).get = "/aura/validatorsecurity/v1beta1/evidences";
+  }
+
+  // ValidatorAlerts queries alerts for a validator
+  rpc ValidatorAlerts(QueryValidatorAlertsRequest) returns (QueryValidatorAlertsResponse) {
+    option (google.api.http).get = "/aura/validatorsecurity/v1beta1/alerts/{validator_address}";
+  }
+
+  // SentryNodes queries sentry nodes for a validator
+  rpc SentryNodes(QuerySentryNodesRequest) returns (QuerySentryNodesResponse) {
+    option (google.api.http).get = "/aura/validatorsecurity/v1beta1/sentry/{validator_address}";
+  }
+}
+
+message QueryParamsRequest {}
+
+message QueryParamsResponse {
+  ValidatorSecurityParams params = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryValidatorSecurityInfoRequest {
+  string validator_address = 1;
+}
+
+message QueryValidatorSecurityInfoResponse {
+  ValidatorSecurityInfo info = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryAllValidatorsRequest {}
+
+message QueryAllValidatorsResponse {
+  repeated ValidatorSecurityInfo validators = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryJailedValidatorsRequest {}
+
+message QueryJailedValidatorsResponse {
+  repeated ValidatorSecurityInfo validators = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryTombstonedValidatorsRequest {}
+
+message QueryTombstonedValidatorsResponse {
+  repeated ValidatorSecurityInfo validators = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryDoubleSignEvidencesRequest {}
+
+message QueryDoubleSignEvidencesResponse {
+  repeated DoubleSignEvidence evidences = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryValidatorAlertsRequest {
+  string validator_address = 1;
+}
+
+message QueryValidatorAlertsResponse {
+  repeated ValidatorAlert alerts = 1 [(gogoproto.nullable) = false];
+}
+
+message QuerySentryNodesRequest {
+  string validator_address = 1;
+}
+
+message QuerySentryNodesResponse {
+  repeated SentryNodeInfo nodes = 1 [(gogoproto.nullable) = false];
+}

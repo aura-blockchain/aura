@@ -1,0 +1,490 @@
+package keeper
+
+import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"time"
+
+	"github.com/aequitas/aura/chain/x/compliance/types"
+)
+
+// RecordGDPRConsent records user consent for data processing
+// Feature 6: GDPR compliance for European users
+func (k *Keeper) RecordGDPRConsent(
+	address string,
+	consentType string,
+	consented bool,
+	consentVersion string,
+	ipAddress string,
+	userAgent string,
+) error {
+	if !k.params.GDPREnabled {
+		return nil
+	}
+
+	k.mu.Lock()
+	defer k.mu.Unlock()
+
+	now := time.Now()
+
+	consent := &types.GDPRConsent{
+		Address:        address,
+		ConsentType:    consentType,
+		Consented:      consented,
+		ConsentVersion: consentVersion,
+		IPAddress:      ipAddress,
+		UserAgent:      userAgent,
+	}
+
+	if consented {
+		consent.ConsentGivenAt = now
+	} else {
+		consent.ConsentWithdrawnAt = now
+	}
+
+	if err := consent.Validate(); err != nil {
+		return fmt.Errorf("invalid consent record: %w", err)
+	}
+
+	// Initialize consent map for address if needed
+	if k.gdprConsents[address] == nil {
+		k.gdprConsents[address] = make(map[string]*types.GDPRConsent)
+	}
+
+	// Store consent
+	k.gdprConsents[address][consentType] = consent
+
+	return nil
+}
+
+// GetGDPRConsent retrieves consent record for an address and consent type
+func (k *Keeper) GetGDPRConsent(address string, consentType string) (*types.GDPRConsent, error) {
+	k.mu.RLock()
+	defer k.mu.RUnlock()
+
+	if k.gdprConsents[address] == nil {
+		return nil, fmt.Errorf("no consent records found for address: %s", address)
+	}
+
+	consent, exists := k.gdprConsents[address][consentType]
+	if !exists {
+		return nil, fmt.Errorf("no consent found for type %s", consentType)
+	}
+
+	return consent, nil
+}
+
+// ValidateGDPRConsent checks if user has given required consent
+func (k *Keeper) ValidateGDPRConsent(address string, requiredConsents []string) error {
+	if !k.params.GDPREnabled {
+		return nil
+	}
+
+	k.mu.RLock()
+	defer k.mu.RUnlock()
+
+	if k.gdprConsents[address] == nil {
+		return fmt.Errorf("no consent records found for address: %s", address)
+	}
+
+	for _, consentType := range requiredConsents {
+		consent, exists := k.gdprConsents[address][consentType]
+		if !exists {
+			return fmt.Errorf("required consent not found: %s", consentType)
+		}
+		if !consent.Consented {
+			return fmt.Errorf("consent not given for: %s", consentType)
+		}
+	}
+
+	return nil
+}
+
+// RequestGDPRData creates a GDPR data access/portability request
+func (k *Keeper) RequestGDPRData(address string, requestType string) (string, error) {
+	if !k.params.GDPREnabled {
+		return "", fmt.Errorf("GDPR features not enabled")
+	}
+
+	k.mu.Lock()
+	defer k.mu.Unlock()
+
+	now := time.Now()
+
+	// Generate request ID
+	hash := sha256.Sum256([]byte(fmt.Sprintf("%s:%s:%d", address, requestType, now.Unix())))
+	requestID := hex.EncodeToString(hash[:])[:16]
+
+	request := &types.GDPRDataRequest{
+		ID:          requestID,
+		Address:     address,
+		RequestType: requestType,
+		RequestedAt: now,
+		Status:      "pending",
+	}
+
+	if err := request.Validate(); err != nil {
+		return "", fmt.Errorf("invalid GDPR request: %w", err)
+	}
+
+	k.gdprDataRequests[requestID] = request
+
+	// For access and portability requests, generate the data
+	if requestType == "access" || requestType == "portability" {
+		go k.processDataAccessRequest(requestID, address)
+	}
+
+	return requestID, nil
+}
+
+// processDataAccessRequest processes a data access/portability request
+func (k *Keeper) processDataAccessRequest(requestID string, address string) {
+	// This runs asynchronously to compile all user data
+	time.Sleep(1 * time.Second) // Simulate processing time
+
+	k.mu.Lock()
+	defer k.mu.Unlock()
+
+	request, exists := k.gdprDataRequests[requestID]
+	if !exists {
+		return
+	}
+
+	// Compile all data for the user
+	userData := k.compileUserData(address)
+
+	// Convert to JSON
+	dataJSON, err := json.MarshalIndent(userData, "", "  ")
+	if err != nil {
+		request.Status = "failed"
+		request.Notes = fmt.Sprintf("Failed to compile data: %v", err)
+		return
+	}
+
+	request.FulfillmentData = string(dataJSON)
+	request.Status = "completed"
+	request.CompletedAt = time.Now()
+}
+
+// compileUserData compiles all data associated with an address
+func (k *Keeper) compileUserData(address string) map[string]interface{} {
+	userData := make(map[string]interface{})
+
+	// KYC data
+	if kycRecord, exists := k.kycRecords[address]; exists {
+		userData["kyc_record"] = kycRecord
+	}
+
+	// AML profile
+	if amlProfile, exists := k.amlProfiles[address]; exists {
+		userData["aml_profile"] = amlProfile
+	}
+
+	// Transaction alerts
+	if alerts, exists := k.transactionAlerts[address]; exists {
+		userData["transaction_alerts"] = alerts
+	}
+
+	// Sanctions screening
+	if sanctions, exists := k.sanctionsResults[address]; exists {
+		userData["sanctions_screening"] = sanctions
+	}
+
+	// GDPR consents
+	if consents, exists := k.gdprConsents[address]; exists {
+		userData["gdpr_consents"] = consents
+	}
+
+	// Tax reports
+	if reports, exists := k.taxReports[address]; exists {
+		userData["tax_reports"] = reports
+	}
+
+	return userData
+}
+
+// GetGDPRDataRequest retrieves a GDPR data request by ID
+func (k *Keeper) GetGDPRDataRequest(requestID string) (*types.GDPRDataRequest, error) {
+	k.mu.RLock()
+	defer k.mu.RUnlock()
+
+	request, exists := k.gdprDataRequests[requestID]
+	if !exists {
+		return nil, fmt.Errorf("GDPR request not found: %s", requestID)
+	}
+
+	return request, nil
+}
+
+// ProcessRightToErasure processes a GDPR right to erasure (deletion) request
+func (k *Keeper) ProcessRightToErasure(address string, requestID string) error {
+	if !k.params.GDPREnabled {
+		return fmt.Errorf("GDPR features not enabled")
+	}
+
+	k.mu.Lock()
+	defer k.mu.Unlock()
+
+	request, exists := k.gdprDataRequests[requestID]
+	if !exists {
+		return fmt.Errorf("GDPR request not found: %s", requestID)
+	}
+
+	if request.RequestType != "erasure" {
+		return fmt.Errorf("request is not an erasure request")
+	}
+
+	// Check if we can legally delete the data
+	// Some data must be retained for legal/regulatory compliance
+	if k.mustRetainData(address) {
+		request.Status = "rejected"
+		request.Notes = "Data must be retained for legal/regulatory compliance"
+		request.CompletedAt = time.Now()
+		return fmt.Errorf("cannot erase data: retention required for compliance")
+	}
+
+	// Delete non-essential data
+	k.eraseNonEssentialData(address)
+
+	request.Status = "completed"
+	request.CompletedAt = time.Now()
+	request.Notes = "Non-essential data erased. Essential data retained for compliance."
+
+	return nil
+}
+
+// mustRetainData checks if data must be retained for compliance
+func (k *Keeper) mustRetainData(address string) bool {
+	// Check if address has suspicious activity reports
+	if profile, exists := k.amlProfiles[address]; exists {
+		if len(profile.SuspiciousActivities) > 0 {
+			for _, activity := range profile.SuspiciousActivities {
+				// Must retain SAR data for 5+ years
+				if time.Since(activity.ReportedAt).Hours() < 24*365*5 {
+					return true
+				}
+			}
+		}
+	}
+
+	// Check if address is on sanctions list
+	if result, exists := k.sanctionsResults[address]; exists {
+		if result.Status == types.SanctionsConfirmed {
+			return true
+		}
+	}
+
+	// Check active tax reporting obligations
+	if reports, exists := k.taxReports[address]; exists {
+		for _, report := range reports {
+			// Must retain tax data for 7 years
+			if time.Since(report.GeneratedAt).Hours() < 24*365*7 {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+// eraseNonEssentialData deletes non-essential personal data
+func (k *Keeper) eraseNonEssentialData(address string) {
+	// Anonymize KYC data (keep record exists but remove PII)
+	if kycRecord, exists := k.kycRecords[address]; exists {
+		kycRecord.VerificationID = "REDACTED"
+		kycRecord.Documents = []string{"REDACTED"}
+	}
+
+	// Remove consent records older than retention period
+	if consents, exists := k.gdprConsents[address]; exists {
+		retentionDate := time.Now().AddDate(0, 0, -int(k.params.DataRetentionDays))
+		for consentType, consent := range consents {
+			if consent.ConsentGivenAt.Before(retentionDate) {
+				delete(k.gdprConsents[address], consentType)
+			}
+		}
+	}
+
+	// Clean up old reviewed alerts
+	if alerts, exists := k.transactionAlerts[address]; exists {
+		retentionDate := time.Now().AddDate(0, 0, -int(k.params.DataRetentionDays))
+		filteredAlerts := []*types.TransactionAlert{}
+		for _, alert := range alerts {
+			if alert.Reviewed && alert.ReviewedAt.After(retentionDate) {
+				filteredAlerts = append(filteredAlerts, alert)
+			} else if !alert.Reviewed {
+				filteredAlerts = append(filteredAlerts, alert)
+			}
+		}
+		k.transactionAlerts[address] = filteredAlerts
+	}
+}
+
+// ProcessRectification processes a GDPR right to rectification request
+func (k *Keeper) ProcessRectification(requestID string, updatedData map[string]interface{}) error {
+	if !k.params.GDPREnabled {
+		return fmt.Errorf("GDPR features not enabled")
+	}
+
+	k.mu.Lock()
+	defer k.mu.Unlock()
+
+	request, exists := k.gdprDataRequests[requestID]
+	if !exists {
+		return fmt.Errorf("GDPR request not found: %s", requestID)
+	}
+
+	if request.RequestType != "rectification" {
+		return fmt.Errorf("request is not a rectification request")
+	}
+
+	address := request.Address
+
+	// Update KYC data if provided
+	if kycData, ok := updatedData["kyc"].(map[string]interface{}); ok {
+		if kycRecord, exists := k.kycRecords[address]; exists {
+			if jurisdiction, ok := kycData["jurisdiction"].(string); ok {
+				kycRecord.Jurisdiction = jurisdiction
+			}
+			if occupation, ok := kycData["occupation"].(string); ok {
+				// Update occupation in AML profile
+				if profile, exists := k.amlProfiles[address]; exists {
+					profile.Occupation = occupation
+				}
+			}
+		}
+	}
+
+	request.Status = "completed"
+	request.CompletedAt = time.Now()
+	request.Notes = "Data rectification completed"
+
+	return nil
+}
+
+// GetDataRetentionReport generates a report of data and retention periods
+func (k *Keeper) GetDataRetentionReport(address string) map[string]interface{} {
+	k.mu.RLock()
+	defer k.mu.RUnlock()
+
+	report := make(map[string]interface{})
+	now := time.Now()
+
+	// KYC data retention
+	if kycRecord, exists := k.kycRecords[address]; exists {
+		retentionUntil := kycRecord.VerifiedAt.AddDate(0, 0, int(k.params.DataRetentionDays))
+		report["kyc_retention_until"] = retentionUntil
+		report["kyc_can_delete"] = now.After(retentionUntil) && !k.mustRetainData(address)
+	}
+
+	// Consent records
+	if consents, exists := k.gdprConsents[address]; exists {
+		consentRetention := make(map[string]time.Time)
+		for consentType, consent := range consents {
+			retentionUntil := consent.ConsentGivenAt.AddDate(0, 0, int(k.params.DataRetentionDays))
+			consentRetention[consentType] = retentionUntil
+		}
+		report["consent_retention"] = consentRetention
+	}
+
+	// Transaction alerts
+	if alerts, exists := k.transactionAlerts[address]; exists {
+		alertCount := len(alerts)
+		oldAlerts := 0
+		for _, alert := range alerts {
+			retentionDate := now.AddDate(0, 0, -int(k.params.DataRetentionDays))
+			if alert.TriggeredAt.Before(retentionDate) {
+				oldAlerts++
+			}
+		}
+		report["total_alerts"] = alertCount
+		report["alerts_can_delete"] = oldAlerts
+	}
+
+	return report
+}
+
+// CleanupExpiredData removes data past retention period
+func (k *Keeper) CleanupExpiredData() int {
+	k.mu.Lock()
+	defer k.mu.Unlock()
+
+	cleaned := 0
+	retentionDate := time.Now().AddDate(0, 0, -int(k.params.DataRetentionDays))
+
+	// Clean up old consent records
+	for address, consents := range k.gdprConsents {
+		for consentType, consent := range consents {
+			if consent.ConsentGivenAt.Before(retentionDate) {
+				delete(k.gdprConsents[address], consentType)
+				cleaned++
+			}
+		}
+	}
+
+	// Clean up old reviewed alerts
+	for address, alerts := range k.transactionAlerts {
+		filteredAlerts := []*types.TransactionAlert{}
+		for _, alert := range alerts {
+			if !alert.Reviewed || alert.ReviewedAt.After(retentionDate) {
+				filteredAlerts = append(filteredAlerts, alert)
+			} else {
+				cleaned++
+			}
+		}
+		k.transactionAlerts[address] = filteredAlerts
+	}
+
+	// Clean up completed GDPR requests older than 90 days
+	ninetyDaysAgo := time.Now().AddDate(0, 0, -90)
+	for requestID, request := range k.gdprDataRequests {
+		if request.Status == "completed" && request.CompletedAt.Before(ninetyDaysAgo) {
+			delete(k.gdprDataRequests, requestID)
+			cleaned++
+		}
+	}
+
+	return cleaned
+}
+
+// GetGDPRComplianceStatus returns the GDPR compliance status for an address
+func (k *Keeper) GetGDPRComplianceStatus(address string) map[string]interface{} {
+	k.mu.RLock()
+	defer k.mu.RUnlock()
+
+	status := make(map[string]interface{})
+
+	// Check consent status
+	requiredConsents := []string{"data_processing", "terms_of_service"}
+	consentsGiven := []string{}
+	consentsMissing := []string{}
+
+	for _, consentType := range requiredConsents {
+		if k.gdprConsents[address] != nil {
+			if consent, exists := k.gdprConsents[address][consentType]; exists && consent.Consented {
+				consentsGiven = append(consentsGiven, consentType)
+			} else {
+				consentsMissing = append(consentsMissing, consentType)
+			}
+		} else {
+			consentsMissing = append(consentsMissing, consentType)
+		}
+	}
+
+	status["consents_given"] = consentsGiven
+	status["consents_missing"] = consentsMissing
+	status["gdpr_compliant"] = len(consentsMissing) == 0
+
+	// Pending requests
+	pendingRequests := []string{}
+	for requestID, request := range k.gdprDataRequests {
+		if request.Address == address && request.Status == "pending" {
+			pendingRequests = append(pendingRequests, requestID)
+		}
+	}
+	status["pending_requests"] = pendingRequests
+
+	return status
+}

@@ -1,0 +1,236 @@
+syntax = "proto3";
+package aura.bridge.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+import "cosmos/base/v1beta1/coin.proto";
+
+option go_package = "github.com/aequitas/aura/x/bridge/types";
+
+// CrossChainTransfer represents a transfer between AURA, PAW, or XAI chains
+message CrossChainTransfer {
+  // Unique transfer identifier
+  string transfer_id = 1;
+
+  // Source chain ("aura", "paw", "xai")
+  string source_chain = 2;
+
+  // Target chain ("aura", "paw", "xai")
+  string target_chain = 3;
+
+  // Sender address on source chain
+  string sender = 4;
+
+  // Recipient address on target chain
+  string recipient = 5;
+
+  // Amount transferred
+  string amount = 6 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Token denomination
+  string denom = 7;
+
+  // Transaction hash on source chain
+  string source_tx_hash = 8;
+
+  // Transaction hash on target chain (once minted)
+  string target_tx_hash = 9;
+
+  // Transfer status
+  TransferStatus status = 10;
+
+  // Timestamp of transfer initiation
+  google.protobuf.Timestamp timestamp = 11 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+
+  // Number of validator confirmations
+  uint64 confirmations = 12;
+
+  // Required confirmations
+  uint64 required_confirmations = 13;
+
+  // Validator signatures
+  repeated ValidatorSignature validator_signatures = 14 [(gogoproto.nullable) = false];
+}
+
+// TransferStatus represents the lifecycle of a cross-chain transfer
+enum TransferStatus {
+  PENDING = 0;         // Waiting for confirmations
+  CONFIRMED = 1;       // Confirmed on source chain
+  RELAYED = 2;         // Relayed to target chain
+  COMPLETED = 3;       // Minted/unlocked on target chain
+  FAILED = 4;          // Transfer failed
+  REFUNDED = 5;        // Tokens refunded to sender
+}
+
+// ValidatorSignature contains validator's signature for cross-chain transfer
+message ValidatorSignature {
+  // Validator address
+  string validator_address = 1;
+
+  // Signature
+  bytes signature = 2;
+
+  // Timestamp of signature
+  google.protobuf.Timestamp timestamp = 3 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+}
+
+// ChainConfig contains configuration for each connected chain
+message ChainConfig {
+  // Chain identifier ("aura", "paw", "xai")
+  string chain_id = 1;
+
+  // Human-readable chain name
+  string chain_name = 2;
+
+  // RPC endpoint
+  string rpc_endpoint = 3;
+
+  // Address prefix (e.g., "aura", "paw", "xai")
+  string address_prefix = 4;
+
+  // Bridge contract address (if applicable)
+  string bridge_contract = 5;
+
+  // Minimum confirmations required
+  uint64 min_confirmations = 6;
+
+  // Active validators for this bridge
+  repeated string validators = 7;
+
+  // Enabled for transfers
+  bool enabled = 8;
+
+  // Native token denomination
+  string native_denom = 9;
+}
+
+// BridgeValidator represents a validator authorized to relay cross-chain transfers
+message BridgeValidator {
+  // Validator address on AURA
+  string address = 1;
+
+  // Validator public key
+  bytes public_key = 2;
+
+  // Voting power / weight
+  uint64 power = 3;
+
+  // Active status
+  bool active = 4;
+
+  // Chains this validator relays for
+  repeated string chains = 5;
+}
+
+// WrappedToken represents a token from another chain wrapped on AURA
+message WrappedToken {
+  // Wrapped token denomination on AURA (e.g., "paw.token", "xai.coin")
+  string wrapped_denom = 1;
+
+  // Original denomination on source chain
+  string original_denom = 2;
+
+  // Source chain
+  string source_chain = 3;
+
+  // Total supply of wrapped tokens
+  string total_supply = 4 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Decimals
+  uint32 decimals = 5;
+
+  // Locked amount on source chain (for verification)
+  string locked_amount = 6 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+}
+
+// SharedIdentity allows identity verification to work across AURA, PAW, and XAI
+message SharedIdentity {
+  // User address (on any chain)
+  string address = 1;
+
+  // Verified on AURA
+  bool verified_aura = 2;
+
+  // Verified on PAW
+  bool verified_paw = 3;
+
+  // Verified on XAI
+  bool verified_xai = 4;
+
+  // AURA IR score (0-100)
+  uint64 aura_ir_score = 5;
+
+  // Linked addresses on other chains
+  map<string, string> linked_addresses = 6;  // chain_id -> address
+
+  // Verification timestamp
+  google.protobuf.Timestamp verified_at = 7 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+
+  // Reputation score (0-1000)
+  uint64 reputation_score = 8;
+}
+
+// CrossChainSwap represents a swap executed across multiple chains
+// Example: Swap AURA on AURA chain for PAW on PAW chain
+message CrossChainSwap {
+  // Unique swap identifier
+  string swap_id = 1;
+
+  // Source chain and token
+  string source_chain = 2;
+  cosmos.base.v1beta1.Coin source_coin = 3 [(gogoproto.nullable) = false];
+
+  // Target chain and token
+  string target_chain = 4;
+  string target_denom = 5;
+  string min_target_amount = 6 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // User addresses
+  string sender = 7;
+  string recipient = 8;
+
+  // Route (may involve multiple hops)
+  repeated string route = 9;  // ["aura", "osmosis", "paw"]
+
+  // Status
+  string status = 10;
+
+  // Execution details
+  google.protobuf.Timestamp initiated_at = 11 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+  google.protobuf.Timestamp completed_at = 12 [(gogoproto.stdtime) = true];
+
+  // Final amount received
+  string final_amount = 13 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+}
+
+// RelayerStats tracks performance of bridge relayers
+message RelayerStats {
+  string relayer_address = 1;
+  uint64 total_transfers_relayed = 2;
+  uint64 successful_transfers = 3;
+  uint64 failed_transfers = 4;
+  string total_volume = 5 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+  google.protobuf.Timestamp last_relay = 6 [(gogoproto.stdtime) = true];
+  string uptime_percentage = 7 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
+}

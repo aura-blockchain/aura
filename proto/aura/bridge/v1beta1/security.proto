@@ -1,0 +1,428 @@
+syntax = "proto3";
+package aura.bridge.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+import "aura/bridge/v1beta1/bridge.proto";
+
+option go_package = "github.com/aequitas/aura/x/bridge/types";
+
+// ============================================================================
+// SECURITY FEATURES
+// ============================================================================
+
+// MerkleProof represents a Merkle proof for cross-chain verification
+message MerkleProof {
+  // Root hash of the Merkle tree
+  bytes root = 1;
+
+  // Leaf data being proven
+  bytes leaf = 2;
+
+  // Proof path (array of sibling hashes)
+  repeated bytes proof = 3;
+
+  // Indices for proof verification
+  repeated uint64 indices = 4;
+
+  // Block height on source chain
+  uint64 block_height = 5;
+
+  // Chain ID
+  string chain_id = 6;
+}
+
+// TSSSignature represents a threshold signature
+message TSSSignature {
+  // Combined signature from threshold signers
+  bytes signature = 1;
+
+  // Public key commitment
+  bytes public_key = 2;
+
+  // Participant addresses who signed
+  repeated string signers = 3;
+
+  // Required threshold (e.g., 2/3)
+  uint64 threshold = 4;
+
+  // Total number of participants
+  uint64 total_participants = 5;
+
+  // Nonce for replay protection
+  uint64 nonce = 6;
+}
+
+// ValidatorSetRotation tracks validator set changes
+message ValidatorSetRotation {
+  // Rotation ID
+  string rotation_id = 1;
+
+  // Previous validator set
+  repeated BridgeValidator previous_validators = 2 [(gogoproto.nullable) = false];
+
+  // New validator set
+  repeated BridgeValidator new_validators = 3 [(gogoproto.nullable) = false];
+
+  // Rotation timestamp
+  google.protobuf.Timestamp rotation_time = 4 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+
+  // Effective block height
+  uint64 effective_height = 5;
+
+  // Status
+  RotationStatus status = 6;
+
+  // Approval signatures
+  repeated ValidatorSignature approvals = 7 [(gogoproto.nullable) = false];
+}
+
+enum RotationStatus {
+  ROTATION_PENDING = 0;
+  ROTATION_APPROVED = 1;
+  ROTATION_ACTIVE = 2;
+  ROTATION_EXPIRED = 3;
+}
+
+// SlashingEvent records slashing of malicious bridge validators
+message SlashingEvent {
+  // Event ID
+  string event_id = 1;
+
+  // Validator being slashed
+  string validator_address = 2;
+
+  // Slash reason
+  SlashReason reason = 3;
+
+  // Slash amount
+  string slash_amount = 4 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Evidence hash
+  bytes evidence_hash = 5;
+
+  // Block height of infraction
+  uint64 infraction_height = 6;
+
+  // Timestamp
+  google.protobuf.Timestamp timestamp = 7 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+
+  // Permanently jailed
+  bool jailed = 8;
+}
+
+enum SlashReason {
+  SLASH_REASON_UNSPECIFIED = 0;
+  SLASH_INVALID_PROOF = 1;
+  SLASH_DOUBLE_SIGN = 2;
+  SLASH_UNAUTHORIZED_MINT = 3;
+  SLASH_FRAUD_ATTEMPT = 4;
+  SLASH_DOWNTIME = 5;
+}
+
+// FraudProof represents a challenge to an invalid transfer
+message FraudProof {
+  // Proof ID
+  string proof_id = 1;
+
+  // Transfer ID being challenged
+  string challenged_transfer_id = 2;
+
+  // Challenger address
+  string challenger = 3;
+
+  // Fraud claim type
+  FraudType fraud_type = 4;
+
+  // Evidence data
+  bytes evidence = 5;
+
+  // Counter-proof from original relayer
+  bytes counter_proof = 6;
+
+  // Status
+  FraudProofStatus status = 7;
+
+  // Resolution timestamp
+  google.protobuf.Timestamp submitted_at = 8 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+  google.protobuf.Timestamp resolved_at = 9 [(gogoproto.stdtime) = true];
+
+  // Reward for successful challenge
+  string reward_amount = 10 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+}
+
+enum FraudType {
+  FRAUD_INVALID_MERKLE_PROOF = 0;
+  FRAUD_DOUBLE_SPEND = 1;
+  FRAUD_INVALID_SIGNATURE = 2;
+  FRAUD_AMOUNT_MISMATCH = 3;
+  FRAUD_UNAUTHORIZED_MINT = 4;
+}
+
+enum FraudProofStatus {
+  FRAUD_PROOF_PENDING = 0;
+  FRAUD_PROOF_INVESTIGATING = 1;
+  FRAUD_PROOF_VALID = 2;
+  FRAUD_PROOF_INVALID = 3;
+  FRAUD_PROOF_EXPIRED = 4;
+}
+
+// TimeLock represents a time-locked withdrawal
+message TimeLock {
+  // Lock ID
+  string lock_id = 1;
+
+  // Transfer ID
+  string transfer_id = 2;
+
+  // Amount locked
+  string amount = 3 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Denom
+  string denom = 4;
+
+  // Recipient
+  string recipient = 5;
+
+  // Lock time
+  google.protobuf.Timestamp lock_time = 6 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+
+  // Unlock time
+  google.protobuf.Timestamp unlock_time = 7 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+
+  // Status
+  TimeLockStatus status = 8;
+
+  // Challenge count
+  uint64 challenge_count = 9;
+}
+
+enum TimeLockStatus {
+  TIMELOCK_LOCKED = 0;
+  TIMELOCK_UNLOCKED = 1;
+  TIMELOCK_CHALLENGED = 2;
+  TIMELOCK_CANCELLED = 3;
+}
+
+// WithdrawalLimit tracks daily withdrawal limits per user
+message WithdrawalLimit {
+  // User address
+  string address = 1;
+
+  // Daily limit
+  string daily_limit = 2 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Amount withdrawn today
+  string withdrawn_today = 3 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Last reset timestamp (daily)
+  google.protobuf.Timestamp last_reset = 4 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+
+  // VIP tier (affects limits)
+  uint64 tier = 5;
+}
+
+// CircuitBreaker monitors and auto-pauses on anomalies
+message CircuitBreaker {
+  // Breaker ID
+  string breaker_id = 1;
+
+  // Status
+  CircuitBreakerStatus status = 2;
+
+  // Threshold settings
+  string max_hourly_volume = 3 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  string max_single_transfer = 4 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  uint64 max_failed_transfers_per_hour = 5;
+
+  // Current metrics
+  string current_hourly_volume = 6 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  uint64 current_failed_count = 7;
+
+  // Last trigger
+  google.protobuf.Timestamp last_triggered = 8 [(gogoproto.stdtime) = true];
+
+  // Auto-reset time
+  google.protobuf.Timestamp auto_reset_time = 9 [(gogoproto.stdtime) = true];
+}
+
+enum CircuitBreakerStatus {
+  CIRCUIT_CLOSED = 0;    // Normal operation
+  CIRCUIT_OPEN = 1;      // Paused due to anomaly
+  CIRCUIT_HALF_OPEN = 2; // Testing recovery
+}
+
+// NonceTracker prevents replay attacks
+message NonceTracker {
+  // User or validator address
+  string address = 1;
+
+  // Current nonce
+  uint64 nonce = 2;
+
+  // Chain ID
+  string chain_id = 3;
+
+  // Last update
+  google.protobuf.Timestamp last_updated = 4 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+}
+
+// AddressPermission manages whitelist/blacklist
+message AddressPermission {
+  // Address
+  string address = 1;
+
+  // Permission type
+  PermissionType permission_type = 2;
+
+  // Reason
+  string reason = 3;
+
+  // Added by (admin/governance)
+  string added_by = 4;
+
+  // Timestamp
+  google.protobuf.Timestamp added_at = 5 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+
+  // Expiry (if temporary)
+  google.protobuf.Timestamp expires_at = 6 [(gogoproto.stdtime) = true];
+}
+
+enum PermissionType {
+  PERMISSION_NONE = 0;
+  PERMISSION_WHITELISTED = 1;
+  PERMISSION_BLACKLISTED = 2;
+}
+
+// BridgeFee defines fee structure for bridge operations
+message BridgeFee {
+  // Fee type
+  FeeType fee_type = 1;
+
+  // Fixed fee amount
+  string fixed_fee = 2 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Percentage fee (basis points, 10000 = 100%)
+  uint64 percentage_fee_bps = 3;
+
+  // Minimum fee
+  string min_fee = 4 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Maximum fee
+  string max_fee = 5 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Fee recipient (module, insurance fund, etc.)
+  string recipient = 6;
+}
+
+enum FeeType {
+  FEE_TRANSFER = 0;
+  FEE_MINT_WRAPPED = 1;
+  FEE_BURN_WRAPPED = 2;
+  FEE_FAST_TRANSFER = 3;
+}
+
+// InsuranceFund tracks the insurance fund for bridge security
+message InsuranceFund {
+  // Total balance
+  string total_balance = 1 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Claims paid out
+  string total_claims_paid = 2 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Pending claims
+  repeated InsuranceClaim pending_claims = 3 [(gogoproto.nullable) = false];
+
+  // Contribution rate (percentage of fees)
+  uint64 contribution_rate_bps = 4;
+
+  // Last update
+  google.protobuf.Timestamp last_updated = 5 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+}
+
+// InsuranceClaim represents a claim against the insurance fund
+message InsuranceClaim {
+  // Claim ID
+  string claim_id = 1;
+
+  // Claimant address
+  string claimant = 2;
+
+  // Transfer ID (if related to specific transfer)
+  string transfer_id = 3;
+
+  // Claim amount
+  string claim_amount = 4 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Claim reason
+  string reason = 5;
+
+  // Evidence
+  bytes evidence = 6;
+
+  // Status
+  ClaimStatus status = 7;
+
+  // Timestamps
+  google.protobuf.Timestamp submitted_at = 8 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+  google.protobuf.Timestamp resolved_at = 9 [(gogoproto.stdtime) = true];
+
+  // Resolution
+  string approved_amount = 10 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+}
+
+enum ClaimStatus {
+  CLAIM_PENDING = 0;
+  CLAIM_INVESTIGATING = 1;
+  CLAIM_APPROVED = 2;
+  CLAIM_REJECTED = 3;
+  CLAIM_PAID = 4;
+}

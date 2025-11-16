@@ -1,0 +1,503 @@
+syntax = "proto3";
+package aura.confidencescore.v1beta1;
+
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/confidencescore/v1beta1;confidencescorepb";
+
+// ============================
+// ENUMS
+// ============================
+
+// IRCompletionStatus represents the status of an IR completion
+enum IRCompletionStatus {
+  IR_COMPLETION_STATUS_UNSPECIFIED = 0;
+  IR_COMPLETION_STATUS_PENDING = 1;      // Awaiting verification
+  IR_COMPLETION_STATUS_VERIFIED = 2;      // Successfully verified
+  IR_COMPLETION_STATUS_REJECTED = 3;      // Rejected by governance
+  IR_COMPLETION_STATUS_APPEALED = 4;      // Under appeal review
+}
+
+// SlashReason represents the reason for a score slash
+enum SlashReason {
+  SLASH_REASON_UNSPECIFIED = 0;
+  SLASH_REASON_FRAUD_DETECTED = 1;        // Fraud detected in verification
+  SLASH_REASON_FALSE_ATTESTATION = 2;     // Assistant provided false attestation
+  SLASH_REASON_COLLUSION = 3;             // Collusion detected
+  SLASH_REASON_DUPLICATE_COMPLETION = 4;  // Duplicate/replay completion
+}
+
+// VerificationStatus represents the verification state of a user
+enum VerificationStatus {
+  VERIFICATION_STATUS_UNSPECIFIED = 0;
+  VERIFICATION_STATUS_UNVERIFIED = 1;     // CS < 10,000
+  VERIFICATION_STATUS_VERIFIED = 2;       // CS >= 10,000
+  VERIFICATION_STATUS_SUSPENDED = 3;      // Governance flag
+  VERIFICATION_STATUS_REVOKED = 4;        // Self-revocation or fraud
+}
+
+// ChangeReason represents the reason for a score change
+enum ChangeReason {
+  CHANGE_REASON_UNSPECIFIED = 0;
+  CHANGE_REASON_IR_COMPLETION = 1;        // IR completion
+  CHANGE_REASON_FRAUD_SLASH = 2;          // Fraud slash
+  CHANGE_REASON_GOVERNANCE_ADJUSTMENT = 3; // Governance adjustment
+  CHANGE_REASON_APPEAL_REVERSAL = 4;      // Appeal reversal
+}
+
+// ============================
+// STATE MESSAGES
+// ============================
+
+// UserConfidenceRecord represents the complete confidence score record for a user
+message UserConfidenceRecord {
+  string wallet_address = 1;              // Bech32 Aura address
+  uint64 total_score = 2;                 // Aggregate CS value
+  repeated IRCompletion completed_irs = 3; // Full completion history
+  bool has_anchor = 4;                    // Whether IR-000 is completed
+  uint64 last_updated_height = 5;         // Block height of last update
+  map<string, ArenaScore> arena_scores = 6; // Per-arena CS totals
+  VerificationStatus status = 7;          // Verification status
+  google.protobuf.Timestamp last_updated = 8; // Timestamp of last update
+  uint64 verification_achieved_height = 9; // Block when CS >= 10,000
+  google.protobuf.Timestamp verification_achieved_at = 10; // Timestamp when verified
+  AnchorInfo anchor_info = 11;            // IR-000 metadata
+}
+
+// AnchorInfo contains metadata about the anchor IR-000 completion
+message AnchorInfo {
+  bool completed = 1;
+  google.protobuf.Timestamp completed_at = 2;
+  bytes verifier_plugin_hash = 3;        // SHA256 of verifier plug-in
+  uint64 block_height = 4;
+  bytes proof_hash = 5;                  // SHA256 of proof data
+}
+
+// ArenaScore represents the score details for a specific arena
+message ArenaScore {
+  string arena_type = 1;                 // Arena name (e.g., "Biometric")
+  uint64 total_score = 2;                // Total score in this arena
+  uint32 ir_count = 3;                   // Number of IRs completed
+  bool focus_bonus_active = 4;           // Whether arena focus bonus is active (>= 5000 CS)
+}
+
+// IRCompletion represents a single IR completion record
+message IRCompletion {
+  string ir_id = 1;                      // e.g., "IR-102"
+  uint64 base_score = 2;                 // Base score from IR definition
+  uint64 final_score = 3;                // Final score after all multipliers
+  google.protobuf.Timestamp completed_at = 4;
+  uint64 completed_height = 5;           // Block height of completion
+  string assistant_address = 6;          // AI assistant who verified
+  bytes proof_hash = 7;                  // SHA256 of proof data
+  bytes verifier_hash = 8;               // SHA256 of verifier plug-in
+  string tx_hash = 9;                    // Transaction hash
+  float velocity_bonus = 10;             // Velocity multiplier applied (1.0-1.25)
+  float arena_bonus = 11;                // Arena multiplier applied (1.0-1.5)
+  float jackpot_bonus = 12;              // Jackpot multiplier applied (1.0, 5.0, 25.0)
+  IRCompletionStatus status = 13;        // Completion status
+  string arena = 14;                     // Arena type
+}
+
+// ArenaBreakdown provides a breakdown of scores by arena (deprecated in favor of map)
+message ArenaBreakdown {
+  uint64 biometric = 1;
+  uint64 possession = 2;
+  uint64 knowledge = 3;
+  uint64 social = 4;
+  uint64 geo_location = 5;
+  uint64 high_assurance = 6;
+  uint64 persistence = 7;
+  uint64 specialized = 8;
+}
+
+// ConfidenceHistory tracks the score change history for a user
+message ConfidenceHistory {
+  string wallet_address = 1;
+  repeated ScoreChange changes = 2;
+}
+
+// ScoreChange represents a single score change event
+message ScoreChange {
+  uint64 block_height = 1;
+  int64 score_delta = 2;                 // Can be negative (slashing)
+  uint64 new_total = 3;
+  ChangeReason reason = 4;
+  string related_ir_id = 5;              // If applicable
+  string tx_hash = 6;
+  google.protobuf.Timestamp timestamp = 7;
+  uint64 previous_score = 8;
+}
+
+// SlashRecord represents a score slash record
+message SlashRecord {
+  string wallet_address = 1;
+  uint64 slash_amount = 2;               // CS points deducted
+  SlashReason reason = 3;
+  uint64 slash_height = 4;               // Block height of slash
+  google.protobuf.Timestamp slash_time = 5;
+  string related_ir_id = 6;              // IR being disputed
+  string slash_tx_hash = 7;
+  google.protobuf.Timestamp appeal_deadline = 8; // Deadline for appeal
+  bool appealed = 9;                     // Whether appeal was filed
+  bool resolved = 10;                    // Whether appeal was resolved
+  string authority = 11;                 // Who executed the slash
+  string evidence = 12;                  // IPFS hash or metadata
+}
+
+// ============================
+// PARAMS
+// ============================
+
+// Params defines the module parameters
+message Params {
+  // Verification thresholds
+  uint64 verification_threshold = 1;     // Default: 10,000
+  uint64 high_assurance_threshold = 2;   // Default: 15,000
+  uint64 arena_focus_threshold = 3;      // Default: 5,000
+
+  // Velocity bonuses (time-based completion bonuses)
+  repeated uint64 velocity_bonus_days = 4; // [7, 30] - days thresholds
+  repeated float velocity_bonus_multipliers = 5; // [1.25, 1.10] - corresponding multipliers
+
+  // Arena multipliers
+  map<uint64, float> arena_multipliers = 6; // threshold -> multiplier (3000->1.1, 4000->1.2, 5000->1.5)
+
+  // Slashing parameters
+  uint64 slash_percentage = 7;           // Default: 50% max slash
+  string appeal_deposit = 8;             // Default: 1000 AEQ
+
+  // Rate limiting
+  uint64 max_irs_per_day = 9;            // Default: 10
+  uint64 max_irs_per_hour = 10;          // Default: 3
+
+  // Jackpot probabilities
+  repeated uint64 jackpot_odds = 11;     // [100, 1000] - odds for jackpot (1 in N)
+  repeated float jackpot_multipliers = 12; // [5.0, 25.0] - corresponding multipliers
+
+  // Staleness (future)
+  bool staleness_enabled = 13;           // Default: false
+  uint64 degradation_rate_per_year = 14; // Default: 0
+
+  // PoI (Proof-of-Identity) Rewards (Whitepaper Section 12.0)
+  bool poi_rewards_enabled = 15;         // Default: true
+  uint64 user_reward_split_percent = 16; // % of reward to user (rest to node operator)
+  bool velocity_bonus_enabled = 17;      // Enable VBT (Velocity Bonus Tier)
+}
+
+// ============================
+// MSG SERVICE (State Transitions)
+// ============================
+
+// MsgRecordIRCompletion records an IR completion with assistant attestation
+message MsgRecordIRCompletion {
+  string wallet_address = 1;
+  string ir_id = 2;
+  bytes proof_hash = 3;                  // SHA256 of proof
+  bytes verifier_hash = 4;               // SHA256 of verifier plug-in
+  string assistant_address = 5;          // Signer (AI assistant)
+  google.protobuf.Timestamp timestamp = 6;
+}
+
+message MsgRecordIRCompletionResponse {
+  uint64 score_earned = 1;
+  uint64 new_total_score = 2;
+  bool verification_achieved = 3;        // True if crossed 10,000
+  float velocity_multiplier = 4;
+  float arena_multiplier = 5;
+  float jackpot_multiplier = 6;
+}
+
+// MsgRecalculateScore recalculates a user's total score (admin only)
+message MsgRecalculateScore {
+  string wallet_address = 1;
+  string authority = 2;                  // Governance module address
+}
+
+message MsgRecalculateScoreResponse {
+  uint64 previous_score = 1;
+  uint64 recalculated_score = 2;
+  repeated string discrepancies = 3;     // If any found
+}
+
+// MsgSlashScore slashes a user's score for fraud (governance)
+message MsgSlashScore {
+  string wallet_address = 1;
+  string ir_id = 2;                      // IR being disputed
+  string reason = 3;
+  uint64 slash_amount = 4;               // CS points to deduct
+  string authority = 5;                  // Governance or fraud detector
+  string evidence = 6;                   // IPFS hash or metadata
+}
+
+message MsgSlashScoreResponse {
+  uint64 previous_score = 1;
+  uint64 new_score = 2;
+  bool verification_revoked = 3;         // True if dropped below 10,000
+  string slash_tx_hash = 4;
+}
+
+// MsgAppealSlash allows a user to appeal a slash
+message MsgAppealSlash {
+  string wallet_address = 1;
+  string slash_tx_hash = 2;
+  string evidence = 3;                   // IPFS hash or metadata
+  string deposit = 4;                    // AEQ deposit for appeal
+}
+
+message MsgAppealSlashResponse {
+  bool appeal_accepted = 1;
+  google.protobuf.Timestamp review_deadline = 2;
+}
+
+// MsgResolveAppeal resolves an appeal (governance)
+message MsgResolveAppeal {
+  string wallet_address = 1;
+  string slash_tx_hash = 2;
+  bool restore_score = 3;                // Whether to restore the slashed score
+  string authority = 4;                  // Governance module address
+  string resolution_notes = 5;
+}
+
+message MsgResolveAppealResponse {
+  uint64 restored_score = 1;
+  bool deposit_returned = 2;
+}
+
+// Msg service defines the state transitions for the confidencescore module
+service Msg {
+  rpc RecordIRCompletion(MsgRecordIRCompletion) returns (MsgRecordIRCompletionResponse);
+  rpc RecalculateScore(MsgRecalculateScore) returns (MsgRecalculateScoreResponse);
+  rpc SlashScore(MsgSlashScore) returns (MsgSlashScoreResponse);
+  rpc AppealSlash(MsgAppealSlash) returns (MsgAppealSlashResponse);
+  rpc ResolveAppeal(MsgResolveAppeal) returns (MsgResolveAppealResponse);
+}
+
+// ============================
+// QUERY SERVICE
+// ============================
+
+// QueryUserScoreRequest is the request type for getting a user's score
+message QueryUserScoreRequest {
+  string wallet_address = 1;
+}
+
+// QueryUserScoreResponse is the response type for getting a user's score
+message QueryUserScoreResponse {
+  uint64 total_score = 1;
+  bool is_verified = 2;                  // CS >= 10,000
+  AnchorInfo anchor_info = 3;
+  map<string, ArenaScore> arena_scores = 4;
+  uint32 ir_count = 5;
+  google.protobuf.Timestamp last_updated = 6;
+  VerificationStatus status = 7;
+  uint64 verification_achieved_height = 8;
+}
+
+// QueryUserCompletionsRequest is the request type for getting a user's IR completions
+message QueryUserCompletionsRequest {
+  string wallet_address = 1;
+  string arena_filter = 2;               // Optional arena filter
+  cosmos.base.query.v1beta1.PageRequest pagination = 3;
+}
+
+// QueryUserCompletionsResponse is the response type for getting a user's IR completions
+message QueryUserCompletionsResponse {
+  repeated IRCompletion completions = 1;
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryScoreHistoryRequest is the request type for getting a user's score history
+message QueryScoreHistoryRequest {
+  string wallet_address = 1;
+  uint64 from_height = 2;                // Optional
+  uint64 to_height = 3;                  // Optional
+  cosmos.base.query.v1beta1.PageRequest pagination = 4;
+}
+
+// QueryScoreHistoryResponse is the response type for getting a user's score history
+message QueryScoreHistoryResponse {
+  repeated ScoreChange changes = 1;
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryThresholdsRequest is the request type for getting verification thresholds
+message QueryThresholdsRequest {}
+
+// QueryThresholdsResponse is the response type for getting verification thresholds
+message QueryThresholdsResponse {
+  uint64 verified_human_threshold = 1;  // 10,000
+  map<string, uint64> vc_thresholds = 2; // VC type -> threshold
+  map<string, uint64> arena_focus_thresholds = 3; // Arena -> threshold
+}
+
+// QueryVerifiedUsersRequest is the request type for listing verified users
+message QueryVerifiedUsersRequest {
+  uint64 min_score = 1;                  // Optional minimum score filter
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+// QueryVerifiedUsersResponse is the response type for listing verified users
+message QueryVerifiedUsersResponse {
+  repeated string wallet_addresses = 1;
+  repeated uint64 scores = 2;
+  cosmos.base.query.v1beta1.PageResponse pagination = 3;
+}
+
+// QueryArenaBreakdownRequest is the request type for getting a user's arena breakdown
+message QueryArenaBreakdownRequest {
+  string wallet_address = 1;
+}
+
+// QueryArenaBreakdownResponse is the response type for getting a user's arena breakdown
+message QueryArenaBreakdownResponse {
+  map<string, ArenaScore> arena_scores = 1;
+  repeated string focus_arenas = 2;      // Arenas with >= 5000 CS
+}
+
+// QuerySlashRecordRequest is the request type for getting slash records
+message QuerySlashRecordRequest {
+  string wallet_address = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+// QuerySlashRecordResponse is the response type for getting slash records
+message QuerySlashRecordResponse {
+  repeated SlashRecord slash_records = 1;
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryParamsRequest is the request type for getting module parameters
+message QueryParamsRequest {}
+
+// QueryParamsResponse is the response type for getting module parameters
+message QueryParamsResponse {
+  Params params = 1;
+}
+
+// QueryIRCompletionRequest is the request type for getting a specific IR completion
+message QueryIRCompletionRequest {
+  string wallet_address = 1;
+  string ir_id = 2;
+}
+
+// QueryIRCompletionResponse is the response type for getting a specific IR completion
+message QueryIRCompletionResponse {
+  IRCompletion completion = 1;
+  bool completed = 2;
+}
+
+// Query service defines the gRPC querier service for the confidencescore module
+service Query {
+  // Get a user's confidence score and status
+  rpc UserScore(QueryUserScoreRequest) returns (QueryUserScoreResponse);
+
+  // Get a user's completed IRs with pagination
+  rpc UserCompletions(QueryUserCompletionsRequest) returns (QueryUserCompletionsResponse);
+
+  // Get a user's score history with pagination
+  rpc ScoreHistory(QueryScoreHistoryRequest) returns (QueryScoreHistoryResponse);
+
+  // Get verification thresholds
+  rpc Thresholds(QueryThresholdsRequest) returns (QueryThresholdsResponse);
+
+  // List verified users with pagination
+  rpc VerifiedUsers(QueryVerifiedUsersRequest) returns (QueryVerifiedUsersResponse);
+
+  // Get a user's score breakdown by arena
+  rpc ArenaBreakdown(QueryArenaBreakdownRequest) returns (QueryArenaBreakdownResponse);
+
+  // Get slash records for a user
+  rpc SlashRecord(QuerySlashRecordRequest) returns (QuerySlashRecordResponse);
+
+  // Get module parameters
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse);
+
+  // Get a specific IR completion
+  rpc IRCompletion(QueryIRCompletionRequest) returns (QueryIRCompletionResponse);
+}
+
+// ============================
+// GENESIS STATE
+// ============================
+
+// GenesisState defines the initial state of the confidencescore module
+message GenesisState {
+  Params params = 1;
+  repeated UserConfidenceRecord user_records = 2;
+  repeated IRCompletion completions = 3;
+  repeated ConfidenceHistory history = 4;
+  repeated SlashRecord slash_records = 5;
+}
+
+// ============================
+// EVENTS
+// ============================
+
+// EventIRCompleted is emitted when an IR is successfully completed
+message EventIRCompleted {
+  string wallet_address = 1;
+  string ir_id = 2;
+  uint64 score_earned = 3;
+  uint64 new_total_score = 4;
+  string assistant_address = 5;
+  string arena = 6;
+  uint64 block_height = 7;
+  float velocity_multiplier = 8;
+  float arena_multiplier = 9;
+  float jackpot_multiplier = 10;
+}
+
+// EventVerificationAchieved is emitted when a user achieves verified status
+message EventVerificationAchieved {
+  string wallet_address = 1;
+  uint64 final_score = 2;
+  google.protobuf.Timestamp achieved_at = 3;
+  uint32 ir_count = 4;
+  uint64 days_since_anchor = 5;
+}
+
+// EventArenaFocusAchieved is emitted when a user achieves arena focus
+message EventArenaFocusAchieved {
+  string wallet_address = 1;
+  string arena = 2;
+  uint64 arena_score = 3;
+  google.protobuf.Timestamp achieved_at = 4;
+}
+
+// EventScoreSlashed is emitted when a score is slashed
+message EventScoreSlashed {
+  string wallet_address = 1;
+  string ir_id = 2;
+  uint64 slash_amount = 3;
+  uint64 new_score = 4;
+  string reason = 5;
+  bool verification_revoked = 6;
+  string slash_tx_hash = 7;
+}
+
+// EventJackpotTriggered is emitted when a jackpot bonus is triggered
+message EventJackpotTriggered {
+  string wallet_address = 1;
+  string ir_id = 2;
+  float multiplier = 3;                  // 5.0 or 25.0
+  uint64 bonus_score = 4;
+}
+
+// EventAppealFiled is emitted when an appeal is filed
+message EventAppealFiled {
+  string wallet_address = 1;
+  string slash_tx_hash = 2;
+  string deposit = 3;
+  google.protobuf.Timestamp review_deadline = 4;
+}
+
+// EventAppealResolved is emitted when an appeal is resolved
+message EventAppealResolved {
+  string wallet_address = 1;
+  string slash_tx_hash = 2;
+  bool score_restored = 3;
+  uint64 restored_amount = 4;
+  bool deposit_returned = 5;
+}

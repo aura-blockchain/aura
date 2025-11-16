@@ -1,0 +1,350 @@
+syntax = "proto3";
+package aura.networksecurity.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+
+option go_package = "github.com/aura/chain/x/networksecurity/types";
+
+// Params defines the parameters for the network security module
+message Params {
+  // Rate limiting parameters
+  RateLimitConfig rate_limit = 1 [(gogoproto.nullable) = false];
+
+  // Connection parameters
+  ConnectionConfig connection = 2 [(gogoproto.nullable) = false];
+
+  // Mempool parameters
+  MempoolConfig mempool = 3 [(gogoproto.nullable) = false];
+
+  // Reputation parameters
+  ReputationConfig reputation = 4 [(gogoproto.nullable) = false];
+
+  // Gossip validation parameters
+  GossipConfig gossip = 5 [(gogoproto.nullable) = false];
+
+  // Fork detection parameters
+  ForkDetectionConfig fork_detection = 6 [(gogoproto.nullable) = false];
+
+  // Network partitioning detection parameters
+  PartitionDetectionConfig partition_detection = 7 [(gogoproto.nullable) = false];
+}
+
+// RateLimitConfig defines rate limiting parameters
+message RateLimitConfig {
+  // Maximum requests per second per peer
+  uint64 max_requests_per_second = 1;
+
+  // Burst size for rate limiter
+  uint64 burst_size = 2;
+
+  // Window duration for rate limiting
+  google.protobuf.Duration window_duration = 3 [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+
+  // Ban duration for rate limit violations
+  google.protobuf.Duration ban_duration = 4 [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+
+  // Bandwidth limit per peer (bytes per second)
+  uint64 bandwidth_limit_per_peer = 5;
+}
+
+// ConnectionConfig defines connection management parameters
+message ConnectionConfig {
+  // Maximum number of inbound connections
+  uint32 max_inbound_connections = 1;
+
+  // Maximum number of outbound connections
+  uint32 max_outbound_connections = 2;
+
+  // Maximum connections per IP address
+  uint32 max_connections_per_ip = 3;
+
+  // Connection timeout
+  google.protobuf.Duration connection_timeout = 4 [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+
+  // Enable trusted peers only mode
+  bool trusted_peers_only = 5;
+
+  // Minimum peer diversity (different ASNs)
+  uint32 min_peer_diversity = 6;
+}
+
+// MempoolConfig defines mempool security parameters
+message MempoolConfig {
+  // Maximum mempool size (number of transactions)
+  uint64 max_size = 1;
+
+  // Maximum mempool size in bytes
+  uint64 max_bytes = 2;
+
+  // Minimum priority fee to enter mempool
+  string min_priority_fee = 3 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Maximum transactions per account in mempool
+  uint32 max_txs_per_account = 4;
+
+  // Mempool eviction policy (oldest, lowest_fee, etc)
+  string eviction_policy = 5;
+
+  // Enable priority fee mechanism
+  bool enable_priority_fees = 6;
+}
+
+// ReputationConfig defines node reputation parameters
+message ReputationConfig {
+  // Enable reputation tracking
+  bool enable_tracking = 1;
+
+  // Initial reputation score
+  int64 initial_score = 2;
+
+  // Minimum reputation to connect
+  int64 min_score_to_connect = 3;
+
+  // Score decay rate per block
+  int64 decay_rate = 4;
+
+  // Maximum reputation score
+  int64 max_score = 5;
+
+  // Penalty for misbehavior
+  int64 misbehavior_penalty = 6;
+
+  // Reward for good behavior
+  int64 good_behavior_reward = 7;
+}
+
+// GossipConfig defines gossip protocol validation parameters
+message GossipConfig {
+  // Enable message signature verification
+  bool verify_signatures = 1;
+
+  // Maximum message size
+  uint64 max_message_size = 2;
+
+  // Message TTL (time to live)
+  google.protobuf.Duration message_ttl = 3 [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+
+  // Enable redundancy filtering
+  bool enable_redundancy_filter = 4;
+
+  // Maximum gossip fanout
+  uint32 max_fanout = 5;
+}
+
+// ForkDetectionConfig defines fork detection parameters
+message ForkDetectionConfig {
+  // Enable fork detection
+  bool enable_detection = 1;
+
+  // Block height difference to trigger alert
+  int64 height_diff_threshold = 2;
+
+  // Enable automatic fork resolution
+  bool enable_auto_resolution = 3;
+
+  // Confirmation depth for finality
+  int64 confirmation_depth = 4;
+}
+
+// PartitionDetectionConfig defines network partitioning detection parameters
+message PartitionDetectionConfig {
+  // Enable partition detection
+  bool enable_detection = 1;
+
+  // Minimum connected peers to consider healthy
+  uint32 min_connected_peers = 2;
+
+  // Check interval
+  google.protobuf.Duration check_interval = 3 [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+
+  // Partition alert threshold (missing peers)
+  uint32 partition_threshold = 4;
+}
+
+// PeerInfo represents information about a network peer
+message PeerInfo {
+  // Peer ID
+  string peer_id = 1;
+
+  // IP address
+  string ip_address = 2;
+
+  // Connection type (inbound/outbound)
+  string connection_type = 3;
+
+  // Connected at
+  google.protobuf.Timestamp connected_at = 4 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+
+  // Reputation score
+  int64 reputation_score = 5;
+
+  // Is trusted peer
+  bool is_trusted = 6;
+
+  // ASN (Autonomous System Number)
+  uint32 asn = 7;
+
+  // Geographic region
+  string region = 8;
+}
+
+// RateLimitEntry tracks rate limiting per peer
+message RateLimitEntry {
+  // Peer ID
+  string peer_id = 1;
+
+  // Current request count
+  uint64 request_count = 2;
+
+  // Window start time
+  google.protobuf.Timestamp window_start = 3 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+
+  // Is currently banned
+  bool is_banned = 4;
+
+  // Ban expires at
+  google.protobuf.Timestamp ban_expires_at = 5 [(gogoproto.stdtime) = true];
+
+  // Total bytes sent
+  uint64 bytes_sent = 6;
+
+  // Total bytes received
+  uint64 bytes_received = 7;
+}
+
+// NodeReputation tracks reputation for a peer
+message NodeReputation {
+  // Peer ID
+  string peer_id = 1;
+
+  // Current reputation score
+  int64 score = 2;
+
+  // Last updated block height
+  int64 last_updated_height = 3;
+
+  // Total messages received
+  uint64 messages_received = 4;
+
+  // Valid messages
+  uint64 valid_messages = 5;
+
+  // Invalid messages
+  uint64 invalid_messages = 6;
+
+  // Connection uptime (seconds)
+  int64 uptime = 7;
+
+  // Misbehavior count
+  uint64 misbehavior_count = 8;
+}
+
+// TrustedPeer represents a trusted peer configuration
+message TrustedPeer {
+  // Peer ID
+  string peer_id = 1;
+
+  // IP address or hostname
+  string address = 2;
+
+  // Public key
+  bytes public_key = 3;
+
+  // Description
+  string description = 4;
+
+  // Added at
+  google.protobuf.Timestamp added_at = 5 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+}
+
+// ForkAlert represents a detected fork
+message ForkAlert {
+  // Alert ID
+  string alert_id = 1;
+
+  // Block height where fork detected
+  int64 block_height = 2;
+
+  // Fork chain A block hash
+  bytes chain_a_hash = 3;
+
+  // Fork chain B block hash
+  bytes chain_b_hash = 4;
+
+  // Detected at
+  google.protobuf.Timestamp detected_at = 5 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+
+  // Resolved
+  bool resolved = 6;
+
+  // Resolution details
+  string resolution_details = 7;
+}
+
+// PartitionAlert represents a detected network partition
+message PartitionAlert {
+  // Alert ID
+  string alert_id = 1;
+
+  // Number of connected peers
+  uint32 connected_peers = 2;
+
+  // Expected peers
+  uint32 expected_peers = 3;
+
+  // Missing peers
+  repeated string missing_peer_ids = 4;
+
+  // Detected at
+  google.protobuf.Timestamp detected_at = 5 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+
+  // Resolved
+  bool resolved = 6;
+}
+
+// MempoolStats represents mempool statistics
+message MempoolStats {
+  // Current transaction count
+  uint64 tx_count = 1;
+
+  // Current mempool size in bytes
+  uint64 size_bytes = 2;
+
+  // Average priority fee
+  string avg_priority_fee = 3 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Transactions evicted
+  uint64 evicted_count = 4;
+
+  // Rejected transactions (spam)
+  uint64 rejected_count = 5;
+}
+
+// GenesisState defines the network security module's genesis state
+message GenesisState {
+  // Module parameters
+  Params params = 1 [(gogoproto.nullable) = false];
+
+  // Trusted peers
+  repeated TrustedPeer trusted_peers = 2 [(gogoproto.nullable) = false];
+
+  // Peer reputation data
+  repeated NodeReputation reputations = 3 [(gogoproto.nullable) = false];
+
+  // Rate limit entries
+  repeated RateLimitEntry rate_limits = 4 [(gogoproto.nullable) = false];
+
+  // Active fork alerts
+  repeated ForkAlert fork_alerts = 5 [(gogoproto.nullable) = false];
+
+  // Active partition alerts
+  repeated PartitionAlert partition_alerts = 6 [(gogoproto.nullable) = false];
+}

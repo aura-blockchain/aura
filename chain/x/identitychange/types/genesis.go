@@ -4,46 +4,45 @@ import (
 	"encoding/json"
 	"fmt"
 
+	identitychangepb "github.com/aequitas/aura/proto/aura/identitychange/v1beta1"
 	"github.com/cosmos/cosmos-sdk/codec"
 )
 
-type GenesisState struct {
-	Params   Params                  `json:"params"`
-	Records  []IdentityRecord        `json:"records"`
-	Requests []IdentityChangeRequest `json:"requests"`
-	History  []IdentityChangeHistory `json:"history"`
-	Suspended bool                   `json:"suspended"`
-}
-
-func DefaultGenesisState() GenesisState {
-	return GenesisState{
-		Params:   DefaultParams(),
-		Records:  []IdentityRecord{},
-		Requests: []IdentityChangeRequest{},
-		History:  []IdentityChangeHistory{},
+func DefaultGenesisState() *identitychangepb.GenesisState {
+	return &identitychangepb.GenesisState{
+		Params:    DefaultParamsProto(),
+		Records:   []*identitychangepb.IdentityRecord{},
+		Requests:  []*identitychangepb.IdentityChangeRequest{},
+		History:   []*identitychangepb.IdentityChangeHistory{},
 		Suspended: false,
 	}
 }
 
-func ValidateGenesisState(state GenesisState) error {
-	if err := state.Params.Validate(); err != nil {
-		return fmt.Errorf("params validation failed: %w", err)
+func ValidateGenesisState(state *identitychangepb.GenesisState) error {
+	if state == nil {
+		return fmt.Errorf("genesis state cannot be nil")
+	}
+	if state.Params != nil {
+		params := ParamsFromProto(state.Params)
+		if err := params.Validate(); err != nil {
+			return fmt.Errorf("params validation failed: %w", err)
+		}
 	}
 	requestIDs := make(map[string]struct{}, len(state.Requests))
 	for _, req := range state.Requests {
-		if req.RequestID == "" {
+		if req.RequestId == "" {
 			return fmt.Errorf("identity change request missing id")
 		}
-		if req.TargetDID == "" {
-			return fmt.Errorf("identity change request %s target did required", req.RequestID)
+		if req.TargetDid == "" {
+			return fmt.Errorf("identity change request %s target did required", req.RequestId)
 		}
-		if _, exists := requestIDs[req.RequestID]; exists {
-			return fmt.Errorf("duplicate identity change request %s", req.RequestID)
+		if _, exists := requestIDs[req.RequestId]; exists {
+			return fmt.Errorf("duplicate identity change request %s", req.RequestId)
 		}
-		requestIDs[req.RequestID] = struct{}{}
+		requestIDs[req.RequestId] = struct{}{}
 	}
 	for _, record := range state.Records {
-		if record.DID == "" {
+		if record.Did == "" {
 			return fmt.Errorf("identity record missing did")
 		}
 	}

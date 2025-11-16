@@ -2,3 +2,7 @@ vendor/
 tools/bin/
 node_modules/
 .phpunit.result.cache
+
+nul
+proto/nul
+C:*

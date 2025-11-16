@@ -1,0 +1,224 @@
+syntax = "proto3";
+package aura.dex.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/aequitas/aura/x/dex/types";
+
+// SecurityParams defines security-related parameters for DEX operations
+message SecurityParams {
+  // Front-running protection: minimum block delay between swaps from same address
+  uint64 min_block_delay = 1;
+
+  // Maximum trade size per transaction (as percentage of pool reserves)
+  string max_trade_size_percent = 2 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
+
+  // Maximum price impact threshold before rejecting trade
+  string max_price_impact_percent = 3 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
+
+  // Liquidity lock-up period in seconds (prevents rug pulls)
+  int64 liquidity_lockup_seconds = 4;
+
+  // Minimum time between pool creation by same address (seconds)
+  int64 pool_creation_cooldown = 5;
+
+  // Maximum pools that can be created per address
+  uint64 max_pools_per_creator = 6;
+
+  // TWAP window size in blocks for price oracle
+  uint64 twap_window_blocks = 7;
+
+  // Minimum liquidity required to create a pool (prevents spam)
+  string min_pool_creation_liquidity = 8 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Flash loan protection: minimum blocks between add/remove liquidity
+  uint64 min_liquidity_blocks = 9;
+
+  // Wash trading detection: minimum time between trades (seconds)
+  int64 wash_trade_min_interval = 10;
+
+  // Dust attack prevention: minimum swap amount
+  string min_trade_amount = 11 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Order manipulation: max order size variance (%)
+  string max_order_variance = 12 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
+
+  // Enable circuit breaker for emergency pause
+  bool circuit_breaker_enabled = 13;
+
+  // MEV protection: randomize transaction ordering within block
+  bool mev_protection_enabled = 14;
+
+  // Maximum number of swaps per block per address
+  uint64 max_swaps_per_block = 15;
+}
+
+// TWAPPrice represents a Time-Weighted Average Price observation
+message TWAPPrice {
+  string pool_id = 1;
+
+  // Cumulative price (price * time elapsed)
+  string cumulative_price = 2 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
+
+  // Block height of observation
+  int64 block_height = 3;
+
+  // Timestamp of observation
+  google.protobuf.Timestamp timestamp = 4 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+
+  // Reserve A at observation time
+  string reserve_a = 5 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Reserve B at observation time
+  string reserve_b = 6 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Spot price at observation (reserve_b / reserve_a)
+  string spot_price = 7 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
+}
+
+// LiquidityLock tracks locked liquidity to prevent rug pulls
+message LiquidityLock {
+  string pool_id = 1;
+  string provider = 2;
+
+  // Amount of LP tokens locked
+  string locked_lp_tokens = 3 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Lock start time
+  google.protobuf.Timestamp lock_start = 4 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+
+  // Lock end time
+  google.protobuf.Timestamp lock_end = 5 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+
+  // Whether lock is still active
+  bool is_active = 6;
+}
+
+// TradeHistory tracks user trading activity for anti-manipulation
+message TradeHistory {
+  string address = 1;
+  string pool_id = 2;
+
+  // Last trade timestamp
+  google.protobuf.Timestamp last_trade_time = 3 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+
+  // Last trade block height
+  int64 last_trade_block = 4;
+
+  // Number of trades in current block
+  uint64 trades_in_block = 5;
+
+  // Trade count in last hour
+  uint64 recent_trade_count = 6;
+
+  // Total volume traded in last hour
+  string recent_volume = 7 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+}
+
+// PoolCreationRecord tracks pools created by address
+message PoolCreationRecord {
+  string creator = 1;
+
+  // Pools created by this address
+  repeated string pool_ids = 2;
+
+  // Last pool creation time
+  google.protobuf.Timestamp last_creation_time = 3 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+
+  // Total pools created
+  uint64 total_pools = 4;
+}
+
+// CircuitBreaker state for emergency pause
+message CircuitBreaker {
+  // Whether trading is paused
+  bool is_paused = 1;
+
+  // Reason for pause
+  string pause_reason = 2;
+
+  // When pause started
+  google.protobuf.Timestamp paused_at = 3 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+
+  // Who triggered the pause
+  string paused_by = 4;
+
+  // Affected pools (empty = all pools)
+  repeated string affected_pools = 5;
+}
+
+// WashTradeDetection stores detection results
+message WashTradeDetection {
+  string address = 1;
+  string pool_id = 2;
+
+  // Suspicious trade count
+  uint64 suspicious_trades = 3;
+
+  // First suspicious trade time
+  google.protobuf.Timestamp first_detection = 4 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+
+  // Latest suspicious trade time
+  google.protobuf.Timestamp last_detection = 5 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+
+  // Whether address is flagged
+  bool is_flagged = 6;
+
+  // Detection confidence score (0-100)
+  uint64 confidence_score = 7;
+}
+
+// OrderManipulationDetection tracks orderbook manipulation
+message OrderManipulationDetection {
+  string address = 1;
+  string pool_id = 2;
+
+  // Number of rapid order changes
+  uint64 rapid_changes = 3;
+
+  // Layering detection count
+  uint64 layering_count = 4;
+
+  // Spoofing detection count
+  uint64 spoofing_count = 5;
+
+  // Detection timestamp
+  google.protobuf.Timestamp detected_at = 6 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+
+  // Whether flagged for manipulation
+  bool is_flagged = 7;
+}

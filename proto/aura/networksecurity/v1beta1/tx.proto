@@ -1,0 +1,130 @@
+syntax = "proto3";
+package aura.networksecurity.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "aura/networksecurity/v1beta1/networksecurity.proto";
+
+option go_package = "github.com/aura/chain/x/networksecurity/types";
+
+// Msg defines the network security Msg service
+service Msg {
+  // UpdateParams updates the module parameters
+  rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
+
+  // AddTrustedPeer adds a trusted peer
+  rpc AddTrustedPeer(MsgAddTrustedPeer) returns (MsgAddTrustedPeerResponse);
+
+  // RemoveTrustedPeer removes a trusted peer
+  rpc RemoveTrustedPeer(MsgRemoveTrustedPeer) returns (MsgRemoveTrustedPeerResponse);
+
+  // BanPeer manually bans a peer
+  rpc BanPeer(MsgBanPeer) returns (MsgBanPeerResponse);
+
+  // UnbanPeer unbans a peer
+  rpc UnbanPeer(MsgUnbanPeer) returns (MsgUnbanPeerResponse);
+
+  // UpdatePeerReputation manually updates peer reputation
+  rpc UpdatePeerReputation(MsgUpdatePeerReputation) returns (MsgUpdatePeerReputationResponse);
+
+  // ResolveForkAlert marks a fork alert as resolved
+  rpc ResolveForkAlert(MsgResolveForkAlert) returns (MsgResolveForkAlertResponse);
+
+  // ResolvePartitionAlert marks a partition alert as resolved
+  rpc ResolvePartitionAlert(MsgResolvePartitionAlert) returns (MsgResolvePartitionAlertResponse);
+}
+
+message MsgUpdateParams {
+  // Authority is the address of the governance account
+  string authority = 1;
+
+  // New parameters
+  Params params = 2 [(gogoproto.nullable) = false];
+}
+
+message MsgUpdateParamsResponse {}
+
+message MsgAddTrustedPeer {
+  // Authority is the address that can add trusted peers
+  string authority = 1;
+
+  // Peer to add
+  TrustedPeer peer = 2 [(gogoproto.nullable) = false];
+}
+
+message MsgAddTrustedPeerResponse {}
+
+message MsgRemoveTrustedPeer {
+  // Authority is the address that can remove trusted peers
+  string authority = 1;
+
+  // Peer ID to remove
+  string peer_id = 2;
+}
+
+message MsgRemoveTrustedPeerResponse {}
+
+message MsgBanPeer {
+  // Authority is the address that can ban peers
+  string authority = 1;
+
+  // Peer ID to ban
+  string peer_id = 2;
+
+  // Ban duration in seconds
+  int64 duration_seconds = 3;
+
+  // Reason for ban
+  string reason = 4;
+}
+
+message MsgBanPeerResponse {}
+
+message MsgUnbanPeer {
+  // Authority is the address that can unban peers
+  string authority = 1;
+
+  // Peer ID to unban
+  string peer_id = 2;
+}
+
+message MsgUnbanPeerResponse {}
+
+message MsgUpdatePeerReputation {
+  // Authority is the address that can update reputation
+  string authority = 1;
+
+  // Peer ID
+  string peer_id = 2;
+
+  // New reputation score
+  int64 score = 3;
+
+  // Reason for update
+  string reason = 4;
+}
+
+message MsgUpdatePeerReputationResponse {}
+
+message MsgResolveForkAlert {
+  // Authority is the address that can resolve alerts
+  string authority = 1;
+
+  // Alert ID to resolve
+  string alert_id = 2;
+
+  // Resolution details
+  string resolution_details = 3;
+}
+
+message MsgResolveForkAlertResponse {}
+
+message MsgResolvePartitionAlert {
+  // Authority is the address that can resolve alerts
+  string authority = 1;
+
+  // Alert ID to resolve
+  string alert_id = 2;
+}
+
+message MsgResolvePartitionAlertResponse {}

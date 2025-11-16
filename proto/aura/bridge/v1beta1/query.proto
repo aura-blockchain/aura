@@ -1,0 +1,189 @@
+syntax = "proto3";
+package aura.bridge.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "aura/bridge/v1beta1/bridge.proto";
+
+option go_package = "github.com/aequitas/aura/x/bridge/types";
+
+// Query defines the gRPC querier service for bridge
+service Query {
+  // Transfer queries a cross-chain transfer by ID
+  rpc Transfer(QueryTransferRequest) returns (QueryTransferResponse) {
+    option (google.api.http).get = "/aura/bridge/v1beta1/transfers/{transfer_id}";
+  }
+
+  // AllTransfers queries all cross-chain transfers
+  rpc AllTransfers(QueryAllTransfersRequest) returns (QueryAllTransfersResponse) {
+    option (google.api.http).get = "/aura/bridge/v1beta1/transfers";
+  }
+
+  // UserTransfers queries transfers for specific user
+  rpc UserTransfers(QueryUserTransfersRequest) returns (QueryUserTransfersResponse) {
+    option (google.api.http).get = "/aura/bridge/v1beta1/transfers/user/{address}";
+  }
+
+  // ChainConfig queries configuration for a chain
+  rpc ChainConfig(QueryChainConfigRequest) returns (QueryChainConfigResponse) {
+    option (google.api.http).get = "/aura/bridge/v1beta1/chains/{chain_id}";
+  }
+
+  // AllChains queries all connected chains
+  rpc AllChains(QueryAllChainsRequest) returns (QueryAllChainsResponse) {
+    option (google.api.http).get = "/aura/bridge/v1beta1/chains";
+  }
+
+  // WrappedToken queries wrapped token info
+  rpc WrappedToken(QueryWrappedTokenRequest) returns (QueryWrappedTokenResponse) {
+    option (google.api.http).get = "/aura/bridge/v1beta1/wrapped/{wrapped_denom}";
+  }
+
+  // AllWrappedTokens queries all wrapped tokens
+  rpc AllWrappedTokens(QueryAllWrappedTokensRequest) returns (QueryAllWrappedTokensResponse) {
+    option (google.api.http).get = "/aura/bridge/v1beta1/wrapped";
+  }
+
+  // SharedIdentity queries shared identity across chains
+  rpc SharedIdentity(QuerySharedIdentityRequest) returns (QuerySharedIdentityResponse) {
+    option (google.api.http).get = "/aura/bridge/v1beta1/identity/{address}";
+  }
+
+  // CrossChainSwap queries cross-chain swap status
+  rpc CrossChainSwap(QueryCrossChainSwapRequest) returns (QueryCrossChainSwapResponse) {
+    option (google.api.http).get = "/aura/bridge/v1beta1/swaps/{swap_id}";
+  }
+
+  // BridgeStats queries bridge statistics
+  rpc BridgeStats(QueryBridgeStatsRequest) returns (QueryBridgeStatsResponse) {
+    option (google.api.http).get = "/aura/bridge/v1beta1/stats";
+  }
+
+  // Validators queries active bridge validators
+  rpc Validators(QueryValidatorsRequest) returns (QueryValidatorsResponse) {
+    option (google.api.http).get = "/aura/bridge/v1beta1/validators";
+  }
+
+  // RelayerStats queries relayer performance stats
+  rpc RelayerStats(QueryRelayerStatsRequest) returns (QueryRelayerStatsResponse) {
+    option (google.api.http).get = "/aura/bridge/v1beta1/relayers/{relayer_address}";
+  }
+}
+
+// Transfer queries
+message QueryTransferRequest {
+  string transfer_id = 1;
+}
+
+message QueryTransferResponse {
+  CrossChainTransfer transfer = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryAllTransfersRequest {
+  // Optional status filter
+  string status = 1;
+}
+
+message QueryAllTransfersResponse {
+  repeated CrossChainTransfer transfers = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryUserTransfersRequest {
+  string address = 1;
+  // Optional chain filter
+  string chain = 2;
+}
+
+message QueryUserTransfersResponse {
+  repeated CrossChainTransfer transfers = 1 [(gogoproto.nullable) = false];
+}
+
+// Chain config queries
+message QueryChainConfigRequest {
+  string chain_id = 1;
+}
+
+message QueryChainConfigResponse {
+  ChainConfig config = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryAllChainsRequest {}
+
+message QueryAllChainsResponse {
+  repeated ChainConfig chains = 1 [(gogoproto.nullable) = false];
+}
+
+// Wrapped token queries
+message QueryWrappedTokenRequest {
+  string wrapped_denom = 1;
+}
+
+message QueryWrappedTokenResponse {
+  WrappedToken token = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryAllWrappedTokensRequest {}
+
+message QueryAllWrappedTokensResponse {
+  repeated WrappedToken tokens = 1 [(gogoproto.nullable) = false];
+}
+
+// Shared identity queries
+message QuerySharedIdentityRequest {
+  string address = 1;
+}
+
+message QuerySharedIdentityResponse {
+  SharedIdentity identity = 1 [(gogoproto.nullable) = false];
+}
+
+// Cross-chain swap queries
+message QueryCrossChainSwapRequest {
+  string swap_id = 1;
+}
+
+message QueryCrossChainSwapResponse {
+  CrossChainSwap swap = 1 [(gogoproto.nullable) = false];
+}
+
+// Bridge stats queries
+message QueryBridgeStatsRequest {}
+
+message QueryBridgeStatsResponse {
+  // Total transfers processed
+  uint64 total_transfers = 1;
+
+  // Transfers by status
+  map<string, uint64> transfers_by_status = 2;
+
+  // Total volume by chain
+  map<string, string> volume_by_chain = 3;
+
+  // Total wrapped tokens
+  uint64 total_wrapped_tokens = 4;
+
+  // Active validators
+  uint64 active_validators = 5;
+
+  // Active relayers
+  uint64 active_relayers = 6;
+
+  // Average completion time (seconds)
+  uint64 avg_completion_time = 7;
+}
+
+// Validator queries
+message QueryValidatorsRequest {}
+
+message QueryValidatorsResponse {
+  repeated BridgeValidator validators = 1 [(gogoproto.nullable) = false];
+}
+
+// Relayer stats queries
+message QueryRelayerStatsRequest {
+  string relayer_address = 1;
+}
+
+message QueryRelayerStatsResponse {
+  RelayerStats stats = 1 [(gogoproto.nullable) = false];
+}

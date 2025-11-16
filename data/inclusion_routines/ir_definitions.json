@@ -1,0 +1,1870 @@
+{
+  "version": "1.0",
+  "total_count": 181,
+  "last_updated": "2025-11-13",
+  "source_document": "Auquitas AURAcoin Blockchain.md",
+  "description": "Complete list of Inclusion Routines (IRs) for the Aequitas Protocol identity verification system",
+  "inclusion_routines": [
+    {
+      "id": "IR-000",
+      "arena": "ANCHOR",
+      "name": "Government ID Anchor",
+      "description": "(Non-Negotiable Prerequisite) User must complete a one-time, AI-witnessed scan of a valid, government-issued photo ID (e.g., Passport, Driver's License) paired with a full-spectrum liveness check. This anchors the wallet to a legal identity.",
+      "score": 0,
+      "is_prerequisite": true,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-101",
+      "arena": "Biometric",
+      "name": "Simple Liveness",
+      "description": "Standard \"turn head, smile, blink\" check.",
+      "score": 50,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-102",
+      "arena": "Biometric",
+      "name": "Randomized Pose",
+      "description": "AI requests 3 random, complex poses (e.g., \"left hand 3 fingers, touch right ear\").",
+      "score": 300,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-103",
+      "arena": "Biometric",
+      "name": "Emotional Response",
+      "description": "AI requests user to display 3 random emotions (e.g., \"Surprise,\" \"Anger\").",
+      "score": 350,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-104",
+      "arena": "Biometric",
+      "name": "Voiceprint (Static)",
+      "description": "User reads a standard phonetically-balanced phrase to create a voiceprint.",
+      "score": 150,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-105",
+      "arena": "Biometric",
+      "name": "Voiceprint (Dynamic)",
+      "description": "AI provides 3 random, complex \"tongue-twister\" phrases to be read aloud.",
+      "score": 350,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-106",
+      "arena": "Biometric",
+      "name": "Gait Analysis",
+      "description": "User walks 10 paces from the camera and back, proving a unique \"walk.\"",
+      "score": 400,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-107",
+      "arena": "Biometric",
+      "name": "Hand Geometry",
+      "description": "User places their hand flat on a plain surface for AI to scan geometry and creases.",
+      "score": 200,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-108",
+      "arena": "Biometric",
+      "name": "Iris Scan",
+      "description": "(Requires high-res camera) User performs a close-up scan of their iris.",
+      "score": 700,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-109",
+      "arena": "Biometric",
+      "name": "Keystroke Dynamics",
+      "description": "User must type a 100-word paragraph provided by the AI. AI analyzes typing rhythm.",
+      "score": 250,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-110",
+      "arena": "Biometric",
+      "name": "Signature Dynamics",
+      "description": "User must sign their name 3 times on-screen with their finger or a stylus.",
+      "score": 200,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-111",
+      "arena": "Biometric",
+      "name": "\"Whisper\" Authentication",
+      "description": "User must whisper 3 secret words provided by the AI.",
+      "score": 300,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-112",
+      "arena": "Biometric",
+      "name": "Saccadic Eye Movement",
+      "description": "AI displays a fast-moving dot; user must follow it with their eyes only.",
+      "score": 450,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-113",
+      "arena": "Biometric",
+      "name": "Multi-Modal Sync",
+      "description": "User must tap the screen, snap their fingers, and say a word, all at the same time.",
+      "score": 500,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-114",
+      "arena": "Biometric",
+      "name": "Light Response",
+      "description": "AI flashes a white screen; AI analyzes pupil dilation response.",
+      "score": 250,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-115",
+      "arena": "Biometric",
+      "name": "3D Face Mesh",
+      "description": "AI requests a 360-degree head rotation to build a detailed 3D mesh.",
+      "score": 600,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-116",
+      "arena": "Biometric",
+      "name": "Micro-Expression Check",
+      "description": "AI analyzes user's face for micro-expressions in response to 5 rapid images.",
+      "score": 400,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-117",
+      "arena": "Biometric",
+      "name": "Voice Pitch Range",
+      "description": "User must sing or speak a phrase from their lowest to highest pitch.",
+      "score": 200,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-118",
+      "arena": "Biometric",
+      "name": "Held Breath",
+      "description": "User must hold their breath for 20 seconds while AI monitors for micro-movements.",
+      "score": 150,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-119",
+      "arena": "Biometric",
+      "name": "Coordinated Movement",
+      "description": "AI requests user to tap their head and rub their stomach simultaneously.",
+      "score": 300,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-120",
+      "arena": "Biometric",
+      "name": "Heart Rate (Camera)",
+      "description": "User places finger over camera lens for 30 seconds for AI to estimate heart rate.",
+      "score": 250,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-201",
+      "arena": "Possession",
+      "name": "Credit/Debit Card",
+      "description": "User must scan a physical card. AI verifies name (must match anchor) and card network.",
+      "score": 300,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-202",
+      "arena": "Possession",
+      "name": "Secondary ID",
+      "description": "User scans a different non-anchor ID (e.g., student ID, work badge, library card).",
+      "score": 200,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-203",
+      "arena": "Possession",
+      "name": "Utility Bill (Physical)",
+      "description": "User must show a paper utility bill (gas, electric) dated < 60 days.",
+      "score": 400,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-204",
+      "arena": "Possession",
+      "name": "Bank Statement (Physical)",
+      "description": "User must show a paper bank statement.",
+      "score": 400,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-205",
+      "arena": "Possession",
+      "name": "Diploma / Degree",
+      "description": "User scans a physical diploma. AI verifies institution and name.",
+      "score": 500,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-206",
+      "arena": "Possession",
+      "name": "Professional License",
+      "description": "User scans a physical state-issued professional license (e.g., medical, law).",
+      "score": 700,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-207",
+      "arena": "Possession",
+      "name": "Car Keys / Fob",
+      "description": "User must show a car key fob; AI requests user to press \"lock\" (verifies light).",
+      "score": 150,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-208",
+      "arena": "Possession",
+      "name": "Vehicle Registration",
+      "description": "User scans official vehicle registration document.",
+      "score": 450,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-209",
+      "arena": "Possession",
+      "name": "Vehicle Title",
+      "description": "User scans official vehicle title document.",
+      "score": 600,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-210",
+      "arena": "Possession",
+      "name": "Property Deed / Lease",
+      "description": "User scans first page of a property deed or active lease agreement.",
+      "score": 650,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-211",
+      "arena": "Possession",
+      "name": "\"The Fridge Raider\"",
+      "description": "AI-witnessed walk to kitchen; user must scan barcode of a common item (e.g., milk, ketchup).",
+      "score": 250,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-212",
+      "arena": "Possession",
+      "name": "Pet Scan",
+      "description": "User must get their pet (dog/cat) on camera and have AI verify it is a live animal.",
+      "score": 200,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-213",
+      "arena": "Possession",
+      "name": "House Key",
+      "description": "User must show a standard house key.",
+      "score": 50,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-214",
+      "arena": "Possession",
+      "name": "Prescription Medication",
+      "description": "User shows a prescription bottle with their name (AI verifies name matches anchor).",
+      "score": 400,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-215",
+      "arena": "Possession",
+      "name": "Birth Certificate",
+      "description": "User scans their birth certificate.",
+      "score": 750,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-216",
+      "arena": "Possession",
+      "name": "Social Security Card",
+      "description": "(US) User scans their physical Social Security card.",
+      "score": 750,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["US"]
+    },
+    {
+      "id": "IR-217",
+      "arena": "Possession",
+      "name": "Marriage Certificate",
+      "description": "User scans their marriage certificate.",
+      "score": 500,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-218",
+      "arena": "Possession",
+      "name": "\"The Bookshelf\"",
+      "description": "User must pull a physical book from a shelf and read the first sentence of a random page.",
+      "score": 150,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-219",
+      "arena": "Possession",
+      "name": "\"The Sock Drawer\"",
+      "description": "AI-witnessed walk to a drawer; user must pull out a pair of socks.",
+      "score": 100,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-220",
+      "arena": "Possession",
+      "name": "\"Junk Drawer\"",
+      "description": "User must show a \"junk drawer\" item (e.g., batteries, tape).",
+      "score": 100,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-221",
+      "arena": "Possession",
+      "name": "Passport (Secondary)",
+      "description": "If IR-000 was a driver's license, user scans their passport.",
+      "score": 800,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-222",
+      "arena": "Possession",
+      "name": "Driver's License (Secondary)",
+      "description": "If IR-000 was a passport, user scans their driver's license.",
+      "score": 700,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-223",
+      "arena": "Possession",
+      "name": "\"The Spice Rack\"",
+      "description": "User must find and scan the barcode of a specific spice (e.g., \"Paprika\").",
+      "score": 200,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-224",
+      "arena": "Possession",
+      "name": "\"Toolshed\"",
+      "description": "User must show a common tool (e.g., hammer, screwdriver).",
+      "score": 150,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-225",
+      "arena": "Possession",
+      "name": "Live Event Ticket",
+      "description": "User shows a physical ticket for a concert/event on the day of the event.",
+      "score": 300,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-301",
+      "arena": "Knowledge",
+      "name": "Email Loop (Low Trust)",
+      "description": "User clicks a verification link sent to a webmail (Gmail, Hotmail).",
+      "score": 50,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-302",
+      "arena": "Knowledge",
+      "name": "Email Loop (High Trust)",
+      "description": "User clicks a verification link sent to a .edu, .gov, or corporate email.",
+      "score": 350,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-303",
+      "arena": "Knowledge",
+      "name": "SMS Verification",
+      "description": "User provides a 6-digit code sent to their mobile number.",
+      "score": 100,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-304",
+      "arena": "Knowledge",
+      "name": "Utility Bill (Digital)",
+      "description": "User must log in to their utility provider's website and show the PDF bill.",
+      "score": 500,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-305",
+      "arena": "Knowledge",
+      "name": "Bank Account (Digital)",
+      "description": "User must log in to their bank's website. AI verifies the URL and user name.",
+      "score": 700,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-306",
+      "arena": "Knowledge",
+      "name": "Phone Bill (Digital)",
+      "description": "User must log in to their mobile carrier's website and show the PDF bill.",
+      "score": 550,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-307",
+      "arena": "Knowledge",
+      "name": "Social Graph (LinkedIn)",
+      "description": "User links a LinkedIn account. AI verifies > 100 connections and > 2 years history.",
+      "score": 300,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-308",
+      "arena": "Knowledge",
+      "name": "Social Graph (Facebook)",
+      "description": "User links a Facebook account. AI verifies > 100 friends and > 5 years history.",
+      "score": 250,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-309",
+      "arena": "Knowledge",
+      "name": "Social Graph (Twitter/X)",
+      "description": "User links a Twitter/X account. AI verifies > 100 followers and > 3 years history.",
+      "score": 200,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-310",
+      "arena": "Knowledge",
+      "name": "\"Photo History\" Quest",
+      "description": "AI requests user to find a photo from their camera roll from a random date (e.g., \"July 2022\").",
+      "score": 400,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-311",
+      "arena": "Knowledge",
+      "name": "Device History",
+      "description": "AI verifies the \"age\" of the mobile device OS (e.g., \"first use > 2 years ago\").",
+      "score": 300,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-312",
+      "arena": "Knowledge",
+      "name": "2FA App Sync",
+      "description": "User proves control of a 2FA app (e.g., Google Auth) by entering a time-based code.",
+      "score": 450,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-313",
+      "arena": "Knowledge",
+      "name": "Crypto Wallet (Holdings)",
+      "description": "User signs a message with a different crypto wallet (BTC/ETH) holding > $100.",
+      "score": 350,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-314",
+      "arena": "Knowledge",
+      "name": "Crypto Wallet (Age)",
+      "description": "User signs a message with a wallet that has an on-chain history > 3 years.",
+      "score": 500,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-315",
+      "arena": "Knowledge",
+      "name": "KYC Pass-Thru (Exchange)",
+      "description": "User proves active, KYC-verified login at a major crypto exchange.",
+      "score": 800,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-316",
+      "arena": "Knowledge",
+      "name": "KYC Pass-Thru (Bank)",
+      "description": "User proves active, KYC-verified login at a major online bank.",
+      "score": 800,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-317",
+      "arena": "Knowledge",
+      "name": "GitHub Account",
+      "description": "User links a GitHub account. AI verifies > 1 year history and > 10 commits.",
+      "score": 300,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-318",
+      "arena": "Knowledge",
+      "name": "Stack Overflow Account",
+      "description": "User links account with > 500 reputation.",
+      "score": 350,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-319",
+      "arena": "Knowledge",
+      "name": "Reddit Account",
+      "description": "User links account with > 1,000 karma and > 3 years history.",
+      "score": 250,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-320",
+      "arena": "Knowledge",
+      "name": "\"AGI Retrieval\" (US)",
+      "description": "User must log into IRS.gov and retrieve their AGI from the previous year's tax return.",
+      "score": 1500,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["US"]
+    },
+    {
+      "id": "IR-321",
+      "arena": "Knowledge",
+      "name": "\"Credit Score\" (US)",
+      "description": "User logs into Credit Karma / Experian and shows their credit score.",
+      "score": 600,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["US"]
+    },
+    {
+      "id": "IR-322",
+      "arena": "Knowledge",
+      "name": "Domain Ownership",
+      "description": "User proves ownership of a domain name by adding a TXT record.",
+      "score": 500,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-323",
+      "arena": "Knowledge",
+      "name": "\"Amazon Order History\"",
+      "description": "User logs into Amazon and shows an order from > 3 years ago.",
+      "score": 300,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-324",
+      "arena": "Knowledge",
+      "name": "\"Netflix Profile\"",
+      "description": "User logs into Netflix and shows a profile with > 2 years of watch history.",
+      "score": 200,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-325",
+      "arena": "Knowledge",
+      "name": "\"Spotify Profile\"",
+      "description": "User logs into Spotify and shows a profile with > 3 years of listening.",
+      "score": 200,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-326",
+      "arena": "Knowledge",
+      "name": "Steam Account",
+      "description": "User links a Steam account with > $100 in games and > 3 years history.",
+      "score": 250,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-327",
+      "arena": "Knowledge",
+      "name": "\"Paystub\" (Digital)",
+      "description": "User shows a PDF paystub from their employer dated < 30 days.",
+      "score": 600,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-328",
+      "arena": "Knowledge",
+      "name": "Insurance Portal",
+      "description": "User logs into their car or health insurance portal.",
+      "score": 550,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-329",
+      "arena": "Knowledge",
+      "name": "\"Google Maps History\"",
+      "description": "User shows their Google Maps timeline from a random, prior date.",
+      "score": 400,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-330",
+      "arena": "Knowledge",
+      "name": "PGP Key",
+      "description": "User signs a message using a PGP key from a public keyserver.",
+      "score": 300,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-401",
+      "arena": "Social",
+      "name": "Peer Vouch (Level 1)",
+      "description": "User is vouched for (via signed message) by 1 other \"Verified\" user.",
+      "score": 100,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-402",
+      "arena": "Social",
+      "name": "Peer Vouch (Level 2)",
+      "description": "User is vouched for by 3 other \"Verified\" users.",
+      "score": 350,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-403",
+      "arena": "Social",
+      "name": "Peer Vouch (Level 3)",
+      "description": "User is vouched for by 5 other \"Verified\" users.",
+      "score": 700,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-404",
+      "arena": "Social",
+      "name": "Live Vouch (Family)",
+      "description": "User joins a live 3-way video call with a \"Verified\" user they claim is family.",
+      "score": 500,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-405",
+      "arena": "Social",
+      "name": "Live Vouch (Spouse)",
+      "description": "User joins a live video call with a \"Verified\" spouse. Both must show marriage cert.",
+      "score": 800,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-406",
+      "arena": "Social",
+      "name": "Live Vouch (Friend)",
+      "description": "User joins a live 3-way video call with a \"Verified\" user they claim is a friend.",
+      "score": 400,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-407",
+      "arena": "Social",
+      "name": "Employer Vouch",
+      "description": "A \"Verified\" user with a \"Focus: Corporate\" vouches for the user as an employee.",
+      "score": 600,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-408",
+      "arena": "Social",
+      "name": "\"Shared Secret\"",
+      "description": "User and a \"Verified\" friend are given 5 questions; must answer identically.",
+      "score": 300,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-409",
+      "arena": "Social",
+      "name": "\"In-Person Vouch\"",
+      "description": "User meets a \"Verified\" user in person; both scan a QR code at the same time/GPS.",
+      "score": 750,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-410",
+      "arena": "Social",
+      "name": "\"Notary Vouch\"",
+      "description": "A \"Verified\" public notary performs a remote online notarization for the user.",
+      "score": 1500,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-411",
+      "arena": "Social",
+      "name": "\"Doctor Vouch\"",
+      "description": "A \"Verified\" user with a \"Focus: Medical\" vouches for the user as a patient.",
+      "score": 1000,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-412",
+      "arena": "Social",
+      "name": "\"Landlord Vouch\"",
+      "description": "A \"Verified\" user with a \"Focus: Property\" vouches for the user as a tenant.",
+      "score": 600,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-413",
+      "arena": "Social",
+      "name": "\"Alumni Vouch\"",
+      "description": "User is vouched for by 3 \"Verified\" users who are also verified alumni of the same school.",
+      "score": 500,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-414",
+      "arena": "Social",
+      "name": "\"Conference Vouch\"",
+      "description": "User attends a real-world event and gets 5 \"Verified\" attendees to vouch for them.",
+      "score": 400,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-415",
+      "arena": "Social",
+      "name": "\"Family Photo\"",
+      "description": "User and 3 \"Verified\" family members must all join a video call at the same time.",
+      "score": 700,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-416",
+      "arena": "Social",
+      "name": "\"Pet Vouch\"",
+      "description": "User and a \"Verified\" friend must both show their pets on a live video call.",
+      "score": 100,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-417",
+      "arena": "Social",
+      "name": "\"Local Vouch\"",
+      "description": "User is vouched for by 3 \"Verified\" users who live in the same zip code.",
+      "score": 450,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-418",
+      "arena": "Social",
+      "name": "\"Hobby Vouch\"",
+      "description": "User is vouched for by 3 \"Verified\" users who are part of a verified \"Hobby\" club.",
+      "score": 300,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-419",
+      "arena": "Social",
+      "name": "\"Gamer Vouch\"",
+      "description": "User is vouched for by 3 \"Verified\" users from the same \"Verified\" gaming guild.",
+      "score": 250,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-420",
+      "arena": "Social",
+      "name": "\"Co-Worker Vouch\"",
+      "description": "User is vouched for by 3 \"Verified\" users who all work at the same \"Verified\" company.",
+      "score": 650,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-501",
+      "arena": "Geo-Location",
+      "name": "\"Mailbox Quest\"",
+      "description": "AI-witnessed walk (with GPS) to user's home mailbox. User must retrieve a piece of mail.",
+      "score": 500,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-502",
+      "arena": "Geo-Location",
+      "name": "\"Home\" Check-in",
+      "description": "User checks in from their verified home address GPS coordinates.",
+      "score": 100,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-503",
+      "arena": "Geo-Location",
+      "name": "\"Work\" Check-in",
+      "description": "User checks in from their verified work address GPS coordinates.",
+      "score": 150,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-504",
+      "arena": "Geo-Location",
+      "name": "\"ATM Visit\"",
+      "description": "User goes to a bank ATM, enables mic, and AI listens for ATM machine sounds.",
+      "score": 300,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-505",
+      "arena": "Geo-Location",
+      "name": "\"Post Office\" Quest",
+      "description": "User goes to a Post Office, buys a stamp, and scans the receipt. GPS must match.",
+      "score": 600,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-506",
+      "arena": "Geo-Location",
+      "name": "\"Public Landmark\"",
+      "description": "AI gives user a quest to visit a specific, random public landmark in their city.",
+      "score": 400,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-507",
+      "arena": "Geo-Location",
+      "name": "\"Daily Commute\"",
+      "description": "User records their commute (home to work) for 3 consecutive days.",
+      "score": 700,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-508",
+      "arena": "Geo-Location",
+      "name": "\"Store Receipt\"",
+      "description": "User buys an item from a store and scans the receipt. GPS must match store.",
+      "score": 300,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-509",
+      "arena": "Geo-Location",
+      "name": "\"Gas Station\"",
+      "description": "User buys gas and scans the receipt. AI matches GPS and receipt data.",
+      "score": 300,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-510",
+      "arena": "Geo-Location",
+      "name": "\"Coffee Shop\"",
+      "description": "User buys a coffee and scans the receipt.",
+      "score": 250,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-511",
+      "arena": "Geo-Location",
+      "name": "\"Library Visit\"",
+      "description": "User visits a public library, logs into the WiFi, and shows the portal.",
+      "score": 400,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-512",
+      "arena": "Geo-Location",
+      "name": "\"Airport\" Check-in",
+      "description": "User scans a boarding pass at an airport on the day of travel.",
+      "score": 600,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-513",
+      "arena": "Geo-Location",
+      "name": "\"Hotel\" Check-in",
+      "description": "User scans their hotel room key card and shows the hotel's WiFi portal.",
+      "score": 450,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-514",
+      "arena": "Geo-Location",
+      "name": "\"National Park\"",
+      "description": "User visits a national park and takes a photo of a specific (AI-requested) sign.",
+      "score": 500,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-515",
+      "arena": "Geo-Location",
+      "name": "\"Cemetery Visit\"",
+      "description": "AI gives user quest to find a specific (publicly listed) tombstone and take a photo.",
+      "score": 350,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-516",
+      "arena": "Geo-Location",
+      "name": "\"DMV Visit\"",
+      "description": "(Failure Recovery) User enables AI witness, goes to DMV, and scans a queue ticket.",
+      "score": 1000,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-517",
+      "arena": "Geo-Location",
+      "name": "\"Bank Visit\"",
+      "description": "(Failure Recovery) User enables AI witness, goes to bank, and scans a deposit receipt.",
+      "score": 900,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-518",
+      "arena": "Geo-Location",
+      "name": "\"Police Station\"",
+      "description": "User takes a photo of the front of a local police station. GPS must match.",
+      "score": 300,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-519",
+      "arena": "Geo-Location",
+      "name": "\"Public Transport\"",
+      "description": "User scans a valid public transport ticket (bus, subway) during rush hour.",
+      "score": 250,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-520",
+      "arena": "Geo-Location",
+      "name": "\"Sunrise\" Quest",
+      "description": "User must take a live, AI-witnessed video of the sunrise.",
+      "score": 200,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-521",
+      "arena": "Geo-Location",
+      "name": "\"Sunset\" Quest",
+      "description": "User must take a live, AI-witnessed video of the sunset.",
+      "score": 200,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-522",
+      "arena": "Geo-Location",
+      "name": "\"Local Weather\"",
+      "description": "User must perform a specific action (e.g., \"show the rain\") during a verified local weather event.",
+      "score": 300,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-523",
+      "arena": "Geo-Location",
+      "name": "\"Grocery Run\"",
+      "description": "User must scan 5 specific, common items (e.g., Apple, Bread) at a grocery store.",
+      "score": 400,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-524",
+      "arena": "Geo-Location",
+      "name": "\"International\" Check-in",
+      "description": "User checks in from a GPS location outside their home country.",
+      "score": 700,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-525",
+      "arena": "Geo-Location",
+      "name": "\"Border Crossing\"",
+      "description": "User scans a passport stamp within 24 hours of receiving it.",
+      "score": 800,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-601",
+      "arena": "High-Assurance",
+      "name": "Remote Online Notary",
+      "description": "User completes a full, live, AI-witnessed Remote Online Notarization (RON).",
+      "score": 2000,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-602",
+      "arena": "High-Assurance",
+      "name": "Bank Letter",
+      "description": "User scans a physically mailed, recent \"Letter of Good Standing\" from their bank.",
+      "score": 1200,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-603",
+      "arena": "High-Assurance",
+      "name": "Credit Score (Hard)",
+      "description": "User initiates a \"hard pull\" of their credit, proving access to their SSN/SIN.",
+      "score": 1500,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["US", "CA"]
+    },
+    {
+      "id": "IR-604",
+      "arena": "High-Assurance",
+      "name": "Professional License (Active)",
+      "description": "AI verifies user's name on a live state/gov't database (e.g., state bar, medical board).",
+      "score": 1300,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-605",
+      "arena": "High-Assurance",
+      "name": "Voter Registration",
+      "description": "AI verifies user's name and address on a public voter registration roll.",
+      "score": 900,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-606",
+      "arena": "High-Assurance",
+      "name": "Property Ownership",
+      "description": "AI verifies user's name on a public county/city property tax database.",
+      "score": 1400,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-607",
+      "arena": "High-Assurance",
+      "name": "Tax Return (Full)",
+      "description": "User uploads a redacted copy of their last federal tax return (AI matches name, AGI).",
+      "score": 1600,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-608",
+      "arena": "High-Assurance",
+      "name": "Pilot's License",
+      "description": "AI verifies user's name on the FAA (or equivalent) pilot database.",
+      "score": 1200,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-609",
+      "arena": "High-Assurance",
+      "name": "Amateur Radio License",
+      "description": "AI verifies user's call sign and name on the FCC (or equivalent) database.",
+      "score": 700,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-610",
+      "arena": "High-Assurance",
+      "name": "Military ID",
+      "description": "User scans a valid (non-classified) military ID or veteran's card.",
+      "score": 1100,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-611",
+      "arena": "High-Assurance",
+      "name": "\"Trusted Traveler\"",
+      "description": "User scans their Global Entry, NEXUS, or SENTRI card.",
+      "score": 1000,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["US", "CA", "MX"]
+    },
+    {
+      "id": "IR-612",
+      "arena": "High-Assurance",
+      "name": "Academic Publication",
+      "description": "User proves authorship of a paper in a recognized academic journal.",
+      "score": 800,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-613",
+      "arena": "High-Assurance",
+      "name": "Corporate Officer",
+      "description": "AI verifies user's name as a registered officer of a corporation.",
+      "score": 1300,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-614",
+      "arena": "High-Assurance",
+      "name": "Security Clearance",
+      "description": "User attests to holding a (non-verifiable) clearance; high-value \"honeypot\" task.",
+      "score": 500,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-615",
+      "arena": "High-Assurance",
+      "name": "\"Proof-of-Debt\"",
+      "description": "User proves login to their student loan or mortgage provider portal.",
+      "score": 700,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-616",
+      "arena": "High-Assurance",
+      "name": "Court Record",
+      "description": "User proves they are a party in a (public) civil court filing.",
+      "score": 600,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-617",
+      "arena": "High-Assurance",
+      "name": "UCC Filing",
+      "description": "User proves they are party to a Uniform Commercial Code filing.",
+      "score": 800,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-618",
+      "arena": "High-Assurance",
+      "name": "Patent Ownership",
+      "description": "User proves they are the listed inventor on a granted patent.",
+      "score": 1200,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-619",
+      "arena": "High-Assurance",
+      "name": "\"Proof-of-Insurance\"",
+      "description": "User shows their active, digital insurance card (auto, health).",
+      "score": 600,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-620",
+      "arena": "High-Assurance",
+      "name": "Business License",
+      "description": "User scans a city or state-issued business license.",
+      "score": 900,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-701",
+      "arena": "Persistence",
+      "name": "Daily Check-in",
+      "description": "User completes a simple liveness check for 7 consecutive days.",
+      "score": 300,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-702",
+      "arena": "Persistence",
+      "name": "Weekly Quest",
+      "description": "User completes one random, AI-assigned IR (from any Arena) for 4 consecutive weeks.",
+      "score": 800,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-703",
+      "arena": "Persistence",
+      "name": "\"Proof-of-Life\" (30d)",
+      "description": "User maintains the app's \"heartbeat\" (passive check-in) for 30 days.",
+      "score": 500,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-704",
+      "arena": "Persistence",
+      "name": "\"Proof-of-Life\" (90d)",
+      "description": "User maintains the app's \"heartbeat\" for 90 days.",
+      "score": 1000,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-705",
+      "arena": "Persistence",
+      "name": "\"Proof-of-Life\" (365d)",
+      "description": "User maintains the app's \"heartbeat\" for 1 full year.",
+      "score": 2500,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-706",
+      "arena": "Persistence",
+      "name": "\"Financial Transaction\"",
+      "description": "User proves 1 financial transaction (e.g., coffee) every day for 5 days.",
+      "score": 400,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-707",
+      "arena": "Persistence",
+      "name": "\"Data Feed\"",
+      "description": "User provides a \"read-only\" API feed from their bank for 30 days.",
+      "score": 1500,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-708",
+      "arena": "Persistence",
+      "name": "\"Health Data\"",
+      "description": "User provides a \"read-only\" feed from their health app (e.g., Apple Health) for 30 days.",
+      "score": 1200,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-709",
+      "arena": "Persistence",
+      "name": "\"Node Uptime\"",
+      "description": "(Advanced) User runs a light node for the Aequitas protocol for 30 days.",
+      "score": 2000,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-710",
+      "arena": "Persistence",
+      "name": "\"Commute\" (Monthly)",
+      "description": "User proves their daily commute (IR-507) once per month for 6 months.",
+      "score": 1800,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-711",
+      "arena": "Persistence",
+      "name": "\"Bill Pay\"",
+      "description": "User proves they paid 3 different utility bills over a 3-month period.",
+      "score": 900,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-712",
+      "arena": "Persistence",
+      "name": "\"Social Media\"",
+      "description": "User makes one \"verified\" post on a linked social account every week for a month.",
+      "score": 300,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-713",
+      "arena": "Persistence",
+      "name": "\"AI Check-in\"",
+      "description": "User has a 2-minute \"conversation\" with their AI assistant once a week for a month.",
+      "score": 250,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-714",
+      "arena": "Persistence",
+      "name": "\"Random Audit\"",
+      "description": "User agrees to \"random audits\" and successfully completes 3 random IRs within 1 hour.",
+      "score": 1500,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-715",
+      "arena": "Persistence",
+      "name": "\"Wallet Age\"",
+      "description": "(Passive) The user's Aequitas wallet itself ages 1 year.",
+      "score": 500,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-801",
+      "arena": "Specialized",
+      "name": "Aadhaar Sync (India)",
+      "description": "User completes a verification using the Aadhaar biometric/OTP system.",
+      "score": 1500,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["IN"]
+    },
+    {
+      "id": "IR-802",
+      "arena": "Specialized",
+      "name": "eIDAS Sync (EU)",
+      "description": "User completes a verification using their eIDAS compatible national ID.",
+      "score": 1500,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["EU"]
+    },
+    {
+      "id": "IR-803",
+      "arena": "Specialized",
+      "name": "My Number Sync (Japan)",
+      "description": "User completes a verification using their \"My Number\" card.",
+      "score": 1400,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["JP"]
+    },
+    {
+      "id": "IR-804",
+      "arena": "Specialized",
+      "name": "SIN Sync (Canada)",
+      "description": "User proves knowledge of their Social Insurance Number (paired with other ID).",
+      "score": 1300,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["CA"]
+    },
+    {
+      "id": "IR-805",
+      "arena": "Specialized",
+      "name": "WeChat Pay (China)",
+      "description": "User proves active, verified login to WeChat Pay.",
+      "score": 1000,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["CN"]
+    },
+    {
+      "id": "IR-806",
+      "arena": "Specialized",
+      "name": "Alipay (China)",
+      "description": "User proves active, verified login to Alipay with \"Zhima Credit.\"",
+      "score": 1000,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["CN"]
+    },
+    {
+      "id": "IR-807",
+      "arena": "Specialized",
+      "name": "KakaoPay (S. Korea)",
+      "description": "User proves active, verified login to KakaoPay.",
+      "score": 900,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["KR"]
+    },
+    {
+      "id": "IR-808",
+      "arena": "Specialized",
+      "name": "\"University ID\"",
+      "description": "User scans a valid, active Student ID from any accredited university.",
+      "score": 300,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-809",
+      "arena": "Specialized",
+      "name": "\"Alumni Status\"",
+      "description": "AI verifies user's name on a university's public alumni donation list.",
+      "score": 400,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-810",
+      "arena": "Specialized",
+      "name": "\"Public Library Card\"",
+      "description": "User scans their local public library card.",
+      "score": 200,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-811",
+      "arena": "Specialized",
+      "name": "\"Costco\" Card",
+      "description": "User scans their Costco or other wholesale club membership card.",
+      "score": 150,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-812",
+      "arena": "Specialized",
+      "name": "\"Frequent Flyer\"",
+      "description": "User proves > 50k miles status on a major airline.",
+      "score": 400,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-813",
+      "arena": "Specialized",
+      "name": "\"Blood Donor\"",
+      "description": "User scans their official blood donor card.",
+      "score": 300,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-814",
+      "arena": "Specialized",
+      "name": "\"Organ Donor\"",
+      "description": "User shows their driver's license (or other ID) with the organ donor symbol.",
+      "score": 200,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-815",
+      "arena": "Specialized",
+      "name": "\"Hunting/Fishing\"",
+      "description": "User scans a valid, state-issued hunting or fishing license.",
+      "score": 350,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-816",
+      "arena": "Specialized",
+      "name": "\"Concealed Carry\"",
+      "description": "User scans their (non-federal) concealed carry weapon permit.",
+      "score": 600,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["US"]
+    },
+    {
+      "id": "IR-817",
+      "arena": "Specialized",
+      "name": "\"Verified Gamer\"",
+      "description": "User links a \"Verified\" account from a partner gaming service (e.g., Blizzard).",
+      "score": 250,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-818",
+      "arena": "Specialized",
+      "name": "\"Spotify\" (Top 1%)",
+      "description": "User proves they were in the \"Top 1% of Listeners\" for an artist.",
+      "score": 100,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-819",
+      "arena": "Specialized",
+      "name": "\"First Email\"",
+      "description": "User proves access to their email account by forwarding their \"Welcome to Gmail/Hotmail\" email.",
+      "score": 700,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-820",
+      "arena": "Specialized",
+      "name": "\"Notary Public\"",
+      "description": "User proves they are a Notary Public by scanning their commission.",
+      "score": 1200,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-821",
+      "arena": "Specialized",
+      "name": "\"Clergy\"",
+      "description": "User proves they are ordained clergy via a recognized religious body.",
+      "score": 500,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-822",
+      "arena": "Specialized",
+      "name": "\"Farm\"",
+      "description": "User proves ownership of livestock (e.g., ear tag) or a registered \"Farm\" vehicle.",
+      "score": 700,
+      "is_prerequisite": false,
+      "privacy_tier": "medium",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-823",
+      "arena": "Specialized",
+      "name": "\"Ham Radio\"",
+      "description": "User (IR-609) performs a live, AI-witnessed broadcast of their call sign.",
+      "score": 900,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-824",
+      "arena": "Specialized",
+      "name": "\"MENSA\"",
+      "description": "User scans their MENSA membership card.",
+      "score": 400,
+      "is_prerequisite": false,
+      "privacy_tier": "low",
+      "locale_tags": ["global"]
+    },
+    {
+      "id": "IR-825",
+      "arena": "Specialized",
+      "name": "\"Reservation\"",
+      "description": "(US) User scans their \"Certificate of Degree of Indian Blood\" or tribal ID.",
+      "score": 800,
+      "is_prerequisite": false,
+      "privacy_tier": "high",
+      "locale_tags": ["US"]
+    }
+  ],
+  "metadata": {
+    "verification_threshold": 10000,
+    "arena_focus_threshold": 5000,
+    "arenas": [
+      {
+        "name": "ANCHOR",
+        "count": 1,
+        "description": "Non-negotiable prerequisite government ID verification"
+      },
+      {
+        "name": "Biometric",
+        "count": 20,
+        "description": "Proving unique, real-time human liveness"
+      },
+      {
+        "name": "Possession",
+        "count": 25,
+        "description": "Proving control over unique physical items and documents"
+      },
+      {
+        "name": "Knowledge",
+        "count": 30,
+        "description": "Proving active control over digital accounts, data, and access"
+      },
+      {
+        "name": "Social",
+        "count": 20,
+        "description": "Proving identity through a verified Web of Trust"
+      },
+      {
+        "name": "Geo-Location",
+        "count": 25,
+        "description": "Proving real-world presence and mobility"
+      },
+      {
+        "name": "High-Assurance",
+        "count": 20,
+        "description": "Proving connection to high-trust, official, and financial systems"
+      },
+      {
+        "name": "Persistence",
+        "count": 15,
+        "description": "Proving proof-of-life over an extended period"
+      },
+      {
+        "name": "Specialized",
+        "count": 25,
+        "description": "Region-specific and niche cultural routines"
+      }
+    ]
+  }
+}

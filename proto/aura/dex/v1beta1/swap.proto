@@ -1,0 +1,163 @@
+syntax = "proto3";
+package aura.dex.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/aequitas/aura/x/dex/types";
+
+// SwapOrderType represents buy or sell order
+// Adapted from simple_swap_gui.py SwapOrderType
+enum SwapOrderType {
+  BUY = 0;   // Buy AURA (sell other coin)
+  SELL = 1;  // Sell AURA (buy other coin)
+}
+
+// SwapOrderStatus represents order lifecycle
+// Adapted from simple_swap_gui.py SwapOrderStatus
+enum SwapOrderStatus {
+  PENDING = 0;       // Waiting for match
+  MATCHED = 1;       // Found counterparty
+  HTLC_CREATED = 2;  // Both HTLCs created
+  COMPLETED = 3;     // Swap finished
+  CANCELLED = 4;     // User cancelled
+  EXPIRED = 5;       // Timed out
+}
+
+// SwapOrder represents a P2P swap order on the orderbook
+// Adapted from simple_swap_gui.py SwapOrder class
+message SwapOrder {
+  // Unique order identifier
+  string order_id = 1;
+
+  // Buy or sell
+  SwapOrderType order_type = 2;
+
+  // Amount of AURA
+  string aura_amount = 3 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Other coin denomination (usdt, btc, eth, etc.)
+  string other_coin = 4;
+
+  // Amount of other coin
+  string other_amount = 5 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // User address
+  string user_address = 6;
+
+  // Order creation time
+  google.protobuf.Timestamp timestamp = 7 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+
+  // Current status
+  SwapOrderStatus status = 8;
+
+  // Matched order ID (if matched)
+  string matched_with = 9;
+
+  // HTLC data for atomic swap
+  HTLCData htlc_data = 10;
+
+  // Price per AURA (other_amount / aura_amount)
+  string price_per_aura = 11 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
+}
+
+// HTLCData contains Hash Time-Locked Contract information for trustless swaps
+// Adapted from simple_swap_gui.py _create_htlc_swap
+message HTLCData {
+  // SHA256 hash of secret
+  string secret_hash = 1;
+
+  // Secret (revealed when claiming)
+  string secret = 2;
+
+  // Timelock expiration
+  google.protobuf.Timestamp timelock = 3 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+
+  // HTLC status
+  string status = 4;
+
+  // Sender locks funds
+  string sender = 5;
+
+  // Recipient can claim with secret
+  string recipient = 6;
+
+  // Amount locked
+  string amount = 7 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Coin denomination
+  string denom = 8;
+
+  // Refund address (if timelock expires)
+  string refund_address = 9;
+}
+
+// MarketPrice tracks price from recent swap history
+// Adapted from simple_swap_gui.py MarketPriceTracker
+message MarketPrice {
+  // Coin symbol
+  string coin = 1;
+
+  // Price in USD (for reference)
+  string price_usd = 2 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
+
+  // Price in AURA
+  string price_aura = 3 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
+
+  // Last updated
+  google.protobuf.Timestamp updated_at = 4 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+
+  // Number of recent swaps used for calculation
+  uint64 sample_size = 5;
+}
+
+// Orderbook contains all active orders for a trading pair
+message Orderbook {
+  // Trading pair (e.g., "AURA/USDT")
+  string pair = 1;
+
+  // Buy orders (sorted by price descending)
+  repeated SwapOrder buy_orders = 2 [(gogoproto.nullable) = false];
+
+  // Sell orders (sorted by price ascending)
+  repeated SwapOrder sell_orders = 3 [(gogoproto.nullable) = false];
+
+  // Total pending orders
+  uint64 total_pending = 4;
+
+  // Best bid price
+  string best_bid = 5 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
+
+  // Best ask price
+  string best_ask = 6 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
+
+  // Spread percentage
+  string spread_percent = 7 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
+}

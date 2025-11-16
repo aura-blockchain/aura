@@ -1,0 +1,451 @@
+syntax = "proto3";
+package aura.economicsecurity.v1beta1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/economicsecurity/v1beta1";
+
+// TokenomicsConfig defines the core tokenomics parameters
+message TokenomicsConfig {
+  // Maximum supply cap (immutable once set)
+  string max_supply = 1;
+
+  // Current circulating supply
+  string circulating_supply = 2;
+
+  // Current inflation rate (percentage with 2 decimal precision, e.g., 500 = 5.00%)
+  uint64 inflation_rate = 3;
+
+  // Target inflation rate
+  uint64 target_inflation_rate = 4;
+
+  // Minimum inflation rate
+  uint64 min_inflation_rate = 5;
+
+  // Maximum inflation rate
+  uint64 max_inflation_rate = 6;
+
+  // Last inflation adjustment timestamp
+  google.protobuf.Timestamp last_inflation_adjustment = 7;
+
+  // Last inflation check timestamp
+  google.protobuf.Timestamp last_inflation_check = 8;
+}
+
+// VestingSchedule represents a vesting schedule for tokens
+message VestingSchedule {
+  // Unique ID for the vesting schedule
+  string schedule_id = 1;
+
+  // Beneficiary address
+  string beneficiary_address = 2;
+
+  // Total amount to vest
+  string total_amount = 3;
+
+  // Amount already vested
+  string vested_amount = 4;
+
+  // Start time of vesting
+  google.protobuf.Timestamp start_time = 5;
+
+  // Cliff duration in seconds
+  uint64 cliff_duration = 6;
+
+  // Vesting duration in seconds
+  uint64 vesting_duration = 7;
+
+  // Vesting type (linear, milestone, etc.)
+  VestingType vesting_type = 8;
+
+  // Schedule type (team, investor, advisor, etc.)
+  ScheduleType schedule_type = 9;
+
+  // Whether the schedule has been revoked
+  bool revoked = 10;
+
+  // Revocation time
+  google.protobuf.Timestamp revoked_at = 11;
+
+  // Revocation reason
+  string revoked_reason = 12;
+}
+
+// VestingType defines the type of vesting
+enum VestingType {
+  VESTING_TYPE_UNSPECIFIED = 0;
+  VESTING_TYPE_LINEAR = 1;
+  VESTING_TYPE_MILESTONE = 2;
+  VESTING_TYPE_CLIFF_THEN_LINEAR = 3;
+}
+
+// ScheduleType defines who the vesting schedule is for
+enum ScheduleType {
+  SCHEDULE_TYPE_UNSPECIFIED = 0;
+  SCHEDULE_TYPE_TEAM = 1;
+  SCHEDULE_TYPE_INVESTOR = 2;
+  SCHEDULE_TYPE_ADVISOR = 3;
+  SCHEDULE_TYPE_ECOSYSTEM = 4;
+  SCHEDULE_TYPE_COMMUNITY = 5;
+}
+
+// WhaleProtection defines anti-whale mechanisms
+message WhaleProtection {
+  // Whether whale protection is enabled
+  bool enabled = 1;
+
+  // Maximum percentage of total supply a single address can hold (basis points)
+  uint64 max_holding_percentage = 2;
+
+  // Maximum percentage of total supply for a single transaction (basis points)
+  uint64 max_tx_percentage = 3;
+
+  // Cooldown period between large transactions (seconds)
+  uint64 large_tx_cooldown = 4;
+
+  // Threshold for what constitutes a large transaction (percentage in basis points)
+  uint64 large_tx_threshold = 5;
+
+  // Exempted addresses (e.g., DEX contracts, liquidity pools)
+  repeated string exempted_addresses = 6;
+}
+
+// TransferTaxConfig defines transfer tax configuration
+message TransferTaxConfig {
+  // Whether transfer tax is enabled
+  bool enabled = 1;
+
+  // Base tax rate (basis points, e.g., 100 = 1%)
+  uint64 base_tax_rate = 2;
+
+  // Tax recipient address (treasury, burn, etc.)
+  string tax_recipient = 3;
+
+  // Percentage of tax to burn (basis points)
+  uint64 burn_percentage = 4;
+
+  // Percentage of tax to treasury (basis points)
+  uint64 treasury_percentage = 5;
+
+  // Percentage of tax to redistribute (basis points)
+  uint64 redistribute_percentage = 6;
+
+  // Exempted addresses (no tax applied)
+  repeated string exempted_addresses = 7;
+
+  // Dynamic tax adjustment based on market conditions
+  bool dynamic_adjustment_enabled = 8;
+
+  // Maximum tax rate for dynamic adjustment
+  uint64 max_tax_rate = 9;
+
+  // Minimum tax rate for dynamic adjustment
+  uint64 min_tax_rate = 10;
+}
+
+// LiquidityMiningConfig defines liquidity mining parameters
+message LiquidityMiningConfig {
+  // Whether liquidity mining is enabled
+  bool enabled = 1;
+
+  // Total rewards allocated for liquidity mining
+  string total_rewards_allocated = 2;
+
+  // Total rewards distributed
+  string total_rewards_distributed = 3;
+
+  // Maximum rewards per epoch
+  string max_rewards_per_epoch = 4;
+
+  // Current epoch number
+  uint64 current_epoch = 5;
+
+  // Epoch duration in blocks
+  uint64 epoch_duration_blocks = 6;
+
+  // Last distribution block height
+  uint64 last_distribution_height = 7;
+
+  // Reward multiplier for IR-verified users (basis points)
+  uint64 ir_verified_multiplier = 8;
+}
+
+// GovernanceConfig defines governance parameters
+message GovernanceConfig {
+  // Minimum stake required to create a proposal
+  string min_proposal_stake = 1;
+
+  // Whether quadratic voting is enabled
+  bool quadratic_voting_enabled = 2;
+
+  // Vote locking enabled
+  bool vote_locking_enabled = 3;
+
+  // Minimum lock duration for voting power boost (seconds)
+  uint64 min_lock_duration = 4;
+
+  // Maximum lock duration (seconds)
+  uint64 max_lock_duration = 5;
+
+  // Vote power multiplier per year locked (basis points)
+  uint64 lock_multiplier_per_year = 6;
+
+  // Proposal deposit amount
+  string proposal_deposit = 7;
+
+  // Quorum percentage required (basis points)
+  uint64 quorum_percentage = 8;
+
+  // Pass threshold percentage (basis points)
+  uint64 pass_threshold_percentage = 9;
+}
+
+// VoteLock represents a locked voting position
+message VoteLock {
+  // Unique lock ID
+  string lock_id = 1;
+
+  // Owner address
+  string owner = 2;
+
+  // Amount locked
+  string amount = 3;
+
+  // Lock start time
+  google.protobuf.Timestamp lock_start = 4;
+
+  // Lock end time
+  google.protobuf.Timestamp lock_end = 5;
+
+  // Voting power (amount * time multiplier)
+  string voting_power = 6;
+
+  // Whether the lock has been withdrawn
+  bool withdrawn = 7;
+}
+
+// TreasuryMultisig defines multi-signature treasury controls
+message TreasuryMultisig {
+  // Treasury address
+  string treasury_address = 1;
+
+  // Required number of signatures
+  uint32 threshold = 2;
+
+  // List of authorized signers
+  repeated string signers = 3;
+
+  // Spending limit without multisig (for small amounts)
+  string spending_limit = 4;
+
+  // Timelock duration for large transactions (seconds)
+  uint64 timelock_duration = 5;
+}
+
+// PendingTreasuryTx represents a pending treasury transaction
+message PendingTreasuryTx {
+  // Transaction ID
+  string tx_id = 1;
+
+  // Recipient address
+  string recipient = 2;
+
+  // Amount to transfer
+  string amount = 3;
+
+  // Description/purpose
+  string description = 4;
+
+  // Proposer address
+  string proposer = 5;
+
+  // List of addresses that have signed
+  repeated string signatures = 6;
+
+  // Creation time
+  google.protobuf.Timestamp created_at = 7;
+
+  // Execution time (after timelock)
+  google.protobuf.Timestamp executable_at = 8;
+
+  // Whether executed
+  bool executed = 9;
+
+  // Whether rejected
+  bool rejected = 10;
+}
+
+// DynamicFeeConfig defines dynamic fee adjustment parameters
+message DynamicFeeConfig {
+  // Whether dynamic fees are enabled
+  bool enabled = 1;
+
+  // Base fee (in micro units)
+  string base_fee = 2;
+
+  // Current fee multiplier (basis points)
+  uint64 current_multiplier = 3;
+
+  // Minimum fee multiplier
+  uint64 min_multiplier = 4;
+
+  // Maximum fee multiplier
+  uint64 max_multiplier = 5;
+
+  // Target block utilization percentage (basis points)
+  uint64 target_utilization = 6;
+
+  // Adjustment speed (how fast fees adjust)
+  uint64 adjustment_speed = 7;
+
+  // Recent block utilization (rolling average)
+  repeated uint64 recent_utilization = 8;
+
+  // Window size for utilization calculation
+  uint64 utilization_window = 9;
+}
+
+// MEVConfig defines MEV redistribution parameters
+message MEVConfig {
+  // Whether MEV redistribution is enabled
+  bool enabled = 1;
+
+  // Percentage of MEV to redistribute to users (basis points)
+  uint64 user_redistribution_percentage = 2;
+
+  // Percentage of MEV to validators (basis points)
+  uint64 validator_percentage = 3;
+
+  // Percentage of MEV to treasury (basis points)
+  uint64 treasury_percentage = 4;
+
+  // Percentage of MEV to burn (basis points)
+  uint64 burn_percentage = 5;
+
+  // Total MEV captured
+  string total_mev_captured = 6;
+
+  // Total MEV redistributed
+  string total_mev_redistributed = 7;
+
+  // MEV redistribution strategy
+  MEVRedistributionStrategy strategy = 8;
+}
+
+// MEVRedistributionStrategy defines how MEV is redistributed
+enum MEVRedistributionStrategy {
+  MEV_STRATEGY_UNSPECIFIED = 0;
+  MEV_STRATEGY_PROPORTIONAL_TO_STAKE = 1;
+  MEV_STRATEGY_PROPORTIONAL_TO_ACTIVITY = 2;
+  MEV_STRATEGY_EQUAL_DISTRIBUTION = 3;
+  MEV_STRATEGY_IR_WEIGHTED = 4;
+}
+
+// InflationAlert represents an inflation monitoring alert
+message InflationAlert {
+  // Alert ID
+  string alert_id = 1;
+
+  // Alert type
+  InflationAlertType alert_type = 2;
+
+  // Current inflation rate when alert triggered
+  uint64 current_inflation_rate = 3;
+
+  // Target inflation rate
+  uint64 target_inflation_rate = 4;
+
+  // Timestamp when alert was triggered
+  google.protobuf.Timestamp triggered_at = 5;
+
+  // Alert message
+  string message = 6;
+
+  // Severity level
+  AlertSeverity severity = 7;
+
+  // Whether action was taken
+  bool action_taken = 8;
+
+  // Action description
+  string action_description = 9;
+}
+
+// InflationAlertType defines types of inflation alerts
+enum InflationAlertType {
+  INFLATION_ALERT_TYPE_UNSPECIFIED = 0;
+  INFLATION_ALERT_TYPE_ABOVE_TARGET = 1;
+  INFLATION_ALERT_TYPE_BELOW_TARGET = 2;
+  INFLATION_ALERT_TYPE_ABOVE_MAX = 3;
+  INFLATION_ALERT_TYPE_BELOW_MIN = 4;
+  INFLATION_ALERT_TYPE_RAPID_CHANGE = 5;
+}
+
+// AlertSeverity defines alert severity levels
+enum AlertSeverity {
+  ALERT_SEVERITY_UNSPECIFIED = 0;
+  ALERT_SEVERITY_INFO = 1;
+  ALERT_SEVERITY_WARNING = 2;
+  ALERT_SEVERITY_CRITICAL = 3;
+  ALERT_SEVERITY_EMERGENCY = 4;
+}
+
+// LargeTxRecord tracks large transactions for whale protection
+message LargeTxRecord {
+  // Transaction hash
+  string tx_hash = 1;
+
+  // Sender address
+  string sender = 2;
+
+  // Recipient address
+  string recipient = 3;
+
+  // Amount transferred
+  string amount = 4;
+
+  // Percentage of total supply
+  uint64 percentage_of_supply = 5;
+
+  // Block height
+  uint64 block_height = 6;
+
+  // Timestamp
+  google.protobuf.Timestamp timestamp = 7;
+
+  // Whether flagged for review
+  bool flagged = 8;
+}
+
+// Params defines the parameters for the economic security module
+message Params {
+  // Tokenomics configuration
+  TokenomicsConfig tokenomics = 1;
+
+  // Whale protection configuration
+  WhaleProtection whale_protection = 2;
+
+  // Transfer tax configuration
+  TransferTaxConfig transfer_tax = 3;
+
+  // Liquidity mining configuration
+  LiquidityMiningConfig liquidity_mining = 4;
+
+  // Governance configuration
+  GovernanceConfig governance = 5;
+
+  // Treasury multisig configuration
+  TreasuryMultisig treasury_multisig = 6;
+
+  // Dynamic fee configuration
+  DynamicFeeConfig dynamic_fees = 7;
+
+  // MEV configuration
+  MEVConfig mev = 8;
+
+  // Inflation alert threshold (basis points deviation from target)
+  uint64 inflation_alert_threshold = 9;
+
+  // Inflation check interval (blocks)
+  uint64 inflation_check_interval = 10;
+}

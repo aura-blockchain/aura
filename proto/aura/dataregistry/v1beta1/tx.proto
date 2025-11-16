@@ -1,0 +1,98 @@
+syntax = "proto3";
+package aura.dataregistry.v1beta1;
+
+import "google/protobuf/timestamp.proto";
+import "aura/dataregistry/v1beta1/data_registry.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/dataregistry/v1beta1;dataregistrypb";
+
+// ============================
+// MSG SERVICE (State Transitions)
+// ============================
+
+// MsgStoreDataItem stores a new data item
+message MsgStoreDataItem {
+  string creator = 1;
+  DataItemType data_type = 2;
+  string title = 3;
+  string description = 4;
+  bytes content_hash = 5;
+  string storage_location = 6;              // IPFS CID
+  bool is_encrypted = 7;
+  GeoLocation geo_location = 8;             // Optional
+  map<string, string> metadata = 9;
+  AccessPolicy access_policy = 10;
+  bytes specialized_data = 11;              // Encoded GolfScoreData, etc.
+  repeated string tags = 12;
+}
+
+message MsgStoreDataItemResponse {
+  string data_id = 1;
+  google.protobuf.Timestamp created_at = 2;
+}
+
+// MsgUpdateDataItem updates an existing data item
+message MsgUpdateDataItem {
+  string creator = 1;
+  string data_id = 2;
+  string title = 3;
+  string description = 4;
+  map<string, string> metadata = 5;
+  AccessPolicy access_policy = 6;
+  repeated string tags = 7;
+}
+
+message MsgUpdateDataItemResponse {
+  google.protobuf.Timestamp updated_at = 1;
+}
+
+// MsgDeleteDataItem deletes a data item
+message MsgDeleteDataItem {
+  string creator = 1;
+  string data_id = 2;
+}
+
+message MsgDeleteDataItemResponse {
+  google.protobuf.Timestamp deleted_at = 1;
+}
+
+// MsgVerifyDataItem adds verification to a data item
+message MsgVerifyDataItem {
+  string verifier = 1;
+  string data_id = 2;
+  VerificationLevel level = 3;
+  uint64 confidence_score = 4;
+  string notes = 5;
+  string verification_method = 6;
+  bytes proof = 7;
+}
+
+message MsgVerifyDataItemResponse {
+  google.protobuf.Timestamp verified_at = 1;
+  uint64 verification_reward = 2;
+}
+
+// MsgRevokeDataItem revokes a data item (governance/authority)
+message MsgRevokeDataItem {
+  string authority = 1;
+  string data_id = 2;
+  string reason = 3;
+}
+
+message MsgRevokeDataItemResponse {
+  google.protobuf.Timestamp revoked_at = 1;
+}
+
+// Msg service defines state transitions
+service Msg {
+  // Data item lifecycle
+  rpc StoreDataItem(MsgStoreDataItem) returns (MsgStoreDataItemResponse);
+  rpc UpdateDataItem(MsgUpdateDataItem) returns (MsgUpdateDataItemResponse);
+  rpc DeleteDataItem(MsgDeleteDataItem) returns (MsgDeleteDataItemResponse);
+
+  // Verification
+  rpc VerifyDataItem(MsgVerifyDataItem) returns (MsgVerifyDataItemResponse);
+
+  // Governance
+  rpc RevokeDataItem(MsgRevokeDataItem) returns (MsgRevokeDataItemResponse);
+}

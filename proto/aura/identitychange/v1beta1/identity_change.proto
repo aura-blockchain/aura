@@ -56,6 +56,14 @@ message Params {
   string staleness_investigator_chain = 5;
 }
 
+message GenesisState {
+  Params params = 1;
+  repeated IdentityRecord records = 2;
+  repeated IdentityChangeRequest requests = 3;
+  repeated IdentityChangeHistory history = 4;
+  bool suspended = 5;
+}
+
 message MsgRequestIdentityChange {
   string requester = 1;
   string target_did = 2;

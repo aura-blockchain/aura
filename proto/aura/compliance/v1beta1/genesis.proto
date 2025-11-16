@@ -1,0 +1,40 @@
+syntax = "proto3";
+package aura.compliance.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "aura/compliance/v1beta1/compliance.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/compliance/v1beta1";
+
+// GenesisState defines the compliance module's genesis state
+message GenesisState {
+  // Module parameters
+  ComplianceParams params = 1 [(gogoproto.nullable) = false];
+
+  // KYC records
+  repeated KYCRecord kyc_records = 2;
+
+  // AML profiles
+  repeated AMLProfile aml_profiles = 3;
+
+  // Suspicious activities
+  repeated SuspiciousActivity suspicious_activities = 4;
+
+  // Transaction monitoring rules
+  repeated TransactionMonitoringRule monitoring_rules = 5;
+
+  // Transaction alerts
+  repeated TransactionAlert transaction_alerts = 6;
+
+  // Sanctions screening results
+  repeated SanctionsScreeningResult sanctions_results = 7;
+
+  // GDPR consents
+  repeated GDPRConsent gdpr_consents = 8;
+
+  // GDPR data requests
+  repeated GDPRDataRequest gdpr_requests = 9;
+
+  // Tax reports
+  repeated TaxReport tax_reports = 10;
+}

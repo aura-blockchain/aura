@@ -1,0 +1,235 @@
+syntax = "proto3";
+package aura.auth.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "aura/auth/v1beta1/auth.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/auth/v1beta1";
+
+// Msg defines the auth module's transaction messages
+service Msg {
+  // CreateRole creates a new role
+  rpc CreateRole(MsgCreateRole) returns (MsgCreateRoleResponse);
+
+  // AssignRole assigns a role to an address
+  rpc AssignRole(MsgAssignRole) returns (MsgAssignRoleResponse);
+
+  // RevokeRole revokes a role from an address
+  rpc RevokeRole(MsgRevokeRole) returns (MsgRevokeRoleResponse);
+
+  // CreateMultisigWallet creates a new multisig wallet
+  rpc CreateMultisigWallet(MsgCreateMultisigWallet) returns (MsgCreateMultisigWalletResponse);
+
+  // CreateMultisigProposal creates a new multisig proposal
+  rpc CreateMultisigProposal(MsgCreateMultisigProposal) returns (MsgCreateMultisigProposalResponse);
+
+  // SignMultisigProposal signs a multisig proposal
+  rpc SignMultisigProposal(MsgSignMultisigProposal) returns (MsgSignMultisigProposalResponse);
+
+  // ExecuteMultisigProposal executes an approved multisig proposal
+  rpc ExecuteMultisigProposal(MsgExecuteMultisigProposal) returns (MsgExecuteMultisigProposalResponse);
+
+  // ProposeTimeLockedAction proposes a time-locked admin action
+  rpc ProposeTimeLockedAction(MsgProposeTimeLockedAction) returns (MsgProposeTimeLockedActionResponse);
+
+  // ExecuteTimeLockedAction executes a ready time-locked action
+  rpc ExecuteTimeLockedAction(MsgExecuteTimeLockedAction) returns (MsgExecuteTimeLockedActionResponse);
+
+  // CancelTimeLockedAction cancels a pending time-locked action
+  rpc CancelTimeLockedAction(MsgCancelTimeLockedAction) returns (MsgCancelTimeLockedActionResponse);
+
+  // ActivateEmergencyAdmin activates an emergency admin
+  rpc ActivateEmergencyAdmin(MsgActivateEmergencyAdmin) returns (MsgActivateEmergencyAdminResponse);
+
+  // DeactivateEmergencyAdmin deactivates an emergency admin
+  rpc DeactivateEmergencyAdmin(MsgDeactivateEmergencyAdmin) returns (MsgDeactivateEmergencyAdminResponse);
+
+  // InitiateValidatorKeyRotation initiates validator key rotation
+  rpc InitiateValidatorKeyRotation(MsgInitiateValidatorKeyRotation) returns (MsgInitiateValidatorKeyRotationResponse);
+
+  // CompleteValidatorKeyRotation completes validator key rotation
+  rpc CompleteValidatorKeyRotation(MsgCompleteValidatorKeyRotation) returns (MsgCompleteValidatorKeyRotationResponse);
+
+  // CreateSession creates a new API session
+  rpc CreateSession(MsgCreateSession) returns (MsgCreateSessionResponse);
+
+  // RevokeSession revokes an active session
+  rpc RevokeSession(MsgRevokeSession) returns (MsgRevokeSessionResponse);
+}
+
+// MsgCreateRole
+message MsgCreateRole {
+  string creator = 1;
+  string name = 2;
+  repeated string permissions = 3;
+  string description = 4;
+}
+
+message MsgCreateRoleResponse {
+  Role role = 1;
+}
+
+// MsgAssignRole
+message MsgAssignRole {
+  string assigner = 1;
+  string address = 2;
+  string role_name = 3;
+  int64 expires_in_seconds = 4; // 0 for no expiry
+}
+
+message MsgAssignRoleResponse {
+  RoleAssignment assignment = 1;
+}
+
+// MsgRevokeRole
+message MsgRevokeRole {
+  string revoker = 1;
+  string address = 2;
+  string role_name = 3;
+}
+
+message MsgRevokeRoleResponse {
+  bool success = 1;
+}
+
+// MsgCreateMultisigWallet
+message MsgCreateMultisigWallet {
+  string creator = 1;
+  repeated string signers = 2;
+  uint32 threshold = 3;
+  WalletType wallet_type = 4;
+}
+
+message MsgCreateMultisigWalletResponse {
+  MultisigWallet wallet = 1;
+}
+
+// MsgCreateMultisigProposal
+message MsgCreateMultisigProposal {
+  string proposer = 1;
+  string wallet_id = 2;
+  string title = 3;
+  string description = 4;
+  bytes payload = 5;
+  int64 expires_in_seconds = 6;
+}
+
+message MsgCreateMultisigProposalResponse {
+  MultisigProposal proposal = 1;
+}
+
+// MsgSignMultisigProposal
+message MsgSignMultisigProposal {
+  string signer = 1;
+  string proposal_id = 2;
+}
+
+message MsgSignMultisigProposalResponse {
+  MultisigProposal proposal = 1;
+}
+
+// MsgExecuteMultisigProposal
+message MsgExecuteMultisigProposal {
+  string executor = 1;
+  string proposal_id = 2;
+}
+
+message MsgExecuteMultisigProposalResponse {
+  bool success = 1;
+}
+
+// MsgProposeTimeLockedAction
+message MsgProposeTimeLockedAction {
+  string proposer = 1;
+  string action_type = 2;
+  bytes payload = 3;
+  uint64 delay_seconds = 4;
+}
+
+message MsgProposeTimeLockedActionResponse {
+  TimeLockedAction action = 1;
+}
+
+// MsgExecuteTimeLockedAction
+message MsgExecuteTimeLockedAction {
+  string executor = 1;
+  string action_id = 2;
+}
+
+message MsgExecuteTimeLockedActionResponse {
+  bool success = 1;
+}
+
+// MsgCancelTimeLockedAction
+message MsgCancelTimeLockedAction {
+  string canceller = 1;
+  string action_id = 2;
+}
+
+message MsgCancelTimeLockedActionResponse {
+  bool success = 1;
+}
+
+// MsgActivateEmergencyAdmin
+message MsgActivateEmergencyAdmin {
+  string activator = 1;
+  string admin_address = 2;
+  repeated string privileges = 3;
+  int64 expires_in_seconds = 4;
+}
+
+message MsgActivateEmergencyAdminResponse {
+  EmergencyAdmin admin = 1;
+}
+
+// MsgDeactivateEmergencyAdmin
+message MsgDeactivateEmergencyAdmin {
+  string deactivator = 1;
+  string admin_address = 2;
+}
+
+message MsgDeactivateEmergencyAdminResponse {
+  bool success = 1;
+}
+
+// MsgInitiateValidatorKeyRotation
+message MsgInitiateValidatorKeyRotation {
+  string initiator = 1;
+  string validator_address = 2;
+  string new_consensus_pubkey = 3;
+}
+
+message MsgInitiateValidatorKeyRotationResponse {
+  ValidatorKeyRotation rotation = 1;
+}
+
+// MsgCompleteValidatorKeyRotation
+message MsgCompleteValidatorKeyRotation {
+  string completer = 1;
+  string validator_address = 2;
+}
+
+message MsgCompleteValidatorKeyRotationResponse {
+  bool success = 1;
+}
+
+// MsgCreateSession
+message MsgCreateSession {
+  string user_address = 1;
+  string ip_address = 2;
+  map<string, string> metadata = 3;
+}
+
+message MsgCreateSessionResponse {
+  Session session = 1;
+}
+
+// MsgRevokeSession
+message MsgRevokeSession {
+  string user_address = 1;
+  string session_id = 2;
+}
+
+message MsgRevokeSessionResponse {
+  bool success = 1;
+}

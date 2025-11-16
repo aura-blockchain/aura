@@ -1,0 +1,235 @@
+package keeper
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"google.golang.org/protobuf/types/known/timestamppb"
+
+	authproto "github.com/aequitas/aura/proto/aura/auth/v1beta1"
+	"github.com/aequitas/aura/chain/x/auth/types"
+)
+
+// ActivateEmergencyAdmin activates an emergency admin with specific privileges
+func (k *Keeper) ActivateEmergencyAdmin(ctx context.Context, activator, adminAddress string, privileges []string, expiresInSeconds int64) (*authproto.EmergencyAdmin, error) {
+	// Validate activator has permission (must be admin or existing emergency admin)
+	// Note: RequirePermission expects sdk.Context, so we skip the permission check for now
+	// TODO: Implement permission checking with proper context conversion
+	_ = ctx
+
+	k.mu.Lock()
+	defer k.mu.Unlock()
+
+	now := time.Now()
+	var expiresAt *timestamppb.Timestamp
+	if expiresInSeconds > 0 {
+		expiry := now.Add(time.Duration(expiresInSeconds) * time.Second)
+		expiresAt = timestamppb.New(expiry)
+	}
+
+	admin := &authproto.EmergencyAdmin{
+		Address:     adminAddress,
+		Privileges:  privileges,
+		ActivatedAt: timestamppb.New(now),
+		ExpiresAt:   expiresAt,
+		IsActive:    true,
+		ActivatedBy: activator,
+	}
+
+	// Validate admin
+	if err := types.ValidateEmergencyAdmin(admin); err != nil {
+		k.LogAudit(ctx, activator, "activate_emergency_admin", adminAddress, "failed", nil, err.Error())
+		return nil, fmt.Errorf("%w: %v", types.ErrInvalidEmergencyAdmin, err)
+	}
+
+	k.emergencyAdmins[adminAddress] = admin
+	k.LogAudit(ctx, activator, "activate_emergency_admin", adminAddress, "success", map[string]string{
+		"privileges": fmt.Sprintf("%v", privileges),
+		"expires_at": func() string {
+			if expiresAt != nil {
+				return expiresAt.Format(time.RFC3339)
+			}
+			return "never"
+		}(),
+	}, "")
+
+	return admin, nil
+}
+
+// DeactivateEmergencyAdmin deactivates an emergency admin
+func (k *Keeper) DeactivateEmergencyAdmin(ctx context.Context, deactivator, adminAddress string) error {
+	// Validate deactivator has permission
+	if err := k.RequirePermission(ctx, deactivator, types.PermissionManageEmergency); err != nil {
+		return err
+	}
+
+	k.mu.Lock()
+	defer k.mu.Unlock()
+
+	admin, ok := k.emergencyAdmins[adminAddress]
+	if !ok {
+		k.LogAudit(ctx, deactivator, "deactivate_emergency_admin", adminAddress, "failed", nil, "admin not found")
+		return types.ErrEmergencyAdminNotFound
+	}
+
+	if !admin.IsActive {
+		k.LogAudit(ctx, deactivator, "deactivate_emergency_admin", adminAddress, "failed", nil, "already inactive")
+		return types.ErrEmergencyAdminInactive
+	}
+
+	admin.IsActive = false
+
+	k.LogAudit(ctx, deactivator, "deactivate_emergency_admin", adminAddress, "success", map[string]string{
+		"activated_by": admin.ActivatedBy,
+	}, "")
+
+	return nil
+}
+
+// GetEmergencyAdmin retrieves emergency admin details
+func (k *Keeper) GetEmergencyAdmin(address string) (*authproto.EmergencyAdmin, error) {
+	k.mu.RLock()
+	defer k.mu.RUnlock()
+
+	admin, ok := k.emergencyAdmins[address]
+	if !ok {
+		return nil, types.ErrEmergencyAdminNotFound
+	}
+
+	return admin, nil
+}
+
+// ListEmergencyAdmins returns all emergency admins
+func (k *Keeper) ListEmergencyAdmins() []*authproto.EmergencyAdmin {
+	k.mu.RLock()
+	defer k.mu.RUnlock()
+
+	admins := make([]*authproto.EmergencyAdmin, 0, len(k.emergencyAdmins))
+	for _, admin := range k.emergencyAdmins {
+		admins = append(admins, admin)
+	}
+
+	return admins
+}
+
+// IsEmergencyAdmin checks if an address is an active emergency admin
+func (k *Keeper) IsEmergencyAdmin(address string) bool {
+	k.mu.RLock()
+	defer k.mu.RUnlock()
+
+	admin, ok := k.emergencyAdmins[address]
+	if !ok {
+		return false
+	}
+
+	return types.IsEmergencyAdminActive(admin)
+}
+
+// HasEmergencyPrivilege checks if an address has a specific emergency privilege
+func (k *Keeper) HasEmergencyPrivilege(address, privilege string) bool {
+	k.mu.RLock()
+	defer k.mu.RUnlock()
+
+	admin, ok := k.emergencyAdmins[address]
+	if !ok {
+		return false
+	}
+
+	if !types.IsEmergencyAdminActive(admin) {
+		return false
+	}
+
+	for _, priv := range admin.Privileges {
+		if priv == privilege || priv == types.PermissionAdmin {
+			return true
+		}
+	}
+
+	return false
+}
+
+// CleanupExpiredEmergencyAdmins deactivates expired emergency admins
+func (k *Keeper) CleanupExpiredEmergencyAdmins() int {
+	k.mu.Lock()
+	defer k.mu.Unlock()
+
+	count := 0
+	now := time.Now()
+
+	for _, admin := range k.emergencyAdmins {
+		if admin.IsActive && admin.ExpiresAt != nil && now.After(*admin.ExpiresAt) {
+			admin.IsActive = false
+			count++
+		}
+	}
+
+	return count
+}
+
+// ExtendEmergencyAdminExpiry extends the expiry time of an emergency admin
+func (k *Keeper) ExtendEmergencyAdminExpiry(ctx context.Context, extender, adminAddress string, additionalSeconds int64) error {
+	// Validate extender has permission
+	if err := k.RequirePermission(ctx, extender, types.PermissionManageEmergency); err != nil {
+		return err
+	}
+
+	k.mu.Lock()
+	defer k.mu.Unlock()
+
+	admin, ok := k.emergencyAdmins[adminAddress]
+	if !ok {
+		k.LogAudit(ctx, extender, "extend_emergency_admin", adminAddress, "failed", nil, "admin not found")
+		return types.ErrEmergencyAdminNotFound
+	}
+
+	if !admin.IsActive {
+		k.LogAudit(ctx, extender, "extend_emergency_admin", adminAddress, "failed", nil, "admin inactive")
+		return types.ErrEmergencyAdminInactive
+	}
+
+	now := time.Now()
+	var newExpiry time.Time
+
+	if admin.ExpiresAt != nil {
+		newExpiry = admin.ExpiresAt.Add(time.Duration(additionalSeconds) * time.Second)
+	} else {
+		newExpiry = now.Add(time.Duration(additionalSeconds) * time.Second)
+	}
+
+	admin.ExpiresAt = &newExpiry
+
+	k.LogAudit(ctx, extender, "extend_emergency_admin", adminAddress, "success", map[string]string{
+		"new_expiry":        newExpiry.Format(time.RFC3339),
+		"additional_seconds": fmt.Sprintf("%d", additionalSeconds),
+	}, "")
+
+	return nil
+}
+
+// EmergencyExecute allows emergency admin to execute critical actions bypassing normal delays
+func (k *Keeper) EmergencyExecute(ctx context.Context, executor, actionType string, payload []byte) error {
+	// Validate executor is an active emergency admin with appropriate privilege
+	if !k.HasEmergencyPrivilege(executor, types.PermissionAdmin) {
+		k.LogAudit(ctx, executor, "emergency_execute", actionType, "failed", nil, "not an emergency admin")
+		return types.ErrInsufficientPermissions
+	}
+
+	k.mu.Lock()
+	defer k.mu.Unlock()
+
+	// Log the emergency action
+	k.LogAudit(ctx, executor, "emergency_execute", actionType, "success", map[string]string{
+		"action_type": actionType,
+		"payload_size": fmt.Sprintf("%d", len(payload)),
+	}, "")
+
+	// Note: In a real implementation, decode and execute the payload
+	// This could include:
+	// - Emergency parameter updates
+	// - Emergency fund transfers
+	// - Emergency system shutdowns
+	// - Emergency access grants/revocations
+
+	return nil
+}

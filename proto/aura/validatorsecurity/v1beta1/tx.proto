@@ -1,0 +1,107 @@
+syntax = "proto3";
+package aura.validatorsecurity.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+import "aura/validatorsecurity/v1beta1/validator_security.proto";
+
+option go_package = "github.com/aura/aura/x/validatorsecurity/types";
+
+// Msg defines the validator security Msg service
+service Msg {
+  // RegisterValidator registers a validator with security information
+  rpc RegisterValidator(MsgRegisterValidator) returns (MsgRegisterValidatorResponse);
+
+  // UpdateSecurityInfo updates validator security information
+  rpc UpdateSecurityInfo(MsgUpdateSecurityInfo) returns (MsgUpdateSecurityInfoResponse);
+
+  // RegisterSentryNode registers a sentry node for a validator
+  rpc RegisterSentryNode(MsgRegisterSentryNode) returns (MsgRegisterSentryNodeResponse);
+
+  // ReportDoubleSign reports double signing evidence
+  rpc ReportDoubleSign(MsgReportDoubleSign) returns (MsgReportDoubleSignResponse);
+
+  // Unjail allows a validator to unjail themselves
+  rpc Unjail(MsgUnjail) returns (MsgUnjailResponse);
+
+  // AcknowledgeAlert acknowledges a validator alert
+  rpc AcknowledgeAlert(MsgAcknowledgeAlert) returns (MsgAcknowledgeAlertResponse);
+
+  // UpdateParams updates the module parameters
+  rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
+}
+
+// MsgRegisterValidator registers a validator with security information
+message MsgRegisterValidator {
+  string validator_address = 1;
+  string hot_key = 2;
+  string cold_key = 3;
+  string region = 4;
+  string country_code = 5;
+  double latitude = 6;
+  double longitude = 7;
+  repeated string backup_validator_addresses = 8;
+}
+
+message MsgRegisterValidatorResponse {}
+
+// MsgUpdateSecurityInfo updates validator security information
+message MsgUpdateSecurityInfo {
+  string validator_address = 1;
+  string hot_key = 2;
+  string cold_key = 3;
+  string region = 4;
+  string country_code = 5;
+  double latitude = 6;
+  double longitude = 7;
+  repeated string backup_validator_addresses = 8;
+}
+
+message MsgUpdateSecurityInfoResponse {}
+
+// MsgRegisterSentryNode registers a sentry node
+message MsgRegisterSentryNode {
+  string validator_address = 1;
+  string sentry_address = 2;
+  string ip_address = 3;
+  int32 port = 4;
+}
+
+message MsgRegisterSentryNodeResponse {}
+
+// MsgReportDoubleSign reports double signing evidence
+message MsgReportDoubleSign {
+  string reporter_address = 1;
+  string validator_address = 2;
+  int64 height = 3;
+  bytes vote_a = 4;
+  bytes vote_b = 5;
+}
+
+message MsgReportDoubleSignResponse {
+  bool slashed = 1;
+  string slash_amount = 2;
+}
+
+// MsgUnjail allows a jailed validator to unjail
+message MsgUnjail {
+  string validator_address = 1;
+}
+
+message MsgUnjailResponse {}
+
+// MsgAcknowledgeAlert acknowledges an alert
+message MsgAcknowledgeAlert {
+  string alert_id = 1;
+  string acknowledger_address = 2;
+}
+
+message MsgAcknowledgeAlertResponse {}
+
+// MsgUpdateParams updates module parameters
+message MsgUpdateParams {
+  string authority = 1;
+  ValidatorSecurityParams params = 2 [(gogoproto.nullable) = false];
+}
+
+message MsgUpdateParamsResponse {}

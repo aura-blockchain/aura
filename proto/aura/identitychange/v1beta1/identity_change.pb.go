@@ -459,6 +459,82 @@ func (x *Params) GetStalenessInvestigatorChain() string {
 	return ""
 }
 
+type GenesisState struct {
+	state         protoimpl.MessageState   `protogen:"open.v1"`
+	Params        *Params                  `protobuf:"bytes,1,opt,name=params,proto3" json:"params,omitempty"`
+	Records       []*IdentityRecord        `protobuf:"bytes,2,rep,name=records,proto3" json:"records,omitempty"`
+	Requests      []*IdentityChangeRequest `protobuf:"bytes,3,rep,name=requests,proto3" json:"requests,omitempty"`
+	History       []*IdentityChangeHistory `protobuf:"bytes,4,rep,name=history,proto3" json:"history,omitempty"`
+	Suspended     bool                     `protobuf:"varint,5,opt,name=suspended,proto3" json:"suspended,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GenesisState) Reset() {
+	*x = GenesisState{}
+	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GenesisState) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GenesisState) ProtoMessage() {}
+
+func (x *GenesisState) ProtoReflect() protoreflect.Message {
+	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GenesisState.ProtoReflect.Descriptor instead.
+func (*GenesisState) Descriptor() ([]byte, []int) {
+	return file_aura_identitychange_v1beta1_identity_change_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *GenesisState) GetParams() *Params {
+	if x != nil {
+		return x.Params
+	}
+	return nil
+}
+
+func (x *GenesisState) GetRecords() []*IdentityRecord {
+	if x != nil {
+		return x.Records
+	}
+	return nil
+}
+
+func (x *GenesisState) GetRequests() []*IdentityChangeRequest {
+	if x != nil {
+		return x.Requests
+	}
+	return nil
+}
+
+func (x *GenesisState) GetHistory() []*IdentityChangeHistory {
+	if x != nil {
+		return x.History
+	}
+	return nil
+}
+
+func (x *GenesisState) GetSuspended() bool {
+	if x != nil {
+		return x.Suspended
+	}
+	return false
+}
+
 type MsgRequestIdentityChange struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Requester     string                 `protobuf:"bytes,1,opt,name=requester,proto3" json:"requester,omitempty"`
@@ -472,7 +548,7 @@ type MsgRequestIdentityChange struct {
 
 func (x *MsgRequestIdentityChange) Reset() {
 	*x = MsgRequestIdentityChange{}
-	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[4]
+	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -484,7 +560,7 @@ func (x *MsgRequestIdentityChange) String() string {
 func (*MsgRequestIdentityChange) ProtoMessage() {}
 
 func (x *MsgRequestIdentityChange) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[4]
+	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -497,7 +573,7 @@ func (x *MsgRequestIdentityChange) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MsgRequestIdentityChange.ProtoReflect.Descriptor instead.
 func (*MsgRequestIdentityChange) Descriptor() ([]byte, []int) {
-	return file_aura_identitychange_v1beta1_identity_change_proto_rawDescGZIP(), []int{4}
+	return file_aura_identitychange_v1beta1_identity_change_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *MsgRequestIdentityChange) GetRequester() string {
@@ -544,7 +620,7 @@ type MsgRequestIdentityChangeResponse struct {
 
 func (x *MsgRequestIdentityChangeResponse) Reset() {
 	*x = MsgRequestIdentityChangeResponse{}
-	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[5]
+	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -556,7 +632,7 @@ func (x *MsgRequestIdentityChangeResponse) String() string {
 func (*MsgRequestIdentityChangeResponse) ProtoMessage() {}
 
 func (x *MsgRequestIdentityChangeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[5]
+	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -569,7 +645,7 @@ func (x *MsgRequestIdentityChangeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MsgRequestIdentityChangeResponse.ProtoReflect.Descriptor instead.
 func (*MsgRequestIdentityChangeResponse) Descriptor() ([]byte, []int) {
-	return file_aura_identitychange_v1beta1_identity_change_proto_rawDescGZIP(), []int{5}
+	return file_aura_identitychange_v1beta1_identity_change_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *MsgRequestIdentityChangeResponse) GetRequestId() string {
@@ -592,7 +668,7 @@ type MsgSubmitAssistantProof struct {
 
 func (x *MsgSubmitAssistantProof) Reset() {
 	*x = MsgSubmitAssistantProof{}
-	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[6]
+	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -604,7 +680,7 @@ func (x *MsgSubmitAssistantProof) String() string {
 func (*MsgSubmitAssistantProof) ProtoMessage() {}
 
 func (x *MsgSubmitAssistantProof) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[6]
+	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -617,7 +693,7 @@ func (x *MsgSubmitAssistantProof) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MsgSubmitAssistantProof.ProtoReflect.Descriptor instead.
 func (*MsgSubmitAssistantProof) Descriptor() ([]byte, []int) {
-	return file_aura_identitychange_v1beta1_identity_change_proto_rawDescGZIP(), []int{6}
+	return file_aura_identitychange_v1beta1_identity_change_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *MsgSubmitAssistantProof) GetAssistant() string {
@@ -663,7 +739,7 @@ type MsgSubmitAssistantProofResponse struct {
 
 func (x *MsgSubmitAssistantProofResponse) Reset() {
 	*x = MsgSubmitAssistantProofResponse{}
-	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[7]
+	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -675,7 +751,7 @@ func (x *MsgSubmitAssistantProofResponse) String() string {
 func (*MsgSubmitAssistantProofResponse) ProtoMessage() {}
 
 func (x *MsgSubmitAssistantProofResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[7]
+	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -688,7 +764,7 @@ func (x *MsgSubmitAssistantProofResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MsgSubmitAssistantProofResponse.ProtoReflect.Descriptor instead.
 func (*MsgSubmitAssistantProofResponse) Descriptor() ([]byte, []int) {
-	return file_aura_identitychange_v1beta1_identity_change_proto_rawDescGZIP(), []int{7}
+	return file_aura_identitychange_v1beta1_identity_change_proto_rawDescGZIP(), []int{8}
 }
 
 type MsgApplyIdentityChange struct {
@@ -701,7 +777,7 @@ type MsgApplyIdentityChange struct {
 
 func (x *MsgApplyIdentityChange) Reset() {
 	*x = MsgApplyIdentityChange{}
-	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[8]
+	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -713,7 +789,7 @@ func (x *MsgApplyIdentityChange) String() string {
 func (*MsgApplyIdentityChange) ProtoMessage() {}
 
 func (x *MsgApplyIdentityChange) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[8]
+	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -726,7 +802,7 @@ func (x *MsgApplyIdentityChange) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MsgApplyIdentityChange.ProtoReflect.Descriptor instead.
 func (*MsgApplyIdentityChange) Descriptor() ([]byte, []int) {
-	return file_aura_identitychange_v1beta1_identity_change_proto_rawDescGZIP(), []int{8}
+	return file_aura_identitychange_v1beta1_identity_change_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *MsgApplyIdentityChange) GetRequester() string {
@@ -751,7 +827,7 @@ type MsgApplyIdentityChangeResponse struct {
 
 func (x *MsgApplyIdentityChangeResponse) Reset() {
 	*x = MsgApplyIdentityChangeResponse{}
-	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[9]
+	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -763,7 +839,7 @@ func (x *MsgApplyIdentityChangeResponse) String() string {
 func (*MsgApplyIdentityChangeResponse) ProtoMessage() {}
 
 func (x *MsgApplyIdentityChangeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[9]
+	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -776,7 +852,7 @@ func (x *MsgApplyIdentityChangeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MsgApplyIdentityChangeResponse.ProtoReflect.Descriptor instead.
 func (*MsgApplyIdentityChangeResponse) Descriptor() ([]byte, []int) {
-	return file_aura_identitychange_v1beta1_identity_change_proto_rawDescGZIP(), []int{9}
+	return file_aura_identitychange_v1beta1_identity_change_proto_rawDescGZIP(), []int{10}
 }
 
 type MsgRejectIdentityChange struct {
@@ -790,7 +866,7 @@ type MsgRejectIdentityChange struct {
 
 func (x *MsgRejectIdentityChange) Reset() {
 	*x = MsgRejectIdentityChange{}
-	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[10]
+	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -802,7 +878,7 @@ func (x *MsgRejectIdentityChange) String() string {
 func (*MsgRejectIdentityChange) ProtoMessage() {}
 
 func (x *MsgRejectIdentityChange) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[10]
+	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -815,7 +891,7 @@ func (x *MsgRejectIdentityChange) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MsgRejectIdentityChange.ProtoReflect.Descriptor instead.
 func (*MsgRejectIdentityChange) Descriptor() ([]byte, []int) {
-	return file_aura_identitychange_v1beta1_identity_change_proto_rawDescGZIP(), []int{10}
+	return file_aura_identitychange_v1beta1_identity_change_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *MsgRejectIdentityChange) GetActor() string {
@@ -847,7 +923,7 @@ type MsgRejectIdentityChangeResponse struct {
 
 func (x *MsgRejectIdentityChangeResponse) Reset() {
 	*x = MsgRejectIdentityChangeResponse{}
-	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[11]
+	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -859,7 +935,7 @@ func (x *MsgRejectIdentityChangeResponse) String() string {
 func (*MsgRejectIdentityChangeResponse) ProtoMessage() {}
 
 func (x *MsgRejectIdentityChangeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[11]
+	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -872,7 +948,7 @@ func (x *MsgRejectIdentityChangeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MsgRejectIdentityChangeResponse.ProtoReflect.Descriptor instead.
 func (*MsgRejectIdentityChangeResponse) Descriptor() ([]byte, []int) {
-	return file_aura_identitychange_v1beta1_identity_change_proto_rawDescGZIP(), []int{11}
+	return file_aura_identitychange_v1beta1_identity_change_proto_rawDescGZIP(), []int{12}
 }
 
 type MsgSuspendIdentityChanges struct {
@@ -885,7 +961,7 @@ type MsgSuspendIdentityChanges struct {
 
 func (x *MsgSuspendIdentityChanges) Reset() {
 	*x = MsgSuspendIdentityChanges{}
-	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[12]
+	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -897,7 +973,7 @@ func (x *MsgSuspendIdentityChanges) String() string {
 func (*MsgSuspendIdentityChanges) ProtoMessage() {}
 
 func (x *MsgSuspendIdentityChanges) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[12]
+	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -910,7 +986,7 @@ func (x *MsgSuspendIdentityChanges) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MsgSuspendIdentityChanges.ProtoReflect.Descriptor instead.
 func (*MsgSuspendIdentityChanges) Descriptor() ([]byte, []int) {
-	return file_aura_identitychange_v1beta1_identity_change_proto_rawDescGZIP(), []int{12}
+	return file_aura_identitychange_v1beta1_identity_change_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *MsgSuspendIdentityChanges) GetAuthority() string {
@@ -935,7 +1011,7 @@ type MsgSuspendIdentityChangesResponse struct {
 
 func (x *MsgSuspendIdentityChangesResponse) Reset() {
 	*x = MsgSuspendIdentityChangesResponse{}
-	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[13]
+	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -947,7 +1023,7 @@ func (x *MsgSuspendIdentityChangesResponse) String() string {
 func (*MsgSuspendIdentityChangesResponse) ProtoMessage() {}
 
 func (x *MsgSuspendIdentityChangesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[13]
+	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -960,7 +1036,7 @@ func (x *MsgSuspendIdentityChangesResponse) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use MsgSuspendIdentityChangesResponse.ProtoReflect.Descriptor instead.
 func (*MsgSuspendIdentityChangesResponse) Descriptor() ([]byte, []int) {
-	return file_aura_identitychange_v1beta1_identity_change_proto_rawDescGZIP(), []int{13}
+	return file_aura_identitychange_v1beta1_identity_change_proto_rawDescGZIP(), []int{14}
 }
 
 type QueryIdentityRecordRequest struct {
@@ -972,7 +1048,7 @@ type QueryIdentityRecordRequest struct {
 
 func (x *QueryIdentityRecordRequest) Reset() {
 	*x = QueryIdentityRecordRequest{}
-	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[14]
+	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -984,7 +1060,7 @@ func (x *QueryIdentityRecordRequest) String() string {
 func (*QueryIdentityRecordRequest) ProtoMessage() {}
 
 func (x *QueryIdentityRecordRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[14]
+	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -997,7 +1073,7 @@ func (x *QueryIdentityRecordRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QueryIdentityRecordRequest.ProtoReflect.Descriptor instead.
 func (*QueryIdentityRecordRequest) Descriptor() ([]byte, []int) {
-	return file_aura_identitychange_v1beta1_identity_change_proto_rawDescGZIP(), []int{14}
+	return file_aura_identitychange_v1beta1_identity_change_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *QueryIdentityRecordRequest) GetDid() string {
@@ -1016,7 +1092,7 @@ type QueryIdentityRecordResponse struct {
 
 func (x *QueryIdentityRecordResponse) Reset() {
 	*x = QueryIdentityRecordResponse{}
-	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[15]
+	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1028,7 +1104,7 @@ func (x *QueryIdentityRecordResponse) String() string {
 func (*QueryIdentityRecordResponse) ProtoMessage() {}
 
 func (x *QueryIdentityRecordResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[15]
+	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1041,7 +1117,7 @@ func (x *QueryIdentityRecordResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QueryIdentityRecordResponse.ProtoReflect.Descriptor instead.
 func (*QueryIdentityRecordResponse) Descriptor() ([]byte, []int) {
-	return file_aura_identitychange_v1beta1_identity_change_proto_rawDescGZIP(), []int{15}
+	return file_aura_identitychange_v1beta1_identity_change_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *QueryIdentityRecordResponse) GetRecord() *IdentityRecord {
@@ -1060,7 +1136,7 @@ type QueryIdentityChangeRequestRequest struct {
 
 func (x *QueryIdentityChangeRequestRequest) Reset() {
 	*x = QueryIdentityChangeRequestRequest{}
-	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[16]
+	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1072,7 +1148,7 @@ func (x *QueryIdentityChangeRequestRequest) String() string {
 func (*QueryIdentityChangeRequestRequest) ProtoMessage() {}
 
 func (x *QueryIdentityChangeRequestRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[16]
+	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1085,7 +1161,7 @@ func (x *QueryIdentityChangeRequestRequest) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use QueryIdentityChangeRequestRequest.ProtoReflect.Descriptor instead.
 func (*QueryIdentityChangeRequestRequest) Descriptor() ([]byte, []int) {
-	return file_aura_identitychange_v1beta1_identity_change_proto_rawDescGZIP(), []int{16}
+	return file_aura_identitychange_v1beta1_identity_change_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *QueryIdentityChangeRequestRequest) GetRequestId() string {
@@ -1104,7 +1180,7 @@ type QueryIdentityChangeRequestResponse struct {
 
 func (x *QueryIdentityChangeRequestResponse) Reset() {
 	*x = QueryIdentityChangeRequestResponse{}
-	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[17]
+	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1116,7 +1192,7 @@ func (x *QueryIdentityChangeRequestResponse) String() string {
 func (*QueryIdentityChangeRequestResponse) ProtoMessage() {}
 
 func (x *QueryIdentityChangeRequestResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[17]
+	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1129,7 +1205,7 @@ func (x *QueryIdentityChangeRequestResponse) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use QueryIdentityChangeRequestResponse.ProtoReflect.Descriptor instead.
 func (*QueryIdentityChangeRequestResponse) Descriptor() ([]byte, []int) {
-	return file_aura_identitychange_v1beta1_identity_change_proto_rawDescGZIP(), []int{17}
+	return file_aura_identitychange_v1beta1_identity_change_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *QueryIdentityChangeRequestResponse) GetRequest() *IdentityChangeRequest {
@@ -1149,7 +1225,7 @@ type QueryIdentityChangeHistoryRequest struct {
 
 func (x *QueryIdentityChangeHistoryRequest) Reset() {
 	*x = QueryIdentityChangeHistoryRequest{}
-	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[18]
+	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1161,7 +1237,7 @@ func (x *QueryIdentityChangeHistoryRequest) String() string {
 func (*QueryIdentityChangeHistoryRequest) ProtoMessage() {}
 
 func (x *QueryIdentityChangeHistoryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[18]
+	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1174,7 +1250,7 @@ func (x *QueryIdentityChangeHistoryRequest) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use QueryIdentityChangeHistoryRequest.ProtoReflect.Descriptor instead.
 func (*QueryIdentityChangeHistoryRequest) Descriptor() ([]byte, []int) {
-	return file_aura_identitychange_v1beta1_identity_change_proto_rawDescGZIP(), []int{18}
+	return file_aura_identitychange_v1beta1_identity_change_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *QueryIdentityChangeHistoryRequest) GetDid() string {
@@ -1201,7 +1277,7 @@ type QueryIdentityChangeHistoryResponse struct {
 
 func (x *QueryIdentityChangeHistoryResponse) Reset() {
 	*x = QueryIdentityChangeHistoryResponse{}
-	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[19]
+	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1213,7 +1289,7 @@ func (x *QueryIdentityChangeHistoryResponse) String() string {
 func (*QueryIdentityChangeHistoryResponse) ProtoMessage() {}
 
 func (x *QueryIdentityChangeHistoryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[19]
+	mi := &file_aura_identitychange_v1beta1_identity_change_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1226,7 +1302,7 @@ func (x *QueryIdentityChangeHistoryResponse) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use QueryIdentityChangeHistoryResponse.ProtoReflect.Descriptor instead.
 func (*QueryIdentityChangeHistoryResponse) Descriptor() ([]byte, []int) {
-	return file_aura_identitychange_v1beta1_identity_change_proto_rawDescGZIP(), []int{19}
+	return file_aura_identitychange_v1beta1_identity_change_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *QueryIdentityChangeHistoryResponse) GetEntries() []*IdentityChangeHistory {
@@ -1286,7 +1362,13 @@ const file_aura_identitychange_v1beta1_identity_change_proto_rawDesc = "" +
 	"\x1bmin_confidence_after_change\x18\x02 \x01(\x05R\x18minConfidenceAfterChange\x12<\n" +
 	"\x1astaleness_height_threshold\x18\x03 \x01(\x03R\x18stalenessHeightThreshold\x12H\n" +
 	"!assistant_slash_on_false_positive\x18\x04 \x01(\bR\x1dassistantSlashOnFalsePositive\x12@\n" +
-	"\x1cstaleness_investigator_chain\x18\x05 \x01(\tR\x1astalenessInvestigatorChain\"\xb0\x01\n" +
+	"\x1cstaleness_investigator_chain\x18\x05 \x01(\tR\x1astalenessInvestigatorChain\"\xce\x02\n" +
+	"\fGenesisState\x12;\n" +
+	"\x06params\x18\x01 \x01(\v2#.aura.identitychange.v1beta1.ParamsR\x06params\x12E\n" +
+	"\arecords\x18\x02 \x03(\v2+.aura.identitychange.v1beta1.IdentityRecordR\arecords\x12N\n" +
+	"\brequests\x18\x03 \x03(\v22.aura.identitychange.v1beta1.IdentityChangeRequestR\brequests\x12L\n" +
+	"\ahistory\x18\x04 \x03(\v22.aura.identitychange.v1beta1.IdentityChangeHistoryR\ahistory\x12\x1c\n" +
+	"\tsuspended\x18\x05 \x01(\bR\tsuspended\"\xb0\x01\n" +
 	"\x18MsgRequestIdentityChange\x12\x1c\n" +
 	"\trequester\x18\x01 \x01(\tR\trequester\x12\x1d\n" +
 	"\n" +
@@ -1373,61 +1455,66 @@ func file_aura_identitychange_v1beta1_identity_change_proto_rawDescGZIP() []byte
 }
 
 var file_aura_identitychange_v1beta1_identity_change_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_aura_identitychange_v1beta1_identity_change_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
+var file_aura_identitychange_v1beta1_identity_change_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
 var file_aura_identitychange_v1beta1_identity_change_proto_goTypes = []any{
 	(IdentityChangeStatus)(0),                  // 0: aura.identitychange.v1beta1.IdentityChangeStatus
 	(*IdentityRecord)(nil),                     // 1: aura.identitychange.v1beta1.IdentityRecord
 	(*IdentityChangeRequest)(nil),              // 2: aura.identitychange.v1beta1.IdentityChangeRequest
 	(*IdentityChangeHistory)(nil),              // 3: aura.identitychange.v1beta1.IdentityChangeHistory
 	(*Params)(nil),                             // 4: aura.identitychange.v1beta1.Params
-	(*MsgRequestIdentityChange)(nil),           // 5: aura.identitychange.v1beta1.MsgRequestIdentityChange
-	(*MsgRequestIdentityChangeResponse)(nil),   // 6: aura.identitychange.v1beta1.MsgRequestIdentityChangeResponse
-	(*MsgSubmitAssistantProof)(nil),            // 7: aura.identitychange.v1beta1.MsgSubmitAssistantProof
-	(*MsgSubmitAssistantProofResponse)(nil),    // 8: aura.identitychange.v1beta1.MsgSubmitAssistantProofResponse
-	(*MsgApplyIdentityChange)(nil),             // 9: aura.identitychange.v1beta1.MsgApplyIdentityChange
-	(*MsgApplyIdentityChangeResponse)(nil),     // 10: aura.identitychange.v1beta1.MsgApplyIdentityChangeResponse
-	(*MsgRejectIdentityChange)(nil),            // 11: aura.identitychange.v1beta1.MsgRejectIdentityChange
-	(*MsgRejectIdentityChangeResponse)(nil),    // 12: aura.identitychange.v1beta1.MsgRejectIdentityChangeResponse
-	(*MsgSuspendIdentityChanges)(nil),          // 13: aura.identitychange.v1beta1.MsgSuspendIdentityChanges
-	(*MsgSuspendIdentityChangesResponse)(nil),  // 14: aura.identitychange.v1beta1.MsgSuspendIdentityChangesResponse
-	(*QueryIdentityRecordRequest)(nil),         // 15: aura.identitychange.v1beta1.QueryIdentityRecordRequest
-	(*QueryIdentityRecordResponse)(nil),        // 16: aura.identitychange.v1beta1.QueryIdentityRecordResponse
-	(*QueryIdentityChangeRequestRequest)(nil),  // 17: aura.identitychange.v1beta1.QueryIdentityChangeRequestRequest
-	(*QueryIdentityChangeRequestResponse)(nil), // 18: aura.identitychange.v1beta1.QueryIdentityChangeRequestResponse
-	(*QueryIdentityChangeHistoryRequest)(nil),  // 19: aura.identitychange.v1beta1.QueryIdentityChangeHistoryRequest
-	(*QueryIdentityChangeHistoryResponse)(nil), // 20: aura.identitychange.v1beta1.QueryIdentityChangeHistoryResponse
-	(*query.PageRequest)(nil),                  // 21: cosmos.base.query.v1beta1.PageRequest
-	(*query.PageResponse)(nil),                 // 22: cosmos.base.query.v1beta1.PageResponse
+	(*GenesisState)(nil),                       // 5: aura.identitychange.v1beta1.GenesisState
+	(*MsgRequestIdentityChange)(nil),           // 6: aura.identitychange.v1beta1.MsgRequestIdentityChange
+	(*MsgRequestIdentityChangeResponse)(nil),   // 7: aura.identitychange.v1beta1.MsgRequestIdentityChangeResponse
+	(*MsgSubmitAssistantProof)(nil),            // 8: aura.identitychange.v1beta1.MsgSubmitAssistantProof
+	(*MsgSubmitAssistantProofResponse)(nil),    // 9: aura.identitychange.v1beta1.MsgSubmitAssistantProofResponse
+	(*MsgApplyIdentityChange)(nil),             // 10: aura.identitychange.v1beta1.MsgApplyIdentityChange
+	(*MsgApplyIdentityChangeResponse)(nil),     // 11: aura.identitychange.v1beta1.MsgApplyIdentityChangeResponse
+	(*MsgRejectIdentityChange)(nil),            // 12: aura.identitychange.v1beta1.MsgRejectIdentityChange
+	(*MsgRejectIdentityChangeResponse)(nil),    // 13: aura.identitychange.v1beta1.MsgRejectIdentityChangeResponse
+	(*MsgSuspendIdentityChanges)(nil),          // 14: aura.identitychange.v1beta1.MsgSuspendIdentityChanges
+	(*MsgSuspendIdentityChangesResponse)(nil),  // 15: aura.identitychange.v1beta1.MsgSuspendIdentityChangesResponse
+	(*QueryIdentityRecordRequest)(nil),         // 16: aura.identitychange.v1beta1.QueryIdentityRecordRequest
+	(*QueryIdentityRecordResponse)(nil),        // 17: aura.identitychange.v1beta1.QueryIdentityRecordResponse
+	(*QueryIdentityChangeRequestRequest)(nil),  // 18: aura.identitychange.v1beta1.QueryIdentityChangeRequestRequest
+	(*QueryIdentityChangeRequestResponse)(nil), // 19: aura.identitychange.v1beta1.QueryIdentityChangeRequestResponse
+	(*QueryIdentityChangeHistoryRequest)(nil),  // 20: aura.identitychange.v1beta1.QueryIdentityChangeHistoryRequest
+	(*QueryIdentityChangeHistoryResponse)(nil), // 21: aura.identitychange.v1beta1.QueryIdentityChangeHistoryResponse
+	(*query.PageRequest)(nil),                  // 22: cosmos.base.query.v1beta1.PageRequest
+	(*query.PageResponse)(nil),                 // 23: cosmos.base.query.v1beta1.PageResponse
 }
 var file_aura_identitychange_v1beta1_identity_change_proto_depIdxs = []int32{
 	0,  // 0: aura.identitychange.v1beta1.IdentityRecord.status:type_name -> aura.identitychange.v1beta1.IdentityChangeStatus
 	0,  // 1: aura.identitychange.v1beta1.IdentityChangeRequest.status:type_name -> aura.identitychange.v1beta1.IdentityChangeStatus
-	1,  // 2: aura.identitychange.v1beta1.QueryIdentityRecordResponse.record:type_name -> aura.identitychange.v1beta1.IdentityRecord
-	2,  // 3: aura.identitychange.v1beta1.QueryIdentityChangeRequestResponse.request:type_name -> aura.identitychange.v1beta1.IdentityChangeRequest
-	21, // 4: aura.identitychange.v1beta1.QueryIdentityChangeHistoryRequest.pagination:type_name -> cosmos.base.query.v1beta1.PageRequest
-	3,  // 5: aura.identitychange.v1beta1.QueryIdentityChangeHistoryResponse.entries:type_name -> aura.identitychange.v1beta1.IdentityChangeHistory
-	22, // 6: aura.identitychange.v1beta1.QueryIdentityChangeHistoryResponse.pagination:type_name -> cosmos.base.query.v1beta1.PageResponse
-	5,  // 7: aura.identitychange.v1beta1.Msg.RequestIdentityChange:input_type -> aura.identitychange.v1beta1.MsgRequestIdentityChange
-	7,  // 8: aura.identitychange.v1beta1.Msg.SubmitAssistantProof:input_type -> aura.identitychange.v1beta1.MsgSubmitAssistantProof
-	9,  // 9: aura.identitychange.v1beta1.Msg.ApplyIdentityChange:input_type -> aura.identitychange.v1beta1.MsgApplyIdentityChange
-	11, // 10: aura.identitychange.v1beta1.Msg.RejectIdentityChange:input_type -> aura.identitychange.v1beta1.MsgRejectIdentityChange
-	13, // 11: aura.identitychange.v1beta1.Msg.SuspendIdentityChanges:input_type -> aura.identitychange.v1beta1.MsgSuspendIdentityChanges
-	15, // 12: aura.identitychange.v1beta1.Query.IdentityRecord:input_type -> aura.identitychange.v1beta1.QueryIdentityRecordRequest
-	17, // 13: aura.identitychange.v1beta1.Query.IdentityChangeRequest:input_type -> aura.identitychange.v1beta1.QueryIdentityChangeRequestRequest
-	19, // 14: aura.identitychange.v1beta1.Query.IdentityChangeHistory:input_type -> aura.identitychange.v1beta1.QueryIdentityChangeHistoryRequest
-	6,  // 15: aura.identitychange.v1beta1.Msg.RequestIdentityChange:output_type -> aura.identitychange.v1beta1.MsgRequestIdentityChangeResponse
-	8,  // 16: aura.identitychange.v1beta1.Msg.SubmitAssistantProof:output_type -> aura.identitychange.v1beta1.MsgSubmitAssistantProofResponse
-	10, // 17: aura.identitychange.v1beta1.Msg.ApplyIdentityChange:output_type -> aura.identitychange.v1beta1.MsgApplyIdentityChangeResponse
-	12, // 18: aura.identitychange.v1beta1.Msg.RejectIdentityChange:output_type -> aura.identitychange.v1beta1.MsgRejectIdentityChangeResponse
-	14, // 19: aura.identitychange.v1beta1.Msg.SuspendIdentityChanges:output_type -> aura.identitychange.v1beta1.MsgSuspendIdentityChangesResponse
-	16, // 20: aura.identitychange.v1beta1.Query.IdentityRecord:output_type -> aura.identitychange.v1beta1.QueryIdentityRecordResponse
-	18, // 21: aura.identitychange.v1beta1.Query.IdentityChangeRequest:output_type -> aura.identitychange.v1beta1.QueryIdentityChangeRequestResponse
-	20, // 22: aura.identitychange.v1beta1.Query.IdentityChangeHistory:output_type -> aura.identitychange.v1beta1.QueryIdentityChangeHistoryResponse
-	15, // [15:23] is the sub-list for method output_type
-	7,  // [7:15] is the sub-list for method input_type
-	7,  // [7:7] is the sub-list for extension type_name
-	7,  // [7:7] is the sub-list for extension extendee
-	0,  // [0:7] is the sub-list for field type_name
+	4,  // 2: aura.identitychange.v1beta1.GenesisState.params:type_name -> aura.identitychange.v1beta1.Params
+	1,  // 3: aura.identitychange.v1beta1.GenesisState.records:type_name -> aura.identitychange.v1beta1.IdentityRecord
+	2,  // 4: aura.identitychange.v1beta1.GenesisState.requests:type_name -> aura.identitychange.v1beta1.IdentityChangeRequest
+	3,  // 5: aura.identitychange.v1beta1.GenesisState.history:type_name -> aura.identitychange.v1beta1.IdentityChangeHistory
+	1,  // 6: aura.identitychange.v1beta1.QueryIdentityRecordResponse.record:type_name -> aura.identitychange.v1beta1.IdentityRecord
+	2,  // 7: aura.identitychange.v1beta1.QueryIdentityChangeRequestResponse.request:type_name -> aura.identitychange.v1beta1.IdentityChangeRequest
+	22, // 8: aura.identitychange.v1beta1.QueryIdentityChangeHistoryRequest.pagination:type_name -> cosmos.base.query.v1beta1.PageRequest
+	3,  // 9: aura.identitychange.v1beta1.QueryIdentityChangeHistoryResponse.entries:type_name -> aura.identitychange.v1beta1.IdentityChangeHistory
+	23, // 10: aura.identitychange.v1beta1.QueryIdentityChangeHistoryResponse.pagination:type_name -> cosmos.base.query.v1beta1.PageResponse
+	6,  // 11: aura.identitychange.v1beta1.Msg.RequestIdentityChange:input_type -> aura.identitychange.v1beta1.MsgRequestIdentityChange
+	8,  // 12: aura.identitychange.v1beta1.Msg.SubmitAssistantProof:input_type -> aura.identitychange.v1beta1.MsgSubmitAssistantProof
+	10, // 13: aura.identitychange.v1beta1.Msg.ApplyIdentityChange:input_type -> aura.identitychange.v1beta1.MsgApplyIdentityChange
+	12, // 14: aura.identitychange.v1beta1.Msg.RejectIdentityChange:input_type -> aura.identitychange.v1beta1.MsgRejectIdentityChange
+	14, // 15: aura.identitychange.v1beta1.Msg.SuspendIdentityChanges:input_type -> aura.identitychange.v1beta1.MsgSuspendIdentityChanges
+	16, // 16: aura.identitychange.v1beta1.Query.IdentityRecord:input_type -> aura.identitychange.v1beta1.QueryIdentityRecordRequest
+	18, // 17: aura.identitychange.v1beta1.Query.IdentityChangeRequest:input_type -> aura.identitychange.v1beta1.QueryIdentityChangeRequestRequest
+	20, // 18: aura.identitychange.v1beta1.Query.IdentityChangeHistory:input_type -> aura.identitychange.v1beta1.QueryIdentityChangeHistoryRequest
+	7,  // 19: aura.identitychange.v1beta1.Msg.RequestIdentityChange:output_type -> aura.identitychange.v1beta1.MsgRequestIdentityChangeResponse
+	9,  // 20: aura.identitychange.v1beta1.Msg.SubmitAssistantProof:output_type -> aura.identitychange.v1beta1.MsgSubmitAssistantProofResponse
+	11, // 21: aura.identitychange.v1beta1.Msg.ApplyIdentityChange:output_type -> aura.identitychange.v1beta1.MsgApplyIdentityChangeResponse
+	13, // 22: aura.identitychange.v1beta1.Msg.RejectIdentityChange:output_type -> aura.identitychange.v1beta1.MsgRejectIdentityChangeResponse
+	15, // 23: aura.identitychange.v1beta1.Msg.SuspendIdentityChanges:output_type -> aura.identitychange.v1beta1.MsgSuspendIdentityChangesResponse
+	17, // 24: aura.identitychange.v1beta1.Query.IdentityRecord:output_type -> aura.identitychange.v1beta1.QueryIdentityRecordResponse
+	19, // 25: aura.identitychange.v1beta1.Query.IdentityChangeRequest:output_type -> aura.identitychange.v1beta1.QueryIdentityChangeRequestResponse
+	21, // 26: aura.identitychange.v1beta1.Query.IdentityChangeHistory:output_type -> aura.identitychange.v1beta1.QueryIdentityChangeHistoryResponse
+	19, // [19:27] is the sub-list for method output_type
+	11, // [11:19] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_aura_identitychange_v1beta1_identity_change_proto_init() }
@@ -1441,7 +1528,7 @@ func file_aura_identitychange_v1beta1_identity_change_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_aura_identitychange_v1beta1_identity_change_proto_rawDesc), len(file_aura_identitychange_v1beta1_identity_change_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   20,
+			NumMessages:   21,
 			NumExtensions: 0,
 			NumServices:   2,
 		},

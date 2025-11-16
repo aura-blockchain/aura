@@ -1,0 +1,574 @@
+syntax = "proto3";
+package aura.vcregistry.v1beta1;
+
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "google/protobuf/timestamp.proto";
+import "aura/vcregistry/v1beta1/types.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/vcregistry/v1beta1;vcregistrypb";
+
+// ============================
+// STATE MESSAGES
+// ============================
+
+// VCRecord represents a minted verifiable credential
+message VCRecord {
+  string vc_id = 1;                             // Unique identifier
+  VCType vc_type = 2;                           // Type of credential
+  string vc_type_custom = 3;                    // Custom type name (if VC_TYPE_CUSTOM)
+  string holder_did = 4;                        // DID of holder
+  string holder_address = 5;                    // Bech32 address of holder
+  VCStatus status = 6;                          // Current status
+  google.protobuf.Timestamp issued_at = 7;      // When issued
+  google.protobuf.Timestamp expires_at = 8;     // Expiration (0 = never)
+  uint64 issued_height = 9;                     // Block height of issuance
+  bytes credential_hash = 10;                   // SHA256 of full credential
+  bytes verifier_plugin_hash = 11;              // Hash of issuing plug-in
+  string issuer_assistant = 12;                 // AI assistant address
+  repeated string prerequisite_ir_ids = 13;     // IRs required for minting
+  map<string, string> metadata = 14;            // Extensible metadata
+  uint64 cs_at_mint = 15;                       // CS value when minted
+  string policy_version = 16;                   // Policy version used
+}
+
+// RevocationRecord represents a revoked credential
+message RevocationRecord {
+  string vc_id = 1;
+  google.protobuf.Timestamp revoked_at = 2;
+  uint64 revoked_height = 3;
+  RevocationReason reason = 4;
+  string revoker = 5;                           // holder_did or "governance"
+  string evidence = 6;                          // IPFS hash or metadata
+  bytes merkle_proof = 7;                       // Merkle proof for trustless verification
+  uint64 merkle_index = 8;                      // Position in Merkle tree
+}
+
+// RevocationList maintains the Merkle tree of revocations
+message RevocationList {
+  bytes merkle_root = 1;                        // Current Merkle root
+  uint64 total_revocations = 2;                 // Total count
+  uint64 last_updated_height = 3;               // Last update block
+  google.protobuf.Timestamp last_updated = 4;
+}
+
+// DIDDocument represents an on-chain DID document (simplified)
+message DIDDocument {
+  string did = 1;                               // did:aura:mainnet:...
+  string controller = 2;                        // Bech32 address
+  repeated VerificationMethod verification_methods = 3;
+  repeated string credential_ids = 4;           // List of active VC IDs
+  google.protobuf.Timestamp created = 5;
+  google.protobuf.Timestamp updated = 6;
+  string metadata_uri = 7;                      // Full doc URI (IPFS)
+  map<string, string> service_endpoints = 8;    // Service endpoint map
+}
+
+// VerificationMethod represents a public key for verification
+message VerificationMethod {
+  string id = 1;                                // Method ID
+  string type = 2;                              // e.g., "Ed25519VerificationKey2020"
+  string controller = 3;                        // DID of controller
+  bytes public_key = 4;                         // Raw public key bytes
+}
+
+// VCPolicy defines minting criteria for a VC type
+message VCPolicy {
+  string vc_type_name = 1;                      // Human-readable type name
+  VCType vc_type_enum = 2;                      // Enum value
+  uint64 cs_threshold = 3;                      // Minimum CS required
+  repeated string required_ir_ids = 4;          // Required IR completions
+  string required_arena = 5;                    // Required arena (if any)
+  uint64 required_arena_score = 6;              // Minimum arena score
+  uint64 expiry_duration_days = 7;              // 0 = no expiry
+  bool singleton = 8;                           // Only one active per user
+  bool requires_annual_renewal = 9;
+  string metadata_uri = 10;                     // Policy details URI
+  VCPolicyStatus status = 11;
+  string version = 12;                          // Policy version
+  google.protobuf.Timestamp created_at = 13;
+  uint64 created_height = 14;
+  string creator = 15;                          // Governance address
+}
+
+// ============================
+// PARAMS
+// ============================
+
+// Params defines module parameters
+message Params {
+  // Minting limits
+  uint64 max_vcs_per_user = 1;                  // Default: 50
+  uint64 max_mint_per_day = 2;                  // Default: 5
+  uint64 max_mint_per_hour = 3;                 // Default: 2
+
+  // Default settings
+  uint64 default_vc_expiry_days = 4;            // Default: 365
+
+  // Revocation
+  uint64 revocation_merkle_update_frequency = 5; // Blocks between Merkle updates
+
+  // DID
+  string did_prefix = 6;                        // "did:aura"
+  string did_network = 7;                       // "mainnet" or "testnet"
+
+  // Fees
+  string mint_fee = 8;                          // Fee to mint VC (in AEQ)
+  string revoke_fee = 9;                        // Fee to revoke (usually 0)
+  string policy_creation_deposit = 10;          // Governance deposit for new policies
+
+  // Rate limiting
+  bool rate_limiting_enabled = 11;              // Enable/disable rate limits
+}
+
+// ============================
+// GENESIS STATE
+// ============================
+
+// GenesisState defines the initial state of the vcregistry module
+message GenesisState {
+  Params params = 1;
+  repeated VCRecord vc_records = 2;
+  repeated RevocationRecord revocation_records = 3;
+  RevocationList revocation_list = 4;
+  repeated DIDDocument did_documents = 5;
+  repeated VCPolicy vc_policies = 6;
+  map<string, uint64> user_mint_counts = 7;     // Address -> mint count today
+}
+
+// ============================
+// MSG SERVICE (State Transitions)
+// ============================
+
+// MsgMintVC mints a new verifiable credential
+message MsgMintVC {
+  string holder_address = 1;                    // Signer
+  string holder_did = 2;                        // DID to bind credential to
+  VCType vc_type = 3;                           // Type of VC to mint
+  string vc_type_custom = 4;                    // Custom type name (if applicable)
+  map<string, string> metadata = 5;             // Optional metadata
+}
+
+message MsgMintVCResponse {
+  string vc_id = 1;
+  google.protobuf.Timestamp issued_at = 2;
+  google.protobuf.Timestamp expires_at = 3;
+  bytes credential_hash = 4;
+}
+
+// MsgRevokeVC revokes a credential (user-initiated)
+message MsgRevokeVC {
+  string holder_address = 1;                    // Signer (must be holder)
+  string vc_id = 2;                             // VC to revoke
+  string reason_text = 3;                       // Optional reason description
+}
+
+message MsgRevokeVCResponse {
+  google.protobuf.Timestamp revoked_at = 1;
+  bool merkle_updated = 2;
+}
+
+// MsgAdminRevokeVC revokes a credential (governance)
+message MsgAdminRevokeVC {
+  string authority = 1;                         // Governance module address
+  string vc_id = 2;
+  RevocationReason reason = 3;
+  string evidence = 4;                          // IPFS hash or metadata
+}
+
+message MsgAdminRevokeVCResponse {
+  google.protobuf.Timestamp revoked_at = 1;
+  bool merkle_updated = 2;
+}
+
+// MsgSuspendVC temporarily suspends a credential
+message MsgSuspendVC {
+  string authority = 1;                         // Governance module address
+  string vc_id = 2;
+  string reason = 3;
+  uint64 suspension_duration_days = 4;          // 0 = indefinite
+}
+
+message MsgSuspendVCResponse {
+  google.protobuf.Timestamp suspended_at = 1;
+  google.protobuf.Timestamp reactivate_at = 2;  // If duration specified
+}
+
+// MsgReactivateVC reactivates a suspended credential
+message MsgReactivateVC {
+  string authority = 1;                         // Governance module address
+  string vc_id = 2;
+}
+
+message MsgReactivateVCResponse {
+  google.protobuf.Timestamp reactivated_at = 1;
+}
+
+// MsgCreateVCPolicy creates a new VC policy (governance)
+message MsgCreateVCPolicy {
+  string authority = 1;                         // Governance module address
+  string vc_type_name = 2;
+  VCType vc_type_enum = 3;
+  uint64 cs_threshold = 4;
+  repeated string required_ir_ids = 5;
+  string required_arena = 6;
+  uint64 required_arena_score = 7;
+  uint64 expiry_duration_days = 8;
+  bool singleton = 9;
+  bool requires_annual_renewal = 10;
+  string metadata_uri = 11;
+}
+
+message MsgCreateVCPolicyResponse {
+  string policy_id = 1;
+  string version = 2;
+}
+
+// MsgUpdateVCPolicy updates an existing policy (creates new version)
+message MsgUpdateVCPolicy {
+  string authority = 1;                         // Governance module address
+  string vc_type_name = 2;
+  uint64 cs_threshold = 3;
+  repeated string required_ir_ids = 4;
+  string required_arena = 5;
+  uint64 required_arena_score = 6;
+  uint64 expiry_duration_days = 7;
+  bool singleton = 8;
+  bool requires_annual_renewal = 9;
+  string metadata_uri = 10;
+}
+
+message MsgUpdateVCPolicyResponse {
+  string new_version = 1;
+}
+
+// MsgDeprecateVCPolicy deprecates a policy (no new mints)
+message MsgDeprecateVCPolicy {
+  string authority = 1;                         // Governance module address
+  string vc_type_name = 2;
+  string reason = 3;
+}
+
+message MsgDeprecateVCPolicyResponse {
+  google.protobuf.Timestamp deprecated_at = 1;
+}
+
+// MsgRegisterDID registers a new DID document
+message MsgRegisterDID {
+  string controller = 1;                        // Signer
+  string did = 2;                               // Desired DID (validated for uniqueness)
+  repeated VerificationMethod verification_methods = 3;
+  string metadata_uri = 4;
+}
+
+message MsgRegisterDIDResponse {
+  string did = 1;
+  google.protobuf.Timestamp created_at = 2;
+}
+
+// MsgUpdateDIDDocument updates a DID document
+message MsgUpdateDIDDocument {
+  string controller = 1;                        // Signer
+  string did = 2;
+  repeated VerificationMethod verification_methods = 3;
+  string metadata_uri = 4;
+}
+
+message MsgUpdateDIDDocumentResponse {
+  google.protobuf.Timestamp updated_at = 1;
+}
+
+// Msg service defines state transitions
+service Msg {
+  // VC lifecycle
+  rpc MintVC(MsgMintVC) returns (MsgMintVCResponse);
+  rpc RevokeVC(MsgRevokeVC) returns (MsgRevokeVCResponse);
+  rpc AdminRevokeVC(MsgAdminRevokeVC) returns (MsgAdminRevokeVCResponse);
+  rpc SuspendVC(MsgSuspendVC) returns (MsgSuspendVCResponse);
+  rpc ReactivateVC(MsgReactivateVC) returns (MsgReactivateVCResponse);
+
+  // Policy management
+  rpc CreateVCPolicy(MsgCreateVCPolicy) returns (MsgCreateVCPolicyResponse);
+  rpc UpdateVCPolicy(MsgUpdateVCPolicy) returns (MsgUpdateVCPolicyResponse);
+  rpc DeprecateVCPolicy(MsgDeprecateVCPolicy) returns (MsgDeprecateVCPolicyResponse);
+
+  // DID management
+  rpc RegisterDID(MsgRegisterDID) returns (MsgRegisterDIDResponse);
+  rpc UpdateDIDDocument(MsgUpdateDIDDocument) returns (MsgUpdateDIDDocumentResponse);
+}
+
+// ============================
+// QUERY SERVICE
+// ============================
+
+// QueryGetVCRequest retrieves a specific VC
+message QueryGetVCRequest {
+  string vc_id = 1;
+}
+
+message QueryGetVCResponse {
+  VCRecord vc = 1;
+  bool exists = 2;
+}
+
+// QueryListUserVCsRequest lists all VCs for a user
+message QueryListUserVCsRequest {
+  string holder_address = 1;
+  VCStatus status_filter = 2;                   // Optional filter
+  VCType type_filter = 3;                       // Optional filter
+  cosmos.base.query.v1beta1.PageRequest pagination = 4;
+}
+
+message QueryListUserVCsResponse {
+  repeated VCRecord vcs = 1;
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryCheckVCStatusRequest checks if a VC is valid
+message QueryCheckVCStatusRequest {
+  string vc_id = 1;
+}
+
+message QueryCheckVCStatusResponse {
+  VCStatus status = 1;
+  bool valid = 2;                               // Active and not expired
+  google.protobuf.Timestamp expires_at = 3;
+  RevocationRecord revocation = 4;              // If revoked
+  bytes merkle_proof = 5;                       // For trustless verification
+}
+
+// QueryBatchVCStatusRequest checks multiple VCs
+message QueryBatchVCStatusRequest {
+  repeated string vc_ids = 1;
+}
+
+message VCStatusInfo {
+  string vc_id = 1;
+  VCStatus status = 2;
+  bool valid = 3;
+  google.protobuf.Timestamp expires_at = 4;
+}
+
+message QueryBatchVCStatusResponse {
+  map<string, VCStatusInfo> statuses = 1;
+}
+
+// QueryGetVCPolicyRequest retrieves a VC policy
+message QueryGetVCPolicyRequest {
+  string vc_type_name = 1;
+}
+
+message QueryGetVCPolicyResponse {
+  VCPolicy policy = 1;
+  bool exists = 2;
+}
+
+// QueryListVCPoliciesRequest lists all policies
+message QueryListVCPoliciesRequest {
+  VCPolicyStatus status_filter = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+message QueryListVCPoliciesResponse {
+  repeated VCPolicy policies = 1;
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryGetRevocationListRequest retrieves the revocation Merkle root
+message QueryGetRevocationListRequest {}
+
+message QueryGetRevocationListResponse {
+  RevocationList revocation_list = 1;
+}
+
+// QueryCheckRevocationRequest checks if a VC is revoked
+message QueryCheckRevocationRequest {
+  string vc_id = 1;
+}
+
+message QueryCheckRevocationResponse {
+  bool revoked = 1;
+  RevocationRecord record = 2;
+  bytes merkle_proof = 3;
+}
+
+// QueryResolveDIDRequest resolves a DID to its document
+message QueryResolveDIDRequest {
+  string did = 1;
+}
+
+message QueryResolveDIDResponse {
+  DIDDocument did_document = 1;
+  bool exists = 2;
+  repeated VCRecord credentials = 3;            // Associated active VCs
+}
+
+// QueryGetDIDByAddressRequest gets DID by controller address
+message QueryGetDIDByAddressRequest {
+  string controller = 1;
+}
+
+message QueryGetDIDByAddressResponse {
+  repeated string dids = 1;                     // Multiple DIDs per address allowed
+}
+
+// QueryValidateMintEligibilityRequest checks if user can mint a VC
+message QueryValidateMintEligibilityRequest {
+  string holder_address = 1;
+  VCType vc_type = 2;
+  string vc_type_custom = 3;
+}
+
+message QueryValidateMintEligibilityResponse {
+  bool eligible = 1;
+  repeated string missing_requirements = 2;     // What's missing
+  uint64 current_cs = 3;
+  uint64 required_cs = 4;
+  repeated string completed_ir_ids = 5;
+  repeated string required_ir_ids = 6;
+}
+
+// QueryStatsRequest retrieves registry statistics
+message QueryStatsRequest {}
+
+message QueryStatsResponse {
+  uint64 total_vcs_minted = 1;
+  uint64 total_active_vcs = 2;
+  uint64 total_revoked_vcs = 3;
+  uint64 total_expired_vcs = 4;
+  uint64 total_dids = 5;
+  uint64 total_policies = 6;
+  map<string, uint64> vcs_by_type = 7;          // Type -> count
+}
+
+// QueryParamsRequest retrieves module parameters
+message QueryParamsRequest {}
+
+message QueryParamsResponse {
+  Params params = 1;
+}
+
+// Query service defines read-only queries
+service Query {
+  // VC queries
+  rpc GetVC(QueryGetVCRequest) returns (QueryGetVCResponse);
+  rpc ListUserVCs(QueryListUserVCsRequest) returns (QueryListUserVCsResponse);
+  rpc CheckVCStatus(QueryCheckVCStatusRequest) returns (QueryCheckVCStatusResponse);
+  rpc BatchVCStatus(QueryBatchVCStatusRequest) returns (QueryBatchVCStatusResponse);
+
+  // Policy queries
+  rpc GetVCPolicy(QueryGetVCPolicyRequest) returns (QueryGetVCPolicyResponse);
+  rpc ListVCPolicies(QueryListVCPoliciesRequest) returns (QueryListVCPoliciesResponse);
+
+  // Revocation queries
+  rpc GetRevocationList(QueryGetRevocationListRequest) returns (QueryGetRevocationListResponse);
+  rpc CheckRevocation(QueryCheckRevocationRequest) returns (QueryCheckRevocationResponse);
+
+  // DID queries
+  rpc ResolveDID(QueryResolveDIDRequest) returns (QueryResolveDIDResponse);
+  rpc GetDIDByAddress(QueryGetDIDByAddressRequest) returns (QueryGetDIDByAddressResponse);
+
+  // Eligibility check
+  rpc ValidateMintEligibility(QueryValidateMintEligibilityRequest) returns (QueryValidateMintEligibilityResponse);
+
+  // Stats
+  rpc Stats(QueryStatsRequest) returns (QueryStatsResponse);
+
+  // Params
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse);
+}
+
+// ============================
+// EVENTS
+// ============================
+
+// EventVCMinted is emitted when a VC is minted
+message EventVCMinted {
+  string vc_id = 1;
+  VCType vc_type = 2;
+  string vc_type_custom = 3;
+  string holder_did = 4;
+  string holder_address = 5;
+  google.protobuf.Timestamp issued_at = 6;
+  google.protobuf.Timestamp expires_at = 7;
+  uint64 block_height = 8;
+  string policy_version = 9;
+}
+
+// EventVCRevoked is emitted when a VC is revoked
+message EventVCRevoked {
+  string vc_id = 1;
+  VCType vc_type = 2;
+  RevocationReason reason = 3;
+  string revoker = 4;
+  google.protobuf.Timestamp revoked_at = 5;
+  uint64 block_height = 6;
+}
+
+// EventVCExpired is emitted when a VC expires
+message EventVCExpired {
+  string vc_id = 1;
+  VCType vc_type = 2;
+  string holder_address = 3;
+  google.protobuf.Timestamp expired_at = 4;
+}
+
+// EventVCSuspended is emitted when a VC is suspended
+message EventVCSuspended {
+  string vc_id = 1;
+  string reason = 2;
+  google.protobuf.Timestamp suspended_at = 3;
+  google.protobuf.Timestamp reactivate_at = 4;
+}
+
+// EventVCReactivated is emitted when a VC is reactivated
+message EventVCReactivated {
+  string vc_id = 1;
+  google.protobuf.Timestamp reactivated_at = 2;
+}
+
+// EventVCPolicyCreated is emitted when a policy is created
+message EventVCPolicyCreated {
+  string vc_type_name = 1;
+  VCType vc_type_enum = 2;
+  uint64 cs_threshold = 3;
+  string version = 4;
+  uint64 block_height = 5;
+}
+
+// EventVCPolicyUpdated is emitted when a policy is updated
+message EventVCPolicyUpdated {
+  string vc_type_name = 1;
+  string old_version = 2;
+  string new_version = 3;
+  uint64 block_height = 4;
+}
+
+// EventVCPolicyDeprecated is emitted when a policy is deprecated
+message EventVCPolicyDeprecated {
+  string vc_type_name = 1;
+  string reason = 2;
+  google.protobuf.Timestamp deprecated_at = 3;
+}
+
+// EventDIDRegistered is emitted when a DID is registered
+message EventDIDRegistered {
+  string did = 1;
+  string controller = 2;
+  google.protobuf.Timestamp created_at = 3;
+  uint64 block_height = 4;
+}
+
+// EventDIDUpdated is emitted when a DID document is updated
+message EventDIDUpdated {
+  string did = 1;
+  google.protobuf.Timestamp updated_at = 2;
+  uint64 block_height = 3;
+}
+
+// EventMerkleRootUpdated is emitted when revocation Merkle root updates
+message EventMerkleRootUpdated {
+  bytes old_root = 1;
+  bytes new_root = 2;
+  uint64 total_revocations = 3;
+  uint64 block_height = 4;
+}

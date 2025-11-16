@@ -1,0 +1,293 @@
+name: Regression Tests
+
+on:
+  push:
+    branches: ["master", "main"]
+  pull_request:
+    branches: ["master", "main"]
+  workflow_dispatch:
+    inputs:
+      test_suite:
+        description: 'Test suite to run'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - critical
+          - module-specific
+
+env:
+  GO_VERSION: '1.25'
+
+jobs:
+  # Critical Path Regression Tests
+  critical-regression:
+    name: Critical Path Regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Run critical path tests
+        run: |
+          cd chain
+          go test ./... -v -run TestCritical -timeout 40m
+
+  # Module Regression Tests
+  module-regression:
+    name: Module Regression Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      matrix:
+        module:
+          - identitychange
+          - vcregistry
+          - dataregistry
+          - inclusionroutines
+          - confidencescore
+          - prevalidation
+          - dex
+          - bridge
+          - validatorsecurity
+          - cryptography
+          - economicsecurity
+          - governance
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Run module tests
+        run: |
+          cd chain
+          go test ./x/${{ matrix.module }}/... -v -timeout 55m
+
+  # API Regression Tests
+  api-regression:
+    name: API Regression Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Start test node
+        run: |
+          cd chain
+          go build -o build/aurad ./cmd/aurad
+          ./build/aurad init test --chain-id test-1 &
+          sleep 10
+
+      - name: Run API tests
+        run: |
+          # Test REST API endpoints
+          curl -f http://localhost:1317/cosmos/base/tendermint/v1beta1/node_info || exit 1
+
+          # Test gRPC endpoints
+          cd chain
+          go run ./testing/api/grpc_test.go
+
+      - name: Stop test node
+        run: pkill aurad
+
+  # State Migration Regression
+  state-migration-regression:
+    name: State Migration Regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Test state migrations
+        run: |
+          cd chain
+          go test ./app/upgrades/... -v -timeout 25m
+
+  # Transaction Regression Tests
+  transaction-regression:
+    name: Transaction Regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Run transaction tests
+        run: |
+          cd chain
+          # Test various transaction types
+          go test ./testing/regression/transactions/... -v -timeout 35m
+
+  # Consensus Regression Tests
+  consensus-regression:
+    name: Consensus Regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Run consensus tests
+        run: |
+          cd chain
+          go test ./testing/regression/consensus/... -v -timeout 40m
+
+  # Backward Compatibility Tests
+  backward-compatibility:
+    name: Backward Compatibility
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Test backward compatibility
+        run: |
+          cd chain
+          # Test with previous protocol versions
+          go test ./testing/regression/compatibility/... -v -timeout 25m
+
+  # Performance Regression
+  performance-regression:
+    name: Performance Regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Download baseline benchmarks
+        uses: actions/download-artifact@v4
+        with:
+          name: baseline-benchmarks
+          path: chain/
+        continue-on-error: true
+
+      - name: Run performance benchmarks
+        run: |
+          cd chain
+          go test ./... -bench=. -benchmem -timeout 30m | tee current-benchmarks.txt
+
+      - name: Compare with baseline
+        run: |
+          cd chain
+          if [ -f baseline-benchmarks.txt ]; then
+            go install golang.org/x/perf/cmd/benchstat@latest
+            benchstat baseline-benchmarks.txt current-benchmarks.txt | tee regression-report.txt
+
+            # Check for significant regressions
+            if grep -q "~" regression-report.txt; then
+              echo "⚠️ Performance regressions detected!"
+              cat regression-report.txt
+            fi
+          else
+            echo "No baseline found, saving current as baseline"
+            cp current-benchmarks.txt baseline-benchmarks.txt
+          fi
+
+      - name: Upload current benchmarks
+        uses: actions/upload-artifact@v4
+        with:
+          name: current-benchmarks
+          path: chain/current-benchmarks.txt
+
+  # Regression Report
+  regression-report:
+    name: Generate Regression Report
+    runs-on: ubuntu-latest
+    needs:
+      - critical-regression
+      - module-regression
+      - api-regression
+      - state-migration-regression
+      - transaction-regression
+      - consensus-regression
+      - backward-compatibility
+      - performance-regression
+    if: always()
+
+    steps:
+      - name: Generate report
+        run: |
+          echo "# Regression Test Report" > report.md
+          echo "" >> report.md
+          echo "## Test Results" >> report.md
+          echo "- Critical Path: ${{ needs.critical-regression.result }}" >> report.md
+          echo "- Module Tests: ${{ needs.module-regression.result }}" >> report.md
+          echo "- API Tests: ${{ needs.api-regression.result }}" >> report.md
+          echo "- State Migration: ${{ needs.state-migration-regression.result }}" >> report.md
+          echo "- Transactions: ${{ needs.transaction-regression.result }}" >> report.md
+          echo "- Consensus: ${{ needs.consensus-regression.result }}" >> report.md
+          echo "- Backward Compatibility: ${{ needs.backward-compatibility.result }}" >> report.md
+          echo "- Performance: ${{ needs.performance-regression.result }}" >> report.md
+
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: regression-report
+          path: report.md
+
+      - name: Comment PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('report.md', 'utf8');
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: report
+            });

@@ -2,10 +2,22 @@ package app
 
 import (
 	tmlog "cosmossdk.io/log"
+	"github.com/aequitas/aura/chain/x/bridge"
+	"github.com/aequitas/aura/chain/x/confidencescore"
+	cskeeper "github.com/aequitas/aura/chain/x/confidencescore/keeper"
+	csparams "github.com/aequitas/aura/chain/x/confidencescore/params"
+	cstypes "github.com/aequitas/aura/chain/x/confidencescore/types"
+	"github.com/aequitas/aura/chain/x/dataregistry"
+	"github.com/aequitas/aura/chain/x/dex"
 	"github.com/aequitas/aura/chain/x/identitychange"
-	"github.com/aequitas/aura/chain/x/identitychange/keeper"
-	"github.com/aequitas/aura/chain/x/identitychange/params"
-	"github.com/aequitas/aura/chain/x/identitychange/types"
+	idkeeper "github.com/aequitas/aura/chain/x/identitychange/keeper"
+	idparams "github.com/aequitas/aura/chain/x/identitychange/params"
+	idtypes "github.com/aequitas/aura/chain/x/identitychange/types"
+	"github.com/aequitas/aura/chain/x/inclusionroutines"
+	irkeeper "github.com/aequitas/aura/chain/x/inclusionroutines/keeper"
+	irparams "github.com/aequitas/aura/chain/x/inclusionroutines/params"
+	irtypes "github.com/aequitas/aura/chain/x/inclusionroutines/types"
+	"github.com/aequitas/aura/chain/x/vcregistry"
 	"github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -13,7 +25,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-// CosmosApp represents a minimal Cosmos SDK application shell that wires the identitychange module into baseapp.
+// CosmosApp represents a minimal Cosmos SDK application shell that wires the identitychange and inclusionroutines modules into baseapp.
 type CosmosApp struct {
 	*baseapp.BaseApp
 	moduleManager ModuleManager
@@ -21,7 +33,7 @@ type CosmosApp struct {
 	encoding      EncodingConfig
 }
 
-// NewCosmosApp builds the shell with the identitychange keeper/module manager wired into a baseapp instance.
+// NewCosmosApp builds the shell with the identitychange, inclusionroutines, and confidencescore keeper/module manager wired into a baseapp instance.
 func NewCosmosApp(logger tmlog.Logger) *CosmosApp {
 	if logger == nil {
 		logger = tmlog.NewNopLogger()
@@ -35,10 +47,33 @@ func NewCosmosApp(logger tmlog.Logger) *CosmosApp {
 		dummyTxDecoder,
 	)
 	bApp.SetInterfaceRegistry(encoding.InterfaceRegistry)
-	paramsStore := params.NewStore(types.DefaultParams())
-	k := keeper.NewKeeper(paramsStore)
-	module := identitychange.NewAppModule(k)
-	manager := NewModuleManager(module)
+
+	// Initialize identitychange module
+	idParamsStore := idparams.NewStore(idtypes.DefaultParams())
+	idKeeper := idkeeper.NewKeeper(idParamsStore)
+	idModule := identitychange.NewAppModule(idKeeper)
+
+	// Initialize inclusionroutines module
+	irParamsStore := irparams.NewStore(irtypes.DefaultParams())
+	irKeeper := irkeeper.NewKeeper(irParamsStore)
+	irModule := inclusionroutines.NewAppModule(irKeeper)
+
+	// Initialize confidencescore module (needs IR keeper as dependency)
+	csParamsStore := csparams.NewStore(cstypes.DefaultParams())
+	csKeeper := cskeeper.NewKeeper(csParamsStore)
+	csKeeper.SetIRRegistry(irKeeper)
+	csModule := confidencescore.NewAppModule(csKeeper)
+
+	// Create module manager with all modules
+	manager := NewModuleManager(
+		[]identitychange.AppModule{idModule},
+		[]inclusionroutines.AppModule{irModule},
+		[]confidencescore.AppModule{csModule},
+		[]vcregistry.AppModule{},
+		[]dataregistry.AppModule{}, // Empty for now
+		[]dex.AppModule{},          // Empty - requires BankKeeper, AccountKeeper
+		[]bridge.AppModule{},       // Empty - requires BankKeeper, AccountKeeper
+	)
 	grpcServer := grpc.NewServer()
 	app := &CosmosApp{
 		BaseApp:       bApp,

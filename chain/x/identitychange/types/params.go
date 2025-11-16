@@ -1,6 +1,10 @@
 package types
 
-import "fmt"
+import (
+	"fmt"
+
+	identitychangepb "github.com/aequitas/aura/proto/aura/identitychange/v1beta1"
+)
 
 type Params struct {
 	MaxRequestsPerWalletPerMonth  int32  `json:"max_requests_per_wallet_per_month"`
@@ -17,6 +21,34 @@ func DefaultParams() Params {
 		StalenessHeightThreshold:      10000,
 		AssistantSlashOnFalsePositive: true,
 		StalenessInvestigatorChain:    "",
+	}
+}
+
+func DefaultParamsProto() *identitychangepb.Params {
+	defaults := DefaultParams()
+	return ParamsToProto(defaults)
+}
+
+func ParamsFromProto(pb *identitychangepb.Params) Params {
+	if pb == nil {
+		return Params{}
+	}
+	return Params{
+		MaxRequestsPerWalletPerMonth:  pb.MaxRequestsPerWalletPerMonth,
+		MinConfidenceAfterChange:      int64(pb.MinConfidenceAfterChange),
+		StalenessHeightThreshold:      pb.StalenessHeightThreshold,
+		AssistantSlashOnFalsePositive: pb.AssistantSlashOnFalsePositive,
+		StalenessInvestigatorChain:    pb.StalenessInvestigatorChain,
+	}
+}
+
+func ParamsToProto(p Params) *identitychangepb.Params {
+	return &identitychangepb.Params{
+		MaxRequestsPerWalletPerMonth:  p.MaxRequestsPerWalletPerMonth,
+		MinConfidenceAfterChange:      int32(p.MinConfidenceAfterChange),
+		StalenessHeightThreshold:      p.StalenessHeightThreshold,
+		AssistantSlashOnFalsePositive: p.AssistantSlashOnFalsePositive,
+		StalenessInvestigatorChain:    p.StalenessInvestigatorChain,
 	}
 }
 

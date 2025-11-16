@@ -3,8 +3,10 @@ package app
 import (
 	"testing"
 
+	"github.com/aequitas/aura/chain/x/confidencescore"
 	"github.com/aequitas/aura/chain/x/identitychange"
 	"github.com/aequitas/aura/chain/x/identitychange/keeper"
+	"github.com/aequitas/aura/chain/x/inclusionroutines"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 )
@@ -19,7 +21,11 @@ func (f *fakeRegistrar) RegisterService(desc *grpc.ServiceDesc, impl interface{}
 
 func TestRegisterGRPCServices(t *testing.T) {
 	k := keeper.NewKeeper(nil)
-	manager := NewModuleManager(identitychange.NewAppModule(k))
+	manager := NewModuleManager(
+		[]identitychange.AppModule{identitychange.NewAppModule(k)},
+		[]inclusionroutines.AppModule{},
+		[]confidencescore.AppModule{},
+	)
 
 	registrar := &fakeRegistrar{}
 	manager.RegisterGRPCServices(registrar)
