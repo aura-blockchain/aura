@@ -10,6 +10,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/aequitas/aura/chain/x/bridge/types"
@@ -170,7 +171,7 @@ Requires validator signatures to prove tokens were burned on the source chain.
 
 			sourceChain := args[0]
 			burnTxHash := args[1]
-			amount, ok := sdk.NewIntFromString(args[2])
+			amount, ok := sdkmath.NewIntFromString(args[2])
 			if !ok {
 				return fmt.Errorf("invalid amount: %s", args[2])
 			}
@@ -233,7 +234,7 @@ Requires validator signature over (source_chain, source_tx_hash, recipient, amou
 			sourceChain := args[0]
 			sourceTxHash := args[1]
 			recipient := args[2]
-			amount, ok := sdk.NewIntFromString(args[3])
+			amount, ok := sdkmath.NewIntFromString(args[3])
 			if !ok {
 				return fmt.Errorf("invalid amount: %s", args[3])
 			}
@@ -342,7 +343,7 @@ The swap may route through multiple chains (e.g., AURA -> Osmosis -> PAW).
 			}
 			targetChain := args[2]
 			targetDenom := args[3]
-			minTargetAmount, ok := sdk.NewIntFromString(args[4])
+			minTargetAmount, ok := sdkmath.NewIntFromString(args[4])
 			if !ok {
 				return fmt.Errorf("invalid min target amount: %s", args[4])
 			}

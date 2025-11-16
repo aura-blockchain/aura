@@ -10,6 +10,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkmath "cosmossdk.io/math"
 
 	"github.com/aequitas/aura/chain/x/dex/types"
 )
@@ -166,7 +167,7 @@ Note: You will receive tokens proportional to your share of the pool.
 			}
 
 			// Parse LP tokens amount
-			lpTokens, ok := sdk.NewIntFromString(args[1])
+			lpTokens, ok := sdkmath.NewIntFromString(args[1])
 			if !ok {
 				return fmt.Errorf("invalid lp-tokens amount: %s", args[1])
 			}
@@ -218,7 +219,7 @@ Note: Verified users (100+ IR points) earn 40% more fees!
 			}
 
 			// Parse min amount out
-			minAmountOut, ok := sdk.NewIntFromString(args[2])
+			minAmountOut, ok := sdkmath.NewIntFromString(args[2])
 			if !ok {
 				return fmt.Errorf("invalid min-amount-out: %s", args[2])
 			}
@@ -288,12 +289,12 @@ Orders expire after 24 hours by default.
 			}
 
 			// Parse amounts
-			auraAmount, ok := sdk.NewIntFromString(args[1])
+			auraAmount, ok := sdkmath.NewIntFromString(args[1])
 			if !ok {
 				return fmt.Errorf("invalid aura-amount: %s", args[1])
 			}
 
-			otherAmount, ok := sdk.NewIntFromString(args[3])
+			otherAmount, ok := sdkmath.NewIntFromString(args[3])
 			if !ok {
 				return fmt.Errorf("invalid other-amount: %s", args[3])
 			}
