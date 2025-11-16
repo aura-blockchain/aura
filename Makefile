@@ -1,4 +1,6 @@
-.PHONY: build test proto-gen clean install help lint fmt test-integration test-e2e test-stress test-chaos test-coverage test-bench
+.PHONY: help build test proto-gen clean install lint fmt test-integration test-e2e test-stress \
+	test-chaos test-coverage test-bench test-unit test-vc test-cs test-ir test-id test-race \
+	mod-tidy check ci security-scan docker-up docker-down docker-logs init-testnet start-node reset-testnet
 
 # Build variables
 BUILD_DIR := build
@@ -7,34 +9,57 @@ PROTO_DIR := proto
 BINARY_NAME := aurad
 COVERAGE_FILE := coverage.out
 COVERAGE_HTML := coverage.html
+NODE_HOME := $(HOME)/.aura
 
-# Help target
+# Help target - Show all available targets
 help:
-	@echo "AURA Blockchain - Make Targets"
-	@echo "==============================="
-	@echo "build            - Build all modules and create binaries"
-	@echo "test             - Run all tests"
-	@echo "test-unit        - Run unit tests only"
-	@echo "test-integration - Run integration tests"
-	@echo "test-e2e         - Run end-to-end tests"
-	@echo "test-stress      - Run stress tests"
-	@echo "test-chaos       - Run chaos engineering tests"
-	@echo "test-coverage    - Run tests with coverage report"
-	@echo "test-race        - Run tests with race detector"
-	@echo "test-bench       - Run benchmark tests"
-	@echo "test-vc          - Run VC registry tests"
-	@echo "test-cs          - Run confidence score tests"
-	@echo "test-ir          - Run inclusion routines tests"
-	@echo "test-id          - Run identity change tests"
-	@echo "proto-gen        - Generate protobuf bindings"
-	@echo "clean            - Remove build artifacts"
-	@echo "install          - Install binaries to GOPATH"
-	@echo "lint             - Run linters"
-	@echo "fmt              - Format code"
-	@echo "mod-tidy         - Tidy Go modules"
-	@echo "check            - Run all checks (fmt, lint, test)"
-	@echo "ci               - Run CI pipeline"
-	@echo "security-scan    - Run security vulnerability scan"
+	@echo "============================================================================"
+	@echo "AURA Blockchain - Makefile Targets"
+	@echo "============================================================================"
+	@echo ""
+	@echo "Installation & Setup:"
+	@echo "  install               ## Install binaries to GOPATH"
+	@echo ""
+	@echo "Development:"
+	@echo "  build                 ## Build all modules and create binaries"
+	@echo "  fmt                   ## Format code with gofmt and buf"
+	@echo "  lint                  ## Run linters (golangci-lint)"
+	@echo "  proto-gen             ## Generate protobuf bindings"
+	@echo "  mod-tidy              ## Tidy Go modules"
+	@echo ""
+	@echo "Testing:"
+	@echo "  test                  ## Run all tests"
+	@echo "  test-unit             ## Run unit tests only"
+	@echo "  test-integration      ## Run integration tests"
+	@echo "  test-e2e              ## Run end-to-end tests"
+	@echo "  test-stress           ## Run stress tests"
+	@echo "  test-chaos            ## Run chaos engineering tests"
+	@echo "  test-coverage         ## Run tests with coverage report"
+	@echo "  test-race             ## Run tests with race detector"
+	@echo "  test-bench            ## Run benchmark tests"
+	@echo "  test-vc               ## Run VC registry tests"
+	@echo "  test-cs               ## Run confidence score tests"
+	@echo "  test-ir               ## Run inclusion routines tests"
+	@echo "  test-id               ## Run identity change tests"
+	@echo ""
+	@echo "Docker & Services:"
+	@echo "  docker-up             ## Start Docker services"
+	@echo "  docker-down           ## Stop Docker services"
+	@echo "  docker-logs           ## View Docker service logs"
+	@echo ""
+	@echo "Blockchain Operations:"
+	@echo "  init-testnet          ## Initialize testnet node"
+	@echo "  start-node            ## Start blockchain node"
+	@echo "  reset-testnet         ## Reset testnet data"
+	@echo ""
+	@echo "Quality & Security:"
+	@echo "  check                 ## Run all checks (fmt, lint, test)"
+	@echo "  security-scan         ## Run security vulnerability scan"
+	@echo "  ci                    ## Run CI pipeline"
+	@echo ""
+	@echo "Maintenance:"
+	@echo "  clean                 ## Remove build artifacts and caches"
+	@echo ""
 
 # Build all modules
 build:
@@ -166,3 +191,42 @@ check: fmt lint test
 # Run CI pipeline
 ci: build test-coverage lint
 	@echo "CI pipeline complete!"
+
+# ============================================================================
+# Docker & Services
+# ============================================================================
+
+docker-up:
+	@echo "Starting Docker services..."
+	docker-compose up -d
+	@echo "✓ Docker services started"
+	@docker-compose ps
+
+docker-down:
+	@echo "Stopping Docker services..."
+	docker-compose down
+	@echo "✓ Docker services stopped"
+
+docker-logs:
+	@echo "Viewing Docker service logs (press Ctrl+C to exit)..."
+	docker-compose logs -f
+
+# ============================================================================
+# Blockchain Node Operations
+# ============================================================================
+
+init-testnet:
+	@echo "Initializing testnet node..."
+	@mkdir -p $(NODE_HOME)
+	cd $(CHAIN_DIR) && go run ./cmd/aurad init-testnet --home $(NODE_HOME)
+	@echo "✓ Testnet node initialized at $(NODE_HOME)"
+
+start-node:
+	@echo "Starting blockchain node..."
+	cd $(CHAIN_DIR) && go run ./cmd/aurad start --home $(NODE_HOME)
+
+reset-testnet:
+	@echo "Resetting testnet data..."
+	@rm -rf $(NODE_HOME)
+	@echo "✓ Testnet data reset"
+	@$(MAKE) init-testnet
