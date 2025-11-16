@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"fmt"
 
 	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -71,6 +70,6 @@ func (k Keeper) GetParams(ctx sdk.Context) (params types.Params) {
 
 // SetParams sets the bridge parameters to the param space.
 func (k Keeper) SetParams(ctx sdk.Context, params types.Params) error {
-	// Only admins can set params
-	caller := sdk.AccAddress("sender")
+	// TODO: Implement parameter validation and storage
+	return nil
 }
