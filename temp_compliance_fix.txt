@@ -1,0 +1,11 @@
+// initializeDefaultMonitoringRules sets up default transaction monitoring rules
+func (k *Keeper) initializeDefaultMonitoringRules(ctx sdk.Context) error {
+	_, err := k.GetParamsFromStore(ctx)
+	if err != nil {
+		return err
+	}
+
+	// TODO: Implement monitoring rules storage in KVStore
+	// Currently disabled until proper KVStore methods are implemented
+	return nil
+}

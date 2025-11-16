@@ -36,125 +36,14 @@ func NewKeeper(cdc codec.BinaryCodec, storeKey storetypes.StoreKey) *Keeper {
 
 // initializeDefaultMonitoringRules sets up default transaction monitoring rules
 func (k *Keeper) initializeDefaultMonitoringRules(ctx sdk.Context) error {
-	params, err := k.GetParamsFromStore(ctx)
+	_, err := k.GetParamsFromStore(ctx)
 	if err != nil {
 		return err
 	}
 
-	now := time.Now()
-
-	// Velocity rule - detect rapid succession of transactions
-	rule1 := &types.TransactionMonitoringRule{
-		ID:          "velocity_24h",
-		Name:        "24-Hour Velocity Limit",
-		Description: "Triggers when transaction volume exceeds limit in 24 hours",
-		RuleType:    "velocity",
-		Parameters: map[string]string{
-			"time_window": "24h",
-			"limit":       k.params.VelocityLimit24h,
-		},
-		RiskLevel: types.TxRiskMedium,
-		Enabled:   true,
-		CreatedAt: now,
-		UpdatedAt: now,
-	}
-
-	// Large transaction rule
-	k.monitoringRules["large_transaction"] = &types.TransactionMonitoringRule{
-		ID:          "large_transaction",
-		Name:        "Large Transaction Alert",
-		Description: "Triggers for transactions exceeding the single transaction limit",
-		RuleType:    "threshold",
-		Parameters: map[string]string{
-			"threshold": k.params.SingleTransactionLimit,
-		},
-		RiskLevel: types.TxRiskHigh,
-		Enabled:   true,
-		CreatedAt: now,
-		UpdatedAt: now,
-	}
-
-	// Structuring detection - multiple transactions just below reporting threshold
-	k.monitoringRules["structuring"] = &types.TransactionMonitoringRule{
-		ID:          "structuring",
-		Name:        "Structuring Detection",
-		Description: "Detects potential structuring behavior (multiple txs just below threshold)",
-		RuleType:    "structuring",
-		Parameters: map[string]string{
-			"count_threshold":  string(rune(k.params.StructuringThresholdCount)),
-			"amount_threshold": "9900", // Just below 10K reporting threshold
-			"time_window":      "24h",
-		},
-		RiskLevel: types.TxRiskHigh,
-		Enabled:   true,
-		CreatedAt: now,
-		UpdatedAt: now,
-	}
-
-	// Smurfing detection - coordinated transactions across multiple accounts
-	k.monitoringRules["smurfing"] = &types.TransactionMonitoringRule{
-		ID:          "smurfing",
-		Name:        "Smurfing Detection",
-		Description: "Detects coordinated transactions across multiple accounts",
-		RuleType:    "smurfing",
-		Parameters: map[string]string{
-			"min_accounts":         "3",
-			"time_window":          "1h",
-			"similarity_threshold": "0.8",
-		},
-		RiskLevel: types.TxRiskCritical,
-		Enabled:   true,
-		CreatedAt: now,
-		UpdatedAt: now,
-	}
-
-	// Round amount detection
-	k.monitoringRules["round_amounts"] = &types.TransactionMonitoringRule{
-		ID:          "round_amounts",
-		Name:        "Round Amount Pattern",
-		Description: "Detects suspicious patterns of round number transactions",
-		RuleType:    "pattern",
-		Parameters: map[string]string{
-			"count_threshold": "5",
-			"time_window":     "24h",
-		},
-		RiskLevel: types.TxRiskMedium,
-		Enabled:   true,
-		CreatedAt: now,
-		UpdatedAt: now,
-	}
-
-	// Rapid movement detection
-	k.monitoringRules["rapid_movement"] = &types.TransactionMonitoringRule{
-		ID:          "rapid_movement",
-		Name:        "Rapid Fund Movement",
-		Description: "Detects funds moving rapidly through multiple accounts",
-		RuleType:    "chain",
-		Parameters: map[string]string{
-			"min_hops":   "3",
-			"max_time":   "1h",
-			"min_amount": "1000",
-		},
-		RiskLevel: types.TxRiskHigh,
-		Enabled:   true,
-		CreatedAt: now,
-		UpdatedAt: now,
-	}
-
-	// Geographic risk
-	k.monitoringRules["high_risk_jurisdiction"] = &types.TransactionMonitoringRule{
-		ID:          "high_risk_jurisdiction",
-		Name:        "High-Risk Jurisdiction",
-		Description: "Flags transactions involving high-risk jurisdictions",
-		RuleType:    "jurisdiction",
-		Parameters: map[string]string{
-			"risk_countries": "KP,IR,SY", // Example: North Korea, Iran, Syria
-		},
-		RiskLevel: types.TxRiskCritical,
-		Enabled:   true,
-		CreatedAt: now,
-		UpdatedAt: now,
-	}
+	// TODO: Implement monitoring rules storage in KVStore
+	// Currently disabled until proper KVStore methods are implemented
+	return nil
 }
 
 // GetParams returns the current module parameters
