@@ -182,7 +182,7 @@ func (s *QueryServer) TokenomicsStats(ctx context.Context, req *economicsecurity
 	params := s.keeper.GetParams()
 	totalVested, totalVesting := s.keeper.GetTotalVesting()
 	totalLocked := s.keeper.GetTotalLockedGovernance()
-	whaleTriggers := s.keeper.GetWhaleProtectionTriggers_24H()
+	whaleTriggers := s.keeper.GetWhaleProtectionTriggers24h()
 	taxCollected := s.keeper.GetTaxCollected24h()
 
 	return &economicsecuritypb.QueryTokenomicsStatsResponse{

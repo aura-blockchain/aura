@@ -21,7 +21,6 @@ func NewAppModule(k *keeper.Keeper) AppModule {
 // RegisterGRPCServices registers the module's gRPC services
 func (am AppModule) RegisterGRPCServices(server *grpc.Server) {
 	// Register message server
-	_ = queryServer // In a real implementation, this would be registered with the server
 }
 
 // Name returns the module name
