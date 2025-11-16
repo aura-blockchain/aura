@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"time"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
@@ -122,7 +123,7 @@ func (k Keeper) AddLiquidity(
 	poolID string,
 	amountA sdk.Coin,
 	amountB sdk.Coin,
-) (sdkmath.Int, sdk.Dec, error) {
+) (sdkmath.Int, sdkmath.LegacyDec, error) {
 	// Get pool
 	pool := k.GetPool(ctx, poolID)
 	if pool == nil {
@@ -347,7 +348,7 @@ func (k Keeper) SwapExactIn(
 	coinIn sdk.Coin,
 	minAmountOut sdkmath.Int,
 	maxSlippageBps uint64,
-) (sdkmath.Int, sdk.Dec, sdk.Dec, error) {
+) (sdkmath.Int, sdkmath.LegacyDec, sdkmath.LegacyDec, error) {
 	// Get pool
 	pool := k.GetPool(ctx, poolID)
 	if pool == nil {
@@ -503,7 +504,7 @@ func (k Keeper) GetQuote(
 	poolID string,
 	denomIn string,
 	amountIn sdkmath.Int,
-) (sdkmath.Int, sdk.Dec, sdk.Dec, sdkmath.Int, error) {
+) (sdkmath.Int, sdkmath.LegacyDec, sdkmath.LegacyDec, sdkmath.Int, error) {
 	pool := k.GetPool(ctx, poolID)
 	if pool == nil {
 		return sdk.ZeroInt(), sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroInt(),
