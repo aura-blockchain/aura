@@ -53,7 +53,7 @@ func (k Keeper) SetHardwareWallet(ctx context.Context, walletID string, config [
 func (k Keeper) GetHardwareWallet(ctx context.Context, walletID string) ([]byte, error) {
 	store := k.getStore(ctx)
 	key := types.GetHardwareWalletKey(walletID)
-	value := store.Get(key)
+	value, _ := store.Get(key)
 	if value == nil {
 		return nil, types.ErrHardwareWalletNotFound
 	}
@@ -72,7 +72,7 @@ func (k Keeper) SetMultiSigWallet(ctx context.Context, walletID string, wallet [
 func (k Keeper) GetMultiSigWallet(ctx context.Context, walletID string) ([]byte, error) {
 	store := k.getStore(ctx)
 	key := types.GetMultiSigWalletKey(walletID)
-	value := store.Get(key)
+	value, _ := store.Get(key)
 	if value == nil {
 		return nil, types.ErrMultiSigWalletNotFound
 	}
@@ -91,7 +91,7 @@ func (k Keeper) SetPendingMultiSigTx(ctx context.Context, txID string, tx []byte
 func (k Keeper) GetPendingMultiSigTx(ctx context.Context, txID string) ([]byte, error) {
 	store := k.getStore(ctx)
 	key := types.GetPendingMultiSigTxKey(txID)
-	value := store.Get(key)
+	value, _ := store.Get(key)
 	if value == nil {
 		return nil, types.ErrMultiSigTxNotFound
 	}
@@ -118,7 +118,7 @@ func (k Keeper) SetSocialRecoveryConfig(ctx context.Context, walletID string, co
 func (k Keeper) GetSocialRecoveryConfig(ctx context.Context, walletID string) ([]byte, error) {
 	store := k.getStore(ctx)
 	key := types.GetSocialRecoveryKey(walletID)
-	value := store.Get(key)
+	value, _ := store.Get(key)
 	if value == nil {
 		return nil, types.ErrRecoveryNotEnabled
 	}
@@ -137,7 +137,7 @@ func (k Keeper) SetRecoveryRequest(ctx context.Context, requestID string, reques
 func (k Keeper) GetRecoveryRequest(ctx context.Context, requestID string) ([]byte, error) {
 	store := k.getStore(ctx)
 	key := types.GetRecoveryRequestKey(requestID)
-	value := store.Get(key)
+	value, _ := store.Get(key)
 	if value == nil {
 		return nil, types.ErrRecoveryRequestNotFound
 	}
@@ -156,7 +156,7 @@ func (k Keeper) SetSpendingLimit(ctx context.Context, walletID, denom string, li
 func (k Keeper) GetSpendingLimit(ctx context.Context, walletID, denom string) ([]byte, error) {
 	store := k.getStore(ctx)
 	key := types.GetSpendingLimitKey(walletID, denom)
-	value := store.Get(key)
+	value, _ := store.Get(key)
 	if value == nil {
 		return nil, types.ErrSpendingLimitNotFound
 	}
@@ -175,7 +175,7 @@ func (k Keeper) SetSessionConfig(ctx context.Context, sessionID string, config [
 func (k Keeper) GetSessionConfig(ctx context.Context, sessionID string) ([]byte, error) {
 	store := k.getStore(ctx)
 	key := types.GetSessionConfigKey(sessionID)
-	value := store.Get(key)
+	value, _ := store.Get(key)
 	if value == nil {
 		return nil, types.ErrSessionNotFound
 	}
@@ -194,7 +194,7 @@ func (k Keeper) SetBiometricAuth(ctx context.Context, walletID string, auth []by
 func (k Keeper) GetBiometricAuth(ctx context.Context, walletID string) ([]byte, error) {
 	store := k.getStore(ctx)
 	key := types.GetBiometricAuthKey(walletID)
-	value := store.Get(key)
+	value, _ := store.Get(key)
 	if value == nil {
 		return nil, types.ErrBiometricNotEnrolled
 	}
@@ -213,7 +213,7 @@ func (k Keeper) SetSecureEnclaveConfig(ctx context.Context, walletID string, con
 func (k Keeper) GetSecureEnclaveConfig(ctx context.Context, walletID string) ([]byte, error) {
 	store := k.getStore(ctx)
 	key := types.GetSecureEnclaveKey(walletID)
-	value := store.Get(key)
+	value, _ := store.Get(key)
 	if value == nil {
 		return nil, types.ErrEnclaveNotAvailable
 	}
@@ -232,7 +232,7 @@ func (k Keeper) SetEncryptedBackup(ctx context.Context, backupID string, backup 
 func (k Keeper) GetEncryptedBackup(ctx context.Context, backupID string) ([]byte, error) {
 	store := k.getStore(ctx)
 	key := types.GetEncryptedBackupKey(backupID)
-	value := store.Get(key)
+	value, _ := store.Get(key)
 	if value == nil {
 		return nil, types.ErrBackupNotFound
 	}
@@ -251,7 +251,7 @@ func (k Keeper) SetDustFilter(ctx context.Context, walletID string, filter []byt
 func (k Keeper) GetDustFilter(ctx context.Context, walletID string) ([]byte, error) {
 	store := k.getStore(ctx)
 	key := types.GetDustFilterKey(walletID)
-	value := store.Get(key)
+	value, _ := store.Get(key)
 	if value == nil {
 		return nil, types.ErrDustFilterNotEnabled
 	}
@@ -270,7 +270,7 @@ func (k Keeper) SetDomainVerification(ctx context.Context, domain string, verifi
 func (k Keeper) GetDomainVerification(ctx context.Context, domain string) ([]byte, error) {
 	store := k.getStore(ctx)
 	key := types.GetDomainVerificationKey(domain)
-	value := store.Get(key)
+	value, _ := store.Get(key)
 	if value == nil {
 		return nil, types.ErrDomainNotVerified
 	}
@@ -289,7 +289,7 @@ func (k Keeper) SetSecurityMetrics(ctx context.Context, walletID string, metrics
 func (k Keeper) GetSecurityMetrics(ctx context.Context, walletID string) ([]byte, error) {
 	store := k.getStore(ctx)
 	key := types.GetSecurityMetricsKey(walletID)
-	value := store.Get(key)
+	value, _ := store.Get(key)
 	if value == nil {
 		// Return empty metrics if not found
 		return nil, fmt.Errorf("security metrics not found for wallet %s", walletID)
@@ -309,7 +309,7 @@ func (k Keeper) SetDustTransaction(ctx context.Context, txHash string, tx []byte
 func (k Keeper) GetDustTransaction(ctx context.Context, txHash string) ([]byte, error) {
 	store := k.getStore(ctx)
 	key := types.GetDustTransactionKey(txHash)
-	value := store.Get(key)
+	value, _ := store.Get(key)
 	if value == nil {
 		return nil, fmt.Errorf("dust transaction not found: %s", txHash)
 	}
