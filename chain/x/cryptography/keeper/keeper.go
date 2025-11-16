@@ -71,7 +71,7 @@ func (k Keeper) GetParams(ctx context.Context) (*cryptoproto.Params, error) {
 	store := k.getStore(ctx)
 	bz := store.Get(types.ParamsKey)
 	if bz == nil {
-		return types.DefaultParams(), nil
+		params := types.DefaultParams(); return &params, nil
 	}
 
 	var params cryptoproto.Params

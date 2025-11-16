@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"github.com/aequitas/aura/chain/x/cryptography/types"
 	cryptoproto "github.com/aequitas/aura/proto/aura/cryptography/v1beta1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -52,7 +53,7 @@ func (k Keeper) CreateKeyRotationSchedule(
 	schedule := &cryptoproto.KeyRotationSchedule{
 		Id:                      scheduleID,
 		KeyId:                   keyID,
-		NextRotationTime:        nextRotation,
+		NextRotationTime:        timestamppb.New(nextRotation),
 		RotationIntervalSeconds: rotationIntervalSeconds,
 		Enabled:                 true,
 		CreatedBy:               creator,
@@ -125,9 +126,9 @@ func (k Keeper) RotateKey(
 	// Update any associated rotation schedules
 	for scheduleID, schedule := range k.rotationSchedules {
 		if schedule.KeyId == keyID {
-			schedule.LastRotation = &rotationTime
+			schedule.LastRotation = timestamppb.New(rotationTime)
 			nextRotation := rotationTime.Add(time.Duration(schedule.RotationIntervalSeconds) * time.Second)
-			schedule.NextRotationTime = nextRotation
+			schedule.NextRotationTime = timestamppb.New(nextRotation)
 
 			// Update in store
 			store := k.getStore(ctx)
@@ -161,7 +162,7 @@ func (k Keeper) ProcessScheduledRotations(ctx context.Context) error {
 			continue
 		}
 
-		if schedule.NextRotationTime.After(now) {
+		if schedule.NextRotationTime.AsTime().After(now) {
 			continue
 		}
 
@@ -178,9 +179,9 @@ func (k Keeper) ProcessScheduledRotations(ctx context.Context) error {
 		// 4. Archive the old key
 
 		// Update schedule
-		schedule.LastRotation = &now
+		schedule.LastRotation = timestamppb.New(now)
 		nextRotation := now.Add(time.Duration(schedule.RotationIntervalSeconds) * time.Second)
-		schedule.NextRotationTime = nextRotation
+		schedule.NextRotationTime = timestamppb.New(nextRotation)
 
 		// Update in store
 		store := k.getStore(ctx)

@@ -27,19 +27,19 @@ func (k *Keeper) InitGenesis(ctx context.Context, data *cryptoproto.GenesisState
 		}
 	}
 
-	// Initialize threshold signature schemes
-	for _, scheme := range data.ThresholdSchemes {
-		if err := k.SetThresholdScheme(ctx, scheme); err != nil {
-			k.Logger(ctx).Error("failed to initialize threshold scheme", "scheme_id", scheme.SchemeId, "error", err)
-		}
-	}
+// 	// Initialize threshold signature schemes
+// 	for _, scheme := range data.ThresholdSchemes {
+// 		if err := k.SetThresholdScheme(ctx, scheme); err != nil {
+// 			k.Logger(ctx).Error("failed to initialize threshold scheme", "scheme_id", scheme.SchemeId, "error", err)
+// 		}
+// 	}
 
-	// Initialize ZK proof configs
-	for _, config := range data.ZkProofConfigs {
-		if err := k.SetZKProofConfig(ctx, config); err != nil {
-			k.Logger(ctx).Error("failed to initialize ZK proof config", "proof_id", config.ProofId, "error", err)
-		}
-	}
+// 	// Initialize ZK proof configs
+// 	for _, config := range data.ZkProofConfigs {
+// 		if err := k.SetZKProofConfig(ctx, config); err != nil {
+// 			k.Logger(ctx).Error("failed to initialize ZK proof config", "proof_id", config.ProofId, "error", err)
+// 		}
+// 	}
 
 	// Initialize secure enclaves
 	for _, enclave := range data.SecureEnclaves {

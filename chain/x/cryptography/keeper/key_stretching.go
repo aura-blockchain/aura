@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/sha512"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"fmt"
 	"time"
 
@@ -54,7 +55,7 @@ func (k Keeper) CreateKeyStretchingConfig(
 		Parallelism: parallelism,
 		KeyLength:   keyLength,
 		Salt:        salt,
-		CreatedAt:   now,
+		CreatedAt:   timestamppb.New(now),
 	}
 
 	// Store in state
