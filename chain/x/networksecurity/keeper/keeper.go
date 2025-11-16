@@ -33,13 +33,6 @@ type Keeper struct {
 }
 
 // MessageCache implements LRU cache for gossip message deduplication
-type MessageCache struct {
-	mu           sync.RWMutex
-	cache        map[string]time.Time // message hash -> timestamp
-	maxSize      int
-	ttl          time.Duration
-	cleanupTimer *time.Timer
-}
 
 // NewKeeper creates a new network security Keeper
 func NewKeeper(
@@ -443,56 +436,10 @@ func (k Keeper) DecrementConnectionCount(ctx sdk.Context, ipAddress string) erro
 }
 
 // NewMessageCache creates a new message cache for gossip deduplication
-func NewMessageCache(maxSize int) *MessageCache {
-	mc := &MessageCache{
-		cache:   make(map[string]time.Time),
-		maxSize: maxSize,
-		ttl:     5 * time.Minute, // Default 5 minute TTL
-	}
-
-	// Start cleanup goroutine
-	mc.startCleanup()
-
-	return mc
-}
 
 // Has checks if a message hash exists in the cache
-func (mc *MessageCache) Has(messageHash string) bool {
-	mc.mu.RLock()
-	defer mc.mu.RUnlock()
-
-	timestamp, exists := mc.cache[messageHash]
-	if !exists {
-		return false
-	}
-
-	// Check if expired
-	if time.Since(timestamp) > mc.ttl {
-		return false
-	}
-
-	return true
-}
 
 // Add adds a message hash to the cache
-func (mc *MessageCache) Add(messageHash string) bool {
-	mc.mu.Lock()
-	defer mc.mu.Unlock()
-
-	// Check if already exists
-	if _, exists := mc.cache[messageHash]; exists {
-		return false
-	}
-
-	// Check if cache is full
-	if len(mc.cache) >= mc.maxSize {
-		// Evict oldest entry
-		mc.evictOldest()
-	}
-
-	mc.cache[messageHash] = time.Now()
-	return true
-}
 
 // evictOldest removes the oldest entry from the cache
 func (mc *MessageCache) evictOldest() {
@@ -543,11 +490,6 @@ func (mc *MessageCache) Stop() {
 }
 
 // Size returns the current cache size
-func (mc *MessageCache) Size() int {
-	mc.mu.RLock()
-	defer mc.mu.RUnlock()
-	return len(mc.cache)
-}
 
 // Clear removes all entries from the cache
 func (mc *MessageCache) Clear() {
@@ -574,38 +516,6 @@ func (k Keeper) CheckGossipMessage(ctx sdk.Context, messageData []byte) (bool, s
 }
 
 // ValidateGossipMessage performs comprehensive gossip message validation
-func (k Keeper) ValidateGossipMessage(
-	ctx sdk.Context,
-	peerID string,
-	messageData []byte,
-	messageType string,
-) error {
-	params, _ := k.GetParams(ctx)
-
-	// 1. Check message size
-	if uint64(len(messageData)) > params.Gossip.MaxMessageSize {
-		k.PenalizeReputation(ctx, peerID, params.Reputation.MisbehaviorPenalty)
-		return types.ErrMessageTooLarge
-	}
-
-	// 2. Check for duplicate
-	isDuplicate, _, err := k.CheckGossipMessage(ctx, messageData)
-	if err != nil {
-		// Message is a duplicate
-		k.PenalizeReputation(ctx, peerID, params.Reputation.MisbehaviorPenalty/10)
-		return err
-	}
-
-	// 3. Check gossip fanout limits
-	peerInfo, exists := k.GetPeerInfo(ctx, peerID)
-	if exists {
-		// Track gossip stats
-		peerInfo.MessagesSent++
-		k.SetPeerInfo(ctx, peerInfo)
-	}
-
-	return nil
-}
 
 // GetMessageCacheStats returns statistics about the message cache
 func (k Keeper) GetMessageCacheStats() map[string]interface{} {
