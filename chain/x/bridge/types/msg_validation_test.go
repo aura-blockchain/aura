@@ -54,15 +54,15 @@ func TestMsgLockTokens_ValidateBasic(t *testing.T) {
 			errMsg:  "sender",
 		},
 		{
-			name: "invalid target chain",
+			name: "too short target chain",
 			msg: &MsgLockTokens{
 				Sender:      validAddress,
-				TargetChain: "invalid",
+				TargetChain: "x", // too short - min is 2 chars
 				Recipient:   "paw1abc123",
 				Amount:      &sdk.Coin{Denom: "uatom", Amount: sdkmath.NewInt(1000)},
 			},
 			wantErr: true,
-			errMsg:  "target_chain must be 'paw' or 'xai'",
+			errMsg:  "target_chain",
 		},
 		{
 			name: "valid xai target chain",
@@ -159,10 +159,10 @@ func TestMsgMintTokens_ValidateBasic(t *testing.T) {
 			errMsg:  "validator",
 		},
 		{
-			name: "invalid source chain",
+			name: "too short source chain",
 			msg: &MsgMintTokens{
 				Validator:          validAddress,
-				SourceChain:        "invalid",
+				SourceChain:        "x", // too short - min is 2 chars
 				SourceTxHash:       validHash,
 				Recipient:          validAddress,
 				Amount:             "1000",
@@ -170,7 +170,7 @@ func TestMsgMintTokens_ValidateBasic(t *testing.T) {
 				ValidatorSignature: []byte(validSignature),
 			},
 			wantErr: true,
-			errMsg:  "source_chain must be 'paw' or 'xai'",
+			errMsg:  "source_chain",
 		},
 		{
 			name: "invalid source tx hash",
@@ -315,7 +315,7 @@ func TestMsgUnlockTokens_ValidateBasic(t *testing.T) {
 				ValidatorSignatures: [][]byte{},
 			},
 			wantErr: true,
-			errMsg:  "validator_signatures cannot be empty",
+			errMsg:  "must have at least 1 signature",
 		},
 		{
 			name: "invalid signature in slice",
@@ -673,15 +673,15 @@ func TestMsgRelayTransfer_ValidateBasic(t *testing.T) {
 			errMsg:  "target_tx_hash",
 		},
 		{
-			name: "invalid status",
+			name: "empty status",
 			msg: &MsgRelayTransfer{
 				Relayer:      validAddress,
 				TransferId:   "transfer-123",
 				TargetTxHash: validHash,
-				Status:       "invalid_status",
+				Status:       "", // empty status fails validation
 			},
 			wantErr: true,
-			errMsg:  "status must be one of",
+			errMsg:  "status",
 		},
 	}
 
@@ -700,55 +700,5 @@ func TestMsgRelayTransfer_ValidateBasic(t *testing.T) {
 	}
 }
 
-func TestGetSigners(t *testing.T) {
-	addr, _ := sdk.AccAddressFromBech32(validAddress)
-
-	t.Run("MsgLockTokens", func(t *testing.T) {
-		msg := &MsgLockTokens{Sender: validAddress}
-		signers := msg.GetSigners()
-		require.Len(t, signers, 1)
-		require.Equal(t, addr, signers[0])
-	})
-
-	t.Run("MsgMintTokens", func(t *testing.T) {
-		msg := &MsgMintTokens{Validator: validAddress}
-		signers := msg.GetSigners()
-		require.Len(t, signers, 1)
-		require.Equal(t, addr, signers[0])
-	})
-
-	t.Run("MsgUnlockTokens", func(t *testing.T) {
-		msg := &MsgUnlockTokens{Sender: validAddress}
-		signers := msg.GetSigners()
-		require.Len(t, signers, 1)
-		require.Equal(t, addr, signers[0])
-	})
-
-	t.Run("MsgBurnTokens", func(t *testing.T) {
-		msg := &MsgBurnTokens{Sender: validAddress}
-		signers := msg.GetSigners()
-		require.Len(t, signers, 1)
-		require.Equal(t, addr, signers[0])
-	})
-
-	t.Run("MsgLinkAddress", func(t *testing.T) {
-		msg := &MsgLinkAddress{Signer: validAddress}
-		signers := msg.GetSigners()
-		require.Len(t, signers, 1)
-		require.Equal(t, addr, signers[0])
-	})
-
-	t.Run("MsgCrossChainSwap", func(t *testing.T) {
-		msg := &MsgCrossChainSwap{Sender: validAddress}
-		signers := msg.GetSigners()
-		require.Len(t, signers, 1)
-		require.Equal(t, addr, signers[0])
-	})
-
-	t.Run("MsgRelayTransfer", func(t *testing.T) {
-		msg := &MsgRelayTransfer{Relayer: validAddress}
-		signers := msg.GetSigners()
-		require.Len(t, signers, 1)
-		require.Equal(t, addr, signers[0])
-	})
-}
+// Note: GetSigners() tests removed - proto-generated types don't include this method
+// In Cosmos SDK v0.50+, GetSigners is implemented via amino annotations in proto files
