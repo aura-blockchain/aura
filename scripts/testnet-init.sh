@@ -1,0 +1,344 @@
+#!/bin/bash
+# ============================================================================
+# AURA Testnet Initialization Script
+# ============================================================================
+# This script initializes a 4-validator local testnet for AURA blockchain
+# Chain ID: aura-local-4
+# ============================================================================
+
+set -e
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Configuration
+CHAIN_ID="aura-local-4"
+DENOM="uaura"
+STAKING_AMOUNT="900000000000${DENOM}"  # 900,000 AURA per validator
+NUM_VALIDATORS=4
+BINARY="aurad"
+VALIDATOR_MONIKERS=("validator-1" "validator-2" "validator-3" "validator-4")
+
+# Base directory for testnet data
+TESTNET_DIR="${PWD}/testnet-data"
+
+# Docker network configuration (must match docker-compose.testnet.yml)
+VALIDATOR_IPS=("172.26.0.10" "172.26.0.11" "172.26.0.12" "172.26.0.13")
+
+echo -e "${BLUE}============================================================================${NC}"
+echo -e "${BLUE}AURA Multi-Node Testnet Initialization${NC}"
+echo -e "${BLUE}============================================================================${NC}"
+echo -e "${GREEN}Chain ID:${NC} ${CHAIN_ID}"
+echo -e "${GREEN}Validators:${NC} ${NUM_VALIDATORS}"
+echo -e "${GREEN}Staking per validator:${NC} ${STAKING_AMOUNT}"
+echo ""
+
+# ============================================================================
+# Step 1: Build the aurad binary
+# ============================================================================
+echo -e "${YELLOW}[1/8]${NC} Building aurad binary..."
+cd "${PWD}/chain"
+if ! command -v go &> /dev/null; then
+    echo -e "${RED}Error: Go is not installed${NC}"
+    exit 1
+fi
+
+go build -o "${BINARY}" ./cmd/aurad
+if [ ! -f "${BINARY}" ]; then
+    echo -e "${RED}Error: Failed to build ${BINARY}${NC}"
+    exit 1
+fi
+chmod +x "${BINARY}"
+echo -e "${GREEN}✓ Binary built successfully${NC}"
+
+# Move binary to a location accessible for the script
+BINARY_PATH="${PWD}/${BINARY}"
+echo -e "${GREEN}✓ Binary location: ${BINARY_PATH}${NC}"
+cd ..
+
+# ============================================================================
+# Step 2: Clean up old testnet data
+# ============================================================================
+echo -e "${YELLOW}[2/8]${NC} Cleaning up old testnet data..."
+rm -rf "${TESTNET_DIR}"
+mkdir -p "${TESTNET_DIR}"
+echo -e "${GREEN}✓ Testnet directory created: ${TESTNET_DIR}${NC}"
+
+# ============================================================================
+# Step 3: Initialize each validator node
+# ============================================================================
+echo -e "${YELLOW}[3/8]${NC} Initializing ${NUM_VALIDATORS} validator nodes..."
+for i in $(seq 0 $((NUM_VALIDATORS - 1))); do
+    MONIKER="${VALIDATOR_MONIKERS[$i]}"
+    NODE_HOME="${TESTNET_DIR}/${MONIKER}"
+
+    echo -e "  ${BLUE}Initializing ${MONIKER}...${NC}"
+    "${BINARY_PATH}" init "${MONIKER}" \
+        --chain-id "${CHAIN_ID}" \
+        --home "${NODE_HOME}" \
+        --overwrite > /dev/null 2>&1
+
+    echo -e "  ${GREEN}✓ ${MONIKER} initialized${NC}"
+done
+
+# ============================================================================
+# Step 4: Create validator keys and configure genesis accounts
+# ============================================================================
+echo -e "${YELLOW}[4/8]${NC} Creating validator keys and accounts..."
+
+# We'll collect all validator addresses and node IDs
+declare -a VALIDATOR_ADDRESSES
+declare -a NODE_IDS
+
+for i in $(seq 0 $((NUM_VALIDATORS - 1))); do
+    MONIKER="${VALIDATOR_MONIKERS[$i]}"
+    NODE_HOME="${TESTNET_DIR}/${MONIKER}"
+
+    echo -e "  ${BLUE}Creating key for ${MONIKER}...${NC}"
+
+    # Create validator key
+    echo "password123" | "${BINARY_PATH}" keys add "${MONIKER}" \
+        --keyring-backend test \
+        --home "${NODE_HOME}" \
+        --output json > "${NODE_HOME}/key.json" 2>&1
+
+    # Extract validator address
+    VALIDATOR_ADDR=$(echo "password123" | "${BINARY_PATH}" keys show "${MONIKER}" \
+        --keyring-backend test \
+        --home "${NODE_HOME}" \
+        --address 2>/dev/null)
+
+    VALIDATOR_ADDRESSES[$i]="${VALIDATOR_ADDR}"
+
+    # Get node ID for persistent_peers
+    NODE_ID=$("${BINARY_PATH}" tendermint show-node-id --home "${NODE_HOME}")
+    NODE_IDS[$i]="${NODE_ID}"
+
+    echo -e "  ${GREEN}✓ ${MONIKER}: ${VALIDATOR_ADDR}${NC}"
+    echo -e "  ${GREEN}  Node ID: ${NODE_ID}${NC}"
+done
+
+# ============================================================================
+# Step 5: Configure genesis file with all validators
+# ============================================================================
+echo -e "${YELLOW}[5/8]${NC} Configuring genesis file..."
+
+# Use validator-1 as the template for genesis
+GENESIS_HOME="${TESTNET_DIR}/${VALIDATOR_MONIKERS[0]}"
+GENESIS_FILE="${GENESIS_HOME}/config/genesis.json"
+
+# Add all validator accounts to genesis
+for i in $(seq 0 $((NUM_VALIDATORS - 1))); do
+    MONIKER="${VALIDATOR_MONIKERS[$i]}"
+    VALIDATOR_ADDR="${VALIDATOR_ADDRESSES[$i]}"
+
+    echo -e "  ${BLUE}Adding ${MONIKER} to genesis...${NC}"
+    "${BINARY_PATH}" genesis add-genesis-account "${VALIDATOR_ADDR}" \
+        "1000000000000${DENOM}" \
+        --home "${GENESIS_HOME}" > /dev/null 2>&1
+done
+
+# Configure genesis parameters for testnet
+echo -e "  ${BLUE}Configuring genesis parameters...${NC}"
+
+# Use jq to modify genesis parameters (if jq is available)
+if command -v jq &> /dev/null; then
+    # Staking parameters
+    jq '.app_state.staking.params.unbonding_time = "1814400s"' "${GENESIS_FILE}" > tmp.json && mv tmp.json "${GENESIS_FILE}"
+    jq '.app_state.staking.params.max_validators = 100' "${GENESIS_FILE}" > tmp.json && mv tmp.json "${GENESIS_FILE}"
+
+    # Governance parameters (shorter voting period for testing)
+    jq '.app_state.gov.params.voting_period = "300s"' "${GENESIS_FILE}" > tmp.json && mv tmp.json "${GENESIS_FILE}"
+    jq '.app_state.gov.params.min_deposit[0].amount = "10000000"' "${GENESIS_FILE}" > tmp.json && mv tmp.json "${GENESIS_FILE}"
+
+    # Mint parameters
+    jq '.app_state.mint.params.inflation_min = "0.07"' "${GENESIS_FILE}" > tmp.json && mv tmp.json "${GENESIS_FILE}"
+    jq '.app_state.mint.params.inflation_max = "0.20"' "${GENESIS_FILE}" > tmp.json && mv tmp.json "${GENESIS_FILE}"
+
+    # Crisis module constant fee
+    jq '.app_state.crisis.constant_fee.denom = "uaura"' "${GENESIS_FILE}" > tmp.json && mv tmp.json "${GENESIS_FILE}"
+
+    echo -e "  ${GREEN}✓ Genesis parameters configured${NC}"
+else
+    echo -e "  ${YELLOW}⚠ jq not found, using default genesis parameters${NC}"
+fi
+
+# ============================================================================
+# Step 6: Create gentx for each validator
+# ============================================================================
+echo -e "${YELLOW}[6/8]${NC} Creating genesis transactions (gentx)..."
+
+for i in $(seq 0 $((NUM_VALIDATORS - 1))); do
+    MONIKER="${VALIDATOR_MONIKERS[$i]}"
+    NODE_HOME="${TESTNET_DIR}/${MONIKER}"
+
+    # Copy the genesis file to each node
+    cp "${GENESIS_FILE}" "${NODE_HOME}/config/genesis.json"
+
+    echo -e "  ${BLUE}Creating gentx for ${MONIKER}...${NC}"
+
+    "${BINARY_PATH}" genesis gentx "${MONIKER}" \
+        "${STAKING_AMOUNT}" \
+        --chain-id "${CHAIN_ID}" \
+        --keyring-backend test \
+        --home "${NODE_HOME}" \
+        --moniker "${MONIKER}" \
+        --commission-rate 0.1 \
+        --commission-max-rate 0.2 \
+        --commission-max-change-rate 0.01 \
+        --min-self-delegation 1 > /dev/null 2>&1
+
+    echo -e "  ${GREEN}✓ gentx created for ${MONIKER}${NC}"
+done
+
+# ============================================================================
+# Step 7: Collect all gentx files
+# ============================================================================
+echo -e "${YELLOW}[7/8]${NC} Collecting genesis transactions..."
+
+# Copy all gentx files to validator-1
+for i in $(seq 1 $((NUM_VALIDATORS - 1))); do
+    MONIKER="${VALIDATOR_MONIKERS[$i]}"
+    NODE_HOME="${TESTNET_DIR}/${MONIKER}"
+
+    cp "${NODE_HOME}/config/gentx/"*.json "${GENESIS_HOME}/config/gentx/"
+done
+
+# Collect all gentx into genesis
+"${BINARY_PATH}" genesis collect-gentxs --home "${GENESIS_HOME}" > /dev/null 2>&1
+echo -e "${GREEN}✓ All gentx collected${NC}"
+
+# Validate genesis
+"${BINARY_PATH}" genesis validate-genesis --home "${GENESIS_HOME}" > /dev/null 2>&1
+echo -e "${GREEN}✓ Genesis validated successfully${NC}"
+
+# Distribute final genesis to all validators
+FINAL_GENESIS="${GENESIS_HOME}/config/genesis.json"
+for i in $(seq 1 $((NUM_VALIDATORS - 1))); do
+    MONIKER="${VALIDATOR_MONIKERS[$i]}"
+    NODE_HOME="${TESTNET_DIR}/${MONIKER}"
+    cp "${FINAL_GENESIS}" "${NODE_HOME}/config/genesis.json"
+done
+
+# ============================================================================
+# Step 8: Configure persistent_peers for each node
+# ============================================================================
+echo -e "${YELLOW}[8/8]${NC} Configuring persistent peers..."
+
+for i in $(seq 0 $((NUM_VALIDATORS - 1))); do
+    MONIKER="${VALIDATOR_MONIKERS[$i]}"
+    NODE_HOME="${TESTNET_DIR}/${MONIKER}"
+    CONFIG_FILE="${NODE_HOME}/config/config.toml"
+
+    # Build persistent_peers string (exclude self)
+    PEERS=""
+    for j in $(seq 0 $((NUM_VALIDATORS - 1))); do
+        if [ $i -ne $j ]; then
+            NODE_ID="${NODE_IDS[$j]}"
+            IP="${VALIDATOR_IPS[$j]}"
+            if [ -n "${PEERS}" ]; then
+                PEERS="${PEERS},"
+            fi
+            PEERS="${PEERS}${NODE_ID}@${IP}:26656"
+        fi
+    done
+
+    # Update config.toml
+    sed -i.bak "s/^persistent_peers = .*/persistent_peers = \"${PEERS}\"/" "${CONFIG_FILE}"
+    sed -i.bak 's/^cors_allowed_origins = \[\]/cors_allowed_origins = ["*"]/' "${CONFIG_FILE}"
+    sed -i.bak 's/^allow_duplicate_ip = false/allow_duplicate_ip = true/' "${CONFIG_FILE}"
+
+    # Enable prometheus metrics
+    sed -i.bak 's/^prometheus = false/prometheus = true/' "${CONFIG_FILE}"
+
+    # Faster block times for testing
+    sed -i.bak 's/^timeout_commit = .*/timeout_commit = "3s"/' "${CONFIG_FILE}"
+
+    echo -e "  ${GREEN}✓ ${MONIKER} configured with peers${NC}"
+done
+
+# ============================================================================
+# Final Step: Create Docker volume initialization script
+# ============================================================================
+echo -e "${YELLOW}Creating Docker volume population script...${NC}"
+
+cat > "${TESTNET_DIR}/populate-volumes.sh" << 'EOF'
+#!/bin/bash
+# Populate Docker volumes with initialized testnet data
+
+set -e
+
+TESTNET_DIR="$(dirname "$0")"
+VALIDATORS=("validator-1" "validator-2" "validator-3" "validator-4")
+
+echo "Populating Docker volumes..."
+
+for VALIDATOR in "${VALIDATORS[@]}"; do
+    VOLUME_NAME="aura_${VALIDATOR}-data"
+
+    # Create a temporary container to copy data
+    echo "  Copying data for ${VALIDATOR}..."
+
+    docker run --rm \
+        -v "${VOLUME_NAME}:/home/aura/.aura" \
+        -v "${TESTNET_DIR}/${VALIDATOR}:/source:ro" \
+        alpine sh -c "cp -r /source/config /home/aura/.aura/ && \
+                      cp -r /source/data /home/aura/.aura/ && \
+                      cp -r /source/keyring-test /home/aura/.aura/ 2>/dev/null || true"
+
+    echo "  ✓ ${VALIDATOR} volume populated"
+done
+
+echo "All volumes populated successfully!"
+EOF
+
+chmod +x "${TESTNET_DIR}/populate-volumes.sh"
+
+# ============================================================================
+# Summary
+# ============================================================================
+echo ""
+echo -e "${BLUE}============================================================================${NC}"
+echo -e "${GREEN}Testnet Initialization Complete!${NC}"
+echo -e "${BLUE}============================================================================${NC}"
+echo ""
+echo -e "${GREEN}Chain ID:${NC} ${CHAIN_ID}"
+echo -e "${GREEN}Validators:${NC} ${NUM_VALIDATORS}"
+echo -e "${GREEN}Testnet Data:${NC} ${TESTNET_DIR}"
+echo ""
+echo -e "${YELLOW}Validator Details:${NC}"
+for i in $(seq 0 $((NUM_VALIDATORS - 1))); do
+    MONIKER="${VALIDATOR_MONIKERS[$i]}"
+    echo -e "  ${BLUE}${MONIKER}:${NC}"
+    echo -e "    Address: ${VALIDATOR_ADDRESSES[$i]}"
+    echo -e "    Node ID: ${NODE_IDS[$i]}"
+    echo -e "    IP: ${VALIDATOR_IPS[$i]}"
+done
+echo ""
+echo -e "${YELLOW}Next Steps:${NC}"
+echo -e "  1. Populate Docker volumes:"
+echo -e "     ${BLUE}cd testnet-data && ./populate-volumes.sh${NC}"
+echo ""
+echo -e "  2. Start the testnet:"
+echo -e "     ${BLUE}docker-compose -f docker-compose.testnet.yml up -d${NC}"
+echo ""
+echo -e "  3. View logs:"
+echo -e "     ${BLUE}docker-compose -f docker-compose.testnet.yml logs -f validator-1${NC}"
+echo ""
+echo -e "  4. Check node status:"
+echo -e "     ${BLUE}curl http://localhost:26657/status${NC}"
+echo ""
+echo -e "${YELLOW}Port Mappings:${NC}"
+echo -e "  validator-1: RPC=26657, API=1317, P2P=26656, gRPC=9090, Metrics=26660"
+echo -e "  validator-2: RPC=26757, API=1417, P2P=26756, gRPC=9190, Metrics=26760"
+echo -e "  validator-3: RPC=26857, API=1517, P2P=26856, gRPC=9290, Metrics=26860"
+echo -e "  validator-4: RPC=26957, API=1617, P2P=26956, gRPC=9390, Metrics=26960"
+echo ""
+echo -e "  Monitoring: Prometheus=9091, Grafana=3001"
+echo ""
+echo -e "${GREEN}Happy testing!${NC}"
+echo -e "${BLUE}============================================================================${NC}"

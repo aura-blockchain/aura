@@ -37,10 +37,11 @@ All modules have keepers, protos, and tests:
 - ✅ Web: `/wallet/web/`
 
 ### Infrastructure
-- ✅ Docker: `/docker-compose.yml`, `/docker-compose.secure.yml`
+- ✅ Docker: `/docker-compose.yml`, `/docker-compose.secure.yml`, `/docker-compose.testnet.yml`
 - ✅ Kubernetes: `/k8s/base/`, `/k8s/overlays/` (dev, staging, production)
 - ✅ Monitoring: `/prometheus/`, `/grafana/dashboards/`
 - ✅ Deployment scripts: `/deployment-security/scripts/`
+- ✅ Testnet scripts: `/scripts/testnet-init.sh`, `/scripts/testnet-manage.sh`
 
 ### Testing (376+ test files in `/chain/testing/`)
 - ✅ Unit, integration, e2e, chaos, benchmark tests
@@ -128,7 +129,12 @@ All modules have keepers, protos, and tests:
 - [ ] Benchmark gas consumption
 
 ### Multi-Node (4 validators)
-- [ ] Deploy with Docker Compose
+- [x] Deploy with Docker Compose → `/docker-compose.testnet.yml`
+- [x] Create initialization script → `/scripts/testnet-init.sh`
+- [x] Create management script → `/scripts/testnet-manage.sh`
+- [x] Create Prometheus config → `/prometheus/prometheus-testnet.yml`
+- [x] Create testnet documentation → `/TESTNET_SETUP.md`, `/TESTNET_QUICKSTART.md`
+- [ ] Run initialization and start testnet
 - [ ] Test Byzantine fault tolerance (stop 1 validator = consensus continues)
 - [ ] Test state synchronization
 

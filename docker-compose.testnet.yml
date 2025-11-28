@@ -1,0 +1,322 @@
+version: '3.8'
+
+# ============================================================================
+# AURA Multi-Node Local Testnet - 4 Validators
+# Chain ID: aura-local-4
+# ============================================================================
+#
+# Usage:
+#   1. Initialize the testnet:
+#      ./scripts/testnet-init.sh
+#
+#   2. Start all validators:
+#      docker-compose -f docker-compose.testnet.yml up -d
+#
+#   3. View logs:
+#      docker-compose -f docker-compose.testnet.yml logs -f validator-1
+#
+#   4. Stop the testnet:
+#      docker-compose -f docker-compose.testnet.yml down
+#
+# ============================================================================
+
+services:
+  # ==========================================================================
+  # Validator 1 - Primary Validator
+  # ==========================================================================
+  validator-1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VERSION: "v1.0.0-testnet"
+        COMMIT: "${GIT_COMMIT:-unknown}"
+        BUILD_DATE: "${BUILD_DATE:-unknown}"
+    container_name: aura-validator-1
+    hostname: validator-1
+    restart: unless-stopped
+    ports:
+      # P2P
+      - "26656:26656"
+      # RPC
+      - "26657:26657"
+      # REST API
+      - "1317:1317"
+      # gRPC
+      - "9090:9090"
+      # Prometheus metrics
+      - "26660:26660"
+    volumes:
+      - validator-1-data:/home/aura/.aura
+      - ./scripts:/scripts:ro
+    environment:
+      - CHAIN_ID=aura-local-4
+      - MONIKER=validator-1
+      - VALIDATOR_INDEX=0
+      - LOG_LEVEL=info
+      - MINIMUM_GAS_PRICES=0.025uaura
+      - ENABLE_UNSAFE_CORS=true
+    networks:
+      aura-testnet:
+        ipv4_address: 172.26.0.10
+    healthcheck:
+      test: ["CMD", "aurad", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+    labels:
+      - "aura.role=validator"
+      - "aura.network=testnet"
+      - "aura.validator.index=1"
+
+  # ==========================================================================
+  # Validator 2
+  # ==========================================================================
+  validator-2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VERSION: "v1.0.0-testnet"
+        COMMIT: "${GIT_COMMIT:-unknown}"
+        BUILD_DATE: "${BUILD_DATE:-unknown}"
+    container_name: aura-validator-2
+    hostname: validator-2
+    restart: unless-stopped
+    ports:
+      # P2P (offset by 100)
+      - "26756:26656"
+      # RPC
+      - "26757:26657"
+      # REST API
+      - "1417:1317"
+      # gRPC
+      - "9190:9090"
+      # Prometheus metrics
+      - "26760:26660"
+    volumes:
+      - validator-2-data:/home/aura/.aura
+      - ./scripts:/scripts:ro
+    environment:
+      - CHAIN_ID=aura-local-4
+      - MONIKER=validator-2
+      - VALIDATOR_INDEX=1
+      - LOG_LEVEL=info
+      - MINIMUM_GAS_PRICES=0.025uaura
+      - ENABLE_UNSAFE_CORS=true
+    networks:
+      aura-testnet:
+        ipv4_address: 172.26.0.11
+    healthcheck:
+      test: ["CMD", "aurad", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+    depends_on:
+      - validator-1
+    labels:
+      - "aura.role=validator"
+      - "aura.network=testnet"
+      - "aura.validator.index=2"
+
+  # ==========================================================================
+  # Validator 3
+  # ==========================================================================
+  validator-3:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VERSION: "v1.0.0-testnet"
+        COMMIT: "${GIT_COMMIT:-unknown}"
+        BUILD_DATE: "${BUILD_DATE:-unknown}"
+    container_name: aura-validator-3
+    hostname: validator-3
+    restart: unless-stopped
+    ports:
+      # P2P (offset by 200)
+      - "26856:26656"
+      # RPC
+      - "26857:26657"
+      # REST API
+      - "1517:1317"
+      # gRPC
+      - "9290:9090"
+      # Prometheus metrics
+      - "26860:26660"
+    volumes:
+      - validator-3-data:/home/aura/.aura
+      - ./scripts:/scripts:ro
+    environment:
+      - CHAIN_ID=aura-local-4
+      - MONIKER=validator-3
+      - VALIDATOR_INDEX=2
+      - LOG_LEVEL=info
+      - MINIMUM_GAS_PRICES=0.025uaura
+      - ENABLE_UNSAFE_CORS=true
+    networks:
+      aura-testnet:
+        ipv4_address: 172.26.0.12
+    healthcheck:
+      test: ["CMD", "aurad", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+    depends_on:
+      - validator-1
+    labels:
+      - "aura.role=validator"
+      - "aura.network=testnet"
+      - "aura.validator.index=3"
+
+  # ==========================================================================
+  # Validator 4
+  # ==========================================================================
+  validator-4:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VERSION: "v1.0.0-testnet"
+        COMMIT: "${GIT_COMMIT:-unknown}"
+        BUILD_DATE: "${BUILD_DATE:-unknown}"
+    container_name: aura-validator-4
+    hostname: validator-4
+    restart: unless-stopped
+    ports:
+      # P2P (offset by 300)
+      - "26956:26656"
+      # RPC
+      - "26957:26657"
+      # REST API
+      - "1617:1317"
+      # gRPC
+      - "9390:9090"
+      # Prometheus metrics
+      - "26960:26660"
+    volumes:
+      - validator-4-data:/home/aura/.aura
+      - ./scripts:/scripts:ro
+    environment:
+      - CHAIN_ID=aura-local-4
+      - MONIKER=validator-4
+      - VALIDATOR_INDEX=3
+      - LOG_LEVEL=info
+      - MINIMUM_GAS_PRICES=0.025uaura
+      - ENABLE_UNSAFE_CORS=true
+    networks:
+      aura-testnet:
+        ipv4_address: 172.26.0.13
+    healthcheck:
+      test: ["CMD", "aurad", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+    depends_on:
+      - validator-1
+    labels:
+      - "aura.role=validator"
+      - "aura.network=testnet"
+      - "aura.validator.index=4"
+
+  # ==========================================================================
+  # Prometheus - Metrics Aggregation for All Validators
+  # ==========================================================================
+  prometheus-testnet:
+    image: prom/prometheus:latest
+    container_name: aura-testnet-prometheus
+    restart: unless-stopped
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./prometheus/prometheus-testnet.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-testnet-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=7d'
+      - '--web.enable-lifecycle'
+    networks:
+      - aura-testnet
+    depends_on:
+      - validator-1
+      - validator-2
+      - validator-3
+      - validator-4
+    labels:
+      - "aura.role=monitoring"
+      - "aura.network=testnet"
+
+  # ==========================================================================
+  # Grafana - Visualization Dashboard
+  # ==========================================================================
+  grafana-testnet:
+    image: grafana/grafana:latest
+    container_name: aura-testnet-grafana
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-testnet-data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=aura-testnet-admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=http://localhost:3001
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/aura-testnet.json
+    networks:
+      - aura-testnet
+    depends_on:
+      - prometheus-testnet
+    labels:
+      - "aura.role=monitoring"
+      - "aura.network=testnet"
+
+# ============================================================================
+# Docker Volumes - Persistent Storage for Each Validator
+# ============================================================================
+volumes:
+  validator-1-data:
+    driver: local
+    labels:
+      - "aura.validator=1"
+      - "aura.network=testnet"
+  validator-2-data:
+    driver: local
+    labels:
+      - "aura.validator=2"
+      - "aura.network=testnet"
+  validator-3-data:
+    driver: local
+    labels:
+      - "aura.validator=3"
+      - "aura.network=testnet"
+  validator-4-data:
+    driver: local
+    labels:
+      - "aura.validator=4"
+      - "aura.network=testnet"
+  prometheus-testnet-data:
+    driver: local
+  grafana-testnet-data:
+    driver: local
+
+# ============================================================================
+# Network Configuration - Isolated Testnet Network
+# ============================================================================
+networks:
+  aura-testnet:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.26.0.0/16
+          gateway: 172.26.0.1
+    labels:
+      - "aura.network=testnet"
+      - "aura.chain-id=aura-local-4"
