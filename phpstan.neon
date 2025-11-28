@@ -1,0 +1,8 @@
+parameters:
+  level: 6
+  paths:
+    - chain
+    - ai-assistant
+    - wallet
+    - verifier-portal
+  inferPrivatePropertyTypeFromConstructor: true

@@ -1,0 +1,172 @@
+package keeper_test
+
+import (
+	"testing"
+	"time"
+
+	storetypes "cosmossdk.io/store/types"
+	"github.com/aequitas/aura/chain/x/contractregistry/keeper"
+	"github.com/aequitas/aura/chain/x/contractregistry/types"
+	pb "github.com/aequitas/aura/proto/aura/contractregistry/v1beta1"
+	"github.com/cosmos/cosmos-sdk/codec"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/testutil"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/stretchr/testify/suite"
+)
+
+type RateLimitingTestSuite struct {
+	suite.Suite
+	ctx    sdk.Context
+	keeper *keeper.Keeper
+	cdc    codec.BinaryCodec
+}
+
+func TestRateLimitingTestSuite(t *testing.T) {
+	suite.Run(t, new(RateLimitingTestSuite))
+}
+
+func (suite *RateLimitingTestSuite) SetupTest() {
+	key := storetypes.NewKVStoreKey(types.StoreKey)
+	testCtx := testutil.DefaultContextWithDB(suite.T(), key, storetypes.NewTransientStoreKey("transient_test"))
+	suite.ctx = testCtx.Ctx
+	registry := codectypes.NewInterfaceRegistry()
+	suite.cdc = codec.NewProtoCodec(registry)
+	suite.keeper = keeper.NewKeeper(key, suite.cdc, "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn")
+	params := types.DefaultParams()
+	suite.NoError(suite.keeper.SetParams(suite.ctx, &params))
+}
+
+func (suite *RateLimitingTestSuite) TestCheckRateLimit_UnderLimit() {
+	contractAddr := "cosmos1contract"
+	userAddr := "cosmos1user"
+	limit := uint64(10)
+
+	// First few calls should pass
+	for i := 0; i < 5; i++ {
+		err := suite.keeper.CheckRateLimit(suite.ctx, contractAddr, userAddr, limit)
+		suite.NoError(err)
+		suite.keeper.IncrementRateLimit(suite.ctx, contractAddr, userAddr)
+	}
+
+	// Should still be under limit
+	err := suite.keeper.CheckRateLimit(suite.ctx, contractAddr, userAddr, limit)
+	suite.NoError(err)
+}
+
+func (suite *RateLimitingTestSuite) TestCheckRateLimit_AtLimit() {
+	contractAddr := "cosmos1contract"
+	userAddr := "cosmos1user"
+	limit := uint64(10)
+
+	// Reach the limit
+	for i := 0; i < 10; i++ {
+		suite.keeper.IncrementRateLimit(suite.ctx, contractAddr, userAddr)
+	}
+
+	// Should fail at limit
+	err := suite.keeper.CheckRateLimit(suite.ctx, contractAddr, userAddr, limit)
+	suite.Error(err)
+	suite.ErrorIs(err, types.ErrRateLimitExceeded)
+}
+
+func (suite *RateLimitingTestSuite) TestCheckRateLimit_NoLimit() {
+	// Zero limit means no rate limiting
+	err := suite.keeper.CheckRateLimit(suite.ctx, "cosmos1contract", "cosmos1user", 0)
+	suite.NoError(err)
+}
+
+func (suite *RateLimitingTestSuite) TestRateLimitStatus() {
+	contractAddr := "cosmos1contract"
+	userAddr := "cosmos1user"
+	limit := uint64(10)
+
+	// Increment 5 times
+	for i := 0; i < 5; i++ {
+		suite.keeper.IncrementRateLimit(suite.ctx, contractAddr, userAddr)
+	}
+
+	current, remaining, resetTime := suite.keeper.GetRateLimitStatus(suite.ctx, contractAddr, userAddr, limit)
+	suite.Equal(uint64(5), current)
+	suite.Equal(uint64(5), remaining)
+	suite.True(resetTime > suite.ctx.BlockTime().Unix())
+}
+
+func (suite *RateLimitingTestSuite) TestRateLimitStatus_Exceeded() {
+	contractAddr := "cosmos1contract"
+	userAddr := "cosmos1user"
+	limit := uint64(5)
+
+	// Exceed limit
+	for i := 0; i < 10; i++ {
+		suite.keeper.IncrementRateLimit(suite.ctx, contractAddr, userAddr)
+	}
+
+	current, remaining, _ := suite.keeper.GetRateLimitStatus(suite.ctx, contractAddr, userAddr, limit)
+	suite.Equal(uint64(10), current)
+	suite.Equal(uint64(0), remaining)
+}
+
+func (suite *RateLimitingTestSuite) TestRateLimit_MultipleUsers() {
+	contractAddr := "cosmos1contract"
+	user1 := "cosmos1user1"
+	user2 := "cosmos1user2"
+	limit := uint64(5)
+
+	// User1 reaches limit
+	for i := 0; i < 5; i++ {
+		suite.keeper.IncrementRateLimit(suite.ctx, contractAddr, user1)
+	}
+
+	// User2 should still be able to execute
+	err := suite.keeper.CheckRateLimit(suite.ctx, contractAddr, user2, limit)
+	suite.NoError(err)
+}
+
+func (suite *RateLimitingTestSuite) TestCleanupOldRateLimits() {
+	contractAddr := "cosmos1contract"
+	userAddr := "cosmos1user"
+
+	// Set old timestamp (25 hours ago)
+	oldTime := suite.ctx.BlockTime().Add(-25 * time.Hour)
+	oldWindow := oldTime.Truncate(time.Hour).Unix()
+	suite.keeper.SetRateLimitCount(suite.ctx, contractAddr, userAddr, oldWindow, 5)
+
+	// Set current rate limit
+	currentWindow := suite.ctx.BlockTime().Truncate(time.Hour).Unix()
+	suite.keeper.SetRateLimitCount(suite.ctx, contractAddr, userAddr, currentWindow, 3)
+
+	// Cleanup
+	suite.keeper.CleanupOldRateLimits(suite.ctx)
+
+	// Old limit should be removed
+	oldCount := suite.keeper.GetRateLimitCount(suite.ctx, contractAddr, userAddr, oldWindow)
+	suite.Equal(uint64(0), oldCount)
+
+	// Current limit should remain
+	currentCount := suite.keeper.GetRateLimitCount(suite.ctx, contractAddr, userAddr, currentWindow)
+	suite.Equal(uint64(3), currentCount)
+}
+
+func (suite *RateLimitingTestSuite) TestRateLimit_HourlyWindowReset() {
+	contractAddr := "cosmos1contract"
+	userAddr := "cosmos1user"
+	limit := uint64(5)
+
+	// Fill current window
+	for i := 0; i < 5; i++ {
+		suite.keeper.IncrementRateLimit(suite.ctx, contractAddr, userAddr)
+	}
+
+	// Should be at limit
+	err := suite.keeper.CheckRateLimit(suite.ctx, contractAddr, userAddr, limit)
+	suite.Error(err)
+
+	// Move to next hour
+	newTime := suite.ctx.BlockTime().Add(61 * time.Minute)
+	suite.ctx = suite.ctx.WithBlockTime(newTime)
+
+	// Should be able to execute again
+	err = suite.keeper.CheckRateLimit(suite.ctx, contractAddr, userAddr, limit)
+	suite.NoError(err)
+}

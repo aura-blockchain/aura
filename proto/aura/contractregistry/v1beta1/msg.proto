@@ -1,0 +1,172 @@
+syntax = "proto3";
+package aura.contractregistry.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "cosmos/msg/v1/msg.proto";
+import "aura/contractregistry/v1beta1/contract_registry.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/contractregistry/v1beta1";
+
+// Msg defines the contract registry Msg service
+service Msg {
+  option (cosmos.msg.v1.service) = true;
+
+  // RegisterContract registers a new contract with metadata and policies
+  rpc RegisterContract(MsgRegisterContract) returns (MsgRegisterContractResponse);
+
+  // UpdateContractMetadata updates contract metadata
+  rpc UpdateContractMetadata(MsgUpdateContractMetadata) returns (MsgUpdateContractMetadataResponse);
+
+  // UpdateSecurityPolicy updates contract security policy
+  rpc UpdateSecurityPolicy(MsgUpdateSecurityPolicy) returns (MsgUpdateSecurityPolicyResponse);
+
+  // PauseContract pauses a contract (admin or governance only)
+  rpc PauseContract(MsgPauseContract) returns (MsgPauseContractResponse);
+
+  // UnpauseContract unpauses a contract
+  rpc UnpauseContract(MsgUnpauseContract) returns (MsgUnpauseContractResponse);
+
+  // DeprecateContract marks a contract as deprecated
+  rpc DeprecateContract(MsgDeprecateContract) returns (MsgDeprecateContractResponse);
+}
+
+// MsgRegisterContract registers a new smart contract
+message MsgRegisterContract {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  // Signer (must be contract admin or creator)
+  string signer = 1;
+
+  // Contract address
+  string contract_address = 2;
+
+  // Code ID
+  uint64 code_id = 3;
+
+  // Creator address
+  string creator = 4;
+
+  // Admin address
+  string admin = 5;
+
+  // Contract label
+  string label = 6;
+
+  // Contract metadata
+  ContractMetadata metadata = 7 [(gogoproto.nullable) = false];
+
+  // Security policy
+  SecurityPolicy security_policy = 8 [(gogoproto.nullable) = false];
+
+  // Compliance requirements
+  ComplianceRequirements compliance = 9 [(gogoproto.nullable) = false];
+}
+
+// MsgRegisterContractResponse is the response for RegisterContract
+message MsgRegisterContractResponse {
+  // Success indicator
+  bool success = 1;
+
+  // Contract address
+  string contract_address = 2;
+}
+
+// MsgUpdateContractMetadata updates contract metadata
+message MsgUpdateContractMetadata {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  // Signer (must be contract admin)
+  string signer = 1;
+
+  // Contract address
+  string contract_address = 2;
+
+  // Updated metadata
+  ContractMetadata metadata = 3 [(gogoproto.nullable) = false];
+}
+
+// MsgUpdateContractMetadataResponse is the response for UpdateContractMetadata
+message MsgUpdateContractMetadataResponse {
+  // Success indicator
+  bool success = 1;
+}
+
+// MsgUpdateSecurityPolicy updates contract security policy
+message MsgUpdateSecurityPolicy {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  // Signer (must be contract admin)
+  string signer = 1;
+
+  // Contract address
+  string contract_address = 2;
+
+  // Updated security policy
+  SecurityPolicy security_policy = 3 [(gogoproto.nullable) = false];
+}
+
+// MsgUpdateSecurityPolicyResponse is the response for UpdateSecurityPolicy
+message MsgUpdateSecurityPolicyResponse {
+  // Success indicator
+  bool success = 1;
+}
+
+// MsgPauseContract pauses a contract
+message MsgPauseContract {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  // Signer (must be contract admin or governance)
+  string signer = 1;
+
+  // Contract address to pause
+  string contract_address = 2;
+
+  // Reason for pausing
+  string reason = 3;
+}
+
+// MsgPauseContractResponse is the response for PauseContract
+message MsgPauseContractResponse {
+  // Success indicator
+  bool success = 1;
+}
+
+// MsgUnpauseContract unpauses a contract
+message MsgUnpauseContract {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  // Signer (must be contract admin or governance)
+  string signer = 1;
+
+  // Contract address to unpause
+  string contract_address = 2;
+}
+
+// MsgUnpauseContractResponse is the response for UnpauseContract
+message MsgUnpauseContractResponse {
+  // Success indicator
+  bool success = 1;
+}
+
+// MsgDeprecateContract marks a contract as deprecated
+message MsgDeprecateContract {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  // Signer (must be contract admin or governance)
+  string signer = 1;
+
+  // Contract address to deprecate
+  string contract_address = 2;
+
+  // Reason for deprecation
+  string reason = 3;
+
+  // Optional migration target (new contract address)
+  string migration_target = 4;
+}
+
+// MsgDeprecateContractResponse is the response for DeprecateContract
+message MsgDeprecateContractResponse {
+  // Success indicator
+  bool success = 1;
+}

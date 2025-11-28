@@ -1,0 +1,17 @@
+@startuml
+title Verifier Proof Request
+
+participant Verifier
+participant "WalletConnect" as WC
+participant Wallet
+participant "Status Registry" as SR
+
+Verifier -> WC: Generate request QR (VC type, nonce, fee)
+Wallet -> WC: Scan QR, establish session
+Wallet -> Holder: Prompt consent + biometrics
+Wallet -> Verifier: Send proof-of-possession
+Verifier -> SR: Pay fee + query VC status (Merkle proof)
+SR -> Verifier: Proof result (valid/revoked)
+Verifier -> User: Display outcome
+
+@enduml

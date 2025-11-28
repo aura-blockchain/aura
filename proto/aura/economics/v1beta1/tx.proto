@@ -1,0 +1,340 @@
+syntax = "proto3";
+package aura.economics.v1beta1;
+
+option go_package = "github.com/aequitas/aura/proto/aura/economics/v1beta1";
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "aura/economics/v1beta1/economics.proto";
+
+// Msg defines the economics module's message service
+service Msg {
+  // Vesting operations
+
+  // CreateVestingSchedule creates a new vesting schedule
+  rpc CreateVestingSchedule(MsgCreateVestingSchedule) returns (MsgCreateVestingScheduleResponse);
+
+  // ReleaseVestedTokens releases vested tokens to beneficiary
+  rpc ReleaseVestedTokens(MsgReleaseVestedTokens) returns (MsgReleaseVestedTokensResponse);
+
+  // RevokeVestingSchedule revokes a vesting schedule
+  rpc RevokeVestingSchedule(MsgRevokeVestingSchedule) returns (MsgRevokeVestingScheduleResponse);
+
+  // Governance operations
+
+  // SubmitProposal submits a new governance proposal
+  rpc SubmitProposal(MsgSubmitProposal) returns (MsgSubmitProposalResponse);
+
+  // Deposit adds a deposit to a proposal
+  rpc Deposit(MsgDeposit) returns (MsgDepositResponse);
+
+  // Vote casts a vote on a proposal
+  rpc Vote(MsgVote) returns (MsgVoteResponse);
+
+  // VoteWeighted casts a weighted vote on a proposal
+  rpc VoteWeighted(MsgVoteWeighted) returns (MsgVoteWeightedResponse);
+
+  // DelegateVote delegates voting power to another address
+  rpc DelegateVote(MsgDelegateVote) returns (MsgDelegateVoteResponse);
+
+  // UndelegateVote removes vote delegation
+  rpc UndelegateVote(MsgUndelegateVote) returns (MsgUndelegateVoteResponse);
+
+  // ExecuteProposal executes a passed proposal after timelock
+  rpc ExecuteProposal(MsgExecuteProposal) returns (MsgExecuteProposalResponse);
+
+  // RevealSecretVote reveals a secret ballot vote
+  rpc RevealSecretVote(MsgRevealSecretVote) returns (MsgRevealSecretVoteResponse);
+
+  // Vote lock operations
+
+  // LockVotingTokens locks tokens for voting power boost
+  rpc LockVotingTokens(MsgLockVotingTokens) returns (MsgLockVotingTokensResponse);
+
+  // UnlockVotingTokens unlocks voting tokens after lock period
+  rpc UnlockVotingTokens(MsgUnlockVotingTokens) returns (MsgUnlockVotingTokensResponse);
+
+  // Treasury operations
+
+  // ProposeTreasurySpend proposes a treasury spend
+  rpc ProposeTreasurySpend(MsgProposeTreasurySpend) returns (MsgProposeTreasurySpendResponse);
+
+  // SignTreasurySpend signs a treasury spend proposal
+  rpc SignTreasurySpend(MsgSignTreasurySpend) returns (MsgSignTreasurySpendResponse);
+
+  // ExecuteTreasurySpend executes an approved treasury spend
+  rpc ExecuteTreasurySpend(MsgExecuteTreasurySpend) returns (MsgExecuteTreasurySpendResponse);
+
+  // Admin operations
+
+  // UpdateParams updates module parameters (governance only)
+  rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
+
+  // AdjustInflationRate manually adjusts inflation rate (governance only)
+  rpc AdjustInflationRate(MsgAdjustInflationRate) returns (MsgAdjustInflationRateResponse);
+}
+
+// Vesting messages
+
+message MsgCreateVestingSchedule {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+
+  string creator = 1;
+  string beneficiary_address = 2;
+  cosmos.base.v1beta1.Coin total_amount = 3 [(gogoproto.nullable) = false];
+  google.protobuf.Timestamp start_time = 4 [
+    (gogoproto.stdtime) = true,
+    (gogoproto.nullable) = false
+  ];
+  uint64 cliff_duration = 5; // seconds
+  uint64 vesting_duration = 6; // seconds
+  VestingType vesting_type = 7;
+  ScheduleType schedule_type = 8;
+}
+
+message MsgCreateVestingScheduleResponse {
+  string schedule_id = 1;
+}
+
+message MsgReleaseVestedTokens {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+
+  string beneficiary = 1;
+  string schedule_id = 2;
+}
+
+message MsgReleaseVestedTokensResponse {
+  cosmos.base.v1beta1.Coin amount_released = 1 [(gogoproto.nullable) = false];
+}
+
+message MsgRevokeVestingSchedule {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+
+  string revoker = 1;
+  string schedule_id = 2;
+  string reason = 3;
+}
+
+message MsgRevokeVestingScheduleResponse {
+  cosmos.base.v1beta1.Coin unvested_amount_returned = 1 [(gogoproto.nullable) = false];
+}
+
+// Governance messages
+
+message MsgSubmitProposal {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+
+  string title = 1;
+  string description = 2;
+  ProposalCategory category = 3;
+  string proposer = 4;
+  repeated cosmos.base.v1beta1.Coin initial_deposit = 5 [
+    (gogoproto.nullable) = false,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
+  ];
+  bool is_emergency = 6;
+}
+
+message MsgSubmitProposalResponse {
+  uint64 proposal_id = 1;
+}
+
+message MsgDeposit {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+
+  uint64 proposal_id = 1;
+  string depositor = 2;
+  repeated cosmos.base.v1beta1.Coin amount = 3 [
+    (gogoproto.nullable) = false,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
+  ];
+}
+
+message MsgDepositResponse {}
+
+message MsgVote {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+
+  uint64 proposal_id = 1;
+  string voter = 2;
+  VoteOption option = 3;
+  bool is_secret = 4;
+  string vote_commitment = 5; // For secret ballots
+}
+
+message MsgVoteResponse {}
+
+message WeightedVoteOption {
+  VoteOption option = 1;
+  string weight = 2 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
+}
+
+message MsgVoteWeighted {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+
+  uint64 proposal_id = 1;
+  string voter = 2;
+  repeated WeightedVoteOption options = 3 [(gogoproto.nullable) = false];
+}
+
+message MsgVoteWeightedResponse {}
+
+message MsgDelegateVote {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+
+  string delegator = 1;
+  string delegate = 2;
+  repeated ProposalCategory categories = 3; // Empty means all categories
+}
+
+message MsgDelegateVoteResponse {}
+
+message MsgUndelegateVote {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+
+  string delegator = 1;
+  string delegate = 2;
+  repeated ProposalCategory categories = 3; // Empty means all categories
+}
+
+message MsgUndelegateVoteResponse {}
+
+message MsgExecuteProposal {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+
+  uint64 proposal_id = 1;
+  string executor = 2;
+}
+
+message MsgExecuteProposalResponse {}
+
+message MsgRevealSecretVote {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+
+  uint64 proposal_id = 1;
+  string voter = 2;
+  VoteOption option = 3;
+  string reveal_key = 4;
+}
+
+message MsgRevealSecretVoteResponse {}
+
+// Vote lock messages
+
+message MsgLockVotingTokens {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+
+  string owner = 1;
+  cosmos.base.v1beta1.Coin amount = 2 [(gogoproto.nullable) = false];
+  uint64 lock_duration = 3; // seconds
+}
+
+message MsgLockVotingTokensResponse {
+  string lock_id = 1;
+  string voting_power = 2 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+}
+
+message MsgUnlockVotingTokens {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+
+  string owner = 1;
+  string lock_id = 2;
+}
+
+message MsgUnlockVotingTokensResponse {
+  cosmos.base.v1beta1.Coin amount_unlocked = 1 [(gogoproto.nullable) = false];
+}
+
+// Treasury messages
+
+message MsgProposeTreasurySpend {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+
+  string proposer = 1;
+  string recipient = 2;
+  repeated cosmos.base.v1beta1.Coin amount = 3 [
+    (gogoproto.nullable) = false,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
+  ];
+  string description = 4;
+}
+
+message MsgProposeTreasurySpendResponse {
+  string tx_id = 1;
+  google.protobuf.Timestamp executable_at = 2 [
+    (gogoproto.stdtime) = true,
+    (gogoproto.nullable) = false
+  ];
+}
+
+message MsgSignTreasurySpend {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+
+  string signer = 1;
+  string tx_id = 2;
+}
+
+message MsgSignTreasurySpendResponse {
+  uint32 current_signatures = 1;
+  uint32 required_signatures = 2;
+}
+
+message MsgExecuteTreasurySpend {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+
+  string executor = 1;
+  string tx_id = 2;
+}
+
+message MsgExecuteTreasurySpendResponse {
+  bool success = 1;
+}
+
+// Admin messages
+
+message MsgUpdateParams {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+
+  string authority = 1;
+  Params params = 2 [(gogoproto.nullable) = false];
+}
+
+message MsgUpdateParamsResponse {}
+
+message MsgAdjustInflationRate {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+
+  string authority = 1;
+  uint64 new_rate = 2; // basis points
+  string reason = 3;
+}
+
+message MsgAdjustInflationRateResponse {
+  uint64 old_rate = 1;
+  uint64 new_rate = 2;
+}

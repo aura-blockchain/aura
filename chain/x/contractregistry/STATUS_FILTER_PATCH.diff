@@ -1,0 +1,18 @@
+--- a/chain/x/contractregistry/keeper/query_server.go
++++ b/chain/x/contractregistry/keeper/query_server.go
+@@ -166,6 +166,13 @@ func (qs queryServer) RegisteredContracts(goCtx context.Context, req *pb.QueryR
+ 	for ; iterator.Valid(); iterator.Next() {
+ 		var info pb.ContractInfo
+ 		if err := qs.cdc.Unmarshal(iterator.Value(), &info); err != nil {
+ 			return nil, status.Error(codes.Internal, err.Error())
+ 		}
+ 
++		// Apply status filter if specified
++		if req.Status != pb.ContractStatus_CONTRACT_STATUS_UNSPECIFIED {
++			if info.Status != req.Status {
++				continue // Skip this contract, continue to next iteration
++			}
++		}
++
+ 		contracts = append(contracts, &info)
+ 	}

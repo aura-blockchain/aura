@@ -1,0 +1,367 @@
+# ============================================================================
+# AURA Blockchain - Security Makefile Targets
+# ============================================================================
+# Comprehensive security scanning, auditing, and hardening
+# Append to main Makefile: include Makefile.security
+# ============================================================================
+
+.PHONY: security-all security-scan security-container security-secrets \
+        security-dependencies security-sast security-audit security-report \
+        security-baseline security-fix security-ci
+
+# ============================================================================
+# Main Security Target - Run All Security Checks
+# ============================================================================
+security-all: security-scan security-container security-secrets security-audit
+	@echo "✓ All security checks completed"
+
+# ============================================================================
+# Security Scanning - Code Vulnerabilities
+# ============================================================================
+security-scan: security-dependencies security-sast security-baseline
+	@echo "✓ Security scanning completed"
+
+## security-dependencies: Scan dependencies for known vulnerabilities
+security-dependencies:
+	@echo "Running dependency vulnerability scans..."
+	@echo "=== govulncheck ==="
+	@go install golang.org/x/vuln/cmd/govulncheck@latest
+	@govulncheck -scan=symbol ./... | tee security-reports/govulncheck.log
+	@if grep -q "HIGH\|CRITICAL" security-reports/govulncheck.log; then \
+		echo "❌ CRITICAL/HIGH vulnerabilities found!"; \
+		exit 1; \
+	fi
+	@echo "=== Nancy - Dependency Check ==="
+	@go install github.com/sonatype-nexus-community/nancy@latest
+	@go list -json -m all | nancy sleuth | tee security-reports/nancy.log
+	@echo "✓ Dependency vulnerability scan completed"
+
+## security-sast: Static Application Security Testing
+security-sast:
+	@echo "Running SAST tools..."
+	@mkdir -p security-reports
+	@echo "=== gosec - Security Scanner ==="
+	@go install github.com/securego/gosec/v2/cmd/gosec@latest
+	@gosec -fmt=json -out=security-reports/gosec.json -no-fail ./... || true
+	@gosec -fmt=text -out=security-reports/gosec.txt ./... || true
+	@echo "=== staticcheck - Static Analysis ==="
+	@go install honnef.co/go/tools/cmd/staticcheck@latest
+	@staticcheck -f json ./... > security-reports/staticcheck.json || true
+	@staticcheck ./... | tee security-reports/staticcheck.txt || true
+	@echo "=== go vet - Built-in Security Checks ==="
+	@go vet ./... 2>&1 | tee security-reports/govet.log
+	@echo "✓ SAST completed - reports in security-reports/"
+
+## security-baseline: Security baseline checks
+security-baseline:
+	@echo "Running security baseline checks..."
+	@mkdir -p security-reports
+	@echo "=== Checking for hardcoded credentials ==="
+	@! grep -r -i "password\s*=\s*['\"]" --include="*.go" . || \
+		(echo "❌ Hardcoded passwords found!" && exit 1)
+	@! grep -r -i "api[_-]?key\s*=\s*['\"]" --include="*.go" . || \
+		(echo "❌ Hardcoded API keys found!" && exit 1)
+	@! grep -r -i "secret\s*=\s*['\"]" --include="*.go" . || \
+		(echo "❌ Hardcoded secrets found!" && exit 1)
+	@echo "=== Checking for insecure crypto ==="
+	@! grep -r "crypto/md5\|crypto/sha1\|crypto/des" --include="*.go" . || \
+		(echo "⚠️  Warning: Insecure cryptography found" && exit 0)
+	@echo "=== Checking for SQL injection risks ==="
+	@! grep -r "db.Query.*fmt.Sprintf\|db.Exec.*fmt.Sprintf" --include="*.go" . || \
+		(echo "⚠️  Warning: Potential SQL injection risks" && exit 0)
+	@echo "✓ Security baseline checks passed"
+
+# ============================================================================
+# Container Security
+# ============================================================================
+## security-container: Scan container images for vulnerabilities
+security-container: security-container-trivy security-container-grype security-container-dockle
+	@echo "✓ Container security scanning completed"
+
+## security-container-trivy: Trivy container scanner
+security-container-trivy:
+	@echo "Running Trivy container scan..."
+	@mkdir -p security-reports
+	@if command -v trivy >/dev/null 2>&1; then \
+		echo "=== Trivy: Filesystem Scan ==="; \
+		trivy fs --severity HIGH,CRITICAL --format json --output security-reports/trivy-fs.json .; \
+		trivy fs --severity HIGH,CRITICAL --format table . | tee security-reports/trivy-fs.txt; \
+		if docker images | grep -q "aura"; then \
+			echo "=== Trivy: Image Scan ==="; \
+			for img in $$(docker images --format "{{.Repository}}:{{.Tag}}" | grep aura); do \
+				echo "Scanning $$img..."; \
+				trivy image --severity HIGH,CRITICAL --format json --output security-reports/trivy-$$img.json $$img; \
+				trivy image --severity HIGH,CRITICAL $$img | tee security-reports/trivy-$$img.txt; \
+			done; \
+		fi; \
+	else \
+		echo "Trivy not installed. Install: https://github.com/aquasecurity/trivy"; \
+		exit 1; \
+	fi
+	@echo "✓ Trivy scan completed"
+
+## security-container-grype: Grype container scanner (alternative)
+security-container-grype:
+	@echo "Running Grype container scan..."
+	@mkdir -p security-reports
+	@if command -v grype >/dev/null 2>&1; then \
+		grype dir:. -o json > security-reports/grype.json; \
+		grype dir:. | tee security-reports/grype.txt; \
+	else \
+		echo "Grype not installed. Install: https://github.com/anchore/grype"; \
+		echo "Skipping Grype scan..."; \
+	fi
+
+## security-container-dockle: Docker image linter
+security-container-dockle:
+	@echo "Running Dockle image linter..."
+	@mkdir -p security-reports
+	@if command -v dockle >/dev/null 2>&1; then \
+		if docker images | grep -q "aura"; then \
+			for img in $$(docker images --format "{{.Repository}}:{{.Tag}}" | grep aura); do \
+				echo "Linting $$img..."; \
+				dockle --format json --output security-reports/dockle-$$img.json $$img; \
+				dockle $$img | tee security-reports/dockle-$$img.txt; \
+			done; \
+		fi; \
+	else \
+		echo "Dockle not installed. Install: https://github.com/goodwithtech/dockle"; \
+		echo "Skipping Dockle scan..."; \
+	fi
+
+# ============================================================================
+# Secret Scanning
+# ============================================================================
+## security-secrets: Scan for leaked secrets in repository
+security-secrets: security-secrets-trufflehog security-secrets-gitleaks
+	@echo "✓ Secret scanning completed"
+
+## security-secrets-trufflehog: TruffleHog secret scanner
+security-secrets-trufflehog:
+	@echo "Running TruffleHog secret scan..."
+	@mkdir -p security-reports
+	@if command -v trufflehog >/dev/null 2>&1; then \
+		trufflehog filesystem . --json > security-reports/trufflehog.json || true; \
+		trufflehog filesystem . | tee security-reports/trufflehog.txt || true; \
+		if [ -s security-reports/trufflehog.json ] && [ "$$(cat security-reports/trufflehog.json)" != "[]" ]; then \
+			echo "❌ Secrets detected in repository!"; \
+			exit 1; \
+		fi; \
+	else \
+		echo "TruffleHog not installed. Install: https://github.com/trufflesecurity/trufflehog"; \
+		exit 1; \
+	fi
+	@echo "✓ No secrets detected"
+
+## security-secrets-gitleaks: Gitleaks secret scanner
+security-secrets-gitleaks:
+	@echo "Running Gitleaks secret scan..."
+	@mkdir -p security-reports
+	@if command -v gitleaks >/dev/null 2>&1; then \
+		gitleaks detect --source . --report-path security-reports/gitleaks.json --report-format json || true; \
+		gitleaks detect --source . --report-path security-reports/gitleaks.txt --report-format sarif || true; \
+		if [ -s security-reports/gitleaks.json ] && [ "$$(cat security-reports/gitleaks.json)" != "[]" ]; then \
+			echo "⚠️  Gitleaks found potential secrets"; \
+		fi; \
+	else \
+		echo "Gitleaks not installed. Install: https://github.com/gitleaks/gitleaks"; \
+		echo "Skipping Gitleaks scan..."; \
+	fi
+
+# ============================================================================
+# Security Audit & Compliance
+# ============================================================================
+## security-audit: Comprehensive security audit
+security-audit:
+	@echo "Running comprehensive security audit..."
+	@mkdir -p security-reports
+	@echo "=== File Permissions Audit ===" | tee security-reports/audit.txt
+	@find . -type f -perm -002 -ls | tee -a security-reports/audit.txt || true
+	@echo "=== SUID/SGID Files ===" | tee -a security-reports/audit.txt
+	@find . -type f \( -perm -4000 -o -perm -2000 \) -ls | tee -a security-reports/audit.txt || true
+	@echo "=== World-Writable Directories ===" | tee -a security-reports/audit.txt
+	@find . -type d -perm -002 -ls | tee -a security-reports/audit.txt || true
+	@echo "=== Docker Security Audit ===" | tee -a security-reports/audit.txt
+	@./deployment-security/scripts/verify-deployment-security.sh | tee -a security-reports/audit.txt || true
+	@echo "✓ Security audit completed - see security-reports/audit.txt"
+
+# ============================================================================
+# Security Report Generation
+# ============================================================================
+## security-report: Generate comprehensive security report
+security-report:
+	@echo "Generating comprehensive security report..."
+	@mkdir -p security-reports
+	@echo "==============================================================================" > security-reports/SECURITY_REPORT.md
+	@echo "# AURA Blockchain Security Scan Report" >> security-reports/SECURITY_REPORT.md
+	@echo "==============================================================================" >> security-reports/SECURITY_REPORT.md
+	@echo "" >> security-reports/SECURITY_REPORT.md
+	@echo "**Generated:** $$(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> security-reports/SECURITY_REPORT.md
+	@echo "**Version:** $$(git describe --tags --always 2>/dev/null || echo 'unknown')" >> security-reports/SECURITY_REPORT.md
+	@echo "**Commit:** $$(git rev-parse --short HEAD 2>/dev/null || echo 'unknown')" >> security-reports/SECURITY_REPORT.md
+	@echo "" >> security-reports/SECURITY_REPORT.md
+	@echo "## Executive Summary" >> security-reports/SECURITY_REPORT.md
+	@echo "" >> security-reports/SECURITY_REPORT.md
+	@echo "| Scan Type | Status | Critical | High | Medium | Low |" >> security-reports/SECURITY_REPORT.md
+	@echo "|-----------|--------|----------|------|--------|-----|" >> security-reports/SECURITY_REPORT.md
+	@if [ -f security-reports/govulncheck.log ]; then \
+		echo "| govulncheck | ✓ | - | - | - | - |" >> security-reports/SECURITY_REPORT.md; \
+	fi
+	@if [ -f security-reports/gosec.json ]; then \
+		echo "| gosec | ✓ | - | - | - | - |" >> security-reports/SECURITY_REPORT.md; \
+	fi
+	@if [ -f security-reports/trivy-fs.json ]; then \
+		echo "| Trivy | ✓ | - | - | - | - |" >> security-reports/SECURITY_REPORT.md; \
+	fi
+	@if [ -f security-reports/trufflehog.json ]; then \
+		echo "| TruffleHog | ✓ | - | - | - | - |" >> security-reports/SECURITY_REPORT.md; \
+	fi
+	@echo "" >> security-reports/SECURITY_REPORT.md
+	@echo "## Detailed Findings" >> security-reports/SECURITY_REPORT.md
+	@echo "" >> security-reports/SECURITY_REPORT.md
+	@echo "### Dependency Vulnerabilities" >> security-reports/SECURITY_REPORT.md
+	@if [ -f security-reports/govulncheck.log ]; then \
+		echo '```' >> security-reports/SECURITY_REPORT.md; \
+		cat security-reports/govulncheck.log >> security-reports/SECURITY_REPORT.md; \
+		echo '```' >> security-reports/SECURITY_REPORT.md; \
+	fi
+	@echo "" >> security-reports/SECURITY_REPORT.md
+	@echo "### SAST Findings" >> security-reports/SECURITY_REPORT.md
+	@if [ -f security-reports/gosec.txt ]; then \
+		echo '```' >> security-reports/SECURITY_REPORT.md; \
+		head -100 security-reports/gosec.txt >> security-reports/SECURITY_REPORT.md; \
+		echo '```' >> security-reports/SECURITY_REPORT.md; \
+	fi
+	@echo "" >> security-reports/SECURITY_REPORT.md
+	@echo "### Container Security" >> security-reports/SECURITY_REPORT.md
+	@if [ -f security-reports/trivy-fs.txt ]; then \
+		echo '```' >> security-reports/SECURITY_REPORT.md; \
+		head -100 security-reports/trivy-fs.txt >> security-reports/SECURITY_REPORT.md; \
+		echo '```' >> security-reports/SECURITY_REPORT.md; \
+	fi
+	@echo "" >> security-reports/SECURITY_REPORT.md
+	@echo "### Secret Scan Results" >> security-reports/SECURITY_REPORT.md
+	@if [ -f security-reports/trufflehog.txt ]; then \
+		echo '```' >> security-reports/SECURITY_REPORT.md; \
+		cat security-reports/trufflehog.txt >> security-reports/SECURITY_REPORT.md; \
+		echo '```' >> security-reports/SECURITY_REPORT.md; \
+	fi
+	@echo "" >> security-reports/SECURITY_REPORT.md
+	@echo "## Recommendations" >> security-reports/SECURITY_REPORT.md
+	@echo "" >> security-reports/SECURITY_REPORT.md
+	@echo "1. Review and remediate all CRITICAL and HIGH severity findings" >> security-reports/SECURITY_REPORT.md
+	@echo "2. Update dependencies with known vulnerabilities" >> security-reports/SECURITY_REPORT.md
+	@echo "3. Rotate any exposed secrets immediately" >> security-reports/SECURITY_REPORT.md
+	@echo "4. Re-scan after applying fixes" >> security-reports/SECURITY_REPORT.md
+	@echo "" >> security-reports/SECURITY_REPORT.md
+	@echo "==============================================================================" >> security-reports/SECURITY_REPORT.md
+	@echo "✓ Security report generated: security-reports/SECURITY_REPORT.md"
+
+# ============================================================================
+# Security Fixes & Remediation
+# ============================================================================
+## security-fix: Apply automated security fixes where possible
+security-fix:
+	@echo "Applying automated security fixes..."
+	@echo "=== Updating Go dependencies ==="
+	@go get -u ./...
+	@go mod tidy
+	@echo "=== Running go fix ==="
+	@go fix ./...
+	@echo "=== Running go fmt ==="
+	@go fmt ./...
+	@echo "✓ Automated fixes applied - review changes before committing"
+
+# ============================================================================
+# CI/CD Integration
+# ============================================================================
+## security-ci: Security checks for CI/CD pipeline (fail-fast)
+security-ci:
+	@echo "Running security checks for CI/CD..."
+	@mkdir -p security-reports
+	@echo "=== Critical Security Checks ==="
+	# Fail on hardcoded secrets
+	@! grep -r -i "password\s*=\s*['\"][^'\"]*['\"]" --include="*.go" . || \
+		(echo "❌ FAIL: Hardcoded passwords detected" && exit 1)
+	# Fail on high/critical vulnerabilities
+	@go install golang.org/x/vuln/cmd/govulncheck@latest
+	@govulncheck -scan=symbol ./... > security-reports/govulncheck-ci.log || \
+		(echo "❌ FAIL: Vulnerabilities detected" && cat security-reports/govulncheck-ci.log && exit 1)
+	# Run gosec with strict settings
+	@go install github.com/securego/gosec/v2/cmd/gosec@latest
+	@gosec -severity high -confidence medium -quiet ./... || \
+		(echo "❌ FAIL: Critical security issues detected" && exit 1)
+	@echo "✓ CI security checks passed"
+
+# ============================================================================
+# Setup & Installation
+# ============================================================================
+## security-install-tools: Install all security scanning tools
+security-install-tools:
+	@echo "Installing security scanning tools..."
+	@echo "=== Go security tools ==="
+	@go install golang.org/x/vuln/cmd/govulncheck@latest
+	@go install github.com/securego/gosec/v2/cmd/gosec@latest
+	@go install honnef.co/go/tools/cmd/staticcheck@latest
+	@go install github.com/sonatype-nexus-community/nancy@latest
+	@echo "=== Container security tools ==="
+	@echo "Install Trivy: https://aquasecurity.github.io/trivy/latest/getting-started/installation/"
+	@echo "Install Grype: https://github.com/anchore/grype#installation"
+	@echo "Install Dockle: https://github.com/goodwithtech/dockle#installation"
+	@echo "=== Secret scanning tools ==="
+	@echo "Install TruffleHog: https://github.com/trufflesecurity/trufflehog#installation"
+	@echo "Install Gitleaks: https://github.com/gitleaks/gitleaks#installation"
+	@echo "✓ Go tools installed - see links above for additional tools"
+
+## security-setup: Initial security setup
+security-setup: security-install-tools
+	@echo "Setting up security infrastructure..."
+	@mkdir -p security-reports
+	@mkdir -p .github/workflows
+	@chmod 700 security-reports
+	@echo "✓ Security setup completed"
+
+# ============================================================================
+# Cleanup
+# ============================================================================
+## security-clean: Remove security reports
+security-clean:
+	@echo "Cleaning security reports..."
+	@rm -rf security-reports/*
+	@echo "✓ Security reports cleaned"
+
+# ============================================================================
+# Help
+# ============================================================================
+## security-help: Show security targets help
+security-help:
+	@echo "AURA Blockchain - Security Makefile Targets"
+	@echo ""
+	@echo "Main Targets:"
+	@echo "  security-all             - Run all security checks"
+	@echo "  security-scan            - Scan code for vulnerabilities"
+	@echo "  security-container       - Scan container images"
+	@echo "  security-secrets         - Scan for leaked secrets"
+	@echo "  security-audit           - Comprehensive security audit"
+	@echo "  security-report          - Generate security report"
+	@echo "  security-ci              - CI/CD security checks (fail-fast)"
+	@echo ""
+	@echo "Detailed Targets:"
+	@echo "  security-dependencies    - Scan dependencies (govulncheck, nancy)"
+	@echo "  security-sast            - Static analysis (gosec, staticcheck)"
+	@echo "  security-baseline        - Security baseline checks"
+	@echo "  security-container-trivy - Trivy container scan"
+	@echo "  security-container-grype - Grype container scan"
+	@echo "  security-secrets-trufflehog - TruffleHog secret scan"
+	@echo "  security-secrets-gitleaks   - Gitleaks secret scan"
+	@echo ""
+	@echo "Utilities:"
+	@echo "  security-install-tools   - Install security tools"
+	@echo "  security-setup           - Initial setup"
+	@echo "  security-fix             - Apply automated fixes"
+	@echo "  security-clean           - Clean reports"
+	@echo ""
+	@echo "Usage: make -f Makefile.security <target>"
+
+# Default target
+.DEFAULT_GOAL := security-help

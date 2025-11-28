@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "Aura Network Wallet",
+  "description": "Manage AURA tokens, swap via the DEX, and access DeFi features from your browser",
+  "version": "1.0.0",
+  "action": {
+    "default_title": "Aura Wallet",
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "host_permissions": [
+    "http://localhost:1317/*",
+    "http://127.0.0.1:1317/*",
+    "http://localhost:26657/*",
+    "http://127.0.0.1:26657/*"
+  ],
+  "permissions": ["storage", "alarms"]
+}

@@ -1,0 +1,43 @@
+syntax = "proto3";
+package aura.auth.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "aura/auth/v1beta1/auth.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/auth/v1beta1";
+
+// GenesisState defines the auth module's genesis state
+message GenesisState {
+  // Module parameters
+  Params params = 1 [(gogoproto.nullable) = false];
+
+  // Roles defined in the system
+  repeated Role roles = 2 [(gogoproto.nullable) = false];
+
+  // Role assignments to addresses
+  repeated RoleAssignment role_assignments = 3 [(gogoproto.nullable) = false];
+
+  // Multisig wallets
+  repeated MultisigWallet multisig_wallets = 4 [(gogoproto.nullable) = false];
+
+  // Multisig proposals
+  repeated MultisigProposal multisig_proposals = 5 [(gogoproto.nullable) = false];
+
+  // Time-locked actions
+  repeated TimeLockedAction time_locked_actions = 6 [(gogoproto.nullable) = false];
+
+  // Emergency admins
+  repeated EmergencyAdmin emergency_admins = 7 [(gogoproto.nullable) = false];
+
+  // Validator key rotations
+  repeated ValidatorKeyRotation validator_key_rotations = 8 [(gogoproto.nullable) = false];
+
+  // Active sessions
+  repeated Session sessions = 9 [(gogoproto.nullable) = false];
+
+  // Rate limit configs
+  repeated RateLimitConfig rate_limit_configs = 10 [(gogoproto.nullable) = false];
+
+  // Audit logs
+  repeated AuditLog audit_logs = 11 [(gogoproto.nullable) = false];
+}

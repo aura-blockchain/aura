@@ -1,0 +1,30 @@
+syntax = "proto3";
+package aura.dex.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "aura/dex/v1beta1/params.proto";
+import "aura/dex/v1beta1/liquidity_pool.proto";
+import "aura/dex/v1beta1/swap.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/dex/v1beta1";
+
+// GenesisState defines the dex module's genesis state
+message GenesisState {
+  // Module parameters
+  Params params = 1 [(gogoproto.nullable) = false];
+
+  // Liquidity pools
+  repeated LiquidityPool liquidity_pools = 2 [(gogoproto.nullable) = false];
+
+  // Swap orders
+  repeated SwapOrder swap_orders = 3 [(gogoproto.nullable) = false];
+
+  // Orderbooks
+  repeated Orderbook orderbooks = 4 [(gogoproto.nullable) = false];
+
+  // Market prices
+  repeated MarketPrice market_prices = 5 [(gogoproto.nullable) = false];
+
+  // Swap stats
+  repeated SwapStats swap_stats = 6 [(gogoproto.nullable) = false];
+}

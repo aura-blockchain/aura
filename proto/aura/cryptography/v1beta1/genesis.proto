@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package aura.cryptography.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "aura/cryptography/v1beta1/cryptography.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/cryptography/v1beta1";
+
+// GenesisState defines the cryptography module's genesis state
+message GenesisState {
+  Params params = 1 [(gogoproto.nullable) = false];
+  repeated KeyRotationSchedule key_rotation_schedules = 2;
+  repeated ThresholdSignatureScheme threshold_schemes = 3;
+  repeated ZKProofConfig zk_proof_configs = 4;
+  repeated SecureEnclaveConfig secure_enclaves = 5;
+  repeated QuantumResistantKey quantum_resistant_keys = 6;
+  repeated CryptoRandomSource random_sources = 7;
+  repeated KeyStretchingConfig key_stretching_configs = 8;
+  repeated CertificatePin certificate_pins = 9;
+}

@@ -1,0 +1,317 @@
+# Prometheus alerting rules for Aura monitoring
+
+groups:
+  - name: network_health
+    interval: 30s
+    rules:
+      - alert: HighNetworkCongestion
+        expr: aura_monitoring_network_congestion > 0.8
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Network congestion is critically high"
+          description: "Network congestion has been above 80% for 5 minutes"
+
+      - alert: LowConsensusHealth
+        expr: aura_monitoring_consensus_health < 0.7
+        for: 3m
+        labels:
+          severity: high
+        annotations:
+          summary: "Consensus health is low"
+          description: "Consensus health score is below 70%"
+
+      - alert: HighBlockTime
+        expr: aura_monitoring_block_time_seconds > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Block time is unusually high"
+          description: "Average block time exceeds 10 seconds"
+
+  - name: validator_alerts
+    interval: 30s
+    rules:
+      - alert: ValidatorDown
+        expr: aura_monitoring_validator_uptime_percentage < 95
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Validator {{$labels.moniker}} is experiencing downtime"
+          description: "Validator uptime is below 95%"
+
+      - alert: ValidatorJailed
+        expr: aura_monitoring_jailed_validators > 0
+        for: 1m
+        labels:
+          severity: high
+        annotations:
+          summary: "Validators have been jailed"
+          description: "{{$value}} validator(s) are currently jailed"
+
+  - name: security_alerts
+    interval: 10s
+    rules:
+      - alert: HighAnomalyRate
+        expr: rate(aura_monitoring_anomaly_detections_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: high
+        annotations:
+          summary: "High rate of anomaly detections"
+          description: "Anomaly detection rate is above threshold"
+
+      - alert: LargeTransactionDetected
+        expr: increase(aura_monitoring_large_transactions_total[1m]) > 5
+        for: 1m
+        labels:
+          severity: medium
+        annotations:
+          summary: "Multiple large transactions detected"
+          description: "More than 5 large transactions in the last minute"
+
+      - alert: FailedTransactionPattern
+        expr: rate(aura_monitoring_failed_transactions_total[5m]) > 0.2
+        for: 5m
+        labels:
+          severity: high
+        annotations:
+          summary: "High rate of failed transactions"
+          description: "Failed transaction rate is above 20%"
+
+      - alert: SecurityEventThreat
+        expr: aura_monitoring_threat_level > 7
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High threat level security event detected"
+          description: "Security event with threat level {{$value}}"
+
+      - alert: GossipDuplicateFlood
+        expr: rate(networksecurity_gossip_cache_hit_total[5m]) / clamp_min(rate(networksecurity_gossip_cache_hit_total[5m]) + rate(networksecurity_gossip_cache_miss_total[5m]), 0.0001) > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Excessive duplicate gossip traffic detected"
+          description: "More than 90% of gossip messages are duplicates over the last 5 minutes"
+
+      - alert: WalletSpendingBlocksSpike
+        expr: increase(walletsecurity_spending_limit_blocked_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: high
+        annotations:
+          summary: "Wallet spending limit blocks spiking"
+          description: "More than 10 transactions blocked by spending limits in 5 minutes"
+
+      - alert: DustAttackDetected
+        expr: increase(walletsecurity_dust_filter_blocked_total[5m]) > 20
+        for: 5m
+        labels:
+          severity: high
+        annotations:
+          summary: "Dust attack attempts detected"
+          description: "Dust filter blocked more than 20 transactions in 5 minutes"
+
+  - name: economics_alerts
+    interval: 1m
+    rules:
+      - alert: GasPriceSpike
+        expr: aura_monitoring_current_gas_price / aura_monitoring_average_gas_price > 3
+        for: 5m
+        labels:
+          severity: medium
+        annotations:
+          summary: "Gas price spike detected"
+          description: "Current gas price is 3x above average"
+
+      - alert: TVLDropSignificant
+        expr: aura_monitoring_tvl_change_24h_percentage < -20
+        for: 10m
+        labels:
+          severity: high
+        annotations:
+          summary: "Significant TVL drop"
+          description: "TVL has dropped by more than 20% in 24 hours"
+
+      - alert: TVLIncreaseRapid
+        expr: aura_monitoring_tvl_change_24h_percentage > 50
+        for: 10m
+        labels:
+          severity: medium
+        annotations:
+          summary: "Rapid TVL increase"
+          description: "TVL has increased by more than 50% in 24 hours (potential anomaly)"
+
+  - name: system_alerts
+    interval: 30s
+    rules:
+      - alert: ExplorerSyncLag
+        expr: aura_monitoring_explorer_sync_lag_blocks > 100
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Explorer sync lag detected"
+          description: "Explorer is {{$value}} blocks behind"
+
+      - alert: HighMemPoolSize
+        expr: aura_monitoring_mempool_size > 10000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Mempool size is very high"
+          description: "Mempool has more than 10,000 pending transactions"
+
+  - name: performance_alerts
+    interval: 1m
+    rules:
+      - alert: CacheHitRateLow
+        expr: aura_cache_hit_rate < 0.7
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Cache hit rate is low"
+          description: "Cache hit rate is {{$value}} (below 70%)"
+
+      - alert: HighQueryLatency
+        expr: histogram_quantile(0.95, rate(aura_query_duration_seconds_bucket[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Query latency is high"
+          description: "95th percentile query latency is {{$value}}s"
+
+      - alert: HighTransactionProcessingTime
+        expr: histogram_quantile(0.95, rate(aura_tx_processing_duration_seconds_bucket[5m])) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Transaction processing time is high"
+          description: "95th percentile tx processing time is {{$value}}s"
+
+  - name: module_alerts
+    interval: 30s
+    rules:
+      - alert: DEXLiquidityLow
+        expr: aura_dex_total_liquidity_usd < 1000000
+        for: 10m
+        labels:
+          severity: high
+        annotations:
+          summary: "DEX liquidity is critically low"
+          description: "Total DEX liquidity is ${{$value}}"
+
+      - alert: BridgeOperationsStalled
+        expr: rate(aura_bridge_transfers_total[10m]) == 0 and aura_bridge_transfers_total > 0
+        for: 15m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Bridge operations have stalled"
+          description: "No bridge transfers in the last 15 minutes"
+
+      - alert: ConfidenceScoreAnomalies
+        expr: rate(aura_confidence_score_anomalies_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: medium
+        annotations:
+          summary: "High rate of confidence score anomalies"
+          description: "Anomaly rate is {{$value}} per second"
+
+      - alert: ComplianceCheckFailures
+        expr: rate(aura_compliance_check_failures_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: high
+        annotations:
+          summary: "High rate of compliance check failures"
+          description: "Compliance failures at {{$value}} per second"
+
+      - alert: VCRegistryVerificationBacklog
+        expr: aura_vcregistry_pending_verifications > 1000
+        for: 30m
+        labels:
+          severity: medium
+        annotations:
+          summary: "VC verification backlog is growing"
+          description: "{{$value}} pending verifications"
+
+  - name: sla_alerts
+    interval: 5m
+    rules:
+      - alert: SLAViolationUptime
+        expr: avg_over_time(up[1h]) < 0.995
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "SLA violation: Uptime below 99.5%"
+          description: "Uptime is {{$value}} over last hour"
+
+      - alert: SLAViolationBlockTime
+        expr: avg_over_time(aura_monitoring_block_time_seconds[1h]) > 7
+        for: 5m
+        labels:
+          severity: high
+        annotations:
+          summary: "SLA violation: Average block time above 7s"
+          description: "Average block time is {{$value}}s over last hour"
+
+      - alert: SLAViolationTransactionSuccess
+        expr: (rate(aura_transactions_success_total[1h]) / rate(aura_transactions_total[1h])) < 0.99
+        for: 5m
+        labels:
+          severity: high
+        annotations:
+          summary: "SLA violation: Transaction success rate below 99%"
+          description: "Success rate is {{$value}} over last hour"
+
+  - name: resource_alerts
+    interval: 30s
+    rules:
+      - alert: HighMemoryUsage
+        expr: process_resident_memory_bytes / node_memory_MemTotal_bytes > 0.9
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Memory usage is critically high"
+          description: "Memory usage is {{$value}} of total"
+
+      - alert: HighCPUUsage
+        expr: rate(process_cpu_seconds_total[5m]) > 0.9
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "CPU usage is high"
+          description: "CPU usage is {{$value}}"
+
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) < 0.1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Disk space is critically low"
+          description: "Only {{$value}} of disk space available"
+
+      - alert: FileDescriptorsHigh
+        expr: process_open_fds / process_max_fds > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "File descriptor usage is high"
+          description: "Using {{$value}} of available file descriptors"

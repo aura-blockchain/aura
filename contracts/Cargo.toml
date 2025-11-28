@@ -1,0 +1,10 @@
+[workspace]
+members = [
+    "binding-tester",
+    "packages/aura-bindings",
+    "vc-issuer",
+]
+resolver = "2"
+
+[workspace.package]
+edition = "2021"

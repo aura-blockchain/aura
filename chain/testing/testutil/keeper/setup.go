@@ -1,0 +1,137 @@
+package keeper
+
+import (
+	"testing"
+	"time"
+
+	"cosmossdk.io/log"
+	"cosmossdk.io/store"
+	"cosmossdk.io/store/metrics"
+	storetypes "cosmossdk.io/store/types"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	dbm "github.com/cosmos/cosmos-db"
+	"github.com/cosmos/cosmos-sdk/codec"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/stretchr/testify/require"
+)
+
+// TestKeepers holds all keeper instances for integration testing
+type TestKeepers struct {
+	// Add keeper fields as needed
+}
+
+// TestInput represents a standard test input for keeper tests
+type TestInput struct {
+	Ctx         sdk.Context
+	Cdc         codec.Codec
+	StoreKey    *storetypes.KVStoreKey
+	MemStoreKey *storetypes.MemoryStoreKey
+	DB          *dbm.MemDB
+	CMS         store.CommitMultiStore
+}
+
+// CreateTestInput creates a standard test input for keeper testing
+func CreateTestInput(t testing.TB) TestInput {
+	t.Helper()
+
+	db := dbm.NewMemDB()
+	cms := store.NewCommitMultiStore(db, log.NewNopLogger(), metrics.NewNoOpMetrics())
+
+	storeKey := storetypes.NewKVStoreKey("test")
+	memStoreKey := storetypes.NewMemoryStoreKey("mem_test")
+
+	cms.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, db)
+	cms.MountStoreWithDB(memStoreKey, storetypes.StoreTypeMemory, nil)
+
+	require.NoError(t, cms.LoadLatestVersion())
+
+	ctx := sdk.NewContext(cms, cmtproto.Header{
+		Height: 1,
+		Time:   time.Now().UTC(),
+	}, false, log.NewNopLogger())
+
+	interfaceRegistry := codectypes.NewInterfaceRegistry()
+	cdc := codec.NewProtoCodec(interfaceRegistry)
+
+	return TestInput{
+		Ctx:         ctx,
+		Cdc:         cdc,
+		StoreKey:    storeKey,
+		MemStoreKey: memStoreKey,
+		DB:          db,
+		CMS:         cms,
+	}
+}
+
+// CreateTestInputWithKeys creates test input with custom store keys
+func CreateTestInputWithKeys(t testing.TB, keys ...string) TestInput {
+	t.Helper()
+
+	db := dbm.NewMemDB()
+	cms := store.NewCommitMultiStore(db, log.NewNopLogger(), metrics.NewNoOpMetrics())
+
+	storeKeys := make([]*storetypes.KVStoreKey, len(keys))
+	for i, key := range keys {
+		storeKeys[i] = storetypes.NewKVStoreKey(key)
+		cms.MountStoreWithDB(storeKeys[i], storetypes.StoreTypeIAVL, db)
+	}
+
+	require.NoError(t, cms.LoadLatestVersion())
+
+	ctx := sdk.NewContext(cms, cmtproto.Header{
+		Height: 1,
+		Time:   time.Now().UTC(),
+	}, false, log.NewNopLogger())
+
+	interfaceRegistry := codectypes.NewInterfaceRegistry()
+	cdc := codec.NewProtoCodec(interfaceRegistry)
+
+	return TestInput{
+		Ctx:      ctx,
+		Cdc:      cdc,
+		StoreKey: storeKeys[0],
+		DB:       db,
+		CMS:      cms,
+	}
+}
+
+// GenTestAddr generates a random test address
+func GenTestAddr() sdk.AccAddress {
+	return sdk.AccAddress([]byte("test_address_______"))
+}
+
+// GenTestAddrs generates multiple test addresses
+func GenTestAddrs(count int) []sdk.AccAddress {
+	addrs := make([]sdk.AccAddress, count)
+	for i := 0; i < count; i++ {
+		addrs[i] = sdk.AccAddress(append([]byte("addr"), byte(i)))
+	}
+	return addrs
+}
+
+// MockTime returns a deterministic time for testing
+func MockTime() time.Time {
+	return time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+}
+
+// NewTestCodec creates a codec for testing
+func NewTestCodec() codec.Codec {
+	interfaceRegistry := codectypes.NewInterfaceRegistry()
+	return codec.NewProtoCodec(interfaceRegistry)
+}
+
+// AdvanceBlockHeight advances the block height in the context
+func AdvanceBlockHeight(ctx sdk.Context, blocks int64) sdk.Context {
+	header := ctx.BlockHeader()
+	header.Height += blocks
+	header.Time = header.Time.Add(time.Duration(blocks) * 5 * time.Second)
+	return ctx.WithBlockHeader(header)
+}
+
+// AdvanceTime advances time in the context
+func AdvanceTime(ctx sdk.Context, duration time.Duration) sdk.Context {
+	header := ctx.BlockHeader()
+	header.Time = header.Time.Add(duration)
+	return ctx.WithBlockHeader(header)
+}

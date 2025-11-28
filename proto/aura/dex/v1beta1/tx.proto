@@ -1,0 +1,204 @@
+syntax = "proto3";
+package aura.dex.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "cosmos/msg/v1/msg.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "aura/dex/v1beta1/swap.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/dex/v1beta1";
+
+// Msg defines the dex Msg service
+service Msg {
+  // AMM Liquidity Pool Messages
+  rpc CreatePool(MsgCreatePool) returns (MsgCreatePoolResponse);
+  rpc AddLiquidity(MsgAddLiquidity) returns (MsgAddLiquidityResponse);
+  rpc RemoveLiquidity(MsgRemoveLiquidity) returns (MsgRemoveLiquidityResponse);
+  rpc SwapExactIn(MsgSwapExactIn) returns (MsgSwapExactInResponse);
+
+  // P2P Orderbook Messages
+  rpc CreateOrder(MsgCreateOrder) returns (MsgCreateOrderResponse);
+  rpc CancelOrder(MsgCancelOrder) returns (MsgCancelOrderResponse);
+  rpc ExecuteSwap(MsgExecuteSwap) returns (MsgExecuteSwapResponse);
+
+  // HTLC Atomic Swap Messages
+  rpc CreateHTLC(MsgCreateHTLC) returns (MsgCreateHTLCResponse);
+  rpc ClaimHTLC(MsgClaimHTLC) returns (MsgClaimHTLCResponse);
+  rpc RefundHTLC(MsgRefundHTLC) returns (MsgRefundHTLCResponse);
+}
+
+// MsgCreatePool creates a new AMM liquidity pool
+message MsgCreatePool {
+  option (cosmos.msg.v1.signer) = "creator";
+
+  string creator = 1;
+  string denom_a = 2;
+  string denom_b = 3;
+  cosmos.base.v1beta1.Coin amount_a = 4 [(gogoproto.nullable) = false];
+  cosmos.base.v1beta1.Coin amount_b = 5 [(gogoproto.nullable) = false];
+}
+
+message MsgCreatePoolResponse {
+  string pool_id = 1;
+  string lp_tokens = 2 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+}
+
+// MsgAddLiquidity adds liquidity to existing pool
+message MsgAddLiquidity {
+  option (cosmos.msg.v1.signer) = "provider";
+
+  string provider = 1;
+  string pool_id = 2;
+  cosmos.base.v1beta1.Coin amount_a = 3 [(gogoproto.nullable) = false];
+  cosmos.base.v1beta1.Coin amount_b = 4 [(gogoproto.nullable) = false];
+}
+
+message MsgAddLiquidityResponse {
+  string lp_tokens_minted = 1 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+  string pool_share_percent = 2 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
+}
+
+// MsgRemoveLiquidity removes liquidity from pool
+message MsgRemoveLiquidity {
+  option (cosmos.msg.v1.signer) = "provider";
+
+  string provider = 1;
+  string pool_id = 2;
+  string lp_tokens = 3 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+}
+
+message MsgRemoveLiquidityResponse {
+  cosmos.base.v1beta1.Coin amount_a = 1 [(gogoproto.nullable) = false];
+  cosmos.base.v1beta1.Coin amount_b = 2 [(gogoproto.nullable) = false];
+}
+
+// MsgSwapExactIn swaps exact input amount for minimum output
+message MsgSwapExactIn {
+  option (cosmos.msg.v1.signer) = "sender";
+
+  string sender = 1;
+  string pool_id = 2;
+  cosmos.base.v1beta1.Coin coin_in = 3 [(gogoproto.nullable) = false];
+  string min_amount_out = 4 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+  uint64 max_slippage_bps = 5;  // basis points (500 = 5%)
+}
+
+message MsgSwapExactInResponse {
+  string amount_out = 1 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+  string effective_price = 2 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
+  string price_impact_percent = 3 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
+}
+
+// MsgCreateOrder creates P2P swap order
+message MsgCreateOrder {
+  option (cosmos.msg.v1.signer) = "creator";
+
+  string creator = 1;
+  SwapOrderType order_type = 2;
+  string aura_amount = 3 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+  string other_coin = 4;
+  string other_amount = 5 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+}
+
+message MsgCreateOrderResponse {
+  string order_id = 1;
+  SwapOrderStatus status = 2;
+  string matched_with = 3;  // If auto-matched
+  string message = 4;
+}
+
+// MsgCancelOrder cancels pending order
+message MsgCancelOrder {
+  option (cosmos.msg.v1.signer) = "creator";
+
+  string creator = 1;
+  string order_id = 2;
+}
+
+message MsgCancelOrderResponse {
+  bool success = 1;
+}
+
+// MsgExecuteSwap executes matched HTLC swap
+message MsgExecuteSwap {
+  option (cosmos.msg.v1.signer) = "initiator";
+
+  string initiator = 1;
+  string order_id = 2;
+  string secret = 3;  // HTLC secret
+}
+
+message MsgExecuteSwapResponse {
+  bool success = 1;
+  string swap_id = 2;
+}
+
+// MsgCreateHTLC creates Hash Time-Locked Contract
+message MsgCreateHTLC {
+  option (cosmos.msg.v1.signer) = "sender";
+
+  string sender = 1;
+  string recipient = 2;
+  cosmos.base.v1beta1.Coin amount = 3 [(gogoproto.nullable) = false];
+  string secret_hash = 4;
+  uint64 timelock_duration = 5;  // seconds
+}
+
+message MsgCreateHTLCResponse {
+  string htlc_id = 1;
+}
+
+// MsgClaimHTLC claims HTLC with secret
+message MsgClaimHTLC {
+  option (cosmos.msg.v1.signer) = "recipient";
+
+  string recipient = 1;
+  string htlc_id = 2;
+  string secret = 3;
+}
+
+message MsgClaimHTLCResponse {
+  bool success = 1;
+}
+
+// MsgRefundHTLC refunds expired HTLC
+message MsgRefundHTLC {
+  option (cosmos.msg.v1.signer) = "sender";
+
+  string sender = 1;
+  string htlc_id = 2;
+}
+
+message MsgRefundHTLCResponse {
+  bool success = 1;
+}

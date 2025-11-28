@@ -1,0 +1,289 @@
+syntax = "proto3";
+package aura.contractregistry.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "aura/contractregistry/v1beta1/contract_registry.proto";
+import "aura/contractregistry/v1beta1/genesis.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/contractregistry/v1beta1";
+
+// Query defines the gRPC querier service for contract registry
+service Query {
+  // ContractInfo queries information about a registered contract
+  rpc ContractInfo(QueryContractInfoRequest) returns (QueryContractInfoResponse) {
+    option (google.api.http).get = "/aura/contractregistry/v1beta1/contracts/{contract_address}";
+  }
+
+  // ContractsByCreator queries all contracts created by a specific address
+  rpc ContractsByCreator(QueryContractsByCreatorRequest) returns (QueryContractsByCreatorResponse) {
+    option (google.api.http).get = "/aura/contractregistry/v1beta1/contracts/creator/{creator_address}";
+  }
+
+  // ContractsByTag queries all contracts with a specific tag
+  rpc ContractsByTag(QueryContractsByTagRequest) returns (QueryContractsByTagResponse) {
+    option (google.api.http).get = "/aura/contractregistry/v1beta1/contracts/tag/{tag}";
+  }
+
+  // RegisteredContracts queries all registered contracts with pagination
+  rpc RegisteredContracts(QueryRegisteredContractsRequest) returns (QueryRegisteredContractsResponse) {
+    option (google.api.http).get = "/aura/contractregistry/v1beta1/contracts";
+  }
+
+  // ContractMetrics queries usage metrics for a contract
+  rpc ContractMetrics(QueryContractMetricsRequest) returns (QueryContractMetricsResponse) {
+    option (google.api.http).get = "/aura/contractregistry/v1beta1/metrics/{contract_address}";
+  }
+
+  // ContractAudits queries audit trail for a contract
+  rpc ContractAudits(QueryContractAuditsRequest) returns (QueryContractAuditsResponse) {
+    option (google.api.http).get = "/aura/contractregistry/v1beta1/audits/{contract_address}";
+  }
+
+  // ContractVerification queries verification status for a contract
+  rpc ContractVerification(QueryContractVerificationRequest) returns (QueryContractVerificationResponse) {
+    option (google.api.http).get = "/aura/contractregistry/v1beta1/verification/{contract_address}";
+  }
+
+  // WhitelistedContracts queries all whitelisted contracts
+  rpc WhitelistedContracts(QueryWhitelistedContractsRequest) returns (QueryWhitelistedContractsResponse) {
+    option (google.api.http).get = "/aura/contractregistry/v1beta1/whitelisted";
+  }
+
+  // BlacklistedContracts queries all blacklisted contracts
+  rpc BlacklistedContracts(QueryBlacklistedContractsRequest) returns (QueryBlacklistedContractsResponse) {
+    option (google.api.http).get = "/aura/contractregistry/v1beta1/blacklisted";
+  }
+
+  // ContractSecurityScore queries the security score for a contract
+  rpc ContractSecurityScore(QueryContractSecurityScoreRequest) returns (QueryContractSecurityScoreResponse) {
+    option (google.api.http).get = "/aura/contractregistry/v1beta1/security-score/{contract_address}";
+  }
+
+  // ContractUsageStats queries detailed usage statistics for a contract
+  rpc ContractUsageStats(QueryContractUsageStatsRequest) returns (QueryContractUsageStatsResponse) {
+    option (google.api.http).get = "/aura/contractregistry/v1beta1/usage-stats/{contract_address}";
+  }
+
+  // Params queries the module parameters
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/aura/contractregistry/v1beta1/params";
+  }
+}
+
+// QueryContractInfoRequest is the request for ContractInfo query
+message QueryContractInfoRequest {
+  // Contract address to query
+  string contract_address = 1;
+}
+
+// QueryContractInfoResponse is the response for ContractInfo query
+message QueryContractInfoResponse {
+  // Contract information
+  ContractInfo contract = 1 [(gogoproto.nullable) = false];
+}
+
+// QueryContractsByCreatorRequest is the request for ContractsByCreator query
+message QueryContractsByCreatorRequest {
+  // Creator address
+  string creator_address = 1;
+
+  // Pagination parameters
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+// QueryContractsByCreatorResponse is the response for ContractsByCreator query
+message QueryContractsByCreatorResponse {
+  // List of contracts
+  repeated ContractInfo contracts = 1 [(gogoproto.nullable) = false];
+
+  // Pagination response
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryContractsByTagRequest is the request for ContractsByTag query
+message QueryContractsByTagRequest {
+  // Tag to filter by
+  string tag = 1;
+
+  // Pagination parameters
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+// QueryContractsByTagResponse is the response for ContractsByTag query
+message QueryContractsByTagResponse {
+  // List of contracts with the tag
+  repeated ContractInfo contracts = 1 [(gogoproto.nullable) = false];
+
+  // Pagination response
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryRegisteredContractsRequest is the request for RegisteredContracts query
+message QueryRegisteredContractsRequest {
+  // Optional status filter
+  ContractStatus status = 1;
+
+  // Pagination parameters
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+// QueryRegisteredContractsResponse is the response for RegisteredContracts query
+message QueryRegisteredContractsResponse {
+  // List of all registered contracts
+  repeated ContractInfo contracts = 1 [(gogoproto.nullable) = false];
+
+  // Pagination response
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryContractMetricsRequest is the request for ContractMetrics query
+message QueryContractMetricsRequest {
+  // Contract address
+  string contract_address = 1;
+}
+
+// QueryContractMetricsResponse is the response for ContractMetrics query
+message QueryContractMetricsResponse {
+  // Contract metrics
+  ContractMetrics metrics = 1 [(gogoproto.nullable) = false];
+}
+
+// QueryContractAuditsRequest is the request for ContractAudits query
+message QueryContractAuditsRequest {
+  // Contract address to query
+  string contract_address = 1;
+
+  // Maximum number of entries to return (0 = all)
+  uint64 limit = 2;
+}
+
+// QueryContractAuditsResponse is the response for ContractAudits query
+message QueryContractAuditsResponse {
+  // Audit entries
+  repeated AuditEntry entries = 1 [(gogoproto.nullable) = false];
+
+  // Statistics about the audit trail
+  AuditStatistics statistics = 2 [(gogoproto.nullable) = false];
+}
+
+// QueryContractVerificationRequest is the request for ContractVerification query
+message QueryContractVerificationRequest {
+  // Contract address to query
+  string contract_address = 1;
+}
+
+// QueryContractVerificationResponse is the response for ContractVerification query
+message QueryContractVerificationResponse {
+  // Contract address
+  string contract_address = 1;
+
+  // Whether contract is verified
+  bool verified = 2;
+
+  // Verification timestamp
+  google.protobuf.Timestamp verified_at = 3 [(gogoproto.stdtime) = true];
+
+  // Verifier address
+  string verified_by = 4;
+
+  // Security score (0-100)
+  uint32 security_score = 5;
+}
+
+// QueryWhitelistedContractsRequest is the request for WhitelistedContracts query
+message QueryWhitelistedContractsRequest {
+  // Pagination parameters
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+// QueryWhitelistedContractsResponse is the response for WhitelistedContracts query
+message QueryWhitelistedContractsResponse {
+  // List of whitelisted contracts
+  repeated ContractInfo contracts = 1 [(gogoproto.nullable) = false];
+
+  // Pagination response
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryBlacklistedContractsRequest is the request for BlacklistedContracts query
+message QueryBlacklistedContractsRequest {
+  // Pagination parameters
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+// QueryBlacklistedContractsResponse is the response for BlacklistedContracts query
+message QueryBlacklistedContractsResponse {
+  // List of blacklisted contracts
+  repeated ContractInfo contracts = 1 [(gogoproto.nullable) = false];
+
+  // Pagination response
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryContractSecurityScoreRequest is the request for ContractSecurityScore query
+message QueryContractSecurityScoreRequest {
+  // Contract address to query
+  string contract_address = 1;
+}
+
+// QueryContractSecurityScoreResponse is the response for ContractSecurityScore query
+message QueryContractSecurityScoreResponse {
+  // Contract address
+  string contract_address = 1;
+
+  // Security score (0-100)
+  uint32 score = 2;
+
+  // Risk level (LOW, MEDIUM, HIGH, CRITICAL)
+  string risk_level = 3;
+
+  // Last score update timestamp
+  google.protobuf.Timestamp updated_at = 4 [(gogoproto.stdtime) = true];
+}
+
+// QueryContractUsageStatsRequest is the request for ContractUsageStats query
+message QueryContractUsageStatsRequest {
+  // Contract address to query
+  string contract_address = 1;
+
+  // Start block height (0 = from beginning)
+  int64 from_height = 2;
+
+  // End block height (0 = current)
+  int64 to_height = 3;
+}
+
+// QueryContractUsageStatsResponse is the response for ContractUsageStats query
+message QueryContractUsageStatsResponse {
+  // Contract address
+  string contract_address = 1;
+
+  // Total executions in period
+  uint64 total_executions = 2;
+
+  // Successful executions
+  uint64 successful_executions = 3;
+
+  // Failed executions
+  uint64 failed_executions = 4;
+
+  // Total gas used
+  uint64 total_gas_used = 5;
+
+  // Number of unique users
+  uint64 unique_users = 6;
+}
+
+// QueryParamsRequest is the request for Params query
+message QueryParamsRequest {
+}
+
+// QueryParamsResponse is the response for Params query
+// Note: ContractRegistryParams is imported from genesis.proto
+message QueryParamsResponse {
+  // Module parameters - uses type from genesis.proto
+  aura.contractregistry.v1beta1.ContractRegistryParams params = 1 [(gogoproto.nullable) = false];
+}

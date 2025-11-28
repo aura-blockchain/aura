@@ -1,0 +1,38 @@
+package types
+
+import (
+	"cosmossdk.io/errors"
+)
+
+var (
+	ErrInvalidPeerID             = errors.Register(ModuleName, 1, "invalid peer ID")
+	ErrPeerNotFound              = errors.Register(ModuleName, 2, "peer not found")
+	ErrPeerBanned                = errors.Register(ModuleName, 3, "peer is banned")
+	ErrRateLimitExceeded         = errors.Register(ModuleName, 4, "rate limit exceeded")
+	ErrConnectionLimitExceeded   = errors.Register(ModuleName, 5, "connection limit exceeded")
+	ErrInvalidPeerReputation     = errors.Register(ModuleName, 6, "invalid peer reputation")
+	ErrMempoolFull               = errors.Register(ModuleName, 7, "mempool is full")
+	ErrPriorityFeeTooLow         = errors.Register(ModuleName, 8, "priority fee too low")
+	ErrMaxTxsPerAccountReached   = errors.Register(ModuleName, 9, "maximum transactions per account reached")
+	ErrInvalidGossipMessage      = errors.Register(ModuleName, 10, "invalid gossip message")
+	ErrMessageTooLarge           = errors.Register(ModuleName, 11, "message too large")
+	ErrDuplicateMessage          = errors.Register(ModuleName, 12, "duplicate message")
+	ErrMessageExpired            = errors.Register(ModuleName, 13, "message expired")
+	ErrForkDetected              = errors.Register(ModuleName, 14, "fork detected")
+	ErrPartitionDetected         = errors.Register(ModuleName, 15, "network partition detected")
+	ErrNotTrustedPeer            = errors.Register(ModuleName, 16, "peer is not in trusted list")
+	ErrInsufficientPeerDiversity = errors.Register(ModuleName, 17, "insufficient peer diversity")
+	ErrBandwidthLimitExceeded    = errors.Register(ModuleName, 18, "bandwidth limit exceeded")
+	ErrInvalidSignature          = errors.Register(ModuleName, 19, "invalid message signature")
+	ErrSybilDetected             = errors.Register(ModuleName, 20, "potential sybil attack detected")
+	ErrEclipseDetected           = errors.Register(ModuleName, 21, "potential eclipse attack detected")
+	ErrSyncAttack                = errors.Register(ModuleName, 22, "sync attack detected")
+	ErrInvalidAlertID            = errors.Register(ModuleName, 23, "invalid alert ID")
+	ErrAlertNotFound             = errors.Register(ModuleName, 24, "alert not found")
+	ErrAlreadyResolved           = errors.Register(ModuleName, 25, "alert already resolved")
+	ErrTrustedPeerExists         = errors.Register(ModuleName, 26, "trusted peer already exists")
+	ErrInvalidIPAddress          = errors.Register(ModuleName, 27, "invalid IP address")
+	ErrInvalidASN                = errors.Register(ModuleName, 28, "invalid ASN")
+	ErrConnectionTimeout         = errors.Register(ModuleName, 29, "connection timeout")
+	ErrInvalidPublicKey          = errors.Register(ModuleName, 30, "invalid public key")
+)

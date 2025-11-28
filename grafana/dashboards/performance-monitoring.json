@@ -1,0 +1,189 @@
+{
+  "dashboard": {
+    "title": "Aura Performance Monitoring Dashboard",
+    "tags": ["aura", "performance", "optimization"],
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "version": 1,
+    "refresh": "10s",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Cache Hit Rate",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "aura_cache_hit_rate",
+            "legendFormat": "{{module}}"
+          }
+        ],
+        "yaxes": [
+          {"format": "percentunit", "min": 0, "max": 1}
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {"params": [0.7], "type": "lt"},
+              "operator": {"type": "and"},
+              "query": {"params": ["A", "5m", "now"]},
+              "reducer": {"params": [], "type": "avg"},
+              "type": "query"
+            }
+          ],
+          "name": "Low Cache Hit Rate"
+        }
+      },
+      {
+        "id": 2,
+        "title": "Query Latency (95th percentile)",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(aura_query_duration_seconds_bucket[5m]))",
+            "legendFormat": "{{module}}"
+          }
+        ],
+        "yaxes": [
+          {"format": "s", "min": 0}
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Transaction Processing Time",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(aura_tx_processing_duration_seconds_bucket[5m]))",
+            "legendFormat": "p95"
+          },
+          {
+            "expr": "histogram_quantile(0.50, rate(aura_tx_processing_duration_seconds_bucket[5m]))",
+            "legendFormat": "p50"
+          }
+        ],
+        "yaxes": [
+          {"format": "s", "min": 0}
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Memory Usage",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "process_resident_memory_bytes",
+            "legendFormat": "RSS"
+          },
+          {
+            "expr": "go_memstats_alloc_bytes",
+            "legendFormat": "Allocated"
+          },
+          {
+            "expr": "go_memstats_heap_inuse_bytes",
+            "legendFormat": "Heap In Use"
+          }
+        ],
+        "yaxes": [
+          {"format": "bytes", "min": 0}
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Goroutines",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 16, "w": 8, "h": 8},
+        "targets": [
+          {
+            "expr": "go_goroutines",
+            "legendFormat": "Goroutines"
+          }
+        ],
+        "yaxes": [
+          {"format": "short", "min": 0}
+        ]
+      },
+      {
+        "id": 6,
+        "title": "GC Pause Duration",
+        "type": "graph",
+        "gridPos": {"x": 8, "y": 16, "w": 8, "h": 8},
+        "targets": [
+          {
+            "expr": "rate(go_gc_duration_seconds_sum[5m]) / rate(go_gc_duration_seconds_count[5m])",
+            "legendFormat": "Average GC Pause"
+          }
+        ],
+        "yaxes": [
+          {"format": "s", "min": 0}
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Database Operations per Second",
+        "type": "graph",
+        "gridPos": {"x": 16, "y": 16, "w": 8, "h": 8},
+        "targets": [
+          {
+            "expr": "rate(aura_db_reads_total[5m])",
+            "legendFormat": "Reads"
+          },
+          {
+            "expr": "rate(aura_db_writes_total[5m])",
+            "legendFormat": "Writes"
+          }
+        ],
+        "yaxes": [
+          {"format": "ops", "min": 0}
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Block Processing Time",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 24, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "aura_monitoring_block_time_seconds",
+            "legendFormat": "Block Time"
+          },
+          {
+            "expr": "rate(aura_blocks_processed_total[5m])",
+            "legendFormat": "Blocks/sec"
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Consensus Performance",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 24, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "aura_monitoring_consensus_health",
+            "legendFormat": "Health Score"
+          },
+          {
+            "expr": "aura_consensus_round_duration_seconds",
+            "legendFormat": "Round Duration"
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "title": "Module Performance Breakdown",
+        "type": "heatmap",
+        "gridPos": {"x": 0, "y": 32, "w": 24, "h": 8},
+        "targets": [
+          {
+            "expr": "sum by (module) (rate(aura_module_processing_time_seconds_sum[5m]))",
+            "legendFormat": "{{module}}"
+          }
+        ]
+      }
+    ]
+  }
+}

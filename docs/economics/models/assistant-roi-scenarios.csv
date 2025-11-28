@@ -1,0 +1,5 @@
+Scenario,IRs_per_day,Assistant_Share_Pct,Reward_per_IR_AEQ,Gross_AEQ_per_day,Gross_USD_per_day,Monthly_Gross_USD,Monthly_OpEx_USD,Hardware_CapEx_USD,Net_Monthly_USD,BreakEven_Months,Notes
+solo_launch,40,0.60,3.60,144.00,72.00,2160.00,1200.00,2000.00,960.00,2.10,"Single operator + laptop/mobile kit"
+regional_team,120,0.65,4.88,585.00,292.50,8775.00,4200.00,6000.00,4575.00,1.31,"3-assistant pod covering multiple locales"
+verification_kiosk,200,0.50,3.00,600.00,300.00,9000.00,7500.00,15000.00,1500.00,10.00,"Retail kiosk paying rent + attendants"
+ai_aggregator,500,0.40,2.60,1300.00,650.00,19500.00,12000.00,25000.00,7500.00,3.33,"Cloud-based agent orchestrator with moderation staff"

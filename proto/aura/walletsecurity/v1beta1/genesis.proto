@@ -1,0 +1,97 @@
+syntax = "proto3";
+package aura.walletsecurity.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "aura/walletsecurity/v1beta1/wallet_security.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/walletsecurity/v1beta1";
+
+// WalletSecurityParams defines module parameters
+message WalletSecurityParams {
+  // Hardware wallet settings
+  bool hardware_wallet_enabled = 1;
+  repeated int32 supported_hardware_types = 2;
+
+  // Multi-sig settings
+  int32 max_signers = 3;
+  int32 min_threshold = 4;
+  int32 max_threshold = 5;
+
+  // Social recovery settings
+  bool social_recovery_enabled = 6;
+  int32 max_guardians = 7;
+  int32 min_recovery_threshold = 8;
+  uint64 default_recovery_delay_seconds = 9;
+
+  // Session settings
+  uint64 default_session_timeout_seconds = 10;
+  uint64 max_session_duration_seconds = 11;
+
+  // Spending limit settings
+  bool spending_limits_enabled = 12;
+  string default_daily_limit = 13;
+
+  // Biometric settings
+  bool biometric_enabled = 14;
+  int32 max_biometric_attempts = 15;
+  uint64 lockout_duration_seconds = 16;
+
+  // Dust attack settings
+  bool dust_filter_enabled = 17;
+  string min_dust_amount = 18;
+
+  // Phishing protection
+  bool phishing_protection_enabled = 19;
+  bool require_domain_verification = 20;
+}
+
+// GenesisState defines the walletsecurity module's genesis state
+message GenesisState {
+  // Module parameters
+  WalletSecurityParams params = 1 [(gogoproto.nullable) = false];
+
+  // Hardware wallet configs
+  repeated HardwareWalletConfig hardware_wallets = 2;
+
+  // Multi-sig wallets
+  repeated MultiSigWallet multisig_wallets = 3;
+
+  // Pending multi-sig transactions
+  repeated PendingMultiSigTransaction pending_transactions = 4;
+
+  // Social recovery configs
+  repeated SocialRecoveryConfig recovery_configs = 5;
+
+  // Active recovery requests
+  repeated RecoveryRequest recovery_requests = 6;
+
+  // Domain verifications
+  repeated DomainVerification domain_verifications = 7;
+
+  // Phishing protection configs
+  repeated PhishingProtectionConfig phishing_configs = 8;
+
+  // Spending limits
+  repeated SpendingLimit spending_limits = 9;
+
+  // Session configs
+  repeated SessionConfig session_configs = 10;
+
+  // Biometric auth configs
+  repeated BiometricAuth biometric_configs = 11;
+
+  // Secure enclave configs
+  repeated SecureEnclaveConfig enclave_configs = 12;
+
+  // Encrypted backups
+  repeated EncryptedBackup encrypted_backups = 13;
+
+  // Dust attack filters
+  repeated DustAttackFilter dust_filters = 14;
+
+  // Detected dust transactions
+  repeated DustTransaction dust_transactions = 15;
+
+  // Wallet security metrics
+  repeated WalletSecurityMetrics security_metrics = 16;
+}

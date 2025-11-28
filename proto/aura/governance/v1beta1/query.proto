@@ -1,0 +1,157 @@
+syntax = "proto3";
+package aura.governance.v1beta1;
+
+import "aura/governance/v1beta1/governance.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/governance/v1beta1";
+
+// Query defines the governance Query service
+service Query {
+  // Proposal queries a proposal based on proposal id
+  rpc Proposal(QueryProposalRequest) returns (QueryProposalResponse);
+
+  // Proposals queries all proposals
+  rpc Proposals(QueryProposalsRequest) returns (QueryProposalsResponse);
+
+  // Vote queries a vote by proposal id and voter
+  rpc Vote(QueryVoteRequest) returns (QueryVoteResponse);
+
+  // Votes queries all votes for a proposal
+  rpc Votes(QueryVotesRequest) returns (QueryVotesResponse);
+
+  // Params queries the governance parameters
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse);
+
+  // Deposit queries a deposit by proposal id and depositor
+  rpc Deposit(QueryDepositRequest) returns (QueryDepositResponse);
+
+  // Deposits queries all deposits for a proposal
+  rpc Deposits(QueryDepositsRequest) returns (QueryDepositsResponse);
+
+  // TallyResult queries the tally of a proposal
+  rpc TallyResult(QueryTallyResultRequest) returns (QueryTallyResultResponse);
+
+  // VoteDelegations queries all vote delegations for a delegator
+  rpc VoteDelegations(QueryVoteDelegationsRequest) returns (QueryVoteDelegationsResponse);
+
+  // VotingPower queries the voting power of an address
+  rpc VotingPower(QueryVotingPowerRequest) returns (QueryVotingPowerResponse);
+
+  // TokenLocks queries all token locks for an address
+  rpc TokenLocks(QueryTokenLocksRequest) returns (QueryTokenLocksResponse);
+
+  // VetoRequests queries all veto requests for a proposal
+  rpc VetoRequests(QueryVetoRequestsRequest) returns (QueryVetoRequestsResponse);
+
+  // SnapshotVotes queries snapshot votes for a proposal
+  rpc SnapshotVotes(QuerySnapshotVotesRequest) returns (QuerySnapshotVotesResponse);
+}
+
+message QueryProposalRequest {
+  uint64 proposal_id = 1;
+}
+
+message QueryProposalResponse {
+  Proposal proposal = 1;
+}
+
+message QueryProposalsRequest {
+  ProposalStatus status = 1;
+  string voter = 2;
+  string depositor = 3;
+}
+
+message QueryProposalsResponse {
+  repeated Proposal proposals = 1;
+}
+
+message QueryVoteRequest {
+  uint64 proposal_id = 1;
+  string voter = 2;
+}
+
+message QueryVoteResponse {
+  Vote vote = 1;
+}
+
+message QueryVotesRequest {
+  uint64 proposal_id = 1;
+}
+
+message QueryVotesResponse {
+  repeated Vote votes = 1;
+}
+
+message QueryParamsRequest {}
+
+message QueryParamsResponse {
+  GovernanceParams params = 1;
+}
+
+message QueryDepositRequest {
+  uint64 proposal_id = 1;
+  string depositor = 2;
+}
+
+message QueryDepositResponse {
+  Deposit deposit = 1;
+}
+
+message QueryDepositsRequest {
+  uint64 proposal_id = 1;
+}
+
+message QueryDepositsResponse {
+  repeated Deposit deposits = 1;
+}
+
+message QueryTallyResultRequest {
+  uint64 proposal_id = 1;
+}
+
+message QueryTallyResultResponse {
+  TallyResult tally = 1;
+}
+
+message QueryVoteDelegationsRequest {
+  string delegator = 1;
+}
+
+message QueryVoteDelegationsResponse {
+  repeated VoteDelegation delegations = 1;
+}
+
+message QueryVotingPowerRequest {
+  string address = 1;
+  uint64 proposal_id = 2;  // Optional: for snapshot voting
+}
+
+message QueryVotingPowerResponse {
+  string voting_power = 1;
+  string delegated_power = 2;
+  string total_power = 3;
+}
+
+message QueryTokenLocksRequest {
+  string address = 1;
+}
+
+message QueryTokenLocksResponse {
+  repeated TokenLock locks = 1;
+}
+
+message QueryVetoRequestsRequest {
+  uint64 proposal_id = 1;
+}
+
+message QueryVetoRequestsResponse {
+  repeated VetoRequest veto_requests = 1;
+}
+
+message QuerySnapshotVotesRequest {
+  uint64 proposal_id = 1;
+}
+
+message QuerySnapshotVotesResponse {
+  repeated SnapshotVote votes = 1;
+}

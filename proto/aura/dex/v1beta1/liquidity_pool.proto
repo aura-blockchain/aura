@@ -1,0 +1,134 @@
+syntax = "proto3";
+package aura.dex.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+import "cosmos/base/v1beta1/coin.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/dex/v1beta1";
+
+// LiquidityPool represents an AMM pool using constant product formula (x * y = k)
+// Adapted from liquidity_pools.py
+message LiquidityPool {
+  // Unique pool identifier
+  string pool_id = 1;
+
+  // Token A denomination (e.g., "uaura")
+  string denom_a = 2;
+
+  // Token B denomination (e.g., "usdt", "btc", "eth", "osmo")
+  string denom_b = 3;
+
+  // Reserve of token A (as string for sdk.Int)
+  string reserve_a = 4 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Reserve of token B (as string for sdk.Int)
+  string reserve_b = 5 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Total LP tokens issued
+  string total_lp_tokens = 6 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Trading fee percentage (0.003 = 0.3%)
+  string fee_percentage = 7 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
+
+  // Protocol fee percentage (0.0005 = 0.05%)
+  string protocol_fee_percentage = 8 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
+
+  // Total trading volume (all time)
+  string total_volume = 9 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Total fees collected (all time)
+  string total_fees_collected = 10 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Number of swaps executed
+  uint64 swap_count = 11;
+
+  // Protocol fees accumulated (withdrawable by governance)
+  string protocol_fee_balance = 12 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Liquidity providers
+  repeated LiquidityProvider providers = 13 [(gogoproto.nullable) = false];
+
+  // Pool creation time
+  google.protobuf.Timestamp created_at = 14 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+}
+
+// LiquidityProvider represents a single LP's position
+message LiquidityProvider {
+  // Provider address
+  string address = 1;
+
+  // LP tokens held
+  string lp_tokens = 2 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+}
+
+// PoolPair represents supported trading pairs
+enum PoolPair {
+  // Stablecoin pairs
+  AURA_USDT = 0;
+  AURA_USDC = 1;
+  AURA_DAI = 2;
+
+  // Major crypto pairs
+  AURA_BTC = 3;
+  AURA_ETH = 4;
+  AURA_LTC = 5;
+  AURA_DOGE = 6;
+  AURA_BCH = 7;
+  AURA_XMR = 8;
+  AURA_ZEC = 9;
+  AURA_DASH = 10;
+
+  // Cosmos ecosystem
+  AURA_OSMO = 11;
+  AURA_ATOM = 12;
+
+  // Cross-chain (PAW and XAI)
+  AURA_PAW = 13;
+  AURA_XAI = 14;
+}
+
+// SwapStats tracks recent swap history for price discovery
+message SwapStats {
+  string pool_id = 1;
+  google.protobuf.Timestamp timestamp = 2 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+  string amount_in = 3 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+  string amount_out = 4 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+  string effective_price = 5 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
+}

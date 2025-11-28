@@ -1,0 +1,761 @@
+syntax = "proto3";
+package aura.economics.v1beta1;
+
+option go_package = "github.com/aequitas/aura/proto/aura/economics/v1beta1";
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+import "cosmos/base/v1beta1/coin.proto";
+
+// Params defines the unified economics module parameters
+message Params {
+  // Fee-related parameters
+  FeeParams fees = 1 [(gogoproto.nullable) = false];
+
+  // Vesting-related parameters
+  VestingParams vesting = 2 [(gogoproto.nullable) = false];
+
+  // Treasury-related parameters
+  TreasuryParams treasury = 3 [(gogoproto.nullable) = false];
+
+  // Governance-related parameters
+  GovernanceParams governance = 4 [(gogoproto.nullable) = false];
+
+  // MEV protection parameters
+  MEVParams mev = 5 [(gogoproto.nullable) = false];
+
+  // Whale protection parameters
+  WhaleProtectionParams whale_protection = 6 [(gogoproto.nullable) = false];
+
+  // Liquidity mining parameters
+  LiquidityMiningParams liquidity_mining = 7 [(gogoproto.nullable) = false];
+
+  // Tokenomics parameters
+  TokenomicsParams tokenomics = 8 [(gogoproto.nullable) = false];
+}
+
+// FeeParams defines fee-related parameters
+message FeeParams {
+  // Base fee for transactions
+  string base_fee = 1 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Minimum gas price
+  string min_gas_price = 2 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
+
+  // Whether dynamic fees are enabled
+  bool dynamic_fees_enabled = 3;
+
+  // Percentage of fees to burn (basis points)
+  uint64 fee_burn_percentage = 4;
+
+  // Fee multiplier range for dynamic adjustment
+  uint64 min_fee_multiplier = 5;
+  uint64 max_fee_multiplier = 6;
+
+  // Target block utilization (basis points)
+  uint64 target_block_utilization = 7;
+
+  // Fee adjustment speed
+  uint64 fee_adjustment_speed = 8;
+}
+
+// VestingParams defines vesting-related parameters
+message VestingParams {
+  // Minimum vesting duration
+  google.protobuf.Duration min_vesting_duration = 1 [
+    (gogoproto.stdduration) = true,
+    (gogoproto.nullable) = false
+  ];
+
+  // Maximum vesting duration
+  google.protobuf.Duration max_vesting_duration = 2 [
+    (gogoproto.stdduration) = true,
+    (gogoproto.nullable) = false
+  ];
+
+  // Whether early unlock is allowed
+  bool allow_early_unlock = 3;
+
+  // Penalty for early unlock (basis points)
+  uint64 early_unlock_penalty = 4;
+
+  // Minimum cliff duration
+  google.protobuf.Duration min_cliff_duration = 5 [
+    (gogoproto.stdduration) = true,
+    (gogoproto.nullable) = false
+  ];
+}
+
+// TreasuryParams defines treasury-related parameters
+message TreasuryParams {
+  // Treasury address
+  string treasury_address = 1;
+
+  // Community pool percentage (basis points)
+  uint64 community_pool_percentage = 2;
+
+  // Burn percentage (basis points)
+  uint64 burn_percentage = 3;
+
+  // Multi-signature threshold
+  uint32 multisig_threshold = 4;
+
+  // Authorized signers
+  repeated string authorized_signers = 5;
+
+  // Spending limit without multisig
+  string spending_limit = 6 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Timelock duration for large transactions
+  google.protobuf.Duration timelock_duration = 7 [
+    (gogoproto.stdduration) = true,
+    (gogoproto.nullable) = false
+  ];
+}
+
+// GovernanceParams defines governance-related parameters
+message GovernanceParams {
+  // Minimum deposit to create proposal
+  repeated cosmos.base.v1beta1.Coin min_deposit = 1 [
+    (gogoproto.nullable) = false,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
+  ];
+
+  // Maximum deposit period
+  google.protobuf.Duration max_deposit_period = 2 [
+    (gogoproto.stdduration) = true,
+    (gogoproto.nullable) = false
+  ];
+
+  // Voting period
+  google.protobuf.Duration voting_period = 3 [
+    (gogoproto.stdduration) = true,
+    (gogoproto.nullable) = false
+  ];
+
+  // Quorum percentage (basis points)
+  uint64 quorum = 4;
+
+  // Threshold percentage (basis points)
+  uint64 threshold = 5;
+
+  // Veto threshold percentage (basis points)
+  uint64 veto_threshold = 6;
+
+  // Execution delay (timelock)
+  google.protobuf.Duration execution_delay = 7 [
+    (gogoproto.stdduration) = true,
+    (gogoproto.nullable) = false
+  ];
+
+  // Emergency voting period (fast-track)
+  google.protobuf.Duration emergency_voting_period = 8 [
+    (gogoproto.stdduration) = true,
+    (gogoproto.nullable) = false
+  ];
+
+  // Emergency quorum (basis points)
+  uint64 emergency_quorum = 9;
+
+  // Emergency threshold (basis points)
+  uint64 emergency_threshold = 10;
+
+  // Whether quadratic voting is enabled
+  bool quadratic_voting_enabled = 11;
+
+  // Whether vote locking is enabled
+  bool vote_locking_enabled = 12;
+
+  // Minimum lock duration for voting boost
+  google.protobuf.Duration min_lock_duration = 13 [
+    (gogoproto.stdduration) = true,
+    (gogoproto.nullable) = false
+  ];
+
+  // Maximum lock duration
+  google.protobuf.Duration max_lock_duration = 14 [
+    (gogoproto.stdduration) = true,
+    (gogoproto.nullable) = false
+  ];
+
+  // Vote power multiplier per year locked (basis points)
+  uint64 lock_multiplier_per_year = 15;
+
+  // Whether snapshot voting is enabled
+  bool snapshot_voting_enabled = 16;
+
+  // Snapshot lookback blocks
+  uint64 snapshot_lookback_blocks = 17;
+
+  // Whether secret ballot is enabled
+  bool secret_ballot_enabled = 18;
+
+  // Reveal period for secret ballots
+  google.protobuf.Duration reveal_period = 19 [
+    (gogoproto.stdduration) = true,
+    (gogoproto.nullable) = false
+  ];
+}
+
+// MEVParams defines MEV protection parameters
+message MEVParams {
+  // Whether MEV protection is enabled
+  bool enabled = 1;
+
+  // Maximum frontrun penalty
+  string max_frontrun_penalty = 2 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // MEV auction duration
+  google.protobuf.Duration auction_duration = 3 [
+    (gogoproto.stdduration) = true,
+    (gogoproto.nullable) = false
+  ];
+
+  // User redistribution percentage (basis points)
+  uint64 user_redistribution_percentage = 4;
+
+  // Validator percentage (basis points)
+  uint64 validator_percentage = 5;
+
+  // Treasury percentage (basis points)
+  uint64 treasury_percentage = 6;
+
+  // Burn percentage (basis points)
+  uint64 burn_percentage = 7;
+
+  // MEV redistribution strategy
+  MEVRedistributionStrategy strategy = 8;
+}
+
+// MEVRedistributionStrategy defines how MEV is redistributed
+enum MEVRedistributionStrategy {
+  MEV_STRATEGY_UNSPECIFIED = 0;
+  MEV_STRATEGY_PROPORTIONAL_TO_STAKE = 1;
+  MEV_STRATEGY_PROPORTIONAL_TO_ACTIVITY = 2;
+  MEV_STRATEGY_EQUAL_DISTRIBUTION = 3;
+  MEV_STRATEGY_IR_WEIGHTED = 4;
+}
+
+// WhaleProtectionParams defines whale protection parameters
+message WhaleProtectionParams {
+  // Whether whale protection is enabled
+  bool enabled = 1;
+
+  // Maximum single transfer
+  string max_single_transfer = 2 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Daily transfer limit per address
+  string daily_transfer_limit = 3 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Cooldown period between large transfers
+  google.protobuf.Duration cooldown_period = 4 [
+    (gogoproto.stdduration) = true,
+    (gogoproto.nullable) = false
+  ];
+
+  // Maximum holding percentage (basis points of total supply)
+  uint64 max_holding_percentage = 5;
+
+  // Threshold for large transaction (basis points of total supply)
+  uint64 large_tx_threshold = 6;
+
+  // Exempted addresses (e.g., DEX contracts)
+  repeated string exempted_addresses = 7;
+}
+
+// LiquidityMiningParams defines liquidity mining parameters
+message LiquidityMiningParams {
+  // Whether liquidity mining is enabled
+  bool enabled = 1;
+
+  // Total rewards allocated
+  string total_rewards_allocated = 2 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Maximum rewards per epoch
+  string max_rewards_per_epoch = 3 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Epoch duration in blocks
+  uint64 epoch_duration_blocks = 4;
+
+  // Reward multiplier for IR-verified users (basis points)
+  uint64 ir_verified_multiplier = 5;
+}
+
+// TokenomicsParams defines tokenomics parameters
+message TokenomicsParams {
+  // Maximum supply cap
+  string max_supply = 1 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Target inflation rate (basis points)
+  uint64 target_inflation_rate = 2;
+
+  // Minimum inflation rate (basis points)
+  uint64 min_inflation_rate = 3;
+
+  // Maximum inflation rate (basis points)
+  uint64 max_inflation_rate = 4;
+
+  // Inflation check interval (blocks)
+  uint64 inflation_check_interval = 5;
+
+  // Inflation alert threshold (basis points deviation from target)
+  uint64 inflation_alert_threshold = 6;
+}
+
+// VestingSchedule represents a vesting schedule
+message VestingSchedule {
+  // Unique schedule ID
+  string id = 1;
+
+  // Beneficiary address
+  string address = 2;
+
+  // Original vesting amount
+  cosmos.base.v1beta1.Coin original_amount = 3 [(gogoproto.nullable) = false];
+
+  // Amount already vested
+  cosmos.base.v1beta1.Coin vested_amount = 4 [(gogoproto.nullable) = false];
+
+  // Start time
+  google.protobuf.Timestamp start_time = 5 [
+    (gogoproto.stdtime) = true,
+    (gogoproto.nullable) = false
+  ];
+
+  // End time
+  google.protobuf.Timestamp end_time = 6 [
+    (gogoproto.stdtime) = true,
+    (gogoproto.nullable) = false
+  ];
+
+  // Cliff duration (seconds)
+  uint64 cliff_duration = 7;
+
+  // Vesting type
+  VestingType vesting_type = 8;
+
+  // Schedule type (who it's for)
+  ScheduleType schedule_type = 9;
+
+  // Whether revoked
+  bool revoked = 10;
+
+  // Revocation time
+  google.protobuf.Timestamp revoked_at = 11 [(gogoproto.stdtime) = true];
+
+  // Revocation reason
+  string revoked_reason = 12;
+}
+
+// VestingType defines the type of vesting
+enum VestingType {
+  VESTING_TYPE_UNSPECIFIED = 0;
+  VESTING_TYPE_LINEAR = 1;
+  VESTING_TYPE_CLIFF = 2;
+  VESTING_TYPE_GRADED = 3;
+  VESTING_TYPE_MILESTONE = 4;
+}
+
+// ScheduleType defines who the vesting schedule is for
+enum ScheduleType {
+  SCHEDULE_TYPE_UNSPECIFIED = 0;
+  SCHEDULE_TYPE_TEAM = 1;
+  SCHEDULE_TYPE_INVESTOR = 2;
+  SCHEDULE_TYPE_ADVISOR = 3;
+  SCHEDULE_TYPE_ECOSYSTEM = 4;
+  SCHEDULE_TYPE_COMMUNITY = 5;
+}
+
+// Proposal represents a governance proposal
+message Proposal {
+  // Proposal ID
+  uint64 id = 1;
+
+  // Title
+  string title = 2;
+
+  // Description
+  string description = 3;
+
+  // Proposer address
+  string proposer = 4;
+
+  // Proposal status
+  ProposalStatus status = 5;
+
+  // Category
+  ProposalCategory category = 6;
+
+  // Submit time
+  google.protobuf.Timestamp submit_time = 7 [
+    (gogoproto.stdtime) = true,
+    (gogoproto.nullable) = false
+  ];
+
+  // Deposit end time
+  google.protobuf.Timestamp deposit_end_time = 8 [
+    (gogoproto.stdtime) = true,
+    (gogoproto.nullable) = false
+  ];
+
+  // Voting start time
+  google.protobuf.Timestamp voting_start_time = 9 [(gogoproto.stdtime) = true];
+
+  // Voting end time
+  google.protobuf.Timestamp voting_end_time = 10 [(gogoproto.stdtime) = true];
+
+  // Execution time
+  google.protobuf.Timestamp execution_time = 11 [(gogoproto.stdtime) = true];
+
+  // Total deposit
+  repeated cosmos.base.v1beta1.Coin total_deposit = 12 [
+    (gogoproto.nullable) = false,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
+  ];
+
+  // Final tally result
+  TallyResult final_tally_result = 13;
+
+  // Execution delay
+  google.protobuf.Duration execution_delay = 14 [(gogoproto.stdduration) = true];
+
+  // Whether this is an emergency proposal
+  bool is_emergency = 15;
+
+  // Snapshot height for snapshot voting
+  uint64 snapshot_height = 16;
+}
+
+// ProposalStatus defines proposal status
+enum ProposalStatus {
+  PROPOSAL_STATUS_UNSPECIFIED = 0;
+  PROPOSAL_STATUS_DEPOSIT_PERIOD = 1;
+  PROPOSAL_STATUS_VOTING_PERIOD = 2;
+  PROPOSAL_STATUS_PASSED = 3;
+  PROPOSAL_STATUS_REJECTED = 4;
+  PROPOSAL_STATUS_FAILED = 5;
+  PROPOSAL_STATUS_VETOED = 6;
+  PROPOSAL_STATUS_EXECUTION_DELAY = 7;
+  PROPOSAL_STATUS_EXECUTED = 8;
+}
+
+// ProposalCategory defines proposal category
+enum ProposalCategory {
+  PROPOSAL_CATEGORY_UNSPECIFIED = 0;
+  PROPOSAL_CATEGORY_TEXT = 1;
+  PROPOSAL_CATEGORY_PARAMETER_CHANGE = 2;
+  PROPOSAL_CATEGORY_SOFTWARE_UPGRADE = 3;
+  PROPOSAL_CATEGORY_SPENDING = 4;
+  PROPOSAL_CATEGORY_EMERGENCY = 5;
+  PROPOSAL_CATEGORY_CONSTITUTION = 6;
+}
+
+// Vote represents a vote on a proposal
+message Vote {
+  // Proposal ID
+  uint64 proposal_id = 1;
+
+  // Voter address
+  string voter = 2;
+
+  // Vote option
+  VoteOption option = 3;
+
+  // Timestamp
+  google.protobuf.Timestamp timestamp = 4 [
+    (gogoproto.stdtime) = true,
+    (gogoproto.nullable) = false
+  ];
+
+  // Voting power
+  string voting_power = 5 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Whether this is a secret ballot
+  bool is_secret = 6;
+
+  // Encrypted vote (for secret ballots)
+  string encrypted_vote = 7;
+
+  // Vote commitment (for secret ballots)
+  string vote_commitment = 8;
+}
+
+// VoteOption defines vote options
+enum VoteOption {
+  VOTE_OPTION_UNSPECIFIED = 0;
+  VOTE_OPTION_YES = 1;
+  VOTE_OPTION_ABSTAIN = 2;
+  VOTE_OPTION_NO = 3;
+  VOTE_OPTION_NO_WITH_VETO = 4;
+}
+
+// TallyResult represents the tally of a proposal
+message TallyResult {
+  // Yes votes
+  string yes_count = 1 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Abstain votes
+  string abstain_count = 2 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // No votes
+  string no_count = 3 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // No with veto votes
+  string no_with_veto_count = 4 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Total voting power
+  string total_voting_power = 5 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Turnout percentage (basis points)
+  uint64 turnout_percentage = 6;
+}
+
+// Deposit represents a deposit on a proposal
+message Deposit {
+  // Proposal ID
+  uint64 proposal_id = 1;
+
+  // Depositor address
+  string depositor = 2;
+
+  // Amount deposited
+  repeated cosmos.base.v1beta1.Coin amount = 3 [
+    (gogoproto.nullable) = false,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
+  ];
+
+  // Timestamp
+  google.protobuf.Timestamp timestamp = 4 [
+    (gogoproto.stdtime) = true,
+    (gogoproto.nullable) = false
+  ];
+}
+
+// VoteLock represents locked tokens for voting
+message VoteLock {
+  // Lock ID
+  string id = 1;
+
+  // Owner address
+  string owner = 2;
+
+  // Locked amount
+  cosmos.base.v1beta1.Coin amount = 3 [(gogoproto.nullable) = false];
+
+  // Lock start time
+  google.protobuf.Timestamp lock_start = 4 [
+    (gogoproto.stdtime) = true,
+    (gogoproto.nullable) = false
+  ];
+
+  // Lock end time
+  google.protobuf.Timestamp lock_end = 5 [
+    (gogoproto.stdtime) = true,
+    (gogoproto.nullable) = false
+  ];
+
+  // Voting power (amount * time multiplier)
+  string voting_power = 6 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Whether withdrawn
+  bool withdrawn = 7;
+}
+
+// VoteDelegation represents delegation of voting power
+message VoteDelegation {
+  // Delegator address
+  string delegator = 1;
+
+  // Delegate address
+  string delegate = 2;
+
+  // Delegation time
+  google.protobuf.Timestamp delegation_time = 3 [
+    (gogoproto.stdtime) = true,
+    (gogoproto.nullable) = false
+  ];
+
+  // Delegated power
+  string delegated_power = 4 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Categories (empty = all categories)
+  repeated ProposalCategory categories = 5;
+}
+
+// PendingTreasuryTx represents a pending treasury transaction
+message PendingTreasuryTx {
+  // Transaction ID
+  string tx_id = 1;
+
+  // Recipient address
+  string recipient = 2;
+
+  // Amount
+  repeated cosmos.base.v1beta1.Coin amount = 3 [
+    (gogoproto.nullable) = false,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
+  ];
+
+  // Description
+  string description = 4;
+
+  // Proposer address
+  string proposer = 5;
+
+  // Signatures collected
+  repeated string signatures = 6;
+
+  // Creation time
+  google.protobuf.Timestamp created_at = 7 [
+    (gogoproto.stdtime) = true,
+    (gogoproto.nullable) = false
+  ];
+
+  // Executable time (after timelock)
+  google.protobuf.Timestamp executable_at = 8 [
+    (gogoproto.stdtime) = true,
+    (gogoproto.nullable) = false
+  ];
+
+  // Whether executed
+  bool executed = 9;
+
+  // Whether rejected
+  bool rejected = 10;
+}
+
+// InflationMetrics tracks inflation statistics
+message InflationMetrics {
+  // Current inflation rate (basis points)
+  uint64 current_rate = 1;
+
+  // Circulating supply
+  string circulating_supply = 2 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Total vested
+  string total_vested = 3 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Total vesting
+  string total_vesting = 4 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Last adjustment time
+  google.protobuf.Timestamp last_adjustment = 5 [
+    (gogoproto.stdtime) = true,
+    (gogoproto.nullable) = false
+  ];
+
+  // Next check time
+  google.protobuf.Timestamp next_check = 6 [
+    (gogoproto.stdtime) = true,
+    (gogoproto.nullable) = false
+  ];
+}
+
+// MEVStats tracks MEV redistribution statistics
+message MEVStats {
+  // Total MEV captured
+  string total_captured = 1 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Total redistributed
+  string total_redistributed = 2 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Pending redistribution
+  string pending_redistribution = 3 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+}
+
+// LiquidityMiningStats tracks liquidity mining statistics
+message LiquidityMiningStats {
+  // Current epoch
+  uint64 current_epoch = 1;
+
+  // Total distributed
+  string total_distributed = 2 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Remaining rewards
+  string remaining_rewards = 3 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Rewards this epoch
+  string rewards_this_epoch = 4 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Next distribution height
+  uint64 next_distribution_height = 5;
+}

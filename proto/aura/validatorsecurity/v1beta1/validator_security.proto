@@ -1,0 +1,173 @@
+syntax = "proto3";
+package aura.validatorsecurity.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/validatorsecurity/v1beta1";
+
+// ValidatorSecurityParams defines the parameters for validator security
+message ValidatorSecurityParams {
+  // Slashing parameters
+  string double_sign_slash_fraction = 1 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
+
+  string downtime_slash_fraction = 2 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
+
+  // Downtime tracking
+  int64 signed_blocks_window = 3;
+
+  string min_signed_per_window = 4 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
+
+  google.protobuf.Duration downtime_jail_duration = 5 [
+    (gogoproto.nullable) = false,
+    (gogoproto.stdduration) = true
+  ];
+
+  // Minimum staking requirements
+  string minimum_stake_amount = 6 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Geographical distribution
+  bool enable_geo_distribution = 7;
+  int32 max_validators_per_region = 8;
+
+  // Sentry node requirements
+  bool require_sentry_nodes = 9;
+  int32 min_sentry_nodes = 10;
+
+  // Monitoring
+  google.protobuf.Duration monitoring_interval = 11 [
+    (gogoproto.nullable) = false,
+    (gogoproto.stdduration) = true
+  ];
+
+  // Failover
+  bool enable_auto_failover = 12;
+  google.protobuf.Duration failover_timeout = 13 [
+    (gogoproto.nullable) = false,
+    (gogoproto.stdduration) = true
+  ];
+}
+
+// ValidatorSecurityInfo stores security-related information for a validator
+message ValidatorSecurityInfo {
+  string validator_address = 1;
+
+  // Key separation
+  string hot_key = 2;
+  string cold_key = 3;
+  bool keys_separated = 4;
+
+  // Sentry nodes
+  repeated string sentry_node_addresses = 5;
+
+  // Geographic location
+  string region = 6;
+  string country_code = 7;
+  double latitude = 8;
+  double longitude = 9;
+
+  // Status
+  bool is_jailed = 10;
+  bool is_tombstoned = 11;
+  google.protobuf.Timestamp jailed_until = 12 [(gogoproto.stdtime) = true];
+  google.protobuf.Timestamp tombstoned_at = 13 [(gogoproto.stdtime) = true];
+
+  // Monitoring
+  int64 missed_blocks_counter = 14;
+  int64 index_offset = 15;
+  google.protobuf.Timestamp last_seen = 16 [(gogoproto.stdtime) = true];
+
+  // Backup validators
+  repeated string backup_validator_addresses = 17;
+  bool failover_active = 18;
+  string active_backup = 19;
+}
+
+// DoubleSignEvidence represents evidence of double signing
+message DoubleSignEvidence {
+  string validator_address = 1;
+  int64 height = 2;
+  google.protobuf.Timestamp time = 3 [(gogoproto.stdtime) = true];
+  bytes vote_a = 4;
+  bytes vote_b = 5;
+  string slash_fraction = 6 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
+}
+
+// DowntimeInfraction represents a downtime violation
+message DowntimeInfraction {
+  string validator_address = 1;
+  int64 missed_blocks = 2;
+  int64 window_size = 3;
+  google.protobuf.Timestamp detected_at = 4 [(gogoproto.stdtime) = true];
+  string slash_fraction = 5 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
+}
+
+// ValidatorAlert represents an alert for monitoring
+message ValidatorAlert {
+  enum Severity {
+    INFO = 0;
+    WARNING = 1;
+    CRITICAL = 2;
+  }
+
+  enum AlertType {
+    DOWNTIME = 0;
+    DOUBLE_SIGN = 1;
+    LOW_STAKE = 2;
+    SENTRY_NODE_OFFLINE = 3;
+    GEOGRAPHIC_VIOLATION = 4;
+    KEY_COMPROMISE = 5;
+    FAILOVER_TRIGGERED = 6;
+  }
+
+  string id = 1;
+  string validator_address = 2;
+  AlertType alert_type = 3;
+  Severity severity = 4;
+  string message = 5;
+  google.protobuf.Timestamp timestamp = 6 [(gogoproto.stdtime) = true];
+  bool acknowledged = 7;
+  google.protobuf.Timestamp acknowledged_at = 8 [(gogoproto.stdtime) = true];
+  string acknowledged_by = 9;
+}
+
+// SentryNodeInfo stores information about sentry nodes
+message SentryNodeInfo {
+  string address = 1;
+  string validator_address = 2;
+  string ip_address = 3;
+  int32 port = 4;
+  bool is_active = 5;
+  google.protobuf.Timestamp last_heartbeat = 6 [(gogoproto.stdtime) = true];
+  int64 request_count = 7;
+  int64 blocked_requests = 8;
+}
+
+// GenesisState defines the validator security module's genesis state
+message GenesisState {
+  ValidatorSecurityParams params = 1 [(gogoproto.nullable) = false];
+  repeated ValidatorSecurityInfo validators = 2 [(gogoproto.nullable) = false];
+  repeated DoubleSignEvidence double_sign_evidences = 3 [(gogoproto.nullable) = false];
+  repeated DowntimeInfraction downtime_infractions = 4 [(gogoproto.nullable) = false];
+  repeated ValidatorAlert alerts = 5 [(gogoproto.nullable) = false];
+  repeated SentryNodeInfo sentry_nodes = 6 [(gogoproto.nullable) = false];
+}

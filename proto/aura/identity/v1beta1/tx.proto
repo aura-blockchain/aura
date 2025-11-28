@@ -1,0 +1,284 @@
+syntax = "proto3";
+package aura.identity.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "cosmos/msg/v1/msg.proto";
+import "google/protobuf/timestamp.proto";
+import "aura/identity/v1beta1/identity.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/identity/v1beta1";
+
+// Msg defines the identity Msg service
+service Msg {
+  // Identity change operations
+  rpc RequestIdentityChange(MsgRequestIdentityChange) returns (MsgRequestIdentityChangeResponse);
+  rpc SubmitAssistantProof(MsgSubmitAssistantProof) returns (MsgSubmitAssistantProofResponse);
+  rpc ApplyIdentityChange(MsgApplyIdentityChange) returns (MsgApplyIdentityChangeResponse);
+  rpc RejectIdentityChange(MsgRejectIdentityChange) returns (MsgRejectIdentityChangeResponse);
+  rpc SuspendIdentityChanges(MsgSuspendIdentityChanges) returns (MsgSuspendIdentityChangesResponse);
+
+  // Role management operations
+  rpc CreateRole(MsgCreateRole) returns (MsgCreateRoleResponse);
+  rpc AssignRole(MsgAssignRole) returns (MsgAssignRoleResponse);
+  rpc RevokeRole(MsgRevokeRole) returns (MsgRevokeRoleResponse);
+
+  // Multisig operations
+  rpc CreateMultisigWallet(MsgCreateMultisigWallet) returns (MsgCreateMultisigWalletResponse);
+  rpc CreateMultisigProposal(MsgCreateMultisigProposal) returns (MsgCreateMultisigProposalResponse);
+  rpc SignMultisigProposal(MsgSignMultisigProposal) returns (MsgSignMultisigProposalResponse);
+  rpc ExecuteMultisigProposal(MsgExecuteMultisigProposal) returns (MsgExecuteMultisigProposalResponse);
+
+  // Time-locked operations
+  rpc ProposeTimeLockedAction(MsgProposeTimeLockedAction) returns (MsgProposeTimeLockedActionResponse);
+  rpc ExecuteTimeLockedAction(MsgExecuteTimeLockedAction) returns (MsgExecuteTimeLockedActionResponse);
+  rpc CancelTimeLockedAction(MsgCancelTimeLockedAction) returns (MsgCancelTimeLockedActionResponse);
+
+  // Emergency operations
+  rpc ActivateEmergencyAdmin(MsgActivateEmergencyAdmin) returns (MsgActivateEmergencyAdminResponse);
+  rpc DeactivateEmergencyAdmin(MsgDeactivateEmergencyAdmin) returns (MsgDeactivateEmergencyAdminResponse);
+
+  // Validator operations
+  rpc RotateValidatorKey(MsgRotateValidatorKey) returns (MsgRotateValidatorKeyResponse);
+
+  // Session operations
+  rpc CreateSession(MsgCreateSession) returns (MsgCreateSessionResponse);
+  rpc EndSession(MsgEndSession) returns (MsgEndSessionResponse);
+
+  // Admin operations
+  rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
+}
+
+// Identity change messages
+message MsgRequestIdentityChange {
+  option (cosmos.msg.v1.signer) = "requester";
+
+  string requester = 1;
+  string target_did = 2;
+  string metadata_hash = 3;
+  string ir_id = 4;
+  string proof_hash = 5;
+}
+
+message MsgRequestIdentityChangeResponse {
+  string request_id = 1;
+}
+
+message MsgSubmitAssistantProof {
+  option (cosmos.msg.v1.signer) = "assistant";
+
+  string assistant = 1;
+  string request_id = 2;
+  string proof_hash = 3;
+  int64 confidence_delta = 4;
+  bool success = 5;
+}
+
+message MsgSubmitAssistantProofResponse {}
+
+message MsgApplyIdentityChange {
+  option (cosmos.msg.v1.signer) = "requester";
+
+  string requester = 1;
+  string request_id = 2;
+}
+
+message MsgApplyIdentityChangeResponse {}
+
+message MsgRejectIdentityChange {
+  option (cosmos.msg.v1.signer) = "actor";
+
+  string actor = 1;
+  string request_id = 2;
+  string reason = 3;
+}
+
+message MsgRejectIdentityChangeResponse {}
+
+message MsgSuspendIdentityChanges {
+  option (cosmos.msg.v1.signer) = "authority";
+
+  string authority = 1;
+  string reason = 2;
+}
+
+message MsgSuspendIdentityChangesResponse {}
+
+// Role management messages
+message MsgCreateRole {
+  option (cosmos.msg.v1.signer) = "creator";
+
+  string creator = 1;
+  string role_name = 2;
+  string description = 3;
+  repeated string permissions = 4;
+}
+
+message MsgCreateRoleResponse {}
+
+message MsgAssignRole {
+  option (cosmos.msg.v1.signer) = "assigner";
+
+  string assigner = 1;
+  string address = 2;
+  string role_name = 3;
+  google.protobuf.Timestamp expires_at = 4 [(gogoproto.stdtime) = true];
+}
+
+message MsgAssignRoleResponse {}
+
+message MsgRevokeRole {
+  option (cosmos.msg.v1.signer) = "revoker";
+
+  string revoker = 1;
+  string address = 2;
+  string role_name = 3;
+}
+
+message MsgRevokeRoleResponse {}
+
+// Multisig messages
+message MsgCreateMultisigWallet {
+  option (cosmos.msg.v1.signer) = "creator";
+
+  string creator = 1;
+  repeated string signers = 2;
+  uint32 threshold = 3;
+  WalletType wallet_type = 4;
+}
+
+message MsgCreateMultisigWalletResponse {
+  string wallet_id = 1;
+}
+
+message MsgCreateMultisigProposal {
+  option (cosmos.msg.v1.signer) = "proposer";
+
+  string proposer = 1;
+  string wallet_id = 2;
+  string title = 3;
+  string description = 4;
+  bytes payload = 5;
+}
+
+message MsgCreateMultisigProposalResponse {
+  string proposal_id = 1;
+}
+
+message MsgSignMultisigProposal {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  string signer = 1;
+  string proposal_id = 2;
+}
+
+message MsgSignMultisigProposalResponse {}
+
+message MsgExecuteMultisigProposal {
+  option (cosmos.msg.v1.signer) = "executor";
+
+  string executor = 1;
+  string proposal_id = 2;
+}
+
+message MsgExecuteMultisigProposalResponse {}
+
+// Time-locked action messages
+message MsgProposeTimeLockedAction {
+  option (cosmos.msg.v1.signer) = "proposer";
+
+  string proposer = 1;
+  string action_type = 2;
+  bytes payload = 3;
+  uint64 delay_seconds = 4;
+}
+
+message MsgProposeTimeLockedActionResponse {
+  string action_id = 1;
+  google.protobuf.Timestamp executable_at = 2 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+}
+
+message MsgExecuteTimeLockedAction {
+  option (cosmos.msg.v1.signer) = "executor";
+
+  string executor = 1;
+  string action_id = 2;
+}
+
+message MsgExecuteTimeLockedActionResponse {}
+
+message MsgCancelTimeLockedAction {
+  option (cosmos.msg.v1.signer) = "canceller";
+
+  string canceller = 1;
+  string action_id = 2;
+}
+
+message MsgCancelTimeLockedActionResponse {}
+
+// Emergency admin messages
+message MsgActivateEmergencyAdmin {
+  option (cosmos.msg.v1.signer) = "activator";
+
+  string activator = 1;
+  string admin_address = 2;
+  repeated string privileges = 3;
+  google.protobuf.Timestamp expires_at = 4 [(gogoproto.stdtime) = true];
+}
+
+message MsgActivateEmergencyAdminResponse {}
+
+message MsgDeactivateEmergencyAdmin {
+  option (cosmos.msg.v1.signer) = "deactivator";
+
+  string deactivator = 1;
+  string admin_address = 2;
+}
+
+message MsgDeactivateEmergencyAdminResponse {}
+
+// Validator key rotation messages
+message MsgRotateValidatorKey {
+  option (cosmos.msg.v1.signer) = "validator_address";
+
+  string validator_address = 1;
+  string new_consensus_pubkey = 2;
+}
+
+message MsgRotateValidatorKeyResponse {}
+
+// Session messages
+message MsgCreateSession {
+  option (cosmos.msg.v1.signer) = "address";
+
+  string address = 1;
+  string device_fingerprint = 2;
+  string ip_address = 3;
+  map<string, string> metadata = 4;
+}
+
+message MsgCreateSessionResponse {
+  string session_id = 1;
+  google.protobuf.Timestamp expires_at = 2 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+}
+
+message MsgEndSession {
+  option (cosmos.msg.v1.signer) = "address";
+
+  string address = 1;
+  string session_id = 2;
+}
+
+message MsgEndSessionResponse {}
+
+// Admin messages
+message MsgUpdateParams {
+  option (cosmos.msg.v1.signer) = "authority";
+
+  // Authority is the address that controls the module (defaults to x/gov unless overwritten)
+  string authority = 1;
+
+  // Params defines the parameters to update
+  Params params = 2 [(gogoproto.nullable) = false];
+}
+
+message MsgUpdateParamsResponse {}

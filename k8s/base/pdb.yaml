@@ -1,0 +1,27 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: aura-node-pdb
+  labels:
+    app: aura
+    component: node
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: aura
+      component: node
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: aura-validator-pdb
+  labels:
+    app: aura
+    component: validator
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: aura
+      component: validator

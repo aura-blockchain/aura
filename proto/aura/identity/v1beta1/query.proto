@@ -1,0 +1,365 @@
+syntax = "proto3";
+package aura.identity.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "aura/identity/v1beta1/identity.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/identity/v1beta1";
+
+// Query defines the gRPC querier service for identity
+service Query {
+  // Params queries the module parameters
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/aura/identity/v1beta1/params";
+  }
+
+  // IdentityRecord queries an identity record by DID
+  rpc IdentityRecord(QueryIdentityRecordRequest) returns (QueryIdentityRecordResponse) {
+    option (google.api.http).get = "/aura/identity/v1beta1/identities/{did}";
+  }
+
+  // IdentityRecordByAddress queries an identity record by address
+  rpc IdentityRecordByAddress(QueryIdentityRecordByAddressRequest) returns (QueryIdentityRecordByAddressResponse) {
+    option (google.api.http).get = "/aura/identity/v1beta1/identities/address/{address}";
+  }
+
+  // AllIdentityRecords queries all identity records
+  rpc AllIdentityRecords(QueryAllIdentityRecordsRequest) returns (QueryAllIdentityRecordsResponse) {
+    option (google.api.http).get = "/aura/identity/v1beta1/identities";
+  }
+
+  // ChangeRequest queries a change request by ID
+  rpc ChangeRequest(QueryChangeRequestRequest) returns (QueryChangeRequestResponse) {
+    option (google.api.http).get = "/aura/identity/v1beta1/change-requests/{request_id}";
+  }
+
+  // ChangeRequestsByDID queries change requests for a DID
+  rpc ChangeRequestsByDID(QueryChangeRequestsByDIDRequest) returns (QueryChangeRequestsByDIDResponse) {
+    option (google.api.http).get = "/aura/identity/v1beta1/change-requests/did/{did}";
+  }
+
+  // ChangeHistory queries change history for a DID
+  rpc ChangeHistory(QueryChangeHistoryRequest) returns (QueryChangeHistoryResponse) {
+    option (google.api.http).get = "/aura/identity/v1beta1/change-history/{did}";
+  }
+
+  // Role queries a role by name
+  rpc Role(QueryRoleRequest) returns (QueryRoleResponse) {
+    option (google.api.http).get = "/aura/identity/v1beta1/roles/{role_name}";
+  }
+
+  // AllRoles queries all roles
+  rpc AllRoles(QueryAllRolesRequest) returns (QueryAllRolesResponse) {
+    option (google.api.http).get = "/aura/identity/v1beta1/roles";
+  }
+
+  // RoleAssignments queries role assignments for an address
+  rpc RoleAssignments(QueryRoleAssignmentsRequest) returns (QueryRoleAssignmentsResponse) {
+    option (google.api.http).get = "/aura/identity/v1beta1/role-assignments/{address}";
+  }
+
+  // HasPermission checks if an address has a specific permission
+  rpc HasPermission(QueryHasPermissionRequest) returns (QueryHasPermissionResponse) {
+    option (google.api.http).get = "/aura/identity/v1beta1/permissions/{address}/{permission}";
+  }
+
+  // MultisigWallet queries a multisig wallet by ID
+  rpc MultisigWallet(QueryMultisigWalletRequest) returns (QueryMultisigWalletResponse) {
+    option (google.api.http).get = "/aura/identity/v1beta1/multisig-wallets/{wallet_id}";
+  }
+
+  // AllMultisigWallets queries all multisig wallets
+  rpc AllMultisigWallets(QueryAllMultisigWalletsRequest) returns (QueryAllMultisigWalletsResponse) {
+    option (google.api.http).get = "/aura/identity/v1beta1/multisig-wallets";
+  }
+
+  // MultisigProposal queries a multisig proposal by ID
+  rpc MultisigProposal(QueryMultisigProposalRequest) returns (QueryMultisigProposalResponse) {
+    option (google.api.http).get = "/aura/identity/v1beta1/multisig-proposals/{proposal_id}";
+  }
+
+  // MultisigProposalsByWallet queries proposals for a wallet
+  rpc MultisigProposalsByWallet(QueryMultisigProposalsByWalletRequest) returns (QueryMultisigProposalsByWalletResponse) {
+    option (google.api.http).get = "/aura/identity/v1beta1/multisig-proposals/wallet/{wallet_id}";
+  }
+
+  // TimeLockedAction queries a time-locked action by ID
+  rpc TimeLockedAction(QueryTimeLockedActionRequest) returns (QueryTimeLockedActionResponse) {
+    option (google.api.http).get = "/aura/identity/v1beta1/time-locked-actions/{action_id}";
+  }
+
+  // AllTimeLockedActions queries all time-locked actions
+  rpc AllTimeLockedActions(QueryAllTimeLockedActionsRequest) returns (QueryAllTimeLockedActionsResponse) {
+    option (google.api.http).get = "/aura/identity/v1beta1/time-locked-actions";
+  }
+
+  // EmergencyAdmin queries an emergency admin by address
+  rpc EmergencyAdmin(QueryEmergencyAdminRequest) returns (QueryEmergencyAdminResponse) {
+    option (google.api.http).get = "/aura/identity/v1beta1/emergency-admins/{address}";
+  }
+
+  // AllEmergencyAdmins queries all emergency admins
+  rpc AllEmergencyAdmins(QueryAllEmergencyAdminsRequest) returns (QueryAllEmergencyAdminsResponse) {
+    option (google.api.http).get = "/aura/identity/v1beta1/emergency-admins";
+  }
+
+  // ValidatorRotation queries a validator rotation by address
+  rpc ValidatorRotation(QueryValidatorRotationRequest) returns (QueryValidatorRotationResponse) {
+    option (google.api.http).get = "/aura/identity/v1beta1/validator-rotations/{validator_address}";
+  }
+
+  // Session queries a session by ID
+  rpc Session(QuerySessionRequest) returns (QuerySessionResponse) {
+    option (google.api.http).get = "/aura/identity/v1beta1/sessions/{session_id}";
+  }
+
+  // SessionsByAddress queries sessions for an address
+  rpc SessionsByAddress(QuerySessionsByAddressRequest) returns (QuerySessionsByAddressResponse) {
+    option (google.api.http).get = "/aura/identity/v1beta1/sessions/address/{address}";
+  }
+
+  // RateLimit queries rate limit config for an address
+  rpc RateLimit(QueryRateLimitRequest) returns (QueryRateLimitResponse) {
+    option (google.api.http).get = "/aura/identity/v1beta1/rate-limits/{address}";
+  }
+
+  // AuditLogs queries audit logs
+  rpc AuditLogs(QueryAuditLogsRequest) returns (QueryAuditLogsResponse) {
+    option (google.api.http).get = "/aura/identity/v1beta1/audit-logs";
+  }
+
+  // AuditLogsByActor queries audit logs by actor
+  rpc AuditLogsByActor(QueryAuditLogsByActorRequest) returns (QueryAuditLogsByActorResponse) {
+    option (google.api.http).get = "/aura/identity/v1beta1/audit-logs/actor/{actor}";
+  }
+}
+
+// Params queries
+message QueryParamsRequest {}
+
+message QueryParamsResponse {
+  Params params = 1 [(gogoproto.nullable) = false];
+}
+
+// Identity record queries
+message QueryIdentityRecordRequest {
+  string did = 1;
+}
+
+message QueryIdentityRecordResponse {
+  IdentityRecord record = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryIdentityRecordByAddressRequest {
+  string address = 1;
+}
+
+message QueryIdentityRecordByAddressResponse {
+  IdentityRecord record = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryAllIdentityRecordsRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryAllIdentityRecordsResponse {
+  repeated IdentityRecord records = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// Change request queries
+message QueryChangeRequestRequest {
+  string request_id = 1;
+}
+
+message QueryChangeRequestResponse {
+  ChangeRequest request = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryChangeRequestsByDIDRequest {
+  string did = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+message QueryChangeRequestsByDIDResponse {
+  repeated ChangeRequest requests = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QueryChangeHistoryRequest {
+  string did = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+message QueryChangeHistoryResponse {
+  repeated ChangeHistory entries = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// Role queries
+message QueryRoleRequest {
+  string role_name = 1;
+}
+
+message QueryRoleResponse {
+  Role role = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryAllRolesRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryAllRolesResponse {
+  repeated Role roles = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QueryRoleAssignmentsRequest {
+  string address = 1;
+}
+
+message QueryRoleAssignmentsResponse {
+  repeated RoleAssignment assignments = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryHasPermissionRequest {
+  string address = 1;
+  string permission = 2;
+}
+
+message QueryHasPermissionResponse {
+  bool has_permission = 1;
+  repeated string roles = 2; // Roles that grant this permission
+}
+
+// Multisig wallet queries
+message QueryMultisigWalletRequest {
+  string wallet_id = 1;
+}
+
+message QueryMultisigWalletResponse {
+  MultisigWallet wallet = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryAllMultisigWalletsRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryAllMultisigWalletsResponse {
+  repeated MultisigWallet wallets = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// Multisig proposal queries
+message QueryMultisigProposalRequest {
+  string proposal_id = 1;
+}
+
+message QueryMultisigProposalResponse {
+  MultisigProposal proposal = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryMultisigProposalsByWalletRequest {
+  string wallet_id = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+message QueryMultisigProposalsByWalletResponse {
+  repeated MultisigProposal proposals = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// Time-locked action queries
+message QueryTimeLockedActionRequest {
+  string action_id = 1;
+}
+
+message QueryTimeLockedActionResponse {
+  TimeLockedAction action = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryAllTimeLockedActionsRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryAllTimeLockedActionsResponse {
+  repeated TimeLockedAction actions = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// Emergency admin queries
+message QueryEmergencyAdminRequest {
+  string address = 1;
+}
+
+message QueryEmergencyAdminResponse {
+  EmergencyAdmin admin = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryAllEmergencyAdminsRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryAllEmergencyAdminsResponse {
+  repeated EmergencyAdmin admins = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// Validator rotation queries
+message QueryValidatorRotationRequest {
+  string validator_address = 1;
+}
+
+message QueryValidatorRotationResponse {
+  ValidatorKeyRotation rotation = 1 [(gogoproto.nullable) = false];
+}
+
+// Session queries
+message QuerySessionRequest {
+  string session_id = 1;
+}
+
+message QuerySessionResponse {
+  Session session = 1 [(gogoproto.nullable) = false];
+}
+
+message QuerySessionsByAddressRequest {
+  string address = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+message QuerySessionsByAddressResponse {
+  repeated Session sessions = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// Rate limit queries
+message QueryRateLimitRequest {
+  string address = 1;
+}
+
+message QueryRateLimitResponse {
+  RateLimitConfig config = 1 [(gogoproto.nullable) = false];
+}
+
+// Audit log queries
+message QueryAuditLogsRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryAuditLogsResponse {
+  repeated AuditLog logs = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QueryAuditLogsByActorRequest {
+  string actor = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+message QueryAuditLogsByActorResponse {
+  repeated AuditLog logs = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}

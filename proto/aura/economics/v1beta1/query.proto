@@ -1,0 +1,386 @@
+syntax = "proto3";
+package aura.economics.v1beta1;
+
+option go_package = "github.com/aequitas/aura/proto/aura/economics/v1beta1";
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "aura/economics/v1beta1/economics.proto";
+
+// Query defines the gRPC querier service
+service Query {
+  // Params queries the economics module parameters
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/aura/economics/v1beta1/params";
+  }
+
+  // VestingSchedule queries a vesting schedule by ID
+  rpc VestingSchedule(QueryVestingScheduleRequest) returns (QueryVestingScheduleResponse) {
+    option (google.api.http).get = "/aura/economics/v1beta1/vesting/{schedule_id}";
+  }
+
+  // VestingSchedulesByAddress queries all vesting schedules for an address
+  rpc VestingSchedulesByAddress(QueryVestingSchedulesByAddressRequest) returns (QueryVestingSchedulesByAddressResponse) {
+    option (google.api.http).get = "/aura/economics/v1beta1/vesting/address/{address}";
+  }
+
+  // AllVestingSchedules queries all vesting schedules
+  rpc AllVestingSchedules(QueryAllVestingSchedulesRequest) returns (QueryAllVestingSchedulesResponse) {
+    option (google.api.http).get = "/aura/economics/v1beta1/vesting";
+  }
+
+  // Proposal queries a proposal by ID
+  rpc Proposal(QueryProposalRequest) returns (QueryProposalResponse) {
+    option (google.api.http).get = "/aura/economics/v1beta1/proposals/{proposal_id}";
+  }
+
+  // Proposals queries all proposals
+  rpc Proposals(QueryProposalsRequest) returns (QueryProposalsResponse) {
+    option (google.api.http).get = "/aura/economics/v1beta1/proposals";
+  }
+
+  // Vote queries a vote by proposal ID and voter
+  rpc Vote(QueryVoteRequest) returns (QueryVoteResponse) {
+    option (google.api.http).get = "/aura/economics/v1beta1/proposals/{proposal_id}/votes/{voter}";
+  }
+
+  // Votes queries all votes for a proposal
+  rpc Votes(QueryVotesRequest) returns (QueryVotesResponse) {
+    option (google.api.http).get = "/aura/economics/v1beta1/proposals/{proposal_id}/votes";
+  }
+
+  // Deposit queries a deposit by proposal ID and depositor
+  rpc Deposit(QueryDepositRequest) returns (QueryDepositResponse) {
+    option (google.api.http).get = "/aura/economics/v1beta1/proposals/{proposal_id}/deposits/{depositor}";
+  }
+
+  // Deposits queries all deposits for a proposal
+  rpc Deposits(QueryDepositsRequest) returns (QueryDepositsResponse) {
+    option (google.api.http).get = "/aura/economics/v1beta1/proposals/{proposal_id}/deposits";
+  }
+
+  // TallyResult queries the tally of a proposal
+  rpc TallyResult(QueryTallyResultRequest) returns (QueryTallyResultResponse) {
+    option (google.api.http).get = "/aura/economics/v1beta1/proposals/{proposal_id}/tally";
+  }
+
+  // VoteLock queries a vote lock by ID
+  rpc VoteLock(QueryVoteLockRequest) returns (QueryVoteLockResponse) {
+    option (google.api.http).get = "/aura/economics/v1beta1/vote_locks/{lock_id}";
+  }
+
+  // VoteLocksByOwner queries all vote locks for an owner
+  rpc VoteLocksByOwner(QueryVoteLocksByOwnerRequest) returns (QueryVoteLocksByOwnerResponse) {
+    option (google.api.http).get = "/aura/economics/v1beta1/vote_locks/owner/{owner}";
+  }
+
+  // VotingPower queries the voting power for an address
+  rpc VotingPower(QueryVotingPowerRequest) returns (QueryVotingPowerResponse) {
+    option (google.api.http).get = "/aura/economics/v1beta1/voting_power/{address}";
+  }
+
+  // VoteDelegations queries all vote delegations for a delegator
+  rpc VoteDelegations(QueryVoteDelegationsRequest) returns (QueryVoteDelegationsResponse) {
+    option (google.api.http).get = "/aura/economics/v1beta1/vote_delegations/{delegator}";
+  }
+
+  // PendingTreasuryTx queries a pending treasury transaction
+  rpc PendingTreasuryTx(QueryPendingTreasuryTxRequest) returns (QueryPendingTreasuryTxResponse) {
+    option (google.api.http).get = "/aura/economics/v1beta1/treasury/pending/{tx_id}";
+  }
+
+  // PendingTreasuryTxs queries all pending treasury transactions
+  rpc PendingTreasuryTxs(QueryPendingTreasuryTxsRequest) returns (QueryPendingTreasuryTxsResponse) {
+    option (google.api.http).get = "/aura/economics/v1beta1/treasury/pending";
+  }
+
+  // InflationMetrics queries current inflation metrics
+  rpc InflationMetrics(QueryInflationMetricsRequest) returns (QueryInflationMetricsResponse) {
+    option (google.api.http).get = "/aura/economics/v1beta1/inflation/metrics";
+  }
+
+  // MEVStats queries MEV redistribution statistics
+  rpc MEVStats(QueryMEVStatsRequest) returns (QueryMEVStatsResponse) {
+    option (google.api.http).get = "/aura/economics/v1beta1/mev/stats";
+  }
+
+  // UserMEVBalance queries a user's MEV redistribution balance
+  rpc UserMEVBalance(QueryUserMEVBalanceRequest) returns (QueryUserMEVBalanceResponse) {
+    option (google.api.http).get = "/aura/economics/v1beta1/mev/balance/{address}";
+  }
+
+  // LiquidityMiningStats queries liquidity mining statistics
+  rpc LiquidityMiningStats(QueryLiquidityMiningStatsRequest) returns (QueryLiquidityMiningStatsResponse) {
+    option (google.api.http).get = "/aura/economics/v1beta1/liquidity_mining/stats";
+  }
+
+  // TokenomicsStats queries overall tokenomics statistics
+  rpc TokenomicsStats(QueryTokenomicsStatsRequest) returns (QueryTokenomicsStatsResponse) {
+    option (google.api.http).get = "/aura/economics/v1beta1/tokenomics/stats";
+  }
+}
+
+// Params queries
+
+message QueryParamsRequest {}
+
+message QueryParamsResponse {
+  Params params = 1 [(gogoproto.nullable) = false];
+}
+
+// Vesting queries
+
+message QueryVestingScheduleRequest {
+  string schedule_id = 1;
+}
+
+message QueryVestingScheduleResponse {
+  VestingSchedule schedule = 1 [(gogoproto.nullable) = false];
+  string vested_amount = 2 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+  string remaining_amount = 3 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+}
+
+message QueryVestingSchedulesByAddressRequest {
+  string address = 1;
+}
+
+message QueryVestingSchedulesByAddressResponse {
+  repeated VestingSchedule schedules = 1 [(gogoproto.nullable) = false];
+  string total_vested = 2 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+  string total_vesting = 3 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+}
+
+message QueryAllVestingSchedulesRequest {}
+
+message QueryAllVestingSchedulesResponse {
+  repeated VestingSchedule schedules = 1 [(gogoproto.nullable) = false];
+}
+
+// Governance queries
+
+message QueryProposalRequest {
+  uint64 proposal_id = 1;
+}
+
+message QueryProposalResponse {
+  Proposal proposal = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryProposalsRequest {
+  ProposalStatus status = 1;
+  string voter = 2;
+  string depositor = 3;
+}
+
+message QueryProposalsResponse {
+  repeated Proposal proposals = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryVoteRequest {
+  uint64 proposal_id = 1;
+  string voter = 2;
+}
+
+message QueryVoteResponse {
+  Vote vote = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryVotesRequest {
+  uint64 proposal_id = 1;
+}
+
+message QueryVotesResponse {
+  repeated Vote votes = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryDepositRequest {
+  uint64 proposal_id = 1;
+  string depositor = 2;
+}
+
+message QueryDepositResponse {
+  Deposit deposit = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryDepositsRequest {
+  uint64 proposal_id = 1;
+}
+
+message QueryDepositsResponse {
+  repeated Deposit deposits = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryTallyResultRequest {
+  uint64 proposal_id = 1;
+}
+
+message QueryTallyResultResponse {
+  TallyResult tally = 1 [(gogoproto.nullable) = false];
+}
+
+// Vote lock queries
+
+message QueryVoteLockRequest {
+  string lock_id = 1;
+}
+
+message QueryVoteLockResponse {
+  VoteLock lock = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryVoteLocksByOwnerRequest {
+  string owner = 1;
+}
+
+message QueryVoteLocksByOwnerResponse {
+  repeated VoteLock locks = 1 [(gogoproto.nullable) = false];
+  string total_locked = 2 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+  string total_voting_power = 3 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+}
+
+message QueryVotingPowerRequest {
+  string address = 1;
+  uint64 proposal_id = 2; // Optional: for snapshot voting
+}
+
+message QueryVotingPowerResponse {
+  string voting_power = 1 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+  string locked_amount = 2 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+  string delegated_power = 3 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+  uint64 active_locks = 4;
+}
+
+message QueryVoteDelegationsRequest {
+  string delegator = 1;
+}
+
+message QueryVoteDelegationsResponse {
+  repeated VoteDelegation delegations = 1 [(gogoproto.nullable) = false];
+}
+
+// Treasury queries
+
+message QueryPendingTreasuryTxRequest {
+  string tx_id = 1;
+}
+
+message QueryPendingTreasuryTxResponse {
+  PendingTreasuryTx transaction = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryPendingTreasuryTxsRequest {}
+
+message QueryPendingTreasuryTxsResponse {
+  repeated PendingTreasuryTx transactions = 1 [(gogoproto.nullable) = false];
+}
+
+// Inflation queries
+
+message QueryInflationMetricsRequest {}
+
+message QueryInflationMetricsResponse {
+  InflationMetrics metrics = 1 [(gogoproto.nullable) = false];
+  uint64 inflation_change_24h = 2;
+}
+
+// MEV queries
+
+message QueryMEVStatsRequest {}
+
+message QueryMEVStatsResponse {
+  MEVStats stats = 1 [(gogoproto.nullable) = false];
+  bool enabled = 2;
+  MEVRedistributionStrategy strategy = 3;
+}
+
+message QueryUserMEVBalanceRequest {
+  string address = 1;
+}
+
+message QueryUserMEVBalanceResponse {
+  string balance = 1 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+  string lifetime_received = 2 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+}
+
+// Liquidity mining queries
+
+message QueryLiquidityMiningStatsRequest {}
+
+message QueryLiquidityMiningStatsResponse {
+  LiquidityMiningStats stats = 1 [(gogoproto.nullable) = false];
+  bool enabled = 2;
+}
+
+// Tokenomics queries
+
+message QueryTokenomicsStatsRequest {}
+
+message QueryTokenomicsStatsResponse {
+  string max_supply = 1 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+  string circulating_supply = 2 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+  string total_vested = 3 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+  string total_vesting = 4 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+  string total_locked_governance = 5 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+  string treasury_balance = 6 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+  uint64 current_inflation_rate = 7;
+  string total_burned = 8 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+  uint64 whale_protection_triggers_24h = 9;
+  string transfer_tax_collected_24h = 10 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+}

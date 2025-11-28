@@ -1,0 +1,504 @@
+syntax = "proto3";
+package aura.aurabindings.v1beta1;
+
+import "google/protobuf/timestamp.proto";
+import "aura/vcregistry/v1beta1/types.proto";
+import "aura/compliance/v1beta1/compliance.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/aura-bindings/v1beta1";
+
+// ============================
+// AURA QUERY REQUEST (for Smart Contracts)
+// ============================
+
+// AuraQueryRequest is the unified query request message for smart contracts
+// to query AURA chain state. Uses oneof pattern for type-safe variant handling.
+message AuraQueryRequest {
+  // Query variant - exactly one must be set
+  oneof query {
+    // VCRegistry queries
+    QueryVCStatus vc_status = 1;
+    QueryUserVCs user_vcs = 2;
+    QueryResolveDID resolve_did = 3;
+    QueryValidateMintEligibility validate_mint_eligibility = 4;
+    QueryCheckRevocation check_revocation = 5;
+    QueryGetDisclosurePolicy get_disclosure_policy = 6;
+    QueryListPendingDisclosures list_pending_disclosures = 7;
+
+    // Compliance queries
+    QueryKYCStatus kyc_status = 8;
+    QuerySanctionsCheck sanctions_check = 9;
+    QueryComplianceVerify compliance_verify = 10;
+    QueryGDPRStatus gdpr_status = 11;
+
+    // Auth queries
+    QueryHasRole has_role = 12;
+    QueryCheckPermission check_permission = 13;
+    QueryGetRoleAssignments get_role_assignments = 14;
+    QuerySessionStatus session_status = 15;
+
+    // ConfidenceScore queries
+    QueryUserScore user_score = 16;
+    QueryHasCompletedIR has_completed_ir = 17;
+    QueryArenaScore arena_score = 18;
+    QueryAnchorInfo anchor_info = 19;
+
+    // DataRegistry queries
+    QueryGetDataItem get_data_item = 20;
+    QueryCheckDataAccess check_data_access = 21;
+    QueryListUserDataItems list_user_data_items = 22;
+
+    // EconomicSecurity queries
+    QueryCheckSpendingLimit check_spending_limit = 23;
+    QueryIsWhaleTransaction is_whale_transaction = 24;
+    QueryVestingSchedule vesting_schedule = 25;
+  }
+}
+
+// ============================
+// VCREGISTRY QUERIES
+// ============================
+
+// QueryVCStatus queries the status of a specific verifiable credential
+message QueryVCStatus {
+  string vc_id = 1;  // VC identifier to query
+}
+
+// QueryVCStatusResponse returns the status of a VC
+message QueryVCStatusResponse {
+  aura.vcregistry.v1beta1.VCStatus status = 1;  // Current status
+  bool valid = 2;  // True if active and not expired
+  google.protobuf.Timestamp expires_at = 3;  // Expiration timestamp
+  bool revoked = 4;  // True if revoked
+  bytes merkle_proof = 5;  // Merkle proof for trustless verification
+}
+
+// QueryUserVCs queries all VCs for a user with optional filters
+message QueryUserVCs {
+  string holder_address = 1;  // User's bech32 address
+  aura.vcregistry.v1beta1.VCStatus status_filter = 2;  // Optional: filter by status
+  aura.vcregistry.v1beta1.VCType type_filter = 3;  // Optional: filter by type
+}
+
+// QueryUserVCsResponse returns list of VCs for a user
+message QueryUserVCsResponse {
+  repeated VCRecord vcs = 1;  // List of matching VCs
+  uint64 total_count = 2;  // Total number of VCs (before pagination)
+}
+
+// VCRecord is a simplified VC record for contract queries
+message VCRecord {
+  string vc_id = 1;
+  aura.vcregistry.v1beta1.VCType vc_type = 2;
+  string vc_type_custom = 3;
+  aura.vcregistry.v1beta1.VCStatus status = 4;
+  google.protobuf.Timestamp issued_at = 5;
+  google.protobuf.Timestamp expires_at = 6;
+}
+
+// QueryResolveDID resolves a DID to its document and associated VCs
+message QueryResolveDID {
+  string did = 1;  // DID to resolve (e.g., "did:aura:mainnet:...")
+}
+
+// QueryResolveDIDResponse returns DID document and active VCs
+message QueryResolveDIDResponse {
+  bool exists = 1;  // True if DID exists
+  string controller = 2;  // Controller address
+  repeated VCRecord active_vcs = 3;  // Active VCs for this DID
+  google.protobuf.Timestamp created = 4;
+  google.protobuf.Timestamp updated = 5;
+}
+
+// QueryValidateMintEligibility checks if user can mint a specific VC type
+message QueryValidateMintEligibility {
+  string holder_address = 1;  // User address to check
+  aura.vcregistry.v1beta1.VCType vc_type = 2;  // VC type to mint
+  string vc_type_custom = 3;  // Custom type name (if VC_TYPE_CUSTOM)
+}
+
+// QueryValidateMintEligibilityResponse returns eligibility details
+message QueryValidateMintEligibilityResponse {
+  bool eligible = 1;  // True if user can mint this VC
+  repeated string missing_requirements = 2;  // List of missing requirements
+  uint64 current_cs = 3;  // User's current confidence score
+  uint64 required_cs = 4;  // Required confidence score for this VC
+  repeated string completed_ir_ids = 5;  // IRs user has completed
+  repeated string required_ir_ids = 6;  // IRs required for this VC
+}
+
+// QueryCheckRevocation checks if a VC is revoked
+message QueryCheckRevocation {
+  string vc_id = 1;  // VC to check
+}
+
+// QueryCheckRevocationResponse returns revocation status
+message QueryCheckRevocationResponse {
+  bool revoked = 1;  // True if revoked
+  google.protobuf.Timestamp revoked_at = 2;  // When revoked
+  string reason = 3;  // Revocation reason
+  bytes merkle_proof = 4;  // Merkle proof
+}
+
+// QueryGetDisclosurePolicy gets disclosure policy for a user
+message QueryGetDisclosurePolicy {
+  string holder_address = 1;  // User address
+}
+
+// QueryGetDisclosurePolicyResponse returns disclosure policy
+message QueryGetDisclosurePolicyResponse {
+  bool exists = 1;  // True if policy exists
+  bool auto_approve_verified = 2;  // Auto-approve for verified requesters
+  repeated string allowed_verifiers = 3;  // Whitelist of verifier addresses
+  repeated string blocked_verifiers = 4;  // Blacklist of verifier addresses
+}
+
+// QueryListPendingDisclosures lists pending disclosure requests for a user
+message QueryListPendingDisclosures {
+  string holder_address = 1;  // User address
+}
+
+// QueryListPendingDisclosuresResponse returns pending requests
+message QueryListPendingDisclosuresResponse {
+  repeated DisclosureRequest requests = 1;  // Pending requests
+}
+
+// DisclosureRequest represents a pending disclosure request
+message DisclosureRequest {
+  string request_id = 1;
+  string verifier_address = 2;
+  repeated string requested_attributes = 3;
+  string purpose = 4;
+  google.protobuf.Timestamp requested_at = 5;
+}
+
+// ============================
+// COMPLIANCE QUERIES
+// ============================
+
+// QueryKYCStatus queries KYC verification status for a user
+message QueryKYCStatus {
+  string address = 1;  // User address to check
+}
+
+// QueryKYCStatusResponse returns KYC status details
+message QueryKYCStatusResponse {
+  aura.compliance.v1beta1.KYCLevel kyc_level = 1;  // Current KYC level
+  bool verified = 2;  // True if any KYC level achieved
+  google.protobuf.Timestamp verified_at = 3;  // When verified
+  google.protobuf.Timestamp expires_at = 4;  // When expires
+  string provider = 5;  // KYC provider name
+  string jurisdiction = 6;  // User's jurisdiction
+}
+
+// QuerySanctionsCheck checks if user is on sanctions lists
+message QuerySanctionsCheck {
+  string address = 1;  // User address to check
+  bool force_refresh = 2;  // Force new check instead of using cache
+}
+
+// QuerySanctionsCheckResponse returns sanctions screening result
+message QuerySanctionsCheckResponse {
+  aura.compliance.v1beta1.SanctionsStatus status = 1;  // Sanctions status
+  bool clear = 2;  // True if clear (not on any list)
+  repeated string matched_lists = 3;  // List names with matches
+  google.protobuf.Timestamp screened_at = 4;  // When screened
+  bool requires_manual_review = 5;  // True if manual review needed
+}
+
+// QueryComplianceVerify verifies user meets compliance requirements
+message QueryComplianceVerify {
+  string address = 1;  // User address to check
+  aura.compliance.v1beta1.KYCLevel required_kyc_level = 2;  // Required KYC level
+  bool require_sanctions_clear = 3;  // Require sanctions clearance
+}
+
+// QueryComplianceVerifyResponse returns compliance verification result
+message QueryComplianceVerifyResponse {
+  bool compliant = 1;  // True if all requirements met
+  bool kyc_sufficient = 2;  // True if KYC level sufficient
+  bool sanctions_clear = 3;  // True if sanctions clear
+  repeated string violations = 4;  // List of compliance violations
+}
+
+// QueryGDPRStatus queries GDPR consent status
+message QueryGDPRStatus {
+  string address = 1;  // User address
+  string consent_type = 2;  // Type of consent (e.g., "data_processing")
+}
+
+// QueryGDPRStatusResponse returns GDPR consent status
+message QueryGDPRStatusResponse {
+  bool consented = 1;  // True if consent given
+  google.protobuf.Timestamp consent_given_at = 2;  // When consent given
+  string consent_version = 3;  // Privacy policy version
+  bool withdrawn = 4;  // True if consent withdrawn
+}
+
+// ============================
+// AUTH QUERIES
+// ============================
+
+// QueryHasRole checks if user has a specific role
+message QueryHasRole {
+  string address = 1;  // User address
+  string role = 2;  // Role to check (e.g., "admin", "verifier")
+}
+
+// QueryHasRoleResponse returns role check result
+message QueryHasRoleResponse {
+  bool has_role = 1;  // True if user has the role
+  google.protobuf.Timestamp granted_at = 2;  // When role was granted
+  google.protobuf.Timestamp expires_at = 3;  // When role expires (if applicable)
+}
+
+// QueryCheckPermission checks if user has a specific permission
+message QueryCheckPermission {
+  string address = 1;  // User address
+  string permission = 2;  // Permission to check
+}
+
+// QueryCheckPermissionResponse returns permission check result
+message QueryCheckPermissionResponse {
+  bool has_permission = 1;  // True if user has the permission
+  repeated string granted_by_roles = 2;  // Roles granting this permission
+}
+
+// QueryGetRoleAssignments gets all role assignments for a user
+message QueryGetRoleAssignments {
+  string address = 1;  // User address
+}
+
+// QueryGetRoleAssignmentsResponse returns role assignments
+message QueryGetRoleAssignmentsResponse {
+  repeated RoleAssignment roles = 1;  // All role assignments
+}
+
+// RoleAssignment represents a role assigned to a user
+message RoleAssignment {
+  string role = 1;
+  google.protobuf.Timestamp granted_at = 2;
+  google.protobuf.Timestamp expires_at = 3;
+  string granted_by = 4;
+}
+
+// QuerySessionStatus queries active session status
+message QuerySessionStatus {
+  string session_id = 1;  // Session identifier
+}
+
+// QuerySessionStatusResponse returns session status
+message QuerySessionStatusResponse {
+  bool active = 1;  // True if session is active
+  string owner_address = 2;  // Session owner
+  google.protobuf.Timestamp created_at = 3;
+  google.protobuf.Timestamp expires_at = 4;
+  bool biometric_verified = 5;  // True if biometric auth used
+}
+
+// ============================
+// CONFIDENCESCORE QUERIES
+// ============================
+
+// QueryUserScore queries user's confidence score
+message QueryUserScore {
+  string wallet_address = 1;  // User address
+}
+
+// QueryUserScoreResponse returns confidence score details
+message QueryUserScoreResponse {
+  uint64 total_score = 1;  // Total confidence score
+  bool verified = 2;  // True if score >= 10,000
+  bool has_anchor = 3;  // True if IR-000 completed
+  uint64 verification_achieved_height = 4;  // Block when verified
+  google.protobuf.Timestamp verification_achieved_at = 5;
+}
+
+// QueryHasCompletedIR checks if user completed a specific IR
+message QueryHasCompletedIR {
+  string wallet_address = 1;  // User address
+  string ir_id = 2;  // IR to check (e.g., "IR-102")
+}
+
+// QueryHasCompletedIRResponse returns IR completion status
+message QueryHasCompletedIRResponse {
+  bool completed = 1;  // True if IR completed
+  google.protobuf.Timestamp completed_at = 2;  // When completed
+  uint64 final_score = 3;  // Score awarded for this IR
+  string assistant_address = 4;  // AI assistant who verified
+}
+
+// QueryArenaScore queries score in a specific arena
+message QueryArenaScore {
+  string wallet_address = 1;  // User address
+  string arena = 2;  // Arena name (e.g., "Biometric", "Financial")
+}
+
+// QueryArenaScoreResponse returns arena score details
+message QueryArenaScoreResponse {
+  uint64 total_score = 1;  // Total score in this arena
+  uint32 ir_count = 2;  // Number of IRs completed in arena
+  bool focus_bonus_active = 3;  // True if >= 5000 CS in arena
+}
+
+// QueryAnchorInfo queries anchor IR-000 completion info
+message QueryAnchorInfo {
+  string wallet_address = 1;  // User address
+}
+
+// QueryAnchorInfoResponse returns anchor IR details
+message QueryAnchorInfoResponse {
+  bool completed = 1;  // True if IR-000 completed
+  google.protobuf.Timestamp completed_at = 2;  // When completed
+  uint64 block_height = 3;  // Block height
+  bytes verifier_plugin_hash = 4;  // Verifier plugin hash
+}
+
+// ============================
+// DATAREGISTRY QUERIES
+// ============================
+
+// QueryGetDataItem queries a specific data item
+message QueryGetDataItem {
+  string data_id = 1;  // Data item identifier
+}
+
+// QueryGetDataItemResponse returns data item details
+message QueryGetDataItemResponse {
+  bool exists = 1;  // True if data item exists
+  string owner = 2;  // Owner address
+  string data_type = 3;  // Type of data
+  string status = 4;  // Status (active, archived, etc.)
+  google.protobuf.Timestamp created_at = 5;
+  bytes metadata_hash = 6;  // Hash of metadata
+}
+
+// QueryCheckDataAccess checks if requester can access data
+message QueryCheckDataAccess {
+  string data_id = 1;  // Data item identifier
+  string requester = 2;  // Address requesting access
+}
+
+// QueryCheckDataAccessResponse returns access check result
+message QueryCheckDataAccessResponse {
+  bool has_access = 1;  // True if requester can access
+  string access_level = 2;  // Access level granted (read, write, admin)
+  google.protobuf.Timestamp granted_at = 3;
+  google.protobuf.Timestamp expires_at = 4;
+}
+
+// QueryListUserDataItems lists all data items owned by user
+message QueryListUserDataItems {
+  string owner = 1;  // Owner address
+  string type_filter = 2;  // Optional: filter by type
+  string status_filter = 3;  // Optional: filter by status
+}
+
+// QueryListUserDataItemsResponse returns list of data items
+message QueryListUserDataItemsResponse {
+  repeated DataItemSummary items = 1;  // List of data items
+  uint64 total_count = 2;  // Total count
+}
+
+// DataItemSummary is a summary of a data item
+message DataItemSummary {
+  string data_id = 1;
+  string data_type = 2;
+  string status = 3;
+  google.protobuf.Timestamp created_at = 4;
+}
+
+// ============================
+// ECONOMICSECURITY QUERIES
+// ============================
+
+// QueryCheckSpendingLimit checks if transaction is within spending limits
+message QueryCheckSpendingLimit {
+  string address = 1;  // User address
+  string amount = 2;  // Amount to check (as string to avoid overflow)
+  string denom = 3;  // Denomination
+}
+
+// QueryCheckSpendingLimitResponse returns spending limit check result
+message QueryCheckSpendingLimitResponse {
+  bool within_limit = 1;  // True if within limits
+  string daily_limit = 2;  // Daily spending limit
+  string daily_spent = 3;  // Already spent today
+  string daily_remaining = 4;  // Remaining daily limit
+  string transaction_limit = 5;  // Per-transaction limit
+}
+
+// QueryIsWhaleTransaction checks if transaction is considered a whale transaction
+message QueryIsWhaleTransaction {
+  string address = 1;  // User address
+  string amount = 2;  // Transaction amount
+}
+
+// QueryIsWhaleTransactionResponse returns whale check result
+message QueryIsWhaleTransactionResponse {
+  bool is_whale = 1;  // True if whale transaction
+  string threshold = 2;  // Whale threshold amount
+  bool requires_special_handling = 3;  // True if special handling needed
+}
+
+// QueryVestingSchedule queries vesting schedule for user
+message QueryVestingSchedule {
+  string address = 1;  // User address
+}
+
+// QueryVestingScheduleResponse returns vesting schedule details
+message QueryVestingScheduleResponse {
+  bool has_vesting = 1;  // True if user has vesting
+  string total_vesting = 2;  // Total vesting amount
+  string vested_amount = 3;  // Amount already vested
+  string remaining_amount = 4;  // Amount still vesting
+  google.protobuf.Timestamp next_vesting_date = 5;  // Next vesting event
+}
+
+// ============================
+// UNIFIED RESPONSE
+// ============================
+
+// AuraQueryResponse is the unified query response message
+// Uses oneof pattern to match request variants
+message AuraQueryResponse {
+  // Response variant - exactly one will be set based on query type
+  oneof response {
+    // VCRegistry responses
+    QueryVCStatusResponse vc_status = 1;
+    QueryUserVCsResponse user_vcs = 2;
+    QueryResolveDIDResponse resolve_did = 3;
+    QueryValidateMintEligibilityResponse validate_mint_eligibility = 4;
+    QueryCheckRevocationResponse check_revocation = 5;
+    QueryGetDisclosurePolicyResponse get_disclosure_policy = 6;
+    QueryListPendingDisclosuresResponse list_pending_disclosures = 7;
+
+    // Compliance responses
+    QueryKYCStatusResponse kyc_status = 8;
+    QuerySanctionsCheckResponse sanctions_check = 9;
+    QueryComplianceVerifyResponse compliance_verify = 10;
+    QueryGDPRStatusResponse gdpr_status = 11;
+
+    // Auth responses
+    QueryHasRoleResponse has_role = 12;
+    QueryCheckPermissionResponse check_permission = 13;
+    QueryGetRoleAssignmentsResponse get_role_assignments = 14;
+    QuerySessionStatusResponse session_status = 15;
+
+    // ConfidenceScore responses
+    QueryUserScoreResponse user_score = 16;
+    QueryHasCompletedIRResponse has_completed_ir = 17;
+    QueryArenaScoreResponse arena_score = 18;
+    QueryAnchorInfoResponse anchor_info = 19;
+
+    // DataRegistry responses
+    QueryGetDataItemResponse get_data_item = 20;
+    QueryCheckDataAccessResponse check_data_access = 21;
+    QueryListUserDataItemsResponse list_user_data_items = 22;
+
+    // EconomicSecurity responses
+    QueryCheckSpendingLimitResponse check_spending_limit = 23;
+    QueryIsWhaleTransactionResponse is_whale_transaction = 24;
+    QueryVestingScheduleResponse vesting_schedule = 25;
+  }
+}

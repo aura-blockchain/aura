@@ -1,0 +1,593 @@
+syntax = "proto3";
+package aura.security.v1beta1;
+
+option go_package = "github.com/aequitas/aura/proto/aura/security/v1beta1";
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "aura/security/v1beta1/security.proto";
+
+// Query defines the gRPC querier service for the consolidated security module
+service Query {
+  // ========================================
+  // General Queries
+  // ========================================
+
+  // Params queries the consolidated security parameters
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/aura/security/v1beta1/params";
+  }
+
+  // SecurityStatus queries overall security status across all domains
+  rpc SecurityStatus(QuerySecurityStatusRequest) returns (QuerySecurityStatusResponse) {
+    option (google.api.http).get = "/aura/security/v1beta1/status";
+  }
+
+  // ========================================
+  // Network Security Queries
+  // ========================================
+
+  // PeerInfo queries information about a specific peer
+  rpc PeerInfo(QueryPeerInfoRequest) returns (QueryPeerInfoResponse) {
+    option (google.api.http).get = "/aura/security/v1beta1/network/peer/{peer_id}";
+  }
+
+  // AllPeers queries information about all connected peers
+  rpc AllPeers(QueryAllPeersRequest) returns (QueryAllPeersResponse) {
+    option (google.api.http).get = "/aura/security/v1beta1/network/peers";
+  }
+
+  // TrustedPeers queries all trusted peers
+  rpc TrustedPeers(QueryTrustedPeersRequest) returns (QueryTrustedPeersResponse) {
+    option (google.api.http).get = "/aura/security/v1beta1/network/trusted_peers";
+  }
+
+  // PeerReputation queries reputation for a specific peer
+  rpc PeerReputation(QueryPeerReputationRequest) returns (QueryPeerReputationResponse) {
+    option (google.api.http).get = "/aura/security/v1beta1/network/reputation/{peer_id}";
+  }
+
+  // RateLimitStatus queries rate limit status for a peer
+  rpc RateLimitStatus(QueryRateLimitStatusRequest) returns (QueryRateLimitStatusResponse) {
+    option (google.api.http).get = "/aura/security/v1beta1/network/ratelimit/{peer_id}";
+  }
+
+  // MempoolStats queries current mempool statistics
+  rpc MempoolStats(QueryMempoolStatsRequest) returns (QueryMempoolStatsResponse) {
+    option (google.api.http).get = "/aura/security/v1beta1/network/mempool/stats";
+  }
+
+  // ForkAlerts queries active fork alerts
+  rpc ForkAlerts(QueryForkAlertsRequest) returns (QueryForkAlertsResponse) {
+    option (google.api.http).get = "/aura/security/v1beta1/network/fork_alerts";
+  }
+
+  // PartitionAlerts queries active partition alerts
+  rpc PartitionAlerts(QueryPartitionAlertsRequest) returns (QueryPartitionAlertsResponse) {
+    option (google.api.http).get = "/aura/security/v1beta1/network/partition_alerts";
+  }
+
+  // NetworkHealth queries overall network health status
+  rpc NetworkHealth(QueryNetworkHealthRequest) returns (QueryNetworkHealthResponse) {
+    option (google.api.http).get = "/aura/security/v1beta1/network/health";
+  }
+
+  // ========================================
+  // Validator Security Queries
+  // ========================================
+
+  // ValidatorSecurityInfo queries security information for a validator
+  rpc ValidatorSecurityInfo(QueryValidatorSecurityInfoRequest) returns (QueryValidatorSecurityInfoResponse) {
+    option (google.api.http).get = "/aura/security/v1beta1/validator/{validator_address}";
+  }
+
+  // AllValidatorSecurityInfo queries security information for all validators
+  rpc AllValidatorSecurityInfo(QueryAllValidatorSecurityInfoRequest) returns (QueryAllValidatorSecurityInfoResponse) {
+    option (google.api.http).get = "/aura/security/v1beta1/validators";
+  }
+
+  // ValidatorAlerts queries alerts for a specific validator
+  rpc ValidatorAlerts(QueryValidatorAlertsRequest) returns (QueryValidatorAlertsResponse) {
+    option (google.api.http).get = "/aura/security/v1beta1/validator/{validator_address}/alerts";
+  }
+
+  // DoubleSignEvidences queries double sign evidences
+  rpc DoubleSignEvidences(QueryDoubleSignEvidencesRequest) returns (QueryDoubleSignEvidencesResponse) {
+    option (google.api.http).get = "/aura/security/v1beta1/validator/double_sign_evidences";
+  }
+
+  // DowntimeInfractions queries downtime infractions
+  rpc DowntimeInfractions(QueryDowntimeInfractionsRequest) returns (QueryDowntimeInfractionsResponse) {
+    option (google.api.http).get = "/aura/security/v1beta1/validator/downtime_infractions";
+  }
+
+  // SentryNodes queries sentry nodes for a validator
+  rpc SentryNodes(QuerySentryNodesRequest) returns (QuerySentryNodesResponse) {
+    option (google.api.http).get = "/aura/security/v1beta1/validator/{validator_address}/sentry_nodes";
+  }
+
+  // ========================================
+  // Wallet Security Queries
+  // ========================================
+
+  // WalletSecurityInfo queries security information for a wallet
+  rpc WalletSecurityInfo(QueryWalletSecurityInfoRequest) returns (QueryWalletSecurityInfoResponse) {
+    option (google.api.http).get = "/aura/security/v1beta1/wallet/{wallet_id}";
+  }
+
+  // HardwareWalletConfig queries hardware wallet configuration
+  rpc HardwareWalletConfig(QueryHardwareWalletConfigRequest) returns (QueryHardwareWalletConfigResponse) {
+    option (google.api.http).get = "/aura/security/v1beta1/wallet/{wallet_id}/hardware_config";
+  }
+
+  // MultiSigWallet queries multi-signature wallet details
+  rpc MultiSigWallet(QueryMultiSigWalletRequest) returns (QueryMultiSigWalletResponse) {
+    option (google.api.http).get = "/aura/security/v1beta1/wallet/{wallet_id}/multisig";
+  }
+
+  // PendingMultiSigTransactions queries pending multi-sig transactions
+  rpc PendingMultiSigTransactions(QueryPendingMultiSigTransactionsRequest) returns (QueryPendingMultiSigTransactionsResponse) {
+    option (google.api.http).get = "/aura/security/v1beta1/wallet/{wallet_id}/pending_txs";
+  }
+
+  // SocialRecoveryConfig queries social recovery configuration
+  rpc SocialRecoveryConfig(QuerySocialRecoveryConfigRequest) returns (QuerySocialRecoveryConfigResponse) {
+    option (google.api.http).get = "/aura/security/v1beta1/wallet/{wallet_id}/social_recovery";
+  }
+
+  // RecoveryRequests queries active recovery requests
+  rpc RecoveryRequests(QueryRecoveryRequestsRequest) returns (QueryRecoveryRequestsResponse) {
+    option (google.api.http).get = "/aura/security/v1beta1/wallet/{wallet_id}/recovery_requests";
+  }
+
+  // SpendingLimits queries spending limits for a wallet
+  rpc SpendingLimits(QuerySpendingLimitsRequest) returns (QuerySpendingLimitsResponse) {
+    option (google.api.http).get = "/aura/security/v1beta1/wallet/{wallet_id}/spending_limits";
+  }
+
+  // SimulateTransaction simulates a transaction
+  rpc SimulateTransaction(QuerySimulateTransactionRequest) returns (QuerySimulateTransactionResponse) {
+    option (google.api.http).post = "/aura/security/v1beta1/wallet/simulate_tx";
+  }
+
+  // ========================================
+  // Incident Response Queries
+  // ========================================
+
+  // Incident queries a specific incident
+  rpc Incident(QueryIncidentRequest) returns (QueryIncidentResponse) {
+    option (google.api.http).get = "/aura/security/v1beta1/incident/{incident_id}";
+  }
+
+  // AllIncidents queries all incidents
+  rpc AllIncidents(QueryAllIncidentsRequest) returns (QueryAllIncidentsResponse) {
+    option (google.api.http).get = "/aura/security/v1beta1/incidents";
+  }
+
+  // AuditLog queries audit log entries
+  rpc AuditLog(QueryAuditLogRequest) returns (QueryAuditLogResponse) {
+    option (google.api.http).get = "/aura/security/v1beta1/audit_log";
+  }
+
+  // ResponseActions queries response actions for an incident
+  rpc ResponseActions(QueryResponseActionsRequest) returns (QueryResponseActionsResponse) {
+    option (google.api.http).get = "/aura/security/v1beta1/incident/{incident_id}/actions";
+  }
+
+  // ========================================
+  // Cryptography Queries
+  // ========================================
+
+  // KeyRotationSchedule queries a key rotation schedule
+  rpc KeyRotationSchedule(QueryKeyRotationScheduleRequest) returns (QueryKeyRotationScheduleResponse) {
+    option (google.api.http).get = "/aura/security/v1beta1/crypto/key_rotation_schedule/{id}";
+  }
+
+  // AllKeyRotationSchedules queries all key rotation schedules
+  rpc AllKeyRotationSchedules(QueryAllKeyRotationSchedulesRequest) returns (QueryAllKeyRotationSchedulesResponse) {
+    option (google.api.http).get = "/aura/security/v1beta1/crypto/key_rotation_schedules";
+  }
+
+  // ThresholdScheme queries a threshold signature scheme
+  rpc ThresholdScheme(QueryThresholdSchemeRequest) returns (QueryThresholdSchemeResponse) {
+    option (google.api.http).get = "/aura/security/v1beta1/crypto/threshold_scheme/{scheme_id}";
+  }
+
+  // VerifyZKProof verifies a zero-knowledge proof
+  rpc VerifyZKProof(QueryVerifyZKProofRequest) returns (QueryVerifyZKProofResponse) {
+    option (google.api.http).post = "/aura/security/v1beta1/crypto/verify_zk_proof";
+  }
+
+  // QuantumResistantKey queries a quantum-resistant key
+  rpc QuantumResistantKey(QueryQuantumResistantKeyRequest) returns (QueryQuantumResistantKeyResponse) {
+    option (google.api.http).get = "/aura/security/v1beta1/crypto/quantum_resistant_key/{key_id}";
+  }
+
+  // ========================================
+  // Privacy Queries
+  // ========================================
+
+  // MixingPool queries a mixing pool
+  rpc MixingPool(QueryMixingPoolRequest) returns (QueryMixingPoolResponse) {
+    option (google.api.http).get = "/aura/security/v1beta1/privacy/mixing_pool/{pool_id}";
+  }
+
+  // AllMixingPools queries all mixing pools
+  rpc AllMixingPools(QueryAllMixingPoolsRequest) returns (QueryAllMixingPoolsResponse) {
+    option (google.api.http).get = "/aura/security/v1beta1/privacy/mixing_pools";
+  }
+
+  // StealthAddress queries a stealth address
+  rpc StealthAddress(QueryStealthAddressRequest) returns (QueryStealthAddressResponse) {
+    option (google.api.http).get = "/aura/security/v1beta1/privacy/stealth_address/{address}";
+  }
+
+  // VerifyRingSignature verifies a ring signature
+  rpc VerifyRingSignature(QueryVerifyRingSignatureRequest) returns (QueryVerifyRingSignatureResponse) {
+    option (google.api.http).post = "/aura/security/v1beta1/privacy/verify_ring_signature";
+  }
+}
+
+// ========================================
+// General Query Messages
+// ========================================
+
+message QueryParamsRequest {}
+
+message QueryParamsResponse {
+  Params params = 1 [(gogoproto.nullable) = false];
+}
+
+message QuerySecurityStatusRequest {}
+
+message QuerySecurityStatusResponse {
+  // Network security status
+  bool network_healthy = 1;
+  uint32 connected_peers = 2;
+  bool has_active_forks = 3;
+  bool is_partitioned = 4;
+
+  // Validator security status
+  uint32 total_validators = 5;
+  uint32 jailed_validators = 6;
+  uint32 active_validator_alerts = 7;
+
+  // Wallet security status
+  uint32 total_wallets = 8;
+  uint32 hardware_wallets = 9;
+  uint32 multisig_wallets = 10;
+
+  // Incident response status
+  uint32 active_incidents = 11;
+  uint32 critical_incidents = 12;
+
+  // Overall security score (0-100)
+  int32 overall_security_score = 13;
+}
+
+// ========================================
+// Network Security Query Messages
+// ========================================
+
+message QueryPeerInfoRequest {
+  string peer_id = 1;
+}
+
+message QueryPeerInfoResponse {
+  PeerInfo peer = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryAllPeersRequest {}
+
+message QueryAllPeersResponse {
+  repeated PeerInfo peers = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryTrustedPeersRequest {}
+
+message QueryTrustedPeersResponse {
+  repeated TrustedPeer peers = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryPeerReputationRequest {
+  string peer_id = 1;
+}
+
+message QueryPeerReputationResponse {
+  NodeReputation reputation = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryRateLimitStatusRequest {
+  string peer_id = 1;
+}
+
+message QueryRateLimitStatusResponse {
+  RateLimitEntry status = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryMempoolStatsRequest {}
+
+message QueryMempoolStatsResponse {
+  MempoolStats stats = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryForkAlertsRequest {
+  bool include_resolved = 1;
+}
+
+message QueryForkAlertsResponse {
+  repeated ForkAlert alerts = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryPartitionAlertsRequest {
+  bool include_resolved = 1;
+}
+
+message QueryPartitionAlertsResponse {
+  repeated PartitionAlert alerts = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryNetworkHealthRequest {}
+
+message QueryNetworkHealthResponse {
+  uint32 connected_peers = 1;
+  uint32 healthy_peers = 2;
+  uint32 banned_peers = 3;
+  int64 average_reputation = 4;
+  bool is_partitioned = 5;
+  bool has_active_forks = 6;
+  MempoolStats mempool_stats = 7 [(gogoproto.nullable) = false];
+}
+
+// ========================================
+// Validator Security Query Messages
+// ========================================
+
+message QueryValidatorSecurityInfoRequest {
+  string validator_address = 1;
+}
+
+message QueryValidatorSecurityInfoResponse {
+  ValidatorSecurityInfo info = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryAllValidatorSecurityInfoRequest {}
+
+message QueryAllValidatorSecurityInfoResponse {
+  repeated ValidatorSecurityInfo validators = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryValidatorAlertsRequest {
+  string validator_address = 1;
+  bool include_acknowledged = 2;
+}
+
+message QueryValidatorAlertsResponse {
+  repeated ValidatorAlert alerts = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryDoubleSignEvidencesRequest {
+  string validator_address = 1;
+}
+
+message QueryDoubleSignEvidencesResponse {
+  repeated DoubleSignEvidence evidences = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryDowntimeInfractionsRequest {
+  string validator_address = 1;
+}
+
+message QueryDowntimeInfractionsResponse {
+  repeated DowntimeInfraction infractions = 1 [(gogoproto.nullable) = false];
+}
+
+message QuerySentryNodesRequest {
+  string validator_address = 1;
+}
+
+message QuerySentryNodesResponse {
+  repeated SentryNodeInfo sentry_nodes = 1 [(gogoproto.nullable) = false];
+}
+
+// ========================================
+// Wallet Security Query Messages
+// ========================================
+
+message QueryWalletSecurityInfoRequest {
+  string wallet_id = 1;
+}
+
+message QueryWalletSecurityInfoResponse {
+  bool has_hardware_wallet = 1;
+  bool is_multisig = 2;
+  bool has_social_recovery = 3;
+  bool has_spending_limits = 4;
+  bool has_biometric_auth = 5;
+  int32 security_score = 6;
+  repeated string security_recommendations = 7;
+}
+
+message QueryHardwareWalletConfigRequest {
+  string wallet_id = 1;
+}
+
+message QueryHardwareWalletConfigResponse {
+  HardwareWalletConfig config = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryMultiSigWalletRequest {
+  string wallet_id = 1;
+}
+
+message QueryMultiSigWalletResponse {
+  MultiSigWallet wallet = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryPendingMultiSigTransactionsRequest {
+  string wallet_id = 1;
+}
+
+message QueryPendingMultiSigTransactionsResponse {
+  repeated PendingMultiSigTransaction transactions = 1 [(gogoproto.nullable) = false];
+}
+
+message QuerySocialRecoveryConfigRequest {
+  string wallet_id = 1;
+}
+
+message QuerySocialRecoveryConfigResponse {
+  SocialRecoveryConfig config = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryRecoveryRequestsRequest {
+  string wallet_id = 1;
+  bool include_completed = 2;
+}
+
+message QueryRecoveryRequestsResponse {
+  repeated RecoveryRequest requests = 1 [(gogoproto.nullable) = false];
+}
+
+message QuerySpendingLimitsRequest {
+  string wallet_id = 1;
+}
+
+message QuerySpendingLimitsResponse {
+  repeated SpendingLimit limits = 1 [(gogoproto.nullable) = false];
+}
+
+message QuerySimulateTransactionRequest {
+  string wallet_id = 1;
+  bytes tx_data = 2;
+}
+
+message QuerySimulateTransactionResponse {
+  TransactionSimulation simulation = 1 [(gogoproto.nullable) = false];
+}
+
+// ========================================
+// Incident Response Query Messages
+// ========================================
+
+message QueryIncidentRequest {
+  string incident_id = 1;
+}
+
+message QueryIncidentResponse {
+  Incident incident = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryAllIncidentsRequest {
+  bool include_resolved = 1;
+  IncidentSeverity min_severity = 2;
+}
+
+message QueryAllIncidentsResponse {
+  repeated Incident incidents = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryAuditLogRequest {
+  string event_type = 1;
+  string actor = 2;
+  int64 limit = 3;
+  int64 offset = 4;
+}
+
+message QueryAuditLogResponse {
+  repeated AuditLogEntry entries = 1 [(gogoproto.nullable) = false];
+  int64 total = 2;
+}
+
+message QueryResponseActionsRequest {
+  string incident_id = 1;
+}
+
+message QueryResponseActionsResponse {
+  repeated ResponseAction actions = 1 [(gogoproto.nullable) = false];
+}
+
+// ========================================
+// Cryptography Query Messages
+// ========================================
+
+message QueryKeyRotationScheduleRequest {
+  string id = 1;
+}
+
+message QueryKeyRotationScheduleResponse {
+  KeyRotationSchedule schedule = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryAllKeyRotationSchedulesRequest {}
+
+message QueryAllKeyRotationSchedulesResponse {
+  repeated KeyRotationSchedule schedules = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryThresholdSchemeRequest {
+  string scheme_id = 1;
+}
+
+message QueryThresholdSchemeResponse {
+  ThresholdSignatureScheme scheme = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryVerifyZKProofRequest {
+  string proof_id = 1;
+  bytes proof_data = 2;
+  bytes public_inputs = 3;
+}
+
+message QueryVerifyZKProofResponse {
+  bool valid = 1;
+  string error_message = 2;
+}
+
+message QueryQuantumResistantKeyRequest {
+  string key_id = 1;
+}
+
+message QueryQuantumResistantKeyResponse {
+  QuantumResistantKey key = 1 [(gogoproto.nullable) = false];
+}
+
+// ========================================
+// Privacy Query Messages
+// ========================================
+
+message QueryMixingPoolRequest {
+  string pool_id = 1;
+}
+
+message QueryMixingPoolResponse {
+  MixingPool pool = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryAllMixingPoolsRequest {
+  string status = 1;
+}
+
+message QueryAllMixingPoolsResponse {
+  repeated MixingPool pools = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryStealthAddressRequest {
+  bytes address = 1;
+}
+
+message QueryStealthAddressResponse {
+  StealthAddress stealth_address = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryVerifyRingSignatureRequest {
+  bytes key_image = 1;
+  repeated bytes ring_members = 2;
+  bytes signature_data = 3;
+  bytes message = 4;
+}
+
+message QueryVerifyRingSignatureResponse {
+  bool valid = 1;
+  string error_message = 2;
+}

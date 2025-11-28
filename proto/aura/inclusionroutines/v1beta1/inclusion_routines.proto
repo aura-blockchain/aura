@@ -1,0 +1,249 @@
+syntax = "proto3";
+package aura.inclusionroutines.v1beta1;
+
+import "cosmos/base/query/v1beta1/pagination.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/inclusionroutines/v1beta1";
+
+// IRStatus represents the lifecycle state of an Inclusion Routine
+enum IRStatus {
+  IR_STATUS_UNSPECIFIED = 0;
+  IR_STATUS_DRAFT = 1;
+  IR_STATUS_REVIEWING = 2;
+  IR_STATUS_APPROVED = 3;
+  IR_STATUS_ACTIVE = 4;
+  IR_STATUS_SUSPENDED = 5;
+  IR_STATUS_DEPRECATED = 6;
+  IR_STATUS_RETIRED = 7;
+}
+
+// PrivacyTier represents the privacy sensitivity level of an IR
+enum PrivacyTier {
+  PRIVACY_TIER_UNSPECIFIED = 0;
+  PRIVACY_TIER_LOW = 1;
+  PRIVACY_TIER_MEDIUM = 2;
+  PRIVACY_TIER_HIGH = 3;
+}
+
+// Arena represents the category of verification for an IR
+enum Arena {
+  ARENA_UNSPECIFIED = 0;
+  ARENA_ANCHOR = 1;
+  ARENA_BIOMETRIC = 2;
+  ARENA_POSSESSION = 3;
+  ARENA_KNOWLEDGE = 4;
+  ARENA_SOCIAL = 5;
+  ARENA_GEOLOCATION = 6;
+  ARENA_HIGH_ASSURANCE = 7;
+  ARENA_PERSISTENCE = 8;
+  ARENA_SPECIALIZED = 9;
+}
+
+// IRDefinition defines a single Inclusion Routine
+message IRDefinition {
+  string id = 1;
+  string name = 2;
+  Arena arena = 3;
+  string description = 4;
+  int64 score = 5;
+  int64 poi_reward = 6;
+  repeated string locale_tags = 7;
+  PrivacyTier privacy_tier = 8;
+  string version = 9;
+  string metadata_hash = 10;
+  IRStatus status = 11;
+  int64 activation_height = 12;
+  int64 sunset_height = 13;
+}
+
+// IRPrerequisite defines prerequisite relationships between IRs
+message IRPrerequisite {
+  string ir_id = 1;
+  repeated string required_ir_ids = 2;
+}
+
+// IRRateLimit defines rate limiting rules for an IR
+message IRRateLimit {
+  string ir_id = 1;
+  int32 per_wallet_per_hour = 2;
+  int32 per_wallet_per_day = 3;
+  int32 per_block_global = 4;
+}
+
+// Params defines the module parameters
+message Params {
+  int32 max_ir_per_locale = 1;
+  int32 default_rate_limit_hour = 2;
+  string suspension_fee = 3;
+  string min_governance_deposit = 4;
+}
+
+// GenesisState defines the initial state of the inclusionroutines module
+message GenesisState {
+  Params params = 1;
+  repeated IRDefinition irs = 2;
+  repeated IRPrerequisite prerequisites = 3;
+  repeated IRRateLimit rate_limits = 4;
+}
+
+// MsgCreateIR defines a message to create a new IR definition
+message MsgCreateIR {
+  string authority = 1;
+  string id = 2;
+  string name = 3;
+  Arena arena = 4;
+  string description = 5;
+  int64 score = 6;
+  int64 poi_reward = 7;
+  repeated string locale_tags = 8;
+  PrivacyTier privacy_tier = 9;
+  string version = 10;
+  string metadata_hash = 11;
+  int64 activation_height = 12;
+  int64 sunset_height = 13;
+}
+
+message MsgCreateIRResponse {
+  string id = 1;
+}
+
+// MsgUpdateIR defines a message to update an existing IR definition
+message MsgUpdateIR {
+  string authority = 1;
+  string id = 2;
+  string name = 3;
+  string description = 4;
+  int64 score = 5;
+  int64 poi_reward = 6;
+  repeated string locale_tags = 7;
+  PrivacyTier privacy_tier = 8;
+  string version = 9;
+  string metadata_hash = 10;
+  int64 sunset_height = 11;
+}
+
+message MsgUpdateIRResponse {}
+
+// MsgDeleteIR defines a message to delete an IR definition
+message MsgDeleteIR {
+  string authority = 1;
+  string id = 2;
+}
+
+message MsgDeleteIRResponse {}
+
+// MsgSetIRPrerequisites defines a message to set prerequisites for an IR
+message MsgSetIRPrerequisites {
+  string authority = 1;
+  string ir_id = 2;
+  repeated string required_ir_ids = 3;
+}
+
+message MsgSetIRPrerequisitesResponse {}
+
+// MsgSetIRRateLimit defines a message to set rate limits for an IR
+message MsgSetIRRateLimit {
+  string authority = 1;
+  string ir_id = 2;
+  int32 per_wallet_per_hour = 3;
+  int32 per_wallet_per_day = 4;
+  int32 per_block_global = 5;
+}
+
+message MsgSetIRRateLimitResponse {}
+
+// MsgSuspendIR defines a message to suspend an IR
+message MsgSuspendIR {
+  string authority = 1;
+  string ir_id = 2;
+  string reason = 3;
+}
+
+message MsgSuspendIRResponse {}
+
+// MsgActivateIR defines a message to activate an IR
+message MsgActivateIR {
+  string authority = 1;
+  string ir_id = 2;
+}
+
+message MsgActivateIRResponse {}
+
+// Msg service defines the state transitions for the inclusionroutines module
+service Msg {
+  rpc CreateIR(MsgCreateIR) returns (MsgCreateIRResponse);
+  rpc UpdateIR(MsgUpdateIR) returns (MsgUpdateIRResponse);
+  rpc DeleteIR(MsgDeleteIR) returns (MsgDeleteIRResponse);
+  rpc SetIRPrerequisites(MsgSetIRPrerequisites) returns (MsgSetIRPrerequisitesResponse);
+  rpc SetIRRateLimit(MsgSetIRRateLimit) returns (MsgSetIRRateLimitResponse);
+  rpc SuspendIR(MsgSuspendIR) returns (MsgSuspendIRResponse);
+  rpc ActivateIR(MsgActivateIR) returns (MsgActivateIRResponse);
+}
+
+// QueryIRRequest is the request type for the Query/IR RPC method
+message QueryIRRequest {
+  string id = 1;
+}
+
+// QueryIRResponse is the response type for the Query/IR RPC method
+message QueryIRResponse {
+  IRDefinition ir = 1;
+}
+
+// QueryListIRsRequest is the request type for the Query/ListIRs RPC method
+message QueryListIRsRequest {
+  IRStatus status_filter = 1;
+  Arena arena_filter = 2;
+  string locale_filter = 3;
+  cosmos.base.query.v1beta1.PageRequest pagination = 4;
+}
+
+// QueryListIRsResponse is the response type for the Query/ListIRs RPC method
+message QueryListIRsResponse {
+  repeated IRDefinition irs = 1;
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryIRGraphRequest is the request type for the Query/IRGraph RPC method
+message QueryIRGraphRequest {
+  string ir_id = 1;
+}
+
+// IRGraphNode represents a node in the prerequisite dependency graph
+message IRGraphNode {
+  string ir_id = 1;
+  repeated string depends_on = 2;
+  repeated string required_by = 3;
+}
+
+// QueryIRGraphResponse is the response type for the Query/IRGraph RPC method
+message QueryIRGraphResponse {
+  repeated IRGraphNode nodes = 1;
+}
+
+// QueryRateLimitRequest is the request type for the Query/RateLimit RPC method
+message QueryRateLimitRequest {
+  string ir_id = 1;
+}
+
+// QueryRateLimitResponse is the response type for the Query/RateLimit RPC method
+message QueryRateLimitResponse {
+  IRRateLimit rate_limit = 1;
+}
+
+// QueryParamsRequest is the request type for the Query/Params RPC method
+message QueryParamsRequest {}
+
+// QueryParamsResponse is the response type for the Query/Params RPC method
+message QueryParamsResponse {
+  Params params = 1;
+}
+
+// Query service defines the gRPC querier service for the inclusionroutines module
+service Query {
+  rpc IR(QueryIRRequest) returns (QueryIRResponse);
+  rpc ListIRs(QueryListIRsRequest) returns (QueryListIRsResponse);
+  rpc IRGraph(QueryIRGraphRequest) returns (QueryIRGraphResponse);
+  rpc RateLimit(QueryRateLimitRequest) returns (QueryRateLimitResponse);
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse);
+}

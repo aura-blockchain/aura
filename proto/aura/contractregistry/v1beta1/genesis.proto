@@ -1,0 +1,46 @@
+syntax = "proto3";
+package aura.contractregistry.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "aura/contractregistry/v1beta1/contract_registry.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/contractregistry/v1beta1";
+
+// GenesisState defines the contract registry module's genesis state
+message GenesisState {
+  // Module parameters
+  ContractRegistryParams params = 1 [(gogoproto.nullable) = false];
+
+  // Registered contracts
+  repeated ContractInfo contracts = 2 [(gogoproto.nullable) = false];
+
+  // Contract metrics
+  repeated ContractMetrics metrics = 3 [(gogoproto.nullable) = false];
+}
+
+// ContractRegistryParams defines the parameters for the contract registry module
+message ContractRegistryParams {
+  // Whether registration is open to all
+  bool open_registration = 1;
+
+  // Maximum number of contracts per creator (0 = unlimited)
+  uint64 max_contracts_per_creator = 2;
+
+  // Whether metadata is required for registration
+  bool require_metadata = 3;
+
+  // Whether security policy is required
+  bool require_security_policy = 4;
+
+  // Whether compliance requirements must be specified
+  bool require_compliance_config = 5;
+
+  // Minimum audit age (days) before warning
+  uint64 audit_warning_days = 6;
+
+  // Default rate limit per user per hour
+  uint64 default_rate_limit = 7;
+
+  // Default max gas per transaction
+  uint64 default_max_gas = 8;
+}

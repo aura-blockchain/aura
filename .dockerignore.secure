@@ -1,0 +1,335 @@
+# ============================================================================
+# AURA Blockchain - Secure Docker Ignore File
+# ============================================================================
+# Security-hardened .dockerignore for minimal attack surface
+# Use: DOCKER_BUILDKIT=1 docker build --file Dockerfile.secure .
+# ============================================================================
+
+# ============================================================================
+# CRITICAL: Never Include Secrets in Images
+# ============================================================================
+secrets/
+*.secret
+*.key
+*.pem
+*.crt
+*.p12
+*.pfx
+*.keystore
+keystore/
+.ssh/
+.gnupg/
+.aws/
+.azure/
+.gcloud/
+
+# Environment files with secrets
+.env
+.env.*
+!.env.example
+credentials*.json
+*_credentials*
+config/*.secret
+config/local.*
+
+# ============================================================================
+# Version Control
+# ============================================================================
+.git/
+.gitignore
+.gitattributes
+.github/
+.gitlab-ci.yml
+.gitlab/
+.travis.yml
+azure-pipelines.yml
+.circleci/
+.jenkins/
+Jenkinsfile
+
+# ============================================================================
+# Build Artifacts & Binaries (exclude from image)
+# ============================================================================
+build/
+dist/
+out/
+target/
+bin/
+*.exe
+*.dll
+*.so
+*.dylib
+*.a
+*.o
+.cache/
+vendor/
+
+# ============================================================================
+# Test Files (reduce image size, improve security)
+# ============================================================================
+*_test.go
+test_*.go
+*_bench.go
+*_mock.go
+testing/
+tests/
+testdata/
+.test/
+*.test
+test-*.json
+*test*.json
+**/*_test.go
+**/test/**
+**/tests/**
+**/testdata/**
+
+# Test outputs
+coverage.out
+coverage.html
+*.cov
+cov_*.out
+*.test.exe
+
+# ============================================================================
+# Documentation (not needed in runtime)
+# ============================================================================
+docs/
+*.md
+!README.md
+README*
+CHANGELOG*
+CONTRIBUTING*
+CODE_OF_CONDUCT*
+LICENSE*
+CODEOWNERS
+*.rst
+*.adoc
+*.txt
+!requirements.txt
+!go.sum
+
+# ============================================================================
+# Development & IDE Files
+# ============================================================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+*.sublime-*
+.project
+.settings/
+.classpath
+*.iml
+.vimrc
+.editorconfig
+
+# ============================================================================
+# Blockchain Data & State (use volumes)
+# ============================================================================
+data/
+blockchain/
+state/
+logs/
+*.log
+*.log.*
+log_*.txt
+.aura/
+node_data/
+chaindata/
+validator_keys/
+
+# ============================================================================
+# Node Modules & Dependencies (install in image)
+# ============================================================================
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+*.egg
+
+# PHP
+vendor/
+composer.lock
+.php_cs.cache
+.phpunit.result.cache
+
+# ============================================================================
+# Docker Files (don't copy into image)
+# ============================================================================
+Dockerfile*
+!Dockerfile.secure
+docker-compose*.yml
+.dockerignore*
+
+# ============================================================================
+# CI/CD & Deployment
+# ============================================================================
+.github/
+.gitlab/
+.circleci/
+ci/
+.ci/
+deployment/
+k8s/
+kubernetes/
+helm/
+terraform/
+ansible/
+scripts/dev/
+scripts/local/
+tools/dev/
+
+# ============================================================================
+# Monitoring & Observability (use volumes)
+# ============================================================================
+grafana/
+prometheus/
+monitoring/
+dashboards/
+alerts/
+
+# ============================================================================
+# Temporary & Cache Files
+# ============================================================================
+tmp/
+temp/
+*.tmp
+*.temp
+*.bak
+*.backup
+*.old
+*.swp
+*.swo
+.cache/
+cache/
+
+# ============================================================================
+# Archives
+# ============================================================================
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+*.gz
+*.bz2
+
+# ============================================================================
+# Large Binary Files
+# ============================================================================
+*.iso
+*.dmg
+*.img
+*.bin
+*.dat
+
+# ============================================================================
+# Session & Progress Files
+# ============================================================================
+*PROGRESS*.md
+SESSION_*.md
+COMPILATION_*.md
+FINAL_*.txt
+*SUMMARY*.md
+*REPORT*.md
+frozen.txt
+new-tools.txt
+launch_config.json
+
+# ============================================================================
+# Peripheral Applications (not needed in blockchain node)
+# ============================================================================
+ai-assistant/
+verifier-portal/
+wallet/
+zkp/
+infra/
+playground/
+developer-playground/
+explorer/
+faucet/
+faucet-service/
+sdk/
+wallet-tools/
+
+# ============================================================================
+# Security Reports (not needed in production image)
+# ============================================================================
+security-reports/
+audit-reports/
+scan-results/
+*.sarif
+gosec-report.*
+trivy-report.*
+vulnerability-report.*
+
+# ============================================================================
+# Proto Source Files (only include compiled)
+# ============================================================================
+proto/**/*.proto
+proto/buf.yaml
+proto/buf.gen.yaml
+proto/buf.lock
+
+# ============================================================================
+# Scripts (include only essential entrypoint scripts)
+# ============================================================================
+*.ps1
+*.bat
+*.sh
+!scripts/entrypoint.sh
+!scripts/init.sh
+!scripts/healthcheck.sh
+
+# ============================================================================
+# Makefile (not needed in runtime)
+# ============================================================================
+Makefile*
+!Makefile.include
+
+# ============================================================================
+# Backup Files
+# ============================================================================
+*.bak
+*.backup
+*.old
+*.old[0-9]
+*.orig
+*.rej
+*~
+
+# ============================================================================
+# Media Files (not needed)
+# ============================================================================
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.ico
+*.mp4
+*.avi
+*.mov
+
+# ============================================================================
+# SECURITY VALIDATION
+# ============================================================================
+# To verify this .dockerignore is working:
+# 1. Build image: docker build -f Dockerfile.secure -t aura-test .
+# 2. Check size: docker images aura-test
+# 3. Inspect contents: docker run --rm aura-test find / -name "*.key" 2>/dev/null
+# 4. Should find NO secrets or test files
+# ============================================================================

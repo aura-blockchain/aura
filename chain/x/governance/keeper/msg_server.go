@@ -1,0 +1,491 @@
+package keeper
+
+import (
+	"context"
+	"fmt"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/aequitas/aura/chain/x/governance/types"
+	govpb "github.com/aequitas/aura/proto/aura/governance/v1beta1"
+)
+
+var _ govpb.MsgServer = (*msgServer)(nil)
+
+type msgServer struct {
+	govpb.UnimplementedMsgServer
+	Keeper *Keeper
+}
+
+// NewMsgServerImpl returns an implementation of the MsgServer interface
+func NewMsgServerImpl(keeper *Keeper) govpb.MsgServer {
+	return &msgServer{Keeper: keeper}
+}
+
+// SubmitProposal submits a new governance proposal
+func (ms msgServer) SubmitProposal(goCtx context.Context, msg *govpb.MsgSubmitProposal) (*govpb.MsgSubmitProposalResponse, error) {
+	if msg == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	if err := validateProposal(msg); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// Get next proposal ID
+	proposalID := ms.Keeper.GetNextProposalID(ctx)
+	ms.Keeper.SetNextProposalID(ctx, proposalID+1)
+
+	// Create proposal
+	proposal := &types.Proposal{
+		Id:          proposalID,
+		Title:       msg.Title,
+		Description: msg.Description,
+		Category:    msg.Category,
+		Status:      govpb.ProposalStatus_PROPOSAL_STATUS_DEPOSIT_PERIOD,
+		Proposer:    msg.Proposer,
+		SubmitTime:  timestamppb.Now(),
+		IsEmergency: msg.IsEmergency,
+	}
+
+	// Set deposit and voting periods based on params
+	params := ms.Keeper.GetParams(ctx)
+	proposal.DepositEndTime = timestamppb.New(ctx.BlockTime().Add(params.MaxDepositPeriod.AsDuration()))
+
+	// Store proposal
+	if err := ms.Keeper.SetProposal(ctx, proposal); err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	// Handle initial deposit if provided
+	if msg.InitialDeposit != "" && msg.InitialDeposit != "0" {
+		deposit := &types.Deposit{
+			ProposalId: proposalID,
+			Depositor:  msg.Proposer,
+			Amount:     msg.InitialDeposit,
+			Timestamp:  timestamppb.Now(),
+		}
+		if err := ms.Keeper.SetDeposit(ctx, deposit); err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+	}
+
+	// Emit event
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			types.EventTypeSubmitProposal,
+			sdk.NewAttribute(types.AttributeKeyProposalID, fmt.Sprintf("%d", proposalID)),
+			sdk.NewAttribute(types.AttributeKeyProposer, msg.Proposer),
+		),
+	)
+
+	return &govpb.MsgSubmitProposalResponse{ProposalId: proposalID}, nil
+}
+
+// Deposit adds a deposit to a proposal
+func (ms msgServer) Deposit(goCtx context.Context, msg *govpb.MsgDeposit) (*govpb.MsgDepositResponse, error) {
+	if msg == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	if msg.Amount == "" || msg.Amount == "0" {
+		return nil, status.Error(codes.InvalidArgument, "deposit amount must be positive")
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// Check if proposal exists
+	proposal, err := ms.Keeper.GetProposal(ctx, msg.ProposalId)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, "proposal not found")
+	}
+
+	// Check if proposal is in deposit period
+	if proposal.Status != govpb.ProposalStatus_PROPOSAL_STATUS_DEPOSIT_PERIOD {
+		return nil, status.Error(codes.FailedPrecondition, "proposal not in deposit period")
+	}
+
+	// Store deposit
+	deposit := &types.Deposit{
+		ProposalId: msg.ProposalId,
+		Depositor:  msg.Depositor,
+		Amount:     msg.Amount,
+		Timestamp:  timestamppb.Now(),
+	}
+	if err := ms.Keeper.SetDeposit(ctx, deposit); err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	// Emit event
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			types.EventTypeDeposit,
+			sdk.NewAttribute(types.AttributeKeyProposalID, fmt.Sprintf("%d", msg.ProposalId)),
+			sdk.NewAttribute(types.AttributeKeyDepositor, msg.Depositor),
+		),
+	)
+
+	return &govpb.MsgDepositResponse{}, nil
+}
+
+// Vote casts a vote on a proposal
+func (ms msgServer) Vote(goCtx context.Context, msg *govpb.MsgVote) (*govpb.MsgVoteResponse, error) {
+	if msg == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// Check if proposal exists
+	proposal, err := ms.Keeper.GetProposal(ctx, msg.ProposalId)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, "proposal not found")
+	}
+
+	// Check if proposal is in voting period
+	if proposal.Status != govpb.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD {
+		return nil, status.Error(codes.FailedPrecondition, "proposal not in voting period")
+	}
+
+	// Store vote
+	vote := &types.Vote{
+		ProposalId: msg.ProposalId,
+		Voter:      msg.Voter,
+		Option:     msg.Option,
+		Timestamp:  timestamppb.Now(),
+		IsSecret:   msg.IsSecret,
+	}
+
+	if msg.IsSecret {
+		vote.VoteCommitment = msg.VoteCommitment
+	}
+
+	if err := ms.Keeper.SetVote(ctx, vote); err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	// Emit event
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			types.EventTypeVote,
+			sdk.NewAttribute(types.AttributeKeyProposalID, fmt.Sprintf("%d", msg.ProposalId)),
+			sdk.NewAttribute(types.AttributeKeyVoter, msg.Voter),
+		),
+	)
+
+	return &govpb.MsgVoteResponse{}, nil
+}
+
+// VoteWeighted casts a weighted vote on a proposal
+func (ms msgServer) VoteWeighted(goCtx context.Context, msg *govpb.MsgVoteWeighted) (*govpb.MsgVoteWeightedResponse, error) {
+	if msg == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	if len(msg.Options) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "weighted vote options cannot be empty")
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// Check if proposal exists
+	proposal, err := ms.Keeper.GetProposal(ctx, msg.ProposalId)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, "proposal not found")
+	}
+
+	// Check if proposal is in voting period
+	if proposal.Status != govpb.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD {
+		return nil, status.Error(codes.FailedPrecondition, "proposal not in voting period")
+	}
+
+	// Store weighted vote (simplified: store first option only)
+	vote := &types.Vote{
+		ProposalId: msg.ProposalId,
+		Voter:      msg.Voter,
+		Option:     msg.Options[0].Option,
+		Timestamp:  timestamppb.Now(),
+	}
+
+	if err := ms.Keeper.SetVote(ctx, vote); err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	// Emit event
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			types.EventTypeVote,
+			sdk.NewAttribute(types.AttributeKeyProposalID, fmt.Sprintf("%d", msg.ProposalId)),
+			sdk.NewAttribute(types.AttributeKeyVoter, msg.Voter),
+		),
+	)
+
+	return &govpb.MsgVoteWeightedResponse{}, nil
+}
+
+// DelegateVote delegates voting power to another address
+func (ms msgServer) DelegateVote(goCtx context.Context, msg *govpb.MsgDelegateVote) (*govpb.MsgDelegateVoteResponse, error) {
+	if msg == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	if msg.Delegator == msg.Delegate {
+		return nil, status.Error(codes.InvalidArgument, "cannot delegate to self")
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// Store vote delegation
+	delegation := &types.VoteDelegation{
+		Delegator:  msg.Delegator,
+		Delegate:   msg.Delegate,
+		Categories: msg.Categories,
+	}
+
+	if err := ms.Keeper.SetVoteDelegation(ctx, delegation); err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	// Emit event
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			types.EventTypeDelegateVote,
+			sdk.NewAttribute(types.AttributeKeyDelegator, msg.Delegator),
+			sdk.NewAttribute(types.AttributeKeyDelegate, msg.Delegate),
+		),
+	)
+
+	return &govpb.MsgDelegateVoteResponse{}, nil
+}
+
+// UndelegateVote removes vote delegation
+func (ms msgServer) UndelegateVote(goCtx context.Context, msg *govpb.MsgUndelegateVote) (*govpb.MsgUndelegateVoteResponse, error) {
+	if msg == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// Remove vote delegation
+	if err := ms.Keeper.DeleteVoteDelegation(ctx, msg.Delegator, msg.Delegate); err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	// Emit event
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			types.EventTypeUndelegateVote,
+			sdk.NewAttribute(types.AttributeKeyDelegator, msg.Delegator),
+			sdk.NewAttribute(types.AttributeKeyDelegate, msg.Delegate),
+		),
+	)
+
+	return &govpb.MsgUndelegateVoteResponse{}, nil
+}
+
+// SubmitVeto submits a veto request
+func (ms msgServer) SubmitVeto(goCtx context.Context, msg *govpb.MsgSubmitVeto) (*govpb.MsgSubmitVetoResponse, error) {
+	if msg == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// Check if proposal exists
+	_, err := ms.Keeper.GetProposal(ctx, msg.ProposalId)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, "proposal not found")
+	}
+
+	// Store veto request
+	veto := &types.VetoRequest{
+		ProposalId: msg.ProposalId,
+		Vetoer:     msg.Vetoer,
+		Reason:     msg.Reason,
+		Timestamp:  timestamppb.Now(),
+		Cosigners:  []string{},
+	}
+
+	if err := ms.Keeper.SetVetoRequest(ctx, veto); err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	// Emit event
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			types.EventTypeVeto,
+			sdk.NewAttribute(types.AttributeKeyProposalID, fmt.Sprintf("%d", msg.ProposalId)),
+			sdk.NewAttribute(types.AttributeKeyVetoer, msg.Vetoer),
+		),
+	)
+
+	return &govpb.MsgSubmitVetoResponse{VetoExecuted: false}, nil
+}
+
+// CosignVeto cosigns an existing veto request
+func (ms msgServer) CosignVeto(goCtx context.Context, msg *govpb.MsgCosignVeto) (*govpb.MsgCosignVetoResponse, error) {
+	if msg == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// Get veto request
+	veto, err := ms.Keeper.GetVetoRequest(ctx, msg.ProposalId)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, "veto request not found")
+	}
+
+	// Add cosigner
+	veto.Cosigners = append(veto.Cosigners, msg.Cosigner)
+
+	// Update veto request
+	if err := ms.Keeper.SetVetoRequest(ctx, veto); err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	// Emit event
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			types.EventTypeVeto,
+			sdk.NewAttribute(types.AttributeKeyProposalID, fmt.Sprintf("%d", msg.ProposalId)),
+			sdk.NewAttribute(types.AttributeKeyVetoer, msg.Cosigner),
+		),
+	)
+
+	return &govpb.MsgCosignVetoResponse{VetoExecuted: false}, nil
+}
+
+// ExecuteProposal executes a passed proposal after time-lock
+func (ms msgServer) ExecuteProposal(goCtx context.Context, msg *govpb.MsgExecuteProposal) (*govpb.MsgExecuteProposalResponse, error) {
+	if msg == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// Get proposal
+	proposal, err := ms.Keeper.GetProposal(ctx, msg.ProposalId)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, "proposal not found")
+	}
+
+	// Check if proposal is ready for execution
+	if proposal.Status != govpb.ProposalStatus_PROPOSAL_STATUS_READY_FOR_EXECUTION &&
+		proposal.Status != govpb.ProposalStatus_PROPOSAL_STATUS_PASSED {
+		return nil, status.Error(codes.FailedPrecondition, "proposal not ready for execution")
+	}
+
+	// Update proposal status
+	proposal.Status = govpb.ProposalStatus_PROPOSAL_STATUS_EXECUTED
+	if err := ms.Keeper.SetProposal(ctx, proposal); err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	// Emit event
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			types.EventTypeExecuteProposal,
+			sdk.NewAttribute(types.AttributeKeyProposalID, fmt.Sprintf("%d", msg.ProposalId)),
+			sdk.NewAttribute(types.AttributeKeyExecutor, msg.Executor),
+		),
+	)
+
+	return &govpb.MsgExecuteProposalResponse{}, nil
+}
+
+// SubmitSnapshotVote submits an off-chain snapshot vote
+func (ms msgServer) SubmitSnapshotVote(goCtx context.Context, msg *govpb.MsgSubmitSnapshotVote) (*govpb.MsgSubmitSnapshotVoteResponse, error) {
+	if msg == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// Check if proposal exists
+	_, err := ms.Keeper.GetProposal(ctx, msg.ProposalId)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, "proposal not found")
+	}
+
+	// Store snapshot vote
+	snapshotVote := &types.SnapshotVote{
+		ProposalId: msg.ProposalId,
+		Voter:      msg.Voter,
+		Option:     msg.Option,
+		Signature:  msg.Signature,
+		Timestamp:  timestamppb.Now(),
+	}
+
+	if err := ms.Keeper.SetSnapshotVote(ctx, snapshotVote); err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	// Emit event
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			types.EventTypeSnapshotVote,
+			sdk.NewAttribute(types.AttributeKeyProposalID, fmt.Sprintf("%d", msg.ProposalId)),
+			sdk.NewAttribute(types.AttributeKeyVoter, msg.Voter),
+		),
+	)
+
+	return &govpb.MsgSubmitSnapshotVoteResponse{}, nil
+}
+
+// RevealSecretVote reveals a secret ballot vote
+func (ms msgServer) RevealSecretVote(goCtx context.Context, msg *govpb.MsgRevealSecretVote) (*govpb.MsgRevealSecretVoteResponse, error) {
+	if msg == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// Get existing vote
+	vote, err := ms.Keeper.GetVote(ctx, msg.ProposalId, msg.Voter)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, "vote not found")
+	}
+
+	// Verify vote was secret
+	if !vote.IsSecret {
+		return nil, status.Error(codes.InvalidArgument, "vote is not secret")
+	}
+
+	// Update vote with revealed option
+	vote.Option = msg.Option
+	vote.IsSecret = false
+	if err := ms.Keeper.SetVote(ctx, vote); err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	// Emit event
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			types.EventTypeRevealVote,
+			sdk.NewAttribute(types.AttributeKeyProposalID, fmt.Sprintf("%d", msg.ProposalId)),
+			sdk.NewAttribute(types.AttributeKeyVoter, msg.Voter),
+		),
+	)
+
+	return &govpb.MsgRevealSecretVoteResponse{}, nil
+}
+
+// validateProposal validates a proposal submission
+func validateProposal(msg *govpb.MsgSubmitProposal) error {
+	if msg.Title == "" {
+		return fmt.Errorf("proposal title cannot be empty")
+	}
+	if msg.Description == "" {
+		return fmt.Errorf("proposal description cannot be empty")
+	}
+	if msg.Proposer == "" {
+		return fmt.Errorf("proposer cannot be empty")
+	}
+	return nil
+}

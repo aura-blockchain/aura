@@ -1,0 +1,115 @@
+vendor/
+tools/bin/
+node_modules/
+
+# Large binaries (compiled executables)
+chain/aurad
+*.exe
+/build/
+/bin/
+.phpunit.result.cache
+
+nul
+proto/nul
+C:*
+
+# Proto generated files - only keep in chain/x/*/types/
+proto/aura/**/*.pb.go
+proto/aura/**/*_grpc.pb.go
+
+# ============================================================================
+# SECURITY: Secrets and Credentials - NEVER COMMIT
+# ============================================================================
+secrets/
+*.secret
+*.key
+*.pem
+*.crt
+*.p12
+*.pfx
+!secrets/README.txt
+
+# Environment files
+.env
+.env.*
+!.env.example
+!.env.template
+
+# Credentials
+credentials.json
+*credentials*.json
+*_credentials*
+*secrets*.json
+
+# Test artifacts
+*.out
+*.test
+*.test.exe
+coverage*.out
+cov_*.out
+*_coverage.out
+coverage.html
+
+# Test output
+*_test.txt
+*_errors.txt
+*_output.txt
+
+# Build artifacts
+**/target/
+**/build/
+*.exe
+!**/cmd/**/
+
+# Backup files
+*.bak
+*.old
+*.old[0-9]
+*.orig
+*.rej
+*.backup
+
+# Broken/incomplete files
+*.broken
+
+# Temporary files
+temp_*
+debug_*
+aaa.txt
+status
+AGENT_PROGRESS.md
+
+# ============================================================================
+# IDE and Editor
+# ============================================================================
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ============================================================================
+# Logs and Data
+# ============================================================================
+*.log
+logs/
+data/
+!data/.gitkeep
+blockchain_data/
+
+# ============================================================================
+# Private keys and wallets
+# ============================================================================
+*.keystore
+keystore/
+wallets/
+!wallets/.gitkeep
+
+# ============================================================================
+# Cache
+# ============================================================================
+.cache/
+__pycache__/
+*.pyc

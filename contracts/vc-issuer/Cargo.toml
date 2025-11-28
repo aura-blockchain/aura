@@ -1,0 +1,29 @@
+[package]
+name = "vc-issuer"
+version = "0.1.0"
+authors = ["Aura Team"]
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+backtraces = ["cosmwasm-std/backtraces"]
+library = []
+
+[dependencies]
+aura-bindings = { path = "../packages/aura-bindings" }
+cosmwasm-schema = { version = "1.5.2", default-features = false }
+cosmwasm-std = "1.5.2"
+cosmwasm-storage = "1.5.2"
+cw-storage-plus = "1.2.0"
+schemars = "0.8.22"
+serde = { version = "1.0", default-features = false, features = ["derive"] }
+sha2 = "0.10"
+thiserror = "1.0"
+hex = "0.4"
+
+[dev-dependencies]
+cosmwasm-schema = "1.5.2"
+cosmwasm-std = { version = "1.5.2", features = ["staking"] }
+cw-multi-test = "0.18.0"

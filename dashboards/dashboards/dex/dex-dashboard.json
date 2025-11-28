@@ -1,0 +1,67 @@
+{
+  "title": "Aura DEX Telemetry",
+  "timezone": "browser",
+  "panels": [
+    {
+      "type": "graph",
+      "title": "Swap Effective Price (per pool)",
+      "targets": [
+        {
+          "expr": "dex_swap_effective_price{pool=~\"$pool\"}",
+          "legendFormat": "{{pool}}"
+        }
+      ],
+      "datasource": "Prometheus",
+      "id": 1
+    },
+    {
+      "type": "graph",
+      "title": "Market Price Sample Size",
+      "targets": [
+        {
+          "expr": "dex_market_price_sample_size{coin=~\"$coin\"}",
+          "legendFormat": "{{coin}}"
+        }
+      ],
+      "datasource": "Prometheus",
+      "id": 2
+    },
+    {
+      "type": "stat",
+      "title": "Spot Price Validation Errors",
+      "targets": [
+        {
+          "expr": "increase(dex_query_validation_failed_total{query=\"spot_price\"}[5m])"
+        }
+      ],
+      "datasource": "Prometheus",
+      "id": 3
+    },
+    {
+      "type": "stat",
+      "title": "User Orders Validation Errors",
+      "targets": [
+        {
+          "expr": "increase(dex_query_validation_failed_total{query=\"user_orders\"}[5m])"
+        }
+      ],
+      "datasource": "Prometheus",
+      "id": 4
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "pool",
+        "query": "label_values(dex_swap_effective_price, pool)",
+        "datasource": "Prometheus"
+      },
+      {
+        "name": "coin",
+        "query": "label_values(dex_market_price_sample_size, coin)",
+        "datasource": "Prometheus"
+      }
+    ]
+  },
+  "version": 1
+}

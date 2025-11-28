@@ -1,0 +1,326 @@
+syntax = "proto3";
+package aura.economicsecurity.v1beta1;
+
+import "aura/economicsecurity/v1beta1/types.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/economicsecurity/v1beta1";
+
+// Msg defines the economic security module's message service
+service Msg {
+  // CreateVestingSchedule creates a new vesting schedule
+  rpc CreateVestingSchedule(MsgCreateVestingSchedule) returns (MsgCreateVestingScheduleResponse);
+
+  // ReleaseVestedTokens releases vested tokens to beneficiary
+  rpc ReleaseVestedTokens(MsgReleaseVestedTokens) returns (MsgReleaseVestedTokensResponse);
+
+  // RevokeVestingSchedule revokes a vesting schedule
+  rpc RevokeVestingSchedule(MsgRevokeVestingSchedule) returns (MsgRevokeVestingScheduleResponse);
+
+  // LockVotingTokens locks tokens for voting power boost
+  rpc LockVotingTokens(MsgLockVotingTokens) returns (MsgLockVotingTokensResponse);
+
+  // UnlockVotingTokens unlocks voting tokens after lock period
+  rpc UnlockVotingTokens(MsgUnlockVotingTokens) returns (MsgUnlockVotingTokensResponse);
+
+  // ProposeTreasurySpend proposes a treasury spend
+  rpc ProposeTreasurySpend(MsgProposeTreasurySpend) returns (MsgProposeTreasurySpendResponse);
+
+  // SignTreasurySpend signs a treasury spend proposal
+  rpc SignTreasurySpend(MsgSignTreasurySpend) returns (MsgSignTreasurySpendResponse);
+
+  // ExecuteTreasurySpend executes an approved treasury spend
+  rpc ExecuteTreasurySpend(MsgExecuteTreasurySpend) returns (MsgExecuteTreasurySpendResponse);
+
+  // UpdateParams updates module parameters (governance only)
+  rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
+
+  // AdjustInflationRate manually adjusts inflation rate (governance only)
+  rpc AdjustInflationRate(MsgAdjustInflationRate) returns (MsgAdjustInflationRateResponse);
+}
+
+// Query defines the economic security module's query service
+service Query {
+  // Params queries the module parameters
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse);
+
+  // VestingSchedule queries a vesting schedule by ID
+  rpc VestingSchedule(QueryVestingScheduleRequest) returns (QueryVestingScheduleResponse);
+
+  // VestingSchedulesByBeneficiary queries all vesting schedules for a beneficiary
+  rpc VestingSchedulesByBeneficiary(QueryVestingSchedulesByBeneficiaryRequest) returns (QueryVestingSchedulesByBeneficiaryResponse);
+
+  // VoteLock queries a vote lock by ID
+  rpc VoteLock(QueryVoteLockRequest) returns (QueryVoteLockResponse);
+
+  // VoteLocksByOwner queries all vote locks for an owner
+  rpc VoteLocksByOwner(QueryVoteLocksByOwnerRequest) returns (QueryVoteLocksByOwnerResponse);
+
+  // VotingPower queries the voting power for an address
+  rpc VotingPower(QueryVotingPowerRequest) returns (QueryVotingPowerResponse);
+
+  // PendingTreasuryTx queries a pending treasury transaction
+  rpc PendingTreasuryTx(QueryPendingTreasuryTxRequest) returns (QueryPendingTreasuryTxResponse);
+
+  // PendingTreasuryTxs queries all pending treasury transactions
+  rpc PendingTreasuryTxs(QueryPendingTreasuryTxsRequest) returns (QueryPendingTreasuryTxsResponse);
+
+  // InflationMetrics queries current inflation metrics
+  rpc InflationMetrics(QueryInflationMetricsRequest) returns (QueryInflationMetricsResponse);
+
+  // InflationAlerts queries inflation alerts
+  rpc InflationAlerts(QueryInflationAlertsRequest) returns (QueryInflationAlertsResponse);
+
+  // LiquidityMiningStats queries liquidity mining statistics
+  rpc LiquidityMiningStats(QueryLiquidityMiningStatsRequest) returns (QueryLiquidityMiningStatsResponse);
+
+  // MEVStats queries MEV redistribution statistics
+  rpc MEVStats(QueryMEVStatsRequest) returns (QueryMEVStatsResponse);
+
+  // UserMEVBalance queries a user's MEV redistribution balance
+  rpc UserMEVBalance(QueryUserMEVBalanceRequest) returns (QueryUserMEVBalanceResponse);
+
+  // TokenomicsStats queries overall tokenomics statistics
+  rpc TokenomicsStats(QueryTokenomicsStatsRequest) returns (QueryTokenomicsStatsResponse);
+}
+
+// Message types
+
+message MsgCreateVestingSchedule {
+  string creator = 1;
+  string beneficiary_address = 2;
+  string total_amount = 3;
+  google.protobuf.Timestamp start_time = 4;
+  uint64 cliff_duration = 5;
+  uint64 vesting_duration = 6;
+  VestingType vesting_type = 7;
+  ScheduleType schedule_type = 8;
+}
+
+message MsgCreateVestingScheduleResponse {
+  string schedule_id = 1;
+}
+
+message MsgReleaseVestedTokens {
+  string beneficiary = 1;
+  string schedule_id = 2;
+}
+
+message MsgReleaseVestedTokensResponse {
+  string amount_released = 1;
+}
+
+message MsgRevokeVestingSchedule {
+  string revoker = 1;
+  string schedule_id = 2;
+  string reason = 3;
+}
+
+message MsgRevokeVestingScheduleResponse {
+  string unvested_amount_returned = 1;
+}
+
+message MsgLockVotingTokens {
+  string owner = 1;
+  string amount = 2;
+  uint64 lock_duration = 3;
+}
+
+message MsgLockVotingTokensResponse {
+  string lock_id = 1;
+  string voting_power = 2;
+}
+
+message MsgUnlockVotingTokens {
+  string owner = 1;
+  string lock_id = 2;
+}
+
+message MsgUnlockVotingTokensResponse {
+  string amount_unlocked = 1;
+}
+
+message MsgProposeTreasurySpend {
+  string proposer = 1;
+  string recipient = 2;
+  string amount = 3;
+  string description = 4;
+}
+
+message MsgProposeTreasurySpendResponse {
+  string tx_id = 1;
+  google.protobuf.Timestamp executable_at = 2;
+}
+
+message MsgSignTreasurySpend {
+  string signer = 1;
+  string tx_id = 2;
+}
+
+message MsgSignTreasurySpendResponse {
+  uint32 current_signatures = 1;
+  uint32 required_signatures = 2;
+}
+
+message MsgExecuteTreasurySpend {
+  string executor = 1;
+  string tx_id = 2;
+}
+
+message MsgExecuteTreasurySpendResponse {
+  bool success = 1;
+}
+
+message MsgUpdateParams {
+  string authority = 1;
+  Params params = 2;
+}
+
+message MsgUpdateParamsResponse {}
+
+message MsgAdjustInflationRate {
+  string authority = 1;
+  uint64 new_rate = 2;
+  string reason = 3;
+}
+
+message MsgAdjustInflationRateResponse {
+  uint64 old_rate = 1;
+  uint64 new_rate = 2;
+}
+
+// Query types
+
+message QueryParamsRequest {}
+
+message QueryParamsResponse {
+  Params params = 1;
+}
+
+message QueryVestingScheduleRequest {
+  string schedule_id = 1;
+}
+
+message QueryVestingScheduleResponse {
+  VestingSchedule schedule = 1;
+  string vested_amount = 2;
+  string remaining_amount = 3;
+  google.protobuf.Timestamp next_vest_time = 4;
+}
+
+message QueryVestingSchedulesByBeneficiaryRequest {
+  string beneficiary_address = 1;
+}
+
+message QueryVestingSchedulesByBeneficiaryResponse {
+  repeated VestingSchedule schedules = 1;
+  string total_vested = 2;
+  string total_vesting = 3;
+}
+
+message QueryVoteLockRequest {
+  string lock_id = 1;
+}
+
+message QueryVoteLockResponse {
+  VoteLock lock = 1;
+}
+
+message QueryVoteLocksByOwnerRequest {
+  string owner = 1;
+}
+
+message QueryVoteLocksByOwnerResponse {
+  repeated VoteLock locks = 1;
+  string total_locked = 2;
+  string total_voting_power = 3;
+}
+
+message QueryVotingPowerRequest {
+  string address = 1;
+}
+
+message QueryVotingPowerResponse {
+  string voting_power = 1;
+  string locked_amount = 2;
+  uint64 active_locks = 3;
+}
+
+message QueryPendingTreasuryTxRequest {
+  string tx_id = 1;
+}
+
+message QueryPendingTreasuryTxResponse {
+  PendingTreasuryTx transaction = 1;
+}
+
+message QueryPendingTreasuryTxsRequest {}
+
+message QueryPendingTreasuryTxsResponse {
+  repeated PendingTreasuryTx transactions = 1;
+}
+
+message QueryInflationMetricsRequest {}
+
+message QueryInflationMetricsResponse {
+  uint64 current_inflation_rate = 1;
+  uint64 target_inflation_rate = 2;
+  uint64 inflation_change_24h = 3;
+  google.protobuf.Timestamp last_adjustment = 4;
+  google.protobuf.Timestamp next_check = 5;
+}
+
+message QueryInflationAlertsRequest {
+  uint64 limit = 1;
+}
+
+message QueryInflationAlertsResponse {
+  repeated InflationAlert alerts = 1;
+}
+
+message QueryLiquidityMiningStatsRequest {}
+
+message QueryLiquidityMiningStatsResponse {
+  bool enabled = 1;
+  string total_allocated = 2;
+  string total_distributed = 3;
+  string remaining_rewards = 4;
+  uint64 current_epoch = 5;
+  string rewards_this_epoch = 6;
+  uint64 next_distribution_height = 7;
+}
+
+message QueryMEVStatsRequest {}
+
+message QueryMEVStatsResponse {
+  bool enabled = 1;
+  string total_captured = 2;
+  string total_redistributed = 3;
+  string pending_redistribution = 4;
+  uint64 user_redistribution_percentage = 5;
+  MEVRedistributionStrategy strategy = 6;
+}
+
+message QueryUserMEVBalanceRequest {
+  string address = 1;
+}
+
+message QueryUserMEVBalanceResponse {
+  string balance = 1;
+  string lifetime_received = 2;
+}
+
+message QueryTokenomicsStatsRequest {}
+
+message QueryTokenomicsStatsResponse {
+  string max_supply = 1;
+  string circulating_supply = 2;
+  string total_vested = 3;
+  string total_vesting = 4;
+  string total_locked_governance = 5;
+  string treasury_balance = 6;
+  uint64 current_inflation_rate = 7;
+  string total_burned = 8;
+  uint64 whale_protection_triggers_24h = 9;
+  string transfer_tax_collected_24h = 10;
+}

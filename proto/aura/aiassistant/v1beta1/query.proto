@@ -1,0 +1,58 @@
+syntax = "proto3";
+package aura.aiassistant.v1beta1;
+
+import "google/api/annotations.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "aura/aiassistant/v1beta1/assistant.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/aiassistant/v1beta1";
+
+service Query {
+  rpc Assistant(QueryAssistantRequest) returns (QueryAssistantResponse) {
+    option (google.api.http).get = "/aura/aiassistant/v1beta1/assistants/{assistant_address}";
+  }
+
+  rpc Assistants(QueryAssistantsRequest) returns (QueryAssistantsResponse) {
+    option (google.api.http).get = "/aura/aiassistant/v1beta1/assistants";
+  }
+
+  rpc AssistantsByLocale(QueryAssistantsByLocaleRequest) returns (QueryAssistantsByLocaleResponse) {
+    option (google.api.http).get = "/aura/aiassistant/v1beta1/locales/{locale}";
+  }
+
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/aura/aiassistant/v1beta1/params";
+  }
+}
+
+message QueryAssistantRequest {
+  string assistant_address = 1;
+}
+
+message QueryAssistantResponse {
+  Assistant assistant = 1;
+}
+
+message QueryAssistantsRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryAssistantsResponse {
+  repeated Assistant assistants = 1;
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QueryAssistantsByLocaleRequest {
+  string locale = 1;
+}
+
+message QueryAssistantsByLocaleResponse {
+  string locale = 1;
+  repeated Assistant assistants = 2;
+}
+
+message QueryParamsRequest {}
+
+message QueryParamsResponse {
+  Params params = 1;
+}

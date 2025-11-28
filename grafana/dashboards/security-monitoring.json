@@ -1,0 +1,187 @@
+{
+  "dashboard": {
+    "title": "Aura Security Monitoring Dashboard",
+    "tags": ["aura", "security", "siem"],
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "version": 1,
+    "refresh": "10s",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Active Alerts by Severity",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "aura_monitoring_active_alerts",
+            "legendFormat": "{{severity}}"
+          }
+        ],
+        "stack": true
+      },
+      {
+        "id": 2,
+        "title": "Security Events by Type",
+        "type": "piechart",
+        "targets": [
+          {
+            "expr": "sum by (event_type) (aura_monitoring_security_events_total)",
+            "legendFormat": "{{event_type}}"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Anomaly Detections",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(aura_monitoring_anomaly_detections_total[5m])",
+            "legendFormat": "{{type}}"
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Anomaly Score Distribution",
+        "type": "heatmap",
+        "targets": [
+          {
+            "expr": "aura_monitoring_anomaly_score",
+            "legendFormat": "Anomaly Score"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Failed Transactions",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(aura_monitoring_failed_transactions_total[5m])",
+            "legendFormat": "{{module}} - {{reason}}"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Large Transactions Detected",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "increase(aura_monitoring_large_transactions_total[24h])",
+            "legendFormat": "Large Transactions"
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Threat Level by Event Type",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "aura_monitoring_threat_level",
+            "legendFormat": "{{event_type}}"
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Mitigated Threats",
+        "type": "counter",
+        "targets": [
+          {
+            "expr": "aura_monitoring_mitigated_threats_total",
+            "legendFormat": "Mitigated"
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "SOC Incidents",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(aura_monitoring_soc_incidents_total[5m])",
+            "legendFormat": "{{severity}}"
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "title": "SOC Response Time",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, aura_monitoring_soc_response_time_seconds_bucket)",
+            "legendFormat": "95th Percentile"
+          },
+          {
+            "expr": "histogram_quantile(0.50, aura_monitoring_soc_response_time_seconds_bucket)",
+            "legendFormat": "50th Percentile"
+          }
+        ]
+      },
+      {
+        "id": 11,
+        "title": "Gossip Cache Hit Ratio",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(networksecurity_gossip_cache_hit_total[5m]) / clamp_min(rate(networksecurity_gossip_cache_hit_total[5m]) + rate(networksecurity_gossip_cache_miss_total[5m]), 0.0001)",
+            "legendFormat": "Hit Ratio"
+          }
+        ],
+        "thresholds": [
+          {
+            "value": 0.85,
+            "op": "gt",
+            "colorMode": "critical"
+          }
+        ]
+      },
+      {
+        "id": 12,
+        "title": "Gossip Cache Size & Evictions",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "networksecurity_gossip_cache_size",
+            "legendFormat": "Cache Size"
+          },
+          {
+            "expr": "increase(networksecurity_gossip_cache_evictions[5m])",
+            "legendFormat": "Evictions (5m)"
+          }
+        ]
+      },
+      {
+        "id": 13,
+        "title": "Wallet Spending Limit Decisions",
+        "type": "graph",
+        "stack": true,
+        "targets": [
+          {
+            "expr": "increase(walletsecurity_spending_limit_allowed_total[1h])",
+            "legendFormat": "Allowed (1h)"
+          },
+          {
+            "expr": "increase(walletsecurity_spending_limit_blocked_total[1h])",
+            "legendFormat": "Blocked (1h)"
+          }
+        ]
+      },
+      {
+        "id": 14,
+        "title": "Dust Filter Blocks (5m)",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "increase(walletsecurity_dust_filter_blocked_total[5m])",
+            "legendFormat": "Blocked"
+          }
+        ]
+      }
+    ]
+  }
+}

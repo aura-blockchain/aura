@@ -1,0 +1,963 @@
+syntax = "proto3";
+package aura.security.v1beta1;
+
+option go_package = "github.com/aequitas/aura/proto/aura/security/v1beta1";
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+
+// Consolidated Params for all security domains
+message Params {
+  NetworkSecurityParams network = 1 [(gogoproto.nullable) = false];
+  ValidatorSecurityParams validator = 2 [(gogoproto.nullable) = false];
+  WalletSecurityParams wallet = 3 [(gogoproto.nullable) = false];
+  IncidentResponseParams incident = 4 [(gogoproto.nullable) = false];
+  CryptographyParams crypto = 5 [(gogoproto.nullable) = false];
+  PrivacyParams privacy = 6 [(gogoproto.nullable) = false];
+}
+
+// ========================================
+// Network Security
+// ========================================
+
+message NetworkSecurityParams {
+  // Rate limiting parameters
+  RateLimitConfig rate_limit = 1 [(gogoproto.nullable) = false];
+
+  // Connection parameters
+  ConnectionConfig connection = 2 [(gogoproto.nullable) = false];
+
+  // Mempool parameters
+  MempoolConfig mempool = 3 [(gogoproto.nullable) = false];
+
+  // Reputation parameters
+  ReputationConfig reputation = 4 [(gogoproto.nullable) = false];
+
+  // Gossip validation parameters
+  GossipConfig gossip = 5 [(gogoproto.nullable) = false];
+
+  // Fork detection parameters
+  ForkDetectionConfig fork_detection = 6 [(gogoproto.nullable) = false];
+
+  // Network partitioning detection parameters
+  PartitionDetectionConfig partition_detection = 7 [(gogoproto.nullable) = false];
+}
+
+message RateLimitConfig {
+  // Maximum requests per second per peer
+  uint64 max_requests_per_second = 1;
+
+  // Burst size for rate limiter
+  uint64 burst_size = 2;
+
+  // Window duration for rate limiting
+  google.protobuf.Duration window_duration = 3 [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+
+  // Ban duration for rate limit violations
+  google.protobuf.Duration ban_duration = 4 [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+
+  // Bandwidth limit per peer (bytes per second)
+  uint64 bandwidth_limit_per_peer = 5;
+}
+
+message ConnectionConfig {
+  // Maximum number of inbound connections
+  uint32 max_inbound_connections = 1;
+
+  // Maximum number of outbound connections
+  uint32 max_outbound_connections = 2;
+
+  // Maximum connections per IP address
+  uint32 max_connections_per_ip = 3;
+
+  // Connection timeout
+  google.protobuf.Duration connection_timeout = 4 [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+
+  // Enable trusted peers only mode
+  bool trusted_peers_only = 5;
+
+  // Minimum peer diversity (different ASNs)
+  uint32 min_peer_diversity = 6;
+}
+
+message MempoolConfig {
+  // Maximum mempool size (number of transactions)
+  uint64 max_size = 1;
+
+  // Maximum mempool size in bytes
+  uint64 max_bytes = 2;
+
+  // Minimum priority fee to enter mempool
+  string min_priority_fee = 3 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Maximum transactions per account in mempool
+  uint32 max_txs_per_account = 4;
+
+  // Mempool eviction policy (oldest, lowest_fee, etc)
+  string eviction_policy = 5;
+
+  // Enable priority fee mechanism
+  bool enable_priority_fees = 6;
+}
+
+message ReputationConfig {
+  // Enable reputation tracking
+  bool enable_tracking = 1;
+
+  // Initial reputation score
+  int64 initial_score = 2;
+
+  // Minimum reputation to connect
+  int64 min_score_to_connect = 3;
+
+  // Score decay rate per block
+  int64 decay_rate = 4;
+
+  // Maximum reputation score
+  int64 max_score = 5;
+
+  // Penalty for misbehavior
+  int64 misbehavior_penalty = 6;
+
+  // Reward for good behavior
+  int64 good_behavior_reward = 7;
+}
+
+message GossipConfig {
+  // Enable message signature verification
+  bool verify_signatures = 1;
+
+  // Maximum message size
+  uint64 max_message_size = 2;
+
+  // Message TTL (time to live)
+  google.protobuf.Duration message_ttl = 3 [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+
+  // Enable redundancy filtering
+  bool enable_redundancy_filter = 4;
+
+  // Maximum gossip fanout
+  uint32 max_fanout = 5;
+}
+
+message ForkDetectionConfig {
+  // Enable fork detection
+  bool enable_detection = 1;
+
+  // Block height difference to trigger alert
+  int64 height_diff_threshold = 2;
+
+  // Enable automatic fork resolution
+  bool enable_auto_resolution = 3;
+
+  // Confirmation depth for finality
+  int64 confirmation_depth = 4;
+}
+
+message PartitionDetectionConfig {
+  // Enable partition detection
+  bool enable_detection = 1;
+
+  // Minimum connected peers to consider healthy
+  uint32 min_connected_peers = 2;
+
+  // Check interval
+  google.protobuf.Duration check_interval = 3 [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+
+  // Partition alert threshold (missing peers)
+  uint32 partition_threshold = 4;
+}
+
+message PeerInfo {
+  // Peer ID
+  string peer_id = 1;
+
+  // IP address
+  string ip_address = 2;
+
+  // Connection type (inbound/outbound)
+  string connection_type = 3;
+
+  // Connected at
+  google.protobuf.Timestamp connected_at = 4 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+
+  // Reputation score
+  int64 reputation_score = 5;
+
+  // Is trusted peer
+  bool is_trusted = 6;
+
+  // ASN (Autonomous System Number)
+  uint32 asn = 7;
+
+  // Geographic region
+  string region = 8;
+}
+
+message RateLimitEntry {
+  // Peer ID
+  string peer_id = 1;
+
+  // Current request count
+  uint64 request_count = 2;
+
+  // Window start time
+  google.protobuf.Timestamp window_start = 3 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+
+  // Is currently banned
+  bool is_banned = 4;
+
+  // Ban expires at
+  google.protobuf.Timestamp ban_expires_at = 5 [(gogoproto.stdtime) = true];
+
+  // Total bytes sent
+  uint64 bytes_sent = 6;
+
+  // Total bytes received
+  uint64 bytes_received = 7;
+}
+
+message NodeReputation {
+  // Peer ID
+  string peer_id = 1;
+
+  // Current reputation score
+  int64 score = 2;
+
+  // Last updated block height
+  int64 last_updated_height = 3;
+
+  // Total messages received
+  uint64 messages_received = 4;
+
+  // Valid messages
+  uint64 valid_messages = 5;
+
+  // Invalid messages
+  uint64 invalid_messages = 6;
+
+  // Connection uptime (seconds)
+  int64 uptime = 7;
+
+  // Misbehavior count
+  uint64 misbehavior_count = 8;
+}
+
+message TrustedPeer {
+  // Peer ID
+  string peer_id = 1;
+
+  // IP address or hostname
+  string address = 2;
+
+  // Public key
+  bytes public_key = 3;
+
+  // Description
+  string description = 4;
+
+  // Added at
+  google.protobuf.Timestamp added_at = 5 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+}
+
+message ForkAlert {
+  // Alert ID
+  string alert_id = 1;
+
+  // Block height where fork detected
+  int64 block_height = 2;
+
+  // Fork chain A block hash
+  bytes chain_a_hash = 3;
+
+  // Fork chain B block hash
+  bytes chain_b_hash = 4;
+
+  // Detected at
+  google.protobuf.Timestamp detected_at = 5 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+
+  // Resolved
+  bool resolved = 6;
+
+  // Resolution details
+  string resolution_details = 7;
+}
+
+message PartitionAlert {
+  // Alert ID
+  string alert_id = 1;
+
+  // Number of connected peers
+  uint32 connected_peers = 2;
+
+  // Expected peers
+  uint32 expected_peers = 3;
+
+  // Missing peers
+  repeated string missing_peer_ids = 4;
+
+  // Detected at
+  google.protobuf.Timestamp detected_at = 5 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+
+  // Resolved
+  bool resolved = 6;
+}
+
+message MempoolStats {
+  // Current transaction count
+  uint64 tx_count = 1;
+
+  // Current mempool size in bytes
+  uint64 size_bytes = 2;
+
+  // Average priority fee
+  string avg_priority_fee = 3 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Transactions evicted
+  uint64 evicted_count = 4;
+
+  // Rejected transactions (spam)
+  uint64 rejected_count = 5;
+}
+
+// ========================================
+// Validator Security
+// ========================================
+
+message ValidatorSecurityParams {
+  // Slashing parameters
+  string double_sign_slash_fraction = 1 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
+
+  string downtime_slash_fraction = 2 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
+
+  // Downtime tracking
+  int64 signed_blocks_window = 3;
+
+  string min_signed_per_window = 4 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
+
+  google.protobuf.Duration downtime_jail_duration = 5 [
+    (gogoproto.nullable) = false,
+    (gogoproto.stdduration) = true
+  ];
+
+  // Minimum staking requirements
+  string minimum_stake_amount = 6 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Geographical distribution
+  bool enable_geo_distribution = 7;
+  int32 max_validators_per_region = 8;
+
+  // Sentry node requirements
+  bool require_sentry_nodes = 9;
+  int32 min_sentry_nodes = 10;
+
+  // Monitoring
+  google.protobuf.Duration monitoring_interval = 11 [
+    (gogoproto.nullable) = false,
+    (gogoproto.stdduration) = true
+  ];
+
+  // Failover
+  bool enable_auto_failover = 12;
+  google.protobuf.Duration failover_timeout = 13 [
+    (gogoproto.nullable) = false,
+    (gogoproto.stdduration) = true
+  ];
+}
+
+message ValidatorSecurityInfo {
+  string validator_address = 1;
+
+  // Key separation
+  string hot_key = 2;
+  string cold_key = 3;
+  bool keys_separated = 4;
+
+  // Sentry nodes
+  repeated string sentry_node_addresses = 5;
+
+  // Geographic location
+  string region = 6;
+  string country_code = 7;
+  double latitude = 8;
+  double longitude = 9;
+
+  // Status
+  bool is_jailed = 10;
+  bool is_tombstoned = 11;
+  google.protobuf.Timestamp jailed_until = 12 [(gogoproto.stdtime) = true];
+  google.protobuf.Timestamp tombstoned_at = 13 [(gogoproto.stdtime) = true];
+
+  // Monitoring
+  int64 missed_blocks_counter = 14;
+  int64 index_offset = 15;
+  google.protobuf.Timestamp last_seen = 16 [(gogoproto.stdtime) = true];
+
+  // Backup validators
+  repeated string backup_validator_addresses = 17;
+  bool failover_active = 18;
+  string active_backup = 19;
+}
+
+message DoubleSignEvidence {
+  string validator_address = 1;
+  int64 height = 2;
+  google.protobuf.Timestamp time = 3 [(gogoproto.stdtime) = true];
+  bytes vote_a = 4;
+  bytes vote_b = 5;
+  string slash_fraction = 6 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
+}
+
+message DowntimeInfraction {
+  string validator_address = 1;
+  int64 missed_blocks = 2;
+  int64 window_size = 3;
+  google.protobuf.Timestamp detected_at = 4 [(gogoproto.stdtime) = true];
+  string slash_fraction = 5 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
+}
+
+message ValidatorAlert {
+  enum Severity {
+    INFO = 0;
+    WARNING = 1;
+    CRITICAL = 2;
+  }
+
+  enum AlertType {
+    DOWNTIME = 0;
+    DOUBLE_SIGN = 1;
+    LOW_STAKE = 2;
+    SENTRY_NODE_OFFLINE = 3;
+    GEOGRAPHIC_VIOLATION = 4;
+    KEY_COMPROMISE = 5;
+    FAILOVER_TRIGGERED = 6;
+  }
+
+  string id = 1;
+  string validator_address = 2;
+  AlertType alert_type = 3;
+  Severity severity = 4;
+  string message = 5;
+  google.protobuf.Timestamp timestamp = 6 [(gogoproto.stdtime) = true];
+  bool acknowledged = 7;
+  google.protobuf.Timestamp acknowledged_at = 8 [(gogoproto.stdtime) = true];
+  string acknowledged_by = 9;
+}
+
+message SentryNodeInfo {
+  string address = 1;
+  string validator_address = 2;
+  string ip_address = 3;
+  int32 port = 4;
+  bool is_active = 5;
+  google.protobuf.Timestamp last_heartbeat = 6 [(gogoproto.stdtime) = true];
+  int64 request_count = 7;
+  int64 blocked_requests = 8;
+}
+
+// ========================================
+// Wallet Security
+// ========================================
+
+message WalletSecurityParams {
+  // Hardware wallet requirements
+  bool require_hardware_wallet = 1;
+
+  // Multi-signature requirements
+  int32 default_multisig_threshold = 2;
+  int32 max_multisig_signers = 3;
+
+  // Social recovery parameters
+  int32 min_recovery_guardians = 4;
+  int32 max_recovery_guardians = 5;
+  google.protobuf.Duration recovery_delay = 6 [
+    (gogoproto.nullable) = false,
+    (gogoproto.stdduration) = true
+  ];
+
+  // Transaction simulation
+  bool enable_tx_simulation = 7;
+  bool require_simulation_approval = 8;
+
+  // Spending limits
+  bool enable_spending_limits = 9;
+  string default_daily_limit = 10 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Session management
+  google.protobuf.Duration default_session_timeout = 11 [
+    (gogoproto.nullable) = false,
+    (gogoproto.stdduration) = true
+  ];
+  int32 max_concurrent_sessions = 12;
+
+  // Phishing protection
+  bool enable_phishing_protection = 13;
+  bool require_domain_verification = 14;
+
+  // Dust attack protection
+  bool enable_dust_filter = 15;
+  string min_acceptable_amount = 16 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+}
+
+enum HardwareWalletType {
+  HARDWARE_WALLET_TYPE_UNSPECIFIED = 0;
+  HARDWARE_WALLET_TYPE_LEDGER = 1;
+  HARDWARE_WALLET_TYPE_TREZOR = 2;
+  HARDWARE_WALLET_TYPE_KEEPKEY = 3;
+  HARDWARE_WALLET_TYPE_COLDCARD = 4;
+}
+
+message HardwareWalletConfig {
+  string wallet_id = 1;
+  string address = 2;
+  HardwareWalletType type = 3;
+  string device_id = 4;
+  string firmware_version = 5;
+  string derivation_path = 6;
+  bool requires_pin = 7;
+  bool requires_passphrase = 8;
+  google.protobuf.Timestamp registered_at = 9 [(gogoproto.stdtime) = true];
+  google.protobuf.Timestamp last_used_at = 10 [(gogoproto.stdtime) = true];
+  int32 signature_count = 11;
+  map<string, string> metadata = 12;
+}
+
+message MultiSigWallet {
+  string wallet_id = 1;
+  repeated string signers = 2;
+  int32 threshold = 3;
+  int32 total_signers = 4;
+  google.protobuf.Timestamp created_at = 5 [(gogoproto.stdtime) = true];
+  string creator = 6;
+  map<string, int32> signer_weights = 7;
+  int32 weight_threshold = 8;
+  bool time_locked = 9;
+  google.protobuf.Timestamp unlock_time = 10 [(gogoproto.stdtime) = true];
+  repeated string pending_signers = 11;
+}
+
+message PendingMultiSigTransaction {
+  string tx_id = 1;
+  string wallet_id = 2;
+  bytes tx_data = 3;
+  repeated string signatures = 4;
+  repeated string signed_by = 5;
+  int32 current_weight = 6;
+  google.protobuf.Timestamp created_at = 7 [(gogoproto.stdtime) = true];
+  google.protobuf.Timestamp expires_at = 8 [(gogoproto.stdtime) = true];
+  string tx_type = 9;
+  string description = 10;
+  TransactionSimulation simulation_result = 11;
+}
+
+message SocialRecoveryConfig {
+  string wallet_id = 1;
+  repeated Guardian guardians = 2;
+  int32 recovery_threshold = 3;
+  google.protobuf.Duration recovery_delay = 4 [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+  bool enabled = 5;
+  google.protobuf.Timestamp configured_at = 6 [(gogoproto.stdtime) = true];
+  google.protobuf.Timestamp last_modified = 7 [(gogoproto.stdtime) = true];
+  int32 max_guardians = 8;
+}
+
+message Guardian {
+  string address = 1;
+  string name = 2;
+  string contact_hash = 3;
+  bool confirmed = 4;
+  google.protobuf.Timestamp added_at = 5 [(gogoproto.stdtime) = true];
+  google.protobuf.Timestamp confirmed_at = 6 [(gogoproto.stdtime) = true];
+  int32 recovery_requests_count = 7;
+}
+
+enum RecoveryStatus {
+  RECOVERY_STATUS_UNSPECIFIED = 0;
+  RECOVERY_STATUS_PENDING = 1;
+  RECOVERY_STATUS_APPROVED = 2;
+  RECOVERY_STATUS_EXECUTED = 3;
+  RECOVERY_STATUS_CANCELLED = 4;
+  RECOVERY_STATUS_EXPIRED = 5;
+}
+
+message RecoveryRequest {
+  string request_id = 1;
+  string wallet_id = 2;
+  string new_address = 3;
+  repeated string approvals = 4;
+  int32 approvals_count = 5;
+  google.protobuf.Timestamp initiated_at = 6 [(gogoproto.stdtime) = true];
+  google.protobuf.Timestamp executable_at = 7 [(gogoproto.stdtime) = true];
+  google.protobuf.Timestamp executed_at = 8 [(gogoproto.stdtime) = true];
+  RecoveryStatus status = 9;
+  string initiator = 10;
+}
+
+enum SimulationRisk {
+  SIMULATION_RISK_UNSPECIFIED = 0;
+  SIMULATION_RISK_LOW = 1;
+  SIMULATION_RISK_MEDIUM = 2;
+  SIMULATION_RISK_HIGH = 3;
+  SIMULATION_RISK_CRITICAL = 4;
+}
+
+message TransactionSimulation {
+  bool success = 1;
+  string error_message = 2;
+  int64 gas_used = 3;
+  int64 gas_wanted = 4;
+  repeated StateChange state_changes = 5;
+  repeated BalanceChange balance_changes = 6;
+  repeated string warnings = 7;
+  google.protobuf.Timestamp simulated_at = 8 [(gogoproto.stdtime) = true];
+  SimulationRisk risk_level = 9;
+}
+
+message StateChange {
+  string key = 1;
+  bytes old_value = 2;
+  bytes new_value = 3;
+  string module = 4;
+}
+
+message BalanceChange {
+  string address = 1;
+  string denom = 2;
+  string amount_before = 3;
+  string amount_after = 4;
+  string delta = 5;
+}
+
+message SpendingLimit {
+  string wallet_id = 1;
+  string denom = 2;
+  string daily_limit = 3;
+  string weekly_limit = 4;
+  string monthly_limit = 5;
+  string current_daily_spent = 6;
+  string current_weekly_spent = 7;
+  string current_monthly_spent = 8;
+  google.protobuf.Timestamp daily_reset_at = 9 [(gogoproto.stdtime) = true];
+  google.protobuf.Timestamp weekly_reset_at = 10 [(gogoproto.stdtime) = true];
+  google.protobuf.Timestamp monthly_reset_at = 11 [(gogoproto.stdtime) = true];
+  bool enabled = 12;
+}
+
+enum BiometricType {
+  BIOMETRIC_TYPE_UNSPECIFIED = 0;
+  BIOMETRIC_TYPE_FINGERPRINT = 1;
+  BIOMETRIC_TYPE_FACE = 2;
+  BIOMETRIC_TYPE_IRIS = 3;
+  BIOMETRIC_TYPE_VOICE = 4;
+}
+
+message BiometricAuth {
+  string wallet_id = 1;
+  BiometricType type = 2;
+  string enrollment_hash = 3;
+  google.protobuf.Timestamp enrolled_at = 4 [(gogoproto.stdtime) = true];
+  bool enabled = 5;
+  int32 failed_attempts = 6;
+  google.protobuf.Timestamp last_attempt = 7 [(gogoproto.stdtime) = true];
+  bool locked_out = 8;
+  google.protobuf.Timestamp lockout_until = 9 [(gogoproto.stdtime) = true];
+}
+
+// ========================================
+// Incident Response
+// ========================================
+
+message IncidentResponseParams {
+  // Incident detection
+  bool enable_auto_detection = 1;
+  google.protobuf.Duration detection_interval = 2 [
+    (gogoproto.nullable) = false,
+    (gogoproto.stdduration) = true
+  ];
+
+  // Response automation
+  bool enable_auto_response = 3;
+  repeated string auto_response_actions = 4;
+
+  // Severity thresholds
+  int32 critical_incident_threshold = 5;
+  int32 high_incident_threshold = 6;
+  int32 medium_incident_threshold = 7;
+
+  // Notification settings
+  repeated string notification_endpoints = 8;
+  bool enable_sms_alerts = 9;
+  bool enable_email_alerts = 10;
+
+  // Audit trail
+  bool enable_audit_trail = 11;
+  int64 audit_retention_days = 12;
+}
+
+enum IncidentSeverity {
+  INCIDENT_SEVERITY_UNSPECIFIED = 0;
+  INCIDENT_SEVERITY_LOW = 1;
+  INCIDENT_SEVERITY_MEDIUM = 2;
+  INCIDENT_SEVERITY_HIGH = 3;
+  INCIDENT_SEVERITY_CRITICAL = 4;
+}
+
+enum IncidentStatus {
+  INCIDENT_STATUS_UNSPECIFIED = 0;
+  INCIDENT_STATUS_DETECTED = 1;
+  INCIDENT_STATUS_INVESTIGATING = 2;
+  INCIDENT_STATUS_MITIGATING = 3;
+  INCIDENT_STATUS_RESOLVED = 4;
+  INCIDENT_STATUS_CLOSED = 5;
+}
+
+message Incident {
+  string incident_id = 1;
+  string title = 2;
+  string description = 3;
+  IncidentSeverity severity = 4;
+  IncidentStatus status = 5;
+  google.protobuf.Timestamp detected_at = 6 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+  google.protobuf.Timestamp updated_at = 7 [(gogoproto.stdtime) = true];
+  google.protobuf.Timestamp resolved_at = 8 [(gogoproto.stdtime) = true];
+  repeated string affected_systems = 9;
+  repeated string indicators_of_compromise = 10;
+  repeated ResponseAction response_actions = 11;
+  string assigned_to = 12;
+  map<string, string> metadata = 13;
+}
+
+message ResponseAction {
+  string action_id = 1;
+  string action_type = 2;
+  string description = 3;
+  google.protobuf.Timestamp executed_at = 4 [(gogoproto.stdtime) = true];
+  bool successful = 5;
+  string result = 6;
+  string executed_by = 7;
+}
+
+message AuditLogEntry {
+  string log_id = 1;
+  google.protobuf.Timestamp timestamp = 2 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+  string event_type = 3;
+  string actor = 4;
+  string resource = 5;
+  string action = 6;
+  bool success = 7;
+  string ip_address = 8;
+  string user_agent = 9;
+  map<string, string> metadata = 10;
+}
+
+// ========================================
+// Cryptography
+// ========================================
+
+message CryptographyParams {
+  // Key rotation
+  int32 default_rotation_interval_days = 1;
+  bool enable_auto_rotation = 2;
+
+  // Threshold signatures
+  int32 min_threshold_participants = 3;
+  int32 max_threshold_participants = 4;
+
+  // Random number generation
+  int32 min_entropy_bits = 5;
+
+  // Key stretching
+  int32 min_pbkdf2_iterations = 6;
+  int32 min_argon2_memory_kb = 7;
+  int32 min_argon2_iterations = 8;
+
+  // Certificate pinning
+  bool enforce_certificate_pinning = 9;
+  int32 certificate_pin_validity_days = 10;
+
+  // General security
+  int32 min_salt_length_bytes = 11;
+  int32 min_key_length_bits = 12;
+}
+
+message KeyRotationSchedule {
+  string id = 1;
+  string key_id = 2;
+  google.protobuf.Timestamp next_rotation_time = 3 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  int64 rotation_interval_seconds = 4;
+  bool enabled = 5;
+  string created_by = 6;
+  KeyRotationPolicy policy = 7;
+  google.protobuf.Timestamp last_rotation = 8 [(gogoproto.stdtime) = true];
+}
+
+message KeyRotationPolicy {
+  int32 max_age_days = 1;
+  int32 warning_days_before_expiry = 2;
+  bool auto_rotate = 3;
+  int32 max_rotation_attempts = 4;
+  repeated string notification_addresses = 5;
+}
+
+enum ThresholdSchemeType {
+  THRESHOLD_SCHEME_TYPE_UNSPECIFIED = 0;
+  THRESHOLD_SCHEME_TYPE_ECDSA = 1;
+  THRESHOLD_SCHEME_TYPE_EDDSA = 2;
+  THRESHOLD_SCHEME_TYPE_BLS = 3;
+  THRESHOLD_SCHEME_TYPE_SCHNORR = 4;
+}
+
+enum ThresholdSchemeStatus {
+  THRESHOLD_SCHEME_STATUS_UNSPECIFIED = 0;
+  THRESHOLD_SCHEME_STATUS_INITIALIZING = 1;
+  THRESHOLD_SCHEME_STATUS_ACTIVE = 2;
+  THRESHOLD_SCHEME_STATUS_SUSPENDED = 3;
+  THRESHOLD_SCHEME_STATUS_REVOKED = 4;
+}
+
+message ThresholdSignatureScheme {
+  string scheme_id = 1;
+  int32 threshold = 2;
+  int32 total_participants = 3;
+  repeated string participant_ids = 4;
+  ThresholdSchemeType scheme_type = 5;
+  bytes public_key = 6;
+  google.protobuf.Timestamp created_at = 7 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  ThresholdSchemeStatus status = 8;
+}
+
+enum ZKProofType {
+  ZK_PROOF_TYPE_UNSPECIFIED = 0;
+  ZK_PROOF_TYPE_GROTH16 = 1;
+  ZK_PROOF_TYPE_PLONK = 2;
+  ZK_PROOF_TYPE_BULLETPROOFS = 3;
+  ZK_PROOF_TYPE_STARK = 4;
+}
+
+message ZKProofConfig {
+  string proof_id = 1;
+  ZKProofType proof_type = 2;
+  bytes public_parameters = 3;
+  bytes verification_key = 4;
+  string circuit_id = 5;
+  google.protobuf.Timestamp created_at = 6 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+}
+
+enum QuantumResistantAlgorithm {
+  QUANTUM_RESISTANT_ALGORITHM_UNSPECIFIED = 0;
+  QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_DILITHIUM = 1;
+  QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_KYBER = 2;
+  QUANTUM_RESISTANT_ALGORITHM_FALCON = 3;
+  QUANTUM_RESISTANT_ALGORITHM_SPHINCS_PLUS = 4;
+  QUANTUM_RESISTANT_ALGORITHM_NTRU = 5;
+}
+
+message QuantumResistantKey {
+  string key_id = 1;
+  QuantumResistantAlgorithm algorithm = 2;
+  bytes public_key = 3;
+  bytes key_metadata = 4;
+  google.protobuf.Timestamp created_at = 5 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  google.protobuf.Timestamp expires_at = 6 [(gogoproto.stdtime) = true];
+}
+
+// ========================================
+// Privacy
+// ========================================
+
+message PrivacyParams {
+  // Enable privacy features
+  bool enable_zk_proofs = 1;
+  bool enable_stealth_addresses = 2;
+  bool enable_ring_signatures = 3;
+  bool enable_confidential_transactions = 4;
+  bool enable_network_privacy = 5;
+  bool enable_mixing = 6;
+
+  // Ring signature parameters
+  uint32 min_ring_size = 7;
+  uint32 max_ring_size = 8;
+
+  // Mixing parameters
+  uint32 min_mixing_participants = 9;
+  string mixing_fee = 10 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // ZK proof verification cost
+  uint64 zk_proof_verification_cost = 11;
+}
+
+message StealthAddress {
+  bytes public_spend_key = 1;
+  bytes public_view_key = 2;
+  bytes one_time_address = 3;
+  bytes tx_public_key = 4;
+  bytes encrypted_amount = 5;
+  google.protobuf.Timestamp created_at = 6 [(gogoproto.stdtime) = true];
+}
+
+message RingSignature {
+  bytes key_image = 1;
+  repeated bytes ring_members = 2;
+  bytes signature_data = 3;
+  uint32 ring_size = 4;
+  uint32 mixin_level = 5;
+  google.protobuf.Timestamp created_at = 6 [(gogoproto.stdtime) = true];
+}
+
+message ConfidentialTransaction {
+  bytes commitment = 1;
+  bytes range_proof = 2;
+  bytes blinding_factor = 3;
+  bytes encrypted_amount = 4;
+  string asset_id = 5;
+  google.protobuf.Timestamp created_at = 6 [(gogoproto.stdtime) = true];
+}
+
+message MixingPool {
+  string pool_id = 1;
+  repeated bytes participants = 2;
+  uint32 min_participants = 3;
+  uint32 max_participants = 4;
+  string denomination = 5 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+  uint32 mixing_rounds = 6;
+  string status = 7;
+  google.protobuf.Timestamp deadline = 8 [(gogoproto.stdtime) = true];
+  google.protobuf.Timestamp created_at = 9 [(gogoproto.stdtime) = true];
+}

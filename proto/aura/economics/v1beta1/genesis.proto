@@ -1,0 +1,61 @@
+syntax = "proto3";
+package aura.economics.v1beta1;
+
+option go_package = "github.com/aequitas/aura/proto/aura/economics/v1beta1";
+
+import "gogoproto/gogo.proto";
+import "aura/economics/v1beta1/economics.proto";
+
+// GenesisState defines the economics module's genesis state
+message GenesisState {
+  // Module parameters
+  Params params = 1 [(gogoproto.nullable) = false];
+
+  // Vesting schedules
+  repeated VestingSchedule vesting_schedules = 2 [(gogoproto.nullable) = false];
+
+  // Governance proposals
+  repeated Proposal proposals = 3 [(gogoproto.nullable) = false];
+
+  // Votes
+  repeated Vote votes = 4 [(gogoproto.nullable) = false];
+
+  // Deposits
+  repeated Deposit deposits = 5 [(gogoproto.nullable) = false];
+
+  // Vote locks
+  repeated VoteLock vote_locks = 6 [(gogoproto.nullable) = false];
+
+  // Vote delegations
+  repeated VoteDelegation vote_delegations = 7 [(gogoproto.nullable) = false];
+
+  // Pending treasury transactions
+  repeated PendingTreasuryTx pending_treasury_txs = 8 [(gogoproto.nullable) = false];
+
+  // Inflation metrics
+  InflationMetrics inflation_metrics = 9;
+
+  // MEV statistics
+  MEVStats mev_stats = 10;
+
+  // Liquidity mining statistics
+  LiquidityMiningStats liquidity_mining_stats = 11;
+
+  // User MEV balances
+  map<string, string> user_mev_balances = 12;
+
+  // Last large transaction timestamps (for whale protection cooldown tracking)
+  map<string, int64> last_large_tx_times = 13;
+
+  // Next proposal ID
+  uint64 next_proposal_id = 14;
+
+  // Next vesting schedule ID
+  uint64 next_vesting_schedule_id = 15;
+
+  // Next vote lock ID
+  uint64 next_vote_lock_id = 16;
+
+  // Next treasury tx ID
+  uint64 next_treasury_tx_id = 17;
+}
