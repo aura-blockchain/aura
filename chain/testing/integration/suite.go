@@ -164,3 +164,96 @@ func (s *ModuleInteractionTest) TestEconomicSecurityAndValidatorSecurity() {
 func RunIntegrationTests(t *testing.T) {
 	suite.Run(t, new(ModuleInteractionTest))
 }
+
+// WASMTestContext provides a test context for WASM integration tests
+// This is a stub type to allow tests to compile - full implementation needed
+type WASMTestContext struct {
+	T                *testing.T
+	Ctx              sdk.Context
+	App              *app.App
+	WasmKeeper       interface{}
+	RegistryKeeper   interface{}
+	VCKeeper         interface{}
+	ComplianceKeeper interface{}
+	CSKeeper         interface{}
+}
+
+// SetupTestAppWithWasm creates a test application with WASM support
+// This is a stub implementation - full implementation needed
+func SetupTestAppWithWasm(t *testing.T) WASMTestContext {
+	return WASMTestContext{
+		T:                t,
+		Ctx:              sdk.Context{},
+		App:              nil,
+		WasmKeeper:       &mockWasmKeeper{},
+		RegistryKeeper:   &mockRegistryKeeper{},
+		VCKeeper:         &mockVCKeeper{},
+		ComplianceKeeper: &mockComplianceKeeper{},
+		CSKeeper:         &mockCSKeeper{},
+	}
+}
+
+// Helper methods for WASMTestContext
+func (w WASMTestContext) GetContext() sdk.Context {
+	return w.Ctx
+}
+
+// Mock keepers for testing
+type mockWasmKeeper struct{}
+type mockRegistryKeeper struct{}
+type mockVCKeeper struct{}
+type mockComplianceKeeper struct{}
+type mockCSKeeper struct{}
+
+// Stub methods - these would need actual implementation for real testing
+func (w WASMTestContext) CreateAuthorizedUploader() interface{} {
+	return nil
+}
+
+func (w WASMTestContext) CreateMockWASMCode() []byte {
+	return []byte{}
+}
+
+func (w WASMTestContext) UploadTestContract(uploader interface{}) uint64 {
+	return 0
+}
+
+func (w WASMTestContext) SetupCompleteContract(uploader interface{}, metadata interface{}) sdk.AccAddress {
+	return sdk.AccAddress{}
+}
+
+func (w WASMTestContext) SetupCompleteContractWithPolicy(uploader interface{}, metadata interface{}, policy interface{}) sdk.AccAddress {
+	return sdk.AccAddress{}
+}
+
+func (w WASMTestContext) RegisterContractInRegistry(ctx sdk.Context, addr string, codeID uint64, creator string) {
+}
+
+func (w WASMTestContext) CreateUserWithoutVC() interface{} {
+	return nil
+}
+
+func (w WASMTestContext) CreateUserWithVC(vcType string) interface{} {
+	return nil
+}
+
+func (w WASMTestContext) CreateUserWithKYCLevel(level uint32) interface{} {
+	return nil
+}
+
+func (w WASMTestContext) CreateUserWithConfidenceScore(score uint64) interface{} {
+	return nil
+}
+
+func (w WASMTestContext) ExecuteAsUser(ctx sdk.Context, contractAddr sdk.AccAddress, user interface{}, msg []byte) ([]byte, error) {
+	return nil, nil
+}
+
+// TestUser is a helper type for user mocking
+type TestUser struct {
+	Address sdk.AccAddress
+}
+
+func (u *TestUser) GetAddress() sdk.AccAddress {
+	return u.Address
+}
