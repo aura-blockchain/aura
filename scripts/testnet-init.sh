@@ -80,7 +80,7 @@ for i in $(seq 0 $((NUM_VALIDATORS - 1))); do
     "${BINARY_PATH}" init "${MONIKER}" \
         --chain-id "${CHAIN_ID}" \
         --home "${NODE_HOME}" \
-        --overwrite > /dev/null 2>&1
+        -y > /dev/null 2>&1
 
     echo -e "  ${GREEN}✓ ${MONIKER} initialized${NC}"
 done
@@ -330,15 +330,15 @@ echo -e "  3. View logs:"
 echo -e "     ${BLUE}docker-compose -f docker-compose.testnet.yml logs -f validator-1${NC}"
 echo ""
 echo -e "  4. Check node status:"
-echo -e "     ${BLUE}curl http://localhost:26657/status${NC}"
+echo -e "     ${BLUE}curl http://localhost:27657/status${NC}"
 echo ""
 echo -e "${YELLOW}Port Mappings:${NC}"
-echo -e "  validator-1: RPC=26657, API=1317, P2P=26656, gRPC=9090, Metrics=26660"
-echo -e "  validator-2: RPC=26757, API=1417, P2P=26756, gRPC=9190, Metrics=26760"
-echo -e "  validator-3: RPC=26857, API=1517, P2P=26856, gRPC=9290, Metrics=26860"
-echo -e "  validator-4: RPC=26957, API=1617, P2P=26956, gRPC=9390, Metrics=26960"
+echo -e "  validator-1: RPC=27657, API=2317, P2P=27656, gRPC=10090, Metrics=27660"
+echo -e "  validator-2: RPC=27757, API=2417, P2P=27756, gRPC=10190, Metrics=27760"
+echo -e "  validator-3: RPC=27857, API=2517, P2P=27856, gRPC=10290, Metrics=27860"
+echo -e "  validator-4: RPC=27957, API=2617, P2P=27956, gRPC=10390, Metrics=27960"
 echo ""
-echo -e "  Monitoring: Prometheus=9091, Grafana=3001"
+echo -e "  Monitoring: Prometheus=9094, Grafana=3002"
 echo ""
 echo -e "${GREEN}Happy testing!${NC}"
 echo -e "${BLUE}============================================================================${NC}"

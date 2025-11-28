@@ -85,6 +85,7 @@ The moniker is a human-readable name for the node.`,
 	cmd.Flags().String(FlagChainID, DefaultChainID, "chain ID for the network")
 	cmd.Flags().String(FlagMoniker, DefaultMoniker, "moniker (name) for this node")
 	cmd.Flags().Bool("recover", false, "recover validator key from existing mnemonic")
+	cmd.Flags().BoolP("yes", "y", false, "skip mnemonic confirmation prompt (non-interactive mode)")
 
 	// Bind flags to viper with error checking
 	if flag := cmd.Flags().Lookup(FlagChainID); flag != nil {
@@ -116,6 +117,7 @@ func initNode(cmd *cobra.Command, args []string) error {
 	chainID := viper.GetString(FlagChainID)
 	homeDir := GetHomeDir()
 	recover, _ := cmd.Flags().GetBool("recover")
+	skipConfirmation, _ := cmd.Flags().GetBool("yes")
 
 	// Validate inputs
 	inputValidator := security.NewInputValidator(logger)
@@ -139,7 +141,7 @@ func initNode(cmd *cobra.Command, args []string) error {
 	}
 
 	// Generate or recover private validator key with BIP39 mnemonic
-	keyInfo, err := createPrivateValidatorWithMnemonic(homeDir, recover)
+	keyInfo, err := createPrivateValidatorWithMnemonic(homeDir, recover, skipConfirmation)
 	if err != nil {
 		return fmt.Errorf("failed to create private validator: %w", err)
 	}
@@ -162,7 +164,7 @@ func initNode(cmd *cobra.Command, args []string) error {
 
 // createPrivateValidatorWithMnemonic generates a private validator key using BIP39 mnemonic
 // or recovers from an existing mnemonic if recover is true.
-func createPrivateValidatorWithMnemonic(homeDir string, recover bool) (*ValidatorKeyInfo, error) {
+func createPrivateValidatorWithMnemonic(homeDir string, recover bool, skipConfirmation bool) (*ValidatorKeyInfo, error) {
 	keyFile := filepath.Join(homeDir, "config", "priv_validator_key.json")
 	stateFile := filepath.Join(homeDir, "data", "priv_validator_state.json")
 
@@ -197,7 +199,7 @@ func createPrivateValidatorWithMnemonic(homeDir string, recover bool) (*Validato
 		}
 
 		// Display mnemonic with security warnings
-		displayMnemonicSecurely(mnemonic)
+		displayMnemonicSecurely(mnemonic, skipConfirmation)
 	}
 
 	// Derive ed25519 key from mnemonic (same for both new and recovered)
@@ -432,7 +434,7 @@ func hmacSHA512(key, data []byte) []byte {
 }
 
 // displayMnemonicSecurely displays the mnemonic with security warnings
-func displayMnemonicSecurely(mnemonic string) {
+func displayMnemonicSecurely(mnemonic string, skipConfirmation bool) {
 	fmt.Println()
 	fmt.Println("╔══════════════════════════════════════════════════════════════════════╗")
 	fmt.Println("║                    IMPORTANT - SAVE YOUR MNEMONIC                    ║")
@@ -453,8 +455,12 @@ func displayMnemonicSecurely(mnemonic string) {
 	}
 
 	fmt.Println()
-	fmt.Println("Press Enter after you have safely recorded your mnemonic...")
-	fmt.Scanln()
+	if !skipConfirmation {
+		fmt.Println("Press Enter after you have safely recorded your mnemonic...")
+		fmt.Scanln()
+	} else {
+		fmt.Println("(Non-interactive mode: skipping mnemonic confirmation)")
+	}
 }
 
 // deriveValidatorAddresses derives all address formats from an ed25519 public key

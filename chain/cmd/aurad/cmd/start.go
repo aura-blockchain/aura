@@ -822,12 +822,29 @@ func getVersion() string {
 
 // GetHomeDir returns the configured home directory with path validation
 func GetHomeDir() string {
-	homeDir := viper.GetString(flags.FlagHome)
-	if homeDir != "" {
+	// Try multiple sources for home directory:
+	// Priority order (flag value takes precedence over viper defaults):
+	// 1. Package-level homeDir variable from root.go (set by --home flag)
+	// 2. Viper with cosmos-sdk flag key
+	// 3. Viper with simple "home" key
+	// 4. Fall back to default
+
+	// First check the flag variable - this is set directly by cobra flag parsing
+	dir := GetHomeDirVar()
+
+	// If not set, try viper
+	if dir == "" {
+		dir = viper.GetString(flags.FlagHome)
+	}
+	if dir == "" {
+		dir = viper.GetString("home")
+	}
+
+	if dir != "" {
 		// Validate the home directory path
 		logger := security.NewConsoleLogger()
 		validator := security.NewPathValidator(logger)
-		validPath, err := validator.ValidateAndCleanHomePath(homeDir)
+		validPath, err := validator.ValidateAndCleanHomePath(dir)
 		if err != nil {
 			// Log error but fall back to default
 			logger.Error("Invalid home directory path: %v", err)

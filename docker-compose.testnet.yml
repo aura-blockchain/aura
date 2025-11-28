@@ -36,16 +36,16 @@ services:
     hostname: validator-1
     restart: unless-stopped
     ports:
-      # P2P
-      - "26656:26656"
+      # P2P (base + 1000)
+      - "27656:26656"
       # RPC
-      - "26657:26657"
+      - "27657:26657"
       # REST API
-      - "1317:1317"
+      - "2317:1317"
       # gRPC
-      - "9090:9090"
+      - "10090:9090"
       # Prometheus metrics
-      - "26660:26660"
+      - "27660:26660"
     volumes:
       - validator-1-data:/home/aura/.aura
       - ./scripts:/scripts:ro
@@ -86,15 +86,15 @@ services:
     restart: unless-stopped
     ports:
       # P2P (offset by 100)
-      - "26756:26656"
+      - "27756:26656"
       # RPC
-      - "26757:26657"
+      - "27757:26657"
       # REST API
-      - "1417:1317"
+      - "2417:1317"
       # gRPC
-      - "9190:9090"
+      - "10190:9090"
       # Prometheus metrics
-      - "26760:26660"
+      - "27760:26660"
     volumes:
       - validator-2-data:/home/aura/.aura
       - ./scripts:/scripts:ro
@@ -137,15 +137,15 @@ services:
     restart: unless-stopped
     ports:
       # P2P (offset by 200)
-      - "26856:26656"
+      - "27856:26656"
       # RPC
-      - "26857:26657"
+      - "27857:26657"
       # REST API
-      - "1517:1317"
+      - "2517:1317"
       # gRPC
-      - "9290:9090"
+      - "10290:9090"
       # Prometheus metrics
-      - "26860:26660"
+      - "27860:26660"
     volumes:
       - validator-3-data:/home/aura/.aura
       - ./scripts:/scripts:ro
@@ -188,15 +188,15 @@ services:
     restart: unless-stopped
     ports:
       # P2P (offset by 300)
-      - "26956:26656"
+      - "27956:26656"
       # RPC
-      - "26957:26657"
+      - "27957:26657"
       # REST API
-      - "1617:1317"
+      - "2617:1317"
       # gRPC
-      - "9390:9090"
+      - "10390:9090"
       # Prometheus metrics
-      - "26960:26660"
+      - "27960:26660"
     volumes:
       - validator-4-data:/home/aura/.aura
       - ./scripts:/scripts:ro
@@ -231,7 +231,7 @@ services:
     container_name: aura-testnet-prometheus
     restart: unless-stopped
     ports:
-      - "9091:9090"
+      - "9094:9090"
     volumes:
       - ./prometheus/prometheus-testnet.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-testnet-data:/prometheus
@@ -259,7 +259,7 @@ services:
     container_name: aura-testnet-grafana
     restart: unless-stopped
     ports:
-      - "3001:3000"
+      - "3002:3000"
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
@@ -268,7 +268,7 @@ services:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=aura-testnet-admin
       - GF_USERS_ALLOW_SIGN_UP=false
-      - GF_SERVER_ROOT_URL=http://localhost:3001
+      - GF_SERVER_ROOT_URL=http://localhost:3002
       - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/aura-testnet.json
     networks:
       - aura-testnet

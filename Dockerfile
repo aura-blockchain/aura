@@ -25,13 +25,13 @@ FROM golang:1.21-alpine AS builder
 RUN addgroup -g 10001 builder && \
     adduser -D -u 10001 -G builder builder
 
-# Install build dependencies with specific versions for reproducibility
+# Install build dependencies
 RUN apk add --no-cache \
-    git=~2.40 \
-    make=~4.4 \
-    gcc=~12.2 \
-    musl-dev=~1.2 \
-    linux-headers=~6.3 \
+    git \
+    make \
+    gcc \
+    musl-dev \
+    linux-headers \
     ca-certificates
 
 WORKDIR /app
