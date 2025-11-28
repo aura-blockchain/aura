@@ -140,9 +140,9 @@ All modules have keepers, protos, and tests:
 - [ ] Test state synchronization
 
 ### Monitoring
-- [ ] Deploy: `docker-compose -f docker-compose.monitoring.yml up -d`
-- [ ] Import dashboards from `/grafana/dashboards/`
-- [ ] Configure alerts for chain halt, high resource usage, low peer count
+- [x] Deploy: `docker-compose -f docker-compose.monitoring.yml up -d` (config ready)
+- [x] Import dashboards from `/grafana/dashboards/` → `/docker/monitoring/grafana/dashboards/`
+- [x] Configure alerts for chain halt, high resource usage, low peer count → `/docker/monitoring/prometheus/rules/aura-alerts.yml`
 
 ---
 
