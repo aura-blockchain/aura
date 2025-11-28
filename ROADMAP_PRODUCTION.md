@@ -1,6 +1,6 @@
 # AURA Production Roadmap
 
-**Status:** 80% Complete | **Chain:** Cosmos SDK 0.53.4 + CometBFT | **Build:** ✅ Passing | **Local Testnet:** ✅ Running
+**Status:** 85% Complete | **Chain:** Cosmos SDK 0.53.4 + CometBFT | **Build:** ✅ Passing | **Local Testnet:** ✅ Running (Block 4900+)
 
 ---
 
@@ -124,7 +124,8 @@ All modules have keepers, protos, and tests:
 - [ ] Compliance: Configure AML rules, test transaction screening
 
 ### Smart Contracts
-- [ ] Deploy vc-issuer: `aurad tx wasm store contracts/artifacts/vc_issuer.wasm`
+- [x] WASM CLI commands implemented: `aurad tx aura_wasm_security [store|instantiate|execute|migrate]`
+- [ ] Deploy vc-issuer: `aurad tx aura_wasm_security store contracts/artifacts/vc_issuer.wasm`
 - [ ] Instantiate and test execute/query
 - [ ] Benchmark gas consumption
 
