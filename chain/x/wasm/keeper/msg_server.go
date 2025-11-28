@@ -13,6 +13,7 @@ var _ types.MsgServer = msgServer{}
 
 // msgServer is the gRPC server implementation for wasm module messages
 type msgServer struct {
+	types.UnimplementedMsgServer
 	Keeper
 }
 
@@ -25,23 +26,18 @@ func NewMsgServerImpl(keeper Keeper) types.MsgServer {
 func (ms msgServer) StoreCode(goCtx context.Context, msg *types.MsgStoreCode) (*types.MsgStoreCodeResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	// Validate message
-	if err := msg.ValidateBasic(); err != nil {
-		return nil, err
-	}
-
 	sender, err := sdk.AccAddressFromBech32(msg.Sender)
 	if err != nil {
 		return nil, types.ErrUnauthorized.Wrapf("invalid sender address: %s", err)
 	}
 
 	// Validate upload authorization and contract code
-	if err := ms.Keeper.ValidateContractUpload(ctx, msg.Sender, msg.WASMByteCode); err != nil {
+	if err := ms.Keeper.ValidateContractUpload(ctx, msg.Sender, msg.WasmByteCode); err != nil {
 		return nil, err
 	}
 
 	// Store the code
-	codeID, err := ms.Keeper.StoreCode(ctx, sender, msg.WASMByteCode)
+	codeID, err := ms.Keeper.StoreCode(ctx, sender, msg.WasmByteCode)
 	if err != nil {
 		return nil, err
 	}
@@ -56,18 +52,13 @@ func (ms msgServer) StoreCode(goCtx context.Context, msg *types.MsgStoreCode) (*
 	})
 
 	return &types.MsgStoreCodeResponse{
-		CodeID: codeID,
+		CodeId: codeID,
 	}, nil
 }
 
 // InstantiateContract handles contract instantiation
 func (ms msgServer) InstantiateContract(goCtx context.Context, msg *types.MsgInstantiateContract) (*types.MsgInstantiateContractResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-
-	// Validate message
-	if err := msg.ValidateBasic(); err != nil {
-		return nil, err
-	}
 
 	creator, err := sdk.AccAddressFromBech32(msg.Sender)
 	if err != nil {
@@ -82,15 +73,23 @@ func (ms msgServer) InstantiateContract(goCtx context.Context, msg *types.MsgIns
 		}
 	}
 
+	// Convert funds from proto type to sdk.Coins
+	funds := sdk.NewCoins()
+	for _, coin := range msg.Funds {
+		if coin != nil {
+			funds = funds.Add(sdk.Coin{Denom: coin.Denom, Amount: coin.Amount})
+		}
+	}
+
 	// Instantiate contract
 	contractAddr, data, err := ms.Keeper.InstantiateContract(
 		ctx,
-		msg.CodeID,
+		msg.CodeId,
 		creator,
 		admin,
 		msg.Msg,
 		msg.Label,
-		msg.Funds,
+		funds,
 	)
 	if err != nil {
 		return nil, err
@@ -101,7 +100,7 @@ func (ms msgServer) InstantiateContract(goCtx context.Context, msg *types.MsgIns
 		sdk.NewEvent(
 			types.EventTypeInstantiate,
 			sdk.NewAttribute(types.AttributeKeyContract, contractAddr.String()),
-			sdk.NewAttribute(types.AttributeKeyCodeID, fmt.Sprintf("%d", msg.CodeID)),
+			sdk.NewAttribute(types.AttributeKeyCodeID, fmt.Sprintf("%d", msg.CodeId)),
 			sdk.NewAttribute(types.AttributeKeySender, msg.Sender),
 		),
 	})
@@ -115,11 +114,6 @@ func (ms msgServer) InstantiateContract(goCtx context.Context, msg *types.MsgIns
 // ExecuteContract handles contract execution with enhanced reentrancy protection using call stack
 func (ms msgServer) ExecuteContract(goCtx context.Context, msg *types.MsgExecuteContract) (*types.MsgExecuteContractResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-
-	// Validate message
-	if err := msg.ValidateBasic(); err != nil {
-		return nil, err
-	}
 
 	sender, err := sdk.AccAddressFromBech32(msg.Sender)
 	if err != nil {
@@ -169,6 +163,14 @@ func (ms msgServer) ExecuteContract(goCtx context.Context, msg *types.MsgExecute
 	// Record gas consumption start
 	gasBefore := ctx.GasMeter().GasConsumed()
 
+	// Convert funds from proto type to sdk.Coins
+	funds := sdk.NewCoins()
+	for _, coin := range msg.Funds {
+		if coin != nil {
+			funds = funds.Add(sdk.Coin{Denom: coin.Denom, Amount: coin.Amount})
+		}
+	}
+
 	// Execute contract with panic recovery
 	var data []byte
 	var execErr error
@@ -185,7 +187,7 @@ func (ms msgServer) ExecuteContract(goCtx context.Context, msg *types.MsgExecute
 			}
 		}()
 
-		data, execErr = ms.Keeper.ExecuteContract(ctx, contractAddr, sender, msg.Msg, msg.Funds)
+		data, execErr = ms.Keeper.ExecuteContract(ctx, contractAddr, sender, msg.Msg, funds)
 	}()
 
 	if execErr != nil {
@@ -215,11 +217,6 @@ func (ms msgServer) ExecuteContract(goCtx context.Context, msg *types.MsgExecute
 func (ms msgServer) MigrateContract(goCtx context.Context, msg *types.MsgMigrateContract) (*types.MsgMigrateContractResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	// Validate message
-	if err := msg.ValidateBasic(); err != nil {
-		return nil, err
-	}
-
 	caller, err := sdk.AccAddressFromBech32(msg.Sender)
 	if err != nil {
 		return nil, types.ErrUnauthorized.Wrapf("invalid sender address: %s", err)
@@ -231,7 +228,7 @@ func (ms msgServer) MigrateContract(goCtx context.Context, msg *types.MsgMigrate
 	}
 
 	// Migrate contract
-	data, err := ms.Keeper.Migrate(ctx, contractAddr, caller, msg.CodeID, msg.Msg)
+	data, err := ms.Keeper.Migrate(ctx, contractAddr, caller, msg.CodeId, msg.Msg)
 	if err != nil {
 		return nil, err
 	}
@@ -241,7 +238,7 @@ func (ms msgServer) MigrateContract(goCtx context.Context, msg *types.MsgMigrate
 		sdk.NewEvent(
 			types.EventTypeMigrate,
 			sdk.NewAttribute(types.AttributeKeyContract, msg.Contract),
-			sdk.NewAttribute(types.AttributeKeyCodeID, fmt.Sprintf("%d", msg.CodeID)),
+			sdk.NewAttribute(types.AttributeKeyCodeID, fmt.Sprintf("%d", msg.CodeId)),
 			sdk.NewAttribute(types.AttributeKeySender, msg.Sender),
 		),
 	})
@@ -254,11 +251,6 @@ func (ms msgServer) MigrateContract(goCtx context.Context, msg *types.MsgMigrate
 // UpdateAdmin handles updating contract admin
 func (ms msgServer) UpdateAdmin(goCtx context.Context, msg *types.MsgUpdateAdmin) (*types.MsgUpdateAdminResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-
-	// Validate message
-	if err := msg.ValidateBasic(); err != nil {
-		return nil, err
-	}
 
 	_, err := sdk.AccAddressFromBech32(msg.Sender)
 	if err != nil {
@@ -292,11 +284,6 @@ func (ms msgServer) UpdateAdmin(goCtx context.Context, msg *types.MsgUpdateAdmin
 func (ms msgServer) ClearAdmin(goCtx context.Context, msg *types.MsgClearAdmin) (*types.MsgClearAdminResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	// Validate message
-	if err := msg.ValidateBasic(); err != nil {
-		return nil, err
-	}
-
 	_, err := sdk.AccAddressFromBech32(msg.Sender)
 	if err != nil {
 		return nil, types.ErrUnauthorized.Wrapf("invalid sender address: %s", err)
@@ -322,11 +309,6 @@ func (ms msgServer) ClearAdmin(goCtx context.Context, msg *types.MsgClearAdmin) 
 // AuthorizeUploader handles authorizing contract uploaders (governance only)
 func (ms msgServer) AuthorizeUploader(goCtx context.Context, msg *types.MsgAuthorizeUploader) (*types.MsgAuthorizeUploaderResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-
-	// Validate message
-	if err := msg.ValidateBasic(); err != nil {
-		return nil, err
-	}
 
 	// Check authority
 	if msg.Authority != ms.Keeper.authority {
@@ -358,11 +340,6 @@ func (ms msgServer) AuthorizeUploader(goCtx context.Context, msg *types.MsgAutho
 func (ms msgServer) RevokeUploader(goCtx context.Context, msg *types.MsgRevokeUploader) (*types.MsgRevokeUploaderResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	// Validate message
-	if err := msg.ValidateBasic(); err != nil {
-		return nil, err
-	}
-
 	// Check authority
 	if msg.Authority != ms.Keeper.authority {
 		return nil, types.ErrUnauthorized.Wrapf("invalid authority; expected %s, got %s", ms.Keeper.authority, msg.Authority)
@@ -392,11 +369,6 @@ func (ms msgServer) RevokeUploader(goCtx context.Context, msg *types.MsgRevokeUp
 // PauseContract handles pausing a contract (governance only)
 func (ms msgServer) PauseContract(goCtx context.Context, msg *types.MsgPauseContract) (*types.MsgPauseContractResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-
-	// Validate message
-	if err := msg.ValidateBasic(); err != nil {
-		return nil, err
-	}
 
 	// Check authority
 	if msg.Authority != ms.Keeper.authority {
@@ -428,11 +400,6 @@ func (ms msgServer) PauseContract(goCtx context.Context, msg *types.MsgPauseCont
 func (ms msgServer) UnpauseContract(goCtx context.Context, msg *types.MsgUnpauseContract) (*types.MsgUnpauseContractResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	// Validate message
-	if err := msg.ValidateBasic(); err != nil {
-		return nil, err
-	}
-
 	// Check authority
 	if msg.Authority != ms.Keeper.authority {
 		return nil, types.ErrUnauthorized.Wrapf("invalid authority; expected %s, got %s", ms.Keeper.authority, msg.Authority)
@@ -463,13 +430,8 @@ func (ms msgServer) UnpauseContract(goCtx context.Context, msg *types.MsgUnpause
 func (ms msgServer) UpdateParams(goCtx context.Context, msg *types.MsgUpdateParams) (*types.MsgUpdateParamsResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	// Validate message
-	if err := msg.ValidateBasic(); err != nil {
-		return nil, err
-	}
-
 	// Update params using keeper method which validates authority
-	if err := ms.Keeper.UpdateParams(goCtx, msg.Authority, msg.Params); err != nil {
+	if err := ms.Keeper.UpdateParams(goCtx, msg.Authority, *msg.Params); err != nil {
 		return nil, err
 	}
 

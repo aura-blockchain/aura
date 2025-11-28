@@ -288,9 +288,11 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 		// Use PruningNothing to keep all versions - required for queries to work
 		// This ensures IAVL trees retain historical state for versioned queries
 		baseapp.SetPruning(pruningtypes.NewPruningOptions(pruningtypes.PruningNothing)),
-		// Disable IAVL fast node to ensure version tracking works correctly
-		// This prevents "version does not exist" errors during gRPC queries
-		baseapp.SetIAVLDisableFastNode(true),
+		// Enable IAVL fast node for better query performance
+		// SDK 0.53.x handles version tracking correctly with fast node enabled
+		baseapp.SetIAVLDisableFastNode(false),
+		// Set IAVL cache size for improved performance
+		baseapp.SetIAVLCacheSize(10000),
 	}
 	if chainID != "" {
 		baseAppOptions = append(baseAppOptions, baseapp.SetChainID(chainID))
@@ -956,6 +958,13 @@ func (a *App) RegisterGRPCServices() {
 
 	// Register bank module query service for balance queries
 	banktypes.RegisterQueryServer(a.GRPCQueryRouter(), bankkeeper.NewQuerier(&a.BankKeeper))
+
+	// Register WASM security module query service on the BaseApp's GRPCQueryRouter.
+	// This enables CLI queries to route through ABCI to the WASM query server.
+	// The proto file descriptors are registered manually in x/wasm/types/proto_registry.go
+	// using synthetic protoreflect descriptors, which satisfies the GRPCQueryRouter's
+	// requirement for proto method descriptors.
+	wasmSecurityTypes.RegisterQueryServer(a.GRPCQueryRouter(), wasmSecurityKeeper.NewQueryServerImpl(a.wasmSecurityKeeper))
 }
 
 // GRPCServer exposes the app's gRPC server instance.

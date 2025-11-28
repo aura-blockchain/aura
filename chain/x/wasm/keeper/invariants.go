@@ -47,7 +47,7 @@ func AllInvariants(k Keeper) sdk.Invariant {
 func ParamsInvariant(k Keeper) sdk.Invariant {
 	return func(ctx sdk.Context) (string, bool) {
 		params := k.GetParams(ctx)
-		if err := params.Validate(); err != nil {
+		if err := types.ValidateParams(&params); err != nil {
 			return sdk.FormatInvariant(
 				types.ModuleName,
 				"params-valid",
@@ -66,13 +66,13 @@ func SecurityStatsInvariant(k Keeper) sdk.Invariant {
 		// Count actual paused contracts
 		actualPausedCount := k.countPausedContracts(ctx)
 
-		if stats.TotalPausedContracts != actualPausedCount {
+		if stats.ContractsPaused != actualPausedCount {
 			return sdk.FormatInvariant(
 				types.ModuleName,
 				"security-stats-valid",
 				fmt.Sprintf(
 					"paused contracts count mismatch: stats=%d, actual=%d",
-					stats.TotalPausedContracts,
+					stats.ContractsPaused,
 					actualPausedCount,
 				),
 			), true

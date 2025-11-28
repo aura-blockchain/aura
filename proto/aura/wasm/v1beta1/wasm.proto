@@ -1,0 +1,161 @@
+syntax = "proto3";
+package aura.wasm.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "cosmos_proto/cosmos.proto";
+import "cosmos/base/v1beta1/coin.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/wasm/v1beta1";
+
+// AccessType defines permission levels for contract code operations
+enum AccessType {
+  option (gogoproto.goproto_enum_prefix) = false;
+
+  // ACCESS_TYPE_UNSPECIFIED placeholder for empty value
+  ACCESS_TYPE_UNSPECIFIED = 0 [(gogoproto.enumvalue_customname) = "AccessTypeUnspecified"];
+  // ACCESS_TYPE_NOBODY no one can execute this
+  ACCESS_TYPE_NOBODY = 1 [(gogoproto.enumvalue_customname) = "AccessTypeNobody"];
+  // ACCESS_TYPE_ONLY_ADDRESS only a specific address can execute
+  ACCESS_TYPE_ONLY_ADDRESS = 2 [(gogoproto.enumvalue_customname) = "AccessTypeOnlyAddress"];
+  // ACCESS_TYPE_EVERYBODY everyone can execute
+  ACCESS_TYPE_EVERYBODY = 3 [(gogoproto.enumvalue_customname) = "AccessTypeEverybody"];
+  // ACCESS_TYPE_ANY_OF_ADDRESSES any of the specified addresses can execute
+  ACCESS_TYPE_ANY_OF_ADDRESSES = 4 [(gogoproto.enumvalue_customname) = "AccessTypeAnyOfAddresses"];
+}
+
+// AccessConfig defines access control configuration
+message AccessConfig {
+  option (gogoproto.goproto_stringer) = true;
+
+  AccessType permission = 1;
+  // Address is only used when permission is AccessTypeOnlyAddress
+  string address = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  // Addresses is only used when permission is AccessTypeAnyOfAddresses
+  repeated string addresses = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}
+
+// Params defines the parameters for the wasm module
+message Params {
+  option (gogoproto.goproto_stringer) = false;
+
+  // code_upload_access defines access control for code upload
+  AccessConfig code_upload_access = 1 [(gogoproto.nullable) = false];
+  // instantiate_default_permission defines default permission for contract instantiation
+  AccessType instantiate_default_permission = 2;
+  // max_wasm_code_size defines maximum allowed wasm code size in bytes
+  uint64 max_wasm_code_size = 3;
+  // max_gas_wasm_execution defines maximum gas for wasm execution
+  uint64 max_gas_wasm_execution = 4;
+  // security_analysis_enabled enables on-chain security analysis
+  bool security_analysis_enabled = 5;
+  // require_admin_for_migrate requires admin to migrate contracts
+  bool require_admin_for_migrate = 6;
+}
+
+// CodeInfo stores metadata about a WASM code
+message CodeInfo {
+  option (gogoproto.equal) = true;
+
+  // code_hash is the SHA256 hash of the WASM bytecode
+  bytes code_hash = 1;
+  // creator is the address that uploaded the code
+  string creator = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  // instantiate_config defines access control for instantiation
+  AccessConfig instantiate_config = 3 [(gogoproto.nullable) = false];
+  // created_at is the block height when code was uploaded
+  uint64 created_at = 4;
+  // source is optional URL to source code repository
+  string source = 5;
+  // builder is optional docker image used to build
+  string builder = 6;
+}
+
+// ContractInfo stores metadata about a contract instance
+message ContractInfo {
+  option (gogoproto.equal) = true;
+
+  // code_id references the code stored on chain
+  uint64 code_id = 1;
+  // creator is the address that instantiated the contract
+  string creator = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  // admin is the address that has admin privileges (can migrate/update)
+  string admin = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  // label is a human-readable name for the contract
+  string label = 4;
+  // created_at is the block height of instantiation
+  uint64 created_at = 5;
+  // ibc_port_id is the portID for IBC if enabled
+  string ibc_port_id = 6;
+  // extension allows storing arbitrary metadata
+  bytes extension = 7;
+}
+
+// ContractHistoryEntry describes a single contract state change
+message ContractHistoryEntry {
+  option (gogoproto.equal) = true;
+
+  // operation describes what triggered this entry
+  ContractCodeHistoryOperationType operation = 1;
+  // code_id is the code reference at this point
+  uint64 code_id = 2;
+  // updated_at is the block height of this update
+  uint64 updated_at = 3;
+  // msg contains the initialization/migration message
+  bytes msg = 4;
+}
+
+// ContractCodeHistoryOperationType is the type of code update
+enum ContractCodeHistoryOperationType {
+  option (gogoproto.goproto_enum_prefix) = false;
+
+  // CONTRACT_CODE_HISTORY_OPERATION_TYPE_UNSPECIFIED placeholder
+  CONTRACT_CODE_HISTORY_OPERATION_TYPE_UNSPECIFIED = 0
+    [(gogoproto.enumvalue_customname) = "ContractCodeHistoryOperationTypeUnspecified"];
+  // CONTRACT_CODE_HISTORY_OPERATION_TYPE_INIT on contract instantiation
+  CONTRACT_CODE_HISTORY_OPERATION_TYPE_INIT = 1
+    [(gogoproto.enumvalue_customname) = "ContractCodeHistoryOperationTypeInit"];
+  // CONTRACT_CODE_HISTORY_OPERATION_TYPE_MIGRATE on contract migration
+  CONTRACT_CODE_HISTORY_OPERATION_TYPE_MIGRATE = 2
+    [(gogoproto.enumvalue_customname) = "ContractCodeHistoryOperationTypeMigrate"];
+  // CONTRACT_CODE_HISTORY_OPERATION_TYPE_GENESIS from genesis
+  CONTRACT_CODE_HISTORY_OPERATION_TYPE_GENESIS = 3
+    [(gogoproto.enumvalue_customname) = "ContractCodeHistoryOperationTypeGenesis"];
+}
+
+// Model represents a single key-value state entry
+message Model {
+  option (gogoproto.equal) = true;
+
+  bytes key = 1;
+  bytes value = 2;
+}
+
+// SecurityStats tracks security metrics for the WASM module
+message SecurityStats {
+  option (gogoproto.equal) = true;
+
+  // total_codes_analyzed is the number of codes that passed security analysis
+  uint64 total_codes_analyzed = 1;
+  // codes_rejected is the number of codes rejected by security analysis
+  uint64 codes_rejected = 2;
+  // contracts_paused is the current number of paused contracts
+  uint64 contracts_paused = 3;
+  // total_executions is the total number of contract executions
+  uint64 total_executions = 4;
+  // failed_executions is the number of failed executions
+  uint64 failed_executions = 5;
+  // gas_consumed_total is the total gas consumed by wasm executions
+  uint64 gas_consumed_total = 6;
+  // last_security_scan is the block height of last security scan
+  uint64 last_security_scan = 7;
+}
+
+// AbsoluteTxPosition is a unique transaction position in the blockchain
+message AbsoluteTxPosition {
+  option (gogoproto.equal) = true;
+
+  // block_height is the block number
+  uint64 block_height = 1;
+  // tx_index is the transaction index in the block
+  uint64 tx_index = 2;
+}

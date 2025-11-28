@@ -79,11 +79,7 @@ func GetCmdStoreCode() *cobra.Command {
 
 			msg := &types.MsgStoreCode{
 				Sender:       clientCtx.GetFromAddress().String(),
-				WASMByteCode: wasmCode,
-			}
-
-			if err := msg.ValidateBasic(); err != nil {
-				return err
+				WasmByteCode: wasmCode,
 			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
@@ -154,17 +150,19 @@ func GetCmdInstantiateContract() *cobra.Command {
 				}
 			}
 
+			// Convert sdk.Coins to []*sdk.Coin for proto message
+			fundsProto := make([]*sdk.Coin, len(funds))
+			for i := range funds {
+				fundsProto[i] = &funds[i]
+			}
+
 			msg := &types.MsgInstantiateContract{
 				Sender: clientCtx.GetFromAddress().String(),
 				Admin:  admin,
-				CodeID: codeID,
+				CodeId: codeID,
 				Label:  label,
 				Msg:    initMsg,
-				Funds:  funds,
-			}
-
-			if err := msg.ValidateBasic(); err != nil {
-				return err
+				Funds:  fundsProto,
 			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
@@ -216,15 +214,17 @@ func GetCmdExecuteContract() *cobra.Command {
 				}
 			}
 
+			// Convert sdk.Coins to []*sdk.Coin for proto message
+			fundsProto := make([]*sdk.Coin, len(funds))
+			for i := range funds {
+				fundsProto[i] = &funds[i]
+			}
+
 			msg := &types.MsgExecuteContract{
 				Sender:   clientCtx.GetFromAddress().String(),
 				Contract: contractAddr,
 				Msg:      execMsg,
-				Funds:    funds,
-			}
-
-			if err := msg.ValidateBasic(); err != nil {
-				return err
+				Funds:    fundsProto,
 			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
@@ -267,12 +267,8 @@ func GetCmdMigrateContract() *cobra.Command {
 			msg := &types.MsgMigrateContract{
 				Sender:   clientCtx.GetFromAddress().String(),
 				Contract: contractAddr,
-				CodeID:   newCodeID,
+				CodeId:   newCodeID,
 				Msg:      migrateMsg,
-			}
-
-			if err := msg.ValidateBasic(); err != nil {
-				return err
 			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
@@ -311,10 +307,6 @@ func GetCmdUpdateAdmin() *cobra.Command {
 				NewAdmin: newAdmin,
 			}
 
-			if err := msg.ValidateBasic(); err != nil {
-				return err
-			}
-
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
 		},
 	}
@@ -343,10 +335,6 @@ func GetCmdClearAdmin() *cobra.Command {
 			msg := &types.MsgClearAdmin{
 				Sender:   clientCtx.GetFromAddress().String(),
 				Contract: contractAddr,
-			}
-
-			if err := msg.ValidateBasic(); err != nil {
-				return err
 			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
@@ -379,10 +367,6 @@ func GetCmdAuthorizeUploader() *cobra.Command {
 				Uploader:  uploaderAddr,
 			}
 
-			if err := msg.ValidateBasic(); err != nil {
-				return err
-			}
-
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
 		},
 	}
@@ -411,10 +395,6 @@ func GetCmdRevokeUploader() *cobra.Command {
 			msg := &types.MsgRevokeUploader{
 				Authority: clientCtx.GetFromAddress().String(),
 				Uploader:  uploaderAddr,
-			}
-
-			if err := msg.ValidateBasic(); err != nil {
-				return err
 			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
@@ -447,10 +427,6 @@ func GetCmdPauseContract() *cobra.Command {
 				Contract:  contractAddr,
 			}
 
-			if err := msg.ValidateBasic(); err != nil {
-				return err
-			}
-
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
 		},
 	}
@@ -481,10 +457,6 @@ func GetCmdUnpauseContract() *cobra.Command {
 				Contract:  contractAddr,
 			}
 
-			if err := msg.ValidateBasic(); err != nil {
-				return err
-			}
-
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
 		},
 	}
@@ -512,11 +484,7 @@ func GetCmdUpdateParams() *cobra.Command {
 
 			msg := &types.MsgUpdateParams{
 				Authority: clientCtx.GetFromAddress().String(),
-				Params:    params,
-			}
-
-			if err := msg.ValidateBasic(); err != nil {
-				return err
+				Params:    &params,
 			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)

@@ -13,6 +13,7 @@ var _ types.QueryServer = queryServer{}
 
 // queryServer is the gRPC server implementation for wasm module queries
 type queryServer struct {
+	types.UnimplementedQueryServer
 	Keeper
 }
 
@@ -31,7 +32,7 @@ func (qs queryServer) Params(goCtx context.Context, req *types.QueryParamsReques
 	params := qs.Keeper.GetParams(ctx)
 
 	return &types.QueryParamsResponse{
-		Params: params,
+		Params: &params,
 	}, nil
 }
 
@@ -46,7 +47,7 @@ func (qs queryServer) Code(goCtx context.Context, req *types.QueryCodeRequest) (
 	// Note: In production, this would query wasmd keeper
 	// For now, return stub response
 	return &types.QueryCodeResponse{
-		CodeID: req.CodeId,
+		CodeId: req.CodeId,
 		Data:   []byte{},
 	}, nil
 }
@@ -60,7 +61,7 @@ func (qs queryServer) Codes(goCtx context.Context, req *types.QueryCodesRequest)
 	// Note: In production, this would query wasmd keeper with pagination
 	// For now, return stub response
 	return &types.QueryCodesResponse{
-		CodeInfos:  []types.CodeInfo{},
+		CodeInfos:  []*types.CodeInfo{},
 		Pagination: &query.PageResponse{},
 	}, nil
 }
@@ -111,7 +112,7 @@ func (qs queryServer) ContractHistory(goCtx context.Context, req *types.QueryCon
 	// Note: In production, this would query wasmd keeper
 	// For now, return stub response
 	return &types.QueryContractHistoryResponse{
-		Entries:    []types.ContractHistoryEntry{},
+		Entries:    []*types.ContractHistoryEntry{},
 		Pagination: &query.PageResponse{},
 	}, nil
 }
@@ -141,7 +142,7 @@ func (qs queryServer) AllContractState(goCtx context.Context, req *types.QueryAl
 	// Note: In production, this would query wasmd keeper
 	// For now, return stub response
 	return &types.QueryAllContractStateResponse{
-		Models:     []types.Model{},
+		Models:     []*types.Model{},
 		Pagination: &query.PageResponse{},
 	}, nil
 }
@@ -217,7 +218,7 @@ func (qs queryServer) SecurityStats(goCtx context.Context, req *types.QuerySecur
 	stats := qs.Keeper.GetSecurityStats(ctx)
 
 	return &types.QuerySecurityStatsResponse{
-		Stats: stats,
+		Stats: &stats,
 	}, nil
 }
 
