@@ -78,23 +78,24 @@ All modules have keepers, protos, and tests:
 - [x] Validate: `aurad start` - genesis loads successfully, all 27 modules initialize
 
 ### Smart Contracts
-- [ ] Install Rust toolchain: `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
-- [ ] Compile contracts: `cd contracts/vc-issuer && cargo wasm`
+- [x] Install Rust toolchain: `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
+- [x] Compile contracts: `cargo build --release --target wasm32-unknown-unknown`
+- [x] WASM output: `binding_tester.wasm` (227KB), `vc_issuer.wasm` (328KB)
 - [ ] Optimize: `make optimize-wasm` → `/contracts/artifacts/`
 - [ ] Test deployment on local testnet
 - [ ] Create deployment scripts: `/scripts/deploy-contracts.sh`
 
 ### Security
 - [x] HSM integration guide → `/docs/security/HSM_INTEGRATION.md`
-- [ ] Run secret management scripts: `/deployment-security/scripts/generate-secrets.sh`
-- [ ] TLS setup: `/deployment-security/scripts/tls-setup.sh`
+- [x] Run secret management scripts: `/deployment-security/scripts/generate-secrets.sh`
+- [x] TLS setup: `/deployment-security/scripts/tls-setup.sh` (self-signed for dev)
 - [x] Review node configs: `/networks/mainnet/config.toml` - added seed TODOs, double_sign_check
 
 ### Testing
 - [x] Run full test suite: `make test` (59/101 packages passing - mock infrastructure needs fixes)
 - [x] Run chaos tests: `/chain/testing/chaos/` (passing)
 - [x] Run benchmarks: `/chain/testing/benchmark/` (passing)
-- [ ] Fix test mock infrastructure (ante_test.go, integration tests)
+- [x] Fix test mock infrastructure (ante_test.go, integration tests) - tests now compile
 - [ ] Target: >80% coverage
 
 ### Documentation
