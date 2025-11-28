@@ -65,7 +65,7 @@ Events emitted at each transition keep the wallet light client and governance da
 ## Parameters & Interfaces (Draft)
 
 - `registration_fee`: default 0 (could require dust to avoid spam).
-- `vote_fee`: nominal gas + 0.1 AEQ burn to deter mass submissions.
+- `vote_fee`: nominal gas + 0.1 AURA burn to deter mass submissions.
 - `dispute_window`: 7 days (configurable via governance).
 - gRPC queries:
   - `NullifierUsed(proposal_id, nullifier_hash)`.

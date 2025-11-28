@@ -166,7 +166,7 @@ message Params {
 
   // Slashing parameters
   uint64 slash_percentage = 7;           // Default: 50% max slash
-  string appeal_deposit = 8;             // Default: 1000 AEQ
+  string appeal_deposit = 8;             // Default: 1000 AURA
 
   // Rate limiting
   uint64 max_irs_per_day = 9;            // Default: 10
@@ -243,7 +243,7 @@ message MsgAppealSlash {
   string wallet_address = 1;
   string slash_tx_hash = 2;
   string evidence = 3;                   // IPFS hash or metadata
-  string deposit = 4;                    // AEQ deposit for appeal
+  string deposit = 4;                    // AURA deposit for appeal
 }
 
 message MsgAppealSlashResponse {

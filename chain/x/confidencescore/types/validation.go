@@ -27,7 +27,7 @@ func DefaultParams() Params {
 
 		// Slashing parameters
 		SlashPercentage: 50,          // 50% max slash for fraud
-		AppealDeposit:   "1000uaura", // 1000 AEQ to appeal a slash
+		AppealDeposit:   "1000uaura", // 1000 AURA to appeal a slash
 
 		// Rate limiting
 		MaxIrsPerDay:  10, // Max 10 IR completions per day

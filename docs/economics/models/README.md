@@ -1,6 +1,6 @@
 # Economic Models
 
-Store spreadsheets, CSVs, or notebooks used to simulate AEQ emissions, validator/APR projections, AI assistant ROI, and PoI reward uptake.
+Store spreadsheets, CSVs, or notebooks used to simulate AURA emissions, validator/APR projections, AI assistant ROI, and PoI reward uptake.
 
 Current assets:
 - `emissions-schedule.md/csv` – year-by-year validator + assistant emission targets aligned with RFC-0007.

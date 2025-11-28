@@ -7,14 +7,14 @@
 
 ## Summary
 
-Define the on-chain `tokenomics` module that mints AEQ emissions, enforces fee burn rules, routes rewards to validators/AI assistants/users, and manages vesting schedules (including founder/community wallets).
+Define the on-chain `tokenomics` module that mints AURA emissions, enforces fee burn rules, routes rewards to validators/AI assistants/users, and manages vesting schedules (including founder/community wallets).
 
 ## Emission Overview
 
-- **Total Supply:** 1,000,000,000 AEQ (fixed).
+- **Total Supply:** 1,000,000,000 AURA (fixed).
 - **Breakdown:**
   - 40% validator/assistant emissions over 10 years (front-loaded: Yr1 12%, Yr2 8%, Yr3-5 4% each, Yr6-10 1.6% each per docs/economics/models/emissions-schedule.md).
-  - 20% Proof-of-Identity rewards treasury (200,000,000 AEQ).
+  - 20% Proof-of-Identity rewards treasury (200,000,000 AURA).
   - 20% Ecosystem/Foundation (vesting, governance controlled).
   - 20% Core Team/Founders (vesting, includes special community wallets per `docs/economics/founder-wallets.md`).
 - **Fee Burn:** 25% of verifier-paid fees burned automatically each block.

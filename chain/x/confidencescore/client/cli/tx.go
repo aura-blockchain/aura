@@ -248,7 +248,7 @@ The appeal process:
 
 Requirements:
 - Must appeal before the deadline (default 30 days after slash)
-- Must provide appeal deposit (default 1000 AEQ, configured in params)
+- Must provide appeal deposit (default 1000 AURA, configured in params)
 - Can only appeal once per slash
 
 Example:

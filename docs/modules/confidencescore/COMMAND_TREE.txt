@@ -70,7 +70,7 @@ aurad
         │   ├── --evidence [ipfs-hash]      (Appeal evidence)
         │   └── [Users] Appeal a slash
         │       • Must appeal within 30 days
-        │       • Deposit required (default: 1000 AEQ)
+        │       • Deposit required (default: 1000 AURA)
         │       • Deposit returned if successful
         │
         └── resolve-appeal [wallet-address] [slash-tx-hash] [restore]
@@ -125,7 +125,7 @@ Appeal Process:
 ──────────────
 1. User receives slash
 2. User has 30 days to appeal
-3. User submits appeal with deposit (1000 AEQ)
+3. User submits appeal with deposit (1000 AURA)
 4. Governance reviews evidence
 5. If approved: Score restored + deposit returned
 6. If denied: Slash stands + deposit forfeit
