@@ -22,7 +22,7 @@ func TestWasmGasDecorator(t *testing.T) {
 	t.Run("success - store code", func(t *testing.T) {
 		msg := &types.MsgStoreCode{
 			Sender:       sender.String(),
-			WASMByteCode: []byte("dummy code"),
+			WasmByteCode: []byte("dummy code"),
 		}
 
 		tx := mockTx{msgs: []sdk.Msg{msg}}
@@ -33,11 +33,11 @@ func TestWasmGasDecorator(t *testing.T) {
 
 	t.Run("failure - contract too large for block", func(t *testing.T) {
 		params := k.GetParams(ctx)
-		largeCode := make([]byte, params.MaxContractSizePerBlock+1)
+		largeCode := make([]byte, params.MaxWasmCodeSize+1)
 
 		msg := &types.MsgStoreCode{
 			Sender:       sender.String(),
-			WASMByteCode: largeCode,
+			WasmByteCode: largeCode,
 		}
 
 		tx := mockTx{msgs: []sdk.Msg{msg}}
@@ -61,7 +61,7 @@ func TestWasmAuthDecorator(t *testing.T) {
 	t.Run("success - authorized uploader", func(t *testing.T) {
 		msg := &types.MsgStoreCode{
 			Sender:       authorizedSender.String(),
-			WASMByteCode: []byte("dummy code"),
+			WasmByteCode: []byte("dummy code"),
 		}
 
 		tx := mockTx{msgs: []sdk.Msg{msg}}
@@ -73,7 +73,7 @@ func TestWasmAuthDecorator(t *testing.T) {
 	t.Run("failure - unauthorized uploader", func(t *testing.T) {
 		msg := &types.MsgStoreCode{
 			Sender:       unauthorizedSender.String(),
-			WASMByteCode: []byte("dummy code"),
+			WasmByteCode: []byte("dummy code"),
 		}
 
 		tx := mockTx{msgs: []sdk.Msg{msg}}
@@ -96,7 +96,7 @@ func TestWasmReentrancyDecorator(t *testing.T) {
 			Sender:   sender.String(),
 			Contract: contractAddr.String(),
 			Msg:      []byte(`{"execute":"action"}`),
-			Funds:    sdk.NewCoins(),
+			Funds:    nil,
 		}
 
 		tx := mockTx{msgs: []sdk.Msg{msg}}
@@ -110,14 +110,14 @@ func TestWasmReentrancyDecorator(t *testing.T) {
 			Sender:   sender.String(),
 			Contract: contractAddr.String(),
 			Msg:      []byte(`{"execute":"action1"}`),
-			Funds:    sdk.NewCoins(),
+			Funds:    nil,
 		}
 
 		msg2 := &types.MsgExecuteContract{
 			Sender:   sender.String(),
 			Contract: contractAddr.String(),
 			Msg:      []byte(`{"execute":"action2"}`),
-			Funds:    sdk.NewCoins(),
+			Funds:    nil,
 		}
 
 		tx := mockTx{msgs: []sdk.Msg{msg1, msg2}}
@@ -138,7 +138,7 @@ func TestWasmSecurityDecorator(t *testing.T) {
 	t.Run("success - valid code", func(t *testing.T) {
 		msg := &types.MsgStoreCode{
 			Sender:       sender.String(),
-			WASMByteCode: []byte("valid wasm code"),
+			WasmByteCode: []byte("valid wasm code"),
 		}
 
 		tx := mockTx{msgs: []sdk.Msg{msg}}
@@ -150,7 +150,7 @@ func TestWasmSecurityDecorator(t *testing.T) {
 	t.Run("failure - empty code", func(t *testing.T) {
 		msg := &types.MsgStoreCode{
 			Sender:       sender.String(),
-			WASMByteCode: []byte{},
+			WasmByteCode: []byte{},
 		}
 
 		tx := mockTx{msgs: []sdk.Msg{msg}}
@@ -159,25 +159,24 @@ func TestWasmSecurityDecorator(t *testing.T) {
 		require.Error(t, err)
 	})
 
-	t.Run("failure - migration disabled", func(t *testing.T) {
-		// Ensure migration is disabled
+	t.Run("success - migration with admin requirement", func(t *testing.T) {
+		// Ensure admin requirement is enabled
 		params := k.GetParams(ctx)
-		params.EnableMigration = false
+		params.RequireAdminForMigrate = true
 		err := k.SetParams(ctx, params)
 		require.NoError(t, err)
 
 		msg := &types.MsgMigrateContract{
 			Sender:   sender.String(),
 			Contract: contractAddr.String(),
-			CodeID:   2,
+			CodeId:   2,
 			Msg:      []byte(`{"migrate":"data"}`),
 		}
 
 		tx := mockTx{msgs: []sdk.Msg{msg}}
 
 		_, err = decorator.AnteHandle(ctx, tx, false, mockNext)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "migration")
+		require.NoError(t, err)
 	})
 
 	t.Run("failure - paused contract", func(t *testing.T) {
@@ -189,7 +188,7 @@ func TestWasmSecurityDecorator(t *testing.T) {
 			Sender:   sender.String(),
 			Contract: contractAddr.String(),
 			Msg:      []byte(`{"execute":"action"}`),
-			Funds:    sdk.NewCoins(),
+			Funds:    nil,
 		}
 
 		tx := mockTx{msgs: []sdk.Msg{msg}}
