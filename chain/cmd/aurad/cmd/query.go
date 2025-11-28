@@ -7,6 +7,7 @@ import (
 
 	compliancecli "github.com/aequitas/aura/chain/x/compliance/client/cli"
 	confidencescorecli "github.com/aequitas/aura/chain/x/confidencescore/client/cli"
+	wasmcli "github.com/aequitas/aura/chain/x/wasm/client/cli"
 )
 
 // QueryCmd returns the query command for the Aura daemon
@@ -31,6 +32,7 @@ Available subcommands allow querying different modules and their state.`,
 		queryVCRegistryCmd(),
 		queryDataRegistryCmd(),
 		queryGovernanceCmd(),
+		queryWasmCmd(),
 	)
 
 	return cmd
@@ -266,4 +268,9 @@ func queryGovernanceCmd() *cobra.Command {
 	)
 
 	return cmd
+}
+
+// queryWasmCmd returns the wasm query command
+func queryWasmCmd() *cobra.Command {
+	return wasmcli.GetQueryCmd()
 }

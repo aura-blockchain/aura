@@ -7,6 +7,7 @@ import (
 
 	compliancecli "github.com/aequitas/aura/chain/x/compliance/client/cli"
 	confidencescorecli "github.com/aequitas/aura/chain/x/confidencescore/client/cli"
+	wasmcli "github.com/aequitas/aura/chain/x/wasm/client/cli"
 )
 
 // TxCmd returns the transaction command for the Aura daemon
@@ -29,6 +30,7 @@ Available subcommands allow interacting with different modules.`,
 		txVCRegistryCmd(),
 		txDataRegistryCmd(),
 		txGovernanceCmd(),
+		txWasmCmd(),
 	)
 
 	return cmd
@@ -278,4 +280,9 @@ func txGovernanceCmd() *cobra.Command {
 	)
 
 	return cmd
+}
+
+// txWasmCmd returns the wasm transaction command
+func txWasmCmd() *cobra.Command {
+	return wasmcli.GetTxCmd()
 }
