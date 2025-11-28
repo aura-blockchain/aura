@@ -1,0 +1,92 @@
+# ============================================================================
+# Prometheus Configuration for AURA Multi-Node Testnet
+# ============================================================================
+# Monitors all 4 validator nodes with metrics collection
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'aura-local-testnet'
+    chain_id: 'aura-local-4'
+
+# Alertmanager configuration (optional)
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets: ['alertmanager:9093']
+
+# Rule files for alerting
+rule_files:
+  - '/etc/prometheus/rules/*.yml'
+
+# Scrape configurations
+scrape_configs:
+  # =========================================================================
+  # Validator 1 - Primary Validator
+  # =========================================================================
+  - job_name: 'validator-1'
+    static_configs:
+      - targets: ['validator-1:26660']
+        labels:
+          validator: 'validator-1'
+          validator_index: '1'
+          role: 'validator'
+          ip: '172.26.0.10'
+
+  # =========================================================================
+  # Validator 2
+  # =========================================================================
+  - job_name: 'validator-2'
+    static_configs:
+      - targets: ['validator-2:26660']
+        labels:
+          validator: 'validator-2'
+          validator_index: '2'
+          role: 'validator'
+          ip: '172.26.0.11'
+
+  # =========================================================================
+  # Validator 3
+  # =========================================================================
+  - job_name: 'validator-3'
+    static_configs:
+      - targets: ['validator-3:26660']
+        labels:
+          validator: 'validator-3'
+          validator_index: '3'
+          role: 'validator'
+          ip: '172.26.0.12'
+
+  # =========================================================================
+  # Validator 4
+  # =========================================================================
+  - job_name: 'validator-4'
+    static_configs:
+      - targets: ['validator-4:26660']
+        labels:
+          validator: 'validator-4'
+          validator_index: '4'
+          role: 'validator'
+          ip: '172.26.0.13'
+
+  # =========================================================================
+  # Prometheus Self-Monitoring
+  # =========================================================================
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          role: 'monitoring'
+
+# ============================================================================
+# Metric Relabeling - Standardize Labels
+# ============================================================================
+# Add chain-specific labels to all metrics
+metric_relabel_configs:
+  - source_labels: [__name__]
+    target_label: chain
+    replacement: 'aura'
+  - source_labels: [__name__]
+    target_label: network
+    replacement: 'testnet'
