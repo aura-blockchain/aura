@@ -950,6 +950,21 @@ enabled = true
 # CosmWasm module (absorbs contractregistry)
 [modules.wasm]
 enabled = true
+
+#######################################################################
+###                    Store Pruning Configuration                 ###
+#######################################################################
+
+[store]
+
+# The type of pruning to perform
+# Options: "default" | "nothing" | "everything" | "custom"
+# Use "nothing" for archive nodes that keep all versions for queries
+pruning = "nothing"
+
+# These are only applied if pruning = "custom"
+pruning-keep-recent = 0
+pruning-interval = 0
 `
 }
 
