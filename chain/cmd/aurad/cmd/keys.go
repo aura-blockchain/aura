@@ -8,6 +8,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/aequitas/aura/chain/app"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/input"
@@ -104,7 +105,6 @@ For Cosmos chains, the default coin type is 118.`,
 			if err != nil {
 				return err
 			}
-			cdc := clientCtx.Codec
 
 			name := args[0]
 			if name == "" {
@@ -126,6 +126,15 @@ For Cosmos chains, the default coin type is 118.`,
 			}
 
 			inBuf := bufio.NewReader(cmd.InOrStdin())
+
+			// Use the codec from the client context if available, otherwise create a new one
+			cdc := clientCtx.Codec
+			if cdc == nil {
+				// Initialize encoding config to get a valid codec
+				encodingConfig := app.MakeEncodingConfig()
+				cdc = encodingConfig.Codec
+			}
+
 			kb, err := keyring.New(sdk.KeyringServiceName(), keyringBackend, keyringDir, inBuf, cdc)
 			if err != nil {
 				return fmt.Errorf("failed to initialize keyring: %w", err)
@@ -296,7 +305,6 @@ Keys are stored in the keyring backend configured with --keyring-backend flag.`,
 			if err != nil {
 				return err
 			}
-			cdc := clientCtx.Codec
 
 			// Get keyring backend and initialize keyring
 			keyringBackend, _ := cmd.Flags().GetString(flags.FlagKeyringBackend)
@@ -307,6 +315,15 @@ Keys are stored in the keyring backend configured with --keyring-backend flag.`,
 			}
 
 			inBuf := bufio.NewReader(cmd.InOrStdin())
+
+			// Use the codec from the client context if available, otherwise create a new one
+			cdc := clientCtx.Codec
+			if cdc == nil {
+				// Initialize encoding config to get a valid codec
+				encodingConfig := app.MakeEncodingConfig()
+				cdc = encodingConfig.Codec
+			}
+
 			kb, err := keyring.New(sdk.KeyringServiceName(), keyringBackend, keyringDir, inBuf, cdc)
 			if err != nil {
 				return fmt.Errorf("failed to initialize keyring: %w", err)
@@ -352,7 +369,6 @@ only the address, public key, or full details.`,
 			if err != nil {
 				return err
 			}
-			cdc := clientCtx.Codec
 
 			keyNameOrAddress := args[0]
 
@@ -365,6 +381,15 @@ only the address, public key, or full details.`,
 			}
 
 			inBuf := bufio.NewReader(cmd.InOrStdin())
+
+			// Use the codec from the client context if available, otherwise create a new one
+			cdc := clientCtx.Codec
+			if cdc == nil {
+				// Initialize encoding config to get a valid codec
+				encodingConfig := app.MakeEncodingConfig()
+				cdc = encodingConfig.Codec
+			}
+
 			kb, err := keyring.New(sdk.KeyringServiceName(), keyringBackend, keyringDir, inBuf, cdc)
 			if err != nil {
 				return fmt.Errorf("failed to initialize keyring: %w", err)
@@ -472,7 +497,6 @@ permanently lose access to any assets controlled by that key.`,
 			if err != nil {
 				return err
 			}
-			cdc := clientCtx.Codec
 
 			keyName := args[0]
 
@@ -489,6 +513,15 @@ permanently lose access to any assets controlled by that key.`,
 			}
 
 			inBuf := bufio.NewReader(cmd.InOrStdin())
+
+			// Use the codec from the client context if available, otherwise create a new one
+			cdc := clientCtx.Codec
+			if cdc == nil {
+				// Initialize encoding config to get a valid codec
+				encodingConfig := app.MakeEncodingConfig()
+				cdc = encodingConfig.Codec
+			}
+
 			kb, err := keyring.New(sdk.KeyringServiceName(), keyringBackend, keyringDir, inBuf, cdc)
 			if err != nil {
 				return fmt.Errorf("failed to initialize keyring: %w", err)
@@ -561,7 +594,6 @@ The key's address and public key remain unchanged; only the local name is modifi
 			if err != nil {
 				return err
 			}
-			cdc := clientCtx.Codec
 
 			oldName := args[0]
 			newName := args[1]
@@ -579,6 +611,15 @@ The key's address and public key remain unchanged; only the local name is modifi
 			}
 
 			inBuf := bufio.NewReader(cmd.InOrStdin())
+
+			// Use the codec from the client context if available, otherwise create a new one
+			cdc := clientCtx.Codec
+			if cdc == nil {
+				// Initialize encoding config to get a valid codec
+				encodingConfig := app.MakeEncodingConfig()
+				cdc = encodingConfig.Codec
+			}
+
 			kb, err := keyring.New(sdk.KeyringServiceName(), keyringBackend, keyringDir, inBuf, cdc)
 			if err != nil {
 				return fmt.Errorf("failed to initialize keyring: %w", err)
