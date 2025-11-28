@@ -131,7 +131,7 @@ func (suite *InvariantsComprehensiveTestSuite) TestMerkleProofInvariantNoSibling
 	ctx := suite.SdkCtx
 	inv := MerkleProofInvariant(*suite.Keeper)
 
-	// Create proof with no siblings
+	// Create proof with no proof hashes (siblings)
 	proof := &bridgepb.MerkleProof{
 		Root:    []byte("root-hash"),
 		Leaf:    []byte("leaf-data"),
@@ -141,8 +141,8 @@ func (suite *InvariantsComprehensiveTestSuite) TestMerkleProofInvariantNoSibling
 	suite.storeMerkleProof(ctx, "proof-3", proof)
 
 	msg, broken := inv(ctx)
-	suite.True(broken, "proof with no siblings should break invariant")
-	suite.Contains(msg, "no siblings")
+	suite.True(broken, "proof with no proof hashes should break invariant")
+	suite.Contains(msg, "no proof hashes")
 }
 
 func (suite *InvariantsComprehensiveTestSuite) TestValidatorSetInvariant() {
@@ -186,21 +186,29 @@ func (suite *InvariantsComprehensiveTestSuite) TestValidatorSetInvariantInvalidA
 	suite.Contains(msg, "invalid validator address")
 }
 
-func (suite *InvariantsComprehensiveTestSuite) TestValidatorSetInvariantNegativePower() {
+func (suite *InvariantsComprehensiveTestSuite) TestValidatorSetInvariantZeroPower() {
 	ctx := suite.SdkCtx
 	inv := ValidatorSetInvariant(*suite.Keeper)
 
-	// Create validator with negative power
+	// uint64 cannot be negative, but we can test zero power and invalid address
+	// The invariant checks address format first, so we test that path
+	// Note: The actual invariant validates that Power is not < 0 (which can never happen with uint64)
+	// and that there's at least 1 active validator
+
+	// Create validator with valid address but zero power
+	// This will still count as active if Active=true
 	validator := &bridgepb.BridgeValidator{
-		Address: sdk.ValAddress("validator_________").String(),
-		Power:   0, // uint64 cannot be negative, use 0 instead
+		Address: sdk.AccAddress("validatoraddr_____").String(), // Use AccAddress for valid format
+		Power:   0,
 		Active:  true,
 	}
 	suite.storeValidator(ctx, validator)
 
 	msg, broken := inv(ctx)
-	suite.True(broken, "validator with negative power should break invariant")
-	suite.Contains(msg, "negative power")
+	// With zero power but active=true, the validator is counted but has no voting power
+	// The invariant should pass since there is at least 1 active validator
+	suite.False(broken, "validator with zero power should still be counted as active")
+	suite.Empty(msg)
 }
 
 func (suite *InvariantsComprehensiveTestSuite) TestSecurityParametersInvariant() {
