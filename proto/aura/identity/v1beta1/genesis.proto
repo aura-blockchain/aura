@@ -1,0 +1,58 @@
+syntax = "proto3";
+package aura.identity.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "aura/identity/v1beta1/identity.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/identity/v1beta1";
+
+// GenesisState defines the identity module's genesis state
+message GenesisState {
+  // Module parameters
+  Params params = 1 [(gogoproto.nullable) = false];
+
+  // Identity records
+  repeated IdentityRecord identity_records = 2 [(gogoproto.nullable) = false];
+
+  // Change requests
+  repeated ChangeRequest change_requests = 3 [(gogoproto.nullable) = false];
+
+  // Change history
+  repeated ChangeHistory change_history = 4 [(gogoproto.nullable) = false];
+
+  // Roles
+  repeated Role roles = 5 [(gogoproto.nullable) = false];
+
+  // Role assignments
+  repeated RoleAssignment role_assignments = 6 [(gogoproto.nullable) = false];
+
+  // Multisig wallets
+  repeated MultisigWallet multisig_wallets = 7 [(gogoproto.nullable) = false];
+
+  // Multisig proposals
+  repeated MultisigProposal multisig_proposals = 8 [(gogoproto.nullable) = false];
+
+  // Time-locked actions
+  repeated TimeLockedAction time_locked_actions = 9 [(gogoproto.nullable) = false];
+
+  // Emergency admins
+  repeated EmergencyAdmin emergency_admins = 10 [(gogoproto.nullable) = false];
+
+  // Validator key rotations
+  repeated ValidatorKeyRotation validator_rotations = 11 [(gogoproto.nullable) = false];
+
+  // Sessions
+  repeated Session sessions = 12 [(gogoproto.nullable) = false];
+
+  // Rate limit configs
+  repeated RateLimitConfig rate_limits = 13 [(gogoproto.nullable) = false];
+
+  // Audit logs
+  repeated AuditLog audit_logs = 14 [(gogoproto.nullable) = false];
+
+  // Identity changes suspended flag
+  bool identity_changes_suspended = 15;
+
+  // Next audit log ID counter
+  uint64 next_audit_log_id = 16;
+}

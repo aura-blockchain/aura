@@ -1,0 +1,5 @@
+#!/bin/sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "Running Composer PHP checks before commit..."
+npm run php-checks

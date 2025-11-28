@@ -1,0 +1,170 @@
+package keeper_test
+
+import (
+	"testing"
+
+	storetypes "cosmossdk.io/store/types"
+	"github.com/aequitas/aura/chain/x/contractregistry/keeper"
+	"github.com/aequitas/aura/chain/x/contractregistry/types"
+	pb "github.com/aequitas/aura/proto/aura/contractregistry/v1beta1"
+	"github.com/cosmos/cosmos-sdk/codec"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/testutil"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/stretchr/testify/suite"
+)
+
+type StoreTestSuite struct {
+	suite.Suite
+	ctx    sdk.Context
+	keeper *keeper.Keeper
+	cdc    codec.BinaryCodec
+}
+
+func TestStoreTestSuite(t *testing.T) {
+	suite.Run(t, new(StoreTestSuite))
+}
+
+func (suite *StoreTestSuite) SetupTest() {
+	key := storetypes.NewKVStoreKey(types.StoreKey)
+	testCtx := testutil.DefaultContextWithDB(suite.T(), key, storetypes.NewTransientStoreKey("transient_test"))
+	suite.ctx = testCtx.Ctx
+	registry := codectypes.NewInterfaceRegistry()
+	suite.cdc = codec.NewProtoCodec(registry)
+	suite.keeper = keeper.NewKeeper(key, suite.cdc, "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn")
+	params := types.DefaultParams()
+	suite.NoError(suite.keeper.SetParams(suite.ctx, &params))
+}
+
+func (suite *StoreTestSuite) TestSetGetContractInfo() {
+	info := &pb.ContractInfo{
+		Address:        "cosmos1contract",
+		CodeId:         1,
+		Creator:        "cosmos1creator",
+		Admin:          "cosmos1admin",
+		Label:          "test",
+		Metadata:       &pb.ContractMetadata{Name: "Test"},
+		SecurityPolicy: &pb.SecurityPolicy{},
+		Compliance:     &pb.ComplianceRequirements{},
+		Status:         pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
+	}
+
+	suite.keeper.SetContractInfo(suite.ctx, info)
+
+	retrieved, found := suite.keeper.GetContractInfo(suite.ctx, "cosmos1contract")
+	suite.True(found)
+	suite.Equal(info.Address, retrieved.Address)
+	suite.Equal(info.CodeId, retrieved.CodeId)
+}
+
+func (suite *StoreTestSuite) TestDeleteContractInfo() {
+	info := &pb.ContractInfo{
+		Address:        "cosmos1contract",
+		CodeId:         1,
+		Creator:        "cosmos1creator",
+		Admin:          "cosmos1admin",
+		Label:          "test",
+		Metadata:       &pb.ContractMetadata{Name: "Test"},
+		SecurityPolicy: &pb.SecurityPolicy{},
+		Compliance:     &pb.ComplianceRequirements{},
+		Status:         pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
+	}
+
+	suite.keeper.SetContractInfo(suite.ctx, info)
+	suite.keeper.DeleteContractInfo(suite.ctx, "cosmos1contract")
+
+	_, found := suite.keeper.GetContractInfo(suite.ctx, "cosmos1contract")
+	suite.False(found)
+}
+
+func (suite *StoreTestSuite) TestGetAllContracts() {
+	// Register multiple contracts
+	for i := 1; i <= 5; i++ {
+		info := &pb.ContractInfo{
+			Address:        "cosmos1contract" + string(rune('0'+i)),
+			CodeId:         uint64(i),
+			Creator:        "cosmos1creator",
+			Admin:          "cosmos1admin",
+			Label:          "test",
+			Metadata:       &pb.ContractMetadata{Name: "Test"},
+			SecurityPolicy: &pb.SecurityPolicy{},
+			Compliance:     &pb.ComplianceRequirements{},
+			Status:         pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
+		}
+		suite.keeper.SetContractInfo(suite.ctx, info)
+	}
+
+	contracts := suite.keeper.GetAllContracts(suite.ctx)
+	suite.Len(contracts, 5)
+}
+
+func (suite *StoreTestSuite) TestCreatorIndex() {
+	creator := "cosmos1creator"
+
+	// Add contracts to creator index
+	suite.keeper.AddCreatorContract(suite.ctx, creator, "cosmos1contract1")
+	suite.keeper.AddCreatorContract(suite.ctx, creator, "cosmos1contract2")
+
+	// Set contract info for retrieval
+	for i := 1; i <= 2; i++ {
+		info := &pb.ContractInfo{
+			Address:        "cosmos1contract" + string(rune('0'+i)),
+			CodeId:         uint64(i),
+			Creator:        creator,
+			Admin:          creator,
+			Label:          "test",
+			Metadata:       &pb.ContractMetadata{Name: "Test"},
+			SecurityPolicy: &pb.SecurityPolicy{},
+			Compliance:     &pb.ComplianceRequirements{},
+			Status:         pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
+		}
+		suite.keeper.SetContractInfo(suite.ctx, info)
+	}
+
+	contracts := suite.keeper.GetCreatorContracts(suite.ctx, creator)
+	suite.Len(contracts, 2)
+}
+
+func (suite *StoreTestSuite) TestTagIndex() {
+	tag := "defi"
+
+	// Register contracts with tag
+	for i := 1; i <= 3; i++ {
+		contractAddr := "cosmos1contract" + string(rune('0'+i))
+		info := &pb.ContractInfo{
+			Address:        contractAddr,
+			CodeId:         uint64(i),
+			Creator:        "cosmos1creator",
+			Admin:          "cosmos1admin",
+			Label:          "test",
+			Metadata:       &pb.ContractMetadata{Name: "Test", Tags: []string{tag}},
+			SecurityPolicy: &pb.SecurityPolicy{},
+			Compliance:     &pb.ComplianceRequirements{},
+			Status:         pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
+		}
+		suite.keeper.SetContractInfo(suite.ctx, info)
+		suite.keeper.AddTagContract(suite.ctx, tag, contractAddr)
+	}
+
+	contracts := suite.keeper.GetTagContracts(suite.ctx, tag)
+	suite.Len(contracts, 3)
+}
+
+func (suite *StoreTestSuite) TestMetricsStorage() {
+	contractAddr := "cosmos1contract"
+	metrics := &pb.ContractMetrics{
+		ContractAddress:      contractAddr,
+		TotalExecutions:      100,
+		SuccessfulExecutions: 95,
+		FailedExecutions:     5,
+		TotalGasUsed:         5000000,
+		AvgGasPerExecution:   50000,
+	}
+
+	suite.keeper.SetContractMetrics(suite.ctx, metrics)
+
+	retrieved, found := suite.keeper.GetContractMetrics(suite.ctx, contractAddr)
+	suite.True(found)
+	suite.Equal(metrics.TotalExecutions, retrieved.TotalExecutions)
+	suite.Equal(metrics.SuccessfulExecutions, retrieved.SuccessfulExecutions)
+}

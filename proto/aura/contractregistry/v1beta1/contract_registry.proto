@@ -1,0 +1,400 @@
+syntax = "proto3";
+package aura.contractregistry.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/contractregistry/v1beta1";
+
+// ContractInfo represents a registered smart contract with all metadata and policies
+message ContractInfo {
+  // Contract address
+  string address = 1;
+
+  // Code ID of the contract
+  uint64 code_id = 2;
+
+  // Creator address
+  string creator = 3;
+
+  // Admin address (can migrate/update)
+  string admin = 4;
+
+  // Human-readable label
+  string label = 5;
+
+  // Creation timestamp
+  google.protobuf.Timestamp created_at = 6 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+
+  // Last updated timestamp
+  google.protobuf.Timestamp updated_at = 7 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+
+  // Contract metadata
+  ContractMetadata metadata = 8 [(gogoproto.nullable) = false];
+
+  // Security policy
+  SecurityPolicy security_policy = 9 [(gogoproto.nullable) = false];
+
+  // Compliance requirements
+  ComplianceRequirements compliance = 10 [(gogoproto.nullable) = false];
+
+  // Current status
+  ContractStatus status = 11;
+
+  // Address of contract this contract was migrated to (if any)
+  string migration_target = 12;
+
+  // Address of contract this contract was migrated from (if any)
+  string migrated_from = 13;
+
+  // Timestamp of migration (if any)
+  google.protobuf.Timestamp migrated_at = 14 [(gogoproto.stdtime) = true];
+
+  // Audit history for this contract
+  repeated AuditHistoryEntry audit_history = 15;
+
+  // Security score (0-100)
+  int32 security_score = 16;
+
+  // Whether contract is verified
+  bool is_verified = 17;
+
+  // Verification level (1-4)
+  int32 verification_level = 18;
+}
+
+// ContractMetadata contains identity and requirement information
+message ContractMetadata {
+  // Contract name
+  string name = 1;
+
+  // Detailed description
+  string description = 2;
+
+  // Version string (e.g., "1.0.0")
+  string version = 3;
+
+  // Homepage URL
+  string homepage = 4;
+
+  // Source code URL
+  string source_code_url = 5;
+
+  // Tags for categorization (e.g., "defi", "nft", "dao")
+  repeated string tags = 6;
+
+  // Whether contract requires VCs for interaction
+  bool requires_vc = 7;
+
+  // Required VC types (empty if no requirement)
+  repeated string required_vc_types = 8;
+
+  // Minimum confidence score required (0 = no requirement)
+  uint64 min_confidence_score = 9;
+
+  // Required KYC level (0 = none, 1 = basic, 2 = intermediate, 3 = advanced)
+  uint32 required_kyc_level = 10;
+
+  // Whether sanctions check is required
+  bool check_sanctions = 11;
+
+  // SHA256 hash of source code
+  string source_code_hash = 12;
+
+  // Compiler version used for the contract
+  string compiler_version = 13;
+
+  // License type (e.g., MIT, Apache-2.0)
+  string license = 14;
+
+  // Unix timestamp of last verification
+  int64 last_verified = 15;
+
+  // Audit history entries
+  repeated AuditHistoryEntry audit_history = 16;
+}
+
+// AuditHistoryEntry represents a single audit in the contract's history
+message AuditHistoryEntry {
+  // Name of the auditor or firm
+  string auditor_name = 1;
+
+  // Unix timestamp of the audit date
+  int64 audit_date = 2;
+
+  // Audit score (0-100)
+  int32 audit_score = 3;
+
+  // URI to the audit report
+  string report_uri = 4;
+
+  // Findings summary
+  string findings_summary = 5;
+
+  // Number of critical issues found
+  int32 critical_issues = 6;
+
+  // Number of high issues found
+  int32 high_issues = 7;
+
+  // Number of medium issues found
+  int32 medium_issues = 8;
+
+  // Number of low issues found
+  int32 low_issues = 9;
+}
+
+// SecurityPolicy defines security controls and limits
+message SecurityPolicy {
+  // Whether contract can be paused by admin
+  bool allow_pause = 1;
+
+  // Whether contract can be migrated
+  bool allow_migration = 2;
+
+  // Maximum gas per transaction (0 = no limit)
+  uint64 max_gas_per_tx = 3;
+
+  // Rate limit per user per hour (0 = no limit)
+  uint64 rate_limit_per_user = 4;
+
+  // Blacklisted addresses (cannot interact)
+  repeated string blacklisted_addresses = 5;
+
+  // Whitelisted addresses (if non-empty, only these can interact)
+  repeated string whitelisted_addresses = 6;
+
+  // Whether emergency pause is enabled for this contract
+  bool emergency_pause_enabled = 7;
+
+  // Minimum timelock delay for migrations (in seconds)
+  uint64 migration_timelock = 8;
+
+  // Multi-sig threshold required for admin operations
+  uint32 multisig_threshold = 9;
+
+  // Maximum value per transaction (in base denomination, 0 = no limit)
+  uint64 max_value_per_tx = 10;
+
+  // Daily transaction limit (0 = no limit)
+  uint64 daily_tx_limit = 11;
+}
+
+// ComplianceRequirements defines regulatory compliance settings
+message ComplianceRequirements {
+  // Enforce KYC verification
+  bool enforce_kyc = 1;
+
+  // Minimum KYC level (1 = basic, 2 = intermediate, 3 = advanced)
+  uint32 min_kyc_level = 2;
+
+  // Enforce sanctions screening
+  bool enforce_sanctions_check = 3;
+
+  // Enforce spending limits
+  bool enforce_spending_limits = 4;
+
+  // Whether audit is required
+  bool require_audit = 5;
+
+  // Last audit date
+  google.protobuf.Timestamp last_audit_date = 6 [(gogoproto.stdtime) = true];
+
+  // Audit report URI
+  string audit_report_uri = 7;
+}
+
+// ContractStatus represents the operational status of a contract
+enum ContractStatus {
+  // Unspecified (invalid)
+  CONTRACT_STATUS_UNSPECIFIED = 0;
+
+  // Active and operational
+  CONTRACT_STATUS_ACTIVE = 1;
+
+  // Temporarily paused
+  CONTRACT_STATUS_PAUSED = 2;
+
+  // Deprecated (discouraged use)
+  CONTRACT_STATUS_DEPRECATED = 3;
+
+  // Frozen (emergency stop)
+  CONTRACT_STATUS_FROZEN = 4;
+}
+
+// ContractMetrics tracks usage statistics for a contract
+message ContractMetrics {
+  // Contract address
+  string contract_address = 1;
+
+  // Total executions
+  uint64 total_executions = 2;
+
+  // Successful executions
+  uint64 successful_executions = 3;
+
+  // Failed executions
+  uint64 failed_executions = 4;
+
+  // Total gas used
+  uint64 total_gas_used = 5;
+
+  // Average gas per execution
+  uint64 avg_gas_per_execution = 6;
+
+  // Unique users
+  uint64 unique_users = 7;
+
+  // Rate limit violations
+  uint64 rate_limit_violations = 8;
+
+  // Compliance check failures
+  uint64 compliance_failures = 9;
+
+  // Last execution timestamp
+  google.protobuf.Timestamp last_execution = 10 [(gogoproto.stdtime) = true];
+}
+
+// AuditEntry represents a single audit trail entry for a contract
+message AuditEntry {
+  // Unique entry ID (auto-assigned)
+  uint64 id = 1;
+
+  // Contract address being audited
+  string contract_address = 2;
+
+  // Unix timestamp of the action
+  int64 timestamp = 3;
+
+  // Type of action (e.g., EXECUTE_CONTRACT, STATUS_CHANGE, MIGRATE_FROM)
+  string action = 4;
+
+  // Address of the actor performing the action
+  string actor = 5;
+
+  // Detailed description of the action
+  string details = 6;
+
+  // Whether the action succeeded
+  bool success = 7;
+}
+
+// AuditStatistics aggregates audit trail statistics
+message AuditStatistics {
+  // Contract address
+  string contract_address = 1;
+
+  // Total audit entries
+  uint64 total_entries = 2;
+
+  // Number of successful actions
+  uint64 success_count = 3;
+
+  // Number of failed actions
+  uint64 failure_count = 4;
+
+  // Count of each action type (action -> count)
+  map<string, uint64> action_counts = 5;
+}
+
+// MigrationRecord represents a contract migration
+message MigrationRecord {
+  // Unique migration ID
+  uint64 id = 1;
+
+  // Old contract address
+  string old_contract_address = 2;
+
+  // New contract address
+  string new_contract_address = 3;
+
+  // Code ID of old contract
+  uint64 old_code_id = 4;
+
+  // Code ID of new contract
+  uint64 new_code_id = 5;
+
+  // Timestamp of migration
+  google.protobuf.Timestamp migrated_at = 6 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+
+  // Address of entity that performed the migration
+  string migrated_by = 7;
+
+  // Reason for migration
+  string reason = 8;
+}
+
+// VerificationRecord stores the verification status of a contract
+message VerificationRecord {
+  // Contract address
+  string contract_address = 1;
+
+  // Verification status (unverified, pending, verified, failed, expired, revoked)
+  string status = 2;
+
+  // Verification level (1=basic, 2=standard, 3=full, 4=certified)
+  int32 level = 3;
+
+  // Unix timestamp of verification
+  int64 timestamp = 4;
+
+  // Unix timestamp of expiration
+  int64 expiration_time = 5;
+
+  // SHA256 hash of source code
+  string source_code_hash = 6;
+
+  // SHA256 hash of deployed bytecode
+  string bytecode_hash = 7;
+
+  // Compiler version used
+  string compiler_version = 8;
+
+  // Address that performed verification
+  string verified_by = 9;
+
+  // Certification ID (for level 4 verifications)
+  string certification_id = 10;
+
+  // Verification proof data
+  bytes verification_proof = 11;
+}
+
+// SecurityScoreRecord stores security score data for a contract
+message SecurityScoreRecord {
+  // Contract address
+  string contract_address = 1;
+
+  // Overall security score (0-100)
+  int32 overall_score = 2;
+
+  // Audit score component
+  int32 audit_score = 3;
+
+  // Metrics score component
+  int32 metrics_score = 4;
+
+  // Compliance score component
+  int32 compliance_score = 5;
+
+  // Policy score component
+  int32 policy_score = 6;
+
+  // History score component
+  int32 history_score = 7;
+
+  // Source code score component
+  int32 source_code_score = 8;
+
+  // Vulnerability penalty applied
+  int32 vulnerability_penalty = 9;
+
+  // Risk level (LOW, MEDIUM, HIGH, CRITICAL)
+  string risk_level = 10;
+
+  // Unix timestamp of calculation
+  int64 calculated_at = 11;
+
+  // Recommendations for improving score
+  repeated string recommendations = 12;
+}

@@ -1,0 +1,38 @@
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: default
+  group_by: ['alertname', 'severity']
+  group_wait: 30s
+  group_interval: 2m
+  repeat_interval: 4h
+  routes:
+    - matchers:
+        - severity="critical"
+      receiver: pagerduty
+    - matchers:
+        - severity=~"high|warning"
+      receiver: slack
+
+receivers:
+  - name: default
+    webhook_configs: []
+
+  - name: slack
+    slack_configs:
+      - api_url: '{{ env "SLACK_WEBHOOK_URL" }}'
+        channel: '{{ env "SLACK_CHANNEL" | default "#aura-alerts" }}'
+        send_resolved: true
+        text: |-
+          *{{ .Status | toUpper }}* ({{ .CommonLabels.severity }}) – {{ .CommonAnnotations.summary }}
+          {{ .CommonAnnotations.description }}
+
+  - name: pagerduty
+    pagerduty_configs:
+      - routing_key: '{{ env "PAGERDUTY_ROUTING_KEY" }}'
+        severity: '{{ .CommonLabels.severity }}'
+        class: aura-validatorsecurity
+        description: '{{ .CommonAnnotations.summary }}'
+        details:
+          description: '{{ .CommonAnnotations.description }}'

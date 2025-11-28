@@ -1,0 +1,22 @@
+@startuml
+title Assistant Slashing & Freeze Flow
+
+actor Monitor
+participant "Incident Reporter" as REP
+participant "Governance Module" as GOV
+participant "Assistant Registry" as REG
+participant "Tokenomics" as TOK
+participant "Reward Escrow" as ESC
+
+Monitor -> REP: Upload logs + evidence bundle
+REP -> GOV: File SlashProposal(assistant_id, evidence)
+GOV -> REG: Flag assistant (freeze payouts)
+REG --> GOV: Status=Frozen
+GOV -> GOV: Open voting window
+GOV -> TOK: On approval, slash bonded stake
+TOK -> ESC: Deduct assistant escrow / re-route rewards
+TOK --> Monitor: Pay reporter bounty (if configured)
+GOV -> REG: Update assistant status = Revoked
+REG --> REP: Emit Slashed event to subscribers
+
+@enduml

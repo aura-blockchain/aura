@@ -1,0 +1,130 @@
+package keeper
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"cosmossdk.io/math"
+	"github.com/aequitas/aura/chain/x/common/determinism"
+	wsproto "github.com/aequitas/aura/proto/aura/walletsecurity/v1beta1"
+	"google.golang.org/protobuf/types/known/timestamppb"
+)
+
+// PurchaseInsurance allows a wallet to purchase insurance coverage
+func (k Keeper) PurchaseInsurance(ctx context.Context, walletID string, coverageAmount math.Int, premium math.Int) (*wsproto.InsurancePolicy, error) {
+	policyID := fmt.Sprintf("policy_%s_%d", walletID, determinism.GetBlockTime(ctx).UnixNano())
+
+	policy := &wsproto.InsurancePolicy{
+		PolicyId:       policyID,
+		WalletId:       walletID,
+		CoverageAmount: coverageAmount.String(),
+		Premium:        premium.String(),
+		Active:         true,
+		PurchasedAt:    timestamppb.Now(),
+		ExpiresAt:      timestamppb.New(determinism.GetBlockTime(ctx).Add(365 * 24 * time.Hour)), // 1 year
+		ClaimsPaid:     "0",
+	}
+
+	policyBytes, err := k.cdc.Marshal(policy)
+	if err != nil {
+		return nil, err
+	}
+
+	kvStore := k.getStore(ctx)
+	key := []byte(fmt.Sprintf("insurance_%s", policyID))
+	kvStore.Set(key, policyBytes)
+
+	return policy, nil
+}
+
+// FileClaim files an insurance claim
+func (k Keeper) FileClaim(ctx context.Context, policyID, reason string, claimAmount math.Int) (string, error) {
+	// Get policy
+	kvStore := k.getStore(ctx)
+	key := []byte(fmt.Sprintf("insurance_%s", policyID))
+
+	policyBytes, _ := kvStore.Get(key)
+	if policyBytes == nil {
+		return "", fmt.Errorf("policy not found")
+	}
+
+	var policy wsproto.InsurancePolicy
+	if err := k.cdc.Unmarshal(policyBytes, &policy); err != nil {
+		return "", err
+	}
+
+	if !policy.Active {
+		return "", fmt.Errorf("policy not active")
+	}
+
+	// Create claim
+	claimID := fmt.Sprintf("claim_%s_%d", policyID, determinism.GetBlockTime(ctx).UnixNano())
+
+	claim := &wsproto.InsuranceClaim{
+		ClaimId:    claimID,
+		PolicyId:   policyID,
+		WalletId:   policy.WalletId,
+		Amount:     claimAmount.String(),
+		Reason:     reason,
+		Status:     "pending",
+		FiledAt:    timestamppb.Now(),
+		ApprovedAt: nil,
+	}
+
+	claimBytes, err := k.cdc.Marshal(claim)
+	if err != nil {
+		return "", err
+	}
+
+	claimKey := []byte(fmt.Sprintf("claim_%s", claimID))
+	kvStore.Set(claimKey, claimBytes)
+
+	return claimID, nil
+}
+
+// ProcessClaim processes an insurance claim
+func (k Keeper) ProcessClaim(ctx context.Context, claimID string, approved bool) error {
+	kvStore := k.getStore(ctx)
+	key := []byte(fmt.Sprintf("claim_%s", claimID))
+
+	claimBytes, _ := kvStore.Get(key)
+	if claimBytes == nil {
+		return fmt.Errorf("claim not found")
+	}
+
+	var claim wsproto.InsuranceClaim
+	if err := k.cdc.Unmarshal(claimBytes, &claim); err != nil {
+		return err
+	}
+
+	if approved {
+		claim.Status = "approved"
+		claim.ApprovedAt = timestamppb.Now()
+
+		// Update policy claims paid
+		policyKey := []byte(fmt.Sprintf("insurance_%s", claim.PolicyId))
+		policyBytes, _ := kvStore.Get(policyKey)
+
+		var policy wsproto.InsurancePolicy
+		if err := k.cdc.Unmarshal(policyBytes, &policy); err == nil {
+			currentPaid, _ := math.NewIntFromString(policy.ClaimsPaid)
+			claimAmount, _ := math.NewIntFromString(claim.Amount)
+			newPaid := currentPaid.Add(claimAmount)
+			policy.ClaimsPaid = newPaid.String()
+
+			updatedPolicyBytes, _ := k.cdc.Marshal(&policy)
+			kvStore.Set(policyKey, updatedPolicyBytes)
+		}
+	} else {
+		claim.Status = "denied"
+	}
+
+	updatedBytes, err := k.cdc.Marshal(&claim)
+	if err != nil {
+		return err
+	}
+
+	kvStore.Set(key, updatedBytes)
+	return nil
+}

@@ -1,0 +1,443 @@
+syntax = "proto3";
+package aura.prevalidation.v1beta1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/prevalidation/v1beta1";
+
+// TransactionType defines the types of transactions that can be pre-validated
+enum TransactionType {
+  TX_TYPE_UNSPECIFIED = 0;
+  TX_TYPE_IR_COMPLETION = 1;          // Highest frequency - IR completions
+  TX_TYPE_DEX_SWAP = 2;               // DEX token swaps
+  TX_TYPE_LP_DEPOSIT = 3;             // Liquidity pool deposits
+  TX_TYPE_LP_WITHDRAWAL = 4;          // Liquidity pool withdrawals
+  TX_TYPE_VC_MINT = 5;                // Verifiable credential minting
+  TX_TYPE_BRIDGE_TRANSFER = 6;        // Cross-chain bridge transfers
+  TX_TYPE_CONFIDENCE_SCORE_UPDATE = 7; // Confidence score updates
+  TX_TYPE_IDENTITY_CHANGE = 8;        // Identity change requests
+}
+
+// ValidationStatus tracks the status of a pre-validated transaction
+enum ValidationStatus {
+  VALIDATION_STATUS_UNSPECIFIED = 0;
+  VALIDATION_STATUS_PENDING = 1;       // Scheduled for pre-validation
+  VALIDATION_STATUS_VALIDATED = 2;     // Pre-validation complete
+  VALIDATION_STATUS_EXPIRED = 3;       // Pre-validation expired
+  VALIDATION_STATUS_EXECUTED = 4;      // Transaction executed using pre-validation
+  VALIDATION_STATUS_FAILED = 5;        // Pre-validation failed
+}
+
+// CacheStrategy defines how pre-validated transactions are cached
+enum CacheStrategy {
+  CACHE_STRATEGY_UNSPECIFIED = 0;
+  CACHE_STRATEGY_LRU = 1;              // Least Recently Used
+  CACHE_STRATEGY_LFU = 2;              // Least Frequently Used
+  CACHE_STRATEGY_FIFO = 3;             // First In First Out
+  CACHE_STRATEGY_ADAPTIVE = 4;         // Adaptive based on hit rates
+}
+
+// PreValidatedTransaction represents a transaction that has been pre-validated
+message PreValidatedTransaction {
+  // Unique identifier for the pre-validated transaction
+  string id = 1;
+
+  // Type of transaction
+  TransactionType tx_type = 2;
+
+  // Template ID this transaction was validated against
+  string template_id = 3;
+
+  // Encrypted transaction data (encrypted smart contract)
+  bytes encrypted_data = 4;
+
+  // Encryption key ID (for key rotation)
+  string encryption_key_id = 5;
+
+  // Validation metadata
+  ValidationMetadata validation_metadata = 6;
+
+  // Transaction hash (for verification)
+  bytes tx_hash = 7;
+
+  // Signer address
+  string signer = 8;
+
+  // Nonce for uniqueness
+  uint64 nonce = 9;
+
+  // Status of the pre-validation
+  ValidationStatus status = 10;
+
+  // When this pre-validation expires
+  google.protobuf.Timestamp expires_at = 11;
+
+  // When this was pre-validated
+  google.protobuf.Timestamp validated_at = 12;
+
+  // When this was executed (if executed)
+  google.protobuf.Timestamp executed_at = 13;
+
+  // Block height when pre-validated
+  uint64 validated_height = 14;
+
+  // Block height when executed (if executed)
+  uint64 executed_height = 15;
+
+  // Gas estimate for execution
+  uint64 estimated_gas = 16;
+
+  // Additional context data (transaction-specific)
+  map<string, string> context = 17;
+}
+
+// ValidationTemplate defines a template for common transaction patterns
+message ValidationTemplate {
+  // Unique template identifier
+  string id = 1;
+
+  // Transaction type this template applies to
+  TransactionType tx_type = 2;
+
+  // Template name (e.g., "USDC-AURA-swap", "basic-ir-completion")
+  string name = 3;
+
+  // Template description
+  string description = 4;
+
+  // Validation rules (as JSON schema or similar)
+  string validation_rules = 5;
+
+  // Parameter schema (defines what can vary in the transaction)
+  string parameter_schema = 6;
+
+  // Gas estimation formula
+  string gas_formula = 7;
+
+  // Priority weight (higher = more templates created)
+  uint32 priority_weight = 8;
+
+  // Minimum confidence score required
+  uint64 min_confidence_score = 9;
+
+  // Whether this template is active
+  bool active = 10;
+
+  // Creation time
+  google.protobuf.Timestamp created_at = 11;
+
+  // Last updated time
+  google.protobuf.Timestamp updated_at = 12;
+
+  // Statistics for this template
+  TemplateStats stats = 13;
+}
+
+// TemplateStats tracks usage statistics for a template
+message TemplateStats {
+  // Total pre-validations created
+  uint64 total_created = 1;
+
+  // Total pre-validations executed
+  uint64 total_executed = 2;
+
+  // Total pre-validations expired
+  uint64 total_expired = 3;
+
+  // Cache hit rate (percentage)
+  double cache_hit_rate = 4;
+
+  // Average execution time savings (milliseconds)
+  double avg_time_savings_ms = 5;
+
+  // Last used timestamp
+  google.protobuf.Timestamp last_used = 6;
+}
+
+// ValidationMetadata contains metadata about the validation process
+message ValidationMetadata {
+  // Validator node that performed pre-validation
+  string validator_node = 1;
+
+  // Validation duration (milliseconds)
+  uint64 validation_duration_ms = 2;
+
+  // State root at validation time
+  bytes state_root = 3;
+
+  // Dependencies (other modules/state accessed)
+  repeated string dependencies = 4;
+
+  // Validation proof (cryptographic proof of pre-validation)
+  bytes validation_proof = 5;
+
+  // Version of validation engine
+  string engine_version = 6;
+}
+
+// PreValidationMetrics tracks system-wide metrics
+message PreValidationMetrics {
+  // Total pre-validations created
+  uint64 total_pre_validations = 1;
+
+  // Total pre-validations executed
+  uint64 total_executed = 2;
+
+  // Total pre-validations expired
+  uint64 total_expired = 3;
+
+  // Total cache hits
+  uint64 total_cache_hits = 4;
+
+  // Total cache misses
+  uint64 total_cache_misses = 5;
+
+  // Overall cache hit rate
+  double overall_cache_hit_rate = 6;
+
+  // Average time savings per transaction (milliseconds)
+  double avg_time_savings_ms = 7;
+
+  // Total time saved (milliseconds)
+  uint64 total_time_saved_ms = 8;
+
+  // Total energy saved (estimated kWh)
+  double total_energy_saved_kwh = 9;
+
+  // Metrics by transaction type
+  map<string, TypeMetrics> metrics_by_type = 10;
+
+  // Current hour metrics (for real-time monitoring)
+  HourlyMetrics current_hour = 11;
+
+  // Last 24 hours metrics
+  repeated HourlyMetrics last_24_hours = 12;
+
+  // Control group metrics (for comparison)
+  ControlGroupMetrics control_group = 13;
+}
+
+// TypeMetrics tracks metrics for a specific transaction type
+message TypeMetrics {
+  TransactionType tx_type = 1;
+  uint64 total_pre_validated = 2;
+  uint64 total_executed = 3;
+  uint64 total_expired = 4;
+  uint64 cache_hits = 5;
+  uint64 cache_misses = 6;
+  double cache_hit_rate = 7;
+  double avg_time_savings_ms = 8;
+  double avg_execution_time_ms = 9;
+  double avg_validation_time_ms = 10;
+}
+
+// HourlyMetrics tracks metrics for a specific hour
+message HourlyMetrics {
+  google.protobuf.Timestamp hour = 1;
+  uint64 pre_validations_created = 2;
+  uint64 transactions_executed = 3;
+  uint64 cache_hits = 4;
+  uint64 cache_misses = 5;
+  double avg_time_savings_ms = 6;
+  double energy_saved_kwh = 7;
+}
+
+// ControlGroupMetrics tracks metrics for non-pre-validated transactions
+message ControlGroupMetrics {
+  // Percentage of transactions in control group
+  double control_group_percentage = 1;
+
+  // Total transactions in control group
+  uint64 total_transactions = 2;
+
+  // Average execution time (milliseconds)
+  double avg_execution_time_ms = 3;
+
+  // Standard deviation of execution time
+  double execution_time_std_dev_ms = 4;
+
+  // Median execution time
+  double median_execution_time_ms = 5;
+
+  // 95th percentile execution time
+  double p95_execution_time_ms = 6;
+
+  // 99th percentile execution time
+  double p99_execution_time_ms = 7;
+}
+
+// SchedulerConfig defines when pre-validation runs
+message SchedulerConfig {
+  // Off-peak hours (24-hour format)
+  repeated uint32 off_peak_hours = 1;
+
+  // Timezone for off-peak hours (IANA timezone)
+  string timezone = 2;
+
+  // Whether scheduler is enabled
+  bool enabled = 3;
+
+  // Interval between pre-validation runs (minutes)
+  uint32 run_interval_minutes = 4;
+
+  // Maximum pre-validations per run
+  uint64 max_per_run = 5;
+
+  // Whether to run during peak hours (emergency mode)
+  bool allow_peak_hours = 6;
+}
+
+// AutoScalingConfig defines auto-scaling parameters
+message AutoScalingConfig {
+  // Whether auto-scaling is enabled
+  bool enabled = 1;
+
+  // Initial amounts per transaction type
+  map<string, uint64> initial_amounts = 2;
+
+  // Target cache hit rate (percentage)
+  double target_cache_hit_rate = 3;
+
+  // Minimum cache hit rate before scaling down
+  double min_cache_hit_rate = 4;
+
+  // Maximum pre-validations per type
+  map<string, uint64> max_amounts = 5;
+
+  // Scaling factor (multiply by this when scaling up)
+  double scale_up_factor = 6;
+
+  // Scaling factor (multiply by this when scaling down)
+  double scale_down_factor = 7;
+
+  // Cooldown period between scaling events (minutes)
+  uint32 cooldown_minutes = 8;
+
+  // Evaluation period for scaling decisions (hours)
+  uint32 evaluation_period_hours = 9;
+}
+
+// Params defines the module parameters
+message Params {
+  // Whether pre-validation is enabled
+  bool enabled = 1;
+
+  // Scheduler configuration
+  SchedulerConfig scheduler_config = 2;
+
+  // Auto-scaling configuration
+  AutoScalingConfig auto_scaling_config = 3;
+
+  // Cache strategy
+  CacheStrategy cache_strategy = 4;
+
+  // Maximum cache size (number of pre-validated transactions)
+  uint64 max_cache_size = 5;
+
+  // Pre-validation expiry time (hours)
+  uint32 expiry_hours = 6;
+
+  // Encryption algorithm (e.g., "AES-256-GCM")
+  string encryption_algorithm = 7;
+
+  // Control group percentage (0-100)
+  double control_group_percentage = 8;
+
+  // Minimum confidence score required for pre-validation
+  uint64 min_confidence_score = 9;
+
+  // Energy cost per validation (kWh)
+  double energy_cost_per_validation_kwh = 10;
+
+  // Energy cost per execution (kWh)
+  double energy_cost_per_execution_kwh = 11;
+
+  // Whether to enable metrics collection
+  bool metrics_enabled = 12;
+
+  // Whether to enable detailed logging
+  bool detailed_logging = 13;
+
+  // Maximum validation attempts
+  uint32 max_validation_attempts = 14;
+
+  // Retry delay (seconds)
+  uint32 retry_delay_seconds = 15;
+}
+
+// GenesisState defines the initial state of the module
+message GenesisState {
+  Params params = 1;
+  repeated PreValidatedTransaction pre_validated_transactions = 2;
+  repeated ValidationTemplate templates = 3;
+  PreValidationMetrics metrics = 4;
+}
+
+// Event messages for tracking
+
+// EventPreValidationCreated is emitted when a transaction is pre-validated
+message EventPreValidationCreated {
+  string tx_id = 1;
+  TransactionType tx_type = 2;
+  string template_id = 3;
+  string signer = 4;
+  uint64 block_height = 5;
+  google.protobuf.Timestamp timestamp = 6;
+  uint64 estimated_gas = 7;
+}
+
+// EventPreValidationExecuted is emitted when a pre-validated transaction is executed
+message EventPreValidationExecuted {
+  string tx_id = 1;
+  TransactionType tx_type = 2;
+  string signer = 3;
+  uint64 block_height = 4;
+  google.protobuf.Timestamp timestamp = 5;
+  uint64 time_saved_ms = 6;
+  bool from_cache = 7;
+}
+
+// EventPreValidationExpired is emitted when a pre-validation expires
+message EventPreValidationExpired {
+  string tx_id = 1;
+  TransactionType tx_type = 2;
+  google.protobuf.Timestamp expired_at = 3;
+}
+
+// EventCacheHit is emitted when a cache hit occurs
+message EventCacheHit {
+  TransactionType tx_type = 1;
+  string template_id = 2;
+  uint64 time_saved_ms = 3;
+}
+
+// EventCacheMiss is emitted when a cache miss occurs
+message EventCacheMiss {
+  TransactionType tx_type = 1;
+  string signer = 2;
+}
+
+// EventSchedulerRun is emitted when the scheduler runs
+message EventSchedulerRun {
+  google.protobuf.Timestamp started_at = 1;
+  google.protobuf.Timestamp completed_at = 2;
+  uint64 pre_validations_created = 3;
+  map<string, uint64> created_by_type = 4;
+  bool is_off_peak = 5;
+}
+
+// EventAutoScaling is emitted when auto-scaling adjusts amounts
+message EventAutoScaling {
+  TransactionType tx_type = 1;
+  uint64 previous_amount = 2;
+  uint64 new_amount = 3;
+  double cache_hit_rate = 4;
+  string reason = 5;
+  google.protobuf.Timestamp timestamp = 6;
+}
+
+// EventMetricsUpdate is emitted periodically with updated metrics
+message EventMetricsUpdate {
+  PreValidationMetrics metrics = 1;
+  google.protobuf.Timestamp timestamp = 2;
+}

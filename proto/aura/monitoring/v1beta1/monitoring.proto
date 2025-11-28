@@ -1,0 +1,53 @@
+syntax = "proto3";
+package aura.monitoring.v1beta1;
+
+option go_package = "github.com/aequitas/aura/proto/aura/monitoring/v1beta1";
+
+// WebhookConfig represents webhook configuration
+message WebhookConfig {
+  string id = 1;
+  string url = 2;
+  string secret = 3;
+  repeated string events = 4;
+  bool enabled = 5;
+}
+
+// Metric represents a monitoring metric
+message Metric {
+  string name = 1;
+  string value = 2;
+  map<string, string> labels = 3;
+  int64 timestamp = 4;
+}
+
+// MetricSummary contains statistical summary
+message MetricSummary {
+  string name = 1;
+  int64 count = 2;
+  double sum = 3;
+  double min = 4;
+  double max = 5;
+  double mean = 6;
+  double std_dev = 7;
+  double p50 = 8;
+  double p95 = 9;
+  double p99 = 10;
+  double last_value = 11;
+}
+
+// AlertRoute defines alert routing configuration
+message AlertRoute {
+  string id = 1;
+  string severity = 2;
+  repeated string channels = 3;
+  bool enabled = 4;
+}
+
+// SLATracking tracks Service Level Agreement metrics
+message SLATracking {
+  string id = 1;
+  string name = 2;
+  double target_uptime = 3;
+  double actual_uptime = 4;
+  int64 violation_count = 5;
+}

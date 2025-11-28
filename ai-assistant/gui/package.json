@@ -1,0 +1,50 @@
+{
+  "name": "aura-assistant-gui",
+  "version": "0.2.0",
+  "description": "Electron-based control center for Aura AI assistants (heartbeat scheduling, voucher management, telemetry).",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electronmon .",
+    "dist": "electron-builder",
+    "lint": "eslint renderer --ext .js"
+  },
+  "dependencies": {
+    "keytar": "^7.9.0",
+    "luxon": "^3.4.4"
+  },
+  "devDependencies": {
+    "electron": "^31.2.0",
+    "electron-builder": "^24.13.3",
+    "electronmon": "^2.0.2"
+  },
+  "build": {
+    "appId": "com.aura.assistant",
+    "productName": "Aura Assistant Control Center",
+    "files": [
+      "**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Utility"
+    }
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "license": "Apache-2.0",
+  "author": "Aura Core Team"
+}

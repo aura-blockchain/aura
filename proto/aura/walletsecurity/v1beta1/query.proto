@@ -1,0 +1,120 @@
+syntax = "proto3";
+package aura.walletsecurity.v1beta1;
+
+import "aura/walletsecurity/v1beta1/wallet_security.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/walletsecurity/v1beta1";
+
+// Query defines the gRPC query service for wallet security
+service Query {
+  // GetHardwareWallet retrieves hardware wallet configuration
+  rpc GetHardwareWallet(QueryGetHardwareWalletRequest) returns (QueryGetHardwareWalletResponse);
+
+  // GetMultiSigWallet retrieves multi-sig wallet configuration
+  rpc GetMultiSigWallet(QueryGetMultiSigWalletRequest) returns (QueryGetMultiSigWalletResponse);
+
+  // GetPendingMultiSigTx retrieves a pending multi-sig transaction
+  rpc GetPendingMultiSigTx(QueryGetPendingMultiSigTxRequest) returns (QueryGetPendingMultiSigTxResponse);
+
+  // GetSocialRecoveryConfig retrieves social recovery configuration
+  rpc GetSocialRecoveryConfig(QueryGetSocialRecoveryConfigRequest) returns (QueryGetSocialRecoveryConfigResponse);
+
+  // GetRecoveryRequest retrieves a recovery request
+  rpc GetRecoveryRequest(QueryGetRecoveryRequestRequest) returns (QueryGetRecoveryRequestResponse);
+
+  // GetSpendingLimit retrieves spending limit configuration
+  rpc GetSpendingLimit(QueryGetSpendingLimitRequest) returns (QueryGetSpendingLimitResponse);
+
+  // GetSessionConfig retrieves session configuration
+  rpc GetSessionConfig(QueryGetSessionConfigRequest) returns (QueryGetSessionConfigResponse);
+
+  // GetSecurityMetrics retrieves wallet security metrics
+  rpc GetSecurityMetrics(QueryGetSecurityMetricsRequest) returns (QueryGetSecurityMetricsResponse);
+
+  // GetDomainVerification retrieves domain verification status
+  rpc GetDomainVerification(QueryGetDomainVerificationRequest) returns (QueryGetDomainVerificationResponse);
+
+  // GetDustFilter retrieves dust filter configuration
+  rpc GetDustFilter(QueryGetDustFilterRequest) returns (QueryGetDustFilterResponse);
+}
+
+message QueryGetHardwareWalletRequest {
+  string wallet_id = 1;
+}
+
+message QueryGetHardwareWalletResponse {
+  HardwareWalletConfig config = 1;
+}
+
+message QueryGetMultiSigWalletRequest {
+  string wallet_id = 1;
+}
+
+message QueryGetMultiSigWalletResponse {
+  MultiSigWallet wallet = 1;
+}
+
+message QueryGetPendingMultiSigTxRequest {
+  string tx_id = 1;
+}
+
+message QueryGetPendingMultiSigTxResponse {
+  PendingMultiSigTransaction tx = 1;
+}
+
+message QueryGetSocialRecoveryConfigRequest {
+  string wallet_id = 1;
+}
+
+message QueryGetSocialRecoveryConfigResponse {
+  SocialRecoveryConfig config = 1;
+}
+
+message QueryGetRecoveryRequestRequest {
+  string request_id = 1;
+}
+
+message QueryGetRecoveryRequestResponse {
+  RecoveryRequest request = 1;
+}
+
+message QueryGetSpendingLimitRequest {
+  string wallet_id = 1;
+  string denom = 2;
+}
+
+message QueryGetSpendingLimitResponse {
+  SpendingLimit limit = 1;
+}
+
+message QueryGetSessionConfigRequest {
+  string session_id = 1;
+}
+
+message QueryGetSessionConfigResponse {
+  SessionConfig config = 1;
+}
+
+message QueryGetSecurityMetricsRequest {
+  string wallet_id = 1;
+}
+
+message QueryGetSecurityMetricsResponse {
+  WalletSecurityMetrics metrics = 1;
+}
+
+message QueryGetDomainVerificationRequest {
+  string domain = 1;
+}
+
+message QueryGetDomainVerificationResponse {
+  DomainVerification verification = 1;
+}
+
+message QueryGetDustFilterRequest {
+  string wallet_id = 1;
+}
+
+message QueryGetDustFilterResponse {
+  DustAttackFilter filter = 1;
+}

@@ -1,0 +1,230 @@
+syntax = "proto3";
+package aura.bridge.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "cosmos/msg/v1/msg.proto";
+import "cosmos/base/v1beta1/coin.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/bridge/v1beta1";
+
+// Msg defines the bridge Msg service
+service Msg {
+  // LockTokens locks tokens on AURA for transfer to PAW or XAI
+  rpc LockTokens(MsgLockTokens) returns (MsgLockTokensResponse);
+
+  // MintTokens mints wrapped tokens on AURA from PAW or XAI (validator-only)
+  rpc MintTokens(MsgMintTokens) returns (MsgMintTokensResponse);
+
+  // UnlockTokens unlocks tokens on AURA after burn proof from target chain
+  rpc UnlockTokens(MsgUnlockTokens) returns (MsgUnlockTokensResponse);
+
+  // BurnTokens burns wrapped tokens on AURA to unlock on source chain
+  rpc BurnTokens(MsgBurnTokens) returns (MsgBurnTokensResponse);
+
+  // LinkAddress links addresses across chains for shared identity
+  rpc LinkAddress(MsgLinkAddress) returns (MsgLinkAddressResponse);
+
+  // CrossChainSwap initiates cross-chain swap
+  rpc CrossChainSwap(MsgCrossChainSwap) returns (MsgCrossChainSwapResponse);
+
+  // RelayTransfer relays cross-chain transfer (relayer-only)
+  rpc RelayTransfer(MsgRelayTransfer) returns (MsgRelayTransferResponse);
+}
+
+// MsgLockTokens locks tokens on AURA to transfer to PAW or XAI
+message MsgLockTokens {
+  option (cosmos.msg.v1.signer) = "sender";
+
+  // Sender on AURA
+  string sender = 1;
+
+  // Target chain ("paw" or "xai")
+  string target_chain = 2;
+
+  // Recipient on target chain
+  string recipient = 3;
+
+  // Amount to lock
+  cosmos.base.v1beta1.Coin amount = 4 [(gogoproto.nullable) = false];
+}
+
+message MsgLockTokensResponse {
+  // Transfer ID for tracking
+  string transfer_id = 1;
+
+  // Estimated completion time (seconds)
+  uint64 estimated_completion = 2;
+}
+
+// MsgMintTokens mints wrapped tokens on AURA (validator-signed)
+message MsgMintTokens {
+  option (cosmos.msg.v1.signer) = "validator";
+
+  // Validator address
+  string validator = 1;
+
+  // Source chain ("paw" or "xai")
+  string source_chain = 2;
+
+  // Source chain transaction hash
+  string source_tx_hash = 3;
+
+  // Recipient on AURA
+  string recipient = 4;
+
+  // Amount to mint
+  string amount = 5 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Token denomination
+  string denom = 6;
+
+  // Validator signature over (source_chain, source_tx_hash, recipient, amount, denom)
+  bytes validator_signature = 7;
+}
+
+message MsgMintTokensResponse {
+  bool success = 1;
+  string wrapped_denom = 2;  // e.g., "paw.token" or "xai.coin"
+}
+
+// MsgUnlockTokens unlocks tokens on AURA after burn on target chain
+message MsgUnlockTokens {
+  option (cosmos.msg.v1.signer) = "sender";
+
+  // User address
+  string sender = 1;
+
+  // Source chain where burn occurred ("paw" or "xai")
+  string source_chain = 2;
+
+  // Burn transaction hash on source chain
+  string burn_tx_hash = 3;
+
+  // Amount to unlock
+  string amount = 4 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Token denomination
+  string denom = 5;
+
+  // Validator signatures (multi-sig required)
+  repeated bytes validator_signatures = 6;
+}
+
+message MsgUnlockTokensResponse {
+  bool success = 1;
+}
+
+// MsgBurnTokens burns wrapped tokens to unlock on source chain
+message MsgBurnTokens {
+  option (cosmos.msg.v1.signer) = "sender";
+
+  // Sender on AURA
+  string sender = 1;
+
+  // Target chain to unlock on ("paw" or "xai")
+  string target_chain = 2;
+
+  // Recipient on target chain
+  string recipient = 3;
+
+  // Wrapped tokens to burn
+  cosmos.base.v1beta1.Coin amount = 4 [(gogoproto.nullable) = false];
+}
+
+message MsgBurnTokensResponse {
+  string transfer_id = 1;
+  uint64 estimated_completion = 2;
+}
+
+// MsgLinkAddress links addresses across AURA, PAW, and XAI for shared identity
+message MsgLinkAddress {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  // AURA address
+  string aura_address = 1;
+
+  // PAW address (optional)
+  string paw_address = 2;
+
+  // XAI address (optional)
+  string xai_address = 3;
+
+  // Signature from PAW address (if linking PAW)
+  bytes paw_signature = 4;
+
+  // Signature from XAI address (if linking XAI)
+  bytes xai_signature = 5;
+
+  // Signer (must be one of the addresses being linked)
+  string signer = 6;
+}
+
+message MsgLinkAddressResponse {
+  bool success = 1;
+  string linked_identity_id = 2;
+}
+
+// MsgCrossChainSwap initiates swap across chains
+message MsgCrossChainSwap {
+  option (cosmos.msg.v1.signer) = "sender";
+
+  // Sender address
+  string sender = 1;
+
+  // Source chain
+  string source_chain = 2;
+
+  // Input coin
+  cosmos.base.v1beta1.Coin input_coin = 3 [(gogoproto.nullable) = false];
+
+  // Target chain
+  string target_chain = 4;
+
+  // Target denomination
+  string target_denom = 5;
+
+  // Minimum amount to receive
+  string min_target_amount = 6 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Recipient (defaults to sender if empty)
+  string recipient = 7;
+
+  // Max slippage (basis points, 500 = 5%)
+  uint64 max_slippage_bps = 8;
+}
+
+message MsgCrossChainSwapResponse {
+  string swap_id = 1;
+  repeated string route = 2;  // ["aura", "osmosis", "paw"]
+  uint64 estimated_completion = 3;
+}
+
+// MsgRelayTransfer relays cross-chain transfer (relayer-only)
+message MsgRelayTransfer {
+  option (cosmos.msg.v1.signer) = "relayer";
+
+  // Relayer address
+  string relayer = 1;
+
+  // Transfer ID
+  string transfer_id = 2;
+
+  // Target chain transaction hash
+  string target_tx_hash = 3;
+
+  // Status update
+  string status = 4;
+}
+
+message MsgRelayTransferResponse {
+  bool success = 1;
+}

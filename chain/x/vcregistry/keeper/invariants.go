@@ -1,0 +1,169 @@
+package keeper
+
+import (
+	"fmt"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/aequitas/aura/chain/x/vcregistry/types"
+)
+
+// RegisterInvariants registers all vcregistry module invariants
+func RegisterInvariants(ir sdk.InvariantRegistry, k *Keeper) {
+	ir.RegisterRoute(types.ModuleName, "params-valid", ParamsInvariant(k))
+	ir.RegisterRoute(types.ModuleName, "vc-consistency", VCConsistencyInvariant(k))
+	ir.RegisterRoute(types.ModuleName, "revocation-consistency", RevocationConsistencyInvariant(k))
+}
+
+// AllInvariants runs all invariants of the vcregistry module
+func AllInvariants(k *Keeper) sdk.Invariant {
+	return func(ctx sdk.Context) (string, bool) {
+		invariants := []sdk.Invariant{
+			ParamsInvariant(k),
+			VCConsistencyInvariant(k),
+			RevocationConsistencyInvariant(k),
+		}
+
+		for _, inv := range invariants {
+			msg, broken := inv(ctx)
+			if broken {
+				return msg, broken
+			}
+		}
+
+		return "", false
+	}
+}
+
+// ParamsInvariant checks that module parameters are valid
+func ParamsInvariant(k *Keeper) sdk.Invariant {
+	return func(ctx sdk.Context) (string, bool) {
+		params := k.GetParams()
+		if err := types.ValidateParams(&params); err != nil {
+			return sdk.FormatInvariant(
+				types.ModuleName,
+				"params-valid",
+				fmt.Sprintf("invalid params: %s", err.Error()),
+			), true
+		}
+		return "", false
+	}
+}
+
+// VCConsistencyInvariant checks verifiable credential consistency
+func VCConsistencyInvariant(k *Keeper) sdk.Invariant {
+	return func(ctx sdk.Context) (string, bool) {
+		if k.store == nil {
+			// Store not initialized, skip check
+			return "", false
+		}
+
+		// Iterate through all VCs using the store iterator
+		for _, vc := range k.store.iterateVCRecords(ctx) {
+			// Check VC ID is not empty
+			if vc.VcId == "" {
+				return sdk.FormatInvariant(
+					types.ModuleName,
+					"vc-consistency",
+					"VC has empty ID",
+				), true
+			}
+
+			// Check holder address is valid
+			if _, err := sdk.AccAddressFromBech32(vc.HolderAddress); err != nil {
+				return sdk.FormatInvariant(
+					types.ModuleName,
+					"vc-consistency",
+					fmt.Sprintf("VC %s has invalid holder address: %s", vc.VcId, vc.HolderAddress),
+				), true
+			}
+
+			// Check VC type is not unspecified
+			if vc.VcType == types.VCType_VC_TYPE_UNSPECIFIED {
+				return sdk.FormatInvariant(
+					types.ModuleName,
+					"vc-consistency",
+					fmt.Sprintf("VC %s has unspecified type", vc.VcId),
+				), true
+			}
+
+			// Check credential hash is not empty
+			if len(vc.CredentialHash) == 0 {
+				return sdk.FormatInvariant(
+					types.ModuleName,
+					"vc-consistency",
+					fmt.Sprintf("VC %s has empty credential hash", vc.VcId),
+				), true
+			}
+
+			// Check timestamps
+			if vc.IssuedAt == nil {
+				return sdk.FormatInvariant(
+					types.ModuleName,
+					"vc-consistency",
+					fmt.Sprintf("VC %s has nil issued_at", vc.VcId),
+				), true
+			}
+
+			// Expiration should be after issuance
+			if vc.ExpiresAt != nil && vc.IssuedAt != nil {
+				if vc.ExpiresAt.AsTime().Before(vc.IssuedAt.AsTime()) {
+					return sdk.FormatInvariant(
+						types.ModuleName,
+						"vc-consistency",
+						fmt.Sprintf("VC %s expires before issuance", vc.VcId),
+					), true
+				}
+			}
+
+			// Revoked VCs should have revocation time
+			if vc.Status == types.VCStatus_VC_STATUS_REVOKED {
+				revRecord, found := k.GetRevocationRecord(ctx, vc.VcId)
+				if !found || revRecord.RevokedAt == nil {
+					return sdk.FormatInvariant(
+						types.ModuleName,
+						"vc-consistency",
+						fmt.Sprintf("revoked VC %s has no revocation record", vc.VcId),
+					), true
+				}
+			}
+		}
+
+		return "", false
+	}
+}
+
+// RevocationConsistencyInvariant checks revocation list consistency
+func RevocationConsistencyInvariant(k *Keeper) sdk.Invariant {
+	return func(ctx sdk.Context) (string, bool) {
+		if k.store == nil {
+			// Store not initialized, skip check
+			return "", false
+		}
+
+		revocationList := k.GetRevocationList(ctx)
+		if revocationList == nil {
+			// No revocation list yet, this is valid
+			return "", false
+		}
+
+		// Check that Merkle root is not empty if there are revocations
+		if revocationList.TotalRevocations > 0 && len(revocationList.MerkleRoot) == 0 {
+			return sdk.FormatInvariant(
+				types.ModuleName,
+				"revocation-consistency",
+				"revocation list has entries but empty Merkle root",
+			), true
+		}
+
+		// Check that last updated is not nil if there are revocations
+		if revocationList.TotalRevocations > 0 && revocationList.LastUpdated == nil {
+			return sdk.FormatInvariant(
+				types.ModuleName,
+				"revocation-consistency",
+				"revocation list has entries but nil last_updated",
+			), true
+		}
+
+		return "", false
+	}
+}

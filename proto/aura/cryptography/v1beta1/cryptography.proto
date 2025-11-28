@@ -1,0 +1,282 @@
+syntax = "proto3";
+
+package aura.cryptography.v1beta1;
+
+import "google/protobuf/timestamp.proto";
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/cryptography/v1beta1";
+
+// KeyRotationSchedule defines an automated key rotation schedule
+message KeyRotationSchedule {
+  string id = 1;
+  string key_id = 2;
+  google.protobuf.Timestamp next_rotation_time = 3 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  int64 rotation_interval_seconds = 4;
+  bool enabled = 5;
+  string created_by = 6;
+  KeyRotationPolicy policy = 7;
+  google.protobuf.Timestamp last_rotation = 8 [(gogoproto.stdtime) = true];
+}
+
+// KeyRotationPolicy defines the policy for key rotation
+message KeyRotationPolicy {
+  int32 max_age_days = 1;
+  int32 warning_days_before_expiry = 2;
+  bool auto_rotate = 3;
+  int32 max_rotation_attempts = 4;
+  repeated string notification_addresses = 5;
+}
+
+// HDKeyDerivation represents hierarchical deterministic key derivation
+message HDKeyDerivation {
+  string master_key_id = 1;
+  bytes seed_hash = 2; // Hashed seed for verification only, never store actual seed
+  string derivation_path = 3; // e.g., m/44'/118'/0'/0/0
+  int32 depth = 4;
+  bytes chain_code = 5;
+  google.protobuf.Timestamp created_at = 6 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  HDKeyMetadata metadata = 7;
+}
+
+// HDKeyMetadata contains metadata for HD keys
+message HDKeyMetadata {
+  string purpose = 1; // BIP44 purpose (44' for standard)
+  string coin_type = 2; // BIP44 coin type (118' for Cosmos)
+  int32 account = 3;
+  int32 change = 4;
+  int32 address_index = 5;
+}
+
+// ThresholdSignatureScheme defines threshold signature configuration
+message ThresholdSignatureScheme {
+  string scheme_id = 1;
+  int32 threshold = 2; // t of n
+  int32 total_participants = 3; // n
+  repeated string participant_ids = 4;
+  ThresholdSchemeType scheme_type = 5;
+  bytes public_key = 6;
+  google.protobuf.Timestamp created_at = 7 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  ThresholdSchemeStatus status = 8;
+}
+
+// ThresholdSchemeType specifies the type of threshold signature scheme
+enum ThresholdSchemeType {
+  THRESHOLD_SCHEME_TYPE_UNSPECIFIED = 0;
+  THRESHOLD_SCHEME_TYPE_ECDSA = 1;
+  THRESHOLD_SCHEME_TYPE_EDDSA = 2;
+  THRESHOLD_SCHEME_TYPE_BLS = 3;
+  THRESHOLD_SCHEME_TYPE_SCHNORR = 4;
+}
+
+// ThresholdSchemeStatus represents the status of a threshold scheme
+enum ThresholdSchemeStatus {
+  THRESHOLD_SCHEME_STATUS_UNSPECIFIED = 0;
+  THRESHOLD_SCHEME_STATUS_INITIALIZING = 1;
+  THRESHOLD_SCHEME_STATUS_ACTIVE = 2;
+  THRESHOLD_SCHEME_STATUS_SUSPENDED = 3;
+  THRESHOLD_SCHEME_STATUS_REVOKED = 4;
+}
+
+// ThresholdSignatureShare represents a signature share from a participant
+message ThresholdSignatureShare {
+  string scheme_id = 1;
+  string participant_id = 2;
+  bytes signature_share = 3;
+  bytes message_hash = 4;
+  google.protobuf.Timestamp signed_at = 5 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+}
+
+// ZKProofConfig defines zero-knowledge proof configuration
+message ZKProofConfig {
+  string proof_id = 1;
+  ZKProofType proof_type = 2;
+  bytes public_parameters = 3;
+  bytes verification_key = 4;
+  string circuit_id = 5;
+  google.protobuf.Timestamp created_at = 6 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+}
+
+// ZKProofType specifies the type of zero-knowledge proof
+enum ZKProofType {
+  ZK_PROOF_TYPE_UNSPECIFIED = 0;
+  ZK_PROOF_TYPE_GROTH16 = 1;
+  ZK_PROOF_TYPE_PLONK = 2;
+  ZK_PROOF_TYPE_BULLETPROOFS = 3;
+  ZK_PROOF_TYPE_STARK = 4;
+}
+
+// ZKProof represents a zero-knowledge proof
+message ZKProof {
+  string proof_id = 1;
+  bytes proof_data = 2;
+  bytes public_inputs = 3;
+  google.protobuf.Timestamp generated_at = 4 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  bool verified = 5;
+}
+
+// SecureEnclaveConfig defines secure enclave configuration
+message SecureEnclaveConfig {
+  string enclave_id = 1;
+  SecureEnclaveType enclave_type = 2;
+  bytes attestation_data = 3;
+  google.protobuf.Timestamp attestation_time = 4 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  SecureEnclaveStatus status = 5;
+  map<string, string> enclave_metadata = 6;
+}
+
+// SecureEnclaveType specifies the type of secure enclave
+enum SecureEnclaveType {
+  SECURE_ENCLAVE_TYPE_UNSPECIFIED = 0;
+  SECURE_ENCLAVE_TYPE_SGX = 1;
+  SECURE_ENCLAVE_TYPE_SEV = 2;
+  SECURE_ENCLAVE_TYPE_TPM = 3;
+  SECURE_ENCLAVE_TYPE_HSM = 4;
+  SECURE_ENCLAVE_TYPE_KEYCHAIN = 5;
+}
+
+// SecureEnclaveStatus represents the status of a secure enclave
+enum SecureEnclaveStatus {
+  SECURE_ENCLAVE_STATUS_UNSPECIFIED = 0;
+  SECURE_ENCLAVE_STATUS_UNINITIALIZED = 1;
+  SECURE_ENCLAVE_STATUS_READY = 2;
+  SECURE_ENCLAVE_STATUS_SEALED = 3;
+  SECURE_ENCLAVE_STATUS_ERROR = 4;
+}
+
+// QuantumResistantKey defines a quantum-resistant cryptographic key
+message QuantumResistantKey {
+  string key_id = 1;
+  QuantumResistantAlgorithm algorithm = 2;
+  bytes public_key = 3;
+  bytes key_metadata = 4;
+  google.protobuf.Timestamp created_at = 5 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  google.protobuf.Timestamp expires_at = 6 [(gogoproto.stdtime) = true];
+}
+
+// QuantumResistantAlgorithm specifies quantum-resistant algorithms
+enum QuantumResistantAlgorithm {
+  QUANTUM_RESISTANT_ALGORITHM_UNSPECIFIED = 0;
+  QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_DILITHIUM = 1;
+  QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_KYBER = 2;
+  QUANTUM_RESISTANT_ALGORITHM_FALCON = 3;
+  QUANTUM_RESISTANT_ALGORITHM_SPHINCS_PLUS = 4;
+  QUANTUM_RESISTANT_ALGORITHM_NTRU = 5;
+}
+
+// CryptoRandomSource defines a cryptographically secure random number source
+message CryptoRandomSource {
+  string source_id = 1;
+  RandomSourceType source_type = 2;
+  bytes entropy_pool_hash = 3; // Hash of entropy pool for verification
+  int64 entropy_bits = 4;
+  google.protobuf.Timestamp last_seeded = 5 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  RandomSourceStatus status = 6;
+}
+
+// RandomSourceType specifies the type of random source
+enum RandomSourceType {
+  RANDOM_SOURCE_TYPE_UNSPECIFIED = 0;
+  RANDOM_SOURCE_TYPE_SYSTEM = 1;
+  RANDOM_SOURCE_TYPE_HARDWARE = 2;
+  RANDOM_SOURCE_TYPE_QUANTUM = 3;
+  RANDOM_SOURCE_TYPE_COMBINED = 4;
+}
+
+// RandomSourceStatus represents the status of a random source
+enum RandomSourceStatus {
+  RANDOM_SOURCE_STATUS_UNSPECIFIED = 0;
+  RANDOM_SOURCE_STATUS_HEALTHY = 1;
+  RANDOM_SOURCE_STATUS_LOW_ENTROPY = 2;
+  RANDOM_SOURCE_STATUS_FAILED = 3;
+}
+
+// SaltedHash defines a cryptographic hash with salt
+message SaltedHash {
+  string hash_id = 1;
+  bytes salt = 2;
+  bytes hash = 3;
+  HashAlgorithm algorithm = 4;
+  int32 iterations = 5; // For iterated hashing
+  google.protobuf.Timestamp created_at = 6 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+}
+
+// HashAlgorithm specifies the hash algorithm
+enum HashAlgorithm {
+  HASH_ALGORITHM_UNSPECIFIED = 0;
+  HASH_ALGORITHM_SHA256 = 1;
+  HASH_ALGORITHM_SHA512 = 2;
+  HASH_ALGORITHM_SHA3_256 = 3;
+  HASH_ALGORITHM_SHA3_512 = 4;
+  HASH_ALGORITHM_BLAKE2B = 5;
+  HASH_ALGORITHM_BLAKE3 = 6;
+}
+
+// KeyStretchingConfig defines key stretching configuration
+message KeyStretchingConfig {
+  string config_id = 1;
+  KeyStretchingAlgorithm algorithm = 2;
+  int32 iterations = 3;
+  int32 memory_cost = 4; // For Argon2
+  int32 parallelism = 5; // For Argon2
+  int32 key_length = 6;
+  bytes salt = 7;
+  google.protobuf.Timestamp created_at = 8 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+}
+
+// KeyStretchingAlgorithm specifies the key stretching algorithm
+enum KeyStretchingAlgorithm {
+  KEY_STRETCHING_ALGORITHM_UNSPECIFIED = 0;
+  KEY_STRETCHING_ALGORITHM_PBKDF2_SHA256 = 1;
+  KEY_STRETCHING_ALGORITHM_PBKDF2_SHA512 = 2;
+  KEY_STRETCHING_ALGORITHM_ARGON2I = 3;
+  KEY_STRETCHING_ALGORITHM_ARGON2D = 4;
+  KEY_STRETCHING_ALGORITHM_ARGON2ID = 5;
+  KEY_STRETCHING_ALGORITHM_SCRYPT = 6;
+}
+
+// CertificatePin defines a certificate pinning configuration
+message CertificatePin {
+  string pin_id = 1;
+  string hostname = 2;
+  repeated bytes certificate_hashes = 3;
+  CertificatePinType pin_type = 4;
+  google.protobuf.Timestamp created_at = 5 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  google.protobuf.Timestamp expires_at = 6 [(gogoproto.stdtime) = true];
+  bool enabled = 7;
+}
+
+// CertificatePinType specifies the type of certificate pinning
+enum CertificatePinType {
+  CERTIFICATE_PIN_TYPE_UNSPECIFIED = 0;
+  CERTIFICATE_PIN_TYPE_SPKI = 1; // Subject Public Key Info
+  CERTIFICATE_PIN_TYPE_FULL_CERT = 2;
+  CERTIFICATE_PIN_TYPE_INTERMEDIATE = 3;
+}
+
+// Params defines the parameters for the cryptography module
+message Params {
+  // Key rotation
+  int32 default_rotation_interval_days = 1;
+  bool enable_auto_rotation = 2;
+
+  // Threshold signatures
+  int32 min_threshold_participants = 3;
+  int32 max_threshold_participants = 4;
+
+  // Random number generation
+  int32 min_entropy_bits = 5;
+
+  // Key stretching
+  int32 min_pbkdf2_iterations = 6;
+  int32 min_argon2_memory_kb = 7;
+  int32 min_argon2_iterations = 8;
+
+  // Certificate pinning
+  bool enforce_certificate_pinning = 9;
+  int32 certificate_pin_validity_days = 10;
+
+  // General security
+  int32 min_salt_length_bytes = 11;
+  int32 min_key_length_bits = 12;
+}

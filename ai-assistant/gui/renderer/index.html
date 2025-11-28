@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aura Assistant Control Center</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <header>
+    <div>
+      <h1>Aura Assistant Control Center</h1>
+      <p class="subtitle">Manage heartbeats, sponsorship vouchers, and telemetry from a single secure desktop.</p>
+    </div>
+    <span class="tag">v0.1.0</span>
+  </header>
+
+  <section id="settings" class="card">
+    <h2>Connection & Key Settings</h2>
+    <div class="grid">
+      <label>REST Endpoint
+        <input type="text" id="restEndpoint" placeholder="http://localhost:1317">
+      </label>
+      <label>RPC Endpoint
+        <input type="text" id="rpcEndpoint" placeholder="http://localhost:26657">
+      </label>
+      <label>Aurad Binary
+        <input type="text" id="auradPath" placeholder="/usr/local/bin/aurad">
+      </label>
+      <label>Aura Key Name
+        <input type="text" id="keyName" placeholder="assistant-key">
+      </label>
+      <label>Assistant Address
+        <input type="text" id="assistantAddress" placeholder="aura1...">
+      </label>
+      <label>Chain ID
+        <input type="text" id="chainId" placeholder="aura-localnet">
+      </label>
+      <label>Gas Price
+        <input type="text" id="gasPrice" placeholder="0.025uaura">
+      </label>
+      <label>Voucher CLI
+        <input type="text" id="voucherBinary" placeholder="/usr/local/bin/aura-voucher">
+      </label>
+      <label>Pushgateway (optional)
+        <input type="text" id="pushGateway" placeholder="http://localhost:9091">
+      </label>
+      <label>Voucher Passphrase
+        <input type="password" id="voucherPassphrase" placeholder="Stored securely via OS keychain">
+      </label>
+    </div>
+    <div class="actions">
+      <button id="btnBrowseAurad">Browse Aurad</button>
+      <button id="btnBrowseVoucher">Browse Voucher CLI</button>
+      <button id="btnStorePass">Store passphrase</button>
+      <button id="btnClearPass">Clear stored passphrase</button>
+      <button class="primary" id="btnSaveSettings">Save settings</button>
+    </div>
+  </section>
+
+  <section id="status" class="card">
+    <div class="card-header">
+      <h2>Assistant Status</h2>
+      <button id="btnRefreshStatus">Refresh</button>
+    </div>
+    <div class="status-grid" id="statusGrid">
+      <div>
+        <span class="label">Stake</span>
+        <strong id="stakeValue">--</strong>
+      </div>
+      <div>
+        <span class="label">Sponsorship</span>
+        <strong id="sponsorValue">--</strong>
+      </div>
+      <div>
+        <span class="label">Locales</span>
+        <strong id="localesValue">--</strong>
+      </div>
+      <div>
+        <span class="label">Last Heartbeat</span>
+        <strong id="heartbeatValue">--</strong>
+      </div>
+      <div>
+        <span class="label">Status</span>
+        <strong id="statusValue">--</strong>
+      </div>
+      <div>
+        <span class="label">Misbehavior Reports</span>
+        <strong id="reportsValue">--</strong>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-header">
+      <h2>Heartbeat & Attestation</h2>
+      <button class="primary" id="btnHeartbeat">Send Heartbeat Now</button>
+    </div>
+    <p class="small-muted">Uses the configured `aurad` binary to broadcast <code>tx aiassistant heartbeat</code> via the OS keyring.</p>
+    <label>Additional Flags
+      <input type="text" id="extraHeartbeatFlags" placeholder="--keyring-backend os --broadcast-mode block">
+    </label>
+  </section>
+
+  <section class="card">
+    <h2>Sponsorship Vouchers</h2>
+    <div class="voucher-grid">
+      <div>
+        <h3>Redeem Voucher</h3>
+        <textarea id="voucherPayload" placeholder="Paste voucher payload..."></textarea>
+        <label>Optional Notes
+          <input type="text" id="voucherRedeemNotes" placeholder="IR #442 payout">
+        </label>
+        <div class="actions">
+          <button id="btnRedeemVoucher">Redeem via CLI</button>
+        </div>
+      </div>
+      <div>
+        <h3>Issue Voucher</h3>
+        <label>Amount (micro-denom)
+          <input type="number" id="issueAmount" placeholder="5000000">
+        </label>
+        <label>Denom
+          <input type="text" id="issueDenom" value="uaura">
+        </label>
+        <label>Sponsor Address
+          <input type="text" id="issueSponsor" placeholder="aura1sponsor...">
+        </label>
+        <label>Expiry
+          <input type="datetime-local" id="issueExpiry">
+        </label>
+        <label>Notes
+          <input type="text" id="issueNotes" placeholder="Regional campaign">
+        </label>
+        <div class="actions">
+          <button id="btnIssueVoucher">Issue Voucher</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Command Log</h2>
+    <pre id="logOutput" class="log"></pre>
+  </section>
+
+  <script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
+  <script src="app.js" type="module"></script>
+</body>
+
+</html>

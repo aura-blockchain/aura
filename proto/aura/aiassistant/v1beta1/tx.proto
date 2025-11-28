@@ -1,0 +1,89 @@
+syntax = "proto3";
+package aura.aiassistant.v1beta1;
+
+import "google/api/annotations.proto";
+import "cosmos_proto/cosmos.proto";
+import "gogoproto/gogo.proto";
+import "aura/aiassistant/v1beta1/assistant.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/aiassistant/v1beta1";
+
+service Msg {
+  rpc RegisterAssistant(MsgRegisterAssistant) returns (MsgRegisterAssistantResponse) {
+    option (google.api.http).post = "/aura/aiassistant/v1beta1/assistants";
+    option (google.api.http).body = "*";
+  }
+
+  rpc UpdateLocales(MsgUpdateLocales) returns (MsgUpdateLocalesResponse) {
+    option (google.api.http).post = "/aura/aiassistant/v1beta1/assistants/{assistant_address}/locales";
+    option (google.api.http).body = "*";
+  }
+
+  rpc Heartbeat(MsgHeartbeat) returns (MsgHeartbeatResponse) {
+    option (google.api.http).post = "/aura/aiassistant/v1beta1/assistants/{assistant_address}/heartbeat";
+    option (google.api.http).body = "*";
+  }
+
+  rpc ReportMisbehavior(MsgReportMisbehavior) returns (MsgReportMisbehaviorResponse) {
+    option (google.api.http).post = "/aura/aiassistant/v1beta1/assistants/{assistant_address}/misbehavior";
+    option (google.api.http).body = "*";
+  }
+
+  rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse) {
+    option (google.api.http).post = "/aura/aiassistant/v1beta1/params";
+    option (google.api.http).body = "*";
+  }
+}
+
+message MsgRegisterAssistant {
+  string assistant_address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string owner_address = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  repeated string locales = 3;
+  string model_hash = 4;
+  string api_key_fingerprint = 5;
+  Balance stake = 6 [(gogoproto.nullable) = false];
+  Balance sponsorship = 7 [(gogoproto.nullable) = false];
+}
+
+message MsgRegisterAssistantResponse {
+  Assistant assistant = 1;
+}
+
+message MsgUpdateLocales {
+  string assistant_address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string owner_address = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  repeated string locales = 3;
+}
+
+message MsgUpdateLocalesResponse {
+  Assistant assistant = 1;
+}
+
+message MsgHeartbeat {
+  string assistant_address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string operator_address = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string attestation_hash = 3;
+}
+
+message MsgHeartbeatResponse {
+  uint64 next_slash_time = 1;
+}
+
+message MsgReportMisbehavior {
+  string reporter = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string assistant_address = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string infraction = 3;
+  string evidence_hash = 4;
+}
+
+message MsgReportMisbehaviorResponse {
+  Assistant assistant = 1;
+  Balance slash_amount = 2 [(gogoproto.nullable) = false];
+}
+
+message MsgUpdateParams {
+  string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  Params params = 2 [(gogoproto.nullable) = false];
+}
+
+message MsgUpdateParamsResponse {}

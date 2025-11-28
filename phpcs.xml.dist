@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<ruleset name="Aequitas PHP Standards">
+    <description>PSR-12 + Squiz/Security helpers tuned for the PHP helpers in this repo.</description>
+    <rule ref="PSR12">
+        <exclude-pattern>*bootstrap.php</exclude-pattern>
+    </rule>
+</ruleset>

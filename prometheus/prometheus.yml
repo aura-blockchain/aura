@@ -1,0 +1,43 @@
+# Prometheus configuration for Aura blockchain monitoring
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'aura-mainnet'
+    monitor: 'aura-monitoring'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - 'localhost:9093'
+
+# Load rules once and periodically evaluate them
+rule_files:
+  - "rules/*.yml"
+
+# Scrape configurations
+scrape_configs:
+  # Aura monitoring module metrics
+  - job_name: 'aura-monitoring'
+    static_configs:
+      - targets: ['localhost:9090']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  # Node exporter for system metrics
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['localhost:9100']
+
+  # CometBFT metrics
+  - job_name: 'cometbft'
+    static_configs:
+      - targets: ['localhost:26660']
+
+  # Cosmos SDK metrics
+  - job_name: 'cosmos-sdk'
+    static_configs:
+      - targets: ['localhost:26661']

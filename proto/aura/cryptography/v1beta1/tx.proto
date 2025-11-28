@@ -1,0 +1,176 @@
+syntax = "proto3";
+
+package aura.cryptography.v1beta1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "gogoproto/gogo.proto";
+import "aura/cryptography/v1beta1/cryptography.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/cryptography/v1beta1";
+
+// Msg defines the cryptography module's message service
+service Msg {
+  // CreateKeyRotationSchedule creates a new automated key rotation schedule
+  rpc CreateKeyRotationSchedule(MsgCreateKeyRotationSchedule) returns (MsgCreateKeyRotationScheduleResponse);
+
+  // RotateKey manually rotates a key
+  rpc RotateKey(MsgRotateKey) returns (MsgRotateKeyResponse);
+
+  // CreateThresholdScheme creates a new threshold signature scheme
+  rpc CreateThresholdScheme(MsgCreateThresholdScheme) returns (MsgCreateThresholdSchemeResponse);
+
+  // SubmitThresholdSignatureShare submits a signature share for threshold signing
+  rpc SubmitThresholdSignatureShare(MsgSubmitThresholdSignatureShare) returns (MsgSubmitThresholdSignatureShareResponse);
+
+  // RegisterZKProofCircuit registers a new ZK proof circuit
+  rpc RegisterZKProofCircuit(MsgRegisterZKProofCircuit) returns (MsgRegisterZKProofCircuitResponse);
+
+  // SubmitZKProof submits a zero-knowledge proof for verification
+  rpc SubmitZKProof(MsgSubmitZKProof) returns (MsgSubmitZKProofResponse);
+
+  // RegisterSecureEnclave registers a secure enclave for key storage
+  rpc RegisterSecureEnclave(MsgRegisterSecureEnclave) returns (MsgRegisterSecureEnclaveResponse);
+
+  // GenerateQuantumResistantKey generates a quantum-resistant key pair
+  rpc GenerateQuantumResistantKey(MsgGenerateQuantumResistantKey) returns (MsgGenerateQuantumResistantKeyResponse);
+
+  // AddCertificatePin adds a certificate pin for a hostname
+  rpc AddCertificatePin(MsgAddCertificatePin) returns (MsgAddCertificatePinResponse);
+
+  // UpdateParams updates the module parameters
+  rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
+}
+
+// MsgCreateKeyRotationSchedule creates a new key rotation schedule
+message MsgCreateKeyRotationSchedule {
+  string creator = 1;
+  string key_id = 2;
+  int64 rotation_interval_seconds = 3;
+  KeyRotationPolicy policy = 4;
+}
+
+// MsgCreateKeyRotationScheduleResponse is the response for CreateKeyRotationSchedule
+message MsgCreateKeyRotationScheduleResponse {
+  string schedule_id = 1;
+}
+
+// MsgRotateKey manually rotates a key
+message MsgRotateKey {
+  string creator = 1;
+  string key_id = 2;
+  bytes new_public_key = 3;
+}
+
+// MsgRotateKeyResponse is the response for RotateKey
+message MsgRotateKeyResponse {
+  string rotation_id = 1;
+  google.protobuf.Timestamp rotation_time = 2 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+}
+
+// MsgCreateThresholdScheme creates a new threshold signature scheme
+message MsgCreateThresholdScheme {
+  string creator = 1;
+  int32 threshold = 2;
+  int32 total_participants = 3;
+  repeated string participant_ids = 4;
+  ThresholdSchemeType scheme_type = 5;
+}
+
+// MsgCreateThresholdSchemeResponse is the response for CreateThresholdScheme
+message MsgCreateThresholdSchemeResponse {
+  string scheme_id = 1;
+  bytes public_key = 2;
+}
+
+// MsgSubmitThresholdSignatureShare submits a signature share
+message MsgSubmitThresholdSignatureShare {
+  string submitter = 1;
+  string scheme_id = 2;
+  bytes signature_share = 3;
+  bytes message_hash = 4;
+}
+
+// MsgSubmitThresholdSignatureShareResponse is the response for SubmitThresholdSignatureShare
+message MsgSubmitThresholdSignatureShareResponse {
+  int32 shares_collected = 1;
+  bool threshold_reached = 2;
+  bytes combined_signature = 3;
+}
+
+// MsgRegisterZKProofCircuit registers a new ZK proof circuit
+message MsgRegisterZKProofCircuit {
+  string creator = 1;
+  ZKProofType proof_type = 2;
+  bytes public_parameters = 3;
+  bytes verification_key = 4;
+  string circuit_id = 5;
+}
+
+// MsgRegisterZKProofCircuitResponse is the response for RegisterZKProofCircuit
+message MsgRegisterZKProofCircuitResponse {
+  string proof_id = 1;
+}
+
+// MsgSubmitZKProof submits a zero-knowledge proof
+message MsgSubmitZKProof {
+  string submitter = 1;
+  string proof_id = 2;
+  bytes proof_data = 3;
+  bytes public_inputs = 4;
+}
+
+// MsgSubmitZKProofResponse is the response for SubmitZKProof
+message MsgSubmitZKProofResponse {
+  bool verified = 1;
+  string verification_id = 2;
+}
+
+// MsgRegisterSecureEnclave registers a secure enclave
+message MsgRegisterSecureEnclave {
+  string creator = 1;
+  SecureEnclaveType enclave_type = 2;
+  bytes attestation_data = 3;
+  map<string, string> enclave_metadata = 4;
+}
+
+// MsgRegisterSecureEnclaveResponse is the response for RegisterSecureEnclave
+message MsgRegisterSecureEnclaveResponse {
+  string enclave_id = 1;
+}
+
+// MsgGenerateQuantumResistantKey generates a quantum-resistant key
+message MsgGenerateQuantumResistantKey {
+  string creator = 1;
+  QuantumResistantAlgorithm algorithm = 2;
+  google.protobuf.Timestamp expires_at = 3 [(gogoproto.stdtime) = true];
+}
+
+// MsgGenerateQuantumResistantKeyResponse is the response for GenerateQuantumResistantKey
+message MsgGenerateQuantumResistantKeyResponse {
+  string key_id = 1;
+  bytes public_key = 2;
+}
+
+// MsgAddCertificatePin adds a certificate pin
+message MsgAddCertificatePin {
+  string creator = 1;
+  string hostname = 2;
+  repeated bytes certificate_hashes = 3;
+  CertificatePinType pin_type = 4;
+  google.protobuf.Timestamp expires_at = 5 [(gogoproto.stdtime) = true];
+}
+
+// MsgAddCertificatePinResponse is the response for AddCertificatePin
+message MsgAddCertificatePinResponse {
+  string pin_id = 1;
+}
+
+// MsgUpdateParams updates the module parameters
+message MsgUpdateParams {
+  string authority = 1;
+  Params params = 2 [(gogoproto.nullable) = false];
+}
+
+// MsgUpdateParamsResponse is the response for UpdateParams
+message MsgUpdateParamsResponse {}

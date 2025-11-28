@@ -1,0 +1,21 @@
+@startuml
+title Inclusion Routine Completion Flow
+
+actor Holder
+participant "Assistant GUI" as GUI
+participant "AI Assistant" as AI
+participant "Identity Module" as ID
+participant "Tokenomics" as TOK
+
+Holder -> GUI: Select IR
+GUI -> Holder: Guide capture (local only)
+GUI -> AI: Send hashed proof + metadata
+AI -> AI: Verify IR locally
+AI -> ID: MsgSubmitIRProof
+ID -> AI: Validate signature / prereqs
+ID -> ID: Update ConfidenceScore
+ID -> TOK: Trigger PoI reward emission
+TOK -> AI: Send assistant reward
+ID --> Holder: Emit event (CS updated)
+
+@enduml

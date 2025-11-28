@@ -1,0 +1,266 @@
+syntax = "proto3";
+package aura.aurabindings.v1beta1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/aura-bindings/v1beta1";
+
+// ============================
+// AURA MESSAGE REQUEST (for Smart Contracts)
+// ============================
+
+// AuraMsgRequest is the unified message request for smart contracts
+// to execute state-changing operations on AURA chain modules.
+// Uses oneof pattern for type-safe variant handling.
+message AuraMsgRequest {
+  // Message variant - exactly one must be set
+  oneof msg {
+    // VCRegistry messages
+    MsgRequestDisclosure request_disclosure = 1;
+    MsgVerifyPresentation verify_presentation = 2;
+    MsgCreatePresentation create_presentation = 3;
+
+    // InclusionRoutines messages
+    MsgRecordIRCompletion record_ir_completion = 4;
+
+    // ContractRegistry messages
+    MsgRegisterContract register_contract = 5;
+    MsgUpdateContractMetadata update_contract_metadata = 6;
+
+    // Compliance messages
+    MsgReportSuspiciousActivity report_suspicious_activity = 7;
+
+    // Monitoring messages
+    MsgReportContractEvent report_contract_event = 8;
+  }
+}
+
+// ============================
+// VCREGISTRY MESSAGES
+// ============================
+
+// MsgRequestDisclosure requests attribute disclosure from a credential holder
+// Used by contracts to request selective disclosure of VC attributes
+message MsgRequestDisclosure {
+  string contract_address = 1;  // Contract making the request
+  string holder_address = 2;  // VC holder to request from
+  string verifier_address = 3;  // Verifier address (typically the contract)
+  repeated string requested_attributes = 4;  // Attributes to disclose (e.g., ["age", "country"])
+  string purpose = 5;  // Purpose of disclosure (for audit trail)
+  uint64 expiry_blocks = 6;  // Number of blocks until request expires
+}
+
+// MsgRequestDisclosureResponse returns the disclosure request details
+message MsgRequestDisclosureResponse {
+  string request_id = 1;  // Unique request identifier
+  bool auto_approved = 2;  // True if auto-approved by policy
+  google.protobuf.Timestamp created_at = 3;
+  google.protobuf.Timestamp expires_at = 4;
+}
+
+// MsgVerifyPresentation verifies a credential presentation
+// Used by contracts to verify presentations submitted by users
+message MsgVerifyPresentation {
+  string contract_address = 1;  // Contract verifying the presentation
+  string presentation_id = 2;  // Presentation to verify
+  string context = 3;  // Context for verification (e.g., "loan_application")
+}
+
+// MsgVerifyPresentationResponse returns verification result
+message MsgVerifyPresentationResponse {
+  bool valid = 1;  // True if presentation is valid
+  bool all_vcs_active = 2;  // True if all VCs in presentation are active
+  bool signature_valid = 3;  // True if signature is valid
+  repeated string vc_ids = 4;  // VCs included in presentation
+  map<string, string> disclosed_attributes = 5;  // Disclosed attribute values
+  string holder_did = 6;  // DID of presentation holder
+}
+
+// MsgCreatePresentation creates a new credential presentation
+// Used by contracts to create presentations on behalf of users (with permission)
+message MsgCreatePresentation {
+  string contract_address = 1;  // Contract creating the presentation
+  string holder_address = 2;  // VC holder
+  repeated string vc_ids = 3;  // VCs to include in presentation
+  string context = 4;  // Presentation context
+  string nonce = 5;  // Nonce for replay protection
+}
+
+// MsgCreatePresentationResponse returns created presentation details
+message MsgCreatePresentationResponse {
+  string presentation_id = 1;  // Created presentation ID
+  bytes qr_code_data = 2;  // QR code data for presentation
+  google.protobuf.Timestamp created_at = 3;
+  google.protobuf.Timestamp expires_at = 4;
+}
+
+// ============================
+// INCLUSIONROUTINES MESSAGES
+// ============================
+
+// MsgRecordIRCompletion records completion of an Inclusion Routine
+// Used by authorized contracts to record IR completions
+message MsgRecordIRCompletion {
+  string contract_address = 1;  // Contract recording the completion
+  string wallet_address = 2;  // User completing the IR
+  string ir_id = 3;  // IR identifier (e.g., "IR-102")
+  bytes proof_hash = 4;  // SHA256 hash of proof data
+  string metadata = 5;  // Optional metadata (JSON)
+}
+
+// MsgRecordIRCompletionResponse returns IR completion result
+message MsgRecordIRCompletionResponse {
+  bool success = 1;  // True if completion recorded
+  uint64 base_score = 2;  // Base score for this IR
+  uint64 final_score = 3;  // Final score after multipliers
+  float velocity_bonus = 4;  // Velocity multiplier applied
+  float arena_bonus = 5;  // Arena multiplier applied
+  float jackpot_bonus = 6;  // Jackpot multiplier applied
+  uint64 new_total_score = 7;  // User's new total confidence score
+  bool verification_achieved = 8;  // True if user reached 10,000 CS
+  google.protobuf.Timestamp completed_at = 9;
+}
+
+// ============================
+// CONTRACTREGISTRY MESSAGES
+// ============================
+
+// MsgRegisterContract registers a smart contract in the registry
+// Required before contract can use custom bindings
+message MsgRegisterContract {
+  string contract_address = 1;  // Contract to register
+  string creator_address = 2;  // Contract creator/admin
+  ContractMetadata metadata = 3;  // Contract metadata
+  SecurityPolicy security_policy = 4;  // Security settings
+  ComplianceRequirements compliance = 5;  // Compliance requirements
+}
+
+// ContractMetadata contains contract metadata
+message ContractMetadata {
+  string name = 1;  // Contract name
+  string description = 2;  // Description
+  string version = 3;  // Version string
+  repeated string tags = 4;  // Searchable tags
+  string source_code_url = 5;  // Source code repository URL
+  string audit_report_url = 6;  // Audit report URL
+  string license = 7;  // License identifier (e.g., "MIT", "Apache-2.0")
+}
+
+// SecurityPolicy defines security settings for the contract
+message SecurityPolicy {
+  uint64 max_gas_per_execution = 1;  // Max gas per execution
+  uint64 max_executions_per_block = 2;  // Max executions per block
+  uint64 rate_limit_per_user = 3;  // Max executions per user per hour
+  bool require_vc = 4;  // Require users to have VCs
+  repeated string required_vc_types = 5;  // Required VC types
+  uint64 min_confidence_score = 6;  // Minimum CS required to interact
+  repeated string blacklisted_addresses = 7;  // Blacklisted addresses
+  repeated string whitelisted_addresses = 8;  // Whitelisted addresses (if whitelist mode)
+  bool whitelist_mode = 9;  // True to enable whitelist mode
+}
+
+// ComplianceRequirements defines compliance requirements for users
+message ComplianceRequirements {
+  bool require_kyc = 1;  // Require KYC verification
+  string min_kyc_level = 2;  // Minimum KYC level (BASIC, INTERMEDIATE, ADVANCED)
+  bool require_sanctions_clear = 3;  // Require sanctions clearance
+  bool require_gdpr_consent = 4;  // Require GDPR consent
+  repeated string restricted_jurisdictions = 5;  // Blocked jurisdictions
+  bool pep_allowed = 6;  // Allow Politically Exposed Persons
+}
+
+// MsgRegisterContractResponse returns registration result
+message MsgRegisterContractResponse {
+  bool success = 1;  // True if registration successful
+  google.protobuf.Timestamp registered_at = 2;
+  string contract_id = 3;  // Contract registry ID
+}
+
+// MsgUpdateContractMetadata updates contract metadata
+// Only callable by contract admin
+message MsgUpdateContractMetadata {
+  string contract_address = 1;  // Contract to update
+  string admin_address = 2;  // Contract admin (must be original creator)
+  ContractMetadata metadata = 3;  // Updated metadata
+}
+
+// MsgUpdateContractMetadataResponse returns update result
+message MsgUpdateContractMetadataResponse {
+  bool success = 1;  // True if update successful
+  google.protobuf.Timestamp updated_at = 2;
+}
+
+// ============================
+// COMPLIANCE MESSAGES
+// ============================
+
+// MsgReportSuspiciousActivity reports suspicious activity to compliance module
+// Used by contracts to report potential fraud or abuse
+message MsgReportSuspiciousActivity {
+  string contract_address = 1;  // Contract reporting the activity
+  string subject_address = 2;  // Address of suspicious actor
+  string activity_type = 3;  // Type of activity (e.g., "unusual_pattern", "velocity_abuse")
+  string description = 4;  // Human-readable description
+  repeated string indicators = 5;  // Risk indicators triggered
+  string severity = 6;  // Severity level (LOW, MEDIUM, HIGH, CRITICAL)
+  string evidence = 7;  // Evidence data (JSON or IPFS hash)
+  string transaction_hash = 8;  // Related transaction hash (if applicable)
+}
+
+// MsgReportSuspiciousActivityResponse returns report details
+message MsgReportSuspiciousActivityResponse {
+  string activity_id = 1;  // Created activity report ID
+  bool escalated = 2;  // True if escalated to compliance review
+  google.protobuf.Timestamp reported_at = 3;
+}
+
+// ============================
+// MONITORING MESSAGES
+// ============================
+
+// MsgReportContractEvent reports a contract event to monitoring module
+// Used for telemetry, analytics, and alerting
+message MsgReportContractEvent {
+  string contract_address = 1;  // Contract reporting the event
+  string event_type = 2;  // Event type (e.g., "user_action", "threshold_exceeded")
+  string severity = 3;  // Severity (INFO, WARNING, ERROR, CRITICAL)
+  string description = 4;  // Event description
+  map<string, string> metadata = 5;  // Event metadata
+  bool trigger_alert = 6;  // True to trigger monitoring alert
+}
+
+// MsgReportContractEventResponse returns event recording result
+message MsgReportContractEventResponse {
+  string event_id = 1;  // Created event ID
+  bool alert_triggered = 2;  // True if alert was triggered
+  google.protobuf.Timestamp recorded_at = 3;
+}
+
+// ============================
+// UNIFIED RESPONSE
+// ============================
+
+// AuraMsgResponse is the unified message response
+// Uses oneof pattern to match request variants
+message AuraMsgResponse {
+  // Response variant - exactly one will be set based on message type
+  oneof response {
+    // VCRegistry responses
+    MsgRequestDisclosureResponse request_disclosure = 1;
+    MsgVerifyPresentationResponse verify_presentation = 2;
+    MsgCreatePresentationResponse create_presentation = 3;
+
+    // InclusionRoutines responses
+    MsgRecordIRCompletionResponse record_ir_completion = 4;
+
+    // ContractRegistry responses
+    MsgRegisterContractResponse register_contract = 5;
+    MsgUpdateContractMetadataResponse update_contract_metadata = 6;
+
+    // Compliance responses
+    MsgReportSuspiciousActivityResponse report_suspicious_activity = 7;
+
+    // Monitoring responses
+    MsgReportContractEventResponse report_contract_event = 8;
+  }
+}

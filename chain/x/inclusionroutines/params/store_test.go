@@ -1,0 +1,78 @@
+package params
+
+import (
+	"testing"
+
+	"github.com/aequitas/aura/chain/x/inclusionroutines/types"
+)
+
+func TestNewStore(t *testing.T) {
+	defaults := types.DefaultParams()
+	store := NewStore(defaults)
+
+	if store == nil {
+		t.Fatal("expected store to be non-nil")
+	}
+
+	params := store.GetParams()
+	if params.MaxIrPerLocale != defaults.MaxIrPerLocale {
+		t.Errorf("expected MaxIrPerLocale=%d, got %d", defaults.MaxIrPerLocale, params.MaxIrPerLocale)
+	}
+}
+
+func TestSetParams(t *testing.T) {
+	store := NewStore(types.DefaultParams())
+
+	newParams := types.Params{
+		MaxIrPerLocale:       100,
+		DefaultRateLimitHour: 20,
+		SuspensionFee:        "2000000uaura",
+		MinGovernanceDeposit: "20000000uaura",
+	}
+
+	err := store.SetParams(newParams)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	retrieved := store.GetParams()
+	if retrieved.MaxIrPerLocale != 100 {
+		t.Errorf("expected MaxIrPerLocale=100, got %d", retrieved.MaxIrPerLocale)
+	}
+	if retrieved.DefaultRateLimitHour != 20 {
+		t.Errorf("expected DefaultRateLimitHour=20, got %d", retrieved.DefaultRateLimitHour)
+	}
+}
+
+func TestSetParamsValidation(t *testing.T) {
+	store := NewStore(types.DefaultParams())
+
+	invalidParams := types.Params{
+		MaxIrPerLocale:       -1, // Invalid
+		DefaultRateLimitHour: 10,
+		SuspensionFee:        "1000000uaura",
+		MinGovernanceDeposit: "10000000uaura",
+	}
+
+	err := store.SetParams(invalidParams)
+	if err == nil {
+		t.Error("expected validation error for negative MaxIrPerLocale")
+	}
+}
+
+func TestPanicOnInvalidDefaults(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("expected panic for invalid default params")
+		}
+	}()
+
+	invalidDefaults := types.Params{
+		MaxIrPerLocale:       -1,
+		DefaultRateLimitHour: 10,
+		SuspensionFee:        "1000000uaura",
+		MinGovernanceDeposit: "10000000uaura",
+	}
+
+	NewStore(invalidDefaults)
+}

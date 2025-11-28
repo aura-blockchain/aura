@@ -1,0 +1,30 @@
+{
+  "name": "aura-wallet-tools",
+  "version": "0.1.0",
+  "description": "CLI utilities for Aura wallet management, delegation, and DEX telemetry queries",
+  "type": "module",
+  "bin": {
+    "aura-wallet": "src/index.js"
+  },
+  "scripts": {
+    "lint": "eslint src --ext .js",
+    "format": "prettier --write \"src/**/*.js\"",
+    "test": "node src/index.js --help"
+  },
+  "dependencies": {
+    "@cosmjs/proto-signing": "^0.32.2",
+    "@cosmjs/stargate": "^0.32.2",
+    "node-fetch": "^3.3.2",
+    "yargs": "^17.7.2"
+  },
+  "devDependencies": {
+    "eslint": "^8.56.0",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.1.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "license": "Apache-2.0",
+  "author": "Aura Core Team"
+}

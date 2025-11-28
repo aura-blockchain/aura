@@ -1,0 +1,761 @@
+syntax = "proto3";
+package aura.security.v1beta1;
+
+option go_package = "github.com/aequitas/aura/proto/aura/security/v1beta1";
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+import "aura/security/v1beta1/security.proto";
+import "cosmos/msg/v1/msg.proto";
+
+// Msg defines the security module's message service
+service Msg {
+  option (cosmos.msg.v1.service) = true;
+
+  // ========================================
+  // Network Security Messages
+  // ========================================
+
+  // AddTrustedPeer adds a trusted peer
+  rpc AddTrustedPeer(MsgAddTrustedPeer) returns (MsgAddTrustedPeerResponse);
+
+  // RemoveTrustedPeer removes a trusted peer
+  rpc RemoveTrustedPeer(MsgRemoveTrustedPeer) returns (MsgRemoveTrustedPeerResponse);
+
+  // BanPeer bans a peer
+  rpc BanPeer(MsgBanPeer) returns (MsgBanPeerResponse);
+
+  // UnbanPeer unbans a peer
+  rpc UnbanPeer(MsgUnbanPeer) returns (MsgUnbanPeerResponse);
+
+  // UpdatePeerReputation manually updates peer reputation
+  rpc UpdatePeerReputation(MsgUpdatePeerReputation) returns (MsgUpdatePeerReputationResponse);
+
+  // ResolveForkAlert resolves a fork alert
+  rpc ResolveForkAlert(MsgResolveForkAlert) returns (MsgResolveForkAlertResponse);
+
+  // ResolvePartitionAlert resolves a partition alert
+  rpc ResolvePartitionAlert(MsgResolvePartitionAlert) returns (MsgResolvePartitionAlertResponse);
+
+  // ========================================
+  // Validator Security Messages
+  // ========================================
+
+  // RegisterValidatorSecurity registers security info for a validator
+  rpc RegisterValidatorSecurity(MsgRegisterValidatorSecurity) returns (MsgRegisterValidatorSecurityResponse);
+
+  // UpdateValidatorSecurity updates validator security information
+  rpc UpdateValidatorSecurity(MsgUpdateValidatorSecurity) returns (MsgUpdateValidatorSecurityResponse);
+
+  // RegisterSentryNode registers a sentry node
+  rpc RegisterSentryNode(MsgRegisterSentryNode) returns (MsgRegisterSentryNodeResponse);
+
+  // RemoveSentryNode removes a sentry node
+  rpc RemoveSentryNode(MsgRemoveSentryNode) returns (MsgRemoveSentryNodeResponse);
+
+  // ReportDoubleSign reports double signing evidence
+  rpc ReportDoubleSign(MsgReportDoubleSign) returns (MsgReportDoubleSignResponse);
+
+  // AcknowledgeValidatorAlert acknowledges a validator alert
+  rpc AcknowledgeValidatorAlert(MsgAcknowledgeValidatorAlert) returns (MsgAcknowledgeValidatorAlertResponse);
+
+  // TriggerFailover triggers validator failover
+  rpc TriggerFailover(MsgTriggerFailover) returns (MsgTriggerFailoverResponse);
+
+  // ========================================
+  // Wallet Security Messages
+  // ========================================
+
+  // RegisterHardwareWallet registers a hardware wallet
+  rpc RegisterHardwareWallet(MsgRegisterHardwareWallet) returns (MsgRegisterHardwareWalletResponse);
+
+  // CreateMultiSigWallet creates a multi-signature wallet
+  rpc CreateMultiSigWallet(MsgCreateMultiSigWallet) returns (MsgCreateMultiSigWalletResponse);
+
+  // ProposeMultiSigTransaction proposes a multi-sig transaction
+  rpc ProposeMultiSigTransaction(MsgProposeMultiSigTransaction) returns (MsgProposeMultiSigTransactionResponse);
+
+  // SignMultiSigTransaction signs a pending multi-sig transaction
+  rpc SignMultiSigTransaction(MsgSignMultiSigTransaction) returns (MsgSignMultiSigTransactionResponse);
+
+  // ExecuteMultiSigTransaction executes a fully signed multi-sig transaction
+  rpc ExecuteMultiSigTransaction(MsgExecuteMultiSigTransaction) returns (MsgExecuteMultiSigTransactionResponse);
+
+  // ConfigureSocialRecovery configures social recovery
+  rpc ConfigureSocialRecovery(MsgConfigureSocialRecovery) returns (MsgConfigureSocialRecoveryResponse);
+
+  // InitiateRecovery initiates wallet recovery
+  rpc InitiateRecovery(MsgInitiateRecovery) returns (MsgInitiateRecoveryResponse);
+
+  // ApproveRecovery approves a recovery request
+  rpc ApproveRecovery(MsgApproveRecovery) returns (MsgApproveRecoveryResponse);
+
+  // ExecuteRecovery executes a recovery request
+  rpc ExecuteRecovery(MsgExecuteRecovery) returns (MsgExecuteRecoveryResponse);
+
+  // SetSpendingLimits sets spending limits for a wallet
+  rpc SetSpendingLimits(MsgSetSpendingLimits) returns (MsgSetSpendingLimitsResponse);
+
+  // RegisterBiometric registers biometric authentication
+  rpc RegisterBiometric(MsgRegisterBiometric) returns (MsgRegisterBiometricResponse);
+
+  // ========================================
+  // Incident Response Messages
+  // ========================================
+
+  // CreateIncident creates a new incident
+  rpc CreateIncident(MsgCreateIncident) returns (MsgCreateIncidentResponse);
+
+  // UpdateIncident updates an incident
+  rpc UpdateIncident(MsgUpdateIncident) returns (MsgUpdateIncidentResponse);
+
+  // ResolveIncident resolves an incident
+  rpc ResolveIncident(MsgResolveIncident) returns (MsgResolveIncidentResponse);
+
+  // ExecuteResponseAction executes a response action
+  rpc ExecuteResponseAction(MsgExecuteResponseAction) returns (MsgExecuteResponseActionResponse);
+
+  // AddAuditLogEntry adds an audit log entry
+  rpc AddAuditLogEntry(MsgAddAuditLogEntry) returns (MsgAddAuditLogEntryResponse);
+
+  // ========================================
+  // Cryptography Messages
+  // ========================================
+
+  // CreateKeyRotationSchedule creates a key rotation schedule
+  rpc CreateKeyRotationSchedule(MsgCreateKeyRotationSchedule) returns (MsgCreateKeyRotationScheduleResponse);
+
+  // RotateKey manually rotates a key
+  rpc RotateKey(MsgRotateKey) returns (MsgRotateKeyResponse);
+
+  // CreateThresholdScheme creates a threshold signature scheme
+  rpc CreateThresholdScheme(MsgCreateThresholdScheme) returns (MsgCreateThresholdSchemeResponse);
+
+  // SubmitThresholdSignatureShare submits a threshold signature share
+  rpc SubmitThresholdSignatureShare(MsgSubmitThresholdSignatureShare) returns (MsgSubmitThresholdSignatureShareResponse);
+
+  // RegisterZKProofCircuit registers a ZK proof circuit
+  rpc RegisterZKProofCircuit(MsgRegisterZKProofCircuit) returns (MsgRegisterZKProofCircuitResponse);
+
+  // SubmitZKProof submits a zero-knowledge proof
+  rpc SubmitZKProof(MsgSubmitZKProof) returns (MsgSubmitZKProofResponse);
+
+  // GenerateQuantumResistantKey generates a quantum-resistant key
+  rpc GenerateQuantumResistantKey(MsgGenerateQuantumResistantKey) returns (MsgGenerateQuantumResistantKeyResponse);
+
+  // ========================================
+  // Privacy Messages
+  // ========================================
+
+  // CreateMixingPool creates a mixing pool
+  rpc CreateMixingPool(MsgCreateMixingPool) returns (MsgCreateMixingPoolResponse);
+
+  // JoinMixingPool joins a mixing pool
+  rpc JoinMixingPool(MsgJoinMixingPool) returns (MsgJoinMixingPoolResponse);
+
+  // ExecuteMixing executes mixing in a pool
+  rpc ExecuteMixing(MsgExecuteMixing) returns (MsgExecuteMixingResponse);
+
+  // GenerateStealthAddress generates a stealth address
+  rpc GenerateStealthAddress(MsgGenerateStealthAddress) returns (MsgGenerateStealthAddressResponse);
+
+  // CreateRingSignature creates a ring signature
+  rpc CreateRingSignature(MsgCreateRingSignature) returns (MsgCreateRingSignatureResponse);
+
+  // CreateConfidentialTransaction creates a confidential transaction
+  rpc CreateConfidentialTransaction(MsgCreateConfidentialTransaction) returns (MsgCreateConfidentialTransactionResponse);
+
+  // ========================================
+  // Admin Messages
+  // ========================================
+
+  // UpdateParams updates the module parameters
+  rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
+}
+
+// ========================================
+// Network Security Transaction Messages
+// ========================================
+
+message MsgAddTrustedPeer {
+  option (cosmos.msg.v1.signer) = "authority";
+
+  string authority = 1;
+  string peer_id = 2;
+  string address = 3;
+  bytes public_key = 4;
+  string description = 5;
+}
+
+message MsgAddTrustedPeerResponse {}
+
+message MsgRemoveTrustedPeer {
+  option (cosmos.msg.v1.signer) = "authority";
+
+  string authority = 1;
+  string peer_id = 2;
+}
+
+message MsgRemoveTrustedPeerResponse {}
+
+message MsgBanPeer {
+  option (cosmos.msg.v1.signer) = "authority";
+
+  string authority = 1;
+  string peer_id = 2;
+  google.protobuf.Duration ban_duration = 3 [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+  string reason = 4;
+}
+
+message MsgBanPeerResponse {}
+
+message MsgUnbanPeer {
+  option (cosmos.msg.v1.signer) = "authority";
+
+  string authority = 1;
+  string peer_id = 2;
+}
+
+message MsgUnbanPeerResponse {}
+
+message MsgUpdatePeerReputation {
+  option (cosmos.msg.v1.signer) = "authority";
+
+  string authority = 1;
+  string peer_id = 2;
+  int64 reputation_delta = 3;
+  string reason = 4;
+}
+
+message MsgUpdatePeerReputationResponse {
+  int64 new_reputation = 1;
+}
+
+message MsgResolveForkAlert {
+  option (cosmos.msg.v1.signer) = "authority";
+
+  string authority = 1;
+  string alert_id = 2;
+  string resolution_details = 3;
+}
+
+message MsgResolveForkAlertResponse {}
+
+message MsgResolvePartitionAlert {
+  option (cosmos.msg.v1.signer) = "authority";
+
+  string authority = 1;
+  string alert_id = 2;
+}
+
+message MsgResolvePartitionAlertResponse {}
+
+// ========================================
+// Validator Security Transaction Messages
+// ========================================
+
+message MsgRegisterValidatorSecurity {
+  option (cosmos.msg.v1.signer) = "validator_address";
+
+  string validator_address = 1;
+  string hot_key = 2;
+  string cold_key = 3;
+  string region = 4;
+  string country_code = 5;
+  double latitude = 6;
+  double longitude = 7;
+}
+
+message MsgRegisterValidatorSecurityResponse {}
+
+message MsgUpdateValidatorSecurity {
+  option (cosmos.msg.v1.signer) = "validator_address";
+
+  string validator_address = 1;
+  string region = 2;
+  string country_code = 3;
+  double latitude = 4;
+  double longitude = 5;
+  repeated string sentry_node_addresses = 6;
+}
+
+message MsgUpdateValidatorSecurityResponse {}
+
+message MsgRegisterSentryNode {
+  option (cosmos.msg.v1.signer) = "validator_address";
+
+  string validator_address = 1;
+  string sentry_address = 2;
+  string ip_address = 3;
+  int32 port = 4;
+}
+
+message MsgRegisterSentryNodeResponse {}
+
+message MsgRemoveSentryNode {
+  option (cosmos.msg.v1.signer) = "validator_address";
+
+  string validator_address = 1;
+  string sentry_address = 2;
+}
+
+message MsgRemoveSentryNodeResponse {}
+
+message MsgReportDoubleSign {
+  option (cosmos.msg.v1.signer) = "reporter";
+
+  string reporter = 1;
+  string validator_address = 2;
+  int64 height = 3;
+  bytes vote_a = 4;
+  bytes vote_b = 5;
+}
+
+message MsgReportDoubleSignResponse {
+  bool slashed = 1;
+  string slash_amount = 2;
+}
+
+message MsgAcknowledgeValidatorAlert {
+  option (cosmos.msg.v1.signer) = "validator_address";
+
+  string validator_address = 1;
+  string alert_id = 2;
+}
+
+message MsgAcknowledgeValidatorAlertResponse {}
+
+message MsgTriggerFailover {
+  option (cosmos.msg.v1.signer) = "validator_address";
+
+  string validator_address = 1;
+  string backup_validator = 2;
+  string reason = 3;
+}
+
+message MsgTriggerFailoverResponse {
+  bool success = 1;
+}
+
+// ========================================
+// Wallet Security Transaction Messages
+// ========================================
+
+message MsgRegisterHardwareWallet {
+  option (cosmos.msg.v1.signer) = "address";
+
+  string address = 1;
+  HardwareWalletType type = 2;
+  string device_id = 3;
+  string firmware_version = 4;
+  string derivation_path = 5;
+  bool requires_pin = 6;
+  bool requires_passphrase = 7;
+}
+
+message MsgRegisterHardwareWalletResponse {
+  string wallet_id = 1;
+}
+
+message MsgCreateMultiSigWallet {
+  option (cosmos.msg.v1.signer) = "creator";
+
+  string creator = 1;
+  repeated string signers = 2;
+  int32 threshold = 3;
+  map<string, int32> signer_weights = 4;
+  int32 weight_threshold = 5;
+  bool time_locked = 6;
+  google.protobuf.Timestamp unlock_time = 7 [(gogoproto.stdtime) = true];
+}
+
+message MsgCreateMultiSigWalletResponse {
+  string wallet_id = 1;
+}
+
+message MsgProposeMultiSigTransaction {
+  option (cosmos.msg.v1.signer) = "proposer";
+
+  string proposer = 1;
+  string wallet_id = 2;
+  bytes tx_data = 3;
+  string tx_type = 4;
+  string description = 5;
+  google.protobuf.Timestamp expires_at = 6 [(gogoproto.stdtime) = true];
+}
+
+message MsgProposeMultiSigTransactionResponse {
+  string tx_id = 1;
+}
+
+message MsgSignMultiSigTransaction {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  string signer = 1;
+  string tx_id = 2;
+  string signature = 3;
+}
+
+message MsgSignMultiSigTransactionResponse {
+  int32 current_weight = 1;
+  bool threshold_reached = 2;
+}
+
+message MsgExecuteMultiSigTransaction {
+  option (cosmos.msg.v1.signer) = "executor";
+
+  string executor = 1;
+  string tx_id = 2;
+}
+
+message MsgExecuteMultiSigTransactionResponse {
+  bool success = 1;
+  string result = 2;
+}
+
+message MsgConfigureSocialRecovery {
+  option (cosmos.msg.v1.signer) = "address";
+
+  string address = 1;
+  string wallet_id = 2;
+  repeated Guardian guardians = 3;
+  int32 recovery_threshold = 4;
+  google.protobuf.Duration recovery_delay = 5 [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+}
+
+message MsgConfigureSocialRecoveryResponse {}
+
+message MsgInitiateRecovery {
+  option (cosmos.msg.v1.signer) = "initiator";
+
+  string initiator = 1;
+  string wallet_id = 2;
+  string new_address = 3;
+}
+
+message MsgInitiateRecoveryResponse {
+  string request_id = 1;
+}
+
+message MsgApproveRecovery {
+  option (cosmos.msg.v1.signer) = "guardian";
+
+  string guardian = 1;
+  string request_id = 2;
+}
+
+message MsgApproveRecoveryResponse {
+  int32 approvals_count = 1;
+  bool threshold_reached = 2;
+}
+
+message MsgExecuteRecovery {
+  option (cosmos.msg.v1.signer) = "executor";
+
+  string executor = 1;
+  string request_id = 2;
+}
+
+message MsgExecuteRecoveryResponse {
+  bool success = 1;
+}
+
+message MsgSetSpendingLimits {
+  option (cosmos.msg.v1.signer) = "address";
+
+  string address = 1;
+  string wallet_id = 2;
+  string denom = 3;
+  string daily_limit = 4;
+  string weekly_limit = 5;
+  string monthly_limit = 6;
+}
+
+message MsgSetSpendingLimitsResponse {}
+
+message MsgRegisterBiometric {
+  option (cosmos.msg.v1.signer) = "address";
+
+  string address = 1;
+  string wallet_id = 2;
+  BiometricType type = 3;
+  string enrollment_hash = 4;
+}
+
+message MsgRegisterBiometricResponse {}
+
+// ========================================
+// Incident Response Transaction Messages
+// ========================================
+
+message MsgCreateIncident {
+  option (cosmos.msg.v1.signer) = "reporter";
+
+  string reporter = 1;
+  string title = 2;
+  string description = 3;
+  IncidentSeverity severity = 4;
+  repeated string affected_systems = 5;
+  repeated string indicators_of_compromise = 6;
+}
+
+message MsgCreateIncidentResponse {
+  string incident_id = 1;
+}
+
+message MsgUpdateIncident {
+  option (cosmos.msg.v1.signer) = "updater";
+
+  string updater = 1;
+  string incident_id = 2;
+  IncidentStatus status = 3;
+  string description = 4;
+  string assigned_to = 5;
+}
+
+message MsgUpdateIncidentResponse {}
+
+message MsgResolveIncident {
+  option (cosmos.msg.v1.signer) = "resolver";
+
+  string resolver = 1;
+  string incident_id = 2;
+  string resolution_details = 3;
+}
+
+message MsgResolveIncidentResponse {}
+
+message MsgExecuteResponseAction {
+  option (cosmos.msg.v1.signer) = "executor";
+
+  string executor = 1;
+  string incident_id = 2;
+  string action_type = 3;
+  string description = 4;
+}
+
+message MsgExecuteResponseActionResponse {
+  string action_id = 1;
+  bool successful = 2;
+  string result = 3;
+}
+
+message MsgAddAuditLogEntry {
+  option (cosmos.msg.v1.signer) = "actor";
+
+  string actor = 1;
+  string event_type = 2;
+  string resource = 3;
+  string action = 4;
+  bool success = 5;
+  string ip_address = 6;
+  string user_agent = 7;
+  map<string, string> metadata = 8;
+}
+
+message MsgAddAuditLogEntryResponse {
+  string log_id = 1;
+}
+
+// ========================================
+// Cryptography Transaction Messages
+// ========================================
+
+message MsgCreateKeyRotationSchedule {
+  option (cosmos.msg.v1.signer) = "creator";
+
+  string creator = 1;
+  string key_id = 2;
+  int64 rotation_interval_seconds = 3;
+  KeyRotationPolicy policy = 4;
+}
+
+message MsgCreateKeyRotationScheduleResponse {
+  string schedule_id = 1;
+}
+
+message MsgRotateKey {
+  option (cosmos.msg.v1.signer) = "creator";
+
+  string creator = 1;
+  string key_id = 2;
+  bytes new_public_key = 3;
+}
+
+message MsgRotateKeyResponse {
+  string rotation_id = 1;
+  google.protobuf.Timestamp rotation_time = 2 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+}
+
+message MsgCreateThresholdScheme {
+  option (cosmos.msg.v1.signer) = "creator";
+
+  string creator = 1;
+  int32 threshold = 2;
+  int32 total_participants = 3;
+  repeated string participant_ids = 4;
+  ThresholdSchemeType scheme_type = 5;
+}
+
+message MsgCreateThresholdSchemeResponse {
+  string scheme_id = 1;
+  bytes public_key = 2;
+}
+
+message MsgSubmitThresholdSignatureShare {
+  option (cosmos.msg.v1.signer) = "submitter";
+
+  string submitter = 1;
+  string scheme_id = 2;
+  bytes signature_share = 3;
+  bytes message_hash = 4;
+}
+
+message MsgSubmitThresholdSignatureShareResponse {
+  int32 shares_collected = 1;
+  bool threshold_reached = 2;
+  bytes combined_signature = 3;
+}
+
+message MsgRegisterZKProofCircuit {
+  option (cosmos.msg.v1.signer) = "creator";
+
+  string creator = 1;
+  ZKProofType proof_type = 2;
+  bytes public_parameters = 3;
+  bytes verification_key = 4;
+  string circuit_id = 5;
+}
+
+message MsgRegisterZKProofCircuitResponse {
+  string proof_id = 1;
+}
+
+message MsgSubmitZKProof {
+  option (cosmos.msg.v1.signer) = "submitter";
+
+  string submitter = 1;
+  string proof_id = 2;
+  bytes proof_data = 3;
+  bytes public_inputs = 4;
+}
+
+message MsgSubmitZKProofResponse {
+  bool verified = 1;
+  string verification_id = 2;
+}
+
+message MsgGenerateQuantumResistantKey {
+  option (cosmos.msg.v1.signer) = "creator";
+
+  string creator = 1;
+  QuantumResistantAlgorithm algorithm = 2;
+  google.protobuf.Timestamp expires_at = 3 [(gogoproto.stdtime) = true];
+}
+
+message MsgGenerateQuantumResistantKeyResponse {
+  string key_id = 1;
+  bytes public_key = 2;
+}
+
+// ========================================
+// Privacy Transaction Messages
+// ========================================
+
+message MsgCreateMixingPool {
+  option (cosmos.msg.v1.signer) = "creator";
+
+  string creator = 1;
+  uint32 min_participants = 2;
+  uint32 max_participants = 3;
+  string denomination = 4;
+  uint32 mixing_rounds = 5;
+  google.protobuf.Timestamp deadline = 6 [(gogoproto.stdtime) = true];
+}
+
+message MsgCreateMixingPoolResponse {
+  string pool_id = 1;
+}
+
+message MsgJoinMixingPool {
+  option (cosmos.msg.v1.signer) = "participant";
+
+  string participant = 1;
+  string pool_id = 2;
+  bytes commitment = 3;
+}
+
+message MsgJoinMixingPoolResponse {
+  bool pool_ready = 1;
+}
+
+message MsgExecuteMixing {
+  option (cosmos.msg.v1.signer) = "executor";
+
+  string executor = 1;
+  string pool_id = 2;
+}
+
+message MsgExecuteMixingResponse {
+  bool success = 1;
+  repeated bytes outputs = 2;
+}
+
+message MsgGenerateStealthAddress {
+  option (cosmos.msg.v1.signer) = "creator";
+
+  string creator = 1;
+  bytes public_spend_key = 2;
+  bytes public_view_key = 3;
+}
+
+message MsgGenerateStealthAddressResponse {
+  bytes one_time_address = 1;
+  bytes tx_public_key = 2;
+}
+
+message MsgCreateRingSignature {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  string signer = 1;
+  repeated bytes ring_members = 2;
+  bytes message = 3;
+  uint32 signer_index = 4;
+}
+
+message MsgCreateRingSignatureResponse {
+  bytes key_image = 1;
+  bytes signature_data = 2;
+}
+
+message MsgCreateConfidentialTransaction {
+  option (cosmos.msg.v1.signer) = "sender";
+
+  string sender = 1;
+  string recipient = 2;
+  bytes commitment = 3;
+  bytes range_proof = 4;
+  bytes encrypted_amount = 5;
+  string asset_id = 6;
+}
+
+message MsgCreateConfidentialTransactionResponse {
+  string tx_id = 1;
+}
+
+// ========================================
+// Admin Transaction Messages
+// ========================================
+
+message MsgUpdateParams {
+  option (cosmos.msg.v1.signer) = "authority";
+
+  // authority is the address that controls the module (defaults to x/gov unless overwritten)
+  string authority = 1;
+
+  // params defines the module parameters to update
+  Params params = 2 [(gogoproto.nullable) = false];
+}
+
+message MsgUpdateParamsResponse {}

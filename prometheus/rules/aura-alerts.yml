@@ -1,0 +1,277 @@
+groups:
+  - name: aura_blockchain_alerts
+    interval: 30s
+    rules:
+      # Node health alerts
+      - alert: NodeDown
+        expr: up{job="aura-nodes"} == 0
+        for: 5m
+        labels:
+          severity: critical
+          component: node
+        annotations:
+          summary: "AURA node is down"
+          description: "Node {{ $labels.instance }} has been down for more than 5 minutes"
+
+      - alert: NodeNotSyncing
+        expr: tendermint_consensus_latest_block_height{job="aura-nodes"} == 0
+        for: 10m
+        labels:
+          severity: critical
+          component: consensus
+        annotations:
+          summary: "Node is not syncing blocks"
+          description: "Node {{ $labels.instance }} has not synced any blocks in 10 minutes"
+
+      - alert: NodeBehind
+        expr: |
+          (tendermint_consensus_latest_block_height{job="aura-nodes"}
+          - ignoring(instance) group_left()
+          max(tendermint_consensus_latest_block_height{job="aura-nodes"})) < -100
+        for: 15m
+        labels:
+          severity: warning
+          component: consensus
+        annotations:
+          summary: "Node is behind in block sync"
+          description: "Node {{ $labels.instance }} is more than 100 blocks behind the network"
+
+      # Performance alerts
+      - alert: HighCPUUsage
+        expr: rate(process_cpu_seconds_total{job="aura-nodes"}[5m]) > 0.8
+        for: 10m
+        labels:
+          severity: warning
+          component: performance
+        annotations:
+          summary: "High CPU usage detected"
+          description: "Node {{ $labels.instance }} CPU usage is above 80% for 10 minutes"
+
+      - alert: HighMemoryUsage
+        expr: |
+          (process_resident_memory_bytes{job="aura-nodes"}
+          / node_memory_MemTotal_bytes) > 0.85
+        for: 10m
+        labels:
+          severity: warning
+          component: performance
+        annotations:
+          summary: "High memory usage detected"
+          description: "Node {{ $labels.instance }} memory usage is above 85%"
+
+      - alert: DiskSpaceLow
+        expr: |
+          (node_filesystem_avail_bytes{job="node-exporter",mountpoint="/"}
+          / node_filesystem_size_bytes{job="node-exporter",mountpoint="/"}) < 0.15
+        for: 30m
+        labels:
+          severity: warning
+          component: storage
+        annotations:
+          summary: "Low disk space"
+          description: "Node {{ $labels.instance }} has less than 15% disk space available"
+
+      - alert: DiskSpaceCritical
+        expr: |
+          (node_filesystem_avail_bytes{job="node-exporter",mountpoint="/"}
+          / node_filesystem_size_bytes{job="node-exporter",mountpoint="/"}) < 0.05
+        for: 10m
+        labels:
+          severity: critical
+          component: storage
+        annotations:
+          summary: "Critical disk space"
+          description: "Node {{ $labels.instance }} has less than 5% disk space available"
+
+      # Consensus alerts
+      - alert: MissedBlocks
+        expr: increase(tendermint_consensus_validators_missed_blocks_total[1h]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          component: validator
+        annotations:
+          summary: "Validator missing blocks"
+          description: "Validator {{ $labels.validator }} has missed more than 10 blocks in the last hour"
+
+      - alert: ValidatorJailed
+        expr: tendermint_consensus_validator_jailed == 1
+        for: 1m
+        labels:
+          severity: critical
+          component: validator
+        annotations:
+          summary: "Validator is jailed"
+          description: "Validator {{ $labels.validator }} has been jailed"
+
+      - alert: LowValidatorPower
+        expr: |
+          tendermint_consensus_validator_power
+          < 0.01 * sum(tendermint_consensus_validator_power)
+        for: 1h
+        labels:
+          severity: warning
+          component: validator
+        annotations:
+          summary: "Validator power is low"
+          description: "Validator {{ $labels.validator }} has less than 1% of total voting power"
+
+      # Network alerts
+      - alert: LowPeerCount
+        expr: tendermint_p2p_peers < 5
+        for: 15m
+        labels:
+          severity: warning
+          component: network
+        annotations:
+          summary: "Low peer count"
+          description: "Node {{ $labels.instance }} has fewer than 5 peers"
+
+      - alert: NoPeers
+        expr: tendermint_p2p_peers == 0
+        for: 5m
+        labels:
+          severity: critical
+          component: network
+        annotations:
+          summary: "No peers connected"
+          description: "Node {{ $labels.instance }} has no peers connected"
+
+      - alert: HighNetworkLatency
+        expr: |
+          histogram_quantile(0.95,
+          rate(tendermint_p2p_message_receive_bytes_total[5m])) > 1000000
+        for: 10m
+        labels:
+          severity: warning
+          component: network
+        annotations:
+          summary: "High network latency"
+          description: "Node {{ $labels.instance }} experiencing high network latency"
+
+      # Transaction pool alerts
+      - alert: MempoolFull
+        expr: tendermint_mempool_size >= tendermint_mempool_config_size
+        for: 30m
+        labels:
+          severity: warning
+          component: mempool
+        annotations:
+          summary: "Mempool is full"
+          description: "Node {{ $labels.instance }} mempool is at capacity"
+
+      - alert: HighMempoolSize
+        expr: tendermint_mempool_size > (0.8 * tendermint_mempool_config_size)
+        for: 1h
+        labels:
+          severity: warning
+          component: mempool
+        annotations:
+          summary: "Mempool size is high"
+          description: "Node {{ $labels.instance }} mempool is over 80% full"
+
+      # Module-specific alerts
+      - alert: BridgeTransferStuck
+        expr: |
+          aura_bridge_pending_transfers > 100
+        for: 1h
+        labels:
+          severity: warning
+          component: bridge
+        annotations:
+          summary: "Bridge transfers stuck"
+          description: "More than 100 bridge transfers are pending for over 1 hour"
+
+      - alert: HighFraudProofRate
+        expr: |
+          rate(aura_bridge_fraud_proofs_total[1h]) > 0.01
+        for: 30m
+        labels:
+          severity: critical
+          component: bridge
+        annotations:
+          summary: "High fraud proof submission rate"
+          description: "Fraud proof submission rate is abnormally high"
+
+      - alert: ComplianceChecksFailing
+        expr: |
+          rate(aura_compliance_checks_failed_total[5m]) > 0.1
+        for: 15m
+        labels:
+          severity: warning
+          component: compliance
+        annotations:
+          summary: "Compliance checks failing"
+          description: "More than 10% of compliance checks are failing"
+
+      - alert: ConfidenceScoreAnomaly
+        expr: |
+          aura_confidence_score_average < 50
+        for: 30m
+        labels:
+          severity: warning
+          component: confidence_score
+        annotations:
+          summary: "Low average confidence score"
+          description: "Average confidence score has dropped below 50"
+
+      # Security alerts
+      - alert: UnauthorizedAccess
+        expr: |
+          rate(aura_auth_unauthorized_attempts_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: critical
+          component: security
+        annotations:
+          summary: "High unauthorized access attempts"
+          description: "More than 10 unauthorized access attempts per minute detected"
+
+      - alert: SuspiciousTransactionPattern
+        expr: |
+          rate(aura_monitoring_suspicious_transactions_total[10m]) > 5
+        for: 10m
+        labels:
+          severity: warning
+          component: security
+        annotations:
+          summary: "Suspicious transaction pattern detected"
+          description: "Unusual transaction pattern detected on the network"
+
+  - name: aura_performance_alerts
+    interval: 1m
+    rules:
+      - alert: SlowBlockTime
+        expr: |
+          rate(tendermint_consensus_block_interval_seconds_sum[5m])
+          / rate(tendermint_consensus_block_interval_seconds_count[5m]) > 7
+        for: 10m
+        labels:
+          severity: warning
+          component: performance
+        annotations:
+          summary: "Slow block production"
+          description: "Average block time is above 7 seconds"
+
+      - alert: HighTransactionLatency
+        expr: |
+          histogram_quantile(0.95,
+          rate(cosmos_tx_processing_duration_seconds_bucket[5m])) > 5
+        for: 10m
+        labels:
+          severity: warning
+          component: performance
+        annotations:
+          summary: "High transaction latency"
+          description: "95th percentile transaction latency is above 5 seconds"
+
+      - alert: GRPCRequestsHigh
+        expr: |
+          rate(grpc_server_handled_total[5m]) > 1000
+        for: 15m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: "High gRPC request rate"
+          description: "gRPC request rate is above 1000 req/s"

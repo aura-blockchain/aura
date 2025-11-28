@@ -1,0 +1,70 @@
+syntax = "proto3";
+package aura.dex.v1beta1;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/dex/v1beta1";
+
+// Params defines the parameters for the dex module
+message Params {
+  // Trading fee percentage (0.003 = 0.3%)
+  string trading_fee = 1 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
+
+  // Protocol fee percentage (0.0005 = 0.05%)
+  string protocol_fee = 2 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
+
+  // Dynamic minimum liquidity based on AURA price
+  // When AURA < $0.50: min = $1,000 USD
+  // When AURA < $1.00: min = $3,000 USD
+  // When AURA >= $1.00: min = $6,000 USD
+  repeated MinLiquidityTier min_liquidity_tiers = 3 [(gogoproto.nullable) = false];
+
+  // Maximum slippage allowed (in basis points, 10000 = 100%)
+  uint64 max_slippage_bps = 4;
+
+  // Minimum swap amount (to prevent dust attacks)
+  string min_swap_amount = 5 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Enable IR boost for verified users
+  bool ir_boost_enabled = 6;
+
+  // IR boost percentage for verified users (40 = 40% bonus)
+  uint64 ir_boost_percent = 7;
+
+  // Enable bonding curve for early LPs
+  bool bonding_curve_enabled = 8;
+
+  // Enable protocol fee buyback and burn
+  bool buyback_burn_enabled = 9;
+
+  // Percentage of protocol fees used for buyback (rest goes to treasury)
+  uint64 buyback_percent = 10;  // 100 = 100% of protocol fees
+}
+
+// MinLiquidityTier defines minimum liquidity requirements that adjust with price
+message MinLiquidityTier {
+  // Maximum AURA price (in USD) for this tier
+  // Use "0" for unlimited (highest tier)
+  string max_aura_price_usd = 1 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
+
+  // Minimum liquidity in USD equivalent
+  string min_liquidity_usd = 2 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
+
+  // Tier name (for display)
+  string tier_name = 3;  // "Bootstrap", "Growth", "Established"
+}

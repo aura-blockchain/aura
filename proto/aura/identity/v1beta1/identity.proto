@@ -1,0 +1,505 @@
+syntax = "proto3";
+package aura.identity.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/identity/v1beta1";
+
+// Params defines unified identity module parameters
+message Params {
+  // Auth-related parameters
+  AuthParams auth = 1 [(gogoproto.nullable) = false];
+
+  // Identity change parameters
+  IdentityChangeParams change = 2 [(gogoproto.nullable) = false];
+}
+
+// AuthParams for role-based access control and sessions
+message AuthParams {
+  // Enable role-based access control
+  bool enable_rbac = 1;
+
+  // Maximum roles per account
+  uint32 max_roles_per_account = 2;
+
+  // Session timeout duration
+  google.protobuf.Duration session_timeout = 3 [(gogoproto.stdduration) = true, (gogoproto.nullable) = false];
+
+  // Enable audit logging
+  bool enable_audit_logging = 4;
+
+  // Default time delay for time-locked actions (seconds)
+  uint64 default_timelock_delay_seconds = 5;
+
+  // Default rate limits
+  uint64 default_requests_per_minute = 6;
+  uint64 default_requests_per_hour = 7;
+  uint64 default_requests_per_day = 8;
+
+  // Multisig proposal expiry (seconds)
+  uint64 multisig_proposal_expiry_seconds = 9;
+}
+
+// IdentityChangeParams for identity modification operations
+message IdentityChangeParams {
+  // Maximum requests per wallet per month
+  int32 max_requests_per_wallet_per_month = 1;
+
+  // Minimum confidence score after change
+  int32 min_confidence_after_change = 2;
+
+  // Staleness height threshold
+  int64 staleness_height_threshold = 3;
+
+  // Slash assistant on false positive
+  bool assistant_slash_on_false_positive = 4;
+
+  // Staleness investigator chain
+  string staleness_investigator_chain = 5;
+}
+
+// Role represents a named set of permissions
+message Role {
+  // Role name (e.g., "admin", "moderator", "validator")
+  string name = 1;
+
+  // Human-readable description
+  string description = 2;
+
+  // List of permissions granted
+  repeated string permissions = 3;
+
+  // Timestamp when role was created
+  google.protobuf.Timestamp created_at = 4 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+
+  // Creator address
+  string created_by = 5;
+
+  // Whether this is a system-defined role
+  bool is_system_role = 6;
+
+  // Timestamp when role was last updated
+  google.protobuf.Timestamp updated_at = 7 [(gogoproto.stdtime) = true];
+}
+
+// RoleAssignment assigns a role to an address
+message RoleAssignment {
+  // Address receiving the role
+  string address = 1;
+
+  // Name of the role being assigned
+  string role_name = 2;
+
+  // Timestamp of assignment
+  google.protobuf.Timestamp assigned_at = 3 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+
+  // Address that assigned the role
+  string assigned_by = 4;
+
+  // Optional expiration timestamp
+  google.protobuf.Timestamp expires_at = 5 [(gogoproto.stdtime) = true];
+}
+
+// RoleAssignmentList holds multiple role assignments for storage
+message RoleAssignmentList {
+  repeated RoleAssignment assignments = 1;
+}
+
+// AuditLog represents a comprehensive audit log entry
+message AuditLog {
+  // Unique identifier
+  string id = 1;
+
+  // Action performed
+  string action = 2;
+
+  // Actor who performed the action
+  string actor = 3;
+
+  // Target resource or address
+  string target = 4;
+
+  // Timestamp of action
+  google.protobuf.Timestamp timestamp = 5 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+
+  // Additional details
+  string details = 6;
+
+  // Result of action
+  AuditResult result = 7;
+
+  // IP address (if applicable)
+  string ip_address = 8;
+
+  // Additional metadata
+  map<string, string> metadata = 9;
+
+  // Error message (if result is failure)
+  string error_message = 10;
+}
+
+// AuditResult enum
+enum AuditResult {
+  AUDIT_RESULT_UNSPECIFIED = 0;
+  AUDIT_RESULT_SUCCESS = 1;
+  AUDIT_RESULT_FAILURE = 2;
+  AUDIT_RESULT_DENIED = 3;
+}
+
+// IdentityRecord represents a decentralized identity
+message IdentityRecord {
+  // Decentralized identifier (DID)
+  string did = 1;
+
+  // Associated blockchain address
+  string address = 2;
+
+  // Current status of identity
+  IdentityStatus status = 3;
+
+  // Timestamp when identity was created
+  google.protobuf.Timestamp created_at = 4 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+
+  // Timestamp when identity was last updated
+  google.protobuf.Timestamp updated_at = 5 [(gogoproto.stdtime) = true];
+
+  // Key-value attributes
+  map<string, string> attributes = 6;
+
+  // List of verification methods
+  repeated string verification_methods = 7;
+
+  // Confidence score (0-100)
+  int64 confidence_score = 8;
+
+  // Metadata hash
+  string metadata_hash = 9;
+
+  // Latest inclusion routine version
+  string latest_ir_version = 10;
+
+  // Block height of last change
+  int64 last_changed_height = 11;
+}
+
+// IdentityStatus enum
+enum IdentityStatus {
+  IDENTITY_STATUS_UNSPECIFIED = 0;
+  IDENTITY_STATUS_ACTIVE = 1;
+  IDENTITY_STATUS_SUSPENDED = 2;
+  IDENTITY_STATUS_REVOKED = 3;
+  IDENTITY_STATUS_IDLE = 4;
+  IDENTITY_STATUS_PENDING_VERIFICATION = 5;
+}
+
+// ChangeRequest for identity updates
+message ChangeRequest {
+  // Unique identifier
+  string id = 1;
+
+  // Target DID
+  string did = 2;
+
+  // Type of change requested
+  ChangeType change_type = 3;
+
+  // Address requesting the change
+  string requester = 4;
+
+  // Timestamp of request
+  google.protobuf.Timestamp requested_at = 5 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+
+  // Current status
+  ChangeStatus status = 6;
+
+  // Serialized change data
+  bytes change_data = 7;
+
+  // Assistant address (if applicable)
+  string assistant = 8;
+
+  // Inclusion routine ID
+  string ir_id = 9;
+
+  // Proof hash
+  string proof_hash = 10;
+
+  // Metadata hash
+  string metadata_hash = 11;
+
+  // Reason for change
+  string reason = 12;
+
+  // Block height when created
+  int64 created_height = 13;
+
+  // Block height of verdict
+  int64 verdict_height = 14;
+}
+
+// ChangeType enum
+enum ChangeType {
+  CHANGE_TYPE_UNSPECIFIED = 0;
+  CHANGE_TYPE_UPDATE_ATTRIBUTES = 1;
+  CHANGE_TYPE_ADD_VERIFICATION_METHOD = 2;
+  CHANGE_TYPE_REVOKE_VERIFICATION_METHOD = 3;
+  CHANGE_TYPE_TRANSFER_CONTROL = 4;
+  CHANGE_TYPE_UPDATE_METADATA = 5;
+}
+
+// ChangeStatus enum
+enum ChangeStatus {
+  CHANGE_STATUS_UNSPECIFIED = 0;
+  CHANGE_STATUS_PENDING = 1;
+  CHANGE_STATUS_APPROVED = 2;
+  CHANGE_STATUS_REJECTED = 3;
+  CHANGE_STATUS_EXECUTED = 4;
+  CHANGE_STATUS_READY_TO_APPLY = 5;
+  CHANGE_STATUS_PENDING_VERIFICATION = 6;
+}
+
+// ChangeHistory tracks historical changes
+message ChangeHistory {
+  // Change request ID
+  string request_id = 1;
+
+  // Target DID
+  string target_did = 2;
+
+  // Previous confidence score
+  int64 prev_confidence_score = 3;
+
+  // New confidence score
+  int64 new_confidence_score = 4;
+
+  // Reason for transition
+  string transition_reason = 5;
+
+  // Block height when changed
+  int64 changed_height = 6;
+
+  // Timestamp of change
+  google.protobuf.Timestamp changed_at = 7 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+}
+
+// Session management for authentication
+message Session {
+  // Unique session identifier
+  string id = 1;
+
+  // User address
+  string address = 2;
+
+  // Creation timestamp
+  google.protobuf.Timestamp created_at = 3 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+
+  // Expiration timestamp
+  google.protobuf.Timestamp expires_at = 4 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+
+  // Device fingerprint
+  string device_fingerprint = 5;
+
+  // Active status
+  bool is_active = 6;
+
+  // Last accessed timestamp
+  google.protobuf.Timestamp last_accessed = 7 [(gogoproto.stdtime) = true];
+
+  // IP address
+  string ip_address = 8;
+
+  // Additional metadata
+  map<string, string> metadata = 9;
+}
+
+// SessionList holds multiple sessions for storage
+message SessionList {
+  repeated Session sessions = 1;
+}
+
+// SessionIDList holds multiple session IDs for storage
+message SessionIDList {
+  repeated string session_ids = 1;
+}
+
+// MultisigWallet represents a multi-signature wallet
+message MultisigWallet {
+  // Unique identifier
+  string id = 1;
+
+  // List of signer addresses
+  repeated string signers = 2;
+
+  // Threshold (e.g., 3 for 3-of-5)
+  uint32 threshold = 3;
+
+  // Creation timestamp
+  google.protobuf.Timestamp created_at = 4 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+
+  // Creator address
+  string created_by = 5;
+
+  // Wallet type
+  WalletType wallet_type = 6;
+}
+
+// WalletType enum
+enum WalletType {
+  WALLET_TYPE_UNSPECIFIED = 0;
+  WALLET_TYPE_3_OF_5 = 1;
+  WALLET_TYPE_5_OF_7 = 2;
+  WALLET_TYPE_CUSTOM = 3;
+}
+
+// MultisigProposal represents a proposal requiring multiple signatures
+message MultisigProposal {
+  // Unique identifier
+  string id = 1;
+
+  // Associated wallet ID
+  string wallet_id = 2;
+
+  // Proposal title
+  string title = 3;
+
+  // Detailed description
+  string description = 4;
+
+  // Encoded transaction or action
+  bytes payload = 5;
+
+  // Addresses that have signed
+  repeated string signatures = 6;
+
+  // Current status
+  ProposalStatus status = 7;
+
+  // Creation timestamp
+  google.protobuf.Timestamp created_at = 8 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+
+  // Execution timestamp
+  google.protobuf.Timestamp executed_at = 9 [(gogoproto.stdtime) = true];
+
+  // Expiration timestamp
+  google.protobuf.Timestamp expires_at = 10 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+}
+
+// ProposalStatus enum
+enum ProposalStatus {
+  PROPOSAL_STATUS_UNSPECIFIED = 0;
+  PROPOSAL_STATUS_PENDING = 1;
+  PROPOSAL_STATUS_APPROVED = 2;
+  PROPOSAL_STATUS_EXECUTED = 3;
+  PROPOSAL_STATUS_REJECTED = 4;
+  PROPOSAL_STATUS_EXPIRED = 5;
+}
+
+// TimeLockedAction represents an admin action with time delay
+message TimeLockedAction {
+  // Unique identifier
+  string id = 1;
+
+  // Action type (e.g., "UPDATE_PARAMS", "CHANGE_ADMIN")
+  string action_type = 2;
+
+  // Encoded action payload
+  bytes payload = 3;
+
+  // Proposer address
+  string proposer = 4;
+
+  // Proposal timestamp
+  google.protobuf.Timestamp proposed_at = 5 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+
+  // Executable timestamp
+  google.protobuf.Timestamp executable_at = 6 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+
+  // Execution timestamp
+  google.protobuf.Timestamp executed_at = 7 [(gogoproto.stdtime) = true];
+
+  // Current status
+  ActionStatus status = 8;
+
+  // Delay in seconds
+  uint64 delay_seconds = 9;
+}
+
+// ActionStatus enum
+enum ActionStatus {
+  ACTION_STATUS_UNSPECIFIED = 0;
+  ACTION_STATUS_PENDING = 1;
+  ACTION_STATUS_READY = 2;
+  ACTION_STATUS_EXECUTED = 3;
+  ACTION_STATUS_CANCELLED = 4;
+}
+
+// EmergencyAdmin represents an emergency admin key with specific privileges
+message EmergencyAdmin {
+  // Admin address
+  string address = 1;
+
+  // List of privileges
+  repeated string privileges = 2;
+
+  // Activation timestamp
+  google.protobuf.Timestamp activated_at = 3 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+
+  // Expiration timestamp
+  google.protobuf.Timestamp expires_at = 4 [(gogoproto.stdtime) = true];
+
+  // Active status
+  bool is_active = 5;
+
+  // Address that activated this admin
+  string activated_by = 6;
+}
+
+// ValidatorKeyRotation represents a key rotation event
+message ValidatorKeyRotation {
+  // Validator address
+  string validator_address = 1;
+
+  // Old consensus public key
+  string old_consensus_pubkey = 2;
+
+  // New consensus public key
+  string new_consensus_pubkey = 3;
+
+  // Rotation timestamp
+  google.protobuf.Timestamp rotation_time = 4 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+
+  // Address that initiated rotation
+  string initiated_by = 5;
+
+  // Rotation status
+  RotationStatus rotation_status = 6;
+}
+
+// RotationStatus enum
+enum RotationStatus {
+  ROTATION_STATUS_UNSPECIFIED = 0;
+  ROTATION_STATUS_PENDING = 1;
+  ROTATION_STATUS_COMPLETED = 2;
+  ROTATION_STATUS_FAILED = 3;
+}
+
+// RateLimitConfig represents rate limiting configuration per user
+message RateLimitConfig {
+  // User address
+  string user_address = 1;
+
+  // Limits
+  uint64 requests_per_minute = 2;
+  uint64 requests_per_hour = 3;
+  uint64 requests_per_day = 4;
+
+  // Current counts
+  uint64 current_minute_count = 5;
+  uint64 current_hour_count = 6;
+  uint64 current_day_count = 7;
+
+  // Window start timestamp
+  google.protobuf.Timestamp window_start = 8 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+}

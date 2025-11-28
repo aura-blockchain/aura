@@ -1,0 +1,221 @@
+syntax = "proto3";
+package aura.dex.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "aura/dex/v1beta1/liquidity_pool.proto";
+import "aura/dex/v1beta1/swap.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/dex/v1beta1";
+
+// Query defines the gRPC querier service
+service Query {
+  // Pool queries a liquidity pool by ID
+  rpc Pool(QueryPoolRequest) returns (QueryPoolResponse) {
+    option (google.api.http).get = "/aura/dex/v1beta1/pools/{pool_id}";
+  }
+
+  // AllPools queries all liquidity pools
+  rpc AllPools(QueryAllPoolsRequest) returns (QueryAllPoolsResponse) {
+    option (google.api.http).get = "/aura/dex/v1beta1/pools";
+  }
+
+  // GetQuote gets swap quote without executing
+  rpc GetQuote(QueryGetQuoteRequest) returns (QueryGetQuoteResponse) {
+    option (google.api.http).get = "/aura/dex/v1beta1/quote/{pool_id}/{denom_in}/{amount_in}";
+  }
+
+  // PoolStats queries pool statistics
+  rpc PoolStats(QueryPoolStatsRequest) returns (QueryPoolStatsResponse) {
+    option (google.api.http).get = "/aura/dex/v1beta1/pools/{pool_id}/stats";
+  }
+
+  // Orderbook queries P2P orderbook
+  rpc Orderbook(QueryOrderbookRequest) returns (QueryOrderbookResponse) {
+    option (google.api.http).get = "/aura/dex/v1beta1/orderbook/{pair}";
+  }
+
+  // Order queries specific order
+  rpc Order(QueryOrderRequest) returns (QueryOrderResponse) {
+    option (google.api.http).get = "/aura/dex/v1beta1/orders/{order_id}";
+  }
+
+  // UserOrders queries all orders for user
+  rpc UserOrders(QueryUserOrdersRequest) returns (QueryUserOrdersResponse) {
+    option (google.api.http).get = "/aura/dex/v1beta1/orders/user/{address}";
+  }
+
+  // MarketPrice queries current market price
+  rpc MarketPrice(QueryMarketPriceRequest) returns (QueryMarketPriceResponse) {
+    option (google.api.http).get = "/aura/dex/v1beta1/price/{coin}";
+  }
+
+  // SpotPrice queries instantaneous pool price for a pair
+  rpc SpotPrice(QuerySpotPriceRequest) returns (QuerySpotPriceResponse) {
+    option (google.api.http).get = "/aura/dex/v1beta1/spot/{pool_id}/{base_denom}/{quote_denom}";
+  }
+
+  // SupportedCoins queries list of supported altcoins
+  rpc SupportedCoins(QuerySupportedCoinsRequest) returns (QuerySupportedCoinsResponse) {
+    option (google.api.http).get = "/aura/dex/v1beta1/coins";
+  }
+
+  // HTLC queries Hash Time-Locked Contract
+  rpc HTLC(QueryHTLCRequest) returns (QueryHTLCResponse) {
+    option (google.api.http).get = "/aura/dex/v1beta1/htlc/{htlc_id}";
+  }
+}
+
+// Pool queries
+message QueryPoolRequest {
+  string pool_id = 1;
+}
+
+message QueryPoolResponse {
+  LiquidityPool pool = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryAllPoolsRequest {}
+
+message QueryAllPoolsResponse {
+  repeated LiquidityPool pools = 1 [(gogoproto.nullable) = false];
+}
+
+// Quote queries
+message QueryGetQuoteRequest {
+  string pool_id = 1;
+  string denom_in = 2;
+  string amount_in = 3 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+}
+
+message QueryGetQuoteResponse {
+  string estimated_output = 1 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+  string effective_price = 2 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
+  string price_impact_percent = 3 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
+  string fee_amount = 4 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+}
+
+// Pool stats queries
+message QueryPoolStatsRequest {
+  string pool_id = 1;
+}
+
+message QueryPoolStatsResponse {
+  string pool_id = 1;
+  string denom_a = 2;
+  string denom_b = 3;
+  string reserve_a = 4 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+  string reserve_b = 5 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+  string total_lp_tokens = 6 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+  uint64 liquidity_providers_count = 7;
+  string current_price = 8 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
+  string total_volume = 9 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+  string total_fees_collected = 10 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+  uint64 swap_count = 11;
+  string tvl_a = 12 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+  string tvl_b = 13 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+}
+
+// Orderbook queries
+message QueryOrderbookRequest {
+  string pair = 1;  // e.g., "AURA/USDT"
+}
+
+message QueryOrderbookResponse {
+  Orderbook orderbook = 1 [(gogoproto.nullable) = false];
+}
+
+// Order queries
+message QueryOrderRequest {
+  string order_id = 1;
+}
+
+message QueryOrderResponse {
+  SwapOrder order = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryUserOrdersRequest {
+  string address = 1;
+}
+
+message QueryUserOrdersResponse {
+  repeated SwapOrder orders = 1 [(gogoproto.nullable) = false];
+}
+
+// Market price queries
+message QueryMarketPriceRequest {
+  string coin = 1;  // usdt, btc, eth, etc.
+}
+
+message QueryMarketPriceResponse {
+  MarketPrice price = 1 [(gogoproto.nullable) = false];
+}
+
+// Spot price queries
+message QuerySpotPriceRequest {
+  string pool_id = 1;
+  string base_denom = 2;
+  string quote_denom = 3;
+}
+
+message QuerySpotPriceResponse {
+  string price = 1 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
+}
+
+// Supported coins query
+message QuerySupportedCoinsRequest {}
+
+message QuerySupportedCoinsResponse {
+  repeated string coins = 1;  // ["usdt", "usdc", "btc", "eth", "ltc", "doge", "osmo", "paw", "xai"]
+}
+
+// HTLC queries
+message QueryHTLCRequest {
+  string htlc_id = 1;
+}
+
+message QueryHTLCResponse {
+  HTLCData htlc = 1 [(gogoproto.nullable) = false];
+}

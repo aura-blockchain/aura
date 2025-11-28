@@ -1,0 +1,122 @@
+syntax = "proto3";
+
+package aura.privacy.v1beta1;
+
+import "aura/privacy/v1beta1/privacy.proto";
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/privacy/v1beta1";
+
+// Query defines the gRPC querier service for privacy module
+service Query {
+  // Params queries the module parameters
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse);
+
+  // MixingPool queries a specific mixing pool
+  rpc MixingPool(QueryMixingPoolRequest) returns (QueryMixingPoolResponse);
+
+  // MixingPools queries all mixing pools
+  rpc MixingPools(QueryMixingPoolsRequest) returns (QueryMixingPoolsResponse);
+
+  // ViewKey queries a specific view key
+  rpc ViewKey(QueryViewKeyRequest) returns (QueryViewKeyResponse);
+
+  // ViewKeys queries all view keys for an address
+  rpc ViewKeys(QueryViewKeysRequest) returns (QueryViewKeysResponse);
+
+  // VerifyZKProof verifies a zero-knowledge proof
+  rpc VerifyZKProof(QueryVerifyZKProofRequest) returns (QueryVerifyZKProofResponse);
+
+  // DecryptWithViewKey decrypts transaction data using a view key
+  rpc DecryptWithViewKey(QueryDecryptWithViewKeyRequest) returns (QueryDecryptWithViewKeyResponse);
+}
+
+// QueryParamsRequest is the request type for the Query/Params RPC method
+message QueryParamsRequest {}
+
+// QueryParamsResponse is the response type for the Query/Params RPC method
+message QueryParamsResponse {
+  // params are the module parameters
+  Params params = 1 [(gogoproto.nullable) = false];
+}
+
+// QueryMixingPoolRequest is the request for a specific mixing pool
+message QueryMixingPoolRequest {
+  // pool_id is the unique identifier of the pool
+  string pool_id = 1;
+}
+
+// QueryMixingPoolResponse is the response
+message QueryMixingPoolResponse {
+  // mixing_pool is the requested pool
+  MixingPool mixing_pool = 1;
+}
+
+// QueryMixingPoolsRequest is the request for all mixing pools
+message QueryMixingPoolsRequest {
+  // status filters pools by status (optional)
+  string status = 1;
+}
+
+// QueryMixingPoolsResponse is the response
+message QueryMixingPoolsResponse {
+  // mixing_pools are all matching pools
+  repeated MixingPool mixing_pools = 1;
+}
+
+// QueryViewKeyRequest is the request for a specific view key
+message QueryViewKeyRequest {
+  // public_view_key is the key to query
+  bytes public_view_key = 1;
+}
+
+// QueryViewKeyResponse is the response
+message QueryViewKeyResponse {
+  // view_key is the requested key (without private component)
+  ViewKey view_key = 1;
+}
+
+// QueryViewKeysRequest is the request for all view keys of an address
+message QueryViewKeysRequest {
+  // address is the address to query
+  string address = 1;
+}
+
+// QueryViewKeysResponse is the response
+message QueryViewKeysResponse {
+  // view_keys are all keys for the address
+  repeated ViewKey view_keys = 1;
+}
+
+// QueryVerifyZKProofRequest is the request to verify a ZK proof
+message QueryVerifyZKProofRequest {
+  // zk_proof is the proof to verify
+  ZKProof zk_proof = 1;
+}
+
+// QueryVerifyZKProofResponse is the response
+message QueryVerifyZKProofResponse {
+  // valid indicates if the proof is valid
+  bool valid = 1;
+
+  // error_message contains details if verification failed
+  string error_message = 2;
+}
+
+// QueryDecryptWithViewKeyRequest is the request to decrypt transaction data
+message QueryDecryptWithViewKeyRequest {
+  // encrypted_data is the data to decrypt
+  bytes encrypted_data = 1;
+
+  // private_view_key is the key to use for decryption
+  bytes private_view_key = 2;
+}
+
+// QueryDecryptWithViewKeyResponse is the response
+message QueryDecryptWithViewKeyResponse {
+  // decrypted_data is the decrypted content
+  bytes decrypted_data = 1;
+
+  // success indicates if decryption was successful
+  bool success = 2;
+}

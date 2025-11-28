@@ -1,0 +1,130 @@
+syntax = "proto3";
+
+package aura.cryptography.v1beta1;
+
+import "google/api/annotations.proto";
+import "aura/cryptography/v1beta1/cryptography.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/cryptography/v1beta1";
+
+// Query defines the gRPC querier service
+service Query {
+  // Params queries the parameters of the cryptography module
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/aura/cryptography/v1beta1/params";
+  }
+
+  // KeyRotationSchedule queries a key rotation schedule by ID
+  rpc KeyRotationSchedule(QueryKeyRotationScheduleRequest) returns (QueryKeyRotationScheduleResponse) {
+    option (google.api.http).get = "/aura/cryptography/v1beta1/key_rotation_schedule/{id}";
+  }
+
+  // ThresholdScheme queries a threshold signature scheme by ID
+  rpc ThresholdScheme(QueryThresholdSchemeRequest) returns (QueryThresholdSchemeResponse) {
+    option (google.api.http).get = "/aura/cryptography/v1beta1/threshold_scheme/{scheme_id}";
+  }
+
+  // VerifyZKProof verifies a zero-knowledge proof
+  rpc VerifyZKProof(QueryVerifyZKProofRequest) returns (QueryVerifyZKProofResponse) {
+    option (google.api.http).post = "/aura/cryptography/v1beta1/verify_zk_proof";
+  }
+
+  // SecureEnclave queries secure enclave information
+  rpc SecureEnclave(QuerySecureEnclaveRequest) returns (QuerySecureEnclaveResponse) {
+    option (google.api.http).get = "/aura/cryptography/v1beta1/secure_enclave/{enclave_id}";
+  }
+
+  // QuantumResistantKey queries a quantum-resistant key
+  rpc QuantumResistantKey(QueryQuantumResistantKeyRequest) returns (QueryQuantumResistantKeyResponse) {
+    option (google.api.http).get = "/aura/cryptography/v1beta1/quantum_resistant_key/{key_id}";
+  }
+
+  // RandomSourceStatus queries the status of random sources
+  rpc RandomSourceStatus(QueryRandomSourceStatusRequest) returns (QueryRandomSourceStatusResponse) {
+    option (google.api.http).get = "/aura/cryptography/v1beta1/random_source_status";
+  }
+
+  // CertificatePin queries certificate pinning configuration
+  rpc CertificatePin(QueryCertificatePinRequest) returns (QueryCertificatePinResponse) {
+    option (google.api.http).get = "/aura/cryptography/v1beta1/certificate_pin/{hostname}";
+  }
+}
+
+// QueryParamsRequest is the request type for the Query/Params RPC method
+message QueryParamsRequest {}
+
+// QueryParamsResponse is the response type for the Query/Params RPC method
+message QueryParamsResponse {
+  Params params = 1;
+}
+
+// QueryKeyRotationScheduleRequest is the request type for the Query/KeyRotationSchedule RPC method
+message QueryKeyRotationScheduleRequest {
+  string id = 1;
+}
+
+// QueryKeyRotationScheduleResponse is the response type for the Query/KeyRotationSchedule RPC method
+message QueryKeyRotationScheduleResponse {
+  KeyRotationSchedule schedule = 1;
+}
+
+// QueryThresholdSchemeRequest is the request type for the Query/ThresholdScheme RPC method
+message QueryThresholdSchemeRequest {
+  string scheme_id = 1;
+}
+
+// QueryThresholdSchemeResponse is the response type for the Query/ThresholdScheme RPC method
+message QueryThresholdSchemeResponse {
+  ThresholdSignatureScheme scheme = 1;
+}
+
+// QueryVerifyZKProofRequest is the request type for the Query/VerifyZKProof RPC method
+message QueryVerifyZKProofRequest {
+  string proof_id = 1;
+  bytes proof_data = 2;
+  bytes public_inputs = 3;
+}
+
+// QueryVerifyZKProofResponse is the response type for the Query/VerifyZKProof RPC method
+message QueryVerifyZKProofResponse {
+  bool valid = 1;
+  string error_message = 2;
+}
+
+// QuerySecureEnclaveRequest is the request type for the Query/SecureEnclave RPC method
+message QuerySecureEnclaveRequest {
+  string enclave_id = 1;
+}
+
+// QuerySecureEnclaveResponse is the response type for the Query/SecureEnclave RPC method
+message QuerySecureEnclaveResponse {
+  SecureEnclaveConfig enclave = 1;
+}
+
+// QueryQuantumResistantKeyRequest is the request type for the Query/QuantumResistantKey RPC method
+message QueryQuantumResistantKeyRequest {
+  string key_id = 1;
+}
+
+// QueryQuantumResistantKeyResponse is the response type for the Query/QuantumResistantKey RPC method
+message QueryQuantumResistantKeyResponse {
+  QuantumResistantKey key = 1;
+}
+
+// QueryRandomSourceStatusRequest is the request type for the Query/RandomSourceStatus RPC method
+message QueryRandomSourceStatusRequest {}
+
+// QueryRandomSourceStatusResponse is the response type for the Query/RandomSourceStatus RPC method
+message QueryRandomSourceStatusResponse {
+  repeated CryptoRandomSource sources = 1;
+}
+
+// QueryCertificatePinRequest is the request type for the Query/CertificatePin RPC method
+message QueryCertificatePinRequest {
+  string hostname = 1;
+}
+
+// QueryCertificatePinResponse is the response type for the Query/CertificatePin RPC method
+message QueryCertificatePinResponse {
+  CertificatePin pin = 1;
+}

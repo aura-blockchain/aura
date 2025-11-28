@@ -1,0 +1,263 @@
+syntax = "proto3";
+package aura.dataregistry.v1beta1;
+
+import "google/protobuf/timestamp.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/dataregistry/v1beta1";
+
+// ============================
+// ENUMS
+// ============================
+
+// DataItemType categorizes stored data
+enum DataItemType {
+  DATA_ITEM_TYPE_UNSPECIFIED = 0;
+
+  // Documents
+  DATA_ITEM_TYPE_VEHICLE_REGISTRATION = 1;
+  DATA_ITEM_TYPE_VEHICLE_INSURANCE = 2;
+  DATA_ITEM_TYPE_PROPERTY_DEED = 3;
+  DATA_ITEM_TYPE_LEASE_AGREEMENT = 4;
+  DATA_ITEM_TYPE_CONTRACT = 5;
+  DATA_ITEM_TYPE_RECEIPT = 6;
+  DATA_ITEM_TYPE_WARRANTY = 7;
+
+  // Media
+  DATA_ITEM_TYPE_PHOTO = 10;
+  DATA_ITEM_TYPE_VIDEO = 11;
+  DATA_ITEM_TYPE_AUDIO = 12;
+  DATA_ITEM_TYPE_DOCUMENT_PDF = 13;
+
+  // Scores & Achievements
+  DATA_ITEM_TYPE_GOLF_SCORE = 20;
+  DATA_ITEM_TYPE_TEST_SCORE = 21;
+  DATA_ITEM_TYPE_CERTIFICATION = 22;
+  DATA_ITEM_TYPE_ACHIEVEMENT = 23;
+
+  // Digital Assets
+  DATA_ITEM_TYPE_NFT = 30;
+  DATA_ITEM_TYPE_DIGITAL_ART = 31;
+  DATA_ITEM_TYPE_MUSIC_LICENSE = 32;
+
+  // Health
+  DATA_ITEM_TYPE_VACCINATION_RECORD = 40;
+  DATA_ITEM_TYPE_MEDICAL_RECORD = 41;
+  DATA_ITEM_TYPE_PRESCRIPTION = 42;
+
+  // Custom
+  DATA_ITEM_TYPE_CUSTOM = 100;
+}
+
+// DataItemStatus represents lifecycle
+enum DataItemStatus {
+  DATA_ITEM_STATUS_UNSPECIFIED = 0;
+  DATA_ITEM_STATUS_PENDING_VERIFICATION = 1;
+  DATA_ITEM_STATUS_VERIFIED = 2;
+  DATA_ITEM_STATUS_REJECTED = 3;
+  DATA_ITEM_STATUS_EXPIRED = 4;
+  DATA_ITEM_STATUS_REVOKED = 5;
+}
+
+// VerificationLevel indicates trust level
+enum VerificationLevel {
+  VERIFICATION_LEVEL_UNSPECIFIED = 0;
+  VERIFICATION_LEVEL_SELF_ATTESTED = 1;     // User claims, not verified
+  VERIFICATION_LEVEL_PEER_VERIFIED = 2;      // Verified by another user
+  VERIFICATION_LEVEL_AI_VERIFIED = 3;        // Verified by AI agent
+  VERIFICATION_LEVEL_AUTHORITY_VERIFIED = 4; // Verified by official authority
+  VERIFICATION_LEVEL_BLOCKCHAIN_ANCHORED = 5; // Anchored with external proof
+}
+
+// AccessMode defines visibility policy
+enum AccessMode {
+  ACCESS_MODE_PRIVATE = 0;                  // Owner only
+  ACCESS_MODE_WHITELIST = 1;                // Allowed addresses only
+  ACCESS_MODE_PUBLIC = 2;                   // Anyone can view
+  ACCESS_MODE_VERIFIED_USERS = 3;           // Any AURA-verified user
+}
+
+// ============================
+// STATE MESSAGES
+// ============================
+
+// GeoLocation for geotagged data
+message GeoLocation {
+  double latitude = 1;
+  double longitude = 2;
+  double altitude = 3;                      // Optional
+  double accuracy_meters = 4;               // GPS accuracy
+  google.protobuf.Timestamp timestamp = 5;  // When location was captured
+  string location_name = 6;                 // "Pebble Beach Golf Course"
+}
+
+// Verification record
+message Verification {
+  string verifier_address = 1;              // Who verified
+  VerificationLevel level = 2;              // What level
+  google.protobuf.Timestamp verified_at = 3;
+  string verification_method = 4;           // "AI OCR", "Manual review", etc.
+  uint64 confidence_score = 5;              // 0-100
+  string notes = 6;                         // Verifier notes
+  bytes proof = 7;                          // Cryptographic proof (optional)
+}
+
+// AccessPolicy controls who can view data
+message AccessPolicy {
+  AccessMode mode = 1;
+  repeated string allowed_addresses = 2;    // Whitelist
+  repeated string denied_addresses = 3;     // Blacklist
+  bool require_verified_identity = 4;       // Must have AURA VC
+  uint64 min_confidence_score = 5;          // Minimum CS required
+}
+
+// DataItem represents a stored data item
+message DataItem {
+  string data_id = 1;                       // Unique identifier
+  string owner_address = 2;                 // Owner's wallet
+  DataItemType data_type = 3;               // Type of data
+  string data_type_custom = 4;              // Custom type name
+  DataItemStatus status = 5;                // Current status
+  VerificationLevel verification_level = 6; // How verified
+
+  // Content (stored off-chain or encrypted)
+  bytes content_hash = 7;                   // SHA256 of content
+  string storage_location = 8;              // IPFS CID, Arweave TX, or URL
+  bool is_encrypted = 9;                    // Is content encrypted
+  bytes encryption_key_hash = 10;           // Hash of encryption key (if encrypted)
+
+  // Metadata
+  string title = 11;                        // Human-readable title
+  string description = 12;                  // Description
+  map<string, string> metadata = 13;        // Extensible metadata
+  repeated string tags = 14;                // Search tags
+
+  // Temporal/Geospatial
+  google.protobuf.Timestamp created_at = 15;
+  google.protobuf.Timestamp verified_at = 16;
+  google.protobuf.Timestamp expires_at = 17; // 0 = never
+  GeoLocation geo_location = 18;            // Where data was created
+
+  // Verification
+  repeated Verification verifications = 19; // Who verified it
+  string verified_by = 20;                  // Primary verifier address
+
+  // Access control
+  AccessPolicy access_policy = 21;          // Who can see it
+
+  // Provenance
+  string previous_data_id = 22;             // For versioning/updates
+  uint64 version = 23;                      // Version number
+}
+
+// Specialized data types
+
+// Golf score with geotagging and timestamping
+message GolfScoreData {
+  string course_name = 1;
+  GeoLocation location = 2;
+  google.protobuf.Timestamp played_at = 3;
+  uint32 total_score = 4;
+  repeated uint32 hole_scores = 5;          // 18 holes
+  uint32 handicap = 6;
+  string scorecard_image_cid = 7;           // IPFS CID of photo
+  repeated string playing_partners = 8;     // Witness addresses
+}
+
+// Vehicle registration data
+message VehicleRegistrationData {
+  string vin = 1;
+  string make = 2;
+  string model = 3;
+  uint32 year = 4;
+  string license_plate = 5;
+  string state = 6;
+  google.protobuf.Timestamp registered_at = 7;
+  google.protobuf.Timestamp expires_at = 8;
+  string registration_image_cid = 9;        // IPFS CID
+}
+
+// Photo with metadata
+message PhotoData {
+  string photo_cid = 1;                     // IPFS CID
+  GeoLocation location = 2;
+  google.protobuf.Timestamp taken_at = 3;
+  string camera_model = 4;
+  string description = 5;
+  repeated string people_tagged = 6;        // AURA addresses
+  uint32 width = 7;
+  uint32 height = 8;
+}
+
+// ============================
+// PARAMS
+// ============================
+
+// Params for module configuration
+message Params {
+  uint64 max_data_items_per_user = 1;       // Default: 1000
+  uint64 max_storage_bytes = 2;             // Max size per item
+  string storage_fee = 3;                   // Fee in uaura
+  uint64 verification_reward = 4;           // Reward for verifiers
+  repeated string authorized_verifiers = 5; // Official verifier addresses
+}
+
+// ============================
+// GENESIS STATE
+// ============================
+
+// GenesisState defines the initial state of the dataregistry module
+message GenesisState {
+  Params params = 1;
+  repeated DataItem data_items = 2;
+  uint64 next_data_id = 3;
+}
+
+// ============================
+// EVENTS
+// ============================
+
+// EventDataItemStored is emitted when a data item is stored
+message EventDataItemStored {
+  string data_id = 1;
+  DataItemType data_type = 2;
+  string owner_address = 3;
+  string storage_location = 4;
+  google.protobuf.Timestamp created_at = 5;
+  uint64 block_height = 6;
+}
+
+// EventDataItemUpdated is emitted when a data item is updated
+message EventDataItemUpdated {
+  string data_id = 1;
+  string owner_address = 2;
+  google.protobuf.Timestamp updated_at = 3;
+  uint64 block_height = 4;
+}
+
+// EventDataItemDeleted is emitted when a data item is deleted
+message EventDataItemDeleted {
+  string data_id = 1;
+  string owner_address = 2;
+  google.protobuf.Timestamp deleted_at = 3;
+  uint64 block_height = 4;
+}
+
+// EventDataItemVerified is emitted when a data item is verified
+message EventDataItemVerified {
+  string data_id = 1;
+  string verifier_address = 2;
+  VerificationLevel level = 3;
+  uint64 confidence_score = 4;
+  google.protobuf.Timestamp verified_at = 5;
+  uint64 block_height = 6;
+}
+
+// EventDataItemRevoked is emitted when a data item is revoked
+message EventDataItemRevoked {
+  string data_id = 1;
+  string authority = 2;
+  string reason = 3;
+  google.protobuf.Timestamp revoked_at = 4;
+  uint64 block_height = 5;
+}

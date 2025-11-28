@@ -1,0 +1,97 @@
+package bridge
+
+import (
+	"fmt"
+
+	"github.com/spf13/cobra"
+
+	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/codec"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	"github.com/aequitas/aura/chain/x/bridge/client/cli"
+	"github.com/aequitas/aura/chain/x/bridge/keeper"
+	"github.com/aequitas/aura/chain/x/bridge/types"
+	bridgepb "github.com/aequitas/aura/proto/aura/bridge/v1beta1"
+)
+
+// ModuleServices defines how the application wires bridge gRPC services.
+type ModuleServices interface {
+	RegisterMsgServer(bridgepb.MsgServer)
+	RegisterQueryServer(bridgepb.QueryServer)
+}
+
+// AppModuleBasic defines the basic application module
+type AppModuleBasic struct{}
+
+// Name returns the module name
+func (AppModuleBasic) Name() string { return types.ModuleName }
+
+// RegisterServices registers module services (no-op for basic)
+func (AppModuleBasic) RegisterServices(ModuleServices) {}
+
+// DefaultGenesis returns the module's default genesis state.
+func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) []byte {
+	return cdc.MustMarshalJSON(types.DefaultGenesis())
+}
+
+// ValidateGenesis validates the provided genesis state for the module.
+func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, _ client.TxEncodingConfig, bz []byte) error {
+	var gen types.GenesisState
+	if err := cdc.UnmarshalJSON(bz, &gen); err != nil {
+		return fmt.Errorf("failed to unmarshal %s genesis state: %w", types.ModuleName, err)
+	}
+	return types.ValidateGenesis(&gen)
+}
+
+// AppModule implements the app module interface
+type AppModule struct {
+	keeper *keeper.Keeper
+}
+
+// NewAppModule creates a new AppModule instance
+func NewAppModule(k *keeper.Keeper) AppModule {
+	return AppModule{keeper: k}
+}
+
+// Name returns the module name
+func (AppModule) Name() string { return types.ModuleName }
+
+// RegisterServices registers the module's message and query servers
+func (m AppModule) RegisterServices(config ModuleServices) {
+	if config == nil {
+		panic(fmt.Sprintf("%s: nil module services", types.ModuleName))
+	}
+	config.RegisterMsgServer(keeper.NewMsgServerImpl(m.keeper))
+	config.RegisterQueryServer(keeper.NewQueryServerImpl(m.keeper))
+}
+
+// BeginBlock executes all ABCI BeginBlock logic
+func (m AppModule) BeginBlock() {
+	// No begin block logic needed for Bridge
+}
+
+// EndBlock executes all ABCI EndBlock logic
+func (m AppModule) EndBlock() {
+	// No end block logic needed for Bridge currently
+}
+
+// InitGenesis initializes module state from genesis
+func (m AppModule) InitGenesis(ctx sdk.Context, genesis types.GenesisState) error {
+	return m.keeper.InitGenesis(ctx, genesis)
+}
+
+// ExportGenesis exports module state for genesis
+func (m AppModule) ExportGenesis(ctx sdk.Context) types.GenesisState {
+	return m.keeper.ExportGenesis(ctx)
+}
+
+// GetTxCmd returns the transaction commands for this module
+func (AppModule) GetTxCmd() *cobra.Command {
+	return cli.GetTxCmd()
+}
+
+// GetQueryCmd returns the query commands for this module
+func (AppModule) GetQueryCmd() *cobra.Command {
+	return cli.GetQueryCmd()
+}

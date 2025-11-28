@@ -1,0 +1,170 @@
+syntax = "proto3";
+
+package aura.privacy.v1beta1;
+
+import "aura/privacy/v1beta1/privacy.proto";
+import "gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/privacy/v1beta1";
+
+// Msg defines the privacy module's transaction messages
+service Msg {
+  // SubmitPrivateTransaction submits a private transaction
+  rpc SubmitPrivateTransaction(MsgSubmitPrivateTransaction) returns (MsgSubmitPrivateTransactionResponse);
+
+  // CreateMixingPool creates a new coin mixing pool
+  rpc CreateMixingPool(MsgCreateMixingPool) returns (MsgCreateMixingPoolResponse);
+
+  // JoinMixingPool joins an existing mixing pool
+  rpc JoinMixingPool(MsgJoinMixingPool) returns (MsgJoinMixingPoolResponse);
+
+  // RegisterViewKey registers a new view key
+  rpc RegisterViewKey(MsgRegisterViewKey) returns (MsgRegisterViewKeyResponse);
+
+  // RevokeViewKey revokes an existing view key
+  rpc RevokeViewKey(MsgRevokeViewKey) returns (MsgRevokeViewKeyResponse);
+
+  // UpdateNetworkPrivacy updates network privacy settings
+  rpc UpdateNetworkPrivacy(MsgUpdateNetworkPrivacy) returns (MsgUpdateNetworkPrivacyResponse);
+
+  // UpdateParams updates module parameters
+  rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
+}
+
+// MsgSubmitPrivateTransaction submits a private transaction
+message MsgSubmitPrivateTransaction {
+  option (gogoproto.equal) = false;
+
+  // sender is the address submitting the transaction
+  string sender = 1;
+
+  // private_transaction contains all privacy-enhanced transaction data
+  PrivateTransaction private_transaction = 2;
+}
+
+// MsgSubmitPrivateTransactionResponse is the response
+message MsgSubmitPrivateTransactionResponse {
+  // tx_hash is the hash of the submitted transaction
+  bytes tx_hash = 1;
+
+  // success indicates if the transaction was accepted
+  bool success = 2;
+}
+
+// MsgCreateMixingPool creates a new mixing pool
+message MsgCreateMixingPool {
+  option (gogoproto.equal) = false;
+
+  // creator is the address creating the pool
+  string creator = 1;
+
+  // min_participants is the minimum number of participants
+  uint32 min_participants = 2;
+
+  // max_participants is the maximum number of participants
+  uint32 max_participants = 3;
+
+  // denomination is the standard mixing amount
+  string denomination = 4 [(gogoproto.customtype) = "cosmossdk.io/math.Int", (gogoproto.nullable) = false];
+
+  // mixing_rounds is the number of mixing rounds
+  uint32 mixing_rounds = 5;
+
+  // deadline_duration is how long to wait for participants (in seconds)
+  uint64 deadline_duration = 6;
+}
+
+// MsgCreateMixingPoolResponse is the response
+message MsgCreateMixingPoolResponse {
+  // pool_id is the unique identifier for the created pool
+  string pool_id = 1;
+}
+
+// MsgJoinMixingPool joins an existing mixing pool
+message MsgJoinMixingPool {
+  option (gogoproto.equal) = false;
+
+  // participant is the address joining the pool
+  string participant = 1;
+
+  // pool_id is the mixing pool to join
+  string pool_id = 2;
+
+  // commitment is the participant's commitment to the mixing process
+  bytes commitment = 3;
+}
+
+// MsgJoinMixingPoolResponse is the response
+message MsgJoinMixingPoolResponse {
+  // success indicates if the join was successful
+  bool success = 1;
+
+  // participant_index is the participant's index in the pool
+  uint32 participant_index = 2;
+}
+
+// MsgRegisterViewKey registers a view key
+message MsgRegisterViewKey {
+  option (gogoproto.equal) = false;
+
+  // owner is the address registering the view key
+  string owner = 1;
+
+  // view_key is the key being registered
+  ViewKey view_key = 2;
+}
+
+// MsgRegisterViewKeyResponse is the response
+message MsgRegisterViewKeyResponse {
+  // success indicates if registration was successful
+  bool success = 1;
+}
+
+// MsgRevokeViewKey revokes a view key
+message MsgRevokeViewKey {
+  option (gogoproto.equal) = false;
+
+  // owner is the address revoking the view key
+  string owner = 1;
+
+  // public_view_key is the key to revoke
+  bytes public_view_key = 2;
+}
+
+// MsgRevokeViewKeyResponse is the response
+message MsgRevokeViewKeyResponse {
+  // success indicates if revocation was successful
+  bool success = 1;
+}
+
+// MsgUpdateNetworkPrivacy updates network privacy settings
+message MsgUpdateNetworkPrivacy {
+  option (gogoproto.equal) = false;
+
+  // sender is the address updating settings
+  string sender = 1;
+
+  // network_privacy contains the new settings
+  NetworkPrivacy network_privacy = 2;
+}
+
+// MsgUpdateNetworkPrivacyResponse is the response
+message MsgUpdateNetworkPrivacyResponse {
+  // success indicates if the update was successful
+  bool success = 1;
+}
+
+// MsgUpdateParams updates module parameters
+message MsgUpdateParams {
+  option (gogoproto.equal) = false;
+
+  // authority is the address authorized to update params
+  string authority = 1;
+
+  // params are the new parameters
+  Params params = 2 [(gogoproto.nullable) = false];
+}
+
+// MsgUpdateParamsResponse is the response
+message MsgUpdateParamsResponse {}

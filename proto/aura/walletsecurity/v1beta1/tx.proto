@@ -1,0 +1,300 @@
+syntax = "proto3";
+package aura.walletsecurity.v1beta1;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+import "aura/walletsecurity/v1beta1/wallet_security.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/walletsecurity/v1beta1";
+
+// Msg defines the wallet security Msg service
+service Msg {
+  // RegisterHardwareWallet registers a new hardware wallet
+  rpc RegisterHardwareWallet(MsgRegisterHardwareWallet) returns (MsgRegisterHardwareWalletResponse);
+
+  // CreateMultiSigWallet creates a new multi-signature wallet
+  rpc CreateMultiSigWallet(MsgCreateMultiSigWallet) returns (MsgCreateMultiSigWalletResponse);
+
+  // SignMultiSigTransaction signs a pending multi-sig transaction
+  rpc SignMultiSigTransaction(MsgSignMultiSigTransaction) returns (MsgSignMultiSigTransactionResponse);
+
+  // ConfigureSocialRecovery configures social recovery for a wallet
+  rpc ConfigureSocialRecovery(MsgConfigureSocialRecovery) returns (MsgConfigureSocialRecoveryResponse);
+
+  // InitiateRecovery initiates a social recovery process
+  rpc InitiateRecovery(MsgInitiateRecovery) returns (MsgInitiateRecoveryResponse);
+
+  // ApproveRecovery approves a recovery request as a guardian
+  rpc ApproveRecovery(MsgApproveRecovery) returns (MsgApproveRecoveryResponse);
+
+  // ExecuteRecovery executes an approved recovery request
+  rpc ExecuteRecovery(MsgExecuteRecovery) returns (MsgExecuteRecoveryResponse);
+
+  // SimulateTransaction simulates a transaction before execution
+  rpc SimulateTransaction(MsgSimulateTransaction) returns (MsgSimulateTransactionResponse);
+
+  // VerifyDomain verifies a domain for phishing protection
+  rpc VerifyDomain(MsgVerifyDomain) returns (MsgVerifyDomainResponse);
+
+  // SetSpendingLimit sets spending limits for a wallet
+  rpc SetSpendingLimit(MsgSetSpendingLimit) returns (MsgSetSpendingLimitResponse);
+
+  // ConfigureSession configures wallet session settings
+  rpc ConfigureSession(MsgConfigureSession) returns (MsgConfigureSessionResponse);
+
+  // LockSession locks the current wallet session
+  rpc LockSession(MsgLockSession) returns (MsgLockSessionResponse);
+
+  // UnlockSession unlocks a locked wallet session
+  rpc UnlockSession(MsgUnlockSession) returns (MsgUnlockSessionResponse);
+
+  // EnrollBiometric enrolls biometric authentication
+  rpc EnrollBiometric(MsgEnrollBiometric) returns (MsgEnrollBiometricResponse);
+
+  // AuthenticateBiometric authenticates using biometric
+  rpc AuthenticateBiometric(MsgAuthenticateBiometric) returns (MsgAuthenticateBiometricResponse);
+
+  // StoreInSecureEnclave stores key material in secure enclave
+  rpc StoreInSecureEnclave(MsgStoreInSecureEnclave) returns (MsgStoreInSecureEnclaveResponse);
+
+  // CreateEncryptedBackup creates an encrypted backup of seed phrase
+  rpc CreateEncryptedBackup(MsgCreateEncryptedBackup) returns (MsgCreateEncryptedBackupResponse);
+
+  // ConfigureDustFilter configures dust attack filtering
+  rpc ConfigureDustFilter(MsgConfigureDustFilter) returns (MsgConfigureDustFilterResponse);
+
+  // ValidateAddressChecksum validates an address checksum
+  rpc ValidateAddressChecksum(MsgValidateAddressChecksum) returns (MsgValidateAddressChecksumResponse);
+}
+
+// MsgRegisterHardwareWallet registers a hardware wallet
+message MsgRegisterHardwareWallet {
+  string address = 1;
+  HardwareWalletType type = 2;
+  string device_id = 3;
+  string firmware_version = 4;
+  string derivation_path = 5;
+  bytes signature = 6; // Signature from hardware wallet to prove ownership
+}
+
+message MsgRegisterHardwareWalletResponse {
+  string wallet_id = 1;
+  HardwareWalletConfig config = 2;
+}
+
+// MsgCreateMultiSigWallet creates a multi-signature wallet
+message MsgCreateMultiSigWallet {
+  string creator = 1;
+  repeated string signers = 2;
+  int32 threshold = 3;
+  map<string, int32> signer_weights = 4; // Optional
+  int32 weight_threshold = 5; // Optional
+  google.protobuf.Duration time_lock = 6; // Optional
+}
+
+message MsgCreateMultiSigWalletResponse {
+  string wallet_id = 1;
+  MultiSigWallet wallet = 2;
+}
+
+// MsgSignMultiSigTransaction signs a multi-sig transaction
+message MsgSignMultiSigTransaction {
+  string tx_id = 1;
+  string signer = 2;
+  bytes signature = 3;
+}
+
+message MsgSignMultiSigTransactionResponse {
+  int32 current_signatures = 1;
+  int32 required_signatures = 2;
+  bool ready_to_execute = 3;
+}
+
+// MsgConfigureSocialRecovery configures social recovery
+message MsgConfigureSocialRecovery {
+  string wallet_id = 1;
+  repeated Guardian guardians = 2;
+  int32 recovery_threshold = 3;
+  google.protobuf.Duration recovery_delay = 4;
+}
+
+message MsgConfigureSocialRecoveryResponse {
+  SocialRecoveryConfig config = 1;
+}
+
+// MsgInitiateRecovery initiates a recovery process
+message MsgInitiateRecovery {
+  string wallet_id = 1;
+  string new_address = 2;
+  string initiator = 3; // Guardian address
+}
+
+message MsgInitiateRecoveryResponse {
+  string request_id = 1;
+  RecoveryRequest request = 2;
+}
+
+// MsgApproveRecovery approves a recovery request
+message MsgApproveRecovery {
+  string request_id = 1;
+  string guardian = 2;
+  bytes signature = 3;
+}
+
+message MsgApproveRecoveryResponse {
+  int32 approvals_count = 1;
+  int32 required_approvals = 2;
+  bool ready_to_execute = 3;
+  google.protobuf.Timestamp executable_at = 4;
+}
+
+// MsgExecuteRecovery executes a recovery request
+message MsgExecuteRecovery {
+  string request_id = 1;
+}
+
+message MsgExecuteRecoveryResponse {
+  bool success = 1;
+  string new_address = 2;
+}
+
+// MsgSimulateTransaction simulates a transaction
+message MsgSimulateTransaction {
+  bytes tx_data = 1;
+  string sender = 2;
+}
+
+message MsgSimulateTransactionResponse {
+  TransactionSimulation simulation = 1;
+}
+
+// MsgVerifyDomain verifies a domain
+message MsgVerifyDomain {
+  string domain = 1;
+  string certificate_hash = 2;
+  string verifier = 3;
+}
+
+message MsgVerifyDomainResponse {
+  DomainVerification verification = 1;
+}
+
+// MsgSetSpendingLimit sets spending limits
+message MsgSetSpendingLimit {
+  string wallet_id = 1;
+  string denom = 2;
+  string daily_limit = 3;
+  string weekly_limit = 4;
+  string monthly_limit = 5;
+}
+
+message MsgSetSpendingLimitResponse {
+  SpendingLimit limit = 1;
+}
+
+// MsgConfigureSession configures session settings
+message MsgConfigureSession {
+  string wallet_id = 1;
+  google.protobuf.Duration timeout_duration = 2;
+  bool auto_lock_enabled = 3;
+  int32 inactivity_threshold_seconds = 4;
+}
+
+message MsgConfigureSessionResponse {
+  SessionConfig config = 1;
+}
+
+// MsgLockSession locks a session
+message MsgLockSession {
+  string session_id = 1;
+}
+
+message MsgLockSessionResponse {
+  bool locked = 1;
+}
+
+// MsgUnlockSession unlocks a session
+message MsgUnlockSession {
+  string session_id = 1;
+  bytes authentication_proof = 2; // Biometric or password proof
+}
+
+message MsgUnlockSessionResponse {
+  bool unlocked = 1;
+  google.protobuf.Timestamp expires_at = 2;
+}
+
+// MsgEnrollBiometric enrolls biometric authentication
+message MsgEnrollBiometric {
+  string wallet_id = 1;
+  BiometricType type = 2;
+  bytes enrollment_data = 3; // Hash of biometric data
+}
+
+message MsgEnrollBiometricResponse {
+  BiometricAuth auth = 1;
+}
+
+// MsgAuthenticateBiometric authenticates using biometric
+message MsgAuthenticateBiometric {
+  string wallet_id = 1;
+  bytes biometric_proof = 2;
+}
+
+message MsgAuthenticateBiometricResponse {
+  bool authenticated = 1;
+  int32 failed_attempts = 2;
+  bool locked_out = 3;
+}
+
+// MsgStoreInSecureEnclave stores key material in secure enclave
+message MsgStoreInSecureEnclave {
+  string wallet_id = 1;
+  EnclaveType enclave_type = 2;
+  bytes encrypted_key_material = 3;
+  string attestation_certificate = 4;
+}
+
+message MsgStoreInSecureEnclaveResponse {
+  SecureEnclaveConfig config = 1;
+}
+
+// MsgCreateEncryptedBackup creates an encrypted backup
+message MsgCreateEncryptedBackup {
+  string wallet_id = 1;
+  bytes encrypted_seed = 2;
+  string encryption_algorithm = 3;
+  string key_derivation_function = 4;
+  bytes salt = 5;
+  int32 iterations = 6;
+  BackupLocation location = 7;
+}
+
+message MsgCreateEncryptedBackupResponse {
+  EncryptedBackup backup = 1;
+}
+
+// MsgConfigureDustFilter configures dust attack filtering
+message MsgConfigureDustFilter {
+  string wallet_id = 1;
+  bool enabled = 2;
+  string minimum_amount = 3;
+  int32 max_dust_transactions_per_block = 4;
+  int32 suspicious_pattern_threshold = 5;
+}
+
+message MsgConfigureDustFilterResponse {
+  DustAttackFilter filter = 1;
+}
+
+// MsgValidateAddressChecksum validates an address checksum
+message MsgValidateAddressChecksum {
+  string address = 1;
+  ChecksumAlgorithm algorithm = 2;
+}
+
+message MsgValidateAddressChecksumResponse {
+  bool valid = 1;
+  string checksum = 2;
+  string error_message = 3;
+}

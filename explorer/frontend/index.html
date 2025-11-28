@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aura Block Explorer</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="explorer-header">
+        <div class="container">
+            <h1>Aura Block Explorer</h1>
+            <nav>
+                <a href="#blocks">Blocks</a>
+                <a href="#transactions">Transactions</a>
+                <a href="#validators">Validators</a>
+                <a href="#analytics">Analytics</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="search-section">
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="Search by block height, tx hash, or address...">
+                <button id="searchBtn">Search</button>
+            </div>
+            <div class="quick-stats">
+                <div class="stat-card">
+                    <div class="stat-label">Latest Block</div>
+                    <div class="stat-value" id="latestBlock">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Avg Block Time</div>
+                    <div class="stat-value" id="avgBlockTime">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Total Transactions</div>
+                    <div class="stat-value" id="totalTxs">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Active Validators</div>
+                    <div class="stat-value" id="activeValidators">-</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="blocks" class="data-section">
+            <div class="section-header">
+                <h2>Recent Blocks</h2>
+                <div class="section-controls">
+                    <label>
+                        <input type="checkbox" id="autoRefresh" checked>
+                        Auto-refresh
+                    </label>
+                    <button id="refreshBlocks">Refresh</button>
+                </div>
+            </div>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Height</th>
+                            <th>Hash</th>
+                            <th>Time</th>
+                            <th>Proposer</th>
+                            <th>Txs</th>
+                            <th>Size</th>
+                        </tr>
+                    </thead>
+                    <tbody id="blocksTable">
+                        <tr><td colspan="6">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="pagination">
+                <button id="prevBlocks">Previous</button>
+                <span id="blockPage">Page 1</span>
+                <button id="nextBlocks">Next</button>
+            </div>
+        </section>
+
+        <section id="transactions" class="data-section">
+            <div class="section-header">
+                <h2>Recent Transactions</h2>
+                <div class="filter-controls">
+                    <select id="txTypeFilter">
+                        <option value="">All Types</option>
+                        <option value="send">Send</option>
+                        <option value="delegate">Delegate</option>
+                        <option value="vote">Vote</option>
+                    </select>
+                    <select id="txStatusFilter">
+                        <option value="">All Status</option>
+                        <option value="success">Success</option>
+                        <option value="failed">Failed</option>
+                    </select>
+                </div>
+            </div>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Hash</th>
+                            <th>Block</th>
+                            <th>Type</th>
+                            <th>From</th>
+                            <th>To</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Time</th>
+                        </tr>
+                    </thead>
+                    <tbody id="txsTable">
+                        <tr><td colspan="8">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="pagination">
+                <button id="prevTxs">Previous</button>
+                <span id="txPage">Page 1</span>
+                <button id="nextTxs">Next</button>
+            </div>
+        </section>
+
+        <section id="validators" class="data-section">
+            <div class="section-header">
+                <h2>Validator Set</h2>
+                <div class="section-controls">
+                    <select id="validatorSort">
+                        <option value="voting_power">Voting Power</option>
+                        <option value="uptime">Uptime</option>
+                        <option value="commission">Commission</option>
+                    </select>
+                </div>
+            </div>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Validator</th>
+                            <th>Voting Power</th>
+                            <th>Commission</th>
+                            <th>Uptime</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="validatorsTable">
+                        <tr><td colspan="6">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="analytics" class="data-section">
+            <div class="section-header">
+                <h2>Network Analytics</h2>
+            </div>
+            <div class="analytics-grid">
+                <div class="chart-container">
+                    <h3>Block Production Rate</h3>
+                    <canvas id="blockRateChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3>Transaction Volume</h3>
+                    <canvas id="txVolumeChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3>Validator Distribution</h3>
+                    <canvas id="validatorDistChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3>Gas Usage</h3>
+                    <canvas id="gasUsageChart"></canvas>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div id="wsStatus" class="ws-indicator">
+        <span class="ws-dot"></span>
+        <span class="ws-text">Connecting...</span>
+    </div>
+
+    <script src="explorer.js"></script>
+    <script src="websocket-handler.js"></script>
+</body>
+</html>

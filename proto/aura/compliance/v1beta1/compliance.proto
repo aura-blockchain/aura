@@ -1,0 +1,371 @@
+syntax = "proto3";
+package aura.compliance.v1beta1;
+
+option go_package = "github.com/aequitas/aura/proto/aura/compliance/v1beta1";
+
+import "google/protobuf/timestamp.proto";
+
+// KYCLevel defines the level of KYC verification
+enum KYCLevel {
+  KYC_LEVEL_UNSPECIFIED = 0;
+  KYC_LEVEL_NONE = 1;           // No KYC verification
+  KYC_LEVEL_BASIC = 2;          // Basic identity verification
+  KYC_LEVEL_INTERMEDIATE = 3;   // Government ID verification
+  KYC_LEVEL_ADVANCED = 4;       // Enhanced due diligence
+}
+
+// AMLRiskLevel defines the AML risk classification
+enum AMLRiskLevel {
+  AML_RISK_UNSPECIFIED = 0;
+  AML_RISK_LOW = 1;
+  AML_RISK_MEDIUM = 2;
+  AML_RISK_HIGH = 3;
+  AML_RISK_SEVERE = 4;
+}
+
+// TransactionRiskLevel defines transaction risk classification
+enum TransactionRiskLevel {
+  TX_RISK_UNSPECIFIED = 0;
+  TX_RISK_LOW = 1;
+  TX_RISK_MEDIUM = 2;
+  TX_RISK_HIGH = 3;
+  TX_RISK_CRITICAL = 4;
+}
+
+// SanctionsStatus defines sanctions screening status
+enum SanctionsStatus {
+  SANCTIONS_UNSPECIFIED = 0;
+  SANCTIONS_CLEAR = 1;           // Not on any sanctions list
+  SANCTIONS_MATCH = 2;           // Potential match found
+  SANCTIONS_CONFIRMED = 3;       // Confirmed sanctions match
+  SANCTIONS_PENDING_REVIEW = 4;  // Under manual review
+}
+
+// KYCRecord represents a KYC verification record
+message KYCRecord {
+  string address = 1;
+  KYCLevel kyc_level = 2;
+  string provider = 3;                              // KYC provider name
+  google.protobuf.Timestamp verified_at = 4;
+  google.protobuf.Timestamp expires_at = 5;
+  string verification_id = 6;                       // External verification ID
+  repeated string documents = 7;                    // Document types verified
+  string jurisdiction = 8;                          // User's jurisdiction
+  bool enhanced_due_diligence = 9;                 // EDD required
+  string risk_score = 10;                          // Risk score from provider
+}
+
+// AMLProfile represents an AML risk profile
+message AMLProfile {
+  string address = 1;
+  AMLRiskLevel risk_level = 2;
+  repeated string risk_factors = 3;
+  google.protobuf.Timestamp last_assessment = 4;
+  uint64 total_transactions = 5;
+  string total_volume = 6;                         // Total transaction volume
+  repeated SuspiciousActivity suspicious_activities = 7;
+  bool pep_status = 8;                            // Politically Exposed Person
+  repeated string source_of_funds = 9;
+  string occupation = 10;
+}
+
+// SuspiciousActivity represents a suspicious activity report
+message SuspiciousActivity {
+  string id = 1;
+  string address = 2;
+  string transaction_hash = 3;
+  string activity_type = 4;                        // Type of suspicious activity
+  string description = 5;
+  string amount = 6;
+  google.protobuf.Timestamp detected_at = 7;
+  google.protobuf.Timestamp reported_at = 8;
+  bool filed_sar = 9;                             // SAR (Suspicious Activity Report) filed
+  string sar_reference = 10;                       // SAR reference number
+  repeated string indicators = 11;                 // Risk indicators triggered
+}
+
+// TransactionMonitoringRule defines a monitoring rule
+message TransactionMonitoringRule {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  string rule_type = 4;                           // velocity, structuring, smurfing, etc.
+  map<string, string> parameters = 5;             // Rule-specific parameters
+  TransactionRiskLevel risk_level = 6;
+  bool enabled = 7;
+  google.protobuf.Timestamp created_at = 8;
+  google.protobuf.Timestamp updated_at = 9;
+}
+
+// TransactionAlert represents a monitoring alert
+message TransactionAlert {
+  string id = 1;
+  string transaction_hash = 2;
+  string address = 3;
+  string rule_id = 4;                             // Rule that triggered alert
+  TransactionRiskLevel risk_level = 5;
+  string description = 6;
+  google.protobuf.Timestamp triggered_at = 7;
+  bool reviewed = 8;
+  google.protobuf.Timestamp reviewed_at = 9;
+  string reviewer = 10;
+  string resolution = 11;                          // escalate, dismiss, file_sar
+  string notes = 12;
+}
+
+// TransactionAlertList stores alerts keyed by address
+message TransactionAlertList {
+  repeated TransactionAlert alerts = 1;
+}
+
+// SanctionsScreeningResult represents a sanctions check result
+message SanctionsScreeningResult {
+  string address = 1;
+  SanctionsStatus status = 2;
+  repeated SanctionsMatch matches = 3;
+  google.protobuf.Timestamp screened_at = 4;
+  string screening_provider = 5;
+  bool requires_manual_review = 6;
+  google.protobuf.Timestamp reviewed_at = 7;
+  string reviewer = 8;
+  string review_decision = 9;
+}
+
+// SanctionsMatch represents a potential sanctions list match
+message SanctionsMatch {
+  string list_name = 1;                           // OFAC SDN, EU, UN, etc.
+  string match_score = 2;                         // Confidence score
+  string matched_name = 3;
+  string matched_id = 4;
+  repeated string aliases = 5;
+  string country = 6;
+  string program = 7;                             // Sanctions program
+  string remarks = 8;
+}
+
+// GDPRConsent represents GDPR consent record
+message GDPRConsent {
+  string address = 1;
+  string consent_type = 2;                        // data_processing, marketing, etc.
+  bool consented = 3;
+  google.protobuf.Timestamp consent_given_at = 4;
+  google.protobuf.Timestamp consent_withdrawn_at = 5;
+  string consent_version = 6;                     // Version of privacy policy
+  string ip_address = 7;                          // IP when consent given
+  string user_agent = 8;
+}
+
+// GDPRConsentList stores consents keyed by address
+message GDPRConsentList {
+  repeated GDPRConsent consents = 1;
+}
+
+// GDPRDataRequest represents a GDPR data request
+message GDPRDataRequest {
+  string id = 1;
+  string address = 2;
+  string request_type = 3;                        // access, rectification, erasure, portability
+  google.protobuf.Timestamp requested_at = 4;
+  google.protobuf.Timestamp completed_at = 5;
+  string status = 6;                              // pending, processing, completed, rejected
+  string fulfillment_data = 7;                    // JSON data for access requests
+  string notes = 8;
+}
+
+// TaxReport represents a tax reporting record
+message TaxReport {
+  string id = 1;
+  string address = 2;
+  string tax_year = 3;
+  string jurisdiction = 4;
+  string report_type = 5;                         // 1099-MISC, 1099-K, 8949, etc.
+  repeated TaxTransaction transactions = 6;
+  string total_income = 7;
+  string total_capital_gains = 8;
+  string total_capital_losses = 9;
+  google.protobuf.Timestamp generated_at = 10;
+  string file_path = 11;                          // Path to generated PDF/CSV
+  bool filed = 12;
+  google.protobuf.Timestamp filed_at = 13;
+}
+
+// TaxReportList stores generated tax reports keyed by address
+message TaxReportList {
+  repeated TaxReport reports = 1;
+}
+
+// TaxTransaction represents a taxable transaction
+message TaxTransaction {
+  string transaction_hash = 1;
+  google.protobuf.Timestamp timestamp = 2;
+  string transaction_type = 3;                    // trade, stake, reward, airdrop, etc.
+  string asset = 4;
+  string amount = 5;
+  string cost_basis = 6;
+  string fair_market_value = 7;
+  string gain_loss = 8;
+  bool is_income = 9;
+}
+
+// ComplianceParams defines module parameters
+message ComplianceParams {
+  // KYC/AML settings
+  bool kyc_required = 1;
+  KYCLevel minimum_kyc_level = 2;
+  uint64 kyc_expiry_days = 3;
+
+  // Transaction monitoring
+  bool transaction_monitoring_enabled = 4;
+  string velocity_limit_24h = 5;                  // Max transaction volume in 24h
+  string single_transaction_limit = 6;            // Max single transaction amount
+  uint32 structuring_threshold_count = 7;         // Number of txs to trigger structuring alert
+
+  // Sanctions screening
+  bool sanctions_screening_enabled = 8;
+  repeated string sanctions_lists = 9;            // Lists to check (OFAC, EU, UN, etc.)
+  uint64 screening_cache_hours = 10;              // Cache screening results
+
+  // GDPR
+  bool gdpr_enabled = 11;
+  uint64 data_retention_days = 12;
+  repeated string processing_purposes = 13;
+
+  // Tax reporting
+  bool tax_reporting_enabled = 14;
+  repeated string tax_jurisdictions = 15;
+  string tax_year_end = 16;                       // MM-DD format
+}
+
+// Query messages
+message QueryKYCRecordRequest {
+  string address = 1;
+}
+
+message QueryKYCRecordResponse {
+  KYCRecord record = 1;
+}
+
+message QueryAMLProfileRequest {
+  string address = 1;
+}
+
+message QueryAMLProfileResponse {
+  AMLProfile profile = 1;
+}
+
+message QuerySanctionsScreeningRequest {
+  string address = 1;
+  bool force_refresh = 2;  // Force new screening instead of using cache
+}
+
+message QuerySanctionsScreeningResponse {
+  SanctionsScreeningResult result = 1;
+}
+
+message QueryTransactionAlertsRequest {
+  string address = 1;
+  bool unreviewed_only = 2;
+}
+
+message QueryTransactionAlertsResponse {
+  repeated TransactionAlert alerts = 1;
+}
+
+message QueryTaxReportRequest {
+  string address = 1;
+  string tax_year = 2;
+  string jurisdiction = 3;
+}
+
+message QueryTaxReportResponse {
+  TaxReport report = 1;
+}
+
+// Transaction messages
+message MsgSubmitKYC {
+  string address = 1;
+  KYCLevel kyc_level = 2;
+  string provider = 3;
+  string verification_id = 4;
+  repeated string documents = 5;
+  string jurisdiction = 6;
+}
+
+message MsgSubmitKYCResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message MsgReportSuspiciousActivity {
+  string reporter = 1;
+  string address = 2;
+  string transaction_hash = 3;
+  string activity_type = 4;
+  string description = 5;
+  repeated string indicators = 6;
+}
+
+message MsgReportSuspiciousActivityResponse {
+  string activity_id = 1;
+}
+
+message MsgScreenSanctions {
+  string address = 1;
+  bool force_refresh = 2;
+}
+
+message MsgScreenSanctionsResponse {
+  SanctionsStatus status = 1;
+  bool requires_review = 2;
+}
+
+message MsgRecordGDPRConsent {
+  string address = 1;
+  string consent_type = 2;
+  bool consented = 3;
+  string consent_version = 4;
+}
+
+message MsgRecordGDPRConsentResponse {
+  bool success = 1;
+}
+
+message MsgRequestGDPRData {
+  string address = 1;
+  string request_type = 2;
+}
+
+message MsgRequestGDPRDataResponse {
+  string request_id = 1;
+}
+
+message MsgGenerateTaxReport {
+  string address = 1;
+  string tax_year = 2;
+  string jurisdiction = 3;
+  string report_type = 4;
+}
+
+message MsgGenerateTaxReportResponse {
+  string report_id = 1;
+  string file_path = 2;
+}
+
+// Query service exposes read-only compliance operations
+service Query {
+  rpc KycRecord(QueryKYCRecordRequest) returns (QueryKYCRecordResponse);
+  rpc AmlProfile(QueryAMLProfileRequest) returns (QueryAMLProfileResponse);
+  rpc SanctionsScreening(QuerySanctionsScreeningRequest) returns (QuerySanctionsScreeningResponse);
+  rpc TransactionAlerts(QueryTransactionAlertsRequest) returns (QueryTransactionAlertsResponse);
+  rpc TaxReport(QueryTaxReportRequest) returns (QueryTaxReportResponse);
+}
+
+// Msg service exposes state-changing compliance operations
+service Msg {
+  rpc SubmitKYC(MsgSubmitKYC) returns (MsgSubmitKYCResponse);
+  rpc ReportSuspiciousActivity(MsgReportSuspiciousActivity) returns (MsgReportSuspiciousActivityResponse);
+  rpc ScreenSanctions(MsgScreenSanctions) returns (MsgScreenSanctionsResponse);
+  rpc RecordGDPRConsent(MsgRecordGDPRConsent) returns (MsgRecordGDPRConsentResponse);
+  rpc RequestGDPRData(MsgRequestGDPRData) returns (MsgRequestGDPRDataResponse);
+  rpc GenerateTaxReport(MsgGenerateTaxReport) returns (MsgGenerateTaxReportResponse);
+}

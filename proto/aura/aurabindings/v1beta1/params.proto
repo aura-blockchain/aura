@@ -1,0 +1,180 @@
+syntax = "proto3";
+package aura.aurabindings.v1beta1;
+
+option go_package = "github.com/aequitas/aura/proto/aura/aura-bindings/v1beta1";
+
+// ============================
+// AURA-BINDINGS MODULE PARAMS
+// ============================
+
+// Params defines the parameters for the aura-bindings module
+// These parameters control the behavior of custom bindings for smart contracts
+message Params {
+  // Query permissions - control which query types are enabled
+
+  // enable_vc_queries controls whether VCRegistry queries are enabled
+  // If disabled, contracts cannot query VC status, user VCs, DIDs, etc.
+  // Default: true
+  bool enable_vc_queries = 1;
+
+  // enable_compliance_queries controls whether Compliance queries are enabled
+  // If disabled, contracts cannot query KYC status, sanctions, GDPR, etc.
+  // Default: true
+  bool enable_compliance_queries = 2;
+
+  // enable_auth_queries controls whether Auth queries are enabled
+  // If disabled, contracts cannot query roles, permissions, sessions
+  // Default: true
+  bool enable_auth_queries = 3;
+
+  // enable_cs_queries controls whether ConfidenceScore queries are enabled
+  // If disabled, contracts cannot query user scores, IR completions, etc.
+  // Default: true
+  bool enable_cs_queries = 4;
+
+  // enable_data_queries controls whether DataRegistry queries are enabled
+  // If disabled, contracts cannot query data items or access permissions
+  // Default: true
+  bool enable_data_queries = 5;
+
+  // enable_economic_queries controls whether EconomicSecurity queries are enabled
+  // If disabled, contracts cannot query spending limits, vesting, etc.
+  // Default: true
+  bool enable_economic_queries = 6;
+
+  // Message permissions - control which message types are enabled
+
+  // enable_vc_messages controls whether VCRegistry messages are enabled
+  // If disabled, contracts cannot request disclosures, verify presentations, etc.
+  // Default: true
+  bool enable_vc_messages = 7;
+
+  // enable_ir_messages controls whether InclusionRoutines messages are enabled
+  // If disabled, contracts cannot record IR completions
+  // Default: true (but requires contract authorization)
+  bool enable_ir_messages = 8;
+
+  // enable_registry_messages controls whether ContractRegistry messages are enabled
+  // If disabled, contracts cannot register themselves or update metadata
+  // Default: true
+  bool enable_registry_messages = 9;
+
+  // enable_compliance_messages controls whether Compliance messages are enabled
+  // If disabled, contracts cannot report suspicious activity
+  // Default: true
+  bool enable_compliance_messages = 10;
+
+  // enable_monitoring_messages controls whether Monitoring messages are enabled
+  // If disabled, contracts cannot report events for monitoring
+  // Default: true
+  bool enable_monitoring_messages = 11;
+
+  // Rate limiting - prevent query/message spam
+
+  // rate_limit_queries_per_block limits total queries across all contracts per block
+  // This prevents query spam that could DoS the chain
+  // Default: 1000 (adjust based on performance testing)
+  uint64 rate_limit_queries_per_block = 12;
+
+  // rate_limit_messages_per_block limits total messages across all contracts per block
+  // This prevents message spam
+  // Default: 100 (messages are more expensive than queries)
+  uint64 rate_limit_messages_per_block = 13;
+
+  // rate_limit_queries_per_contract limits queries per contract per block
+  // Prevents individual contract from monopolizing query capacity
+  // Default: 100
+  uint64 rate_limit_queries_per_contract = 14;
+
+  // rate_limit_messages_per_contract limits messages per contract per block
+  // Prevents individual contract from monopolizing message capacity
+  // Default: 10
+  uint64 rate_limit_messages_per_contract = 15;
+
+  // Gas limits - control computational costs
+
+  // query_gas_limit is the maximum gas a single query can consume
+  // Prevents expensive queries from blocking execution
+  // Default: 100000
+  uint64 query_gas_limit = 16;
+
+  // message_gas_limit is the maximum gas a single message can consume
+  // Prevents expensive messages from blocking execution
+  // Default: 500000
+  uint64 message_gas_limit = 17;
+
+  // Authorization - control contract access
+
+  // require_contract_registration requires contracts to be registered
+  // before they can use custom bindings
+  // Default: true (recommended for security)
+  bool require_contract_registration = 18;
+
+  // allow_unaudited_contracts allows contracts without audit reports
+  // to use custom bindings
+  // Default: false (mainnet), true (testnet)
+  bool allow_unaudited_contracts = 19;
+
+  // authorized_ir_contracts is a whitelist of contract addresses
+  // authorized to record IR completions
+  // Empty list = no contracts authorized (use governance to add)
+  repeated string authorized_ir_contracts = 20;
+
+  // Query-specific limits
+
+  // max_vcs_per_query limits the number of VCs returned in QueryUserVCs
+  // Prevents large responses from overwhelming contracts
+  // Default: 50
+  uint64 max_vcs_per_query = 21;
+
+  // max_data_items_per_query limits the number of data items returned
+  // Default: 50
+  uint64 max_data_items_per_query = 22;
+
+  // max_roles_per_query limits the number of roles returned
+  // Default: 20
+  uint64 max_roles_per_query = 23;
+
+  // Caching - improve performance
+
+  // enable_query_caching enables caching of query results
+  // Can significantly improve performance for repeated queries
+  // Default: true
+  bool enable_query_caching = 24;
+
+  // query_cache_ttl_seconds is the TTL for cached query results
+  // Default: 60 (1 minute)
+  uint64 query_cache_ttl_seconds = 25;
+
+  // max_cache_size_mb is the maximum size of query cache in MB
+  // Default: 100
+  uint64 max_cache_size_mb = 26;
+
+  // Security - additional safety measures
+
+  // enable_circuit_breaker enables emergency circuit breaker
+  // Can pause all custom binding operations in case of emergency
+  // Default: true
+  bool enable_circuit_breaker = 27;
+
+  // circuit_breaker_threshold is the error rate threshold to trigger circuit breaker
+  // If error rate exceeds this percentage, circuit breaker activates
+  // Default: 50 (50% error rate)
+  uint64 circuit_breaker_threshold = 28;
+
+  // circuit_breaker_window_seconds is the time window for measuring error rate
+  // Default: 300 (5 minutes)
+  uint64 circuit_breaker_window_seconds = 29;
+
+  // Telemetry - monitoring and observability
+
+  // enable_telemetry enables telemetry collection for custom bindings
+  // Tracks query/message counts, latencies, error rates, etc.
+  // Default: true
+  bool enable_telemetry = 30;
+
+  // telemetry_sample_rate is the percentage of operations to sample
+  // 100 = sample everything, 1 = sample 1%
+  // Default: 100 (adjust based on load)
+  uint64 telemetry_sample_rate = 31;
+}

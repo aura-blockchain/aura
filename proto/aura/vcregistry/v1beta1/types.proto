@@ -1,0 +1,125 @@
+syntax = "proto3";
+package aura.vcregistry.v1beta1;
+
+option go_package = "github.com/aequitas/aura/proto/aura/vcregistry/v1beta1";
+
+// ============================
+// SHARED ENUMS
+// ============================
+
+// VCType represents the type of verifiable credential
+enum VCType {
+  VC_TYPE_UNSPECIFIED = 0;
+
+  // Core credentials
+  VC_TYPE_VERIFIED_HUMAN = 1;           // VC:isVerifiedHuman
+  VC_TYPE_AGE_OVER_18 = 2;              // VC:isAgeOver18
+  VC_TYPE_AGE_OVER_21 = 3;              // VC:isAgeOver21
+  VC_TYPE_RESIDENT_OF = 4;              // VC:isResidentOf
+  VC_TYPE_BIOMETRIC_AUTH = 5;           // VC:hasBiometricAuth
+  VC_TYPE_KYC_VERIFICATION = 6;         // VC:hasKYCVerification
+  VC_TYPE_NOTARY_PUBLIC = 7;            // VC:isNotaryPublic
+  VC_TYPE_PROFESSIONAL_LICENSE = 8;     // VC:isProfessionalLicense
+
+  // Arena focus credentials
+  VC_TYPE_BIOMETRIC_FOCUS = 20;         // VC:BiometricFocus
+  VC_TYPE_SOCIAL_FOCUS = 21;            // VC:SocialFocus
+  VC_TYPE_GEOLOCATION_FOCUS = 22;       // VC:GeoLocationFocus
+  VC_TYPE_HIGH_ASSURANCE_FOCUS = 23;    // VC:HighAssuranceFocus
+  VC_TYPE_POSSESSION_FOCUS = 24;        // VC:PossessionFocus
+  VC_TYPE_KNOWLEDGE_FOCUS = 25;         // VC:KnowledgeFocus
+  VC_TYPE_PERSISTENCE_FOCUS = 26;       // VC:PersistenceFocus
+  VC_TYPE_SPECIALIZED_FOCUS = 27;       // VC:SpecializedFocus
+
+  // Custom (governance-defined)
+  VC_TYPE_CUSTOM = 100;                 // Custom VC types start at 100
+}
+
+// VCStatus represents the lifecycle status of a credential
+enum VCStatus {
+  VC_STATUS_UNSPECIFIED = 0;
+  VC_STATUS_PENDING = 1;                // Minting in progress
+  VC_STATUS_ACTIVE = 2;                 // Valid and usable
+  VC_STATUS_REVOKED = 3;                // Permanently revoked
+  VC_STATUS_EXPIRED = 4;                // Passed expiration date
+  VC_STATUS_SUSPENDED = 5;              // Temporarily suspended by governance
+}
+
+// RevocationReason represents why a VC was revoked
+enum RevocationReason {
+  REVOCATION_REASON_UNSPECIFIED = 0;
+  REVOCATION_REASON_USER_REQUEST = 1;           // User-initiated
+  REVOCATION_REASON_FRAUD_DETECTED = 2;         // Fraud slash
+  REVOCATION_REASON_CS_BELOW_THRESHOLD = 3;     // CS dropped below minimum
+  REVOCATION_REASON_IR_INVALIDATED = 4;         // Required IR was invalidated
+  REVOCATION_REASON_EXPIRED = 5;                // Natural expiration
+  REVOCATION_REASON_GOVERNANCE = 6;             // Governance decision
+  REVOCATION_REASON_SECURITY_COMPROMISE = 7;    // Security incident
+  REVOCATION_REASON_POLICY_CHANGE = 8;          // Policy deprecated
+}
+
+// VCPolicyStatus represents the status of a VC policy
+enum VCPolicyStatus {
+  VC_POLICY_STATUS_UNSPECIFIED = 0;
+  VC_POLICY_STATUS_DRAFT = 1;
+  VC_POLICY_STATUS_ACTIVE = 2;
+  VC_POLICY_STATUS_DEPRECATED = 3;
+}
+
+// AttributeType defines types of identity attributes
+enum AttributeType {
+  ATTRIBUTE_TYPE_UNSPECIFIED = 0;
+
+  // Personal attributes
+  ATTRIBUTE_TYPE_FULL_NAME = 1;
+  ATTRIBUTE_TYPE_FIRST_NAME = 2;
+  ATTRIBUTE_TYPE_LAST_NAME = 3;
+  ATTRIBUTE_TYPE_DATE_OF_BIRTH = 4;
+  ATTRIBUTE_TYPE_AGE = 5;
+  ATTRIBUTE_TYPE_GENDER = 6;
+
+  // Contact attributes
+  ATTRIBUTE_TYPE_EMAIL = 10;
+  ATTRIBUTE_TYPE_PHONE = 11;
+  ATTRIBUTE_TYPE_ADDRESS_FULL = 12;
+  ATTRIBUTE_TYPE_ADDRESS_STREET = 13;
+  ATTRIBUTE_TYPE_ADDRESS_CITY = 14;
+  ATTRIBUTE_TYPE_ADDRESS_STATE = 15;
+  ATTRIBUTE_TYPE_ADDRESS_ZIP = 16;
+  ATTRIBUTE_TYPE_ADDRESS_COUNTRY = 17;
+
+  // Government IDs
+  ATTRIBUTE_TYPE_PASSPORT_NUMBER = 20;
+  ATTRIBUTE_TYPE_DRIVERS_LICENSE = 21;
+  ATTRIBUTE_TYPE_SSN = 22;
+  ATTRIBUTE_TYPE_TAX_ID = 23;
+
+  // Physical attributes
+  ATTRIBUTE_TYPE_HEIGHT = 30;
+  ATTRIBUTE_TYPE_WEIGHT = 31;
+  ATTRIBUTE_TYPE_EYE_COLOR = 32;
+  ATTRIBUTE_TYPE_HAIR_COLOR = 33;
+
+  // Professional attributes
+  ATTRIBUTE_TYPE_OCCUPATION = 40;
+  ATTRIBUTE_TYPE_EMPLOYER = 41;
+  ATTRIBUTE_TYPE_PROFESSIONAL_LICENSE = 42;
+  ATTRIBUTE_TYPE_EDUCATION_LEVEL = 43;
+  ATTRIBUTE_TYPE_DEGREE = 44;
+
+  // Special certifications
+  ATTRIBUTE_TYPE_SCUBA_CERTIFIED = 50;
+  ATTRIBUTE_TYPE_PILOTS_LICENSE = 51;
+  ATTRIBUTE_TYPE_SECURITY_CLEARANCE = 52;
+
+  // Custom
+  ATTRIBUTE_TYPE_CUSTOM = 100;
+}
+
+// DisclosurePolicyMode defines disclosure behavior
+enum DisclosurePolicyMode {
+  DISCLOSURE_POLICY_MODE_DENY = 0;         // Never disclose
+  DISCLOSURE_POLICY_MODE_ASK = 1;          // Prompt user each time
+  DISCLOSURE_POLICY_MODE_ALLOW = 2;        // Always disclose
+  DISCLOSURE_POLICY_MODE_CONDITIONAL = 3;  // Allow if conditions met
+}

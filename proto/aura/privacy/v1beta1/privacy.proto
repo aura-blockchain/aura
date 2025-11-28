@@ -1,0 +1,272 @@
+syntax = "proto3";
+
+package aura.privacy.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/privacy/v1beta1";
+
+// ZKProof represents a zero-knowledge proof for private transactions
+message ZKProof {
+  // proof_type indicates the type of ZK proof (GROTH16, PLONK, SNARK, STARK)
+  string proof_type = 1;
+
+  // proof_data contains the serialized proof data
+  bytes proof_data = 2;
+
+  // public_inputs are the public parameters of the proof
+  repeated bytes public_inputs = 3;
+
+  // verification_key is the key used to verify this proof
+  bytes verification_key = 4;
+
+  // circuit_id identifies the circuit used for this proof
+  string circuit_id = 5;
+
+  // created_at timestamp
+  google.protobuf.Timestamp created_at = 6 [(gogoproto.stdtime) = true];
+}
+
+// StealthAddress represents a one-time address for private transactions
+message StealthAddress {
+  // public_spend_key is the recipient's public spend key
+  bytes public_spend_key = 1;
+
+  // public_view_key is the recipient's public view key
+  bytes public_view_key = 2;
+
+  // one_time_address is the generated stealth address
+  bytes one_time_address = 3;
+
+  // tx_public_key is the ephemeral public key for this transaction
+  bytes tx_public_key = 4;
+
+  // encrypted_amount contains the encrypted transaction amount
+  bytes encrypted_amount = 5;
+
+  // created_at timestamp
+  google.protobuf.Timestamp created_at = 6 [(gogoproto.stdtime) = true];
+}
+
+// RingSignature provides sender anonymity through ring signatures
+message RingSignature {
+  // key_image is the unique identifier to prevent double spending
+  bytes key_image = 1;
+
+  // ring_members are the public keys in the ring
+  repeated bytes ring_members = 2;
+
+  // signature_data contains the ring signature
+  bytes signature_data = 3;
+
+  // ring_size is the number of members in the ring
+  uint32 ring_size = 4;
+
+  // mixin_level indicates the anonymity level
+  uint32 mixin_level = 5;
+
+  // created_at timestamp
+  google.protobuf.Timestamp created_at = 6 [(gogoproto.stdtime) = true];
+}
+
+// ConfidentialTransaction hides transaction amounts using homomorphic encryption
+message ConfidentialTransaction {
+  // commitment is the Pedersen commitment to the amount
+  bytes commitment = 1;
+
+  // range_proof proves the amount is within a valid range
+  bytes range_proof = 2;
+
+  // blinding_factor is used to blind the amount
+  bytes blinding_factor = 3;
+
+  // encrypted_amount is the encrypted transaction amount
+  bytes encrypted_amount = 4;
+
+  // asset_id identifies the asset being transferred
+  string asset_id = 5;
+
+  // created_at timestamp
+  google.protobuf.Timestamp created_at = 6 [(gogoproto.stdtime) = true];
+}
+
+// NetworkPrivacy represents Tor/I2P network integration settings
+message NetworkPrivacy {
+  // network_type indicates the privacy network (TOR, I2P, MIXED)
+  string network_type = 1;
+
+  // onion_address is the Tor hidden service address
+  string onion_address = 2;
+
+  // i2p_destination is the I2P destination address
+  string i2p_destination = 3;
+
+  // proxy_enabled indicates if the proxy is active
+  bool proxy_enabled = 4;
+
+  // circuit_lifetime is the lifetime of Tor circuits in seconds
+  uint64 circuit_lifetime = 5;
+
+  // stream_isolation enables stream isolation for connections
+  bool stream_isolation = 6;
+
+  // created_at timestamp
+  google.protobuf.Timestamp created_at = 7 [(gogoproto.stdtime) = true];
+}
+
+// MixingPool represents a coin mixing/tumbling service
+message MixingPool {
+  // pool_id is the unique identifier for this mixing pool
+  string pool_id = 1;
+
+  // participants are the addresses participating in mixing
+  repeated bytes participants = 2;
+
+  // min_participants is the minimum number of participants required
+  uint32 min_participants = 3;
+
+  // max_participants is the maximum number of participants allowed
+  uint32 max_participants = 4;
+
+  // denomination is the standard amount for mixing
+  string denomination = 5 [(gogoproto.customtype) = "cosmossdk.io/math.Int", (gogoproto.nullable) = false];
+
+  // mixing_rounds is the number of mixing rounds to perform
+  uint32 mixing_rounds = 6;
+
+  // status indicates the current status of the mixing pool
+  string status = 7;
+
+  // deadline is when the mixing must be completed
+  google.protobuf.Timestamp deadline = 8 [(gogoproto.stdtime) = true];
+
+  // created_at timestamp
+  google.protobuf.Timestamp created_at = 9 [(gogoproto.stdtime) = true];
+}
+
+// EncryptedMemo contains encrypted transaction memo data
+message EncryptedMemo {
+  // ciphertext is the encrypted memo content
+  bytes ciphertext = 1;
+
+  // nonce is used for encryption
+  bytes nonce = 2;
+
+  // encryption_algorithm specifies the encryption method (AES-256-GCM, ChaCha20-Poly1305)
+  string encryption_algorithm = 3;
+
+  // recipient_public_key is the public key used for encryption
+  bytes recipient_public_key = 4;
+
+  // ephemeral_public_key is the ephemeral key for this encryption
+  bytes ephemeral_public_key = 5;
+
+  // authentication_tag for authenticated encryption
+  bytes authentication_tag = 6;
+
+  // created_at timestamp
+  google.protobuf.Timestamp created_at = 7 [(gogoproto.stdtime) = true];
+}
+
+// ViewKey enables selective disclosure of transaction details
+message ViewKey {
+  // key_type indicates the type of view key (INCOMING, OUTGOING, AUDIT)
+  string key_type = 1;
+
+  // public_view_key is the public component of the view key
+  bytes public_view_key = 2;
+
+  // private_view_key is the private component (only for key owner)
+  bytes private_view_key = 3;
+
+  // address is the associated address
+  bytes address = 4;
+
+  // permissions define what this view key can access
+  repeated string permissions = 5;
+
+  // expiration is when this view key expires
+  google.protobuf.Timestamp expiration = 6 [(gogoproto.stdtime) = true];
+
+  // created_at timestamp
+  google.protobuf.Timestamp created_at = 7 [(gogoproto.stdtime) = true];
+}
+
+// PrivateTransaction combines all privacy features
+message PrivateTransaction {
+  // tx_id is the unique transaction identifier
+  bytes tx_id = 1;
+
+  // zk_proof for transaction validity
+  ZKProof zk_proof = 2;
+
+  // stealth_address for recipient privacy
+  StealthAddress stealth_address = 3;
+
+  // ring_signature for sender anonymity
+  RingSignature ring_signature = 4;
+
+  // confidential_transaction for amount privacy
+  ConfidentialTransaction confidential_transaction = 5;
+
+  // encrypted_memo for private notes
+  EncryptedMemo encrypted_memo = 6;
+
+  // network_privacy settings
+  NetworkPrivacy network_privacy = 7;
+
+  // mixing_pool_id if this transaction is part of a mixing pool
+  string mixing_pool_id = 8;
+
+  // created_at timestamp
+  google.protobuf.Timestamp created_at = 9 [(gogoproto.stdtime) = true];
+}
+
+// Params defines the parameters for the privacy module
+message Params {
+  // enable_zk_proofs enables zero-knowledge proof verification
+  bool enable_zk_proofs = 1;
+
+  // enable_stealth_addresses enables stealth address support
+  bool enable_stealth_addresses = 2;
+
+  // enable_ring_signatures enables ring signature verification
+  bool enable_ring_signatures = 3;
+
+  // enable_confidential_transactions enables confidential transactions
+  bool enable_confidential_transactions = 4;
+
+  // enable_network_privacy enables Tor/I2P integration
+  bool enable_network_privacy = 5;
+
+  // enable_mixing enables coin mixing services
+  bool enable_mixing = 6;
+
+  // min_ring_size is the minimum size for ring signatures
+  uint32 min_ring_size = 7;
+
+  // max_ring_size is the maximum size for ring signatures
+  uint32 max_ring_size = 8;
+
+  // min_mixing_participants is the minimum participants for mixing
+  uint32 min_mixing_participants = 9;
+
+  // mixing_fee is the fee for using mixing services
+  string mixing_fee = 10 [(gogoproto.customtype) = "cosmossdk.io/math.Int", (gogoproto.nullable) = false];
+
+  // zk_proof_verification_cost is the computational cost for ZK verification
+  uint64 zk_proof_verification_cost = 11;
+}
+
+// GenesisState defines the privacy module's genesis state
+message GenesisState {
+  // params are the module parameters
+  Params params = 1 [(gogoproto.nullable) = false];
+
+  // mixing_pools are the active mixing pools
+  repeated MixingPool mixing_pools = 2;
+
+  // registered_view_keys are the registered view keys
+  repeated ViewKey registered_view_keys = 3;
+}

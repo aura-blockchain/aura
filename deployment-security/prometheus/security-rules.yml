@@ -1,0 +1,412 @@
+# ============================================================================
+# AURA Blockchain - Prometheus Security Alert Rules
+# ============================================================================
+# Security-focused alerting rules for threat detection and monitoring
+# ============================================================================
+
+groups:
+  # ==========================================================================
+  # Authentication & Access Control Alerts
+  # ==========================================================================
+  - name: authentication_security
+    interval: 30s
+    rules:
+      - alert: MultipleFailedLoginAttempts
+        expr: rate(http_requests_total{status="401"}[5m]) > 5
+        for: 5m
+        labels:
+          severity: warning
+          category: security
+          type: authentication
+        annotations:
+          summary: "Multiple failed login attempts detected"
+          description: "More than 5 failed login attempts per second in the last 5 minutes from {{ $labels.instance }}"
+          impact: "Possible brute force attack"
+          action: "Review authentication logs and consider IP blocking"
+
+      - alert: SuspiciousAuthenticationPattern
+        expr: rate(http_requests_total{status="401"}[1m]) > 10
+        for: 2m
+        labels:
+          severity: critical
+          category: security
+          type: authentication
+        annotations:
+          summary: "CRITICAL: Suspicious authentication pattern"
+          description: "More than 10 failed auth attempts per second on {{ $labels.instance }}"
+          impact: "Active brute force attack in progress"
+          action: "IMMEDIATE: Enable rate limiting, block source IPs, investigate logs"
+
+      - alert: UnauthorizedAccessAttempt
+        expr: rate(http_requests_total{status="403"}[5m]) > 3
+        for: 5m
+        labels:
+          severity: warning
+          category: security
+          type: authorization
+        annotations:
+          summary: "Unauthorized access attempts detected"
+          description: "Multiple 403 forbidden responses from {{ $labels.instance }}"
+          impact: "User attempting to access unauthorized resources"
+          action: "Review access control logs and user permissions"
+
+  # ==========================================================================
+  # Network Security Alerts
+  # ==========================================================================
+  - name: network_security
+    interval: 30s
+    rules:
+      - alert: UnusualTrafficVolume
+        expr: rate(http_requests_total[5m]) > 1000
+        for: 5m
+        labels:
+          severity: warning
+          category: security
+          type: network
+        annotations:
+          summary: "Unusual traffic volume detected"
+          description: "{{ $labels.instance }} receiving {{ $value }} requests/second"
+          impact: "Possible DDoS attack or traffic spike"
+          action: "Enable rate limiting, check traffic sources"
+
+      - alert: SuspiciousNetworkActivity
+        expr: rate(node_network_receive_bytes_total[5m]) > 100000000
+        for: 5m
+        labels:
+          severity: critical
+          category: security
+          type: network
+        annotations:
+          summary: "CRITICAL: Suspicious network activity"
+          description: "{{ $labels.instance }} receiving excessive network traffic: {{ $value }} bytes/sec"
+          impact: "Possible DDoS or data exfiltration"
+          action: "IMMEDIATE: Investigate traffic, enable DDoS protection"
+
+      - alert: TooManyOpenConnections
+        expr: node_netstat_Tcp_CurrEstab > 1000
+        for: 5m
+        labels:
+          severity: warning
+          category: security
+          type: network
+        annotations:
+          summary: "Too many open TCP connections"
+          description: "{{ $labels.instance }} has {{ $value }} established connections"
+          impact: "Resource exhaustion or connection flood attack"
+          action: "Review connection sources, enable connection limits"
+
+  # ==========================================================================
+  # Resource Exhaustion Alerts
+  # ==========================================================================
+  - name: resource_exhaustion
+    interval: 30s
+    rules:
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 90
+        for: 10m
+        labels:
+          severity: critical
+          category: security
+          type: resource
+        annotations:
+          summary: "Critical CPU usage"
+          description: "{{ $labels.instance }} CPU usage is {{ $value }}%"
+          impact: "Possible crypto mining malware or resource attack"
+          action: "Investigate processes, check for malware"
+
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 90
+        for: 10m
+        labels:
+          severity: critical
+          category: security
+          type: resource
+        annotations:
+          summary: "Critical memory usage"
+          description: "{{ $labels.instance }} memory usage is {{ $value }}%"
+          impact: "Possible memory leak or memory exhaustion attack"
+          action: "Investigate memory consumption, restart if needed"
+
+      - alert: DiskSpaceExhaustion
+        expr: (1 - (node_filesystem_avail_bytes / node_filesystem_size_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          category: security
+          type: resource
+        annotations:
+          summary: "Disk space running low"
+          description: "{{ $labels.instance }} disk usage is {{ $value }}%"
+          impact: "Possible log flooding or disk exhaustion attack"
+          action: "Clean up logs, investigate disk usage patterns"
+
+      - alert: ProcessCountAnomaly
+        expr: node_processes_threads > 10000
+        for: 5m
+        labels:
+          severity: warning
+          category: security
+          type: resource
+        annotations:
+          summary: "Abnormal number of processes"
+          description: "{{ $labels.instance }} has {{ $value }} processes/threads"
+          impact: "Possible fork bomb or malware execution"
+          action: "Investigate process list, check for malicious activity"
+
+  # ==========================================================================
+  # Certificate & TLS Alerts
+  # ==========================================================================
+  - name: certificate_security
+    interval: 1h
+    rules:
+      - alert: TLSCertificateExpiringSoon
+        expr: (probe_ssl_earliest_cert_expiry - time()) / 86400 < 30
+        for: 1h
+        labels:
+          severity: warning
+          category: security
+          type: certificate
+        annotations:
+          summary: "TLS certificate expiring soon"
+          description: "Certificate for {{ $labels.instance }} expires in {{ $value }} days"
+          impact: "Service will become inaccessible after expiration"
+          action: "Renew certificate immediately"
+
+      - alert: TLSCertificateExpired
+        expr: (probe_ssl_earliest_cert_expiry - time()) / 86400 < 0
+        for: 1h
+        labels:
+          severity: critical
+          category: security
+          type: certificate
+        annotations:
+          summary: "CRITICAL: TLS certificate expired"
+          description: "Certificate for {{ $labels.instance }} has expired"
+          impact: "Service is insecure and may be inaccessible"
+          action: "IMMEDIATE: Renew and deploy new certificate"
+
+      - alert: InsecureTLSVersion
+        expr: probe_tls_version_info{version!="TLS 1.3",version!="TLS 1.2"} == 1
+        for: 5m
+        labels:
+          severity: critical
+          category: security
+          type: tls
+        annotations:
+          summary: "Insecure TLS version detected"
+          description: "{{ $labels.instance }} using insecure TLS version {{ $labels.version }}"
+          impact: "Vulnerable to downgrade attacks"
+          action: "Update TLS configuration to support only TLS 1.2+"
+
+  # ==========================================================================
+  # Application Security Alerts
+  # ==========================================================================
+  - name: application_security
+    interval: 30s
+    rules:
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          category: security
+          type: application
+        annotations:
+          summary: "High error rate detected"
+          description: "{{ $labels.instance }} error rate is {{ $value }}"
+          impact: "Possible application exploit or attack"
+          action: "Review error logs, check for attack patterns"
+
+      - alert: SuspiciousAPIActivity
+        expr: rate(http_requests_total{endpoint=~"/admin.*"}[5m]) > 10
+        for: 5m
+        labels:
+          severity: critical
+          category: security
+          type: application
+        annotations:
+          summary: "Suspicious admin API activity"
+          description: "High rate of admin endpoint access: {{ $value }} req/sec"
+          impact: "Possible admin panel attack"
+          action: "Verify legitimate admin activity, enable IP whitelist"
+
+      - alert: DatabaseConnectionSpike
+        expr: rate(database_connections_total[5m]) > 100
+        for: 5m
+        labels:
+          severity: warning
+          category: security
+          type: database
+        annotations:
+          summary: "Database connection spike"
+          description: "{{ $value }} database connections per second"
+          impact: "Possible connection exhaustion attack"
+          action: "Enable connection pooling limits, investigate sources"
+
+  # ==========================================================================
+  # Blockchain-Specific Security Alerts
+  # ==========================================================================
+  - name: blockchain_security
+    interval: 30s
+    rules:
+      - alert: BlockProductionStalled
+        expr: increase(tendermint_consensus_height[5m]) == 0
+        for: 5m
+        labels:
+          severity: critical
+          category: security
+          type: blockchain
+        annotations:
+          summary: "CRITICAL: Block production stalled"
+          description: "No new blocks in 5 minutes on {{ $labels.instance }}"
+          impact: "Network halt or consensus failure"
+          action: "IMMEDIATE: Check validator set, network connectivity"
+
+      - alert: UnusualTransactionVolume
+        expr: rate(tendermint_mempool_size[5m]) > 1000
+        for: 10m
+        labels:
+          severity: warning
+          category: security
+          type: blockchain
+        annotations:
+          summary: "Unusual transaction volume in mempool"
+          description: "Mempool size: {{ $value }} transactions"
+          impact: "Possible transaction spam attack"
+          action: "Enable transaction rate limiting, increase fees"
+
+      - alert: PeerDisconnectionSpike
+        expr: rate(tendermint_p2p_peers[5m]) < -5
+        for: 5m
+        labels:
+          severity: warning
+          category: security
+          type: blockchain
+        annotations:
+          summary: "Multiple peer disconnections"
+          description: "Losing {{ $value }} peers per second"
+          impact: "Possible network partition or eclipse attack"
+          action: "Check network connectivity, verify peer list"
+
+      - alert: ConsensusViolation
+        expr: increase(tendermint_consensus_byzantine_validators[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+          category: security
+          type: blockchain
+        annotations:
+          summary: "CRITICAL: Byzantine behavior detected"
+          description: "Byzantine validator detected: {{ $value }}"
+          impact: "Network security compromised"
+          action: "IMMEDIATE: Identify and jail malicious validator"
+
+  # ==========================================================================
+  # Container Security Alerts
+  # ==========================================================================
+  - name: container_security
+    interval: 1m
+    rules:
+      - alert: ContainerRestarting
+        expr: rate(container_restart_count[5m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+          category: security
+          type: container
+        annotations:
+          summary: "Container frequently restarting"
+          description: "{{ $labels.container }} restarting: {{ $value }} times"
+          impact: "Possible exploit causing crashes"
+          action: "Review container logs, check for attacks"
+
+      - alert: ContainerHighMemoryUsage
+        expr: (container_memory_usage_bytes / container_spec_memory_limit_bytes) * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+          category: security
+          type: container
+        annotations:
+          summary: "Container memory usage critical"
+          description: "{{ $labels.container }} using {{ $value }}% memory"
+          impact: "Possible memory leak or attack"
+          action: "Investigate container, consider restart"
+
+      - alert: PrivilegedContainerRunning
+        expr: container_spec_privileged == 1
+        for: 5m
+        labels:
+          severity: critical
+          category: security
+          type: container
+        annotations:
+          summary: "CRITICAL: Privileged container detected"
+          description: "Container {{ $labels.container }} running with privileged mode"
+          impact: "Security boundary violation - full host access"
+          action: "IMMEDIATE: Remove privileged mode, investigate necessity"
+
+  # ==========================================================================
+  # Monitoring System Health
+  # ==========================================================================
+  - name: monitoring_health
+    interval: 1m
+    rules:
+      - alert: PrometheusTargetDown
+        expr: up == 0
+        for: 5m
+        labels:
+          severity: warning
+          category: monitoring
+          type: health
+        annotations:
+          summary: "Prometheus target down"
+          description: "{{ $labels.instance }} is unreachable"
+          impact: "Loss of monitoring visibility"
+          action: "Check target health, network connectivity"
+
+      - alert: AlertManagerDown
+        expr: absent(up{job="alertmanager"})
+        for: 5m
+        labels:
+          severity: critical
+          category: monitoring
+          type: health
+        annotations:
+          summary: "AlertManager is down"
+          description: "AlertManager service is not responding"
+          impact: "Security alerts not being delivered"
+          action: "IMMEDIATE: Restart AlertManager, check logs"
+
+# ============================================================================
+# Alert Routing Configuration
+# ============================================================================
+# Add to alertmanager.yml:
+#
+# route:
+#   receiver: 'security-team'
+#   group_by: ['severity', 'category']
+#   group_wait: 10s
+#   group_interval: 10s
+#   repeat_interval: 12h
+#
+#   routes:
+#     - match:
+#         severity: critical
+#       receiver: 'security-pager'
+#       continue: true
+#
+#     - match:
+#         category: security
+#       receiver: 'security-team'
+#       continue: true
+#
+# receivers:
+#   - name: 'security-team'
+#     email_configs:
+#       - to: 'security@aura.network'
+#
+#   - name: 'security-pager'
+#     pagerduty_configs:
+#       - service_key: '<your-key>'
+# ============================================================================

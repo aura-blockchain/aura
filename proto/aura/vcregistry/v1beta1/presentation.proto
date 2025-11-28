@@ -1,0 +1,146 @@
+syntax = "proto3";
+package aura.vcregistry.v1beta1;
+
+import "google/protobuf/timestamp.proto";
+import "aura/vcregistry/v1beta1/types.proto";
+import "aura/vcregistry/v1beta1/attributes.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/vcregistry/v1beta1";
+
+// ============================
+// PRESENTATION MESSAGES
+// ============================
+
+// VCPresentation represents a QR code presentation of VCs
+message VCPresentation {
+  string presentation_id = 1;              // Unique ID for this presentation
+  string holder_did = 2;                   // DID of person presenting
+  string holder_address = 3;               // Bech32 address
+  repeated string vc_ids = 4;              // VCs being presented
+  google.protobuf.Timestamp created_at = 5; // When QR was generated
+  uint64 nonce = 6;                        // Anti-replay nonce
+  uint64 expires_in_seconds = 7;           // QR expiration (e.g., 300s = 5min)
+  bytes signature = 8;                     // Holder's signature over presentation
+  PresentationContext context = 9;         // What's being shown
+
+  // Selective disclosure integration
+  repeated AttributeType disclosed_attributes = 10; // From selective disclosure
+  repeated AttributeDisclosure attribute_disclosures = 11; // Full attribute data
+}
+
+// PresentationContext defines what attributes are disclosed
+message PresentationContext {
+  bool show_full_name = 1;
+  bool show_age = 2;
+  bool show_age_over_18 = 3;
+  bool show_age_over_21 = 4;
+  bool show_address = 5;
+  bool show_city_state_only = 6;
+  bool show_professional_license = 7;
+  map<string, bool> custom_attributes = 8; // Extensible
+
+  // Advanced selective disclosure
+  repeated AttributeType selective_attributes = 9; // Specific attributes to show
+  bool use_zk_proofs = 10;                        // Use ZK proofs when applicable
+}
+
+// VerificationResult returned to verifier
+message VerificationResult {
+  bool is_valid = 1;                       // Overall validity
+  string holder_did = 2;                   // Who is presenting
+  repeated VCVerificationDetail vc_details = 3; // Each VC's status
+  google.protobuf.Timestamp verified_at = 4;    // When verification occurred
+  string verification_error = 5;           // Error message if invalid
+  DiscloseableAttributes attributes = 6;   // Attributes shown
+
+  // Selective disclosure results
+  repeated AttributeDisclosure disclosed_attributes = 7; // Disclosed attribute VCs
+  uint32 total_attributes_disclosed = 8;   // Count of attributes
+}
+
+// Individual VC verification details
+message VCVerificationDetail {
+  string vc_id = 1;
+  VCType vc_type = 2;
+  VCStatus status = 3;
+  bool is_valid = 4;
+  bool is_expired = 5;
+  bool is_revoked = 6;
+  google.protobuf.Timestamp issued_at = 7;
+  google.protobuf.Timestamp expires_at = 8;
+}
+
+// Attributes disclosed to verifier
+message DiscloseableAttributes {
+  string full_name = 1;                    // Only if show_full_name = true
+  uint32 age = 2;                          // Only if show_age = true
+  bool is_over_18 = 3;                     // Only if show_age_over_18 = true
+  bool is_over_21 = 4;                     // Only if show_age_over_21 = true
+  string full_address = 5;                 // Only if show_address = true
+  string city_state = 6;                   // Only if show_city_state_only = true
+  map<string, string> custom_attributes = 7; // Extensible
+
+  // From AttributeVCs
+  map<string, string> attribute_values = 8; // attribute_type -> value
+}
+
+// ============================
+// TRANSACTION MESSAGES
+// ============================
+
+// MsgCreatePresentation - User creates a QR code presentation
+message MsgCreatePresentation {
+  string creator = 1;                      // User's address
+  repeated string vc_ids = 2;              // VCs to present
+  PresentationContext context = 3;         // What to show
+  uint64 expires_in_seconds = 4;           // Default: 300 (5 min)
+
+  // Selective disclosure integration
+  repeated AttributeType attribute_types = 5; // Specific attributes to include
+  bool use_voice_command = 6;              // Parse from voice command
+  string voice_command_text = 7;           // "AURA show my age"
+}
+
+message MsgCreatePresentationResponse {
+  string presentation_id = 1;
+  string qr_code_data = 2;                 // Base64 encoded QR data
+  google.protobuf.Timestamp expires_at = 3;
+  repeated AttributeType disclosed_attributes = 4;
+}
+
+// ============================
+// QUERY MESSAGES
+// ============================
+
+// QueryVerifyPresentationRequest - Verify a presentation (called by business/verifier)
+message QueryVerifyPresentationRequest {
+  string qr_code_data = 1;                 // Data scanned from QR code
+  string verifier_address = 2;             // Who is verifying (optional)
+}
+
+message QueryVerifyPresentationResponse {
+  VerificationResult result = 1;
+}
+
+// ============================
+// EVENTS
+// ============================
+
+// EventPresentationCreated is emitted when a presentation is created
+message EventPresentationCreated {
+  string presentation_id = 1;
+  string holder_address = 2;
+  repeated string vc_ids = 3;
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp expires_at = 5;
+  uint64 block_height = 6;
+}
+
+// EventPresentationVerified is emitted when a presentation is verified
+message EventPresentationVerified {
+  string presentation_id = 1;
+  string verifier_address = 2;
+  bool is_valid = 3;
+  google.protobuf.Timestamp verified_at = 4;
+  uint64 block_height = 5;
+}

@@ -1,0 +1,262 @@
+syntax = "proto3";
+package aura.vcregistry.v1beta1;
+
+import "google/protobuf/timestamp.proto";
+import "aura/vcregistry/v1beta1/types.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/vcregistry/v1beta1";
+
+// ============================
+// CORE MESSAGES
+// ============================
+
+// AttributeVC represents a single identity attribute as a VC
+message AttributeVC {
+  string attribute_vc_id = 1;              // Unique ID
+  string holder_address = 2;               // Owner
+  AttributeType attribute_type = 3;        // What attribute
+  bytes encrypted_value = 4;               // Encrypted attribute value
+  bytes value_hash = 5;                    // Hash for ZK proofs
+  google.protobuf.Timestamp issued_at = 6;
+  google.protobuf.Timestamp expires_at = 7;
+  VCStatus status = 8;
+  string issuer = 9;                       // Who verified this attribute
+  uint64 verification_level = 10;          // 1-100 confidence
+}
+
+// DisclosurePolicy defines user's disclosure preferences
+message DisclosurePolicy {
+  string holder_address = 1;
+  repeated AttributeDisclosureRule rules = 2;
+  DisclosurePolicyMode default_mode = 3;  // Default: deny all
+  google.protobuf.Timestamp updated_at = 4;
+}
+
+// Rule for disclosing a specific attribute
+message AttributeDisclosureRule {
+  AttributeType attribute_type = 1;
+  DisclosurePolicyMode mode = 2;
+  repeated string allowed_verifiers = 3;   // Whitelist (optional)
+  uint64 max_disclosures_per_day = 4;      // Rate limit
+}
+
+// DisclosureRequest - What verifier is asking for
+message DisclosureRequest {
+  string request_id = 1;
+  string verifier_address = 2;
+  string verifier_name = 3;                // "Joe's Bar", "DMV", etc.
+  repeated AttributeType requested_attributes = 4;
+  string purpose = 5;                      // "Age verification for alcohol"
+  google.protobuf.Timestamp requested_at = 6;
+  uint64 expires_in_seconds = 7;
+}
+
+// DisclosureResponse - User's answer to request
+message DisclosureResponse {
+  string request_id = 1;
+  string holder_address = 2;
+  bool approved = 3;
+  repeated AttributeDisclosure disclosed_attributes = 4;
+  google.protobuf.Timestamp responded_at = 5;
+}
+
+// Single attribute disclosure
+message AttributeDisclosure {
+  AttributeType attribute_type = 1;
+  string revealed_value = 2;               // Decrypted value (if full disclosure)
+  bytes zk_proof = 3;                      // ZK proof (if selective)
+  bool is_zk_proof = 4;                    // True if using ZK, false if full reveal
+}
+
+// Voice command structure
+message VoiceCommand {
+  string holder_address = 1;
+  string command_text = 2;                 // "AURA show my age"
+  repeated AttributeType parsed_attributes = 3;
+  google.protobuf.Timestamp issued_at = 4;
+}
+
+// ============================
+// TRANSACTION MESSAGES
+// ============================
+
+// MsgCreateAttributeVC creates a new attribute VC
+message MsgCreateAttributeVC {
+  string creator = 1;
+  AttributeType attribute_type = 2;
+  bytes encrypted_value = 3;
+  string issuer = 4;
+  uint64 expires_in_seconds = 5;
+}
+
+message MsgCreateAttributeVCResponse {
+  string attribute_vc_id = 1;
+  google.protobuf.Timestamp issued_at = 2;
+  google.protobuf.Timestamp expires_at = 3;
+}
+
+// MsgUpdateDisclosurePolicy updates user's disclosure policy
+message MsgUpdateDisclosurePolicy {
+  string creator = 1;
+  repeated AttributeDisclosureRule rules = 2;
+  DisclosurePolicyMode default_mode = 3;
+}
+
+message MsgUpdateDisclosurePolicyResponse {
+  google.protobuf.Timestamp updated_at = 1;
+}
+
+// MsgRespondToDisclosureRequest responds to a disclosure request
+message MsgRespondToDisclosureRequest {
+  string creator = 1;
+  string request_id = 2;
+  bool approved = 3;
+  repeated AttributeType disclosed_attributes = 4;
+}
+
+message MsgRespondToDisclosureRequestResponse {
+  DisclosureResponse response = 1;
+}
+
+// MsgCreateDisclosureRequest creates a disclosure request
+message MsgCreateDisclosureRequest {
+  string verifier = 1;
+  string holder_address = 2;
+  string verifier_name = 3;
+  repeated AttributeType requested_attributes = 4;
+  string purpose = 5;
+  uint64 expires_in_seconds = 6;
+}
+
+message MsgCreateDisclosureRequestResponse {
+  string request_id = 1;
+  google.protobuf.Timestamp expires_at = 2;
+}
+
+// MsgRevokeAttributeVC revokes an attribute VC
+message MsgRevokeAttributeVC {
+  string creator = 1;
+  string attribute_vc_id = 2;
+  string reason = 3;
+}
+
+message MsgRevokeAttributeVCResponse {
+  google.protobuf.Timestamp revoked_at = 1;
+}
+
+// ============================
+// QUERY MESSAGES
+// ============================
+
+// QueryDisclosurePolicyRequest gets user's disclosure policy
+message QueryDisclosurePolicyRequest {
+  string holder_address = 1;
+}
+
+message QueryDisclosurePolicyResponse {
+  DisclosurePolicy policy = 1;
+  bool exists = 2;
+}
+
+// QueryAttributeVCsRequest gets user's attribute VCs
+message QueryAttributeVCsRequest {
+  string holder_address = 1;
+  repeated AttributeType filter_types = 2; // Optional filter
+}
+
+message QueryAttributeVCsResponse {
+  repeated AttributeVC attribute_vcs = 1;
+}
+
+// QueryParseVoiceCommandRequest parses a voice command
+message QueryParseVoiceCommandRequest {
+  string command_text = 1;                 // "AURA show my age and address"
+}
+
+message QueryParseVoiceCommandResponse {
+  repeated AttributeType parsed_attributes = 1;
+  bool is_valid = 2;
+  string error_message = 3;
+}
+
+// QueryGetAttributeVCRequest gets a specific attribute VC
+message QueryGetAttributeVCRequest {
+  string attribute_vc_id = 1;
+}
+
+message QueryGetAttributeVCResponse {
+  AttributeVC attribute_vc = 1;
+  bool exists = 2;
+}
+
+// QueryDisclosureRequestRequest gets a disclosure request
+message QueryDisclosureRequestRequest {
+  string request_id = 1;
+}
+
+message QueryDisclosureRequestResponse {
+  DisclosureRequest request = 1;
+  bool exists = 2;
+}
+
+// QueryPendingDisclosureRequestsRequest gets pending requests for a user
+message QueryPendingDisclosureRequestsRequest {
+  string holder_address = 1;
+}
+
+message QueryPendingDisclosureRequestsResponse {
+  repeated DisclosureRequest requests = 1;
+}
+
+// ============================
+// EVENTS
+// ============================
+
+// EventAttributeVCCreated emitted when attribute VC is created
+message EventAttributeVCCreated {
+  string attribute_vc_id = 1;
+  AttributeType attribute_type = 2;
+  string holder_address = 3;
+  string issuer = 4;
+  google.protobuf.Timestamp issued_at = 5;
+  uint64 block_height = 6;
+}
+
+// EventAttributeVCRevoked emitted when attribute VC is revoked
+message EventAttributeVCRevoked {
+  string attribute_vc_id = 1;
+  AttributeType attribute_type = 2;
+  string holder_address = 3;
+  string reason = 4;
+  google.protobuf.Timestamp revoked_at = 5;
+  uint64 block_height = 6;
+}
+
+// EventDisclosurePolicyUpdated emitted when disclosure policy is updated
+message EventDisclosurePolicyUpdated {
+  string holder_address = 1;
+  DisclosurePolicyMode default_mode = 2;
+  uint32 rules_count = 3;
+  google.protobuf.Timestamp updated_at = 4;
+  uint64 block_height = 5;
+}
+
+// EventDisclosureRequestCreated emitted when disclosure request is created
+message EventDisclosureRequestCreated {
+  string request_id = 1;
+  string verifier_address = 2;
+  string holder_address = 3;
+  uint32 attributes_count = 4;
+  google.protobuf.Timestamp requested_at = 5;
+  uint64 block_height = 6;
+}
+
+// EventDisclosureResponseCreated emitted when disclosure response is created
+message EventDisclosureResponseCreated {
+  string request_id = 1;
+  string holder_address = 2;
+  bool approved = 3;
+  uint32 disclosed_count = 4;
+  google.protobuf.Timestamp responded_at = 5;
+  uint64 block_height = 6;
+}

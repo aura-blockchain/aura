@@ -1,0 +1,33 @@
+syntax = "proto3";
+package aura.economicsecurity.v1beta1;
+
+import "aura/economicsecurity/v1beta1/types.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/economicsecurity/v1beta1";
+
+// GenesisState defines the economic security module's genesis state
+message GenesisState {
+  // Module parameters
+  Params params = 1;
+
+  // Vesting schedules
+  repeated VestingSchedule vesting_schedules = 2;
+
+  // Vote locks
+  repeated VoteLock vote_locks = 3;
+
+  // Pending treasury transactions
+  repeated PendingTreasuryTx pending_treasury_txs = 4;
+
+  // Inflation alerts
+  repeated InflationAlert inflation_alerts = 5;
+
+  // Large transaction records
+  repeated LargeTxRecord large_tx_records = 6;
+
+  // Last large transaction timestamps (for cooldown tracking)
+  map<string, int64> last_large_tx_times = 7;
+
+  // User MEV redistribution balances
+  map<string, string> user_mev_balances = 8;
+}

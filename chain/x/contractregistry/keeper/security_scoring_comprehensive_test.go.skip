@@ -1,0 +1,188 @@
+package keeper_test
+
+import (
+	"testing"
+	"time"
+
+	storetypes "cosmossdk.io/store/types"
+	"github.com/aequitas/aura/chain/x/contractregistry/keeper"
+	"github.com/aequitas/aura/chain/x/contractregistry/types"
+	pb "github.com/aequitas/aura/proto/aura/contractregistry/v1beta1"
+	"github.com/cosmos/cosmos-sdk/codec"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/testutil"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/stretchr/testify/suite"
+	"google.golang.org/protobuf/types/known/timestamppb"
+)
+
+type SecurityScoringTestSuite struct {
+	suite.Suite
+	ctx    sdk.Context
+	keeper *keeper.Keeper
+	cdc    codec.BinaryCodec
+}
+
+func TestSecurityScoringTestSuite(t *testing.T) {
+	suite.Run(t, new(SecurityScoringTestSuite))
+}
+
+func (suite *SecurityScoringTestSuite) SetupTest() {
+	key := storetypes.NewKVStoreKey(types.StoreKey)
+	testCtx := testutil.DefaultContextWithDB(suite.T(), key, storetypes.NewTransientStoreKey("transient_test"))
+	suite.ctx = testCtx.Ctx
+	registry := codectypes.NewInterfaceRegistry()
+	suite.cdc = codec.NewProtoCodec(registry)
+	authority := "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
+	suite.keeper = keeper.NewKeeper(key, suite.cdc, authority)
+	params := types.DefaultParams()
+	suite.NoError(suite.keeper.SetParams(suite.ctx, &params))
+}
+
+func (suite *SecurityScoringTestSuite) TestComputeSecurityScore_VerifiedContract() {
+	contractAddr := "cosmos1contract"
+
+	// Create audit history with recent high-score audit
+	auditHistory := []*pb.AuditHistoryEntry{
+		{
+			AuditorName:      "SecurityAuditor",
+			AuditDate:        suite.ctx.BlockTime().Add(-30 * 24 * time.Hour).Unix(),
+			AuditScore:       95,
+			ReportUri:        "https://example.com/audit",
+			FindingsSummary:  "No critical issues found",
+			CriticalIssues:   0,
+			HighIssues:       0,
+			MediumIssues:     2,
+			LowIssues:        5,
+		},
+	}
+
+	info := &pb.ContractInfo{
+		Address:           contractAddr,
+		CodeId:            1,
+		Creator:           "cosmos1creator",
+		Admin:             "cosmos1admin",
+		Label:             "test",
+		CreatedAt:         timestamppb.New(suite.ctx.BlockTime().Add(-200 * 24 * time.Hour)),
+		UpdatedAt:         timestamppb.New(suite.ctx.BlockTime()),
+		Metadata:          &pb.ContractMetadata{
+			Name:             "Test Contract",
+			SourceCodeHash:   "abc123",
+			CompilerVersion:  "1.0.0",
+		},
+		SecurityPolicy:    &pb.SecurityPolicy{
+			AllowPause:           true,
+			EmergencyPauseEnabled: true,
+			MultisigThreshold:    3,
+		},
+		Compliance:        &pb.ComplianceRequirements{
+			EnforceKyc:           true,
+			MinKycLevel:          2,
+			EnforceSanctionsCheck: true,
+		},
+		Status:            pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
+		IsVerified:        true,
+		VerificationLevel: 3,
+		AuditHistory:      auditHistory,
+		SecurityScore:     0, // Will be computed
+	}
+	suite.NoError(suite.keeper.RegisterContract(suite.ctx, info))
+
+	// Initialize metrics with high success rate
+	for i := 0; i < 1500; i++ {
+		suite.keeper.UpdateMetricsOnExecution(suite.ctx, contractAddr, 50000, true)
+	}
+
+	score, err := suite.keeper.ComputeSecurityScore(suite.ctx, contractAddr)
+	suite.NoError(err)
+
+	// Should have high score with good audit, metrics, compliance, and policy
+	suite.Greater(score.TotalScore, uint64(60), "Expected high security score for verified contract with good audit")
+	suite.Equal("LOW", score.RiskLevel, "Expected LOW risk level")
+}
+
+func (suite *SecurityScoringTestSuite) TestComputeSecurityScore_UnverifiedContract() {
+	contractAddr := "cosmos1contract2"
+	info := &pb.ContractInfo{
+		Address:           contractAddr,
+		CodeId:            1,
+		Creator:           "cosmos1creator",
+		Admin:             "cosmos1admin",
+		Label:             "test",
+		CreatedAt:         timestamppb.New(suite.ctx.BlockTime()),
+		UpdatedAt:         timestamppb.New(suite.ctx.BlockTime()),
+		Metadata:          &pb.ContractMetadata{Name: "Unverified Contract"},
+		SecurityPolicy:    &pb.SecurityPolicy{},
+		Compliance:        &pb.ComplianceRequirements{},
+		Status:            pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
+		IsVerified:        false,
+		VerificationLevel: 0,
+		AuditHistory:      []*pb.AuditHistoryEntry{},
+		SecurityScore:     0,
+	}
+	suite.NoError(suite.keeper.RegisterContract(suite.ctx, info))
+
+	score, err := suite.keeper.ComputeSecurityScore(suite.ctx, contractAddr)
+	suite.NoError(err)
+
+	// Should have lower score (no verification, no audit, new)
+	suite.Less(score.TotalScore, uint64(50), "Expected lower score for unverified contract")
+	suite.NotEqual("LOW", score.RiskLevel, "Expected higher risk level for unverified contract")
+}
+
+func (suite *SecurityScoringTestSuite) TestUpdateSecurityScore_WithViolations() {
+	contractAddr := "cosmos1contract"
+	info := &pb.ContractInfo{
+		Address:        contractAddr,
+		CodeId:         1,
+		Creator:        "cosmos1creator",
+		Admin:          "cosmos1admin",
+		Label:          "test",
+		Metadata:       &pb.ContractMetadata{Name: "Test"},
+		SecurityPolicy: &pb.SecurityPolicy{},
+		Compliance:     &pb.ComplianceRequirements{},
+		Status:         pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
+		Verified:       true,
+		AuditScore:     80,
+		CreatedAt:      timestamppb.New(suite.ctx.BlockTime().Add(-100 * 24 * time.Hour)),
+	}
+	suite.NoError(suite.keeper.RegisterContract(suite.ctx, info))
+
+	// Add violations
+	for i := 0; i < 50; i++ {
+		suite.keeper.IncrementMetricsCounter(suite.ctx, contractAddr, "rate_limit_violation")
+		suite.keeper.IncrementMetricsCounter(suite.ctx, contractAddr, "compliance_failure")
+	}
+
+	score := suite.keeper.UpdateSecurityScore(suite.ctx, contractAddr)
+
+	// Violations should reduce score
+	suite.Less(score, uint32(80))
+}
+
+func (suite *SecurityScoringTestSuite) TestUpdateSecurityScore_RecentAudit() {
+	contractAddr := "cosmos1contract"
+	recentAudit := timestamppb.New(suite.ctx.BlockTime().Add(-30 * 24 * time.Hour))
+
+	info := &pb.ContractInfo{
+		Address:        contractAddr,
+		CodeId:         1,
+		Creator:        "cosmos1creator",
+		Admin:          "cosmos1admin",
+		Label:          "test",
+		Metadata:       &pb.ContractMetadata{Name: "Test"},
+		SecurityPolicy: &pb.SecurityPolicy{},
+		Compliance:     &pb.ComplianceRequirements{},
+		Status:         pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
+		Verified:       true,
+		AuditScore:     80,
+		LastAudit:      recentAudit,
+		CreatedAt:      timestamppb.New(suite.ctx.BlockTime().Add(-100 * 24 * time.Hour)),
+	}
+	suite.NoError(suite.keeper.RegisterContract(suite.ctx, info))
+
+	score := suite.keeper.UpdateSecurityScore(suite.ctx, contractAddr)
+
+	// Recent audit should add bonus points
+	suite.Greater(score, uint32(50))
+}

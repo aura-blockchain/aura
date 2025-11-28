@@ -1,0 +1,133 @@
+syntax = "proto3";
+package aura.security.v1beta1;
+
+option go_package = "github.com/aequitas/aura/proto/aura/security/v1beta1";
+
+import "gogoproto/gogo.proto";
+import "aura/security/v1beta1/security.proto";
+
+// GenesisState defines the consolidated security module's genesis state
+message GenesisState {
+  // Unified module parameters
+  Params params = 1 [(gogoproto.nullable) = false];
+
+  // Network Security state
+  NetworkSecurityState network_security = 2 [(gogoproto.nullable) = false];
+
+  // Validator Security state
+  ValidatorSecurityState validator_security = 3 [(gogoproto.nullable) = false];
+
+  // Wallet Security state
+  WalletSecurityState wallet_security = 4 [(gogoproto.nullable) = false];
+
+  // Incident Response state
+  IncidentResponseState incident_response = 5 [(gogoproto.nullable) = false];
+
+  // Cryptography state
+  CryptographyState cryptography = 6 [(gogoproto.nullable) = false];
+
+  // Privacy state
+  PrivacyState privacy = 7 [(gogoproto.nullable) = false];
+}
+
+// NetworkSecurityState contains network security genesis data
+message NetworkSecurityState {
+  // Trusted peers
+  repeated TrustedPeer trusted_peers = 1 [(gogoproto.nullable) = false];
+
+  // Peer reputation data
+  repeated NodeReputation reputations = 2 [(gogoproto.nullable) = false];
+
+  // Rate limit entries
+  repeated RateLimitEntry rate_limits = 3 [(gogoproto.nullable) = false];
+
+  // Active fork alerts
+  repeated ForkAlert fork_alerts = 4 [(gogoproto.nullable) = false];
+
+  // Active partition alerts
+  repeated PartitionAlert partition_alerts = 5 [(gogoproto.nullable) = false];
+}
+
+// ValidatorSecurityState contains validator security genesis data
+message ValidatorSecurityState {
+  // Validator security info
+  repeated ValidatorSecurityInfo validators = 1 [(gogoproto.nullable) = false];
+
+  // Double sign evidences
+  repeated DoubleSignEvidence double_sign_evidences = 2 [(gogoproto.nullable) = false];
+
+  // Downtime infractions
+  repeated DowntimeInfraction downtime_infractions = 3 [(gogoproto.nullable) = false];
+
+  // Active alerts
+  repeated ValidatorAlert alerts = 4 [(gogoproto.nullable) = false];
+
+  // Sentry nodes
+  repeated SentryNodeInfo sentry_nodes = 5 [(gogoproto.nullable) = false];
+}
+
+// WalletSecurityState contains wallet security genesis data
+message WalletSecurityState {
+  // Hardware wallet configurations
+  repeated HardwareWalletConfig hardware_wallets = 1 [(gogoproto.nullable) = false];
+
+  // Multi-signature wallets
+  repeated MultiSigWallet multisig_wallets = 2 [(gogoproto.nullable) = false];
+
+  // Pending multi-signature transactions
+  repeated PendingMultiSigTransaction pending_multisig_txs = 3 [(gogoproto.nullable) = false];
+
+  // Social recovery configurations
+  repeated SocialRecoveryConfig social_recovery_configs = 4 [(gogoproto.nullable) = false];
+
+  // Active recovery requests
+  repeated RecoveryRequest recovery_requests = 5 [(gogoproto.nullable) = false];
+
+  // Spending limits
+  repeated SpendingLimit spending_limits = 6 [(gogoproto.nullable) = false];
+
+  // Biometric authentications
+  repeated BiometricAuth biometric_auths = 7 [(gogoproto.nullable) = false];
+}
+
+// IncidentResponseState contains incident response genesis data
+message IncidentResponseState {
+  // Active incidents
+  repeated Incident incidents = 1 [(gogoproto.nullable) = false];
+
+  // Audit log entries
+  repeated AuditLogEntry audit_logs = 2 [(gogoproto.nullable) = false];
+
+  // Response action history
+  repeated ResponseAction response_actions = 3 [(gogoproto.nullable) = false];
+}
+
+// CryptographyState contains cryptography genesis data
+message CryptographyState {
+  // Key rotation schedules
+  repeated KeyRotationSchedule key_rotation_schedules = 1 [(gogoproto.nullable) = false];
+
+  // Threshold signature schemes
+  repeated ThresholdSignatureScheme threshold_schemes = 2 [(gogoproto.nullable) = false];
+
+  // ZK proof configurations
+  repeated ZKProofConfig zk_proof_configs = 3 [(gogoproto.nullable) = false];
+
+  // Quantum-resistant keys
+  repeated QuantumResistantKey quantum_resistant_keys = 4 [(gogoproto.nullable) = false];
+}
+
+// PrivacyState contains privacy genesis data
+message PrivacyState {
+  // Active mixing pools
+  repeated MixingPool mixing_pools = 1 [(gogoproto.nullable) = false];
+
+  // Stealth addresses
+  repeated StealthAddress stealth_addresses = 2 [(gogoproto.nullable) = false];
+
+  // Ring signatures
+  repeated RingSignature ring_signatures = 3 [(gogoproto.nullable) = false];
+
+  // Confidential transactions
+  repeated ConfidentialTransaction confidential_transactions = 4 [(gogoproto.nullable) = false];
+}

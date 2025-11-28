@@ -1,0 +1,39 @@
+package types
+
+import (
+	errorsmod "cosmossdk.io/errors"
+)
+
+// Cryptography module errors
+var (
+	ErrInvalidInput                  = errorsmod.Register("cryptography", 1, "invalid input")
+	ErrInvalidKeyID                  = errorsmod.Register("cryptography", 2, "invalid key ID")
+	ErrKeyRotationScheduleNotFound   = errorsmod.Register("cryptography", 3, "key rotation schedule not found")
+	ErrInvalidRotationInterval       = errorsmod.Register("cryptography", 4, "invalid rotation interval")
+	ErrKeyRotationInProgress         = errorsmod.Register("cryptography", 5, "key rotation already in progress")
+	ErrInvalidThreshold              = errorsmod.Register("cryptography", 6, "invalid threshold value")
+	ErrInvalidParticipantCount       = errorsmod.Register("cryptography", 7, "invalid participant count")
+	ErrThresholdSchemeNotFound       = errorsmod.Register("cryptography", 8, "threshold scheme not found")
+	ErrInvalidSignatureShare         = errorsmod.Register("cryptography", 9, "invalid signature share")
+	ErrThresholdNotReached           = errorsmod.Register("cryptography", 10, "threshold not reached")
+	ErrInvalidZKProof                = errorsmod.Register("cryptography", 11, "invalid zero-knowledge proof")
+	ErrZKProofConfigNotFound         = errorsmod.Register("cryptography", 12, "ZK proof configuration not found")
+	ErrSecureEnclaveNotFound         = errorsmod.Register("cryptography", 13, "secure enclave not found")
+	ErrEnclaveAttestationFailed      = errorsmod.Register("cryptography", 14, "enclave attestation failed")
+	ErrQuantumKeyNotFound            = errorsmod.Register("cryptography", 15, "quantum-resistant key not found")
+	ErrInvalidQuantumAlgorithm       = errorsmod.Register("cryptography", 16, "invalid quantum-resistant algorithm")
+	ErrInsufficientEntropy           = errorsmod.Register("cryptography", 17, "insufficient entropy")
+	ErrRandomSourceFailed            = errorsmod.Register("cryptography", 18, "random source failed")
+	ErrInvalidSaltLength             = errorsmod.Register("cryptography", 19, "invalid salt length")
+	ErrInvalidHashAlgorithm          = errorsmod.Register("cryptography", 20, "invalid hash algorithm")
+	ErrInvalidKeyStretchingConfig    = errorsmod.Register("cryptography", 21, "invalid key stretching configuration")
+	ErrInvalidIterationCount         = errorsmod.Register("cryptography", 22, "invalid iteration count")
+	ErrCertificatePinNotFound        = errorsmod.Register("cryptography", 23, "certificate pin not found")
+	ErrCertificateVerificationFailed = errorsmod.Register("cryptography", 24, "certificate verification failed")
+	ErrInvalidCertificateHash        = errorsmod.Register("cryptography", 25, "invalid certificate hash")
+	ErrInvalidDerivationPath         = errorsmod.Register("cryptography", 26, "invalid derivation path")
+	ErrHDKeyDerivationFailed         = errorsmod.Register("cryptography", 27, "HD key derivation failed")
+	ErrInvalidSeed                   = errorsmod.Register("cryptography", 28, "invalid seed")
+	ErrKeyExpired                    = errorsmod.Register("cryptography", 29, "key has expired")
+	ErrUnauthorized                  = errorsmod.Register("cryptography", 30, "unauthorized operation")
+)

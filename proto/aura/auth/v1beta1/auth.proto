@@ -1,0 +1,176 @@
+syntax = "proto3";
+package aura.auth.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/auth/v1beta1";
+
+// Role represents a named set of permissions
+message Role {
+  string name = 1;
+  repeated string permissions = 2;
+  string description = 3;
+  google.protobuf.Timestamp created_at = 4 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  google.protobuf.Timestamp updated_at = 5 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+}
+
+// RoleAssignment assigns a role to an address
+message RoleAssignment {
+  string address = 1;
+  string role_name = 2;
+  string assigned_by = 3;
+  google.protobuf.Timestamp assigned_at = 4 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  google.protobuf.Timestamp expires_at = 5 [(gogoproto.stdtime) = true];
+}
+
+// RoleAssignmentList holds multiple role assignments for storage
+message RoleAssignmentList {
+  repeated RoleAssignment assignments = 1;
+}
+
+// MultisigWallet represents a multi-signature wallet
+message MultisigWallet {
+  string id = 1;
+  repeated string signers = 2;
+  uint32 threshold = 3; // Number of signatures required (e.g., 3 for 3-of-5)
+  google.protobuf.Timestamp created_at = 4 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  string created_by = 5;
+  WalletType wallet_type = 6;
+}
+
+enum WalletType {
+  WALLET_TYPE_UNSPECIFIED = 0;
+  WALLET_TYPE_3_OF_5 = 1;
+  WALLET_TYPE_5_OF_7 = 2;
+  WALLET_TYPE_CUSTOM = 3;
+}
+
+// MultisigProposal represents a proposal requiring multiple signatures
+message MultisigProposal {
+  string id = 1;
+  string wallet_id = 2;
+  string title = 3;
+  string description = 4;
+  bytes payload = 5; // Encoded transaction or action
+  repeated string signatures = 6; // Addresses that have signed
+  ProposalStatus status = 7;
+  google.protobuf.Timestamp created_at = 8 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  google.protobuf.Timestamp executed_at = 9 [(gogoproto.stdtime) = true];
+  google.protobuf.Timestamp expires_at = 10 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+}
+
+enum ProposalStatus {
+  PROPOSAL_STATUS_UNSPECIFIED = 0;
+  PROPOSAL_STATUS_PENDING = 1;
+  PROPOSAL_STATUS_APPROVED = 2;
+  PROPOSAL_STATUS_EXECUTED = 3;
+  PROPOSAL_STATUS_REJECTED = 4;
+  PROPOSAL_STATUS_EXPIRED = 5;
+}
+
+// TimeLockedAction represents an admin action with time delay
+message TimeLockedAction {
+  string id = 1;
+  string action_type = 2; // e.g., "UPDATE_PARAMS", "CHANGE_ADMIN"
+  bytes payload = 3;
+  string proposer = 4;
+  google.protobuf.Timestamp proposed_at = 5 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  google.protobuf.Timestamp executable_at = 6 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  google.protobuf.Timestamp executed_at = 7 [(gogoproto.stdtime) = true];
+  ActionStatus status = 8;
+  uint64 delay_seconds = 9; // Time delay in seconds
+}
+
+enum ActionStatus {
+  ACTION_STATUS_UNSPECIFIED = 0;
+  ACTION_STATUS_PENDING = 1;
+  ACTION_STATUS_READY = 2;
+  ACTION_STATUS_EXECUTED = 3;
+  ACTION_STATUS_CANCELLED = 4;
+}
+
+// EmergencyAdmin represents an emergency admin key with specific privileges
+message EmergencyAdmin {
+  string address = 1;
+  repeated string privileges = 2;
+  google.protobuf.Timestamp activated_at = 3 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  google.protobuf.Timestamp expires_at = 4 [(gogoproto.stdtime) = true];
+  bool is_active = 5;
+  string activated_by = 6;
+}
+
+// ValidatorKeyRotation represents a key rotation event
+message ValidatorKeyRotation {
+  string validator_address = 1;
+  string old_consensus_pubkey = 2;
+  string new_consensus_pubkey = 3;
+  google.protobuf.Timestamp rotation_time = 4 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  string initiated_by = 5;
+  RotationStatus rotation_status = 6;
+}
+
+enum RotationStatus {
+  ROTATION_STATUS_UNSPECIFIED = 0;
+  ROTATION_STATUS_PENDING = 1;
+  ROTATION_STATUS_COMPLETED = 2;
+  ROTATION_STATUS_FAILED = 3;
+}
+
+// Session represents an API session
+message Session {
+  string session_id = 1;
+  string user_address = 2;
+  google.protobuf.Timestamp created_at = 3 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  google.protobuf.Timestamp expires_at = 4 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  google.protobuf.Timestamp last_accessed = 5 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  string ip_address = 6;
+  bool is_active = 7;
+  map<string, string> metadata = 8;
+}
+
+// SessionList holds multiple sessions for storage
+message SessionList {
+  repeated Session sessions = 1;
+}
+
+// SessionIDList holds multiple session IDs for storage
+message SessionIDList {
+  repeated string session_ids = 1;
+}
+
+// RateLimitConfig represents rate limiting configuration per user
+message RateLimitConfig {
+  string user_address = 1;
+  uint64 requests_per_minute = 2;
+  uint64 requests_per_hour = 3;
+  uint64 requests_per_day = 4;
+  uint64 current_minute_count = 5;
+  uint64 current_hour_count = 6;
+  uint64 current_day_count = 7;
+  google.protobuf.Timestamp window_start = 8 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+}
+
+// AuditLog represents a comprehensive audit log entry
+message AuditLog {
+  string id = 1;
+  string actor = 2; // Who performed the action
+  string action = 3; // What action was performed
+  string resource = 4; // What resource was affected
+  google.protobuf.Timestamp timestamp = 5 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  string ip_address = 6;
+  map<string, string> metadata = 7;
+  string result = 8; // success, failure, etc.
+  string error_message = 9;
+}
+
+// Params defines the parameters for the auth module
+message Params {
+  uint64 session_timeout_seconds = 1; // Default session timeout
+  uint64 default_timelock_delay_seconds = 2; // Default time delay for admin actions
+  uint64 default_requests_per_minute = 3;
+  uint64 default_requests_per_hour = 4;
+  uint64 default_requests_per_day = 5;
+  uint64 multisig_proposal_expiry_seconds = 6;
+  bool audit_logging_enabled = 7;
+}

@@ -1,0 +1,196 @@
+package keeper
+
+import (
+	"context"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+
+	"github.com/aequitas/aura/chain/x/monitoring/types"
+)
+
+func TestMsgServer_AcknowledgeAlert(t *testing.T) {
+	keeper := setupTestKeeper(t)
+	defer keeper.Close()
+
+	ms := NewMsgServer(keeper)
+	require.NotNil(t, ms)
+
+	ctx := context.Background()
+
+	// Test with nil message
+	resp, err := ms.AcknowledgeAlert(ctx, nil)
+	require.Error(t, err)
+	require.Nil(t, resp)
+	require.Equal(t, types.ErrInvalidTransaction, err)
+
+	// Test with empty alert ID
+	resp, err = ms.AcknowledgeAlert(ctx, &types.MsgAcknowledgeAlert{
+		AlertId:        "",
+		AcknowledgedBy: "user123",
+	})
+	require.Error(t, err)
+	require.Nil(t, resp)
+	require.Equal(t, types.ErrAlertNotFound, err)
+
+	// Test with empty acknowledged by
+	resp, err = ms.AcknowledgeAlert(ctx, &types.MsgAcknowledgeAlert{
+		AlertId:        "alert123",
+		AcknowledgedBy: "",
+	})
+	require.Error(t, err)
+	require.Nil(t, resp)
+	require.Equal(t, types.ErrInvalidTransaction, err)
+
+	// Test with non-existent alert
+	resp, err = ms.AcknowledgeAlert(ctx, &types.MsgAcknowledgeAlert{
+		AlertId:        "alert123",
+		AcknowledgedBy: "user123",
+	})
+	require.Error(t, err)
+	require.Nil(t, resp)
+	require.Equal(t, types.ErrAlertNotFound, err)
+
+	// Create a test alert
+	alert, err := keeper.CreateAlert(
+		types.AlertTypeSecurityThreat,
+		types.SeverityCritical,
+		"Test alert",
+		map[string]interface{}{"detail": "test"},
+	)
+	require.NoError(t, err)
+	require.NotNil(t, alert)
+	require.False(t, alert.Acknowledged)
+
+	// Test acknowledging the alert
+	resp, err = ms.AcknowledgeAlert(ctx, &types.MsgAcknowledgeAlert{
+		AlertId:        alert.ID,
+		AcknowledgedBy: "user123",
+	})
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	require.True(t, resp.Success)
+
+	// Verify the alert was acknowledged
+	acknowledgedAlert, err := keeper.GetAlert(alert.ID)
+	require.NoError(t, err)
+	require.NotNil(t, acknowledgedAlert)
+	require.True(t, acknowledgedAlert.Acknowledged)
+	require.Equal(t, "user123", acknowledgedAlert.AcknowledgedBy)
+	require.NotNil(t, acknowledgedAlert.AcknowledgedAt)
+}
+
+func TestMsgServer_ResolveAlert(t *testing.T) {
+	keeper := setupTestKeeper(t)
+	defer keeper.Close()
+
+	ms := NewMsgServer(keeper)
+	require.NotNil(t, ms)
+
+	ctx := context.Background()
+
+	// Test with nil message
+	resp, err := ms.ResolveAlert(ctx, nil)
+	require.Error(t, err)
+	require.Nil(t, resp)
+	require.Equal(t, types.ErrInvalidTransaction, err)
+
+	// Test with empty alert ID
+	resp, err = ms.ResolveAlert(ctx, &types.MsgResolveAlert{
+		AlertId: "",
+	})
+	require.Error(t, err)
+	require.Nil(t, resp)
+	require.Equal(t, types.ErrAlertNotFound, err)
+
+	// Test with non-existent alert
+	resp, err = ms.ResolveAlert(ctx, &types.MsgResolveAlert{
+		AlertId: "alert123",
+	})
+	require.Error(t, err)
+	require.Nil(t, resp)
+	require.Equal(t, types.ErrAlertNotFound, err)
+
+	// Create a test alert
+	alert, err := keeper.CreateAlert(
+		types.AlertTypeSecurityThreat,
+		types.SeverityCritical,
+		"Test alert",
+		map[string]interface{}{"detail": "test"},
+	)
+	require.NoError(t, err)
+	require.NotNil(t, alert)
+	require.False(t, alert.Resolved)
+
+	// Test resolving the alert
+	resp, err = ms.ResolveAlert(ctx, &types.MsgResolveAlert{
+		AlertId: alert.ID,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	require.True(t, resp.Success)
+
+	// Verify the alert was resolved
+	resolvedAlert, err := keeper.GetAlert(alert.ID)
+	require.NoError(t, err)
+	require.NotNil(t, resolvedAlert)
+	require.True(t, resolvedAlert.Resolved)
+	require.NotNil(t, resolvedAlert.ResolvedAt)
+}
+
+func TestMsgServer_AcknowledgeAndResolve(t *testing.T) {
+	keeper := setupTestKeeper(t)
+	defer keeper.Close()
+
+	ms := NewMsgServer(keeper)
+	require.NotNil(t, ms)
+
+	ctx := context.Background()
+
+	// Create a test alert
+	alert, err := keeper.CreateAlert(
+		types.AlertTypeAnomaly,
+		types.SeverityHigh,
+		"Test workflow alert",
+		map[string]interface{}{"detail": "test"},
+	)
+	require.NoError(t, err)
+	require.NotNil(t, alert)
+
+	// Acknowledge the alert
+	ackResp, err := ms.AcknowledgeAlert(ctx, &types.MsgAcknowledgeAlert{
+		AlertId:        alert.ID,
+		AcknowledgedBy: "admin",
+	})
+	require.NoError(t, err)
+	require.NotNil(t, ackResp)
+	require.True(t, ackResp.Success)
+
+	// Resolve the alert
+	resolveResp, err := ms.ResolveAlert(ctx, &types.MsgResolveAlert{
+		AlertId: alert.ID,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, resolveResp)
+	require.True(t, resolveResp.Success)
+
+	// Verify the final state
+	finalAlert, err := keeper.GetAlert(alert.ID)
+	require.NoError(t, err)
+	require.NotNil(t, finalAlert)
+	require.True(t, finalAlert.Acknowledged)
+	require.True(t, finalAlert.Resolved)
+	require.Equal(t, "admin", finalAlert.AcknowledgedBy)
+	require.NotNil(t, finalAlert.AcknowledgedAt)
+	require.NotNil(t, finalAlert.ResolvedAt)
+}
+
+func TestMsgServer_ImplementsInterface(t *testing.T) {
+	keeper := setupTestKeeper(t)
+	defer keeper.Close()
+
+	ms := NewMsgServer(keeper)
+
+	// Verify that MsgServer implements the types.MsgServer interface
+	var _ types.MsgServer = ms
+}

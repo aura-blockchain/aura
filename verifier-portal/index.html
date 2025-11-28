@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aura Verifier Portal</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <header>
+    <div>
+      <h1>Aura Verifier Portal</h1>
+      <p>Real-time intelligence for assistant operators, compliance responders, and IR reviewers.</p>
+    </div>
+    <button id="btnRefreshAll">Refresh all</button>
+  </header>
+
+  <section class="card">
+    <h2>Network Settings</h2>
+    <div class="grid">
+      <label>REST Endpoint
+        <input type="text" id="portalRest" placeholder="http://localhost:1317">
+      </label>
+      <label>Assistant Filter (regex)
+        <input type="text" id="assistantFilter" placeholder=".*">
+      </label>
+      <label>Wallet Lookup
+        <input type="text" id="walletAddress" placeholder="aura1...">
+      </label>
+    </div>
+    <div class="actions">
+      <button id="btnSavePortal">Save settings</button>
+      <button id="btnLookupWallet" class="primary">Lookup wallet</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-header">
+      <div>
+        <h2>Assistant Fleet</h2>
+        <p class="muted">Data source: `/aura/aiassistant/v1beta1/assistants` (pagination limit 50)</p>
+      </div>
+      <span id="assistantStats" class="pill">--</span>
+    </div>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Assistant</th>
+            <th>Owner</th>
+            <th>Stake</th>
+            <th>Sponsorship</th>
+            <th>Locales</th>
+            <th>Status</th>
+            <th>Heartbeat</th>
+            <th>Reports</th>
+          </tr>
+        </thead>
+        <tbody id="assistantTable">
+          <tr>
+            <td colspan="8">Loading...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-header">
+      <div>
+        <h2>Wallet Confidence Score</h2>
+        <p class="muted">Powered by `/aura/confidencescore/v1beta1/user_score/{wallet}`</p>
+      </div>
+      <span id="walletStatus" class="pill">Idle</span>
+    </div>
+    <div class="score-grid" id="walletDetails">
+      <p>Lookup a wallet to load score, arenas, and verification history.</p>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Recent IR Completions</h2>
+    <p class="muted">Top 5 entries from `/aura/confidencescore/v1beta1/user_completions/{wallet}`</p>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>IR ID</th>
+            <th>Arena</th>
+            <th>Assistant</th>
+            <th>Score</th>
+            <th>Timestamp</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody id="completionTable">
+          <tr>
+            <td colspan="6">Lookup a wallet above.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <script src="app.js" type="module"></script>
+</body>
+
+</html>
