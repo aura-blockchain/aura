@@ -58,7 +58,7 @@ All modules have keepers, protos, and tests:
 
 | Gap | Priority | Location |
 |-----|----------|----------|
-| Production genesis file | 🔴 Critical | `/networks/mainnet/genesis.json` (missing) |
+| Production genesis file | ✅ Done | `/networks/mainnet/genesis.json` |
 | External security audit | 🔴 Critical | Not started |
 | Active testnet | 🔴 Critical | No deployment |
 | IBC channels | 🔴 Critical | Not established |
@@ -71,33 +71,35 @@ All modules have keepers, protos, and tests:
 ## Phase 0: Pre-Deployment (2-3 weeks)
 
 ### Genesis Configuration
-- [ ] Create production genesis with all 27 modules → `/networks/mainnet/genesis.json`
-- [ ] Configure: 100 initial validators, 21-day unbonding, 0.025uaura min gas
-- [ ] Load inclusion routines from `/data/inclusion_routines/ir_genesis_300.json`
-- [ ] Create genesis accounts per `/docs/economics/founder-wallets.md`
+- [x] Create production genesis with all 27 modules → `/networks/mainnet/genesis.json`
+- [x] Configure: 100 initial validators, 21-day unbonding, 0.025uaura min gas
+- [x] Load inclusion routines from `/data/inclusion_routines/ir_genesis_300.json`
+- [ ] Create genesis accounts per `/docs/economics/founder-wallets.md` (pending ops approval)
 - [ ] Validate: `aurad validate-genesis`
 
 ### Smart Contracts
+- [ ] Install Rust toolchain: `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
 - [ ] Compile contracts: `cd contracts/vc-issuer && cargo wasm`
 - [ ] Optimize: `make optimize-wasm` → `/contracts/artifacts/`
 - [ ] Test deployment on local testnet
 - [ ] Create deployment scripts: `/scripts/deploy-contracts.sh`
 
 ### Security
-- [ ] HSM integration guide → `/docs/security/HSM_INTEGRATION.md`
+- [x] HSM integration guide → `/docs/security/HSM_INTEGRATION.md`
 - [ ] Run secret management scripts: `/deployment-security/scripts/generate-secrets.sh`
 - [ ] TLS setup: `/deployment-security/scripts/tls-setup.sh`
 - [ ] Review node configs: `/networks/mainnet/config.toml`
 
 ### Testing
-- [ ] Run full test suite: `make test` (376+ tests)
-- [ ] Run chaos tests: `/chain/testing/chaos/`
-- [ ] Run benchmarks: `/chain/testing/benchmark/`
+- [x] Run full test suite: `make test` (59/101 packages passing - mock infrastructure needs fixes)
+- [x] Run chaos tests: `/chain/testing/chaos/` (passing)
+- [x] Run benchmarks: `/chain/testing/benchmark/` (passing)
+- [ ] Fix test mock infrastructure (ante_test.go, integration tests)
 - [ ] Target: >80% coverage
 
 ### Documentation
-- [ ] Create: `/docs/ops/PRODUCTION_DEPLOYMENT.md`
-- [ ] Create: `/docs/validators/ONBOARDING.md`
+- [x] Create: `/docs/ops/PRODUCTION_DEPLOYMENT.md`
+- [x] Create: `/docs/validators/ONBOARDING.md`
 - [ ] Create: `/docs/ops/runbooks/` (upgrade, incident, backup procedures)
 
 ---
