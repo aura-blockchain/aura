@@ -62,6 +62,14 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data types.GenesisState) error {
 
 // ExportGenesis exports the module's state to a genesis state
 func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
-	// Minimal genesis export
-	return types.NewGenesisState(types.DefaultParams(), []string{}, []string{}, types.SecurityStats{})
+	// Minimal genesis export with proper proto types
+	return types.NewGenesisState(
+		types.DefaultParams(),
+		[]*types.Code{},
+		[]*types.Contract{},
+		[]*types.Sequence{},
+		[]string{}, // authorizedUploaders
+		[]string{}, // pausedContracts
+		types.DefaultSecurityStats(),
+	)
 }

@@ -14,6 +14,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// printJSON prints the response as formatted JSON
+func printJSON(clientCtx client.Context, v interface{}) error {
+	out, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		return err
+	}
+	return clientCtx.PrintBytes(out)
+}
+
 // GetQueryCmd returns the query commands for the wasm module
 func GetQueryCmd() *cobra.Command {
 	queryCmd := &cobra.Command{
@@ -61,7 +70,7 @@ func GetCmdQueryParams() *cobra.Command {
 				return err
 			}
 
-			return clientCtx.PrintProto(res)
+			return printJSON(clientCtx, res)
 		},
 	}
 
@@ -94,7 +103,7 @@ func GetCmdQueryCode() *cobra.Command {
 				return err
 			}
 
-			return clientCtx.PrintProto(res)
+			return printJSON(clientCtx, res)
 		},
 	}
 
@@ -128,7 +137,7 @@ func GetCmdListCode() *cobra.Command {
 				return err
 			}
 
-			return clientCtx.PrintProto(res)
+			return printJSON(clientCtx, res)
 		},
 	}
 
@@ -162,7 +171,7 @@ func GetCmdQueryContractInfo() *cobra.Command {
 				return err
 			}
 
-			return clientCtx.PrintProto(res)
+			return printJSON(clientCtx, res)
 		},
 	}
 
@@ -202,7 +211,7 @@ func GetCmdQueryContractState() *cobra.Command {
 				return err
 			}
 
-			return clientCtx.PrintProto(res)
+			return printJSON(clientCtx, res)
 		},
 	}
 
@@ -243,7 +252,7 @@ func GetCmdQueryContractHistory() *cobra.Command {
 				return err
 			}
 
-			return clientCtx.PrintProto(res)
+			return printJSON(clientCtx, res)
 		},
 	}
 
@@ -283,7 +292,7 @@ func GetCmdQuerySmartContract() *cobra.Command {
 				return err
 			}
 
-			return clientCtx.PrintProto(res)
+			return printJSON(clientCtx, res)
 		},
 	}
 
@@ -315,14 +324,14 @@ func GetCmdQueryRawContract() *cobra.Command {
 
 			queryClient := types.NewQueryClient(clientCtx)
 			res, err := queryClient.RawContractState(context.Background(), &types.QueryRawContractStateRequest{
-				Address:  contractAddr,
+				Address:   contractAddr,
 				QueryData: key,
 			})
 			if err != nil {
 				return err
 			}
 
-			return clientCtx.PrintProto(res)
+			return printJSON(clientCtx, res)
 		},
 	}
 
@@ -348,7 +357,7 @@ func GetCmdQuerySecurityStats() *cobra.Command {
 				return err
 			}
 
-			return clientCtx.PrintProto(res)
+			return printJSON(clientCtx, res)
 		},
 	}
 
@@ -382,7 +391,7 @@ func GetCmdQueryAuthorizedUploaders() *cobra.Command {
 				return err
 			}
 
-			return clientCtx.PrintProto(res)
+			return printJSON(clientCtx, res)
 		},
 	}
 
@@ -417,7 +426,7 @@ func GetCmdQueryPausedContracts() *cobra.Command {
 				return err
 			}
 
-			return clientCtx.PrintProto(res)
+			return printJSON(clientCtx, res)
 		},
 	}
 
@@ -451,7 +460,7 @@ func GetCmdQueryIsAuthorizedUploader() *cobra.Command {
 				return err
 			}
 
-			return clientCtx.PrintProto(res)
+			return printJSON(clientCtx, res)
 		},
 	}
 
@@ -484,7 +493,7 @@ func GetCmdQueryIsContractPaused() *cobra.Command {
 				return err
 			}
 
-			return clientCtx.PrintProto(res)
+			return printJSON(clientCtx, res)
 		},
 	}
 

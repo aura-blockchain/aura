@@ -1,0 +1,76 @@
+syntax = "proto3";
+package aura.wasm.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "aura/wasm/v1beta1/wasm.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/wasm/v1beta1";
+
+// GenesisState defines the wasm module's genesis state
+message GenesisState {
+  // params defines all the parameters of the module
+  Params params = 1 [(gogoproto.nullable) = false];
+
+  // codes contains all stored WASM code information
+  repeated Code codes = 2 [(gogoproto.nullable) = false];
+
+  // contracts contains all contract instances
+  repeated Contract contracts = 3 [(gogoproto.nullable) = false];
+
+  // sequences stores the auto-increment sequences for code and contract IDs
+  repeated Sequence sequences = 4 [(gogoproto.nullable) = false];
+
+  // authorized_uploaders contains addresses authorized to upload code
+  repeated string authorized_uploaders = 5;
+
+  // paused_contracts contains addresses of paused contracts
+  repeated string paused_contracts = 6;
+
+  // security_stats contains the security statistics snapshot
+  SecurityStats security_stats = 7 [(gogoproto.nullable) = false];
+}
+
+// Code is a stored WASM code in genesis
+message Code {
+  option (gogoproto.equal) = true;
+
+  // code_id is the unique identifier
+  uint64 code_id = 1 [(gogoproto.customname) = "CodeID"];
+
+  // code_info contains metadata
+  CodeInfo code_info = 2 [(gogoproto.nullable) = false];
+
+  // code_bytes is the actual WASM bytecode
+  bytes code_bytes = 3;
+
+  // pinned indicates if the code should be pinned to cache
+  bool pinned = 4;
+}
+
+// Contract is a contract instance in genesis
+message Contract {
+  option (gogoproto.equal) = true;
+
+  // contract_address is the bech32 address
+  string contract_address = 1;
+
+  // contract_info contains metadata
+  ContractInfo contract_info = 2 [(gogoproto.nullable) = false];
+
+  // contract_state is the raw state data
+  repeated Model contract_state = 3 [(gogoproto.nullable) = false];
+
+  // contract_history contains the code update history
+  repeated ContractHistoryEntry contract_history = 4 [(gogoproto.nullable) = false];
+}
+
+// Sequence holds the auto-increment sequence for code and contract IDs
+message Sequence {
+  option (gogoproto.equal) = true;
+
+  // id_key is the key name for this sequence
+  bytes id_key = 1 [(gogoproto.customname) = "IDKey"];
+
+  // value is the current sequence value
+  uint64 value = 2;
+}

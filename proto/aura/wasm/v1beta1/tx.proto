@@ -1,0 +1,276 @@
+syntax = "proto3";
+package aura.wasm.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "cosmos/msg/v1/msg.proto";
+import "cosmos_proto/cosmos.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "aura/wasm/v1beta1/wasm.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/wasm/v1beta1";
+
+// Msg defines the wasm Msg service
+service Msg {
+  option (cosmos.msg.v1.service) = true;
+
+  // StoreCode uploads WASM bytecode to the chain
+  rpc StoreCode(MsgStoreCode) returns (MsgStoreCodeResponse);
+
+  // InstantiateContract creates a new smart contract instance
+  rpc InstantiateContract(MsgInstantiateContract) returns (MsgInstantiateContractResponse);
+
+  // ExecuteContract executes a smart contract
+  rpc ExecuteContract(MsgExecuteContract) returns (MsgExecuteContractResponse);
+
+  // MigrateContract migrates a contract to a new code version
+  rpc MigrateContract(MsgMigrateContract) returns (MsgMigrateContractResponse);
+
+  // UpdateAdmin updates the admin of a contract
+  rpc UpdateAdmin(MsgUpdateAdmin) returns (MsgUpdateAdminResponse);
+
+  // ClearAdmin removes the admin from a contract
+  rpc ClearAdmin(MsgClearAdmin) returns (MsgClearAdminResponse);
+
+  // AuthorizeUploader authorizes an address to upload code (governance)
+  rpc AuthorizeUploader(MsgAuthorizeUploader) returns (MsgAuthorizeUploaderResponse);
+
+  // RevokeUploader revokes code upload authorization (governance)
+  rpc RevokeUploader(MsgRevokeUploader) returns (MsgRevokeUploaderResponse);
+
+  // PauseContract pauses a contract (governance/security)
+  rpc PauseContract(MsgPauseContract) returns (MsgPauseContractResponse);
+
+  // UnpauseContract unpauses a contract (governance)
+  rpc UnpauseContract(MsgUnpauseContract) returns (MsgUnpauseContractResponse);
+
+  // UpdateParams updates module parameters (governance)
+  rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
+}
+
+// MsgStoreCode submits WASM bytecode for storage on the chain
+message MsgStoreCode {
+  option (cosmos.msg.v1.signer) = "sender";
+  option (gogoproto.goproto_getters) = false;
+
+  // sender is the address of the account that uploads the code
+  string sender = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // wasm_byte_code is the gzip-compressed WASM bytecode
+  bytes wasm_byte_code = 2 [(gogoproto.customname) = "WASMByteCode"];
+
+  // instantiate_permission defines who can instantiate this code
+  AccessConfig instantiate_permission = 3;
+
+  // source is an optional URL to the code source repository
+  string source = 4;
+
+  // builder is an optional docker image used to build the code
+  string builder = 5;
+}
+
+// MsgStoreCodeResponse is the response type for the Msg/StoreCode RPC method
+message MsgStoreCodeResponse {
+  // code_id is the unique identifier of the stored code
+  uint64 code_id = 1 [(gogoproto.customname) = "CodeID"];
+
+  // checksum is the SHA256 hash of the stored code
+  bytes checksum = 2;
+}
+
+// MsgInstantiateContract creates a new smart contract instance
+message MsgInstantiateContract {
+  option (cosmos.msg.v1.signer) = "sender";
+  option (gogoproto.goproto_getters) = false;
+
+  // sender is the address that instantiates the contract
+  string sender = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // admin is an optional address that can migrate/update the contract
+  string admin = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // code_id is the reference to the stored code
+  uint64 code_id = 3 [(gogoproto.customname) = "CodeID"];
+
+  // label is a human-readable name for this contract
+  string label = 4;
+
+  // msg is the JSON-encoded instantiation message
+  bytes msg = 5 [(gogoproto.casttype) = "RawContractMessage"];
+
+  // funds are coins to send to the contract during instantiation
+  repeated cosmos.base.v1beta1.Coin funds = 6 [
+    (gogoproto.nullable) = false,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
+  ];
+}
+
+// MsgInstantiateContractResponse is the response type for Msg/InstantiateContract
+message MsgInstantiateContractResponse {
+  // address is the bech32 address of the new contract instance
+  string address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // data contains the result data returned from the instantiate call
+  bytes data = 2;
+}
+
+// MsgExecuteContract executes a function on a smart contract
+message MsgExecuteContract {
+  option (cosmos.msg.v1.signer) = "sender";
+  option (gogoproto.goproto_getters) = false;
+
+  // sender is the address that executes the contract
+  string sender = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // contract is the bech32 address of the contract
+  string contract = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // msg is the JSON-encoded execution message
+  bytes msg = 3 [(gogoproto.casttype) = "RawContractMessage"];
+
+  // funds are coins to send to the contract during execution
+  repeated cosmos.base.v1beta1.Coin funds = 4 [
+    (gogoproto.nullable) = false,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
+  ];
+}
+
+// MsgExecuteContractResponse is the response type for Msg/ExecuteContract
+message MsgExecuteContractResponse {
+  // data contains the result data returned from the execute call
+  bytes data = 1;
+}
+
+// MsgMigrateContract migrates a contract to a new code version
+message MsgMigrateContract {
+  option (cosmos.msg.v1.signer) = "sender";
+  option (gogoproto.goproto_getters) = false;
+
+  // sender must be the admin of the contract
+  string sender = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // contract is the bech32 address of the contract
+  string contract = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // code_id is the new code to migrate to
+  uint64 code_id = 3 [(gogoproto.customname) = "CodeID"];
+
+  // msg is the JSON-encoded migration message
+  bytes msg = 4 [(gogoproto.casttype) = "RawContractMessage"];
+}
+
+// MsgMigrateContractResponse is the response type for Msg/MigrateContract
+message MsgMigrateContractResponse {
+  // data contains the result data returned from the migrate call
+  bytes data = 1;
+}
+
+// MsgUpdateAdmin updates the admin address of a contract
+message MsgUpdateAdmin {
+  option (cosmos.msg.v1.signer) = "sender";
+  option (gogoproto.goproto_getters) = false;
+
+  // sender must be the current admin
+  string sender = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // new_admin is the address that will become the new admin
+  string new_admin = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // contract is the bech32 address of the contract
+  string contract = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}
+
+// MsgUpdateAdminResponse is the response type for Msg/UpdateAdmin
+message MsgUpdateAdminResponse {}
+
+// MsgClearAdmin removes the admin from a contract
+message MsgClearAdmin {
+  option (cosmos.msg.v1.signer) = "sender";
+  option (gogoproto.goproto_getters) = false;
+
+  // sender must be the current admin
+  string sender = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // contract is the bech32 address of the contract
+  string contract = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}
+
+// MsgClearAdminResponse is the response type for Msg/ClearAdmin
+message MsgClearAdminResponse {}
+
+// MsgAuthorizeUploader authorizes an address to upload WASM code
+message MsgAuthorizeUploader {
+  option (cosmos.msg.v1.signer) = "authority";
+  option (gogoproto.goproto_getters) = false;
+
+  // authority is the governance account address
+  string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // uploader is the address to authorize
+  string uploader = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}
+
+// MsgAuthorizeUploaderResponse is the response type for Msg/AuthorizeUploader
+message MsgAuthorizeUploaderResponse {}
+
+// MsgRevokeUploader revokes code upload authorization
+message MsgRevokeUploader {
+  option (cosmos.msg.v1.signer) = "authority";
+  option (gogoproto.goproto_getters) = false;
+
+  // authority is the governance account address
+  string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // uploader is the address to revoke
+  string uploader = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}
+
+// MsgRevokeUploaderResponse is the response type for Msg/RevokeUploader
+message MsgRevokeUploaderResponse {}
+
+// MsgPauseContract pauses a contract, blocking all executions
+message MsgPauseContract {
+  option (cosmos.msg.v1.signer) = "authority";
+  option (gogoproto.goproto_getters) = false;
+
+  // authority is the governance account or security council address
+  string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // contract is the bech32 address of the contract to pause
+  string contract = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // reason is the reason for pausing the contract
+  string reason = 3;
+}
+
+// MsgPauseContractResponse is the response type for Msg/PauseContract
+message MsgPauseContractResponse {}
+
+// MsgUnpauseContract resumes a paused contract
+message MsgUnpauseContract {
+  option (cosmos.msg.v1.signer) = "authority";
+  option (gogoproto.goproto_getters) = false;
+
+  // authority is the governance account address
+  string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // contract is the bech32 address of the contract to unpause
+  string contract = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}
+
+// MsgUnpauseContractResponse is the response type for Msg/UnpauseContract
+message MsgUnpauseContractResponse {}
+
+// MsgUpdateParams updates the module parameters
+message MsgUpdateParams {
+  option (cosmos.msg.v1.signer) = "authority";
+  option (gogoproto.goproto_getters) = false;
+
+  // authority is the governance account address
+  string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // params defines the wasm module parameters to update
+  Params params = 2 [(gogoproto.nullable) = false];
+}
+
+// MsgUpdateParamsResponse is the response type for Msg/UpdateParams
+message MsgUpdateParamsResponse {}

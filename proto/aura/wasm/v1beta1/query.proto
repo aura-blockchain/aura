@@ -1,0 +1,253 @@
+syntax = "proto3";
+package aura.wasm.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "aura/wasm/v1beta1/wasm.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/wasm/v1beta1";
+
+// Query defines the gRPC querier service for the wasm module
+service Query {
+  // Params returns the module parameters
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/aura/wasm/v1beta1/params";
+  }
+
+  // Code returns contract code by code ID
+  rpc Code(QueryCodeRequest) returns (QueryCodeResponse) {
+    option (google.api.http).get = "/aura/wasm/v1beta1/code/{code_id}";
+  }
+
+  // Codes returns all stored contract codes with pagination
+  rpc Codes(QueryCodesRequest) returns (QueryCodesResponse) {
+    option (google.api.http).get = "/aura/wasm/v1beta1/code";
+  }
+
+  // ContractInfo returns contract metadata
+  rpc ContractInfo(QueryContractInfoRequest) returns (QueryContractInfoResponse) {
+    option (google.api.http).get = "/aura/wasm/v1beta1/contract/{address}";
+  }
+
+  // ContractHistory returns the contract's code history
+  rpc ContractHistory(QueryContractHistoryRequest) returns (QueryContractHistoryResponse) {
+    option (google.api.http).get = "/aura/wasm/v1beta1/contract/{address}/history";
+  }
+
+  // AllContractState returns all contract state entries with pagination
+  rpc AllContractState(QueryAllContractStateRequest) returns (QueryAllContractStateResponse) {
+    option (google.api.http).get = "/aura/wasm/v1beta1/contract/{address}/state";
+  }
+
+  // RawContractState returns raw contract state by key
+  rpc RawContractState(QueryRawContractStateRequest) returns (QueryRawContractStateResponse) {
+    option (google.api.http).get = "/aura/wasm/v1beta1/contract/{address}/raw/{query_data}";
+  }
+
+  // SmartContractState executes a smart query against a contract
+  rpc SmartContractState(QuerySmartContractStateRequest) returns (QuerySmartContractStateResponse) {
+    option (google.api.http).get = "/aura/wasm/v1beta1/contract/{address}/smart/{query_data}";
+  }
+
+  // SecurityStats returns security statistics for the module
+  rpc SecurityStats(QuerySecurityStatsRequest) returns (QuerySecurityStatsResponse) {
+    option (google.api.http).get = "/aura/wasm/v1beta1/security/stats";
+  }
+
+  // AuthorizedUploaders returns all authorized code uploaders
+  rpc AuthorizedUploaders(QueryAuthorizedUploadersRequest) returns (QueryAuthorizedUploadersResponse) {
+    option (google.api.http).get = "/aura/wasm/v1beta1/security/uploaders";
+  }
+
+  // PausedContracts returns all paused contracts
+  rpc PausedContracts(QueryPausedContractsRequest) returns (QueryPausedContractsResponse) {
+    option (google.api.http).get = "/aura/wasm/v1beta1/security/paused";
+  }
+
+  // IsAuthorizedUploader checks if an address is authorized to upload code
+  rpc IsAuthorizedUploader(QueryIsAuthorizedUploaderRequest) returns (QueryIsAuthorizedUploaderResponse) {
+    option (google.api.http).get = "/aura/wasm/v1beta1/security/uploader/{address}";
+  }
+
+  // IsContractPaused checks if a contract is paused
+  rpc IsContractPaused(QueryIsContractPausedRequest) returns (QueryIsContractPausedResponse) {
+    option (google.api.http).get = "/aura/wasm/v1beta1/security/paused/{address}";
+  }
+}
+
+// QueryParamsRequest is the request type for the Query/Params RPC method
+message QueryParamsRequest {}
+
+// QueryParamsResponse is the response type for the Query/Params RPC method
+message QueryParamsResponse {
+  // params holds all the parameters of this module
+  Params params = 1 [(gogoproto.nullable) = false];
+}
+
+// QueryCodeRequest is the request type for the Query/Code RPC method
+message QueryCodeRequest {
+  // code_id is the unique code identifier
+  uint64 code_id = 1;
+}
+
+// QueryCodeResponse is the response type for the Query/Code RPC method
+message QueryCodeResponse {
+  // code_id is the unique code identifier
+  uint64 code_id = 1;
+  // code_info contains metadata about the code
+  CodeInfo code_info = 2 [(gogoproto.nullable) = false];
+  // data is the wasm bytecode
+  bytes data = 3;
+}
+
+// QueryCodesRequest is the request type for the Query/Codes RPC method
+message QueryCodesRequest {
+  // pagination defines an optional pagination for the request
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+// QueryCodesResponse is the response type for the Query/Codes RPC method
+message QueryCodesResponse {
+  // code_infos is the list of stored code information
+  repeated CodeInfo code_infos = 1 [(gogoproto.nullable) = false];
+  // pagination defines the pagination in the response
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryContractInfoRequest is the request type for the Query/ContractInfo RPC method
+message QueryContractInfoRequest {
+  // address is the bech32 address of the contract
+  string address = 1;
+}
+
+// QueryContractInfoResponse is the response type for the Query/ContractInfo RPC method
+message QueryContractInfoResponse {
+  // address is the bech32 address of the contract
+  string address = 1;
+  // contract_info contains metadata about the contract
+  ContractInfo contract_info = 2 [(gogoproto.nullable) = false];
+  // is_paused indicates if the contract is currently paused
+  bool is_paused = 3;
+}
+
+// QueryContractHistoryRequest is the request type for the Query/ContractHistory RPC method
+message QueryContractHistoryRequest {
+  // address is the bech32 address of the contract
+  string address = 1;
+  // pagination defines an optional pagination for the request
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+// QueryContractHistoryResponse is the response type for the Query/ContractHistory RPC method
+message QueryContractHistoryResponse {
+  // entries contains the contract's history entries
+  repeated ContractHistoryEntry entries = 1 [(gogoproto.nullable) = false];
+  // pagination defines the pagination in the response
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryAllContractStateRequest is the request type for the Query/AllContractState RPC method
+message QueryAllContractStateRequest {
+  // address is the bech32 address of the contract
+  string address = 1;
+  // pagination defines an optional pagination for the request
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+// QueryAllContractStateResponse is the response type for the Query/AllContractState RPC method
+message QueryAllContractStateResponse {
+  // models is the list of key-value pairs in contract state
+  repeated Model models = 1 [(gogoproto.nullable) = false];
+  // pagination defines the pagination in the response
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryRawContractStateRequest is the request type for the Query/RawContractState RPC method
+message QueryRawContractStateRequest {
+  // address is the bech32 address of the contract
+  string address = 1;
+  // query_data is the raw key to query in contract state
+  bytes query_data = 2;
+}
+
+// QueryRawContractStateResponse is the response type for the Query/RawContractState RPC method
+message QueryRawContractStateResponse {
+  // data is the raw value associated with the key
+  bytes data = 1;
+}
+
+// QuerySmartContractStateRequest is the request type for the Query/SmartContractState RPC method
+message QuerySmartContractStateRequest {
+  // address is the bech32 address of the contract
+  string address = 1;
+  // query_data is the JSON encoded query message to send to the contract
+  bytes query_data = 2;
+}
+
+// QuerySmartContractStateResponse is the response type for the Query/SmartContractState RPC method
+message QuerySmartContractStateResponse {
+  // data is the JSON encoded response from the contract
+  bytes data = 1;
+}
+
+// QuerySecurityStatsRequest is the request type for the Query/SecurityStats RPC method
+message QuerySecurityStatsRequest {}
+
+// QuerySecurityStatsResponse is the response type for the Query/SecurityStats RPC method
+message QuerySecurityStatsResponse {
+  // stats contains the security statistics
+  SecurityStats stats = 1 [(gogoproto.nullable) = false];
+}
+
+// QueryAuthorizedUploadersRequest is the request type for the Query/AuthorizedUploaders RPC method
+message QueryAuthorizedUploadersRequest {
+  // pagination defines an optional pagination for the request
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+// QueryAuthorizedUploadersResponse is the response type for the Query/AuthorizedUploaders RPC method
+message QueryAuthorizedUploadersResponse {
+  // uploaders is the list of authorized uploader addresses
+  repeated string uploaders = 1;
+  // pagination defines the pagination in the response
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryPausedContractsRequest is the request type for the Query/PausedContracts RPC method
+message QueryPausedContractsRequest {
+  // pagination defines an optional pagination for the request
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+// QueryPausedContractsResponse is the response type for the Query/PausedContracts RPC method
+message QueryPausedContractsResponse {
+  // contracts is the list of paused contract addresses
+  repeated string contracts = 1;
+  // pagination defines the pagination in the response
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryIsAuthorizedUploaderRequest is the request type for the Query/IsAuthorizedUploader RPC method
+message QueryIsAuthorizedUploaderRequest {
+  // address is the bech32 address to check
+  string address = 1;
+}
+
+// QueryIsAuthorizedUploaderResponse is the response type for the Query/IsAuthorizedUploader RPC method
+message QueryIsAuthorizedUploaderResponse {
+  // is_authorized indicates if the address is authorized to upload code
+  bool is_authorized = 1;
+}
+
+// QueryIsContractPausedRequest is the request type for the Query/IsContractPaused RPC method
+message QueryIsContractPausedRequest {
+  // address is the bech32 address of the contract
+  string address = 1;
+}
+
+// QueryIsContractPausedResponse is the response type for the Query/IsContractPaused RPC method
+message QueryIsContractPausedResponse {
+  // is_paused indicates if the contract is paused
+  bool is_paused = 1;
+}

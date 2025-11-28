@@ -4,133 +4,116 @@ import (
 	"fmt"
 )
 
-// GenesisState represents the genesis state for the wasm module
-type GenesisState struct {
-	Params              Params              `json:"params"`
-	AuthorizedUploaders []string            `json:"authorized_uploaders"`
-	PausedContracts     []string            `json:"paused_contracts"`
-	SecurityStats       SecurityStats       `json:"security_stats"`
-}
-
-// Params represents the wasm module parameters
-type Params struct {
-	// MaxContractSize is the maximum size of contract code in bytes (600KB default)
-	MaxContractSize uint64 `json:"max_contract_size"`
-
-	// MaxInstantiateGas is the maximum gas for contract instantiation
-	MaxInstantiateGas uint64 `json:"max_instantiate_gas"`
-
-	// MaxExecuteGas is the maximum gas for contract execution
-	MaxExecuteGas uint64 `json:"max_execute_gas"`
-
-	// MaxQueryGas is the maximum gas for contract queries
-	MaxQueryGas uint64 `json:"max_query_gas"`
-
-	// RequireAuthorization determines if contract uploads require authorization
-	RequireAuthorization bool `json:"require_authorization"`
-
-	// EnableMigration determines if contract migration is allowed
-	EnableMigration bool `json:"enable_migration"`
-
-	// MaxContractSizePerBlock is the maximum total size of contracts that can be uploaded per block
-	MaxContractSizePerBlock uint64 `json:"max_contract_size_per_block"`
-}
-
-// SecurityStats tracks security-related statistics
-type SecurityStats struct {
-	TotalContractsUploaded   uint64 `json:"total_contracts_uploaded"`
-	TotalContractsInstantiated uint64 `json:"total_contracts_instantiated"`
-	TotalExecutions          uint64 `json:"total_executions"`
-	TotalPausedContracts     uint64 `json:"total_paused_contracts"`
-	ReentrancyAttemptsBlocked uint64 `json:"reentrancy_attempts_blocked"`
-}
-
-// DefaultParams returns default parameters for the wasm module
-func DefaultParams() Params {
-	return Params{
-		MaxContractSize:         600 * 1024,        // 600KB
-		MaxInstantiateGas:       2_000_000,         // 2M gas
-		MaxExecuteGas:           1_000_000,         // 1M gas
-		MaxQueryGas:             100_000,           // 100K gas
-		RequireAuthorization:    true,              // Require authorization initially
-		EnableMigration:         false,             // Disable migration initially
-		MaxContractSizePerBlock: 5 * 1024 * 1024,   // 5MB per block
+// DefaultParams returns default parameters for the wasm module.
+// This creates a Params proto type with sensible defaults.
+func DefaultParams() *Params {
+	return &Params{
+		CodeUploadAccess: &AccessConfig{
+			Permission: AccessTypeEverybody,
+		},
+		InstantiateDefaultPermission: AccessTypeEverybody,
+		MaxWasmCodeSize:              600 * 1024,    // 600KB
+		MaxGasWasmExecution:          10_000_000,    // 10M gas
+		SecurityAnalysisEnabled:      true,
+		RequireAdminForMigrate:       true,
 	}
 }
 
-// NewGenesisState creates a new GenesisState object
+// DefaultGenesisState returns the default genesis state for the wasm module.
+func DefaultGenesisState() *GenesisState {
+	return &GenesisState{
+		Params:              DefaultParams(),
+		Codes:               []*Code{},
+		Contracts:           []*Contract{},
+		Sequences:           []*Sequence{},
+		AuthorizedUploaders: []string{},
+		PausedContracts:     []string{},
+		SecurityStats:       &SecurityStats{},
+	}
+}
+
+// NewGenesisState creates a new GenesisState object.
 func NewGenesisState(
-	params Params,
+	params *Params,
+	codes []*Code,
+	contracts []*Contract,
+	sequences []*Sequence,
 	authorizedUploaders []string,
 	pausedContracts []string,
-	securityStats SecurityStats,
+	securityStats *SecurityStats,
 ) *GenesisState {
 	return &GenesisState{
 		Params:              params,
+		Codes:               codes,
+		Contracts:           contracts,
+		Sequences:           sequences,
 		AuthorizedUploaders: authorizedUploaders,
 		PausedContracts:     pausedContracts,
 		SecurityStats:       securityStats,
 	}
 }
 
-// DefaultGenesisState returns the default genesis state
-func DefaultGenesisState() *GenesisState {
-	return &GenesisState{
-		Params:              DefaultParams(),
-		AuthorizedUploaders: []string{},
-		PausedContracts:     []string{},
-		SecurityStats:       SecurityStats{},
+// Validate performs basic validation of genesis data.
+func ValidateGenesis(gs *GenesisState) error {
+	if gs.Params == nil {
+		return fmt.Errorf("params cannot be nil")
 	}
-}
 
-// Validate performs basic validation of genesis data
-func (gs GenesisState) Validate() error {
-	if err := gs.Params.Validate(); err != nil {
+	if err := ValidateParams(gs.Params); err != nil {
 		return fmt.Errorf("invalid params: %w", err)
 	}
 
 	// Validate authorized uploaders
-	for _, uploader := range gs.AuthorizedUploaders {
+	for i, uploader := range gs.AuthorizedUploaders {
 		if len(uploader) == 0 {
-			return fmt.Errorf("empty authorized uploader address")
+			return fmt.Errorf("empty authorized uploader address at index %d", i)
 		}
 	}
 
 	// Validate paused contracts
-	for _, contract := range gs.PausedContracts {
+	for i, contract := range gs.PausedContracts {
 		if len(contract) == 0 {
-			return fmt.Errorf("empty paused contract address")
+			return fmt.Errorf("empty paused contract address at index %d", i)
 		}
 	}
 
 	return nil
 }
 
-// Validate validates the module parameters
-func (p Params) Validate() error {
-	if p.MaxContractSize == 0 {
-		return fmt.Errorf("max contract size must be positive")
+// ValidateParams validates the module parameters.
+func ValidateParams(p *Params) error {
+	if p.MaxWasmCodeSize == 0 {
+		return fmt.Errorf("max wasm code size must be positive")
 	}
 
-	if p.MaxContractSize > 10*1024*1024 { // 10MB max
-		return fmt.Errorf("max contract size cannot exceed 10MB")
+	if p.MaxWasmCodeSize > 10*1024*1024 { // 10MB max
+		return fmt.Errorf("max wasm code size cannot exceed 10MB")
 	}
 
-	if p.MaxInstantiateGas == 0 {
-		return fmt.Errorf("max instantiate gas must be positive")
-	}
-
-	if p.MaxExecuteGas == 0 {
-		return fmt.Errorf("max execute gas must be positive")
-	}
-
-	if p.MaxQueryGas == 0 {
-		return fmt.Errorf("max query gas must be positive")
-	}
-
-	if p.MaxContractSizePerBlock == 0 {
-		return fmt.Errorf("max contract size per block must be positive")
+	if p.MaxGasWasmExecution == 0 {
+		return fmt.Errorf("max gas wasm execution must be positive")
 	}
 
 	return nil
+}
+
+// GetCodeUploadAccess returns the code upload access config.
+func GetCodeUploadAccess(p *Params) *AccessConfig {
+	if p.CodeUploadAccess == nil {
+		return &AccessConfig{Permission: AccessTypeEverybody}
+	}
+	return p.CodeUploadAccess
+}
+
+// DefaultSecurityStats returns default security statistics.
+func DefaultSecurityStats() *SecurityStats {
+	return &SecurityStats{
+		TotalCodesAnalyzed:  0,
+		CodesRejected:       0,
+		ContractsPaused:     0,
+		TotalExecutions:     0,
+		FailedExecutions:    0,
+		GasConsumedTotal:    0,
+		LastSecurityScan:    0,
+	}
 }

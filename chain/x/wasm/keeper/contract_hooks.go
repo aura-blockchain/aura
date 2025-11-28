@@ -339,7 +339,7 @@ func (k Keeper) AfterInstantiateHook(
 		},
 		SecurityPolicy: &pb.SecurityPolicy{
 			AllowPause:       true,
-			AllowMigration:   wasmParams.EnableMigration,
+			AllowMigration:   !wasmParams.RequireAdminForMigrate,
 			MaxGasPerTx:      1_000_000, // Default 1M gas per tx
 			RateLimitPerUser: 100,       // Default 100 calls per hour
 		},
