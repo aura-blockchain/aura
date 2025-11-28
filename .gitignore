@@ -114,3 +114,6 @@ wallets/
 __pycache__/
 *.pyc
 testnet-data/
+*.mnemonic
+.deployer.mnemonic
+# Mnemonic files (sensitive)
