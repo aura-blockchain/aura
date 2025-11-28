@@ -1,0 +1,42 @@
+# Prometheus configuration for AURA local testnet monitoring
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+rule_files:
+  - /etc/prometheus/rules/*.yml
+
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # AURA node metrics (CometBFT/Tendermint)
+  - job_name: 'aura-node'
+    static_configs:
+      - targets: ['host.docker.internal:26660']  # CometBFT Prometheus metrics
+    metrics_path: /metrics
+
+  # AURA node RPC status (for custom metrics)
+  - job_name: 'aura-rpc'
+    static_configs:
+      - targets: ['host.docker.internal:26657']
+    metrics_path: /metrics
+    scrape_interval: 30s
+
+  # Node exporter (system metrics)
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+
+  # cAdvisor (container metrics)
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']

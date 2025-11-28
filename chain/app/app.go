@@ -1082,7 +1082,12 @@ func (a *App) CheckInvariants(ctx sdk.Context) []string {
 }
 
 // MakeEncodingConfig builds a protobuf codec + interface registry for the app shell.
+// This also ensures SDK config is set with the correct Bech32 prefixes.
 func MakeEncodingConfig() EncodingConfig {
+	// Ensure SDK config is set before creating encoding config
+	// This sets the Bech32 prefixes (aura, auravaloper, auravalcons) for address encoding
+	ensureSDKConfig()
+
 	interfaceRegistry := codectypes.NewInterfaceRegistry()
 	authtypes.RegisterInterfaces(interfaceRegistry)
 	banktypes.RegisterInterfaces(interfaceRegistry)

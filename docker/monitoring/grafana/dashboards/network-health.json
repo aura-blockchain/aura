@@ -1,0 +1,134 @@
+{
+  "dashboard": {
+    "title": "Aura Network Health Dashboard",
+    "tags": ["aura", "network", "health"],
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "version": 1,
+    "refresh": "30s",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Block Time",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "aura_monitoring_block_time_seconds",
+            "legendFormat": "Block Time"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "Seconds",
+            "format": "s"
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Transactions Per Second",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "aura_monitoring_transactions_per_second",
+            "legendFormat": "TPS"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Network Congestion",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "aura_monitoring_network_congestion",
+            "legendFormat": "Congestion Level"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "max": 1,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "green"},
+                {"value": 0.7, "color": "yellow"},
+                {"value": 0.9, "color": "red"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "Consensus Health",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "aura_monitoring_consensus_health",
+            "legendFormat": "Consensus Health"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "max": 1,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "red"},
+                {"value": 0.7, "color": "yellow"},
+                {"value": 0.9, "color": "green"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "Mempool Size",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "aura_monitoring_mempool_size",
+            "legendFormat": "Mempool Size"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Peer Count",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "aura_monitoring_peer_count",
+            "legendFormat": "Peers"
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Active Validators",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "aura_monitoring_active_validators",
+            "legendFormat": "Active Validators"
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Total Transactions (24h)",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "increase(aura_monitoring_total_transactions[24h])",
+            "legendFormat": "Transactions"
+          }
+        ]
+      }
+    ]
+  }
+}
