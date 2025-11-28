@@ -134,3 +134,8 @@ func getDefaultHomeDir() string {
 	}
 	return fmt.Sprintf("%s/%s", userHomeDir, DefaultHomePath)
 }
+
+// GetHomeDirVar returns the package-level homeDir variable set by the --home flag
+func GetHomeDirVar() string {
+	return homeDir
+}

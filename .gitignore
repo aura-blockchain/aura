@@ -113,3 +113,4 @@ wallets/
 .cache/
 __pycache__/
 *.pyc
+testnet-data/
