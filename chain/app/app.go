@@ -8,6 +8,7 @@ import (
 
 	tmlog "cosmossdk.io/log"
 	sdkmath "cosmossdk.io/math"
+	pruningtypes "cosmossdk.io/store/pruning/types"
 	storetypes "cosmossdk.io/store/types"
 	txsigning "cosmossdk.io/x/tx/signing"
 	txsigningtextual "cosmossdk.io/x/tx/signing/textual"
@@ -17,10 +18,12 @@ import (
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
+	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	"github.com/cosmos/cosmos-sdk/x/auth/tx"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
@@ -152,6 +155,7 @@ var (
 type EncodingConfig struct {
 	InterfaceRegistry codectypes.InterfaceRegistry
 	Codec             codec.Codec
+	TxConfig          client.TxConfig
 }
 
 // App wires all Aura modules plus the Cosmos SDK base keepers into a runnable node shell.
@@ -280,7 +284,14 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 	}
 
 	// Build BaseApp with options
-	baseAppOptions := []func(*baseapp.BaseApp){}
+	baseAppOptions := []func(*baseapp.BaseApp){
+		// Use PruningNothing to keep all versions - required for queries to work
+		// This ensures IAVL trees retain historical state for versioned queries
+		baseapp.SetPruning(pruningtypes.NewPruningOptions(pruningtypes.PruningNothing)),
+		// Disable IAVL fast node to ensure version tracking works correctly
+		// This prevents "version does not exist" errors during gRPC queries
+		baseapp.SetIAVLDisableFastNode(true),
+	}
 	if chainID != "" {
 		baseAppOptions = append(baseAppOptions, baseapp.SetChainID(chainID))
 	}
@@ -859,6 +870,16 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 
 	app.RegisterGRPCServices()
 
+	// Explicitly set pruning on CommitMultiStore after all stores are mounted.
+	// This ensures IAVL trees retain all versions for historical queries.
+	// The baseapp.SetPruning option sets it during NewBaseApp, but we reinforce it here.
+	if cms, ok := base.CommitMultiStore().(interface {
+		SetPruning(pruningtypes.PruningOptions)
+	}); ok {
+		cms.SetPruning(pruningtypes.NewPruningOptions(pruningtypes.PruningNothing))
+		logger.Info("pruning explicitly set to PruningNothing on CommitMultiStore")
+	}
+
 	return app
 }
 
@@ -923,8 +944,18 @@ func (a *App) Logger() tmlog.Logger {
 }
 
 // RegisterGRPCServices wires the module manager into the gRPC server registrar.
+// Also registers SDK module query services on the BaseApp's GRPCQueryRouter
+// for transaction signing to work (AccountRetriever queries auth module).
 func (a *App) RegisterGRPCServices() {
 	a.moduleManager.RegisterGRPCServices(a.grpcServer)
+
+	// Register SDK auth module query service on the BaseApp's GRPCQueryRouter.
+	// This is required for transaction signing - the AccountRetriever queries
+	// the auth module to get account sequence and account number.
+	authtypes.RegisterQueryServer(a.GRPCQueryRouter(), authkeeper.NewQueryServer(a.AccountKeeper))
+
+	// Register bank module query service for balance queries
+	banktypes.RegisterQueryServer(a.GRPCQueryRouter(), bankkeeper.NewQuerier(&a.BankKeeper))
 }
 
 // GRPCServer exposes the app's gRPC server instance.
@@ -1101,9 +1132,14 @@ func MakeEncodingConfig() EncodingConfig {
 	slashingtypes.RegisterInterfaces(interfaceRegistry)
 	distrtypes.RegisterInterfaces(interfaceRegistry)
 	wasmtypes.RegisterInterfaces(interfaceRegistry)
+
+	protoCodec := codec.NewProtoCodec(interfaceRegistry)
+	txConfig := tx.NewTxConfig(protoCodec, tx.DefaultSignModes)
+
 	return EncodingConfig{
 		InterfaceRegistry: interfaceRegistry,
-		Codec:             codec.NewProtoCodec(interfaceRegistry),
+		Codec:             protoCodec,
+		TxConfig:          txConfig,
 	}
 }
 
