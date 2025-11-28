@@ -20,6 +20,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
@@ -1089,6 +1090,11 @@ func MakeEncodingConfig() EncodingConfig {
 	ensureSDKConfig()
 
 	interfaceRegistry := codectypes.NewInterfaceRegistry()
+
+	// Register crypto types (secp256k1, ed25519, etc.) - CRITICAL for keyring proto unmarshalling
+	// Without this, the SDK 0.53.x keyring migration fails with "no registered implementations of type types.PubKey"
+	cryptocodec.RegisterInterfaces(interfaceRegistry)
+
 	authtypes.RegisterInterfaces(interfaceRegistry)
 	banktypes.RegisterInterfaces(interfaceRegistry)
 	stakingtypes.RegisterInterfaces(interfaceRegistry)
