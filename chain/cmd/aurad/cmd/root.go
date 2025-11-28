@@ -7,6 +7,7 @@ import (
 	"cosmossdk.io/log"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -38,10 +39,13 @@ func NewRootCmd() *cobra.Command {
 	// Initialize encoding config for client context
 	encodingConfig := app.MakeEncodingConfig()
 
-	// Create initial client context with codec
+	// Create initial client context with codec, TxConfig, and AccountRetriever
+	// AccountRetriever is required for transaction signing to query account info
 	initClientCtx := client.Context{}.
 		WithCodec(encodingConfig.Codec).
 		WithInterfaceRegistry(encodingConfig.InterfaceRegistry).
+		WithTxConfig(encodingConfig.TxConfig).
+		WithAccountRetriever(authtypes.AccountRetriever{}).
 		WithInput(os.Stdin)
 
 	rootCmd := &cobra.Command{
