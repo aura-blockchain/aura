@@ -180,9 +180,12 @@ laddr = "tcp://0.0.0.0:26656"
 external_address = ""
 
 # Comma separated list of seed nodes to connect to
+# TODO: Add mainnet seed nodes before launch
+# seeds = "node_id@seed1.aura.network:26656,node_id@seed2.aura.network:26656,node_id@seed3.aura.network:26656"
 seeds = ""
 
 # Comma separated list of nodes to keep persistent connections to
+# TODO: Add persistent peers for validators
 persistent_peers = ""
 
 # UPNP port forwarding
@@ -350,7 +353,8 @@ timeout_commit = "5s"
 # When non-zero, the node will panic upon restart
 # if the same consensus key was used to sign {double_sign_check_height} last blocks.
 # So validators should stop the state machine, wait for some blocks, and then restart the state machine to avoid panic.
-double_sign_check_height = 0
+# SECURITY: Set to 10 for production to detect double signing attempts
+double_sign_check_height = 10
 
 # Make progress as soon as we have all the precommits (as if TimeoutCommit = 0)
 skip_timeout_commit = false
