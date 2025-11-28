@@ -271,7 +271,7 @@ message MsgAppealSlash {
   string wallet_address = 1;
   string slash_tx_hash = 2;
   string evidence = 3;                   // IPFS hash or metadata
-  uint64 deposit = 4;                    // AEQ deposit for appeal
+  uint64 deposit = 4;                    // AURA deposit for appeal
 }
 ```
 
@@ -690,7 +690,7 @@ message Params {
 
   // Score adjustment limits
   uint64 max_slash_percentage = 4;       // Default: 50%
-  uint64 min_appeal_deposit = 5;         // Default: 1000 AEQ
+  uint64 min_appeal_deposit = 5;         // Default: 1000 AURA
 
   // Rate limiting
   uint64 max_irs_per_day = 6;            // Default: 10
@@ -755,7 +755,7 @@ slash_config:
     max_amount: 5000
 
   appeal_process:
-    deposit_required: 1000  # AEQ
+    deposit_required: 1000  # AURA
     review_period: 14  # days
     refund_on_success: true
 

@@ -173,7 +173,7 @@ message MsgAppealSlash {
   string wallet_address = 1;
   string slash_tx_hash = 2;
   string evidence = 3;                   // IPFS hash or metadata
-  string deposit = 4;                    // AEQ deposit for appeal
+  string deposit = 4;                    // AURA deposit for appeal
 }
 ```
 

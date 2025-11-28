@@ -1,0 +1,1038 @@
+{
+  "genesis_time": "2025-01-15T00:00:00.000000000Z",
+  "chain_id": "aura-mainnet-1",
+  "initial_height": "1",
+  "consensus_params": {
+    "block": {
+      "max_bytes": "22020096",
+      "max_gas": "100000000"
+    },
+    "evidence": {
+      "max_age_num_blocks": "100000",
+      "max_age_duration": "172800000000000",
+      "max_bytes": "1048576"
+    },
+    "validator": {
+      "pub_key_types": ["ed25519"]
+    },
+    "version": {
+      "app": "0"
+    },
+    "abci": {
+      "vote_extensions_enable_height": "0"
+    }
+  },
+  "app_hash": "",
+  "app_state": {
+    "auth": {
+      "params": {
+        "max_memo_characters": "256",
+        "tx_sig_limit": "7",
+        "tx_size_cost_per_byte": "10",
+        "sig_verify_cost_ed25519": "590",
+        "sig_verify_cost_secp256k1": "1000"
+      },
+      "accounts": []
+    },
+    "bank": {
+      "params": {
+        "send_enabled": [],
+        "default_send_enabled": true
+      },
+      "balances": [],
+      "supply": [],
+      "denom_metadata": [
+        {
+          "description": "The native staking and governance token of the Aura Network",
+          "denom_units": [
+            {
+              "denom": "uaura",
+              "exponent": 0,
+              "aliases": ["microaura"]
+            },
+            {
+              "denom": "maura",
+              "exponent": 3,
+              "aliases": ["milliaura"]
+            },
+            {
+              "denom": "aura",
+              "exponent": 6,
+              "aliases": []
+            }
+          ],
+          "base": "uaura",
+          "display": "aura",
+          "name": "Aura",
+          "symbol": "AURA",
+          "uri": "",
+          "uri_hash": ""
+        }
+      ],
+      "send_enabled": []
+    },
+    "staking": {
+      "params": {
+        "unbonding_time": "1814400s",
+        "max_validators": 100,
+        "max_entries": 7,
+        "historical_entries": 10000,
+        "bond_denom": "uaura",
+        "min_commission_rate": "0.050000000000000000"
+      },
+      "last_total_power": "0",
+      "last_validator_powers": [],
+      "validators": [],
+      "delegations": [],
+      "unbonding_delegations": [],
+      "redelegations": [],
+      "exported": false
+    },
+    "slashing": {
+      "params": {
+        "signed_blocks_window": "10000",
+        "min_signed_per_window": "0.050000000000000000",
+        "downtime_jail_duration": "600s",
+        "slash_fraction_double_sign": "0.050000000000000000",
+        "slash_fraction_downtime": "0.010000000000000000"
+      },
+      "signing_infos": [],
+      "missed_blocks": []
+    },
+    "distribution": {
+      "params": {
+        "community_tax": "0.020000000000000000",
+        "base_proposer_reward": "0.000000000000000000",
+        "bonus_proposer_reward": "0.000000000000000000",
+        "withdraw_addr_enabled": true
+      },
+      "fee_pool": {
+        "community_pool": []
+      },
+      "delegator_withdraw_infos": [],
+      "previous_proposer": "",
+      "outstanding_rewards": [],
+      "validator_accumulated_commissions": [],
+      "validator_historical_rewards": [],
+      "validator_current_rewards": [],
+      "delegator_starting_infos": [],
+      "validator_slash_events": []
+    },
+    "consensus": null,
+    "params": null,
+    "wasm": {
+      "params": {
+        "code_upload_access": {
+          "permission": "Everybody",
+          "addresses": []
+        },
+        "instantiate_default_permission": "Everybody"
+      },
+      "codes": [],
+      "contracts": [],
+      "sequences": []
+    },
+    "identity": {
+      "params": {
+        "auth": {
+          "max_roles_per_account": 10,
+          "default_requests_per_minute": 60,
+          "max_sessions_per_account": 5,
+          "session_timeout_seconds": 3600,
+          "require_mfa_for_sensitive": true
+        },
+        "change": {
+          "max_requests_per_wallet_per_month": 5,
+          "processing_fee": "1000000uaura",
+          "approval_timeout_seconds": 604800,
+          "min_approvers": 2
+        }
+      },
+      "roles": [],
+      "role_assignments": [],
+      "audit_logs": [],
+      "sessions": [],
+      "rate_limits": [],
+      "multisig_wallets": [],
+      "multisig_proposals": [],
+      "time_locked_actions": [],
+      "emergency_admins": [],
+      "validator_rotations": [],
+      "identity_records": [],
+      "change_requests": [],
+      "change_history": [],
+      "identity_changes_suspended": false,
+      "next_audit_log_id": "1"
+    },
+    "vcregistry": {
+      "params": {
+        "max_credential_size_bytes": 65536,
+        "credential_expiry_seconds": 31536000,
+        "revocation_enabled": true,
+        "issuer_verification_required": true,
+        "max_credentials_per_holder": 1000,
+        "min_issuer_stake": "10000000uaura"
+      },
+      "credentials": [],
+      "issuers": [],
+      "schemas": [],
+      "revocations": [],
+      "presentations": []
+    },
+    "identitychange": {
+      "params": {
+        "max_requests_per_wallet_per_month": 5,
+        "processing_fee": "1000000uaura",
+        "approval_timeout_seconds": 604800,
+        "min_approvers": 2,
+        "allowed_change_types": ["name", "address", "email", "phone", "avatar"],
+        "require_identity_verification": true
+      },
+      "change_requests": [],
+      "change_history": [],
+      "pending_approvals": []
+    },
+    "inclusionroutines": {
+      "params": {
+        "max_ir_per_locale": 300,
+        "default_rate_limit_hour": 10,
+        "suspension_fee": "1000000uaura",
+        "min_governance_deposit": "10000000uaura"
+      },
+      "irs": [
+        {
+          "id": "IR-001",
+          "name": "Passport Verification",
+          "arena": "ARENA_HIGH_ASSURANCE",
+          "description": "Submit current passport, AI verifies MRZ code, photo, security features, chip data",
+          "score": 30,
+          "poi_reward": 15,
+          "locale_tags": ["global"],
+          "privacy_tier": "PRIVACY_TIER_HIGH",
+          "version": "1.0",
+          "metadata_hash": "",
+          "status": "IR_STATUS_ACTIVE",
+          "activation_height": 0,
+          "sunset_height": 0,
+          "trinity_category": "official_document",
+          "fun_factor": 0
+        },
+        {
+          "id": "IR-002",
+          "name": "National ID Card Authentication",
+          "arena": "ARENA_HIGH_ASSURANCE",
+          "description": "Submit national ID card with biometric chip, AI reads chip and validates signature",
+          "score": 30,
+          "poi_reward": 15,
+          "locale_tags": ["global"],
+          "privacy_tier": "PRIVACY_TIER_HIGH",
+          "version": "1.0",
+          "metadata_hash": "",
+          "status": "IR_STATUS_ACTIVE",
+          "activation_height": 0,
+          "sunset_height": 0,
+          "trinity_category": "official_document",
+          "fun_factor": 0
+        },
+        {
+          "id": "IR-003",
+          "name": "Driver's License Verification",
+          "arena": "ARENA_HIGH_ASSURANCE",
+          "description": "Submit driver's license, AI verifies with DMV database, barcode scan, photo match",
+          "score": 25,
+          "poi_reward": 12,
+          "locale_tags": ["us", "ca", "eu"],
+          "privacy_tier": "PRIVACY_TIER_HIGH",
+          "version": "1.0",
+          "metadata_hash": "",
+          "status": "IR_STATUS_ACTIVE",
+          "activation_height": 0,
+          "sunset_height": 0,
+          "trinity_category": "official_document",
+          "fun_factor": 0
+        },
+        {
+          "id": "IR-004",
+          "name": "State ID Card Verification",
+          "arena": "ARENA_HIGH_ASSURANCE",
+          "description": "Submit state-issued ID card, AI validates security features",
+          "score": 25,
+          "poi_reward": 12,
+          "locale_tags": ["us"],
+          "privacy_tier": "PRIVACY_TIER_HIGH",
+          "version": "1.0",
+          "metadata_hash": "",
+          "status": "IR_STATUS_ACTIVE",
+          "activation_height": 0,
+          "sunset_height": 0,
+          "trinity_category": "official_document",
+          "fun_factor": 0
+        },
+        {
+          "id": "IR-005",
+          "name": "Military ID Authentication",
+          "arena": "ARENA_HIGH_ASSURANCE",
+          "description": "Submit military ID card, AI validates with DoD database",
+          "score": 25,
+          "poi_reward": 12,
+          "locale_tags": ["us", "global"],
+          "privacy_tier": "PRIVACY_TIER_HIGH",
+          "version": "1.0",
+          "metadata_hash": "",
+          "status": "IR_STATUS_ACTIVE",
+          "activation_height": 0,
+          "sunset_height": 0,
+          "trinity_category": "official_document",
+          "fun_factor": 0
+        },
+        {
+          "id": "IR-006",
+          "name": "Diplomatic/Government Employee ID",
+          "arena": "ARENA_HIGH_ASSURANCE",
+          "description": "Submit diplomatic or federal employee credential, AI validates with State Department",
+          "score": 25,
+          "poi_reward": 12,
+          "locale_tags": ["us", "global"],
+          "privacy_tier": "PRIVACY_TIER_HIGH",
+          "version": "1.0",
+          "metadata_hash": "",
+          "status": "IR_STATUS_ACTIVE",
+          "activation_height": 0,
+          "sunset_height": 0,
+          "trinity_category": "official_document",
+          "fun_factor": 0
+        },
+        {
+          "id": "IR-007",
+          "name": "Trusted Traveler Program Card",
+          "arena": "ARENA_HIGH_ASSURANCE",
+          "description": "Submit Global Entry, NEXUS, or TSA PreCheck card, AI validates with DHS database",
+          "score": 20,
+          "poi_reward": 10,
+          "locale_tags": ["us", "ca", "mx"],
+          "privacy_tier": "PRIVACY_TIER_HIGH",
+          "version": "1.0",
+          "metadata_hash": "",
+          "status": "IR_STATUS_ACTIVE",
+          "activation_height": 0,
+          "sunset_height": 0,
+          "trinity_category": "official_document",
+          "fun_factor": 0
+        },
+        {
+          "id": "IR-008",
+          "name": "Enhanced Driver's License (EDL)",
+          "arena": "ARENA_HIGH_ASSURANCE",
+          "description": "Submit REAL ID or EDL with RFID chip, AI reads chip and validates enhanced security",
+          "score": 25,
+          "poi_reward": 12,
+          "locale_tags": ["us"],
+          "privacy_tier": "PRIVACY_TIER_HIGH",
+          "version": "1.0",
+          "metadata_hash": "",
+          "status": "IR_STATUS_ACTIVE",
+          "activation_height": 0,
+          "sunset_height": 0,
+          "trinity_category": "official_document",
+          "fun_factor": 0
+        },
+        {
+          "id": "IR-009",
+          "name": "Permanent Resident Card (Green Card)",
+          "arena": "ARENA_HIGH_ASSURANCE",
+          "description": "Submit I-551 permanent resident card, AI validates with USCIS database",
+          "score": 30,
+          "poi_reward": 15,
+          "locale_tags": ["us"],
+          "privacy_tier": "PRIVACY_TIER_HIGH",
+          "version": "1.0",
+          "metadata_hash": "",
+          "status": "IR_STATUS_ACTIVE",
+          "activation_height": 0,
+          "sunset_height": 0,
+          "trinity_category": "official_document",
+          "fun_factor": 0
+        },
+        {
+          "id": "IR-010",
+          "name": "Refugee/Asylum Travel Document",
+          "arena": "ARENA_HIGH_ASSURANCE",
+          "description": "Submit I-571 or I-327 travel document, AI validates with USCIS refugee database",
+          "score": 25,
+          "poi_reward": 12,
+          "locale_tags": ["us"],
+          "privacy_tier": "PRIVACY_TIER_HIGH",
+          "version": "1.0",
+          "metadata_hash": "",
+          "status": "IR_STATUS_ACTIVE",
+          "activation_height": 0,
+          "sunset_height": 0,
+          "trinity_category": "official_document",
+          "fun_factor": 0
+        },
+        {
+          "id": "IR-011",
+          "name": "Birth Certificate Validation",
+          "arena": "ARENA_HIGH_ASSURANCE",
+          "description": "Submit certified birth certificate, AI validates with state vital records office",
+          "score": 20,
+          "poi_reward": 10,
+          "locale_tags": ["us", "global"],
+          "privacy_tier": "PRIVACY_TIER_HIGH",
+          "version": "1.0",
+          "metadata_hash": "",
+          "status": "IR_STATUS_ACTIVE",
+          "activation_height": 0,
+          "sunset_height": 0,
+          "trinity_category": "official_document",
+          "fun_factor": 0
+        },
+        {
+          "id": "IR-012",
+          "name": "Naturalization Certificate",
+          "arena": "ARENA_HIGH_ASSURANCE",
+          "description": "Submit Form N-550 or N-570 Certificate of Naturalization, AI validates with USCIS",
+          "score": 30,
+          "poi_reward": 15,
+          "locale_tags": ["us"],
+          "privacy_tier": "PRIVACY_TIER_HIGH",
+          "version": "1.0",
+          "metadata_hash": "",
+          "status": "IR_STATUS_ACTIVE",
+          "activation_height": 0,
+          "sunset_height": 0,
+          "trinity_category": "official_document",
+          "fun_factor": 0
+        },
+        {
+          "id": "IR-013",
+          "name": "Citizenship Certificate",
+          "arena": "ARENA_HIGH_ASSURANCE",
+          "description": "Submit Form N-560 Certificate of Citizenship, AI validates with USCIS",
+          "score": 30,
+          "poi_reward": 15,
+          "locale_tags": ["us"],
+          "privacy_tier": "PRIVACY_TIER_HIGH",
+          "version": "1.0",
+          "metadata_hash": "",
+          "status": "IR_STATUS_ACTIVE",
+          "activation_height": 0,
+          "sunset_height": 0,
+          "trinity_category": "official_document",
+          "fun_factor": 0
+        },
+        {
+          "id": "IR-014",
+          "name": "Marriage Certificate",
+          "arena": "ARENA_HIGH_ASSURANCE",
+          "description": "Submit certified marriage certificate, AI validates with county clerk vital records",
+          "score": 15,
+          "poi_reward": 8,
+          "locale_tags": ["us", "global"],
+          "privacy_tier": "PRIVACY_TIER_HIGH",
+          "version": "1.0",
+          "metadata_hash": "",
+          "status": "IR_STATUS_ACTIVE",
+          "activation_height": 0,
+          "sunset_height": 0,
+          "trinity_category": "official_document",
+          "fun_factor": 0
+        },
+        {
+          "id": "IR-015",
+          "name": "Legal Name Change Documentation",
+          "arena": "ARENA_HIGH_ASSURANCE",
+          "description": "Submit court order for legal name change, AI validates with court records system",
+          "score": 20,
+          "poi_reward": 10,
+          "locale_tags": ["us", "global"],
+          "privacy_tier": "PRIVACY_TIER_HIGH",
+          "version": "1.0",
+          "metadata_hash": "",
+          "status": "IR_STATUS_ACTIVE",
+          "activation_height": 0,
+          "sunset_height": 0,
+          "trinity_category": "official_document",
+          "fun_factor": 0
+        },
+        {
+          "id": "IR-016",
+          "name": "Social Security Card Verification",
+          "arena": "ARENA_HIGH_ASSURANCE",
+          "description": "Submit SSN card (redacted except last 4 digits), AI validates format and SSA database",
+          "score": 25,
+          "poi_reward": 12,
+          "locale_tags": ["us"],
+          "privacy_tier": "PRIVACY_TIER_HIGH",
+          "version": "1.0",
+          "metadata_hash": "",
+          "status": "IR_STATUS_ACTIVE",
+          "activation_height": 0,
+          "sunset_height": 0,
+          "trinity_category": "official_document",
+          "fun_factor": 0
+        },
+        {
+          "id": "IR-017",
+          "name": "IRS W-2 Form Verification",
+          "arena": "ARENA_HIGH_ASSURANCE",
+          "description": "Submit recent W-2 form, AI validates employer EIN and format",
+          "score": 20,
+          "poi_reward": 10,
+          "locale_tags": ["us"],
+          "privacy_tier": "PRIVACY_TIER_HIGH",
+          "version": "1.0",
+          "metadata_hash": "",
+          "status": "IR_STATUS_ACTIVE",
+          "activation_height": 0,
+          "sunset_height": 0,
+          "trinity_category": "official_document",
+          "fun_factor": 0
+        },
+        {
+          "id": "IR-018",
+          "name": "Tax Return Verification",
+          "arena": "ARENA_HIGH_ASSURANCE",
+          "description": "Submit 1040 tax return (redacted amounts OK), AI validates format and signature",
+          "score": 20,
+          "poi_reward": 10,
+          "locale_tags": ["us"],
+          "privacy_tier": "PRIVACY_TIER_HIGH",
+          "version": "1.0",
+          "metadata_hash": "",
+          "status": "IR_STATUS_ACTIVE",
+          "activation_height": 0,
+          "sunset_height": 0,
+          "trinity_category": "official_document",
+          "fun_factor": 0
+        },
+        {
+          "id": "IR-019",
+          "name": "1099 Form Verification",
+          "arena": "ARENA_HIGH_ASSURANCE",
+          "description": "Submit 1099 form (self-employment, interest, dividend), AI validates payer TIN",
+          "score": 15,
+          "poi_reward": 8,
+          "locale_tags": ["us"],
+          "privacy_tier": "PRIVACY_TIER_HIGH",
+          "version": "1.0",
+          "metadata_hash": "",
+          "status": "IR_STATUS_ACTIVE",
+          "activation_height": 0,
+          "sunset_height": 0,
+          "trinity_category": "official_document",
+          "fun_factor": 0
+        },
+        {
+          "id": "IR-020",
+          "name": "Employer ID Number (EIN) Verification",
+          "arena": "ARENA_HIGH_ASSURANCE",
+          "description": "Submit business EIN letter from IRS (for business owners), AI validates with IRS database",
+          "score": 15,
+          "poi_reward": 8,
+          "locale_tags": ["us"],
+          "privacy_tier": "PRIVACY_TIER_HIGH",
+          "version": "1.0",
+          "metadata_hash": "",
+          "status": "IR_STATUS_ACTIVE",
+          "activation_height": 0,
+          "sunset_height": 0,
+          "trinity_category": "official_document",
+          "fun_factor": 0
+        },
+        {
+          "id": "IR-021",
+          "name": "Property Tax Statement",
+          "arena": "ARENA_HIGH_ASSURANCE",
+          "description": "Submit recent property tax bill, AI validates with county assessor database",
+          "score": 15,
+          "poi_reward": 8,
+          "locale_tags": ["us", "global"],
+          "privacy_tier": "PRIVACY_TIER_MEDIUM",
+          "version": "1.0",
+          "metadata_hash": "",
+          "status": "IR_STATUS_ACTIVE",
+          "activation_height": 0,
+          "sunset_height": 0,
+          "trinity_category": "official_document",
+          "fun_factor": 0
+        },
+        {
+          "id": "IR-022",
+          "name": "Vehicle Registration",
+          "arena": "ARENA_HIGH_ASSURANCE",
+          "description": "Submit current vehicle registration card, AI validates with DMV registration database",
+          "score": 15,
+          "poi_reward": 8,
+          "locale_tags": ["us", "global"],
+          "privacy_tier": "PRIVACY_TIER_MEDIUM",
+          "version": "1.0",
+          "metadata_hash": "",
+          "status": "IR_STATUS_ACTIVE",
+          "activation_height": 0,
+          "sunset_height": 0,
+          "trinity_category": "official_document",
+          "fun_factor": 0
+        },
+        {
+          "id": "IR-023",
+          "name": "Vehicle Title",
+          "arena": "ARENA_HIGH_ASSURANCE",
+          "description": "Submit vehicle title document, AI validates with DMV title records",
+          "score": 15,
+          "poi_reward": 8,
+          "locale_tags": ["us", "global"],
+          "privacy_tier": "PRIVACY_TIER_MEDIUM",
+          "version": "1.0",
+          "metadata_hash": "",
+          "status": "IR_STATUS_ACTIVE",
+          "activation_height": 0,
+          "sunset_height": 0,
+          "trinity_category": "official_document",
+          "fun_factor": 0
+        },
+        {
+          "id": "IR-024",
+          "name": "Professional License Verification",
+          "arena": "ARENA_HIGH_ASSURANCE",
+          "description": "Submit professional license (medical, legal, engineering), AI validates with state licensing board",
+          "score": 20,
+          "poi_reward": 10,
+          "locale_tags": ["us", "global"],
+          "privacy_tier": "PRIVACY_TIER_MEDIUM",
+          "version": "1.0",
+          "metadata_hash": "",
+          "status": "IR_STATUS_ACTIVE",
+          "activation_height": 0,
+          "sunset_height": 0,
+          "trinity_category": "official_document",
+          "fun_factor": 0
+        },
+        {
+          "id": "IR-025",
+          "name": "College Degree Certificate",
+          "arena": "ARENA_HIGH_ASSURANCE",
+          "description": "Submit degree certificate or diploma, AI validates with National Student Clearinghouse",
+          "score": 15,
+          "poi_reward": 8,
+          "locale_tags": ["us", "global"],
+          "privacy_tier": "PRIVACY_TIER_MEDIUM",
+          "version": "1.0",
+          "metadata_hash": "",
+          "status": "IR_STATUS_ACTIVE",
+          "activation_height": 0,
+          "sunset_height": 0,
+          "trinity_category": "official_document",
+          "fun_factor": 0
+        },
+        {
+          "id": "IR-026",
+          "name": "Official Academic Transcript",
+          "arena": "ARENA_HIGH_ASSURANCE",
+          "description": "Submit sealed official transcript, AI validates registrar seal and institution accreditation",
+          "score": 15,
+          "poi_reward": 8,
+          "locale_tags": ["us", "global"],
+          "privacy_tier": "PRIVACY_TIER_MEDIUM",
+          "version": "1.0",
+          "metadata_hash": "",
+          "status": "IR_STATUS_ACTIVE",
+          "activation_height": 0,
+          "sunset_height": 0,
+          "trinity_category": "official_document",
+          "fun_factor": 0
+        },
+        {
+          "id": "IR-027",
+          "name": "Professional Certification",
+          "arena": "ARENA_HIGH_ASSURANCE",
+          "description": "Submit professional certification (CPA, PMP, etc.), AI validates with certifying body",
+          "score": 15,
+          "poi_reward": 8,
+          "locale_tags": ["us", "global"],
+          "privacy_tier": "PRIVACY_TIER_MEDIUM",
+          "version": "1.0",
+          "metadata_hash": "",
+          "status": "IR_STATUS_ACTIVE",
+          "activation_height": 0,
+          "sunset_height": 0,
+          "trinity_category": "official_document",
+          "fun_factor": 0
+        },
+        {
+          "id": "IR-028",
+          "name": "Bar Admission Certificate",
+          "arena": "ARENA_HIGH_ASSURANCE",
+          "description": "Submit state bar admission certificate (attorneys), AI validates with state bar association",
+          "score": 20,
+          "poi_reward": 10,
+          "locale_tags": ["us"],
+          "privacy_tier": "PRIVACY_TIER_MEDIUM",
+          "version": "1.0",
+          "metadata_hash": "",
+          "status": "IR_STATUS_ACTIVE",
+          "activation_height": 0,
+          "sunset_height": 0,
+          "trinity_category": "official_document",
+          "fun_factor": 0
+        },
+        {
+          "id": "IR-029",
+          "name": "Medical Board Certification",
+          "arena": "ARENA_HIGH_ASSURANCE",
+          "description": "Submit medical specialty board certification, AI validates with ABMS or specialty board",
+          "score": 20,
+          "poi_reward": 10,
+          "locale_tags": ["us", "global"],
+          "privacy_tier": "PRIVACY_TIER_MEDIUM",
+          "version": "1.0",
+          "metadata_hash": "",
+          "status": "IR_STATUS_ACTIVE",
+          "activation_height": 0,
+          "sunset_height": 0,
+          "trinity_category": "official_document",
+          "fun_factor": 0
+        },
+        {
+          "id": "IR-030",
+          "name": "Security Clearance Documentation",
+          "arena": "ARENA_HIGH_ASSURANCE",
+          "description": "Submit evidence of active security clearance, AI validates with sponsoring agency",
+          "score": 25,
+          "poi_reward": 12,
+          "locale_tags": ["us"],
+          "privacy_tier": "PRIVACY_TIER_HIGH",
+          "version": "1.0",
+          "metadata_hash": "",
+          "status": "IR_STATUS_ACTIVE",
+          "activation_height": 0,
+          "sunset_height": 0,
+          "trinity_category": "official_document",
+          "fun_factor": 0
+        }
+      ],
+      "prerequisites": [],
+      "rate_limits": []
+    },
+    "confidencescore": {
+      "params": {
+        "max_score": 100,
+        "decay_rate_per_day": "0.001",
+        "min_ir_for_tier_upgrade": 3,
+        "tier_thresholds": [0, 25, 50, 75, 90],
+        "poi_reward_multiplier": "1.0"
+      },
+      "user_scores": [],
+      "ir_completions": [],
+      "tier_history": []
+    },
+    "dataregistry": {
+      "params": {
+        "max_data_size_bytes": 1048576,
+        "default_retention_days": 365,
+        "encryption_required": true,
+        "allowed_data_types": ["identity", "credential", "document", "transaction"],
+        "storage_fee_per_kb": "100uaura"
+      },
+      "data_entries": [],
+      "access_grants": [],
+      "retention_policies": []
+    },
+    "compliance": {
+      "params": {
+        "kyc_required": true,
+        "kyc_expiry_days": 365,
+        "aml_threshold_amount": "10000000000uaura",
+        "sanctions_check_enabled": true,
+        "gdpr_enabled": true,
+        "tax_reporting_enabled": true,
+        "monitoring_enabled": true,
+        "alert_threshold": "1000000000uaura"
+      },
+      "kyc_records": [],
+      "aml_profiles": [],
+      "suspicious_activities": [],
+      "monitoring_rules": [],
+      "transaction_alerts": [],
+      "sanctions_results": [],
+      "gdpr_consents": [],
+      "gdpr_requests": [],
+      "tax_reports": []
+    },
+    "dex": {
+      "params": {
+        "trading_fee": "0.003",
+        "protocol_fee": "0.0005",
+        "min_liquidity_tiers": [],
+        "max_slippage_bps": 10000,
+        "min_swap_amount": "1000000",
+        "ir_boost_enabled": true,
+        "ir_boost_percent": 40,
+        "bonding_curve_enabled": true,
+        "buyback_burn_enabled": true,
+        "buyback_percent": 100
+      },
+      "liquidity_pools": [],
+      "swap_orders": [],
+      "orderbooks": [],
+      "market_prices": [],
+      "swap_stats": []
+    },
+    "bridge": {
+      "params": {
+        "enabled": true,
+        "min_confirmations": 12,
+        "bridge_fee_basis_points": 30,
+        "max_transfer_amount": "1000000000000000",
+        "validator_threshold_percentage": 67
+      },
+      "pending_transfers": [],
+      "completed_transfers": [],
+      "supported_chains": [
+        {
+          "chain_id": "cosmoshub-4",
+          "name": "Cosmos Hub",
+          "enabled": true,
+          "min_confirmations": 12,
+          "bridge_address": ""
+        },
+        {
+          "chain_id": "osmosis-1",
+          "name": "Osmosis",
+          "enabled": true,
+          "min_confirmations": 6,
+          "bridge_address": ""
+        }
+      ],
+      "validators": [],
+      "merkle_roots": []
+    },
+    "aiassistant": {
+      "params": {
+        "min_stake": {
+          "denom": "uaura",
+          "amount": "5000000"
+        },
+        "heartbeat_window_seconds": 600,
+        "heartbeat_grace_seconds": 120,
+        "slash_fraction_downtime": "0.02",
+        "slash_fraction_misbehavior": "0.10",
+        "max_locales": 5
+      },
+      "assistants": [],
+      "tasks": [],
+      "responses": [],
+      "reputation_scores": []
+    },
+    "contractregistry": {
+      "params": {
+        "verification_required": true,
+        "max_contract_size_bytes": 2097152,
+        "audit_required_for_production": true,
+        "allowed_code_upload": true
+      },
+      "contracts": [],
+      "deployments": [],
+      "verifications": [],
+      "audit_reports": []
+    },
+    "wasm_security": {
+      "params": {
+        "gas_limit_per_call": 100000000,
+        "memory_limit_bytes": 134217728,
+        "max_query_depth": 10,
+        "rate_limit_per_block": 100
+      }
+    },
+    "economics": {
+      "params": {
+        "fees": {
+          "base_fee": "0.025uaura",
+          "target_block_utilization": 5000,
+          "max_fee_multiplier": 10,
+          "min_fee_multiplier": 1
+        },
+        "tokenomics": {
+          "total_supply": "1000000000000000",
+          "max_inflation_rate": "0.07",
+          "min_inflation_rate": "0.03",
+          "target_staking_ratio": "0.67"
+        },
+        "vesting": {
+          "min_vesting_duration": "2592000s",
+          "max_vesting_duration": "126230400s",
+          "cliff_enabled": true
+        },
+        "governance": {
+          "quorum": 4000,
+          "threshold": 5000,
+          "veto_threshold": 3340,
+          "voting_period": "1209600s",
+          "deposit_period": "1209600s",
+          "min_deposit": "10000000000uaura"
+        },
+        "whale_protection": {
+          "enabled": true,
+          "max_holding_percentage": 500,
+          "large_transfer_threshold": "100000000000uaura"
+        }
+      },
+      "vesting_schedules": [],
+      "proposals": [],
+      "votes": [],
+      "deposits": [],
+      "vote_locks": [],
+      "vote_delegations": [],
+      "pending_treasury_txs": [],
+      "user_mev_balances": {},
+      "last_large_tx_times": {},
+      "next_proposal_id": "1",
+      "next_vesting_schedule_id": "1",
+      "next_vote_lock_id": "1",
+      "next_treasury_tx_id": "1"
+    },
+    "economicsecurity": {
+      "params": {
+        "max_price_deviation_percent": 10,
+        "oracle_update_interval_seconds": 60,
+        "liquidation_threshold_percent": 80,
+        "min_collateral_ratio_percent": 150,
+        "max_leverage": 10
+      }
+    },
+    "governance": {
+      "params": {
+        "min_deposit": "10000000000uaura",
+        "quorum": "0.40",
+        "threshold": "0.50",
+        "veto_threshold": "0.334",
+        "max_deposit_period": "1209600s",
+        "voting_period": "1209600s",
+        "expedited_voting_period": "86400s",
+        "expedited_threshold": "0.667",
+        "expedited_min_deposit": "50000000000uaura",
+        "burn_vote_quorum": false,
+        "burn_proposal_deposit_prevote": false,
+        "burn_vote_veto": true,
+        "min_initial_deposit_ratio": "0.10"
+      },
+      "proposals": [],
+      "votes": [],
+      "deposits": []
+    },
+    "walletsecurity": {
+      "params": {
+        "max_daily_transfers": 100,
+        "suspicious_activity_threshold": 10,
+        "lockout_duration_seconds": 86400,
+        "require_2fa_threshold": "100000000000uaura",
+        "whitelist_enabled": true
+      },
+      "wallet_configs": [],
+      "security_events": [],
+      "whitelists": []
+    },
+    "validatorsecurity": {
+      "params": {
+        "min_self_delegation": "1000000000000uaura",
+        "double_sign_slash_fraction": "0.05",
+        "downtime_slash_fraction": "0.01",
+        "key_rotation_cooldown_seconds": 86400,
+        "max_missed_blocks_per_window": 500
+      },
+      "validator_records": [],
+      "slash_events": [],
+      "key_rotations": []
+    },
+    "cryptography": {
+      "params": {
+        "supported_algorithms": ["ed25519", "secp256k1", "bls12-381"],
+        "key_derivation_function": "hkdf-sha256",
+        "min_key_length_bits": 256,
+        "encryption_enabled": true,
+        "zk_proof_enabled": true
+      },
+      "public_keys": [],
+      "key_pairs": [],
+      "zk_circuits": []
+    },
+    "networksecurity": {
+      "params": {
+        "max_peers": 100,
+        "min_peers": 10,
+        "peer_ban_duration_seconds": 86400,
+        "ddos_protection_enabled": true,
+        "rate_limit_requests_per_second": 100,
+        "max_message_size_bytes": 10485760
+      },
+      "banned_peers": [],
+      "rate_limits": [],
+      "security_events": []
+    },
+    "incidentresponse": {
+      "params": {
+        "alert_threshold_severity": 3,
+        "auto_response_enabled": true,
+        "escalation_timeout_seconds": 3600,
+        "max_concurrent_incidents": 10
+      },
+      "incidents": [],
+      "responses": [],
+      "escalations": [],
+      "playbooks": []
+    },
+    "privacy": {
+      "params": {
+        "zk_snark_enabled": true,
+        "confidential_transfers_enabled": true,
+        "ring_signature_size": 11,
+        "pedersen_commitment_enabled": true,
+        "bulletproof_range_proof_enabled": true
+      },
+      "confidential_balances": [],
+      "nullifiers": [],
+      "commitments": []
+    },
+    "prevalidation": {
+      "params": {
+        "enabled": true,
+        "max_queue_size": 1000,
+        "validation_timeout_seconds": 30,
+        "parallel_validation_workers": 4
+      }
+    },
+    "monitoring": {
+      "params": {
+        "metrics_enabled": true,
+        "log_level": "info",
+        "alert_webhook_url": "",
+        "health_check_interval_seconds": 60,
+        "performance_sampling_rate": 100
+      }
+    },
+    "security": {
+      "params": {
+        "audit_log_enabled": true,
+        "intrusion_detection_enabled": true,
+        "anomaly_detection_threshold": 3,
+        "security_scan_interval_seconds": 3600
+      }
+    },
+    "common": {},
+    "aura_bindings": {
+      "params": {
+        "max_custom_query_gas": 100000,
+        "max_custom_message_gas": 500000,
+        "allowed_messages": ["vcregistry", "compliance", "confidencescore"],
+        "allowed_queries": ["vcregistry", "compliance", "confidencescore", "identity"]
+      }
+    },
+    "auth_custom": {
+      "params": {
+        "session_duration_seconds": 3600,
+        "max_active_sessions": 5,
+        "require_signature_for_sensitive": true
+      }
+    }
+  }
+}

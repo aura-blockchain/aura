@@ -564,9 +564,9 @@ params:
   did_network: "mainnet"
 
   # Fees
-  mint_fee: "0.1 AEQ"
-  revoke_fee: "0 AEQ"  # Free
-  policy_creation_deposit: "10000 AEQ"
+  mint_fee: "0.1 AURA"
+  revoke_fee: "0 AURA"  # Free
+  policy_creation_deposit: "10000 AURA"
 ```
 
 ---

@@ -208,7 +208,7 @@ The following arena types are supported for filtering and breakdown:
 
 ### Appeal Process
 1. User has 30 days (configurable) to appeal after slash
-2. User must provide deposit (default 1000 AEQ)
+2. User must provide deposit (default 1000 AURA)
 3. Governance reviews evidence
 4. If successful: score restored, deposit returned
 5. If unsuccessful: slash stands, deposit forfeit

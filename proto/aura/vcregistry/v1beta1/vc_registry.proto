@@ -114,7 +114,7 @@ message Params {
   string did_network = 7;                       // "mainnet" or "testnet"
 
   // Fees
-  string mint_fee = 8;                          // Fee to mint VC (in AEQ)
+  string mint_fee = 8;                          // Fee to mint VC (in AURA)
   string revoke_fee = 9;                        // Fee to revoke (usually 0)
   string policy_creation_deposit = 10;          // Governance deposit for new policies
 

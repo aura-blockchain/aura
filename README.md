@@ -200,7 +200,7 @@ Aequitas Blockchain
 │   ├── Locale-Specific Nodes
 │   ├── Fraud Detection System
 │   └── ML Model Updates
-├── Tokenomics (AEQ)
+├── Tokenomics (AURA)
 │   ├── Validator Rewards
 │   ├── AI Assistant Rewards
 │   ├── Proof-of-Identity Mining
@@ -328,7 +328,7 @@ cat docs/economics/models/economics-scenarios.ipynb
 | Initial Validators | 100 |
 | Max Validators | 300+ (via governance) |
 
-### Tokenomics (AEQ)
+### Tokenomics (AURA)
 
 | Component | Allocation | Purpose |
 |-----------|-----------|---------|
