@@ -1,6 +1,7 @@
 package economics
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 
@@ -50,6 +51,9 @@ func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 
 // ValidateGenesis performs genesis state validation
 func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncodingConfig, bz json.RawMessage) error {
+	if len(bytes.TrimSpace(bz)) == 0 {
+		return nil
+	}
 	var genesis types.GenesisState
 	if err := cdc.UnmarshalJSON(bz, &genesis); err != nil {
 		return err

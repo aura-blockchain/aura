@@ -1,66 +1,26 @@
 package keeper
 
 import (
+	"context"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/stretchr/testify/suite"
+
+	confidencescorepb "github.com/aequitas/aura/proto/aura/confidencescore/v1beta1"
 )
 
-type QueryServerTestSuite struct {
-	KeeperTestSuite
-	queryServer interface{}
-}
+func TestQueryServerConstruction(t *testing.T) {
+	ctx, k := setupConfKeeper(t)
+	server := NewQueryServer(k)
 
-func TestQueryServerTestSuite(t *testing.T) {
-	suite.Run(t, new(QueryServerTestSuite))
-}
+	require.NotNil(t, server)
+	require.NotNil(t, sdk.WrapSDKContext(ctx))
 
-func (suite *QueryServerTestSuite) SetupTest() {
-	suite.KeeperTestSuite.SetupTest()
-	suite.queryServer = NewQueryServerImpl(suite.Keeper)
-}
-
-func (suite *QueryServerTestSuite) TestQueryServerImplementation() {
-	suite.NotNil(suite.queryServer, "query server should be created")
-}
-
-func (suite *QueryServerTestSuite) TestNilRequest() {
-	ctx := sdk.WrapSDKContext(suite.SdkCtx)
-	
-	// All query handlers should handle nil requests gracefully
-	// This test should be customized per module based on available queries
-	_ = ctx
-}
-
-func (suite *QueryServerTestSuite) TestValidQuery() {
-	ctx := sdk.WrapSDKContext(suite.SdkCtx)
-	
-	// Test valid query execution
-	// This test should be customized per module based on available queries
-	_ = ctx
-}
-
-func (suite *QueryServerTestSuite) TestQueryNonExistent() {
-	ctx := sdk.WrapSDKContext(suite.SdkCtx)
-	
-	// Test querying non-existent data
-	// This test should be customized per module based on available queries
-	_ = ctx
-}
-
-func (suite *QueryServerTestSuite) TestPagination() {
-	ctx := sdk.WrapSDKContext(suite.SdkCtx)
-	
-	// Test pagination for list queries
-	// This test should be customized per module based on available queries
-	_ = ctx
-}
-
-func (suite *QueryServerTestSuite) TestInvalidParameters() {
-	ctx := sdk.WrapSDKContext(suite.SdkCtx)
-	
-	// Test queries with invalid parameters
-	// This test should be customized per module based on available queries
-	_ = ctx
+	_, ok := server.(interface {
+		confidencescorepb.QueryServer
+	})
+	require.True(t, ok)
+	_ = context.Background()
 }

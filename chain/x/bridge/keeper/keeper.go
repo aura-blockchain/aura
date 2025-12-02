@@ -319,6 +319,21 @@ func (k Keeper) setValidator(ctx sdk.Context, validator *types.BridgeValidator) 
 	k.store(ctx).Set(types.ValidatorKey(validator.Address), k.cdc.MustMarshal(validator))
 }
 
+func (k Keeper) getValidator(ctx sdk.Context, address string) (*types.BridgeValidator, bool) {
+	if address == "" {
+		return nil, false
+	}
+	bz := k.store(ctx).Get(types.ValidatorKey(address))
+	if bz == nil {
+		return nil, false
+	}
+	var validator types.BridgeValidator
+	if err := k.cdc.Unmarshal(bz, &validator); err != nil {
+		return nil, false
+	}
+	return &validator, true
+}
+
 func (k Keeper) getAllValidators(ctx sdk.Context) []*types.BridgeValidator {
 	store := k.store(ctx)
 	iterator := store.Iterator(types.ValidatorPrefix, storetypes.PrefixEndBytes(types.ValidatorPrefix))

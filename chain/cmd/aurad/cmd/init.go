@@ -13,12 +13,23 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
+	sdkmath "cosmossdk.io/math"
+	"github.com/cosmos/cosmos-sdk/codec"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	cosmosed25519 "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	auth "github.com/cosmos/cosmos-sdk/x/auth/types"
+	bank "github.com/cosmos/cosmos-sdk/x/bank/types"
+	staking "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/go-bip39"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"github.com/aequitas/aura/chain/app"
 	"github.com/aequitas/aura/chain/cmd/aurad/cmd/security"
+	"github.com/cosmos/cosmos-sdk/types/module"
 )
 
 const (
@@ -970,417 +981,233 @@ pruning-interval = 0
 
 // generateCompleteGenesis generates a complete genesis.json with consolidated module structure
 func generateCompleteGenesis(chainID string, keyInfo *ValidatorKeyInfo) string {
-	return fmt.Sprintf(`{
-  "genesis_time": "2025-01-01T00:00:00.000000Z",
-  "chain_id": "%s",
-  "initial_height": "1",
-  "consensus_params": {
-    "block": {
-      "max_bytes": "22020096",
-      "max_gas": "-1"
-    },
-    "evidence": {
-      "max_age_num_blocks": "100000",
-      "max_age_duration": "172800000000000",
-      "max_bytes": "1048576"
-    },
-    "validator": {
-      "pub_key_types": ["ed25519"]
-    },
-    "version": {
-      "app": "0"
-    },
-    "abci": {
-      "vote_extensions_enable_height": "0"
-    }
-  },
-  "app_hash": "",
-  "validators": [
-    {
-      "address": "%s",
-      "pub_key": {
-        "type": "tendermint/PubKeyEd25519",
-        "value": "%s"
-      },
-      "power": "%s",
-      "name": "genesis-validator"
-    }
-  ],
-  "app_state": {
-    "auth": {
-      "params": {
-        "max_memo_characters": "256",
-        "tx_sig_limit": "7",
-        "tx_size_cost_per_byte": "10",
-        "sig_verify_cost_ed25519": "590",
-        "sig_verify_cost_secp256k1": "1000"
-      },
-      "accounts": [
-        {
-          "@type": "/cosmos.auth.v1beta1.BaseAccount",
-          "address": "%s",
-          "pub_key": null,
-          "account_number": "0",
-          "sequence": "0"
-        }
-      ]
-    },
-    "bank": {
-      "params": {
-        "send_enabled": [],
-        "default_send_enabled": true
-      },
-      "balances": [
-        {
-          "address": "%s",
-          "coins": [
-            {
-              "denom": "stake",
-              "amount": "%s"
-            },
-            {
-              "denom": "uaura",
-              "amount": "1000000000000"
-            }
-          ]
-        }
-      ],
-      "supply": [
-        {
-          "denom": "stake",
-          "amount": "%s"
-        },
-        {
-          "denom": "uaura",
-          "amount": "1000000000000"
-        }
-      ],
-      "denom_metadata": [
-        {
-          "description": "The native staking token of the AURA network",
-          "denom_units": [
-            {"denom": "uaura", "exponent": 0, "aliases": ["microaura"]},
-            {"denom": "maura", "exponent": 3, "aliases": ["milliaura"]},
-            {"denom": "aura", "exponent": 6, "aliases": []}
-          ],
-          "base": "uaura",
-          "display": "aura",
-          "name": "Aura",
-          "symbol": "AURA"
-        }
-      ],
-      "send_enabled": []
-    },
-    "staking": {
-      "params": {
-        "unbonding_time": "1814400s",
-        "max_validators": 100,
-        "max_entries": 7,
-        "historical_entries": 10000,
-        "bond_denom": "stake",
-        "min_commission_rate": "0.000000000000000000"
-      },
-      "last_total_power": "%s",
-      "last_validator_powers": [
-        {
-          "address": "%s",
-          "power": "%s"
-        }
-      ],
-      "validators": [
-        {
-          "operator_address": "%s",
-          "consensus_pubkey": {
-            "@type": "/cosmos.crypto.ed25519.PubKey",
-            "key": "%s"
-          },
-          "jailed": false,
-          "status": "BOND_STATUS_BONDED",
-          "tokens": "%s",
-          "delegator_shares": "%s.000000000000000000",
-          "description": {
-            "moniker": "genesis-validator",
-            "identity": "",
-            "website": "",
-            "security_contact": "",
-            "details": "Genesis validator for AURA network"
-          },
-          "unbonding_height": "0",
-          "unbonding_time": "1970-01-01T00:00:00Z",
-          "commission": {
-            "commission_rates": {
-              "rate": "0.100000000000000000",
-              "max_rate": "0.200000000000000000",
-              "max_change_rate": "0.010000000000000000"
-            },
-            "update_time": "2025-01-01T00:00:00Z"
-          },
-          "min_self_delegation": "1"
-        }
-      ],
-      "delegations": [
-        {
-          "delegator_address": "%s",
-          "validator_address": "%s",
-          "shares": "%s.000000000000000000"
-        }
-      ],
-      "unbonding_delegations": [],
-      "redelegations": [],
-      "exported": false
-    },
-    "slashing": {
-      "params": {
-        "signed_blocks_window": "100",
-        "min_signed_per_window": "0.500000000000000000",
-        "downtime_jail_duration": "600s",
-        "slash_fraction_double_sign": "0.050000000000000000",
-        "slash_fraction_downtime": "0.010000000000000000"
-      },
-      "signing_infos": [],
-      "missed_blocks": []
-    },
-    "distribution": {
-      "params": {
-        "community_tax": "0.020000000000000000",
-        "base_proposer_reward": "0.000000000000000000",
-        "bonus_proposer_reward": "0.000000000000000000",
-        "withdraw_addr_enabled": true
-      },
-      "fee_pool": {
-        "community_pool": []
-      },
-      "delegator_withdraw_infos": [],
-      "previous_proposer": "",
-      "outstanding_rewards": [],
-      "validator_accumulated_commissions": [],
-      "validator_historical_rewards": [],
-      "validator_current_rewards": [],
-      "delegator_starting_infos": [],
-      "validator_slash_events": []
-    },
-    "genutil": {
-      "gen_txs": []
-    },
-    "security": {
-      "params": {
-        "max_connections_per_ip": 10,
-        "rate_limit_per_second": 100,
-        "blacklist_duration": "3600s",
-        "sybil_threshold": 5,
-        "min_stake": "1000000",
-        "max_downtime_blocks": 500,
-        "jail_duration": "600s",
-        "double_sign_slash_factor": "0.050000000000000000",
-        "downtime_slash_factor": "0.010000000000000000",
-        "default_multisig_threshold": 2,
-        "recovery_delay_period": "604800s",
-        "session_timeout": "3600s",
-        "max_devices_per_wallet": 10,
-        "circuit_breaker_threshold": 100,
-        "emergency_pause_duration": "3600s",
-        "min_ring_size": 3,
-        "max_ring_size": 7,
-        "min_mixing_participants": 2,
-        "mixing_fee": "100",
-        "zk_proof_verification_cost": 50
-      },
-      "network": {
-        "rate_limits": [],
-        "reputations": [],
-        "trusted_peers": [],
-        "blacklist": [],
-        "fork_alerts": [],
-        "partition_alerts": []
-      },
-      "validator": {
-        "validators": [],
-        "double_sign_evidence": [],
-        "downtime_infractions": [],
-        "alerts": [],
-        "sentry_nodes": []
-      },
-      "wallet": {
-        "hardware_wallets": [],
-        "multisig_wallets": [],
-        "pending_multisig_txs": [],
-        "social_recovery_configs": [],
-        "recovery_requests": [],
-        "device_fingerprints": [],
-        "sessions": [],
-        "anomaly_detections": []
-      },
-      "incident": {
-        "incidents": [],
-        "pause_state": {
-          "is_paused": false,
-          "pause_level": 0
-        },
-        "wallet_limits": [],
-        "next_incident_id": 1
-      },
-      "crypto": {
-        "key_rotation_schedules": [],
-        "threshold_schemes": [],
-        "zk_proof_configs": [],
-        "secure_enclaves": [],
-        "quantum_resistant_keys": [],
-        "random_sources": [],
-        "certificate_pins": []
-      },
-      "privacy": {
-        "mixing_pools": [],
-        "registered_view_keys": []
-      }
-    },
-    "identity": {
-      "params": {
-        "max_identity_changes_per_year": 2,
-        "identity_change_fee": "1000000",
-        "require_multisig_approval": false,
-        "multisig_threshold": 2
-      },
-      "records": [],
-      "change_requests": [],
-      "change_history": [],
-      "suspended": false,
-      "audit_trail": []
-    },
-    "economics": {
-      "params": {
-        "max_transfer_per_block": "1000000000000",
-        "whale_threshold": "100000000000",
-        "fee_multiplier": "1.000000000000000000",
-        "min_deposit": [{"denom": "stake", "amount": "10000000"}],
-        "max_deposit_period": "172800s",
-        "voting_period": "172800s",
-        "quorum": "0.334000000000000000",
-        "threshold": "0.500000000000000000",
-        "veto_threshold": "0.334000000000000000"
-      },
-      "vesting_schedules": [],
-      "treasury_state": {
-        "balance": [],
-        "pending_transactions": []
-      },
-      "governance_state": {
-        "starting_proposal_id": "1",
-        "deposits": [],
-        "votes": [],
-        "proposals": []
-      },
-      "dynamic_fees": {
-        "base_fee": "1000",
-        "fee_history": []
-      },
-      "whale_protection": {
-        "large_tx_records": [],
-        "last_large_tx_times": {}
-      },
-      "mev_state": {
-        "user_balances": {}
-      }
-    },
-    "vcregistry": {
-      "params": {},
-      "vc_records": [],
-      "revocation_records": [],
-      "revocation_list": {
-        "revoked_ids": []
-      },
-      "did_documents": [],
-      "vc_policies": [],
-      "user_mint_counts": {},
-      "presentations": [],
-      "user_presentation_index": {},
-      "attribute_vcs": [],
-      "user_attribute_index": {},
-      "data_items": []
-    },
-    "confidencescore": {
-      "params": {},
-      "user_records": [],
-      "completions": [],
-      "history": [],
-      "slash_records": []
-    },
-    "inclusionroutines": {
-      "params": {},
-      "irs": [],
-      "prerequisites": [],
-      "rate_limits": []
-    },
-    "dex": {
-      "params": {
-        "trading_fee": "0.003000000000000000",
-        "protocol_fee": "0.001000000000000000",
-        "max_slippage_bps": 500,
-        "min_swap_amount": "1000"
-      },
-      "liquidity_pools": [],
-      "swap_orders": [],
-      "orderbooks": [],
-      "market_prices": [],
-      "swap_stats": []
-    },
-    "bridge": {
-      "params": {
-        "min_confirmations": 12,
-        "bridge_fee_basis_points": 30,
-        "max_transfer_amount": "1000000000000",
-        "enabled": true,
-        "validator_threshold_percentage": 67
-      },
-      "transfers": [],
-      "chain_configs": [],
-      "validators": [],
-      "wrapped_tokens": [],
-      "shared_identities": [],
-      "cross_chain_swaps": [],
-      "relayer_stats": []
-    },
-    "compliance": {
-      "params": {},
-      "kyc_records": [],
-      "aml_profiles": [],
-      "suspicious_activities": [],
-      "monitoring_rules": [],
-      "transaction_alerts": [],
-      "sanctions_results": [],
-      "gdpr_consents": [],
-      "gdpr_requests": [],
-      "tax_reports": []
-    },
-    "wasm": {
-      "params": {
-        "code_upload_access": {
-          "permission": "Everybody"
-        },
-        "instantiate_default_permission": "Everybody"
-      },
-      "codes": [],
-      "contracts": [],
-      "sequences": []
-    }
-  }
-}`,
-		chainID,
-		keyInfo.ConsensusAddressHex,
-		keyInfo.PublicKeyBase64,
-		DefaultValidatorPower,
-		keyInfo.AccountAddress,
-		keyInfo.AccountAddress,
-		DefaultValidatorTokens,
-		DefaultValidatorTokens,
-		DefaultValidatorPower,
-		keyInfo.OperatorAddress,
-		DefaultValidatorPower,
-		keyInfo.OperatorAddress,
-		keyInfo.PublicKeyBase64,
-		DefaultBondedTokens,
-		DefaultBondedTokens,
-		keyInfo.AccountAddress,
-		keyInfo.OperatorAddress,
-		DefaultBondedTokens,
+	encoding := app.MakeEncodingConfig()
+	genesisState := defaultGenesisAppState(encoding.Codec)
+
+	genesisState[auth.ModuleName] = updateAuthGenesisState(encoding.Codec, genesisState[auth.ModuleName], keyInfo.AccountAddress)
+	genesisState[bank.ModuleName] = updateBankGenesisState(encoding.Codec, genesisState[bank.ModuleName], keyInfo.AccountAddress)
+	genesisState[staking.ModuleName] = updateStakingGenesisState(encoding.Codec, genesisState[staking.ModuleName], keyInfo)
+
+	genesisDoc := map[string]any{
+		"genesis_time":   "2025-01-01T00:00:00.000000Z",
+		"chain_id":       chainID,
+		"initial_height": "1",
+		"consensus_params": map[string]any{
+			"block": map[string]string{
+				"max_bytes": "22020096",
+				"max_gas":   "-1",
+			},
+			"evidence": map[string]string{
+				"max_age_num_blocks": "100000",
+				"max_age_duration":   "172800000000000",
+				"max_bytes":          "1048576",
+			},
+			"validator": map[string][]string{
+				"pub_key_types": {"ed25519"},
+			},
+			"version": map[string]string{"app": "0"},
+			"abci": map[string]string{
+				"vote_extensions_enable_height": "0",
+			},
+		},
+		"app_hash": "",
+		"validators": []map[string]any{
+			{
+				"address": keyInfo.ConsensusAddressHex,
+				"pub_key": map[string]string{
+					"type":  "tendermint/PubKeyEd25519",
+					"value": keyInfo.PublicKeyBase64,
+				},
+				"power": DefaultValidatorPower,
+				"name":  "genesis-validator",
+			},
+		},
+		"app_state": genesisState,
+	}
+
+	bytes, err := json.MarshalIndent(genesisDoc, "", "  ")
+	if err != nil {
+		panic(fmt.Errorf("failed to marshal genesis doc: %w", err))
+	}
+
+	return string(bytes)
+}
+
+func updateAuthGenesisState(cdc codec.Codec, raw json.RawMessage, addrBech32 string) json.RawMessage {
+	var gs auth.GenesisState
+	if len(raw) == 0 {
+		gs = *auth.DefaultGenesisState()
+	} else {
+		if err := cdc.UnmarshalJSON(raw, &gs); err != nil {
+			panic(fmt.Errorf("failed to unmarshal auth genesis: %w", err))
+		}
+	}
+
+	addr, err := sdk.AccAddressFromBech32(addrBech32)
+	if err != nil {
+		panic(fmt.Errorf("invalid account address %s: %w", addrBech32, err))
+	}
+
+	baseAcc := auth.NewBaseAccountWithAddress(addr)
+	accAny, err := codectypes.NewAnyWithValue(baseAcc)
+	if err != nil {
+		panic(fmt.Errorf("failed to encode auth account to Any: %w", err))
+	}
+	gs.Accounts = append(gs.Accounts, accAny)
+
+	return cdc.MustMarshalJSON(&gs)
+}
+
+func updateBankGenesisState(cdc codec.Codec, raw json.RawMessage, addrBech32 string) json.RawMessage {
+	var gs bank.GenesisState
+	if len(raw) == 0 {
+		gs = *bank.DefaultGenesisState()
+	} else {
+		if err := cdc.UnmarshalJSON(raw, &gs); err != nil {
+			panic(fmt.Errorf("failed to unmarshal bank genesis: %w", err))
+		}
+	}
+
+	addr, err := sdk.AccAddressFromBech32(addrBech32)
+	if err != nil {
+		panic(fmt.Errorf("invalid bank address %s: %w", addrBech32, err))
+	}
+
+	stakeAmt, ok := sdkmath.NewIntFromString(DefaultValidatorTokens)
+	if !ok {
+		panic("invalid DefaultValidatorTokens")
+	}
+	uauraAmt, ok := sdkmath.NewIntFromString("1000000000000")
+	if !ok {
+		panic("invalid uaura supply")
+	}
+
+	gs.Balances = []bank.Balance{
+		{
+			Address: addr.String(),
+			Coins: sdk.NewCoins(
+				sdk.NewCoin("stake", stakeAmt),
+				sdk.NewCoin("uaura", uauraAmt),
+			),
+		},
+	}
+
+	gs.Supply = sdk.NewCoins(
+		sdk.NewCoin("stake", stakeAmt),
+		sdk.NewCoin("uaura", uauraAmt),
 	)
+
+	return cdc.MustMarshalJSON(&gs)
+}
+
+func updateStakingGenesisState(cdc codec.Codec, raw json.RawMessage, keyInfo *ValidatorKeyInfo) json.RawMessage {
+	var gs staking.GenesisState
+	if len(raw) == 0 {
+		gs = *staking.DefaultGenesisState()
+	} else {
+		if err := cdc.UnmarshalJSON(raw, &gs); err != nil {
+			panic(fmt.Errorf("failed to unmarshal staking genesis: %w", err))
+		}
+	}
+
+	tokenAmt, ok := sdkmath.NewIntFromString(DefaultBondedTokens)
+	if !ok {
+		panic("invalid DefaultBondedTokens")
+	}
+	powerAmt, ok := sdkmath.NewIntFromString(DefaultValidatorPower)
+	if !ok {
+		panic("invalid DefaultValidatorPower")
+	}
+
+	pubKeyAny, err := codectypes.NewAnyWithValue(&cosmosed25519.PubKey{Key: keyInfo.PublicKeyBytes})
+	if err != nil {
+		panic(fmt.Errorf("failed to encode consensus pubkey: %w", err))
+	}
+
+	sharesValue, err := sdkmath.LegacyNewDecFromStr(tokenAmt.String() + ".000000000000000000")
+	if err != nil {
+		panic(fmt.Errorf("invalid shares decimal: %w", err))
+	}
+
+	rate, err := sdkmath.LegacyNewDecFromStr("0.1")
+	if err != nil {
+		panic(fmt.Errorf("invalid commission rate: %w", err))
+	}
+	maxRate, err := sdkmath.LegacyNewDecFromStr("0.2")
+	if err != nil {
+		panic(fmt.Errorf("invalid commission max rate: %w", err))
+	}
+	maxChange, err := sdkmath.LegacyNewDecFromStr("0.01")
+	if err != nil {
+		panic(fmt.Errorf("invalid commission max change rate: %w", err))
+	}
+
+	validator := staking.Validator{
+		OperatorAddress: keyInfo.OperatorAddress,
+		ConsensusPubkey: pubKeyAny,
+		Jailed:          false,
+		Status:          staking.Bonded,
+		Tokens:          tokenAmt,
+		DelegatorShares: sharesValue,
+		Description:     staking.Description{Moniker: "genesis-validator"},
+		UnbondingHeight: 0,
+		UnbondingTime:   time.Unix(0, 0),
+		Commission: staking.Commission{
+			CommissionRates: staking.CommissionRates{
+				Rate:          rate,
+				MaxRate:       maxRate,
+				MaxChangeRate: maxChange,
+			},
+			UpdateTime: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+		},
+		MinSelfDelegation: sdkmath.NewInt(1),
+	}
+
+	gs.LastTotalPower = powerAmt
+	gs.LastValidatorPowers = []staking.LastValidatorPower{
+		{
+			Address: keyInfo.OperatorAddress,
+			Power:   powerAmt.Int64(),
+		},
+	}
+	gs.Validators = []staking.Validator{validator}
+	gs.Delegations = []staking.Delegation{
+		{
+			DelegatorAddress: keyInfo.AccountAddress,
+			ValidatorAddress: keyInfo.OperatorAddress,
+			Shares:           sharesValue,
+		},
+	}
+
+	return cdc.MustMarshalJSON(&gs)
+}
+
+func defaultGenesisAppState(cdc codec.JSONCodec) map[string]json.RawMessage {
+	state := make(map[string]json.RawMessage)
+	for name, mod := range app.ModuleBasics {
+		state[name] = safeDefaultGenesis(mod, cdc)
+	}
+	return state
+}
+
+func safeDefaultGenesis(mod module.AppModuleBasic, cdc codec.JSONCodec) (raw json.RawMessage) {
+	defer func() {
+		if r := recover(); r != nil {
+			raw = json.RawMessage(`{}`)
+		}
+	}()
+	if mod == nil {
+		return json.RawMessage(`{}`)
+	}
+	if hasGen, ok := mod.(interface {
+		DefaultGenesis(codec.JSONCodec) json.RawMessage
+	}); ok {
+		raw = hasGen.DefaultGenesis(cdc)
+	} else {
+		return json.RawMessage(`{}`)
+	}
+	if len(raw) == 0 {
+		raw = json.RawMessage(`{}`)
+	}
+	return
 }

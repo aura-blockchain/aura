@@ -1,11 +1,11 @@
 package testutil
 
 import (
-	"context"
 	"fmt"
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 )
 
 // MockBankKeeper is a mock implementation of the bank keeper
@@ -21,7 +21,7 @@ func NewMockBankKeeper() *MockBankKeeper {
 }
 
 // GetBalance returns the balance for an address and denom
-func (m *MockBankKeeper) GetBalance(ctx context.Context, addr sdk.AccAddress, denom string) sdk.Coin {
+func (m *MockBankKeeper) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin {
 	if coins, ok := m.Balances[addr.String()]; ok {
 		return sdk.NewCoin(denom, coins.AmountOf(denom))
 	}
@@ -29,7 +29,7 @@ func (m *MockBankKeeper) GetBalance(ctx context.Context, addr sdk.AccAddress, de
 }
 
 // SpendableCoins returns spendable coins for an address
-func (m *MockBankKeeper) SpendableCoins(ctx context.Context, addr sdk.AccAddress) sdk.Coins {
+func (m *MockBankKeeper) SpendableCoins(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
 	if coins, ok := m.Balances[addr.String()]; ok {
 		return coins
 	}
@@ -37,7 +37,7 @@ func (m *MockBankKeeper) SpendableCoins(ctx context.Context, addr sdk.AccAddress
 }
 
 // SendCoinsFromAccountToModule sends coins from account to module
-func (m *MockBankKeeper) SendCoinsFromAccountToModule(ctx context.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
+func (m *MockBankKeeper) SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
 	senderBalance := m.Balances[senderAddr.String()]
 	if !senderBalance.IsAllGTE(amt) {
 		return fmt.Errorf("insufficient funds")
@@ -47,9 +47,36 @@ func (m *MockBankKeeper) SendCoinsFromAccountToModule(ctx context.Context, sende
 }
 
 // SendCoinsFromModuleToAccount sends coins from module to account
-func (m *MockBankKeeper) SendCoinsFromModuleToAccount(ctx context.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
+func (m *MockBankKeeper) SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
 	current := m.Balances[recipientAddr.String()]
 	m.Balances[recipientAddr.String()] = current.Add(amt...)
+	return nil
+}
+
+// SendCoins is a passthrough for completeness
+func (m *MockBankKeeper) SendCoins(ctx sdk.Context, fromAddr sdk.AccAddress, toAddr sdk.AccAddress, amt sdk.Coins) error {
+	currentFrom := m.Balances[fromAddr.String()]
+	if !currentFrom.IsAllGTE(amt) {
+		return fmt.Errorf("insufficient funds")
+	}
+	m.Balances[fromAddr.String()] = currentFrom.Sub(amt...)
+	currentTo := m.Balances[toAddr.String()]
+	m.Balances[toAddr.String()] = currentTo.Add(amt...)
+	return nil
+}
+
+func (m *MockBankKeeper) MintCoins(ctx sdk.Context, moduleName string, amt sdk.Coins) error {
+	// Track minting against the module name for completeness
+	m.Balances[moduleName] = m.Balances[moduleName].Add(amt...)
+	return nil
+}
+
+func (m *MockBankKeeper) BurnCoins(ctx sdk.Context, moduleName string, amt sdk.Coins) error {
+	current := m.Balances[moduleName]
+	if !current.IsAllGTE(amt) {
+		return fmt.Errorf("insufficient module balance")
+	}
+	m.Balances[moduleName] = current.Sub(amt...)
 	return nil
 }
 
@@ -66,13 +93,20 @@ func NewMockAccountKeeper() *MockAccountKeeper {
 }
 
 // GetAccount returns an account
-func (m *MockAccountKeeper) GetAccount(ctx context.Context, addr sdk.AccAddress) sdk.AccountI {
+func (m *MockAccountKeeper) GetAccount(ctx sdk.Context, addr sdk.AccAddress) sdk.AccountI {
 	return m.Accounts[addr.String()]
 }
 
 // SetAccount sets an account
-func (m *MockAccountKeeper) SetAccount(ctx context.Context, acc sdk.AccountI) {
+func (m *MockAccountKeeper) SetAccount(ctx sdk.Context, acc sdk.AccountI) {
 	m.Accounts[acc.GetAddress().String()] = acc
+}
+
+// NewAccountWithAddress creates a basic account for an address
+func (m *MockAccountKeeper) NewAccountWithAddress(ctx sdk.Context, addr sdk.AccAddress) sdk.AccountI {
+	acc := authtypes.NewBaseAccountWithAddress(addr)
+	m.SetAccount(ctx, acc)
+	return acc
 }
 
 // MockStakingKeeper is a mock implementation of the staking keeper
@@ -88,7 +122,7 @@ func NewMockStakingKeeper() *MockStakingKeeper {
 }
 
 // GetValidator returns a validator
-func (m *MockStakingKeeper) GetValidator(ctx context.Context, addr sdk.ValAddress) (interface{}, error) {
+func (m *MockStakingKeeper) GetValidator(ctx sdk.Context, addr sdk.ValAddress) (interface{}, error) {
 	if val, ok := m.Validators[addr.String()]; ok {
 		return val, nil
 	}
@@ -108,7 +142,7 @@ func NewMockSlashingKeeper() *MockSlashingKeeper {
 }
 
 // Slash marks a validator as slashed
-func (m *MockSlashingKeeper) Slash(ctx context.Context, addr sdk.ValAddress) error {
+func (m *MockSlashingKeeper) Slash(ctx sdk.Context, addr sdk.ValAddress) error {
 	m.SlashedValidators[addr.String()] = true
 	return nil
 }
@@ -126,12 +160,12 @@ func NewMockGovernanceKeeper() *MockGovernanceKeeper {
 }
 
 // GetProposal returns a proposal
-func (m *MockGovernanceKeeper) GetProposal(ctx context.Context, proposalID uint64) (interface{}, bool) {
+func (m *MockGovernanceKeeper) GetProposal(ctx sdk.Context, proposalID uint64) (interface{}, bool) {
 	prop, ok := m.Proposals[proposalID]
 	return prop, ok
 }
 
 // SetProposal sets a proposal
-func (m *MockGovernanceKeeper) SetProposal(ctx context.Context, proposalID uint64, proposal interface{}) {
+func (m *MockGovernanceKeeper) SetProposal(ctx sdk.Context, proposalID uint64, proposal interface{}) {
 	m.Proposals[proposalID] = proposal
 }

@@ -3,9 +3,9 @@ package keeper
 import (
 	"fmt"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/aequitas/aura/chain/x/inclusionroutines/types"
 	inclusionroutinespb "github.com/aequitas/aura/proto/aura/inclusionroutines/v1beta1"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // CreateIR creates a new IR definition in KV store

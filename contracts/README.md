@@ -14,6 +14,11 @@ This directory serves multiple purposes:
 - **Documentation**: Living examples of AURA features
 - **Best Practices**: Demonstrate security and design patterns
 
+## Tooling
+
+- `scripts/deploy-contracts.sh` – uploads optimized wasm artifacts (defaults to `contracts/artifacts/vc_issuer.wasm`) and instantiates vc-issuer with sensible defaults.
+- `scripts/test-vc-issuer-e2e.sh` – spins up an ephemeral Aura node, deploys vc-issuer, registers an issuer, fulfills a VC request, and asserts state via queries. Requires an `aurad` build that exposes genesis helpers (`add-genesis-account`, `gentx`) so a local validator can be created.
+
 ## Directory Structure
 
 ```

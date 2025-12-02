@@ -1,0 +1,15 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aura-node
+spec:
+  template:
+    spec:
+      initContainers:
+        - name: init-config
+          env:
+            - name: CHAIN_ID
+              value: "aura-testnet-1"
+      containers:
+        - name: aura
+          image: aequitas/aura:testnet

@@ -40,9 +40,9 @@ type BankKeeper interface {
 // StakingKeeper defines the expected staking keeper interface
 type StakingKeeper interface {
 	GetValidator(ctx sdk.Context, addr sdk.ValAddress) (validator interface{}, found bool)
-	Jail(ctx sdk.Context, consAddr sdk.ConsAddress)
-	Unjail(ctx sdk.Context, consAddr sdk.ConsAddress)
-	Slash(ctx sdk.Context, consAddr sdk.ConsAddress, infractionHeight int64, power int64, slashFactor string) string
+	Jail(ctx sdk.Context, consAddr sdk.ConsAddress) error
+	Unjail(ctx sdk.Context, consAddr sdk.ConsAddress) error
+	Slash(ctx sdk.Context, consAddr sdk.ConsAddress, infractionHeight int64, power int64, slashFactor string) (string, error)
 }
 
 // AccountKeeper defines the expected account keeper interface

@@ -55,9 +55,8 @@ func (m *mockIRRegistry) GetIRArena(irID string) (string, error) {
 }
 
 func TestRecordIRCompletion_Success(t *testing.T) {
-	k := NewKeeper(nil, "gov1")
-	k.SetCurrentTime(time.Now().Unix())
-	k.SetCurrentHeight(100)
+	ctx, k := setupConfKeeper(t)
+	ctx = ctx.WithBlockHeight(100).WithBlockTime(time.Now())
 
 	registry := newMockIRRegistry()
 	registry.activeIRs["IR-000"] = true
@@ -69,6 +68,7 @@ func TestRecordIRCompletion_Success(t *testing.T) {
 	verifierHash := sha256.Sum256([]byte("verifier"))
 
 	score, err := k.RecordIRCompletion(
+		ctx,
 		walletAddr,
 		"IR-000",
 		"assistant1",
@@ -86,7 +86,7 @@ func TestRecordIRCompletion_Success(t *testing.T) {
 	}
 
 	// Check completion was recorded
-	completion, ok := k.GetIRCompletion(walletAddr, "IR-000")
+	completion, ok := k.GetIRCompletion(ctx, walletAddr, "IR-000")
 	if !ok {
 		t.Error("expected completion to be recorded")
 	}
@@ -96,7 +96,7 @@ func TestRecordIRCompletion_Success(t *testing.T) {
 	}
 
 	// Check user record was updated
-	record, ok := k.GetUserRecord(walletAddr)
+	record, ok := k.GetUserRecord(ctx, walletAddr)
 	if !ok {
 		t.Error("expected user record to exist")
 	}
@@ -111,8 +111,8 @@ func TestRecordIRCompletion_Success(t *testing.T) {
 }
 
 func TestRecordIRCompletion_InvalidInputs(t *testing.T) {
-	k := NewKeeper(nil, "gov1")
-	k.SetCurrentTime(time.Now().Unix())
+	ctx, k := setupConfKeeper(t)
+	ctx = ctx.WithBlockTime(time.Now())
 
 	proofHash := sha256.Sum256([]byte("proof"))
 	verifierHash := sha256.Sum256([]byte("verifier"))
@@ -162,6 +162,7 @@ func TestRecordIRCompletion_InvalidInputs(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := k.RecordIRCompletion(
+				ctx,
 				tt.walletAddr,
 				tt.irID,
 				"assistant1",
@@ -178,8 +179,8 @@ func TestRecordIRCompletion_InvalidInputs(t *testing.T) {
 }
 
 func TestRecordIRCompletion_AlreadyCompleted(t *testing.T) {
-	k := NewKeeper(nil, "gov1")
-	k.SetCurrentTime(time.Now().Unix())
+	ctx, k := setupConfKeeperWithTime(t)
+	ctx = ctx.WithBlockHeight(100)
 
 	registry := newMockIRRegistry()
 	registry.activeIRs["IR-000"] = true
@@ -191,6 +192,7 @@ func TestRecordIRCompletion_AlreadyCompleted(t *testing.T) {
 
 	// Complete IR first time
 	_, err := k.RecordIRCompletion(
+		ctx,
 		walletAddr,
 		"IR-000",
 		"assistant1",
@@ -205,6 +207,7 @@ func TestRecordIRCompletion_AlreadyCompleted(t *testing.T) {
 	// Try to complete again
 	proofHash2 := sha256.Sum256([]byte("proof2"))
 	_, err = k.RecordIRCompletion(
+		ctx,
 		walletAddr,
 		"IR-000",
 		"assistant1",
@@ -219,8 +222,7 @@ func TestRecordIRCompletion_AlreadyCompleted(t *testing.T) {
 }
 
 func TestRecordIRCompletion_InactiveIR(t *testing.T) {
-	k := NewKeeper(nil, "gov1")
-	k.SetCurrentTime(time.Now().Unix())
+	ctx, k := setupConfKeeperWithTime(t)
 
 	registry := newMockIRRegistry()
 	registry.activeIRs["IR-001"] = false // Inactive
@@ -230,14 +232,7 @@ func TestRecordIRCompletion_InactiveIR(t *testing.T) {
 	proofHash := sha256.Sum256([]byte("proof"))
 	verifierHash := sha256.Sum256([]byte("verifier"))
 
-	_, err := k.RecordIRCompletion(
-		walletAddr,
-		"IR-001",
-		"assistant1",
-		proofHash[:],
-		verifierHash[:],
-		time.Now().Unix(),
-	)
+	_, err := k.RecordIRCompletion(ctx, walletAddr, "IR-001", "assistant1", proofHash[:], verifierHash[:], time.Now().Unix())
 
 	if err != types.ErrIRNotActive {
 		t.Errorf("expected ErrIRNotActive, got %v", err)
@@ -245,8 +240,7 @@ func TestRecordIRCompletion_InactiveIR(t *testing.T) {
 }
 
 func TestRecordIRCompletion_AnchorRequired(t *testing.T) {
-	k := NewKeeper(nil, "gov1")
-	k.SetCurrentTime(time.Now().Unix())
+	ctx, k := setupConfKeeperWithTime(t)
 
 	registry := newMockIRRegistry()
 	registry.activeIRs["IR-001"] = true
@@ -257,14 +251,7 @@ func TestRecordIRCompletion_AnchorRequired(t *testing.T) {
 	verifierHash := sha256.Sum256([]byte("verifier"))
 
 	// Try to complete IR-001 without IR-000
-	_, err := k.RecordIRCompletion(
-		walletAddr,
-		"IR-001",
-		"assistant1",
-		proofHash[:],
-		verifierHash[:],
-		time.Now().Unix(),
-	)
+	_, err := k.RecordIRCompletion(ctx, walletAddr, "IR-001", "assistant1", proofHash[:], verifierHash[:], time.Now().Unix())
 
 	if err != types.ErrAnchorNotCompleted {
 		t.Errorf("expected ErrAnchorNotCompleted, got %v", err)
@@ -272,8 +259,7 @@ func TestRecordIRCompletion_AnchorRequired(t *testing.T) {
 }
 
 func TestRecordIRCompletion_PrerequisitesMissing(t *testing.T) {
-	k := NewKeeper(nil, "gov1")
-	k.SetCurrentTime(time.Now().Unix())
+	ctx, k := setupConfKeeperWithTime(t)
 
 	registry := newMockIRRegistry()
 	registry.activeIRs["IR-000"] = true
@@ -286,18 +272,11 @@ func TestRecordIRCompletion_PrerequisitesMissing(t *testing.T) {
 	verifierHash := sha256.Sum256([]byte("verifier"))
 
 	// Complete IR-000 (anchor)
-	k.RecordIRCompletion(walletAddr, "IR-000", "assistant1", proofHash[:], verifierHash[:], time.Now().Unix())
+	k.RecordIRCompletion(ctx, walletAddr, "IR-000", "assistant1", proofHash[:], verifierHash[:], time.Now().Unix())
 
 	// Try to complete IR-002 without IR-001
 	proofHash2 := sha256.Sum256([]byte("proof2"))
-	_, err := k.RecordIRCompletion(
-		walletAddr,
-		"IR-002",
-		"assistant1",
-		proofHash2[:],
-		verifierHash[:],
-		time.Now().Unix(),
-	)
+	_, err := k.RecordIRCompletion(ctx, walletAddr, "IR-002", "assistant1", proofHash2[:], verifierHash[:], time.Now().Unix())
 
 	if err == nil || err.Error() != "required prerequisite ir not completed: IR-001" {
 		t.Errorf("expected prerequisite error, got %v", err)
@@ -305,8 +284,7 @@ func TestRecordIRCompletion_PrerequisitesMissing(t *testing.T) {
 }
 
 func TestRecordIRCompletion_RateLimitExceeded(t *testing.T) {
-	k := NewKeeper(nil, "gov1")
-	k.SetCurrentTime(time.Now().Unix())
+	ctx, k := setupConfKeeperWithTime(t)
 
 	registry := newMockIRRegistry()
 	registry.activeIRs["IR-000"] = true
@@ -317,7 +295,7 @@ func TestRecordIRCompletion_RateLimitExceeded(t *testing.T) {
 	// Complete anchor first
 	proofHash := sha256.Sum256([]byte("proof0"))
 	verifierHash := sha256.Sum256([]byte("verifier"))
-	k.RecordIRCompletion(walletAddr, "IR-000", "assistant1", proofHash[:], verifierHash[:], time.Now().Unix())
+	k.RecordIRCompletion(ctx, walletAddr, "IR-000", "assistant1", proofHash[:], verifierHash[:], time.Now().Unix())
 
 	// Set up other active IRs
 	for i := 1; i <= 10; i++ {
@@ -329,7 +307,7 @@ func TestRecordIRCompletion_RateLimitExceeded(t *testing.T) {
 	for i := 1; i <= 4; i++ {
 		irID := "IR-" + string(rune('0'+i))
 		proofHash := sha256.Sum256([]byte("proof" + string(rune('0'+i))))
-		_, err := k.RecordIRCompletion(walletAddr, irID, "assistant1", proofHash[:], verifierHash[:], time.Now().Unix())
+		_, err := k.RecordIRCompletion(ctx, walletAddr, irID, "assistant1", proofHash[:], verifierHash[:], time.Now().Unix())
 
 		if i <= 2 {
 			if err != nil {
@@ -346,8 +324,8 @@ func TestRecordIRCompletion_RateLimitExceeded(t *testing.T) {
 }
 
 func TestRecordIRCompletion_ReplayDetection(t *testing.T) {
-	k := NewKeeper(nil, "gov1")
-	k.SetCurrentTime(time.Now().Unix())
+	ctx, k := setupConfKeeperWithTime(t)
+	ctx = ctx.WithBlockHeight(200)
 
 	registry := newMockIRRegistry()
 	registry.activeIRs["IR-000"] = true
@@ -359,10 +337,10 @@ func TestRecordIRCompletion_ReplayDetection(t *testing.T) {
 	verifierHash := sha256.Sum256([]byte("verifier"))
 
 	// Complete IR-000 with proof hash
-	k.RecordIRCompletion(walletAddr, "IR-000", "assistant1", proofHash[:], verifierHash[:], time.Now().Unix())
+	k.RecordIRCompletion(ctx, walletAddr, "IR-000", "assistant1", proofHash[:], verifierHash[:], time.Now().Unix())
 
 	// Try to use same proof hash for different IR
-	_, err := k.RecordIRCompletion(walletAddr, "IR-001", "assistant1", proofHash[:], verifierHash[:], time.Now().Unix())
+	_, err := k.RecordIRCompletion(ctx, walletAddr, "IR-001", "assistant1", proofHash[:], verifierHash[:], time.Now().Unix())
 
 	if err != types.ErrReplayDetected {
 		t.Errorf("expected ErrReplayDetected, got %v", err)
@@ -370,8 +348,8 @@ func TestRecordIRCompletion_ReplayDetection(t *testing.T) {
 }
 
 func TestRecordIRCompletion_StaleAttestation(t *testing.T) {
-	k := NewKeeper(nil, "gov1")
-	k.SetCurrentTime(time.Now().Unix())
+	ctx, k := setupConfKeeperWithTime(t)
+	ctx = ctx.WithBlockHeight(300)
 
 	registry := newMockIRRegistry()
 	registry.activeIRs["IR-000"] = true
@@ -384,14 +362,7 @@ func TestRecordIRCompletion_StaleAttestation(t *testing.T) {
 	// Use timestamp from 10 minutes ago (exceeds 5 minute freshness)
 	staleTimestamp := time.Now().Add(-10 * time.Minute).Unix()
 
-	_, err := k.RecordIRCompletion(
-		walletAddr,
-		"IR-000",
-		"assistant1",
-		proofHash[:],
-		verifierHash[:],
-		staleTimestamp,
-	)
+	_, err := k.RecordIRCompletion(ctx, walletAddr, "IR-000", "assistant1", proofHash[:], verifierHash[:], staleTimestamp)
 
 	if err != types.ErrStaleAttestation {
 		t.Errorf("expected ErrStaleAttestation, got %v", err)
@@ -399,9 +370,8 @@ func TestRecordIRCompletion_StaleAttestation(t *testing.T) {
 }
 
 func TestRecordIRCompletion_VerificationAchieved(t *testing.T) {
-	k := NewKeeper(nil, "gov1")
-	k.SetCurrentTime(time.Now().Unix())
-	k.SetCurrentHeight(100)
+	ctx, k := setupConfKeeperWithTime(t)
+	ctx = ctx.WithBlockHeight(100)
 
 	registry := newMockIRRegistry()
 	registry.activeIRs["IR-000"] = true
@@ -412,21 +382,14 @@ func TestRecordIRCompletion_VerificationAchieved(t *testing.T) {
 	proofHash := sha256.Sum256([]byte("proof"))
 	verifierHash := sha256.Sum256([]byte("verifier"))
 
-	score, err := k.RecordIRCompletion(
-		walletAddr,
-		"IR-000",
-		"assistant1",
-		proofHash[:],
-		verifierHash[:],
-		time.Now().Unix(),
-	)
+	score, err := k.RecordIRCompletion(ctx, walletAddr, "IR-000", "assistant1", proofHash[:], verifierHash[:], time.Now().Unix())
 
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
 	// Check verification status
-	record, _ := k.GetUserRecord(walletAddr)
+	record, _ := k.GetUserRecord(ctx, walletAddr)
 	if record.Status != types.VerificationStatusVerified {
 		t.Errorf("expected verified status, got %v", record.Status)
 	}
@@ -441,12 +404,12 @@ func TestRecordIRCompletion_VerificationAchieved(t *testing.T) {
 }
 
 func TestValidateAnchor(t *testing.T) {
-	k := NewKeeper(nil, "gov1")
+	ctx, k := setupConfKeeperWithTime(t)
 
 	walletAddr := "aura1test"
 
 	// Test without anchor
-	err := k.ValidateAnchor(walletAddr)
+	err := k.ValidateAnchor(ctx, walletAddr)
 	if err != types.ErrAnchorNotCompleted {
 		t.Errorf("expected ErrAnchorNotCompleted, got %v", err)
 	}
@@ -457,9 +420,9 @@ func TestValidateAnchor(t *testing.T) {
 		HasAnchor:     true,
 		AnchorInfo:    nil,
 	}
-	k.SetUserRecord(record)
+	k.SetUserRecord(ctx, record)
 
-	err = k.ValidateAnchor(walletAddr)
+	err = k.ValidateAnchor(ctx, walletAddr)
 	if err != types.ErrInvalidAnchor {
 		t.Errorf("expected ErrInvalidAnchor, got %v", err)
 	}
@@ -468,22 +431,22 @@ func TestValidateAnchor(t *testing.T) {
 	record.AnchorInfo = &types.AnchorInfo{
 		Completed: true,
 	}
-	k.SetUserRecord(record)
+	k.SetUserRecord(ctx, record)
 
-	err = k.ValidateAnchor(walletAddr)
+	err = k.ValidateAnchor(ctx, walletAddr)
 	if err != nil {
 		t.Errorf("expected no error for valid anchor, got %v", err)
 	}
 }
 
 func TestCalculateVelocityBonus(t *testing.T) {
-	k := NewKeeper(nil, "gov1")
-	k.SetCurrentTime(time.Now().Unix())
+	ctx, k := setupConfKeeperWithTime(t)
+	ctx = ctx.WithBlockHeight(500)
 
 	walletAddr := "aura1test"
 
 	// No anchor - should return 1.0
-	bonus := k.CalculateVelocityBonus(walletAddr)
+	bonus := k.CalculateVelocityBonus(ctx, walletAddr)
 	if bonus != 1.0 {
 		t.Errorf("expected 1.0 for no anchor, got %f", bonus)
 	}
@@ -496,34 +459,34 @@ func TestCalculateVelocityBonus(t *testing.T) {
 		TotalScore:    5000, // Below verification threshold
 		AnchorInfo: &types.AnchorInfo{
 			Completed:   true,
-			CompletedAt: timestampFromUnix(anchorTime),
+			CompletedAt: timestampFromTime(time.Unix(anchorTime, 0)),
 		},
 	}
-	k.SetUserRecord(record)
+	k.SetUserRecord(ctx, record)
 
-	bonus = k.CalculateVelocityBonus(walletAddr)
+	bonus = k.CalculateVelocityBonus(ctx, walletAddr)
 	if bonus != 1.25 { // Within 7 days
 		t.Errorf("expected 1.25 for 5 days, got %f", bonus)
 	}
 
 	// Already verified - should return 1.0
 	record.TotalScore = 10000
-	k.SetUserRecord(record)
-	bonus = k.CalculateVelocityBonus(walletAddr)
+	k.SetUserRecord(ctx, record)
+	bonus = k.CalculateVelocityBonus(ctx, walletAddr)
 	if bonus != 1.0 {
 		t.Errorf("expected 1.0 for verified user, got %f", bonus)
 	}
 }
 
 func TestCheckJackpotWin(t *testing.T) {
-	k := NewKeeper(nil, "gov1")
-	k.SetCurrentHeight(100)
+	ctx, k := setupConfKeeperWithTime(t)
+	ctx = ctx.WithBlockHeight(100)
 
 	walletAddr := "aura1test"
 	irID := "IR-001"
 
 	// Test jackpot calculation (deterministic based on seed)
-	multiplier := k.CheckJackpotWin(walletAddr, irID)
+	multiplier := k.CheckJackpotWin(ctx, walletAddr, irID)
 
 	// Should be >= 1.0
 	if multiplier < 1.0 {
@@ -531,43 +494,20 @@ func TestCheckJackpotWin(t *testing.T) {
 	}
 
 	// Same inputs should give same result
-	multiplier2 := k.CheckJackpotWin(walletAddr, irID)
+	multiplier2 := k.CheckJackpotWin(ctx, walletAddr, irID)
 	if multiplier != multiplier2 {
 		t.Error("expected deterministic jackpot result")
 	}
 
 	// Different inputs should potentially give different result
-	multiplier3 := k.CheckJackpotWin(walletAddr, "IR-002")
+	multiplier3 := k.CheckJackpotWin(ctx, walletAddr, "IR-002")
 	_ = multiplier3 // May or may not be different, but should not panic
 }
 
 func TestCleanupExpiredRateLimits(t *testing.T) {
-	k := NewKeeper(nil, "gov1")
-	k.SetCurrentTime(time.Now().Unix())
+	ctx, k := setupConfKeeperWithTime(t)
+	ctx = ctx.WithBlockHeight(600)
 
-	walletAddr := "aura1test"
-
-	// Manually add some rate limit entries
-	k.mu.Lock()
-	k.rateLimits[walletAddr] = map[string]int{
-		"hour_2024_1":   1,
-		"day_2024_1":    2,
-		"hour_2025_365": 3, // Old entry
-	}
-	k.mu.Unlock()
-
-	k.CleanupExpiredRateLimits()
-
-	// Check that old entries are removed
-	k.mu.RLock()
-	limits := k.rateLimits[walletAddr]
-	k.mu.RUnlock()
-
-	// Should only have current hour/day entries
-	for key := range limits {
-		if key == "hour_2025_365" {
-			// This might still be there if it matches current time
-			continue
-		}
-	}
+	// Ensure cleanup does not panic (logic currently a no-op placeholder)
+	k.CleanupExpiredRateLimits(ctx)
 }

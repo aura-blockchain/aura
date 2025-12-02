@@ -3,8 +3,8 @@ package keeper
 import (
 	"fmt"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/aequitas/aura/chain/x/inclusionroutines/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // GetIRPrerequisites returns the list of prerequisite IR IDs for the given IR

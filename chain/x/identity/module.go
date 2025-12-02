@@ -1,6 +1,7 @@
 package identity
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -21,10 +22,10 @@ import (
 )
 
 var (
-	_ module.AppModuleBasic      = AppModule{}
-	_ module.HasGenesis          = AppModule{}
-	_ module.HasServices         = AppModule{}
-	_ appmodule.AppModule        = AppModule{}
+	_ module.AppModuleBasic = AppModule{}
+	_ module.HasGenesis     = AppModule{}
+	_ module.HasServices    = AppModule{}
+	_ appmodule.AppModule   = AppModule{}
 )
 
 // AppModuleBasic defines the basic application module used by the identity module.
@@ -54,6 +55,9 @@ func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 
 // ValidateGenesis performs genesis state validation for the identity module.
 func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncodingConfig, bz json.RawMessage) error {
+	if len(bytes.TrimSpace(bz)) == 0 {
+		return nil
+	}
 	var data types.GenesisState
 	if err := cdc.UnmarshalJSON(bz, &data); err != nil {
 		return fmt.Errorf("failed to unmarshal %s genesis state: %w", types.ModuleName, err)
@@ -150,10 +154,6 @@ func (AppModule) ConsensusVersion() uint64 { return 1 }
 // ============================================================================
 // App Wiring Setup
 // ============================================================================
-
-func init() {
-	appmodule.Register(&Module{})
-}
 
 // Module is the app module type for the identity module.
 type Module struct {

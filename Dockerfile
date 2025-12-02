@@ -5,39 +5,46 @@
 # ============================================================================
 # Stage 1: Security Scanner Base
 # ============================================================================
-FROM golang:1.21-alpine AS security-scanner
+FROM golang:1.23-bullseye AS security-scanner
 
-RUN apk add --no-cache git
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends git && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /scan
 COPY chain/go.mod chain/go.sum ./
 
 # Install security scanning tools
-RUN go install golang.org/x/vuln/cmd/govulncheck@latest
-RUN go install github.com/securego/gosec/v2/cmd/gosec@latest
+RUN go install golang.org/x/vuln/cmd/govulncheck@v1.0.0
+RUN go install github.com/securego/gosec/v2/cmd/gosec@v2.17.0
 
 # ============================================================================
 # Stage 2: Builder
 # ============================================================================
-FROM golang:1.21-alpine AS builder
+FROM golang:1.23-bullseye AS builder
 
 # Security: Run as non-root during build
-RUN addgroup -g 10001 builder && \
-    adduser -D -u 10001 -G builder builder
+RUN groupadd -g 10001 builder && \
+    useradd -m -u 10001 -g builder builder
 
 # Install build dependencies
-RUN apk add --no-cache \
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
     git \
     make \
     gcc \
-    musl-dev \
-    linux-headers \
-    ca-certificates
+    g++ \
+    pkg-config \
+    libc6-dev \
+    ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
 # Copy dependency files first for better layer caching
 COPY --chown=builder:builder chain/go.mod chain/go.sum ./chain/
+COPY --chown=builder:builder third_party/ ./third_party/
+COPY --chown=builder:builder proto/ ./proto/
 WORKDIR /app/chain
 
 # Verify dependencies before download
@@ -57,7 +64,7 @@ RUN govulncheck ./... || echo "Vulnerability scan completed with warnings"
 ARG VERSION=dev
 ARG COMMIT=unknown
 ARG BUILD_DATE
-ARG BUILD_TAGS="netgo,ledger,muslc"
+ARG BUILD_TAGS="netgo,ledger"
 
 # Build the binary with maximum optimizations and security hardening
 RUN CGO_ENABLED=1 \
@@ -75,7 +82,7 @@ RUN CGO_ENABLED=1 \
         -X 'github.com/cosmos/cosmos-sdk/version.BuildDate=${BUILD_DATE}' \
         -w -s \
         -linkmode=external \
-        -extldflags '-Wl,-z,relro,-z,now,-z,muldefs -static -fstack-protector-strong'" \
+        -extldflags '-Wl,-z,relro,-z,now,-z,muldefs -fstack-protector-strong'" \
     -trimpath \
     -buildvcs=false \
     -o /app/build/aurad \
@@ -90,26 +97,23 @@ RUN strip /app/build/aurad || true
 # ============================================================================
 # Stage 3: Runtime (Minimal Production Image)
 # ============================================================================
-FROM alpine:3.18
+FROM debian:12-slim
 
 # Security: Install only essential runtime dependencies
-RUN apk add --no-cache \
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
     ca-certificates \
-    libgcc \
     tzdata && \
+    rm -rf /var/lib/apt/lists/* && \
     # Create non-root user
-    addgroup -g 1000 aura && \
-    adduser -D -u 1000 -G aura aura && \
+    groupadd -g 1000 aura && \
+    useradd -m -u 1000 -g aura aura && \
     # Set up directories with proper permissions
     mkdir -p /home/aura/.aura/config \
              /home/aura/.aura/data \
              /home/aura/.aura/cosmovisor/genesis/bin \
              /home/aura/.aura/cosmovisor/upgrades && \
-    chown -R aura:aura /home/aura && \
-    # Remove unnecessary packages
-    apk del apk-tools && \
-    # Clear cache
-    rm -rf /var/cache/apk/*
+    chown -R aura:aura /home/aura
 
 # Copy binary from builder with ownership
 COPY --from=builder --chown=aura:aura /app/build/aurad /usr/local/bin/aurad

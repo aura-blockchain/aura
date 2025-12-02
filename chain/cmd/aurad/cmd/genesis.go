@@ -2,23 +2,32 @@ package cmd
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 
 	"cosmossdk.io/core/address"
+	"github.com/aequitas/aura/chain/app"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/server"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	bankexported "github.com/cosmos/cosmos-sdk/x/bank/exported"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	"github.com/cosmos/cosmos-sdk/x/genutil"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 
 	"github.com/aequitas/aura/chain/cmd/aurad/cmd/security"
+	contractregistrytypes "github.com/aequitas/aura/chain/x/contractregistry/types"
+	incidentresponsetypes "github.com/aequitas/aura/chain/x/incidentresponse/types"
+	contractregistrypb "github.com/aequitas/aura/proto/aura/contractregistry/v1beta1"
 )
 
 const (
@@ -49,7 +58,12 @@ func (b bankBalancesIterator) IterateGenesisBalances(
 }
 
 // GenesisCmd returns the genesis command group with security-wrapped SDK commands
-func GenesisCmd(mbm module.BasicManager, addressCodec address.Codec) *cobra.Command {
+func GenesisCmd(
+	mbm module.BasicManager,
+	accountCodec address.Codec,
+	validatorCodec address.Codec,
+	txEncCfg client.TxEncodingConfig,
+) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "genesis",
 		Short: "Genesis file operations",
@@ -65,15 +79,107 @@ The genesis file defines the initial state of the blockchain including:
 
 	// Add standard SDK genesis commands with security validation
 	// Only add commands that require mbm and addressCodec if they are provided
-	if mbm != nil && addressCodec != nil {
+	if mbm != nil && accountCodec != nil && validatorCodec != nil {
+		validateCmd := genutilcli.ValidateGenesisCmd(mbm)
+		validateCmd.RunE = func(cmd *cobra.Command, args []string) error {
+			encCfg := app.MakeEncodingConfig()
+			clientCtx := client.GetClientContextFromCmd(cmd).
+				WithTxConfig(encCfg.TxConfig).
+				WithCodec(encCfg.Codec).
+				WithInterfaceRegistry(encCfg.InterfaceRegistry)
+			if err := client.SetCmdClientContext(cmd, clientCtx); err != nil {
+				return err
+			}
+
+			if err := ensureGenesisSections(cmd, args, mbm); err != nil {
+				return err
+			}
+
+			serverCtx := server.GetServerContextFromCmd(cmd)
+			var genesisPath string
+			if len(args) == 0 {
+				if serverCtx == nil || serverCtx.Config == nil {
+					return fmt.Errorf("server context not initialized; unable to locate genesis file")
+				}
+				genesisPath = serverCtx.Config.GenesisFile()
+			} else {
+				genesisPath = args[0]
+			}
+
+			appGenesis, err := genutiltypes.AppGenesisFromFile(genesisPath)
+			if err != nil {
+				return enrichUnmarshalError(err)
+			}
+
+			if err := appGenesis.ValidateAndComplete(); err != nil {
+				const chainUpgradeGuide = "https://github.com/cosmos/cosmos-sdk/blob/main/UPGRADING.md"
+				return fmt.Errorf("make sure that you have correctly migrated all CometBFT consensus params. Refer the UPGRADING.md (%s): %w", chainUpgradeGuide, err)
+			}
+
+			var genState map[string]json.RawMessage
+			if err := json.Unmarshal(appGenesis.AppState, &genState); err != nil {
+				if strings.Contains(err.Error(), "unexpected end of JSON input") {
+					return fmt.Errorf("app_state is missing in the genesis file: %s", err.Error())
+				}
+				return fmt.Errorf("error unmarshalling genesis doc %s: %w", genesisPath, err)
+			}
+
+			txCfg := encCfg.TxConfig
+
+			// Validate genutil/gentx explicitly with the safe decoder.
+			genutilGs := genutiltypes.GetGenesisStateFromAppState(clientCtx.Codec, genState)
+			if genutilGs != nil {
+				if err := genutiltypes.ValidateGenesis(genutilGs, txCfg.TxJSONDecoder(), genutiltypes.DefaultMessageValidator); err != nil {
+					errStr := fmt.Sprintf("error validating genesis file %s (module %s): %s", genesisPath, genutiltypes.ModuleName, err.Error())
+					if errors.Is(err, io.EOF) {
+						errStr = fmt.Sprintf("%s: section is missing in the app_state", errStr)
+					}
+					return fmt.Errorf("%s", errStr)
+				}
+			}
+
+			for name, mod := range mbm {
+				if name == genutiltypes.ModuleName {
+					continue
+				}
+				vg, ok := mod.(interface {
+					ValidateGenesis(codec.JSONCodec, client.TxEncodingConfig, json.RawMessage) error
+				})
+				if !ok {
+					continue
+				}
+
+				if err := vg.ValidateGenesis(clientCtx.Codec, txCfg, genState[name]); err != nil {
+					errStr := fmt.Sprintf("error validating genesis file %s (module %s): %s", genesisPath, name, err.Error())
+					if errors.Is(err, io.EOF) {
+						errStr = fmt.Sprintf("%s: section is missing in the app_state", errStr)
+					}
+					return fmt.Errorf("%s", errStr)
+				}
+			}
+
+			fmt.Fprintf(cmd.OutOrStdout(), "File at %s is a valid genesis file\n", genesisPath)
+			return nil
+		}
+		validateCmd = wrapWithSecurity(validateCmd)
+		validateCmd.Use = "validate-genesis"
+		validateCmd.Aliases = append(validateCmd.Aliases, "validate")
+
 		cmd.AddCommand(
-			wrapWithSecurity(genutilcli.AddGenesisAccountCmd(defaultNodeHome, addressCodec)),
-			wrapWithSecurity(genutilcli.ValidateGenesisCmd(mbm)),
+			wrapWithSecurity(genutilcli.AddGenesisAccountCmd(defaultNodeHome, accountCodec)),
+			wrapWithSecurity(genutilcli.GenTxCmd(
+				mbm,
+				txEncCfg,
+				bankBalancesIterator{},
+				defaultNodeHome,
+				validatorCodec,
+			)),
+			validateCmd,
 			wrapWithSecurity(genutilcli.CollectGenTxsCmd(
 				bankBalancesIterator{},
 				defaultNodeHome,
 				genutiltypes.DefaultMessageValidator,
-				addressCodec,
+				validatorCodec,
 			)),
 		)
 	}
@@ -116,8 +222,22 @@ func wrapWithSecurity(cmd *cobra.Command) *cobra.Command {
 
 		// Validate home directory path
 		clientCtx := client.GetClientContextFromCmd(c)
+		if clientCtx.Codec == nil || clientCtx.InterfaceRegistry == nil {
+			encCfg := app.MakeEncodingConfig()
+			clientCtx = clientCtx.
+				WithTxConfig(encCfg.TxConfig).
+				WithCodec(encCfg.Codec).
+				WithInterfaceRegistry(encCfg.InterfaceRegistry)
+		}
+		homeDir := clientCtx.HomeDir
+		if homeFlag := c.Flag(flags.FlagHome); homeFlag != nil {
+			if flagHome := homeFlag.Value.String(); flagHome != "" {
+				homeDir = flagHome
+			}
+		}
+
 		validator := security.NewPathValidator(secLogger)
-		validHome, err := validator.ValidateAndCleanHomePath(clientCtx.HomeDir)
+		validHome, err := validator.ValidateAndCleanHomePath(homeDir)
 		if err != nil {
 			return fmt.Errorf("invalid home directory: %w", err)
 		}
@@ -130,13 +250,135 @@ func wrapWithSecurity(cmd *cobra.Command) *cobra.Command {
 
 		// Update server context with validated home
 		serverCtx := server.GetServerContextFromCmd(c)
-		serverCtx.Config.SetRoot(validHome)
+		if serverCtx != nil && serverCtx.Config != nil {
+			serverCtx.Config.SetRoot(validHome)
+		}
 
 		// Call the original command
 		return originalRunE(c, args)
 	}
 
 	return cmd
+}
+
+// ensureGenesisSections backfills missing module genesis sections with defaults
+// so validation succeeds even if app_state omitted registered modules.
+func ensureGenesisSections(cmd *cobra.Command, args []string, mbm module.BasicManager) error {
+	clientCtx := client.GetClientContextFromCmd(cmd)
+	if clientCtx.Codec == nil || clientCtx.InterfaceRegistry == nil {
+		encCfg := app.MakeEncodingConfig()
+		clientCtx = clientCtx.
+			WithCodec(encCfg.Codec).
+			WithInterfaceRegistry(encCfg.InterfaceRegistry).
+			WithTxConfig(encCfg.TxConfig)
+		if err := client.SetCmdClientContext(cmd, clientCtx); err != nil {
+			return err
+		}
+	}
+
+	serverCtx := server.GetServerContextFromCmd(cmd)
+	var genesisPath string
+	if len(args) == 0 {
+		if serverCtx == nil || serverCtx.Config == nil {
+			return fmt.Errorf("server context not initialized; unable to locate genesis file")
+		}
+		genesisPath = serverCtx.Config.GenesisFile()
+	} else {
+		genesisPath = args[0]
+	}
+
+	appGenesis, err := genutiltypes.AppGenesisFromFile(genesisPath)
+	if err != nil {
+		return fmt.Errorf("failed to load genesis file %s: %w", genesisPath, err)
+	}
+
+	var genState map[string]json.RawMessage
+	if err := json.Unmarshal(appGenesis.AppState, &genState); err != nil {
+		return fmt.Errorf("error unmarshalling genesis doc %s: %w", genesisPath, err)
+	}
+
+	updated := false
+	for name, mod := range mbm {
+		if len(genState[name]) == 0 {
+			genState[name] = defaultGenesisForModule(clientCtx.Codec, mod)
+			updated = true
+		}
+	}
+
+	// Fix up known-invalid defaults for incidentresponse (emergency pause with no keys).
+	if raw := genState[incidentresponsetypes.ModuleName]; len(raw) != 0 {
+		var gs incidentresponsetypes.GenesisState
+		if err := json.Unmarshal(raw, &gs); err == nil {
+			if gs.Params != nil && gs.Params.EmergencyPauseEnabled && len(gs.Params.PauseAuthorizedKeys) == 0 {
+				gs.Params.EmergencyPauseEnabled = false
+				patched, _ := json.Marshal(gs)
+				genState[incidentresponsetypes.ModuleName] = patched
+				updated = true
+				raw = genState[incidentresponsetypes.ModuleName]
+			}
+		}
+
+		if err := json.Unmarshal(raw, &gs); err == nil {
+			if gs.Params != nil && gs.Params.DisasterRecovery.Enabled && len(gs.Params.DisasterRecovery.BackupLocations) == 0 {
+				gs.Params.DisasterRecovery.Enabled = false
+				patched, _ := json.Marshal(gs)
+				genState[incidentresponsetypes.ModuleName] = patched
+				updated = true
+			}
+		}
+	}
+
+	// Ensure contractregistry has params to satisfy InitGenesis.
+	if raw := genState[contractregistrytypes.ModuleName]; len(raw) != 0 {
+		var gs contractregistrypb.GenesisState
+		if err := json.Unmarshal(raw, &gs); err == nil {
+			if gs.Params == nil {
+				gs.Params = contractregistrytypes.DefaultParams()
+				genState[contractregistrytypes.ModuleName] = clientCtx.Codec.MustMarshalJSON(&gs)
+				updated = true
+			}
+		}
+	}
+
+	if !updated {
+		return nil
+	}
+
+	newAppState, err := json.Marshal(genState)
+	if err != nil {
+		return fmt.Errorf("failed to marshal patched app_state: %w", err)
+	}
+
+	appGenesis.AppState = newAppState
+	if err := genutil.ExportGenesisFile(appGenesis, genesisPath); err != nil {
+		return fmt.Errorf("failed to write patched genesis file %s: %w", genesisPath, err)
+	}
+
+	return nil
+}
+
+// defaultGenesisForModule returns a module's default genesis if available.
+func defaultGenesisForModule(cdc codec.JSONCodec, mod module.AppModuleBasic) json.RawMessage {
+	if mod == nil {
+		return json.RawMessage(`{}`)
+	}
+	if dg, ok := mod.(interface {
+		DefaultGenesis(codec.JSONCodec) json.RawMessage
+	}); ok {
+		if raw := dg.DefaultGenesis(cdc); len(raw) > 0 {
+			return raw
+		}
+	}
+	return json.RawMessage(`{}`)
+}
+
+// enrichUnmarshalError mirrors the SDK helper to improve syntax error context.
+func enrichUnmarshalError(err error) error {
+	var syntaxErr *json.SyntaxError
+	if errors.As(err, &syntaxErr) {
+		return fmt.Errorf("error at offset %d: %s", syntaxErr.Offset, syntaxErr.Error())
+	}
+	return err
 }
 
 // QuickstartCmd returns a command that helps users quickly set up a single-node chain

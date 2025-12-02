@@ -1,6 +1,7 @@
 package aurabindings
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 
@@ -55,6 +56,9 @@ func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 
 // ValidateGenesis performs genesis state validation
 func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncodingConfig, bz json.RawMessage) error {
+	if len(bytes.TrimSpace(bz)) == 0 {
+		return nil
+	}
 	var data types.GenesisState
 	// Use standard JSON unmarshaling since GenesisState is a Go struct, not proto
 	if err := json.Unmarshal(bz, &data); err != nil {

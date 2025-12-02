@@ -1,8 +1,10 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -10,18 +12,28 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"sort"
+	"strconv"
 	"syscall"
 	"time"
 
 	"cosmossdk.io/log"
+	sdkmath "cosmossdk.io/math"
 	"cosmossdk.io/store"
 	pruningtypes "cosmossdk.io/store/pruning/types"
+	storetypes "cosmossdk.io/store/types"
+	storewrapper "cosmossdk.io/store/wrapper"
+	"github.com/cosmos/iavl"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 
+	"github.com/aequitas/aura/chain/app"
+	"github.com/aequitas/aura/chain/cmd/aurad/cmd/security"
+	contractregistrytypes "github.com/aequitas/aura/chain/x/contractregistry/types"
+	contractregistrypb "github.com/aequitas/aura/proto/aura/contractregistry/v1beta1"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtcfg "github.com/cometbft/cometbft/config"
 	cmtlog "github.com/cometbft/cometbft/libs/log"
@@ -33,41 +45,51 @@ import (
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-
-	"github.com/aequitas/aura/chain/app"
-	"github.com/aequitas/aura/chain/cmd/aurad/cmd/security"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	genutil "github.com/cosmos/cosmos-sdk/x/genutil"
+	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
+	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 const (
 	// Flags for node configuration
-	flagWithComet              = "with-comet"
-	flagAddress                = "address"
-	flagTransport              = "transport"
-	flagTraceStore             = "trace-store"
-	flagCPUProfile             = "cpu-profile"
-	flagPruning                = "pruning"
-	flagPruningKeepRecent      = "pruning-keep-recent"
-	flagPruningInterval        = "pruning-interval"
-	flagMinGasPrices           = "minimum-gas-prices"
-	flagHaltHeight             = "halt-height"
-	flagHaltTime               = "halt-time"
-	flagInterBlockCache        = "inter-block-cache"
-	flagUnsafeSkipUpgrades     = "unsafe-skip-upgrades"
-	flagTrace                  = "trace"
-	flagInvCheckPeriod         = "inv-check-period"
-	flagAPIEnable              = "api.enable"
-	flagAPIAddress             = "api.address"
-	flagGRPCEnable             = "grpc.enable"
-	flagGRPCAddress            = "grpc.address"
-	flagGRPCWebEnable          = "grpc-web.enable"
-	flagJSONRPCEnable          = "json-rpc.enable"
-	flagJSONRPCAddress         = "json-rpc.address"
+	flagWithComet          = "with-comet"
+	flagAddress            = "address"
+	flagTransport          = "transport"
+	flagTraceStore         = "trace-store"
+	flagCPUProfile         = "cpu-profile"
+	flagPruning            = "pruning"
+	flagPruningKeepRecent  = "pruning-keep-recent"
+	flagPruningInterval    = "pruning-interval"
+	flagMinGasPrices       = "minimum-gas-prices"
+	flagHaltHeight         = "halt-height"
+	flagHaltTime           = "halt-time"
+	flagInterBlockCache    = "inter-block-cache"
+	flagUnsafeSkipUpgrades = "unsafe-skip-upgrades"
+	flagTrace              = "trace"
+	flagInvCheckPeriod     = "inv-check-period"
+	flagAPIEnable          = "api.enable"
+	flagAPIAddress         = "api.address"
+	flagGRPCEnable         = "grpc.enable"
+	flagGRPCAddress        = "grpc.address"
+	flagRPCListenAddress   = "rpc.address"
+	flagP2PListenAddress   = "p2p.address"
+	flagGRPCWebEnable      = "grpc-web.enable"
+	flagJSONRPCEnable      = "json-rpc.enable"
+	flagJSONRPCAddress     = "json-rpc.address"
 
 	// Default values
-	DefaultGRPCAddress         = "localhost:9090"
-	DefaultAPIAddress          = "tcp://localhost:1317"
-	DefaultRPCAddress          = "tcp://localhost:26657"
-	DefaultABCIAddress         = "tcp://0.0.0.0:26658"
+	DefaultGRPCAddress = "localhost:9090"
+	DefaultAPIAddress  = "tcp://localhost:1317"
+	DefaultRPCAddress  = "tcp://localhost:26657"
+	DefaultP2PAddress  = "tcp://0.0.0.0:26656"
+	DefaultABCIAddress = "tcp://0.0.0.0:26658"
 )
 
 // StartCmd returns the start command to run the node
@@ -156,14 +178,76 @@ func addStartFlags(cmd *cobra.Command) {
 	// API flags
 	cmd.Flags().Bool(flagAPIEnable, true, "Enable the API server")
 	cmd.Flags().String(flagAPIAddress, DefaultAPIAddress, "the API server address to listen on")
+	cmd.Flags().String(flagRPCListenAddress, DefaultRPCAddress, "the RPC (CometBFT) server address to listen on")
+	cmd.Flags().String(flagP2PListenAddress, DefaultP2PAddress, "the P2P server address to listen on")
 
 	// Other options
 	cmd.Flags().Bool(flagInterBlockCache, true, "Enable inter-block caching")
 	cmd.Flags().Bool(flagTrace, false, "Provide full stack traces for errors in ABCI Log")
 	cmd.Flags().IntSlice(flagUnsafeSkipUpgrades, []int{}, "Skip a set of upgrade heights to continue the old binary")
 
-	// Home directory
-	cmd.Flags().String(flags.FlagHome, getDefaultHomeDirFromGenesis(), "The application home directory")
+}
+
+type serviceConfig struct {
+	grpcAddress string
+	apiAddress  string
+	grpcEnabled bool
+	apiEnabled  bool
+}
+
+func loadStartServiceConfig(cmd *cobra.Command, homeDir string, logger log.Logger) (serviceConfig, error) {
+	appCfg, cfgLoaded, err := loadAppConfig(homeDir, logger)
+	if err != nil {
+		return serviceConfig{}, err
+	}
+
+	return serviceConfig{
+		grpcAddress: resolveStringFlag(cmd, flagGRPCAddress, appCfg.GRPC.Address, cfgLoaded, DefaultGRPCAddress),
+		apiAddress:  resolveStringFlag(cmd, flagAPIAddress, appCfg.API.Address, cfgLoaded, DefaultAPIAddress),
+		grpcEnabled: resolveBoolFlag(cmd, flagGRPCEnable, appCfg.GRPC.Enable, cfgLoaded, true),
+		apiEnabled:  resolveBoolFlag(cmd, flagAPIEnable, appCfg.API.Enable, cfgLoaded, true),
+	}, nil
+}
+
+func loadAppConfig(homeDir string, logger log.Logger) (serverconfig.Config, bool, error) {
+	appConfigPath := filepath.Join(homeDir, "config", "app.toml")
+	v := viper.New()
+	v.SetConfigFile(appConfigPath)
+	if err := v.ReadInConfig(); err != nil {
+		var notFound viper.ConfigFileNotFoundError
+		if errors.As(err, &notFound) {
+			logger.Info("app.toml not found; falling back to defaults", "path", appConfigPath)
+			return *serverconfig.DefaultConfig(), false, nil
+		}
+		return serverconfig.Config{}, false, fmt.Errorf("failed to read app config: %w", err)
+	}
+
+	cfg, err := serverconfig.ParseConfig(v)
+	if err != nil {
+		return serverconfig.Config{}, true, fmt.Errorf("failed to parse app config: %w", err)
+	}
+
+	return *cfg, true, nil
+}
+
+func resolveStringFlag(cmd *cobra.Command, flagName, configValue string, configLoaded bool, fallback string) string {
+	if flag := cmd.Flags().Lookup(flagName); flag != nil && flag.Changed {
+		return viper.GetString(flagName)
+	}
+	if configLoaded && configValue != "" {
+		return configValue
+	}
+	return fallback
+}
+
+func resolveBoolFlag(cmd *cobra.Command, flagName string, configValue bool, configLoaded bool, fallback bool) bool {
+	if flag := cmd.Flags().Lookup(flagName); flag != nil && flag.Changed {
+		return viper.GetBool(flagName)
+	}
+	if configLoaded {
+		return configValue
+	}
+	return fallback
 }
 
 // startInProcess starts the node with CometBFT in the same process
@@ -177,15 +261,47 @@ func startInProcess(cmd *cobra.Command, auraApp *app.App, logger log.Logger) err
 	// Get security logger
 	secLogger := GetSecurityLogger()
 
+	// Drop any genesis gentxs for local single-node starts; multi-node setups
+	// should run collect-gentxs outside this path.
+	if err := dropGentxs(homeDir, secLogger); err != nil {
+		return fmt.Errorf("failed to sanitize gentxs: %w", err)
+	}
+
+	// Reconcile staking pools and module accounts before any other processing.
+	if err := reconcileGenesisState(homeDir, secLogger); err != nil {
+		return fmt.Errorf("failed to reconcile genesis state: %w", err)
+	}
+
+	// Seed any KV stores that are missing on-disk versions (development safety net).
+	if err := seedMissingStoreVersions(homeDir, logger, app.StoreKeyNames()); err != nil {
+		return fmt.Errorf("failed to seed missing store versions: %w", err)
+	}
+
+	// Ensure genesis file formatting is compatible with CometBFT expectations
+	if err := normalizeGenesisFile(homeDir, secLogger); err != nil {
+		return fmt.Errorf("failed to normalize genesis file: %w", err)
+	}
+
 	// Load CometBFT configuration
 	cmtConfig, err := loadCometConfig(homeDir)
 	if err != nil {
 		return fmt.Errorf("failed to load CometBFT config: %w", err)
 	}
 
+	serviceCfg, err := loadStartServiceConfig(cmd, homeDir, logger)
+	if err != nil {
+		return fmt.Errorf("failed to load service configuration: %w", err)
+	}
+
 	// Validate configuration
 	if err := cmtConfig.ValidateBasic(); err != nil {
 		return fmt.Errorf("invalid CometBFT config: %w", err)
+	}
+	if cmd.Flags().Changed(flagRPCListenAddress) {
+		cmtConfig.RPC.ListenAddress = viper.GetString(flagRPCListenAddress)
+	}
+	if cmd.Flags().Changed(flagP2PListenAddress) {
+		cmtConfig.P2P.ListenAddress = viper.GetString(flagP2PListenAddress)
 	}
 
 	// Create CometBFT logger
@@ -208,7 +324,11 @@ func startInProcess(cmd *cobra.Command, auraApp *app.App, logger log.Logger) err
 	if err != nil {
 		return fmt.Errorf("failed to extract chain-id from genesis: %w", err)
 	}
-	logger.Info("loaded chain-id from genesis", "chain_id", chainID)
+	if flagChainID := viper.GetString(flags.FlagChainID); flagChainID != "" {
+		logger.Info("overriding chain-id from flag", "flag_chain_id", flagChainID, "genesis_chain_id", chainID)
+		chainID = flagChainID
+	}
+	logger.Info("loaded chain-id", "chain_id", chainID)
 
 	// Setup trace writer if enabled
 	var traceWriter io.WriteCloser
@@ -282,11 +402,10 @@ func startInProcess(cmd *cobra.Command, auraApp *app.App, logger log.Logger) err
 
 	// Start gRPC server if enabled
 	var grpcSrv *grpc.Server
-	if viper.GetBool(flagGRPCEnable) {
-		grpcAddress := viper.GetString(flagGRPCAddress)
-		logger.Info("starting gRPC server", "address", grpcAddress)
+	if serviceCfg.grpcEnabled {
+		logger.Info("starting gRPC server", "address", serviceCfg.grpcAddress)
 
-		grpcSrv, err = startGRPCServer(auraApp, grpcAddress, serverMgr, logger)
+		grpcSrv, err = startGRPCServer(auraApp, serviceCfg.grpcAddress, serverMgr, logger)
 		if err != nil {
 			// Try to cleanup
 			cmtNode.Stop()
@@ -296,11 +415,10 @@ func startInProcess(cmd *cobra.Command, auraApp *app.App, logger log.Logger) err
 
 	// Start API server if enabled
 	var apiSrv *http.Server
-	if viper.GetBool(flagAPIEnable) {
-		apiAddress := viper.GetString(flagAPIAddress)
-		logger.Info("starting API server", "address", apiAddress)
+	if serviceCfg.apiEnabled {
+		logger.Info("starting API server", "address", serviceCfg.apiAddress)
 
-		apiSrv, err = startAPIServer(apiAddress, serverMgr, secLogger)
+		apiSrv, err = startAPIServer(serviceCfg.apiAddress, serverMgr, secLogger)
 		if err != nil {
 			// Try to cleanup
 			if grpcSrv != nil {
@@ -335,6 +453,11 @@ func startStandAlone(cmd *cobra.Command, auraApp *app.App, logger log.Logger) er
 	}
 	defer db.Close()
 
+	serviceCfg, err := loadStartServiceConfig(cmd, homeDir, logger)
+	if err != nil {
+		return fmt.Errorf("failed to load service configuration: %w", err)
+	}
+
 	// Recreate app with proper database
 	auraApp = createAppWithDB(logger, db, nil)
 
@@ -343,27 +466,25 @@ func startStandAlone(cmd *cobra.Command, auraApp *app.App, logger log.Logger) er
 
 	// Start gRPC server
 	var grpcSrv *grpc.Server
-	if viper.GetBool(flagGRPCEnable) {
-		grpcAddress := viper.GetString(flagGRPCAddress)
-		grpcSrv, err = startGRPCServer(auraApp, grpcAddress, serverMgr, logger)
+	if serviceCfg.grpcEnabled {
+		grpcSrv, err = startGRPCServer(auraApp, serviceCfg.grpcAddress, serverMgr, logger)
 		if err != nil {
 			return fmt.Errorf("failed to start gRPC server: %w", err)
 		}
-		logger.Info("gRPC server started", "address", grpcAddress)
+		logger.Info("gRPC server started", "address", serviceCfg.grpcAddress)
 	}
 
 	// Start API server
 	var apiSrv *http.Server
-	if viper.GetBool(flagAPIEnable) {
-		apiAddress := viper.GetString(flagAPIAddress)
-		apiSrv, err = startAPIServer(apiAddress, serverMgr, secLogger)
+	if serviceCfg.apiEnabled {
+		apiSrv, err = startAPIServer(serviceCfg.apiAddress, serverMgr, secLogger)
 		if err != nil {
 			if grpcSrv != nil {
 				grpcSrv.GracefulStop()
 			}
 			return fmt.Errorf("failed to start API server: %w", err)
 		}
-		logger.Info("API server started", "address", apiAddress)
+		logger.Info("API server started", "address", serviceCfg.apiAddress)
 	}
 
 	logger.Info("stand-alone mode started successfully")
@@ -383,6 +504,10 @@ func startGRPCServer(
 	serverMgr *security.ServerManager,
 	logger log.Logger,
 ) (*grpc.Server, error) {
+	if auraApp == nil {
+		return nil, fmt.Errorf("app instance is nil: cannot start gRPC server")
+	}
+
 	// Parse address
 	_, portStr, err := net.SplitHostPort(address)
 	if err != nil {
@@ -416,10 +541,10 @@ func startGRPCServer(
 	// Create server
 	grpcSrv := grpc.NewServer(grpcOpts...)
 
-	// Register services from the app - use the app's module manager
-	// The app already has a grpc server, but we need to register services on our new one
-	// For now, we'll use the app's built-in gRPC server handling
-	// Note: In a full implementation, you'd register all module query services here
+	// Register ABCI-backed query services with proper SDK context injection so
+	// client gRPC calls execute against the latest state.
+	auraApp.BaseApp.RegisterGRPCServer(grpcSrv)
+	auraApp.SetGRPCServer(grpcSrv)
 
 	// Register with server manager
 	serverMgr.RegisterGRPCServer(grpcSrv)
@@ -581,17 +706,30 @@ func loadCometConfig(homeDir string) (*cmtcfg.Config, error) {
 	// Try to read config.toml
 	configFile := filepath.Join(configPath, "config.toml")
 	if _, err := os.Stat(configFile); err == nil {
-		viper.SetConfigFile(configFile)
-		if err := viper.ReadInConfig(); err != nil {
+		cfgViper := viper.New()
+		cfgViper.SetConfigFile(configFile)
+		if err := cfgViper.ReadInConfig(); err != nil {
 			return nil, fmt.Errorf("failed to read config: %w", err)
 		}
 
 		// Manually set some critical fields from viper
-		if chainID := viper.GetString("chain-id"); chainID != "" {
+		if chainID := cfgViper.GetString("chain-id"); chainID != "" {
 			cmtConfig.BaseConfig.Moniker = chainID
 		}
-		if moniker := viper.GetString("moniker"); moniker != "" {
+		if moniker := cfgViper.GetString("moniker"); moniker != "" {
 			cmtConfig.Moniker = moniker
+		}
+		if rpcAddr := cfgViper.GetString("rpc.laddr"); rpcAddr != "" {
+			cmtConfig.RPC.ListenAddress = rpcAddr
+		}
+		if pprofAddr := cfgViper.GetString("rpc.pprof_laddr"); pprofAddr != "" {
+			cmtConfig.RPC.PprofListenAddress = pprofAddr
+		}
+		if p2pAddr := cfgViper.GetString("p2p.laddr"); p2pAddr != "" {
+			cmtConfig.P2P.ListenAddress = p2pAddr
+		}
+		if externalAddr := cfgViper.GetString("p2p.external_address"); externalAddr != "" {
+			cmtConfig.P2P.ExternalAddress = externalAddr
 		}
 	}
 
@@ -873,4 +1011,477 @@ func getDefaultHomeDirFromGenesis() string {
 		return ".aura"
 	}
 	return filepath.Join(userHomeDir, ".aura")
+}
+
+// normalizeGenesisFile enforces legacy-compatible encoding for fields CometBFT expects.
+// Some tooling rewrites genesis.json with numeric initial_height values and nests validators
+// under consensus.*, which breaks the default CometBFT loader. This function corrects those issues.
+func normalizeGenesisFile(homeDir string, logger security.Logger) error {
+	genesisPath := filepath.Join(homeDir, "config", "genesis.json")
+
+	data, err := os.ReadFile(genesisPath)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil
+		}
+		return fmt.Errorf("failed to read genesis file: %w", err)
+	}
+
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.UseNumber()
+
+	doc := make(map[string]interface{})
+	if err := decoder.Decode(&doc); err != nil {
+		return fmt.Errorf("failed to parse genesis file: %w", err)
+	}
+
+	changed := false
+
+	// Ensure initial_height is encoded as a JSON string
+	if value, ok := doc["initial_height"]; ok {
+		switch v := value.(type) {
+		case json.Number:
+			doc["initial_height"] = v.String()
+			changed = true
+		case float64:
+			doc["initial_height"] = strconv.FormatInt(int64(v), 10)
+			changed = true
+		case string:
+			// Already encoded properly
+		default:
+			// Leave other unexpected types untouched
+		}
+	}
+
+	// Rehydrate legacy validators/consensus_params fields if genesis only contains consensus block
+	if consensusRaw, ok := doc["consensus"]; ok {
+		if consensus, ok := consensusRaw.(map[string]interface{}); ok {
+			if _, hasValidators := doc["validators"]; !hasValidators {
+				if consensusValidators, ok := consensus["validators"]; ok {
+					doc["validators"] = consensusValidators
+					changed = true
+				}
+			}
+			if _, hasParams := doc["consensus_params"]; !hasParams {
+				if consensusParams, ok := consensus["params"]; ok {
+					doc["consensus_params"] = consensusParams
+					changed = true
+				}
+			}
+		}
+	}
+
+	if !changed {
+		return nil
+	}
+
+	normalizedData, err := json.MarshalIndent(doc, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal normalized genesis file: %w", err)
+	}
+
+	if err := os.WriteFile(genesisPath, normalizedData, security.ConfigFilePerms); err != nil {
+		return fmt.Errorf("failed to write normalized genesis file: %w", err)
+	}
+	if err := os.Chmod(genesisPath, security.ConfigFilePerms); err != nil {
+		return fmt.Errorf("failed to set permissions on genesis file: %w", err)
+	}
+
+	logger.Info("normalized genesis metadata in %s", genesisPath)
+	return nil
+}
+
+// reconcileGenesisState ensures module accounts exist and staking pool balances line up with bonded tokens.
+func reconcileGenesisState(homeDir string, logger security.Logger) error {
+	genesisPath := filepath.Join(homeDir, "config", "genesis.json")
+	if _, err := os.Stat(genesisPath); errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+
+	appGenesis, err := genutiltypes.AppGenesisFromFile(genesisPath)
+	if err != nil {
+		return fmt.Errorf("failed to load genesis: %w", err)
+	}
+
+	var genState map[string]json.RawMessage
+	if err := json.Unmarshal(appGenesis.AppState, &genState); err != nil {
+		return fmt.Errorf("failed to decode app_state: %w", err)
+	}
+
+	encCfg := app.MakeEncodingConfig()
+
+	authGenesis := authtypes.GetGenesisStateFromAppState(encCfg.Codec, genState)
+	bankGenesis := banktypes.GetGenesisStateFromAppState(encCfg.Codec, genState)
+	stakingGenesis := stakingtypes.GetGenesisStateFromAppState(encCfg.Codec, genState)
+	genutilGenesis := genutiltypes.GetGenesisStateFromAppState(encCfg.Codec, genState)
+	var slashingGenesis *slashingtypes.GenesisState
+	switch {
+	case len(genState[slashingtypes.ModuleName]) == 0:
+		slashingGenesis = slashingtypes.DefaultGenesisState()
+	default:
+		slashingGenesis = &slashingtypes.GenesisState{}
+		if err := encCfg.Codec.UnmarshalJSON(genState[slashingtypes.ModuleName], slashingGenesis); err != nil {
+			return fmt.Errorf("failed to decode slashing genesis: %w", err)
+		}
+	}
+	var contractGenesis contractregistrypb.GenesisState
+
+	switch {
+	case len(genState[contractregistrytypes.ModuleName]) == 0:
+		contractGenesis = *contractregistrytypes.DefaultGenesis()
+	default:
+		if err := encCfg.Codec.UnmarshalJSON(genState[contractregistrytypes.ModuleName], &contractGenesis); err != nil {
+			return fmt.Errorf("failed to decode contractregistry genesis: %w", err)
+		}
+	}
+	if contractGenesis.Params == nil {
+		contractGenesis.Params = contractregistrytypes.DefaultParams()
+		logger.Info("populated default contractregistry params")
+	}
+	genState[contractregistrytypes.ModuleName] = encCfg.Codec.MustMarshalJSON(&contractGenesis)
+
+	bondDenom := stakingGenesis.Params.BondDenom
+	requiredModuleAccounts := map[string][]string{
+		authtypes.FeeCollectorName:     nil,
+		stakingtypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
+		stakingtypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
+	}
+
+	for name, perms := range requiredModuleAccounts {
+		if !moduleAccountExists(&authGenesis, encCfg.Codec, name) {
+			ma := authtypes.NewEmptyModuleAccount(name, perms...)
+			any, err := codectypes.NewAnyWithValue(ma)
+			if err != nil {
+				return fmt.Errorf("failed to wrap module account %s: %w", name, err)
+			}
+			authGenesis.Accounts = append(authGenesis.Accounts, any)
+			logger.Info("added missing module account", "module", name)
+		}
+	}
+
+	powerReduction := sdk.DefaultPowerReduction
+	newConsensusVals := make([]cmttypes.GenesisValidator, 0, len(stakingGenesis.Validators))
+	newLastPowers := make([]stakingtypes.LastValidatorPower, 0, len(stakingGenesis.Validators))
+	var totalPower int64
+	for _, val := range stakingGenesis.Validators {
+		pk, err := val.ConsPubKey()
+		if err != nil {
+			return fmt.Errorf("failed to unpack validator consensus key: %w", err)
+		}
+		cmtPk, err := cryptocodec.ToCmtPubKeyInterface(pk)
+		if err != nil {
+			return fmt.Errorf("failed to convert validator consensus key: %w", err)
+		}
+		power := val.ConsensusPower(powerReduction)
+		totalPower += power
+
+		newConsensusVals = append(newConsensusVals, cmttypes.GenesisValidator{
+			Address: sdk.ConsAddress(cmtPk.Address()).Bytes(),
+			PubKey:  cmtPk,
+			Power:   power,
+			Name:    val.Description.Moniker,
+		})
+		newLastPowers = append(newLastPowers, stakingtypes.LastValidatorPower{
+			Address: val.OperatorAddress,
+			Power:   power,
+		})
+	}
+	stakingGenesis.LastValidatorPowers = newLastPowers
+	stakingGenesis.LastTotalPower = sdkmath.NewInt(totalPower)
+	if appGenesis.Consensus == nil {
+		appGenesis.Consensus = &genutiltypes.ConsensusGenesis{}
+	}
+	appGenesis.Consensus.Validators = newConsensusVals
+
+	if slashingGenesis == nil {
+		slashingGenesis = slashingtypes.DefaultGenesisState()
+	}
+	existingSigningInfo := make(map[string]bool, len(slashingGenesis.SigningInfos))
+	for _, info := range slashingGenesis.SigningInfos {
+		existingSigningInfo[info.Address] = true
+	}
+	for _, val := range stakingGenesis.Validators {
+		consAddr, err := val.GetConsAddr()
+		if err != nil {
+			return fmt.Errorf("failed to derive consensus address: %w", err)
+		}
+		addrStr, err := sdk.Bech32ifyAddressBytes(sdk.GetConfig().GetBech32ConsensusAddrPrefix(), consAddr)
+		if err != nil {
+			return fmt.Errorf("failed to encode consensus address: %w", err)
+		}
+		if existingSigningInfo[addrStr] {
+			continue
+		}
+		slashingGenesis.SigningInfos = append(slashingGenesis.SigningInfos, slashingtypes.SigningInfo{
+			Address: addrStr,
+			ValidatorSigningInfo: slashingtypes.ValidatorSigningInfo{
+				StartHeight:         0,
+				IndexOffset:         0,
+				JailedUntil:         time.Time{},
+				Tombstoned:          false,
+				MissedBlocksCounter: 0,
+			},
+		})
+	}
+
+	// Build a mutable balance map.
+	balanceMap := make(map[string]*banktypes.Balance, len(bankGenesis.Balances)+len(requiredModuleAccounts))
+	for i := range bankGenesis.Balances {
+		bal := &bankGenesis.Balances[i]
+		balanceCopy := *bal
+		balanceMap[bal.Address] = &balanceCopy
+	}
+
+	ensureBalance := func(addr string) *banktypes.Balance {
+		if bal, ok := balanceMap[addr]; ok {
+			return bal
+		}
+		newBal := &banktypes.Balance{Address: addr, Coins: sdk.NewCoins()}
+		balanceMap[addr] = newBal
+		return newBal
+	}
+
+	// Move delegated stake from delegator balances into the bonded pool.
+	for _, del := range stakingGenesis.Delegations {
+		amt := del.Shares.TruncateInt()
+		if amt.IsZero() {
+			continue
+		}
+		bal := ensureBalance(del.DelegatorAddress)
+		current := bal.Coins.AmountOf(bondDenom)
+		newAmt := current.Sub(amt)
+		if newAmt.IsNegative() {
+			newAmt = sdkmath.ZeroInt()
+		}
+		setCoinAmount(bal, bondDenom, newAmt)
+	}
+
+	// Sum bonded tokens from bonded validators.
+	bondedTokens := sdkmath.NewInt(0)
+	notBondedTokens := sdkmath.NewInt(0)
+	for _, val := range stakingGenesis.Validators {
+		if val.Status == stakingtypes.Bonded {
+			bondedTokens = bondedTokens.Add(val.Tokens)
+		} else {
+			notBondedTokens = notBondedTokens.Add(val.Tokens)
+		}
+	}
+
+	for _, ubd := range stakingGenesis.UnbondingDelegations {
+		for _, entry := range ubd.Entries {
+			notBondedTokens = notBondedTokens.Add(entry.Balance)
+		}
+	}
+
+	bondedAddr := authtypes.NewModuleAddress(stakingtypes.BondedPoolName).String()
+	notBondedAddr := authtypes.NewModuleAddress(stakingtypes.NotBondedPoolName).String()
+
+	// Place bonded tokens into the bonded pool and non-bonded tokens into the not bonded pool.
+	setCoinAmount(ensureBalance(bondedAddr), bondDenom, bondedTokens)
+	setCoinAmount(ensureBalance(notBondedAddr), bondDenom, notBondedTokens)
+
+	// Rebuild balances and supply.
+	balances := make([]banktypes.Balance, 0, len(balanceMap))
+	supplyByDenom := make(map[string]sdkmath.Int)
+	for _, bal := range balanceMap {
+		bal.Coins = bal.Coins.Sort()
+		balances = append(balances, *bal)
+		for _, coin := range bal.Coins {
+			if coin.Amount.IsNegative() {
+				continue
+			}
+			if _, ok := supplyByDenom[coin.Denom]; !ok {
+				supplyByDenom[coin.Denom] = sdkmath.ZeroInt()
+			}
+			supplyByDenom[coin.Denom] = supplyByDenom[coin.Denom].Add(coin.Amount)
+		}
+	}
+
+	sort.Slice(balances, func(i, j int) bool {
+		return balances[i].Address < balances[j].Address
+	})
+
+	newSupply := sdk.NewCoins()
+	for denom, amt := range supplyByDenom {
+		if amt.IsZero() {
+			continue
+		}
+		newSupply = newSupply.Add(sdk.NewCoin(denom, amt))
+	}
+
+	bankGenesis.Balances = balances
+	bankGenesis.Supply = newSupply.Sort()
+
+	genState[authtypes.ModuleName] = encCfg.Codec.MustMarshalJSON(&authGenesis)
+	genState[banktypes.ModuleName] = encCfg.Codec.MustMarshalJSON(bankGenesis)
+	genState[stakingtypes.ModuleName] = encCfg.Codec.MustMarshalJSON(stakingGenesis)
+	genState[slashingtypes.ModuleName] = encCfg.Codec.MustMarshalJSON(slashingGenesis)
+	if genutilGenesis == nil {
+		genutilGenesis = genutiltypes.DefaultGenesisState()
+	}
+	if len(genutilGenesis.GenTxs) > 0 {
+		genutilGenesis.GenTxs = []json.RawMessage{}
+		logger.Info("removed genutil gentxs for local start (using patched staking state)")
+	}
+	genState[genutiltypes.ModuleName] = encCfg.Codec.MustMarshalJSON(genutilGenesis)
+
+	newAppState, err := json.Marshal(genState)
+	if err != nil {
+		return fmt.Errorf("failed to marshal patched app_state: %w", err)
+	}
+
+	appGenesis.AppState = newAppState
+	if err := genutil.ExportGenesisFile(appGenesis, genesisPath); err != nil {
+		return fmt.Errorf("failed to write patched genesis: %w", err)
+	}
+
+	logger.Info("reconciled module accounts and staking pools in %s", genesisPath)
+	return nil
+}
+
+// dropGentxs removes any collected gentxs for local single-node runs to avoid
+// signature verification errors when no validator keyring context is present.
+func dropGentxs(homeDir string, logger security.Logger) error {
+	genesisPath := filepath.Join(homeDir, "config", "genesis.json")
+	if _, err := os.Stat(genesisPath); errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+
+	appGenesis, err := genutiltypes.AppGenesisFromFile(genesisPath)
+	if err != nil {
+		return fmt.Errorf("failed to load genesis: %w", err)
+	}
+
+	var genState map[string]json.RawMessage
+	if err := json.Unmarshal(appGenesis.AppState, &genState); err != nil {
+		return fmt.Errorf("failed to decode app_state: %w", err)
+	}
+
+	encCfg := app.MakeEncodingConfig()
+	genutilGenesis := genutiltypes.GetGenesisStateFromAppState(encCfg.Codec, genState)
+	if genutilGenesis == nil {
+		genutilGenesis = genutiltypes.DefaultGenesisState()
+	}
+	if len(genutilGenesis.GenTxs) == 0 {
+		return nil
+	}
+
+	genutilGenesis.GenTxs = []json.RawMessage{}
+	genState[genutiltypes.ModuleName] = encCfg.Codec.MustMarshalJSON(genutilGenesis)
+
+	newAppState, err := json.Marshal(genState)
+	if err != nil {
+		return fmt.Errorf("failed to marshal patched app_state: %w", err)
+	}
+
+	appGenesis.AppState = newAppState
+	if err := genutil.ExportGenesisFile(appGenesis, genesisPath); err != nil {
+		return fmt.Errorf("failed to write patched genesis: %w", err)
+	}
+
+	logger.Info("removed gentxs from %s for local start", genesisPath)
+	return nil
+}
+
+func moduleAccountExists(gs *authtypes.GenesisState, cdc codectypes.AnyUnpacker, name string) bool {
+	for _, acc := range gs.Accounts {
+		var ma authtypes.ModuleAccount
+		if err := cdc.UnpackAny(acc, &ma); err == nil && ma.Name == name {
+			return true
+		}
+	}
+	return false
+}
+
+func setCoinAmount(bal *banktypes.Balance, denom string, amount sdkmath.Int) {
+	coins := bal.Coins
+	filtered := sdk.NewCoins()
+	for _, coin := range coins {
+		if coin.Denom == denom {
+			continue
+		}
+		filtered = filtered.Add(coin)
+	}
+	if amount.IsPositive() {
+		filtered = filtered.Add(sdk.NewCoin(denom, amount))
+	}
+	bal.Coins = filtered
+}
+
+// seedMissingStoreVersions ensures every mounted store has an on-disk version.
+// Some dev builds produced commit infos that referenced stores without persisted
+// IAVL versions, causing "version does not exist" failures when loading
+// CacheMultiStoreWithVersion. This function detects those stores and seeds an
+// empty tree at the expected version so the node can start.
+func seedMissingStoreVersions(homeDir string, logger log.Logger, expectedStores []string) error {
+	dataDir := filepath.Join(homeDir, "data")
+	db, err := dbm.NewGoLevelDB("application", dataDir, nil)
+	if err != nil {
+		// If the DB doesn't exist yet (fresh init), nothing to do.
+		if errors.Is(err, os.ErrNotExist) {
+			return nil
+		}
+		return err
+	}
+	defer db.Close()
+
+	latestBz, err := db.Get([]byte("s/latest"))
+	if err != nil || len(latestBz) == 0 {
+		// nothing to seed on a brand new DB
+		return nil
+	}
+	var ci storetypes.CommitInfo
+	if err := ci.Unmarshal(latestBz); err != nil {
+		logger.Warn("failed to parse latest commit info; skipping store seeding", "error", err)
+		return nil
+	}
+
+	ciKey := []byte(fmt.Sprintf("s/%d", ci.Version))
+	if ciBz, err := db.Get(ciKey); err == nil && len(ciBz) > 0 {
+		var existing storetypes.CommitInfo
+		if err := existing.Unmarshal(ciBz); err == nil {
+			ci = existing
+		}
+	}
+
+	updated := false
+	for i, si := range ci.StoreInfos {
+		prefix := []byte("s/k:" + si.Name + "/")
+		pdb := dbm.NewPrefixDB(db, prefix)
+		tree := iavl.NewMutableTree(storewrapper.NewDBWrapper(pdb), 0, true, log.NewNopLogger())
+
+		if _, err := tree.LoadVersion(si.CommitId.GetVersion()); err == nil {
+			continue
+		}
+
+		version := si.CommitId.GetVersion()
+		tree.SetInitialVersion(uint64(version))
+		_, _ = tree.Set([]byte("seed"), []byte{}) // ensure a version is written
+		if _, _, err := tree.SaveVersion(); err != nil {
+			return fmt.Errorf("seed store %s: %w", si.Name, err)
+		}
+
+		ci.StoreInfos[i].CommitId.Version = version
+		ci.StoreInfos[i].CommitId.Hash = tree.Hash()
+		updated = true
+		logger.Info("seeded missing store version", "store", si.Name, "version", version)
+	}
+
+	if !updated {
+		return nil
+	}
+
+	newCIBz, err := ci.Marshal()
+	if err != nil {
+		return err
+	}
+	if err := db.Set(ciKey, newCIBz); err != nil {
+		return err
+	}
+	if err := db.Set([]byte("s/latest"), newCIBz); err != nil {
+		return err
+	}
+
+	logger.Info("updated commit info to include seeded stores", "version", ci.Version)
+	return nil
 }

@@ -5,6 +5,7 @@ import (
 
 	"github.com/aequitas/aura/chain/x/aura-bindings/keeper"
 	"github.com/aequitas/aura/chain/x/aura-bindings/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 func (suite *KeeperTestSuite) TestQueryStatsNonNegativeInvariant() {
@@ -100,7 +101,7 @@ func (suite *KeeperTestSuite) TestInvariantsWithEmptyState() {
 	require := suite.Require()
 
 	// Test all invariants with empty state
-	invariants := []func(keeper.Keeper) func(ctx interface{}) (string, bool){
+	invariants := []func(keeper.Keeper) sdk.Invariant{
 		keeper.QueryStatsNonNegativeInvariant,
 		keeper.MessageStatsNonNegativeInvariant,
 		keeper.RateLimitsValidInvariant,
@@ -170,7 +171,7 @@ func (suite *KeeperTestSuite) TestInvariantMessages() {
 	// Each invariant should produce a properly formatted message
 	invariants := []struct {
 		name      string
-		invariant func(keeper.Keeper) func(ctx interface{}) (string, bool)
+		invariant func(keeper.Keeper) sdk.Invariant
 	}{
 		{"query-stats-non-negative", keeper.QueryStatsNonNegativeInvariant},
 		{"message-stats-non-negative", keeper.MessageStatsNonNegativeInvariant},

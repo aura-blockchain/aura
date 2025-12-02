@@ -26,11 +26,19 @@ func (suite *InvariantsTestSuite) TestAllInvariants() {
 }
 
 func (suite *InvariantsTestSuite) TestRegisterInvariants() {
-	// Create a mock invariant registry
-	registry := sdk.NewInvariantRegistry()
+	// Cosmos SDK v0.53 doesn't expose sdk.NewInvariantRegistry, so exercise each invariant directly.
+	invariants := []func(sdk.Context) (string, bool){
+		ParamsInvariant(suite.Keeper),
+		PoolReservesConsistencyInvariant(suite.Keeper),
+		OrderValidityInvariant(suite.Keeper),
+		LiquidityProviderConsistencyInvariant(suite.Keeper),
+		SecurityLimitsInvariant(suite.Keeper),
+		HTLCValidityInvariant(suite.Keeper),
+	}
 
-	// Register invariants - should not panic
-	suite.NotPanics(func() {
-		RegisterInvariants(registry, suite.Keeper)
-	})
+	for _, inv := range invariants {
+		msg, broken := inv(suite.SdkCtx)
+		suite.False(broken)
+		suite.Empty(msg)
+	}
 }

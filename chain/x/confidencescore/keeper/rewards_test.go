@@ -4,11 +4,11 @@ import (
 	"testing"
 
 	"cosmossdk.io/math"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 func TestCalculatePoIReward(t *testing.T) {
-	k := NewKeeper(nil, "gov1")
+	ctx, k := setupConfKeeperWithTime(t)
+	ctx = ctx.WithBlockHeight(100)
 
 	tests := []struct {
 		name           string
@@ -49,7 +49,7 @@ func TestCalculatePoIReward(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			reward := k.CalculatePoIReward(sdk.Context{}, tt.auraPrice)
+			reward := k.CalculatePoIReward(tt.auraPrice)
 			if !reward.Equal(tt.expectedReward) {
 				t.Errorf("expected reward %s, got %s", tt.expectedReward, reward)
 			}
@@ -58,7 +58,8 @@ func TestCalculatePoIReward(t *testing.T) {
 }
 
 func TestCalculatePoIReward_Tier4(t *testing.T) {
-	k := NewKeeper(nil, "gov1")
+	ctx, k := setupConfKeeperWithTime(t)
+	ctx = ctx.WithBlockHeight(100)
 
 	// Tier 4: Price >= $0.50, reward = $50 / price
 	tests := []struct {
@@ -85,7 +86,7 @@ func TestCalculatePoIReward_Tier4(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			reward := k.CalculatePoIReward(sdk.Context{}, tt.auraPrice)
+			reward := k.CalculatePoIReward(tt.auraPrice)
 
 			// For tier 4, check that it's approximately correct
 			// Allow small variance due to decimal math
@@ -101,7 +102,8 @@ func TestCalculatePoIReward_Tier4(t *testing.T) {
 }
 
 func TestSplitPoIReward(t *testing.T) {
-	k := NewKeeper(nil, "gov1")
+	ctx, k := setupConfKeeperWithTime(t)
+	ctx = ctx.WithBlockHeight(100)
 
 	tests := []struct {
 		name         string
@@ -170,7 +172,8 @@ func TestSplitPoIReward(t *testing.T) {
 }
 
 func TestCalculateVBTBoost(t *testing.T) {
-	k := NewKeeper(nil, "gov1")
+	ctx, k := setupConfKeeperWithTime(t)
+	ctx = ctx.WithBlockHeight(100)
 
 	tests := []struct {
 		name               string
@@ -222,7 +225,8 @@ func TestCalculateVBTBoost(t *testing.T) {
 }
 
 func TestCalculateVBTBoost_Disabled(t *testing.T) {
-	k := NewKeeper(nil, "gov1")
+	ctx, k := setupConfKeeperWithTime(t)
+	ctx = ctx.WithBlockHeight(100)
 
 	// Get params and disable velocity bonus
 	params := k.GetParams()
@@ -237,7 +241,8 @@ func TestCalculateVBTBoost_Disabled(t *testing.T) {
 }
 
 func TestApplyVBTBoost(t *testing.T) {
-	k := NewKeeper(nil, "gov1")
+	ctx, k := setupConfKeeperWithTime(t)
+	ctx = ctx.WithBlockHeight(100)
 
 	tests := []struct {
 		name           string
@@ -284,7 +289,8 @@ func TestApplyVBTBoost(t *testing.T) {
 }
 
 func TestGetCurrentRewardAmount(t *testing.T) {
-	k := NewKeeper(nil, "gov1")
+	ctx, k := setupConfKeeperWithTime(t)
+	ctx = ctx.WithBlockHeight(100)
 
 	auraPrice := math.LegacyNewDecWithPrec(15, 2) // $0.15
 	reward := k.GetCurrentRewardAmount(auraPrice)
@@ -296,7 +302,8 @@ func TestGetCurrentRewardAmount(t *testing.T) {
 }
 
 func TestGetRewardTierInfo(t *testing.T) {
-	k := NewKeeper(nil, "gov1")
+	ctx, k := setupConfKeeperWithTime(t)
+	ctx = ctx.WithBlockHeight(100)
 
 	tests := []struct {
 		name           string
@@ -355,12 +362,13 @@ func TestGetRewardTierInfo(t *testing.T) {
 }
 
 func TestGetTotalRewardsDistributed(t *testing.T) {
-	k := NewKeeper(nil, "gov1")
+	ctx, k := setupConfKeeperWithTime(t)
+	ctx = ctx.WithBlockHeight(100)
 
 	walletAddr := "aura1test"
 
 	// Currently returns 0 as placeholder (rewards not tracked in proto yet)
-	total := k.GetTotalRewardsDistributed(walletAddr)
+	total := k.GetTotalRewardsDistributed(ctx, walletAddr)
 
 	if total != 0 {
 		t.Errorf("expected 0 (placeholder), got %d", total)

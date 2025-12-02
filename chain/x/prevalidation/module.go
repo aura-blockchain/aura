@@ -1,6 +1,7 @@
 package prevalidation
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 
@@ -56,6 +57,9 @@ func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 
 // ValidateGenesis performs genesis state validation for the prevalidation module
 func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncodingConfig, bz json.RawMessage) error {
+	if len(bytes.TrimSpace(bz)) == 0 {
+		return nil
+	}
 	var data pb.GenesisState
 	if err := cdc.UnmarshalJSON(bz, &data); err != nil {
 		return err

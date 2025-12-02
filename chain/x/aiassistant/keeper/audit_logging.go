@@ -13,21 +13,40 @@ import (
 
 // AuditLog represents an audit log entry for AI operations
 type AuditLog struct {
-	ID            uint64
-	Timestamp     time.Time
-	UserAddress   string
-	OperationType string
-	ModelHash     string
-	QueryHash     string
-	InputSize     uint64
-	OutputSize    uint64
-	Success       bool
-	ErrorMessage  string
-	CostEstimate  CostEstimate
+	ID             uint64
+	Timestamp      time.Time
+	EventType      string
+	Actor          string
+	Resource       string
+	Action         string
+	UserAddress    string
+	OperationType  string
+	ModelHash      string
+	QueryHash      string
+	InputSize      uint64
+	OutputSize     uint64
+	Success        bool
+	ErrorMessage   string
+	CostEstimate   CostEstimate
 	ProcessingTime uint64 // milliseconds
-	IPAddress     string  // Optional
-	UserAgent     string  // Optional
-	Metadata      map[string]string
+	IPAddress      string // Optional
+	UserAgent      string // Optional
+	Metadata       map[string]string
+}
+
+// LogAuditEvent provides a high-level helper used by tests to log an audit entry.
+func (k Keeper) LogAuditEvent(ctx sdk.Context, eventType, actor, resource, action string, metadata map[string]string) error {
+	entry := AuditLog{
+		EventType:     eventType,
+		Actor:         actor,
+		Resource:      resource,
+		Action:        action,
+		UserAddress:   actor,
+		OperationType: eventType,
+		Metadata:      metadata,
+		Success:       true,
+	}
+	return k.LogAIOperation(ctx, entry)
 }
 
 // LogAIOperation logs an AI operation for audit purposes
@@ -105,12 +124,32 @@ func (k Keeper) ListAuditLogs(ctx sdk.Context, filters AuditLogFilters, limit ui
 	return logs
 }
 
+// GetAuditLogs returns up to limit audit logs without additional filtering.
+func (k Keeper) GetAuditLogs(ctx sdk.Context, limit uint64) []AuditLog {
+	return k.ListAuditLogs(ctx, AuditLogFilters{}, limit)
+}
+
 // GetUserAuditLogs returns audit logs for a specific user
 func (k Keeper) GetUserAuditLogs(ctx sdk.Context, userAddr string, limit uint64) []AuditLog {
 	filters := AuditLogFilters{
 		UserAddress: userAddr,
 	}
 	return k.ListAuditLogs(ctx, filters, limit)
+}
+
+// GetAuditLogsByActor aliases GetUserAuditLogs for test compatibility.
+func (k Keeper) GetAuditLogsByActor(ctx sdk.Context, actor string, limit uint64) []AuditLog {
+	return k.GetUserAuditLogs(ctx, actor, limit)
+}
+
+// GetAuditLogsByResource filters by resource.
+func (k Keeper) GetAuditLogsByResource(ctx sdk.Context, resource string, limit uint64) []AuditLog {
+	return k.ListAuditLogs(ctx, AuditLogFilters{ResourceID: resource}, limit)
+}
+
+// GetAuditLogsByEventType filters by event type.
+func (k Keeper) GetAuditLogsByEventType(ctx sdk.Context, eventType string, limit uint64) []AuditLog {
+	return k.ListAuditLogs(ctx, AuditLogFilters{OperationType: eventType}, limit)
 }
 
 // GetAuditStats returns audit statistics
@@ -200,6 +239,7 @@ func (k Keeper) getNextAuditLogID(ctx sdk.Context) uint64 {
 // AuditLogFilters defines filters for querying audit logs
 type AuditLogFilters struct {
 	UserAddress   string
+	ResourceID    string
 	ModelHash     string
 	OperationType string
 	SuccessOnly   bool
@@ -217,6 +257,9 @@ func matchesFilters(log AuditLog, filters AuditLogFilters) bool {
 		return false
 	}
 	if filters.OperationType != "" && log.OperationType != filters.OperationType {
+		return false
+	}
+	if filters.ResourceID != "" && log.Resource != filters.ResourceID {
 		return false
 	}
 	if filters.SuccessOnly && !log.Success {

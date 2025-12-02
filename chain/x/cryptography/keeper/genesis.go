@@ -76,6 +76,13 @@ func (k *Keeper) InitGenesis(ctx context.Context, data *cryptoproto.GenesisState
 		}
 	}
 
+	// Initialize ZK proof verifications
+	for _, verification := range data.ZkProofVerifications {
+		if err := k.SetZKProofVerification(ctx, verification); err != nil {
+			k.Logger(ctx).Error("failed to initialize ZK proof verification", "verification_id", verification.VerificationId, "error", err)
+		}
+	}
+
 	k.Logger(ctx).Info("cryptography module initialized from genesis")
 	return nil
 }
@@ -98,25 +105,47 @@ func (k *Keeper) ExportGenesis(ctx context.Context) *cryptoproto.GenesisState {
 	// Export ZK proof configs
 	zkProofConfigs := k.GetAllZKProofConfigs(ctx)
 
-	// Export secure enclaves - empty for now, all data is in KV store
+	// Export secure enclaves
 	secureEnclaves := make([]*cryptoproto.SecureEnclaveConfig, 0)
-	// TODO: Implement IterateSecureEnclaves to read from KV store
+	_ = k.IterateSecureEnclaves(ctx, func(enclave *cryptoproto.SecureEnclaveConfig) bool {
+		secureEnclaves = append(secureEnclaves, enclave)
+		return false
+	})
 
-	// Export quantum-resistant keys - empty for now, all data is in KV store
+	// Export quantum-resistant keys
 	quantumResistantKeys := make([]*cryptoproto.QuantumResistantKey, 0)
-	// TODO: Implement IterateQuantumKeys to read from KV store
+	_ = k.IterateQuantumKeys(ctx, func(key *cryptoproto.QuantumResistantKey) bool {
+		quantumResistantKeys = append(quantumResistantKeys, key)
+		return false
+	})
 
-	// Export random sources - empty for now, all data is in KV store
+	// Export random sources
 	randomSources := make([]*cryptoproto.CryptoRandomSource, 0)
-	// TODO: Implement IterateRandomSources to read from KV store
+	_ = k.IterateRandomSources(ctx, func(source *cryptoproto.CryptoRandomSource) bool {
+		randomSources = append(randomSources, source)
+		return false
+	})
 
-	// Export key stretching configs - empty for now, all data is in KV store
+	// Export key stretching configs
 	keyStretchingConfigs := make([]*cryptoproto.KeyStretchingConfig, 0)
-	// TODO: Implement IterateKeyStretchingConfigs to read from KV store
+	_ = k.IterateKeyStretchingConfigs(ctx, func(config *cryptoproto.KeyStretchingConfig) bool {
+		keyStretchingConfigs = append(keyStretchingConfigs, config)
+		return false
+	})
 
-	// Export certificate pins - empty for now, all data is in KV store
+	// Export certificate pins
 	certificatePins := make([]*cryptoproto.CertificatePin, 0)
-	// TODO: Implement IterateCertificatePins to read from KV store
+	_ = k.IterateCertificatePins(ctx, func(pin *cryptoproto.CertificatePin) bool {
+		certificatePins = append(certificatePins, pin)
+		return false
+	})
+
+	// Export ZK proof verifications
+	zkProofVerifications := make([]*cryptoproto.ZKProofVerification, 0)
+	_ = k.IterateZKProofVerifications(ctx, func(verification *cryptoproto.ZKProofVerification) bool {
+		zkProofVerifications = append(zkProofVerifications, verification)
+		return false
+	})
 
 	return &cryptoproto.GenesisState{
 		Params:               params,
@@ -128,5 +157,6 @@ func (k *Keeper) ExportGenesis(ctx context.Context) *cryptoproto.GenesisState {
 		RandomSources:        randomSources,
 		KeyStretchingConfigs: keyStretchingConfigs,
 		CertificatePins:      certificatePins,
+		ZkProofVerifications: zkProofVerifications,
 	}
 }

@@ -57,8 +57,8 @@ func GetRewardTiers() []RewardTier {
 		},
 		{
 			// Tier 4: AURA ≥ $0.50 → Variable amount not exceeding $50 USD
-			MaxPrice:     math.LegacyZeroDec(),      // Unlimited
-			RewardAmount: math.ZeroInt(),            // Calculated dynamically
+			MaxPrice:     math.LegacyZeroDec(), // Unlimited
+			RewardAmount: math.ZeroInt(),       // Calculated dynamically
 			UseUSDCap:    true,
 			USDCap:       math.LegacyNewDec(50), // $50 USD max
 		},

@@ -7,8 +7,8 @@ import (
 )
 
 func TestCalculateScoreEarned(t *testing.T) {
-	k := NewKeeper(nil, "gov1")
-	k.SetCurrentHeight(100)
+	ctx, k := setupConfKeeperWithTime(t)
+	ctx = ctx.WithBlockHeight(100)
 
 	registry := newMockIRRegistry()
 	registry.irScores["IR-001"] = 500
@@ -17,7 +17,7 @@ func TestCalculateScoreEarned(t *testing.T) {
 
 	walletAddr := "aura1test"
 
-	score, velocity, arena, jackpot, err := k.CalculateScoreEarned(walletAddr, "IR-001")
+	score, velocity, arena, jackpot, err := k.CalculateScoreEarned(ctx, walletAddr, "IR-001")
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -40,13 +40,13 @@ func TestCalculateScoreEarned(t *testing.T) {
 }
 
 func TestCalculateScoreEarned_NoRegistry(t *testing.T) {
-	k := NewKeeper(nil, "gov1")
-	k.SetCurrentHeight(100)
+	ctx, k := setupConfKeeperWithTime(t)
+	ctx = ctx.WithBlockHeight(100)
 
 	// No registry set - should use default score
 	walletAddr := "aura1test"
 
-	score, _, _, _, err := k.CalculateScoreEarned(walletAddr, "IR-001")
+	score, _, _, _, err := k.CalculateScoreEarned(ctx, walletAddr, "IR-001")
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -57,19 +57,20 @@ func TestCalculateScoreEarned_NoRegistry(t *testing.T) {
 }
 
 func TestCalculateArenaMultiplier(t *testing.T) {
-	k := NewKeeper(nil, "gov1")
+	ctx, k := setupConfKeeperWithTime(t)
+	ctx = ctx.WithBlockHeight(100)
 
 	walletAddr := "aura1test"
 	arena := "Biometric"
 
 	// No record - should return 1.0
-	multiplier := k.CalculateArenaMultiplier(walletAddr, arena)
+	multiplier := k.CalculateArenaMultiplier(ctx, walletAddr, arena)
 	if multiplier != 1.0 {
 		t.Errorf("expected 1.0 for no record, got %f", multiplier)
 	}
 
 	// Empty arena - should return 1.0
-	multiplier = k.CalculateArenaMultiplier(walletAddr, "")
+	multiplier = k.CalculateArenaMultiplier(ctx, walletAddr, "")
 	if multiplier != 1.0 {
 		t.Errorf("expected 1.0 for empty arena, got %f", multiplier)
 	}
@@ -85,48 +86,49 @@ func TestCalculateArenaMultiplier(t *testing.T) {
 			},
 		},
 	}
-	k.SetUserRecord(record)
+	k.SetUserRecord(ctx, record)
 
-	multiplier = k.CalculateArenaMultiplier(walletAddr, arena)
+	multiplier = k.CalculateArenaMultiplier(ctx, walletAddr, arena)
 	if multiplier != 1.0 {
 		t.Errorf("expected 1.0 for score below threshold, got %f", multiplier)
 	}
 
 	// Arena score at 3000 threshold
 	record.ArenaScores[arena].TotalScore = 3000
-	k.SetUserRecord(record)
+	k.SetUserRecord(ctx, record)
 
-	multiplier = k.CalculateArenaMultiplier(walletAddr, arena)
+	multiplier = k.CalculateArenaMultiplier(ctx, walletAddr, arena)
 	if multiplier != 1.1 {
 		t.Errorf("expected 1.1 for 3000 score, got %f", multiplier)
 	}
 
 	// Arena score at 4000 threshold
 	record.ArenaScores[arena].TotalScore = 4000
-	k.SetUserRecord(record)
+	k.SetUserRecord(ctx, record)
 
-	multiplier = k.CalculateArenaMultiplier(walletAddr, arena)
+	multiplier = k.CalculateArenaMultiplier(ctx, walletAddr, arena)
 	if multiplier != 1.2 {
 		t.Errorf("expected 1.2 for 4000 score, got %f", multiplier)
 	}
 
 	// Arena score at 5000 threshold (focus unlocked)
 	record.ArenaScores[arena].TotalScore = 5000
-	k.SetUserRecord(record)
+	k.SetUserRecord(ctx, record)
 
-	multiplier = k.CalculateArenaMultiplier(walletAddr, arena)
+	multiplier = k.CalculateArenaMultiplier(ctx, walletAddr, arena)
 	if multiplier != 1.5 {
 		t.Errorf("expected 1.5 for 5000 score, got %f", multiplier)
 	}
 }
 
 func TestCalculateTotalScore(t *testing.T) {
-	k := NewKeeper(nil, "gov1")
+	ctx, k := setupConfKeeperWithTime(t)
+	ctx = ctx.WithBlockHeight(100)
 
 	walletAddr := "aura1test"
 
 	// No record
-	_, err := k.CalculateTotalScore(walletAddr)
+	_, err := k.CalculateTotalScore(ctx, walletAddr)
 	if err != types.ErrUserRecordNotFound {
 		t.Errorf("expected ErrUserRecordNotFound, got %v", err)
 	}
@@ -140,9 +142,9 @@ func TestCalculateTotalScore(t *testing.T) {
 			{IrId: "IR-003", FinalScore: 1000},
 		},
 	}
-	k.SetUserRecord(record)
+	k.SetUserRecord(ctx, record)
 
-	total, err := k.CalculateTotalScore(walletAddr)
+	total, err := k.CalculateTotalScore(ctx, walletAddr)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -154,13 +156,14 @@ func TestCalculateTotalScore(t *testing.T) {
 }
 
 func TestCalculateArenaScore(t *testing.T) {
-	k := NewKeeper(nil, "gov1")
+	ctx, k := setupConfKeeperWithTime(t)
+	ctx = ctx.WithBlockHeight(100)
 
 	walletAddr := "aura1test"
 	arena := "Biometric"
 
 	// No record
-	_, err := k.CalculateArenaScore(walletAddr, arena)
+	_, err := k.CalculateArenaScore(ctx, walletAddr, arena)
 	if err != types.ErrUserRecordNotFound {
 		t.Errorf("expected ErrUserRecordNotFound, got %v", err)
 	}
@@ -174,9 +177,9 @@ func TestCalculateArenaScore(t *testing.T) {
 			{IrId: "IR-003", Arena: "Social", FinalScore: 1000},
 		},
 	}
-	k.SetUserRecord(record)
+	k.SetUserRecord(ctx, record)
 
-	arenaScore, err := k.CalculateArenaScore(walletAddr, arena)
+	arenaScore, err := k.CalculateArenaScore(ctx, walletAddr, arena)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -187,7 +190,7 @@ func TestCalculateArenaScore(t *testing.T) {
 	}
 
 	// Test different arena
-	socialScore, err := k.CalculateArenaScore(walletAddr, "Social")
+	socialScore, err := k.CalculateArenaScore(ctx, walletAddr, "Social")
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -198,14 +201,13 @@ func TestCalculateArenaScore(t *testing.T) {
 }
 
 func TestRecalculateScore(t *testing.T) {
-	k := NewKeeper(nil, "gov1")
-	k.SetCurrentHeight(100)
-	k.SetCurrentTime(1000000)
+	ctx, k := setupConfKeeperWithTime(t)
+	ctx = ctx.WithBlockHeight(100)
 
 	walletAddr := "aura1test"
 
 	// No record
-	_, _, _, err := k.RecalculateScore(walletAddr)
+	_, _, _, err := k.RecalculateScore(ctx, walletAddr)
 	if err != types.ErrUserRecordNotFound {
 		t.Errorf("expected ErrUserRecordNotFound, got %v", err)
 	}
@@ -226,9 +228,9 @@ func TestRecalculateScore(t *testing.T) {
 			},
 		},
 	}
-	k.SetUserRecord(record)
+	k.SetUserRecord(ctx, record)
 
-	previous, recalculated, discrepancies, err := k.RecalculateScore(walletAddr)
+	previous, recalculated, discrepancies, err := k.RecalculateScore(ctx, walletAddr)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -246,16 +248,15 @@ func TestRecalculateScore(t *testing.T) {
 	}
 
 	// Verify record was updated
-	updatedRecord, _ := k.GetUserRecord(walletAddr)
+	updatedRecord, _ := k.GetUserRecord(ctx, walletAddr)
 	if updatedRecord.TotalScore != 1250 {
 		t.Errorf("expected updated score 1250, got %d", updatedRecord.TotalScore)
 	}
 }
 
 func TestRecalculateScore_ArenaDiscrepancy(t *testing.T) {
-	k := NewKeeper(nil, "gov1")
-	k.SetCurrentHeight(100)
-	k.SetCurrentTime(1000000)
+	ctx, k := setupConfKeeperWithTime(t)
+	ctx = ctx.WithBlockHeight(100)
 
 	walletAddr := "aura1test"
 
@@ -275,9 +276,9 @@ func TestRecalculateScore_ArenaDiscrepancy(t *testing.T) {
 			},
 		},
 	}
-	k.SetUserRecord(record)
+	k.SetUserRecord(ctx, record)
 
-	_, _, discrepancies, err := k.RecalculateScore(walletAddr)
+	_, _, discrepancies, err := k.RecalculateScore(ctx, walletAddr)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -287,7 +288,7 @@ func TestRecalculateScore_ArenaDiscrepancy(t *testing.T) {
 	}
 
 	// Verify arena scores were corrected
-	updatedRecord, _ := k.GetUserRecord(walletAddr)
+	updatedRecord, _ := k.GetUserRecord(ctx, walletAddr)
 	if updatedRecord.ArenaScores["Biometric"].TotalScore != 1250 {
 		t.Errorf("expected corrected arena score 1250, got %d",
 			updatedRecord.ArenaScores["Biometric"].TotalScore)
@@ -299,12 +300,13 @@ func TestRecalculateScore_ArenaDiscrepancy(t *testing.T) {
 }
 
 func TestCheckVerificationStatus(t *testing.T) {
-	k := NewKeeper(nil, "gov1")
+	ctx, k := setupConfKeeperWithTime(t)
+	ctx = ctx.WithBlockHeight(100)
 
 	walletAddr := "aura1test"
 
 	// No record
-	status, err := k.CheckVerificationStatus(walletAddr)
+	status, err := k.CheckVerificationStatus(ctx, walletAddr)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -318,9 +320,9 @@ func TestCheckVerificationStatus(t *testing.T) {
 		TotalScore:    9000,
 		Status:        types.VerificationStatusUnverified,
 	}
-	k.SetUserRecord(record)
+	k.SetUserRecord(ctx, record)
 
-	status, err = k.CheckVerificationStatus(walletAddr)
+	status, err = k.CheckVerificationStatus(ctx, walletAddr)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -330,9 +332,9 @@ func TestCheckVerificationStatus(t *testing.T) {
 
 	// At threshold
 	record.TotalScore = 10000
-	k.SetUserRecord(record)
+	k.SetUserRecord(ctx, record)
 
-	status, err = k.CheckVerificationStatus(walletAddr)
+	status, err = k.CheckVerificationStatus(ctx, walletAddr)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -342,9 +344,9 @@ func TestCheckVerificationStatus(t *testing.T) {
 
 	// Suspended (should remain suspended regardless of score)
 	record.Status = types.VerificationStatusSuspended
-	k.SetUserRecord(record)
+	k.SetUserRecord(ctx, record)
 
-	status, err = k.CheckVerificationStatus(walletAddr)
+	status, err = k.CheckVerificationStatus(ctx, walletAddr)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -354,9 +356,9 @@ func TestCheckVerificationStatus(t *testing.T) {
 
 	// Revoked
 	record.Status = types.VerificationStatusRevoked
-	k.SetUserRecord(record)
+	k.SetUserRecord(ctx, record)
 
-	status, err = k.CheckVerificationStatus(walletAddr)
+	status, err = k.CheckVerificationStatus(ctx, walletAddr)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -366,12 +368,13 @@ func TestCheckVerificationStatus(t *testing.T) {
 }
 
 func TestApplyArenaFocusBonus(t *testing.T) {
-	k := NewKeeper(nil, "gov1")
+	ctx, k := setupConfKeeperWithTime(t)
+	ctx = ctx.WithBlockHeight(100)
 
 	walletAddr := "aura1test"
 
 	// No record
-	_, err := k.ApplyArenaFocusBonus(walletAddr)
+	_, err := k.ApplyArenaFocusBonus(ctx, walletAddr)
 	if err != types.ErrUserRecordNotFound {
 		t.Errorf("expected ErrUserRecordNotFound, got %v", err)
 	}
@@ -400,9 +403,9 @@ func TestApplyArenaFocusBonus(t *testing.T) {
 			},
 		},
 	}
-	k.SetUserRecord(record)
+	k.SetUserRecord(ctx, record)
 
-	focusArenas, err := k.ApplyArenaFocusBonus(walletAddr)
+	focusArenas, err := k.ApplyArenaFocusBonus(ctx, walletAddr)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -413,7 +416,7 @@ func TestApplyArenaFocusBonus(t *testing.T) {
 	}
 
 	// Verify focus bonus flags were set
-	updatedRecord, _ := k.GetUserRecord(walletAddr)
+	updatedRecord, _ := k.GetUserRecord(ctx, walletAddr)
 	if !updatedRecord.ArenaScores["Biometric"].FocusBonusActive {
 		t.Error("expected Biometric focus bonus to be active")
 	}
@@ -426,12 +429,13 @@ func TestApplyArenaFocusBonus(t *testing.T) {
 }
 
 func TestGetArenaBreakdown(t *testing.T) {
-	k := NewKeeper(nil, "gov1")
+	ctx, k := setupConfKeeperWithTime(t)
+	ctx = ctx.WithBlockHeight(100)
 
 	walletAddr := "aura1test"
 
 	// No record
-	_, _, err := k.GetArenaBreakdown(walletAddr)
+	_, _, err := k.GetArenaBreakdown(ctx, walletAddr)
 	if err != types.ErrUserRecordNotFound {
 		t.Errorf("expected ErrUserRecordNotFound, got %v", err)
 	}
@@ -453,9 +457,9 @@ func TestGetArenaBreakdown(t *testing.T) {
 			},
 		},
 	}
-	k.SetUserRecord(record)
+	k.SetUserRecord(ctx, record)
 
-	arenaScores, focusArenas, err := k.GetArenaBreakdown(walletAddr)
+	arenaScores, focusArenas, err := k.GetArenaBreakdown(ctx, walletAddr)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -475,9 +479,8 @@ func TestGetArenaBreakdown(t *testing.T) {
 }
 
 func TestRecalculateScore_VerificationStatusChange(t *testing.T) {
-	k := NewKeeper(nil, "gov1")
-	k.SetCurrentHeight(100)
-	k.SetCurrentTime(1000000)
+	ctx, k := setupConfKeeperWithTime(t)
+	ctx = ctx.WithBlockHeight(100)
 
 	walletAddr := "aura1test"
 
@@ -490,9 +493,9 @@ func TestRecalculateScore_VerificationStatusChange(t *testing.T) {
 			{IrId: "IR-001", FinalScore: 10000},
 		},
 	}
-	k.SetUserRecord(record)
+	k.SetUserRecord(ctx, record)
 
-	_, recalculated, _, err := k.RecalculateScore(walletAddr)
+	_, recalculated, _, err := k.RecalculateScore(ctx, walletAddr)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -502,7 +505,7 @@ func TestRecalculateScore_VerificationStatusChange(t *testing.T) {
 	}
 
 	// Should still be verified since recalculated >= threshold
-	updatedRecord, _ := k.GetUserRecord(walletAddr)
+	updatedRecord, _ := k.GetUserRecord(ctx, walletAddr)
 	if updatedRecord.Status != types.VerificationStatusVerified {
 		t.Errorf("expected verified status, got %v", updatedRecord.Status)
 	}
@@ -517,9 +520,9 @@ func TestRecalculateScore_VerificationStatusChange(t *testing.T) {
 		},
 		VerificationAchievedHeight: 50,
 	}
-	k.SetUserRecord(record2)
+	k.SetUserRecord(ctx, record2)
 
-	_, recalculated, _, err = k.RecalculateScore(walletAddr)
+	_, recalculated, _, err = k.RecalculateScore(ctx, walletAddr)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -529,7 +532,7 @@ func TestRecalculateScore_VerificationStatusChange(t *testing.T) {
 	}
 
 	// Should now be unverified
-	updatedRecord2, _ := k.GetUserRecord(walletAddr)
+	updatedRecord2, _ := k.GetUserRecord(ctx, walletAddr)
 	if updatedRecord2.Status != types.VerificationStatusUnverified {
 		t.Errorf("expected unverified status, got %v", updatedRecord2.Status)
 	}

@@ -16,9 +16,10 @@ import (
 // the keeper is built, rather than using post-construction mutation.
 //
 // Usage:
-//   keeper := NewKeeperBuilder(storeService, cdc, paramsStore, authority, logger).
-//       WithIRRegistry(irKeeper).
-//       Build()
+//
+//	keeper := NewKeeperBuilder(storeService, cdc, paramsStore, authority, logger).
+//	    WithIRRegistry(irKeeper).
+//	    Build()
 type KeeperBuilder struct {
 	storeService store.KVStoreService
 	cdc          codec.BinaryCodec

@@ -82,9 +82,9 @@ All modules have keepers, protos, and tests:
 - [x] Install Rust toolchain: `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
 - [x] Compile contracts: `cargo build --release --target wasm32-unknown-unknown`
 - [x] WASM output: `binding_tester.wasm` (227KB), `vc_issuer.wasm` (328KB)
-- [ ] Optimize: `make optimize-wasm` → `/contracts/artifacts/`
+- [x] Optimize: `make optimize-wasm` → `/contracts/artifacts/`
 - [ ] Test deployment on local testnet
-- [ ] Create deployment scripts: `/scripts/deploy-contracts.sh`
+- [x] Create deployment scripts: `/scripts/deploy-contracts.sh`
 
 ### Security
 - [x] HSM integration guide → `/docs/security/HSM_INTEGRATION.md`
@@ -119,15 +119,19 @@ All modules have keepers, protos, and tests:
 - [x] Identity/VC: Query commands functional (vcregistry, identitychange)
 - [x] Inclusion Routines: Query commands functional
 - [x] Governance: Query commands functional
-- [ ] Bridge: Simulate cross-chain transfer, test Merkle proofs
+- [x] Bridge: Simulate cross-chain transfer, test Merkle proofs (`chain/x/bridge/keeper/cross_chain_flow_test.go` covers lock flow + Merkle verification)
 - [ ] DEX: Create pool, execute swaps, verify AMM calculations
 - [ ] Compliance: Configure AML rules, test transaction screening
 
 ### Smart Contracts
 - [x] WASM CLI commands implemented: `aurad tx aura_wasm_security [store|instantiate|execute|migrate]`
-- [ ] Deploy vc-issuer: `aurad tx aura_wasm_security store contracts/artifacts/vc_issuer.wasm`
-- [ ] Instantiate and test execute/query
-- [ ] Benchmark gas consumption
+- [ ] [BLOCKED] Deploy vc-issuer: `aurad tx aura_wasm_security store contracts/artifacts/vc_issuer.wasm`
+  - **Blocker:** tx signing currently fails with `signature verification failed; ... SIGN_MODE_DIRECT ... unauthorized` even when `--sign-mode legacy-amino-json` is passed. Keyring account/sequence and CLI tx plumbing need fixing.
+  - **Automation ready:** `scripts/test-vc-issuer-e2e.sh` spins up an ephemeral node, stores, instantiates, registers issuer, requests, fulfills, and queries. Broadcast now uses `sync`, gas bumped to 5,000,000, and sign-mode flag set, but the CLI still produces SIGN_MODE_DIRECT; TxConfig now defaults to LEGACY_AMINO_JSON and the Tx/Query CLI has been re-wired to the SDK—re-run after keyring/sequence fixes.
+- [ ] [BLOCKED] Instantiate and test execute/query
+  - **Blocker:** same signing/keyring issue; resolve store path first.
+- [ ] Restore full genesis CLI (add-genesis-account/gentx/collect-gentxs) or ship a scripted genesis injector for local dev/testnet parity
+- [ ] Benchmark gas consumption (store/instantiate/execute) once signing unblocked
 
 ### Multi-Node (4 validators)
 - [x] Deploy with Docker Compose → `/docker-compose.testnet.yml`
@@ -135,6 +139,7 @@ All modules have keepers, protos, and tests:
 - [x] Create management script → `/scripts/testnet-manage.sh`
 - [x] Create Prometheus config → `/prometheus/prometheus-testnet.yml`
 - [x] Create testnet documentation → `/TESTNET_SETUP.md`, `/TESTNET_QUICKSTART.md`
+- [x] Document Docker runbook for local testnet → `/docs/runbooks/LOCAL_TESTNET_DOCKER.md`
 - [ ] Run initialization and start testnet
 - [ ] Test Byzantine fault tolerance (stop 1 validator = consensus continues)
 - [ ] Test state synchronization
@@ -143,6 +148,43 @@ All modules have keepers, protos, and tests:
 - [x] Deploy: `docker-compose -f docker-compose.monitoring.yml up -d` (config ready)
 - [x] Import dashboards from `/grafana/dashboards/` → `/docker/monitoring/grafana/dashboards/`
 - [x] Configure alerts for chain halt, high resource usage, low peer count → `/docker/monitoring/prometheus/rules/aura-alerts.yml`
+
+### Module Architecture Alignment (Cosmos SDK + Native Parity)
+- [x] Add lightweight `IsAppModule` tags/adapters for many Aura modules; scaffold adapter wrapper (`chain/app/module_adapters.go`).
+- [x] Add adapters for remaining Aura modules and wire all into an SDK `module.Manager`.
+- [x] Build SDK `module.Manager` with core modules (auth, bank, staking, slashing, distribution, params, consensus, genutil, wasm) and Aura adapters; set InitGenesis/BeginBlock/EndBlock orderings; register services via configurator.
+- [x] Fix adapter wiring to execute module `InitGenesis`/`BeginBlock`/`EndBlock` with `codec.JSONCodec` and add regression tests; migrate `x/walletsecurity` to a full `AppModule`/`AppModuleBasic` with genesis import/export.
+- [x] Hook BaseApp pre-block, InitChainer, BeginBlocker, EndBlocker, prepare-check-state, and precommit to the module manager with JSON app state handling.
+- [x] Make `start` honor chain-id from genesis and app.toml/flags for RPC/API/GRPC ports; expose flags to override gRPC/API ports for e2e harnesses.
+- [ ] Run `scripts/test-vc-issuer-e2e.sh` after refactor to confirm tx execution works; current failure is SIGN_MODE_DIRECT auth rejection in wasm store tx despite amino flag. Instrument BaseApp/store version logging if signing fix does not unblock tx execution.
+- [x] Align DEX invariants, msg server guardrails, keeper harness, and positive msg server paths with current proto types; `go test ./chain/x/dex/...` now passes.
+- [x] Seeded KV stores at InitGenesis to ensure all mounted stores persist version 1 (prevents IAVL version lookup failures in tx/query paths).
+- [ ] Update DEX/Compliance tests and coverage after tx path is restored.
+- [ ] **Module Migration to Unified AppModule Pattern**
+  - Converted governance, compliance, identitychange, dataregistry, inclusionroutines, and aiassistant to native `AppModule`/`AppModuleBasic` implementations; each now registers its proto Msg/MsgResponse interfaces, gRPC services via `module.Configurator`, and default genesis/validation logic.
+  - Next up: finish migrating the remaining Aura modules (bridge, dex, economicsecurity, vcregistry, cryptography, wasm/security, monitoring, etc.), then delete the adapter layer so the ModuleManager wires real `AppModule`s, and rerun `go test ./chain/...` to clear the outstanding suite failures before finishing the migration.
+
+### Next 20 Tasks (handoff for next agent)
+1. Fix wasm tx signing path end-to-end: configure TxConfig to enable LEGACY_AMINO_JSON as default, ensure CLI uses it, and set correct chain-id/account-number/sequence so wasm store succeeds.
+2. Regenerate or align keyring keys with genesis; add deterministic seeds and explicit keyring-backend in `scripts/test-vc-issuer-e2e.sh` with automated account/sequence fetch.
+3. Implement real CLI query/tx subcommands (bank, tx, account, block) using SDK client contexts (not stubs) and add regression tests.
+4. Re-run `scripts/test-vc-issuer-e2e.sh` after signing fix; capture logs, keep temp home path, and baseline gas per step (store/instantiate/execute).
+5. Add offline sign fallback (`--generate-only` + `tx sign --sign-mode LEGACY_AMINO_JSON`) in the contract flow to avoid SIGN_MODE_DIRECT regressions.
+6. Harden e2e script preflight: assert account-number/sequence before sending, check increments afterward, and fail fast on mismatches.
+7. Add BaseApp diagnostics: log store name/height on `CacheMultiStoreWithVersion` failures and emit a post-InitGenesis sanity check that every mounted KV store has a persisted version.
+8. Bake store-init marker verification into multi-node bootstrap/testnet scripts and document the behavior; confirm AppHash consistency across start→stop→start.
+9. Finish migrating remaining Aura modules (bridge, dex, economicsecurity, vcregistry, cryptography, wasm/security, monitoring, aurabindings) to native `AppModule`s and delete the adapter layer.
+10. Rerun `go test ./chain/...` after migrations; raise coverage toward 80%+ and fix any failing suites.
+11. Add wasm/security invariants and tests (code size/upload limits, admin enforcement, gas caps, event emission).
+12. Expand DEX/compliance scenario tests: pool create/swap math, fee/gas guardrails, AML screening edge cases.
+13. Benchmark wasm store/instantiate/execute gas on local node and tune app.toml defaults; record baselines in docs.
+14. Restore full genesis CLI helpers (`add-genesis-account`, `gentx`, `collect-gentxs`) wired to Aura modules; add tests.
+15. Harden key management: deterministic key material, backend selection, env/secret handling, and per-script validation.
+16. Add monitoring probes and alerts for wasm tx failures, state load errors, and signature mismatch rates; surface in Grafana/Prometheus.
+17. Integrate explorer/faucet deployment steps into Phase 1 docs and ensure API/RPC endpoints are exposed for local testnet users.
+18. Prepare cloud testnet automation (parameterized K8s overlays, DNS entries, validator configs) and run a dry-run rollout.
+19. Verify replay on a seeded DB via start→stop→start integration test; ensure AppHash stability and no “version does not exist” errors.
+20. Document the signing/keyring remediation, store seeding guarantees, and new gas baselines in `/docs/runbooks/LOCAL_TESTNET_DOCKER.md` and contract deployment docs.
 
 ---
 

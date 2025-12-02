@@ -1,65 +1,128 @@
 package governance
 
 import (
-    "github.com/cosmos/cosmos-sdk/types/module"
-    "google.golang.org/grpc"
+	"bytes"
+	"encoding/json"
+	"fmt"
 
-    sdk "github.com/cosmos/cosmos-sdk/types"
-    "github.com/spf13/cobra"
+	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/codec"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/module"
+	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/spf13/cobra"
 
-    "github.com/aequitas/aura/chain/x/governance/client/cli"
-    "github.com/aequitas/aura/chain/x/governance/keeper"
-    "github.com/aequitas/aura/chain/x/governance/types"
+	"github.com/aequitas/aura/chain/x/governance/client/cli"
+	"github.com/aequitas/aura/chain/x/governance/keeper"
+	"github.com/aequitas/aura/chain/x/governance/types"
+	govpb "github.com/aequitas/aura/proto/aura/governance/v1beta1"
 )
 
-// AppModule represents the governance application module
+// AppModuleBasic implements the AppModuleBasic interface for governance.
+type AppModuleBasic struct{}
+
+// Name returns the governance module name.
+func (AppModuleBasic) Name() string { return types.ModuleName }
+
+// RegisterLegacyAminoCodec registers legacy Amino types.
+func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
+	types.RegisterLegacyAminoCodec(cdc)
+}
+
+// RegisterInterfaces registers protobuf interfaces with the codec.
+func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
+	types.RegisterInterfaces(registry)
+}
+
+// RegisterGRPCGatewayRoutes registers gRPC gateway routes.
+func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
+	_ = clientCtx
+	_ = mux
+}
+
+// DefaultGenesis returns the default genesis state.
+func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
+	return cdc.MustMarshalJSON(types.DefaultGenesis())
+}
+
+// ValidateGenesis validates the module genesis state.
+func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, _ client.TxEncodingConfig, bz json.RawMessage) error {
+	if len(bytes.TrimSpace(bz)) == 0 {
+		return nil
+	}
+	var gen types.GenesisState
+	if err := cdc.UnmarshalJSON(bz, &gen); err != nil {
+		return fmt.Errorf("failed to unmarshal governance genesis: %w", err)
+	}
+	return types.ValidateGenesis(&gen)
+}
+
+// GetTxCmd returns the root tx command for the governance module.
+func (AppModuleBasic) GetTxCmd() *cobra.Command {
+	return cli.GetTxCmd()
+}
+
+// GetQueryCmd returns the root query command for the governance module.
+func (AppModuleBasic) GetQueryCmd() *cobra.Command {
+	return cli.GetQueryCmd()
+}
+
+// AppModule implements the AppModule interface for governance.
 type AppModule struct {
-    keeper *keeper.Keeper
+	AppModuleBasic
+	keeper *keeper.Keeper
 }
 
-// NewAppModule creates a new governance AppModule
+// NewAppModule creates a new AppModule.
 func NewAppModule(k *keeper.Keeper) AppModule {
-    return AppModule{
-        keeper: k,
-    }
+	return AppModule{
+		AppModuleBasic: AppModuleBasic{},
+		keeper:         k,
+	}
 }
 
-// RegisterServices registers the module's gRPC services with the configurator
+// Name returns the governance module name.
+func (AppModule) Name() string { return types.ModuleName }
+
+// RegisterServices registers gRPC services.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
-    // Register message and query servers
+	govpb.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper))
+	govpb.RegisterQueryServer(cfg.QueryServer(), keeper.NewQueryServerImpl(am.keeper))
 }
 
-// RegisterGRPCServices registers the module's gRPC services
-func (am AppModule) RegisterGRPCServices(server *grpc.Server) {
-    // Register message server
+// InitGenesis initializes the module genesis state.
+func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) {
+	var gen types.GenesisState
+	if len(bytes.TrimSpace(data)) == 0 {
+		gen = *types.DefaultGenesis()
+	} else if err := cdc.UnmarshalJSON(data, &gen); err != nil {
+		panic(fmt.Errorf("failed to unmarshal governance genesis: %w", err))
+	}
+	if err := am.keeper.InitGenesis(ctx, gen); err != nil {
+		panic(fmt.Errorf("governance InitGenesis: %w", err))
+	}
 }
 
-// Name returns the module name
-func (am AppModule) Name() string {
-    return "governance"
+// ExportGenesis exports the module genesis state.
+func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
+	gen := am.keeper.ExportGenesis(ctx)
+	return cdc.MustMarshalJSON(&gen)
 }
 
-// GetTxCmd returns the transaction commands for this module
-func (AppModule) GetTxCmd() *cobra.Command {
-    return cli.GetTxCmd()
-}
+// ConsensusVersion returns the module consensus version.
+func (AppModule) ConsensusVersion() uint64 { return 1 }
 
-// GetQueryCmd returns the query commands for this module
-func (AppModule) GetQueryCmd() *cobra.Command {
-    return cli.GetQueryCmd()
-}
+// BeginBlock executes begin blocker logic.
+func (AppModule) BeginBlock(ctx sdk.Context) {}
 
-// DefaultGenesis returns the default genesis state for the governance module.
-func (AppModule) DefaultGenesis() types.GenesisState {
-    return *types.DefaultGenesis()
-}
+// EndBlock executes end blocker logic.
+func (AppModule) EndBlock(ctx sdk.Context) {}
 
-// ValidateGenesis validates the supplied genesis state.
-func (AppModule) ValidateGenesis(genesis types.GenesisState) error {
-    return genesis.Validate()
-}
-
-// RegisterInvariants registers the module's invariants.
+// RegisterInvariants registers governance invariants.
 func (am AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {
-    // keeper.RegisterInvariants(ir, am.keeper) // TODO: Implement RegisterInvariants
+	keeper.RegisterInvariants(ir, am.keeper)
 }
+
+// IsAppModule tags the module for module manager compatibility.
+func (AppModule) IsAppModule() {}

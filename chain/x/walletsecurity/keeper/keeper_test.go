@@ -1,7 +1,6 @@
 package keeper_test
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -26,7 +25,7 @@ import (
 
 type KeeperTestSuite struct {
 	suite.Suite
-	ctx    context.Context
+	ctx    sdk.Context
 	keeper keeper.Keeper
 	cdc    codec.BinaryCodec
 }

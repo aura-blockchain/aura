@@ -4,6 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/codec"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/types/msgservice"
+	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+
 	"github.com/aequitas/aura/chain/x/vcregistry/keeper"
 	"github.com/aequitas/aura/chain/x/vcregistry/types"
 	vcregistrypb "github.com/aequitas/aura/proto/aura/vcregistry/v1beta1"
@@ -22,8 +28,33 @@ type AppModuleBasic struct{}
 // Name returns the module name
 func (AppModuleBasic) Name() string { return types.ModuleName }
 
+// RegisterGRPCGatewayRoutes is a no-op placeholder to satisfy the AppModuleBasic interface.
+func (AppModuleBasic) RegisterGRPCGatewayRoutes(client.Context, *runtime.ServeMux) {}
+
 // RegisterServices registers module services (no-op for basic)
 func (AppModuleBasic) RegisterServices(ModuleServices) {}
+
+// RegisterInterfaces wires the module messages into the interface registry so Msg servers can be registered safely.
+func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
+	msgservice.RegisterMsgServiceDesc(registry, &vcregistrypb.Msg_ServiceDesc)
+
+	registry.RegisterImplementations(
+		(*sdk.Msg)(nil),
+		&vcregistrypb.MsgMintVC{},
+		&vcregistrypb.MsgRevokeVC{},
+		&vcregistrypb.MsgAdminRevokeVC{},
+		&vcregistrypb.MsgSuspendVC{},
+		&vcregistrypb.MsgReactivateVC{},
+		&vcregistrypb.MsgCreateVCPolicy{},
+		&vcregistrypb.MsgUpdateVCPolicy{},
+		&vcregistrypb.MsgDeprecateVCPolicy{},
+		&vcregistrypb.MsgRegisterDID{},
+		&vcregistrypb.MsgUpdateDIDDocument{},
+	)
+}
+
+// RegisterLegacyAminoCodec satisfies the module.AppModuleBasic interface (proto-only module).
+func (AppModuleBasic) RegisterLegacyAminoCodec(*codec.LegacyAmino) {}
 
 // AppModule implements the app module interface
 type AppModule struct {
@@ -74,6 +105,9 @@ func (m AppModule) InitGenesis(ctx context.Context, genesis types.GenesisState) 
 func (m AppModule) ExportGenesis(ctx context.Context) types.GenesisState {
 	return m.keeper.ExportGenesis(ctx)
 }
+
+// IsAppModule tags this module for Cosmos SDK module manager compatibility.
+func (AppModule) IsAppModule() {}
 
 func unwrapSDKContext(ctx context.Context) (sdk.Context, bool) {
 	if ctx == nil {

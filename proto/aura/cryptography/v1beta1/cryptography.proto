@@ -95,6 +95,10 @@ message ZKProofConfig {
   bytes verification_key = 4;
   string circuit_id = 5;
   google.protobuf.Timestamp created_at = 6 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  ZKProofStatus status = 7;
+  uint64 total_proofs = 8;
+  uint64 successful_proofs = 9;
+  map<string, string> metadata = 10;
 }
 
 // ZKProofType specifies the type of zero-knowledge proof
@@ -104,6 +108,15 @@ enum ZKProofType {
   ZK_PROOF_TYPE_PLONK = 2;
   ZK_PROOF_TYPE_BULLETPROOFS = 3;
   ZK_PROOF_TYPE_STARK = 4;
+  ZK_PROOF_TYPE_HALO2 = 5;
+}
+
+// ZKProofStatus represents the status of a ZK proof circuit
+enum ZKProofStatus {
+  ZK_PROOF_STATUS_UNSPECIFIED = 0;
+  ZK_PROOF_STATUS_ACTIVE = 1;
+  ZK_PROOF_STATUS_INACTIVE = 2;
+  ZK_PROOF_STATUS_DEPRECATED = 3;
 }
 
 // ZKProof represents a zero-knowledge proof
@@ -113,6 +126,19 @@ message ZKProof {
   bytes public_inputs = 3;
   google.protobuf.Timestamp generated_at = 4 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
   bool verified = 5;
+}
+
+// ZKProofVerification represents a verification record for a submitted proof
+message ZKProofVerification {
+  string verification_id = 1;
+  string proof_id = 2;
+  string submitter = 3;
+  bytes proof_data = 4;
+  bytes public_inputs = 5;
+  bool verified = 6;
+  google.protobuf.Timestamp verified_at = 7 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  string verifier_node = 8;
+  string error_message = 9; // If verification failed
 }
 
 // SecureEnclaveConfig defines secure enclave configuration

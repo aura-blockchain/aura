@@ -1,7 +1,7 @@
 package keeper
 
 import (
-        storetypes "cosmossdk.io/store/types"
+	storetypes "cosmossdk.io/store/types"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"

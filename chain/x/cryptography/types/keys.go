@@ -37,6 +37,9 @@ var (
 	// ZKProofPrefix is the prefix for ZK proofs
 	ZKProofPrefix = []byte{0x07}
 
+	// ZKProofVerificationPrefix is the prefix for ZK proof verifications
+	ZKProofVerificationPrefix = []byte{0x0e}
+
 	// SecureEnclavePrefix is the prefix for secure enclave configurations
 	SecureEnclavePrefix = []byte{0x08}
 
@@ -86,6 +89,11 @@ func GetZKProofConfigKey(proofID string) []byte {
 // GetZKProofKey returns the store key for a ZK proof
 func GetZKProofKey(proofID string) []byte {
 	return append(ZKProofPrefix, []byte(proofID)...)
+}
+
+// GetZKProofVerificationKey returns the store key for a ZK proof verification
+func GetZKProofVerificationKey(verificationID string) []byte {
+	return append(ZKProofVerificationPrefix, []byte(verificationID)...)
 }
 
 // GetSecureEnclaveKey returns the store key for a secure enclave

@@ -3,33 +3,58 @@ package identitychange_test
 import (
 	"testing"
 
+	"cosmossdk.io/log"
+	"cosmossdk.io/store"
+	"cosmossdk.io/store/metrics"
+	storetypes "cosmossdk.io/store/types"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	dbm "github.com/cosmos/cosmos-db"
+	"github.com/cosmos/cosmos-sdk/codec"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	runtime "github.com/cosmos/cosmos-sdk/runtime"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkmod "github.com/cosmos/cosmos-sdk/types/module"
+	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
+
 	"github.com/aequitas/aura/chain/x/identitychange"
 	"github.com/aequitas/aura/chain/x/identitychange/keeper"
 	"github.com/aequitas/aura/chain/x/identitychange/params"
 	"github.com/aequitas/aura/chain/x/identitychange/types"
-	identitychangepb "github.com/aequitas/aura/proto/aura/identitychange/v1beta1"
 )
 
-type testServices struct {
-	receivedMsg   identitychangepb.MsgServer
-	receivedQuery identitychangepb.QueryServer
-}
+func setupModule(t *testing.T) (identitychange.AppModule, *keeper.Keeper, sdk.Context, codec.Codec) {
+	t.Helper()
 
-func (s *testServices) RegisterMsgServer(server identitychangepb.MsgServer) {
-	s.receivedMsg = server
-}
+	storeKey := storetypes.NewKVStoreKey(types.StoreKey)
+	db := dbm.NewMemDB()
+	stateStore := store.NewCommitMultiStore(db, log.NewNopLogger(), metrics.NewNoOpMetrics())
+	stateStore.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, db)
+	require.NoError(t, stateStore.LoadLatestVersion())
 
-func (s *testServices) RegisterQueryServer(server identitychangepb.QueryServer) {
-	s.receivedQuery = server
+	interfaceRegistry := codectypes.NewInterfaceRegistry()
+	binaryCodec := codec.NewProtoCodec(interfaceRegistry)
+	paramsStore := params.NewStore(types.DefaultParams())
+	k := keeper.NewKeeper(
+		runtime.NewKVStoreService(storeKey),
+		binaryCodec,
+		paramsStore,
+		"authority",
+		log.NewNopLogger(),
+	)
+
+	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
+	module := identitychange.NewAppModule(k)
+	return module, k, ctx, binaryCodec
 }
 
 func TestAppModuleRegisterServices(t *testing.T) {
-	store := params.NewStore(types.DefaultParams())
-	k := keeper.NewKeeper(store)
-	module := identitychange.NewAppModule(k)
-	services := &testServices{}
-	module.RegisterServices(services)
-	if services.receivedMsg == nil || services.receivedQuery == nil {
-		t.Fatalf("services not registered")
-	}
+	module, _, _, protoCodec := setupModule(t)
+
+	msgServer := grpc.NewServer()
+	queryServer := grpc.NewServer()
+	configurator := sdkmod.NewConfigurator(protoCodec, msgServer, queryServer)
+
+	module.RegisterServices(configurator)
+	require.NoError(t, configurator.Error())
 }

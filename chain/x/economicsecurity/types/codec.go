@@ -3,7 +3,10 @@ package types
 import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	// "github.com/cosmos/cosmos-sdk/types/msgservice"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/msgservice"
+
+	espb "github.com/aequitas/aura/proto/aura/economicsecurity/v1beta1"
 )
 
 // RegisterLegacyAminoCodec registers the necessary x/economicsecurity interfaces and concrete types
@@ -14,6 +17,19 @@ func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 
 // RegisterInterfaces registers the x/economicsecurity interfaces types with the interface registry
 func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
-	// Register message types with the interface registry
-	// msgservice.RegisterMsgServiceDesc(registry, &_MsgService_serviceDesc)
+	msgservice.RegisterMsgServiceDesc(registry, &espb.Msg_ServiceDesc)
+
+	registry.RegisterImplementations(
+		(*sdk.Msg)(nil),
+		&espb.MsgCreateVestingSchedule{},
+		&espb.MsgReleaseVestedTokens{},
+		&espb.MsgRevokeVestingSchedule{},
+		&espb.MsgLockVotingTokens{},
+		&espb.MsgUnlockVotingTokens{},
+		&espb.MsgProposeTreasurySpend{},
+		&espb.MsgSignTreasurySpend{},
+		&espb.MsgExecuteTreasurySpend{},
+		&espb.MsgUpdateParams{},
+		&espb.MsgAdjustInflationRate{},
+	)
 }

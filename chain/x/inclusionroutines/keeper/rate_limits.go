@@ -3,8 +3,8 @@ package keeper
 import (
 	"fmt"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/aequitas/aura/chain/x/inclusionroutines/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // GetRateLimitConfig retrieves the rate limit configuration for an IR from KV store
@@ -152,7 +152,7 @@ func (k *Keeper) GetRateLimitStatus(ctx sdk.Context, wallet, irID string) (hourl
 	dayKey := fmt.Sprintf("day:%d", currentDay)
 
 	return k.GetRateLimitUsage(ctx, irID, wallet, hourKey),
-	       k.GetRateLimitUsage(ctx, irID, wallet, dayKey)
+		k.GetRateLimitUsage(ctx, irID, wallet, dayKey)
 }
 
 // ValidateRateLimit validates rate limit configuration
