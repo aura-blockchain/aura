@@ -1,8 +1,6 @@
 package keeper
 
 import (
-	"sync"
-
 	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -10,8 +8,6 @@ import (
 
 	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 )
-
-var configureSDK sync.Once
 
 // KeeperTestSuite is a base test suite for keeper tests in the keeper package
 type KeeperTestSuite struct {
@@ -25,13 +21,8 @@ type KeeperTestSuite struct {
 
 // SetupTest initializes the test suite before each test
 func (suite *KeeperTestSuite) SetupTest() {
-	configureSDK.Do(func() {
-		cfg := sdk.GetConfig()
-		cfg.SetBech32PrefixForAccount("aura", "aurapub")
-		cfg.SetBech32PrefixForValidator("auravaloper", "auravaloperpub")
-		cfg.SetBech32PrefixForConsensusNode("auravalcons", "auravalconspub")
-		cfg.Seal()
-	})
+	// Configure SDK with Aura-specific prefixes (safe to call multiple times)
+	keepertest.ConfigureSDK()
 
 	input := keepertest.CreateTestInput(suite.T())
 

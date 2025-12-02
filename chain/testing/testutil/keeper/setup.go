@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"sync"
 	"testing"
 	"time"
 
@@ -198,3 +199,18 @@ func WrapStoreService(storeKey *storetypes.KVStoreKey) corestore.KVStoreService 
 func Logger() log.Logger {
 	return log.NewNopLogger()
 }
+
+// ConfigureSDK configures the Cosmos SDK with Aura-specific prefixes.
+// This function uses sync.Once internally to ensure configuration happens only once.
+// Safe to call multiple times from different test files.
+func ConfigureSDK() {
+	configureSDKOnce.Do(func() {
+		cfg := sdk.GetConfig()
+		cfg.SetBech32PrefixForAccount("aura", "aurapub")
+		cfg.SetBech32PrefixForValidator("auravaloper", "auravaloperpub")
+		cfg.SetBech32PrefixForConsensusNode("auravalcons", "auravalconspub")
+		cfg.Seal()
+	})
+}
+
+var configureSDKOnce = &sync.Once{}

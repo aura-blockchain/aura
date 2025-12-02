@@ -4,43 +4,21 @@ import (
 	"testing"
 	"time"
 
-	"cosmossdk.io/log"
-	"cosmossdk.io/store"
-	"cosmossdk.io/store/metrics"
-	storetypes "cosmossdk.io/store/types"
 	sdkmath "cosmossdk.io/math"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	dbm "github.com/cosmos/cosmos-db"
-	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 	"github.com/aequitas/aura/chain/x/aiassistant/types"
 )
 
 // setupKeeper creates a test keeper for aiassistant module
 func setupKeeper(t *testing.T) (*Keeper, sdk.Context) {
 	t.Helper()
-	key := storetypes.NewKVStoreKey(types.StoreKey)
-	db := dbm.NewMemDB()
-	stateStore := store.NewCommitMultiStore(db, log.NewNopLogger(), metrics.NewNoOpMetrics())
-	stateStore.MountStoreWithDB(key, storetypes.StoreTypeIAVL, db)
-	if err := stateStore.LoadLatestVersion(); err != nil {
-		t.Fatal(err)
-	}
-
-	ctx := sdk.NewContext(stateStore, cmtproto.Header{
-		ChainID: "aiassistant-test",
-		Time:    time.Now().UTC(),
-	}, false, log.NewNopLogger())
-
-	// Create codec
-	interfaceRegistry := codectypes.NewInterfaceRegistry()
-	cdc := codec.NewProtoCodec(interfaceRegistry)
+	input := keepertest.CreateTestInputWithStoreKey(t, types.StoreKey)
 
 	bank := newMockBankKeeper()
-	k := NewKeeper(cdc, key, "", bank)
-	return &k, ctx
+	k := NewKeeper(input.Cdc, input.StoreKey, "", bank)
+	return &k, input.Ctx
 }
 
 // mockBankKeeper is a minimal bank keeper for testing
