@@ -124,14 +124,16 @@ func DelegationStoreKey(delegationID string) string {
 
 // ExpirationIndexKey returns the store key for delegation expiration index
 // Format: delexp/{height}/{delegation_id}
+// Height is encoded as string for proper sorting
 func ExpirationIndexKey(height uint64, delegationID string) string {
-	return DelegationExpirationIndexPrefix + string(rune(height)) + "/" + delegationID
+	return DelegationExpirationIndexPrefix + fmt.Sprintf("%020d", height) + "/" + delegationID
 }
 
 // ExpirationIndexPrefix returns the prefix for all delegations expiring at a specific height
 // Format: delexp/{height}/
+// Height is encoded as string for proper sorting
 func ExpirationIndexPrefix(height uint64) string {
-	return DelegationExpirationIndexPrefix + string(rune(height)) + "/"
+	return DelegationExpirationIndexPrefix + fmt.Sprintf("%020d", height) + "/"
 }
 
 // MarketplaceListingStoreKey returns the store key for marketplace listings
