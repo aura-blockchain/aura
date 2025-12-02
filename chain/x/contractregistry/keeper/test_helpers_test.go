@@ -4,9 +4,16 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/log"
+	"cosmossdk.io/store"
+	"cosmossdk.io/store/metrics"
+	storetypes "cosmossdk.io/store/types"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	dbm "github.com/cosmos/cosmos-db"
+	"github.com/cosmos/cosmos-sdk/codec"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 	"github.com/aequitas/aura/chain/x/contractregistry/types"
 	pb "github.com/aequitas/aura/proto/aura/contractregistry/v1beta1"
 )
@@ -14,29 +21,57 @@ import (
 // setupKeeper creates a test keeper and context for contractregistry module tests.
 // This function is used by tests in the keeper package that expect a simple
 // setupKeeper(t) signature returning (Keeper, sdk.Context).
+// NOTE: Cannot use global helpers due to import cycle (testutil/keeper -> wasm -> contractregistry)
 func setupKeeper(t *testing.T) (Keeper, sdk.Context) {
 	t.Helper()
 
-	// Use global test helpers for standard setup
-	input := keepertest.CreateTestInputWithTime(t, time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC))
+	// Create in-memory database
+	db := dbm.NewMemDB()
+
+	// Create commit multi-store with metrics
+	cms := store.NewCommitMultiStore(db, log.NewNopLogger(), metrics.NewNoOpMetrics())
+
+	// Create store key for contractregistry module
+	storeKey := storetypes.NewKVStoreKey(types.StoreKey)
+	cms.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, db)
+
+	// Load latest version
+	if err := cms.LoadLatestVersion(); err != nil {
+		panic(err)
+	}
+
+	// Create context with block header and time
+	ctx := sdk.NewContext(
+		cms,
+		cmtproto.Header{
+			Height: 1,
+			Time:   time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+		},
+		false,
+		log.NewNopLogger(),
+	)
+
+	// Create interface registry and codec
+	interfaceRegistry := codectypes.NewInterfaceRegistry()
+	cdc := codec.NewProtoCodec(interfaceRegistry)
 
 	// Create keeper with authority address
 	// Using a standard test governance address
 	authority := "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
 
 	keeper := NewKeeper(
-		input.StoreKey,
-		input.Cdc,
+		storeKey,
+		cdc,
 		authority,
 	)
 
 	// Initialize with default params
 	params := types.DefaultParams()
-	if err := keeper.SetParams(input.Ctx, &params); err != nil {
+	if err := keeper.SetParams(ctx, &params); err != nil {
 		panic(err)
 	}
 
-	return *keeper, input.Ctx
+	return *keeper, ctx
 }
 
 // setupKeeperWithMocks creates a keeper with mock dependencies for testing.
@@ -149,13 +184,18 @@ func newTestContractInfo(address, creator, admin string) *pb.ContractInfo {
 }
 
 // advanceBlockTime advances the block time in the context by the given duration.
-// This is a module-specific wrapper over the global helper.
 func advanceBlockTime(ctx sdk.Context, duration time.Duration) sdk.Context {
-	return keepertest.AdvanceTime(ctx, duration).WithBlockHeight(ctx.BlockHeight() + 1)
+	header := ctx.BlockHeader()
+	header.Time = header.Time.Add(duration)
+	header.Height++
+	return ctx.WithBlockHeader(header)
 }
 
 // advanceBlockHeight advances the block height by the given number of blocks.
-// This is a module-specific wrapper over the global helper.
 func advanceBlockHeight(ctx sdk.Context, blocks int64) sdk.Context {
-	return keepertest.AdvanceBlockHeight(ctx, blocks)
+	header := ctx.BlockHeader()
+	header.Height += blocks
+	// Assume 5 seconds per block
+	header.Time = header.Time.Add(time.Duration(blocks) * 5 * time.Second)
+	return ctx.WithBlockHeader(header)
 }
