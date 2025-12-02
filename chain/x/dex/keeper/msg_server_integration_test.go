@@ -28,13 +28,8 @@ func TestMsgServerIntegrationSuite(t *testing.T) {
 }
 
 func (suite *MsgServerIntegrationSuite) SetupTest() {
-	configureSDK.Do(func() {
-		cfg := sdk.GetConfig()
-		cfg.SetBech32PrefixForAccount("aura", "aurapub")
-		cfg.SetBech32PrefixForValidator("auravaloper", "auravaloperpub")
-		cfg.SetBech32PrefixForConsensusNode("auravalcons", "auravalconspub")
-		cfg.Seal()
-	})
+	// Configure SDK with Aura-specific prefixes (safe to call multiple times)
+	keepertest.ConfigureSDK()
 
 	input := keepertest.CreateTestInput(suite.T())
 	suite.bank = testutil.NewMockBankKeeper()
