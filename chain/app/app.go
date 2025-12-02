@@ -185,6 +185,191 @@ type EncodingConfig struct {
 	TxConfig          client.TxConfig
 }
 
+// storeKeys holds all KV store keys with methods to access them as a single source of truth.
+// This eliminates the need to update multiple locations when adding/removing modules.
+type storeKeys struct {
+	// Cosmos SDK standard keys
+	account      *storetypes.KVStoreKey
+	bank         *storetypes.KVStoreKey
+	staking      *storetypes.KVStoreKey
+	slashing     *storetypes.KVStoreKey
+	distribution *storetypes.KVStoreKey
+	params       *storetypes.KVStoreKey
+	consensus    *storetypes.KVStoreKey
+
+	// Security module keys (individual)
+	walletSecurity    *storetypes.KVStoreKey
+	validatorSecurity *storetypes.KVStoreKey
+	cryptography      *storetypes.KVStoreKey
+	networkSecurity   *storetypes.KVStoreKey
+	incidentResponse  *storetypes.KVStoreKey
+	privacy           *storetypes.KVStoreKey
+	security          *storetypes.KVStoreKey
+
+	// Identity module key (individual)
+	identityChange *storetypes.KVStoreKey
+	identity       *storetypes.KVStoreKey
+
+	// Economics module keys (individual)
+	economicSecurity *storetypes.KVStoreKey
+	governance       *storetypes.KVStoreKey
+	economics        *storetypes.KVStoreKey
+
+	// Core AURA module keys (unchanged)
+	vc                *storetypes.KVStoreKey
+	compliance        *storetypes.KVStoreKey
+	dex               *storetypes.KVStoreKey
+	bridge            *storetypes.KVStoreKey
+	ai                *storetypes.KVStoreKey
+	wasm              *storetypes.KVStoreKey
+	contractRegistry  *storetypes.KVStoreKey
+	wasmSecurity      *storetypes.KVStoreKey
+	confidenceScore   *storetypes.KVStoreKey
+	inclusionRoutines *storetypes.KVStoreKey
+	dataRegistry      *storetypes.KVStoreKey
+	monitoring        *storetypes.KVStoreKey
+	prevalidation     *storetypes.KVStoreKey
+	aurabindings      *storetypes.KVStoreKey
+}
+
+// Names returns all store key names for StoreKeyNames function.
+// This is the single source of truth for store key names.
+func (s *storeKeys) Names() []string {
+	return []string{
+		authtypes.StoreKey,
+		banktypes.StoreKey,
+		stakingtypes.StoreKey,
+		slashingtypes.StoreKey,
+		distrtypes.StoreKey,
+		paramstypes.StoreKey,
+		consensustypes.StoreKey,
+		walletsecuritytypes.StoreKey,
+		validatorsecuritytypes.StoreKey,
+		cryptographytypes.StoreKey,
+		networksecuritytypes.StoreKey,
+		incidentresponsetypes.StoreKey,
+		privacytypes.StoreKey,
+		identitychangetypes.StoreKey,
+		identitytypes.StoreKey,
+		economicsecuritytypes.StoreKey,
+		governancetypes.StoreKey,
+		economicstypes.StoreKey,
+		vctypes.StoreKey,
+		compliancetypes.StoreKey,
+		dextypes.StoreKey,
+		bridgetypes.StoreKey,
+		aitypes.StoreKey,
+		wasmtypes.StoreKey,
+		contractregistrytypes.StoreKey,
+		wasmSecurityTypes.StoreKey,
+		cstypes.StoreKey,
+		irtypes.StoreKey,
+		drtypes.StoreKey,
+		monitoringtypes.StoreKey,
+		prevalidationtypes.StoreKey,
+		aurabindingstypes.StoreKey,
+		securitytypes.StoreKey,
+	}
+}
+
+// AsMap returns store keys as a map for MountKVStores.
+// This is the single source of truth for store key mounting.
+func (s *storeKeys) AsMap() map[string]*storetypes.KVStoreKey {
+	return map[string]*storetypes.KVStoreKey{
+		// Cosmos SDK standard keys
+		authtypes.StoreKey:      s.account,
+		banktypes.StoreKey:      s.bank,
+		stakingtypes.StoreKey:   s.staking,
+		slashingtypes.StoreKey:  s.slashing,
+		distrtypes.StoreKey:     s.distribution,
+		paramstypes.StoreKey:    s.params,
+		consensustypes.StoreKey: s.consensus,
+
+		// Security module keys (individual)
+		walletsecuritytypes.StoreKey:    s.walletSecurity,
+		validatorsecuritytypes.StoreKey: s.validatorSecurity,
+		cryptographytypes.StoreKey:      s.cryptography,
+		networksecuritytypes.StoreKey:   s.networkSecurity,
+		incidentresponsetypes.StoreKey:  s.incidentResponse,
+		privacytypes.StoreKey:           s.privacy,
+
+		// Identity module key (individual)
+		identitychangetypes.StoreKey: s.identityChange,
+		identitytypes.StoreKey:       s.identity,
+
+		// Economics module keys (individual)
+		economicsecuritytypes.StoreKey: s.economicSecurity,
+		governancetypes.StoreKey:       s.governance,
+		economicstypes.StoreKey:        s.economics,
+
+		// Core AURA module keys (unchanged)
+		vctypes.StoreKey:               s.vc,
+		compliancetypes.StoreKey:       s.compliance,
+		dextypes.StoreKey:              s.dex,
+		bridgetypes.StoreKey:           s.bridge,
+		aitypes.StoreKey:               s.ai,
+		wasmtypes.StoreKey:             s.wasm,
+		contractregistrytypes.StoreKey: s.contractRegistry,
+		wasmSecurityTypes.StoreKey:     s.wasmSecurity,
+		cstypes.StoreKey:               s.confidenceScore,
+		irtypes.StoreKey:               s.inclusionRoutines,
+		drtypes.StoreKey:               s.dataRegistry,
+		monitoringtypes.StoreKey:       s.monitoring,
+		prevalidationtypes.StoreKey:    s.prevalidation,
+		aurabindingstypes.StoreKey:     s.aurabindings,
+		securitytypes.StoreKey:         s.security,
+	}
+}
+
+// initStoreKeys creates all store keys as a single source of truth.
+// Adding a new module only requires updating this function.
+func initStoreKeys() *storeKeys {
+	return &storeKeys{
+		// Cosmos SDK standard keys
+		account:      storetypes.NewKVStoreKey(authtypes.StoreKey),
+		bank:         storetypes.NewKVStoreKey(banktypes.StoreKey),
+		staking:      storetypes.NewKVStoreKey(stakingtypes.StoreKey),
+		slashing:     storetypes.NewKVStoreKey(slashingtypes.StoreKey),
+		distribution: storetypes.NewKVStoreKey(distrtypes.StoreKey),
+		params:       storetypes.NewKVStoreKey(paramstypes.StoreKey),
+		consensus:    storetypes.NewKVStoreKey(consensustypes.StoreKey),
+
+		// Security module keys (individual)
+		walletSecurity:    storetypes.NewKVStoreKey(walletsecuritytypes.StoreKey),
+		validatorSecurity: storetypes.NewKVStoreKey(validatorsecuritytypes.StoreKey),
+		cryptography:      storetypes.NewKVStoreKey(cryptographytypes.StoreKey),
+		networkSecurity:   storetypes.NewKVStoreKey(networksecuritytypes.StoreKey),
+		incidentResponse:  storetypes.NewKVStoreKey(incidentresponsetypes.StoreKey),
+		privacy:           storetypes.NewKVStoreKey(privacytypes.StoreKey),
+		security:          storetypes.NewKVStoreKey(securitytypes.StoreKey),
+
+		// Identity module key (individual)
+		identityChange: storetypes.NewKVStoreKey(identitychangetypes.StoreKey),
+		identity:       storetypes.NewKVStoreKey(identitytypes.StoreKey),
+
+		// Economics module keys (individual)
+		economicSecurity: storetypes.NewKVStoreKey(economicsecuritytypes.StoreKey),
+		governance:       storetypes.NewKVStoreKey(governancetypes.StoreKey),
+		economics:        storetypes.NewKVStoreKey(economicstypes.StoreKey),
+
+		// Core AURA module keys
+		vc:                storetypes.NewKVStoreKey(vctypes.StoreKey),
+		compliance:        storetypes.NewKVStoreKey(compliancetypes.StoreKey),
+		dex:               storetypes.NewKVStoreKey(dextypes.StoreKey),
+		bridge:            storetypes.NewKVStoreKey(bridgetypes.StoreKey),
+		ai:                storetypes.NewKVStoreKey(aitypes.StoreKey),
+		wasm:              storetypes.NewKVStoreKey(wasmtypes.StoreKey),
+		contractRegistry:  storetypes.NewKVStoreKey(contractregistrytypes.StoreKey),
+		wasmSecurity:      storetypes.NewKVStoreKey(wasmSecurityTypes.StoreKey),
+		confidenceScore:   storetypes.NewKVStoreKey(cstypes.StoreKey),
+		inclusionRoutines: storetypes.NewKVStoreKey(irtypes.StoreKey),
+		dataRegistry:      storetypes.NewKVStoreKey(drtypes.StoreKey),
+		monitoring:        storetypes.NewKVStoreKey(monitoringtypes.StoreKey),
+		prevalidation:     storetypes.NewKVStoreKey(prevalidationtypes.StoreKey),
+		aurabindings:      storetypes.NewKVStoreKey(aurabindingstypes.StoreKey),
+	}
+}
+
 // App wires all Aura modules plus the Cosmos SDK base keepers into a runnable node shell.
 type App struct {
 	*baseapp.BaseApp
@@ -234,50 +419,7 @@ type App struct {
 	prevalidationKeeper    *prevalidationkeeper.Keeper
 	aurabindingsKeeper     *aurabindingskeeper.Keeper
 
-	storeKeys struct {
-		// Cosmos SDK standard keys
-		account      *storetypes.KVStoreKey
-		bank         *storetypes.KVStoreKey
-		staking      *storetypes.KVStoreKey
-		slashing     *storetypes.KVStoreKey
-		distribution *storetypes.KVStoreKey
-		params       *storetypes.KVStoreKey
-		consensus    *storetypes.KVStoreKey
-
-		// Security module keys (individual)
-		walletSecurity    *storetypes.KVStoreKey
-		validatorSecurity *storetypes.KVStoreKey
-		cryptography      *storetypes.KVStoreKey
-		networkSecurity   *storetypes.KVStoreKey
-		incidentResponse  *storetypes.KVStoreKey
-		privacy           *storetypes.KVStoreKey
-		security          *storetypes.KVStoreKey
-
-		// Identity module key (individual)
-		identityChange *storetypes.KVStoreKey
-		identity       *storetypes.KVStoreKey
-
-		// Economics module keys (individual)
-		economicSecurity *storetypes.KVStoreKey
-		governance       *storetypes.KVStoreKey
-		economics        *storetypes.KVStoreKey
-
-		// Core AURA module keys (unchanged)
-		vc                *storetypes.KVStoreKey
-		compliance        *storetypes.KVStoreKey
-		dex               *storetypes.KVStoreKey
-		bridge            *storetypes.KVStoreKey
-		ai                *storetypes.KVStoreKey
-		wasm              *storetypes.KVStoreKey
-		contractRegistry  *storetypes.KVStoreKey
-		wasmSecurity      *storetypes.KVStoreKey
-		confidenceScore   *storetypes.KVStoreKey
-		inclusionRoutines *storetypes.KVStoreKey
-		dataRegistry      *storetypes.KVStoreKey
-		monitoring        *storetypes.KVStoreKey
-		prevalidation     *storetypes.KVStoreKey
-		aurabindings      *storetypes.KVStoreKey
-	}
+	storeKeys *storeKeys
 	memKeys struct {
 		vc           *storetypes.MemoryStoreKey
 		security     *storetypes.MemoryStoreKey

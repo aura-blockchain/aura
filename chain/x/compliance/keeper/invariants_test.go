@@ -131,6 +131,244 @@ func (suite *InvariantsTestSuite) TestKYCRecordConsistencyInvariant() {
 	suite.Contains(msg, "nil verified_at")
 }
 
+func (suite *InvariantsTestSuite) TestParamsInvariant() {
+	ctx := suite.SdkCtx
+
+	// Test: valid params pass
+	inv := ParamsInvariant(suite.Keeper)
+	msg, broken := inv(ctx)
+	suite.False(broken, "valid params should pass")
+	suite.Empty(msg)
+}
+
+func (suite *InvariantsTestSuite) TestSanctionsScreeningInvariant() {
+	ctx := suite.SdkCtx
+
+	// Test: valid sanctions screening passes
+	validAddr := suite.addr("sanctions-valid")
+	validResult := &types.SanctionsScreeningResult{
+		Address:    validAddr,
+		Flagged:    false,
+		ScreenedAt: timestamppb.Now(),
+		Matches:    []string{},
+	}
+	suite.Require().NoError(suite.Keeper.SetSanctionsScreening(ctx, validResult))
+
+	inv := SanctionsScreeningInvariant(suite.Keeper)
+	msg, broken := inv(ctx)
+	suite.False(broken, "valid sanctions screening should pass")
+	suite.Empty(msg)
+
+	// Test: invalid address fails
+	invalidResult := &types.SanctionsScreeningResult{
+		Address:    "invalid-address",
+		Flagged:    false,
+		ScreenedAt: timestamppb.Now(),
+		Matches:    []string{},
+	}
+	suite.Require().NoError(suite.Keeper.SetSanctionsScreening(ctx, invalidResult))
+
+	msg, broken = inv(ctx)
+	suite.True(broken, "invalid address should break invariant")
+	suite.Contains(msg, "invalid address")
+
+	// Clean up
+	suite.SetupTest()
+	ctx = suite.SdkCtx
+	inv = SanctionsScreeningInvariant(suite.Keeper)
+
+	// Test: nil screened_at fails
+	nilTimeResult := &types.SanctionsScreeningResult{
+		Address:    validAddr,
+		Flagged:    false,
+		ScreenedAt: nil,
+		Matches:    []string{},
+	}
+	suite.Require().NoError(suite.Keeper.SetSanctionsScreening(ctx, nilTimeResult))
+
+	msg, broken = inv(ctx)
+	suite.True(broken, "nil screened_at should break invariant")
+	suite.Contains(msg, "nil screened_at")
+
+	// Clean up
+	suite.SetupTest()
+	ctx = suite.SdkCtx
+	inv = SanctionsScreeningInvariant(suite.Keeper)
+
+	// Test: flagged with no matches fails
+	flaggedNoMatches := &types.SanctionsScreeningResult{
+		Address:    validAddr,
+		Flagged:    true,
+		ScreenedAt: timestamppb.Now(),
+		Matches:    []string{},
+	}
+	suite.Require().NoError(suite.Keeper.SetSanctionsScreening(ctx, flaggedNoMatches))
+
+	msg, broken = inv(ctx)
+	suite.True(broken, "flagged with no matches should break invariant")
+	suite.Contains(msg, "flagged but has no matches")
+}
+
+func (suite *InvariantsTestSuite) TestGDPRDataIntegrityInvariant() {
+	ctx := suite.SdkCtx
+
+	// Test: valid GDPR request passes
+	validAddr := suite.addr("gdpr-valid")
+	validRequest := &types.GDPRRequest{
+		RequesterAddress: validAddr,
+		RequestType:      "access",
+		Status:           "pending",
+		SubmittedAt:      timestamppb.Now(),
+		ProcessedAt:      nil,
+	}
+	suite.Require().NoError(suite.Keeper.SetGDPRRequest(ctx, validRequest))
+
+	inv := GDPRDataIntegrityInvariant(suite.Keeper)
+	msg, broken := inv(ctx)
+	suite.False(broken, "valid GDPR request should pass")
+	suite.Empty(msg)
+
+	// Test: invalid requester address fails
+	invalidRequest := &types.GDPRRequest{
+		RequesterAddress: "invalid-address",
+		RequestType:      "access",
+		Status:           "pending",
+		SubmittedAt:      timestamppb.Now(),
+	}
+	suite.Require().NoError(suite.Keeper.SetGDPRRequest(ctx, invalidRequest))
+
+	msg, broken = inv(ctx)
+	suite.True(broken, "invalid requester address should break invariant")
+	suite.Contains(msg, "invalid requester address")
+
+	// Clean up
+	suite.SetupTest()
+	ctx = suite.SdkCtx
+	inv = GDPRDataIntegrityInvariant(suite.Keeper)
+
+	// Test: invalid request type fails
+	invalidTypeRequest := &types.GDPRRequest{
+		RequesterAddress: validAddr,
+		RequestType:      "invalid-type",
+		Status:           "pending",
+		SubmittedAt:      timestamppb.Now(),
+	}
+	suite.Require().NoError(suite.Keeper.SetGDPRRequest(ctx, invalidTypeRequest))
+
+	msg, broken = inv(ctx)
+	suite.True(broken, "invalid request type should break invariant")
+	suite.Contains(msg, "invalid type")
+
+	// Clean up
+	suite.SetupTest()
+	ctx = suite.SdkCtx
+	inv = GDPRDataIntegrityInvariant(suite.Keeper)
+
+	// Test: nil submitted_at fails
+	nilTimeRequest := &types.GDPRRequest{
+		RequesterAddress: validAddr,
+		RequestType:      "access",
+		Status:           "pending",
+		SubmittedAt:      nil,
+	}
+	suite.Require().NoError(suite.Keeper.SetGDPRRequest(ctx, nilTimeRequest))
+
+	msg, broken = inv(ctx)
+	suite.True(broken, "nil submitted_at should break invariant")
+	suite.Contains(msg, "nil submitted_at")
+
+	// Clean up
+	suite.SetupTest()
+	ctx = suite.SdkCtx
+	inv = GDPRDataIntegrityInvariant(suite.Keeper)
+
+	// Test: processed without processed_at fails
+	processedNoTime := &types.GDPRRequest{
+		RequesterAddress: validAddr,
+		RequestType:      "access",
+		Status:           "processed",
+		SubmittedAt:      timestamppb.Now(),
+		ProcessedAt:      nil,
+	}
+	suite.Require().NoError(suite.Keeper.SetGDPRRequest(ctx, processedNoTime))
+
+	msg, broken = inv(ctx)
+	suite.True(broken, "processed without processed_at should break invariant")
+	suite.Contains(msg, "nil processed_at")
+}
+
+func (suite *InvariantsTestSuite) TestTaxRecordConsistencyInvariant() {
+	ctx := suite.SdkCtx
+
+	// Test: valid tax record passes
+	validAddr := suite.addr("tax-valid")
+	validRecord := &types.TaxRecord{
+		Address:      validAddr,
+		TaxYear:      2024,
+		Jurisdiction: "US",
+		TotalIncome:  "1000.00",
+		TotalTax:     "200.00",
+	}
+	suite.Require().NoError(suite.Keeper.SetTaxRecord(ctx, validRecord))
+
+	inv := TaxRecordConsistencyInvariant(suite.Keeper)
+	msg, broken := inv(ctx)
+	suite.False(broken, "valid tax record should pass")
+	suite.Empty(msg)
+
+	// Test: invalid address fails
+	invalidRecord := &types.TaxRecord{
+		Address:      "invalid-address",
+		TaxYear:      2024,
+		Jurisdiction: "US",
+		TotalIncome:  "1000.00",
+		TotalTax:     "200.00",
+	}
+	suite.Require().NoError(suite.Keeper.SetTaxRecord(ctx, invalidRecord))
+
+	msg, broken = inv(ctx)
+	suite.True(broken, "invalid address should break invariant")
+	suite.Contains(msg, "invalid address")
+
+	// Clean up
+	suite.SetupTest()
+	ctx = suite.SdkCtx
+	inv = TaxRecordConsistencyInvariant(suite.Keeper)
+
+	// Test: invalid tax year fails
+	invalidYearRecord := &types.TaxRecord{
+		Address:      validAddr,
+		TaxYear:      1900,
+		Jurisdiction: "US",
+		TotalIncome:  "1000.00",
+		TotalTax:     "200.00",
+	}
+	suite.Require().NoError(suite.Keeper.SetTaxRecord(ctx, invalidYearRecord))
+
+	msg, broken = inv(ctx)
+	suite.True(broken, "invalid tax year should break invariant")
+	suite.Contains(msg, "invalid year")
+
+	// Clean up
+	suite.SetupTest()
+	ctx = suite.SdkCtx
+	inv = TaxRecordConsistencyInvariant(suite.Keeper)
+
+	// Test: empty jurisdiction fails
+	emptyJurisdiction := &types.TaxRecord{
+		Address:      validAddr,
+		TaxYear:      2024,
+		Jurisdiction: "",
+		TotalIncome:  "1000.00",
+		TotalTax:     "200.00",
+	}
+	suite.Require().NoError(suite.Keeper.SetTaxRecord(ctx, emptyJurisdiction))
+
+	msg, broken = inv(ctx)
+	suite.True(broken, "empty jurisdiction should break invariant")
+	suite.Contains(msg, "empty jurisdiction")
+}
+
 func (suite *InvariantsTestSuite) addr(seed string) string {
 	sum := sha256.Sum256([]byte(seed))
 	bech32, err := sdk.Bech32ifyAddressBytes("aura", sum[:20])

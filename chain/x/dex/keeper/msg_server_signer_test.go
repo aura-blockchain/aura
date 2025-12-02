@@ -91,9 +91,9 @@ func TestSignerVerification(t *testing.T) {
 		createMsg := &dexpb.MsgCreateOrder{
 			Creator:     addr1.String(),
 			OrderType:   dexpb.SwapOrderType_BUY,
-			AuraAmount:  sdkmath.NewInt(100),
+			AuraAmount:  sdkmath.NewInt(100).String(),
 			OtherCoin:   "usdt",
-			OtherAmount: sdkmath.NewInt(100),
+			OtherAmount: sdkmath.NewInt(100).String(),
 		}
 		createResp, err := msgServer.CreateOrder(suite.ctx, createMsg)
 		require.NoError(t, err)
@@ -122,9 +122,9 @@ func TestSignerVerification(t *testing.T) {
 		createMsg := &dexpb.MsgCreateOrder{
 			Creator:     addr1.String(),
 			OrderType:   dexpb.SwapOrderType_BUY,
-			AuraAmount:  sdkmath.NewInt(100),
+			AuraAmount:  sdkmath.NewInt(100).String(),
 			OtherCoin:   "usdt",
-			OtherAmount: sdkmath.NewInt(100),
+			OtherAmount: sdkmath.NewInt(100).String(),
 		}
 		createResp, err := msgServer.CreateOrder(suite.ctx, createMsg)
 		require.NoError(t, err)
@@ -159,7 +159,7 @@ func TestSignerVerification(t *testing.T) {
 			Sender:         addr2.String(),
 			PoolId:         poolResp.PoolId,
 			CoinIn:         &sdk.Coin{Denom: "aura", Amount: sdkmath.NewInt(100)},
-			MinAmountOut:   sdkmath.NewInt(90),
+			MinAmountOut:   sdkmath.NewInt(90).String(),
 			MaxSlippageBps: 500,
 		}
 
