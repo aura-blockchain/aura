@@ -55,8 +55,21 @@ func (k *Keeper) DeleteIR(ctx sdk.Context, id string) error {
 	}
 
 	// Check if any other IRs depend on this one
-	allIRs := k.GetAllIRs(ctx)
-	for _, checkIR := range allIRs {
+	// Must iterate to check dependencies
+	store := k.storeService.OpenKVStore(ctx)
+	prefix := []byte(types.IRStoreKeyPrefix)
+	iterator, err := store.Iterator(prefix, prefixEndBytes(prefix))
+	if err != nil {
+		return fmt.Errorf("failed to create iterator: %w", err)
+	}
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		var checkIR types.IRDefinition
+		if err := k.cdc.Unmarshal(iterator.Value(), &checkIR); err != nil {
+			continue
+		}
+
 		if prereq, exists := k.GetPrerequisite(ctx, checkIR.Id); exists {
 			for _, reqID := range prereq.RequiredIrIds {
 				if reqID == id {
@@ -67,7 +80,6 @@ func (k *Keeper) DeleteIR(ctx sdk.Context, id string) error {
 	}
 
 	// Delete from store
-	store := k.storeService.OpenKVStore(ctx)
 	if err := store.Delete([]byte(types.IRStoreKey(id))); err != nil {
 		return fmt.Errorf("failed to delete IR: %w", err)
 	}
@@ -80,13 +92,36 @@ func (k *Keeper) DeleteIR(ctx sdk.Context, id string) error {
 }
 
 // ListIRs returns a filtered list of IR definitions with pagination
+// Filters at storage iteration level instead of loading all IRs into memory
 func (k *Keeper) ListIRs(ctx sdk.Context, statusFilter inclusionroutinespb.IRStatus, arenaFilter inclusionroutinespb.Arena, localeFilter string, offset, limit int) ([]types.IRDefinition, int) {
-	allIRs := k.GetAllIRs(ctx)
+	if limit <= 0 {
+		limit = 100 // Default page size
+	}
+	if offset < 0 {
+		offset = 0
+	}
 
-	// Collect all matching IRs
-	matching := make([]types.IRDefinition, 0)
-	for _, ir := range allIRs {
-		// Apply filters
+	store := k.storeService.OpenKVStore(ctx)
+	prefix := []byte(types.IRStoreKeyPrefix)
+	iterator, err := store.Iterator(prefix, prefixEndBytes(prefix))
+	if err != nil {
+		k.logger.Error("failed to create IR iterator", "error", err)
+		return []types.IRDefinition{}, 0
+	}
+	defer iterator.Close()
+
+	matching := make([]types.IRDefinition, 0, limit)
+	totalCount := 0
+	skipped := 0
+
+	for ; iterator.Valid(); iterator.Next() {
+		var ir types.IRDefinition
+		if err := k.cdc.Unmarshal(iterator.Value(), &ir); err != nil {
+			k.logger.Error("failed to unmarshal IR in ListIRs", "error", err)
+			continue
+		}
+
+		// Apply filters at iteration level
 		if statusFilter != inclusionroutinespb.IRStatus_IR_STATUS_UNSPECIFIED && ir.Status != statusFilter {
 			continue
 		}
@@ -105,25 +140,25 @@ func (k *Keeper) ListIRs(ctx sdk.Context, statusFilter inclusionroutinespb.IRSta
 				continue
 			}
 		}
+
+		// This IR matches filters
+		totalCount++
+
+		// Skip until we reach offset
+		if skipped < offset {
+			skipped++
+			continue
+		}
+
+		// Stop if we've collected enough for this page
+		if len(matching) >= limit {
+			continue
+		}
+
 		matching = append(matching, ir)
 	}
 
-	total := len(matching)
-
-	// Apply pagination
-	if offset < 0 {
-		offset = 0
-	}
-	if offset > len(matching) {
-		return []types.IRDefinition{}, total
-	}
-
-	end := offset + limit
-	if limit <= 0 || end > len(matching) {
-		end = len(matching)
-	}
-
-	return matching[offset:end], total
+	return matching, totalCount
 }
 
 // SuspendIR suspends an IR
@@ -176,11 +211,25 @@ func (k *Keeper) RetireIR(ctx sdk.Context, id string) error {
 }
 
 // GetIRByArena returns all IRs in a specific arena
+// Filters at storage iteration level for efficiency
 func (k *Keeper) GetIRByArena(ctx sdk.Context, arena inclusionroutinespb.Arena) []types.IRDefinition {
-	allIRs := k.GetAllIRs(ctx)
-	result := make([]types.IRDefinition, 0)
+	store := k.storeService.OpenKVStore(ctx)
+	prefix := []byte(types.IRStoreKeyPrefix)
+	iterator, err := store.Iterator(prefix, prefixEndBytes(prefix))
+	if err != nil {
+		k.logger.Error("failed to create IR iterator", "error", err)
+		return []types.IRDefinition{}
+	}
+	defer iterator.Close()
 
-	for _, ir := range allIRs {
+	result := make([]types.IRDefinition, 0)
+	for ; iterator.Valid(); iterator.Next() {
+		var ir types.IRDefinition
+		if err := k.cdc.Unmarshal(iterator.Value(), &ir); err != nil {
+			k.logger.Error("failed to unmarshal IR", "error", err)
+			continue
+		}
+
 		if ir.Arena == arena {
 			result = append(result, ir)
 		}
@@ -190,12 +239,27 @@ func (k *Keeper) GetIRByArena(ctx sdk.Context, arena inclusionroutinespb.Arena) 
 }
 
 // GetActiveIRs returns all active IRs at the current block height
+// Filters at storage iteration level for efficiency
 func (k *Keeper) GetActiveIRs(ctx sdk.Context) []types.IRDefinition {
-	allIRs := k.GetAllIRs(ctx)
+	store := k.storeService.OpenKVStore(ctx)
+	prefix := []byte(types.IRStoreKeyPrefix)
+	iterator, err := store.Iterator(prefix, prefixEndBytes(prefix))
+	if err != nil {
+		k.logger.Error("failed to create IR iterator", "error", err)
+		return []types.IRDefinition{}
+	}
+	defer iterator.Close()
+
 	result := make([]types.IRDefinition, 0)
 	currentHeight := ctx.BlockHeight()
 
-	for _, ir := range allIRs {
+	for ; iterator.Valid(); iterator.Next() {
+		var ir types.IRDefinition
+		if err := k.cdc.Unmarshal(iterator.Value(), &ir); err != nil {
+			k.logger.Error("failed to unmarshal IR", "error", err)
+			continue
+		}
+
 		// Check if IR is active
 		if ir.Status == inclusionroutinespb.IRStatus_IR_STATUS_ACTIVE {
 			// Check activation height
@@ -258,11 +322,25 @@ func (k *Keeper) GetIRCount(ctx sdk.Context) int {
 }
 
 // GetIRsByStatus returns all IRs with a specific status
+// Filters at storage iteration level for efficiency
 func (k *Keeper) GetIRsByStatus(ctx sdk.Context, status inclusionroutinespb.IRStatus) []types.IRDefinition {
-	allIRs := k.GetAllIRs(ctx)
-	result := make([]types.IRDefinition, 0)
+	store := k.storeService.OpenKVStore(ctx)
+	prefix := []byte(types.IRStoreKeyPrefix)
+	iterator, err := store.Iterator(prefix, prefixEndBytes(prefix))
+	if err != nil {
+		k.logger.Error("failed to create IR iterator", "error", err)
+		return []types.IRDefinition{}
+	}
+	defer iterator.Close()
 
-	for _, ir := range allIRs {
+	result := make([]types.IRDefinition, 0)
+	for ; iterator.Valid(); iterator.Next() {
+		var ir types.IRDefinition
+		if err := k.cdc.Unmarshal(iterator.Value(), &ir); err != nil {
+			k.logger.Error("failed to unmarshal IR", "error", err)
+			continue
+		}
+
 		if ir.Status == status {
 			result = append(result, ir)
 		}

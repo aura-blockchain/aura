@@ -395,7 +395,7 @@ func (ms msgServer) SubmitVeto(goCtx context.Context, msg *govpb.MsgSubmitVeto) 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	// Check if proposal exists
-	_, err := ms.Keeper.GetProposal(ctx, msg.ProposalId)
+	_, err = ms.Keeper.GetProposal(ctx, msg.ProposalId)
 	if err != nil {
 		return nil, status.Error(codes.NotFound, "proposal not found")
 	}
@@ -548,7 +548,7 @@ func (ms msgServer) SubmitSnapshotVote(goCtx context.Context, msg *govpb.MsgSubm
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	// Check if proposal exists
-	_, err := ms.Keeper.GetProposal(ctx, msg.ProposalId)
+	_, err = ms.Keeper.GetProposal(ctx, msg.ProposalId)
 	if err != nil {
 		return nil, status.Error(codes.NotFound, "proposal not found")
 	}

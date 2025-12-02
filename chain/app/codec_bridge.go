@@ -3,6 +3,8 @@ package app
 import (
 	"bytes"
 	"compress/gzip"
+	"fmt"
+	"os"
 	"strings"
 
 	gogoproto "github.com/cosmos/gogoproto/proto"
@@ -10,6 +12,13 @@ import (
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
+)
+
+var (
+	registeredFiles int
+	failedFiles     []string
+	registeredTypes int
+	failedTypes     []string
 )
 
 // init bridges protobuf file descriptors registered by the modern protobuf
@@ -47,10 +56,12 @@ func init() {
 			// can look it up via proto.FileDescriptor(metadata).
 			func() {
 				defer func() {
-					// Ignore registration failures to avoid panics during CLI startup.
-					_ = recover()
+					if r := recover(); r != nil {
+						failedFiles = append(failedFiles, fmt.Sprintf("%s: %v", path, r))
+					}
 				}()
 				gogoproto.RegisterFile(path, buf.Bytes())
+				registeredFiles++
 			}()
 		}
 
@@ -76,9 +87,35 @@ func init() {
 		}
 
 		func() {
-			defer func() { _ = recover() }()
+			defer func() {
+				if r := recover(); r != nil {
+					failedTypes = append(failedTypes, fmt.Sprintf("%s: %v", fullName, r))
+				}
+			}()
 			gogoproto.RegisterType(legacyMsg, fullName)
+			registeredTypes++
 		}()
 		return true
 	})
+
+	// Log summary at startup
+	if len(failedFiles) > 0 || len(failedTypes) > 0 {
+		fmt.Fprintf(os.Stderr, "WARNING: codec_bridge registration results:\n")
+		fmt.Fprintf(os.Stderr, "  Files: %d registered, %d failed\n", registeredFiles, len(failedFiles))
+		fmt.Fprintf(os.Stderr, "  Types: %d registered, %d failed\n", registeredTypes, len(failedTypes))
+
+		if len(failedFiles) > 0 {
+			fmt.Fprintf(os.Stderr, "Failed file registrations:\n")
+			for _, f := range failedFiles {
+				fmt.Fprintf(os.Stderr, "  - %s\n", f)
+			}
+		}
+
+		if len(failedTypes) > 0 {
+			fmt.Fprintf(os.Stderr, "Failed type registrations:\n")
+			for _, t := range failedTypes {
+				fmt.Fprintf(os.Stderr, "  - %s\n", t)
+			}
+		}
+	}
 }
