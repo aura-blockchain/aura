@@ -10,20 +10,10 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
-	aitypes "github.com/aequitas/aura/chain/x/aiassistant/types"
 	bridgetypes "github.com/aequitas/aura/chain/x/bridge/types"
-	compliancetypes "github.com/aequitas/aura/chain/x/compliance/types"
-	contractregistrytypes "github.com/aequitas/aura/chain/x/contractregistry/types"
 	dextypes "github.com/aequitas/aura/chain/x/dex/types"
-	economicsecuritytypes "github.com/aequitas/aura/chain/x/economicsecurity/types"
-	governancetypes "github.com/aequitas/aura/chain/x/governance/types"
-	walletsecuritytypes "github.com/aequitas/aura/chain/x/walletsecurity/types"
-	wasmSecurityTypes "github.com/aequitas/aura/chain/x/wasm/types"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
@@ -77,24 +67,9 @@ func (app *App) validateStoreKeys(result *ValidationResult) {
 	// Map to track store key usage
 	storeKeyMap := make(map[string]string)
 
-	// List of all store keys with their module names
-	storeKeys := map[string]*storetypes.KVStoreKey{
-		authtypes.StoreKey:              app.storeKeys.account,
-		banktypes.StoreKey:              app.storeKeys.bank,
-		stakingtypes.StoreKey:           app.storeKeys.staking,
-		slashingtypes.StoreKey:          app.storeKeys.slashing,
-		distrtypes.StoreKey:             app.storeKeys.distribution,
-		economicsecuritytypes.StoreKey:  app.storeKeys.economicSecurity,
-		governancetypes.StoreKey:        app.storeKeys.governance,
-		bridgetypes.StoreKey:            app.storeKeys.bridge,
-		dextypes.StoreKey:               app.storeKeys.dex,
-		aitypes.StoreKey:                app.storeKeys.ai,
-		compliancetypes.StoreKey:        app.storeKeys.compliance,
-		walletsecuritytypes.StoreKey:    app.storeKeys.walletSecurity,
-		wasmtypes.StoreKey:              app.storeKeys.wasm,
-		contractregistrytypes.StoreKey:  app.storeKeys.contractRegistry,
-		wasmSecurityTypes.StoreKey:      app.storeKeys.wasmSecurity,
-	}
+	// Use the centralized AsMap() method - single source of truth
+	// This eliminates the need to maintain a duplicate list here
+	storeKeys := app.storeKeys.AsMap()
 
 	// Validate each store key
 	for keyName, key := range storeKeys {

@@ -4,34 +4,18 @@ import (
 	"testing"
 	"time"
 
-	"cosmossdk.io/log"
-	"cosmossdk.io/store"
-	"cosmossdk.io/store/metrics"
-	storetypes "cosmossdk.io/store/types"
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	dbm "github.com/cosmos/cosmos-db"
-	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 	"github.com/aequitas/aura/chain/x/compliance/types"
 )
 
 func setupTestKeeper(t *testing.T) (*Keeper, sdk.Context) {
-	storeKey := storetypes.NewKVStoreKey("compliance")
-	db := dbm.NewMemDB()
-	stateStore := store.NewCommitMultiStore(db, log.NewNopLogger(), metrics.NewNoOpMetrics())
-	stateStore.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, db)
-	require.NoError(t, stateStore.LoadLatestVersion())
-
-	registry := codectypes.NewInterfaceRegistry()
-	cdc := codec.NewProtoCodec(registry)
-	keeper := NewKeeper(cdc, storeKey)
-	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
-
-	return keeper, ctx
+	input := keepertest.CreateTestInputWithKeys(t, "compliance")
+	keeper := NewKeeper(input.Cdc, input.StoreKey)
+	return keeper, input.Ctx
 }
 
 // ============================================================================
