@@ -35,6 +35,20 @@ func (ms msgServer) SubmitProposal(goCtx context.Context, msg *govpb.MsgSubmitPr
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	signers := msg.GetSigners()
+	if len(signers) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "no signers")
+	}
+
+	proposerAddr, err := sdk.AccAddressFromBech32(msg.Proposer)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	if !proposerAddr.Equals(signers[0]) {
+		return nil, status.Error(codes.PermissionDenied, "proposer must be transaction signer")
+	}
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	// Get next proposal ID
@@ -97,6 +111,20 @@ func (ms msgServer) Deposit(goCtx context.Context, msg *govpb.MsgDeposit) (*govp
 		return nil, status.Error(codes.InvalidArgument, "deposit amount must be positive")
 	}
 
+	signers := msg.GetSigners()
+	if len(signers) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "no signers")
+	}
+
+	depositorAddr, err := sdk.AccAddressFromBech32(msg.Depositor)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	if !depositorAddr.Equals(signers[0]) {
+		return nil, status.Error(codes.PermissionDenied, "depositor must be transaction signer")
+	}
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	// Check if proposal exists
@@ -137,6 +165,20 @@ func (ms msgServer) Deposit(goCtx context.Context, msg *govpb.MsgDeposit) (*govp
 func (ms msgServer) Vote(goCtx context.Context, msg *govpb.MsgVote) (*govpb.MsgVoteResponse, error) {
 	if msg == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	signers := msg.GetSigners()
+	if len(signers) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "no signers")
+	}
+
+	voterAddr, err := sdk.AccAddressFromBech32(msg.Voter)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	if !voterAddr.Equals(signers[0]) {
+		return nil, status.Error(codes.PermissionDenied, "voter must be transaction signer")
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
@@ -191,6 +233,20 @@ func (ms msgServer) VoteWeighted(goCtx context.Context, msg *govpb.MsgVoteWeight
 		return nil, status.Error(codes.InvalidArgument, "weighted vote options cannot be empty")
 	}
 
+	signers := msg.GetSigners()
+	if len(signers) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "no signers")
+	}
+
+	voterAddr, err := sdk.AccAddressFromBech32(msg.Voter)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	if !voterAddr.Equals(signers[0]) {
+		return nil, status.Error(codes.PermissionDenied, "voter must be transaction signer")
+	}
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	// Check if proposal exists
@@ -238,6 +294,20 @@ func (ms msgServer) DelegateVote(goCtx context.Context, msg *govpb.MsgDelegateVo
 		return nil, status.Error(codes.InvalidArgument, "cannot delegate to self")
 	}
 
+	signers := msg.GetSigners()
+	if len(signers) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "no signers")
+	}
+
+	delegatorAddr, err := sdk.AccAddressFromBech32(msg.Delegator)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	if !delegatorAddr.Equals(signers[0]) {
+		return nil, status.Error(codes.PermissionDenied, "delegator must be transaction signer")
+	}
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	// Store vote delegation
@@ -269,6 +339,20 @@ func (ms msgServer) UndelegateVote(goCtx context.Context, msg *govpb.MsgUndelega
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
+	signers := msg.GetSigners()
+	if len(signers) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "no signers")
+	}
+
+	delegatorAddr, err := sdk.AccAddressFromBech32(msg.Delegator)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	if !delegatorAddr.Equals(signers[0]) {
+		return nil, status.Error(codes.PermissionDenied, "delegator must be transaction signer")
+	}
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	// Remove vote delegation
@@ -292,6 +376,20 @@ func (ms msgServer) UndelegateVote(goCtx context.Context, msg *govpb.MsgUndelega
 func (ms msgServer) SubmitVeto(goCtx context.Context, msg *govpb.MsgSubmitVeto) (*govpb.MsgSubmitVetoResponse, error) {
 	if msg == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	signers := msg.GetSigners()
+	if len(signers) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "no signers")
+	}
+
+	vetoerAddr, err := sdk.AccAddressFromBech32(msg.Vetoer)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	if !vetoerAddr.Equals(signers[0]) {
+		return nil, status.Error(codes.PermissionDenied, "vetoer must be transaction signer")
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
@@ -333,6 +431,20 @@ func (ms msgServer) CosignVeto(goCtx context.Context, msg *govpb.MsgCosignVeto) 
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
+	signers := msg.GetSigners()
+	if len(signers) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "no signers")
+	}
+
+	cosignerAddr, err := sdk.AccAddressFromBech32(msg.Cosigner)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	if !cosignerAddr.Equals(signers[0]) {
+		return nil, status.Error(codes.PermissionDenied, "cosigner must be transaction signer")
+	}
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	// Get veto request
@@ -365,6 +477,20 @@ func (ms msgServer) CosignVeto(goCtx context.Context, msg *govpb.MsgCosignVeto) 
 func (ms msgServer) ExecuteProposal(goCtx context.Context, msg *govpb.MsgExecuteProposal) (*govpb.MsgExecuteProposalResponse, error) {
 	if msg == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	signers := msg.GetSigners()
+	if len(signers) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "no signers")
+	}
+
+	executorAddr, err := sdk.AccAddressFromBech32(msg.Executor)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	if !executorAddr.Equals(signers[0]) {
+		return nil, status.Error(codes.PermissionDenied, "executor must be transaction signer")
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
@@ -405,6 +531,20 @@ func (ms msgServer) SubmitSnapshotVote(goCtx context.Context, msg *govpb.MsgSubm
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
+	signers := msg.GetSigners()
+	if len(signers) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "no signers")
+	}
+
+	voterAddr, err := sdk.AccAddressFromBech32(msg.Voter)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	if !voterAddr.Equals(signers[0]) {
+		return nil, status.Error(codes.PermissionDenied, "voter must be transaction signer")
+	}
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	// Check if proposal exists
@@ -442,6 +582,20 @@ func (ms msgServer) SubmitSnapshotVote(goCtx context.Context, msg *govpb.MsgSubm
 func (ms msgServer) RevealSecretVote(goCtx context.Context, msg *govpb.MsgRevealSecretVote) (*govpb.MsgRevealSecretVoteResponse, error) {
 	if msg == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	signers := msg.GetSigners()
+	if len(signers) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "no signers")
+	}
+
+	voterAddr, err := sdk.AccAddressFromBech32(msg.Voter)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	if !voterAddr.Equals(signers[0]) {
+		return nil, status.Error(codes.PermissionDenied, "voter must be transaction signer")
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)

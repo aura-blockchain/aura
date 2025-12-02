@@ -4,6 +4,7 @@
 package security
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -14,6 +15,7 @@ import (
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	"github.com/cosmos/cosmos-sdk/types/msgservice"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
@@ -54,9 +56,55 @@ func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 
 // RegisterInterfaces registers the module's interface types with the interface registry.
 func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
-	// Register message types with the interface registry
-	// When protobuf definitions are ready, register message service descriptor:
-	// msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)
+	msgservice.RegisterMsgServiceDesc(registry, &securitypb.Msg_ServiceDesc)
+
+	registry.RegisterImplementations(
+		(*sdk.Msg)(nil),
+		&securitypb.MsgAddTrustedPeer{},
+		&securitypb.MsgRemoveTrustedPeer{},
+		&securitypb.MsgBanPeer{},
+		&securitypb.MsgUnbanPeer{},
+		&securitypb.MsgUpdatePeerReputation{},
+		&securitypb.MsgResolveForkAlert{},
+		&securitypb.MsgResolvePartitionAlert{},
+		&securitypb.MsgRegisterValidatorSecurity{},
+		&securitypb.MsgUpdateValidatorSecurity{},
+		&securitypb.MsgRegisterSentryNode{},
+		&securitypb.MsgRemoveSentryNode{},
+		&securitypb.MsgReportDoubleSign{},
+		&securitypb.MsgAcknowledgeValidatorAlert{},
+		&securitypb.MsgTriggerFailover{},
+		&securitypb.MsgRegisterHardwareWallet{},
+		&securitypb.MsgCreateMultiSigWallet{},
+		&securitypb.MsgProposeMultiSigTransaction{},
+		&securitypb.MsgSignMultiSigTransaction{},
+		&securitypb.MsgExecuteMultiSigTransaction{},
+		&securitypb.MsgConfigureSocialRecovery{},
+		&securitypb.MsgInitiateRecovery{},
+		&securitypb.MsgApproveRecovery{},
+		&securitypb.MsgExecuteRecovery{},
+		&securitypb.MsgSetSpendingLimits{},
+		&securitypb.MsgRegisterBiometric{},
+		&securitypb.MsgCreateIncident{},
+		&securitypb.MsgUpdateIncident{},
+		&securitypb.MsgResolveIncident{},
+		&securitypb.MsgExecuteResponseAction{},
+		&securitypb.MsgAddAuditLogEntry{},
+		&securitypb.MsgCreateKeyRotationSchedule{},
+		&securitypb.MsgRotateKey{},
+		&securitypb.MsgCreateThresholdScheme{},
+		&securitypb.MsgSubmitThresholdSignatureShare{},
+		&securitypb.MsgRegisterZKProofCircuit{},
+		&securitypb.MsgSubmitZKProof{},
+		&securitypb.MsgGenerateQuantumResistantKey{},
+		&securitypb.MsgCreateMixingPool{},
+		&securitypb.MsgJoinMixingPool{},
+		&securitypb.MsgExecuteMixing{},
+		&securitypb.MsgGenerateStealthAddress{},
+		&securitypb.MsgCreateRingSignature{},
+		&securitypb.MsgCreateConfidentialTransaction{},
+		&securitypb.MsgUpdateParams{},
+	)
 }
 
 // DefaultGenesis returns default genesis state as raw bytes for the security module.
@@ -66,6 +114,9 @@ func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 
 // ValidateGenesis performs genesis state validation for the security module.
 func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncodingConfig, bz json.RawMessage) error {
+	if len(bytes.TrimSpace(bz)) == 0 {
+		return nil
+	}
 	var genState securitypb.GenesisState
 	if err := cdc.UnmarshalJSON(bz, &genState); err != nil {
 		return fmt.Errorf("failed to unmarshal %s genesis state: %w", types.ModuleName, err)

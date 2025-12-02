@@ -1,7 +1,7 @@
 package keeper
 
 import (
-        storetypes "cosmossdk.io/store/types"
+	storetypes "cosmossdk.io/store/types"
 	"fmt"
 
 	"github.com/aequitas/aura/chain/x/confidencescore/types"

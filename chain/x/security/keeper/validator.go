@@ -149,7 +149,9 @@ func (k Keeper) JailValidator(ctx sdk.Context, valAddr sdk.ValAddress) error {
 	if err != nil {
 		return err
 	}
-	k.stakingKeeper.Jail(ctx, consAddr)
+	if err := k.stakingKeeper.Jail(ctx, consAddr); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -159,7 +161,9 @@ func (k Keeper) UnjailValidator(ctx sdk.Context, valAddr sdk.ValAddress) error {
 	if err != nil {
 		return err
 	}
-	k.stakingKeeper.Unjail(ctx, consAddr)
+	if err := k.stakingKeeper.Unjail(ctx, consAddr); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -169,7 +173,9 @@ func (k Keeper) SlashValidator(ctx sdk.Context, valAddr sdk.ValAddress, height i
 	if err != nil {
 		return err
 	}
-	k.stakingKeeper.Slash(ctx, consAddr, height, power, factor)
+	if _, err := k.stakingKeeper.Slash(ctx, consAddr, height, power, factor); err != nil {
+		return err
+	}
 	return nil
 }
 

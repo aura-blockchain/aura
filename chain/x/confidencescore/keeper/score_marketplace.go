@@ -1,7 +1,7 @@
 package keeper
 
 import (
-        storetypes "cosmossdk.io/store/types"
+	storetypes "cosmossdk.io/store/types"
 	"fmt"
 
 	"cosmossdk.io/math"
@@ -31,7 +31,7 @@ type ScoreListing struct {
 	ScoreAmount   uint64
 	PricePerPoint math.Int // Price per score point in uaura
 	TotalPrice    math.Int
-	LeaseDuration uint64 // blocks (for lease type)
+	LeaseDuration uint64   // blocks (for lease type)
 	MinBid        math.Int // minimum bid (for auction type)
 	CurrentBid    math.Int
 	HighestBidder string

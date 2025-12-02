@@ -4,33 +4,27 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/stretchr/testify/suite"
+	"github.com/stretchr/testify/require"
 )
 
-type InvariantsTestSuite struct {
-	KeeperTestSuite
-}
+type mockInvariantRegistry struct{}
 
-func TestInvariantsTestSuite(t *testing.T) {
-	suite.Run(t, new(InvariantsTestSuite))
-}
+func (mockInvariantRegistry) RegisterRoute(_ string, _ string, _ sdk.Invariant) {}
 
-func (suite *InvariantsTestSuite) TestAllInvariants() {
-	ctx := suite.SdkCtx
+func TestAllInvariants(t *testing.T) {
+	ctx, keeper := setupInclusionKeeper(t)
 
-	// Test: All invariants on empty store
-	inv := AllInvariants(suite.Keeper)
+	inv := AllInvariants(keeper)
 	msg, broken := inv(ctx)
-	suite.False(broken, "all invariants should pass on empty store")
-	suite.Empty(msg)
+	require.False(t, broken, "all invariants should pass on empty store")
+	require.Empty(t, msg)
 }
 
-func (suite *InvariantsTestSuite) TestRegisterInvariants() {
-	// Create a mock invariant registry
-	registry := sdk.NewInvariantRegistry()
+func TestRegisterInvariants(t *testing.T) {
+	_, keeper := setupInclusionKeeper(t)
+	registry := mockInvariantRegistry{}
 
-	// Register invariants - should not panic
-	suite.NotPanics(func() {
-		RegisterInvariants(registry, suite.Keeper)
+	require.NotPanics(t, func() {
+		RegisterInvariants(registry, keeper)
 	})
 }

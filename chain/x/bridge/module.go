@@ -7,7 +7,10 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/msgservice"
+	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 
 	"github.com/aequitas/aura/chain/x/bridge/client/cli"
 	"github.com/aequitas/aura/chain/x/bridge/keeper"
@@ -27,8 +30,29 @@ type AppModuleBasic struct{}
 // Name returns the module name
 func (AppModuleBasic) Name() string { return types.ModuleName }
 
+// RegisterGRPCGatewayRoutes is a no-op placeholder to satisfy the AppModuleBasic interface.
+func (AppModuleBasic) RegisterGRPCGatewayRoutes(client.Context, *runtime.ServeMux) {}
+
 // RegisterServices registers module services (no-op for basic)
 func (AppModuleBasic) RegisterServices(ModuleServices) {}
+
+// RegisterInterfaces registers bridge message types for interface resolution.
+func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
+	msgservice.RegisterMsgServiceDesc(registry, &bridgepb.Msg_ServiceDesc)
+	registry.RegisterImplementations(
+		(*sdk.Msg)(nil),
+		&bridgepb.MsgLockTokens{},
+		&bridgepb.MsgMintTokens{},
+		&bridgepb.MsgUnlockTokens{},
+		&bridgepb.MsgBurnTokens{},
+		&bridgepb.MsgLinkAddress{},
+		&bridgepb.MsgCrossChainSwap{},
+		&bridgepb.MsgRelayTransfer{},
+	)
+}
+
+// RegisterLegacyAminoCodec satisfies the module.AppModuleBasic interface (proto-first module).
+func (AppModuleBasic) RegisterLegacyAminoCodec(_ *codec.LegacyAmino) {}
 
 // DefaultGenesis returns the module's default genesis state.
 func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) []byte {
@@ -85,6 +109,9 @@ func (m AppModule) InitGenesis(ctx sdk.Context, genesis types.GenesisState) erro
 func (m AppModule) ExportGenesis(ctx sdk.Context) types.GenesisState {
 	return m.keeper.ExportGenesis(ctx)
 }
+
+// IsAppModule tags this module for Cosmos SDK module manager compatibility.
+func (AppModule) IsAppModule() {}
 
 // GetTxCmd returns the transaction commands for this module
 func (AppModule) GetTxCmd() *cobra.Command {

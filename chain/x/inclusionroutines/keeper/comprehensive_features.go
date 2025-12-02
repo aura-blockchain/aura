@@ -4,7 +4,7 @@ package keeper
 // across rate_limits.go, ir_crud.go, and prerequisites.go files.
 // The comprehensive features include:
 // - IR verification proofs
-// - IR completion rewards  
+// - IR completion rewards
 // - IR expiration logic
 // - Prerequisite chain validation
 // - IR difficulty adjustment

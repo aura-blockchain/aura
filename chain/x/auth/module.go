@@ -3,10 +3,10 @@ package auth
 import (
 	"context"
 
-	"github.com/spf13/cobra"
-	"github.com/aequitas/aura/chain/x/auth/keeper"
 	"github.com/aequitas/aura/chain/x/auth/client/cli"
+	"github.com/aequitas/aura/chain/x/auth/keeper"
 	authproto "github.com/aequitas/aura/proto/aura/auth/v1beta1"
+	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 )
 
@@ -38,6 +38,9 @@ func (am AppModule) RegisterGRPCServer(server *grpc.Server) {
 	authproto.RegisterMsgServer(server, NewMsgServer(am.keeper))
 	authproto.RegisterQueryServer(server, keeper.NewQueryServerImpl(am.keeper))
 }
+
+// IsAppModule tags this module for Cosmos SDK module manager compatibility.
+func (AppModule) IsAppModule() {}
 
 // GetTxCmd returns the transaction commands for this module
 func (am AppModule) GetTxCmd() *cobra.Command {

@@ -3,8 +3,8 @@ package keeper
 import (
 	"fmt"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/aequitas/aura/chain/x/confidencescore/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // RegisterInvariants registers all confidencescore module invariants

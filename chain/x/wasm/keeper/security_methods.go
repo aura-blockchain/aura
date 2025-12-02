@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	"github.com/aequitas/aura/chain/x/wasm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -161,10 +162,15 @@ func (k Keeper) ValidateContractExecution(ctx sdk.Context, contractAddr string) 
 
 // StoreCode stores contract code
 func (k Keeper) StoreCode(ctx sdk.Context, sender sdk.AccAddress, code []byte) (uint64, error) {
-	// Delegate to wasmd keeper - use the keeper's public method
-	// Note: In production, use the actual wasmd keeper method
-	// For now, return a stub code ID
-	codeID := uint64(1)
+	if k.wasmKeeper == nil {
+		return 0, fmt.Errorf("wasm keeper not configured")
+	}
+
+	ops := wasmkeeper.NewDefaultPermissionKeeper(k.wasmKeeper)
+	codeID, _, err := ops.Create(ctx, sender, code, nil)
+	if err != nil {
+		return 0, err
+	}
 
 	// Update stats
 	k.incrementSecurityStat(ctx, "contracts_uploaded")
@@ -187,11 +193,15 @@ func (k Keeper) InstantiateContract(
 		return nil, nil, err
 	}
 
-	// Delegate to wasmd keeper - use the keeper's public method
-	// Note: In production, use the actual wasmd keeper method
-	// For now, return a stub address
-	contractAddr := creator // stub
-	data := []byte("instantiated")
+	if k.wasmKeeper == nil {
+		return nil, nil, fmt.Errorf("wasm keeper not configured")
+	}
+
+	ops := wasmkeeper.NewDefaultPermissionKeeper(k.wasmKeeper)
+	contractAddr, data, err := ops.Instantiate(ctx, codeID, creator, admin, initMsg, label, funds)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	// Call after hook
 	if err := k.AfterInstantiateHook(ctx, contractAddr, codeID, creator, admin, label); err != nil {
@@ -214,13 +224,16 @@ func (k Keeper) ExecuteContract(ctx sdk.Context, contractAddr, sender sdk.AccAdd
 		return nil, err
 	}
 
-	// Record gas before execution
-	gasBefore := ctx.GasMeter().GasConsumed()
+	if k.wasmKeeper == nil {
+		return nil, fmt.Errorf("wasm keeper not configured")
+	}
+	ops := wasmkeeper.NewDefaultPermissionKeeper(k.wasmKeeper)
 
-	// Delegate to wasmd keeper - use the keeper's public method
-	// Note: In production, use the actual wasmd keeper method
-	// For now, return stub data
-	data := []byte("executed")
+	gasBefore := ctx.GasMeter().GasConsumed()
+	data, err := ops.Execute(ctx, contractAddr, sender, msg, funds)
+	if err != nil {
+		return nil, err
+	}
 
 	// Call after hook
 	success := true
@@ -238,10 +251,15 @@ func (k Keeper) Migrate(ctx sdk.Context, contractAddr, caller sdk.AccAddress, ne
 		// For now, just note the requirement is enabled
 	}
 
-	// Delegate to wasmd keeper - use the keeper's public method
-	// Note: In production, use the actual wasmd keeper method
-	// For now, return stub data
-	data := []byte("migrated")
+	if k.wasmKeeper == nil {
+		return nil, fmt.Errorf("wasm keeper not configured")
+	}
+
+	ops := wasmkeeper.NewDefaultPermissionKeeper(k.wasmKeeper)
+	data, err := ops.Migrate(ctx, contractAddr, caller, newCodeID, msg)
+	if err != nil {
+		return nil, err
+	}
 
 	// Update stats
 	k.incrementSecurityStat(ctx, "contracts_migrated")
@@ -256,10 +274,11 @@ func (k Keeper) QuerySmart(ctx sdk.Context, contractAddr sdk.AccAddress, queryMs
 		return nil, types.ErrContractPaused.Wrapf("contract %s is paused", contractAddr.String())
 	}
 
-	// Delegate to wasmd keeper - use the keeper's public method
-	// Note: In production, use the actual wasmd keeper method
-	// For now, return stub data
-	return []byte("query_result"), nil
+	if k.wasmKeeper == nil {
+		return nil, fmt.Errorf("wasm keeper not configured")
+	}
+
+	return k.wasmKeeper.QuerySmart(ctx, contractAddr, queryMsg)
 }
 
 // ============================================================================

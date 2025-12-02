@@ -3,13 +3,22 @@ package keeper_test
 import (
 	"testing"
 
+	"cosmossdk.io/log"
+	"cosmossdk.io/store"
+	"cosmossdk.io/store/metrics"
+	storetypes "cosmossdk.io/store/types"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	dbm "github.com/cosmos/cosmos-db"
+	"github.com/cosmos/cosmos-sdk/codec"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	vckeeper "github.com/aequitas/aura/chain/x/vcregistry/keeper"
+	vcparams "github.com/aequitas/aura/chain/x/vcregistry/params"
+	vctypes "github.com/aequitas/aura/chain/x/vcregistry/types"
 
-	"github.com/aequitas/aura/chain/app"
 	"github.com/aequitas/aura/chain/x/aura-bindings/keeper"
 	"github.com/aequitas/aura/chain/x/aura-bindings/types"
 )
@@ -17,7 +26,6 @@ import (
 type KeeperTestSuite struct {
 	suite.Suite
 
-	app    *app.App
 	ctx    sdk.Context
 	keeper keeper.Keeper
 }
@@ -27,16 +35,29 @@ func TestKeeperTestSuite(t *testing.T) {
 }
 
 func (suite *KeeperTestSuite) SetupTest() {
-	suite.app = app.NewApp()
-	suite.ctx = suite.app.NewUncachedContext(false, tmproto.Header{Height: 1})
+	// Minimal store + codec setup
+	interfaceRegistry := codectypes.NewInterfaceRegistry()
+	cdc := codec.NewProtoCodec(interfaceRegistry)
 
-	// Create a keeper instance for testing
-	// Note: In a real app, this would be accessed via suite.app.AuraBindingsKeeper
-	// For now, we create a standalone keeper
+	db := dbm.NewMemDB()
+	stateStore := store.NewCommitMultiStore(db, log.NewNopLogger(), metrics.NewNoOpMetrics())
+
+	abStoreKey := storetypes.NewKVStoreKey(types.StoreKey)
+	vcStoreKey := storetypes.NewKVStoreKey(vctypes.StoreKey)
+
+	stateStore.MountStoreWithDB(abStoreKey, storetypes.StoreTypeIAVL, db)
+	stateStore.MountStoreWithDB(vcStoreKey, storetypes.StoreTypeIAVL, db)
+	require.NoError(suite.T(), stateStore.LoadLatestVersion())
+
+	suite.ctx = sdk.NewContext(stateStore, tmproto.Header{Height: 1}, false, log.NewNopLogger())
+
+	vcParamsStore := vcparams.NewStore(*vctypes.DefaultParams())
+	vcKeeper := vckeeper.NewKeeperBuilder(vcParamsStore, "authority").WithStore(vcStoreKey, cdc).Build()
+
 	suite.keeper = *keeper.NewKeeper(
-		suite.app.AppCodec(),
-		suite.app.GetKey(types.StoreKey),
-		suite.app.VCRegistryKeeper,
+		cdc,
+		abStoreKey,
+		vcKeeper,
 	)
 }
 

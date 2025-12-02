@@ -1,7 +1,7 @@
 package app
 
 import (
-	"context"
+	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"sync"
@@ -11,11 +11,9 @@ import (
 	pruningtypes "cosmossdk.io/store/pruning/types"
 	storetypes "cosmossdk.io/store/types"
 	txsigning "cosmossdk.io/x/tx/signing"
-	txsigningtextual "cosmossdk.io/x/tx/signing/textual"
-
-	bankv1beta1 "cosmossdk.io/api/cosmos/bank/v1beta1"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+	abci "github.com/cometbft/cometbft/abci/types"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -23,26 +21,41 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	"github.com/cosmos/cosmos-sdk/x/auth/tx"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkmodule "github.com/cosmos/cosmos-sdk/types/module"
+	signingtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
+	auth "github.com/cosmos/cosmos-sdk/x/auth"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
+	"github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	bankmodule "github.com/cosmos/cosmos-sdk/x/bank"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
-	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
-	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
-	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
-	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	consensus "github.com/cosmos/cosmos-sdk/x/consensus"
 	consensuskeeper "github.com/cosmos/cosmos-sdk/x/consensus/keeper"
 	consensustypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
+	distribution "github.com/cosmos/cosmos-sdk/x/distribution"
+	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
+	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+	genutilmodule "github.com/cosmos/cosmos-sdk/x/genutil"
+	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
+	params "github.com/cosmos/cosmos-sdk/x/params"
+	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
+	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	slashingmodule "github.com/cosmos/cosmos-sdk/x/slashing"
+	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
+	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
+	stakingmodule "github.com/cosmos/cosmos-sdk/x/staking"
+	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/cosmos/gogoproto/proto"
 	"google.golang.org/grpc"
 
 	// AURA Core Modules (kept as-is)
+	aurabindings "github.com/aequitas/aura/chain/x/aura-bindings"
+	aurabindingskeeper "github.com/aequitas/aura/chain/x/aura-bindings/keeper"
+	aurabindingstypes "github.com/aequitas/aura/chain/x/aura-bindings/types"
 	"github.com/aequitas/aura/chain/x/bridge"
 	bridgekeeper "github.com/aequitas/aura/chain/x/bridge/keeper"
 	bridgetypes "github.com/aequitas/aura/chain/x/bridge/types"
@@ -63,10 +76,25 @@ import (
 	"github.com/aequitas/aura/chain/x/dex"
 	dexkeeper "github.com/aequitas/aura/chain/x/dex/keeper"
 	dextypes "github.com/aequitas/aura/chain/x/dex/types"
+	"github.com/aequitas/aura/chain/x/economics"
+	economicskeeper "github.com/aequitas/aura/chain/x/economics/keeper"
+	economicstypes "github.com/aequitas/aura/chain/x/economics/types"
+	"github.com/aequitas/aura/chain/x/identity"
+	identitykeeper "github.com/aequitas/aura/chain/x/identity/keeper"
+	identitytypes "github.com/aequitas/aura/chain/x/identity/types"
 	"github.com/aequitas/aura/chain/x/inclusionroutines"
 	irkeeper "github.com/aequitas/aura/chain/x/inclusionroutines/keeper"
 	irparams "github.com/aequitas/aura/chain/x/inclusionroutines/params"
 	irtypes "github.com/aequitas/aura/chain/x/inclusionroutines/types"
+	"github.com/aequitas/aura/chain/x/monitoring"
+	monitoringkeeper "github.com/aequitas/aura/chain/x/monitoring/keeper"
+	monitoringtypes "github.com/aequitas/aura/chain/x/monitoring/types"
+	"github.com/aequitas/aura/chain/x/prevalidation"
+	prevalidationkeeper "github.com/aequitas/aura/chain/x/prevalidation/keeper"
+	prevalidationtypes "github.com/aequitas/aura/chain/x/prevalidation/types"
+	"github.com/aequitas/aura/chain/x/security"
+	securitykeeper "github.com/aequitas/aura/chain/x/security/keeper"
+	securitytypes "github.com/aequitas/aura/chain/x/security/types"
 	"github.com/aequitas/aura/chain/x/vcregistry"
 	vckeeper "github.com/aequitas/aura/chain/x/vcregistry/keeper"
 	vcparams "github.com/aequitas/aura/chain/x/vcregistry/params"
@@ -76,36 +104,36 @@ import (
 	wasmSecurityTypes "github.com/aequitas/aura/chain/x/wasm/types"
 
 	// AURA Security Modules (individual)
-	"github.com/aequitas/aura/chain/x/walletsecurity"
-	walletsecuritykeeper "github.com/aequitas/aura/chain/x/walletsecurity/keeper"
-	walletsecuritytypes "github.com/aequitas/aura/chain/x/walletsecurity/types"
-	"github.com/aequitas/aura/chain/x/validatorsecurity"
-	validatorsecuritykeeper "github.com/aequitas/aura/chain/x/validatorsecurity/keeper"
-	validatorsecuritytypes "github.com/aequitas/aura/chain/x/validatorsecurity/types"
 	"github.com/aequitas/aura/chain/x/cryptography"
 	cryptographykeeper "github.com/aequitas/aura/chain/x/cryptography/keeper"
 	cryptographytypes "github.com/aequitas/aura/chain/x/cryptography/types"
-	"github.com/aequitas/aura/chain/x/networksecurity"
-	networksecuritykeeper "github.com/aequitas/aura/chain/x/networksecurity/keeper"
-	networksecuritytypes "github.com/aequitas/aura/chain/x/networksecurity/types"
 	"github.com/aequitas/aura/chain/x/incidentresponse"
 	incidentresponsekeeper "github.com/aequitas/aura/chain/x/incidentresponse/keeper"
 	incidentresponsetypes "github.com/aequitas/aura/chain/x/incidentresponse/types"
+	"github.com/aequitas/aura/chain/x/networksecurity"
+	networksecuritykeeper "github.com/aequitas/aura/chain/x/networksecurity/keeper"
+	networksecuritytypes "github.com/aequitas/aura/chain/x/networksecurity/types"
 	"github.com/aequitas/aura/chain/x/privacy"
 	privacykeeper "github.com/aequitas/aura/chain/x/privacy/keeper"
 	privacytypes "github.com/aequitas/aura/chain/x/privacy/types"
+	"github.com/aequitas/aura/chain/x/validatorsecurity"
+	validatorsecuritykeeper "github.com/aequitas/aura/chain/x/validatorsecurity/keeper"
+	validatorsecuritytypes "github.com/aequitas/aura/chain/x/validatorsecurity/types"
+	"github.com/aequitas/aura/chain/x/walletsecurity"
+	walletsecuritykeeper "github.com/aequitas/aura/chain/x/walletsecurity/keeper"
+	walletsecuritytypes "github.com/aequitas/aura/chain/x/walletsecurity/types"
 
 	// AURA Identity Module (individual)
 	"github.com/aequitas/aura/chain/x/identitychange"
 	identitychangekeeper "github.com/aequitas/aura/chain/x/identitychange/keeper"
-	identitychangetypes "github.com/aequitas/aura/chain/x/identitychange/types"
 	identitychangeparams "github.com/aequitas/aura/chain/x/identitychange/params"
+	identitychangetypes "github.com/aequitas/aura/chain/x/identitychange/types"
 
 	// AURA Economics Modules (individual)
 	"github.com/aequitas/aura/chain/x/economicsecurity"
 	economicsecuritykeeper "github.com/aequitas/aura/chain/x/economicsecurity/keeper"
-	economicsecuritytypes "github.com/aequitas/aura/chain/x/economicsecurity/types"
 	economicsecurityparams "github.com/aequitas/aura/chain/x/economicsecurity/params"
+	economicsecuritytypes "github.com/aequitas/aura/chain/x/economicsecurity/types"
 	"github.com/aequitas/aura/chain/x/governance"
 	governancekeeper "github.com/aequitas/aura/chain/x/governance/keeper"
 	governancetypes "github.com/aequitas/aura/chain/x/governance/types"
@@ -114,7 +142,6 @@ import (
 	"github.com/aequitas/aura/chain/x/aiassistant"
 	aikeeper "github.com/aequitas/aura/chain/x/aiassistant/keeper"
 	aitypes "github.com/aequitas/aura/chain/x/aiassistant/types"
-
 )
 
 const (
@@ -162,7 +189,7 @@ type EncodingConfig struct {
 type App struct {
 	*baseapp.BaseApp
 
-	moduleManager ModuleManager
+	moduleManager *sdkmodule.Manager
 	grpcServer    *grpc.Server
 	encoding      EncodingConfig
 
@@ -184,10 +211,12 @@ type App struct {
 
 	// Identity module keeper (individual)
 	identitychangeKeeper *identitychangekeeper.Keeper
+	identityKeeper       *identitykeeper.Keeper
 
 	// Economics module keepers (individual)
 	economicsecurityKeeper *economicsecuritykeeper.Keeper
 	governanceKeeper       *governancekeeper.Keeper
+	economicsKeeper        *economicskeeper.Keeper
 
 	// Core module keepers (unchanged)
 	irKeeper               *irkeeper.Keeper
@@ -200,6 +229,10 @@ type App struct {
 	aiKeeper               *aikeeper.Keeper
 	contractRegistryKeeper *contractregistrykeeper.Keeper
 	wasmSecurityKeeper     wasmSecurityKeeper.Keeper
+	securityKeeper         *securitykeeper.Keeper
+	monitoringKeeper       *monitoringkeeper.Keeper
+	prevalidationKeeper    *prevalidationkeeper.Keeper
+	aurabindingsKeeper     *aurabindingskeeper.Keeper
 
 	storeKeys struct {
 		// Cosmos SDK standard keys
@@ -218,13 +251,16 @@ type App struct {
 		networkSecurity   *storetypes.KVStoreKey
 		incidentResponse  *storetypes.KVStoreKey
 		privacy           *storetypes.KVStoreKey
+		security          *storetypes.KVStoreKey
 
 		// Identity module key (individual)
 		identityChange *storetypes.KVStoreKey
+		identity       *storetypes.KVStoreKey
 
 		// Economics module keys (individual)
 		economicSecurity *storetypes.KVStoreKey
 		governance       *storetypes.KVStoreKey
+		economics        *storetypes.KVStoreKey
 
 		// Core AURA module keys (unchanged)
 		vc                *storetypes.KVStoreKey
@@ -238,9 +274,14 @@ type App struct {
 		confidenceScore   *storetypes.KVStoreKey
 		inclusionRoutines *storetypes.KVStoreKey
 		dataRegistry      *storetypes.KVStoreKey
+		monitoring        *storetypes.KVStoreKey
+		prevalidation     *storetypes.KVStoreKey
+		aurabindings      *storetypes.KVStoreKey
 	}
 	memKeys struct {
-		vc *storetypes.MemoryStoreKey
+		vc           *storetypes.MemoryStoreKey
+		security     *storetypes.MemoryStoreKey
+		aurabindings *storetypes.MemoryStoreKey
 	}
 	transientKeys struct {
 		params *storetypes.TransientStoreKey
@@ -257,6 +298,45 @@ func NewApp() *App {
 // Deprecated: Use NewAppWithOptions instead for production deployments.
 func NewAppWithLogger(logger tmlog.Logger) *App {
 	return NewAppWithOptions(logger, nil, "")
+}
+
+// StoreKeyNames lists all KV store names mounted by the app.
+func StoreKeyNames() []string {
+	return []string{
+		authtypes.StoreKey,
+		banktypes.StoreKey,
+		stakingtypes.StoreKey,
+		slashingtypes.StoreKey,
+		distrtypes.StoreKey,
+		paramstypes.StoreKey,
+		consensustypes.StoreKey,
+		walletsecuritytypes.StoreKey,
+		validatorsecuritytypes.StoreKey,
+		cryptographytypes.StoreKey,
+		networksecuritytypes.StoreKey,
+		incidentresponsetypes.StoreKey,
+		privacytypes.StoreKey,
+		identitychangetypes.StoreKey,
+		identitytypes.StoreKey,
+		economicsecuritytypes.StoreKey,
+		governancetypes.StoreKey,
+		economicstypes.StoreKey,
+		vctypes.StoreKey,
+		compliancetypes.StoreKey,
+		dextypes.StoreKey,
+		bridgetypes.StoreKey,
+		aitypes.StoreKey,
+		wasmtypes.StoreKey,
+		contractregistrytypes.StoreKey,
+		wasmSecurityTypes.StoreKey,
+		cstypes.StoreKey,
+		irtypes.StoreKey,
+		drtypes.StoreKey,
+		monitoringtypes.StoreKey,
+		prevalidationtypes.StoreKey,
+		aurabindingstypes.StoreKey,
+		securitytypes.StoreKey,
+	}
 }
 
 // NewAppWithDB builds the Aura application shell with the provided logger and database.
@@ -289,8 +369,8 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 		// This ensures IAVL trees retain historical state for versioned queries
 		baseapp.SetPruning(pruningtypes.NewPruningOptions(pruningtypes.PruningNothing)),
 		// Enable IAVL fast node for better query performance
-		// SDK 0.53.x handles version tracking correctly with fast node enabled
-		baseapp.SetIAVLDisableFastNode(false),
+		// Disable fast node to avoid version lookup errors during tx execution
+		baseapp.SetIAVLDisableFastNode(true),
 		// Set IAVL cache size for improved performance
 		baseapp.SetIAVLCacheSize(10000),
 	}
@@ -298,8 +378,9 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 		baseAppOptions = append(baseAppOptions, baseapp.SetChainID(chainID))
 	}
 
-	base := baseapp.NewBaseApp(appName, logger, db, dummyTxDecoder, baseAppOptions...)
+	base := baseapp.NewBaseApp(appName, logger, db, encoding.TxConfig.TxDecoder(), baseAppOptions...)
 	base.SetInterfaceRegistry(encoding.InterfaceRegistry)
+	base.SetTxEncoder(encoding.TxConfig.TxEncoder())
 
 	accountKey := storetypes.NewKVStoreKey(authtypes.StoreKey)
 	bankKey := storetypes.NewKVStoreKey(banktypes.StoreKey)
@@ -318,10 +399,12 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 
 	// Identity module key (individual)
 	identityChangeKey := storetypes.NewKVStoreKey(identitychangetypes.StoreKey)
+	identityKey := storetypes.NewKVStoreKey(identitytypes.StoreKey)
 
 	// Economics module keys (individual)
 	economicSecurityKey := storetypes.NewKVStoreKey(economicsecuritytypes.StoreKey)
 	governanceKey := storetypes.NewKVStoreKey(governancetypes.StoreKey)
+	economicsKey := storetypes.NewKVStoreKey(economicstypes.StoreKey)
 
 	// Core module keys (unchanged)
 	vcKey := storetypes.NewKVStoreKey(vctypes.StoreKey)
@@ -335,19 +418,25 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 	confidenceScoreKey := storetypes.NewKVStoreKey(cstypes.StoreKey)
 	inclusionRoutinesKey := storetypes.NewKVStoreKey(irtypes.StoreKey)
 	dataRegistryKey := storetypes.NewKVStoreKey(drtypes.StoreKey)
+	monitoringKey := storetypes.NewKVStoreKey(monitoringtypes.StoreKey)
+	prevalidationKey := storetypes.NewKVStoreKey(prevalidationtypes.StoreKey)
+	aurabindingsKey := storetypes.NewKVStoreKey(aurabindingstypes.StoreKey)
+	securityKey := storetypes.NewKVStoreKey(securitytypes.StoreKey)
 	consensusKey := storetypes.NewKVStoreKey(consensustypes.StoreKey)
 
 	paramsTKey := storetypes.NewTransientStoreKey(paramstypes.TStoreKey)
 	vcMemKey := storetypes.NewMemoryStoreKey(vctypes.MemStoreKey)
+	securityMemKey := storetypes.NewMemoryStoreKey(securitytypes.MemStoreKey)
+	aurabindingsMemKey := storetypes.NewMemoryStoreKey(aurabindingstypes.MemStoreKey)
 
 	base.MountKVStores(map[string]*storetypes.KVStoreKey{
 		// Cosmos SDK standard keys
-		authtypes.StoreKey:     accountKey,
-		banktypes.StoreKey:     bankKey,
-		stakingtypes.StoreKey:  stakingKey,
-		slashingtypes.StoreKey: slashingKey,
-		distrtypes.StoreKey:    distributionKey,
-		paramstypes.StoreKey:   paramsKey,
+		authtypes.StoreKey:      accountKey,
+		banktypes.StoreKey:      bankKey,
+		stakingtypes.StoreKey:   stakingKey,
+		slashingtypes.StoreKey:  slashingKey,
+		distrtypes.StoreKey:     distributionKey,
+		paramstypes.StoreKey:    paramsKey,
 		consensustypes.StoreKey: consensusKey,
 
 		// Security module keys (individual)
@@ -360,10 +449,12 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 
 		// Identity module key (individual)
 		identitychangetypes.StoreKey: identityChangeKey,
+		identitytypes.StoreKey:       identityKey,
 
 		// Economics module keys (individual)
 		economicsecuritytypes.StoreKey: economicSecurityKey,
 		governancetypes.StoreKey:       governanceKey,
+		economicstypes.StoreKey:        economicsKey,
 
 		// Core AURA module keys (unchanged)
 		vctypes.StoreKey:               vcKey,
@@ -377,13 +468,19 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 		cstypes.StoreKey:               confidenceScoreKey,
 		irtypes.StoreKey:               inclusionRoutinesKey,
 		drtypes.StoreKey:               dataRegistryKey,
+		monitoringtypes.StoreKey:       monitoringKey,
+		prevalidationtypes.StoreKey:    prevalidationKey,
+		aurabindingstypes.StoreKey:     aurabindingsKey,
+		securitytypes.StoreKey:         securityKey,
 	})
 	base.MountTransientStores(map[string]*storetypes.TransientStoreKey{
 		paramstypes.TStoreKey: paramsTKey,
 	})
 	base.MountMemoryStores(map[string]*storetypes.MemoryStoreKey{
-		vctypes.MemStoreKey:             vcMemKey,
+		vctypes.MemStoreKey:                vcMemKey,
 		validatorsecuritytypes.MemStoreKey: validatorSecurityMemKey,
+		securitytypes.MemStoreKey:          securityMemKey,
+		aurabindingstypes.MemStoreKey:      aurabindingsMemKey,
 	})
 
 	paramsKeeper := paramskeeper.NewKeeper(encoding.Codec, codec.NewLegacyAmino(), paramsKey, paramsTKey)
@@ -414,6 +511,7 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 		logger,
 	)
 	bankAdapter := newBankKeeperAdapter(bankKeeper)
+	accountAdapter := newAccountKeeperAdapter(accountKeeper)
 
 	stakingKeeper := stakingkeeper.NewKeeper(
 		encoding.Codec,
@@ -534,6 +632,16 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 		bankKeeper,
 	)
 
+	securityKeeper := securitykeeper.NewKeeper(
+		encoding.Codec,
+		securityKey,
+		securityMemKey,
+		authorityAddr,
+		bankAdapter,
+		newSecurityStakingAdapter(stakingKeeper),
+		accountAdapter,
+	)
+
 	// Individual economics module keepers
 	governanceKeeper := governancekeeper.NewKeeper(encoding.Codec, governanceKey)
 
@@ -557,6 +665,13 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 		logger.With("module", identitychangetypes.ModuleName),
 	)
 
+	identityKeeper := identitykeeper.NewKeeper(
+		runtime.NewKVStoreService(identityKey),
+		encoding.Codec,
+		authorityAddr,
+		logger.With("module", identitytypes.ModuleName),
+	)
+
 	drParamsStore := drparams.NewStore(drtypes.DefaultParams())
 	drKeeper := drkeeper.NewKeeper(
 		runtime.NewKVStoreService(dataRegistryKey),
@@ -565,6 +680,24 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 		authorityAddr,
 		logger.With("module", drtypes.ModuleName),
 	)
+
+	monitoringKeeper := monitoringkeeper.NewKeeper(
+		encoding.Codec,
+		runtime.NewKVStoreService(monitoringKey),
+		authorityAddr,
+	)
+
+	economicsKeeper := economicskeeper.NewKeeper(
+		encoding.Codec,
+		runtime.NewKVStoreService(economicsKey),
+		authorityAddr,
+	)
+
+	prevalidationKeeper := prevalidationkeeper.NewKeeper(
+		encoding.Codec,
+		prevalidationKey,
+	)
+	prevalidationKeeper.SetLogger(logger.With("module", prevalidationtypes.ModuleName))
 
 	logger.Info("initializing keepers", "phase", "tier-3-inclusion-routines")
 
@@ -600,6 +733,12 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 		WithStore(vcKey, encoding.Codec).
 		Build() // Note: ConfidenceScore keeper not wired due to interface mismatch - fix in follow-up
 
+	aurabindingsKeeper := aurabindingskeeper.NewKeeper(
+		encoding.Codec,
+		aurabindingsKey,
+		vcKeeper,
+	)
+
 	logger.Info("initializing keepers", "phase", "tier-6-contract-registry")
 
 	// Tier 6: Contract registry (depends on vcregistry, compliance, confidencescore)
@@ -617,7 +756,6 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 	logger.Info("initializing keepers", "phase", "tier-7-dex-bridge-ai")
 
 	// Tier 7: DEX, Bridge, and AI modules (depend on vcregistry)
-	accountAdapter := newAccountKeeperAdapter(accountKeeper)
 	vcAdapter := newVCRegistryKeeperAdapter(vcKeeper)
 
 	dexKeeper := dexkeeper.NewKeeper(encoding.Codec, dexKey, bankAdapter, accountAdapter, vcAdapter)
@@ -654,16 +792,16 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 		nil, // PortKeeper - to be added in Phase 3
 		nil, // ScopedWasmKeeper - to be added in Phase 3
 		nil, // TransferKeeper - to be added in Phase 3
-		base.MsgServiceRouter(),
-		base.GRPCQueryRouter(),
-		filepath.Join("/tmp", "wasm"), // Wasm cache directory
-		wasmConfig,
-		"iterator", // Available capabilities - "iterator"
-		authorityAddr,
-		// Note: QueryPlugin and MessageHandler wiring deferred - requires forward reference
-		// wasmkeeper.WithQueryPlugins(aurabindings.NewQueryPlugin(vcKeeper, &wasmKeeper)),
-		// wasmkeeper.WithMessageHandler(aurabindings.NewMessageHandler(vcKeeper)),
-	)
+	base.MsgServiceRouter(),
+	base.GRPCQueryRouter(),
+	filepath.Join("/tmp", "wasm"), // Wasm cache directory
+	wasmConfig,
+	"iterator", // Available capabilities - "iterator"
+	authorityAddr,
+	// Note: QueryPlugin wiring deferred - requires forward reference
+	wasmkeeper.WithQueryPlugins(aurabindings.NewQueryPlugin(vcKeeper, nil)),
+	wasmkeeper.WithMessageHandler(aurabindings.NewMessageHandler(vcKeeper)),
+)
 
 	// Create WASM security keeper wrapping the base wasmd keeper
 	// This provides additional security controls and integrates with contract registry
@@ -676,11 +814,13 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 
 	// Create modules using individual keepers
 	identitychangeModule := identitychange.NewAppModule(identitychangeKeeper)
+	identityModule := identity.NewAppModule(encoding.Codec, identityKeeper)
 	inclusionModule := inclusionroutines.NewAppModule(irKeeper)
 	confidenceModule := confidencescore.NewAppModule(csKeeper)
 	vcModule := vcregistry.NewAppModule(vcKeeper)
 	dataModule := dataregistry.NewAppModule(drKeeper)
 	complianceModule := compliance.NewAppModule(complianceKeeper)
+	monitoringModule := monitoring.NewAppModule(encoding.Codec, monitoringKeeper)
 
 	// Individual security modules
 	walletsecurityModule := walletsecurity.NewAppModule(walletsecurityKeeper)
@@ -689,9 +829,11 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 	networksecurityModule := networksecurity.NewAppModule(encoding.Codec, networksecurityKeeper)
 	incidentresponseModule := incidentresponse.NewAppModule(encoding.Codec, incidentresponseKeeper)
 	privacyModule := privacy.NewAppModule(encoding.Codec, privacyKeeper)
+	securityModule := security.NewAppModule(encoding.Codec, securityKeeper)
 
 	// Individual economics modules
 	economicsecurityModule := economicsecurity.NewAppModule(encoding.Codec, economicsecurityKeeper)
+	economicsModule := economics.NewAppModule(encoding.Codec, economicsKeeper)
 	governanceModule := governance.NewAppModule(governanceKeeper)
 
 	dexModule := dex.NewAppModule(dexKeeper)
@@ -701,41 +843,167 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 	contractRegistryModule := contractregistry.NewAppModule(encoding.Codec, *contractRegistryKeeper)
 	// WASM security module - wraps wasmd with AURA security controls
 	wasmSecurityModule := wasm.NewAppModule(encoding.Codec, wasmSecurityKeeperInstance)
+	prevalidationModule := prevalidation.NewAppModule(encoding.Codec, prevalidationKeeper)
+	aurabindingsModule := aurabindings.NewAppModule(encoding.Codec, *aurabindingsKeeper)
 
-	manager := NewModuleManager(
-		encoding,
-		[]aiassistant.AppModule{aiModule},
-		[]identitychange.AppModule{identitychangeModule},
-		[]inclusionroutines.AppModule{inclusionModule},
-		[]confidencescore.AppModule{confidenceModule},
-		[]vcregistry.AppModule{vcModule},
-		[]dataregistry.AppModule{dataModule},
-		[]compliance.AppModule{complianceModule},
-		[]walletsecurity.AppModule{walletsecurityModule},
-		[]validatorsecurity.AppModule{validatorsecurityModule},
-		[]cryptography.AppModule{cryptographyModule},
-		[]networksecurity.AppModule{networksecurityModule},
-		[]incidentresponse.AppModule{incidentresponseModule},
-		[]privacy.AppModule{privacyModule},
-		[]economicsecurity.AppModule{economicsecurityModule},
-		[]governance.AppModule{governanceModule},
-		[]dex.AppModule{dexModule},
-		[]bridge.AppModule{bridgeModule},
-		[]contractregistry.AppModule{contractRegistryModule},
-		[]wasm.AppModule{wasmSecurityModule},
-	)
+	coreModules := []sdkmodule.AppModule{
+		auth.NewAppModule(encoding.Codec, accountKeeper, nil, nil),
+		bankmodule.NewAppModule(encoding.Codec, bankKeeper, accountKeeper, nil),
+		stakingmodule.NewAppModule(encoding.Codec, stakingKeeper, accountKeeper, bankKeeper, nil),
+		slashingmodule.NewAppModule(encoding.Codec, slashingKeeper, accountKeeper, bankKeeper, stakingKeeper, nil, encoding.InterfaceRegistry),
+		distribution.NewAppModule(encoding.Codec, distributionKeeper, accountKeeper, bankKeeper, stakingKeeper, nil),
+		params.NewAppModule(paramsKeeper),
+		consensus.NewAppModule(encoding.Codec, consensusKeeper),
+		genutilmodule.NewAppModule(accountKeeper, stakingKeeper, base, encoding.TxConfig),
+		wasmSecurityModule,
+		contractRegistryModule,
+	}
 
-	base.SetBeginBlocker(func(ctx sdk.Context) (sdk.BeginBlock, error) {
-		manager.BeginBlock(sdk.WrapSDKContext(ctx))
-		return sdk.BeginBlock{}, nil
+	auraModules := []sdkmodule.AppModule{
+		inclusionModule,
+		confidenceModule,
+	}
+
+	adapterModules := wrapAdapters(map[string]interface{}{
+		identitychangetypes.ModuleName:    identitychangeModule,
+		identitytypes.ModuleName:          identityModule,
+		vctypes.ModuleName:                vcModule,
+		drtypes.ModuleName:                dataModule,
+		compliancetypes.ModuleName:        complianceModule,
+		monitoringtypes.ModuleName:        monitoringModule,
+		walletsecuritytypes.ModuleName:    walletsecurityModule,
+		validatorsecuritytypes.ModuleName: validatorsecurityModule,
+		cryptographytypes.ModuleName:      cryptographyModule,
+		networksecuritytypes.ModuleName:   networksecurityModule,
+		incidentresponsetypes.ModuleName:  incidentresponseModule,
+		privacytypes.ModuleName:           privacyModule,
+		economicsecuritytypes.ModuleName:  economicsecurityModule,
+		economicstypes.ModuleName:         economicsModule,
+		governancetypes.ModuleName:        governanceModule,
+		dextypes.ModuleName:               dexModule,
+		bridgetypes.ModuleName:            bridgeModule,
+		aitypes.ModuleName:                aiModule,
+		prevalidationtypes.ModuleName:     prevalidationModule,
+		securitytypes.ModuleName:          securityModule,
+		aurabindingstypes.ModuleName:      aurabindingsModule,
 	})
 
-	grpcServer := grpc.NewServer()
+	moduleManager := sdkmodule.NewManager(append(append(coreModules, auraModules...), adapterModules...)...)
+
+	moduleManager.SetOrderInitGenesis(
+		authtypes.ModuleName,
+		banktypes.ModuleName,
+		distrtypes.ModuleName,
+		stakingtypes.ModuleName,
+		slashingtypes.ModuleName,
+		consensustypes.ModuleName,
+		paramstypes.ModuleName,
+		genutiltypes.ModuleName,
+		wasmtypes.ModuleName,
+		wasmSecurityTypes.ModuleName,
+		contractregistrytypes.ModuleName,
+		identitychangetypes.ModuleName,
+		identitytypes.ModuleName,
+		irtypes.ModuleName,
+		cstypes.ModuleName,
+		vctypes.ModuleName,
+		drtypes.ModuleName,
+		compliancetypes.ModuleName,
+		monitoringtypes.ModuleName,
+		walletsecuritytypes.ModuleName,
+		validatorsecuritytypes.ModuleName,
+		cryptographytypes.ModuleName,
+		networksecuritytypes.ModuleName,
+		incidentresponsetypes.ModuleName,
+		privacytypes.ModuleName,
+		securitytypes.ModuleName,
+		economicsecuritytypes.ModuleName,
+		economicstypes.ModuleName,
+		governancetypes.ModuleName,
+		prevalidationtypes.ModuleName,
+		dextypes.ModuleName,
+		bridgetypes.ModuleName,
+		aitypes.ModuleName,
+		aurabindingstypes.ModuleName,
+	)
+
+	moduleManager.SetOrderBeginBlockers(
+		genutiltypes.ModuleName,
+		consensustypes.ModuleName,
+		slashingtypes.ModuleName,
+		stakingtypes.ModuleName,
+		distrtypes.ModuleName,
+		wasmtypes.ModuleName,
+		wasmSecurityTypes.ModuleName,
+		dextypes.ModuleName,
+		bridgetypes.ModuleName,
+		contractregistrytypes.ModuleName,
+		identitychangetypes.ModuleName,
+		identitytypes.ModuleName,
+		irtypes.ModuleName,
+		cstypes.ModuleName,
+		vctypes.ModuleName,
+		drtypes.ModuleName,
+		compliancetypes.ModuleName,
+		monitoringtypes.ModuleName,
+		walletsecuritytypes.ModuleName,
+		validatorsecuritytypes.ModuleName,
+		cryptographytypes.ModuleName,
+		networksecuritytypes.ModuleName,
+		incidentresponsetypes.ModuleName,
+		privacytypes.ModuleName,
+		securitytypes.ModuleName,
+		economicsecuritytypes.ModuleName,
+		economicstypes.ModuleName,
+		governancetypes.ModuleName,
+		authtypes.ModuleName,
+		banktypes.ModuleName,
+		paramstypes.ModuleName,
+		prevalidationtypes.ModuleName,
+		aurabindingstypes.ModuleName,
+	)
+
+	moduleManager.SetOrderEndBlockers(
+		slashingtypes.ModuleName,
+		stakingtypes.ModuleName,
+		distrtypes.ModuleName,
+		wasmtypes.ModuleName,
+		wasmSecurityTypes.ModuleName,
+		dextypes.ModuleName,
+		bridgetypes.ModuleName,
+		contractregistrytypes.ModuleName,
+		identitychangetypes.ModuleName,
+		identitytypes.ModuleName,
+		irtypes.ModuleName,
+		cstypes.ModuleName,
+		vctypes.ModuleName,
+		drtypes.ModuleName,
+		compliancetypes.ModuleName,
+		monitoringtypes.ModuleName,
+		walletsecuritytypes.ModuleName,
+		validatorsecuritytypes.ModuleName,
+		cryptographytypes.ModuleName,
+		networksecuritytypes.ModuleName,
+		incidentresponsetypes.ModuleName,
+		privacytypes.ModuleName,
+		securitytypes.ModuleName,
+		economicsecuritytypes.ModuleName,
+		economicstypes.ModuleName,
+		governancetypes.ModuleName,
+		authtypes.ModuleName,
+		banktypes.ModuleName,
+		paramstypes.ModuleName,
+		genutiltypes.ModuleName,
+		prevalidationtypes.ModuleName,
+		aurabindingstypes.ModuleName,
+	)
+
+	configurator := sdkmodule.NewConfigurator(encoding.Codec, base.MsgServiceRouter(), base.GRPCQueryRouter())
+	moduleManager.RegisterServices(configurator)
 
 	app := &App{
 		BaseApp:            base,
-		moduleManager:      manager,
-		grpcServer:         grpcServer,
+		moduleManager:      moduleManager,
 		encoding:           encoding,
 		AccountKeeper:      accountKeeper,
 		BankKeeper:         bankKeeper,
@@ -753,9 +1021,11 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 		privacyKeeper:           privacyKeeper,
 		// Individual identity keeper
 		identitychangeKeeper: identitychangeKeeper,
+		identityKeeper:       identityKeeper,
 		// Individual economics keepers
 		economicsecurityKeeper: economicsecurityKeeper,
 		governanceKeeper:       governanceKeeper,
+		economicsKeeper:        economicsKeeper,
 		// Core module keepers
 		irKeeper:               irKeeper,
 		csKeeper:               csKeeper,
@@ -767,6 +1037,10 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 		aiKeeper:               &aiKeeper,
 		contractRegistryKeeper: contractRegistryKeeper,
 		wasmSecurityKeeper:     wasmSecurityKeeperInstance,
+		securityKeeper:         securityKeeper,
+		monitoringKeeper:       monitoringKeeper,
+		prevalidationKeeper:    prevalidationKeeper,
+		aurabindingsKeeper:     aurabindingsKeeper,
 		storeKeys: struct {
 			// Cosmos SDK standard keys
 			account      *storetypes.KVStoreKey
@@ -783,11 +1057,14 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 			networkSecurity   *storetypes.KVStoreKey
 			incidentResponse  *storetypes.KVStoreKey
 			privacy           *storetypes.KVStoreKey
+			security          *storetypes.KVStoreKey
 			// Identity module key (individual)
 			identityChange *storetypes.KVStoreKey
+			identity       *storetypes.KVStoreKey
 			// Economics module keys (individual)
 			economicSecurity *storetypes.KVStoreKey
 			governance       *storetypes.KVStoreKey
+			economics        *storetypes.KVStoreKey
 			// Core AURA module keys
 			vc                *storetypes.KVStoreKey
 			compliance        *storetypes.KVStoreKey
@@ -800,14 +1077,17 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 			confidenceScore   *storetypes.KVStoreKey
 			inclusionRoutines *storetypes.KVStoreKey
 			dataRegistry      *storetypes.KVStoreKey
+			monitoring        *storetypes.KVStoreKey
+			prevalidation     *storetypes.KVStoreKey
+			aurabindings      *storetypes.KVStoreKey
 		}{
-			account:           accountKey,
-			bank:              bankKey,
-			staking:           stakingKey,
-			slashing:          slashingKey,
-			distribution:      distributionKey,
-			params:            paramsKey,
-			consensus:         consensusKey,
+			account:      accountKey,
+			bank:         bankKey,
+			staking:      stakingKey,
+			slashing:     slashingKey,
+			distribution: distributionKey,
+			params:       paramsKey,
+			consensus:    consensusKey,
 			// Individual security module keys
 			walletSecurity:    walletSecurityKey,
 			validatorSecurity: validatorSecurityKey,
@@ -815,11 +1095,14 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 			networkSecurity:   networkSecurityKey,
 			incidentResponse:  incidentResponseKey,
 			privacy:           privacyKey,
+			security:          securityKey,
 			// Individual identity module key
 			identityChange: identityChangeKey,
+			identity:       identityKey,
 			// Individual economics module keys
 			economicSecurity: economicSecurityKey,
 			governance:       governanceKey,
+			economics:        economicsKey,
 			// Core AURA module keys
 			vc:                vcKey,
 			compliance:        complianceKey,
@@ -832,16 +1115,53 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 			confidenceScore:   confidenceScoreKey,
 			inclusionRoutines: inclusionRoutinesKey,
 			dataRegistry:      dataRegistryKey,
+			monitoring:        monitoringKey,
+			prevalidation:     prevalidationKey,
+			aurabindings:      aurabindingsKey,
 		},
 		memKeys: struct {
-			vc *storetypes.MemoryStoreKey
+			vc           *storetypes.MemoryStoreKey
+			security     *storetypes.MemoryStoreKey
+			aurabindings *storetypes.MemoryStoreKey
 		}{
-			vc: vcMemKey,
+			vc:           vcMemKey,
+			security:     securityMemKey,
+			aurabindings: aurabindingsMemKey,
 		},
 		transientKeys: struct {
 			params *storetypes.TransientStoreKey
 		}{params: paramsTKey},
 	}
+
+	app.SetPreBlocker(func(ctx sdk.Context, req *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
+		return moduleManager.PreBlock(ctx)
+	})
+	app.SetInitChainer(func(ctx sdk.Context, req *abci.RequestInitChain) (*abci.ResponseInitChain, error) {
+		var genesisState map[string]json.RawMessage
+		if err := json.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
+			return nil, err
+		}
+		res, err := moduleManager.InitGenesis(ctx, encoding.Codec, genesisState)
+		if err != nil {
+			return nil, err
+		}
+		ensureStoreInitMarkers(ctx, app.allStoreKeys())
+		return res, nil
+	})
+	app.SetBeginBlocker(moduleManager.BeginBlock)
+	app.SetEndBlocker(moduleManager.EndBlock)
+	app.SetPrepareCheckStater(func(ctx sdk.Context) {
+		if err := moduleManager.PrepareCheckState(ctx); err != nil {
+			ctx.Logger().Error("prepare-check-state failed", "error", err)
+			panic(err)
+		}
+	})
+	app.SetPrecommiter(func(ctx sdk.Context) {
+		if err := moduleManager.Precommit(ctx); err != nil {
+			ctx.Logger().Error("precommit failed", "error", err)
+			panic(err)
+		}
+	})
 
 	// Setup ante handler for transaction processing
 	// Note: LoadLatestVersion() is NOT called here - it will be called by CometBFT
@@ -870,8 +1190,6 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 	logger.Info("registering module invariants")
 	app.registerInvariants()
 
-	app.RegisterGRPCServices()
-
 	// Explicitly set pruning on CommitMultiStore after all stores are mounted.
 	// This ensures IAVL trees retain all versions for historical queries.
 	// The baseapp.SetPruning option sets it during NewBaseApp, but we reinforce it here.
@@ -885,30 +1203,73 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 	return app
 }
 
+// ensureStoreInitMarkers writes a deterministic marker into each KV store so
+// every mounted store has an on-disk version from the first commit.
+func ensureStoreInitMarkers(ctx sdk.Context, keys []storetypes.StoreKey) {
+	marker := []byte{0x01}
+	for _, key := range keys {
+		if key == nil {
+			continue
+		}
+		store := ctx.KVStore(key)
+		if store == nil {
+			continue
+		}
+		if !store.Has(marker) {
+			store.Set(marker, marker)
+		}
+	}
+}
+
+func (app *App) allStoreKeys() []storetypes.StoreKey {
+	return []storetypes.StoreKey{
+		app.storeKeys.account,
+		app.storeKeys.bank,
+		app.storeKeys.staking,
+		app.storeKeys.slashing,
+		app.storeKeys.distribution,
+		app.storeKeys.params,
+		app.storeKeys.consensus,
+		app.storeKeys.walletSecurity,
+		app.storeKeys.validatorSecurity,
+		app.storeKeys.cryptography,
+		app.storeKeys.networkSecurity,
+		app.storeKeys.incidentResponse,
+		app.storeKeys.privacy,
+		app.storeKeys.identityChange,
+		app.storeKeys.identity,
+		app.storeKeys.economicSecurity,
+		app.storeKeys.governance,
+		app.storeKeys.economics,
+		app.storeKeys.vc,
+		app.storeKeys.compliance,
+		app.storeKeys.dex,
+		app.storeKeys.bridge,
+		app.storeKeys.ai,
+		app.storeKeys.wasm,
+		app.storeKeys.contractRegistry,
+		app.storeKeys.wasmSecurity,
+		app.storeKeys.confidenceScore,
+		app.storeKeys.inclusionRoutines,
+		app.storeKeys.dataRegistry,
+		app.storeKeys.monitoring,
+		app.storeKeys.prevalidation,
+		app.storeKeys.aurabindings,
+		app.storeKeys.security,
+	}
+}
+
 // SetupAnteHandler configures the ante handler for transaction processing.
 // The ante handler performs validation, fee deduction, and security checks
 // before transaction execution.
 func (a *App) SetupAnteHandler() {
-	// Create sign mode handler using the textual handler
-	// This supports SIGN_MODE_TEXTUAL for human-readable transaction signing
-	signingCtx := a.encoding.InterfaceRegistry.SigningContext()
-
-	// Create textual sign mode handler with coin metadata query
-	textualHandler, err := txsigningtextual.NewSignModeHandler(txsigningtextual.SignModeOptions{
-		FileResolver: signingCtx.FileResolver(),
-		TypeResolver: signingCtx.TypeResolver(),
-		CoinMetadataQuerier: func(ctx context.Context, denom string) (*bankv1beta1.Metadata, error) {
-			// Query bank keeper for coin metadata
-			// For now return nil to use default behavior
-			return nil, nil
-		},
-	})
-	if err != nil {
-		panic(fmt.Errorf("failed to create textual sign mode handler: %w", err))
-	}
-
-	// Create handler map with the textual sign mode handler
-	signModeHandler := txsigning.NewHandlerMap(textualHandler)
+	// Use the SignModeHandler from TxConfig which was configured in MakeEncodingConfig
+	// with LEGACY_AMINO_JSON, DIRECT, and DIRECT_AUX modes. This ensures the ante handler
+	// can verify signatures created with any of these modes.
+	//
+	// Previously this was creating a new handler with only TEXTUAL mode, which caused
+	// signature verification failures when clients signed with LEGACY_AMINO_JSON mode.
+	signModeHandler := a.encoding.TxConfig.SignModeHandler()
 
 	// Create WASM config
 	wasmConfig := wasmtypes.DefaultWasmConfig()
@@ -928,7 +1289,7 @@ func (a *App) SetupAnteHandler() {
 		TXCounterStoreService: runtime.NewKVStoreService(a.storeKeys.wasm),
 
 		// AURA custom keepers
-		ComplianceKeeper:      a.complianceKeeper,
+		ComplianceKeeper:     a.complianceKeeper,
 		WalletSecurityKeeper: &a.walletsecurityKeeper,
 	})
 
@@ -949,8 +1310,6 @@ func (a *App) Logger() tmlog.Logger {
 // Also registers SDK module query services on the BaseApp's GRPCQueryRouter
 // for transaction signing to work (AccountRetriever queries auth module).
 func (a *App) RegisterGRPCServices() {
-	a.moduleManager.RegisterGRPCServices(a.grpcServer)
-
 	// Register SDK auth module query service on the BaseApp's GRPCQueryRouter.
 	// This is required for transaction signing - the AccountRetriever queries
 	// the auth module to get account sequence and account number.
@@ -972,19 +1331,26 @@ func (a *App) GRPCServer() *grpc.Server {
 	return a.grpcServer
 }
 
+// SetGRPCServer records the externally managed gRPC server instance so it can be
+// exposed to helpers (tests, diagnostics) without coupling app construction to
+// server options like TLS credentials.
+func (a *App) SetGRPCServer(server *grpc.Server) {
+	a.grpcServer = server
+}
+
 // Encoding returns the codec configuration currently in use.
 func (a *App) Encoding() EncodingConfig {
 	return a.encoding
 }
 
-// InitBridgeGenesis initializes the bridge module state through the module manager.
+// InitBridgeGenesis initializes the bridge module state directly via the keeper.
 func (a *App) InitBridgeGenesis(ctx sdk.Context, genesis bridgetypes.GenesisState) error {
-	return a.moduleManager.InitBridgeGenesis(ctx, genesis)
+	return a.bridgeKeeper.InitGenesis(ctx, genesis)
 }
 
-// ExportBridgeGenesis exports the bridge module genesis state for each registered module.
-func (a *App) ExportBridgeGenesis(ctx sdk.Context) []bridgetypes.GenesisState {
-	return a.moduleManager.ExportBridgeGenesis(ctx)
+// ExportBridgeGenesis exports the bridge module genesis state.
+func (a *App) ExportBridgeGenesis(ctx sdk.Context) bridgetypes.GenesisState {
+	return a.bridgeKeeper.ExportGenesis(ctx)
 }
 
 // ============================================================================
@@ -1004,16 +1370,14 @@ func (a *App) ExportBridgeGenesis(ctx sdk.Context) []bridgetypes.GenesisState {
 //   - VCRegistry: VC records are consistent with indices
 //
 // Invariants are checked:
-//   1. At genesis (to validate initial state)
-//   2. During upgrades (to validate migration correctness)
-//   3. Periodically in production (configurable via governance)
-//   4. On-demand via CLI commands for debugging
+//  1. At genesis (to validate initial state)
+//  2. During upgrades (to validate migration correctness)
+//  3. Periodically in production (configurable via governance)
+//  4. On-demand via CLI commands for debugging
 func (a *App) registerInvariants() {
 	// Bank module invariants (Cosmos SDK standard)
 	// Ensures total supply = sum of all account balances
-	if a.BankKeeper.GetSupply != nil {
-		a.Logger().Info("registered bank invariants", "checks", "total-supply")
-	}
+	a.Logger().Info("registered bank invariants", "checks", "total-supply")
 
 	// Staking module invariants (Cosmos SDK standard)
 	// Ensures bonded pool = sum of bonded tokens
@@ -1129,7 +1493,18 @@ func MakeEncodingConfig() EncodingConfig {
 	// This sets the Bech32 prefixes (aura, auravaloper, auravalcons) for address encoding
 	ensureSDKConfig()
 
-	interfaceRegistry := codectypes.NewInterfaceRegistry()
+	addrCodec := address.NewBech32Codec(bech32MainPrefix)
+	valCodec := address.NewBech32Codec(bech32ValidatorPrefix)
+	interfaceRegistry, err := codectypes.NewInterfaceRegistryWithOptions(codectypes.InterfaceRegistryOptions{
+		ProtoFiles: proto.HybridResolver,
+		SigningOptions: txsigning.Options{
+			AddressCodec:          addrCodec,
+			ValidatorAddressCodec: valCodec,
+		},
+	})
+	if err != nil {
+		panic(fmt.Errorf("failed to create interface registry: %w", err))
+	}
 
 	// Register crypto types (secp256k1, ed25519, etc.) - CRITICAL for keyring proto unmarshalling
 	// Without this, the SDK 0.53.x keyring migration fails with "no registered implementations of type types.PubKey"
@@ -1142,8 +1517,31 @@ func MakeEncodingConfig() EncodingConfig {
 	distrtypes.RegisterInterfaces(interfaceRegistry)
 	wasmtypes.RegisterInterfaces(interfaceRegistry)
 
+	// Register interfaces for all modules tracked by ModuleBasics so
+	// consensus and custom message/service types are discoverable.
+	ModuleBasics.RegisterInterfaces(interfaceRegistry)
+
 	protoCodec := codec.NewProtoCodec(interfaceRegistry)
-	txConfig := tx.NewTxConfig(protoCodec, tx.DefaultSignModes)
+
+	// Prefer LEGACY_AMINO_JSON as the default sign mode to align with existing keys/scripts,
+	// while still supporting DIRECT and DIRECT_AUX for modern clients.
+	signModes := []signingtypes.SignMode{
+		signingtypes.SignMode_SIGN_MODE_LEGACY_AMINO_JSON,
+		signingtypes.SignMode_SIGN_MODE_DIRECT,
+		signingtypes.SignMode_SIGN_MODE_DIRECT_AUX,
+	}
+
+	txConfig, err := tx.NewTxConfigWithOptions(protoCodec, tx.ConfigOptions{
+		EnabledSignModes: signModes,
+		SigningOptions: &txsigning.Options{
+			FileResolver:          proto.HybridResolver,
+			AddressCodec:          addrCodec,
+			ValidatorAddressCodec: valCodec,
+		},
+	})
+	if err != nil {
+		panic(fmt.Errorf("failed to build tx config: %w", err))
+	}
 
 	return EncodingConfig{
 		InterfaceRegistry: interfaceRegistry,
@@ -1188,12 +1586,12 @@ func initModuleAccounts(ctx sdk.Context, keeper authkeeper.AccountKeeper, perms 
 // SupplyMonitor tracks token minting per block to prevent inflation attacks.
 // This provides rate limiting and alerting for modules with Minter permissions.
 type SupplyMonitor struct {
-	mu                 sync.RWMutex
-	mintedPerBlock     map[int64]map[string]sdk.Coins // block_height -> module_name -> amount
-	maxMintPerBlock    sdk.Coins                       // Maximum tokens that can be minted per block
-	maxMintPerModule   map[string]sdk.Coins            // Per-module minting limits
-	alertThreshold     sdkmath.LegacyDec                // Alert if minting exceeds this % of max
-	violationCallback  func(blockHeight int64, module string, amount sdk.Coins)
+	mu                sync.RWMutex
+	mintedPerBlock    map[int64]map[string]sdk.Coins // block_height -> module_name -> amount
+	maxMintPerBlock   sdk.Coins                      // Maximum tokens that can be minted per block
+	maxMintPerModule  map[string]sdk.Coins           // Per-module minting limits
+	alertThreshold    sdkmath.LegacyDec              // Alert if minting exceeds this % of max
+	violationCallback func(blockHeight int64, module string, amount sdk.Coins)
 }
 
 // NewSupplyMonitor creates a new supply monitor with default limits.

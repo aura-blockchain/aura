@@ -2,10 +2,13 @@ package keeper
 
 import (
 	context "context"
+	"crypto/sha256"
 	"fmt"
 	"strings"
 
 	sdkmath "cosmossdk.io/math"
+	errorsmod "cosmossdk.io/errors"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -29,6 +32,85 @@ func NewMsgServerImpl(k *Keeper) bridgepb.MsgServer {
 
 func normalizeChain(chain string) string {
 	return strings.ToLower(strings.TrimSpace(chain))
+}
+
+// verifyRawValidatorSignatures verifies raw byte signatures from multiple validators.
+// Since the proto uses repeated bytes (not ValidatorSignature objects), we need to
+// iterate through all validators and check which ones signed.
+// This is a simplified verification - in production you'd want validator addresses
+// encoded in the signature or a separate validator list.
+func (ms msgServer) verifyRawValidatorSignatures(
+	ctx sdk.Context,
+	signatures [][]byte,
+	msgHash []byte,
+	minRequired uint64,
+) (validCount int, err error) {
+	if len(signatures) < int(minRequired) {
+		return 0, errorsmod.Wrapf(types.ErrInsufficientSignatures,
+			"provided %d signatures, need at least %d", len(signatures), minRequired)
+	}
+
+	// Get all active validators
+	allValidators := ms.Keeper.getAllValidators(ctx)
+	if len(allValidators) == 0 {
+		return 0, errorsmod.Wrap(types.ErrValidatorNotFound, "no validators registered")
+	}
+
+	// Track which validators have been matched
+	usedValidators := make(map[string]bool)
+
+	for _, sigBytes := range signatures {
+		if len(sigBytes) == 0 {
+			continue
+		}
+
+		// Try to match this signature against all validators
+		for _, validator := range allValidators {
+			// Skip if validator already matched
+			if usedValidators[validator.Address] {
+				continue
+			}
+
+			// Skip inactive validators
+			if !validator.Active {
+				continue
+			}
+
+			// Parse the validator's public key
+			if len(validator.PublicKey) == 0 {
+				continue
+			}
+
+			var pubKey cryptotypes.PubKey
+			// Try to unmarshal as amino JSON first, then as protobuf
+			err := ms.Keeper.cdc.UnmarshalInterface(validator.PublicKey, &pubKey)
+			if err != nil {
+				// Skip this validator if pubkey can't be parsed
+				continue
+			}
+
+			if pubKey == nil {
+				continue
+			}
+
+			// CRITICAL: Verify the cryptographic signature
+			if pubKey.VerifySignature(msgHash, sigBytes) {
+				// Valid signature found - mark this validator as used
+				usedValidators[validator.Address] = true
+				validCount++
+				break // Move to next signature
+			}
+		}
+	}
+
+	// Check if we have enough valid signatures
+	if validCount < int(minRequired) {
+		return validCount, errorsmod.Wrapf(types.ErrInsufficientSignatures,
+			"only %d valid signatures from %d provided, need %d",
+			validCount, len(signatures), minRequired)
+	}
+
+	return validCount, nil
 }
 
 // LockTokens locks native tokens on Aura for cross-chain transfer.
@@ -181,10 +263,38 @@ func (ms msgServer) UnlockTokens(goCtx context.Context, msg *bridgepb.MsgUnlockT
 	if !found {
 		return nil, status.Error(codes.NotFound, types.ErrTransferNotFound.Error())
 	}
+
+	// SECURITY FIX: Verify cryptographic signatures instead of just counting them
 	required := ms.Keeper.GetParams(ctx).MinConfirmations
-	if uint64(len(msg.ValidatorSignatures)) < required {
-		return nil, status.Error(codes.FailedPrecondition, "insufficient signatures")
+
+	// Build deterministic message hash for signature verification
+	// Format: sourceChain:burnTxHash:recipient:amount:denom
+	msgToSign := fmt.Sprintf("%s:%s:%s:%s:%s",
+		transfer.SourceChain,
+		msg.BurnTxHash,
+		msg.Sender,
+		msg.Amount,
+		msg.Denom,
+	)
+	msgHash := sha256.Sum256([]byte(msgToSign))
+
+	// Verify signatures cryptographically
+	validCount, err := ms.verifyRawValidatorSignatures(ctx, msg.ValidatorSignatures, msgHash[:], required)
+	if err != nil {
+		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
+
+	// Log successful verification for audit trail
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			"unlock_tokens_verified",
+			sdk.NewAttribute("transfer_id", transferID),
+			sdk.NewAttribute("burn_tx_hash", msg.BurnTxHash),
+			sdk.NewAttribute("valid_signatures", fmt.Sprintf("%d", validCount)),
+			sdk.NewAttribute("required_signatures", fmt.Sprintf("%d", required)),
+		),
+	)
+
 	recipient, err := sdk.AccAddressFromBech32(msg.Sender)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())

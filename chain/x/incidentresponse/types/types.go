@@ -210,7 +210,7 @@ type IncidentResponseParams struct {
 // DefaultParams returns default parameters
 func DefaultParams() IncidentResponseParams {
 	return IncidentResponseParams{
-		EmergencyPauseEnabled:  true,
+		EmergencyPauseEnabled:  false,
 		PauseAuthorizedKeys:    []string{},
 		PauseRequiredSigners:   3,
 		MaxPauseDuration:       24 * time.Hour,
@@ -235,7 +235,7 @@ func DefaultParams() IncidentResponseParams {
 			UpdateInterval: 30 * time.Minute,
 		},
 		DisasterRecovery: DisasterRecoveryPlan{
-			Enabled:           true,
+			Enabled:           false,
 			BackupInterval:    6 * time.Hour,
 			RPO:               15 * time.Minute,
 			RTO:               2 * time.Hour,

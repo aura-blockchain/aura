@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -56,6 +57,46 @@ func (a bankKeeperAdapter) BurnCoins(ctx sdk.Context, moduleName string, amt sdk
 
 func (a bankKeeperAdapter) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin {
 	return a.inner.GetBalance(sdk.WrapSDKContext(ctx), addr, denom)
+}
+
+// securityStakingAdapter bridges staking keeper expectations for the security module.
+type securityStakingAdapter struct {
+	inner *stakingkeeper.Keeper
+}
+
+func newSecurityStakingAdapter(inner *stakingkeeper.Keeper) securitykeeper.StakingKeeper {
+	return securityStakingAdapter{inner: inner}
+}
+
+func (a securityStakingAdapter) GetValidator(ctx sdk.Context, addr sdk.ValAddress) (interface{}, bool) {
+	validator, err := a.inner.GetValidator(sdk.WrapSDKContext(ctx), addr)
+	return validator, err == nil
+}
+
+func (a securityStakingAdapter) Jail(ctx sdk.Context, consAddr sdk.ConsAddress) error {
+	if err := a.inner.Jail(sdk.WrapSDKContext(ctx), consAddr); err != nil {
+		return fmt.Errorf("staking jail failed for %s: %w", consAddr, err)
+	}
+	return nil
+}
+
+func (a securityStakingAdapter) Unjail(ctx sdk.Context, consAddr sdk.ConsAddress) error {
+	if err := a.inner.Unjail(sdk.WrapSDKContext(ctx), consAddr); err != nil {
+		return fmt.Errorf("staking unjail failed for %s: %w", consAddr, err)
+	}
+	return nil
+}
+
+func (a securityStakingAdapter) Slash(ctx sdk.Context, consAddr sdk.ConsAddress, infractionHeight int64, power int64, slashFactor string) (string, error) {
+	dec, err := sdkmath.LegacyNewDecFromStr(slashFactor)
+	if err != nil {
+		return "", fmt.Errorf("invalid slash factor %q: %w", slashFactor, err)
+	}
+	tokens, err := a.inner.Slash(sdk.WrapSDKContext(ctx), consAddr, infractionHeight, power, dec)
+	if err != nil {
+		return "", fmt.Errorf("staking slash failed for %s: %w", consAddr, err)
+	}
+	return tokens.String(), nil
 }
 
 // validatorSecurityBankAdapter exposes context.Context based methods for validatorsecurity.
@@ -283,24 +324,30 @@ func (a securityStakingKeeperAdapter) GetValidator(ctx sdk.Context, addr sdk.Val
 	return validator, true
 }
 
-func (a securityStakingKeeperAdapter) Jail(ctx sdk.Context, consAddr sdk.ConsAddress) {
-	_ = a.inner.Jail(sdk.WrapSDKContext(ctx), consAddr)
+func (a securityStakingKeeperAdapter) Jail(ctx sdk.Context, consAddr sdk.ConsAddress) error {
+	if err := a.inner.Jail(sdk.WrapSDKContext(ctx), consAddr); err != nil {
+		return fmt.Errorf("staking jail failed for %s: %w", consAddr, err)
+	}
+	return nil
 }
 
-func (a securityStakingKeeperAdapter) Unjail(ctx sdk.Context, consAddr sdk.ConsAddress) {
-	_ = a.inner.Unjail(sdk.WrapSDKContext(ctx), consAddr)
+func (a securityStakingKeeperAdapter) Unjail(ctx sdk.Context, consAddr sdk.ConsAddress) error {
+	if err := a.inner.Unjail(sdk.WrapSDKContext(ctx), consAddr); err != nil {
+		return fmt.Errorf("staking unjail failed for %s: %w", consAddr, err)
+	}
+	return nil
 }
 
-func (a securityStakingKeeperAdapter) Slash(ctx sdk.Context, consAddr sdk.ConsAddress, infractionHeight int64, power int64, slashFactor string) string {
+func (a securityStakingKeeperAdapter) Slash(ctx sdk.Context, consAddr sdk.ConsAddress, infractionHeight int64, power int64, slashFactor string) (string, error) {
 	factor, err := sdkmath.LegacyNewDecFromStr(slashFactor)
 	if err != nil {
-		return "0"
+		return "", fmt.Errorf("invalid slash factor %q: %w", slashFactor, err)
 	}
 	slashed, err := a.inner.Slash(sdk.WrapSDKContext(ctx), consAddr, infractionHeight, power, factor)
 	if err != nil {
-		return "0"
+		return "", fmt.Errorf("staking slash failed for %s: %w", consAddr, err)
 	}
-	return slashed.String()
+	return slashed.String(), nil
 }
 
 // securityAccountKeeperAdapter wraps the account keeper for the security module

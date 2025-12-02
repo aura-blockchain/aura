@@ -10,6 +10,7 @@ BUILD_DATE=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 SHORT_TEST_PACKAGES := ./app ./x/vcregistry
 SHORT_TEST_PARALLEL ?= 4
 SHORT_TEST_TIMEOUT ?= 8m
+CONTRACT_PACKAGES := binding-tester vc-issuer
 
 # Go build flags
 LDFLAGS=-ldflags "\
@@ -147,11 +148,29 @@ optimize-wasm:
 	@echo "Optimizing WASM contracts..."
 	@if command -v docker >/dev/null 2>&1; then \
 		if [ -d "../contracts" ]; then \
-			cd ../contracts && \
-			docker run --rm -v "$$(pwd)":/code \
-				--mount type=volume,source="$$(basename $$(pwd))_cache",target=/code/target \
+			cd ../contracts && mkdir -p target && \
+			docker run --rm -e CARGO_TARGET_DIR=/target -u "$$(id -u)":"$$(id -g)" -v "$$(pwd)":/code \
+				--mount type=bind,source="$$(pwd)"/target,target=/target \
 				--mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-				cosmwasm/rust-optimizer:0.15.0; \
+				--entrypoint /bin/sh \
+				cosmwasm/rust-optimizer:0.17.0 -c '\
+					set -euo pipefail; \
+					cd /code; \
+					echo "  Using target dir: $${CARGO_TARGET_DIR:-/target}"; \
+					mkdir -p artifacts; \
+					rm -f artifacts/*.wasm artifacts/checksums.txt; \
+					for contract in $(CONTRACT_PACKAGES); do \
+						echo "  Building $$contract..."; \
+						cargo build --release --locked --target wasm32-unknown-unknown -p $$contract; \
+					done; \
+					for wasm in /target/wasm32-unknown-unknown/release/*.wasm; do \
+						name=$$(basename $$wasm .wasm); \
+						echo "  Optimizing $$name.wasm..."; \
+						wasm-opt -Os --signext-lowering $$wasm -o artifacts/$$name.wasm; \
+					done; \
+					(cd artifacts && sha256sum -- *.wasm > checksums.txt); \
+					echo "Artifacts written to /code/artifacts"; \
+				'; \
 		else \
 			echo "Contracts directory not found."; \
 		fi; \

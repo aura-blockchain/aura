@@ -11,6 +11,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	addresscodec "github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/types/module"
+
+	"github.com/aequitas/aura/chain/app"
 )
 
 // mockAddressCodec implements address.Codec for testing
@@ -28,11 +30,12 @@ func (m mockAddressCodec) BytesToString(bz []byte) (string, error) {
 func TestGenesisCmd(t *testing.T) {
 	// Create a minimal module manager for testing
 	mbm := module.NewBasicManager()
+	txCfg := app.MakeEncodingConfig().TxConfig
 
 	// Use mock address codec for testing
 	var addrCodec address.Codec = mockAddressCodec{}
 
-	cmd := GenesisCmd(mbm, addrCodec)
+	cmd := GenesisCmd(mbm, addrCodec, addrCodec, txCfg)
 
 	require.NotNil(t, cmd)
 	require.Equal(t, "genesis", cmd.Use)
@@ -76,9 +79,10 @@ func TestQuickstartCmd(t *testing.T) {
 // TestGenesisCommandHelp verifies all commands have proper help text
 func TestGenesisCommandHelp(t *testing.T) {
 	mbm := module.NewBasicManager()
+	txCfg := app.MakeEncodingConfig().TxConfig
 	var addrCodec address.Codec = mockAddressCodec{}
 
-	genesisCmd := GenesisCmd(mbm, addrCodec)
+	genesisCmd := GenesisCmd(mbm, addrCodec, addrCodec, txCfg)
 
 	for _, cmd := range genesisCmd.Commands() {
 		t.Run(cmd.Name(), func(t *testing.T) {
@@ -125,9 +129,10 @@ func TestGenesisConstants(t *testing.T) {
 func TestWrapWithSecurity(t *testing.T) {
 	// Create a simple test command
 	mbm := module.NewBasicManager()
+	txCfg := app.MakeEncodingConfig().TxConfig
 	var addrCodec address.Codec = mockAddressCodec{}
 
-	genesisCmd := GenesisCmd(mbm, addrCodec)
+	genesisCmd := GenesisCmd(mbm, addrCodec, addrCodec, txCfg)
 
 	// All subcommands should have RunE set (from security wrapper)
 	for _, cmd := range genesisCmd.Commands() {
@@ -172,13 +177,14 @@ func TestGenesisWorkflow(t *testing.T) {
 // BenchmarkGenesisCommands benchmarks genesis command creation
 func BenchmarkGenesisCommands(b *testing.B) {
 	mbm := module.NewBasicManager()
+	txCfg := app.MakeEncodingConfig().TxConfig
 
 	// Use real address codec for benchmarks
 	addrCodec := addresscodec.NewBech32Codec("aura")
 
 	b.Run("GenesisCmd", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			_ = GenesisCmd(mbm, addrCodec)
+			_ = GenesisCmd(mbm, addrCodec, addrCodec, txCfg)
 		}
 	})
 

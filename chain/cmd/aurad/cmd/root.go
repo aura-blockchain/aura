@@ -6,6 +6,7 @@ import (
 
 	"cosmossdk.io/log"
 	"github.com/cosmos/cosmos-sdk/client"
+	clientconfig "github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/spf13/cobra"
@@ -59,13 +60,38 @@ It provides commands for initialization, starting the node, querying state, and 
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			// Initialize configuration
+			// Build client context from flags and client.toml so tx/query commands
+			// inherit proper home/node/chain-id defaults.
+			clientCtx := initClientCtx.WithHomeDir(homeDir).WithViper(EnvPrefix)
+
+			var err error
+			clientCtx, err = client.ReadPersistentCommandFlags(clientCtx, cmd.Flags())
+			if err != nil {
+				return err
+			}
+
+			homeDir = clientCtx.HomeDir
+			if homeDir == "" {
+				homeDir = getDefaultHomeDir()
+				clientCtx = clientCtx.WithHomeDir(homeDir)
+			}
+
+			// Initialize configuration (server + viper-based settings)
 			if err := initConfig(); err != nil {
 				return err
 			}
 
+			clientCtx, err = clientconfig.ReadFromClientConfig(clientCtx)
+			if err != nil {
+				return err
+			}
+
+			// Ensure CLI defaults to LEGACY_AMINO_JSON signing unless explicitly overridden.
+			if clientCtx.SignModeStr == "" {
+				clientCtx = clientCtx.WithSignModeStr(flags.SignModeLegacyAminoJSON)
+			}
+
 			// Set the client context with encoding config on the command
-			clientCtx := initClientCtx.WithHomeDir(homeDir)
 			if err := client.SetCmdClientContext(cmd, clientCtx); err != nil {
 				return err
 			}
@@ -94,15 +120,18 @@ It provides commands for initialization, starting the node, querying state, and 
 	viper.BindPFlag(flags.FlagOutput, rootCmd.PersistentFlags().Lookup(flags.FlagOutput))
 	viper.BindPFlag(flags.FlagNode, rootCmd.PersistentFlags().Lookup(flags.FlagNode))
 	viper.BindPFlag(flags.FlagChainID, rootCmd.PersistentFlags().Lookup(flags.FlagChainID))
+	// Force legacy amino JSON as the default signing mode so CLI transactions
+	// never fall back to SIGN_MODE_DIRECT when the user does not pass --sign-mode.
+	viper.SetDefault(flags.FlagSignMode, flags.SignModeLegacyAminoJSON)
 
 	// Add subcommands
-	addSubcommands(rootCmd)
+	addSubcommands(rootCmd, initClientCtx.TxConfig)
 
 	return rootCmd
 }
 
 // addSubcommands adds all subcommands to the root command
-func addSubcommands(rootCmd *cobra.Command) {
+func addSubcommands(rootCmd *cobra.Command, txEncCfg client.TxConfig) {
 	// Create logger
 	logger := log.NewLogger(os.Stdout)
 
@@ -110,10 +139,14 @@ func addSubcommands(rootCmd *cobra.Command) {
 	// to avoid errors during command help/version checks
 	var auraApp *app.App
 
+	accountCodec := app.AccountAddressCodec()
+	validatorCodec := app.ValidatorAddressCodec()
+	genesisCmd := GenesisCmd(app.ModuleBasics, accountCodec, validatorCodec, txEncCfg)
+
 	rootCmd.AddCommand(
 		InitCmd(),
 		StartCmd(&auraApp, logger),
-		GenesisCmd(nil, nil), // Pass nil for module.BasicManager and address.Codec
+		genesisCmd,
 		VersionCmd(),
 		StatusCmd(),
 		KeysCmd(),

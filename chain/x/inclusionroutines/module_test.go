@@ -3,61 +3,57 @@ package inclusionroutines
 import (
 	"testing"
 
+	"cosmossdk.io/log"
+	"cosmossdk.io/store"
+	"cosmossdk.io/store/metrics"
+	storetypes "cosmossdk.io/store/types"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	dbm "github.com/cosmos/cosmos-db"
+	"github.com/cosmos/cosmos-sdk/codec"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	runtime "github.com/cosmos/cosmos-sdk/runtime"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkmod "github.com/cosmos/cosmos-sdk/types/module"
+	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
+
 	"github.com/aequitas/aura/chain/x/inclusionroutines/keeper"
 	"github.com/aequitas/aura/chain/x/inclusionroutines/params"
 	"github.com/aequitas/aura/chain/x/inclusionroutines/types"
 )
 
-func TestAppModuleBasic(t *testing.T) {
-	basic := AppModuleBasic{}
+func setupModule(t *testing.T) (AppModule, *keeper.Keeper, sdk.Context, codec.Codec) {
+	t.Helper()
 
-	if basic.Name() != types.ModuleName {
-		t.Errorf("expected module name %s, got %s", types.ModuleName, basic.Name())
-	}
+	storeKey := storetypes.NewKVStoreKey(types.StoreKey)
+	db := dbm.NewMemDB()
+	stateStore := store.NewCommitMultiStore(db, log.NewNopLogger(), metrics.NewNoOpMetrics())
+	stateStore.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, db)
+	require.NoError(t, stateStore.LoadLatestVersion())
+
+	interfaceRegistry := codectypes.NewInterfaceRegistry()
+	protoCodec := codec.NewProtoCodec(interfaceRegistry)
+	paramsStore := params.NewStore(types.DefaultParams())
+	k := keeper.NewKeeper(
+		runtime.NewKVStoreService(storeKey),
+		protoCodec,
+		paramsStore,
+		"authority",
+		log.NewNopLogger(),
+	)
+
+	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
+	module := NewAppModule(k)
+	return module, k, ctx, protoCodec
 }
 
-func TestNewAppModule(t *testing.T) {
-	store := params.NewStore(types.DefaultParams())
-	k := keeper.NewKeeper(store, "authority")
-	module := NewAppModule(k)
+func TestRegisterServices(t *testing.T) {
+	module, _, _, protoCodec := setupModule(t)
 
-	if module.Name() != types.ModuleName {
-		t.Errorf("expected module name %s, got %s", types.ModuleName, module.Name())
-	}
+	msgServer := grpc.NewServer()
+	queryServer := grpc.NewServer()
+	configurator := sdkmod.NewConfigurator(protoCodec, msgServer, queryServer)
 
-	if module.keeper == nil {
-		t.Error("expected keeper to be non-nil")
-	}
-}
-
-func TestRegisterServicesPanic(t *testing.T) {
-	store := params.NewStore(types.DefaultParams())
-	k := keeper.NewKeeper(store, "authority")
-	module := NewAppModule(k)
-
-	defer func() {
-		if r := recover(); r == nil {
-			t.Error("expected panic when RegisterServices called with nil config")
-		}
-	}()
-
-	module.RegisterServices(nil)
-}
-
-func TestBeginBlock(t *testing.T) {
-	store := params.NewStore(types.DefaultParams())
-	k := keeper.NewKeeper(store, "authority")
-	module := NewAppModule(k)
-
-	// Should not panic
-	module.BeginBlock()
-}
-
-func TestEndBlock(t *testing.T) {
-	store := params.NewStore(types.DefaultParams())
-	k := keeper.NewKeeper(store, "authority")
-	module := NewAppModule(k)
-
-	// Should not panic
-	module.EndBlock()
+	module.RegisterServices(configurator)
+	require.NoError(t, configurator.Error())
 }

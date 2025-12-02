@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	sdkmath "cosmossdk.io/math"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 func TestEstimateQueryCost(t *testing.T) {
@@ -134,11 +133,11 @@ func TestGetModelPricing(t *testing.T) {
 
 	// Set model pricing
 	pricing := ModelPricing{
-		ModelHash:        "model1",
-		BasePrice:        sdkmath.NewInt(1000),
-		PerTokenPrice:    sdkmath.NewInt(10),
-		PerComputeUnit:   sdkmath.NewInt(5),
-		MinimumCharge:    sdkmath.NewInt(100),
+		ModelHash:      "model1",
+		BasePrice:      sdkmath.NewInt(1000),
+		PerTokenPrice:  sdkmath.NewInt(10),
+		PerComputeUnit: sdkmath.NewInt(5),
+		MinimumCharge:  sdkmath.NewInt(100),
 	}
 
 	err := k.SetModelPricing(ctx, pricing)
@@ -214,10 +213,10 @@ func TestCostDiscounts(t *testing.T) {
 
 	// Set discount for high-volume users
 	discount := CostDiscount{
-		Address:        "user1",
+		Address:         "user1",
 		DiscountPercent: 20,
-		MinimumQueries: 100,
-		ValidUntil:     ctx.BlockTime().Add(30 * 24 * 60 * 60),
+		MinimumQueries:  100,
+		ValidUntil:      ctx.BlockTime().Add(30 * 24 * 60 * 60),
 	}
 
 	err := k.SetCostDiscount(ctx, discount)
@@ -385,10 +384,10 @@ func TestSubscriptionPricing(t *testing.T) {
 	k, ctx := setupKeeper(t)
 
 	subscription := SubscriptionPlan{
-		Name:              "premium",
-		MonthlyPrice:      sdkmath.NewInt(10000),
-		IncludedQueries:   1000,
-		OverageRate:       sdkmath.NewInt(5),
+		Name:            "premium",
+		MonthlyPrice:    sdkmath.NewInt(10000),
+		IncludedQueries: 1000,
+		OverageRate:     sdkmath.NewInt(5),
 	}
 
 	err := k.SetSubscriptionPlan(ctx, subscription)
@@ -413,7 +412,7 @@ func TestFreeTierPricing(t *testing.T) {
 
 	// Set free tier limits
 	freeTier := FreeTier{
-		DailyQueries:  10,
+		DailyQueries:   10,
 		MonthlyQueries: 100,
 		MaxInputLength: 1000,
 	}

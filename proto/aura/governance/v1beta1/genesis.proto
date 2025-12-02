@@ -1,0 +1,22 @@
+syntax = "proto3";
+package aura.governance.v1beta1;
+
+import "aura/governance/v1beta1/governance.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/governance/v1beta1";
+
+// GenesisState defines the governance module genesis state.
+message GenesisState {
+  GovernanceParams params = 1;
+
+  // Initial proposal state
+  repeated Proposal proposals = 2;
+  repeated Deposit deposits = 3;
+  repeated Vote votes = 4;
+  repeated VoteDelegation vote_delegations = 5;
+  repeated TokenLock token_locks = 6;
+  repeated VetoRequest veto_requests = 7;
+
+  // Tracks the next proposal id
+  uint64 starting_proposal_id = 8;
+}

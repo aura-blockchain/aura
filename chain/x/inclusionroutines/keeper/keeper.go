@@ -112,11 +112,6 @@ func (k *Keeper) RegisterIR(ctx sdk.Context, ir types.IRDefinition) error {
 		return types.ErrInvalidIRDefinition
 	}
 
-	// Check if IR already exists
-	if _, exists := k.GetIR(ctx, ir.Id); exists {
-		return types.ErrIRAlreadyExists
-	}
-
 	store := k.storeService.OpenKVStore(ctx)
 	bz, err := k.cdc.Marshal(&ir)
 	if err != nil {
@@ -464,6 +459,11 @@ func (k *Keeper) GetPrerequisiteGraph(ctx sdk.Context) []types.IRGraphNode {
 
 // InitGenesis initializes the keeper from genesis state
 func (k *Keeper) InitGenesis(ctx sdk.Context, genesis types.GenesisState) error {
+	// Validate incoming state before mutating store
+	if err := types.ValidateGenesisState(&genesis); err != nil {
+		return fmt.Errorf("invalid genesis state: %w", err)
+	}
+
 	// Set params
 	if genesis.Params != nil {
 		if err := k.paramsStore.SetParams(*genesis.Params); err != nil {
@@ -471,9 +471,32 @@ func (k *Keeper) InitGenesis(ctx sdk.Context, genesis types.GenesisState) error 
 		}
 	}
 
-	// NOTE: genesis.IrDefinitions, Prerequisites, RateLimits fields don't exist in current proto
-	// Skipping these imports for now to allow compilation
-	_ = genesis
+	for _, ir := range genesis.Irs {
+		if ir == nil {
+			continue
+		}
+		if err := k.RegisterIR(ctx, *ir); err != nil {
+			return fmt.Errorf("failed to import IR %s: %w", ir.Id, err)
+		}
+	}
+
+	for _, prereq := range genesis.Prerequisites {
+		if prereq == nil {
+			continue
+		}
+		if err := k.SetPrerequisite(ctx, *prereq); err != nil {
+			return fmt.Errorf("failed to import prerequisite for %s: %w", prereq.IrId, err)
+		}
+	}
+
+	for _, rateLimit := range genesis.RateLimits {
+		if rateLimit == nil {
+			continue
+		}
+		if err := k.SetRateLimit(ctx, *rateLimit); err != nil {
+			return fmt.Errorf("failed to import rate limit for %s: %w", rateLimit.IrId, err)
+		}
+	}
 
 	return nil
 }
@@ -528,9 +551,10 @@ func (k *Keeper) ExportGenesis(ctx sdk.Context) types.GenesisState {
 	}
 
 	params := k.GetParams()
-	// NOTE: IrDefinitions, Prerequisites, RateLimits fields don't exist in current proto
-	// Returning minimal genesis for now
 	return types.GenesisState{
-		Params: &params,
+		Params:        &params,
+		Irs:           irDefinitions,
+		Prerequisites: prerequisites,
+		RateLimits:    rateLimits,
 	}
 }

@@ -3,9 +3,9 @@ package keeper
 import (
 	"fmt"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	storetypes "cosmossdk.io/store/types"
 	"github.com/aequitas/aura/chain/x/compliance/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // RegisterInvariants registers all compliance module invariants

@@ -454,14 +454,22 @@ func KeeperDependencyGraph() map[string][]string {
 // TopologicalSort performs a topological sort on the keeper dependency graph.
 // Returns the keepers in initialization order.
 func TopologicalSort(dependencies map[string][]string) ([]string, error) {
-	// Calculate in-degree for each keeper
+	// Calculate in-degree for each keeper; include nodes referenced only as dependencies.
 	inDegree := make(map[string]int)
-	for keeper := range dependencies {
+	for keeper, deps := range dependencies {
 		if _, exists := inDegree[keeper]; !exists {
 			inDegree[keeper] = 0
 		}
-		for _, dep := range dependencies[keeper] {
-			inDegree[dep]++
+		for _, dep := range deps {
+			if _, exists := dependencies[dep]; !exists {
+				// Materialize external dependency as a node with no further deps
+				// so ordering includes it for downstream validation.
+				dependencies[dep] = []string{}
+			}
+			if _, exists := inDegree[dep]; !exists {
+				inDegree[dep] = 0
+			}
+			inDegree[keeper]++
 		}
 	}
 

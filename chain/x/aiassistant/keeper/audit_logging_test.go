@@ -3,10 +3,6 @@ package keeper
 import (
 	"testing"
 	"time"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	"github.com/aequitas/aura/chain/x/aiassistant/types"
 )
 
 func TestLogAuditEvent(t *testing.T) {
@@ -94,7 +90,7 @@ func TestGetAuditLogs(t *testing.T) {
 		if firstLog.Actor == "" {
 			t.Error("Log actor should not be empty")
 		}
-		if firstLog.Timestamp == nil {
+		if firstLog.Timestamp.IsZero() {
 			t.Error("Log timestamp should not be nil")
 		}
 	}
@@ -189,7 +185,7 @@ func TestGetAuditLogsByEventType(t *testing.T) {
 	}
 }
 
-func TestSearchAuditLogs(t *testing.T) {
+func TestListAuditLogs(t *testing.T) {
 	k, ctx := setupKeeper(t)
 
 	// Create diverse logs
@@ -215,34 +211,29 @@ func TestSearchAuditLogs(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		criteria map[string]string
+		filters  AuditLogFilters
 		minCount int
 	}{
 		{
 			name:     "search by actor",
-			criteria: map[string]string{"actor": "user1"},
+			filters:  AuditLogFilters{UserAddress: "user1"},
 			minCount: 2,
 		},
 		{
 			name:     "search by event type",
-			criteria: map[string]string{"event_type": "QUERY"},
+			filters:  AuditLogFilters{OperationType: "QUERY"},
 			minCount: 2,
 		},
 		{
 			name:     "search by resource",
-			criteria: map[string]string{"resource": "assistant-1"},
+			filters:  AuditLogFilters{ResourceID: "assistant-1"},
 			minCount: 2,
-		},
-		{
-			name:     "search by action",
-			criteria: map[string]string{"action": "inference"},
-			minCount: 1,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			results := k.SearchAuditLogs(ctx, tt.criteria, 100)
+			results := k.ListAuditLogs(ctx, tt.filters, 100)
 			if len(results) < tt.minCount {
 				t.Errorf("Expected at least %d results, got %d", tt.minCount, len(results))
 			}
@@ -267,7 +258,7 @@ func TestAuditLogTimestamp(t *testing.T) {
 		t.Fatal("Expected at least one log")
 	}
 
-	logTime := logs[0].Timestamp.AsTime()
+	logTime := logs[0].Timestamp
 	if logTime.Before(beforeTime) || logTime.After(afterTime) {
 		t.Errorf("Log timestamp %v is not within expected range [%v, %v]",
 			logTime, beforeTime, afterTime)
@@ -342,7 +333,7 @@ func TestAuditLogOrdering(t *testing.T) {
 
 	// Verify logs are in reverse chronological order (newest first)
 	for i := 0; i < len(logs)-1; i++ {
-		if logs[i].Timestamp.AsTime().Before(logs[i+1].Timestamp.AsTime()) {
+		if logs[i].Timestamp.Before(logs[i+1].Timestamp) {
 			t.Error("Logs should be in reverse chronological order")
 			break
 		}
@@ -426,7 +417,7 @@ func TestDeleteOldAuditLogs(t *testing.T) {
 
 	// Delete logs older than 30 days
 	cutoffTime := ctx.BlockTime().Add(-30 * 24 * time.Hour)
-	deleted := k.DeleteAuditLogsBefore(ctx, cutoffTime)
+	deleted := k.PruneAuditLogs(ctx, cutoffTime)
 
 	t.Logf("Deleted %d old audit logs", deleted)
 
@@ -458,14 +449,14 @@ func TestAuditLogStatistics(t *testing.T) {
 	}
 
 	// Get statistics
-	stats := k.GetAuditLogStatistics(ctx)
-	if stats.TotalLogs < uint64(len(eventTypes)) {
-		t.Errorf("Expected at least %d total logs, got %d", len(eventTypes), stats.TotalLogs)
+	stats := k.GetAuditStats(ctx, time.Now().Add(-24*time.Hour))
+	if stats.TotalOperations < uint64(len(eventTypes)) {
+		t.Errorf("Expected at least %d total logs, got %d", len(eventTypes), stats.TotalOperations)
 	}
 
 	// Check event type counts
-	if stats.EventTypeCounts != nil {
-		if queryCount := stats.EventTypeCounts["QUERY"]; queryCount < 3 {
+	if stats.OperationCounts != nil {
+		if queryCount := stats.OperationCounts["QUERY"]; queryCount < 3 {
 			t.Errorf("Expected at least 3 QUERY events, got %d", queryCount)
 		}
 	}

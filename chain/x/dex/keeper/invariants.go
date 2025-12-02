@@ -3,10 +3,10 @@ package keeper
 import (
 	"fmt"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkmath "cosmossdk.io/math"
 	storeprefix "cosmossdk.io/store/prefix"
 	"github.com/aequitas/aura/chain/x/dex/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // RegisterInvariants registers all dex module invariants
@@ -45,7 +45,10 @@ func AllInvariants(k *Keeper) sdk.Invariant {
 // ParamsInvariant checks that module parameters are valid
 func ParamsInvariant(k *Keeper) sdk.Invariant {
 	return func(ctx sdk.Context) (string, bool) {
-		params := k.GetParams(ctx)
+		// Create cache context for consistent snapshot reads
+		cacheCtx, _ := ctx.CacheContext()
+
+		params := k.GetParams(cacheCtx)
 		if params == nil {
 			return sdk.FormatInvariant(
 				types.ModuleName,
@@ -70,7 +73,10 @@ func ParamsInvariant(k *Keeper) sdk.Invariant {
 // PoolReservesConsistencyInvariant checks that pool reserves are consistent
 func PoolReservesConsistencyInvariant(k *Keeper) sdk.Invariant {
 	return func(ctx sdk.Context) (string, bool) {
-		store := ctx.KVStore(k.storeKey)
+		// Create cache context for consistent snapshot reads
+		cacheCtx, _ := ctx.CacheContext()
+
+		store := cacheCtx.KVStore(k.storeKey)
 		prefixStore := storeprefix.NewStore(store, types.PoolPrefix)
 
 		iterator := prefixStore.Iterator(nil, nil)
@@ -150,7 +156,10 @@ func PoolReservesConsistencyInvariant(k *Keeper) sdk.Invariant {
 // OrderValidityInvariant checks that all orders are valid
 func OrderValidityInvariant(k *Keeper) sdk.Invariant {
 	return func(ctx sdk.Context) (string, bool) {
-		store := ctx.KVStore(k.storeKey)
+		// Create cache context for consistent snapshot reads
+		cacheCtx, _ := ctx.CacheContext()
+
+		store := cacheCtx.KVStore(k.storeKey)
 		prefixStore := storeprefix.NewStore(store, types.OrderPrefix)
 
 		iterator := prefixStore.Iterator(nil, nil)
@@ -227,75 +236,82 @@ func OrderValidityInvariant(k *Keeper) sdk.Invariant {
 }
 
 // LiquidityProviderConsistencyInvariant checks liquidity provider positions
-// TODO: Enable when LiquidityProviderPosition type is defined in proto
 func LiquidityProviderConsistencyInvariant(k *Keeper) sdk.Invariant {
 	return func(ctx sdk.Context) (string, bool) {
-		// TODO: Implement when LiquidityProviderPosition type exists
-		// For now, liquidity provider positions are tracked within LiquidityPool.Providers
-		// This invariant can validate those instead
-		return "", false
+		// Create cache context for consistent snapshot reads
+		cacheCtx, _ := ctx.CacheContext()
 
-		/* Uncomment when LiquidityProviderPosition type is defined
-		store := ctx.KVStore(k.storeKey)
-		prefixStore := storeprefix.NewStore(store, types.LiquidityProviderKeyPrefix)
+		store := cacheCtx.KVStore(k.storeKey)
+		prefixStore := storeprefix.NewStore(store, types.PoolPrefix)
 
 		iterator := prefixStore.Iterator(nil, nil)
 		defer iterator.Close()
 
 		for ; iterator.Valid(); iterator.Next() {
-			var position types.LiquidityProviderPosition
-			if err := k.cdc.Unmarshal(iterator.Value(), &position); err != nil {
+			var pool types.LiquidityPool
+			if err := k.cdc.Unmarshal(iterator.Value(), &pool); err != nil {
 				return sdk.FormatInvariant(
 					types.ModuleName,
 					"liquidity-provider-consistency",
-					fmt.Sprintf("failed to unmarshal LP position: %s", err.Error()),
+					fmt.Sprintf("failed to unmarshal pool: %s", err.Error()),
 				), true
 			}
 
-			// Check provider address is valid
-			if _, err := sdk.AccAddressFromBech32(position.Provider); err != nil {
+			totalPoolShares, ok := sdkmath.NewIntFromString(pool.TotalLpTokens)
+			if !ok || totalPoolShares.IsNegative() {
 				return sdk.FormatInvariant(
 					types.ModuleName,
 					"liquidity-provider-consistency",
-					fmt.Sprintf("LP position has invalid provider address: %s", position.Provider),
+					fmt.Sprintf("pool %s has invalid total LP tokens: %s", pool.PoolId, pool.TotalLpTokens),
 				), true
 			}
 
-			// Check pool ID is not empty
-			if position.PoolId == "" {
-				return sdk.FormatInvariant(
-					types.ModuleName,
-					"liquidity-provider-consistency",
-					fmt.Sprintf("LP position for %s has empty pool ID", position.Provider),
-				), true
+			sum := sdkmath.ZeroInt()
+			for _, provider := range pool.Providers {
+				if _, err := sdk.AccAddressFromBech32(provider.Address); err != nil {
+					return sdk.FormatInvariant(
+						types.ModuleName,
+						"liquidity-provider-consistency",
+						fmt.Sprintf("pool %s provider address invalid: %s", pool.PoolId, provider.Address),
+					), true
+				}
+
+				lpTokens, ok := sdkmath.NewIntFromString(provider.LpTokens)
+				if !ok || lpTokens.IsNegative() {
+					return sdk.FormatInvariant(
+						types.ModuleName,
+						"liquidity-provider-consistency",
+						fmt.Sprintf("pool %s provider %s has invalid LP tokens: %s", pool.PoolId, provider.Address, provider.LpTokens),
+					), true
+				}
+				sum = sum.Add(lpTokens)
 			}
 
-			// Check shares are positive
-			shares, ok := sdkmath.NewIntFromString(position.Shares)
-			if !ok || !shares.IsPositive() {
+			if !totalPoolShares.IsZero() && !sum.Equal(totalPoolShares) {
 				return sdk.FormatInvariant(
 					types.ModuleName,
 					"liquidity-provider-consistency",
-					fmt.Sprintf("LP position for %s has invalid shares: %s",
-						position.Provider, position.Shares),
+					fmt.Sprintf("pool %s total LP tokens %s do not match provider balances %s", pool.PoolId, totalPoolShares.String(), sum.String()),
 				), true
 			}
 		}
 
 		return "", false
-		*/
 	}
 }
 
 // SecurityLimitsInvariant checks security limits are not exceeded
 func SecurityLimitsInvariant(k *Keeper) sdk.Invariant {
 	return func(ctx sdk.Context) (string, bool) {
-		params := k.GetParams(ctx)
+		// Create cache context for consistent snapshot reads
+		cacheCtx, _ := ctx.CacheContext()
+
+		params := k.GetParams(cacheCtx)
 		if params == nil {
 			return "", false
 		}
 
-		store := ctx.KVStore(k.storeKey)
+		store := cacheCtx.KVStore(k.storeKey)
 		prefixStore := storeprefix.NewStore(store, types.PoolPrefix)
 
 		iterator := prefixStore.Iterator(nil, nil)
@@ -319,7 +335,10 @@ func SecurityLimitsInvariant(k *Keeper) sdk.Invariant {
 // HTLCValidityInvariant checks Hash Time Locked Contracts validity
 func HTLCValidityInvariant(k *Keeper) sdk.Invariant {
 	return func(ctx sdk.Context) (string, bool) {
-		store := ctx.KVStore(k.storeKey)
+		// Create cache context for consistent snapshot reads
+		cacheCtx, _ := ctx.CacheContext()
+
+		store := cacheCtx.KVStore(k.storeKey)
 		prefixStore := storeprefix.NewStore(store, types.HTLCPrefix)
 
 		iterator := prefixStore.Iterator(nil, nil)

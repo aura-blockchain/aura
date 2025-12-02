@@ -42,15 +42,18 @@ func (k Keeper) RegisterZKProofCircuit(ctx sdk.Context, creator string, proofTyp
 	// Create ZK proof configuration
 	now := ctx.BlockTime()
 	config := &cryptoproto.ZKProofConfig{
-		ProofId:           proofID,
-		CircuitId:         circuitID,
-		ProofType:         proofType,
-		// Note: creator field doesn't exist in proto, stored separately if needed
-		PublicParameters:  publicParams, // Use PublicParameters not PublicParams
-		VerificationKey:   verificationKey,
-		CreatedAt:         timestamppb.New(now),
-		// Note: Status, TotalProofs, SuccessfulProofs, Metadata don't exist in current proto
-		// These would need to be tracked separately or proto updated
+		ProofId:          proofID,
+		CircuitId:        circuitID,
+		ProofType:        proofType,
+		PublicParameters: publicParams,
+		VerificationKey:  verificationKey,
+		CreatedAt:        timestamppb.New(now),
+		Status:           cryptoproto.ZKProofStatus_ZK_PROOF_STATUS_ACTIVE,
+		TotalProofs:      0,
+		SuccessfulProofs: 0,
+		Metadata: map[string]string{
+			"creator": creator,
+		},
 	}
 
 	// Validate proof type
@@ -99,51 +102,58 @@ func (k Keeper) SubmitZKProof(ctx sdk.Context, submitter string, proofID string,
 		return false, "", fmt.Errorf("proof configuration not found: %w", err)
 	}
 
-	// TODO: Status field doesn't exist in current proto - would need to track separately
 	// Check if circuit is active
-	// if config.Status != cryptoproto.ZKProofStatus_ZK_PROOF_STATUS_ACTIVE {
-	// 	return false, "", fmt.Errorf("proof circuit is not active")
-	// }
+	if config.Status != cryptoproto.ZKProofStatus_ZK_PROOF_STATUS_ACTIVE {
+		return false, "", fmt.Errorf("proof circuit is not active")
+	}
 
 	// Generate verification ID
 	verificationID = fmt.Sprintf("verify-%s-%s-%d", proofID, submitter, ctx.BlockHeight())
 
 	// Verify the proof
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	verified, err = k.verifyZKProofData(ctx, config, proofData, publicInputs)
+
+	// Create verification record with error message if verification failed
+	errorMessage := ""
+	if err != nil {
+		errorMessage = err.Error()
+		verified = false
+	}
+
+	// Create verification record
+	verificationRecord := &cryptoproto.ZKProofVerification{
+		VerificationId: verificationID,
+		ProofId:        proofID,
+		Submitter:      submitter,
+		ProofData:      proofData,
+		PublicInputs:   publicInputs,
+		Verified:       verified,
+		VerifiedAt:     timestamppb.New(sdkCtx.BlockTime()),
+		VerifierNode:   sdkCtx.BlockHeader().ProposerAddress.String(),
+		ErrorMessage:   errorMessage,
+	}
+
+	// Store verification record
+	if err := k.SetZKProofVerification(ctx, verificationRecord); err != nil {
+		return false, verificationID, fmt.Errorf("failed to store verification record: %w", err)
+	}
+
+	// Update statistics
+	config.TotalProofs++
+	if verified {
+		config.SuccessfulProofs++
+	}
+
+	// Update config in store
+	store := k.getStore(ctx)
+	configBz := k.cdc.MustMarshal(config)
+	store.Set(types.GetZKProofConfigKey(proofID), configBz)
+
+	// Return error if verification failed
 	if err != nil {
 		return false, verificationID, fmt.Errorf("proof verification failed: %w", err)
 	}
-
-	// TODO: ZKProofVerification type doesn't exist in current proto
-	// Create verification record
-	// verificationRecord := &cryptoproto.ZKProofVerification{
-	// 	VerificationId: verificationID,
-	// 	ProofId:        proofID,
-	// 	Submitter:      submitter,
-	// 	ProofData:      proofData,
-	// 	PublicInputs:   publicInputs,
-	// 	Verified:       verified,
-	// 	VerifiedAt:     timestamppb.New(ctx.BlockTime()),
-	// 	VerifierNode:   ctx.BlockHeader().ProposerAddress.String(),
-	// }
-
-	// Store verification record
-	// store := k.getStore(ctx)
-	// bz := k.cdc.MustMarshal(verificationRecord)
-	// store.Set(types.GetZKProofVerificationKey(verificationID), bz)
-
-	// TODO: TotalProofs and SuccessfulProofs fields don't exist in current proto
-	// Update statistics
-	// k.mu.Lock()
-	// config.TotalProofs++
-	// if verified {
-	// 	config.SuccessfulProofs++
-	// }
-	// k.mu.Unlock()
-
-	// Update config in store
-	// configBz := k.cdc.MustMarshal(config)
-	// store.Set(types.GetZKProofConfigKey(proofID), configBz)
 
 	// Emit event
 	status := "failed"
@@ -205,9 +215,8 @@ func (k Keeper) verifyZKProofData(ctx sdk.Context, config *cryptoproto.ZKProofCo
 	case cryptoproto.ZKProofType_ZK_PROOF_TYPE_STARK:
 		return k.verifyStark(config, proofData, publicInputs)
 
-	// TODO: HALO2 not defined in current proto
-	// case cryptoproto.ZKProofType_ZK_PROOF_TYPE_HALO2:
-	// 	return k.verifyHalo2(config, proofData, publicInputs)
+	case cryptoproto.ZKProofType_ZK_PROOF_TYPE_HALO2:
+		return k.verifyHalo2(config, proofData, publicInputs)
 
 	default:
 		return false, fmt.Errorf("unsupported proof type: %s", config.ProofType.String())
@@ -294,8 +303,7 @@ func (k Keeper) validateProofType(proofType cryptoproto.ZKProofType) error {
 		cryptoproto.ZKProofType_ZK_PROOF_TYPE_PLONK,
 		cryptoproto.ZKProofType_ZK_PROOF_TYPE_BULLETPROOFS,
 		cryptoproto.ZKProofType_ZK_PROOF_TYPE_STARK,
-		// TODO: HALO2 not defined in current proto
-		// cryptoproto.ZKProofType_ZK_PROOF_TYPE_HALO2,
+		cryptoproto.ZKProofType_ZK_PROOF_TYPE_HALO2,
 	}
 
 	for _, valid := range validTypes {
@@ -327,30 +335,19 @@ func (k Keeper) validatePublicInputs(publicInputs []byte) error {
 	return nil
 }
 
-// GetAllZKProofVerifications retrieves all verifications for a proof
-// TODO: Define ZKProofVerification in proto
-/*
-func (k Keeper) GetAllZKProofVerifications(ctx sdk.Context, proofID string) []*cryptoproto.ZKProofVerification {
-	// In production, iterate KVStore with proof ID prefix
-	return []*cryptoproto.ZKProofVerification{}
-}
-*/
-
 // GetProofStatistics returns statistics for a proof circuit
-// TODO: TotalProofs and SuccessfulProofs don't exist in current proto
 func (k Keeper) GetProofStatistics(ctx sdk.Context, proofID string) (total, successful uint64, successRate float64, err error) {
-	_, err = k.GetZKProofConfig(ctx, proofID)
+	config, err := k.GetZKProofConfig(ctx, proofID)
 	if err != nil {
 		return 0, 0, 0, err
 	}
 
-	// TODO: Need to track statistics separately or update proto
-	// total = config.TotalProofs
-	// successful = config.SuccessfulProofs
+	total = config.TotalProofs
+	successful = config.SuccessfulProofs
 
-	// if total > 0 {
-	// 	successRate = float64(successful) / float64(total) * 100
-	// }
+	if total > 0 {
+		successRate = float64(successful) / float64(total) * 100
+	}
 
-	return 0, 0, 0, nil
+	return total, successful, successRate, nil
 }

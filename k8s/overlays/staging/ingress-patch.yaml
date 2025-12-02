@@ -1,0 +1,42 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aura-ingress
+spec:
+  tls:
+    - hosts:
+        - api.testnet.aura.network
+        - rpc.testnet.aura.network
+        - grpc.testnet.aura.network
+      secretName: aura-testnet-tls
+  rules:
+    - host: api.testnet.aura.network
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: aura-node-api
+                port:
+                  number: 1317
+    - host: rpc.testnet.aura.network
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: aura-node-rpc
+                port:
+                  number: 26657
+    - host: grpc.testnet.aura.network
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: aura-node-grpc
+                port:
+                  number: 9090

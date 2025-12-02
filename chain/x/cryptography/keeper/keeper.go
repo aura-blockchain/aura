@@ -663,6 +663,71 @@ func (k Keeper) IterateZKProofs(ctx context.Context, fn func(proof *cryptoproto.
 }
 
 // ============================================================================
+// ZK Proof Verifications - KV Store Operations
+// ============================================================================
+
+// GetZKProofVerification retrieves a ZK proof verification from KV store
+func (k Keeper) GetZKProofVerification(ctx context.Context, verificationID string) (*cryptoproto.ZKProofVerification, error) {
+	store := k.getStore(ctx)
+	bz := store.Get(types.GetZKProofVerificationKey(verificationID))
+	if bz == nil {
+		return nil, types.ErrInvalidZKProof
+	}
+
+	var verification cryptoproto.ZKProofVerification
+	k.cdc.MustUnmarshal(bz, &verification)
+	return &verification, nil
+}
+
+// SetZKProofVerification stores a ZK proof verification
+func (k Keeper) SetZKProofVerification(ctx context.Context, verification *cryptoproto.ZKProofVerification) error {
+	if verification == nil {
+		return nil
+	}
+
+	store := k.getStore(ctx)
+	bz := k.cdc.MustMarshal(verification)
+	store.Set(types.GetZKProofVerificationKey(verification.VerificationId), bz)
+	return nil
+}
+
+// DeleteZKProofVerification deletes a ZK proof verification
+func (k Keeper) DeleteZKProofVerification(ctx context.Context, verificationID string) error {
+	store := k.getStore(ctx)
+	store.Delete(types.GetZKProofVerificationKey(verificationID))
+	return nil
+}
+
+// IterateZKProofVerifications iterates over all ZK proof verifications
+func (k Keeper) IterateZKProofVerifications(ctx context.Context, fn func(verification *cryptoproto.ZKProofVerification) bool) error {
+	store := k.getStore(ctx)
+	iterator := storetypes.KVStorePrefixIterator(store, types.ZKProofVerificationPrefix)
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		var verification cryptoproto.ZKProofVerification
+		k.cdc.MustUnmarshal(iterator.Value(), &verification)
+		if fn(&verification) {
+			break
+		}
+	}
+
+	return nil
+}
+
+// GetAllZKProofVerifications retrieves all verifications for a proof
+func (k Keeper) GetAllZKProofVerifications(ctx context.Context, proofID string) []*cryptoproto.ZKProofVerification {
+	verifications := make([]*cryptoproto.ZKProofVerification, 0)
+	_ = k.IterateZKProofVerifications(ctx, func(verification *cryptoproto.ZKProofVerification) bool {
+		if proofID == "" || verification.ProofId == proofID {
+			verifications = append(verifications, verification)
+		}
+		return false
+	})
+	return verifications
+}
+
+// ============================================================================
 // Salted Hashes - KV Store Operations
 // ============================================================================
 

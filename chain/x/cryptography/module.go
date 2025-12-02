@@ -10,6 +10,7 @@ import (
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	"github.com/cosmos/cosmos-sdk/types/msgservice"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 
 	"github.com/aequitas/aura/chain/x/cryptography/keeper"
@@ -38,7 +39,23 @@ func (AppModuleBasic) Name() string {
 func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {}
 
 // RegisterInterfaces registers the module's interface types
-func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) {}
+func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
+	msgservice.RegisterMsgServiceDesc(registry, &cryptoproto.Msg_ServiceDesc)
+
+	registry.RegisterImplementations(
+		(*sdk.Msg)(nil),
+		&cryptoproto.MsgCreateKeyRotationSchedule{},
+		&cryptoproto.MsgRotateKey{},
+		&cryptoproto.MsgCreateThresholdScheme{},
+		&cryptoproto.MsgSubmitThresholdSignatureShare{},
+		&cryptoproto.MsgRegisterZKProofCircuit{},
+		&cryptoproto.MsgSubmitZKProof{},
+		&cryptoproto.MsgRegisterSecureEnclave{},
+		&cryptoproto.MsgGenerateQuantumResistantKey{},
+		&cryptoproto.MsgAddCertificatePin{},
+		&cryptoproto.MsgUpdateParams{},
+	)
+}
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the cryptography module
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {

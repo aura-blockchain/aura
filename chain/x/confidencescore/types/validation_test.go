@@ -301,7 +301,7 @@ func TestValidateParams(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := ValidateParams(tt.params)
+			err := ValidateParams(&tt.params)
 
 			if tt.expectError {
 				if err == nil {
@@ -325,7 +325,7 @@ func TestDefaultParams(t *testing.T) {
 	params := DefaultParams()
 
 	// Validate default params
-	if err := ValidateParams(params); err != nil {
+	if err := ValidateParams(&params); err != nil {
 		t.Errorf("default params should be valid, got error: %v", err)
 	}
 

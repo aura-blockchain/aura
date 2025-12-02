@@ -3,26 +3,34 @@ package keeper
 import (
 	"testing"
 
-	"github.com/aequitas/aura/chain/x/inclusionroutines/params"
+	"github.com/stretchr/testify/require"
+
 	"github.com/aequitas/aura/chain/x/inclusionroutines/types"
 	inclusionroutinespb "github.com/aequitas/aura/proto/aura/inclusionroutines/v1beta1"
 )
 
 func TestNewKeeper(t *testing.T) {
-	store := params.NewStore(types.DefaultParams())
-	keeper := NewKeeper(store, "authority")
+	ctx, keeper := setupInclusionKeeper(t)
 
 	if keeper == nil {
 		t.Fatal("expected keeper to be non-nil")
 	}
 
-	if keeper.paramsStore != store {
+	if keeper.paramsStore == nil {
 		t.Error("keeper params store not set correctly")
 	}
+
+	// validate params are accessible
+	params := keeper.GetParams()
+	if params.MaxIrPerLocale == 0 {
+		t.Errorf("expected default params to be set, got %+v", params)
+	}
+
+	_ = ctx
 }
 
 func TestCreateAndGetIR(t *testing.T) {
-	keeper := NewKeeper(nil, "authority")
+	ctx, keeper := setupInclusionKeeper(t)
 
 	ir := types.IRDefinition{
 		Id:          "IR-001",
@@ -37,12 +45,12 @@ func TestCreateAndGetIR(t *testing.T) {
 		Status:      types.IRStatus(inclusionroutinespb.IRStatus_IR_STATUS_ACTIVE),
 	}
 
-	err := keeper.CreateIR(ir)
+	err := keeper.CreateIR(ctx, ir)
 	if err != nil {
 		t.Fatalf("failed to create IR: %v", err)
 	}
 
-	retrieved, ok := keeper.GetIR("IR-001")
+	retrieved, ok := keeper.GetIR(ctx, "IR-001")
 	if !ok {
 		t.Fatal("IR not found after creation")
 	}
@@ -53,7 +61,7 @@ func TestCreateAndGetIR(t *testing.T) {
 }
 
 func TestDeleteIR(t *testing.T) {
-	keeper := NewKeeper(nil, "authority")
+	ctx, keeper := setupInclusionKeeper(t)
 
 	ir := types.IRDefinition{
 		Id:          "IR-002",
@@ -68,21 +76,21 @@ func TestDeleteIR(t *testing.T) {
 		Status:      types.IRStatus(inclusionroutinespb.IRStatus_IR_STATUS_ACTIVE),
 	}
 
-	keeper.CreateIR(ir)
+	keeper.CreateIR(ctx, ir)
 
-	err := keeper.DeleteIR("IR-002")
+	err := keeper.DeleteIR(ctx, "IR-002")
 	if err != nil {
 		t.Fatalf("failed to delete IR: %v", err)
 	}
 
-	_, ok := keeper.GetIR("IR-002")
+	_, ok := keeper.GetIR(ctx, "IR-002")
 	if ok {
 		t.Error("IR still exists after deletion")
 	}
 }
 
 func TestSetPrerequisites(t *testing.T) {
-	keeper := NewKeeper(nil, "authority")
+	ctx, keeper := setupInclusionKeeper(t)
 
 	// Create two IRs
 	ir1 := types.IRDefinition{
@@ -106,16 +114,16 @@ func TestSetPrerequisites(t *testing.T) {
 		Version:     "1.0",
 	}
 
-	keeper.CreateIR(ir1)
-	keeper.CreateIR(ir2)
+	keeper.CreateIR(ctx, ir1)
+	keeper.CreateIR(ctx, ir2)
 
 	// Set prerequisite
-	err := keeper.SetPrerequisites("IR-101", []string{"IR-100"})
+	err := keeper.SetPrerequisites(ctx, "IR-101", []string{"IR-100"})
 	if err != nil {
 		t.Fatalf("failed to set prerequisites: %v", err)
 	}
 
-	prereq, ok := keeper.GetPrerequisites("IR-101")
+	prereq, ok := keeper.GetPrerequisites(ctx, "IR-101")
 	if !ok {
 		t.Fatal("prerequisites not found")
 	}
@@ -126,7 +134,7 @@ func TestSetPrerequisites(t *testing.T) {
 }
 
 func TestCircularDependency(t *testing.T) {
-	keeper := NewKeeper(nil, "authority")
+	ctx, keeper := setupInclusionKeeper(t)
 
 	// Create three IRs
 	ir1 := types.IRDefinition{
@@ -160,25 +168,25 @@ func TestCircularDependency(t *testing.T) {
 		Version:     "1.0",
 	}
 
-	keeper.CreateIR(ir1)
-	keeper.CreateIR(ir2)
-	keeper.CreateIR(ir3)
+	keeper.CreateIR(ctx, ir1)
+	keeper.CreateIR(ctx, ir2)
+	keeper.CreateIR(ctx, ir3)
 
 	// IR-201 requires IR-200
-	keeper.SetPrerequisites("IR-201", []string{"IR-200"})
+	keeper.SetPrerequisites(ctx, "IR-201", []string{"IR-200"})
 
 	// IR-202 requires IR-201
-	keeper.SetPrerequisites("IR-202", []string{"IR-201"})
+	keeper.SetPrerequisites(ctx, "IR-202", []string{"IR-201"})
 
 	// Try to make IR-200 require IR-202 (creates cycle)
-	err := keeper.SetPrerequisites("IR-200", []string{"IR-202"})
+	err := keeper.SetPrerequisites(ctx, "IR-200", []string{"IR-202"})
 	if err != types.ErrCircularDependency {
 		t.Errorf("expected circular dependency error, got %v", err)
 	}
 }
 
 func TestRateLimit(t *testing.T) {
-	keeper := NewKeeper(nil, "authority")
+	ctx, keeper := setupInclusionKeeper(t)
 
 	ir := types.IRDefinition{
 		Id:          "IR-300",
@@ -191,7 +199,7 @@ func TestRateLimit(t *testing.T) {
 		Version:     "1.0",
 	}
 
-	keeper.CreateIR(ir)
+	keeper.CreateIR(ctx, ir)
 
 	// Set rate limit
 	limit := types.IRRateLimit{
@@ -201,7 +209,7 @@ func TestRateLimit(t *testing.T) {
 		PerBlockGlobal:   100,
 	}
 
-	err := keeper.SetRateLimit(limit)
+	err := keeper.SetRateLimit(ctx, limit)
 	if err != nil {
 		t.Fatalf("failed to set rate limit: %v", err)
 	}
@@ -209,24 +217,24 @@ func TestRateLimit(t *testing.T) {
 	wallet := "wallet123"
 
 	// First check should pass
-	err = keeper.CheckRateLimit(wallet, "IR-300")
+	err = keeper.CheckRateLimit(ctx, wallet, "IR-300")
 	if err != nil {
 		t.Errorf("first rate limit check failed: %v", err)
 	}
 
 	// Increment usage
-	keeper.IncrementRateLimit(wallet, "IR-300")
-	keeper.IncrementRateLimit(wallet, "IR-300")
+	require.NoError(t, keeper.IncrementRateLimitCounters(ctx, wallet, "IR-300"))
+	require.NoError(t, keeper.IncrementRateLimitCounters(ctx, wallet, "IR-300"))
 
 	// Third check should fail (hourly limit is 2)
-	err = keeper.CheckRateLimit(wallet, "IR-300")
+	err = keeper.CheckRateLimit(ctx, wallet, "IR-300")
 	if err == nil {
 		t.Error("expected rate limit error after exceeding limit")
 	}
 }
 
 func TestValidatePrerequisites(t *testing.T) {
-	keeper := NewKeeper(nil, "authority")
+	ctx, keeper := setupInclusionKeeper(t)
 
 	// Create base IR
 	ir1 := types.IRDefinition{
@@ -252,19 +260,19 @@ func TestValidatePrerequisites(t *testing.T) {
 		Version:     "1.0",
 	}
 
-	keeper.CreateIR(ir1)
-	keeper.CreateIR(ir2)
-	keeper.SetPrerequisites("IR-401", []string{"IR-400"})
+	keeper.CreateIR(ctx, ir1)
+	keeper.CreateIR(ctx, ir2)
+	keeper.SetPrerequisites(ctx, "IR-401", []string{"IR-400"})
 
 	// Test with prerequisites met
 	completed := []string{"IR-400"}
-	err := keeper.ValidatePrerequisites("IR-401", completed)
+	err := keeper.ValidatePrerequisites(ctx, "IR-401", completed)
 	if err != nil {
 		t.Errorf("validation failed with completed prerequisites: %v", err)
 	}
 
 	// Test with prerequisites not met
-	err = keeper.ValidatePrerequisites("IR-401", []string{})
+	err = keeper.ValidatePrerequisites(ctx, "IR-401", []string{})
 	if err == nil {
 		t.Error("expected prerequisite error when prerequisites not met")
 	}

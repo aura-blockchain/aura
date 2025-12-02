@@ -49,6 +49,9 @@ const (
 	// DelegationStoreKeyPrefix is the prefix for storing score delegations
 	DelegationStoreKeyPrefix = "delegation/"
 
+	// DelegationExpirationIndexPrefix is the prefix for indexing delegations by expiration height
+	DelegationExpirationIndexPrefix = "delexp/"
+
 	// MarketplaceListingStoreKeyPrefix is the prefix for storing marketplace listings
 	MarketplaceListingStoreKeyPrefix = "listing/"
 
@@ -117,6 +120,18 @@ func VerificationProofHashStoreKey(walletAddr, proofHash string) string {
 // Format: delegation/{delegation_id}
 func DelegationStoreKey(delegationID string) string {
 	return DelegationStoreKeyPrefix + delegationID
+}
+
+// ExpirationIndexKey returns the store key for delegation expiration index
+// Format: delexp/{height}/{delegation_id}
+func ExpirationIndexKey(height uint64, delegationID string) string {
+	return DelegationExpirationIndexPrefix + string(rune(height)) + "/" + delegationID
+}
+
+// ExpirationIndexPrefix returns the prefix for all delegations expiring at a specific height
+// Format: delexp/{height}/
+func ExpirationIndexPrefix(height uint64) string {
+	return DelegationExpirationIndexPrefix + string(rune(height)) + "/"
 }
 
 // MarketplaceListingStoreKey returns the store key for marketplace listings

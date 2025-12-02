@@ -1,11 +1,13 @@
 package keeper
 
 import (
+	"crypto/sha256"
 	"testing"
+	"time"
 
-	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/suite"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/dex/types"
 )
@@ -22,19 +24,17 @@ func (suite *InvariantsComprehensiveTestSuite) TestPoolReservesConsistencyInvari
 	ctx := suite.SdkCtx
 	inv := PoolReservesConsistencyInvariant(suite.Keeper)
 
-	// Test: Empty store should not break invariant
 	msg, broken := inv(ctx)
 	suite.False(broken)
 	suite.Empty(msg)
 
-	// Create valid pool
 	pool := types.LiquidityPool{
-		PoolId:      "pool-1",
-		DenomA:      "uaura",
-		DenomB:      "utoken",
-		ReserveA:    "1000000",
-		ReserveB:    "2000000",
-		TotalShares: "1414213",
+		PoolId:        "pool-1",
+		DenomA:        "uaura",
+		DenomB:        "utoken",
+		ReserveA:      "1000000",
+		ReserveB:      "2000000",
+		TotalLpTokens: "1414213",
 	}
 	suite.storePool(ctx, &pool)
 
@@ -48,12 +48,12 @@ func (suite *InvariantsComprehensiveTestSuite) TestPoolEmptyID() {
 	inv := PoolReservesConsistencyInvariant(suite.Keeper)
 
 	pool := types.LiquidityPool{
-		PoolId:      "",
-		DenomA:      "uaura",
-		DenomB:      "utoken",
-		ReserveA:    "1000000",
-		ReserveB:    "2000000",
-		TotalShares: "1414213",
+		PoolId:        "",
+		DenomA:        "uaura",
+		DenomB:        "utoken",
+		ReserveA:      "1000000",
+		ReserveB:      "2000000",
+		TotalLpTokens: "1414213",
 	}
 	suite.storePool(ctx, &pool)
 
@@ -67,12 +67,12 @@ func (suite *InvariantsComprehensiveTestSuite) TestPoolEmptyDenoms() {
 	inv := PoolReservesConsistencyInvariant(suite.Keeper)
 
 	pool := types.LiquidityPool{
-		PoolId:      "pool-2",
-		DenomA:      "",
-		DenomB:      "utoken",
-		ReserveA:    "1000000",
-		ReserveB:    "2000000",
-		TotalShares: "1414213",
+		PoolId:        "pool-2",
+		DenomA:        "",
+		DenomB:        "utoken",
+		ReserveA:      "1000000",
+		ReserveB:      "2000000",
+		TotalLpTokens: "1414213",
 	}
 	suite.storePool(ctx, &pool)
 
@@ -86,12 +86,12 @@ func (suite *InvariantsComprehensiveTestSuite) TestPoolNegativeReserves() {
 	inv := PoolReservesConsistencyInvariant(suite.Keeper)
 
 	pool := types.LiquidityPool{
-		PoolId:      "pool-3",
-		DenomA:      "uaura",
-		DenomB:      "utoken",
-		ReserveA:    "-1000000",
-		ReserveB:    "2000000",
-		TotalShares: "1414213",
+		PoolId:        "pool-3",
+		DenomA:        "uaura",
+		DenomB:        "utoken",
+		ReserveA:      "-1000000",
+		ReserveB:      "2000000",
+		TotalLpTokens: "1414213",
 	}
 	suite.storePool(ctx, &pool)
 
@@ -105,131 +105,189 @@ func (suite *InvariantsComprehensiveTestSuite) TestPoolReservesButZeroShares() {
 	inv := PoolReservesConsistencyInvariant(suite.Keeper)
 
 	pool := types.LiquidityPool{
-		PoolId:      "pool-4",
-		DenomA:      "uaura",
-		DenomB:      "utoken",
-		ReserveA:    "1000000",
-		ReserveB:    "2000000",
-		TotalShares: "0",
+		PoolId:        "pool-4",
+		DenomA:        "uaura",
+		DenomB:        "utoken",
+		ReserveA:      "1000000",
+		ReserveB:      "2000000",
+		TotalLpTokens: "0",
 	}
 	suite.storePool(ctx, &pool)
 
 	msg, broken := inv(ctx)
 	suite.True(broken, "pool with reserves but zero shares should break invariant")
-	suite.Contains(msg, "zero shares")
+	suite.Contains(msg, "LP tokens")
 }
 
 func (suite *InvariantsComprehensiveTestSuite) TestOrderValidityInvariant() {
 	ctx := suite.SdkCtx
 	inv := OrderValidityInvariant(suite.Keeper)
 
-	// Test: Empty store should not break invariant
 	msg, broken := inv(ctx)
 	suite.False(broken)
 	suite.Empty(msg)
 
-	// Create valid order
-	trader := sdk.AccAddress("trader____________")
-	order := types.Order{
-		OrderId:   1,
-		Trader:    trader.String(),
-		DenomIn:   "uaura",
-		DenomOut:  "utoken",
-		AmountIn:  "1000",
-		MinOut:    "900",
-		CreatedAt: nil,
+	order := types.SwapOrder{
+		OrderId:      "order-1",
+		OrderType:    types.SwapOrderType_BUY,
+		AuraAmount:   "1000",
+		OtherCoin:    "utoken",
+		OtherAmount:  "900",
+		UserAddress:  suite.testAddr("trader"),
+		Status:       types.SwapOrderStatus_PENDING,
+		Timestamp:    timestamppb.New(ctx.BlockTime()),
+		ExpiresAt:    timestamppb.New(ctx.BlockTime().Add(time.Hour)),
+		PricePerAura: "0.9",
 	}
 	suite.storeOrder(ctx, &order)
 
-	// May break if CreatedAt is nil and checked
 	msg, broken = inv(ctx)
-	_ = msg
-	_ = broken
+	suite.False(broken)
+	suite.Empty(msg)
 }
 
 func (suite *InvariantsComprehensiveTestSuite) TestOrderZeroID() {
 	ctx := suite.SdkCtx
 	inv := OrderValidityInvariant(suite.Keeper)
 
-	trader := sdk.AccAddress("trader____________")
-	order := types.Order{
-		OrderId:   0,
-		Trader:    trader.String(),
-		DenomIn:   "uaura",
-		DenomOut:  "utoken",
-		AmountIn:  "1000",
-		MinOut:    "900",
+	order := types.SwapOrder{
+		OrderId:      "",
+		OrderType:    types.SwapOrderType_BUY,
+		AuraAmount:   "1000",
+		OtherCoin:    "utoken",
+		OtherAmount:  "900",
+		UserAddress:  suite.testAddr("trader-zero"),
+		Timestamp:    timestamppb.New(ctx.BlockTime()),
+		ExpiresAt:    timestamppb.New(ctx.BlockTime().Add(time.Hour)),
+		PricePerAura: "0.9",
 	}
 	suite.storeOrder(ctx, &order)
 
 	msg, broken := inv(ctx)
-	suite.True(broken, "order with zero ID should break invariant")
-	suite.Contains(msg, "zero ID")
+	suite.True(broken, "order with empty ID should break invariant")
+	suite.Contains(msg, "empty ID")
 }
 
 func (suite *InvariantsComprehensiveTestSuite) TestOrderInvalidTrader() {
 	ctx := suite.SdkCtx
 	inv := OrderValidityInvariant(suite.Keeper)
 
-	order := types.Order{
-		OrderId:   1,
-		Trader:    "invalid-address",
-		DenomIn:   "uaura",
-		DenomOut:  "utoken",
-		AmountIn:  "1000",
-		MinOut:    "900",
+	order := types.SwapOrder{
+		OrderId:      "order-2",
+		OrderType:    types.SwapOrderType_BUY,
+		AuraAmount:   "1000",
+		OtherCoin:    "utoken",
+		OtherAmount:  "900",
+		UserAddress:  "invalid-address",
+		Timestamp:    timestamppb.New(ctx.BlockTime()),
+		ExpiresAt:    timestamppb.New(ctx.BlockTime().Add(time.Hour)),
+		PricePerAura: "0.9",
 	}
 	suite.storeOrder(ctx, &order)
 
 	msg, broken := inv(ctx)
 	suite.True(broken, "order with invalid trader should break invariant")
-	suite.Contains(msg, "invalid trader address")
+	suite.Contains(msg, "invalid user address")
+}
+
+func (suite *InvariantsComprehensiveTestSuite) TestOrderNilTimestamp() {
+	ctx := suite.SdkCtx
+	inv := OrderValidityInvariant(suite.Keeper)
+
+	order := types.SwapOrder{
+		OrderId:      "order-3",
+		OrderType:    types.SwapOrderType_BUY,
+		AuraAmount:   "1000",
+		OtherCoin:    "utoken",
+		OtherAmount:  "900",
+		UserAddress:  suite.testAddr("no-timestamp"),
+		Timestamp:    nil,
+		ExpiresAt:    timestamppb.New(ctx.BlockTime().Add(time.Hour)),
+		PricePerAura: "0.9",
+	}
+	suite.storeOrder(ctx, &order)
+
+	msg, broken := inv(ctx)
+	suite.True(broken, "order with nil timestamp should break invariant")
+	suite.Contains(msg, "nil timestamp")
 }
 
 func (suite *InvariantsComprehensiveTestSuite) TestLiquidityProviderConsistencyInvariant() {
 	ctx := suite.SdkCtx
 	inv := LiquidityProviderConsistencyInvariant(suite.Keeper)
 
-	// Test: Empty store should not break invariant
 	msg, broken := inv(ctx)
 	suite.False(broken)
 	suite.Empty(msg)
 
-	// Create valid LP position
-	provider := sdk.AccAddress("provider__________")
-	position := types.LiquidityProviderPosition{
-		Provider: provider.String(),
-		PoolId:   "pool-1",
-		Shares:   "1000000",
+	lpAddr := suite.testAddr("provider-1")
+	pool := types.LiquidityPool{
+		PoolId:        "pool-1",
+		DenomA:        "uaura",
+		DenomB:        "usdt",
+		ReserveA:      "1000",
+		ReserveB:      "2000",
+		TotalLpTokens: "3000",
+		Providers: []*types.LiquidityProvider{
+			{Address: lpAddr, LpTokens: "3000"},
+		},
 	}
-	suite.storeLPPosition(ctx, &position)
+	suite.storePool(ctx, &pool)
 
 	msg, broken = inv(ctx)
 	suite.False(broken)
 	suite.Empty(msg)
 }
 
-func (suite *InvariantsComprehensiveTestSuite) TestLPPositionInvalidProvider() {
+func (suite *InvariantsComprehensiveTestSuite) TestLPProviderInvalidAddress() {
 	ctx := suite.SdkCtx
 	inv := LiquidityProviderConsistencyInvariant(suite.Keeper)
 
-	position := types.LiquidityProviderPosition{
-		Provider: "invalid-address",
-		PoolId:   "pool-1",
-		Shares:   "1000000",
+	pool := types.LiquidityPool{
+		PoolId:        "pool-1",
+		DenomA:        "uaura",
+		DenomB:        "usdt",
+		ReserveA:      "1000",
+		ReserveB:      "2000",
+		TotalLpTokens: "3000",
+		Providers: []*types.LiquidityProvider{
+			{Address: "invalid-address", LpTokens: "3000"},
+		},
 	}
-	suite.storeLPPosition(ctx, &position)
+	suite.storePool(ctx, &pool)
 
 	msg, broken := inv(ctx)
-	suite.True(broken, "LP position with invalid provider should break invariant")
-	suite.Contains(msg, "invalid provider address")
+	suite.True(broken, "invalid provider address should break invariant")
+	suite.Contains(msg, "provider address invalid")
+}
+
+func (suite *InvariantsComprehensiveTestSuite) TestLPProviderMismatchedTotals() {
+	ctx := suite.SdkCtx
+	inv := LiquidityProviderConsistencyInvariant(suite.Keeper)
+
+	pool := types.LiquidityPool{
+		PoolId:        "pool-2",
+		DenomA:        "uaura",
+		DenomB:        "usdc",
+		ReserveA:      "5000",
+		ReserveB:      "10000",
+		TotalLpTokens: "5000",
+		Providers: []*types.LiquidityProvider{
+			{Address: suite.testAddr("lp-1"), LpTokens: "2000"},
+			{Address: suite.testAddr("lp-2"), LpTokens: "2000"},
+		},
+	}
+	suite.storePool(ctx, &pool)
+
+	msg, broken := inv(ctx)
+	suite.True(broken, "provider totals should match pool total")
+	suite.Contains(msg, "do not match provider balances")
 }
 
 func (suite *InvariantsComprehensiveTestSuite) TestHTLCValidityInvariant() {
 	ctx := suite.SdkCtx
 	inv := HTLCValidityInvariant(suite.Keeper)
 
-	// Test: Empty store should not break invariant
 	msg, broken := inv(ctx)
 	suite.False(broken)
 	suite.Empty(msg)
@@ -239,28 +297,26 @@ func (suite *InvariantsComprehensiveTestSuite) TestAllInvariants() {
 	ctx := suite.SdkCtx
 	inv := AllInvariants(suite.Keeper)
 
-	// Test: All invariants on empty store
 	msg, broken := inv(ctx)
 	suite.False(broken)
 	suite.Empty(msg)
 }
 
-// Helper methods
 func (suite *InvariantsComprehensiveTestSuite) storePool(ctx sdk.Context, pool *types.LiquidityPool) {
 	store := ctx.KVStore(suite.Keeper.storeKey)
 	bz := suite.Keeper.cdc.MustMarshal(pool)
-	store.Set(append(types.PoolKeyPrefix, []byte(pool.PoolId)...), bz)
+	store.Set(types.PoolKey(pool.PoolId), bz)
 }
 
-func (suite *InvariantsComprehensiveTestSuite) storeOrder(ctx sdk.Context, order *types.Order) {
+func (suite *InvariantsComprehensiveTestSuite) storeOrder(ctx sdk.Context, order *types.SwapOrder) {
 	store := ctx.KVStore(suite.Keeper.storeKey)
 	bz := suite.Keeper.cdc.MustMarshal(order)
-	store.Set(append(types.OrderKeyPrefix, sdk.Uint64ToBigEndian(order.OrderId)...), bz)
+	store.Set(types.OrderKey(order.OrderId), bz)
 }
 
-func (suite *InvariantsComprehensiveTestSuite) storeLPPosition(ctx sdk.Context, position *types.LiquidityProviderPosition) {
-	store := ctx.KVStore(suite.Keeper.storeKey)
-	bz := suite.Keeper.cdc.MustMarshal(position)
-	key := append(types.LiquidityProviderKeyPrefix, []byte(position.Provider+":"+position.PoolId)...)
-	store.Set(key, bz)
+func (suite *InvariantsComprehensiveTestSuite) testAddr(seed string) string {
+	sum := sha256.Sum256([]byte(seed))
+	bech32, err := sdk.Bech32ifyAddressBytes("aura", sum[:20])
+	suite.Require().NoError(err)
+	return bech32
 }

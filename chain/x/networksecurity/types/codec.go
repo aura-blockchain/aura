@@ -3,6 +3,10 @@ package types
 import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/msgservice"
+
+	networksecuritypb "github.com/aequitas/aura/proto/aura/networksecurity/v1beta1"
 )
 
 // RegisterLegacyAminoCodec registers the necessary x/networksecurity interfaces and concrete types
@@ -13,7 +17,14 @@ func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 
 // RegisterInterfaces registers the x/networksecurity interfaces types with the interface registry
 func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
-	// Register message types with the interface registry
-	// TODO: Uncomment when message service is defined
-	// msgservice.RegisterMsgServiceDesc(registry, &_MsgService_serviceDesc)
+	msgservice.RegisterMsgServiceDesc(registry, &networksecuritypb.Msg_ServiceDesc)
+
+	registry.RegisterImplementations(
+		(*sdk.Msg)(nil),
+		&networksecuritypb.MsgUpdateParams{},
+		&networksecuritypb.MsgAddTrustedPeer{},
+		&networksecuritypb.MsgRemoveTrustedPeer{},
+		&networksecuritypb.MsgBanPeer{},
+		&networksecuritypb.MsgUnbanPeer{},
+	)
 }

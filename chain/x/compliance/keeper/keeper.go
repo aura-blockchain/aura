@@ -41,6 +41,11 @@ func (k Keeper) logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
 }
 
+// StoreKey returns the keeper's store key.
+func (k Keeper) StoreKey() storetypes.StoreKey {
+	return k.storeKey
+}
+
 // initializeDefaultMonitoringRules sets up default transaction monitoring rules
 func (k *Keeper) initializeDefaultMonitoringRules(ctx sdk.Context) error {
 	params, err := k.GetParamsFromStore(ctx)

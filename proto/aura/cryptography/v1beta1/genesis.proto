@@ -18,4 +18,5 @@ message GenesisState {
   repeated CryptoRandomSource random_sources = 7;
   repeated KeyStretchingConfig key_stretching_configs = 8;
   repeated CertificatePin certificate_pins = 9;
+  repeated ZKProofVerification zk_proof_verifications = 10;
 }

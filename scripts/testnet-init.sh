@@ -8,6 +8,8 @@
 
 set -e
 
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -115,7 +117,32 @@ for i in $(seq 0 $((NUM_VALIDATORS - 1))); do
     VALIDATOR_ADDRESSES[$i]="${VALIDATOR_ADDR}"
 
     # Get node ID for persistent_peers
-    NODE_ID=$("${BINARY_PATH}" tendermint show-node-id --home "${NODE_HOME}")
+    NODE_KEY_GEN=$(mktemp "${REPO_ROOT}/chain/tmp.nodekey.XXXX.go")
+    cat > "${NODE_KEY_GEN}" <<'EOF'
+package main
+
+import (
+	"fmt"
+	"log"
+	"os"
+
+	tmp2p "github.com/cometbft/cometbft/p2p"
+)
+
+func main() {
+	if len(os.Args) != 2 {
+		log.Fatal("usage: node_key_path")
+	}
+	path := os.Args[1]
+	key, err := tmp2p.LoadOrGenNodeKey(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Print(key.ID())
+}
+EOF
+    NODE_ID=$(GOWORK=off go run -C "${REPO_ROOT}/chain" -mod=mod "${NODE_KEY_GEN}" "${NODE_HOME}/config/node_key.json")
+    rm -f "${NODE_KEY_GEN}"
     NODE_IDS[$i]="${NODE_ID}"
 
     echo -e "  ${GREEN}✓ ${MONIKER}: ${VALIDATOR_ADDR}${NC}"
@@ -168,53 +195,9 @@ else
 fi
 
 # ============================================================================
-# Step 6: Create gentx for each validator
+# Step 6: Distribute genesis and configure peers
 # ============================================================================
-echo -e "${YELLOW}[6/8]${NC} Creating genesis transactions (gentx)..."
-
-for i in $(seq 0 $((NUM_VALIDATORS - 1))); do
-    MONIKER="${VALIDATOR_MONIKERS[$i]}"
-    NODE_HOME="${TESTNET_DIR}/${MONIKER}"
-
-    # Copy the genesis file to each node
-    cp "${GENESIS_FILE}" "${NODE_HOME}/config/genesis.json"
-
-    echo -e "  ${BLUE}Creating gentx for ${MONIKER}...${NC}"
-
-    "${BINARY_PATH}" genesis gentx "${MONIKER}" \
-        "${STAKING_AMOUNT}" \
-        --chain-id "${CHAIN_ID}" \
-        --keyring-backend test \
-        --home "${NODE_HOME}" \
-        --moniker "${MONIKER}" \
-        --commission-rate 0.1 \
-        --commission-max-rate 0.2 \
-        --commission-max-change-rate 0.01 \
-        --min-self-delegation 1 > /dev/null 2>&1
-
-    echo -e "  ${GREEN}✓ gentx created for ${MONIKER}${NC}"
-done
-
-# ============================================================================
-# Step 7: Collect all gentx files
-# ============================================================================
-echo -e "${YELLOW}[7/8]${NC} Collecting genesis transactions..."
-
-# Copy all gentx files to validator-1
-for i in $(seq 1 $((NUM_VALIDATORS - 1))); do
-    MONIKER="${VALIDATOR_MONIKERS[$i]}"
-    NODE_HOME="${TESTNET_DIR}/${MONIKER}"
-
-    cp "${NODE_HOME}/config/gentx/"*.json "${GENESIS_HOME}/config/gentx/"
-done
-
-# Collect all gentx into genesis
-"${BINARY_PATH}" genesis collect-gentxs --home "${GENESIS_HOME}" > /dev/null 2>&1
-echo -e "${GREEN}✓ All gentx collected${NC}"
-
-# Validate genesis
-"${BINARY_PATH}" genesis validate-genesis --home "${GENESIS_HOME}" > /dev/null 2>&1
-echo -e "${GREEN}✓ Genesis validated successfully${NC}"
+echo -e "${YELLOW}[6/8]${NC} Distributing genesis and configuring peers..."
 
 # Distribute final genesis to all validators
 FINAL_GENESIS="${GENESIS_HOME}/config/genesis.json"
@@ -223,11 +206,10 @@ for i in $(seq 1 $((NUM_VALIDATORS - 1))); do
     NODE_HOME="${TESTNET_DIR}/${MONIKER}"
     cp "${FINAL_GENESIS}" "${NODE_HOME}/config/genesis.json"
 done
+echo -e "${GREEN}✓ Genesis distributed to all nodes${NC}"
 
-# ============================================================================
-# Step 8: Configure persistent_peers for each node
-# ============================================================================
-echo -e "${YELLOW}[8/8]${NC} Configuring persistent peers..."
+# Configure persistent peers
+echo -e "${YELLOW}[7/8]${NC} Configuring persistent peers..."
 
 for i in $(seq 0 $((NUM_VALIDATORS - 1))); do
     MONIKER="${VALIDATOR_MONIKERS[$i]}"
@@ -264,7 +246,7 @@ done
 # ============================================================================
 # Final Step: Create Docker volume initialization script
 # ============================================================================
-echo -e "${YELLOW}Creating Docker volume population script...${NC}"
+echo -e "${YELLOW}[8/8]${NC} Creating Docker volume population script...${NC}"
 
 cat > "${TESTNET_DIR}/populate-volumes.sh" << 'EOF'
 #!/bin/bash

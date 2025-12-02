@@ -1,69 +1,171 @@
 package walletsecurity
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
 
 	"cosmossdk.io/core/appmodule"
+	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/client"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	"github.com/cosmos/cosmos-sdk/types/msgservice"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/spf13/cobra"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/aequitas/aura/chain/x/walletsecurity/keeper"
+	"github.com/aequitas/aura/chain/x/walletsecurity/types"
 	wsproto "github.com/aequitas/aura/proto/aura/walletsecurity/v1beta1"
 )
 
 var (
-	_ appmodule.AppModule = AppModule{}
-	_ module.HasServices  = AppModule{}
+	_ module.AppModuleBasic = AppModuleBasic{}
+	_ module.HasGenesis     = AppModule{}
+	_ module.HasServices    = AppModule{}
+	_ appmodule.AppModule   = AppModule{}
 )
 
-// AppModule implements the AppModule interface for the wallet security module
-type AppModule struct {
-	keeper keeper.Keeper
+// AppModuleBasic wires genesis and interface registration for wallet security.
+type AppModuleBasic struct{}
+
+// Name returns the wallet security module's name.
+func (AppModuleBasic) Name() string {
+	return types.ModuleName
 }
 
-// NewAppModule creates a new AppModule object
-func NewAppModule(keeper keeper.Keeper) AppModule {
-	return AppModule{
-		keeper: keeper,
-	}
-}
+// RegisterLegacyAminoCodec registers the wallet security module's types on the LegacyAmino codec.
+func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {}
 
-// Name returns the wallet security module's name
-func (AppModule) Name() string {
-	return "walletsecurity"
-}
-
-// RegisterLegacyAminoCodec registers the wallet security module's types on the LegacyAmino codec
-func (AppModule) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {}
-
-// RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the wallet security module
-func (AppModule) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
-	// TODO: Uncomment when gateway code is generated
-	// wsproto.RegisterQueryHandlerClient(context.Background(), mux, wsproto.NewQueryClient(clientCtx))
+// RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the wallet security module.
+func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
 	_ = clientCtx
 	_ = mux
 }
 
-// RegisterInterfaces registers the wallet security module's interface types
-func (AppModule) RegisterInterfaces(registry codectypes.InterfaceRegistry) {}
+// RegisterInterfaces registers the wallet security module's interface types.
+func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
+	msgservice.RegisterMsgServiceDesc(registry, &wsproto.Msg_ServiceDesc)
 
-// ConsensusVersion implements AppModule/ConsensusVersion
-func (AppModule) ConsensusVersion() uint64 { return 1 }
+	registry.RegisterImplementations(
+		(*sdk.Msg)(nil),
+		&wsproto.MsgRegisterHardwareWallet{},
+		&wsproto.MsgCreateMultiSigWallet{},
+		&wsproto.MsgSignMultiSigTransaction{},
+		&wsproto.MsgConfigureSocialRecovery{},
+		&wsproto.MsgInitiateRecovery{},
+		&wsproto.MsgApproveRecovery{},
+		&wsproto.MsgExecuteRecovery{},
+		&wsproto.MsgSimulateTransaction{},
+		&wsproto.MsgVerifyDomain{},
+		&wsproto.MsgSetSpendingLimit{},
+		&wsproto.MsgConfigureSession{},
+		&wsproto.MsgLockSession{},
+		&wsproto.MsgUnlockSession{},
+		&wsproto.MsgEnrollBiometric{},
+		&wsproto.MsgAuthenticateBiometric{},
+		&wsproto.MsgStoreInSecureEnclave{},
+		&wsproto.MsgCreateEncryptedBackup{},
+		&wsproto.MsgConfigureDustFilter{},
+		&wsproto.MsgValidateAddressChecksum{},
+	)
+}
 
-// RegisterServices registers module services
+// DefaultGenesis returns the default genesis state for wallet security.
+func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
+	return cdc.MustMarshalJSON(types.DefaultGenesisState())
+}
+
+// ValidateGenesis validates the module genesis data.
+func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, _ client.TxEncodingConfig, bz json.RawMessage) error {
+	if len(bytes.TrimSpace(bz)) == 0 {
+		return nil
+	}
+	var gen wsproto.GenesisState
+	if err := cdc.UnmarshalJSON(bz, &gen); err != nil {
+		return fmt.Errorf("failed to unmarshal %s genesis: %w", types.ModuleName, err)
+	}
+	return types.ValidateGenesis(&gen)
+}
+
+// GetTxCmd returns the root tx command for wallet security.
+func (AppModuleBasic) GetTxCmd() *cobra.Command {
+	return nil
+}
+
+// GetQueryCmd returns the root query command for wallet security.
+func (AppModuleBasic) GetQueryCmd() *cobra.Command {
+	return nil
+}
+
+// AppModule implements the AppModule interface for the wallet security module.
+type AppModule struct {
+	AppModuleBasic
+	keeper keeper.Keeper
+}
+
+// NewAppModule creates a new AppModule object.
+func NewAppModule(keeper keeper.Keeper) AppModule {
+	return AppModule{
+		AppModuleBasic: AppModuleBasic{},
+		keeper:         keeper,
+	}
+}
+
+// Name returns the wallet security module's name.
+func (AppModule) Name() string {
+	return types.ModuleName
+}
+
+// RegisterServices registers module services.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
 	wsproto.RegisterMsgServer(cfg.MsgServer(), NewMsgServerImpl(am.keeper))
 	wsproto.RegisterQueryServer(cfg.QueryServer(), NewQueryServerImpl(am.keeper))
 }
 
-// IsOnePerModuleType implements the depinject.OnePerModuleType interface
+// InitGenesis initializes the module state from genesis data.
+func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) {
+	var genesis wsproto.GenesisState
+	if len(bytes.TrimSpace(data)) == 0 {
+		genesis = *types.DefaultGenesisState()
+	} else if err := cdc.UnmarshalJSON(data, &genesis); err != nil {
+		panic(fmt.Errorf("failed to decode %s genesis: %w", types.ModuleName, err))
+	}
+
+	if err := types.ValidateGenesis(&genesis); err != nil {
+		panic(fmt.Errorf("invalid %s genesis: %w", types.ModuleName, err))
+	}
+
+	if err := am.keeper.InitGenesis(sdk.WrapSDKContext(ctx), &genesis); err != nil {
+		panic(fmt.Errorf("walletsecurity InitGenesis: %w", err))
+	}
+}
+
+// ExportGenesis exports the current module state to genesis.
+func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
+	state := am.keeper.ExportGenesis(sdk.WrapSDKContext(ctx))
+	return cdc.MustMarshalJSON(state)
+}
+
+// RegisterInvariants registers invariants for the module (none currently).
+func (am AppModule) RegisterInvariants(_ sdk.InvariantRegistry) {}
+
+// BeginBlock is a no-op for wallet security.
+func (AppModule) BeginBlock(_ sdk.Context) {}
+
+// EndBlock is a no-op for wallet security.
+func (AppModule) EndBlock(_ sdk.Context) {}
+
+// ConsensusVersion implements AppModule/ConsensusVersion.
+func (AppModule) ConsensusVersion() uint64 { return 1 }
+
+// IsOnePerModuleType implements the depinject.OnePerModuleType interface.
 func (am AppModule) IsOnePerModuleType() {}
 
-// IsAppModule implements the appmodule.AppModule interface
+// IsAppModule implements the appmodule.AppModule interface.
 func (am AppModule) IsAppModule() {}
 
 // MsgServerImpl implements the wallet security Msg service
