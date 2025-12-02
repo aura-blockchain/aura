@@ -12,6 +12,7 @@ import (
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	runtime "github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 )
@@ -134,4 +135,60 @@ func AdvanceTime(ctx sdk.Context, duration time.Duration) sdk.Context {
 	header := ctx.BlockHeader()
 	header.Time = header.Time.Add(duration)
 	return ctx.WithBlockHeader(header)
+}
+
+// CreateTestInputWithTime creates test input with a specific block time
+func CreateTestInputWithTime(t testing.TB, blockTime time.Time) TestInput {
+	t.Helper()
+
+	input := CreateTestInput(t)
+	input.Ctx = input.Ctx.WithBlockTime(blockTime)
+	return input
+}
+
+// CreateTestInputWithKeysAndTime creates test input with custom store keys and time
+func CreateTestInputWithKeysAndTime(t testing.TB, blockTime time.Time, keys ...string) TestInput {
+	t.Helper()
+
+	input := CreateTestInputWithKeys(t, keys...)
+	input.Ctx = input.Ctx.WithBlockTime(blockTime)
+	return input
+}
+
+// CreateTestInputWithStoreKey creates test input with a specific store key name
+func CreateTestInputWithStoreKey(t testing.TB, storeKeyName string) TestInput {
+	t.Helper()
+
+	db := dbm.NewMemDB()
+	cms := store.NewCommitMultiStore(db, log.NewNopLogger(), metrics.NewNoOpMetrics())
+
+	storeKey := storetypes.NewKVStoreKey(storeKeyName)
+	memStoreKey := storetypes.NewMemoryStoreKey("mem_" + storeKeyName)
+
+	cms.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, db)
+	cms.MountStoreWithDB(memStoreKey, storetypes.StoreTypeMemory, nil)
+
+	require.NoError(t, cms.LoadLatestVersion())
+
+	ctx := sdk.NewContext(cms, cmtproto.Header{
+		Height: 1,
+		Time:   time.Now().UTC(),
+	}, false, log.NewNopLogger())
+
+	interfaceRegistry := codectypes.NewInterfaceRegistry()
+	cdc := codec.NewProtoCodec(interfaceRegistry)
+
+	return TestInput{
+		Ctx:         ctx,
+		Cdc:         cdc,
+		StoreKey:    storeKey,
+		MemStoreKey: memStoreKey,
+		DB:          db,
+		CMS:         cms,
+	}
+}
+
+// WrapStoreService wraps a store key as a KVStoreService for runtime compatibility
+func WrapStoreService(storeKey *storetypes.KVStoreKey) runtime.KVStoreService {
+	return runtime.NewKVStoreService(storeKey)
 }

@@ -32,7 +32,7 @@ func setupTestKeeperForDelegation(t *testing.T) (*Keeper, sdk.Context) {
 	cdc := codec.NewProtoCodec(registry)
 	ctx := sdk.NewContext(stateStore, cmtproto.Header{}, false, log.NewNopLogger())
 
-	paramsStore := params.NewStore(params.DefaultParams())
+	paramsStore := params.NewStore(types.DefaultParams())
 
 	keeper := NewKeeper(
 		runtime.NewKVStoreService(storeKey),
@@ -53,9 +53,9 @@ func TestDelegationPagination(t *testing.T) {
 	numDelegations := 150
 	for i := 0; i < numDelegations; i++ {
 		delegation := &ScoreDelegation{
-			DelegationID:   sdk.Sprintf("del-%d", i),
-			Delegator:      sdk.Sprintf("delegator-%d", i%10), // 10 unique delegators
-			Delegate:       sdk.Sprintf("delegate-%d", i%5),   // 5 unique delegates
+			DelegationID:   fmt.Sprintf("del-%d", i),
+			Delegator:      fmt.Sprintf("delegator-%d", i%10), // 10 unique delegators
+			Delegate:       fmt.Sprintf("delegate-%d", i%5),   // 5 unique delegates
 			DelegatedScore: uint64(100 + i),
 			DelegationType: DelegationTypeValidation,
 			StartHeight:    uint64(ctx.BlockHeight()),
@@ -115,9 +115,9 @@ func TestDelegationUserFiltering(t *testing.T) {
 	// Create delegations for target user
 	for i := 0; i < 30; i++ {
 		delegation := &ScoreDelegation{
-			DelegationID:   sdk.Sprintf("target-del-%d", i),
+			DelegationID:   fmt.Sprintf("target-del-%d", i),
 			Delegator:      targetUser,
-			Delegate:       sdk.Sprintf("delegate-%d", i),
+			Delegate:       fmt.Sprintf("delegate-%d", i),
 			DelegatedScore: 100,
 			DelegationType: DelegationTypeValidation,
 			StartHeight:    uint64(ctx.BlockHeight()),
@@ -135,9 +135,9 @@ func TestDelegationUserFiltering(t *testing.T) {
 	// Create delegations for other users
 	for i := 0; i < 70; i++ {
 		delegation := &ScoreDelegation{
-			DelegationID:   sdk.Sprintf("other-del-%d", i),
+			DelegationID:   fmt.Sprintf("other-del-%d", i),
 			Delegator:      otherUser,
-			Delegate:       sdk.Sprintf("delegate-%d", i),
+			Delegate:       fmt.Sprintf("delegate-%d", i),
 			DelegatedScore: 100,
 			DelegationType: DelegationTypeValidation,
 			StartHeight:    uint64(ctx.BlockHeight()),
@@ -193,9 +193,9 @@ func TestExpirationIndex(t *testing.T) {
 		// Rest expire at expirationHeight
 
 		delegation := &ScoreDelegation{
-			DelegationID:   sdk.Sprintf("exp-del-%d", i),
-			Delegator:      sdk.Sprintf("delegator-%d", i),
-			Delegate:       sdk.Sprintf("delegate-%d", i),
+			DelegationID:   fmt.Sprintf("exp-del-%d", i),
+			Delegator:      fmt.Sprintf("delegator-%d", i),
+			Delegate:       fmt.Sprintf("delegate-%d", i),
 			DelegatedScore: 100,
 			DelegationType: DelegationTypeValidation,
 			StartHeight:    currentHeight,
@@ -237,11 +237,11 @@ func TestProcessExpiredDelegationsScalability(t *testing.T) {
 
 	// Create user records for delegators and delegates
 	for i := 0; i < 20; i++ {
-		delegatorRecord := keeper.GetOrCreateUserRecord(ctx, sdk.Sprintf("delegator-%d", i))
+		delegatorRecord := keeper.GetOrCreateUserRecord(ctx, fmt.Sprintf("delegator-%d", i))
 		delegatorRecord.TotalScore = 0 // Will be updated when delegations expire
 		require.NoError(t, keeper.SetUserRecord(ctx, delegatorRecord))
 
-		delegateRecord := keeper.GetOrCreateUserRecord(ctx, sdk.Sprintf("delegate-%d", i))
+		delegateRecord := keeper.GetOrCreateUserRecord(ctx, fmt.Sprintf("delegate-%d", i))
 		delegateRecord.TotalScore = 100 * 10 // Has delegated score
 		require.NoError(t, keeper.SetUserRecord(ctx, delegateRecord))
 	}
@@ -257,9 +257,9 @@ func TestProcessExpiredDelegationsScalability(t *testing.T) {
 		}
 
 		delegation := &ScoreDelegation{
-			DelegationID:   sdk.Sprintf("scale-del-%d", i),
-			Delegator:      sdk.Sprintf("delegator-%d", i%20),
-			Delegate:       sdk.Sprintf("delegate-%d", i%20),
+			DelegationID:   fmt.Sprintf("scale-del-%d", i),
+			Delegator:      fmt.Sprintf("delegator-%d", i%20),
+			Delegate:       fmt.Sprintf("delegate-%d", i%20),
 			DelegatedScore: 100,
 			DelegationType: DelegationTypeValidation,
 			StartHeight:    currentHeight,
@@ -284,7 +284,7 @@ func TestProcessExpiredDelegationsScalability(t *testing.T) {
 
 	// Verify the 5 delegations are now inactive
 	for i := 0; i < 5; i++ {
-		delegation, ok := keeper.getDelegation(ctx, sdk.Sprintf("scale-del-%d", i))
+		delegation, ok := keeper.getDelegation(ctx, fmt.Sprintf("scale-del-%d", i))
 		require.True(t, ok)
 		require.False(t, delegation.Active, "delegation should be inactive after expiration")
 	}
