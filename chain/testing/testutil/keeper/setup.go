@@ -192,3 +192,8 @@ func CreateTestInputWithStoreKey(t testing.TB, storeKeyName string) TestInput {
 func WrapStoreService(storeKey *storetypes.KVStoreKey) runtime.KVStoreService {
 	return runtime.NewKVStoreService(storeKey)
 }
+
+// Logger returns a no-op logger for testing
+func Logger() log.Logger {
+	return log.NewNopLogger()
+}

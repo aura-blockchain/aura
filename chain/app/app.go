@@ -622,18 +622,18 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 	logger.Info("initializing keepers", "phase", "tier-1-no-deps")
 
 	// Tier 1: Keepers with no AURA dependencies
-	complianceKeeper := compliancekeeper.NewKeeper(encoding.Codec, complianceKey)
+	complianceKeeper := compliancekeeper.NewKeeper(encoding.Codec, keys.compliance)
 
 	// Individual security module keepers
 	walletsecurityKeeper := walletsecuritykeeper.NewKeeper(
 		encoding.Codec,
-		runtime.NewKVStoreService(walletSecurityKey),
+		runtime.NewKVStoreService(keys.walletSecurity),
 		logger.With("module", walletsecuritytypes.ModuleName),
 	)
 
 	validatorsecurityKeeper := validatorsecuritykeeper.NewKeeper(
 		encoding.Codec,
-		validatorSecurityKey,
+		keys.validatorSecurity,
 		validatorSecurityMemKey,
 		authorityAddr,
 		newValidatorSecurityStakingAdapter(stakingKeeper),
@@ -643,33 +643,33 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 
 	cryptographyKeeper := cryptographykeeper.NewKeeper(
 		encoding.Codec,
-		cryptographyKey,
+		keys.cryptography,
 		logger.With("module", cryptographytypes.ModuleName),
 		authorityAddr,
 	)
 
 	networksecurityKeeper := networksecuritykeeper.NewKeeper(
 		encoding.Codec,
-		runtime.NewKVStoreService(networkSecurityKey),
+		runtime.NewKVStoreService(keys.networkSecurity),
 		authorityAddr,
 		logger.With("module", networksecuritytypes.ModuleName),
 	)
 
 	incidentresponseKeeper := incidentresponsekeeper.NewKeeperKV(
-		incidentResponseKey,
+		keys.incidentResponse,
 		encoding.Codec,
 	)
 
 	privacyKeeper := privacykeeper.NewKeeper(
 		encoding.Codec,
-		privacyKey,
+		keys.privacy,
 		accountKeeper,
 		bankKeeper,
 	)
 
 	securityKeeper := securitykeeper.NewKeeper(
 		encoding.Codec,
-		securityKey,
+		keys.security,
 		securityMemKey,
 		authorityAddr,
 		bankAdapter,
@@ -678,12 +678,12 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 	)
 
 	// Individual economics module keepers
-	governanceKeeper := governancekeeper.NewKeeper(encoding.Codec, governanceKey)
+	governanceKeeper := governancekeeper.NewKeeper(encoding.Codec, keys.governance)
 
 	economicsecurityParamsStore := economicsecurityparams.NewStore(*economicsecuritytypes.DefaultParams())
 	economicsecurityKeeper := economicsecuritykeeper.NewKeeper(
 		encoding.Codec,
-		runtime.NewKVStoreService(economicSecurityKey),
+		runtime.NewKVStoreService(keys.economicSecurity),
 		economicsecurityParamsStore,
 		authorityAddr,
 	)
@@ -693,7 +693,7 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 	// Tier 2: Individual identity keeper
 	identitychangeParamsStore := identitychangeparams.NewStore(identitychangetypes.DefaultParams())
 	identitychangeKeeper := identitychangekeeper.NewKeeper(
-		runtime.NewKVStoreService(identityChangeKey),
+		runtime.NewKVStoreService(keys.identityChange),
 		encoding.Codec,
 		identitychangeParamsStore,
 		authorityAddr,
@@ -701,7 +701,7 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 	)
 
 	identityKeeper := identitykeeper.NewKeeper(
-		runtime.NewKVStoreService(identityKey),
+		runtime.NewKVStoreService(keys.identity),
 		encoding.Codec,
 		authorityAddr,
 		logger.With("module", identitytypes.ModuleName),
@@ -709,7 +709,7 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 
 	drParamsStore := drparams.NewStore(drtypes.DefaultParams())
 	drKeeper := drkeeper.NewKeeper(
-		runtime.NewKVStoreService(dataRegistryKey),
+		runtime.NewKVStoreService(keys.dataRegistry),
 		encoding.Codec,
 		drParamsStore,
 		authorityAddr,
@@ -718,19 +718,19 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 
 	monitoringKeeper := monitoringkeeper.NewKeeper(
 		encoding.Codec,
-		runtime.NewKVStoreService(monitoringKey),
+		runtime.NewKVStoreService(keys.monitoring),
 		authorityAddr,
 	)
 
 	economicsKeeper := economicskeeper.NewKeeper(
 		encoding.Codec,
-		runtime.NewKVStoreService(economicsKey),
+		runtime.NewKVStoreService(keys.economics),
 		authorityAddr,
 	)
 
 	prevalidationKeeper := prevalidationkeeper.NewKeeper(
 		encoding.Codec,
-		prevalidationKey,
+		keys.prevalidation,
 	)
 	prevalidationKeeper.SetLogger(logger.With("module", prevalidationtypes.ModuleName))
 
@@ -739,7 +739,7 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 	// Tier 3: Inclusion routines (depends on dataregistry for data validation)
 	irParamsStore := irparams.NewStore(irtypes.DefaultParams())
 	irKeeper := irkeeper.NewKeeper(
-		runtime.NewKVStoreService(inclusionRoutinesKey),
+		runtime.NewKVStoreService(keys.inclusionRoutines),
 		encoding.Codec,
 		irParamsStore,
 		authorityAddr,
@@ -752,7 +752,7 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 	// Using builder pattern to set all dependencies BEFORE construction
 	csParamsStore := csparams.NewStore(cstypes.DefaultParams())
 	csKeeper := cskeeper.NewKeeperBuilder(
-		runtime.NewKVStoreService(confidenceScoreKey),
+		runtime.NewKVStoreService(keys.confidenceScore),
 		encoding.Codec,
 		csParamsStore,
 		authorityAddr,
@@ -765,12 +765,12 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 	// Using builder pattern to eliminate circular dependency
 	vcParamsStore := vcparams.NewStore(*vctypes.DefaultParams())
 	vcKeeper := vckeeper.NewKeeperBuilder(vcParamsStore, authorityAddr).
-		WithStore(vcKey, encoding.Codec).
+		WithStore(keys.vc, encoding.Codec).
 		Build() // Note: ConfidenceScore keeper not wired due to interface mismatch - fix in follow-up
 
 	aurabindingsKeeper := aurabindingskeeper.NewKeeper(
 		encoding.Codec,
-		aurabindingsKey,
+		keys.aurabindings,
 		vcKeeper,
 	)
 
@@ -779,7 +779,7 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 	// Tier 6: Contract registry (depends on vcregistry, compliance, confidencescore)
 	// Contract registry must be initialized BEFORE wasm security as it's a dependency
 	contractRegistryKeeper := contractregistrykeeper.NewKeeper(
-		contractRegistryKey,
+		keys.contractRegistry,
 		encoding.Codec,
 		authorityAddr,
 	)
