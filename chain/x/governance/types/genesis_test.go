@@ -7,8 +7,8 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 )
 
-func TestValidateGenesis_Valid(t *testing.T) {
-	// Create a valid genesis with properly formatted values
+// validTestGenesis creates a properly formatted genesis for testing
+func validTestGenesis() *GenesisState {
 	genesis := DefaultGenesis()
 	// Fix the min_deposit to include denomination
 	genesis.Params.MinDeposit = "10000000aura"
@@ -17,6 +17,12 @@ func TestValidateGenesis_Valid(t *testing.T) {
 	for _, params := range genesis.Params.CategoryParams {
 		params.MinDeposit = "10000000aura"
 	}
+
+	return genesis
+}
+
+func TestValidateGenesis_Valid(t *testing.T) {
+	genesis := validTestGenesis()
 
 	if err := ValidateGenesis(genesis); err != nil {
 		t.Errorf("Valid genesis should pass validation, got error: %v", err)
@@ -96,7 +102,7 @@ func TestValidateGenesis_InvalidThresholds(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			genesis := DefaultGenesis()
+			genesis := validTestGenesis()
 			genesis.Params.Quorum = tt.threshold
 
 			err := ValidateGenesis(genesis)
@@ -145,7 +151,7 @@ func TestValidateGenesis_VetoThresholdMustBeLessThanThreshold(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			genesis := DefaultGenesis()
+			genesis := validTestGenesis()
 			genesis.Params.Threshold = tt.threshold
 			genesis.Params.VetoThreshold = tt.vetoThreshold
 
@@ -192,7 +198,7 @@ func TestValidateGenesis_InvalidMinDeposit(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			genesis := DefaultGenesis()
+			genesis := validTestGenesis()
 			genesis.Params.MinDeposit = tt.minDeposit
 
 			err := ValidateGenesis(genesis)
@@ -247,7 +253,7 @@ func TestValidateGenesis_InvalidPeriods(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name+" (voting_period)", func(t *testing.T) {
-			genesis := DefaultGenesis()
+			genesis := validTestGenesis()
 			genesis.Params.VotingPeriod = durationpb.New(time.Duration(tt.seconds) * time.Second)
 
 			err := ValidateGenesis(genesis)
@@ -257,7 +263,7 @@ func TestValidateGenesis_InvalidPeriods(t *testing.T) {
 		})
 
 		t.Run(tt.name+" (max_deposit_period)", func(t *testing.T) {
-			genesis := DefaultGenesis()
+			genesis := validTestGenesis()
 			genesis.Params.MaxDepositPeriod = durationpb.New(time.Duration(tt.seconds) * time.Second)
 
 			err := ValidateGenesis(genesis)
@@ -270,7 +276,7 @@ func TestValidateGenesis_InvalidPeriods(t *testing.T) {
 
 func TestValidateGenesis_NilPeriods(t *testing.T) {
 	t.Run("nil voting_period", func(t *testing.T) {
-		genesis := DefaultGenesis()
+		genesis := validTestGenesis()
 		genesis.Params.VotingPeriod = nil
 
 		err := ValidateGenesis(genesis)
@@ -283,7 +289,7 @@ func TestValidateGenesis_NilPeriods(t *testing.T) {
 	})
 
 	t.Run("nil max_deposit_period", func(t *testing.T) {
-		genesis := DefaultGenesis()
+		genesis := validTestGenesis()
 		genesis.Params.MaxDepositPeriod = nil
 
 		err := ValidateGenesis(genesis)
@@ -326,7 +332,7 @@ func TestValidateGenesis_ExecutionDelay(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			genesis := DefaultGenesis()
+			genesis := validTestGenesis()
 			genesis.Params.ExecutionDelay = durationpb.New(time.Duration(tt.seconds) * time.Second)
 
 			err := ValidateGenesis(genesis)
@@ -339,7 +345,7 @@ func TestValidateGenesis_ExecutionDelay(t *testing.T) {
 
 func TestValidateGenesis_TokenLockValidation(t *testing.T) {
 	t.Run("token lock enabled but nil duration", func(t *testing.T) {
-		genesis := DefaultGenesis()
+		genesis := validTestGenesis()
 		genesis.Params.RequireTokenLock = true
 		genesis.Params.TokenLockDuration = nil
 
@@ -350,7 +356,7 @@ func TestValidateGenesis_TokenLockValidation(t *testing.T) {
 	})
 
 	t.Run("token lock duration too short", func(t *testing.T) {
-		genesis := DefaultGenesis()
+		genesis := validTestGenesis()
 		genesis.Params.RequireTokenLock = true
 		genesis.Params.TokenLockDuration = durationpb.New(30 * time.Second)
 
@@ -361,7 +367,7 @@ func TestValidateGenesis_TokenLockValidation(t *testing.T) {
 	})
 
 	t.Run("token lock duration too long", func(t *testing.T) {
-		genesis := DefaultGenesis()
+		genesis := validTestGenesis()
 		genesis.Params.RequireTokenLock = true
 		genesis.Params.TokenLockDuration = durationpb.New(2 * 365 * 24 * time.Hour)
 
@@ -372,7 +378,7 @@ func TestValidateGenesis_TokenLockValidation(t *testing.T) {
 	})
 
 	t.Run("valid token lock duration", func(t *testing.T) {
-		genesis := DefaultGenesis()
+		genesis := validTestGenesis()
 		genesis.Params.RequireTokenLock = true
 		genesis.Params.TokenLockDuration = durationpb.New(7 * 24 * time.Hour)
 
@@ -385,7 +391,7 @@ func TestValidateGenesis_TokenLockValidation(t *testing.T) {
 
 func TestValidateGenesis_SecretBallotValidation(t *testing.T) {
 	t.Run("secret ballot enabled but nil reveal period", func(t *testing.T) {
-		genesis := DefaultGenesis()
+		genesis := validTestGenesis()
 		genesis.Params.SecretBallotEnabled = true
 		genesis.Params.RevealPeriod = nil
 
@@ -396,7 +402,7 @@ func TestValidateGenesis_SecretBallotValidation(t *testing.T) {
 	})
 
 	t.Run("reveal period too short", func(t *testing.T) {
-		genesis := DefaultGenesis()
+		genesis := validTestGenesis()
 		genesis.Params.SecretBallotEnabled = true
 		genesis.Params.RevealPeriod = durationpb.New(30 * time.Second)
 
@@ -407,7 +413,7 @@ func TestValidateGenesis_SecretBallotValidation(t *testing.T) {
 	})
 
 	t.Run("reveal period too long", func(t *testing.T) {
-		genesis := DefaultGenesis()
+		genesis := validTestGenesis()
 		genesis.Params.SecretBallotEnabled = true
 		genesis.Params.RevealPeriod = durationpb.New(31 * 24 * time.Hour)
 
@@ -418,7 +424,7 @@ func TestValidateGenesis_SecretBallotValidation(t *testing.T) {
 	})
 
 	t.Run("valid reveal period", func(t *testing.T) {
-		genesis := DefaultGenesis()
+		genesis := validTestGenesis()
 		genesis.Params.SecretBallotEnabled = true
 		genesis.Params.RevealPeriod = durationpb.New(24 * time.Hour)
 
@@ -431,7 +437,7 @@ func TestValidateGenesis_SecretBallotValidation(t *testing.T) {
 
 func TestValidateGenesis_CategoryParams(t *testing.T) {
 	t.Run("nil category params", func(t *testing.T) {
-		genesis := DefaultGenesis()
+		genesis := validTestGenesis()
 		genesis.Params.CategoryParams["test_category"] = nil
 
 		err := ValidateGenesis(genesis)
@@ -441,9 +447,9 @@ func TestValidateGenesis_CategoryParams(t *testing.T) {
 	})
 
 	t.Run("category with invalid threshold", func(t *testing.T) {
-		genesis := DefaultGenesis()
+		genesis := validTestGenesis()
 		genesis.Params.CategoryParams["test_category"] = &CategoryParams{
-			MinDeposit:     "10000000",
+			MinDeposit:     "10000000aura",
 			VotingPeriod:   durationpb.New(7 * 24 * time.Hour),
 			Quorum:         "1.5", // Invalid: > 1.0
 			Threshold:      "0.5",
@@ -458,9 +464,9 @@ func TestValidateGenesis_CategoryParams(t *testing.T) {
 	})
 
 	t.Run("category with veto >= threshold", func(t *testing.T) {
-		genesis := DefaultGenesis()
+		genesis := validTestGenesis()
 		genesis.Params.CategoryParams["test_category"] = &CategoryParams{
-			MinDeposit:     "10000000",
+			MinDeposit:     "10000000aura",
 			VotingPeriod:   durationpb.New(7 * 24 * time.Hour),
 			Quorum:         "0.334",
 			Threshold:      "0.5",
@@ -475,7 +481,7 @@ func TestValidateGenesis_CategoryParams(t *testing.T) {
 	})
 
 	t.Run("category with invalid min deposit", func(t *testing.T) {
-		genesis := DefaultGenesis()
+		genesis := validTestGenesis()
 		genesis.Params.CategoryParams["test_category"] = &CategoryParams{
 			MinDeposit:     "0aura", // Invalid: not positive
 			VotingPeriod:   durationpb.New(7 * 24 * time.Hour),
@@ -492,9 +498,9 @@ func TestValidateGenesis_CategoryParams(t *testing.T) {
 	})
 
 	t.Run("category with invalid voting period", func(t *testing.T) {
-		genesis := DefaultGenesis()
+		genesis := validTestGenesis()
 		genesis.Params.CategoryParams["test_category"] = &CategoryParams{
-			MinDeposit:     "10000000",
+			MinDeposit:     "10000000aura",
 			VotingPeriod:   durationpb.New(30 * time.Second), // Invalid: < 1 minute
 			Quorum:         "0.334",
 			Threshold:      "0.5",
@@ -509,9 +515,9 @@ func TestValidateGenesis_CategoryParams(t *testing.T) {
 	})
 
 	t.Run("category with negative execution delay", func(t *testing.T) {
-		genesis := DefaultGenesis()
+		genesis := validTestGenesis()
 		genesis.Params.CategoryParams["test_category"] = &CategoryParams{
-			MinDeposit:     "10000000",
+			MinDeposit:     "10000000aura",
 			VotingPeriod:   durationpb.New(7 * 24 * time.Hour),
 			Quorum:         "0.334",
 			Threshold:      "0.5",
@@ -526,9 +532,9 @@ func TestValidateGenesis_CategoryParams(t *testing.T) {
 	})
 
 	t.Run("valid category params", func(t *testing.T) {
-		genesis := DefaultGenesis()
+		genesis := validTestGenesis()
 		genesis.Params.CategoryParams["test_category"] = &CategoryParams{
-			MinDeposit:     "10000000",
+			MinDeposit:     "10000000aura",
 			VotingPeriod:   durationpb.New(7 * 24 * time.Hour),
 			Quorum:         "0.334",
 			Threshold:      "0.5",
@@ -545,7 +551,7 @@ func TestValidateGenesis_CategoryParams(t *testing.T) {
 
 func TestValidateGenesis_EmergencyThresholds(t *testing.T) {
 	t.Run("invalid emergency quorum", func(t *testing.T) {
-		genesis := DefaultGenesis()
+		genesis := validTestGenesis()
 		genesis.Params.EmergencyQuorum = "1.5" // Invalid: > 1.0
 
 		err := ValidateGenesis(genesis)
@@ -555,7 +561,7 @@ func TestValidateGenesis_EmergencyThresholds(t *testing.T) {
 	})
 
 	t.Run("invalid emergency threshold", func(t *testing.T) {
-		genesis := DefaultGenesis()
+		genesis := validTestGenesis()
 		genesis.Params.EmergencyThreshold = "-0.1" // Invalid: < 0.0
 
 		err := ValidateGenesis(genesis)
@@ -565,7 +571,7 @@ func TestValidateGenesis_EmergencyThresholds(t *testing.T) {
 	})
 
 	t.Run("valid emergency thresholds", func(t *testing.T) {
-		genesis := DefaultGenesis()
+		genesis := validTestGenesis()
 		genesis.Params.EmergencyQuorum = "0.6"
 		genesis.Params.EmergencyThreshold = "0.75"
 

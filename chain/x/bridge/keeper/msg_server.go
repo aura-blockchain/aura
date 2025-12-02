@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	sdkmath "cosmossdk.io/math"
 	errorsmod "cosmossdk.io/errors"
+	sdkmath "cosmossdk.io/math"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"google.golang.org/grpc/codes"
