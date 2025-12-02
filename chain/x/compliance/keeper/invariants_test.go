@@ -144,29 +144,48 @@ func (suite *InvariantsTestSuite) TestParamsInvariant() {
 func (suite *InvariantsTestSuite) TestSanctionsScreeningInvariant() {
 	ctx := suite.SdkCtx
 
-	// Test: valid sanctions screening passes
+	// Test on empty store - should pass
+	inv := SanctionsScreeningInvariant(suite.Keeper)
+	msg, broken := inv(ctx)
+	suite.False(broken, "sanctions invariant should pass on empty store")
+	suite.Empty(msg)
+
+	// Test with valid sanctions screening data (store directly)
 	validAddr := suite.addr("sanctions-valid")
 	validResult := &types.SanctionsScreeningResult{
 		Address:    validAddr,
-		Flagged:    false,
+		Status:     types.SanctionsStatus_SANCTIONS_CLEAR,
+		Matches:    []*types.SanctionsMatch{},
 		ScreenedAt: timestamppb.Now(),
-		Matches:    []string{},
 	}
-	suite.Require().NoError(suite.Keeper.SetSanctionsScreening(ctx, validResult))
 
-	inv := SanctionsScreeningInvariant(suite.Keeper)
-	msg, broken := inv(ctx)
+	// Write directly to store since there's no public setter
+	bz, err := suite.Keeper.cdc.Marshal(validResult)
+	suite.Require().NoError(err)
+	store := ctx.KVStore(suite.Keeper.storeKey)
+	key := append(SanctionsResultsKeyPrefix, []byte(validAddr)...)
+	store.Set(key, bz)
+
+	msg, broken = inv(ctx)
 	suite.False(broken, "valid sanctions screening should pass")
 	suite.Empty(msg)
 
 	// Test: invalid address fails
+	suite.SetupTest()
+	ctx = suite.SdkCtx
+	inv = SanctionsScreeningInvariant(suite.Keeper)
+
 	invalidResult := &types.SanctionsScreeningResult{
 		Address:    "invalid-address",
-		Flagged:    false,
+		Status:     types.SanctionsStatus_SANCTIONS_CLEAR,
+		Matches:    []*types.SanctionsMatch{},
 		ScreenedAt: timestamppb.Now(),
-		Matches:    []string{},
 	}
-	suite.Require().NoError(suite.Keeper.SetSanctionsScreening(ctx, invalidResult))
+	bz, err = suite.Keeper.cdc.Marshal(invalidResult)
+	suite.Require().NoError(err)
+	store = ctx.KVStore(suite.Keeper.storeKey)
+	key = append(SanctionsResultsKeyPrefix, []byte("invalid-address")...)
+	store.Set(key, bz)
 
 	msg, broken = inv(ctx)
 	suite.True(broken, "invalid address should break invariant")
@@ -178,13 +197,18 @@ func (suite *InvariantsTestSuite) TestSanctionsScreeningInvariant() {
 	inv = SanctionsScreeningInvariant(suite.Keeper)
 
 	// Test: nil screened_at fails
+	validAddr2 := suite.addr("sanctions-niltime")
 	nilTimeResult := &types.SanctionsScreeningResult{
-		Address:    validAddr,
-		Flagged:    false,
+		Address:    validAddr2,
+		Status:     types.SanctionsStatus_SANCTIONS_CLEAR,
+		Matches:    []*types.SanctionsMatch{},
 		ScreenedAt: nil,
-		Matches:    []string{},
 	}
-	suite.Require().NoError(suite.Keeper.SetSanctionsScreening(ctx, nilTimeResult))
+	bz, err = suite.Keeper.cdc.Marshal(nilTimeResult)
+	suite.Require().NoError(err)
+	store = ctx.KVStore(suite.Keeper.storeKey)
+	key = append(SanctionsResultsKeyPrefix, []byte(validAddr2)...)
+	store.Set(key, bz)
 
 	msg, broken = inv(ctx)
 	suite.True(broken, "nil screened_at should break invariant")
@@ -195,18 +219,23 @@ func (suite *InvariantsTestSuite) TestSanctionsScreeningInvariant() {
 	ctx = suite.SdkCtx
 	inv = SanctionsScreeningInvariant(suite.Keeper)
 
-	// Test: flagged with no matches fails
-	flaggedNoMatches := &types.SanctionsScreeningResult{
-		Address:    validAddr,
-		Flagged:    true,
+	// Test: status MATCH with no matches fails
+	validAddr3 := suite.addr("sanctions-nomatch")
+	matchNoMatches := &types.SanctionsScreeningResult{
+		Address:    validAddr3,
+		Status:     types.SanctionsStatus_SANCTIONS_MATCH,
+		Matches:    []*types.SanctionsMatch{},
 		ScreenedAt: timestamppb.Now(),
-		Matches:    []string{},
 	}
-	suite.Require().NoError(suite.Keeper.SetSanctionsScreening(ctx, flaggedNoMatches))
+	bz, err = suite.Keeper.cdc.Marshal(matchNoMatches)
+	suite.Require().NoError(err)
+	store = ctx.KVStore(suite.Keeper.storeKey)
+	key = append(SanctionsResultsKeyPrefix, []byte(validAddr3)...)
+	store.Set(key, bz)
 
 	msg, broken = inv(ctx)
-	suite.True(broken, "flagged with no matches should break invariant")
-	suite.Contains(msg, "flagged but has no matches")
+	suite.True(broken, "match status with no matches should break invariant")
+	suite.Contains(msg, "has match status but no matches")
 }
 
 func (suite *InvariantsTestSuite) TestGDPRDataIntegrityInvariant() {

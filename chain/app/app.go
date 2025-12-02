@@ -443,42 +443,12 @@ func NewAppWithLogger(logger tmlog.Logger) *App {
 }
 
 // StoreKeyNames lists all KV store names mounted by the app.
+// Uses the centralized storeKeys.Names() as the single source of truth.
 func StoreKeyNames() []string {
-	return []string{
-		authtypes.StoreKey,
-		banktypes.StoreKey,
-		stakingtypes.StoreKey,
-		slashingtypes.StoreKey,
-		distrtypes.StoreKey,
-		paramstypes.StoreKey,
-		consensustypes.StoreKey,
-		walletsecuritytypes.StoreKey,
-		validatorsecuritytypes.StoreKey,
-		cryptographytypes.StoreKey,
-		networksecuritytypes.StoreKey,
-		incidentresponsetypes.StoreKey,
-		privacytypes.StoreKey,
-		identitychangetypes.StoreKey,
-		identitytypes.StoreKey,
-		economicsecuritytypes.StoreKey,
-		governancetypes.StoreKey,
-		economicstypes.StoreKey,
-		vctypes.StoreKey,
-		compliancetypes.StoreKey,
-		dextypes.StoreKey,
-		bridgetypes.StoreKey,
-		aitypes.StoreKey,
-		wasmtypes.StoreKey,
-		contractregistrytypes.StoreKey,
-		wasmSecurityTypes.StoreKey,
-		cstypes.StoreKey,
-		irtypes.StoreKey,
-		drtypes.StoreKey,
-		monitoringtypes.StoreKey,
-		prevalidationtypes.StoreKey,
-		aurabindingstypes.StoreKey,
-		securitytypes.StoreKey,
-	}
+	// Create a temporary storeKeys instance just to get the names
+	// This ensures Names() is the single source of truth
+	keys := &storeKeys{}
+	return keys.Names()
 }
 
 // NewAppWithDB builds the Aura application shell with the provided logger and database.
@@ -524,97 +494,20 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 	base.SetInterfaceRegistry(encoding.InterfaceRegistry)
 	base.SetTxEncoder(encoding.TxConfig.TxEncoder())
 
-	accountKey := storetypes.NewKVStoreKey(authtypes.StoreKey)
-	bankKey := storetypes.NewKVStoreKey(banktypes.StoreKey)
-	stakingKey := storetypes.NewKVStoreKey(stakingtypes.StoreKey)
-	slashingKey := storetypes.NewKVStoreKey(slashingtypes.StoreKey)
-	distributionKey := storetypes.NewKVStoreKey(distrtypes.StoreKey)
-	paramsKey := storetypes.NewKVStoreKey(paramstypes.StoreKey)
-	// Security module keys (individual)
-	walletSecurityKey := storetypes.NewKVStoreKey(walletsecuritytypes.StoreKey)
-	validatorSecurityKey := storetypes.NewKVStoreKey(validatorsecuritytypes.StoreKey)
+	// Initialize all KV store keys from single source of truth
+	keys := initStoreKeys()
+
+	// Memory keys (not part of centralized keys as they're transient)
 	validatorSecurityMemKey := storetypes.NewMemoryStoreKey(validatorsecuritytypes.MemStoreKey)
-	cryptographyKey := storetypes.NewKVStoreKey(cryptographytypes.StoreKey)
-	networkSecurityKey := storetypes.NewKVStoreKey(networksecuritytypes.StoreKey)
-	incidentResponseKey := storetypes.NewKVStoreKey(incidentresponsetypes.StoreKey)
-	privacyKey := storetypes.NewKVStoreKey(privacytypes.StoreKey)
-
-	// Identity module key (individual)
-	identityChangeKey := storetypes.NewKVStoreKey(identitychangetypes.StoreKey)
-	identityKey := storetypes.NewKVStoreKey(identitytypes.StoreKey)
-
-	// Economics module keys (individual)
-	economicSecurityKey := storetypes.NewKVStoreKey(economicsecuritytypes.StoreKey)
-	governanceKey := storetypes.NewKVStoreKey(governancetypes.StoreKey)
-	economicsKey := storetypes.NewKVStoreKey(economicstypes.StoreKey)
-
-	// Core module keys (unchanged)
-	vcKey := storetypes.NewKVStoreKey(vctypes.StoreKey)
-	complianceKey := storetypes.NewKVStoreKey(compliancetypes.StoreKey)
-	dexKey := storetypes.NewKVStoreKey(dextypes.StoreKey)
-	bridgeKey := storetypes.NewKVStoreKey(bridgetypes.StoreKey)
-	aiKey := storetypes.NewKVStoreKey(aitypes.StoreKey)
-	wasmKey := storetypes.NewKVStoreKey(wasmtypes.StoreKey)
-	contractRegistryKey := storetypes.NewKVStoreKey(contractregistrytypes.StoreKey)
-	wasmSecurityKey := storetypes.NewKVStoreKey(wasmSecurityTypes.StoreKey)
-	confidenceScoreKey := storetypes.NewKVStoreKey(cstypes.StoreKey)
-	inclusionRoutinesKey := storetypes.NewKVStoreKey(irtypes.StoreKey)
-	dataRegistryKey := storetypes.NewKVStoreKey(drtypes.StoreKey)
-	monitoringKey := storetypes.NewKVStoreKey(monitoringtypes.StoreKey)
-	prevalidationKey := storetypes.NewKVStoreKey(prevalidationtypes.StoreKey)
-	aurabindingsKey := storetypes.NewKVStoreKey(aurabindingstypes.StoreKey)
-	securityKey := storetypes.NewKVStoreKey(securitytypes.StoreKey)
-	consensusKey := storetypes.NewKVStoreKey(consensustypes.StoreKey)
-
-	paramsTKey := storetypes.NewTransientStoreKey(paramstypes.TStoreKey)
 	vcMemKey := storetypes.NewMemoryStoreKey(vctypes.MemStoreKey)
 	securityMemKey := storetypes.NewMemoryStoreKey(securitytypes.MemStoreKey)
 	aurabindingsMemKey := storetypes.NewMemoryStoreKey(aurabindingstypes.MemStoreKey)
 
-	base.MountKVStores(map[string]*storetypes.KVStoreKey{
-		// Cosmos SDK standard keys
-		authtypes.StoreKey:      accountKey,
-		banktypes.StoreKey:      bankKey,
-		stakingtypes.StoreKey:   stakingKey,
-		slashingtypes.StoreKey:  slashingKey,
-		distrtypes.StoreKey:     distributionKey,
-		paramstypes.StoreKey:    paramsKey,
-		consensustypes.StoreKey: consensusKey,
+	// Transient keys (not part of centralized keys as they're transient)
+	paramsTKey := storetypes.NewTransientStoreKey(paramstypes.TStoreKey)
 
-		// Security module keys (individual)
-		walletsecuritytypes.StoreKey:    walletSecurityKey,
-		validatorsecuritytypes.StoreKey: validatorSecurityKey,
-		cryptographytypes.StoreKey:      cryptographyKey,
-		networksecuritytypes.StoreKey:   networkSecurityKey,
-		incidentresponsetypes.StoreKey:  incidentResponseKey,
-		privacytypes.StoreKey:           privacyKey,
-
-		// Identity module key (individual)
-		identitychangetypes.StoreKey: identityChangeKey,
-		identitytypes.StoreKey:       identityKey,
-
-		// Economics module keys (individual)
-		economicsecuritytypes.StoreKey: economicSecurityKey,
-		governancetypes.StoreKey:       governanceKey,
-		economicstypes.StoreKey:        economicsKey,
-
-		// Core AURA module keys (unchanged)
-		vctypes.StoreKey:               vcKey,
-		compliancetypes.StoreKey:       complianceKey,
-		dextypes.StoreKey:              dexKey,
-		bridgetypes.StoreKey:           bridgeKey,
-		aitypes.StoreKey:               aiKey,
-		wasmtypes.StoreKey:             wasmKey,
-		contractregistrytypes.StoreKey: contractRegistryKey,
-		wasmSecurityTypes.StoreKey:     wasmSecurityKey,
-		cstypes.StoreKey:               confidenceScoreKey,
-		irtypes.StoreKey:               inclusionRoutinesKey,
-		drtypes.StoreKey:               dataRegistryKey,
-		monitoringtypes.StoreKey:       monitoringKey,
-		prevalidationtypes.StoreKey:    prevalidationKey,
-		aurabindingstypes.StoreKey:     aurabindingsKey,
-		securitytypes.StoreKey:         securityKey,
-	})
+	// Mount all KV stores using the centralized map (single source of truth)
+	base.MountKVStores(keys.AsMap())
 	base.MountTransientStores(map[string]*storetypes.TransientStoreKey{
 		paramstypes.TStoreKey: paramsTKey,
 	})
@@ -625,7 +518,7 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 		aurabindingstypes.MemStoreKey:      aurabindingsMemKey,
 	})
 
-	paramsKeeper := paramskeeper.NewKeeper(encoding.Codec, codec.NewLegacyAmino(), paramsKey, paramsTKey)
+	paramsKeeper := paramskeeper.NewKeeper(encoding.Codec, codec.NewLegacyAmino(), keys.params, paramsTKey)
 	bridgeSubspace := paramsKeeper.Subspace(bridgetypes.ModuleName)
 
 	accountCodec := address.NewBech32Codec(bech32MainPrefix)
@@ -635,7 +528,7 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 
 	accountKeeper := authkeeper.NewAccountKeeper(
 		encoding.Codec,
-		runtime.NewKVStoreService(accountKey),
+		runtime.NewKVStoreService(keys.account),
 		authtypes.ProtoBaseAccount,
 		moduleAccountPermissions,
 		accountCodec,
@@ -646,7 +539,7 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 	// Ensure module accounts exist before keepers that depend on them (staking, bank) are created.
 	bankKeeper := bankkeeper.NewBaseKeeper(
 		encoding.Codec,
-		runtime.NewKVStoreService(bankKey),
+		runtime.NewKVStoreService(keys.bank),
 		accountKeeper,
 		blockedModuleAddresses(moduleAccountPermissions),
 		authorityAddr,
@@ -657,7 +550,7 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 
 	stakingKeeper := stakingkeeper.NewKeeper(
 		encoding.Codec,
-		runtime.NewKVStoreService(stakingKey),
+		runtime.NewKVStoreService(keys.staking),
 		accountKeeper,
 		bankKeeper,
 		authorityAddr,
@@ -668,14 +561,14 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 	slashingKeeper := slashingkeeper.NewKeeper(
 		encoding.Codec,
 		codec.NewLegacyAmino(),
-		runtime.NewKVStoreService(slashingKey),
+		runtime.NewKVStoreService(keys.slashing),
 		stakingKeeper,
 		authorityAddr,
 	)
 
 	distributionKeeper := distrkeeper.NewKeeper(
 		encoding.Codec,
-		runtime.NewKVStoreService(distributionKey),
+		runtime.NewKVStoreService(keys.distribution),
 		accountKeeper,
 		bankKeeper,
 		stakingKeeper,
@@ -686,7 +579,7 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 	// Consensus keeper - required for BaseApp.ParamStore in SDK v0.53+
 	consensusKeeper := consensuskeeper.NewKeeper(
 		encoding.Codec,
-		runtime.NewKVStoreService(consensusKey),
+		runtime.NewKVStoreService(keys.consensus),
 		authorityAddr,
 		runtime.EventService{},
 	)

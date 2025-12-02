@@ -90,8 +90,7 @@ func TestDelegationExpirationIndex(t *testing.T) {
 
 // TestDelegationExpirationIndexCleanup verifies that the expiration index is cleaned up when delegation becomes inactive
 func TestDelegationExpirationIndexCleanup(t *testing.T) {
-	suite := NewKeeperTestSuite(t)
-	ctx := suite.ctx
+	ctx, keeper := setupConfKeeper(t)
 
 	// Create an active delegation
 	delegation := &ScoreDelegation{
@@ -110,30 +109,29 @@ func TestDelegationExpirationIndexCleanup(t *testing.T) {
 	}
 
 	// Store the delegation
-	err := suite.keeper.storeDelegation(ctx, delegation)
+	err := keeper.storeDelegation(ctx, delegation)
 	require.NoError(t, err, "failed to store delegation")
 
 	// Verify it's in the expiration index
-	expiringDelegations, err := suite.keeper.getDelegationsExpiringAtHeight(ctx, 500)
+	expiringDelegations, err := keeper.getDelegationsExpiringAtHeight(ctx, 500)
 	require.NoError(t, err)
 	require.Len(t, expiringDelegations, 1, "delegation not found in expiration index")
 
 	// Mark delegation as inactive and update
 	delegation.Active = false
 	delegation.LastUpdated = 200
-	err = suite.keeper.storeDelegation(ctx, delegation)
+	err = keeper.storeDelegation(ctx, delegation)
 	require.NoError(t, err, "failed to update delegation")
 
 	// Verify it's removed from the expiration index
-	expiringDelegations, err = suite.keeper.getDelegationsExpiringAtHeight(ctx, 500)
+	expiringDelegations, err = keeper.getDelegationsExpiringAtHeight(ctx, 500)
 	require.NoError(t, err)
 	require.Len(t, expiringDelegations, 0, "delegation should be removed from expiration index when inactive")
 }
 
 // TestGetAllDelegations_PaginationWarning verifies that getAllDelegations logs a warning
 func TestGetAllDelegations_PaginationWarning(t *testing.T) {
-	suite := NewKeeperTestSuite(t)
-	ctx := suite.ctx
+	ctx, keeper := setupConfKeeper(t)
 
 	// Create multiple delegations
 	for i := 0; i < 5; i++ {
@@ -151,20 +149,19 @@ func TestGetAllDelegations_PaginationWarning(t *testing.T) {
 			CreatedHeight:  100,
 			LastUpdated:    100,
 		}
-		err := suite.keeper.storeDelegation(ctx, delegation)
+		err := keeper.storeDelegation(ctx, delegation)
 		require.NoError(t, err)
 	}
 
 	// Call getAllDelegations (deprecated method)
 	// This should log a warning but still work
-	delegations := suite.keeper.getAllDelegations(ctx)
+	delegations := keeper.getAllDelegations(ctx)
 	require.Len(t, delegations, 5, "expected 5 delegations")
 }
 
 // TestGetDelegationsPaginated verifies that pagination works correctly
 func TestGetDelegationsPaginated(t *testing.T) {
-	suite := NewKeeperTestSuite(t)
-	ctx := suite.ctx
+	ctx, keeper := setupConfKeeper(t)
 
 	// Create 10 delegations
 	for i := 0; i < 10; i++ {
@@ -182,24 +179,24 @@ func TestGetDelegationsPaginated(t *testing.T) {
 			CreatedHeight:  uint64(100 + i),
 			LastUpdated:    uint64(100 + i),
 		}
-		err := suite.keeper.storeDelegation(ctx, delegation)
+		err := keeper.storeDelegation(ctx, delegation)
 		require.NoError(t, err)
 	}
 
 	// Test pagination: first page
-	delegations, hasMore, err := suite.keeper.getDelegationsPaginated(ctx, 0, 5)
+	delegations, hasMore, err := keeper.getDelegationsPaginated(ctx, 0, 5)
 	require.NoError(t, err)
 	require.Len(t, delegations, 5, "expected 5 delegations in first page")
 	require.True(t, hasMore, "expected more results")
 
 	// Test pagination: second page
-	delegations, hasMore, err = suite.keeper.getDelegationsPaginated(ctx, 5, 5)
+	delegations, hasMore, err = keeper.getDelegationsPaginated(ctx, 5, 5)
 	require.NoError(t, err)
 	require.Len(t, delegations, 5, "expected 5 delegations in second page")
 	require.False(t, hasMore, "expected no more results")
 
 	// Test pagination: beyond available data
-	delegations, hasMore, err = suite.keeper.getDelegationsPaginated(ctx, 10, 5)
+	delegations, hasMore, err = keeper.getDelegationsPaginated(ctx, 10, 5)
 	require.NoError(t, err)
 	require.Len(t, delegations, 0, "expected 0 delegations beyond available data")
 	require.False(t, hasMore, "expected no more results")
@@ -207,8 +204,7 @@ func TestGetDelegationsPaginated(t *testing.T) {
 
 // TestGetDelegationsByUser verifies user-specific delegation queries
 func TestGetDelegationsByUser(t *testing.T) {
-	suite := NewKeeperTestSuite(t)
-	ctx := suite.ctx
+	ctx, keeper := setupConfKeeper(t)
 
 	// Create delegations for multiple users
 	users := []string{"aura1user1", "aura1user2", "aura1user3"}
@@ -228,18 +224,18 @@ func TestGetDelegationsByUser(t *testing.T) {
 				CreatedHeight:  100,
 				LastUpdated:    100,
 			}
-			err := suite.keeper.storeDelegation(ctx, delegation)
+			err := keeper.storeDelegation(ctx, delegation)
 			require.NoError(t, err)
 		}
 	}
 
 	// Query all delegations for user1
-	delegations, _, err := suite.keeper.getDelegationsByUser(ctx, "aura1user1", false, 0, 100)
+	delegations, _, err := keeper.getDelegationsByUser(ctx, "aura1user1", false, 0, 100)
 	require.NoError(t, err)
 	require.Len(t, delegations, 3, "expected 3 delegations for user1")
 
 	// Query only active delegations for user1
-	activeDelegations, _, err := suite.keeper.getDelegationsByUser(ctx, "aura1user1", true, 0, 100)
+	activeDelegations, _, err := keeper.getDelegationsByUser(ctx, "aura1user1", true, 0, 100)
 	require.NoError(t, err)
 	require.Len(t, activeDelegations, 2, "expected 2 active delegations for user1")
 
