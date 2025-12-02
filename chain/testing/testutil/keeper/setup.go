@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	corestore "cosmossdk.io/core/store"
 	"cosmossdk.io/log"
 	"cosmossdk.io/store"
 	"cosmossdk.io/store/metrics"
@@ -189,7 +190,7 @@ func CreateTestInputWithStoreKey(t testing.TB, storeKeyName string) TestInput {
 }
 
 // WrapStoreService wraps a store key as a KVStoreService for runtime compatibility
-func WrapStoreService(storeKey *storetypes.KVStoreKey) runtime.KVStoreService {
+func WrapStoreService(storeKey *storetypes.KVStoreKey) corestore.KVStoreService {
 	return runtime.NewKVStoreService(storeKey)
 }
 

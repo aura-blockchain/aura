@@ -130,7 +130,7 @@ func (k Keeper) SubmitZKProof(ctx sdk.Context, submitter string, proofID string,
 		PublicInputs:   publicInputs,
 		Verified:       verified,
 		VerifiedAt:     timestamppb.New(sdkCtx.BlockTime()),
-		VerifierNode:   sdkCtx.BlockHeader().ProposerAddress.String(),
+		VerifierNode:   string(sdkCtx.BlockHeader().ProposerAddress),
 		ErrorMessage:   errorMessage,
 	}
 

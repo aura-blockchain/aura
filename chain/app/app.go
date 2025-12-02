@@ -793,16 +793,16 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 	// Tier 7: DEX, Bridge, and AI modules (depend on vcregistry)
 	vcAdapter := newVCRegistryKeeperAdapter(vcKeeper)
 
-	dexKeeper := dexkeeper.NewKeeper(encoding.Codec, dexKey, bankAdapter, accountAdapter, vcAdapter)
+	dexKeeper := dexkeeper.NewKeeper(encoding.Codec, keys.dex, bankAdapter, accountAdapter, vcAdapter)
 	bridgeKeeper := bridgekeeper.NewKeeper(
 		encoding.Codec,
-		bridgeKey,
+		keys.bridge,
 		&bridgeSubspace,
 		bankAdapter,
 		accountAdapter,
 		vcAdapter,
 	)
-	aiKeeper := aikeeper.NewKeeper(encoding.Codec, aiKey, authorityAddr, bankAdapter)
+	aiKeeper := aikeeper.NewKeeper(encoding.Codec, keys.ai, authorityAddr, bankAdapter)
 
 	logger.Info("initializing keepers", "phase", "tier-8-wasm")
 
@@ -817,7 +817,7 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 	// This will be addressed when we add custom bindings in Phase 3
 	wasmKeeper := wasmkeeper.NewKeeper(
 		encoding.Codec,
-		runtime.NewKVStoreService(wasmKey),
+		runtime.NewKVStoreService(keys.wasm),
 		accountKeeper,
 		bankKeeper,
 		stakingKeeper,
@@ -842,7 +842,7 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 	// This provides additional security controls and integrates with contract registry
 	wasmSecurityKeeperInstance := wasmSecurityKeeper.NewKeeper(
 		encoding.Codec,
-		wasmSecurityKey,
+		keys.wasmSecurity,
 		&wasmKeeper,
 		authorityAddr,
 	)
@@ -1076,84 +1076,7 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 		monitoringKeeper:       monitoringKeeper,
 		prevalidationKeeper:    prevalidationKeeper,
 		aurabindingsKeeper:     aurabindingsKeeper,
-		storeKeys: struct {
-			// Cosmos SDK standard keys
-			account      *storetypes.KVStoreKey
-			bank         *storetypes.KVStoreKey
-			staking      *storetypes.KVStoreKey
-			slashing     *storetypes.KVStoreKey
-			distribution *storetypes.KVStoreKey
-			params       *storetypes.KVStoreKey
-			consensus    *storetypes.KVStoreKey
-			// Security module keys (individual)
-			walletSecurity    *storetypes.KVStoreKey
-			validatorSecurity *storetypes.KVStoreKey
-			cryptography      *storetypes.KVStoreKey
-			networkSecurity   *storetypes.KVStoreKey
-			incidentResponse  *storetypes.KVStoreKey
-			privacy           *storetypes.KVStoreKey
-			security          *storetypes.KVStoreKey
-			// Identity module key (individual)
-			identityChange *storetypes.KVStoreKey
-			identity       *storetypes.KVStoreKey
-			// Economics module keys (individual)
-			economicSecurity *storetypes.KVStoreKey
-			governance       *storetypes.KVStoreKey
-			economics        *storetypes.KVStoreKey
-			// Core AURA module keys
-			vc                *storetypes.KVStoreKey
-			compliance        *storetypes.KVStoreKey
-			dex               *storetypes.KVStoreKey
-			bridge            *storetypes.KVStoreKey
-			ai                *storetypes.KVStoreKey
-			wasm              *storetypes.KVStoreKey
-			contractRegistry  *storetypes.KVStoreKey
-			wasmSecurity      *storetypes.KVStoreKey
-			confidenceScore   *storetypes.KVStoreKey
-			inclusionRoutines *storetypes.KVStoreKey
-			dataRegistry      *storetypes.KVStoreKey
-			monitoring        *storetypes.KVStoreKey
-			prevalidation     *storetypes.KVStoreKey
-			aurabindings      *storetypes.KVStoreKey
-		}{
-			account:      accountKey,
-			bank:         bankKey,
-			staking:      stakingKey,
-			slashing:     slashingKey,
-			distribution: distributionKey,
-			params:       paramsKey,
-			consensus:    consensusKey,
-			// Individual security module keys
-			walletSecurity:    walletSecurityKey,
-			validatorSecurity: validatorSecurityKey,
-			cryptography:      cryptographyKey,
-			networkSecurity:   networkSecurityKey,
-			incidentResponse:  incidentResponseKey,
-			privacy:           privacyKey,
-			security:          securityKey,
-			// Individual identity module key
-			identityChange: identityChangeKey,
-			identity:       identityKey,
-			// Individual economics module keys
-			economicSecurity: economicSecurityKey,
-			governance:       governanceKey,
-			economics:        economicsKey,
-			// Core AURA module keys
-			vc:                vcKey,
-			compliance:        complianceKey,
-			dex:               dexKey,
-			bridge:            bridgeKey,
-			ai:                aiKey,
-			wasm:              wasmKey,
-			contractRegistry:  contractRegistryKey,
-			wasmSecurity:      wasmSecurityKey,
-			confidenceScore:   confidenceScoreKey,
-			inclusionRoutines: inclusionRoutinesKey,
-			dataRegistry:      dataRegistryKey,
-			monitoring:        monitoringKey,
-			prevalidation:     prevalidationKey,
-			aurabindings:      aurabindingsKey,
-		},
+		storeKeys:              keys,
 		memKeys: struct {
 			vc           *storetypes.MemoryStoreKey
 			security     *storetypes.MemoryStoreKey
