@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -19,23 +20,23 @@ func (k *Keeper) InitGenesis(ctx sdk.Context, data types.GenesisState) error {
 	// Set params
 	if data.Params != nil {
 		params := types.Params{
-			VerificationThreshold:      data.Params.VerificationThreshold,
-			HighAssuranceThreshold:     data.Params.HighAssuranceThreshold,
-			ArenaFocusThreshold:        data.Params.ArenaFocusThreshold,
-			VelocityBonusDays:          data.Params.VelocityBonusDays,
-			VelocityBonusMultipliers:   data.Params.VelocityBonusMultipliers,
-			ArenaMultipliers:           data.Params.ArenaMultipliers,
-			SlashPercentage:            data.Params.SlashPercentage,
-			AppealDeposit:              data.Params.AppealDeposit,
-			MaxIrsPerDay:               data.Params.MaxIrsPerDay,
-			MaxIrsPerHour:              data.Params.MaxIrsPerHour,
-			JackpotOdds:                data.Params.JackpotOdds,
-			JackpotMultipliers:         data.Params.JackpotMultipliers,
-			StalenessEnabled:           data.Params.StalenessEnabled,
-			DegradationRatePerYear:     data.Params.DegradationRatePerYear,
-			PoiRewardsEnabled:          data.Params.PoiRewardsEnabled,
-			UserRewardSplitPercent:     data.Params.UserRewardSplitPercent,
-			VelocityBonusEnabled:       data.Params.VelocityBonusEnabled,
+			VerificationThreshold:    data.Params.VerificationThreshold,
+			HighAssuranceThreshold:   data.Params.HighAssuranceThreshold,
+			ArenaFocusThreshold:      data.Params.ArenaFocusThreshold,
+			VelocityBonusDays:        data.Params.VelocityBonusDays,
+			VelocityBonusMultipliers: data.Params.VelocityBonusMultipliers,
+			ArenaMultipliers:         data.Params.ArenaMultipliers,
+			SlashPercentage:          data.Params.SlashPercentage,
+			AppealDeposit:            data.Params.AppealDeposit,
+			MaxIrsPerDay:             data.Params.MaxIrsPerDay,
+			MaxIrsPerHour:            data.Params.MaxIrsPerHour,
+			JackpotOdds:              data.Params.JackpotOdds,
+			JackpotMultipliers:       data.Params.JackpotMultipliers,
+			StalenessEnabled:         data.Params.StalenessEnabled,
+			DegradationRatePerYear:   data.Params.DegradationRatePerYear,
+			PoiRewardsEnabled:        data.Params.PoiRewardsEnabled,
+			UserRewardSplitPercent:   data.Params.UserRewardSplitPercent,
+			VelocityBonusEnabled:     data.Params.VelocityBonusEnabled,
 		}
 		if err := k.paramsStore.SetParams(params); err != nil {
 			return fmt.Errorf("failed to set params: %w", err)
@@ -81,27 +82,28 @@ func (k *Keeper) ExportGenesis(ctx sdk.Context) types.GenesisState {
 	// Export params
 	params := k.paramsStore.GetParams()
 	protoParams := &confidencescorepb.Params{
-		VerificationThreshold:      params.VerificationThreshold,
-		HighAssuranceThreshold:     params.HighAssuranceThreshold,
-		ArenaFocusThreshold:        params.ArenaFocusThreshold,
-		VelocityBonusDays:          params.VelocityBonusDays,
-		VelocityBonusMultipliers:   params.VelocityBonusMultipliers,
-		ArenaMultipliers:           params.ArenaMultipliers,
-		SlashPercentage:            params.SlashPercentage,
-		AppealDeposit:              params.AppealDeposit,
-		MaxIrsPerDay:               params.MaxIrsPerDay,
-		MaxIrsPerHour:              params.MaxIrsPerHour,
-		JackpotOdds:                params.JackpotOdds,
-		JackpotMultipliers:         params.JackpotMultipliers,
-		StalenessEnabled:           params.StalenessEnabled,
-		DegradationRatePerYear:     params.DegradationRatePerYear,
-		PoiRewardsEnabled:          params.PoiRewardsEnabled,
-		UserRewardSplitPercent:     params.UserRewardSplitPercent,
-		VelocityBonusEnabled:       params.VelocityBonusEnabled,
+		VerificationThreshold:    params.VerificationThreshold,
+		HighAssuranceThreshold:   params.HighAssuranceThreshold,
+		ArenaFocusThreshold:      params.ArenaFocusThreshold,
+		VelocityBonusDays:        params.VelocityBonusDays,
+		VelocityBonusMultipliers: params.VelocityBonusMultipliers,
+		ArenaMultipliers:         params.ArenaMultipliers,
+		SlashPercentage:          params.SlashPercentage,
+		AppealDeposit:            params.AppealDeposit,
+		MaxIrsPerDay:             params.MaxIrsPerDay,
+		MaxIrsPerHour:            params.MaxIrsPerHour,
+		JackpotOdds:              params.JackpotOdds,
+		JackpotMultipliers:       params.JackpotMultipliers,
+		StalenessEnabled:         params.StalenessEnabled,
+		DegradationRatePerYear:   params.DegradationRatePerYear,
+		PoiRewardsEnabled:        params.PoiRewardsEnabled,
+		UserRewardSplitPercent:   params.UserRewardSplitPercent,
+		VelocityBonusEnabled:     params.VelocityBonusEnabled,
 	}
 
 	// Export user records from KV store
 	userRecords := []*confidencescorepb.UserConfidenceRecord{}
+	var userRecordErrors []string
 	prefix := []byte(types.UserRecordStoreKeyPrefix)
 	// Calculate end bytes for prefix iteration
 	endBytes := append([]byte(nil), prefix...)
@@ -111,11 +113,34 @@ func (k *Keeper) ExportGenesis(ctx sdk.Context) types.GenesisState {
 		defer iterator.Close()
 		for ; iterator.Valid(); iterator.Next() {
 			var record confidencescorepb.UserConfidenceRecord
-			if err := k.cdc.Unmarshal(iterator.Value(), &record); err == nil {
-				recordCopy := record
-				userRecords = append(userRecords, &recordCopy)
+			if err := k.cdc.Unmarshal(iterator.Value(), &record); err != nil {
+				// Log the unmarshal error with record identifier
+				keyHex := fmt.Sprintf("%x", iterator.Key())
+				userRecordErrors = append(userRecordErrors, fmt.Sprintf("record %s: %v", keyHex, err))
+				ctx.Logger().Error("failed to unmarshal user record during export",
+					"key", keyHex,
+					"error", err)
+				continue
 			}
+			recordCopy := record
+			userRecords = append(userRecords, &recordCopy)
 		}
+	}
+
+	// Log summary if there were unmarshal errors
+	if len(userRecordErrors) > 0 {
+		ctx.Logger().Error("genesis export completed with user record errors",
+			"failed_records", len(userRecordErrors),
+			"total_exported", len(userRecords))
+		// Emit event for monitoring systems
+		ctx.EventManager().EmitEvent(
+			sdk.NewEvent("genesis_export_warning",
+				sdk.NewAttribute("module", types.ModuleName),
+				sdk.NewAttribute("record_type", "user_records"),
+				sdk.NewAttribute("failed_count", strconv.Itoa(len(userRecordErrors))),
+				sdk.NewAttribute("exported_count", strconv.Itoa(len(userRecords))),
+			),
+		)
 	}
 
 	// Export standalone completions (none for now as they're part of user records)
@@ -126,6 +151,7 @@ func (k *Keeper) ExportGenesis(ctx sdk.Context) types.GenesisState {
 
 	// Export slash records from KV store
 	slashRecords := []*confidencescorepb.SlashRecord{}
+	var slashRecordErrors []string
 	slashPrefix := []byte(types.SlashRecordStoreKeyPrefix)
 	// Calculate end bytes for prefix iteration
 	slashEndBytes := append([]byte(nil), slashPrefix...)
@@ -135,11 +161,34 @@ func (k *Keeper) ExportGenesis(ctx sdk.Context) types.GenesisState {
 		defer slashIterator.Close()
 		for ; slashIterator.Valid(); slashIterator.Next() {
 			var record confidencescorepb.SlashRecord
-			if err := k.cdc.Unmarshal(slashIterator.Value(), &record); err == nil {
-				recordCopy := record
-				slashRecords = append(slashRecords, &recordCopy)
+			if err := k.cdc.Unmarshal(slashIterator.Value(), &record); err != nil {
+				// Log the unmarshal error with record identifier
+				keyHex := fmt.Sprintf("%x", slashIterator.Key())
+				slashRecordErrors = append(slashRecordErrors, fmt.Sprintf("record %s: %v", keyHex, err))
+				ctx.Logger().Error("failed to unmarshal slash record during export",
+					"key", keyHex,
+					"error", err)
+				continue
 			}
+			recordCopy := record
+			slashRecords = append(slashRecords, &recordCopy)
 		}
+	}
+
+	// Log summary if there were unmarshal errors
+	if len(slashRecordErrors) > 0 {
+		ctx.Logger().Error("genesis export completed with slash record errors",
+			"failed_records", len(slashRecordErrors),
+			"total_exported", len(slashRecords))
+		// Emit event for monitoring systems
+		ctx.EventManager().EmitEvent(
+			sdk.NewEvent("genesis_export_warning",
+				sdk.NewAttribute("module", types.ModuleName),
+				sdk.NewAttribute("record_type", "slash_records"),
+				sdk.NewAttribute("failed_count", strconv.Itoa(len(slashRecordErrors))),
+				sdk.NewAttribute("exported_count", strconv.Itoa(len(slashRecords))),
+			),
+		)
 	}
 
 	return types.GenesisState{
