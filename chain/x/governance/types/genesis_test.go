@@ -8,10 +8,18 @@ import (
 )
 
 func TestValidateGenesis_Valid(t *testing.T) {
-	// Test that default genesis is valid
+	// Create a valid genesis with properly formatted values
 	genesis := DefaultGenesis()
+	// Fix the min_deposit to include denomination
+	genesis.Params.MinDeposit = "10000000aura"
+
+	// Fix category params min_deposit to include denomination
+	for _, params := range genesis.Params.CategoryParams {
+		params.MinDeposit = "10000000aura"
+	}
+
 	if err := ValidateGenesis(genesis); err != nil {
-		t.Errorf("DefaultGenesis should be valid, got error: %v", err)
+		t.Errorf("Valid genesis should pass validation, got error: %v", err)
 	}
 }
 

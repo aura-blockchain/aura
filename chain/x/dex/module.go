@@ -30,7 +30,9 @@ type AppModuleBasic struct{}
 func (AppModuleBasic) Name() string { return types.ModuleName }
 
 // RegisterLegacyAminoCodec registers Amino types (DEX is protobuf-native).
-func (AppModuleBasic) RegisterLegacyAminoCodec(_ *codec.LegacyAmino) {}
+func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
+	types.RegisterLegacyAminoCodec(cdc)
+}
 
 // RegisterGRPCGatewayRoutes is a no-op placeholder to satisfy the AppModuleBasic interface.
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(client.Context, *runtime.ServeMux) {}
@@ -40,20 +42,7 @@ func (AppModuleBasic) RegisterServices(ModuleServices) {}
 
 // RegisterInterfaces registers DEX message types for the interface registry.
 func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
-	msgservice.RegisterMsgServiceDesc(registry, &dexpb.Msg_ServiceDesc)
-	registry.RegisterImplementations(
-		(*sdk.Msg)(nil),
-		&dexpb.MsgCreatePool{},
-		&dexpb.MsgAddLiquidity{},
-		&dexpb.MsgRemoveLiquidity{},
-		&dexpb.MsgSwapExactIn{},
-		&dexpb.MsgCreateOrder{},
-		&dexpb.MsgCancelOrder{},
-		&dexpb.MsgExecuteSwap{},
-		&dexpb.MsgCreateHTLC{},
-		&dexpb.MsgClaimHTLC{},
-		&dexpb.MsgRefundHTLC{},
-	)
+	types.RegisterInterfaces(registry)
 }
 
 // AppModule implements the app module interface
