@@ -52,6 +52,9 @@ func TestGetTxCmd(t *testing.T) {
 }
 
 func TestCmdSubmitKYC(t *testing.T) {
+	// Valid 64-character hex string (32 bytes SHA-256 hash)
+	validPIICommitment := "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+
 	tests := []struct {
 		name    string
 		args    []string
@@ -60,11 +63,11 @@ func TestCmdSubmitKYC(t *testing.T) {
 		{
 			name: "valid KYC submission",
 			args: []string{
-				"aura1abc123", // address
-				"3",           // kyc level (INTERMEDIATE)
-				"Jumio",       // provider
-				"VID-12345",   // verification ID
-				"US",          // jurisdiction
+				"aura1abc123",       // address
+				"3",                 // kyc level (INTERMEDIATE)
+				"Jumio",             // provider
+				validPIICommitment,  // pii commitment hex (64 chars)
+				"US",                // jurisdiction
 			},
 			wantErr: false,
 		},
@@ -72,9 +75,9 @@ func TestCmdSubmitKYC(t *testing.T) {
 			name: "basic KYC level",
 			args: []string{
 				"aura1xyz789",
-				"2", // BASIC
+				"2",                 // BASIC
 				"Provider",
-				"VID-67890",
+				validPIICommitment,  // pii commitment hex (64 chars)
 				"UK",
 			},
 			wantErr: false,
@@ -97,10 +100,6 @@ func TestCmdSubmitKYC(t *testing.T) {
 			require.NotNil(t, cmd)
 			require.Contains(t, cmd.Use, "submit-kyc")
 			require.Contains(t, cmd.Short, "Submit KYC verification")
-
-			// Verify flag exists
-			flag := cmd.Flags().Lookup("documents")
-			require.NotNil(t, flag)
 
 			cmd.SetArgs(tt.args)
 			err := cmd.Args(cmd, tt.args)
@@ -439,10 +438,15 @@ func TestTxCommandStructure(t *testing.T) {
 func TestSubmitKYCDocumentsFlag(t *testing.T) {
 	cmd := CmdSubmitKYC()
 
+	// The documents flag was removed in favor of PII commitment-based storage.
+	// This test now verifies that the flag does NOT exist.
 	flag := cmd.Flags().Lookup("documents")
-	require.NotNil(t, flag)
-	require.Equal(t, "string", flag.Value.Type())
-	require.Contains(t, flag.Usage, "document")
+	require.Nil(t, flag, "documents flag should not exist - using PII commitment instead")
+
+	// Verify command structure
+	require.NotNil(t, cmd)
+	require.Contains(t, cmd.Use, "submit-kyc")
+	require.Contains(t, cmd.Use, "pii-commitment-hex", "command should accept PII commitment hex parameter")
 }
 
 func TestReportSuspiciousIndicatorsFlag(t *testing.T) {
