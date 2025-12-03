@@ -13,6 +13,9 @@ import (
 )
 
 func setupTestKeeper(t *testing.T) (*Keeper, sdk.Context) {
+	// Configure SDK with Aura-specific prefixes (safe to call multiple times)
+	keepertest.ConfigureSDK()
+
 	input := keepertest.CreateTestInputWithKeys(t, "compliance")
 	keeper := NewKeeper(input.Cdc, input.StoreKey)
 	return keeper, input.Ctx

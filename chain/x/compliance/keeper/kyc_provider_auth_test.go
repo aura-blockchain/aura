@@ -6,12 +6,28 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/compliance/types"
 )
 
 // setupTestKeeper is imported from keeper_test.go
 // This file provides comprehensive tests for KYC provider authorization (Issue #044)
+
+// grantConsentForKYC grants GDPR consent for KYC processing
+func grantConsentForKYC(t *testing.T, keeper *Keeper, ctx sdk.Context, address string) {
+	consent := &types.GDPRConsent{
+		Address:        address,
+		ConsentType:    "kyc_processing",
+		Consented:      true,
+		ConsentVersion: "v1",
+		ConsentGivenAt: timestamppb.Now(),
+	}
+	err := keeper.SetGDPRConsent(ctx, consent)
+	require.NoError(t, err)
+	err = keeper.SetProcessingRestriction(ctx, address, false)
+	require.NoError(t, err)
+}
 
 // TestKYCProviderAuthorization_UnauthorizedProviderRejection tests that
 // KYC submissions from unauthorized providers are rejected
@@ -110,6 +126,9 @@ func TestKYCProviderAuthorization_ValidProviderSucceeds(t *testing.T) {
 	err := keeper.SetParams(ctx, params)
 	require.NoError(t, err)
 
+	// Grant GDPR consent for KYC processing
+	grantConsentForKYC(t, keeper, ctx, userAddr)
+
 	piiCommitment := sha256.Sum256([]byte("test_pii_data"))
 
 	// Test: Authorized provider submits KYC
@@ -177,6 +196,9 @@ func TestKYCProviderAuthorization_MultipleProviders(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
+		// Grant GDPR consent for each user
+		grantConsentForKYC(t, keeper, ctx, tc.user)
+
 		req := &types.MsgSubmitKYC{
 			Address:       tc.user,
 			KycLevel:      tc.level,
@@ -252,6 +274,9 @@ func TestKYCProviderAuthorization_ProviderRemoval(t *testing.T) {
 
 	piiCommitment1 := sha256.Sum256([]byte("test_pii_1"))
 	piiCommitment2 := sha256.Sum256([]byte("test_pii_2"))
+
+	// Grant GDPR consent for user1
+	grantConsentForKYC(t, keeper, ctx, userAddr1)
 
 	// Test: Provider submits KYC successfully
 	req1 := &types.MsgSubmitKYC{
@@ -333,6 +358,9 @@ func TestKYCProviderAuthorization_ProviderAddition(t *testing.T) {
 	err = keeper.SetParams(ctx, params)
 	require.NoError(t, err)
 
+	// Grant GDPR consent for user2
+	grantConsentForKYC(t, keeper, ctx, userAddr2)
+
 	// Test: Same provider attempts submission after authorization
 	req2 := &types.MsgSubmitKYC{
 		Address:       userAddr2,
@@ -381,6 +409,9 @@ func TestKYCProviderAuthorization_DifferentKYCLevels(t *testing.T) {
 	for i, level := range levels {
 		userAddr := sdk.AccAddress([]byte("user_" + string(rune('0'+i)) + "_level_test")).String()
 		piiCommitment := sha256.Sum256([]byte("test_pii_" + string(rune('0'+i))))
+
+		// Grant GDPR consent for this user
+		grantConsentForKYC(t, keeper, ctx, userAddr)
 
 		req := &types.MsgSubmitKYC{
 			Address:       userAddr,
@@ -455,6 +486,9 @@ func TestKYCProviderAuthorization_AddressFormat(t *testing.T) {
 	require.NoError(t, err)
 
 	piiCommitment := sha256.Sum256([]byte("test_pii_data"))
+
+	// Grant GDPR consent
+	grantConsentForKYC(t, keeper, ctx, userAddr)
 
 	// Test: Submission with exact provider address succeeds
 	req := &types.MsgSubmitKYC{
@@ -646,6 +680,11 @@ func TestKYCProviderAuthorization_ComprehensiveSecurityChecks(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			// Grant consent only for valid submission test case
+			if !tc.expectError && tc.address != "" {
+				grantConsentForKYC(t, keeper, ctx, tc.address)
+			}
+
 			req := &types.MsgSubmitKYC{
 				Address:       tc.address,
 				KycLevel:      tc.kycLevel,
