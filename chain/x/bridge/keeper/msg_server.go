@@ -34,11 +34,28 @@ func normalizeChain(chain string) string {
 	return strings.ToLower(strings.TrimSpace(chain))
 }
 
-// verifyRawValidatorSignatures verifies raw byte signatures from multiple validators.
-// Since the proto uses repeated bytes (not ValidatorSignature objects), we need to
-// iterate through all validators and check which ones signed.
-// This is a simplified verification - in production you'd want validator addresses
-// encoded in the signature or a separate validator list.
+// verifyRawValidatorSignatures verifies raw byte signatures from multiple validators
+// against the ACTIVE validator set. This function implements critical security checks:
+//   1. Verifies cryptographic signatures
+//   2. Checks validator authorization (active status)
+//   3. Prevents signature reuse (each validator counted once)
+//   4. Ensures minimum threshold of unique active validators
+//
+// Security considerations:
+//   - Only ACTIVE validators are allowed (inactive/slashed/jailed are rejected)
+//   - Each validator can only contribute one signature (prevents duplicate counting)
+//   - Cryptographic verification using validator's registered public key
+//   - Minimum required threshold enforced (never less than MinAllowedConfirmations)
+//
+// Parameters:
+//   - ctx: SDK context for state access
+//   - signatures: Raw signature bytes from validators
+//   - msgHash: Hash of the message that was signed
+//   - minRequired: Minimum number of valid signatures required
+//
+// Returns:
+//   - validCount: Number of valid signatures from unique active validators
+//   - err: Error if threshold not met or validation fails
 func (ms msgServer) verifyRawValidatorSignatures(
 	ctx sdk.Context,
 	signatures [][]byte,
@@ -50,13 +67,27 @@ func (ms msgServer) verifyRawValidatorSignatures(
 			"provided %d signatures, need at least %d", len(signatures), minRequired)
 	}
 
-	// Get all active validators
-	allValidators := ms.Keeper.getAllValidators(ctx)
-	if len(allValidators) == 0 {
-		return 0, errorsmod.Wrap(types.ErrValidatorNotFound, "no validators registered")
+	// SECURITY: Get only ACTIVE validators (governance-approved, not slashed/jailed)
+	activeValidators := ms.Keeper.getActiveValidators(ctx)
+	if len(activeValidators) == 0 {
+		return 0, errorsmod.Wrap(types.ErrNoActiveValidators,
+			"no active validators in current set")
 	}
 
-	// Track which validators have been matched
+	// Get full validator objects for active validators only
+	activeValidatorMap := make(map[string]*types.BridgeValidator)
+	for _, addr := range activeValidators {
+		if validator, found := ms.Keeper.getValidator(ctx, addr); found {
+			activeValidatorMap[addr] = validator
+		}
+	}
+
+	if len(activeValidatorMap) == 0 {
+		return 0, errorsmod.Wrap(types.ErrNoActiveValidators,
+			"no active validators available")
+	}
+
+	// Track which validators have been matched (prevent counting same validator twice)
 	usedValidators := make(map[string]bool)
 
 	for _, sigBytes := range signatures {
@@ -64,15 +95,10 @@ func (ms msgServer) verifyRawValidatorSignatures(
 			continue
 		}
 
-		// Try to match this signature against all validators
-		for _, validator := range allValidators {
-			// Skip if validator already matched
-			if usedValidators[validator.Address] {
-				continue
-			}
-
-			// Skip inactive validators
-			if !validator.Active {
+		// Try to match this signature against ACTIVE validators only
+		for addr, validator := range activeValidatorMap {
+			// Skip if validator already matched (prevent duplicate counting)
+			if usedValidators[addr] {
 				continue
 			}
 
@@ -82,7 +108,7 @@ func (ms msgServer) verifyRawValidatorSignatures(
 			}
 
 			var pubKey cryptotypes.PubKey
-			// Try to unmarshal as amino JSON first, then as protobuf
+			// Unmarshal the public key
 			err := ms.Keeper.cdc.UnmarshalInterface(validator.PublicKey, &pubKey)
 			if err != nil {
 				// Skip this validator if pubkey can't be parsed
@@ -95,18 +121,18 @@ func (ms msgServer) verifyRawValidatorSignatures(
 
 			// CRITICAL: Verify the cryptographic signature
 			if pubKey.VerifySignature(msgHash, sigBytes) {
-				// Valid signature found - mark this validator as used
-				usedValidators[validator.Address] = true
+				// Valid signature from active validator found
+				usedValidators[addr] = true
 				validCount++
 				break // Move to next signature
 			}
 		}
 	}
 
-	// Check if we have enough valid signatures
+	// Check if we have enough valid signatures from active validators
 	if validCount < int(minRequired) {
 		return validCount, errorsmod.Wrapf(types.ErrInsufficientSignatures,
-			"only %d valid signatures from %d provided, need %d",
+			"only %d valid signatures from active validators (out of %d provided), need %d",
 			validCount, len(signatures), minRequired)
 	}
 
@@ -255,6 +281,27 @@ func (ms msgServer) UnlockTokens(goCtx context.Context, msg *bridgepb.MsgUnlockT
 		return nil, status.Error(codes.InvalidArgument, "invalid amount")
 	}
 	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// CRITICAL SECURITY: Check if this source hash was already processed (replay attack prevention)
+	// This MUST happen BEFORE any other processing to prevent replay attacks where an attacker
+	// reuses the same burn transaction hash to unlock tokens multiple times.
+	sourceChain := normalizeChain(msg.SourceChain)
+	if sourceChain == "" {
+		// If no source chain specified, try to infer from transfer
+		transferID, hasIndex := ms.Keeper.transferIDByHash(ctx, msg.BurnTxHash)
+		if hasIndex {
+			if transfer, found := ms.Keeper.getTransfer(ctx, transferID); found {
+				sourceChain = normalizeChain(transfer.SourceChain)
+			}
+		}
+	}
+
+	// Perform replay check with normalized source chain
+	if ms.Keeper.IsSourceHashProcessed(ctx, sourceChain, msg.BurnTxHash) {
+		return nil, status.Error(codes.AlreadyExists,
+			"source transaction already processed (replay attack prevented)")
+	}
+
 	transferID, hasIndex := ms.Keeper.transferIDByHash(ctx, msg.BurnTxHash)
 	if !hasIndex {
 		transferID = msg.BurnTxHash
@@ -267,6 +314,12 @@ func (ms msgServer) UnlockTokens(goCtx context.Context, msg *bridgepb.MsgUnlockT
 	// SECURITY FIX: Verify cryptographic signatures instead of just counting them
 	required := ms.Keeper.GetParams(ctx).MinConfirmations
 
+	// CRITICAL SECURITY: Enforce minimum even if params were misconfigured
+	// Never allow less than 2 validators to prevent single validator control
+	if required < types.MinAllowedConfirmations {
+		required = types.MinAllowedConfirmations
+	}
+
 	// Build deterministic message hash for signature verification
 	// Format: sourceChain:burnTxHash:recipient:amount:denom
 	msgToSign := fmt.Sprintf("%s:%s:%s:%s:%s",
@@ -278,7 +331,20 @@ func (ms msgServer) UnlockTokens(goCtx context.Context, msg *bridgepb.MsgUnlockT
 	)
 	msgHash := sha256.Sum256([]byte(msgToSign))
 
-	// Verify signatures cryptographically
+	// CRITICAL SECURITY: Check if this signature set has been used before
+	// This prevents replay attacks where the same valid signatures are reused
+	signatureSetHash := ms.Keeper.computeSignatureSetHash(msg.ValidatorSignatures)
+	if signatureSetHash != nil && ms.Keeper.isSignatureSetUsed(ctx, transferID, signatureSetHash) {
+		return nil, status.Error(codes.AlreadyExists,
+			"signature set already used for this transfer (replay attack prevented)")
+	}
+
+	// Verify signatures cryptographically against ACTIVE validator set
+	// This function:
+	//   - Verifies cryptographic signatures
+	//   - Checks validator authorization (only active validators)
+	//   - Counts UNIQUE validators (prevents duplicate counting)
+	//   - Enforces minimum threshold
 	validCount, err := ms.verifyRawValidatorSignatures(ctx, msg.ValidatorSignatures, msgHash[:], required)
 	if err != nil {
 		return nil, status.Error(codes.PermissionDenied, err.Error())
@@ -292,8 +358,21 @@ func (ms msgServer) UnlockTokens(goCtx context.Context, msg *bridgepb.MsgUnlockT
 			sdk.NewAttribute("burn_tx_hash", msg.BurnTxHash),
 			sdk.NewAttribute("valid_signatures", fmt.Sprintf("%d", validCount)),
 			sdk.NewAttribute("required_signatures", fmt.Sprintf("%d", required)),
+			sdk.NewAttribute("signature_set_hash", fmt.Sprintf("%x", signatureSetHash)),
 		),
 	)
+
+	// CRITICAL SECURITY: Mark signature set as used BEFORE unlocking tokens
+	// This prevents the same signatures from being replayed
+	// Following checks-effects-interactions pattern
+	if signatureSetHash != nil {
+		ms.Keeper.markSignatureSetUsed(ctx, transferID, signatureSetHash)
+	}
+
+	// CRITICAL SECURITY: Mark the source hash as processed BEFORE unlocking tokens
+	// This prevents reentrancy and ensures the replay protection is atomic.
+	// Following checks-effects-interactions pattern: effects (state change) before interactions (token transfer).
+	ms.Keeper.MarkSourceHashProcessed(ctx, sourceChain, msg.BurnTxHash)
 
 	recipient, err := sdk.AccAddressFromBech32(msg.Sender)
 	if err != nil {

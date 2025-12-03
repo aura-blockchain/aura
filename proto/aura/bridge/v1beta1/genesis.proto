@@ -31,6 +31,10 @@ message GenesisState {
 
   // Relayer stats
   repeated RelayerStats relayer_stats = 8 [(gogoproto.nullable) = false];
+
+  // Processed source hashes (replay attack prevention)
+  // Format: "sourceChain:sourceHash" for each processed transaction
+  repeated string processed_source_hashes = 9;
 }
 
 // BridgeParams defines the parameters for the bridge module

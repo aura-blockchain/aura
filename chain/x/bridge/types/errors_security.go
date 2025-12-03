@@ -44,8 +44,11 @@ var (
 	ErrClaimAlreadyResolved      = errors.New("claim already resolved")
 
 	// Validator errors
-	ErrValidatorSlashed     = errors.New("validator has been slashed")
-	ErrValidatorJailed      = errors.New("validator is jailed")
-	ErrRotationNotApproved  = errors.New("validator rotation not approved")
-	ErrRotationNotEffective = errors.New("validator rotation not yet effective")
+	ErrValidatorSlashed        = errors.New("validator has been slashed")
+	ErrValidatorJailed         = errors.New("validator is jailed")
+	ErrRotationNotApproved     = errors.New("validator rotation not approved")
+	ErrRotationNotEffective    = errors.New("validator rotation not yet effective")
+	ErrValidatorUnauthorized   = errors.New("validator is not authorized")
+	ErrNoActiveValidators      = errors.New("no active validators available")
+	ErrSignatureSetAlreadyUsed = errors.New("signature set already used for this transfer")
 )

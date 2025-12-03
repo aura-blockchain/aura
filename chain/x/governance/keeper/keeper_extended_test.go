@@ -3,6 +3,7 @@ package keeper_test
 import (
 	"testing"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -16,16 +17,35 @@ import (
 
 func TestGetNextProposalID(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey)
+	mockStaking := &MockStakingKeeper{delegatorBonded: make(map[string]sdkmath.Int)}
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, mockStaking)
 
 	// First ID should be 1
 	id := k.GetNextProposalID(input.Ctx)
 	assert.Equal(t, uint64(1), id)
 }
 
+// MockStakingKeeper for tests
+type MockStakingKeeper struct {
+	delegatorBonded map[string]sdkmath.Int
+}
+
+func (m *MockStakingKeeper) GetDelegatorBonded(ctx sdk.Context, delegator sdk.AccAddress) sdkmath.Int {
+	if amount, ok := m.delegatorBonded[delegator.String()]; ok {
+		return amount
+	}
+	return sdkmath.ZeroInt()
+}
+
+// createTestKeeper is a helper function to create a keeper with mock staking keeper
+func createTestKeeper(input keepertest.TestInput) *keeper.Keeper {
+	mockStaking := &MockStakingKeeper{delegatorBonded: make(map[string]sdkmath.Int)}
+	return keeper.NewKeeper(input.Cdc, input.StoreKey, mockStaking)
+}
+
 func TestSetNextProposalID(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey)
+	k := createTestKeeper(input)
 
 	k.SetNextProposalID(input.Ctx, 42)
 	id := k.GetNextProposalID(input.Ctx)
@@ -34,7 +54,7 @@ func TestSetNextProposalID(t *testing.T) {
 
 func TestNextProposalIDIncrement(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey)
+	k := createTestKeeper(input)
 
 	// Get initial ID
 	id1 := k.GetNextProposalID(input.Ctx)
@@ -51,7 +71,7 @@ func TestNextProposalIDIncrement(t *testing.T) {
 
 func TestSetAndGetProposal(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey)
+	k := createTestKeeper(input)
 
 	proposal := &types.Proposal{
 		Id:          1,
@@ -74,7 +94,7 @@ func TestSetAndGetProposal(t *testing.T) {
 
 func TestDeleteProposal(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey)
+	k := createTestKeeper(input)
 
 	proposal := &types.Proposal{
 		Id:       1,
@@ -101,7 +121,7 @@ func TestDeleteProposal(t *testing.T) {
 
 func TestGetAllProposalsEmpty(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey)
+	k := createTestKeeper(input)
 
 	proposals := k.GetAllProposals(input.Ctx)
 	assert.Empty(t, proposals)
@@ -109,7 +129,7 @@ func TestGetAllProposalsEmpty(t *testing.T) {
 
 func TestGetAllProposalsMultiple(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey)
+	k := createTestKeeper(input)
 
 	// Create multiple proposals
 	for i := 1; i <= 5; i++ {
@@ -131,7 +151,7 @@ func TestGetAllProposalsMultiple(t *testing.T) {
 
 func TestSetAndGetVote(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey)
+	k := createTestKeeper(input)
 
 	voter := keepertest.GenTestAddr().String()
 	vote := &types.Vote{
@@ -152,7 +172,7 @@ func TestSetAndGetVote(t *testing.T) {
 
 func TestGetVoteNotFound(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey)
+	k := createTestKeeper(input)
 
 	_, err := k.GetVote(input.Ctx, 1, "nonexistent")
 	require.Error(t, err)
@@ -160,16 +180,16 @@ func TestGetVoteNotFound(t *testing.T) {
 
 func TestGetVotesForProposal(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey)
+	k := createTestKeeper(input)
 
 	proposalID := uint64(1)
 
-	// Create multiple votes
-	for i := 0; i < 3; i++ {
-		voter := keepertest.GenTestAddr().String()
+	// Create multiple votes with unique addresses
+	voters := keepertest.GenTestAddrs(3)
+	for _, voter := range voters {
 		vote := &types.Vote{
 			ProposalId:  proposalID,
-			Voter:       voter,
+			Voter:       voter.String(),
 			Option:      types.OptionYes,
 			VotingPower: "1000000",
 		}
@@ -183,7 +203,7 @@ func TestGetVotesForProposal(t *testing.T) {
 
 func TestGetVotesEmpty(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey)
+	k := createTestKeeper(input)
 
 	votes := k.GetVotes(input.Ctx, 999)
 	assert.Empty(t, votes)
@@ -193,7 +213,7 @@ func TestGetVotesEmpty(t *testing.T) {
 
 func TestSetAndGetDeposit(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey)
+	k := createTestKeeper(input)
 
 	depositor := keepertest.GenTestAddr().String()
 	deposit := &types.Deposit{
@@ -212,7 +232,7 @@ func TestSetAndGetDeposit(t *testing.T) {
 
 func TestGetDepositNotFound(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey)
+	k := createTestKeeper(input)
 
 	_, err := k.GetDeposit(input.Ctx, 1, "nonexistent")
 	require.Error(t, err)
@@ -221,7 +241,7 @@ func TestGetDepositNotFound(t *testing.T) {
 
 func TestGetDepositsForProposal(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey)
+	k := createTestKeeper(input)
 
 	proposalID := uint64(1)
 
@@ -245,7 +265,7 @@ func TestGetDepositsForProposal(t *testing.T) {
 
 func TestSetVoteDelegation(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey)
+	k := createTestKeeper(input)
 
 	delegator := keepertest.GenTestAddr().String()
 	delegate := keepertest.GenTestAddr().String()
@@ -262,7 +282,7 @@ func TestSetVoteDelegation(t *testing.T) {
 
 func TestDeleteVoteDelegation(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey)
+	k := createTestKeeper(input)
 
 	delegator := keepertest.GenTestAddr().String()
 	delegate := keepertest.GenTestAddr().String()
@@ -282,7 +302,7 @@ func TestDeleteVoteDelegation(t *testing.T) {
 
 func TestGetVoteDelegations(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey)
+	k := createTestKeeper(input)
 
 	delegator := keepertest.GenTestAddr().String()
 
@@ -306,7 +326,7 @@ func TestGetVoteDelegations(t *testing.T) {
 
 func TestSetAndGetVetoRequest(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey)
+	k := createTestKeeper(input)
 
 	vetoer := keepertest.GenTestAddr().String()
 	veto := &types.VetoRequest{
@@ -327,7 +347,7 @@ func TestSetAndGetVetoRequest(t *testing.T) {
 
 func TestGetVetoRequestNotFound(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey)
+	k := createTestKeeper(input)
 
 	_, err := k.GetVetoRequest(input.Ctx, 999)
 	require.Error(t, err)
@@ -336,7 +356,7 @@ func TestGetVetoRequestNotFound(t *testing.T) {
 
 func TestGetVetoRequests(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey)
+	k := createTestKeeper(input)
 
 	proposalID := uint64(1)
 	vetoer := keepertest.GenTestAddr().String()
@@ -358,7 +378,7 @@ func TestGetVetoRequests(t *testing.T) {
 
 func TestSetSnapshotVote(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey)
+	k := createTestKeeper(input)
 
 	voter := keepertest.GenTestAddr().String()
 	vote := &types.SnapshotVote{
@@ -375,7 +395,7 @@ func TestSetSnapshotVote(t *testing.T) {
 
 func TestGetSnapshotVotes(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey)
+	k := createTestKeeper(input)
 
 	proposalID := uint64(1)
 
@@ -401,7 +421,7 @@ func TestGetSnapshotVotes(t *testing.T) {
 
 func TestCalculateTallyNoVotes(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey)
+	k := createTestKeeper(input)
 
 	tally := k.CalculateTally(input.Ctx, 1)
 	require.NotNil(t, tally)
@@ -413,26 +433,37 @@ func TestCalculateTallyNoVotes(t *testing.T) {
 
 func TestCalculateTallyWithVotes(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey)
+	mockStaking := &MockStakingKeeper{delegatorBonded: make(map[string]sdkmath.Int)}
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, mockStaking)
 
 	proposalID := uint64(1)
 
-	// Add different types of votes
-	votes := []types.VoteOption{
-		types.OptionYes,
-		types.OptionYes,
-		types.OptionNo,
-		types.OptionAbstain,
-		types.OptionNoWithVeto,
+	// Add different types of votes with staking power
+	votesWithPower := []struct {
+		option types.VoteOption
+		power  sdkmath.Int
+	}{
+		{types.OptionYes, sdkmath.NewInt(1000000)},
+		{types.OptionYes, sdkmath.NewInt(2000000)},
+		{types.OptionNo, sdkmath.NewInt(500000)},
+		{types.OptionAbstain, sdkmath.NewInt(300000)},
+		{types.OptionNoWithVeto, sdkmath.NewInt(100000)},
 	}
 
-	for i, option := range votes {
-		voter := keepertest.GenTestAddr().String()
+	// Generate unique addresses for each voter
+	voters := keepertest.GenTestAddrs(len(votesWithPower))
+
+	for i, voteInfo := range votesWithPower {
+		voter := voters[i]
+
+		// Set up staking power for this voter in the mock
+		mockStaking.delegatorBonded[voter.String()] = voteInfo.power
+
 		vote := &types.Vote{
 			ProposalId:  proposalID,
-			Voter:       voter,
-			Option:      option,
-			VotingPower: "1000000",
+			Voter:       voter.String(),
+			Option:      voteInfo.option,
+			VotingPower: voteInfo.power.String(),
 		}
 		err := k.SetVote(input.Ctx, vote)
 		require.NoError(t, err, "vote %d failed", i)
@@ -440,25 +471,31 @@ func TestCalculateTallyWithVotes(t *testing.T) {
 
 	tally := k.CalculateTally(input.Ctx, proposalID)
 	require.NotNil(t, tally)
-	// Note: Simple counting implementation returns "1" for any count > 0
-	assert.NotEqual(t, "0", tally.Yes)
-	assert.NotEqual(t, "0", tally.No)
+
+	// Verify proper accumulation (not just "1" per vote)
+	assert.Equal(t, "3000000", tally.Yes, "Yes votes should total 1M + 2M")
+	assert.Equal(t, "500000", tally.No, "No votes should total 500K")
+	assert.Equal(t, "300000", tally.Abstain, "Abstain votes should total 300K")
+	assert.Equal(t, "100000", tally.NoWithVeto, "NoWithVeto votes should total 100K")
 }
 
 // Test Helper Methods
 
 func TestGetVotingPower(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey)
+	k := createTestKeeper(input)
 
 	addr := keepertest.GenTestAddr().String()
-	power := k.GetVotingPower(input.Ctx, addr)
-	assert.NotEmpty(t, power)
+	power, err := k.GetVotingPower(input.Ctx, addr)
+	require.NoError(t, err)
+	assert.NotNil(t, power)
+	// Default voting power is 0 since no stake is set in mock
+	assert.Equal(t, sdkmath.ZeroInt(), power)
 }
 
 func TestGetDelegatedPower(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey)
+	k := createTestKeeper(input)
 
 	addr := keepertest.GenTestAddr().String()
 	power := k.GetDelegatedPower(input.Ctx, addr)
@@ -467,7 +504,7 @@ func TestGetDelegatedPower(t *testing.T) {
 
 func TestGetTokenLocks(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey)
+	k := createTestKeeper(input)
 
 	addr := keepertest.GenTestAddr().String()
 	locks := k.GetTokenLocks(input.Ctx, addr)
@@ -478,7 +515,7 @@ func TestGetTokenLocks(t *testing.T) {
 
 func TestSetProposalWithZeroID(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey)
+	k := createTestKeeper(input)
 
 	proposal := &types.Proposal{
 		Id:       0,
@@ -497,7 +534,7 @@ func TestSetProposalWithZeroID(t *testing.T) {
 
 func TestSetVoteWithEmptyVoter(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey)
+	k := createTestKeeper(input)
 
 	vote := &types.Vote{
 		ProposalId:  1,
@@ -512,7 +549,7 @@ func TestSetVoteWithEmptyVoter(t *testing.T) {
 
 func TestMultipleProposalCategories(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey)
+	k := createTestKeeper(input)
 
 	categories := []types.ProposalCategory{
 		types.CategoryText,
@@ -543,7 +580,7 @@ func TestMultipleProposalCategories(t *testing.T) {
 
 func TestProposalStatusTransitions(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey)
+	k := createTestKeeper(input)
 
 	statuses := []types.ProposalStatus{
 		types.StatusDepositPeriod,
@@ -576,7 +613,7 @@ func TestProposalStatusTransitions(t *testing.T) {
 
 func TestVoteOptions(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey)
+	k := createTestKeeper(input)
 
 	options := []types.VoteOption{
 		types.OptionUnspecified,
@@ -607,7 +644,7 @@ func TestVoteOptions(t *testing.T) {
 
 func TestConcurrentProposalCreation(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey)
+	k := createTestKeeper(input)
 
 	// Create multiple proposals with different IDs
 	for i := 1; i <= 10; i++ {
@@ -628,7 +665,7 @@ func TestConcurrentProposalCreation(t *testing.T) {
 
 func TestBoundaryValues(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey)
+	k := createTestKeeper(input)
 
 	// Test with max uint64 ID
 	proposal := &types.Proposal{

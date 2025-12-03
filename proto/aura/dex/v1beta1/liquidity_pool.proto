@@ -75,6 +75,12 @@ message LiquidityPool {
 
   // Pool creation time
   google.protobuf.Timestamp created_at = 14 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+
+  // Locked liquidity (minimum liquidity burned on pool creation to prevent first depositor attack)
+  string locked_liquidity = 15 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
 }
 
 // LiquidityProvider represents a single LP's position

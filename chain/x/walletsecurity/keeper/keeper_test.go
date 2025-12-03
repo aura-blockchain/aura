@@ -355,6 +355,204 @@ func (suite *KeeperTestSuite) TestInitiateRecovery() {
 	suite.Require().Equal(int32(1), request.ApprovalsCount)
 }
 
+func (suite *KeeperTestSuite) TestApproveRecovery_Success() {
+	walletID := "wallet123"
+	guardians := []*wsproto.Guardian{
+		{Address: "cosmos1guardian1", Name: "Guardian 1"},
+		{Address: "cosmos1guardian2", Name: "Guardian 2"},
+		{Address: "cosmos1guardian3", Name: "Guardian 3"},
+	}
+
+	// Configure social recovery
+	config, err := suite.keeper.ConfigureSocialRecovery(
+		suite.ctx,
+		walletID,
+		guardians,
+		2,
+		durationpb.New(48*time.Hour),
+	)
+	suite.Require().NoError(err)
+
+	// Confirm guardians
+	for _, g := range guardians {
+		err = suite.keeper.ConfirmGuardian(suite.ctx, walletID, g.Address)
+		suite.Require().NoError(err)
+	}
+
+	// Initiate recovery
+	newAddress := "cosmos1newaddress"
+	request, err := suite.keeper.InitiateRecovery(
+		suite.ctx,
+		config.WalletId,
+		newAddress,
+		guardians[0].Address,
+	)
+	suite.Require().NoError(err)
+
+	// Second guardian approves
+	signature := make([]byte, 64)
+	ready, err := suite.keeper.ApproveRecovery(
+		suite.ctx,
+		request.RequestId,
+		guardians[1].Address,
+		signature,
+	)
+	suite.Require().NoError(err)
+	suite.Require().True(ready) // Threshold of 2 met
+
+	// Verify request state
+	requestBytes, err := suite.keeper.GetRecoveryRequest(suite.ctx, request.RequestId)
+	suite.Require().NoError(err)
+	var updatedRequest wsproto.RecoveryRequest
+	suite.cdc.MustUnmarshal(requestBytes, &updatedRequest)
+	suite.Require().Equal(int32(2), updatedRequest.ApprovalsCount)
+	suite.Require().Equal(wsproto.RecoveryStatus_RECOVERY_STATUS_APPROVED, updatedRequest.Status)
+}
+
+func (suite *KeeperTestSuite) TestApproveRecovery_UnauthorizedGuardian() {
+	walletID := "wallet123"
+	guardians := []*wsproto.Guardian{
+		{Address: "cosmos1guardian1", Name: "Guardian 1"},
+		{Address: "cosmos1guardian2", Name: "Guardian 2"},
+	}
+
+	// Configure social recovery
+	config, err := suite.keeper.ConfigureSocialRecovery(
+		suite.ctx,
+		walletID,
+		guardians,
+		2,
+		durationpb.New(48*time.Hour),
+	)
+	suite.Require().NoError(err)
+
+	// Confirm authorized guardians
+	for _, g := range guardians {
+		err = suite.keeper.ConfirmGuardian(suite.ctx, walletID, g.Address)
+		suite.Require().NoError(err)
+	}
+
+	// Initiate recovery
+	newAddress := "cosmos1newaddress"
+	request, err := suite.keeper.InitiateRecovery(
+		suite.ctx,
+		config.WalletId,
+		newAddress,
+		guardians[0].Address,
+	)
+	suite.Require().NoError(err)
+
+	// Unauthorized address (not in guardian list) tries to approve
+	unauthorizedAddress := "cosmos1unauthorized"
+	signature := make([]byte, 64)
+	_, err = suite.keeper.ApproveRecovery(
+		suite.ctx,
+		request.RequestId,
+		unauthorizedAddress,
+		signature,
+	)
+
+	// Should fail with invalid guardian error
+	suite.Require().Error(err)
+	suite.Require().Equal(types.ErrInvalidGuardian, err)
+}
+
+func (suite *KeeperTestSuite) TestApproveRecovery_DuplicateApproval() {
+	walletID := "wallet123"
+	guardians := []*wsproto.Guardian{
+		{Address: "cosmos1guardian1", Name: "Guardian 1"},
+		{Address: "cosmos1guardian2", Name: "Guardian 2"},
+		{Address: "cosmos1guardian3", Name: "Guardian 3"},
+	}
+
+	// Configure social recovery
+	config, err := suite.keeper.ConfigureSocialRecovery(
+		suite.ctx,
+		walletID,
+		guardians,
+		2,
+		durationpb.New(48*time.Hour),
+	)
+	suite.Require().NoError(err)
+
+	// Confirm guardians
+	for _, g := range guardians {
+		err = suite.keeper.ConfirmGuardian(suite.ctx, walletID, g.Address)
+		suite.Require().NoError(err)
+	}
+
+	// Initiate recovery (guardian 1 automatically approves)
+	newAddress := "cosmos1newaddress"
+	request, err := suite.keeper.InitiateRecovery(
+		suite.ctx,
+		config.WalletId,
+		newAddress,
+		guardians[0].Address,
+	)
+	suite.Require().NoError(err)
+
+	// Same guardian tries to approve again
+	signature := make([]byte, 64)
+	_, err = suite.keeper.ApproveRecovery(
+		suite.ctx,
+		request.RequestId,
+		guardians[0].Address,
+		signature,
+	)
+
+	// Should fail with already exists error
+	suite.Require().Error(err)
+	suite.Require().Contains(err.Error(), "already approved")
+}
+
+func (suite *KeeperTestSuite) TestApproveRecovery_UnconfirmedGuardian() {
+	walletID := "wallet123"
+	guardians := []*wsproto.Guardian{
+		{Address: "cosmos1guardian1", Name: "Guardian 1"},
+		{Address: "cosmos1guardian2", Name: "Guardian 2"},
+		{Address: "cosmos1guardian3", Name: "Guardian 3"},
+	}
+
+	// Configure social recovery
+	config, err := suite.keeper.ConfigureSocialRecovery(
+		suite.ctx,
+		walletID,
+		guardians,
+		2,
+		durationpb.New(48*time.Hour),
+	)
+	suite.Require().NoError(err)
+
+	// Confirm only guardians 1 and 2, leave guardian 3 unconfirmed
+	err = suite.keeper.ConfirmGuardian(suite.ctx, walletID, guardians[0].Address)
+	suite.Require().NoError(err)
+	err = suite.keeper.ConfirmGuardian(suite.ctx, walletID, guardians[1].Address)
+	suite.Require().NoError(err)
+
+	// Initiate recovery with guardian 1
+	newAddress := "cosmos1newaddress"
+	request, err := suite.keeper.InitiateRecovery(
+		suite.ctx,
+		config.WalletId,
+		newAddress,
+		guardians[0].Address,
+	)
+	suite.Require().NoError(err)
+
+	// Unconfirmed guardian 3 tries to approve
+	signature := make([]byte, 64)
+	_, err = suite.keeper.ApproveRecovery(
+		suite.ctx,
+		request.RequestId,
+		guardians[2].Address,
+		signature,
+	)
+
+	// Should fail with invalid guardian error
+	suite.Require().Error(err)
+	suite.Require().Equal(types.ErrInvalidGuardian, err)
+}
+
 // ============================================================================
 // Spending Limit Tests
 // ============================================================================

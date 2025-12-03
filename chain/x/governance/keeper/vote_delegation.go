@@ -144,22 +144,14 @@ func (k *Keeper) VoteWithDelegatedPower(
 
 // calculateTotalVotingPower calculates total voting power including delegations
 func (k *Keeper) calculateTotalVotingPower(ctx sdk.Context, address string) string {
-	// Get base voting power
-	basePower := k.GetVotingPower(ctx, address)
+	// GetVotingPower now includes all delegation logic internally
+	// It returns: staked tokens + delegated TO - delegated AWAY
+	totalPower, err := k.GetVotingPower(ctx, address)
+	if err != nil {
+		return "0"
+	}
 
-	// Get delegated power
-	delegatedPower := k.calculateDelegatedPower(ctx, address)
-
-	// Sum total
-	base := new(big.Int)
-	base.SetString(basePower, 10)
-
-	delegated := new(big.Int)
-	delegated.SetString(delegatedPower, 10)
-
-	total := new(big.Int).Add(base, delegated)
-
-	return total.String()
+	return totalPower.String()
 }
 
 // calculateDelegatedPower calculates power delegated to an address

@@ -295,3 +295,123 @@ func TestDefaultSecurityParams_Consistency(t *testing.T) {
 	require.True(t, params.ValidatorRotationPeriod > 0)
 	require.True(t, params.FraudProofWindowDuration > 0)
 }
+
+// TestMinConfirmationsSecurity verifies the critical security fix for single validator control
+// This addresses TODO-035: Bridge Single Validator Can Drain Funds
+func TestMinConfirmationsSecurity(t *testing.T) {
+	t.Run("DefaultParams must require 3 confirmations", func(t *testing.T) {
+		params := types.DefaultParams()
+		require.Equal(t, types.DefaultMinConfirmations, params.MinConfirmations,
+			"Default params must require 3 confirmations to prevent single validator control")
+		require.Equal(t, uint64(3), params.MinConfirmations,
+			"DefaultMinConfirmations constant must be 3")
+	})
+
+	t.Run("Validate rejects less than MinAllowedConfirmations", func(t *testing.T) {
+		params := types.DefaultParams()
+
+		// Test with 0 confirmations (CRITICAL vulnerability)
+		params.MinConfirmations = 0
+		err := params.Validate()
+		require.Error(t, err, "Must reject 0 confirmations")
+		require.Contains(t, err.Error(), "MinConfirmations must be >= 2",
+			"Error message must reference minimum requirement")
+
+		// Test with 1 confirmation (CRITICAL vulnerability - single validator control)
+		params.MinConfirmations = 1
+		err = params.Validate()
+		require.Error(t, err, "Must reject single validator confirmation")
+		require.Contains(t, err.Error(), "prevents single validator control",
+			"Error message must explain security rationale")
+
+		// Test with 2 confirmations (minimum allowed)
+		params.MinConfirmations = 2
+		err = params.Validate()
+		require.NoError(t, err, "Must accept 2 confirmations (minimum allowed)")
+
+		// Test with 3 confirmations (default)
+		params.MinConfirmations = 3
+		err = params.Validate()
+		require.NoError(t, err, "Must accept 3 confirmations (default)")
+
+		// Test with higher values
+		params.MinConfirmations = 10
+		err = params.Validate()
+		require.NoError(t, err, "Must accept higher confirmation requirements")
+	})
+
+	t.Run("MinAllowedConfirmations constant is 2", func(t *testing.T) {
+		require.Equal(t, uint64(2), types.MinAllowedConfirmations,
+			"MinAllowedConfirmations must be 2 to prevent single validator control")
+	})
+
+	t.Run("validateMinConfirmations enforces minimum", func(t *testing.T) {
+		params := types.DefaultParams()
+		pairs := params.ParamSetPairs()
+
+		// Find the MinConfirmations validator function
+		var minConfValidator func(interface{}) error
+		for _, pair := range pairs {
+			if string(pair.Key) == "MinConfirmations" {
+				minConfValidator = pair.ValidatorFn
+				break
+			}
+		}
+
+		require.NotNil(t, minConfValidator, "MinConfirmations must have a validator function")
+
+		// Test validator rejects values below minimum
+		err := minConfValidator(uint64(0))
+		require.Error(t, err, "Validator must reject 0")
+
+		err = minConfValidator(uint64(1))
+		require.Error(t, err, "Validator must reject 1")
+
+		// Test validator accepts minimum and above
+		err = minConfValidator(uint64(2))
+		require.NoError(t, err, "Validator must accept 2")
+
+		err = minConfValidator(uint64(3))
+		require.NoError(t, err, "Validator must accept 3")
+
+		err = minConfValidator(uint64(100))
+		require.NoError(t, err, "Validator must accept higher values")
+	})
+}
+
+// TestSecurityRegressionPrevention ensures the vulnerability cannot be reintroduced
+func TestSecurityRegressionPrevention(t *testing.T) {
+	t.Run("Default params must never allow single validator control", func(t *testing.T) {
+		params := types.DefaultParams()
+
+		// This test will fail if someone changes the default back to 1
+		require.GreaterOrEqual(t, params.MinConfirmations, types.MinAllowedConfirmations,
+			"SECURITY REGRESSION: Default params must require at least MinAllowedConfirmations")
+
+		require.GreaterOrEqual(t, params.MinConfirmations, uint64(3),
+			"SECURITY REGRESSION: Default params should require at least 3 confirmations")
+	})
+
+	t.Run("MinAllowedConfirmations constant must prevent single validator", func(t *testing.T) {
+		// This test will fail if someone changes MinAllowedConfirmations to less than 2
+		require.GreaterOrEqual(t, types.MinAllowedConfirmations, uint64(2),
+			"SECURITY REGRESSION: MinAllowedConfirmations must be at least 2 to prevent single validator control")
+	})
+
+	t.Run("Validation must enforce minimum at protocol level", func(t *testing.T) {
+		// Even if someone tries to set params with MinConfirmations=1, validation must reject it
+		invalidParams := types.Params{
+			BridgeEnabled:                true,
+			MinConfirmations:             1, // INVALID
+			BridgeFeeBasisPoints:         30,
+			MaxTransferAmount:            "1000000000",
+			ValidatorThresholdPercentage: 67,
+		}
+
+		err := invalidParams.Validate()
+		require.Error(t, err,
+			"SECURITY REGRESSION: Validation must reject MinConfirmations=1")
+		require.Contains(t, err.Error(), "prevents single validator control",
+			"Error message must explain security rationale")
+	})
+}

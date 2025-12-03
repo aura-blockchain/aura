@@ -3,12 +3,18 @@ package keeper
 import (
 	"encoding/binary"
 
+	sdkmath "cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/aequitas/aura/chain/x/governance/types"
 )
+
+// StakingKeeper defines the expected staking keeper interface
+type StakingKeeper interface {
+	GetDelegatorBonded(ctx sdk.Context, delegator sdk.AccAddress) sdkmath.Int
+}
 
 // Key prefixes for KVStore
 var (
@@ -26,15 +32,17 @@ var (
 
 // Keeper maintains the state of the governance module
 type Keeper struct {
-	storeKey storetypes.StoreKey
-	cdc      codec.BinaryCodec
+	storeKey      storetypes.StoreKey
+	cdc           codec.BinaryCodec
+	stakingKeeper StakingKeeper
 }
 
 // NewKeeper creates a new governance keeper
-func NewKeeper(cdc codec.BinaryCodec, storeKey storetypes.StoreKey) *Keeper {
+func NewKeeper(cdc codec.BinaryCodec, storeKey storetypes.StoreKey, stakingKeeper StakingKeeper) *Keeper {
 	return &Keeper{
-		cdc:      cdc,
-		storeKey: storeKey,
+		cdc:           cdc,
+		storeKey:      storeKey,
+		stakingKeeper: stakingKeeper,
 	}
 }
 
@@ -186,8 +194,7 @@ func (k *Keeper) GetVote(ctx sdk.Context, proposalID uint64, voter string) (*typ
 		return nil, types.ErrInvalidVote
 	}
 
-	var vote types.Vote
-	return &vote, k.cdc.Unmarshal(bz, &vote)
+	return k.unmarshalVote(bz)
 }
 
 // GetVotes retrieves all votes for a proposal
@@ -199,11 +206,11 @@ func (k *Keeper) GetVotes(ctx sdk.Context, proposalID uint64) []*types.Vote {
 
 	var votes []*types.Vote
 	for ; iterator.Valid(); iterator.Next() {
-		var vote types.Vote
-		if err := k.cdc.Unmarshal(iterator.Value(), &vote); err != nil {
+		vote, err := k.unmarshalVote(iterator.Value())
+		if err != nil {
 			continue
 		}
-		votes = append(votes, &vote)
+		votes = append(votes, vote)
 	}
 	return votes
 }
@@ -394,43 +401,144 @@ func (k *Keeper) GetSnapshotVotes(ctx sdk.Context, proposalID uint64) []*types.S
 // ============================================================================
 
 // CalculateTally calculates the tally for a proposal
+// Vote counts are weighted by the voter's staking power and vote delegations
 func (k *Keeper) CalculateTally(ctx sdk.Context, proposalID uint64) *types.TallyResult {
 	votes := k.GetVotes(ctx, proposalID)
 
-	tally := &types.TallyResult{
-		Yes:        "0",
-		Abstain:    "0",
-		No:         "0",
-		NoWithVeto: "0",
-	}
+	// Use proper integers for accumulation
+	var (
+		yesVotes     = sdkmath.ZeroInt()
+		noVotes      = sdkmath.ZeroInt()
+		abstainVotes = sdkmath.ZeroInt()
+		noWithVeto   = sdkmath.ZeroInt()
+	)
 
-	// Simple counting (in production, would weight by voting power)
+	// Accumulate votes weighted by voting power
 	for _, vote := range votes {
+		// Get voter's actual voting power (includes staked tokens and delegations)
+		voterPower, err := k.GetVotingPower(ctx, vote.Voter)
+		if err != nil {
+			// Skip votes from invalid voters
+			continue
+		}
+
+		// Add the voter's power to the appropriate tally category
 		switch vote.Option {
 		case 1: // Yes
-			tally.Yes = "1" // Simplified
+			yesVotes = yesVotes.Add(voterPower)
 		case 2: // Abstain
-			tally.Abstain = "1"
+			abstainVotes = abstainVotes.Add(voterPower)
 		case 3: // No
-			tally.No = "1"
+			noVotes = noVotes.Add(voterPower)
 		case 4: // NoWithVeto
-			tally.NoWithVeto = "1"
+			noWithVeto = noWithVeto.Add(voterPower)
 		}
 	}
 
-	return tally
+	// Convert accumulated integers to strings for TallyResult
+	return &types.TallyResult{
+		Yes:        yesVotes.String(),
+		Abstain:    abstainVotes.String(),
+		No:         noVotes.String(),
+		NoWithVeto: noWithVeto.String(),
+	}
 }
 
-// GetVotingPower returns the voting power for an address
-func (k *Keeper) GetVotingPower(ctx sdk.Context, address string) string {
-	// Simplified: return "1000" for testing
-	return "1000"
+// GetVotingPower returns the voting power for an address based on staked tokens and delegations
+// Returns the total voting power as sdkmath.Int and any error encountered
+func (k *Keeper) GetVotingPower(ctx sdk.Context, address string) (sdkmath.Int, error) {
+	totalPower := sdkmath.ZeroInt()
+
+	// Parse the address
+	addr, err := sdk.AccAddressFromBech32(address)
+	if err != nil {
+		return sdkmath.ZeroInt(), err
+	}
+
+	// 1. Get direct staked tokens from staking module
+	// This is the validator's own bonded stake
+	stakedAmount := k.stakingKeeper.GetDelegatorBonded(ctx, addr)
+	totalPower = totalPower.Add(stakedAmount)
+
+	// 2. Add voting power delegated TO this address (from others)
+	// When someone delegates their vote to this address, this address gains their voting power
+	delegatedPower := k.GetDelegatedVotingPower(ctx, address)
+	totalPower = totalPower.Add(delegatedPower)
+
+	// 3. Subtract voting power delegated AWAY from this address
+	// When this address delegates their vote to someone else, they lose their voting power
+	powerDelegatedAway := k.GetPowerDelegatedAway(ctx, address)
+	totalPower = totalPower.Sub(powerDelegatedAway)
+
+	// Ensure voting power is never negative (defensive programming)
+	if totalPower.IsNegative() {
+		totalPower = sdkmath.ZeroInt()
+	}
+
+	return totalPower, nil
 }
 
-// GetDelegatedPower returns the delegated voting power for an address
+// GetDelegatedVotingPower calculates the total voting power delegated TO this address
+// This iterates all vote delegations and sums up the staked tokens of delegators
+// who have delegated their voting power to this address
+func (k *Keeper) GetDelegatedVotingPower(ctx sdk.Context, delegate string) sdkmath.Int {
+	totalDelegated := sdkmath.ZeroInt()
+
+	// Iterate all vote delegations in the store
+	store := ctx.KVStore(k.storeKey)
+	iterator := storetypes.KVStorePrefixIterator(store, DelegationsKeyPrefix)
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		var delegation types.VoteDelegation
+		if err := k.cdc.Unmarshal(iterator.Value(), &delegation); err != nil {
+			continue // Skip invalid delegations
+		}
+
+		// Check if this delegation is TO the target address
+		if delegation.Delegate == delegate {
+			// Get the delegator's staked tokens
+			delegatorAddr, err := sdk.AccAddressFromBech32(delegation.Delegator)
+			if err != nil {
+				continue // Skip invalid addresses
+			}
+
+			// Add the delegator's staked amount to the delegate's voting power
+			delegatorStake := k.stakingKeeper.GetDelegatorBonded(ctx, delegatorAddr)
+			totalDelegated = totalDelegated.Add(delegatorStake)
+		}
+	}
+
+	return totalDelegated
+}
+
+// GetPowerDelegatedAway calculates the voting power this address has delegated away
+// When an address delegates their vote to someone else, they lose their voting power
+func (k *Keeper) GetPowerDelegatedAway(ctx sdk.Context, delegator string) sdkmath.Int {
+	// Get all delegations FROM this address
+	delegations := k.GetVoteDelegations(ctx, delegator)
+
+	// If this address has delegated their vote, they have delegated away their full staked power
+	// Note: In this implementation, we assume all-or-nothing delegation
+	// If the user has ANY active delegation, their entire stake is delegated away
+	if len(delegations) > 0 {
+		addr, err := sdk.AccAddressFromBech32(delegator)
+		if err != nil {
+			return sdkmath.ZeroInt()
+		}
+
+		// Return the full staked amount since it's delegated away
+		return k.stakingKeeper.GetDelegatorBonded(ctx, addr)
+	}
+
+	return sdkmath.ZeroInt()
+}
+
+// GetDelegatedPower returns the delegated voting power for an address (legacy compatibility)
+// Deprecated: Use GetDelegatedVotingPower instead
 func (k *Keeper) GetDelegatedPower(ctx sdk.Context, address string) string {
-	// Simplified: return "0" for testing
-	return "0"
+	power := k.GetDelegatedVotingPower(ctx, address)
+	return power.String()
 }
 
 // GetTokenLocks returns token locks for an address

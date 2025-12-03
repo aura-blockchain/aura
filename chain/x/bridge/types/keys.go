@@ -1,5 +1,7 @@
 package types
 
+import "encoding/binary"
+
 const (
 	// ModuleName defines the module name
 	ModuleName = "bridge"
@@ -48,6 +50,15 @@ var (
 
 	// Auto-increment counter key
 	TransferCounterKey = []byte{0x0b}
+
+	// Processed source hashes (replay attack prevention)
+	ProcessedSourceHashPrefix = []byte{0x0c}
+
+	// Signature set tracking (prevent reusing same signature sets)
+	SignatureSetPrefix = []byte{0x0e}
+
+	// Validator snapshot tracking (for historical validator sets)
+	ValidatorSnapshotPrefix = []byte{0x0f}
 )
 
 // TransferKey returns the store key for a cross-chain transfer
@@ -95,4 +106,27 @@ func TransferHashIndexKey(hash string) []byte {
 // SwapKey returns the store key for a cross-chain swap
 func SwapKey(swapID string) []byte {
 	return append(SwapPrefix, []byte(swapID)...)
+}
+
+// ProcessedSourceHashKey returns the store key for a processed source hash
+// Format: ProcessedSourceHashPrefix + sourceChain:sourceHash
+func ProcessedSourceHashKey(sourceChain, sourceHash string) []byte {
+	compositeKey := sourceChain + ":" + sourceHash
+	return append(ProcessedSourceHashPrefix, []byte(compositeKey)...)
+}
+
+// SignatureSetKey returns the store key for a signature set hash
+// Format: SignatureSetPrefix + transferID + ":" + signatureSetHash
+func SignatureSetKey(transferID string, signatureSetHash []byte) []byte {
+	key := append(SignatureSetPrefix, []byte(transferID)...)
+	key = append(key, byte(0x00))
+	return append(key, signatureSetHash...)
+}
+
+// ValidatorSnapshotKey returns the store key for a validator set snapshot at a specific height
+// Format: ValidatorSnapshotPrefix + blockHeight (8 bytes big-endian)
+func ValidatorSnapshotKey(blockHeight int64) []byte {
+	heightBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(heightBytes, uint64(blockHeight))
+	return append(ValidatorSnapshotPrefix, heightBytes...)
 }

@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"crypto/sha256"
 	"encoding/binary"
 	"fmt"
 	"strings"
@@ -759,4 +760,275 @@ func (k Keeper) AddCollectedFee(ctx sdk.Context, fee sdk.Coin) {
 	if bz, err := current.Marshal(); err == nil {
 		store.Set(key, bz)
 	}
+}
+
+// IsSourceHashProcessed checks if a source transaction hash has already been processed.
+// This prevents replay attacks where the same source transaction could be used
+// multiple times to unlock tokens on Aura.
+//
+// Parameters:
+//   - ctx: SDK context for state access
+//   - sourceChain: Chain identifier where the transaction originated
+//   - sourceHash: Transaction hash from the source chain
+//
+// Returns:
+//   - bool: true if the hash has been processed, false otherwise
+//
+// Security: This is a CRITICAL function for preventing replay attacks.
+// Always call this BEFORE processing any unlock/mint operation.
+func (k Keeper) IsSourceHashProcessed(ctx sdk.Context, sourceChain, sourceHash string) bool {
+	// Normalize inputs to prevent bypass via case sensitivity
+	sourceChain = strings.ToLower(strings.TrimSpace(sourceChain))
+	sourceHash = strings.ToLower(strings.TrimSpace(sourceHash))
+
+	if sourceChain == "" || sourceHash == "" {
+		return false
+	}
+
+	store := k.store(ctx)
+	key := types.ProcessedSourceHashKey(sourceChain, sourceHash)
+	return store.Has(key)
+}
+
+// MarkSourceHashProcessed marks a source transaction hash as processed.
+// This prevents the same source transaction from being used multiple times
+// to unlock tokens (replay attack).
+//
+// Parameters:
+//   - ctx: SDK context for state access
+//   - sourceChain: Chain identifier where the transaction originated
+//   - sourceHash: Transaction hash from the source chain
+//
+// Security considerations:
+//   - This function MUST be called BEFORE minting/unlocking tokens
+//   - Follows checks-effects-interactions pattern (mark before external call)
+//   - State change is atomic and irreversible
+//   - The hash is stored permanently in state (no expiration)
+func (k Keeper) MarkSourceHashProcessed(ctx sdk.Context, sourceChain, sourceHash string) {
+	// Normalize inputs to ensure consistent storage
+	sourceChain = strings.ToLower(strings.TrimSpace(sourceChain))
+	sourceHash = strings.ToLower(strings.TrimSpace(sourceHash))
+
+	if sourceChain == "" || sourceHash == "" {
+		return
+	}
+
+	store := k.store(ctx)
+	key := types.ProcessedSourceHashKey(sourceChain, sourceHash)
+	// Store a simple marker byte - we only care about existence
+	store.Set(key, []byte{1})
+
+	// Emit event for audit trail
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			"source_hash_marked_processed",
+			sdk.NewAttribute("source_chain", sourceChain),
+			sdk.NewAttribute("source_hash", sourceHash),
+			sdk.NewAttribute("block_height", fmt.Sprintf("%d", ctx.BlockHeight())),
+		),
+	)
+}
+
+// GetAllProcessedSourceHashes returns all processed source hashes for genesis export.
+// Returns a map of "sourceChain:sourceHash" -> true for all processed hashes.
+func (k Keeper) GetAllProcessedSourceHashes(ctx sdk.Context) map[string]bool {
+	store := k.store(ctx)
+	iterator := store.Iterator(
+		types.ProcessedSourceHashPrefix,
+		storetypes.PrefixEndBytes(types.ProcessedSourceHashPrefix),
+	)
+	defer iterator.Close()
+
+	processedHashes := make(map[string]bool)
+	for ; iterator.Valid(); iterator.Next() {
+		// Extract the composite key (sourceChain:sourceHash)
+		fullKey := iterator.Key()
+		compositeKey := string(fullKey[len(types.ProcessedSourceHashPrefix):])
+		processedHashes[compositeKey] = true
+	}
+
+	return processedHashes
+}
+
+// SetProcessedSourceHash sets a processed source hash (for genesis import).
+// The compositeKey should be in format "sourceChain:sourceHash".
+func (k Keeper) SetProcessedSourceHash(ctx sdk.Context, compositeKey string) {
+	if compositeKey == "" {
+		return
+	}
+
+	// Parse the composite key
+	parts := strings.Split(compositeKey, ":")
+	if len(parts) != 2 {
+		return
+	}
+
+	sourceChain := strings.ToLower(strings.TrimSpace(parts[0]))
+	sourceHash := strings.ToLower(strings.TrimSpace(parts[1]))
+
+	if sourceChain == "" || sourceHash == "" {
+		return
+	}
+
+	store := k.store(ctx)
+	key := types.ProcessedSourceHashKey(sourceChain, sourceHash)
+	store.Set(key, []byte{1})
+}
+
+// getActiveValidators returns the list of currently active validators.
+// Active validators are those with Active=true status.
+//
+// Security considerations:
+//   - Only active validators should be allowed to sign bridge operations
+//   - Inactive validators may have been slashed, jailed, or rotated out
+//   - This function should be called at the current block height for authorization checks
+//
+// Returns:
+//   - List of active validator addresses
+func (k Keeper) getActiveValidators(ctx sdk.Context) []string {
+	allValidators := k.getAllValidators(ctx)
+	activeAddresses := make([]string, 0, len(allValidators))
+
+	for _, validator := range allValidators {
+		if validator != nil && validator.Active {
+			activeAddresses = append(activeAddresses, validator.Address)
+		}
+	}
+
+	return activeAddresses
+}
+
+// IsValidatorActive checks if a validator is currently active and authorized.
+//
+// Security: This is a critical authorization check. A validator must be:
+//   - Present in the validator registry
+//   - Have Active=true status
+//   - Not slashed or jailed (implementation can be extended)
+//
+// Parameters:
+//   - ctx: SDK context for state access
+//   - validatorAddr: Address of the validator to check
+//
+// Returns:
+//   - bool: true if validator is active and authorized
+func (k Keeper) IsValidatorActive(ctx sdk.Context, validatorAddr string) bool {
+	if validatorAddr == "" {
+		return false
+	}
+
+	validator, found := k.getValidator(ctx, validatorAddr)
+	if !found {
+		return false
+	}
+
+	// Check if validator is active
+	if !validator.Active {
+		return false
+	}
+
+	// Additional checks could be added here:
+	// - Check if validator is slashed
+	// - Check if validator is jailed
+	// - Check validator stake/power is above minimum
+
+	return true
+}
+
+// isSignatureSetUsed checks if a specific signature set has already been used
+// for a given transfer. This prevents replay attacks where an attacker reuses
+// the same valid signatures to unlock tokens multiple times.
+//
+// Security considerations:
+//   - This is CRITICAL for preventing signature replay attacks
+//   - Must be checked BEFORE processing any unlock operation
+//   - The signature set hash should be deterministic and cover all signatures
+//
+// Parameters:
+//   - ctx: SDK context for state access
+//   - transferID: Unique identifier of the transfer
+//   - signatureSetHash: Hash of the signature set (SHA256 of concatenated signatures)
+//
+// Returns:
+//   - bool: true if this signature set has been used before
+func (k Keeper) isSignatureSetUsed(ctx sdk.Context, transferID string, signatureSetHash []byte) bool {
+	if transferID == "" || len(signatureSetHash) == 0 {
+		return false
+	}
+
+	store := k.store(ctx)
+	key := types.SignatureSetKey(transferID, signatureSetHash)
+	return store.Has(key)
+}
+
+// markSignatureSetUsed marks a signature set as used for a given transfer.
+// This prevents the same signature set from being replayed.
+//
+// Security considerations:
+//   - Must be called AFTER successful verification but BEFORE token transfer
+//   - Follows checks-effects-interactions pattern
+//   - State change is permanent and irreversible
+//
+// Parameters:
+//   - ctx: SDK context for state access
+//   - transferID: Unique identifier of the transfer
+//   - signatureSetHash: Hash of the signature set
+func (k Keeper) markSignatureSetUsed(ctx sdk.Context, transferID string, signatureSetHash []byte) {
+	if transferID == "" || len(signatureSetHash) == 0 {
+		return
+	}
+
+	store := k.store(ctx)
+	key := types.SignatureSetKey(transferID, signatureSetHash)
+	store.Set(key, []byte{1})
+
+	// Emit event for audit trail
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			"signature_set_marked_used",
+			sdk.NewAttribute("transfer_id", transferID),
+			sdk.NewAttribute("signature_set_hash", fmt.Sprintf("%x", signatureSetHash)),
+			sdk.NewAttribute("block_height", fmt.Sprintf("%d", ctx.BlockHeight())),
+		),
+	)
+}
+
+// computeSignatureSetHash computes a deterministic hash of a signature set.
+// This hash is used to track which signature sets have been used.
+//
+// The hash is computed as: SHA256(sig1 || sig2 || ... || sigN) where signatures
+// are sorted lexicographically to ensure determinism.
+//
+// Parameters:
+//   - signatures: List of raw signature bytes
+//
+// Returns:
+//   - []byte: SHA256 hash of the signature set
+func (k Keeper) computeSignatureSetHash(signatures [][]byte) []byte {
+	if len(signatures) == 0 {
+		return nil
+	}
+
+	// Sort signatures to ensure deterministic hash
+	// This prevents different orderings from producing different hashes
+	sortedSigs := make([][]byte, len(signatures))
+	copy(sortedSigs, signatures)
+
+	// Simple bubble sort (sufficient for small signature sets)
+	for i := 0; i < len(sortedSigs)-1; i++ {
+		for j := 0; j < len(sortedSigs)-i-1; j++ {
+			if string(sortedSigs[j]) > string(sortedSigs[j+1]) {
+				sortedSigs[j], sortedSigs[j+1] = sortedSigs[j+1], sortedSigs[j]
+			}
+		}
+	}
+
+	// Concatenate sorted signatures
+	var combined []byte
+	for _, sig := range sortedSigs {
+		combined = append(combined, sig...)
+	}
+
+	// Return SHA256 hash
+	hash := sha256.Sum256(combined)
+	return hash[:]
 }
