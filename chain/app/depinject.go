@@ -15,7 +15,6 @@ import (
 
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 
-	aikeeper "github.com/aequitas/aura/chain/x/aiassistant/keeper"
 	bridgekeeper "github.com/aequitas/aura/chain/x/bridge/keeper"
 	compliancekeeper "github.com/aequitas/aura/chain/x/compliance/keeper"
 	cskeeper "github.com/aequitas/aura/chain/x/confidencescore/keeper"
@@ -66,7 +65,6 @@ type KeeperContainer struct {
 	ContractRegistryKeeper *contractregistrykeeper.Keeper
 	BridgeKeeper           *bridgekeeper.Keeper
 	DexKeeper              *dexkeeper.Keeper
-	AIKeeper               *aikeeper.Keeper
 
 	// Security keepers
 	ValidatorSecurityKeeper validatorsecuritykeeper.Keeper
@@ -269,15 +267,12 @@ func (ki *KeeperInitializer) initTier5Keepers(container *KeeperContainer) error 
 	// container.ContractRegistryKeeper.SetComplianceKeeper(container.ComplianceKeeper)
 	// container.ContractRegistryKeeper.SetConfidenceScoreKeeper(container.ConfidenceScoreKeeper)
 
-	// BridgeKeeper, DexKeeper, and AIKeeper are already initialized
+	// BridgeKeeper and DexKeeper are already initialized
 	if container.BridgeKeeper == nil {
 		return fmt.Errorf("bridge keeper not initialized")
 	}
 	if container.DexKeeper == nil {
 		return fmt.Errorf("dex keeper not initialized")
-	}
-	if container.AIKeeper == nil {
-		return fmt.Errorf("AI keeper not initialized")
 	}
 
 	ki.logger.Info("tier 5 keepers initialized successfully (cross-keeper wiring pending)")
@@ -403,7 +398,6 @@ func GetKeeperInitializationOrder() []string {
 		"contractregistry",
 		"bridge",
 		"dex",
-		"aiassistant",
 
 		// Security: Depend on all above
 		"wasm",
@@ -442,7 +436,6 @@ func KeeperDependencyGraph() map[string][]string {
 		"contractregistry": {"vcregistry", "compliance", "confidencescore"},
 		"bridge":           {"bank", "auth", "vcregistry"},
 		"dex":              {"bank", "auth", "vcregistry"},
-		"aiassistant":      {"bank"},
 
 		// Security
 		"wasm":              {"auth", "bank", "staking"},

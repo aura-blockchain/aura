@@ -502,7 +502,6 @@ func GetRecommendedModuleInitOrder() []string {
 		"contractregistry",
 		"bridge",
 		"dex",
-		"aiassistant",
 
 		// WASM modules (depend on all above)
 		"wasm",

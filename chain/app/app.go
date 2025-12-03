@@ -138,10 +138,6 @@ import (
 	governancekeeper "github.com/aequitas/aura/chain/x/governance/keeper"
 	governancetypes "github.com/aequitas/aura/chain/x/governance/types"
 
-	// AI Assistant module (kept as-is, not consolidated)
-	"github.com/aequitas/aura/chain/x/aiassistant"
-	aikeeper "github.com/aequitas/aura/chain/x/aiassistant/keeper"
-	aitypes "github.com/aequitas/aura/chain/x/aiassistant/types"
 )
 
 const (
@@ -220,7 +216,6 @@ type storeKeys struct {
 	compliance        *storetypes.KVStoreKey
 	dex               *storetypes.KVStoreKey
 	bridge            *storetypes.KVStoreKey
-	ai                *storetypes.KVStoreKey
 	wasm              *storetypes.KVStoreKey
 	contractRegistry  *storetypes.KVStoreKey
 	wasmSecurity      *storetypes.KVStoreKey
@@ -258,7 +253,6 @@ func (s *storeKeys) Names() []string {
 		compliancetypes.StoreKey,
 		dextypes.StoreKey,
 		bridgetypes.StoreKey,
-		aitypes.StoreKey,
 		wasmtypes.StoreKey,
 		contractregistrytypes.StoreKey,
 		wasmSecurityTypes.StoreKey,
@@ -307,7 +301,6 @@ func (s *storeKeys) AsMap() map[string]*storetypes.KVStoreKey {
 		compliancetypes.StoreKey:       s.compliance,
 		dextypes.StoreKey:              s.dex,
 		bridgetypes.StoreKey:           s.bridge,
-		aitypes.StoreKey:               s.ai,
 		wasmtypes.StoreKey:             s.wasm,
 		contractregistrytypes.StoreKey: s.contractRegistry,
 		wasmSecurityTypes.StoreKey:     s.wasmSecurity,
@@ -357,7 +350,6 @@ func initStoreKeys() *storeKeys {
 		compliance:        storetypes.NewKVStoreKey(compliancetypes.StoreKey),
 		dex:               storetypes.NewKVStoreKey(dextypes.StoreKey),
 		bridge:            storetypes.NewKVStoreKey(bridgetypes.StoreKey),
-		ai:                storetypes.NewKVStoreKey(aitypes.StoreKey),
 		wasm:              storetypes.NewKVStoreKey(wasmtypes.StoreKey),
 		contractRegistry:  storetypes.NewKVStoreKey(contractregistrytypes.StoreKey),
 		wasmSecurity:      storetypes.NewKVStoreKey(wasmSecurityTypes.StoreKey),
@@ -411,7 +403,6 @@ type App struct {
 	complianceKeeper       *compliancekeeper.Keeper
 	dexKeeper              *dexkeeper.Keeper
 	bridgeKeeper           *bridgekeeper.Keeper
-	aiKeeper               *aikeeper.Keeper
 	contractRegistryKeeper *contractregistrykeeper.Keeper
 	wasmSecurityKeeper     wasmSecurityKeeper.Keeper
 	securityKeeper         *securitykeeper.Keeper
@@ -806,7 +797,6 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 		vcAdapter,
 		stakingKeeper, // For validator slashing
 	)
-	aiKeeper := aikeeper.NewKeeper(encoding.Codec, keys.ai, authorityAddr, bankAdapter)
 
 	logger.Info("initializing keepers", "phase", "tier-8-wasm")
 
@@ -877,7 +867,6 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 
 	dexModule := dex.NewAppModule(dexKeeper)
 	bridgeModule := bridge.NewAppModule(bridgeKeeper)
-	aiModule := aiassistant.NewAppModule(&aiKeeper)
 	// Contract registry module - must come BEFORE wasm security (dependency order)
 	contractRegistryModule := contractregistry.NewAppModule(encoding.Codec, *contractRegistryKeeper)
 	// WASM security module - wraps wasmd with AURA security controls
@@ -921,7 +910,6 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 		governancetypes.ModuleName:        governanceModule,
 		dextypes.ModuleName:               dexModule,
 		bridgetypes.ModuleName:            bridgeModule,
-		aitypes.ModuleName:                aiModule,
 		prevalidationtypes.ModuleName:     prevalidationModule,
 		securitytypes.ModuleName:          securityModule,
 		aurabindingstypes.ModuleName:      aurabindingsModule,
@@ -962,7 +950,6 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 		prevalidationtypes.ModuleName,
 		dextypes.ModuleName,
 		bridgetypes.ModuleName,
-		aitypes.ModuleName,
 		aurabindingstypes.ModuleName,
 	)
 
@@ -1073,7 +1060,6 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 		complianceKeeper:       complianceKeeper,
 		dexKeeper:              dexKeeper,
 		bridgeKeeper:           bridgeKeeper,
-		aiKeeper:               &aiKeeper,
 		contractRegistryKeeper: contractRegistryKeeper,
 		wasmSecurityKeeper:     wasmSecurityKeeperInstance,
 		securityKeeper:         securityKeeper,
@@ -1207,7 +1193,6 @@ func (app *App) allStoreKeys() []storetypes.StoreKey {
 		app.storeKeys.compliance,
 		app.storeKeys.dex,
 		app.storeKeys.bridge,
-		app.storeKeys.ai,
 		app.storeKeys.wasm,
 		app.storeKeys.contractRegistry,
 		app.storeKeys.wasmSecurity,

@@ -7,7 +7,6 @@ import (
 	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	aitypes "github.com/aequitas/aura/chain/x/aiassistant/types"
 	authtypes "github.com/aequitas/aura/chain/x/auth/types"
 	bridgetypes "github.com/aequitas/aura/chain/x/bridge/types"
 	compliancetypes "github.com/aequitas/aura/chain/x/compliance/types"
@@ -39,7 +38,6 @@ func MigrateStore(ctx sdk.Context, storeKey storetypes.StoreKey, cdc interface{}
 		name    string
 		migrate func(sdk.Context, storetypes.StoreKey) error
 	}{
-		{"aiassistant", migrateAIAssistantStore},
 		{"auth", migrateAuthStore},
 		{"bridge", migrateBridgeStore},
 		{"compliance", migrateComplianceStore},
@@ -70,25 +68,6 @@ func MigrateStore(ctx sdk.Context, storeKey storetypes.StoreKey, cdc interface{}
 	}
 
 	ctx.Logger().Info("Store migrations completed")
-	return nil
-}
-
-// migrateAIAssistantStore migrates AI assistant module state
-func migrateAIAssistantStore(ctx sdk.Context, storeKey storetypes.StoreKey) error {
-	store := ctx.KVStore(storeKey)
-
-	// Check if migration already done (idempotent)
-	migrationKey := []byte("migration_v2_aiassistant")
-	if store.Has(migrationKey) {
-		return nil
-	}
-
-	// Migrate voucher records if needed
-	// Update any changed key formats
-	// Fix any data inconsistencies
-
-	// Mark migration as complete
-	store.Set(migrationKey, []byte{1})
 	return nil
 }
 
@@ -452,7 +431,6 @@ func ValidateMigration(ctx sdk.Context) error {
 
 // Module type usage to prevent unused import errors
 var (
-	_ = aitypes.ModuleName
 	_ = authtypes.ModuleName
 	_ = bridgetypes.ModuleName
 	_ = compliancetypes.ModuleName

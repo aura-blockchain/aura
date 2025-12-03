@@ -242,6 +242,14 @@ func (ms msgServer) Vote(goCtx context.Context, msg *govpb.MsgVote) (*govpb.MsgV
 		return nil, status.Error(codes.FailedPrecondition, "proposal not in voting period")
 	}
 
+	// Get or create voting power snapshot for this voter
+	// This is a performance optimization: voting power is cached at first vote
+	// and reused for vote updates and tally calculations (O(1) instead of O(n))
+	votingPower, err := ms.Keeper.GetOrCreateVotingPowerSnapshot(ctx, msg.ProposalId, msg.Voter)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get voting power: %s", err)
+	}
+
 	// Check for existing vote to prevent double voting or allow vote update
 	existingVote, err := ms.Keeper.GetVote(ctx, msg.ProposalId, msg.Voter)
 	if err == nil && existingVote != nil {
@@ -249,6 +257,7 @@ func (ms msgServer) Vote(goCtx context.Context, msg *govpb.MsgVote) (*govpb.MsgV
 		// This is standard governance behavior: users can change their vote during voting period
 		existingVote.Option = msg.Option
 		existingVote.Timestamp = timestamppb.Now()
+		existingVote.VotingPower = votingPower.String()
 
 		// Handle secret ballot update
 		if msg.IsSecret {
@@ -267,19 +276,21 @@ func (ms msgServer) Vote(goCtx context.Context, msg *govpb.MsgVote) (*govpb.MsgV
 				sdk.NewAttribute(types.AttributeKeyProposalID, fmt.Sprintf("%d", msg.ProposalId)),
 				sdk.NewAttribute(types.AttributeKeyVoter, msg.Voter),
 				sdk.NewAttribute("action", "update"),
+				sdk.NewAttribute("voting_power", votingPower.String()),
 			),
 		)
 
 		return &govpb.MsgVoteResponse{}, nil
 	}
 
-	// Create new vote
+	// Create new vote with cached voting power
 	vote := &types.Vote{
-		ProposalId: msg.ProposalId,
-		Voter:      msg.Voter,
-		Option:     msg.Option,
-		Timestamp:  timestamppb.Now(),
-		IsSecret:   msg.IsSecret,
+		ProposalId:  msg.ProposalId,
+		Voter:       msg.Voter,
+		Option:      msg.Option,
+		Timestamp:   timestamppb.Now(),
+		IsSecret:    msg.IsSecret,
+		VotingPower: votingPower.String(),
 	}
 
 	if msg.IsSecret {
@@ -297,6 +308,7 @@ func (ms msgServer) Vote(goCtx context.Context, msg *govpb.MsgVote) (*govpb.MsgV
 			sdk.NewAttribute(types.AttributeKeyProposalID, fmt.Sprintf("%d", msg.ProposalId)),
 			sdk.NewAttribute(types.AttributeKeyVoter, msg.Voter),
 			sdk.NewAttribute("action", "create"),
+			sdk.NewAttribute("voting_power", votingPower.String()),
 		),
 	)
 

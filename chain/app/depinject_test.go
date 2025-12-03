@@ -115,7 +115,7 @@ func TestValidateKeeperInitializationOrder(t *testing.T) {
 				"identitychange", "inclusionroutines",
 				"confidencescore",
 				"vcregistry", "dataregistry",
-				"contractregistry", "bridge", "dex", "aiassistant",
+				"contractregistry", "bridge", "dex",
 				"wasm", "wasmsecurity", "validatorsecurity",
 			},
 			expectError: false,
