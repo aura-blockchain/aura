@@ -10,16 +10,22 @@ import (
 )
 
 // ReentrancyGuard provides protection against reentrancy attacks
+// Supports both global and scoped (keyed) reentrancy protection
 type ReentrancyGuard struct {
-	entered uint32
+	entered     uint32
+	mu          sync.Mutex
+	scopedLocks map[string]bool
 }
 
 // NewReentrancyGuard creates a new reentrancy guard
 func NewReentrancyGuard() *ReentrancyGuard {
-	return &ReentrancyGuard{entered: 0}
+	return &ReentrancyGuard{
+		entered:     0,
+		scopedLocks: make(map[string]bool),
+	}
 }
 
-// Enter marks entry into a protected section
+// Enter marks entry into a protected section (global lock)
 // Returns error if already entered (reentrancy detected)
 func (rg *ReentrancyGuard) Enter() error {
 	if !atomic.CompareAndSwapUint32(&rg.entered, 0, 1) {
@@ -28,17 +34,48 @@ func (rg *ReentrancyGuard) Enter() error {
 	return nil
 }
 
-// Exit marks exit from a protected section
+// Exit marks exit from a protected section (global lock)
 func (rg *ReentrancyGuard) Exit() {
 	atomic.StoreUint32(&rg.entered, 0)
 }
 
-// WithReentrancyGuard executes a function with reentrancy protection
+// EnterScoped marks entry into a scoped protected section
+// scope: unique identifier for the protected resource (e.g., "pool:123", "orderbook:uaura-usdt")
+// Returns error if that scope is already entered (reentrancy detected for that scope)
+func (rg *ReentrancyGuard) EnterScoped(scope string) error {
+	rg.mu.Lock()
+	defer rg.mu.Unlock()
+
+	if rg.scopedLocks[scope] {
+		return fmt.Errorf("reentrancy detected for scope %s: %w", scope, ErrReentrancyDetected)
+	}
+
+	rg.scopedLocks[scope] = true
+	return nil
+}
+
+// ExitScoped marks exit from a scoped protected section
+func (rg *ReentrancyGuard) ExitScoped(scope string) {
+	rg.mu.Lock()
+	defer rg.mu.Unlock()
+	delete(rg.scopedLocks, scope)
+}
+
+// WithReentrancyGuard executes a function with reentrancy protection (global)
 func (rg *ReentrancyGuard) WithReentrancyGuard(fn func() error) error {
 	if err := rg.Enter(); err != nil {
 		return err
 	}
 	defer rg.Exit()
+	return fn()
+}
+
+// WithScopedGuard executes a function with scoped reentrancy protection
+func (rg *ReentrancyGuard) WithScopedGuard(scope string, fn func() error) error {
+	if err := rg.EnterScoped(scope); err != nil {
+		return err
+	}
+	defer rg.ExitScoped(scope)
 	return fn()
 }
 

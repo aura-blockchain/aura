@@ -170,27 +170,27 @@ message EncryptedMemo {
 }
 
 // ViewKey enables selective disclosure of transaction details
+// SECURITY NOTE: Private keys must NEVER be stored on-chain or transmitted in messages.
+// Private keys are managed client-side only. The blockchain stores only public keys.
 message ViewKey {
   // key_type indicates the type of view key (INCOMING, OUTGOING, AUDIT)
   string key_type = 1;
 
   // public_view_key is the public component of the view key
+  // This is the ONLY key stored on-chain. Private keys are client-side only.
   bytes public_view_key = 2;
 
-  // private_view_key is the private component (only for key owner)
-  bytes private_view_key = 3;
-
   // address is the associated address
-  bytes address = 4;
+  bytes address = 3;
 
   // permissions define what this view key can access
-  repeated string permissions = 5;
+  repeated string permissions = 4;
 
   // expiration is when this view key expires
-  google.protobuf.Timestamp expiration = 6 [(gogoproto.stdtime) = true];
+  google.protobuf.Timestamp expiration = 5 [(gogoproto.stdtime) = true];
 
   // created_at timestamp
-  google.protobuf.Timestamp created_at = 7 [(gogoproto.stdtime) = true];
+  google.protobuf.Timestamp created_at = 6 [(gogoproto.stdtime) = true];
 }
 
 // PrivateTransaction combines all privacy features

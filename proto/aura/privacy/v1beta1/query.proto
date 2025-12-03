@@ -27,8 +27,9 @@ service Query {
   // VerifyZKProof verifies a zero-knowledge proof
   rpc VerifyZKProof(QueryVerifyZKProofRequest) returns (QueryVerifyZKProofResponse);
 
-  // DecryptWithViewKey decrypts transaction data using a view key
-  rpc DecryptWithViewKey(QueryDecryptWithViewKeyRequest) returns (QueryDecryptWithViewKeyResponse);
+  // SECURITY NOTE: DecryptWithViewKey has been removed. Decryption must be performed
+  // client-side using private keys that never leave the client. The blockchain should
+  // never receive or process private keys in any form.
 }
 
 // QueryParamsRequest is the request type for the Query/Params RPC method
@@ -103,20 +104,10 @@ message QueryVerifyZKProofResponse {
   string error_message = 2;
 }
 
-// QueryDecryptWithViewKeyRequest is the request to decrypt transaction data
-message QueryDecryptWithViewKeyRequest {
-  // encrypted_data is the data to decrypt
-  bytes encrypted_data = 1;
-
-  // private_view_key is the key to use for decryption
-  bytes private_view_key = 2;
-}
-
-// QueryDecryptWithViewKeyResponse is the response
-message QueryDecryptWithViewKeyResponse {
-  // decrypted_data is the decrypted content
-  bytes decrypted_data = 1;
-
-  // success indicates if decryption was successful
-  bool success = 2;
-}
+// SECURITY NOTE: QueryDecryptWithViewKey messages have been removed.
+// Decryption is a client-side operation that must never involve the blockchain.
+// Private keys must never be transmitted to or processed by the chain.
+// Clients should:
+// 1. Download encrypted transaction data from the chain
+// 2. Decrypt locally using their private view keys (kept client-side)
+// 3. Never send private keys to the blockchain
