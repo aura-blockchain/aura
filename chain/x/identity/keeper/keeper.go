@@ -161,6 +161,20 @@ func (k *Keeper) InitGenesis(ctx sdk.Context, gs *types.GenesisState) error {
 		}
 	}
 
+	// Initialize DID key rotations
+	for _, rotation := range gs.DidKeyRotations {
+		if err := k.SetDIDKeyRotation(ctx, rotation); err != nil {
+			return fmt.Errorf("failed to set DID key rotation for %s: %w", rotation.Did, err)
+		}
+	}
+
+	// Initialize DID key histories
+	for _, history := range gs.DidKeyHistories {
+		if err := k.SetDIDKeyHistory(ctx, history); err != nil {
+			return fmt.Errorf("failed to set DID key history for %s: %w", history.Did, err)
+		}
+	}
+
 	// Initialize change requests
 	for _, request := range gs.ChangeRequests {
 		if err := k.SetChangeRequest(ctx, request); err != nil {
@@ -275,6 +289,18 @@ func (k *Keeper) ExportGenesis(ctx sdk.Context) (*types.GenesisState, error) {
 	credentialRevocations, err := k.GetAllCredentialRevocations(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get credential revocations: %w", err)
+	}
+
+	// Get all DID key rotations
+	didKeyRotations, err := k.GetAllDIDKeyRotations(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get DID key rotations: %w", err)
+	}
+
+	// Get all DID key histories
+	didKeyHistories, err := k.GetAllDIDKeyHistories(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get DID key histories: %w", err)
 	}
 
 	// Get all change requests

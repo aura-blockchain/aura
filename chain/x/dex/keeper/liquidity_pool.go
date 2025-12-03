@@ -175,12 +175,10 @@ func (k Keeper) CreatePool(
 	// Store pool
 	k.SetPool(ctx, pool)
 
-	// AUDIT TRAIL: Record pool creation for compliance and audit purposes
-	// This creates a permanent record enabling:
-	// - Regulatory compliance and audit trails
-	// - Pool creation limit enforcement
-	// - Pool history reconstruction
-	k.RecordPoolCreation(ctx, creator, poolID, denomA, denomB, amountA.Amount, amountB.Amount)
+	// NOTE: Pool creation recording (audit trail) is handled by SecureCreatePool wrapper.
+	// This avoids duplicate recording when called through the secure path.
+	// Direct calls to CreatePool (mainly in tests) bypass audit recording deliberately
+	// for simplicity. Production code MUST use SecureCreatePool.
 
 	// Emit events
 	ctx.EventManager().EmitEvents(sdk.Events{
