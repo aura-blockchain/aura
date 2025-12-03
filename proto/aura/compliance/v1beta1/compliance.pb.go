@@ -8,6 +8,7 @@ package v1beta1
 
 import (
 	_ "github.com/cosmos/cosmos-sdk/types/msgservice"
+	query "github.com/cosmos/cosmos-sdk/types/query"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -358,6 +359,137 @@ func (x *KYCRecord) GetVersion() uint64 {
 	return 0
 }
 
+// KYCHistoryEntry represents a historical snapshot of a KYC record
+// Used for audit trail and version tracking when records are updated
+type KYCHistoryEntry struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Address       string                 `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
+	Version       uint64                 `protobuf:"varint,2,opt,name=version,proto3" json:"version,omitempty"`
+	Snapshot      *KYCRecord             `protobuf:"bytes,3,opt,name=snapshot,proto3" json:"snapshot,omitempty"` // Complete KYC record at this version
+	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	UpdatedBy     string                 `protobuf:"bytes,5,opt,name=updated_by,json=updatedBy,proto3" json:"updated_by,omitempty"`          // Provider that performed the update
+	UpdateReason  string                 `protobuf:"bytes,6,opt,name=update_reason,json=updateReason,proto3" json:"update_reason,omitempty"` // Reason for update (audit trail)
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *KYCHistoryEntry) Reset() {
+	*x = KYCHistoryEntry{}
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *KYCHistoryEntry) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*KYCHistoryEntry) ProtoMessage() {}
+
+func (x *KYCHistoryEntry) ProtoReflect() protoreflect.Message {
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use KYCHistoryEntry.ProtoReflect.Descriptor instead.
+func (*KYCHistoryEntry) Descriptor() ([]byte, []int) {
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *KYCHistoryEntry) GetAddress() string {
+	if x != nil {
+		return x.Address
+	}
+	return ""
+}
+
+func (x *KYCHistoryEntry) GetVersion() uint64 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
+}
+
+func (x *KYCHistoryEntry) GetSnapshot() *KYCRecord {
+	if x != nil {
+		return x.Snapshot
+	}
+	return nil
+}
+
+func (x *KYCHistoryEntry) GetUpdatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.UpdatedAt
+	}
+	return nil
+}
+
+func (x *KYCHistoryEntry) GetUpdatedBy() string {
+	if x != nil {
+		return x.UpdatedBy
+	}
+	return ""
+}
+
+func (x *KYCHistoryEntry) GetUpdateReason() string {
+	if x != nil {
+		return x.UpdateReason
+	}
+	return ""
+}
+
+// KYCHistoryList stores history entries keyed by address
+type KYCHistoryList struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Entries       []*KYCHistoryEntry     `protobuf:"bytes,1,rep,name=entries,proto3" json:"entries,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *KYCHistoryList) Reset() {
+	*x = KYCHistoryList{}
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *KYCHistoryList) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*KYCHistoryList) ProtoMessage() {}
+
+func (x *KYCHistoryList) ProtoReflect() protoreflect.Message {
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use KYCHistoryList.ProtoReflect.Descriptor instead.
+func (*KYCHistoryList) Descriptor() ([]byte, []int) {
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *KYCHistoryList) GetEntries() []*KYCHistoryEntry {
+	if x != nil {
+		return x.Entries
+	}
+	return nil
+}
+
 // AMLProfile represents an AML risk profile
 type AMLProfile struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
@@ -377,7 +509,7 @@ type AMLProfile struct {
 
 func (x *AMLProfile) Reset() {
 	*x = AMLProfile{}
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[1]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -389,7 +521,7 @@ func (x *AMLProfile) String() string {
 func (*AMLProfile) ProtoMessage() {}
 
 func (x *AMLProfile) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[1]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -402,7 +534,7 @@ func (x *AMLProfile) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AMLProfile.ProtoReflect.Descriptor instead.
 func (*AMLProfile) Descriptor() ([]byte, []int) {
-	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{1}
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *AMLProfile) GetAddress() string {
@@ -495,7 +627,7 @@ type SuspiciousActivity struct {
 
 func (x *SuspiciousActivity) Reset() {
 	*x = SuspiciousActivity{}
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[2]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -507,7 +639,7 @@ func (x *SuspiciousActivity) String() string {
 func (*SuspiciousActivity) ProtoMessage() {}
 
 func (x *SuspiciousActivity) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[2]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -520,7 +652,7 @@ func (x *SuspiciousActivity) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SuspiciousActivity.ProtoReflect.Descriptor instead.
 func (*SuspiciousActivity) Descriptor() ([]byte, []int) {
-	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{2}
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *SuspiciousActivity) GetId() string {
@@ -618,7 +750,7 @@ type TransactionMonitoringRule struct {
 
 func (x *TransactionMonitoringRule) Reset() {
 	*x = TransactionMonitoringRule{}
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[3]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -630,7 +762,7 @@ func (x *TransactionMonitoringRule) String() string {
 func (*TransactionMonitoringRule) ProtoMessage() {}
 
 func (x *TransactionMonitoringRule) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[3]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -643,7 +775,7 @@ func (x *TransactionMonitoringRule) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TransactionMonitoringRule.ProtoReflect.Descriptor instead.
 func (*TransactionMonitoringRule) Descriptor() ([]byte, []int) {
-	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{3}
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *TransactionMonitoringRule) GetId() string {
@@ -730,7 +862,7 @@ type TransactionAlert struct {
 
 func (x *TransactionAlert) Reset() {
 	*x = TransactionAlert{}
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[4]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -742,7 +874,7 @@ func (x *TransactionAlert) String() string {
 func (*TransactionAlert) ProtoMessage() {}
 
 func (x *TransactionAlert) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[4]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -755,7 +887,7 @@ func (x *TransactionAlert) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TransactionAlert.ProtoReflect.Descriptor instead.
 func (*TransactionAlert) Descriptor() ([]byte, []int) {
-	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{4}
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *TransactionAlert) GetId() string {
@@ -852,7 +984,7 @@ type TransactionAlertList struct {
 
 func (x *TransactionAlertList) Reset() {
 	*x = TransactionAlertList{}
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[5]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -864,7 +996,7 @@ func (x *TransactionAlertList) String() string {
 func (*TransactionAlertList) ProtoMessage() {}
 
 func (x *TransactionAlertList) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[5]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -877,7 +1009,7 @@ func (x *TransactionAlertList) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TransactionAlertList.ProtoReflect.Descriptor instead.
 func (*TransactionAlertList) Descriptor() ([]byte, []int) {
-	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{5}
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *TransactionAlertList) GetAlerts() []*TransactionAlert {
@@ -905,7 +1037,7 @@ type SanctionsScreeningResult struct {
 
 func (x *SanctionsScreeningResult) Reset() {
 	*x = SanctionsScreeningResult{}
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[6]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -917,7 +1049,7 @@ func (x *SanctionsScreeningResult) String() string {
 func (*SanctionsScreeningResult) ProtoMessage() {}
 
 func (x *SanctionsScreeningResult) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[6]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -930,7 +1062,7 @@ func (x *SanctionsScreeningResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SanctionsScreeningResult.ProtoReflect.Descriptor instead.
 func (*SanctionsScreeningResult) Descriptor() ([]byte, []int) {
-	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{6}
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *SanctionsScreeningResult) GetAddress() string {
@@ -1013,7 +1145,7 @@ type SanctionsMatch struct {
 
 func (x *SanctionsMatch) Reset() {
 	*x = SanctionsMatch{}
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[7]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1025,7 +1157,7 @@ func (x *SanctionsMatch) String() string {
 func (*SanctionsMatch) ProtoMessage() {}
 
 func (x *SanctionsMatch) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[7]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1038,7 +1170,7 @@ func (x *SanctionsMatch) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SanctionsMatch.ProtoReflect.Descriptor instead.
 func (*SanctionsMatch) Descriptor() ([]byte, []int) {
-	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{7}
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *SanctionsMatch) GetListName() string {
@@ -1114,7 +1246,7 @@ type GDPRConsent struct {
 
 func (x *GDPRConsent) Reset() {
 	*x = GDPRConsent{}
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[8]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1126,7 +1258,7 @@ func (x *GDPRConsent) String() string {
 func (*GDPRConsent) ProtoMessage() {}
 
 func (x *GDPRConsent) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[8]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1139,7 +1271,7 @@ func (x *GDPRConsent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GDPRConsent.ProtoReflect.Descriptor instead.
 func (*GDPRConsent) Descriptor() ([]byte, []int) {
-	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{8}
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *GDPRConsent) GetAddress() string {
@@ -1201,7 +1333,7 @@ type GDPRConsentList struct {
 
 func (x *GDPRConsentList) Reset() {
 	*x = GDPRConsentList{}
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[9]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1213,7 +1345,7 @@ func (x *GDPRConsentList) String() string {
 func (*GDPRConsentList) ProtoMessage() {}
 
 func (x *GDPRConsentList) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[9]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1226,7 +1358,7 @@ func (x *GDPRConsentList) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GDPRConsentList.ProtoReflect.Descriptor instead.
 func (*GDPRConsentList) Descriptor() ([]byte, []int) {
-	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{9}
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *GDPRConsentList) GetConsents() []*GDPRConsent {
@@ -1253,7 +1385,7 @@ type GDPRDataRequest struct {
 
 func (x *GDPRDataRequest) Reset() {
 	*x = GDPRDataRequest{}
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[10]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1265,7 +1397,7 @@ func (x *GDPRDataRequest) String() string {
 func (*GDPRDataRequest) ProtoMessage() {}
 
 func (x *GDPRDataRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[10]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1278,7 +1410,7 @@ func (x *GDPRDataRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GDPRDataRequest.ProtoReflect.Descriptor instead.
 func (*GDPRDataRequest) Descriptor() ([]byte, []int) {
-	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{10}
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *GDPRDataRequest) GetId() string {
@@ -1359,7 +1491,7 @@ type TaxReport struct {
 
 func (x *TaxReport) Reset() {
 	*x = TaxReport{}
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[11]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1371,7 +1503,7 @@ func (x *TaxReport) String() string {
 func (*TaxReport) ProtoMessage() {}
 
 func (x *TaxReport) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[11]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1384,7 +1516,7 @@ func (x *TaxReport) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TaxReport.ProtoReflect.Descriptor instead.
 func (*TaxReport) Descriptor() ([]byte, []int) {
-	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{11}
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *TaxReport) GetId() string {
@@ -1488,7 +1620,7 @@ type TaxReportList struct {
 
 func (x *TaxReportList) Reset() {
 	*x = TaxReportList{}
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[12]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1500,7 +1632,7 @@ func (x *TaxReportList) String() string {
 func (*TaxReportList) ProtoMessage() {}
 
 func (x *TaxReportList) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[12]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1513,7 +1645,7 @@ func (x *TaxReportList) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TaxReportList.ProtoReflect.Descriptor instead.
 func (*TaxReportList) Descriptor() ([]byte, []int) {
-	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{12}
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *TaxReportList) GetReports() []*TaxReport {
@@ -1541,7 +1673,7 @@ type TaxTransaction struct {
 
 func (x *TaxTransaction) Reset() {
 	*x = TaxTransaction{}
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[13]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1553,7 +1685,7 @@ func (x *TaxTransaction) String() string {
 func (*TaxTransaction) ProtoMessage() {}
 
 func (x *TaxTransaction) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[13]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1566,7 +1698,7 @@ func (x *TaxTransaction) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TaxTransaction.ProtoReflect.Descriptor instead.
 func (*TaxTransaction) Descriptor() ([]byte, []int) {
-	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{13}
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *TaxTransaction) GetTransactionHash() string {
@@ -1645,7 +1777,7 @@ type RateLimitEntry struct {
 
 func (x *RateLimitEntry) Reset() {
 	*x = RateLimitEntry{}
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[14]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1657,7 +1789,7 @@ func (x *RateLimitEntry) String() string {
 func (*RateLimitEntry) ProtoMessage() {}
 
 func (x *RateLimitEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[14]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1670,7 +1802,7 @@ func (x *RateLimitEntry) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RateLimitEntry.ProtoReflect.Descriptor instead.
 func (*RateLimitEntry) Descriptor() ([]byte, []int) {
-	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{14}
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *RateLimitEntry) GetAddress() string {
@@ -1740,7 +1872,7 @@ type ComplianceParams struct {
 
 func (x *ComplianceParams) Reset() {
 	*x = ComplianceParams{}
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[15]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1752,7 +1884,7 @@ func (x *ComplianceParams) String() string {
 func (*ComplianceParams) ProtoMessage() {}
 
 func (x *ComplianceParams) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[15]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1765,7 +1897,7 @@ func (x *ComplianceParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ComplianceParams.ProtoReflect.Descriptor instead.
 func (*ComplianceParams) Descriptor() ([]byte, []int) {
-	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{15}
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *ComplianceParams) GetKycRequired() bool {
@@ -1946,7 +2078,7 @@ type QueryKYCRecordRequest struct {
 
 func (x *QueryKYCRecordRequest) Reset() {
 	*x = QueryKYCRecordRequest{}
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[16]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1958,7 +2090,7 @@ func (x *QueryKYCRecordRequest) String() string {
 func (*QueryKYCRecordRequest) ProtoMessage() {}
 
 func (x *QueryKYCRecordRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[16]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1971,7 +2103,7 @@ func (x *QueryKYCRecordRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QueryKYCRecordRequest.ProtoReflect.Descriptor instead.
 func (*QueryKYCRecordRequest) Descriptor() ([]byte, []int) {
-	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{16}
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *QueryKYCRecordRequest) GetAddress() string {
@@ -1990,7 +2122,7 @@ type QueryKYCRecordResponse struct {
 
 func (x *QueryKYCRecordResponse) Reset() {
 	*x = QueryKYCRecordResponse{}
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[17]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2002,7 +2134,7 @@ func (x *QueryKYCRecordResponse) String() string {
 func (*QueryKYCRecordResponse) ProtoMessage() {}
 
 func (x *QueryKYCRecordResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[17]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2015,12 +2147,100 @@ func (x *QueryKYCRecordResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QueryKYCRecordResponse.ProtoReflect.Descriptor instead.
 func (*QueryKYCRecordResponse) Descriptor() ([]byte, []int) {
-	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{17}
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *QueryKYCRecordResponse) GetRecord() *KYCRecord {
 	if x != nil {
 		return x.Record
+	}
+	return nil
+}
+
+type QueryKYCHistoryRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Address       string                 `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *QueryKYCHistoryRequest) Reset() {
+	*x = QueryKYCHistoryRequest{}
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QueryKYCHistoryRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryKYCHistoryRequest) ProtoMessage() {}
+
+func (x *QueryKYCHistoryRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QueryKYCHistoryRequest.ProtoReflect.Descriptor instead.
+func (*QueryKYCHistoryRequest) Descriptor() ([]byte, []int) {
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *QueryKYCHistoryRequest) GetAddress() string {
+	if x != nil {
+		return x.Address
+	}
+	return ""
+}
+
+type QueryKYCHistoryResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	History       []*KYCHistoryEntry     `protobuf:"bytes,1,rep,name=history,proto3" json:"history,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *QueryKYCHistoryResponse) Reset() {
+	*x = QueryKYCHistoryResponse{}
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QueryKYCHistoryResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryKYCHistoryResponse) ProtoMessage() {}
+
+func (x *QueryKYCHistoryResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QueryKYCHistoryResponse.ProtoReflect.Descriptor instead.
+func (*QueryKYCHistoryResponse) Descriptor() ([]byte, []int) {
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *QueryKYCHistoryResponse) GetHistory() []*KYCHistoryEntry {
+	if x != nil {
+		return x.History
 	}
 	return nil
 }
@@ -2034,7 +2254,7 @@ type QueryAMLProfileRequest struct {
 
 func (x *QueryAMLProfileRequest) Reset() {
 	*x = QueryAMLProfileRequest{}
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[18]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2046,7 +2266,7 @@ func (x *QueryAMLProfileRequest) String() string {
 func (*QueryAMLProfileRequest) ProtoMessage() {}
 
 func (x *QueryAMLProfileRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[18]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2059,7 +2279,7 @@ func (x *QueryAMLProfileRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QueryAMLProfileRequest.ProtoReflect.Descriptor instead.
 func (*QueryAMLProfileRequest) Descriptor() ([]byte, []int) {
-	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{18}
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *QueryAMLProfileRequest) GetAddress() string {
@@ -2078,7 +2298,7 @@ type QueryAMLProfileResponse struct {
 
 func (x *QueryAMLProfileResponse) Reset() {
 	*x = QueryAMLProfileResponse{}
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[19]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2090,7 +2310,7 @@ func (x *QueryAMLProfileResponse) String() string {
 func (*QueryAMLProfileResponse) ProtoMessage() {}
 
 func (x *QueryAMLProfileResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[19]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2103,7 +2323,7 @@ func (x *QueryAMLProfileResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QueryAMLProfileResponse.ProtoReflect.Descriptor instead.
 func (*QueryAMLProfileResponse) Descriptor() ([]byte, []int) {
-	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{19}
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *QueryAMLProfileResponse) GetProfile() *AMLProfile {
@@ -2123,7 +2343,7 @@ type QuerySanctionsScreeningRequest struct {
 
 func (x *QuerySanctionsScreeningRequest) Reset() {
 	*x = QuerySanctionsScreeningRequest{}
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[20]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2135,7 +2355,7 @@ func (x *QuerySanctionsScreeningRequest) String() string {
 func (*QuerySanctionsScreeningRequest) ProtoMessage() {}
 
 func (x *QuerySanctionsScreeningRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[20]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2148,7 +2368,7 @@ func (x *QuerySanctionsScreeningRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QuerySanctionsScreeningRequest.ProtoReflect.Descriptor instead.
 func (*QuerySanctionsScreeningRequest) Descriptor() ([]byte, []int) {
-	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{20}
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *QuerySanctionsScreeningRequest) GetAddress() string {
@@ -2174,7 +2394,7 @@ type QuerySanctionsScreeningResponse struct {
 
 func (x *QuerySanctionsScreeningResponse) Reset() {
 	*x = QuerySanctionsScreeningResponse{}
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[21]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2186,7 +2406,7 @@ func (x *QuerySanctionsScreeningResponse) String() string {
 func (*QuerySanctionsScreeningResponse) ProtoMessage() {}
 
 func (x *QuerySanctionsScreeningResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[21]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2199,7 +2419,7 @@ func (x *QuerySanctionsScreeningResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QuerySanctionsScreeningResponse.ProtoReflect.Descriptor instead.
 func (*QuerySanctionsScreeningResponse) Descriptor() ([]byte, []int) {
-	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{21}
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *QuerySanctionsScreeningResponse) GetResult() *SanctionsScreeningResult {
@@ -2219,7 +2439,7 @@ type QueryTransactionAlertsRequest struct {
 
 func (x *QueryTransactionAlertsRequest) Reset() {
 	*x = QueryTransactionAlertsRequest{}
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[22]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2231,7 +2451,7 @@ func (x *QueryTransactionAlertsRequest) String() string {
 func (*QueryTransactionAlertsRequest) ProtoMessage() {}
 
 func (x *QueryTransactionAlertsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[22]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2244,7 +2464,7 @@ func (x *QueryTransactionAlertsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QueryTransactionAlertsRequest.ProtoReflect.Descriptor instead.
 func (*QueryTransactionAlertsRequest) Descriptor() ([]byte, []int) {
-	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{22}
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *QueryTransactionAlertsRequest) GetAddress() string {
@@ -2270,7 +2490,7 @@ type QueryTransactionAlertsResponse struct {
 
 func (x *QueryTransactionAlertsResponse) Reset() {
 	*x = QueryTransactionAlertsResponse{}
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[23]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2282,7 +2502,7 @@ func (x *QueryTransactionAlertsResponse) String() string {
 func (*QueryTransactionAlertsResponse) ProtoMessage() {}
 
 func (x *QueryTransactionAlertsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[23]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2295,7 +2515,7 @@ func (x *QueryTransactionAlertsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QueryTransactionAlertsResponse.ProtoReflect.Descriptor instead.
 func (*QueryTransactionAlertsResponse) Descriptor() ([]byte, []int) {
-	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{23}
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *QueryTransactionAlertsResponse) GetAlerts() []*TransactionAlert {
@@ -2316,7 +2536,7 @@ type QueryTaxReportRequest struct {
 
 func (x *QueryTaxReportRequest) Reset() {
 	*x = QueryTaxReportRequest{}
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[24]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2328,7 +2548,7 @@ func (x *QueryTaxReportRequest) String() string {
 func (*QueryTaxReportRequest) ProtoMessage() {}
 
 func (x *QueryTaxReportRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[24]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2341,7 +2561,7 @@ func (x *QueryTaxReportRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QueryTaxReportRequest.ProtoReflect.Descriptor instead.
 func (*QueryTaxReportRequest) Descriptor() ([]byte, []int) {
-	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{24}
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *QueryTaxReportRequest) GetAddress() string {
@@ -2374,7 +2594,7 @@ type QueryTaxReportResponse struct {
 
 func (x *QueryTaxReportResponse) Reset() {
 	*x = QueryTaxReportResponse{}
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[25]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2386,7 +2606,7 @@ func (x *QueryTaxReportResponse) String() string {
 func (*QueryTaxReportResponse) ProtoMessage() {}
 
 func (x *QueryTaxReportResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[25]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2399,12 +2619,684 @@ func (x *QueryTaxReportResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QueryTaxReportResponse.ProtoReflect.Descriptor instead.
 func (*QueryTaxReportResponse) Descriptor() ([]byte, []int) {
-	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{25}
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *QueryTaxReportResponse) GetReport() *TaxReport {
 	if x != nil {
 		return x.Report
+	}
+	return nil
+}
+
+type QueryAllKYCRecordsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Pagination    *query.PageRequest     `protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *QueryAllKYCRecordsRequest) Reset() {
+	*x = QueryAllKYCRecordsRequest{}
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[30]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QueryAllKYCRecordsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryAllKYCRecordsRequest) ProtoMessage() {}
+
+func (x *QueryAllKYCRecordsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[30]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QueryAllKYCRecordsRequest.ProtoReflect.Descriptor instead.
+func (*QueryAllKYCRecordsRequest) Descriptor() ([]byte, []int) {
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{30}
+}
+
+func (x *QueryAllKYCRecordsRequest) GetPagination() *query.PageRequest {
+	if x != nil {
+		return x.Pagination
+	}
+	return nil
+}
+
+type QueryAllKYCRecordsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Records       []*KYCRecord           `protobuf:"bytes,1,rep,name=records,proto3" json:"records,omitempty"`
+	Pagination    *query.PageResponse    `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *QueryAllKYCRecordsResponse) Reset() {
+	*x = QueryAllKYCRecordsResponse{}
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QueryAllKYCRecordsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryAllKYCRecordsResponse) ProtoMessage() {}
+
+func (x *QueryAllKYCRecordsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QueryAllKYCRecordsResponse.ProtoReflect.Descriptor instead.
+func (*QueryAllKYCRecordsResponse) Descriptor() ([]byte, []int) {
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{31}
+}
+
+func (x *QueryAllKYCRecordsResponse) GetRecords() []*KYCRecord {
+	if x != nil {
+		return x.Records
+	}
+	return nil
+}
+
+func (x *QueryAllKYCRecordsResponse) GetPagination() *query.PageResponse {
+	if x != nil {
+		return x.Pagination
+	}
+	return nil
+}
+
+type QueryAllAMLProfilesRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Pagination    *query.PageRequest     `protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *QueryAllAMLProfilesRequest) Reset() {
+	*x = QueryAllAMLProfilesRequest{}
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[32]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QueryAllAMLProfilesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryAllAMLProfilesRequest) ProtoMessage() {}
+
+func (x *QueryAllAMLProfilesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[32]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QueryAllAMLProfilesRequest.ProtoReflect.Descriptor instead.
+func (*QueryAllAMLProfilesRequest) Descriptor() ([]byte, []int) {
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{32}
+}
+
+func (x *QueryAllAMLProfilesRequest) GetPagination() *query.PageRequest {
+	if x != nil {
+		return x.Pagination
+	}
+	return nil
+}
+
+type QueryAllAMLProfilesResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Profiles      []*AMLProfile          `protobuf:"bytes,1,rep,name=profiles,proto3" json:"profiles,omitempty"`
+	Pagination    *query.PageResponse    `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *QueryAllAMLProfilesResponse) Reset() {
+	*x = QueryAllAMLProfilesResponse{}
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[33]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QueryAllAMLProfilesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryAllAMLProfilesResponse) ProtoMessage() {}
+
+func (x *QueryAllAMLProfilesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[33]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QueryAllAMLProfilesResponse.ProtoReflect.Descriptor instead.
+func (*QueryAllAMLProfilesResponse) Descriptor() ([]byte, []int) {
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{33}
+}
+
+func (x *QueryAllAMLProfilesResponse) GetProfiles() []*AMLProfile {
+	if x != nil {
+		return x.Profiles
+	}
+	return nil
+}
+
+func (x *QueryAllAMLProfilesResponse) GetPagination() *query.PageResponse {
+	if x != nil {
+		return x.Pagination
+	}
+	return nil
+}
+
+type QueryAllSanctionsResultsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Pagination    *query.PageRequest     `protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *QueryAllSanctionsResultsRequest) Reset() {
+	*x = QueryAllSanctionsResultsRequest{}
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[34]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QueryAllSanctionsResultsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryAllSanctionsResultsRequest) ProtoMessage() {}
+
+func (x *QueryAllSanctionsResultsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[34]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QueryAllSanctionsResultsRequest.ProtoReflect.Descriptor instead.
+func (*QueryAllSanctionsResultsRequest) Descriptor() ([]byte, []int) {
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{34}
+}
+
+func (x *QueryAllSanctionsResultsRequest) GetPagination() *query.PageRequest {
+	if x != nil {
+		return x.Pagination
+	}
+	return nil
+}
+
+type QueryAllSanctionsResultsResponse struct {
+	state         protoimpl.MessageState      `protogen:"open.v1"`
+	Results       []*SanctionsScreeningResult `protobuf:"bytes,1,rep,name=results,proto3" json:"results,omitempty"`
+	Pagination    *query.PageResponse         `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *QueryAllSanctionsResultsResponse) Reset() {
+	*x = QueryAllSanctionsResultsResponse{}
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[35]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QueryAllSanctionsResultsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryAllSanctionsResultsResponse) ProtoMessage() {}
+
+func (x *QueryAllSanctionsResultsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[35]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QueryAllSanctionsResultsResponse.ProtoReflect.Descriptor instead.
+func (*QueryAllSanctionsResultsResponse) Descriptor() ([]byte, []int) {
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{35}
+}
+
+func (x *QueryAllSanctionsResultsResponse) GetResults() []*SanctionsScreeningResult {
+	if x != nil {
+		return x.Results
+	}
+	return nil
+}
+
+func (x *QueryAllSanctionsResultsResponse) GetPagination() *query.PageResponse {
+	if x != nil {
+		return x.Pagination
+	}
+	return nil
+}
+
+type QueryAllTransactionAlertsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Pagination    *query.PageRequest     `protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *QueryAllTransactionAlertsRequest) Reset() {
+	*x = QueryAllTransactionAlertsRequest{}
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[36]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QueryAllTransactionAlertsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryAllTransactionAlertsRequest) ProtoMessage() {}
+
+func (x *QueryAllTransactionAlertsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[36]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QueryAllTransactionAlertsRequest.ProtoReflect.Descriptor instead.
+func (*QueryAllTransactionAlertsRequest) Descriptor() ([]byte, []int) {
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{36}
+}
+
+func (x *QueryAllTransactionAlertsRequest) GetPagination() *query.PageRequest {
+	if x != nil {
+		return x.Pagination
+	}
+	return nil
+}
+
+type QueryAllTransactionAlertsResponse struct {
+	state         protoimpl.MessageState  `protogen:"open.v1"`
+	Alerts        []*TransactionAlertList `protobuf:"bytes,1,rep,name=alerts,proto3" json:"alerts,omitempty"`
+	Pagination    *query.PageResponse     `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *QueryAllTransactionAlertsResponse) Reset() {
+	*x = QueryAllTransactionAlertsResponse{}
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[37]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QueryAllTransactionAlertsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryAllTransactionAlertsResponse) ProtoMessage() {}
+
+func (x *QueryAllTransactionAlertsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[37]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QueryAllTransactionAlertsResponse.ProtoReflect.Descriptor instead.
+func (*QueryAllTransactionAlertsResponse) Descriptor() ([]byte, []int) {
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{37}
+}
+
+func (x *QueryAllTransactionAlertsResponse) GetAlerts() []*TransactionAlertList {
+	if x != nil {
+		return x.Alerts
+	}
+	return nil
+}
+
+func (x *QueryAllTransactionAlertsResponse) GetPagination() *query.PageResponse {
+	if x != nil {
+		return x.Pagination
+	}
+	return nil
+}
+
+type QueryAllGDPRConsentsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Pagination    *query.PageRequest     `protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *QueryAllGDPRConsentsRequest) Reset() {
+	*x = QueryAllGDPRConsentsRequest{}
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[38]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QueryAllGDPRConsentsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryAllGDPRConsentsRequest) ProtoMessage() {}
+
+func (x *QueryAllGDPRConsentsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[38]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QueryAllGDPRConsentsRequest.ProtoReflect.Descriptor instead.
+func (*QueryAllGDPRConsentsRequest) Descriptor() ([]byte, []int) {
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{38}
+}
+
+func (x *QueryAllGDPRConsentsRequest) GetPagination() *query.PageRequest {
+	if x != nil {
+		return x.Pagination
+	}
+	return nil
+}
+
+type QueryAllGDPRConsentsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Consents      []*GDPRConsentList     `protobuf:"bytes,1,rep,name=consents,proto3" json:"consents,omitempty"`
+	Pagination    *query.PageResponse    `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *QueryAllGDPRConsentsResponse) Reset() {
+	*x = QueryAllGDPRConsentsResponse{}
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[39]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QueryAllGDPRConsentsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryAllGDPRConsentsResponse) ProtoMessage() {}
+
+func (x *QueryAllGDPRConsentsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[39]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QueryAllGDPRConsentsResponse.ProtoReflect.Descriptor instead.
+func (*QueryAllGDPRConsentsResponse) Descriptor() ([]byte, []int) {
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{39}
+}
+
+func (x *QueryAllGDPRConsentsResponse) GetConsents() []*GDPRConsentList {
+	if x != nil {
+		return x.Consents
+	}
+	return nil
+}
+
+func (x *QueryAllGDPRConsentsResponse) GetPagination() *query.PageResponse {
+	if x != nil {
+		return x.Pagination
+	}
+	return nil
+}
+
+type QueryAllTaxReportsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Pagination    *query.PageRequest     `protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *QueryAllTaxReportsRequest) Reset() {
+	*x = QueryAllTaxReportsRequest{}
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[40]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QueryAllTaxReportsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryAllTaxReportsRequest) ProtoMessage() {}
+
+func (x *QueryAllTaxReportsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[40]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QueryAllTaxReportsRequest.ProtoReflect.Descriptor instead.
+func (*QueryAllTaxReportsRequest) Descriptor() ([]byte, []int) {
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{40}
+}
+
+func (x *QueryAllTaxReportsRequest) GetPagination() *query.PageRequest {
+	if x != nil {
+		return x.Pagination
+	}
+	return nil
+}
+
+type QueryAllTaxReportsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Reports       []*TaxReportList       `protobuf:"bytes,1,rep,name=reports,proto3" json:"reports,omitempty"`
+	Pagination    *query.PageResponse    `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *QueryAllTaxReportsResponse) Reset() {
+	*x = QueryAllTaxReportsResponse{}
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[41]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QueryAllTaxReportsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryAllTaxReportsResponse) ProtoMessage() {}
+
+func (x *QueryAllTaxReportsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[41]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QueryAllTaxReportsResponse.ProtoReflect.Descriptor instead.
+func (*QueryAllTaxReportsResponse) Descriptor() ([]byte, []int) {
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{41}
+}
+
+func (x *QueryAllTaxReportsResponse) GetReports() []*TaxReportList {
+	if x != nil {
+		return x.Reports
+	}
+	return nil
+}
+
+func (x *QueryAllTaxReportsResponse) GetPagination() *query.PageResponse {
+	if x != nil {
+		return x.Pagination
+	}
+	return nil
+}
+
+type QueryAllGDPRRequestsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Pagination    *query.PageRequest     `protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *QueryAllGDPRRequestsRequest) Reset() {
+	*x = QueryAllGDPRRequestsRequest{}
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[42]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QueryAllGDPRRequestsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryAllGDPRRequestsRequest) ProtoMessage() {}
+
+func (x *QueryAllGDPRRequestsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[42]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QueryAllGDPRRequestsRequest.ProtoReflect.Descriptor instead.
+func (*QueryAllGDPRRequestsRequest) Descriptor() ([]byte, []int) {
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{42}
+}
+
+func (x *QueryAllGDPRRequestsRequest) GetPagination() *query.PageRequest {
+	if x != nil {
+		return x.Pagination
+	}
+	return nil
+}
+
+type QueryAllGDPRRequestsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Requests      []*GDPRDataRequest     `protobuf:"bytes,1,rep,name=requests,proto3" json:"requests,omitempty"`
+	Pagination    *query.PageResponse    `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *QueryAllGDPRRequestsResponse) Reset() {
+	*x = QueryAllGDPRRequestsResponse{}
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[43]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QueryAllGDPRRequestsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryAllGDPRRequestsResponse) ProtoMessage() {}
+
+func (x *QueryAllGDPRRequestsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[43]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QueryAllGDPRRequestsResponse.ProtoReflect.Descriptor instead.
+func (*QueryAllGDPRRequestsResponse) Descriptor() ([]byte, []int) {
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{43}
+}
+
+func (x *QueryAllGDPRRequestsResponse) GetRequests() []*GDPRDataRequest {
+	if x != nil {
+		return x.Requests
+	}
+	return nil
+}
+
+func (x *QueryAllGDPRRequestsResponse) GetPagination() *query.PageResponse {
+	if x != nil {
+		return x.Pagination
 	}
 	return nil
 }
@@ -2427,7 +3319,7 @@ type MsgSubmitKYC struct {
 
 func (x *MsgSubmitKYC) Reset() {
 	*x = MsgSubmitKYC{}
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[26]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[44]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2439,7 +3331,7 @@ func (x *MsgSubmitKYC) String() string {
 func (*MsgSubmitKYC) ProtoMessage() {}
 
 func (x *MsgSubmitKYC) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[26]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[44]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2452,7 +3344,7 @@ func (x *MsgSubmitKYC) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MsgSubmitKYC.ProtoReflect.Descriptor instead.
 func (*MsgSubmitKYC) Descriptor() ([]byte, []int) {
-	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{26}
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{44}
 }
 
 func (x *MsgSubmitKYC) GetAddress() string {
@@ -2500,7 +3392,7 @@ type MsgSubmitKYCResponse struct {
 
 func (x *MsgSubmitKYCResponse) Reset() {
 	*x = MsgSubmitKYCResponse{}
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[27]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[45]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2512,7 +3404,7 @@ func (x *MsgSubmitKYCResponse) String() string {
 func (*MsgSubmitKYCResponse) ProtoMessage() {}
 
 func (x *MsgSubmitKYCResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[27]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[45]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2525,7 +3417,7 @@ func (x *MsgSubmitKYCResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MsgSubmitKYCResponse.ProtoReflect.Descriptor instead.
 func (*MsgSubmitKYCResponse) Descriptor() ([]byte, []int) {
-	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{27}
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{45}
 }
 
 func (x *MsgSubmitKYCResponse) GetSuccess() bool {
@@ -2556,7 +3448,7 @@ type MsgReportSuspiciousActivity struct {
 
 func (x *MsgReportSuspiciousActivity) Reset() {
 	*x = MsgReportSuspiciousActivity{}
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[28]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[46]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2568,7 +3460,7 @@ func (x *MsgReportSuspiciousActivity) String() string {
 func (*MsgReportSuspiciousActivity) ProtoMessage() {}
 
 func (x *MsgReportSuspiciousActivity) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[28]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[46]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2581,7 +3473,7 @@ func (x *MsgReportSuspiciousActivity) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MsgReportSuspiciousActivity.ProtoReflect.Descriptor instead.
 func (*MsgReportSuspiciousActivity) Descriptor() ([]byte, []int) {
-	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{28}
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{46}
 }
 
 func (x *MsgReportSuspiciousActivity) GetReporter() string {
@@ -2635,7 +3527,7 @@ type MsgReportSuspiciousActivityResponse struct {
 
 func (x *MsgReportSuspiciousActivityResponse) Reset() {
 	*x = MsgReportSuspiciousActivityResponse{}
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[29]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[47]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2647,7 +3539,7 @@ func (x *MsgReportSuspiciousActivityResponse) String() string {
 func (*MsgReportSuspiciousActivityResponse) ProtoMessage() {}
 
 func (x *MsgReportSuspiciousActivityResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[29]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[47]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2660,7 +3552,7 @@ func (x *MsgReportSuspiciousActivityResponse) ProtoReflect() protoreflect.Messag
 
 // Deprecated: Use MsgReportSuspiciousActivityResponse.ProtoReflect.Descriptor instead.
 func (*MsgReportSuspiciousActivityResponse) Descriptor() ([]byte, []int) {
-	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{29}
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{47}
 }
 
 func (x *MsgReportSuspiciousActivityResponse) GetActivityId() string {
@@ -2680,7 +3572,7 @@ type MsgScreenSanctions struct {
 
 func (x *MsgScreenSanctions) Reset() {
 	*x = MsgScreenSanctions{}
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[30]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[48]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2692,7 +3584,7 @@ func (x *MsgScreenSanctions) String() string {
 func (*MsgScreenSanctions) ProtoMessage() {}
 
 func (x *MsgScreenSanctions) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[30]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[48]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2705,7 +3597,7 @@ func (x *MsgScreenSanctions) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MsgScreenSanctions.ProtoReflect.Descriptor instead.
 func (*MsgScreenSanctions) Descriptor() ([]byte, []int) {
-	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{30}
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{48}
 }
 
 func (x *MsgScreenSanctions) GetAddress() string {
@@ -2732,7 +3624,7 @@ type MsgScreenSanctionsResponse struct {
 
 func (x *MsgScreenSanctionsResponse) Reset() {
 	*x = MsgScreenSanctionsResponse{}
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[31]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[49]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2744,7 +3636,7 @@ func (x *MsgScreenSanctionsResponse) String() string {
 func (*MsgScreenSanctionsResponse) ProtoMessage() {}
 
 func (x *MsgScreenSanctionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[31]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[49]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2757,7 +3649,7 @@ func (x *MsgScreenSanctionsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MsgScreenSanctionsResponse.ProtoReflect.Descriptor instead.
 func (*MsgScreenSanctionsResponse) Descriptor() ([]byte, []int) {
-	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{31}
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{49}
 }
 
 func (x *MsgScreenSanctionsResponse) GetStatus() SanctionsStatus {
@@ -2786,7 +3678,7 @@ type MsgRecordGDPRConsent struct {
 
 func (x *MsgRecordGDPRConsent) Reset() {
 	*x = MsgRecordGDPRConsent{}
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[32]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[50]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2798,7 +3690,7 @@ func (x *MsgRecordGDPRConsent) String() string {
 func (*MsgRecordGDPRConsent) ProtoMessage() {}
 
 func (x *MsgRecordGDPRConsent) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[32]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[50]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2811,7 +3703,7 @@ func (x *MsgRecordGDPRConsent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MsgRecordGDPRConsent.ProtoReflect.Descriptor instead.
 func (*MsgRecordGDPRConsent) Descriptor() ([]byte, []int) {
-	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{32}
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{50}
 }
 
 func (x *MsgRecordGDPRConsent) GetAddress() string {
@@ -2851,7 +3743,7 @@ type MsgRecordGDPRConsentResponse struct {
 
 func (x *MsgRecordGDPRConsentResponse) Reset() {
 	*x = MsgRecordGDPRConsentResponse{}
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[33]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[51]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2863,7 +3755,7 @@ func (x *MsgRecordGDPRConsentResponse) String() string {
 func (*MsgRecordGDPRConsentResponse) ProtoMessage() {}
 
 func (x *MsgRecordGDPRConsentResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[33]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[51]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2876,7 +3768,7 @@ func (x *MsgRecordGDPRConsentResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MsgRecordGDPRConsentResponse.ProtoReflect.Descriptor instead.
 func (*MsgRecordGDPRConsentResponse) Descriptor() ([]byte, []int) {
-	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{33}
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{51}
 }
 
 func (x *MsgRecordGDPRConsentResponse) GetSuccess() bool {
@@ -2896,7 +3788,7 @@ type MsgRequestGDPRData struct {
 
 func (x *MsgRequestGDPRData) Reset() {
 	*x = MsgRequestGDPRData{}
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[34]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[52]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2908,7 +3800,7 @@ func (x *MsgRequestGDPRData) String() string {
 func (*MsgRequestGDPRData) ProtoMessage() {}
 
 func (x *MsgRequestGDPRData) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[34]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[52]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2921,7 +3813,7 @@ func (x *MsgRequestGDPRData) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MsgRequestGDPRData.ProtoReflect.Descriptor instead.
 func (*MsgRequestGDPRData) Descriptor() ([]byte, []int) {
-	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{34}
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{52}
 }
 
 func (x *MsgRequestGDPRData) GetAddress() string {
@@ -2947,7 +3839,7 @@ type MsgRequestGDPRDataResponse struct {
 
 func (x *MsgRequestGDPRDataResponse) Reset() {
 	*x = MsgRequestGDPRDataResponse{}
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[35]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[53]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2959,7 +3851,7 @@ func (x *MsgRequestGDPRDataResponse) String() string {
 func (*MsgRequestGDPRDataResponse) ProtoMessage() {}
 
 func (x *MsgRequestGDPRDataResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[35]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[53]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2972,7 +3864,7 @@ func (x *MsgRequestGDPRDataResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MsgRequestGDPRDataResponse.ProtoReflect.Descriptor instead.
 func (*MsgRequestGDPRDataResponse) Descriptor() ([]byte, []int) {
-	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{35}
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{53}
 }
 
 func (x *MsgRequestGDPRDataResponse) GetRequestId() string {
@@ -2995,7 +3887,7 @@ type MsgGenerateTaxReport struct {
 
 func (x *MsgGenerateTaxReport) Reset() {
 	*x = MsgGenerateTaxReport{}
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[36]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[54]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3007,7 +3899,7 @@ func (x *MsgGenerateTaxReport) String() string {
 func (*MsgGenerateTaxReport) ProtoMessage() {}
 
 func (x *MsgGenerateTaxReport) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[36]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[54]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3020,7 +3912,7 @@ func (x *MsgGenerateTaxReport) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MsgGenerateTaxReport.ProtoReflect.Descriptor instead.
 func (*MsgGenerateTaxReport) Descriptor() ([]byte, []int) {
-	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{36}
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{54}
 }
 
 func (x *MsgGenerateTaxReport) GetAddress() string {
@@ -3068,7 +3960,7 @@ type MsgGenerateTaxReportResponse struct {
 
 func (x *MsgGenerateTaxReportResponse) Reset() {
 	*x = MsgGenerateTaxReportResponse{}
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[37]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[55]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3080,7 +3972,7 @@ func (x *MsgGenerateTaxReportResponse) String() string {
 func (*MsgGenerateTaxReportResponse) ProtoMessage() {}
 
 func (x *MsgGenerateTaxReportResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[37]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[55]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3093,7 +3985,7 @@ func (x *MsgGenerateTaxReportResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MsgGenerateTaxReportResponse.ProtoReflect.Descriptor instead.
 func (*MsgGenerateTaxReportResponse) Descriptor() ([]byte, []int) {
-	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{37}
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{55}
 }
 
 func (x *MsgGenerateTaxReportResponse) GetReportId() string {
@@ -3123,7 +4015,7 @@ type MsgEraseGDPRData struct {
 
 func (x *MsgEraseGDPRData) Reset() {
 	*x = MsgEraseGDPRData{}
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[38]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[56]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3135,7 +4027,7 @@ func (x *MsgEraseGDPRData) String() string {
 func (*MsgEraseGDPRData) ProtoMessage() {}
 
 func (x *MsgEraseGDPRData) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[38]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[56]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3148,7 +4040,7 @@ func (x *MsgEraseGDPRData) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MsgEraseGDPRData.ProtoReflect.Descriptor instead.
 func (*MsgEraseGDPRData) Descriptor() ([]byte, []int) {
-	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{38}
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{56}
 }
 
 func (x *MsgEraseGDPRData) GetAddress() string {
@@ -3175,7 +4067,7 @@ type MsgEraseGDPRDataResponse struct {
 
 func (x *MsgEraseGDPRDataResponse) Reset() {
 	*x = MsgEraseGDPRDataResponse{}
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[39]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[57]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3187,7 +4079,7 @@ func (x *MsgEraseGDPRDataResponse) String() string {
 func (*MsgEraseGDPRDataResponse) ProtoMessage() {}
 
 func (x *MsgEraseGDPRDataResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[39]
+	mi := &file_aura_compliance_v1beta1_compliance_proto_msgTypes[57]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3200,7 +4092,7 @@ func (x *MsgEraseGDPRDataResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MsgEraseGDPRDataResponse.ProtoReflect.Descriptor instead.
 func (*MsgEraseGDPRDataResponse) Descriptor() ([]byte, []int) {
-	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{39}
+	return file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP(), []int{57}
 }
 
 func (x *MsgEraseGDPRDataResponse) GetSuccess() bool {
@@ -3221,7 +4113,7 @@ var File_aura_compliance_v1beta1_compliance_proto protoreflect.FileDescriptor
 
 const file_aura_compliance_v1beta1_compliance_proto_rawDesc = "" +
 	"\n" +
-	"(aura/compliance/v1beta1/compliance.proto\x12\x17aura.compliance.v1beta1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x17cosmos/msg/v1/msg.proto\"\xfa\x02\n" +
+	"(aura/compliance/v1beta1/compliance.proto\x12\x17aura.compliance.v1beta1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x17cosmos/msg/v1/msg.proto\x1a*cosmos/base/query/v1beta1/pagination.proto\"\x94\x03\n" +
 	"\tKYCRecord\x12\x18\n" +
 	"\aaddress\x18\x01 \x01(\tR\aaddress\x12>\n" +
 	"\tkyc_level\x18\x02 \x01(\x0e2!.aura.compliance.v1beta1.KYCLevelR\bkycLevel\x12\x1a\n" +
@@ -3232,7 +4124,19 @@ const file_aura_compliance_v1beta1_compliance_proto_rawDesc = "" +
 	"expires_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\x12%\n" +
 	"\x0epii_commitment\x18\x06 \x01(\fR\rpiiCommitment\x124\n" +
 	"\x16enhanced_due_diligence\x18\a \x01(\bR\x14enhancedDueDiligence\x12\"\n" +
-	"\fjurisdiction\x18\b \x01(\tR\fjurisdiction\"\xef\x03\n" +
+	"\fjurisdiction\x18\b \x01(\tR\fjurisdiction\x12\x18\n" +
+	"\aversion\x18\t \x01(\x04R\aversion\"\x84\x02\n" +
+	"\x0fKYCHistoryEntry\x12\x18\n" +
+	"\aaddress\x18\x01 \x01(\tR\aaddress\x12\x18\n" +
+	"\aversion\x18\x02 \x01(\x04R\aversion\x12>\n" +
+	"\bsnapshot\x18\x03 \x01(\v2\".aura.compliance.v1beta1.KYCRecordR\bsnapshot\x129\n" +
+	"\n" +
+	"updated_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12\x1d\n" +
+	"\n" +
+	"updated_by\x18\x05 \x01(\tR\tupdatedBy\x12#\n" +
+	"\rupdate_reason\x18\x06 \x01(\tR\fupdateReason\"T\n" +
+	"\x0eKYCHistoryList\x12B\n" +
+	"\aentries\x18\x01 \x03(\v2(.aura.compliance.v1beta1.KYCHistoryEntryR\aentries\"\xef\x03\n" +
 	"\n" +
 	"AMLProfile\x12\x18\n" +
 	"\aaddress\x18\x01 \x01(\tR\aaddress\x12D\n" +
@@ -3412,6 +4316,10 @@ const file_aura_compliance_v1beta1_compliance_proto_rawDesc = "" +
 	"\aaddress\x18\x01 \x01(\tR\aaddress\"T\n" +
 	"\x16QueryKYCRecordResponse\x12:\n" +
 	"\x06record\x18\x01 \x01(\v2\".aura.compliance.v1beta1.KYCRecordR\x06record\"2\n" +
+	"\x16QueryKYCHistoryRequest\x12\x18\n" +
+	"\aaddress\x18\x01 \x01(\tR\aaddress\"]\n" +
+	"\x17QueryKYCHistoryResponse\x12B\n" +
+	"\ahistory\x18\x01 \x03(\v2(.aura.compliance.v1beta1.KYCHistoryEntryR\ahistory\"2\n" +
 	"\x16QueryAMLProfileRequest\x12\x18\n" +
 	"\aaddress\x18\x01 \x01(\tR\aaddress\"X\n" +
 	"\x17QueryAMLProfileResponse\x12=\n" +
@@ -3431,7 +4339,70 @@ const file_aura_compliance_v1beta1_compliance_proto_rawDesc = "" +
 	"\btax_year\x18\x02 \x01(\tR\ataxYear\x12\"\n" +
 	"\fjurisdiction\x18\x03 \x01(\tR\fjurisdiction\"T\n" +
 	"\x16QueryTaxReportResponse\x12:\n" +
-	"\x06report\x18\x01 \x01(\v2\".aura.compliance.v1beta1.TaxReportR\x06report\"\xde\x01\n" +
+	"\x06report\x18\x01 \x01(\v2\".aura.compliance.v1beta1.TaxReportR\x06report\"c\n" +
+	"\x19QueryAllKYCRecordsRequest\x12F\n" +
+	"\n" +
+	"pagination\x18\x01 \x01(\v2&.cosmos.base.query.v1beta1.PageRequestR\n" +
+	"pagination\"\xa3\x01\n" +
+	"\x1aQueryAllKYCRecordsResponse\x12<\n" +
+	"\arecords\x18\x01 \x03(\v2\".aura.compliance.v1beta1.KYCRecordR\arecords\x12G\n" +
+	"\n" +
+	"pagination\x18\x02 \x01(\v2'.cosmos.base.query.v1beta1.PageResponseR\n" +
+	"pagination\"d\n" +
+	"\x1aQueryAllAMLProfilesRequest\x12F\n" +
+	"\n" +
+	"pagination\x18\x01 \x01(\v2&.cosmos.base.query.v1beta1.PageRequestR\n" +
+	"pagination\"\xa7\x01\n" +
+	"\x1bQueryAllAMLProfilesResponse\x12?\n" +
+	"\bprofiles\x18\x01 \x03(\v2#.aura.compliance.v1beta1.AMLProfileR\bprofiles\x12G\n" +
+	"\n" +
+	"pagination\x18\x02 \x01(\v2'.cosmos.base.query.v1beta1.PageResponseR\n" +
+	"pagination\"i\n" +
+	"\x1fQueryAllSanctionsResultsRequest\x12F\n" +
+	"\n" +
+	"pagination\x18\x01 \x01(\v2&.cosmos.base.query.v1beta1.PageRequestR\n" +
+	"pagination\"\xb8\x01\n" +
+	" QueryAllSanctionsResultsResponse\x12K\n" +
+	"\aresults\x18\x01 \x03(\v21.aura.compliance.v1beta1.SanctionsScreeningResultR\aresults\x12G\n" +
+	"\n" +
+	"pagination\x18\x02 \x01(\v2'.cosmos.base.query.v1beta1.PageResponseR\n" +
+	"pagination\"j\n" +
+	" QueryAllTransactionAlertsRequest\x12F\n" +
+	"\n" +
+	"pagination\x18\x01 \x01(\v2&.cosmos.base.query.v1beta1.PageRequestR\n" +
+	"pagination\"\xb3\x01\n" +
+	"!QueryAllTransactionAlertsResponse\x12E\n" +
+	"\x06alerts\x18\x01 \x03(\v2-.aura.compliance.v1beta1.TransactionAlertListR\x06alerts\x12G\n" +
+	"\n" +
+	"pagination\x18\x02 \x01(\v2'.cosmos.base.query.v1beta1.PageResponseR\n" +
+	"pagination\"e\n" +
+	"\x1bQueryAllGDPRConsentsRequest\x12F\n" +
+	"\n" +
+	"pagination\x18\x01 \x01(\v2&.cosmos.base.query.v1beta1.PageRequestR\n" +
+	"pagination\"\xad\x01\n" +
+	"\x1cQueryAllGDPRConsentsResponse\x12D\n" +
+	"\bconsents\x18\x01 \x03(\v2(.aura.compliance.v1beta1.GDPRConsentListR\bconsents\x12G\n" +
+	"\n" +
+	"pagination\x18\x02 \x01(\v2'.cosmos.base.query.v1beta1.PageResponseR\n" +
+	"pagination\"c\n" +
+	"\x19QueryAllTaxReportsRequest\x12F\n" +
+	"\n" +
+	"pagination\x18\x01 \x01(\v2&.cosmos.base.query.v1beta1.PageRequestR\n" +
+	"pagination\"\xa7\x01\n" +
+	"\x1aQueryAllTaxReportsResponse\x12@\n" +
+	"\areports\x18\x01 \x03(\v2&.aura.compliance.v1beta1.TaxReportListR\areports\x12G\n" +
+	"\n" +
+	"pagination\x18\x02 \x01(\v2'.cosmos.base.query.v1beta1.PageResponseR\n" +
+	"pagination\"e\n" +
+	"\x1bQueryAllGDPRRequestsRequest\x12F\n" +
+	"\n" +
+	"pagination\x18\x01 \x01(\v2&.cosmos.base.query.v1beta1.PageRequestR\n" +
+	"pagination\"\xad\x01\n" +
+	"\x1cQueryAllGDPRRequestsResponse\x12D\n" +
+	"\brequests\x18\x01 \x03(\v2(.aura.compliance.v1beta1.GDPRDataRequestR\brequests\x12G\n" +
+	"\n" +
+	"pagination\x18\x02 \x01(\v2'.cosmos.base.query.v1beta1.PageResponseR\n" +
+	"pagination\"\xde\x01\n" +
 	"\fMsgSubmitKYC\x12\x18\n" +
 	"\aaddress\x18\x01 \x01(\tR\aaddress\x12>\n" +
 	"\tkyc_level\x18\x02 \x01(\x0e2!.aura.compliance.v1beta1.KYCLevelR\bkycLevel\x12\x1a\n" +
@@ -3511,14 +4482,23 @@ const file_aura_compliance_v1beta1_compliance_proto_rawDesc = "" +
 	"\x0fSANCTIONS_CLEAR\x10\x01\x12\x13\n" +
 	"\x0fSANCTIONS_MATCH\x10\x02\x12\x17\n" +
 	"\x13SANCTIONS_CONFIRMED\x10\x03\x12\x1c\n" +
-	"\x18SANCTIONS_PENDING_REVIEW\x10\x042\xe5\x04\n" +
+	"\x18SANCTIONS_PENDING_REVIEW\x10\x042\xe4\f\n" +
 	"\x05Query\x12l\n" +
 	"\tKycRecord\x12..aura.compliance.v1beta1.QueryKYCRecordRequest\x1a/.aura.compliance.v1beta1.QueryKYCRecordResponse\x12o\n" +
+	"\n" +
+	"KycHistory\x12/.aura.compliance.v1beta1.QueryKYCHistoryRequest\x1a0.aura.compliance.v1beta1.QueryKYCHistoryResponse\x12o\n" +
 	"\n" +
 	"AmlProfile\x12/.aura.compliance.v1beta1.QueryAMLProfileRequest\x1a0.aura.compliance.v1beta1.QueryAMLProfileResponse\x12\x87\x01\n" +
 	"\x12SanctionsScreening\x127.aura.compliance.v1beta1.QuerySanctionsScreeningRequest\x1a8.aura.compliance.v1beta1.QuerySanctionsScreeningResponse\x12\x84\x01\n" +
 	"\x11TransactionAlerts\x126.aura.compliance.v1beta1.QueryTransactionAlertsRequest\x1a7.aura.compliance.v1beta1.QueryTransactionAlertsResponse\x12l\n" +
-	"\tTaxReport\x12..aura.compliance.v1beta1.QueryTaxReportRequest\x1a/.aura.compliance.v1beta1.QueryTaxReportResponse2\xc8\x06\n" +
+	"\tTaxReport\x12..aura.compliance.v1beta1.QueryTaxReportRequest\x1a/.aura.compliance.v1beta1.QueryTaxReportResponse\x12x\n" +
+	"\rAllKYCRecords\x122.aura.compliance.v1beta1.QueryAllKYCRecordsRequest\x1a3.aura.compliance.v1beta1.QueryAllKYCRecordsResponse\x12{\n" +
+	"\x0eAllAMLProfiles\x123.aura.compliance.v1beta1.QueryAllAMLProfilesRequest\x1a4.aura.compliance.v1beta1.QueryAllAMLProfilesResponse\x12\x8a\x01\n" +
+	"\x13AllSanctionsResults\x128.aura.compliance.v1beta1.QueryAllSanctionsResultsRequest\x1a9.aura.compliance.v1beta1.QueryAllSanctionsResultsResponse\x12\x8d\x01\n" +
+	"\x14AllTransactionAlerts\x129.aura.compliance.v1beta1.QueryAllTransactionAlertsRequest\x1a:.aura.compliance.v1beta1.QueryAllTransactionAlertsResponse\x12~\n" +
+	"\x0fAllGDPRConsents\x124.aura.compliance.v1beta1.QueryAllGDPRConsentsRequest\x1a5.aura.compliance.v1beta1.QueryAllGDPRConsentsResponse\x12x\n" +
+	"\rAllTaxReports\x122.aura.compliance.v1beta1.QueryAllTaxReportsRequest\x1a3.aura.compliance.v1beta1.QueryAllTaxReportsResponse\x12~\n" +
+	"\x0fAllGDPRRequests\x124.aura.compliance.v1beta1.QueryAllGDPRRequestsRequest\x1a5.aura.compliance.v1beta1.QueryAllGDPRRequestsResponse2\xc8\x06\n" +
 	"\x03Msg\x12a\n" +
 	"\tSubmitKYC\x12%.aura.compliance.v1beta1.MsgSubmitKYC\x1a-.aura.compliance.v1beta1.MsgSubmitKYCResponse\x12\x8e\x01\n" +
 	"\x18ReportSuspiciousActivity\x124.aura.compliance.v1beta1.MsgReportSuspiciousActivity\x1a<.aura.compliance.v1beta1.MsgReportSuspiciousActivityResponse\x12s\n" +
@@ -3541,124 +4521,185 @@ func file_aura_compliance_v1beta1_compliance_proto_rawDescGZIP() []byte {
 }
 
 var file_aura_compliance_v1beta1_compliance_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_aura_compliance_v1beta1_compliance_proto_msgTypes = make([]protoimpl.MessageInfo, 41)
+var file_aura_compliance_v1beta1_compliance_proto_msgTypes = make([]protoimpl.MessageInfo, 59)
 var file_aura_compliance_v1beta1_compliance_proto_goTypes = []any{
 	(KYCLevel)(0),                               // 0: aura.compliance.v1beta1.KYCLevel
 	(AMLRiskLevel)(0),                           // 1: aura.compliance.v1beta1.AMLRiskLevel
 	(TransactionRiskLevel)(0),                   // 2: aura.compliance.v1beta1.TransactionRiskLevel
 	(SanctionsStatus)(0),                        // 3: aura.compliance.v1beta1.SanctionsStatus
 	(*KYCRecord)(nil),                           // 4: aura.compliance.v1beta1.KYCRecord
-	(*AMLProfile)(nil),                          // 5: aura.compliance.v1beta1.AMLProfile
-	(*SuspiciousActivity)(nil),                  // 6: aura.compliance.v1beta1.SuspiciousActivity
-	(*TransactionMonitoringRule)(nil),           // 7: aura.compliance.v1beta1.TransactionMonitoringRule
-	(*TransactionAlert)(nil),                    // 8: aura.compliance.v1beta1.TransactionAlert
-	(*TransactionAlertList)(nil),                // 9: aura.compliance.v1beta1.TransactionAlertList
-	(*SanctionsScreeningResult)(nil),            // 10: aura.compliance.v1beta1.SanctionsScreeningResult
-	(*SanctionsMatch)(nil),                      // 11: aura.compliance.v1beta1.SanctionsMatch
-	(*GDPRConsent)(nil),                         // 12: aura.compliance.v1beta1.GDPRConsent
-	(*GDPRConsentList)(nil),                     // 13: aura.compliance.v1beta1.GDPRConsentList
-	(*GDPRDataRequest)(nil),                     // 14: aura.compliance.v1beta1.GDPRDataRequest
-	(*TaxReport)(nil),                           // 15: aura.compliance.v1beta1.TaxReport
-	(*TaxReportList)(nil),                       // 16: aura.compliance.v1beta1.TaxReportList
-	(*TaxTransaction)(nil),                      // 17: aura.compliance.v1beta1.TaxTransaction
-	(*RateLimitEntry)(nil),                      // 18: aura.compliance.v1beta1.RateLimitEntry
-	(*ComplianceParams)(nil),                    // 19: aura.compliance.v1beta1.ComplianceParams
-	(*QueryKYCRecordRequest)(nil),               // 20: aura.compliance.v1beta1.QueryKYCRecordRequest
-	(*QueryKYCRecordResponse)(nil),              // 21: aura.compliance.v1beta1.QueryKYCRecordResponse
-	(*QueryAMLProfileRequest)(nil),              // 22: aura.compliance.v1beta1.QueryAMLProfileRequest
-	(*QueryAMLProfileResponse)(nil),             // 23: aura.compliance.v1beta1.QueryAMLProfileResponse
-	(*QuerySanctionsScreeningRequest)(nil),      // 24: aura.compliance.v1beta1.QuerySanctionsScreeningRequest
-	(*QuerySanctionsScreeningResponse)(nil),     // 25: aura.compliance.v1beta1.QuerySanctionsScreeningResponse
-	(*QueryTransactionAlertsRequest)(nil),       // 26: aura.compliance.v1beta1.QueryTransactionAlertsRequest
-	(*QueryTransactionAlertsResponse)(nil),      // 27: aura.compliance.v1beta1.QueryTransactionAlertsResponse
-	(*QueryTaxReportRequest)(nil),               // 28: aura.compliance.v1beta1.QueryTaxReportRequest
-	(*QueryTaxReportResponse)(nil),              // 29: aura.compliance.v1beta1.QueryTaxReportResponse
-	(*MsgSubmitKYC)(nil),                        // 30: aura.compliance.v1beta1.MsgSubmitKYC
-	(*MsgSubmitKYCResponse)(nil),                // 31: aura.compliance.v1beta1.MsgSubmitKYCResponse
-	(*MsgReportSuspiciousActivity)(nil),         // 32: aura.compliance.v1beta1.MsgReportSuspiciousActivity
-	(*MsgReportSuspiciousActivityResponse)(nil), // 33: aura.compliance.v1beta1.MsgReportSuspiciousActivityResponse
-	(*MsgScreenSanctions)(nil),                  // 34: aura.compliance.v1beta1.MsgScreenSanctions
-	(*MsgScreenSanctionsResponse)(nil),          // 35: aura.compliance.v1beta1.MsgScreenSanctionsResponse
-	(*MsgRecordGDPRConsent)(nil),                // 36: aura.compliance.v1beta1.MsgRecordGDPRConsent
-	(*MsgRecordGDPRConsentResponse)(nil),        // 37: aura.compliance.v1beta1.MsgRecordGDPRConsentResponse
-	(*MsgRequestGDPRData)(nil),                  // 38: aura.compliance.v1beta1.MsgRequestGDPRData
-	(*MsgRequestGDPRDataResponse)(nil),          // 39: aura.compliance.v1beta1.MsgRequestGDPRDataResponse
-	(*MsgGenerateTaxReport)(nil),                // 40: aura.compliance.v1beta1.MsgGenerateTaxReport
-	(*MsgGenerateTaxReportResponse)(nil),        // 41: aura.compliance.v1beta1.MsgGenerateTaxReportResponse
-	(*MsgEraseGDPRData)(nil),                    // 42: aura.compliance.v1beta1.MsgEraseGDPRData
-	(*MsgEraseGDPRDataResponse)(nil),            // 43: aura.compliance.v1beta1.MsgEraseGDPRDataResponse
-	nil,                                         // 44: aura.compliance.v1beta1.TransactionMonitoringRule.ParametersEntry
-	(*timestamppb.Timestamp)(nil),               // 45: google.protobuf.Timestamp
+	(*KYCHistoryEntry)(nil),                     // 5: aura.compliance.v1beta1.KYCHistoryEntry
+	(*KYCHistoryList)(nil),                      // 6: aura.compliance.v1beta1.KYCHistoryList
+	(*AMLProfile)(nil),                          // 7: aura.compliance.v1beta1.AMLProfile
+	(*SuspiciousActivity)(nil),                  // 8: aura.compliance.v1beta1.SuspiciousActivity
+	(*TransactionMonitoringRule)(nil),           // 9: aura.compliance.v1beta1.TransactionMonitoringRule
+	(*TransactionAlert)(nil),                    // 10: aura.compliance.v1beta1.TransactionAlert
+	(*TransactionAlertList)(nil),                // 11: aura.compliance.v1beta1.TransactionAlertList
+	(*SanctionsScreeningResult)(nil),            // 12: aura.compliance.v1beta1.SanctionsScreeningResult
+	(*SanctionsMatch)(nil),                      // 13: aura.compliance.v1beta1.SanctionsMatch
+	(*GDPRConsent)(nil),                         // 14: aura.compliance.v1beta1.GDPRConsent
+	(*GDPRConsentList)(nil),                     // 15: aura.compliance.v1beta1.GDPRConsentList
+	(*GDPRDataRequest)(nil),                     // 16: aura.compliance.v1beta1.GDPRDataRequest
+	(*TaxReport)(nil),                           // 17: aura.compliance.v1beta1.TaxReport
+	(*TaxReportList)(nil),                       // 18: aura.compliance.v1beta1.TaxReportList
+	(*TaxTransaction)(nil),                      // 19: aura.compliance.v1beta1.TaxTransaction
+	(*RateLimitEntry)(nil),                      // 20: aura.compliance.v1beta1.RateLimitEntry
+	(*ComplianceParams)(nil),                    // 21: aura.compliance.v1beta1.ComplianceParams
+	(*QueryKYCRecordRequest)(nil),               // 22: aura.compliance.v1beta1.QueryKYCRecordRequest
+	(*QueryKYCRecordResponse)(nil),              // 23: aura.compliance.v1beta1.QueryKYCRecordResponse
+	(*QueryKYCHistoryRequest)(nil),              // 24: aura.compliance.v1beta1.QueryKYCHistoryRequest
+	(*QueryKYCHistoryResponse)(nil),             // 25: aura.compliance.v1beta1.QueryKYCHistoryResponse
+	(*QueryAMLProfileRequest)(nil),              // 26: aura.compliance.v1beta1.QueryAMLProfileRequest
+	(*QueryAMLProfileResponse)(nil),             // 27: aura.compliance.v1beta1.QueryAMLProfileResponse
+	(*QuerySanctionsScreeningRequest)(nil),      // 28: aura.compliance.v1beta1.QuerySanctionsScreeningRequest
+	(*QuerySanctionsScreeningResponse)(nil),     // 29: aura.compliance.v1beta1.QuerySanctionsScreeningResponse
+	(*QueryTransactionAlertsRequest)(nil),       // 30: aura.compliance.v1beta1.QueryTransactionAlertsRequest
+	(*QueryTransactionAlertsResponse)(nil),      // 31: aura.compliance.v1beta1.QueryTransactionAlertsResponse
+	(*QueryTaxReportRequest)(nil),               // 32: aura.compliance.v1beta1.QueryTaxReportRequest
+	(*QueryTaxReportResponse)(nil),              // 33: aura.compliance.v1beta1.QueryTaxReportResponse
+	(*QueryAllKYCRecordsRequest)(nil),           // 34: aura.compliance.v1beta1.QueryAllKYCRecordsRequest
+	(*QueryAllKYCRecordsResponse)(nil),          // 35: aura.compliance.v1beta1.QueryAllKYCRecordsResponse
+	(*QueryAllAMLProfilesRequest)(nil),          // 36: aura.compliance.v1beta1.QueryAllAMLProfilesRequest
+	(*QueryAllAMLProfilesResponse)(nil),         // 37: aura.compliance.v1beta1.QueryAllAMLProfilesResponse
+	(*QueryAllSanctionsResultsRequest)(nil),     // 38: aura.compliance.v1beta1.QueryAllSanctionsResultsRequest
+	(*QueryAllSanctionsResultsResponse)(nil),    // 39: aura.compliance.v1beta1.QueryAllSanctionsResultsResponse
+	(*QueryAllTransactionAlertsRequest)(nil),    // 40: aura.compliance.v1beta1.QueryAllTransactionAlertsRequest
+	(*QueryAllTransactionAlertsResponse)(nil),   // 41: aura.compliance.v1beta1.QueryAllTransactionAlertsResponse
+	(*QueryAllGDPRConsentsRequest)(nil),         // 42: aura.compliance.v1beta1.QueryAllGDPRConsentsRequest
+	(*QueryAllGDPRConsentsResponse)(nil),        // 43: aura.compliance.v1beta1.QueryAllGDPRConsentsResponse
+	(*QueryAllTaxReportsRequest)(nil),           // 44: aura.compliance.v1beta1.QueryAllTaxReportsRequest
+	(*QueryAllTaxReportsResponse)(nil),          // 45: aura.compliance.v1beta1.QueryAllTaxReportsResponse
+	(*QueryAllGDPRRequestsRequest)(nil),         // 46: aura.compliance.v1beta1.QueryAllGDPRRequestsRequest
+	(*QueryAllGDPRRequestsResponse)(nil),        // 47: aura.compliance.v1beta1.QueryAllGDPRRequestsResponse
+	(*MsgSubmitKYC)(nil),                        // 48: aura.compliance.v1beta1.MsgSubmitKYC
+	(*MsgSubmitKYCResponse)(nil),                // 49: aura.compliance.v1beta1.MsgSubmitKYCResponse
+	(*MsgReportSuspiciousActivity)(nil),         // 50: aura.compliance.v1beta1.MsgReportSuspiciousActivity
+	(*MsgReportSuspiciousActivityResponse)(nil), // 51: aura.compliance.v1beta1.MsgReportSuspiciousActivityResponse
+	(*MsgScreenSanctions)(nil),                  // 52: aura.compliance.v1beta1.MsgScreenSanctions
+	(*MsgScreenSanctionsResponse)(nil),          // 53: aura.compliance.v1beta1.MsgScreenSanctionsResponse
+	(*MsgRecordGDPRConsent)(nil),                // 54: aura.compliance.v1beta1.MsgRecordGDPRConsent
+	(*MsgRecordGDPRConsentResponse)(nil),        // 55: aura.compliance.v1beta1.MsgRecordGDPRConsentResponse
+	(*MsgRequestGDPRData)(nil),                  // 56: aura.compliance.v1beta1.MsgRequestGDPRData
+	(*MsgRequestGDPRDataResponse)(nil),          // 57: aura.compliance.v1beta1.MsgRequestGDPRDataResponse
+	(*MsgGenerateTaxReport)(nil),                // 58: aura.compliance.v1beta1.MsgGenerateTaxReport
+	(*MsgGenerateTaxReportResponse)(nil),        // 59: aura.compliance.v1beta1.MsgGenerateTaxReportResponse
+	(*MsgEraseGDPRData)(nil),                    // 60: aura.compliance.v1beta1.MsgEraseGDPRData
+	(*MsgEraseGDPRDataResponse)(nil),            // 61: aura.compliance.v1beta1.MsgEraseGDPRDataResponse
+	nil,                                         // 62: aura.compliance.v1beta1.TransactionMonitoringRule.ParametersEntry
+	(*timestamppb.Timestamp)(nil),               // 63: google.protobuf.Timestamp
+	(*query.PageRequest)(nil),                   // 64: cosmos.base.query.v1beta1.PageRequest
+	(*query.PageResponse)(nil),                  // 65: cosmos.base.query.v1beta1.PageResponse
 }
 var file_aura_compliance_v1beta1_compliance_proto_depIdxs = []int32{
 	0,  // 0: aura.compliance.v1beta1.KYCRecord.kyc_level:type_name -> aura.compliance.v1beta1.KYCLevel
-	45, // 1: aura.compliance.v1beta1.KYCRecord.verified_at:type_name -> google.protobuf.Timestamp
-	45, // 2: aura.compliance.v1beta1.KYCRecord.expires_at:type_name -> google.protobuf.Timestamp
-	1,  // 3: aura.compliance.v1beta1.AMLProfile.risk_level:type_name -> aura.compliance.v1beta1.AMLRiskLevel
-	45, // 4: aura.compliance.v1beta1.AMLProfile.last_assessment:type_name -> google.protobuf.Timestamp
-	6,  // 5: aura.compliance.v1beta1.AMLProfile.suspicious_activities:type_name -> aura.compliance.v1beta1.SuspiciousActivity
-	45, // 6: aura.compliance.v1beta1.SuspiciousActivity.detected_at:type_name -> google.protobuf.Timestamp
-	45, // 7: aura.compliance.v1beta1.SuspiciousActivity.reported_at:type_name -> google.protobuf.Timestamp
-	44, // 8: aura.compliance.v1beta1.TransactionMonitoringRule.parameters:type_name -> aura.compliance.v1beta1.TransactionMonitoringRule.ParametersEntry
-	2,  // 9: aura.compliance.v1beta1.TransactionMonitoringRule.risk_level:type_name -> aura.compliance.v1beta1.TransactionRiskLevel
-	45, // 10: aura.compliance.v1beta1.TransactionMonitoringRule.created_at:type_name -> google.protobuf.Timestamp
-	45, // 11: aura.compliance.v1beta1.TransactionMonitoringRule.updated_at:type_name -> google.protobuf.Timestamp
-	2,  // 12: aura.compliance.v1beta1.TransactionAlert.risk_level:type_name -> aura.compliance.v1beta1.TransactionRiskLevel
-	45, // 13: aura.compliance.v1beta1.TransactionAlert.triggered_at:type_name -> google.protobuf.Timestamp
-	45, // 14: aura.compliance.v1beta1.TransactionAlert.reviewed_at:type_name -> google.protobuf.Timestamp
-	8,  // 15: aura.compliance.v1beta1.TransactionAlertList.alerts:type_name -> aura.compliance.v1beta1.TransactionAlert
-	3,  // 16: aura.compliance.v1beta1.SanctionsScreeningResult.status:type_name -> aura.compliance.v1beta1.SanctionsStatus
-	11, // 17: aura.compliance.v1beta1.SanctionsScreeningResult.matches:type_name -> aura.compliance.v1beta1.SanctionsMatch
-	45, // 18: aura.compliance.v1beta1.SanctionsScreeningResult.screened_at:type_name -> google.protobuf.Timestamp
-	45, // 19: aura.compliance.v1beta1.SanctionsScreeningResult.reviewed_at:type_name -> google.protobuf.Timestamp
-	45, // 20: aura.compliance.v1beta1.GDPRConsent.consent_given_at:type_name -> google.protobuf.Timestamp
-	45, // 21: aura.compliance.v1beta1.GDPRConsent.consent_withdrawn_at:type_name -> google.protobuf.Timestamp
-	12, // 22: aura.compliance.v1beta1.GDPRConsentList.consents:type_name -> aura.compliance.v1beta1.GDPRConsent
-	45, // 23: aura.compliance.v1beta1.GDPRDataRequest.requested_at:type_name -> google.protobuf.Timestamp
-	45, // 24: aura.compliance.v1beta1.GDPRDataRequest.completed_at:type_name -> google.protobuf.Timestamp
-	17, // 25: aura.compliance.v1beta1.TaxReport.transactions:type_name -> aura.compliance.v1beta1.TaxTransaction
-	45, // 26: aura.compliance.v1beta1.TaxReport.generated_at:type_name -> google.protobuf.Timestamp
-	45, // 27: aura.compliance.v1beta1.TaxReport.filed_at:type_name -> google.protobuf.Timestamp
-	15, // 28: aura.compliance.v1beta1.TaxReportList.reports:type_name -> aura.compliance.v1beta1.TaxReport
-	45, // 29: aura.compliance.v1beta1.TaxTransaction.timestamp:type_name -> google.protobuf.Timestamp
-	45, // 30: aura.compliance.v1beta1.RateLimitEntry.window_start:type_name -> google.protobuf.Timestamp
-	0,  // 31: aura.compliance.v1beta1.ComplianceParams.minimum_kyc_level:type_name -> aura.compliance.v1beta1.KYCLevel
-	4,  // 32: aura.compliance.v1beta1.QueryKYCRecordResponse.record:type_name -> aura.compliance.v1beta1.KYCRecord
-	5,  // 33: aura.compliance.v1beta1.QueryAMLProfileResponse.profile:type_name -> aura.compliance.v1beta1.AMLProfile
-	10, // 34: aura.compliance.v1beta1.QuerySanctionsScreeningResponse.result:type_name -> aura.compliance.v1beta1.SanctionsScreeningResult
-	8,  // 35: aura.compliance.v1beta1.QueryTransactionAlertsResponse.alerts:type_name -> aura.compliance.v1beta1.TransactionAlert
-	15, // 36: aura.compliance.v1beta1.QueryTaxReportResponse.report:type_name -> aura.compliance.v1beta1.TaxReport
-	0,  // 37: aura.compliance.v1beta1.MsgSubmitKYC.kyc_level:type_name -> aura.compliance.v1beta1.KYCLevel
-	3,  // 38: aura.compliance.v1beta1.MsgScreenSanctionsResponse.status:type_name -> aura.compliance.v1beta1.SanctionsStatus
-	20, // 39: aura.compliance.v1beta1.Query.KycRecord:input_type -> aura.compliance.v1beta1.QueryKYCRecordRequest
-	22, // 40: aura.compliance.v1beta1.Query.AmlProfile:input_type -> aura.compliance.v1beta1.QueryAMLProfileRequest
-	24, // 41: aura.compliance.v1beta1.Query.SanctionsScreening:input_type -> aura.compliance.v1beta1.QuerySanctionsScreeningRequest
-	26, // 42: aura.compliance.v1beta1.Query.TransactionAlerts:input_type -> aura.compliance.v1beta1.QueryTransactionAlertsRequest
-	28, // 43: aura.compliance.v1beta1.Query.TaxReport:input_type -> aura.compliance.v1beta1.QueryTaxReportRequest
-	30, // 44: aura.compliance.v1beta1.Msg.SubmitKYC:input_type -> aura.compliance.v1beta1.MsgSubmitKYC
-	32, // 45: aura.compliance.v1beta1.Msg.ReportSuspiciousActivity:input_type -> aura.compliance.v1beta1.MsgReportSuspiciousActivity
-	34, // 46: aura.compliance.v1beta1.Msg.ScreenSanctions:input_type -> aura.compliance.v1beta1.MsgScreenSanctions
-	36, // 47: aura.compliance.v1beta1.Msg.RecordGDPRConsent:input_type -> aura.compliance.v1beta1.MsgRecordGDPRConsent
-	38, // 48: aura.compliance.v1beta1.Msg.RequestGDPRData:input_type -> aura.compliance.v1beta1.MsgRequestGDPRData
-	42, // 49: aura.compliance.v1beta1.Msg.EraseGDPRData:input_type -> aura.compliance.v1beta1.MsgEraseGDPRData
-	40, // 50: aura.compliance.v1beta1.Msg.GenerateTaxReport:input_type -> aura.compliance.v1beta1.MsgGenerateTaxReport
-	21, // 51: aura.compliance.v1beta1.Query.KycRecord:output_type -> aura.compliance.v1beta1.QueryKYCRecordResponse
-	23, // 52: aura.compliance.v1beta1.Query.AmlProfile:output_type -> aura.compliance.v1beta1.QueryAMLProfileResponse
-	25, // 53: aura.compliance.v1beta1.Query.SanctionsScreening:output_type -> aura.compliance.v1beta1.QuerySanctionsScreeningResponse
-	27, // 54: aura.compliance.v1beta1.Query.TransactionAlerts:output_type -> aura.compliance.v1beta1.QueryTransactionAlertsResponse
-	29, // 55: aura.compliance.v1beta1.Query.TaxReport:output_type -> aura.compliance.v1beta1.QueryTaxReportResponse
-	31, // 56: aura.compliance.v1beta1.Msg.SubmitKYC:output_type -> aura.compliance.v1beta1.MsgSubmitKYCResponse
-	33, // 57: aura.compliance.v1beta1.Msg.ReportSuspiciousActivity:output_type -> aura.compliance.v1beta1.MsgReportSuspiciousActivityResponse
-	35, // 58: aura.compliance.v1beta1.Msg.ScreenSanctions:output_type -> aura.compliance.v1beta1.MsgScreenSanctionsResponse
-	37, // 59: aura.compliance.v1beta1.Msg.RecordGDPRConsent:output_type -> aura.compliance.v1beta1.MsgRecordGDPRConsentResponse
-	39, // 60: aura.compliance.v1beta1.Msg.RequestGDPRData:output_type -> aura.compliance.v1beta1.MsgRequestGDPRDataResponse
-	43, // 61: aura.compliance.v1beta1.Msg.EraseGDPRData:output_type -> aura.compliance.v1beta1.MsgEraseGDPRDataResponse
-	41, // 62: aura.compliance.v1beta1.Msg.GenerateTaxReport:output_type -> aura.compliance.v1beta1.MsgGenerateTaxReportResponse
-	51, // [51:63] is the sub-list for method output_type
-	39, // [39:51] is the sub-list for method input_type
-	39, // [39:39] is the sub-list for extension type_name
-	39, // [39:39] is the sub-list for extension extendee
-	0,  // [0:39] is the sub-list for field type_name
+	63, // 1: aura.compliance.v1beta1.KYCRecord.verified_at:type_name -> google.protobuf.Timestamp
+	63, // 2: aura.compliance.v1beta1.KYCRecord.expires_at:type_name -> google.protobuf.Timestamp
+	4,  // 3: aura.compliance.v1beta1.KYCHistoryEntry.snapshot:type_name -> aura.compliance.v1beta1.KYCRecord
+	63, // 4: aura.compliance.v1beta1.KYCHistoryEntry.updated_at:type_name -> google.protobuf.Timestamp
+	5,  // 5: aura.compliance.v1beta1.KYCHistoryList.entries:type_name -> aura.compliance.v1beta1.KYCHistoryEntry
+	1,  // 6: aura.compliance.v1beta1.AMLProfile.risk_level:type_name -> aura.compliance.v1beta1.AMLRiskLevel
+	63, // 7: aura.compliance.v1beta1.AMLProfile.last_assessment:type_name -> google.protobuf.Timestamp
+	8,  // 8: aura.compliance.v1beta1.AMLProfile.suspicious_activities:type_name -> aura.compliance.v1beta1.SuspiciousActivity
+	63, // 9: aura.compliance.v1beta1.SuspiciousActivity.detected_at:type_name -> google.protobuf.Timestamp
+	63, // 10: aura.compliance.v1beta1.SuspiciousActivity.reported_at:type_name -> google.protobuf.Timestamp
+	62, // 11: aura.compliance.v1beta1.TransactionMonitoringRule.parameters:type_name -> aura.compliance.v1beta1.TransactionMonitoringRule.ParametersEntry
+	2,  // 12: aura.compliance.v1beta1.TransactionMonitoringRule.risk_level:type_name -> aura.compliance.v1beta1.TransactionRiskLevel
+	63, // 13: aura.compliance.v1beta1.TransactionMonitoringRule.created_at:type_name -> google.protobuf.Timestamp
+	63, // 14: aura.compliance.v1beta1.TransactionMonitoringRule.updated_at:type_name -> google.protobuf.Timestamp
+	2,  // 15: aura.compliance.v1beta1.TransactionAlert.risk_level:type_name -> aura.compliance.v1beta1.TransactionRiskLevel
+	63, // 16: aura.compliance.v1beta1.TransactionAlert.triggered_at:type_name -> google.protobuf.Timestamp
+	63, // 17: aura.compliance.v1beta1.TransactionAlert.reviewed_at:type_name -> google.protobuf.Timestamp
+	10, // 18: aura.compliance.v1beta1.TransactionAlertList.alerts:type_name -> aura.compliance.v1beta1.TransactionAlert
+	3,  // 19: aura.compliance.v1beta1.SanctionsScreeningResult.status:type_name -> aura.compliance.v1beta1.SanctionsStatus
+	13, // 20: aura.compliance.v1beta1.SanctionsScreeningResult.matches:type_name -> aura.compliance.v1beta1.SanctionsMatch
+	63, // 21: aura.compliance.v1beta1.SanctionsScreeningResult.screened_at:type_name -> google.protobuf.Timestamp
+	63, // 22: aura.compliance.v1beta1.SanctionsScreeningResult.reviewed_at:type_name -> google.protobuf.Timestamp
+	63, // 23: aura.compliance.v1beta1.GDPRConsent.consent_given_at:type_name -> google.protobuf.Timestamp
+	63, // 24: aura.compliance.v1beta1.GDPRConsent.consent_withdrawn_at:type_name -> google.protobuf.Timestamp
+	14, // 25: aura.compliance.v1beta1.GDPRConsentList.consents:type_name -> aura.compliance.v1beta1.GDPRConsent
+	63, // 26: aura.compliance.v1beta1.GDPRDataRequest.requested_at:type_name -> google.protobuf.Timestamp
+	63, // 27: aura.compliance.v1beta1.GDPRDataRequest.completed_at:type_name -> google.protobuf.Timestamp
+	19, // 28: aura.compliance.v1beta1.TaxReport.transactions:type_name -> aura.compliance.v1beta1.TaxTransaction
+	63, // 29: aura.compliance.v1beta1.TaxReport.generated_at:type_name -> google.protobuf.Timestamp
+	63, // 30: aura.compliance.v1beta1.TaxReport.filed_at:type_name -> google.protobuf.Timestamp
+	17, // 31: aura.compliance.v1beta1.TaxReportList.reports:type_name -> aura.compliance.v1beta1.TaxReport
+	63, // 32: aura.compliance.v1beta1.TaxTransaction.timestamp:type_name -> google.protobuf.Timestamp
+	63, // 33: aura.compliance.v1beta1.RateLimitEntry.window_start:type_name -> google.protobuf.Timestamp
+	0,  // 34: aura.compliance.v1beta1.ComplianceParams.minimum_kyc_level:type_name -> aura.compliance.v1beta1.KYCLevel
+	4,  // 35: aura.compliance.v1beta1.QueryKYCRecordResponse.record:type_name -> aura.compliance.v1beta1.KYCRecord
+	5,  // 36: aura.compliance.v1beta1.QueryKYCHistoryResponse.history:type_name -> aura.compliance.v1beta1.KYCHistoryEntry
+	7,  // 37: aura.compliance.v1beta1.QueryAMLProfileResponse.profile:type_name -> aura.compliance.v1beta1.AMLProfile
+	12, // 38: aura.compliance.v1beta1.QuerySanctionsScreeningResponse.result:type_name -> aura.compliance.v1beta1.SanctionsScreeningResult
+	10, // 39: aura.compliance.v1beta1.QueryTransactionAlertsResponse.alerts:type_name -> aura.compliance.v1beta1.TransactionAlert
+	17, // 40: aura.compliance.v1beta1.QueryTaxReportResponse.report:type_name -> aura.compliance.v1beta1.TaxReport
+	64, // 41: aura.compliance.v1beta1.QueryAllKYCRecordsRequest.pagination:type_name -> cosmos.base.query.v1beta1.PageRequest
+	4,  // 42: aura.compliance.v1beta1.QueryAllKYCRecordsResponse.records:type_name -> aura.compliance.v1beta1.KYCRecord
+	65, // 43: aura.compliance.v1beta1.QueryAllKYCRecordsResponse.pagination:type_name -> cosmos.base.query.v1beta1.PageResponse
+	64, // 44: aura.compliance.v1beta1.QueryAllAMLProfilesRequest.pagination:type_name -> cosmos.base.query.v1beta1.PageRequest
+	7,  // 45: aura.compliance.v1beta1.QueryAllAMLProfilesResponse.profiles:type_name -> aura.compliance.v1beta1.AMLProfile
+	65, // 46: aura.compliance.v1beta1.QueryAllAMLProfilesResponse.pagination:type_name -> cosmos.base.query.v1beta1.PageResponse
+	64, // 47: aura.compliance.v1beta1.QueryAllSanctionsResultsRequest.pagination:type_name -> cosmos.base.query.v1beta1.PageRequest
+	12, // 48: aura.compliance.v1beta1.QueryAllSanctionsResultsResponse.results:type_name -> aura.compliance.v1beta1.SanctionsScreeningResult
+	65, // 49: aura.compliance.v1beta1.QueryAllSanctionsResultsResponse.pagination:type_name -> cosmos.base.query.v1beta1.PageResponse
+	64, // 50: aura.compliance.v1beta1.QueryAllTransactionAlertsRequest.pagination:type_name -> cosmos.base.query.v1beta1.PageRequest
+	11, // 51: aura.compliance.v1beta1.QueryAllTransactionAlertsResponse.alerts:type_name -> aura.compliance.v1beta1.TransactionAlertList
+	65, // 52: aura.compliance.v1beta1.QueryAllTransactionAlertsResponse.pagination:type_name -> cosmos.base.query.v1beta1.PageResponse
+	64, // 53: aura.compliance.v1beta1.QueryAllGDPRConsentsRequest.pagination:type_name -> cosmos.base.query.v1beta1.PageRequest
+	15, // 54: aura.compliance.v1beta1.QueryAllGDPRConsentsResponse.consents:type_name -> aura.compliance.v1beta1.GDPRConsentList
+	65, // 55: aura.compliance.v1beta1.QueryAllGDPRConsentsResponse.pagination:type_name -> cosmos.base.query.v1beta1.PageResponse
+	64, // 56: aura.compliance.v1beta1.QueryAllTaxReportsRequest.pagination:type_name -> cosmos.base.query.v1beta1.PageRequest
+	18, // 57: aura.compliance.v1beta1.QueryAllTaxReportsResponse.reports:type_name -> aura.compliance.v1beta1.TaxReportList
+	65, // 58: aura.compliance.v1beta1.QueryAllTaxReportsResponse.pagination:type_name -> cosmos.base.query.v1beta1.PageResponse
+	64, // 59: aura.compliance.v1beta1.QueryAllGDPRRequestsRequest.pagination:type_name -> cosmos.base.query.v1beta1.PageRequest
+	16, // 60: aura.compliance.v1beta1.QueryAllGDPRRequestsResponse.requests:type_name -> aura.compliance.v1beta1.GDPRDataRequest
+	65, // 61: aura.compliance.v1beta1.QueryAllGDPRRequestsResponse.pagination:type_name -> cosmos.base.query.v1beta1.PageResponse
+	0,  // 62: aura.compliance.v1beta1.MsgSubmitKYC.kyc_level:type_name -> aura.compliance.v1beta1.KYCLevel
+	3,  // 63: aura.compliance.v1beta1.MsgScreenSanctionsResponse.status:type_name -> aura.compliance.v1beta1.SanctionsStatus
+	22, // 64: aura.compliance.v1beta1.Query.KycRecord:input_type -> aura.compliance.v1beta1.QueryKYCRecordRequest
+	24, // 65: aura.compliance.v1beta1.Query.KycHistory:input_type -> aura.compliance.v1beta1.QueryKYCHistoryRequest
+	26, // 66: aura.compliance.v1beta1.Query.AmlProfile:input_type -> aura.compliance.v1beta1.QueryAMLProfileRequest
+	28, // 67: aura.compliance.v1beta1.Query.SanctionsScreening:input_type -> aura.compliance.v1beta1.QuerySanctionsScreeningRequest
+	30, // 68: aura.compliance.v1beta1.Query.TransactionAlerts:input_type -> aura.compliance.v1beta1.QueryTransactionAlertsRequest
+	32, // 69: aura.compliance.v1beta1.Query.TaxReport:input_type -> aura.compliance.v1beta1.QueryTaxReportRequest
+	34, // 70: aura.compliance.v1beta1.Query.AllKYCRecords:input_type -> aura.compliance.v1beta1.QueryAllKYCRecordsRequest
+	36, // 71: aura.compliance.v1beta1.Query.AllAMLProfiles:input_type -> aura.compliance.v1beta1.QueryAllAMLProfilesRequest
+	38, // 72: aura.compliance.v1beta1.Query.AllSanctionsResults:input_type -> aura.compliance.v1beta1.QueryAllSanctionsResultsRequest
+	40, // 73: aura.compliance.v1beta1.Query.AllTransactionAlerts:input_type -> aura.compliance.v1beta1.QueryAllTransactionAlertsRequest
+	42, // 74: aura.compliance.v1beta1.Query.AllGDPRConsents:input_type -> aura.compliance.v1beta1.QueryAllGDPRConsentsRequest
+	44, // 75: aura.compliance.v1beta1.Query.AllTaxReports:input_type -> aura.compliance.v1beta1.QueryAllTaxReportsRequest
+	46, // 76: aura.compliance.v1beta1.Query.AllGDPRRequests:input_type -> aura.compliance.v1beta1.QueryAllGDPRRequestsRequest
+	48, // 77: aura.compliance.v1beta1.Msg.SubmitKYC:input_type -> aura.compliance.v1beta1.MsgSubmitKYC
+	50, // 78: aura.compliance.v1beta1.Msg.ReportSuspiciousActivity:input_type -> aura.compliance.v1beta1.MsgReportSuspiciousActivity
+	52, // 79: aura.compliance.v1beta1.Msg.ScreenSanctions:input_type -> aura.compliance.v1beta1.MsgScreenSanctions
+	54, // 80: aura.compliance.v1beta1.Msg.RecordGDPRConsent:input_type -> aura.compliance.v1beta1.MsgRecordGDPRConsent
+	56, // 81: aura.compliance.v1beta1.Msg.RequestGDPRData:input_type -> aura.compliance.v1beta1.MsgRequestGDPRData
+	60, // 82: aura.compliance.v1beta1.Msg.EraseGDPRData:input_type -> aura.compliance.v1beta1.MsgEraseGDPRData
+	58, // 83: aura.compliance.v1beta1.Msg.GenerateTaxReport:input_type -> aura.compliance.v1beta1.MsgGenerateTaxReport
+	23, // 84: aura.compliance.v1beta1.Query.KycRecord:output_type -> aura.compliance.v1beta1.QueryKYCRecordResponse
+	25, // 85: aura.compliance.v1beta1.Query.KycHistory:output_type -> aura.compliance.v1beta1.QueryKYCHistoryResponse
+	27, // 86: aura.compliance.v1beta1.Query.AmlProfile:output_type -> aura.compliance.v1beta1.QueryAMLProfileResponse
+	29, // 87: aura.compliance.v1beta1.Query.SanctionsScreening:output_type -> aura.compliance.v1beta1.QuerySanctionsScreeningResponse
+	31, // 88: aura.compliance.v1beta1.Query.TransactionAlerts:output_type -> aura.compliance.v1beta1.QueryTransactionAlertsResponse
+	33, // 89: aura.compliance.v1beta1.Query.TaxReport:output_type -> aura.compliance.v1beta1.QueryTaxReportResponse
+	35, // 90: aura.compliance.v1beta1.Query.AllKYCRecords:output_type -> aura.compliance.v1beta1.QueryAllKYCRecordsResponse
+	37, // 91: aura.compliance.v1beta1.Query.AllAMLProfiles:output_type -> aura.compliance.v1beta1.QueryAllAMLProfilesResponse
+	39, // 92: aura.compliance.v1beta1.Query.AllSanctionsResults:output_type -> aura.compliance.v1beta1.QueryAllSanctionsResultsResponse
+	41, // 93: aura.compliance.v1beta1.Query.AllTransactionAlerts:output_type -> aura.compliance.v1beta1.QueryAllTransactionAlertsResponse
+	43, // 94: aura.compliance.v1beta1.Query.AllGDPRConsents:output_type -> aura.compliance.v1beta1.QueryAllGDPRConsentsResponse
+	45, // 95: aura.compliance.v1beta1.Query.AllTaxReports:output_type -> aura.compliance.v1beta1.QueryAllTaxReportsResponse
+	47, // 96: aura.compliance.v1beta1.Query.AllGDPRRequests:output_type -> aura.compliance.v1beta1.QueryAllGDPRRequestsResponse
+	49, // 97: aura.compliance.v1beta1.Msg.SubmitKYC:output_type -> aura.compliance.v1beta1.MsgSubmitKYCResponse
+	51, // 98: aura.compliance.v1beta1.Msg.ReportSuspiciousActivity:output_type -> aura.compliance.v1beta1.MsgReportSuspiciousActivityResponse
+	53, // 99: aura.compliance.v1beta1.Msg.ScreenSanctions:output_type -> aura.compliance.v1beta1.MsgScreenSanctionsResponse
+	55, // 100: aura.compliance.v1beta1.Msg.RecordGDPRConsent:output_type -> aura.compliance.v1beta1.MsgRecordGDPRConsentResponse
+	57, // 101: aura.compliance.v1beta1.Msg.RequestGDPRData:output_type -> aura.compliance.v1beta1.MsgRequestGDPRDataResponse
+	61, // 102: aura.compliance.v1beta1.Msg.EraseGDPRData:output_type -> aura.compliance.v1beta1.MsgEraseGDPRDataResponse
+	59, // 103: aura.compliance.v1beta1.Msg.GenerateTaxReport:output_type -> aura.compliance.v1beta1.MsgGenerateTaxReportResponse
+	84, // [84:104] is the sub-list for method output_type
+	64, // [64:84] is the sub-list for method input_type
+	64, // [64:64] is the sub-list for extension type_name
+	64, // [64:64] is the sub-list for extension extendee
+	0,  // [0:64] is the sub-list for field type_name
 }
 
 func init() { file_aura_compliance_v1beta1_compliance_proto_init() }
@@ -3672,7 +4713,7 @@ func file_aura_compliance_v1beta1_compliance_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_aura_compliance_v1beta1_compliance_proto_rawDesc), len(file_aura_compliance_v1beta1_compliance_proto_rawDesc)),
 			NumEnums:      4,
-			NumMessages:   41,
+			NumMessages:   59,
 			NumExtensions: 0,
 			NumServices:   2,
 		},

@@ -31,6 +31,8 @@ type (
 	// Query types
 	QueryKYCRecordRequest           = pb.QueryKYCRecordRequest
 	QueryKYCRecordResponse          = pb.QueryKYCRecordResponse
+	QueryKYCHistoryRequest          = pb.QueryKYCHistoryRequest
+	QueryKYCHistoryResponse         = pb.QueryKYCHistoryResponse
 	QueryAMLProfileRequest          = pb.QueryAMLProfileRequest
 	QueryAMLProfileResponse         = pb.QueryAMLProfileResponse
 	QuerySanctionsScreeningRequest  = pb.QuerySanctionsScreeningRequest
@@ -39,6 +41,26 @@ type (
 	QueryTransactionAlertsResponse  = pb.QueryTransactionAlertsResponse
 	QueryTaxReportRequest           = pb.QueryTaxReportRequest
 	QueryTaxReportResponse          = pb.QueryTaxReportResponse
+
+	// Paginated query types
+	QueryAllKYCRecordsRequest           = pb.QueryAllKYCRecordsRequest
+	QueryAllKYCRecordsResponse          = pb.QueryAllKYCRecordsResponse
+	QueryAllAMLProfilesRequest          = pb.QueryAllAMLProfilesRequest
+	QueryAllAMLProfilesResponse         = pb.QueryAllAMLProfilesResponse
+	QueryAllSanctionsResultsRequest     = pb.QueryAllSanctionsResultsRequest
+	QueryAllSanctionsResultsResponse    = pb.QueryAllSanctionsResultsResponse
+	QueryAllTransactionAlertsRequest    = pb.QueryAllTransactionAlertsRequest
+	QueryAllTransactionAlertsResponse   = pb.QueryAllTransactionAlertsResponse
+	QueryAllGDPRConsentsRequest         = pb.QueryAllGDPRConsentsRequest
+	QueryAllGDPRConsentsResponse        = pb.QueryAllGDPRConsentsResponse
+	QueryAllTaxReportsRequest           = pb.QueryAllTaxReportsRequest
+	QueryAllTaxReportsResponse          = pb.QueryAllTaxReportsResponse
+	QueryAllGDPRRequestsRequest         = pb.QueryAllGDPRRequestsRequest
+	QueryAllGDPRRequestsResponse        = pb.QueryAllGDPRRequestsResponse
+
+	// History and list types
+	KYCHistoryEntry = pb.KYCHistoryEntry
+	KYCHistoryList  = pb.KYCHistoryList
 
 	// Message types
 	MsgSubmitKYC                        = pb.MsgSubmitKYC
