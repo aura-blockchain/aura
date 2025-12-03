@@ -185,6 +185,10 @@ func TestEraseGDPRData(t *testing.T) {
 	keeper, ctx := setupTestKeeper(t)
 	server := NewMsgServer(keeper)
 
+	// Use valid bech32 addresses
+	userAddr := sdk.AccAddress([]byte("user_address_12345")).String()
+	providerAddr := sdk.AccAddress([]byte("provider_address_1234")).String()
+
 	// First, submit a KYC record
 	piiData := OffChainKYCData{
 		VerificationID: "KYC-ERASE-TEST",
@@ -195,17 +199,17 @@ func TestEraseGDPRData(t *testing.T) {
 	commitment, err := ComputePIICommitment(piiData)
 	require.NoError(t, err)
 
-	providerAddr := sdk.AccAddress([]byte("provider_address_1234")).String()
 	params := keeper.GetParams(ctx)
 	params.ApprovedKycProviders = []string{providerAddr}
 	err = keeper.SetParams(ctx, params)
 	require.NoError(t, err)
 
 	submitMsg := &types.MsgSubmitKYC{
-		Address:       "aura1test",
+		Address:       userAddr,
 		KycLevel:      types.KYCLevel_KYC_LEVEL_BASIC,
 		Provider:      providerAddr,
 		PiiCommitment: commitment,
+		Jurisdiction:  "US", // Required: ISO 3166-1 alpha-2 country code
 	}
 
 	_, err = server.SubmitKYC(sdk.WrapSDKContext(ctx), submitMsg)
@@ -213,7 +217,7 @@ func TestEraseGDPRData(t *testing.T) {
 
 	// Now request data erasure
 	eraseMsg := &types.MsgEraseGDPRData{
-		Address:       "aura1test",
+		Address:       userAddr,
 		ErasureReason: "GDPR Article 17 - User requested data deletion",
 	}
 
@@ -235,7 +239,7 @@ func TestEraseGDPRData(t *testing.T) {
 	require.True(t, found, "gdpr_data_erased event not emitted")
 
 	// Verify on-chain record still exists (commitment preserved for audit)
-	record, err := keeper.GetKYCRecord(ctx, submitMsg.Address)
+	record, err := keeper.GetKYCRecord(ctx, userAddr)
 	require.NoError(t, err)
 	require.Equal(t, commitment, record.PiiCommitment, "commitment should remain for audit trail")
 }
