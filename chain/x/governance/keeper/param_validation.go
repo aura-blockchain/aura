@@ -103,8 +103,11 @@ func (k *Keeper) ValidateVote(ctx sdk.Context, proposalID uint64, voter string, 
 	}
 
 	// Check if voter has voting power
-	votingPower := k.GetVotingPower(ctx, voter)
-	if votingPower == "0" {
+	votingPower, err := k.GetVotingPower(ctx, voter)
+	if err != nil {
+		return err
+	}
+	if votingPower.IsZero() {
 		return types.ErrNoVotingPower
 	}
 

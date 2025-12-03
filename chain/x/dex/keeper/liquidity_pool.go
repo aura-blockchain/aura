@@ -20,6 +20,14 @@ import (
 // Adapted from liquidity_pools.py (541 lines)
 // ============================================================================
 
+const (
+	// MinimumLiquidity is the minimum liquidity burned on pool creation
+	// to prevent first depositor inflation attacks.
+	// This amount is permanently locked (not assigned to any provider)
+	// to ensure LP token value cannot be manipulated via donation attacks.
+	MinimumLiquidity = 1000
+)
+
 // CreatePool creates a new AMM liquidity pool
 func (k Keeper) CreatePool(
 	ctx sdk.Context,
@@ -72,9 +80,34 @@ func (k Keeper) CreatePool(
 
 	// Calculate initial LP tokens using geometric mean (from Python line 78)
 	// lp_tokens = (xai_amount * other_amount) ** 0.5
-	lpTokens := sdkmath.NewIntFromBigInt(new(big.Int).Sqrt(
+	initialLpTokens := sdkmath.NewIntFromBigInt(new(big.Int).Sqrt(
 		amountA.Amount.Mul(amountB.Amount).BigInt(),
 	))
+
+	// SECURITY: Burn minimum liquidity to prevent first depositor inflation attack
+	// The first depositor attack allows manipulation of LP token value through donation:
+	// 1. Attacker creates pool with 1 WEI of each token, receives 1 LP token
+	// 2. Attacker donates large amounts directly to pool (not via AddLiquidity)
+	// 3. Pool reserves are now imbalanced, but LP supply is still 1
+	// 4. Victim adds liquidity, receives 0 LP tokens due to rounding
+	// 5. Attacker withdraws, stealing victim's deposit
+	//
+	// By burning MinimumLiquidity (1000) LP tokens permanently, we ensure:
+	// - LP token value stays reasonable (cannot be inflated to extreme values)
+	// - Rounding errors are minimized for subsequent depositors
+	// - Cost of attack becomes prohibitively expensive
+	minimumLiquidity := sdkmath.NewInt(MinimumLiquidity)
+	if initialLpTokens.LTE(minimumLiquidity) {
+		return nil, sdkmath.ZeroInt(), errors.Wrapf(
+			types.ErrInvalidRequest,
+			"insufficient initial liquidity: calculated %s LP tokens, need > %d to burn minimum",
+			initialLpTokens.String(),
+			MinimumLiquidity,
+		)
+	}
+
+	// Subtract minimum liquidity - this amount is locked forever
+	lpTokens := initialLpTokens.Sub(minimumLiquidity)
 
 	// Get parameters
 	params := k.GetParams(ctx)
@@ -86,17 +119,18 @@ func (k Keeper) CreatePool(
 		DenomB:                denomB,
 		ReserveA:              amountA.Amount.String(),
 		ReserveB:              amountB.Amount.String(),
-		TotalLpTokens:         lpTokens.String(),
+		TotalLpTokens:         initialLpTokens.String(), // Total includes locked liquidity
 		FeePercentage:         params.TradingFee,
 		ProtocolFeePercentage: params.ProtocolFee,
 		TotalVolume:           sdkmath.ZeroInt().String(),
 		TotalFeesCollected:    sdkmath.ZeroInt().String(),
 		SwapCount:             0,
 		ProtocolFeeBalance:    sdkmath.ZeroInt().String(),
+		LockedLiquidity:       minimumLiquidity.String(), // Permanently locked
 		Providers: []*types.LiquidityProvider{
 			{
 				Address:  creator,
-				LpTokens: lpTokens.String(),
+				LpTokens: lpTokens.String(), // Creator receives total minus locked
 			},
 		},
 		CreatedAt: timestamppb.New(ctx.BlockTime()),
@@ -105,15 +139,21 @@ func (k Keeper) CreatePool(
 	// Store pool
 	k.SetPool(ctx, pool)
 
-	// Emit event
-	ctx.EventManager().EmitEvent(
+	// Emit events
+	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeCreatePool,
 			sdk.NewAttribute(types.AttributeKeyPoolID, poolID),
 			sdk.NewAttribute(types.AttributeKeyCreator, creator),
 			sdk.NewAttribute(types.AttributeKeyLPTokens, lpTokens.String()),
 		),
-	)
+		sdk.NewEvent(
+			"minimum_liquidity_locked",
+			sdk.NewAttribute("pool_id", poolID),
+			sdk.NewAttribute("amount", minimumLiquidity.String()),
+			sdk.NewAttribute("reason", "first_depositor_attack_prevention"),
+		),
+	})
 
 	return pool, lpTokens, nil
 }
@@ -182,6 +222,20 @@ func (k Keeper) AddLiquidity(
 		Quo(reserveA.ToLegacyDec()).
 		Mul(totalLpTokens.ToLegacyDec()).
 		TruncateInt()
+
+	// SECURITY: Prevent dust/rounding attacks by rejecting deposits that would receive 0 LP tokens
+	// This protects against:
+	// 1. Donation attacks that inflate pool reserves to cause rounding to zero
+	// 2. Dust deposits that waste gas without providing liquidity
+	// 3. Economic griefing where deposits are lost to rounding
+	if lpTokens.IsZero() {
+		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), errors.Wrapf(
+			types.ErrInvalidRequest,
+			"liquidity amount too small: would receive 0 LP tokens (amounts: %s %s, %s %s)",
+			actualAmountA.String(), pool.DenomA,
+			actualAmountB.String(), pool.DenomB,
+		)
+	}
 
 	// Transfer tokens from provider
 	providerAddr, err := sdk.AccAddressFromBech32(provider)

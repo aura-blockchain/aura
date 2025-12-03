@@ -4,11 +4,15 @@ package aura.walletsecurity.v1beta1;
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/duration.proto";
 import "aura/walletsecurity/v1beta1/wallet_security.proto";
+import "cosmos/msg/v1/msg.proto";
+import "cosmos_proto/cosmos.proto";
+import "gogoproto/gogo.proto";
 
 option go_package = "github.com/aequitas/aura/proto/aura/walletsecurity/v1beta1";
 
 // Msg defines the wallet security Msg service
 service Msg {
+  option (cosmos.msg.v1.service) = true;
   // RegisterHardwareWallet registers a new hardware wallet
   rpc RegisterHardwareWallet(MsgRegisterHardwareWallet) returns (MsgRegisterHardwareWalletResponse);
 
@@ -69,7 +73,9 @@ service Msg {
 
 // MsgRegisterHardwareWallet registers a hardware wallet
 message MsgRegisterHardwareWallet {
-  string address = 1;
+  option (cosmos.msg.v1.signer) = "address";
+
+  string address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
   HardwareWalletType type = 2;
   string device_id = 3;
   string firmware_version = 4;
@@ -84,7 +90,9 @@ message MsgRegisterHardwareWalletResponse {
 
 // MsgCreateMultiSigWallet creates a multi-signature wallet
 message MsgCreateMultiSigWallet {
-  string creator = 1;
+  option (cosmos.msg.v1.signer) = "creator";
+
+  string creator = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
   repeated string signers = 2;
   int32 threshold = 3;
   map<string, int32> signer_weights = 4; // Optional
@@ -99,8 +107,10 @@ message MsgCreateMultiSigWalletResponse {
 
 // MsgSignMultiSigTransaction signs a multi-sig transaction
 message MsgSignMultiSigTransaction {
+  option (cosmos.msg.v1.signer) = "signer";
+
   string tx_id = 1;
-  string signer = 2;
+  string signer = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
   bytes signature = 3;
 }
 
@@ -112,10 +122,13 @@ message MsgSignMultiSigTransactionResponse {
 
 // MsgConfigureSocialRecovery configures social recovery
 message MsgConfigureSocialRecovery {
-  string wallet_id = 1;
-  repeated Guardian guardians = 2;
-  int32 recovery_threshold = 3;
-  google.protobuf.Duration recovery_delay = 4;
+  option (cosmos.msg.v1.signer) = "owner";
+
+  string owner = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string wallet_id = 2;
+  repeated Guardian guardians = 3;
+  int32 recovery_threshold = 4;
+  google.protobuf.Duration recovery_delay = 5;
 }
 
 message MsgConfigureSocialRecoveryResponse {
@@ -124,9 +137,11 @@ message MsgConfigureSocialRecoveryResponse {
 
 // MsgInitiateRecovery initiates a recovery process
 message MsgInitiateRecovery {
+  option (cosmos.msg.v1.signer) = "initiator";
+
   string wallet_id = 1;
   string new_address = 2;
-  string initiator = 3; // Guardian address
+  string initiator = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"]; // Guardian address
 }
 
 message MsgInitiateRecoveryResponse {
@@ -136,8 +151,10 @@ message MsgInitiateRecoveryResponse {
 
 // MsgApproveRecovery approves a recovery request
 message MsgApproveRecovery {
+  option (cosmos.msg.v1.signer) = "guardian";
+
   string request_id = 1;
-  string guardian = 2;
+  string guardian = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
   bytes signature = 3;
 }
 
@@ -150,7 +167,10 @@ message MsgApproveRecoveryResponse {
 
 // MsgExecuteRecovery executes a recovery request
 message MsgExecuteRecovery {
+  option (cosmos.msg.v1.signer) = "executor";
+
   string request_id = 1;
+  string executor = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 }
 
 message MsgExecuteRecoveryResponse {
@@ -160,8 +180,10 @@ message MsgExecuteRecoveryResponse {
 
 // MsgSimulateTransaction simulates a transaction
 message MsgSimulateTransaction {
+  option (cosmos.msg.v1.signer) = "sender";
+
   bytes tx_data = 1;
-  string sender = 2;
+  string sender = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 }
 
 message MsgSimulateTransactionResponse {
@@ -170,9 +192,11 @@ message MsgSimulateTransactionResponse {
 
 // MsgVerifyDomain verifies a domain
 message MsgVerifyDomain {
+  option (cosmos.msg.v1.signer) = "verifier";
+
   string domain = 1;
   string certificate_hash = 2;
-  string verifier = 3;
+  string verifier = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 }
 
 message MsgVerifyDomainResponse {
@@ -181,11 +205,14 @@ message MsgVerifyDomainResponse {
 
 // MsgSetSpendingLimit sets spending limits
 message MsgSetSpendingLimit {
-  string wallet_id = 1;
-  string denom = 2;
-  string daily_limit = 3;
-  string weekly_limit = 4;
-  string monthly_limit = 5;
+  option (cosmos.msg.v1.signer) = "owner";
+
+  string owner = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string wallet_id = 2;
+  string denom = 3;
+  string daily_limit = 4;
+  string weekly_limit = 5;
+  string monthly_limit = 6;
 }
 
 message MsgSetSpendingLimitResponse {
@@ -194,10 +221,13 @@ message MsgSetSpendingLimitResponse {
 
 // MsgConfigureSession configures session settings
 message MsgConfigureSession {
-  string wallet_id = 1;
-  google.protobuf.Duration timeout_duration = 2;
-  bool auto_lock_enabled = 3;
-  int32 inactivity_threshold_seconds = 4;
+  option (cosmos.msg.v1.signer) = "owner";
+
+  string owner = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string wallet_id = 2;
+  google.protobuf.Duration timeout_duration = 3;
+  bool auto_lock_enabled = 4;
+  int32 inactivity_threshold_seconds = 5;
 }
 
 message MsgConfigureSessionResponse {

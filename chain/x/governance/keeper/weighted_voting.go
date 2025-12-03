@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/big"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -37,7 +38,10 @@ func (k *Keeper) CastWeightedVote(
 	}
 
 	// Get voter's voting power
-	votingPower := k.GetVotingPower(ctx, voter)
+	votingPower, err := k.GetVotingPower(ctx, voter)
+	if err != nil {
+		return err
+	}
 
 	// Create weighted vote
 	// Note: Weighted voting stores vote options as encrypted data in the vote
@@ -46,7 +50,7 @@ func (k *Keeper) CastWeightedVote(
 		ProposalId:  proposalID,
 		Voter:       voter,
 		Option:      types.VoteOption_VOTE_OPTION_UNSPECIFIED, // Not used for weighted votes
-		VotingPower: votingPower,
+		VotingPower: votingPower.String(),
 		Timestamp:   timestamppb.Now(),
 	}
 
@@ -60,7 +64,7 @@ func (k *Keeper) CastWeightedVote(
 			"weighted_vote_cast",
 			sdk.NewAttribute("proposal_id", fmt.Sprintf("%d", proposalID)),
 			sdk.NewAttribute("voter", voter),
-			sdk.NewAttribute("voting_power", votingPower),
+			sdk.NewAttribute("voting_power", votingPower.String()),
 		),
 	)
 
@@ -137,11 +141,15 @@ func (k *Keeper) CalculateWeightedTally(ctx sdk.Context, proposalID uint64) *typ
 
 // GetVotingPowerBreakdown returns detailed voting power breakdown
 func (k *Keeper) GetVotingPowerBreakdown(ctx sdk.Context, voter string) *VotingPowerBreakdown {
-	// Get base voting power (from tokens)
-	baseVotingPower := k.GetVotingPower(ctx, voter)
+	// Get total voting power (includes delegations)
+	totalVotingPower, err := k.GetVotingPower(ctx, voter)
+	if err != nil {
+		totalVotingPower = sdkmath.ZeroInt()
+	}
 
-	// Get delegated power received
-	delegatedPower := k.GetDelegatedPower(ctx, voter)
+	// Get delegated power received (using the new method)
+	delegatedPowerInt := k.GetDelegatedVotingPower(ctx, voter)
+	delegatedPower := delegatedPowerInt.String()
 
 	// Get locked tokens
 	locks := k.GetTokenLocks(ctx, voter)
@@ -157,21 +165,22 @@ func (k *Keeper) GetVotingPowerBreakdown(ctx sdk.Context, voter string) *VotingP
 		lockedPower = current.String()
 	}
 
-	// Calculate total
-	base := new(big.Int)
-	base.SetString(baseVotingPower, 10)
-
-	delegated := new(big.Int)
-	delegated.SetString(delegatedPower, 10)
-
-	total := new(big.Int).Add(base, delegated)
+	// Get base power (direct stake) separately for breakdown
+	addr, _ := sdk.AccAddressFromBech32(voter)
+	var baseVotingPower string
+	if addr != nil && k.stakingKeeper != nil {
+		basePower := k.stakingKeeper.GetDelegatorBonded(ctx, addr)
+		baseVotingPower = basePower.String()
+	} else {
+		baseVotingPower = "0"
+	}
 
 	return &VotingPowerBreakdown{
 		Address:              voter,
 		BaseVotingPower:      baseVotingPower,
 		DelegatedPower:       delegatedPower,
 		LockedTokenPower:     lockedPower,
-		TotalVotingPower:     total.String(),
+		TotalVotingPower:     totalVotingPower.String(),
 		ActiveDelegations:    uint64(len(k.GetVoteDelegations(ctx, voter))),
 		VotingPowerMultiplier: 10000, // 1.0x in basis points
 	}

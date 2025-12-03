@@ -88,13 +88,18 @@ func (k *Keeper) RevealVote(
 	}
 
 	// Create actual vote
+	votingPower, err := k.GetVotingPower(ctx, voter)
+	if err != nil {
+		return err
+	}
+
 	vote := &types.Vote{
 		ProposalId:  proposalID,
 		Voter:       voter,
 		Option:      option,
 		Timestamp:   timestamppb.Now(),
 		IsSecret:    true,
-		VotingPower: k.GetVotingPower(ctx, voter),
+		VotingPower: votingPower.String(),
 	}
 
 	// Store vote

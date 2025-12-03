@@ -106,9 +106,11 @@ func (k *Keeper) calculateQuadraticVotingPower(credits uint64) uint64 {
 // GetVoteCredits returns available vote credits for a voter
 func (k *Keeper) GetVoteCredits(ctx sdk.Context, voter string) uint64 {
 	// Base credits from token holdings
-	votingPower := k.GetVotingPower(ctx, voter)
-	power := new(big.Int)
-	power.SetString(votingPower, 10)
+	votingPower, err := k.GetVotingPower(ctx, voter)
+	if err != nil {
+		return 0
+	}
+	power := votingPower.BigInt()
 
 	// Convert to credits (1 token = X credits based on params)
 	voteCreditsPerToken := k.getVoteCreditsPerToken()

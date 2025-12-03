@@ -3,6 +3,7 @@ package keeper
 import (
 	"testing"
 
+	sdkmath "cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
@@ -14,9 +15,22 @@ import (
 
 func setupKeeper(t *testing.T) (*Keeper, sdk.Context) {
 	input := keepertest.CreateTestInputWithKeys(t, "governance")
-	keeper := NewKeeper(input.Cdc, input.StoreKey)
+	mockStaking := &MockStakingKeeper{delegatorBonded: make(map[string]sdkmath.Int)}
+	keeper := NewKeeper(input.Cdc, input.StoreKey, mockStaking)
 	ctx := input.Ctx.WithKVGasConfig(storetypes.GasConfig{})
 	return keeper, ctx
+}
+
+// MockStakingKeeper for genesis tests
+type MockStakingKeeper struct {
+	delegatorBonded map[string]sdkmath.Int
+}
+
+func (m *MockStakingKeeper) GetDelegatorBonded(ctx sdk.Context, delegator sdk.AccAddress) sdkmath.Int {
+	if amount, ok := m.delegatorBonded[delegator.String()]; ok {
+		return amount
+	}
+	return sdkmath.ZeroInt()
 }
 
 func TestInitGenesis(t *testing.T) {
@@ -36,10 +50,6 @@ func TestInitGenesis(t *testing.T) {
 					Quorum:            "0.334",
 					Threshold:         "0.5",
 					VetoThreshold:     "0.334",
-					MinInitialDeposit: "100",
-					BurnVoteQuorum:    true,
-					BurnVoteVeto:      true,
-					BurnProposalDeposit: false,
 				},
 			},
 			wantErr: false,
@@ -64,15 +74,16 @@ func TestInitGenesis(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			keeper, ctx := setupKeeper(t)
 
-			// Validate genesis state first
-			err := tt.genesis.Validate()
-			if tt.wantErr && tt.errMsg != "" {
+			// Initialize genesis
+			err := keeper.InitGenesis(ctx, tt.genesis)
+
+			if tt.wantErr {
 				require.Error(t, err)
-				require.Contains(t, err.Error(), tt.errMsg)
+				if tt.errMsg != "" {
+					require.Contains(t, err.Error(), tt.errMsg)
+				}
 				return
 			}
-
-			err = keeper.InitGenesis(ctx, tt.genesis)
 			require.NoError(t, err)
 
 			// Verify params were set
@@ -94,10 +105,6 @@ func TestExportGenesis(t *testing.T) {
 		Quorum:            "0.4",
 		Threshold:         "0.6",
 		VetoThreshold:     "0.33",
-		MinInitialDeposit: "200",
-		BurnVoteQuorum:    false,
-		BurnVoteVeto:      true,
-		BurnProposalDeposit: true,
 	}
 	keeper.SetParams(ctx, params)
 
@@ -110,8 +117,6 @@ func TestExportGenesis(t *testing.T) {
 	require.Equal(t, "0.4", exported.Params.Quorum)
 	require.Equal(t, "0.6", exported.Params.Threshold)
 	require.Equal(t, "0.33", exported.Params.VetoThreshold)
-	require.True(t, exported.Params.BurnVoteVeto)
-	require.False(t, exported.Params.BurnVoteQuorum)
 }
 
 func TestGenesisRoundTrip(t *testing.T) {
@@ -126,10 +131,6 @@ func TestGenesisRoundTrip(t *testing.T) {
 		Quorum:            "0.35",
 		Threshold:         "0.55",
 		VetoThreshold:     "0.35",
-		MinInitialDeposit: "500",
-		BurnVoteQuorum:    true,
-		BurnVoteVeto:      false,
-		BurnProposalDeposit: true,
 	}
 	keeper1.SetParams(ctx1, params)
 
@@ -148,9 +149,6 @@ func TestGenesisRoundTrip(t *testing.T) {
 	require.Equal(t, params1.Quorum, params2.Quorum)
 	require.Equal(t, params1.Threshold, params2.Threshold)
 	require.Equal(t, params1.VetoThreshold, params2.VetoThreshold)
-	require.Equal(t, params1.BurnVoteQuorum, params2.BurnVoteQuorum)
-	require.Equal(t, params1.BurnVoteVeto, params2.BurnVoteVeto)
-	require.Equal(t, params1.BurnProposalDeposit, params2.BurnProposalDeposit)
 
 	// Export again and verify consistency
 	exported2 := keeper2.ExportGenesis(ctx2)
@@ -164,10 +162,6 @@ func TestDefaultGenesis(t *testing.T) {
 	defaultGen := types.DefaultGenesis()
 	require.NotNil(t, defaultGen)
 
-	// Validate default genesis
-	err := defaultGen.Validate()
-	require.NoError(t, err)
-
 	// Verify default params
 	require.NotNil(t, defaultGen.Params)
 	require.NotEmpty(t, defaultGen.Params.MinDeposit)
@@ -179,7 +173,7 @@ func TestDefaultGenesis(t *testing.T) {
 
 	// Test importing default genesis
 	keeper, ctx := setupKeeper(t)
-	err = keeper.InitGenesis(ctx, *defaultGen)
+	err := keeper.InitGenesis(ctx, *defaultGen)
 	require.NoError(t, err)
 
 	// Verify keeper state after importing default genesis
@@ -198,10 +192,6 @@ func TestInitGenesis_WithCustomParams(t *testing.T) {
 			Quorum:            "0.5",
 			Threshold:         "0.667",
 			VetoThreshold:     "0.4",
-			MinInitialDeposit: "1000",
-			BurnVoteQuorum:    false,
-			BurnVoteVeto:      false,
-			BurnProposalDeposit: false,
 		},
 	}
 
@@ -216,10 +206,6 @@ func TestInitGenesis_WithCustomParams(t *testing.T) {
 	require.Equal(t, "0.5", params.Quorum)
 	require.Equal(t, "0.667", params.Threshold)
 	require.Equal(t, "0.4", params.VetoThreshold)
-	require.Equal(t, "1000", params.MinInitialDeposit)
-	require.False(t, params.BurnVoteQuorum)
-	require.False(t, params.BurnVoteVeto)
-	require.False(t, params.BurnProposalDeposit)
 }
 
 func TestInitGenesis_NilParams(t *testing.T) {
@@ -263,10 +249,6 @@ func TestGenesisRoundTrip_MultipleIterations(t *testing.T) {
 		Quorum:            "0.45",
 		Threshold:         "0.65",
 		VetoThreshold:     "0.38",
-		MinInitialDeposit: "300",
-		BurnVoteQuorum:    true,
-		BurnVoteVeto:      true,
-		BurnProposalDeposit: false,
 	}
 	keeper1.SetParams(ctx1, initialParams)
 

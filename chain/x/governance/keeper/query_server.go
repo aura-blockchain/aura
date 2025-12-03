@@ -234,15 +234,26 @@ func (qs queryServer) VotingPower(goCtx context.Context, req *govpb.QueryVotingP
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	// Calculate voting power (simplified)
-	votingPower := qs.Keeper.GetVotingPower(ctx, req.Address)
-	delegatedPower := qs.Keeper.GetDelegatedPower(ctx, req.Address)
-	totalPower := votingPower + delegatedPower
+	// Get total voting power (includes delegations)
+	totalPower, err := qs.Keeper.GetVotingPower(ctx, req.Address)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get delegated power separately for breakdown
+	delegatedPowerInt := qs.Keeper.GetDelegatedVotingPower(ctx, req.Address)
+
+	// Get base power (direct stake)
+	addr, err := sdk.AccAddressFromBech32(req.Address)
+	if err != nil {
+		return nil, err
+	}
+	basePower := qs.Keeper.stakingKeeper.GetDelegatorBonded(ctx, addr)
 
 	return &govpb.QueryVotingPowerResponse{
-		VotingPower:    votingPower,
-		DelegatedPower: delegatedPower,
-		TotalPower:     totalPower,
+		VotingPower:    basePower.String(),
+		DelegatedPower: delegatedPowerInt.String(),
+		TotalPower:     totalPower.String(),
 	}, nil
 }
 

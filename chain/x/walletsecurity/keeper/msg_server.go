@@ -37,6 +37,21 @@ func (ms msgServer) RegisterHardwareWallet(goCtx context.Context, msg *wspb.MsgR
 		return nil, status.Error(codes.InvalidArgument, "address cannot be empty")
 	}
 
+	// CRITICAL: Verify transaction signer matches claimed address
+	signers := msg.GetSigners()
+	if len(signers) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "no signers")
+	}
+
+	claimedAddr, err := sdk.AccAddressFromBech32(msg.Address)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid address format")
+	}
+
+	if !signers[0].Equals(claimedAddr) {
+		return nil, status.Error(codes.PermissionDenied, "transaction signer does not match claimed address")
+	}
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	walletID := fmt.Sprintf("hw_%s_%d", msg.Address, ctx.BlockHeight())
@@ -79,6 +94,26 @@ func (ms msgServer) RegisterHardwareWallet(goCtx context.Context, msg *wspb.MsgR
 func (ms msgServer) CreateMultiSigWallet(goCtx context.Context, msg *wspb.MsgCreateMultiSigWallet) (*wspb.MsgCreateMultiSigWalletResponse, error) {
 	if msg == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	// CRITICAL: Verify transaction signer matches claimed creator
+	if msg.Creator == "" {
+		return nil, status.Error(codes.InvalidArgument, "creator cannot be empty")
+	}
+
+	// Use the SDK helper to get signers (implemented via GetSignersSDK)
+	signers := msg.GetSignersSDK()
+	if len(signers) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "no signers")
+	}
+
+	claimedCreator, err := sdk.AccAddressFromBech32(msg.Creator)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid creator address")
+	}
+
+	if !signers[0].Equals(claimedCreator) {
+		return nil, status.Error(codes.PermissionDenied, "transaction signer does not match creator")
 	}
 
 	if len(msg.Signers) < 2 {
@@ -138,6 +173,21 @@ func (ms msgServer) SignMultiSigTransaction(goCtx context.Context, msg *wspb.Msg
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
+	// CRITICAL: Verify signer matches claimed signer address
+	signers := msg.GetSigners()
+	if len(signers) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "no signers")
+	}
+
+	claimedSigner, err := sdk.AccAddressFromBech32(msg.Signer)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid signer address")
+	}
+
+	if !signers[0].Equals(claimedSigner) {
+		return nil, status.Error(codes.PermissionDenied, "transaction signer does not match claimed signer")
+	}
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	txBytes, err := ms.Keeper.GetPendingMultiSigTx(ctx, msg.TxId)
@@ -150,12 +200,7 @@ func (ms msgServer) SignMultiSigTransaction(goCtx context.Context, msg *wspb.Msg
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// Add signature
-	tx.Signatures = append(tx.Signatures, string(msg.Signature))
-	tx.SignedBy = append(tx.SignedBy, msg.Signer)
-	tx.CurrentWeight++
-
-	// Get wallet to check threshold
+	// Get wallet configuration to validate signer authorization and weights
 	walletBytes, err := ms.Keeper.GetMultiSigWallet(ctx, tx.WalletId)
 	if err != nil {
 		return nil, status.Error(codes.NotFound, "wallet not found")
@@ -166,7 +211,44 @@ func (ms msgServer) SignMultiSigTransaction(goCtx context.Context, msg *wspb.Msg
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	readyToExecute := tx.CurrentWeight >= wallet.Threshold
+	// CRITICAL: Verify signer is authorized for this wallet
+	isAuthorized := false
+	for _, authorizedSigner := range wallet.Signers {
+		if authorizedSigner == msg.Signer {
+			isAuthorized = true
+			break
+		}
+	}
+	if !isAuthorized {
+		return nil, status.Error(codes.PermissionDenied, "signer not authorized for this wallet")
+	}
+
+	// CRITICAL: Check for duplicate signature
+	for _, existingSigner := range tx.SignedBy {
+		if existingSigner == msg.Signer {
+			return nil, status.Error(codes.AlreadyExists, "signer already signed this transaction")
+		}
+	}
+
+	// CRITICAL: Calculate actual weight to add (not just +1)
+	signerWeight := int32(1) // Default weight
+	if wallet.SignerWeights != nil {
+		if weight, ok := wallet.SignerWeights[msg.Signer]; ok {
+			signerWeight = weight
+		}
+	}
+
+	// Add signature with proper weight
+	tx.Signatures = append(tx.Signatures, string(msg.Signature))
+	tx.SignedBy = append(tx.SignedBy, msg.Signer)
+	tx.CurrentWeight += signerWeight // Use actual weight, not just ++
+
+	// CRITICAL: Check threshold using weight threshold if configured
+	requiredWeight := wallet.Threshold
+	if wallet.WeightThreshold > 0 {
+		requiredWeight = wallet.WeightThreshold
+	}
+	readyToExecute := tx.CurrentWeight >= requiredWeight
 
 	// Update transaction
 	updatedTxBytes, err := ms.Keeper.cdc.Marshal(&tx)
@@ -188,7 +270,7 @@ func (ms msgServer) SignMultiSigTransaction(goCtx context.Context, msg *wspb.Msg
 
 	return &wspb.MsgSignMultiSigTransactionResponse{
 		CurrentSignatures:  tx.CurrentWeight,
-		RequiredSignatures: wallet.Threshold,
+		RequiredSignatures: requiredWeight,
 		ReadyToExecute:     readyToExecute,
 	}, nil
 }
@@ -197,6 +279,21 @@ func (ms msgServer) SignMultiSigTransaction(goCtx context.Context, msg *wspb.Msg
 func (ms msgServer) ConfigureSocialRecovery(goCtx context.Context, msg *wspb.MsgConfigureSocialRecovery) (*wspb.MsgConfigureSocialRecoveryResponse, error) {
 	if msg == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	// CRITICAL: Verify signer is the wallet owner
+	signers := msg.GetSigners()
+	if len(signers) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "no signers")
+	}
+
+	claimedOwner, err := sdk.AccAddressFromBech32(msg.Owner)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid owner address")
+	}
+
+	if !signers[0].Equals(claimedOwner) {
+		return nil, status.Error(codes.PermissionDenied, "transaction signer does not match owner")
 	}
 
 	if len(msg.Guardians) < 2 {
@@ -242,6 +339,21 @@ func (ms msgServer) ConfigureSocialRecovery(goCtx context.Context, msg *wspb.Msg
 func (ms msgServer) InitiateRecovery(goCtx context.Context, msg *wspb.MsgInitiateRecovery) (*wspb.MsgInitiateRecoveryResponse, error) {
 	if msg == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	// CRITICAL: Verify signer matches claimed initiator (guardian)
+	signers := msg.GetSigners()
+	if len(signers) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "no signers")
+	}
+
+	claimedInitiator, err := sdk.AccAddressFromBech32(msg.Initiator)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid initiator address")
+	}
+
+	if !signers[0].Equals(claimedInitiator) {
+		return nil, status.Error(codes.PermissionDenied, "signer does not match initiator")
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
@@ -303,8 +415,24 @@ func (ms msgServer) ApproveRecovery(goCtx context.Context, msg *wspb.MsgApproveR
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
+	// CRITICAL: Verify signer matches claimed guardian
+	signers := msg.GetSigners()
+	if len(signers) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "no signers")
+	}
+
+	claimedGuardian, err := sdk.AccAddressFromBech32(msg.Guardian)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid guardian address")
+	}
+
+	if !signers[0].Equals(claimedGuardian) {
+		return nil, status.Error(codes.PermissionDenied, "signer does not match guardian")
+	}
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	// Get recovery request
 	requestBytes, err := ms.Keeper.GetRecoveryRequest(ctx, msg.RequestId)
 	if err != nil {
 		return nil, status.Error(codes.NotFound, "recovery request not found")
@@ -315,11 +443,7 @@ func (ms msgServer) ApproveRecovery(goCtx context.Context, msg *wspb.MsgApproveR
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// Add approval
-	request.Approvals = append(request.Approvals, msg.Guardian)
-	request.ApprovalsCount++
-
-	// Get recovery config to check threshold
+	// Get recovery config to verify guardian authorization
 	configBytes, err := ms.Keeper.GetSocialRecoveryConfig(ctx, request.WalletId)
 	if err != nil {
 		return nil, status.Error(codes.NotFound, "recovery config not found")
@@ -329,6 +453,32 @@ func (ms msgServer) ApproveRecovery(goCtx context.Context, msg *wspb.MsgApproveR
 	if err := ms.Keeper.cdc.Unmarshal(configBytes, &config); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+
+	// CRITICAL: Verify guardian is in authorized list and confirmed
+	isAuthorized := false
+	for _, authorizedGuardian := range config.Guardians {
+		if authorizedGuardian.Address == msg.Guardian {
+			if !authorizedGuardian.Confirmed {
+				return nil, status.Error(codes.PermissionDenied, "guardian not confirmed")
+			}
+			isAuthorized = true
+			break
+		}
+	}
+	if !isAuthorized {
+		return nil, status.Error(codes.PermissionDenied, "not an authorized guardian for this wallet")
+	}
+
+	// CRITICAL: Prevent duplicate approvals
+	for _, existingApproval := range request.Approvals {
+		if existingApproval == msg.Guardian {
+			return nil, status.Error(codes.AlreadyExists, "guardian already approved this recovery request")
+		}
+	}
+
+	// Add approval
+	request.Approvals = append(request.Approvals, msg.Guardian)
+	request.ApprovalsCount++
 
 	readyToExecute := request.ApprovalsCount >= config.RecoveryThreshold
 
@@ -365,6 +515,21 @@ func (ms msgServer) ApproveRecovery(goCtx context.Context, msg *wspb.MsgApproveR
 func (ms msgServer) ExecuteRecovery(goCtx context.Context, msg *wspb.MsgExecuteRecovery) (*wspb.MsgExecuteRecoveryResponse, error) {
 	if msg == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	// CRITICAL: Verify signer matches executor
+	signers := msg.GetSigners()
+	if len(signers) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "no signers")
+	}
+
+	claimedExecutor, err := sdk.AccAddressFromBech32(msg.Executor)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid executor address")
+	}
+
+	if !signers[0].Equals(claimedExecutor) {
+		return nil, status.Error(codes.PermissionDenied, "transaction signer does not match executor")
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
@@ -419,6 +584,21 @@ func (ms msgServer) SimulateTransaction(goCtx context.Context, msg *wspb.MsgSimu
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
+	// CRITICAL: Verify signer matches claimed sender
+	signers := msg.GetSigners()
+	if len(signers) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "no signers")
+	}
+
+	claimedSender, err := sdk.AccAddressFromBech32(msg.Sender)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid sender address")
+	}
+
+	if !signers[0].Equals(claimedSender) {
+		return nil, status.Error(codes.PermissionDenied, "signer does not match sender")
+	}
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	simulation, err := ms.Keeper.SimulateTransaction(ctx, msg.TxData, msg.Sender)
@@ -433,6 +613,21 @@ func (ms msgServer) SimulateTransaction(goCtx context.Context, msg *wspb.MsgSimu
 func (ms msgServer) VerifyDomain(goCtx context.Context, msg *wspb.MsgVerifyDomain) (*wspb.MsgVerifyDomainResponse, error) {
 	if msg == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	// CRITICAL: Verify signer matches claimed verifier
+	signers := msg.GetSigners()
+	if len(signers) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "no signers")
+	}
+
+	claimedVerifier, err := sdk.AccAddressFromBech32(msg.Verifier)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid verifier address")
+	}
+
+	if !signers[0].Equals(claimedVerifier) {
+		return nil, status.Error(codes.PermissionDenied, "signer does not match verifier")
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
@@ -458,6 +653,21 @@ func (ms msgServer) SetSpendingLimit(goCtx context.Context, msg *wspb.MsgSetSpen
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
+	// CRITICAL: Verify signer is the wallet owner
+	signers := msg.GetSigners()
+	if len(signers) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "no signers")
+	}
+
+	claimedOwner, err := sdk.AccAddressFromBech32(msg.Owner)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid owner address")
+	}
+
+	if !signers[0].Equals(claimedOwner) {
+		return nil, status.Error(codes.PermissionDenied, "transaction signer does not match owner")
+	}
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	limit, err := ms.Keeper.SetSpendingLimit(ctx, msg.WalletId, msg.Denom, msg.DailyLimit, msg.WeeklyLimit, msg.MonthlyLimit)
@@ -480,6 +690,21 @@ func (ms msgServer) SetSpendingLimit(goCtx context.Context, msg *wspb.MsgSetSpen
 func (ms msgServer) ConfigureSession(goCtx context.Context, msg *wspb.MsgConfigureSession) (*wspb.MsgConfigureSessionResponse, error) {
 	if msg == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	// CRITICAL: Verify signer is the wallet owner
+	signers := msg.GetSigners()
+	if len(signers) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "no signers")
+	}
+
+	claimedOwner, err := sdk.AccAddressFromBech32(msg.Owner)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid owner address")
+	}
+
+	if !signers[0].Equals(claimedOwner) {
+		return nil, status.Error(codes.PermissionDenied, "transaction signer does not match owner")
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)

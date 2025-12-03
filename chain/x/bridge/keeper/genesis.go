@@ -65,6 +65,13 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data types.GenesisState) error {
 		k.setRelayerStats(ctx, stats)
 	}
 
+	// Import processed source hashes for replay attack prevention
+	for _, compositeKey := range data.ProcessedSourceHashes {
+		if compositeKey != "" {
+			k.SetProcessedSourceHash(ctx, compositeKey)
+		}
+	}
+
 	return nil
 }
 
@@ -87,15 +94,23 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) types.GenesisState {
 		chainConfigPtrs = append(chainConfigPtrs, &cfgCopy)
 	}
 
+	// Export processed source hashes for replay attack prevention
+	processedHashes := k.GetAllProcessedSourceHashes(ctx)
+	processedHashList := make([]string, 0, len(processedHashes))
+	for compositeKey := range processedHashes {
+		processedHashList = append(processedHashList, compositeKey)
+	}
+
 	return types.GenesisState{
-		Params:           bridgeParamsToProto(params),
-		Transfers:        k.getAllTransfers(ctx),
-		ChainConfigs:     chainConfigPtrs,
-		Validators:       k.getAllValidators(ctx),
-		WrappedTokens:    wrappedPtrs,
-		SharedIdentities: k.getAllSharedIdentities(ctx),
-		CrossChainSwaps:  k.getAllSwaps(ctx),
-		RelayerStats:     k.getAllRelayerStats(ctx),
+		Params:                 bridgeParamsToProto(params),
+		Transfers:              k.getAllTransfers(ctx),
+		ChainConfigs:           chainConfigPtrs,
+		Validators:             k.getAllValidators(ctx),
+		WrappedTokens:          wrappedPtrs,
+		SharedIdentities:       k.getAllSharedIdentities(ctx),
+		CrossChainSwaps:        k.getAllSwaps(ctx),
+		RelayerStats:           k.getAllRelayerStats(ctx),
+		ProcessedSourceHashes:  processedHashList,
 	}
 }
 
