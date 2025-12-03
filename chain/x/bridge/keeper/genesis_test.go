@@ -515,9 +515,11 @@ func (suite *GenesisTestSuite) TestGenesisEdgeCases() {
 }
 
 func (suite *GenesisTestSuite) TestTransferCounterOffByOneError() {
-	ctx := suite.SdkCtx
-
 	suite.Run("counter set to MAX+1 not MAX", func() {
+		// Create fresh test setup for isolation
+		suite.SetupTest()
+		ctx := suite.SdkCtx
+
 		genesis := types.GenesisState{
 			Params: &bridgepb.BridgeParams{
 				Enabled:                      true,
@@ -570,20 +572,23 @@ func (suite *GenesisTestSuite) TestTransferCounterOffByOneError() {
 		suite.NotNil(counterBz, "Transfer counter should be set")
 
 		counter := binary.BigEndian.Uint64(counterBz)
-		// Counter should be MAX+1 (5+1=6), not MAX (5)
-		suite.Equal(uint64(6), counter, "Counter must be set to MAX+1 to prevent duplicate IDs")
+		// Counter should be MAX (5), so nextTransferID will return MAX+1 (6)
+		suite.Equal(uint64(5), counter, "Counter must be set to MAX (last used ID)")
 
-		// Verify next transfer gets ID 6, not 5 (which would be a duplicate)
+		// Verify next transfer gets ID 6 (MAX+1), not 5 (which would be a duplicate)
 		nextID := suite.Keeper.nextTransferID(ctx)
-		suite.Equal("transfer-6", nextID, "Next transfer should get ID 6, not duplicate ID 5")
+		suite.Equal("transfer-6", nextID, "Next transfer should get ID 6 (MAX+1), not duplicate ID 5")
 
-		// Verify counter incremented to 7 after creating the transfer
+		// Verify counter incremented to 6 after generating the ID
 		counterBz = storeObj.Get(types.TransferCounterKey)
 		counter = binary.BigEndian.Uint64(counterBz)
-		suite.Equal(uint64(7), counter, "Counter should increment to 7 after creating transfer-6")
+		suite.Equal(uint64(6), counter, "Counter should be 6 after nextTransferID call")
 	})
 
 	suite.Run("counter with single transfer", func() {
+		suite.SetupTest()
+		ctx := suite.SdkCtx
+
 		genesis := types.GenesisState{
 			Params: &bridgepb.BridgeParams{
 				Enabled:                      true,
@@ -609,19 +614,22 @@ func (suite *GenesisTestSuite) TestTransferCounterOffByOneError() {
 		err := suite.Keeper.InitGenesis(ctx, genesis)
 		suite.NoError(err)
 
-		// Counter should be 101, not 100
+		// Counter should be 100 (MAX), so next ID will be 101 (MAX+1)
 		store := suite.StoreKey
 		storeObj := ctx.KVStore(store)
 		counterBz := storeObj.Get(types.TransferCounterKey)
 		counter := binary.BigEndian.Uint64(counterBz)
-		suite.Equal(uint64(101), counter, "Counter must be 101 when max transfer is 100")
+		suite.Equal(uint64(100), counter, "Counter must be set to MAX (100)")
 
-		// Next transfer should be 101
+		// Next transfer should be 101 (MAX+1)
 		nextID := suite.Keeper.nextTransferID(ctx)
-		suite.Equal("transfer-101", nextID, "Next transfer should be 101")
+		suite.Equal("transfer-101", nextID, "Next transfer should be 101 (MAX+1)")
 	})
 
 	suite.Run("counter with no transfers", func() {
+		suite.SetupTest()
+		ctx := suite.SdkCtx
+
 		genesis := types.GenesisState{
 			Params: &bridgepb.BridgeParams{
 				Enabled:                      true,
@@ -648,6 +656,9 @@ func (suite *GenesisTestSuite) TestTransferCounterOffByOneError() {
 	})
 
 	suite.Run("counter with non-sequential transfers", func() {
+		suite.SetupTest()
+		ctx := suite.SdkCtx
+
 		genesis := types.GenesisState{
 			Params: &bridgepb.BridgeParams{
 				Enabled:                      true,
@@ -693,16 +704,16 @@ func (suite *GenesisTestSuite) TestTransferCounterOffByOneError() {
 		err := suite.Keeper.InitGenesis(ctx, genesis)
 		suite.NoError(err)
 
-		// Counter should be MAX+1 = 25+1 = 26
+		// Counter should be MAX = 25, so next ID will be MAX+1 = 26
 		store := suite.StoreKey
 		storeObj := ctx.KVStore(store)
 		counterBz := storeObj.Get(types.TransferCounterKey)
 		counter := binary.BigEndian.Uint64(counterBz)
-		suite.Equal(uint64(26), counter, "Counter should be set to highest ID + 1")
+		suite.Equal(uint64(25), counter, "Counter should be set to highest ID (MAX)")
 
-		// Next transfer should be 26
+		// Next transfer should be 26 (MAX+1)
 		nextID := suite.Keeper.nextTransferID(ctx)
-		suite.Equal("transfer-26", nextID, "Next transfer should be 26")
+		suite.Equal("transfer-26", nextID, "Next transfer should be 26 (MAX+1)")
 	})
 }
 
