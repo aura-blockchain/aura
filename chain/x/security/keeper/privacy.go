@@ -29,7 +29,10 @@ func (k Keeper) GetMixingPool(ctx sdk.Context, id string) (*securitypb.MixingPoo
 		return nil, false
 	}
 	var pool securitypb.MixingPool
-	k.cdc.MustUnmarshal(bz, &pool)
+	if err := k.cdc.Unmarshal(bz, &MixingPool); err != nil {
+		ctx.Logger().Error("failed to unmarshal data", "error", err, "data_len", len(bz))
+		return nil, false
+	}
 	return &pool, true
 }
 
@@ -83,7 +86,10 @@ func (k Keeper) GetRegisteredViewKey(ctx sdk.Context, id string) (*types.ViewKey
 		return nil, false
 	}
 	var viewKey types.ViewKey
-	k.cdc.MustUnmarshal(bz, &viewKey)
+	if err := k.cdc.Unmarshal(bz, &ViewKey); err != nil {
+		ctx.Logger().Error("failed to unmarshal data", "error", err, "data_len", len(bz))
+		return nil, false
+	}
 	return &viewKey, true
 }
 
