@@ -249,6 +249,7 @@ func (SanctionsStatus) EnumDescriptor() ([]byte, []int) {
 
 // KYCRecord represents a KYC verification record (GDPR-compliant)
 // PII is stored off-chain; only cryptographic commitments stored on-chain
+// Jurisdiction is stored on-chain for OFAC compliance enforcement
 type KYCRecord struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	Address              string                 `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
@@ -258,6 +259,7 @@ type KYCRecord struct {
 	ExpiresAt            *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
 	PiiCommitment        []byte                 `protobuf:"bytes,6,opt,name=pii_commitment,json=piiCommitment,proto3" json:"pii_commitment,omitempty"`                         // SHA-256 hash of off-chain PII data
 	EnhancedDueDiligence bool                   `protobuf:"varint,7,opt,name=enhanced_due_diligence,json=enhancedDueDiligence,proto3" json:"enhanced_due_diligence,omitempty"` // EDD required flag
+	Jurisdiction         string                 `protobuf:"bytes,8,opt,name=jurisdiction,proto3" json:"jurisdiction,omitempty"`                                                // ISO 3166-1 alpha-2 country code
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -339,6 +341,13 @@ func (x *KYCRecord) GetEnhancedDueDiligence() bool {
 		return x.EnhancedDueDiligence
 	}
 	return false
+}
+
+func (x *KYCRecord) GetJurisdiction() string {
+	if x != nil {
+		return x.Jurisdiction
+	}
+	return ""
 }
 
 // AMLProfile represents an AML risk profile
@@ -1623,6 +1632,7 @@ type ComplianceParams struct {
 	MinimumKycLevel      KYCLevel `protobuf:"varint,2,opt,name=minimum_kyc_level,json=minimumKycLevel,proto3,enum=aura.compliance.v1beta1.KYCLevel" json:"minimum_kyc_level,omitempty"`
 	KycExpiryDays        uint64   `protobuf:"varint,3,opt,name=kyc_expiry_days,json=kycExpiryDays,proto3" json:"kyc_expiry_days,omitempty"`
 	ApprovedKycProviders []string `protobuf:"bytes,17,rep,name=approved_kyc_providers,json=approvedKycProviders,proto3" json:"approved_kyc_providers,omitempty"` // Authorized KYC provider addresses
+	BlockedJurisdictions []string `protobuf:"bytes,18,rep,name=blocked_jurisdictions,json=blockedJurisdictions,proto3" json:"blocked_jurisdictions,omitempty"`   // OFAC-sanctioned country codes (ISO 3166-1 alpha-2)
 	// Transaction monitoring
 	TransactionMonitoringEnabled bool   `protobuf:"varint,4,opt,name=transaction_monitoring_enabled,json=transactionMonitoringEnabled,proto3" json:"transaction_monitoring_enabled,omitempty"`
 	VelocityLimit_24H            string `protobuf:"bytes,5,opt,name=velocity_limit_24h,json=velocityLimit24h,proto3" json:"velocity_limit_24h,omitempty"`                             // Max transaction volume in 24h
@@ -1698,6 +1708,13 @@ func (x *ComplianceParams) GetKycExpiryDays() uint64 {
 func (x *ComplianceParams) GetApprovedKycProviders() []string {
 	if x != nil {
 		return x.ApprovedKycProviders
+	}
+	return nil
+}
+
+func (x *ComplianceParams) GetBlockedJurisdictions() []string {
+	if x != nil {
+		return x.BlockedJurisdictions
 	}
 	return nil
 }
@@ -2268,14 +2285,16 @@ func (x *QueryTaxReportResponse) GetReport() *TaxReport {
 
 // Transaction messages
 // MsgSubmitKYC submits KYC verification with PII commitment (GDPR-compliant)
-// PII data (verification_id, documents, jurisdiction, risk_score) must be
+// PII data (verification_id, documents, risk_score) must be
 // stored off-chain by the provider. Only the cryptographic commitment is stored on-chain.
+// Jurisdiction must be provided on-chain for OFAC compliance validation.
 type MsgSubmitKYC struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Address       string                 `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
 	KycLevel      KYCLevel               `protobuf:"varint,2,opt,name=kyc_level,json=kycLevel,proto3,enum=aura.compliance.v1beta1.KYCLevel" json:"kyc_level,omitempty"`
 	Provider      string                 `protobuf:"bytes,3,opt,name=provider,proto3" json:"provider,omitempty"`
 	PiiCommitment []byte                 `protobuf:"bytes,4,opt,name=pii_commitment,json=piiCommitment,proto3" json:"pii_commitment,omitempty"` // SHA-256 hash of off-chain PII JSON
+	Jurisdiction  string                 `protobuf:"bytes,5,opt,name=jurisdiction,proto3" json:"jurisdiction,omitempty"`                        // ISO 3166-1 alpha-2 country code (required for OFAC compliance)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2336,6 +2355,13 @@ func (x *MsgSubmitKYC) GetPiiCommitment() []byte {
 		return x.PiiCommitment
 	}
 	return nil
+}
+
+func (x *MsgSubmitKYC) GetJurisdiction() string {
+	if x != nil {
+		return x.Jurisdiction
+	}
+	return ""
 }
 
 type MsgSubmitKYCResponse struct {
@@ -3061,7 +3087,7 @@ var File_aura_compliance_v1beta1_compliance_proto protoreflect.FileDescriptor
 
 const file_aura_compliance_v1beta1_compliance_proto_rawDesc = "" +
 	"\n" +
-	"(aura/compliance/v1beta1/compliance.proto\x12\x17aura.compliance.v1beta1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x17cosmos/msg/v1/msg.proto\"\xd6\x02\n" +
+	"(aura/compliance/v1beta1/compliance.proto\x12\x17aura.compliance.v1beta1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x17cosmos/msg/v1/msg.proto\"\xfa\x02\n" +
 	"\tKYCRecord\x12\x18\n" +
 	"\aaddress\x18\x01 \x01(\tR\aaddress\x12>\n" +
 	"\tkyc_level\x18\x02 \x01(\x0e2!.aura.compliance.v1beta1.KYCLevelR\bkycLevel\x12\x1a\n" +
@@ -3071,7 +3097,8 @@ const file_aura_compliance_v1beta1_compliance_proto_rawDesc = "" +
 	"\n" +
 	"expires_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\x12%\n" +
 	"\x0epii_commitment\x18\x06 \x01(\fR\rpiiCommitment\x124\n" +
-	"\x16enhanced_due_diligence\x18\a \x01(\bR\x14enhancedDueDiligence\"\xef\x03\n" +
+	"\x16enhanced_due_diligence\x18\a \x01(\bR\x14enhancedDueDiligence\x12\"\n" +
+	"\fjurisdiction\x18\b \x01(\tR\fjurisdiction\"\xef\x03\n" +
 	"\n" +
 	"AMLProfile\x12\x18\n" +
 	"\aaddress\x18\x01 \x01(\tR\aaddress\x12D\n" +
@@ -3214,12 +3241,13 @@ const file_aura_compliance_v1beta1_compliance_proto_rawDesc = "" +
 	"cost_basis\x18\x06 \x01(\tR\tcostBasis\x12*\n" +
 	"\x11fair_market_value\x18\a \x01(\tR\x0ffairMarketValue\x12\x1b\n" +
 	"\tgain_loss\x18\b \x01(\tR\bgainLoss\x12\x1b\n" +
-	"\tis_income\x18\t \x01(\bR\bisIncome\"\xf4\x06\n" +
+	"\tis_income\x18\t \x01(\bR\bisIncome\"\xa9\a\n" +
 	"\x10ComplianceParams\x12!\n" +
 	"\fkyc_required\x18\x01 \x01(\bR\vkycRequired\x12M\n" +
 	"\x11minimum_kyc_level\x18\x02 \x01(\x0e2!.aura.compliance.v1beta1.KYCLevelR\x0fminimumKycLevel\x12&\n" +
 	"\x0fkyc_expiry_days\x18\x03 \x01(\x04R\rkycExpiryDays\x124\n" +
-	"\x16approved_kyc_providers\x18\x11 \x03(\tR\x14approvedKycProviders\x12D\n" +
+	"\x16approved_kyc_providers\x18\x11 \x03(\tR\x14approvedKycProviders\x123\n" +
+	"\x15blocked_jurisdictions\x18\x12 \x03(\tR\x14blockedJurisdictions\x12D\n" +
 	"\x1etransaction_monitoring_enabled\x18\x04 \x01(\bR\x1ctransactionMonitoringEnabled\x12,\n" +
 	"\x12velocity_limit_24h\x18\x05 \x01(\tR\x10velocityLimit24h\x128\n" +
 	"\x18single_transaction_limit\x18\x06 \x01(\tR\x16singleTransactionLimit\x12>\n" +
@@ -3258,12 +3286,13 @@ const file_aura_compliance_v1beta1_compliance_proto_rawDesc = "" +
 	"\btax_year\x18\x02 \x01(\tR\ataxYear\x12\"\n" +
 	"\fjurisdiction\x18\x03 \x01(\tR\fjurisdiction\"T\n" +
 	"\x16QueryTaxReportResponse\x12:\n" +
-	"\x06report\x18\x01 \x01(\v2\".aura.compliance.v1beta1.TaxReportR\x06report\"\xba\x01\n" +
+	"\x06report\x18\x01 \x01(\v2\".aura.compliance.v1beta1.TaxReportR\x06report\"\xde\x01\n" +
 	"\fMsgSubmitKYC\x12\x18\n" +
 	"\aaddress\x18\x01 \x01(\tR\aaddress\x12>\n" +
 	"\tkyc_level\x18\x02 \x01(\x0e2!.aura.compliance.v1beta1.KYCLevelR\bkycLevel\x12\x1a\n" +
 	"\bprovider\x18\x03 \x01(\tR\bprovider\x12%\n" +
-	"\x0epii_commitment\x18\x04 \x01(\fR\rpiiCommitment:\r\x82\xe7\xb0*\bprovider\"J\n" +
+	"\x0epii_commitment\x18\x04 \x01(\fR\rpiiCommitment\x12\"\n" +
+	"\fjurisdiction\x18\x05 \x01(\tR\fjurisdiction:\r\x82\xe7\xb0*\bprovider\"J\n" +
 	"\x14MsgSubmitKYCResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\"\xf4\x01\n" +

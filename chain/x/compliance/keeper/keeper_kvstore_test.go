@@ -770,6 +770,7 @@ func TestKVStore_AllPrefixes(t *testing.T) {
 		GDPRRequestsKeyPrefix,
 		TaxReportsKeyPrefix,
 		ParamsKeyPrefix,
+		ProcessingRestrictionsKeyPrefix,
 	}
 
 	seen := make(map[byte]bool)
@@ -1119,4 +1120,328 @@ func TestInitializeDefaultMonitoringRules_WithErrorInGetParams(t *testing.T) {
 
 	err := keeper.initializeDefaultMonitoringRules(ctx)
 	require.Error(t, err)
+}
+
+// ============================================================================
+// GDPR Consent Withdrawal Enforcement Tests (TODO 055)
+// ============================================================================
+
+func TestSetProcessingRestriction(t *testing.T) {
+	keeper, ctx := setupTestKeeper(t)
+
+	address := "cosmos1test"
+
+	// Set restriction
+	err := keeper.SetProcessingRestriction(ctx, address, true)
+	require.NoError(t, err)
+
+	// Verify restriction is set
+	require.True(t, keeper.IsProcessingRestricted(ctx, address))
+
+	// Remove restriction
+	err = keeper.SetProcessingRestriction(ctx, address, false)
+	require.NoError(t, err)
+
+	// Verify restriction is removed
+	require.False(t, keeper.IsProcessingRestricted(ctx, address))
+}
+
+func TestIsProcessingRestricted_NotSet(t *testing.T) {
+	keeper, ctx := setupTestKeeper(t)
+
+	address := "cosmos1test"
+
+	// Should be false when not set
+	require.False(t, keeper.IsProcessingRestricted(ctx, address))
+}
+
+func TestGetGDPRConsent_Found(t *testing.T) {
+	keeper, ctx := setupTestKeeper(t)
+
+	now := time.Now()
+	consent := &types.GDPRConsent{
+		Address:        "cosmos1test",
+		ConsentType:    "data_processing",
+		Consented:      true,
+		ConsentGivenAt: timestamppb.New(now),
+	}
+
+	err := keeper.SetGDPRConsent(ctx, consent)
+	require.NoError(t, err)
+
+	// Test GetGDPRConsent
+	retrieved, found := keeper.GetGDPRConsent(ctx, "cosmos1test", "data_processing")
+	require.True(t, found)
+	require.NotNil(t, retrieved)
+	require.Equal(t, consent.ConsentType, retrieved.ConsentType)
+	require.Equal(t, consent.Consented, retrieved.Consented)
+}
+
+func TestGetGDPRConsent_NotFound(t *testing.T) {
+	keeper, ctx := setupTestKeeper(t)
+
+	retrieved, found := keeper.GetGDPRConsent(ctx, "cosmos1test", "nonexistent")
+	require.False(t, found)
+	require.Nil(t, retrieved)
+}
+
+func TestGetGDPRConsent_WrongConsentType(t *testing.T) {
+	keeper, ctx := setupTestKeeper(t)
+
+	now := time.Now()
+	consent := &types.GDPRConsent{
+		Address:        "cosmos1test",
+		ConsentType:    "data_processing",
+		Consented:      true,
+		ConsentGivenAt: timestamppb.New(now),
+	}
+
+	err := keeper.SetGDPRConsent(ctx, consent)
+	require.NoError(t, err)
+
+	// Try to get with different consent type
+	retrieved, found := keeper.GetGDPRConsent(ctx, "cosmos1test", "marketing")
+	require.False(t, found)
+	require.Nil(t, retrieved)
+}
+
+func TestCanProcessData_WithValidConsent(t *testing.T) {
+	keeper, ctx := setupTestKeeper(t)
+
+	address := "cosmos1test"
+	purpose := "data_processing"
+
+	// Set valid consent
+	now := time.Now()
+	consent := &types.GDPRConsent{
+		Address:        address,
+		ConsentType:    purpose,
+		Consented:      true,
+		ConsentGivenAt: timestamppb.New(now),
+	}
+
+	err := keeper.SetGDPRConsent(ctx, consent)
+	require.NoError(t, err)
+
+	// Should allow processing
+	require.True(t, keeper.CanProcessData(ctx, address, purpose))
+}
+
+func TestCanProcessData_WithWithdrawnConsent(t *testing.T) {
+	keeper, ctx := setupTestKeeper(t)
+
+	address := "cosmos1test"
+	purpose := "data_processing"
+
+	// Set withdrawn consent
+	now := time.Now()
+	consent := &types.GDPRConsent{
+		Address:             address,
+		ConsentType:         purpose,
+		Consented:           false,
+		ConsentGivenAt:      timestamppb.New(now),
+		ConsentWithdrawnAt:  timestamppb.New(now),
+	}
+
+	err := keeper.SetGDPRConsent(ctx, consent)
+	require.NoError(t, err)
+
+	// Should not allow processing
+	require.False(t, keeper.CanProcessData(ctx, address, purpose))
+}
+
+func TestCanProcessData_WithProcessingRestriction(t *testing.T) {
+	keeper, ctx := setupTestKeeper(t)
+
+	address := "cosmos1test"
+	purpose := "data_processing"
+
+	// Set valid consent
+	now := time.Now()
+	consent := &types.GDPRConsent{
+		Address:        address,
+		ConsentType:    purpose,
+		Consented:      true,
+		ConsentGivenAt: timestamppb.New(now),
+	}
+
+	err := keeper.SetGDPRConsent(ctx, consent)
+	require.NoError(t, err)
+
+	// Set processing restriction
+	err = keeper.SetProcessingRestriction(ctx, address, true)
+	require.NoError(t, err)
+
+	// Should not allow processing even with valid consent
+	require.False(t, keeper.CanProcessData(ctx, address, purpose))
+}
+
+func TestCanProcessData_NoConsent(t *testing.T) {
+	keeper, ctx := setupTestKeeper(t)
+
+	address := "cosmos1test"
+	purpose := "data_processing"
+
+	// No consent set, should not allow processing
+	require.False(t, keeper.CanProcessData(ctx, address, purpose))
+}
+
+func TestTriggerDataDeletion(t *testing.T) {
+	keeper, ctx := setupTestKeeper(t)
+
+	address := "cosmos1test"
+	consentType := "data_processing"
+
+	// Trigger data deletion
+	err := keeper.TriggerDataDeletion(ctx, address, consentType)
+	require.NoError(t, err)
+
+	// Verify event was emitted
+	events := ctx.EventManager().Events()
+	require.NotEmpty(t, events)
+
+	// Find the deletion event
+	var deletionEvent sdk.Event
+	for _, event := range events {
+		if event.Type == "gdpr_data_deletion_requested" {
+			deletionEvent = event
+			break
+		}
+	}
+
+	require.NotNil(t, deletionEvent.Type)
+	require.Equal(t, "gdpr_data_deletion_requested", deletionEvent.Type)
+
+	// Verify event attributes
+	attrs := deletionEvent.Attributes
+	addressFound := false
+	consentTypeFound := false
+
+	for _, attr := range attrs {
+		if attr.Key == types.AttributeKeyAddress && attr.Value == address {
+			addressFound = true
+		}
+		if attr.Key == types.AttributeKeyConsentType && attr.Value == consentType {
+			consentTypeFound = true
+		}
+	}
+
+	require.True(t, addressFound, "address attribute should be present in event")
+	require.True(t, consentTypeFound, "consent_type attribute should be present in event")
+}
+
+func TestConsentWithdrawalEnforcement_CompleteFlow(t *testing.T) {
+	keeper, ctx := setupTestKeeper(t)
+
+	address := "cosmos1test"
+	purpose := "data_processing"
+
+	// Step 1: Give consent
+	now := time.Now()
+	consent := &types.GDPRConsent{
+		Address:        address,
+		ConsentType:    purpose,
+		Consented:      true,
+		ConsentGivenAt: timestamppb.New(now),
+	}
+
+	err := keeper.SetGDPRConsent(ctx, consent)
+	require.NoError(t, err)
+
+	// Verify processing is allowed
+	require.True(t, keeper.CanProcessData(ctx, address, purpose))
+	require.False(t, keeper.IsProcessingRestricted(ctx, address))
+
+	// Step 2: Withdraw consent
+	consent.Consented = false
+	consent.ConsentWithdrawnAt = timestamppb.New(now)
+	err = keeper.SetGDPRConsent(ctx, consent)
+	require.NoError(t, err)
+
+	// Set processing restriction (simulating what RecordGDPRConsent does)
+	err = keeper.SetProcessingRestriction(ctx, address, true)
+	require.NoError(t, err)
+
+	// Verify processing is now blocked
+	require.False(t, keeper.CanProcessData(ctx, address, purpose))
+	require.True(t, keeper.IsProcessingRestricted(ctx, address))
+
+	// Step 3: Give consent again
+	consent.Consented = true
+	consent.ConsentWithdrawnAt = nil
+	err = keeper.SetGDPRConsent(ctx, consent)
+	require.NoError(t, err)
+
+	// Remove processing restriction
+	err = keeper.SetProcessingRestriction(ctx, address, false)
+	require.NoError(t, err)
+
+	// Verify processing is allowed again
+	require.True(t, keeper.CanProcessData(ctx, address, purpose))
+	require.False(t, keeper.IsProcessingRestricted(ctx, address))
+}
+
+func TestCanProcessData_MultipleConsents(t *testing.T) {
+	keeper, ctx := setupTestKeeper(t)
+
+	address := "cosmos1test"
+	now := time.Now()
+
+	// Set consent for data_processing
+	consent1 := &types.GDPRConsent{
+		Address:        address,
+		ConsentType:    "data_processing",
+		Consented:      true,
+		ConsentGivenAt: timestamppb.New(now),
+	}
+	err := keeper.SetGDPRConsent(ctx, consent1)
+	require.NoError(t, err)
+
+	// Set consent for marketing (withdrawn)
+	consent2 := &types.GDPRConsent{
+		Address:            address,
+		ConsentType:        "marketing",
+		Consented:          false,
+		ConsentGivenAt:     timestamppb.New(now),
+		ConsentWithdrawnAt: timestamppb.New(now),
+	}
+	err = keeper.SetGDPRConsent(ctx, consent2)
+	require.NoError(t, err)
+
+	// Data processing should be allowed
+	require.True(t, keeper.CanProcessData(ctx, address, "data_processing"))
+
+	// Marketing should not be allowed
+	require.False(t, keeper.CanProcessData(ctx, address, "marketing"))
+}
+
+func TestProcessingRestriction_DifferentAddresses(t *testing.T) {
+	keeper, ctx := setupTestKeeper(t)
+
+	address1 := "cosmos1test1"
+	address2 := "cosmos1test2"
+
+	// Set restriction for address1
+	err := keeper.SetProcessingRestriction(ctx, address1, true)
+	require.NoError(t, err)
+
+	// Verify only address1 is restricted
+	require.True(t, keeper.IsProcessingRestricted(ctx, address1))
+	require.False(t, keeper.IsProcessingRestricted(ctx, address2))
+
+	// Set restriction for address2
+	err = keeper.SetProcessingRestriction(ctx, address2, true)
+	require.NoError(t, err)
+
+	// Verify both are restricted
+	require.True(t, keeper.IsProcessingRestricted(ctx, address1))
+	require.True(t, keeper.IsProcessingRestricted(ctx, address2))
+
+	// Remove restriction for address1
+	err = keeper.SetProcessingRestriction(ctx, address1, false)
+	require.NoError(t, err)
+
+	// Verify only address2 is restricted
+	require.False(t, keeper.IsProcessingRestricted(ctx, address1))
+	require.True(t, keeper.IsProcessingRestricted(ctx, address2))
 }

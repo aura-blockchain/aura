@@ -12,6 +12,7 @@ const (
 	EventTypeSanctionsScreening        = "sanctions_screening"
 	EventTypeSanctionsFlagged          = "sanctions_flagged"
 	EventTypeGDPRConsentRecorded       = "gdpr_consent_recorded"
+	EventTypeGDPRConsentWithdrawn      = "gdpr_consent_withdrawn"
 	EventTypeGDPRDataRequested         = "gdpr_data_requested"
 	EventTypeGDPRDataErased            = "gdpr_data_erased"
 	EventTypeGDPRRequest               = "gdpr_request"
@@ -19,6 +20,7 @@ const (
 	EventTypeTaxReportGenerated        = "tax_report_generated"
 	EventTypeComplianceViolation       = "compliance_violation"
 	EventTypeParamsUpdated             = "params_updated"
+	EventTypeTransactionAlert          = "transaction_alert"
 )
 
 // Event attribute keys
@@ -59,11 +61,17 @@ const (
 	AttributeKeyJurisdiction      = "jurisdiction"
 	AttributeKeyReportType        = "report_type"
 	AttributeKeyTransactionCount  = "transaction_count"
-	AttributeKeyViolationType     = "violation_type"
-	AttributeKeyViolationSeverity = "violation_severity"
-	AttributeKeyBlockHeight       = "block_height"
-	AttributeKeyBlockTime         = "block_time"
-	AttributeKeyTimestamp         = "timestamp"
+	AttributeKeyViolationType       = "violation_type"
+	AttributeKeyViolationSeverity   = "violation_severity"
+	AttributeKeyProcessingRestricted = "processing_restricted"
+	AttributeKeyDeletionTriggered   = "deletion_triggered"
+	AttributeKeyBlockHeight         = "block_height"
+	AttributeKeyBlockTime           = "block_time"
+	AttributeKeyTimestamp           = "timestamp"
+	AttributeKeyAlertID             = "alert_id"
+	AttributeKeyRuleID              = "rule_id"
+	AttributeKeyRiskLevel           = "risk_level"
+	AttributeKeyDescription         = "description"
 )
 
 // Helper functions for creating event attributes
