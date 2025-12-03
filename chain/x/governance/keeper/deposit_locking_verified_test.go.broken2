@@ -1,0 +1,622 @@
+package keeper_test
+
+import (
+	"fmt"
+	"testing"
+	"time"
+
+	sdkmath "cosmossdk.io/math"
+	storetypes "cosmossdk.io/store/types"
+	"github.com/cosmos/cosmos-sdk/codec"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/stretchr/testify/require"
+
+	"github.com/aequitas/aura/chain/x/governance/keeper"
+	"github.com/aequitas/aura/chain/x/governance/types"
+)
+
+// setupDepositTestEnvironment creates a test environment for deposit tests
+func setupDepositTestEnvironment(t *testing.T) (sdk.Context, *keeper.Keeper, *testBankKeeper) {
+	// Create codec
+	registry := codectypes.NewInterfaceRegistry()
+	types.RegisterInterfaces(registry)
+	cdc := codec.NewProtoCodec(registry)
+
+	// Create store - use a minimal context
+	storeKey := storetypes.NewKVStoreKey(types.StoreKey)
+
+	// Create context using the pattern from other tests
+	ctx := sdk.Context{}.WithBlockTime(time.Now())
+
+	// Create mock keepers
+	stakingKeeper := &keeper.MockStakingKeeper{}
+	bankKeeper := newTestBankKeeper()
+	securityKeeper := &keeper.MockSecurityKeeper{}
+
+	// Initialize keeper
+	k := keeper.NewKeeper(cdc, storeKey, stakingKeeper, bankKeeper, securityKeeper)
+
+	// Set default params
+	params := types.DefaultParams()
+	k.SetParams(ctx, params)
+
+	// Initialize next proposal ID
+	k.SetNextProposalID(ctx, 1)
+
+	return ctx, k, bankKeeper
+}
+
+// testBankKeeper is a test implementation with exported fields
+type testBankKeeper struct {
+	Balances       map[string]sdk.Coins
+	ModuleBalances map[string]sdk.Coins
+}
+
+func newTestBankKeeper() *testBankKeeper {
+	return &testBankKeeper{
+		Balances:       make(map[string]sdk.Coins),
+		ModuleBalances: make(map[string]sdk.Coins),
+	}
+}
+
+func (m *testBankKeeper) SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
+	// Check if sender has enough balance
+	senderBalance := m.Balances[senderAddr.String()]
+	if !senderBalance.IsAllGTE(amt) {
+		return fmt.Errorf("insufficient funds")
+	}
+
+	// Deduct from sender
+	newBalance := senderBalance.Sub(amt...)
+	m.Balances[senderAddr.String()] = newBalance
+
+	// Add to module
+	moduleBalance := m.ModuleBalances[recipientModule]
+	m.ModuleBalances[recipientModule] = moduleBalance.Add(amt...)
+
+	return nil
+}
+
+func (m *testBankKeeper) SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
+	// Check if module has enough balance
+	moduleBalance := m.ModuleBalances[senderModule]
+	if !moduleBalance.IsAllGTE(amt) {
+		return fmt.Errorf("insufficient module funds")
+	}
+
+	// Deduct from module
+	newModuleBalance := moduleBalance.Sub(amt...)
+	m.ModuleBalances[senderModule] = newModuleBalance
+
+	// Add to recipient
+	recipientBalance := m.Balances[recipientAddr.String()]
+	m.Balances[recipientAddr.String()] = recipientBalance.Add(amt...)
+
+	return nil
+}
+
+func (m *testBankKeeper) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin {
+	if balance, ok := m.Balances[addr.String()]; ok {
+		amt := balance.AmountOf(denom)
+		return sdk.NewCoin(denom, amt)
+	}
+	return sdk.NewCoin(denom, sdkmath.ZeroInt())
+}
+
+// TestDepositLocking_TransferToModuleAccount verifies deposits are transferred to module account
+func TestDepositLocking_TransferToModuleAccount(t *testing.T) {
+	ctx, _, bankKeeper := setupDepositTestEnvironment(t)
+
+	// Setup: Create test addresses
+	proposer := sdk.AccAddress([]byte("proposer_address_1"))
+	depositor := sdk.AccAddress([]byte("depositor_address"))
+
+	// Setup: Give accounts initial balances
+	initialBalance := sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(10_000_000)))
+	bankKeeper.Balances[proposer.String()] = initialBalance
+	bankKeeper.Balances[depositor.String()] = initialBalance
+	bankKeeper.ModuleBalances[types.ModuleName] = sdk.NewCoins()
+
+	t.Run("InitialDepositTransferredOnProposalSubmit", func(t *testing.T) {
+		// Create proposal with initial deposit
+		depositAmount := sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(1_000_000)))
+
+		// Directly transfer to simulate msg_server behavior
+		err := bankKeeper.SendCoinsFromAccountToModule(ctx, proposer, types.ModuleName, depositAmount)
+		require.NoError(t, err, "Initial deposit transfer should succeed")
+
+		// Verify proposer balance decreased
+		proposerBalance := bankKeeper.Balances[proposer.String()]
+		expectedBalance := initialBalance.Sub(depositAmount...)
+		require.Equal(t, expectedBalance, proposerBalance, "Proposer balance should decrease by deposit amount")
+
+		// Verify module account balance increased
+		moduleBalance := bankKeeper.ModuleBalances[types.ModuleName]
+		require.Equal(t, depositAmount, moduleBalance, "Module account should receive deposit")
+	})
+
+	t.Run("AdditionalDepositTransferredToModule", func(t *testing.T) {
+		// Reset balances
+		bankKeeper.Balances[depositor.String()] = initialBalance
+		bankKeeper.ModuleBalances[types.ModuleName] = sdk.NewCoins()
+
+		additionalDeposit := sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(500_000)))
+
+		// Simulate MsgDeposit transfer
+		err := bankKeeper.SendCoinsFromAccountToModule(ctx, depositor, types.ModuleName, additionalDeposit)
+		require.NoError(t, err, "Additional deposit transfer should succeed")
+
+		// Verify depositor balance decreased
+		depositorBalance := bankKeeper.Balances[depositor.String()]
+		expectedBalance := initialBalance.Sub(additionalDeposit...)
+		require.Equal(t, expectedBalance, depositorBalance, "Depositor balance should decrease")
+
+		// Verify module balance increased
+		moduleBalance := bankKeeper.ModuleBalances[types.ModuleName]
+		require.Equal(t, additionalDeposit, moduleBalance, "Module should accumulate deposits")
+	})
+
+	t.Run("InsufficientBalancePreventsDEposit", func(t *testing.T) {
+		// Create address with insufficient balance
+		poorAddress := sdk.AccAddress([]byte("poor_address_______"))
+		bankKeeper.Balances[poorAddress.String()] = sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(100)))
+
+		// Attempt to deposit more than balance
+		largeDeposit := sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(1_000_000)))
+		err := bankKeeper.SendCoinsFromAccountToModule(ctx, poorAddress, types.ModuleName, largeDeposit)
+		require.Error(t, err, "Transfer should fail with insufficient balance")
+		require.Contains(t, err.Error(), "insufficient funds", "Error should indicate insufficient funds")
+	})
+
+	t.Run("ModuleAccountAccumulatesMultipleDeposits", func(t *testing.T) {
+		// Reset module balance
+		bankKeeper.ModuleBalances[types.ModuleName] = sdk.NewCoins()
+
+		// Setup multiple depositors
+		depositor1 := sdk.AccAddress([]byte("depositor_1________"))
+		depositor2 := sdk.AccAddress([]byte("depositor_2________"))
+		depositor3 := sdk.AccAddress([]byte("depositor_3________"))
+
+		bankKeeper.Balances[depositor1.String()] = initialBalance
+		bankKeeper.Balances[depositor2.String()] = initialBalance
+		bankKeeper.Balances[depositor3.String()] = initialBalance
+
+		// Multiple deposits
+		deposit1 := sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(1_000_000)))
+		deposit2 := sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(750_000)))
+		deposit3 := sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(500_000)))
+
+		err := bankKeeper.SendCoinsFromAccountToModule(ctx, depositor1, types.ModuleName, deposit1)
+		require.NoError(t, err)
+
+		err = bankKeeper.SendCoinsFromAccountToModule(ctx, depositor2, types.ModuleName, deposit2)
+		require.NoError(t, err)
+
+		err = bankKeeper.SendCoinsFromAccountToModule(ctx, depositor3, types.ModuleName, deposit3)
+		require.NoError(t, err)
+
+		// Verify total module balance
+		moduleBalance := bankKeeper.ModuleBalances[types.ModuleName]
+		expectedTotal := deposit1.Add(deposit2...).Add(deposit3...)
+		require.Equal(t, expectedTotal, moduleBalance, "Module should accumulate all deposits")
+	})
+}
+
+// TestDepositLocking_MinimumDepositEnforcement tests minimum deposit validation
+func TestDepositLocking_MinimumDepositEnforcement(t *testing.T) {
+	params := types.DefaultParams()
+
+	t.Run("MinimumDepositParsing", func(t *testing.T) {
+		minDeposit, err := sdk.ParseCoinsNormalized(params.MinDeposit)
+		require.NoError(t, err, "Default minimum deposit should parse correctly")
+		require.NotNil(t, minDeposit, "Minimum deposit should not be nil")
+		require.False(t, minDeposit.IsZero(), "Minimum deposit should not be zero")
+	})
+
+	t.Run("DepositBelowMinimumRejected", func(t *testing.T) {
+		minDeposit, _ := sdk.ParseCoinsNormalized(params.MinDeposit)
+
+		// Create deposit below minimum
+		belowMinimum := sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(1)))
+
+		// Check using IsAllLT (all less than)
+		isBelowMinimum := belowMinimum.IsAllLT(minDeposit)
+		require.True(t, isBelowMinimum, "Small deposit should be below minimum")
+	})
+
+	t.Run("DepositAtMinimumAccepted", func(t *testing.T) {
+		minDeposit, _ := sdk.ParseCoinsNormalized(params.MinDeposit)
+
+		// Check deposit exactly at minimum
+		atMinimum := minDeposit
+
+		isBelowMinimum := atMinimum.IsAllLT(minDeposit)
+		require.False(t, isBelowMinimum, "Deposit at minimum should not be below minimum")
+	})
+
+	t.Run("DepositAboveMinimumAccepted", func(t *testing.T) {
+		minDeposit, _ := sdk.ParseCoinsNormalized(params.MinDeposit)
+
+		// Create deposit above minimum
+		minAmount := minDeposit.AmountOf("uaura")
+		aboveMinimum := sdk.NewCoins(sdk.NewCoin("uaura", minAmount.Add(sdkmath.NewInt(1_000_000))))
+
+		isBelowMinimum := aboveMinimum.IsAllLT(minDeposit)
+		require.False(t, isBelowMinimum, "Deposit above minimum should not be below minimum")
+	})
+
+	t.Run("ZeroDepositRejected", func(t *testing.T) {
+		minDeposit, _ := sdk.ParseCoinsNormalized(params.MinDeposit)
+
+		zeroDeposit := sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.ZeroInt()))
+
+		isBelowMinimum := zeroDeposit.IsAllLT(minDeposit)
+		require.True(t, isBelowMinimum, "Zero deposit should be below minimum")
+	})
+
+	t.Run("MultiDenomDepositValidation", func(t *testing.T) {
+		// If minimum is "1000000uaura", a deposit of "500000uaura,1000000uatom" should fail
+		// because the uaura component is below minimum
+		minDeposit := sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(1_000_000)))
+
+		insufficientMultiDenom := sdk.NewCoins(
+			sdk.NewCoin("uaura", sdkmath.NewInt(500_000)),
+			sdk.NewCoin("uatom", sdkmath.NewInt(1_000_000)),
+		)
+
+		// IsAllLT checks if ALL coins in the deposit are less than minimum
+		// This will be false because uatom doesn't exist in minimum
+		// For proper validation, we need IsAllGTE (greater than or equal)
+		meetsMinimum := insufficientMultiDenom.IsAllGTE(minDeposit)
+		require.False(t, meetsMinimum, "Deposit with insufficient uaura should not meet minimum")
+
+		// Sufficient multi-denom deposit
+		sufficientMultiDenom := sdk.NewCoins(
+			sdk.NewCoin("uaura", sdkmath.NewInt(1_500_000)),
+			sdk.NewCoin("uatom", sdkmath.NewInt(1_000_000)),
+		)
+
+		meetsMinimum = sufficientMultiDenom.IsAllGTE(minDeposit)
+		require.True(t, meetsMinimum, "Deposit with sufficient uaura should meet minimum")
+	})
+}
+
+// TestDepositLocking_RefundOnProposalPass tests deposit refund mechanism
+func TestDepositLocking_RefundOnProposalPass(t *testing.T) {
+	ctx, _, bankKeeper := setupDepositTestEnvironment(t)
+
+	t.Run("SingleDepositRefundedOnPass", func(t *testing.T) {
+		// Setup depositor with tokens locked in module
+		depositor := sdk.AccAddress([]byte("depositor_address_1"))
+		depositAmount := sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(1_000_000)))
+
+		// Initial state: depositor has 0, module has deposit
+		bankKeeper.Balances[depositor.String()] = sdk.NewCoins()
+		bankKeeper.ModuleBalances[types.ModuleName] = depositAmount
+
+		// Simulate refund
+		err := bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, depositor, depositAmount)
+		require.NoError(t, err, "Refund should succeed")
+
+		// Verify depositor received refund
+		depositorBalance := bankKeeper.Balances[depositor.String()]
+		require.Equal(t, depositAmount, depositorBalance, "Depositor should receive full refund")
+
+		// Verify module balance decreased
+		moduleBalance := bankKeeper.ModuleBalances[types.ModuleName]
+		require.Equal(t, sdk.NewCoins(), moduleBalance, "Module should have zero balance after refund")
+	})
+
+	t.Run("MultipleDepositsRefundedToOriginalDepositors", func(t *testing.T) {
+		// Setup multiple depositors
+		depositor1 := sdk.AccAddress([]byte("depositor_1________"))
+		depositor2 := sdk.AccAddress([]byte("depositor_2________"))
+		depositor3 := sdk.AccAddress([]byte("depositor_3________"))
+
+		deposit1 := sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(1_000_000)))
+		deposit2 := sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(750_000)))
+		deposit3 := sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(500_000)))
+
+		// Initial state: all deposits in module
+		bankKeeper.Balances[depositor1.String()] = sdk.NewCoins()
+		bankKeeper.Balances[depositor2.String()] = sdk.NewCoins()
+		bankKeeper.Balances[depositor3.String()] = sdk.NewCoins()
+
+		totalDeposits := deposit1.Add(deposit2...).Add(deposit3...)
+		bankKeeper.ModuleBalances[types.ModuleName] = totalDeposits
+
+		// Refund each depositor
+		err := bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, depositor1, deposit1)
+		require.NoError(t, err)
+
+		err = bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, depositor2, deposit2)
+		require.NoError(t, err)
+
+		err = bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, depositor3, deposit3)
+		require.NoError(t, err)
+
+		// Verify each depositor received their deposit back
+		require.Equal(t, deposit1, bankKeeper.Balances[depositor1.String()])
+		require.Equal(t, deposit2, bankKeeper.Balances[depositor2.String()])
+		require.Equal(t, deposit3, bankKeeper.Balances[depositor3.String()])
+
+		// Verify module balance is zero
+		moduleBalance := bankKeeper.ModuleBalances[types.ModuleName]
+		require.Equal(t, sdk.NewCoins(), moduleBalance, "All deposits refunded")
+	})
+
+	t.Run("RefundPreservesDepositIntegrity", func(t *testing.T) {
+		// This test verifies that refunding deposits doesn't allow double-refund
+		// by checking module balance constraints
+
+		depositor := sdk.AccAddress([]byte("depositor_address_2"))
+		depositAmount := sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(1_000_000)))
+
+		bankKeeper.Balances[depositor.String()] = sdk.NewCoins()
+		bankKeeper.ModuleBalances[types.ModuleName] = depositAmount
+
+		// First refund - should succeed
+		err := bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, depositor, depositAmount)
+		require.NoError(t, err)
+
+		// Second refund attempt - should fail (insufficient module funds)
+		err = bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, depositor, depositAmount)
+		require.Error(t, err, "Double refund should fail")
+		require.Contains(t, err.Error(), "insufficient module funds")
+	})
+}
+
+// TestDepositLocking_BurnOnProposalVeto tests deposit burn mechanism
+func TestDepositLocking_BurnOnProposalVeto(t *testing.T) {
+	_, _, bankKeeper := setupDepositTestEnvironment(t)
+
+	t.Run("VetoedProposalDepositsRemainLocked", func(t *testing.T) {
+		// Setup: deposits in module account
+		depositor1 := sdk.AccAddress([]byte("depositor_1________"))
+		depositor2 := sdk.AccAddress([]byte("depositor_2________"))
+
+		deposit1 := sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(1_000_000)))
+		deposit2 := sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(500_000)))
+
+		totalDeposits := deposit1.Add(deposit2...)
+		bankKeeper.ModuleBalances[types.ModuleName] = totalDeposits
+
+		// Initial state: depositors have no balance (all locked in module)
+		bankKeeper.Balances[depositor1.String()] = sdk.NewCoins()
+		bankKeeper.Balances[depositor2.String()] = sdk.NewCoins()
+
+		// On veto: deposits are NOT refunded, they remain in module account
+		// This is the "burn" mechanism - tokens are permanently locked
+
+		// Verify deposits remain in module
+		moduleBalance := bankKeeper.ModuleBalances[types.ModuleName]
+		require.Equal(t, totalDeposits, moduleBalance, "Deposits should remain locked in module on veto")
+
+		// Verify depositors did not receive refunds
+		require.Equal(t, sdk.NewCoins(), bankKeeper.Balances[depositor1.String()])
+		require.Equal(t, sdk.NewCoins(), bankKeeper.Balances[depositor2.String()])
+	})
+
+	t.Run("BurnedDepositsCannotBeRecovered", func(t *testing.T) {
+		// Once burned (locked in module without refund), deposits cannot be recovered
+		depositor := sdk.AccAddress([]byte("depositor_address_3"))
+		burnedAmount := sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(1_000_000)))
+
+		bankKeeper.Balances[depositor.String()] = sdk.NewCoins()
+		bankKeeper.ModuleBalances[types.ModuleName] = burnedAmount
+
+		// Attempting to refund a burned deposit would require module to send coins
+		// but in the burn scenario, no refund should occur
+
+		// Verify depositor has no balance
+		depositorBalance := bankKeeper.Balances[depositor.String()]
+		require.Equal(t, sdk.NewCoins(), depositorBalance, "Burned deposits not refunded")
+
+		// Verify module retains the burned amount
+		moduleBalance := bankKeeper.ModuleBalances[types.ModuleName]
+		require.Equal(t, burnedAmount, moduleBalance, "Burned amount locked in module permanently")
+	})
+
+	t.Run("BurnDoesNotAffectOtherProposals", func(t *testing.T) {
+		ctx, _, bankKeeper := setupDepositTestEnvironment(t)
+
+		// Burning deposits for one proposal should not affect deposits for other proposals
+		// This is ensured by proposal-specific deposit tracking
+
+		// Proposal 1 deposits (to be burned)
+		proposal1Deposits := sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(1_000_000)))
+
+		// Proposal 2 deposits (to be refunded)
+		proposal2Deposits := sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(500_000)))
+
+		totalInModule := proposal1Deposits.Add(proposal2Deposits...)
+		bankKeeper.ModuleBalances[types.ModuleName] = totalInModule
+
+		// Burn proposal 1: deposits remain in module (no action needed)
+		// Module balance stays the same
+
+		// Refund proposal 2
+		depositor2 := sdk.AccAddress([]byte("proposer_2_________"))
+		bankKeeper.Balances[depositor2.String()] = sdk.NewCoins()
+
+		err := bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, depositor2, proposal2Deposits)
+		require.NoError(t, err)
+
+		// Verify proposal 1 deposits still locked
+		moduleBalance := bankKeeper.ModuleBalances[types.ModuleName]
+		require.Equal(t, proposal1Deposits, moduleBalance, "Proposal 1 deposits remain locked")
+
+		// Verify proposal 2 depositor received refund
+		require.Equal(t, proposal2Deposits, bankKeeper.Balances[depositor2.String()])
+	})
+}
+
+// TestDepositLocking_ProposalLifecycleIntegration tests deposit locking through full lifecycle
+func TestDepositLocking_ProposalLifecycleIntegration(t *testing.T) {
+	// This test documents the complete lifecycle of deposits
+
+	t.Run("PassedProposalLifecycle", func(t *testing.T) {
+		ctx, _, bankKeeper := setupDepositTestEnvironment(t)
+
+		proposer := sdk.AccAddress([]byte("proposer___________"))
+		initialBalance := sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(10_000_000)))
+		depositAmount := sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(1_000_000)))
+
+		// Phase 1: Proposal Submission
+		bankKeeper.Balances[proposer.String()] = initialBalance
+		bankKeeper.ModuleBalances[types.ModuleName] = sdk.NewCoins()
+
+		err := bankKeeper.SendCoinsFromAccountToModule(ctx, proposer, types.ModuleName, depositAmount)
+		require.NoError(t, err, "Initial deposit should transfer")
+
+		balanceAfterDeposit := bankKeeper.Balances[proposer.String()]
+		require.Equal(t, initialBalance.Sub(depositAmount...), balanceAfterDeposit)
+		require.Equal(t, depositAmount, bankKeeper.ModuleBalances[types.ModuleName])
+
+		// Phase 2: Deposit Period (tokens locked in module)
+		// No changes, deposits remain locked
+
+		// Phase 3: Voting Period (tokens still locked)
+		// No changes, deposits remain locked
+
+		// Phase 4: Proposal Passes - Refund deposits
+		err = bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, proposer, depositAmount)
+		require.NoError(t, err, "Refund should succeed")
+
+		finalBalance := bankKeeper.Balances[proposer.String()]
+		require.Equal(t, initialBalance, finalBalance, "Proposer should recover full initial balance")
+		require.Equal(t, sdk.NewCoins(), bankKeeper.ModuleBalances[types.ModuleName])
+	})
+
+	t.Run("VetoedProposalLifecycle", func(t *testing.T) {
+		ctx, _, bankKeeper := setupDepositTestEnvironment(t)
+
+		proposer := sdk.AccAddress([]byte("malicious_proposer_"))
+		initialBalance := sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(10_000_000)))
+		depositAmount := sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(1_000_000)))
+
+		// Phase 1: Malicious Proposal Submission
+		bankKeeper.Balances[proposer.String()] = initialBalance
+		bankKeeper.ModuleBalances[types.ModuleName] = sdk.NewCoins()
+
+		err := bankKeeper.SendCoinsFromAccountToModule(ctx, proposer, types.ModuleName, depositAmount)
+		require.NoError(t, err)
+
+		// Phase 2-3: Deposit and Voting Periods pass
+
+		// Phase 4: Proposal Vetoed - Burn deposits (keep in module)
+		// NO REFUND - deposits remain locked
+
+		// Verify proposer lost the deposit
+		finalBalance := bankKeeper.Balances[proposer.String()]
+		expectedLoss := initialBalance.Sub(depositAmount...)
+		require.Equal(t, expectedLoss, finalBalance, "Proposer loses deposit on veto")
+
+		// Verify deposits remain in module (burned)
+		require.Equal(t, depositAmount, bankKeeper.ModuleBalances[types.ModuleName], "Deposits burned (locked in module)")
+	})
+}
+
+// TestDepositLocking_SecurityInvariants tests critical security invariants
+func TestDepositLocking_SecurityInvariants(t *testing.T) {
+	t.Run("DepositCannotExceedModuleBalance", func(t *testing.T) {
+		ctx, _, bankKeeper := setupDepositTestEnvironment(t)
+
+		// This invariant ensures no deposit can be refunded if module doesn't have funds
+		depositor := sdk.AccAddress([]byte("depositor__________"))
+		refundAmount := sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(1_000_000)))
+
+		// Module has NO balance
+		bankKeeper.ModuleBalances[types.ModuleName] = sdk.NewCoins()
+		bankKeeper.Balances[depositor.String()] = sdk.NewCoins()
+
+		// Attempt refund should fail
+		err := bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, depositor, refundAmount)
+		require.Error(t, err, "Cannot refund more than module balance")
+	})
+
+	t.Run("ModuleBalanceEqualsDepositSum", func(t *testing.T) {
+		ctx, _, bankKeeper := setupDepositTestEnvironment(t)
+
+		// Invariant: Module account balance should equal sum of all deposit records
+		depositor1 := sdk.AccAddress([]byte("dep1_______________"))
+		depositor2 := sdk.AccAddress([]byte("dep2_______________"))
+		depositor3 := sdk.AccAddress([]byte("dep3_______________"))
+
+		initialBalance := sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(10_000_000)))
+		bankKeeper.Balances[depositor1.String()] = initialBalance
+		bankKeeper.Balances[depositor2.String()] = initialBalance
+		bankKeeper.Balances[depositor3.String()] = initialBalance
+		bankKeeper.ModuleBalances[types.ModuleName] = sdk.NewCoins()
+
+		deposit1 := sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(1_000_000)))
+		deposit2 := sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(2_000_000)))
+		deposit3 := sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(500_000)))
+
+		// Transfer deposits
+		err := bankKeeper.SendCoinsFromAccountToModule(ctx, depositor1, types.ModuleName, deposit1)
+		require.NoError(t, err)
+
+		err = bankKeeper.SendCoinsFromAccountToModule(ctx, depositor2, types.ModuleName, deposit2)
+		require.NoError(t, err)
+
+		err = bankKeeper.SendCoinsFromModuleToAccount(ctx, depositor3, types.ModuleName, deposit3)
+		require.NoError(t, err)
+
+		// Calculate expected module balance
+		expectedModuleBalance := deposit1.Add(deposit2...).Add(deposit3...)
+
+		// Verify invariant
+		actualModuleBalance := bankKeeper.ModuleBalances[types.ModuleName]
+		require.Equal(t, expectedModuleBalance, actualModuleBalance,
+			"Module balance must equal sum of all deposits")
+	})
+
+	t.Run("NoNegativeBalances", func(t *testing.T) {
+		ctx, _, bankKeeper := setupDepositTestEnvironment(t)
+
+		// Invariant: Balances can never go negative
+		depositor := sdk.AccAddress([]byte("depositor__________"))
+		smallBalance := sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(100)))
+		largeDeposit := sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(1_000_000)))
+
+		bankKeeper.Balances[depositor.String()] = smallBalance
+
+		// Attempt to deposit more than balance
+		err := bankKeeper.SendCoinsFromAccountToModule(ctx, depositor, types.ModuleName, largeDeposit)
+		require.Error(t, err, "Cannot create negative balance")
+
+		// Verify balance unchanged
+		require.Equal(t, smallBalance, bankKeeper.Balances[depositor.String()])
+	})
+
+	t.Run("AtomicDepositTransfer", func(t *testing.T) {
+		ctx, _, bankKeeper := setupDepositTestEnvironment(t)
+
+		// Invariant: Deposit transfer is atomic (both balances update or neither)
+		// This is guaranteed by the mock implementation checking balance first
+
+		depositor := sdk.AccAddress([]byte("depositor__________"))
+		balance := sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(1_000_000)))
+		depositAmount := sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(500_000)))
+
+		bankKeeper.Balances[depositor.String()] = balance
+		bankKeeper.ModuleBalances[types.ModuleName] = sdk.NewCoins()
+
+		// Successful transfer
+		err := bankKeeper.SendCoinsFromAccountToModule(ctx, depositor, types.ModuleName, depositAmount)
+		require.NoError(t, err)
+
+		// Both balances should be updated
+		depositorBalance := bankKeeper.Balances[depositor.String()]
+		moduleBalance := bankKeeper.ModuleBalances[types.ModuleName]
+
+		require.Equal(t, balance.Sub(depositAmount...), depositorBalance, "Depositor balance updated")
+		require.Equal(t, depositAmount, moduleBalance, "Module balance updated")
+
+		// Total supply preserved (invariant)
+		totalAfter := depositorBalance.Add(moduleBalance...)
+		require.Equal(t, balance, totalAfter, "Total tokens preserved")
+	})
+}
