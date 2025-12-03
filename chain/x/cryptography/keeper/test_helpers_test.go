@@ -20,6 +20,13 @@ import (
 	"github.com/aequitas/aura/chain/x/cryptography/types"
 )
 
+// Test addresses with proper bech32 checksums
+var (
+	testAddr1 = sdk.AccAddress([]byte("test_address_1______")).String()
+	testAddr2 = sdk.AccAddress([]byte("test_address_2______")).String()
+	testAddr3 = sdk.AccAddress([]byte("test_address_3______")).String()
+)
+
 func setupKeeper(t *testing.T) (keeper.Keeper, context.Context) {
 	storeKey := storetypes.NewKVStoreKey(types.ModuleName)
 
