@@ -26,6 +26,7 @@ type (
 	TaxReportList             = pb.TaxReportList
 	TaxTransaction            = pb.TaxTransaction
 	ComplianceParams          = pb.ComplianceParams
+	RateLimitEntry            = pb.RateLimitEntry
 
 	// Query types
 	QueryKYCRecordRequest           = pb.QueryKYCRecordRequest

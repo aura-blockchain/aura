@@ -384,3 +384,84 @@ func TestMsgRecordGDPRConsent_WithdrawalAuditTrail(t *testing.T) {
 	require.False(t, consent2.Consented)
 	require.NotNil(t, consent2.ConsentWithdrawnAt)
 }
+
+// TestGenerateTaxReportValidFilePath tests that valid file paths are accepted
+func TestGenerateTaxReportValidFilePath(t *testing.T) {
+	keeper, ctx := setupTestKeeper(t)
+	server := NewMsgServer(keeper)
+
+	address := sdk.AccAddress([]byte("test_address_123456")).String()
+
+	req := &types.MsgGenerateTaxReport{
+		Address:      address,
+		TaxYear:      "2023",
+		Jurisdiction: "US",
+		ReportType:   "1099-MISC",
+		FilePath:     "reports/tax_2023.pdf",
+	}
+
+	resp, err := server.GenerateTaxReport(sdk.WrapSDKContext(ctx), req)
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	require.NotEmpty(t, resp.ReportId)
+	require.Equal(t, "reports/tax_2023.pdf", resp.FilePath)
+}
+
+// TestGenerateTaxReportPathTraversalBlocked tests that path traversal attacks are blocked
+func TestGenerateTaxReportPathTraversalBlocked(t *testing.T) {
+	keeper, ctx := setupTestKeeper(t)
+	server := NewMsgServer(keeper)
+
+	address := sdk.AccAddress([]byte("test_address_123456")).String()
+
+	attackPaths := []string{
+		"../../../etc/passwd",
+		"/etc/shadow",
+		"C:\\Windows\\System32\\config\\SAM",
+		"reports/../../etc/passwd",
+		"report<script>.pdf",
+		"report|malicious.sh",
+		".ssh/id_rsa",
+		"report\x00.pdf",
+		"reports//double//slash.txt",
+	}
+
+	for _, attackPath := range attackPaths {
+		t.Run(attackPath, func(t *testing.T) {
+			req := &types.MsgGenerateTaxReport{
+				Address:      address,
+				TaxYear:      "2023",
+				Jurisdiction: "US",
+				ReportType:   "1099-MISC",
+				FilePath:     attackPath,
+			}
+
+			resp, err := server.GenerateTaxReport(sdk.WrapSDKContext(ctx), req)
+			require.Error(t, err, "Should reject malicious path: %s", attackPath)
+			require.Nil(t, resp)
+			require.Contains(t, err.Error(), "invalid file path")
+		})
+	}
+}
+
+// TestGenerateTaxReportEmptyFilePathAllowed tests that empty file path is allowed (optional field)
+func TestGenerateTaxReportEmptyFilePathAllowed(t *testing.T) {
+	keeper, ctx := setupTestKeeper(t)
+	server := NewMsgServer(keeper)
+
+	address := sdk.AccAddress([]byte("test_address_123456")).String()
+
+	req := &types.MsgGenerateTaxReport{
+		Address:      address,
+		TaxYear:      "2023",
+		Jurisdiction: "US",
+		ReportType:   "1099-MISC",
+		FilePath:     "", // Empty file path should be allowed
+	}
+
+	resp, err := server.GenerateTaxReport(sdk.WrapSDKContext(ctx), req)
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	require.NotEmpty(t, resp.ReportId)
+	require.Empty(t, resp.FilePath)
+}
