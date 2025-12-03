@@ -343,6 +343,8 @@ func (k *Keeper) ExportGenesis(ctx sdk.Context) (*types.GenesisState, error) {
 		ValidatorRotations:       validatorRotations,
 		IdentityRecords:          identityRecords,
 		CredentialRevocations:    credentialRevocations,
+		DidKeyRotations:          didKeyRotations,
+		DidKeyHistories:          didKeyHistories,
 		ChangeRequests:           changeRequests,
 		ChangeHistory:            changeHistory,
 		IdentityChangesSuspended: suspended,

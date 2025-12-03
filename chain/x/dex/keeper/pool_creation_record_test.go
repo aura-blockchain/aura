@@ -315,21 +315,23 @@ func TestPoolCreationRecord_Integration(t *testing.T) {
 	creator := suite.TestAccs[0]
 	creatorStr := creator.String()
 
-	// Setup: Fund creator account
+	// Setup: Fund creator account with sufficient balance for security checks
 	initialCoins := sdk.NewCoins(
-		sdk.NewCoin("uaura", sdkmath.NewInt(10000000)),
-		sdk.NewCoin("usdt", sdkmath.NewInt(10000000)),
+		sdk.NewCoin("uaura", sdkmath.NewInt(5000000000)),
+		sdk.NewCoin("usdt", sdkmath.NewInt(5000000000)),
 	)
 	suite.FundAccount(suite.BankKeeper, ctx, creator, initialCoins)
 
-	// Create pool (this should automatically record pool creation)
-	pool, lpTokens, err := keeper.CreatePool(
+	// Create pool using SecureCreatePool (includes audit trail recording)
+	// Production code MUST use SecureCreatePool, not CreatePool directly
+	// Note: SecureCreatePool enforces minimum liquidity (1_000_000_000)
+	pool, lpTokens, err := keeper.SecureCreatePool(
 		ctx,
 		creatorStr,
 		"uaura",
 		"usdt",
-		sdk.NewCoin("uaura", sdkmath.NewInt(1000000)),
-		sdk.NewCoin("usdt", sdkmath.NewInt(1000000)),
+		sdk.NewCoin("uaura", sdkmath.NewInt(2000000000)),
+		sdk.NewCoin("usdt", sdkmath.NewInt(2000000000)),
 	)
 
 	require.NoError(t, err, "Pool creation should succeed")
