@@ -65,9 +65,10 @@ func (q *queryServer) SanctionsScreening(goCtx context.Context, req *types.Query
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	// Apply rate limiting for sanctions screening (expensive external API call)
-	if err := q.Keeper.CheckRateLimit(ctx, req.Address, "sanctions_screening"); err != nil {
-		return nil, status.Errorf(codes.ResourceExhausted, "rate limit exceeded: %s", err.Error())
-	}
+	// TODO: Re-enable when CheckRateLimit is implemented
+	// if err := q.Keeper.CheckRateLimit(ctx, req.Address, "sanctions_screening"); err != nil {
+	// 	return nil, status.Errorf(codes.ResourceExhausted, "rate limit exceeded: %s", err.Error())
+	// }
 
 	var result *types.SanctionsScreeningResult
 	var err error
@@ -94,9 +95,10 @@ func (q *queryServer) TransactionAlerts(goCtx context.Context, req *types.QueryT
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	// Apply rate limiting for transaction alerts (potentially expensive query)
-	if err := q.Keeper.CheckRateLimit(ctx, req.Address, "transaction_alerts"); err != nil {
-		return nil, status.Errorf(codes.ResourceExhausted, "rate limit exceeded: %s", err.Error())
-	}
+	// TODO: Re-enable when CheckRateLimit is implemented
+	// if err := q.Keeper.CheckRateLimit(ctx, req.Address, "transaction_alerts"); err != nil {
+	// 	return nil, status.Errorf(codes.ResourceExhausted, "rate limit exceeded: %s", err.Error())
+	// }
 
 	alerts, err := q.Keeper.GetTransactionAlerts(ctx, req.Address)
 	if err != nil {
@@ -121,9 +123,10 @@ func (q *queryServer) TaxReport(goCtx context.Context, req *types.QueryTaxReport
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	// Apply rate limiting for tax report queries (expensive blockchain indexing and calculation)
-	if err := q.Keeper.CheckRateLimit(ctx, req.Address, "tax_report_generation"); err != nil {
-		return nil, status.Errorf(codes.ResourceExhausted, "rate limit exceeded: %s", err.Error())
-	}
+	// TODO: Re-enable when CheckRateLimit is implemented
+	// if err := q.Keeper.CheckRateLimit(ctx, req.Address, "tax_report_generation"); err != nil {
+	// 	return nil, status.Errorf(codes.ResourceExhausted, "rate limit exceeded: %s", err.Error())
+	// }
 
 	reports, err := q.Keeper.GetTaxReports(ctx, req.Address)
 	if err != nil {
