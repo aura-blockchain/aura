@@ -1064,3 +1064,9 @@ func (k Keeper) validateLPTokenInvariant(pool *types.LiquidityPool) error {
 
 	return nil
 }
+
+// ValidateLPTokenInvariantExported is an exported wrapper for validateLPTokenInvariant
+// for use in tests. This allows test packages to validate the LP token invariant.
+func (k Keeper) ValidateLPTokenInvariantExported(pool *types.LiquidityPool) error {
+	return k.validateLPTokenInvariant(pool)
+}
