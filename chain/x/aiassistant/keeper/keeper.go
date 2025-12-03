@@ -248,7 +248,13 @@ func (k Keeper) mustGetAssistant(ctx sdk.Context, addr string) (*types.Assistant
 		return nil, types.ErrAssistantNotFound
 	}
 	var assistant types.Assistant
-	k.cdc.MustUnmarshal(bz, &assistant)
+	if err := k.cdc.Unmarshal(bz, &assistant); err != nil {
+		ctx.Logger().Error("failed to unmarshal assistant",
+			"address", addr,
+			"error", err,
+			"data_len", len(bz))
+		return nil, err
+	}
 	return &assistant, nil
 }
 
@@ -259,7 +265,13 @@ func (k Keeper) GetAssistant(ctx sdk.Context, addr string) (*types.Assistant, bo
 		return nil, false
 	}
 	var assistant types.Assistant
-	k.cdc.MustUnmarshal(bz, &assistant)
+	if err := k.cdc.Unmarshal(bz, &assistant); err != nil {
+		ctx.Logger().Error("failed to unmarshal assistant",
+			"address", addr,
+			"error", err,
+			"data_len", len(bz))
+		return nil, false
+	}
 	return &assistant, true
 }
 
@@ -362,7 +374,11 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 		return def
 	}
 	var params types.Params
-	k.cdc.MustUnmarshal(store.Get(types.ParamsKey), &params)
+	if err := k.cdc.Unmarshal(store.Get(types.ParamsKey), &params); err != nil {
+		ctx.Logger().Error("failed to unmarshal ai assistant params, returning defaults",
+			"error", err)
+		return types.DefaultParams()
+	}
 	return params
 }
 
