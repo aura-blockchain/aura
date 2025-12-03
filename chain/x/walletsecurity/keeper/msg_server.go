@@ -3,6 +3,7 @@ package keeper
 import (
     "github.com/aequitas/aura/chain/x/common/determinism"
 	"context"
+	"crypto/sha256"
 	"fmt"
 	"time"
 
@@ -777,14 +778,26 @@ func (ms msgServer) EnrollBiometric(goCtx context.Context, msg *wspb.MsgEnrollBi
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
+	// CRITICAL: Validate enrollment data is provided
+	if len(msg.EnrollmentData) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "enrollment data is required")
+	}
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// CRITICAL: Hash the enrollment data for storage
+	// This prevents storing raw biometric data on-chain
+	enrollmentHash := sha256.Sum256(msg.EnrollmentData)
+	enrollmentHashStr := fmt.Sprintf("%x", enrollmentHash)
 
 	auth := &wspb.BiometricAuth{
 		WalletId:       msg.WalletId,
 		Type:           msg.Type,
+		EnrollmentHash: enrollmentHashStr, // Store hash, not raw data
 		EnrolledAt:     timestamppb.Now(),
 		Enabled:        true,
 		FailedAttempts: 0,
+		LockedOut:      false,
 	}
 
 	authBytes, err := ms.Keeper.cdc.Marshal(auth)
@@ -812,15 +825,143 @@ func (ms msgServer) AuthenticateBiometric(goCtx context.Context, msg *wspb.MsgAu
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	_ = sdk.UnwrapSDKContext(goCtx)
+	// CRITICAL: Verify transaction signer matches claimed wallet address
+	signers := msg.GetSigners()
+	if len(signers) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "no signers")
+	}
 
-	// Simplified authentication
-	authenticated := len(msg.BiometricProof) > 0
+	walletAddr, err := sdk.AccAddressFromBech32(msg.WalletId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid wallet address")
+	}
+
+	if !signers[0].Equals(walletAddr) {
+		return nil, status.Error(codes.PermissionDenied, "signer does not match wallet")
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// CRITICAL: Minimum biometric proof size validation
+	const MinBiometricProofSize = 64 // Minimum size for valid proof
+	if len(msg.BiometricProof) < MinBiometricProofSize {
+		return nil, status.Error(codes.InvalidArgument, "biometric proof too short")
+	}
+
+	// CRITICAL: Get registered biometric configuration
+	biometricAuthBytes, err := ms.Keeper.GetBiometricAuth(ctx, msg.WalletId)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, "biometric not configured for this wallet")
+	}
+
+	var biometricAuth wspb.BiometricAuth
+	if err := ms.Keeper.cdc.Unmarshal(biometricAuthBytes, &biometricAuth); err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	// Check if biometric authentication is enabled
+	if !biometricAuth.Enabled {
+		return nil, status.Error(codes.PermissionDenied, "biometric authentication is disabled")
+	}
+
+	// CRITICAL: Check if currently locked out
+	if biometricAuth.LockedOut {
+		now := determinism.GetBlockTime(ctx)
+		if biometricAuth.LockoutUntil != nil && now.Before(biometricAuth.LockoutUntil.AsTime()) {
+			return &wspb.MsgAuthenticateBiometricResponse{
+				Authenticated:  false,
+				FailedAttempts: biometricAuth.FailedAttempts,
+				LockedOut:      true,
+			}, nil
+		}
+		// Lockout period expired, reset
+		biometricAuth.LockedOut = false
+		biometricAuth.FailedAttempts = 0
+	}
+
+	// CRITICAL: Replay protection - check if proof was already used
+	proofHash := sha256.Sum256(msg.BiometricProof)
+	if ms.Keeper.IsBiometricProofUsed(ctx, msg.WalletId, proofHash[:]) {
+		return nil, status.Error(codes.AlreadyExists, "biometric proof already used (replay attack detected)")
+	}
+
+	// CRITICAL: Verify biometric proof against stored enrollment hash
+	authenticated := ms.Keeper.verifyBiometricTemplate(
+		biometricAuth.EnrollmentHash,
+		msg.BiometricProof,
+	)
+
+	if authenticated {
+		// CRITICAL: Mark proof as used to prevent replay attacks
+		if err := ms.Keeper.MarkBiometricProofUsed(ctx, msg.WalletId, proofHash[:]); err != nil {
+			return nil, status.Error(codes.Internal, "failed to mark proof as used")
+		}
+
+		// Reset failed attempts on successful authentication
+		biometricAuth.FailedAttempts = 0
+		biometricAuth.LastAttempt = timestamppb.New(determinism.GetBlockTime(ctx))
+
+		// Update biometric auth record
+		updatedAuthBytes, err := ms.Keeper.cdc.Marshal(&biometricAuth)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+
+		if err := ms.Keeper.SetBiometricAuth(ctx, msg.WalletId, updatedAuthBytes); err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+
+		ctx.EventManager().EmitEvent(
+			sdk.NewEvent(
+				types.EventTypeBiometricAuth,
+				sdk.NewAttribute(types.AttributeKeyWalletID, msg.WalletId),
+				sdk.NewAttribute(types.AttributeKeyStatus, "success"),
+			),
+		)
+
+		return &wspb.MsgAuthenticateBiometricResponse{
+			Authenticated:  true,
+			FailedAttempts: 0,
+			LockedOut:      false,
+		}, nil
+	}
+
+	// Authentication failed - increment failed attempts
+	biometricAuth.FailedAttempts++
+	biometricAuth.LastAttempt = timestamppb.New(determinism.GetBlockTime(ctx))
+
+	// CRITICAL: Lock out after max failed attempts (e.g., 5)
+	const MaxFailedAttempts = 5
+	const LockoutDuration = 30 * time.Minute
+
+	if biometricAuth.FailedAttempts >= MaxFailedAttempts {
+		biometricAuth.LockedOut = true
+		biometricAuth.LockoutUntil = timestamppb.New(determinism.GetBlockTime(ctx).Add(LockoutDuration))
+	}
+
+	// Update biometric auth record with incremented failed attempts
+	updatedAuthBytes, err := ms.Keeper.cdc.Marshal(&biometricAuth)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	if err := ms.Keeper.SetBiometricAuth(ctx, msg.WalletId, updatedAuthBytes); err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			types.EventTypeBiometricAuth,
+			sdk.NewAttribute(types.AttributeKeyWalletID, msg.WalletId),
+			sdk.NewAttribute(types.AttributeKeyStatus, "failed"),
+			sdk.NewAttribute("failed_attempts", fmt.Sprintf("%d", biometricAuth.FailedAttempts)),
+		),
+	)
 
 	return &wspb.MsgAuthenticateBiometricResponse{
-		Authenticated:  authenticated,
-		FailedAttempts: 0,
-		LockedOut:      false,
+		Authenticated:  false,
+		FailedAttempts: biometricAuth.FailedAttempts,
+		LockedOut:      biometricAuth.LockedOut,
 	}, nil
 }
 

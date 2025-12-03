@@ -2,6 +2,8 @@ package keeper
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"strings"
@@ -684,4 +686,59 @@ func (k Keeper) CheckSpendingLimit(ctx context.Context, walletID, denom, amount 
 
 	trackSpendingLimit(ctx, walletID, denom, amount, types.AttributeValueStatusAllowed, "accepted")
 	return nil
+}
+
+// IsBiometricProofUsed checks if a biometric proof hash has already been used (replay protection)
+func (k Keeper) IsBiometricProofUsed(ctx context.Context, walletID string, proofHash []byte) bool {
+	store := k.getStore(ctx)
+	key := types.GetBiometricProofKey(walletID, proofHash)
+	value, _ := store.Get(key)
+	return value != nil
+}
+
+// MarkBiometricProofUsed marks a biometric proof hash as used (replay protection)
+func (k Keeper) MarkBiometricProofUsed(ctx context.Context, walletID string, proofHash []byte) error {
+	store := k.getStore(ctx)
+	key := types.GetBiometricProofKey(walletID, proofHash)
+
+	// Store with timestamp and set TTL for cleanup (e.g., 24 hours)
+	// In production, implement TTL cleanup or use a bounded sliding window
+	timestamp := determinism.GetBlockTime(ctx).Unix()
+	value := []byte(fmt.Sprintf("%d", timestamp))
+
+	store.Set(key, value)
+	return nil
+}
+
+// verifyBiometricTemplate verifies a biometric proof against the stored enrollment hash
+//
+// Security considerations:
+//   - Uses SHA-256 to hash the biometric proof
+//   - Compares against the enrollment hash stored during enrollment
+//   - In production, this should use a more sophisticated biometric matching algorithm
+//     with fuzzy matching, liveness detection, and anti-spoofing measures
+//   - The current implementation provides replay protection and basic verification
+//
+// Parameters:
+//   - enrollmentHash: The hash stored during biometric enrollment
+//   - biometricProof: The raw biometric proof data to verify
+//
+// Returns:
+//   - bool: true if verification succeeds, false otherwise
+func (k Keeper) verifyBiometricTemplate(enrollmentHash string, biometricProof []byte) bool {
+	// CRITICAL: Hash the provided proof
+	proofHash := sha256.Sum256(biometricProof)
+	proofHashStr := hex.EncodeToString(proofHash[:])
+
+	// CRITICAL: Compare against stored enrollment hash
+	// In production biometric systems, this would use:
+	// 1. Fuzzy matching algorithms (e.g., for fingerprints, facial recognition)
+	// 2. Liveness detection (prevent photo/video spoofing)
+	// 3. Anti-spoofing measures (detect fake fingerprints, deepfakes)
+	// 4. Secure enclave verification (TEE, SGX, Keychain)
+	// 5. Biometric template matching with threshold scoring
+	//
+	// For blockchain consensus determinism, we use exact hash matching
+	// Real-world implementation should delegate to secure hardware (TPM, Secure Enclave)
+	return proofHashStr == enrollmentHash
 }

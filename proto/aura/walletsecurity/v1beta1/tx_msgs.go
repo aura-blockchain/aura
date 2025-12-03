@@ -17,6 +17,8 @@ var (
 	_ sdk.Msg = &MsgVerifyDomain{}
 	_ sdk.Msg = &MsgSetSpendingLimit{}
 	_ sdk.Msg = &MsgConfigureSession{}
+	_ sdk.Msg = &MsgEnrollBiometric{}
+	_ sdk.Msg = &MsgAuthenticateBiometric{}
 )
 
 // GetSigners implementations for wallet security messages
@@ -106,6 +108,22 @@ func (msg *MsgSetSpendingLimit) GetSigners() []sdk.AccAddress {
 
 func (msg *MsgConfigureSession) GetSigners() []sdk.AccAddress {
 	addr, err := sdk.AccAddressFromBech32(msg.Owner)
+	if err != nil {
+		panic(err)
+	}
+	return []sdk.AccAddress{addr}
+}
+
+func (msg *MsgEnrollBiometric) GetSigners() []sdk.AccAddress {
+	addr, err := sdk.AccAddressFromBech32(msg.WalletId)
+	if err != nil {
+		panic(err)
+	}
+	return []sdk.AccAddress{addr}
+}
+
+func (msg *MsgAuthenticateBiometric) GetSigners() []sdk.AccAddress {
+	addr, err := sdk.AccAddressFromBech32(msg.WalletId)
 	if err != nil {
 		panic(err)
 	}

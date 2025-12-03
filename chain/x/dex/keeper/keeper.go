@@ -9,6 +9,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	"github.com/aequitas/aura/chain/x/common/security"
 	"github.com/aequitas/aura/chain/x/dex/types"
 )
 
@@ -25,6 +26,14 @@ type Keeper struct {
 	bankKeeper    types.BankKeeper
 	accountKeeper types.AccountKeeper
 	vcKeeper      types.VCRegistryKeeper // For IR verification check
+
+	// Security primitives from common security library
+	reentrancyGuard *security.ReentrancyGuard
+	pauseGuard      *security.PauseGuard
+	inputValidator  *security.InputValidator
+	safeMath        *security.SafeMath
+	gasLimitGuard   *security.GasLimitGuard
+	accessControl   *security.AccessControl
 }
 
 // NewKeeper creates a new dex Keeper instance
@@ -41,6 +50,14 @@ func NewKeeper(
 		bankKeeper:    bankKeeper,
 		accountKeeper: accountKeeper,
 		vcKeeper:      vcKeeper,
+
+		// Initialize security primitives
+		reentrancyGuard: security.NewReentrancyGuard(),
+		pauseGuard:      security.NewPauseGuard(""), // Admin will be set via params
+		inputValidator:  security.NewInputValidator(),
+		safeMath:        security.NewSafeMath(),
+		gasLimitGuard:   security.NewGasLimitGuard(1_000_000), // 1M gas default
+		accessControl:   security.NewAccessControl([]string{}), // Admins set via params
 	}
 }
 
@@ -363,9 +380,17 @@ func (k Keeper) GetSpotPrice(ctx sdk.Context, poolID, baseDenom, quoteDenom stri
 }
 
 // CalculateSwapFee returns the fee amount based on current params.
+//
+// SECURITY: This function uses SafeMulDec to prevent integer overflow attacks
+// where user-controlled amounts could be crafted to:
+// - Cause overflow resulting in zero/negative fees (protocol revenue loss)
+// - Wrap around to produce incorrect fee amounts (theft)
+//
+// All fee calculations MUST use overflow-safe arithmetic.
 func (k Keeper) CalculateSwapFee(ctx sdk.Context, amount sdkmath.Int) (sdkmath.Int, error) {
-	if !amount.IsPositive() {
-		return sdkmath.ZeroInt(), fmt.Errorf("amount must be positive")
+	// Validate input is positive
+	if err := types.CheckPositive(amount, "swap amount"); err != nil {
+		return sdkmath.ZeroInt(), err
 	}
 
 	params := k.GetParams(ctx)
@@ -374,10 +399,22 @@ func (k Keeper) CalculateSwapFee(ctx sdk.Context, amount sdkmath.Int) (sdkmath.I
 		return sdkmath.ZeroInt(), fmt.Errorf("invalid trading fee: %w", err)
 	}
 
-	fee := feeDec.Mul(amount.ToLegacyDec()).TruncateInt()
-	if fee.IsZero() {
+	// Validate fee rate is non-negative
+	if feeDec.IsNegative() {
+		return sdkmath.ZeroInt(), fmt.Errorf("fee rate cannot be negative: %s", feeDec.String())
+	}
+
+	// Use safe multiplication to prevent overflow
+	fee, err := types.SafeMulDec(amount, feeDec)
+	if err != nil {
+		return sdkmath.ZeroInt(), fmt.Errorf("fee calculation overflow: %w", err)
+	}
+
+	// Ensure minimum fee of 1 if non-zero
+	if fee.IsZero() && !feeDec.IsZero() {
 		return sdkmath.NewInt(1), nil
 	}
+
 	return fee, nil
 }
 

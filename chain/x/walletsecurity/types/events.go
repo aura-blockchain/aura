@@ -12,6 +12,7 @@ const (
 	EventTypeSessionLocked             = "session_locked"
 	EventTypeSessionTerminated         = "session_terminated"
 	EventTypeEnrollBiometric           = "enroll_biometric"
+	EventTypeBiometricAuth             = "biometric_auth"
 	EventTypeRegisterHardwareWallet    = "register_hardware_wallet"
 	EventTypeSignMultiSigTx            = "sign_multisig_tx"
 	EventTypeVerifyDomain              = "verify_domain"

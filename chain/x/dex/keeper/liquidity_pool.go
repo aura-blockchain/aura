@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"fmt"
 	"math/big"
 	"strings"
 	"time"
@@ -37,6 +38,17 @@ func (k Keeper) CreatePool(
 	amountA sdk.Coin,
 	amountB sdk.Coin,
 ) (*types.LiquidityPool, sdkmath.Int, error) {
+	// SECURITY CHECK 1: Pause Guard - Check if DEX module is paused
+	if err := k.pauseGuard.CheckNotPaused(); err != nil {
+		return nil, sdkmath.ZeroInt(), errors.Wrap(err, "dex module paused")
+	}
+
+	// SECURITY CHECK 2: Reentrancy Guard - Prevent reentrancy attacks
+	if err := k.reentrancyGuard.Enter(); err != nil {
+		return nil, sdkmath.ZeroInt(), errors.Wrap(err, "reentrancy detected in CreatePool")
+	}
+	defer k.reentrancyGuard.Exit()
+
 	// Generate pool ID
 	poolID := k.GeneratePoolID(denomA, denomB)
 
@@ -80,9 +92,17 @@ func (k Keeper) CreatePool(
 
 	// Calculate initial LP tokens using geometric mean (from Python line 78)
 	// lp_tokens = (xai_amount * other_amount) ** 0.5
-	initialLpTokens := sdkmath.NewIntFromBigInt(new(big.Int).Sqrt(
-		amountA.Amount.Mul(amountB.Amount).BigInt(),
-	))
+	//
+	// SECURITY: Use SafeMul to prevent overflow in initial pool creation
+	// where large amounts could cause multiplication overflow
+	product, err := types.SafeMul(amountA.Amount, amountB.Amount)
+	if err != nil {
+		return nil, sdkmath.ZeroInt(), errors.Wrap(
+			types.ErrInvalidRequest,
+			fmt.Sprintf("initial liquidity calculation overflow: %v", err),
+		)
+	}
+	initialLpTokens := sdkmath.NewIntFromBigInt(new(big.Int).Sqrt(product.BigInt()))
 
 	// SECURITY: Burn minimum liquidity to prevent first depositor inflation attack
 	// The first depositor attack allows manipulation of LP token value through donation:
@@ -167,6 +187,17 @@ func (k Keeper) AddLiquidity(
 	amountA sdk.Coin,
 	amountB sdk.Coin,
 ) (sdkmath.Int, sdkmath.LegacyDec, error) {
+	// SECURITY CHECK 1: Pause Guard - Check if DEX module is paused
+	if err := k.pauseGuard.CheckNotPaused(); err != nil {
+		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), errors.Wrap(err, "dex module paused")
+	}
+
+	// SECURITY CHECK 2: Reentrancy Guard - Prevent reentrancy attacks
+	if err := k.reentrancyGuard.Enter(); err != nil {
+		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), errors.Wrap(err, "reentrancy detected in AddLiquidity")
+	}
+	defer k.reentrancyGuard.Exit()
+
 	// Get pool
 	pool := k.GetPool(ctx, poolID)
 	if pool == nil {
@@ -310,6 +341,17 @@ func (k Keeper) RemoveLiquidity(
 	poolID string,
 	lpTokens sdkmath.Int,
 ) (sdk.Coin, sdk.Coin, error) {
+	// SECURITY CHECK 1: Pause Guard - Check if DEX module is paused
+	if err := k.pauseGuard.CheckNotPaused(); err != nil {
+		return sdk.Coin{}, sdk.Coin{}, errors.Wrap(err, "dex module paused")
+	}
+
+	// SECURITY CHECK 2: Reentrancy Guard - Prevent reentrancy attacks
+	if err := k.reentrancyGuard.Enter(); err != nil {
+		return sdk.Coin{}, sdk.Coin{}, errors.Wrap(err, "reentrancy detected in RemoveLiquidity")
+	}
+	defer k.reentrancyGuard.Exit()
+
 	// Get pool
 	pool := k.GetPool(ctx, poolID)
 	if pool == nil {
@@ -436,6 +478,17 @@ func (k Keeper) SwapExactIn(
 	minAmountOut sdkmath.Int,
 	maxSlippageBps uint64,
 ) (sdkmath.Int, sdkmath.LegacyDec, sdkmath.LegacyDec, error) {
+	// SECURITY CHECK 1: Pause Guard - Check if DEX module is paused
+	if err := k.pauseGuard.CheckNotPaused(); err != nil {
+		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec(), errors.Wrap(err, "dex module paused")
+	}
+
+	// SECURITY CHECK 2: Reentrancy Guard - Prevent reentrancy attacks
+	if err := k.reentrancyGuard.Enter(); err != nil {
+		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec(), errors.Wrap(err, "reentrancy detected in SwapExactIn")
+	}
+	defer k.reentrancyGuard.Exit()
+
 	// Validate non-zero input
 	if coinIn.Amount.IsZero() {
 		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec(), errors.Wrap(
@@ -520,7 +573,16 @@ func (k Keeper) SwapExactIn(
 	// new_xai_reserve = self.xai_reserve + xai_after_fee
 	// new_other_reserve = k / new_xai_reserve
 	// other_output = self.other_reserve - new_other_reserve
-	k_constant := reserveIn.Mul(reserveOut)
+	//
+	// SECURITY: Use SafeMul to prevent overflow when calculating k = x * y
+	// Large pool reserves could overflow, breaking the AMM invariant
+	k_constant, err := types.SafeMul(reserveIn, reserveOut)
+	if err != nil {
+		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec(), errors.Wrap(
+			types.ErrInvalidRequest,
+			fmt.Sprintf("pool invariant calculation overflow: %v", err),
+		)
+	}
 	newReserveIn := reserveIn.Add(amountAfterFee)
 	newReserveOut := k_constant.ToLegacyDec().QuoInt(newReserveIn).TruncateInt()
 	amountOut := reserveOut.Sub(newReserveOut)
@@ -558,8 +620,21 @@ func (k Keeper) SwapExactIn(
 	}
 
 	// Calculate fees (Python lines 241-242)
-	feeAmount := coinIn.Amount.ToLegacyDec().Mul(feePercentage).TruncateInt()
-	protocolFee := coinIn.Amount.ToLegacyDec().Mul(protocolFeePercentage).TruncateInt()
+	// SECURITY: Use SafeMulDec to prevent overflow in fee calculations
+	feeAmount, err := types.SafeMulDec(coinIn.Amount, feePercentage)
+	if err != nil {
+		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec(), errors.Wrap(
+			types.ErrInvalidRequest,
+			fmt.Sprintf("fee amount calculation overflow: %v", err),
+		)
+	}
+	protocolFee, err := types.SafeMulDec(coinIn.Amount, protocolFeePercentage)
+	if err != nil {
+		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec(), errors.Wrap(
+			types.ErrInvalidRequest,
+			fmt.Sprintf("protocol fee calculation overflow: %v", err),
+		)
+	}
 
 	// Parse existing volume and fees
 	totalVolume, err := k.parseReserve(pool.TotalVolume)
@@ -681,7 +756,12 @@ func (k Keeper) GetQuote(
 	totalFeeRate := feePercentage.Add(protocolFeePercentage)
 	amountAfterFee := amountIn.ToLegacyDec().Mul(sdkmath.LegacyOneDec().Sub(totalFeeRate)).TruncateInt()
 
-	k_constant := reserveIn.Mul(reserveOut)
+	// SECURITY: Use SafeMul for k-constant calculation in quote
+	k_constant, err := types.SafeMul(reserveIn, reserveOut)
+	if err != nil {
+		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec(), sdkmath.ZeroInt(),
+			errors.Wrap(types.ErrInvalidRequest, fmt.Sprintf("quote calculation overflow: %v", err))
+	}
 	newReserveIn := reserveIn.Add(amountAfterFee)
 	newReserveOut := k_constant.ToLegacyDec().QuoInt(newReserveIn).TruncateInt()
 	estimatedOutput := reserveOut.Sub(newReserveOut)
@@ -695,7 +775,12 @@ func (k Keeper) GetQuote(
 		priceImpact = priceImpact.Neg()
 	}
 
-	feeAmount := amountIn.ToLegacyDec().Mul(feePercentage).TruncateInt()
+	// SECURITY: Use SafeMulDec for fee calculation in quote
+	feeAmount, err := types.SafeMulDec(amountIn, feePercentage)
+	if err != nil {
+		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec(), sdkmath.ZeroInt(),
+			errors.Wrap(types.ErrInvalidRequest, fmt.Sprintf("fee calculation overflow: %v", err))
+	}
 
 	return estimatedOutput, effectivePrice, priceImpact, feeAmount, nil
 }
