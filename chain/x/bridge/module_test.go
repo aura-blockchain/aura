@@ -56,6 +56,7 @@ func TestNewAppModule(t *testing.T) {
 		nil,
 		nil,
 		nil,
+		nil, // stakingKeeper
 	)
 
 	module := bridge.NewAppModule(k)
@@ -71,6 +72,7 @@ func TestAppModule_Name(t *testing.T) {
 		nil,
 		nil,
 		nil,
+		nil, // stakingKeeper
 	)
 
 	module := bridge.NewAppModule(k)
@@ -89,6 +91,7 @@ func TestAppModule_RegisterServices_Nil(t *testing.T) {
 		nil,
 		nil,
 		nil,
+		nil, // stakingKeeper
 	)
 
 	module := bridge.NewAppModule(k)
@@ -122,6 +125,7 @@ func TestAppModule_RegisterServices_Valid(t *testing.T) {
 		nil,
 		nil,
 		nil,
+		nil, // stakingKeeper
 	)
 
 	module := bridge.NewAppModule(k)
@@ -143,6 +147,7 @@ func TestAppModule_BeginBlock(t *testing.T) {
 		nil,
 		nil,
 		nil,
+		nil, // stakingKeeper
 	)
 
 	module := bridge.NewAppModule(k)
@@ -162,6 +167,7 @@ func TestAppModule_EndBlock(t *testing.T) {
 		nil,
 		nil,
 		nil,
+		nil, // stakingKeeper
 	)
 
 	module := bridge.NewAppModule(k)
@@ -176,7 +182,7 @@ func TestAppModule_InitGenesis(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
 	legacyAmino := codec.NewLegacyAmino()
 	ps := paramtypes.NewSubspace(input.Cdc, legacyAmino, input.StoreKey, input.MemStoreKey, "bridge").WithKeyTable(types.ParamKeyTable())
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, &ps, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, &ps, nil, nil, nil, nil)
 
 	module := bridge.NewAppModule(k)
 	require.NoError(t, module.InitGenesis(input.Ctx, *types.DefaultGenesis()))
@@ -188,7 +194,7 @@ func TestAppModule_ExportGenesis(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
 	legacyAmino := codec.NewLegacyAmino()
 	ps := paramtypes.NewSubspace(input.Cdc, legacyAmino, input.StoreKey, input.MemStoreKey, "bridge").WithKeyTable(types.ParamKeyTable())
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, &ps, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, &ps, nil, nil, nil, nil)
 	module := bridge.NewAppModule(k)
 	state := module.ExportGenesis(input.Ctx)
 	require.True(t, state.Params != nil)
@@ -220,6 +226,7 @@ func TestAppModule_MultipleOperations(t *testing.T) {
 		nil,
 		nil,
 		nil,
+		nil, // stakingKeeper
 	)
 
 	module := bridge.NewAppModule(k)

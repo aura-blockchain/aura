@@ -66,7 +66,7 @@ func TestGetParams_WithoutParamstore(t *testing.T) {
 // TestExecuteWithdrawal_NotFound tests error when withdrawal doesn't exist
 func TestExecuteWithdrawal_NotFound(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 
 	// Try to execute non-existent withdrawal
 	err := k.ExecuteWithdrawal(input.Ctx, "non-existent-withdrawal")
@@ -77,7 +77,7 @@ func TestExecuteWithdrawal_NotFound(t *testing.T) {
 // TestGetFraudProof_NotFound tests GetFraudProof when no proof exists
 func TestGetFraudProof_NotFound(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 
 	proof, found := k.GetFraudProof(input.Ctx, "non-existent-transfer")
 	require.False(t, found)
@@ -87,7 +87,7 @@ func TestGetFraudProof_NotFound(t *testing.T) {
 // TestGetSupportedChain_UnmarshalError tests error handling in GetSupportedChain
 func TestGetSupportedChain_UnmarshalError(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 
 	// Manually add invalid data to store
 	store := input.Ctx.KVStore(input.StoreKey)
@@ -103,7 +103,7 @@ func TestGetSupportedChain_UnmarshalError(t *testing.T) {
 // TestDisableChain_NotFound tests error when trying to disable non-existent chain
 func TestDisableChain_NotFound(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 
 	err := k.DisableChain(input.Ctx, "non-existent-chain")
 	require.Error(t, err)
@@ -113,7 +113,7 @@ func TestDisableChain_NotFound(t *testing.T) {
 // TestAddCollectedFee_WithExistingFees tests AddCollectedFee with existing fees
 func TestAddCollectedFee_WithExistingFees(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 
 	// Add first fee
 	fee1 := sdk.NewCoin("uaura", math.NewInt(1000))
@@ -131,7 +131,7 @@ func TestAddCollectedFee_WithExistingFees(t *testing.T) {
 // TestAddCollectedFee_MultiDenom tests AddCollectedFee with multiple denominations
 func TestAddCollectedFee_MultiDenom(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 
 	// Add fees for different denoms
 	k.AddCollectedFee(input.Ctx, sdk.NewCoin("uaura", math.NewInt(1000)))
@@ -147,7 +147,7 @@ func TestAddCollectedFee_MultiDenom(t *testing.T) {
 // TestGetCollectedFees_Empty tests GetCollectedFees with no fees
 func TestGetCollectedFees_Empty(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 
 	// Get collected fees when empty
 	collected := k.GetCollectedFees(input.Ctx)
@@ -158,7 +158,7 @@ func TestGetCollectedFees_Empty(t *testing.T) {
 // TestGetCollectedFees_WithCorruptData tests GetCollectedFees with invalid data
 func TestGetCollectedFees_WithCorruptData(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 
 	// Manually add corrupt data
 	store := input.Ctx.KVStore(input.StoreKey)
@@ -172,7 +172,7 @@ func TestGetCollectedFees_WithCorruptData(t *testing.T) {
 // TestGetAttestations_Empty tests GetAttestations with no attestations
 func TestGetAttestations_Empty(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 
 	attestations := k.GetAttestations(input.Ctx, "transfer-no-attestations")
 	require.Empty(t, attestations)
@@ -181,7 +181,7 @@ func TestGetAttestations_Empty(t *testing.T) {
 // TestCheckAttestationThreshold_BelowThreshold tests threshold not met
 func TestCheckAttestationThreshold_BelowThreshold(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 
 	transferID := "transfer_below_threshold"
 	seedBridgeTransfer(t, input, transferID, math.NewInt(1000).String(), 7)
@@ -200,7 +200,7 @@ func TestCheckAttestationThreshold_BelowThreshold(t *testing.T) {
 // TestCheckAttestationThreshold_ExactThreshold tests threshold exactly met
 func TestCheckAttestationThreshold_ExactThreshold(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 
 	transferID := "transfer_exact_threshold"
 	seedBridgeTransfer(t, input, transferID, math.NewInt(1000).String(), 7)
@@ -219,7 +219,7 @@ func TestCheckAttestationThreshold_ExactThreshold(t *testing.T) {
 // TestProcessWithdrawal_MaxAllowed tests ProcessWithdrawal with max allowed amount
 func TestProcessWithdrawal_MaxAllowed(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 
 	recipient := keepertest.GenTestAddr()
 	// Just below default circuit breaker threshold (1,000,000,000 uaura)
@@ -233,7 +233,7 @@ func TestProcessWithdrawal_MaxAllowed(t *testing.T) {
 // TestIsInFraudProofWindow_NewTransfer tests fraud proof window for new transfer
 func TestIsInFraudProofWindow_NewTransfer(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 
 	transferID := "new-transfer"
 	seedBridgeTransfer(t, input, transferID, math.NewInt(5000).String(), 0)
@@ -250,7 +250,7 @@ func TestIsInFraudProofWindow_NewTransfer(t *testing.T) {
 // TestAddSupportedChain_MarshalError tests error handling in AddSupportedChain
 func TestAddSupportedChain_Success(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 
 	chainConfig := types.ChainConfig{
 		ChainId:   "polygon",
@@ -271,7 +271,7 @@ func TestAddSupportedChain_Success(t *testing.T) {
 // TestCalculateBridgeFee_ZeroAmount tests fee calculation with zero amount
 func TestCalculateBridgeFee_ZeroAmount(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 
 	amount := math.ZeroInt()
 	fee := k.CalculateBridgeFee(input.Ctx, amount, "ethereum")
@@ -282,7 +282,7 @@ func TestCalculateBridgeFee_ZeroAmount(t *testing.T) {
 // TestCalculateBridgeFee_LargeAmount tests fee calculation with large amount
 func TestCalculateBridgeFee_LargeAmount(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 
 	amount := math.NewInt(1000000000000) // 1 trillion
 	fee := k.CalculateBridgeFee(input.Ctx, amount, "ethereum")

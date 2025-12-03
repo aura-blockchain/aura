@@ -14,7 +14,7 @@ import (
 
 func TestMsgServerLockTokens_Success(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 	ctx := input.Ctx
 	ms := keeper.NewMsgServerImpl(k)
 
@@ -39,7 +39,7 @@ func TestMsgServerLockTokens_Success(t *testing.T) {
 
 func TestMsgServerLockTokens_MissingChain(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 	ctx := input.Ctx
 	ms := keeper.NewMsgServerImpl(k)
 
@@ -57,7 +57,7 @@ func TestMsgServerLockTokens_MissingChain(t *testing.T) {
 
 func TestMsgServerMintTokens_CreatesWrappedToken(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 	ctx := input.Ctx
 	ms := keeper.NewMsgServerImpl(k)
 

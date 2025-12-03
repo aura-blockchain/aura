@@ -3,9 +3,9 @@ package keeper
 import (
 	"bytes"
 	"fmt"
-	"time"
 
 	sdkmath "cosmossdk.io/math"
+	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -119,7 +119,7 @@ func (k Keeper) SubmitSlashingEvidence(
 		EventId:          eventID,
 		ValidatorAddress: validatorAddress,
 		Reason:           reason,
-		SlashAmount:      slashAmount,
+		SlashAmount:      slashAmount.String(),
 		EvidenceHash:     evidenceHash,
 		InfractionHeight: uint64(ctx.BlockHeight()),
 		Timestamp:        timestamppb.New(ctx.BlockTime()),
@@ -677,7 +677,7 @@ func (k Keeper) slashValidatorsForFraudulentTransfer(ctx sdk.Context, transferID
 //   - []*SlashingEvent: List of all slashing events
 func (k Keeper) GetAllSlashingEvents(ctx sdk.Context) []*types.SlashingEvent {
 	store := k.store(ctx)
-	iterator := store.Iterator(types.SlashingEventPrefix, sdk.PrefixEndBytes(types.SlashingEventPrefix))
+	iterator := store.Iterator(types.SlashingEventPrefix, storetypes.PrefixEndBytes(types.SlashingEventPrefix))
 	defer iterator.Close()
 
 	var events []*types.SlashingEvent
