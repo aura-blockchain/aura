@@ -22,6 +22,9 @@ type Keeper struct {
 	sanctionsProviders  map[string]SanctionsProvider
 	taxReportGenerators map[string]TaxReportGenerator
 	sanctionsCache      map[string]time.Time // address -> last screening time (transient)
+
+	// Data protection service for PII commitments (GDPR Article 32 compliance)
+	dataProtection *DataProtectionService
 }
 
 // NewKeeper creates a new compliance keeper
@@ -33,7 +36,20 @@ func NewKeeper(cdc codec.BinaryCodec, storeKey storetypes.StoreKey) *Keeper {
 		sanctionsProviders:  make(map[string]SanctionsProvider),
 		taxReportGenerators: make(map[string]TaxReportGenerator),
 		sanctionsCache:      make(map[string]time.Time),
+		dataProtection:      NewDataProtectionService(),
 	}
+}
+
+// GetDataProtectionService returns the data protection service for PII commitments
+//
+// Use this service to:
+// - Generate SHA-256 commitments for sensitive data before on-chain storage
+// - Verify data integrity against stored commitments
+// - Protect PII according to GDPR Article 32 requirements
+//
+// See: chain/x/compliance/keeper/DATA_PROTECTION_ARCHITECTURE.md for usage patterns
+func (k *Keeper) GetDataProtectionService() *DataProtectionService {
+	return k.dataProtection
 }
 
 // Logger returns a module-specific logger

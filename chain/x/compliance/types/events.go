@@ -4,17 +4,21 @@ import "fmt"
 
 // Event types for the compliance module
 const (
-	EventTypeKYCSubmitted        = "kyc_submitted"
-	EventTypeKYCApproved         = "kyc_approved"
-	EventTypeKYCRejected         = "kyc_rejected"
-	EventTypeKYCExpired          = "kyc_expired"
-	EventTypeSanctionsScreening  = "sanctions_screening"
-	EventTypeSanctionsFlagged    = "sanctions_flagged"
-	EventTypeGDPRRequest         = "gdpr_request"
-	EventTypeGDPRCompleted       = "gdpr_completed"
-	EventTypeTaxReportGenerated  = "tax_report_generated"
-	EventTypeComplianceViolation = "compliance_violation"
-	EventTypeParamsUpdated       = "params_updated"
+	EventTypeKYCSubmitted              = "kyc_submitted"
+	EventTypeKYCApproved               = "kyc_approved"
+	EventTypeKYCRejected               = "kyc_rejected"
+	EventTypeKYCExpired                = "kyc_expired"
+	EventTypeSARReported               = "suspicious_activity_reported"
+	EventTypeSanctionsScreening        = "sanctions_screening"
+	EventTypeSanctionsFlagged          = "sanctions_flagged"
+	EventTypeGDPRConsentRecorded       = "gdpr_consent_recorded"
+	EventTypeGDPRDataRequested         = "gdpr_data_requested"
+	EventTypeGDPRDataErased            = "gdpr_data_erased"
+	EventTypeGDPRRequest               = "gdpr_request"
+	EventTypeGDPRCompleted             = "gdpr_completed"
+	EventTypeTaxReportGenerated        = "tax_report_generated"
+	EventTypeComplianceViolation       = "compliance_violation"
+	EventTypeParamsUpdated             = "params_updated"
 )
 
 // Event attribute keys
@@ -27,15 +31,30 @@ const (
 	AttributeKeyRiskScore         = "risk_score"
 	AttributeKeyApprovedBy        = "approved_by"
 	AttributeKeyRejectionReason   = "rejection_reason"
+	AttributeKeyProvider          = "provider"
+	AttributeKeyPIICommitment     = "pii_commitment"
+	AttributeKeyActivityID        = "activity_id"
+	AttributeKeyActivityType      = "activity_type"
+	AttributeKeyReporter          = "reporter"
+	AttributeKeyTransactionHash   = "transaction_hash"
 	AttributeKeyScreeningResult   = "screening_result"
+	AttributeKeyStatus            = "status"
+	AttributeKeyRequiresReview    = "requires_review"
 	AttributeKeyFlagged           = "flagged"
 	AttributeKeyMatchCount        = "match_count"
 	AttributeKeySanctionsList     = "sanctions_list"
+	AttributeKeyConsentType       = "consent_type"
+	AttributeKeyConsented         = "consented"
+	AttributeKeyConsentVersion    = "consent_version"
 	AttributeKeyGDPRRequestType   = "gdpr_request_type"
 	AttributeKeyRequester         = "requester"
 	AttributeKeyRequestID         = "request_id"
+	AttributeKeyErasureEventID    = "erasure_event_id"
+	AttributeKeyErasureReason     = "erasure_reason"
+	AttributeKeyErasureTime       = "erasure_time"
 	AttributeKeyDataExported      = "data_exported"
 	AttributeKeyDataDeleted       = "data_deleted"
+	AttributeKeyReportID          = "report_id"
 	AttributeKeyTaxYear           = "tax_year"
 	AttributeKeyJurisdiction      = "jurisdiction"
 	AttributeKeyReportType        = "report_type"
@@ -191,6 +210,68 @@ func NewComplianceViolationEvent(
 		AttributeKeyViolationSeverity: violationSeverity,
 		AttributeKeyBlockHeight:       formatInt64(blockHeight),
 		AttributeKeyBlockTime:         blockTime,
+	}
+}
+
+// NewSARReportedEvent creates attributes for suspicious activity report
+func NewSARReportedEvent(
+	activityID, address, reporter, activityType, transactionHash string,
+	blockHeight int64, blockTime string,
+) map[string]string {
+	return map[string]string{
+		AttributeKeyActivityID:      activityID,
+		AttributeKeyAddress:         address,
+		AttributeKeyReporter:        reporter,
+		AttributeKeyActivityType:    activityType,
+		AttributeKeyTransactionHash: transactionHash,
+		AttributeKeyBlockHeight:     formatInt64(blockHeight),
+		AttributeKeyBlockTime:       blockTime,
+	}
+}
+
+// NewGDPRConsentRecordedEvent creates attributes for GDPR consent recording
+func NewGDPRConsentRecordedEvent(
+	address, consentType string,
+	consented bool,
+	consentVersion string,
+	blockHeight int64, blockTime string,
+) map[string]string {
+	return map[string]string{
+		AttributeKeyAddress:        address,
+		AttributeKeyConsentType:    consentType,
+		AttributeKeyConsented:      formatBool(consented),
+		AttributeKeyConsentVersion: consentVersion,
+		AttributeKeyBlockHeight:    formatInt64(blockHeight),
+		AttributeKeyBlockTime:      blockTime,
+	}
+}
+
+// NewGDPRDataRequestedEvent creates attributes for GDPR data request
+func NewGDPRDataRequestedEvent(
+	requestID, address, requestType string,
+	blockHeight int64, blockTime string,
+) map[string]string {
+	return map[string]string{
+		AttributeKeyRequestID:       requestID,
+		AttributeKeyAddress:         address,
+		AttributeKeyGDPRRequestType: requestType,
+		AttributeKeyBlockHeight:     formatInt64(blockHeight),
+		AttributeKeyBlockTime:       blockTime,
+	}
+}
+
+// NewGDPRDataErasedEvent creates attributes for GDPR data erasure
+func NewGDPRDataErasedEvent(
+	address, erasureEventID, erasureReason, erasureTime string,
+	blockHeight int64, blockTime string,
+) map[string]string {
+	return map[string]string{
+		AttributeKeyAddress:        address,
+		AttributeKeyErasureEventID: erasureEventID,
+		AttributeKeyErasureReason:  erasureReason,
+		AttributeKeyErasureTime:    erasureTime,
+		AttributeKeyBlockHeight:    formatInt64(blockHeight),
+		AttributeKeyBlockTime:      blockTime,
 	}
 }
 
