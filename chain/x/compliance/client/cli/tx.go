@@ -40,9 +40,13 @@ func GetTxCmd() *cobra.Command {
 // CmdSubmitKYC submits KYC verification
 func CmdSubmitKYC() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "submit-kyc [address] [kyc-level] [provider] [verification-id] [jurisdiction]",
+		Use:   "submit-kyc [address] [kyc-level] [provider] [pii-commitment-hex] [jurisdiction]",
 		Short: "Submit KYC verification for an address",
 		Long: `Submit Know Your Customer (KYC) verification for an address.
+
+This command submits a KYC record using GDPR-compliant commitment-based storage.
+The PII commitment should be a 64-character hex string (SHA-256 hash of off-chain PII data).
+The jurisdiction must be a 2-letter ISO 3166-1 alpha-2 country code.
 
 KYC Levels:
   1 - NONE: No KYC verification
@@ -50,8 +54,11 @@ KYC Levels:
   3 - INTERMEDIATE: Government ID verification
   4 - ADVANCED: Enhanced due diligence
 
+OFAC Compliance:
+  Jurisdictions from OFAC-sanctioned countries will be rejected (e.g., KP, IR, SY, CU, RU, BY).
+
 Example:
-  aurad tx compliance submit-kyc aura1abc... 3 "Jumio" "VID-12345" "US" --documents="passport,driver_license" --from alice
+  aurad tx compliance submit-kyc aura1abc... 3 cosmos1provider... a1b2c3d4...f0 US --from provider
 `,
 		Args: cobra.ExactArgs(5),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -66,30 +73,36 @@ Example:
 				return fmt.Errorf("invalid kyc level: %w", err)
 			}
 			provider := args[2]
-			verificationID := args[3]
+			piiCommitmentHex := args[3]
 			jurisdiction := args[4]
 
-			// Get optional documents
-			documentsStr, _ := cmd.Flags().GetString("documents")
-			var documents []string
-			if documentsStr != "" {
-				documents = strings.Split(documentsStr, ",")
+			// Parse PII commitment from hex (should be 64 hex chars = 32 bytes)
+			if len(piiCommitmentHex) != 64 {
+				return fmt.Errorf("pii-commitment must be 64 hex characters (32 bytes SHA-256 hash)")
+			}
+			piiCommitment := make([]byte, 32)
+			_, err = fmt.Sscanf(piiCommitmentHex, "%x", &piiCommitment)
+			if err != nil {
+				return fmt.Errorf("invalid pii-commitment hex string: %w", err)
+			}
+
+			// Validate jurisdiction format
+			if len(jurisdiction) != 2 {
+				return fmt.Errorf("jurisdiction must be 2-letter ISO 3166-1 alpha-2 country code")
 			}
 
 			msg := &v1beta1.MsgSubmitKYC{
-				Address:        address,
-				KycLevel:       v1beta1.KYCLevel(kycLevelInt),
-				Provider:       provider,
-				VerificationId: verificationID,
-				Documents:      documents,
-				Jurisdiction:   jurisdiction,
+				Address:       address,
+				KycLevel:      v1beta1.KYCLevel(kycLevelInt),
+				Provider:      provider,
+				PiiCommitment: piiCommitment,
+				Jurisdiction:  jurisdiction,
 			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
 		},
 	}
 
-	cmd.Flags().String("documents", "", "Comma-separated list of document types verified")
 	flags.AddTxFlagsToCmd(cmd)
 
 	return cmd
