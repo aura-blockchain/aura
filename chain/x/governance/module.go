@@ -124,5 +124,8 @@ func (am AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {
 	keeper.RegisterInvariants(ir, am.keeper)
 }
 
+// IsOnePerModuleType tags this module for depinject one-per-module compatibility.
+func (AppModule) IsOnePerModuleType() {}
+
 // IsAppModule tags the module for module manager compatibility.
 func (AppModule) IsAppModule() {}

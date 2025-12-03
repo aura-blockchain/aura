@@ -105,7 +105,7 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
 	// Convert sdk.Context to context.Context for keeper
 	gen := am.keeper.ExportGenesis(sdk.WrapSDKContext(ctx))
-	return cdc.MustMarshalJSON(gen)
+	return cdc.MustMarshalJSON(&gen)
 }
 
 // ConsensusVersion returns the module consensus version
@@ -124,6 +124,9 @@ func (m AppModule) EndBlock(ctx sdk.Context) {}
 func (am AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {
 	keeper.RegisterInvariants(ir, am.keeper)
 }
+
+// IsOnePerModuleType tags this module for depinject one-per-module compatibility.
+func (AppModule) IsOnePerModuleType() {}
 
 // IsAppModule tags this module for Cosmos SDK module manager compatibility.
 func (AppModule) IsAppModule() {}
