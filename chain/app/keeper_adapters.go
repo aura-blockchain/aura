@@ -15,6 +15,7 @@ import (
 
 	sdkmath "cosmossdk.io/math"
 
+	compliancekeeper "github.com/aequitas/aura/chain/x/compliance/keeper"
 	securitykeeper "github.com/aequitas/aura/chain/x/security/keeper"
 	validatorsecuritykeeper "github.com/aequitas/aura/chain/x/validatorsecurity/keeper"
 	validatorsecuritytypes "github.com/aequitas/aura/chain/x/validatorsecurity/types"
@@ -56,6 +57,186 @@ func (a bankKeeperAdapter) BurnCoins(ctx sdk.Context, moduleName string, amt sdk
 }
 
 func (a bankKeeperAdapter) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin {
+	return a.inner.GetBalance(sdk.WrapSDKContext(ctx), addr, denom)
+}
+
+// monitoredBankKeeperAdapter wraps the bank keeper with transaction monitoring for AML compliance.
+// This adapter intercepts coin transfer methods to evaluate compliance rules before execution.
+//
+// IMPORTANT: This is the integration point for transaction monitoring as described in
+// chain/x/compliance/TRANSACTION_MONITORING.md. All coin transfers go through this adapter.
+type monitoredBankKeeperAdapter struct {
+	inner            bankkeeper.BaseKeeper
+	complianceKeeper *compliancekeeper.Keeper
+}
+
+func newMonitoredBankKeeperAdapter(bankKeeper bankkeeper.BaseKeeper, complianceKeeper *compliancekeeper.Keeper) monitoredBankKeeperAdapter {
+	return monitoredBankKeeperAdapter{
+		inner:            bankKeeper,
+		complianceKeeper: complianceKeeper,
+	}
+}
+
+func (a monitoredBankKeeperAdapter) SendCoins(ctx sdk.Context, fromAddr sdk.AccAddress, toAddr sdk.AccAddress, amt sdk.Coins) error {
+	// Monitor transaction before executing
+	alerts, err := a.complianceKeeper.MonitorTransaction(ctx, fromAddr, toAddr, amt)
+	if err != nil {
+		// Log error but don't block transaction - monitoring failure shouldn't prevent valid transactions
+		ctx.Logger().Error("transaction monitoring failed",
+			"from", fromAddr.String(),
+			"to", toAddr.String(),
+			"amount", amt.String(),
+			"error", err.Error(),
+		)
+	}
+
+	// Check if transaction should be blocked based on alerts
+	if shouldBlock, reason := a.complianceKeeper.ShouldBlockTransaction(alerts); shouldBlock {
+		ctx.EventManager().EmitEvent(
+			sdk.NewEvent(
+				"compliance_violation",
+				sdk.NewAttribute("from", fromAddr.String()),
+				sdk.NewAttribute("to", toAddr.String()),
+				sdk.NewAttribute("amount", amt.String()),
+				sdk.NewAttribute("reason", reason),
+				sdk.NewAttribute("blocked", "true"),
+			),
+		)
+		return fmt.Errorf("transaction blocked by compliance: %s", reason)
+	}
+
+	// Execute transfer via underlying bank keeper
+	if err := a.inner.SendCoins(sdk.WrapSDKContext(ctx), fromAddr, toAddr, amt); err != nil {
+		return err
+	}
+
+	// Update AML profiles after successful transfer
+	if err := a.complianceKeeper.UpdateAMLProfile(ctx, fromAddr, amt); err != nil {
+		ctx.Logger().Error("failed to update sender AML profile",
+			"address", fromAddr.String(),
+			"error", err.Error(),
+		)
+	}
+
+	if err := a.complianceKeeper.UpdateAMLProfile(ctx, toAddr, amt); err != nil {
+		ctx.Logger().Error("failed to update recipient AML profile",
+			"address", toAddr.String(),
+			"error", err.Error(),
+		)
+	}
+
+	return nil
+}
+
+func (a monitoredBankKeeperAdapter) SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
+	// Get module address for monitoring
+	moduleAddr := sdk.AccAddress(sdk.MustBech32ifyAddressBytes("aura", sdk.AccAddress(recipientModule).Bytes()))
+
+	// Monitor transaction
+	alerts, err := a.complianceKeeper.MonitorTransaction(ctx, senderAddr, moduleAddr, amt)
+	if err != nil {
+		ctx.Logger().Error("transaction monitoring failed",
+			"from", senderAddr.String(),
+			"module", recipientModule,
+			"amount", amt.String(),
+			"error", err.Error(),
+		)
+	}
+
+	// Check if transaction should be blocked
+	if shouldBlock, reason := a.complianceKeeper.ShouldBlockTransaction(alerts); shouldBlock {
+		ctx.EventManager().EmitEvent(
+			sdk.NewEvent(
+				"compliance_violation",
+				sdk.NewAttribute("from", senderAddr.String()),
+				sdk.NewAttribute("module", recipientModule),
+				sdk.NewAttribute("amount", amt.String()),
+				sdk.NewAttribute("reason", reason),
+				sdk.NewAttribute("blocked", "true"),
+			),
+		)
+		return fmt.Errorf("module transfer blocked by compliance: %s", reason)
+	}
+
+	// Execute transfer
+	if err := a.inner.SendCoinsFromAccountToModule(sdk.WrapSDKContext(ctx), senderAddr, recipientModule, amt); err != nil {
+		return err
+	}
+
+	// Update sender AML profile
+	if err := a.complianceKeeper.UpdateAMLProfile(ctx, senderAddr, amt); err != nil {
+		ctx.Logger().Error("failed to update sender AML profile",
+			"address", senderAddr.String(),
+			"error", err.Error(),
+		)
+	}
+
+	return nil
+}
+
+func (a monitoredBankKeeperAdapter) SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
+	// Get module address for monitoring
+	moduleAddr := sdk.AccAddress(sdk.MustBech32ifyAddressBytes("aura", sdk.AccAddress(senderModule).Bytes()))
+
+	// Monitor transaction (primarily for recipient)
+	alerts, err := a.complianceKeeper.MonitorTransaction(ctx, moduleAddr, recipientAddr, amt)
+	if err != nil {
+		ctx.Logger().Error("transaction monitoring failed",
+			"module", senderModule,
+			"to", recipientAddr.String(),
+			"amount", amt.String(),
+			"error", err.Error(),
+		)
+	}
+
+	// Check if transaction should be blocked
+	if shouldBlock, reason := a.complianceKeeper.ShouldBlockTransaction(alerts); shouldBlock {
+		ctx.EventManager().EmitEvent(
+			sdk.NewEvent(
+				"compliance_violation",
+				sdk.NewAttribute("module", senderModule),
+				sdk.NewAttribute("to", recipientAddr.String()),
+				sdk.NewAttribute("amount", amt.String()),
+				sdk.NewAttribute("reason", reason),
+				sdk.NewAttribute("blocked", "true"),
+			),
+		)
+		return fmt.Errorf("module transfer blocked by compliance: %s", reason)
+	}
+
+	// Execute transfer
+	if err := a.inner.SendCoinsFromModuleToAccount(sdk.WrapSDKContext(ctx), senderModule, recipientAddr, amt); err != nil {
+		return err
+	}
+
+	// Update recipient AML profile
+	if err := a.complianceKeeper.UpdateAMLProfile(ctx, recipientAddr, amt); err != nil {
+		ctx.Logger().Error("failed to update recipient AML profile",
+			"address", recipientAddr.String(),
+			"error", err.Error(),
+		)
+	}
+
+	return nil
+}
+
+func (a monitoredBankKeeperAdapter) SendCoinsFromModuleToModule(ctx sdk.Context, senderModule, recipientModule string, amt sdk.Coins) error {
+	// Module-to-module transfers don't need monitoring (trusted internal transfers)
+	return a.inner.SendCoinsFromModuleToModule(sdk.WrapSDKContext(ctx), senderModule, recipientModule, amt)
+}
+
+func (a monitoredBankKeeperAdapter) MintCoins(ctx sdk.Context, moduleName string, amt sdk.Coins) error {
+	// Minting doesn't need monitoring (trusted operation)
+	return a.inner.MintCoins(sdk.WrapSDKContext(ctx), moduleName, amt)
+}
+
+func (a monitoredBankKeeperAdapter) BurnCoins(ctx sdk.Context, moduleName string, amt sdk.Coins) error {
+	// Burning doesn't need monitoring (trusted operation)
+	return a.inner.BurnCoins(sdk.WrapSDKContext(ctx), moduleName, amt)
+}
+
+func (a monitoredBankKeeperAdapter) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin {
+	// Balance queries don't need monitoring
 	return a.inner.GetBalance(sdk.WrapSDKContext(ctx), addr, denom)
 }
 
