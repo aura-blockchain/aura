@@ -378,12 +378,13 @@ func (k Keeper) verifyPawAddressOwnership(ctx sdk.Context, auraAddress string, p
 	msgHash := sha256.Sum256([]byte(message))
 
 	// Extract recovery ID (V) from the last byte
-	// Recovery ID should be 0-3, but some implementations use 27-30
+	// Recovery ID can be 0-7 (0-3 for uncompressed, 4-7 for compressed)
+	// Some implementations add 27, making it 27-34
 	recoveryID := signature[64]
 	if recoveryID >= 27 {
 		recoveryID -= 27
 	}
-	if recoveryID > 3 {
+	if recoveryID > 7 {
 		ctx.Logger().Error("Invalid recovery ID in PAW signature",
 			"recovery_id", recoveryID,
 			"paw_address", pawAddress)
