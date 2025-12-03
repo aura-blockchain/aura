@@ -33,6 +33,7 @@ func SetupKeeperTestSuite(t *testing.T) *KeeperTestSuite {
 		bankKeeper,
 		nil, // accountKeeper
 		nil, // vcKeeper
+		nil, // securityKeeper
 	)
 
 	// Generate test accounts

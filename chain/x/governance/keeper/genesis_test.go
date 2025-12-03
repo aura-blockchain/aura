@@ -20,7 +20,8 @@ func setupKeeper(t *testing.T) (*Keeper, sdk.Context) {
 		balances:       make(map[string]sdk.Coins),
 		moduleBalances: make(map[string]sdk.Coins),
 	}
-	keeper := NewKeeper(input.Cdc, input.StoreKey, mockStaking, mockBank)
+	mockSecurity := &MockSecurityKeeper{}
+	keeper := NewKeeper(input.Cdc, input.StoreKey, mockStaking, mockBank, mockSecurity)
 	ctx := input.Ctx.WithKVGasConfig(storetypes.GasConfig{})
 	return keeper, ctx
 }
