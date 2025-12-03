@@ -7,6 +7,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/compliance/types"
 )
@@ -59,6 +60,20 @@ func TestSubmitKYC_WithPIICommitment(t *testing.T) {
 
 	// Submit KYC with commitment
 	userAddr := sdk.AccAddress([]byte("test_user_address_1234")).String()
+
+	// Grant consent for KYC processing
+	consent := &types.GDPRConsent{
+		Address:        userAddr,
+		ConsentType:    "kyc_processing",
+		Consented:      true,
+		ConsentVersion: "v1",
+		ConsentGivenAt: timestamppb.Now(),
+	}
+	err = keeper.SetGDPRConsent(ctx, consent)
+	require.NoError(t, err)
+	err = keeper.SetProcessingRestriction(ctx, userAddr, false)
+	require.NoError(t, err)
+
 	msg := &types.MsgSubmitKYC{
 		Address:       userAddr,
 		KycLevel:      types.KYCLevel_KYC_LEVEL_ADVANCED,
@@ -158,6 +173,20 @@ func TestPIICommitmentVerification(t *testing.T) {
 
 	// Submit to blockchain
 	userAddr := sdk.AccAddress([]byte("test_user_address_1234")).String()
+
+	// Grant consent for KYC processing
+	consent := &types.GDPRConsent{
+		Address:        userAddr,
+		ConsentType:    "kyc_processing",
+		Consented:      true,
+		ConsentVersion: "v1",
+		ConsentGivenAt: timestamppb.Now(),
+	}
+	err = keeper.SetGDPRConsent(ctx, consent)
+	require.NoError(t, err)
+	err = keeper.SetProcessingRestriction(ctx, userAddr, false)
+	require.NoError(t, err)
+
 	msg := &types.MsgSubmitKYC{
 		Address:       userAddr,
 		KycLevel:      types.KYCLevel_KYC_LEVEL_INTERMEDIATE,
@@ -209,6 +238,19 @@ func TestEraseGDPRData(t *testing.T) {
 	params := keeper.GetParams(ctx)
 	params.ApprovedKycProviders = []string{providerAddr}
 	err = keeper.SetParams(ctx, params)
+	require.NoError(t, err)
+
+	// Grant consent for KYC processing
+	consent := &types.GDPRConsent{
+		Address:        userAddr,
+		ConsentType:    "kyc_processing",
+		Consented:      true,
+		ConsentVersion: "v1",
+		ConsentGivenAt: timestamppb.Now(),
+	}
+	err = keeper.SetGDPRConsent(ctx, consent)
+	require.NoError(t, err)
+	err = keeper.SetProcessingRestriction(ctx, userAddr, false)
 	require.NoError(t, err)
 
 	submitMsg := &types.MsgSubmitKYC{

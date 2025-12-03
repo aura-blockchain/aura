@@ -79,9 +79,11 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data types.GenesisState) error {
 	//   WRONG: counter = 5 → next transfer gets ID 5 → COLLISION with existing transfer-5
 	//   RIGHT: counter = 6 → next transfer gets ID 6 → no collision
 	//
+	// Edge case: transfer-0 exists → counter should be 1 (0+1)
+	//
 	// Only restore counter if legacy sequential IDs were found in genesis
 	// (chains using only new hash-based IDs don't need counter restoration)
-	if legacyIDsFound && maxTransferCounter > 0 {
+	if legacyIDsFound {
 		bz := make([]byte, 8)
 		binary.BigEndian.PutUint64(bz, maxTransferCounter+1) // +1 CRITICAL: next available ID
 		k.store(ctx).Set(types.TransferCounterKey, bz)

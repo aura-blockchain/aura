@@ -25,6 +25,10 @@ type Keeper struct {
 
 	// Data protection service for PII commitments (GDPR Article 32 compliance)
 	dataProtection *DataProtectionService
+
+	// Encryption service for data at rest (GDPR Article 32 compliance)
+	// Encrypts sensitive PII stored in KVStore with AES-256-GCM
+	encryptionService *EncryptionService
 }
 
 // NewKeeper creates a new compliance keeper
@@ -37,7 +41,57 @@ func NewKeeper(cdc codec.BinaryCodec, storeKey storetypes.StoreKey) *Keeper {
 		taxReportGenerators: make(map[string]TaxReportGenerator),
 		sanctionsCache:      make(map[string]time.Time),
 		dataProtection:      NewDataProtectionService(),
+		encryptionService:   nil, // Must be set via SetEncryptionService after initialization
 	}
+}
+
+// SetEncryptionService sets the encryption service for the keeper.
+//
+// This must be called after NewKeeper to enable encryption at rest.
+// The encryption service requires a master key which should be loaded
+// from a secure key management system (not hardcoded).
+//
+// Parameters:
+//   - service: Initialized EncryptionService with master key
+//
+// Security considerations:
+//   - Master key must be 32 bytes (AES-256)
+//   - Key should be rotated periodically (e.g., every 90 days)
+//   - Key must be stored securely (e.g., HashiCorp Vault, AWS KMS)
+//   - Do not hardcode keys in source code
+//
+// Example:
+//   masterKey := loadKeyFromSecureStorage()
+//   encService, err := NewEncryptionService(masterKey)
+//   if err != nil {
+//       return err
+//   }
+//   keeper.SetEncryptionService(encService)
+func (k *Keeper) SetEncryptionService(service *EncryptionService) {
+	k.encryptionService = service
+}
+
+// GetEncryptionService returns the encryption service for encrypting data at rest.
+//
+// Use this service to:
+// - Encrypt sensitive PII before storing in KVStore
+// - Decrypt encrypted data when retrieving from storage
+// - Ensure GDPR Article 32 compliance
+//
+// Returns:
+//   - *EncryptionService: Encryption service instance
+//   - bool: true if encryption is enabled, false if not configured
+//
+// Example:
+//   if encService, enabled := keeper.GetEncryptionService(); enabled {
+//       encrypted, err := encService.EncryptString(sensitiveData, context)
+//       // Store encrypted data
+//   }
+func (k *Keeper) GetEncryptionService() (*EncryptionService, bool) {
+	if k.encryptionService == nil {
+		return nil, false
+	}
+	return k.encryptionService, true
 }
 
 // GetDataProtectionService returns the data protection service for PII commitments

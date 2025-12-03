@@ -1054,6 +1054,51 @@ func (k *Keeper) TriggerDataDeletion(ctx sdk.Context, address string, consentTyp
 	return nil
 }
 
+// RequireConsent checks if the user has valid consent for a specific purpose.
+// This is the enforcement point for GDPR consent requirements (Article 6(1)(a) and Article 7).
+//
+// This method MUST be called before any data processing operation involving user data.
+// It ensures that:
+//   1. User has given explicit consent for the processing purpose
+//   2. Consent has not been withdrawn (Article 7(3))
+//   3. Processing is not restricted (Article 18)
+//
+// Parameters:
+//   - ctx: SDK context for state access
+//   - address: User's blockchain address
+//   - purpose: Processing purpose (e.g., "kyc_processing", "aml_monitoring", "sanctions_screening")
+//
+// Returns:
+//   - error: types.ErrProcessingRestricted if consent is missing or withdrawn
+//
+// GDPR compliance:
+//   - Article 6(1)(a): Lawfulness of processing based on consent
+//   - Article 7: Conditions for consent
+//   - Article 7(3): Consent withdrawal enforcement - processing must stop immediately
+//   - Article 18: Right to restriction of processing
+//
+// Security considerations:
+//   - Default deny: Returns error if no consent found (fail-safe)
+//   - Atomic check: Verifies both consent existence and validity
+//   - Audit trail: All checks are logged via state access
+//
+// Example usage in processing functions:
+//   if err := k.RequireConsent(ctx, userAddress, "kyc_processing"); err != nil {
+//       return nil, err
+//   }
+func (k *Keeper) RequireConsent(ctx sdk.Context, address string, purpose string) error {
+	// Check if data processing is allowed for this address and purpose
+	// This internally checks:
+	// 1. Processing restrictions (consent withdrawn)
+	// 2. Consent existence for the specific purpose
+	// 3. Consent validity (not withdrawn)
+	if !k.CanProcessData(ctx, address, purpose) {
+		return types.ErrProcessingRestricted
+	}
+
+	return nil
+}
+
 
 // ============================================================================
 // Rate Limiting KVStore Methods (DoS Protection for Expensive Operations)

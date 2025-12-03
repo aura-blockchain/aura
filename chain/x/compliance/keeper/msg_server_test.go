@@ -19,6 +19,21 @@ func createTestAddressMsg(name string) string {
 	return addr.String()
 }
 
+// grantConsent is a helper to grant GDPR consent for testing
+func grantConsent(t *testing.T, keeper *Keeper, ctx sdk.Context, address string, purpose string) {
+	consent := &types.GDPRConsent{
+		Address:        address,
+		ConsentType:    purpose,
+		Consented:      true,
+		ConsentVersion: "v1",
+		ConsentGivenAt: timestamppb.Now(),
+	}
+	err := keeper.SetGDPRConsent(ctx, consent)
+	require.NoError(t, err)
+	err = keeper.SetProcessingRestriction(ctx, address, false)
+	require.NoError(t, err)
+}
+
 func TestMsgSubmitKYCStoresRecord(t *testing.T) {
 	keeper, ctx := setupTestKeeper(t)
 	server := NewMsgServer(keeper)
@@ -33,8 +48,11 @@ func TestMsgSubmitKYCStoresRecord(t *testing.T) {
 	piiCommitment := make([]byte, 32) // SHA-256 hash
 	copy(piiCommitment, []byte("test_commitment_hash_32_bytes"))
 
+	userAddr := createTestAddressMsg("kyc_user")
+	grantConsent(t, keeper, ctx, userAddr, "kyc_processing")
+
 	req := &types.MsgSubmitKYC{
-		Address:       createTestAddressMsg("kyc_user"),
+		Address:       userAddr,
 		KycLevel:      types.KYCLevel_KYC_LEVEL_BASIC,
 		Provider:      providerAddr,
 		PiiCommitment: piiCommitment,
@@ -50,9 +68,13 @@ func TestMsgSubmitKYCStoresRecord(t *testing.T) {
 func TestMsgReportSuspiciousActivityPersisted(t *testing.T) {
 	keeper, ctx := setupTestKeeper(t)
 	server := NewMsgServer(keeper)
+
+	userAddr := createTestAddressMsg("user")
+	grantConsent(t, keeper, ctx, userAddr, "aml_monitoring")
+
 	req := &types.MsgReportSuspiciousActivity{
 		Reporter:        createTestAddressMsg("reporter"),
-		Address:         createTestAddressMsg("user"),
+		Address:         userAddr,
 		TransactionHash: "hash",
 		ActivityType:    "structuring",
 		Description:     "many tx",
@@ -68,7 +90,11 @@ func TestMsgReportSuspiciousActivityPersisted(t *testing.T) {
 func TestMsgScreenSanctionsStoresResult(t *testing.T) {
 	keeper, ctx := setupTestKeeper(t)
 	server := NewMsgServer(keeper)
-	req := &types.MsgScreenSanctions{Address: createTestAddressMsg("sanction_user")}
+
+	userAddr := createTestAddressMsg("sanction_user")
+	grantConsent(t, keeper, ctx, userAddr, "sanctions_screening")
+
+	req := &types.MsgScreenSanctions{Address: userAddr}
 	resp, err := server.ScreenSanctions(sdk.WrapSDKContext(ctx), req)
 	require.NoError(t, err)
 	require.Equal(t, types.SanctionsStatus_SANCTIONS_CLEAR, resp.Status)
@@ -132,7 +158,11 @@ func TestMsgScreenSanctionsUsesProviderWhenAvailable(t *testing.T) {
 	provider := &testSanctionsProvider{}
 	keeper.RegisterSanctionsProvider("mock", provider)
 	server := NewMsgServer(keeper)
-	resp, err := server.ScreenSanctions(sdk.WrapSDKContext(ctx), &types.MsgScreenSanctions{Address: createTestAddressMsg("provider_user")})
+
+	userAddr := createTestAddressMsg("provider_user")
+	grantConsent(t, keeper, ctx, userAddr, "sanctions_screening")
+
+	resp, err := server.ScreenSanctions(sdk.WrapSDKContext(ctx), &types.MsgScreenSanctions{Address: userAddr})
 	require.NoError(t, err)
 	require.Equal(t, types.SanctionsStatus_SANCTIONS_CLEAR, resp.Status)
 }

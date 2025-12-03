@@ -29,6 +29,12 @@ service Msg {
 
   // RelayTransfer relays cross-chain transfer (relayer-only)
   rpc RelayTransfer(MsgRelayTransfer) returns (MsgRelayTransferResponse);
+
+  // FinalizeTransfer finalizes a pending transfer after fraud proof window
+  rpc FinalizeTransfer(MsgFinalizeTransfer) returns (MsgFinalizeTransferResponse);
+
+  // SubmitFraudProof challenges a fraudulent transfer during the window
+  rpc SubmitFraudProof(MsgSubmitFraudProof) returns (MsgSubmitFraudProofResponse);
 }
 
 // MsgLockTokens locks tokens on AURA to transfer to PAW or XAI
@@ -272,4 +278,55 @@ message MsgUnpause {
 
 message MsgUnpauseResponse {
   bool success = 1;
+}
+
+// MsgFinalizeTransfer finalizes a pending transfer after fraud proof window expires
+message MsgFinalizeTransfer {
+  option (cosmos.msg.v1.signer) = "sender";
+
+  // Sender (anyone can finalize once window expires)
+  string sender = 1;
+
+  // Transfer ID of the pending transfer
+  string transfer_id = 2;
+}
+
+message MsgFinalizeTransferResponse {
+  bool success = 1;
+
+  // Amount unlocked/minted
+  string amount = 2 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Recipient who received the funds
+  string recipient = 3;
+}
+
+// MsgSubmitFraudProof submits a fraud proof to challenge a pending transfer
+message MsgSubmitFraudProof {
+  option (cosmos.msg.v1.signer) = "challenger";
+
+  // Challenger address
+  string challenger = 1;
+
+  // Transfer ID being challenged
+  string transfer_id = 2;
+
+  // Fraud type
+  string fraud_type = 3;
+
+  // Evidence data proving the fraud
+  bytes evidence = 4;
+
+  // Description of the fraud
+  string description = 5;
+}
+
+message MsgSubmitFraudProofResponse {
+  bool success = 1;
+
+  // Fraud proof ID for tracking
+  string fraud_proof_id = 2;
 }

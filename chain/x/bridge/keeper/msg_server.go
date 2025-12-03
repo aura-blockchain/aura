@@ -847,3 +847,243 @@ func (ms msgServer) RelayTransfer(goCtx context.Context, msg *bridgepb.MsgRelayT
 	ms.Keeper.recordRelayerStats(ctx, msg.Relayer, true, vol)
 	return &bridgepb.MsgRelayTransferResponse{Success: true}, nil
 }
+
+// FinalizeTransfer finalizes a pending transfer after the fraud proof window expires.
+//
+// SECURITY CRITICAL: This function completes the unlock/mint process for transfers
+// that have passed the fraud proof window without being challenged.
+//
+// Security checks:
+//   - Fraud proof window must have expired (unlock_time <= current time)
+//   - Transfer must not have been challenged (no fraud proof submitted)
+//   - Transfer must exist and be in pending state
+//
+// Attack vectors prevented:
+//   - Early finalization: Cannot finalize before fraud proof window expires
+//   - Challenged transfers: Cannot finalize transfers under investigation
+//   - Double finalization: Pending transfer is deleted after finalization
+//
+// Parameters:
+//   - msg: Contains transfer ID to finalize
+//
+// Returns:
+//   - Response with success status, amount, and recipient
+//   - Error if: transfer not found, window not expired, or transfer challenged
+func (ms msgServer) FinalizeTransfer(goCtx context.Context, msg *bridgepb.MsgFinalizeTransfer) (*bridgepb.MsgFinalizeTransferResponse, error) {
+	if msg == nil {
+		return nil, status.Error(codes.InvalidArgument, "request cannot be nil")
+	}
+	if msg.TransferId == "" {
+		return nil, status.Error(codes.InvalidArgument, "transfer id required")
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// Get the pending transfer
+	pendingTransfer, found := ms.Keeper.GetPendingTransfer(ctx, msg.TransferId)
+	if !found {
+		return nil, status.Error(codes.NotFound,
+			"pending transfer not found - may already be finalized or never existed")
+	}
+
+	// CRITICAL SECURITY: Check if fraud proof window has expired
+	// This ensures adequate time for fraud proof submission before finalizing
+	currentTime := ctx.BlockTime()
+	unlockTime := pendingTransfer.UnlockTime.AsTime()
+
+	if currentTime.Before(unlockTime) {
+		return nil, status.Error(codes.FailedPrecondition,
+			fmt.Sprintf("fraud proof window has not expired - unlock time: %s, current time: %s",
+				unlockTime.Format(time.RFC3339), currentTime.Format(time.RFC3339)))
+	}
+
+	// CRITICAL SECURITY: Check if transfer has been challenged
+	// Challenged transfers cannot be finalized and require investigation
+	if pendingTransfer.Challenged {
+		return nil, status.Error(codes.FailedPrecondition,
+			fmt.Sprintf("transfer has been challenged with fraud proof %s - cannot finalize",
+				pendingTransfer.FraudProofId))
+	}
+
+	// Parse amount
+	amount, ok := sdkmath.NewIntFromString(pendingTransfer.Amount)
+	if !ok || !amount.IsPositive() {
+		return nil, status.Error(codes.Internal,
+			fmt.Sprintf("invalid amount in pending transfer: %s", pendingTransfer.Amount))
+	}
+
+	// Parse recipient address
+	recipient, err := sdk.AccAddressFromBech32(pendingTransfer.Recipient)
+	if err != nil {
+		return nil, status.Error(codes.Internal,
+			fmt.Sprintf("invalid recipient address: %s", err.Error()))
+	}
+
+	// CRITICAL SECURITY: Unlock/mint tokens following checks-effects-interactions pattern
+	// 1. All checks done above
+	// 2. Effects (state changes) - delete pending transfer first to prevent reentrancy
+	ms.Keeper.deletePendingTransfer(ctx, msg.TransferId)
+
+	// Update main transfer status to COMPLETED
+	transfer, found := ms.Keeper.GetTransfer(ctx, msg.TransferId)
+	if found {
+		transfer.Status = bridgepb.TransferStatus_COMPLETED
+		transfer.Timestamp = timestamppb.New(currentTime)
+		ms.Keeper.setTransfer(ctx, transfer)
+	}
+
+	// 3. Interactions (token transfers) - unlock tokens from module to recipient
+	coin := sdk.NewCoin(pendingTransfer.Denom, amount)
+	if ms.Keeper.bankKeeper != nil {
+		// Send from module account to recipient
+		if err := ms.Keeper.bankKeeper.SendCoinsFromModuleToAccount(
+			ctx,
+			types.ModuleName,
+			recipient,
+			sdk.NewCoins(coin),
+		); err != nil {
+			return nil, status.Error(codes.Internal,
+				fmt.Sprintf("failed to unlock tokens: %s", err.Error()))
+		}
+	}
+
+	// Emit event for finalization
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			"transfer_finalized",
+			sdk.NewAttribute("transfer_id", msg.TransferId),
+			sdk.NewAttribute("recipient", pendingTransfer.Recipient),
+			sdk.NewAttribute("amount", amount.String()),
+			sdk.NewAttribute("denom", pendingTransfer.Denom),
+			sdk.NewAttribute("source_chain", pendingTransfer.SourceChain),
+			sdk.NewAttribute("finalized_at", currentTime.Format(time.RFC3339)),
+		),
+	)
+
+	return &bridgepb.MsgFinalizeTransferResponse{
+		Success:   true,
+		Amount:    amount.String(),
+		Recipient: pendingTransfer.Recipient,
+	}, nil
+}
+
+// SubmitFraudProof submits a fraud proof to challenge a pending transfer.
+//
+// SECURITY CRITICAL: This function allows anyone to challenge a potentially
+// fraudulent transfer during the fraud proof window.
+//
+// Security considerations:
+//   - Must be submitted during fraud proof window (before unlock_time)
+//   - Prevents finalization of the challenged transfer
+//   - Requires evidence data for investigation
+//   - Creates a fraud proof record for governance review
+//
+// Attack vectors prevented:
+//   - Fraudulent transfers: Allows community to challenge invalid transfers
+//   - Late challenges: Must be submitted before window expires
+//   - Frivolous challenges: Evidence required for investigation
+//
+// Parameters:
+//   - msg: Contains transfer ID, fraud type, evidence, and description
+//
+// Returns:
+//   - Response with success status and fraud proof ID
+//   - Error if: transfer not found, window expired, or already challenged
+func (ms msgServer) SubmitFraudProof(goCtx context.Context, msg *bridgepb.MsgSubmitFraudProof) (*bridgepb.MsgSubmitFraudProofResponse, error) {
+	if msg == nil {
+		return nil, status.Error(codes.InvalidArgument, "request cannot be nil")
+	}
+	if msg.TransferId == "" {
+		return nil, status.Error(codes.InvalidArgument, "transfer id required")
+	}
+	if msg.Challenger == "" {
+		return nil, status.Error(codes.InvalidArgument, "challenger address required")
+	}
+	if len(msg.Evidence) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "evidence required for fraud proof")
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// Get the pending transfer
+	pendingTransfer, found := ms.Keeper.GetPendingTransfer(ctx, msg.TransferId)
+	if !found {
+		return nil, status.Error(codes.NotFound,
+			"pending transfer not found - may already be finalized or never existed")
+	}
+
+	// CRITICAL SECURITY: Check if fraud proof window is still open
+	// Fraud proofs can only be submitted during the window
+	currentTime := ctx.BlockTime()
+	unlockTime := pendingTransfer.UnlockTime.AsTime()
+
+	if currentTime.After(unlockTime) {
+		return nil, status.Error(codes.FailedPrecondition,
+			fmt.Sprintf("fraud proof window has expired - unlock time: %s, current time: %s",
+				unlockTime.Format(time.RFC3339), currentTime.Format(time.RFC3339)))
+	}
+
+	// Check if transfer is already challenged
+	if pendingTransfer.Challenged {
+		return nil, status.Error(codes.AlreadyExists,
+			fmt.Sprintf("transfer already challenged with fraud proof %s",
+				pendingTransfer.FraudProofId))
+	}
+
+	// Generate fraud proof ID
+	fraudProofID := fmt.Sprintf("fraud-%s-%d", msg.TransferId, currentTime.Unix())
+
+	// Parse fraud type to enum
+	var fraudType bridgepb.FraudType
+	switch strings.ToUpper(msg.FraudType) {
+	case "INVALID_MERKLE_PROOF":
+		fraudType = bridgepb.FraudType_FRAUD_INVALID_MERKLE_PROOF
+	case "DOUBLE_SPEND":
+		fraudType = bridgepb.FraudType_FRAUD_DOUBLE_SPEND
+	case "INVALID_SIGNATURE":
+		fraudType = bridgepb.FraudType_FRAUD_INVALID_SIGNATURE
+	case "AMOUNT_MISMATCH":
+		fraudType = bridgepb.FraudType_FRAUD_AMOUNT_MISMATCH
+	case "UNAUTHORIZED_MINT":
+		fraudType = bridgepb.FraudType_FRAUD_UNAUTHORIZED_MINT
+	default:
+		fraudType = bridgepb.FraudType_FRAUD_INVALID_MERKLE_PROOF // Default
+	}
+
+	// Create fraud proof record
+	fraudProof := &bridgepb.FraudProof{
+		ProofId:              fraudProofID,
+		ChallengedTransferId: msg.TransferId,
+		Challenger:           msg.Challenger,
+		FraudType:            fraudType,
+		Evidence:             msg.Evidence,
+		Status:               bridgepb.FraudProofStatus_FRAUD_PROOF_PENDING,
+		SubmittedAt:          timestamppb.New(currentTime),
+	}
+
+	// Store fraud proof
+	ms.Keeper.setFraudProof(ctx, fraudProof)
+
+	// CRITICAL SECURITY: Mark pending transfer as challenged
+	// This prevents finalization while fraud proof is investigated
+	pendingTransfer.Challenged = true
+	pendingTransfer.FraudProofId = fraudProofID
+	ms.Keeper.SetPendingTransfer(ctx, pendingTransfer)
+
+	// Emit event for fraud proof submission
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			"fraud_proof_submitted",
+			sdk.NewAttribute("fraud_proof_id", fraudProofID),
+			sdk.NewAttribute("transfer_id", msg.TransferId),
+			sdk.NewAttribute("challenger", msg.Challenger),
+			sdk.NewAttribute("fraud_type", msg.FraudType),
+			sdk.NewAttribute("submitted_at", currentTime.Format(time.RFC3339)),
+		),
+	)
+
+	return &bridgepb.MsgSubmitFraudProofResponse{
+		Success:      true,
+		FraudProofId: fraudProofID,
+	}, nil
+}
