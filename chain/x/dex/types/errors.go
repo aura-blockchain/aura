@@ -33,4 +33,5 @@ var (
 	ErrWashTradingDetected         = errors.New("wash trading detected")
 	ErrPoolCreationCooldown        = errors.New("pool creation cooldown active")
 	ErrMaxPoolsExceeded            = errors.New("maximum pools per creator exceeded")
+	ErrPriceManipulation           = errors.New("price manipulation detected")
 )

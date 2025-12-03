@@ -72,13 +72,14 @@ func (suite *GenesisTestSuite) TestGenesisRoundTrip() {
 
 	// Set up some state
 	params := types.Params{
-		MaxContractSize:         1024 * 1024,
-		MaxInstantiateGas:       3_000_000,
-		MaxExecuteGas:           2_000_000,
-		MaxQueryGas:             200_000,
-		RequireAuthorization:    true,
-		EnableMigration:         true,
-		MaxContractSizePerBlock: 10 * 1024 * 1024,
+		CodeUploadAccess: &types.AccessConfig{
+			Permission: types.AccessTypeEverybody,
+		},
+		InstantiateDefaultPermission: types.AccessTypeEverybody,
+		MaxWasmCodeSize:              1024 * 1024,
+		MaxGasWasmExecution:          3_000_000,
+		SecurityAnalysisEnabled:      true,
+		RequireAdminForMigrate:       true,
 	}
 	err := suite.keeper.SetParams(ctx, params)
 	suite.NoError(err)
@@ -99,7 +100,7 @@ func (suite *GenesisTestSuite) TestGenesisRoundTrip() {
 
 	// Verify state
 	importedParams := newKeeper.GetParams(newCtx)
-	suite.Equal(params.MaxContractSize, importedParams.MaxContractSize)
+	suite.Equal(params.MaxWasmCodeSize, importedParams.MaxWasmCodeSize)
 }
 
 func (suite *GenesisTestSuite) TestInitGenesisWithValidData() {
@@ -107,21 +108,26 @@ func (suite *GenesisTestSuite) TestInitGenesisWithValidData() {
 
 	// Create valid genesis state
 	genState := &types.GenesisState{
-		Params: types.Params{
-			MaxContractSize:         600 * 1024,
-			MaxInstantiateGas:       2_000_000,
-			MaxExecuteGas:           1_000_000,
-			MaxQueryGas:             100_000,
-			RequireAuthorization:    true,
-			EnableMigration:         false,
-			MaxContractSizePerBlock: 5 * 1024 * 1024,
+		Params: &types.Params{
+			CodeUploadAccess: &types.AccessConfig{
+				Permission: types.AccessTypeEverybody,
+			},
+			InstantiateDefaultPermission: types.AccessTypeEverybody,
+			MaxWasmCodeSize:              600 * 1024,
+			MaxGasWasmExecution:          2_000_000,
+			SecurityAnalysisEnabled:      true,
+			RequireAdminForMigrate:       false,
 		},
 		AuthorizedUploaders: []string{"aura1abc123", "aura1def456"},
 		PausedContracts:     []string{},
-		SecurityStats: types.SecurityStats{
-			TotalContractsUploaded:     0,
-			TotalContractsInstantiated: 0,
-			TotalExecutions:            0,
+		SecurityStats: &types.SecurityStats{
+			TotalCodesAnalyzed: 0,
+			CodesRejected:      0,
+			ContractsPaused:    0,
+			TotalExecutions:    0,
+			FailedExecutions:   0,
+			GasConsumedTotal:   0,
+			LastSecurityScan:   0,
 		},
 	}
 
@@ -130,7 +136,7 @@ func (suite *GenesisTestSuite) TestInitGenesisWithValidData() {
 
 	// Verify state was set correctly
 	params := suite.keeper.GetParams(ctx)
-	suite.Equal(genState.Params.MaxContractSize, params.MaxContractSize)
+	suite.Equal(genState.Params.MaxWasmCodeSize, params.MaxWasmCodeSize)
 }
 
 func (suite *GenesisTestSuite) TestInitGenesisWithInvalidData() {
@@ -138,23 +144,24 @@ func (suite *GenesisTestSuite) TestInitGenesisWithInvalidData() {
 
 	// Create genesis state with invalid params
 	genState := &types.GenesisState{
-		Params: types.Params{
-			MaxContractSize:         0, // Invalid
-			MaxInstantiateGas:       2_000_000,
-			MaxExecuteGas:           1_000_000,
-			MaxQueryGas:             100_000,
-			RequireAuthorization:    true,
-			EnableMigration:         false,
-			MaxContractSizePerBlock: 5 * 1024 * 1024,
+		Params: &types.Params{
+			CodeUploadAccess: &types.AccessConfig{
+				Permission: types.AccessTypeEverybody,
+			},
+			InstantiateDefaultPermission: types.AccessTypeEverybody,
+			MaxWasmCodeSize:              0, // Invalid - should be positive
+			MaxGasWasmExecution:          2_000_000,
+			SecurityAnalysisEnabled:      true,
+			RequireAdminForMigrate:       false,
 		},
 		AuthorizedUploaders: []string{},
 		PausedContracts:     []string{},
-		SecurityStats:       types.SecurityStats{},
+		SecurityStats:       &types.SecurityStats{},
 	}
 
 	err := suite.keeper.InitGenesis(ctx, *genState)
 	suite.Error(err)
-	suite.Contains(err.Error(), "max contract size must be positive")
+	suite.Contains(err.Error(), "max_wasm_code_size must be positive")
 }
 
 func (suite *GenesisTestSuite) TestDefaultGenesis() {
@@ -168,6 +175,6 @@ func (suite *GenesisTestSuite) TestDefaultGenesis() {
 
 	// Verify default params
 	params := suite.keeper.GetParams(suite.ctx)
-	suite.Equal(uint64(600*1024), params.MaxContractSize)
-	suite.Equal(uint64(2_000_000), params.MaxInstantiateGas)
+	suite.Equal(uint64(600*1024), params.MaxWasmCodeSize)
+	suite.Equal(uint64(10_000_000), params.MaxGasWasmExecution)
 }

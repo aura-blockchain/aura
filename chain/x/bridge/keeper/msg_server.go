@@ -437,6 +437,23 @@ func (ms msgServer) BurnTokens(goCtx context.Context, msg *bridgepb.MsgBurnToken
 }
 
 // LinkAddress links Aura/PAW/XAI addresses for shared identity.
+//
+// SECURITY CRITICAL: This function implements cross-chain identity linking with strict access controls:
+//   1. Signer verification: Only the Aura address owner can link addresses
+//   2. Cross-chain ownership proof: Cryptographic signatures required from PAW/XAI addresses
+//   3. Conflict prevention: Prevents overwriting existing links without proper authorization
+//
+// Attack vectors prevented:
+//   - Identity theft: Can't link someone else's addresses without their private keys
+//   - Cross-chain impersonation: Requires proof of ownership on each chain
+//   - Link hijacking: Existing links can't be overwritten by unauthorized parties
+//
+// Parameters:
+//   - msg: Contains addresses to link and cryptographic proofs of ownership
+//
+// Returns:
+//   - Response with success status and linked identity ID
+//   - Error if: signer not authorized, signatures invalid, addresses already linked
 func (ms msgServer) LinkAddress(goCtx context.Context, msg *bridgepb.MsgLinkAddress) (*bridgepb.MsgLinkAddressResponse, error) {
 	if msg == nil {
 		return nil, status.Error(codes.InvalidArgument, "request cannot be nil")
@@ -444,7 +461,67 @@ func (ms msgServer) LinkAddress(goCtx context.Context, msg *bridgepb.MsgLinkAddr
 	if msg.AuraAddress == "" {
 		return nil, status.Error(codes.InvalidArgument, "aura address required")
 	}
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// CRITICAL SECURITY: Verify signer owns the Aura address
+	// This prevents arbitrary address linking by unauthorized parties
+	if msg.Signer == "" {
+		return nil, status.Error(codes.Unauthenticated, "signer required")
+	}
+
+	// Verify signer is the Aura address owner
+	// The signer must match the Aura address being linked
+	if msg.AuraAddress != msg.Signer {
+		return nil, status.Error(codes.PermissionDenied,
+			"signer must be the Aura address owner")
+	}
+
+	// CRITICAL SECURITY: Check if addresses are already linked to someone else
+	// Prevent hijacking existing identity links
+	if msg.PawAddress != "" {
+		existingIdentity := ms.Keeper.findSharedIdentityByLinkedAddress(ctx, "paw", msg.PawAddress)
+		if existingIdentity != nil && existingIdentity.Address != msg.Signer {
+			return nil, status.Error(codes.AlreadyExists,
+				fmt.Sprintf("PAW address %s already linked to identity %s",
+					msg.PawAddress, existingIdentity.Address))
+		}
+	}
+
+	if msg.XaiAddress != "" {
+		existingIdentity := ms.Keeper.findSharedIdentityByLinkedAddress(ctx, "xai", msg.XaiAddress)
+		if existingIdentity != nil && existingIdentity.Address != msg.Signer {
+			return nil, status.Error(codes.AlreadyExists,
+				fmt.Sprintf("XAI address %s already linked to identity %s",
+					msg.XaiAddress, existingIdentity.Address))
+		}
+	}
+
+	// CRITICAL SECURITY: Verify cross-chain ownership proofs
+	// Require cryptographic signatures from PAW/XAI addresses to prove ownership
+	if msg.PawAddress != "" {
+		if len(msg.PawSignature) == 0 {
+			return nil, status.Error(codes.InvalidArgument,
+				"PAW signature required when linking PAW address")
+		}
+		if !ms.Keeper.verifyPawAddressOwnership(ctx, msg.AuraAddress, msg.PawAddress, msg.PawSignature) {
+			return nil, status.Error(codes.Unauthenticated,
+				"invalid PAW address ownership proof")
+		}
+	}
+
+	if msg.XaiAddress != "" {
+		if len(msg.XaiSignature) == 0 {
+			return nil, status.Error(codes.InvalidArgument,
+				"XAI signature required when linking XAI address")
+		}
+		if !ms.Keeper.verifyXaiAddressOwnership(ctx, msg.AuraAddress, msg.XaiAddress, msg.XaiSignature) {
+			return nil, status.Error(codes.Unauthenticated,
+				"invalid XAI address ownership proof")
+		}
+	}
+
+	// All security checks passed - create or update the shared identity
 	linked := map[string]string{"aura": msg.AuraAddress}
 	if msg.PawAddress != "" {
 		linked["paw"] = msg.PawAddress
@@ -452,19 +529,35 @@ func (ms msgServer) LinkAddress(goCtx context.Context, msg *bridgepb.MsgLinkAddr
 	if msg.XaiAddress != "" {
 		linked["xai"] = msg.XaiAddress
 	}
+
 	identity := &bridgepb.SharedIdentity{
 		Address:         msg.AuraAddress,
-		VerifiedAura:    msg.AuraAddress != "",
-		VerifiedPaw:     msg.PawAddress != "",
-		VerifiedXai:     msg.XaiAddress != "",
+		VerifiedAura:    true, // Always true since signer verification passed
+		VerifiedPaw:     msg.PawAddress != "" && len(msg.PawSignature) > 0,
+		VerifiedXai:     msg.XaiAddress != "" && len(msg.XaiSignature) > 0,
 		LinkedAddresses: linked,
 		VerifiedAt:      timestamppb.New(ctx.BlockTime()),
 	}
+
 	if ms.Keeper.vcKeeper != nil {
 		identity.AuraIrScore = ms.Keeper.vcKeeper.GetIRScore(ctx, msg.AuraAddress)
 		identity.ReputationScore = identity.AuraIrScore * 10
 	}
+
 	ms.Keeper.setSharedIdentity(ctx, identity)
+
+	// Emit event for audit trail
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			"link_address",
+			sdk.NewAttribute("aura_address", msg.AuraAddress),
+			sdk.NewAttribute("paw_address", msg.PawAddress),
+			sdk.NewAttribute("xai_address", msg.XaiAddress),
+			sdk.NewAttribute("verified_paw", fmt.Sprintf("%t", identity.VerifiedPaw)),
+			sdk.NewAttribute("verified_xai", fmt.Sprintf("%t", identity.VerifiedXai)),
+		),
+	)
+
 	return &bridgepb.MsgLinkAddressResponse{Success: true, LinkedIdentityId: msg.AuraAddress}, nil
 }
 

@@ -16,6 +16,7 @@ var (
 	CircuitBreakerPrefix    = []byte{0x16}
 	WashTradePrefix         = []byte{0x17}
 	OrderManipulationPrefix = []byte{0x18}
+	LastPricePrefix         = []byte{0x19}
 )
 
 // TradeBlockKey returns the key for tracking last trade block
@@ -91,6 +92,11 @@ func OrderManipulationKey(address string, poolID string) []byte {
 	key = append(key, byte(0x00)) // separator
 	key = append(key, []byte(poolID)...)
 	return key
+}
+
+// LastPriceKey returns the key for last recorded price (sanity checks)
+func LastPriceKey(poolID string) []byte {
+	return append(LastPricePrefix, []byte(poolID)...)
 }
 
 // FormatSecurityKey formats a security key for logging
