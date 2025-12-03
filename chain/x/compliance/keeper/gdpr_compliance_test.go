@@ -145,8 +145,9 @@ func TestGDPRCompliance_NoPIIInProtobuf(t *testing.T) {
 // 4. Off-chain data can be deleted (GDPR Article 17)
 // 5. On-chain commitment remains for audit trail
 func TestGDPRCompliance_CommitmentBasedStorage(t *testing.T) {
-	suite := setupKeeperTestSuite(t)
-	ctx := suite.ctx
+	suite := NewTestSuite(t)
+	ctx := suite.Ctx
+	keeper := suite.Keeper
 
 	t.Run("PII_StoredAsCommitmentOnly", func(t *testing.T) {
 		// Simulate off-chain PII data (NEVER stored on-chain)
@@ -173,11 +174,11 @@ func TestGDPRCompliance_CommitmentBasedStorage(t *testing.T) {
 		}
 
 		// Store on-chain
-		err = suite.keeper.SetKYCRecord(ctx, kycRecord)
+		err = keeper.SetKYCRecord(ctx, kycRecord)
 		require.NoError(t, err)
 
 		// Retrieve from chain
-		retrieved, err := suite.keeper.GetKYCRecord(ctx, "aura1test")
+		retrieved, err := keeper.GetKYCRecord(ctx, "aura1test")
 		require.NoError(t, err)
 
 		// Verify only commitment is stored, not raw PII
@@ -209,11 +210,11 @@ func TestGDPRCompliance_CommitmentBasedStorage(t *testing.T) {
 			PiiCommitment: commitment,
 			Jurisdiction:  "GB",
 		}
-		err = suite.keeper.SetKYCRecord(ctx, kycRecord)
+		err = keeper.SetKYCRecord(ctx, kycRecord)
 		require.NoError(t, err)
 
 		// Later, verify data matches commitment (without storing on-chain)
-		retrieved, err := suite.keeper.GetKYCRecord(ctx, "aura1alice")
+		retrieved, err := keeper.GetKYCRecord(ctx, "aura1alice")
 		require.NoError(t, err)
 
 		// Correct PII verifies successfully
@@ -244,15 +245,16 @@ func TestGDPRCompliance_CommitmentBasedStorage(t *testing.T) {
 // - Off-chain PII is deleted by providers (event-driven)
 // - Event provides proof of erasure request
 func TestGDPRCompliance_RightToErasure(t *testing.T) {
-	suite := setupKeeperTestSuite(t)
-	ctx := suite.ctx
+	suite := NewTestSuite(t)
+	ctx := suite.Ctx
+	keeper := suite.Keeper
 
 	t.Run("ErasureRequest_EmitsImmutableEvent", func(t *testing.T) {
 		// User submits erasure request
 		address := "aura1user"
 
 		// Erasure event should be emitted (monitored by off-chain systems)
-		err := suite.keeper.TriggerDataDeletion(ctx, address, "data_processing")
+		err := keeper.TriggerDataDeletion(ctx, address, "data_processing")
 		require.NoError(t, err)
 
 		// Verify event was emitted
@@ -260,21 +262,28 @@ func TestGDPRCompliance_RightToErasure(t *testing.T) {
 		require.NotEmpty(t, events)
 
 		// Find erasure event
-		var erasureEvent *types.EventGDPRDataDeletionRequested
+		var foundEvent bool
+		var eventAddress string
+		var eventConsentType string
 		for _, event := range events {
 			if event.Type == "gdpr_data_deletion_requested" {
 				// Event exists - off-chain systems will see this
-				erasureEvent = &types.EventGDPRDataDeletionRequested{
-					Address:     getAttributeValue(event, "address"),
-					ConsentType: getAttributeValue(event, "consent_type"),
+				foundEvent = true
+				for _, attr := range event.Attributes {
+					if string(attr.Key) == types.AttributeKeyAddress {
+						eventAddress = string(attr.Value)
+					}
+					if string(attr.Key) == types.AttributeKeyConsentType {
+						eventConsentType = string(attr.Value)
+					}
 				}
 				break
 			}
 		}
 
-		require.NotNil(t, erasureEvent, "Erasure event must be emitted")
-		require.Equal(t, address, erasureEvent.Address)
-		require.Equal(t, "data_processing", erasureEvent.ConsentType)
+		require.True(t, foundEvent, "Erasure event must be emitted")
+		require.Equal(t, address, eventAddress)
+		require.Equal(t, "data_processing", eventConsentType)
 	})
 
 	t.Run("OnChainCommitments_RemainAfterErasure", func(t *testing.T) {
@@ -286,15 +295,15 @@ func TestGDPRCompliance_RightToErasure(t *testing.T) {
 			PiiCommitment: []byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20},
 			Jurisdiction:  "US",
 		}
-		err := suite.keeper.SetKYCRecord(ctx, kycRecord)
+		err := keeper.SetKYCRecord(ctx, kycRecord)
 		require.NoError(t, err)
 
 		// User requests erasure
-		err = suite.keeper.TriggerDataDeletion(ctx, "aura1user", "kyc_data")
+		err = keeper.TriggerDataDeletion(ctx, "aura1user", "kyc_data")
 		require.NoError(t, err)
 
 		// On-chain record still exists (immutable blockchain)
-		retrieved, err := suite.keeper.GetKYCRecord(ctx, "aura1user")
+		retrieved, err := keeper.GetKYCRecord(ctx, "aura1user")
 		require.NoError(t, err)
 		require.NotNil(t, retrieved)
 
@@ -310,17 +319,17 @@ func TestGDPRCompliance_RightToErasure(t *testing.T) {
 		address := "aura1restricted"
 
 		// Initially no restriction
-		require.False(t, suite.keeper.IsProcessingRestricted(ctx, address))
+		require.False(t, keeper.IsProcessingRestricted(ctx, address))
 
 		// User withdraws consent
-		err := suite.keeper.SetProcessingRestriction(ctx, address, true)
+		err := keeper.SetProcessingRestriction(ctx, address, true)
 		require.NoError(t, err)
 
 		// Processing is now restricted
-		require.True(t, suite.keeper.IsProcessingRestricted(ctx, address))
+		require.True(t, keeper.IsProcessingRestricted(ctx, address))
 
 		// Data processing should be blocked
-		canProcess := suite.keeper.CanProcessData(ctx, address, "data_processing")
+		canProcess := keeper.CanProcessData(ctx, address, "data_processing")
 		require.False(t, canProcess, "Processing must be blocked after consent withdrawal")
 	})
 }
@@ -376,8 +385,9 @@ func TestGDPRCompliance_DataMinimization(t *testing.T) {
 // - Country code alone is not identifiable PII (GDPR Recital 26)
 // - Multiple legal bases: Legal obligation (OFAC) + Legitimate interest (sanctions compliance)
 func TestGDPRCompliance_JurisdictionMustBeStored(t *testing.T) {
-	suite := setupKeeperTestSuite(t)
-	ctx := suite.ctx
+	suite := NewTestSuite(t)
+	ctx := suite.Ctx
+	keeper := suite.Keeper
 
 	t.Run("Jurisdiction_RequiredForOFACCompliance", func(t *testing.T) {
 		// Jurisdiction must be provided
@@ -389,31 +399,31 @@ func TestGDPRCompliance_JurisdictionMustBeStored(t *testing.T) {
 			Jurisdiction:  "US", // Required for OFAC validation
 		}
 
-		err := suite.keeper.SetKYCRecord(ctx, kycRecord)
+		err := keeper.SetKYCRecord(ctx, kycRecord)
 		require.NoError(t, err)
 
 		// Retrieve and verify jurisdiction is stored
-		retrieved, err := suite.keeper.GetKYCRecord(ctx, "aura1test")
+		retrieved, err := keeper.GetKYCRecord(ctx, "aura1test")
 		require.NoError(t, err)
 		require.Equal(t, "US", retrieved.Jurisdiction)
 	})
 
 	t.Run("SanctionedJurisdiction_RejectedOnChain", func(t *testing.T) {
 		// Set up blocked jurisdictions (OFAC sanctioned countries)
-		params := suite.keeper.GetParams(ctx)
+		params := keeper.GetParams(ctx)
 		params.BlockedJurisdictions = []string{"KP", "IR", "SY", "CU"}
-		err := suite.keeper.SetParams(ctx, params)
+		err := keeper.SetParams(ctx, params)
 		require.NoError(t, err)
 
 		// Attempt to submit KYC from sanctioned country
-		blocked := suite.keeper.IsJurisdictionBlocked(ctx, "KP")
+		blocked := keeper.IsJurisdictionBlocked(ctx, "KP")
 		require.True(t, blocked, "North Korea should be blocked")
 
-		blocked = suite.keeper.IsJurisdictionBlocked(ctx, "IR")
+		blocked = keeper.IsJurisdictionBlocked(ctx, "IR")
 		require.True(t, blocked, "Iran should be blocked")
 
 		// Non-sanctioned country is allowed
-		blocked = suite.keeper.IsJurisdictionBlocked(ctx, "US")
+		blocked = keeper.IsJurisdictionBlocked(ctx, "US")
 		require.False(t, blocked, "US should not be blocked")
 	})
 }
@@ -442,22 +452,6 @@ func TestGDPRCompliance_Documentation(t *testing.T) {
 		consent.AuditCommitment = make([]byte, 32)
 		require.Len(t, consent.AuditCommitment, 32)
 	})
-}
-
-// Helper function to get attribute value from event
-func getAttributeValue(event types.Event, key string) string {
-	for _, attr := range event.Attributes {
-		if string(attr.Key) == key {
-			return string(attr.Value)
-		}
-	}
-	return ""
-}
-
-// EventGDPRDataDeletionRequested represents the erasure event structure
-type EventGDPRDataDeletionRequested struct {
-	Address     string
-	ConsentType string
 }
 
 // TestGDPRCompliance_CommitmentLength verifies that commitments are

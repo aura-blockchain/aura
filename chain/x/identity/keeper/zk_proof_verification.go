@@ -519,7 +519,7 @@ func (k *Keeper) logProofVerification(ctx sdk.Context, proofType ZKProofType, pr
 	}
 
 	// Marshal and store
-	bz, err := k.cdc.Marshal(&auditRecord)
+	bz, err := json.Marshal(&auditRecord)
 	if err != nil {
 		// Log error but don't fail verification
 		k.logger.Error("failed to marshal proof audit record", "error", err)

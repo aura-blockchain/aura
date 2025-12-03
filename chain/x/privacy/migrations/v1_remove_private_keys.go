@@ -2,6 +2,7 @@ package migrations
 
 import (
 	"context"
+	"fmt"
 
 	"cosmossdk.io/store/prefix"
 	storetypes "cosmossdk.io/store/types"
@@ -87,8 +88,8 @@ func MigrateV1RemovePrivateKeys(ctx context.Context, storeKey storetypes.StoreKe
 		sdk.NewEvent(
 			"privacy_migration_v1",
 			sdk.NewAttribute("migration_type", "remove_private_keys"),
-			sdk.NewAttribute("total_keys_processed", sdk.IntProto{Int: int64(totalKeys)}.String()),
-			sdk.NewAttribute("invalid_keys_removed", sdk.IntProto{Int: int64(cleanedKeys)}.String()),
+			sdk.NewAttribute("total_keys_processed", fmt.Sprintf("%d", totalKeys)),
+			sdk.NewAttribute("invalid_keys_removed", fmt.Sprintf("%d", cleanedKeys)),
 		),
 	)
 
