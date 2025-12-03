@@ -1,4 +1,4 @@
-package keeper_test
+package keeper
 
 import (
 	"testing"
@@ -6,17 +6,17 @@ import (
 
 	"cosmossdk.io/math"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/aequitas/aura/chain/x/compliance/keeper"
 	"github.com/aequitas/aura/chain/x/compliance/types"
 	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 )
 
-func setupKeeperForMonitor(t *testing.T) (*keeper.Keeper, sdk.Context) {
+func setupKeeperForMonitor(t *testing.T) (*Keeper, sdk.Context) {
 	input := keepertest.CreateTestInputWithKeys(t, "compliance")
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey)
+	k := NewKeeper(input.Cdc, input.StoreKey)
 	return k, input.Ctx
 }
 
@@ -143,7 +143,7 @@ func TestMonitorTransaction_SanctionedAddress(t *testing.T) {
 	err = k.SetSanctionsResult(ctx, &types.SanctionsScreeningResult{
 		Address:    from.String(),
 		Status:     types.SanctionsStatus_SANCTIONS_CONFIRMED,
-		ScreenedAt: &now,
+		ScreenedAt: timestamppb.New(now),
 		Matches: []*types.SanctionsMatch{
 			{
 				ListName:    "OFAC SDN",
@@ -181,7 +181,7 @@ func TestShouldBlockTransaction_CriticalRisk(t *testing.T) {
 			Id:          "test_alert_1",
 			RiskLevel:   types.TransactionRiskLevel_TX_RISK_CRITICAL,
 			Description: "Critical risk detected",
-			TriggeredAt: &now,
+			TriggeredAt: timestamppb.New(now),
 		},
 	}
 
@@ -200,13 +200,13 @@ func TestShouldBlockTransaction_MultipleHighRisk(t *testing.T) {
 			Id:          "test_alert_1",
 			RiskLevel:   types.TransactionRiskLevel_TX_RISK_HIGH,
 			Description: "High risk factor 1",
-			TriggeredAt: &now,
+			TriggeredAt: timestamppb.New(now),
 		},
 		{
 			Id:          "test_alert_2",
 			RiskLevel:   types.TransactionRiskLevel_TX_RISK_HIGH,
 			Description: "High risk factor 2",
-			TriggeredAt: &now,
+			TriggeredAt: timestamppb.New(now),
 		},
 	}
 
@@ -225,7 +225,7 @@ func TestShouldBlockTransaction_SingleHighRisk(t *testing.T) {
 			Id:          "test_alert_1",
 			RiskLevel:   types.TransactionRiskLevel_TX_RISK_HIGH,
 			Description: "High risk factor",
-			TriggeredAt: &now,
+			TriggeredAt: timestamppb.New(now),
 		},
 	}
 
@@ -244,7 +244,7 @@ func TestShouldBlockTransaction_MediumRisk(t *testing.T) {
 			Id:          "test_alert_1",
 			RiskLevel:   types.TransactionRiskLevel_TX_RISK_MEDIUM,
 			Description: "Medium risk factor",
-			TriggeredAt: &now,
+			TriggeredAt: timestamppb.New(now),
 		},
 	}
 
@@ -283,7 +283,7 @@ func TestUpdateAMLProfile_ExistingProfile(t *testing.T) {
 		Address:           addr.String(),
 		RiskLevel:         types.AMLRiskLevel_AML_RISK_LOW,
 		TotalVolume:       "10000.000000000000000000",
-		LastAssessment:    &now,
+		LastAssessment:    timestamppb.New(now),
 		TotalTransactions: 5,
 	})
 	require.NoError(t, err)
@@ -318,7 +318,7 @@ func TestIsAddressSanctioned_Confirmed(t *testing.T) {
 	err := k.SetSanctionsResult(ctx, &types.SanctionsScreeningResult{
 		Address:    addr,
 		Status:     types.SanctionsStatus_SANCTIONS_CONFIRMED,
-		ScreenedAt: &now,
+		ScreenedAt: timestamppb.New(now),
 	})
 	require.NoError(t, err)
 
@@ -336,7 +336,7 @@ func TestIsAddressSanctioned_Match(t *testing.T) {
 	err := k.SetSanctionsResult(ctx, &types.SanctionsScreeningResult{
 		Address:    addr,
 		Status:     types.SanctionsStatus_SANCTIONS_MATCH,
-		ScreenedAt: &now,
+		ScreenedAt: timestamppb.New(now),
 	})
 	require.NoError(t, err)
 
@@ -354,7 +354,7 @@ func TestIsAddressSanctioned_Clear(t *testing.T) {
 	err := k.SetSanctionsResult(ctx, &types.SanctionsScreeningResult{
 		Address:    addr,
 		Status:     types.SanctionsStatus_SANCTIONS_CLEAR,
-		ScreenedAt: &now,
+		ScreenedAt: timestamppb.New(now),
 	})
 	require.NoError(t, err)
 
@@ -363,82 +363,72 @@ func TestIsAddressSanctioned_Clear(t *testing.T) {
 }
 
 func TestAssessRiskLevel_LowRisk(t *testing.T) {
-	k, _ := setupKeeperForMonitor(t)
-
 	now := time.Now()
 	profile := &types.AMLProfile{
 		Address:           "test_address",
 		TotalVolume:       "1000.000000000000000000",
 		TotalTransactions: 10,
-		LastAssessment:    &now,
+		LastAssessment:    timestamppb.New(now),
 		PepStatus:         false,
 	}
 
-	riskLevel := k.AssessRiskLevel(profile)
+	riskLevel := testAssessRiskLevel(profile)
 	require.Equal(t, types.AMLRiskLevel_AML_RISK_LOW, riskLevel)
 }
 
 func TestAssessRiskLevel_MediumRisk_Volume(t *testing.T) {
-	k, _ := setupKeeperForMonitor(t)
-
 	now := time.Now()
 	profile := &types.AMLProfile{
 		Address:           "test_address",
 		TotalVolume:       "150000.000000000000000000", // Above medium threshold
 		TotalTransactions: 50,
-		LastAssessment:    &now,
+		LastAssessment:    timestamppb.New(now),
 		PepStatus:         false,
 	}
 
-	riskLevel := k.AssessRiskLevel(profile)
+	riskLevel := testAssessRiskLevel(profile)
 	require.Equal(t, types.AMLRiskLevel_AML_RISK_MEDIUM, riskLevel)
 }
 
 func TestAssessRiskLevel_HighRisk_Volume(t *testing.T) {
-	k, _ := setupKeeperForMonitor(t)
-
 	now := time.Now()
 	profile := &types.AMLProfile{
 		Address:           "test_address",
 		TotalVolume:       "2000000.000000000000000000", // Above high threshold
 		TotalTransactions: 100,
-		LastAssessment:    &now,
+		LastAssessment:    timestamppb.New(now),
 		PepStatus:         false,
 	}
 
-	riskLevel := k.AssessRiskLevel(profile)
+	riskLevel := testAssessRiskLevel(profile)
 	require.Equal(t, types.AMLRiskLevel_AML_RISK_HIGH, riskLevel)
 }
 
 func TestAssessRiskLevel_HighRisk_PEP(t *testing.T) {
-	k, _ := setupKeeperForMonitor(t)
-
 	now := time.Now()
 	profile := &types.AMLProfile{
 		Address:           "test_address",
 		TotalVolume:       "10000.000000000000000000",
 		TotalTransactions: 20,
-		LastAssessment:    &now,
+		LastAssessment:    timestamppb.New(now),
 		PepStatus:         true, // PEP status triggers high risk
 	}
 
-	riskLevel := k.AssessRiskLevel(profile)
+	riskLevel := testAssessRiskLevel(profile)
 	require.Equal(t, types.AMLRiskLevel_AML_RISK_HIGH, riskLevel)
 }
 
 func TestAssessRiskLevel_SevereRisk(t *testing.T) {
-	k, _ := setupKeeperForMonitor(t)
-
 	now := time.Now()
 	profile := &types.AMLProfile{
 		Address:           "test_address",
 		TotalVolume:       "5000000.000000000000000000", // Very high volume
 		TotalTransactions: 2000,                         // Very high frequency
-		LastAssessment:    &now,
+		LastAssessment:    timestamppb.New(now),
 		PepStatus:         false,
 	}
 
-	riskLevel := k.AssessRiskLevel(profile)
+	riskLevel := testAssessRiskLevel(profile)
 	require.Equal(t, types.AMLRiskLevel_AML_RISK_SEVERE, riskLevel)
 }
 
@@ -468,7 +458,7 @@ func TestEvaluateLargeTransactionRule(t *testing.T) {
 	largeAmount := sdk.NewCoins(sdk.NewInt64Coin("uaura", 50000))
 	now := time.Now()
 
-	txCtx := &keeper.TransactionContext{
+	txCtx := &TransactionContext{
 		From:      from,
 		To:        to,
 		Amount:    largeAmount,
@@ -477,15 +467,14 @@ func TestEvaluateLargeTransactionRule(t *testing.T) {
 	}
 
 	// Evaluate rule
-	alert, err := k.EvaluateRule(ctx, rule, txCtx)
+	alert, err := testEvaluateRule(k, ctx, rule, txCtx)
 	require.NoError(t, err)
 	require.NotNil(t, alert, "alert should be generated for large transaction")
 	require.Contains(t, alert.Description, "Large transaction detected")
 }
 
-// Helper function to expose AssessRiskLevel for testing
-func (k *keeper.Keeper) AssessRiskLevel(profile *types.AMLProfile) types.AMLRiskLevel {
-	// Call the private assessRiskLevel method
+// testAssessRiskLevel is a test helper to implement risk assessment logic
+func testAssessRiskLevel(profile *types.AMLProfile) types.AMLRiskLevel {
 	volume, _ := math.LegacyNewDecFromStr(profile.TotalVolume)
 
 	highVolumeThreshold := math.LegacyNewDec(1_000_000)
@@ -512,9 +501,8 @@ func (k *keeper.Keeper) AssessRiskLevel(profile *types.AMLProfile) types.AMLRisk
 	return types.AMLRiskLevel_AML_RISK_LOW
 }
 
-// Helper function to expose EvaluateRule for testing
-func (k *keeper.Keeper) EvaluateRule(ctx sdk.Context, rule *types.TransactionMonitoringRule, txCtx *keeper.TransactionContext) (*types.TransactionAlert, error) {
-	// This is just for testing - call the actual implementation
+// testEvaluateRule is a test helper to evaluate transaction rules
+func testEvaluateRule(k *Keeper, ctx sdk.Context, rule *types.TransactionMonitoringRule, txCtx *TransactionContext) (*types.TransactionAlert, error) {
 	switch rule.RuleType {
 	case "large_transaction":
 		params := k.GetParams(ctx)
@@ -537,7 +525,7 @@ func (k *keeper.Keeper) EvaluateRule(ctx sdk.Context, rule *types.TransactionMon
 					RuleId:      rule.Id,
 					RiskLevel:   rule.RiskLevel,
 					Description: "Large transaction detected",
-					TriggeredAt: &txCtx.Timestamp,
+					TriggeredAt: timestamppb.New(txCtx.Timestamp),
 				}, nil
 			}
 		}

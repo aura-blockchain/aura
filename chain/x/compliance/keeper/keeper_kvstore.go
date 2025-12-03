@@ -154,6 +154,7 @@ func (k *Keeper) UpdateKYCRecord(ctx sdk.Context, newRecord *types.KYCRecord, re
 			sdk.NewAttribute(types.AttributeKeyAddress, newRecord.Address),
 			sdk.NewAttribute(types.AttributeKeyProvider, newRecord.Provider),
 			sdk.NewAttribute(types.AttributeKeyKYCLevel, newRecord.KycLevel.String()),
+			sdk.NewAttribute(types.AttributeKeyJurisdiction, newRecord.Jurisdiction),
 			sdk.NewAttribute("version", fmt.Sprintf("%d", newRecord.Version)),
 			sdk.NewAttribute("update_reason", reason),
 			sdk.NewAttribute(types.AttributeKeyBlockHeight, fmt.Sprintf("%d", ctx.BlockHeight())),
