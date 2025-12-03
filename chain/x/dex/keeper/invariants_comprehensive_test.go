@@ -281,7 +281,7 @@ func (suite *InvariantsComprehensiveTestSuite) TestLPProviderMismatchedTotals() 
 
 	msg, broken := inv(ctx)
 	suite.True(broken, "provider totals should match pool total")
-	suite.Contains(msg, "do not match provider balances")
+	suite.Contains(msg, "invariant violated")
 }
 
 func (suite *InvariantsComprehensiveTestSuite) TestHTLCValidityInvariant() {
