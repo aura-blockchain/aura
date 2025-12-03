@@ -1,12 +1,13 @@
 ---
 id: "054"
-title: "Bridge Fraud Proof Window Not Enforced"
-status: ready
+title: "Bridge Fraud Proof Window Enforced"
+status: complete
 priority: p2
 category: security
 module: bridge
 severity: HIGH
 source: bridge-security-matrix
+completed: 2025-12-03
 ---
 
 # Bridge Fraud Proof Window Not Enforced
