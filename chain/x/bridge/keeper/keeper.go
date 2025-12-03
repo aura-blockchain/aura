@@ -115,6 +115,11 @@ func (k Keeper) getTransfer(ctx sdk.Context, transferID string) (*types.CrossCha
 	return &transfer, true
 }
 
+// GetTransfer is a public exported method for getting a transfer (for tests).
+func (k Keeper) GetTransfer(ctx sdk.Context, transferID string) (*types.CrossChainTransfer, bool) {
+	return k.getTransfer(ctx, transferID)
+}
+
 func (k Keeper) deleteTransfer(ctx sdk.Context, transferID string) {
 	if transferID == "" {
 		return
