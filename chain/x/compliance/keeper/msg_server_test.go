@@ -220,39 +220,39 @@ func TestMsgRecordGDPRConsent_WithdrawalEmitsEnforcementEvent(t *testing.T) {
 		if event.Type == types.EventTypeGDPRConsentWithdrawn {
 			withdrawalEventFound = true
 
-			// Verify event attributes
-			var processingRestrictedAttr, deletionTriggeredAttr sdk.Attribute
+			// Verify event attributes - event.Attributes are ABCI types
+			var processingRestrictedValue, deletionTriggeredValue string
 			for _, attr := range event.Attributes {
 				if attr.Key == types.AttributeKeyProcessingRestricted {
-					processingRestrictedAttr = attr
+					processingRestrictedValue = attr.Value
 				}
 				if attr.Key == types.AttributeKeyDeletionTriggered {
-					deletionTriggeredAttr = attr
+					deletionTriggeredValue = attr.Value
 				}
 			}
 
-			require.NotNil(t, processingRestrictedAttr.Key, "processing_restricted attribute should be present")
-			require.Equal(t, "true", processingRestrictedAttr.Value, "processing_restricted should be true")
-			require.NotNil(t, deletionTriggeredAttr.Key, "deletion_triggered attribute should be present")
-			require.Equal(t, "true", deletionTriggeredAttr.Value, "deletion_triggered should be true")
+			require.NotEmpty(t, processingRestrictedValue, "processing_restricted attribute should be present")
+			require.Equal(t, "true", processingRestrictedValue, "processing_restricted should be true")
+			require.NotEmpty(t, deletionTriggeredValue, "deletion_triggered attribute should be present")
+			require.Equal(t, "true", deletionTriggeredValue, "deletion_triggered should be true")
 		}
 
 		if event.Type == "gdpr_data_deletion_requested" {
 			deletionEventFound = true
 
-			// Verify deletion event attributes
-			var addressAttr, consentTypeAttr sdk.Attribute
+			// Verify deletion event attributes - event.Attributes are ABCI types
+			var addressValue, consentTypeValue string
 			for _, attr := range event.Attributes {
 				if attr.Key == types.AttributeKeyAddress {
-					addressAttr = attr
+					addressValue = attr.Value
 				}
 				if attr.Key == types.AttributeKeyConsentType {
-					consentTypeAttr = attr
+					consentTypeValue = attr.Value
 				}
 			}
 
-			require.Equal(t, address, addressAttr.Value, "address should match")
-			require.Equal(t, consentType, consentTypeAttr.Value, "consent type should match")
+			require.Equal(t, address, addressValue, "address should match")
+			require.Equal(t, consentType, consentTypeValue, "consent type should match")
 		}
 	}
 
