@@ -129,6 +129,8 @@ func TestMonitorTransaction_SanctionedAddress(t *testing.T) {
 		SanctionsScreeningEnabled:    true,
 		SingleTransactionLimit:       "100000",
 		VelocityLimit_24H:            "1000000",
+		StructuringThresholdCount:    5,                    // Required when transaction_monitoring_enabled is true
+		SanctionsLists:               []string{"OFAC_SDN"}, // Required when sanctions_screening_enabled is true
 	}
 	err := k.SetParams(ctx, params)
 	require.NoError(t, err)

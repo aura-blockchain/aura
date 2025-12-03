@@ -9,6 +9,7 @@ import (
 	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/compliance/types"
@@ -37,7 +38,8 @@ var (
 
 func (k *Keeper) SetKYCRecord(ctx sdk.Context, record *types.KYCRecord) error {
 	store := ctx.KVStore(k.storeKey)
-	bz, err := k.cdc.Marshal(record)
+	// Use proto.Marshal for protoimpl-generated types (not gogoproto)
+	bz, err := proto.Marshal(record)
 	if err != nil {
 		return err
 	}
@@ -55,7 +57,8 @@ func (k *Keeper) GetKYCRecord(ctx sdk.Context, address string) (*types.KYCRecord
 	}
 
 	var record types.KYCRecord
-	if err := k.cdc.Unmarshal(bz, &record); err != nil {
+	// Use proto.Unmarshal for protoimpl-generated types (not gogoproto)
+	if err := proto.Unmarshal(bz, &record); err != nil {
 		return nil, err
 	}
 	return &record, nil
@@ -194,7 +197,8 @@ func (k *Keeper) AddKYCHistory(ctx sdk.Context, entry *types.KYCHistoryEntry) er
 
 	// Store updated history list
 	list := &types.KYCHistoryList{Entries: history}
-	bz, err := k.cdc.Marshal(list)
+	// Use proto.Marshal for protoimpl-generated types
+	bz, err := proto.Marshal(list)
 	if err != nil {
 		return err
 	}
@@ -229,7 +233,8 @@ func (k *Keeper) GetKYCHistory(ctx sdk.Context, address string) ([]*types.KYCHis
 	}
 
 	var list types.KYCHistoryList
-	if err := k.cdc.Unmarshal(bz, &list); err != nil {
+	// Use proto.Unmarshal for protoimpl-generated types
+	if err := proto.Unmarshal(bz, &list); err != nil {
 		return nil, err
 	}
 

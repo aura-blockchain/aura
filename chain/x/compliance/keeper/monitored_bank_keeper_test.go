@@ -38,6 +38,7 @@ func TestMonitoredBankKeeper_SendCoins_Allowed(t *testing.T) {
 		SingleTransactionLimit:       "1000000", // High threshold
 		VelocityLimit_24H:            "10000000",
 		SanctionsScreeningEnabled:    false,
+		StructuringThresholdCount:    5, // Required when transaction_monitoring_enabled is true
 	}
 	err := complianceKeeper.SetParams(complianceInput.Ctx, params)
 	require.NoError(t, err)

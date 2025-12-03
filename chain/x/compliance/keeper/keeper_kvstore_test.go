@@ -680,13 +680,26 @@ func TestGetParams_Default(t *testing.T) {
 func TestSetParams_ValidatesParams(t *testing.T) {
 	keeper, ctx := setupTestKeeper(t)
 
+	// Test valid params with kyc_required = true and kyc_expiry_days > 0
 	params := types.ComplianceParams{
 		KycRequired:     true,
 		MinimumKycLevel: types.KYCLevel_KYC_LEVEL_BASIC,
+		KycExpiryDays:   365, // Required when KycRequired is true
 	}
 
 	err := keeper.SetParamsToStore(ctx, params)
-	require.NoError(t, err) // ValidateParams currently allows all values
+	require.NoError(t, err, "Valid params should not error")
+
+	// Test invalid params: kyc_required = true but kyc_expiry_days = 0
+	invalidParams := types.ComplianceParams{
+		KycRequired:     true,
+		MinimumKycLevel: types.KYCLevel_KYC_LEVEL_BASIC,
+		KycExpiryDays:   0, // Invalid: must be > 0 when KycRequired is true
+	}
+
+	err = keeper.SetParamsToStore(ctx, invalidParams)
+	require.Error(t, err, "Should error when kyc_required=true but kyc_expiry_days=0")
+	require.Contains(t, err.Error(), "kyc_expiry_days must be positive")
 }
 
 // ============================================================================
