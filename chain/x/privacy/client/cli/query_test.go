@@ -266,60 +266,19 @@ func (s *QueryCLITestSuite) TestCmdQueryVerifyZKProof() {
 	}
 }
 
-// TestCmdQueryDecryptWithViewKey tests decrypt with view key query command
-func (s *QueryCLITestSuite) TestCmdQueryDecryptWithViewKey() {
-	tests := []struct {
-		name      string
-		args      []string
-		expectErr bool
-		errMsg    string
-	}{
-		{
-			name:      "valid encrypted data and key",
-			args:      []string{"abc123", "def456"},
-			expectErr: false,
-		},
-		{
-			name:      "another valid pair",
-			args:      []string{"789abc", "012def"},
-			expectErr: false,
-		},
-		{
-			name:      "invalid encrypted data hex",
-			args:      []string{"invalid-hex", "def456"},
-			expectErr: true,
-			errMsg:    "invalid encrypted-data",
-		},
-		{
-			name:      "invalid private view key hex",
-			args:      []string{"abc123", "invalid-hex"},
-			expectErr: true,
-			errMsg:    "invalid private-view-key",
-		},
-		{
-			name:      "missing private view key",
-			args:      []string{"abc123"},
-			expectErr: true,
-		},
-		{
-			name:      "no arguments",
-			args:      []string{},
-			expectErr: true,
-		},
-	}
-
-	for _, tc := range tests {
-		s.Run(tc.name, func() {
-			cmd := CmdQueryDecryptWithViewKey()
-			cmd.SetArgs(tc.args)
-
-			err := cmd.Execute()
-			if tc.expectErr {
-				s.Require().Error(err)
-				if tc.errMsg != "" {
-					s.Require().Contains(err.Error(), tc.errMsg)
-				}
-			}
-		})
-	}
+// SECURITY NOTE: TestCmdQueryDecryptWithViewKey has been removed.
+// The DecryptWithViewKey query command was removed because decryption must be performed
+// client-side using private keys that never leave the client.
+//
+// Private view keys must NEVER be:
+// - Transmitted to the blockchain
+// - Passed as CLI arguments
+// - Sent in API requests
+// - Stored in blockchain state
+//
+// Decryption functionality should be tested in client-side libraries, not in the CLI.
+func (s *QueryCLITestSuite) TestCmdQueryDecryptWithViewKey_RemovedForSecurity() {
+	// This test documents that DecryptWithViewKey was intentionally removed
+	// for security reasons. Decryption must be client-side only.
+	s.T().Log("DecryptWithViewKey command removed: decryption must be client-side only")
 }
