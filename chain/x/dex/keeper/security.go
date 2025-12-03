@@ -222,7 +222,13 @@ func (k Keeper) GetTWAPObservations(ctx sdk.Context, poolID string, windowBlocks
 	var observations []*types.TWAPPrice
 	for ; iterator.Valid(); iterator.Next() {
 		var obs types.TWAPPrice
-		k.cdc.MustUnmarshal(iterator.Value(), &obs)
+		if err := k.cdc.Unmarshal(iterator.Value(), &obs); err != nil {
+			ctx.Logger().Error("failed to unmarshal TWAP observation, skipping",
+				"pool_id", poolID,
+				"error", err,
+				"data_len", len(iterator.Value()))
+			continue
+		}
 
 		if uint64(obs.BlockHeight) >= cutoffBlock {
 			observations = append(observations, &obs)
@@ -245,7 +251,15 @@ func (k Keeper) PruneTWAPObservations(ctx sdk.Context, poolID string) {
 	var keysToDelete [][]byte
 	for ; iterator.Valid(); iterator.Next() {
 		var obs types.TWAPPrice
-		k.cdc.MustUnmarshal(iterator.Value(), &obs)
+		if err := k.cdc.Unmarshal(iterator.Value(), &obs); err != nil {
+			ctx.Logger().Error("failed to unmarshal TWAP observation during pruning, deleting corrupted entry",
+				"pool_id", poolID,
+				"error", err,
+				"data_len", len(iterator.Value()))
+			// Delete corrupted entries during pruning
+			keysToDelete = append(keysToDelete, iterator.Key())
+			continue
+		}
 
 		if uint64(obs.BlockHeight) < cutoffBlock {
 			keysToDelete = append(keysToDelete, iterator.Key())
@@ -650,7 +664,14 @@ func (k Keeper) GetLiquidityLock(ctx sdk.Context, provider string, poolID string
 	}
 
 	var lock types.LiquidityLock
-	k.cdc.MustUnmarshal(bz, &lock)
+	if err := k.cdc.Unmarshal(bz, &lock); err != nil {
+		ctx.Logger().Error("failed to unmarshal liquidity lock",
+			"provider", provider,
+			"pool_id", poolID,
+			"error", err,
+			"data_len", len(bz))
+		return nil
+	}
 	return &lock
 }
 
@@ -1001,13 +1022,29 @@ func (k Keeper) IncrementWashTradeDetection(ctx sdk.Context, address string, poo
 			ConfidenceScore:  10,
 		}
 	} else {
-		k.cdc.MustUnmarshal(bz, &detection)
-		detection.SuspiciousTrades++
-		detection.LastDetection = timestamppb.New(ctx.BlockTime())
-		detection.ConfidenceScore = min(100, detection.ConfidenceScore+10)
+		if err := k.cdc.Unmarshal(bz, &detection); err != nil {
+			ctx.Logger().Error("failed to unmarshal wash trade detection, resetting",
+				"address", address,
+				"pool_id", poolID,
+				"error", err)
+			// Reset to new detection on corruption
+			detection = types.WashTradeDetection{
+				Address:          address,
+				PoolId:           poolID,
+				SuspiciousTrades: 1,
+				FirstDetection:   timestamppb.New(ctx.BlockTime()),
+				LastDetection:    timestamppb.New(ctx.BlockTime()),
+				IsFlagged:        false,
+				ConfidenceScore:  10,
+			}
+		} else {
+			detection.SuspiciousTrades++
+			detection.LastDetection = timestamppb.New(ctx.BlockTime())
+			detection.ConfidenceScore = min(100, detection.ConfidenceScore+10)
 
-		if detection.SuspiciousTrades >= 5 {
-			detection.IsFlagged = true
+			if detection.SuspiciousTrades >= 5 {
+				detection.IsFlagged = true
+			}
 		}
 	}
 
@@ -1025,7 +1062,14 @@ func (k Keeper) GetWashTradeDetection(ctx sdk.Context, address string, poolID st
 	}
 
 	var detection types.WashTradeDetection
-	k.cdc.MustUnmarshal(bz, &detection)
+	if err := k.cdc.Unmarshal(bz, &detection); err != nil {
+		ctx.Logger().Error("failed to unmarshal wash trade detection",
+			"address", address,
+			"pool_id", poolID,
+			"error", err,
+			"data_len", len(bz))
+		return nil
+	}
 	return &detection
 }
 
@@ -1197,7 +1241,12 @@ func (k Keeper) GetCircuitBreaker(ctx sdk.Context) *types.CircuitBreaker {
 	}
 
 	var breaker types.CircuitBreaker
-	k.cdc.MustUnmarshal(bz, &breaker)
+	if err := k.cdc.Unmarshal(bz, &breaker); err != nil {
+		ctx.Logger().Error("failed to unmarshal circuit breaker",
+			"error", err,
+			"data_len", len(bz))
+		return nil
+	}
 	return &breaker
 }
 
@@ -1233,17 +1282,31 @@ func (k Keeper) UpdateTradeHistory(ctx sdk.Context, address string, poolID strin
 			RecentVolume:     sdkmath.ZeroInt().String(),
 		}
 	} else {
-		k.cdc.MustUnmarshal(bz, &history)
-
-		if history.LastTradeBlock == currentBlock {
-			history.TradesInBlock++
+		if err := k.cdc.Unmarshal(bz, &history); err != nil {
+			ctx.Logger().Error("failed to unmarshal trade history, resetting",
+				"address", address,
+				"error", err)
+			// Reset to new history on corruption
+			history = types.TradeHistory{
+				Address:          address,
+				PoolId:           poolID,
+				LastTradeTime:    timestamppb.New(ctx.BlockTime()),
+				LastTradeBlock:   currentBlock,
+				TradesInBlock:    1,
+				RecentTradeCount: 1,
+				RecentVolume:     sdkmath.ZeroInt().String(),
+			}
 		} else {
-			history.TradesInBlock = 1
-		}
+			if history.LastTradeBlock == currentBlock {
+				history.TradesInBlock++
+			} else {
+				history.TradesInBlock = 1
+			}
 
-		history.LastTradeTime = timestamppb.New(ctx.BlockTime())
-		history.LastTradeBlock = currentBlock
-		history.RecentTradeCount++
+			history.LastTradeTime = timestamppb.New(ctx.BlockTime())
+			history.LastTradeBlock = currentBlock
+			history.RecentTradeCount++
+		}
 	}
 
 	store.Set(key, k.cdc.MustMarshal(&history))
@@ -1260,7 +1323,13 @@ func (k Keeper) GetTradeHistory(ctx sdk.Context, address string) *types.TradeHis
 	}
 
 	var history types.TradeHistory
-	k.cdc.MustUnmarshal(bz, &history)
+	if err := k.cdc.Unmarshal(bz, &history); err != nil {
+		ctx.Logger().Error("failed to unmarshal trade history",
+			"address", address,
+			"error", err,
+			"data_len", len(bz))
+		return nil
+	}
 	return &history
 }
 
@@ -1322,10 +1391,22 @@ func (k Keeper) RecordPoolCreation(ctx sdk.Context, creator string, poolID strin
 		}
 	} else {
 		// Existing creator - append new pool
-		k.cdc.MustUnmarshal(bz, &record)
-		record.PoolIds = append(record.PoolIds, poolID)
-		record.LastCreationTime = timestamppb.New(ctx.BlockTime())
-		record.TotalPools++
+		if err := k.cdc.Unmarshal(bz, &record); err != nil {
+			ctx.Logger().Error("failed to unmarshal pool creation record, resetting",
+				"creator", creator,
+				"error", err)
+			// Reset to new record on corruption
+			record = types.PoolCreationRecord{
+				Creator:          creator,
+				PoolIds:          []string{poolID},
+				LastCreationTime: timestamppb.New(ctx.BlockTime()),
+				TotalPools:       1,
+			}
+		} else {
+			record.PoolIds = append(record.PoolIds, poolID)
+			record.LastCreationTime = timestamppb.New(ctx.BlockTime())
+			record.TotalPools++
+		}
 	}
 
 	// Store updated record
@@ -1360,7 +1441,13 @@ func (k Keeper) GetPoolCreationRecord(ctx sdk.Context, creator string) *types.Po
 	}
 
 	var record types.PoolCreationRecord
-	k.cdc.MustUnmarshal(bz, &record)
+	if err := k.cdc.Unmarshal(bz, &record); err != nil {
+		ctx.Logger().Error("failed to unmarshal pool creation record",
+			"creator", creator,
+			"error", err,
+			"data_len", len(bz))
+		return nil
+	}
 	return &record
 }
 
@@ -1374,7 +1461,12 @@ func (k Keeper) GetAllPoolCreationRecords(ctx sdk.Context) []*types.PoolCreation
 	var records []*types.PoolCreationRecord
 	for ; iterator.Valid(); iterator.Next() {
 		var record types.PoolCreationRecord
-		k.cdc.MustUnmarshal(iterator.Value(), &record)
+		if err := k.cdc.Unmarshal(iterator.Value(), &record); err != nil {
+			ctx.Logger().Error("failed to unmarshal pool creation record, skipping",
+				"error", err,
+				"data_len", len(iterator.Value()))
+			continue
+		}
 		records = append(records, &record)
 	}
 

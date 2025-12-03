@@ -96,6 +96,17 @@ func (ms msgServer) InstantiateContract(goCtx context.Context, msg *types.MsgIns
 		return nil, err
 	}
 
+	// Store admin in AURA storage if admin was specified
+	if !admin.Empty() {
+		if err := ms.Keeper.SetContractAdmin(ctx, contractAddr, admin); err != nil {
+			ms.Keeper.Logger(ctx).Error("failed to set contract admin in AURA storage",
+				"contract", contractAddr.String(),
+				"admin", admin.String(),
+				"error", err)
+			// Don't fail instantiation if admin storage fails, but log it
+		}
+	}
+
 	// Emit event
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
@@ -228,6 +239,15 @@ func (ms msgServer) MigrateContract(goCtx context.Context, msg *types.MsgMigrate
 		return nil, types.ErrInvalidContractAddress.Wrapf("invalid contract address: %s", err)
 	}
 
+	// Verify caller is the contract admin
+	isAdmin, err := ms.Keeper.IsContractAdmin(ctx, contractAddr, caller)
+	if err != nil {
+		return nil, types.ErrSecurityViolation.Wrapf("failed to verify admin: %s", err)
+	}
+	if !isAdmin {
+		return nil, types.ErrUnauthorized.Wrapf("sender %s is not the contract admin", caller.String())
+	}
+
 	// Migrate contract
 	data, err := ms.Keeper.Migrate(ctx, contractAddr, caller, msg.CodeId, msg.Msg)
 	if err != nil {
@@ -268,15 +288,38 @@ func (ms msgServer) UpdateAdmin(goCtx context.Context, msg *types.MsgUpdateAdmin
 		return nil, types.ErrInvalidAdmin.Wrapf("invalid new admin address: %s", err)
 	}
 
-	// Verify wasmd keeper is available
-	if ms.Keeper.wasmKeeper == nil {
-		return nil, types.ErrSecurityViolation.Wrap("wasm keeper not configured")
+	// Verify sender is the current admin
+	currentAdmin, err := ms.Keeper.GetContractAdmin(ctx, contractAddr)
+	if err != nil {
+		return nil, types.ErrSecurityViolation.Wrapf("failed to get current admin: %s", err)
 	}
 
-	// Use wasmd keeper to update admin (includes authorization checks)
-	ops := wasmkeeper.NewDefaultPermissionKeeper(ms.Keeper.wasmKeeper)
-	if err := ops.UpdateContractAdmin(ctx, contractAddr, sender, newAdmin); err != nil {
-		return nil, types.ErrUnauthorized.Wrapf("failed to update admin: %s", err)
+	// If no admin is set in AURA storage, this is an unauthorized operation
+	// (contracts must be instantiated through AURA's InstantiateContract which sets admin)
+	if currentAdmin.Empty() {
+		return nil, types.ErrUnauthorized.Wrap("contract has no admin set")
+	}
+
+	// Verify sender is the current admin
+	if !currentAdmin.Equals(sender) {
+		return nil, types.ErrUnauthorized.Wrapf("sender %s is not the contract admin %s",
+			sender.String(), currentAdmin.String())
+	}
+
+	// Update admin in AURA storage
+	if err := ms.Keeper.SetContractAdmin(ctx, contractAddr, newAdmin); err != nil {
+		return nil, types.ErrSecurityViolation.Wrapf("failed to update admin: %s", err)
+	}
+
+	// Also update in wasmd keeper if available (dual storage for compatibility)
+	if ms.Keeper.wasmKeeper != nil {
+		ops := wasmkeeper.NewDefaultPermissionKeeper(ms.Keeper.wasmKeeper)
+		if err := ops.UpdateContractAdmin(ctx, contractAddr, sender, newAdmin); err != nil {
+			ms.Keeper.Logger(ctx).Error("failed to update admin in wasmd keeper",
+				"contract", msg.Contract,
+				"error", err)
+			// Don't fail the transaction - AURA storage is source of truth
+		}
 	}
 
 	// Emit event
@@ -306,15 +349,37 @@ func (ms msgServer) ClearAdmin(goCtx context.Context, msg *types.MsgClearAdmin) 
 		return nil, types.ErrInvalidContractAddress.Wrapf("invalid contract address: %s", err)
 	}
 
-	// Verify wasmd keeper is available
-	if ms.Keeper.wasmKeeper == nil {
-		return nil, types.ErrSecurityViolation.Wrap("wasm keeper not configured")
+	// Verify sender is the current admin
+	currentAdmin, err := ms.Keeper.GetContractAdmin(ctx, contractAddr)
+	if err != nil {
+		return nil, types.ErrSecurityViolation.Wrapf("failed to get current admin: %s", err)
 	}
 
-	// Use wasmd keeper to clear admin (includes authorization checks)
-	ops := wasmkeeper.NewDefaultPermissionKeeper(ms.Keeper.wasmKeeper)
-	if err := ops.ClearContractAdmin(ctx, contractAddr, sender); err != nil {
-		return nil, types.ErrUnauthorized.Wrapf("failed to clear admin: %s", err)
+	// If no admin is set, this is an error
+	if currentAdmin.Empty() {
+		return nil, types.ErrUnauthorized.Wrap("contract has no admin to clear")
+	}
+
+	// Verify sender is the current admin
+	if !currentAdmin.Equals(sender) {
+		return nil, types.ErrUnauthorized.Wrapf("sender %s is not the contract admin %s",
+			sender.String(), currentAdmin.String())
+	}
+
+	// Clear admin in AURA storage
+	if err := ms.Keeper.DeleteContractAdmin(ctx, contractAddr); err != nil {
+		return nil, types.ErrSecurityViolation.Wrapf("failed to clear admin: %s", err)
+	}
+
+	// Also clear in wasmd keeper if available (dual storage for compatibility)
+	if ms.Keeper.wasmKeeper != nil {
+		ops := wasmkeeper.NewDefaultPermissionKeeper(ms.Keeper.wasmKeeper)
+		if err := ops.ClearContractAdmin(ctx, contractAddr, sender); err != nil {
+			ms.Keeper.Logger(ctx).Error("failed to clear admin in wasmd keeper",
+				"contract", msg.Contract,
+				"error", err)
+			// Don't fail the transaction - AURA storage is source of truth
+		}
 	}
 
 	// Emit event

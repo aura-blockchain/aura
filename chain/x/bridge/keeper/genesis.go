@@ -23,8 +23,20 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data types.GenesisState) error {
 		return err
 	}
 
-	var maxTransferCounter uint64
-	seenTransferIDs := make(map[uint64]bool)
+	// MIGRATION NOTE: With deterministic IDs based on block height + tx index,
+	// we no longer need to track a counter. The old counter-based system is
+	// now deprecated, and IDs are generated deterministically from blockchain state.
+	//
+	// For backward compatibility during migration:
+	//   - Old counter-based IDs (e.g., "transfer-1", "transfer-2") are still valid
+	//   - New IDs use format: "transfer-{(blockHeight<<32)|txIndex}"
+	//   - Both formats can coexist in the same chain
+	//   - No migration of existing transfers needed - they keep their old IDs
+	//
+	// The TransferCounterKey is no longer used but we don't remove it to avoid
+	// breaking existing state. It will be ignored by the new implementation.
+
+	seenTransferIDs := make(map[string]bool)
 
 	for _, transfer := range data.Transfers {
 		if transfer == nil {
@@ -32,30 +44,12 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data types.GenesisState) error {
 		}
 
 		// Detect duplicate transfer IDs during import
-		if seq, ok := parseTransferSequence(transfer.TransferId); ok {
-			if seenTransferIDs[seq] {
-				panic(fmt.Sprintf("duplicate transfer ID in genesis: %s", transfer.TransferId))
-			}
-			seenTransferIDs[seq] = true
-
-			if seq > maxTransferCounter {
-				maxTransferCounter = seq
-			}
+		if seenTransferIDs[transfer.TransferId] {
+			panic(fmt.Sprintf("duplicate transfer ID in genesis: %s", transfer.TransferId))
 		}
+		seenTransferIDs[transfer.TransferId] = true
 
 		k.setTransfer(ctx, transfer)
-	}
-
-	// CRITICAL: The counter must be set so the NEXT call to nextTransferID returns MAX+1
-	// nextTransferID reads counter, increments it, stores it, then returns it
-	// So if max is 5, we need next ID to be 6:
-	// - Store counter = 5
-	// - nextTransferID reads 5, increments to 6, stores 6, returns 6 ✓
-	// This prevents duplicate IDs when re-importing genesis
-	if maxTransferCounter > 0 {
-		bz := make([]byte, 8)
-		binary.BigEndian.PutUint64(bz, maxTransferCounter)
-		k.store(ctx).Set(types.TransferCounterKey, bz)
 	}
 
 	for _, cfg := range data.ChainConfigs {

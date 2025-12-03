@@ -37,4 +37,5 @@ var (
 	ErrNoVoteCommitment          = fmt.Errorf("no vote commitment found")
 	ErrQuadraticVotingDisabled   = fmt.Errorf("quadratic voting is disabled")
 	ErrInsufficientVoteCredits   = fmt.Errorf("insufficient vote credits")
+	ErrCorruptedData             = fmt.Errorf("corrupted data in storage")
 )

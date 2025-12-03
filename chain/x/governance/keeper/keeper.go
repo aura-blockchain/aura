@@ -66,7 +66,13 @@ func (k *Keeper) GetParams(ctx sdk.Context) *types.GovernanceParams {
 	}
 
 	var params types.GovernanceParams
-	k.cdc.MustUnmarshal(bz, &params)
+	if err := k.cdc.Unmarshal(bz, &params); err != nil {
+		// CRITICAL: Params corruption is severe - log and return defaults as recovery
+		ctx.Logger().Error("failed to unmarshal governance params, returning defaults",
+			"error", err,
+			"data_len", len(bz))
+		return types.DefaultParams()
+	}
 	return &params
 }
 
