@@ -36,6 +36,7 @@ var (
 	AnomalyPrefix            = []byte{0x10}
 	WalletAnalyticsPrefix    = []byte{0x11}
 	InsurancePolicyPrefix    = []byte{0x12}
+	BiometricProofPrefix     = []byte{0x13} // For replay protection of biometric proofs
 )
 
 // GetHardwareWalletKey returns the store key for a hardware wallet
@@ -131,4 +132,13 @@ func GetSecurityMetricsKey(walletID string) []byte {
 // GetDustTransactionKey returns the store key for a dust transaction
 func GetDustTransactionKey(txHash string) []byte {
 	return append(DustTransactionPrefix, []byte(txHash)...)
+}
+
+// GetBiometricProofKey returns the store key for tracking used biometric proofs (replay protection)
+func GetBiometricProofKey(walletID string, proofHash []byte) []byte {
+	// Combine wallet ID and proof hash for unique key
+	key := append(BiometricProofPrefix, []byte(walletID)...)
+	key = append(key, []byte(":")...)
+	key = append(key, proofHash...)
+	return key
 }

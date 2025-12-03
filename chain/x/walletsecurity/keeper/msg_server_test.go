@@ -301,3 +301,236 @@ func (suite *MsgServerTestSuite) TestApproveRecovery_NilRequest() {
 	suite.Equal(codes.InvalidArgument, st.Code())
 	suite.Contains(st.Message(), "empty request")
 }
+
+// TestAuthenticateBiometric_Success tests successful biometric authentication
+func (suite *MsgServerTestSuite) TestAuthenticateBiometric_Success() {
+	// Create test wallet address
+	walletAddr := sdk.AccAddress("wallet_addr_________")
+
+	// Enroll biometric first
+	enrollmentData := []byte("test_biometric_data_for_enrollment_123456789012345678901234567890")
+	enrollMsg := &wspb.MsgEnrollBiometric{
+		WalletId:       walletAddr.String(),
+		Type:           wspb.BiometricType_BIOMETRIC_TYPE_FINGERPRINT,
+		EnrollmentData: enrollmentData,
+	}
+
+	enrollResp, err := suite.msgServer.EnrollBiometric(suite.ctx, enrollMsg)
+	suite.Require().NoError(err)
+	suite.Require().NotNil(enrollResp)
+	suite.Equal(walletAddr.String(), enrollResp.Auth.WalletId)
+	suite.True(enrollResp.Auth.Enabled)
+
+	// Authenticate with the same biometric data
+	authMsg := &wspb.MsgAuthenticateBiometric{
+		WalletId:       walletAddr.String(),
+		BiometricProof: enrollmentData, // Same data should match
+	}
+
+	authResp, err := suite.msgServer.AuthenticateBiometric(suite.ctx, authMsg)
+	suite.Require().NoError(err)
+	suite.Require().NotNil(authResp)
+	suite.True(authResp.Authenticated)
+	suite.Equal(int32(0), authResp.FailedAttempts)
+	suite.False(authResp.LockedOut)
+}
+
+// TestAuthenticateBiometric_InvalidProof tests authentication with wrong biometric data
+func (suite *MsgServerTestSuite) TestAuthenticateBiometric_InvalidProof() {
+	walletAddr := sdk.AccAddress("wallet_addr2________")
+
+	// Enroll biometric
+	enrollmentData := []byte("correct_biometric_data_for_enrollment_12345678901234567890123")
+	enrollMsg := &wspb.MsgEnrollBiometric{
+		WalletId:       walletAddr.String(),
+		Type:           wspb.BiometricType_BIOMETRIC_TYPE_FACE,
+		EnrollmentData: enrollmentData,
+	}
+
+	_, err := suite.msgServer.EnrollBiometric(suite.ctx, enrollMsg)
+	suite.Require().NoError(err)
+
+	// Authenticate with DIFFERENT biometric data (should fail)
+	wrongData := []byte("wrong_biometric_data_this_should_not_match_12345678901234567890123")
+	authMsg := &wspb.MsgAuthenticateBiometric{
+		WalletId:       walletAddr.String(),
+		BiometricProof: wrongData,
+	}
+
+	authResp, err := suite.msgServer.AuthenticateBiometric(suite.ctx, authMsg)
+	suite.Require().NoError(err)
+	suite.Require().NotNil(authResp)
+	suite.False(authResp.Authenticated)
+	suite.Equal(int32(1), authResp.FailedAttempts)
+	suite.False(authResp.LockedOut)
+}
+
+// TestAuthenticateBiometric_ReplayAttack tests that the same proof cannot be used twice
+func (suite *MsgServerTestSuite) TestAuthenticateBiometric_ReplayAttack() {
+	walletAddr := sdk.AccAddress("wallet_addr3________")
+
+	// Enroll biometric
+	enrollmentData := []byte("replay_test_biometric_data_for_enrollment_123456789012345678901")
+	enrollMsg := &wspb.MsgEnrollBiometric{
+		WalletId:       walletAddr.String(),
+		Type:           wspb.BiometricType_BIOMETRIC_TYPE_FINGERPRINT,
+		EnrollmentData: enrollmentData,
+	}
+
+	_, err := suite.msgServer.EnrollBiometric(suite.ctx, enrollMsg)
+	suite.Require().NoError(err)
+
+	// First authentication - should succeed
+	authMsg := &wspb.MsgAuthenticateBiometric{
+		WalletId:       walletAddr.String(),
+		BiometricProof: enrollmentData,
+	}
+
+	authResp, err := suite.msgServer.AuthenticateBiometric(suite.ctx, authMsg)
+	suite.Require().NoError(err)
+	suite.True(authResp.Authenticated)
+
+	// Second authentication with SAME proof - should fail (replay attack)
+	authResp2, err := suite.msgServer.AuthenticateBiometric(suite.ctx, authMsg)
+	suite.Require().Error(err)
+	suite.Require().Nil(authResp2)
+
+	st, ok := status.FromError(err)
+	suite.Require().True(ok)
+	suite.Equal(codes.AlreadyExists, st.Code())
+	suite.Contains(st.Message(), "replay attack detected")
+}
+
+// TestAuthenticateBiometric_ProofTooShort tests that short proofs are rejected
+func (suite *MsgServerTestSuite) TestAuthenticateBiometric_ProofTooShort() {
+	walletAddr := sdk.AccAddress("wallet_addr4________")
+
+	// Enroll biometric
+	enrollmentData := []byte("valid_biometric_data_for_enrollment_this_is_long_enough_12345")
+	enrollMsg := &wspb.MsgEnrollBiometric{
+		WalletId:       walletAddr.String(),
+		Type:           wspb.BiometricType_BIOMETRIC_TYPE_IRIS,
+		EnrollmentData: enrollmentData,
+	}
+
+	_, err := suite.msgServer.EnrollBiometric(suite.ctx, enrollMsg)
+	suite.Require().NoError(err)
+
+	// Authenticate with too short proof (less than 64 bytes)
+	shortProof := []byte("short")
+	authMsg := &wspb.MsgAuthenticateBiometric{
+		WalletId:       walletAddr.String(),
+		BiometricProof: shortProof,
+	}
+
+	authResp, err := suite.msgServer.AuthenticateBiometric(suite.ctx, authMsg)
+	suite.Require().Error(err)
+	suite.Require().Nil(authResp)
+
+	st, ok := status.FromError(err)
+	suite.Require().True(ok)
+	suite.Equal(codes.InvalidArgument, st.Code())
+	suite.Contains(st.Message(), "biometric proof too short")
+}
+
+// TestAuthenticateBiometric_NotEnrolled tests authentication without enrollment
+func (suite *MsgServerTestSuite) TestAuthenticateBiometric_NotEnrolled() {
+	walletAddr := sdk.AccAddress("wallet_addr5________")
+
+	// Try to authenticate without enrolling first
+	authMsg := &wspb.MsgAuthenticateBiometric{
+		WalletId:       walletAddr.String(),
+		BiometricProof: []byte("some_biometric_data_that_is_long_enough_1234567890123456789"),
+	}
+
+	authResp, err := suite.msgServer.AuthenticateBiometric(suite.ctx, authMsg)
+	suite.Require().Error(err)
+	suite.Require().Nil(authResp)
+
+	st, ok := status.FromError(err)
+	suite.Require().True(ok)
+	suite.Equal(codes.NotFound, st.Code())
+	suite.Contains(st.Message(), "biometric not configured")
+}
+
+// TestAuthenticateBiometric_Lockout tests that account locks after max failed attempts
+func (suite *MsgServerTestSuite) TestAuthenticateBiometric_Lockout() {
+	walletAddr := sdk.AccAddress("wallet_addr6________")
+
+	// Enroll biometric
+	enrollmentData := []byte("lockout_test_biometric_data_for_enrollment_12345678901234567890")
+	enrollMsg := &wspb.MsgEnrollBiometric{
+		WalletId:       walletAddr.String(),
+		Type:           wspb.BiometricType_BIOMETRIC_TYPE_VOICE,
+		EnrollmentData: enrollmentData,
+	}
+
+	_, err := suite.msgServer.EnrollBiometric(suite.ctx, enrollMsg)
+	suite.Require().NoError(err)
+
+	// Make 5 failed authentication attempts
+	wrongData := []byte("wrong_biometric_data_for_lockout_test_1234567890123456789012345678")
+	for i := 0; i < 5; i++ {
+		authMsg := &wspb.MsgAuthenticateBiometric{
+			WalletId:       walletAddr.String(),
+			BiometricProof: wrongData,
+		}
+
+		authResp, err := suite.msgServer.AuthenticateBiometric(suite.ctx, authMsg)
+		suite.Require().NoError(err)
+		suite.False(authResp.Authenticated)
+
+		if i < 4 {
+			// First 4 attempts should not lock out
+			suite.False(authResp.LockedOut)
+			suite.Equal(int32(i+1), authResp.FailedAttempts)
+		} else {
+			// 5th attempt should trigger lockout
+			suite.True(authResp.LockedOut)
+			suite.Equal(int32(5), authResp.FailedAttempts)
+		}
+	}
+
+	// Try with correct data - should still be locked out
+	correctAuthMsg := &wspb.MsgAuthenticateBiometric{
+		WalletId:       walletAddr.String(),
+		BiometricProof: enrollmentData,
+	}
+
+	authResp, err := suite.msgServer.AuthenticateBiometric(suite.ctx, correctAuthMsg)
+	suite.Require().NoError(err)
+	suite.False(authResp.Authenticated)
+	suite.True(authResp.LockedOut)
+}
+
+// TestEnrollBiometric_EmptyData tests enrollment with no data
+func (suite *MsgServerTestSuite) TestEnrollBiometric_EmptyData() {
+	walletAddr := sdk.AccAddress("wallet_addr7________")
+
+	enrollMsg := &wspb.MsgEnrollBiometric{
+		WalletId:       walletAddr.String(),
+		Type:           wspb.BiometricType_BIOMETRIC_TYPE_FINGERPRINT,
+		EnrollmentData: []byte{}, // Empty data
+	}
+
+	enrollResp, err := suite.msgServer.EnrollBiometric(suite.ctx, enrollMsg)
+	suite.Require().Error(err)
+	suite.Require().Nil(enrollResp)
+
+	st, ok := status.FromError(err)
+	suite.Require().True(ok)
+	suite.Equal(codes.InvalidArgument, st.Code())
+	suite.Contains(st.Message(), "enrollment data is required")
+}
+
+// TestAuthenticateBiometric_NilRequest tests nil request handling
+func (suite *MsgServerTestSuite) TestAuthenticateBiometric_NilRequest() {
+	resp, err := suite.msgServer.AuthenticateBiometric(suite.ctx, nil)
+	suite.Require().Error(err)
+	suite.Require().Nil(resp)
+
+	st, ok := status.FromError(err)
+	suite.Require().True(ok)
+	suite.Equal(codes.InvalidArgument, st.Code())
+	suite.Contains(st.Message(), "empty request")
+}
