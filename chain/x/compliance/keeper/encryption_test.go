@@ -501,7 +501,7 @@ func TestGetSensitiveFieldsList(t *testing.T) {
 		},
 		{
 			dataType:      "suspicious_activity",
-			expectedCount: 5,
+			expectedCount: 6,
 			mustContain:   []string{"description", "sar_details", "indicators"},
 		},
 		{
