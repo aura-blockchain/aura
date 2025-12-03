@@ -1220,3 +1220,349 @@ func TestValidateParams_AllCombinations(t *testing.T) {
 		})
 	}
 }
+
+// ============================================================================
+// Rate Limiting Parameter Tests
+// ============================================================================
+
+func TestValidateParams_ValidRateLimits(t *testing.T) {
+	params := ComplianceParams{
+		RateLimitWindowSeconds:       3600,  // 1 hour
+		SanctionsScreeningLimit:      100,
+		KycVerificationLimit:         50,
+		AmlProfileQueryLimit:         200,
+		TaxReportGenerationLimit:     10,
+		DefaultQueryLimit:            1000,
+	}
+	err := ValidateParams(params)
+	require.NoError(t, err)
+}
+
+func TestValidateParams_RateLimitWindowTooLarge(t *testing.T) {
+	params := ComplianceParams{
+		RateLimitWindowSeconds: 86400*7 + 1, // Exceeds 7 days
+	}
+	err := ValidateParams(params)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "rate_limit_window_seconds too large")
+}
+
+func TestValidateParams_RateLimitWindowTooSmall(t *testing.T) {
+	params := ComplianceParams{
+		RateLimitWindowSeconds: 59, // Less than 1 minute
+	}
+	err := ValidateParams(params)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "rate_limit_window_seconds too small")
+}
+
+func TestValidateParams_RateLimitWindowBoundaries(t *testing.T) {
+	testCases := []struct {
+		name    string
+		seconds uint64
+		valid   bool
+	}{
+		{"zero (disabled)", 0, true},
+		{"59 seconds", 59, false},
+		{"60 seconds (min)", 60, true},
+		{"3600 seconds (1 hour)", 3600, true},
+		{"86400 seconds (1 day)", 86400, true},
+		{"604800 seconds (7 days, max)", 86400 * 7, true},
+		{"604801 seconds (over max)", 86400*7 + 1, false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			params := ComplianceParams{
+				RateLimitWindowSeconds: tc.seconds,
+			}
+			err := ValidateParams(params)
+			if tc.valid {
+				require.NoError(t, err, "Expected valid for %d seconds", tc.seconds)
+			} else {
+				require.Error(t, err, "Expected error for %d seconds", tc.seconds)
+			}
+		})
+	}
+}
+
+func TestValidateParams_NegativeSanctionsScreeningLimit(t *testing.T) {
+	params := ComplianceParams{
+		SanctionsScreeningLimit: -1,
+	}
+	err := ValidateParams(params)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "sanctions_screening_limit cannot be negative")
+}
+
+func TestValidateParams_SanctionsScreeningLimitTooLarge(t *testing.T) {
+	params := ComplianceParams{
+		SanctionsScreeningLimit: 10001,
+	}
+	err := ValidateParams(params)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "sanctions_screening_limit too large")
+}
+
+func TestValidateParams_NegativeKycVerificationLimit(t *testing.T) {
+	params := ComplianceParams{
+		KycVerificationLimit: -1,
+	}
+	err := ValidateParams(params)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "kyc_verification_limit cannot be negative")
+}
+
+func TestValidateParams_KycVerificationLimitTooLarge(t *testing.T) {
+	params := ComplianceParams{
+		KycVerificationLimit: 10001,
+	}
+	err := ValidateParams(params)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "kyc_verification_limit too large")
+}
+
+func TestValidateParams_NegativeAmlProfileQueryLimit(t *testing.T) {
+	params := ComplianceParams{
+		AmlProfileQueryLimit: -1,
+	}
+	err := ValidateParams(params)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "aml_profile_query_limit cannot be negative")
+}
+
+func TestValidateParams_AmlProfileQueryLimitTooLarge(t *testing.T) {
+	params := ComplianceParams{
+		AmlProfileQueryLimit: 10001,
+	}
+	err := ValidateParams(params)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "aml_profile_query_limit too large")
+}
+
+func TestValidateParams_NegativeTaxReportGenerationLimit(t *testing.T) {
+	params := ComplianceParams{
+		TaxReportGenerationLimit: -1,
+	}
+	err := ValidateParams(params)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "tax_report_generation_limit cannot be negative")
+}
+
+func TestValidateParams_TaxReportGenerationLimitTooLarge(t *testing.T) {
+	params := ComplianceParams{
+		TaxReportGenerationLimit: 1001,
+	}
+	err := ValidateParams(params)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "tax_report_generation_limit too large")
+}
+
+func TestValidateParams_NegativeDefaultQueryLimit(t *testing.T) {
+	params := ComplianceParams{
+		DefaultQueryLimit: -1,
+	}
+	err := ValidateParams(params)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "default_query_limit cannot be negative")
+}
+
+func TestValidateParams_DefaultQueryLimitTooLarge(t *testing.T) {
+	params := ComplianceParams{
+		DefaultQueryLimit: 10001,
+	}
+	err := ValidateParams(params)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "default_query_limit too large")
+}
+
+func TestValidateParams_RateLimitBoundaryValues(t *testing.T) {
+	testCases := []struct {
+		name   string
+		params ComplianceParams
+		valid  bool
+	}{
+		{
+			name: "all at max allowed",
+			params: ComplianceParams{
+				RateLimitWindowSeconds:       86400 * 7, // Max: 7 days
+				SanctionsScreeningLimit:      10000,     // Max
+				KycVerificationLimit:         10000,     // Max
+				AmlProfileQueryLimit:         10000,     // Max
+				TaxReportGenerationLimit:     1000,      // Max (lower due to expense)
+				DefaultQueryLimit:            10000,     // Max
+			},
+			valid: true,
+		},
+		{
+			name: "all at zero (disabled)",
+			params: ComplianceParams{
+				RateLimitWindowSeconds:       0,
+				SanctionsScreeningLimit:      0,
+				KycVerificationLimit:         0,
+				AmlProfileQueryLimit:         0,
+				TaxReportGenerationLimit:     0,
+				DefaultQueryLimit:            0,
+			},
+			valid: true,
+		},
+		{
+			name: "window at min",
+			params: ComplianceParams{
+				RateLimitWindowSeconds: 60, // Min: 1 minute
+			},
+			valid: true,
+		},
+		{
+			name: "sanctions screening at max",
+			params: ComplianceParams{
+				SanctionsScreeningLimit: 10000,
+			},
+			valid: true,
+		},
+		{
+			name: "tax report generation at max",
+			params: ComplianceParams{
+				TaxReportGenerationLimit: 1000,
+			},
+			valid: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := ValidateParams(tc.params)
+			if tc.valid {
+				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
+			}
+		})
+	}
+}
+
+func TestValidateParams_RateLimitZeroValues(t *testing.T) {
+	// Zero values should be allowed (means rate limiting disabled)
+	params := ComplianceParams{
+		RateLimitWindowSeconds:       0,
+		SanctionsScreeningLimit:      0,
+		KycVerificationLimit:         0,
+		AmlProfileQueryLimit:         0,
+		TaxReportGenerationLimit:     0,
+		DefaultQueryLimit:            0,
+	}
+	err := ValidateParams(params)
+	require.NoError(t, err)
+}
+
+func TestValidateParams_RateLimitRealisticValues(t *testing.T) {
+	// Test realistic production values
+	testCases := []struct {
+		name   string
+		params ComplianceParams
+	}{
+		{
+			name: "conservative limits",
+			params: ComplianceParams{
+				RateLimitWindowSeconds:       3600,  // 1 hour
+				SanctionsScreeningLimit:      10,    // 10/hour
+				KycVerificationLimit:         5,     // 5/hour
+				AmlProfileQueryLimit:         20,    // 20/hour
+				TaxReportGenerationLimit:     2,     // 2/hour
+				DefaultQueryLimit:            100,   // 100/hour
+			},
+		},
+		{
+			name: "moderate limits",
+			params: ComplianceParams{
+				RateLimitWindowSeconds:       3600,  // 1 hour
+				SanctionsScreeningLimit:      100,   // 100/hour
+				KycVerificationLimit:         50,    // 50/hour
+				AmlProfileQueryLimit:         200,   // 200/hour
+				TaxReportGenerationLimit:     10,    // 10/hour
+				DefaultQueryLimit:            1000,  // 1000/hour
+			},
+		},
+		{
+			name: "generous limits",
+			params: ComplianceParams{
+				RateLimitWindowSeconds:       86400, // 24 hours
+				SanctionsScreeningLimit:      1000,  // 1000/day
+				KycVerificationLimit:         500,   // 500/day
+				AmlProfileQueryLimit:         2000,  // 2000/day
+				TaxReportGenerationLimit:     100,   // 100/day
+				DefaultQueryLimit:            5000,  // 5000/day
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := ValidateParams(tc.params)
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestValidateParams_CompleteWithRateLimits(t *testing.T) {
+	// Test that all parameters including rate limits work together
+	params := ComplianceParams{
+		// KYC parameters
+		KycRequired:     true,
+		MinimumKycLevel: KYCLevel_KYC_LEVEL_ADVANCED,
+		KycExpiryDays:   365,
+		ApprovedKycProviders: []string{
+			"cosmos1validprovider1xxxxxxxxxxxxxxxxxxx",
+			"cosmos1validprovider2xxxxxxxxxxxxxxxxxxx",
+		},
+		BlockedJurisdictions: []string{"KP", "IR"},
+
+		// Transaction monitoring
+		TransactionMonitoringEnabled: true,
+		VelocityLimit_24H:            "1000000",
+		SingleTransactionLimit:       "100000",
+		StructuringThresholdCount:    10,
+
+		// Sanctions screening
+		SanctionsScreeningEnabled: true,
+		SanctionsLists:            []string{"OFAC", "EU", "UN"},
+		ScreeningCacheHours:       24,
+
+		// GDPR
+		GdprEnabled:        true,
+		DataRetentionDays:  730,
+		ProcessingPurposes: []string{"compliance", "analytics"},
+
+		// Tax reporting
+		TaxReportingEnabled: true,
+		TaxJurisdictions:    []string{"US", "EU", "UK"},
+		TaxYearEnd:          "12-31",
+
+		// Rate limiting
+		RateLimitWindowSeconds:       3600,
+		SanctionsScreeningLimit:      100,
+		KycVerificationLimit:         50,
+		AmlProfileQueryLimit:         200,
+		TaxReportGenerationLimit:     10,
+		DefaultQueryLimit:            1000,
+	}
+
+	err := ValidateParams(params)
+	require.NoError(t, err)
+}
+
+func TestDefaultParams_IncludesRateLimits(t *testing.T) {
+	params := DefaultParams()
+
+	// Verify rate limit defaults are set
+	require.Equal(t, uint64(3600), params.RateLimitWindowSeconds)
+	require.Equal(t, int64(100), params.SanctionsScreeningLimit)
+	require.Equal(t, int64(50), params.KycVerificationLimit)
+	require.Equal(t, int64(200), params.AmlProfileQueryLimit)
+	require.Equal(t, int64(10), params.TaxReportGenerationLimit)
+	require.Equal(t, int64(1000), params.DefaultQueryLimit)
+
+	// Verify defaults are valid
+	err := ValidateParams(params)
+	require.NoError(t, err)
+}

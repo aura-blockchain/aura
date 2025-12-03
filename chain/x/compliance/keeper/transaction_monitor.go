@@ -308,82 +308,10 @@ func (k Keeper) IsAddressSanctioned(ctx sdk.Context, address string) bool {
 		result.Status == types.SanctionsStatus_SANCTIONS_CONFIRMED
 }
 
-// UpdateAMLProfile updates the AML profile for an address after a transaction
+// UpdateAMLProfile is DEPRECATED. Use UpdateAMLProfileOnTransaction instead.
+// This function is kept for backwards compatibility but delegates to the new implementation.
 func (k Keeper) UpdateAMLProfile(ctx sdk.Context, address sdk.AccAddress, amount sdk.Coins) error {
-	profile, err := k.GetAMLProfile(ctx, address.String())
-	if err != nil {
-		// Create new profile
-		now := ctx.BlockTime()
-		profile = &types.AMLProfile{
-			Address:           address.String(),
-			RiskLevel:         types.AMLRiskLevel_AML_RISK_LOW,
-			TotalVolume:       "0",
-			LastAssessment:    timestamppb.New(now),
-			TotalTransactions: 0,
-		}
-	}
-
-	// Update transaction count
-	profile.TotalTransactions++
-
-	// Update total volume (assuming first coin)
-	if len(amount) > 0 {
-		currentVolume, err := math.LegacyNewDecFromStr(profile.TotalVolume)
-		if err != nil {
-			currentVolume = math.LegacyZeroDec()
-		}
-		txAmount := math.LegacyNewDecFromInt(amount[0].Amount)
-		newVolume := currentVolume.Add(txAmount)
-		profile.TotalVolume = newVolume.String()
-	}
-
-	// Update last assessment time
-	now := ctx.BlockTime()
-	profile.LastAssessment = timestamppb.New(now)
-
-	// Reassess risk level based on updated profile
-	profile.RiskLevel = k.assessRiskLevel(profile)
-
-	return k.SetAMLProfile(ctx, profile)
-}
-
-// assessRiskLevel determines the risk level based on profile metrics
-func (k Keeper) assessRiskLevel(profile *types.AMLProfile) types.AMLRiskLevel {
-	// Simple risk assessment based on transaction volume and count
-	volume, err := math.LegacyNewDecFromStr(profile.TotalVolume)
-	if err != nil {
-		return types.AMLRiskLevel_AML_RISK_LOW
-	}
-
-	// High volume threshold (example: 1,000,000)
-	highVolumeThreshold := math.LegacyNewDec(1_000_000)
-	mediumVolumeThreshold := math.LegacyNewDec(100_000)
-
-	// High frequency threshold (example: 1000 transactions)
-	highFrequencyThreshold := uint64(1000)
-	mediumFrequencyThreshold := uint64(100)
-
-	// Check for severe risk
-	if volume.GTE(highVolumeThreshold) && profile.TotalTransactions >= highFrequencyThreshold {
-		return types.AMLRiskLevel_AML_RISK_SEVERE
-	}
-
-	// Check for high risk
-	if volume.GTE(highVolumeThreshold) || profile.TotalTransactions >= highFrequencyThreshold {
-		return types.AMLRiskLevel_AML_RISK_HIGH
-	}
-
-	// Check for medium risk
-	if volume.GTE(mediumVolumeThreshold) || profile.TotalTransactions >= mediumFrequencyThreshold {
-		return types.AMLRiskLevel_AML_RISK_MEDIUM
-	}
-
-	// Check for PEP status or suspicious activities
-	if profile.PepStatus || len(profile.SuspiciousActivities) > 0 {
-		return types.AMLRiskLevel_AML_RISK_HIGH
-	}
-
-	return types.AMLRiskLevel_AML_RISK_LOW
+	return k.UpdateAMLProfileOnTransaction(ctx, address.String(), amount)
 }
 
 // ShouldBlockTransaction determines if a transaction should be blocked based on alerts
