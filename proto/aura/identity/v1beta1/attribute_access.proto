@@ -1,0 +1,238 @@
+syntax = "proto3";
+package aura.identity.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/identity/v1beta1";
+
+// AccessLevel defines the level of access to an attribute
+enum AccessLevel {
+  ACCESS_LEVEL_UNSPECIFIED = 0;
+  ACCESS_LEVEL_NONE = 1;           // No access
+  ACCESS_LEVEL_VERIFY_ONLY = 2;    // Can verify claim without seeing value
+  ACCESS_LEVEL_READ = 3;           // Can read full value
+}
+
+// AttributePermission represents access permission for a specific attribute
+message AttributePermission {
+  // Attribute name (e.g., "email", "age", "ssn")
+  string attribute_name = 1;
+
+  // Grantee address ("*" for public, specific address for individual)
+  string granted_to = 2;
+
+  // When permission was granted
+  google.protobuf.Timestamp granted_at = 3 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+
+  // When permission expires (zero time means no expiry)
+  google.protobuf.Timestamp expires_at = 4 [(gogoproto.stdtime) = true];
+
+  // Access level granted
+  AccessLevel access_level = 5;
+
+  // Address that granted this permission (usually owner)
+  string granted_by = 6;
+
+  // Optional metadata
+  string metadata = 7;
+}
+
+// AttributePermissionList holds multiple permissions for storage
+message AttributePermissionList {
+  repeated AttributePermission permissions = 1;
+}
+
+// AttributeAccessLog tracks attribute access events for audit
+message AttributeAccessLog {
+  // Unique log ID
+  string id = 1;
+
+  // Owner of the attribute
+  string owner = 2;
+
+  // Attribute accessed
+  string attribute_name = 3;
+
+  // Requester who accessed
+  string requester = 4;
+
+  // Access level used
+  AccessLevel access_level = 5;
+
+  // Timestamp of access
+  google.protobuf.Timestamp accessed_at = 6 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+
+  // Result of access attempt
+  bool success = 7;
+
+  // Error message if failed
+  string error_message = 8;
+
+  // Block height when accessed
+  int64 block_height = 9;
+}
+
+// AttributeConsentRecord tracks consent for attribute sharing
+message AttributeConsentRecord {
+  // Owner DID
+  string did = 1;
+
+  // Attribute name
+  string attribute_name = 2;
+
+  // Grantee address
+  string grantee = 3;
+
+  // Purpose of data sharing
+  string purpose = 4;
+
+  // When consent was given
+  google.protobuf.Timestamp consented_at = 5 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+
+  // When consent expires
+  google.protobuf.Timestamp expires_at = 6 [(gogoproto.stdtime) = true];
+
+  // Whether consent is revoked
+  bool revoked = 7;
+
+  // When consent was revoked
+  google.protobuf.Timestamp revoked_at = 8 [(gogoproto.stdtime) = true];
+
+  // Revocation reason
+  string revocation_reason = 9;
+
+  // Access level consented to
+  AccessLevel access_level = 10;
+}
+
+// MsgGrantAttributeAccess grants access to an attribute
+message MsgGrantAttributeAccess {
+  // Owner address (signer)
+  string owner = 1;
+
+  // Attribute name
+  string attribute_name = 2;
+
+  // Address to grant access to
+  string grantee = 3;
+
+  // Access level to grant
+  AccessLevel access_level = 4;
+
+  // Expiry time (0 for no expiry)
+  google.protobuf.Timestamp expires_at = 5 [(gogoproto.stdtime) = true];
+
+  // Purpose of data sharing
+  string purpose = 6;
+}
+
+message MsgGrantAttributeAccessResponse {
+  // Timestamp when granted
+  google.protobuf.Timestamp granted_at = 1 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+}
+
+// MsgRevokeAttributeAccess revokes access to an attribute
+message MsgRevokeAttributeAccess {
+  // Owner address (signer)
+  string owner = 1;
+
+  // Attribute name
+  string attribute_name = 2;
+
+  // Address to revoke access from
+  string grantee = 3;
+
+  // Reason for revocation
+  string reason = 4;
+}
+
+message MsgRevokeAttributeAccessResponse {
+  // Timestamp when revoked
+  google.protobuf.Timestamp revoked_at = 1 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+}
+
+// QueryAttributePermissionsRequest queries permissions for an attribute
+message QueryAttributePermissionsRequest {
+  // Owner address
+  string owner = 1;
+
+  // Attribute name
+  string attribute_name = 2;
+}
+
+message QueryAttributePermissionsResponse {
+  repeated AttributePermission permissions = 1;
+}
+
+// QueryCanAccessAttributeRequest checks if requester can access attribute
+message QueryCanAccessAttributeRequest {
+  // Owner address
+  string owner = 1;
+
+  // Attribute name
+  string attribute_name = 2;
+
+  // Requester address
+  string requester = 3;
+}
+
+message QueryCanAccessAttributeResponse {
+  // Access level available
+  AccessLevel access_level = 1;
+
+  // Whether access is granted
+  bool granted = 2;
+
+  // Error message if not granted
+  string error_message = 3;
+}
+
+// QueryAttributeAccessLogsRequest queries access logs for an attribute
+message QueryAttributeAccessLogsRequest {
+  // Owner address
+  string owner = 1;
+
+  // Optional attribute name filter
+  string attribute_name = 2;
+
+  // Pagination
+  uint64 limit = 3;
+  uint64 offset = 4;
+}
+
+message QueryAttributeAccessLogsResponse {
+  repeated AttributeAccessLog logs = 1;
+  uint64 total = 2;
+}
+
+// EventAttributeAccessGranted emitted when access is granted
+message EventAttributeAccessGranted {
+  string owner = 1;
+  string attribute_name = 2;
+  string grantee = 3;
+  AccessLevel access_level = 4;
+  google.protobuf.Timestamp granted_at = 5 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  uint64 block_height = 6;
+}
+
+// EventAttributeAccessRevoked emitted when access is revoked
+message EventAttributeAccessRevoked {
+  string owner = 1;
+  string attribute_name = 2;
+  string grantee = 3;
+  string reason = 4;
+  google.protobuf.Timestamp revoked_at = 5 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  uint64 block_height = 6;
+}
+
+// EventAttributeAccessed emitted when attribute is accessed
+message EventAttributeAccessed {
+  string owner = 1;
+  string attribute_name = 2;
+  string requester = 3;
+  AccessLevel access_level = 4;
+  bool success = 5;
+  google.protobuf.Timestamp accessed_at = 6 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  uint64 block_height = 7;
+}

@@ -49,6 +49,9 @@ service Msg {
 
   // GDPR operations
   rpc EraseIdentity(MsgEraseIdentity) returns (MsgEraseIdentityResponse);
+
+  // DID key rotation operations
+  rpc RotateDIDKey(MsgRotateDIDKey) returns (MsgRotateDIDKeyResponse);
 }
 
 // Identity change messages
@@ -303,4 +306,29 @@ message MsgEraseIdentity {
 message MsgEraseIdentityResponse {
   // Confirmation timestamp
   google.protobuf.Timestamp erased_at = 1 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+}
+
+// DID key rotation messages
+message MsgRotateDIDKey {
+  option (cosmos.msg.v1.signer) = "initiator";
+
+  // Address initiating the rotation (must be DID owner or have permission)
+  string initiator = 1;
+
+  // DID to rotate key for
+  string did = 2;
+
+  // New verification method (public key identifier)
+  string new_verification_method = 3;
+
+  // Reason for rotation (audit trail)
+  string reason = 4;
+}
+
+message MsgRotateDIDKeyResponse {
+  // Rotation timestamp
+  google.protobuf.Timestamp rotation_time = 1 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+
+  // Grace period end timestamp
+  google.protobuf.Timestamp grace_period_end = 2 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
 }

@@ -23,6 +23,10 @@ type (
 	TimeLockedAction     = identitypb.TimeLockedAction
 	EmergencyAdmin       = identitypb.EmergencyAdmin
 	ValidatorKeyRotation = identitypb.ValidatorKeyRotation
+	DIDKeyRotation       = identitypb.DIDKeyRotation
+	DIDKeyHistory        = identitypb.DIDKeyHistory
+	DIDKeyHistoryEntry   = identitypb.DIDKeyHistoryEntry
+	CredentialRevocation = identitypb.CredentialRevocation
 	IdentityRecord       = identitypb.IdentityRecord
 	ChangeRequest        = identitypb.ChangeRequest
 	ChangeHistory        = identitypb.ChangeHistory
@@ -31,14 +35,15 @@ type (
 
 // Enums from proto
 type (
-	AuditResult    = identitypb.AuditResult
-	IdentityStatus = identitypb.IdentityStatus
-	ChangeType     = identitypb.ChangeType
-	ChangeStatus   = identitypb.ChangeStatus
-	ProposalStatus = identitypb.ProposalStatus
-	ActionStatus   = identitypb.ActionStatus
-	RotationStatus = identitypb.RotationStatus
-	WalletType     = identitypb.WalletType
+	AuditResult          = identitypb.AuditResult
+	IdentityStatus       = identitypb.IdentityStatus
+	ChangeType           = identitypb.ChangeType
+	ChangeStatus         = identitypb.ChangeStatus
+	ProposalStatus       = identitypb.ProposalStatus
+	ActionStatus         = identitypb.ActionStatus
+	RotationStatus       = identitypb.RotationStatus
+	DIDKeyRotationStatus = identitypb.DIDKeyRotationStatus
+	WalletType           = identitypb.WalletType
 )
 
 // Enum constants - AuditResult
@@ -104,6 +109,14 @@ const (
 	RotationStatusPending     = identitypb.RotationStatus_ROTATION_STATUS_PENDING
 	RotationStatusCompleted   = identitypb.RotationStatus_ROTATION_STATUS_COMPLETED
 	RotationStatusFailed      = identitypb.RotationStatus_ROTATION_STATUS_FAILED
+)
+
+// Enum constants - DIDKeyRotationStatus
+const (
+	DIDKeyRotationStatusUnspecified = identitypb.DIDKeyRotationStatus_DID_KEY_ROTATION_STATUS_UNSPECIFIED
+	DIDKeyRotationStatusPending     = identitypb.DIDKeyRotationStatus_DID_KEY_ROTATION_STATUS_PENDING
+	DIDKeyRotationStatusCompleted   = identitypb.DIDKeyRotationStatus_DID_KEY_ROTATION_STATUS_COMPLETED
+	DIDKeyRotationStatusReverted    = identitypb.DIDKeyRotationStatus_DID_KEY_ROTATION_STATUS_REVERTED
 )
 
 // Enum constants - WalletType
@@ -174,11 +187,12 @@ func DefaultParams() *Params {
 			MultisigProposalExpirySeconds: 604800, // 7 days
 		},
 		Change: &IdentityChangeParams{
-			MaxRequestsPerWalletPerMonth:  10,
-			MinConfidenceAfterChange:      50,
-			StalenessHeightThreshold:      100000,
-			AssistantSlashOnFalsePositive: true,
-			StalenessInvestigatorChain:    "",
+			MaxRequestsPerWalletPerMonth:     10,
+			MinConfidenceAfterChange:         50,
+			StalenessHeightThreshold:         100000,
+			AssistantSlashOnFalsePositive:    true,
+			StalenessInvestigatorChain:       "",
+			KeyRotationGracePeriodSeconds:    86400, // 24 hours default grace period
 		},
 	}
 }

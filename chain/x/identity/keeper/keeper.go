@@ -148,6 +148,19 @@ func (k *Keeper) InitGenesis(ctx sdk.Context, gs *types.GenesisState) error {
 		}
 	}
 
+	// Initialize credential revocations
+	for _, revocation := range gs.CredentialRevocations {
+		store := k.storeService.OpenKVStore(ctx)
+		key := types.GetCredentialRevocationKey(revocation.CredentialId)
+		bz, err := k.cdc.Marshal(revocation)
+		if err != nil {
+			return fmt.Errorf("failed to marshal credential revocation %s: %w", revocation.CredentialId, err)
+		}
+		if err := store.Set(key, bz); err != nil {
+			return fmt.Errorf("failed to set credential revocation %s: %w", revocation.CredentialId, err)
+		}
+	}
+
 	// Initialize change requests
 	for _, request := range gs.ChangeRequests {
 		if err := k.SetChangeRequest(ctx, request); err != nil {
@@ -258,6 +271,12 @@ func (k *Keeper) ExportGenesis(ctx sdk.Context) (*types.GenesisState, error) {
 		return nil, fmt.Errorf("failed to get identity records: %w", err)
 	}
 
+	// Get all credential revocations
+	credentialRevocations, err := k.GetAllCredentialRevocations(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get credential revocations: %w", err)
+	}
+
 	// Get all change requests
 	changeRequests, err := k.GetAllChangeRequests(ctx)
 	if err != nil {
@@ -297,6 +316,7 @@ func (k *Keeper) ExportGenesis(ctx sdk.Context) (*types.GenesisState, error) {
 		EmergencyAdmins:          emergencyAdmins,
 		ValidatorRotations:       validatorRotations,
 		IdentityRecords:          identityRecords,
+		CredentialRevocations:    credentialRevocations,
 		ChangeRequests:           changeRequests,
 		ChangeHistory:            changeHistory,
 		IdentityChangesSuspended: suspended,
