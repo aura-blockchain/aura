@@ -86,8 +86,8 @@ func (k Keeper) GetRegisteredViewKey(ctx sdk.Context, id string) (*types.ViewKey
 		return nil, false
 	}
 	var viewKey types.ViewKey
-	if err := k.cdc.Unmarshal(bz, &ViewKey); err != nil {
-		ctx.Logger().Error("failed to unmarshal data", "error", err, "data_len", len(bz))
+	if err := k.cdc.Unmarshal(bz, &viewKey); err != nil {
+		ctx.Logger().Error("failed to unmarshal ViewKey", "error", err, "data_len", len(bz))
 		return nil, false
 	}
 	return &viewKey, true
