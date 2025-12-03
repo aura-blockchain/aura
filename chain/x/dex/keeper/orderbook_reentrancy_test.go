@@ -31,6 +31,7 @@ func SetupKeeperTest(t *testing.T) TestFixture {
 		bankKeeper,
 		nil, // accountKeeper
 		nil, // vcKeeper
+		nil, // securityKeeper
 	)
 
 	// Generate test addresses
