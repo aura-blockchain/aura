@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/cryptography/types"
@@ -23,6 +25,21 @@ func NewMsgServerImpl(keeper *Keeper) cryptoproto.MsgServer {
 }
 
 func (ms msgServer) CreateKeyRotationSchedule(goCtx context.Context, msg *cryptoproto.MsgCreateKeyRotationSchedule) (*cryptoproto.MsgCreateKeyRotationScheduleResponse, error) {
+	// Verify signer
+	signers := msg.GetSigners()
+	if len(signers) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "no signers")
+	}
+
+	creatorAddr, err := sdk.AccAddressFromBech32(msg.Creator)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid creator address")
+	}
+
+	if !signers[0].Equals(creatorAddr) {
+		return nil, status.Error(codes.PermissionDenied, "signer does not match creator")
+	}
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	if msg.KeyId == "" || msg.RotationIntervalSeconds <= 0 {
@@ -38,10 +55,34 @@ func (ms msgServer) CreateKeyRotationSchedule(goCtx context.Context, msg *crypto
 }
 
 func (ms msgServer) RotateKey(goCtx context.Context, msg *cryptoproto.MsgRotateKey) (*cryptoproto.MsgRotateKeyResponse, error) {
+	// Verify signer
+	signers := msg.GetSigners()
+	if len(signers) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "no signers")
+	}
+
+	creatorAddr, err := sdk.AccAddressFromBech32(msg.Creator)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid creator address")
+	}
+
+	if !signers[0].Equals(creatorAddr) {
+		return nil, status.Error(codes.PermissionDenied, "signer does not match creator")
+	}
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	if msg.KeyId == "" || len(msg.NewPublicKey) == 0 {
 		return nil, types.ErrInvalidInput.Wrap("key_id and new_public_key are required")
+	}
+
+	// Verify ownership of key rotation schedules
+	// Check if any schedules exist for this key and verify the creator owns them
+	schedules := ms.Keeper.GetSchedulesForKey(ctx, msg.KeyId)
+	for _, schedule := range schedules {
+		if schedule.CreatedBy != msg.Creator {
+			return nil, status.Error(codes.PermissionDenied, "not authorized to rotate this key - not the owner of associated rotation schedule")
+		}
 	}
 
 	rotationID, rotationTime, err := ms.Keeper.RotateKey(ctx, msg.Creator, msg.KeyId, msg.NewPublicKey)
@@ -103,6 +144,21 @@ func (ms msgServer) SubmitThresholdSignatureShare(goCtx context.Context, msg *cr
 */
 
 func (ms msgServer) RegisterZKProofCircuit(goCtx context.Context, msg *cryptoproto.MsgRegisterZKProofCircuit) (*cryptoproto.MsgRegisterZKProofCircuitResponse, error) {
+	// Verify signer
+	signers := msg.GetSigners()
+	if len(signers) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "no signers")
+	}
+
+	creatorAddr, err := sdk.AccAddressFromBech32(msg.Creator)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid creator address")
+	}
+
+	if !signers[0].Equals(creatorAddr) {
+		return nil, status.Error(codes.PermissionDenied, "signer does not match creator")
+	}
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	if msg.CircuitId == "" || len(msg.VerificationKey) == 0 {
@@ -118,10 +174,31 @@ func (ms msgServer) RegisterZKProofCircuit(goCtx context.Context, msg *cryptopro
 }
 
 func (ms msgServer) SubmitZKProof(goCtx context.Context, msg *cryptoproto.MsgSubmitZKProof) (*cryptoproto.MsgSubmitZKProofResponse, error) {
+	// Verify signer
+	signers := msg.GetSigners()
+	if len(signers) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "no signers")
+	}
+
+	submitterAddr, err := sdk.AccAddressFromBech32(msg.Submitter)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid submitter address")
+	}
+
+	if !signers[0].Equals(submitterAddr) {
+		return nil, status.Error(codes.PermissionDenied, "signer does not match submitter")
+	}
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	if msg.ProofId == "" || len(msg.ProofData) == 0 {
 		return nil, types.ErrInvalidInput.Wrap("proof_id and proof_data are required")
+	}
+
+	// Verify that the proof circuit exists
+	_, err = ms.Keeper.GetZKProofConfig(ctx, msg.ProofId)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, "ZK proof circuit not found")
 	}
 
 	verified, verificationID, err := ms.Keeper.SubmitZKProof(ctx, msg.Submitter, msg.ProofId, msg.ProofData, msg.PublicInputs)
@@ -136,6 +213,21 @@ func (ms msgServer) SubmitZKProof(goCtx context.Context, msg *cryptoproto.MsgSub
 }
 
 func (ms msgServer) RegisterSecureEnclave(goCtx context.Context, msg *cryptoproto.MsgRegisterSecureEnclave) (*cryptoproto.MsgRegisterSecureEnclaveResponse, error) {
+	// Verify signer
+	signers := msg.GetSigners()
+	if len(signers) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "no signers")
+	}
+
+	creatorAddr, err := sdk.AccAddressFromBech32(msg.Creator)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid creator address")
+	}
+
+	if !signers[0].Equals(creatorAddr) {
+		return nil, status.Error(codes.PermissionDenied, "signer does not match creator")
+	}
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	if len(msg.AttestationData) == 0 {
@@ -151,6 +243,21 @@ func (ms msgServer) RegisterSecureEnclave(goCtx context.Context, msg *cryptoprot
 }
 
 func (ms msgServer) GenerateQuantumResistantKey(goCtx context.Context, msg *cryptoproto.MsgGenerateQuantumResistantKey) (*cryptoproto.MsgGenerateQuantumResistantKeyResponse, error) {
+	// Verify signer
+	signers := msg.GetSigners()
+	if len(signers) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "no signers")
+	}
+
+	creatorAddr, err := sdk.AccAddressFromBech32(msg.Creator)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid creator address")
+	}
+
+	if !signers[0].Equals(creatorAddr) {
+		return nil, status.Error(codes.PermissionDenied, "signer does not match creator")
+	}
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	// Convert timestamppb.Timestamp to *time.Time
@@ -172,6 +279,21 @@ func (ms msgServer) GenerateQuantumResistantKey(goCtx context.Context, msg *cryp
 }
 
 func (ms msgServer) AddCertificatePin(goCtx context.Context, msg *cryptoproto.MsgAddCertificatePin) (*cryptoproto.MsgAddCertificatePinResponse, error) {
+	// Verify signer
+	signers := msg.GetSigners()
+	if len(signers) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "no signers")
+	}
+
+	creatorAddr, err := sdk.AccAddressFromBech32(msg.Creator)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid creator address")
+	}
+
+	if !signers[0].Equals(creatorAddr) {
+		return nil, status.Error(codes.PermissionDenied, "signer does not match creator")
+	}
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	if msg.Hostname == "" || len(msg.CertificateHashes) == 0 {

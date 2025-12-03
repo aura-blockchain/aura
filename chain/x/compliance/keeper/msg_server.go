@@ -31,9 +31,41 @@ func (s *msgServer) SubmitKYC(goCtx context.Context, req *types.MsgSubmitKYC) (*
 	if req.Address == "" {
 		return nil, status.Error(codes.InvalidArgument, "address is required")
 	}
+	if req.Provider == "" {
+		return nil, status.Error(codes.InvalidArgument, "provider is required")
+	}
+
+	// Verify signer
+	signers := req.GetSigners()
+	if len(signers) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "no signers")
+	}
+
+	providerAddr, err := sdk.AccAddressFromBech32(req.Provider)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid provider address")
+	}
+
+	if !providerAddr.Equals(signers[0]) {
+		return nil, status.Error(codes.PermissionDenied, "provider must be transaction signer")
+	}
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	now := ctx.BlockTime()
+
+	// Check if provider is authorized
 	params := s.Keeper.GetParams(ctx)
+	isAuthorized := false
+	for _, authorizedProvider := range params.ApprovedKycProviders {
+		if authorizedProvider == req.Provider {
+			isAuthorized = true
+			break
+		}
+	}
+	if !isAuthorized {
+		return nil, status.Error(codes.PermissionDenied, "provider not authorized to submit KYC records")
+	}
+
+	now := ctx.BlockTime()
 	expiresAt := timestamppb.New(now.Add(time.Duration(params.KycExpiryDays) * 24 * time.Hour))
 	record := &types.KYCRecord{
 		Address:              req.Address,
@@ -49,6 +81,17 @@ func (s *msgServer) SubmitKYC(goCtx context.Context, req *types.MsgSubmitKYC) (*
 	if err := s.Keeper.SetKYCRecord(ctx, record); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+
+	// Emit event for KYC submission
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			"kyc_submitted",
+			sdk.NewAttribute("address", req.Address),
+			sdk.NewAttribute("provider", req.Provider),
+			sdk.NewAttribute("kyc_level", req.KycLevel.String()),
+		),
+	)
+
 	return &types.MsgSubmitKYCResponse{Success: true, Message: "kyc record stored"}, nil
 }
 
@@ -59,6 +102,25 @@ func (s *msgServer) ReportSuspiciousActivity(goCtx context.Context, req *types.M
 	if req.Address == "" || req.TransactionHash == "" {
 		return nil, status.Error(codes.InvalidArgument, "address and transaction hash required")
 	}
+	if req.Reporter == "" {
+		return nil, status.Error(codes.InvalidArgument, "reporter is required")
+	}
+
+	// Verify signer
+	signers := req.GetSigners()
+	if len(signers) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "no signers")
+	}
+
+	reporterAddr, err := sdk.AccAddressFromBech32(req.Reporter)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid reporter address")
+	}
+
+	if !reporterAddr.Equals(signers[0]) {
+		return nil, status.Error(codes.PermissionDenied, "reporter must be transaction signer")
+	}
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	now := ctx.BlockTime()
 	id := fmt.Sprintf("sar-%s-%d", req.TransactionHash, now.UnixNano())
@@ -76,6 +138,18 @@ func (s *msgServer) ReportSuspiciousActivity(goCtx context.Context, req *types.M
 	if err := s.Keeper.SetSuspiciousActivity(ctx, activity); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+
+	// Emit event for SAR filing
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			"suspicious_activity_reported",
+			sdk.NewAttribute("activity_id", id),
+			sdk.NewAttribute("address", req.Address),
+			sdk.NewAttribute("reporter", req.Reporter),
+			sdk.NewAttribute("activity_type", req.ActivityType),
+		),
+	)
+
 	return &types.MsgReportSuspiciousActivityResponse{ActivityId: id}, nil
 }
 
@@ -86,9 +160,24 @@ func (s *msgServer) ScreenSanctions(goCtx context.Context, req *types.MsgScreenS
 	if req.Address == "" {
 		return nil, status.Error(codes.InvalidArgument, "address is required")
 	}
+
+	// Verify signer - the address being screened must be the signer (user-initiated screening)
+	signers := req.GetSigners()
+	if len(signers) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "no signers")
+	}
+
+	requestAddr, err := sdk.AccAddressFromBech32(req.Address)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid address")
+	}
+
+	if !requestAddr.Equals(signers[0]) {
+		return nil, status.Error(codes.PermissionDenied, "address must match transaction signer")
+	}
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	var result *types.SanctionsScreeningResult
-	var err error
 	if !req.ForceRefresh {
 		result, err = s.Keeper.GetSanctionsResult(ctx, req.Address)
 		if err != nil {
@@ -104,6 +193,17 @@ func (s *msgServer) ScreenSanctions(goCtx context.Context, req *types.MsgScreenS
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 	}
+
+	// Emit event for sanctions screening
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			"sanctions_screened",
+			sdk.NewAttribute("address", req.Address),
+			sdk.NewAttribute("status", result.Status.String()),
+			sdk.NewAttribute("requires_review", fmt.Sprintf("%t", result.RequiresManualReview)),
+		),
+	)
+
 	return &types.MsgScreenSanctionsResponse{Status: result.Status, RequiresReview: result.RequiresManualReview}, nil
 }
 
@@ -146,6 +246,22 @@ func (s *msgServer) RecordGDPRConsent(goCtx context.Context, req *types.MsgRecor
 	if req.Address == "" || req.ConsentType == "" {
 		return nil, status.Error(codes.InvalidArgument, "address and consent type required")
 	}
+
+	// Verify signer - the address giving/withdrawing consent must be the signer
+	signers := req.GetSigners()
+	if len(signers) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "no signers")
+	}
+
+	requestAddr, err := sdk.AccAddressFromBech32(req.Address)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid address")
+	}
+
+	if !requestAddr.Equals(signers[0]) {
+		return nil, status.Error(codes.PermissionDenied, "address must match transaction signer")
+	}
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	now := ctx.BlockTime()
 	consent := &types.GDPRConsent{
@@ -161,6 +277,17 @@ func (s *msgServer) RecordGDPRConsent(goCtx context.Context, req *types.MsgRecor
 	if err := s.Keeper.SetGDPRConsent(ctx, consent); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+
+	// Emit event for GDPR consent
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			"gdpr_consent_recorded",
+			sdk.NewAttribute("address", req.Address),
+			sdk.NewAttribute("consent_type", req.ConsentType),
+			sdk.NewAttribute("consented", fmt.Sprintf("%t", req.Consented)),
+		),
+	)
+
 	return &types.MsgRecordGDPRConsentResponse{Success: true}, nil
 }
 
@@ -171,6 +298,22 @@ func (s *msgServer) RequestGDPRData(goCtx context.Context, req *types.MsgRequest
 	if req.Address == "" || req.RequestType == "" {
 		return nil, status.Error(codes.InvalidArgument, "address and request type required")
 	}
+
+	// Verify signer - the address requesting data must be the signer
+	signers := req.GetSigners()
+	if len(signers) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "no signers")
+	}
+
+	requestAddr, err := sdk.AccAddressFromBech32(req.Address)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid address")
+	}
+
+	if !requestAddr.Equals(signers[0]) {
+		return nil, status.Error(codes.PermissionDenied, "address must match transaction signer")
+	}
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	now := ctx.BlockTime()
 	id := fmt.Sprintf("gdpr-%d-%d", ctx.BlockHeight(), now.UnixNano())
@@ -184,6 +327,17 @@ func (s *msgServer) RequestGDPRData(goCtx context.Context, req *types.MsgRequest
 	if err := s.Keeper.SetGDPRRequest(ctx, request); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+
+	// Emit event for GDPR data request
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			"gdpr_data_requested",
+			sdk.NewAttribute("request_id", id),
+			sdk.NewAttribute("address", req.Address),
+			sdk.NewAttribute("request_type", req.RequestType),
+		),
+	)
+
 	return &types.MsgRequestGDPRDataResponse{RequestId: id}, nil
 }
 
@@ -194,6 +348,22 @@ func (s *msgServer) GenerateTaxReport(goCtx context.Context, req *types.MsgGener
 	if req.Address == "" || req.TaxYear == "" || req.Jurisdiction == "" {
 		return nil, status.Error(codes.InvalidArgument, "address, tax year, and jurisdiction required")
 	}
+
+	// Verify signer - the address requesting the tax report must be the signer
+	signers := req.GetSigners()
+	if len(signers) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "no signers")
+	}
+
+	requestAddr, err := sdk.AccAddressFromBech32(req.Address)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid address")
+	}
+
+	if !requestAddr.Equals(signers[0]) {
+		return nil, status.Error(codes.PermissionDenied, "address must match transaction signer")
+	}
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	now := ctx.BlockTime()
 	id := fmt.Sprintf("tax-%s-%s-%d", req.Address, req.TaxYear, now.UnixNano())
@@ -209,5 +379,17 @@ func (s *msgServer) GenerateTaxReport(goCtx context.Context, req *types.MsgGener
 	if err := s.Keeper.SetTaxReport(ctx, report); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+
+	// Emit event for tax report generation
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			"tax_report_generated",
+			sdk.NewAttribute("report_id", id),
+			sdk.NewAttribute("address", req.Address),
+			sdk.NewAttribute("tax_year", req.TaxYear),
+			sdk.NewAttribute("jurisdiction", req.Jurisdiction),
+		),
+	)
+
 	return &types.MsgGenerateTaxReportResponse{ReportId: id, FilePath: ""}, nil
 }

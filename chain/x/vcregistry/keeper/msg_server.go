@@ -46,6 +46,26 @@ func (m *MsgServer) CreatePresentation(
 		return nil, types.ErrInvalidInput
 	}
 
+	// SECURITY: Verify transaction signer matches creator
+	// This prevents attackers from creating presentations using other users' VCs
+	signers := msg.GetSigners()
+	if len(signers) == 0 {
+		return nil, fmt.Errorf("no signers")
+	}
+
+	creatorAddr, err := sdk.AccAddressFromBech32(msg.Creator)
+	if err != nil {
+		return nil, fmt.Errorf("invalid creator address: %w", err)
+	}
+
+	if !signers[0].Equals(creatorAddr) {
+		return nil, types.ErrUnauthorized.Wrapf(
+			"signer (%s) does not match creator (%s)",
+			signers[0].String(),
+			msg.Creator,
+		)
+	}
+
 	// Set default expiration if not provided
 	expiresInSeconds := msg.ExpiresInSeconds
 	if expiresInSeconds == 0 {
@@ -110,6 +130,25 @@ func (m *MsgServer) MintVC(
 		return nil, types.ErrInvalidVCType
 	}
 
+	// SECURITY: Verify transaction signer matches holder address
+	signers := msg.GetSigners()
+	if len(signers) == 0 {
+		return nil, fmt.Errorf("no signers")
+	}
+
+	holderAddr, err := sdk.AccAddressFromBech32(msg.HolderAddress)
+	if err != nil {
+		return nil, fmt.Errorf("invalid holder address: %w", err)
+	}
+
+	if !signers[0].Equals(holderAddr) {
+		return nil, types.ErrUnauthorized.Wrapf(
+			"signer (%s) does not match holder address (%s)",
+			signers[0].String(),
+			msg.HolderAddress,
+		)
+	}
+
 	// Mint the VC (cast vcregistrypb.VCType to types.VCType)
 	vcID, err := m.keeper.MintVC(
 		ctx,
@@ -165,6 +204,25 @@ func (m *MsgServer) RevokeVC(
 		return nil, types.ErrInvalidVCID
 	}
 
+	// SECURITY: Verify transaction signer matches holder address
+	signers := msg.GetSigners()
+	if len(signers) == 0 {
+		return nil, fmt.Errorf("no signers")
+	}
+
+	holderAddr, err := sdk.AccAddressFromBech32(msg.HolderAddress)
+	if err != nil {
+		return nil, fmt.Errorf("invalid holder address: %w", err)
+	}
+
+	if !signers[0].Equals(holderAddr) {
+		return nil, types.ErrUnauthorized.Wrapf(
+			"signer (%s) does not match holder address (%s)",
+			signers[0].String(),
+			msg.HolderAddress,
+		)
+	}
+
 	// Verify the signer owns the VC
 	vcRecord, ok := m.keeper.GetVCRecord(ctx, msg.VcId)
 	if !ok {
@@ -175,7 +233,7 @@ func (m *MsgServer) RevokeVC(
 	}
 
 	// Revoke the VC (user-initiated revocations use USER_REQUEST reason)
-	err := m.keeper.RevokeVC(
+	err = m.keeper.RevokeVC(
 		ctx,
 		msg.VcId,
 		types.RevocationReason(vcregistrypb.RevocationReason_REVOCATION_REASON_USER_REQUEST),
@@ -544,9 +602,28 @@ func (m *MsgServer) RegisterDID(
 		return nil, types.ErrInvalidDID
 	}
 
+	// SECURITY: Verify transaction signer matches controller
+	signers := msg.GetSigners()
+	if len(signers) == 0 {
+		return nil, fmt.Errorf("no signers")
+	}
+
+	controllerAddr, err := sdk.AccAddressFromBech32(msg.Controller)
+	if err != nil {
+		return nil, fmt.Errorf("invalid controller address: %w", err)
+	}
+
+	if !signers[0].Equals(controllerAddr) {
+		return nil, types.ErrUnauthorized.Wrapf(
+			"signer (%s) does not match controller (%s)",
+			signers[0].String(),
+			msg.Controller,
+		)
+	}
+
 	// Register the DID (convert verification methods from protobuf to types)
 	verificationMethods := types.VerificationMethodsFromProto(msg.VerificationMethods)
-	err := m.keeper.RegisterDID(
+	err = m.keeper.RegisterDID(
 		ctx,
 		msg.Did,
 		msg.Controller,
@@ -588,6 +665,25 @@ func (m *MsgServer) UpdateDIDDocument(
 		return nil, types.ErrInvalidDID
 	}
 
+	// SECURITY: Verify transaction signer matches controller
+	signers := msg.GetSigners()
+	if len(signers) == 0 {
+		return nil, fmt.Errorf("no signers")
+	}
+
+	controllerAddr, err := sdk.AccAddressFromBech32(msg.Controller)
+	if err != nil {
+		return nil, fmt.Errorf("invalid controller address: %w", err)
+	}
+
+	if !signers[0].Equals(controllerAddr) {
+		return nil, types.ErrUnauthorized.Wrapf(
+			"signer (%s) does not match controller (%s)",
+			signers[0].String(),
+			msg.Controller,
+		)
+	}
+
 	// Get existing DID to verify controller
 	existingDoc, ok := m.keeper.GetDIDDocument(ctx, msg.Did)
 	if !ok {
@@ -600,11 +696,11 @@ func (m *MsgServer) UpdateDIDDocument(
 	}
 
 	// Update the DID document (convert verification methods from protobuf to types)
-	verificationMethods := types.VerificationMethodsFromProto(msg.VerificationMethods)
-	err := m.keeper.UpdateDIDDocument(
+	updateVerificationMethods := types.VerificationMethodsFromProto(msg.VerificationMethods)
+	err = m.keeper.UpdateDIDDocument(
 		ctx,
 		msg.Did,
-		verificationMethods,
+		updateVerificationMethods,
 		msg.MetadataUri,
 	)
 	if err != nil {
@@ -688,6 +784,25 @@ func (m *MsgServer) CreateAttributeVC(
 		return nil, fmt.Errorf("encrypted_value required")
 	}
 
+	// SECURITY: Verify transaction signer matches creator
+	signers := msg.GetSigners()
+	if len(signers) == 0 {
+		return nil, fmt.Errorf("no signers")
+	}
+
+	creatorAddr, err := sdk.AccAddressFromBech32(msg.Creator)
+	if err != nil {
+		return nil, fmt.Errorf("invalid creator address: %w", err)
+	}
+
+	if !signers[0].Equals(creatorAddr) {
+		return nil, types.ErrUnauthorized.Wrapf(
+			"signer (%s) does not match creator (%s)",
+			signers[0].String(),
+			msg.Creator,
+		)
+	}
+
 	// Generate attribute VC ID
 	avcID := m.keeper.GenerateAttributeVCID(ctx, msg.Creator, msg.AttributeType)
 
@@ -745,6 +860,25 @@ func (m *MsgServer) RevokeAttributeVC(
 		return nil, fmt.Errorf("attribute_vc_id required")
 	}
 
+	// SECURITY: Verify transaction signer matches creator
+	signers := msg.GetSigners()
+	if len(signers) == 0 {
+		return nil, fmt.Errorf("no signers")
+	}
+
+	creatorAddr, err := sdk.AccAddressFromBech32(msg.Creator)
+	if err != nil {
+		return nil, fmt.Errorf("invalid creator address: %w", err)
+	}
+
+	if !signers[0].Equals(creatorAddr) {
+		return nil, types.ErrUnauthorized.Wrapf(
+			"signer (%s) does not match creator (%s)",
+			signers[0].String(),
+			msg.Creator,
+		)
+	}
+
 	// Verify the signer owns the attribute VC
 	avc, ok := m.keeper.GetAttributeVC(ctx, msg.AttributeVcId)
 	if !ok {
@@ -784,6 +918,25 @@ func (m *MsgServer) UpdateDisclosurePolicy(
 	// Validate inputs
 	if msg.Creator == "" {
 		return nil, types.ErrInvalidHolderAddress
+	}
+
+	// SECURITY: Verify transaction signer matches creator
+	signers := msg.GetSigners()
+	if len(signers) == 0 {
+		return nil, fmt.Errorf("no signers")
+	}
+
+	creatorAddr, err := sdk.AccAddressFromBech32(msg.Creator)
+	if err != nil {
+		return nil, fmt.Errorf("invalid creator address: %w", err)
+	}
+
+	if !signers[0].Equals(creatorAddr) {
+		return nil, types.ErrUnauthorized.Wrapf(
+			"signer (%s) does not match creator (%s)",
+			signers[0].String(),
+			msg.Creator,
+		)
 	}
 
 	// Create policy
@@ -884,6 +1037,25 @@ func (m *MsgServer) RespondToDisclosureRequest(
 	}
 	if msg.RequestId == "" {
 		return nil, fmt.Errorf("request_id required")
+	}
+
+	// SECURITY: Verify transaction signer matches creator (holder responding)
+	signers := msg.GetSigners()
+	if len(signers) == 0 {
+		return nil, fmt.Errorf("no signers")
+	}
+
+	creatorAddr, err := sdk.AccAddressFromBech32(msg.Creator)
+	if err != nil {
+		return nil, fmt.Errorf("invalid creator address: %w", err)
+	}
+
+	if !signers[0].Equals(creatorAddr) {
+		return nil, types.ErrUnauthorized.Wrapf(
+			"signer (%s) does not match creator (%s)",
+			signers[0].String(),
+			msg.Creator,
+		)
 	}
 
 	// Convert AttributeType list to AttributeDisclosure list

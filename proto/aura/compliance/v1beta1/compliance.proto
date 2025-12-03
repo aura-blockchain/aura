@@ -213,6 +213,7 @@ message ComplianceParams {
   bool kyc_required = 1;
   KYCLevel minimum_kyc_level = 2;
   uint64 kyc_expiry_days = 3;
+  repeated string approved_kyc_providers = 17;    // Authorized KYC provider addresses
 
   // Transaction monitoring
   bool transaction_monitoring_enabled = 4;

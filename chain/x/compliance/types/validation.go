@@ -12,6 +12,7 @@ func DefaultParams() ComplianceParams {
 		KycRequired:                  false,
 		MinimumKycLevel:              0,
 		KycExpiryDays:                365,
+		ApprovedKycProviders:         []string{}, // Empty by default - must be configured
 		TransactionMonitoringEnabled: false,
 		VelocityLimit_24H:            "1000000",
 		SingleTransactionLimit:       "100000",
