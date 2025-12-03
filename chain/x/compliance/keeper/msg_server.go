@@ -4,6 +4,7 @@ import (
 	context "context"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -63,15 +64,22 @@ func (s *msgServer) SubmitKYC(goCtx context.Context, req *types.MsgSubmitKYC) (*
 	if req.Jurisdiction == "" {
 		return nil, status.Error(codes.InvalidArgument, "jurisdiction is required (ISO 3166-1 alpha-2 country code)")
 	}
+
+	// Normalize jurisdiction to uppercase for ISO 3166-1 alpha-2 compliance
+	// This allows case-insensitive input while maintaining standard format
+	normalizedJurisdiction := strings.ToUpper(strings.TrimSpace(req.Jurisdiction))
+
 	// Validate jurisdiction format (2-letter ISO 3166-1 alpha-2 country code)
 	// This validation enforces:
 	//   - Exactly 2 uppercase letters (e.g., "US", "GB", "JP")
 	//   - No numeric characters
 	//   - No special characters
-	//   - No lowercase letters
-	if err := types.ValidateJurisdictionCode(req.Jurisdiction); err != nil {
+	if err := types.ValidateJurisdictionCode(normalizedJurisdiction); err != nil {
 		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("invalid jurisdiction: must be 2-letter ISO 3166-1 alpha-2 country code (e.g., 'US', 'GB', 'JP'): %s", err.Error()))
 	}
+
+	// Use normalized jurisdiction for all subsequent operations
+	req.Jurisdiction = normalizedJurisdiction
 
 	// Verify signer
 	signers := req.GetSigners()
