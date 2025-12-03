@@ -37,14 +37,13 @@ func (m *MockBankKeeper) SendCoins(ctx sdk.Context, fromAddr sdk.AccAddress, toA
 
 func (m *MockBankKeeper) SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
 	// See MOCK_BANK_KEEPER_EXPLANATION.md for why this implementation is critical
-	// Balance tracking is enabled if address has been explicitly funded
-	addrStr := senderAddr.String()
-	hasAnyBalance := false
-	if m.balances[addrStr] != nil && len(m.balances[addrStr]) > 0 {
-		hasAnyBalance = true
-	}
 
-	if hasAnyBalance {
+	// Check if balance tracking is enabled for this address
+	// An address has tracking enabled if it appears in the balances map (even with zero balance)
+	addrStr := senderAddr.String()
+	_, addressKnown := m.balances[addrStr]
+
+	if addressKnown {
 		// Balance tracking enabled: check AND deduct (simulates real BankKeeper behavior)
 		for _, coin := range amt {
 			balance := m.GetBalance(ctx, senderAddr, coin.Denom)
@@ -56,8 +55,23 @@ func (m *MockBankKeeper) SendCoinsFromAccountToModule(ctx sdk.Context, senderAdd
 			newBalance := balance.Amount.Sub(coin.Amount)
 			m.SetBalance(senderAddr, coin.Denom, newBalance)
 		}
+		return nil
 	}
-	// Permissive mode for backward compatibility (addresses never explicitly funded)
+
+	// Address not in tracking map - two possibilities:
+	// 1. Test explicitly funded with SendCoinsFromModuleToAccount -> address is in map
+	// 2. Test never funded address -> not in map, return insufficient balance error
+	//
+	// To handle case 2 properly, check if requesting non-zero amount from unknown address
+	for _, coin := range amt {
+		if coin.Amount.GT(math.ZeroInt()) {
+			// Trying to send from unfunded address
+			return fmt.Errorf("insufficient balance: have 0, need %s %s",
+				coin.Amount.String(), coin.Denom)
+		}
+	}
+
+	// Zero amount send or permissive for backward compatibility
 	return nil
 }
 
@@ -183,7 +197,7 @@ func (suite *DEXKeeperTestSuite) TestSetParams() {
 func TestCreatePool(t *testing.T) {
 	k, ctx, _ := setupTestKeeper(t)
 
-	_, creator := fundedTestAddr(mockBank, 1000000, 1000000)
+	creator := keepertest.GenTestAddr().String()
 	tokenA := "uaura"
 	tokenB := "uusdt"
 	amountA := sdk.NewCoin("uaura", math.NewInt(1000000))

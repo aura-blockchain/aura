@@ -43,7 +43,7 @@ func TestGenesisRoundTrip(t *testing.T) {
 	require.NotEmpty(t, gen.MarketPrices)
 	require.NotEmpty(t, gen.SwapStats)
 
-	k2, ctx2 := setupTestKeeper(t)
+	k2, ctx2, _ := setupTestKeeper(t)
 	require.NoError(t, k2.InitGenesis(ctx2, gen))
 
 	reParams := k2.GetParams(ctx2)
