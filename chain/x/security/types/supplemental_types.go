@@ -163,6 +163,7 @@ func (m *ViewKey) String() string { return "ViewKey" }
 func (*ViewKey) ProtoMessage()    {}
 
 // RateLimit tracks operation rate limiting
+// This is stored in memory and cleared on block boundaries
 type RateLimit struct {
 	Identifier string      `json:"identifier,omitempty"`
 	Timestamps []time.Time `json:"timestamps,omitempty"`
@@ -171,19 +172,3 @@ type RateLimit struct {
 func (m *RateLimit) Reset()         { *m = RateLimit{} }
 func (m *RateLimit) String() string { return "RateLimit" }
 func (*RateLimit) ProtoMessage()    {}
-
-// AuditLogEntry represents a security audit log entry
-type AuditLogEntry struct {
-	LogId       string `json:"log_id,omitempty"`
-	Timestamp   int64  `json:"timestamp,omitempty"`
-	Severity    string `json:"severity,omitempty"`
-	EventType   string `json:"event_type,omitempty"`
-	Actor       string `json:"actor,omitempty"`
-	Action      string `json:"action,omitempty"`
-	Details     string `json:"details,omitempty"`
-	BlockHeight int64  `json:"block_height,omitempty"`
-}
-
-func (m *AuditLogEntry) Reset()         { *m = AuditLogEntry{} }
-func (m *AuditLogEntry) String() string { return "AuditLogEntry" }
-func (*AuditLogEntry) ProtoMessage()    {}

@@ -211,23 +211,41 @@ func (k Keeper) AddLiquidity(
 	amountB sdk.Coin,
 ) (sdkmath.Int, sdkmath.LegacyDec, error) {
 	// SECURITY CHECK 1: Pause Guard - Check if DEX module is paused
-	if err := k.securityKeeper.RequireNotPaused(ctx, "dex"); err != nil {
-		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), errors.Wrap(err, "dex module paused")
+	// Use securityKeeper if available, otherwise fall back to legacy pauseGuard
+	if k.securityKeeper != nil {
+		if err := k.securityKeeper.RequireNotPaused(ctx, "dex"); err != nil {
+			return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), errors.Wrap(err, "dex module paused")
+		}
+	} else if k.pauseGuard != nil {
+		if err := k.pauseGuard.CheckNotPaused(); err != nil {
+			return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), errors.Wrap(err, "dex module paused")
+		}
 	}
 
 	// SECURITY CHECK 2: Reentrancy Guard - Prevent reentrancy attacks
+	// Use securityKeeper if available, otherwise fall back to legacy reentrancyGuard
 	reentrancyKey := fmt.Sprintf("dex:addliquidity:%s:%s", poolID, provider)
-	if err := k.securityKeeper.EnterNoReentrant(ctx, reentrancyKey); err != nil {
-		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), errors.Wrap(err, "reentrancy detected in AddLiquidity")
+	if k.securityKeeper != nil {
+		if err := k.securityKeeper.EnterNoReentrant(ctx, reentrancyKey); err != nil {
+			return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), errors.Wrap(err, "reentrancy detected in AddLiquidity")
+		}
+		defer k.securityKeeper.ExitNoReentrant(ctx, reentrancyKey)
+	} else if k.reentrancyGuard != nil {
+		if err := k.reentrancyGuard.Enter(); err != nil {
+			return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), errors.Wrap(err, "reentrancy detected in AddLiquidity")
+		}
+		defer k.reentrancyGuard.Exit()
 	}
-	defer k.securityKeeper.ExitNoReentrant(ctx, reentrancyKey)
 
 	// SECURITY CHECK 3: Rate limiting - Prevent spam
-	rateLimitKey := fmt.Sprintf("addliquidity:%s", provider)
-	if err := k.securityKeeper.CheckRateLimit(ctx, rateLimitKey, 100, time.Minute); err != nil {
-		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), errors.Wrap(err, "rate limit exceeded")
+	// Only use securityKeeper for rate limiting (no legacy equivalent)
+	if k.securityKeeper != nil {
+		rateLimitKey := fmt.Sprintf("addliquidity:%s", provider)
+		if err := k.securityKeeper.CheckGuardRateLimit(ctx, rateLimitKey, 100, time.Minute); err != nil {
+			return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), errors.Wrap(err, "rate limit exceeded")
+		}
+		defer k.securityKeeper.IncrementGuardRateLimit(ctx, rateLimitKey, time.Minute)
 	}
-	defer k.securityKeeper.IncrementRateLimit(ctx, rateLimitKey, time.Minute)
 
 	// Get pool
 	pool := k.GetPool(ctx, poolID)
@@ -379,23 +397,41 @@ func (k Keeper) RemoveLiquidity(
 	lpTokens sdkmath.Int,
 ) (sdk.Coin, sdk.Coin, error) {
 	// SECURITY CHECK 1: Pause Guard - Check if DEX module is paused
-	if err := k.securityKeeper.RequireNotPaused(ctx, "dex"); err != nil {
-		return sdk.Coin{}, sdk.Coin{}, errors.Wrap(err, "dex module paused")
+	// Use securityKeeper if available, otherwise fall back to legacy pauseGuard
+	if k.securityKeeper != nil {
+		if err := k.securityKeeper.RequireNotPaused(ctx, "dex"); err != nil {
+			return sdk.Coin{}, sdk.Coin{}, errors.Wrap(err, "dex module paused")
+		}
+	} else if k.pauseGuard != nil {
+		if err := k.pauseGuard.CheckNotPaused(); err != nil {
+			return sdk.Coin{}, sdk.Coin{}, errors.Wrap(err, "dex module paused")
+		}
 	}
 
 	// SECURITY CHECK 2: Reentrancy Guard - Prevent reentrancy attacks
+	// Use securityKeeper if available, otherwise fall back to legacy reentrancyGuard
 	reentrancyKey := fmt.Sprintf("dex:removeliquidity:%s:%s", poolID, provider)
-	if err := k.securityKeeper.EnterNoReentrant(ctx, reentrancyKey); err != nil {
-		return sdk.Coin{}, sdk.Coin{}, errors.Wrap(err, "reentrancy detected in RemoveLiquidity")
+	if k.securityKeeper != nil {
+		if err := k.securityKeeper.EnterNoReentrant(ctx, reentrancyKey); err != nil {
+			return sdk.Coin{}, sdk.Coin{}, errors.Wrap(err, "reentrancy detected in RemoveLiquidity")
+		}
+		defer k.securityKeeper.ExitNoReentrant(ctx, reentrancyKey)
+	} else if k.reentrancyGuard != nil {
+		if err := k.reentrancyGuard.Enter(); err != nil {
+			return sdk.Coin{}, sdk.Coin{}, errors.Wrap(err, "reentrancy detected in RemoveLiquidity")
+		}
+		defer k.reentrancyGuard.Exit()
 	}
-	defer k.securityKeeper.ExitNoReentrant(ctx, reentrancyKey)
 
 	// SECURITY CHECK 3: Rate limiting - Prevent spam
-	rateLimitKey := fmt.Sprintf("removeliquidity:%s", provider)
-	if err := k.securityKeeper.CheckRateLimit(ctx, rateLimitKey, 100, time.Minute); err != nil {
-		return sdk.Coin{}, sdk.Coin{}, errors.Wrap(err, "rate limit exceeded")
+	// Only use securityKeeper for rate limiting (no legacy equivalent)
+	if k.securityKeeper != nil {
+		rateLimitKey := fmt.Sprintf("removeliquidity:%s", provider)
+		if err := k.securityKeeper.CheckGuardRateLimit(ctx, rateLimitKey, 100, time.Minute); err != nil {
+			return sdk.Coin{}, sdk.Coin{}, errors.Wrap(err, "rate limit exceeded")
+		}
+		defer k.securityKeeper.IncrementGuardRateLimit(ctx, rateLimitKey, time.Minute)
 	}
-	defer k.securityKeeper.IncrementRateLimit(ctx, rateLimitKey, time.Minute)
 
 	// Get pool
 	pool := k.GetPool(ctx, poolID)
@@ -530,23 +566,41 @@ func (k Keeper) SwapExactIn(
 	maxSlippageBps uint64,
 ) (sdkmath.Int, sdkmath.LegacyDec, sdkmath.LegacyDec, error) {
 	// SECURITY CHECK 1: Pause Guard - Check if DEX module is paused
-	if err := k.securityKeeper.RequireNotPaused(ctx, "dex"); err != nil {
-		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec(), errors.Wrap(err, "dex module paused")
+	// Use securityKeeper if available, otherwise fall back to legacy pauseGuard
+	if k.securityKeeper != nil {
+		if err := k.securityKeeper.RequireNotPaused(ctx, "dex"); err != nil {
+			return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec(), errors.Wrap(err, "dex module paused")
+		}
+	} else if k.pauseGuard != nil {
+		if err := k.pauseGuard.CheckNotPaused(); err != nil {
+			return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec(), errors.Wrap(err, "dex module paused")
+		}
 	}
 
 	// SECURITY CHECK 2: Reentrancy Guard - Prevent reentrancy attacks
+	// Use securityKeeper if available, otherwise fall back to legacy reentrancyGuard
 	reentrancyKey := fmt.Sprintf("dex:swap:%s:%s", poolID, sender)
-	if err := k.securityKeeper.EnterNoReentrant(ctx, reentrancyKey); err != nil {
-		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec(), errors.Wrap(err, "reentrancy detected in SwapExactIn")
+	if k.securityKeeper != nil {
+		if err := k.securityKeeper.EnterNoReentrant(ctx, reentrancyKey); err != nil {
+			return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec(), errors.Wrap(err, "reentrancy detected in SwapExactIn")
+		}
+		defer k.securityKeeper.ExitNoReentrant(ctx, reentrancyKey)
+	} else if k.reentrancyGuard != nil {
+		if err := k.reentrancyGuard.Enter(); err != nil {
+			return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec(), errors.Wrap(err, "reentrancy detected in SwapExactIn")
+		}
+		defer k.reentrancyGuard.Exit()
 	}
-	defer k.securityKeeper.ExitNoReentrant(ctx, reentrancyKey)
 
 	// SECURITY CHECK 3: Rate limiting - Prevent spam and flash loan attacks
-	rateLimitKey := fmt.Sprintf("swap:%s", sender)
-	if err := k.securityKeeper.CheckRateLimit(ctx, rateLimitKey, 1000, time.Minute); err != nil {
-		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec(), errors.Wrap(err, "rate limit exceeded")
+	// Only use securityKeeper for rate limiting (no legacy equivalent)
+	if k.securityKeeper != nil {
+		rateLimitKey := fmt.Sprintf("swap:%s", sender)
+		if err := k.securityKeeper.CheckGuardRateLimit(ctx, rateLimitKey, 1000, time.Minute); err != nil {
+			return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec(), errors.Wrap(err, "rate limit exceeded")
+		}
+		defer k.securityKeeper.IncrementGuardRateLimit(ctx, rateLimitKey, time.Minute)
 	}
-	defer k.securityKeeper.IncrementRateLimit(ctx, rateLimitKey, time.Minute)
 
 	// Validate non-zero input
 	if coinIn.Amount.IsZero() {

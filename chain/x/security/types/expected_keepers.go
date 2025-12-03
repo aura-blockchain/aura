@@ -26,10 +26,10 @@ type SecurityKeeper interface {
 	UnpauseModule(ctx sdk.Context, moduleName string, unpausedBy string) error
 	IsModulePaused(ctx sdk.Context, moduleName string) bool
 
-	// Rate Limiting
+	// Rate Limiting (Guard-specific, distinct from network rate limiting)
 	// Use to prevent spam and DoS attacks
-	CheckRateLimit(ctx sdk.Context, key string, limit uint64, window time.Duration) error
-	IncrementRateLimit(ctx sdk.Context, key string, window time.Duration)
+	CheckGuardRateLimit(ctx sdk.Context, key string, limit uint64, window time.Duration) error
+	IncrementGuardRateLimit(ctx sdk.Context, key string, window time.Duration)
 
 	// Input Validation
 	// Use to validate inputs before processing

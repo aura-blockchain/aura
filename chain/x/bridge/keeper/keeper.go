@@ -1359,6 +1359,26 @@ func (k Keeper) SetValidator(ctx sdk.Context, validator *types.BridgeValidator) 
 	k.setValidator(ctx, validator)
 }
 
+// GetActiveValidatorSet is a public exported method for getting active validators (for tests)
+func (k Keeper) GetActiveValidatorSet(ctx sdk.Context, blockHeight int64) []string {
+	return k.getActiveValidatorSet(ctx, blockHeight)
+}
+
+// ComputeSignatureSetHash is a public exported method for computing signature set hash (for tests)
+func (k Keeper) ComputeSignatureSetHash(signatures [][]byte) []byte {
+	return k.computeSignatureSetHash(signatures)
+}
+
+// IsSignatureSetUsed is a public exported method for checking if signature set is used (for tests)
+func (k Keeper) IsSignatureSetUsed(ctx sdk.Context, transferID string, signatureSetHash []byte) bool {
+	return k.isSignatureSetUsed(ctx, transferID, signatureSetHash)
+}
+
+// MarkSignatureSetUsed is a public exported method for marking signature set as used (for tests)
+func (k Keeper) MarkSignatureSetUsed(ctx sdk.Context, transferID string, signatureSetHash []byte) {
+	k.markSignatureSetUsed(ctx, transferID, signatureSetHash)
+}
+
 // SetTransfer is a public method to set a cross-chain transfer
 func (k Keeper) SetTransfer(ctx sdk.Context, transfer *types.CrossChainTransfer) {
 	k.setTransfer(ctx, transfer)
