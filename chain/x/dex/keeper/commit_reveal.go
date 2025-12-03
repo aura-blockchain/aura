@@ -247,10 +247,18 @@ func (k Keeper) RevealOrder(
 }
 
 // RequiresCommitReveal determines if an order requires commit-reveal scheme
-// based on the configured threshold
+// based on the configured threshold.
 func (k Keeper) RequiresCommitReveal(ctx sdk.Context, amount sdkmath.Int) bool {
 	params := k.GetParams(ctx)
-	return amount.GTE(params.CommitRevealThreshold)
+
+	// Parse threshold from string (proto customtype not yet applied)
+	threshold, ok := sdkmath.NewIntFromString(params.CommitRevealThreshold)
+	if !ok {
+		// If parsing fails, disable commit-reveal (threshold = max)
+		return false
+	}
+
+	return amount.GTE(threshold)
 }
 
 // ExecuteBatch executes all queued orders in a batch

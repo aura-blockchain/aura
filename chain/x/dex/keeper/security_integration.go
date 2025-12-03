@@ -119,8 +119,8 @@ func (k Keeper) SecureCreatePool(
 		return nil, math.ZeroInt(), err
 	}
 
-	// Record pool creation for tracking
-	k.RecordPoolCreation(ctx, creator, poolID)
+	// Record pool creation for tracking (audit trail for compliance)
+	k.RecordPoolCreation(ctx, creator, poolID, denomA, denomB, amountA.Amount, amountB.Amount)
 
 	// SECURITY CHECK 3: Create Liquidity Lock
 	if err := k.CreateLiquidityLock(ctx, creator, poolID, lpTokens); err != nil {

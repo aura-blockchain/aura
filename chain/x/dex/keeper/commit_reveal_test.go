@@ -15,7 +15,7 @@ import (
 
 // TestCommitOrder_Success tests successful order commitment
 func TestCommitOrder_Success(t *testing.T) {
-	suite := SetupTestSuite(t)
+	suite := SetupKeeperTestSuite(t)
 	ctx := suite.Ctx
 
 	sender := suite.TestAccounts[0]
@@ -44,7 +44,7 @@ func TestCommitOrder_Success(t *testing.T) {
 
 // TestCommitOrder_InvalidHash tests commitment with invalid hash
 func TestCommitOrder_InvalidHash(t *testing.T) {
-	suite := SetupTestSuite(t)
+	suite := SetupKeeperTestSuite(t)
 	ctx := suite.Ctx
 
 	sender := suite.TestAccounts[0]
@@ -59,7 +59,7 @@ func TestCommitOrder_InvalidHash(t *testing.T) {
 
 // TestCommitOrder_DuplicateCommitment tests that only one commitment per sender is allowed
 func TestCommitOrder_DuplicateCommitment(t *testing.T) {
-	suite := SetupTestSuite(t)
+	suite := SetupKeeperTestSuite(t)
 	ctx := suite.Ctx
 
 	sender := suite.TestAccounts[0]
@@ -80,7 +80,7 @@ func TestCommitOrder_DuplicateCommitment(t *testing.T) {
 
 // TestRevealOrder_Success tests successful order reveal
 func TestRevealOrder_Success(t *testing.T) {
-	suite := SetupTestSuite(t)
+	suite := SetupKeeperTestSuite(t)
 	ctx := suite.Ctx
 
 	sender := suite.TestAccounts[0]
@@ -119,7 +119,7 @@ func TestRevealOrder_Success(t *testing.T) {
 
 // TestRevealOrder_HashMismatch tests reveal with wrong order details
 func TestRevealOrder_HashMismatch(t *testing.T) {
-	suite := SetupTestSuite(t)
+	suite := SetupKeeperTestSuite(t)
 	ctx := suite.Ctx
 
 	sender := suite.TestAccounts[0]
@@ -154,7 +154,7 @@ func TestRevealOrder_HashMismatch(t *testing.T) {
 
 // TestRevealOrder_ExpiredDeadline tests reveal after deadline
 func TestRevealOrder_ExpiredDeadline(t *testing.T) {
-	suite := SetupTestSuite(t)
+	suite := SetupKeeperTestSuite(t)
 	ctx := suite.Ctx
 
 	sender := suite.TestAccounts[0]
@@ -186,7 +186,7 @@ func TestRevealOrder_ExpiredDeadline(t *testing.T) {
 
 // TestRevealOrder_InsufficientBalance tests reveal without funds
 func TestRevealOrder_InsufficientBalance(t *testing.T) {
-	suite := SetupTestSuite(t)
+	suite := SetupKeeperTestSuite(t)
 	ctx := suite.Ctx
 
 	sender := suite.TestAccounts[0]
@@ -211,7 +211,7 @@ func TestRevealOrder_InsufficientBalance(t *testing.T) {
 
 // TestRevealOrder_CommitmentNotFound tests reveal with non-existent commitment
 func TestRevealOrder_CommitmentNotFound(t *testing.T) {
-	suite := SetupTestSuite(t)
+	suite := SetupKeeperTestSuite(t)
 	ctx := suite.Ctx
 
 	sender := suite.TestAccounts[0]
@@ -230,7 +230,7 @@ func TestRevealOrder_CommitmentNotFound(t *testing.T) {
 
 // TestBatchExecution_PricePriority tests that batch execution sorts by price
 func TestBatchExecution_PricePriority(t *testing.T) {
-	suite := SetupTestSuite(t)
+	suite := SetupKeeperTestSuite(t)
 	ctx := suite.Ctx
 
 	// Enable batch execution
@@ -301,7 +301,7 @@ func TestBatchExecution_PricePriority(t *testing.T) {
 
 // TestCleanupExpiredCommitments tests cleanup of expired commitments
 func TestCleanupExpiredCommitments(t *testing.T) {
-	suite := SetupTestSuite(t)
+	suite := SetupKeeperTestSuite(t)
 	ctx := suite.Ctx
 
 	sender := suite.TestAccounts[0]
@@ -329,11 +329,13 @@ func TestCleanupExpiredCommitments(t *testing.T) {
 
 // TestRequiresCommitReveal tests threshold check
 func TestRequiresCommitReveal(t *testing.T) {
-	suite := SetupTestSuite(t)
+	suite := SetupKeeperTestSuite(t)
 	ctx := suite.Ctx
 
 	params := suite.Keeper.GetParams(ctx)
-	threshold := params.CommitRevealThreshold
+	// Parse threshold from string (proto customtype not yet applied)
+	threshold, ok := sdkmath.NewIntFromString(params.CommitRevealThreshold)
+	require.True(t, ok, "threshold should parse correctly")
 
 	// Amount below threshold
 	smallAmount := threshold.Sub(sdkmath.NewInt(1))
@@ -349,7 +351,7 @@ func TestRequiresCommitReveal(t *testing.T) {
 
 // TestComputeOrderHash_Consistency tests hash computation consistency
 func TestComputeOrderHash_Consistency(t *testing.T) {
-	suite := SetupTestSuite(t)
+	suite := SetupKeeperTestSuite(t)
 
 	orderType := types.SwapOrderType_SELL
 	auraAmount := sdkmath.NewInt(10000000000)
@@ -368,7 +370,7 @@ func TestComputeOrderHash_Consistency(t *testing.T) {
 
 // TestComputeOrderHash_Uniqueness tests that different inputs produce different hashes
 func TestComputeOrderHash_Uniqueness(t *testing.T) {
-	suite := SetupTestSuite(t)
+	suite := SetupKeeperTestSuite(t)
 
 	orderType := types.SwapOrderType_SELL
 	auraAmount := sdkmath.NewInt(10000000000)
@@ -387,7 +389,7 @@ func TestComputeOrderHash_Uniqueness(t *testing.T) {
 
 // TestFrontRunningResistance simulates a front-running attack attempt
 func TestFrontRunningResistance(t *testing.T) {
-	suite := SetupTestSuite(t)
+	suite := SetupKeeperTestSuite(t)
 	ctx := suite.Ctx
 
 	// Enable batch execution
@@ -440,7 +442,7 @@ func TestFrontRunningResistance(t *testing.T) {
 
 // TestBatchExecution_FailedLocks tests batch execution with some failed orders
 func TestBatchExecution_FailedLocks(t *testing.T) {
-	suite := SetupTestSuite(t)
+	suite := SetupKeeperTestSuite(t)
 	ctx := suite.Ctx
 
 	// Enable batch execution
@@ -494,7 +496,7 @@ func TestBatchExecution_FailedLocks(t *testing.T) {
 
 // TestComputeOrderHash_DifferentOrderTypes tests hash changes with order type
 func TestComputeOrderHash_DifferentOrderTypes(t *testing.T) {
-	suite := SetupTestSuite(t)
+	suite := SetupKeeperTestSuite(t)
 
 	auraAmount := sdkmath.NewInt(10000000000)
 	otherCoin := "usdt"

@@ -1,10 +1,11 @@
 package keeper_test
 
 import (
-	"cosmossdk.io/math"
+	"fmt"
 	"testing"
 	"time"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 
@@ -318,7 +319,7 @@ func TestPoolCreationLimits(t *testing.T) {
 	require.NoError(t, err)
 
 	// Record pool creation
-	keeper.RecordPoolCreation(ctx, creator, "pool1")
+	keeper.RecordPoolCreation(ctx, creator, "pool1", "uaura", "usdt", liquidity, liquidity)
 
 	// Immediate second pool should fail (cooldown)
 	err = keeper.CheckPoolCreationLimits(ctx, creator, liquidity)
@@ -332,7 +333,8 @@ func TestPoolCreationLimits(t *testing.T) {
 
 	// Create max pools
 	for i := 1; i < 10; i++ {
-		keeper.RecordPoolCreation(ctx, creator, "pool"+string(rune(i)))
+		poolID := fmt.Sprintf("pool%d", i)
+		keeper.RecordPoolCreation(ctx, creator, poolID, "uaura", "usdt", liquidity, liquidity)
 		ctx = ctx.WithBlockTime(ctx.BlockTime().Add(2 * time.Hour))
 	}
 

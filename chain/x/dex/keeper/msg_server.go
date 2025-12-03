@@ -323,8 +323,15 @@ func (ms msgServer) RevealOrder(goCtx context.Context, msg *dexpb.MsgRevealOrder
 		return nil, err
 	}
 
-	auraAmount := msg.AuraAmount
-	otherAmount := msg.OtherAmount
+	// Parse amounts from string (proto customtype not yet applied)
+	auraAmount, ok := sdkmath.NewIntFromString(msg.AuraAmount)
+	if !ok {
+		return nil, fmt.Errorf("invalid aura amount: %s", msg.AuraAmount)
+	}
+	otherAmount, ok := sdkmath.NewIntFromString(msg.OtherAmount)
+	if !ok {
+		return nil, fmt.Errorf("invalid other amount: %s", msg.OtherAmount)
+	}
 
 	orderID, err := ms.keeper.RevealOrder(
 		ctx,
