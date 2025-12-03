@@ -590,14 +590,23 @@ func TestCircuitBreakerLargeSwap(t *testing.T) {
 }
 
 func TestCircuitBreakerPriceDeviation(t *testing.T) {
-	k, ctx, _ := setupTestKeeper(t)
+	k, ctx, mockBank := setupTestKeeper(t)
 
-	creator := keepertest.GenTestAddr().String()
+	// Fund creator with sufficient balance for pool creation
+	creatorAddr := keepertest.GenTestAddr()
+	creator := creatorAddr.String()
+	mockBank.SetBalance(creatorAddr, "uaura", math.NewInt(1000000))
+	mockBank.SetBalance(creatorAddr, "uusdt", math.NewInt(1000000))
+
 	pool, _, err := k.CreatePool(ctx, creator, "uaura", "uusdt", sdk.NewCoin("uaura", math.NewInt(1000000)), sdk.NewCoin("uusdt", math.NewInt(1000000)))
 	require.NoError(t, err)
 
 	// Multiple large swaps to cause price deviation
-	trader := keepertest.GenTestAddr().String()
+	traderAddr := keepertest.GenTestAddr()
+	trader := traderAddr.String()
+	// Fund trader with enough for 10 swaps of 50000 each = 500000 uaura
+	mockBank.SetBalance(traderAddr, "uaura", math.NewInt(500000))
+
 	for i := 0; i < 10; i++ {
 		coinIn := sdk.NewCoin("uaura", math.NewInt(50000))
 		_, _, _, err = k.SwapExactIn(ctx, trader, pool.PoolId, coinIn, math.NewInt(1), 0)

@@ -72,7 +72,7 @@ All paginated methods follow this pattern:
 ```go
 func (k *Keeper) GetAllXXXPaginated(ctx sdk.Context, pagination *query.PageRequest) ([]*types.XXX, *query.PageResponse, error) {
     store := ctx.KVStore(k.storeKey)
-    xxxStore := storetypes.PrefixedStore(store, XXXKeyPrefix)
+    xxxStore := prefix.NewStore(store, XXXKeyPrefix)
 
     var items []*types.XXX
     pageRes, err := query.Paginate(xxxStore, pagination, func(key []byte, value []byte) error {

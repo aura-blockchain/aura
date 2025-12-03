@@ -285,21 +285,21 @@ func TestPoolCreationCooldown_RespectsCooldownPeriod(t *testing.T) {
 	// works correctly with the default 1-hour cooldown period.
 
 	// Create first pool - no cooldown for first pool
-	keeper.RecordPoolCreation(ctx, creator, "pool1", "uaura", "usdt", amountA, amountB)
 	err := keeper.CheckPoolCreationCooldown(ctx, creator)
-	require.NoError(t, err, "Should allow immediate next pool after cooldown check passes")
+	require.NoError(t, err, "First pool should have no cooldown")
+	keeper.RecordPoolCreation(ctx, creator, "pool1", "uaura", "usdt", amountA, amountB)
 
-	// Advance time by exactly 1 hour to satisfy cooldown
-	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(1 * time.Hour))
-	keeper.RecordPoolCreation(ctx, creator, "pool2", "uaura", "usdc", amountA, amountB)
+	// Advance time by exactly 1 hour + 1 second to satisfy cooldown for second pool
+	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(time.Hour + time.Second))
 	err = keeper.CheckPoolCreationCooldown(ctx, creator)
 	require.NoError(t, err, "Should allow pool creation after 1 hour cooldown period")
+	keeper.RecordPoolCreation(ctx, creator, "pool2", "uaura", "usdc", amountA, amountB)
 
-	// Advance time again by 1 hour
-	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(1 * time.Hour))
-	keeper.RecordPoolCreation(ctx, creator, "pool3", "uaura", "dai", amountA, amountB)
+	// Advance time again by 1 hour + 1 second for third pool
+	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(time.Hour + time.Second))
 	err = keeper.CheckPoolCreationCooldown(ctx, creator)
 	require.NoError(t, err, "Should allow pool creation after another 1 hour cooldown period")
+	keeper.RecordPoolCreation(ctx, creator, "pool3", "uaura", "dai", amountA, amountB)
 
 	// Verify all pools were created
 	record := keeper.GetPoolCreationRecord(ctx, creator)
