@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
 
 	"cosmossdk.io/core/address"
@@ -49,6 +50,7 @@ func TestGenesisCmd(t *testing.T) {
 	// Expected commands from GenesisCmd function
 	expectedCommands := []string{
 		"add-genesis-account",
+		"gentx",
 		"validate-genesis",
 		"collect-gentxs",
 		"quickstart",
@@ -143,6 +145,134 @@ func TestWrapWithSecurity(t *testing.T) {
 		// Wrapped commands should have RunE
 		require.NotNil(t, cmd.RunE, "Command %s should have RunE set from security wrapper", cmd.Name())
 	}
+}
+
+// TestAddGenesisAccountCommand tests the add-genesis-account command structure
+func TestAddGenesisAccountCommand(t *testing.T) {
+	mbm := app.ModuleBasics
+	txCfg := app.MakeEncodingConfig().TxConfig
+	accountCodec := app.AccountAddressCodec()
+	validatorCodec := app.ValidatorAddressCodec()
+
+	genesisCmd := GenesisCmd(mbm, accountCodec, validatorCodec, txCfg)
+
+	// Find add-genesis-account command
+	var addAccountCmd *cobra.Command
+	for _, cmd := range genesisCmd.Commands() {
+		if cmd.Name() == "add-genesis-account" {
+			addAccountCmd = cmd
+			break
+		}
+	}
+
+	require.NotNil(t, addAccountCmd, "add-genesis-account command should exist")
+	require.Equal(t, "add-genesis-account", addAccountCmd.Name())
+	require.NotEmpty(t, addAccountCmd.Short)
+	require.NotNil(t, addAccountCmd.RunE, "add-genesis-account should have RunE function")
+
+	// Verify flags exist
+	flags := []string{"home", "keyring-backend", "vesting-amount", "vesting-start-time", "vesting-end-time", "module-name", "append"}
+	for _, flagName := range flags {
+		flag := addAccountCmd.Flag(flagName)
+		require.NotNil(t, flag, "Flag %s should exist", flagName)
+	}
+}
+
+// TestGentxCommand tests the gentx command structure
+func TestGentxCommand(t *testing.T) {
+	mbm := app.ModuleBasics
+	txCfg := app.MakeEncodingConfig().TxConfig
+	accountCodec := app.AccountAddressCodec()
+	validatorCodec := app.ValidatorAddressCodec()
+
+	genesisCmd := GenesisCmd(mbm, accountCodec, validatorCodec, txCfg)
+
+	// Find gentx command
+	var gentxCmd *cobra.Command
+	for _, cmd := range genesisCmd.Commands() {
+		if cmd.Name() == "gentx" {
+			gentxCmd = cmd
+			break
+		}
+	}
+
+	require.NotNil(t, gentxCmd, "gentx command should exist")
+	require.Equal(t, "gentx", gentxCmd.Name())
+	require.NotEmpty(t, gentxCmd.Short)
+	require.NotNil(t, gentxCmd.RunE, "gentx should have RunE function")
+
+	// Verify critical flags exist
+	flags := []string{"home", "chain-id", "keyring-backend", "commission-rate", "commission-max-rate",
+		"commission-max-change-rate", "min-self-delegation", "moniker", "identity", "website",
+		"security-contact", "details"}
+	for _, flagName := range flags {
+		flag := gentxCmd.Flag(flagName)
+		require.NotNil(t, flag, "Flag %s should exist", flagName)
+	}
+}
+
+// TestCollectGentxsCommand tests the collect-gentxs command structure
+func TestCollectGentxsCommand(t *testing.T) {
+	mbm := app.ModuleBasics
+	txCfg := app.MakeEncodingConfig().TxConfig
+	accountCodec := app.AccountAddressCodec()
+	validatorCodec := app.ValidatorAddressCodec()
+
+	genesisCmd := GenesisCmd(mbm, accountCodec, validatorCodec, txCfg)
+
+	// Find collect-gentxs command
+	var collectCmd *cobra.Command
+	for _, cmd := range genesisCmd.Commands() {
+		if cmd.Name() == "collect-gentxs" {
+			collectCmd = cmd
+			break
+		}
+	}
+
+	require.NotNil(t, collectCmd, "collect-gentxs command should exist")
+	require.Equal(t, "collect-gentxs", collectCmd.Name())
+	require.NotEmpty(t, collectCmd.Short)
+	require.NotNil(t, collectCmd.RunE, "collect-gentxs should have RunE function")
+
+	// Verify flags exist
+	flags := []string{"home", "gentx-dir"}
+	for _, flagName := range flags {
+		flag := collectCmd.Flag(flagName)
+		require.NotNil(t, flag, "Flag %s should exist", flagName)
+	}
+}
+
+// TestValidateGenesisCommand tests the validate-genesis command structure
+func TestValidateGenesisCommand(t *testing.T) {
+	mbm := app.ModuleBasics
+	txCfg := app.MakeEncodingConfig().TxConfig
+	accountCodec := app.AccountAddressCodec()
+	validatorCodec := app.ValidatorAddressCodec()
+
+	genesisCmd := GenesisCmd(mbm, accountCodec, validatorCodec, txCfg)
+
+	// Find validate-genesis command
+	var validateCmd *cobra.Command
+	for _, cmd := range genesisCmd.Commands() {
+		if cmd.Name() == "validate-genesis" || cmd.Name() == "validate" {
+			validateCmd = cmd
+			break
+		}
+	}
+
+	require.NotNil(t, validateCmd, "validate-genesis command should exist")
+	require.NotEmpty(t, validateCmd.Short)
+	require.NotNil(t, validateCmd.RunE, "validate-genesis should have RunE function")
+
+	// Verify it has the validate alias
+	hasValidateAlias := false
+	for _, alias := range validateCmd.Aliases {
+		if alias == "validate" {
+			hasValidateAlias = true
+			break
+		}
+	}
+	require.True(t, hasValidateAlias, "validate-genesis should have 'validate' alias")
 }
 
 // TestGenesisWorkflow tests a complete genesis workflow

@@ -787,7 +787,9 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 	// Tier 7: DEX, Bridge, and AI modules (depend on vcregistry)
 	vcAdapter := newVCRegistryKeeperAdapter(vcKeeper)
 
-	dexKeeper := dexkeeper.NewKeeper(encoding.Codec, keys.dex, bankAdapter, accountAdapter, vcAdapter)
+	dexKeeper := dexkeeper.NewKeeper(encoding.Codec, keys.dex, bankAdapter, accountAdapter, vcAdapter, securityKeeper)
+
+	stakingAdapter := newBridgeStakingAdapter(stakingKeeper)
 	bridgeKeeper := bridgekeeper.NewKeeper(
 		encoding.Codec,
 		keys.bridge,
@@ -795,7 +797,7 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 		bankAdapter,
 		accountAdapter,
 		vcAdapter,
-		stakingKeeper, // For validator slashing
+		stakingAdapter, // For validator slashing
 	)
 
 	logger.Info("initializing keepers", "phase", "tier-8-wasm")

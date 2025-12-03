@@ -362,7 +362,17 @@ func (k Keeper) findSharedIdentityByLinkedAddress(ctx sdk.Context, chainName str
 //   - true if signature is valid and proves ownership
 //   - false if signature is invalid or address format is wrong
 func (k Keeper) verifyPawAddressOwnership(ctx sdk.Context, auraAddress string, pawAddress string, signature []byte) bool {
+	// TELEMETRY: Track signature verification start time
+	startTime := time.Now()
+	defer func() {
+		duration := time.Since(startTime)
+		// Record will happen in specific failure/success paths below
+		_ = duration
+	}()
+
 	if len(signature) == 0 || pawAddress == "" || auraAddress == "" {
+		k.recordSignatureMismatch("paw", "link_address", "empty_input")
+		k.recordSignatureVerification("paw", "link_address", false, time.Since(startTime))
 		return false
 	}
 
@@ -373,6 +383,8 @@ func (k Keeper) verifyPawAddressOwnership(ctx sdk.Context, auraAddress string, p
 			"expected", 65,
 			"actual", len(signature),
 			"paw_address", pawAddress)
+		k.recordSignatureMismatch("paw", "link_address", "invalid_signature_length")
+		k.recordSignatureVerification("paw", "link_address", false, time.Since(startTime))
 		return false
 	}
 
@@ -394,6 +406,9 @@ func (k Keeper) verifyPawAddressOwnership(ctx sdk.Context, auraAddress string, p
 		ctx.Logger().Error("Invalid recovery ID in PAW signature",
 			"recovery_id", recoveryID,
 			"paw_address", pawAddress)
+		k.recordInvalidRecoveryID("paw")
+		k.recordSignatureMismatch("paw", "link_address", "invalid_recovery_id")
+		k.recordSignatureVerification("paw", "link_address", false, time.Since(startTime))
 		return false
 	}
 
@@ -427,6 +442,9 @@ func (k Keeper) verifyPawAddressOwnership(ctx sdk.Context, auraAddress string, p
 		ctx.Logger().Error("Failed to recover public key from PAW signature",
 			"paw_address", pawAddress,
 			"aura_address", auraAddress)
+		k.recordPubKeyRecoveryFailure("paw", fmt.Sprintf("%d", recoveryID))
+		k.recordSignatureMismatch("paw", "link_address", "pubkey_recovery_failed")
+		k.recordSignatureVerification("paw", "link_address", false, time.Since(startTime))
 		return false
 	}
 
@@ -437,12 +455,17 @@ func (k Keeper) verifyPawAddressOwnership(ctx sdk.Context, auraAddress string, p
 		ctx.Logger().Error("PAW signature verification failed",
 			"paw_address", pawAddress,
 			"aura_address", auraAddress)
+		k.recordSignatureMismatch("paw", "link_address", "ecdsa_verification_failed")
+		k.recordSignatureVerification("paw", "link_address", false, time.Since(startTime))
 		return false
 	}
 
 	ctx.Logger().Info("PAW address ownership verified successfully",
 		"paw_address", pawAddress,
 		"aura_address", auraAddress)
+
+	// TELEMETRY: Record successful verification
+	k.recordSignatureVerification("paw", "link_address", true, time.Since(startTime))
 
 	return true
 }
@@ -473,7 +496,12 @@ func (k Keeper) verifyPawAddressOwnership(ctx sdk.Context, auraAddress string, p
 //   - true if signature is valid and proves ownership
 //   - false if signature is invalid or address format is wrong
 func (k Keeper) verifyXaiAddressOwnership(ctx sdk.Context, auraAddress string, xaiAddress string, signature []byte) bool {
+	// TELEMETRY: Track signature verification start time
+	startTime := time.Now()
+
 	if len(signature) == 0 || xaiAddress == "" || auraAddress == "" {
+		k.recordSignatureMismatch("xai", "link_address", "empty_input")
+		k.recordSignatureVerification("xai", "link_address", false, time.Since(startTime))
 		return false
 	}
 
@@ -484,6 +512,8 @@ func (k Keeper) verifyXaiAddressOwnership(ctx sdk.Context, auraAddress string, x
 			"expected", 65,
 			"actual", len(signature),
 			"xai_address", xaiAddress)
+		k.recordSignatureMismatch("xai", "link_address", "invalid_signature_length")
+		k.recordSignatureVerification("xai", "link_address", false, time.Since(startTime))
 		return false
 	}
 
@@ -505,6 +535,9 @@ func (k Keeper) verifyXaiAddressOwnership(ctx sdk.Context, auraAddress string, x
 		ctx.Logger().Error("Invalid recovery ID in XAI signature",
 			"recovery_id", recoveryID,
 			"xai_address", xaiAddress)
+		k.recordInvalidRecoveryID("xai")
+		k.recordSignatureMismatch("xai", "link_address", "invalid_recovery_id")
+		k.recordSignatureVerification("xai", "link_address", false, time.Since(startTime))
 		return false
 	}
 
@@ -538,6 +571,9 @@ func (k Keeper) verifyXaiAddressOwnership(ctx sdk.Context, auraAddress string, x
 		ctx.Logger().Error("Failed to recover public key from XAI signature",
 			"xai_address", xaiAddress,
 			"aura_address", auraAddress)
+		k.recordPubKeyRecoveryFailure("xai", fmt.Sprintf("%d", recoveryID))
+		k.recordSignatureMismatch("xai", "link_address", "pubkey_recovery_failed")
+		k.recordSignatureVerification("xai", "link_address", false, time.Since(startTime))
 		return false
 	}
 
@@ -548,12 +584,17 @@ func (k Keeper) verifyXaiAddressOwnership(ctx sdk.Context, auraAddress string, x
 		ctx.Logger().Error("XAI signature verification failed",
 			"xai_address", xaiAddress,
 			"aura_address", auraAddress)
+		k.recordSignatureMismatch("xai", "link_address", "ecdsa_verification_failed")
+		k.recordSignatureVerification("xai", "link_address", false, time.Since(startTime))
 		return false
 	}
 
 	ctx.Logger().Info("XAI address ownership verified successfully",
 		"xai_address", xaiAddress,
 		"aura_address", auraAddress)
+
+	// TELEMETRY: Record successful verification
+	k.recordSignatureVerification("xai", "link_address", true, time.Since(startTime))
 
 	return true
 }

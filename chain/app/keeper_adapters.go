@@ -240,6 +240,11 @@ func (a monitoredBankKeeperAdapter) GetBalance(ctx sdk.Context, addr sdk.AccAddr
 	return a.inner.GetBalance(sdk.WrapSDKContext(ctx), addr, denom)
 }
 
+func (a monitoredBankKeeperAdapter) GetSupply(ctx sdk.Context, denom string) sdk.Coin {
+	// Supply queries don't need monitoring
+	return a.inner.GetSupply(sdk.WrapSDKContext(ctx), denom)
+}
+
 // securityStakingAdapter bridges staking keeper expectations for the security module.
 type securityStakingAdapter struct {
 	inner *stakingkeeper.Keeper
@@ -320,6 +325,64 @@ func (a accountKeeperAdapter) SetAccount(ctx sdk.Context, acc sdk.AccountI) {
 
 func (a accountKeeperAdapter) NewAccountWithAddress(ctx sdk.Context, addr sdk.AccAddress) sdk.AccountI {
 	return a.inner.NewAccountWithAddress(sdk.WrapSDKContext(ctx), addr)
+}
+
+func (a accountKeeperAdapter) GetModuleAddress(moduleName string) sdk.AccAddress {
+	return a.inner.GetModuleAddress(moduleName)
+}
+
+// bridgeStakingAdapter wraps the staking keeper for bridge module expectations.
+type bridgeStakingAdapter struct {
+	inner *stakingkeeper.Keeper
+}
+
+func newBridgeStakingAdapter(inner *stakingkeeper.Keeper) bridgeStakingAdapter {
+	return bridgeStakingAdapter{inner: inner}
+}
+
+func (a bridgeStakingAdapter) GetValidator(ctx sdk.Context, addr sdk.ValAddress) (stakingtypes.Validator, bool) {
+	validator, err := a.inner.GetValidator(sdk.WrapSDKContext(ctx), addr)
+	if err != nil {
+		return stakingtypes.Validator{}, false
+	}
+	return validator, true
+}
+
+func (a bridgeStakingAdapter) Slash(ctx sdk.Context, consAddr sdk.ConsAddress, infractionHeight, power int64, slashFactor sdkmath.LegacyDec) sdkmath.Int {
+	slashed, _ := a.inner.Slash(sdk.WrapSDKContext(ctx), consAddr, infractionHeight, power, slashFactor)
+	return slashed
+}
+
+func (a bridgeStakingAdapter) Jail(ctx sdk.Context, consAddr sdk.ConsAddress) {
+	_ = a.inner.Jail(sdk.WrapSDKContext(ctx), consAddr)
+}
+
+func (a bridgeStakingAdapter) Unjail(ctx sdk.Context, valAddr sdk.ValAddress) {
+	validator, found := a.GetValidator(ctx, valAddr)
+	if !found {
+		return
+	}
+	consAddrBytes, err := validator.GetConsAddr()
+	if err != nil {
+		return
+	}
+	_ = a.inner.Unjail(sdk.WrapSDKContext(ctx), consAddrBytes)
+}
+
+func (a bridgeStakingAdapter) IsBonded(ctx sdk.Context, addr sdk.ValAddress) bool {
+	validator, found := a.GetValidator(ctx, addr)
+	if !found {
+		return false
+	}
+	return validator.IsBonded()
+}
+
+func (a bridgeStakingAdapter) GetValidatorByConsAddr(ctx sdk.Context, consAddr sdk.ConsAddress) (stakingtypes.Validator, bool) {
+	validator, err := a.inner.GetValidatorByConsAddr(sdk.WrapSDKContext(ctx), consAddr)
+	if err != nil {
+		return stakingtypes.Validator{}, false
+	}
+	return validator, true
 }
 
 // vcRegistryKeeperAdapter reuses the confidence score keeper hooks to provide the interface DEX/bridge expect.
