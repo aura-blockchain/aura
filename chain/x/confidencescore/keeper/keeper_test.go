@@ -113,7 +113,10 @@ func TestKeeper_InitExportGenesis(t *testing.T) {
 	}
 
 	// Export genesis
-	exported := keeper.ExportGenesis(ctx)
+	exported, err := keeper.ExportGenesis(ctx)
+	if err != nil {
+		t.Fatalf("failed to export genesis: %v", err)
+	}
 
 	if len(exported.UserRecords) != len(genesis.UserRecords) {
 		t.Errorf("expected %d user records, got %d",

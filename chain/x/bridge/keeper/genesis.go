@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"encoding/binary"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -23,18 +24,33 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data types.GenesisState) error {
 	}
 
 	var maxTransferCounter uint64
+	seenTransferIDs := make(map[uint64]bool)
+
 	for _, transfer := range data.Transfers {
 		if transfer == nil {
 			continue
 		}
-		k.setTransfer(ctx, transfer)
-		if seq, ok := parseTransferSequence(transfer.TransferId); ok && seq > maxTransferCounter {
-			maxTransferCounter = seq
+
+		// Detect duplicate transfer IDs during import
+		if seq, ok := parseTransferSequence(transfer.TransferId); ok {
+			if seenTransferIDs[seq] {
+				panic(fmt.Sprintf("duplicate transfer ID in genesis: %s", transfer.TransferId))
+			}
+			seenTransferIDs[seq] = true
+
+			if seq > maxTransferCounter {
+				maxTransferCounter = seq
+			}
 		}
+
+		k.setTransfer(ctx, transfer)
 	}
+
+	// CRITICAL: Set counter to MAX+1 to prevent duplicate IDs
+	// The next transfer will use this counter, so it must be one higher than the max
 	if maxTransferCounter > 0 {
 		bz := make([]byte, 8)
-		binary.BigEndian.PutUint64(bz, maxTransferCounter)
+		binary.BigEndian.PutUint64(bz, maxTransferCounter+1)
 		k.store(ctx).Set(types.TransferCounterKey, bz)
 	}
 

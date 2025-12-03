@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"fmt"
-	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -76,7 +75,7 @@ func (k *Keeper) InitGenesis(ctx sdk.Context, data types.GenesisState) error {
 }
 
 // ExportGenesis exports the current module state to genesis
-func (k *Keeper) ExportGenesis(ctx sdk.Context) types.GenesisState {
+func (k *Keeper) ExportGenesis(ctx sdk.Context) (*types.GenesisState, error) {
 	store := k.storeService.OpenKVStore(ctx)
 
 	// Export params
@@ -103,44 +102,23 @@ func (k *Keeper) ExportGenesis(ctx sdk.Context) types.GenesisState {
 
 	// Export user records from KV store
 	userRecords := []*confidencescorepb.UserConfidenceRecord{}
-	var userRecordErrors []string
 	prefix := []byte(types.UserRecordStoreKeyPrefix)
 	// Calculate end bytes for prefix iteration
 	endBytes := append([]byte(nil), prefix...)
 	endBytes[len(endBytes)-1]++
 	iterator, err := store.Iterator(prefix, endBytes)
-	if err == nil {
-		defer iterator.Close()
-		for ; iterator.Valid(); iterator.Next() {
-			var record confidencescorepb.UserConfidenceRecord
-			if err := k.cdc.Unmarshal(iterator.Value(), &record); err != nil {
-				// Log the unmarshal error with record identifier
-				keyHex := fmt.Sprintf("%x", iterator.Key())
-				userRecordErrors = append(userRecordErrors, fmt.Sprintf("record %s: %v", keyHex, err))
-				ctx.Logger().Error("failed to unmarshal user record during export",
-					"key", keyHex,
-					"error", err)
-				continue
-			}
-			recordCopy := record
-			userRecords = append(userRecords, &recordCopy)
-		}
+	if err != nil {
+		return nil, fmt.Errorf("failed to create user records iterator: %w", err)
 	}
+	defer iterator.Close()
 
-	// Log summary if there were unmarshal errors
-	if len(userRecordErrors) > 0 {
-		ctx.Logger().Error("genesis export completed with user record errors",
-			"failed_records", len(userRecordErrors),
-			"total_exported", len(userRecords))
-		// Emit event for monitoring systems
-		ctx.EventManager().EmitEvent(
-			sdk.NewEvent("genesis_export_warning",
-				sdk.NewAttribute("module", types.ModuleName),
-				sdk.NewAttribute("record_type", "user_records"),
-				sdk.NewAttribute("failed_count", strconv.Itoa(len(userRecordErrors))),
-				sdk.NewAttribute("exported_count", strconv.Itoa(len(userRecords))),
-			),
-		)
+	for ; iterator.Valid(); iterator.Next() {
+		var record confidencescorepb.UserConfidenceRecord
+		if err := k.cdc.Unmarshal(iterator.Value(), &record); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal user record at key %x: %w", iterator.Key(), err)
+		}
+		recordCopy := record
+		userRecords = append(userRecords, &recordCopy)
 	}
 
 	// Export standalone completions (none for now as they're part of user records)
@@ -151,51 +129,30 @@ func (k *Keeper) ExportGenesis(ctx sdk.Context) types.GenesisState {
 
 	// Export slash records from KV store
 	slashRecords := []*confidencescorepb.SlashRecord{}
-	var slashRecordErrors []string
 	slashPrefix := []byte(types.SlashRecordStoreKeyPrefix)
 	// Calculate end bytes for prefix iteration
 	slashEndBytes := append([]byte(nil), slashPrefix...)
 	slashEndBytes[len(slashEndBytes)-1]++
 	slashIterator, err := store.Iterator(slashPrefix, slashEndBytes)
-	if err == nil {
-		defer slashIterator.Close()
-		for ; slashIterator.Valid(); slashIterator.Next() {
-			var record confidencescorepb.SlashRecord
-			if err := k.cdc.Unmarshal(slashIterator.Value(), &record); err != nil {
-				// Log the unmarshal error with record identifier
-				keyHex := fmt.Sprintf("%x", slashIterator.Key())
-				slashRecordErrors = append(slashRecordErrors, fmt.Sprintf("record %s: %v", keyHex, err))
-				ctx.Logger().Error("failed to unmarshal slash record during export",
-					"key", keyHex,
-					"error", err)
-				continue
-			}
-			recordCopy := record
-			slashRecords = append(slashRecords, &recordCopy)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create slash records iterator: %w", err)
+	}
+	defer slashIterator.Close()
+
+	for ; slashIterator.Valid(); slashIterator.Next() {
+		var record confidencescorepb.SlashRecord
+		if err := k.cdc.Unmarshal(slashIterator.Value(), &record); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal slash record at key %x: %w", slashIterator.Key(), err)
 		}
+		recordCopy := record
+		slashRecords = append(slashRecords, &recordCopy)
 	}
 
-	// Log summary if there were unmarshal errors
-	if len(slashRecordErrors) > 0 {
-		ctx.Logger().Error("genesis export completed with slash record errors",
-			"failed_records", len(slashRecordErrors),
-			"total_exported", len(slashRecords))
-		// Emit event for monitoring systems
-		ctx.EventManager().EmitEvent(
-			sdk.NewEvent("genesis_export_warning",
-				sdk.NewAttribute("module", types.ModuleName),
-				sdk.NewAttribute("record_type", "slash_records"),
-				sdk.NewAttribute("failed_count", strconv.Itoa(len(slashRecordErrors))),
-				sdk.NewAttribute("exported_count", strconv.Itoa(len(slashRecords))),
-			),
-		)
-	}
-
-	return types.GenesisState{
+	return &types.GenesisState{
 		Params:       protoParams,
 		UserRecords:  userRecords,
 		Completions:  completions,
 		History:      historyRecords,
 		SlashRecords: slashRecords,
-	}
+	}, nil
 }

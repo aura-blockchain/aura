@@ -133,8 +133,11 @@ func (m AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, bz json.Raw
 
 // ExportGenesis satisfies module.HasGenesis using sdk.Context.
 func (m AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
-	state := m.keeper.ExportGenesis(ctx)
-	return cdc.MustMarshalJSON(&state)
+	state, err := m.keeper.ExportGenesis(ctx)
+	if err != nil {
+		panic(fmt.Sprintf("failed to export genesis state: %s", err))
+	}
+	return cdc.MustMarshalJSON(state)
 }
 
 // Ensure AppModule implements module.HasGenesis.
