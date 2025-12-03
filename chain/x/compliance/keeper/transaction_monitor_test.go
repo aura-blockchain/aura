@@ -11,10 +11,17 @@ import (
 
 	"github.com/aequitas/aura/chain/x/compliance/keeper"
 	"github.com/aequitas/aura/chain/x/compliance/types"
+	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 )
 
+func setupKeeperForMonitor(t *testing.T) (*keeper.Keeper, sdk.Context) {
+	input := keepertest.CreateTestInputWithKeys(t, "compliance")
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey)
+	return k, input.Ctx
+}
+
 func TestMonitorTransaction_Disabled(t *testing.T) {
-	k, ctx := setupKeeper(t)
+	k, ctx := setupKeeperForMonitor(t)
 
 	// Disable transaction monitoring
 	params := types.ComplianceParams{
@@ -35,7 +42,7 @@ func TestMonitorTransaction_Disabled(t *testing.T) {
 }
 
 func TestMonitorTransaction_LargeTransaction(t *testing.T) {
-	k, ctx := setupKeeper(t)
+	k, ctx := setupKeeperForMonitor(t)
 
 	// Enable monitoring with low threshold
 	params := types.ComplianceParams{
@@ -76,7 +83,7 @@ func TestMonitorTransaction_LargeTransaction(t *testing.T) {
 }
 
 func TestMonitorTransaction_SmallTransaction(t *testing.T) {
-	k, ctx := setupKeeper(t)
+	k, ctx := setupKeeperForMonitor(t)
 
 	// Enable monitoring with high threshold
 	params := types.ComplianceParams{
@@ -114,7 +121,7 @@ func TestMonitorTransaction_SmallTransaction(t *testing.T) {
 }
 
 func TestMonitorTransaction_SanctionedAddress(t *testing.T) {
-	k, ctx := setupKeeper(t)
+	k, ctx := setupKeeperForMonitor(t)
 
 	// Enable sanctions screening
 	params := types.ComplianceParams{
@@ -165,7 +172,7 @@ func TestMonitorTransaction_SanctionedAddress(t *testing.T) {
 }
 
 func TestShouldBlockTransaction_CriticalRisk(t *testing.T) {
-	k, _ := setupKeeper(t)
+	k, _ := setupKeeperForMonitor(t)
 
 	// Create critical risk alert
 	now := time.Now()
@@ -184,7 +191,7 @@ func TestShouldBlockTransaction_CriticalRisk(t *testing.T) {
 }
 
 func TestShouldBlockTransaction_MultipleHighRisk(t *testing.T) {
-	k, _ := setupKeeper(t)
+	k, _ := setupKeeperForMonitor(t)
 
 	// Create multiple high risk alerts
 	now := time.Now()
@@ -209,7 +216,7 @@ func TestShouldBlockTransaction_MultipleHighRisk(t *testing.T) {
 }
 
 func TestShouldBlockTransaction_SingleHighRisk(t *testing.T) {
-	k, _ := setupKeeper(t)
+	k, _ := setupKeeperForMonitor(t)
 
 	// Create single high risk alert
 	now := time.Now()
@@ -228,7 +235,7 @@ func TestShouldBlockTransaction_SingleHighRisk(t *testing.T) {
 }
 
 func TestShouldBlockTransaction_MediumRisk(t *testing.T) {
-	k, _ := setupKeeper(t)
+	k, _ := setupKeeperForMonitor(t)
 
 	// Create medium risk alert
 	now := time.Now()
@@ -247,7 +254,7 @@ func TestShouldBlockTransaction_MediumRisk(t *testing.T) {
 }
 
 func TestUpdateAMLProfile_NewProfile(t *testing.T) {
-	k, ctx := setupKeeper(t)
+	k, ctx := setupKeeperForMonitor(t)
 
 	addr := sdk.AccAddress([]byte("test_address"))
 	amount := sdk.NewCoins(sdk.NewInt64Coin("uaura", 5000))
@@ -266,7 +273,7 @@ func TestUpdateAMLProfile_NewProfile(t *testing.T) {
 }
 
 func TestUpdateAMLProfile_ExistingProfile(t *testing.T) {
-	k, ctx := setupKeeper(t)
+	k, ctx := setupKeeperForMonitor(t)
 
 	addr := sdk.AccAddress([]byte("test_address"))
 
@@ -294,7 +301,7 @@ func TestUpdateAMLProfile_ExistingProfile(t *testing.T) {
 }
 
 func TestIsAddressSanctioned_NoResult(t *testing.T) {
-	k, ctx := setupKeeper(t)
+	k, ctx := setupKeeperForMonitor(t)
 
 	addr := "aura1test123"
 	isSanctioned := k.IsAddressSanctioned(ctx, addr)
@@ -302,7 +309,7 @@ func TestIsAddressSanctioned_NoResult(t *testing.T) {
 }
 
 func TestIsAddressSanctioned_Confirmed(t *testing.T) {
-	k, ctx := setupKeeper(t)
+	k, ctx := setupKeeperForMonitor(t)
 
 	addr := "aura1test123"
 	now := time.Now()
@@ -320,7 +327,7 @@ func TestIsAddressSanctioned_Confirmed(t *testing.T) {
 }
 
 func TestIsAddressSanctioned_Match(t *testing.T) {
-	k, ctx := setupKeeper(t)
+	k, ctx := setupKeeperForMonitor(t)
 
 	addr := "aura1test123"
 	now := time.Now()
@@ -338,7 +345,7 @@ func TestIsAddressSanctioned_Match(t *testing.T) {
 }
 
 func TestIsAddressSanctioned_Clear(t *testing.T) {
-	k, ctx := setupKeeper(t)
+	k, ctx := setupKeeperForMonitor(t)
 
 	addr := "aura1test123"
 	now := time.Now()
@@ -356,7 +363,7 @@ func TestIsAddressSanctioned_Clear(t *testing.T) {
 }
 
 func TestAssessRiskLevel_LowRisk(t *testing.T) {
-	k, _ := setupKeeper(t)
+	k, _ := setupKeeperForMonitor(t)
 
 	now := time.Now()
 	profile := &types.AMLProfile{
@@ -372,7 +379,7 @@ func TestAssessRiskLevel_LowRisk(t *testing.T) {
 }
 
 func TestAssessRiskLevel_MediumRisk_Volume(t *testing.T) {
-	k, _ := setupKeeper(t)
+	k, _ := setupKeeperForMonitor(t)
 
 	now := time.Now()
 	profile := &types.AMLProfile{
@@ -388,7 +395,7 @@ func TestAssessRiskLevel_MediumRisk_Volume(t *testing.T) {
 }
 
 func TestAssessRiskLevel_HighRisk_Volume(t *testing.T) {
-	k, _ := setupKeeper(t)
+	k, _ := setupKeeperForMonitor(t)
 
 	now := time.Now()
 	profile := &types.AMLProfile{
@@ -404,7 +411,7 @@ func TestAssessRiskLevel_HighRisk_Volume(t *testing.T) {
 }
 
 func TestAssessRiskLevel_HighRisk_PEP(t *testing.T) {
-	k, _ := setupKeeper(t)
+	k, _ := setupKeeperForMonitor(t)
 
 	now := time.Now()
 	profile := &types.AMLProfile{
@@ -420,7 +427,7 @@ func TestAssessRiskLevel_HighRisk_PEP(t *testing.T) {
 }
 
 func TestAssessRiskLevel_SevereRisk(t *testing.T) {
-	k, _ := setupKeeper(t)
+	k, _ := setupKeeperForMonitor(t)
 
 	now := time.Now()
 	profile := &types.AMLProfile{
@@ -436,7 +443,7 @@ func TestAssessRiskLevel_SevereRisk(t *testing.T) {
 }
 
 func TestEvaluateLargeTransactionRule(t *testing.T) {
-	k, ctx := setupKeeper(t)
+	k, ctx := setupKeeperForMonitor(t)
 
 	// Set params
 	params := types.ComplianceParams{
