@@ -471,6 +471,244 @@ func (suite *LPTokenInvariantTestSuite) TestInvariant_AccountingErrorPrevention(
 	suite.Contains(err.Error(), "700000") // Provider sum
 }
 
+// TestModuleLevelInvariant_AllPools tests the module-level invariant across all pools
+func (suite *LPTokenInvariantTestSuite) TestModuleLevelInvariant_AllPools() {
+	ctx := suite.SdkCtx
+	creator1 := suite.testAddr("creator1")
+	creator2 := suite.testAddr("creator2")
+
+	// Fund creators
+	creator1Addr, _ := sdk.AccAddressFromBech32(creator1)
+	creator2Addr, _ := sdk.AccAddressFromBech32(creator2)
+	suite.fundAccount(ctx, creator1Addr, sdk.NewCoins(
+		sdk.NewCoin("uaura", sdkmath.NewInt(5000000)),
+		sdk.NewCoin("usdt", sdkmath.NewInt(2500000)),
+	))
+	suite.fundAccount(ctx, creator2Addr, sdk.NewCoins(
+		sdk.NewCoin("uaura", sdkmath.NewInt(5000000)),
+		sdk.NewCoin("usdc", sdkmath.NewInt(2500000)),
+	))
+
+	// Create multiple pools
+	_, _, err := suite.Keeper.CreatePool(
+		ctx,
+		creator1,
+		"uaura",
+		"usdt",
+		sdk.NewCoin("uaura", sdkmath.NewInt(1000000)),
+		sdk.NewCoin("usdt", sdkmath.NewInt(500000)),
+	)
+	suite.Require().NoError(err)
+
+	_, _, err = suite.Keeper.CreatePool(
+		ctx,
+		creator2,
+		"uaura",
+		"usdc",
+		sdk.NewCoin("uaura", sdkmath.NewInt(2000000)),
+		sdk.NewCoin("usdc", sdkmath.NewInt(1000000)),
+	)
+	suite.Require().NoError(err)
+
+	// Run the module-level invariant
+	invariantFn := LiquidityProviderConsistencyInvariant(suite.Keeper)
+	msg, broken := invariantFn(ctx)
+
+	suite.False(broken, "module-level invariant should pass for all pools")
+	suite.Empty(msg, "no error message should be returned")
+}
+
+// TestModuleLevelInvariant_DetectsViolation tests that module-level invariant detects violations
+func (suite *LPTokenInvariantTestSuite) TestModuleLevelInvariant_DetectsViolation() {
+	ctx := suite.SdkCtx
+	creator := suite.testAddr("creator")
+
+	// Fund creator
+	creatorAddr, _ := sdk.AccAddressFromBech32(creator)
+	suite.fundAccount(ctx, creatorAddr, sdk.NewCoins(
+		sdk.NewCoin("uaura", sdkmath.NewInt(2000000)),
+		sdk.NewCoin("usdt", sdkmath.NewInt(1000000)),
+	))
+
+	// Create pool
+	pool, _, err := suite.Keeper.CreatePool(
+		ctx,
+		creator,
+		"uaura",
+		"usdt",
+		sdk.NewCoin("uaura", sdkmath.NewInt(1000000)),
+		sdk.NewCoin("usdt", sdkmath.NewInt(500000)),
+	)
+	suite.Require().NoError(err)
+
+	// Manually corrupt the pool (simulate accounting error)
+	pool.TotalLpTokens = sdkmath.NewInt(999999999).String() // Inflate total
+	suite.Keeper.SetPool(ctx, pool)
+
+	// Run the module-level invariant
+	invariantFn := LiquidityProviderConsistencyInvariant(suite.Keeper)
+	msg, broken := invariantFn(ctx)
+
+	suite.True(broken, "module-level invariant should detect violation")
+	suite.Contains(msg, "CRITICAL")
+	suite.Contains(msg, "invariant violated")
+	suite.Contains(msg, pool.PoolId)
+}
+
+// TestModuleLevelInvariant_WithLockedLiquidity tests invariant accounts for locked liquidity
+func (suite *LPTokenInvariantTestSuite) TestModuleLevelInvariant_WithLockedLiquidity() {
+	ctx := suite.SdkCtx
+
+	// Manually create a pool with locked liquidity
+	pool := &types.LiquidityPool{
+		PoolId:          "uaura-test",
+		DenomA:          "uaura",
+		DenomB:          "test",
+		ReserveA:        "1000000",
+		ReserveB:        "500000",
+		TotalLpTokens:   "707106",
+		LockedLiquidity: "1000",
+		Providers: []*types.LiquidityProvider{
+			{
+				Address:  suite.testAddr("provider1"),
+				LpTokens: "706106", // Total - Locked = 707106 - 1000
+			},
+		},
+	}
+	suite.Keeper.SetPool(ctx, pool)
+
+	// Run the module-level invariant
+	invariantFn := LiquidityProviderConsistencyInvariant(suite.Keeper)
+	msg, broken := invariantFn(ctx)
+
+	suite.False(broken, "invariant should pass when locked liquidity is correctly accounted")
+	suite.Empty(msg)
+}
+
+// TestModuleLevelInvariant_MissingLockedLiquidity tests detection of missing locked liquidity
+func (suite *LPTokenInvariantTestSuite) TestModuleLevelInvariant_MissingLockedLiquidity() {
+	ctx := suite.SdkCtx
+
+	// Create pool where provider tokens + locked != total (accounting error)
+	pool := &types.LiquidityPool{
+		PoolId:          "uaura-error",
+		DenomA:          "uaura",
+		DenomB:          "error",
+		ReserveA:        "1000000",
+		ReserveB:        "500000",
+		TotalLpTokens:   "707106",
+		LockedLiquidity: "1000",
+		Providers: []*types.LiquidityProvider{
+			{
+				Address:  suite.testAddr("provider1"),
+				LpTokens: "700000", // Sum + locked = 701000, but total is 707106!
+			},
+		},
+	}
+	suite.Keeper.SetPool(ctx, pool)
+
+	// Run the module-level invariant
+	invariantFn := LiquidityProviderConsistencyInvariant(suite.Keeper)
+	msg, broken := invariantFn(ctx)
+
+	suite.True(broken, "invariant should detect mismatch")
+	suite.Contains(msg, "CRITICAL")
+	suite.Contains(msg, "707106")
+	suite.Contains(msg, "700000")
+	suite.Contains(msg, "1000")
+}
+
+// TestModuleLevelInvariant_InvalidLockedLiquidity tests detection of invalid locked liquidity
+func (suite *LPTokenInvariantTestSuite) TestModuleLevelInvariant_InvalidLockedLiquidity() {
+	ctx := suite.SdkCtx
+
+	// Create pool with invalid locked liquidity value
+	pool := &types.LiquidityPool{
+		PoolId:          "uaura-invalid",
+		DenomA:          "uaura",
+		DenomB:          "invalid",
+		ReserveA:        "1000000",
+		ReserveB:        "500000",
+		TotalLpTokens:   "707106",
+		LockedLiquidity: "invalid-number",
+		Providers: []*types.LiquidityProvider{
+			{
+				Address:  suite.testAddr("provider1"),
+				LpTokens: "706106",
+			},
+		},
+	}
+	suite.Keeper.SetPool(ctx, pool)
+
+	// Run the module-level invariant
+	invariantFn := LiquidityProviderConsistencyInvariant(suite.Keeper)
+	msg, broken := invariantFn(ctx)
+
+	suite.True(broken, "invariant should detect invalid locked liquidity")
+	suite.Contains(msg, "invalid locked liquidity")
+}
+
+// TestModuleLevelInvariant_EmptyLockedLiquidity tests pools without locked liquidity
+func (suite *LPTokenInvariantTestSuite) TestModuleLevelInvariant_EmptyLockedLiquidity() {
+	ctx := suite.SdkCtx
+
+	// Create pool without locked liquidity (legacy pool or test scenario)
+	pool := &types.LiquidityPool{
+		PoolId:          "uaura-legacy",
+		DenomA:          "uaura",
+		DenomB:          "legacy",
+		ReserveA:        "1000000",
+		ReserveB:        "500000",
+		TotalLpTokens:   "707106",
+		LockedLiquidity: "", // Empty string - no locked liquidity
+		Providers: []*types.LiquidityProvider{
+			{
+				Address:  suite.testAddr("provider1"),
+				LpTokens: "707106", // All tokens to provider
+			},
+		},
+	}
+	suite.Keeper.SetPool(ctx, pool)
+
+	// Run the module-level invariant
+	invariantFn := LiquidityProviderConsistencyInvariant(suite.Keeper)
+	msg, broken := invariantFn(ctx)
+
+	suite.False(broken, "invariant should handle empty locked liquidity (treats as zero)")
+	suite.Empty(msg)
+}
+
+// TestAllInvariants tests that AllInvariants function includes LP token invariant
+func (suite *LPTokenInvariantTestSuite) TestAllInvariants() {
+	ctx := suite.SdkCtx
+	creator := suite.testAddr("creator")
+
+	// Fund creator
+	creatorAddr, _ := sdk.AccAddressFromBech32(creator)
+	suite.fundAccount(ctx, creatorAddr, sdk.NewCoins(
+		sdk.NewCoin("uaura", sdkmath.NewInt(2000000)),
+		sdk.NewCoin("usdt", sdkmath.NewInt(1000000)),
+	))
+
+	// Create pool
+	_, _, err := suite.Keeper.CreatePool(
+		ctx,
+		creator,
+		"uaura",
+		"usdt",
+		sdk.NewCoin("uaura", sdkmath.NewInt(1000000)),
+		sdk.NewCoin("usdt", sdkmath.NewInt(500000)),
+	)
+	suite.Require().NoError(err)
+
+	// Run all invariants
+	allInvariantsFn := AllInvariants(suite.Keeper)
+	msg, broken := allInvariantsFn(ctx)
+
+	suite.False(broken, "all invariants should pass for valid pool")
+	suite.Empty(msg)
+}
+
 // Helper function to fund an account
 func (suite *LPTokenInvariantTestSuite) fundAccount(ctx sdk.Context, addr sdk.AccAddress, coins sdk.Coins) {
 	err := suite.BankKeeper.MintCoins(ctx, types.ModuleName, coins)

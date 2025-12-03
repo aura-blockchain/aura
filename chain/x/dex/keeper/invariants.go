@@ -236,6 +236,9 @@ func OrderValidityInvariant(k *Keeper) sdk.Invariant {
 }
 
 // LiquidityProviderConsistencyInvariant checks liquidity provider positions
+// SECURITY: This invariant ensures LP token supply matches distributed tokens
+// Formula: TotalLpTokens = Sum(Provider LP Tokens) + LockedLiquidity
+// This prevents LP token inflation attacks and accounting errors
 func LiquidityProviderConsistencyInvariant(k *Keeper) sdk.Invariant {
 	return func(ctx sdk.Context) (string, bool) {
 		// Create cache context for consistent snapshot reads
@@ -266,6 +269,7 @@ func LiquidityProviderConsistencyInvariant(k *Keeper) sdk.Invariant {
 				), true
 			}
 
+			// Sum all provider LP tokens
 			sum := sdkmath.ZeroInt()
 			for _, provider := range pool.Providers {
 				if _, err := sdk.AccAddressFromBech32(provider.Address); err != nil {
@@ -287,11 +291,38 @@ func LiquidityProviderConsistencyInvariant(k *Keeper) sdk.Invariant {
 				sum = sum.Add(lpTokens)
 			}
 
-			if !totalPoolShares.IsZero() && !sum.Equal(totalPoolShares) {
+			// Account for permanently locked liquidity (burned on pool creation)
+			// The locked liquidity is included in TotalLpTokens but not assigned to any provider
+			lockedLiquidity := sdkmath.ZeroInt()
+			if pool.LockedLiquidity != "" {
+				lockedLiquidityParsed, ok := sdkmath.NewIntFromString(pool.LockedLiquidity)
+				if !ok || lockedLiquidityParsed.IsNegative() {
+					return sdk.FormatInvariant(
+						types.ModuleName,
+						"liquidity-provider-consistency",
+						fmt.Sprintf("pool %s has invalid locked liquidity: %s", pool.PoolId, pool.LockedLiquidity),
+					), true
+				}
+				lockedLiquidity = lockedLiquidityParsed
+			}
+
+			// CRITICAL INVARIANT: TotalLpTokens = Sum(Provider LP Tokens) + LockedLiquidity
+			// This ensures LP tokens are properly backed by reserves and prevents:
+			// - LP token inflation attacks where tokens are minted without backing
+			// - Accounting errors that allow draining pool reserves
+			// - Mismatch between total supply and distributed tokens
+			expectedTotal := sum.Add(lockedLiquidity)
+			if !totalPoolShares.IsZero() && !expectedTotal.Equal(totalPoolShares) {
 				return sdk.FormatInvariant(
 					types.ModuleName,
 					"liquidity-provider-consistency",
-					fmt.Sprintf("pool %s total LP tokens %s do not match provider balances %s", pool.PoolId, totalPoolShares.String(), sum.String()),
+					fmt.Sprintf("CRITICAL: pool %s LP token invariant violated - "+
+						"total LP tokens %s != provider sum %s + locked %s (expected %s)",
+						pool.PoolId,
+						totalPoolShares.String(),
+						sum.String(),
+						lockedLiquidity.String(),
+						expectedTotal.String()),
 				), true
 			}
 		}
