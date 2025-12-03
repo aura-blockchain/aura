@@ -440,7 +440,7 @@ func (suite *MsgServerTestSuite) TestAuthenticateBiometric_NotEnrolled() {
 	// Try to authenticate without enrolling first
 	authMsg := &wspb.MsgAuthenticateBiometric{
 		WalletId:       walletAddr.String(),
-		BiometricProof: []byte("some_biometric_data_that_is_long_enough_12345678901234567890123"),
+		BiometricProof: []byte("some_biometric_data_that_is_long_enough_123456789012345678901234"),
 	}
 
 	authResp, err := suite.msgServer.AuthenticateBiometric(suite.ctx, authMsg)
