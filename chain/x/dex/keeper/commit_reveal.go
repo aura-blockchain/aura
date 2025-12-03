@@ -370,7 +370,13 @@ func (k Keeper) GetOrderCommitment(ctx sdk.Context, commitID string) (*types.Ord
 	}
 
 	var commitment types.OrderCommitment
-	k.cdc.MustUnmarshal(bz, &commitment)
+	if err := k.cdc.Unmarshal(bz, &commitment); err != nil {
+		ctx.Logger().Error("failed to unmarshal order commitment",
+			"commit_id", commitID,
+			"error", err,
+			"data_len", len(bz))
+		return nil, false
+	}
 	return &commitment, true
 }
 
@@ -390,7 +396,12 @@ func (k Keeper) GetAllOrderCommitments(ctx sdk.Context) []*types.OrderCommitment
 	var commitments []*types.OrderCommitment
 	for ; iterator.Valid(); iterator.Next() {
 		var commitment types.OrderCommitment
-		k.cdc.MustUnmarshal(iterator.Value(), &commitment)
+		if err := k.cdc.Unmarshal(iterator.Value(), &commitment); err != nil {
+			ctx.Logger().Error("failed to unmarshal commitment in GetAllOrderCommitments, skipping",
+				"error", err,
+				"data_len", len(iterator.Value()))
+			continue
+		}
 		commitments = append(commitments, &commitment)
 	}
 
@@ -435,7 +446,12 @@ func (k Keeper) GetAllQueuedOrders(ctx sdk.Context) []*types.QueuedOrder {
 	var queuedOrders []*types.QueuedOrder
 	for ; iterator.Valid(); iterator.Next() {
 		var queuedOrder types.QueuedOrder
-		k.cdc.MustUnmarshal(iterator.Value(), &queuedOrder)
+		if err := k.cdc.Unmarshal(iterator.Value(), &queuedOrder); err != nil {
+			ctx.Logger().Error("failed to unmarshal queued order, skipping",
+				"error", err,
+				"data_len", len(iterator.Value()))
+			continue
+		}
 		queuedOrders = append(queuedOrders, &queuedOrder)
 	}
 
