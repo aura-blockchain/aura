@@ -135,8 +135,7 @@ func (am AppModule) EndBlock(ctx context.Context) error {
 
 // RegisterInvariants registers the wasm module invariants.
 func (am AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {
-	// TODO: Implement invariants registration when keeper methods are available
-	// keeper.RegisterInvariants(ir, am.keeper)
+	keeper.RegisterInvariants(ir, am.keeper)
 }
 
 // IsOnePerModuleType implements the depinject.OnePerModuleType interface.

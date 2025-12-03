@@ -890,14 +890,17 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 	auraModules := []sdkmodule.AppModule{
 		inclusionModule,
 		confidenceModule,
+		governanceModule,
+		complianceModule,
+		identitychangeModule,
+		dataModule,
+		dexModule,
+		bridgeModule,
+		vcModule,
 	}
 
 	adapterModules := wrapAdapters(map[string]interface{}{
-		identitychangetypes.ModuleName:    identitychangeModule,
 		identitytypes.ModuleName:          identityModule,
-		vctypes.ModuleName:                vcModule,
-		drtypes.ModuleName:                dataModule,
-		compliancetypes.ModuleName:        complianceModule,
 		monitoringtypes.ModuleName:        monitoringModule,
 		walletsecuritytypes.ModuleName:    walletsecurityModule,
 		validatorsecuritytypes.ModuleName: validatorsecurityModule,
@@ -907,9 +910,6 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 		privacytypes.ModuleName:           privacyModule,
 		economicsecuritytypes.ModuleName:  economicsecurityModule,
 		economicstypes.ModuleName:         economicsModule,
-		governancetypes.ModuleName:        governanceModule,
-		dextypes.ModuleName:               dexModule,
-		bridgetypes.ModuleName:            bridgeModule,
 		prevalidationtypes.ModuleName:     prevalidationModule,
 		securitytypes.ModuleName:          securityModule,
 		aurabindingstypes.ModuleName:      aurabindingsModule,

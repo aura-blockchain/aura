@@ -1,26 +1,23 @@
 package dex
 
 import (
-	"context"
+	"bytes"
+	"encoding/json"
 	"fmt"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/spf13/cobra"
 
+	"github.com/aequitas/aura/chain/x/dex/client/cli"
 	"github.com/aequitas/aura/chain/x/dex/keeper"
 	"github.com/aequitas/aura/chain/x/dex/types"
 	dexpb "github.com/aequitas/aura/proto/aura/dex/v1beta1"
 )
-
-// ModuleServices defines the interface for registering module services.
-// The ModuleManager provides a concrete implementation backed by gRPC registration.
-type ModuleServices interface {
-	RegisterMsgServer(dexpb.MsgServer)
-	RegisterQueryServer(dexpb.QueryServer)
-}
 
 // AppModuleBasic defines the basic application module
 type AppModuleBasic struct{}
@@ -36,85 +33,115 @@ func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 // RegisterGRPCGatewayRoutes is a no-op placeholder to satisfy the AppModuleBasic interface.
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(client.Context, *runtime.ServeMux) {}
 
-// RegisterServices registers module services (no-op for basic)
-func (AppModuleBasic) RegisterServices(ModuleServices) {}
-
 // RegisterInterfaces registers DEX message types for the interface registry.
 func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 	types.RegisterInterfaces(registry)
 }
 
+// DefaultGenesis returns the module's default genesis state.
+func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
+	return cdc.MustMarshalJSON(types.DefaultGenesis())
+}
+
+// ValidateGenesis validates the provided genesis state for the module.
+func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, _ client.TxEncodingConfig, bz json.RawMessage) error {
+	if len(bytes.TrimSpace(bz)) == 0 {
+		return nil
+	}
+	var gen types.GenesisState
+	if err := cdc.UnmarshalJSON(bz, &gen); err != nil {
+		return fmt.Errorf("failed to unmarshal %s genesis state: %w", types.ModuleName, err)
+	}
+	return types.ValidateGenesis(&gen)
+}
+
+// GetTxCmd returns the root tx command for the dex module.
+func (AppModuleBasic) GetTxCmd() *cobra.Command {
+	return cli.GetTxCmd()
+}
+
+// GetQueryCmd returns the root query command for the dex module.
+func (AppModuleBasic) GetQueryCmd() *cobra.Command {
+	return cli.GetQueryCmd()
+}
+
 // AppModule implements the app module interface
 type AppModule struct {
+	AppModuleBasic
 	keeper *keeper.Keeper
 }
 
 // NewAppModule creates a new AppModule instance
 func NewAppModule(k *keeper.Keeper) AppModule {
-	return AppModule{keeper: k}
+	return AppModule{
+		AppModuleBasic: AppModuleBasic{},
+		keeper:         k,
+	}
 }
 
 // Name returns the module name
 func (AppModule) Name() string { return types.ModuleName }
 
 // RegisterServices registers the module's message and query servers
-func (m AppModule) RegisterServices(config ModuleServices) {
-	if config == nil {
-		panic(fmt.Sprintf("%s: nil module services", types.ModuleName))
-	}
-
-	config.RegisterMsgServer(keeper.NewMsgServerImpl(m.keeper))
-	config.RegisterQueryServer(keeper.NewQueryServerImpl(m.keeper))
+func (m AppModule) RegisterServices(cfg module.Configurator) {
+	dexpb.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(m.keeper))
+	dexpb.RegisterQueryServer(cfg.QueryServer(), keeper.NewQueryServerImpl(m.keeper))
 }
 
+// InitGenesis initializes module state from genesis
+func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) {
+	var gen types.GenesisState
+	if len(bytes.TrimSpace(data)) == 0 {
+		gen = *types.DefaultGenesis()
+	} else if err := cdc.UnmarshalJSON(data, &gen); err != nil {
+		panic(fmt.Errorf("failed to unmarshal dex genesis: %w", err))
+	}
+	if err := am.keeper.InitGenesis(ctx, gen); err != nil {
+		panic(fmt.Errorf("dex InitGenesis: %w", err))
+	}
+}
+
+// ExportGenesis exports module state for genesis
+func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
+	gen := am.keeper.ExportGenesis(ctx)
+	return cdc.MustMarshalJSON(&gen)
+}
+
+// ConsensusVersion returns the module consensus version
+func (AppModule) ConsensusVersion() uint64 { return 1 }
+
 // BeginBlock executes any BeginBlock logic. Currently no-op.
-func (m AppModule) BeginBlock(_ context.Context) {}
+func (m AppModule) BeginBlock(_ sdk.Context) {}
 
 // EndBlock executes all ABCI EndBlock logic
-func (m AppModule) EndBlock(ctx context.Context) {
-	if ctx == nil || m.keeper == nil {
-		return
-	}
-
-	// Use the SDK context to run housekeeping such as pruning expired orders.
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	m.keeper.CleanupExpiredOrders(sdkCtx)
-	m.keeper.CleanupExpiredHTLCs(sdkCtx)
+func (m AppModule) EndBlock(ctx sdk.Context) {
+	// Run housekeeping such as pruning expired orders
+	m.keeper.CleanupExpiredOrders(ctx)
+	m.keeper.CleanupExpiredHTLCs(ctx)
 
 	// Record TWAP price observations for all active pools
 	// This provides flash loan attack protection
-	m.keeper.RecordAllPoolPrices(sdkCtx)
+	m.keeper.RecordAllPoolPrices(ctx)
 
 	// Cleanup expired order commitments (commit-reveal scheme)
-	m.keeper.CleanupExpiredCommitments(sdkCtx)
+	m.keeper.CleanupExpiredCommitments(ctx)
 
 	// Execute batch of revealed orders (front-running protection)
-	params := m.keeper.GetParams(sdkCtx)
+	params := m.keeper.GetParams(ctx)
 	if params.BatchExecutionEnabled {
 		// Execute batch every N blocks
-		if sdkCtx.BlockHeight()%int64(params.BatchExecutionInterval) == 0 {
-			if err := m.keeper.ExecuteBatch(sdkCtx); err != nil {
+		if ctx.BlockHeight()%int64(params.BatchExecutionInterval) == 0 {
+			if err := m.keeper.ExecuteBatch(ctx); err != nil {
 				// Log error but don't panic (batch execution is non-critical)
-				sdkCtx.Logger().Error("failed to execute batch", "error", err)
+				ctx.Logger().Error("failed to execute batch", "error", err)
 			}
 		}
 	}
 }
 
-// InitGenesis initializes module state from genesis
-func (m AppModule) InitGenesis(ctx sdk.Context, data types.GenesisState) error {
-	if m.keeper == nil {
-		return fmt.Errorf("dex keeper not initialized")
-	}
-	return m.keeper.InitGenesis(ctx, data)
-}
-
-// ExportGenesis exports module state for genesis
-func (m AppModule) ExportGenesis(ctx sdk.Context) types.GenesisState {
-	if m.keeper == nil {
-		return *types.DefaultGenesis()
-	}
-	return m.keeper.ExportGenesis(ctx)
+// RegisterInvariants registers dex invariants
+func (am AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {
+	keeper.RegisterInvariants(ir, am.keeper)
 }
 
 // IsAppModule tags this module for Cosmos SDK module manager compatibility.
