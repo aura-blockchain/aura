@@ -35,12 +35,24 @@ func (k Keeper) checkUSCompliance(ctx context.Context) (bool, error) {
 }
 
 // RegisterViewKey registers a view key for selective disclosure
-func (k Keeper) RegisterViewKey(ctx context.Context, owner string, publicKey, privateKey []byte) error {
+// SECURITY: Only accepts public keys. Private keys must never be passed to the blockchain.
+func (k Keeper) RegisterViewKey(ctx context.Context, owner string, publicKey []byte) error {
+	// SECURITY: privateKey parameter removed - private keys must never be on-chain
+	if len(publicKey) == 0 {
+		return fmt.Errorf("public key cannot be empty")
+	}
+
+	// Validate key length
+	keyLen := len(publicKey)
+	if keyLen != 32 && keyLen != 33 && keyLen != 64 {
+		return fmt.Errorf("invalid public key length (must be 32, 33, or 64 bytes)")
+	}
+
 	viewKey := &privacyproto.ViewKey{
-		KeyType:        "AUDIT", // Default key type
-		PublicViewKey:  publicKey,
-		PrivateViewKey: privateKey,
-		Address:        []byte(owner), // ViewKey has 'address' field, not 'Owner'
+		KeyType:       "AUDIT", // Default key type
+		PublicViewKey: publicKey,
+		// NO PrivateViewKey field - removed for security
+		Address: []byte(owner),
 	}
 
 	return k.SetViewKey(ctx, owner, viewKey)

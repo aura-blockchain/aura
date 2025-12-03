@@ -29,7 +29,7 @@ func GetQueryCmd() *cobra.Command {
 		CmdQueryViewKey(),
 		CmdQueryViewKeys(),
 		CmdQueryVerifyZKProof(),
-		CmdQueryDecryptWithViewKey(),
+		// SECURITY: CmdQueryDecryptWithViewKey removed - decryption must be client-side
 	)
 
 	return cmd
@@ -320,64 +320,13 @@ Returns:
 	return cmd
 }
 
-// CmdQueryDecryptWithViewKey decrypts transaction data using a view key
-func CmdQueryDecryptWithViewKey() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "decrypt-with-view-key [encrypted-data] [private-view-key]",
-		Short: "Decrypt transaction data using a view key",
-		Long: `Decrypt encrypted transaction data using a private view key.
-
-Examples:
-  aurad query privacy decrypt-with-view-key abc123... def456...
-  aurad query privacy decrypt-with-view-key 789abc... 012def...
-
-Arguments:
-  encrypted-data: The encrypted transaction data (hex-encoded)
-  private-view-key: The private view key for decryption (hex-encoded)
-
-Returns:
-  - Decrypted data (if successful)
-  - Success status
-  - Error message if decryption failed
-
-Note: This requires possession of the private view key.
-Use with caution as it may reveal private transaction details.
-`,
-		Args: cobra.ExactArgs(2),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			clientCtx, err := client.GetClientQueryContext(cmd)
-			if err != nil {
-				return err
-			}
-
-			queryClient := privacyv1beta1.NewQueryClient(clientCtx)
-
-			// Parse encrypted data
-			encryptedData, err := hex.DecodeString(args[0])
-			if err != nil {
-				return fmt.Errorf("invalid encrypted-data: %w", err)
-			}
-
-			// Parse private view key
-			privateViewKey, err := hex.DecodeString(args[1])
-			if err != nil {
-				return fmt.Errorf("invalid private-view-key: %w", err)
-			}
-
-			req := &privacyv1beta1.QueryDecryptWithViewKeyRequest{
-				EncryptedData:  encryptedData,
-				PrivateViewKey: privateViewKey,
-			}
-
-			res, err := queryClient.DecryptWithViewKey(cmd.Context(), req)
-			if err != nil {
-				return err
-			}
-
-			return clientCtx.PrintProto(res)
-		},
-	}
-
-	flags.AddQueryFlagsToCmd(cmd)
-	return cmd
-}
+// SECURITY NOTE: CmdQueryDecryptWithViewKey has been removed.
+// Decryption must be performed client-side using private keys that never leave the client.
+// Private view keys must NEVER be transmitted to the blockchain or passed as CLI arguments.
+//
+// To decrypt transaction data:
+// 1. Download encrypted data from the blockchain using standard query commands
+// 2. Decrypt locally using your private view key (stored securely in your keystore)
+// 3. Implement client-side decryption in your application or wallet software
+//
+// Never expose private keys in CLI commands, API calls, or any blockchain interaction.
