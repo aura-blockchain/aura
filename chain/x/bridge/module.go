@@ -91,8 +91,15 @@ func (m AppModule) RegisterServices(config ModuleServices) {
 }
 
 // BeginBlock executes all ABCI BeginBlock logic
-func (m AppModule) BeginBlock() {
-	// No begin block logic needed for Bridge
+func (m AppModule) BeginBlock(ctx sdk.Context) {
+	// SECURITY: Reset mint limits for supply cap enforcement
+	// This function cleans up old daily/hourly counters and allows fresh limits
+
+	// Reset daily mint counters (removes counters from previous days)
+	m.keeper.ResetDailyMint(ctx)
+
+	// Reset hourly mint counters (removes counters from previous hours)
+	m.keeper.ResetHourlyMint(ctx)
 }
 
 // EndBlock executes all ABCI EndBlock logic

@@ -169,8 +169,12 @@ func (k *Keeper) GetVotingPowerBreakdown(ctx sdk.Context, voter string) *VotingP
 	addr, _ := sdk.AccAddressFromBech32(voter)
 	var baseVotingPower string
 	if addr != nil && k.stakingKeeper != nil {
-		basePower := k.stakingKeeper.GetDelegatorBonded(ctx, addr)
-		baseVotingPower = basePower.String()
+		basePower, err := k.stakingKeeper.GetDelegatorBonded(ctx, addr)
+		if err == nil {
+			baseVotingPower = basePower.String()
+		} else {
+			baseVotingPower = "0"
+		}
 	} else {
 		baseVotingPower = "0"
 	}

@@ -241,7 +241,11 @@ func (k *Keeper) processProposalOutcome(ctx sdk.Context, proposal *types.Proposa
 	totalVotes := yesVotes.Add(noVotes).Add(abstainVotes).Add(noWithVetoVotes)
 
 	// Get total bonded tokens (total voting power in the network)
-	totalBondedTokens := k.stakingKeeper.TotalBondedTokens(ctx)
+	totalBondedTokens, err := k.stakingKeeper.TotalBondedTokens(ctx)
+	if err != nil {
+		// On error, use zero as fallback (will likely fail quorum check)
+		totalBondedTokens = sdkmath.ZeroInt()
+	}
 
 	// SECURITY CHECK 1: Quorum enforcement (minimum participation)
 	// Prevents a single voter or small group from passing proposals without sufficient participation

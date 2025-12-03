@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"context"
 	"testing"
 
 	"cosmossdk.io/log"
@@ -32,11 +33,20 @@ func NewMockStakingKeeper() *MockStakingKeeper {
 }
 
 // GetDelegatorBonded returns the bonded tokens for a delegator
-func (m *MockStakingKeeper) GetDelegatorBonded(ctx sdk.Context, delegator sdk.AccAddress) sdkmath.Int {
+func (m *MockStakingKeeper) GetDelegatorBonded(ctx context.Context, delegator sdk.AccAddress) (sdkmath.Int, error) {
 	if amount, ok := m.delegatorBonded[delegator.String()]; ok {
-		return amount
+		return amount, nil
 	}
-	return sdkmath.ZeroInt()
+	return sdkmath.ZeroInt(), nil
+}
+
+// TotalBondedTokens returns the total bonded tokens across all delegators
+func (m *MockStakingKeeper) TotalBondedTokens(ctx context.Context) (sdkmath.Int, error) {
+	total := sdkmath.ZeroInt()
+	for _, amount := range m.delegatorBonded {
+		total = total.Add(amount)
+	}
+	return total, nil
 }
 
 // SetDelegatorBonded sets the bonded tokens for a delegator (test helper)
@@ -62,10 +72,11 @@ func GovernanceKeeper(t *testing.T) (*keeper.Keeper, sdk.Context) {
 	registry := codectypes.NewInterfaceRegistry()
 	cdc := codec.NewProtoCodec(registry)
 
-	// Create mock staking keeper
+	// Create mock keepers
 	stakingKeeper := NewMockStakingKeeper()
+	bankKeeper := NewMockBankKeeper()
 
-	k := keeper.NewKeeper(cdc, storeKey, stakingKeeper)
+	k := keeper.NewKeeper(cdc, storeKey, stakingKeeper, bankKeeper)
 
 	ctx := sdk.NewContext(stateStore, cmtproto.Header{}, false, log.NewNopLogger())
 
@@ -74,4 +85,23 @@ func GovernanceKeeper(t *testing.T) (*keeper.Keeper, sdk.Context) {
 	k.SetParams(ctx, params)
 
 	return k, ctx
+}
+
+// MockBankKeeper is a mock bank keeper for testing
+type MockBankKeeper struct{}
+
+func NewMockBankKeeper() *MockBankKeeper {
+	return &MockBankKeeper{}
+}
+
+func (m *MockBankKeeper) SendCoinsFromAccountToModule(ctx context.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
+	return nil
+}
+
+func (m *MockBankKeeper) SendCoinsFromModuleToAccount(ctx context.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
+	return nil
+}
+
+func (m *MockBankKeeper) GetBalance(ctx context.Context, addr sdk.AccAddress, denom string) sdk.Coin {
+	return sdk.NewCoin(denom, sdkmath.ZeroInt())
 }

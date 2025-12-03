@@ -59,6 +59,15 @@ var (
 
 	// Validator snapshot tracking (for historical validator sets)
 	ValidatorSnapshotPrefix = []byte{0x0f}
+
+	// Daily mint tracking (supply cap enforcement)
+	DailyMintPrefix = []byte{0x20}
+
+	// Hourly mint tracking (rate limiting)
+	HourlyMintPrefix = []byte{0x21}
+
+	// Verified block hashes (for Merkle proof verification)
+	VerifiedBlockHashPrefix = []byte{0x22}
 )
 
 // TransferKey returns the store key for a cross-chain transfer
@@ -129,4 +138,30 @@ func ValidatorSnapshotKey(blockHeight int64) []byte {
 	heightBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(heightBytes, uint64(blockHeight))
 	return append(ValidatorSnapshotPrefix, heightBytes...)
+}
+
+// DailyMintKey returns the store key for daily mint tracking
+// Format: DailyMintPrefix + date (YYYYMMDD) + ":" + denom
+// The date is derived from the current block time
+func DailyMintKey(date string, denom string) []byte {
+	compositeKey := date + ":" + denom
+	return append(DailyMintPrefix, []byte(compositeKey)...)
+}
+
+// HourlyMintKey returns the store key for hourly mint tracking
+// Format: HourlyMintPrefix + datetime (YYYYMMDDHH) + ":" + denom
+// The datetime is derived from the current block time
+func HourlyMintKey(datetime string, denom string) []byte {
+	compositeKey := datetime + ":" + denom
+	return append(HourlyMintPrefix, []byte(compositeKey)...)
+}
+
+// VerifiedBlockHashKey returns the store key for a verified block hash
+// Format: VerifiedBlockHashPrefix + sourceChain + ":" + blockHeight (8 bytes big-endian)
+func VerifiedBlockHashKey(sourceChain string, blockHeight uint64) []byte {
+	heightBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(heightBytes, blockHeight)
+	compositeKey := sourceChain + ":"
+	key := append(VerifiedBlockHashPrefix, []byte(compositeKey)...)
+	return append(key, heightBytes...)
 }

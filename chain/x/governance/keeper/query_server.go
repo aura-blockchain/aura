@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -248,7 +249,10 @@ func (qs queryServer) VotingPower(goCtx context.Context, req *govpb.QueryVotingP
 	if err != nil {
 		return nil, err
 	}
-	basePower := qs.Keeper.stakingKeeper.GetDelegatorBonded(ctx, addr)
+	basePower, err := qs.Keeper.stakingKeeper.GetDelegatorBonded(ctx, addr)
+	if err != nil {
+		basePower = sdkmath.ZeroInt()
+	}
 
 	return &govpb.QueryVotingPowerResponse{
 		VotingPower:    basePower.String(),

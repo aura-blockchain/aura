@@ -114,6 +114,18 @@ message MsgUnlockTokens {
 
   // Validator signatures (multi-sig required)
   repeated bytes validator_signatures = 6;
+
+  // Merkle proof that the transaction is in the source block
+  bytes merkle_proof = 7;
+
+  // Merkle root from the source block header
+  bytes merkle_root = 8;
+
+  // Block height on source chain where burn occurred
+  uint64 source_block_height = 9;
+
+  // Block hash on source chain where burn occurred
+  bytes source_block_hash = 10;
 }
 
 message MsgUnlockTokensResponse {
@@ -226,5 +238,38 @@ message MsgRelayTransfer {
 }
 
 message MsgRelayTransferResponse {
+  bool success = 1;
+}
+
+// MsgEmergencyPause pauses bridge operations (emergency guardians only)
+message MsgEmergencyPause {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  // Guardian address authorized to pause
+  string signer = 1;
+
+  // Reason for pause (for audit trail)
+  string reason = 2;
+
+  // Optional: specific chains to pause (empty = global pause)
+  repeated string chains = 3;
+}
+
+message MsgEmergencyPauseResponse {
+  bool success = 1;
+}
+
+// MsgUnpause unpauses bridge operations (governance only)
+message MsgUnpause {
+  option (cosmos.msg.v1.signer) = "authority";
+
+  // Governance authority address
+  string authority = 1;
+
+  // Optional: specific chains to unpause (empty = global unpause)
+  repeated string chains = 2;
+}
+
+message MsgUnpauseResponse {
   bool success = 1;
 }
