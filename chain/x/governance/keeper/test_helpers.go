@@ -14,6 +14,21 @@ type MockStakingKeeper struct {
 	delegatorBonded map[string]sdkmath.Int
 }
 
+// NewMockStakingKeeper creates a properly initialized MockStakingKeeper
+func NewMockStakingKeeper() *MockStakingKeeper {
+	return &MockStakingKeeper{
+		delegatorBonded: make(map[string]sdkmath.Int),
+	}
+}
+
+// SetDelegatorBonded sets the bonded amount for a delegator (test helper)
+func (m *MockStakingKeeper) SetDelegatorBonded(address string, amount sdkmath.Int) {
+	if m.delegatorBonded == nil {
+		m.delegatorBonded = make(map[string]sdkmath.Int)
+	}
+	m.delegatorBonded[address] = amount
+}
+
 func (m *MockStakingKeeper) GetDelegatorBonded(ctx context.Context, delegator sdk.AccAddress) (sdkmath.Int, error) {
 	if amount, ok := m.delegatorBonded[delegator.String()]; ok {
 		return amount, nil
@@ -113,11 +128,11 @@ func (m *MockSecurityKeeper) IsModulePaused(ctx sdk.Context, moduleName string) 
 	return false
 }
 
-func (m *MockSecurityKeeper) CheckRateLimit(ctx sdk.Context, key string, limit uint64, window time.Duration) error {
+func (m *MockSecurityKeeper) CheckGuardRateLimit(ctx sdk.Context, key string, limit uint64, window time.Duration) error {
 	return nil
 }
 
-func (m *MockSecurityKeeper) IncrementRateLimit(ctx sdk.Context, key string, window time.Duration) {}
+func (m *MockSecurityKeeper) IncrementGuardRateLimit(ctx sdk.Context, key string, window time.Duration) {}
 
 func (m *MockSecurityKeeper) ValidateAddress(address string) error {
 	return nil

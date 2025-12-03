@@ -165,8 +165,8 @@ func (*ViewKey) ProtoMessage()    {}
 // RateLimit tracks operation rate limiting
 // This is stored in memory and cleared on block boundaries
 type RateLimit struct {
-	Identifier string      `json:"identifier,omitempty"`
-	Timestamps []time.Time `json:"timestamps,omitempty"`
+	Identifier string      `protobuf:"bytes,1,opt,name=identifier,proto3" json:"identifier,omitempty"`
+	Timestamps []time.Time `protobuf:"bytes,2,rep,name=timestamps,proto3,stdtime" json:"timestamps,omitempty"`
 }
 
 func (m *RateLimit) Reset()         { *m = RateLimit{} }
