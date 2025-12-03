@@ -14,6 +14,9 @@ message GenesisState {
   // KYC records
   repeated KYCRecord kyc_records = 2;
 
+  // KYC history entries (version tracking and audit trail)
+  repeated KYCHistoryEntry kyc_history = 11;
+
   // AML profiles
   repeated AMLProfile aml_profiles = 3;
 

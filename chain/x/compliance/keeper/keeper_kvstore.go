@@ -26,6 +26,7 @@ var (
 	ParamsKeyPrefix               = []byte{0x0A}
 	ProcessingRestrictionsKeyPrefix = []byte{0x0B}
 	RateLimitKeyPrefix              = []byte{0x0C}
+	KYCHistoryKeyPrefix             = []byte{0x0D}
 )
 
 // ============================================================================

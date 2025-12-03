@@ -115,8 +115,18 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 func (AppModule) ConsensusVersion() uint64 { return 1 }
 
 // RegisterInvariants registers compliance invariants.
+//
+// Registered invariants:
+//   - params-valid: Validates module parameters
+//   - kyc-record-consistency: Validates KYC records (address, PII commitment, level, timestamps)
+//   - sanctions-screening-validity: Validates sanctions screening results (address, status, matches)
+//   - gdpr-data-integrity: Validates GDPR requests (address, type, timestamps)
+//   - tax-record-consistency: Validates tax reports (address, year format, jurisdiction)
+//
+// These invariants run during crisis module checks and help detect invalid state
+// that could indicate data corruption or security issues.
 func (am AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {
-	// TODO: add invariants if needed
+	keeper.RegisterInvariants(ir, am.keeper)
 }
 
 // BeginBlock processes expired KYC records at the start of each block.
