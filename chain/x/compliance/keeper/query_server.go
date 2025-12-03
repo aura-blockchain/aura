@@ -27,9 +27,10 @@ func (q *queryServer) KycRecord(goCtx context.Context, req *types.QueryKYCRecord
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	// Apply rate limiting for KYC record queries (may trigger verification)
-	if err := q.Keeper.CheckRateLimit(ctx, req.Address, "kyc_verification"); err != nil {
-		return nil, status.Errorf(codes.ResourceExhausted, "rate limit exceeded: %s", err.Error())
-	}
+	// TODO: Re-enable when CheckRateLimit is implemented
+	// if err := q.Keeper.CheckRateLimit(ctx, req.Address, "kyc_verification"); err != nil {
+	// 	return nil, status.Errorf(codes.ResourceExhausted, "rate limit exceeded: %s", err.Error())
+	// }
 
 	record, err := q.Keeper.GetKYCRecord(ctx, req.Address)
 	if err != nil {
@@ -45,9 +46,10 @@ func (q *queryServer) AmlProfile(goCtx context.Context, req *types.QueryAMLProfi
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	// Apply rate limiting for AML profile queries (expensive risk calculation)
-	if err := q.Keeper.CheckRateLimit(ctx, req.Address, "aml_profile_query"); err != nil {
-		return nil, status.Errorf(codes.ResourceExhausted, "rate limit exceeded: %s", err.Error())
-	}
+	// TODO: Re-enable when CheckRateLimit is implemented
+	// if err := q.Keeper.CheckRateLimit(ctx, req.Address, "aml_profile_query"); err != nil {
+	// 	return nil, status.Errorf(codes.ResourceExhausted, "rate limit exceeded: %s", err.Error())
+	// }
 
 	profile, err := q.Keeper.GetAMLProfile(ctx, req.Address)
 	if err != nil {
