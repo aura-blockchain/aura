@@ -233,8 +233,8 @@ func TestSecurityAuditEvent(t *testing.T) {
 
 // TestSecurityConstants tests security-related constants
 func TestSecurityConstants(t *testing.T) {
-	require.Equal(t, uint32(5), types.MaxCallDepth, "Max call depth should be 5")
-	require.Equal(t, uint64(100), types.GasPerByte, "Gas per byte should be 100")
+	require.EqualValues(t, 5, types.MaxCallDepth, "Max call depth should be 5")
+	require.EqualValues(t, 100, types.GasPerByte, "Gas per byte should be 100")
 	require.Equal(t, 0x00, types.WASMMagicNumberByte0)
 	require.Equal(t, 0x61, types.WASMMagicNumberByte1)
 	require.Equal(t, 0x73, types.WASMMagicNumberByte2)
