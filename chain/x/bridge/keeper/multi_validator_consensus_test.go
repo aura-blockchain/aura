@@ -34,7 +34,7 @@ func TestMultiValidatorConsensus_InsufficientValidatorsRejected(t *testing.T) {
 		signaturesProvided int
 		minRequired        uint64
 		expectPass         bool
-		expectedError      string
+		expectedError      string // Can be partial match
 	}{
 		{
 			name:               "1 validator when 2 required - should fail",
@@ -43,7 +43,7 @@ func TestMultiValidatorConsensus_InsufficientValidatorsRejected(t *testing.T) {
 			signaturesProvided: 1,
 			minRequired:        types.MinAllowedConfirmations, // 2
 			expectPass:         false,
-			expectedError:      "insufficient signatures",
+			expectedError:      "insufficient validator signatures",
 		},
 		{
 			name:               "2 validators when 2 required - should pass",
@@ -61,7 +61,7 @@ func TestMultiValidatorConsensus_InsufficientValidatorsRejected(t *testing.T) {
 			signaturesProvided: 0,
 			minRequired:        types.MinAllowedConfirmations, // 2
 			expectPass:         false,
-			expectedError:      "insufficient signatures",
+			expectedError:      "insufficient validator signatures",
 		},
 		{
 			name:               "2 validators when 3 required - should fail",
@@ -70,7 +70,7 @@ func TestMultiValidatorConsensus_InsufficientValidatorsRejected(t *testing.T) {
 			signaturesProvided: 2,
 			minRequired:        3,
 			expectPass:         false,
-			expectedError:      "insufficient signatures",
+			expectedError:      "insufficient validator signatures",
 		},
 		{
 			name:               "3 validators when 3 required (default) - should pass",
@@ -212,8 +212,7 @@ func TestMultiValidatorConsensus_DuplicateValidatorSignaturesRejected(t *testing
 			validators := createTestValidators(t, input, k, tc.totalValidators, tc.totalValidators)
 
 			// Create a transfer to unlock
-			transferID := "transfer-duplicate-test"
-			transfer := createTestTransfer(t, input, transferID, "1000000", tc.minRequired)
+			transfer := createTestTransfer(t, input, k, "transfer-duplicate-test", "0xduplicate123", "1000000", tc.minRequired)
 
 			// Prepare unlock message data
 			burnTxHash := "0xduplicate123"
@@ -337,10 +336,12 @@ func TestMultiValidatorConsensus_MinimumThresholdEnforced(t *testing.T) {
 
 			// Create a transfer
 			transferID := fmt.Sprintf("transfer-threshold-%d", tc.paramsMinRequired)
-			transfer := createTestTransfer(t, input, transferID, "1000000", tc.paramsMinRequired)
 
 			// Prepare unlock message
 			burnTxHash := fmt.Sprintf("0xthreshold%d", tc.paramsMinRequired)
+
+			// Create a transfer
+			transfer := createTestTransfer(t, input, k, transferID, burnTxHash, "1000000", tc.paramsMinRequired)
 			sender := keepertest.GenTestAddr().String()
 			amount := "1000000"
 			denom := "uaura"
@@ -468,10 +469,12 @@ func TestMultiValidatorConsensus_InactiveValidatorsNotCounted(t *testing.T) {
 
 			// Create a transfer
 			transferID := "transfer-inactive-test"
-			transfer := createTestTransfer(t, input, transferID, "1000000", tc.minRequired)
 
 			// Prepare unlock message
 			burnTxHash := "0xinactive123"
+
+			// Create a transfer
+			transfer := createTestTransfer(t, input, k, transferID, burnTxHash, "1000000", tc.minRequired)
 			sender := keepertest.GenTestAddr().String()
 			amount := "1000000"
 			denom := "uaura"
