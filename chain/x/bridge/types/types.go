@@ -36,6 +36,7 @@ type (
 	// Core types - Security
 	CircuitBreaker    = pb.CircuitBreaker
 	TimeLock          = pb.TimeLock
+	PendingTransfer   = pb.PendingTransfer
 	FraudProof        = pb.FraudProof
 	SlashingEvent     = pb.SlashingEvent
 	InsuranceFund     = pb.InsuranceFund

@@ -65,6 +65,13 @@ const (
 	CodeInvalidDID                  uint32 = 609
 	CodeInvalidChangeRequest        uint32 = 610
 
+	// GDPR-related error codes (650-669)
+	CodeIdentityAlreadyErased uint32 = 650
+	CodeIdentityErased        uint32 = 651
+	CodeNoCommitment          uint32 = 652
+	CodeInvalidCommitment     uint32 = 653
+	CodeUnauthorized          uint32 = 654
+
 	// General error codes (900-999)
 	CodeInvalidAddress uint32 = 900
 	CodeInvalidInput   uint32 = 901
@@ -142,6 +149,15 @@ var (
 	ErrIdentityChangeSuspended     = errors.Register(ModuleName, CodeIdentityChangeSuspended, "identity changes are suspended")
 	ErrInvalidDID                  = errors.Register(ModuleName, CodeInvalidDID, "invalid DID")
 	ErrInvalidChangeRequest        = errors.Register(ModuleName, CodeInvalidChangeRequest, "invalid change request")
+)
+
+// GDPR-related errors
+var (
+	ErrIdentityAlreadyErased = errors.Register(ModuleName, CodeIdentityAlreadyErased, "identity already erased")
+	ErrIdentityErased        = errors.Register(ModuleName, CodeIdentityErased, "identity has been erased")
+	ErrNoCommitment          = errors.Register(ModuleName, CodeNoCommitment, "no PII commitment found")
+	ErrInvalidCommitment     = errors.Register(ModuleName, CodeInvalidCommitment, "invalid PII commitment")
+	ErrUnauthorized          = errors.Register(ModuleName, CodeUnauthorized, "unauthorized action")
 )
 
 // General errors

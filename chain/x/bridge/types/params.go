@@ -35,6 +35,7 @@ var (
 	KeyAutoPauseEnabled             = []byte("AutoPauseEnabled")
 	KeyAutoPauseThreshold           = []byte("AutoPauseThreshold")
 	KeyEmergencyPauseAddresses      = []byte("EmergencyPauseAddresses")
+	KeyFraudProofWindow             = []byte("FraudProofWindow")
 )
 
 // Params defines the parameters persisted in the Cosmos SDK param store.
@@ -54,6 +55,10 @@ type Params struct {
 	AutoPauseEnabled        bool     `json:"auto_pause_enabled"`          // Enable automatic pause on anomaly
 	AutoPauseThreshold      string   `json:"auto_pause_threshold"`        // Max hourly mint amount before auto-pause
 	EmergencyPauseAddresses []string `json:"emergency_pause_addresses"`   // Authorized addresses for emergency pause
+
+	// Fraud proof window - time period for challenging transfers before finalization
+	// SECURITY CRITICAL: Provides time window for fraud proof submission before tokens are released
+	FraudProofWindow int64 `json:"fraud_proof_window"` // Duration in seconds (e.g., 3600 = 1 hour)
 }
 
 // DefaultParams returns default parameters used by the param store.
@@ -70,10 +75,11 @@ func DefaultParams() Params {
 
 		// Circuit breaker defaults
 		Paused:                  false,
-		PausedChains:            []string{},    // No chains paused by default
-		AutoPauseEnabled:        false,         // Disabled by default, enable after testing
-		AutoPauseThreshold:      "5000000000",  // 5 billion per hour triggers auto-pause
-		EmergencyPauseAddresses: []string{},    // Must be set by governance
+		PausedChains:            []string{},                             // No chains paused by default
+		AutoPauseEnabled:        false,                                  // Disabled by default, enable after testing
+		AutoPauseThreshold:      "5000000000",                           // 5 billion per hour triggers auto-pause
+		EmergencyPauseAddresses: []string{},                             // Must be set by governance
+		FraudProofWindow:        int64(DefaultFraudProofWindow.Seconds()), // 7 days in seconds (604800)
 	}
 }
 
@@ -98,6 +104,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeyAutoPauseEnabled, &p.AutoPauseEnabled, validateBool),
 		paramtypes.NewParamSetPair(KeyAutoPauseThreshold, &p.AutoPauseThreshold, validateStringNotEmpty),
 		paramtypes.NewParamSetPair(KeyEmergencyPauseAddresses, &p.EmergencyPauseAddresses, validateStringSlice),
+		paramtypes.NewParamSetPair(KeyFraudProofWindow, &p.FraudProofWindow, validateFraudProofWindow),
 	}
 }
 
@@ -166,6 +173,23 @@ func validateSupplyCaps(i interface{}) error {
 	return nil
 }
 
+// validateFraudProofWindow ensures the fraud proof window is reasonable
+func validateFraudProofWindow(i interface{}) error {
+	val, ok := i.(int64)
+	if !ok {
+		return ErrInvalidParam
+	}
+	// Minimum 1 hour (3600 seconds), maximum 30 days (2592000 seconds)
+	// This prevents too-short windows (no time to challenge) and too-long windows (tokens locked forever)
+	if val < 3600 {
+		return fmt.Errorf("fraud proof window must be at least 1 hour (3600 seconds), got %d", val)
+	}
+	if val > 2592000 {
+		return fmt.Errorf("fraud proof window cannot exceed 30 days (2592000 seconds), got %d", val)
+	}
+	return nil
+}
+
 // Validate performs comprehensive validation of bridge parameters
 func (p Params) Validate() error {
 	// CRITICAL SECURITY: Enforce minimum validator confirmations
@@ -222,6 +246,11 @@ func (p Params) Validate() error {
 			return fmt.Errorf("HourlyMintLimit must be a valid integer, got %s",
 				p.HourlyMintLimit)
 		}
+	}
+
+	// Validate fraud proof window
+	if err := validateFraudProofWindow(p.FraudProofWindow); err != nil {
+		return err
 	}
 
 	return nil

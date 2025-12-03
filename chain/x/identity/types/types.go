@@ -57,6 +57,7 @@ const (
 	IdentityStatusRevoked             = identitypb.IdentityStatus_IDENTITY_STATUS_REVOKED
 	IdentityStatusIdle                = identitypb.IdentityStatus_IDENTITY_STATUS_IDLE
 	IdentityStatusPendingVerification = identitypb.IdentityStatus_IDENTITY_STATUS_PENDING_VERIFICATION
+	IdentityStatusErased              = identitypb.IdentityStatus_IDENTITY_STATUS_ERASED
 )
 
 // Enum constants - ChangeType

@@ -206,6 +206,44 @@ message TimeLock {
   uint64 challenge_count = 9;
 }
 
+// PendingTransfer represents a transfer awaiting fraud proof window expiration
+// SECURITY CRITICAL: Holds transfers in escrow during the fraud proof window
+// to allow time for fraud proof submission before finalizing token release.
+message PendingTransfer {
+  // Transfer ID (unique identifier)
+  string transfer_id = 1;
+
+  // Recipient address on Aura
+  string recipient = 2;
+
+  // Amount to be released
+  string amount = 3 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Token denomination
+  string denom = 4;
+
+  // Source chain where burn/lock occurred
+  string source_chain = 5;
+
+  // Source transaction hash
+  string source_tx_hash = 6;
+
+  // Time when transfer was created (locked)
+  google.protobuf.Timestamp created_at = 7 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+
+  // Time when fraud proof window expires and transfer can be finalized
+  google.protobuf.Timestamp unlock_time = 8 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+
+  // Whether a fraud proof has been submitted against this transfer
+  bool challenged = 9;
+
+  // Fraud proof ID if challenged
+  string fraud_proof_id = 10;
+}
+
 enum TimeLockStatus {
   TIMELOCK_LOCKED = 0;
   TIMELOCK_UNLOCKED = 1;
