@@ -278,6 +278,26 @@ func TaxRecordConsistencyInvariant(k *Keeper) sdk.Invariant {
 					), true
 				}
 
+				// Parse and validate tax year is in reasonable range (1970 to current year + 1)
+				var year int
+				if _, err := fmt.Sscanf(report.TaxYear, "%d", &year); err != nil {
+					return sdk.FormatInvariant(
+						types.ModuleName,
+						"tax-record-consistency",
+						fmt.Sprintf("tax report has non-numeric year: %s", report.TaxYear),
+					), true
+				}
+
+				// Tax year must be >= 1970 (Unix epoch) and <= current year + 1 (for future filing)
+				currentYear := ctx.BlockTime().Year()
+				if year < 1970 || year > currentYear+1 {
+					return sdk.FormatInvariant(
+						types.ModuleName,
+						"tax-record-consistency",
+						fmt.Sprintf("tax report for %s has invalid year %d (must be between 1970 and %d)", report.Address, year, currentYear+1),
+					), true
+				}
+
 				// Check jurisdiction is not empty
 				if report.Jurisdiction == "" {
 					return sdk.FormatInvariant(

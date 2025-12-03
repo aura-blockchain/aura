@@ -6,11 +6,10 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
-	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
-	"google.golang.org/protobuf/types/known/timestamppb"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/compliance/types"
 )
@@ -390,22 +389,7 @@ func TestPaginationDefaultLimit(t *testing.T) {
 }
 
 // setupKeeperForTest creates a test keeper and context
+// This uses the same setup as keeper_test.go for consistency
 func setupKeeperForTest(t *testing.T) (*Keeper, sdk.Context) {
-	// This is a simplified setup - in production tests you would use the full test setup
-	// from the Cosmos SDK testing framework
-	storeKey := storetypes.NewKVStoreKey("compliance")
-	ctx := sdk.Context{} // Simplified - would use proper test context in production
-
-	// Note: This is a placeholder. In actual tests, you would use:
-	// - testutil.DefaultContext() or similar from Cosmos SDK
-	// - Proper codec setup
-	// - Full keeper initialization
-	// For now, we're just demonstrating the test structure
-
-	keeper := &Keeper{
-		storeKey: storeKey,
-		// cdc would be initialized here
-	}
-
-	return keeper, ctx
+	return setupKeeper(t)
 }

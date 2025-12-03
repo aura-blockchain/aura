@@ -206,7 +206,7 @@ func validateTaxReportingParams(p ComplianceParams) error {
 
 		// Validate tax jurisdiction codes
 		for _, jurisdiction := range p.TaxJurisdictions {
-			if err := validateJurisdictionCode(jurisdiction); err != nil {
+			if err := ValidateJurisdictionCode(jurisdiction); err != nil {
 				return fmt.Errorf("invalid tax jurisdiction: %w", err)
 			}
 		}
@@ -218,16 +218,16 @@ func validateTaxReportingParams(p ComplianceParams) error {
 // validateBlockedJurisdictions validates jurisdiction code format
 func validateBlockedJurisdictions(jurisdictions []string) error {
 	for _, j := range jurisdictions {
-		if err := validateJurisdictionCode(j); err != nil {
+		if err := ValidateJurisdictionCode(j); err != nil {
 			return fmt.Errorf("invalid blocked jurisdiction: %w", err)
 		}
 	}
 	return nil
 }
 
-// validateJurisdictionCode validates ISO 3166-1 alpha-2 country codes
+// ValidateJurisdictionCode validates ISO 3166-1 alpha-2 country codes
 // Accepts 2-letter codes and optionally extended formats like "US-NY" for subdivisions
-func validateJurisdictionCode(code string) error {
+func ValidateJurisdictionCode(code string) error {
 	code = strings.TrimSpace(code)
 	if code == "" {
 		return fmt.Errorf("jurisdiction code cannot be empty")
