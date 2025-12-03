@@ -773,6 +773,31 @@ func (ms msgServer) UnlockSession(goCtx context.Context, msg *wspb.MsgUnlockSess
 }
 
 // EnrollBiometric enrolls biometric authentication
+//
+// DEPRECATION WARNING:
+//   This function is DEPRECATED and should not be used in production.
+//   True biometric authentication cannot be implemented securely on a blockchain.
+//   See keeper.verifyBiometricTemplate for detailed explanation.
+//
+// Security Implementation:
+//   - Enrollment data is hashed with SHA-256 before storage
+//   - Only the hash is stored on-chain (never raw biometric data)
+//   - Hash is stored permanently and cannot be changed
+//
+// Privacy Concerns:
+//   - Biometric hashes stored on-chain are PERMANENT and PUBLIC
+//   - If the hash is compromised, the user cannot change their biometrics
+//   - This violates GDPR "right to be forgotten" for biometric data
+//   - Public blockchains create permanent records of biometric identifiers
+//
+// Security Limitations:
+//   - The enrollment hash is essentially a pre-shared secret
+//   - No liveness detection (cannot detect spoofed enrollment)
+//   - No fuzzy matching (exact match required, defeats biometric purpose)
+//   - Vulnerable to replay if enrollment data is captured
+//
+// This implementation is provided for compatibility only and should be
+// considered a pre-shared secret system, not true biometric authentication.
 func (ms msgServer) EnrollBiometric(goCtx context.Context, msg *wspb.MsgEnrollBiometric) (*wspb.MsgEnrollBiometricResponse, error) {
 	if msg == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
@@ -787,6 +812,8 @@ func (ms msgServer) EnrollBiometric(goCtx context.Context, msg *wspb.MsgEnrollBi
 
 	// CRITICAL: Hash the enrollment data for storage
 	// This prevents storing raw biometric data on-chain
+	// However, note that even hashed biometric data creates privacy concerns
+	// on a public blockchain (permanent, immutable, publicly visible)
 	enrollmentHash := sha256.Sum256(msg.EnrollmentData)
 	enrollmentHashStr := fmt.Sprintf("%x", enrollmentHash)
 
@@ -820,12 +847,49 @@ func (ms msgServer) EnrollBiometric(goCtx context.Context, msg *wspb.MsgEnrollBi
 }
 
 // AuthenticateBiometric authenticates using biometric
+//
+// DEPRECATION WARNING:
+//   This function is DEPRECATED and should not be used in production.
+//   See detailed explanation in keeper.verifyBiometricTemplate for why
+//   biometric authentication is fundamentally incompatible with blockchain.
+//
+// Security Implementation Notes:
+//   Despite the architectural limitations, this implementation includes:
+//   - Signer verification (prevents unauthorized authentication attempts)
+//   - Minimum proof size validation (prevents trivial bypass attacks)
+//   - Replay protection (prevents reuse of captured proofs)
+//   - Failed attempt tracking (rate limiting)
+//   - Automatic lockout after 5 failed attempts
+//   - Cryptographic proof verification (exact hash matching)
+//
+// What This Implementation DOES:
+//   - Verifies the transaction is signed by the wallet owner
+//   - Checks that biometric proof matches enrollment data (exact match)
+//   - Prevents replay attacks by tracking used proofs
+//   - Locks out wallet after repeated failed attempts
+//
+// What This Implementation DOES NOT Do:
+//   - True biometric matching (fuzzy matching, similarity scores)
+//   - Liveness detection (detect spoofed biometrics)
+//   - Anti-spoofing measures (detect fake fingerprints)
+//   - Work across multiple devices (biometric is device-specific)
+//   - Provide security beyond pre-shared secret authentication
+//
+// Recommended Alternative:
+//   Use client-side biometric authentication (FaceID, TouchID, etc.) to
+//   unlock the wallet's private key, then sign transactions normally
+//   with Cosmos SDK authentication. This provides:
+//   - True biometric security (hardware-backed, liveness detection)
+//   - Off-chain biometric verification (no consensus issues)
+//   - Standard blockchain authentication (proven security model)
+//   - Privacy (biometric data never leaves the device)
 func (ms msgServer) AuthenticateBiometric(goCtx context.Context, msg *wspb.MsgAuthenticateBiometric) (*wspb.MsgAuthenticateBiometricResponse, error) {
 	if msg == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
 	// CRITICAL: Verify transaction signer matches claimed wallet address
+	// This prevents anyone from attempting to authenticate on behalf of another wallet
 	signers := msg.GetSigners()
 	if len(signers) == 0 {
 		return nil, status.Error(codes.Unauthenticated, "no signers")

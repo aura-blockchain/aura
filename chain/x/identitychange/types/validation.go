@@ -2,7 +2,6 @@ package types
 
 import (
 	"fmt"
-	"unsafe"
 
 	identitychangepb "github.com/aequitas/aura/proto/aura/identitychange/v1beta1"
 )
@@ -27,9 +26,10 @@ func DefaultParams() Params {
 }
 
 // DefaultParamsProto returns default params as proto type for compatibility
+// Since Params is a type alias for identitychangepb.Params, we can return it directly
 func DefaultParamsProto() *identitychangepb.Params {
 	p := DefaultParams()
-	return (*identitychangepb.Params)(unsafe.Pointer(&p))
+	return &p
 }
 
 // ParamsFromProto converts proto Params to Params (no-op since we use proto types directly)

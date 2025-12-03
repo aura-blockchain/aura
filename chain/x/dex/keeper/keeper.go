@@ -70,7 +70,12 @@ func (k Keeper) GetParams(ctx sdk.Context) *types.Params {
 	}
 
 	var params types.Params
-	k.cdc.MustUnmarshal(bz, &params)
+	if err := k.cdc.Unmarshal(bz, &params); err != nil {
+		ctx.Logger().Error("failed to unmarshal DEX params, returning defaults",
+			"error", err,
+			"data_len", len(bz))
+		return types.DefaultParams()
+	}
 	return &params
 }
 

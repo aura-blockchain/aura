@@ -712,12 +712,55 @@ func (k Keeper) MarkBiometricProofUsed(ctx context.Context, walletID string, pro
 
 // verifyBiometricTemplate verifies a biometric proof against the stored enrollment hash
 //
-// Security considerations:
-//   - Uses SHA-256 to hash the biometric proof
-//   - Compares against the enrollment hash stored during enrollment
-//   - In production, this should use a more sophisticated biometric matching algorithm
-//     with fuzzy matching, liveness detection, and anti-spoofing measures
-//   - The current implementation provides replay protection and basic verification
+// DEPRECATION WARNING:
+//   This implementation is DEPRECATED and will be removed in a future version.
+//   True biometric authentication is fundamentally incompatible with blockchain consensus.
+//
+// Why Biometric Authentication Cannot Work on Blockchain:
+//
+// 1. DETERMINISM REQUIREMENT:
+//    - Blockchain consensus requires deterministic execution across all validators
+//    - Biometric matching is inherently non-deterministic and uses fuzzy algorithms
+//    - Different validators would produce different match scores for the same biometric
+//    - This breaks blockchain consensus and leads to chain halts
+//
+// 2. LIVENESS DETECTION IMPOSSIBILITY:
+//    - True biometric systems require liveness detection (detect photos, masks, etc.)
+//    - Liveness detection requires real-time hardware interaction (camera, sensor)
+//    - Blockchain cannot access client-side hardware during consensus
+//    - Without liveness, the system is vulnerable to replay attacks with stolen biometric data
+//
+// 3. PRIVACY CONCERNS:
+//    - Storing biometric hashes on-chain creates permanent privacy risks
+//    - Biometric data cannot be changed if compromised (unlike passwords)
+//    - Public blockchain = permanent public record of biometric identifiers
+//    - GDPR/privacy laws prohibit permanent storage of biometric identifiers
+//
+// 4. SECURITY MODEL MISMATCH:
+//    - Biometric authentication assumes: "something you are" + local hardware verification
+//    - Blockchain authentication assumes: "something you have" (private key)
+//    - The current implementation is just "pre-shared secret authentication"
+//    - It provides no additional security beyond knowing the enrollment secret
+//
+// CURRENT IMPLEMENTATION (Simplified):
+//   - This implementation uses exact hash matching as a placeholder
+//   - It provides replay protection and basic verification
+//   - However, it is NOT true biometric authentication
+//   - It is essentially a pre-shared secret that cannot be updated
+//
+// RECOMMENDED ALTERNATIVES:
+//   1. Hardware Wallet Integration (Ledger, Trezor) - Use RegisterHardwareWallet
+//   2. Multi-Signature Wallets - Use CreateMultiSigWallet
+//   3. Social Recovery - Use ConfigureSocialRecovery
+//   4. Time-locked Transactions - Use MultiSigWallet with time_lock
+//   5. Off-chain Biometric + On-chain Signature - Use standard Cosmos SDK auth
+//
+// MIGRATION PATH:
+//   Users relying on biometric authentication should:
+//   1. Enable hardware wallet integration for "something you have"
+//   2. Enable multi-sig for enhanced security
+//   3. Configure social recovery for account recovery
+//   4. Use client-side biometric authentication before signing (off-chain)
 //
 // Parameters:
 //   - enrollmentHash: The hash stored during biometric enrollment
@@ -725,20 +768,32 @@ func (k Keeper) MarkBiometricProofUsed(ctx context.Context, walletID string, pro
 //
 // Returns:
 //   - bool: true if verification succeeds, false otherwise
+//
+// Security Notes:
+//   - This function only verifies that the proof matches the enrollment hash
+//   - It does NOT provide true biometric security
+//   - It does NOT prevent replay attacks at the biometric level
+//   - Replay protection is handled at the transaction level (see AuthenticateBiometric)
 func (k Keeper) verifyBiometricTemplate(enrollmentHash string, biometricProof []byte) bool {
 	// CRITICAL: Hash the provided proof
 	proofHash := sha256.Sum256(biometricProof)
 	proofHashStr := hex.EncodeToString(proofHash[:])
 
-	// CRITICAL: Compare against stored enrollment hash
-	// In production biometric systems, this would use:
-	// 1. Fuzzy matching algorithms (e.g., for fingerprints, facial recognition)
-	// 2. Liveness detection (prevent photo/video spoofing)
-	// 3. Anti-spoofing measures (detect fake fingerprints, deepfakes)
-	// 4. Secure enclave verification (TEE, SGX, Keychain)
-	// 5. Biometric template matching with threshold scoring
+	// CRITICAL: Exact hash matching
+	// This is NOT fuzzy biometric matching - it's exact secret matching
+	// If the proof doesn't match exactly, authentication fails
 	//
-	// For blockchain consensus determinism, we use exact hash matching
-	// Real-world implementation should delegate to secure hardware (TPM, Secure Enclave)
+	// In a true biometric system, this would use:
+	// 1. Fuzzy matching algorithms (Hamming distance, similarity scores)
+	// 2. Liveness detection (3D depth sensing, challenge-response)
+	// 3. Anti-spoofing (detect fake fingerprints, deepfakes)
+	// 4. Secure enclave verification (TEE, SGX, TPM, Secure Element)
+	// 5. Threshold-based matching (e.g., 95% similarity = match)
+	//
+	// However, ALL of these approaches are non-deterministic and cannot
+	// be used in blockchain consensus without breaking the chain.
+	//
+	// The only deterministic approach is exact matching, which defeats
+	// the purpose of biometric authentication (biometrics vary each time).
 	return proofHashStr == enrollmentHash
 }

@@ -87,3 +87,98 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	_ = wasmkeeper.ExportGenesis(ctx, k.wasmKeeper) // rely on defaults for Aura module export
 	return types.DefaultGenesisState()
 }
+
+// ============================================================================
+// CONTRACT ADMIN MANAGEMENT
+// ============================================================================
+
+// SetContractAdmin sets the admin for a contract
+// This provides AURA-specific admin tracking in addition to wasmd's admin storage
+func (k Keeper) SetContractAdmin(ctx sdk.Context, contractAddr sdk.AccAddress, admin sdk.AccAddress) error {
+	if contractAddr.Empty() {
+		return types.ErrInvalidContractAddress.Wrap("contract address cannot be empty")
+	}
+	if admin.Empty() {
+		return types.ErrInvalidAdmin.Wrap("admin address cannot be empty")
+	}
+
+	store := ctx.KVStore(k.storeKey)
+	key := types.GetContractAdminKey(contractAddr.String())
+	store.Set(key, []byte(admin.String()))
+
+	k.Logger(ctx).Debug("contract admin set",
+		"contract", contractAddr.String(),
+		"admin", admin.String())
+
+	return nil
+}
+
+// GetContractAdmin retrieves the admin for a contract
+// Returns empty address if no admin is set
+func (k Keeper) GetContractAdmin(ctx sdk.Context, contractAddr sdk.AccAddress) (sdk.AccAddress, error) {
+	if contractAddr.Empty() {
+		return nil, types.ErrInvalidContractAddress.Wrap("contract address cannot be empty")
+	}
+
+	store := ctx.KVStore(k.storeKey)
+	key := types.GetContractAdminKey(contractAddr.String())
+	bz := store.Get(key)
+
+	if bz == nil {
+		// No admin set - check wasmd keeper as fallback
+		if k.wasmKeeper != nil {
+			info := k.wasmKeeper.GetContractInfo(ctx, contractAddr)
+			if info != nil {
+				adminAddr, err := sdk.AccAddressFromBech32(info.Admin)
+				if err == nil && !adminAddr.Empty() {
+					return adminAddr, nil
+				}
+			}
+		}
+		return sdk.AccAddress{}, nil
+	}
+
+	adminAddr, err := sdk.AccAddressFromBech32(string(bz))
+	if err != nil {
+		return nil, types.ErrInvalidAdmin.Wrapf("stored admin address is invalid: %s", err)
+	}
+
+	return adminAddr, nil
+}
+
+// DeleteContractAdmin removes the admin for a contract
+func (k Keeper) DeleteContractAdmin(ctx sdk.Context, contractAddr sdk.AccAddress) error {
+	if contractAddr.Empty() {
+		return types.ErrInvalidContractAddress.Wrap("contract address cannot be empty")
+	}
+
+	store := ctx.KVStore(k.storeKey)
+	key := types.GetContractAdminKey(contractAddr.String())
+	store.Delete(key)
+
+	k.Logger(ctx).Debug("contract admin deleted",
+		"contract", contractAddr.String())
+
+	return nil
+}
+
+// HasContractAdmin checks if a contract has an admin set
+func (k Keeper) HasContractAdmin(ctx sdk.Context, contractAddr sdk.AccAddress) bool {
+	admin, err := k.GetContractAdmin(ctx, contractAddr)
+	if err != nil {
+		return false
+	}
+	return !admin.Empty()
+}
+
+// IsContractAdmin checks if the given address is the admin of the contract
+func (k Keeper) IsContractAdmin(ctx sdk.Context, contractAddr, candidate sdk.AccAddress) (bool, error) {
+	admin, err := k.GetContractAdmin(ctx, contractAddr)
+	if err != nil {
+		return false, err
+	}
+	if admin.Empty() {
+		return false, nil
+	}
+	return admin.Equals(candidate), nil
+}

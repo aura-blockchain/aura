@@ -29,11 +29,19 @@ var (
 
 	// SecurityStatsKey is the key for storing security statistics
 	SecurityStatsKey = []byte{0x04}
+
+	// ContractAdminPrefix is the key prefix for storing contract admins
+	ContractAdminPrefix = []byte{0x06}
 )
 
 // GetContractAuthKey returns the key for a specific authorized uploader
 func GetContractAuthKey(address string) []byte {
 	return append(ContractAuthKey, []byte(address)...)
+}
+
+// GetContractAdminKey returns the key for a specific contract's admin
+func GetContractAdminKey(contractAddr string) []byte {
+	return append(ContractAdminPrefix, []byte(contractAddr)...)
 }
 
 // GetAuthorizedUploaderKey returns the key for a specific authorized uploader
