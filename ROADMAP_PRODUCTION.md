@@ -175,7 +175,7 @@ All modules have keepers, protos, and tests:
 8. Bake store-init marker verification into multi-node bootstrap/testnet scripts and document the behavior; confirm AppHash consistency across start→stop→start.
 9. Finish migrating remaining Aura modules (bridge, dex, economicsecurity, vcregistry, cryptography, wasm/security, monitoring, aurabindings) to native `AppModule`s and delete the adapter layer.
 10. Rerun `go test ./chain/...` after migrations; raise coverage toward 80%+ and fix any failing suites.
-11. Add wasm/security invariants and tests (code size/upload limits, admin enforcement, gas caps, event emission).
+11. ~~Add wasm/security invariants and tests (code size/upload limits, admin enforcement, gas caps, event emission).~~ ✅ **COMPLETE** - Added 4 new invariants (CodeSizeLimits, UploadAuthEnforcement, GasCaps, AdminEnforcement) with 10 comprehensive security tests. All security tests passing.
 12. Expand DEX/compliance scenario tests: pool create/swap math, fee/gas guardrails, AML screening edge cases.
 13. Benchmark wasm store/instantiate/execute gas on local node and tune app.toml defaults; record baselines in docs.
 14. Restore full genesis CLI helpers (`add-genesis-account`, `gentx`, `collect-gentxs`) wired to Aura modules; add tests.
