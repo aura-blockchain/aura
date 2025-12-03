@@ -6,6 +6,7 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/common/security"
 	"github.com/aequitas/aura/chain/x/security/types"
@@ -208,11 +209,11 @@ func (k Keeper) IsModulePaused(ctx sdk.Context, moduleName string) bool {
 // Rate Limiting
 // =============================================================================
 
-// CheckRateLimit checks if an operation is within rate limits
+// CheckGuardRateLimit checks if an operation is within rate limits for security guards
 // key: unique identifier for rate limiting (e.g., "swap:user_address", "bridge:chain_id")
 // limit: maximum number of operations allowed
 // window: time window for the limit (e.g., 1 minute, 1 hour)
-func (k Keeper) CheckRateLimit(ctx sdk.Context, key string, limit uint64, window time.Duration) error {
+func (k Keeper) CheckGuardRateLimit(ctx sdk.Context, key string, limit uint64, window time.Duration) error {
 	store := k.GetMemStore(ctx)
 	rateLimitKey := types.GetRateLimitStoreKey(fmt.Sprintf("guard:%s", key))
 
@@ -252,8 +253,8 @@ func (k Keeper) CheckRateLimit(ctx sdk.Context, key string, limit uint64, window
 	return nil
 }
 
-// IncrementRateLimit increments the rate limit counter for a key
-func (k Keeper) IncrementRateLimit(ctx sdk.Context, key string, window time.Duration) {
+// IncrementGuardRateLimit increments the rate limit counter for a key
+func (k Keeper) IncrementGuardRateLimit(ctx sdk.Context, key string, window time.Duration) {
 	store := k.GetMemStore(ctx)
 	rateLimitKey := types.GetRateLimitStoreKey(fmt.Sprintf("guard:%s", key))
 
@@ -397,17 +398,20 @@ func (k Keeper) LogSecurityEvent(
 	details string,
 ) {
 	// Create audit log entry
-	logID := fmt.Sprintf("audit_%d_%s", ctx.BlockHeight(), ctx.TxIndex())
+	logID := fmt.Sprintf("audit_%d", ctx.BlockHeight())
 
 	entry := &types.AuditLogEntry{
-		LogId:       logID,
-		Timestamp:   ctx.BlockTime().Unix(),
-		Severity:    severity,
-		EventType:   eventType,
-		Actor:       actor,
-		Action:      action,
-		Details:     details,
-		BlockHeight: ctx.BlockHeight(),
+		LogId:     logID,
+		Timestamp: timestamppb.New(ctx.BlockTime()),
+		EventType: eventType,
+		Actor:     actor,
+		Resource:  details, // Use resource field for details
+		Action:    action,
+		Success:   severity != "critical" && severity != "high", // Success is true unless high severity
+		Metadata: map[string]string{
+			"severity":     severity,
+			"block_height": fmt.Sprintf("%d", ctx.BlockHeight()),
+		},
 	}
 
 	k.SetAuditLogEntry(ctx, entry)

@@ -46,8 +46,8 @@ type SecurityKeeper interface {
 	IsModulePaused(ctx sdk.Context, moduleName string) bool
 
 	// Rate Limiting
-	CheckRateLimit(ctx sdk.Context, key string, limit uint64, window time.Duration) error
-	IncrementRateLimit(ctx sdk.Context, key string, window time.Duration)
+	CheckGuardRateLimit(ctx sdk.Context, key string, limit uint64, window time.Duration) error
+	IncrementGuardRateLimit(ctx sdk.Context, key string, window time.Duration)
 
 	// Input Validation
 	ValidateAddress(address string) error

@@ -290,13 +290,13 @@ func (suite *SecurityGuardsTestSuite) TestRateLimit_BasicLimiting() {
 
 	// First 3 operations should succeed
 	for i := 0; i < 3; i++ {
-		err := k.CheckRateLimit(ctx, key, limit, window)
+		err := k.CheckGuardRateLimit(ctx, key, limit, window)
 		suite.Require().NoError(err, "operation %d should be within limit", i+1)
-		k.IncrementRateLimit(ctx, key, window)
+		k.IncrementGuardRateLimit(ctx, key, window)
 	}
 
 	// 4th operation should fail (limit exceeded)
-	err := k.CheckRateLimit(ctx, key, limit, window)
+	err := k.CheckGuardRateLimit(ctx, key, limit, window)
 	suite.Require().Error(err, "operation should exceed rate limit")
 	suite.Require().ErrorIs(err, types.ErrRateLimitExceeded)
 }
@@ -311,20 +311,20 @@ func (suite *SecurityGuardsTestSuite) TestRateLimit_WindowExpiry() {
 
 	// Perform 2 operations (reach limit)
 	for i := 0; i < 2; i++ {
-		err := k.CheckRateLimit(ctx, key, limit, window)
+		err := k.CheckGuardRateLimit(ctx, key, limit, window)
 		suite.Require().NoError(err)
-		k.IncrementRateLimit(ctx, key, window)
+		k.IncrementGuardRateLimit(ctx, key, window)
 	}
 
 	// Should be at limit
-	err := k.CheckRateLimit(ctx, key, limit, window)
+	err := k.CheckGuardRateLimit(ctx, key, limit, window)
 	suite.Require().Error(err)
 
 	// Advance time beyond window
 	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(2 * time.Second))
 
 	// Old operations should have expired, new operation should succeed
-	err = k.CheckRateLimit(ctx, key, limit, window)
+	err = k.CheckGuardRateLimit(ctx, key, limit, window)
 	suite.Require().NoError(err, "rate limit should reset after window expiry")
 }
 
@@ -340,20 +340,20 @@ func (suite *SecurityGuardsTestSuite) TestRateLimit_DifferentUsers() {
 
 	// User1 performs 2 operations (reaches limit)
 	for i := 0; i < 2; i++ {
-		err := k.CheckRateLimit(ctx, user1Key, limit, window)
+		err := k.CheckGuardRateLimit(ctx, user1Key, limit, window)
 		suite.Require().NoError(err)
-		k.IncrementRateLimit(ctx, user1Key, window)
+		k.IncrementGuardRateLimit(ctx, user1Key, window)
 	}
 
 	// User1 should be at limit
-	err := k.CheckRateLimit(ctx, user1Key, limit, window)
+	err := k.CheckGuardRateLimit(ctx, user1Key, limit, window)
 	suite.Require().Error(err)
 
 	// User2 should still have full limit (different key)
 	for i := 0; i < 2; i++ {
-		err := k.CheckRateLimit(ctx, user2Key, limit, window)
+		err := k.CheckGuardRateLimit(ctx, user2Key, limit, window)
 		suite.Require().NoError(err, "user2 should have independent rate limit")
-		k.IncrementRateLimit(ctx, user2Key, window)
+		k.IncrementGuardRateLimit(ctx, user2Key, window)
 	}
 }
 
@@ -367,17 +367,17 @@ func (suite *SecurityGuardsTestSuite) TestRateLimit_SlidingWindow() {
 
 	// Perform 3 operations at time T
 	for i := 0; i < 3; i++ {
-		k.IncrementRateLimit(ctx, key, window)
+		k.IncrementGuardRateLimit(ctx, key, window)
 	}
 
 	// At T+5s, should still be at limit (all 3 operations in window)
 	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(5 * time.Second))
-	err := k.CheckRateLimit(ctx, key, limit, window)
+	err := k.CheckGuardRateLimit(ctx, key, limit, window)
 	suite.Require().Error(err, "operations should still be within window")
 
 	// At T+11s, operations should have expired
 	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(6 * time.Second))
-	err = k.CheckRateLimit(ctx, key, limit, window)
+	err = k.CheckGuardRateLimit(ctx, key, limit, window)
 	suite.Require().NoError(err, "operations should have expired")
 }
 
@@ -521,9 +521,9 @@ func (suite *SecurityGuardsTestSuite) TestIntegration_SwapWithAllGuards() {
 
 	// 3. Rate limiting
 	rateLimitKey := fmt.Sprintf("swap:%s", sender)
-	err = k.CheckRateLimit(ctx, rateLimitKey, 100, time.Minute)
+	err = k.CheckGuardRateLimit(ctx, rateLimitKey, 100, time.Minute)
 	suite.Require().NoError(err, "rate limit should allow operation")
-	k.IncrementRateLimit(ctx, rateLimitKey, time.Minute)
+	k.IncrementGuardRateLimit(ctx, rateLimitKey, time.Minute)
 
 	// 4. Input validation
 	amount := math.NewInt(1000)
