@@ -223,59 +223,69 @@ func TestGenerateTaxReport_SignerVerification(t *testing.T) {
 
 // TestGetSigners_Implementation tests that GetSigners is implemented for all message types
 func TestGetSigners_Implementation(t *testing.T) {
+	// Use real valid bech32 addresses with correct length
+	validAddr := sdk.AccAddress([]byte("test_address_123456"))
+	validBech32 := validAddr.String()
+
 	t.Run("MsgSubmitKYC GetSigners", func(t *testing.T) {
 		msg := &types.MsgSubmitKYC{
-			Provider: "aura1provider123456789012345678901234567890",
+			Provider: validBech32,
 		}
 		signers := msg.GetSigners()
 		require.NotNil(t, signers)
 		// Should return the provider address
 		require.Len(t, signers, 1)
+		require.Equal(t, validAddr, signers[0])
 	})
 
 	t.Run("MsgReportSuspiciousActivity GetSigners", func(t *testing.T) {
 		msg := &types.MsgReportSuspiciousActivity{
-			Reporter: "aura1reporter000000000000000000000000000000",
+			Reporter: validBech32,
 		}
 		signers := msg.GetSigners()
 		require.NotNil(t, signers)
 		require.Len(t, signers, 1)
+		require.Equal(t, validAddr, signers[0])
 	})
 
 	t.Run("MsgScreenSanctions GetSigners", func(t *testing.T) {
 		msg := &types.MsgScreenSanctions{
-			Address: "aura1user000000000000000000000000000000000",
+			Address: validBech32,
 		}
 		signers := msg.GetSigners()
 		require.NotNil(t, signers)
 		require.Len(t, signers, 1)
+		require.Equal(t, validAddr, signers[0])
 	})
 
 	t.Run("MsgRecordGDPRConsent GetSigners", func(t *testing.T) {
 		msg := &types.MsgRecordGDPRConsent{
-			Address: "aura1user000000000000000000000000000000000",
+			Address: validBech32,
 		}
 		signers := msg.GetSigners()
 		require.NotNil(t, signers)
 		require.Len(t, signers, 1)
+		require.Equal(t, validAddr, signers[0])
 	})
 
 	t.Run("MsgRequestGDPRData GetSigners", func(t *testing.T) {
 		msg := &types.MsgRequestGDPRData{
-			Address: "aura1user000000000000000000000000000000000",
+			Address: validBech32,
 		}
 		signers := msg.GetSigners()
 		require.NotNil(t, signers)
 		require.Len(t, signers, 1)
+		require.Equal(t, validAddr, signers[0])
 	})
 
 	t.Run("MsgGenerateTaxReport GetSigners", func(t *testing.T) {
 		msg := &types.MsgGenerateTaxReport{
-			Address: "aura1user000000000000000000000000000000000",
+			Address: validBech32,
 		}
 		signers := msg.GetSigners()
 		require.NotNil(t, signers)
 		require.Len(t, signers, 1)
+		require.Equal(t, validAddr, signers[0])
 	})
 }
 
