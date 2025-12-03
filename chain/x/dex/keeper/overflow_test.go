@@ -8,12 +8,13 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 
+	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 	"github.com/aequitas/aura/chain/x/dex/types"
 )
 
 // TestSwapFeeOverflowPrevention tests that fee calculations reject overflow
 func TestSwapFeeOverflowPrevention(t *testing.T) {
-	suite := SetupTestSuite(t)
+	k, ctx := setupTestKeeper(t)
 
 	tests := []struct {
 		name          string
@@ -47,7 +48,7 @@ func TestSwapFeeOverflowPrevention(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			fee, err := suite.dexKeeper.CalculateSwapFee(suite.SdkCtx, tt.amount)
+			fee, err := k.CalculateSwapFee(ctx, tt.amount)
 
 			if tt.expectError {
 				require.Error(t, err)
@@ -64,17 +65,17 @@ func TestSwapFeeOverflowPrevention(t *testing.T) {
 
 // TestPoolCreationOverflowPrevention tests that pool creation rejects overflow
 func TestPoolCreationOverflowPrevention(t *testing.T) {
-	suite := SetupTestSuite(t)
-	creator := suite.testAddr("creator")
+	k, ctx := setupTestKeeper(t)
+	creator := keepertest.GenTestAddr("creator")
 
 	// Fund creator
 	normalAmount := sdk.NewCoin("uaura", sdkmath.NewInt(10_000_000_000_000))
-	require.NoError(t, suite.bankKeeper.MintCoins(suite.SdkCtx, types.ModuleName, sdk.NewCoins(normalAmount)))
-	require.NoError(t, suite.bankKeeper.SendCoinsFromModuleToAccount(suite.SdkCtx, types.ModuleName, creator, sdk.NewCoins(normalAmount)))
+	require.NoError(t, k.bankKeeper.MintCoins(ctx, types.ModuleName, sdk.NewCoins(normalAmount)))
+	require.NoError(t, k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, creator, sdk.NewCoins(normalAmount)))
 
 	usdt := sdk.NewCoin("usdt", sdkmath.NewInt(2_000_000_000_000))
-	require.NoError(t, suite.bankKeeper.MintCoins(suite.SdkCtx, types.ModuleName, sdk.NewCoins(usdt)))
-	require.NoError(t, suite.bankKeeper.SendCoinsFromModuleToAccount(suite.SdkCtx, types.ModuleName, creator, sdk.NewCoins(usdt)))
+	require.NoError(t, k.bankKeeper.MintCoins(ctx, types.ModuleName, sdk.NewCoins(usdt)))
+	require.NoError(t, k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, creator, sdk.NewCoins(usdt)))
 
 	tests := []struct {
 		name          string
@@ -106,13 +107,13 @@ func TestPoolCreationOverflowPrevention(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			poolID := suite.dexKeeper.GeneratePoolID(tt.amountA.Denom, tt.amountB.Denom)
+			poolID := k.GeneratePoolID(tt.amountA.Denom, tt.amountB.Denom)
 
 			// Clean up any existing pool
-			suite.dexKeeper.DeletePool(suite.SdkCtx, poolID)
+			k.DeletePool(ctx, poolID)
 
-			pool, lpTokens, err := suite.dexKeeper.CreatePool(
-				suite.SdkCtx,
+			pool, lpTokens, err := k.CreatePool(
+				ctx,
 				creator.String(),
 				tt.amountA.Denom,
 				tt.amountB.Denom,
@@ -137,21 +138,21 @@ func TestPoolCreationOverflowPrevention(t *testing.T) {
 
 // TestSwapOverflowPrevention tests that swaps reject overflow in k-constant calculation
 func TestSwapOverflowPrevention(t *testing.T) {
-	suite := SetupTestSuite(t)
-	creator := suite.testAddr("creator")
-	swapper := suite.testAddr("swapper")
+	k, ctx := setupTestKeeper(t)
+	creator := keepertest.GenTestAddr("creator")
+	swapper := keepertest.GenTestAddr("swapper")
 
 	// Create pool with normal amounts
 	auraAmount := sdk.NewCoin("uaura", sdkmath.NewInt(1_000_000_000_000))
 	usdtAmount := sdk.NewCoin("usdt", sdkmath.NewInt(200_000_000_000))
 
 	// Fund creator
-	require.NoError(t, suite.bankKeeper.MintCoins(suite.SdkCtx, types.ModuleName, sdk.NewCoins(auraAmount, usdtAmount)))
-	require.NoError(t, suite.bankKeeper.SendCoinsFromModuleToAccount(suite.SdkCtx, types.ModuleName, creator, sdk.NewCoins(auraAmount, usdtAmount)))
+	require.NoError(t, k.bankKeeper.MintCoins(ctx, types.ModuleName, sdk.NewCoins(auraAmount, usdtAmount)))
+	require.NoError(t, k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, creator, sdk.NewCoins(auraAmount, usdtAmount)))
 
 	// Create pool
-	pool, _, err := suite.dexKeeper.CreatePool(
-		suite.SdkCtx,
+	pool, _, err := k.CreatePool(
+		ctx,
 		creator.String(),
 		"uaura",
 		"usdt",
@@ -163,8 +164,8 @@ func TestSwapOverflowPrevention(t *testing.T) {
 
 	// Fund swapper
 	swapAmount := sdk.NewCoin("uaura", sdkmath.NewInt(1_000_000_000))
-	require.NoError(t, suite.bankKeeper.MintCoins(suite.SdkCtx, types.ModuleName, sdk.NewCoins(swapAmount)))
-	require.NoError(t, suite.bankKeeper.SendCoinsFromModuleToAccount(suite.SdkCtx, types.ModuleName, swapper, sdk.NewCoins(swapAmount)))
+	require.NoError(t, k.bankKeeper.MintCoins(ctx, types.ModuleName, sdk.NewCoins(swapAmount)))
+	require.NoError(t, k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, swapper, sdk.NewCoins(swapAmount)))
 
 	tests := []struct {
 		name          string
@@ -190,8 +191,8 @@ func TestSwapOverflowPrevention(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			amountOut, effectivePrice, priceImpact, err := suite.dexKeeper.SwapExactIn(
-				suite.SdkCtx,
+			amountOut, effectivePrice, priceImpact, err := k.SwapExactIn(
+				ctx,
 				swapper.String(),
 				pool.PoolId,
 				tt.swapIn,
@@ -216,18 +217,18 @@ func TestSwapOverflowPrevention(t *testing.T) {
 
 // TestGetQuoteOverflowPrevention tests that quotes reject overflow
 func TestGetQuoteOverflowPrevention(t *testing.T) {
-	suite := SetupTestSuite(t)
-	creator := suite.testAddr("creator")
+	k, ctx := setupTestKeeper(t)
+	creator := keepertest.GenTestAddr("creator")
 
 	// Create pool
 	auraAmount := sdk.NewCoin("uaura", sdkmath.NewInt(1_000_000_000_000))
 	usdtAmount := sdk.NewCoin("usdt", sdkmath.NewInt(200_000_000_000))
 
-	require.NoError(t, suite.bankKeeper.MintCoins(suite.SdkCtx, types.ModuleName, sdk.NewCoins(auraAmount, usdtAmount)))
-	require.NoError(t, suite.bankKeeper.SendCoinsFromModuleToAccount(suite.SdkCtx, types.ModuleName, creator, sdk.NewCoins(auraAmount, usdtAmount)))
+	require.NoError(t, k.bankKeeper.MintCoins(ctx, types.ModuleName, sdk.NewCoins(auraAmount, usdtAmount)))
+	require.NoError(t, k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, creator, sdk.NewCoins(auraAmount, usdtAmount)))
 
-	pool, _, err := suite.dexKeeper.CreatePool(
-		suite.SdkCtx,
+	pool, _, err := k.CreatePool(
+		ctx,
 		creator.String(),
 		"uaura",
 		"usdt",
@@ -255,8 +256,8 @@ func TestGetQuoteOverflowPrevention(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			estimatedOutput, effectivePrice, priceImpact, feeAmount, err := suite.dexKeeper.GetQuote(
-				suite.SdkCtx,
+			estimatedOutput, effectivePrice, priceImpact, feeAmount, err := k.GetQuote(
+				ctx,
 				pool.PoolId,
 				"uaura",
 				tt.amountIn,
@@ -277,7 +278,7 @@ func TestGetQuoteOverflowPrevention(t *testing.T) {
 
 // TestExtremeValueRejection tests that extremely large values that would overflow are rejected
 func TestExtremeValueRejection(t *testing.T) {
-	suite := SetupTestSuite(t)
+	k, ctx := setupTestKeeper(t)
 
 	// Test with values near MaxInt256
 	maxInt256 := sdkmath.NewIntFromBigInt(new(big.Int).Sub(
@@ -288,7 +289,7 @@ func TestExtremeValueRejection(t *testing.T) {
 	// These should fail validation before reaching SafeMul
 	extremeAmount := maxInt256
 
-	_, err := suite.dexKeeper.CalculateSwapFee(suite.SdkCtx, extremeAmount)
+	_, err := k.CalculateSwapFee(ctx, extremeAmount)
 	// This might succeed or fail depending on fee rate, but should never panic
 	if err != nil {
 		require.Contains(t, err.Error(), "overflow", "should report overflow")
