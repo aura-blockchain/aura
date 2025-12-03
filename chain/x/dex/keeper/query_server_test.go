@@ -34,7 +34,7 @@ func TestQueryUserOrders(t *testing.T) {
 }
 
 func TestQueryMarketPriceUsesStoredValue(t *testing.T) {
-	k, ctx := setupTestKeeper(t)
+	k, ctx, _ := setupTestKeeper(t)
 	user := keepertest.GenTestAddr().String()
 
 	_, _, err := k.CreatePool(ctx, user, "uaura", "usdt", sdk.NewCoin("uaura", math.NewInt(1_000000)), sdk.NewCoin("usdt", math.NewInt(2_000000)))
@@ -51,7 +51,7 @@ func TestQueryMarketPriceUsesStoredValue(t *testing.T) {
 }
 
 func TestQuerySpotPrice(t *testing.T) {
-	k, ctx := setupTestKeeper(t)
+	k, ctx, _ := setupTestKeeper(t)
 	user := keepertest.GenTestAddr().String()
 
 	_, _, err := k.CreatePool(ctx, user, "uaura", "usdt", sdk.NewCoin("uaura", math.NewInt(1_000000)), sdk.NewCoin("usdt", math.NewInt(2_000000)))

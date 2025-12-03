@@ -12,7 +12,7 @@ import (
 )
 
 func TestCreateAndClaimHTLC(t *testing.T) {
-	k, ctx := setupTestKeeper(t)
+	k, ctx, _ := setupTestKeeper(t)
 
 	sender := keepertest.GenTestAddr().String()
 	recipient := keepertest.GenTestAddr().String()
@@ -38,7 +38,7 @@ func TestCreateAndClaimHTLC(t *testing.T) {
 }
 
 func TestRefundHTLC(t *testing.T) {
-	k, ctx := setupTestKeeper(t)
+	k, ctx, _ := setupTestKeeper(t)
 
 	sender := keepertest.GenTestAddr().String()
 	recipient := keepertest.GenTestAddr().String()
@@ -62,7 +62,7 @@ func TestRefundHTLC(t *testing.T) {
 }
 
 func TestCleanupExpiredHTLCs(t *testing.T) {
-	k, ctx := setupTestKeeper(t)
+	k, ctx, _ := setupTestKeeper(t)
 
 	sender := keepertest.GenTestAddr().String()
 	recipient := keepertest.GenTestAddr().String()
