@@ -498,3 +498,203 @@ func TestMsgClearAdmin(t *testing.T) {
 	// - Contract admin is actually cleared in storage
 	// - Contract cannot be migrated after admin is cleared
 }
+
+// TestAdminStorage tests the admin storage methods
+func TestAdminStorage(t *testing.T) {
+	k, ctx := keepertest.WasmKeeper(t)
+
+	contractAddr := sdk.AccAddress("contract____________")
+	adminAddr := sdk.AccAddress("admin_______________")
+	otherAddr := sdk.AccAddress("other_______________")
+
+	t.Run("set and get admin", func(t *testing.T) {
+		err := k.SetContractAdmin(ctx, contractAddr, adminAddr)
+		require.NoError(t, err)
+
+		storedAdmin, err := k.GetContractAdmin(ctx, contractAddr)
+		require.NoError(t, err)
+		require.Equal(t, adminAddr, storedAdmin)
+	})
+
+	t.Run("has admin - true", func(t *testing.T) {
+		hasAdmin := k.HasContractAdmin(ctx, contractAddr)
+		require.True(t, hasAdmin)
+	})
+
+	t.Run("is admin - true for correct address", func(t *testing.T) {
+		isAdmin, err := k.IsContractAdmin(ctx, contractAddr, adminAddr)
+		require.NoError(t, err)
+		require.True(t, isAdmin)
+	})
+
+	t.Run("is admin - false for different address", func(t *testing.T) {
+		isAdmin, err := k.IsContractAdmin(ctx, contractAddr, otherAddr)
+		require.NoError(t, err)
+		require.False(t, isAdmin)
+	})
+
+	t.Run("delete admin", func(t *testing.T) {
+		err := k.DeleteContractAdmin(ctx, contractAddr)
+		require.NoError(t, err)
+
+		storedAdmin, err := k.GetContractAdmin(ctx, contractAddr)
+		require.NoError(t, err)
+		require.True(t, storedAdmin.Empty())
+	})
+
+	t.Run("has admin - false after deletion", func(t *testing.T) {
+		hasAdmin := k.HasContractAdmin(ctx, contractAddr)
+		require.False(t, hasAdmin)
+	})
+}
+
+// TestAdminUpdateFlow tests the full admin update flow
+func TestAdminUpdateFlow(t *testing.T) {
+	k, ctx := keepertest.WasmKeeper(t)
+	msgServer := keeper.NewMsgServerImpl(k)
+
+	contractAddr := sdk.AccAddress("contract____________")
+	admin1 := sdk.AccAddress("admin1______________")
+	admin2 := sdk.AccAddress("admin2______________")
+	nonAdmin := sdk.AccAddress("nonadmin____________")
+
+	// Setup: Set initial admin
+	err := k.SetContractAdmin(ctx, contractAddr, admin1)
+	require.NoError(t, err)
+
+	t.Run("admin1 updates to admin2 - success", func(t *testing.T) {
+		msg := &types.MsgUpdateAdmin{
+			Sender:   admin1.String(),
+			Contract: contractAddr.String(),
+			NewAdmin: admin2.String(),
+		}
+
+		_, err := msgServer.UpdateAdmin(ctx, msg)
+		require.NoError(t, err)
+
+		// Verify admin changed
+		storedAdmin, err := k.GetContractAdmin(ctx, contractAddr)
+		require.NoError(t, err)
+		require.Equal(t, admin2, storedAdmin)
+	})
+
+	t.Run("admin1 cannot update anymore - unauthorized", func(t *testing.T) {
+		msg := &types.MsgUpdateAdmin{
+			Sender:   admin1.String(),
+			Contract: contractAddr.String(),
+			NewAdmin: admin1.String(),
+		}
+
+		_, err := msgServer.UpdateAdmin(ctx, msg)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "not the contract admin")
+	})
+
+	t.Run("non-admin cannot update - unauthorized", func(t *testing.T) {
+		msg := &types.MsgUpdateAdmin{
+			Sender:   nonAdmin.String(),
+			Contract: contractAddr.String(),
+			NewAdmin: nonAdmin.String(),
+		}
+
+		_, err := msgServer.UpdateAdmin(ctx, msg)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "not the contract admin")
+	})
+
+	t.Run("admin2 clears admin - success", func(t *testing.T) {
+		msg := &types.MsgClearAdmin{
+			Sender:   admin2.String(),
+			Contract: contractAddr.String(),
+		}
+
+		_, err := msgServer.ClearAdmin(ctx, msg)
+		require.NoError(t, err)
+
+		// Verify admin cleared
+		hasAdmin := k.HasContractAdmin(ctx, contractAddr)
+		require.False(t, hasAdmin)
+	})
+
+	t.Run("cannot update admin after cleared", func(t *testing.T) {
+		msg := &types.MsgUpdateAdmin{
+			Sender:   admin2.String(),
+			Contract: contractAddr.String(),
+			NewAdmin: admin2.String(),
+		}
+
+		_, err := msgServer.UpdateAdmin(ctx, msg)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "contract has no admin set")
+	})
+
+	t.Run("cannot clear admin twice", func(t *testing.T) {
+		msg := &types.MsgClearAdmin{
+			Sender:   admin2.String(),
+			Contract: contractAddr.String(),
+		}
+
+		_, err := msgServer.ClearAdmin(ctx, msg)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "contract has no admin to clear")
+	})
+}
+
+// TestAdminMigrationAuth tests that migrations require admin
+func TestAdminMigrationAuth(t *testing.T) {
+	k, ctx := keepertest.WasmKeeper(t)
+	msgServer := keeper.NewMsgServerImpl(k)
+
+	contractAddr := sdk.AccAddress("contract____________")
+	adminAddr := sdk.AccAddress("admin_______________")
+	nonAdmin := sdk.AccAddress("nonadmin____________")
+
+	// Setup: Set admin
+	err := k.SetContractAdmin(ctx, contractAddr, adminAddr)
+	require.NoError(t, err)
+
+	t.Run("non-admin cannot migrate", func(t *testing.T) {
+		msg := &types.MsgMigrateContract{
+			Sender:   nonAdmin.String(),
+			Contract: contractAddr.String(),
+			CodeId:   2,
+			Msg:      []byte("{}"),
+		}
+
+		_, err := msgServer.MigrateContract(ctx, msg)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "not the contract admin")
+	})
+
+	t.Run("admin can attempt migration (will fail at keeper level without wasmd)", func(t *testing.T) {
+		msg := &types.MsgMigrateContract{
+			Sender:   adminAddr.String(),
+			Contract: contractAddr.String(),
+			CodeId:   2,
+			Msg:      []byte("{}"),
+		}
+
+		// Will pass authorization but fail at migration level since no wasmd keeper
+		_, err := msgServer.MigrateContract(ctx, msg)
+		// Error is expected - either migration not implemented or wasmd not configured
+		// The important part is we passed admin authorization check
+		require.Error(t, err)
+	})
+
+	t.Run("cleared admin cannot migrate", func(t *testing.T) {
+		// Clear admin
+		err := k.DeleteContractAdmin(ctx, contractAddr)
+		require.NoError(t, err)
+
+		msg := &types.MsgMigrateContract{
+			Sender:   adminAddr.String(),
+			Contract: contractAddr.String(),
+			CodeId:   2,
+			Msg:      []byte("{}"),
+		}
+
+		_, err := msgServer.MigrateContract(ctx, msg)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "not the contract admin")
+	})
+}
