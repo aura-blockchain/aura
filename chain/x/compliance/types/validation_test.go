@@ -43,6 +43,7 @@ func TestValidateParams_EmptyParams(t *testing.T) {
 func TestValidateParams_PartialParams(t *testing.T) {
 	params := ComplianceParams{
 		KycRequired:     true,
+		KycExpiryDays:   365,
 		MinimumKycLevel: KYCLevel_KYC_LEVEL_ADVANCED,
 	}
 
@@ -78,16 +79,16 @@ func TestValidateParams_MaxValues(t *testing.T) {
 	params := ComplianceParams{
 		KycRequired:                  true,
 		MinimumKycLevel:              KYCLevel_KYC_LEVEL_ADVANCED,
-		KycExpiryDays:                999999,
+		KycExpiryDays:                365 * 10, // At max allowed
 		TransactionMonitoringEnabled: true,
 		VelocityLimit_24H:            "999999999999999",
 		SingleTransactionLimit:       "999999999999999",
-		StructuringThresholdCount:    999999,
+		StructuringThresholdCount:    10000, // At max allowed
 		SanctionsScreeningEnabled:    true,
 		SanctionsLists:               []string{"LIST1", "LIST2", "LIST3", "LIST4", "LIST5"},
-		ScreeningCacheHours:          999999,
+		ScreeningCacheHours:          24 * 30, // At max allowed
 		GdprEnabled:                  true,
-		DataRetentionDays:            999999,
+		DataRetentionDays:            365 * 20, // At max allowed
 		ProcessingPurposes:           []string{"purpose1", "purpose2", "purpose3"},
 		TaxReportingEnabled:          true,
 		TaxJurisdictions:             []string{"US", "EU", "UK", "CA"},
@@ -108,9 +109,9 @@ func TestValidateParams_MultipleSanctionsLists(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestValidateParams_EmptySanctionsLists(t *testing.T) {
+func TestValidateParams_EmptySanctionsListsWhenDisabled(t *testing.T) {
 	params := ComplianceParams{
-		SanctionsScreeningEnabled: true,
+		SanctionsScreeningEnabled: false,
 		SanctionsLists:            []string{},
 	}
 
@@ -122,6 +123,7 @@ func TestValidateParams_MultipleJurisdictions(t *testing.T) {
 	params := ComplianceParams{
 		TaxReportingEnabled: true,
 		TaxJurisdictions:    []string{"US", "EU", "UK", "CA", "AU", "NZ"},
+		TaxYearEnd:          "12-31",
 	}
 
 	err := ValidateParams(params)
@@ -275,6 +277,366 @@ func TestTaxReportList_Empty(t *testing.T) {
 }
 
 // ============================================================================
+// Invalid Parameter Tests
+// ============================================================================
+
+func TestValidateParams_InvalidKYCExpiryDays(t *testing.T) {
+	params := ComplianceParams{
+		KycExpiryDays: 365*10 + 1, // Exceeds max
+	}
+	err := ValidateParams(params)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "kyc_expiry_days too large")
+}
+
+func TestValidateParams_KYCRequiredWithZeroExpiry(t *testing.T) {
+	params := ComplianceParams{
+		KycRequired:   true,
+		KycExpiryDays: 0,
+	}
+	err := ValidateParams(params)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "kyc_expiry_days must be positive when kyc_required is true")
+}
+
+func TestValidateParams_KYCRequiredWithInvalidLevel(t *testing.T) {
+	params := ComplianceParams{
+		KycRequired:     true,
+		KycExpiryDays:   365,
+		MinimumKycLevel: KYCLevel_KYC_LEVEL_NONE,
+	}
+	err := ValidateParams(params)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "minimum_kyc_level must be at least BASIC")
+}
+
+func TestValidateParams_NegativeVelocityLimit(t *testing.T) {
+	params := ComplianceParams{
+		VelocityLimit_24H: "-1000",
+	}
+	err := ValidateParams(params)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "velocity_limit_24h cannot be negative")
+}
+
+func TestValidateParams_InvalidVelocityLimitFormat(t *testing.T) {
+	params := ComplianceParams{
+		VelocityLimit_24H: "not-a-number",
+	}
+	err := ValidateParams(params)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "velocity_limit_24h is not a valid integer")
+}
+
+func TestValidateParams_NegativeSingleTransactionLimit(t *testing.T) {
+	params := ComplianceParams{
+		SingleTransactionLimit: "-500",
+	}
+	err := ValidateParams(params)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "single_transaction_limit cannot be negative")
+}
+
+func TestValidateParams_InvalidSingleTransactionLimitFormat(t *testing.T) {
+	params := ComplianceParams{
+		SingleTransactionLimit: "invalid",
+	}
+	err := ValidateParams(params)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "single_transaction_limit is not a valid integer")
+}
+
+func TestValidateParams_SingleTransactionExceedsVelocity(t *testing.T) {
+	params := ComplianceParams{
+		VelocityLimit_24H:      "1000",
+		SingleTransactionLimit: "2000",
+	}
+	err := ValidateParams(params)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "single_transaction_limit")
+	require.Contains(t, err.Error(), "cannot exceed velocity_limit_24h")
+}
+
+func TestValidateParams_MonitoringEnabledWithZeroThreshold(t *testing.T) {
+	params := ComplianceParams{
+		TransactionMonitoringEnabled: true,
+		StructuringThresholdCount:    0,
+	}
+	err := ValidateParams(params)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "structuring_threshold_count must be positive")
+}
+
+func TestValidateParams_StructuringThresholdTooLarge(t *testing.T) {
+	params := ComplianceParams{
+		StructuringThresholdCount: 10001, // Exceeds max
+	}
+	err := ValidateParams(params)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "structuring_threshold_count too large")
+}
+
+func TestValidateParams_ScreeningCacheHoursTooLarge(t *testing.T) {
+	params := ComplianceParams{
+		ScreeningCacheHours: 24*30 + 1, // Exceeds max
+	}
+	err := ValidateParams(params)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "screening_cache_hours too large")
+}
+
+func TestValidateParams_SanctionsEnabledWithEmptyLists(t *testing.T) {
+	params := ComplianceParams{
+		SanctionsScreeningEnabled: true,
+		SanctionsLists:            []string{},
+	}
+	err := ValidateParams(params)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "sanctions_lists cannot be empty")
+}
+
+func TestValidateParams_SanctionsListWithEmptyEntry(t *testing.T) {
+	params := ComplianceParams{
+		SanctionsScreeningEnabled: true,
+		SanctionsLists:            []string{"OFAC", "", "EU"},
+	}
+	err := ValidateParams(params)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "sanctions_lists contains empty")
+}
+
+func TestValidateParams_SanctionsListNameTooLong(t *testing.T) {
+	longName := string(make([]byte, 101))
+	params := ComplianceParams{
+		SanctionsScreeningEnabled: true,
+		SanctionsLists:            []string{longName},
+	}
+	err := ValidateParams(params)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "sanctions list name too long")
+}
+
+func TestValidateParams_DataRetentionDaysTooLarge(t *testing.T) {
+	params := ComplianceParams{
+		DataRetentionDays: 365*20 + 1, // Exceeds max
+	}
+	err := ValidateParams(params)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "data_retention_days too large")
+}
+
+func TestValidateParams_GDPREnabledWithZeroRetention(t *testing.T) {
+	params := ComplianceParams{
+		GdprEnabled:       true,
+		DataRetentionDays: 0,
+	}
+	err := ValidateParams(params)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "data_retention_days must be positive when gdpr_enabled is true")
+}
+
+func TestValidateParams_GDPREnabledWithEmptyPurposes(t *testing.T) {
+	params := ComplianceParams{
+		GdprEnabled:        true,
+		DataRetentionDays:  365,
+		ProcessingPurposes: []string{},
+	}
+	err := ValidateParams(params)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "processing_purposes cannot be empty")
+}
+
+func TestValidateParams_ProcessingPurposeWithEmptyEntry(t *testing.T) {
+	params := ComplianceParams{
+		GdprEnabled:        true,
+		DataRetentionDays:  365,
+		ProcessingPurposes: []string{"compliance", "", "analytics"},
+	}
+	err := ValidateParams(params)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "processing_purposes contains empty")
+}
+
+func TestValidateParams_ProcessingPurposeTooLong(t *testing.T) {
+	longPurpose := string(make([]byte, 201))
+	params := ComplianceParams{
+		GdprEnabled:        true,
+		DataRetentionDays:  365,
+		ProcessingPurposes: []string{longPurpose},
+	}
+	err := ValidateParams(params)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "processing purpose too long")
+}
+
+func TestValidateParams_TaxReportingEnabledWithEmptyJurisdictions(t *testing.T) {
+	params := ComplianceParams{
+		TaxReportingEnabled: true,
+		TaxYearEnd:          "12-31",
+		TaxJurisdictions:    []string{},
+	}
+	err := ValidateParams(params)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "tax_jurisdictions cannot be empty")
+}
+
+func TestValidateParams_TaxReportingEnabledWithoutYearEnd(t *testing.T) {
+	params := ComplianceParams{
+		TaxReportingEnabled: true,
+		TaxJurisdictions:    []string{"US"},
+		TaxYearEnd:          "",
+	}
+	err := ValidateParams(params)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "tax_year_end must be set")
+}
+
+func TestValidateParams_InvalidTaxYearEndFormat(t *testing.T) {
+	testCases := []struct {
+		name    string
+		yearEnd string
+	}{
+		{"missing day", "12"},
+		{"too many parts", "12-31-2024"},
+		{"invalid month", "13-31"},
+		{"invalid day", "12-32"},
+		{"zero month", "00-15"},
+		{"zero day", "06-00"},
+		{"invalid February", "02-30"},
+		{"invalid April", "04-31"},
+		{"non-numeric", "AA-BB"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			params := ComplianceParams{
+				TaxYearEnd: tc.yearEnd,
+			}
+			err := ValidateParams(params)
+			require.Error(t, err, "Expected error for year end: %s", tc.yearEnd)
+			require.Contains(t, err.Error(), "tax_year_end")
+		})
+	}
+}
+
+func TestValidateParams_InvalidJurisdictionCode(t *testing.T) {
+	testCases := []struct {
+		name         string
+		jurisdiction string
+	}{
+		{"too short", "U"},
+		{"too long", "USA"},
+		{"lowercase", "us"},
+		{"numbers only", "12"},
+		{"empty", ""},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			params := ComplianceParams{
+				BlockedJurisdictions: []string{tc.jurisdiction},
+			}
+			err := ValidateParams(params)
+			require.Error(t, err, "Expected error for jurisdiction: %s", tc.jurisdiction)
+			require.Contains(t, err.Error(), "invalid")
+		})
+	}
+}
+
+func TestValidateParams_EmptyKYCProviderAddress(t *testing.T) {
+	params := ComplianceParams{
+		ApprovedKycProviders: []string{"cosmos1validaddress", ""},
+	}
+	err := ValidateParams(params)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "approved_kyc_providers contains empty")
+}
+
+func TestValidateParams_DuplicateKYCProvider(t *testing.T) {
+	params := ComplianceParams{
+		ApprovedKycProviders: []string{"cosmos1provider1", "cosmos1provider2", "cosmos1provider1"},
+	}
+	err := ValidateParams(params)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "duplicate kyc provider")
+}
+
+func TestValidateParams_KYCProviderAddressTooShort(t *testing.T) {
+	params := ComplianceParams{
+		ApprovedKycProviders: []string{"short"},
+	}
+	err := ValidateParams(params)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "kyc provider address too short")
+}
+
+func TestValidateParams_KYCProviderAddressTooLong(t *testing.T) {
+	longAddress := string(make([]byte, 101))
+	params := ComplianceParams{
+		ApprovedKycProviders: []string{longAddress},
+	}
+	err := ValidateParams(params)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "kyc provider address too long")
+}
+
+// ============================================================================
+// Valid Edge Cases Tests
+// ============================================================================
+
+func TestValidateParams_ValidExtendedJurisdictionCodes(t *testing.T) {
+	params := ComplianceParams{
+		BlockedJurisdictions: []string{"US", "US-NY", "CA-ON", "GB-ENG"},
+		TaxJurisdictions:     []string{"US", "US-CA", "EU-DE"},
+	}
+	err := ValidateParams(params)
+	require.NoError(t, err)
+}
+
+func TestValidateParams_ValidTaxYearEnds(t *testing.T) {
+	testCases := []string{
+		"12-31",
+		"01-01",
+		"06-30",
+		"03-31",
+		"02-29", // Leap year day
+		"04-30", // 30-day month
+	}
+
+	for _, yearEnd := range testCases {
+		t.Run(yearEnd, func(t *testing.T) {
+			params := ComplianceParams{
+				TaxYearEnd: yearEnd,
+			}
+			err := ValidateParams(params)
+			require.NoError(t, err, "Should accept valid year end: %s", yearEnd)
+		})
+	}
+}
+
+func TestValidateParams_BoundaryValues(t *testing.T) {
+	params := ComplianceParams{
+		KycExpiryDays:             365 * 10,         // Exactly at max
+		StructuringThresholdCount: 10000,           // Exactly at max
+		ScreeningCacheHours:       24 * 30,         // Exactly at max
+		DataRetentionDays:         365 * 20,        // Exactly at max
+		VelocityLimit_24H:         "999999999999",  // Large valid number
+		SingleTransactionLimit:    "999999999999",  // Large valid number
+	}
+	err := ValidateParams(params)
+	require.NoError(t, err)
+}
+
+func TestValidateParams_ConsistentLimits(t *testing.T) {
+	params := ComplianceParams{
+		VelocityLimit_24H:      "1000000",
+		SingleTransactionLimit: "1000000", // Equal is allowed
+	}
+	err := ValidateParams(params)
+	require.NoError(t, err)
+}
+
+// ============================================================================
 // Edge Cases
 // ============================================================================
 
@@ -290,11 +652,12 @@ func TestValidateParams_NilSlices(t *testing.T) {
 }
 
 func TestValidateParams_LargeNumbers(t *testing.T) {
+	// Test that very large numbers within allowed bounds are accepted
 	params := ComplianceParams{
-		KycExpiryDays:             18446744073709551615, // max uint64
-		StructuringThresholdCount: 4294967295,           // max uint32
-		ScreeningCacheHours:       18446744073709551615, // max uint64
-		DataRetentionDays:         18446744073709551615, // max uint64
+		KycExpiryDays:             365 * 10,     // At max allowed
+		StructuringThresholdCount: 10000,       // At max allowed
+		ScreeningCacheHours:       24 * 30,     // At max allowed
+		DataRetentionDays:         365 * 20,    // At max allowed
 	}
 
 	err := ValidateParams(params)
@@ -302,23 +665,23 @@ func TestValidateParams_LargeNumbers(t *testing.T) {
 }
 
 func TestValidateParams_VeryLargeStrings(t *testing.T) {
-	longString := string(make([]byte, 10000))
+	// Test large numeric strings (should fail if not valid numbers)
 	params := ComplianceParams{
-		VelocityLimit_24H:      longString,
-		SingleTransactionLimit: longString,
-		TaxYearEnd:             longString,
+		VelocityLimit_24H:      "999999999999999999999999999999",
+		SingleTransactionLimit: "888888888888888888888888888888",
 	}
 
+	// These should be valid as long as they're parseable as integers
 	err := ValidateParams(params)
-	require.NoError(t, err) // Currently no validation on string length
+	require.NoError(t, err)
 }
 
 func TestValidateParams_SpecialCharacters(t *testing.T) {
 	params := ComplianceParams{
 		SanctionsLists:     []string{"OFAC-SDN", "EU_LIST", "UN.LIST", "UK/LIST"},
 		ProcessingPurposes: []string{"compliance & analytics", "reporting@domain"},
-		TaxJurisdictions:   []string{"US-NY", "EU/UK", "CA_ON"},
-		TaxYearEnd:         "12/31",
+		TaxJurisdictions:   []string{"US-NY", "CA-ON"}, // Valid extended format
+		TaxYearEnd:         "12-31", // Must use dash format
 	}
 
 	err := ValidateParams(params)

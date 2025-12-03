@@ -143,7 +143,7 @@ func TestSanctionsScreening_EventEmitted(t *testing.T) {
 	require.True(t, found, "sanctions_screening event not found")
 
 	// Verify event attributes
-	attrs := attributesToMap(sanctionEvent.Attributes)
+	attrs := abciAttributesToMap(sanctionEvent)
 	require.Equal(t, req.Address, attrs[types.AttributeKeyAddress])
 	require.Equal(t, resp.Status.String(), attrs[types.AttributeKeyStatus])
 	require.Equal(t, fmt.Sprintf("%t", resp.RequiresReview), attrs[types.AttributeKeyRequiresReview])
@@ -187,7 +187,7 @@ func TestGDPRConsent_EventEmitted(t *testing.T) {
 	require.True(t, found, "gdpr_consent_recorded event not found")
 
 	// Verify event attributes
-	attrs := attributesToMap(consentEvent.Attributes)
+	attrs := abciAttributesToMap(consentEvent)
 	require.Equal(t, req.Address, attrs[types.AttributeKeyAddress])
 	require.Equal(t, req.ConsentType, attrs[types.AttributeKeyConsentType])
 	require.Equal(t, fmt.Sprintf("%t", req.Consented), attrs[types.AttributeKeyConsented])
@@ -229,7 +229,7 @@ func TestGDPRDataRequest_EventEmitted(t *testing.T) {
 	require.True(t, found, "gdpr_data_requested event not found")
 
 	// Verify event attributes
-	attrs := attributesToMap(requestEvent.Attributes)
+	attrs := abciAttributesToMap(requestEvent)
 	require.Equal(t, resp.RequestId, attrs[types.AttributeKeyRequestID])
 	require.Equal(t, req.Address, attrs[types.AttributeKeyAddress])
 	require.Equal(t, req.RequestType, attrs[types.AttributeKeyGDPRRequestType])
@@ -271,7 +271,7 @@ func TestGDPRDataErasure_EventEmitted(t *testing.T) {
 	require.True(t, found, "gdpr_data_erased event not found")
 
 	// Verify event attributes
-	attrs := attributesToMap(erasureEvent.Attributes)
+	attrs := abciAttributesToMap(erasureEvent)
 	require.Equal(t, req.Address, attrs[types.AttributeKeyAddress])
 	require.Equal(t, resp.ErasureEventId, attrs[types.AttributeKeyErasureEventID])
 	require.Equal(t, req.ErasureReason, attrs[types.AttributeKeyErasureReason])
@@ -319,7 +319,7 @@ func TestTaxReportGeneration_EventEmitted(t *testing.T) {
 	require.True(t, found, "tax_report_generated event not found")
 
 	// Verify event attributes
-	attrs := attributesToMap(taxEvent.Attributes)
+	attrs := abciAttributesToMap(taxEvent)
 	require.Equal(t, resp.ReportId, attrs[types.AttributeKeyReportID])
 	require.Equal(t, req.Address, attrs[types.AttributeKeyAddress])
 	require.Equal(t, req.TaxYear, attrs[types.AttributeKeyTaxYear])
@@ -363,7 +363,7 @@ func TestGDPRConsentWithdrawal_EventEmitted(t *testing.T) {
 	require.True(t, found, "gdpr_consent_recorded event not found")
 
 	// Verify withdrawal is properly recorded
-	attrs := attributesToMap(consentEvent.Attributes)
+	attrs := abciAttributesToMap(consentEvent)
 	require.Equal(t, "false", attrs[types.AttributeKeyConsented])
 }
 
@@ -400,7 +400,7 @@ func TestSanctionsScreening_WithMatches_EventEmitted(t *testing.T) {
 	require.True(t, found, "sanctions_screening event not found")
 
 	// Verify match count is greater than zero
-	attrs := attributesToMap(sanctionEvent.Attributes)
+	attrs := abciAttributesToMap(sanctionEvent)
 	require.NotEqual(t, "0", attrs[types.AttributeKeyMatchCount])
 }
 
@@ -478,12 +478,11 @@ type testSanctionsProviderWithMatches struct{}
 func (m *testSanctionsProviderWithMatches) ScreenAddress(address string) (*types.SanctionsScreeningResult, error) {
 	return &types.SanctionsScreeningResult{
 		Address: address,
-		Status:  types.SanctionsStatus_SANCTIONS_FLAGGED,
+		Status:  types.SanctionsStatus_SANCTIONS_MATCH,
 		Matches: []*types.SanctionsMatch{
 			{
-				ListName:    "OFAC-SDN",
-				MatchScore:  95.0,
-				MatchReason: "Name similarity",
+				ListName:   "OFAC-SDN",
+				MatchScore: "95.0",
 			},
 		},
 		ScreenedAt:           nil, // Will be set by msg_server
@@ -494,9 +493,8 @@ func (m *testSanctionsProviderWithMatches) ScreenAddress(address string) (*types
 func (m *testSanctionsProviderWithMatches) CheckLists(_ []string) ([]*types.SanctionsMatch, error) {
 	return []*types.SanctionsMatch{
 		{
-			ListName:    "OFAC-SDN",
-			MatchScore:  95.0,
-			MatchReason: "Name similarity",
+			ListName:   "OFAC-SDN",
+			MatchScore: "95.0",
 		},
 	}, nil
 }

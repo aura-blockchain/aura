@@ -3,8 +3,10 @@ package keeper
 import (
 	"fmt"
 
+	"cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/compliance/types"
 )
@@ -114,6 +116,196 @@ func (k *Keeper) GetAllAMLProfiles(ctx sdk.Context) ([]*types.AMLProfile, error)
 		profiles = append(profiles, &profile)
 	}
 	return profiles, nil
+}
+
+// UpdateAMLProfileOnTransaction updates an AML profile when a transaction occurs.
+// This implements continuous AML monitoring by:
+//   - Tracking transaction count and volume
+//   - Recalculating risk level based on behavior
+//   - Emitting events when risk level changes
+//
+// This method should be called for every transaction to maintain accurate
+// risk profiles and enable real-time AML compliance monitoring.
+//
+// Parameters:
+//   - ctx: SDK context for state access
+//   - address: Address performing the transaction
+//   - amount: Transaction amount (can be multi-denomination)
+//
+// Returns:
+//   - error: If profile cannot be updated
+//
+// AML Compliance:
+//   - FinCEN: Continuous transaction monitoring requirement
+//   - FATF Recommendation 10: Customer due diligence and ongoing monitoring
+//   - BSA: Suspicious activity detection through pattern analysis
+//
+// Security considerations:
+//   - Profiles are created on first transaction (no pre-registration required)
+//   - Risk level changes trigger immediate events for monitoring systems
+//   - Transaction volume is accumulated across all denominations
+//   - Timestamps track last activity for velocity analysis
+//
+// Example usage:
+//   if err := k.UpdateAMLProfileOnTransaction(ctx, sender, amount); err != nil {
+//       return errorsmod.Wrap(ErrAMLUpdateFailed, err.Error())
+//   }
+func (k *Keeper) UpdateAMLProfileOnTransaction(ctx sdk.Context, address string, amount sdk.Coins) error {
+	// Get existing profile or create new one
+	profile, err := k.GetAMLProfile(ctx, address)
+	if err != nil {
+		// Create new profile for first transaction
+		profile = &types.AMLProfile{
+			Address:          address,
+			RiskLevel:        types.AMLRiskLevel_AML_RISK_LOW,
+			TotalTransactions: 0,
+			TotalVolume:      "0",
+			RiskFactors:      []string{},
+			LastAssessment:   timestamppb.New(ctx.BlockTime()),
+			PepStatus:        false,
+			SourceOfFunds:    []string{},
+			Occupation:       "",
+		}
+	}
+
+	// Update transaction metrics
+	profile.TotalTransactions++
+	profile.LastAssessment = timestamppb.New(ctx.BlockTime())
+
+	// Calculate total transaction volume (sum all denominations)
+	// Parse existing volume
+	existingVolume, ok := math.NewIntFromString(profile.TotalVolume)
+	if !ok {
+		existingVolume = math.ZeroInt()
+	}
+
+	// Add current transaction amount (sum all coins as integer units)
+	for _, coin := range amount {
+		existingVolume = existingVolume.Add(coin.Amount)
+	}
+	profile.TotalVolume = existingVolume.String()
+
+	// Store previous risk level for event emission
+	previousRisk := profile.RiskLevel
+
+	// Recalculate risk level based on updated metrics
+	profile.RiskLevel = k.calculateRiskLevel(ctx, profile)
+
+	// Save updated profile
+	if err := k.SetAMLProfile(ctx, profile); err != nil {
+		return err
+	}
+
+	// Emit profile updated event
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			types.EventTypeAMLProfileUpdated,
+			sdk.NewAttribute(types.AttributeKeyAddress, address),
+			sdk.NewAttribute(types.AttributeKeyTransactionCount, fmt.Sprintf("%d", profile.TotalTransactions)),
+			sdk.NewAttribute(types.AttributeKeyTotalVolume, profile.TotalVolume),
+			sdk.NewAttribute(types.AttributeKeyRiskLevel, profile.RiskLevel.String()),
+		),
+	)
+
+	// Emit risk level changed event if risk level increased
+	if profile.RiskLevel != previousRisk {
+		ctx.EventManager().EmitEvent(
+			sdk.NewEvent(
+				types.EventTypeRiskLevelChanged,
+				sdk.NewAttribute(types.AttributeKeyAddress, address),
+				sdk.NewAttribute(types.AttributeKeyPreviousRisk, previousRisk.String()),
+				sdk.NewAttribute(types.AttributeKeyNewRisk, profile.RiskLevel.String()),
+				sdk.NewAttribute(types.AttributeKeyTotalVolume, profile.TotalVolume),
+				sdk.NewAttribute(types.AttributeKeyTransactionCount, fmt.Sprintf("%d", profile.TotalTransactions)),
+			),
+		)
+	}
+
+	return nil
+}
+
+// calculateRiskLevel determines AML risk level based on transaction behavior.
+// This implements risk-based approach required by FATF and FinCEN.
+//
+// Risk factors considered:
+//   - Total transaction volume (high volume = higher risk)
+//   - Transaction velocity (frequent transactions = higher risk)
+//   - PEP status (Politically Exposed Person = higher risk)
+//   - Existing risk factors from investigations
+//
+// Risk Level Thresholds:
+//   - LOW: Normal transaction patterns, low volume
+//   - MEDIUM: Moderate volume or frequency
+//   - HIGH: High volume or frequent transactions
+//   - SEVERE: PEP status or very high volume/frequency
+//
+// The thresholds are configurable via module params and should be
+// calibrated based on jurisdiction requirements and risk appetite.
+//
+// Parameters:
+//   - ctx: SDK context for accessing params
+//   - profile: Current AML profile to assess
+//
+// Returns:
+//   - AMLRiskLevel: Calculated risk level
+//
+// Security considerations:
+//   - Conservative thresholds (bias toward flagging for review)
+//   - PEP status always results in HIGH or SEVERE risk
+//   - Multiple factors compound to increase risk level
+//   - Thresholds should be reviewed regularly and adjusted
+func (k *Keeper) calculateRiskLevel(ctx sdk.Context, profile *types.AMLProfile) types.AMLRiskLevel {
+	params := k.GetParams(ctx)
+
+	// Parse volume as math.Int for comparison
+	totalVolume, ok := math.NewIntFromString(profile.TotalVolume)
+	if !ok {
+		totalVolume = math.ZeroInt()
+	}
+
+	// PEP status or existing high-risk factors trigger SEVERE
+	if profile.PepStatus || len(profile.RiskFactors) >= 3 {
+		return types.AMLRiskLevel_AML_RISK_SEVERE
+	}
+
+	// Parse threshold parameters
+	highVolumeThreshold, ok := math.NewIntFromString(params.VelocityLimit_24H)
+	if !ok {
+		// Default to 1 million if param not set
+		highVolumeThreshold = math.NewInt(1_000_000)
+	}
+
+	// Calculate medium threshold as 50% of high threshold
+	mediumVolumeThreshold := highVolumeThreshold.QuoRaw(2)
+
+	// Evaluate volume-based risk
+	if totalVolume.GTE(highVolumeThreshold) {
+		return types.AMLRiskLevel_AML_RISK_HIGH
+	}
+
+	if totalVolume.GTE(mediumVolumeThreshold) {
+		return types.AMLRiskLevel_AML_RISK_MEDIUM
+	}
+
+	// Evaluate transaction velocity (frequency)
+	// High frequency transactions can indicate structuring
+	highFrequencyThreshold := uint64(100) // More than 100 transactions is high risk
+	mediumFrequencyThreshold := uint64(50) // More than 50 transactions is medium risk
+
+	if profile.TotalTransactions > highFrequencyThreshold {
+		return types.AMLRiskLevel_AML_RISK_HIGH
+	}
+
+	if profile.TotalTransactions > mediumFrequencyThreshold {
+		return types.AMLRiskLevel_AML_RISK_MEDIUM
+	}
+
+	// Check for existing risk factors
+	if len(profile.RiskFactors) > 0 {
+		return types.AMLRiskLevel_AML_RISK_MEDIUM
+	}
+
+	return types.AMLRiskLevel_AML_RISK_LOW
 }
 
 // ============================================================================

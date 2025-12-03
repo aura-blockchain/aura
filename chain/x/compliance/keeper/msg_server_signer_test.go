@@ -222,6 +222,46 @@ func TestGenerateTaxReport_SignerVerification(t *testing.T) {
 	})
 }
 
+// TestEraseGDPRData_SignerVerification tests GDPR data erasure authorization
+func TestEraseGDPRData_SignerVerification(t *testing.T) {
+	keeper, ctx := setupTestKeeper(t)
+	server := NewMsgServer(keeper)
+
+	t.Run("empty address rejected", func(t *testing.T) {
+		req := &types.MsgEraseGDPRData{
+			Address:       "",
+			ErasureReason: "no longer using service",
+		}
+		_, err := server.EraseGDPRData(sdk.WrapSDKContext(ctx), req)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "address is required")
+	})
+
+	t.Run("no signers rejected", func(t *testing.T) {
+		req := &types.MsgEraseGDPRData{
+			Address:       "aura1user000000000000000000000000000000000",
+			ErasureReason: "no longer using service",
+		}
+		_, err := server.EraseGDPRData(sdk.WrapSDKContext(ctx), req)
+		require.Error(t, err)
+		// Should fail at signer verification or permission check
+		require.True(t, err.Error() == "rpc error: code = Unauthenticated desc = no signers" ||
+			err.Error() == "rpc error: code = PermissionDenied desc = only the data subject can request erasure")
+	})
+
+	t.Run("invalid address rejected", func(t *testing.T) {
+		req := &types.MsgEraseGDPRData{
+			Address:       "invalid-bech32-address",
+			ErasureReason: "test",
+		}
+		_, err := server.EraseGDPRData(sdk.WrapSDKContext(ctx), req)
+		require.Error(t, err)
+		// Should fail at GetSigners or address validation
+		require.True(t, err.Error() == "rpc error: code = Unauthenticated desc = no signers" ||
+			err.Error() == "rpc error: code = InvalidArgument desc = invalid address")
+	})
+}
+
 // TestGetSigners_Implementation tests that GetSigners is implemented for all message types
 func TestGetSigners_Implementation(t *testing.T) {
 	// Use real valid bech32 addresses with correct length
@@ -271,6 +311,16 @@ func TestGetSigners_Implementation(t *testing.T) {
 
 	t.Run("MsgRequestGDPRData GetSigners", func(t *testing.T) {
 		msg := &types.MsgRequestGDPRData{
+			Address: validBech32,
+		}
+		signers := msg.GetSigners()
+		require.NotNil(t, signers)
+		require.Len(t, signers, 1)
+		require.Equal(t, validAddr, signers[0])
+	})
+
+	t.Run("MsgEraseGDPRData GetSigners", func(t *testing.T) {
+		msg := &types.MsgEraseGDPRData{
 			Address: validBech32,
 		}
 		signers := msg.GetSigners()

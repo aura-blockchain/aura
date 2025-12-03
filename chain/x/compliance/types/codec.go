@@ -25,6 +25,7 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 		&compliancepb.MsgScreenSanctions{},
 		&compliancepb.MsgRecordGDPRConsent{},
 		&compliancepb.MsgRequestGDPRData{},
+		&compliancepb.MsgEraseGDPRData{},
 		&compliancepb.MsgGenerateTaxReport{},
 	)
 
@@ -34,6 +35,7 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 		&compliancepb.MsgScreenSanctionsResponse{},
 		&compliancepb.MsgRecordGDPRConsentResponse{},
 		&compliancepb.MsgRequestGDPRDataResponse{},
+		&compliancepb.MsgEraseGDPRDataResponse{},
 		&compliancepb.MsgGenerateTaxReportResponse{},
 	)
 }
