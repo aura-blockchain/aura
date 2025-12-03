@@ -1,0 +1,519 @@
+{
+  "dashboard": {
+    "title": "WASM & Bridge Security Monitoring",
+    "tags": ["wasm", "bridge", "security", "signatures"],
+    "timezone": "browser",
+    "editable": true,
+    "graphTooltip": 1,
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "refresh": "30s",
+    "panels": [
+      {
+        "id": 1,
+        "title": "WASM Transaction Failure Rate",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "rate(aura_wasm_tx_failures_total[5m]) / clamp_min(rate(aura_wasm_tx_total[5m]), 0.0001)",
+            "legendFormat": "Overall Failure Rate",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(aura_wasm_tx_failures_total{contract_address!=\"\"}[5m]) / clamp_min(rate(aura_wasm_tx_total{contract_address!=\"\"}[5m]), 0.0001)",
+            "legendFormat": "{{ contract_address }}",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {"format": "percentunit", "label": "Failure Rate"},
+          {"format": "short"}
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {"params": [0.05], "type": "gt"},
+              "operator": {"type": "and"},
+              "query": {"params": ["A", "5m", "now"]},
+              "reducer": {"params": [], "type": "avg"},
+              "type": "query"
+            }
+          ],
+          "executionErrorState": "alerting",
+          "frequency": "1m",
+          "handler": 1,
+          "name": "WASM Tx Failure Rate High",
+          "noDataState": "no_data",
+          "notifications": []
+        },
+        "thresholds": [
+          {"value": 0.05, "op": "gt", "fill": true, "line": true, "colorMode": "critical"}
+        ]
+      },
+      {
+        "id": 2,
+        "title": "WASM Failures by Error Type",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "rate(aura_wasm_tx_failures_total[5m])",
+            "legendFormat": "{{ error_type }}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "ops", "label": "Failures/sec"},
+          {"format": "short"}
+        ],
+        "stack": true
+      },
+      {
+        "id": 3,
+        "title": "State Load Errors by Module",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "rate(aura_state_load_errors_total[5m])",
+            "legendFormat": "{{ module }}/{{ store }} - {{ error_type }}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "ops", "label": "Errors/sec"},
+          {"format": "short"}
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {"params": [0], "type": "gt"},
+              "operator": {"type": "and"},
+              "query": {"params": ["A", "5m", "now"]},
+              "reducer": {"params": [], "type": "avg"},
+              "type": "query"
+            }
+          ],
+          "executionErrorState": "alerting",
+          "frequency": "1m",
+          "handler": 1,
+          "name": "State Load Errors Detected",
+          "noDataState": "no_data",
+          "notifications": []
+        }
+      },
+      {
+        "id": 4,
+        "title": "Unmarshal Errors",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "rate(aura_unmarshal_errors_total[5m])",
+            "legendFormat": "{{ module }} - {{ proto_type }}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "ops", "label": "Unmarshal Errors/sec"},
+          {"format": "short"}
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "custom": {
+              "lineWidth": 2,
+              "fillOpacity": 10
+            }
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "Signature Verification Mismatch Rate",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 16, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "rate(aura_bridge_signature_mismatches_total[5m]) / clamp_min(rate(aura_bridge_signature_verifications_total[5m]), 0.0001)",
+            "legendFormat": "Overall Mismatch Rate",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(aura_bridge_signature_mismatches_total{chain!=\"\"}[5m]) / clamp_min(rate(aura_bridge_signature_verifications_total{chain!=\"\"}[5m]), 0.0001)",
+            "legendFormat": "{{ chain }} Chain",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {"format": "percentunit", "label": "Mismatch Rate"},
+          {"format": "short"}
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {"params": [0.01], "type": "gt"},
+              "operator": {"type": "and"},
+              "query": {"params": ["A", "5m", "now"]},
+              "reducer": {"params": [], "type": "avg"},
+              "type": "query"
+            }
+          ],
+          "executionErrorState": "alerting",
+          "frequency": "1m",
+          "handler": 1,
+          "name": "Signature Mismatch Rate High",
+          "noDataState": "no_data",
+          "notifications": []
+        },
+        "thresholds": [
+          {"value": 0.01, "op": "gt", "fill": true, "line": true, "colorMode": "critical"}
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Signature Verification by Chain",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 16, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "rate(aura_bridge_signature_verifications_total[5m])",
+            "legendFormat": "{{ chain }} - Success",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(aura_bridge_signature_mismatches_total[5m])",
+            "legendFormat": "{{ chain }} - Mismatch",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {"format": "ops", "label": "Verifications/sec"},
+          {"format": "short"}
+        ],
+        "seriesOverrides": [
+          {
+            "alias": "/.*Mismatch/",
+            "color": "#F2495C",
+            "fill": 2
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "WASM Circuit Breaker State",
+        "type": "stat",
+        "gridPos": {"x": 0, "y": 24, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "aura_wasm_circuit_breaker_state",
+            "legendFormat": "{{ state }}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "graphMode": "none",
+          "colorMode": "background",
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "green"},
+                {"value": 1, "color": "red"}
+              ]
+            },
+            "mappings": [
+              {"type": "value", "value": 0, "text": "Closed (OK)"},
+              {"type": "value", "value": 1, "text": "Open (ALERT)"},
+              {"type": "value", "value": 2, "text": "Half-Open"}
+            ]
+          }
+        }
+      },
+      {
+        "id": 8,
+        "title": "WASM Validation Cache Hit Rate",
+        "type": "stat",
+        "gridPos": {"x": 6, "y": 24, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "rate(aura_wasm_validation_cache_hits_total[5m]) / clamp_min(rate(aura_wasm_validation_cache_total[5m]), 0.0001)",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "graphMode": "area",
+          "colorMode": "value"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percentunit",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "red"},
+                {"value": 0.5, "color": "yellow"},
+                {"value": 0.7, "color": "green"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 9,
+        "title": "Invalid Recovery IDs",
+        "type": "stat",
+        "gridPos": {"x": 12, "y": 24, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "rate(aura_bridge_invalid_recovery_id_total[5m])",
+            "legendFormat": "{{ chain }}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "graphMode": "area",
+          "colorMode": "background"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ops",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "green"},
+                {"value": 0.1, "color": "yellow"},
+                {"value": 1, "color": "red"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 10,
+        "title": "Public Key Recovery Failures",
+        "type": "stat",
+        "gridPos": {"x": 18, "y": 24, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "rate(aura_bridge_pubkey_recovery_failures_total[5m])",
+            "legendFormat": "{{ chain }}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "graphMode": "area",
+          "colorMode": "background"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ops",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "green"},
+                {"value": 0.05, "color": "yellow"},
+                {"value": 0.5, "color": "red"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 11,
+        "title": "WASM Instantiation Failures",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 28, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "rate(aura_wasm_instantiation_failures_total[5m])",
+            "legendFormat": "Code ID {{ code_id }} - {{ error_type }}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "ops", "label": "Failures/sec"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 12,
+        "title": "Signature Verification Duration (p95)",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 28, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(aura_bridge_signature_verification_duration_seconds_bucket[5m]))",
+            "legendFormat": "{{ chain }} Chain",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "s", "label": "Duration (p95)"},
+          {"format": "short"}
+        ],
+        "thresholds": [
+          {"value": 0.1, "op": "gt", "fill": false, "line": true, "colorMode": "custom"}
+        ]
+      },
+      {
+        "id": 13,
+        "title": "State Corruption Events",
+        "type": "table",
+        "gridPos": {"x": 0, "y": 36, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "increase(aura_state_corruption_total[1h])",
+            "legendFormat": "",
+            "refId": "A",
+            "format": "table",
+            "instant": true
+          }
+        ],
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {},
+              "indexByName": {
+                "module": 0,
+                "store": 1,
+                "Value": 2
+              },
+              "renameByName": {
+                "module": "Module",
+                "store": "Store",
+                "Value": "Corruption Events (1h)"
+              }
+            }
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "align": "left",
+              "displayMode": "auto"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "green"},
+                {"value": 1, "color": "red"}
+              ]
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {"id": "byName", "options": "Corruption Events (1h)"},
+              "properties": [
+                {"id": "custom.displayMode", "value": "color-background"}
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": 14,
+        "title": "KVStore Iteration Errors",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 36, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "rate(aura_kvstore_iteration_errors_total[5m])",
+            "legendFormat": "{{ store }}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "ops", "label": "Errors/sec"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 15,
+        "title": "Multi-Subsystem Health",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 44, "w": 24, "h": 8},
+        "targets": [
+          {
+            "expr": "rate(aura_wasm_tx_failures_total[5m])",
+            "legendFormat": "WASM Failures",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(aura_state_load_errors_total[5m])",
+            "legendFormat": "State Load Errors",
+            "refId": "B"
+          },
+          {
+            "expr": "rate(aura_bridge_signature_mismatches_total[5m])",
+            "legendFormat": "Signature Mismatches",
+            "refId": "C"
+          },
+          {
+            "expr": "rate(aura_unmarshal_errors_total[5m])",
+            "legendFormat": "Unmarshal Errors",
+            "refId": "D"
+          }
+        ],
+        "yaxes": [
+          {"format": "ops", "label": "Errors/sec"},
+          {"format": "short"}
+        ],
+        "description": "Overview of all critical subsystem error rates. Multiple simultaneous spikes indicate systemic issues or attacks."
+      }
+    ],
+    "annotations": {
+      "list": [
+        {
+          "datasource": "Prometheus",
+          "enable": true,
+          "expr": "ALERTS{alertname=~\"Wasm.*|State.*|Signature.*\"}",
+          "iconColor": "red",
+          "name": "Security Alerts",
+          "step": "60s",
+          "tagKeys": "severity,component",
+          "textFormat": "{{ alertname }}: {{ summary }}",
+          "titleFormat": "Alert"
+        }
+      ]
+    },
+    "templating": {
+      "list": [
+        {
+          "name": "datasource",
+          "type": "datasource",
+          "query": "prometheus",
+          "current": {
+            "text": "Prometheus",
+            "value": "Prometheus"
+          }
+        },
+        {
+          "name": "contract",
+          "type": "query",
+          "query": "label_values(aura_wasm_tx_total, contract_address)",
+          "datasource": "Prometheus",
+          "refresh": 1,
+          "multi": true,
+          "includeAll": true
+        },
+        {
+          "name": "chain",
+          "type": "query",
+          "query": "label_values(aura_bridge_signature_verifications_total, chain)",
+          "datasource": "Prometheus",
+          "refresh": 1,
+          "multi": true,
+          "includeAll": true
+        }
+      ]
+    }
+  }
+}

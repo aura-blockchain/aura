@@ -64,6 +64,29 @@ func NewAppModule(k *keeper.Keeper) AppModule {
 // Name returns the module name
 func (AppModule) Name() string { return types.ModuleName }
 
+// RegisterLegacyAminoCodec registers amino types (no-op for proto-only module)
+func (AppModule) RegisterLegacyAminoCodec(_ *codec.LegacyAmino) {}
+
+// RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the module
+func (AppModule) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
+	// Register query handler client
+	// This will be implemented when query services are added
+}
+
+// RegisterInterfaces registers the module's interface types
+func (AppModule) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
+	msgservice.RegisterMsgServiceDesc(registry, &pb.Msg_ServiceDesc)
+
+	registry.RegisterImplementations(
+		(*sdk.Msg)(nil),
+		&pb.MsgStoreDataItem{},
+		&pb.MsgUpdateDataItem{},
+		&pb.MsgDeleteDataItem{},
+		&pb.MsgVerifyDataItem{},
+		&pb.MsgRevokeDataItem{},
+	)
+}
+
 // RegisterServices registers the module's message and query servers
 func (m AppModule) RegisterServices(config ModuleServices) {
 	if config == nil {

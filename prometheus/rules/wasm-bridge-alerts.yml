@@ -1,0 +1,424 @@
+# ============================================================================
+# WASM, Bridge, and Security Monitoring Alert Rules
+# ============================================================================
+# Monitors WASM transaction failures, state load errors, and signature
+# verification mismatches as specified in ROADMAP_PRODUCTION.md task #16
+
+groups:
+  # =========================================================================
+  # WASM Transaction Failure Monitoring
+  # =========================================================================
+  - name: wasm_transaction_alerts
+    interval: 30s
+    rules:
+      # High WASM transaction failure rate (>5%)
+      - alert: WasmTxFailureRateHigh
+        expr: |
+          (
+            rate(aura_wasm_tx_failures_total[5m])
+            /
+            clamp_min(rate(aura_wasm_tx_total[5m]), 0.0001)
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          component: wasm
+          category: transaction_failure
+        annotations:
+          summary: "WASM transaction failure rate exceeds 5%"
+          description: |
+            WASM transaction failure rate is {{ $value | humanizePercentage }} (threshold: 5%)
+            This indicates systemic issues with WASM contract execution.
+            Contract: {{ $labels.contract_address }}
+            Error Type: {{ $labels.error_type }}
+          runbook: "Check WASM contract code for bugs, verify gas limits, inspect contract state"
+
+      # Specific contract experiencing high failure rate
+      - alert: WasmContractFailureSpike
+        expr: |
+          (
+            rate(aura_wasm_tx_failures_total{contract_address!=""}[5m])
+            /
+            clamp_min(rate(aura_wasm_tx_total{contract_address!=""}[5m]), 0.0001)
+          ) > 0.10
+        for: 3m
+        labels:
+          severity: high
+          component: wasm
+          category: contract_failure
+        annotations:
+          summary: "Specific WASM contract has >10% failure rate"
+          description: |
+            Contract {{ $labels.contract_address }} failure rate: {{ $value | humanizePercentage }}
+            Error Type: {{ $labels.error_type }}
+            This contract may have a critical bug or be under attack.
+          runbook: "Investigate contract {{ $labels.contract_address }}, consider pausing if malicious"
+
+      # WASM out-of-gas errors spiking
+      - alert: WasmOutOfGasSpike
+        expr: |
+          rate(aura_wasm_tx_failures_total{error_type="out_of_gas"}[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          component: wasm
+          category: gas_limit
+        annotations:
+          summary: "High rate of WASM out-of-gas errors"
+          description: |
+            Out-of-gas errors: {{ $value | humanize }} per second
+            Contract: {{ $labels.contract_address }}
+            Users may need higher gas limits or contract is inefficient.
+          runbook: "Review contract gas consumption, update documentation with recommended gas limits"
+
+      # WASM instantiation failures
+      - alert: WasmInstantiationFailures
+        expr: |
+          increase(aura_wasm_instantiation_failures_total[10m]) > 5
+        for: 5m
+        labels:
+          severity: high
+          component: wasm
+          category: instantiation
+        annotations:
+          summary: "Multiple WASM contract instantiation failures"
+          description: |
+            {{ $value }} instantiation failures in last 10 minutes
+            Code ID: {{ $labels.code_id }}
+            Error: {{ $labels.error_type }}
+            May indicate malformed contract code or system issues.
+          runbook: "Check code ID {{ $labels.code_id }}, verify contract binary, check contract registry"
+
+      # WASM circuit breaker open
+      - alert: WasmCircuitBreakerOpen
+        expr: |
+          aura_wasm_circuit_breaker_state{state="open"} == 1
+        for: 1m
+        labels:
+          severity: critical
+          component: wasm
+          category: circuit_breaker
+        annotations:
+          summary: "WASM circuit breaker is OPEN - registry integration degraded"
+          description: |
+            WASM circuit breaker has opened due to repeated failures in contract registry integration.
+            System is in permissive mode. Contract validation may be bypassed.
+          runbook: "Check contract registry health, inspect circuit breaker logs, consider manual reset"
+
+      # WASM validation cache hit rate low
+      - alert: WasmValidationCacheLow
+        expr: |
+          (
+            rate(aura_wasm_validation_cache_hits_total[5m])
+            /
+            clamp_min(rate(aura_wasm_validation_cache_total[5m]), 0.0001)
+          ) < 0.5
+        for: 10m
+        labels:
+          severity: warning
+          component: wasm
+          category: performance
+        annotations:
+          summary: "WASM validation cache hit rate below 50%"
+          description: |
+            Cache hit rate: {{ $value | humanizePercentage }}
+            Low cache efficiency may increase latency and load.
+          runbook: "Monitor cache size, check for cache eviction issues, review cache TTL settings"
+
+  # =========================================================================
+  # State Load Error Monitoring
+  # =========================================================================
+  - name: state_load_alerts
+    interval: 30s
+    rules:
+      # State load errors detected (any)
+      - alert: StateLoadErrorsDetected
+        expr: |
+          rate(aura_state_load_errors_total[5m]) > 0
+        for: 2m
+        labels:
+          severity: critical
+          component: state
+          category: data_integrity
+        annotations:
+          summary: "State load errors detected - data corruption risk"
+          description: |
+            State load error rate: {{ $value | humanize }} per second
+            Module: {{ $labels.module }}
+            Store: {{ $labels.store }}
+            Error Type: {{ $labels.error_type }}
+            This indicates database corruption or unmarshaling failures.
+          runbook: "URGENT: Check database integrity, inspect unmarshal errors, verify protobuf definitions"
+
+      # State load errors by module
+      - alert: StateLoadErrorsByModule
+        expr: |
+          increase(aura_state_load_errors_total[10m]) > 3
+        for: 5m
+        labels:
+          severity: high
+          component: state
+          category: module_error
+        annotations:
+          summary: "Repeated state load errors in module {{ $labels.module }}"
+          description: |
+            {{ $value }} state load errors in module {{ $labels.module }}
+            Store: {{ $labels.store }}
+            Error: {{ $labels.error_type }}
+            May indicate schema mismatch or data corruption.
+          runbook: "Check module {{ $labels.module }} state schema, verify migration status, inspect store"
+
+      # Unmarshal failures (silent data loss risk)
+      - alert: UnmarshalFailuresDetected
+        expr: |
+          rate(aura_unmarshal_errors_total[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+          component: state
+          category: unmarshal
+        annotations:
+          summary: "Protobuf unmarshal failures detected"
+          description: |
+            Unmarshal error rate: {{ $value | humanize }} per second
+            Module: {{ $labels.module }}
+            Type: {{ $labels.proto_type }}
+            Silent unmarshal failures can cause data loss or corruption.
+          runbook: "CRITICAL: Check protobuf definitions, verify data format, inspect error logs"
+
+      # State corruption in specific store
+      - alert: StateCorruptionInStore
+        expr: |
+          increase(aura_state_corruption_total{store!=""}[10m]) > 1
+        for: 5m
+        labels:
+          severity: critical
+          component: state
+          category: corruption
+        annotations:
+          summary: "State corruption detected in {{ $labels.store }} store"
+          description: |
+            {{ $value }} corruption events in store {{ $labels.store }}
+            Module: {{ $labels.module }}
+            This requires immediate investigation and may need rollback.
+          runbook: "EMERGENCY: Stop writes to {{ $labels.store }}, assess damage, prepare state recovery"
+
+      # KVStore iteration errors
+      - alert: KVStoreIterationErrors
+        expr: |
+          rate(aura_kvstore_iteration_errors_total[5m]) > 0.01
+        for: 5m
+        labels:
+          severity: high
+          component: state
+          category: iterator
+        annotations:
+          summary: "KVStore iteration errors occurring"
+          description: |
+            Iterator error rate: {{ $value | humanize }} per second
+            Store: {{ $labels.store }}
+            May indicate corrupted keys or malformed data.
+          runbook: "Check store integrity, verify key format, inspect iterator logs"
+
+  # =========================================================================
+  # Signature Verification Mismatch Monitoring
+  # =========================================================================
+  - name: signature_verification_alerts
+    interval: 30s
+    rules:
+      # Signature mismatch rate above threshold
+      - alert: SignatureMismatchRateHigh
+        expr: |
+          (
+            rate(aura_bridge_signature_mismatches_total[5m])
+            /
+            clamp_min(rate(aura_bridge_signature_verifications_total[5m]), 0.0001)
+          ) > 0.01
+        for: 5m
+        labels:
+          severity: high
+          component: bridge
+          category: signature_verification
+        annotations:
+          summary: "Bridge signature mismatch rate exceeds 1%"
+          description: |
+            Signature mismatch rate: {{ $value | humanizePercentage }} (threshold: 1%)
+            Chain: {{ $labels.chain }}
+            Signature Type: {{ $labels.signature_type }}
+            High mismatch rates may indicate attack attempts or wallet incompatibility.
+          runbook: "Investigate signature format, check for replay attacks, verify wallet implementations"
+
+      # Signature verification failures for specific chain
+      - alert: SignatureFailuresByChain
+        expr: |
+          (
+            rate(aura_bridge_signature_mismatches_total{chain!=""}[5m])
+            /
+            clamp_min(rate(aura_bridge_signature_verifications_total{chain!=""}[5m]), 0.0001)
+          ) > 0.05
+        for: 3m
+        labels:
+          severity: critical
+          component: bridge
+          category: chain_signature
+        annotations:
+          summary: "High signature failure rate for {{ $labels.chain }} chain"
+          description: |
+            {{ $labels.chain }} signature mismatch rate: {{ $value | humanizePercentage }}
+            This chain may have signature format incompatibilities or be under attack.
+          runbook: "Check {{ $labels.chain }} signature implementation, verify recovery ID handling"
+
+      # PAW signature verification failures
+      - alert: PawSignatureFailures
+        expr: |
+          increase(aura_bridge_signature_mismatches_total{chain="paw"}[10m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          component: bridge
+          category: paw_signature
+        annotations:
+          summary: "Multiple PAW signature verification failures"
+          description: |
+            {{ $value }} PAW signature failures in last 10 minutes
+            May indicate wallet incompatibility or attack attempts.
+          runbook: "Check PAW wallet signature format, verify message formatting, inspect recovery ID"
+
+      # XAI signature verification failures
+      - alert: XaiSignatureFailures
+        expr: |
+          increase(aura_bridge_signature_mismatches_total{chain="xai"}[10m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          component: bridge
+          category: xai_signature
+        annotations:
+          summary: "Multiple XAI signature verification failures"
+          description: |
+            {{ $value }} XAI signature failures in last 10 minutes
+            May indicate wallet incompatibility or attack attempts.
+          runbook: "Check XAI wallet signature format, verify message formatting, inspect recovery ID"
+
+      # Invalid recovery ID in signatures
+      - alert: InvalidRecoveryIDDetected
+        expr: |
+          rate(aura_bridge_invalid_recovery_id_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: high
+          component: bridge
+          category: recovery_id
+        annotations:
+          summary: "Invalid recovery IDs in signature verification"
+          description: |
+            Invalid recovery ID rate: {{ $value | humanize }} per second
+            Chain: {{ $labels.chain }}
+            Indicates malformed signatures or incompatible wallet implementations.
+          runbook: "Check wallet signature format, verify recovery ID encoding (27 offset handling)"
+
+      # Public key recovery failures
+      - alert: PubKeyRecoveryFailures
+        expr: |
+          (
+            rate(aura_bridge_pubkey_recovery_failures_total[5m])
+            /
+            clamp_min(rate(aura_bridge_signature_verifications_total[5m]), 0.0001)
+          ) > 0.02
+        for: 5m
+        labels:
+          severity: high
+          component: bridge
+          category: pubkey_recovery
+        annotations:
+          summary: "High rate of public key recovery failures"
+          description: |
+            Public key recovery failure rate: {{ $value | humanizePercentage }}
+            Chain: {{ $labels.chain }}
+            May indicate corrupted signatures or ECDSA implementation issues.
+          runbook: "Check ECDSA recovery implementation, verify signature R/S components"
+
+      # Signature verification performance degradation
+      - alert: SignatureVerificationSlow
+        expr: |
+          histogram_quantile(0.95,
+            rate(aura_bridge_signature_verification_duration_seconds_bucket[5m])
+          ) > 0.1
+        for: 10m
+        labels:
+          severity: warning
+          component: bridge
+          category: performance
+        annotations:
+          summary: "Signature verification is slow"
+          description: |
+            95th percentile verification time: {{ $value | humanizeDuration }}
+            This may impact transaction processing throughput.
+          runbook: "Check for CPU contention, optimize signature verification code, consider caching"
+
+  # =========================================================================
+  # Cross-Module Security Alerts
+  # =========================================================================
+  - name: cross_module_security_alerts
+    interval: 30s
+    rules:
+      # Combined failures across WASM, state, and signatures
+      - alert: MultipleSubsystemFailures
+        expr: |
+          (
+            (rate(aura_wasm_tx_failures_total[5m]) > 1) +
+            (rate(aura_state_load_errors_total[5m]) > 0) +
+            (rate(aura_bridge_signature_mismatches_total[5m]) > 1)
+          ) >= 2
+        for: 5m
+        labels:
+          severity: critical
+          component: system
+          category: multi_failure
+        annotations:
+          summary: "Multiple subsystem failures detected simultaneously"
+          description: |
+            Multiple critical subsystems are experiencing failures:
+            - WASM failures: {{ $labels.wasm_failures }}
+            - State errors: {{ $labels.state_errors }}
+            - Signature mismatches: {{ $labels.signature_errors }}
+            This may indicate a coordinated attack or systemic issue.
+          runbook: "EMERGENCY: Assess system health, consider activating incident response, check for attacks"
+
+      # Registry integration degraded
+      - alert: RegistryIntegrationDegraded
+        expr: |
+          aura_wasm_registry_errors_total > 0 or
+          aura_wasm_circuit_breaker_state{state="open"} == 1
+        for: 3m
+        labels:
+          severity: high
+          component: wasm
+          category: registry
+        annotations:
+          summary: "Contract registry integration is degraded"
+          description: |
+            Registry errors or circuit breaker activation detected.
+            Contract validation may be operating in permissive mode.
+          runbook: "Check contract registry module, verify keeper initialization, inspect error logs"
+
+      # Data integrity issues across modules
+      - alert: DataIntegrityIssues
+        expr: |
+          (
+            rate(aura_state_load_errors_total[10m]) +
+            rate(aura_unmarshal_errors_total[10m]) +
+            rate(aura_state_corruption_total[10m])
+          ) > 0.1
+        for: 5m
+        labels:
+          severity: critical
+          component: state
+          category: data_integrity
+        annotations:
+          summary: "Multiple data integrity issues detected"
+          description: |
+            Combined error rate: {{ $value | humanize }} per second
+            State load errors, unmarshal failures, or corruption detected.
+            Data integrity is compromised - immediate action required.
+          runbook: "CRITICAL: Stop writes, assess data corruption extent, initiate recovery procedures"
