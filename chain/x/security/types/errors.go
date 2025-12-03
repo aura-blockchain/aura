@@ -84,4 +84,7 @@ var (
 	ErrConfidentialTxFailed = errors.Register(ModuleName, 115, "confidential transaction failed")
 	ErrViewKeyInvalid     = errors.Register(ModuleName, 116, "view key invalid")
 	ErrMixingFeeRequired  = errors.Register(ModuleName, 117, "mixing fee required")
+
+	// Security guard errors (130-149)
+	ErrReentrancyDetected = errors.Register(ModuleName, 130, "reentrancy attack detected")
 )

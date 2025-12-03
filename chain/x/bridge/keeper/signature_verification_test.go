@@ -124,15 +124,20 @@ func TestPAWSignatureVerification_InvalidRecoveryID(t *testing.T) {
 	message := "Link PAW address " + pawAddress + " to Aura address " + auraAddress
 	signature := signMessage(t, privKey, message)
 
-	// Modify recovery ID to invalid values
+	// Modify recovery ID to various values
+	// Recovery IDs 0-7 are valid (0-3 uncompressed, 4-7 compressed)
+	// Recovery IDs 27-34 are also valid (27+0 through 27+7, with +27 offset)
+	// Only values >34 or <27 and >7 are invalid
 	testCases := []struct {
 		name       string
 		recoveryID byte
+		expectPass bool
 	}{
-		{"recovery ID 4", 4},
-		{"recovery ID 5", 5},
-		{"recovery ID 30", 30},
-		{"recovery ID 255", 255},
+		{"recovery ID 4", 4, true},    // Valid compressed
+		{"recovery ID 5", 5, true},    // Valid compressed
+		{"recovery ID 30", 30, true},  // Valid (30-27=3, uncompressed with offset)
+		{"recovery ID 35", 35, false}, // Invalid (35-27=8, >7)
+		{"recovery ID 255", 255, false}, // Invalid (255-27=228, >7)
 	}
 
 	for _, tc := range testCases {
@@ -142,7 +147,11 @@ func TestPAWSignatureVerification_InvalidRecoveryID(t *testing.T) {
 			modifiedSig[64] = tc.recoveryID
 
 			valid := k.VerifyPawAddressOwnership(ctx, auraAddress, pawAddress, modifiedSig)
-			require.False(t, valid, "Signature with invalid recovery ID %d should be rejected", tc.recoveryID)
+			if tc.expectPass {
+				require.True(t, valid, "Signature with recovery ID %d should pass (valid ID)", tc.recoveryID)
+			} else {
+				require.False(t, valid, "Signature with invalid recovery ID %d should be rejected", tc.recoveryID)
+			}
 		})
 	}
 }

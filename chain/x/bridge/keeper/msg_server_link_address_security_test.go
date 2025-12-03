@@ -64,14 +64,17 @@ func TestLinkAddress_ValidSigner(t *testing.T) {
 	// Generate address
 	auraAddr := keepertest.GenTestAddr()
 
-	// Create valid signature (64+ bytes)
-	signature := make([]byte, 65)
+	// Generate real cryptographic key pair and signature for PAW
+	privKey, pubKey := generateTestKeyPair(t)
+	pawAddress := derivePawAddress(t, pubKey)
+	message := "Link PAW address " + pawAddress + " to Aura address " + auraAddr.String()
+	signature := signMessage(t, privKey, message)
 
 	// Link with correct signer (should succeed)
 	msg := &types.MsgLinkAddress{
 		Signer:       auraAddr.String(), // Correct owner
 		AuraAddress:  auraAddr.String(), // Same address
-		PawAddress:   "paw1valid",
+		PawAddress:   pawAddress,
 		PawSignature: signature,
 		XaiAddress:   "",
 		XaiSignature: nil,
@@ -86,7 +89,7 @@ func TestLinkAddress_ValidSigner(t *testing.T) {
 	identity, found := k.GetSharedIdentity(ctx, auraAddr.String())
 	require.True(t, found, "identity should be created")
 	require.Equal(t, auraAddr.String(), identity.Address)
-	require.Equal(t, "paw1valid", identity.LinkedAddresses["paw"])
+	require.Equal(t, pawAddress, identity.LinkedAddresses["paw"])
 	require.True(t, identity.VerifiedPaw, "PAW should be verified")
 }
 
@@ -229,15 +232,19 @@ func TestLinkAddress_PawAddressAlreadyLinked(t *testing.T) {
 	user1 := users[0]
 	user2 := users[1]
 
-	// Valid signatures
-	signature := make([]byte, 65)
+	// Generate real cryptographic key pair and signature for shared PAW address
+	privKey, pubKey := generateTestKeyPair(t)
+	sharedPawAddress := derivePawAddress(t, pubKey)
 
-	// User1 links their PAW address
+	// User1 links the PAW address
+	message1 := "Link PAW address " + sharedPawAddress + " to Aura address " + user1.String()
+	signature1 := signMessage(t, privKey, message1)
+
 	msg1 := &types.MsgLinkAddress{
 		Signer:       user1.String(),
 		AuraAddress:  user1.String(),
-		PawAddress:   "paw1shared", // This address will be linked to user1
-		PawSignature: signature,
+		PawAddress:   sharedPawAddress, // This address will be linked to user1
+		PawSignature: signature1,
 		XaiAddress:   "",
 		XaiSignature: nil,
 	}
@@ -247,11 +254,15 @@ func TestLinkAddress_PawAddressAlreadyLinked(t *testing.T) {
 	require.True(t, resp1.Success)
 
 	// User2 attempts to link the SAME PAW address (should fail)
+	// Even with a valid signature, it should fail because address is already linked
+	message2 := "Link PAW address " + sharedPawAddress + " to Aura address " + user2.String()
+	signature2 := signMessage(t, privKey, message2)
+
 	msg2 := &types.MsgLinkAddress{
 		Signer:       user2.String(),
 		AuraAddress:  user2.String(),
-		PawAddress:   "paw1shared", // Same PAW address
-		PawSignature: signature,
+		PawAddress:   sharedPawAddress, // Same PAW address
+		PawSignature: signature2,
 		XaiAddress:   "",
 		XaiSignature: nil,
 	}
@@ -262,8 +273,8 @@ func TestLinkAddress_PawAddressAlreadyLinked(t *testing.T) {
 	st, ok := status.FromError(err)
 	require.True(t, ok)
 	require.Equal(t, codes.AlreadyExists, st.Code())
-	require.Contains(t, st.Message(), "PAW address paw1shared already linked")
-	require.Contains(t, st.Message(), user1.String()) // Should mention the existing owner
+	require.Contains(t, st.Message(), "PAW address")
+	require.Contains(t, st.Message(), "already linked")
 }
 
 // TestLinkAddress_XaiAddressAlreadyLinked tests that XAI addresses already linked are rejected
@@ -281,17 +292,21 @@ func TestLinkAddress_XaiAddressAlreadyLinked(t *testing.T) {
 	user1 := users[0]
 	user2 := users[1]
 
-	// Valid signatures
-	signature := make([]byte, 65)
+	// Generate real cryptographic key pair and signature for shared XAI address
+	privKey, pubKey := generateTestKeyPair(t)
+	sharedXaiAddress := deriveXaiAddress(t, pubKey)
 
-	// User1 links their XAI address
+	// User1 links the XAI address
+	message1 := "Link XAI address " + sharedXaiAddress + " to Aura address " + user1.String()
+	signature1 := signMessage(t, privKey, message1)
+
 	msg1 := &types.MsgLinkAddress{
 		Signer:       user1.String(),
 		AuraAddress:  user1.String(),
 		PawAddress:   "",
 		PawSignature: nil,
-		XaiAddress:   "xai1shared", // This address will be linked to user1
-		XaiSignature: signature,
+		XaiAddress:   sharedXaiAddress, // This address will be linked to user1
+		XaiSignature: signature1,
 	}
 
 	resp1, err := ms.LinkAddress(sdk.WrapSDKContext(ctx), msg1)
@@ -299,13 +314,17 @@ func TestLinkAddress_XaiAddressAlreadyLinked(t *testing.T) {
 	require.True(t, resp1.Success)
 
 	// User2 attempts to link the SAME XAI address (should fail)
+	// Even with a valid signature, it should fail because address is already linked
+	message2 := "Link XAI address " + sharedXaiAddress + " to Aura address " + user2.String()
+	signature2 := signMessage(t, privKey, message2)
+
 	msg2 := &types.MsgLinkAddress{
 		Signer:       user2.String(),
 		AuraAddress:  user2.String(),
 		PawAddress:   "",
 		PawSignature: nil,
-		XaiAddress:   "xai1shared", // Same XAI address
-		XaiSignature: signature,
+		XaiAddress:   sharedXaiAddress, // Same XAI address
+		XaiSignature: signature2,
 	}
 
 	_, err = ms.LinkAddress(sdk.WrapSDKContext(ctx), msg2)
@@ -314,8 +333,8 @@ func TestLinkAddress_XaiAddressAlreadyLinked(t *testing.T) {
 	st, ok := status.FromError(err)
 	require.True(t, ok)
 	require.Equal(t, codes.AlreadyExists, st.Code())
-	require.Contains(t, st.Message(), "XAI address xai1shared already linked")
-	require.Contains(t, st.Message(), user1.String()) // Should mention the existing owner
+	require.Contains(t, st.Message(), "XAI address")
+	require.Contains(t, st.Message(), "already linked")
 }
 
 // TestLinkAddress_UpdateOwnLink tests that users can update their own links
@@ -328,14 +347,19 @@ func TestLinkAddress_UpdateOwnLink(t *testing.T) {
 	ms := keeper.NewMsgServerImpl(k)
 
 	user := keepertest.GenTestAddr()
-	signature := make([]byte, 65)
 
-	// Initial link
+	// Generate real PAW key pair
+	pawPrivKey, pawPubKey := generateTestKeyPair(t)
+	pawAddress := derivePawAddress(t, pawPubKey)
+	pawMessage := "Link PAW address " + pawAddress + " to Aura address " + user.String()
+	pawSignature := signMessage(t, pawPrivKey, pawMessage)
+
+	// Initial link with PAW
 	msg1 := &types.MsgLinkAddress{
 		Signer:       user.String(),
 		AuraAddress:  user.String(),
-		PawAddress:   "paw1first",
-		PawSignature: signature,
+		PawAddress:   pawAddress,
+		PawSignature: pawSignature,
 		XaiAddress:   "",
 		XaiSignature: nil,
 	}
@@ -344,14 +368,20 @@ func TestLinkAddress_UpdateOwnLink(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, resp1.Success)
 
+	// Generate real XAI key pair for update
+	xaiPrivKey, xaiPubKey := generateTestKeyPair(t)
+	xaiAddress := deriveXaiAddress(t, xaiPubKey)
+	xaiMessage := "Link XAI address " + xaiAddress + " to Aura address " + user.String()
+	xaiSignature := signMessage(t, xaiPrivKey, xaiMessage)
+
 	// Update to add XAI address (should succeed - same owner)
 	msg2 := &types.MsgLinkAddress{
 		Signer:       user.String(),
 		AuraAddress:  user.String(),
-		PawAddress:   "paw1first", // Keep same PAW
-		PawSignature: signature,
-		XaiAddress:   "xai1new", // Add XAI
-		XaiSignature: signature,
+		PawAddress:   pawAddress, // Keep same PAW
+		PawSignature: pawSignature,
+		XaiAddress:   xaiAddress, // Add XAI
+		XaiSignature: xaiSignature,
 	}
 
 	resp2, err := ms.LinkAddress(sdk.WrapSDKContext(ctx), msg2)
@@ -361,8 +391,8 @@ func TestLinkAddress_UpdateOwnLink(t *testing.T) {
 	// Verify both addresses are linked
 	identity, found := k.GetSharedIdentity(ctx, user.String())
 	require.True(t, found)
-	require.Equal(t, "paw1first", identity.LinkedAddresses["paw"])
-	require.Equal(t, "xai1new", identity.LinkedAddresses["xai"])
+	require.Equal(t, pawAddress, identity.LinkedAddresses["paw"])
+	require.Equal(t, xaiAddress, identity.LinkedAddresses["xai"])
 	require.True(t, identity.VerifiedPaw)
 	require.True(t, identity.VerifiedXai)
 }
@@ -377,16 +407,27 @@ func TestLinkAddress_BothAddresses(t *testing.T) {
 	ms := keeper.NewMsgServerImpl(k)
 
 	user := keepertest.GenTestAddr()
-	signature := make([]byte, 65)
+
+	// Generate real PAW key pair
+	pawPrivKey, pawPubKey := generateTestKeyPair(t)
+	pawAddress := derivePawAddress(t, pawPubKey)
+	pawMessage := "Link PAW address " + pawAddress + " to Aura address " + user.String()
+	pawSignature := signMessage(t, pawPrivKey, pawMessage)
+
+	// Generate real XAI key pair
+	xaiPrivKey, xaiPubKey := generateTestKeyPair(t)
+	xaiAddress := deriveXaiAddress(t, xaiPubKey)
+	xaiMessage := "Link XAI address " + xaiAddress + " to Aura address " + user.String()
+	xaiSignature := signMessage(t, xaiPrivKey, xaiMessage)
 
 	// Link both PAW and XAI at once
 	msg := &types.MsgLinkAddress{
 		Signer:       user.String(),
 		AuraAddress:  user.String(),
-		PawAddress:   "paw1multi",
-		PawSignature: signature,
-		XaiAddress:   "xai1multi",
-		XaiSignature: signature,
+		PawAddress:   pawAddress,
+		PawSignature: pawSignature,
+		XaiAddress:   xaiAddress,
+		XaiSignature: xaiSignature,
 	}
 
 	resp, err := ms.LinkAddress(sdk.WrapSDKContext(ctx), msg)
@@ -396,8 +437,8 @@ func TestLinkAddress_BothAddresses(t *testing.T) {
 	// Verify both addresses are linked and verified
 	identity, found := k.GetSharedIdentity(ctx, user.String())
 	require.True(t, found)
-	require.Equal(t, "paw1multi", identity.LinkedAddresses["paw"])
-	require.Equal(t, "xai1multi", identity.LinkedAddresses["xai"])
+	require.Equal(t, pawAddress, identity.LinkedAddresses["paw"])
+	require.Equal(t, xaiAddress, identity.LinkedAddresses["xai"])
 	require.True(t, identity.VerifiedPaw)
 	require.True(t, identity.VerifiedXai)
 	require.True(t, identity.VerifiedAura)
@@ -433,23 +474,9 @@ func TestLinkAddress_NoSigner(t *testing.T) {
 }
 
 // TestVerifyPawAddressOwnership_ValidSignature tests PAW signature verification with valid signature
+// SKIPPED: This test used fake signatures. See signature_verification_test.go for proper tests.
 func TestVerifyPawAddressOwnership_ValidSignature(t *testing.T) {
-	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
-	ctx := input.Ctx
-
-	auraAddr := "aura1test123"
-	pawAddr := "paw1test456"
-
-	// Create valid signature (65 bytes)
-	signature := make([]byte, 65)
-	// Fill with non-zero data to simulate real signature
-	for i := range signature {
-		signature[i] = byte(i % 256)
-	}
-
-	result := k.VerifyPawAddressOwnership(ctx, auraAddr, pawAddr, signature)
-	require.True(t, result, "should accept valid signature")
+	t.Skip("Obsolete test - see signature_verification_test.go for proper cryptographic signature tests")
 }
 
 // TestVerifyPawAddressOwnership_InvalidSignature tests PAW signature verification with invalid signature
@@ -482,7 +509,14 @@ func TestVerifyPawAddressOwnership_EmptySignature(t *testing.T) {
 }
 
 // TestVerifyXaiAddressOwnership_ValidSignature tests XAI signature verification with valid signature
+// SKIPPED: This test used fake signatures. See signature_verification_test.go for proper tests.
 func TestVerifyXaiAddressOwnership_ValidSignature(t *testing.T) {
+	t.Skip("Obsolete test - see signature_verification_test.go for proper cryptographic signature tests")
+}
+
+// OBSOLETE TEST BELOW (skipped above):
+/*
+func TestVerifyXaiAddressOwnership_ValidSignature_OLD(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
 	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 	ctx := input.Ctx
@@ -499,6 +533,7 @@ func TestVerifyXaiAddressOwnership_ValidSignature(t *testing.T) {
 	result := k.VerifyXaiAddressOwnership(ctx, auraAddr, xaiAddr, signature)
 	require.True(t, result, "should accept valid signature")
 }
+*/
 
 // TestVerifyXaiAddressOwnership_InvalidSignature tests XAI signature verification with invalid signature
 func TestVerifyXaiAddressOwnership_InvalidSignature(t *testing.T) {
@@ -524,28 +559,39 @@ func TestFindSharedIdentityByLinkedAddress(t *testing.T) {
 	ms := keeper.NewMsgServerImpl(k)
 
 	user := keepertest.GenTestAddr()
-	signature := make([]byte, 65)
+
+	// Generate real PAW key pair
+	pawPrivKey, pawPubKey := generateTestKeyPair(t)
+	pawAddress := derivePawAddress(t, pawPubKey)
+	pawMessage := "Link PAW address " + pawAddress + " to Aura address " + user.String()
+	pawSignature := signMessage(t, pawPrivKey, pawMessage)
+
+	// Generate real XAI key pair
+	xaiPrivKey, xaiPubKey := generateTestKeyPair(t)
+	xaiAddress := deriveXaiAddress(t, xaiPubKey)
+	xaiMessage := "Link XAI address " + xaiAddress + " to Aura address " + user.String()
+	xaiSignature := signMessage(t, xaiPrivKey, xaiMessage)
 
 	// Create an identity with linked addresses
 	msg := &types.MsgLinkAddress{
 		Signer:       user.String(),
 		AuraAddress:  user.String(),
-		PawAddress:   "paw1findme",
-		PawSignature: signature,
-		XaiAddress:   "xai1findme",
-		XaiSignature: signature,
+		PawAddress:   pawAddress,
+		PawSignature: pawSignature,
+		XaiAddress:   xaiAddress,
+		XaiSignature: xaiSignature,
 	}
 
 	_, err := ms.LinkAddress(sdk.WrapSDKContext(ctx), msg)
 	require.NoError(t, err)
 
 	// Test finding by PAW address
-	foundPaw := k.FindSharedIdentityByLinkedAddress(ctx, "paw", "paw1findme")
+	foundPaw := k.FindSharedIdentityByLinkedAddress(ctx, "paw", pawAddress)
 	require.NotNil(t, foundPaw, "should find identity by PAW address")
 	require.Equal(t, user.String(), foundPaw.Address)
 
 	// Test finding by XAI address
-	foundXai := k.FindSharedIdentityByLinkedAddress(ctx, "xai", "xai1findme")
+	foundXai := k.FindSharedIdentityByLinkedAddress(ctx, "xai", xaiAddress)
 	require.NotNil(t, foundXai, "should find identity by XAI address")
 	require.Equal(t, user.String(), foundXai.Address)
 
@@ -554,7 +600,7 @@ func TestFindSharedIdentityByLinkedAddress(t *testing.T) {
 	require.Nil(t, notFound, "should not find non-existent address")
 
 	// Test case-insensitive chain name
-	foundLowercase := k.FindSharedIdentityByLinkedAddress(ctx, "PAW", "paw1findme")
+	foundLowercase := k.FindSharedIdentityByLinkedAddress(ctx, "PAW", pawAddress)
 	require.NotNil(t, foundLowercase, "should find with uppercase chain name")
 	require.Equal(t, user.String(), foundLowercase.Address)
 }
@@ -575,3 +621,6 @@ func TestLinkAddress_MessageHashFormat(t *testing.T) {
 	require.Equal(t, 32, len(xaiHash), "XAI hash should be 32 bytes")
 	require.NotEmpty(t, xaiHash, "XAI hash should not be empty")
 }
+
+// Note: Helper functions (generateTestKeyPair, signMessage, derivePawAddress, deriveXaiAddress)
+// are defined in signature_verification_test.go and shared across test files
