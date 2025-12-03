@@ -6,7 +6,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 
 	"github.com/aequitas/aura/chain/x/compliance/keeper"
 	"github.com/aequitas/aura/chain/x/compliance/types"
@@ -19,14 +18,7 @@ func TestMonitoredBankKeeper_SendCoins_Allowed(t *testing.T) {
 	complianceKeeper := keeper.NewKeeper(complianceInput.Cdc, complianceInput.StoreKey)
 
 	bankInput := keepertest.CreateTestInputWithKeys(t, "bank")
-	baseBankKeeper := bankkeeper.NewBaseKeeper(
-		bankInput.Cdc,
-		keepertest.WrapStoreService(bankInput.StoreKey),
-		nil, // account keeper not needed for this test
-		nil, // blocked addresses
-		"",  // authority
-		keepertest.Logger(),
-	)
+	baseBankKeeper := keepertest.BankKeeperWithMockAccountKeeper(t, bankInput)
 
 	// Create monitored bank keeper
 	monitoredKeeper := keeper.NewMonitoredBankKeeper(baseBankKeeper, complianceKeeper)
@@ -69,14 +61,7 @@ func TestMonitoredBankKeeper_SendCoins_Blocked_Sanctions(t *testing.T) {
 	complianceKeeper := keeper.NewKeeper(complianceInput.Cdc, complianceInput.StoreKey)
 
 	bankInput := keepertest.CreateTestInputWithKeys(t, "bank")
-	baseBankKeeper := bankkeeper.NewBaseKeeper(
-		bankInput.Cdc,
-		keepertest.WrapStoreService(bankInput.StoreKey),
-		nil,
-		nil,
-		"",
-		keepertest.Logger(),
-	)
+	baseBankKeeper := keepertest.BankKeeperWithMockAccountKeeper(t, bankInput)
 
 	monitoredKeeper := keeper.NewMonitoredBankKeeper(baseBankKeeper, complianceKeeper)
 
@@ -122,14 +107,7 @@ func TestMonitoredBankKeeper_SendCoins_Blocked_LargeTransaction(t *testing.T) {
 	complianceKeeper := keeper.NewKeeper(complianceInput.Cdc, complianceInput.StoreKey)
 
 	bankInput := keepertest.CreateTestInputWithKeys(t, "bank")
-	baseBankKeeper := bankkeeper.NewBaseKeeper(
-		bankInput.Cdc,
-		keepertest.WrapStoreService(bankInput.StoreKey),
-		nil,
-		nil,
-		"",
-		keepertest.Logger(),
-	)
+	baseBankKeeper := keepertest.BankKeeperWithMockAccountKeeper(t, bankInput)
 
 	monitoredKeeper := keeper.NewMonitoredBankKeeper(baseBankKeeper, complianceKeeper)
 
@@ -176,14 +154,7 @@ func TestGetModuleAddress(t *testing.T) {
 	complianceKeeper := keeper.NewKeeper(complianceInput.Cdc, complianceInput.StoreKey)
 
 	bankInput := keepertest.CreateTestInputWithKeys(t, "bank")
-	baseBankKeeper := bankkeeper.NewBaseKeeper(
-		bankInput.Cdc,
-		keepertest.WrapStoreService(bankInput.StoreKey),
-		nil,
-		nil,
-		"",
-		keepertest.Logger(),
-	)
+	baseBankKeeper := keepertest.BankKeeperWithMockAccountKeeper(t, bankInput)
 
 	monitoredKeeper := keeper.NewMonitoredBankKeeper(baseBankKeeper, complianceKeeper)
 

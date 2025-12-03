@@ -37,6 +37,7 @@ func TestSubmitKYC_SignerVerification(t *testing.T) {
 			KycLevel:      types.KYCLevel_KYC_LEVEL_BASIC,
 			Provider:      unauthorizedAddr,
 			PiiCommitment: makePiiCommitment("test"),
+			Jurisdiction:  "US", // Required: ISO 3166-1 alpha-2 country code
 		}
 		_, err := server.SubmitKYC(sdk.WrapSDKContext(ctx), req)
 		require.Error(t, err)
@@ -62,6 +63,7 @@ func TestSubmitKYC_SignerVerification(t *testing.T) {
 			KycLevel:      types.KYCLevel_KYC_LEVEL_BASIC,
 			Provider:      "invalid-bech32-address",
 			PiiCommitment: makePiiCommitment("test"),
+			Jurisdiction:  "US", // Required: ISO 3166-1 alpha-2 country code
 		}
 		_, err := server.SubmitKYC(sdk.WrapSDKContext(ctx), req)
 		require.Error(t, err)
@@ -388,6 +390,7 @@ func TestKYCProviderAuthorization_Integration(t *testing.T) {
 			KycLevel:      types.KYCLevel_KYC_LEVEL_BASIC,
 			Provider:      unauthorizedAddr,
 			PiiCommitment: makePiiCommitment("test"),
+			Jurisdiction:  "US", // Required: ISO 3166-1 alpha-2 country code
 		}
 		_, err := server.SubmitKYC(sdk.WrapSDKContext(ctx), req)
 		require.Error(t, err)
@@ -405,6 +408,7 @@ func TestKYCProviderAuthorization_Integration(t *testing.T) {
 			KycLevel:      types.KYCLevel_KYC_LEVEL_BASIC,
 			Provider:      providerAddr,
 			PiiCommitment: makePiiCommitment("test"),
+			Jurisdiction:  "US", // Required: ISO 3166-1 alpha-2 country code
 		}
 		_, err = server.SubmitKYC(sdk.WrapSDKContext(ctx), req)
 		require.Error(t, err)

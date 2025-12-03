@@ -13,10 +13,14 @@ import (
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/codec/address"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	runtime "github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
+	banktestutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 )
 
 // TestKeepers holds all keeper instances for integration testing
@@ -198,6 +202,54 @@ func WrapStoreService(storeKey *storetypes.KVStoreKey) corestore.KVStoreService 
 // Logger returns a no-op logger for testing
 func Logger() log.Logger {
 	return log.NewNopLogger()
+}
+
+// BankKeeperWithMockAccountKeeper creates a bank keeper for testing with a mock account keeper.
+// This properly initializes all required dependencies to avoid nil pointer dereferences.
+// Note: This returns a basic bank keeper. For full functionality in tests, you may need
+// to set up actual account balances and other prerequisites.
+func BankKeeperWithMockAccountKeeper(t testing.TB, testInput TestInput) bankkeeper.BaseKeeper {
+	t.Helper()
+
+	// Ensure SDK is configured with Aura prefixes before creating addresses
+	ConfigureSDK()
+
+	// Create a mock controller for the account keeper
+	ctrl := gomock.NewController(t)
+	mockAccountKeeper := banktestutil.NewMockAccountKeeper(ctrl)
+
+	// Mock the AddressCodec to return a Bech32Codec that can handle authority strings
+	// The SDK requires this to validate the authority address in NewBaseKeeper
+	addressCodec := address.NewBech32Codec("aura")
+	mockAccountKeeper.EXPECT().
+		AddressCodec().
+		Return(addressCodec).
+		AnyTimes()
+
+	// Allow GetAccount to be called without expectations (will return zero value)
+	// This is needed for bank keeper operations that check account existence
+	mockAccountKeeper.EXPECT().
+		GetAccount(gomock.Any(), gomock.Any()).
+		Return(nil).
+		AnyTimes()
+
+	// Generate a valid authority address using the module name pattern
+	// This creates a deterministic module address that passes bech32 validation
+	authorityAddr := sdk.AccAddress([]byte("governance_module_addr")).String()
+
+	// Create the bank keeper with the mock account keeper
+	// Note: This uses the first store key from testInput, so if you need bank module
+	// functionality, ensure the context has the bank store mounted
+	baseBankKeeper := bankkeeper.NewBaseKeeper(
+		testInput.Cdc,
+		WrapStoreService(testInput.StoreKey),
+		mockAccountKeeper,
+		nil, // blocked addresses map (can be nil for tests)
+		authorityAddr,
+		Logger(),
+	)
+
+	return baseBankKeeper
 }
 
 // ConfigureSDK configures the Cosmos SDK with Aura-specific prefixes.
