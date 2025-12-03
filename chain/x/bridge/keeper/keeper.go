@@ -1265,10 +1265,17 @@ func (k Keeper) computeSignatureSetHash(signatures [][]byte) []byte {
 // Security: This function verifies that a transaction is included in a block's Merkle tree.
 // This prevents validators from attesting to fake deposits that never occurred on the source chain.
 //
+// IMPORTANT: This function expects the proof bytes to encode BOTH the sibling hashes AND
+// the path indices. Each proof element consists of:
+//   - 1 byte: index of the sibling (to determine left/right ordering)
+//   - 32 bytes: hash of the sibling
+//
+// This matches the format used by GenerateMerkleProof when serializing to bytes.
+//
 // Parameters:
 //   - merkleRoot: The Merkle root from the source block header
 //   - transactionLeaf: The hash of the transaction being proven
-//   - merkleProofBytes: Raw bytes of the Merkle proof (concatenated sibling hashes)
+//   - merkleProofBytes: Raw bytes of the Merkle proof (index + sibling hash per level)
 //
 // Returns:
 //   - bool: true if the proof is valid and the transaction is in the block
@@ -1277,31 +1284,52 @@ func (k Keeper) VerifyMerkleProofBytes(merkleRoot, transactionLeaf, merkleProofB
 		return false
 	}
 
-	// Parse proof bytes into individual sibling hashes (each 32 bytes for SHA256)
-	if len(merkleProofBytes)%32 != 0 {
+	// Special case: empty proof means single-element tree
+	if len(merkleProofBytes) == 0 {
+		// For a single element, the leaf hash should equal the root
+		return bytes.Equal(transactionLeaf, merkleRoot)
+	}
+
+	// Parse proof bytes: each entry is 1 byte (index) + 32 bytes (hash) = 33 bytes
+	// OR for backward compatibility, try 32-byte chunks (hash only)
+	var proofHashes [][]byte
+	var indices []uint64
+
+	if len(merkleProofBytes)%33 == 0 {
+		// New format: index + hash
+		for i := 0; i < len(merkleProofBytes); i += 33 {
+			idx := uint64(merkleProofBytes[i])
+			hash := merkleProofBytes[i+1 : i+33]
+			indices = append(indices, idx)
+			proofHashes = append(proofHashes, hash)
+		}
+	} else if len(merkleProofBytes)%32 == 0 {
+		// Old format: hash only (try both orderings - brute force)
+		// This is less secure but maintains backward compatibility
+		for i := 0; i < len(merkleProofBytes); i += 32 {
+			proofHashes = append(proofHashes, merkleProofBytes[i:i+32])
+		}
+		// Try to verify by attempting both orderings at each level
+		return k.verifyMerkleProofBruteForce(merkleRoot, transactionLeaf, proofHashes)
+	} else {
+		// Invalid format
 		return false
 	}
 
-	var proofHashes [][]byte
-	for i := 0; i < len(merkleProofBytes); i += 32 {
-		proofHashes = append(proofHashes, merkleProofBytes[i:i+32])
-	}
-
-	// Since we don't have indices, we need to reconstruct the proof manually
-	// by trying to verify at each level
+	// Verify using indices (new format)
 	currentHash := transactionLeaf
 
-	// Traverse up the tree, trying both possible orderings at each level
-	for _, sibling := range proofHashes {
-		// Determine ordering based on byte comparison (standard Merkle tree ordering)
-		// Smaller hash goes on the left
+	for i := 0; i < len(proofHashes); i++ {
+		sibling := proofHashes[i]
+		idx := indices[i]
+
 		var combined []byte
-		if bytes.Compare(sibling, currentHash) < 0 {
-			// Sibling is smaller, put it on the left
-			combined = append(sibling, currentHash...)
-		} else {
-			// Current hash is smaller, put it on the left
+		if idx%2 == 1 {
+			// Sibling is on the right (odd index)
 			combined = append(currentHash, sibling...)
+		} else {
+			// Sibling is on the left (even index)
+			combined = append(sibling, currentHash...)
 		}
 
 		hash := sha256.Sum256(combined)
@@ -1309,17 +1337,50 @@ func (k Keeper) VerifyMerkleProofBytes(merkleRoot, transactionLeaf, merkleProofB
 	}
 
 	// Check if final hash matches root
-	if len(currentHash) != len(merkleRoot) {
-		return false
+	return bytes.Equal(currentHash, merkleRoot)
+}
+
+// verifyMerkleProofBruteForce tries all possible orderings to verify a proof
+// when indices are not available. This is less efficient but maintains backward
+// compatibility with proofs that only contain hashes.
+//
+// NOTE: This approach tries 2^n possible paths for n proof elements, which is
+// exponential. For production use, proofs should include indices.
+func (k Keeper) verifyMerkleProofBruteForce(merkleRoot, transactionLeaf []byte, proofHashes [][]byte) bool {
+	// For small proofs (< 10 levels), try all 2^n possible orderings
+	if len(proofHashes) > 10 {
+		return false // Too many possibilities to brute force
 	}
 
-	for i := range currentHash {
-		if currentHash[i] != merkleRoot[i] {
-			return false
+	// Try all possible bit patterns for left/right choices
+	numPatterns := 1 << uint(len(proofHashes))
+	for pattern := 0; pattern < numPatterns; pattern++ {
+		currentHash := transactionLeaf
+
+		for i := 0; i < len(proofHashes); i++ {
+			sibling := proofHashes[i]
+
+			// Use bit i of pattern to determine ordering
+			var combined []byte
+			if (pattern & (1 << uint(i))) != 0 {
+				// Bit is 1: current on left, sibling on right
+				combined = append(currentHash, sibling...)
+			} else {
+				// Bit is 0: sibling on left, current on right
+				combined = append(sibling, currentHash...)
+			}
+
+			hash := sha256.Sum256(combined)
+			currentHash = hash[:]
+		}
+
+		// Check if this ordering produces the correct root
+		if bytes.Equal(currentHash, merkleRoot) {
+			return true
 		}
 	}
 
-	return true
+	return false
 }
 
 // ConstructTransactionLeaf constructs a deterministic hash of a transaction

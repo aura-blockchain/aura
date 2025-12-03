@@ -89,8 +89,9 @@ func TestVotingPowerWithDelegations(t *testing.T) {
 	k := keeper.NewKeeper(input.Cdc, input.StoreKey, mockStaking, mockBank)
 
 	// Create addresses
-	delegatee := keepertest.GenTestAddr() // Person receiving delegation
-	delegator := keepertest.GenTestAddr() // Person delegating
+	addrs := keepertest.GenTestAddrs(2)
+	delegatee := addrs[0] // Person receiving delegation
+	delegator := addrs[1] // Person delegating
 
 	// Set stakes
 	delegateeStake := sdkmath.NewInt(500000)
@@ -116,7 +117,7 @@ func TestVotingPowerWithDelegations(t *testing.T) {
 	// Delegator's voting power should be zero (delegated away)
 	delegatorPower, err := k.GetVotingPower(input.Ctx, delegator.String())
 	require.NoError(t, err)
-	assert.Equal(t, sdkmath.ZeroInt(), delegatorPower)
+	assert.True(t, delegatorPower.IsZero(), "Delegator power should be zero after delegating, got: %s", delegatorPower.String())
 }
 
 // TestSybilResistance verifies addresses without stake have no voting power
@@ -148,8 +149,9 @@ func TestWhaleVotingPower(t *testing.T) {
 	mockBank := &MockBankKeeperForVotingPower{}
 	k := keeper.NewKeeper(input.Cdc, input.StoreKey, mockStaking, mockBank)
 
-	whale := keepertest.GenTestAddr()
-	regular := keepertest.GenTestAddr()
+	addrs := keepertest.GenTestAddrs(2)
+	whale := addrs[0]
+	regular := addrs[1]
 
 	// Whale has 1000x more stake
 	whaleStake := sdkmath.NewInt(1000000000) // 1B tokens
@@ -176,10 +178,12 @@ func TestMultipleDelegations(t *testing.T) {
 	mockBank := &MockBankKeeperForVotingPower{}
 	k := keeper.NewKeeper(input.Cdc, input.StoreKey, mockStaking, mockBank)
 
-	delegatee := keepertest.GenTestAddr()
-	delegator1 := keepertest.GenTestAddr()
-	delegator2 := keepertest.GenTestAddr()
-	delegator3 := keepertest.GenTestAddr()
+	// Generate unique test addresses
+	addrs := keepertest.GenTestAddrs(4)
+	delegatee := addrs[0]
+	delegator1 := addrs[1]
+	delegator2 := addrs[2]
+	delegator3 := addrs[3]
 
 	delegateeStake := sdkmath.NewInt(100000)
 	del1Stake := sdkmath.NewInt(50000)
@@ -202,6 +206,18 @@ func TestMultipleDelegations(t *testing.T) {
 		err := k.SetVoteDelegation(input.Ctx, delegation)
 		require.NoError(t, err)
 	}
+
+	// Verify all delegations were stored
+	allDelegations := k.GetAllVoteDelegations(input.Ctx)
+	require.Equal(t, 3, len(allDelegations), "All 3 delegations should be stored")
+
+	// Verify we can retrieve delegations by delegator
+	del1Delegations := k.GetVoteDelegations(input.Ctx, delegator1.String())
+	require.Equal(t, 1, len(del1Delegations), "Delegator1 should have 1 delegation")
+	del2Delegations := k.GetVoteDelegations(input.Ctx, delegator2.String())
+	require.Equal(t, 1, len(del2Delegations), "Delegator2 should have 1 delegation")
+	del3Delegations := k.GetVoteDelegations(input.Ctx, delegator3.String())
+	require.Equal(t, 1, len(del3Delegations), "Delegator3 should have 1 delegation")
 
 	// Delegatee should have their stake + all delegated stakes
 	delegateePower, err := k.GetVotingPower(input.Ctx, delegatee.String())

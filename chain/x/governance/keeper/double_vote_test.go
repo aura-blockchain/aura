@@ -98,7 +98,7 @@ func TestDoubleVotePrevention(t *testing.T) {
 	retrievedVote, err := k.GetVote(input.Ctx, proposalID, voter)
 	require.NoError(t, err)
 	require.NotNil(t, retrievedVote)
-	require.Equal(t, int32(1), retrievedVote.Option) // YES
+	require.Equal(t, types.OptionYes, retrievedVote.Option) // YES
 
 	// Attempt second vote: NO (should overwrite, not append)
 	vote2 := &types.Vote{
@@ -114,13 +114,13 @@ func TestDoubleVotePrevention(t *testing.T) {
 	retrievedVote, err = k.GetVote(input.Ctx, proposalID, voter)
 	require.NoError(t, err)
 	require.NotNil(t, retrievedVote)
-	require.Equal(t, int32(3), retrievedVote.Option) // Should be NO (updated)
+	require.Equal(t, types.OptionNo, retrievedVote.Option) // Should be NO (updated)
 
 	// Verify GetVotes returns only ONE vote for this voter
 	allVotes := k.GetVotes(input.Ctx, proposalID)
 	require.Equal(t, 1, len(allVotes), "Should only have 1 vote, not multiple")
 	require.Equal(t, voter, allVotes[0].Voter)
-	require.Equal(t, int32(3), allVotes[0].Option) // Latest vote
+	require.Equal(t, types.OptionNo, allVotes[0].Option) // Latest vote
 }
 
 // TestTallyWithoutDoubleVoting verifies that tally counts each voter only once
@@ -173,7 +173,7 @@ func TestTallyWithoutDoubleVoting(t *testing.T) {
 	// Verify only one vote exists in storage
 	allVotes := k.GetVotes(input.Ctx, proposalID)
 	require.Equal(t, 1, len(allVotes))
-	require.Equal(t, int32(3), allVotes[0].Option) // Should be NO
+	require.Equal(t, types.OptionNo, allVotes[0].Option) // Should be NO
 }
 
 // TestSnapshotVoteNoDuplication verifies snapshot votes cannot be duplicated
@@ -209,7 +209,7 @@ func TestSnapshotVoteNoDuplication(t *testing.T) {
 	allVotes := k.GetSnapshotVotes(input.Ctx, proposalID)
 	require.Equal(t, 1, len(allVotes))
 	require.Equal(t, voter, allVotes[0].Voter)
-	require.Equal(t, int32(3), allVotes[0].Option) // Updated to NO
+	require.Equal(t, types.OptionNo, allVotes[0].Option) // Updated to NO
 	require.Equal(t, "sig2", allVotes[0].Signature)
 }
 
@@ -266,10 +266,10 @@ func TestMultipleVotersNoInterference(t *testing.T) {
 	// Verify voter 1's vote was updated
 	voter1Vote, err := k.GetVote(input.Ctx, proposalID, "cosmos1voter1")
 	require.NoError(t, err)
-	require.Equal(t, int32(2), voter1Vote.Option) // ABSTAIN
+	require.Equal(t, types.OptionAbstain, voter1Vote.Option) // ABSTAIN
 
 	// Verify voter 2's vote unchanged
 	voter2Vote, err := k.GetVote(input.Ctx, proposalID, "cosmos1voter2")
 	require.NoError(t, err)
-	require.Equal(t, int32(3), voter2Vote.Option) // NO
+	require.Equal(t, types.OptionNo, voter2Vote.Option) // NO
 }

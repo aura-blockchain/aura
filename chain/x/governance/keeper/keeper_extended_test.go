@@ -242,12 +242,12 @@ func TestGetDepositsForProposal(t *testing.T) {
 
 	proposalID := uint64(1)
 
-	// Create multiple deposits
+	// Create multiple deposits from unique depositors
+	depositors := keepertest.GenTestAddrs(3)
 	for i := 0; i < 3; i++ {
-		depositor := keepertest.GenTestAddr().String()
 		deposit := &types.Deposit{
 			ProposalId: proposalID,
-			Depositor:  depositor,
+			Depositor:  depositors[i].String(),
 			Amount:     "1000000",
 		}
 		err := k.SetDeposit(input.Ctx, deposit)
@@ -301,11 +301,13 @@ func TestGetVoteDelegations(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
 	k := createTestKeeper(input)
 
-	delegator := keepertest.GenTestAddr().String()
+	// Generate unique addresses
+	addrs := keepertest.GenTestAddrs(4) // 1 delegator + 3 delegates
+	delegator := addrs[0].String()
 
 	// Create multiple delegations
 	for i := 0; i < 3; i++ {
-		delegate := keepertest.GenTestAddr().String()
+		delegate := addrs[i+1].String()
 		delegation := &types.VoteDelegation{
 			Delegator:      delegator,
 			Delegate:       delegate,
@@ -396,12 +398,12 @@ func TestGetSnapshotVotes(t *testing.T) {
 
 	proposalID := uint64(1)
 
-	// Create multiple snapshot votes
+	// Create multiple snapshot votes from unique voters
+	voters := keepertest.GenTestAddrs(3)
 	for i := 0; i < 3; i++ {
-		voter := keepertest.GenTestAddr().String()
 		vote := &types.SnapshotVote{
 			ProposalId:            proposalID,
-			Voter:                 voter,
+			Voter:                 voters[i].String(),
 			Option:                types.OptionYes,
 			VotingPowerAtSnapshot: "1000000",
 			Signature:             "sig",
@@ -506,7 +508,8 @@ func TestGetTokenLocks(t *testing.T) {
 
 	addr := keepertest.GenTestAddr().String()
 	locks := k.GetTokenLocks(input.Ctx, addr)
-	assert.NotNil(t, locks)
+	// Empty result (nil slice or zero-length slice) is valid when there are no locks
+	assert.Len(t, locks, 0)
 }
 
 // Test Edge Cases
