@@ -156,6 +156,12 @@ func (k Keeper) CreatePool(
 		CreatedAt: timestamppb.New(ctx.BlockTime()),
 	}
 
+	// SECURITY: Validate LP token invariant before storing
+	// This ensures the initial pool state is consistent
+	if err := k.validateLPTokenInvariant(pool); err != nil {
+		return nil, sdkmath.ZeroInt(), err
+	}
+
 	// Store pool
 	k.SetPool(ctx, pool)
 
@@ -316,6 +322,12 @@ func (k Keeper) AddLiquidity(
 	newTotalLpTokens := totalLpTokens.Add(lpTokens)
 	poolShare := lpTokens.ToLegacyDec().Quo(newTotalLpTokens.ToLegacyDec()).MulInt64(100)
 
+	// SECURITY: Validate LP token invariant after minting new LP tokens
+	// This ensures no accounting errors occurred during liquidity addition
+	if err := k.validateLPTokenInvariant(pool); err != nil {
+		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), err
+	}
+
 	// Save pool
 	k.SetPool(ctx, pool)
 
@@ -431,6 +443,12 @@ func (k Keeper) RemoveLiquidity(
 			pool.Providers[:providerIndex],
 			pool.Providers[providerIndex+1:]...,
 		)
+	}
+
+	// SECURITY: Validate LP token invariant after burning LP tokens
+	// This ensures no accounting errors occurred during liquidity removal
+	if err := k.validateLPTokenInvariant(pool); err != nil {
+		return sdk.Coin{}, sdk.Coin{}, err
 	}
 
 	// Save pool
@@ -664,6 +682,13 @@ func (k Keeper) SwapExactIn(
 	pool.ProtocolFeeBalance = protocolFeeBalance.Add(protocolFee).String()
 	pool.SwapCount++
 
+	// SECURITY: Validate LP token invariant after swap
+	// While swaps don't modify LP tokens, this defense-in-depth check ensures
+	// no accounting errors were introduced during reserve updates
+	if err := k.validateLPTokenInvariant(pool); err != nil {
+		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec(), err
+	}
+
 	k.SetPool(ctx, pool)
 
 	// Transfer tokens
@@ -872,4 +897,75 @@ func isUSDStable(denom string) bool {
 	default:
 		return false
 	}
+}
+
+// validateLPTokenInvariant validates that sum of provider LP tokens equals total pool LP supply.
+// This critical invariant ensures LP tokens are properly backed by reserves and prevents:
+// - LP token inflation attacks
+// - Accounting errors that allow draining pool reserves
+// - Mismatch between total supply and distributed tokens
+//
+// SECURITY: This function MUST be called after every operation that modifies LP token balances:
+// - CreatePool: Initial LP token distribution
+// - AddLiquidity: Minting new LP tokens to provider
+// - RemoveLiquidity: Burning LP tokens from provider
+// - Swap: Does not affect LP tokens, but checked for safety
+//
+// Returns error immediately if invariant is violated rather than silently continuing,
+// ensuring atomic operation failure and state rollback.
+func (k Keeper) validateLPTokenInvariant(pool *types.LiquidityPool) error {
+	// Parse total pool LP tokens
+	totalShares, err := k.parseLPTokens(pool.TotalLpTokens)
+	if err != nil {
+		return errors.Wrap(
+			types.ErrInvalidRequest,
+			fmt.Sprintf("invalid total LP tokens for pool %s: %v", pool.PoolId, err),
+		)
+	}
+
+	// Sum up all provider LP tokens (excluding locked liquidity which is not assigned to any provider)
+	sumProviderShares := sdkmath.ZeroInt()
+	for _, provider := range pool.Providers {
+		providerTokens, err := k.parseLPTokens(provider.LpTokens)
+		if err != nil {
+			return errors.Wrap(
+				types.ErrInvalidRequest,
+				fmt.Sprintf("invalid LP tokens for provider %s in pool %s: %v",
+					provider.Address, pool.PoolId, err),
+			)
+		}
+		sumProviderShares = sumProviderShares.Add(providerTokens)
+	}
+
+	// Account for permanently locked liquidity (MinimumLiquidity burned on pool creation)
+	// The locked liquidity is included in TotalLpTokens but not assigned to any provider
+	lockedLiquidity := sdkmath.ZeroInt()
+	if pool.LockedLiquidity != "" {
+		lockedLiquidity, err = k.parseLPTokens(pool.LockedLiquidity)
+		if err != nil {
+			return errors.Wrap(
+				types.ErrInvalidRequest,
+				fmt.Sprintf("invalid locked liquidity for pool %s: %v", pool.PoolId, err),
+			)
+		}
+	}
+
+	// Invariant: TotalLpTokens = Sum(Provider LP Tokens) + LockedLiquidity
+	expectedTotal := sumProviderShares.Add(lockedLiquidity)
+
+	if !expectedTotal.Equal(totalShares) {
+		return errors.Wrap(
+			types.ErrInvalidRequest,
+			fmt.Sprintf("CRITICAL: LP token invariant violated for pool %s - "+
+				"total LP tokens %s != provider sum %s + locked %s (expected %s)",
+				pool.PoolId,
+				totalShares.String(),
+				sumProviderShares.String(),
+				lockedLiquidity.String(),
+				expectedTotal.String(),
+			),
+		)
+	}
+
+	return nil
 }
