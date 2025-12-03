@@ -55,21 +55,18 @@ func TestSubmitKYC_SignerVerification(t *testing.T) {
 		require.Contains(t, err.Error(), "provider is required")
 	})
 
-	t.Run("no signers rejected", func(t *testing.T) {
-		// Note: In actual usage, GetSigners would be called automatically by the SDK
-		// This test ensures the handler checks for empty signers list
+	t.Run("invalid provider address rejected", func(t *testing.T) {
+		// Invalid bech32 address should fail at GetSigners
 		req := &types.MsgSubmitKYC{
 			Address:       "aura1user000000000000000000000000000000000",
 			KycLevel:      types.KYCLevel_KYC_LEVEL_BASIC,
-			Provider:      providerAddr,
+			Provider:      "invalid-bech32-address",
 			PiiCommitment: makePiiCommitment("test"),
 		}
-		// GetSigners will return empty list when Provider can't be parsed as address
 		_, err := server.SubmitKYC(sdk.WrapSDKContext(ctx), req)
 		require.Error(t, err)
-		// Should fail either at signer verification or authorization check
-		require.True(t, err.Error() == "rpc error: code = Unauthenticated desc = no signers" ||
-			err.Error() == "rpc error: code = PermissionDenied desc = provider must be transaction signer")
+		// Should fail at signer verification with invalid address
+		require.Contains(t, err.Error(), "no signers")
 	})
 }
 
