@@ -1,15 +1,14 @@
-package keeper_test
+package keeper
 
 import (
-	"fmt"
 	"testing"
 
 	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 	"github.com/aequitas/aura/chain/x/bridge/types"
 )
 
@@ -53,7 +52,7 @@ func TestSubmitSlashingEvidence_FraudSignature(t *testing.T) {
 	require.Equal(t, evidenceHash, event.EvidenceHash)
 
 	// Verify validator was marked inactive (jailed in bridge module)
-	val, found := keeper.GetValidator(ctx, validatorAddr)
+	val, found := keeper.getValidator(ctx, validatorAddr)
 	require.True(t, found)
 	require.False(t, val.Active) // Should be inactive after slashing
 
@@ -94,7 +93,7 @@ func TestSubmitSlashingEvidence_DoubleSigning(t *testing.T) {
 	require.Equal(t, types.SlashReason_SLASH_DOUBLE_SIGN, event.Reason)
 
 	// Verify validator is inactive
-	val, found := keeper.GetValidator(ctx, validatorAddr)
+	val, found := keeper.getValidator(ctx, validatorAddr)
 	require.True(t, found)
 	require.False(t, val.Active)
 }
@@ -130,7 +129,7 @@ func TestSubmitSlashingEvidence_Downtime(t *testing.T) {
 	require.Equal(t, types.SlashReason_SLASH_DOWNTIME, event.Reason)
 
 	// Verify validator remains active
-	val, found := keeper.GetValidator(ctx, validatorAddr)
+	val, found := keeper.getValidator(ctx, validatorAddr)
 	require.True(t, found)
 	require.True(t, val.Active) // Should still be active
 }
@@ -323,7 +322,7 @@ func TestCheckAndSlashDoubleSigning_DetectsAndSlashes(t *testing.T) {
 	require.Contains(t, err.Error(), "double-signed")
 
 	// Verify validator was slashed and jailed
-	val, found := keeper.GetValidator(ctx, validatorAddr)
+	val, found := keeper.getValidator(ctx, validatorAddr)
 	require.True(t, found)
 	require.False(t, val.Active) // Should be jailed
 }
@@ -437,7 +436,7 @@ func TestSlashForDowntime_ValidatorOnline(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify validator remains active
-	val, found := keeper.GetValidator(ctx, validatorAddr)
+	val, found := keeper.getValidator(ctx, validatorAddr)
 	require.True(t, found)
 	require.True(t, val.Active)
 }
@@ -475,7 +474,7 @@ func TestSlashForDowntime_ValidatorOffline(t *testing.T) {
 	// Verify slashing event was created
 	// (We can't easily verify the exact event ID, but we can check validator remains active
 	// since downtime doesn't jail)
-	val, found := keeper.GetValidator(ctx, validatorAddr)
+	val, found := keeper.getValidator(ctx, validatorAddr)
 	require.True(t, found)
 	require.True(t, val.Active) // Downtime doesn't jail, only slashes
 }
@@ -523,16 +522,17 @@ func TestSlashingParams_SigningWindow(t *testing.T) {
 // ========================================================================
 
 // setupKeeperWithStaking creates a keeper with a mock staking keeper for testing
-func setupKeeperWithStaking(t *testing.T) (*testKeeper, sdk.Context) {
-	// Use the existing test setup (which may have a nil staking keeper)
-	keeper, ctx := setupKeeper(t)
+func setupKeeperWithStaking(t *testing.T) (*Keeper, sdk.Context) {
+	input := keepertest.CreateTestInput(t)
+	k := NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
+	ctx := input.Ctx
 
 	// For tests that require staking keeper, it would be nil
 	// In production, the real staking keeper would be wired in app.go
 	// For these tests, we're testing the bridge module's slashing logic,
 	// not the actual staking module integration
 
-	return keeper, ctx
+	return k, ctx
 }
 
 // ========================================================================
@@ -583,30 +583,25 @@ func TestSlashValidatorsForFraudulentTransfer_Success(t *testing.T) {
 	}
 	keeper.SetTransfer(ctx, transfer)
 
-	// Submit fraud proof
+	// Submit fraud proof ID for slashing
+	// Note: In production, a FraudProof record would be created via SubmitFraudProof
+	// For this test, we're just testing the validator slashing logic
 	fraudProofID := "fraud-proof-1"
-	fraudProof := &types.FraudProof{
-		ProofId:              fraudProofID,
-		ChallengedTransferId: transferID,
-		Status:               types.FraudProofStatus_FRAUD_PROOF_INVESTIGATING,
-	}
-	// Store fraud proof (normally done via SubmitFraudProof)
-	// For testing, we just need it to exist
 
 	// Slash all validators for fraudulent transfer
 	err := keeper.slashValidatorsForFraudulentTransfer(ctx, transferID, fraudProofID)
 	require.NoError(t, err)
 
 	// Verify all validators were slashed and jailed
-	val1, found := keeper.GetValidator(ctx, validator1.Address)
+	val1, found := keeper.getValidator(ctx, validator1.Address)
 	require.True(t, found)
 	require.False(t, val1.Active) // Should be jailed
 
-	val2, found := keeper.GetValidator(ctx, validator2.Address)
+	val2, found := keeper.getValidator(ctx, validator2.Address)
 	require.True(t, found)
 	require.False(t, val2.Active) // Should be jailed
 
-	val3, found := keeper.GetValidator(ctx, validator3.Address)
+	val3, found := keeper.getValidator(ctx, validator3.Address)
 	require.True(t, found)
 	require.False(t, val3.Active) // Should be jailed
 
@@ -696,7 +691,7 @@ func TestSlashValidatorsForFraudulentTransfer_PartialFailure(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify active validator was slashed
-	val, found := keeper.GetValidator(ctx, validatorActive.Address)
+	val, found := keeper.getValidator(ctx, validatorActive.Address)
 	require.True(t, found)
 	require.False(t, val.Active) // Should be jailed now
 }
@@ -747,7 +742,7 @@ func TestResolveFraudProof_SlashesValidators(t *testing.T) {
 	require.Equal(t, types.FraudProofStatus_FRAUD_PROOF_VALID, resolved.Status)
 
 	// Verify validator was slashed
-	val, found := keeper.GetValidator(ctx, validator.Address)
+	val, found := keeper.getValidator(ctx, validator.Address)
 	require.True(t, found)
 	require.False(t, val.Active) // Should be jailed
 

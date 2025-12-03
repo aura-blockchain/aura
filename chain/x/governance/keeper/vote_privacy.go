@@ -133,8 +133,14 @@ func (k *Keeper) calculateVoteHash(proposalID uint64, voter string, option types
 // setVoteCommitment stores a vote commitment
 func (k *Keeper) setVoteCommitment(ctx sdk.Context, commitment *types.VoteCommitment) error {
 	store := ctx.KVStore(k.storeKey)
-	key := append(VoteCommitmentsKeyPrefix, sdk.Uint64ToBigEndian(commitment.ProposalId)...)
-	key = append(key, []byte(commitment.Voter)...)
+	// Pre-allocate to avoid shared underlying arrays with global prefix
+	proposalIDBytes := sdk.Uint64ToBigEndian(commitment.ProposalId)
+	voterBytes := []byte(commitment.Voter)
+	keyLen := len(VoteCommitmentsKeyPrefix) + len(proposalIDBytes) + len(voterBytes)
+	key := make([]byte, 0, keyLen)
+	key = append(key, VoteCommitmentsKeyPrefix...)
+	key = append(key, proposalIDBytes...)
+	key = append(key, voterBytes...)
 
 	// Use JSON marshaling for custom types
 	bz, err := json.Marshal(commitment)
@@ -149,8 +155,14 @@ func (k *Keeper) setVoteCommitment(ctx sdk.Context, commitment *types.VoteCommit
 // getVoteCommitment retrieves a vote commitment
 func (k *Keeper) getVoteCommitment(ctx sdk.Context, proposalID uint64, voter string) (*types.VoteCommitment, error) {
 	store := ctx.KVStore(k.storeKey)
-	key := append(VoteCommitmentsKeyPrefix, sdk.Uint64ToBigEndian(proposalID)...)
-	key = append(key, []byte(voter)...)
+	// Pre-allocate to avoid shared underlying arrays with global prefix
+	proposalIDBytes := sdk.Uint64ToBigEndian(proposalID)
+	voterBytes := []byte(voter)
+	keyLen := len(VoteCommitmentsKeyPrefix) + len(proposalIDBytes) + len(voterBytes)
+	key := make([]byte, 0, keyLen)
+	key = append(key, VoteCommitmentsKeyPrefix...)
+	key = append(key, proposalIDBytes...)
+	key = append(key, voterBytes...)
 
 	bz := store.Get(key)
 	if bz == nil {
