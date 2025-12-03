@@ -17,26 +17,53 @@ import (
 )
 
 // MockBankKeeper is a mock implementation of BankKeeper for testing
-type MockBankKeeper struct{}
+type MockBankKeeper struct {
+	balances map[string]map[string]math.Int // address -> denom -> amount
+}
 
-func (m MockBankKeeper) SendCoins(ctx sdk.Context, fromAddr sdk.AccAddress, toAddr sdk.AccAddress, amt sdk.Coins) error {
+func NewMockBankKeeper() *MockBankKeeper {
+	return &MockBankKeeper{
+		balances: make(map[string]map[string]math.Int),
+	}
+}
+
+func (m *MockBankKeeper) SendCoins(ctx sdk.Context, fromAddr sdk.AccAddress, toAddr sdk.AccAddress, amt sdk.Coins) error {
 	return nil
 }
 
-func (m MockBankKeeper) SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
+func (m *MockBankKeeper) SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
 	return nil
 }
 
-func (m MockBankKeeper) SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
+func (m *MockBankKeeper) SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
 	return nil
 }
 
-func (m MockBankKeeper) MintCoins(ctx sdk.Context, moduleName string, amt sdk.Coins) error {
+func (m *MockBankKeeper) MintCoins(ctx sdk.Context, moduleName string, amt sdk.Coins) error {
 	return nil
 }
 
-func (m MockBankKeeper) BurnCoins(ctx sdk.Context, moduleName string, amt sdk.Coins) error {
+func (m *MockBankKeeper) BurnCoins(ctx sdk.Context, moduleName string, amt sdk.Coins) error {
 	return nil
+}
+
+func (m *MockBankKeeper) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin {
+	addrStr := addr.String()
+	if m.balances[addrStr] == nil {
+		return sdk.NewCoin(denom, math.ZeroInt())
+	}
+	if amt, ok := m.balances[addrStr][denom]; ok {
+		return sdk.NewCoin(denom, amt)
+	}
+	return sdk.NewCoin(denom, math.ZeroInt())
+}
+
+func (m *MockBankKeeper) SetBalance(addr sdk.AccAddress, denom string, amount math.Int) {
+	addrStr := addr.String()
+	if m.balances[addrStr] == nil {
+		m.balances[addrStr] = make(map[string]math.Int)
+	}
+	m.balances[addrStr][denom] = amount
 }
 
 type DEXKeeperTestSuite struct {
@@ -65,7 +92,7 @@ func TestDEXKeeperTestSuite(t *testing.T) {
 // Helper function to create a test keeper
 func setupTestKeeper(t *testing.T) (*keeper.Keeper, sdk.Context) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, MockBankKeeper{}, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, NewMockBankKeeper(), nil, nil)
 	return k, input.Ctx
 }
 
