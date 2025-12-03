@@ -258,11 +258,18 @@ func TestShouldBlockTransaction_MediumRisk(t *testing.T) {
 func TestUpdateAMLProfile_NewProfile(t *testing.T) {
 	k, ctx := setupKeeperForMonitor(t)
 
+	// Set params for risk calculation
+	params := types.ComplianceParams{
+		VelocityLimit_24H: "1000000", // 1 million threshold
+	}
+	err := k.SetParams(ctx, params)
+	require.NoError(t, err)
+
 	addr := sdk.AccAddress([]byte("test_address"))
 	amount := sdk.NewCoins(sdk.NewInt64Coin("uaura", 5000))
 
 	// Update AML profile (creates new profile)
-	err := k.UpdateAMLProfile(ctx, addr, amount)
+	err = k.UpdateAMLProfile(ctx, addr, amount)
 	require.NoError(t, err)
 
 	// Verify profile was created
@@ -270,21 +277,28 @@ func TestUpdateAMLProfile_NewProfile(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, addr.String(), profile.Address)
 	require.Equal(t, uint64(1), profile.TotalTransactions)
-	require.Equal(t, "5000.000000000000000000", profile.TotalVolume)
+	require.Equal(t, "5000", profile.TotalVolume) // Updated to math.Int format
 	require.Equal(t, types.AMLRiskLevel_AML_RISK_LOW, profile.RiskLevel)
 }
 
 func TestUpdateAMLProfile_ExistingProfile(t *testing.T) {
 	k, ctx := setupKeeperForMonitor(t)
 
+	// Set params for risk calculation
+	params := types.ComplianceParams{
+		VelocityLimit_24H: "1000000", // 1 million threshold
+	}
+	err := k.SetParams(ctx, params)
+	require.NoError(t, err)
+
 	addr := sdk.AccAddress([]byte("test_address"))
 
 	// Create initial profile
 	now := time.Now()
-	err := k.SetAMLProfile(ctx, &types.AMLProfile{
+	err = k.SetAMLProfile(ctx, &types.AMLProfile{
 		Address:           addr.String(),
 		RiskLevel:         types.AMLRiskLevel_AML_RISK_LOW,
-		TotalVolume:       "10000.000000000000000000",
+		TotalVolume:       "10000", // Updated to math.Int format
 		LastAssessment:    timestamppb.New(now),
 		TotalTransactions: 5,
 	})
@@ -299,7 +313,7 @@ func TestUpdateAMLProfile_ExistingProfile(t *testing.T) {
 	profile, err := k.GetAMLProfile(ctx, addr.String())
 	require.NoError(t, err)
 	require.Equal(t, uint64(6), profile.TotalTransactions)
-	require.Equal(t, "15000.000000000000000000", profile.TotalVolume)
+	require.Equal(t, "15000", profile.TotalVolume) // Updated to math.Int format
 }
 
 func TestIsAddressSanctioned_NoResult(t *testing.T) {
