@@ -68,6 +68,9 @@ var (
 	CircuitBreakerKey   = []byte{0x35}
 	AuditLogKey         = []byte{0x36}
 
+	// Security guard prefixes (memory store)
+	ReentrancyLockKey = []byte{0xF0} // Memory-only, cleared on block boundaries
+
 	// Cryptography prefixes
 	CryptoParamsKey           = []byte{0x40}
 	KeyRotationScheduleKey    = []byte{0x41}
@@ -361,4 +364,17 @@ func GetStealthAddressStoreKey(oneTimeAddressHex string) []byte {
 // GetConfidentialTxStoreKey returns the store key for a confidential transaction
 func GetConfidentialTxStoreKey(txId string) []byte {
 	return append(ConfidentialTxKey, []byte(txId)...)
+}
+
+// Security guard key helpers
+
+// GetReentrancyLockKey returns the store key for a reentrancy lock
+// This is stored in memory store and cleared on block boundaries
+func GetReentrancyLockKey(lockId string) []byte {
+	return append(ReentrancyLockKey, []byte(lockId)...)
+}
+
+// GetPauseStateKey returns the store key for module pause state
+func GetPauseStateKey(moduleName string) []byte {
+	return append(PauseStateKey, []byte(moduleName)...)
 }

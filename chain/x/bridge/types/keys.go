@@ -71,6 +71,9 @@ var (
 
 	// Pending transfers (awaiting fraud proof window expiry)
 	PendingTransferPrefix = []byte{0x23}
+
+	// Unlock nonces (replay protection for unlock operations)
+	UnlockNoncePrefix = []byte{0x24}
 )
 
 // TransferKey returns the store key for a cross-chain transfer
@@ -173,4 +176,11 @@ func VerifiedBlockHashKey(sourceChain string, blockHeight uint64) []byte {
 // Format: PendingTransferPrefix + transferID
 func PendingTransferKey(transferID string) []byte {
 	return append(PendingTransferPrefix, []byte(transferID)...)
+}
+
+// UnlockNonceKey returns the store key for unlock nonce tracking
+// Format: UnlockNoncePrefix + transferID
+// This tracks how many times unlock has been attempted for a transfer (replay protection)
+func UnlockNonceKey(transferID string) []byte {
+	return append(UnlockNoncePrefix, []byte(transferID)...)
 }

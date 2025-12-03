@@ -23,11 +23,13 @@ type Keeper struct {
 	cdc      codec.BinaryCodec
 
 	// Dependencies
-	bankKeeper    types.BankKeeper
-	accountKeeper types.AccountKeeper
-	vcKeeper      types.VCRegistryKeeper // For IR verification check
+	bankKeeper     types.BankKeeper
+	accountKeeper  types.AccountKeeper
+	vcKeeper       types.VCRegistryKeeper // For IR verification check
+	securityKeeper types.SecurityKeeper   // Centralized security primitives
 
-	// Security primitives from common security library
+	// Legacy security primitives (kept for backward compatibility during migration)
+	// TODO: Remove these once all code is migrated to securityKeeper
 	reentrancyGuard *security.ReentrancyGuard
 	pauseGuard      *security.PauseGuard
 	inputValidator  *security.InputValidator
@@ -43,15 +45,18 @@ func NewKeeper(
 	bankKeeper types.BankKeeper,
 	accountKeeper types.AccountKeeper,
 	vcKeeper types.VCRegistryKeeper,
+	securityKeeper types.SecurityKeeper,
 ) *Keeper {
 	return &Keeper{
-		storeKey:      storeKey,
-		cdc:           cdc,
-		bankKeeper:    bankKeeper,
-		accountKeeper: accountKeeper,
-		vcKeeper:      vcKeeper,
+		storeKey:       storeKey,
+		cdc:            cdc,
+		bankKeeper:     bankKeeper,
+		accountKeeper:  accountKeeper,
+		vcKeeper:       vcKeeper,
+		securityKeeper: securityKeeper,
 
-		// Initialize security primitives
+		// Initialize legacy security primitives (for backward compatibility)
+		// TODO: Remove these once all code is migrated to securityKeeper
 		reentrancyGuard: security.NewReentrancyGuard(),
 		pauseGuard:      security.NewPauseGuard(""), // Admin will be set via params
 		inputValidator:  security.NewInputValidator(),
@@ -260,6 +265,12 @@ func (k Keeper) IsUserVerified(ctx sdk.Context, address string) bool {
 }
 
 // CalculateFeeBoost returns fee boost percentage for user
+//
+// SECURITY: This function validates IR boost parameters to prevent
+// manipulation or configuration errors that could lead to:
+// - Excessive fee boosts (>100%)
+// - Negative boosts
+// - Integer overflow when applied to amounts
 func (k Keeper) CalculateFeeBoost(ctx sdk.Context, address string) sdkmath.LegacyDec {
 	params := k.GetParams(ctx)
 
@@ -268,6 +279,13 @@ func (k Keeper) CalculateFeeBoost(ctx sdk.Context, address string) sdkmath.Legac
 	}
 
 	if k.IsUserVerified(ctx, address) {
+		// Validate boost percentage is reasonable (0-100%)
+		if params.IrBoostPercent < 0 || params.IrBoostPercent > 100 {
+			ctx.Logger().Error("invalid IR boost percentage, using 0",
+				"boost_percent", params.IrBoostPercent)
+			return sdkmath.LegacyZeroDec()
+		}
+
 		// Return boost as decimal (40 = 0.40 = 40%)
 		return sdkmath.LegacyNewDec(int64(params.IrBoostPercent)).QuoInt64(100)
 	}
@@ -276,16 +294,37 @@ func (k Keeper) CalculateFeeBoost(ctx sdk.Context, address string) sdkmath.Legac
 }
 
 // CalculateEffectiveFee returns actual fee user receives (base + boost)
+//
+// SECURITY: Uses validated decimal multiplication to calculate boosted fees.
+// While LegacyDec multiplication is inherently safer than Int multiplication,
+// we still validate inputs to prevent edge cases.
 func (k Keeper) CalculateEffectiveFee(
 	ctx sdk.Context,
 	address string,
 	baseFee sdkmath.LegacyDec,
 ) sdkmath.LegacyDec {
+	// Validate base fee is non-negative
+	if baseFee.IsNegative() {
+		ctx.Logger().Error("negative base fee provided, using zero",
+			"base_fee", baseFee.String())
+		return sdkmath.LegacyZeroDec()
+	}
+
 	boost := k.CalculateFeeBoost(ctx, address)
 
 	// Effective fee = base_fee × (1 + boost)
 	// Example: 0.003 × (1 + 0.40) = 0.0042 (0.42%)
-	return baseFee.Mul(sdkmath.LegacyOneDec().Add(boost))
+	effectiveFee := baseFee.Mul(sdkmath.LegacyOneDec().Add(boost))
+
+	// Sanity check: effective fee should never be negative
+	if effectiveFee.IsNegative() {
+		ctx.Logger().Error("effective fee calculation resulted in negative value",
+			"base_fee", baseFee.String(),
+			"boost", boost.String())
+		return baseFee // Fallback to base fee without boost
+	}
+
+	return effectiveFee
 }
 
 // ============================================================================

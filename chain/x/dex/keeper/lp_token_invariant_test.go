@@ -40,6 +40,7 @@ func (suite *LPTokenInvariantTestSuite) SetupTest() {
 		suite.BankKeeper,
 		nil, // accountKeeper
 		nil, // vcKeeper
+		nil, // securityKeeper
 	)
 	suite.SdkCtx = input.Ctx
 }

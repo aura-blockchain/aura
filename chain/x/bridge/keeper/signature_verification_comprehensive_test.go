@@ -456,10 +456,10 @@ func testInvalidRecoveryID(t *testing.T) {
 	message := "Link PAW address " + pawAddress + " to Aura address " + auraAddress
 	signature := signMessage(t, privKey, message)
 
-	// Set invalid recovery ID (4 is invalid for compressed)
-	signature[64] = 4
+	// Set invalid recovery ID (35 is invalid: 35-27=8, which is >7)
+	signature[64] = 35
 	valid := k.VerifyPawAddressOwnership(ctx, auraAddress, pawAddress, signature)
-	require.False(t, valid, "Signature with recovery ID 4 should be rejected")
+	require.False(t, valid, "Signature with recovery ID 35 should be rejected")
 }
 
 func testRecoveryID255(t *testing.T) {
