@@ -29,8 +29,8 @@ func (k Keeper) GetMixingPool(ctx sdk.Context, id string) (*securitypb.MixingPoo
 		return nil, false
 	}
 	var pool securitypb.MixingPool
-	if err := k.cdc.Unmarshal(bz, &MixingPool); err != nil {
-		ctx.Logger().Error("failed to unmarshal data", "error", err, "data_len", len(bz))
+	if err := k.cdc.Unmarshal(bz, &pool); err != nil {
+		ctx.Logger().Error("failed to unmarshal MixingPool", "error", err, "data_len", len(bz))
 		return nil, false
 	}
 	return &pool, true
