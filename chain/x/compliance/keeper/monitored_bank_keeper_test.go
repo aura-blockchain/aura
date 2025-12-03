@@ -22,11 +22,11 @@ func TestMonitoredBankKeeper_SendCoins_Allowed(t *testing.T) {
 	bankInput := keepertest.CreateTestInputWithKeys(t, "bank")
 	baseBankKeeper := bankkeeper.NewBaseKeeper(
 		bankInput.Cdc,
-		bankInput.StoreService,
+		keepertest.WrapStoreService(bankInput.StoreKey),
 		nil, // account keeper not needed for this test
 		nil, // blocked addresses
 		"",  // authority
-		bankInput.Logger,
+		keepertest.Logger(),
 	)
 
 	// Create monitored bank keeper
@@ -71,11 +71,11 @@ func TestMonitoredBankKeeper_SendCoins_Blocked_Sanctions(t *testing.T) {
 	bankInput := keepertest.CreateTestInputWithKeys(t, "bank")
 	baseBankKeeper := bankkeeper.NewBaseKeeper(
 		bankInput.Cdc,
-		bankInput.StoreService,
+		keepertest.WrapStoreService(bankInput.StoreKey),
 		nil,
 		nil,
 		"",
-		bankInput.Logger,
+		keepertest.Logger(),
 	)
 
 	monitoredKeeper := keeper.NewMonitoredBankKeeper(baseBankKeeper, complianceKeeper)
@@ -94,7 +94,6 @@ func TestMonitoredBankKeeper_SendCoins_Blocked_Sanctions(t *testing.T) {
 	to := sdk.AccAddress([]byte("to_address"))
 
 	// Add sanctions screening result
-	now := time.Now()
 	err = complianceKeeper.SetSanctionsResult(complianceInput.Ctx, &types.SanctionsScreeningResult{
 		Address:    from.String(),
 		Status:     types.SanctionsStatus_SANCTIONS_CONFIRMED,
@@ -125,11 +124,11 @@ func TestMonitoredBankKeeper_SendCoins_Blocked_LargeTransaction(t *testing.T) {
 	bankInput := keepertest.CreateTestInputWithKeys(t, "bank")
 	baseBankKeeper := bankkeeper.NewBaseKeeper(
 		bankInput.Cdc,
-		bankInput.StoreService,
+		keepertest.WrapStoreService(bankInput.StoreKey),
 		nil,
 		nil,
 		"",
-		bankInput.Logger,
+		keepertest.Logger(),
 	)
 
 	monitoredKeeper := keeper.NewMonitoredBankKeeper(baseBankKeeper, complianceKeeper)
@@ -179,11 +178,11 @@ func TestGetModuleAddress(t *testing.T) {
 	bankInput := keepertest.CreateTestInputWithKeys(t, "bank")
 	baseBankKeeper := bankkeeper.NewBaseKeeper(
 		bankInput.Cdc,
-		bankInput.StoreService,
+		keepertest.WrapStoreService(bankInput.StoreKey),
 		nil,
 		nil,
 		"",
-		bankInput.Logger,
+		keepertest.Logger(),
 	)
 
 	monitoredKeeper := keeper.NewMonitoredBankKeeper(baseBankKeeper, complianceKeeper)

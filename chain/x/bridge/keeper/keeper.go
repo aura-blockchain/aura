@@ -1299,15 +1299,21 @@ func (k Keeper) VerifyMerkleProofBytes(merkleRoot, transactionLeaf, merkleProofB
 		// New format: index + hash
 		for i := 0; i < len(merkleProofBytes); i += 33 {
 			idx := uint64(merkleProofBytes[i])
-			hash := merkleProofBytes[i+1 : i+33]
+			// IMPORTANT: Copy the hash bytes to avoid aliasing issues
+			hashCopy := make([]byte, 32)
+			copy(hashCopy, merkleProofBytes[i+1:i+33])
 			indices = append(indices, idx)
-			proofHashes = append(proofHashes, hash)
+			proofHashes = append(proofHashes, hashCopy)
 		}
 	} else if len(merkleProofBytes)%32 == 0 {
 		// Old format: hash only (try both orderings - brute force)
 		// This is less secure but maintains backward compatibility
 		for i := 0; i < len(merkleProofBytes); i += 32 {
-			proofHashes = append(proofHashes, merkleProofBytes[i:i+32])
+			// IMPORTANT: Copy the hash bytes to avoid aliasing issues
+			// If we just slice, the underlying array may be modified later
+			hashCopy := make([]byte, 32)
+			copy(hashCopy, merkleProofBytes[i:i+32])
+			proofHashes = append(proofHashes, hashCopy)
 		}
 		// Try to verify by attempting both orderings at each level
 		return k.verifyMerkleProofBruteForce(merkleRoot, transactionLeaf, proofHashes)
@@ -1321,15 +1327,23 @@ func (k Keeper) VerifyMerkleProofBytes(merkleRoot, transactionLeaf, merkleProofB
 
 	for i := 0; i < len(proofHashes); i++ {
 		sibling := proofHashes[i]
-		idx := indices[i]
+		siblingIdx := indices[i]
 
+		// IMPORTANT: Use explicit allocation to avoid corrupting input slices
 		var combined []byte
-		if idx%2 == 1 {
-			// Sibling is on the right (odd index)
-			combined = append(currentHash, sibling...)
+		// The index stored is the sibling's position in the tree level.
+		// If sibling index is even, sibling is on the left (before current).
+		// If sibling index is odd, sibling is on the right (after current).
+		if siblingIdx%2 == 1 {
+			// Sibling is at odd position → sibling on RIGHT, current on LEFT
+			combined = make([]byte, 0, 64)
+			combined = append(combined, currentHash...)
+			combined = append(combined, sibling...)
 		} else {
-			// Sibling is on the left (even index)
-			combined = append(sibling, currentHash...)
+			// Sibling is at even position → sibling on LEFT, current on RIGHT
+			combined = make([]byte, 0, 64)
+			combined = append(combined, sibling...)
+			combined = append(combined, currentHash...)
 		}
 
 		hash := sha256.Sum256(combined)
@@ -1361,13 +1375,18 @@ func (k Keeper) verifyMerkleProofBruteForce(merkleRoot, transactionLeaf []byte, 
 			sibling := proofHashes[i]
 
 			// Use bit i of pattern to determine ordering
+			// IMPORTANT: Use explicit allocation to avoid corrupting input slices
 			var combined []byte
 			if (pattern & (1 << uint(i))) != 0 {
 				// Bit is 1: current on left, sibling on right
-				combined = append(currentHash, sibling...)
+				combined = make([]byte, 0, 64)
+				combined = append(combined, currentHash...)
+				combined = append(combined, sibling...)
 			} else {
 				// Bit is 0: sibling on left, current on right
-				combined = append(sibling, currentHash...)
+				combined = make([]byte, 0, 64)
+				combined = append(combined, sibling...)
+				combined = append(combined, currentHash...)
 			}
 
 			hash := sha256.Sum256(combined)
