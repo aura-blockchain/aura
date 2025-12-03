@@ -191,6 +191,12 @@ func TestRevealOrder_InsufficientBalance(t *testing.T) {
 
 	sender := suite.TestAccounts[0]
 
+	// Disable batch execution to test immediate execution path
+	params := suite.Keeper.GetParams(ctx)
+	params.BatchExecutionEnabled = false
+	err := suite.Keeper.SetParams(ctx, params)
+	require.NoError(t, err)
+
 	// Order details (large amount)
 	orderType := types.SwapOrderType_SELL
 	auraAmount := sdkmath.NewInt(10000000000)
@@ -203,7 +209,7 @@ func TestRevealOrder_InsufficientBalance(t *testing.T) {
 	commitID, err := suite.Keeper.CommitOrder(ctx, sender.String(), commitHash)
 	require.NoError(t, err)
 
-	// Try to reveal without funds (should fail)
+	// Try to reveal without funds (should fail during immediate execution)
 	_, err = suite.Keeper.RevealOrder(ctx, commitID, sender.String(), orderType, auraAmount, otherCoin, otherAmount, salt)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "insufficient balance")

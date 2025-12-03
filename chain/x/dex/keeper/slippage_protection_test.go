@@ -14,23 +14,22 @@ import (
 )
 
 // Helper to create keeper with mock bank keeper for slippage tests
-func setupSlippageTestKeeper(t *testing.T) (*keeper.Keeper, sdk.Context) {
+func setupSlippageTestKeeper(t *testing.T) (*keeper.Keeper, sdk.Context, *MockBankKeeper) {
 	input := keepertest.CreateTestInput(t)
 
 	// Use the existing MockBankKeeper from keeper_comprehensive_test.go
 	mockBank := NewMockBankKeeper()
-	// Set up large balances for all addresses so tests don't fail due to insufficient funds
-	// The mock will return zero by default, but swaps check balances
 
 	k := keeper.NewKeeper(input.Cdc, input.StoreKey, mockBank, nil, nil)
-	return k, input.Ctx
+	return k, input.Ctx, mockBank
 }
 
 // SlippageProtectionTestSuite tests comprehensive slippage protection
 type SlippageProtectionTestSuite struct {
 	suite.Suite
-	keeper *keeper.Keeper
-	ctx    sdk.Context
+	keeper   *keeper.Keeper
+	ctx      sdk.Context
+	mockBank *MockBankKeeper
 }
 
 func TestSlippageProtectionSuite(t *testing.T) {
@@ -38,7 +37,19 @@ func TestSlippageProtectionSuite(t *testing.T) {
 }
 
 func (suite *SlippageProtectionTestSuite) SetupTest() {
-	suite.keeper, suite.ctx = setupSlippageTestKeeper(suite.T())
+	suite.keeper, suite.ctx, suite.mockBank = setupSlippageTestKeeper(suite.T())
+}
+
+// Helper to create and fund a test address
+func (suite *SlippageProtectionTestSuite) fundedAddr(uaura, uusdt int64) (sdk.AccAddress, string) {
+	addr := testdata.GenTestAddr()
+	if uaura > 0 {
+		suite.mockBank.SetBalance(addr, "uaura", sdkmath.NewInt(uaura))
+	}
+	if uusdt > 0 {
+		suite.mockBank.SetBalance(addr, "uusdt", sdkmath.NewInt(uusdt))
+	}
+	return addr, addr.String()
 }
 
 // TestSlippageEnforcementBeforeStateChanges verifies slippage check happens before any state modifications
@@ -46,8 +57,9 @@ func (suite *SlippageProtectionTestSuite) TestSlippageEnforcementBeforeStateChan
 	ctx := suite.ctx
 	k := suite.keeper
 
-	// Create pool
-	creator := testdata.GenTestAddr().String()
+	// Create pool with funded creator
+	creatorAddr, creator := suite.fundedAddr(1000000, 1000000)
+	_ = creatorAddr
 	pool, _, err := k.CreatePool(
 		ctx,
 		creator,
@@ -66,7 +78,7 @@ func (suite *SlippageProtectionTestSuite) TestSlippageEnforcementBeforeStateChan
 	initialSwapCount := initialPool.SwapCount
 
 	// Attempt swap with impossible minAmountOut
-	trader := testdata.GenTestAddr().String()
+	_, trader := suite.fundedAddr(10000, 10000)
 	coinIn := sdk.NewCoin("uaura", sdkmath.NewInt(1000))
 	impossibleMinOut := sdkmath.NewInt(1000000) // Way more than possible
 
@@ -89,7 +101,7 @@ func (suite *SlippageProtectionTestSuite) TestMinAmountOutEnforcement() {
 	k := suite.keeper
 
 	// Create pool with 1:1 ratio
-	creator := keepertest.GenTestAddr().String()
+	_, creator := suite.fundedAddr(1000000, 1000000)
 	pool, _, err := k.CreatePool(
 		ctx,
 		creator,
@@ -100,7 +112,7 @@ func (suite *SlippageProtectionTestSuite) TestMinAmountOutEnforcement() {
 	)
 	suite.Require().NoError(err)
 
-	trader := testdata.GenTestAddr().String()
+	_, trader := suite.fundedAddr(100000, 100000)
 	coinIn := sdk.NewCoin("uaura", sdkmath.NewInt(1000))
 
 	// First, get a quote to see what output we'd actually get
@@ -132,7 +144,7 @@ func (suite *SlippageProtectionTestSuite) TestMaxSlippageBpsEnforcement() {
 	k := suite.keeper
 
 	// Create small pool to make price impact significant
-	creator := keepertest.GenTestAddr().String()
+	_, creator := suite.fundedAddr(100000, 100000)
 	pool, _, err := k.CreatePool(
 		ctx,
 		creator,
@@ -143,7 +155,7 @@ func (suite *SlippageProtectionTestSuite) TestMaxSlippageBpsEnforcement() {
 	)
 	suite.Require().NoError(err)
 
-	trader := testdata.GenTestAddr().String()
+	_, trader := suite.fundedAddr(100000, 100000)
 
 	// Large swap relative to pool size (5% of pool for lower price impact)
 	largeSwap := sdk.NewCoin("uaura", sdkmath.NewInt(5000))
@@ -184,7 +196,7 @@ func (suite *SlippageProtectionTestSuite) TestSlippageProtectionAgainstSandwichA
 	k := suite.keeper
 
 	// Create pool
-	creator := testdata.GenTestAddr().String()
+	_, creator := suite.fundedAddr(1000000, 1000000)
 	pool, _, err := k.CreatePool(
 		ctx,
 		creator,
@@ -195,8 +207,8 @@ func (suite *SlippageProtectionTestSuite) TestSlippageProtectionAgainstSandwichA
 	)
 	suite.Require().NoError(err)
 
-	victim := testdata.GenTestAddr().String()
-	attacker := testdata.GenTestAddr().String()
+	_, victim := suite.fundedAddr(100000, 100000)
+	_, attacker := suite.fundedAddr(500000, 500000)
 
 	// Victim wants to swap 10000 uaura
 	victimSwapAmount := sdkmath.NewInt(10000)
@@ -234,7 +246,7 @@ func (suite *SlippageProtectionTestSuite) TestSlippageProtectionWithMultipleSwap
 	k := suite.keeper
 
 	// Create pool
-	creator := testdata.GenTestAddr().String()
+	_, creator := suite.fundedAddr(1000000, 1000000)
 	pool, _, err := k.CreatePool(
 		ctx,
 		creator,
@@ -245,7 +257,7 @@ func (suite *SlippageProtectionTestSuite) TestSlippageProtectionWithMultipleSwap
 	)
 	suite.Require().NoError(err)
 
-	trader := testdata.GenTestAddr().String()
+	_, trader := suite.fundedAddr(100000, 100000)
 	swapAmount := sdkmath.NewInt(1000)
 
 	// Execute multiple swaps, each should enforce slippage
@@ -281,7 +293,7 @@ func (suite *SlippageProtectionTestSuite) TestSlippageProtectionEdgeCases() {
 	k := suite.keeper
 
 	// Create pool
-	creator := testdata.GenTestAddr().String()
+	_, creator := suite.fundedAddr(1000000, 1000000)
 	pool, _, err := k.CreatePool(
 		ctx,
 		creator,
@@ -292,7 +304,7 @@ func (suite *SlippageProtectionTestSuite) TestSlippageProtectionEdgeCases() {
 	)
 	suite.Require().NoError(err)
 
-	trader := testdata.GenTestAddr().String()
+	_, trader := suite.fundedAddr(100000, 100000)
 
 	// Edge Case 1: Very small swap (dust)
 	tinySwap := sdk.NewCoin("uaura", sdkmath.NewInt(1))
@@ -328,7 +340,7 @@ func (suite *SlippageProtectionTestSuite) TestSlippageProtectionBidirectional() 
 	k := suite.keeper
 
 	// Create pool
-	creator := testdata.GenTestAddr().String()
+	_, creator := suite.fundedAddr(1000000, 1000000)
 	pool, _, err := k.CreatePool(
 		ctx,
 		creator,
@@ -339,7 +351,7 @@ func (suite *SlippageProtectionTestSuite) TestSlippageProtectionBidirectional() 
 	)
 	suite.Require().NoError(err)
 
-	trader := testdata.GenTestAddr().String()
+	_, trader := suite.fundedAddr(100000, 100000)
 	swapAmount := sdkmath.NewInt(1000)
 
 	// Test swap A -> B
@@ -411,7 +423,7 @@ func (suite *SlippageProtectionTestSuite) TestSlippageRejectionErrorMessages() {
 	k := suite.keeper
 
 	// Create pool
-	creator := testdata.GenTestAddr().String()
+	_, creator := suite.fundedAddr(1000000, 1000000)
 	pool, _, err := k.CreatePool(
 		ctx,
 		creator,
@@ -422,7 +434,7 @@ func (suite *SlippageProtectionTestSuite) TestSlippageRejectionErrorMessages() {
 	)
 	suite.Require().NoError(err)
 
-	trader := testdata.GenTestAddr().String()
+	_, trader := suite.fundedAddr(100000, 100000)
 	coinIn := sdk.NewCoin("uaura", sdkmath.NewInt(1000))
 	impossibleMin := sdkmath.NewInt(1000000)
 

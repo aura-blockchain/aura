@@ -139,26 +139,10 @@ func (k Keeper) RevealOrder(
 		return "", fmt.Errorf("other coin amount must be positive")
 	}
 
-	// Validate user has sufficient balance
+	// Parse sender address (needed for balance check and later operations)
 	addr, err := sdk.AccAddressFromBech32(sender)
 	if err != nil {
 		return "", fmt.Errorf("invalid sender address: %w", err)
-	}
-
-	var requiredDenom string
-	var requiredAmount sdkmath.Int
-	if orderType == types.SwapOrderType_SELL {
-		requiredDenom = "uaura"
-		requiredAmount = auraAmount
-	} else {
-		requiredDenom = otherCoin
-		requiredAmount = otherAmount
-	}
-
-	balance := k.bankKeeper.GetBalance(ctx, addr, requiredDenom)
-	if balance.Amount.LT(requiredAmount) {
-		return "", fmt.Errorf("insufficient balance: have %s, need %s %s",
-			balance.Amount.String(), requiredAmount.String(), requiredDenom)
 	}
 
 	// === 2. EFFECTS - Update state BEFORE external calls ===
@@ -211,6 +195,24 @@ func (k Keeper) RevealOrder(
 	// === 3. INTERACTIONS - External calls for immediate execution ===
 
 	// If batch execution is disabled, execute order immediately
+
+	// Check balance before immediate execution (batch execution will check later)
+	var requiredDenom string
+	var requiredAmount sdkmath.Int
+	if orderType == types.SwapOrderType_SELL {
+		requiredDenom = "uaura"
+		requiredAmount = auraAmount
+	} else {
+		requiredDenom = otherCoin
+		requiredAmount = otherAmount
+	}
+
+	balance := k.bankKeeper.GetBalance(ctx, addr, requiredDenom)
+	if balance.Amount.LT(requiredAmount) {
+		return "", fmt.Errorf("insufficient balance: have %s, need %s %s",
+			balance.Amount.String(), requiredAmount.String(), requiredDenom)
+	}
+
 	// Store order
 	k.SetOrder(ctx, order)
 
