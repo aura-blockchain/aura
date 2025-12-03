@@ -154,7 +154,7 @@ func TestAppModule_BeginBlock(t *testing.T) {
 
 	// BeginBlock should not panic
 	require.NotPanics(t, func() {
-		module.BeginBlock()
+		module.BeginBlock(input.Ctx)
 	})
 }
 
@@ -233,7 +233,7 @@ func TestAppModule_MultipleOperations(t *testing.T) {
 
 	require.NotPanics(t, func() {
 		_ = module.Name()
-		module.BeginBlock()
+		module.BeginBlock(input.Ctx)
 		module.EndBlock()
 		_ = module.InitGenesis(input.Ctx, *types.DefaultGenesis())
 		_ = module.ExportGenesis(input.Ctx)
