@@ -174,7 +174,7 @@ func TestAppModule_EndBlock(t *testing.T) {
 
 	// EndBlock should not panic
 	require.NotPanics(t, func() {
-		module.EndBlock()
+		module.EndBlock(input.Ctx)
 	})
 }
 
@@ -234,7 +234,7 @@ func TestAppModule_MultipleOperations(t *testing.T) {
 	require.NotPanics(t, func() {
 		_ = module.Name()
 		module.BeginBlock(input.Ctx)
-		module.EndBlock()
+		module.EndBlock(input.Ctx)
 		_ = module.InitGenesis(input.Ctx, *types.DefaultGenesis())
 		_ = module.ExportGenesis(input.Ctx)
 	})
