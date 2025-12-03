@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"bytes"
+	"encoding/hex"
 	"fmt"
 
 	sdkmath "cosmossdk.io/math"
@@ -683,10 +684,15 @@ func (k Keeper) GetAllSlashingEvents(ctx sdk.Context) []*types.SlashingEvent {
 	var events []*types.SlashingEvent
 	for ; iterator.Valid(); iterator.Next() {
 		var event types.SlashingEvent
-		if err := k.cdc.Unmarshal(iterator.Value(), &event); err == nil {
-			eventCopy := event
-			events = append(events, &eventCopy)
+		if err := k.cdc.Unmarshal(iterator.Value(), &event); err != nil {
+			// Log corrupted data but continue iteration
+			k.Logger(ctx).Error("failed to unmarshal slashing event",
+				"key", hex.EncodeToString(iterator.Key()),
+				"error", err.Error())
+			continue
 		}
+		eventCopy := event
+		events = append(events, &eventCopy)
 	}
 	return events
 }

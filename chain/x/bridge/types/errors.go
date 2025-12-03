@@ -12,4 +12,5 @@ var (
 	ErrTimelockNotElapsed    = errors.New("timelock period has not elapsed")
 	ErrChainDisabled         = errors.New("chain disabled")
 	ErrInvalidSignature      = errors.New("invalid cryptographic signature")
+	ErrCorruptedData         = errors.New("corrupted or invalid data in storage")
 )

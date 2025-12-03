@@ -49,7 +49,7 @@ func TestQuerySecurityStats(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, resp)
 		require.NotNil(t, resp.Stats)
-		require.Equal(t, uint64(1), resp.Stats.TotalContractsUploaded)
+		require.Equal(t, uint64(1), resp.Stats.GetTotalCodesAnalyzed())
 	})
 }
 

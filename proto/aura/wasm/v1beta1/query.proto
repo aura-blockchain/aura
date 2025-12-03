@@ -74,6 +74,11 @@ service Query {
   rpc IsContractPaused(QueryIsContractPausedRequest) returns (QueryIsContractPausedResponse) {
     option (google.api.http).get = "/aura/wasm/v1beta1/security/paused/{address}";
   }
+
+  // ContractAdmin returns the admin of a contract
+  rpc ContractAdmin(QueryContractAdminRequest) returns (QueryContractAdminResponse) {
+    option (google.api.http).get = "/aura/wasm/v1beta1/contract/{address}/admin";
+  }
 }
 
 // QueryParamsRequest is the request type for the Query/Params RPC method
@@ -250,4 +255,16 @@ message QueryIsContractPausedRequest {
 message QueryIsContractPausedResponse {
   // is_paused indicates if the contract is paused
   bool is_paused = 1;
+}
+
+// QueryContractAdminRequest is the request type for the Query/ContractAdmin RPC method
+message QueryContractAdminRequest {
+  // address is the bech32 address of the contract
+  string address = 1;
+}
+
+// QueryContractAdminResponse is the response type for the Query/ContractAdmin RPC method
+message QueryContractAdminResponse {
+  // admin is the bech32 address of the contract admin (empty if no admin)
+  string admin = 1;
 }
