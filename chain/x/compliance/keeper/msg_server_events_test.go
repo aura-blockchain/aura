@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"testing"
 	"time"
@@ -11,13 +12,20 @@ import (
 	"github.com/aequitas/aura/chain/x/compliance/types"
 )
 
+// createTestAddress creates a valid Bech32 address for testing
+func createTestAddress(name string) string {
+	hash := sha256.Sum256([]byte(name))
+	addr := sdk.AccAddress(hash[:20])
+	return addr.String()
+}
+
 // TestKYCSubmission_EventEmitted verifies that KYC submission emits proper audit event
 func TestKYCSubmission_EventEmitted(t *testing.T) {
 	keeper, ctx := setupTestKeeper(t)
 	server := NewMsgServer(keeper)
 
 	// Setup approved provider
-	providerAddr := sdk.AccAddress([]byte("provider_address_12")).String()
+	providerAddr := createTestAddress("provider_address")
 	params := keeper.GetParams(ctx)
 	params.ApprovedKycProviders = []string{providerAddr}
 	err := keeper.SetParams(ctx, params)
@@ -27,10 +35,11 @@ func TestKYCSubmission_EventEmitted(t *testing.T) {
 	copy(piiCommitment, []byte("test_commitment_hash_32_bytes"))
 
 	req := &types.MsgSubmitKYC{
-		Address:       "aura1kyc",
+		Address:       createTestAddress("kyc_user"),
 		KycLevel:      types.KYCLevel_KYC_LEVEL_BASIC,
 		Provider:      providerAddr,
 		PiiCommitment: piiCommitment,
+		Jurisdiction:  "US",
 	}
 
 	_, err = server.SubmitKYC(sdk.WrapSDKContext(ctx), req)
@@ -43,13 +52,13 @@ func TestKYCSubmission_EventEmitted(t *testing.T) {
 	var kycEvent sdk.Event
 	found := false
 	for _, event := range events {
-		if event.Type == types.EventTypeKYCSubmitted {
+		if event.Type == types.EventTypeKYCApproved {
 			kycEvent = event
 			found = true
 			break
 		}
 	}
-	require.True(t, found, "kyc_submitted event not found")
+	require.True(t, found, "kyc_approved event not found")
 
 	// Verify event attributes
 	attrs := abciAttributesToMap(kycEvent)
@@ -74,8 +83,8 @@ func TestSARReporting_EventEmitted(t *testing.T) {
 	server := NewMsgServer(keeper)
 
 	req := &types.MsgReportSuspiciousActivity{
-		Reporter:        "aura1reporter",
-		Address:         "aura1user",
+		Reporter:        createTestAddress("reporter"),
+		Address:         createTestAddress("user"),
 		TransactionHash: "hash123",
 		ActivityType:    "structuring",
 		Description:     "many small transactions",
@@ -120,7 +129,7 @@ func TestSanctionsScreening_EventEmitted(t *testing.T) {
 	server := NewMsgServer(keeper)
 
 	req := &types.MsgScreenSanctions{
-		Address: "aura1sanction",
+		Address: createTestAddress("sanction_user"),
 	}
 
 	resp, err := server.ScreenSanctions(sdk.WrapSDKContext(ctx), req)
@@ -162,7 +171,7 @@ func TestGDPRConsent_EventEmitted(t *testing.T) {
 	server := NewMsgServer(keeper)
 
 	req := &types.MsgRecordGDPRConsent{
-		Address:        "aura1gdpr",
+		Address:        createTestAddress("gdpr_user"),
 		ConsentType:    "data_processing",
 		Consented:      true,
 		ConsentVersion: "v1.0",
@@ -205,7 +214,7 @@ func TestGDPRDataRequest_EventEmitted(t *testing.T) {
 	server := NewMsgServer(keeper)
 
 	req := &types.MsgRequestGDPRData{
-		Address:     "aura1gdprreq",
+		Address:     createTestAddress("gdpr_requester"),
 		RequestType: "access",
 	}
 
@@ -246,7 +255,7 @@ func TestGDPRDataErasure_EventEmitted(t *testing.T) {
 	server := NewMsgServer(keeper)
 
 	req := &types.MsgEraseGDPRData{
-		Address:       "aura1erase",
+		Address:       createTestAddress("erase_user"),
 		ErasureReason: "user_request",
 	}
 
@@ -293,7 +302,7 @@ func TestTaxReportGeneration_EventEmitted(t *testing.T) {
 	server := NewMsgServer(keeper)
 
 	req := &types.MsgGenerateTaxReport{
-		Address:      "aura1tax",
+		Address:      createTestAddress("tax_user"),
 		TaxYear:      "2024",
 		Jurisdiction: "US",
 		ReportType:   "1099",
@@ -338,7 +347,7 @@ func TestGDPRConsentWithdrawal_EventEmitted(t *testing.T) {
 	server := NewMsgServer(keeper)
 
 	req := &types.MsgRecordGDPRConsent{
-		Address:        "aura1gdpr",
+		Address:        createTestAddress("gdpr_withdraw"),
 		ConsentType:    "data_processing",
 		Consented:      false, // Withdrawal
 		ConsentVersion: "v1.0",
@@ -354,17 +363,18 @@ func TestGDPRConsentWithdrawal_EventEmitted(t *testing.T) {
 	var consentEvent sdk.Event
 	found := false
 	for _, event := range events {
-		if event.Type == types.EventTypeGDPRConsentRecorded {
+		if event.Type == types.EventTypeGDPRConsentWithdrawn {
 			consentEvent = event
 			found = true
 			break
 		}
 	}
-	require.True(t, found, "gdpr_consent_recorded event not found")
+	require.True(t, found, "gdpr_consent_withdrawn event not found")
 
 	// Verify withdrawal is properly recorded
 	attrs := abciAttributesToMap(consentEvent)
-	require.Equal(t, "false", attrs[types.AttributeKeyConsented])
+	require.Equal(t, req.ConsentType, attrs[types.AttributeKeyConsentType])
+	require.Equal(t, "true", attrs[types.AttributeKeyProcessingRestricted])
 }
 
 // TestSanctionsScreening_WithMatches_EventEmitted verifies flagged screening emits proper event
@@ -377,7 +387,7 @@ func TestSanctionsScreening_WithMatches_EventEmitted(t *testing.T) {
 	keeper.RegisterSanctionsProvider("mock", provider)
 
 	req := &types.MsgScreenSanctions{
-		Address: "aura1flagged",
+		Address: createTestAddress("flagged_user"),
 	}
 
 	resp, err := server.ScreenSanctions(sdk.WrapSDKContext(ctx), req)
@@ -410,28 +420,31 @@ func TestMultipleEvents_InSingleTransaction(t *testing.T) {
 	server := NewMsgServer(keeper)
 
 	// Setup approved provider
-	providerAddr := sdk.AccAddress([]byte("provider_address_12")).String()
+	providerAddr := createTestAddress("multi_provider")
 	params := keeper.GetParams(ctx)
 	params.ApprovedKycProviders = []string{providerAddr}
 	err := keeper.SetParams(ctx, params)
 	require.NoError(t, err)
+
+	multiAddr := createTestAddress("multi_user")
 
 	// Submit KYC
 	piiCommitment := make([]byte, 32)
 	copy(piiCommitment, []byte("test_commitment_hash_32_bytes"))
 
 	kycReq := &types.MsgSubmitKYC{
-		Address:       "aura1multi",
+		Address:       multiAddr,
 		KycLevel:      types.KYCLevel_KYC_LEVEL_BASIC,
 		Provider:      providerAddr,
 		PiiCommitment: piiCommitment,
+		Jurisdiction:  "US",
 	}
 	_, err = server.SubmitKYC(sdk.WrapSDKContext(ctx), kycReq)
 	require.NoError(t, err)
 
 	// Screen sanctions
 	sanctionsReq := &types.MsgScreenSanctions{
-		Address: "aura1multi",
+		Address: multiAddr,
 	}
 	_, err = server.ScreenSanctions(sdk.WrapSDKContext(ctx), sanctionsReq)
 	require.NoError(t, err)
