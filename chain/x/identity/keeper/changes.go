@@ -329,6 +329,21 @@ func (k *Keeper) SubmitVerification(ctx sdk.Context, requestID, assistant string
 		return nil, err
 	}
 
+	// Check if the identity being verified has any revoked credentials
+	// This prevents verification of identities with compromised credentials
+	identity, err := k.GetIdentityRecord(ctx, request.Did)
+	if err == nil && identity != nil {
+		// Check all verification methods for revocation
+		for _, verificationMethod := range identity.VerificationMethods {
+			if k.IsCredentialRevoked(ctx, verificationMethod) {
+				return nil, types.ErrCredentialRevoked.Wrapf(
+					"identity %s has revoked verification method %s",
+					request.Did, verificationMethod,
+				)
+			}
+		}
+	}
+
 	request.Assistant = assistant
 	request.VerdictHeight = ctx.BlockHeight()
 

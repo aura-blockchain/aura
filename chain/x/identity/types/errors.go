@@ -52,6 +52,13 @@ const (
 	CodeRotationInProgress uint32 = 501
 	CodeRotationNotFound   uint32 = 502
 
+	// DID Key Rotation error codes (550-559)
+	CodeDIDKeyRotationNotFound      uint32 = 550
+	CodeDIDKeyRotationInProgress    uint32 = 551
+	CodeInvalidVerificationMethod   uint32 = 552
+	CodeKeyInGracePeriod            uint32 = 553
+	CodeKeyNotValid                 uint32 = 554
+
 	// Identity change error codes (600-699)
 	CodeIdentityNotFound         uint32 = 600
 	CodeIdentityAlreadyExists    uint32 = 601
@@ -71,6 +78,20 @@ const (
 	CodeNoCommitment          uint32 = 652
 	CodeInvalidCommitment     uint32 = 653
 	CodeUnauthorized          uint32 = 654
+
+	// Credential revocation error codes (670-689)
+	CodeCredentialRevoked         uint32 = 670
+	CodeCredentialNotFound        uint32 = 671
+	CodeCredentialAlreadyRevoked  uint32 = 672
+	CodeInvalidCredentialID       uint32 = 673
+
+	// Attribute Access Control error codes (690-709)
+	CodeAttributeNotFound     uint32 = 690
+	CodeAccessDenied          uint32 = 691
+	CodeAccessExpired         uint32 = 692
+	CodeInvalidPermission     uint32 = 693
+	CodePermissionNotFound    uint32 = 694
+	CodeInvalidAccessLevel    uint32 = 695
 
 	// General error codes (900-999)
 	CodeInvalidAddress uint32 = 900
@@ -136,6 +157,15 @@ var (
 	ErrRotationNotFound   = errors.Register(ModuleName, CodeRotationNotFound, "rotation not found")
 )
 
+// DID Key Rotation errors
+var (
+	ErrDIDKeyRotationNotFound    = errors.Register(ModuleName, CodeDIDKeyRotationNotFound, "DID key rotation not found")
+	ErrDIDKeyRotationInProgress  = errors.Register(ModuleName, CodeDIDKeyRotationInProgress, "DID key rotation already in progress")
+	ErrInvalidVerificationMethod = errors.Register(ModuleName, CodeInvalidVerificationMethod, "invalid verification method")
+	ErrKeyInGracePeriod          = errors.Register(ModuleName, CodeKeyInGracePeriod, "old key still in grace period")
+	ErrKeyNotValid               = errors.Register(ModuleName, CodeKeyNotValid, "key is not valid")
+)
+
 // Identity change errors
 var (
 	ErrIdentityNotFound         = errors.Register(ModuleName, CodeIdentityNotFound, "identity not found")
@@ -158,6 +188,24 @@ var (
 	ErrNoCommitment          = errors.Register(ModuleName, CodeNoCommitment, "no PII commitment found")
 	ErrInvalidCommitment     = errors.Register(ModuleName, CodeInvalidCommitment, "invalid PII commitment")
 	ErrUnauthorized          = errors.Register(ModuleName, CodeUnauthorized, "unauthorized action")
+)
+
+// Credential revocation errors
+var (
+	ErrCredentialRevoked        = errors.Register(ModuleName, CodeCredentialRevoked, "credential has been revoked")
+	ErrCredentialNotFound       = errors.Register(ModuleName, CodeCredentialNotFound, "credential not found")
+	ErrCredentialAlreadyRevoked = errors.Register(ModuleName, CodeCredentialAlreadyRevoked, "credential already revoked")
+	ErrInvalidCredentialID      = errors.Register(ModuleName, CodeInvalidCredentialID, "invalid credential ID")
+)
+
+// Attribute Access Control errors
+var (
+	ErrAttributeNotFound   = errors.Register(ModuleName, CodeAttributeNotFound, "attribute not found")
+	ErrAccessDenied        = errors.Register(ModuleName, CodeAccessDenied, "access denied")
+	ErrAccessExpired       = errors.Register(ModuleName, CodeAccessExpired, "access permission expired")
+	ErrInvalidPermission   = errors.Register(ModuleName, CodeInvalidPermission, "invalid permission")
+	ErrPermissionNotFound  = errors.Register(ModuleName, CodePermissionNotFound, "permission not found")
+	ErrInvalidAccessLevel  = errors.Register(ModuleName, CodeInvalidAccessLevel, "invalid access level")
 )
 
 // General errors

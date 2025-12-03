@@ -58,6 +58,9 @@ message IdentityChangeParams {
 
   // Staleness investigator chain
   string staleness_investigator_chain = 5;
+
+  // Key rotation grace period (seconds) - old keys remain valid during this time
+  uint64 key_rotation_grace_period_seconds = 6;
 }
 
 // Role represents a named set of permissions
@@ -527,4 +530,90 @@ message RateLimitConfig {
 
   // Window start timestamp
   google.protobuf.Timestamp window_start = 8 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+}
+
+// CredentialRevocation represents a revoked credential
+message CredentialRevocation {
+  // Unique credential identifier
+  string credential_id = 1;
+
+  // DID that owns the credential
+  string did = 2;
+
+  // Timestamp when revoked
+  google.protobuf.Timestamp revoked_at = 3 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+
+  // Address that revoked the credential
+  string revoked_by = 4;
+
+  // Reason for revocation
+  string reason = 5;
+
+  // Additional metadata
+  map<string, string> metadata = 6;
+}
+
+// DIDKeyRotation represents a DID key rotation event
+message DIDKeyRotation {
+  // DID being rotated
+  string did = 1;
+
+  // Old verification method (public key identifier)
+  string old_verification_method = 2;
+
+  // New verification method (public key identifier)
+  string new_verification_method = 3;
+
+  // Rotation timestamp
+  google.protobuf.Timestamp rotation_time = 4 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+
+  // Address that initiated rotation
+  string initiated_by = 5;
+
+  // Rotation reason
+  string reason = 6;
+
+  // Grace period end (old key valid until this time)
+  google.protobuf.Timestamp grace_period_end = 7 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+
+  // Rotation status
+  DIDKeyRotationStatus status = 8;
+}
+
+// DIDKeyRotationStatus enum
+enum DIDKeyRotationStatus {
+  DID_KEY_ROTATION_STATUS_UNSPECIFIED = 0;
+  DID_KEY_ROTATION_STATUS_PENDING = 1;      // Rotation initiated, grace period active
+  DID_KEY_ROTATION_STATUS_COMPLETED = 2;    // Grace period ended, old key invalidated
+  DID_KEY_ROTATION_STATUS_REVERTED = 3;     // Rotation was reverted
+}
+
+// DIDKeyHistory tracks historical keys for a DID
+message DIDKeyHistory {
+  // DID
+  string did = 1;
+
+  // Historical key entries
+  repeated DIDKeyHistoryEntry entries = 2;
+}
+
+// DIDKeyHistoryEntry represents a single key in the history
+message DIDKeyHistoryEntry {
+  // Verification method (public key identifier)
+  string verification_method = 1;
+
+  // When this key became active
+  google.protobuf.Timestamp active_from = 2 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+
+  // When this key became inactive (nil if current)
+  google.protobuf.Timestamp active_until = 3 [(gogoproto.stdtime) = true];
+
+  // Who initiated the rotation (if rotated)
+  string rotated_by = 4;
+
+  // Reason for rotation
+  string rotation_reason = 5;
+
+  // Whether this key is currently valid
+  bool is_current = 6;
 }
