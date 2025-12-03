@@ -577,3 +577,137 @@ func (k Keeper) GetValidatorSigningInfo(ctx sdk.Context, validatorAddress string
 
 	return signingInfo
 }
+
+// ========================================================================
+// FRAUD PROOF INTEGRATION
+// ========================================================================
+
+// slashValidatorsForFraudulentTransfer slashes all validators who signed a fraudulent transfer.
+//
+// SECURITY CRITICAL: This is called when a fraud proof is validated as correct.
+// All validators who attested to the fraudulent transfer must be punished economically.
+//
+// This function:
+//   1. Retrieves the transfer and all validator signatures
+//   2. For each validator who signed, submits slashing evidence
+//   3. Slashes the validator's stake and jails them
+//   4. Records slashing events for audit trail
+//
+// Parameters:
+//   - ctx: SDK context
+//   - transferID: The fraudulent transfer ID
+//   - fraudProofID: The fraud proof ID that proved the transfer fraudulent
+//
+// Returns:
+//   - error: If slashing fails for all validators (partial failures are logged but don't cause error)
+func (k Keeper) slashValidatorsForFraudulentTransfer(ctx sdk.Context, transferID string, fraudProofID string) error {
+	// Get the transfer
+	transfer, found := k.getTransfer(ctx, transferID)
+	if !found {
+		return fmt.Errorf("transfer not found: %s", transferID)
+	}
+
+	// Check if transfer has validator signatures
+	if len(transfer.ValidatorSignatures) == 0 {
+		return fmt.Errorf("no validator signatures found on fraudulent transfer %s", transferID)
+	}
+
+	// Track slashing results
+	slashedCount := 0
+	var lastError error
+
+	// Slash each validator who signed this fraudulent transfer
+	for _, sig := range transfer.ValidatorSignatures {
+		if sig == nil || sig.ValidatorAddress == "" {
+			continue
+		}
+
+		// Create evidence hash (combines transfer ID, fraud proof ID, and validator address)
+		evidenceData := []byte(fmt.Sprintf("fraud:%s:proof:%s:validator:%s",
+			transferID, fraudProofID, sig.ValidatorAddress))
+
+		// Submit slashing evidence for this validator
+		_, err := k.SubmitSlashingEvidence(
+			ctx,
+			sig.ValidatorAddress,
+			types.SlashReason_SLASH_FRAUD_ATTEMPT,
+			transferID,
+			evidenceData,
+			fmt.Sprintf("fraud-proof:%s", fraudProofID),
+		)
+
+		if err != nil {
+			ctx.Logger().Error("failed to slash validator for fraudulent transfer",
+				"validator", sig.ValidatorAddress,
+				"transfer_id", transferID,
+				"fraud_proof_id", fraudProofID,
+				"error", err)
+			lastError = err
+			// Continue to slash other validators even if one fails
+			continue
+		}
+
+		slashedCount++
+		ctx.Logger().Info("validator slashed for signing fraudulent transfer",
+			"validator", sig.ValidatorAddress,
+			"transfer_id", transferID,
+			"fraud_proof_id", fraudProofID)
+	}
+
+	// If no validators were slashed, return error
+	if slashedCount == 0 {
+		if lastError != nil {
+			return fmt.Errorf("failed to slash any validators: %w", lastError)
+		}
+		return fmt.Errorf("failed to slash any validators for fraudulent transfer %s", transferID)
+	}
+
+	ctx.Logger().Info("completed validator slashing for fraudulent transfer",
+		"transfer_id", transferID,
+		"fraud_proof_id", fraudProofID,
+		"slashed_count", slashedCount,
+		"total_signers", len(transfer.ValidatorSignatures))
+
+	return nil
+}
+
+// GetAllSlashingEvents retrieves all slashing events from state.
+//
+// Returns:
+//   - []*SlashingEvent: List of all slashing events
+func (k Keeper) GetAllSlashingEvents(ctx sdk.Context) []*types.SlashingEvent {
+	store := k.store(ctx)
+	iterator := store.Iterator(types.SlashingEventPrefix, sdk.PrefixEndBytes(types.SlashingEventPrefix))
+	defer iterator.Close()
+
+	var events []*types.SlashingEvent
+	for ; iterator.Valid(); iterator.Next() {
+		var event types.SlashingEvent
+		if err := k.cdc.Unmarshal(iterator.Value(), &event); err == nil {
+			eventCopy := event
+			events = append(events, &eventCopy)
+		}
+	}
+	return events
+}
+
+// GetValidatorSlashingHistory retrieves all slashing events for a specific validator.
+//
+// Parameters:
+//   - ctx: SDK context
+//   - validatorAddress: Validator address
+//
+// Returns:
+//   - []*SlashingEvent: List of slashing events for this validator
+func (k Keeper) GetValidatorSlashingHistory(ctx sdk.Context, validatorAddress string) []*types.SlashingEvent {
+	allEvents := k.GetAllSlashingEvents(ctx)
+	var validatorEvents []*types.SlashingEvent
+
+	for _, event := range allEvents {
+		if event != nil && event.ValidatorAddress == validatorAddress {
+			validatorEvents = append(validatorEvents, event)
+		}
+	}
+
+	return validatorEvents
+}

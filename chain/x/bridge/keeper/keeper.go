@@ -807,6 +807,12 @@ func (k Keeper) SubmitFraudProof(ctx sdk.Context, transferID string, submitter s
 }
 
 // ResolveFraudProof finalizes an open fraud proof, rewarding challengers and marking transfers.
+//
+// SECURITY CRITICAL: When a fraud proof is validated as correct (valid=true), this function:
+//   1. Marks the transfer as fraudulent
+//   2. Slashes ALL validators who signed the fraudulent transfer
+//   3. Pays out reward to the fraud proof challenger
+//   4. Prevents the transfer from being finalized
 func (k Keeper) ResolveFraudProof(ctx sdk.Context, transferID string, valid bool) (types.FraudProof, error) {
 	proof, found := k.getFraudProof(ctx, transferID)
 	if !found {
@@ -832,6 +838,17 @@ func (k Keeper) ResolveFraudProof(ctx sdk.Context, transferID string, valid bool
 		if err != nil {
 			return types.FraudProof{}, err
 		}
+
+		// CRITICAL SECURITY: Slash all validators who signed this fraudulent transfer
+		// This is the primary economic deterrent against validator fraud
+		if err := k.slashValidatorsForFraudulentTransfer(ctx, transferID, proof.ProofId); err != nil {
+			ctx.Logger().Error("failed to slash validators for fraudulent transfer",
+				"transfer_id", transferID,
+				"fraud_proof_id", proof.ProofId,
+				"error", err)
+			// Log error but continue - fraud proof is still valid even if slashing fails
+		}
+
 		if err := k.payoutFraudProofReward(ctx, proof.Challenger, transfer.Denom, reward); err != nil {
 			return types.FraudProof{}, err
 		}
