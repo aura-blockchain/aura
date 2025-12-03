@@ -21,6 +21,8 @@ const (
 	EventTypeComplianceViolation       = "compliance_violation"
 	EventTypeParamsUpdated             = "params_updated"
 	EventTypeTransactionAlert          = "transaction_alert"
+	EventTypeRiskLevelChanged          = "risk_level_changed"
+	EventTypeAMLProfileUpdated         = "aml_profile_updated"
 )
 
 // Event attribute keys
@@ -72,6 +74,10 @@ const (
 	AttributeKeyRuleID              = "rule_id"
 	AttributeKeyRiskLevel           = "risk_level"
 	AttributeKeyDescription         = "description"
+	AttributeKeyPreviousRisk        = "previous_risk"
+	AttributeKeyNewRisk             = "new_risk"
+	AttributeKeyTotalVolume         = "total_volume"
+	AttributeKeyAmount              = "amount"
 )
 
 // Helper functions for creating event attributes
