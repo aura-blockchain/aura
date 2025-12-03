@@ -41,6 +41,12 @@ var (
 
 	// Market price keys
 	MarketPricePrefix = []byte{0x08}
+
+	// Order commitment keys (commit-reveal scheme)
+	OrderCommitmentPrefix = []byte{0x09}
+
+	// Queued order keys (batch execution)
+	QueuedOrderPrefix = []byte{0x0A}
 )
 
 // PoolKey returns the store key for a liquidity pool
@@ -104,4 +110,14 @@ func SwapStatsKey(poolID string) []byte {
 // MarketPriceKey returns the key for stored market prices.
 func MarketPriceKey(poolID string) []byte {
 	return append(MarketPricePrefix, []byte(poolID)...)
+}
+
+// OrderCommitmentKey returns the store key for an order commitment
+func OrderCommitmentKey(commitID string) []byte {
+	return append(OrderCommitmentPrefix, []byte(commitID)...)
+}
+
+// QueuedOrderKey returns the store key for a queued order
+func QueuedOrderKey(orderID string) []byte {
+	return append(QueuedOrderPrefix, []byte(orderID)...)
 }

@@ -21,6 +21,10 @@ service Msg {
   rpc CancelOrder(MsgCancelOrder) returns (MsgCancelOrderResponse);
   rpc ExecuteSwap(MsgExecuteSwap) returns (MsgExecuteSwapResponse);
 
+  // Commit-Reveal Scheme for Front-Running Protection
+  rpc CommitOrder(MsgCommitOrder) returns (MsgCommitOrderResponse);
+  rpc RevealOrder(MsgRevealOrder) returns (MsgRevealOrderResponse);
+
   // HTLC Atomic Swap Messages
   rpc CreateHTLC(MsgCreateHTLC) returns (MsgCreateHTLCResponse);
   rpc ClaimHTLC(MsgClaimHTLC) returns (MsgClaimHTLCResponse);
@@ -201,4 +205,48 @@ message MsgRefundHTLC {
 
 message MsgRefundHTLCResponse {
   bool success = 1;
+}
+
+// MsgCommitOrder commits order hash (phase 1 of commit-reveal)
+// Hides order details to prevent front-running by validators/MEV bots
+message MsgCommitOrder {
+  option (cosmos.msg.v1.signer) = "sender";
+
+  string sender = 1;
+  bytes commit_hash = 2;  // SHA-256(order_details || salt)
+}
+
+message MsgCommitOrderResponse {
+  string commit_id = 1;
+  string reveal_deadline = 2;  // RFC3339 timestamp
+}
+
+// MsgRevealOrder reveals committed order (phase 2 of commit-reveal)
+// Must be called within reveal window after commitment
+message MsgRevealOrder {
+  option (cosmos.msg.v1.signer) = "sender";
+
+  string sender = 1;
+  string commit_id = 2;
+
+  // Order details (must match commitment hash)
+  SwapOrderType order_type = 3;
+  string aura_amount = 4 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+  string other_coin = 5;
+  string other_amount = 6 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Salt used in commitment
+  bytes salt = 7;
+}
+
+message MsgRevealOrderResponse {
+  bool success = 1;
+  string order_id = 2;
+  string message = 3;  // "queued for batch execution" or "executed immediately"
 }

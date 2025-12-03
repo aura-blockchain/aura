@@ -22,6 +22,7 @@ var (
 	BridgeFeePrefix         = []byte{0x1b}
 	InsuranceFundPrefix     = []byte{0x1c}
 	InsuranceClaimPrefix    = []byte{0x1d}
+	ValidatorSigningPrefix  = []byte{0x1e} // For liveness tracking
 )
 
 // MerkleRootKey returns the store key for a Merkle root
@@ -103,4 +104,21 @@ func InsuranceFundKey() []byte {
 // InsuranceClaimKey returns the store key for an insurance claim
 func InsuranceClaimKey(claimId string) []byte {
 	return append(InsuranceClaimPrefix, []byte(claimId)...)
+}
+
+// ValidatorSigningInfoKey returns the store key for validator signing info at a specific block height.
+// Used for liveness tracking to determine if validators should be slashed for downtime.
+//
+// Storage format: ValidatorSigningPrefix + validatorAddress + "-" + blockHeight
+//
+// Parameters:
+//   - validatorAddress: Address of the validator
+//   - blockHeight: Block height
+//
+// Returns:
+//   - []byte: Store key
+func ValidatorSigningInfoKey(validatorAddress string, blockHeight int64) []byte {
+	key := append(ValidatorSigningPrefix, []byte(validatorAddress)...)
+	key = append(key, []byte(fmt.Sprintf("-%d", blockHeight))...)
+	return key
 }

@@ -84,6 +84,21 @@ func (m AppModule) EndBlock(ctx context.Context) {
 	// Record TWAP price observations for all active pools
 	// This provides flash loan attack protection
 	m.keeper.RecordAllPoolPrices(sdkCtx)
+
+	// Cleanup expired order commitments (commit-reveal scheme)
+	m.keeper.CleanupExpiredCommitments(sdkCtx)
+
+	// Execute batch of revealed orders (front-running protection)
+	params := m.keeper.GetParams(sdkCtx)
+	if params.BatchExecutionEnabled {
+		// Execute batch every N blocks
+		if sdkCtx.BlockHeight()%int64(params.BatchExecutionInterval) == 0 {
+			if err := m.keeper.ExecuteBatch(sdkCtx); err != nil {
+				// Log error but don't panic (batch execution is non-critical)
+				sdkCtx.Logger().Error("failed to execute batch", "error", err)
+			}
+		}
+	}
 }
 
 // InitGenesis initializes module state from genesis

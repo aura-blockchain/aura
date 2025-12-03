@@ -1110,46 +1110,6 @@ func (k Keeper) CheckPoolCreationLimits(
 	return nil
 }
 
-// RecordPoolCreation records pool creation by address
-func (k Keeper) RecordPoolCreation(ctx sdk.Context, creator string, poolID string) {
-	store := ctx.KVStore(k.storeKey)
-	key := types.PoolCreationKey(creator)
-
-	var record types.PoolCreationRecord
-	bz := store.Get(key)
-
-	if bz == nil {
-		record = types.PoolCreationRecord{
-			Creator:          creator,
-			PoolIds:          []string{poolID},
-			LastCreationTime: timestamppb.New(ctx.BlockTime()),
-			TotalPools:       1,
-		}
-	} else {
-		k.cdc.MustUnmarshal(bz, &record)
-		record.PoolIds = append(record.PoolIds, poolID)
-		record.LastCreationTime = timestamppb.New(ctx.BlockTime())
-		record.TotalPools++
-	}
-
-	store.Set(key, k.cdc.MustMarshal(&record))
-}
-
-// GetPoolCreationRecord retrieves pool creation record
-func (k Keeper) GetPoolCreationRecord(ctx sdk.Context, creator string) *types.PoolCreationRecord {
-	store := ctx.KVStore(k.storeKey)
-	key := types.PoolCreationKey(creator)
-
-	bz := store.Get(key)
-	if bz == nil {
-		return nil
-	}
-
-	var record types.PoolCreationRecord
-	k.cdc.MustUnmarshal(bz, &record)
-	return &record
-}
-
 // ============================================================================
 // CIRCUIT BREAKER
 // ============================================================================
@@ -1329,4 +1289,157 @@ func min(a, b uint64) uint64 {
 		return a
 	}
 	return b
+}
+
+// ============================================================================
+// 8. POOL CREATION AUDIT TRAIL
+// ============================================================================
+
+// RecordPoolCreation records pool creation for audit trail and compliance.
+// This creates a permanent record of who created which pools and when,
+// enabling:
+// - Regulatory compliance and audit trails
+// - Pool creation limit enforcement
+// - Creation cooldown period checks
+// - Pool history reconstruction
+//
+// SECURITY: This function should be called immediately after successful pool creation
+// to ensure all pools have proper audit records.
+func (k Keeper) RecordPoolCreation(ctx sdk.Context, creator string, poolID string, tokenA string, tokenB string, amountA sdkmath.Int, amountB sdkmath.Int) {
+	store := ctx.KVStore(k.storeKey)
+	key := types.PoolCreationKey(creator)
+
+	var record types.PoolCreationRecord
+	bz := store.Get(key)
+
+	if bz == nil {
+		// First pool created by this address
+		record = types.PoolCreationRecord{
+			Creator:          creator,
+			PoolIds:          []string{poolID},
+			LastCreationTime: timestamppb.New(ctx.BlockTime()),
+			TotalPools:       1,
+		}
+	} else {
+		// Existing creator - append new pool
+		k.cdc.MustUnmarshal(bz, &record)
+		record.PoolIds = append(record.PoolIds, poolID)
+		record.LastCreationTime = timestamppb.New(ctx.BlockTime())
+		record.TotalPools++
+	}
+
+	// Store updated record
+	store.Set(key, k.cdc.MustMarshal(&record))
+
+	// Emit detailed audit event
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			"pool_creation_recorded",
+			sdk.NewAttribute("creator", creator),
+			sdk.NewAttribute("pool_id", poolID),
+			sdk.NewAttribute("token_a", tokenA),
+			sdk.NewAttribute("token_b", tokenB),
+			sdk.NewAttribute("initial_liquidity_a", amountA.String()),
+			sdk.NewAttribute("initial_liquidity_b", amountB.String()),
+			sdk.NewAttribute("total_pools_created", fmt.Sprintf("%d", record.TotalPools)),
+			sdk.NewAttribute("timestamp", ctx.BlockTime().String()),
+			sdk.NewAttribute("block_height", fmt.Sprintf("%d", ctx.BlockHeight())),
+		),
+	)
+}
+
+// GetPoolCreationRecord retrieves the pool creation record for a creator.
+// Returns nil if the creator has never created any pools.
+func (k Keeper) GetPoolCreationRecord(ctx sdk.Context, creator string) *types.PoolCreationRecord {
+	store := ctx.KVStore(k.storeKey)
+	key := types.PoolCreationKey(creator)
+
+	bz := store.Get(key)
+	if bz == nil {
+		return nil
+	}
+
+	var record types.PoolCreationRecord
+	k.cdc.MustUnmarshal(bz, &record)
+	return &record
+}
+
+// GetAllPoolCreationRecords retrieves all pool creation records for genesis export.
+// This enables full reconstruction of pool creation history from genesis state.
+func (k Keeper) GetAllPoolCreationRecords(ctx sdk.Context) []*types.PoolCreationRecord {
+	store := ctx.KVStore(k.storeKey)
+	iterator := storetypes.KVStorePrefixIterator(store, types.PoolCreationPrefix)
+	defer iterator.Close()
+
+	var records []*types.PoolCreationRecord
+	for ; iterator.Valid(); iterator.Next() {
+		var record types.PoolCreationRecord
+		k.cdc.MustUnmarshal(iterator.Value(), &record)
+		records = append(records, &record)
+	}
+
+	return records
+}
+
+// CheckPoolCreationLimit validates if creator can create another pool.
+// Enforces max_pools_per_creator parameter to prevent spam pool creation.
+//
+// SECURITY: Call this BEFORE creating a pool to reject requests from
+// addresses that have exceeded their pool creation quota.
+func (k Keeper) CheckPoolCreationLimit(ctx sdk.Context, creator string) error {
+	params := k.GetSecurityParams(ctx)
+	if params.MaxPoolsPerCreator == 0 {
+		return nil // No limit enforced
+	}
+
+	record := k.GetPoolCreationRecord(ctx, creator)
+	if record == nil {
+		return nil // First pool, allowed
+	}
+
+	if record.TotalPools >= params.MaxPoolsPerCreator {
+		return fmt.Errorf(
+			"pool creation limit exceeded: creator %s has %d pools, maximum allowed is %d: %w",
+			creator,
+			record.TotalPools,
+			params.MaxPoolsPerCreator,
+			types.ErrPoolCreationLimitExceeded,
+		)
+	}
+
+	return nil
+}
+
+// CheckPoolCreationCooldown validates if creator can create a pool now.
+// Enforces pool_creation_cooldown parameter to prevent rapid pool spam.
+//
+// SECURITY: Call this BEFORE creating a pool to reject requests from
+// addresses that are creating pools too rapidly.
+func (k Keeper) CheckPoolCreationCooldown(ctx sdk.Context, creator string) error {
+	params := k.GetSecurityParams(ctx)
+	if params.PoolCreationCooldown == 0 {
+		return nil // No cooldown enforced
+	}
+
+	record := k.GetPoolCreationRecord(ctx, creator)
+	if record == nil {
+		return nil // First pool, no cooldown applies
+	}
+
+	// Calculate time since last pool creation
+	lastCreationTime := record.LastCreationTime.AsTime()
+	currentTime := ctx.BlockTime()
+	timeSinceLastCreation := currentTime.Sub(lastCreationTime)
+
+	cooldownDuration := time.Duration(params.PoolCreationCooldown) * time.Second
+	if timeSinceLastCreation < cooldownDuration {
+		return fmt.Errorf(
+			"pool creation cooldown active: must wait %s between pool creations, last creation was %s ago: %w",
+			cooldownDuration.String(),
+			timeSinceLastCreation.String(),
+			types.ErrPoolCreationCooldown,
+		)
+	}
+
+	return nil
 }

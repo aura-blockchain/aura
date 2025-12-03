@@ -170,3 +170,38 @@ message Orderbook {
     (gogoproto.nullable) = false
   ];
 }
+
+// OrderCommitment represents a committed order hash (phase 1 of commit-reveal)
+// Prevents front-running by hiding order details until reveal deadline
+message OrderCommitment {
+  // Unique commitment ID
+  string commit_id = 1;
+
+  // Address that committed the order
+  string sender = 2;
+
+  // SHA-256 hash of (order_details || salt)
+  bytes commit_hash = 3;
+
+  // When commitment was created
+  google.protobuf.Timestamp committed_at = 4 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+
+  // Deadline to reveal (typically 1-5 blocks after commitment)
+  google.protobuf.Timestamp reveal_deadline = 5 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+
+  // Block height when committed
+  int64 commit_height = 6;
+}
+
+// QueuedOrder represents an order queued for batch execution
+// Orders are executed by price priority, not arrival time
+message QueuedOrder {
+  // Order details
+  SwapOrder order = 1 [(gogoproto.nullable) = false];
+
+  // Salt used in commitment
+  bytes salt = 2;
+
+  // When order was revealed and queued
+  google.protobuf.Timestamp queued_at = 3 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+}

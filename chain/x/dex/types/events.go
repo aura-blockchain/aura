@@ -10,6 +10,11 @@ const (
 	EventTypeManipulationDetected      = "manipulation_detected"
 	EventTypeCircuitBreakerActivated   = "circuit_breaker_activated"
 	EventTypeCircuitBreakerDeactivated = "circuit_breaker_deactivated"
+	EventTypeOrderCommitted            = "order_committed"
+	EventTypeOrderRevealed             = "order_revealed"
+	EventTypeCommitmentExpired         = "commitment_expired"
+	EventTypeBatchExecuted             = "batch_executed"
+	EventTypeBatchOrderExecuted        = "batch_order_executed"
 
 	AttributeKeyPoolID       = "pool_id"
 	AttributeKeyCreator      = "creator"

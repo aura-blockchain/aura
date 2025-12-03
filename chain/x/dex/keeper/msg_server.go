@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 	"fmt"
+	"time"
 
 	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -287,6 +288,70 @@ func (ms msgServer) RefundHTLC(goCtx context.Context, msg *dexpb.MsgRefundHTLC) 
 	}
 
 	return &dexpb.MsgRefundHTLCResponse{Success: true}, nil
+}
+
+func (ms msgServer) CommitOrder(goCtx context.Context, msg *dexpb.MsgCommitOrder) (*dexpb.MsgCommitOrderResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// Verify that the message sender is the transaction signer
+	if err := verifySigner(msg, msg.Sender); err != nil {
+		return nil, err
+	}
+
+	commitID, err := ms.keeper.CommitOrder(ctx, msg.Sender, msg.CommitHash)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to commit order: %s", err.Error())
+	}
+
+	// Get the commitment to return reveal deadline
+	commitment, found := ms.keeper.GetOrderCommitment(ctx, commitID)
+	if !found {
+		return nil, status.Error(codes.Internal, "commitment not found after creation")
+	}
+
+	return &dexpb.MsgCommitOrderResponse{
+		CommitId:       commitID,
+		RevealDeadline: commitment.RevealDeadline.AsTime().Format(time.RFC3339),
+	}, nil
+}
+
+func (ms msgServer) RevealOrder(goCtx context.Context, msg *dexpb.MsgRevealOrder) (*dexpb.MsgRevealOrderResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// Verify that the message sender is the transaction signer
+	if err := verifySigner(msg, msg.Sender); err != nil {
+		return nil, err
+	}
+
+	auraAmount := msg.AuraAmount
+	otherAmount := msg.OtherAmount
+
+	orderID, err := ms.keeper.RevealOrder(
+		ctx,
+		msg.CommitId,
+		msg.Sender,
+		msg.OrderType,
+		auraAmount,
+		msg.OtherCoin,
+		otherAmount,
+		msg.Salt,
+	)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to reveal order: %s", err.Error())
+	}
+
+	// Determine message based on batch execution
+	params := ms.keeper.GetParams(ctx)
+	message := "executed immediately"
+	if params.BatchExecutionEnabled {
+		message = "queued for batch execution"
+	}
+
+	return &dexpb.MsgRevealOrderResponse{
+		Success: true,
+		OrderId: orderID,
+		Message: message,
+	}, nil
 }
 
 func protoCoinToSDK(coin *sdk.Coin) (sdk.Coin, error) {

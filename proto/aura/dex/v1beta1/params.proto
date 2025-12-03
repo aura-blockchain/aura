@@ -48,6 +48,22 @@ message Params {
 
   // Percentage of protocol fees used for buyback (rest goes to treasury)
   uint64 buyback_percent = 10;  // 100 = 100% of protocol fees
+
+  // Commit-reveal scheme parameters for front-running protection
+  // Minimum order size that requires commit-reveal (prevents MEV on large orders)
+  string commit_reveal_threshold = 11 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // Time window in seconds for revealing after commitment (typically 30-300 seconds)
+  uint64 commit_reveal_window = 12;
+
+  // Enable batch execution of revealed orders
+  bool batch_execution_enabled = 13;
+
+  // Batch execution interval in blocks (orders accumulated and executed together)
+  uint64 batch_execution_interval = 14;
 }
 
 // MinLiquidityTier defines minimum liquidity requirements that adjust with price
