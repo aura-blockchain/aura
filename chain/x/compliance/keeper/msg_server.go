@@ -25,16 +25,23 @@ func NewMsgServer(k *Keeper) types.MsgServer {
 }
 
 // SubmitKYC stores a KYC record using commitment-based storage (GDPR-compliant).
-// The PII data (verification_id, documents, jurisdiction, risk_score) must be
+// The PII data (verification_id, documents, risk_score) must be
 // stored off-chain by the KYC provider. Only the cryptographic commitment (SHA-256 hash)
 // of the PII is stored on-chain, allowing verification without storing sensitive data.
+// Jurisdiction is stored on-chain for OFAC compliance validation.
 //
 // Security considerations:
 //   - Provider must be authorized (checked against params.ApprovedKycProviders)
 //   - Provider must be the transaction signer (authentication)
 //   - PII commitment must be exactly 32 bytes (SHA-256 hash)
+//   - Jurisdiction must be provided and validated against blocked list (OFAC compliance)
 //   - Off-chain PII data should be encrypted and stored by the provider
 //   - Data erasure requests can be fulfilled off-chain while preserving on-chain audit trail
+//
+// OFAC compliance:
+//   - Jurisdiction is validated against params.BlockedJurisdictions
+//   - Users from sanctioned countries (KP, IR, SY, CU, etc.) are rejected
+//   - Governance can update the blocked list via params
 //
 // GDPR compliance:
 //   - Article 17 "Right to Erasure": PII stored off-chain can be deleted on request
@@ -52,6 +59,13 @@ func (s *msgServer) SubmitKYC(goCtx context.Context, req *types.MsgSubmitKYC) (*
 	}
 	if len(req.PiiCommitment) != 32 {
 		return nil, status.Error(codes.InvalidArgument, "pii_commitment must be 32 bytes (SHA-256 hash)")
+	}
+	if req.Jurisdiction == "" {
+		return nil, status.Error(codes.InvalidArgument, "jurisdiction is required (ISO 3166-1 alpha-2 country code)")
+	}
+	// Validate jurisdiction format (2-letter country code)
+	if len(req.Jurisdiction) != 2 {
+		return nil, status.Error(codes.InvalidArgument, "jurisdiction must be 2-letter ISO 3166-1 alpha-2 country code")
 	}
 
 	// Verify signer
@@ -84,6 +98,12 @@ func (s *msgServer) SubmitKYC(goCtx context.Context, req *types.MsgSubmitKYC) (*
 		return nil, status.Error(codes.PermissionDenied, "provider not authorized to submit KYC records")
 	}
 
+	// OFAC compliance: Check if jurisdiction is blocked (sanctioned country)
+	if s.Keeper.IsJurisdictionBlocked(ctx, req.Jurisdiction) {
+		return nil, status.Errorf(codes.PermissionDenied,
+			"jurisdiction %s is blocked due to OFAC sanctions", req.Jurisdiction)
+	}
+
 	now := ctx.BlockTime()
 	expiresAt := timestamppb.New(now.Add(time.Duration(params.KycExpiryDays) * 24 * time.Hour))
 	record := &types.KYCRecord{
@@ -94,6 +114,7 @@ func (s *msgServer) SubmitKYC(goCtx context.Context, req *types.MsgSubmitKYC) (*
 		ExpiresAt:            expiresAt,
 		PiiCommitment:        req.PiiCommitment,
 		EnhancedDueDiligence: req.KycLevel == types.KYCLevel_KYC_LEVEL_ADVANCED,
+		Jurisdiction:         req.Jurisdiction,
 	}
 	if err := s.Keeper.SetKYCRecord(ctx, record); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -106,6 +127,7 @@ func (s *msgServer) SubmitKYC(goCtx context.Context, req *types.MsgSubmitKYC) (*
 			sdk.NewAttribute(types.AttributeKeyAddress, req.Address),
 			sdk.NewAttribute(types.AttributeKeyProvider, req.Provider),
 			sdk.NewAttribute(types.AttributeKeyKYCLevel, req.KycLevel.String()),
+			sdk.NewAttribute(types.AttributeKeyJurisdiction, req.Jurisdiction),
 			sdk.NewAttribute(types.AttributeKeyPIICommitment, fmt.Sprintf("%x", req.PiiCommitment)),
 			sdk.NewAttribute(types.AttributeKeyBlockHeight, fmt.Sprintf("%d", ctx.BlockHeight())),
 			sdk.NewAttribute(types.AttributeKeyBlockTime, ctx.BlockTime().Format(time.RFC3339)),
@@ -325,19 +347,57 @@ func (s *msgServer) RecordGDPRConsent(goCtx context.Context, req *types.MsgRecor
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// Emit event for GDPR consent (GDPR Article 7 compliance audit trail)
-	ctx.EventManager().EmitEvent(
-		sdk.NewEvent(
-			types.EventTypeGDPRConsentRecorded,
-			sdk.NewAttribute(types.AttributeKeyAddress, req.Address),
-			sdk.NewAttribute(types.AttributeKeyConsentType, req.ConsentType),
-			sdk.NewAttribute(types.AttributeKeyConsented, fmt.Sprintf("%t", req.Consented)),
-			sdk.NewAttribute(types.AttributeKeyConsentVersion, req.ConsentVersion),
-			sdk.NewAttribute(types.AttributeKeyBlockHeight, fmt.Sprintf("%d", ctx.BlockHeight())),
-			sdk.NewAttribute(types.AttributeKeyBlockTime, ctx.BlockTime().Format(time.RFC3339)),
-			sdk.NewAttribute(types.AttributeKeyTimestamp, fmt.Sprintf("%d", ctx.BlockTime().Unix())),
-		),
-	)
+	// GDPR Article 7(3) Enforcement: When consent is withdrawn, immediately
+	// restrict data processing and trigger deletion of associated PII
+	if !req.Consented {
+		// Mark address as "do not process" - this flag must be checked
+		// before any data processing operation (enforces Article 7(3))
+		if err := s.Keeper.SetProcessingRestriction(ctx, req.Address, true); err != nil {
+			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to set processing restriction: %s", err.Error()))
+		}
+
+		// Trigger data deletion for this consent type
+		// This emits an event for off-chain systems (KYC providers, databases)
+		// to delete the user's PII associated with this consent type
+		if err := s.Keeper.TriggerDataDeletion(ctx, req.Address, req.ConsentType); err != nil {
+			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to trigger data deletion: %s", err.Error()))
+		}
+
+		// Emit withdrawal enforcement event for audit trail
+		// (GDPR Article 7(3) compliance - demonstrates that withdrawal has immediate effect)
+		ctx.EventManager().EmitEvent(
+			sdk.NewEvent(
+				types.EventTypeGDPRConsentWithdrawn,
+				sdk.NewAttribute(types.AttributeKeyAddress, req.Address),
+				sdk.NewAttribute(types.AttributeKeyConsentType, req.ConsentType),
+				sdk.NewAttribute(types.AttributeKeyProcessingRestricted, "true"),
+				sdk.NewAttribute(types.AttributeKeyDeletionTriggered, "true"),
+				sdk.NewAttribute(types.AttributeKeyBlockHeight, fmt.Sprintf("%d", ctx.BlockHeight())),
+				sdk.NewAttribute(types.AttributeKeyBlockTime, ctx.BlockTime().Format(time.RFC3339)),
+				sdk.NewAttribute(types.AttributeKeyTimestamp, fmt.Sprintf("%d", ctx.BlockTime().Unix())),
+			),
+		)
+	} else {
+		// When consent is given, remove processing restriction (if any)
+		// This allows data processing to resume for this address
+		if err := s.Keeper.SetProcessingRestriction(ctx, req.Address, false); err != nil {
+			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to remove processing restriction: %s", err.Error()))
+		}
+
+		// Emit standard consent recorded event
+		ctx.EventManager().EmitEvent(
+			sdk.NewEvent(
+				types.EventTypeGDPRConsentRecorded,
+				sdk.NewAttribute(types.AttributeKeyAddress, req.Address),
+				sdk.NewAttribute(types.AttributeKeyConsentType, req.ConsentType),
+				sdk.NewAttribute(types.AttributeKeyConsented, fmt.Sprintf("%t", req.Consented)),
+				sdk.NewAttribute(types.AttributeKeyConsentVersion, req.ConsentVersion),
+				sdk.NewAttribute(types.AttributeKeyBlockHeight, fmt.Sprintf("%d", ctx.BlockHeight())),
+				sdk.NewAttribute(types.AttributeKeyBlockTime, ctx.BlockTime().Format(time.RFC3339)),
+				sdk.NewAttribute(types.AttributeKeyTimestamp, fmt.Sprintf("%d", ctx.BlockTime().Unix())),
+			),
+		)
+	}
 
 	return &types.MsgRecordGDPRConsentResponse{Success: true}, nil
 }

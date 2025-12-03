@@ -144,3 +144,243 @@ func (m *testSanctionsProvider) ScreenAddress(address string) (*types.SanctionsS
 func (m *testSanctionsProvider) CheckLists(_ []string) ([]*types.SanctionsMatch, error) {
 	return []*types.SanctionsMatch{}, nil
 }
+
+// ============================================================================
+// GDPR Consent Withdrawal Enforcement Tests (TODO 055)
+// ============================================================================
+
+func TestMsgRecordGDPRConsent_WithdrawalEnforcesProcessingRestriction(t *testing.T) {
+	keeper, ctx := setupTestKeeper(t)
+	server := NewMsgServer(keeper)
+
+	address := "aura1test"
+	consentType := "data_processing"
+
+	// Step 1: Give consent
+	reqGive := &types.MsgRecordGDPRConsent{
+		Address:        address,
+		ConsentType:    consentType,
+		Consented:      true,
+		ConsentVersion: "v1",
+	}
+	_, err := server.RecordGDPRConsent(sdk.WrapSDKContext(ctx), reqGive)
+	require.NoError(t, err)
+
+	// Verify consent is stored and processing is allowed
+	consent, found := keeper.GetGDPRConsent(ctx, address, consentType)
+	require.True(t, found)
+	require.True(t, consent.Consented)
+	require.True(t, keeper.CanProcessData(ctx, address, consentType))
+	require.False(t, keeper.IsProcessingRestricted(ctx, address))
+
+	// Step 2: Withdraw consent
+	reqWithdraw := &types.MsgRecordGDPRConsent{
+		Address:        address,
+		ConsentType:    consentType,
+		Consented:      false,
+		ConsentVersion: "v1",
+	}
+	_, err = server.RecordGDPRConsent(sdk.WrapSDKContext(ctx), reqWithdraw)
+	require.NoError(t, err)
+
+	// Verify withdrawal enforcement
+	consent, found = keeper.GetGDPRConsent(ctx, address, consentType)
+	require.True(t, found)
+	require.False(t, consent.Consented, "consent should be withdrawn")
+	require.NotNil(t, consent.ConsentWithdrawnAt, "withdrawal timestamp should be set")
+
+	// Critical: Verify processing is now restricted
+	require.True(t, keeper.IsProcessingRestricted(ctx, address), "processing should be restricted after withdrawal")
+	require.False(t, keeper.CanProcessData(ctx, address, consentType), "data processing should be blocked")
+}
+
+func TestMsgRecordGDPRConsent_WithdrawalEmitsEnforcementEvent(t *testing.T) {
+	keeper, ctx := setupTestKeeper(t)
+	server := NewMsgServer(keeper)
+
+	address := "aura1test"
+	consentType := "data_processing"
+
+	// Withdraw consent
+	req := &types.MsgRecordGDPRConsent{
+		Address:        address,
+		ConsentType:    consentType,
+		Consented:      false,
+		ConsentVersion: "v1",
+	}
+	_, err := server.RecordGDPRConsent(sdk.WrapSDKContext(ctx), req)
+	require.NoError(t, err)
+
+	// Verify withdrawal event was emitted
+	events := ctx.EventManager().Events()
+	withdrawalEventFound := false
+	deletionEventFound := false
+
+	for _, event := range events {
+		if event.Type == types.EventTypeGDPRConsentWithdrawn {
+			withdrawalEventFound = true
+
+			// Verify event attributes
+			var processingRestrictedAttr, deletionTriggeredAttr sdk.Attribute
+			for _, attr := range event.Attributes {
+				if attr.Key == types.AttributeKeyProcessingRestricted {
+					processingRestrictedAttr = attr
+				}
+				if attr.Key == types.AttributeKeyDeletionTriggered {
+					deletionTriggeredAttr = attr
+				}
+			}
+
+			require.NotNil(t, processingRestrictedAttr.Key, "processing_restricted attribute should be present")
+			require.Equal(t, "true", processingRestrictedAttr.Value, "processing_restricted should be true")
+			require.NotNil(t, deletionTriggeredAttr.Key, "deletion_triggered attribute should be present")
+			require.Equal(t, "true", deletionTriggeredAttr.Value, "deletion_triggered should be true")
+		}
+
+		if event.Type == "gdpr_data_deletion_requested" {
+			deletionEventFound = true
+
+			// Verify deletion event attributes
+			var addressAttr, consentTypeAttr sdk.Attribute
+			for _, attr := range event.Attributes {
+				if attr.Key == types.AttributeKeyAddress {
+					addressAttr = attr
+				}
+				if attr.Key == types.AttributeKeyConsentType {
+					consentTypeAttr = attr
+				}
+			}
+
+			require.Equal(t, address, addressAttr.Value, "address should match")
+			require.Equal(t, consentType, consentTypeAttr.Value, "consent type should match")
+		}
+	}
+
+	require.True(t, withdrawalEventFound, "GDPR consent withdrawn event should be emitted")
+	require.True(t, deletionEventFound, "Data deletion requested event should be emitted")
+}
+
+func TestMsgRecordGDPRConsent_GivingConsentRemovesRestriction(t *testing.T) {
+	keeper, ctx := setupTestKeeper(t)
+	server := NewMsgServer(keeper)
+
+	address := "aura1test"
+	consentType := "data_processing"
+
+	// First withdraw consent
+	reqWithdraw := &types.MsgRecordGDPRConsent{
+		Address:        address,
+		ConsentType:    consentType,
+		Consented:      false,
+		ConsentVersion: "v1",
+	}
+	_, err := server.RecordGDPRConsent(sdk.WrapSDKContext(ctx), reqWithdraw)
+	require.NoError(t, err)
+
+	// Verify restriction is set
+	require.True(t, keeper.IsProcessingRestricted(ctx, address))
+
+	// Now give consent
+	reqGive := &types.MsgRecordGDPRConsent{
+		Address:        address,
+		ConsentType:    consentType,
+		Consented:      true,
+		ConsentVersion: "v1",
+	}
+	_, err = server.RecordGDPRConsent(sdk.WrapSDKContext(ctx), reqGive)
+	require.NoError(t, err)
+
+	// Verify restriction is removed
+	require.False(t, keeper.IsProcessingRestricted(ctx, address), "processing restriction should be removed when consent is given")
+	require.True(t, keeper.CanProcessData(ctx, address, consentType), "data processing should be allowed")
+}
+
+func TestMsgRecordGDPRConsent_MultipleConsentTypes(t *testing.T) {
+	keeper, ctx := setupTestKeeper(t)
+	server := NewMsgServer(keeper)
+
+	address := "aura1test"
+
+	// Give consent for data_processing
+	req1 := &types.MsgRecordGDPRConsent{
+		Address:        address,
+		ConsentType:    "data_processing",
+		Consented:      true,
+		ConsentVersion: "v1",
+	}
+	_, err := server.RecordGDPRConsent(sdk.WrapSDKContext(ctx), req1)
+	require.NoError(t, err)
+
+	// Give consent for marketing
+	req2 := &types.MsgRecordGDPRConsent{
+		Address:        address,
+		ConsentType:    "marketing",
+		Consented:      true,
+		ConsentVersion: "v1",
+	}
+	_, err = server.RecordGDPRConsent(sdk.WrapSDKContext(ctx), req2)
+	require.NoError(t, err)
+
+	// Verify both consents are active
+	require.True(t, keeper.CanProcessData(ctx, address, "data_processing"))
+	require.True(t, keeper.CanProcessData(ctx, address, "marketing"))
+
+	// Withdraw marketing consent
+	req3 := &types.MsgRecordGDPRConsent{
+		Address:        address,
+		ConsentType:    "marketing",
+		Consented:      false,
+		ConsentVersion: "v1",
+	}
+	_, err = server.RecordGDPRConsent(sdk.WrapSDKContext(ctx), req3)
+	require.NoError(t, err)
+
+	// Verify processing is restricted (global restriction applies)
+	require.True(t, keeper.IsProcessingRestricted(ctx, address))
+
+	// Even though data_processing consent exists, global restriction blocks it
+	require.False(t, keeper.CanProcessData(ctx, address, "data_processing"))
+	require.False(t, keeper.CanProcessData(ctx, address, "marketing"))
+}
+
+func TestMsgRecordGDPRConsent_WithdrawalAuditTrail(t *testing.T) {
+	keeper, ctx := setupTestKeeper(t)
+	server := NewMsgServer(keeper)
+
+	address := "aura1test"
+	consentType := "data_processing"
+
+	// Give consent
+	req1 := &types.MsgRecordGDPRConsent{
+		Address:        address,
+		ConsentType:    consentType,
+		Consented:      true,
+		ConsentVersion: "v1",
+	}
+	_, err := server.RecordGDPRConsent(sdk.WrapSDKContext(ctx), req1)
+	require.NoError(t, err)
+
+	consent1, found := keeper.GetGDPRConsent(ctx, address, consentType)
+	require.True(t, found)
+	require.NotNil(t, consent1.ConsentGivenAt)
+	require.Nil(t, consent1.ConsentWithdrawnAt)
+
+	// Withdraw consent
+	req2 := &types.MsgRecordGDPRConsent{
+		Address:        address,
+		ConsentType:    consentType,
+		Consented:      false,
+		ConsentVersion: "v1",
+	}
+	_, err = server.RecordGDPRConsent(sdk.WrapSDKContext(ctx), req2)
+	require.NoError(t, err)
+
+	consent2, found := keeper.GetGDPRConsent(ctx, address, consentType)
+	require.True(t, found)
+	require.NotNil(t, consent2.ConsentGivenAt, "original consent timestamp should be preserved")
+	require.NotNil(t, consent2.ConsentWithdrawnAt, "withdrawal timestamp should be set")
+
+	// Verify audit trail shows withdrawal
+	require.False(t, consent2.Consented)
+	require.NotNil(t, consent2.ConsentWithdrawnAt)
+}

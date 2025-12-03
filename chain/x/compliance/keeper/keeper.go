@@ -145,6 +145,55 @@ func (k *Keeper) RegisterTaxReportGenerator(jurisdiction string, generator TaxRe
 	k.taxReportGenerators[jurisdiction] = generator
 }
 
+// IsJurisdictionBlocked checks if a jurisdiction is blocked due to OFAC sanctions.
+// Jurisdiction codes use ISO 3166-1 alpha-2 format (e.g., "US", "KP", "IR").
+//
+// OFAC Compliance:
+//   - Validates against the blocked_jurisdictions list in module params
+//   - Returns true if jurisdiction is sanctioned (user from that country cannot use platform)
+//   - Case-insensitive comparison for robustness
+//   - Governance can update the blocked list via params
+//
+// Security considerations:
+//   - Empty jurisdiction string is treated as blocked (fail-safe)
+//   - Invalid country codes should be blocked by upstream validation
+//   - This check should occur before accepting KYC records
+//
+// Returns:
+//   - true: Jurisdiction is blocked (OFAC sanctioned)
+//   - false: Jurisdiction is allowed
+func (k Keeper) IsJurisdictionBlocked(ctx sdk.Context, jurisdiction string) bool {
+	if jurisdiction == "" {
+		return true // Fail-safe: empty jurisdiction is blocked
+	}
+
+	params := k.GetParams(ctx)
+
+	// Case-insensitive check for blocked jurisdictions
+	jurisdictionUpper := toUpperASCII(jurisdiction)
+	for _, blocked := range params.BlockedJurisdictions {
+		if toUpperASCII(blocked) == jurisdictionUpper {
+			return true
+		}
+	}
+
+	return false
+}
+
+// toUpperASCII converts ASCII letters to uppercase without allocating (simple case for country codes)
+func toUpperASCII(s string) string {
+	result := make([]byte, len(s))
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if c >= 'a' && c <= 'z' {
+			result[i] = c - 32 // Convert to uppercase
+		} else {
+			result[i] = c
+		}
+	}
+	return string(result)
+}
+
 // Interface definitions for external service providers
 type KYCProvider interface {
 	VerifyIdentity(address, documentType string, documents [][]byte) (*types.KYCRecord, error)

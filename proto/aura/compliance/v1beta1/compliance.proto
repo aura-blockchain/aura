@@ -44,6 +44,7 @@ enum SanctionsStatus {
 
 // KYCRecord represents a KYC verification record (GDPR-compliant)
 // PII is stored off-chain; only cryptographic commitments stored on-chain
+// Jurisdiction is stored on-chain for OFAC compliance enforcement
 message KYCRecord {
   string address = 1;
   KYCLevel kyc_level = 2;
@@ -52,6 +53,7 @@ message KYCRecord {
   google.protobuf.Timestamp expires_at = 5;
   bytes pii_commitment = 6;                         // SHA-256 hash of off-chain PII data
   bool enhanced_due_diligence = 7;                  // EDD required flag
+  string jurisdiction = 8;                          // ISO 3166-1 alpha-2 country code
 }
 
 // AMLProfile represents an AML risk profile
@@ -213,6 +215,7 @@ message ComplianceParams {
   KYCLevel minimum_kyc_level = 2;
   uint64 kyc_expiry_days = 3;
   repeated string approved_kyc_providers = 17;    // Authorized KYC provider addresses
+  repeated string blocked_jurisdictions = 18;     // OFAC-sanctioned country codes (ISO 3166-1 alpha-2)
 
   // Transaction monitoring
   bool transaction_monitoring_enabled = 4;
@@ -283,8 +286,9 @@ message QueryTaxReportResponse {
 
 // Transaction messages
 // MsgSubmitKYC submits KYC verification with PII commitment (GDPR-compliant)
-// PII data (verification_id, documents, jurisdiction, risk_score) must be
+// PII data (verification_id, documents, risk_score) must be
 // stored off-chain by the provider. Only the cryptographic commitment is stored on-chain.
+// Jurisdiction must be provided on-chain for OFAC compliance validation.
 message MsgSubmitKYC {
   option (cosmos.msg.v1.signer) = "provider";
 
@@ -292,6 +296,7 @@ message MsgSubmitKYC {
   KYCLevel kyc_level = 2;
   string provider = 3;
   bytes pii_commitment = 4;                       // SHA-256 hash of off-chain PII JSON
+  string jurisdiction = 5;                        // ISO 3166-1 alpha-2 country code (required for OFAC compliance)
 }
 
 message MsgSubmitKYCResponse {
