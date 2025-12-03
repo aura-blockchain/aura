@@ -331,6 +331,7 @@ func TestQueryServer_SanctionsScreening_RateLimit(t *testing.T) {
 		RateLimitWindowSeconds:       3600,
 		SanctionsScreeningLimit:      2,
 		SanctionsScreeningEnabled:    true,
+		SanctionsLists:               []string{"OFAC_SDN", "EU_SANCTIONS"},
 		ScreeningCacheHours:          24,
 		BlockedJurisdictions:         []string{},
 		ApprovedKycProviders:         []string{},

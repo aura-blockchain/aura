@@ -36,6 +36,7 @@ type TestInput struct {
 	MemStoreKey *storetypes.MemoryStoreKey
 	DB          *dbm.MemDB
 	CMS         store.CommitMultiStore
+	StoreKeys   map[string]*storetypes.KVStoreKey // Additional store keys for multi-module tests
 }
 
 // CreateTestInput creates a standard test input for keeper testing
@@ -79,8 +80,10 @@ func CreateTestInputWithKeys(t testing.TB, keys ...string) TestInput {
 	cms := store.NewCommitMultiStore(db, log.NewNopLogger(), metrics.NewNoOpMetrics())
 
 	storeKeys := make([]*storetypes.KVStoreKey, len(keys))
+	storeKeyMap := make(map[string]*storetypes.KVStoreKey)
 	for i, key := range keys {
 		storeKeys[i] = storetypes.NewKVStoreKey(key)
+		storeKeyMap[key] = storeKeys[i]
 		cms.MountStoreWithDB(storeKeys[i], storetypes.StoreTypeIAVL, db)
 	}
 
@@ -95,11 +98,12 @@ func CreateTestInputWithKeys(t testing.TB, keys ...string) TestInput {
 	cdc := codec.NewProtoCodec(interfaceRegistry)
 
 	return TestInput{
-		Ctx:      ctx,
-		Cdc:      cdc,
-		StoreKey: storeKeys[0],
-		DB:       db,
-		CMS:      cms,
+		Ctx:       ctx,
+		Cdc:       cdc,
+		StoreKey:  storeKeys[0],
+		DB:        db,
+		CMS:       cms,
+		StoreKeys: storeKeyMap,
 	}
 }
 
@@ -237,12 +241,19 @@ func BankKeeperWithMockAccountKeeper(t testing.TB, testInput TestInput) bankkeep
 	// This creates a deterministic module address that passes bech32 validation
 	authorityAddr := sdk.AccAddress([]byte("governance_module_addr")).String()
 
+	// Get the bank store key from the StoreKeys map
+	// Fall back to the first store key if "bank" doesn't exist
+	bankStoreKey := testInput.StoreKey
+	if testInput.StoreKeys != nil {
+		if key, exists := testInput.StoreKeys["bank"]; exists {
+			bankStoreKey = key
+		}
+	}
+
 	// Create the bank keeper with the mock account keeper
-	// Note: This uses the first store key from testInput, so if you need bank module
-	// functionality, ensure the context has the bank store mounted
 	baseBankKeeper := bankkeeper.NewBaseKeeper(
 		testInput.Cdc,
-		WrapStoreService(testInput.StoreKey),
+		WrapStoreService(bankStoreKey),
 		mockAccountKeeper,
 		nil, // blocked addresses map (can be nil for tests)
 		authorityAddr,

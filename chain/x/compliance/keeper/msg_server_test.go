@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"crypto/sha256"
 	"testing"
 	"time"
 
@@ -11,12 +12,19 @@ import (
 	"github.com/aequitas/aura/chain/x/compliance/types"
 )
 
+// createTestAddress creates a valid Bech32 address for testing (helper reused from events test)
+func createTestAddressMsg(name string) string {
+	hash := sha256.Sum256([]byte(name))
+	addr := sdk.AccAddress(hash[:20])
+	return addr.String()
+}
+
 func TestMsgSubmitKYCStoresRecord(t *testing.T) {
 	keeper, ctx := setupTestKeeper(t)
 	server := NewMsgServer(keeper)
 
 	// Setup approved provider
-	providerAddr := sdk.AccAddress([]byte("provider_address_12")).String()
+	providerAddr := createTestAddressMsg("provider")
 	params := keeper.GetParams(ctx)
 	params.ApprovedKycProviders = []string{providerAddr}
 	err := keeper.SetParams(ctx, params)
@@ -26,10 +34,11 @@ func TestMsgSubmitKYCStoresRecord(t *testing.T) {
 	copy(piiCommitment, []byte("test_commitment_hash_32_bytes"))
 
 	req := &types.MsgSubmitKYC{
-		Address:       "aura1kyc",
+		Address:       createTestAddressMsg("kyc_user"),
 		KycLevel:      types.KYCLevel_KYC_LEVEL_BASIC,
 		Provider:      providerAddr,
 		PiiCommitment: piiCommitment,
+		Jurisdiction:  "US",
 	}
 	_, err = server.SubmitKYC(sdk.WrapSDKContext(ctx), req)
 	require.NoError(t, err)
@@ -42,8 +51,8 @@ func TestMsgReportSuspiciousActivityPersisted(t *testing.T) {
 	keeper, ctx := setupTestKeeper(t)
 	server := NewMsgServer(keeper)
 	req := &types.MsgReportSuspiciousActivity{
-		Reporter:        "aura1reporter",
-		Address:         "aura1user",
+		Reporter:        createTestAddressMsg("reporter"),
+		Address:         createTestAddressMsg("user"),
 		TransactionHash: "hash",
 		ActivityType:    "structuring",
 		Description:     "many tx",
@@ -59,7 +68,7 @@ func TestMsgReportSuspiciousActivityPersisted(t *testing.T) {
 func TestMsgScreenSanctionsStoresResult(t *testing.T) {
 	keeper, ctx := setupTestKeeper(t)
 	server := NewMsgServer(keeper)
-	req := &types.MsgScreenSanctions{Address: "aura1sanction"}
+	req := &types.MsgScreenSanctions{Address: createTestAddressMsg("sanction_user")}
 	resp, err := server.ScreenSanctions(sdk.WrapSDKContext(ctx), req)
 	require.NoError(t, err)
 	require.Equal(t, types.SanctionsStatus_SANCTIONS_CLEAR, resp.Status)
@@ -72,7 +81,7 @@ func TestMsgRecordGDPRConsentPersists(t *testing.T) {
 	keeper, ctx := setupTestKeeper(t)
 	server := NewMsgServer(keeper)
 	req := &types.MsgRecordGDPRConsent{
-		Address:        "aura1gdpr",
+		Address:        createTestAddressMsg("gdpr_user"),
 		ConsentType:    "data_processing",
 		Consented:      true,
 		ConsentVersion: "v1",
@@ -89,7 +98,7 @@ func TestMsgRequestGDPRDataCreatesEntry(t *testing.T) {
 	keeper, ctx := setupTestKeeper(t)
 	server := NewMsgServer(keeper)
 	req := &types.MsgRequestGDPRData{
-		Address:     "aura1gdprreq",
+		Address:     createTestAddressMsg("gdpr_requester"),
 		RequestType: "access",
 	}
 	resp, err := server.RequestGDPRData(sdk.WrapSDKContext(ctx), req)
@@ -104,7 +113,7 @@ func TestMsgGenerateTaxReportCreatesReport(t *testing.T) {
 	keeper, ctx := setupTestKeeper(t)
 	server := NewMsgServer(keeper)
 	req := &types.MsgGenerateTaxReport{
-		Address:      "aura1tax",
+		Address:      createTestAddressMsg("tax_user"),
 		TaxYear:      "2024",
 		Jurisdiction: "US",
 		ReportType:   "1099",
@@ -123,7 +132,7 @@ func TestMsgScreenSanctionsUsesProviderWhenAvailable(t *testing.T) {
 	provider := &testSanctionsProvider{}
 	keeper.RegisterSanctionsProvider("mock", provider)
 	server := NewMsgServer(keeper)
-	resp, err := server.ScreenSanctions(sdk.WrapSDKContext(ctx), &types.MsgScreenSanctions{Address: "aura1provider"})
+	resp, err := server.ScreenSanctions(sdk.WrapSDKContext(ctx), &types.MsgScreenSanctions{Address: createTestAddressMsg("provider_user")})
 	require.NoError(t, err)
 	require.Equal(t, types.SanctionsStatus_SANCTIONS_CLEAR, resp.Status)
 }
@@ -153,7 +162,7 @@ func TestMsgRecordGDPRConsent_WithdrawalEnforcesProcessingRestriction(t *testing
 	keeper, ctx := setupTestKeeper(t)
 	server := NewMsgServer(keeper)
 
-	address := "aura1test"
+	address := createTestAddressMsg("test_withdrawal")
 	consentType := "data_processing"
 
 	// Step 1: Give consent
@@ -198,7 +207,7 @@ func TestMsgRecordGDPRConsent_WithdrawalEmitsEnforcementEvent(t *testing.T) {
 	keeper, ctx := setupTestKeeper(t)
 	server := NewMsgServer(keeper)
 
-	address := "aura1test"
+	address := createTestAddressMsg("test_event")
 	consentType := "data_processing"
 
 	// Withdraw consent
@@ -264,7 +273,7 @@ func TestMsgRecordGDPRConsent_GivingConsentRemovesRestriction(t *testing.T) {
 	keeper, ctx := setupTestKeeper(t)
 	server := NewMsgServer(keeper)
 
-	address := "aura1test"
+	address := createTestAddressMsg("test_removal")
 	consentType := "data_processing"
 
 	// First withdraw consent
@@ -299,7 +308,7 @@ func TestMsgRecordGDPRConsent_MultipleConsentTypes(t *testing.T) {
 	keeper, ctx := setupTestKeeper(t)
 	server := NewMsgServer(keeper)
 
-	address := "aura1test"
+	address := createTestAddressMsg("test_multiple")
 
 	// Give consent for data_processing
 	req1 := &types.MsgRecordGDPRConsent{
@@ -347,7 +356,7 @@ func TestMsgRecordGDPRConsent_WithdrawalAuditTrail(t *testing.T) {
 	keeper, ctx := setupTestKeeper(t)
 	server := NewMsgServer(keeper)
 
-	address := "aura1test"
+	address := createTestAddressMsg("test_audit")
 	consentType := "data_processing"
 
 	// Give consent

@@ -13,12 +13,12 @@ import (
 )
 
 func TestMonitoredBankKeeper_SendCoins_Allowed(t *testing.T) {
-	// Setup
-	complianceInput := keepertest.CreateTestInputWithKeys(t, "compliance")
-	complianceKeeper := keeper.NewKeeper(complianceInput.Cdc, complianceInput.StoreKey)
+	// Setup - create a unified test environment with both store keys
+	unifiedInput := keepertest.CreateTestInputWithKeys(t, "compliance", "bank")
+	complianceKeeper := keeper.NewKeeper(unifiedInput.Cdc, unifiedInput.StoreKey)
 
-	bankInput := keepertest.CreateTestInputWithKeys(t, "bank")
-	baseBankKeeper := keepertest.BankKeeperWithMockAccountKeeper(t, bankInput)
+	// Create bank keeper with mock account keeper using the unified context
+	baseBankKeeper := keepertest.BankKeeperWithMockAccountKeeper(t, unifiedInput)
 
 	// Create monitored bank keeper
 	monitoredKeeper := keeper.NewMonitoredBankKeeper(baseBankKeeper, complianceKeeper)
@@ -32,7 +32,7 @@ func TestMonitoredBankKeeper_SendCoins_Allowed(t *testing.T) {
 		SanctionsScreeningEnabled:    false,
 		StructuringThresholdCount:    5, // Required when transaction_monitoring_enabled is true
 	}
-	err := complianceKeeper.SetParams(complianceInput.Ctx, params)
+	err := complianceKeeper.SetParams(unifiedInput.Ctx, params)
 	require.NoError(t, err)
 
 	// Test addresses
@@ -45,10 +45,10 @@ func TestMonitoredBankKeeper_SendCoins_Allowed(t *testing.T) {
 	// thing is that monitoring happens before the send attempt.
 
 	// Attempt send - will fail at bank keeper level but monitoring should work
-	_ = monitoredKeeper.SendCoins(complianceInput.Ctx, from, to, amount)
+	_ = monitoredKeeper.SendCoins(unifiedInput.Ctx, from, to, amount)
 
 	// Verify AML profiles were created/updated
-	profile, err := complianceKeeper.GetAMLProfile(complianceInput.Ctx, from.String())
+	profile, err := complianceKeeper.GetAMLProfile(unifiedInput.Ctx, from.String())
 	if err == nil {
 		// Profile was created
 		require.Equal(t, uint64(1), profile.TotalTransactions)
@@ -70,6 +70,8 @@ func TestMonitoredBankKeeper_SendCoins_Blocked_Sanctions(t *testing.T) {
 		TransactionMonitoringEnabled: true,
 		SingleTransactionLimit:       "1000000",
 		SanctionsScreeningEnabled:    true,
+		SanctionsLists:               []string{"OFAC_SDN", "EU_SANCTIONS"},
+		StructuringThresholdCount:    5, // Required when transaction_monitoring_enabled is true
 	}
 	err := complianceKeeper.SetParams(complianceInput.Ctx, params)
 	require.NoError(t, err)
@@ -116,6 +118,7 @@ func TestMonitoredBankKeeper_SendCoins_Blocked_LargeTransaction(t *testing.T) {
 		TransactionMonitoringEnabled: true,
 		SingleTransactionLimit:       "1000", // Low threshold for testing
 		SanctionsScreeningEnabled:    false,
+		StructuringThresholdCount:    5, // Required when transaction_monitoring_enabled is true
 	}
 	err := complianceKeeper.SetParams(complianceInput.Ctx, params)
 	require.NoError(t, err)

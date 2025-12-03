@@ -153,9 +153,14 @@ func (s *msgServer) SubmitKYC(goCtx context.Context, req *types.MsgSubmitKYC) (*
 		sdk.NewEvent(
 			types.EventTypeKYCApproved,
 			sdk.NewAttribute(types.AttributeKeyAddress, req.Address),
+			sdk.NewAttribute(types.AttributeKeyProvider, req.Provider),
+			sdk.NewAttribute(types.AttributeKeyKYCLevel, req.KycLevel.String()),
 			sdk.NewAttribute(types.AttributeKeyJurisdiction, req.Jurisdiction),
 			sdk.NewAttribute(types.AttributeKeyPIICommitment, fmt.Sprintf("%x", req.PiiCommitment)),
 			sdk.NewAttribute("version", fmt.Sprintf("%d", record.Version)),
+			sdk.NewAttribute(types.AttributeKeyBlockHeight, fmt.Sprintf("%d", ctx.BlockHeight())),
+			sdk.NewAttribute(types.AttributeKeyBlockTime, ctx.BlockTime().Format(time.RFC3339)),
+			sdk.NewAttribute(types.AttributeKeyTimestamp, fmt.Sprintf("%d", ctx.BlockTime().Unix())),
 		),
 	)
 

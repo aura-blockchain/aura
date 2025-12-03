@@ -58,11 +58,13 @@ func TestSubmitKYC_WithPIICommitment(t *testing.T) {
 	require.NoError(t, err)
 
 	// Submit KYC with commitment
+	userAddr := sdk.AccAddress([]byte("test_user_address_1234")).String()
 	msg := &types.MsgSubmitKYC{
-		Address:       "aura1test",
+		Address:       userAddr,
 		KycLevel:      types.KYCLevel_KYC_LEVEL_ADVANCED,
 		Provider:      providerAddr,
 		PiiCommitment: commitment,
+		Jurisdiction:  "US",
 	}
 
 	resp, err := server.SubmitKYC(sdk.WrapSDKContext(ctx), msg)
@@ -110,13 +112,16 @@ func TestSubmitKYC_InvalidCommitmentSize(t *testing.T) {
 		},
 	}
 
+	userAddr := sdk.AccAddress([]byte("test_user_address_1234")).String()
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			msg := &types.MsgSubmitKYC{
-				Address:       "aura1test",
+				Address:       userAddr,
 				KycLevel:      types.KYCLevel_KYC_LEVEL_BASIC,
 				Provider:      providerAddr,
 				PiiCommitment: tt.commitment,
+				Jurisdiction:  "US",
 			}
 
 			resp, err := server.SubmitKYC(sdk.WrapSDKContext(ctx), msg)
@@ -152,11 +157,13 @@ func TestPIICommitmentVerification(t *testing.T) {
 	require.NoError(t, err)
 
 	// Submit to blockchain
+	userAddr := sdk.AccAddress([]byte("test_user_address_1234")).String()
 	msg := &types.MsgSubmitKYC{
-		Address:       "aura1test",
+		Address:       userAddr,
 		KycLevel:      types.KYCLevel_KYC_LEVEL_INTERMEDIATE,
 		Provider:      providerAddr,
 		PiiCommitment: commitment,
+		Jurisdiction:  "US",
 	}
 
 	_, err = server.SubmitKYC(sdk.WrapSDKContext(ctx), msg)
