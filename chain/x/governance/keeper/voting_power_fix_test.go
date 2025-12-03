@@ -35,11 +35,35 @@ func (m *MockStakingKeeperWithStake) SetDelegatorBonded(delegator sdk.AccAddress
 	m.delegatorBonded[delegator.String()] = amount
 }
 
+func (m *MockStakingKeeperWithStake) TotalBondedTokens(ctx sdk.Context) sdkmath.Int {
+	total := sdkmath.ZeroInt()
+	for _, amount := range m.delegatorBonded {
+		total = total.Add(amount)
+	}
+	return total
+}
+
+// MockBankKeeperForVotingPower is a simple mock for voting power tests
+type MockBankKeeperForVotingPower struct{}
+
+func (m *MockBankKeeperForVotingPower) SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
+	return nil
+}
+
+func (m *MockBankKeeperForVotingPower) SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
+	return nil
+}
+
+func (m *MockBankKeeperForVotingPower) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin {
+	return sdk.NewCoin(denom, sdkmath.ZeroInt())
+}
+
 // TestVotingPowerBasedOnStake verifies voting power is derived from staked tokens
 func TestVotingPowerBasedOnStake(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
 	mockStaking := NewMockStakingKeeperWithStake()
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, mockStaking)
+	mockBank := &MockBankKeeperForVotingPower{}
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, mockStaking, mockBank)
 
 	// Create test address
 	addr := keepertest.GenTestAddr()
@@ -60,7 +84,8 @@ func TestVotingPowerBasedOnStake(t *testing.T) {
 func TestVotingPowerWithDelegations(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
 	mockStaking := NewMockStakingKeeperWithStake()
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, mockStaking)
+	mockBank := &MockBankKeeperForVotingPower{}
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, mockStaking, mockBank)
 
 	// Create addresses
 	delegatee := keepertest.GenTestAddr() // Person receiving delegation
@@ -97,7 +122,8 @@ func TestVotingPowerWithDelegations(t *testing.T) {
 func TestSybilResistance(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
 	mockStaking := NewMockStakingKeeperWithStake()
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, mockStaking)
+	mockBank := &MockBankKeeperForVotingPower{}
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, mockStaking, mockBank)
 
 	// Create addresses with no stake
 	addrs := []sdk.AccAddress{
@@ -118,7 +144,8 @@ func TestSybilResistance(t *testing.T) {
 func TestWhaleVotingPower(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
 	mockStaking := NewMockStakingKeeperWithStake()
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, mockStaking)
+	mockBank := &MockBankKeeperForVotingPower{}
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, mockStaking, mockBank)
 
 	whale := keepertest.GenTestAddr()
 	regular := keepertest.GenTestAddr()
@@ -145,7 +172,8 @@ func TestWhaleVotingPower(t *testing.T) {
 func TestMultipleDelegations(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
 	mockStaking := NewMockStakingKeeperWithStake()
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, mockStaking)
+	mockBank := &MockBankKeeperForVotingPower{}
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, mockStaking, mockBank)
 
 	delegatee := keepertest.GenTestAddr()
 	delegator1 := keepertest.GenTestAddr()

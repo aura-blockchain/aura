@@ -16,22 +16,15 @@ import (
 func setupKeeper(t *testing.T) (*Keeper, sdk.Context) {
 	input := keepertest.CreateTestInputWithKeys(t, "governance")
 	mockStaking := &MockStakingKeeper{delegatorBonded: make(map[string]sdkmath.Int)}
-	keeper := NewKeeper(input.Cdc, input.StoreKey, mockStaking)
+	mockBank := &MockBankKeeper{
+		balances:       make(map[string]sdk.Coins),
+		moduleBalances: make(map[string]sdk.Coins),
+	}
+	keeper := NewKeeper(input.Cdc, input.StoreKey, mockStaking, mockBank)
 	ctx := input.Ctx.WithKVGasConfig(storetypes.GasConfig{})
 	return keeper, ctx
 }
 
-// MockStakingKeeper for genesis tests
-type MockStakingKeeper struct {
-	delegatorBonded map[string]sdkmath.Int
-}
-
-func (m *MockStakingKeeper) GetDelegatorBonded(ctx sdk.Context, delegator sdk.AccAddress) sdkmath.Int {
-	if amount, ok := m.delegatorBonded[delegator.String()]; ok {
-		return amount
-	}
-	return sdkmath.ZeroInt()
-}
 
 func TestInitGenesis(t *testing.T) {
 	tests := []struct {

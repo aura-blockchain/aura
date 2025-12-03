@@ -78,13 +78,43 @@ func (ms msgServer) SubmitProposal(goCtx context.Context, msg *govpb.MsgSubmitPr
 
 	// Handle initial deposit if provided
 	if msg.InitialDeposit != "" && msg.InitialDeposit != "0" {
-		deposit := &types.Deposit{
+		// Parse and validate deposit amount
+		deposit, err := sdk.ParseCoinsNormalized(msg.InitialDeposit)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, "invalid deposit amount")
+		}
+
+		// Check minimum deposit requirement
+		minDeposit, err := sdk.ParseCoinsNormalized(params.MinDeposit)
+		if err != nil {
+			return nil, status.Error(codes.Internal, "invalid minimum deposit parameter")
+		}
+
+		if deposit.IsAllLT(minDeposit) {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"deposit %s below minimum %s", deposit, minDeposit)
+		}
+
+		// Actually transfer tokens from proposer to module account
+		err = ms.Keeper.bankKeeper.SendCoinsFromAccountToModule(
+			ctx,
+			proposerAddr,
+			types.ModuleName,
+			deposit,
+		)
+		if err != nil {
+			return nil, status.Errorf(codes.FailedPrecondition,
+				"failed to transfer deposit: %s", err)
+		}
+
+		// Store deposit record
+		depositRecord := &types.Deposit{
 			ProposalId: proposalID,
 			Depositor:  msg.Proposer,
 			Amount:     msg.InitialDeposit,
 			Timestamp:  timestamppb.Now(),
 		}
-		if err := ms.Keeper.SetDeposit(ctx, deposit); err != nil {
+		if err := ms.Keeper.SetDeposit(ctx, depositRecord); err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 	}
@@ -138,7 +168,25 @@ func (ms msgServer) Deposit(goCtx context.Context, msg *govpb.MsgDeposit) (*govp
 		return nil, status.Error(codes.FailedPrecondition, "proposal not in deposit period")
 	}
 
-	// Store deposit
+	// Parse and validate deposit amount
+	depositAmount, err := sdk.ParseCoinsNormalized(msg.Amount)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid deposit amount")
+	}
+
+	// Actually transfer tokens from depositor to module account
+	err = ms.Keeper.bankKeeper.SendCoinsFromAccountToModule(
+		ctx,
+		depositorAddr,
+		types.ModuleName,
+		depositAmount,
+	)
+	if err != nil {
+		return nil, status.Errorf(codes.FailedPrecondition,
+			"failed to transfer deposit: %s", err)
+	}
+
+	// Store deposit record
 	deposit := &types.Deposit{
 		ProposalId: msg.ProposalId,
 		Depositor:  msg.Depositor,
@@ -194,7 +242,38 @@ func (ms msgServer) Vote(goCtx context.Context, msg *govpb.MsgVote) (*govpb.MsgV
 		return nil, status.Error(codes.FailedPrecondition, "proposal not in voting period")
 	}
 
-	// Store vote
+	// Check for existing vote to prevent double voting or allow vote update
+	existingVote, err := ms.Keeper.GetVote(ctx, msg.ProposalId, msg.Voter)
+	if err == nil && existingVote != nil {
+		// Vote already exists - allow update by overwriting
+		// This is standard governance behavior: users can change their vote during voting period
+		existingVote.Option = msg.Option
+		existingVote.Timestamp = timestamppb.Now()
+
+		// Handle secret ballot update
+		if msg.IsSecret {
+			existingVote.IsSecret = true
+			existingVote.VoteCommitment = msg.VoteCommitment
+		}
+
+		if err := ms.Keeper.SetVote(ctx, existingVote); err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+
+		// Emit vote update event
+		ctx.EventManager().EmitEvent(
+			sdk.NewEvent(
+				types.EventTypeVote,
+				sdk.NewAttribute(types.AttributeKeyProposalID, fmt.Sprintf("%d", msg.ProposalId)),
+				sdk.NewAttribute(types.AttributeKeyVoter, msg.Voter),
+				sdk.NewAttribute("action", "update"),
+			),
+		)
+
+		return &govpb.MsgVoteResponse{}, nil
+	}
+
+	// Create new vote
 	vote := &types.Vote{
 		ProposalId: msg.ProposalId,
 		Voter:      msg.Voter,
@@ -217,6 +296,7 @@ func (ms msgServer) Vote(goCtx context.Context, msg *govpb.MsgVote) (*govpb.MsgV
 			types.EventTypeVote,
 			sdk.NewAttribute(types.AttributeKeyProposalID, fmt.Sprintf("%d", msg.ProposalId)),
 			sdk.NewAttribute(types.AttributeKeyVoter, msg.Voter),
+			sdk.NewAttribute("action", "create"),
 		),
 	)
 
@@ -260,7 +340,31 @@ func (ms msgServer) VoteWeighted(goCtx context.Context, msg *govpb.MsgVoteWeight
 		return nil, status.Error(codes.FailedPrecondition, "proposal not in voting period")
 	}
 
-	// Store weighted vote (simplified: store first option only)
+	// Check for existing vote to prevent double voting or allow vote update
+	existingVote, err := ms.Keeper.GetVote(ctx, msg.ProposalId, msg.Voter)
+	if err == nil && existingVote != nil {
+		// Vote already exists - allow update by overwriting
+		existingVote.Option = msg.Options[0].Option
+		existingVote.Timestamp = timestamppb.Now()
+
+		if err := ms.Keeper.SetVote(ctx, existingVote); err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+
+		// Emit vote update event
+		ctx.EventManager().EmitEvent(
+			sdk.NewEvent(
+				types.EventTypeVote,
+				sdk.NewAttribute(types.AttributeKeyProposalID, fmt.Sprintf("%d", msg.ProposalId)),
+				sdk.NewAttribute(types.AttributeKeyVoter, msg.Voter),
+				sdk.NewAttribute("action", "update"),
+			),
+		)
+
+		return &govpb.MsgVoteWeightedResponse{}, nil
+	}
+
+	// Create new weighted vote (simplified: store first option only)
 	vote := &types.Vote{
 		ProposalId: msg.ProposalId,
 		Voter:      msg.Voter,
@@ -278,6 +382,7 @@ func (ms msgServer) VoteWeighted(goCtx context.Context, msg *govpb.MsgVoteWeight
 			types.EventTypeVote,
 			sdk.NewAttribute(types.AttributeKeyProposalID, fmt.Sprintf("%d", msg.ProposalId)),
 			sdk.NewAttribute(types.AttributeKeyVoter, msg.Voter),
+			sdk.NewAttribute("action", "create"),
 		),
 	)
 
@@ -553,7 +658,32 @@ func (ms msgServer) SubmitSnapshotVote(goCtx context.Context, msg *govpb.MsgSubm
 		return nil, status.Error(codes.NotFound, "proposal not found")
 	}
 
-	// Store snapshot vote
+	// Check for existing snapshot vote to prevent double voting or allow vote update
+	existingVote, err := ms.Keeper.GetSnapshotVote(ctx, msg.ProposalId, msg.Voter)
+	if err == nil && existingVote != nil {
+		// Snapshot vote already exists - allow update
+		existingVote.Option = msg.Option
+		existingVote.Signature = msg.Signature
+		existingVote.Timestamp = timestamppb.Now()
+
+		if err := ms.Keeper.SetSnapshotVote(ctx, existingVote); err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+
+		// Emit snapshot vote update event
+		ctx.EventManager().EmitEvent(
+			sdk.NewEvent(
+				types.EventTypeSnapshotVote,
+				sdk.NewAttribute(types.AttributeKeyProposalID, fmt.Sprintf("%d", msg.ProposalId)),
+				sdk.NewAttribute(types.AttributeKeyVoter, msg.Voter),
+				sdk.NewAttribute("action", "update"),
+			),
+		)
+
+		return &govpb.MsgSubmitSnapshotVoteResponse{}, nil
+	}
+
+	// Create new snapshot vote
 	snapshotVote := &types.SnapshotVote{
 		ProposalId: msg.ProposalId,
 		Voter:      msg.Voter,
@@ -572,6 +702,7 @@ func (ms msgServer) SubmitSnapshotVote(goCtx context.Context, msg *govpb.MsgSubm
 			types.EventTypeSnapshotVote,
 			sdk.NewAttribute(types.AttributeKeyProposalID, fmt.Sprintf("%d", msg.ProposalId)),
 			sdk.NewAttribute(types.AttributeKeyVoter, msg.Voter),
+			sdk.NewAttribute("action", "create"),
 		),
 	)
 

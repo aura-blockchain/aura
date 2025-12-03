@@ -678,7 +678,7 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 	)
 
 	// Individual economics module keepers
-	governanceKeeper := governancekeeper.NewKeeper(encoding.Codec, keys.governance, stakingKeeper)
+	governanceKeeper := governancekeeper.NewKeeper(encoding.Codec, keys.governance, stakingKeeper, bankKeeper)
 
 	economicsecurityParamsStore := economicsecurityparams.NewStore(*economicsecuritytypes.DefaultParams())
 	economicsecurityKeeper := economicsecuritykeeper.NewKeeper(
