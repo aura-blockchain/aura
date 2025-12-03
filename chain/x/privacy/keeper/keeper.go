@@ -585,13 +585,8 @@ func (k Keeper) VerifyZKProofSimple(ctx context.Context, proof *privacyproto.ZKP
 	return proof.ProofType != "" && len(proof.ProofData) > 0
 }
 
-// DecryptWithViewKey decrypts data using a view key (simplified)
-func (k Keeper) DecryptWithViewKey(ctx context.Context, encryptedData, privateViewKey []byte) ([]byte, bool) {
-	if len(encryptedData) == 0 || len(privateViewKey) == 0 {
-		return nil, false
-	}
-
-	// Simplified decryption - in production would use actual encryption
-	// For testing, just return the encrypted data as-is
-	return encryptedData, true
-}
+// SECURITY NOTE: DecryptWithViewKey has been removed.
+// Decryption must be performed client-side using private keys that never leave the client.
+// The blockchain should never receive, store, or process private keys in any form.
+// Private view keys enable clients to decrypt their own transaction data locally,
+// but they must NEVER be transmitted to or stored on the blockchain.

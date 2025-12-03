@@ -21,6 +21,9 @@ const userOrderHistoryLimit = 200
 
 // CreateOrder creates a new swap order in the orderbook
 // Adapted from simple_swap_gui.py lines 120-180
+//
+// SECURITY: Protected with reentrancy guard and follows Checks-Effects-Interactions pattern
+// to prevent manipulation through callbacks during external calls
 func (k Keeper) CreateOrder(
 	ctx sdk.Context,
 	creator string,
@@ -30,7 +33,19 @@ func (k Keeper) CreateOrder(
 	otherAmount sdkmath.Int,
 	expirationMinutes uint64,
 ) (*types.SwapOrder, error) {
-	// Validate inputs
+	// Derive pool identifier for scoped reentrancy protection
+	poolID := k.GeneratePoolID("uaura", otherCoin)
+	scope := fmt.Sprintf("orderbook:%s", poolID)
+
+	// Acquire reentrancy lock for this orderbook
+	if err := k.reentrancyGuard.EnterScoped(scope); err != nil {
+		return nil, fmt.Errorf("reentrancy detected: %w", err)
+	}
+	defer k.reentrancyGuard.ExitScoped(scope)
+
+	// === 1. CHECKS - Validate all inputs and state ===
+
+	// Validate amounts
 	if auraAmount.LTE(sdkmath.ZeroInt()) {
 		return nil, fmt.Errorf("AURA amount must be positive")
 	}
@@ -38,21 +53,44 @@ func (k Keeper) CreateOrder(
 		return nil, fmt.Errorf("other coin amount must be positive")
 	}
 
+	// Detect order manipulation
+	if err := k.DetectOrderManipulation(ctx, creator, poolID, auraAmount); err != nil {
+		return nil, err
+	}
+
+	// Validate user has sufficient balance
+	addr, err := sdk.AccAddressFromBech32(creator)
+	if err != nil {
+		return nil, fmt.Errorf("invalid creator address: %w", err)
+	}
+
+	var requiredDenom string
+	var requiredAmount sdkmath.Int
+	if orderType == types.SwapOrderType_SELL {
+		requiredDenom = "uaura"
+		requiredAmount = auraAmount
+	} else {
+		requiredDenom = otherCoin
+		requiredAmount = otherAmount
+	}
+
+	balance := k.bankKeeper.GetBalance(ctx, addr, requiredDenom)
+	if balance.Amount.LT(requiredAmount) {
+		return nil, fmt.Errorf("insufficient balance: have %s, need %s %s",
+			balance.Amount.String(), requiredAmount.String(), requiredDenom)
+	}
+
+	// === 2. EFFECTS - Update state BEFORE external calls ===
+
 	// Generate order ID
 	orderID := k.GenerateOrderID(ctx, creator)
 
 	// Calculate expiration time
 	expirationTime := ctx.BlockTime().Add(time.Duration(expirationMinutes) * time.Minute)
 
-	// Derive pool identifier for manipulation detection (uaura paired with other coin)
-	poolID := k.GeneratePoolID("uaura", otherCoin)
-	if err := k.DetectOrderManipulation(ctx, creator, poolID, auraAmount); err != nil {
-		return nil, err
-	}
-
 	pricePerAura := otherAmount.ToLegacyDec().Quo(auraAmount.ToLegacyDec())
 
-	// Create order
+	// Create order struct
 	order := &types.SwapOrder{
 		OrderId:      orderID,
 		OrderType:    orderType,
@@ -66,26 +104,34 @@ func (k Keeper) CreateOrder(
 		PricePerAura: pricePerAura.String(),
 	}
 
+	// Store order BEFORE external call
+	k.SetOrder(ctx, order)
+
+	// Add to orderbook index BEFORE external call
+	k.AddToOrderbook(ctx, order)
+
+	// === 3. INTERACTIONS - External calls LAST ===
+
 	// Lock user's funds based on order type
 	if orderType == types.SwapOrderType_SELL {
 		// Selling AURA, lock AURA
 		if err := k.LockFundsForOrder(ctx, creator, "uaura", auraAmount); err != nil {
+			// Rollback state changes
+			k.RemoveFromOrderbook(ctx, orderID)
+			k.DeleteOrder(ctx, orderID)
 			return nil, fmt.Errorf("failed to lock AURA: %w", err)
 		}
 	} else {
 		// Buying AURA, lock other coin
 		if err := k.LockFundsForOrder(ctx, creator, otherCoin, otherAmount); err != nil {
+			// Rollback state changes
+			k.RemoveFromOrderbook(ctx, orderID)
+			k.DeleteOrder(ctx, orderID)
 			return nil, fmt.Errorf("failed to lock %s: %w", otherCoin, err)
 		}
 	}
 
-	// Store order
-	k.SetOrder(ctx, order)
-
-	// Add to orderbook index
-	k.AddToOrderbook(ctx, order)
-
-	// Emit event
+	// Emit event (safe - no state changes after this)
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			"order_created",
@@ -103,16 +149,32 @@ func (k Keeper) CreateOrder(
 
 // MatchOrder attempts to match and execute an order
 // Adapted from simple_swap_gui.py lines 220-280
+//
+// SECURITY: Protected with reentrancy guard and follows Checks-Effects-Interactions pattern
+// State changes (order status, indexing) occur BEFORE external transfers to prevent
+// reentrancy attacks where callbacks could manipulate order state during execution
 func (k Keeper) MatchOrder(
 	ctx sdk.Context,
 	matcher string,
 	orderID string,
 ) error {
-	// Get order
+	// Get order for scoped reentrancy protection
 	order := k.GetOrder(ctx, orderID)
 	if order == nil {
 		return fmt.Errorf("order not found: %s", orderID)
 	}
+
+	// Derive scope from order
+	poolID := k.GeneratePoolID("uaura", order.OtherCoin)
+	scope := fmt.Sprintf("orderbook:%s", poolID)
+
+	// Acquire reentrancy lock for this orderbook
+	if err := k.reentrancyGuard.EnterScoped(scope); err != nil {
+		return fmt.Errorf("reentrancy detected: %w", err)
+	}
+	defer k.reentrancyGuard.ExitScoped(scope)
+
+	// === 1. CHECKS - Validate all inputs and state ===
 
 	// Validate order status
 	if order.Status != types.SwapOrderStatus_PENDING {
@@ -136,43 +198,91 @@ func (k Keeper) MatchOrder(
 		return fmt.Errorf("invalid other amount")
 	}
 
-	// Lock matcher's funds
-	if order.OrderType == types.SwapOrderType_SELL {
-		// Order is selling AURA, matcher needs to provide other coin
-		if err := k.LockFundsForOrder(ctx, matcher, order.OtherCoin, otherAmount); err != nil {
-			return fmt.Errorf("failed to lock matcher funds: %w", err)
-		}
-	} else {
-		// Order is buying AURA, matcher needs to provide AURA
-		if err := k.LockFundsForOrder(ctx, matcher, "uaura", auraAmount); err != nil {
-			return fmt.Errorf("failed to lock matcher funds: %w", err)
-		}
+	// Validate matcher is not the order creator (can't match own order)
+	if matcher == order.UserAddress {
+		return fmt.Errorf("cannot match your own order")
 	}
 
-	// Update order status
+	// Validate matcher has sufficient balance
+	matcherAddr, err := sdk.AccAddressFromBech32(matcher)
+	if err != nil {
+		return fmt.Errorf("invalid matcher address: %w", err)
+	}
+
+	var requiredDenom string
+	var requiredAmount sdkmath.Int
+	if order.OrderType == types.SwapOrderType_SELL {
+		// Order is selling AURA, matcher needs to provide other coin
+		requiredDenom = order.OtherCoin
+		requiredAmount = otherAmount
+	} else {
+		// Order is buying AURA, matcher needs to provide AURA
+		requiredDenom = "uaura"
+		requiredAmount = auraAmount
+	}
+
+	matcherBalance := k.bankKeeper.GetBalance(ctx, matcherAddr, requiredDenom)
+	if matcherBalance.Amount.LT(requiredAmount) {
+		return fmt.Errorf("matcher has insufficient balance: have %s, need %s %s",
+			matcherBalance.Amount.String(), requiredAmount.String(), requiredDenom)
+	}
+
+	// === 2. EFFECTS - Update state BEFORE external calls ===
+
+	// Update order status to MATCHED BEFORE external calls
 	order.Status = types.SwapOrderStatus_MATCHED
 	order.MatcherAddress = matcher
 	order.MatchedAt = timestamppb.New(ctx.BlockTime())
 	k.SetOrder(ctx, order)
 
-	// Execute swap
+	// Remove from orderbook BEFORE external calls (prevents double-matching)
+	k.RemoveFromOrderbook(ctx, orderID)
+
+	// === 3. INTERACTIONS - External calls LAST ===
+
+	// Lock matcher's funds
+	if order.OrderType == types.SwapOrderType_SELL {
+		// Order is selling AURA, matcher needs to provide other coin
+		if err := k.LockFundsForOrder(ctx, matcher, order.OtherCoin, otherAmount); err != nil {
+			// Rollback state changes
+			k.AddToOrderbook(ctx, order)
+			order.Status = types.SwapOrderStatus_PENDING
+			order.MatcherAddress = ""
+			order.MatchedAt = nil
+			k.SetOrder(ctx, order)
+			return fmt.Errorf("failed to lock matcher funds: %w", err)
+		}
+	} else {
+		// Order is buying AURA, matcher needs to provide AURA
+		if err := k.LockFundsForOrder(ctx, matcher, "uaura", auraAmount); err != nil {
+			// Rollback state changes
+			k.AddToOrderbook(ctx, order)
+			order.Status = types.SwapOrderStatus_PENDING
+			order.MatcherAddress = ""
+			order.MatchedAt = nil
+			k.SetOrder(ctx, order)
+			return fmt.Errorf("failed to lock matcher funds: %w", err)
+		}
+	}
+
+	// Execute swap (transfers funds between parties)
 	if err := k.ExecuteSwap(ctx, order); err != nil {
 		// Swap failed, unlock funds and revert
 		k.UnlockFundsForOrder(ctx, order.UserAddress, order)
 		k.UnlockFundsForOrder(ctx, matcher, order)
+		k.AddToOrderbook(ctx, order)
 		order.Status = types.SwapOrderStatus_PENDING
+		order.MatcherAddress = ""
+		order.MatchedAt = nil
 		k.SetOrder(ctx, order)
 		return fmt.Errorf("failed to execute swap: %w", err)
 	}
 
-	// Mark as completed
+	// Mark as completed AFTER successful swap
 	order.Status = types.SwapOrderStatus_COMPLETED
 	k.SetOrder(ctx, order)
 
-	// Remove from orderbook
-	k.RemoveFromOrderbook(ctx, orderID)
-
-	// Emit event
+	// Emit event (safe - no state changes after this)
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			"order_matched",
@@ -186,6 +296,9 @@ func (k Keeper) MatchOrder(
 }
 
 // CancelOrder cancels an order and unlocks funds
+//
+// SECURITY: Protected with reentrancy guard and follows Checks-Effects-Interactions pattern
+// State changes occur BEFORE external calls to prevent reentrancy attacks
 func (k Keeper) CancelOrder(
 	ctx sdk.Context,
 	orderID string,
@@ -197,24 +310,44 @@ func (k Keeper) CancelOrder(
 		return fmt.Errorf("order not found: %s", orderID)
 	}
 
+	// Derive scope for reentrancy protection
+	poolID := k.GeneratePoolID("uaura", order.OtherCoin)
+	scope := fmt.Sprintf("orderbook:%s", poolID)
+
+	// Acquire reentrancy lock for this orderbook
+	if err := k.reentrancyGuard.EnterScoped(scope); err != nil {
+		return fmt.Errorf("reentrancy detected: %w", err)
+	}
+	defer k.reentrancyGuard.ExitScoped(scope)
+
+	// === 1. CHECKS - Validate state ===
+
 	// Can only cancel pending orders
 	if order.Status != types.SwapOrderStatus_PENDING {
 		return fmt.Errorf("order is not pending")
 	}
 
-	// Unlock funds
-	if err := k.UnlockFundsForOrder(ctx, order.UserAddress, order); err != nil {
-		return fmt.Errorf("failed to unlock funds: %w", err)
-	}
+	// === 2. EFFECTS - Update state BEFORE external calls ===
 
-	// Update status
+	// Update status BEFORE external call
 	order.Status = types.SwapOrderStatus_CANCELLED
 	k.SetOrder(ctx, order)
 
-	// Remove from orderbook
+	// Remove from orderbook BEFORE external call
 	k.RemoveFromOrderbook(ctx, orderID)
 
-	// Emit event
+	// === 3. INTERACTIONS - External calls LAST ===
+
+	// Unlock funds
+	if err := k.UnlockFundsForOrder(ctx, order.UserAddress, order); err != nil {
+		// Rollback state changes
+		k.AddToOrderbook(ctx, order)
+		order.Status = types.SwapOrderStatus_PENDING
+		k.SetOrder(ctx, order)
+		return fmt.Errorf("failed to unlock funds: %w", err)
+	}
+
+	// Emit event (safe - no state changes after this)
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			"order_cancelled",
@@ -227,9 +360,45 @@ func (k Keeper) CancelOrder(
 }
 
 // ExecuteSwap executes the actual token swap for a matched order
+//
+// SECURITY: This function is called from MatchOrder which already holds the reentrancy lock.
+// We validate invariants and execute transfers in the correct order to prevent manipulation.
+//
+// Note: This function should ONLY be called from within MatchOrder's reentrancy-protected section.
 func (k Keeper) ExecuteSwap(ctx sdk.Context, order *types.SwapOrder) error {
-	auraAmount, _ := sdkmath.NewIntFromString(order.AuraAmount)
-	otherAmount, _ := sdkmath.NewIntFromString(order.OtherAmount)
+	// === 1. CHECKS - Parse and validate amounts ===
+
+	auraAmount, ok := sdkmath.NewIntFromString(order.AuraAmount)
+	if !ok {
+		return fmt.Errorf("invalid AURA amount in order")
+	}
+	otherAmount, ok := sdkmath.NewIntFromString(order.OtherAmount)
+	if !ok {
+		return fmt.Errorf("invalid other amount in order")
+	}
+
+	// Validate order is in MATCHED status
+	if order.Status != types.SwapOrderStatus_MATCHED {
+		return fmt.Errorf("order must be in MATCHED status, got: %s", order.Status.String())
+	}
+
+	// Validate matcher is set
+	if order.MatcherAddress == "" {
+		return fmt.Errorf("order has no matcher address")
+	}
+
+	// Validate amounts are positive
+	if auraAmount.LTE(sdkmath.ZeroInt()) {
+		return fmt.Errorf("AURA amount must be positive")
+	}
+	if otherAmount.LTE(sdkmath.ZeroInt()) {
+		return fmt.Errorf("other amount must be positive")
+	}
+
+	// === 2. EFFECTS - No additional state changes needed here ===
+	// (State was already updated in MatchOrder before calling this function)
+
+	// === 3. INTERACTIONS - Execute transfers ===
 
 	if order.OrderType == types.SwapOrderType_SELL {
 		// Creator sells AURA, receives other coin

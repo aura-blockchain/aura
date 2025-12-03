@@ -11,13 +11,13 @@ import (
 func TestReentrancyGuard(t *testing.T) {
 	guard := NewReentrancyGuard()
 
-	// Test normal operation
+	// Test normal operation (global lock)
 	err := guard.WithReentrancyGuard(func() error {
 		return nil
 	})
 	require.NoError(t, err)
 
-	// Test reentrancy detection
+	// Test reentrancy detection (global lock)
 	err = guard.WithReentrancyGuard(func() error {
 		// Attempt nested call (should fail)
 		return guard.WithReentrancyGuard(func() error {
@@ -26,6 +26,88 @@ func TestReentrancyGuard(t *testing.T) {
 	})
 	require.Error(t, err)
 	require.Equal(t, ErrReentrancyDetected, err)
+}
+
+func TestReentrancyGuardScoped(t *testing.T) {
+	guard := NewReentrancyGuard()
+
+	// Test normal scoped operation
+	err := guard.WithScopedGuard("pool:123", func() error {
+		return nil
+	})
+	require.NoError(t, err)
+
+	// Test reentrancy detection within same scope
+	err = guard.WithScopedGuard("pool:123", func() error {
+		// Attempt nested call to same scope (should fail)
+		return guard.WithScopedGuard("pool:123", func() error {
+			return nil
+		})
+	})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "reentrancy detected")
+	require.Contains(t, err.Error(), "pool:123")
+
+	// Test concurrent access to different scopes (should succeed)
+	err1 := guard.EnterScoped("pool:123")
+	require.NoError(t, err1)
+
+	err2 := guard.EnterScoped("pool:456")
+	require.NoError(t, err2)
+
+	// Verify both locks are held
+	err3 := guard.EnterScoped("pool:123")
+	require.Error(t, err3)
+	require.Contains(t, err3.Error(), "pool:123")
+
+	err4 := guard.EnterScoped("pool:456")
+	require.Error(t, err4)
+	require.Contains(t, err4.Error(), "pool:456")
+
+	// Release locks
+	guard.ExitScoped("pool:123")
+	guard.ExitScoped("pool:456")
+
+	// Verify locks are released
+	err5 := guard.EnterScoped("pool:123")
+	require.NoError(t, err5)
+	guard.ExitScoped("pool:123")
+
+	err6 := guard.EnterScoped("pool:456")
+	require.NoError(t, err6)
+	guard.ExitScoped("pool:456")
+}
+
+func TestReentrancyGuardScopedIsolation(t *testing.T) {
+	guard := NewReentrancyGuard()
+
+	// Test that different scopes don't interfere
+	scope1 := "orderbook:uaura-usdt"
+	scope2 := "orderbook:uaura-btc"
+
+	// Lock scope 1
+	err := guard.EnterScoped(scope1)
+	require.NoError(t, err)
+
+	// Scope 2 should still be accessible
+	err = guard.WithScopedGuard(scope2, func() error {
+		// This should succeed even though scope1 is locked
+		return nil
+	})
+	require.NoError(t, err)
+
+	// Scope 1 should still be locked
+	err = guard.EnterScoped(scope1)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), scope1)
+
+	// Release scope 1
+	guard.ExitScoped(scope1)
+
+	// Now scope 1 should be accessible
+	err = guard.EnterScoped(scope1)
+	require.NoError(t, err)
+	guard.ExitScoped(scope1)
 }
 
 func TestPauseGuard(t *testing.T) {

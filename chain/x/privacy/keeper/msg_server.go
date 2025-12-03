@@ -186,6 +186,7 @@ func (ms msgServer) JoinMixingPool(goCtx context.Context, msg *privacypb.MsgJoin
 }
 
 // RegisterViewKey registers a new view key
+// SECURITY: Only public keys are stored. Private keys must never be transmitted or stored on-chain.
 func (ms msgServer) RegisterViewKey(goCtx context.Context, msg *privacypb.MsgRegisterViewKey) (*privacypb.MsgRegisterViewKeyResponse, error) {
 	if msg == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
@@ -199,9 +200,27 @@ func (ms msgServer) RegisterViewKey(goCtx context.Context, msg *privacypb.MsgReg
 		return nil, status.Error(codes.InvalidArgument, "view key cannot be nil")
 	}
 
+	// Validate public view key is present and valid
+	if len(msg.ViewKey.PublicViewKey) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "public view key cannot be empty")
+	}
+
+	// Validate key length (Ed25519/Curve25519 keys are 32 bytes, compressed secp256k1 is 33 bytes)
+	keyLen := len(msg.ViewKey.PublicViewKey)
+	if keyLen != 32 && keyLen != 33 && keyLen != 64 {
+		return nil, status.Error(codes.InvalidArgument, "invalid public key length (must be 32, 33, or 64 bytes)")
+	}
+
+	// SECURITY CHECK: Ensure no private key material is being stored
+	// The ViewKey proto no longer has private_view_key field, but we add this
+	// defensive check in case someone tries to abuse the system
+	if msg.ViewKey.KeyType == "PRIVATE" || msg.ViewKey.KeyType == "SECRET" {
+		return nil, status.Error(codes.InvalidArgument, "private keys cannot be registered on-chain")
+	}
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	// Store view key
+	// Store view key (only public component)
 	if err := ms.Keeper.SetViewKey(ctx, msg.Owner, msg.ViewKey); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -211,6 +230,7 @@ func (ms msgServer) RegisterViewKey(goCtx context.Context, msg *privacypb.MsgReg
 		sdk.NewEvent(
 			types.EventTypeViewKey,
 			sdk.NewAttribute("owner", msg.Owner),
+			sdk.NewAttribute("key_type", msg.ViewKey.KeyType),
 		),
 	)
 

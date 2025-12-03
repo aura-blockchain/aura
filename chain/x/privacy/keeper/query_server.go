@@ -160,27 +160,6 @@ func (qs queryServer) VerifyZKProof(goCtx context.Context, req *privacypb.QueryV
 	}, nil
 }
 
-// DecryptWithViewKey decrypts transaction data using a view key
-func (qs queryServer) DecryptWithViewKey(goCtx context.Context, req *privacypb.QueryDecryptWithViewKeyRequest) (*privacypb.QueryDecryptWithViewKeyResponse, error) {
-	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
-	}
-
-	if len(req.EncryptedData) == 0 {
-		return nil, status.Error(codes.InvalidArgument, "encrypted data cannot be empty")
-	}
-
-	if len(req.PrivateViewKey) == 0 {
-		return nil, status.Error(codes.InvalidArgument, "private view key cannot be empty")
-	}
-
-	ctx := sdk.UnwrapSDKContext(goCtx)
-
-	// Decrypt data (simplified)
-	decryptedData, success := qs.Keeper.DecryptWithViewKey(ctx, req.EncryptedData, req.PrivateViewKey)
-
-	return &privacypb.QueryDecryptWithViewKeyResponse{
-		DecryptedData: decryptedData,
-		Success:       success,
-	}, nil
-}
+// SECURITY NOTE: DecryptWithViewKey has been removed.
+// Decryption must be performed client-side using private keys that never leave the client.
+// The blockchain should never receive or process private keys in any form.

@@ -221,51 +221,7 @@ func (suite *QueryServerTestSuite) TestVerifyZKProofQueryNilProof() {
 	suite.Nil(resp)
 }
 
-func (suite *QueryServerTestSuite) TestDecryptWithViewKeyQuery() {
-	goCtx := sdk.WrapSDKContext(suite.ctx)
-
-	// Test with valid data
-	req := &privacypb.QueryDecryptWithViewKeyRequest{
-		EncryptedData:  []byte("encrypted_test_data"),
-		PrivateViewKey: []byte("private_view_key"),
-	}
-	resp, err := suite.queryServer.DecryptWithViewKey(goCtx, req)
-	suite.NoError(err)
-	suite.NotNil(resp)
-	// Decryption may fail, but response should be valid
-}
-
-func (suite *QueryServerTestSuite) TestDecryptWithViewKeyQueryNilRequest() {
-	goCtx := sdk.WrapSDKContext(suite.ctx)
-
-	// Test nil request
-	resp, err := suite.queryServer.DecryptWithViewKey(goCtx, nil)
-	suite.Error(err)
-	suite.Nil(resp)
-}
-
-func (suite *QueryServerTestSuite) TestDecryptWithViewKeyQueryEmptyData() {
-	goCtx := sdk.WrapSDKContext(suite.ctx)
-
-	// Test empty encrypted data
-	req := &privacypb.QueryDecryptWithViewKeyRequest{
-		EncryptedData:  []byte{},
-		PrivateViewKey: []byte("private_view_key"),
-	}
-	resp, err := suite.queryServer.DecryptWithViewKey(goCtx, req)
-	suite.Error(err)
-	suite.Nil(resp)
-}
-
-func (suite *QueryServerTestSuite) TestDecryptWithViewKeyQueryEmptyViewKey() {
-	goCtx := sdk.WrapSDKContext(suite.ctx)
-
-	// Test empty private view key
-	req := &privacypb.QueryDecryptWithViewKeyRequest{
-		EncryptedData:  []byte("encrypted_test_data"),
-		PrivateViewKey: []byte{},
-	}
-	resp, err := suite.queryServer.DecryptWithViewKey(goCtx, req)
-	suite.Error(err)
-	suite.Nil(resp)
-}
+// SECURITY NOTE: DecryptWithViewKey tests have been removed.
+// Decryption must be performed client-side using private keys that never leave the client.
+// The blockchain should never receive, store, or process private keys in any form.
+// Tests for client-side decryption should be implemented in client libraries, not on-chain.
