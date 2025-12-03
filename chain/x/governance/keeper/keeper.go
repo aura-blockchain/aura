@@ -184,8 +184,14 @@ func (k *Keeper) SetVote(ctx sdk.Context, vote *types.Vote) error {
 	}
 
 	// Key: prefix + proposalID (8 bytes) + voter (variable length)
-	key := append(VotesKeyPrefix, sdk.Uint64ToBigEndian(vote.ProposalId)...)
-	key = append(key, []byte(vote.Voter)...)
+	// Pre-allocate to avoid shared underlying arrays with global prefix
+	proposalIDBytes := sdk.Uint64ToBigEndian(vote.ProposalId)
+	voterBytes := []byte(vote.Voter)
+	keyLen := len(VotesKeyPrefix) + len(proposalIDBytes) + len(voterBytes)
+	key := make([]byte, 0, keyLen)
+	key = append(key, VotesKeyPrefix...)
+	key = append(key, proposalIDBytes...)
+	key = append(key, voterBytes...)
 	store.Set(key, bz)
 	return nil
 }
@@ -193,8 +199,14 @@ func (k *Keeper) SetVote(ctx sdk.Context, vote *types.Vote) error {
 // GetVote retrieves a vote from the KVStore
 func (k *Keeper) GetVote(ctx sdk.Context, proposalID uint64, voter string) (*types.Vote, error) {
 	store := ctx.KVStore(k.storeKey)
-	key := append(VotesKeyPrefix, sdk.Uint64ToBigEndian(proposalID)...)
-	key = append(key, []byte(voter)...)
+	// Pre-allocate to avoid shared underlying arrays with global prefix
+	proposalIDBytes := sdk.Uint64ToBigEndian(proposalID)
+	voterBytes := []byte(voter)
+	keyLen := len(VotesKeyPrefix) + len(proposalIDBytes) + len(voterBytes)
+	key := make([]byte, 0, keyLen)
+	key = append(key, VotesKeyPrefix...)
+	key = append(key, proposalIDBytes...)
+	key = append(key, voterBytes...)
 
 	bz := store.Get(key)
 	if bz == nil {
@@ -207,7 +219,12 @@ func (k *Keeper) GetVote(ctx sdk.Context, proposalID uint64, voter string) (*typ
 // GetVotes retrieves all votes for a proposal
 func (k *Keeper) GetVotes(ctx sdk.Context, proposalID uint64) []*types.Vote {
 	store := ctx.KVStore(k.storeKey)
-	prefix := append(VotesKeyPrefix, sdk.Uint64ToBigEndian(proposalID)...)
+	// Pre-allocate to avoid shared underlying arrays with global prefix
+	proposalIDBytes := sdk.Uint64ToBigEndian(proposalID)
+	prefixLen := len(VotesKeyPrefix) + len(proposalIDBytes)
+	prefix := make([]byte, 0, prefixLen)
+	prefix = append(prefix, VotesKeyPrefix...)
+	prefix = append(prefix, proposalIDBytes...)
 	iterator := storetypes.KVStorePrefixIterator(store, prefix)
 	defer iterator.Close()
 
@@ -234,8 +251,14 @@ func (k *Keeper) SetDeposit(ctx sdk.Context, deposit *types.Deposit) error {
 		return err
 	}
 
-	key := append(DepositsKeyPrefix, sdk.Uint64ToBigEndian(deposit.ProposalId)...)
-	key = append(key, []byte(deposit.Depositor)...)
+	// Pre-allocate to avoid shared underlying arrays with global prefix
+	proposalIDBytes := sdk.Uint64ToBigEndian(deposit.ProposalId)
+	depositorBytes := []byte(deposit.Depositor)
+	keyLen := len(DepositsKeyPrefix) + len(proposalIDBytes) + len(depositorBytes)
+	key := make([]byte, 0, keyLen)
+	key = append(key, DepositsKeyPrefix...)
+	key = append(key, proposalIDBytes...)
+	key = append(key, depositorBytes...)
 	store.Set(key, bz)
 	return nil
 }
@@ -243,8 +266,14 @@ func (k *Keeper) SetDeposit(ctx sdk.Context, deposit *types.Deposit) error {
 // GetDeposit retrieves a deposit from the KVStore
 func (k *Keeper) GetDeposit(ctx sdk.Context, proposalID uint64, depositor string) (*types.Deposit, error) {
 	store := ctx.KVStore(k.storeKey)
-	key := append(DepositsKeyPrefix, sdk.Uint64ToBigEndian(proposalID)...)
-	key = append(key, []byte(depositor)...)
+	// Pre-allocate to avoid shared underlying arrays with global prefix
+	proposalIDBytes := sdk.Uint64ToBigEndian(proposalID)
+	depositorBytes := []byte(depositor)
+	keyLen := len(DepositsKeyPrefix) + len(proposalIDBytes) + len(depositorBytes)
+	key := make([]byte, 0, keyLen)
+	key = append(key, DepositsKeyPrefix...)
+	key = append(key, proposalIDBytes...)
+	key = append(key, depositorBytes...)
 
 	bz := store.Get(key)
 	if bz == nil {
@@ -258,7 +287,12 @@ func (k *Keeper) GetDeposit(ctx sdk.Context, proposalID uint64, depositor string
 // GetDeposits retrieves all deposits for a proposal
 func (k *Keeper) GetDeposits(ctx sdk.Context, proposalID uint64) []*types.Deposit {
 	store := ctx.KVStore(k.storeKey)
-	prefix := append(DepositsKeyPrefix, sdk.Uint64ToBigEndian(proposalID)...)
+	// Pre-allocate to avoid shared underlying arrays with global prefix
+	proposalIDBytes := sdk.Uint64ToBigEndian(proposalID)
+	prefixLen := len(DepositsKeyPrefix) + len(proposalIDBytes)
+	prefix := make([]byte, 0, prefixLen)
+	prefix = append(prefix, DepositsKeyPrefix...)
+	prefix = append(prefix, proposalIDBytes...)
 	iterator := storetypes.KVStorePrefixIterator(store, prefix)
 	defer iterator.Close()
 
@@ -276,8 +310,14 @@ func (k *Keeper) GetDeposits(ctx sdk.Context, proposalID uint64) []*types.Deposi
 // DeleteDeposit removes a specific deposit from the KVStore
 func (k *Keeper) DeleteDeposit(ctx sdk.Context, proposalID uint64, depositor string) {
 	store := ctx.KVStore(k.storeKey)
-	key := append(DepositsKeyPrefix, sdk.Uint64ToBigEndian(proposalID)...)
-	key = append(key, []byte(depositor)...)
+	// Pre-allocate to avoid shared underlying arrays with global prefix
+	proposalIDBytes := sdk.Uint64ToBigEndian(proposalID)
+	depositorBytes := []byte(depositor)
+	keyLen := len(DepositsKeyPrefix) + len(proposalIDBytes) + len(depositorBytes)
+	key := make([]byte, 0, keyLen)
+	key = append(key, DepositsKeyPrefix...)
+	key = append(key, proposalIDBytes...)
+	key = append(key, depositorBytes...)
 	store.Delete(key)
 }
 
@@ -353,9 +393,15 @@ func (k *Keeper) SetVoteDelegation(ctx sdk.Context, delegation *types.VoteDelega
 	}
 
 	// Build key with separator: prefix | delegator | separator | delegate
-	key := append(DelegationsKeyPrefix, []byte(delegation.Delegator)...)
+	// Pre-allocate to avoid shared underlying arrays with global prefix
+	delegatorBytes := []byte(delegation.Delegator)
+	delegateBytes := []byte(delegation.Delegate)
+	keyLen := len(DelegationsKeyPrefix) + len(delegatorBytes) + len(KeySeparator) + len(delegateBytes)
+	key := make([]byte, 0, keyLen)
+	key = append(key, DelegationsKeyPrefix...)
+	key = append(key, delegatorBytes...)
 	key = append(key, KeySeparator...)
-	key = append(key, []byte(delegation.Delegate)...)
+	key = append(key, delegateBytes...)
 	store.Set(key, bz)
 	return nil
 }
@@ -364,9 +410,15 @@ func (k *Keeper) SetVoteDelegation(ctx sdk.Context, delegation *types.VoteDelega
 func (k *Keeper) DeleteVoteDelegation(ctx sdk.Context, delegator, delegate string) error {
 	store := ctx.KVStore(k.storeKey)
 	// Build key with separator: prefix | delegator | separator | delegate
-	key := append(DelegationsKeyPrefix, []byte(delegator)...)
+	// Pre-allocate to avoid shared underlying arrays with global prefix
+	delegatorBytes := []byte(delegator)
+	delegateBytes := []byte(delegate)
+	keyLen := len(DelegationsKeyPrefix) + len(delegatorBytes) + len(KeySeparator) + len(delegateBytes)
+	key := make([]byte, 0, keyLen)
+	key = append(key, DelegationsKeyPrefix...)
+	key = append(key, delegatorBytes...)
 	key = append(key, KeySeparator...)
-	key = append(key, []byte(delegate)...)
+	key = append(key, delegateBytes...)
 	store.Delete(key)
 	return nil
 }
@@ -376,7 +428,12 @@ func (k *Keeper) GetVoteDelegations(ctx sdk.Context, delegator string) []*types.
 	store := ctx.KVStore(k.storeKey)
 	// Build prefix with separator: prefix | delegator | separator
 	// This ensures we match only keys with this exact delegator
-	prefix := append(DelegationsKeyPrefix, []byte(delegator)...)
+	// Pre-allocate to avoid shared underlying arrays with global prefix
+	delegatorBytes := []byte(delegator)
+	prefixLen := len(DelegationsKeyPrefix) + len(delegatorBytes) + len(KeySeparator)
+	prefix := make([]byte, 0, prefixLen)
+	prefix = append(prefix, DelegationsKeyPrefix...)
+	prefix = append(prefix, delegatorBytes...)
 	prefix = append(prefix, KeySeparator...)
 	iterator := storetypes.KVStorePrefixIterator(store, prefix)
 	defer iterator.Close()
@@ -404,7 +461,12 @@ func (k *Keeper) SetVetoRequest(ctx sdk.Context, veto *types.VetoRequest) error 
 		return err
 	}
 
-	key := append(VetoRequestsKeyPrefix, sdk.Uint64ToBigEndian(veto.ProposalId)...)
+	// Pre-allocate to avoid shared underlying arrays with global prefix
+	proposalIDBytes := sdk.Uint64ToBigEndian(veto.ProposalId)
+	keyLen := len(VetoRequestsKeyPrefix) + len(proposalIDBytes)
+	key := make([]byte, 0, keyLen)
+	key = append(key, VetoRequestsKeyPrefix...)
+	key = append(key, proposalIDBytes...)
 	store.Set(key, bz)
 	return nil
 }
@@ -412,7 +474,12 @@ func (k *Keeper) SetVetoRequest(ctx sdk.Context, veto *types.VetoRequest) error 
 // GetVetoRequest retrieves a veto request
 func (k *Keeper) GetVetoRequest(ctx sdk.Context, proposalID uint64) (*types.VetoRequest, error) {
 	store := ctx.KVStore(k.storeKey)
-	key := append(VetoRequestsKeyPrefix, sdk.Uint64ToBigEndian(proposalID)...)
+	// Pre-allocate to avoid shared underlying arrays with global prefix
+	proposalIDBytes := sdk.Uint64ToBigEndian(proposalID)
+	keyLen := len(VetoRequestsKeyPrefix) + len(proposalIDBytes)
+	key := make([]byte, 0, keyLen)
+	key = append(key, VetoRequestsKeyPrefix...)
+	key = append(key, proposalIDBytes...)
 
 	bz := store.Get(key)
 	if bz == nil {
@@ -426,7 +493,12 @@ func (k *Keeper) GetVetoRequest(ctx sdk.Context, proposalID uint64) (*types.Veto
 // GetVetoRequests retrieves all veto requests for a proposal
 func (k *Keeper) GetVetoRequests(ctx sdk.Context, proposalID uint64) []*types.VetoRequest {
 	store := ctx.KVStore(k.storeKey)
-	prefix := append(VetoRequestsKeyPrefix, sdk.Uint64ToBigEndian(proposalID)...)
+	// Pre-allocate to avoid shared underlying arrays with global prefix
+	proposalIDBytes := sdk.Uint64ToBigEndian(proposalID)
+	prefixLen := len(VetoRequestsKeyPrefix) + len(proposalIDBytes)
+	prefix := make([]byte, 0, prefixLen)
+	prefix = append(prefix, VetoRequestsKeyPrefix...)
+	prefix = append(prefix, proposalIDBytes...)
 	iterator := storetypes.KVStorePrefixIterator(store, prefix)
 	defer iterator.Close()
 
@@ -444,7 +516,12 @@ func (k *Keeper) GetVetoRequests(ctx sdk.Context, proposalID uint64) []*types.Ve
 // DeleteVetoRequest removes a veto request from the KVStore
 func (k *Keeper) DeleteVetoRequest(ctx sdk.Context, proposalID uint64) {
 	store := ctx.KVStore(k.storeKey)
-	key := append(VetoRequestsKeyPrefix, sdk.Uint64ToBigEndian(proposalID)...)
+	// Pre-allocate to avoid shared underlying arrays with global prefix
+	proposalIDBytes := sdk.Uint64ToBigEndian(proposalID)
+	keyLen := len(VetoRequestsKeyPrefix) + len(proposalIDBytes)
+	key := make([]byte, 0, keyLen)
+	key = append(key, VetoRequestsKeyPrefix...)
+	key = append(key, proposalIDBytes...)
 	store.Delete(key)
 }
 
@@ -460,8 +537,14 @@ func (k *Keeper) SetSnapshotVote(ctx sdk.Context, vote *types.SnapshotVote) erro
 		return err
 	}
 
-	key := append(SnapshotVotesKeyPrefix, sdk.Uint64ToBigEndian(vote.ProposalId)...)
-	key = append(key, []byte(vote.Voter)...)
+	// Pre-allocate to avoid shared underlying arrays with global prefix
+	proposalIDBytes := sdk.Uint64ToBigEndian(vote.ProposalId)
+	voterBytes := []byte(vote.Voter)
+	keyLen := len(SnapshotVotesKeyPrefix) + len(proposalIDBytes) + len(voterBytes)
+	key := make([]byte, 0, keyLen)
+	key = append(key, SnapshotVotesKeyPrefix...)
+	key = append(key, proposalIDBytes...)
+	key = append(key, voterBytes...)
 	store.Set(key, bz)
 	return nil
 }
@@ -469,8 +552,14 @@ func (k *Keeper) SetSnapshotVote(ctx sdk.Context, vote *types.SnapshotVote) erro
 // GetSnapshotVote retrieves a single snapshot vote
 func (k *Keeper) GetSnapshotVote(ctx sdk.Context, proposalID uint64, voter string) (*types.SnapshotVote, error) {
 	store := ctx.KVStore(k.storeKey)
-	key := append(SnapshotVotesKeyPrefix, sdk.Uint64ToBigEndian(proposalID)...)
-	key = append(key, []byte(voter)...)
+	// Pre-allocate to avoid shared underlying arrays with global prefix
+	proposalIDBytes := sdk.Uint64ToBigEndian(proposalID)
+	voterBytes := []byte(voter)
+	keyLen := len(SnapshotVotesKeyPrefix) + len(proposalIDBytes) + len(voterBytes)
+	key := make([]byte, 0, keyLen)
+	key = append(key, SnapshotVotesKeyPrefix...)
+	key = append(key, proposalIDBytes...)
+	key = append(key, voterBytes...)
 
 	bz := store.Get(key)
 	if bz == nil {
@@ -484,7 +573,12 @@ func (k *Keeper) GetSnapshotVote(ctx sdk.Context, proposalID uint64, voter strin
 // GetSnapshotVotes retrieves all snapshot votes for a proposal
 func (k *Keeper) GetSnapshotVotes(ctx sdk.Context, proposalID uint64) []*types.SnapshotVote {
 	store := ctx.KVStore(k.storeKey)
-	prefix := append(SnapshotVotesKeyPrefix, sdk.Uint64ToBigEndian(proposalID)...)
+	// Pre-allocate to avoid shared underlying arrays with global prefix
+	proposalIDBytes := sdk.Uint64ToBigEndian(proposalID)
+	prefixLen := len(SnapshotVotesKeyPrefix) + len(proposalIDBytes)
+	prefix := make([]byte, 0, prefixLen)
+	prefix = append(prefix, SnapshotVotesKeyPrefix...)
+	prefix = append(prefix, proposalIDBytes...)
 	iterator := storetypes.KVStorePrefixIterator(store, prefix)
 	defer iterator.Close()
 
@@ -668,8 +762,14 @@ func (k *Keeper) SetTokenLock(ctx sdk.Context, lock *types.TokenLock) error {
 	}
 
 	// Key: prefix + owner address + proposal ID
-	key := append(TokenLocksKeyPrefix, []byte(lock.Owner)...)
-	key = append(key, sdk.Uint64ToBigEndian(lock.ProposalId)...)
+	// Pre-allocate to avoid shared underlying arrays with global prefix
+	ownerBytes := []byte(lock.Owner)
+	proposalIDBytes := sdk.Uint64ToBigEndian(lock.ProposalId)
+	keyLen := len(TokenLocksKeyPrefix) + len(ownerBytes) + len(proposalIDBytes)
+	key := make([]byte, 0, keyLen)
+	key = append(key, TokenLocksKeyPrefix...)
+	key = append(key, ownerBytes...)
+	key = append(key, proposalIDBytes...)
 	store.Set(key, bz)
 	return nil
 }
@@ -677,7 +777,12 @@ func (k *Keeper) SetTokenLock(ctx sdk.Context, lock *types.TokenLock) error {
 // GetTokenLocks returns token locks for an address
 func (k *Keeper) GetTokenLocks(ctx sdk.Context, address string) []*types.TokenLock {
 	store := ctx.KVStore(k.storeKey)
-	prefix := append(TokenLocksKeyPrefix, []byte(address)...)
+	// Pre-allocate to avoid shared underlying arrays with global prefix
+	addressBytes := []byte(address)
+	prefixLen := len(TokenLocksKeyPrefix) + len(addressBytes)
+	prefix := make([]byte, 0, prefixLen)
+	prefix = append(prefix, TokenLocksKeyPrefix...)
+	prefix = append(prefix, addressBytes...)
 	iterator := storetypes.KVStorePrefixIterator(store, prefix)
 	defer iterator.Close()
 
@@ -695,8 +800,14 @@ func (k *Keeper) GetTokenLocks(ctx sdk.Context, address string) []*types.TokenLo
 // DeleteTokenLock removes a token lock from the KVStore
 func (k *Keeper) DeleteTokenLock(ctx sdk.Context, owner string, proposalID uint64) {
 	store := ctx.KVStore(k.storeKey)
-	key := append(TokenLocksKeyPrefix, []byte(owner)...)
-	key = append(key, sdk.Uint64ToBigEndian(proposalID)...)
+	// Pre-allocate to avoid shared underlying arrays with global prefix
+	ownerBytes := []byte(owner)
+	proposalIDBytes := sdk.Uint64ToBigEndian(proposalID)
+	keyLen := len(TokenLocksKeyPrefix) + len(ownerBytes) + len(proposalIDBytes)
+	key := make([]byte, 0, keyLen)
+	key = append(key, TokenLocksKeyPrefix...)
+	key = append(key, ownerBytes...)
+	key = append(key, proposalIDBytes...)
 	store.Delete(key)
 }
 

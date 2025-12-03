@@ -34,8 +34,13 @@ func TestQueryUserOrders(t *testing.T) {
 }
 
 func TestQueryMarketPriceUsesStoredValue(t *testing.T) {
-	k, ctx, _ := setupTestKeeper(t)
-	user := keepertest.GenTestAddr().String()
+	k, ctx, mockBank := setupTestKeeper(t)
+	userAddr := keepertest.GenTestAddr()
+	user := userAddr.String()
+
+	// Fund the user account with sufficient balance for pool creation
+	mockBank.SetBalance(userAddr, "uaura", math.NewInt(1_000000))
+	mockBank.SetBalance(userAddr, "usdt", math.NewInt(2_000000))
 
 	_, _, err := k.CreatePool(ctx, user, "uaura", "usdt", sdk.NewCoin("uaura", math.NewInt(1_000000)), sdk.NewCoin("usdt", math.NewInt(2_000000)))
 	require.NoError(t, err)
@@ -51,8 +56,13 @@ func TestQueryMarketPriceUsesStoredValue(t *testing.T) {
 }
 
 func TestQuerySpotPrice(t *testing.T) {
-	k, ctx, _ := setupTestKeeper(t)
-	user := keepertest.GenTestAddr().String()
+	k, ctx, mockBank := setupTestKeeper(t)
+	userAddr := keepertest.GenTestAddr()
+	user := userAddr.String()
+
+	// Fund the user account with sufficient balance for pool creation
+	mockBank.SetBalance(userAddr, "uaura", math.NewInt(1_000000))
+	mockBank.SetBalance(userAddr, "usdt", math.NewInt(2_000000))
 
 	_, _, err := k.CreatePool(ctx, user, "uaura", "usdt", sdk.NewCoin("uaura", math.NewInt(1_000000)), sdk.NewCoin("usdt", math.NewInt(2_000000)))
 	require.NoError(t, err)
