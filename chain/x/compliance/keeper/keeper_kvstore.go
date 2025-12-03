@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
+	"cosmossdk.io/store/prefix"
 	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
@@ -1213,7 +1214,7 @@ func (k *Keeper) CheckRateLimit(ctx sdk.Context, address string, operation strin
 //   - Efficient iteration using prefix store
 func (k *Keeper) GetAllKYCRecordsPaginated(ctx sdk.Context, pagination *query.PageRequest) ([]*types.KYCRecord, *query.PageResponse, error) {
 	store := ctx.KVStore(k.storeKey)
-	recordStore := storetypes.PrefixedStore(store, KYCRecordsKeyPrefix)
+	recordStore := prefix.NewStore(store, KYCRecordsKeyPrefix)
 
 	var records []*types.KYCRecord
 	pageRes, err := query.Paginate(recordStore, pagination, func(key []byte, value []byte) error {
@@ -1234,7 +1235,7 @@ func (k *Keeper) GetAllKYCRecordsPaginated(ctx sdk.Context, pagination *query.Pa
 // GetAllAMLProfilesPaginated retrieves AML profiles with pagination support.
 func (k *Keeper) GetAllAMLProfilesPaginated(ctx sdk.Context, pagination *query.PageRequest) ([]*types.AMLProfile, *query.PageResponse, error) {
 	store := ctx.KVStore(k.storeKey)
-	profileStore := storetypes.PrefixedStore(store, AMLProfilesKeyPrefix)
+	profileStore := prefix.NewStore(store, AMLProfilesKeyPrefix)
 
 	var profiles []*types.AMLProfile
 	pageRes, err := query.Paginate(profileStore, pagination, func(key []byte, value []byte) error {
@@ -1255,7 +1256,7 @@ func (k *Keeper) GetAllAMLProfilesPaginated(ctx sdk.Context, pagination *query.P
 // GetAllSanctionsResultsPaginated retrieves sanctions screening results with pagination support.
 func (k *Keeper) GetAllSanctionsResultsPaginated(ctx sdk.Context, pagination *query.PageRequest) ([]*types.SanctionsScreeningResult, *query.PageResponse, error) {
 	store := ctx.KVStore(k.storeKey)
-	resultsStore := storetypes.PrefixedStore(store, SanctionsResultsKeyPrefix)
+	resultsStore := prefix.NewStore(store, SanctionsResultsKeyPrefix)
 
 	var results []*types.SanctionsScreeningResult
 	pageRes, err := query.Paginate(resultsStore, pagination, func(key []byte, value []byte) error {
@@ -1277,7 +1278,7 @@ func (k *Keeper) GetAllSanctionsResultsPaginated(ctx sdk.Context, pagination *qu
 // Returns a map of address -> consent list for each page.
 func (k *Keeper) GetAllGDPRConsentsPaginated(ctx sdk.Context, pagination *query.PageRequest) (map[string][]*types.GDPRConsent, *query.PageResponse, error) {
 	store := ctx.KVStore(k.storeKey)
-	consentStore := storetypes.PrefixedStore(store, GDPRConsentsKeyPrefix)
+	consentStore := prefix.NewStore(store, GDPRConsentsKeyPrefix)
 
 	consents := make(map[string][]*types.GDPRConsent)
 	pageRes, err := query.Paginate(consentStore, pagination, func(key []byte, value []byte) error {
@@ -1300,7 +1301,7 @@ func (k *Keeper) GetAllGDPRConsentsPaginated(ctx sdk.Context, pagination *query.
 // Returns a map of address -> alert list for each page.
 func (k *Keeper) GetAllTransactionAlertsPaginated(ctx sdk.Context, pagination *query.PageRequest) (map[string][]*types.TransactionAlert, *query.PageResponse, error) {
 	store := ctx.KVStore(k.storeKey)
-	alertStore := storetypes.PrefixedStore(store, TransactionAlertsKeyPrefix)
+	alertStore := prefix.NewStore(store, TransactionAlertsKeyPrefix)
 
 	alerts := make(map[string][]*types.TransactionAlert)
 	pageRes, err := query.Paginate(alertStore, pagination, func(key []byte, value []byte) error {
@@ -1323,7 +1324,7 @@ func (k *Keeper) GetAllTransactionAlertsPaginated(ctx sdk.Context, pagination *q
 // Returns a map of address -> report list for each page.
 func (k *Keeper) GetAllTaxReportsPaginated(ctx sdk.Context, pagination *query.PageRequest) (map[string][]*types.TaxReport, *query.PageResponse, error) {
 	store := ctx.KVStore(k.storeKey)
-	reportStore := storetypes.PrefixedStore(store, TaxReportsKeyPrefix)
+	reportStore := prefix.NewStore(store, TaxReportsKeyPrefix)
 
 	reports := make(map[string][]*types.TaxReport)
 	pageRes, err := query.Paginate(reportStore, pagination, func(key []byte, value []byte) error {
@@ -1345,7 +1346,7 @@ func (k *Keeper) GetAllTaxReportsPaginated(ctx sdk.Context, pagination *query.Pa
 // GetAllGDPRRequestsPaginated retrieves GDPR data requests with pagination support.
 func (k *Keeper) GetAllGDPRRequestsPaginated(ctx sdk.Context, pagination *query.PageRequest) ([]*types.GDPRDataRequest, *query.PageResponse, error) {
 	store := ctx.KVStore(k.storeKey)
-	requestStore := storetypes.PrefixedStore(store, GDPRRequestsKeyPrefix)
+	requestStore := prefix.NewStore(store, GDPRRequestsKeyPrefix)
 
 	var requests []*types.GDPRDataRequest
 	pageRes, err := query.Paginate(requestStore, pagination, func(key []byte, value []byte) error {

@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 	"github.com/aequitas/aura/chain/x/bridge/keeper"
 	"github.com/aequitas/aura/chain/x/bridge/types"
 	bridgepb "github.com/aequitas/aura/proto/aura/bridge/v1beta1"
@@ -380,34 +381,52 @@ func TestFraudProofWindowParameter(t *testing.T) {
 
 // Helper functions for test setup
 func setupTestSuite(t *testing.T) *testSuite {
-	// This would be implemented similarly to existing test suites
-	// For brevity, returning a mock suite structure
-	// In real implementation, this would initialize keeper with proper dependencies
-	suite := &testSuite{
-		ctx:        sdk.Context{}, // Would be properly initialized
-		keeper:     &keeper.Keeper{}, // Would be properly initialized
-		bankKeeper: &mockBankKeeper{}, // Would be properly initialized
+	// Create proper test input with initialized store
+	input := keepertest.CreateTestInput(t)
+
+	// Create mock bank keeper for token operations
+	bankKeeper := &mockBankKeeper{
+		balances: make(map[string]sdk.Coins),
+		supplies: make(map[string]math.Int),
 	}
-	return suite
+
+	// Initialize keeper with proper dependencies
+	k := keeper.NewKeeper(
+		input.Cdc,
+		input.StoreKey,
+		nil, // paramstore not needed for these tests
+		bankKeeper,
+		nil, // accountKeeper not needed
+		nil, // vcKeeper not needed
+		nil, // stakingKeeper not needed
+	)
+
+	return &testSuite{
+		ctx:        input.Ctx,
+		keeper:     k,
+		bankKeeper: bankKeeper,
+	}
 }
 
 func createTestValidator(suite *testSuite, address string) *types.BridgeValidator {
-	// Create a test validator with proper public key
-	// Implementation would match existing test patterns
 	return &types.BridgeValidator{
 		Address:   address,
 		PublicKey: []byte("test-pubkey"),
 		Power:     100,
 		Active:    true,
+		Chains:    []string{"aura", "ethereum"},
 	}
 }
 
 func createTestSignatures(suite *testSuite, validators []string, message string) [][]byte {
-	// Create test signatures
-	// Implementation would match existing test patterns
 	signatures := make([][]byte, len(validators))
 	for i := range validators {
-		signatures[i] = make([]byte, 64) // Standard signature length
+		// Create 64-byte signatures (standard secp256k1 signature length)
+		signatures[i] = make([]byte, 64)
+		// Fill with deterministic data for testing
+		for j := range signatures[i] {
+			signatures[i][j] = byte(i + j)
+		}
 	}
 	return signatures
 }
@@ -418,20 +437,44 @@ type testSuite struct {
 	bankKeeper *mockBankKeeper
 }
 
-type mockBankKeeper struct{}
+type mockBankKeeper struct {
+	balances map[string]sdk.Coins
+	supplies map[string]math.Int
+}
 
 func (m *mockBankKeeper) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin {
+	if coins, ok := m.balances[addr.String()]; ok {
+		return sdk.NewCoin(denom, coins.AmountOf(denom))
+	}
 	return sdk.NewCoin(denom, math.ZeroInt())
 }
 
 func (m *mockBankKeeper) GetSupply(ctx sdk.Context, denom string) sdk.Coin {
+	if supply, ok := m.supplies[denom]; ok {
+		return sdk.NewCoin(denom, supply)
+	}
 	return sdk.NewCoin(denom, math.ZeroInt())
 }
 
 func (m *mockBankKeeper) MintCoins(ctx sdk.Context, moduleName string, coins sdk.Coins) error {
+	// Update supplies
+	for _, coin := range coins {
+		if supply, ok := m.supplies[coin.Denom]; ok {
+			m.supplies[coin.Denom] = supply.Add(coin.Amount)
+		} else {
+			m.supplies[coin.Denom] = coin.Amount
+		}
+	}
 	return nil
 }
 
 func (m *mockBankKeeper) SendCoinsFromModuleToAccount(ctx sdk.Context, moduleName string, addr sdk.AccAddress, coins sdk.Coins) error {
+	// Update recipient balance
+	key := addr.String()
+	if balance, ok := m.balances[key]; ok {
+		m.balances[key] = balance.Add(coins...)
+	} else {
+		m.balances[key] = coins
+	}
 	return nil
 }
