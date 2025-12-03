@@ -46,11 +46,15 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data types.GenesisState) error {
 		k.setTransfer(ctx, transfer)
 	}
 
-	// CRITICAL: Set counter to MAX+1 to prevent duplicate IDs
-	// The next transfer will use this counter, so it must be one higher than the max
+	// CRITICAL: The counter must be set so the NEXT call to nextTransferID returns MAX+1
+	// nextTransferID reads counter, increments it, stores it, then returns it
+	// So if max is 5, we need next ID to be 6:
+	// - Store counter = 5
+	// - nextTransferID reads 5, increments to 6, stores 6, returns 6 ✓
+	// This prevents duplicate IDs when re-importing genesis
 	if maxTransferCounter > 0 {
 		bz := make([]byte, 8)
-		binary.BigEndian.PutUint64(bz, maxTransferCounter+1)
+		binary.BigEndian.PutUint64(bz, maxTransferCounter)
 		k.store(ctx).Set(types.TransferCounterKey, bz)
 	}
 
@@ -134,13 +138,15 @@ func bridgeParamsFromProto(params *types.BridgeParams) types.Params {
 	if params == nil {
 		return types.DefaultParams()
 	}
-	return types.Params{
-		BridgeEnabled:                params.Enabled,
-		MinConfirmations:             params.MinConfirmations,
-		BridgeFeeBasisPoints:         params.BridgeFeeBasisPoints,
-		MaxTransferAmount:            params.MaxTransferAmount,
-		ValidatorThresholdPercentage: params.ValidatorThresholdPercentage,
-	}
+	// Start with defaults to ensure all required fields are populated
+	result := types.DefaultParams()
+	// Override with genesis values
+	result.BridgeEnabled = params.Enabled
+	result.MinConfirmations = params.MinConfirmations
+	result.BridgeFeeBasisPoints = params.BridgeFeeBasisPoints
+	result.MaxTransferAmount = params.MaxTransferAmount
+	result.ValidatorThresholdPercentage = params.ValidatorThresholdPercentage
+	return result
 }
 
 func bridgeParamsToProto(params types.Params) *types.BridgeParams {
