@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"context"
 	"encoding/binary"
 
 	sdkmath "cosmossdk.io/math"
@@ -13,8 +14,8 @@ import (
 
 // StakingKeeper defines the expected staking keeper interface
 type StakingKeeper interface {
-	GetDelegatorBonded(ctx sdk.Context, delegator sdk.AccAddress) sdkmath.Int
-	TotalBondedTokens(ctx sdk.Context) sdkmath.Int
+	GetDelegatorBonded(ctx context.Context, delegator sdk.AccAddress) (sdkmath.Int, error)
+	TotalBondedTokens(ctx context.Context) (sdkmath.Int, error)
 }
 
 // Key prefixes for KVStore
@@ -542,7 +543,11 @@ func (k *Keeper) GetVotingPower(ctx sdk.Context, address string) (sdkmath.Int, e
 
 	// 1. Get direct staked tokens from staking module
 	// This is the validator's own bonded stake
-	stakedAmount := k.stakingKeeper.GetDelegatorBonded(ctx, addr)
+	stakedAmount, err := k.stakingKeeper.GetDelegatorBonded(ctx, addr)
+	if err != nil {
+		// On error, continue with zero staked amount
+		stakedAmount = sdkmath.ZeroInt()
+	}
 	totalPower = totalPower.Add(stakedAmount)
 
 	// 2. Add voting power delegated TO this address (from others)
@@ -589,7 +594,10 @@ func (k *Keeper) GetDelegatedVotingPower(ctx sdk.Context, delegate string) sdkma
 			}
 
 			// Add the delegator's staked amount to the delegate's voting power
-			delegatorStake := k.stakingKeeper.GetDelegatorBonded(ctx, delegatorAddr)
+			delegatorStake, err := k.stakingKeeper.GetDelegatorBonded(ctx, delegatorAddr)
+			if err != nil {
+				continue // Skip on error
+			}
 			totalDelegated = totalDelegated.Add(delegatorStake)
 		}
 	}
@@ -613,7 +621,11 @@ func (k *Keeper) GetPowerDelegatedAway(ctx sdk.Context, delegator string) sdkmat
 		}
 
 		// Return the full staked amount since it's delegated away
-		return k.stakingKeeper.GetDelegatorBonded(ctx, addr)
+		stakedAmount, err := k.stakingKeeper.GetDelegatorBonded(ctx, addr)
+		if err != nil {
+			return sdkmath.ZeroInt()
+		}
+		return stakedAmount
 	}
 
 	return sdkmath.ZeroInt()

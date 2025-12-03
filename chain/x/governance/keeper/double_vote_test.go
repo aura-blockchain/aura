@@ -26,6 +26,14 @@ func (m *MockStakingKeeperTest) GetDelegatorBonded(ctx sdk.Context, delegator sd
 	return sdkmath.ZeroInt()
 }
 
+func (m *MockStakingKeeperTest) TotalBondedTokens(ctx sdk.Context) sdkmath.Int {
+	total := sdkmath.ZeroInt()
+	for _, amount := range m.delegatorBonded {
+		total = total.Add(amount)
+	}
+	return total
+}
+
 // MockBankKeeperTest for tests (minimal implementation)
 type MockBankKeeperTest struct{}
 
@@ -35,6 +43,10 @@ func (m *MockBankKeeperTest) SendCoinsFromAccountToModule(ctx sdk.Context, sende
 
 func (m *MockBankKeeperTest) SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
 	return nil
+}
+
+func (m *MockBankKeeperTest) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin {
+	return sdk.NewCoin(denom, sdkmath.ZeroInt())
 }
 
 // Helper function to setup keeper for testing

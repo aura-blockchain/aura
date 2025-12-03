@@ -1,0 +1,295 @@
+package keeper_test
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/require"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkmath "cosmossdk.io/math"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
+	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
+	"github.com/aequitas/aura/chain/x/bridge/keeper"
+	"github.com/aequitas/aura/chain/x/bridge/types"
+	bridgepb "github.com/aequitas/aura/proto/aura/bridge/v1beta1"
+)
+
+func TestEmergencyPause_Authorized(t *testing.T) {
+	input := keepertest.CreateTestInput(t)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	ctx := input.Ctx
+	ms := keeper.NewMsgServerImpl(k)
+
+	guardian := keepertest.GenTestAddr().String()
+
+	// Set guardian as authorized
+	params := k.GetParams(ctx)
+	params.EmergencyPauseAddresses = []string{guardian}
+	k.SetParams(ctx, params)
+
+	// Guardian should be able to trigger pause
+	msg := &bridgepb.MsgEmergencyPause{
+		Signer: guardian,
+		Reason: "suspicious activity detected",
+	}
+
+	resp, err := ms.EmergencyPause(sdk.WrapSDKContext(ctx), msg)
+	require.NoError(t, err)
+	require.True(t, resp.Success)
+
+	// Bridge should be paused
+	params = k.GetParams(ctx)
+	require.True(t, params.Paused)
+}
+
+func TestEmergencyPause_Unauthorized(t *testing.T) {
+	input := keepertest.CreateTestInput(t)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	ctx := input.Ctx
+	ms := keeper.NewMsgServerImpl(k)
+
+	guardian := keepertest.GenTestAddr().String()
+	attacker := keepertest.GenTestAddr().String()
+
+	// Set only guardian as authorized
+	params := k.GetParams(ctx)
+	params.EmergencyPauseAddresses = []string{guardian}
+	k.SetParams(ctx, params)
+
+	// Attacker should not be able to pause
+	msg := &bridgepb.MsgEmergencyPause{
+		Signer: attacker,
+		Reason: "malicious pause attempt",
+	}
+
+	resp, err := ms.EmergencyPause(sdk.WrapSDKContext(ctx), msg)
+	require.Error(t, err)
+	require.Nil(t, resp)
+
+	// Check error is PermissionDenied
+	st, ok := status.FromError(err)
+	require.True(t, ok)
+	require.Equal(t, codes.PermissionDenied, st.Code())
+
+	// Bridge should still be active
+	params = k.GetParams(ctx)
+	require.False(t, params.Paused)
+}
+
+func TestEmergencyPause_PerChain(t *testing.T) {
+	input := keepertest.CreateTestInput(t)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	ctx := input.Ctx
+	ms := keeper.NewMsgServerImpl(k)
+
+	guardian := keepertest.GenTestAddr().String()
+
+	// Set guardian as authorized
+	params := k.GetParams(ctx)
+	params.EmergencyPauseAddresses = []string{guardian}
+	k.SetParams(ctx, params)
+
+	// Pause only PAW chain
+	msg := &bridgepb.MsgEmergencyPause{
+		Signer: guardian,
+		Reason: "PAW chain issue detected",
+		Chains: []string{"paw"},
+	}
+
+	resp, err := ms.EmergencyPause(sdk.WrapSDKContext(ctx), msg)
+	require.NoError(t, err)
+	require.True(t, resp.Success)
+
+	// Global pause should be false
+	params = k.GetParams(ctx)
+	require.False(t, params.Paused)
+
+	// PAW should be paused
+	require.Contains(t, params.PausedChains, "paw")
+
+	// XAI should not be paused
+	require.NotContains(t, params.PausedChains, "xai")
+}
+
+func TestUnpause_GlobalUnpause(t *testing.T) {
+	input := keepertest.CreateTestInput(t)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	ctx := input.Ctx
+	ms := keeper.NewMsgServerImpl(k)
+
+	// Set bridge as paused
+	params := k.GetParams(ctx)
+	params.Paused = true
+	params.PausedChains = []string{"paw", "xai"}
+	k.SetParams(ctx, params)
+
+	authority := keepertest.GenTestAddr().String()
+
+	// Unpause globally
+	msg := &bridgepb.MsgUnpause{
+		Authority: authority,
+	}
+
+	resp, err := ms.Unpause(sdk.WrapSDKContext(ctx), msg)
+	require.NoError(t, err)
+	require.True(t, resp.Success)
+
+	// Bridge should be unpaused
+	params = k.GetParams(ctx)
+	require.False(t, params.Paused)
+	require.Empty(t, params.PausedChains)
+}
+
+func TestUnpause_PerChainUnpause(t *testing.T) {
+	input := keepertest.CreateTestInput(t)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	ctx := input.Ctx
+	ms := keeper.NewMsgServerImpl(k)
+
+	// Pause both chains
+	params := k.GetParams(ctx)
+	params.PausedChains = []string{"paw", "xai"}
+	k.SetParams(ctx, params)
+
+	authority := keepertest.GenTestAddr().String()
+
+	// Unpause only PAW
+	msg := &bridgepb.MsgUnpause{
+		Authority: authority,
+		Chains:    []string{"paw"},
+	}
+
+	resp, err := ms.Unpause(sdk.WrapSDKContext(ctx), msg)
+	require.NoError(t, err)
+	require.True(t, resp.Success)
+
+	// PAW should be unpaused, XAI still paused
+	params = k.GetParams(ctx)
+	require.NotContains(t, params.PausedChains, "paw")
+	require.Contains(t, params.PausedChains, "xai")
+}
+
+func TestLockTokens_PausedChain(t *testing.T) {
+	input := keepertest.CreateTestInput(t)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	ctx := input.Ctx
+	ms := keeper.NewMsgServerImpl(k)
+
+	// Add and pause PAW chain
+	require.NoError(t, k.AddSupportedChain(ctx, types.ChainConfig{ChainId: "paw", Enabled: true}))
+	params := k.GetParams(ctx)
+	params.PausedChains = []string{"paw"}
+	k.SetParams(ctx, params)
+
+	// Try to lock tokens to paused chain
+	amount := sdk.NewCoin("uaura", sdkmath.NewInt(1_000))
+	msg := &bridgepb.MsgLockTokens{
+		Sender:      keepertest.GenTestAddr().String(),
+		TargetChain: "paw",
+		Recipient:   "paw1recipient",
+		Amount:      &amount,
+	}
+
+	resp, err := ms.LockTokens(sdk.WrapSDKContext(ctx), msg)
+	require.Error(t, err)
+	require.Nil(t, resp)
+	require.Contains(t, err.Error(), "paused")
+}
+
+func TestUnlockTokens_PausedChain(t *testing.T) {
+	t.Skip("SECURITY: This test needs proper validator signature setup. " +
+		"Requires cryptographic keys for test validators to generate valid signatures. " +
+		"See TODO-035 and pause_test.go for simpler pause validation tests.")
+
+	// TODO: Implement with proper validator setup:
+	// 1. Create test validators with cryptographic keys
+	// 2. Generate valid signatures
+	// 3. Test that paused source chain blocks unlock
+}
+
+func TestMintTokens_PausedChain(t *testing.T) {
+	input := keepertest.CreateTestInput(t)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	ctx := input.Ctx
+	ms := keeper.NewMsgServerImpl(k)
+
+	// Pause PAW chain
+	params := k.GetParams(ctx)
+	params.PausedChains = []string{"paw"}
+	k.SetParams(ctx, params)
+
+	// Try to mint from paused chain
+	msg := &bridgepb.MsgMintTokens{
+		Validator:    keepertest.GenTestAddr().String(),
+		SourceChain:  "paw",
+		SourceTxHash: "0xabc",
+		Recipient:    keepertest.GenTestAddr().String(),
+		Amount:       "1000",
+		Denom:        "token",
+	}
+
+	resp, err := ms.MintTokens(sdk.WrapSDKContext(ctx), msg)
+	require.Error(t, err)
+	require.Nil(t, resp)
+	require.Contains(t, err.Error(), "paused")
+}
+
+func TestMintTokens_AutoPauseTriggered(t *testing.T) {
+	input := keepertest.CreateTestInput(t)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	ctx := input.Ctx
+	ms := keeper.NewMsgServerImpl(k)
+
+	// Enable auto-pause with low threshold
+	params := k.GetParams(ctx)
+	params.AutoPauseEnabled = true
+	params.AutoPauseThreshold = "1000"
+	k.SetParams(ctx, params)
+
+	// Try to mint above threshold
+	msg := &bridgepb.MsgMintTokens{
+		Validator:    keepertest.GenTestAddr().String(),
+		SourceChain:  "paw",
+		SourceTxHash: "0xabc",
+		Recipient:    keepertest.GenTestAddr().String(),
+		Amount:       "2000", // Above threshold
+		Denom:        "token",
+	}
+
+	resp, err := ms.MintTokens(sdk.WrapSDKContext(ctx), msg)
+	require.Error(t, err)
+	require.Nil(t, resp)
+	require.Contains(t, err.Error(), "auto-pause triggered")
+
+	// Bridge should be paused
+	params = k.GetParams(ctx)
+	require.True(t, params.Paused)
+}
+
+func TestBurnTokens_PausedChain(t *testing.T) {
+	input := keepertest.CreateTestInput(t)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	ctx := input.Ctx
+	ms := keeper.NewMsgServerImpl(k)
+
+	// Add and pause XAI chain
+	require.NoError(t, k.AddSupportedChain(ctx, types.ChainConfig{ChainId: "xai", Enabled: true}))
+	params := k.GetParams(ctx)
+	params.PausedChains = []string{"xai"}
+	k.SetParams(ctx, params)
+
+	// Try to burn tokens to paused chain
+	amount := sdk.NewCoin("wrapped-token", sdkmath.NewInt(1_000))
+	msg := &bridgepb.MsgBurnTokens{
+		Sender:      keepertest.GenTestAddr().String(),
+		TargetChain: "xai",
+		Recipient:   "xai1recipient",
+		Amount:      &amount,
+	}
+
+	resp, err := ms.BurnTokens(sdk.WrapSDKContext(ctx), msg)
+	require.Error(t, err)
+	require.Nil(t, resp)
+	require.Contains(t, err.Error(), "paused")
+}

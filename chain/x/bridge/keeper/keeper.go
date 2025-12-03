@@ -1035,6 +1035,23 @@ func (k Keeper) SetProcessedSourceHash(ctx sdk.Context, compositeKey string) {
 	store.Set(key, []byte{1})
 }
 
+// Public exported methods for external access
+
+// SetValidator is a public method to set a bridge validator
+func (k Keeper) SetValidator(ctx sdk.Context, validator *types.BridgeValidator) {
+	k.setValidator(ctx, validator)
+}
+
+// SetTransfer is a public method to set a cross-chain transfer
+func (k Keeper) SetTransfer(ctx sdk.Context, transfer *types.CrossChainTransfer) {
+	k.setTransfer(ctx, transfer)
+}
+
+// IndexTransferHash is a public method to index a transfer by hash
+func (k Keeper) IndexTransferHash(ctx sdk.Context, hash, transferID string) {
+	k.indexTransferHash(ctx, hash, transferID)
+}
+
 // getActiveValidators returns the list of currently active validators.
 // Active validators are those with Active=true status.
 //
@@ -1191,4 +1208,403 @@ func (k Keeper) computeSignatureSetHash(signatures [][]byte) []byte {
 	// Return SHA256 hash
 	hash := sha256.Sum256(combined)
 	return hash[:]
+}
+
+// VerifyMerkleProofBytes verifies a Merkle proof given raw bytes.
+// This is a wrapper around the existing VerifyMerkleProof that works with raw proof bytes.
+//
+// Security: This function verifies that a transaction is included in a block's Merkle tree.
+// This prevents validators from attesting to fake deposits that never occurred on the source chain.
+//
+// Parameters:
+//   - merkleRoot: The Merkle root from the source block header
+//   - transactionLeaf: The hash of the transaction being proven
+//   - merkleProofBytes: Raw bytes of the Merkle proof (concatenated sibling hashes)
+//
+// Returns:
+//   - bool: true if the proof is valid and the transaction is in the block
+func (k Keeper) VerifyMerkleProofBytes(merkleRoot, transactionLeaf, merkleProofBytes []byte) bool {
+	if len(merkleRoot) == 0 || len(transactionLeaf) == 0 {
+		return false
+	}
+
+	// Parse proof bytes into individual sibling hashes (each 32 bytes for SHA256)
+	if len(merkleProofBytes)%32 != 0 {
+		return false
+	}
+
+	var proofHashes [][]byte
+	for i := 0; i < len(merkleProofBytes); i += 32 {
+		proofHashes = append(proofHashes, merkleProofBytes[i:i+32])
+	}
+
+	// Since we don't have indices, we need to reconstruct the proof manually
+	// by trying to verify at each level
+	currentHash := transactionLeaf
+
+	// Traverse up the tree, trying both possible orderings at each level
+	for _, sibling := range proofHashes {
+		// Try left sibling first
+		combined := append(sibling, currentHash...)
+		hash := sha256.Sum256(combined)
+		tempHash := hash[:]
+
+		// Check if this matches at any level by continuing
+		// For now, assume standard ordering (smaller hash on left)
+		// This is a simplification - in production, indices should be provided
+		if bytes.Compare(sibling, currentHash) < 0 {
+			// Sibling is smaller, put it on the left
+			combined = append(sibling, currentHash...)
+		} else {
+			// Current hash is smaller, put it on the left
+			combined = append(currentHash, sibling...)
+		}
+
+		hash = sha256.Sum256(combined)
+		currentHash = hash[:]
+	}
+
+	// Check if final hash matches root
+	if len(currentHash) != len(merkleRoot) {
+		return false
+	}
+
+	for i := range currentHash {
+		if currentHash[i] != merkleRoot[i] {
+			return false
+		}
+	}
+
+	return true
+}
+
+// ConstructTransactionLeaf constructs a deterministic hash of a transaction
+// that can be verified against a Merkle proof.
+//
+// Security: The transaction leaf must be constructed the same way on both
+// the source chain and Aura to ensure proof verification works correctly.
+//
+// Format: SHA256(sourceChain:burnTxHash:sender:amount:denom)
+//
+// Parameters:
+//   - sourceChain: Chain where the transaction occurred
+//   - burnTxHash: Transaction hash on source chain
+//   - sender: Address that initiated the transaction
+//   - amount: Amount of tokens involved
+//   - denom: Token denomination
+//
+// Returns:
+//   - []byte: SHA256 hash of the transaction data
+func (k Keeper) ConstructTransactionLeaf(sourceChain, burnTxHash, sender, amount, denom string) []byte {
+	// Build deterministic transaction data string
+	// Format matches what source chain should use for Merkle tree construction
+	txData := fmt.Sprintf("%s:%s:%s:%s:%s",
+		strings.ToLower(strings.TrimSpace(sourceChain)),
+		strings.ToLower(strings.TrimSpace(burnTxHash)),
+		sender,
+		amount,
+		denom,
+	)
+
+	// Return SHA256 hash
+	hash := sha256.Sum256([]byte(txData))
+	return hash[:]
+}
+
+// VerifySourceBlock verifies that a source block hash is valid for a given height.
+// This prevents validators from providing fake block headers.
+//
+// Security: In a production system, this should verify the block hash against:
+//   - An oracle that tracks source chain headers
+//   - A light client that maintains source chain state
+//   - IBC connection if using IBC for cross-chain communication
+//
+// Current implementation: Stores verified block hashes in state.
+// Validators must submit block headers that are verified by consensus.
+//
+// Parameters:
+//   - ctx: SDK context for state access
+//   - sourceChain: Chain identifier (e.g., "paw", "xai")
+//   - blockHeight: Block height on source chain
+//   - blockHash: Block hash to verify
+//
+// Returns:
+//   - bool: true if block hash is verified for this height
+func (k Keeper) VerifySourceBlock(ctx sdk.Context, sourceChain string, blockHeight uint64, blockHash []byte) bool {
+	if sourceChain == "" || blockHeight == 0 || len(blockHash) == 0 {
+		return false
+	}
+
+	// Normalize chain name
+	sourceChain = strings.ToLower(strings.TrimSpace(sourceChain))
+
+	// Get stored/verified block hash for this height
+	storedHash := k.GetVerifiedBlockHash(ctx, sourceChain, blockHeight)
+	if storedHash == nil {
+		// Block not verified yet - in production, this should trigger
+		// verification via light client or oracle
+		return false
+	}
+
+	// Compare provided hash with stored verified hash
+	if len(storedHash) != len(blockHash) {
+		return false
+	}
+
+	for i := range storedHash {
+		if storedHash[i] != blockHash[i] {
+			return false
+		}
+	}
+
+	return true
+}
+
+// GetVerifiedBlockHash retrieves a verified block hash for a given chain and height.
+//
+// Storage key format: VerifiedBlockHashPrefix + sourceChain + ":" + height
+//
+// Parameters:
+//   - ctx: SDK context for state access
+//   - sourceChain: Chain identifier
+//   - blockHeight: Block height
+//
+// Returns:
+//   - []byte: Verified block hash, or nil if not found
+func (k Keeper) GetVerifiedBlockHash(ctx sdk.Context, sourceChain string, blockHeight uint64) []byte {
+	sourceChain = strings.ToLower(strings.TrimSpace(sourceChain))
+	if sourceChain == "" || blockHeight == 0 {
+		return nil
+	}
+
+	store := k.store(ctx)
+	key := types.VerifiedBlockHashKey(sourceChain, blockHeight)
+	return store.Get(key)
+}
+
+// SetVerifiedBlockHash stores a verified block hash for a given chain and height.
+// This should only be called after the block hash has been verified through:
+//   - Light client verification
+//   - Oracle consensus
+//   - IBC proof verification
+//
+// Security: Access to this function should be restricted to authorized validators
+// or governance proposals.
+//
+// Parameters:
+//   - ctx: SDK context for state access
+//   - sourceChain: Chain identifier
+//   - blockHeight: Block height
+//   - blockHash: Verified block hash to store
+func (k Keeper) SetVerifiedBlockHash(ctx sdk.Context, sourceChain string, blockHeight uint64, blockHash []byte) {
+	sourceChain = strings.ToLower(strings.TrimSpace(sourceChain))
+	if sourceChain == "" || blockHeight == 0 || len(blockHash) == 0 {
+		return
+	}
+
+	store := k.store(ctx)
+	key := types.VerifiedBlockHashKey(sourceChain, blockHeight)
+	store.Set(key, blockHash)
+
+	// Emit event for audit trail
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			"verified_block_hash_stored",
+			sdk.NewAttribute("source_chain", sourceChain),
+			sdk.NewAttribute("block_height", fmt.Sprintf("%d", blockHeight)),
+			sdk.NewAttribute("block_hash", fmt.Sprintf("%x", blockHash)),
+		),
+	)
+}
+
+// GetDailyMintedAmount returns the total amount minted for a specific denom today.
+//
+// Security considerations:
+//   - Used to enforce daily mint limits (supply cap security)
+//   - Automatically resets at midnight UTC via BeginBlocker
+//   - Tracked separately per denom to prevent cross-denom abuse
+//
+// Parameters:
+//   - ctx: SDK context for state access and time
+//   - denom: Token denomination to check
+//
+// Returns:
+//   - math.Int: Total amount minted today (zero if none)
+func (k Keeper) GetDailyMintedAmount(ctx sdk.Context, denom string) math.Int {
+	if denom == "" {
+		return math.ZeroInt()
+	}
+
+	// Format: YYYYMMDD (e.g., "20250102")
+	date := ctx.BlockTime().UTC().Format("20060102")
+	store := k.store(ctx)
+	key := types.DailyMintKey(date, denom)
+
+	bz := store.Get(key)
+	if bz == nil {
+		return math.ZeroInt()
+	}
+
+	var amount math.Int
+	if err := amount.Unmarshal(bz); err != nil {
+		return math.ZeroInt()
+	}
+
+	return amount
+}
+
+// AddDailyMintedAmount adds to the daily minted amount for a specific denom.
+//
+// Security considerations:
+//   - MUST be called AFTER successful mint operation (checks-effects-interactions)
+//   - Updates persistent state to track against daily limits
+//   - Separate tracking per denom prevents abuse via multiple tokens
+//
+// Parameters:
+//   - ctx: SDK context for state access
+//   - denom: Token denomination being minted
+//   - amount: Amount to add to today's total
+func (k Keeper) AddDailyMintedAmount(ctx sdk.Context, denom string, amount math.Int) {
+	if denom == "" || !amount.IsPositive() {
+		return
+	}
+
+	date := ctx.BlockTime().UTC().Format("20060102")
+	store := k.store(ctx)
+	key := types.DailyMintKey(date, denom)
+
+	current := k.GetDailyMintedAmount(ctx, denom)
+	newTotal := current.Add(amount)
+
+	bz, err := newTotal.Marshal()
+	if err != nil {
+		return
+	}
+
+	store.Set(key, bz)
+}
+
+// GetHourlyMintedAmount returns the total amount minted for a specific denom in the current hour.
+//
+// Security considerations:
+//   - Used to enforce hourly rate limits (prevents rapid draining)
+//   - Automatically resets each hour via BeginBlocker
+//   - Tracked separately per denom
+//
+// Parameters:
+//   - ctx: SDK context for state access and time
+//   - denom: Token denomination to check
+//
+// Returns:
+//   - math.Int: Total amount minted this hour (zero if none)
+func (k Keeper) GetHourlyMintedAmount(ctx sdk.Context, denom string) math.Int {
+	if denom == "" {
+		return math.ZeroInt()
+	}
+
+	// Format: YYYYMMDDHH (e.g., "2025010214" for 2PM)
+	datetime := ctx.BlockTime().UTC().Format("2006010215")
+	store := k.store(ctx)
+	key := types.HourlyMintKey(datetime, denom)
+
+	bz := store.Get(key)
+	if bz == nil {
+		return math.ZeroInt()
+	}
+
+	var amount math.Int
+	if err := amount.Unmarshal(bz); err != nil {
+		return math.ZeroInt()
+	}
+
+	return amount
+}
+
+// AddHourlyMintedAmount adds to the hourly minted amount for a specific denom.
+//
+// Security considerations:
+//   - MUST be called AFTER successful mint operation
+//   - Updates persistent state to track against hourly rate limits
+//   - Separate tracking per denom prevents cross-token abuse
+//
+// Parameters:
+//   - ctx: SDK context for state access
+//   - denom: Token denomination being minted
+//   - amount: Amount to add to this hour's total
+func (k Keeper) AddHourlyMintedAmount(ctx sdk.Context, denom string, amount math.Int) {
+	if denom == "" || !amount.IsPositive() {
+		return
+	}
+
+	datetime := ctx.BlockTime().UTC().Format("2006010215")
+	store := k.store(ctx)
+	key := types.HourlyMintKey(datetime, denom)
+
+	current := k.GetHourlyMintedAmount(ctx, denom)
+	newTotal := current.Add(amount)
+
+	bz, err := newTotal.Marshal()
+	if err != nil {
+		return
+	}
+
+	store.Set(key, bz)
+}
+
+// ResetDailyMint resets daily mint counters (called in BeginBlocker at midnight UTC).
+//
+// Security considerations:
+//   - Allows fresh daily limit after reset
+//   - Only resets counters for the previous day
+//   - Prevents accumulation of stale data
+func (k Keeper) ResetDailyMint(ctx sdk.Context) {
+	store := k.store(ctx)
+	currentDate := ctx.BlockTime().UTC().Format("20060102")
+
+	// Iterate all daily mint keys
+	iterator := store.Iterator(types.DailyMintPrefix, storetypes.PrefixEndBytes(types.DailyMintPrefix))
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		key := iterator.Key()
+		// Extract the date from the key
+		compositeKey := string(key[len(types.DailyMintPrefix):])
+		parts := strings.Split(compositeKey, ":")
+		if len(parts) == 2 {
+			keyDate := parts[0]
+			// Delete if not current date (cleanup old data)
+			if keyDate < currentDate {
+				store.Delete(key)
+			}
+		}
+	}
+}
+
+// ResetHourlyMint resets hourly mint counters (called in BeginBlocker each hour).
+//
+// Security considerations:
+//   - Allows fresh hourly limit after reset
+//   - Only resets counters for previous hours
+//   - Prevents accumulation of stale data
+func (k Keeper) ResetHourlyMint(ctx sdk.Context) {
+	store := k.store(ctx)
+	currentDatetime := ctx.BlockTime().UTC().Format("2006010215")
+
+	// Iterate all hourly mint keys
+	iterator := store.Iterator(types.HourlyMintPrefix, storetypes.PrefixEndBytes(types.HourlyMintPrefix))
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		key := iterator.Key()
+		// Extract the datetime from the key
+		compositeKey := string(key[len(types.HourlyMintPrefix):])
+		parts := strings.Split(compositeKey, ":")
+		if len(parts) == 2 {
+			keyDatetime := parts[0]
+			// Delete if not current hour (cleanup old data)
+			if keyDatetime < currentDatetime {
+				store.Delete(key)
+			}
+		}
+	}
 }

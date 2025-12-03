@@ -152,6 +152,11 @@ func (ms msgServer) LockTokens(goCtx context.Context, msg *bridgepb.MsgLockToken
 		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}
 	chainID := normalizeChain(msg.TargetChain)
+
+	// CRITICAL SECURITY: Check if bridge is paused for this chain
+	if err := ms.Keeper.RequireNotPaused(ctx, chainID); err != nil {
+		return nil, status.Error(codes.FailedPrecondition, err.Error())
+	}
 	if chainID == "" {
 		return nil, status.Error(codes.InvalidArgument, "target chain required")
 	}
@@ -210,6 +215,19 @@ func (ms msgServer) MintTokens(goCtx context.Context, msg *bridgepb.MsgMintToken
 		return nil, status.Error(codes.InvalidArgument, "invalid amount")
 	}
 	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// CRITICAL SECURITY: Check if bridge is paused for source chain
+	sourceChain := normalizeChain(msg.SourceChain)
+	if err := ms.Keeper.RequireNotPaused(ctx, sourceChain); err != nil {
+		return nil, status.Error(codes.FailedPrecondition, err.Error())
+	}
+
+	// CRITICAL SECURITY: Check auto-pause threshold BEFORE minting
+	// This prevents excessive minting in case of exploit
+	if ms.Keeper.CheckAndTriggerAutoPause(ctx, msg.Denom, amount) {
+		return nil, status.Error(codes.FailedPrecondition,
+			"auto-pause triggered - hourly mint threshold exceeded")
+	}
 	transferID, hasIndex := ms.Keeper.transferIDByHash(ctx, msg.SourceTxHash)
 	if !hasIndex {
 		transferID = ms.Keeper.nextTransferID(ctx)
@@ -252,8 +270,11 @@ func (ms msgServer) MintTokens(goCtx context.Context, msg *bridgepb.MsgMintToken
 		transfer.TargetTxHash = msg.SourceTxHash
 		transfer.Timestamp = timestamppb.New(ctx.BlockTime())
 		ms.Keeper.setTransfer(ctx, transfer)
+
+		// CRITICAL SECURITY: Record minted amount for hourly tracking (auto-pause detection)
+		ms.Keeper.RecordMintedAmount(ctx, msg.Denom, amount)
 	}
-	wrappedDenom := fmt.Sprintf("%s.%s", normalizeChain(msg.SourceChain), msg.Denom)
+	wrappedDenom := fmt.Sprintf("%s.%s", sourceChain, msg.Denom)
 	token, _ := ms.Keeper.getWrappedToken(ctx, wrappedDenom)
 	if token == nil {
 		token = &bridgepb.WrappedToken{
@@ -286,9 +307,18 @@ func (ms msgServer) UnlockTokens(goCtx context.Context, msg *bridgepb.MsgUnlockT
 	// This MUST happen BEFORE any other processing to prevent replay attacks where an attacker
 	// reuses the same burn transaction hash to unlock tokens multiple times.
 	sourceChain := normalizeChain(msg.SourceChain)
+
+	// CRITICAL SECURITY: Check if bridge is paused for source chain
+	if err := ms.Keeper.RequireNotPaused(ctx, sourceChain); err != nil {
+		return nil, status.Error(codes.FailedPrecondition, err.Error())
+	}
+
+	var transferID string
+	var hasIndex bool
+
 	if sourceChain == "" {
 		// If no source chain specified, try to infer from transfer
-		transferID, hasIndex := ms.Keeper.transferIDByHash(ctx, msg.BurnTxHash)
+		transferID, hasIndex = ms.Keeper.transferIDByHash(ctx, msg.BurnTxHash)
 		if hasIndex {
 			if transfer, found := ms.Keeper.getTransfer(ctx, transferID); found {
 				sourceChain = normalizeChain(transfer.SourceChain)
@@ -302,7 +332,7 @@ func (ms msgServer) UnlockTokens(goCtx context.Context, msg *bridgepb.MsgUnlockT
 			"source transaction already processed (replay attack prevented)")
 	}
 
-	transferID, hasIndex := ms.Keeper.transferIDByHash(ctx, msg.BurnTxHash)
+	transferID, hasIndex = ms.Keeper.transferIDByHash(ctx, msg.BurnTxHash)
 	if !hasIndex {
 		transferID = msg.BurnTxHash
 	}
@@ -350,6 +380,58 @@ func (ms msgServer) UnlockTokens(goCtx context.Context, msg *bridgepb.MsgUnlockT
 		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 
+	// CRITICAL SECURITY: Verify Merkle proof that transaction exists on source chain
+	// This prevents validators from attesting to fake deposits that never occurred.
+	// The Merkle proof cryptographically proves the transaction is in a specific block.
+	if len(msg.MerkleProof) > 0 && len(msg.MerkleRoot) > 0 {
+		// Construct the transaction leaf hash
+		txLeaf := ms.Keeper.ConstructTransactionLeaf(
+			transfer.SourceChain,
+			msg.BurnTxHash,
+			msg.Sender,
+			msg.Amount,
+			msg.Denom,
+		)
+
+		// Verify the Merkle proof
+		proofValid := ms.Keeper.VerifyMerkleProofBytes(
+			msg.MerkleRoot,
+			txLeaf,
+			msg.MerkleProof,
+		)
+
+		if !proofValid {
+			return nil, status.Error(codes.InvalidArgument,
+				"invalid Merkle proof: transaction not found in source block")
+		}
+
+		// If block hash and height provided, verify the block is authentic
+		if len(msg.SourceBlockHash) > 0 && msg.SourceBlockHeight > 0 {
+			blockValid := ms.Keeper.VerifySourceBlock(
+				ctx,
+				transfer.SourceChain,
+				msg.SourceBlockHeight,
+				msg.SourceBlockHash,
+			)
+
+			if !blockValid {
+				return nil, status.Error(codes.InvalidArgument,
+					"invalid or unverified source block hash")
+			}
+		}
+
+		// Log Merkle proof verification for audit trail
+		ctx.EventManager().EmitEvent(
+			sdk.NewEvent(
+				"merkle_proof_verified",
+				sdk.NewAttribute("transfer_id", transferID),
+				sdk.NewAttribute("source_chain", transfer.SourceChain),
+				sdk.NewAttribute("source_block_height", fmt.Sprintf("%d", msg.SourceBlockHeight)),
+				sdk.NewAttribute("merkle_root", fmt.Sprintf("%x", msg.MerkleRoot)),
+			),
+		)
+	}
+
 	// Log successful verification for audit trail
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
@@ -369,10 +451,59 @@ func (ms msgServer) UnlockTokens(goCtx context.Context, msg *bridgepb.MsgUnlockT
 		ms.Keeper.markSignatureSetUsed(ctx, transferID, signatureSetHash)
 	}
 
+	// CRITICAL SECURITY: Enforce supply caps and rate limits BEFORE minting
+	// This prevents unlimited token inflation even if all validator signatures are valid
+	params := ms.Keeper.GetParams(ctx)
+
+	// 1. Check per-transfer maximum (circuit breaker)
+	maxTransfer, ok := sdkmath.NewIntFromString(params.MaxTransferAmount)
+	if ok && amount.GT(maxTransfer) {
+		return nil, status.Errorf(codes.InvalidArgument,
+			"amount %s exceeds max transfer limit %s", amount, maxTransfer)
+	}
+
+	// 2. Check per-token supply cap (if configured for this denom)
+	if cap, exists := params.SupplyCaps[msg.Denom]; exists {
+		supplyCap, ok := sdkmath.NewIntFromString(cap)
+		if ok {
+			// Get current supply of this token
+			currentSupply := ms.Keeper.bankKeeper.GetSupply(ctx, msg.Denom).Amount
+			// Check if minting would exceed the cap
+			if currentSupply.Add(amount).GT(supplyCap) {
+				return nil, status.Errorf(codes.ResourceExhausted,
+					"minting %s would exceed supply cap of %s (current: %s)",
+					amount, supplyCap, currentSupply)
+			}
+		}
+	}
+
+	// 3. Check daily mint limit (rate limiting)
+	dailyMinted := ms.Keeper.GetDailyMintedAmount(ctx, msg.Denom)
+	dailyLimit, ok := sdkmath.NewIntFromString(params.DailyMintLimit)
+	if ok && dailyMinted.Add(amount).GT(dailyLimit) {
+		return nil, status.Errorf(codes.ResourceExhausted,
+			"daily mint limit exceeded: %s already minted today, limit is %s",
+			dailyMinted, dailyLimit)
+	}
+
+	// 4. Check hourly mint limit (rate limiting - prevents rapid draining)
+	hourlyMinted := ms.Keeper.GetHourlyMintedAmount(ctx, msg.Denom)
+	hourlyLimit, ok := sdkmath.NewIntFromString(params.HourlyMintLimit)
+	if ok && hourlyMinted.Add(amount).GT(hourlyLimit) {
+		return nil, status.Errorf(codes.ResourceExhausted,
+			"hourly mint limit exceeded: %s already minted this hour, limit is %s",
+			hourlyMinted, hourlyLimit)
+	}
+
 	// CRITICAL SECURITY: Mark the source hash as processed BEFORE unlocking tokens
 	// This prevents reentrancy and ensures the replay protection is atomic.
 	// Following checks-effects-interactions pattern: effects (state change) before interactions (token transfer).
 	ms.Keeper.MarkSourceHashProcessed(ctx, sourceChain, msg.BurnTxHash)
+
+	// Track minted amounts BEFORE minting (following checks-effects-interactions)
+	// This ensures limits are enforced even if minting fails
+	ms.Keeper.AddDailyMintedAmount(ctx, msg.Denom, amount)
+	ms.Keeper.AddHourlyMintedAmount(ctx, msg.Denom, amount)
 
 	recipient, err := sdk.AccAddressFromBech32(msg.Sender)
 	if err != nil {
@@ -401,6 +532,12 @@ func (ms msgServer) BurnTokens(goCtx context.Context, msg *bridgepb.MsgBurnToken
 	if chainID == "" {
 		return nil, status.Error(codes.InvalidArgument, "target chain required")
 	}
+
+	// CRITICAL SECURITY: Check if bridge is paused for target chain
+	if err := ms.Keeper.RequireNotPaused(ctx, chainID); err != nil {
+		return nil, status.Error(codes.FailedPrecondition, err.Error())
+	}
+
 	if cfg, found := ms.Keeper.getChainConfig(ctx, chainID); !found {
 		return nil, status.Error(codes.NotFound, types.ErrChainNotFound.Error())
 	} else if !cfg.Enabled {
