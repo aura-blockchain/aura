@@ -16,6 +16,11 @@ type KYCHistoryEntry struct {
 	UpdateReason string                 `protobuf:"bytes,6,opt,name=update_reason,json=updateReason,proto3" json:"update_reason,omitempty"`
 }
 
+// KYCHistoryList stores history entries keyed by address
+type KYCHistoryList struct {
+	Entries []*KYCHistoryEntry `protobuf:"bytes,1,rep,name=entries,proto3" json:"entries,omitempty"`
+}
+
 // Reset implements proto.Message
 func (m *KYCHistoryEntry) Reset() { *m = KYCHistoryEntry{} }
 
@@ -24,3 +29,12 @@ func (m *KYCHistoryEntry) String() string { return "KYCHistoryEntry" }
 
 // ProtoMessage implements proto.Message
 func (*KYCHistoryEntry) ProtoMessage() {}
+
+// Reset implements proto.Message
+func (m *KYCHistoryList) Reset() { *m = KYCHistoryList{} }
+
+// String implements proto.Message
+func (m *KYCHistoryList) String() string { return "KYCHistoryList" }
+
+// ProtoMessage implements proto.Message
+func (*KYCHistoryList) ProtoMessage() {}

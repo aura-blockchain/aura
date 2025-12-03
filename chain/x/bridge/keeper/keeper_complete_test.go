@@ -32,6 +32,7 @@ func TestGetParams_WithParamstore(t *testing.T) {
 		nil,
 		nil,
 		nil,
+		nil, // stakingKeeper
 	)
 
 	// Set params
@@ -56,6 +57,7 @@ func TestGetParams_WithoutParamstore(t *testing.T) {
 		nil,
 		nil,
 		nil,
+		nil, // stakingKeeper
 	)
 
 	// Get params should return defaults
@@ -303,6 +305,7 @@ func TestNewKeeper_WithNilParamstore(t *testing.T) {
 		nil,
 		nil,
 		nil,
+		nil, // stakingKeeper
 	)
 
 	require.NotNil(t, k)
@@ -329,6 +332,7 @@ func TestNewKeeper_WithParamstoreNoKeyTable(t *testing.T) {
 		nil,
 		nil,
 		nil,
+		nil, // stakingKeeper
 	)
 
 	require.NotNil(t, k)
@@ -356,6 +360,7 @@ func TestNewKeeper_WithParamstoreWithKeyTable(t *testing.T) {
 		nil,
 		nil,
 		nil,
+		nil, // stakingKeeper
 	)
 
 	require.NotNil(t, k)
