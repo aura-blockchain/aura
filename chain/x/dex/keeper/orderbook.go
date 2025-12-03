@@ -447,7 +447,13 @@ func (k Keeper) GetOrder(ctx sdk.Context, orderID string) *types.SwapOrder {
 	}
 
 	var order types.SwapOrder
-	k.cdc.MustUnmarshal(bz, &order)
+	if err := k.cdc.Unmarshal(bz, &order); err != nil {
+		ctx.Logger().Error("failed to unmarshal swap order",
+			"order_id", orderID,
+			"error", err,
+			"data_len", len(bz))
+		return nil
+	}
 	return &order
 }
 
@@ -482,7 +488,12 @@ func (k Keeper) GetAllOrders(ctx sdk.Context) []*types.SwapOrder {
 	var orders []*types.SwapOrder
 	for ; iterator.Valid(); iterator.Next() {
 		var order types.SwapOrder
-		k.cdc.MustUnmarshal(iterator.Value(), &order)
+		if err := k.cdc.Unmarshal(iterator.Value(), &order); err != nil {
+			ctx.Logger().Error("failed to unmarshal order in GetAllOrders, skipping",
+				"error", err,
+				"data_len", len(iterator.Value()))
+			continue
+		}
 		orders = append(orders, &order)
 	}
 

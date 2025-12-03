@@ -303,7 +303,13 @@ func (k Keeper) GetPool(ctx sdk.Context, poolID string) *types.LiquidityPool {
 	}
 
 	var pool types.LiquidityPool
-	k.cdc.MustUnmarshal(bz, &pool)
+	if err := k.cdc.Unmarshal(bz, &pool); err != nil {
+		ctx.Logger().Error("failed to unmarshal liquidity pool",
+			"pool_id", poolID,
+			"error", err,
+			"data_len", len(bz))
+		return nil
+	}
 	return &pool
 }
 
@@ -462,7 +468,12 @@ func (k Keeper) GetAllPools(ctx sdk.Context) []*types.LiquidityPool {
 	var pools []*types.LiquidityPool
 	for ; iterator.Valid(); iterator.Next() {
 		var pool types.LiquidityPool
-		k.cdc.MustUnmarshal(iterator.Value(), &pool)
+		if err := k.cdc.Unmarshal(iterator.Value(), &pool); err != nil {
+			ctx.Logger().Error("failed to unmarshal pool in GetAllPools, skipping",
+				"error", err,
+				"data_len", len(iterator.Value()))
+			continue
+		}
 		pools = append(pools, &pool)
 	}
 

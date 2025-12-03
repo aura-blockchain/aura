@@ -156,7 +156,12 @@ func (suite *BiometricSecurityTestSuite) TestBiometricRateLimiting() {
 
 	// Make 5 failed attempts with different wrong proofs
 	for i := 0; i < 5; i++ {
-		wrongProof := []byte("wrong_proof_attempt_number_" + string(rune(i)) + "_should_fail_authentication_12345")
+		// Create wrong proof that is long enough (>64 bytes) but doesn't match enrollment
+		wrongProof := []byte("wrong_proof_attempt_should_fail_authentication_this_is_long_enough_")
+		// Make each attempt unique by appending the attempt number
+		for j := 0; j <= i; j++ {
+			wrongProof = append(wrongProof, byte('0'+i))
+		}
 		authMsg := &wspb.MsgAuthenticateBiometric{
 			WalletId:       walletAddr.String(),
 			BiometricProof: wrongProof,
