@@ -5,9 +5,12 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/cosmos/cosmos-sdk/codec"
+	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
+	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 	"github.com/aequitas/aura/chain/x/bridge/types"
 )
 
@@ -314,12 +317,12 @@ func (suite *TransferIDTestSuite) TestTransferIDDuplicateDetection() {
 	}
 	suite.Keeper.SetTransfer(testCtx, transfer)
 
-	// Second call with same context - should return same ID (deterministic)
-	// and log a warning about duplicate
+	// Second call with same context - should return DIFFERENT ID
+	// The function detects collision and adds nonce to generate unique ID
 	transferID2 := suite.Keeper.nextTransferID(testCtx)
 
-	// Both calls should return same ID (deterministic)
-	suite.Equal(transferID1, transferID2)
+	// IDs should be DIFFERENT (collision avoidance working correctly)
+	suite.NotEqual(transferID1, transferID2, "Should generate new ID when collision detected")
 }
 
 // TestTransferIDEmptyTxBytes verifies behavior with empty transaction bytes
@@ -390,15 +393,30 @@ func BenchmarkTransferIDConcurrent(b *testing.B) {
 	})
 }
 
-// Test helper
+// TestTransferIDSimple tests transfer ID generation with simple setup
 func TestTransferIDSimple(t *testing.T) {
-	suite := new(TransferIDTestSuite)
-	suite.SetupTest()
+	input := keepertest.CreateTestInput(t)
+	legacyAmino := codec.NewLegacyAmino()
+	ps := paramtypes.NewSubspace(input.Cdc, legacyAmino, input.StoreKey, input.MemStoreKey, "bridge")
 
-	ctx := suite.SdkCtx.WithBlockHeight(100).WithTxBytes([]byte("test"))
-	id1 := suite.Keeper.nextTransferID(ctx)
-	id2 := suite.Keeper.nextTransferID(ctx)
+	keeper := NewKeeper(
+		input.Cdc,
+		input.StoreKey,
+		&ps,
+		nil, // bankKeeper
+		nil, // accountKeeper
+		nil, // vcKeeper
+		nil, // stakingKeeper
+	)
 
-	require.Equal(t, id1, id2, "Deterministic IDs should match")
+	ctx := input.Ctx.WithBlockHeight(100).WithTxBytes([]byte("test"))
+
+	// First call generates ID
+	id1 := keeper.nextTransferID(ctx)
+
+	// Second call with SAME context (no storage in between) should generate SAME ID
+	id2 := keeper.nextTransferID(ctx)
+
+	require.Equal(t, id1, id2, "Deterministic IDs should match when context is identical")
 	require.Contains(t, id1, "transfer-")
 }
