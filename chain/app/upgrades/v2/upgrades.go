@@ -11,7 +11,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 
 	// Import module types for migrations
-	aitypes "github.com/aequitas/aura/chain/x/aiassistant/types"
 	authtypes "github.com/aequitas/aura/chain/x/auth/types"
 	bridgetypes "github.com/aequitas/aura/chain/x/bridge/types"
 	compliancetypes "github.com/aequitas/aura/chain/x/compliance/types"
@@ -103,7 +102,6 @@ func migrateModules(
 		{"prevalidation", migratePrevalidation},
 		{"privacy", migratePrivacy},
 		{"contractregistry", migrateContractRegistry},
-		{"aiassistant", migrateAIAssistant},
 		{"wasm", migrateWasm},
 	}
 
@@ -285,15 +283,6 @@ func migrateContractRegistry(ctx sdk.Context) error {
 	return nil
 }
 
-// migrateAIAssistant performs AI assistant module migration
-func migrateAIAssistant(ctx sdk.Context) error {
-	ctx.Logger().Info("Migrating AI assistant module...")
-
-	// Add AI assistant-specific migration logic
-
-	return nil
-}
-
 // migrateWasm performs wasm module migration
 func migrateWasm(ctx sdk.Context) error {
 	ctx.Logger().Info("Migrating wasm module...")
@@ -343,7 +332,6 @@ func GetStoreUpgrades() storetypes.StoreUpgrades {
 
 // Module type aliases to avoid unused import errors
 var (
-	_ = aitypes.ModuleName
 	_ = authtypes.ModuleName
 	_ = bridgetypes.ModuleName
 	_ = compliancetypes.ModuleName

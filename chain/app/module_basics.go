@@ -22,7 +22,6 @@ import (
 	"github.com/spf13/cobra"
 
 	// Aura modules
-	"github.com/aequitas/aura/chain/x/aiassistant"
 	aurabindings "github.com/aequitas/aura/chain/x/aura-bindings"
 	"github.com/aequitas/aura/chain/x/bridge"
 	bridgetypes "github.com/aequitas/aura/chain/x/bridge/types"
@@ -82,7 +81,6 @@ var ModuleBasics = module.NewBasicManager(
 	prevalidation.AppModuleBasic{},
 	aurabindings.AppModuleBasic{},
 	governance.AppModuleBasic{},
-	aiassistant.AppModuleBasic{},
 	confidencescore.AppModuleBasic{},
 	dataregistry.AppModuleBasic{},
 	vcregistry.AppModuleBasic{},
