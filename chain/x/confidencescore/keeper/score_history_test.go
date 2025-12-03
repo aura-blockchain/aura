@@ -148,6 +148,9 @@ func TestScoreHistoryQueryByAddress(t *testing.T) {
 
 	// Add entries with different patterns
 	for i := uint64(1); i <= 10; i++ {
+		// Advance block height for each entry to ensure proper ordering
+		ctx = ctx.WithBlockHeight(int64(100 + i))
+
 		change1 := types.ScoreChange{
 			ScoreDelta:    int64(i * 10),
 			NewTotal:      i * 100,
@@ -187,8 +190,10 @@ func TestScoreHistoryQueryByAddress(t *testing.T) {
 		if h.Reason != types.ChangeReasonIRCompletion {
 			t.Errorf("entry %d: expected reason IRCompletion, got %s", i, h.Reason)
 		}
-		if h.NewTotal != uint64((i+1)*100) {
-			t.Errorf("entry %d: expected new total %d, got %d", i, (i+1)*100, h.NewTotal)
+		// History entries are indexed from the loop (1 to 10), so entry i corresponds to loop iteration i+1
+		expectedTotal := uint64((i + 1) * 100)
+		if h.NewTotal != expectedTotal {
+			t.Errorf("entry %d: expected new total %d, got %d", i, expectedTotal, h.NewTotal)
 		}
 	}
 
@@ -206,8 +211,10 @@ func TestScoreHistoryQueryByAddress(t *testing.T) {
 		if h.Reason != types.ChangeReasonAppealReversal {
 			t.Errorf("entry %d: expected reason AppealReversal, got %s", i, h.Reason)
 		}
-		if h.NewTotal != uint64((i+1)*200) {
-			t.Errorf("entry %d: expected new total %d, got %d", i, (i+1)*200, h.NewTotal)
+		// History entries are indexed from the loop (1 to 10), so entry i corresponds to loop iteration i+1
+		expectedTotal := uint64((i + 1) * 200)
+		if h.NewTotal != expectedTotal {
+			t.Errorf("entry %d: expected new total %d, got %d", i, expectedTotal, h.NewTotal)
 		}
 	}
 

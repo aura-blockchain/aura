@@ -537,8 +537,7 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 	)
 
 	// Ensure module accounts exist before keepers that depend on them (staking, bank) are created.
-	// Create base bank keeper (will be wrapped with monitoring later)
-	baseBankKeeper := bankkeeper.NewBaseKeeper(
+	bankKeeper := bankkeeper.NewBaseKeeper(
 		encoding.Codec,
 		runtime.NewKVStoreService(keys.bank),
 		accountKeeper,
@@ -552,7 +551,7 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 		encoding.Codec,
 		runtime.NewKVStoreService(keys.staking),
 		accountKeeper,
-		baseBankKeeper,
+		bankKeeper,
 		authorityAddr,
 		validatorCodec,
 		consensusCodec,
@@ -570,7 +569,7 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 		encoding.Codec,
 		runtime.NewKVStoreService(keys.distribution),
 		accountKeeper,
-		baseBankKeeper,
+		bankKeeper,
 		stakingKeeper,
 		authtypes.FeeCollectorName,
 		authorityAddr,
@@ -624,12 +623,9 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 	// Tier 1: Keepers with no AURA dependencies
 	complianceKeeper := compliancekeeper.NewKeeper(encoding.Codec, keys.compliance)
 
-	// Wrap bank keeper with transaction monitoring for AML compliance
+	// Create monitored bank adapter that integrates transaction monitoring for AML compliance
 	// This intercepts all coin transfers to evaluate compliance rules before execution
-	monitoredBankKeeper := compliancekeeper.NewMonitoredBankKeeper(baseBankKeeper, complianceKeeper)
-
-	// Create bank adapter using the monitored bank keeper for compliance
-	bankAdapter := newBankKeeperAdapter(monitoredBankKeeper)
+	bankAdapter := newMonitoredBankKeeperAdapter(bankKeeper, complianceKeeper)
 
 	// Individual security module keepers
 	walletsecurityKeeper := walletsecuritykeeper.NewKeeper(
@@ -645,7 +641,7 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 		authorityAddr,
 		newValidatorSecurityStakingAdapter(stakingKeeper),
 		slashingKeeper,
-		monitoredBankKeeper,
+		bankKeeper,
 	)
 
 	cryptographyKeeper := cryptographykeeper.NewKeeper(
@@ -671,7 +667,7 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 		encoding.Codec,
 		keys.privacy,
 		accountKeeper,
-		monitoredBankKeeper,
+		bankKeeper,
 	)
 
 	securityKeeper := securitykeeper.NewKeeper(
@@ -685,7 +681,7 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 	)
 
 	// Individual economics module keepers
-	governanceKeeper := governancekeeper.NewKeeper(encoding.Codec, keys.governance, stakingKeeper, monitoredBankKeeper)
+	governanceKeeper := governancekeeper.NewKeeper(encoding.Codec, keys.governance, stakingKeeper, bankKeeper, securityKeeper)
 
 	economicsecurityParamsStore := economicsecurityparams.NewStore(*economicsecuritytypes.DefaultParams())
 	economicsecurityKeeper := economicsecuritykeeper.NewKeeper(
@@ -827,7 +823,7 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 		encoding.Codec,
 		runtime.NewKVStoreService(keys.wasm),
 		accountKeeper,
-		monitoredBankKeeper,
+		bankKeeper,
 		stakingKeeper,
 		nil, // DistributionKeeper - interface mismatch, to be wrapped in Phase 3
 		nil, // IBCKeeper - to be added in Phase 3
@@ -891,10 +887,10 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 
 	coreModules := []sdkmodule.AppModule{
 		auth.NewAppModule(encoding.Codec, accountKeeper, nil, nil),
-		bankmodule.NewAppModule(encoding.Codec, monitoredBankKeeper, accountKeeper, nil),
-		stakingmodule.NewAppModule(encoding.Codec, stakingKeeper, accountKeeper, monitoredBankKeeper, nil),
-		slashingmodule.NewAppModule(encoding.Codec, slashingKeeper, accountKeeper, monitoredBankKeeper, stakingKeeper, nil, encoding.InterfaceRegistry),
-		distribution.NewAppModule(encoding.Codec, distributionKeeper, accountKeeper, monitoredBankKeeper, stakingKeeper, nil),
+		bankmodule.NewAppModule(encoding.Codec, bankKeeper, accountKeeper, nil),
+		stakingmodule.NewAppModule(encoding.Codec, stakingKeeper, accountKeeper, bankKeeper, nil),
+		slashingmodule.NewAppModule(encoding.Codec, slashingKeeper, accountKeeper, bankKeeper, stakingKeeper, nil, encoding.InterfaceRegistry),
+		distribution.NewAppModule(encoding.Codec, distributionKeeper, accountKeeper, bankKeeper, stakingKeeper, nil),
 		params.NewAppModule(paramsKeeper),
 		consensus.NewAppModule(encoding.Codec, consensusKeeper),
 		genutilmodule.NewAppModule(accountKeeper, stakingKeeper, base, encoding.TxConfig),
