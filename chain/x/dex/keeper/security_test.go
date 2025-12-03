@@ -442,6 +442,7 @@ func setupTest(t *testing.T) (sdk.Context, *keeper.Keeper) {
 		nil, // bankKeeper
 		nil, // authKeeper
 		nil, // vcKeeper
+		nil, // securityKeeper
 	)
 	return input.Ctx, k
 }

@@ -143,6 +143,7 @@ func (suite *DEXKeeperTestSuite) SetupTest() {
 		nil, // bankKeeper
 		nil, // authKeeper
 		nil, // vcKeeper
+		nil, // securityKeeper
 	)
 	suite.ctx = input.Ctx
 }
@@ -155,7 +156,7 @@ func TestDEXKeeperTestSuite(t *testing.T) {
 func setupTestKeeper(t *testing.T) (*keeper.Keeper, sdk.Context, *MockBankKeeper) {
 	input := keepertest.CreateTestInput(t)
 	mockBank := NewMockBankKeeper()
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, mockBank, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, mockBank, nil, nil, nil)
 	return k, input.Ctx, mockBank
 }
 

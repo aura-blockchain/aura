@@ -20,7 +20,7 @@ func setupSlippageTestKeeper(t *testing.T) (*keeper.Keeper, sdk.Context, *MockBa
 	// Use the existing MockBankKeeper from keeper_comprehensive_test.go
 	mockBank := NewMockBankKeeper()
 
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, mockBank, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, mockBank, nil, nil, nil)
 	return k, input.Ctx, mockBank
 }
 
