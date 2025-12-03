@@ -74,6 +74,8 @@ func (k *Keeper) InitGenesis(ctx context.Context, data types.GenesisState) error
 	}
 
 	// Import presentations to KV store
+	// Indexes are built automatically when setPresentation is called,
+	// so we don't need to import the exported indexes separately.
 	for _, presentation := range data.Presentations {
 		if presentation == nil {
 			continue
@@ -82,18 +84,40 @@ func (k *Keeper) InitGenesis(ctx context.Context, data types.GenesisState) error
 		k.store.appendUserPresentation(ctx, presentation.HolderAddress, presentation.PresentationId)
 	}
 
-	// Import user presentation index to KV store
+	// Validate that built user presentation indexes match exported indexes
+	// This ensures data integrity during genesis import
 	if data.UserPresentationIndex != nil {
-		for addr, presIDs := range data.UserPresentationIndex {
-			if presIDs != nil {
-				for _, id := range presIDs.Ids {
-					k.store.appendUserPresentation(ctx, addr, id)
+		for addr, exportedIDs := range data.UserPresentationIndex {
+			if exportedIDs == nil || len(exportedIDs.Ids) == 0 {
+				continue
+			}
+
+			// Get the index that was built from presentations
+			builtIDs := k.store.listUserPresentations(ctx, addr)
+
+			// Verify count matches
+			if len(builtIDs) != len(exportedIDs.Ids) {
+				return fmt.Errorf("user presentation index mismatch for %s: built %d entries, exported %d entries",
+					addr, len(builtIDs), len(exportedIDs.Ids))
+			}
+
+			// Verify all exported IDs are present in built index
+			builtMap := make(map[string]bool)
+			for _, id := range builtIDs {
+				builtMap[id] = true
+			}
+			for _, id := range exportedIDs.Ids {
+				if !builtMap[id] {
+					return fmt.Errorf("user presentation index mismatch for %s: exported ID %s not found in built index",
+						addr, id)
 				}
 			}
 		}
 	}
 
 	// Import attribute VCs to KV store
+	// Indexes are built automatically when setAttributeVC is called,
+	// so we don't need to import the exported indexes separately.
 	for _, attrVC := range data.AttributeVcs {
 		if attrVC == nil {
 			continue
@@ -102,12 +126,32 @@ func (k *Keeper) InitGenesis(ctx context.Context, data types.GenesisState) error
 		k.store.appendUserAttributeVC(ctx, attrVC.HolderAddress, attrVC.AttributeVcId)
 	}
 
-	// Import user attribute index to KV store
+	// Validate that built user attribute indexes match exported indexes
+	// This ensures data integrity during genesis import
 	if data.UserAttributeIndex != nil {
-		for addr, attrIDs := range data.UserAttributeIndex {
-			if attrIDs != nil {
-				for _, id := range attrIDs.Ids {
-					k.store.appendUserAttributeVC(ctx, addr, id)
+		for addr, exportedIDs := range data.UserAttributeIndex {
+			if exportedIDs == nil || len(exportedIDs.Ids) == 0 {
+				continue
+			}
+
+			// Get the index that was built from attribute VCs
+			builtIDs := k.store.listUserAttributeVCs(ctx, addr)
+
+			// Verify count matches
+			if len(builtIDs) != len(exportedIDs.Ids) {
+				return fmt.Errorf("user attribute index mismatch for %s: built %d entries, exported %d entries",
+					addr, len(builtIDs), len(exportedIDs.Ids))
+			}
+
+			// Verify all exported IDs are present in built index
+			builtMap := make(map[string]bool)
+			for _, id := range builtIDs {
+				builtMap[id] = true
+			}
+			for _, id := range exportedIDs.Ids {
+				if !builtMap[id] {
+					return fmt.Errorf("user attribute index mismatch for %s: exported ID %s not found in built index",
+						addr, id)
 				}
 			}
 		}
@@ -138,12 +182,25 @@ func (k *Keeper) InitGenesis(ctx context.Context, data types.GenesisState) error
 	}
 
 	// Import pending disclosure index to KV store
+	// Note: Unlike presentation and attribute indexes, the pending disclosure index
+	// is NOT automatically built from disclosure requests, because not all requests
+	// are pending (some have responses). Therefore, we must import it explicitly.
 	if data.PendingDisclosureIndex != nil {
-		for holder, ids := range data.PendingDisclosureIndex {
-			if ids != nil {
-				for _, id := range ids.Ids {
-					k.store.appendPendingDisclosure(ctx, holder, id)
-				}
+		for holder, exportedIDs := range data.PendingDisclosureIndex {
+			if exportedIDs == nil || len(exportedIDs.Ids) == 0 {
+				continue
+			}
+
+			// Import each pending disclosure entry
+			for _, id := range exportedIDs.Ids {
+				k.store.appendPendingDisclosure(ctx, holder, id)
+			}
+
+			// Validate that the imported index matches what we just built
+			builtIDs := k.store.listPendingDisclosures(ctx, holder)
+			if len(builtIDs) != len(exportedIDs.Ids) {
+				return fmt.Errorf("pending disclosure index mismatch for %s: built %d entries, exported %d entries",
+					holder, len(builtIDs), len(exportedIDs.Ids))
 			}
 		}
 	}

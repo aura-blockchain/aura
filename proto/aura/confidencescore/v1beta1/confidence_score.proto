@@ -120,14 +120,15 @@ message ConfidenceHistory {
 
 // ScoreChange represents a single score change event
 message ScoreChange {
-  uint64 block_height = 1;
-  int64 score_delta = 2;                 // Can be negative (slashing)
-  uint64 new_total = 3;
-  ChangeReason reason = 4;
-  string related_ir_id = 5;              // If applicable
-  string tx_hash = 6;
-  google.protobuf.Timestamp timestamp = 7;
-  uint64 previous_score = 8;
+  string wallet_address = 1;             // Bech32 Aura address
+  uint64 block_height = 2;
+  int64 score_delta = 3;                 // Can be negative (slashing)
+  uint64 new_total = 4;
+  ChangeReason reason = 5;
+  string related_ir_id = 6;              // If applicable
+  string tx_hash = 7;
+  google.protobuf.Timestamp timestamp = 8;
+  uint64 previous_score = 9;
 }
 
 // SlashRecord represents a score slash record

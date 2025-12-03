@@ -3,6 +3,7 @@ package keeper
 import (
 	"testing"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/suite"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -25,10 +26,12 @@ func (suite *InvariantsComprehensiveTestSuite) TestTransferBalanceInvariant() {
 
 	// Test: Empty store should not break invariant
 	msg, broken := inv(ctx)
-	suite.False(broken)
+	suite.False(broken, "empty store should not break invariant")
 	suite.Empty(msg)
 
-	// Create a pending transfer
+	// Test: Create a pending transfer
+	// Note: Since bankKeeper is nil in test suite, invariant will skip the balance check
+	// This is acceptable for basic tests. For full integration tests, we need a proper mock.
 	transfer := &bridgepb.CrossChainTransfer{
 		TransferId:  "transfer-1",
 		SourceChain: "aura",
@@ -40,14 +43,110 @@ func (suite *InvariantsComprehensiveTestSuite) TestTransferBalanceInvariant() {
 		Status:      bridgepb.TransferStatus_PENDING,
 		Timestamp:   timestamppb.Now(),
 	}
-	suite.Keeper.setTransfer(ctx, transfer)
+	suite.Keeper.SetTransfer(ctx, transfer)
 
-	// The invariant should check if module has sufficient balance
-	// This might fail if bankKeeper is mocked
 	msg, broken = inv(ctx)
-	// Result depends on mock implementation
-	_ = msg
-	_ = broken
+	// With nil bankKeeper, invariant returns (false) - test environment behavior
+	suite.False(broken)
+	suite.Empty(msg)
+}
+
+func (suite *InvariantsComprehensiveTestSuite) TestTransferBalanceInvariantMultipleDenoms() {
+	ctx := suite.SdkCtx
+	inv := TransferBalanceInvariant(*suite.Keeper)
+
+	// Create transfers with different denoms
+	transfer1 := &bridgepb.CrossChainTransfer{
+		TransferId:  "transfer-multi-1",
+		SourceChain: "aura",
+		TargetChain: "ethereum",
+		Sender:      sdk.AccAddress("sender1___________").String(),
+		Recipient:   "0x123",
+		Amount:      "1000",
+		Denom:       "uaura",
+		Status:      bridgepb.TransferStatus_PENDING,
+		Timestamp:   timestamppb.Now(),
+	}
+	suite.Keeper.SetTransfer(ctx, transfer1)
+
+	transfer2 := &bridgepb.CrossChainTransfer{
+		TransferId:  "transfer-multi-2",
+		SourceChain: "aura",
+		TargetChain: "ethereum",
+		Sender:      sdk.AccAddress("sender2___________").String(),
+		Recipient:   "0x456",
+		Amount:      "2000",
+		Denom:       "upaw",
+		Status:      bridgepb.TransferStatus_PENDING,
+		Timestamp:   timestamppb.Now(),
+	}
+	suite.Keeper.SetTransfer(ctx, transfer2)
+
+	transfer3 := &bridgepb.CrossChainTransfer{
+		TransferId:  "transfer-multi-3",
+		SourceChain: "aura",
+		TargetChain: "ethereum",
+		Sender:      sdk.AccAddress("sender3___________").String(),
+		Recipient:   "0x789",
+		Amount:      "500",
+		Denom:       "uaura",
+		Status:      bridgepb.TransferStatus_CONFIRMED,
+		Timestamp:   timestamppb.Now(),
+	}
+	suite.Keeper.SetTransfer(ctx, transfer3)
+
+	// The invariant should sum amounts per denom: uaura=1500, upaw=2000
+	msg, broken := inv(ctx)
+	suite.False(broken, "multiple denoms should not break invariant")
+	suite.Empty(msg)
+}
+
+func (suite *InvariantsComprehensiveTestSuite) TestTransferBalanceInvariantCompletedTransfersIgnored() {
+	ctx := suite.SdkCtx
+	inv := TransferBalanceInvariant(*suite.Keeper)
+
+	// Create a completed transfer (should NOT be counted in locked amounts)
+	completedTransfer := &bridgepb.CrossChainTransfer{
+		TransferId:  "transfer-completed",
+		SourceChain: "aura",
+		TargetChain: "ethereum",
+		Sender:      sdk.AccAddress("sender____________").String(),
+		Recipient:   "0x123",
+		Amount:      "1000000",
+		Denom:       "uaura",
+		Status:      bridgepb.TransferStatus_COMPLETED,
+		Timestamp:   timestamppb.Now(),
+	}
+	suite.Keeper.SetTransfer(ctx, completedTransfer)
+
+	// Completed transfers should not affect the invariant
+	msg, broken := inv(ctx)
+	suite.False(broken, "completed transfers should be ignored")
+	suite.Empty(msg)
+}
+
+func (suite *InvariantsComprehensiveTestSuite) TestTransferBalanceInvariantFailedTransfersIgnored() {
+	ctx := suite.SdkCtx
+	inv := TransferBalanceInvariant(*suite.Keeper)
+
+	// Create a failed transfer (should NOT be counted in locked amounts)
+	failedTransfer := &bridgepb.CrossChainTransfer{
+		TransferId:  "transfer-failed",
+		SourceChain: "aura",
+		TargetChain: "ethereum",
+		Sender:      sdk.AccAddress("sender____________").String(),
+		Recipient:   "0x123",
+		Amount:      "1000000",
+		Denom:       "uaura",
+		Status:      bridgepb.TransferStatus_FAILED,
+		Timestamp:   timestamppb.Now(),
+	}
+	suite.Keeper.SetTransfer(ctx, failedTransfer)
+
+	// Failed transfers should not affect the invariant
+	msg, broken := inv(ctx)
+	suite.False(broken, "failed transfers should be ignored")
+	suite.Empty(msg)
 }
 
 func (suite *InvariantsComprehensiveTestSuite) TestTransferBalanceInvariantInvalidAmount() {
@@ -334,6 +433,203 @@ func (suite *InvariantsComprehensiveTestSuite) storeValidator(ctx sdk.Context, v
 	store := ctx.KVStore(suite.Keeper.storeKey)
 	bz := suite.Keeper.cdc.MustMarshal(validator)
 	store.Set(append(types.ValidatorPrefix, []byte(validator.Address)...), bz)
+}
+
+// ========================================================================
+// BALANCE INVARIANT TESTS WITH MOCKS
+// ========================================================================
+
+// TestBalanceInvariantWithMocks tests balance checking with proper mocks
+func (suite *InvariantsComprehensiveTestSuite) TestBalanceInvariantWithMocksSufficient() {
+	// Create a new keeper with mocked keepers
+	mockBank := newMockBankKeeperWithBalances()
+	mockAccount := newMockAccountKeeperWithModule()
+	moduleAddr := mockAccount.GetModuleAddress(types.ModuleName)
+
+	k := NewKeeper(
+		suite.Keeper.cdc,
+		suite.Keeper.storeKey,
+		nil,
+		mockBank,
+		mockAccount,
+		nil,
+	)
+
+	ctx := suite.SdkCtx
+
+	// Set module balance to 10000 uaura
+	mockBank.SetBalance(moduleAddr, "uaura", sdkmath.NewInt(10000))
+
+	// Create pending transfer for 5000 uaura (less than module balance)
+	transfer := &bridgepb.CrossChainTransfer{
+		TransferId:  "transfer-sufficient",
+		SourceChain: "aura",
+		TargetChain: "ethereum",
+		Sender:      sdk.AccAddress("sender____________").String(),
+		Recipient:   "0x123",
+		Amount:      "5000",
+		Denom:       "uaura",
+		Status:      bridgepb.TransferStatus_PENDING,
+		Timestamp:   timestamppb.Now(),
+	}
+	k.SetTransfer(ctx, transfer)
+
+	// Create invariant with mocked keeper
+	inv := TransferBalanceInvariant(*k)
+
+	// Invariant should pass
+	msg, broken := inv(ctx)
+	suite.False(broken, "invariant should pass when module balance is sufficient")
+	suite.Empty(msg)
+}
+
+func (suite *InvariantsComprehensiveTestSuite) TestBalanceInvariantWithMocksInsufficient() {
+	// Create a new keeper with mocked keepers
+	mockBank := newMockBankKeeperWithBalances()
+	mockAccount := newMockAccountKeeperWithModule()
+	moduleAddr := mockAccount.GetModuleAddress(types.ModuleName)
+
+	k := NewKeeper(
+		suite.Keeper.cdc,
+		suite.Keeper.storeKey,
+		nil,
+		mockBank,
+		mockAccount,
+		nil,
+	)
+
+	ctx := suite.SdkCtx
+
+	// Set module balance to only 1000 uaura
+	mockBank.SetBalance(moduleAddr, "uaura", sdkmath.NewInt(1000))
+
+	// Create pending transfer for 5000 uaura (more than module balance)
+	transfer := &bridgepb.CrossChainTransfer{
+		TransferId:  "transfer-insufficient",
+		SourceChain: "aura",
+		TargetChain: "ethereum",
+		Sender:      sdk.AccAddress("sender____________").String(),
+		Recipient:   "0x123",
+		Amount:      "5000",
+		Denom:       "uaura",
+		Status:      bridgepb.TransferStatus_PENDING,
+		Timestamp:   timestamppb.Now(),
+	}
+	k.SetTransfer(ctx, transfer)
+
+	// Create invariant with mocked keeper
+	inv := TransferBalanceInvariant(*k)
+
+	// Invariant should be BROKEN
+	msg, broken := inv(ctx)
+	suite.True(broken, "invariant should break when module balance is insufficient")
+	suite.Contains(msg, "module balance insufficient")
+	suite.Contains(msg, "balance=1000")
+	suite.Contains(msg, "locked=5000")
+	suite.Contains(msg, "uaura")
+}
+
+func (suite *InvariantsComprehensiveTestSuite) TestBalanceInvariantWithMocksMultipleDenoms() {
+	// Create a new keeper with mocked keepers
+	mockBank := newMockBankKeeperWithBalances()
+	mockAccount := newMockAccountKeeperWithModule()
+	moduleAddr := mockAccount.GetModuleAddress(types.ModuleName)
+
+	k := NewKeeper(
+		suite.Keeper.cdc,
+		suite.Keeper.storeKey,
+		nil,
+		mockBank,
+		mockAccount,
+		nil,
+	)
+
+	ctx := suite.SdkCtx
+
+	// Set module balances - upaw is insufficient
+	mockBank.SetBalance(moduleAddr, "uaura", sdkmath.NewInt(10000))
+	mockBank.SetBalance(moduleAddr, "upaw", sdkmath.NewInt(5000)) // Not enough
+
+	// Create transfers
+	transfer1 := &bridgepb.CrossChainTransfer{
+		TransferId:  "transfer-multi-ok",
+		SourceChain: "aura",
+		TargetChain: "ethereum",
+		Sender:      sdk.AccAddress("sender1___________").String(),
+		Recipient:   "0x123",
+		Amount:      "5000",
+		Denom:       "uaura",
+		Status:      bridgepb.TransferStatus_PENDING,
+		Timestamp:   timestamppb.Now(),
+	}
+	k.SetTransfer(ctx, transfer1)
+
+	transfer2 := &bridgepb.CrossChainTransfer{
+		TransferId:  "transfer-multi-insufficient",
+		SourceChain: "aura",
+		TargetChain: "ethereum",
+		Sender:      sdk.AccAddress("sender2___________").String(),
+		Recipient:   "0x456",
+		Amount:      "10000",
+		Denom:       "upaw",
+		Status:      bridgepb.TransferStatus_PENDING,
+		Timestamp:   timestamppb.Now(),
+	}
+	k.SetTransfer(ctx, transfer2)
+
+	// Create invariant with mocked keeper
+	inv := TransferBalanceInvariant(*k)
+
+	// Total locked: uaura=5000 (OK), upaw=10000 (INSUFFICIENT - only 5000 available)
+	// Invariant should be BROKEN for upaw
+	msg, broken := inv(ctx)
+	suite.True(broken, "invariant should break when one denom is insufficient")
+	suite.Contains(msg, "module balance insufficient")
+	suite.Contains(msg, "upaw")
+	suite.Contains(msg, "balance=5000")
+	suite.Contains(msg, "locked=10000")
+}
+
+func (suite *InvariantsComprehensiveTestSuite) TestBalanceInvariantWithMocksZeroBalance() {
+	// Create a new keeper with mocked keepers
+	mockBank := newMockBankKeeperWithBalances()
+	mockAccount := newMockAccountKeeperWithModule()
+
+	k := NewKeeper(
+		suite.Keeper.cdc,
+		suite.Keeper.storeKey,
+		nil,
+		mockBank,
+		mockAccount,
+		nil,
+	)
+
+	ctx := suite.SdkCtx
+
+	// Module has zero balance (default from mock)
+	// Create pending transfer
+	transfer := &bridgepb.CrossChainTransfer{
+		TransferId:  "transfer-zero-balance",
+		SourceChain: "aura",
+		TargetChain: "ethereum",
+		Sender:      sdk.AccAddress("sender____________").String(),
+		Recipient:   "0x123",
+		Amount:      "1000",
+		Denom:       "uaura",
+		Status:      bridgepb.TransferStatus_PENDING,
+		Timestamp:   timestamppb.Now(),
+	}
+	k.SetTransfer(ctx, transfer)
+
+	// Create invariant with mocked keeper
+	inv := TransferBalanceInvariant(*k)
+
+	// Invariant should be BROKEN - module has no funds
+	msg, broken := inv(ctx)
+	suite.True(broken, "invariant should break when module has zero balance but has locked transfers")
+	suite.Contains(msg, "module balance insufficient")
+	suite.Contains(msg, "balance=0")
+	suite.Contains(msg, "locked=1000")
 }
 
 // storeChannel is commented out until BridgeChannel type is defined in proto

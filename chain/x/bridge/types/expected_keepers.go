@@ -12,6 +12,7 @@ type BankKeeper interface {
 	MintCoins(ctx sdk.Context, moduleName string, amt sdk.Coins) error
 	BurnCoins(ctx sdk.Context, moduleName string, amt sdk.Coins) error
 	GetSupply(ctx sdk.Context, denom string) sdk.Coin
+	GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin
 }
 
 // AccountKeeper defines the expected account keeper interface
@@ -19,6 +20,7 @@ type AccountKeeper interface {
 	GetAccount(ctx sdk.Context, addr sdk.AccAddress) sdk.AccountI
 	SetAccount(ctx sdk.Context, acc sdk.AccountI)
 	NewAccountWithAddress(ctx sdk.Context, addr sdk.AccAddress) sdk.AccountI
+	GetModuleAddress(moduleName string) sdk.AccAddress
 }
 
 // VCRegistryKeeper defines the expected interface for vcregistry keeper

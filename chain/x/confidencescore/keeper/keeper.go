@@ -225,7 +225,15 @@ func (k *Keeper) GetScoreHistory(ctx sdk.Context, walletAddr string, fromHeight,
 }
 
 // AddScoreChange adds a score change to history in KV store
-func (k *Keeper) AddScoreChange(ctx sdk.Context, change types.ScoreChange) error {
+func (k *Keeper) AddScoreChange(ctx sdk.Context, walletAddress string, change types.ScoreChange) error {
+	// Validate wallet address
+	if walletAddress == "" {
+		return types.ErrInvalidWalletAddress
+	}
+
+	// Set wallet address in the change record
+	change.WalletAddress = walletAddress
+
 	// Update timestamps using block context
 	change.BlockHeight = uint64(ctx.BlockHeight())
 	change.Timestamp = timestampFromTime(ctx.BlockTime())
@@ -235,8 +243,7 @@ func (k *Keeper) AddScoreChange(ctx sdk.Context, change types.ScoreChange) error
 	// Use unique key combining wallet, height, and tx hash
 	key := fmt.Sprintf("%s%s/%d/%s",
 		types.ScoreHistoryStoreKeyPrefix,
-		// TODO: WalletAddress field not in proto - needs to be tracked separately
-		"unknown",
+		walletAddress,
 		change.BlockHeight,
 		change.TxHash)
 

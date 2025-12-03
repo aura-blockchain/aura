@@ -110,7 +110,7 @@ func (k *Keeper) ApplyScoreDecay(ctx sdk.Context, walletAddr string) (uint64, ui
 	}
 
 	// Record decay in history
-	k.AddScoreChange(ctx, types.ScoreChange{
+	k.AddScoreChange(ctx, walletAddr, types.ScoreChange{
 		ScoreDelta:    -int64(actualDecay),
 		NewTotal:      newScore,
 		Reason:        types.ChangeReasonGovernanceAdjustment, // Use governance for decay
@@ -294,7 +294,7 @@ func (k *Keeper) RestoreDecayedScore(ctx sdk.Context, walletAddr string, amount 
 		return err
 	}
 
-	k.AddScoreChange(ctx, types.ScoreChange{
+	k.AddScoreChange(ctx, walletAddr, types.ScoreChange{
 		ScoreDelta:    int64(amount),
 		NewTotal:      record.TotalScore,
 		Reason:        types.ChangeReasonGovernanceAdjustment,
