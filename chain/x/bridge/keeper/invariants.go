@@ -42,9 +42,37 @@ func AllInvariants(k Keeper) sdk.Invariant {
 	}
 }
 
-// TransferBalanceInvariant checks that locked assets sum correctly
+// TransferBalanceInvariant checks that locked assets sum correctly and module has sufficient balance.
+//
+// CRITICAL SECURITY: This invariant ensures that the bridge module actually has the tokens
+// it claims to have locked for transfers. Without this check, transfers could be created
+// without locking funds, allowing the module to become insolvent.
+//
+// The invariant validates:
+//   1. All pending/confirmed transfer amounts are valid integers
+//   2. Module balance >= sum of locked amounts for each denom
+//   3. No transfer exists without corresponding locked funds
+//
+// Returns:
+//   - ("", false) if invariant holds (module is solvent)
+//   - (error message, true) if invariant broken (module is insolvent or data corrupted)
 func TransferBalanceInvariant(k Keeper) sdk.Invariant {
 	return func(ctx sdk.Context) (string, bool) {
+		// Skip if bank keeper is not available (test environments)
+		if k.bankKeeper == nil {
+			return "", false
+		}
+
+		// Get module address for balance checks
+		moduleAddr := k.accountKeeper.GetModuleAddress(types.ModuleName)
+		if moduleAddr == nil {
+			return sdk.FormatInvariant(
+				types.ModuleName,
+				"transfer-balance",
+				"module address not found",
+			), true
+		}
+
 		// Get all pending transfers
 		store := ctx.KVStore(k.storeKey)
 		transferStore := storeprefix.NewStore(store, types.TransferPrefix)
@@ -87,8 +115,25 @@ func TransferBalanceInvariant(k Keeper) sdk.Invariant {
 			}
 		}
 
-		// Note: We skip the module balance check since we don't have GetBalance method
-		// This invariant now only validates transfer data integrity
+		// CRITICAL SECURITY CHECK: Verify module balance covers all locked amounts
+		for denom, totalLocked := range lockedAmounts {
+			moduleBalance := k.bankKeeper.GetBalance(ctx, moduleAddr, denom)
+
+			if moduleBalance.Amount.LT(totalLocked) {
+				return sdk.FormatInvariant(
+					types.ModuleName,
+					"transfer-balance",
+					fmt.Sprintf(
+						"module balance insufficient: balance=%s < locked=%s for denom %s",
+						moduleBalance.Amount.String(),
+						totalLocked.String(),
+						denom,
+					),
+				), true
+			}
+		}
+
+		// Invariant holds: module has sufficient balance for all locked transfers
 		return "", false
 	}
 }

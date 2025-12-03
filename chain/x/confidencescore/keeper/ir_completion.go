@@ -151,7 +151,7 @@ func (k *Keeper) RecordIRCompletion(
 	k.incrementRateLimit(ctx, walletAddr)
 
 	// 15. Add to score history
-	k.AddScoreChange(ctx, types.ScoreChange{
+	k.AddScoreChange(ctx, walletAddr, types.ScoreChange{
 		ScoreDelta:    int64(scoreEarned),
 		NewTotal:      record.TotalScore,
 		Reason:        types.ChangeReasonIRCompletion,

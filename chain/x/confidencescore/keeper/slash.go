@@ -86,7 +86,7 @@ func (k *Keeper) SlashScore(
 	}
 
 	// Add to score history
-	k.AddScoreChange(ctx, types.ScoreChange{
+	k.AddScoreChange(ctx, walletAddr, types.ScoreChange{
 		ScoreDelta:    -int64(slashAmount),
 		NewTotal:      newScore,
 		Reason:        types.ChangeReasonFraudSlash,
@@ -205,7 +205,7 @@ func (k *Keeper) ResolveAppeal(
 		}
 
 		// Add to score history
-		k.AddScoreChange(ctx, types.ScoreChange{
+		k.AddScoreChange(ctx, walletAddr, types.ScoreChange{
 			ScoreDelta:    int64(slashRecord.SlashAmount),
 			NewTotal:      record.TotalScore,
 			Reason:        types.ChangeReasonAppealReversal,

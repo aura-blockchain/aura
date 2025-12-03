@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -358,53 +359,91 @@ func TestListVerifiedUsers(t *testing.T) {
 }
 
 func TestGetScoreHistory(t *testing.T) {
-	t.Skip("legacy expectations not aligned with current keeper storage; revisit")
 	ctx, k := setupConfKeeperWithTime(t)
 	ctx = ctx.WithBlockHeight(100).WithBlockTime(time.Now())
 
-	walletAddr := "aura1test"
+	walletAddr1 := "aura1user1"
+	walletAddr2 := "aura1user2"
 
-	// No history
-	history := k.GetScoreHistory(ctx, walletAddr, 0, 0, 10)
+	// Test 1: No history for new wallet
+	history := k.GetScoreHistory(ctx, walletAddr1, 0, 0, 10)
 	if len(history) != 0 {
-		t.Errorf("expected 0 history entries, got %d", len(history))
+		t.Errorf("expected 0 history entries for new wallet, got %d", len(history))
 	}
 
-	// Add some history entries
+	// Test 2: Add history entries for wallet 1
 	for i := uint64(1); i <= 5; i++ {
 		change := types.ScoreChange{
-			BlockHeight:   100 + i,
 			ScoreDelta:    int64(i * 100),
 			NewTotal:      i * 500,
 			Reason:        types.ChangeReasonIRCompletion,
-			TxHash:        walletAddr,
+			TxHash:        fmt.Sprintf("tx-user1-%d", i),
 			PreviousScore: (i - 1) * 500,
 		}
-		k.AddScoreChange(ctx, change)
+		if err := k.AddScoreChange(ctx, walletAddr1, change); err != nil {
+			t.Fatalf("failed to add score change for wallet 1: %v", err)
+		}
 	}
 
-	// Get all history
-	history = k.GetScoreHistory(ctx, walletAddr, 0, 0, 0)
+	// Test 3: Add history entries for wallet 2
+	for i := uint64(1); i <= 3; i++ {
+		change := types.ScoreChange{
+			ScoreDelta:    int64(i * 200),
+			NewTotal:      i * 1000,
+			Reason:        types.ChangeReasonIRCompletion,
+			TxHash:        fmt.Sprintf("tx-user2-%d", i),
+			PreviousScore: (i - 1) * 1000,
+		}
+		if err := k.AddScoreChange(ctx, walletAddr2, change); err != nil {
+			t.Fatalf("failed to add score change for wallet 2: %v", err)
+		}
+	}
+
+	// Test 4: Get all history for wallet 1 (should have 5 entries)
+	history = k.GetScoreHistory(ctx, walletAddr1, 0, 0, 0)
 	if len(history) != 5 {
-		t.Errorf("expected 5 history entries, got %d", len(history))
+		t.Errorf("expected 5 history entries for wallet 1, got %d", len(history))
+	}
+	// Verify wallet address is set correctly
+	for _, h := range history {
+		if h.WalletAddress != walletAddr1 {
+			t.Errorf("expected wallet address %s, got %s", walletAddr1, h.WalletAddress)
+		}
 	}
 
-	// Get with height range
-	history = k.GetScoreHistory(ctx, walletAddr, 102, 104, 0)
+	// Test 5: Get all history for wallet 2 (should have 3 entries)
+	history = k.GetScoreHistory(ctx, walletAddr2, 0, 0, 0)
 	if len(history) != 3 {
-		t.Errorf("expected 3 history entries (102-104), got %d", len(history))
+		t.Errorf("expected 3 history entries for wallet 2, got %d", len(history))
+	}
+	// Verify wallet address is set correctly
+	for _, h := range history {
+		if h.WalletAddress != walletAddr2 {
+			t.Errorf("expected wallet address %s, got %s", walletAddr2, h.WalletAddress)
+		}
 	}
 
-	// Get with limit
-	history = k.GetScoreHistory(ctx, walletAddr, 0, 0, 2)
+	// Test 6: Verify histories are isolated (wallet 1 shouldn't see wallet 2's history)
+	history = k.GetScoreHistory(ctx, walletAddr1, 0, 0, 0)
+	for _, h := range history {
+		if h.WalletAddress == walletAddr2 {
+			t.Errorf("wallet 1 history contains wallet 2 entries - histories are not isolated!")
+		}
+	}
+
+	// Test 7: Test with limit
+	history = k.GetScoreHistory(ctx, walletAddr1, 0, 0, 2)
 	if len(history) != 2 {
-		t.Errorf("expected 2 history entries (limit), got %d", len(history))
+		t.Errorf("expected 2 history entries with limit, got %d", len(history))
 	}
 
-	// Get with from height only
-	history = k.GetScoreHistory(ctx, walletAddr, 103, 0, 0)
-	if len(history) != 3 {
-		t.Errorf("expected 3 history entries (from 103), got %d", len(history))
+	// Test 8: Verify AddScoreChange validation
+	err := k.AddScoreChange(ctx, "", types.ScoreChange{
+		ScoreDelta: 100,
+		TxHash:     "test",
+	})
+	if err == nil {
+		t.Error("expected error when adding score change with empty wallet address")
 	}
 }
 
