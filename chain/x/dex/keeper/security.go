@@ -257,6 +257,112 @@ func (k Keeper) PruneTWAPObservations(ctx sdk.Context, poolID string) {
 	}
 }
 
+// ValidatePriceMovement checks if price change is within acceptable bounds.
+// Rejects price movements > 10% per block to prevent flash loan attacks.
+func (k Keeper) ValidatePriceMovement(ctx sdk.Context, poolID string, newPrice sdkmath.LegacyDec) error {
+	const MaxPriceChangePercent = 10 // 10% maximum per block
+
+	lastPrice := k.GetLastRecordedPrice(ctx, poolID)
+
+	// First price observation, no validation needed
+	if lastPrice.IsZero() {
+		return nil
+	}
+
+	// Calculate percentage change: |new - old| / old * 100
+	priceDiff := newPrice.Sub(lastPrice).Abs()
+	percentChange := priceDiff.Quo(lastPrice).MulInt64(100)
+
+	maxChange := sdkmath.LegacyNewDec(MaxPriceChangePercent)
+	if percentChange.GT(maxChange) {
+		return fmt.Errorf(
+			"price movement too large: %.2f%% exceeds maximum of %d%%: %w",
+			percentChange.MustFloat64(),
+			MaxPriceChangePercent,
+			types.ErrPriceManipulation,
+		)
+	}
+
+	return nil
+}
+
+// SetLastRecordedPrice stores the last validated price for sanity checks
+func (k Keeper) SetLastRecordedPrice(ctx sdk.Context, poolID string, price sdkmath.LegacyDec) {
+	store := ctx.KVStore(k.storeKey)
+	key := types.LastPriceKey(poolID)
+	store.Set(key, []byte(price.String()))
+}
+
+// GetLastRecordedPrice retrieves the last recorded price
+func (k Keeper) GetLastRecordedPrice(ctx sdk.Context, poolID string) sdkmath.LegacyDec {
+	store := ctx.KVStore(k.storeKey)
+	key := types.LastPriceKey(poolID)
+
+	bz := store.Get(key)
+	if bz == nil {
+		return sdkmath.LegacyZeroDec()
+	}
+
+	price, err := sdkmath.LegacyNewDecFromStr(string(bz))
+	if err != nil {
+		return sdkmath.LegacyZeroDec()
+	}
+
+	return price
+}
+
+// RecordAllPoolPrices records TWAP observations for all active pools with price validation.
+// This should be called in EndBlocker to build TWAP history and reject manipulation.
+func (k Keeper) RecordAllPoolPrices(ctx sdk.Context) {
+	pools := k.GetAllPools(ctx)
+
+	for _, pool := range pools {
+		// Skip empty pools
+		reserveA, err := k.parseReserve(pool.ReserveA)
+		if err != nil || reserveA.IsZero() {
+			continue
+		}
+		reserveB, err := k.parseReserve(pool.ReserveB)
+		if err != nil || reserveB.IsZero() {
+			continue
+		}
+
+		// Calculate spot price
+		spotPrice := reserveB.ToLegacyDec().Quo(reserveA.ToLegacyDec())
+
+		// Validate price movement before recording
+		if err := k.ValidatePriceMovement(ctx, pool.PoolId, spotPrice); err != nil {
+			// Price movement too large, emit event and skip recording
+			ctx.EventManager().EmitEvent(
+				sdk.NewEvent(
+					"suspicious_price_movement",
+					sdk.NewAttribute("pool_id", pool.PoolId),
+					sdk.NewAttribute("rejected_price", spotPrice.String()),
+					sdk.NewAttribute("last_price", k.GetLastRecordedPrice(ctx, pool.PoolId).String()),
+					sdk.NewAttribute("reason", err.Error()),
+				),
+			)
+			continue
+		}
+
+		// Record TWAP observation
+		if err := k.RecordTWAPObservation(ctx, pool.PoolId); err != nil {
+			// Log error but don't fail EndBlocker
+			ctx.EventManager().EmitEvent(
+				sdk.NewEvent(
+					"twap_recording_error",
+					sdk.NewAttribute("pool_id", pool.PoolId),
+					sdk.NewAttribute("error", err.Error()),
+				),
+			)
+			continue
+		}
+
+		// Update last recorded price
+		k.SetLastRecordedPrice(ctx, pool.PoolId, spotPrice)
+	}
+}
+
 // ============================================================================
 // 3. FLASH LOAN ATTACK PROTECTION
 // ============================================================================

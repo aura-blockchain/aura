@@ -157,18 +157,20 @@ func TestComputeSignatureSetHash(t *testing.T) {
 	})
 
 	t.Run("single_signature", func(t *testing.T) {
-		sig1 := []byte("signature1")
+		// TODO: Implement test
+		// sig1 := []byte("signature1")
 		// Compute hash manually
-		expected := sha256.Sum256(sig1)
+		// expected := sha256.Sum256(sig1)
 
 		// TODO: Call keeper.computeSignatureSetHash([sig1])
 		// Expected: Should match manual computation
 	})
 
 	t.Run("multiple_signatures_order_independent", func(t *testing.T) {
-		sig1 := []byte("signature1")
-		sig2 := []byte("signature2")
-		sig3 := []byte("signature3")
+		// TODO: Implement test
+		// sig1 := []byte("signature1")
+		// sig2 := []byte("signature2")
+		// sig3 := []byte("signature3")
 
 		// TODO: Call keeper.computeSignatureSetHash([sig1, sig2, sig3])
 		// TODO: Call keeper.computeSignatureSetHash([sig3, sig1, sig2])
@@ -177,7 +179,8 @@ func TestComputeSignatureSetHash(t *testing.T) {
 	})
 
 	t.Run("duplicate_signatures_handled", func(t *testing.T) {
-		sig1 := []byte("signature1")
+		// TODO: Implement test
+		// sig1 := []byte("signature1")
 
 		// TODO: Call keeper.computeSignatureSetHash([sig1, sig1, sig1])
 		// Expected: Should handle duplicates consistently

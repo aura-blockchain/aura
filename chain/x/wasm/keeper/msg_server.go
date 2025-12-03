@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	"github.com/aequitas/aura/chain/x/wasm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -252,28 +253,39 @@ func (ms msgServer) MigrateContract(goCtx context.Context, msg *types.MsgMigrate
 func (ms msgServer) UpdateAdmin(goCtx context.Context, msg *types.MsgUpdateAdmin) (*types.MsgUpdateAdminResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	_, err := sdk.AccAddressFromBech32(msg.Sender)
+	sender, err := sdk.AccAddressFromBech32(msg.Sender)
 	if err != nil {
 		return nil, types.ErrUnauthorized.Wrapf("invalid sender address: %s", err)
 	}
 
-	_, err = sdk.AccAddressFromBech32(msg.Contract)
+	contractAddr, err := sdk.AccAddressFromBech32(msg.Contract)
 	if err != nil {
 		return nil, types.ErrInvalidContractAddress.Wrapf("invalid contract address: %s", err)
 	}
 
-	_, err = sdk.AccAddressFromBech32(msg.NewAdmin)
+	newAdmin, err := sdk.AccAddressFromBech32(msg.NewAdmin)
 	if err != nil {
 		return nil, types.ErrInvalidAdmin.Wrapf("invalid new admin address: %s", err)
 	}
 
-	// Note: In production, this would call wasmd keeper to update admin
-	// For now, we just emit the event
+	// Verify wasmd keeper is available
+	if ms.Keeper.wasmKeeper == nil {
+		return nil, types.ErrSecurityViolation.Wrap("wasm keeper not configured")
+	}
+
+	// Use wasmd keeper to update admin (includes authorization checks)
+	ops := wasmkeeper.NewDefaultPermissionKeeper(ms.Keeper.wasmKeeper)
+	if err := ops.UpdateContractAdmin(ctx, contractAddr, sender, newAdmin); err != nil {
+		return nil, types.ErrUnauthorized.Wrapf("failed to update admin: %s", err)
+	}
+
+	// Emit event
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeUpdateAdmin,
 			sdk.NewAttribute(types.AttributeKeyContract, msg.Contract),
 			sdk.NewAttribute(types.AttributeKeyNewAdmin, msg.NewAdmin),
+			sdk.NewAttribute(types.AttributeKeySender, msg.Sender),
 		),
 	})
 
@@ -284,22 +296,33 @@ func (ms msgServer) UpdateAdmin(goCtx context.Context, msg *types.MsgUpdateAdmin
 func (ms msgServer) ClearAdmin(goCtx context.Context, msg *types.MsgClearAdmin) (*types.MsgClearAdminResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	_, err := sdk.AccAddressFromBech32(msg.Sender)
+	sender, err := sdk.AccAddressFromBech32(msg.Sender)
 	if err != nil {
 		return nil, types.ErrUnauthorized.Wrapf("invalid sender address: %s", err)
 	}
 
-	_, err = sdk.AccAddressFromBech32(msg.Contract)
+	contractAddr, err := sdk.AccAddressFromBech32(msg.Contract)
 	if err != nil {
 		return nil, types.ErrInvalidContractAddress.Wrapf("invalid contract address: %s", err)
 	}
 
-	// Note: In production, this would call wasmd keeper to clear admin
-	// For now, we just emit the event
+	// Verify wasmd keeper is available
+	if ms.Keeper.wasmKeeper == nil {
+		return nil, types.ErrSecurityViolation.Wrap("wasm keeper not configured")
+	}
+
+	// Use wasmd keeper to clear admin (includes authorization checks)
+	ops := wasmkeeper.NewDefaultPermissionKeeper(ms.Keeper.wasmKeeper)
+	if err := ops.ClearContractAdmin(ctx, contractAddr, sender); err != nil {
+		return nil, types.ErrUnauthorized.Wrapf("failed to clear admin: %s", err)
+	}
+
+	// Emit event
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeClearAdmin,
 			sdk.NewAttribute(types.AttributeKeyContract, msg.Contract),
+			sdk.NewAttribute(types.AttributeKeySender, msg.Sender),
 		),
 	})
 

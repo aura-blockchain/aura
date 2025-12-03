@@ -72,30 +72,63 @@ func (k Keeper) SetParams(ctx sdk.Context, params *types.Params) error {
 // Dynamic Minimum Liquidity (BRILLIANT FEATURE!)
 // ============================================================================
 
-// GetAuraPrice returns current AURA price in USD from USDT pool
+// GetAuraPrice returns current AURA price in USD from USDT pool.
+//
+// SECURITY: This function now uses TWAP (Time-Weighted Average Price) to prevent
+// flash loan attacks and single-block price manipulation. The price is calculated
+// from historical observations with the following protections:
+//
+// 1. TWAP calculation over configurable window (prevents single-block manipulation)
+// 2. Price sanity checks reject movements > 10% per block
+// 3. Fallback to validated spot price if insufficient TWAP data
+//
+// Attack Vectors Prevented:
+// - Flash loan price manipulation
+// - Single-block oracle attacks
+// - Sandwich attacks with extreme price movements
 func (k Keeper) GetAuraPrice(ctx sdk.Context) sdkmath.LegacyDec {
-	// Get AURA/USDT pool (pool ID "aura-usdt")
-	pool := k.GetPoolByDenoms(ctx, "uaura", "usdt")
+	poolID := "uaura-usdt"
+	params := k.GetSecurityParams(ctx)
 
+	// Try TWAP first (uses configured window from security params)
+	twapPrice, err := k.GetTWAPPrice(ctx, poolID, params.TwapWindowBlocks)
+	if err == nil && !twapPrice.IsZero() {
+		return twapPrice
+	}
+
+	// Fallback: get pool and return spot price
+	pool := k.GetPoolByDenoms(ctx, "uaura", "usdt")
 	if pool == nil {
 		// Default to very low price if no pool exists yet
 		// This ensures bootstrap phase minimum ($1,000) applies
 		return sdkmath.LegacyNewDecWithPrec(10, 2) // $0.10
 	}
 
-	// Price = USDT_reserve / AURA_reserve
-	// Example: 200,000 USDT / 1,000,000 AURA = $0.20 per AURA
+	// Parse reserves
 	reserveA, ok := sdkmath.NewIntFromString(pool.ReserveA)
-	if !ok {
+	if !ok || reserveA.IsZero() {
 		return sdkmath.LegacyNewDecWithPrec(10, 2) // $0.10 fallback
 	}
 	reserveB, ok := sdkmath.NewIntFromString(pool.ReserveB)
 	if !ok {
 		return sdkmath.LegacyNewDecWithPrec(10, 2) // $0.10 fallback
 	}
-	price := sdkmath.LegacyNewDecFromInt(reserveB).Quo(sdkmath.LegacyNewDecFromInt(reserveA))
 
-	return price
+	// Calculate spot price
+	spotPrice := sdkmath.LegacyNewDecFromInt(reserveB).Quo(sdkmath.LegacyNewDecFromInt(reserveA))
+
+	// Apply price sanity check even on fallback
+	lastPrice := k.GetLastRecordedPrice(ctx, poolID)
+	if !lastPrice.IsZero() {
+		// Reject if movement > 10%
+		maxChange := lastPrice.Mul(sdkmath.LegacyNewDecWithPrec(10, 2)) // 10%
+		if spotPrice.Sub(lastPrice).Abs().GT(maxChange) {
+			// Suspicious movement, return last valid price
+			return lastPrice
+		}
+	}
+
+	return spotPrice
 }
 
 // GetCurrentMinimumLiquidity returns minimum liquidity based on current AURA price

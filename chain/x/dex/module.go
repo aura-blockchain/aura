@@ -80,6 +80,10 @@ func (m AppModule) EndBlock(ctx context.Context) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	m.keeper.CleanupExpiredOrders(sdkCtx)
 	m.keeper.CleanupExpiredHTLCs(sdkCtx)
+
+	// Record TWAP price observations for all active pools
+	// This provides flash loan attack protection
+	m.keeper.RecordAllPoolPrices(sdkCtx)
 }
 
 // InitGenesis initializes module state from genesis

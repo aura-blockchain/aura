@@ -381,3 +381,120 @@ func TestMsgUpdateParams(t *testing.T) {
 		require.Error(t, err)
 	})
 }
+
+func TestMsgUpdateAdmin(t *testing.T) {
+	k, ctx := keepertest.WasmKeeper(t)
+	msgServer := keeper.NewMsgServerImpl(k)
+
+	sender := sdk.AccAddress("sender______________")
+	contractAddr := sdk.AccAddress("contract____________")
+	newAdmin := sdk.AccAddress("newadmin____________")
+
+	t.Run("failure - wasmd keeper not configured", func(t *testing.T) {
+		// Test keeper has nil wasmd keeper, should return error
+		msg := &types.MsgUpdateAdmin{
+			Sender:   sender.String(),
+			Contract: contractAddr.String(),
+			NewAdmin: newAdmin.String(),
+		}
+
+		_, err := msgServer.UpdateAdmin(ctx, msg)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "wasm keeper not configured")
+	})
+
+	t.Run("failure - invalid sender address", func(t *testing.T) {
+		msg := &types.MsgUpdateAdmin{
+			Sender:   "invalid_address",
+			Contract: contractAddr.String(),
+			NewAdmin: newAdmin.String(),
+		}
+
+		_, err := msgServer.UpdateAdmin(ctx, msg)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "invalid sender address")
+	})
+
+	t.Run("failure - invalid contract address", func(t *testing.T) {
+		msg := &types.MsgUpdateAdmin{
+			Sender:   sender.String(),
+			Contract: "invalid_contract",
+			NewAdmin: newAdmin.String(),
+		}
+
+		_, err := msgServer.UpdateAdmin(ctx, msg)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "invalid contract address")
+	})
+
+	t.Run("failure - invalid new admin address", func(t *testing.T) {
+		msg := &types.MsgUpdateAdmin{
+			Sender:   sender.String(),
+			Contract: contractAddr.String(),
+			NewAdmin: "invalid_admin",
+		}
+
+		_, err := msgServer.UpdateAdmin(ctx, msg)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "invalid new admin address")
+	})
+
+	// NOTE: Full integration tests with actual admin changes require a real wasmd keeper.
+	// These tests verify error handling and validation. Integration tests should be added
+	// in integration_test.go with a properly configured wasmd keeper to verify:
+	// - Admin can successfully update to a new admin
+	// - Non-admin cannot update admin
+	// - Event is emitted on successful update
+	// - Contract admin is actually changed in storage
+}
+
+func TestMsgClearAdmin(t *testing.T) {
+	k, ctx := keepertest.WasmKeeper(t)
+	msgServer := keeper.NewMsgServerImpl(k)
+
+	sender := sdk.AccAddress("sender______________")
+	contractAddr := sdk.AccAddress("contract____________")
+
+	t.Run("failure - wasmd keeper not configured", func(t *testing.T) {
+		// Test keeper has nil wasmd keeper, should return error
+		msg := &types.MsgClearAdmin{
+			Sender:   sender.String(),
+			Contract: contractAddr.String(),
+		}
+
+		_, err := msgServer.ClearAdmin(ctx, msg)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "wasm keeper not configured")
+	})
+
+	t.Run("failure - invalid sender address", func(t *testing.T) {
+		msg := &types.MsgClearAdmin{
+			Sender:   "invalid_address",
+			Contract: contractAddr.String(),
+		}
+
+		_, err := msgServer.ClearAdmin(ctx, msg)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "invalid sender address")
+	})
+
+	t.Run("failure - invalid contract address", func(t *testing.T) {
+		msg := &types.MsgClearAdmin{
+			Sender:   sender.String(),
+			Contract: "invalid_contract",
+		}
+
+		_, err := msgServer.ClearAdmin(ctx, msg)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "invalid contract address")
+	})
+
+	// NOTE: Full integration tests with actual admin clearing require a real wasmd keeper.
+	// These tests verify error handling and validation. Integration tests should be added
+	// in integration_test.go with a properly configured wasmd keeper to verify:
+	// - Admin can successfully clear admin
+	// - Non-admin cannot clear admin
+	// - Event is emitted on successful clear
+	// - Contract admin is actually cleared in storage
+	// - Contract cannot be migrated after admin is cleared
+}
