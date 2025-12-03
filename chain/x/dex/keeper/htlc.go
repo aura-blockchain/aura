@@ -157,7 +157,13 @@ func (k Keeper) GetHTLC(ctx sdk.Context, htlcID string) (*types.HTLCData, bool) 
 	}
 
 	var data types.HTLCData
-	k.cdc.MustUnmarshal(bz, &data)
+	if err := k.cdc.Unmarshal(bz, &data); err != nil {
+		ctx.Logger().Error("failed to unmarshal HTLC data",
+			"htlc_id", htlcID,
+			"error", err,
+			"data_len", len(bz))
+		return nil, false
+	}
 	return &data, true
 }
 
@@ -180,7 +186,12 @@ func (k Keeper) CleanupExpiredHTLCs(ctx sdk.Context) {
 
 	for ; iterator.Valid(); iterator.Next() {
 		var data types.HTLCData
-		k.cdc.MustUnmarshal(iterator.Value(), &data)
+		if err := k.cdc.Unmarshal(iterator.Value(), &data); err != nil {
+			ctx.Logger().Error("failed to unmarshal HTLC during cleanup, skipping",
+				"error", err,
+				"data_len", len(iterator.Value()))
+			continue
+		}
 
 		if data.Status != htlcStatusActive {
 			continue

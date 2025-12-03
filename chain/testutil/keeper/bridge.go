@@ -53,6 +53,7 @@ func BridgeKeeper(t *testing.T) (*keeper.Keeper, sdk.Context) {
 		bankKeeper,
 		accountKeeper,
 		vcKeeper,
+		nil, // stakingKeeper - not needed for basic tests
 	)
 
 	ctx := sdk.NewContext(stateStore, cmtproto.Header{}, false, log.NewNopLogger())
@@ -97,6 +98,7 @@ func BridgeKeeperWithMocks(t *testing.T) (*keeper.Keeper, sdk.Context, *mocks.Mo
 		bankKeeper,
 		accountKeeper,
 		vcKeeper,
+		nil, // stakingKeeper - not needed for basic tests
 	)
 
 	ctx := sdk.NewContext(stateStore, cmtproto.Header{}, false, log.NewNopLogger())
