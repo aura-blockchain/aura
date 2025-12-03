@@ -50,10 +50,10 @@ func (suite *KeeperTestSuite) SetupTest() {
 func (suite *KeeperTestSuite) TestParams() {
 	// Test default params
 	params := suite.keeper.GetParams(suite.ctx)
-	suite.Require().Equal(uint64(600*1024), params.MaxWasmCodeSize)
-	suite.Require().Equal(uint64(10_000_000), params.MaxGasWasmExecution)
-	suite.Require().True(params.SecurityAnalysisEnabled)
-	suite.Require().True(params.RequireAdminForMigrate)
+	suite.Require().Equal(uint64(600*1024), params.GetMaxWasmCodeSize())
+	suite.Require().Equal(uint64(10_000_000), params.GetMaxGasWasmExecution())
+	suite.Require().True(params.GetSecurityAnalysisEnabled())
+	suite.Require().True(params.GetRequireAdminForMigrate())
 
 	// Test setting custom params
 	newParams := types.Params{
@@ -72,10 +72,10 @@ func (suite *KeeperTestSuite) TestParams() {
 
 	// Verify params were set
 	params = suite.keeper.GetParams(suite.ctx)
-	suite.Require().Equal(newParams.MaxWasmCodeSize, params.MaxWasmCodeSize)
-	suite.Require().Equal(newParams.MaxGasWasmExecution, params.MaxGasWasmExecution)
-	suite.Require().Equal(newParams.SecurityAnalysisEnabled, params.SecurityAnalysisEnabled)
-	suite.Require().Equal(newParams.RequireAdminForMigrate, params.RequireAdminForMigrate)
+	suite.Require().Equal(newParams.MaxWasmCodeSize, params.GetMaxWasmCodeSize())
+	suite.Require().Equal(newParams.MaxGasWasmExecution, params.GetMaxGasWasmExecution())
+	suite.Require().Equal(newParams.SecurityAnalysisEnabled, params.GetSecurityAnalysisEnabled())
+	suite.Require().Equal(newParams.RequireAdminForMigrate, params.GetRequireAdminForMigrate())
 }
 
 func (suite *KeeperTestSuite) TestParamsValidation() {
@@ -127,22 +127,15 @@ func (suite *KeeperTestSuite) TestAuthorizeUploader() {
 func (suite *KeeperTestSuite) TestAuthorizationWithParams() {
 	address := "aura1abc123def456ghi789jkl012mno345pqr678st"
 
-	// Set params to not require authorization
-	params := suite.keeper.GetParams(suite.ctx)
-	params.RequireAuthorization = false
-	err := suite.keeper.SetParams(suite.ctx, params)
-	suite.Require().NoError(err)
-
-	// Anyone should be authorized
-	suite.Require().True(suite.keeper.IsAuthorizedUploader(suite.ctx, address))
-
-	// Set params to require authorization
-	params.RequireAuthorization = true
-	err = suite.keeper.SetParams(suite.ctx, params)
-	suite.Require().NoError(err)
-
-	// Should not be authorized
+	// Without explicit authorization, should require being in the authorized list
 	suite.Require().False(suite.keeper.IsAuthorizedUploader(suite.ctx, address))
+
+	// Authorize the uploader
+	err := suite.keeper.AuthorizeUploader(suite.ctx, address)
+	suite.Require().NoError(err)
+
+	// Should now be authorized
+	suite.Require().True(suite.keeper.IsAuthorizedUploader(suite.ctx, address))
 }
 
 func (suite *KeeperTestSuite) TestPauseContract() {
@@ -160,7 +153,7 @@ func (suite *KeeperTestSuite) TestPauseContract() {
 
 	// Verify stats updated
 	stats := suite.keeper.GetSecurityStats(suite.ctx)
-	suite.Require().Equal(uint64(1), stats.TotalPausedContracts)
+	suite.Require().Equal(uint64(1), stats.GetContractsPaused())
 
 	// Unpause
 	err = suite.keeper.UnpauseContract(suite.ctx, contractAddr)
@@ -171,34 +164,37 @@ func (suite *KeeperTestSuite) TestPauseContract() {
 
 	// Verify stats updated
 	stats = suite.keeper.GetSecurityStats(suite.ctx)
-	suite.Require().Equal(uint64(0), stats.TotalPausedContracts)
+	suite.Require().Equal(uint64(0), stats.GetContractsPaused())
 }
 
 func (suite *KeeperTestSuite) TestSecurityStats() {
 	// Get initial stats
 	stats := suite.keeper.GetSecurityStats(suite.ctx)
-	suite.Require().Equal(uint64(0), stats.TotalContractsUploaded)
-	suite.Require().Equal(uint64(0), stats.TotalContractsInstantiated)
-	suite.Require().Equal(uint64(0), stats.TotalExecutions)
+	suite.Require().Equal(uint64(0), stats.GetTotalCodesAnalyzed())
+	suite.Require().Equal(uint64(0), stats.GetTotalExecutions())
 
 	// Update stats by calling internal methods
 	// (In real usage, these are updated by the keeper methods)
-	newStats := types.SecurityStats{
-		TotalContractsUploaded:    5,
-		TotalContractsInstantiated: 10,
-		TotalExecutions:           100,
-		TotalPausedContracts:      2,
-		ReentrancyAttemptsBlocked: 3,
+	newStats := &types.SecurityStats{
+		TotalCodesAnalyzed: 5,
+		CodesRejected:      1,
+		ContractsPaused:    2,
+		TotalExecutions:    100,
+		FailedExecutions:   3,
+		GasConsumedTotal:   1000000,
+		LastSecurityScan:   12345,
 	}
-	suite.keeper.SetSecurityStats(suite.ctx, newStats)
+	suite.keeper.SetSecurityStats(suite.ctx, *newStats)
 
 	// Verify stats were set
 	stats = suite.keeper.GetSecurityStats(suite.ctx)
-	suite.Require().Equal(uint64(5), stats.TotalContractsUploaded)
-	suite.Require().Equal(uint64(10), stats.TotalContractsInstantiated)
-	suite.Require().Equal(uint64(100), stats.TotalExecutions)
-	suite.Require().Equal(uint64(2), stats.TotalPausedContracts)
-	suite.Require().Equal(uint64(3), stats.ReentrancyAttemptsBlocked)
+	suite.Require().Equal(uint64(5), stats.GetTotalCodesAnalyzed())
+	suite.Require().Equal(uint64(1), stats.GetCodesRejected())
+	suite.Require().Equal(uint64(2), stats.GetContractsPaused())
+	suite.Require().Equal(uint64(100), stats.GetTotalExecutions())
+	suite.Require().Equal(uint64(3), stats.GetFailedExecutions())
+	suite.Require().Equal(uint64(1000000), stats.GetGasConsumedTotal())
+	suite.Require().Equal(uint64(12345), stats.GetLastSecurityScan())
 }
 
 func (suite *KeeperTestSuite) TestValidateContractUpload() {
@@ -220,7 +216,7 @@ func (suite *KeeperTestSuite) TestValidateContractUpload() {
 
 	// Contract too large
 	params := suite.keeper.GetParams(suite.ctx)
-	largeCode := make([]byte, params.MaxContractSize+1)
+	largeCode := make([]byte, params.GetMaxWasmCodeSize()+1)
 	err = suite.keeper.ValidateContractUpload(suite.ctx, address, largeCode)
 	suite.Require().Error(err)
 	suite.Require().Contains(err.Error(), "exceeds maximum")
@@ -260,13 +256,14 @@ func (suite *KeeperTestSuite) TestValidateContractExecution() {
 func (suite *KeeperTestSuite) TestGenesisExportImport() {
 	// Set up some state
 	params := types.Params{
-		MaxContractSize:         1024 * 1024,
-		MaxInstantiateGas:       3_000_000,
-		MaxExecuteGas:           2_000_000,
-		MaxQueryGas:             200_000,
-		RequireAuthorization:    true,
-		EnableMigration:         true,
-		MaxContractSizePerBlock: 10 * 1024 * 1024,
+		CodeUploadAccess: &types.AccessConfig{
+			Permission: types.AccessTypeEverybody,
+		},
+		InstantiateDefaultPermission: types.AccessTypeEverybody,
+		MaxWasmCodeSize:              1024 * 1024,
+		MaxGasWasmExecution:          3_000_000,
+		SecurityAnalysisEnabled:      true,
+		RequireAdminForMigrate:       true,
 	}
 	err := suite.keeper.SetParams(suite.ctx, params)
 	suite.Require().NoError(err)
@@ -286,21 +283,21 @@ func (suite *KeeperTestSuite) TestGenesisExportImport() {
 
 	// Set some stats
 	stats := types.SecurityStats{
-		TotalContractsUploaded:    10,
-		TotalContractsInstantiated: 8,
-		TotalExecutions:           100,
-		TotalPausedContracts:      1,
-		ReentrancyAttemptsBlocked: 2,
+		TotalCodesAnalyzed: 10,
+		CodesRejected:      2,
+		TotalExecutions:    100,
+		ContractsPaused:    1,
+		FailedExecutions:   5,
 	}
 	suite.keeper.SetSecurityStats(suite.ctx, stats)
 
 	// Export genesis
 	exported := suite.keeper.ExportGenesis(suite.ctx)
 	suite.Require().NotNil(exported)
-	suite.Require().Equal(params.MaxContractSize, exported.Params.MaxContractSize)
-	suite.Require().Len(exported.AuthorizedUploaders, 2)
-	suite.Require().Len(exported.PausedContracts, 1)
-	suite.Require().Equal(stats.TotalContractsUploaded, exported.SecurityStats.TotalContractsUploaded)
+	suite.Require().Equal(params.GetMaxWasmCodeSize(), exported.GetParams().GetMaxWasmCodeSize())
+	suite.Require().Len(exported.GetAuthorizedUploaders(), 2)
+	suite.Require().Len(exported.GetPausedContracts(), 1)
+	suite.Require().Equal(stats.GetTotalCodesAnalyzed(), exported.GetSecurityStats().GetTotalCodesAnalyzed())
 
 	// Create new context for import
 	newStoreKey := storetypes.NewKVStoreKey("test-new")
@@ -314,12 +311,12 @@ func (suite *KeeperTestSuite) TestGenesisExportImport() {
 
 	// Verify imported state
 	importedParams := newKeeper.GetParams(newCtx)
-	suite.Require().Equal(params.MaxContractSize, importedParams.MaxContractSize)
+	suite.Require().Equal(params.GetMaxWasmCodeSize(), importedParams.GetMaxWasmCodeSize())
 	suite.Require().True(newKeeper.IsAuthorizedUploader(newCtx, uploader1))
 	suite.Require().True(newKeeper.IsAuthorizedUploader(newCtx, uploader2))
 	suite.Require().True(newKeeper.IsContractPaused(newCtx, contract))
 	importedStats := newKeeper.GetSecurityStats(newCtx)
-	suite.Require().Equal(stats.TotalContractsUploaded, importedStats.TotalContractsUploaded)
+	suite.Require().Equal(stats.GetTotalCodesAnalyzed(), importedStats.GetTotalCodesAnalyzed())
 }
 
 func TestParamsValidation(t *testing.T) {
@@ -331,98 +328,71 @@ func TestParamsValidation(t *testing.T) {
 	}{
 		{
 			name:      "valid params",
-			params:    types.DefaultParams(),
+			params:    *types.DefaultParams(),
 			expectErr: false,
 		},
 		{
-			name: "zero max contract size",
+			name: "zero max wasm code size",
 			params: types.Params{
-				MaxContractSize:         0,
-				MaxInstantiateGas:       2_000_000,
-				MaxExecuteGas:           1_000_000,
-				MaxQueryGas:             100_000,
-				RequireAuthorization:    true,
-				EnableMigration:         false,
-				MaxContractSizePerBlock: 5 * 1024 * 1024,
+				CodeUploadAccess: &types.AccessConfig{
+					Permission: types.AccessTypeEverybody,
+				},
+				InstantiateDefaultPermission: types.AccessTypeEverybody,
+				MaxWasmCodeSize:              0,
+				MaxGasWasmExecution:          2_000_000,
+				SecurityAnalysisEnabled:      true,
+				RequireAdminForMigrate:       false,
 			},
 			expectErr: true,
-			errMsg:    "max contract size must be positive",
+			errMsg:    "max_wasm_code_size must be positive",
 		},
 		{
 			name: "contract size too large",
 			params: types.Params{
-				MaxContractSize:         11 * 1024 * 1024,
-				MaxInstantiateGas:       2_000_000,
-				MaxExecuteGas:           1_000_000,
-				MaxQueryGas:             100_000,
-				RequireAuthorization:    true,
-				EnableMigration:         false,
-				MaxContractSizePerBlock: 5 * 1024 * 1024,
+				CodeUploadAccess: &types.AccessConfig{
+					Permission: types.AccessTypeEverybody,
+				},
+				InstantiateDefaultPermission: types.AccessTypeEverybody,
+				MaxWasmCodeSize:              11 * 1024 * 1024,
+				MaxGasWasmExecution:          2_000_000,
+				SecurityAnalysisEnabled:      true,
+				RequireAdminForMigrate:       false,
 			},
 			expectErr: true,
 			errMsg:    "cannot exceed 10MB",
 		},
 		{
-			name: "zero instantiate gas",
+			name: "zero max gas",
 			params: types.Params{
-				MaxContractSize:         600 * 1024,
-				MaxInstantiateGas:       0,
-				MaxExecuteGas:           1_000_000,
-				MaxQueryGas:             100_000,
-				RequireAuthorization:    true,
-				EnableMigration:         false,
-				MaxContractSizePerBlock: 5 * 1024 * 1024,
+				CodeUploadAccess: &types.AccessConfig{
+					Permission: types.AccessTypeEverybody,
+				},
+				InstantiateDefaultPermission: types.AccessTypeEverybody,
+				MaxWasmCodeSize:              600 * 1024,
+				MaxGasWasmExecution:          0,
+				SecurityAnalysisEnabled:      true,
+				RequireAdminForMigrate:       false,
 			},
 			expectErr: true,
-			errMsg:    "max instantiate gas must be positive",
-		},
-		{
-			name: "zero execute gas",
-			params: types.Params{
-				MaxContractSize:         600 * 1024,
-				MaxInstantiateGas:       2_000_000,
-				MaxExecuteGas:           0,
-				MaxQueryGas:             100_000,
-				RequireAuthorization:    true,
-				EnableMigration:         false,
-				MaxContractSizePerBlock: 5 * 1024 * 1024,
-			},
-			expectErr: true,
-			errMsg:    "max execute gas must be positive",
-		},
-		{
-			name: "zero query gas",
-			params: types.Params{
-				MaxContractSize:         600 * 1024,
-				MaxInstantiateGas:       2_000_000,
-				MaxExecuteGas:           1_000_000,
-				MaxQueryGas:             0,
-				RequireAuthorization:    true,
-				EnableMigration:         false,
-				MaxContractSizePerBlock: 5 * 1024 * 1024,
-			},
-			expectErr: true,
-			errMsg:    "max query gas must be positive",
-		},
-		{
-			name: "zero max contract size per block",
-			params: types.Params{
-				MaxContractSize:         600 * 1024,
-				MaxInstantiateGas:       2_000_000,
-				MaxExecuteGas:           1_000_000,
-				MaxQueryGas:             100_000,
-				RequireAuthorization:    true,
-				EnableMigration:         false,
-				MaxContractSizePerBlock: 0,
-			},
-			expectErr: true,
-			errMsg:    "max contract size per block must be positive",
+			errMsg:    "max_gas_wasm_execution must be positive",
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := tc.params.Validate()
+			// params.Validate() is not available in the generated proto
+			// Instead we use SetParams which validates
+			storeKey := storetypes.NewKVStoreKey("test")
+			testCtx := testutil.DefaultContextWithDB(t, storeKey, storetypes.NewTransientStoreKey("transient_test"))
+			ctx := testCtx.Ctx
+
+			registry := codectypes.NewInterfaceRegistry()
+			types.RegisterInterfaces(registry)
+			cdc := codec.NewProtoCodec(registry)
+
+			k := keeper.NewKeeper(cdc, storeKey, nil, "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn")
+
+			err := k.SetParams(ctx, tc.params)
 			if tc.expectErr {
 				require.Error(t, err)
 				require.Contains(t, err.Error(), tc.errMsg)

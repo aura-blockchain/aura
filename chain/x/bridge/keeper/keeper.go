@@ -266,9 +266,14 @@ func (k Keeper) getAllChainConfigs(ctx sdk.Context) []types.ChainConfig {
 	var configs []types.ChainConfig
 	for ; iterator.Valid(); iterator.Next() {
 		var cfg types.ChainConfig
-		if err := k.cdc.Unmarshal(iterator.Value(), &cfg); err == nil {
-			configs = append(configs, cfg)
+		if err := k.cdc.Unmarshal(iterator.Value(), &cfg); err != nil {
+			// Log corrupted data but continue iteration
+			k.Logger(ctx).Error("failed to unmarshal chain config",
+				"key", hex.EncodeToString(iterator.Key()),
+				"error", err.Error())
+			continue
 		}
+		configs = append(configs, cfg)
 	}
 	return configs
 }
@@ -597,9 +602,14 @@ func (k Keeper) getAllWrappedTokens(ctx sdk.Context) []types.WrappedToken {
 	var tokens []types.WrappedToken
 	for ; iterator.Valid(); iterator.Next() {
 		var token types.WrappedToken
-		if err := k.cdc.Unmarshal(iterator.Value(), &token); err == nil {
-			tokens = append(tokens, token)
+		if err := k.cdc.Unmarshal(iterator.Value(), &token); err != nil {
+			// Log corrupted data but continue iteration
+			k.Logger(ctx).Error("failed to unmarshal wrapped token",
+				"key", hex.EncodeToString(iterator.Key()),
+				"error", err.Error())
+			continue
 		}
+		tokens = append(tokens, token)
 	}
 	return tokens
 }
@@ -669,10 +679,15 @@ func (k Keeper) getAllRelayerStats(ctx sdk.Context) []*types.RelayerStats {
 	var statsList []*types.RelayerStats
 	for ; iterator.Valid(); iterator.Next() {
 		var stats types.RelayerStats
-		if err := k.cdc.Unmarshal(iterator.Value(), &stats); err == nil {
-			statsCopy := stats
-			statsList = append(statsList, &statsCopy)
+		if err := k.cdc.Unmarshal(iterator.Value(), &stats); err != nil {
+			// Log corrupted data but continue iteration
+			k.Logger(ctx).Error("failed to unmarshal relayer stats",
+				"key", hex.EncodeToString(iterator.Key()),
+				"error", err.Error())
+			continue
 		}
+		statsCopy := stats
+		statsList = append(statsList, &statsCopy)
 	}
 	return statsList
 }
@@ -706,10 +721,15 @@ func (k Keeper) getAllValidators(ctx sdk.Context) []*types.BridgeValidator {
 	var validators []*types.BridgeValidator
 	for ; iterator.Valid(); iterator.Next() {
 		var validator types.BridgeValidator
-		if err := k.cdc.Unmarshal(iterator.Value(), &validator); err == nil {
-			valCopy := validator
-			validators = append(validators, &valCopy)
+		if err := k.cdc.Unmarshal(iterator.Value(), &validator); err != nil {
+			// Log corrupted data but continue iteration
+			k.Logger(ctx).Error("failed to unmarshal bridge validator",
+				"key", hex.EncodeToString(iterator.Key()),
+				"error", err.Error())
+			continue
 		}
+		valCopy := validator
+		validators = append(validators, &valCopy)
 	}
 	return validators
 }
@@ -721,10 +741,15 @@ func (k Keeper) getAllSharedIdentities(ctx sdk.Context) []*types.SharedIdentity 
 	var identities []*types.SharedIdentity
 	for ; iterator.Valid(); iterator.Next() {
 		var identity types.SharedIdentity
-		if err := k.cdc.Unmarshal(iterator.Value(), &identity); err == nil {
-			idCopy := identity
-			identities = append(identities, &idCopy)
+		if err := k.cdc.Unmarshal(iterator.Value(), &identity); err != nil {
+			// Log corrupted data but continue iteration
+			k.Logger(ctx).Error("failed to unmarshal shared identity",
+				"key", hex.EncodeToString(iterator.Key()),
+				"error", err.Error())
+			continue
 		}
+		idCopy := identity
+		identities = append(identities, &idCopy)
 	}
 	return identities
 }
@@ -736,10 +761,15 @@ func (k Keeper) getAllSwaps(ctx sdk.Context) []*types.CrossChainSwap {
 	var swaps []*types.CrossChainSwap
 	for ; iterator.Valid(); iterator.Next() {
 		var swap types.CrossChainSwap
-		if err := k.cdc.Unmarshal(iterator.Value(), &swap); err == nil {
-			swapCopy := swap
-			swaps = append(swaps, &swapCopy)
+		if err := k.cdc.Unmarshal(iterator.Value(), &swap); err != nil {
+			// Log corrupted data but continue iteration
+			k.Logger(ctx).Error("failed to unmarshal cross-chain swap",
+				"key", hex.EncodeToString(iterator.Key()),
+				"error", err.Error())
+			continue
 		}
+		swapCopy := swap
+		swaps = append(swaps, &swapCopy)
 	}
 	return swaps
 }
@@ -751,10 +781,15 @@ func (k Keeper) getAllTransfers(ctx sdk.Context) []*types.CrossChainTransfer {
 	var transfers []*types.CrossChainTransfer
 	for ; iterator.Valid(); iterator.Next() {
 		var transfer types.CrossChainTransfer
-		if err := k.cdc.Unmarshal(iterator.Value(), &transfer); err == nil {
-			transferCopy := transfer
-			transfers = append(transfers, &transferCopy)
+		if err := k.cdc.Unmarshal(iterator.Value(), &transfer); err != nil {
+			// Log corrupted data but continue iteration
+			k.Logger(ctx).Error("failed to unmarshal cross-chain transfer",
+				"key", hex.EncodeToString(iterator.Key()),
+				"error", err.Error())
+			continue
 		}
+		transferCopy := transfer
+		transfers = append(transfers, &transferCopy)
 	}
 	return transfers
 }
@@ -2051,10 +2086,15 @@ func (k Keeper) GetAllPendingTransfers(ctx sdk.Context) []*types.PendingTransfer
 	var pendingTransfers []*types.PendingTransfer
 	for ; iterator.Valid(); iterator.Next() {
 		var pending types.PendingTransfer
-		if err := k.cdc.Unmarshal(iterator.Value(), &pending); err == nil {
-			pendingCopy := pending
-			pendingTransfers = append(pendingTransfers, &pendingCopy)
+		if err := k.cdc.Unmarshal(iterator.Value(), &pending); err != nil {
+			// Log corrupted data but continue iteration
+			k.Logger(ctx).Error("failed to unmarshal pending transfer",
+				"key", hex.EncodeToString(iterator.Key()),
+				"error", err.Error())
+			continue
 		}
+		pendingCopy := pending
+		pendingTransfers = append(pendingTransfers, &pendingCopy)
 	}
 	return pendingTransfers
 }

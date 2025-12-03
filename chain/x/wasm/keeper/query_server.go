@@ -335,3 +335,35 @@ func (qs queryServer) IsContractPaused(goCtx context.Context, req *types.QueryIs
 		IsPaused: isPaused,
 	}, nil
 }
+
+// ContractAdmin returns the admin of a contract
+func (qs queryServer) ContractAdmin(goCtx context.Context, req *types.QueryContractAdminRequest) (*types.QueryContractAdminResponse, error) {
+	if req == nil {
+		return nil, types.ErrUnauthorized.Wrap("empty request")
+	}
+
+	if req.Address == "" {
+		return nil, types.ErrInvalidContractAddress.Wrap("address cannot be empty")
+	}
+
+	contractAddr, err := sdk.AccAddressFromBech32(req.Address)
+	if err != nil {
+		return nil, types.ErrInvalidContractAddress.Wrapf("invalid address: %s", err)
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	admin, err := qs.Keeper.GetContractAdmin(ctx, contractAddr)
+	if err != nil {
+		return nil, err
+	}
+
+	// Return empty string if no admin is set
+	adminStr := ""
+	if !admin.Empty() {
+		adminStr = admin.String()
+	}
+
+	return &types.QueryContractAdminResponse{
+		Admin: adminStr,
+	}, nil
+}

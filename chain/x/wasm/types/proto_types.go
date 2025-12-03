@@ -32,10 +32,12 @@ type (
 	QueryAuthorizedUploadersResponse = wasmpb.QueryAuthorizedUploadersResponse
 	QueryPausedContractsRequest      = wasmpb.QueryPausedContractsRequest
 	QueryPausedContractsResponse     = wasmpb.QueryPausedContractsResponse
-	QueryIsAuthorizedUploaderRequest = wasmpb.QueryIsAuthorizedUploaderRequest
+	QueryIsAuthorizedUploaderRequest  = wasmpb.QueryIsAuthorizedUploaderRequest
 	QueryIsAuthorizedUploaderResponse = wasmpb.QueryIsAuthorizedUploaderResponse
-	QueryIsContractPausedRequest     = wasmpb.QueryIsContractPausedRequest
-	QueryIsContractPausedResponse    = wasmpb.QueryIsContractPausedResponse
+	QueryIsContractPausedRequest      = wasmpb.QueryIsContractPausedRequest
+	QueryIsContractPausedResponse     = wasmpb.QueryIsContractPausedResponse
+	QueryContractAdminRequest         = wasmpb.QueryContractAdminRequest
+	QueryContractAdminResponse        = wasmpb.QueryContractAdminResponse
 
 	// Message types
 	MsgStoreCode                    = wasmpb.MsgStoreCode

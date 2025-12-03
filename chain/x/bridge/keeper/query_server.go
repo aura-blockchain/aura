@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"encoding/hex"
 	"strings"
 
 	sdkmath "cosmossdk.io/math"
@@ -321,6 +322,10 @@ func (qs queryServer) collectValidators(ctx sdk.Context) []*bridgeproto.BridgeVa
 	for ; iterator.Valid(); iterator.Next() {
 		var validator bridgeproto.BridgeValidator
 		if err := qs.Keeper.cdc.Unmarshal(iterator.Value(), &validator); err != nil {
+			// Log corrupted data but continue iteration
+			qs.Keeper.Logger(ctx).Error("failed to unmarshal validator in query",
+				"key", hex.EncodeToString(iterator.Key()),
+				"error", err.Error())
 			continue
 		}
 		valCopy := validator

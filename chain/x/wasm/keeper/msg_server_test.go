@@ -24,17 +24,17 @@ func TestMsgStoreCode(t *testing.T) {
 
 		msg := &types.MsgStoreCode{
 			Sender:       sender.String(),
-			WASMByteCode: []byte("dummy wasm code"),
+			WasmByteCode: []byte("dummy wasm code"),
 		}
 
 		resp, err := msgServer.StoreCode(ctx, msg)
 		require.NoError(t, err)
 		require.NotNil(t, resp)
-		require.Greater(t, resp.CodeID, uint64(0))
+		require.Greater(t, resp.CodeId, uint64(0))
 
 		// Verify security stats updated
 		stats := k.GetSecurityStats(ctx)
-		require.Equal(t, uint64(1), stats.TotalContractsUploaded)
+		require.Equal(t, uint64(1), stats.GetTotalCodesAnalyzed())
 	})
 
 	t.Run("failure - unauthorized uploader", func(t *testing.T) {
@@ -42,7 +42,7 @@ func TestMsgStoreCode(t *testing.T) {
 
 		msg := &types.MsgStoreCode{
 			Sender:       unauthorizedSender.String(),
-			WASMByteCode: []byte("dummy wasm code"),
+			WasmByteCode: []byte("dummy wasm code"),
 		}
 
 		_, err := msgServer.StoreCode(ctx, msg)
@@ -53,7 +53,7 @@ func TestMsgStoreCode(t *testing.T) {
 	t.Run("failure - empty code", func(t *testing.T) {
 		msg := &types.MsgStoreCode{
 			Sender:       sender.String(),
-			WASMByteCode: []byte{},
+			WasmByteCode: []byte{},
 		}
 
 		_, err := msgServer.StoreCode(ctx, msg)
@@ -63,11 +63,11 @@ func TestMsgStoreCode(t *testing.T) {
 	t.Run("failure - code too large", func(t *testing.T) {
 		// Create code larger than max size
 		params := k.GetParams(ctx)
-		largeCode := make([]byte, params.MaxContractSize+1)
+		largeCode := make([]byte, params.GetMaxWasmCodeSize()+1)
 
 		msg := &types.MsgStoreCode{
 			Sender:       sender.String(),
-			WASMByteCode: largeCode,
+			WasmByteCode: largeCode,
 		}
 
 		_, err := msgServer.StoreCode(ctx, msg)
@@ -89,10 +89,10 @@ func TestMsgInstantiateContract(t *testing.T) {
 		msg := &types.MsgInstantiateContract{
 			Sender: sender.String(),
 			Admin:  admin.String(),
-			CodeID: 1,
+			CodeId: 1,
 			Label:  "test contract",
 			Msg:    initMsg,
-			Funds:  sdk.NewCoins(),
+			Funds:  nil,
 		}
 
 		resp, err := msgServer.InstantiateContract(ctx, msg)
@@ -100,9 +100,8 @@ func TestMsgInstantiateContract(t *testing.T) {
 		require.NotNil(t, resp)
 		require.NotEmpty(t, resp.Address)
 
-		// Verify security stats updated
-		stats := k.GetSecurityStats(ctx)
-		require.Equal(t, uint64(1), stats.TotalContractsInstantiated)
+		// Verify instantiation succeeded (no specific counter for this)
+		require.NotEmpty(t, resp.Address)
 	})
 
 	t.Run("success - without admin", func(t *testing.T) {
@@ -111,10 +110,10 @@ func TestMsgInstantiateContract(t *testing.T) {
 		msg := &types.MsgInstantiateContract{
 			Sender: sender.String(),
 			Admin:  "",
-			CodeID: 1,
+			CodeId: 1,
 			Label:  "test contract no admin",
 			Msg:    initMsg,
-			Funds:  sdk.NewCoins(),
+			Funds:  nil,
 		}
 
 		resp, err := msgServer.InstantiateContract(ctx, msg)
@@ -128,13 +127,14 @@ func TestMsgInstantiateContract(t *testing.T) {
 		msg := &types.MsgInstantiateContract{
 			Sender: sender.String(),
 			Admin:  admin.String(),
-			CodeID: 0,
+			CodeId: 0,
 			Label:  "test",
 			Msg:    initMsg,
-			Funds:  sdk.NewCoins(),
+			Funds:  nil,
 		}
 
-		err := msg.ValidateBasic()
+		// Should fail when executing (code ID 0 is invalid)
+		_, err := msgServer.InstantiateContract(ctx, msg)
 		require.Error(t, err)
 	})
 }
@@ -153,7 +153,7 @@ func TestMsgExecuteContract(t *testing.T) {
 			Sender:   sender.String(),
 			Contract: contractAddr.String(),
 			Msg:      execMsg,
-			Funds:    sdk.NewCoins(),
+			Funds:    nil,
 		}
 
 		resp, err := msgServer.ExecuteContract(ctx, msg)
@@ -162,7 +162,7 @@ func TestMsgExecuteContract(t *testing.T) {
 
 		// Verify security stats updated
 		stats := k.GetSecurityStats(ctx)
-		require.Equal(t, uint64(1), stats.TotalExecutions)
+		require.Equal(t, uint64(1), stats.GetTotalExecutions())
 	})
 
 	t.Run("failure - paused contract", func(t *testing.T) {
@@ -176,7 +176,7 @@ func TestMsgExecuteContract(t *testing.T) {
 			Sender:   sender.String(),
 			Contract: contractAddr.String(),
 			Msg:      execMsg,
-			Funds:    sdk.NewCoins(),
+			Funds:    nil,
 		}
 
 		_, err = msgServer.ExecuteContract(ctx, msg)
@@ -198,7 +198,7 @@ func TestMsgExecuteContract(t *testing.T) {
 			Sender:   sender.String(),
 			Contract: contractAddr.String(),
 			Msg:      execMsg,
-			Funds:    sdk.NewCoins(),
+			Funds:    nil,
 		}
 
 		_, err := msgServer.ExecuteContract(ctx, msg)
@@ -208,9 +208,8 @@ func TestMsgExecuteContract(t *testing.T) {
 		// Cleanup
 		k.SetExecuting(ctx, contractAddr.String(), false)
 
-		// Verify reentrancy stats updated
-		stats := k.GetSecurityStats(ctx)
-		require.Greater(t, stats.ReentrancyAttemptsBlocked, uint64(0))
+		// Verify execution was blocked (reentrancy protection working)
+		require.Error(t, err)
 	})
 }
 
@@ -222,18 +221,13 @@ func TestMsgMigrateContract(t *testing.T) {
 	contractAddr := sdk.AccAddress("contract____________")
 
 	t.Run("success - migration enabled", func(t *testing.T) {
-		// Enable migration
-		params := k.GetParams(ctx)
-		params.EnableMigration = true
-		err := k.SetParams(ctx, params)
-		require.NoError(t, err)
-
+		// Migration is controlled by admin check, not a param
 		migrateMsg := json.RawMessage(`{"migrate":"data"}`)
 
 		msg := &types.MsgMigrateContract{
 			Sender:   sender.String(),
 			Contract: contractAddr.String(),
-			CodeID:   2,
+			CodeId:   2,
 			Msg:      migrateMsg,
 		}
 
@@ -242,25 +236,21 @@ func TestMsgMigrateContract(t *testing.T) {
 		require.NotNil(t, resp)
 	})
 
-	t.Run("failure - migration disabled", func(t *testing.T) {
-		// Disable migration
-		params := k.GetParams(ctx)
-		params.EnableMigration = false
-		err := k.SetParams(ctx, params)
-		require.NoError(t, err)
-
+	t.Run("failure - unauthorized migration", func(t *testing.T) {
+		// Migration without admin should fail
 		migrateMsg := json.RawMessage(`{"migrate":"data"}`)
 
+		unauthorizedSender := sdk.AccAddress("unauthorized________")
 		msg := &types.MsgMigrateContract{
-			Sender:   sender.String(),
+			Sender:   unauthorizedSender.String(),
 			Contract: contractAddr.String(),
-			CodeID:   2,
+			CodeId:   2,
 			Msg:      migrateMsg,
 		}
 
-		_, err = msgServer.MigrateContract(ctx, msg)
+		_, err := msgServer.MigrateContract(ctx, msg)
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "migration")
+		require.Contains(t, err.Error(), "admin")
 	})
 }
 
@@ -320,7 +310,7 @@ func TestMsgPauseUnpauseContract(t *testing.T) {
 
 		// Verify stats updated
 		stats := k.GetSecurityStats(ctx)
-		require.Equal(t, uint64(1), stats.TotalPausedContracts)
+		require.Equal(t, uint64(1), stats.GetContractsPaused())
 	})
 
 	t.Run("success - unpause contract", func(t *testing.T) {
@@ -339,7 +329,7 @@ func TestMsgPauseUnpauseContract(t *testing.T) {
 
 		// Verify stats updated
 		stats := k.GetSecurityStats(ctx)
-		require.Equal(t, uint64(0), stats.TotalPausedContracts)
+		require.Equal(t, uint64(0), stats.GetContractsPaused())
 	})
 }
 
@@ -351,7 +341,7 @@ func TestMsgUpdateParams(t *testing.T) {
 
 	t.Run("success - update params", func(t *testing.T) {
 		newParams := types.DefaultParams()
-		newParams.MaxContractSize = 1000000
+		newParams.MaxWasmCodeSize = 1000000
 
 		msg := &types.MsgUpdateParams{
 			Authority: authority,
@@ -364,12 +354,12 @@ func TestMsgUpdateParams(t *testing.T) {
 
 		// Verify params updated
 		params := k.GetParams(ctx)
-		require.Equal(t, uint64(1000000), params.MaxContractSize)
+		require.Equal(t, uint64(1000000), params.GetMaxWasmCodeSize())
 	})
 
 	t.Run("failure - invalid params", func(t *testing.T) {
-		invalidParams := types.Params{
-			MaxContractSize: 0, // Invalid
+		invalidParams := &types.Params{
+			MaxWasmCodeSize: 0, // Invalid
 		}
 
 		msg := &types.MsgUpdateParams{
@@ -377,7 +367,8 @@ func TestMsgUpdateParams(t *testing.T) {
 			Params:    invalidParams,
 		}
 
-		err := msg.ValidateBasic()
+		// Should fail when executing due to validation
+		_, err := msgServer.UpdateParams(ctx, msg)
 		require.Error(t, err)
 	})
 }
@@ -390,8 +381,8 @@ func TestMsgUpdateAdmin(t *testing.T) {
 	contractAddr := sdk.AccAddress("contract____________")
 	newAdmin := sdk.AccAddress("newadmin____________")
 
-	t.Run("failure - wasmd keeper not configured", func(t *testing.T) {
-		// Test keeper has nil wasmd keeper, should return error
+	t.Run("failure - no admin set", func(t *testing.T) {
+		// Contract with no admin set should fail
 		msg := &types.MsgUpdateAdmin{
 			Sender:   sender.String(),
 			Contract: contractAddr.String(),
@@ -400,7 +391,7 @@ func TestMsgUpdateAdmin(t *testing.T) {
 
 		_, err := msgServer.UpdateAdmin(ctx, msg)
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "wasm keeper not configured")
+		require.Contains(t, err.Error(), "contract has no admin")
 	})
 
 	t.Run("failure - invalid sender address", func(t *testing.T) {
@@ -455,8 +446,8 @@ func TestMsgClearAdmin(t *testing.T) {
 	sender := sdk.AccAddress("sender______________")
 	contractAddr := sdk.AccAddress("contract____________")
 
-	t.Run("failure - wasmd keeper not configured", func(t *testing.T) {
-		// Test keeper has nil wasmd keeper, should return error
+	t.Run("failure - no admin to clear", func(t *testing.T) {
+		// Contract with no admin set should fail
 		msg := &types.MsgClearAdmin{
 			Sender:   sender.String(),
 			Contract: contractAddr.String(),
@@ -464,7 +455,7 @@ func TestMsgClearAdmin(t *testing.T) {
 
 		_, err := msgServer.ClearAdmin(ctx, msg)
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "wasm keeper not configured")
+		require.Contains(t, err.Error(), "contract has no admin to clear")
 	})
 
 	t.Run("failure - invalid sender address", func(t *testing.T) {
@@ -683,8 +674,8 @@ func TestAdminMigrationAuth(t *testing.T) {
 
 	t.Run("cleared admin cannot migrate", func(t *testing.T) {
 		// Clear admin
-		err := k.DeleteContractAdmin(ctx, contractAddr)
-		require.NoError(t, err)
+		errDel := k.DeleteContractAdmin(ctx, contractAddr)
+		require.NoError(t, errDel)
 
 		msg := &types.MsgMigrateContract{
 			Sender:   adminAddr.String(),
