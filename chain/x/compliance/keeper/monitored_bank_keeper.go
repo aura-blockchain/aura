@@ -3,10 +3,12 @@ package keeper
 import (
 	"fmt"
 
-	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+
+	"github.com/aequitas/aura/chain/x/compliance/types"
 )
 
 // MonitoredBankKeeper wraps the standard bank keeper to add transaction monitoring.
@@ -153,7 +155,7 @@ func (k *MonitoredBankKeeper) SendCoins(ctx sdk.Context, from, to sdk.AccAddress
 //   - error: Compliance violation or underlying keeper error
 func (k *MonitoredBankKeeper) InputOutputCoins(ctx sdk.Context, inputs []banktypes.Input, outputs []banktypes.Output) error {
 	// Monitor each input for compliance
-	var allAlerts []*TransactionAlert
+	var allAlerts []*types.TransactionAlert
 	for _, input := range inputs {
 		fromAddr := sdk.MustAccAddressFromBech32(input.Address)
 
@@ -190,8 +192,10 @@ func (k *MonitoredBankKeeper) InputOutputCoins(ctx sdk.Context, inputs []banktyp
 	}
 
 	// Execute the multi-send via underlying bank keeper
-	if err := k.Keeper.InputOutputCoins(ctx, inputs, outputs); err != nil {
-		return err
+	for _, input := range inputs {
+		if err := k.Keeper.InputOutputCoins(ctx, input, outputs); err != nil {
+			return err
+		}
 	}
 
 	// Update AML profiles for all participants
@@ -364,8 +368,7 @@ func (k *MonitoredBankKeeper) SendCoinsFromAccountToModule(
 
 // GetModuleAddress returns the address for a module account
 func (k *MonitoredBankKeeper) GetModuleAddress(moduleName string) sdk.AccAddress {
-	return k.Keeper.GetModuleAddress(moduleName)
+	// Module address is derived from the module name using the auth module
+	return authtypes.NewModuleAddress(moduleName)
 }
 
-// TransactionAlert is re-exported from types for convenience
-type TransactionAlert = types.TransactionAlert

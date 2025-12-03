@@ -164,10 +164,10 @@ func (k Keeper) evaluateVelocityRule(ctx sdk.Context, rule *types.TransactionMon
 	if err != nil {
 		// No profile yet, create one
 		profile = &types.AMLProfile{
-			Address:         txCtx.From.String(),
-			RiskLevel:       types.AMLRiskLevel_AML_RISK_LOW,
-			TotalVolume:     "0",
-			LastAssessment:  &txCtx.Timestamp,
+			Address:           txCtx.From.String(),
+			RiskLevel:         types.AMLRiskLevel_AML_RISK_LOW,
+			TotalVolume:       "0",
+			LastAssessment:    timestamppb.New(txCtx.Timestamp),
 			TotalTransactions: 0,
 		}
 	}
@@ -318,7 +318,7 @@ func (k Keeper) UpdateAMLProfile(ctx sdk.Context, address sdk.AccAddress, amount
 			Address:           address.String(),
 			RiskLevel:         types.AMLRiskLevel_AML_RISK_LOW,
 			TotalVolume:       "0",
-			LastAssessment:    &now,
+			LastAssessment:    timestamppb.New(now),
 			TotalTransactions: 0,
 		}
 	}
