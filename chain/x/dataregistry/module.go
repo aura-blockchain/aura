@@ -95,5 +95,8 @@ func (m AppModule) ExportGenesis(ctx context.Context) types.GenesisState {
 	return m.keeper.ExportGenesis(sdkCtx)
 }
 
+// IsOnePerModuleType tags this module for depinject one-per-module compatibility.
+func (AppModule) IsOnePerModuleType() {}
+
 // IsAppModule tags this module for Cosmos SDK module manager compatibility.
 func (AppModule) IsAppModule() {}

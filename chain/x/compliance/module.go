@@ -159,5 +159,8 @@ func (am AppModule) BeginBlock(ctx sdk.Context) {
 // EndBlock is a no-op.
 func (AppModule) EndBlock(ctx sdk.Context) {}
 
+// IsOnePerModuleType tags this module for depinject one-per-module compatibility.
+func (AppModule) IsOnePerModuleType() {}
+
 // IsAppModule tags module for compatibility.
 func (AppModule) IsAppModule() {}
