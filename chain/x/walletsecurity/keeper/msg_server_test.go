@@ -370,7 +370,7 @@ func (suite *MsgServerTestSuite) TestAuthenticateBiometric_ReplayAttack() {
 	walletAddr := sdk.AccAddress("wallet_addr3________")
 
 	// Enroll biometric
-	enrollmentData := []byte("replay_test_biometric_data_for_enrollment_123456789012345678901")
+	enrollmentData := []byte("replay_test_biometric_data_for_enrollment_1234567890123456789012")
 	enrollMsg := &wspb.MsgEnrollBiometric{
 		WalletId:       walletAddr.String(),
 		Type:           wspb.BiometricType_BIOMETRIC_TYPE_FINGERPRINT,
@@ -440,7 +440,7 @@ func (suite *MsgServerTestSuite) TestAuthenticateBiometric_NotEnrolled() {
 	// Try to authenticate without enrolling first
 	authMsg := &wspb.MsgAuthenticateBiometric{
 		WalletId:       walletAddr.String(),
-		BiometricProof: []byte("some_biometric_data_that_is_long_enough_1234567890123456789"),
+		BiometricProof: []byte("some_biometric_data_that_is_long_enough_12345678901234567890123"),
 	}
 
 	authResp, err := suite.msgServer.AuthenticateBiometric(suite.ctx, authMsg)
@@ -458,7 +458,7 @@ func (suite *MsgServerTestSuite) TestAuthenticateBiometric_Lockout() {
 	walletAddr := sdk.AccAddress("wallet_addr6________")
 
 	// Enroll biometric
-	enrollmentData := []byte("lockout_test_biometric_data_for_enrollment_12345678901234567890")
+	enrollmentData := []byte("lockout_test_biometric_data_for_enrollment_123456789012345678901")
 	enrollMsg := &wspb.MsgEnrollBiometric{
 		WalletId:       walletAddr.String(),
 		Type:           wspb.BiometricType_BIOMETRIC_TYPE_VOICE,
