@@ -5,6 +5,7 @@ option go_package = "github.com/aequitas/aura/proto/aura/compliance/v1beta1";
 
 import "google/protobuf/timestamp.proto";
 import "cosmos/msg/v1/msg.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
 
 // KYCLevel defines the level of KYC verification
 enum KYCLevel {
@@ -54,6 +55,23 @@ message KYCRecord {
   bytes pii_commitment = 6;                         // SHA-256 hash of off-chain PII data
   bool enhanced_due_diligence = 7;                  // EDD required flag
   string jurisdiction = 8;                          // ISO 3166-1 alpha-2 country code
+  uint64 version = 9;                               // Auto-incremented on each update (deduplication tracking)
+}
+
+// KYCHistoryEntry represents a historical snapshot of a KYC record
+// Used for audit trail and version tracking when records are updated
+message KYCHistoryEntry {
+  string address = 1;
+  uint64 version = 2;
+  KYCRecord snapshot = 3;                           // Complete KYC record at this version
+  google.protobuf.Timestamp updated_at = 4;
+  string updated_by = 5;                            // Provider that performed the update
+  string update_reason = 6;                         // Reason for update (audit trail)
+}
+
+// KYCHistoryList stores history entries keyed by address
+message KYCHistoryList {
+  repeated KYCHistoryEntry entries = 1;
 }
 
 // AMLProfile represents an AML risk profile
@@ -264,6 +282,14 @@ message QueryKYCRecordResponse {
   KYCRecord record = 1;
 }
 
+message QueryKYCHistoryRequest {
+  string address = 1;
+}
+
+message QueryKYCHistoryResponse {
+  repeated KYCHistoryEntry history = 1;
+}
+
 message QueryAMLProfileRequest {
   string address = 1;
 }
@@ -298,6 +324,71 @@ message QueryTaxReportRequest {
 
 message QueryTaxReportResponse {
   TaxReport report = 1;
+}
+
+// Paginated query messages for GetAll operations
+
+message QueryAllKYCRecordsRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryAllKYCRecordsResponse {
+  repeated KYCRecord records = 1;
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QueryAllAMLProfilesRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryAllAMLProfilesResponse {
+  repeated AMLProfile profiles = 1;
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QueryAllSanctionsResultsRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryAllSanctionsResultsResponse {
+  repeated SanctionsScreeningResult results = 1;
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QueryAllTransactionAlertsRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryAllTransactionAlertsResponse {
+  repeated TransactionAlertList alerts = 1;
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QueryAllGDPRConsentsRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryAllGDPRConsentsResponse {
+  repeated GDPRConsentList consents = 1;
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QueryAllTaxReportsRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryAllTaxReportsResponse {
+  repeated TaxReportList reports = 1;
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QueryAllGDPRRequestsRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryAllGDPRRequestsResponse {
+  repeated GDPRDataRequest requests = 1;
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 // Transaction messages
@@ -403,11 +494,22 @@ message MsgEraseGDPRDataResponse {
 
 // Query service exposes read-only compliance operations
 service Query {
+  // Single record queries
   rpc KycRecord(QueryKYCRecordRequest) returns (QueryKYCRecordResponse);
+  rpc KycHistory(QueryKYCHistoryRequest) returns (QueryKYCHistoryResponse);
   rpc AmlProfile(QueryAMLProfileRequest) returns (QueryAMLProfileResponse);
   rpc SanctionsScreening(QuerySanctionsScreeningRequest) returns (QuerySanctionsScreeningResponse);
   rpc TransactionAlerts(QueryTransactionAlertsRequest) returns (QueryTransactionAlertsResponse);
   rpc TaxReport(QueryTaxReportRequest) returns (QueryTaxReportResponse);
+
+  // Paginated GetAll queries
+  rpc AllKYCRecords(QueryAllKYCRecordsRequest) returns (QueryAllKYCRecordsResponse);
+  rpc AllAMLProfiles(QueryAllAMLProfilesRequest) returns (QueryAllAMLProfilesResponse);
+  rpc AllSanctionsResults(QueryAllSanctionsResultsRequest) returns (QueryAllSanctionsResultsResponse);
+  rpc AllTransactionAlerts(QueryAllTransactionAlertsRequest) returns (QueryAllTransactionAlertsResponse);
+  rpc AllGDPRConsents(QueryAllGDPRConsentsRequest) returns (QueryAllGDPRConsentsResponse);
+  rpc AllTaxReports(QueryAllTaxReportsRequest) returns (QueryAllTaxReportsResponse);
+  rpc AllGDPRRequests(QueryAllGDPRRequestsRequest) returns (QueryAllGDPRRequestsResponse);
 }
 
 // Msg service exposes state-changing compliance operations
