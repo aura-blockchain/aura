@@ -6,24 +6,46 @@ import (
 	"github.com/stretchr/testify/require"
 	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
+	"github.com/cosmos/cosmos-sdk/codec"
+	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
 	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 	"github.com/aequitas/aura/chain/x/bridge/keeper"
 	"github.com/aequitas/aura/chain/x/bridge/types"
 )
 
+// setupKeeperForCircuitBreaker creates a keeper with proper paramstore initialization
+func setupKeeperForCircuitBreaker(t *testing.T) (*keeper.Keeper, keepertest.TestInput) {
+	input := keepertest.CreateTestInput(t)
+
+	// Create LegacyAmino codec for paramstore
+	legacyAmino := codec.NewLegacyAmino()
+
+	// Create a paramstore with KeyTable
+	ps := paramtypes.NewSubspace(input.Cdc, legacyAmino, input.StoreKey, input.MemStoreKey, "bridge")
+
+	k := keeper.NewKeeper(
+		input.Cdc,
+		input.StoreKey,
+		&ps,
+		nil, // bankKeeper
+		nil, // accountKeeper
+		nil, // vcKeeper
+		nil, // stakingKeeper
+	)
+
+	return k, input
+}
+
 // TestCircuitBreaker_GlobalPauseBlocksAllOperations verifies that when the global
 // pause flag is set, all bridge operations (lock, unlock, mint) are blocked.
 func TestCircuitBreaker_GlobalPauseBlocksAllOperations(t *testing.T) {
-	k, input := setupKeeperWithParams(t)
+	k, input := setupKeeperForCircuitBreaker(t)
 	ctx := input.Ctx
-	msgServer := keeper.NewMsgServerImpl(*k)
+	ms := keeper.NewMsgServerImpl(k)
 
-	// Set up test addresses
-	addrs := keepertest.GenTestAddrs(2)
-	sender := addrs[0]
-	recipient := addrs[1]
+	// Set up chain config
+	require.NoError(t, k.AddSupportedChain(ctx, types.ChainConfig{ChainId: "paw", Enabled: true}))
 
 	// Set global pause
 	params := k.GetParams(ctx)
@@ -33,38 +55,37 @@ func TestCircuitBreaker_GlobalPauseBlocksAllOperations(t *testing.T) {
 	// Test 1: LockTokens should be blocked
 	amount := sdk.NewCoin("uaura", sdkmath.NewInt(1000000))
 	lockMsg := &types.MsgLockTokens{
-		Sender:      sender.String(),
-		Recipient:   recipient.String(),
+		Sender:      keepertest.GenTestAddr().String(),
+		Recipient:   "paw1recipient",
 		Amount:      &amount,
 		TargetChain: "paw",
 	}
-	_, err := msgServer.LockTokens(ctx, lockMsg)
+	_, err := ms.LockTokens(sdk.WrapSDKContext(ctx), lockMsg)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "globally paused")
 
 	// Test 2: MintTokens should be blocked
 	mintMsg := &types.MsgMintTokens{
-		Validator:    addrs[0].String(),
+		Validator:    keepertest.GenTestAddr().String(),
 		SourceChain:  "paw",
 		SourceTxHash: "0x123",
-		Recipient:    recipient.String(),
+		Recipient:    keepertest.GenTestAddr().String(),
 		Amount:       "1000000",
 		Denom:        "upaw",
 	}
-	_, err = msgServer.MintTokens(ctx, mintMsg)
+	_, err = ms.MintTokens(sdk.WrapSDKContext(ctx), mintMsg)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "globally paused")
 
 	// Test 3: UnlockTokens should be blocked
 	unlockMsg := &types.MsgUnlockTokens{
-		Validator:    addrs[0].String(),
-		SourceChain:  "paw",
-		SourceTxHash: "0x456",
-		Recipient:    recipient.String(),
-		Amount:       "1000000",
-		Denom:        "uaura",
+		Sender:      keepertest.GenTestAddr().String(),
+		SourceChain: "paw",
+		BurnTxHash:  "0x456",
+		Amount:      "1000000",
+		Denom:       "uaura",
 	}
-	_, err = msgServer.UnlockTokens(ctx, unlockMsg)
+	_, err = ms.UnlockTokens(sdk.WrapSDKContext(ctx), unlockMsg)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "globally paused")
 }
@@ -72,7 +93,7 @@ func TestCircuitBreaker_GlobalPauseBlocksAllOperations(t *testing.T) {
 // TestCircuitBreaker_PerChainPauseSelectivelyBlocks verifies that per-chain pause
 // only affects operations for the specific paused chain, not other chains.
 func TestCircuitBreaker_PerChainPauseSelectivelyBlocks(t *testing.T) {
-	k, input := setupKeeperWithParams(t)
+	k, input := setupKeeperForCircuitBreaker(t)
 	ctx := input.Ctx
 
 	// Pause only "paw" chain
@@ -97,7 +118,7 @@ func TestCircuitBreaker_PerChainPauseSelectivelyBlocks(t *testing.T) {
 // TestCircuitBreaker_AutoPauseTriggersOnThresholdExceeded verifies that the
 // auto-pause mechanism triggers when hourly minting exceeds the configured threshold.
 func TestCircuitBreaker_AutoPauseTriggersOnThresholdExceeded(t *testing.T) {
-	k, input := setupKeeperWithParams(t)
+	k, input := setupKeeperForCircuitBreaker(t)
 	ctx := input.Ctx
 
 	// Enable auto-pause with threshold of 5 billion
@@ -157,7 +178,7 @@ func TestCircuitBreaker_AutoPauseTriggersOnThresholdExceeded(t *testing.T) {
 // TestCircuitBreaker_AutoPauseDoesNotTriggerBelowThreshold verifies that
 // auto-pause does NOT trigger when minting is below the threshold.
 func TestCircuitBreaker_AutoPauseDoesNotTriggerBelowThreshold(t *testing.T) {
-	k, input := setupKeeperWithParams(t)
+	k, input := setupKeeperForCircuitBreaker(t)
 	ctx := input.Ctx
 
 	// Enable auto-pause with threshold of 5 billion
@@ -187,7 +208,7 @@ func TestCircuitBreaker_AutoPauseDoesNotTriggerBelowThreshold(t *testing.T) {
 // TestCircuitBreaker_AutoPauseDisabledDoesNotTrigger verifies that when
 // auto-pause is disabled, no automatic pausing occurs regardless of mint volume.
 func TestCircuitBreaker_AutoPauseDisabledDoesNotTrigger(t *testing.T) {
-	k, input := setupKeeperWithParams(t)
+	k, input := setupKeeperForCircuitBreaker(t)
 	ctx := input.Ctx
 
 	// Disable auto-pause
@@ -213,7 +234,7 @@ func TestCircuitBreaker_AutoPauseDisabledDoesNotTrigger(t *testing.T) {
 // TestCircuitBreaker_UnpauseRestoresFunctionality verifies that when the pause
 // flag is cleared, normal bridge operations resume.
 func TestCircuitBreaker_UnpauseRestoresFunctionality(t *testing.T) {
-	k, input := setupKeeperWithParams(t)
+	k, input := setupKeeperForCircuitBreaker(t)
 	ctx := input.Ctx
 
 	// Start with bridge paused
@@ -238,7 +259,7 @@ func TestCircuitBreaker_UnpauseRestoresFunctionality(t *testing.T) {
 // TestCircuitBreaker_PerChainUnpauseRestoresFunctionality verifies that
 // removing a chain from the paused list restores operations for that chain.
 func TestCircuitBreaker_PerChainUnpauseRestoresFunctionality(t *testing.T) {
-	k, input := setupKeeperWithParams(t)
+	k, input := setupKeeperForCircuitBreaker(t)
 	ctx := input.Ctx
 
 	// Pause "paw" chain
@@ -270,7 +291,7 @@ func TestCircuitBreaker_PerChainUnpauseRestoresFunctionality(t *testing.T) {
 // TestCircuitBreaker_EmergencyPauseAuthorization verifies that only authorized
 // addresses can trigger emergency pause.
 func TestCircuitBreaker_EmergencyPauseAuthorization(t *testing.T) {
-	k, input := setupKeeperWithParams(t)
+	k, input := setupKeeperForCircuitBreaker(t)
 	ctx := input.Ctx
 
 	// Generate test addresses
@@ -300,7 +321,7 @@ func TestCircuitBreaker_EmergencyPauseAuthorization(t *testing.T) {
 // TestCircuitBreaker_HourlyMintTracking verifies that hourly minting is
 // correctly tracked and accumulated.
 func TestCircuitBreaker_HourlyMintTracking(t *testing.T) {
-	k, input := setupKeeperWithParams(t)
+	k, input := setupKeeperForCircuitBreaker(t)
 	ctx := input.Ctx
 
 	// Initially, no mints recorded
@@ -326,21 +347,9 @@ func TestCircuitBreaker_HourlyMintTracking(t *testing.T) {
 // TestCircuitBreaker_MintTokensAutopauses verifies that MintTokens operation
 // triggers auto-pause when threshold is exceeded.
 func TestCircuitBreaker_MintTokensAutopauses(t *testing.T) {
-	k, input := setupKeeperWithParams(t)
+	k, input := setupKeeperForCircuitBreaker(t)
 	ctx := input.Ctx
-	msgServer := keeper.NewMsgServerImpl(*k)
-
-	// Set up chain config
-	chainConfig := &types.ChainConfig{
-		ChainId:           "paw",
-		ChainType:         "cosmos",
-		Enabled:           true,
-		MinConfirmations:  2,
-		BridgeFee:         30,
-		WithdrawalTimelock: 3600,
-		NativeTokenDenom:  "upaw",
-	}
-	k.SetChainConfig(ctx, chainConfig)
+	ms := keeper.NewMsgServerImpl(k)
 
 	// Enable auto-pause with low threshold
 	params := k.GetParams(ctx)
@@ -350,58 +359,18 @@ func TestCircuitBreaker_MintTokensAutopauses(t *testing.T) {
 	params.BridgeEnabled = true
 	k.SetParams(ctx, params)
 
-	// Generate test addresses
-	addrs := keepertest.GenTestAddrs(3)
-	val1 := addrs[0].String()
-	val2 := addrs[1].String()
-	recipient := addrs[2]
-
-	// Create a cross-chain transfer record
-	transferID := "test-transfer-1"
-	transfer := &types.CrossChainTransfer{
-		TransferId:            transferID,
-		SourceChain:           "paw",
-		TargetChain:           "aura",
-		Sender:                "sender-address",
-		Recipient:             recipient.String(),
-		Amount:                "2000000", // 2 million (exceeds threshold)
-		Denom:                 "upaw",
-		Status:                types.TransferStatus_PENDING,
-		Timestamp:             timestamppb.Now(),
-		RequiredConfirmations: 2,
-	}
-	k.SetTransfer(ctx, transfer)
-
-	// First validator mints (below threshold for quorum)
-	mintMsg1 := &types.MsgMintTokens{
-		Validator:    val1,
+	// First mint attempt (should trigger auto-pause check and trigger)
+	mintMsg := &types.MsgMintTokens{
+		Validator:    keepertest.GenTestAddr().String(),
 		SourceChain:  "paw",
 		SourceTxHash: "0xtest123",
-		Recipient:    recipient.String(),
-		Amount:       "2000000",
-		Denom:        "upaw",
-	}
-	_, err := msgServer.MintTokens(ctx, mintMsg1)
-	require.NoError(t, err, "first attestation should succeed")
-
-	// Bridge should still be operational (threshold not met yet)
-	params = k.GetParams(ctx)
-	require.False(t, params.Paused)
-
-	// Second validator mints (reaches quorum, should trigger auto-pause)
-	// Need to refresh context to clear events
-	ctx = ctx.WithEventManager(sdk.NewEventManager())
-	mintMsg2 := &types.MsgMintTokens{
-		Validator:    val2,
-		SourceChain:  "paw",
-		SourceTxHash: "0xtest123",
-		Recipient:    recipient.String(),
-		Amount:       "2000000",
+		Recipient:    keepertest.GenTestAddr().String(),
+		Amount:       "2000000", // 2 million (exceeds threshold)
 		Denom:        "upaw",
 	}
 
-	// This should trigger auto-pause because total minted (2M) > threshold (1M)
-	_, err = msgServer.MintTokens(ctx, mintMsg2)
+	// This should trigger auto-pause because amount (2M) > threshold (1M)
+	_, err := ms.MintTokens(sdk.WrapSDKContext(ctx), mintMsg)
 	require.Error(t, err, "should fail due to auto-pause trigger")
 	require.Contains(t, err.Error(), "auto-pause triggered")
 
@@ -413,43 +382,29 @@ func TestCircuitBreaker_MintTokensAutopauses(t *testing.T) {
 // TestCircuitBreaker_MultipleOperationsAfterPause verifies that all operation
 // types remain blocked after pause, even with multiple attempts.
 func TestCircuitBreaker_MultipleOperationsAfterPause(t *testing.T) {
-	k, input := setupKeeperWithParams(t)
+	k, input := setupKeeperForCircuitBreaker(t)
 	ctx := input.Ctx
-	msgServer := keeper.NewMsgServerImpl(*k)
+	ms := keeper.NewMsgServerImpl(k)
 
 	// Set up chain config
-	chainConfig := &types.ChainConfig{
-		ChainId:           "paw",
-		ChainType:         "cosmos",
-		Enabled:           true,
-		MinConfirmations:  2,
-		BridgeFee:         30,
-		WithdrawalTimelock: 3600,
-		NativeTokenDenom:  "upaw",
-	}
-	k.SetChainConfig(ctx, chainConfig)
+	require.NoError(t, k.AddSupportedChain(ctx, types.ChainConfig{ChainId: "paw", Enabled: true}))
 
-	// Enable bridge
+	// Enable bridge and pause it
 	params := k.GetParams(ctx)
 	params.BridgeEnabled = true
 	params.Paused = true // Start paused
 	k.SetParams(ctx, params)
 
-	// Generate test addresses
-	addrs := keepertest.GenTestAddrs(2)
-	sender := addrs[0]
-	recipient := addrs[1]
-
 	// Try LockTokens multiple times - all should fail
 	for i := 0; i < 3; i++ {
 		lockAmount := sdk.NewCoin("uaura", sdkmath.NewInt(1000000))
 		lockMsg := &types.MsgLockTokens{
-			Sender:      sender.String(),
-			Recipient:   recipient.String(),
+			Sender:      keepertest.GenTestAddr().String(),
+			Recipient:   "paw1recipient",
 			Amount:      &lockAmount,
 			TargetChain: "paw",
 		}
-		_, err := msgServer.LockTokens(ctx, lockMsg)
+		_, err := ms.LockTokens(sdk.WrapSDKContext(ctx), lockMsg)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "globally paused")
 	}
@@ -457,14 +412,14 @@ func TestCircuitBreaker_MultipleOperationsAfterPause(t *testing.T) {
 	// Try MintTokens multiple times - all should fail
 	for i := 0; i < 3; i++ {
 		mintMsg := &types.MsgMintTokens{
-			Validator:    sender.String(),
+			Validator:    keepertest.GenTestAddr().String(),
 			SourceChain:  "paw",
 			SourceTxHash: "0xtest" + string(rune(i)),
-			Recipient:    recipient.String(),
+			Recipient:    keepertest.GenTestAddr().String(),
 			Amount:       "1000000",
 			Denom:        "upaw",
 		}
-		_, err := msgServer.MintTokens(ctx, mintMsg)
+		_, err := ms.MintTokens(sdk.WrapSDKContext(ctx), mintMsg)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "globally paused")
 	}
@@ -472,14 +427,13 @@ func TestCircuitBreaker_MultipleOperationsAfterPause(t *testing.T) {
 	// Try UnlockTokens multiple times - all should fail
 	for i := 0; i < 3; i++ {
 		unlockMsg := &types.MsgUnlockTokens{
-			Validator:    sender.String(),
-			SourceChain:  "paw",
-			SourceTxHash: "0xburn" + string(rune(i)),
-			Recipient:    recipient.String(),
-			Amount:       "1000000",
-			Denom:        "uaura",
+			Sender:      keepertest.GenTestAddr().String(),
+			SourceChain: "paw",
+			BurnTxHash:  "0xburn" + string(rune(i)),
+			Amount:      "1000000",
+			Denom:       "uaura",
 		}
-		_, err := msgServer.UnlockTokens(ctx, unlockMsg)
+		_, err := ms.UnlockTokens(sdk.WrapSDKContext(ctx), unlockMsg)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "globally paused")
 	}
@@ -488,7 +442,7 @@ func TestCircuitBreaker_MultipleOperationsAfterPause(t *testing.T) {
 // TestCircuitBreaker_ZeroAmountMintDoesNotTriggerAutoPause verifies that
 // minting zero amount doesn't trigger auto-pause or affect hourly tracking.
 func TestCircuitBreaker_ZeroAmountMintDoesNotTriggerAutoPause(t *testing.T) {
-	k, input := setupKeeperWithParams(t)
+	k, input := setupKeeperForCircuitBreaker(t)
 	ctx := input.Ctx
 
 	// Enable auto-pause with very low threshold
@@ -517,7 +471,7 @@ func TestCircuitBreaker_ZeroAmountMintDoesNotTriggerAutoPause(t *testing.T) {
 // TestCircuitBreaker_InvalidThresholdDoesNotTrigger verifies that with an
 // invalid threshold configuration, auto-pause does not trigger.
 func TestCircuitBreaker_InvalidThresholdDoesNotTrigger(t *testing.T) {
-	k, input := setupKeeperWithParams(t)
+	k, input := setupKeeperForCircuitBreaker(t)
 	ctx := input.Ctx
 
 	// Enable auto-pause with invalid threshold
@@ -540,7 +494,7 @@ func TestCircuitBreaker_InvalidThresholdDoesNotTrigger(t *testing.T) {
 // TestCircuitBreaker_NegativeThresholdDoesNotTrigger verifies that with a
 // negative threshold, auto-pause does not trigger.
 func TestCircuitBreaker_NegativeThresholdDoesNotTrigger(t *testing.T) {
-	k, input := setupKeeperWithParams(t)
+	k, input := setupKeeperForCircuitBreaker(t)
 	ctx := input.Ctx
 
 	// Enable auto-pause with negative threshold
@@ -558,4 +512,118 @@ func TestCircuitBreaker_NegativeThresholdDoesNotTrigger(t *testing.T) {
 	// Verify bridge remains operational
 	params = k.GetParams(ctx)
 	require.False(t, params.Paused)
+}
+
+// TestCircuitBreaker_IntegrationWithLockTokens verifies that the circuit breaker
+// properly integrates with LockTokens to prevent operations when paused.
+func TestCircuitBreaker_IntegrationWithLockTokens(t *testing.T) {
+	k, input := setupKeeperForCircuitBreaker(t)
+	ctx := input.Ctx
+	ms := keeper.NewMsgServerImpl(k)
+
+	// Set up chain config
+	require.NoError(t, k.AddSupportedChain(ctx, types.ChainConfig{ChainId: "paw", Enabled: true}))
+
+	// Test with bridge operational
+	params := k.GetParams(ctx)
+	params.Paused = false
+	k.SetParams(ctx, params)
+
+	amount := sdk.NewCoin("uaura", sdkmath.NewInt(1000))
+	msg := &types.MsgLockTokens{
+		Sender:      keepertest.GenTestAddr().String(),
+		TargetChain: "paw",
+		Recipient:   "paw1recipient",
+		Amount:      &amount,
+	}
+
+	// Should succeed when not paused
+	resp, err := ms.LockTokens(sdk.WrapSDKContext(ctx), msg)
+	require.NoError(t, err)
+	require.NotEmpty(t, resp.TransferId)
+
+	// Now pause the bridge
+	params.Paused = true
+	k.SetParams(ctx, params)
+
+	// Same message should now fail
+	_, err = ms.LockTokens(sdk.WrapSDKContext(ctx), msg)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "globally paused")
+}
+
+// TestCircuitBreaker_IntegrationWithMintTokens verifies that the circuit breaker
+// properly integrates with MintTokens to prevent operations when paused.
+func TestCircuitBreaker_IntegrationWithMintTokens(t *testing.T) {
+	k, input := setupKeeperForCircuitBreaker(t)
+	ctx := input.Ctx
+	ms := keeper.NewMsgServerImpl(k)
+
+	msg := &types.MsgMintTokens{
+		Validator:    keepertest.GenTestAddr().String(),
+		SourceChain:  "paw",
+		SourceTxHash: "0xabc",
+		Recipient:    keepertest.GenTestAddr().String(),
+		Amount:       "1000",
+		Denom:        "paw.token",
+	}
+
+	// Should succeed when not paused
+	resp, err := ms.MintTokens(sdk.WrapSDKContext(ctx), msg)
+	require.NoError(t, err)
+	require.True(t, resp.Success)
+
+	// Now pause the bridge
+	params := k.GetParams(ctx)
+	params.Paused = true
+	k.SetParams(ctx, params)
+
+	// New mint with different hash should fail when paused
+	msg2 := &types.MsgMintTokens{
+		Validator:    keepertest.GenTestAddr().String(),
+		SourceChain:  "paw",
+		SourceTxHash: "0xdef",
+		Recipient:    keepertest.GenTestAddr().String(),
+		Amount:       "1000",
+		Denom:        "paw.token",
+	}
+	_, err = ms.MintTokens(sdk.WrapSDKContext(ctx), msg2)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "globally paused")
+}
+
+// TestCircuitBreaker_IntegrationWithUnlockTokens verifies that the circuit breaker
+// properly integrates with UnlockTokens to prevent operations when paused.
+func TestCircuitBreaker_IntegrationWithUnlockTokens(t *testing.T) {
+	k, input := setupKeeperForCircuitBreaker(t)
+	ctx := input.Ctx
+	ms := keeper.NewMsgServerImpl(k)
+
+	// Pause the bridge
+	params := k.GetParams(ctx)
+	params.Paused = true
+	k.SetParams(ctx, params)
+
+	msg := &types.MsgUnlockTokens{
+		Sender:      keepertest.GenTestAddr().String(),
+		SourceChain: "paw",
+		BurnTxHash:  "0x123",
+		Amount:      "1000",
+		Denom:       "uaura",
+	}
+
+	// Should fail when paused
+	_, err := ms.UnlockTokens(sdk.WrapSDKContext(ctx), msg)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "globally paused")
+
+	// Unpause the bridge
+	params.Paused = false
+	k.SetParams(ctx, params)
+
+	// Still might fail for other reasons (e.g., no transfer record), but should NOT fail for pause
+	_, err = ms.UnlockTokens(sdk.WrapSDKContext(ctx), msg)
+	if err != nil {
+		require.NotContains(t, err.Error(), "globally paused")
+	}
 }

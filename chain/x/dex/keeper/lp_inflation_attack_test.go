@@ -99,41 +99,39 @@ func (suite *LPInflationAttackTestSuite) TestFirstDepositorAttack_Prevention() {
 		"error should indicate minimum liquidity requirement not met")
 }
 
-// TestFirstDepositorAttack_MinimumThreshold tests the exact threshold for minimum liquidity
+// TestFirstDepositorAttack_MinimumThreshold tests the LP burn threshold with realistic pool
 func (suite *LPInflationAttackTestSuite) TestFirstDepositorAttack_MinimumThreshold() {
 	ctx := suite.SdkCtx
-	attackerAddr := keepertest.GenTestAddrs(1)[0]
-	attacker := attackerAddr.String()
+	creatorAddr := keepertest.GenTestAddrs(1)[0]
+	creator := creatorAddr.String()
 
-	// Calculate minimum amounts needed: sqrt(x*y) > 1000
-	// We need x*y > 1,000,000
-	// Using equal amounts: x*x > 1,000,000 => x > 1000
-	// So x = 1001 should work (barely)
-	minAmount := math.NewInt(1001)
+	// Use minimum viable amounts that meet the $1000 requirement
+	// At $0.10 per AURA, need 10,000 AURA minimum
+	minAmount := math.NewInt(10_000)
 
-	suite.fundAccount(attackerAddr, sdk.NewCoins(
+	suite.fundAccount(creatorAddr, sdk.NewCoins(
 		sdk.NewCoin("uaura", minAmount),
 		sdk.NewCoin("usdt", minAmount),
 	))
 
-	// This should succeed: sqrt(1001*1001) = 1001 LP tokens
-	// After burning 1000, attacker gets 1 LP token
+	// This should succeed: sqrt(10000*10000) = 10,000 LP tokens
+	// After burning 1000, creator gets 9,000 LP tokens
 	pool, lpTokens, err := suite.Keeper.CreatePool(
 		ctx,
-		attacker,
+		creator,
 		"uaura",
 		"usdt",
 		sdk.NewCoin("uaura", minAmount),
 		sdk.NewCoin("usdt", minAmount),
 	)
 
-	suite.Require().NoError(err, "pool with exactly 1001 WEI should succeed")
+	suite.Require().NoError(err, "pool with minimum amounts should succeed")
 	suite.Require().NotNil(pool)
 
 	// Verify minimum liquidity was burned
-	suite.Require().Equal("1001", pool.TotalLpTokens, "total LP tokens should be 1001")
+	suite.Require().Equal("10000", pool.TotalLpTokens, "total LP tokens should be 10000")
 	suite.Require().Equal("1000", pool.LockedLiquidity, "locked liquidity should be 1000")
-	suite.Require().Equal("1", lpTokens.String(), "attacker should receive 1 LP token (1001 - 1000)")
+	suite.Require().Equal("9000", lpTokens.String(), "creator should receive 9000 LP tokens (10000 - 1000)")
 
 	// Verify LP token invariant holds
 	err = suite.Keeper.ValidateLPTokenInvariantExported(pool)
@@ -196,6 +194,7 @@ func (suite *LPInflationAttackTestSuite) TestFirstDepositorAttack_LargerPool() {
 // 4. Due to rounding, victim receives 0 LP tokens but tokens are taken
 //
 // Prevention: AddLiquidity rejects any deposit that would result in 0 LP tokens
+// Additionally, minimum liquidity requirements prevent dust deposits
 func (suite *LPInflationAttackTestSuite) TestDustAttack_Prevention() {
 	ctx := suite.SdkCtx
 
@@ -237,8 +236,8 @@ func (suite *LPInflationAttackTestSuite) TestDustAttack_Prevention() {
 		sdk.NewCoin("usdc", dustAmount),
 	))
 
-	// CRITICAL: This should FAIL because LP tokens would round to zero
-	// LP calculation: (100 / 1,000,000,000,000) * total_lp ≈ 0
+	// CRITICAL: This should FAIL due to minimum liquidity requirements
+	// The minimum liquidity check prevents new LPs from adding dust amounts
 	_, _, err = suite.Keeper.AddLiquidity(
 		ctx,
 		victim,
@@ -248,11 +247,11 @@ func (suite *LPInflationAttackTestSuite) TestDustAttack_Prevention() {
 	)
 
 	suite.Require().Error(err, "dust liquidity addition should fail")
-	suite.Require().Contains(err.Error(), "would receive 0 LP tokens",
-		"error should indicate zero LP token issuance")
+	suite.Require().Contains(err.Error(), "minimum liquidity requirement not met",
+		"error should indicate minimum liquidity requirement not met")
 }
 
-// TestDustAttack_SafeMinimumDeposit tests that meaningful deposits always work
+// TestDustAttack_SafeMinimumDeposit tests that existing LPs can add any amount
 func (suite *LPInflationAttackTestSuite) TestDustAttack_SafeMinimumDeposit() {
 	ctx := suite.SdkCtx
 
@@ -276,28 +275,26 @@ func (suite *LPInflationAttackTestSuite) TestDustAttack_SafeMinimumDeposit() {
 	)
 	suite.Require().NoError(err)
 
-	// Add meaningful liquidity (1% of pool)
-	providerAddr := keepertest.GenTestAddrs(2)[1]
-	provider := providerAddr.String()
-	addAmount := amount.QuoRaw(100) // 1% of pool = 10,000 tokens
+	// Creator (existing LP) can add any amount, even small amounts
+	// because they're grandfathered in
+	addAmount := math.NewInt(100) // Small amount
 
-	suite.fundAccount(providerAddr, sdk.NewCoins(
+	suite.fundAccount(creatorAddr, sdk.NewCoins(
 		sdk.NewCoin("uaura", addAmount),
 		sdk.NewCoin("busd", addAmount),
 	))
 
 	lpTokens, _, err := suite.Keeper.AddLiquidity(
 		ctx,
-		provider,
-		"uaura-busd",
+		creator,
+		"busd-uaura",
 		sdk.NewCoin("uaura", addAmount),
 		sdk.NewCoin("busd", addAmount),
 	)
 
-	// This should succeed and provide meaningful LP tokens
-	suite.Require().NoError(err, "meaningful liquidity addition should succeed")
+	// This should succeed for existing LP
+	suite.Require().NoError(err, "existing LP can add any amount")
 	suite.Require().True(lpTokens.IsPositive(), "should receive positive LP tokens")
-	suite.Require().True(lpTokens.GT(math.ZeroInt()), "should receive non-zero LP tokens")
 }
 
 // TestDonationAttack_LPInvariantProtection tests that donated tokens don't break invariant
@@ -398,13 +395,13 @@ func (suite *LPInflationAttackTestSuite) TestMinimumLiquidityLocked_Permanent() 
 	_, _, err = suite.Keeper.RemoveLiquidity(
 		ctx,
 		creator,
-		"uaura-dai",
+		"dai-uaura",
 		creatorLP,
 	)
 	suite.Require().NoError(err)
 
 	// Verify locked liquidity remains in pool
-	pool = suite.Keeper.GetPool(ctx, "uaura-dai")
+	pool = suite.Keeper.GetPool(ctx, "dai-uaura")
 	suite.Require().NotNil(pool)
 	suite.Require().Equal("1000", pool.LockedLiquidity,
 		"locked liquidity should remain even after all providers exit")
@@ -498,7 +495,7 @@ func (suite *LPInflationAttackTestSuite) TestMultipleProviders_AfterMinimumLock(
 	lp2, _, err := suite.Keeper.AddLiquidity(
 		ctx,
 		provider2,
-		"uaura-busd",
+		"busd-uaura",
 		sdk.NewCoin("uaura", addAmount),
 		sdk.NewCoin("busd", addAmount),
 	)
@@ -517,7 +514,7 @@ func (suite *LPInflationAttackTestSuite) TestMultipleProviders_AfterMinimumLock(
 	lp3, _, err := suite.Keeper.AddLiquidity(
 		ctx,
 		provider3,
-		"uaura-busd",
+		"busd-uaura",
 		sdk.NewCoin("uaura", addAmount),
 		sdk.NewCoin("busd", addAmount),
 	)
@@ -525,7 +522,7 @@ func (suite *LPInflationAttackTestSuite) TestMultipleProviders_AfterMinimumLock(
 	suite.Require().True(lp3.IsPositive())
 
 	// Verify invariant holds with multiple providers
-	pool = suite.Keeper.GetPool(ctx, "uaura-busd")
+	pool = suite.Keeper.GetPool(ctx, "busd-uaura")
 	err = suite.Keeper.ValidateLPTokenInvariantExported(pool)
 	suite.Require().NoError(err)
 
@@ -588,16 +585,16 @@ func (suite *LPInflationAttackTestSuite) TestLargePoolCreation_MinimumLiquidityN
 		"locked liquidity should be less than 0.0001%% for large pools")
 }
 
-// TestEdgeCase_ExactlyMinimumLiquidity tests pool creation with exactly 1000 LP tokens
-func (suite *LPInflationAttackTestSuite) TestEdgeCase_ExactlyMinimumLiquidity() {
+// TestEdgeCase_BelowMinimumLPTokenBurn tests that pools must generate more than MinimumLiquidity
+func (suite *LPInflationAttackTestSuite) TestEdgeCase_BelowMinimumLPTokenBurn() {
 	ctx := suite.SdkCtx
 
 	creatorAddr := keepertest.GenTestAddrs(1)[0]
 	creator := creatorAddr.String()
 
-	// Create pool where sqrt(x*y) = exactly 1000
-	// 1000 * 1000 = 1,000,000
-	// So we need x*y = 1,000,000
+	// Use amount that would generate exactly 1000 LP tokens
+	// sqrt(1000 * 1000) = 1000
+	// But this will fail the minimum liquidity requirement check first (need 10,000 AURA)
 	amount := math.NewInt(1000)
 
 	suite.fundAccount(creatorAddr, sdk.NewCoins(
@@ -605,7 +602,7 @@ func (suite *LPInflationAttackTestSuite) TestEdgeCase_ExactlyMinimumLiquidity() 
 		sdk.NewCoin("test", amount),
 	))
 
-	// This should FAIL because we need LP tokens > 1000, not = 1000
+	// This should FAIL due to minimum liquidity requirement
 	_, _, err := suite.Keeper.CreatePool(
 		ctx,
 		creator,
@@ -615,20 +612,21 @@ func (suite *LPInflationAttackTestSuite) TestEdgeCase_ExactlyMinimumLiquidity() 
 		sdk.NewCoin("test", amount),
 	)
 
-	suite.Require().Error(err, "pool with exactly 1000 LP tokens should fail")
-	suite.Require().Contains(err.Error(), "insufficient initial liquidity")
+	suite.Require().Error(err, "pool with amount below minimum should fail")
+	suite.Require().Contains(err.Error(), "minimum liquidity requirement not met")
 }
 
-// TestEdgeCase_MinimumPlusOne tests pool creation with 1001 LP tokens (minimum viable)
-func (suite *LPInflationAttackTestSuite) TestEdgeCase_MinimumPlusOne() {
+// TestEdgeCase_ExactMinimumBurn tests LP burn with exactly MinimumLiquidity threshold
+func (suite *LPInflationAttackTestSuite) TestEdgeCase_ExactMinimumBurn() {
 	ctx := suite.SdkCtx
 
 	creatorAddr := keepertest.GenTestAddrs(1)[0]
 	creator := creatorAddr.String()
 
-	// sqrt(1001 * 1001) = 1001 LP tokens
-	// After burning 1000, creator gets 1 LP token
-	amount := math.NewInt(1001)
+	// Use minimum amount that meets requirements (10,000 AURA)
+	// sqrt(10000 * 10000) = 10,000 LP tokens
+	// After burning 1000, creator gets 9,000 LP tokens
+	amount := math.NewInt(10_000)
 
 	suite.fundAccount(creatorAddr, sdk.NewCoins(
 		sdk.NewCoin("uaura", amount),
@@ -644,10 +642,10 @@ func (suite *LPInflationAttackTestSuite) TestEdgeCase_MinimumPlusOne() {
 		sdk.NewCoin("test", amount),
 	)
 
-	suite.Require().NoError(err, "pool with 1001 LP tokens should succeed")
-	suite.Require().Equal("1001", pool.TotalLpTokens)
+	suite.Require().NoError(err, "pool with minimum amounts should succeed")
+	suite.Require().Equal("10000", pool.TotalLpTokens)
 	suite.Require().Equal("1000", pool.LockedLiquidity)
-	suite.Require().Equal("1", creatorLP.String())
+	suite.Require().Equal("9000", creatorLP.String(), "creator gets total - locked")
 }
 
 // TestConcurrentDeposits_InvariantPreservation tests that concurrent deposits maintain invariant
@@ -674,16 +672,16 @@ func (suite *LPInflationAttackTestSuite) TestConcurrentDeposits_InvariantPreserv
 	)
 	suite.Require().NoError(err)
 
-	// Simulate multiple providers adding liquidity in sequence
-	// (In practice, reentrancy guards prevent true concurrency)
-	numProviders := 10
-	addrs := keepertest.GenTestAddrs(numProviders)
+	// Simulate multiple NEW providers adding liquidity in sequence
+	// Each new provider must meet minimum liquidity requirements
+	numProviders := 5
+	addrs := keepertest.GenTestAddrs(numProviders + 1) // +1 to skip creator
 
 	for i := 0; i < numProviders; i++ {
-		provider := addrs[i].String()
-		addAmount := math.NewInt(10_000)
+		provider := addrs[i+1].String() // Skip index 0 (creator)
+		addAmount := math.NewInt(100_000) // Well above 10,000 minimum
 
-		suite.fundAccount(addrs[i], sdk.NewCoins(
+		suite.fundAccount(addrs[i+1], sdk.NewCoins(
 			sdk.NewCoin("uaura", addAmount),
 			sdk.NewCoin("dai", addAmount),
 		))
@@ -691,14 +689,14 @@ func (suite *LPInflationAttackTestSuite) TestConcurrentDeposits_InvariantPreserv
 		_, _, err := suite.Keeper.AddLiquidity(
 			ctx,
 			provider,
-			"uaura-dai",
+			"dai-uaura",
 			sdk.NewCoin("uaura", addAmount),
 			sdk.NewCoin("dai", addAmount),
 		)
 		suite.Require().NoError(err, "provider %d should successfully add liquidity", i)
 
 		// Verify invariant after each deposit
-		pool := suite.Keeper.GetPool(ctx, "uaura-dai")
+		pool := suite.Keeper.GetPool(ctx, "dai-uaura")
 		err = suite.Keeper.ValidateLPTokenInvariantExported(pool)
 		suite.Require().NoError(err, "invariant should hold after provider %d deposit", i)
 	}

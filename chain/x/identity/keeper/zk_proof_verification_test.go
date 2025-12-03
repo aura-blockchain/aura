@@ -1,4 +1,4 @@
-package keeper_test
+package keeper
 
 import (
 	"crypto/rand"
@@ -6,8 +6,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
-	"github.com/aequitas/aura/chain/x/identity/keeper"
 )
 
 // ============================================================================
@@ -19,7 +17,7 @@ func TestSetZKVerificationKey(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		proofType   keeper.ZKProofType
+		proofType   ZKProofType
 		keyData     []byte
 		description string
 		expectError bool
@@ -27,28 +25,28 @@ func TestSetZKVerificationKey(t *testing.T) {
 	}{
 		{
 			name:        "valid groth16 key",
-			proofType:   keeper.ZKProofTypeGroth16,
+			proofType:   ZKProofTypeGroth16,
 			keyData:     make([]byte, 128),
 			description: "Test Groth16 verification key",
 			expectError: false,
 		},
 		{
 			name:        "valid plonk key",
-			proofType:   keeper.ZKProofTypePLONK,
+			proofType:   ZKProofTypePLONK,
 			keyData:     make([]byte, 128),
 			description: "Test PLONK verification key",
 			expectError: false,
 		},
 		{
 			name:        "valid simple key",
-			proofType:   keeper.ZKProofTypeSimple,
+			proofType:   ZKProofTypeSimple,
 			keyData:     make([]byte, 32),
 			description: "Test simple verification key",
 			expectError: false,
 		},
 		{
 			name:        "empty proof type",
-			proofType:   keeper.ZKProofType(""),
+			proofType:   ZKProofType(""),
 			keyData:     make([]byte, 128),
 			description: "Test key",
 			expectError: true,
@@ -56,7 +54,7 @@ func TestSetZKVerificationKey(t *testing.T) {
 		},
 		{
 			name:        "empty key data",
-			proofType:   keeper.ZKProofTypeGroth16,
+			proofType:   ZKProofTypeGroth16,
 			keyData:     []byte{},
 			description: "Test key",
 			expectError: true,
@@ -64,7 +62,7 @@ func TestSetZKVerificationKey(t *testing.T) {
 		},
 		{
 			name:        "groth16 key too short",
-			proofType:   keeper.ZKProofTypeGroth16,
+			proofType:   ZKProofTypeGroth16,
 			keyData:     make([]byte, 64), // Too short for Groth16
 			description: "Test key",
 			expectError: true,
@@ -72,7 +70,7 @@ func TestSetZKVerificationKey(t *testing.T) {
 		},
 		{
 			name:        "plonk key too short",
-			proofType:   keeper.ZKProofTypePLONK,
+			proofType:   ZKProofTypePLONK,
 			keyData:     make([]byte, 32), // Too short
 			description: "Test key",
 			expectError: true,
@@ -80,7 +78,7 @@ func TestSetZKVerificationKey(t *testing.T) {
 		},
 		{
 			name:        "simple key too short",
-			proofType:   keeper.ZKProofTypeSimple,
+			proofType:   ZKProofTypeSimple,
 			keyData:     make([]byte, 16), // Too short
 			description: "Test key",
 			expectError: true,
@@ -120,29 +118,29 @@ func TestGetZKVerificationKey(t *testing.T) {
 	_, err := rand.Read(testKeyData)
 	require.NoError(t, err)
 
-	err = k.SetZKVerificationKey(ctx, keeper.ZKProofTypeGroth16, testKeyData, "Test key")
+	err = k.SetZKVerificationKey(ctx, ZKProofTypeGroth16, testKeyData, "Test key")
 	require.NoError(t, err)
 
 	tests := []struct {
 		name        string
-		proofType   keeper.ZKProofType
+		proofType   ZKProofType
 		expectError bool
 		errorMsg    string
 	}{
 		{
 			name:        "existing key",
-			proofType:   keeper.ZKProofTypeGroth16,
+			proofType:   ZKProofTypeGroth16,
 			expectError: false,
 		},
 		{
 			name:        "non-existent key",
-			proofType:   keeper.ZKProofTypePLONK,
+			proofType:   ZKProofTypePLONK,
 			expectError: true,
 			errorMsg:    "verification key not found",
 		},
 		{
 			name:        "empty proof type",
-			proofType:   keeper.ZKProofType(""),
+			proofType:   ZKProofType(""),
 			expectError: true,
 			errorMsg:    "proof type cannot be empty",
 		},
@@ -173,11 +171,11 @@ func TestProofFormatValidation(t *testing.T) {
 	k, ctx := setupKeeperForTest(t)
 
 	// Register verification keys for all types
-	for _, proofType := range []keeper.ZKProofType{
-		keeper.ZKProofTypeGroth16,
-		keeper.ZKProofTypePLONK,
-		keeper.ZKProofTypeBulletProofs,
-		keeper.ZKProofTypeSimple,
+	for _, proofType := range []ZKProofType{
+		ZKProofTypeGroth16,
+		ZKProofTypePLONK,
+		ZKProofTypeBulletProofs,
+		ZKProofTypeSimple,
 	} {
 		keyData := make([]byte, 128)
 		_, err := rand.Read(keyData)
@@ -188,7 +186,7 @@ func TestProofFormatValidation(t *testing.T) {
 
 	tests := []struct {
 		name         string
-		proofType    keeper.ZKProofType
+		proofType    ZKProofType
 		proofSize    int
 		inputsSize   int
 		expectError  bool
@@ -197,21 +195,21 @@ func TestProofFormatValidation(t *testing.T) {
 		// Groth16 tests
 		{
 			name:        "valid groth16 proof - minimum size",
-			proofType:   keeper.ZKProofTypeGroth16,
+			proofType:   ZKProofTypeGroth16,
 			proofSize:   96,
 			inputsSize:  32,
 			expectError: false,
 		},
 		{
 			name:        "valid groth16 proof - normal size",
-			proofType:   keeper.ZKProofTypeGroth16,
+			proofType:   ZKProofTypeGroth16,
 			proofSize:   128,
 			inputsSize:  64,
 			expectError: false,
 		},
 		{
 			name:        "groth16 proof too short",
-			proofType:   keeper.ZKProofTypeGroth16,
+			proofType:   ZKProofTypeGroth16,
 			proofSize:   64,
 			inputsSize:  32,
 			expectError: true,
@@ -219,7 +217,7 @@ func TestProofFormatValidation(t *testing.T) {
 		},
 		{
 			name:        "groth16 proof too long",
-			proofType:   keeper.ZKProofTypeGroth16,
+			proofType:   ZKProofTypeGroth16,
 			proofSize:   300,
 			inputsSize:  32,
 			expectError: true,
@@ -229,14 +227,14 @@ func TestProofFormatValidation(t *testing.T) {
 		// PLONK tests
 		{
 			name:        "valid plonk proof",
-			proofType:   keeper.ZKProofTypePLONK,
+			proofType:   ZKProofTypePLONK,
 			proofSize:   128,
 			inputsSize:  32,
 			expectError: false,
 		},
 		{
 			name:        "plonk proof too short",
-			proofType:   keeper.ZKProofTypePLONK,
+			proofType:   ZKProofTypePLONK,
 			proofSize:   32,
 			inputsSize:  32,
 			expectError: true,
@@ -244,7 +242,7 @@ func TestProofFormatValidation(t *testing.T) {
 		},
 		{
 			name:        "plonk proof too long",
-			proofType:   keeper.ZKProofTypePLONK,
+			proofType:   ZKProofTypePLONK,
 			proofSize:   600,
 			inputsSize:  32,
 			expectError: true,
@@ -254,14 +252,14 @@ func TestProofFormatValidation(t *testing.T) {
 		// BulletProofs tests
 		{
 			name:        "valid bulletproof",
-			proofType:   keeper.ZKProofTypeBulletProofs,
+			proofType:   ZKProofTypeBulletProofs,
 			proofSize:   256,
 			inputsSize:  32,
 			expectError: false,
 		},
 		{
 			name:        "bulletproof too short",
-			proofType:   keeper.ZKProofTypeBulletProofs,
+			proofType:   ZKProofTypeBulletProofs,
 			proofSize:   16,
 			inputsSize:  32,
 			expectError: true,
@@ -271,14 +269,14 @@ func TestProofFormatValidation(t *testing.T) {
 		// Simple tests
 		{
 			name:        "valid simple proof",
-			proofType:   keeper.ZKProofTypeSimple,
+			proofType:   ZKProofTypeSimple,
 			proofSize:   96,
 			inputsSize:  32,
 			expectError: false,
 		},
 		{
 			name:        "simple proof too short",
-			proofType:   keeper.ZKProofTypeSimple,
+			proofType:   ZKProofTypeSimple,
 			proofSize:   16,
 			inputsSize:  32,
 			expectError: true,
@@ -288,7 +286,7 @@ func TestProofFormatValidation(t *testing.T) {
 		// Public inputs tests
 		{
 			name:        "public inputs too short",
-			proofType:   keeper.ZKProofTypeSimple,
+			proofType:   ZKProofTypeSimple,
 			proofSize:   96,
 			inputsSize:  16,
 			expectError: true,
@@ -296,7 +294,7 @@ func TestProofFormatValidation(t *testing.T) {
 		},
 		{
 			name:        "public inputs not multiple of 32",
-			proofType:   keeper.ZKProofTypeSimple,
+			proofType:   ZKProofTypeSimple,
 			proofSize:   96,
 			inputsSize:  48,
 			expectError: true,
@@ -304,7 +302,7 @@ func TestProofFormatValidation(t *testing.T) {
 		},
 		{
 			name:        "public inputs too long",
-			proofType:   keeper.ZKProofTypeSimple,
+			proofType:   ZKProofTypeSimple,
 			proofSize:   96,
 			inputsSize:  1100,
 			expectError: true,
@@ -343,7 +341,7 @@ func TestVerifySimpleProof_ValidProof(t *testing.T) {
 	_, err := rand.Read(vkData)
 	require.NoError(t, err)
 
-	err = k.SetZKVerificationKey(ctx, keeper.ZKProofTypeSimple, vkData, "Test simple key")
+	err = k.SetZKVerificationKey(ctx, ZKProofTypeSimple, vkData, "Test simple key")
 	require.NoError(t, err)
 
 	// Generate public inputs
@@ -363,7 +361,7 @@ func TestVerifySimpleProof_ValidProof(t *testing.T) {
 	require.Equal(t, 96, len(proof))
 
 	// Verify the proof
-	verified, err := k.VerifyZKProof(ctx, keeper.ZKProofTypeSimple, proof, publicInputs)
+	verified, err := k.VerifyZKProof(ctx, ZKProofTypeSimple, proof, publicInputs)
 	require.NoError(t, err)
 	require.True(t, verified, "Valid proof should verify successfully")
 }
@@ -376,7 +374,7 @@ func TestVerifySimpleProof_InvalidProofs(t *testing.T) {
 	_, err := rand.Read(vkData)
 	require.NoError(t, err)
 
-	err = k.SetZKVerificationKey(ctx, keeper.ZKProofTypeSimple, vkData, "Test simple key")
+	err = k.SetZKVerificationKey(ctx, ZKProofTypeSimple, vkData, "Test simple key")
 	require.NoError(t, err)
 
 	// Generate valid inputs and proof
@@ -451,7 +449,7 @@ func TestVerifySimpleProof_InvalidProofs(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			verified, err := k.VerifyZKProof(ctx, keeper.ZKProofTypeSimple, tt.proof, tt.publicInputs)
+			verified, err := k.VerifyZKProof(ctx, ZKProofTypeSimple, tt.proof, tt.publicInputs)
 
 			if tt.expectError {
 				require.Error(t, err, tt.description)
@@ -475,7 +473,7 @@ func TestVerifyGroth16Proof(t *testing.T) {
 	_, err := rand.Read(vkData)
 	require.NoError(t, err)
 
-	err = k.SetZKVerificationKey(ctx, keeper.ZKProofTypeGroth16, vkData, "Test Groth16 key")
+	err = k.SetZKVerificationKey(ctx, ZKProofTypeGroth16, vkData, "Test Groth16 key")
 	require.NoError(t, err)
 
 	// Create valid proof structure
@@ -496,7 +494,7 @@ func TestVerifyGroth16Proof(t *testing.T) {
 
 	// Test valid proof
 	t.Run("valid groth16 proof", func(t *testing.T) {
-		verified, err := k.VerifyZKProof(ctx, keeper.ZKProofTypeGroth16, validProof, publicInputs)
+		verified, err := k.VerifyZKProof(ctx, ZKProofTypeGroth16, validProof, publicInputs)
 		require.NoError(t, err)
 		require.True(t, verified, "Valid Groth16 proof should verify")
 	})
@@ -507,14 +505,14 @@ func TestVerifyGroth16Proof(t *testing.T) {
 		copy(invalidProof, validProof)
 		invalidProof[100] ^= 0xFF // Corrupt commitment
 
-		verified, err := k.VerifyZKProof(ctx, keeper.ZKProofTypeGroth16, invalidProof, publicInputs)
+		verified, err := k.VerifyZKProof(ctx, ZKProofTypeGroth16, invalidProof, publicInputs)
 		require.NoError(t, err)
 		require.False(t, verified, "Invalid proof should not verify")
 	})
 
 	t.Run("random groth16 proof", func(t *testing.T) {
 		randomProof := randomBytes(t, 128)
-		verified, err := k.VerifyZKProof(ctx, keeper.ZKProofTypeGroth16, randomProof, publicInputs)
+		verified, err := k.VerifyZKProof(ctx, ZKProofTypeGroth16, randomProof, publicInputs)
 		require.NoError(t, err)
 		require.False(t, verified, "Random proof should not verify")
 	})
@@ -532,7 +530,7 @@ func TestVerifyPLONKProof(t *testing.T) {
 	_, err := rand.Read(vkData)
 	require.NoError(t, err)
 
-	err = k.SetZKVerificationKey(ctx, keeper.ZKProofTypePLONK, vkData, "Test PLONK key")
+	err = k.SetZKVerificationKey(ctx, ZKProofTypePLONK, vkData, "Test PLONK key")
 	require.NoError(t, err)
 
 	// Create valid proof structure
@@ -554,7 +552,7 @@ func TestVerifyPLONKProof(t *testing.T) {
 
 	// Test valid proof
 	t.Run("valid plonk proof", func(t *testing.T) {
-		verified, err := k.VerifyZKProof(ctx, keeper.ZKProofTypePLONK, validProof, publicInputs)
+		verified, err := k.VerifyZKProof(ctx, ZKProofTypePLONK, validProof, publicInputs)
 		require.NoError(t, err)
 		require.True(t, verified, "Valid PLONK proof should verify")
 	})
@@ -562,7 +560,7 @@ func TestVerifyPLONKProof(t *testing.T) {
 	// Test invalid proof
 	t.Run("invalid plonk proof", func(t *testing.T) {
 		invalidProof := randomBytes(t, 128)
-		verified, err := k.VerifyZKProof(ctx, keeper.ZKProofTypePLONK, invalidProof, publicInputs)
+		verified, err := k.VerifyZKProof(ctx, ZKProofTypePLONK, invalidProof, publicInputs)
 		require.NoError(t, err)
 		require.False(t, verified, "Random PLONK proof should not verify")
 	})
@@ -580,7 +578,7 @@ func TestVerifyBulletProof(t *testing.T) {
 	_, err := rand.Read(vkData)
 	require.NoError(t, err)
 
-	err = k.SetZKVerificationKey(ctx, keeper.ZKProofTypeBulletProofs, vkData, "Test BulletProofs key")
+	err = k.SetZKVerificationKey(ctx, ZKProofTypeBulletProofs, vkData, "Test BulletProofs key")
 	require.NoError(t, err)
 
 	// Create valid proof structure
@@ -602,7 +600,7 @@ func TestVerifyBulletProof(t *testing.T) {
 
 	// Test valid proof
 	t.Run("valid bulletproof", func(t *testing.T) {
-		verified, err := k.VerifyZKProof(ctx, keeper.ZKProofTypeBulletProofs, validProof, publicInputs)
+		verified, err := k.VerifyZKProof(ctx, ZKProofTypeBulletProofs, validProof, publicInputs)
 		require.NoError(t, err)
 		require.True(t, verified, "Valid BulletProof should verify")
 	})
@@ -610,7 +608,7 @@ func TestVerifyBulletProof(t *testing.T) {
 	// Test invalid proof
 	t.Run("invalid bulletproof", func(t *testing.T) {
 		invalidProof := randomBytes(t, 256)
-		verified, err := k.VerifyZKProof(ctx, keeper.ZKProofTypeBulletProofs, invalidProof, publicInputs)
+		verified, err := k.VerifyZKProof(ctx, ZKProofTypeBulletProofs, invalidProof, publicInputs)
 		require.NoError(t, err)
 		require.False(t, verified, "Random BulletProof should not verify")
 	})
@@ -625,7 +623,7 @@ func TestVerifyZKProof_ErrorCases(t *testing.T) {
 
 	// Register a test verification key
 	vkData := make([]byte, 128)
-	err := k.SetZKVerificationKey(ctx, keeper.ZKProofTypeSimple, vkData, "Test key")
+	err := k.SetZKVerificationKey(ctx, ZKProofTypeSimple, vkData, "Test key")
 	require.NoError(t, err)
 
 	validProof := make([]byte, 96)
@@ -633,7 +631,7 @@ func TestVerifyZKProof_ErrorCases(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		proofType   keeper.ZKProofType
+		proofType   ZKProofType
 		proof       []byte
 		inputs      []byte
 		expectError bool
@@ -641,7 +639,7 @@ func TestVerifyZKProof_ErrorCases(t *testing.T) {
 	}{
 		{
 			name:        "unknown proof type",
-			proofType:   keeper.ZKProofType("unknown"),
+			proofType:   ZKProofType("unknown"),
 			proof:       validProof,
 			inputs:      validInputs,
 			expectError: true,
@@ -649,7 +647,7 @@ func TestVerifyZKProof_ErrorCases(t *testing.T) {
 		},
 		{
 			name:        "missing verification key",
-			proofType:   keeper.ZKProofTypeGroth16, // Not registered
+			proofType:   ZKProofTypeGroth16, // Not registered
 			proof:       validProof,
 			inputs:      validInputs,
 			expectError: true,
@@ -657,7 +655,7 @@ func TestVerifyZKProof_ErrorCases(t *testing.T) {
 		},
 		{
 			name:        "nil proof",
-			proofType:   keeper.ZKProofTypeSimple,
+			proofType:   ZKProofTypeSimple,
 			proof:       nil,
 			inputs:      validInputs,
 			expectError: true,
@@ -665,7 +663,7 @@ func TestVerifyZKProof_ErrorCases(t *testing.T) {
 		},
 		{
 			name:        "nil inputs",
-			proofType:   keeper.ZKProofTypeSimple,
+			proofType:   ZKProofTypeSimple,
 			proof:       validProof,
 			inputs:      nil,
 			expectError: true,
@@ -698,7 +696,7 @@ func TestVerifyZKProof_SecurityTests(t *testing.T) {
 	_, err := rand.Read(vkData)
 	require.NoError(t, err)
 
-	err = k.SetZKVerificationKey(ctx, keeper.ZKProofTypeSimple, vkData, "Test key")
+	err = k.SetZKVerificationKey(ctx, ZKProofTypeSimple, vkData, "Test key")
 	require.NoError(t, err)
 
 	publicInputs := make([]byte, 64)
@@ -718,14 +716,14 @@ func TestVerifyZKProof_SecurityTests(t *testing.T) {
 		require.NoError(t, err)
 
 		// Trying to use the same proof with different inputs should fail
-		verified, err := k.VerifyZKProof(ctx, keeper.ZKProofTypeSimple, validProof, differentInputs)
+		verified, err := k.VerifyZKProof(ctx, ZKProofTypeSimple, validProof, differentInputs)
 		require.NoError(t, err)
 		require.False(t, verified, "Proof should not verify with different inputs")
 	})
 
 	t.Run("malformed proof - all zeros", func(t *testing.T) {
 		zeroProof := make([]byte, 96)
-		verified, err := k.VerifyZKProof(ctx, keeper.ZKProofTypeSimple, zeroProof, publicInputs)
+		verified, err := k.VerifyZKProof(ctx, ZKProofTypeSimple, zeroProof, publicInputs)
 		require.NoError(t, err)
 		require.False(t, verified, "All-zero proof should not verify")
 	})
@@ -735,14 +733,14 @@ func TestVerifyZKProof_SecurityTests(t *testing.T) {
 		for i := range onesProof {
 			onesProof[i] = 0xFF
 		}
-		verified, err := k.VerifyZKProof(ctx, keeper.ZKProofTypeSimple, onesProof, publicInputs)
+		verified, err := k.VerifyZKProof(ctx, ZKProofTypeSimple, onesProof, publicInputs)
 		require.NoError(t, err)
 		require.False(t, verified, "All-ones proof should not verify")
 	})
 
 	t.Run("truncated proof", func(t *testing.T) {
-		truncatedProof := validProof[:80]
-		_, err := k.VerifyZKProof(ctx, keeper.ZKProofTypeSimple, truncatedProof, publicInputs)
+		truncatedProof := validProof[:16] // Too short - below 32 byte minimum
+		_, err := k.VerifyZKProof(ctx, ZKProofTypeSimple, truncatedProof, publicInputs)
 		require.Error(t, err, "Truncated proof should return format error")
 		require.Contains(t, err.Error(), "proof too short")
 	})
@@ -754,7 +752,7 @@ func TestVerifyZKProof_SecurityTests(t *testing.T) {
 		require.NoError(t, err)
 
 		// Should still verify based on the valid portion
-		verified, err := k.VerifyZKProof(ctx, keeper.ZKProofTypeSimple, extendedProof, publicInputs)
+		verified, err := k.VerifyZKProof(ctx, ZKProofTypeSimple, extendedProof, publicInputs)
 		require.NoError(t, err)
 		require.True(t, verified, "Valid proof with extra data should still verify")
 	})
@@ -768,11 +766,11 @@ func TestMultipleVerificationKeys(t *testing.T) {
 	k, ctx := setupKeeperForTest(t)
 
 	// Register multiple verification keys
-	proofTypes := []keeper.ZKProofType{
-		keeper.ZKProofTypeGroth16,
-		keeper.ZKProofTypePLONK,
-		keeper.ZKProofTypeBulletProofs,
-		keeper.ZKProofTypeSimple,
+	proofTypes := []ZKProofType{
+		ZKProofTypeGroth16,
+		ZKProofTypePLONK,
+		ZKProofTypeBulletProofs,
+		ZKProofTypeSimple,
 	}
 
 	for _, pt := range proofTypes {
@@ -799,7 +797,7 @@ func TestMultipleVerificationKeys(t *testing.T) {
 			var err error
 
 			switch pt {
-			case keeper.ZKProofTypeSimple:
+			case ZKProofTypeSimple:
 				salt := randomBytes(t, 32)
 				proof, err = k.GenerateSimpleProof(ctx, publicInputs, salt)
 				require.NoError(t, err)
@@ -812,9 +810,9 @@ func TestMultipleVerificationKeys(t *testing.T) {
 				hasher := sha256.New()
 				hasher.Write(publicInputs)
 				hasher.Write(vk.KeyData)
-				if pt == keeper.ZKProofTypePLONK {
+				if pt == ZKProofTypePLONK {
 					hasher.Write([]byte("plonk"))
-				} else if pt == keeper.ZKProofTypeBulletProofs {
+				} else if pt == ZKProofTypeBulletProofs {
 					hasher.Write([]byte("bulletproof"))
 				}
 				commitment := hasher.Sum(nil)
