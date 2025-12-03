@@ -13,6 +13,7 @@ const (
 	EventTypeValidatorAdded          = "validator_added"
 	EventTypeValidatorRemoved        = "validator_removed"
 	EventTypeValidatorPowerUpdated   = "validator_power_updated"
+	EventTypeValidatorSlashed        = "validator_slashed"
 	EventTypeCircuitBreakerTriggered = "circuit_breaker_triggered"
 	EventTypeCircuitBreakerReset     = "circuit_breaker_reset"
 	EventTypeSecurityViolationDetected = "security_violation_detected"
