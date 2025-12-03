@@ -789,22 +789,22 @@ func (suite *LPInflationAttackTestSuite) TestInvariantCheck_AfterEveryOperation(
 	providerLP, _, err := suite.Keeper.AddLiquidity(
 		ctx,
 		provider,
-		"uaura-busd",
+		"busd-uaura",
 		sdk.NewCoin("uaura", addAmount),
 		sdk.NewCoin("busd", addAmount),
 	)
 	suite.Require().NoError(err)
 
-	pool = suite.Keeper.GetPool(ctx, "uaura-busd")
+	pool = suite.Keeper.GetPool(ctx, "busd-uaura")
 	err = suite.Keeper.ValidateLPTokenInvariantExported(pool)
 	suite.Require().NoError(err, "invariant should hold after AddLiquidity")
 
 	// After RemoveLiquidity
 	halfLP := creatorLP.QuoRaw(2)
-	_, _, err = suite.Keeper.RemoveLiquidity(ctx, creator, "uaura-busd", halfLP)
+	_, _, err = suite.Keeper.RemoveLiquidity(ctx, creator, "busd-uaura", halfLP)
 	suite.Require().NoError(err)
 
-	pool = suite.Keeper.GetPool(ctx, "uaura-busd")
+	pool = suite.Keeper.GetPool(ctx, "busd-uaura")
 	err = suite.Keeper.ValidateLPTokenInvariantExported(pool)
 	suite.Require().NoError(err, "invariant should hold after RemoveLiquidity")
 
@@ -820,26 +820,26 @@ func (suite *LPInflationAttackTestSuite) TestInvariantCheck_AfterEveryOperation(
 	_, _, _, err = suite.Keeper.SwapExactIn(
 		ctx,
 		trader,
-		"uaura-busd",
+		"busd-uaura",
 		sdk.NewCoin("uaura", swapAmount),
 		math.NewInt(1),
 		0,
 	)
 	suite.Require().NoError(err)
 
-	pool = suite.Keeper.GetPool(ctx, "uaura-busd")
+	pool = suite.Keeper.GetPool(ctx, "busd-uaura")
 	err = suite.Keeper.ValidateLPTokenInvariantExported(pool)
 	suite.Require().NoError(err, "invariant should hold after Swap")
 
 	// After complete liquidity removal
 	remainingCreatorLP := creatorLP.Sub(halfLP)
-	_, _, err = suite.Keeper.RemoveLiquidity(ctx, creator, "uaura-busd", remainingCreatorLP)
+	_, _, err = suite.Keeper.RemoveLiquidity(ctx, creator, "busd-uaura", remainingCreatorLP)
 	suite.Require().NoError(err)
 
-	_, _, err = suite.Keeper.RemoveLiquidity(ctx, provider, "uaura-busd", providerLP)
+	_, _, err = suite.Keeper.RemoveLiquidity(ctx, provider, "busd-uaura", providerLP)
 	suite.Require().NoError(err)
 
-	pool = suite.Keeper.GetPool(ctx, "uaura-busd")
+	pool = suite.Keeper.GetPool(ctx, "busd-uaura")
 	err = suite.Keeper.ValidateLPTokenInvariantExported(pool)
 	suite.Require().NoError(err, "invariant should hold even with only locked liquidity remaining")
 

@@ -1,13 +1,14 @@
 ---
 id: "041"
 title: "DEX LP Token Inflation Attack (First Depositor)"
-status: ready
+status: complete
 priority: p1
 category: security
 module: dex
 severity: CRITICAL
 cvss: 9.5
 source: dex-security-audit
+completed_at: 2025-12-03
 ---
 
 # DEX LP Token Inflation Attack (First Depositor)
@@ -114,9 +115,41 @@ func (k Keeper) AddLiquidity(ctx sdk.Context, pool *types.LiquidityPool, provide
 
 ## Acceptance Criteria
 
-- [ ] Minimum liquidity burn (1000) on first deposit
-- [ ] Minimum LP token check for subsequent deposits
-- [ ] Genesis export/import of locked liquidity
-- [ ] Tests for first depositor attack prevention
-- [ ] Tests for dust attack prevention
-- [ ] Invariant: locked_liquidity + sum(provider_lp) = total_lp
+- [x] Minimum liquidity burn (1000) on first deposit
+- [x] Minimum LP token check for subsequent deposits
+- [x] Genesis export/import of locked liquidity
+- [x] Tests for first depositor attack prevention
+- [x] Tests for dust attack prevention
+- [x] Invariant: locked_liquidity + sum(provider_lp) = total_lp
+
+## Resolution
+
+Fixed LP token inflation attack vulnerability through multiple layers of protection:
+
+1. **Minimum Liquidity Burn**: Added `MinimumLiquidity = 1000` constant that is permanently burned on pool creation (lines 29, 117-141 in `liquidity_pool.go`)
+2. **Zero LP Token Rejection**: `AddLiquidity` rejects deposits that would receive 0 LP tokens (lines 306-318)
+3. **LP Token Invariant Validation**: Added `validateLPTokenInvariant()` function called after all LP-modifying operations (lines 997-1072)
+4. **Locked Liquidity Tracking**: Added `LockedLiquidity` field to track permanently locked tokens (line 159)
+5. **Event Emission**: Emits `minimum_liquidity_locked` event for audit trail (lines 193-199)
+
+### Implementation Details
+
+- **File**: `chain/x/dex/keeper/liquidity_pool.go`
+- **Test File**: `chain/x/dex/keeper/lp_inflation_attack_test.go` (851 lines, 15 comprehensive tests)
+- **Exported Function**: `ValidateLPTokenInvariantExported()` for test access (lines 1068-1072)
+
+### Test Coverage
+
+Created comprehensive test suite with 15 tests covering:
+- First depositor attack prevention
+- Dust attack prevention
+- Donation attack invariant protection
+- Minimum threshold edge cases
+- LP burn with realistic pools
+- Locked liquidity permanence
+- Event emission verification
+- Multiple provider scenarios
+- Genesis export/import persistence
+- Invariant validation after all operations
+
+All tests pass: `go test -v ./x/dex/keeper/ -run "LPInflation"`
