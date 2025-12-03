@@ -12,13 +12,17 @@ import (
 )
 
 func TestCreateAndClaimHTLC(t *testing.T) {
-	k, ctx, _ := setupTestKeeper(t)
+	k, ctx, mockBank := setupTestKeeper(t)
 
-	sender := keepertest.GenTestAddr().String()
+	senderAddr := keepertest.GenTestAddr()
+	sender := senderAddr.String()
 	recipient := keepertest.GenTestAddr().String()
 	secret := "super-secret"
 	hash := k.GenerateSecureHash([]byte(secret))
 	amount := sdk.NewCoin("uaura", sdkmath.NewInt(1_000000))
+
+	// Fund sender account before creating HTLC
+	mockBank.SetBalance(senderAddr, "uaura", sdkmath.NewInt(1_000000))
 
 	htlcID, err := k.CreateHTLC(ctx, sender, recipient, amount, hash, 600)
 	require.NoError(t, err)
@@ -38,12 +42,16 @@ func TestCreateAndClaimHTLC(t *testing.T) {
 }
 
 func TestRefundHTLC(t *testing.T) {
-	k, ctx, _ := setupTestKeeper(t)
+	k, ctx, mockBank := setupTestKeeper(t)
 
-	sender := keepertest.GenTestAddr().String()
+	senderAddr := keepertest.GenTestAddr()
+	sender := senderAddr.String()
 	recipient := keepertest.GenTestAddr().String()
 	hash := k.GenerateSecureHash([]byte("refund-secret"))
 	amount := sdk.NewCoin("uaura", sdkmath.NewInt(500_000))
+
+	// Fund sender account before creating HTLC
+	mockBank.SetBalance(senderAddr, "uaura", sdkmath.NewInt(500_000))
 
 	htlcID, err := k.CreateHTLC(ctx, sender, recipient, amount, hash, 1)
 	require.NoError(t, err)
@@ -62,12 +70,16 @@ func TestRefundHTLC(t *testing.T) {
 }
 
 func TestCleanupExpiredHTLCs(t *testing.T) {
-	k, ctx, _ := setupTestKeeper(t)
+	k, ctx, mockBank := setupTestKeeper(t)
 
-	sender := keepertest.GenTestAddr().String()
+	senderAddr := keepertest.GenTestAddr()
+	sender := senderAddr.String()
 	recipient := keepertest.GenTestAddr().String()
 	hash := k.GenerateSecureHash([]byte("cleanup-secret"))
 	amount := sdk.NewCoin("uaura", sdkmath.NewInt(250_000))
+
+	// Fund sender account before creating HTLC
+	mockBank.SetBalance(senderAddr, "uaura", sdkmath.NewInt(250_000))
 
 	htlcID, err := k.CreateHTLC(ctx, sender, recipient, amount, hash, 1)
 	require.NoError(t, err)
