@@ -29,7 +29,12 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) types.GenesisState {
 	assistants := make([]*types.Assistant, 0)
 	for ; iter.Valid(); iter.Next() {
 		var assistant types.Assistant
-		k.cdc.MustUnmarshal(iter.Value(), &assistant)
+		if err := k.cdc.Unmarshal(iter.Value(), &assistant); err != nil {
+			ctx.Logger().Error("failed to unmarshal assistant during genesis export, skipping",
+				"error", err,
+				"data_len", len(iter.Value()))
+			continue
+		}
 		assistants = append(assistants, &assistant)
 	}
 
