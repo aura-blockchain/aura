@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
 	"fmt"
@@ -1244,14 +1245,9 @@ func (k Keeper) VerifyMerkleProofBytes(merkleRoot, transactionLeaf, merkleProofB
 
 	// Traverse up the tree, trying both possible orderings at each level
 	for _, sibling := range proofHashes {
-		// Try left sibling first
-		combined := append(sibling, currentHash...)
-		hash := sha256.Sum256(combined)
-		tempHash := hash[:]
-
-		// Check if this matches at any level by continuing
-		// For now, assume standard ordering (smaller hash on left)
-		// This is a simplification - in production, indices should be provided
+		// Determine ordering based on byte comparison (standard Merkle tree ordering)
+		// Smaller hash goes on the left
+		var combined []byte
 		if bytes.Compare(sibling, currentHash) < 0 {
 			// Sibling is smaller, put it on the left
 			combined = append(sibling, currentHash...)
@@ -1260,7 +1256,7 @@ func (k Keeper) VerifyMerkleProofBytes(merkleRoot, transactionLeaf, merkleProofB
 			combined = append(currentHash, sibling...)
 		}
 
-		hash = sha256.Sum256(combined)
+		hash := sha256.Sum256(combined)
 		currentHash = hash[:]
 	}
 
