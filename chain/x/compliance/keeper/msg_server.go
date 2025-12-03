@@ -24,6 +24,22 @@ func NewMsgServer(k *Keeper) types.MsgServer {
 	return &msgServer{Keeper: k}
 }
 
+// SubmitKYC stores a KYC record using commitment-based storage (GDPR-compliant).
+// The PII data (verification_id, documents, jurisdiction, risk_score) must be
+// stored off-chain by the KYC provider. Only the cryptographic commitment (SHA-256 hash)
+// of the PII is stored on-chain, allowing verification without storing sensitive data.
+//
+// Security considerations:
+//   - Provider must be authorized (checked against params.ApprovedKycProviders)
+//   - Provider must be the transaction signer (authentication)
+//   - PII commitment must be exactly 32 bytes (SHA-256 hash)
+//   - Off-chain PII data should be encrypted and stored by the provider
+//   - Data erasure requests can be fulfilled off-chain while preserving on-chain audit trail
+//
+// GDPR compliance:
+//   - Article 17 "Right to Erasure": PII stored off-chain can be deleted on request
+//   - Article 5 "Data Minimization": Only essential verification status stored on-chain
+//   - Immutable audit trail maintained via commitment hashes
 func (s *msgServer) SubmitKYC(goCtx context.Context, req *types.MsgSubmitKYC) (*types.MsgSubmitKYCResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "request cannot be nil")
@@ -33,6 +49,9 @@ func (s *msgServer) SubmitKYC(goCtx context.Context, req *types.MsgSubmitKYC) (*
 	}
 	if req.Provider == "" {
 		return nil, status.Error(codes.InvalidArgument, "provider is required")
+	}
+	if len(req.PiiCommitment) != 32 {
+		return nil, status.Error(codes.InvalidArgument, "pii_commitment must be 32 bytes (SHA-256 hash)")
 	}
 
 	// Verify signer
@@ -71,11 +90,9 @@ func (s *msgServer) SubmitKYC(goCtx context.Context, req *types.MsgSubmitKYC) (*
 		Address:              req.Address,
 		KycLevel:             req.KycLevel,
 		Provider:             req.Provider,
-		VerificationId:       req.VerificationId,
-		Documents:            req.Documents,
-		Jurisdiction:         req.Jurisdiction,
 		VerifiedAt:           timestamppb.New(now),
 		ExpiresAt:            expiresAt,
+		PiiCommitment:        req.PiiCommitment,
 		EnhancedDueDiligence: req.KycLevel == types.KYCLevel_KYC_LEVEL_ADVANCED,
 	}
 	if err := s.Keeper.SetKYCRecord(ctx, record); err != nil {
@@ -89,10 +106,11 @@ func (s *msgServer) SubmitKYC(goCtx context.Context, req *types.MsgSubmitKYC) (*
 			sdk.NewAttribute("address", req.Address),
 			sdk.NewAttribute("provider", req.Provider),
 			sdk.NewAttribute("kyc_level", req.KycLevel.String()),
+			sdk.NewAttribute("pii_commitment", fmt.Sprintf("%x", req.PiiCommitment)),
 		),
 	)
 
-	return &types.MsgSubmitKYCResponse{Success: true, Message: "kyc record stored"}, nil
+	return &types.MsgSubmitKYCResponse{Success: true, Message: "kyc record stored with PII commitment"}, nil
 }
 
 func (s *msgServer) ReportSuspiciousActivity(goCtx context.Context, req *types.MsgReportSuspiciousActivity) (*types.MsgReportSuspiciousActivityResponse, error) {
@@ -392,4 +410,80 @@ func (s *msgServer) GenerateTaxReport(goCtx context.Context, req *types.MsgGener
 	)
 
 	return &types.MsgGenerateTaxReportResponse{ReportId: id, FilePath: ""}, nil
+}
+
+// EraseGDPRData handles GDPR Article 17 "Right to Erasure" requests.
+// This function emits an immutable on-chain event recording the erasure request,
+// which signals off-chain systems to delete the user's PII. The on-chain commitments
+// remain as an audit trail, but the off-chain PII becomes orphaned and unrecoverable.
+//
+// GDPR compliance:
+//   - Article 17 "Right to Erasure": User can request deletion of their personal data
+//   - Blockchain immutability: On-chain hashes remain, but PII is deleted off-chain
+//   - Audit trail: Erasure request event provides compliance evidence
+//   - Irreversibility: Once PII is deleted off-chain, it cannot be recovered
+//
+// Security considerations:
+//   - Only the data subject (address owner) can request erasure
+//   - Address must be the transaction signer (authentication)
+//   - Erasure event ID is deterministic for audit purposes
+//   - Off-chain systems must monitor for erasure events
+//
+// Implementation note:
+//   Off-chain systems (KYC providers, compliance databases) must:
+//   1. Monitor the blockchain for "gdpr_data_erased" events
+//   2. When event is detected, delete all PII for that address
+//   3. Log the erasure in their audit trail
+//   4. Confirm deletion to the user (off-chain communication)
+func (s *msgServer) EraseGDPRData(goCtx context.Context, req *types.MsgEraseGDPRData) (*types.MsgEraseGDPRDataResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "request cannot be nil")
+	}
+	if req.Address == "" {
+		return nil, status.Error(codes.InvalidArgument, "address is required")
+	}
+
+	// Verify signer - only the data subject can request erasure
+	signers := req.GetSigners()
+	if len(signers) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "no signers")
+	}
+
+	requestAddr, err := sdk.AccAddressFromBech32(req.Address)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid address")
+	}
+
+	if !requestAddr.Equals(signers[0]) {
+		return nil, status.Error(codes.PermissionDenied, "only the data subject can request erasure")
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	now := ctx.BlockTime()
+
+	// Generate deterministic erasure event ID for audit trail
+	erasureEventID := fmt.Sprintf("gdpr-erasure-%s-%d-%d", req.Address, ctx.BlockHeight(), now.Unix())
+
+	// Emit immutable event for off-chain systems to process
+	// Off-chain KYC providers and compliance databases must monitor this event
+	// and delete all PII associated with this address
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			"gdpr_data_erased",
+			sdk.NewAttribute("address", req.Address),
+			sdk.NewAttribute("erasure_event_id", erasureEventID),
+			sdk.NewAttribute("erasure_reason", req.ErasureReason),
+			sdk.NewAttribute("erasure_time", now.Format(time.RFC3339)),
+			sdk.NewAttribute("block_height", fmt.Sprintf("%d", ctx.BlockHeight())),
+		),
+	)
+
+	// Note: On-chain commitments/hashes remain for audit purposes
+	// but the off-chain PII they reference will be deleted
+	// This satisfies GDPR while preserving blockchain immutability
+
+	return &types.MsgEraseGDPRDataResponse{
+		Success:         true,
+		ErasureEventId:  erasureEventID,
+	}, nil
 }

@@ -431,6 +431,13 @@ func (k *Keeper) GetVetoRequests(ctx sdk.Context, proposalID uint64) []*types.Ve
 	return vetos
 }
 
+// DeleteVetoRequest removes a veto request from the KVStore
+func (k *Keeper) DeleteVetoRequest(ctx sdk.Context, proposalID uint64) {
+	store := ctx.KVStore(k.storeKey)
+	key := append(VetoRequestsKeyPrefix, sdk.Uint64ToBigEndian(proposalID)...)
+	store.Delete(key)
+}
+
 // ============================================================================
 // Snapshot Vote KVStore Methods
 // ============================================================================
@@ -638,8 +645,137 @@ func (k *Keeper) GetDelegatedPower(ctx sdk.Context, address string) string {
 	return power.String()
 }
 
+// ============================================================================
+// Token Lock KVStore Methods
+// ============================================================================
+
+// SetTokenLock stores a token lock in the KVStore
+func (k *Keeper) SetTokenLock(ctx sdk.Context, lock *types.TokenLock) error {
+	store := ctx.KVStore(k.storeKey)
+	bz, err := k.cdc.Marshal(lock)
+	if err != nil {
+		return err
+	}
+
+	// Key: prefix + owner address + proposal ID
+	key := append(TokenLocksKeyPrefix, []byte(lock.Owner)...)
+	key = append(key, sdk.Uint64ToBigEndian(lock.ProposalId)...)
+	store.Set(key, bz)
+	return nil
+}
+
 // GetTokenLocks returns token locks for an address
 func (k *Keeper) GetTokenLocks(ctx sdk.Context, address string) []*types.TokenLock {
-	// Simplified: return empty slice
-	return []*types.TokenLock{}
+	store := ctx.KVStore(k.storeKey)
+	prefix := append(TokenLocksKeyPrefix, []byte(address)...)
+	iterator := storetypes.KVStorePrefixIterator(store, prefix)
+	defer iterator.Close()
+
+	var locks []*types.TokenLock
+	for ; iterator.Valid(); iterator.Next() {
+		var lock types.TokenLock
+		if err := k.cdc.Unmarshal(iterator.Value(), &lock); err != nil {
+			continue
+		}
+		locks = append(locks, &lock)
+	}
+	return locks
+}
+
+// DeleteTokenLock removes a token lock from the KVStore
+func (k *Keeper) DeleteTokenLock(ctx sdk.Context, owner string, proposalID uint64) {
+	store := ctx.KVStore(k.storeKey)
+	key := append(TokenLocksKeyPrefix, []byte(owner)...)
+	key = append(key, sdk.Uint64ToBigEndian(proposalID)...)
+	store.Delete(key)
+}
+
+// GetAllTokenLocks retrieves all token locks from the KVStore
+func (k *Keeper) GetAllTokenLocks(ctx sdk.Context) []*types.TokenLock {
+	store := ctx.KVStore(k.storeKey)
+	iterator := storetypes.KVStorePrefixIterator(store, TokenLocksKeyPrefix)
+	defer iterator.Close()
+
+	var locks []*types.TokenLock
+	for ; iterator.Valid(); iterator.Next() {
+		var lock types.TokenLock
+		if err := k.cdc.Unmarshal(iterator.Value(), &lock); err != nil {
+			ctx.Logger().Error("failed to unmarshal token lock", "error", err)
+			continue
+		}
+		locks = append(locks, &lock)
+	}
+	return locks
+}
+
+// GetAllVoteDelegations retrieves all vote delegations from the KVStore
+func (k *Keeper) GetAllVoteDelegations(ctx sdk.Context) []*types.VoteDelegation {
+	store := ctx.KVStore(k.storeKey)
+	iterator := storetypes.KVStorePrefixIterator(store, DelegationsKeyPrefix)
+	defer iterator.Close()
+
+	var delegations []*types.VoteDelegation
+	for ; iterator.Valid(); iterator.Next() {
+		var delegation types.VoteDelegation
+		if err := k.cdc.Unmarshal(iterator.Value(), &delegation); err != nil {
+			ctx.Logger().Error("failed to unmarshal vote delegation", "error", err)
+			continue
+		}
+		delegations = append(delegations, &delegation)
+	}
+	return delegations
+}
+
+// GetAllVotes retrieves all votes from the KVStore
+func (k *Keeper) GetAllVotes(ctx sdk.Context) []*types.Vote {
+	store := ctx.KVStore(k.storeKey)
+	iterator := storetypes.KVStorePrefixIterator(store, VotesKeyPrefix)
+	defer iterator.Close()
+
+	var votes []*types.Vote
+	for ; iterator.Valid(); iterator.Next() {
+		vote, err := k.unmarshalVote(iterator.Value())
+		if err != nil {
+			ctx.Logger().Error("failed to unmarshal vote", "error", err)
+			continue
+		}
+		votes = append(votes, vote)
+	}
+	return votes
+}
+
+// GetAllDeposits retrieves all deposits from the KVStore
+func (k *Keeper) GetAllDeposits(ctx sdk.Context) []*types.Deposit {
+	store := ctx.KVStore(k.storeKey)
+	iterator := storetypes.KVStorePrefixIterator(store, DepositsKeyPrefix)
+	defer iterator.Close()
+
+	var deposits []*types.Deposit
+	for ; iterator.Valid(); iterator.Next() {
+		var deposit types.Deposit
+		if err := k.cdc.Unmarshal(iterator.Value(), &deposit); err != nil {
+			ctx.Logger().Error("failed to unmarshal deposit", "error", err)
+			continue
+		}
+		deposits = append(deposits, &deposit)
+	}
+	return deposits
+}
+
+// GetAllVetoRequests retrieves all veto requests from the KVStore
+func (k *Keeper) GetAllVetoRequests(ctx sdk.Context) []*types.VetoRequest {
+	store := ctx.KVStore(k.storeKey)
+	iterator := storetypes.KVStorePrefixIterator(store, VetoRequestsKeyPrefix)
+	defer iterator.Close()
+
+	var vetos []*types.VetoRequest
+	for ; iterator.Valid(); iterator.Next() {
+		var veto types.VetoRequest
+		if err := k.cdc.Unmarshal(iterator.Value(), &veto); err != nil {
+			ctx.Logger().Error("failed to unmarshal veto request", "error", err)
+			continue
+		}
+		vetos = append(vetos, &veto)
+	}
+	return vetos
 }

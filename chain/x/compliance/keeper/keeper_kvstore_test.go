@@ -32,11 +32,8 @@ func TestSetGetKYCRecord(t *testing.T) {
 		Provider:             "provider1",
 		VerifiedAt:           timestamppb.New(now),
 		ExpiresAt:            timestamppb.New(now.Add(365 * 24 * time.Hour)),
-		VerificationId:       "ver123",
-		Documents:            []string{"passport", "address_proof"},
-		Jurisdiction:         "US",
+		PiiCommitment: make([]byte, 32),
 		EnhancedDueDiligence: false,
-		RiskScore:            "low",
 	}
 
 	// Test Set
@@ -50,8 +47,8 @@ func TestSetGetKYCRecord(t *testing.T) {
 	require.Equal(t, record.Address, retrieved.Address)
 	require.Equal(t, record.KycLevel, retrieved.KycLevel)
 	require.Equal(t, record.Provider, retrieved.Provider)
-	require.Equal(t, record.VerificationId, retrieved.VerificationId)
-	require.Equal(t, record.Jurisdiction, retrieved.Jurisdiction)
+	require.Equal(t, record.PiiCommitment, retrieved.PiiCommitment)
+	require.Equal(t, record.Provider, retrieved.Provider)
 }
 
 func TestGetKYCRecord_NotFound(t *testing.T) {
@@ -73,7 +70,7 @@ func TestGetAllKYCRecords(t *testing.T) {
 			Provider:       "provider1",
 			VerifiedAt:     timestamppb.New(now),
 			ExpiresAt:      timestamppb.New(now.Add(365 * 24 * time.Hour)),
-			VerificationId: "ver1",
+			PiiCommitment: make([]byte, 32),
 		},
 		{
 			Address:        "cosmos1addr2",
@@ -81,7 +78,7 @@ func TestGetAllKYCRecords(t *testing.T) {
 			Provider:       "provider2",
 			VerifiedAt:     timestamppb.New(now),
 			ExpiresAt:      timestamppb.New(now.Add(365 * 24 * time.Hour)),
-			VerificationId: "ver2",
+			PiiCommitment: make([]byte, 32),
 		},
 	}
 
@@ -501,8 +498,6 @@ func TestSetGetGDPRConsent(t *testing.T) {
 		Consented:      true,
 		ConsentGivenAt: timestamppb.New(now),
 		ConsentVersion: "v1.0",
-		IpAddress:      "192.168.1.1",
-		UserAgent:      "Mozilla/5.0",
 	}
 
 	err := keeper.SetGDPRConsent(ctx, consent)
@@ -611,7 +606,6 @@ func TestSetGetTaxReport(t *testing.T) {
 		Id:                 "report1",
 		Address:            "cosmos1test",
 		TaxYear:            "2024",
-		Jurisdiction:       "US",
 		ReportType:         "1099-MISC",
 		TotalIncome:        "50000",
 		TotalCapitalGains:  "10000",
@@ -722,7 +716,7 @@ func TestKVStore_UpdateExisting(t *testing.T) {
 		KycLevel:       types.KYCLevel_KYC_LEVEL_BASIC,
 		Provider:       "provider1",
 		VerifiedAt:     timestamppb.New(now),
-		VerificationId: "ver1",
+		PiiCommitment: make([]byte, 32),
 	}
 	err := keeper.SetKYCRecord(ctx, record)
 	require.NoError(t, err)
@@ -752,7 +746,7 @@ func TestKVStore_MultipleAddressesIterator(t *testing.T) {
 			KycLevel:       types.KYCLevel_KYC_LEVEL_BASIC,
 			Provider:       "provider1",
 			VerifiedAt:     timestamppb.New(now),
-			VerificationId: "ver" + string(rune('0'+i)),
+			PiiCommitment: make([]byte, 32),
 		}
 		err := keeper.SetKYCRecord(ctx, record)
 		require.NoError(t, err)

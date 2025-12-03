@@ -81,3 +81,16 @@ func (m *MsgGenerateTaxReport) GetSigners() []sdk.AccAddress {
 	}
 	return []sdk.AccAddress{addr}
 }
+
+// GetSigners returns the expected signers for MsgEraseGDPRData.
+// The address requesting data erasure must be the signer.
+func (m *MsgEraseGDPRData) GetSigners() []sdk.AccAddress {
+	if m.Address == "" {
+		return []sdk.AccAddress{}
+	}
+	addr, err := sdk.AccAddressFromBech32(m.Address)
+	if err != nil {
+		return []sdk.AccAddress{}
+	}
+	return []sdk.AccAddress{addr}
+}

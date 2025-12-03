@@ -30,7 +30,7 @@ func (suite *InvariantsComprehensiveTestSuite) TestKYCRecordConsistencyInvariant
 
 	record := &types.KYCRecord{
 		Address:        suite.addr("kyc"),
-		VerificationId: "kyc-1",
+		PiiCommitment: make([]byte, 32),
 		KycLevel:       types.KYCLevel_KYC_LEVEL_ADVANCED,
 		VerifiedAt:     timestamppb.Now(),
 		ExpiresAt:      timestamppb.New(time.Now().Add(48 * time.Hour)),

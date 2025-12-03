@@ -80,12 +80,12 @@ func KYCRecordConsistencyInvariant(k *Keeper) sdk.Invariant {
 				), true
 			}
 
-			// Check verification ID is not empty
-			if record.VerificationId == "" {
+			// Check PII commitment is exactly 32 bytes (SHA-256)
+			if len(record.PiiCommitment) != 32 {
 				return sdk.FormatInvariant(
 					types.ModuleName,
 					"kyc-record-consistency",
-					fmt.Sprintf("KYC record for %s has empty verification ID", record.Address),
+					fmt.Sprintf("KYC record for %s has invalid PII commitment length: %d (expected 32)", record.Address, len(record.PiiCommitment)),
 				), true
 			}
 

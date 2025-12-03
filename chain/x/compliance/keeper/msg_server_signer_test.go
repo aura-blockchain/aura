@@ -9,13 +9,23 @@ import (
 	"github.com/aequitas/aura/chain/x/compliance/types"
 )
 
+
+func makePiiCommitment(seed string) []byte {
+	pii := make([]byte, 32)
+	copy(pii, []byte(seed))
+	return pii
+}
+
 // TestSubmitKYC_SignerVerification tests that KYC submission requires proper signer verification
 func TestSubmitKYC_SignerVerification(t *testing.T) {
 	keeper, ctx := setupTestKeeper(t)
 	server := NewMsgServer(keeper)
 
+	// Create valid bech32 addresses
+	providerAddr := sdk.AccAddress([]byte("provider_address_12")).String()
+	unauthorizedAddr := sdk.AccAddress([]byte("unauthorized_addr_1")).String()
+
 	// Set up approved provider
-	providerAddr := "aura1provider123456789012345678901234567890"
 	params := keeper.GetParams(ctx)
 	params.ApprovedKycProviders = []string{providerAddr}
 	err := keeper.SetParams(ctx, params)
@@ -23,12 +33,10 @@ func TestSubmitKYC_SignerVerification(t *testing.T) {
 
 	t.Run("unauthorized provider rejected", func(t *testing.T) {
 		req := &types.MsgSubmitKYC{
-			Address:        "aura1user000000000000000000000000000000000",
-			KycLevel:       types.KYCLevel_KYC_LEVEL_BASIC,
-			Provider:       "aura1unauthorized000000000000000000000000",
-			VerificationId: "ver-1",
-			Documents:      []string{"passport"},
-			Jurisdiction:   "US",
+			Address:       sdk.AccAddress([]byte("user_address_12345")).String(),
+			KycLevel:      types.KYCLevel_KYC_LEVEL_BASIC,
+			Provider:      unauthorizedAddr,
+			PiiCommitment: makePiiCommitment("test"),
 		}
 		_, err := server.SubmitKYC(sdk.WrapSDKContext(ctx), req)
 		require.Error(t, err)
@@ -37,12 +45,10 @@ func TestSubmitKYC_SignerVerification(t *testing.T) {
 
 	t.Run("empty provider rejected", func(t *testing.T) {
 		req := &types.MsgSubmitKYC{
-			Address:        "aura1user000000000000000000000000000000000",
-			KycLevel:       types.KYCLevel_KYC_LEVEL_BASIC,
-			Provider:       "",
-			VerificationId: "ver-1",
-			Documents:      []string{"passport"},
-			Jurisdiction:   "US",
+			Address:       "aura1user000000000000000000000000000000000",
+			KycLevel:      types.KYCLevel_KYC_LEVEL_BASIC,
+			Provider:      "",
+			PiiCommitment: makePiiCommitment("test"),
 		}
 		_, err := server.SubmitKYC(sdk.WrapSDKContext(ctx), req)
 		require.Error(t, err)
@@ -53,12 +59,10 @@ func TestSubmitKYC_SignerVerification(t *testing.T) {
 		// Note: In actual usage, GetSigners would be called automatically by the SDK
 		// This test ensures the handler checks for empty signers list
 		req := &types.MsgSubmitKYC{
-			Address:        "aura1user000000000000000000000000000000000",
-			KycLevel:       types.KYCLevel_KYC_LEVEL_BASIC,
-			Provider:       providerAddr,
-			VerificationId: "ver-1",
-			Documents:      []string{"passport"},
-			Jurisdiction:   "US",
+			Address:       "aura1user000000000000000000000000000000000",
+			KycLevel:      types.KYCLevel_KYC_LEVEL_BASIC,
+			Provider:      providerAddr,
+			PiiCommitment: makePiiCommitment("test"),
 		}
 		// GetSigners will return empty list when Provider can't be parsed as address
 		_, err := server.SubmitKYC(sdk.WrapSDKContext(ctx), req)
@@ -314,8 +318,10 @@ func TestKYCProviderAuthorization_Integration(t *testing.T) {
 	keeper, ctx := setupTestKeeper(t)
 	server := NewMsgServer(keeper)
 
-	providerAddr := "aura1provider123456789012345678901234567890"
-	unauthorizedAddr := "aura1unauthorized000000000000000000000000"
+	// Create valid bech32 addresses
+	providerAddr := sdk.AccAddress([]byte("provider_address_12")).String()
+	unauthorizedAddr := sdk.AccAddress([]byte("unauthorized_addr_1")).String()
+	userAddr := sdk.AccAddress([]byte("user_address_12345")).String()
 
 	t.Run("setup approved providers", func(t *testing.T) {
 		params := keeper.GetParams(ctx)
@@ -331,12 +337,10 @@ func TestKYCProviderAuthorization_Integration(t *testing.T) {
 
 	t.Run("unauthorized provider cannot submit KYC", func(t *testing.T) {
 		req := &types.MsgSubmitKYC{
-			Address:        "aura1user000000000000000000000000000000000",
-			KycLevel:       types.KYCLevel_KYC_LEVEL_BASIC,
-			Provider:       unauthorizedAddr,
-			VerificationId: "ver-1",
-			Documents:      []string{"passport"},
-			Jurisdiction:   "US",
+			Address:       userAddr,
+			KycLevel:      types.KYCLevel_KYC_LEVEL_BASIC,
+			Provider:      unauthorizedAddr,
+			PiiCommitment: makePiiCommitment("test"),
 		}
 		_, err := server.SubmitKYC(sdk.WrapSDKContext(ctx), req)
 		require.Error(t, err)
@@ -350,12 +354,10 @@ func TestKYCProviderAuthorization_Integration(t *testing.T) {
 		require.NoError(t, err)
 
 		req := &types.MsgSubmitKYC{
-			Address:        "aura1user000000000000000000000000000000000",
-			KycLevel:       types.KYCLevel_KYC_LEVEL_BASIC,
-			Provider:       providerAddr,
-			VerificationId: "ver-1",
-			Documents:      []string{"passport"},
-			Jurisdiction:   "US",
+			Address:       userAddr,
+			KycLevel:      types.KYCLevel_KYC_LEVEL_BASIC,
+			Provider:      providerAddr,
+			PiiCommitment: makePiiCommitment("test"),
 		}
 		_, err = server.SubmitKYC(sdk.WrapSDKContext(ctx), req)
 		require.Error(t, err)

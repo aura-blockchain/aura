@@ -14,19 +14,28 @@ import (
 func TestMsgSubmitKYCStoresRecord(t *testing.T) {
 	keeper, ctx := setupTestKeeper(t)
 	server := NewMsgServer(keeper)
+
+	// Setup approved provider
+	providerAddr := sdk.AccAddress([]byte("provider_address_12")).String()
+	params := keeper.GetParams(ctx)
+	params.ApprovedKycProviders = []string{providerAddr}
+	err := keeper.SetParams(ctx, params)
+	require.NoError(t, err)
+
+	piiCommitment := make([]byte, 32) // SHA-256 hash
+	copy(piiCommitment, []byte("test_commitment_hash_32_bytes"))
+
 	req := &types.MsgSubmitKYC{
-		Address:        "aura1kyc",
-		KycLevel:       types.KYCLevel_KYC_LEVEL_BASIC,
-		Provider:       "provider",
-		VerificationId: "ver-1",
-		Documents:      []string{"passport"},
-		Jurisdiction:   "US",
+		Address:       "aura1kyc",
+		KycLevel:      types.KYCLevel_KYC_LEVEL_BASIC,
+		Provider:      providerAddr,
+		PiiCommitment: piiCommitment,
 	}
-	_, err := server.SubmitKYC(sdk.WrapSDKContext(ctx), req)
+	_, err = server.SubmitKYC(sdk.WrapSDKContext(ctx), req)
 	require.NoError(t, err)
 	record, err := keeper.GetKYCRecord(ctx, req.Address)
 	require.NoError(t, err)
-	require.Equal(t, req.VerificationId, record.VerificationId)
+	require.Equal(t, req.PiiCommitment, record.PiiCommitment)
 }
 
 func TestMsgReportSuspiciousActivityPersisted(t *testing.T) {

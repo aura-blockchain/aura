@@ -50,6 +50,8 @@ type (
 	MsgRecordGDPRConsentResponse        = pb.MsgRecordGDPRConsentResponse
 	MsgRequestGDPRData                  = pb.MsgRequestGDPRData
 	MsgRequestGDPRDataResponse          = pb.MsgRequestGDPRDataResponse
+	MsgEraseGDPRData                    = pb.MsgEraseGDPRData
+	MsgEraseGDPRDataResponse            = pb.MsgEraseGDPRDataResponse
 	MsgGenerateTaxReport                = pb.MsgGenerateTaxReport
 	MsgGenerateTaxReportResponse        = pb.MsgGenerateTaxReportResponse
 
