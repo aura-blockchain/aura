@@ -20,7 +20,7 @@ import (
 // Attack prevented: Anyone linking arbitrary addresses to their identity
 func TestLinkAddress_SignerVerification(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 	ctx := input.Ctx
 	ms := keeper.NewMsgServerImpl(k)
 
@@ -57,7 +57,7 @@ func TestLinkAddress_SignerVerification(t *testing.T) {
 // SECURITY TEST: Validates legitimate linking by authorized user
 func TestLinkAddress_ValidSigner(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 	ctx := input.Ctx
 	ms := keeper.NewMsgServerImpl(k)
 
@@ -95,7 +95,7 @@ func TestLinkAddress_ValidSigner(t *testing.T) {
 // SECURITY TEST: Prevents linking PAW addresses without proof of ownership
 func TestLinkAddress_PawSignatureRequired(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 	ctx := input.Ctx
 	ms := keeper.NewMsgServerImpl(k)
 
@@ -125,7 +125,7 @@ func TestLinkAddress_PawSignatureRequired(t *testing.T) {
 // SECURITY TEST: Prevents linking XAI addresses without proof of ownership
 func TestLinkAddress_XaiSignatureRequired(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 	ctx := input.Ctx
 	ms := keeper.NewMsgServerImpl(k)
 
@@ -155,7 +155,7 @@ func TestLinkAddress_XaiSignatureRequired(t *testing.T) {
 // SECURITY TEST: Prevents linking with forged or invalid signatures
 func TestLinkAddress_InvalidPawSignature(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 	ctx := input.Ctx
 	ms := keeper.NewMsgServerImpl(k)
 
@@ -187,7 +187,7 @@ func TestLinkAddress_InvalidPawSignature(t *testing.T) {
 // SECURITY TEST: Prevents linking with forged or invalid signatures
 func TestLinkAddress_InvalidXaiSignature(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 	ctx := input.Ctx
 	ms := keeper.NewMsgServerImpl(k)
 
@@ -220,7 +220,7 @@ func TestLinkAddress_InvalidXaiSignature(t *testing.T) {
 // Attack prevented: Attacker linking someone else's already-linked PAW address
 func TestLinkAddress_PawAddressAlreadyLinked(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 	ctx := input.Ctx
 	ms := keeper.NewMsgServerImpl(k)
 
@@ -272,7 +272,7 @@ func TestLinkAddress_PawAddressAlreadyLinked(t *testing.T) {
 // Attack prevented: Attacker linking someone else's already-linked XAI address
 func TestLinkAddress_XaiAddressAlreadyLinked(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 	ctx := input.Ctx
 	ms := keeper.NewMsgServerImpl(k)
 
@@ -323,7 +323,7 @@ func TestLinkAddress_XaiAddressAlreadyLinked(t *testing.T) {
 // SECURITY TEST: Allows legitimate link updates by the owner
 func TestLinkAddress_UpdateOwnLink(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 	ctx := input.Ctx
 	ms := keeper.NewMsgServerImpl(k)
 
@@ -372,7 +372,7 @@ func TestLinkAddress_UpdateOwnLink(t *testing.T) {
 // SECURITY TEST: Validates simultaneous multi-chain linking
 func TestLinkAddress_BothAddresses(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 	ctx := input.Ctx
 	ms := keeper.NewMsgServerImpl(k)
 
@@ -408,7 +408,7 @@ func TestLinkAddress_BothAddresses(t *testing.T) {
 // SECURITY TEST: Validates basic authentication requirements
 func TestLinkAddress_NoSigner(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 	ctx := input.Ctx
 	ms := keeper.NewMsgServerImpl(k)
 
@@ -435,7 +435,7 @@ func TestLinkAddress_NoSigner(t *testing.T) {
 // TestVerifyPawAddressOwnership_ValidSignature tests PAW signature verification with valid signature
 func TestVerifyPawAddressOwnership_ValidSignature(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 	ctx := input.Ctx
 
 	auraAddr := "aura1test123"
@@ -455,7 +455,7 @@ func TestVerifyPawAddressOwnership_ValidSignature(t *testing.T) {
 // TestVerifyPawAddressOwnership_InvalidSignature tests PAW signature verification with invalid signature
 func TestVerifyPawAddressOwnership_InvalidSignature(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 	ctx := input.Ctx
 
 	auraAddr := "aura1test123"
@@ -471,7 +471,7 @@ func TestVerifyPawAddressOwnership_InvalidSignature(t *testing.T) {
 // TestVerifyPawAddressOwnership_EmptySignature tests PAW signature verification with empty signature
 func TestVerifyPawAddressOwnership_EmptySignature(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 	ctx := input.Ctx
 
 	auraAddr := "aura1test123"
@@ -484,7 +484,7 @@ func TestVerifyPawAddressOwnership_EmptySignature(t *testing.T) {
 // TestVerifyXaiAddressOwnership_ValidSignature tests XAI signature verification with valid signature
 func TestVerifyXaiAddressOwnership_ValidSignature(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 	ctx := input.Ctx
 
 	auraAddr := "aura1test123"
@@ -503,7 +503,7 @@ func TestVerifyXaiAddressOwnership_ValidSignature(t *testing.T) {
 // TestVerifyXaiAddressOwnership_InvalidSignature tests XAI signature verification with invalid signature
 func TestVerifyXaiAddressOwnership_InvalidSignature(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 	ctx := input.Ctx
 
 	auraAddr := "aura1test123"
@@ -519,7 +519,7 @@ func TestVerifyXaiAddressOwnership_InvalidSignature(t *testing.T) {
 // TestFindSharedIdentityByLinkedAddress tests finding identities by linked addresses
 func TestFindSharedIdentityByLinkedAddress(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 	ctx := input.Ctx
 	ms := keeper.NewMsgServerImpl(k)
 

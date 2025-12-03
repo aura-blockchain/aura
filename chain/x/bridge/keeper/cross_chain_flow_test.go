@@ -25,7 +25,7 @@ func TestCrossChainTransferFlowWithMerkleProof(t *testing.T) {
 	ps := paramtypes.NewSubspace(input.Cdc, legacyAmino, input.StoreKey, input.MemStoreKey, "bridge").
 		WithKeyTable(types.ParamKeyTable())
 
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, &ps, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, &ps, nil, nil, nil, nil)
 	ctx := input.Ctx
 
 	params := types.DefaultParams()

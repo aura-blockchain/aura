@@ -63,7 +63,7 @@ func (suite *BridgeKeeperTestSuite) TestSetParams() {
 func TestInitiateBridgeTransfer(t *testing.T) {
 	t.Skip("InitiateTransfer method not implemented yet")
 	// input := keepertest.CreateTestInput(t)
-	// k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	// k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 
 	// sender := keepertest.GenTestAddr()
 	// recipient := "0x1234567890123456789012345678901234567890"
@@ -100,7 +100,7 @@ func TestGetAllTransfers(t *testing.T) {
 func TestSubmitAttestation(t *testing.T) {
 	t.Skip("SubmitAttestation method not implemented yet")
 	// input := keepertest.CreateTestInput(t)
-	// k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	// k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 
 	// validator := keepertest.GenTestAddr()
 	// transferID := "transfer_1"
@@ -111,7 +111,7 @@ func TestSubmitAttestation(t *testing.T) {
 
 func TestSubmitMultipleAttestations(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 
 	transferID := "transfer_1"
 	seedBridgeTransfer(t, input, transferID, math.NewInt(1000).String(), 0)
@@ -128,7 +128,7 @@ func TestSubmitMultipleAttestations(t *testing.T) {
 
 func TestDuplicateAttestation(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 
 	validator := keepertest.GenTestAddr()
 	transferID := "transfer_1"
@@ -144,7 +144,7 @@ func TestDuplicateAttestation(t *testing.T) {
 
 func TestAttestationThreshold(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 
 	transferID := "transfer_1"
 	seedBridgeTransfer(t, input, transferID, math.NewInt(5000).String(), 7)
@@ -162,7 +162,7 @@ func TestAttestationThreshold(t *testing.T) {
 
 func TestInsufficientAttestations(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 
 	transferID := "transfer_1"
 	seedBridgeTransfer(t, input, transferID, math.NewInt(5000).String(), 7)
@@ -182,7 +182,7 @@ func TestInsufficientAttestations(t *testing.T) {
 
 func TestProcessWithdrawal(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 
 	recipient := keepertest.GenTestAddr()
 	amount := sdk.NewCoins(sdk.NewCoin("uaura", math.NewInt(1000000)))
@@ -194,7 +194,7 @@ func TestProcessWithdrawal(t *testing.T) {
 
 func TestProcessWithdrawalCircuitBreaker(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 
 	recipient := keepertest.GenTestAddr()
 	largeAmount := sdk.NewCoins(sdk.NewCoin("uaura", math.NewInt(1000000000000)))
@@ -207,7 +207,7 @@ func TestProcessWithdrawalCircuitBreaker(t *testing.T) {
 
 func TestProcessWithdrawalTimelock(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 
 	recipient := keepertest.GenTestAddr()
 	amount := sdk.NewCoins(sdk.NewCoin("uaura", math.NewInt(1000000)))
@@ -232,7 +232,7 @@ func TestProcessWithdrawalTimelock(t *testing.T) {
 
 func TestSubmitFraudProof(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 
 	submitter := keepertest.GenTestAddr()
 	transferID := "transfer_1"
@@ -250,7 +250,7 @@ func TestSubmitFraudProof(t *testing.T) {
 
 func TestSubmitFraudProofDuplicate(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 
 	submitter := keepertest.GenTestAddr()
 	transferID := "transfer_dup"
@@ -266,7 +266,7 @@ func TestSubmitFraudProofDuplicate(t *testing.T) {
 
 func TestSubmitFraudProofWindowExpired(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 
 	submitter := keepertest.GenTestAddr()
 	transferID := "transfer_window"
@@ -280,7 +280,7 @@ func TestSubmitFraudProofWindowExpired(t *testing.T) {
 
 func TestResolveFraudProofValid(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 
 	submitter := keepertest.GenTestAddr()
 	transferID := "transfer_1"
@@ -303,7 +303,7 @@ func TestResolveFraudProofValid(t *testing.T) {
 
 func TestResolveFraudProofInvalid(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 
 	submitter := keepertest.GenTestAddr()
 	transferID := "transfer_invalid"
@@ -323,7 +323,7 @@ func TestResolveFraudProofInvalid(t *testing.T) {
 
 func TestResolveFraudProofMissing(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 
 	_, err := k.ResolveFraudProof(input.Ctx, "unknown", true)
 	require.ErrorIs(t, err, types.ErrFraudProofNotFound)
@@ -331,7 +331,7 @@ func TestResolveFraudProofMissing(t *testing.T) {
 
 func TestResolveFraudProofExpired(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 
 	transferID := "transfer_expired"
 	seedBridgeTransfer(t, input, transferID, math.NewInt(1000).String(), 0)
@@ -346,7 +346,7 @@ func TestResolveFraudProofExpired(t *testing.T) {
 
 func TestFraudProofWindow(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 
 	transferID := "transfer_1"
 	seedBridgeTransfer(t, input, transferID, math.NewInt(1000).String(), 0)
@@ -366,7 +366,7 @@ func TestFraudProofWindow(t *testing.T) {
 
 func TestAddSupportedChain(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 
 	chainConfig := types.ChainConfig{
 		ChainId:   "ethereum",
@@ -380,7 +380,7 @@ func TestAddSupportedChain(t *testing.T) {
 
 func TestGetSupportedChain(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 
 	chainConfig := types.ChainConfig{
 		ChainId:   "ethereum",
@@ -398,7 +398,7 @@ func TestGetSupportedChain(t *testing.T) {
 
 func TestRemoveSupportedChain(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 
 	chainConfig := types.ChainConfig{
 		ChainId:   "ethereum",
@@ -417,7 +417,7 @@ func TestRemoveSupportedChain(t *testing.T) {
 
 func TestDisableChain(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 
 	chainConfig := types.ChainConfig{
 		ChainId:   "ethereum",
@@ -440,7 +440,7 @@ func TestDisableChain(t *testing.T) {
 
 func TestCalculateBridgeFee(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 
 	amount := math.NewInt(1000000)
 	fee := k.CalculateBridgeFee(input.Ctx, amount, "ethereum")
@@ -451,7 +451,7 @@ func TestCalculateBridgeFee(t *testing.T) {
 
 func TestBridgeFeeCollection(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 
 	amount := math.NewInt(1000000)
 	fee := k.CalculateBridgeFee(input.Ctx, amount, "ethereum")
@@ -473,7 +473,7 @@ func TestInitGenesis(t *testing.T) {
 	legacyAmino := codec.NewLegacyAmino()
 	ps := paramtypes.NewSubspace(input.Cdc, legacyAmino, input.StoreKey, input.MemStoreKey, "bridge")
 	ps = ps.WithKeyTable(types.ParamKeyTable())
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, &ps, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, &ps, nil, nil, nil, nil)
 
 	// Missing params should fail validation
 	err := k.InitGenesis(input.Ctx, types.GenesisState{})
@@ -492,7 +492,7 @@ func TestExportGenesis(t *testing.T) {
 	legacyAmino := codec.NewLegacyAmino()
 	ps := paramtypes.NewSubspace(input.Cdc, legacyAmino, input.StoreKey, input.MemStoreKey, "bridge")
 	ps = ps.WithKeyTable(types.ParamKeyTable())
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, &ps, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, &ps, nil, nil, nil, nil)
 
 	genesisState := testBridgeGenesisState()
 	require.NoError(t, k.InitGenesis(input.Ctx, genesisState))

@@ -60,7 +60,7 @@ func TestParamSetPairs(t *testing.T) {
 	params := DefaultParams()
 	pairs := params.ParamSetPairs()
 	require.NotNil(t, pairs)
-	require.Len(t, pairs, 5)
+	require.Len(t, pairs, 19)
 
 	expectedKeys := [][]byte{
 		KeyBridgeEnabled,
@@ -68,6 +68,20 @@ func TestParamSetPairs(t *testing.T) {
 		KeyBridgeFeeBasisPoints,
 		KeyCoreMaxTransferAmount,
 		KeyValidatorThresholdPercentage,
+		KeySupplyCaps,
+		KeyDailyMintLimit,
+		KeyHourlyMintLimit,
+		KeyPaused,
+		KeyPausedChains,
+		KeyAutoPauseEnabled,
+		KeyAutoPauseThreshold,
+		KeyEmergencyPauseAddresses,
+		KeyFraudProofWindow,
+		KeySlashFraudSignature,
+		KeySlashDoubleSigning,
+		KeySlashOffline,
+		KeyMinSigningWindow,
+		KeyMinSignedPerWindow,
 	}
 
 	for _, key := range expectedKeys {

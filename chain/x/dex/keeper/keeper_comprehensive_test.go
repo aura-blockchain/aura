@@ -28,22 +28,43 @@ func NewMockBankKeeper() *MockBankKeeper {
 }
 
 func (m *MockBankKeeper) SendCoins(ctx sdk.Context, fromAddr sdk.AccAddress, toAddr sdk.AccAddress, amt sdk.Coins) error {
+	// For testing, simply add to recipient balance (ignore sender balance check)
+	for _, coin := range amt {
+		m.addBalance(toAddr, coin.Denom, coin.Amount)
+	}
 	return nil
 }
 
 func (m *MockBankKeeper) SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
+	// For testing, deduct from sender (if sufficient balance)
+	for _, coin := range amt {
+		balance := m.GetBalance(ctx, senderAddr, coin.Denom)
+		if balance.Amount.LT(coin.Amount) {
+			return fmt.Errorf("insufficient balance: have %s, need %s %s",
+				balance.Amount.String(), coin.Amount.String(), coin.Denom)
+		}
+		newBalance := balance.Amount.Sub(coin.Amount)
+		m.SetBalance(senderAddr, coin.Denom, newBalance)
+	}
 	return nil
 }
 
 func (m *MockBankKeeper) SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
+	// For testing, simply add to recipient balance (modules have unlimited funds in tests)
+	for _, coin := range amt {
+		m.addBalance(recipientAddr, coin.Denom, coin.Amount)
+	}
 	return nil
 }
 
 func (m *MockBankKeeper) MintCoins(ctx sdk.Context, moduleName string, amt sdk.Coins) error {
+	// Minting is a no-op for the mock (module balances not tracked)
+	// Funds will be added when SendCoinsFromModuleToAccount is called
 	return nil
 }
 
 func (m *MockBankKeeper) BurnCoins(ctx sdk.Context, moduleName string, amt sdk.Coins) error {
+	// Burning is a no-op for the mock (module balances not tracked)
 	return nil
 }
 
@@ -64,6 +85,21 @@ func (m *MockBankKeeper) SetBalance(addr sdk.AccAddress, denom string, amount ma
 		m.balances[addrStr] = make(map[string]math.Int)
 	}
 	m.balances[addrStr][denom] = amount
+}
+
+// addBalance adds to an existing balance (helper for SendCoins methods)
+func (m *MockBankKeeper) addBalance(addr sdk.AccAddress, denom string, amount math.Int) {
+	addrStr := addr.String()
+	if m.balances[addrStr] == nil {
+		m.balances[addrStr] = make(map[string]math.Int)
+	}
+
+	currentBalance := m.balances[addrStr][denom]
+	if currentBalance.IsNil() {
+		currentBalance = math.ZeroInt()
+	}
+
+	m.balances[addrStr][denom] = currentBalance.Add(amount)
 }
 
 type DEXKeeperTestSuite struct {
@@ -264,8 +300,11 @@ func TestGetAllPools(t *testing.T) {
 
 	creator := keepertest.GenTestAddr().String()
 
-	// Create multiple pools
+	// Create multiple pools with cooldown advancement
 	for i := 0; i < 5; i++ {
+		// Advance time by 1 hour + 1 second to satisfy cooldown (3600 seconds default)
+		ctx = ctx.WithBlockTime(ctx.BlockTime().Add(time.Hour + time.Second))
+
 		tokenName := "token" + string(rune('A'+i))
 		_, _, err := k.CreatePool(ctx, creator, tokenName, "uaura", sdk.NewCoin(tokenName, math.NewInt(1000000)), sdk.NewCoin("uaura", math.NewInt(1000000)))
 		require.NoError(t, err)

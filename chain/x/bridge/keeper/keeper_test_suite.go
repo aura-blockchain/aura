@@ -37,6 +37,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 		nil, // bankKeeper
 		nil, // accountKeeper
 		nil, // vcKeeper
+		nil, // stakingKeeper
 	)
 	suite.SdkCtx = input.Ctx
 	suite.Cdc = input.Cdc
