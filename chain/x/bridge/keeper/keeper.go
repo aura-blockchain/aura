@@ -31,6 +31,7 @@ type Keeper struct {
 	bankKeeper    types.BankKeeper
 	accountKeeper types.AccountKeeper
 	vcKeeper      types.VCRegistryKeeper // For shared identity verification
+	stakingKeeper types.StakingKeeper    // For validator slashing
 
 	// Security features
 	reentrancyGuard *security.ReentrancyGuard
@@ -49,6 +50,7 @@ func NewKeeper(
 	bankKeeper types.BankKeeper,
 	accountKeeper types.AccountKeeper,
 	vcKeeper types.VCRegistryKeeper,
+	stakingKeeper types.StakingKeeper,
 ) *Keeper {
 	var paramstore paramtypes.Subspace
 	if ps != nil {
@@ -66,6 +68,7 @@ func NewKeeper(
 		bankKeeper:      bankKeeper,
 		accountKeeper:   accountKeeper,
 		vcKeeper:        vcKeeper,
+		stakingKeeper:   stakingKeeper,
 		reentrancyGuard: security.NewReentrancyGuard(),
 		pauseGuard:      security.NewPauseGuard(""),
 		inputValidator:  security.NewInputValidator(),

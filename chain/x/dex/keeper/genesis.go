@@ -62,6 +62,33 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data types.GenesisState) error {
 		k.setMarketPrice(ctx, price)
 	}
 
+	// Import pool creation records (audit trail)
+	for _, record := range data.PoolCreationRecords {
+		if record == nil {
+			continue
+		}
+		store := ctx.KVStore(k.storeKey)
+		key := types.PoolCreationKey(record.Creator)
+		bz := k.cdc.MustMarshal(record)
+		store.Set(key, bz)
+	}
+
+	// Import order commitments (commit-reveal scheme)
+	for _, commitment := range data.OrderCommitments {
+		if commitment == nil {
+			continue
+		}
+		k.SetOrderCommitment(ctx, commitment)
+	}
+
+	// Import queued orders (batch execution)
+	for _, queuedOrder := range data.QueuedOrders {
+		if queuedOrder == nil || queuedOrder.Order == nil {
+			continue
+		}
+		k.QueueOrderForBatch(ctx, queuedOrder.Order, queuedOrder.Salt)
+	}
+
 	return nil
 }
 
@@ -73,13 +100,19 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) types.GenesisState {
 	orderbooks := k.exportOrderbooks(ctx)
 	swapStats := k.GetAllSwapStats(ctx)
 	marketPrices := k.GetAllMarketPrices(ctx)
+	poolCreationRecords := k.GetAllPoolCreationRecords(ctx)
+	orderCommitments := k.GetAllOrderCommitments(ctx)
+	queuedOrders := k.GetAllQueuedOrders(ctx)
 
 	return types.GenesisState{
-		Params:         params,
-		LiquidityPools: pools,
-		SwapOrders:     orders,
-		Orderbooks:     orderbooks,
-		MarketPrices:   marketPrices,
-		SwapStats:      swapStats,
+		Params:              params,
+		LiquidityPools:      pools,
+		SwapOrders:          orders,
+		Orderbooks:          orderbooks,
+		MarketPrices:        marketPrices,
+		SwapStats:           swapStats,
+		PoolCreationRecords: poolCreationRecords,
+		OrderCommitments:    orderCommitments,
+		QueuedOrders:        queuedOrders,
 	}
 }

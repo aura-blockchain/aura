@@ -801,6 +801,7 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 		bankAdapter,
 		accountAdapter,
 		vcAdapter,
+		stakingKeeper, // For validator slashing
 	)
 	aiKeeper := aikeeper.NewKeeper(encoding.Codec, keys.ai, authorityAddr, bankAdapter)
 

@@ -36,6 +36,11 @@ var (
 	KeyAutoPauseThreshold           = []byte("AutoPauseThreshold")
 	KeyEmergencyPauseAddresses      = []byte("EmergencyPauseAddresses")
 	KeyFraudProofWindow             = []byte("FraudProofWindow")
+	KeySlashFraudSignature          = []byte("SlashFraudSignature")
+	KeySlashDoubleSigning           = []byte("SlashDoubleSigning")
+	KeySlashOffline                 = []byte("SlashOffline")
+	KeyMinSigningWindow             = []byte("MinSigningWindow")
+	KeyMinSignedPerWindow           = []byte("MinSignedPerWindow")
 )
 
 // Params defines the parameters persisted in the Cosmos SDK param store.
@@ -59,6 +64,16 @@ type Params struct {
 	// Fraud proof window - time period for challenging transfers before finalization
 	// SECURITY CRITICAL: Provides time window for fraud proof submission before tokens are released
 	FraudProofWindow int64 `json:"fraud_proof_window"` // Duration in seconds (e.g., 3600 = 1 hour)
+
+	// Validator slashing parameters
+	// SECURITY CRITICAL: Economic deterrent against malicious validator behavior
+	SlashFraudSignature string `json:"slash_fraud_signature"` // Slash fraction for signing fraudulent transfers (e.g., "0.50" = 50%)
+	SlashDoubleSigning  string `json:"slash_double_signing"`  // Slash fraction for double-signing (e.g., "1.00" = 100%)
+	SlashOffline        string `json:"slash_offline"`         // Slash fraction for being offline (e.g., "0.01" = 1%)
+
+	// Liveness tracking parameters for offline slashing
+	MinSigningWindow   int64  `json:"min_signing_window"`    // Number of blocks to track liveness (e.g., 10000)
+	MinSignedPerWindow string `json:"min_signed_per_window"` // Minimum percentage of signatures required (e.g., "0.50" = 50%)
 }
 
 // DefaultParams returns default parameters used by the param store.
@@ -75,11 +90,19 @@ func DefaultParams() Params {
 
 		// Circuit breaker defaults
 		Paused:                  false,
-		PausedChains:            []string{},                             // No chains paused by default
-		AutoPauseEnabled:        false,                                  // Disabled by default, enable after testing
-		AutoPauseThreshold:      "5000000000",                           // 5 billion per hour triggers auto-pause
-		EmergencyPauseAddresses: []string{},                             // Must be set by governance
+		PausedChains:            []string{},                               // No chains paused by default
+		AutoPauseEnabled:        false,                                    // Disabled by default, enable after testing
+		AutoPauseThreshold:      "5000000000",                             // 5 billion per hour triggers auto-pause
+		EmergencyPauseAddresses: []string{},                               // Must be set by governance
 		FraudProofWindow:        int64(DefaultFraudProofWindow.Seconds()), // 7 days in seconds (604800)
+
+		// Validator slashing defaults
+		// SECURITY: Severe punishments deter malicious behavior
+		SlashFraudSignature: "0.50",  // 50% of stake slashed for signing fraudulent transfers
+		SlashDoubleSigning:  "1.00",  // 100% of stake slashed (tombstoned) for double-signing
+		SlashOffline:        "0.01",  // 1% of stake slashed for being offline
+		MinSigningWindow:    10000,   // Track liveness over 10,000 blocks (~18 hours at 6s blocks)
+		MinSignedPerWindow:  "0.50",  // Must sign at least 50% of blocks in window
 	}
 }
 
@@ -105,6 +128,11 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeyAutoPauseThreshold, &p.AutoPauseThreshold, validateStringNotEmpty),
 		paramtypes.NewParamSetPair(KeyEmergencyPauseAddresses, &p.EmergencyPauseAddresses, validateStringSlice),
 		paramtypes.NewParamSetPair(KeyFraudProofWindow, &p.FraudProofWindow, validateFraudProofWindow),
+		paramtypes.NewParamSetPair(KeySlashFraudSignature, &p.SlashFraudSignature, validateSlashFraction),
+		paramtypes.NewParamSetPair(KeySlashDoubleSigning, &p.SlashDoubleSigning, validateSlashFraction),
+		paramtypes.NewParamSetPair(KeySlashOffline, &p.SlashOffline, validateSlashFraction),
+		paramtypes.NewParamSetPair(KeyMinSigningWindow, &p.MinSigningWindow, validateSigningWindow),
+		paramtypes.NewParamSetPair(KeyMinSignedPerWindow, &p.MinSignedPerWindow, validateSlashFraction),
 	}
 }
 
@@ -190,6 +218,47 @@ func validateFraudProofWindow(i interface{}) error {
 	return nil
 }
 
+// validateSlashFraction ensures slash fractions are valid decimals between 0 and 1
+func validateSlashFraction(i interface{}) error {
+	val, ok := i.(string)
+	if !ok {
+		return ErrInvalidParam
+	}
+	if val == "" {
+		return fmt.Errorf("slash fraction cannot be empty")
+	}
+	dec, err := sdkmath.LegacyNewDecFromStr(val)
+	if err != nil {
+		return fmt.Errorf("invalid decimal format for slash fraction: %s", val)
+	}
+	// Must be between 0 and 1 (0% to 100%)
+	if dec.IsNegative() {
+		return fmt.Errorf("slash fraction cannot be negative, got %s", val)
+	}
+	if dec.GT(sdkmath.LegacyOneDec()) {
+		return fmt.Errorf("slash fraction cannot exceed 1.0 (100%%), got %s", val)
+	}
+	return nil
+}
+
+// validateSigningWindow ensures the signing window is reasonable
+func validateSigningWindow(i interface{}) error {
+	val, ok := i.(int64)
+	if !ok {
+		return ErrInvalidParam
+	}
+	// Minimum 100 blocks, maximum 100,000 blocks
+	// This prevents too-short windows (no meaningful liveness tracking) and
+	// too-long windows (excessive state storage)
+	if val < 100 {
+		return fmt.Errorf("signing window must be at least 100 blocks, got %d", val)
+	}
+	if val > 100000 {
+		return fmt.Errorf("signing window cannot exceed 100,000 blocks, got %d", val)
+	}
+	return nil
+}
+
 // Validate performs comprehensive validation of bridge parameters
 func (p Params) Validate() error {
 	// CRITICAL SECURITY: Enforce minimum validator confirmations
@@ -250,6 +319,25 @@ func (p Params) Validate() error {
 
 	// Validate fraud proof window
 	if err := validateFraudProofWindow(p.FraudProofWindow); err != nil {
+		return err
+	}
+
+	// Validate slashing fractions
+	if err := validateSlashFraction(p.SlashFraudSignature); err != nil {
+		return fmt.Errorf("invalid SlashFraudSignature: %w", err)
+	}
+	if err := validateSlashFraction(p.SlashDoubleSigning); err != nil {
+		return fmt.Errorf("invalid SlashDoubleSigning: %w", err)
+	}
+	if err := validateSlashFraction(p.SlashOffline); err != nil {
+		return fmt.Errorf("invalid SlashOffline: %w", err)
+	}
+	if err := validateSlashFraction(p.MinSignedPerWindow); err != nil {
+		return fmt.Errorf("invalid MinSignedPerWindow: %w", err)
+	}
+
+	// Validate signing window
+	if err := validateSigningWindow(p.MinSigningWindow); err != nil {
 		return err
 	}
 

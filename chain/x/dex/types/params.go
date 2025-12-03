@@ -6,16 +6,20 @@ package types
 // DefaultParams returns default parameters
 func DefaultParams() *Params {
 	return &Params{
-		TradingFee:          "0.003",
-		ProtocolFee:         "0.0005",
-		MinLiquidityTiers:   []*MinLiquidityTier{},
-		MaxSlippageBps:      10000,
-		MinSwapAmount:       "1000000",
-		IrBoostEnabled:      true,
-		IrBoostPercent:      40,
-		BondingCurveEnabled: true,
-		BuybackBurnEnabled:  true,
-		BuybackPercent:      100,
+		TradingFee:             "0.003",
+		ProtocolFee:            "0.0005",
+		MinLiquidityTiers:      []*MinLiquidityTier{},
+		MaxSlippageBps:         10000,
+		MinSwapAmount:          "1000000",
+		IrBoostEnabled:         true,
+		IrBoostPercent:         40,
+		BondingCurveEnabled:    true,
+		BuybackBurnEnabled:     true,
+		BuybackPercent:         100,
+		CommitRevealThreshold:  "10000000000", // 10,000 AURA (large orders require commit-reveal)
+		CommitRevealWindow:     60,            // 60 seconds to reveal
+		BatchExecutionEnabled:  true,
+		BatchExecutionInterval: 5, // Execute batch every 5 blocks
 	}
 }
 

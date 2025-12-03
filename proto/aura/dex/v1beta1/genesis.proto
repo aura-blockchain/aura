@@ -5,6 +5,7 @@ import "gogoproto/gogo.proto";
 import "aura/dex/v1beta1/params.proto";
 import "aura/dex/v1beta1/liquidity_pool.proto";
 import "aura/dex/v1beta1/swap.proto";
+import "aura/dex/v1beta1/security.proto";
 
 option go_package = "github.com/aequitas/aura/proto/aura/dex/v1beta1";
 
@@ -27,4 +28,13 @@ message GenesisState {
 
   // Swap stats
   repeated SwapStats swap_stats = 6 [(gogoproto.nullable) = false];
+
+  // Order commitments (commit-reveal scheme)
+  repeated OrderCommitment order_commitments = 7 [(gogoproto.nullable) = false];
+
+  // Queued orders (for batch execution)
+  repeated QueuedOrder queued_orders = 8 [(gogoproto.nullable) = false];
+
+  // Pool creation records (audit trail for regulatory compliance)
+  repeated PoolCreationRecord pool_creation_records = 9 [(gogoproto.nullable) = false];
 }

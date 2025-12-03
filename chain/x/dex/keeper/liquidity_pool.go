@@ -49,6 +49,16 @@ func (k Keeper) CreatePool(
 	}
 	defer k.reentrancyGuard.Exit()
 
+	// SECURITY CHECK 3: Pool Creation Limit - Prevent spam pool creation
+	if err := k.CheckPoolCreationLimit(ctx, creator); err != nil {
+		return nil, sdkmath.ZeroInt(), err
+	}
+
+	// SECURITY CHECK 4: Pool Creation Cooldown - Prevent rapid pool creation
+	if err := k.CheckPoolCreationCooldown(ctx, creator); err != nil {
+		return nil, sdkmath.ZeroInt(), err
+	}
+
 	// Generate pool ID
 	poolID := k.GeneratePoolID(denomA, denomB)
 
@@ -164,6 +174,13 @@ func (k Keeper) CreatePool(
 
 	// Store pool
 	k.SetPool(ctx, pool)
+
+	// AUDIT TRAIL: Record pool creation for compliance and audit purposes
+	// This creates a permanent record enabling:
+	// - Regulatory compliance and audit trails
+	// - Pool creation limit enforcement
+	// - Pool history reconstruction
+	k.RecordPoolCreation(ctx, creator, poolID, denomA, denomB, amountA.Amount, amountB.Amount)
 
 	// Emit events
 	ctx.EventManager().EmitEvents(sdk.Events{

@@ -20,11 +20,13 @@ type (
 	PoolCreationRecord = pb.PoolCreationRecord
 
 	// Core types - Swap
-	SwapOrder    = pb.SwapOrder
-	Orderbook    = pb.Orderbook
-	HTLCData     = pb.HTLCData
-	SwapStats    = pb.SwapStats
-	TradeHistory = pb.TradeHistory
+	SwapOrder        = pb.SwapOrder
+	Orderbook        = pb.Orderbook
+	HTLCData         = pb.HTLCData
+	SwapStats        = pb.SwapStats
+	TradeHistory     = pb.TradeHistory
+	OrderCommitment  = pb.OrderCommitment
+	QueuedOrder      = pb.QueuedOrder
 
 	// Core types - Security
 	OrderManipulationDetection = pb.OrderManipulationDetection
