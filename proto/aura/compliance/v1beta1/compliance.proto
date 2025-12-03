@@ -4,6 +4,7 @@ package aura.compliance.v1beta1;
 option go_package = "github.com/aequitas/aura/proto/aura/compliance/v1beta1";
 
 import "google/protobuf/timestamp.proto";
+import "cosmos/msg/v1/msg.proto";
 
 // KYCLevel defines the level of KYC verification
 enum KYCLevel {
@@ -285,6 +286,8 @@ message QueryTaxReportResponse {
 // PII data (verification_id, documents, jurisdiction, risk_score) must be
 // stored off-chain by the provider. Only the cryptographic commitment is stored on-chain.
 message MsgSubmitKYC {
+  option (cosmos.msg.v1.signer) = "provider";
+
   string address = 1;
   KYCLevel kyc_level = 2;
   string provider = 3;
@@ -297,6 +300,8 @@ message MsgSubmitKYCResponse {
 }
 
 message MsgReportSuspiciousActivity {
+  option (cosmos.msg.v1.signer) = "reporter";
+
   string reporter = 1;
   string address = 2;
   string transaction_hash = 3;
@@ -310,6 +315,8 @@ message MsgReportSuspiciousActivityResponse {
 }
 
 message MsgScreenSanctions {
+  option (cosmos.msg.v1.signer) = "address";
+
   string address = 1;
   bool force_refresh = 2;
 }
@@ -320,6 +327,8 @@ message MsgScreenSanctionsResponse {
 }
 
 message MsgRecordGDPRConsent {
+  option (cosmos.msg.v1.signer) = "address";
+
   string address = 1;
   string consent_type = 2;
   bool consented = 3;
@@ -331,6 +340,8 @@ message MsgRecordGDPRConsentResponse {
 }
 
 message MsgRequestGDPRData {
+  option (cosmos.msg.v1.signer) = "address";
+
   string address = 1;
   string request_type = 2;
 }
@@ -340,6 +351,8 @@ message MsgRequestGDPRDataResponse {
 }
 
 message MsgGenerateTaxReport {
+  option (cosmos.msg.v1.signer) = "address";
+
   string address = 1;
   string tax_year = 2;
   string jurisdiction = 3;
@@ -355,6 +368,8 @@ message MsgGenerateTaxReportResponse {
 // This emits an event for off-chain systems to delete PII while maintaining
 // an immutable audit trail of the erasure request on-chain
 message MsgEraseGDPRData {
+  option (cosmos.msg.v1.signer) = "address";
+
   string address = 1;                             // Address requesting erasure
   string erasure_reason = 2;                      // Reason for data erasure request
 }
