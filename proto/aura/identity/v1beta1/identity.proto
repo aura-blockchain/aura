@@ -149,6 +149,7 @@ enum AuditResult {
 }
 
 // IdentityRecord represents a decentralized identity
+// GDPR-compliant: stores only cryptographic commitments, not raw PII
 message IdentityRecord {
   // Decentralized identifier (DID)
   string did = 1;
@@ -165,16 +166,16 @@ message IdentityRecord {
   // Timestamp when identity was last updated
   google.protobuf.Timestamp updated_at = 5 [(gogoproto.stdtime) = true];
 
-  // Key-value attributes
-  map<string, string> attributes = 6;
+  // REMOVED: Raw PII attributes - use pii_commitment instead
+  // map<string, string> attributes = 6; // DEPRECATED - do not use
 
-  // List of verification methods
+  // List of verification methods (public keys, not PII)
   repeated string verification_methods = 7;
 
   // Confidence score (0-100)
   int64 confidence_score = 8;
 
-  // Metadata hash
+  // Metadata hash (hash of off-chain metadata, not the metadata itself)
   string metadata_hash = 9;
 
   // Latest inclusion routine version
@@ -182,6 +183,29 @@ message IdentityRecord {
 
   // Block height of last change
   int64 last_changed_height = 11;
+
+  // Cryptographic commitment to PII data (SHA-256 hash)
+  // Commitment = SHA256(sorted_attributes || salt)
+  // This allows verification without storing raw PII on-chain
+  bytes pii_commitment = 12;
+
+  // Salt used in PII commitment (random 32 bytes)
+  // Stored on-chain to allow verification but prevents rainbow table attacks
+  bytes commitment_salt = 13;
+
+  // GDPR Right to Erasure flag
+  // When true, PII has been erased but audit trail (commitment) remains
+  bool erased = 14;
+
+  // Timestamp when identity was erased (GDPR compliance)
+  google.protobuf.Timestamp erased_at = 15 [(gogoproto.stdtime) = true];
+
+  // Off-chain data reference (IPFS CID, secure URL, or data location hint)
+  // Actual PII stored here, not on-chain
+  string off_chain_data_ref = 16;
+
+  // Off-chain data reference type (ipfs, https, did-document, etc.)
+  string off_chain_data_type = 17;
 }
 
 // IdentityStatus enum
@@ -192,6 +216,7 @@ enum IdentityStatus {
   IDENTITY_STATUS_REVOKED = 3;
   IDENTITY_STATUS_IDLE = 4;
   IDENTITY_STATUS_PENDING_VERIFICATION = 5;
+  IDENTITY_STATUS_ERASED = 6;  // GDPR erasure completed
 }
 
 // ChangeRequest for identity updates

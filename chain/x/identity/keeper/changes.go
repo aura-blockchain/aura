@@ -71,10 +71,129 @@ func (k *Keeper) GetAllIdentityRecords(ctx sdk.Context) ([]*types.IdentityRecord
 }
 
 // DeleteIdentityRecord removes an identity record
+// DEPRECATED: Use EraseIdentity for GDPR compliance instead
 func (k *Keeper) DeleteIdentityRecord(ctx sdk.Context, did string) error {
 	store := k.storeService.OpenKVStore(ctx)
 	key := types.GetIdentityRecordKey(did)
 	return store.Delete(key)
+}
+
+// EraseIdentity implements GDPR Right to Erasure
+// Marks identity as erased while preserving audit trail (commitment)
+func (k *Keeper) EraseIdentity(ctx sdk.Context, did, requester, reason string) error {
+	// Retrieve existing identity record
+	record, err := k.GetIdentityRecord(ctx, did)
+	if err != nil {
+		return types.ErrIdentityNotFound.Wrapf("identity not found: %s", did)
+	}
+
+	// Check authorization: requester must be owner or have admin permission
+	if record.Address != requester {
+		if err := k.RequirePermission(ctx, requester, types.PermissionManageIdentity); err != nil {
+			return types.ErrUnauthorized.Wrapf("requester %s not authorized to erase identity %s", requester, did)
+		}
+	}
+
+	// Check if already erased
+	if record.Erased {
+		return types.ErrIdentityAlreadyErased.Wrapf("identity %s already erased at %s", did, record.ErasedAt.AsTime())
+	}
+
+	now := ctx.BlockTime()
+
+	// Mark as erased (keep commitment for audit trail)
+	record.Erased = true
+	record.ErasedAt = timestamppb.New(now)
+	record.Status = types.IdentityStatusErased
+	record.UpdatedAt = timestamppb.New(now)
+
+	// Clear off-chain data reference (if any)
+	// The off-chain storage system should delete actual PII separately
+	record.OffChainDataRef = ""
+	record.OffChainDataType = ""
+
+	// Keep: DID, address, commitments, status, timestamps for audit
+	// Erased: off-chain references
+
+	if err := k.SetIdentityRecord(ctx, record); err != nil {
+		return fmt.Errorf("failed to update erased identity record: %w", err)
+	}
+
+	// Log audit trail
+	k.LogAudit(ctx, requester, "erase_identity", did, "success", map[string]string{
+		"reason":    reason,
+		"erased_at": now.Format(time.RFC3339),
+	}, "")
+
+	return nil
+}
+
+// VerifyPIICommitment verifies that PII data matches the stored commitment
+// This allows verification without storing raw PII on-chain
+func (k *Keeper) VerifyPIICommitment(ctx sdk.Context, did string, piiData map[string]string) (bool, error) {
+	record, err := k.GetIdentityRecord(ctx, did)
+	if err != nil {
+		return false, err
+	}
+
+	if record.Erased {
+		return false, types.ErrIdentityErased.Wrapf("identity %s has been erased", did)
+	}
+
+	if len(record.PiiCommitment) == 0 {
+		return false, types.ErrNoCommitment.Wrap("no PII commitment stored")
+	}
+
+	// Compute commitment from provided PII data
+	computed := types.ComputePIICommitment(piiData, record.CommitmentSalt)
+
+	// Compare with stored commitment
+	return string(computed) == string(record.PiiCommitment), nil
+}
+
+// UpdatePIICommitment updates the PII commitment for an identity
+// This should be called when PII changes in off-chain storage
+func (k *Keeper) UpdatePIICommitment(ctx sdk.Context, did, updater string, piiData map[string]string, offChainRef, offChainType string) error {
+	record, err := k.GetIdentityRecord(ctx, did)
+	if err != nil {
+		return err
+	}
+
+	// Check authorization
+	if record.Address != updater {
+		if err := k.RequirePermission(ctx, updater, types.PermissionManageIdentity); err != nil {
+			return types.ErrUnauthorized.Wrapf("updater %s not authorized", updater)
+		}
+	}
+
+	if record.Erased {
+		return types.ErrIdentityErased.Wrapf("cannot update erased identity %s", did)
+	}
+
+	// Generate new salt
+	salt := types.GenerateCommitmentSalt()
+
+	// Compute new commitment
+	commitment := types.ComputePIICommitment(piiData, salt)
+
+	// Update record
+	record.PiiCommitment = commitment
+	record.CommitmentSalt = salt
+	record.OffChainDataRef = offChainRef
+	record.OffChainDataType = offChainType
+	record.UpdatedAt = timestamppb.New(ctx.BlockTime())
+
+	if err := k.SetIdentityRecord(ctx, record); err != nil {
+		return fmt.Errorf("failed to update PII commitment: %w", err)
+	}
+
+	// Log audit trail
+	k.LogAudit(ctx, updater, "update_pii_commitment", did, "success", map[string]string{
+		"off_chain_ref":  offChainRef,
+		"off_chain_type": offChainType,
+	}, "")
+
+	return nil
 }
 
 // ============================================================================

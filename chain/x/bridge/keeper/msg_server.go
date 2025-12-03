@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"strings"
+	"time"
 
 	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
@@ -495,30 +496,58 @@ func (ms msgServer) UnlockTokens(goCtx context.Context, msg *bridgepb.MsgUnlockT
 			hourlyMinted, hourlyLimit)
 	}
 
-	// CRITICAL SECURITY: Mark the source hash as processed BEFORE unlocking tokens
+	// CRITICAL SECURITY: Mark the source hash as processed BEFORE creating pending transfer
 	// This prevents reentrancy and ensures the replay protection is atomic.
 	// Following checks-effects-interactions pattern: effects (state change) before interactions (token transfer).
 	ms.Keeper.MarkSourceHashProcessed(ctx, sourceChain, msg.BurnTxHash)
 
-	// Track minted amounts BEFORE minting (following checks-effects-interactions)
-	// This ensures limits are enforced even if minting fails
-	ms.Keeper.AddDailyMintedAmount(ctx, msg.Denom, amount)
-	ms.Keeper.AddHourlyMintedAmount(ctx, msg.Denom, amount)
+	// CRITICAL SECURITY: Get fraud proof window from params
+	fraudProofWindow := time.Duration(params.FraudProofWindow) * time.Second
+	if fraudProofWindow <= 0 {
+		// Fallback to default if not set (should not happen with proper param validation)
+		fraudProofWindow = types.DefaultFraudProofWindow
+	}
 
-	recipient, err := sdk.AccAddressFromBech32(msg.Sender)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+	// Calculate unlock time (current time + fraud proof window)
+	unlockTime := ctx.BlockTime().Add(fraudProofWindow)
+
+	// Create pending transfer instead of immediately unlocking
+	// This holds the transfer in escrow during the fraud proof window
+	pendingTransfer := &types.PendingTransfer{
+		TransferId:   transferID,
+		Recipient:    msg.Sender,
+		Amount:       amount.String(), // Store as string for protobuf compatibility
+		Denom:        msg.Denom,
+		SourceChain:  sourceChain,
+		SourceTxHash: msg.BurnTxHash,
+		CreatedAt:    timestamppb.New(ctx.BlockTime()),
+		UnlockTime:   timestamppb.New(unlockTime),
+		Challenged:   false,
+		FraudProofId: "",
 	}
-	coin := sdk.NewCoin(msg.Denom, amount)
-	if ms.Keeper.bankKeeper != nil {
-		if err := ms.Keeper.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, recipient, sdk.NewCoins(coin)); err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-	}
-	transfer.Status = bridgepb.TransferStatus_COMPLETED
+
+	ms.Keeper.setPendingTransfer(ctx, pendingTransfer)
+
+	// Update transfer status to RELAYED (awaiting finalization)
+	transfer.Status = bridgepb.TransferStatus_RELAYED
 	transfer.TargetTxHash = msg.BurnTxHash
 	transfer.Timestamp = timestamppb.New(ctx.BlockTime())
 	ms.Keeper.setTransfer(ctx, transfer)
+
+	// Emit event for pending transfer creation
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			"pending_transfer_created",
+			sdk.NewAttribute("transfer_id", transferID),
+			sdk.NewAttribute("recipient", msg.Sender),
+			sdk.NewAttribute("amount", amount.String()),
+			sdk.NewAttribute("denom", msg.Denom),
+			sdk.NewAttribute("source_chain", sourceChain),
+			sdk.NewAttribute("unlock_time", unlockTime.Format(time.RFC3339)),
+			sdk.NewAttribute("fraud_proof_window_seconds", fmt.Sprintf("%d", int64(fraudProofWindow.Seconds()))),
+		),
+	)
+
 	return &bridgepb.MsgUnlockTokensResponse{Success: true}, nil
 }
 

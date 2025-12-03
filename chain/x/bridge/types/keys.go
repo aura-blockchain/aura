@@ -68,6 +68,9 @@ var (
 
 	// Verified block hashes (for Merkle proof verification)
 	VerifiedBlockHashPrefix = []byte{0x22}
+
+	// Pending transfers (awaiting fraud proof window expiry)
+	PendingTransferPrefix = []byte{0x23}
 )
 
 // TransferKey returns the store key for a cross-chain transfer
@@ -164,4 +167,10 @@ func VerifiedBlockHashKey(sourceChain string, blockHeight uint64) []byte {
 	compositeKey := sourceChain + ":"
 	key := append(VerifiedBlockHashPrefix, []byte(compositeKey)...)
 	return append(key, heightBytes...)
+}
+
+// PendingTransferKey returns the store key for a pending transfer
+// Format: PendingTransferPrefix + transferID
+func PendingTransferKey(transferID string) []byte {
+	return append(PendingTransferPrefix, []byte(transferID)...)
 }

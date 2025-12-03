@@ -738,6 +738,9 @@ func (k Keeper) payoutFraudProofReward(ctx sdk.Context, challenger string, denom
 }
 
 // SubmitFraudProof records a fraud challenge for a transfer and begins investigation.
+//
+// CRITICAL SECURITY ENHANCEMENT: This function now also marks the pending transfer
+// as challenged, preventing finalization while the fraud proof is investigated.
 func (k Keeper) SubmitFraudProof(ctx sdk.Context, transferID string, submitter string, proof []byte) error {
 	transferID = strings.TrimSpace(transferID)
 	submitter = strings.TrimSpace(submitter)
@@ -750,9 +753,19 @@ func (k Keeper) SubmitFraudProof(ctx sdk.Context, transferID string, submitter s
 	if _, found := k.getTransfer(ctx, transferID); !found {
 		return types.ErrTransferNotFound
 	}
-	if !k.IsInFraudProofWindow(ctx, transferID) {
+
+	// CRITICAL: Check if there's a pending transfer to challenge
+	// If the transfer is already finalized (no pending transfer), fraud proof window has passed
+	pendingTransfer, hasPending := k.GetPendingTransfer(ctx, transferID)
+	if !hasPending {
 		return types.ErrFraudProofExpired
 	}
+
+	// Check if pending transfer is still within fraud proof window
+	if k.IsPendingTransferExpired(ctx, pendingTransfer) {
+		return types.ErrFraudProofExpired
+	}
+
 	if existing, found := k.getFraudProof(ctx, transferID); found {
 		switch existing.Status {
 		case types.FraudProofStatus_FRAUD_PROOF_INVESTIGATING, types.FraudProofStatus_FRAUD_PROOF_PENDING:
@@ -761,8 +774,11 @@ func (k Keeper) SubmitFraudProof(ctx sdk.Context, transferID string, submitter s
 			return types.ErrFraudProofAlreadyResolved
 		}
 	}
+
+	fraudProofID := fmt.Sprintf("%s-%d", transferID, ctx.BlockHeight())
+
 	fraudProof := &types.FraudProof{
-		ProofId:              fmt.Sprintf("%s-%d", transferID, ctx.BlockHeight()),
+		ProofId:              fraudProofID,
 		ChallengedTransferId: transferID,
 		Challenger:           submitter,
 		FraudType:            types.FraudType_FRAUD_INVALID_SIGNATURE,
@@ -772,6 +788,13 @@ func (k Keeper) SubmitFraudProof(ctx sdk.Context, transferID string, submitter s
 		RewardAmount:         math.ZeroInt().String(),
 	}
 	k.setFraudProof(ctx, fraudProof)
+
+	// CRITICAL SECURITY: Mark pending transfer as challenged
+	// This prevents finalization until the fraud proof is resolved
+	if err := k.MarkPendingTransferChallenged(ctx, transferID, fraudProofID); err != nil {
+		return fmt.Errorf("failed to mark pending transfer as challenged: %w", err)
+	}
+
 	return nil
 }
 
@@ -1603,4 +1626,280 @@ func (k Keeper) ResetHourlyMint(ctx sdk.Context) {
 			}
 		}
 	}
+}
+
+// ========================================================================
+// PENDING TRANSFER MANAGEMENT (Fraud Proof Window)
+// ========================================================================
+
+// setPendingTransfer stores a pending transfer awaiting fraud proof window expiry.
+//
+// Security considerations:
+//   - CRITICAL: Pending transfers are held in escrow during fraud proof window
+//   - Prevents immediate token release to allow time for fraud proof challenges
+//   - State change must be atomic with transfer creation
+//
+// Parameters:
+//   - ctx: SDK context for state access
+//   - pendingTransfer: The pending transfer to store
+func (k Keeper) setPendingTransfer(ctx sdk.Context, pendingTransfer *types.PendingTransfer) {
+	if pendingTransfer == nil || pendingTransfer.TransferId == "" {
+		return
+	}
+	store := k.store(ctx)
+	key := types.PendingTransferKey(pendingTransfer.TransferId)
+	store.Set(key, k.cdc.MustMarshal(pendingTransfer))
+}
+
+// SetPendingTransfer is a public exported method for setting pending transfers (for tests).
+func (k Keeper) SetPendingTransfer(ctx sdk.Context, pendingTransfer *types.PendingTransfer) {
+	k.setPendingTransfer(ctx, pendingTransfer)
+}
+
+// GetPendingTransfer retrieves a pending transfer by ID.
+//
+// Parameters:
+//   - ctx: SDK context for state access
+//   - transferID: Unique identifier of the transfer
+//
+// Returns:
+//   - *PendingTransfer: The pending transfer if found
+//   - bool: true if found, false otherwise
+func (k Keeper) GetPendingTransfer(ctx sdk.Context, transferID string) (*types.PendingTransfer, bool) {
+	if transferID == "" {
+		return nil, false
+	}
+	store := k.store(ctx)
+	key := types.PendingTransferKey(transferID)
+	bz := store.Get(key)
+	if bz == nil {
+		return nil, false
+	}
+
+	var pending types.PendingTransfer
+	if err := k.cdc.Unmarshal(bz, &pending); err != nil {
+		return nil, false
+	}
+	return &pending, true
+}
+
+// deletePendingTransfer removes a pending transfer from storage.
+//
+// Security considerations:
+//   - Called after finalization or cancellation
+//   - Ensures cleanup of completed transfers
+//   - Prevents double-finalization
+//
+// Parameters:
+//   - ctx: SDK context for state access
+//   - transferID: Unique identifier of the transfer to delete
+func (k Keeper) deletePendingTransfer(ctx sdk.Context, transferID string) {
+	if transferID == "" {
+		return
+	}
+	store := k.store(ctx)
+	key := types.PendingTransferKey(transferID)
+	store.Delete(key)
+}
+
+// GetAllPendingTransfers retrieves all pending transfers.
+//
+// Returns:
+//   - []*PendingTransfer: List of all pending transfers
+func (k Keeper) GetAllPendingTransfers(ctx sdk.Context) []*types.PendingTransfer {
+	store := k.store(ctx)
+	iterator := store.Iterator(types.PendingTransferPrefix, storetypes.PrefixEndBytes(types.PendingTransferPrefix))
+	defer iterator.Close()
+
+	var pendingTransfers []*types.PendingTransfer
+	for ; iterator.Valid(); iterator.Next() {
+		var pending types.PendingTransfer
+		if err := k.cdc.Unmarshal(iterator.Value(), &pending); err == nil {
+			pendingCopy := pending
+			pendingTransfers = append(pendingTransfers, &pendingCopy)
+		}
+	}
+	return pendingTransfers
+}
+
+// IsPendingTransferExpired checks if a pending transfer's fraud proof window has expired.
+//
+// Security considerations:
+//   - CRITICAL: Must only return true after fraud proof window has fully elapsed
+//   - Used to determine if transfer can be finalized
+//   - Time-based security check
+//
+// Parameters:
+//   - ctx: SDK context for current block time
+//   - pendingTransfer: The pending transfer to check
+//
+// Returns:
+//   - bool: true if window has expired and transfer can be finalized
+func (k Keeper) IsPendingTransferExpired(ctx sdk.Context, pendingTransfer *types.PendingTransfer) bool {
+	if pendingTransfer == nil || pendingTransfer.UnlockTime == nil {
+		return false
+	}
+	return ctx.BlockTime().After(pendingTransfer.UnlockTime.AsTime()) ||
+		ctx.BlockTime().Equal(pendingTransfer.UnlockTime.AsTime())
+}
+
+// MarkPendingTransferChallenged marks a pending transfer as challenged with a fraud proof.
+//
+// Security considerations:
+//   - CRITICAL: Prevents finalization of challenged transfers
+//   - Must be called when fraud proof is submitted
+//   - State change is permanent until fraud proof is resolved
+//
+// Parameters:
+//   - ctx: SDK context for state access
+//   - transferID: Unique identifier of the transfer
+//   - fraudProofID: ID of the fraud proof challenging this transfer
+//
+// Returns:
+//   - error: If transfer not found or already challenged
+func (k Keeper) MarkPendingTransferChallenged(ctx sdk.Context, transferID string, fraudProofID string) error {
+	pending, found := k.GetPendingTransfer(ctx, transferID)
+	if !found {
+		return types.ErrTransferNotFound
+	}
+
+	if pending.Challenged {
+		return fmt.Errorf("transfer already challenged with fraud proof %s", pending.FraudProofId)
+	}
+
+	pending.Challenged = true
+	pending.FraudProofId = fraudProofID
+	k.setPendingTransfer(ctx, pending)
+
+	// Emit event for audit trail
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			"pending_transfer_challenged",
+			sdk.NewAttribute("transfer_id", transferID),
+			sdk.NewAttribute("fraud_proof_id", fraudProofID),
+			sdk.NewAttribute("block_height", fmt.Sprintf("%d", ctx.BlockHeight())),
+		),
+	)
+
+	return nil
+}
+
+// FinalizeTransfer completes a pending transfer after fraud proof window expires.
+//
+// SECURITY CRITICAL: This function releases tokens to the recipient ONLY if:
+//   1. The fraud proof window has fully elapsed
+//   2. No valid fraud proof has been submitted against the transfer
+//   3. All security checks pass (replay protection, supply caps, etc.)
+//
+// This implements the fraud proof challenge period mechanism:
+//   - Transfers are held in pending state during the window
+//   - Anyone can submit fraud proofs during this time
+//   - Only after window expiry with no valid challenges can tokens be released
+//
+// Parameters:
+//   - ctx: SDK context for state access and time checks
+//   - transferID: Unique identifier of the transfer to finalize
+//
+// Returns:
+//   - error: If transfer cannot be finalized (window not expired, challenged, not found, etc.)
+func (k Keeper) FinalizeTransfer(ctx sdk.Context, transferID string) error {
+	// 1. Retrieve pending transfer
+	pending, found := k.GetPendingTransfer(ctx, transferID)
+	if !found {
+		return types.ErrTransferNotFound
+	}
+
+	// 2. CRITICAL SECURITY: Check fraud proof window has expired
+	if !k.IsPendingTransferExpired(ctx, pending) {
+		return fmt.Errorf("fraud proof window not expired: unlocks at %s, current time %s",
+			pending.UnlockTime.AsTime(), ctx.BlockTime())
+	}
+
+	// 3. CRITICAL SECURITY: Check if challenged by fraud proof
+	if pending.Challenged {
+		return fmt.Errorf("transfer challenged with fraud proof %s - cannot finalize",
+			pending.FraudProofId)
+	}
+
+	// 4. Parse recipient address
+	recipient, err := sdk.AccAddressFromBech32(pending.Recipient)
+	if err != nil {
+		return fmt.Errorf("invalid recipient address: %w", err)
+	}
+
+	// 5. Parse amount from string
+	amount, ok := math.NewIntFromString(pending.Amount)
+	if !ok {
+		return fmt.Errorf("invalid amount string: %s", pending.Amount)
+	}
+
+	// Create coin to mint
+	coin := sdk.NewCoin(pending.Denom, amount)
+
+	// 6. CRITICAL SECURITY: Perform final security checks before minting
+	// These checks should have been done when creating the pending transfer,
+	// but we verify again in case parameters changed during the fraud proof window
+	params := k.GetParams(ctx)
+
+	// Check per-transfer maximum
+	maxTransfer, ok := math.NewIntFromString(params.MaxTransferAmount)
+	if ok && amount.GT(maxTransfer) {
+		return fmt.Errorf("amount %s exceeds max transfer limit %s", amount, maxTransfer)
+	}
+
+	// Check per-token supply cap (if configured)
+	if cap, exists := params.SupplyCaps[pending.Denom]; exists {
+		supplyCap, ok := math.NewIntFromString(cap)
+		if ok {
+			currentSupply := k.bankKeeper.GetSupply(ctx, pending.Denom).Amount
+			if currentSupply.Add(amount).GT(supplyCap) {
+				return fmt.Errorf("minting would exceed supply cap of %s (current: %s)",
+					supplyCap, currentSupply)
+			}
+		}
+	}
+
+	// 7. Mint and send tokens (following checks-effects-interactions)
+	if k.bankKeeper != nil {
+		// Mint to module
+		if err := k.bankKeeper.MintCoins(ctx, types.ModuleName, sdk.NewCoins(coin)); err != nil {
+			return fmt.Errorf("failed to mint coins: %w", err)
+		}
+
+		// Send to recipient
+		if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, recipient, sdk.NewCoins(coin)); err != nil {
+			return fmt.Errorf("failed to send coins to recipient: %w", err)
+		}
+	}
+
+	// 8. Update transfer status to completed
+	transfer, found := k.getTransfer(ctx, transferID)
+	if found {
+		transfer.Status = types.TransferStatus_COMPLETED
+		transfer.Timestamp = timestamppb.New(ctx.BlockTime())
+		k.setTransfer(ctx, transfer)
+	}
+
+	// 9. Delete pending transfer (cleanup)
+	k.deletePendingTransfer(ctx, transferID)
+
+	// 10. Record minted amounts for rate limiting
+	k.AddDailyMintedAmount(ctx, pending.Denom, amount)
+	k.AddHourlyMintedAmount(ctx, pending.Denom, amount)
+
+	// 11. Emit completion event for audit trail
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			"transfer_finalized",
+			sdk.NewAttribute("transfer_id", transferID),
+			sdk.NewAttribute("recipient", pending.Recipient),
+			sdk.NewAttribute("amount", amount.String()),
+			sdk.NewAttribute("denom", pending.Denom),
+			sdk.NewAttribute("source_chain", pending.SourceChain),
+			sdk.NewAttribute("source_tx_hash", pending.SourceTxHash),
+			sdk.NewAttribute("finalized_at_height", fmt.Sprintf("%d", ctx.BlockHeight())),
+		),
+	)
+
+	return nil
 }

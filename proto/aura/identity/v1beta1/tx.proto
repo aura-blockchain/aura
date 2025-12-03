@@ -46,6 +46,9 @@ service Msg {
 
   // Admin operations
   rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
+
+  // GDPR operations
+  rpc EraseIdentity(MsgEraseIdentity) returns (MsgEraseIdentityResponse);
 }
 
 // Identity change messages
@@ -282,3 +285,22 @@ message MsgUpdateParams {
 }
 
 message MsgUpdateParamsResponse {}
+
+// GDPR erasure messages
+message MsgEraseIdentity {
+  option (cosmos.msg.v1.signer) = "requester";
+
+  // Address requesting erasure (must be identity owner or have authority)
+  string requester = 1;
+
+  // DID to erase
+  string did = 2;
+
+  // Reason for erasure (audit trail)
+  string reason = 3;
+}
+
+message MsgEraseIdentityResponse {
+  // Confirmation timestamp
+  google.protobuf.Timestamp erased_at = 1 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+}
