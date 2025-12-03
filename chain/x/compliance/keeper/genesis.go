@@ -31,6 +31,16 @@ func (k *Keeper) InitGenesis(ctx sdk.Context, data *types.GenesisState) error {
 		}
 	}
 
+	// Import KYC history
+	for _, entry := range data.KycHistory {
+		if entry == nil {
+			continue
+		}
+		if err := k.AddKYCHistory(ctx, entry); err != nil {
+			return fmt.Errorf("failed to set KYC history: %w", err)
+		}
+	}
+
 	// Import AML profiles
 	for _, profile := range data.AmlProfiles {
 		if profile == nil {
@@ -119,6 +129,7 @@ func (k *Keeper) InitGenesis(ctx sdk.Context, data *types.GenesisState) error {
 
 	k.logger(ctx).Info("Compliance genesis imported",
 		"kyc_records", len(data.KycRecords),
+		"kyc_history", len(data.KycHistory),
 		"aml_profiles", len(data.AmlProfiles),
 		"suspicious_activities", len(data.SuspiciousActivities))
 
@@ -134,6 +145,17 @@ func (k *Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	if err != nil {
 		k.logger(ctx).Error("failed to get KYC records", "error", err)
 		kycRecords = []*types.KYCRecord{}
+	}
+
+	// Export KYC history - convert map to slice for proto
+	kycHistoryMap, err := k.GetAllKYCHistory(ctx)
+	if err != nil {
+		k.logger(ctx).Error("failed to get KYC history", "error", err)
+		kycHistoryMap = make(map[string][]*types.KYCHistoryEntry)
+	}
+	var kycHistory []*types.KYCHistoryEntry
+	for _, entries := range kycHistoryMap {
+		kycHistory = append(kycHistory, entries...)
 	}
 
 	// Export AML profiles
@@ -207,6 +229,7 @@ func (k *Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	return &types.GenesisState{
 		Params:               &params,
 		KycRecords:           kycRecords,
+		KycHistory:           kycHistory,
 		AmlProfiles:          amlProfiles,
 		SuspiciousActivities: suspiciousActivities,
 		MonitoringRules:      monitoringRules,

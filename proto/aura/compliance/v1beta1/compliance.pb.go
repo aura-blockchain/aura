@@ -260,6 +260,7 @@ type KYCRecord struct {
 	PiiCommitment        []byte                 `protobuf:"bytes,6,opt,name=pii_commitment,json=piiCommitment,proto3" json:"pii_commitment,omitempty"`                         // SHA-256 hash of off-chain PII data
 	EnhancedDueDiligence bool                   `protobuf:"varint,7,opt,name=enhanced_due_diligence,json=enhancedDueDiligence,proto3" json:"enhanced_due_diligence,omitempty"` // EDD required flag
 	Jurisdiction         string                 `protobuf:"bytes,8,opt,name=jurisdiction,proto3" json:"jurisdiction,omitempty"`                                                // ISO 3166-1 alpha-2 country code
+	Version              uint64                 `protobuf:"varint,9,opt,name=version,proto3" json:"version,omitempty"`                                                         // Auto-incremented on each update (deduplication tracking)
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -348,6 +349,13 @@ func (x *KYCRecord) GetJurisdiction() string {
 		return x.Jurisdiction
 	}
 	return ""
+}
+
+func (x *KYCRecord) GetVersion() uint64 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
 }
 
 // AMLProfile represents an AML risk profile

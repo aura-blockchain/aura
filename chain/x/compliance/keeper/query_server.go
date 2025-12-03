@@ -39,6 +39,45 @@ func (q *queryServer) KycRecord(goCtx context.Context, req *types.QueryKYCRecord
 	return &types.QueryKYCRecordResponse{Record: record}, nil
 }
 
+// KycHistory retrieves the complete version history for a KYC record.
+// This provides full audit trail of all KYC updates for compliance purposes.
+//
+// Security considerations:
+//   - Read-only query (no state changes)
+//   - No sensitive PII exposed (only commitments and metadata)
+//   - Returns chronological history (oldest to newest)
+//
+// Compliance:
+//   - BSA/AML: Complete audit trail of KYC changes
+//   - GDPR: History metadata can be queried without exposing PII
+//   - SOX/Regulatory: Immutable version tracking for audits
+//
+// Parameters:
+//   - goCtx: gRPC context
+//   - req: Request containing address to query
+//
+// Returns:
+//   - QueryKYCHistoryResponse: List of history entries
+//   - error: If query fails or address is invalid
+//
+// Example usage:
+//   response, err := queryServer.KycHistory(ctx, &types.QueryKYCHistoryRequest{
+//       Address: "aura1...",
+//   })
+func (q *queryServer) KycHistory(goCtx context.Context, req *types.QueryKYCHistoryRequest) (*types.QueryKYCHistoryResponse, error) {
+	if req == nil || req.Address == "" {
+		return nil, status.Error(codes.InvalidArgument, "address is required")
+	}
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	history, err := q.Keeper.GetKYCHistory(ctx, req.Address)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &types.QueryKYCHistoryResponse{History: history}, nil
+}
+
 func (q *queryServer) AmlProfile(goCtx context.Context, req *types.QueryAMLProfileRequest) (*types.QueryAMLProfileResponse, error) {
 	if req == nil || req.Address == "" {
 		return nil, status.Error(codes.InvalidArgument, "address is required")

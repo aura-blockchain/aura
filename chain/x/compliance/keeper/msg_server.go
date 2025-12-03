@@ -116,26 +116,37 @@ func (s *msgServer) SubmitKYC(goCtx context.Context, req *types.MsgSubmitKYC) (*
 		EnhancedDueDiligence: req.KycLevel == types.KYCLevel_KYC_LEVEL_ADVANCED,
 		Jurisdiction:         req.Jurisdiction,
 	}
-	if err := s.Keeper.SetKYCRecord(ctx, record); err != nil {
+
+	// Use UpdateKYCRecord for proper version tracking and history preservation
+	// This handles deduplication and conflict resolution automatically
+	updateReason := "initial_submission"
+	if existing, err := s.Keeper.GetKYCRecord(ctx, req.Address); err == nil && existing != nil {
+		// Determine update reason based on changes
+		if existing.KycLevel != req.KycLevel {
+			updateReason = "level_upgrade"
+		} else if existing.Provider != req.Provider {
+			updateReason = "provider_change"
+		} else {
+			updateReason = "renewal_or_update"
+		}
+	}
+
+	if err := s.Keeper.UpdateKYCRecord(ctx, record, updateReason); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// Emit event for KYC submission (BSA/AML compliance audit trail)
+	// Additional event with jurisdiction and PII commitment (version event emitted by UpdateKYCRecord)
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
-			types.EventTypeKYCSubmitted,
+			types.EventTypeKYCApproved,
 			sdk.NewAttribute(types.AttributeKeyAddress, req.Address),
-			sdk.NewAttribute(types.AttributeKeyProvider, req.Provider),
-			sdk.NewAttribute(types.AttributeKeyKYCLevel, req.KycLevel.String()),
 			sdk.NewAttribute(types.AttributeKeyJurisdiction, req.Jurisdiction),
 			sdk.NewAttribute(types.AttributeKeyPIICommitment, fmt.Sprintf("%x", req.PiiCommitment)),
-			sdk.NewAttribute(types.AttributeKeyBlockHeight, fmt.Sprintf("%d", ctx.BlockHeight())),
-			sdk.NewAttribute(types.AttributeKeyBlockTime, ctx.BlockTime().Format(time.RFC3339)),
-			sdk.NewAttribute(types.AttributeKeyTimestamp, fmt.Sprintf("%d", ctx.BlockTime().Unix())),
+			sdk.NewAttribute("version", fmt.Sprintf("%d", record.Version)),
 		),
 	)
 
-	return &types.MsgSubmitKYCResponse{Success: true, Message: "kyc record stored with PII commitment"}, nil
+	return &types.MsgSubmitKYCResponse{Success: true, Message: fmt.Sprintf("kyc record stored with PII commitment (version %d)", record.Version)}, nil
 }
 
 func (s *msgServer) ReportSuspiciousActivity(goCtx context.Context, req *types.MsgReportSuspiciousActivity) (*types.MsgReportSuspiciousActivityResponse, error) {
