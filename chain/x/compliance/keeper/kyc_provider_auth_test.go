@@ -475,7 +475,7 @@ func TestKYCProviderAuthorization_AddressFormat(t *testing.T) {
 // must match the transaction signer (authentication)
 func TestKYCProviderAuthorization_SignerVerification(t *testing.T) {
 	keeper, ctx := setupTestKeeper(t)
-	server := NewMsgServer(keeper)
+	_ = NewMsgServer(keeper)
 
 	// Create test addresses
 	authorizedProvider := sdk.AccAddress([]byte("authorized_prov_123")).String()
@@ -517,7 +517,7 @@ func TestKYCProviderAuthorization_SignerVerification(t *testing.T) {
 // provider address must be the transaction signer (lines 84-97 in msg_server.go)
 func TestKYCProviderAuthorization_ProviderMustSignTransaction(t *testing.T) {
 	keeper, ctx := setupTestKeeper(t)
-	server := NewMsgServer(keeper)
+	_ = NewMsgServer(keeper)
 
 	providerAddr := sdk.AccAddress([]byte("authorized_prov_123")).String()
 	userAddr := sdk.AccAddress([]byte("test_user_12345678")).String()
