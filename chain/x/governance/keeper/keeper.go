@@ -14,6 +14,7 @@ import (
 // StakingKeeper defines the expected staking keeper interface
 type StakingKeeper interface {
 	GetDelegatorBonded(ctx sdk.Context, delegator sdk.AccAddress) sdkmath.Int
+	TotalBondedTokens(ctx sdk.Context) sdkmath.Int
 }
 
 // Key prefixes for KVStore
@@ -35,14 +36,16 @@ type Keeper struct {
 	storeKey      storetypes.StoreKey
 	cdc           codec.BinaryCodec
 	stakingKeeper StakingKeeper
+	bankKeeper    types.BankKeeper
 }
 
 // NewKeeper creates a new governance keeper
-func NewKeeper(cdc codec.BinaryCodec, storeKey storetypes.StoreKey, stakingKeeper StakingKeeper) *Keeper {
+func NewKeeper(cdc codec.BinaryCodec, storeKey storetypes.StoreKey, stakingKeeper StakingKeeper, bankKeeper types.BankKeeper) *Keeper {
 	return &Keeper{
 		cdc:           cdc,
 		storeKey:      storeKey,
 		stakingKeeper: stakingKeeper,
+		bankKeeper:    bankKeeper,
 	}
 }
 
@@ -266,6 +269,73 @@ func (k *Keeper) GetDeposits(ctx sdk.Context, proposalID uint64) []*types.Deposi
 	return deposits
 }
 
+// DeleteDeposit removes a specific deposit from the KVStore
+func (k *Keeper) DeleteDeposit(ctx sdk.Context, proposalID uint64, depositor string) {
+	store := ctx.KVStore(k.storeKey)
+	key := append(DepositsKeyPrefix, sdk.Uint64ToBigEndian(proposalID)...)
+	key = append(key, []byte(depositor)...)
+	store.Delete(key)
+}
+
+// DeleteDeposits removes all deposits for a proposal
+func (k *Keeper) DeleteDeposits(ctx sdk.Context, proposalID uint64) error {
+	deposits := k.GetDeposits(ctx, proposalID)
+	for _, deposit := range deposits {
+		k.DeleteDeposit(ctx, proposalID, deposit.Depositor)
+	}
+	return nil
+}
+
+// RefundDeposits refunds all deposits for a proposal
+// This should be called when proposals pass or are rejected (but not vetoed)
+func (k *Keeper) RefundDeposits(ctx sdk.Context, proposalID uint64) error {
+	deposits := k.GetDeposits(ctx, proposalID)
+
+	for _, deposit := range deposits {
+		// Parse depositor address
+		depositorAddr, err := sdk.AccAddressFromBech32(deposit.Depositor)
+		if err != nil {
+			// Log error but continue with other deposits
+			ctx.Logger().Error("failed to parse depositor address", "depositor", deposit.Depositor, "error", err)
+			continue
+		}
+
+		// Parse deposit amount
+		coins, err := sdk.ParseCoinsNormalized(deposit.Amount)
+		if err != nil {
+			ctx.Logger().Error("failed to parse deposit amount", "amount", deposit.Amount, "error", err)
+			continue
+		}
+
+		// Transfer coins from module account back to depositor
+		err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, depositorAddr, coins)
+		if err != nil {
+			ctx.Logger().Error("failed to refund deposit", "depositor", deposit.Depositor, "amount", coins, "error", err)
+			continue
+		}
+
+		ctx.Logger().Info("refunded deposit", "proposal_id", proposalID, "depositor", deposit.Depositor, "amount", coins)
+	}
+
+	// Delete all deposits after refunding
+	return k.DeleteDeposits(ctx, proposalID)
+}
+
+// BurnDeposits burns all deposits for a proposal
+// This should be called when proposals are vetoed
+func (k *Keeper) BurnDeposits(ctx sdk.Context, proposalID uint64) error {
+	// For now, we just delete the deposits without refunding
+	// In a production system, you would actually burn the tokens by sending them
+	// to a burner address or using the bank keeper's BurnCoins method
+	deposits := k.GetDeposits(ctx, proposalID)
+
+	for _, deposit := range deposits {
+		ctx.Logger().Info("burning deposit (no refund)", "proposal_id", proposalID, "depositor", deposit.Depositor, "amount", deposit.Amount)
+	}
+
+	return k.DeleteDeposits(ctx, proposalID)
+}
+
 // ============================================================================
 // Vote Delegation KVStore Methods
 // ============================================================================
@@ -376,6 +446,21 @@ func (k *Keeper) SetSnapshotVote(ctx sdk.Context, vote *types.SnapshotVote) erro
 	key = append(key, []byte(vote.Voter)...)
 	store.Set(key, bz)
 	return nil
+}
+
+// GetSnapshotVote retrieves a single snapshot vote
+func (k *Keeper) GetSnapshotVote(ctx sdk.Context, proposalID uint64, voter string) (*types.SnapshotVote, error) {
+	store := ctx.KVStore(k.storeKey)
+	key := append(SnapshotVotesKeyPrefix, sdk.Uint64ToBigEndian(proposalID)...)
+	key = append(key, []byte(voter)...)
+
+	bz := store.Get(key)
+	if bz == nil {
+		return nil, types.ErrInvalidSnapshot
+	}
+
+	var vote types.SnapshotVote
+	return &vote, k.cdc.Unmarshal(bz, &vote)
 }
 
 // GetSnapshotVotes retrieves all snapshot votes for a proposal

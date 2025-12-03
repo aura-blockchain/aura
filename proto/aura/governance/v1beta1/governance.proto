@@ -71,6 +71,9 @@ message Proposal {
 
   // Snapshot block height for snapshot voting
   uint64 snapshot_height = 17;
+
+  // Rejection reason (if status is REJECTED or FAILED)
+  string rejection_reason = 18;
 }
 
 // Deposit represents a deposit made on a proposal

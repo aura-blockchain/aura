@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	sdkmath "cosmossdk.io/math"
 	"github.com/aequitas/aura/chain/x/common/determinism"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -137,31 +138,9 @@ func (k *Keeper) finalizeProposal(ctx sdk.Context, proposal *types.Proposal, par
 	tally := k.CalculateTally(ctx, proposal.Id)
 	proposal.FinalTallyResult = tally
 
-	// Determine if proposal passed
-	if k.proposalPassed(tally, params) {
-		proposal.Status = types.ProposalStatus_PROPOSAL_STATUS_PASSED
-
-		ctx.EventManager().EmitEvent(
-			sdk.NewEvent(
-				"proposal_passed",
-				sdk.NewAttribute("proposal_id", fmt.Sprintf("%d", proposal.Id)),
-			),
-		)
-	} else {
-		// Check if vetoed
-		if k.proposalVetoed(tally, params) {
-			proposal.Status = types.ProposalStatus_PROPOSAL_STATUS_REJECTED
-		} else {
-			proposal.Status = types.ProposalStatus_PROPOSAL_STATUS_FAILED
-		}
-
-		ctx.EventManager().EmitEvent(
-			sdk.NewEvent(
-				"proposal_rejected",
-				sdk.NewAttribute("proposal_id", fmt.Sprintf("%d", proposal.Id)),
-				sdk.NewAttribute("status", proposal.Status.String()),
-			),
-		)
+	// Process proposal outcome with security checks (quorum, threshold, veto)
+	if err := k.processProposalOutcome(ctx, proposal, tally, params); err != nil {
+		return err
 	}
 
 	return k.SetProposal(ctx, proposal)
@@ -234,21 +213,157 @@ func (k *Keeper) hasMinimumDeposit(proposal *types.Proposal, params *types.Gover
 	return proposal.TotalDeposit >= params.MinDeposit
 }
 
-// proposalPassed checks if proposal passed based on tally
-func (k *Keeper) proposalPassed(tally *types.TallyResult, params *types.GovernanceParams) bool {
-	// Check quorum
-	// Simplified - production would calculate percentages properly
-	yesVotes := tally.Yes
-	totalVotes := tally.Yes // + other votes
+// processProposalOutcome determines the outcome of a proposal with proper security checks
+// This function enforces quorum (minimum participation), pass threshold, and veto threshold
+func (k *Keeper) processProposalOutcome(ctx sdk.Context, proposal *types.Proposal, tally *types.TallyResult, params *types.GovernanceParams) error {
+	// Parse vote counts from tally result strings
+	yesVotes, ok := sdkmath.NewIntFromString(tally.Yes)
+	if !ok {
+		return fmt.Errorf("failed to parse yes votes: %s", tally.Yes)
+	}
 
-	return yesVotes >= params.Quorum && totalVotes >= params.Threshold
-}
+	noVotes, ok := sdkmath.NewIntFromString(tally.No)
+	if !ok {
+		return fmt.Errorf("failed to parse no votes: %s", tally.No)
+	}
 
-// proposalVetoed checks if proposal was vetoed
-func (k *Keeper) proposalVetoed(tally *types.TallyResult, params *types.GovernanceParams) bool {
-	// Check if NoWithVeto votes exceed veto threshold
-	// Simplified
-	return tally.NoWithVeto >= params.VetoThreshold
+	abstainVotes, ok := sdkmath.NewIntFromString(tally.Abstain)
+	if !ok {
+		return fmt.Errorf("failed to parse abstain votes: %s", tally.Abstain)
+	}
+
+	noWithVetoVotes, ok := sdkmath.NewIntFromString(tally.NoWithVeto)
+	if !ok {
+		return fmt.Errorf("failed to parse no with veto votes: %s", tally.NoWithVeto)
+	}
+
+	// Calculate total votes cast
+	totalVotes := yesVotes.Add(noVotes).Add(abstainVotes).Add(noWithVetoVotes)
+
+	// Get total bonded tokens (total voting power in the network)
+	totalBondedTokens := k.stakingKeeper.TotalBondedTokens(ctx)
+
+	// SECURITY CHECK 1: Quorum enforcement (minimum participation)
+	// Prevents a single voter or small group from passing proposals without sufficient participation
+	quorumDec, err := sdkmath.LegacyNewDecFromStr(params.Quorum)
+	if err != nil {
+		return fmt.Errorf("failed to parse quorum parameter: %w", err)
+	}
+
+	// Calculate required quorum (e.g., 33.4% of total bonded tokens)
+	requiredQuorum := quorumDec.MulInt(totalBondedTokens).TruncateInt()
+
+	if totalVotes.LT(requiredQuorum) {
+		// Quorum not reached - proposal fails
+		proposal.Status = types.ProposalStatus_PROPOSAL_STATUS_REJECTED
+		// Note: rejection_reason field will be set once protobuf is regenerated
+		// For now, emit it in the event
+		ctx.EventManager().EmitEvent(
+			sdk.NewEvent(
+				"proposal_rejected",
+				sdk.NewAttribute("proposal_id", fmt.Sprintf("%d", proposal.Id)),
+				sdk.NewAttribute("reason", "quorum not reached"),
+				sdk.NewAttribute("votes_cast", totalVotes.String()),
+				sdk.NewAttribute("required_quorum", requiredQuorum.String()),
+			),
+		)
+		return nil
+	}
+
+	// SECURITY CHECK 2: Veto threshold enforcement
+	// If too many NoWithVeto votes, proposal is rejected and deposits are burned
+	vetoThresholdDec, err := sdkmath.LegacyNewDecFromStr(params.VetoThreshold)
+	if err != nil {
+		return fmt.Errorf("failed to parse veto threshold parameter: %w", err)
+	}
+
+	// Calculate veto threshold (e.g., 33.4% of total votes cast)
+	vetoThreshold := vetoThresholdDec.MulInt(totalVotes).TruncateInt()
+
+	if noWithVetoVotes.GT(vetoThreshold) {
+		// Proposal vetoed - reject and burn deposits
+		proposal.Status = types.ProposalStatus_PROPOSAL_STATUS_VETOED
+
+		// Burn deposits for vetoed proposals as a disincentive for spam/malicious proposals
+		if err := k.BurnDeposits(ctx, proposal.Id); err != nil {
+			ctx.Logger().Error("failed to burn deposits for vetoed proposal", "proposal_id", proposal.Id, "error", err)
+		}
+
+		ctx.EventManager().EmitEvent(
+			sdk.NewEvent(
+				"proposal_vetoed",
+				sdk.NewAttribute("proposal_id", fmt.Sprintf("%d", proposal.Id)),
+				sdk.NewAttribute("reason", "veto threshold exceeded"),
+				sdk.NewAttribute("no_with_veto", noWithVetoVotes.String()),
+				sdk.NewAttribute("veto_threshold", vetoThreshold.String()),
+			),
+		)
+		return nil
+	}
+
+	// SECURITY CHECK 3: Pass threshold enforcement
+	// Calculate votes excluding abstain (abstain votes don't count towards yes/no determination)
+	votesExcludingAbstain := yesVotes.Add(noVotes).Add(noWithVetoVotes)
+
+	// Prevent division by zero if only abstain votes
+	if votesExcludingAbstain.IsZero() {
+		proposal.Status = types.ProposalStatus_PROPOSAL_STATUS_REJECTED
+		ctx.EventManager().EmitEvent(
+			sdk.NewEvent(
+				"proposal_rejected",
+				sdk.NewAttribute("proposal_id", fmt.Sprintf("%d", proposal.Id)),
+				sdk.NewAttribute("reason", "only abstain votes cast"),
+			),
+		)
+		return nil
+	}
+
+	thresholdDec, err := sdkmath.LegacyNewDecFromStr(params.Threshold)
+	if err != nil {
+		return fmt.Errorf("failed to parse threshold parameter: %w", err)
+	}
+
+	// Calculate pass threshold (e.g., 50% of non-abstain votes must be yes)
+	passThreshold := thresholdDec.MulInt(votesExcludingAbstain).TruncateInt()
+
+	if yesVotes.GT(passThreshold) {
+		// Proposal passed all security checks
+		proposal.Status = types.ProposalStatus_PROPOSAL_STATUS_PASSED
+
+		// Refund deposits for passed proposals
+		if err := k.RefundDeposits(ctx, proposal.Id); err != nil {
+			ctx.Logger().Error("failed to refund deposits for passed proposal", "proposal_id", proposal.Id, "error", err)
+		}
+
+		ctx.EventManager().EmitEvent(
+			sdk.NewEvent(
+				"proposal_passed",
+				sdk.NewAttribute("proposal_id", fmt.Sprintf("%d", proposal.Id)),
+				sdk.NewAttribute("yes_votes", yesVotes.String()),
+				sdk.NewAttribute("pass_threshold", passThreshold.String()),
+			),
+		)
+	} else {
+		// Did not meet pass threshold - proposal fails
+		proposal.Status = types.ProposalStatus_PROPOSAL_STATUS_REJECTED
+
+		// Refund deposits for failed proposals (only burn for vetoed proposals)
+		if err := k.RefundDeposits(ctx, proposal.Id); err != nil {
+			ctx.Logger().Error("failed to refund deposits for rejected proposal", "proposal_id", proposal.Id, "error", err)
+		}
+
+		ctx.EventManager().EmitEvent(
+			sdk.NewEvent(
+				"proposal_rejected",
+				sdk.NewAttribute("proposal_id", fmt.Sprintf("%d", proposal.Id)),
+				sdk.NewAttribute("reason", "threshold not met"),
+				sdk.NewAttribute("yes_votes", yesVotes.String()),
+				sdk.NewAttribute("required_threshold", passThreshold.String()),
+			),
+		)
+	}
+
+	return nil
 }
 
 // CancelProposal allows proposer to cancel a proposal during deposit period

@@ -17,30 +17,26 @@ import (
 
 func TestGetNextProposalID(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	mockStaking := &MockStakingKeeper{delegatorBonded: make(map[string]sdkmath.Int)}
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, mockStaking)
+	mockStaking := &MockStakingKeeperForExtended{delegatorBonded: make(map[string]sdkmath.Int)}
+	mockBank := &MockBankKeeperForExtended{
+		balances:       make(map[string]sdk.Coins),
+		moduleBalances: make(map[string]sdk.Coins),
+	}
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, mockStaking, mockBank)
 
 	// First ID should be 1
 	id := k.GetNextProposalID(input.Ctx)
 	assert.Equal(t, uint64(1), id)
 }
 
-// MockStakingKeeper for tests
-type MockStakingKeeper struct {
-	delegatorBonded map[string]sdkmath.Int
-}
-
-func (m *MockStakingKeeper) GetDelegatorBonded(ctx sdk.Context, delegator sdk.AccAddress) sdkmath.Int {
-	if amount, ok := m.delegatorBonded[delegator.String()]; ok {
-		return amount
-	}
-	return sdkmath.ZeroInt()
-}
-
 // createTestKeeper is a helper function to create a keeper with mock staking keeper
 func createTestKeeper(input keepertest.TestInput) *keeper.Keeper {
-	mockStaking := &MockStakingKeeper{delegatorBonded: make(map[string]sdkmath.Int)}
-	return keeper.NewKeeper(input.Cdc, input.StoreKey, mockStaking)
+	mockStaking := &MockStakingKeeperForExtended{delegatorBonded: make(map[string]sdkmath.Int)}
+	mockBank := &MockBankKeeperForExtended{
+		balances:       make(map[string]sdk.Coins),
+		moduleBalances: make(map[string]sdk.Coins),
+	}
+	return keeper.NewKeeper(input.Cdc, input.StoreKey, mockStaking, mockBank)
 }
 
 func TestSetNextProposalID(t *testing.T) {
@@ -433,7 +429,7 @@ func TestCalculateTallyNoVotes(t *testing.T) {
 
 func TestCalculateTallyWithVotes(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	mockStaking := &MockStakingKeeper{delegatorBonded: make(map[string]sdkmath.Int)}
+	mockStaking := &MockStakingKeeperForExtended{delegatorBonded: make(map[string]sdkmath.Int)}
 	k := keeper.NewKeeper(input.Cdc, input.StoreKey, mockStaking)
 
 	proposalID := uint64(1)
@@ -681,4 +677,42 @@ func TestBoundaryValues(t *testing.T) {
 	retrieved, err := k.GetProposal(input.Ctx, ^uint64(0))
 	require.NoError(t, err)
 	assert.Equal(t, "Max ID", retrieved.Title)
+}
+
+// MockStakingKeeperForExtended for tests in keeper_extended_test
+type MockStakingKeeperForExtended struct {
+	delegatorBonded map[string]sdkmath.Int
+}
+
+func (m *MockStakingKeeperForExtended) GetDelegatorBonded(ctx sdk.Context, delegator sdk.AccAddress) sdkmath.Int {
+	if amount, ok := m.delegatorBonded[delegator.String()]; ok {
+		return amount
+	}
+	return sdkmath.ZeroInt()
+}
+
+func (m *MockStakingKeeperForExtended) TotalBondedTokens(ctx sdk.Context) sdkmath.Int {
+	total := sdkmath.ZeroInt()
+	for _, amount := range m.delegatorBonded {
+		total = total.Add(amount)
+	}
+	return total
+}
+
+// MockBankKeeperForExtended for tests
+type MockBankKeeperForExtended struct {
+	balances       map[string]sdk.Coins
+	moduleBalances map[string]sdk.Coins
+}
+
+func (m *MockBankKeeperForExtended) SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
+	return nil
+}
+
+func (m *MockBankKeeperForExtended) SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
+	return nil
+}
+
+func (m *MockBankKeeperForExtended) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin {
+	return sdk.NewCoin(denom, sdkmath.ZeroInt())
 }
