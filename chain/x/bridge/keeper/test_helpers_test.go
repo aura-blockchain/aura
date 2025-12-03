@@ -3,7 +3,6 @@ package keeper_test
 import (
 	"testing"
 
-	sdkmath "cosmossdk.io/math"
 	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 	"github.com/aequitas/aura/chain/x/bridge/types"
 	"github.com/stretchr/testify/require"
@@ -41,16 +40,10 @@ func seedBridgeTransferWithPending(t *testing.T, input keepertest.TestInput, tra
 	// Use the fraud proof window from default params (7 days)
 	unlockTime := input.Ctx.BlockTime().Add(types.DefaultFraudProofWindow)
 
-	// Parse amount string to math.Int for PendingTransfer
-	amountInt, ok := sdkmath.NewIntFromString(amount)
-	if !ok {
-		t.Fatalf("invalid amount string: %s", amount)
-	}
-
 	pending := &types.PendingTransfer{
 		TransferId:   transferID,
 		Recipient:    keepertest.GenTestAddr().String(),
-		Amount:       amountInt,
+		Amount:       amount, // Amount is stored as string
 		Denom:        "uaura",
 		SourceChain:  "paw",
 		SourceTxHash: "0xabcd1234",
