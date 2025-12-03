@@ -4,12 +4,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkmath "cosmossdk.io/math"
 
 	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 	"github.com/aequitas/aura/chain/x/bridge/keeper"
-	"github.com/aequitas/aura/chain/x/bridge/types"
 )
 
 func TestRequireNotPaused_GlobalPause(t *testing.T) {
