@@ -238,7 +238,7 @@ func TestSubmitFraudProof(t *testing.T) {
 	submitter := keepertest.GenTestAddr()
 	transferID := "transfer_1"
 	proof := []byte("fraud_proof_data")
-	seedBridgeTransfer(t, input, transferID, math.NewInt(1000).String(), 0)
+	seedBridgeTransferWithPending(t, input, transferID, math.NewInt(1000).String(), 0)
 
 	err := k.SubmitFraudProof(input.Ctx, transferID, submitter.String(), proof)
 	require.NoError(t, err)
@@ -256,7 +256,7 @@ func TestSubmitFraudProofDuplicate(t *testing.T) {
 	submitter := keepertest.GenTestAddr()
 	transferID := "transfer_dup"
 	proof := []byte("fraud_proof_data")
-	seedBridgeTransfer(t, input, transferID, math.NewInt(1000).String(), 0)
+	seedBridgeTransferWithPending(t, input, transferID, math.NewInt(1000).String(), 0)
 
 	err := k.SubmitFraudProof(input.Ctx, transferID, submitter.String(), proof)
 	require.NoError(t, err)
@@ -272,8 +272,9 @@ func TestSubmitFraudProofWindowExpired(t *testing.T) {
 	submitter := keepertest.GenTestAddr()
 	transferID := "transfer_window"
 	proof := []byte("fraud_proof_data")
-	seedBridgeTransfer(t, input, transferID, math.NewInt(1000).String(), 0)
+	seedBridgeTransferWithPending(t, input, transferID, math.NewInt(1000).String(), 0)
 
+	// Advance time past the fraud proof window
 	ctx := keepertest.AdvanceTime(input.Ctx, types.DefaultFraudProofWindow+time.Second)
 	err := k.SubmitFraudProof(ctx, transferID, submitter.String(), proof)
 	require.ErrorIs(t, err, types.ErrFraudProofExpired)
@@ -286,7 +287,7 @@ func TestResolveFraudProofValid(t *testing.T) {
 	submitter := keepertest.GenTestAddr()
 	transferID := "transfer_1"
 	proof := []byte("valid_fraud_proof")
-	seedBridgeTransfer(t, input, transferID, math.NewInt(1000).String(), 0)
+	seedBridgeTransferWithPending(t, input, transferID, math.NewInt(1000).String(), 0)
 
 	err := k.SubmitFraudProof(input.Ctx, transferID, submitter.String(), proof)
 	require.NoError(t, err)
@@ -308,7 +309,7 @@ func TestResolveFraudProofInvalid(t *testing.T) {
 
 	submitter := keepertest.GenTestAddr()
 	transferID := "transfer_invalid"
-	seedBridgeTransfer(t, input, transferID, math.NewInt(1000).String(), 0)
+	seedBridgeTransferWithPending(t, input, transferID, math.NewInt(1000).String(), 0)
 
 	err := k.SubmitFraudProof(input.Ctx, transferID, submitter.String(), []byte("evidence"))
 	require.NoError(t, err)
@@ -335,11 +336,12 @@ func TestResolveFraudProofExpired(t *testing.T) {
 	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 
 	transferID := "transfer_expired"
-	seedBridgeTransfer(t, input, transferID, math.NewInt(1000).String(), 0)
+	seedBridgeTransferWithPending(t, input, transferID, math.NewInt(1000).String(), 0)
 
 	err := k.SubmitFraudProof(input.Ctx, transferID, keepertest.GenTestAddr().String(), []byte("evidence"))
 	require.NoError(t, err)
 
+	// Advance time past the fraud proof window
 	ctx := keepertest.AdvanceTime(input.Ctx, types.DefaultFraudProofWindow+time.Second)
 	_, err = k.ResolveFraudProof(ctx, transferID, true)
 	require.ErrorIs(t, err, types.ErrFraudProofExpired)
@@ -350,7 +352,7 @@ func TestFraudProofWindow(t *testing.T) {
 	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 
 	transferID := "transfer_1"
-	seedBridgeTransfer(t, input, transferID, math.NewInt(1000).String(), 0)
+	seedBridgeTransferWithPending(t, input, transferID, math.NewInt(1000).String(), 0)
 
 	// Check if in fraud proof window
 	inWindow := k.IsInFraudProofWindow(input.Ctx, transferID)

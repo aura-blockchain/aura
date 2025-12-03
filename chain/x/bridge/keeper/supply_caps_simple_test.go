@@ -37,6 +37,12 @@ func TestSupplyCaps_ValidateParams(t *testing.T) {
 				AutoPauseEnabled:        false,
 				AutoPauseThreshold:      "5000000",
 				EmergencyPauseAddresses: []string{},
+				FraudProofWindow:        3600,   // 1 hour minimum
+				SlashFraudSignature:     "0.50", // 50%
+				SlashDoubleSigning:      "1.00", // 100%
+				SlashOffline:            "0.01", // 1%
+				MinSigningWindow:        10000,  // blocks
+				MinSignedPerWindow:      "0.50", // 50%
 			},
 			expectErr: false,
 		},
@@ -58,6 +64,12 @@ func TestSupplyCaps_ValidateParams(t *testing.T) {
 				AutoPauseEnabled:        false,
 				AutoPauseThreshold:      "5000000",
 				EmergencyPauseAddresses: []string{},
+				FraudProofWindow:        3600,   // 1 hour minimum
+				SlashFraudSignature:     "0.50", // 50%
+				SlashDoubleSigning:      "1.00", // 100%
+				SlashOffline:            "0.01", // 1%
+				MinSigningWindow:        10000,  // blocks
+				MinSignedPerWindow:      "0.50", // 50%
 			},
 			expectErr: true,
 			errMsg:    "invalid supply cap",
@@ -78,6 +90,12 @@ func TestSupplyCaps_ValidateParams(t *testing.T) {
 				AutoPauseEnabled:             false,
 				AutoPauseThreshold:           "5000000",
 				EmergencyPauseAddresses:      []string{},
+				FraudProofWindow:             3600,   // 1 hour minimum
+				SlashFraudSignature:          "0.50", // 50%
+				SlashDoubleSigning:           "1.00", // 100%
+				SlashOffline:                 "0.01", // 1%
+				MinSigningWindow:             10000,  // blocks
+				MinSignedPerWindow:           "0.50", // 50%
 			},
 			expectErr: true,
 			errMsg:    "DailyMintLimit must be a valid integer",
@@ -98,6 +116,12 @@ func TestSupplyCaps_ValidateParams(t *testing.T) {
 				AutoPauseEnabled:             false,
 				AutoPauseThreshold:           "5000000",
 				EmergencyPauseAddresses:      []string{},
+				FraudProofWindow:             3600,   // 1 hour minimum
+				SlashFraudSignature:          "0.50", // 50%
+				SlashDoubleSigning:           "1.00", // 100%
+				SlashOffline:                 "0.01", // 1%
+				MinSigningWindow:             10000,  // blocks
+				MinSignedPerWindow:           "0.50", // 50%
 			},
 			expectErr: true,
 			errMsg:    "HourlyMintLimit must be a valid integer",
@@ -118,6 +142,12 @@ func TestSupplyCaps_ValidateParams(t *testing.T) {
 				AutoPauseEnabled:             false,
 				AutoPauseThreshold:           "5000000",
 				EmergencyPauseAddresses:      []string{},
+				FraudProofWindow:             3600,   // 1 hour minimum
+				SlashFraudSignature:          "0.50", // 50%
+				SlashDoubleSigning:           "1.00", // 100%
+				SlashOffline:                 "0.01", // 1%
+				MinSigningWindow:             10000,  // blocks
+				MinSignedPerWindow:           "0.50", // 50%
 			},
 			expectErr: false,
 		},

@@ -5,14 +5,38 @@ import (
 
 	"github.com/stretchr/testify/require"
 	sdkmath "cosmossdk.io/math"
+	"github.com/cosmos/cosmos-sdk/codec"
+	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
 	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 	"github.com/aequitas/aura/chain/x/bridge/keeper"
 )
 
-func TestRequireNotPaused_GlobalPause(t *testing.T) {
+// setupKeeperWithParams creates a keeper with proper paramstore initialization
+func setupKeeperWithParams(t *testing.T) (*keeper.Keeper, keepertest.TestInput) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
+
+	// Create LegacyAmino codec for paramstore
+	legacyAmino := codec.NewLegacyAmino()
+
+	// Create a paramstore with KeyTable
+	ps := paramtypes.NewSubspace(input.Cdc, legacyAmino, input.StoreKey, input.MemStoreKey, "bridge")
+
+	k := keeper.NewKeeper(
+		input.Cdc,
+		input.StoreKey,
+		&ps,
+		nil, // bankKeeper
+		nil, // accountKeeper
+		nil, // vcKeeper
+		nil, // stakingKeeper
+	)
+
+	return k, input
+}
+
+func TestRequireNotPaused_GlobalPause(t *testing.T) {
+	k, input := setupKeeperWithParams(t)
 	ctx := input.Ctx
 
 	// Initially not paused
@@ -31,8 +55,7 @@ func TestRequireNotPaused_GlobalPause(t *testing.T) {
 }
 
 func TestRequireNotPaused_PerChainPause(t *testing.T) {
-	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
+	k, input := setupKeeperWithParams(t)
 	ctx := input.Ctx
 
 	// Set per-chain pause for paw
@@ -51,8 +74,7 @@ func TestRequireNotPaused_PerChainPause(t *testing.T) {
 }
 
 func TestRequireNotPaused_CaseInsensitive(t *testing.T) {
-	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
+	k, input := setupKeeperWithParams(t)
 	ctx := input.Ctx
 
 	// Pause "paw" (lowercase)
@@ -70,13 +92,14 @@ func TestRequireNotPaused_CaseInsensitive(t *testing.T) {
 }
 
 func TestIsEmergencyPauseAuthorized(t *testing.T) {
-	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
+	k, input := setupKeeperWithParams(t)
 	ctx := input.Ctx
 
-	guardian1 := keepertest.GenTestAddr().String()
-	guardian2 := keepertest.GenTestAddr().String()
-	unauthorized := keepertest.GenTestAddr().String()
+	// Generate unique test addresses
+	addrs := keepertest.GenTestAddrs(3)
+	guardian1 := addrs[0].String()
+	guardian2 := addrs[1].String()
+	unauthorized := addrs[2].String()
 
 	// Set authorized guardians
 	params := k.GetParams(ctx)
@@ -95,8 +118,7 @@ func TestIsEmergencyPauseAuthorized(t *testing.T) {
 }
 
 func TestCheckAndTriggerAutoPause_Disabled(t *testing.T) {
-	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
+	k, input := setupKeeperWithParams(t)
 	ctx := input.Ctx
 
 	// Auto-pause disabled by default
@@ -114,8 +136,7 @@ func TestCheckAndTriggerAutoPause_Disabled(t *testing.T) {
 }
 
 func TestCheckAndTriggerAutoPause_BelowThreshold(t *testing.T) {
-	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
+	k, input := setupKeeperWithParams(t)
 	ctx := input.Ctx
 
 	// Enable auto-pause with threshold of 5 billion
@@ -135,8 +156,7 @@ func TestCheckAndTriggerAutoPause_BelowThreshold(t *testing.T) {
 }
 
 func TestCheckAndTriggerAutoPause_ExceedsThreshold(t *testing.T) {
-	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
+	k, input := setupKeeperWithParams(t)
 	ctx := input.Ctx
 
 	// Enable auto-pause with threshold of 5 billion
@@ -159,8 +179,7 @@ func TestCheckAndTriggerAutoPause_ExceedsThreshold(t *testing.T) {
 }
 
 func TestCheckAndTriggerAutoPause_InvalidThreshold(t *testing.T) {
-	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
+	k, input := setupKeeperWithParams(t)
 	ctx := input.Ctx
 
 	// Enable auto-pause with invalid threshold
@@ -176,8 +195,7 @@ func TestCheckAndTriggerAutoPause_InvalidThreshold(t *testing.T) {
 }
 
 func TestGetHourlyMintedAmount_Empty(t *testing.T) {
-	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
+	k, input := setupKeeperWithParams(t)
 	ctx := input.Ctx
 
 	// No mints recorded
@@ -186,8 +204,7 @@ func TestGetHourlyMintedAmount_Empty(t *testing.T) {
 }
 
 func TestGetHourlyMintedAmount_WithRecords(t *testing.T) {
-	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
+	k, input := setupKeeperWithParams(t)
 	ctx := input.Ctx
 
 	// Record some mints
@@ -202,8 +219,7 @@ func TestGetHourlyMintedAmount_WithRecords(t *testing.T) {
 }
 
 func TestRecordMintedAmount_EmitsEvent(t *testing.T) {
-	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
+	k, input := setupKeeperWithParams(t)
 	ctx := input.Ctx
 
 	// Record mint
@@ -234,8 +250,7 @@ func TestRecordMintedAmount_EmitsEvent(t *testing.T) {
 }
 
 func TestRecordMintedAmount_ZeroAmount(t *testing.T) {
-	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
+	k, input := setupKeeperWithParams(t)
 	ctx := input.Ctx
 
 	// Record zero amount (should be ignored)

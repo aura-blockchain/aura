@@ -161,7 +161,7 @@ func (k Keeper) GetHourlyMintedAmountRolling(ctx sdk.Context, denom string) sdkm
 // Security considerations:
 //   - Must be called AFTER successful mint
 //   - Used for auto-pause threshold calculation
-//   - Automatically cleans up old entries
+//   - Uses the hourly bucket system from keeper.go for consistency
 //
 // Parameters:
 //   - ctx: SDK context for state access
@@ -172,26 +172,9 @@ func (k Keeper) RecordMintedAmount(ctx sdk.Context, denom string, amount sdkmath
 		return
 	}
 
-	store := k.store(ctx)
-	now := ctx.BlockTime()
-
-	// Serialize timestamp
-	timestampBytes, err := now.MarshalBinary()
-	if err != nil {
-		return
-	}
-
-	// Key: "hourly-mint-<denom>-<timestamp>"
-	key := []byte(fmt.Sprintf("hourly-mint-%s-", denom))
-	key = append(key, timestampBytes...)
-
-	// Value: amount
-	amountBytes, err := amount.Marshal()
-	if err != nil {
-		return
-	}
-
-	store.Set(key, amountBytes)
+	// Use the AddHourlyMintedAmount function from keeper.go
+	// This ensures consistency with GetHourlyMintedAmount
+	k.AddHourlyMintedAmount(ctx, denom, amount)
 
 	// Emit event for monitoring
 	ctx.EventManager().EmitEvent(
@@ -199,7 +182,7 @@ func (k Keeper) RecordMintedAmount(ctx sdk.Context, denom string, amount sdkmath
 			"mint_recorded",
 			sdk.NewAttribute("denom", denom),
 			sdk.NewAttribute("amount", amount.String()),
-			sdk.NewAttribute("timestamp", now.Format(time.RFC3339)),
+			sdk.NewAttribute("timestamp", ctx.BlockTime().Format(time.RFC3339)),
 		),
 	)
 }

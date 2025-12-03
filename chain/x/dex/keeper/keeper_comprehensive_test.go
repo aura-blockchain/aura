@@ -195,13 +195,18 @@ func (suite *DEXKeeperTestSuite) TestSetParams() {
 // Pool Creation Tests
 
 func TestCreatePool(t *testing.T) {
-	k, ctx, _ := setupTestKeeper(t)
+	k, ctx, mockBank := setupTestKeeper(t)
 
-	creator := keepertest.GenTestAddr().String()
+	creatorAddr := keepertest.GenTestAddr()
+	creator := creatorAddr.String()
 	tokenA := "uaura"
 	tokenB := "uusdt"
 	amountA := sdk.NewCoin("uaura", math.NewInt(1000000))
 	amountB := sdk.NewCoin("uusdt", math.NewInt(1000000))
+
+	// Fund creator for pool creation
+	mockBank.SetBalance(creatorAddr, tokenA, amountA.Amount)
+	mockBank.SetBalance(creatorAddr, tokenB, amountB.Amount)
 
 	pool, lpTokens, err := k.CreatePool(ctx, creator, tokenA, tokenB, amountA, amountB)
 	require.NoError(t, err)
@@ -250,9 +255,13 @@ func TestCreatePoolSameTokens(t *testing.T) {
 }
 
 func TestGetPool(t *testing.T) {
-	k, ctx, _ := setupTestKeeper(t)
+	k, ctx, mockBank := setupTestKeeper(t)
 
-	creator := keepertest.GenTestAddr().String()
+	creatorAddr := keepertest.GenTestAddr()
+	creator := creatorAddr.String()
+	mockBank.SetBalance(creatorAddr, "uaura", math.NewInt(1000000))
+	mockBank.SetBalance(creatorAddr, "uusdt", math.NewInt(1000000))
+
 	pool, _, err := k.CreatePool(ctx, creator, "uaura", "uusdt", sdk.NewCoin("uaura", math.NewInt(1000000)), sdk.NewCoin("uusdt", math.NewInt(1000000)))
 	require.NoError(t, err)
 
@@ -351,9 +360,10 @@ func TestUserOrderHistoryLimit(t *testing.T) {
 }
 
 func TestGetAllPools(t *testing.T) {
-	k, ctx, _ := setupTestKeeper(t)
+	k, ctx, mockBank := setupTestKeeper(t)
 
-	creator := keepertest.GenTestAddr().String()
+	creatorAddr := keepertest.GenTestAddr()
+	creator := creatorAddr.String()
 
 	// Create multiple pools with cooldown advancement
 	for i := 0; i < 5; i++ {
@@ -361,6 +371,10 @@ func TestGetAllPools(t *testing.T) {
 		ctx = ctx.WithBlockTime(ctx.BlockTime().Add(time.Hour + time.Second))
 
 		tokenName := "token" + string(rune('A'+i))
+		// Fund creator for each pool
+		mockBank.SetBalance(creatorAddr, tokenName, math.NewInt(1000000))
+		mockBank.SetBalance(creatorAddr, "uaura", math.NewInt(1000000*(int64(i)+1)))
+
 		_, _, err := k.CreatePool(ctx, creator, tokenName, "uaura", sdk.NewCoin(tokenName, math.NewInt(1000000)), sdk.NewCoin("uaura", math.NewInt(1000000)))
 		require.NoError(t, err)
 	}
@@ -372,13 +386,20 @@ func TestGetAllPools(t *testing.T) {
 // Swap Tests
 
 func TestSwap(t *testing.T) {
-	k, ctx, _ := setupTestKeeper(t)
+	k, ctx, mockBank := setupTestKeeper(t)
 
-	creator := keepertest.GenTestAddr().String()
+	creatorAddr := keepertest.GenTestAddr()
+	creator := creatorAddr.String()
+	mockBank.SetBalance(creatorAddr, "uaura", math.NewInt(1000000))
+	mockBank.SetBalance(creatorAddr, "uusdt", math.NewInt(1000000))
+
 	pool, _, err := k.CreatePool(ctx, creator, "uaura", "uusdt", sdk.NewCoin("uaura", math.NewInt(1000000)), sdk.NewCoin("uusdt", math.NewInt(1000000)))
 	require.NoError(t, err)
 
-	trader := keepertest.GenTestAddr().String()
+	traderAddr := keepertest.GenTestAddr()
+	trader := traderAddr.String()
+	mockBank.SetBalance(traderAddr, "uaura", math.NewInt(1000))
+
 	coinIn := sdk.NewCoin("uaura", math.NewInt(1000))
 	minAmountOut := math.NewInt(900)
 
@@ -388,9 +409,13 @@ func TestSwap(t *testing.T) {
 }
 
 func TestSwapSlippageProtection(t *testing.T) {
-	k, ctx, _ := setupTestKeeper(t)
+	k, ctx, mockBank := setupTestKeeper(t)
 
-	creator := keepertest.GenTestAddr().String()
+	creatorAddr := keepertest.GenTestAddr()
+	creator := creatorAddr.String()
+	mockBank.SetBalance(creatorAddr, "uaura", math.NewInt(1000000))
+	mockBank.SetBalance(creatorAddr, "uusdt", math.NewInt(1000000))
+
 	pool, _, err := k.CreatePool(ctx, creator, "uaura", "uusdt", sdk.NewCoin("uaura", math.NewInt(1000000)), sdk.NewCoin("uusdt", math.NewInt(1000000)))
 	require.NoError(t, err)
 
@@ -413,9 +438,13 @@ func TestSwapInvalidPool(t *testing.T) {
 }
 
 func TestSwapZeroAmount(t *testing.T) {
-	k, ctx, _ := setupTestKeeper(t)
+	k, ctx, mockBank := setupTestKeeper(t)
 
-	creator := keepertest.GenTestAddr().String()
+	creatorAddr := keepertest.GenTestAddr()
+	creator := creatorAddr.String()
+	mockBank.SetBalance(creatorAddr, "uaura", math.NewInt(1000000))
+	mockBank.SetBalance(creatorAddr, "uusdt", math.NewInt(1000000))
+
 	pool, _, err := k.CreatePool(ctx, creator, "uaura", "uusdt", sdk.NewCoin("uaura", math.NewInt(1000000)), sdk.NewCoin("uusdt", math.NewInt(1000000)))
 	require.NoError(t, err)
 
@@ -427,15 +456,22 @@ func TestSwapZeroAmount(t *testing.T) {
 }
 
 func TestSwapPriceImpact(t *testing.T) {
-	k, ctx, _ := setupTestKeeper(t)
+	k, ctx, mockBank := setupTestKeeper(t)
 
-	creator := keepertest.GenTestAddr().String()
+	creatorAddr := keepertest.GenTestAddr()
+	creator := creatorAddr.String()
+	mockBank.SetBalance(creatorAddr, "uaura", math.NewInt(1000000))
+	mockBank.SetBalance(creatorAddr, "uusdt", math.NewInt(1000000))
+
 	pool, _, err := k.CreatePool(ctx, creator, "uaura", "uusdt", sdk.NewCoin("uaura", math.NewInt(1000000)), sdk.NewCoin("uusdt", math.NewInt(1000000)))
 	require.NoError(t, err)
 
-	trader := keepertest.GenTestAddr().String()
+	traderAddr := keepertest.GenTestAddr()
+	trader := traderAddr.String()
 	// Use 10% of pool (100000) to avoid triggering max trade size (20% limit)
 	largeSwap := math.NewInt(100000)
+	mockBank.SetBalance(traderAddr, "uaura", largeSwap)
+
 	coinIn := sdk.NewCoin("uaura", largeSwap)
 
 	// Large swap should have significant price impact
@@ -449,15 +485,22 @@ func TestSwapPriceImpact(t *testing.T) {
 // Liquidity Tests
 
 func TestAddLiquidity(t *testing.T) {
-	k, ctx, _ := setupTestKeeper(t)
+	k, ctx, mockBank := setupTestKeeper(t)
 
-	creator := keepertest.GenTestAddr().String()
+	creatorAddr := keepertest.GenTestAddr()
+	creator := creatorAddr.String()
+	mockBank.SetBalance(creatorAddr, "uaura", math.NewInt(1000000))
+	mockBank.SetBalance(creatorAddr, "uusdt", math.NewInt(1000000))
+
 	pool, _, err := k.CreatePool(ctx, creator, "uaura", "uusdt", sdk.NewCoin("uaura", math.NewInt(1000000)), sdk.NewCoin("uusdt", math.NewInt(1000000)))
 	require.NoError(t, err)
 
-	provider := keepertest.GenTestAddr().String()
+	providerAddr := keepertest.GenTestAddr()
+	provider := providerAddr.String()
 	amountA := sdk.NewCoin("uaura", math.NewInt(100000))
 	amountB := sdk.NewCoin("uusdt", math.NewInt(100000))
+	mockBank.SetBalance(providerAddr, "uaura", amountA.Amount)
+	mockBank.SetBalance(providerAddr, "uusdt", amountB.Amount)
 
 	lpTokens, _, err := k.AddLiquidity(ctx, provider, pool.PoolId, amountA, amountB)
 	require.NoError(t, err)
@@ -465,15 +508,22 @@ func TestAddLiquidity(t *testing.T) {
 }
 
 func TestAddLiquidityImbalanced(t *testing.T) {
-	k, ctx, _ := setupTestKeeper(t)
+	k, ctx, mockBank := setupTestKeeper(t)
 
-	creator := keepertest.GenTestAddr().String()
+	creatorAddr := keepertest.GenTestAddr()
+	creator := creatorAddr.String()
+	mockBank.SetBalance(creatorAddr, "uaura", math.NewInt(1000000))
+	mockBank.SetBalance(creatorAddr, "uusdt", math.NewInt(1000000))
+
 	pool, _, err := k.CreatePool(ctx, creator, "uaura", "uusdt", sdk.NewCoin("uaura", math.NewInt(1000000)), sdk.NewCoin("uusdt", math.NewInt(1000000)))
 	require.NoError(t, err)
 
-	provider := keepertest.GenTestAddr().String()
+	providerAddr := keepertest.GenTestAddr()
+	provider := providerAddr.String()
 	amountA := sdk.NewCoin("uaura", math.NewInt(100000))
 	amountB := sdk.NewCoin("uusdt", math.NewInt(200000)) // Imbalanced ratio
+	mockBank.SetBalance(providerAddr, "uaura", amountA.Amount)
+	mockBank.SetBalance(providerAddr, "uusdt", amountB.Amount)
 
 	// AddLiquidity adjusts amounts to match ratio, so it returns successfully
 	// with adjusted amounts (not an error)
@@ -484,9 +534,14 @@ func TestAddLiquidityImbalanced(t *testing.T) {
 }
 
 func TestRemoveLiquidity(t *testing.T) {
-	k, ctx, _ := setupTestKeeper(t)
+	k, ctx, mockBank := setupTestKeeper(t)
 
-	creator := keepertest.GenTestAddr().String()
+	creatorAddr := keepertest.GenTestAddr()
+	creator := creatorAddr.String()
+	// Fund creator for pool creation (1000000) + additional liquidity (100000)
+	mockBank.SetBalance(creatorAddr, "uaura", math.NewInt(1100000))
+	mockBank.SetBalance(creatorAddr, "uusdt", math.NewInt(1100000))
+
 	pool, _, err := k.CreatePool(ctx, creator, "uaura", "uusdt", sdk.NewCoin("uaura", math.NewInt(1000000)), sdk.NewCoin("uusdt", math.NewInt(1000000)))
 	require.NoError(t, err)
 
@@ -502,9 +557,13 @@ func TestRemoveLiquidity(t *testing.T) {
 }
 
 func TestRemoveLiquidityExceedsBalance(t *testing.T) {
-	k, ctx, _ := setupTestKeeper(t)
+	k, ctx, mockBank := setupTestKeeper(t)
 
-	creator := keepertest.GenTestAddr().String()
+	creatorAddr := keepertest.GenTestAddr()
+	creator := creatorAddr.String()
+	mockBank.SetBalance(creatorAddr, "uaura", math.NewInt(1000000))
+	mockBank.SetBalance(creatorAddr, "uusdt", math.NewInt(1000000))
+
 	pool, _, err := k.CreatePool(ctx, creator, "uaura", "uusdt", sdk.NewCoin("uaura", math.NewInt(1000000)), sdk.NewCoin("uusdt", math.NewInt(1000000)))
 	require.NoError(t, err)
 
@@ -516,9 +575,13 @@ func TestRemoveLiquidityExceedsBalance(t *testing.T) {
 }
 
 func TestGetPoolPrice(t *testing.T) {
-	k, ctx, _ := setupTestKeeper(t)
+	k, ctx, mockBank := setupTestKeeper(t)
 
-	creator := keepertest.GenTestAddr().String()
+	creatorAddr := keepertest.GenTestAddr()
+	creator := creatorAddr.String()
+	mockBank.SetBalance(creatorAddr, "uaura", math.NewInt(1000000))
+	mockBank.SetBalance(creatorAddr, "uusdt", math.NewInt(2000000))
+
 	pool, _, err := k.CreatePool(ctx, creator, "uaura", "uusdt", sdk.NewCoin("uaura", math.NewInt(1000000)), sdk.NewCoin("uusdt", math.NewInt(2000000)))
 	require.NoError(t, err)
 
@@ -530,9 +593,13 @@ func TestGetPoolPrice(t *testing.T) {
 }
 
 func TestGetSpotPrice(t *testing.T) {
-	k, ctx, _ := setupTestKeeper(t)
+	k, ctx, mockBank := setupTestKeeper(t)
 
-	creator := keepertest.GenTestAddr().String()
+	creatorAddr := keepertest.GenTestAddr()
+	creator := creatorAddr.String()
+	mockBank.SetBalance(creatorAddr, "uaura", math.NewInt(1000000))
+	mockBank.SetBalance(creatorAddr, "uusdt", math.NewInt(1000000))
+
 	pool, _, err := k.CreatePool(ctx, creator, "uaura", "uusdt", sdk.NewCoin("uaura", math.NewInt(1000000)), sdk.NewCoin("uusdt", math.NewInt(1000000)))
 	require.NoError(t, err)
 
@@ -555,14 +622,21 @@ func TestCalculateSwapFee(t *testing.T) {
 }
 
 func TestCollectSwapFees(t *testing.T) {
-	k, ctx, _ := setupTestKeeper(t)
+	k, ctx, mockBank := setupTestKeeper(t)
 
-	creator := keepertest.GenTestAddr().String()
+	creatorAddr := keepertest.GenTestAddr()
+	creator := creatorAddr.String()
+	mockBank.SetBalance(creatorAddr, "uaura", math.NewInt(1000000))
+	mockBank.SetBalance(creatorAddr, "uusdt", math.NewInt(1000000))
+
 	pool, _, err := k.CreatePool(ctx, creator, "uaura", "uusdt", sdk.NewCoin("uaura", math.NewInt(1000000)), sdk.NewCoin("uusdt", math.NewInt(1000000)))
 	require.NoError(t, err)
 
-	trader := keepertest.GenTestAddr().String()
+	traderAddr := keepertest.GenTestAddr()
+	trader := traderAddr.String()
 	coinIn := sdk.NewCoin("uaura", math.NewInt(1000))
+	mockBank.SetBalance(traderAddr, "uaura", coinIn.Amount)
+
 	_, _, _, err = k.SwapExactIn(ctx, trader, pool.PoolId, coinIn, math.NewInt(900), 0)
 	require.NoError(t, err)
 
@@ -574,9 +648,13 @@ func TestCollectSwapFees(t *testing.T) {
 // Circuit Breaker Tests
 
 func TestCircuitBreakerLargeSwap(t *testing.T) {
-	k, ctx, _ := setupTestKeeper(t)
+	k, ctx, mockBank := setupTestKeeper(t)
 
-	creator := keepertest.GenTestAddr().String()
+	creatorAddr := keepertest.GenTestAddr()
+	creator := creatorAddr.String()
+	mockBank.SetBalance(creatorAddr, "uaura", math.NewInt(1000000))
+	mockBank.SetBalance(creatorAddr, "uusdt", math.NewInt(1000000))
+
 	pool, _, err := k.CreatePool(ctx, creator, "uaura", "uusdt", sdk.NewCoin("uaura", math.NewInt(1000000)), sdk.NewCoin("uusdt", math.NewInt(1000000)))
 	require.NoError(t, err)
 

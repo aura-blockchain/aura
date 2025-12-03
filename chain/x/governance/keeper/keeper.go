@@ -690,47 +690,28 @@ func (k *Keeper) GetDelegatedVotingPower(ctx sdk.Context, delegate string) sdkma
 	iterator := storetypes.KVStorePrefixIterator(store, DelegationsKeyPrefix)
 	defer iterator.Close()
 
-	delegationCount := 0
 	for ; iterator.Valid(); iterator.Next() {
 		var delegation types.VoteDelegation
 		if err := k.cdc.Unmarshal(iterator.Value(), &delegation); err != nil {
-			ctx.Logger().Error("failed to unmarshal delegation", "error", err)
 			continue // Skip invalid delegations
 		}
 
-		ctx.Logger().Info("found delegation",
-			"delegator", delegation.Delegator,
-			"delegate", delegation.Delegate,
-			"target_delegate", delegate)
-
 		// Check if this delegation is TO the target address
 		if delegation.Delegate == delegate {
-			delegationCount++
 			// Get the delegator's staked tokens
 			delegatorAddr, err := sdk.AccAddressFromBech32(delegation.Delegator)
 			if err != nil {
-				ctx.Logger().Error("invalid delegator address", "address", delegation.Delegator, "error", err)
 				continue // Skip invalid addresses
 			}
 
 			// Add the delegator's staked amount to the delegate's voting power
 			delegatorStake, err := k.stakingKeeper.GetDelegatorBonded(ctx, delegatorAddr)
 			if err != nil {
-				ctx.Logger().Error("failed to get delegator stake", "delegator", delegation.Delegator, "error", err)
 				continue // Skip on error
 			}
-			ctx.Logger().Info("adding delegator stake",
-				"delegator", delegation.Delegator,
-				"stake", delegatorStake.String(),
-				"total_so_far", totalDelegated.Add(delegatorStake).String())
 			totalDelegated = totalDelegated.Add(delegatorStake)
 		}
 	}
-
-	ctx.Logger().Info("GetDelegatedVotingPower result",
-		"delegate", delegate,
-		"total_delegated", totalDelegated.String(),
-		"delegation_count", delegationCount)
 
 	return totalDelegated
 }
