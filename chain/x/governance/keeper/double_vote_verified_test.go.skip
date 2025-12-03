@@ -1,0 +1,640 @@
+package keeper_test
+
+import (
+	"context"
+	"testing"
+	"time"
+
+	"cosmossdk.io/log"
+	sdkmath "cosmossdk.io/math"
+	storetypes "cosmossdk.io/store/types"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cosmos/cosmos-sdk/codec"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/testutil"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/aequitas/aura/chain/x/governance/keeper"
+	"github.com/aequitas/aura/chain/x/governance/types"
+	govpb "github.com/aequitas/aura/proto/aura/governance/v1beta1"
+)
+
+// Mock security keeper for testing
+type mockSecurityKeeper struct{}
+
+func (m *mockSecurityKeeper) ValidateAddress(ctx sdk.Context, address string) error {
+	return nil
+}
+
+// Mock staking keeper for testing
+type mockStakingKeeper struct{}
+
+func (m *mockStakingKeeper) GetDelegatorBonded(ctx context.Context, delegator sdk.AccAddress) (sdkmath.Int, error) {
+	return sdkmath.NewInt(1000000), nil
+}
+
+func (m *mockStakingKeeper) TotalBondedTokens(ctx context.Context) (sdkmath.Int, error) {
+	return sdkmath.NewInt(100000000), nil
+}
+
+// Mock bank keeper for testing
+type mockBankKeeper struct{}
+
+func (m *mockBankKeeper) SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
+	return nil
+}
+
+func (m *mockBankKeeper) SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
+	return nil
+}
+
+func (m *mockBankKeeper) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin {
+	return sdk.NewCoin(denom, sdkmath.NewInt(1000000000))
+}
+
+// setupTestKeeper creates a test keeper with all dependencies
+func setupTestKeeper(t *testing.T) (*keeper.Keeper, sdk.Context) {
+	t.Helper()
+
+	// Create codec
+	interfaceRegistry := codectypes.NewInterfaceRegistry()
+	govpb.RegisterInterfaces(interfaceRegistry)
+	cdc := codec.NewProtoCodec(interfaceRegistry)
+
+	// Create store
+	storeKey := storetypes.NewKVStoreKey(types.ModuleName)
+	db := testutil.NewMemDB()
+	stateStore := testutil.NewCommitMultiStore(db, log.NewNopLogger(), nil)
+	stateStore.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, db)
+	require.NoError(t, stateStore.LoadLatestVersion())
+
+	// Create context
+	ctx := sdk.NewContext(stateStore, tmproto.Header{
+		Height: 1,
+		Time:   time.Now(),
+	}, false, log.NewNopLogger())
+
+	// Create keeper
+	k := keeper.NewKeeper(
+		cdc,
+		storeKey,
+		&mockStakingKeeper{},
+		&mockBankKeeper{},
+		&mockSecurityKeeper{},
+	)
+
+	// Set default params
+	params := types.DefaultParams()
+	k.SetParams(ctx, params)
+
+	// Initialize next proposal ID
+	k.SetNextProposalID(ctx, 1)
+
+	return k, ctx
+}
+
+// createTestProposal creates a test proposal in voting period
+func createTestProposal(t *testing.T, k *keeper.Keeper, ctx sdk.Context) uint64 {
+	t.Helper()
+
+	proposalID := k.GetNextProposalID(ctx)
+	k.SetNextProposalID(ctx, proposalID+1)
+
+	now := ctx.BlockTime()
+	proposal := &types.Proposal{
+		Id:              proposalID,
+		Title:           "Test Proposal",
+		Description:     "Test Description",
+		Category:        govpb.ProposalCategory_PROPOSAL_CATEGORY_TEXT,
+		Status:          govpb.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD,
+		Proposer:        "cosmos1proposer",
+		SubmitTime:      timestamppb.New(now),
+		VotingStartTime: timestamppb.New(now),
+		VotingEndTime:   timestamppb.New(now.Add(7 * 24 * time.Hour)),
+		TotalDeposit:    "10000000",
+		IsEmergency:     false,
+	}
+
+	err := k.SetProposal(ctx, proposal)
+	require.NoError(t, err)
+
+	return proposalID
+}
+
+// TestDoubleVote_PreventsDuplicateVoting tests that a voter cannot vote twice on the same proposal
+func TestDoubleVote_PreventsDuplicateVoting(t *testing.T) {
+	k, ctx := setupTestKeeper(t)
+	msgServer := keeper.NewMsgServerImpl(k)
+	proposalID := createTestProposal(t, k, ctx)
+
+	// Create test addresses
+	voter := sdk.AccAddress([]byte("voter1______________"))
+	voterAddr := voter.String()
+
+	// Create signing context with the voter as signer
+	goCtx := sdk.WrapSDKContext(ctx)
+
+	// First vote - should succeed
+	msg1 := &govpb.MsgVote{
+		ProposalId: proposalID,
+		Voter:      voterAddr,
+		Option:     govpb.VoteOption_VOTE_OPTION_YES,
+	}
+	// Set signer for message
+	msg1.Signer = voterAddr
+
+	// Override GetSigners for testing
+	origGetSigners := msg1.GetSigners
+	msg1.GetSigners = func() []sdk.AccAddress {
+		return []sdk.AccAddress{voter}
+	}
+
+	resp1, err := msgServer.Vote(goCtx, msg1)
+	require.NoError(t, err, "First vote should succeed")
+	require.NotNil(t, resp1)
+
+	// Restore original GetSigners
+	msg1.GetSigners = origGetSigners
+
+	// Verify vote was stored
+	vote1, err := k.GetVote(ctx, proposalID, voterAddr)
+	require.NoError(t, err)
+	require.Equal(t, govpb.VoteOption_VOTE_OPTION_YES, vote1.Option)
+
+	// Second vote with different option - should update the vote (not create duplicate)
+	msg2 := &govpb.MsgVote{
+		ProposalId: proposalID,
+		Voter:      voterAddr,
+		Option:     govpb.VoteOption_VOTE_OPTION_NO,
+	}
+	msg2.Signer = voterAddr
+
+	// Override GetSigners for testing
+	origGetSigners2 := msg2.GetSigners
+	msg2.GetSigners = func() []sdk.AccAddress {
+		return []sdk.AccAddress{voter}
+	}
+
+	resp2, err := msgServer.Vote(goCtx, msg2)
+	require.NoError(t, err, "Vote update should succeed")
+	require.NotNil(t, resp2)
+
+	// Restore original GetSigners
+	msg2.GetSigners = origGetSigners2
+
+	// Verify vote was updated (not duplicated)
+	vote2, err := k.GetVote(ctx, proposalID, voterAddr)
+	require.NoError(t, err)
+	require.Equal(t, govpb.VoteOption_VOTE_OPTION_NO, vote2.Option, "Vote should be updated to NO")
+
+	// Verify only one vote exists for this voter on this proposal
+	votes := k.GetVotes(ctx, proposalID)
+	require.Len(t, votes, 1, "Should have exactly one vote, not duplicates")
+	require.Equal(t, voterAddr, votes[0].Voter)
+	require.Equal(t, govpb.VoteOption_VOTE_OPTION_NO, votes[0].Option)
+}
+
+// TestDoubleVote_VoteUpdatePreservesProposalID tests that vote updates maintain proposal integrity
+func TestDoubleVote_VoteUpdatePreservesProposalID(t *testing.T) {
+	k, ctx := setupTestKeeper(t)
+	msgServer := keeper.NewMsgServerImpl(k)
+	proposalID := createTestProposal(t, k, ctx)
+
+	voter := sdk.AccAddress([]byte("voter2______________"))
+	voterAddr := voter.String()
+	goCtx := sdk.WrapSDKContext(ctx)
+
+	// Cast initial vote
+	msg1 := &govpb.MsgVote{
+		ProposalId: proposalID,
+		Voter:      voterAddr,
+		Option:     govpb.VoteOption_VOTE_OPTION_ABSTAIN,
+	}
+	msg1.Signer = voterAddr
+	msg1.GetSigners = func() []sdk.AccAddress {
+		return []sdk.AccAddress{voter}
+	}
+
+	_, err := msgServer.Vote(goCtx, msg1)
+	require.NoError(t, err)
+
+	// Update vote
+	msg2 := &govpb.MsgVote{
+		ProposalId: proposalID,
+		Voter:      voterAddr,
+		Option:     govpb.VoteOption_VOTE_OPTION_YES,
+	}
+	msg2.Signer = voterAddr
+	msg2.GetSigners = func() []sdk.AccAddress {
+		return []sdk.AccAddress{voter}
+	}
+
+	_, err = msgServer.Vote(goCtx, msg2)
+	require.NoError(t, err)
+
+	// Verify vote maintains correct proposal ID
+	vote, err := k.GetVote(ctx, proposalID, voterAddr)
+	require.NoError(t, err)
+	require.Equal(t, proposalID, vote.ProposalId)
+	require.Equal(t, voterAddr, vote.Voter)
+}
+
+// TestDoubleVote_SignerVerification tests that only the voter can cast their vote
+func TestDoubleVote_SignerVerification(t *testing.T) {
+	k, ctx := setupTestKeeper(t)
+	msgServer := keeper.NewMsgServerImpl(k)
+	proposalID := createTestProposal(t, k, ctx)
+
+	voter := sdk.AccAddress([]byte("voter3______________"))
+	attacker := sdk.AccAddress([]byte("attacker____________"))
+	voterAddr := voter.String()
+	goCtx := sdk.WrapSDKContext(ctx)
+
+	// Attempt to vote with mismatched signer - should fail
+	msg := &govpb.MsgVote{
+		ProposalId: proposalID,
+		Voter:      voterAddr,
+		Option:     govpb.VoteOption_VOTE_OPTION_YES,
+	}
+	msg.Signer = voterAddr
+
+	// Override GetSigners to simulate attacker signing
+	msg.GetSigners = func() []sdk.AccAddress {
+		return []sdk.AccAddress{attacker}
+	}
+
+	_, err := msgServer.Vote(goCtx, msg)
+	require.Error(t, err, "Vote with mismatched signer should fail")
+
+	// Verify error is permission denied
+	st, ok := status.FromError(err)
+	require.True(t, ok)
+	require.Equal(t, codes.PermissionDenied, st.Code())
+	require.Contains(t, st.Message(), "voter must be transaction signer")
+
+	// Verify no vote was recorded
+	_, err = k.GetVote(ctx, proposalID, voterAddr)
+	require.Error(t, err, "No vote should be recorded for failed signer verification")
+}
+
+// TestDoubleVote_NoSignerProvided tests rejection when no signer is provided
+func TestDoubleVote_NoSignerProvided(t *testing.T) {
+	k, ctx := setupTestKeeper(t)
+	msgServer := keeper.NewMsgServerImpl(k)
+	proposalID := createTestProposal(t, k, ctx)
+
+	voterAddr := sdk.AccAddress([]byte("voter4______________")).String()
+	goCtx := sdk.WrapSDKContext(ctx)
+
+	msg := &govpb.MsgVote{
+		ProposalId: proposalID,
+		Voter:      voterAddr,
+		Option:     govpb.VoteOption_VOTE_OPTION_YES,
+	}
+
+	// Override GetSigners to return empty slice
+	msg.GetSigners = func() []sdk.AccAddress {
+		return []sdk.AccAddress{}
+	}
+
+	_, err := msgServer.Vote(goCtx, msg)
+	require.Error(t, err, "Vote without signer should fail")
+
+	st, ok := status.FromError(err)
+	require.True(t, ok)
+	require.Equal(t, codes.Unauthenticated, st.Code())
+	require.Contains(t, st.Message(), "no signers")
+}
+
+// TestDoubleVote_MultipleVotersOnSameProposal tests that different voters can vote on the same proposal
+func TestDoubleVote_MultipleVotersOnSameProposal(t *testing.T) {
+	k, ctx := setupTestKeeper(t)
+	msgServer := keeper.NewMsgServerImpl(k)
+	proposalID := createTestProposal(t, k, ctx)
+
+	goCtx := sdk.WrapSDKContext(ctx)
+
+	voters := []struct {
+		addr   sdk.AccAddress
+		option govpb.VoteOption
+	}{
+		{sdk.AccAddress([]byte("voter5______________")), govpb.VoteOption_VOTE_OPTION_YES},
+		{sdk.AccAddress([]byte("voter6______________")), govpb.VoteOption_VOTE_OPTION_NO},
+		{sdk.AccAddress([]byte("voter7______________")), govpb.VoteOption_VOTE_OPTION_ABSTAIN},
+		{sdk.AccAddress([]byte("voter8______________")), govpb.VoteOption_VOTE_OPTION_NO_WITH_VETO},
+	}
+
+	// All voters cast their votes
+	for _, v := range voters {
+		msg := &govpb.MsgVote{
+			ProposalId: proposalID,
+			Voter:      v.addr.String(),
+			Option:     v.option,
+		}
+		msg.Signer = v.addr.String()
+		msg.GetSigners = func() []sdk.AccAddress {
+			return []sdk.AccAddress{v.addr}
+		}
+
+		_, err := msgServer.Vote(goCtx, msg)
+		require.NoError(t, err, "Vote from voter %s should succeed", v.addr.String())
+	}
+
+	// Verify all votes were recorded correctly
+	votes := k.GetVotes(ctx, proposalID)
+	require.Len(t, votes, len(voters), "Should have exactly %d votes", len(voters))
+
+	// Verify each vote
+	for _, v := range voters {
+		vote, err := k.GetVote(ctx, proposalID, v.addr.String())
+		require.NoError(t, err)
+		require.Equal(t, v.option, vote.Option)
+		require.Equal(t, proposalID, vote.ProposalId)
+	}
+}
+
+// TestDoubleVote_VoteStorageKeyUniqueness tests that the storage key prevents duplicates
+func TestDoubleVote_VoteStorageKeyUniqueness(t *testing.T) {
+	k, ctx := setupTestKeeper(t)
+	msgServer := keeper.NewMsgServerImpl(k)
+
+	// Create two different proposals
+	proposal1ID := createTestProposal(t, k, ctx)
+	proposal2ID := createTestProposal(t, k, ctx)
+
+	voter := sdk.AccAddress([]byte("voter9______________"))
+	voterAddr := voter.String()
+	goCtx := sdk.WrapSDKContext(ctx)
+
+	// Vote on proposal 1
+	msg1 := &govpb.MsgVote{
+		ProposalId: proposal1ID,
+		Voter:      voterAddr,
+		Option:     govpb.VoteOption_VOTE_OPTION_YES,
+	}
+	msg1.Signer = voterAddr
+	msg1.GetSigners = func() []sdk.AccAddress {
+		return []sdk.AccAddress{voter}
+	}
+
+	_, err := msgServer.Vote(goCtx, msg1)
+	require.NoError(t, err)
+
+	// Vote on proposal 2 with different option
+	msg2 := &govpb.MsgVote{
+		ProposalId: proposal2ID,
+		Voter:      voterAddr,
+		Option:     govpb.VoteOption_VOTE_OPTION_NO,
+	}
+	msg2.Signer = voterAddr
+	msg2.GetSigners = func() []sdk.AccAddress {
+		return []sdk.AccAddress{voter}
+	}
+
+	_, err = msgServer.Vote(goCtx, msg2)
+	require.NoError(t, err)
+
+	// Verify both votes exist independently
+	vote1, err := k.GetVote(ctx, proposal1ID, voterAddr)
+	require.NoError(t, err)
+	require.Equal(t, govpb.VoteOption_VOTE_OPTION_YES, vote1.Option)
+	require.Equal(t, proposal1ID, vote1.ProposalId)
+
+	vote2, err := k.GetVote(ctx, proposal2ID, voterAddr)
+	require.NoError(t, err)
+	require.Equal(t, govpb.VoteOption_VOTE_OPTION_NO, vote2.Option)
+	require.Equal(t, proposal2ID, vote2.ProposalId)
+
+	// Verify each proposal has only one vote from this voter
+	votes1 := k.GetVotes(ctx, proposal1ID)
+	require.Len(t, votes1, 1)
+	votes2 := k.GetVotes(ctx, proposal2ID)
+	require.Len(t, votes2, 1)
+}
+
+// TestDoubleVote_VoteUpdateTimestamp tests that vote updates refresh the timestamp
+func TestDoubleVote_VoteUpdateTimestamp(t *testing.T) {
+	k, ctx := setupTestKeeper(t)
+	msgServer := keeper.NewMsgServerImpl(k)
+	proposalID := createTestProposal(t, k, ctx)
+
+	voter := sdk.AccAddress([]byte("voter10_____________"))
+	voterAddr := voter.String()
+	goCtx := sdk.WrapSDKContext(ctx)
+
+	// Cast initial vote
+	msg1 := &govpb.MsgVote{
+		ProposalId: proposalID,
+		Voter:      voterAddr,
+		Option:     govpb.VoteOption_VOTE_OPTION_YES,
+	}
+	msg1.Signer = voterAddr
+	msg1.GetSigners = func() []sdk.AccAddress {
+		return []sdk.AccAddress{voter}
+	}
+
+	_, err := msgServer.Vote(goCtx, msg1)
+	require.NoError(t, err)
+
+	vote1, err := k.GetVote(ctx, proposalID, voterAddr)
+	require.NoError(t, err)
+	firstTimestamp := vote1.Timestamp
+
+	// Advance block time
+	newTime := ctx.BlockTime().Add(1 * time.Hour)
+	ctx = ctx.WithBlockTime(newTime)
+	goCtx = sdk.WrapSDKContext(ctx)
+
+	// Update vote
+	msg2 := &govpb.MsgVote{
+		ProposalId: proposalID,
+		Voter:      voterAddr,
+		Option:     govpb.VoteOption_VOTE_OPTION_NO,
+	}
+	msg2.Signer = voterAddr
+	msg2.GetSigners = func() []sdk.AccAddress {
+		return []sdk.AccAddress{voter}
+	}
+
+	_, err = msgServer.Vote(goCtx, msg2)
+	require.NoError(t, err)
+
+	vote2, err := k.GetVote(ctx, proposalID, voterAddr)
+	require.NoError(t, err)
+	secondTimestamp := vote2.Timestamp
+
+	// Verify timestamp was updated
+	require.NotNil(t, firstTimestamp)
+	require.NotNil(t, secondTimestamp)
+	require.True(t, secondTimestamp.AsTime().After(firstTimestamp.AsTime()),
+		"Vote update should refresh timestamp")
+}
+
+// TestDoubleVote_InvalidVoterAddress tests handling of invalid voter addresses
+func TestDoubleVote_InvalidVoterAddress(t *testing.T) {
+	k, ctx := setupTestKeeper(t)
+	msgServer := keeper.NewMsgServerImpl(k)
+	proposalID := createTestProposal(t, k, ctx)
+
+	goCtx := sdk.WrapSDKContext(ctx)
+
+	msg := &govpb.MsgVote{
+		ProposalId: proposalID,
+		Voter:      "invalid_address",
+		Option:     govpb.VoteOption_VOTE_OPTION_YES,
+	}
+	msg.Signer = "invalid_address"
+	msg.GetSigners = func() []sdk.AccAddress {
+		return []sdk.AccAddress{}
+	}
+
+	_, err := msgServer.Vote(goCtx, msg)
+	require.Error(t, err, "Invalid voter address should be rejected")
+
+	st, ok := status.FromError(err)
+	require.True(t, ok)
+	require.Equal(t, codes.InvalidArgument, st.Code())
+}
+
+// TestDoubleVote_ProposalNotInVotingPeriod tests that votes are rejected for proposals not in voting period
+func TestDoubleVote_ProposalNotInVotingPeriod(t *testing.T) {
+	k, ctx := setupTestKeeper(t)
+	msgServer := keeper.NewMsgServerImpl(k)
+
+	// Create proposal in deposit period
+	proposalID := k.GetNextProposalID(ctx)
+	k.SetNextProposalID(ctx, proposalID+1)
+
+	proposal := &types.Proposal{
+		Id:          proposalID,
+		Title:       "Test Proposal",
+		Description: "Test Description",
+		Category:    govpb.ProposalCategory_PROPOSAL_CATEGORY_TEXT,
+		Status:      govpb.ProposalStatus_PROPOSAL_STATUS_DEPOSIT_PERIOD, // Not voting period
+		Proposer:    "cosmos1proposer",
+		SubmitTime:  timestamppb.New(ctx.BlockTime()),
+	}
+	err := k.SetProposal(ctx, proposal)
+	require.NoError(t, err)
+
+	voter := sdk.AccAddress([]byte("voter11_____________"))
+	voterAddr := voter.String()
+	goCtx := sdk.WrapSDKContext(ctx)
+
+	msg := &govpb.MsgVote{
+		ProposalId: proposalID,
+		Voter:      voterAddr,
+		Option:     govpb.VoteOption_VOTE_OPTION_YES,
+	}
+	msg.Signer = voterAddr
+	msg.GetSigners = func() []sdk.AccAddress {
+		return []sdk.AccAddress{voter}
+	}
+
+	_, err = msgServer.Vote(goCtx, msg)
+	require.Error(t, err, "Vote on proposal not in voting period should fail")
+
+	st, ok := status.FromError(err)
+	require.True(t, ok)
+	require.Equal(t, codes.FailedPrecondition, st.Code())
+	require.Contains(t, st.Message(), "proposal not in voting period")
+}
+
+// TestDoubleVote_WeightedVoteUpdate tests that weighted votes can also be updated without duplication
+func TestDoubleVote_WeightedVoteUpdate(t *testing.T) {
+	k, ctx := setupTestKeeper(t)
+	msgServer := keeper.NewMsgServerImpl(k)
+	proposalID := createTestProposal(t, k, ctx)
+
+	voter := sdk.AccAddress([]byte("voter12_____________"))
+	voterAddr := voter.String()
+	goCtx := sdk.WrapSDKContext(ctx)
+
+	// Cast initial weighted vote
+	msg1 := &govpb.MsgVoteWeighted{
+		ProposalId: proposalID,
+		Voter:      voterAddr,
+		Options: []*govpb.WeightedVoteOption{
+			{Option: govpb.VoteOption_VOTE_OPTION_YES, Weight: "0.5"},
+			{Option: govpb.VoteOption_VOTE_OPTION_ABSTAIN, Weight: "0.5"},
+		},
+	}
+	msg1.Signer = voterAddr
+	msg1.GetSigners = func() []sdk.AccAddress {
+		return []sdk.AccAddress{voter}
+	}
+
+	_, err := msgServer.VoteWeighted(goCtx, msg1)
+	require.NoError(t, err)
+
+	// Verify initial vote
+	vote1, err := k.GetVote(ctx, proposalID, voterAddr)
+	require.NoError(t, err)
+	require.NotNil(t, vote1)
+
+	// Update weighted vote
+	msg2 := &govpb.MsgVoteWeighted{
+		ProposalId: proposalID,
+		Voter:      voterAddr,
+		Options: []*govpb.WeightedVoteOption{
+			{Option: govpb.VoteOption_VOTE_OPTION_NO, Weight: "1.0"},
+		},
+	}
+	msg2.Signer = voterAddr
+	msg2.GetSigners = func() []sdk.AccAddress {
+		return []sdk.AccAddress{voter}
+	}
+
+	_, err = msgServer.VoteWeighted(goCtx, msg2)
+	require.NoError(t, err)
+
+	// Verify vote was updated, not duplicated
+	votes := k.GetVotes(ctx, proposalID)
+	require.Len(t, votes, 1, "Should have exactly one vote, not duplicates")
+	require.Equal(t, voterAddr, votes[0].Voter)
+}
+
+// TestDoubleVote_ConcurrentVoteAttempts tests behavior under concurrent vote attempts
+func TestDoubleVote_ConcurrentVoteAttempts(t *testing.T) {
+	k, ctx := setupTestKeeper(t)
+	msgServer := keeper.NewMsgServerImpl(k)
+	proposalID := createTestProposal(t, k, ctx)
+
+	voter := sdk.AccAddress([]byte("voter13_____________"))
+	voterAddr := voter.String()
+	goCtx := sdk.WrapSDKContext(ctx)
+
+	// Simulate concurrent votes with same timestamp
+	options := []govpb.VoteOption{
+		govpb.VoteOption_VOTE_OPTION_YES,
+		govpb.VoteOption_VOTE_OPTION_NO,
+		govpb.VoteOption_VOTE_OPTION_ABSTAIN,
+	}
+
+	for _, opt := range options {
+		msg := &govpb.MsgVote{
+			ProposalId: proposalID,
+			Voter:      voterAddr,
+			Option:     opt,
+		}
+		msg.Signer = voterAddr
+		msg.GetSigners = func() []sdk.AccAddress {
+			return []sdk.AccAddress{voter}
+		}
+
+		_, err := msgServer.Vote(goCtx, msg)
+		require.NoError(t, err, "Vote should succeed (update)")
+	}
+
+	// Verify only one vote exists (the last update)
+	votes := k.GetVotes(ctx, proposalID)
+	require.Len(t, votes, 1, "Should have exactly one vote despite multiple submissions")
+
+	vote, err := k.GetVote(ctx, proposalID, voterAddr)
+	require.NoError(t, err)
+	require.Equal(t, options[len(options)-1], vote.Option, "Vote should reflect last update")
+}

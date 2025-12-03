@@ -388,8 +388,8 @@ func (suite *SecurityGuardsTestSuite) TestRateLimit_SlidingWindow() {
 func (suite *SecurityGuardsTestSuite) TestValidateAddress() {
 	k := suite.keeper
 
-	// Valid address
-	validAddr := "aura1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq5dncz2"
+	// Valid address (cosmos prefix is used by SDK by default)
+	validAddr := "cosmos1w3jhxazlv9jxgun9wde47vfjxv6r2d3hzswckl"
 	err := k.ValidateAddress(validAddr)
 	suite.Require().NoError(err)
 
@@ -549,7 +549,6 @@ func (suite *SecurityGuardsTestSuite) TestIntegration_EmergencyPauseScenario() {
 	err := k.RequireNotPaused(ctx, "dex")
 	suite.Require().NoError(err)
 
-	user := "aura1user"
 	reentrancyKey := "swap:pool1:user"
 
 	// User can perform operations

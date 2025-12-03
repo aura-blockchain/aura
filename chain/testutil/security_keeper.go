@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"cosmossdk.io/log"
+	sdkmath "cosmossdk.io/math"
 	"cosmossdk.io/store"
 	"cosmossdk.io/store/metrics"
 	storetypes "cosmossdk.io/store/types"
@@ -66,7 +67,7 @@ func NewSecurityKeeperForTest(t testing.TB) (sdk.Context, *keeper.Keeper) {
 type MockBankKeeper struct{}
 
 func (m *MockBankKeeper) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin {
-	return sdk.NewCoin(denom, sdk.NewInt(1000000))
+	return sdk.NewCoin(denom, sdkmath.NewInt(1000000))
 }
 
 func (m *MockBankKeeper) SendCoins(ctx sdk.Context, from, to sdk.AccAddress, amt sdk.Coins) error {
