@@ -99,14 +99,17 @@ func (s *msgServer) SubmitKYC(goCtx context.Context, req *types.MsgSubmitKYC) (*
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// Emit event for KYC submission
+	// Emit event for KYC submission (BSA/AML compliance audit trail)
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
-			"kyc_submitted",
-			sdk.NewAttribute("address", req.Address),
-			sdk.NewAttribute("provider", req.Provider),
-			sdk.NewAttribute("kyc_level", req.KycLevel.String()),
-			sdk.NewAttribute("pii_commitment", fmt.Sprintf("%x", req.PiiCommitment)),
+			types.EventTypeKYCSubmitted,
+			sdk.NewAttribute(types.AttributeKeyAddress, req.Address),
+			sdk.NewAttribute(types.AttributeKeyProvider, req.Provider),
+			sdk.NewAttribute(types.AttributeKeyKYCLevel, req.KycLevel.String()),
+			sdk.NewAttribute(types.AttributeKeyPIICommitment, fmt.Sprintf("%x", req.PiiCommitment)),
+			sdk.NewAttribute(types.AttributeKeyBlockHeight, fmt.Sprintf("%d", ctx.BlockHeight())),
+			sdk.NewAttribute(types.AttributeKeyBlockTime, ctx.BlockTime().Format(time.RFC3339)),
+			sdk.NewAttribute(types.AttributeKeyTimestamp, fmt.Sprintf("%d", ctx.BlockTime().Unix())),
 		),
 	)
 
@@ -157,14 +160,18 @@ func (s *msgServer) ReportSuspiciousActivity(goCtx context.Context, req *types.M
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// Emit event for SAR filing
+	// Emit event for SAR filing (BSA/AML compliance audit trail)
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
-			"suspicious_activity_reported",
-			sdk.NewAttribute("activity_id", id),
-			sdk.NewAttribute("address", req.Address),
-			sdk.NewAttribute("reporter", req.Reporter),
-			sdk.NewAttribute("activity_type", req.ActivityType),
+			types.EventTypeSARReported,
+			sdk.NewAttribute(types.AttributeKeyActivityID, id),
+			sdk.NewAttribute(types.AttributeKeyAddress, req.Address),
+			sdk.NewAttribute(types.AttributeKeyReporter, req.Reporter),
+			sdk.NewAttribute(types.AttributeKeyActivityType, req.ActivityType),
+			sdk.NewAttribute(types.AttributeKeyTransactionHash, req.TransactionHash),
+			sdk.NewAttribute(types.AttributeKeyBlockHeight, fmt.Sprintf("%d", ctx.BlockHeight())),
+			sdk.NewAttribute(types.AttributeKeyBlockTime, ctx.BlockTime().Format(time.RFC3339)),
+			sdk.NewAttribute(types.AttributeKeyTimestamp, fmt.Sprintf("%d", ctx.BlockTime().Unix())),
 		),
 	)
 
@@ -195,13 +202,30 @@ func (s *msgServer) ScreenSanctions(goCtx context.Context, req *types.MsgScreenS
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// Check cache with expiry validation (OFAC compliance)
 	var result *types.SanctionsScreeningResult
 	if !req.ForceRefresh {
 		result, err = s.Keeper.GetSanctionsResult(ctx, req.Address)
 		if err != nil {
 			result = nil
+		} else if result != nil {
+			// Verify cache has not expired (critical for OFAC compliance)
+			// This prevents using stale "CLEAR" status for newly sanctioned addresses
+			params := s.Keeper.GetParams(ctx)
+			if params.ScreeningCacheHours > 0 {
+				cacheAge := ctx.BlockTime().Sub(result.ScreenedAt.AsTime())
+				maxCacheAge := time.Duration(params.ScreeningCacheHours) * time.Hour
+
+				if cacheAge > maxCacheAge {
+					// Cache expired - force fresh screening
+					result = nil
+				}
+			}
 		}
 	}
+
+	// Perform fresh screening if no valid cache exists
 	if result == nil {
 		result, err = s.performSanctionsScreen(ctx, req.Address)
 		if err != nil {
@@ -212,13 +236,18 @@ func (s *msgServer) ScreenSanctions(goCtx context.Context, req *types.MsgScreenS
 		}
 	}
 
-	// Emit event for sanctions screening
+	// Emit event for sanctions screening (OFAC compliance audit trail)
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
-			"sanctions_screened",
-			sdk.NewAttribute("address", req.Address),
-			sdk.NewAttribute("status", result.Status.String()),
-			sdk.NewAttribute("requires_review", fmt.Sprintf("%t", result.RequiresManualReview)),
+			types.EventTypeSanctionsScreening,
+			sdk.NewAttribute(types.AttributeKeyAddress, req.Address),
+			sdk.NewAttribute(types.AttributeKeyStatus, result.Status.String()),
+			sdk.NewAttribute(types.AttributeKeyRequiresReview, fmt.Sprintf("%t", result.RequiresManualReview)),
+			sdk.NewAttribute(types.AttributeKeyScreeningResult, result.ScreeningProvider),
+			sdk.NewAttribute(types.AttributeKeyMatchCount, fmt.Sprintf("%d", len(result.Matches))),
+			sdk.NewAttribute(types.AttributeKeyBlockHeight, fmt.Sprintf("%d", ctx.BlockHeight())),
+			sdk.NewAttribute(types.AttributeKeyBlockTime, ctx.BlockTime().Format(time.RFC3339)),
+			sdk.NewAttribute(types.AttributeKeyTimestamp, fmt.Sprintf("%d", ctx.BlockTime().Unix())),
 		),
 	)
 
@@ -296,13 +325,17 @@ func (s *msgServer) RecordGDPRConsent(goCtx context.Context, req *types.MsgRecor
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// Emit event for GDPR consent
+	// Emit event for GDPR consent (GDPR Article 7 compliance audit trail)
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
-			"gdpr_consent_recorded",
-			sdk.NewAttribute("address", req.Address),
-			sdk.NewAttribute("consent_type", req.ConsentType),
-			sdk.NewAttribute("consented", fmt.Sprintf("%t", req.Consented)),
+			types.EventTypeGDPRConsentRecorded,
+			sdk.NewAttribute(types.AttributeKeyAddress, req.Address),
+			sdk.NewAttribute(types.AttributeKeyConsentType, req.ConsentType),
+			sdk.NewAttribute(types.AttributeKeyConsented, fmt.Sprintf("%t", req.Consented)),
+			sdk.NewAttribute(types.AttributeKeyConsentVersion, req.ConsentVersion),
+			sdk.NewAttribute(types.AttributeKeyBlockHeight, fmt.Sprintf("%d", ctx.BlockHeight())),
+			sdk.NewAttribute(types.AttributeKeyBlockTime, ctx.BlockTime().Format(time.RFC3339)),
+			sdk.NewAttribute(types.AttributeKeyTimestamp, fmt.Sprintf("%d", ctx.BlockTime().Unix())),
 		),
 	)
 
@@ -346,13 +379,16 @@ func (s *msgServer) RequestGDPRData(goCtx context.Context, req *types.MsgRequest
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// Emit event for GDPR data request
+	// Emit event for GDPR data request (GDPR Article 15 compliance audit trail)
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
-			"gdpr_data_requested",
-			sdk.NewAttribute("request_id", id),
-			sdk.NewAttribute("address", req.Address),
-			sdk.NewAttribute("request_type", req.RequestType),
+			types.EventTypeGDPRDataRequested,
+			sdk.NewAttribute(types.AttributeKeyRequestID, id),
+			sdk.NewAttribute(types.AttributeKeyAddress, req.Address),
+			sdk.NewAttribute(types.AttributeKeyGDPRRequestType, req.RequestType),
+			sdk.NewAttribute(types.AttributeKeyBlockHeight, fmt.Sprintf("%d", ctx.BlockHeight())),
+			sdk.NewAttribute(types.AttributeKeyBlockTime, ctx.BlockTime().Format(time.RFC3339)),
+			sdk.NewAttribute(types.AttributeKeyTimestamp, fmt.Sprintf("%d", ctx.BlockTime().Unix())),
 		),
 	)
 
@@ -398,14 +434,18 @@ func (s *msgServer) GenerateTaxReport(goCtx context.Context, req *types.MsgGener
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// Emit event for tax report generation
+	// Emit event for tax report generation (tax compliance audit trail)
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
-			"tax_report_generated",
-			sdk.NewAttribute("report_id", id),
-			sdk.NewAttribute("address", req.Address),
-			sdk.NewAttribute("tax_year", req.TaxYear),
-			sdk.NewAttribute("jurisdiction", req.Jurisdiction),
+			types.EventTypeTaxReportGenerated,
+			sdk.NewAttribute(types.AttributeKeyReportID, id),
+			sdk.NewAttribute(types.AttributeKeyAddress, req.Address),
+			sdk.NewAttribute(types.AttributeKeyTaxYear, req.TaxYear),
+			sdk.NewAttribute(types.AttributeKeyJurisdiction, req.Jurisdiction),
+			sdk.NewAttribute(types.AttributeKeyReportType, req.ReportType),
+			sdk.NewAttribute(types.AttributeKeyBlockHeight, fmt.Sprintf("%d", ctx.BlockHeight())),
+			sdk.NewAttribute(types.AttributeKeyBlockTime, ctx.BlockTime().Format(time.RFC3339)),
+			sdk.NewAttribute(types.AttributeKeyTimestamp, fmt.Sprintf("%d", ctx.BlockTime().Unix())),
 		),
 	)
 
@@ -467,14 +507,17 @@ func (s *msgServer) EraseGDPRData(goCtx context.Context, req *types.MsgEraseGDPR
 	// Emit immutable event for off-chain systems to process
 	// Off-chain KYC providers and compliance databases must monitor this event
 	// and delete all PII associated with this address
+	// (GDPR Article 17 "Right to Erasure" compliance audit trail)
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
-			"gdpr_data_erased",
-			sdk.NewAttribute("address", req.Address),
-			sdk.NewAttribute("erasure_event_id", erasureEventID),
-			sdk.NewAttribute("erasure_reason", req.ErasureReason),
-			sdk.NewAttribute("erasure_time", now.Format(time.RFC3339)),
-			sdk.NewAttribute("block_height", fmt.Sprintf("%d", ctx.BlockHeight())),
+			types.EventTypeGDPRDataErased,
+			sdk.NewAttribute(types.AttributeKeyAddress, req.Address),
+			sdk.NewAttribute(types.AttributeKeyErasureEventID, erasureEventID),
+			sdk.NewAttribute(types.AttributeKeyErasureReason, req.ErasureReason),
+			sdk.NewAttribute(types.AttributeKeyErasureTime, now.Format(time.RFC3339)),
+			sdk.NewAttribute(types.AttributeKeyBlockHeight, fmt.Sprintf("%d", ctx.BlockHeight())),
+			sdk.NewAttribute(types.AttributeKeyBlockTime, ctx.BlockTime().Format(time.RFC3339)),
+			sdk.NewAttribute(types.AttributeKeyTimestamp, fmt.Sprintf("%d", ctx.BlockTime().Unix())),
 		),
 	)
 
