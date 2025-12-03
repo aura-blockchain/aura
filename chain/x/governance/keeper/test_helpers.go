@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 	"fmt"
+	"time"
 
 	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -81,4 +82,62 @@ func (m *MockBankKeeper) GetBalance(ctx context.Context, addr sdk.AccAddress, de
 		return sdk.NewCoin(denom, amt)
 	}
 	return sdk.NewCoin(denom, sdkmath.ZeroInt())
+}
+
+// MockSecurityKeeper is a mock security keeper for testing - shared across all test files
+type MockSecurityKeeper struct{}
+
+func (m *MockSecurityKeeper) EnterNoReentrant(ctx sdk.Context, key string) error {
+	return nil
+}
+
+func (m *MockSecurityKeeper) ExitNoReentrant(ctx sdk.Context, key string) {}
+
+func (m *MockSecurityKeeper) WithReentrancyGuard(ctx sdk.Context, key string, fn func() error) error {
+	return fn()
+}
+
+func (m *MockSecurityKeeper) RequireNotPaused(ctx sdk.Context, moduleName string) error {
+	return nil
+}
+
+func (m *MockSecurityKeeper) PauseModule(ctx sdk.Context, moduleName string, pausedBy string) error {
+	return nil
+}
+
+func (m *MockSecurityKeeper) UnpauseModule(ctx sdk.Context, moduleName string, unpausedBy string) error {
+	return nil
+}
+
+func (m *MockSecurityKeeper) IsModulePaused(ctx sdk.Context, moduleName string) bool {
+	return false
+}
+
+func (m *MockSecurityKeeper) CheckRateLimit(ctx sdk.Context, key string, limit uint64, window time.Duration) error {
+	return nil
+}
+
+func (m *MockSecurityKeeper) IncrementRateLimit(ctx sdk.Context, key string, window time.Duration) {}
+
+func (m *MockSecurityKeeper) ValidateAddress(address string) error {
+	return nil
+}
+
+func (m *MockSecurityKeeper) ValidateAmount(amount sdkmath.Int, min, max sdkmath.Int) error {
+	return nil
+}
+
+func (m *MockSecurityKeeper) ValidateNonEmpty(value string, fieldName string) error {
+	return nil
+}
+
+func (m *MockSecurityKeeper) ValidateStringLength(value string, fieldName string, minLen, maxLen int) error {
+	return nil
+}
+
+func (m *MockSecurityKeeper) CheckAuthorization(ctx sdk.Context, address string, action string) error {
+	return nil
+}
+
+func (m *MockSecurityKeeper) LogSecurityEvent(ctx sdk.Context, eventType string, severity string, actor string, action string, details string) {
 }
