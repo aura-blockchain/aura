@@ -150,8 +150,21 @@ func (suite *InvariantsComprehensiveTestSuite) TestTransferBalanceInvariantFaile
 }
 
 func (suite *InvariantsComprehensiveTestSuite) TestTransferBalanceInvariantInvalidAmount() {
+	// Create a keeper with mocked keepers to actually run the validation
+	mockBank := newMockBankKeeperWithBalances()
+	mockAccount := newMockAccountKeeperWithModule()
+
+	k := NewKeeper(
+		suite.Keeper.cdc,
+		suite.Keeper.storeKey,
+		nil,
+		mockBank,
+		mockAccount,
+		nil,
+	)
+
 	ctx := suite.SdkCtx
-	inv := TransferBalanceInvariant(*suite.Keeper)
+	inv := TransferBalanceInvariant(*k)
 
 	// Create transfer with invalid amount
 	transfer := &bridgepb.CrossChainTransfer{
@@ -165,7 +178,7 @@ func (suite *InvariantsComprehensiveTestSuite) TestTransferBalanceInvariantInval
 		Status:      bridgepb.TransferStatus_PENDING,
 		Timestamp:   timestamppb.Now(),
 	}
-	suite.Keeper.setTransfer(ctx, transfer)
+	k.SetTransfer(ctx, transfer)
 
 	msg, broken := inv(ctx)
 	suite.True(broken, "invalid amount should break invariant")

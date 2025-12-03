@@ -60,7 +60,7 @@ func TestFraudProofWindowEnforcement(t *testing.T) {
 		Sender:              recipient.String(),
 		SourceChain:         sourceChain,
 		BurnTxHash:          burnTxHash,
-		Amount:              amount,
+		Amount:              amount.String(),
 		Denom:               denom,
 		ValidatorSignatures: createTestSignatures(suite, []string{"validator1"}, burnTxHash),
 		MerkleProof:         []byte{},
@@ -171,7 +171,7 @@ func TestFraudProofChallengeBlocksFinalization(t *testing.T) {
 		Sender:              recipient.String(),
 		SourceChain:         sourceChain,
 		BurnTxHash:          burnTxHash,
-		Amount:              amount,
+		Amount:              amount.String(),
 		Denom:               denom,
 		ValidatorSignatures: createTestSignatures(suite, []string{"validator1"}, burnTxHash),
 	}
