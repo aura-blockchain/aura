@@ -232,10 +232,15 @@ func TestQuorum_OneBelowThreshold(t *testing.T) {
 func TestQuorum_WellAboveThreshold(t *testing.T) {
 	k, ctx, mockStaking := setupQuorumTest(t)
 
+	// Create proper SDK addresses
+	voter1 := sdk.AccAddress([]byte("voter1______________"))
+	voter2 := sdk.AccAddress([]byte("voter2______________"))
+	voter3 := sdk.AccAddress([]byte("voter3______________"))
+
 	// 60% participation - well above 33.4% quorum
-	mockStaking.SetDelegatorBonded("voter1", sdkmath.NewInt(300_000))
-	mockStaking.SetDelegatorBonded("voter2", sdkmath.NewInt(300_000))
-	mockStaking.SetDelegatorBonded("voter3", sdkmath.NewInt(400_000))
+	mockStaking.SetDelegatorBonded(voter1.String(), sdkmath.NewInt(300_000))
+	mockStaking.SetDelegatorBonded(voter2.String(), sdkmath.NewInt(300_000))
+	mockStaking.SetDelegatorBonded(voter3.String(), sdkmath.NewInt(400_000))
 
 	proposalID, err := k.CreateProposal(ctx, "Test", "Well above quorum",
 		"proposer1", types.ProposalCategory_PROPOSAL_CATEGORY_TEXT, "content")
@@ -253,14 +258,14 @@ func TestQuorum_WellAboveThreshold(t *testing.T) {
 	votes := []*types.Vote{
 		{
 			ProposalId:  proposalID,
-			Voter:       "voter1",
+			Voter:       voter1.String(),
 			Option:      types.VoteOption_VOTE_OPTION_YES,
 			VotingPower: "300000",
 			Timestamp:   timestamppb.Now(),
 		},
 		{
 			ProposalId:  proposalID,
-			Voter:       "voter2",
+			Voter:       voter2.String(),
 			Option:      types.VoteOption_VOTE_OPTION_YES,
 			VotingPower: "300000",
 			Timestamp:   timestamppb.Now(),
@@ -292,8 +297,12 @@ func TestQuorum_WellAboveThreshold(t *testing.T) {
 func TestQuorum_QuorumMetButThresholdNotMet(t *testing.T) {
 	k, ctx, mockStaking := setupQuorumTest(t)
 
-	mockStaking.SetDelegatorBonded("voter1", sdkmath.NewInt(500_000))
-	mockStaking.SetDelegatorBonded("voter2", sdkmath.NewInt(500_000))
+	// Create proper SDK addresses
+	voter1 := sdk.AccAddress([]byte("voter1______________"))
+	voter2 := sdk.AccAddress([]byte("voter2______________"))
+
+	mockStaking.SetDelegatorBonded(voter1.String(), sdkmath.NewInt(500_000))
+	mockStaking.SetDelegatorBonded(voter2.String(), sdkmath.NewInt(500_000))
 
 	proposalID, err := k.CreateProposal(ctx, "Test", "Quorum met but threshold not",
 		"proposer1", types.ProposalCategory_PROPOSAL_CATEGORY_TEXT, "content")
@@ -312,14 +321,14 @@ func TestQuorum_QuorumMetButThresholdNotMet(t *testing.T) {
 	votes := []*types.Vote{
 		{
 			ProposalId:  proposalID,
-			Voter:       "voter1",
+			Voter:       voter1.String(),
 			Option:      types.VoteOption_VOTE_OPTION_YES,
 			VotingPower: "180000", // 45% of 400k
 			Timestamp:   timestamppb.Now(),
 		},
 		{
 			ProposalId:  proposalID,
-			Voter:       "voter2",
+			Voter:       voter2.String(),
 			Option:      types.VoteOption_VOTE_OPTION_NO,
 			VotingPower: "220000", // 55% of 400k
 			Timestamp:   timestamppb.Now(),
@@ -356,9 +365,20 @@ func TestQuorum_QuorumMetButThresholdNotMet(t *testing.T) {
 func TestQuorum_WithAbstainVotes(t *testing.T) {
 	k, ctx, mockStaking := setupQuorumTest(t)
 
-	mockStaking.SetDelegatorBonded("voter1", sdkmath.NewInt(200_000))
-	mockStaking.SetDelegatorBonded("voter2", sdkmath.NewInt(200_000))
-	mockStaking.SetDelegatorBonded("voter3", sdkmath.NewInt(600_000))
+	// Create proper SDK addresses
+	voter1 := sdk.AccAddress([]byte("voter1______________"))
+	voter2 := sdk.AccAddress([]byte("voter2______________"))
+	voter3 := sdk.AccAddress([]byte("voter3______________"))
+
+	// Set bonded amounts (actual voting power comes from staking keeper, not vote.VotingPower field)
+	// Total votes: 400,000 (meets quorum of 334k)
+	// Abstain: 100,000 (doesn't count toward yes/no)
+	// Yes: 200,000
+	// No: 100,000
+	// Yes percentage of non-abstain: 200k / 300k = 66.6% > 50% threshold
+	mockStaking.SetDelegatorBonded(voter1.String(), sdkmath.NewInt(100_000))
+	mockStaking.SetDelegatorBonded(voter2.String(), sdkmath.NewInt(200_000))
+	mockStaking.SetDelegatorBonded(voter3.String(), sdkmath.NewInt(100_000))
 
 	proposalID, err := k.CreateProposal(ctx, "Test", "With abstain votes",
 		"proposer1", types.ProposalCategory_PROPOSAL_CATEGORY_TEXT, "content")
@@ -372,31 +392,26 @@ func TestQuorum_WithAbstainVotes(t *testing.T) {
 	proposal.TotalDeposit = "10000000000"
 	require.NoError(t, k.SetProposal(ctx, proposal))
 
-	// Total votes: 400,000 (meets quorum)
-	// Abstain: 200,000 (doesn't count toward yes/no)
-	// Yes: 150,000
-	// No: 50,000
-	// Yes percentage of non-abstain: 150k / 200k = 75% > 50% threshold
 	votes := []*types.Vote{
 		{
 			ProposalId:  proposalID,
-			Voter:       "voter1",
+			Voter:       voter1.String(),
 			Option:      types.VoteOption_VOTE_OPTION_ABSTAIN,
-			VotingPower: "200000",
+			VotingPower: "100000", // Actual power comes from staking keeper
 			Timestamp:   timestamppb.Now(),
 		},
 		{
 			ProposalId:  proposalID,
-			Voter:       "voter2",
+			Voter:       voter2.String(),
 			Option:      types.VoteOption_VOTE_OPTION_YES,
-			VotingPower: "150000",
+			VotingPower: "200000", // Actual power comes from staking keeper
 			Timestamp:   timestamppb.Now(),
 		},
 		{
 			ProposalId:  proposalID,
-			Voter:       "voter3",
+			Voter:       voter3.String(),
 			Option:      types.VoteOption_VOTE_OPTION_NO,
-			VotingPower: "50000",
+			VotingPower: "100000", // Actual power comes from staking keeper
 			Timestamp:   timestamppb.Now(),
 		},
 	}
@@ -411,7 +426,7 @@ func TestQuorum_WithAbstainVotes(t *testing.T) {
 	err = k.AdvanceProposalStatus(ctx, proposalID)
 	require.NoError(t, err)
 
-	// Should PASS - quorum met (400k > 334k) and threshold met (75% yes of non-abstain)
+	// Should PASS - quorum met (400k > 334k) and threshold met (66.6% yes of non-abstain)
 	proposal, err = k.GetProposal(ctx, proposalID)
 	require.NoError(t, err)
 	require.Equal(t, types.ProposalStatus_PROPOSAL_STATUS_PASSED, proposal.Status,
@@ -464,9 +479,14 @@ func TestQuorum_OnlyAbstainVotes(t *testing.T) {
 func TestQuorum_VetoOverridesQuorumAndThreshold(t *testing.T) {
 	k, ctx, mockStaking := setupQuorumTest(t)
 
-	mockStaking.SetDelegatorBonded("voter1", sdkmath.NewInt(400_000))
-	mockStaking.SetDelegatorBonded("voter2", sdkmath.NewInt(350_000))
-	mockStaking.SetDelegatorBonded("voter3", sdkmath.NewInt(250_000))
+	// Create proper SDK addresses
+	voter1 := sdk.AccAddress([]byte("voter1______________"))
+	voter2 := sdk.AccAddress([]byte("voter2______________"))
+	voter3 := sdk.AccAddress([]byte("voter3______________"))
+
+	mockStaking.SetDelegatorBonded(voter1.String(), sdkmath.NewInt(400_000))
+	mockStaking.SetDelegatorBonded(voter2.String(), sdkmath.NewInt(350_000))
+	mockStaking.SetDelegatorBonded(voter3.String(), sdkmath.NewInt(250_000))
 
 	proposalID, err := k.CreateProposal(ctx, "Test", "Veto overrides",
 		"proposer1", types.ProposalCategory_PROPOSAL_CATEGORY_TEXT, "content")
@@ -486,14 +506,14 @@ func TestQuorum_VetoOverridesQuorumAndThreshold(t *testing.T) {
 	votes := []*types.Vote{
 		{
 			ProposalId:  proposalID,
-			Voter:       "voter1",
+			Voter:       voter1.String(),
 			Option:      types.VoteOption_VOTE_OPTION_YES,
 			VotingPower: "400000",
 			Timestamp:   timestamppb.Now(),
 		},
 		{
 			ProposalId:  proposalID,
-			Voter:       "voter2",
+			Voter:       voter2.String(),
 			Option:      types.VoteOption_VOTE_OPTION_NO_WITH_VETO,
 			VotingPower: "350000",
 			Timestamp:   timestamppb.Now(),

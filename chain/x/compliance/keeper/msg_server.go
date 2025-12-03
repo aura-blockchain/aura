@@ -98,7 +98,7 @@ func (s *msgServer) SubmitKYC(goCtx context.Context, req *types.MsgSubmitKYC) (*
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	// Check if provider is authorized
+	// Check if provider is authorized (validate authority first)
 	params := s.Keeper.GetParams(ctx)
 	isAuthorized := false
 	for _, authorizedProvider := range params.ApprovedKycProviders {
@@ -112,9 +112,17 @@ func (s *msgServer) SubmitKYC(goCtx context.Context, req *types.MsgSubmitKYC) (*
 	}
 
 	// OFAC compliance: Check if jurisdiction is blocked (sanctioned country)
+	// This validation must occur before consent check
 	if s.Keeper.IsJurisdictionBlocked(ctx, req.Jurisdiction) {
 		return nil, status.Errorf(codes.PermissionDenied,
 			"jurisdiction %s is blocked due to OFAC sanctions", req.Jurisdiction)
+	}
+
+	// GDPR Consent Enforcement: Verify user has consented to KYC processing (Article 6(1)(a))
+	// This must be checked AFTER provider/jurisdiction validation but BEFORE processing user data
+	if err := s.Keeper.RequireConsent(ctx, req.Address, "kyc_processing"); err != nil {
+		return nil, status.Error(codes.PermissionDenied,
+			"user consent required for KYC processing - consent not found or has been withdrawn (GDPR Article 7(3))")
 	}
 
 	now := ctx.BlockTime()
@@ -194,6 +202,14 @@ func (s *msgServer) ReportSuspiciousActivity(goCtx context.Context, req *types.M
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// GDPR Consent Enforcement: Verify user has consented to AML monitoring (Article 6(1)(a))
+	// SAR (Suspicious Activity Report) requires consent for monitoring and analyzing transaction patterns
+	if err := s.Keeper.RequireConsent(ctx, req.Address, "aml_monitoring"); err != nil {
+		return nil, status.Error(codes.PermissionDenied,
+			"user consent required for AML monitoring - consent not found or has been withdrawn (GDPR Article 7(3))")
+	}
+
 	now := ctx.BlockTime()
 	id := fmt.Sprintf("sar-%s-%d", req.TransactionHash, now.UnixNano())
 	activity := &types.SuspiciousActivity{
@@ -253,6 +269,13 @@ func (s *msgServer) ScreenSanctions(goCtx context.Context, req *types.MsgScreenS
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// GDPR Consent Enforcement: Verify user has consented to sanctions screening (Article 6(1)(a))
+	// Sanctions screening processes user data against OFAC/sanctions lists
+	if err := s.Keeper.RequireConsent(ctx, req.Address, "sanctions_screening"); err != nil {
+		return nil, status.Error(codes.PermissionDenied,
+			"user consent required for sanctions screening - consent not found or has been withdrawn (GDPR Article 7(3))")
+	}
 
 	// Check cache with expiry validation (OFAC compliance)
 	var result *types.SanctionsScreeningResult

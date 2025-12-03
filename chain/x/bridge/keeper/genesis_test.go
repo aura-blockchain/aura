@@ -572,17 +572,16 @@ func (suite *GenesisTestSuite) TestTransferCounterOffByOneError() {
 		suite.NotNil(counterBz, "Transfer counter should be set")
 
 		counter := binary.BigEndian.Uint64(counterBz)
-		// Counter should be MAX (5), so nextTransferID will return MAX+1 (6)
-		suite.Equal(uint64(5), counter, "Counter must be set to MAX (last used ID)")
+		// FIXED: Counter should be MAX+1 (6), not MAX (5), to prevent duplicate IDs
+		// This is the fix for issue #047
+		suite.Equal(uint64(6), counter, "Counter must be set to MAX+1 (6) to prevent duplicate with transfer-5")
 
-		// Verify next transfer gets ID 6 (MAX+1), not 5 (which would be a duplicate)
+		// Note: nextTransferID now returns hash-based IDs (deterministic), not sequential IDs
+		// The counter is maintained for backward compatibility with legacy sequential IDs
+		// but new IDs are generated using block height + tx hash for determinism
 		nextID := suite.Keeper.nextTransferID(ctx)
-		suite.Equal("transfer-6", nextID, "Next transfer should get ID 6 (MAX+1), not duplicate ID 5")
-
-		// Verify counter incremented to 6 after generating the ID
-		counterBz = storeObj.Get(types.TransferCounterKey)
-		counter = binary.BigEndian.Uint64(counterBz)
-		suite.Equal(uint64(6), counter, "Counter should be 6 after nextTransferID call")
+		suite.NotEmpty(nextID, "Next transfer should have a valid ID")
+		suite.Contains(nextID, "transfer-", "Next transfer ID should have transfer- prefix")
 	})
 
 	suite.Run("counter with single transfer", func() {
@@ -614,16 +613,17 @@ func (suite *GenesisTestSuite) TestTransferCounterOffByOneError() {
 		err := suite.Keeper.InitGenesis(ctx, genesis)
 		suite.NoError(err)
 
-		// Counter should be 100 (MAX), so next ID will be 101 (MAX+1)
+		// FIXED: Counter should be 101 (MAX+1), not 100 (MAX)
 		store := suite.StoreKey
 		storeObj := ctx.KVStore(store)
 		counterBz := storeObj.Get(types.TransferCounterKey)
 		counter := binary.BigEndian.Uint64(counterBz)
-		suite.Equal(uint64(100), counter, "Counter must be set to MAX (100)")
+		suite.Equal(uint64(101), counter, "Counter must be set to MAX+1 (101) to prevent duplicate with transfer-100")
 
-		// Next transfer should be 101 (MAX+1)
+		// Note: nextTransferID now returns hash-based IDs, not sequential
 		nextID := suite.Keeper.nextTransferID(ctx)
-		suite.Equal("transfer-101", nextID, "Next transfer should be 101 (MAX+1)")
+		suite.NotEmpty(nextID, "Next transfer should have a valid ID")
+		suite.Contains(nextID, "transfer-", "Next transfer ID should have transfer- prefix")
 	})
 
 	suite.Run("counter with no transfers", func() {
@@ -644,15 +644,16 @@ func (suite *GenesisTestSuite) TestTransferCounterOffByOneError() {
 		err := suite.Keeper.InitGenesis(ctx, genesis)
 		suite.NoError(err)
 
-		// Counter should not be set when no transfers
+		// Counter should not be set when no legacy transfers
 		store := suite.StoreKey
 		storeObj := ctx.KVStore(store)
 		counterBz := storeObj.Get(types.TransferCounterKey)
 		suite.Nil(counterBz, "Counter should not be set with no transfers")
 
-		// First transfer should be 1
+		// New transfers use deterministic hash-based IDs, not sequential
 		nextID := suite.Keeper.nextTransferID(ctx)
-		suite.Equal("transfer-1", nextID, "First transfer should be 1")
+		suite.NotEmpty(nextID, "First transfer should have a valid ID")
+		suite.Contains(nextID, "transfer-", "First transfer ID should have transfer- prefix")
 	})
 
 	suite.Run("counter with non-sequential transfers", func() {
@@ -704,16 +705,17 @@ func (suite *GenesisTestSuite) TestTransferCounterOffByOneError() {
 		err := suite.Keeper.InitGenesis(ctx, genesis)
 		suite.NoError(err)
 
-		// Counter should be MAX = 25, so next ID will be MAX+1 = 26
+		// FIXED: Counter should be MAX+1 = 26, not MAX = 25
 		store := suite.StoreKey
 		storeObj := ctx.KVStore(store)
 		counterBz := storeObj.Get(types.TransferCounterKey)
 		counter := binary.BigEndian.Uint64(counterBz)
-		suite.Equal(uint64(25), counter, "Counter should be set to highest ID (MAX)")
+		suite.Equal(uint64(26), counter, "Counter should be set to MAX+1 (26) to prevent duplicate with transfer-25")
 
-		// Next transfer should be 26 (MAX+1)
+		// Note: nextTransferID now returns hash-based IDs, not sequential
 		nextID := suite.Keeper.nextTransferID(ctx)
-		suite.Equal("transfer-26", nextID, "Next transfer should be 26 (MAX+1)")
+		suite.NotEmpty(nextID, "Next transfer should have a valid ID")
+		suite.Contains(nextID, "transfer-", "Next transfer ID should have transfer- prefix")
 	})
 }
 
@@ -763,13 +765,14 @@ func (suite *GenesisTestSuite) TestDuplicateTransferIDDetection() {
 			},
 		}
 
-		// Should panic on duplicate transfer ID
-		suite.Panics(func() {
-			_ = suite.Keeper.InitGenesis(ctx, genesis)
-		}, "InitGenesis should panic on duplicate transfer IDs")
+		// FIXED: Should return error on duplicate transfer ID (not panic)
+		// Changed from panic to error for better error handling
+		err := suite.Keeper.InitGenesis(ctx, genesis)
+		suite.Error(err, "InitGenesis should error on duplicate transfer IDs")
+		suite.Contains(err.Error(), "duplicate transfer ID", "Error should mention duplicate ID")
 	})
 
-	suite.Run("allow duplicate IDs only if non-sequential format", func() {
+	suite.Run("reject ALL duplicate IDs including non-sequential", func() {
 		genesis := types.GenesisState{
 			Params: &bridgepb.BridgeParams{
 				Enabled:                      true,
@@ -790,7 +793,7 @@ func (suite *GenesisTestSuite) TestDuplicateTransferIDDetection() {
 					Status:      types.TransferStatus_PENDING,
 				},
 				{
-					TransferId:  "custom-transfer-id", // Non-sequential format, won't be checked
+					TransferId:  "custom-transfer-id", // Non-sequential format
 					SourceChain: "polygon",
 					TargetChain: "aura",
 					Sender:      "0x456",
@@ -800,7 +803,7 @@ func (suite *GenesisTestSuite) TestDuplicateTransferIDDetection() {
 					Status:      types.TransferStatus_CONFIRMED,
 				},
 				{
-					TransferId:  "custom-transfer-id", // Duplicate but non-sequential - storage will overwrite
+					TransferId:  "custom-transfer-id", // DUPLICATE non-sequential ID
 					SourceChain: "bsc",
 					TargetChain: "aura",
 					Sender:      "0x789",
@@ -812,10 +815,11 @@ func (suite *GenesisTestSuite) TestDuplicateTransferIDDetection() {
 			},
 		}
 
-		// Should not panic - non-sequential IDs are not checked for duplicates
-		// (This is by design - only sequential transfer-N IDs are validated)
+		// FIXED: Now detects ALL duplicates, not just sequential IDs
+		// This prevents data corruption from silent overwrites
 		err := suite.Keeper.InitGenesis(ctx, genesis)
-		suite.NoError(err, "Non-sequential transfer IDs bypass duplicate detection")
+		suite.Error(err, "Should reject duplicate non-sequential IDs")
+		suite.Contains(err.Error(), "duplicate transfer ID", "Error should mention duplicate ID")
 	})
 
 	suite.Run("detect multiple duplicates", func() {
@@ -861,10 +865,10 @@ func (suite *GenesisTestSuite) TestDuplicateTransferIDDetection() {
 			},
 		}
 
-		// Should panic on first duplicate encountered
-		suite.Panics(func() {
-			_ = suite.Keeper.InitGenesis(ctx, genesis)
-		}, "InitGenesis should panic on first duplicate transfer ID")
+		// FIXED: Should return error on first duplicate (not panic)
+		err := suite.Keeper.InitGenesis(ctx, genesis)
+		suite.Error(err, "InitGenesis should error on first duplicate transfer ID")
+		suite.Contains(err.Error(), "duplicate transfer ID", "Error should mention duplicate ID")
 	})
 }
 

@@ -2307,16 +2307,31 @@ func (k Keeper) FinalizeTransfer(ctx sdk.Context, transferID string) error {
 		}
 	}
 
-	// 7. Mint and send tokens (following checks-effects-interactions)
-	if k.bankKeeper != nil {
-		// Mint to module
-		if err := k.bankKeeper.MintCoins(ctx, types.ModuleName, sdk.NewCoins(coin)); err != nil {
-			return fmt.Errorf("failed to mint coins: %w", err)
-		}
+	// 7. Unlock or mint tokens (following checks-effects-interactions)
+	// Determine if this is an unlock (native tokens) or mint (wrapped tokens)
+	// Wrapped tokens have format "chain.denom" (e.g., "paw.token", "xai.coin")
+	// Native tokens are unlocked from module, wrapped tokens are minted
+	isWrapped := strings.Contains(pending.Denom, ".")
 
-		// Send to recipient
-		if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, recipient, sdk.NewCoins(coin)); err != nil {
-			return fmt.Errorf("failed to send coins to recipient: %w", err)
+	if k.bankKeeper != nil {
+		if isWrapped {
+			// WRAPPED TOKENS: Mint new wrapped tokens
+			// Mint to module
+			if err := k.bankKeeper.MintCoins(ctx, types.ModuleName, sdk.NewCoins(coin)); err != nil {
+				return fmt.Errorf("failed to mint wrapped tokens: %w", err)
+			}
+
+			// Send to recipient
+			if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, recipient, sdk.NewCoins(coin)); err != nil {
+				return fmt.Errorf("failed to send wrapped tokens to recipient: %w", err)
+			}
+		} else {
+			// NATIVE TOKENS: Unlock from module account (already locked from source chain)
+			// The tokens were locked in the module when LockTokens was called on the source
+			// We just need to send them from module to recipient
+			if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, recipient, sdk.NewCoins(coin)); err != nil {
+				return fmt.Errorf("failed to unlock native tokens: %w", err)
+			}
 		}
 	}
 
@@ -2350,6 +2365,102 @@ func (k Keeper) FinalizeTransfer(ctx sdk.Context, transferID string) error {
 	)
 
 	return nil
+}
+
+// ProcessExpiredPendingTransfers automatically finalizes pending transfers whose
+// fraud proof window has expired. This function is called from EndBlock.
+//
+// SECURITY CRITICAL: This implements the automated completion of transfers after
+// the fraud proof window expires, ensuring users receive their funds without
+// requiring manual finalization.
+//
+// Process:
+//   1. Retrieve all pending transfers from state
+//   2. Check each transfer's unlock time against current block time
+//   3. Skip challenged transfers (require governance resolution)
+//   4. Finalize unchallenged expired transfers
+//   5. Log all operations for audit trail
+//
+// Security considerations:
+//   - Only processes transfers with expired fraud proof windows
+//   - Respects fraud proofs (challenged transfers are not finalized)
+//   - Uses existing FinalizeTransfer which has full security checks
+//   - Gas-limited to prevent chain halt (skips to next if one fails)
+//
+// Parameters:
+//   - ctx: SDK context for current block time and state access
+func (k Keeper) ProcessExpiredPendingTransfers(ctx sdk.Context) {
+	// Get all pending transfers
+	allPending := k.GetAllPendingTransfers(ctx)
+
+	if len(allPending) == 0 {
+		// No pending transfers to process
+		return
+	}
+
+	// Track processing statistics for monitoring
+	var processed, finalized, challenged, errors int
+
+	// Process each pending transfer
+	for _, pending := range allPending {
+		processed++
+
+		// Check if transfer has been challenged
+		if pending.Challenged {
+			challenged++
+			// Log challenged transfer for monitoring (not an error)
+			k.Logger(ctx).Info("skipping challenged pending transfer",
+				"transfer_id", pending.TransferId,
+				"fraud_proof_id", pending.FraudProofId,
+				"unlock_time", pending.UnlockTime.AsTime())
+			continue
+		}
+
+		// Check if fraud proof window has expired
+		if !k.IsPendingTransferExpired(ctx, pending) {
+			// Not expired yet - skip silently (this is normal)
+			continue
+		}
+
+		// Fraud proof window has expired and no challenge - finalize the transfer
+		if err := k.FinalizeTransfer(ctx, pending.TransferId); err != nil {
+			errors++
+			// Log error but continue processing other transfers
+			// We don't want one failed transfer to block all others
+			k.Logger(ctx).Error("failed to auto-finalize expired pending transfer",
+				"transfer_id", pending.TransferId,
+				"recipient", pending.Recipient,
+				"amount", pending.Amount,
+				"denom", pending.Denom,
+				"unlock_time", pending.UnlockTime.AsTime(),
+				"error", err.Error())
+			continue
+		}
+
+		finalized++
+
+		// Log successful finalization
+		k.Logger(ctx).Info("auto-finalized expired pending transfer",
+			"transfer_id", pending.TransferId,
+			"recipient", pending.Recipient,
+			"amount", pending.Amount,
+			"denom", pending.Denom,
+			"unlock_time", pending.UnlockTime.AsTime())
+	}
+
+	// Emit summary event if any transfers were processed
+	if finalized > 0 || errors > 0 || challenged > 0 {
+		ctx.EventManager().EmitEvent(
+			sdk.NewEvent(
+				"pending_transfers_processed",
+				sdk.NewAttribute("block_height", fmt.Sprintf("%d", ctx.BlockHeight())),
+				sdk.NewAttribute("total_pending", fmt.Sprintf("%d", processed)),
+				sdk.NewAttribute("finalized", fmt.Sprintf("%d", finalized)),
+				sdk.NewAttribute("challenged", fmt.Sprintf("%d", challenged)),
+				sdk.NewAttribute("errors", fmt.Sprintf("%d", errors)),
+			),
+		)
+	}
 }
 
 // ========================================================================

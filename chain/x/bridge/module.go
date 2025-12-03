@@ -48,6 +48,8 @@ func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) 
 		&bridgepb.MsgLinkAddress{},
 		&bridgepb.MsgCrossChainSwap{},
 		&bridgepb.MsgRelayTransfer{},
+		&bridgepb.MsgFinalizeTransfer{},
+		&bridgepb.MsgSubmitFraudProof{},
 	)
 }
 
@@ -103,8 +105,11 @@ func (m AppModule) BeginBlock(ctx sdk.Context) {
 }
 
 // EndBlock executes all ABCI EndBlock logic
-func (m AppModule) EndBlock() {
-	// No end block logic needed for Bridge currently
+func (m AppModule) EndBlock(ctx sdk.Context) {
+	// SECURITY: Auto-finalize expired pending transfers
+	// This automatically completes transfers after the fraud proof window expires
+	// to ensure users receive their funds without manual finalization
+	m.keeper.ProcessExpiredPendingTransfers(ctx)
 }
 
 // InitGenesis initializes module state from genesis

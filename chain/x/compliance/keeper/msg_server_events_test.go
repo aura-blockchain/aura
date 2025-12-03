@@ -31,11 +31,23 @@ func TestKYCSubmission_EventEmitted(t *testing.T) {
 	err := keeper.SetParams(ctx, params)
 	require.NoError(t, err)
 
+	userAddr := createTestAddress("kyc_user")
+
+	// Record GDPR consent first (required for KYC processing)
+	consent := &types.GDPRConsent{
+		Address:        userAddr,
+		ConsentType:    "kyc_processing",
+		Consented:      true,
+		ConsentVersion: "v1.0",
+	}
+	err = keeper.SetGDPRConsent(ctx, consent)
+	require.NoError(t, err)
+
 	piiCommitment := make([]byte, 32)
 	copy(piiCommitment, []byte("test_commitment_hash_32_bytes"))
 
 	req := &types.MsgSubmitKYC{
-		Address:       createTestAddress("kyc_user"),
+		Address:       userAddr,
 		KycLevel:      types.KYCLevel_KYC_LEVEL_BASIC,
 		Provider:      providerAddr,
 		PiiCommitment: piiCommitment,
@@ -82,9 +94,22 @@ func TestSARReporting_EventEmitted(t *testing.T) {
 	keeper, ctx := setupTestKeeper(t)
 	server := NewMsgServer(keeper)
 
+	reporterAddr := createTestAddress("reporter")
+	userAddr := createTestAddress("user")
+
+	// Record GDPR consent first (required for AML monitoring of the reported user)
+	consent := &types.GDPRConsent{
+		Address:        userAddr,
+		ConsentType:    "aml_monitoring",
+		Consented:      true,
+		ConsentVersion: "v1.0",
+	}
+	err := keeper.SetGDPRConsent(ctx, consent)
+	require.NoError(t, err)
+
 	req := &types.MsgReportSuspiciousActivity{
-		Reporter:        createTestAddress("reporter"),
-		Address:         createTestAddress("user"),
+		Reporter:        reporterAddr,
+		Address:         userAddr,
 		TransactionHash: "hash123",
 		ActivityType:    "structuring",
 		Description:     "many small transactions",
@@ -128,8 +153,20 @@ func TestSanctionsScreening_EventEmitted(t *testing.T) {
 	keeper, ctx := setupTestKeeper(t)
 	server := NewMsgServer(keeper)
 
+	userAddr := createTestAddress("sanction_user")
+
+	// Record GDPR consent first (required for sanctions screening)
+	consent := &types.GDPRConsent{
+		Address:        userAddr,
+		ConsentType:    "sanctions_screening",
+		Consented:      true,
+		ConsentVersion: "v1.0",
+	}
+	err := keeper.SetGDPRConsent(ctx, consent)
+	require.NoError(t, err)
+
 	req := &types.MsgScreenSanctions{
-		Address: createTestAddress("sanction_user"),
+		Address: userAddr,
 	}
 
 	resp, err := server.ScreenSanctions(sdk.WrapSDKContext(ctx), req)
@@ -382,12 +419,24 @@ func TestSanctionsScreening_WithMatches_EventEmitted(t *testing.T) {
 	keeper, ctx := setupTestKeeper(t)
 	server := NewMsgServer(keeper)
 
+	userAddr := createTestAddress("flagged_user")
+
+	// Record GDPR consent first (required for sanctions screening)
+	consent := &types.GDPRConsent{
+		Address:        userAddr,
+		ConsentType:    "sanctions_screening",
+		Consented:      true,
+		ConsentVersion: "v1.0",
+	}
+	err := keeper.SetGDPRConsent(ctx, consent)
+	require.NoError(t, err)
+
 	// Register a mock provider that returns matches
 	provider := &testSanctionsProviderWithMatches{}
 	keeper.RegisterSanctionsProvider("mock", provider)
 
 	req := &types.MsgScreenSanctions{
-		Address: createTestAddress("flagged_user"),
+		Address: userAddr,
 	}
 
 	resp, err := server.ScreenSanctions(sdk.WrapSDKContext(ctx), req)
@@ -427,6 +476,25 @@ func TestMultipleEvents_InSingleTransaction(t *testing.T) {
 	require.NoError(t, err)
 
 	multiAddr := createTestAddress("multi_user")
+
+	// Record GDPR consent first (required for KYC and sanctions screening)
+	consentKyc := &types.GDPRConsent{
+		Address:        multiAddr,
+		ConsentType:    "kyc_processing",
+		Consented:      true,
+		ConsentVersion: "v1.0",
+	}
+	err = keeper.SetGDPRConsent(ctx, consentKyc)
+	require.NoError(t, err)
+
+	consentSanctions := &types.GDPRConsent{
+		Address:        multiAddr,
+		ConsentType:    "sanctions_screening",
+		Consented:      true,
+		ConsentVersion: "v1.0",
+	}
+	err = keeper.SetGDPRConsent(ctx, consentSanctions)
+	require.NoError(t, err)
 
 	// Submit KYC
 	piiCommitment := make([]byte, 32)
