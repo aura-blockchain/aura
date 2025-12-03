@@ -863,6 +863,7 @@ func (k *Keeper) TriggerDataDeletion(ctx sdk.Context, address string, consentTyp
 	return nil
 }
 
+
 // ============================================================================
 // Rate Limiting KVStore Methods (DoS Protection for Expensive Operations)
 // ============================================================================
@@ -904,53 +905,15 @@ func (k *Keeper) SetRateLimitEntry(ctx sdk.Context, entry *types.RateLimitEntry)
 	return nil
 }
 
+// DeleteRateLimitEntry removes a rate limit entry (for window reset)
+func (k *Keeper) DeleteRateLimitEntry(ctx sdk.Context, address string, operation string) {
+	store := ctx.KVStore(k.storeKey)
+	key := getRateLimitKey(address, operation)
+	store.Delete(key)
+}
+
 // CheckRateLimit enforces per-address, per-operation rate limits to prevent DoS
 // of expensive external API calls (sanctions screening, KYC verification, etc.).
-//
-// Rate limiting provides:
-//   - DoS protection: Prevents overwhelming external sanctions/KYC providers
-//   - Cost control: Limits API usage and associated costs
-//   - Fair usage: Prevents single address from consuming all quota
-//
-// The function implements a sliding window rate limiter:
-//   1. Checks if a rate limit entry exists for address+operation
-//   2. Resets the window if time has elapsed beyond window_seconds
-//   3. Increments the counter and checks against operation-specific limit
-//   4. Returns error if limit exceeded, allowing the request if under limit
-//
-// Parameters:
-//   - ctx: SDK context for state access and block time
-//   - address: Address making the request (rate limit granularity)
-//   - operation: Operation type (determines which limit to apply)
-//
-// Returns:
-//   - error: ErrRateLimitExceeded if limit reached, nil if request allowed
-//
-// Operation types and their limits (configured in params):
-//   - "sanctions_screening": sanctions_screening_limit per window
-//   - "kyc_verification": kyc_verification_limit per window
-//   - "aml_profile_query": aml_profile_query_limit per window
-//   - "tax_report_generation": tax_report_generation_limit per window
-//   - "transaction_alerts": default_query_limit per window
-//   - others: default_query_limit per window
-//
-// Security considerations:
-//   - Limits are per-address to prevent single user DoS
-//   - Window size configurable via params (default: 1 hour)
-//   - Limits stored in state for persistence across blocks
-//   - Window automatically resets after expiration
-//   - Uses block time for consistency and tamper resistance
-//
-// Example usage:
-//   if err := k.CheckRateLimit(ctx, req.Address, "sanctions_screening"); err != nil {
-//       return nil, status.Errorf(codes.ResourceExhausted, err.Error())
-//   }
-//
-// Integration with external services:
-//   - Prevents overwhelming OFAC SDN API
-//   - Protects KYC provider quotas
-//   - Controls blockchain indexing costs
-//   - Manages tax calculation service usage
 func (k *Keeper) CheckRateLimit(ctx sdk.Context, address string, operation string) error {
 	params := k.GetParams(ctx)
 
@@ -1040,5 +1003,6 @@ func (k *Keeper) CheckRateLimit(ctx sdk.Context, address string, operation strin
 	if err := k.SetRateLimitEntry(ctx, entry); err != nil {
 		return fmt.Errorf("failed to update rate limit entry: %w", err)
 	}
+
 	return nil
 }
