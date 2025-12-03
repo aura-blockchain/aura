@@ -118,14 +118,14 @@ func (k *MonitoredBankKeeper) SendCoins(ctx sdk.Context, from, to sdk.AccAddress
 	}
 
 	// Update AML profiles after successful transfer
-	if err := k.complianceKeeper.UpdateAMLProfile(ctx, from, amount); err != nil {
+	if err := k.complianceKeeper.UpdateAMLProfileOnTransaction(ctx, from.String(), amount); err != nil {
 		k.complianceKeeper.logger(ctx).Error("failed to update sender AML profile",
 			"address", from.String(),
 			"error", err.Error(),
 		)
 	}
 
-	if err := k.complianceKeeper.UpdateAMLProfile(ctx, to, amount); err != nil {
+	if err := k.complianceKeeper.UpdateAMLProfileOnTransaction(ctx, to.String(), amount); err != nil {
 		k.complianceKeeper.logger(ctx).Error("failed to update recipient AML profile",
 			"address", to.String(),
 			"error", err.Error(),
@@ -200,8 +200,7 @@ func (k *MonitoredBankKeeper) InputOutputCoins(ctx sdk.Context, inputs []banktyp
 
 	// Update AML profiles for all participants
 	for _, input := range inputs {
-		fromAddr := sdk.MustAccAddressFromBech32(input.Address)
-		if err := k.complianceKeeper.UpdateAMLProfile(ctx, fromAddr, input.Coins); err != nil {
+		if err := k.complianceKeeper.UpdateAMLProfileOnTransaction(ctx, input.Address, input.Coins); err != nil {
 			k.complianceKeeper.logger(ctx).Error("failed to update AML profile",
 				"address", input.Address,
 				"error", err.Error(),
@@ -210,8 +209,7 @@ func (k *MonitoredBankKeeper) InputOutputCoins(ctx sdk.Context, inputs []banktyp
 	}
 
 	for _, output := range outputs {
-		toAddr := sdk.MustAccAddressFromBech32(output.Address)
-		if err := k.complianceKeeper.UpdateAMLProfile(ctx, toAddr, output.Coins); err != nil {
+		if err := k.complianceKeeper.UpdateAMLProfileOnTransaction(ctx, output.Address, output.Coins); err != nil {
 			k.complianceKeeper.logger(ctx).Error("failed to update AML profile",
 				"address", output.Address,
 				"error", err.Error(),
@@ -287,7 +285,7 @@ func (k *MonitoredBankKeeper) SendCoinsFromModuleToAccount(
 	}
 
 	// Update recipient AML profile
-	if err := k.complianceKeeper.UpdateAMLProfile(ctx, recipientAddr, amount); err != nil {
+	if err := k.complianceKeeper.UpdateAMLProfileOnTransaction(ctx, recipientAddr.String(), amount); err != nil {
 		k.complianceKeeper.logger(ctx).Error("failed to update recipient AML profile",
 			"address", recipientAddr.String(),
 			"error", err.Error(),
@@ -356,7 +354,7 @@ func (k *MonitoredBankKeeper) SendCoinsFromAccountToModule(
 	}
 
 	// Update sender AML profile
-	if err := k.complianceKeeper.UpdateAMLProfile(ctx, senderAddr, amount); err != nil {
+	if err := k.complianceKeeper.UpdateAMLProfileOnTransaction(ctx, senderAddr.String(), amount); err != nil {
 		k.complianceKeeper.logger(ctx).Error("failed to update sender AML profile",
 			"address", senderAddr.String(),
 			"error", err.Error(),

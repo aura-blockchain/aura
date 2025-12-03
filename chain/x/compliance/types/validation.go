@@ -47,6 +47,11 @@ func ValidateParams(p ComplianceParams) error {
 		return err
 	}
 
+	// Rate limiting validation
+	if err := validateRateLimitParams(p); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -415,6 +420,75 @@ func ValidateFilePath(path string) error {
 	return nil
 }
 
+// validateRateLimitParams validates rate limiting parameters
+func validateRateLimitParams(p ComplianceParams) error {
+	// Rate limit window seconds validation
+	if p.RateLimitWindowSeconds > 0 {
+		const maxWindowSeconds uint64 = 86400 * 7 // Max 7 days
+		if p.RateLimitWindowSeconds > maxWindowSeconds {
+			return fmt.Errorf("rate_limit_window_seconds too large: %d (max %d = 7 days)",
+				p.RateLimitWindowSeconds, maxWindowSeconds)
+		}
+		const minWindowSeconds uint64 = 60 // Min 1 minute
+		if p.RateLimitWindowSeconds < minWindowSeconds {
+			return fmt.Errorf("rate_limit_window_seconds too small: %d (min %d = 1 minute)",
+				p.RateLimitWindowSeconds, minWindowSeconds)
+		}
+	}
+
+	// Sanctions screening limit validation
+	if p.SanctionsScreeningLimit < 0 {
+		return fmt.Errorf("sanctions_screening_limit cannot be negative: %d", p.SanctionsScreeningLimit)
+	}
+	const maxScreeningLimit int64 = 10000
+	if p.SanctionsScreeningLimit > maxScreeningLimit {
+		return fmt.Errorf("sanctions_screening_limit too large: %d (max %d)",
+			p.SanctionsScreeningLimit, maxScreeningLimit)
+	}
+
+	// KYC verification limit validation
+	if p.KycVerificationLimit < 0 {
+		return fmt.Errorf("kyc_verification_limit cannot be negative: %d", p.KycVerificationLimit)
+	}
+	const maxKycLimit int64 = 10000
+	if p.KycVerificationLimit > maxKycLimit {
+		return fmt.Errorf("kyc_verification_limit too large: %d (max %d)",
+			p.KycVerificationLimit, maxKycLimit)
+	}
+
+	// AML profile query limit validation
+	if p.AmlProfileQueryLimit < 0 {
+		return fmt.Errorf("aml_profile_query_limit cannot be negative: %d", p.AmlProfileQueryLimit)
+	}
+	const maxAmlLimit int64 = 10000
+	if p.AmlProfileQueryLimit > maxAmlLimit {
+		return fmt.Errorf("aml_profile_query_limit too large: %d (max %d)",
+			p.AmlProfileQueryLimit, maxAmlLimit)
+	}
+
+	// Tax report generation limit validation
+	if p.TaxReportGenerationLimit < 0 {
+		return fmt.Errorf("tax_report_generation_limit cannot be negative: %d", p.TaxReportGenerationLimit)
+	}
+	const maxTaxReportLimit int64 = 1000 // Lower limit due to expensive operation
+	if p.TaxReportGenerationLimit > maxTaxReportLimit {
+		return fmt.Errorf("tax_report_generation_limit too large: %d (max %d)",
+			p.TaxReportGenerationLimit, maxTaxReportLimit)
+	}
+
+	// Default query limit validation
+	if p.DefaultQueryLimit < 0 {
+		return fmt.Errorf("default_query_limit cannot be negative: %d", p.DefaultQueryLimit)
+	}
+	const maxDefaultLimit int64 = 10000
+	if p.DefaultQueryLimit > maxDefaultLimit {
+		return fmt.Errorf("default_query_limit too large: %d (max %d)",
+			p.DefaultQueryLimit, maxDefaultLimit)
+	}
+
+	return nil
+}
+
 // DefaultParams returns default compliance parameters
 func DefaultParams() ComplianceParams {
 	return ComplianceParams{
@@ -430,5 +504,12 @@ func DefaultParams() ComplianceParams {
 		SanctionsScreeningEnabled:    false,
 		SanctionsLists:               []string{},
 		ScreeningCacheHours:          24,
+		// Rate limiting defaults (DoS protection)
+		RateLimitWindowSeconds:       3600,  // 1 hour window
+		SanctionsScreeningLimit:      100,   // 100 screenings per hour
+		KycVerificationLimit:         50,    // 50 verifications per hour
+		AmlProfileQueryLimit:         200,   // 200 profile queries per hour
+		TaxReportGenerationLimit:     10,    // 10 reports per hour (expensive operation)
+		DefaultQueryLimit:            1000,  // 1000 general queries per hour
 	}
 }
