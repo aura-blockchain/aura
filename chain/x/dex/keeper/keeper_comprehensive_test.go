@@ -132,6 +132,14 @@ func setupTestKeeper(t *testing.T) (*keeper.Keeper, sdk.Context) {
 	return k, input.Ctx
 }
 
+// Helper function to create a test keeper with access to the mock bank keeper
+func setupTestKeeperWithMock(t *testing.T) (*keeper.Keeper, sdk.Context, *MockBankKeeper) {
+	input := keepertest.CreateTestInput(t)
+	mockBank := NewMockBankKeeper()
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, mockBank, nil, nil)
+	return k, input.Ctx, mockBank
+}
+
 // Params Tests
 
 func (suite *DEXKeeperTestSuite) TestGetParams() {
@@ -226,11 +234,17 @@ func TestGetNonExistentPool(t *testing.T) {
 }
 
 func TestGetOrdersByUserIndexed(t *testing.T) {
-	k, ctx := setupTestKeeper(t)
+	k, ctx, mockBank := setupTestKeeperWithMock(t)
 
+	// Set up mock bank keeper with balances
 	addrs := keepertest.GenTestAddrs(2)
 	user := addrs[0].String()
 	other := addrs[1].String()
+
+	// User creates BUY orders, needs usdt balance
+	mockBank.SetBalance(addrs[0], "usdt", math.NewInt(1000))
+	// Other creates SELL order, needs uaura balance
+	mockBank.SetBalance(addrs[1], "uaura", math.NewInt(100))
 
 	for i := 0; i < 3; i++ {
 		ctx = ctx.WithBlockHeight(ctx.BlockHeight() + 1)
@@ -271,9 +285,14 @@ func TestGetOrdersByUserIndexed(t *testing.T) {
 }
 
 func TestUserOrderHistoryLimit(t *testing.T) {
-	k, ctx := setupTestKeeper(t)
+	k, ctx, mockBank := setupTestKeeperWithMock(t)
 
-	user := keepertest.GenTestAddr().String()
+	// Set up mock bank keeper with sufficient balance for 250 orders
+	userAddr := keepertest.GenTestAddr()
+	user := userAddr.String()
+
+	// BUY orders need usdt balance (250 orders * 200 usdt each)
+	mockBank.SetBalance(userAddr, "usdt", math.NewInt(50000))
 
 	for i := 0; i < 250; i++ {
 		ctx = ctx.WithBlockHeight(ctx.BlockHeight() + 1)

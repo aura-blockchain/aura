@@ -12,13 +12,20 @@ import (
 )
 
 func TestGenesisRoundTrip(t *testing.T) {
-	k, ctx := setupTestKeeper(t)
+	k, ctx, mockBank := setupTestKeeperWithMock(t)
+
+	// Set up balances
+	creatorAddr := keepertest.GenTestAddr()
+	creator := creatorAddr.String()
+
+	// Fund creator with sufficient tokens for pool creation and order
+	mockBank.SetBalance(creatorAddr, "uaura", math.NewInt(1_000000))
+	mockBank.SetBalance(creatorAddr, "usdt", math.NewInt(2_200000)) // Pool needs 2M, order needs 200
 
 	params := types.DefaultParams()
 	params.TradingFee = "0.001"
 	require.NoError(t, k.SetParams(ctx, params))
 
-	creator := keepertest.GenTestAddr().String()
 	_, _, err := k.CreatePool(ctx, creator, "uaura", "usdt", sdk.NewCoin("uaura", math.NewInt(1_000000)), sdk.NewCoin("usdt", math.NewInt(2_000000)))
 	require.NoError(t, err)
 

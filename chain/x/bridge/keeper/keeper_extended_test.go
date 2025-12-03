@@ -34,6 +34,7 @@ func (suite *BridgeKeeperTestSuite) SetupTest() {
 		nil, // bankKeeper
 		nil, // accountKeeper
 		nil, // vcKeeper
+		nil, // stakingKeeper
 	)
 	suite.ctx = input.Ctx
 }

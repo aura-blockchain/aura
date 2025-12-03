@@ -161,6 +161,7 @@ func (suite *InvariantsComprehensiveTestSuite) TestTransferBalanceInvariantInval
 		mockBank,
 		mockAccount,
 		nil,
+		nil, // stakingKeeper
 	)
 
 	ctx := suite.SdkCtx
@@ -466,6 +467,7 @@ func (suite *InvariantsComprehensiveTestSuite) TestBalanceInvariantWithMocksSuff
 		mockBank,
 		mockAccount,
 		nil,
+		nil, // stakingKeeper
 	)
 
 	ctx := suite.SdkCtx
@@ -509,6 +511,7 @@ func (suite *InvariantsComprehensiveTestSuite) TestBalanceInvariantWithMocksInsu
 		mockBank,
 		mockAccount,
 		nil,
+		nil, // stakingKeeper
 	)
 
 	ctx := suite.SdkCtx
@@ -555,6 +558,7 @@ func (suite *InvariantsComprehensiveTestSuite) TestBalanceInvariantWithMocksMult
 		mockBank,
 		mockAccount,
 		nil,
+		nil, // stakingKeeper
 	)
 
 	ctx := suite.SdkCtx
@@ -615,6 +619,7 @@ func (suite *InvariantsComprehensiveTestSuite) TestBalanceInvariantWithMocksZero
 		mockBank,
 		mockAccount,
 		nil,
+		nil, // stakingKeeper
 	)
 
 	ctx := suite.SdkCtx

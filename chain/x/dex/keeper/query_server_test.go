@@ -14,8 +14,14 @@ import (
 )
 
 func TestQueryUserOrders(t *testing.T) {
-	k, ctx := setupTestKeeper(t)
-	user := keepertest.GenTestAddr().String()
+	k, ctx, mockBank := setupTestKeeperWithMock(t)
+
+	// Set up mock bank keeper with sufficient balance
+	userAddr := keepertest.GenTestAddr()
+	user := userAddr.String()
+
+	// BUY order needs usdt balance
+	mockBank.SetBalance(userAddr, "usdt", math.NewInt(200))
 
 	_, err := k.CreateOrder(ctx, user, types.SwapOrderType_BUY, math.NewInt(100), "usdt", math.NewInt(200), 60)
 	require.NoError(t, err)

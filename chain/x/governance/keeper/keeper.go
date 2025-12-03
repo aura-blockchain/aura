@@ -30,6 +30,9 @@ var (
 	VoteCommitmentsKeyPrefix = []byte{0x08}
 	ParamsKeyPrefix          = []byte{0x09}
 	NextProposalIDKeyPrefix  = []byte{0x0A}
+
+	// KeySeparator is used to separate key components to prevent collisions
+	KeySeparator = []byte{0x00}
 )
 
 // Keeper maintains the state of the governance module
@@ -349,7 +352,9 @@ func (k *Keeper) SetVoteDelegation(ctx sdk.Context, delegation *types.VoteDelega
 		return err
 	}
 
+	// Build key with separator: prefix | delegator | separator | delegate
 	key := append(DelegationsKeyPrefix, []byte(delegation.Delegator)...)
+	key = append(key, KeySeparator...)
 	key = append(key, []byte(delegation.Delegate)...)
 	store.Set(key, bz)
 	return nil
@@ -358,7 +363,9 @@ func (k *Keeper) SetVoteDelegation(ctx sdk.Context, delegation *types.VoteDelega
 // DeleteVoteDelegation removes a vote delegation
 func (k *Keeper) DeleteVoteDelegation(ctx sdk.Context, delegator, delegate string) error {
 	store := ctx.KVStore(k.storeKey)
+	// Build key with separator: prefix | delegator | separator | delegate
 	key := append(DelegationsKeyPrefix, []byte(delegator)...)
+	key = append(key, KeySeparator...)
 	key = append(key, []byte(delegate)...)
 	store.Delete(key)
 	return nil
@@ -367,7 +374,10 @@ func (k *Keeper) DeleteVoteDelegation(ctx sdk.Context, delegator, delegate strin
 // GetVoteDelegations retrieves all vote delegations for a delegator
 func (k *Keeper) GetVoteDelegations(ctx sdk.Context, delegator string) []*types.VoteDelegation {
 	store := ctx.KVStore(k.storeKey)
+	// Build prefix with separator: prefix | delegator | separator
+	// This ensures we match only keys with this exact delegator
 	prefix := append(DelegationsKeyPrefix, []byte(delegator)...)
+	prefix = append(prefix, KeySeparator...)
 	iterator := storetypes.KVStorePrefixIterator(store, prefix)
 	defer iterator.Close()
 
