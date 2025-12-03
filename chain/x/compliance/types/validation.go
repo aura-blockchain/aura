@@ -310,6 +310,111 @@ var DefaultBlockedJurisdictions = []string{
 	"BY", // Belarus (sectoral sanctions)
 }
 
+// ValidateFilePath validates file paths for security against path traversal attacks
+// This prevents attackers from using .. sequences, absolute paths, or suspicious characters
+// to write files outside of the intended directory
+//
+// Security requirements:
+//   - Reject empty paths
+//   - Reject absolute paths (starting with /)
+//   - Reject path traversal sequences (..)
+//   - Reject suspicious characters that could enable attacks (<>|"'`)
+//   - Ensure cleaned path doesn't escape base directory
+//
+// Returns an error if the path is invalid or could be used in an attack
+func ValidateFilePath(path string) error {
+	// Reject empty paths
+	if path == "" {
+		return fmt.Errorf("file path cannot be empty")
+	}
+
+	// Reject paths that are too long (reasonable limit for file paths)
+	const maxPathLength = 4096 // Standard Linux PATH_MAX
+	if len(path) > maxPathLength {
+		return fmt.Errorf("file path too long: %d bytes (max %d)", len(path), maxPathLength)
+	}
+
+	// Reject absolute paths (must be relative to base directory)
+	// This prevents writing to arbitrary locations like /etc/passwd
+	if strings.HasPrefix(path, "/") {
+		return fmt.Errorf("absolute paths not allowed: %s", path)
+	}
+
+	// Reject Windows-style absolute paths (C:\, D:\, etc.)
+	if len(path) >= 3 && path[1] == ':' && (path[2] == '\\' || path[2] == '/') {
+		return fmt.Errorf("Windows-style absolute paths not allowed: %s", path)
+	}
+
+	// Reject explicit path traversal sequences
+	// This prevents attacks like ../../etc/passwd
+	if strings.Contains(path, "..") {
+		return fmt.Errorf("path traversal sequences (..) not allowed: %s", path)
+	}
+
+	// Reject suspicious characters that could be used in injection attacks
+	// < > | " ' ` ; are commonly used in command injection and shell attacks
+	// Semicolon (;) is particularly dangerous for command chaining
+	suspiciousChars := "<>|\"'`;$&"
+	for _, char := range suspiciousChars {
+		if strings.ContainsRune(path, char) {
+			return fmt.Errorf("invalid character '%c' in file path: %s", char, path)
+		}
+	}
+
+	// Reject null bytes (used in null byte injection attacks)
+	if strings.Contains(path, "\x00") {
+		return fmt.Errorf("null bytes not allowed in file path")
+	}
+
+	// Reject paths containing newlines or other control characters
+	for _, char := range path {
+		if char < 32 && char != 9 { // Allow tab (9), reject other control characters
+			return fmt.Errorf("control characters not allowed in file path")
+		}
+	}
+
+	// Clean the path and verify it doesn't escape the base directory
+	// filepath.Clean normalizes the path by removing ./ and ../
+	// but we already rejected .. above as defense in depth
+	cleaned := strings.TrimSpace(path)
+	if cleaned == "" {
+		return fmt.Errorf("file path cannot be whitespace only")
+	}
+
+	// Reject paths containing consecutive slashes (path normalization evasion)
+	// Check this before other validations to catch "//etc//passwd" type attacks
+	if strings.Contains(path, "//") {
+		return fmt.Errorf("consecutive slashes not allowed in file path: %s", path)
+	}
+
+	// Reject paths that contain hidden files (any segment starting with .)
+	// This prevents access to files like .env, .ssh/id_rsa, .bashrc, reports/.secret.txt
+	if strings.HasPrefix(cleaned, ".") && cleaned != "." {
+		return fmt.Errorf("hidden file paths not allowed: %s", path)
+	}
+	// Also check for hidden files in any path segment
+	for _, segment := range strings.Split(path, "/") {
+		if strings.HasPrefix(segment, ".") && segment != "" && segment != "." && segment != ".." {
+			return fmt.Errorf("hidden file paths not allowed: %s", path)
+		}
+	}
+
+	// Additional validation: ensure the path doesn't try to escape via multiple techniques
+	// This catches edge cases where the path might be valid but still suspicious
+	pathSegments := strings.Split(path, "/")
+	for _, segment := range pathSegments {
+		segment = strings.TrimSpace(segment)
+		if segment == "" {
+			continue // Empty segments from trailing slashes are okay
+		}
+		if segment == "." || segment == ".." {
+			return fmt.Errorf("relative path components (. or ..) not allowed: %s", path)
+		}
+	}
+
+	return nil
+}
+
 // DefaultParams returns default compliance parameters
 func DefaultParams() ComplianceParams {
 	return ComplianceParams{

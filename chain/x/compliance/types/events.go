@@ -23,6 +23,7 @@ const (
 	EventTypeTransactionAlert          = "transaction_alert"
 	EventTypeRiskLevelChanged          = "risk_level_changed"
 	EventTypeAMLProfileUpdated         = "aml_profile_updated"
+	EventTypeRateLimitExceeded         = "rate_limit_exceeded"
 )
 
 // Event attribute keys
@@ -78,6 +79,10 @@ const (
 	AttributeKeyNewRisk             = "new_risk"
 	AttributeKeyTotalVolume         = "total_volume"
 	AttributeKeyAmount              = "amount"
+	AttributeKeyOperation           = "operation"
+	AttributeKeyCount               = "count"
+	AttributeKeyLimit               = "limit"
+	AttributeKeyWindowStart         = "window_start"
 )
 
 // Helper functions for creating event attributes

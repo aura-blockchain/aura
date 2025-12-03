@@ -208,6 +208,14 @@ message TaxTransaction {
   bool is_income = 9;
 }
 
+// RateLimitEntry tracks query rate limits per address and operation
+message RateLimitEntry {
+  string address = 1;                             // Address being rate limited
+  string operation = 2;                           // Operation type (sanctions_screening, kyc_verification, etc.)
+  int64 count = 3;                                // Number of queries in current window
+  google.protobuf.Timestamp window_start = 4;     // Start of current rate limit window
+}
+
 // ComplianceParams defines module parameters
 message ComplianceParams {
   // KYC/AML settings
@@ -237,6 +245,14 @@ message ComplianceParams {
   bool tax_reporting_enabled = 14;
   repeated string tax_jurisdictions = 15;
   string tax_year_end = 16;                       // MM-DD format
+
+  // Rate limiting (DoS protection for expensive operations)
+  uint64 rate_limit_window_seconds = 19;          // Time window for rate limiting (default: 3600 = 1 hour)
+  int64 sanctions_screening_limit = 20;           // Max sanctions screenings per window per address
+  int64 kyc_verification_limit = 21;              // Max KYC verifications per window per address
+  int64 aml_profile_query_limit = 22;             // Max AML profile queries per window per address
+  int64 tax_report_generation_limit = 23;         // Max tax report generations per window per address
+  int64 default_query_limit = 24;                 // Default limit for other expensive queries
 }
 
 // Query messages
@@ -362,6 +378,7 @@ message MsgGenerateTaxReport {
   string tax_year = 2;
   string jurisdiction = 3;
   string report_type = 4;
+  string file_path = 5;                           // Optional file path for report output (validated for security)
 }
 
 message MsgGenerateTaxReportResponse {

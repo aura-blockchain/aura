@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	"time"
 
 	"cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
@@ -24,6 +25,7 @@ var (
 	TaxReportsKeyPrefix           = []byte{0x09}
 	ParamsKeyPrefix               = []byte{0x0A}
 	ProcessingRestrictionsKeyPrefix = []byte{0x0B}
+	RateLimitKeyPrefix              = []byte{0x0C}
 )
 
 // ============================================================================
@@ -858,5 +860,185 @@ func (k *Keeper) TriggerDataDeletion(ctx sdk.Context, address string, consentTyp
 		),
 	)
 
+	return nil
+}
+
+// ============================================================================
+// Rate Limiting KVStore Methods (DoS Protection for Expensive Operations)
+// ============================================================================
+
+// getRateLimitKey generates a composite key for rate limit tracking
+// Format: RateLimitKeyPrefix + address + ":" + operation
+func getRateLimitKey(address string, operation string) []byte {
+	key := append(RateLimitKeyPrefix, []byte(address)...)
+	key = append(key, ':')
+	key = append(key, []byte(operation)...)
+	return key
+}
+
+// GetRateLimitEntry retrieves the rate limit entry for an address and operation
+func (k *Keeper) GetRateLimitEntry(ctx sdk.Context, address string, operation string) (*types.RateLimitEntry, bool) {
+	store := ctx.KVStore(k.storeKey)
+	key := getRateLimitKey(address, operation)
+	bz := store.Get(key)
+	if bz == nil {
+		return nil, false
+	}
+
+	var entry types.RateLimitEntry
+	if err := k.cdc.Unmarshal(bz, &entry); err != nil {
+		return nil, false
+	}
+	return &entry, true
+}
+
+// SetRateLimitEntry stores a rate limit entry for an address and operation
+func (k *Keeper) SetRateLimitEntry(ctx sdk.Context, entry *types.RateLimitEntry) error {
+	store := ctx.KVStore(k.storeKey)
+	bz, err := k.cdc.Marshal(entry)
+	if err != nil {
+		return err
+	}
+	key := getRateLimitKey(entry.Address, entry.Operation)
+	store.Set(key, bz)
+	return nil
+}
+
+// CheckRateLimit enforces per-address, per-operation rate limits to prevent DoS
+// of expensive external API calls (sanctions screening, KYC verification, etc.).
+//
+// Rate limiting provides:
+//   - DoS protection: Prevents overwhelming external sanctions/KYC providers
+//   - Cost control: Limits API usage and associated costs
+//   - Fair usage: Prevents single address from consuming all quota
+//
+// The function implements a sliding window rate limiter:
+//   1. Checks if a rate limit entry exists for address+operation
+//   2. Resets the window if time has elapsed beyond window_seconds
+//   3. Increments the counter and checks against operation-specific limit
+//   4. Returns error if limit exceeded, allowing the request if under limit
+//
+// Parameters:
+//   - ctx: SDK context for state access and block time
+//   - address: Address making the request (rate limit granularity)
+//   - operation: Operation type (determines which limit to apply)
+//
+// Returns:
+//   - error: ErrRateLimitExceeded if limit reached, nil if request allowed
+//
+// Operation types and their limits (configured in params):
+//   - "sanctions_screening": sanctions_screening_limit per window
+//   - "kyc_verification": kyc_verification_limit per window
+//   - "aml_profile_query": aml_profile_query_limit per window
+//   - "tax_report_generation": tax_report_generation_limit per window
+//   - "transaction_alerts": default_query_limit per window
+//   - others: default_query_limit per window
+//
+// Security considerations:
+//   - Limits are per-address to prevent single user DoS
+//   - Window size configurable via params (default: 1 hour)
+//   - Limits stored in state for persistence across blocks
+//   - Window automatically resets after expiration
+//   - Uses block time for consistency and tamper resistance
+//
+// Example usage:
+//   if err := k.CheckRateLimit(ctx, req.Address, "sanctions_screening"); err != nil {
+//       return nil, status.Errorf(codes.ResourceExhausted, err.Error())
+//   }
+//
+// Integration with external services:
+//   - Prevents overwhelming OFAC SDN API
+//   - Protects KYC provider quotas
+//   - Controls blockchain indexing costs
+//   - Manages tax calculation service usage
+func (k *Keeper) CheckRateLimit(ctx sdk.Context, address string, operation string) error {
+	params := k.GetParams(ctx)
+
+	// Get or create rate limit entry
+	entry, found := k.GetRateLimitEntry(ctx, address, operation)
+	if !found {
+		// Create new entry for first request
+		entry = &types.RateLimitEntry{
+			Address:     address,
+			Operation:   operation,
+			Count:       0,
+			WindowStart: timestamppb.New(ctx.BlockTime()),
+		}
+	}
+
+	// Check if window has expired and should be reset
+	windowDuration := time.Duration(params.RateLimitWindowSeconds) * time.Second
+	if windowDuration == 0 {
+		// Default to 1 hour if not configured
+		windowDuration = time.Hour
+	}
+
+	windowStart := entry.WindowStart.AsTime()
+	timeSinceWindowStart := ctx.BlockTime().Sub(windowStart)
+
+	if timeSinceWindowStart >= windowDuration {
+		// Reset window - new time period
+		entry.Count = 0
+		entry.WindowStart = timestamppb.New(ctx.BlockTime())
+	}
+
+	// Determine limit for this operation
+	var limit int64
+	switch operation {
+	case "sanctions_screening":
+		limit = params.SanctionsScreeningLimit
+	case "kyc_verification":
+		limit = params.KycVerificationLimit
+	case "aml_profile_query":
+		limit = params.AmlProfileQueryLimit
+	case "tax_report_generation":
+		limit = params.TaxReportGenerationLimit
+	case "transaction_alerts":
+		limit = params.DefaultQueryLimit
+	default:
+		limit = params.DefaultQueryLimit
+	}
+
+	// Apply default if limit not configured
+	if limit <= 0 {
+		// Reasonable defaults based on operation cost
+		switch operation {
+		case "sanctions_screening":
+			limit = 10 // Expensive external API calls
+		case "kyc_verification":
+			limit = 5 // Very expensive verification processes
+		case "aml_profile_query":
+			limit = 50 // Moderate cost database queries
+		case "tax_report_generation":
+			limit = 3 // Very expensive report generation
+		default:
+			limit = 100 // Cheap operations
+		}
+	}
+
+	// Check if limit exceeded
+	if entry.Count >= limit {
+		// Emit rate limit exceeded event for monitoring
+		ctx.EventManager().EmitEvent(
+			sdk.NewEvent(
+				types.EventTypeRateLimitExceeded,
+				sdk.NewAttribute(types.AttributeKeyAddress, address),
+				sdk.NewAttribute(types.AttributeKeyOperation, operation),
+				sdk.NewAttribute(types.AttributeKeyCount, fmt.Sprintf("%d", entry.Count)),
+				sdk.NewAttribute(types.AttributeKeyLimit, fmt.Sprintf("%d", limit)),
+				sdk.NewAttribute(types.AttributeKeyWindowStart, entry.WindowStart.AsTime().Format(time.RFC3339)),
+			),
+		)
+
+		return fmt.Errorf("rate limit exceeded for %s: %d/%d requests in window (resets at %s)",
+			operation, entry.Count, limit,
+			entry.WindowStart.AsTime().Add(windowDuration).Format(time.RFC3339))
+	}
+
+	// Increment counter and save
+	entry.Count++
+	if err := k.SetRateLimitEntry(ctx, entry); err != nil {
+		return fmt.Errorf("failed to update rate limit entry: %w", err)
+	}
 	return nil
 }

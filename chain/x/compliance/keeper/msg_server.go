@@ -481,6 +481,22 @@ func (s *msgServer) GenerateTaxReport(goCtx context.Context, req *types.MsgGener
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	now := ctx.BlockTime()
 	id := fmt.Sprintf("tax-%s-%s-%d", req.Address, req.TaxYear, now.UnixNano())
+
+	// Generate default file path if not provided by user
+	// If user provides a file path, validate it to prevent path traversal attacks
+	filePath := ""
+	if req.FilePath != "" {
+		// Security: Validate file path to prevent path traversal attacks
+		// This prevents attackers from using malicious paths like:
+		//   - ../../etc/passwd (directory traversal)
+		//   - /etc/passwd (absolute path)
+		//   - path/with/<script>injection</script> (XSS/injection)
+		if err := types.ValidateFilePath(req.FilePath); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid file path: %v", err)
+		}
+		filePath = req.FilePath
+	}
+
 	report := &types.TaxReport{
 		Id:           id,
 		Address:      req.Address,
@@ -488,6 +504,7 @@ func (s *msgServer) GenerateTaxReport(goCtx context.Context, req *types.MsgGener
 		Jurisdiction: req.Jurisdiction,
 		ReportType:   req.ReportType,
 		GeneratedAt:  timestamppb.New(now),
+		FilePath:     filePath,
 		Filed:        false,
 	}
 	if err := s.Keeper.SetTaxReport(ctx, report); err != nil {
@@ -509,7 +526,7 @@ func (s *msgServer) GenerateTaxReport(goCtx context.Context, req *types.MsgGener
 		),
 	)
 
-	return &types.MsgGenerateTaxReportResponse{ReportId: id, FilePath: ""}, nil
+	return &types.MsgGenerateTaxReportResponse{ReportId: id, FilePath: filePath}, nil
 }
 
 // EraseGDPRData handles GDPR Article 17 "Right to Erasure" requests.

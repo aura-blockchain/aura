@@ -119,8 +119,32 @@ func (am AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {
 	// TODO: add invariants if needed
 }
 
-// BeginBlock is a no-op.
-func (AppModule) BeginBlock(ctx sdk.Context) {}
+// BeginBlock processes expired KYC records at the start of each block.
+// This automatically marks KYC records as expired and emits events for monitoring.
+//
+// Processing includes:
+//   - Iterate through all KYC records
+//   - Check if expired (BlockTime > ExpiresAt)
+//   - Emit EventTypeKYCExpired for each expired record
+//
+// Security considerations:
+//   - Read-only iteration (does not modify state)
+//   - Gas-bounded: Limited processing per block
+//   - Time-based: Uses blockchain time (trustworthy)
+//   - Events provide audit trail for compliance
+//
+// Compliance:
+//   - FinCEN: Continuous monitoring of verification status
+//   - FATF: Ongoing due diligence enforcement
+//   - Provides immutable audit trail of expiry events
+//
+// Performance notes:
+//   - O(n) where n is total KYC records
+//   - Consider pagination if records exceed gas limit
+//   - Events are indexed for efficient queries
+func (am AppModule) BeginBlock(ctx sdk.Context) {
+	am.keeper.BeginBlocker(ctx)
+}
 
 // EndBlock is a no-op.
 func (AppModule) EndBlock(ctx sdk.Context) {}
