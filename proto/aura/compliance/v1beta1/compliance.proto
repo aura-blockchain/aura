@@ -41,18 +41,16 @@ enum SanctionsStatus {
   SANCTIONS_PENDING_REVIEW = 4;  // Under manual review
 }
 
-// KYCRecord represents a KYC verification record
+// KYCRecord represents a KYC verification record (GDPR-compliant)
+// PII is stored off-chain; only cryptographic commitments stored on-chain
 message KYCRecord {
   string address = 1;
   KYCLevel kyc_level = 2;
   string provider = 3;                              // KYC provider name
   google.protobuf.Timestamp verified_at = 4;
   google.protobuf.Timestamp expires_at = 5;
-  string verification_id = 6;                       // External verification ID
-  repeated string documents = 7;                    // Document types verified
-  string jurisdiction = 8;                          // User's jurisdiction
-  bool enhanced_due_diligence = 9;                 // EDD required
-  string risk_score = 10;                          // Risk score from provider
+  bytes pii_commitment = 6;                         // SHA-256 hash of off-chain PII data
+  bool enhanced_due_diligence = 7;                  // EDD required flag
 }
 
 // AMLProfile represents an AML risk profile
@@ -143,7 +141,8 @@ message SanctionsMatch {
   string remarks = 8;
 }
 
-// GDPRConsent represents GDPR consent record
+// GDPRConsent represents GDPR consent record (GDPR-compliant)
+// PII (IP address, user agent) removed - stored off-chain if needed for audit
 message GDPRConsent {
   string address = 1;
   string consent_type = 2;                        // data_processing, marketing, etc.
@@ -151,8 +150,7 @@ message GDPRConsent {
   google.protobuf.Timestamp consent_given_at = 4;
   google.protobuf.Timestamp consent_withdrawn_at = 5;
   string consent_version = 6;                     // Version of privacy policy
-  string ip_address = 7;                          // IP when consent given
-  string user_agent = 8;
+  bytes audit_commitment = 7;                     // SHA-256 hash for audit trail (optional)
 }
 
 // GDPRConsentList stores consents keyed by address
@@ -283,13 +281,14 @@ message QueryTaxReportResponse {
 }
 
 // Transaction messages
+// MsgSubmitKYC submits KYC verification with PII commitment (GDPR-compliant)
+// PII data (verification_id, documents, jurisdiction, risk_score) must be
+// stored off-chain by the provider. Only the cryptographic commitment is stored on-chain.
 message MsgSubmitKYC {
   string address = 1;
   KYCLevel kyc_level = 2;
   string provider = 3;
-  string verification_id = 4;
-  repeated string documents = 5;
-  string jurisdiction = 6;
+  bytes pii_commitment = 4;                       // SHA-256 hash of off-chain PII JSON
 }
 
 message MsgSubmitKYCResponse {
@@ -352,6 +351,19 @@ message MsgGenerateTaxReportResponse {
   string file_path = 2;
 }
 
+// MsgEraseGDPRData handles GDPR Article 17 "Right to Erasure" requests
+// This emits an event for off-chain systems to delete PII while maintaining
+// an immutable audit trail of the erasure request on-chain
+message MsgEraseGDPRData {
+  string address = 1;                             // Address requesting erasure
+  string erasure_reason = 2;                      // Reason for data erasure request
+}
+
+message MsgEraseGDPRDataResponse {
+  bool success = 1;
+  string erasure_event_id = 2;                    // Event ID for audit trail
+}
+
 // Query service exposes read-only compliance operations
 service Query {
   rpc KycRecord(QueryKYCRecordRequest) returns (QueryKYCRecordResponse);
@@ -368,5 +380,6 @@ service Msg {
   rpc ScreenSanctions(MsgScreenSanctions) returns (MsgScreenSanctionsResponse);
   rpc RecordGDPRConsent(MsgRecordGDPRConsent) returns (MsgRecordGDPRConsentResponse);
   rpc RequestGDPRData(MsgRequestGDPRData) returns (MsgRequestGDPRDataResponse);
+  rpc EraseGDPRData(MsgEraseGDPRData) returns (MsgEraseGDPRDataResponse);
   rpc GenerateTaxReport(MsgGenerateTaxReport) returns (MsgGenerateTaxReportResponse);
 }

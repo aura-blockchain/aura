@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"context"
 	"testing"
 
 	sdkmath "cosmossdk.io/math"
@@ -24,37 +25,37 @@ func NewMockStakingKeeperWithStake() *MockStakingKeeperWithStake {
 	}
 }
 
-func (m *MockStakingKeeperWithStake) GetDelegatorBonded(ctx sdk.Context, delegator sdk.AccAddress) sdkmath.Int {
+func (m *MockStakingKeeperWithStake) GetDelegatorBonded(ctx context.Context, delegator sdk.AccAddress) (sdkmath.Int, error) {
 	if amount, ok := m.delegatorBonded[delegator.String()]; ok {
-		return amount
+		return amount, nil
 	}
-	return sdkmath.ZeroInt()
+	return sdkmath.ZeroInt(), nil
 }
 
 func (m *MockStakingKeeperWithStake) SetDelegatorBonded(delegator sdk.AccAddress, amount sdkmath.Int) {
 	m.delegatorBonded[delegator.String()] = amount
 }
 
-func (m *MockStakingKeeperWithStake) TotalBondedTokens(ctx sdk.Context) sdkmath.Int {
+func (m *MockStakingKeeperWithStake) TotalBondedTokens(ctx context.Context) (sdkmath.Int, error) {
 	total := sdkmath.ZeroInt()
 	for _, amount := range m.delegatorBonded {
 		total = total.Add(amount)
 	}
-	return total
+	return total, nil
 }
 
 // MockBankKeeperForVotingPower is a simple mock for voting power tests
 type MockBankKeeperForVotingPower struct{}
 
-func (m *MockBankKeeperForVotingPower) SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
+func (m *MockBankKeeperForVotingPower) SendCoinsFromAccountToModule(ctx context.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
 	return nil
 }
 
-func (m *MockBankKeeperForVotingPower) SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
+func (m *MockBankKeeperForVotingPower) SendCoinsFromModuleToAccount(ctx context.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
 	return nil
 }
 
-func (m *MockBankKeeperForVotingPower) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin {
+func (m *MockBankKeeperForVotingPower) GetBalance(ctx context.Context, addr sdk.AccAddress, denom string) sdk.Coin {
 	return sdk.NewCoin(denom, sdkmath.ZeroInt())
 }
 

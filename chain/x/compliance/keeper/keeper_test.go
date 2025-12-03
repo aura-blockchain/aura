@@ -183,11 +183,8 @@ func TestKeeper_FullKYCWorkflow(t *testing.T) {
 		Provider:             "provider1",
 		VerifiedAt:           timestamppb.New(now),
 		ExpiresAt:            timestamppb.New(now.Add(365 * 24 * time.Hour)),
-		VerificationId:       "ver123",
-		Documents:            []string{"passport"},
-		Jurisdiction:         "US",
+		PiiCommitment: make([]byte, 32),
 		EnhancedDueDiligence: false,
-		RiskScore:            "low",
 	}
 
 	err := keeper.SetKYCRecord(ctx, record)
@@ -332,13 +329,13 @@ func (m *mockKYCProvider) VerifyIdentity(address, documentType string, documents
 		KycLevel:       types.KYCLevel_KYC_LEVEL_BASIC,
 		Provider:       "mock",
 		VerifiedAt:     timestamppb.Now(),
-		VerificationId: "mock-ver-123",
+		PiiCommitment: make([]byte, 32),
 	}, nil
 }
 
 func (m *mockKYCProvider) GetVerificationStatus(verificationID string) (*types.KYCRecord, error) {
 	return &types.KYCRecord{
-		VerificationId: verificationID,
+		PiiCommitment: make([]byte, 32),
 		KycLevel:       types.KYCLevel_KYC_LEVEL_BASIC,
 	}, nil
 }

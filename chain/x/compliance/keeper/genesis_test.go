@@ -30,15 +30,17 @@ func (suite *GenesisTestSuite) TestInitGenesis_DefaultAndCustom() {
 	// Custom populated genesis
 	addr := suite.addr("kyc-genesis")
 	params := types.DefaultParams()
+	piiCommitment := make([]byte, 32)
+	copy(piiCommitment, []byte("test_commitment_hash_32_bytes"))
 	genesis := &compliancepb.GenesisState{
 		Params: &params,
 		KycRecords: []*compliancepb.KYCRecord{
 			{
-				Address:        addr,
-				KycLevel:       compliancepb.KYCLevel_KYC_LEVEL_BASIC,
-				VerificationId: "kyc-1",
-				VerifiedAt:     timestamppb.Now(),
-				ExpiresAt:      timestamppb.New(time.Now().Add(24 * time.Hour)),
+				Address:       addr,
+				KycLevel:      compliancepb.KYCLevel_KYC_LEVEL_BASIC,
+				PiiCommitment: piiCommitment,
+				VerifiedAt:    timestamppb.Now(),
+				ExpiresAt:     timestamppb.New(time.Now().Add(24 * time.Hour)),
 			},
 		},
 		AmlProfiles: []*compliancepb.AMLProfile{

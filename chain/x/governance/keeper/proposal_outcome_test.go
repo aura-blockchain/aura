@@ -152,7 +152,7 @@ func TestProposalOutcome_SecurityScenarios(t *testing.T) {
 
 	// Scenario 5: Only abstain votes - should reject
 	t.Run("OnlyAbstainVotes", func(t *testing.T) {
-		abstainVotes := sdkmath.NewInt(400_000)
+		_ = sdkmath.NewInt(400_000) // abstainVotes
 		votesExcludingAbstain := sdkmath.ZeroInt()
 
 		require.True(t, votesExcludingAbstain.IsZero(), "With only abstain, non-abstain votes should be zero")

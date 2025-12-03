@@ -51,12 +51,15 @@ func (suite *InvariantsTestSuite) TestKYCRecordConsistencyInvariant() {
 	inv := KYCRecordConsistencyInvariant(suite.Keeper)
 
 	validAddr := suite.addr("kyc-valid")
+	piiCommitment := make([]byte, 32)
+	copy(piiCommitment, []byte("test_commitment_hash_32_bytes"))
+
 	validRecord := &types.KYCRecord{
-		Address:        validAddr,
-		VerificationId: "kyc-123",
-		KycLevel:       types.KYCLevel_KYC_LEVEL_BASIC,
-		VerifiedAt:     timestamppb.Now(),
-		ExpiresAt:      timestamppb.New(time.Now().Add(time.Hour)),
+		Address:       validAddr,
+		PiiCommitment: piiCommitment,
+		KycLevel:      types.KYCLevel_KYC_LEVEL_BASIC,
+		VerifiedAt:    timestamppb.Now(),
+		ExpiresAt:     timestamppb.New(time.Now().Add(time.Hour)),
 	}
 	suite.Require().NoError(suite.Keeper.SetKYCRecord(ctx, validRecord))
 
@@ -66,10 +69,10 @@ func (suite *InvariantsTestSuite) TestKYCRecordConsistencyInvariant() {
 
 	// Invalid address
 	invalidRecord := &types.KYCRecord{
-		Address:        "invalid-address",
-		VerificationId: "kyc-456",
-		KycLevel:       types.KYCLevel_KYC_LEVEL_BASIC,
-		VerifiedAt:     timestamppb.Now(),
+		Address:       "invalid-address",
+		PiiCommitment: piiCommitment,
+		KycLevel:      types.KYCLevel_KYC_LEVEL_BASIC,
+		VerifiedAt:    timestamppb.Now(),
 	}
 	suite.Require().NoError(suite.Keeper.SetKYCRecord(ctx, invalidRecord))
 
@@ -82,18 +85,18 @@ func (suite *InvariantsTestSuite) TestKYCRecordConsistencyInvariant() {
 	ctx = suite.SdkCtx
 	inv = KYCRecordConsistencyInvariant(suite.Keeper)
 
-	// Empty verification ID
-	emptyVerif := &types.KYCRecord{
-		Address:        validAddr,
-		VerificationId: "",
-		KycLevel:       types.KYCLevel_KYC_LEVEL_BASIC,
-		VerifiedAt:     timestamppb.Now(),
+	// Invalid PII commitment length
+	emptyCommitment := &types.KYCRecord{
+		Address:       validAddr,
+		PiiCommitment: []byte("short"),
+		KycLevel:      types.KYCLevel_KYC_LEVEL_BASIC,
+		VerifiedAt:    timestamppb.Now(),
 	}
-	suite.Require().NoError(suite.Keeper.SetKYCRecord(ctx, emptyVerif))
+	suite.Require().NoError(suite.Keeper.SetKYCRecord(ctx, emptyCommitment))
 
 	msg, broken = inv(ctx)
 	suite.True(broken)
-	suite.Contains(msg, "empty verification ID")
+	suite.Contains(msg, "invalid PII commitment length")
 
 	// Reset context
 	suite.SetupTest()
@@ -102,10 +105,10 @@ func (suite *InvariantsTestSuite) TestKYCRecordConsistencyInvariant() {
 
 	// Invalid level
 	badLevel := &types.KYCRecord{
-		Address:        validAddr,
-		VerificationId: "kyc-789",
-		KycLevel:       types.KYCLevel(99),
-		VerifiedAt:     timestamppb.Now(),
+		Address:       validAddr,
+		PiiCommitment: piiCommitment,
+		KycLevel:      types.KYCLevel(99),
+		VerifiedAt:    timestamppb.Now(),
 	}
 	suite.Require().NoError(suite.Keeper.SetKYCRecord(ctx, badLevel))
 
@@ -120,9 +123,9 @@ func (suite *InvariantsTestSuite) TestKYCRecordConsistencyInvariant() {
 
 	// Nil verified_at
 	nilVerified := &types.KYCRecord{
-		Address:        validAddr,
-		VerificationId: "kyc-101",
-		KycLevel:       types.KYCLevel_KYC_LEVEL_BASIC,
+		Address:       validAddr,
+		PiiCommitment: piiCommitment,
+		KycLevel:      types.KYCLevel_KYC_LEVEL_BASIC,
 	}
 	suite.Require().NoError(suite.Keeper.SetKYCRecord(ctx, nilVerified))
 

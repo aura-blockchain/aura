@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"context"
 	"testing"
 
 	sdkmath "cosmossdk.io/math"
@@ -19,33 +20,33 @@ type MockStakingKeeperTest struct {
 	delegatorBonded map[string]sdkmath.Int
 }
 
-func (m *MockStakingKeeperTest) GetDelegatorBonded(ctx sdk.Context, delegator sdk.AccAddress) sdkmath.Int {
+func (m *MockStakingKeeperTest) GetDelegatorBonded(ctx context.Context, delegator sdk.AccAddress) (sdkmath.Int, error) {
 	if amount, ok := m.delegatorBonded[delegator.String()]; ok {
-		return amount
+		return amount, nil
 	}
-	return sdkmath.ZeroInt()
+	return sdkmath.ZeroInt(), nil
 }
 
-func (m *MockStakingKeeperTest) TotalBondedTokens(ctx sdk.Context) sdkmath.Int {
+func (m *MockStakingKeeperTest) TotalBondedTokens(ctx context.Context) (sdkmath.Int, error) {
 	total := sdkmath.ZeroInt()
 	for _, amount := range m.delegatorBonded {
 		total = total.Add(amount)
 	}
-	return total
+	return total, nil
 }
 
 // MockBankKeeperTest for tests (minimal implementation)
 type MockBankKeeperTest struct{}
 
-func (m *MockBankKeeperTest) SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
+func (m *MockBankKeeperTest) SendCoinsFromAccountToModule(ctx context.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
 	return nil
 }
 
-func (m *MockBankKeeperTest) SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
+func (m *MockBankKeeperTest) SendCoinsFromModuleToAccount(ctx context.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
 	return nil
 }
 
-func (m *MockBankKeeperTest) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin {
+func (m *MockBankKeeperTest) GetBalance(ctx context.Context, addr sdk.AccAddress, denom string) sdk.Coin {
 	return sdk.NewCoin(denom, sdkmath.ZeroInt())
 }
 
