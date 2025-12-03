@@ -395,11 +395,11 @@ func (k Keeper) verifyPawAddressOwnership(ctx sdk.Context, auraAddress string, p
 	sigBytes := signature[:64]
 
 	// Attempt to recover the public key from the signature
-	// We try all possible recovery IDs (0-3) to find the correct one
+	// We try all possible recovery IDs (0-7) to find the correct one
 	var recoveredPubKey []byte
-	for recID := byte(0); recID <= 3; recID++ {
+	for recID := byte(0); recID <= 7; recID++ {
 		// Use the provided recovery ID first, then try others
-		tryRecID := (recoveryID + recID) % 4
+		tryRecID := (recoveryID + recID) % 8
 
 		// Attempt recovery with this ID
 		pubKey, err := k.recoverPubKeyFromSignature(msgHash[:], sigBytes, tryRecID)
@@ -489,12 +489,13 @@ func (k Keeper) verifyXaiAddressOwnership(ctx sdk.Context, auraAddress string, x
 	msgHash := sha256.Sum256([]byte(message))
 
 	// Extract recovery ID (V) from the last byte
-	// Recovery ID should be 0-3, but some implementations use 27-30
+	// Recovery ID can be 0-7 (0-3 for uncompressed, 4-7 for compressed)
+	// Some implementations add 27, making it 27-34
 	recoveryID := signature[64]
 	if recoveryID >= 27 {
 		recoveryID -= 27
 	}
-	if recoveryID > 3 {
+	if recoveryID > 7 {
 		ctx.Logger().Error("Invalid recovery ID in XAI signature",
 			"recovery_id", recoveryID,
 			"xai_address", xaiAddress)
@@ -505,11 +506,11 @@ func (k Keeper) verifyXaiAddressOwnership(ctx sdk.Context, auraAddress string, x
 	sigBytes := signature[:64]
 
 	// Attempt to recover the public key from the signature
-	// We try all possible recovery IDs (0-3) to find the correct one
+	// We try all possible recovery IDs (0-7) to find the correct one
 	var recoveredPubKey []byte
-	for recID := byte(0); recID <= 3; recID++ {
+	for recID := byte(0); recID <= 7; recID++ {
 		// Use the provided recovery ID first, then try others
-		tryRecID := (recoveryID + recID) % 4
+		tryRecID := (recoveryID + recID) % 8
 
 		// Attempt recovery with this ID
 		pubKey, err := k.recoverPubKeyFromSignature(msgHash[:], sigBytes, tryRecID)
@@ -2271,8 +2272,8 @@ func (k Keeper) recoverPubKeyFromSignature(msgHash []byte, signature []byte, rec
 	if len(signature) != 64 {
 		return nil, fmt.Errorf("invalid signature length: expected 64, got %d", len(signature))
 	}
-	if recoveryID > 3 {
-		return nil, fmt.Errorf("invalid recovery ID: %d (must be 0-3)", recoveryID)
+	if recoveryID > 7 {
+		return nil, fmt.Errorf("invalid recovery ID: %d (must be 0-7)", recoveryID)
 	}
 
 	// Parse R and S from signature
