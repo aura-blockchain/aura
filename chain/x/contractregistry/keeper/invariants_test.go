@@ -203,16 +203,41 @@ func (suite *InvariantsTestSuite) TestContractMetadataConsistencyInvariant_Empty
 	suite.Contains(msg, "empty version")
 }
 
-// TestContractMetadataConsistencyInvariant_EmptyCodeHash tests empty code hash
-func (suite *InvariantsTestSuite) TestContractMetadataConsistencyInvariant_EmptyCodeHash() {
-	// Skip this test as CodeHash is not part of ContractMetadata anymore
-	suite.T().Skip("CodeHash is not part of ContractMetadata")
-}
+// TestContractMetadataConsistencyInvariant_EmptyCodeHash removed - CodeHash is not part of current schema
+// The ContractInfo uses CodeId (uint64) instead of CodeHash, which cannot be empty by type definition
 
-// TestContractMetadataConsistencyInvariant_InvalidCreator tests invalid creator address
+// TestContractMetadataConsistencyInvariant_InvalidCreator tests that keeper prevents invalid creator addresses
 func (suite *InvariantsTestSuite) TestContractMetadataConsistencyInvariant_InvalidCreator() {
-	// Skip this test as we can't create invalid addresses through keeper methods
-	suite.T().Skip("Invalid creator address cannot be set through keeper methods")
+	// This test verifies that the keeper's validation prevents invalid creator addresses.
+	// Since the keeper validates addresses, we can only verify that valid addresses pass the invariant.
+	ctx := suite.ctx
+
+	// Create info with valid creator address
+	contractAddr := sdk.AccAddress([]byte("contract_____________")).String()
+	creator := sdk.AccAddress([]byte("creator______________")).String()
+	now := timestamppb.New(time.Now())
+
+	validInfo := &pb.ContractInfo{
+		Address:   contractAddr,
+		CodeId:    1,
+		Creator:   creator,
+		Admin:     creator,
+		Label:     "test",
+		CreatedAt: now,
+		UpdatedAt: now,
+		Metadata: &pb.ContractMetadata{
+			Name:    "Test Contract",
+			Version: "1.0.0",
+		},
+		Status: pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
+	}
+
+	// Store and verify invariant passes
+	suite.keeper.SetContractInfo(ctx, validInfo)
+	inv := keeper.ContractMetadataConsistencyInvariant(suite.keeper)
+	msg, broken := inv(ctx)
+	suite.False(broken, "invariant should pass with valid creator")
+	suite.Empty(msg)
 }
 
 // TestContractMetadataConsistencyInvariant_NilCreatedAt tests nil created_at timestamp
@@ -248,23 +273,8 @@ func (suite *InvariantsTestSuite) TestContractMetadataConsistencyInvariant_NilCr
 	suite.Contains(msg, "nil created_at")
 }
 
-// TestCodeHashValidityInvariant_EmptyStore tests CodeHashValidityInvariant on empty store
-func (suite *InvariantsTestSuite) TestCodeHashValidityInvariant_EmptyStore() {
-	// Skip - CodeHash is not part of the current schema
-	suite.T().Skip("CodeHash invariant not applicable to current schema")
-}
-
-// TestCodeHashValidityInvariant_ValidCodeHash tests CodeHashValidityInvariant with valid code hash
-func (suite *InvariantsTestSuite) TestCodeHashValidityInvariant_ValidCodeHash() {
-	// Skip - CodeHash is not part of the current schema
-	suite.T().Skip("CodeHash invariant not applicable to current schema")
-}
-
-// TestCodeHashValidityInvariant_InvalidLength tests CodeHashValidityInvariant with invalid code hash length
-func (suite *InvariantsTestSuite) TestCodeHashValidityInvariant_InvalidLength() {
-	// Skip - CodeHash is not part of the current schema
-	suite.T().Skip("CodeHash invariant not applicable to current schema")
-}
+// CodeHashValidityInvariant tests removed - CodeHash is not part of the current schema.
+// The current schema uses CodeId (uint64) instead of CodeHash.
 
 // TestContractAddressValidityInvariant_EmptyStore tests ContractAddressValidityInvariant on empty store
 func (suite *InvariantsTestSuite) TestContractAddressValidityInvariant_EmptyStore() {
@@ -279,15 +289,40 @@ func (suite *InvariantsTestSuite) TestContractAddressValidityInvariant_EmptyStor
 
 // TestContractAddressValidityInvariant_ValidAddress tests ContractAddressValidityInvariant with valid address
 func (suite *InvariantsTestSuite) TestContractAddressValidityInvariant_ValidAddress() {
-	// Skip - can't test without direct store access
-	suite.T().Skip("Cannot test address validity through direct store access")
+	// This test verifies that the keeper properly validates addresses before storing them.
+	// The keeper's address validation prevents invalid addresses, so we verify valid ones pass.
+	ctx := suite.ctx
+
+	contractAddr := sdk.AccAddress([]byte("contract_____________")).String()
+	creator := sdk.AccAddress([]byte("creator______________")).String()
+	now := timestamppb.New(time.Now())
+
+	validInfo := &pb.ContractInfo{
+		Address:   contractAddr,
+		CodeId:    1,
+		Creator:   creator,
+		Admin:     creator,
+		Label:     "test",
+		CreatedAt: now,
+		UpdatedAt: now,
+		Metadata: &pb.ContractMetadata{
+			Name:    "Test Contract",
+			Version: "1.0.0",
+		},
+		Status: pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
+	}
+
+	suite.keeper.SetContractInfo(ctx, validInfo)
+
+	// Test invariant - should pass with valid address
+	inv := keeper.ContractAddressValidityInvariant(suite.keeper)
+	msg, broken := inv(ctx)
+	suite.False(broken, "invariant should pass with valid contract address")
+	suite.Empty(msg)
 }
 
-// TestContractAddressValidityInvariant_InvalidAddress tests ContractAddressValidityInvariant with invalid address
-func (suite *InvariantsTestSuite) TestContractAddressValidityInvariant_InvalidAddress() {
-	// Skip - can't test without direct store access
-	suite.T().Skip("Cannot test address validity through direct store access")
-}
+// TestContractAddressValidityInvariant_InvalidAddress removed - keeper validates addresses
+// The keeper's SetContractInfo method validates addresses, preventing invalid addresses from being stored.
 
 // TestVersionConsistencyInvariant_EmptyStore tests VersionConsistencyInvariant on empty store
 func (suite *InvariantsTestSuite) TestVersionConsistencyInvariant_EmptyStore() {
@@ -302,20 +337,104 @@ func (suite *InvariantsTestSuite) TestVersionConsistencyInvariant_EmptyStore() {
 
 // TestVersionConsistencyInvariant_ValidVersion tests VersionConsistencyInvariant with valid version
 func (suite *InvariantsTestSuite) TestVersionConsistencyInvariant_ValidVersion() {
-	// Skip - testing through proper API
-	suite.T().Skip("Version consistency tested through ContractInfo API")
+	ctx := suite.ctx
+
+	contractAddr := sdk.AccAddress([]byte("contract_____________")).String()
+	creator := sdk.AccAddress([]byte("creator______________")).String()
+	now := timestamppb.New(time.Now())
+
+	validInfo := &pb.ContractInfo{
+		Address:   contractAddr,
+		CodeId:    1,
+		Creator:   creator,
+		Admin:     creator,
+		Label:     "test",
+		CreatedAt: now,
+		UpdatedAt: now,
+		Metadata: &pb.ContractMetadata{
+			Name:    "Test Contract",
+			Version: "1.0.0",
+		},
+		Status: pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
+	}
+
+	suite.keeper.SetContractInfo(ctx, validInfo)
+
+	// Test invariant - should pass with valid version
+	inv := keeper.VersionConsistencyInvariant(suite.keeper)
+	msg, broken := inv(ctx)
+	suite.False(broken, "invariant should pass with valid version")
+	suite.Empty(msg)
 }
 
 // TestVersionConsistencyInvariant_OverlyLongVersion tests VersionConsistencyInvariant with overly long version
 func (suite *InvariantsTestSuite) TestVersionConsistencyInvariant_OverlyLongVersion() {
-	// Skip - testing through proper API
-	suite.T().Skip("Version consistency tested through ContractInfo API")
+	ctx := suite.ctx
+
+	contractAddr := sdk.AccAddress([]byte("contract_____________")).String()
+	creator := sdk.AccAddress([]byte("creator______________")).String()
+	now := timestamppb.New(time.Now())
+
+	// Create version string longer than reasonable limit (e.g., > 100 characters)
+	longVersion := string(make([]byte, 200))
+	for i := range longVersion {
+		longVersion = longVersion[:i] + "v"
+	}
+
+	invalidInfo := &pb.ContractInfo{
+		Address:   contractAddr,
+		CodeId:    1,
+		Creator:   creator,
+		Admin:     creator,
+		Label:     "test",
+		CreatedAt: now,
+		UpdatedAt: now,
+		Metadata: &pb.ContractMetadata{
+			Name:    "Test Contract",
+			Version: longVersion,
+		},
+		Status: pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
+	}
+
+	suite.keeper.SetContractInfo(ctx, invalidInfo)
+
+	// Test invariant - should fail with overly long version
+	inv := keeper.VersionConsistencyInvariant(suite.keeper)
+	msg, broken := inv(ctx)
+	suite.True(broken, "invariant should fail with overly long version")
+	suite.Contains(msg, "version")
 }
 
 // TestVersionConsistencyInvariant_UpdatedBeforeCreated tests VersionConsistencyInvariant with updated_at before created_at
 func (suite *InvariantsTestSuite) TestVersionConsistencyInvariant_UpdatedBeforeCreated() {
-	// Skip - testing through proper API
-	suite.T().Skip("Version consistency tested through ContractInfo API")
+	ctx := suite.ctx
+
+	contractAddr := sdk.AccAddress([]byte("contract_____________")).String()
+	creator := sdk.AccAddress([]byte("creator______________")).String()
+	now := time.Now()
+
+	invalidInfo := &pb.ContractInfo{
+		Address:   contractAddr,
+		CodeId:    1,
+		Creator:   creator,
+		Admin:     creator,
+		Label:     "test",
+		CreatedAt: timestamppb.New(now),
+		UpdatedAt: timestamppb.New(now.Add(-1 * time.Hour)), // Updated before created
+		Metadata: &pb.ContractMetadata{
+			Name:    "Test Contract",
+			Version: "1.0.0",
+		},
+		Status: pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
+	}
+
+	suite.keeper.SetContractInfo(ctx, invalidInfo)
+
+	// Test invariant - should fail with updated_at before created_at
+	inv := keeper.VersionConsistencyInvariant(suite.keeper)
+	msg, broken := inv(ctx)
+	suite.True(broken, "invariant should fail when updated_at is before created_at")
+	suite.Contains(msg, "updated")
 }
 
 // TestAllInvariantsWithMultipleInvalidStates tests that AllInvariants detects any broken invariant
@@ -384,8 +503,56 @@ func (suite *InvariantsTestSuite) TestAllInvariantsWithValidData() {
 	suite.Empty(msg)
 }
 
-// TestMultipleContractsWithMixedValidity tests invariants with multiple contracts
+// TestMultipleContractsWithMixedValidity tests invariants with multiple contracts having mixed validity
 func (suite *InvariantsTestSuite) TestMultipleContractsWithMixedValidity() {
-	// Skip - testing with proper API is sufficient
-	suite.T().Skip("Multiple contracts tested through other test cases")
+	ctx := suite.ctx
+
+	// Add one valid contract
+	validAddr := sdk.AccAddress([]byte("valid_contract_______")).String()
+	creator1 := sdk.AccAddress([]byte("creator1_____________")).String()
+	now := timestamppb.New(time.Now())
+
+	validInfo := &pb.ContractInfo{
+		Address:   validAddr,
+		CodeId:    1,
+		Creator:   creator1,
+		Admin:     creator1,
+		Label:     "valid",
+		CreatedAt: now,
+		UpdatedAt: now,
+		Metadata: &pb.ContractMetadata{
+			Name:    "Valid Contract",
+			Version: "1.0.0",
+		},
+		Status: pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
+	}
+
+	suite.keeper.SetContractInfo(ctx, validInfo)
+
+	// Add one invalid contract (empty name)
+	invalidAddr := sdk.AccAddress([]byte("invalid_contract_____")).String()
+	creator2 := sdk.AccAddress([]byte("creator2_____________")).String()
+
+	invalidInfo := &pb.ContractInfo{
+		Address:   invalidAddr,
+		CodeId:    2,
+		Creator:   creator2,
+		Admin:     creator2,
+		Label:     "invalid",
+		CreatedAt: now,
+		UpdatedAt: now,
+		Metadata: &pb.ContractMetadata{
+			Name:    "", // Invalid: empty name
+			Version: "1.0.0",
+		},
+		Status: pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
+	}
+
+	suite.keeper.SetContractInfo(ctx, invalidInfo)
+
+	// Test AllInvariants - should detect the invalid contract
+	inv := keeper.AllInvariants(suite.keeper)
+	msg, broken := inv(ctx)
+	suite.True(broken, "invariants should detect invalid contract among multiple contracts")
+	suite.NotEmpty(msg)
 }

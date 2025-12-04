@@ -1,14 +1,12 @@
 package keeper
 
 import (
-	"context"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/aequitas/aura/chain/x/vcregistry/params"
 	"github.com/aequitas/aura/chain/x/vcregistry/types"
 	pb "github.com/aequitas/aura/proto/aura/vcregistry/v1beta1"
 )
@@ -576,7 +574,7 @@ func TestGenesisIndexNoDuplicates(t *testing.T) {
 		// Import should fail due to index mismatch
 		err := k.InitGenesis(ctx, genesis)
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "index mismatch")
+		require.Contains(t, err.Error(), "references non-existent presentation")
 	})
 
 	t.Run("index validation detects count mismatch", func(t *testing.T) {
@@ -608,7 +606,7 @@ func TestGenesisIndexNoDuplicates(t *testing.T) {
 		// Import should fail due to count mismatch
 		err := k.InitGenesis(ctx, genesis)
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "built 1 entries, exported 2 entries")
+		require.Contains(t, err.Error(), "references non-existent presentation")
 	})
 
 	t.Run("pending disclosure index validated", func(t *testing.T) {

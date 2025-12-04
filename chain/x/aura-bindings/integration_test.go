@@ -30,10 +30,13 @@ func TestIntegrationTestSuite(t *testing.T) {
 }
 
 func (s *IntegrationTestSuite) SetupTest() {
-	s.T().Skip("integration test disabled until full app wiring is available in tests")
-
+	// Initialize app with proper context and genesis state
 	s.App = app.NewApp()
-	s.Ctx = s.App.NewUncachedContext(false, tmproto.Header{Time: time.Now()})
+	s.Require().NotNil(s.App, "app should not be nil")
+	s.Require().NotNil(s.App.WasmKeeper, "wasm keeper should not be nil")
+
+	// Create context with proper block header (using NewUncachedContext for testing as in app_wasm_test.go)
+	s.Ctx = s.App.NewUncachedContext(true, sdk.NewBlockHeader())
 	s.MsgServer = keeper.NewMsgServerImpl(s.App.WasmKeeper)
 
 	// Set up creator account with funds

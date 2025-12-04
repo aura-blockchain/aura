@@ -377,6 +377,7 @@ func (k Keeper) GetInflationAlert(ctx context.Context, alertID string) (*types.I
 }
 
 // IterateInflationAlerts iterates over all inflation alerts
+// The callback should return true to stop iteration, false to continue
 func (k Keeper) IterateInflationAlerts(ctx context.Context, cb func(alert *types.InflationAlert) bool) error {
 	store := k.storeService.OpenKVStore(ctx)
 	iterator, err := store.Iterator(types.InflationAlertPrefix, storeprefixend(types.InflationAlertPrefix))
@@ -390,8 +391,8 @@ func (k Keeper) IterateInflationAlerts(ctx context.Context, cb func(alert *types
 		if err := k.cdc.Unmarshal(iterator.Value(), &alert); err != nil {
 			return err
 		}
-		if !cb(&alert) {
-			break
+		if cb(&alert) {
+			break // Callback returned true = stop iteration
 		}
 	}
 	return nil
@@ -432,6 +433,7 @@ func (k Keeper) GetLargeTxRecord(ctx context.Context, txHash string) (*types.Lar
 }
 
 // IterateLargeTxRecords iterates over all large tx records
+// The callback should return true to stop iteration, false to continue
 func (k Keeper) IterateLargeTxRecords(ctx context.Context, cb func(record *types.LargeTxRecord) bool) error {
 	store := k.storeService.OpenKVStore(ctx)
 	iterator, err := store.Iterator(types.LargeTxRecordPrefix, storeprefixend(types.LargeTxRecordPrefix))
@@ -445,8 +447,8 @@ func (k Keeper) IterateLargeTxRecords(ctx context.Context, cb func(record *types
 		if err := k.cdc.Unmarshal(iterator.Value(), &record); err != nil {
 			return err
 		}
-		if !cb(&record) {
-			break
+		if cb(&record) {
+			break // Callback returned true = stop iteration
 		}
 	}
 	return nil
@@ -530,6 +532,7 @@ func (k Keeper) GetUserMEVBalance(ctx context.Context, address string) (string, 
 }
 
 // IterateUserMEVBalances iterates over all user MEV balances
+// The callback should return true to stop iteration, false to continue
 func (k Keeper) IterateUserMEVBalances(ctx context.Context, cb func(address string, balance string) bool) error {
 	store := k.storeService.OpenKVStore(ctx)
 	iterator, err := store.Iterator(types.UserMEVBalancePrefix, storeprefixend(types.UserMEVBalancePrefix))
@@ -544,8 +547,8 @@ func (k Keeper) IterateUserMEVBalances(ctx context.Context, cb func(address stri
 		address := string(key[len(types.UserMEVBalancePrefix):])
 		balance := string(iterator.Value())
 
-		if !cb(address, balance) {
-			break
+		if cb(address, balance) {
+			break // Callback returned true = stop iteration
 		}
 	}
 	return nil
