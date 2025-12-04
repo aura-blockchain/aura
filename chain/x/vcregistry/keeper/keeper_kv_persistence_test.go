@@ -2,18 +2,24 @@ package keeper
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
+	"cosmossdk.io/log"
+	"cosmossdk.io/store"
+	"cosmossdk.io/store/metrics"
 	storetypes "cosmossdk.io/store/types"
-	"github.com/aequitas/aura/chain/x/vcregistry/params"
-	"github.com/aequitas/aura/chain/x/vcregistry/types"
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/aequitas/aura/chain/x/vcregistry/params"
+	"github.com/aequitas/aura/chain/x/vcregistry/types"
 )
 
 // setupKeeperForTest creates a keeper with KV store for testing
@@ -25,9 +31,14 @@ func setupKeeperForTest(t *testing.T) (*Keeper, sdk.Context) {
 	// Create store key
 	storeKey := storetypes.NewKVStoreKey(types.StoreKey)
 
-	// Create in-memory store
-	stateStore := runtime.NewKVStoreService(storeKey)
-	ctx := sdk.NewContext(nil, false, nil).WithKVStoreService(stateStore)
+	// Create in-memory state store (CommitMultiStore)
+	db := dbm.NewMemDB()
+	stateStore := store.NewCommitMultiStore(db, log.NewNopLogger(), metrics.NewNoOpMetrics())
+	stateStore.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, db)
+	require.NoError(t, stateStore.LoadLatestVersion())
+
+	// Create context with proper Cosmos SDK v0.50+ signature
+	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
 
 	// Create params store
 	paramStore := params.NewStore(*types.DefaultParams())
@@ -50,7 +61,7 @@ func TestVCRecord_KVPersistence(t *testing.T) {
 	vcRecord := types.VCRecord{
 		VcId:          "vc-test-123",
 		HolderAddress: "holder1",
-		VcType:        types.VCTypeIdentity,
+		VcType:        types.VCType_VC_TYPE_VERIFIED_HUMAN,
 		Status:        types.VCStatus_VC_STATUS_ACTIVE,
 		IssuedAt:      timestamppb.New(time.Now()),
 		ExpiresAt:     timestamppb.New(time.Now().Add(365 * 24 * time.Hour)),
@@ -81,7 +92,7 @@ func TestVCRevocation_KVPersistence(t *testing.T) {
 	vcRecord := types.VCRecord{
 		VcId:          "vc-revoke-test",
 		HolderAddress: "holder1",
-		VcType:        types.VCTypeIdentity,
+		VcType:        types.VCType_VC_TYPE_VERIFIED_HUMAN,
 		Status:        types.VCStatus_VC_STATUS_ACTIVE,
 		IssuedAt:      timestamppb.New(time.Now()),
 	}
@@ -89,7 +100,7 @@ func TestVCRevocation_KVPersistence(t *testing.T) {
 	require.NoError(t, err)
 
 	// Revoke VC
-	err = keeper.RevokeVC(ctx, "vc-revoke-test", types.RevocationReasonCompromised, "revoker1", "test evidence")
+	err = keeper.RevokeVC(ctx, "vc-revoke-test", types.RevocationReason_REVOCATION_REASON_SECURITY_COMPROMISE, "revoker1", "test evidence")
 	require.NoError(t, err)
 
 	// Check revocation
@@ -100,7 +111,7 @@ func TestVCRevocation_KVPersistence(t *testing.T) {
 	revRecord, ok := keeper.GetRevocationRecord(ctx, "vc-revoke-test")
 	require.True(t, ok)
 	require.Equal(t, "vc-revoke-test", revRecord.VcId)
-	require.Equal(t, types.RevocationReasonCompromised, revRecord.Reason)
+	require.Equal(t, types.RevocationReason_REVOCATION_REASON_SECURITY_COMPROMISE, revRecord.Reason)
 	require.Equal(t, "revoker1", revRecord.Revoker)
 
 	// Check VC status updated
@@ -121,9 +132,9 @@ func TestDIDDocument_KVPersistence(t *testing.T) {
 	// Register DID
 	verificationMethods := []*types.VerificationMethod{
 		{
-			MethodId:   "key-1",
-			MethodType: "Ed25519VerificationKey2020",
-			PublicKey:  []byte("test-public-key"),
+			Id:        "key-1",
+			Type:      "Ed25519VerificationKey2020",
+			PublicKey: []byte("test-public-key"),
 		},
 	}
 
@@ -145,9 +156,9 @@ func TestDIDDocument_KVPersistence(t *testing.T) {
 	// Update DID
 	newMethods := []*types.VerificationMethod{
 		{
-			MethodId:   "key-2",
-			MethodType: "Ed25519VerificationKey2020",
-			PublicKey:  []byte("new-public-key"),
+			Id:        "key-2",
+			Type:      "Ed25519VerificationKey2020",
+			PublicKey: []byte("new-public-key"),
 		},
 	}
 	err = keeper.UpdateDIDDocument(ctx, "did:aura:test123", newMethods, "https://new-metadata.uri")
@@ -157,7 +168,7 @@ func TestDIDDocument_KVPersistence(t *testing.T) {
 	didDoc, ok = keeper.GetDIDDocument(ctx, "did:aura:test123")
 	require.True(t, ok)
 	require.Len(t, didDoc.VerificationMethods, 1)
-	require.Equal(t, "key-2", didDoc.VerificationMethods[0].MethodId)
+	require.Equal(t, "key-2", didDoc.VerificationMethods[0].Id)
 }
 
 func TestAttributeVC_KVPersistence(t *testing.T) {
@@ -206,7 +217,7 @@ func TestDisclosurePolicy_KVPersistence(t *testing.T) {
 	policy := types.DisclosurePolicy{
 		HolderAddress: "holder1",
 		DefaultMode:   types.DisclosurePolicyMode_DISCLOSURE_POLICY_MODE_DENY,
-		Rules: []*types.DisclosureRule{
+		Rules: []*types.AttributeDisclosureRule{
 			{
 				AttributeType: types.AttributeType_ATTRIBUTE_TYPE_EMAIL,
 				Mode:          types.DisclosurePolicyMode_DISCLOSURE_POLICY_MODE_ALLOW,
@@ -262,11 +273,12 @@ func TestGenesis_RoundTrip(t *testing.T) {
 
 	// Create some state
 	vcRecord := types.VCRecord{
-		VcId:          "vc-genesis-test",
-		HolderAddress: "holder1",
-		VcType:        types.VCTypeIdentity,
-		Status:        types.VCStatus_VC_STATUS_ACTIVE,
-		IssuedAt:      timestamppb.New(time.Now()),
+		VcId:            "vc-genesis-test",
+		HolderAddress:   "holder1",
+		VcType:          types.VCType_VC_TYPE_VERIFIED_HUMAN,
+		Status:          types.VCStatus_VC_STATUS_ACTIVE,
+		IssuedAt:        timestamppb.New(time.Now()),
+		IssuerAssistant: "aura1issuer",
 	}
 	err := keeper.SetVCRecord(ctx, vcRecord)
 	require.NoError(t, err)
@@ -319,7 +331,7 @@ func TestNoMemoryLeaks(t *testing.T) {
 		vcRecord := types.VCRecord{
 			VcId:          fmt.Sprintf("vc-leak-test-%d", i),
 			HolderAddress: fmt.Sprintf("holder%d", i%10),
-			VcType:        types.VCTypeIdentity,
+			VcType:        types.VCType_VC_TYPE_VERIFIED_HUMAN,
 			Status:        types.VCStatus_VC_STATUS_ACTIVE,
 			IssuedAt:      timestamppb.New(time.Now()),
 		}

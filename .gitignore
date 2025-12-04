@@ -117,3 +117,4 @@ testnet-data/
 *.mnemonic
 .deployer.mnemonic
 # Mnemonic files (sensitive)
+aurad
