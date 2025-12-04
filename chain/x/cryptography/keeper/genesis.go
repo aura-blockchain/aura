@@ -3,6 +3,8 @@ package keeper
 import (
 	"context"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	cryptoproto "github.com/aequitas/aura/proto/aura/cryptography/v1beta1"
 )
 
@@ -11,6 +13,9 @@ func (k *Keeper) InitGenesis(ctx context.Context, data *cryptoproto.GenesisState
 	if data == nil {
 		return nil
 	}
+
+	// Unwrap SDK context for methods that need it
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
 	// Set parameters
 	if data.Params != nil {
@@ -27,30 +32,30 @@ func (k *Keeper) InitGenesis(ctx context.Context, data *cryptoproto.GenesisState
 		}
 	}
 
-// 	// Initialize threshold signature schemes
-// 	for _, scheme := range data.ThresholdSchemes {
-// 		if err := k.SetThresholdScheme(ctx, scheme); err != nil {
-// 			k.Logger(ctx).Error("failed to initialize threshold scheme", "scheme_id", scheme.SchemeId, "error", err)
-// 		}
-// 	}
+	// Initialize threshold signature schemes
+	for _, scheme := range data.ThresholdSchemes {
+		if err := k.SetThresholdScheme(ctx, scheme); err != nil {
+			k.Logger(ctx).Error("failed to initialize threshold scheme", "scheme_id", scheme.SchemeId, "error", err)
+		}
+	}
 
-// 	// Initialize ZK proof configs
-// 	for _, config := range data.ZkProofConfigs {
-// 		if err := k.SetZKProofConfig(ctx, config); err != nil {
-// 			k.Logger(ctx).Error("failed to initialize ZK proof config", "proof_id", config.ProofId, "error", err)
-// 		}
-// 	}
+	// Initialize ZK proof configs
+	for _, config := range data.ZkProofConfigs {
+		if err := k.SetZKProofConfig(sdkCtx, config); err != nil {
+			k.Logger(ctx).Error("failed to initialize ZK proof config", "proof_id", config.ProofId, "error", err)
+		}
+	}
 
 	// Initialize secure enclaves
 	for _, enclave := range data.SecureEnclaves {
-		if err := k.SetSecureEnclaveConfig(ctx, enclave); err != nil {
+		if err := k.SetSecureEnclaveConfig(sdkCtx, enclave); err != nil {
 			k.Logger(ctx).Error("failed to initialize secure enclave", "enclave_id", enclave.EnclaveId, "error", err)
 		}
 	}
 
 	// Initialize quantum-resistant keys
 	for _, key := range data.QuantumResistantKeys {
-		if err := k.SetQuantumResistantKey(ctx, key); err != nil {
+		if err := k.SetQuantumResistantKey(sdkCtx, key); err != nil {
 			k.Logger(ctx).Error("failed to initialize quantum-resistant key", "key_id", key.KeyId, "error", err)
 		}
 	}
@@ -89,6 +94,9 @@ func (k *Keeper) InitGenesis(ctx context.Context, data *cryptoproto.GenesisState
 
 // ExportGenesis exports the cryptography module state to genesis
 func (k *Keeper) ExportGenesis(ctx context.Context) *cryptoproto.GenesisState {
+	// Unwrap SDK context for methods that need it
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
 	// Get parameters
 	params, err := k.GetParams(ctx)
 	if err != nil {
@@ -103,7 +111,7 @@ func (k *Keeper) ExportGenesis(ctx context.Context) *cryptoproto.GenesisState {
 	thresholdSchemes := k.GetAllThresholdSchemes(ctx)
 
 	// Export ZK proof configs
-	zkProofConfigs := k.GetAllZKProofConfigs(ctx)
+	zkProofConfigs := k.GetAllZKProofConfigs(sdkCtx)
 
 	// Export secure enclaves
 	secureEnclaves := make([]*cryptoproto.SecureEnclaveConfig, 0)

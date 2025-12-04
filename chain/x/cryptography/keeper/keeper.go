@@ -581,33 +581,8 @@ func (k Keeper) GetThresholdSignatureSharesForScheme(ctx context.Context, scheme
 // ============================================================================
 // ZK Proof Configs - KV Store Operations (implemented in zk_proofs.go)
 // ============================================================================
-
-// IterateZKProofConfigs iterates over all ZK proof configurations
-func (k Keeper) IterateZKProofConfigs(ctx context.Context, fn func(config *cryptoproto.ZKProofConfig) bool) error {
-	store := k.getStore(ctx)
-	iterator := storetypes.KVStorePrefixIterator(store, types.ZKProofConfigPrefix)
-	defer iterator.Close()
-
-	for ; iterator.Valid(); iterator.Next() {
-		var config cryptoproto.ZKProofConfig
-		k.cdc.MustUnmarshal(iterator.Value(), &config)
-		if fn(&config) {
-			break
-		}
-	}
-
-	return nil
-}
-
-// GetAllZKProofConfigs retrieves all ZK proof configurations
-func (k Keeper) GetAllZKProofConfigs(ctx context.Context) []*cryptoproto.ZKProofConfig {
-	configs := make([]*cryptoproto.ZKProofConfig, 0)
-	_ = k.IterateZKProofConfigs(ctx, func(config *cryptoproto.ZKProofConfig) bool {
-		configs = append(configs, config)
-		return false
-	})
-	return configs
-}
+// Note: GetZKProofConfig, SetZKProofConfig, and other ZK proof methods
+// are implemented in zk_proofs.go
 
 // ============================================================================
 // ZK Proofs - KV Store Operations
