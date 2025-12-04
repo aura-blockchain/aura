@@ -19,7 +19,7 @@ func TestInitGenesis(t *testing.T) {
 		VestingSchedules: []*types.VestingSchedule{
 			{
 				ScheduleId:          "team-vesting-1",
-				BeneficiaryAddress:  "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
+				BeneficiaryAddress:  "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
 				TotalAmount:         "10000000",
 				VestedAmount:        "1000000",
 				VestingDuration:     31536000, // 1 year
@@ -29,7 +29,7 @@ func TestInitGenesis(t *testing.T) {
 			},
 			{
 				ScheduleId:          "advisor-vesting-1",
-				BeneficiaryAddress:  "aura1fl48vsnmsdzcv85q5d2q4z5ajdha8yu34mf0eh",
+				BeneficiaryAddress:  "aura1w3jhxapjta047h6lta047h6lta047h6l42n9lg",
 				TotalAmount:         "5000000",
 				VestedAmount:        "0",
 				VestingDuration:     15768000, // 6 months
@@ -41,7 +41,7 @@ func TestInitGenesis(t *testing.T) {
 		VoteLocks: []*types.VoteLock{
 			{
 				LockId:      "vote-lock-1",
-				Owner:       "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
+				Owner:       "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
 				Amount:      "1000000",
 				LockStart:   timestamppb.New(time.Now()),
 				LockEnd:     timestamppb.New(time.Now().Add(30 * 24 * time.Hour)),
@@ -51,9 +51,9 @@ func TestInitGenesis(t *testing.T) {
 		PendingTreasuryTxs: []*types.PendingTreasuryTx{
 			{
 				TxId:         "treasury-tx-1",
-				Recipient:    "aura1fl48vsnmsdzcv85q5d2q4z5ajdha8yu34mf0eh",
+				Recipient:    "aura1w3jhxapjta047h6lta047h6lta047h6l42n9lg",
 				Amount:       "100000",
-				Proposer:     "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
+				Proposer:     "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
 				Signatures:   []string{"sig1", "sig2"},
 				CreatedAt:    timestamppb.New(time.Now()),
 				ExecutableAt: timestamppb.New(time.Now().Add(48 * time.Hour)),
@@ -72,8 +72,8 @@ func TestInitGenesis(t *testing.T) {
 		LargeTxRecords: []*types.LargeTxRecord{
 			{
 				TxHash:             "hash-1",
-				Sender:             "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
-				Recipient:          "aura1fl48vsnmsdzcv85q5d2q4z5ajdha8yu34mf0eh",
+				Sender:             "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
+				Recipient:          "aura1w3jhxapjta047h6lta047h6lta047h6l42n9lg",
 				Amount:             "5000000",
 				Timestamp:          timestamppb.New(time.Now()),
 				BlockHeight:        12345,
@@ -81,11 +81,11 @@ func TestInitGenesis(t *testing.T) {
 			},
 		},
 		LastLargeTxTimes: map[string]int64{
-			"aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn": time.Now().Unix(),
+			"aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr": time.Now().Unix(),
 		},
 		UserMevBalances: map[string]string{
-			"aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn": "75000",
-			"aura1fl48vsnmsdzcv85q5d2q4z5ajdha8yu34mf0eh": "25000",
+			"aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr": "75000",
+			"aura1w3jhxapjta047h6lta047h6lta047h6l42n9lg": "25000",
 		},
 	}
 
@@ -97,7 +97,7 @@ func TestInitGenesis(t *testing.T) {
 	schedule1, err := k.GetVestingSchedule(ctx, "team-vesting-1")
 	require.NoError(t, err)
 	require.Equal(t, "10000000", schedule1.TotalAmount)
-	require.Equal(t, "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn", schedule1.BeneficiaryAddress)
+	require.Equal(t, "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr", schedule1.BeneficiaryAddress)
 
 	schedule2, err := k.GetVestingSchedule(ctx, "advisor-vesting-1")
 	require.NoError(t, err)
@@ -128,16 +128,16 @@ func TestInitGenesis(t *testing.T) {
 	require.Equal(t, uint64(250), record.PercentageOfSupply)
 
 	// Verify last large tx times were loaded
-	lastTime, err := k.GetLastLargeTxTime(ctx, "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn")
+	lastTime, err := k.GetLastLargeTxTime(ctx, "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr")
 	require.NoError(t, err)
 	require.Greater(t, lastTime, int64(0))
 
 	// Verify MEV balances were loaded
-	mevBalance1, err := k.GetUserMEVBalance(ctx, "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn")
+	mevBalance1, err := k.GetUserMEVBalance(ctx, "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr")
 	require.NoError(t, err)
 	require.Equal(t, "75000", mevBalance1)
 
-	mevBalance2, err := k.GetUserMEVBalance(ctx, "aura1fl48vsnmsdzcv85q5d2q4z5ajdha8yu34mf0eh")
+	mevBalance2, err := k.GetUserMEVBalance(ctx, "aura1w3jhxapjta047h6lta047h6lta047h6l42n9lg")
 	require.NoError(t, err)
 	require.Equal(t, "25000", mevBalance2)
 
@@ -152,7 +152,7 @@ func TestExportGenesis(t *testing.T) {
 	// Set up test data
 	schedule := &types.VestingSchedule{
 		ScheduleId:          "export-test-schedule",
-		BeneficiaryAddress:  "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
+		BeneficiaryAddress:  "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
 		TotalAmount:         "1000000",
 		VestedAmount:        "100000",
 		VestingDuration:     31536000,
@@ -165,7 +165,7 @@ func TestExportGenesis(t *testing.T) {
 
 	lock := &types.VoteLock{
 		LockId:      "export-test-lock",
-		Owner:       "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
+		Owner:       "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
 		Amount:      "500000",
 		LockStart:   timestamppb.New(time.Now()),
 		LockEnd:     timestamppb.New(time.Now().Add(30 * 24 * time.Hour)),
@@ -176,9 +176,9 @@ func TestExportGenesis(t *testing.T) {
 
 	tx := &types.PendingTreasuryTx{
 		TxId:         "export-test-tx",
-		Recipient:    "aura1fl48vsnmsdzcv85q5d2q4z5ajdha8yu34mf0eh",
+		Recipient:    "aura1w3jhxapjta047h6lta047h6lta047h6l42n9lg",
 		Amount:       "100000",
-		Proposer:     "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
+		Proposer:     "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
 		Signatures:   []string{},
 		CreatedAt:    timestamppb.New(time.Now()),
 		ExecutableAt: timestamppb.New(time.Now().Add(24 * time.Hour)),
@@ -199,8 +199,8 @@ func TestExportGenesis(t *testing.T) {
 
 	record := &types.LargeTxRecord{
 		TxHash:             "export-test-hash",
-		Sender:             "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
-		Recipient:          "aura1fl48vsnmsdzcv85q5d2q4z5ajdha8yu34mf0eh",
+		Sender:             "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
+		Recipient:          "aura1w3jhxapjta047h6lta047h6lta047h6l42n9lg",
 		Amount:             "1000000",
 		Timestamp:          timestamppb.New(time.Now()),
 		BlockHeight:        12345,
@@ -209,7 +209,7 @@ func TestExportGenesis(t *testing.T) {
 	err = k.SetLargeTxRecord(ctx, record)
 	require.NoError(t, err)
 
-	err = k.SetUserMEVBalance(ctx, "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn", "50000")
+	err = k.SetUserMEVBalance(ctx, "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr", "50000")
 	require.NoError(t, err)
 
 	// Export genesis
@@ -234,7 +234,7 @@ func TestExportGenesis(t *testing.T) {
 	require.Equal(t, "export-test-hash", exported.LargeTxRecords[0].TxHash)
 
 	require.Len(t, exported.UserMevBalances, 1)
-	require.Equal(t, "50000", exported.UserMevBalances["aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"])
+	require.Equal(t, "50000", exported.UserMevBalances["aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr"])
 }
 
 func TestGenesisRoundTrip(t *testing.T) {
@@ -246,7 +246,7 @@ func TestGenesisRoundTrip(t *testing.T) {
 		VestingSchedules: []*types.VestingSchedule{
 			{
 				ScheduleId:          "roundtrip-schedule",
-				BeneficiaryAddress:  "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
+				BeneficiaryAddress:  "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
 				TotalAmount:         "10000000",
 				VestedAmount:        "1000000",
 				VestingDuration:     31536000,
@@ -258,7 +258,7 @@ func TestGenesisRoundTrip(t *testing.T) {
 		VoteLocks: []*types.VoteLock{
 			{
 				LockId:      "roundtrip-lock",
-				Owner:       "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
+				Owner:       "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
 				Amount:      "1000000",
 				LockStart:   timestamppb.New(time.Now()),
 				LockEnd:     timestamppb.New(time.Now().Add(30 * 24 * time.Hour)),
@@ -268,9 +268,9 @@ func TestGenesisRoundTrip(t *testing.T) {
 		PendingTreasuryTxs: []*types.PendingTreasuryTx{
 			{
 				TxId:         "roundtrip-tx",
-				Recipient:    "aura1fl48vsnmsdzcv85q5d2q4z5ajdha8yu34mf0eh",
+				Recipient:    "aura1w3jhxapjta047h6lta047h6lta047h6l42n9lg",
 				Amount:       "100000",
-				Proposer:     "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
+				Proposer:     "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
 				Signatures:   []string{"sig1"},
 				CreatedAt:    timestamppb.New(time.Now()),
 				ExecutableAt: timestamppb.New(time.Now().Add(48 * time.Hour)),
@@ -289,8 +289,8 @@ func TestGenesisRoundTrip(t *testing.T) {
 		LargeTxRecords: []*types.LargeTxRecord{
 			{
 				TxHash:             "roundtrip-hash",
-				Sender:             "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
-				Recipient:          "aura1fl48vsnmsdzcv85q5d2q4z5ajdha8yu34mf0eh",
+				Sender:             "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
+				Recipient:          "aura1w3jhxapjta047h6lta047h6lta047h6l42n9lg",
 				Amount:             "5000000",
 				Timestamp:          timestamppb.New(time.Now()),
 				BlockHeight:        67890,
@@ -298,11 +298,11 @@ func TestGenesisRoundTrip(t *testing.T) {
 			},
 		},
 		LastLargeTxTimes: map[string]int64{
-			"aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn": time.Now().Unix(),
+			"aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr": time.Now().Unix(),
 		},
 		UserMevBalances: map[string]string{
-			"aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn": "123456",
-			"aura1fl48vsnmsdzcv85q5d2q4z5ajdha8yu34mf0eh": "654321",
+			"aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr": "123456",
+			"aura1w3jhxapjta047h6lta047h6lta047h6l42n9lg": "654321",
 		},
 	}
 
@@ -341,8 +341,8 @@ func TestGenesisRoundTrip(t *testing.T) {
 
 	// Verify MEV balances
 	require.Len(t, exportedGenesis.UserMevBalances, 2)
-	require.Equal(t, "123456", exportedGenesis.UserMevBalances["aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"])
-	require.Equal(t, "654321", exportedGenesis.UserMevBalances["aura1fl48vsnmsdzcv85q5d2q4z5ajdha8yu34mf0eh"])
+	require.Equal(t, "123456", exportedGenesis.UserMevBalances["aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr"])
+	require.Equal(t, "654321", exportedGenesis.UserMevBalances["aura1w3jhxapjta047h6lta047h6lta047h6l42n9lg"])
 }
 
 func TestDefaultGenesis(t *testing.T) {
@@ -367,7 +367,7 @@ func TestInitGenesis_WithMultipleSchedules(t *testing.T) {
 		VestingSchedules: []*types.VestingSchedule{
 			{
 				ScheduleId:          "team-vesting-1",
-				BeneficiaryAddress:  "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
+				BeneficiaryAddress:  "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
 				TotalAmount:         "5000000",
 				VestedAmount:        "500000",
 				VestingDuration:     31536000,
@@ -377,7 +377,7 @@ func TestInitGenesis_WithMultipleSchedules(t *testing.T) {
 			},
 			{
 				ScheduleId:          "team-vesting-2",
-				BeneficiaryAddress:  "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
+				BeneficiaryAddress:  "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
 				TotalAmount:         "3000000",
 				VestedAmount:        "0",
 				VestingDuration:     15768000,
@@ -387,7 +387,7 @@ func TestInitGenesis_WithMultipleSchedules(t *testing.T) {
 			},
 			{
 				ScheduleId:          "advisor-vesting-1",
-				BeneficiaryAddress:  "aura1fl48vsnmsdzcv85q5d2q4z5ajdha8yu34mf0eh",
+				BeneficiaryAddress:  "aura1w3jhxapjta047h6lta047h6lta047h6l42n9lg",
 				TotalAmount:         "2000000",
 				VestedAmount:        "200000",
 				VestingDuration:     15768000,
@@ -416,14 +416,14 @@ func TestInitGenesis_WithMultipleSchedules(t *testing.T) {
 	require.Equal(t, "2000000", schedule3.TotalAmount)
 
 	// Verify user vesting index has multiple schedules
-	scheduleIDs, err := k.GetUserVestingIndex(ctx, "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn")
+	scheduleIDs, err := k.GetUserVestingIndex(ctx, "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr")
 	require.NoError(t, err)
 	require.Len(t, scheduleIDs, 2)
 	require.Contains(t, scheduleIDs, "team-vesting-1")
 	require.Contains(t, scheduleIDs, "team-vesting-2")
 
 	// Verify second user has one schedule
-	scheduleIDs2, err := k.GetUserVestingIndex(ctx, "aura1fl48vsnmsdzcv85q5d2q4z5ajdha8yu34mf0eh")
+	scheduleIDs2, err := k.GetUserVestingIndex(ctx, "aura1w3jhxapjta047h6lta047h6lta047h6l42n9lg")
 	require.NoError(t, err)
 	require.Len(t, scheduleIDs2, 1)
 	require.Contains(t, scheduleIDs2, "advisor-vesting-1")

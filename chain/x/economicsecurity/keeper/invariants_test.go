@@ -23,7 +23,7 @@ func TestAllInvariants(t *testing.T) {
 	// Test with valid vesting schedule
 	validSchedule := &types.VestingSchedule{
 		ScheduleId:          "test-schedule-1",
-		BeneficiaryAddress:  "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
+		BeneficiaryAddress:  "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
 		TotalAmount:         "1000000",
 		VestedAmount:        "100000",
 		VestingDuration:     31536000, // 1 year in seconds
@@ -37,7 +37,7 @@ func TestAllInvariants(t *testing.T) {
 	// Test with valid vote lock
 	validLock := &types.VoteLock{
 		LockId:       "test-lock-1",
-		Owner:        "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
+		Owner:        "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
 		Amount:       "500000",
 		LockStart:    timestamppb.New(time.Now()),
 		LockEnd:      timestamppb.New(time.Now().Add(30 * 24 * time.Hour)),
@@ -49,9 +49,9 @@ func TestAllInvariants(t *testing.T) {
 	// Test with valid treasury tx
 	validTx := &types.PendingTreasuryTx{
 		TxId:          "test-tx-1",
-		Recipient:     "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
+		Recipient:     "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
 		Amount:        "100000",
-		Proposer:      "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
+		Proposer:      "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
 		Signatures:    []string{},
 		CreatedAt:     timestamppb.New(time.Now()),
 		ExecutableAt:  timestamppb.New(time.Now().Add(24 * time.Hour)),
@@ -74,8 +74,8 @@ func TestAllInvariants(t *testing.T) {
 	// Test with valid large tx record
 	validRecord := &types.LargeTxRecord{
 		TxHash:             "test-hash-1",
-		Sender:             "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
-		Recipient:          "aura1fl48vsnmsdzcv85q5d2q4z5ajdha8yu34mf0eh",
+		Sender:             "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
+		Recipient:          "aura1w3jhxapjta047h6lta047h6lta047h6l42n9lg",
 		Amount:             "1000000",
 		Timestamp:          timestamppb.New(time.Now()),
 		BlockHeight:        12345,
@@ -85,7 +85,7 @@ func TestAllInvariants(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test with valid MEV balance
-	err = k.SetUserMEVBalance(ctx, "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn", "50000")
+	err = k.SetUserMEVBalance(ctx, "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr", "50000")
 	require.NoError(t, err)
 
 	// Set total MEV pending to match user balances
@@ -100,7 +100,7 @@ func TestAllInvariants(t *testing.T) {
 	// Test with invalid vesting schedule (vested > total)
 	invalidSchedule := &types.VestingSchedule{
 		ScheduleId:          "invalid-schedule",
-		BeneficiaryAddress:  "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
+		BeneficiaryAddress:  "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
 		TotalAmount:         "1000000",
 		VestedAmount:        "2000000", // More than total - INVALID
 		VestingDuration:     31536000,

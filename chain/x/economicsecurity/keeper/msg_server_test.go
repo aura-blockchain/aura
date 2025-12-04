@@ -23,7 +23,7 @@ func TestMsgServerFunctionality(t *testing.T) {
 	// Verify keeper has correct authority
 	authority := k.GetAuthority()
 	require.NotEmpty(t, authority)
-	require.Equal(t, "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn", authority)
+	require.Equal(t, "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr", authority)
 
 	// Verify keeper params can be accessed through msg server
 	params := k.GetParams()
