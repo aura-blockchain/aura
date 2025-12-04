@@ -120,7 +120,7 @@ All modules have keepers, protos, and tests:
 - [x] Inclusion Routines: Query commands functional
 - [x] Governance: Query commands functional
 - [x] Bridge: Simulate cross-chain transfer, test Merkle proofs (`chain/x/bridge/keeper/cross_chain_flow_test.go` covers lock flow + Merkle verification)
-- [ ] DEX: Create pool, execute swaps, verify AMM calculations
+- [x] DEX: Create pool, execute swaps, verify AMM calculations (`chain/x/dex/keeper/msg_server_integration_test.go` - all integration tests passing)
 - [ ] Compliance: Configure AML rules, test transaction screening
 
 ### Smart Contracts
