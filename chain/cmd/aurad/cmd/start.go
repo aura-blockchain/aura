@@ -35,6 +35,7 @@ import (
 	contractregistrytypes "github.com/aequitas/aura/chain/x/contractregistry/types"
 	contractregistrypb "github.com/aequitas/aura/proto/aura/contractregistry/v1beta1"
 	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	cmtcfg "github.com/cometbft/cometbft/config"
 	cmtlog "github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/node"
@@ -396,6 +397,17 @@ func startInProcess(cmd *cobra.Command, auraApp *app.App, logger log.Logger) err
 	if err := cmtNode.Start(); err != nil {
 		return fmt.Errorf("failed to start node: %w", err)
 	}
+
+	// Start Prometheus metrics HTTP server
+	metricsPort := 26660
+	go func() {
+		http.Handle("/metrics", promhttp.Handler())
+		metricsAddr := fmt.Sprintf(":%d", metricsPort)
+		logger.Info("starting Prometheus metrics server", "address", metricsAddr)
+		if err := http.ListenAndServe(metricsAddr, nil); err != nil {
+			logger.Error("metrics server failed", "error", err)
+		}
+	}()
 
 	// Create server manager for graceful shutdown
 	serverMgr := security.NewServerManager(secLogger)
