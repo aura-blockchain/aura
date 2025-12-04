@@ -49,8 +49,8 @@ func NewKeeper(cdc codec.BinaryCodec, storeKey storetypes.StoreKey) *Keeper {
 	}
 }
 
-// initializeDefaultRoles creates predefined roles
-func (k *Keeper) initializeDefaultRoles(ctx sdk.Context) error {
+// InitializeDefaultRoles creates predefined roles
+func (k *Keeper) InitializeDefaultRoles(ctx sdk.Context) error {
 	now := ctx.BlockTime()
 	nowProto := timestamppb.New(now)
 

@@ -11,14 +11,14 @@ import (
 
 func TestInitGenesis(t *testing.T) {
 	t.Run("init with nil genesis", func(t *testing.T) {
-		k, ctx := setupKeeper(t)
+		k, ctx := NewTestKeeper(t)
 
 		err := k.InitGenesis(ctx, nil)
 		require.NoError(t, err)
 	})
 
 	t.Run("init with default genesis", func(t *testing.T) {
-		k, ctx := setupKeeper(t)
+		k, ctx := NewTestKeeper(t)
 
 		genesis := types.DefaultGenesisState()
 		err := k.InitGenesis(ctx, genesis)
@@ -31,7 +31,7 @@ func TestInitGenesis(t *testing.T) {
 	})
 
 	t.Run("init with custom params", func(t *testing.T) {
-		k, ctx := setupKeeper(t)
+		k, ctx := NewTestKeeper(t)
 
 		genesis := &types.GenesisState{
 			Params: types.Params{
@@ -55,7 +55,7 @@ func TestInitGenesis(t *testing.T) {
 	})
 
 	t.Run("init with invalid params fails", func(t *testing.T) {
-		k, ctx := setupKeeper(t)
+		k, ctx := NewTestKeeper(t)
 
 		genesis := &types.GenesisState{
 			Params: types.Params{
@@ -70,7 +70,7 @@ func TestInitGenesis(t *testing.T) {
 
 func TestExportGenesis(t *testing.T) {
 	t.Run("export empty state", func(t *testing.T) {
-		k, ctx := setupKeeper(t)
+		k, ctx := NewTestKeeper(t)
 
 		genesis := k.ExportGenesis(ctx)
 
@@ -79,7 +79,7 @@ func TestExportGenesis(t *testing.T) {
 	})
 
 	t.Run("export after init preserves params", func(t *testing.T) {
-		k, ctx := setupKeeper(t)
+		k, ctx := NewTestKeeper(t)
 
 		originalGenesis := &types.GenesisState{
 			Params: types.Params{
@@ -105,7 +105,7 @@ func TestExportGenesis(t *testing.T) {
 
 func TestGenesisRoundTrip(t *testing.T) {
 	t.Run("init then export produces same state", func(t *testing.T) {
-		k, ctx := setupKeeper(t)
+		k, ctx := NewTestKeeper(t)
 
 		originalGenesis := &types.GenesisState{
 			Params: types.Params{
@@ -129,8 +129,8 @@ func TestGenesisRoundTrip(t *testing.T) {
 	})
 
 	t.Run("multiple round trips are deterministic", func(t *testing.T) {
-		k1, ctx1 := setupKeeper(t)
-		k2, ctx2 := setupKeeper(t)
+		k1, ctx1 := NewTestKeeper(t)
+		k2, ctx2 := NewTestKeeper(t)
 
 		genesis := types.DefaultGenesisState()
 		genesis.Params.MetricsRetentionPeriod = 9999 * time.Second
@@ -150,7 +150,7 @@ func TestGenesisRoundTrip(t *testing.T) {
 	})
 
 	t.Run("handles default genesis correctly", func(t *testing.T) {
-		k, ctx := setupKeeper(t)
+		k, ctx := NewTestKeeper(t)
 
 		defaultGenesis := types.DefaultGenesisState()
 
@@ -177,7 +177,7 @@ func TestDefaultGenesis(t *testing.T) {
 	})
 
 	t.Run("can init with default genesis", func(t *testing.T) {
-		k, ctx := setupKeeper(t)
+		k, ctx := NewTestKeeper(t)
 
 		genesis := types.DefaultGenesisState()
 		err := k.InitGenesis(ctx, genesis)
@@ -198,10 +198,3 @@ func TestDefaultGenesis(t *testing.T) {
 	})
 }
 
-// setupKeeper creates a keeper for testing
-func setupKeeper(t *testing.T) (*Keeper, context.Context) {
-	// This is a simplified setup - adjust based on your actual keeper setup
-	k := NewTestKeeper(t)
-	ctx := context.Background()
-	return k, ctx
-}

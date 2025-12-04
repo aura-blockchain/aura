@@ -90,9 +90,19 @@ func (am AppModule) IsAppModule() {}
 
 // RegisterServices registers the module's message and query servers
 func (am AppModule) RegisterServices(cfg module.Configurator) {
-	// Server registration commented out - proto types need to be generated
-	// types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServer(am.keeper))
-	// types.RegisterQueryServer(cfg.QueryServer(), keeper.NewQueryServer(am.keeper))
+	// NOTE: Server registration is not enabled because this module does not yet have
+	// gRPC service definitions in its protobuf files. The proto/aura/prevalidation/v1beta1/
+	// directory contains only type definitions (prevalidation.proto) but no tx.proto or
+	// query.proto with service definitions. The keeper implements stub message and query
+	// servers for testing purposes only. To enable gRPC services:
+	// 1. Create proto/aura/prevalidation/v1beta1/tx.proto with service Msg
+	// 2. Create proto/aura/prevalidation/v1beta1/query.proto with service Query
+	// 3. Run make proto-gen to generate gRPC code
+	// 4. Update keeper servers to use proto-generated types
+	// 5. Uncomment registration below
+	//
+	// prevalidationpb.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper))
+	// prevalidationpb.RegisterQueryServer(cfg.QueryServer(), keeper.NewQueryServerImpl(am.keeper))
 }
 
 // InitGenesis performs genesis initialization for the prevalidation module
