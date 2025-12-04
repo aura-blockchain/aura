@@ -890,34 +890,38 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 	}
 
 	auraModules := []sdkmodule.AppModule{
+		// Core Aura modules
 		inclusionModule,
 		confidenceModule,
 		governanceModule,
 		complianceModule,
 		identitychangeModule,
+		identityModule,
 		dataModule,
 		dexModule,
 		bridgeModule,
 		vcModule,
+		monitoringModule,
+
+		// Security modules
+		walletsecurityModule,
+		validatorsecurityModule,
+		cryptographyModule,
+		networksecurityModule,
+		incidentresponseModule,
+		privacyModule,
+		securityModule,
+
+		// Economics modules
+		economicsecurityModule,
+		economicsModule,
+
+		// Other modules
+		prevalidationModule,
+		aurabindingsModule,
 	}
 
-	adapterModules := wrapAdapters(map[string]interface{}{
-		identitytypes.ModuleName:          identityModule,
-		monitoringtypes.ModuleName:        monitoringModule,
-		walletsecuritytypes.ModuleName:    walletsecurityModule,
-		validatorsecuritytypes.ModuleName: validatorsecurityModule,
-		cryptographytypes.ModuleName:      cryptographyModule,
-		networksecuritytypes.ModuleName:   networksecurityModule,
-		incidentresponsetypes.ModuleName:  incidentresponseModule,
-		privacytypes.ModuleName:           privacyModule,
-		economicsecuritytypes.ModuleName:  economicsecurityModule,
-		economicstypes.ModuleName:         economicsModule,
-		prevalidationtypes.ModuleName:     prevalidationModule,
-		securitytypes.ModuleName:          securityModule,
-		aurabindingstypes.ModuleName:      aurabindingsModule,
-	})
-
-	moduleManager := sdkmodule.NewManager(append(append(coreModules, auraModules...), adapterModules...)...)
+	moduleManager := sdkmodule.NewManager(append(coreModules, auraModules...)...)
 
 	moduleManager.SetOrderInitGenesis(
 		authtypes.ModuleName,

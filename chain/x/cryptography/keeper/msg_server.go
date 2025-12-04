@@ -96,9 +96,22 @@ func (ms msgServer) RotateKey(goCtx context.Context, msg *cryptoproto.MsgRotateK
 	}, nil
 }
 
-// TODO: Implement CreateThresholdScheme keeper method
-/*
 func (ms msgServer) CreateThresholdScheme(goCtx context.Context, msg *cryptoproto.MsgCreateThresholdScheme) (*cryptoproto.MsgCreateThresholdSchemeResponse, error) {
+	// Verify signer
+	signers := msg.GetSigners()
+	if len(signers) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "no signers")
+	}
+
+	creatorAddr, err := sdk.AccAddressFromBech32(msg.Creator)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid creator address")
+	}
+
+	if !signers[0].Equals(creatorAddr) {
+		return nil, status.Error(codes.PermissionDenied, "signer does not match creator")
+	}
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	if msg.Threshold <= 0 || msg.TotalParticipants <= 0 || msg.Threshold > msg.TotalParticipants {
@@ -119,11 +132,23 @@ func (ms msgServer) CreateThresholdScheme(goCtx context.Context, msg *cryptoprot
 		PublicKey: publicKey,
 	}, nil
 }
-*/
 
-// TODO: Implement SubmitThresholdSignatureShare keeper method
-/*
 func (ms msgServer) SubmitThresholdSignatureShare(goCtx context.Context, msg *cryptoproto.MsgSubmitThresholdSignatureShare) (*cryptoproto.MsgSubmitThresholdSignatureShareResponse, error) {
+	// Verify signer
+	signers := msg.GetSigners()
+	if len(signers) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "no signers")
+	}
+
+	submitterAddr, err := sdk.AccAddressFromBech32(msg.Submitter)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid submitter address")
+	}
+
+	if !signers[0].Equals(submitterAddr) {
+		return nil, status.Error(codes.PermissionDenied, "signer does not match submitter")
+	}
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	if msg.SchemeId == "" || len(msg.SignatureShare) == 0 || len(msg.MessageHash) == 0 {
@@ -141,7 +166,6 @@ func (ms msgServer) SubmitThresholdSignatureShare(goCtx context.Context, msg *cr
 		CombinedSignature: combinedSignature,
 	}, nil
 }
-*/
 
 func (ms msgServer) RegisterZKProofCircuit(goCtx context.Context, msg *cryptoproto.MsgRegisterZKProofCircuit) (*cryptoproto.MsgRegisterZKProofCircuitResponse, error) {
 	// Verify signer

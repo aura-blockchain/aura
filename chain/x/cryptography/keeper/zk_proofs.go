@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 
+	storetypes "cosmossdk.io/store/types"
 	"github.com/aequitas/aura/chain/x/cryptography/types"
 	cryptoproto "github.com/aequitas/aura/proto/aura/cryptography/v1beta1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -238,6 +239,37 @@ func (k Keeper) GetZKProofConfig(ctx sdk.Context, proofID string) (*cryptoproto.
 	return &config, nil
 }
 
+// SetZKProofConfig stores a ZK proof configuration
+func (k Keeper) SetZKProofConfig(ctx sdk.Context, config *cryptoproto.ZKProofConfig) error {
+	if config == nil {
+		return fmt.Errorf("config cannot be nil")
+	}
+	if config.ProofId == "" {
+		return fmt.Errorf("proof ID cannot be empty")
+	}
+
+	store := k.getStore(ctx)
+	bz := k.cdc.MustMarshal(config)
+	store.Set(types.GetZKProofConfigKey(config.ProofId), bz)
+	return nil
+}
+
+// GetAllZKProofConfigs retrieves all ZK proof configurations
+func (k Keeper) GetAllZKProofConfigs(ctx sdk.Context) []*cryptoproto.ZKProofConfig {
+	configs := make([]*cryptoproto.ZKProofConfig, 0)
+	store := k.getStore(ctx)
+	iterator := storetypes.KVStorePrefixIterator(store, types.ZKProofConfigPrefix)
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		var config cryptoproto.ZKProofConfig
+		k.cdc.MustUnmarshal(iterator.Value(), &config)
+		configs = append(configs, &config)
+	}
+
+	return configs
+}
+
 // Verification functions for different proof types
 // These implementations perform structural validation to prevent acceptance of arbitrary bytes
 // PRODUCTION INTEGRATION NOTE: For mainnet, integrate with gnark, arkworks, or similar ZK libraries
@@ -246,33 +278,33 @@ func (k Keeper) GetZKProofConfig(ctx sdk.Context, proofID string) (*cryptoproto.
 const (
 	// Groth16 on BN254: 2 G1 points (64 bytes each) + 1 G2 point (128 bytes) = 256 bytes uncompressed
 	// Compressed: 2 G1 (32 bytes each) + 1 G2 (64 bytes) = 128 bytes
-	Groth16MinSize        = 128
-	Groth16MaxSize        = 256
-	Groth16ExpectedSizes  = "128 or 256 bytes"
+	Groth16MinSize       = 128
+	Groth16MaxSize       = 256
+	Groth16ExpectedSizes = "128 or 256 bytes"
 
 	// PLONK proofs are larger due to multiple polynomial commitments
-	PlonkMinSize          = 288
-	PlonkMaxSize          = 512
-	PlonkExpectedSizes    = "288-512 bytes"
+	PlonkMinSize       = 288
+	PlonkMaxSize       = 512
+	PlonkExpectedSizes = "288-512 bytes"
 
 	// Bulletproofs vary by range size, typically 672-1600 bytes
-	BulletproofMinSize    = 672
-	BulletproofMaxSize    = 2048
+	BulletproofMinSize       = 672
+	BulletproofMaxSize       = 2048
 	BulletproofExpectedSizes = "672-2048 bytes"
 
 	// STARKs are larger due to FRI proofs
-	StarkMinSize          = 1024
-	StarkMaxSize          = 32768
-	StarkExpectedSizes    = "1024-32768 bytes"
+	StarkMinSize       = 1024
+	StarkMaxSize       = 32768
+	StarkExpectedSizes = "1024-32768 bytes"
 
 	// Halo2 proofs similar to PLONK
-	Halo2MinSize          = 256
-	Halo2MaxSize          = 512
-	Halo2ExpectedSizes    = "256-512 bytes"
+	Halo2MinSize       = 256
+	Halo2MaxSize       = 512
+	Halo2ExpectedSizes = "256-512 bytes"
 
 	// Public inputs minimum size (at least one 32-byte scalar)
-	MinPublicInputSize    = 32
-	MaxPublicInputSize    = 1024
+	MinPublicInputSize = 32
+	MaxPublicInputSize = 1024
 )
 
 func (k Keeper) verifyGroth16(config *cryptoproto.ZKProofConfig, proofData []byte, publicInputs []byte) (bool, error) {

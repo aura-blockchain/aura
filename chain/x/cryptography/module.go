@@ -128,72 +128,14 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 
 // initGenesis initializes the module's state from genesis
 func (am AppModule) initGenesis(ctx sdk.Context, gs *cryptoproto.GenesisState) error {
-	// Set params
-	if err := am.keeper.SetParams(ctx, gs.Params); err != nil {
-		return err
-	}
-
-	// Initialize key rotation schedules
-	for _, schedule := range gs.KeyRotationSchedules {
-		// Store would happen in keeper methods
-		_ = schedule
-	}
-
-	// Initialize threshold schemes
-	for _, scheme := range gs.ThresholdSchemes {
-		_ = scheme
-	}
-
-	// Initialize ZK proof configs
-	for _, config := range gs.ZkProofConfigs {
-		_ = config
-	}
-
-	// Initialize secure enclaves
-	for _, enclave := range gs.SecureEnclaves {
-		_ = enclave
-	}
-
-	// Initialize quantum keys
-	for _, key := range gs.QuantumResistantKeys {
-		_ = key
-	}
-
-	// Initialize random sources
-	for _, source := range gs.RandomSources {
-		_ = source
-	}
-
-	// Initialize key stretching configs
-	for _, config := range gs.KeyStretchingConfigs {
-		_ = config
-	}
-
-	// Initialize certificate pins
-	for _, pin := range gs.CertificatePins {
-		_ = pin
-	}
-	return nil
+	// Delegate to keeper's InitGenesis which has the complete implementation
+	return am.keeper.InitGenesis(ctx, gs)
 }
 
 // exportGenesis exports the module's state to genesis
 func (am AppModule) exportGenesis(ctx sdk.Context) (*cryptoproto.GenesisState, error) {
-	params, err := am.keeper.GetParams(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return &cryptoproto.GenesisState{
-		Params:               params,
-		KeyRotationSchedules: []*cryptoproto.KeyRotationSchedule{},
-		ThresholdSchemes:     []*cryptoproto.ThresholdSignatureScheme{},
-		ZkProofConfigs:       []*cryptoproto.ZKProofConfig{},
-		SecureEnclaves:       []*cryptoproto.SecureEnclaveConfig{},
-		QuantumResistantKeys: []*cryptoproto.QuantumResistantKey{},
-		RandomSources:        []*cryptoproto.CryptoRandomSource{},
-		KeyStretchingConfigs: []*cryptoproto.KeyStretchingConfig{},
-		CertificatePins:      []*cryptoproto.CertificatePin{},
-	}, nil
+	// Delegate to keeper's ExportGenesis which has the complete implementation
+	return am.keeper.ExportGenesis(ctx), nil
 }
 
 // BeginBlock performs module-specific logic at the beginning of each block
