@@ -383,6 +383,14 @@ func (k Keeper) AddLiquidity(
 		),
 	)
 
+	// Record metrics
+	metrics := GetDEXMetrics()
+	metrics.LiquidityAdded.WithLabelValues(poolID, pool.DenomA).Inc()
+	metrics.LiquidityAdded.WithLabelValues(poolID, pool.DenomB).Inc()
+	metrics.PoolReserves.WithLabelValues(poolID, pool.DenomA).Set(float64(reserveA.Add(actualAmountA).Int64()))
+	metrics.PoolReserves.WithLabelValues(poolID, pool.DenomB).Set(float64(reserveB.Add(actualAmountB).Int64()))
+	metrics.LPTokenSupply.WithLabelValues(poolID).Set(float64(newTotalLpTokens.Int64()))
+
 	return lpTokens, poolShare, nil
 }
 

@@ -149,6 +149,9 @@ func (k *Keeper) GetUserSessions(ctx sdk.Context, userAddress string) ([]string,
 
 // CreateSession creates a new session for a user
 func (k *Keeper) CreateSession(ctx sdk.Context, userAddress string, expirySeconds uint64) (types.Session, error) {
+	// Get metrics instance
+	metrics := GetIdentityMetrics()
+
 	params, _ := k.GetParams(ctx)
 
 	// Check max sessions per user (use max roles per account as proxy for now)
@@ -182,6 +185,18 @@ func (k *Keeper) CreateSession(ctx sdk.Context, userAddress string, expirySecond
 
 	k.LogAudit(ctx, userAddress, "create_session", sessionID, "success", nil, "")
 
+	// Record metrics
+	metrics.SessionsCreated.Inc()
+	// Update active sessions count
+	allSessions, _ := k.GetAllSessions(ctx)
+	activeCount := 0
+	for _, s := range allSessions {
+		if s.IsActive {
+			activeCount++
+		}
+	}
+	metrics.SessionsActive.Set(float64(activeCount))
+
 	return *session, nil
 }
 
@@ -201,6 +216,19 @@ func (k *Keeper) RevokeSession(ctx sdk.Context, userAddress, sessionID string) e
 	}
 
 	k.LogAudit(ctx, userAddress, "revoke_session", sessionID, "success", nil, "")
+
+	// Record metrics
+	metrics := GetIdentityMetrics()
+	metrics.SessionsTerminated.WithLabelValues("revoked").Inc()
+	// Update active sessions count
+	allSessions, _ := k.GetAllSessions(ctx)
+	activeCount := 0
+	for _, s := range allSessions {
+		if s.IsActive {
+			activeCount++
+		}
+	}
+	metrics.SessionsActive.Set(float64(activeCount))
 
 	return nil
 }

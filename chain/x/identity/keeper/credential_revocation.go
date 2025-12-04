@@ -57,6 +57,10 @@ func (k *Keeper) GetCredentialRevocation(ctx sdk.Context, credentialID string) (
 // RevokeCredential revokes a credential with full audit trail
 // This function enforces authorization and creates an indexed revocation record
 func (k *Keeper) RevokeCredential(ctx sdk.Context, credentialID, did, revoker, reason string, metadata map[string]string) error {
+	// Get metrics instance
+	metrics := GetIdentityMetrics()
+	startTime := time.Now()
+
 	// Validate inputs
 	if credentialID == "" {
 		return types.ErrInvalidCredentialID.Wrap("credential ID cannot be empty")
@@ -130,6 +134,14 @@ func (k *Keeper) RevokeCredential(ctx sdk.Context, credentialID, did, revoker, r
 		auditMetadata[k] = v
 	}
 	k.LogAudit(ctx, revoker, "revoke_credential", credentialID, "success", auditMetadata, "")
+
+	// Record metrics
+	metrics.CredentialsRevoked.WithLabelValues(reason).Inc()
+	metrics.CredRevocationTime.Observe(time.Since(startTime).Seconds())
+	// Update revocation list size
+	revocations, _ := k.GetAllCredentialRevocations(ctx)
+	metrics.RevocationListSize.Set(float64(len(revocations)))
+	metrics.MerkleRootUpdates.Inc()
 
 	return nil
 }
@@ -213,16 +225,22 @@ func (k *Keeper) BatchRevokeCredentials(ctx sdk.Context, credentialIDs []string,
 // VerifyCredential verifies a credential with comprehensive checks
 // This is the main entry point for credential verification
 func (k *Keeper) VerifyCredential(ctx sdk.Context, credentialID, did string) error {
+	// Get metrics instance
+	metrics := GetIdentityMetrics()
+
 	// Validate inputs
 	if credentialID == "" {
+		metrics.CredVerificationFails.WithLabelValues("invalid_credential_id").Inc()
 		return types.ErrInvalidCredentialID.Wrap("credential ID cannot be empty")
 	}
 	if did == "" {
+		metrics.CredVerificationFails.WithLabelValues("invalid_did").Inc()
 		return types.ErrInvalidDID.Wrap("DID cannot be empty")
 	}
 
 	// CHECK REVOCATION FIRST - this is the critical security check
 	if k.IsCredentialRevoked(ctx, credentialID) {
+		metrics.CredVerificationFails.WithLabelValues("revoked").Inc()
 		// Get revocation details for audit
 		revocation, err := k.GetCredentialRevocation(ctx, credentialID)
 		if err == nil {
@@ -240,21 +258,27 @@ func (k *Keeper) VerifyCredential(ctx sdk.Context, credentialID, did string) err
 	// Verify identity exists and is active
 	record, err := k.GetIdentityRecord(ctx, did)
 	if err != nil {
+		metrics.CredVerificationFails.WithLabelValues("identity_not_found").Inc()
 		return types.ErrIdentityNotFound.Wrapf("identity %s not found", did)
 	}
 
 	// Check if identity is erased (GDPR compliance)
 	if record.Erased {
+		metrics.CredVerificationFails.WithLabelValues("identity_erased").Inc()
 		return types.ErrIdentityErased.Wrapf("identity %s has been erased", did)
 	}
 
 	// Check identity status
 	if record.Status != types.IdentityStatusActive {
+		metrics.CredVerificationFails.WithLabelValues("identity_not_active").Inc()
 		return types.ErrIdentityNotFound.Wrapf("identity %s is not active (status: %s)", did, record.Status.String())
 	}
 
 	// Additional credential verification logic can be added here
 	// For example: expiration checks, signature verification, etc.
+
+	// Record successful verification
+	metrics.CredentialsVerified.WithLabelValues("success").Inc()
 
 	return nil
 }
