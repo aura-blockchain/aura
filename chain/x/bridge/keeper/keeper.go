@@ -949,6 +949,102 @@ func (k Keeper) ProcessWithdrawal(ctx sdk.Context, recipient string, amount sdk.
 	return nil
 }
 
+// InitiateTransfer initiates a cross-chain transfer
+//
+// This method creates a new cross-chain transfer request from the Aura chain to a target chain.
+// It validates all inputs, checks bridge configuration, and creates a pending transfer record.
+//
+// Parameters:
+//   - ctx: SDK context for state access
+//   - sender: Address initiating the transfer (on Aura chain)
+//   - recipient: Destination address (on target chain)
+//   - amount: Coins to transfer (with denomination)
+//   - targetChain: Target chain identifier (e.g., "ethereum", "paw")
+//
+// Returns:
+//   - transferID: Unique identifier for this transfer
+//   - error: Validation errors, unsupported chain, or max amount exceeded
+//
+// Security considerations:
+//   - Input validation: All parameters are validated for non-empty/non-zero values
+//   - Chain validation: Target chain must be supported and enabled
+//   - Amount limits: Transfer amount must not exceed configured maximum
+//   - Bridge status: Bridge must be enabled in params
+func (k Keeper) InitiateTransfer(ctx sdk.Context, sender string, recipient string, amount sdk.Coins, targetChain string) (string, error) {
+	// Validate inputs
+	if sender == "" {
+		return "", fmt.Errorf("sender address required")
+	}
+	if recipient == "" {
+		return "", fmt.Errorf("recipient address required")
+	}
+	if amount.Empty() || !amount.IsValid() {
+		return "", fmt.Errorf("amount must be positive and valid")
+	}
+	if targetChain == "" {
+		return "", fmt.Errorf("target chain required")
+	}
+
+	// Check if bridge is paused
+	if err := k.RequireNotPaused(ctx, targetChain); err != nil {
+		return "", err
+	}
+
+	// Validate target chain is supported and enabled
+	chainConfig, found := k.getChainConfig(ctx, targetChain)
+	if !found {
+		return "", fmt.Errorf("unsupported chain: %s", targetChain)
+	}
+	if !chainConfig.Enabled {
+		return "", fmt.Errorf("chain %s is currently disabled", targetChain)
+	}
+
+	// Validate amount does not exceed maximum
+	params := k.GetParams(ctx)
+	maxAmt, ok := math.NewIntFromString(params.MaxTransferAmount)
+	if !ok {
+		return "", fmt.Errorf("invalid max transfer amount param")
+	}
+	transferAmt := amount.AmountOf(amount[0].Denom)
+	if transferAmt.GT(maxAmt) {
+		return "", types.ErrCircuitBreakerTripped
+	}
+
+	// Generate unique transfer ID
+	transferID := k.nextTransferID(ctx)
+
+	// Create cross-chain transfer record
+	transfer := &types.CrossChainTransfer{
+		TransferId:  transferID,
+		SourceChain: sourceChainAura,
+		TargetChain: targetChain,
+		Sender:      sender,
+		Recipient:   recipient,
+		Amount:      transferAmt.String(),
+		Denom:       amount[0].Denom,
+		Status:      types.TransferStatus_PENDING,
+		Timestamp:   timestamppb.New(ctx.BlockTime()),
+	}
+
+	// Store transfer
+	k.setTransfer(ctx, transfer)
+
+	// Emit event for transfer initiation
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			"bridge_transfer_initiated",
+			sdk.NewAttribute("transfer_id", transferID),
+			sdk.NewAttribute("sender", sender),
+			sdk.NewAttribute("recipient", recipient),
+			sdk.NewAttribute("amount", transferAmt.String()),
+			sdk.NewAttribute("denom", amount[0].Denom),
+			sdk.NewAttribute("target_chain", targetChain),
+		),
+	)
+
+	return transferID, nil
+}
+
 // InitiateWithdrawal stores a pending withdrawal with timestamp metadata
 func (k Keeper) InitiateWithdrawal(ctx sdk.Context, recipient string, amount sdk.Coins) (string, error) {
 	transferID := k.nextTransferID(ctx)
