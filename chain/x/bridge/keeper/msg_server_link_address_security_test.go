@@ -473,11 +473,8 @@ func TestLinkAddress_NoSigner(t *testing.T) {
 	require.Equal(t, codes.Unauthenticated, st.Code())
 }
 
-// TestVerifyPawAddressOwnership_ValidSignature tests PAW signature verification with valid signature
-// SKIPPED: This test used fake signatures. See signature_verification_test.go for proper tests.
-func TestVerifyPawAddressOwnership_ValidSignature(t *testing.T) {
-	t.Skip("Obsolete test - see signature_verification_test.go for proper cryptographic signature tests")
-}
+// TestVerifyPawAddressOwnership_ValidSignature is obsolete.
+// See signature_verification_test.go for proper cryptographic signature tests.
 
 // TestVerifyPawAddressOwnership_InvalidSignature tests PAW signature verification with invalid signature
 func TestVerifyPawAddressOwnership_InvalidSignature(t *testing.T) {
@@ -508,11 +505,8 @@ func TestVerifyPawAddressOwnership_EmptySignature(t *testing.T) {
 	require.False(t, result, "should reject empty signature")
 }
 
-// TestVerifyXaiAddressOwnership_ValidSignature tests XAI signature verification with valid signature
-// SKIPPED: This test used fake signatures. See signature_verification_test.go for proper tests.
-func TestVerifyXaiAddressOwnership_ValidSignature(t *testing.T) {
-	t.Skip("Obsolete test - see signature_verification_test.go for proper cryptographic signature tests")
-}
+// TestVerifyXaiAddressOwnership_ValidSignature is obsolete.
+// See signature_verification_test.go for proper cryptographic signature tests.
 
 // OBSOLETE TEST BELOW (skipped above):
 /*

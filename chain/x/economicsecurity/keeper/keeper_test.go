@@ -47,8 +47,7 @@ func TestKeeperFunctionality(t *testing.T) {
 		VestingDuration:     31536000,
 		CliffDuration:       7776000,
 		StartTime:           timestamppb.New(time.Now()),
-		Creator:             "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
-		VestingType:         types.VestingType_LINEAR,
+		VestingType:         types.VestingTypeLinear,
 	}
 
 	// Set vesting schedule
@@ -132,8 +131,8 @@ func TestKeeperFunctionality(t *testing.T) {
 	// Test inflation alert operations
 	alert := &types.InflationAlert{
 		AlertId:              "test-alert-1",
-		AlertType:            types.InflationAlertType_RATE_SPIKE,
-		Severity:             types.AlertSeverity_CRITICAL,
+		AlertType:            types.InflationAlertTypeRapidChange,
+		Severity:             types.AlertSeverityCritical,
 		CurrentInflationRate: 2000,
 		TriggeredAt:          timestamppb.New(time.Now()),
 		Message:              "Critical inflation spike detected",

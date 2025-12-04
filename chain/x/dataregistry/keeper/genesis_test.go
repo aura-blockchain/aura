@@ -33,16 +33,16 @@ func TestInitGenesis(t *testing.T) {
 			{
 				DataId:          "genesis-data-1",
 				OwnerAddress:    "aura1owner",
-				DataType:        types.DataItemType_DataItemType_DATA_ITEM_TYPE_PHOTO,
-				ContentHash:     []byte("hash1",
+				DataType:        types.DataItemType_DATA_ITEM_TYPE_PHOTO,
+				ContentHash:     []byte("hash1"),
 				StorageLocation: "ipfs://genesis1",
-				Status:          types.DataItemStatus_DataItemStatus_DATA_ITEM_STATUS_PENDING_VERIFICATION,
+				Status:          types.DataItemStatus_DATA_ITEM_STATUS_PENDING_VERIFICATION,
 			},
 			{
 				DataId:          "genesis-data-2",
 				OwnerAddress:    "aura1owner2",
-				DataType:        types.DataItemType_DataItemType_DATA_ITEM_TYPE_PHOTO,
-				ContentHash:     []byte("hash2",
+				DataType:        types.DataItemType_DATA_ITEM_TYPE_VIDEO,
+				ContentHash:     []byte("hash2"),
 				StorageLocation: "ipfs://genesis2",
 				Status:          types.DataItemStatus_DATA_ITEM_STATUS_VERIFIED,
 			},
@@ -91,17 +91,17 @@ func TestExportGenesis(t *testing.T) {
 	item1 := types.DataItem{
 		DataId:          "export-data-1",
 		OwnerAddress:    "aura1owner",
-		DataType:        types.DataItemType_DataItemType_DATA_ITEM_TYPE_PHOTO,
-		ContentHash:     []byte("hash1",
+		DataType:        types.DataItemType_DATA_ITEM_TYPE_PHOTO,
+		ContentHash:     []byte("hash1"),
 		StorageLocation: "ipfs://export1",
-		Status:          types.DataItemStatus_DataItemStatus_DATA_ITEM_STATUS_PENDING_VERIFICATION,
+		Status:          types.DataItemStatus_DATA_ITEM_STATUS_PENDING_VERIFICATION,
 	}
 
 	item2 := types.DataItem{
 		DataId:          "export-data-2",
 		OwnerAddress:    "aura1owner2",
-		DataType:        types.DataItemType_DataItemType_DATA_ITEM_TYPE_PHOTO,
-		ContentHash:     []byte("hash2",
+		DataType:        types.DataItemType_DATA_ITEM_TYPE_VIDEO,
+		ContentHash:     []byte("hash2"),
 		StorageLocation: "ipfs://export2",
 		Status:          types.DataItemStatus_DATA_ITEM_STATUS_VERIFIED,
 	}
@@ -161,11 +161,11 @@ func TestGenesisRoundTrip(t *testing.T) {
 			{
 				DataId:          "roundtrip-data-1",
 				OwnerAddress:    "aura1owner",
-				DataType:        types.DataItemType_DataItemType_DATA_ITEM_TYPE_PHOTO,
-				ContentHash:     []byte("hash1",
+				DataType:        types.DataItemType_DATA_ITEM_TYPE_PHOTO,
+				ContentHash:     []byte("hash1"),
 				StorageLocation: "ipfs://roundtrip1",
-				Status:          types.DataItemStatus_DataItemStatus_DATA_ITEM_STATUS_PENDING_VERIFICATION,
-				Title:           "Test Document",
+				Status:          types.DataItemStatus_DATA_ITEM_STATUS_PENDING_VERIFICATION,
+				Title:           "Test Photo",
 				Tags:            []string{"test", "roundtrip"},
 			},
 		},
@@ -224,20 +224,20 @@ func TestInitGenesis_WithVerifications(t *testing.T) {
 			{
 				DataId:          "verified-data-1",
 				OwnerAddress:    "aura1owner",
-				DataType:        types.DataItemType_DataItemType_DATA_ITEM_TYPE_PHOTO,
-				ContentHash:     []byte("hash1",
+				DataType:        types.DataItemType_DATA_ITEM_TYPE_PHOTO,
+				ContentHash:     []byte("hash1"),
 				StorageLocation: "ipfs://verified1",
 				Status:          types.DataItemStatus_DATA_ITEM_STATUS_VERIFIED,
 				Verifications: []*types.Verification{
 					{
-						VerifierId: "aura1verifier1",
-						Timestamp:  1234567890,
-						Signature:  "sig1",
+						VerifierAddress:    "aura1verifier1",
+						VerificationMethod: "manual",
+						ConfidenceScore:    95,
 					},
 					{
-						VerifierId: "aura1verifier2",
-						Timestamp:  1234567900,
-						Signature:  "sig2",
+						VerifierAddress:    "aura1verifier2",
+						VerificationMethod: "automated",
+						ConfidenceScore:    85,
 					},
 				},
 			},
@@ -254,8 +254,8 @@ func TestInitGenesis_WithVerifications(t *testing.T) {
 	require.True(t, found)
 	require.Equal(t, types.DataItemStatus_DATA_ITEM_STATUS_VERIFIED, item.Status)
 	require.Len(t, item.Verifications, 2)
-	require.Equal(t, "aura1verifier1", item.Verifications[0].VerifierId)
-	require.Equal(t, "aura1verifier2", item.Verifications[1].VerifierId)
+	require.Equal(t, "aura1verifier1", item.Verifications[0].VerifierAddress)
+	require.Equal(t, "aura1verifier2", item.Verifications[1].VerifierAddress)
 }
 
 func TestInitGenesis_WithTypeSpecificData(t *testing.T) {
@@ -279,28 +279,28 @@ func TestInitGenesis_WithTypeSpecificData(t *testing.T) {
 		Params: &defaultParams,
 		DataItems: []*types.DataItem{
 			{
-				DataId:          "doc-1",
+				DataId:          "photo-1",
 				OwnerAddress:    "aura1owner",
-				DataType:        types.DataItemType_DataItemType_DATA_ITEM_TYPE_PHOTO,
-				ContentHash:     []byte("doc_hash"),
-				StorageLocation: "ipfs://doc",
-				Status:          types.DataItemStatus_DataItemStatus_DATA_ITEM_STATUS_PENDING_VERIFICATION,
+				DataType:        types.DataItemType_DATA_ITEM_TYPE_PHOTO,
+				ContentHash:     []byte("photo_hash"),
+				StorageLocation: "ipfs://photo",
+				Status:          types.DataItemStatus_DATA_ITEM_STATUS_PENDING_VERIFICATION,
 			},
 			{
-				DataId:          "image-1",
+				DataId:          "video-1",
 				OwnerAddress:    "aura1owner",
-				DataType:        types.DataItemType_DataItemType_DATA_ITEM_TYPE_PHOTO,
-				ContentHash:     []byte("img_hash"),
-				StorageLocation: "ipfs://image",
-				Status:          types.DataItemStatus_DataItemStatus_DATA_ITEM_STATUS_PENDING_VERIFICATION,
+				DataType:        types.DataItemType_DATA_ITEM_TYPE_VIDEO,
+				ContentHash:     []byte("video_hash"),
+				StorageLocation: "ipfs://video",
+				Status:          types.DataItemStatus_DATA_ITEM_STATUS_PENDING_VERIFICATION,
 			},
 			{
 				DataId:          "audio-1",
 				OwnerAddress:    "aura1owner",
-				DataType:        types.DataItemType_DataItemType_DATA_ITEM_TYPE_AUDIO,
+				DataType:        types.DataItemType_DATA_ITEM_TYPE_AUDIO,
 				ContentHash:     []byte("audio_hash"),
 				StorageLocation: "ipfs://audio",
-				Status:          types.DataItemStatus_DataItemStatus_DATA_ITEM_STATUS_PENDING_VERIFICATION,
+				Status:          types.DataItemStatus_DATA_ITEM_STATUS_PENDING_VERIFICATION,
 			},
 		},
 		NextDataId: 1,
@@ -311,15 +311,15 @@ func TestInitGenesis_WithTypeSpecificData(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify each type was stored correctly
-	doc, found := k.GetDataItem(input.Ctx, "doc-1")
+	photo, found := k.GetDataItem(input.Ctx, "photo-1")
 	require.True(t, found)
-	require.Equal(t, types.DataItemType_DataItemType_DATA_ITEM_TYPE_PHOTO, doc.DataType)
+	require.Equal(t, types.DataItemType_DATA_ITEM_TYPE_PHOTO, photo.DataType)
 
-	img, found := k.GetDataItem(input.Ctx, "image-1")
+	video, found := k.GetDataItem(input.Ctx, "video-1")
 	require.True(t, found)
-	require.Equal(t, types.DataItemType_DataItemType_DATA_ITEM_TYPE_PHOTO, img.DataType)
+	require.Equal(t, types.DataItemType_DATA_ITEM_TYPE_VIDEO, video.DataType)
 
 	audio, found := k.GetDataItem(input.Ctx, "audio-1")
 	require.True(t, found)
-	require.Equal(t, types.DataItemType_DataItemType_DATA_ITEM_TYPE_AUDIO, audio.DataType)
+	require.Equal(t, types.DataItemType_DATA_ITEM_TYPE_AUDIO, audio.DataType)
 }

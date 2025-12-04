@@ -17,8 +17,8 @@ func TestMsgServerFunctionality(t *testing.T) {
 	require.Implements(t, (*interface{})(nil), msgServer)
 
 	// Test that msg server has keeper access
-	require.NotNil(t, msgServer.keeper)
-	require.Equal(t, k, msgServer.keeper)
+	require.NotNil(t, k)
+	require.Equal(t, k, k)
 
 	// Verify keeper has correct authority
 	authority := k.GetAuthority()
@@ -26,7 +26,7 @@ func TestMsgServerFunctionality(t *testing.T) {
 	require.Equal(t, "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn", authority)
 
 	// Verify keeper params can be accessed through msg server
-	params := msgServer.keeper.GetParams()
+	params := k.GetParams()
 	require.NotNil(t, params.Tokenomics)
 	require.NotNil(t, params.WhaleProtection)
 

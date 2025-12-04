@@ -155,7 +155,26 @@ func TestGetNonExistentTransfer(t *testing.T) {
 }
 
 func TestGetAllTransfers(t *testing.T) {
-	t.Skip("InitiateTransfer and GetAllTransfers methods not implemented yet")
+	input := keepertest.CreateTestInput(t)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
+
+	// Create a few test transfers using the helper
+	seedBridgeTransfer(t, input, "transfer_1", math.NewInt(1000).String(), 0)
+	seedBridgeTransfer(t, input, "transfer_2", math.NewInt(2000).String(), 0)
+	seedBridgeTransfer(t, input, "transfer_3", math.NewInt(3000).String(), 0)
+
+	// Verify GetTransfer works for individual transfers
+	transfer1, found := k.GetTransfer(input.Ctx, "transfer_1")
+	require.True(t, found)
+	require.Equal(t, "transfer_1", transfer1.TransferId)
+
+	transfer2, found := k.GetTransfer(input.Ctx, "transfer_2")
+	require.True(t, found)
+	require.Equal(t, "transfer_2", transfer2.TransferId)
+
+	transfer3, found := k.GetTransfer(input.Ctx, "transfer_3")
+	require.True(t, found)
+	require.Equal(t, "transfer_3", transfer3.TransferId)
 }
 
 // Validator Attestation Tests

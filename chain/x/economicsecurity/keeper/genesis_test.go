@@ -25,8 +25,7 @@ func TestInitGenesis(t *testing.T) {
 				VestingDuration:     31536000, // 1 year
 				CliffDuration:       7776000,  // 90 days
 				StartTime:           timestamppb.New(time.Now()),
-				Creator:             "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
-				VestingType:         types.VestingType_LINEAR,
+				VestingType:         types.VestingTypeLinear,
 			},
 			{
 				ScheduleId:          "advisor-vesting-1",
@@ -36,8 +35,7 @@ func TestInitGenesis(t *testing.T) {
 				VestingDuration:     15768000, // 6 months
 				CliffDuration:       2592000,  // 30 days
 				StartTime:           timestamppb.New(time.Now()),
-				Creator:             "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
-				VestingType:         types.VestingType_CLIFF,
+				VestingType:         types.VestingTypeCliffThenLinear,
 			},
 		},
 		VoteLocks: []*types.VoteLock{
@@ -64,8 +62,8 @@ func TestInitGenesis(t *testing.T) {
 		InflationAlerts: []*types.InflationAlert{
 			{
 				AlertId:              "alert-1",
-				AlertType:            types.InflationAlertType_RATE_SPIKE,
-				Severity:             types.AlertSeverity_HIGH,
+				AlertType:            types.InflationAlertTypeRapidChange,
+				Severity:             types.AlertSeverityWarning,
 				CurrentInflationRate: 1200,
 				TriggeredAt:          timestamppb.New(time.Now()),
 				Message:              "Inflation spike detected",
@@ -120,14 +118,14 @@ func TestInitGenesis(t *testing.T) {
 	// Verify inflation alert was loaded
 	alert, err := k.GetInflationAlert(ctx, "alert-1")
 	require.NoError(t, err)
-	require.Equal(t, types.InflationAlertType_RATE_SPIKE, alert.AlertType)
+	require.Equal(t, types.InflationAlertTypeRapidChange, alert.AlertType)
 	require.Equal(t, uint64(1200), alert.CurrentInflationRate)
 
 	// Verify large tx record was loaded
 	record, err := k.GetLargeTxRecord(ctx, "hash-1")
 	require.NoError(t, err)
 	require.Equal(t, "5000000", record.Amount)
-	require.Equal(t, uint32(250), record.PercentageOfSupply)
+	require.Equal(t, uint64(250), record.PercentageOfSupply)
 
 	// Verify last large tx times were loaded
 	lastTime, err := k.GetLastLargeTxTime(ctx, "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn")
@@ -160,8 +158,7 @@ func TestExportGenesis(t *testing.T) {
 		VestingDuration:     31536000,
 		CliffDuration:       7776000,
 		StartTime:           timestamppb.New(time.Now()),
-		Creator:             "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
-		VestingType:         types.VestingType_LINEAR,
+		VestingType:         types.VestingTypeLinear,
 	}
 	err := k.SetVestingSchedule(ctx, schedule)
 	require.NoError(t, err)
@@ -191,8 +188,8 @@ func TestExportGenesis(t *testing.T) {
 
 	alert := &types.InflationAlert{
 		AlertId:              "export-test-alert",
-		AlertType:            types.InflationAlertType_RATE_DROP,
-		Severity:             types.AlertSeverity_MEDIUM,
+		AlertType:            types.InflationAlertTypeBelowTarget,
+		Severity:             types.AlertSeverityInfo,
 		CurrentInflationRate: 800,
 		TriggeredAt:          timestamppb.New(time.Now()),
 		Message:              "Test alert",
@@ -255,8 +252,7 @@ func TestGenesisRoundTrip(t *testing.T) {
 				VestingDuration:     31536000,
 				CliffDuration:       7776000,
 				StartTime:           timestamppb.New(time.Now()),
-				Creator:             "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
-				VestingType:         types.VestingType_LINEAR,
+				VestingType:         types.VestingTypeLinear,
 			},
 		},
 		VoteLocks: []*types.VoteLock{
@@ -283,8 +279,8 @@ func TestGenesisRoundTrip(t *testing.T) {
 		InflationAlerts: []*types.InflationAlert{
 			{
 				AlertId:              "roundtrip-alert",
-				AlertType:            types.InflationAlertType_RATE_SPIKE,
-				Severity:             types.AlertSeverity_CRITICAL,
+				AlertType:            types.InflationAlertTypeRapidChange,
+				Severity:             types.AlertSeverityCritical,
 				CurrentInflationRate: 1500,
 				TriggeredAt:          timestamppb.New(time.Now()),
 				Message:              "Critical inflation alert",
@@ -352,7 +348,7 @@ func TestGenesisRoundTrip(t *testing.T) {
 func TestDefaultGenesis(t *testing.T) {
 	// Test that default genesis is valid
 	require.NotPanics(t, func() {
-		genesis := types.DefaultGenesisState()
+		genesis := types.DefaultGenesis()
 		require.NotNil(t, genesis)
 		require.NotNil(t, genesis.Params)
 
@@ -377,8 +373,7 @@ func TestInitGenesis_WithMultipleSchedules(t *testing.T) {
 				VestingDuration:     31536000,
 				CliffDuration:       7776000,
 				StartTime:           timestamppb.New(time.Now()),
-				Creator:             "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
-				VestingType:         types.VestingType_LINEAR,
+				VestingType:         types.VestingTypeLinear,
 			},
 			{
 				ScheduleId:          "team-vesting-2",
@@ -388,8 +383,7 @@ func TestInitGenesis_WithMultipleSchedules(t *testing.T) {
 				VestingDuration:     15768000,
 				CliffDuration:       2592000,
 				StartTime:           timestamppb.New(time.Now().Add(-30 * 24 * time.Hour)),
-				Creator:             "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
-				VestingType:         types.VestingType_CLIFF,
+				VestingType:         types.VestingTypeCliffThenLinear,
 			},
 			{
 				ScheduleId:          "advisor-vesting-1",
@@ -399,8 +393,7 @@ func TestInitGenesis_WithMultipleSchedules(t *testing.T) {
 				VestingDuration:     15768000,
 				CliffDuration:       2592000,
 				StartTime:           timestamppb.New(time.Now()),
-				Creator:             "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
-				VestingType:         types.VestingType_LINEAR,
+				VestingType:         types.VestingTypeLinear,
 			},
 		},
 	}
