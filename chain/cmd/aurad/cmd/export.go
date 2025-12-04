@@ -43,10 +43,10 @@ Example:
 			serverCtx := server.GetServerContextFromCmd(cmd)
 			clientCtx := client.GetClientContextFromCmd(cmd)
 
-			height, _ := cmd.Flags().GetInt64("height")
+			height, _ := cmd.Flags().GetInt64("export-height")
 			forZeroHeight, _ := cmd.Flags().GetBool("for-zero-height")
 			jailedValidators, _ := cmd.Flags().GetBool("jailed-validators")
-			outputFile, _ := cmd.Flags().GetString("output")
+			outputFile, _ := cmd.Flags().GetString("output-file")
 			modulesToExport, _ := cmd.Flags().GetStringSlice("modules-to-export")
 
 			fmt.Fprintf(os.Stderr, "=== Export Blockchain State ===\n\n")
@@ -130,12 +130,13 @@ Example:
 		},
 	}
 
+	cmd.Flags().Int64("export-height", 0, "Export at specific height (0 for latest)")
 	cmd.Flags().Bool("for-zero-height", false, "Export for chain restart (resets height to 0)")
 	cmd.Flags().Bool("jailed-validators", false, "Include jailed validators in export")
+	cmd.Flags().String("output-file", "", "Output file path (default: stdout)")
 	cmd.Flags().StringSlice("modules-to-export", []string{}, "Specific modules to export (default: all)")
 	cmd.Flags().Bool("indent", true, "Indent JSON output for readability")
 	cmd.Flags().Bool("skip-validate", false, "Skip genesis validation after export")
-	// Note: Do not add query flags here - they conflict with root persistent flags
 
 	return cmd
 }
