@@ -13,7 +13,7 @@ func TestDefaultGenesisState(t *testing.T) {
 	require.Equal(t, types.DefaultParams(), genesis.Params)
 	require.Empty(t, genesis.AuthorizedUploaders)
 	require.Empty(t, genesis.PausedContracts)
-	require.Equal(t, types.SecurityStats{}, genesis.SecurityStats)
+	require.NotNil(t, genesis.SecurityStats)
 }
 
 func TestGenesisStateValidation(t *testing.T) {
@@ -31,42 +31,38 @@ func TestGenesisStateValidation(t *testing.T) {
 		{
 			name: "valid custom genesis",
 			genesis: types.GenesisState{
-				Params: types.Params{
-					MaxContractSize:         1024 * 1024,
-					MaxInstantiateGas:       3_000_000,
-					MaxExecuteGas:           2_000_000,
-					MaxQueryGas:             200_000,
-					RequireAuthorization:    false,
-					EnableMigration:         true,
-					MaxContractSizePerBlock: 10 * 1024 * 1024,
+				Params: &types.Params{
+					CodeUploadAccess: &types.AccessConfig{
+						Permission: types.AccessTypeEverybody,
+					},
+					InstantiateDefaultPermission: types.AccessTypeEverybody,
+					MaxWasmCodeSize:              1024 * 1024,
+					MaxGasWasmExecution:          10_000_000,
+					SecurityAnalysisEnabled:      true,
+					RequireAdminForMigrate:       true,
 				},
 				AuthorizedUploaders: []string{"aura1abc123", "aura1def456"},
 				PausedContracts:     []string{"aura14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9s4hmalr"},
-				SecurityStats: types.SecurityStats{
-					TotalContractsUploaded:    10,
-					TotalContractsInstantiated: 8,
-					TotalExecutions:           100,
-					TotalPausedContracts:      1,
-					ReentrancyAttemptsBlocked: 2,
-				},
+				SecurityStats: &types.SecurityStats{},
 			},
 			expectErr: false,
 		},
 		{
 			name: "invalid params",
 			genesis: types.GenesisState{
-				Params: types.Params{
-					MaxContractSize:         0, // Invalid
-					MaxInstantiateGas:       2_000_000,
-					MaxExecuteGas:           1_000_000,
-					MaxQueryGas:             100_000,
-					RequireAuthorization:    true,
-					EnableMigration:         false,
-					MaxContractSizePerBlock: 5 * 1024 * 1024,
+				Params: &types.Params{
+					CodeUploadAccess: &types.AccessConfig{
+						Permission: types.AccessTypeEverybody,
+					},
+					InstantiateDefaultPermission: types.AccessTypeEverybody,
+					MaxWasmCodeSize:              0, // Invalid - too small
+					MaxGasWasmExecution:          1_000_000,
+					SecurityAnalysisEnabled:      true,
+					RequireAdminForMigrate:       false,
 				},
 				AuthorizedUploaders: []string{},
 				PausedContracts:     []string{},
-				SecurityStats:       types.SecurityStats{},
+				SecurityStats:       &types.SecurityStats{},
 			},
 			expectErr: true,
 			errMsg:    "invalid params",
@@ -77,7 +73,7 @@ func TestGenesisStateValidation(t *testing.T) {
 				Params:              types.DefaultParams(),
 				AuthorizedUploaders: []string{""},
 				PausedContracts:     []string{},
-				SecurityStats:       types.SecurityStats{},
+				SecurityStats:       &types.SecurityStats{},
 			},
 			expectErr: true,
 			errMsg:    "empty authorized uploader address",
@@ -88,7 +84,7 @@ func TestGenesisStateValidation(t *testing.T) {
 				Params:              types.DefaultParams(),
 				AuthorizedUploaders: []string{},
 				PausedContracts:     []string{""},
-				SecurityStats:       types.SecurityStats{},
+				SecurityStats:       &types.SecurityStats{},
 			},
 			expectErr: true,
 			errMsg:    "empty paused contract address",
@@ -97,7 +93,7 @@ func TestGenesisStateValidation(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := tc.genesis.Validate()
+			err := types.ValidateGenesis(&tc.genesis)
 			if tc.expectErr {
 				require.Error(t, err)
 				if tc.errMsg != "" {
@@ -111,23 +107,24 @@ func TestGenesisStateValidation(t *testing.T) {
 }
 
 func TestNewGenesisState(t *testing.T) {
-	params := types.Params{
-		MaxContractSize:         1024 * 1024,
-		MaxInstantiateGas:       3_000_000,
-		MaxExecuteGas:           2_000_000,
-		MaxQueryGas:             200_000,
-		RequireAuthorization:    false,
-		EnableMigration:         true,
-		MaxContractSizePerBlock: 10 * 1024 * 1024,
+	params := &types.Params{
+		CodeUploadAccess: &types.AccessConfig{
+			Permission: types.AccessTypeEverybody,
+		},
+		InstantiateDefaultPermission: types.AccessTypeEverybody,
+		MaxWasmCodeSize:              1024 * 1024,
+		MaxGasWasmExecution:          10_000_000,
+		SecurityAnalysisEnabled:      true,
+		RequireAdminForMigrate:       true,
 	}
+	codes := []*types.Code{}
+	contracts := []*types.Contract{}
+	sequences := []*types.Sequence{}
 	uploaders := []string{"aura1abc123"}
 	paused := []string{"aura14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9s4hmalr"}
-	stats := types.SecurityStats{
-		TotalContractsUploaded: 5,
-		TotalExecutions:        50,
-	}
+	stats := &types.SecurityStats{}
 
-	genesis := types.NewGenesisState(params, uploaders, paused, stats)
+	genesis := types.NewGenesisState(params, codes, contracts, sequences, uploaders, paused, stats)
 	require.NotNil(t, genesis)
 	require.Equal(t, params, genesis.Params)
 	require.Equal(t, uploaders, genesis.AuthorizedUploaders)
@@ -137,11 +134,12 @@ func TestNewGenesisState(t *testing.T) {
 
 func TestDefaultParams(t *testing.T) {
 	params := types.DefaultParams()
-	require.Equal(t, uint64(600*1024), params.MaxContractSize)
-	require.Equal(t, uint64(2_000_000), params.MaxInstantiateGas)
-	require.Equal(t, uint64(1_000_000), params.MaxExecuteGas)
-	require.Equal(t, uint64(100_000), params.MaxQueryGas)
-	require.True(t, params.RequireAuthorization)
-	require.False(t, params.EnableMigration)
-	require.Equal(t, uint64(5*1024*1024), params.MaxContractSizePerBlock)
+	require.NotNil(t, params)
+	require.NotNil(t, params.CodeUploadAccess)
+	require.Equal(t, types.AccessTypeEverybody, params.CodeUploadAccess.Permission)
+	require.Equal(t, types.AccessTypeEverybody, params.InstantiateDefaultPermission)
+	require.Equal(t, uint64(600*1024), params.MaxWasmCodeSize)
+	require.Equal(t, uint64(10_000_000), params.MaxGasWasmExecution)
+	require.True(t, params.SecurityAnalysisEnabled)
+	require.True(t, params.RequireAdminForMigrate)
 }

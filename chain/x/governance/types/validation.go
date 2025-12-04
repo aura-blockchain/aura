@@ -46,7 +46,7 @@ func DefaultGovernanceParams() GovernanceParams {
 	// Initialize category-specific parameters
 	categoryParams := map[string]*CategoryParams{
 		CategoryText.String(): {
-			MinDeposit:     "10000000",                           // 10 AURA
+			MinDeposit:     "10000000stake",                      // 10 AURA
 			VotingPeriod:   durationpb.New(7 * 24 * time.Hour),   // 7 days
 			Quorum:         "0.334",                              // 33.4%
 			Threshold:      "0.50",                               // 50%
@@ -54,7 +54,7 @@ func DefaultGovernanceParams() GovernanceParams {
 			ExecutionDelay: durationpb.New(48 * time.Hour),       // 48 hours
 		},
 		CategoryParameterChange.String(): {
-			MinDeposit:     "10000000",                           // 10 AURA
+			MinDeposit:     "10000000stake",                      // 10 AURA
 			VotingPeriod:   durationpb.New(7 * 24 * time.Hour),   // 7 days
 			Quorum:         "0.334",                              // 33.4%
 			Threshold:      "0.50",                               // 50%
@@ -62,7 +62,7 @@ func DefaultGovernanceParams() GovernanceParams {
 			ExecutionDelay: durationpb.New(48 * time.Hour),       // 48 hours
 		},
 		CategorySoftwareUpgrade.String(): {
-			MinDeposit:     "10000000",                           // 10 AURA
+			MinDeposit:     "10000000stake",                      // 10 AURA
 			VotingPeriod:   durationpb.New(7 * 24 * time.Hour),   // 7 days
 			Quorum:         "0.334",                              // 33.4%
 			Threshold:      "0.50",                               // 50%
@@ -70,7 +70,7 @@ func DefaultGovernanceParams() GovernanceParams {
 			ExecutionDelay: durationpb.New(48 * time.Hour),       // 48 hours
 		},
 		CategorySpending.String(): {
-			MinDeposit:     "10000000",                           // 10 AURA
+			MinDeposit:     "10000000stake",                      // 10 AURA
 			VotingPeriod:   durationpb.New(7 * 24 * time.Hour),   // 7 days
 			Quorum:         "0.334",                              // 33.4%
 			Threshold:      "0.50",                               // 50%
@@ -78,7 +78,7 @@ func DefaultGovernanceParams() GovernanceParams {
 			ExecutionDelay: durationpb.New(48 * time.Hour),       // 48 hours
 		},
 		CategoryEmergency.String(): {
-			MinDeposit:     "10000000",                           // 10 AURA
+			MinDeposit:     "10000000stake",                      // 10 AURA
 			VotingPeriod:   durationpb.New(24 * time.Hour),       // 24 hours
 			Quorum:         "0.600",                              // 60%
 			Threshold:      "0.750",                              // 75%
@@ -86,7 +86,7 @@ func DefaultGovernanceParams() GovernanceParams {
 			ExecutionDelay: durationpb.New(0),                    // No delay for emergency
 		},
 		CategoryConstitution.String(): {
-			MinDeposit:     "10000000",                           // 10 AURA
+			MinDeposit:     "10000000stake",                      // 10 AURA
 			VotingPeriod:   durationpb.New(7 * 24 * time.Hour),   // 7 days
 			Quorum:         "0.667",                              // 66.7%
 			Threshold:      "0.750",                              // 75%
@@ -97,7 +97,7 @@ func DefaultGovernanceParams() GovernanceParams {
 
 	return GovernanceParams{
 		// Deposit parameters
-		MinDeposit:       "10000000", // 10 AURA
+		MinDeposit:       "10000000stake", // 10 AURA (using stake denom for genesis compatibility)
 		MaxDepositPeriod: durationpb.New(7 * 24 * time.Hour), // 7 days
 
 		// Voting parameters
