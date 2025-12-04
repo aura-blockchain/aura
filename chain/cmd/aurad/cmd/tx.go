@@ -4,7 +4,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
 	authcli "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
 	bankcli "github.com/cosmos/cosmos-sdk/x/bank/client/cli"
 	distrcli "github.com/cosmos/cosmos-sdk/x/distribution/client/cli"
@@ -64,22 +63,5 @@ func TxCmd() *cobra.Command {
 	// - vcregistry txs (x/vcregistry/client/cli)
 	// etc.
 
-	enforceLegacyAminoSignMode(cmd)
-
 	return cmd
-}
-
-// enforceLegacyAminoSignMode walks the tx command tree and sets LEGACY_AMINO_JSON
-// as the default sign mode so callers that omit --sign-mode still use amino.
-func enforceLegacyAminoSignMode(cmd *cobra.Command) {
-	if flag := cmd.Flags().Lookup(flags.FlagSignMode); flag != nil {
-		flag.DefValue = flags.SignModeLegacyAminoJSON
-		if !cmd.Flags().Changed(flags.FlagSignMode) {
-			_ = flag.Value.Set(flags.SignModeLegacyAminoJSON)
-		}
-	}
-
-	for _, sub := range cmd.Commands() {
-		enforceLegacyAminoSignMode(sub)
-	}
 }
