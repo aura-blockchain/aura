@@ -1,14 +1,42 @@
 package keeper
 
 import (
+	"fmt"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/vcregistry/types"
 	vcregistrypb "github.com/aequitas/aura/proto/aura/vcregistry/v1beta1"
 )
+
+// MockMinimalCSKeeper is a minimal mock for confidence score keeper
+type MockMinimalCSKeeper struct {
+	hasAnchor bool
+	score     uint64
+}
+
+func (m *MockMinimalCSKeeper) GetUserScore(walletAddr string) (uint64, bool) {
+	return m.score, true
+}
+
+func (m *MockMinimalCSKeeper) HasCompletedIR(walletAddr, irID string) bool {
+	return true // All IRs completed for simplified test
+}
+
+func (m *MockMinimalCSKeeper) GetAnchorInfo(walletAddr string) (interface{}, bool) {
+	return nil, m.hasAnchor
+}
+
+func (m *MockMinimalCSKeeper) GetArenaScore(walletAddr, arena string) (uint64, error) {
+	return 0, nil
+}
+
+func (m *MockMinimalCSKeeper) IsVerified(walletAddr string) bool {
+	return true
+}
 
 // TestCreatePresentation_SignerVerification tests that CreatePresentation rejects unauthorized signers
 func TestCreatePresentation_SignerVerification(t *testing.T) {
@@ -36,7 +64,28 @@ func TestCreatePresentation_SignerVerification(t *testing.T) {
 	err := k.SetDisclosurePolicy(ctx, policy)
 	require.NoError(t, err)
 
-	vcID, err := k.MintVC(ctx, aliceAddr, aliceDID, types.VCType_VC_TYPE_VERIFIED_HUMAN, "", nil)
+	// Setup VC Policy (required by MintVC for eligibility checking)
+	vcType := types.VCType_VC_TYPE_VERIFIED_HUMAN
+	vcPolicy := types.VCPolicy{
+		VcTypeName:         fmt.Sprintf("%d", vcType),
+		Status:             types.VCPolicyStatus_VC_POLICY_STATUS_ACTIVE,
+		Version:            "1",
+		CsThreshold:        0, // Set to 0 for simplified test
+		RequiredIrIds:      []string{},
+		RequiredArena:      "",
+		RequiredArenaScore: 0,
+		Singleton:          false,
+		ExpiryDurationDays: 365,
+		CreatedAt:          timestamppb.Now(),
+	}
+	err = k.SetVCPolicy(ctx, vcPolicy)
+	require.NoError(t, err)
+
+	// Setup mock CS keeper with minimal data
+	mockCS := &MockMinimalCSKeeper{hasAnchor: true, score: 0}
+	k.SetConfidenceScoreKeeper(mockCS)
+
+	vcID, err := k.MintVC(ctx, aliceAddr, aliceDID, vcType, "", nil)
 	require.NoError(t, err)
 
 	// Test: Bob tries to create a presentation using Alice's VC
@@ -118,7 +167,28 @@ func TestRevokeVC_SignerVerification(t *testing.T) {
 	err := k.SetDisclosurePolicy(ctx, policy)
 	require.NoError(t, err)
 
-	vcID, err := k.MintVC(ctx, aliceAddr, aliceDID, types.VCType_VC_TYPE_VERIFIED_HUMAN, "", nil)
+	// Setup VC Policy (required by MintVC for eligibility checking)
+	vcType := types.VCType_VC_TYPE_VERIFIED_HUMAN
+	vcPolicy := types.VCPolicy{
+		VcTypeName:         fmt.Sprintf("%d", vcType),
+		Status:             types.VCPolicyStatus_VC_POLICY_STATUS_ACTIVE,
+		Version:            "1",
+		CsThreshold:        0, // Set to 0 for simplified test
+		RequiredIrIds:      []string{},
+		RequiredArena:      "",
+		RequiredArenaScore: 0,
+		Singleton:          false,
+		ExpiryDurationDays: 365,
+		CreatedAt:          timestamppb.Now(),
+	}
+	err = k.SetVCPolicy(ctx, vcPolicy)
+	require.NoError(t, err)
+
+	// Setup mock CS keeper with minimal data
+	mockCS := &MockMinimalCSKeeper{hasAnchor: true, score: 0}
+	k.SetConfidenceScoreKeeper(mockCS)
+
+	vcID, err := k.MintVC(ctx, aliceAddr, aliceDID, vcType, "", nil)
 	require.NoError(t, err)
 
 	// Test: Bob tries to revoke Alice's VC
