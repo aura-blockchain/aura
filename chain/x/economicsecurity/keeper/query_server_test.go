@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -120,7 +121,7 @@ func TestPagination(t *testing.T) {
 	// Create multiple vesting schedules for pagination testing
 	for i := 1; i <= 25; i++ {
 		schedule := &types.VestingSchedule{
-			ScheduleId:          "schedule-" + string(rune('a'+i-1)),
+			ScheduleId:          fmt.Sprintf("schedule-%d", i),
 			BeneficiaryAddress:  "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
 			TotalAmount:         "1000000",
 			VestedAmount:        "0",
@@ -145,7 +146,7 @@ func TestPagination(t *testing.T) {
 	// Create multiple vote locks for pagination testing
 	for i := 1; i <= 15; i++ {
 		lock := &types.VoteLock{
-			LockId:      "lock-" + string(rune('a'+i-1)),
+			LockId:      fmt.Sprintf("lock-%d", i),
 			Owner:       "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
 			Amount:      "100000",
 			LockStart:   timestamppb.New(time.Now()),

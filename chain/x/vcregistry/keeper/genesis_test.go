@@ -14,10 +14,8 @@ import (
 )
 
 func TestInitGenesis(t *testing.T) {
-	t.Skip("These tests require refactoring to use proper SDK context - see keeper_kv_persistence_test.go for examples")
 	t.Run("init with default genesis", func(t *testing.T) {
-		k := NewKeeper(params.NewStore(*types.DefaultParams()), "authority")
-		ctx := context.Background()
+		k, ctx := setupKeeperForTest(t)
 
 		genesis := types.DefaultGenesisState()
 		err := k.InitGenesis(ctx, *genesis)
@@ -25,8 +23,7 @@ func TestInitGenesis(t *testing.T) {
 	})
 
 	t.Run("init with VC records", func(t *testing.T) {
-		k := NewKeeper(params.NewStore(*types.DefaultParams()), "authority")
-		ctx := context.Background()
+		k, ctx := setupKeeperForTest(t)
 
 		genesis := types.GenesisState{
 			Params: types.DefaultParams(),
@@ -73,9 +70,7 @@ func TestInitGenesis(t *testing.T) {
 	})
 
 	t.Run("init with revocation records", func(t *testing.T) {
-		k := NewKeeper(params.NewStore(*types.DefaultParams()), "authority")
-		ctx := context.Background()
-
+		k, ctx := setupKeeperForTest(t)
 		genesis := types.GenesisState{
 			Params:    types.DefaultParams(),
 			VcRecords: []*pb.VCRecord{},
@@ -112,9 +107,7 @@ func TestInitGenesis(t *testing.T) {
 	})
 
 	t.Run("init with DID documents", func(t *testing.T) {
-		k := NewKeeper(params.NewStore(*types.DefaultParams()), "authority")
-		ctx := context.Background()
-
+		k, ctx := setupKeeperForTest(t)
 		genesis := types.GenesisState{
 			Params:            types.DefaultParams(),
 			VcRecords:         []*pb.VCRecord{},
@@ -143,9 +136,7 @@ func TestInitGenesis(t *testing.T) {
 	})
 
 	t.Run("init with VC policies", func(t *testing.T) {
-		k := NewKeeper(params.NewStore(*types.DefaultParams()), "authority")
-		ctx := context.Background()
-
+		k, ctx := setupKeeperForTest(t)
 		genesis := types.GenesisState{
 			Params:            types.DefaultParams(),
 			VcRecords:         []*pb.VCRecord{},
@@ -172,9 +163,7 @@ func TestInitGenesis(t *testing.T) {
 	})
 
 	t.Run("init with user mint counts", func(t *testing.T) {
-		k := NewKeeper(params.NewStore(*types.DefaultParams()), "authority")
-		ctx := context.Background()
-
+		k, ctx := setupKeeperForTest(t)
 		genesis := types.GenesisState{
 			Params:                types.DefaultParams(),
 			VcRecords:             []*pb.VCRecord{},
@@ -198,9 +187,7 @@ func TestInitGenesis(t *testing.T) {
 	})
 
 	t.Run("init with presentations", func(t *testing.T) {
-		k := NewKeeper(params.NewStore(*types.DefaultParams()), "authority")
-		ctx := context.Background()
-
+		k, ctx := setupKeeperForTest(t)
 		genesis := types.GenesisState{
 			Params:            types.DefaultParams(),
 			VcRecords:         []*pb.VCRecord{},
@@ -229,9 +216,7 @@ func TestInitGenesis(t *testing.T) {
 	})
 
 	t.Run("init with attribute VCs", func(t *testing.T) {
-		k := NewKeeper(params.NewStore(*types.DefaultParams()), "authority")
-		ctx := context.Background()
-
+		k, ctx := setupKeeperForTest(t)
 		genesis := types.GenesisState{
 			Params:                types.DefaultParams(),
 			VcRecords:             []*pb.VCRecord{},
@@ -259,9 +244,7 @@ func TestInitGenesis(t *testing.T) {
 	})
 
 	t.Run("init with invalid genesis fails", func(t *testing.T) {
-		k := NewKeeper(params.NewStore(*types.DefaultParams()), "authority")
-		ctx := context.Background()
-
+		k, ctx := setupKeeperForTest(t)
 		genesis := types.GenesisState{
 			Params: &pb.Params{
 				MaxVcsPerUser: 0, // Invalid
@@ -283,9 +266,7 @@ func TestInitGenesis(t *testing.T) {
 	})
 
 	t.Run("init skips nil entries", func(t *testing.T) {
-		k := NewKeeper(params.NewStore(*types.DefaultParams()), "authority")
-		ctx := context.Background()
-
+		k, ctx := setupKeeperForTest(t)
 		genesis := types.GenesisState{
 			Params: types.DefaultParams(),
 			VcRecords: []*pb.VCRecord{
@@ -315,11 +296,8 @@ func TestInitGenesis(t *testing.T) {
 }
 
 func TestExportGenesis(t *testing.T) {
-	t.Skip("These tests require refactoring to use proper SDK context - see keeper_kv_persistence_test.go for examples")
 	t.Run("export empty state", func(t *testing.T) {
-		k := NewKeeper(params.NewStore(*types.DefaultParams()), "authority")
-		ctx := context.Background()
-
+		k, ctx := setupKeeperForTest(t)
 		genesis := k.ExportGenesis(ctx)
 
 		require.NotNil(t, genesis.Params)
@@ -331,9 +309,7 @@ func TestExportGenesis(t *testing.T) {
 	})
 
 	t.Run("export with data", func(t *testing.T) {
-		k := NewKeeper(params.NewStore(*types.DefaultParams()), "authority")
-		ctx := context.Background()
-
+		k, ctx := setupKeeperForTest(t)
 		// Initialize with data
 		initGenesis := types.GenesisState{
 			Params: types.DefaultParams(),
@@ -371,11 +347,8 @@ func TestExportGenesis(t *testing.T) {
 }
 
 func TestGenesisRoundTrip(t *testing.T) {
-	t.Skip("These tests require refactoring to use proper SDK context - see keeper_kv_persistence_test.go for examples")
 	t.Run("init then export produces same state", func(t *testing.T) {
-		k := NewKeeper(params.NewStore(*types.DefaultParams()), "authority")
-		ctx := context.Background()
-
+		k, ctx := setupKeeperForTest(t)
 		originalGenesis := types.GenesisState{
 			Params: types.DefaultParams(),
 			VcRecords: []*pb.VCRecord{
@@ -421,24 +394,22 @@ func TestGenesisRoundTrip(t *testing.T) {
 	})
 
 	t.Run("multiple round trips are deterministic", func(t *testing.T) {
-		k1 := NewKeeper(nil, "authority")
-		k2 := NewKeeper(nil, "authority")
-		ctx := context.Background()
-
+		k1, ctx1 := setupKeeperForTest(t)
+		k2, ctx2 := setupKeeperForTest(t)
 		genesis := types.DefaultGenesisState()
 		genesis.VcRecords = []*pb.VCRecord{
 			{VcId: "vc1", HolderAddress: "holder1", HolderDid: "did:aura:holder1", IssuerAssistant: "issuer1"},
 		}
 
 		// First round trip
-		err := k1.InitGenesis(ctx, *genesis)
+		err := k1.InitGenesis(ctx1, *genesis)
 		require.NoError(t, err)
-		export1 := k1.ExportGenesis(ctx)
+		export1 := k1.ExportGenesis(ctx1)
 
 		// Second round trip
-		err = k2.InitGenesis(ctx, export1)
+		err = k2.InitGenesis(ctx2, export1)
 		require.NoError(t, err)
-		export2 := k2.ExportGenesis(ctx)
+		export2 := k2.ExportGenesis(ctx2)
 
 		// Verify exports match
 		require.Len(t, export2.VcRecords, len(export1.VcRecords))
@@ -446,7 +417,6 @@ func TestGenesisRoundTrip(t *testing.T) {
 }
 
 func TestDefaultGenesis(t *testing.T) {
-	t.Skip("These tests require refactoring to use proper SDK context - see keeper_kv_persistence_test.go for examples")
 	t.Run("default genesis is valid", func(t *testing.T) {
 		genesis := types.DefaultGenesisState()
 
@@ -459,9 +429,7 @@ func TestDefaultGenesis(t *testing.T) {
 	})
 
 	t.Run("can init with default genesis", func(t *testing.T) {
-		k := NewKeeper(params.NewStore(*types.DefaultParams()), "authority")
-		ctx := context.Background()
-
+		k, ctx := setupKeeperForTest(t)
 		genesis := types.DefaultGenesisState()
 		err := k.InitGenesis(ctx, *genesis)
 		require.NoError(t, err)
@@ -477,11 +445,8 @@ func TestDefaultGenesis(t *testing.T) {
 }
 
 func TestGenesisIndexNoDuplicates(t *testing.T) {
-	t.Skip("These tests require refactoring to use proper SDK context - see keeper_kv_persistence_test.go for examples")
 	t.Run("presentation index not built twice", func(t *testing.T) {
-		k := NewKeeper(params.NewStore(*types.DefaultParams()), "authority")
-		ctx := context.Background()
-
+		k, ctx := setupKeeperForTest(t)
 		// Genesis with presentations AND their index
 		genesis := types.GenesisState{
 			Params:            types.DefaultParams(),
@@ -533,9 +498,7 @@ func TestGenesisIndexNoDuplicates(t *testing.T) {
 	})
 
 	t.Run("attribute VC index not built twice", func(t *testing.T) {
-		k := NewKeeper(params.NewStore(*types.DefaultParams()), "authority")
-		ctx := context.Background()
-
+		k, ctx := setupKeeperForTest(t)
 		// Genesis with attribute VCs AND their index
 		genesis := types.GenesisState{
 			Params:                types.DefaultParams(),
@@ -585,9 +548,7 @@ func TestGenesisIndexNoDuplicates(t *testing.T) {
 	})
 
 	t.Run("index validation detects mismatch", func(t *testing.T) {
-		k := NewKeeper(params.NewStore(*types.DefaultParams()), "authority")
-		ctx := context.Background()
-
+		k, ctx := setupKeeperForTest(t)
 		// Genesis with presentations but MISMATCHED index
 		genesis := types.GenesisState{
 			Params:            types.DefaultParams(),
@@ -619,9 +580,7 @@ func TestGenesisIndexNoDuplicates(t *testing.T) {
 	})
 
 	t.Run("index validation detects count mismatch", func(t *testing.T) {
-		k := NewKeeper(params.NewStore(*types.DefaultParams()), "authority")
-		ctx := context.Background()
-
+		k, ctx := setupKeeperForTest(t)
 		// Genesis with presentations but WRONG COUNT in index
 		genesis := types.GenesisState{
 			Params:            types.DefaultParams(),
@@ -653,9 +612,7 @@ func TestGenesisIndexNoDuplicates(t *testing.T) {
 	})
 
 	t.Run("pending disclosure index validated", func(t *testing.T) {
-		k := NewKeeper(params.NewStore(*types.DefaultParams()), "authority")
-		ctx := context.Background()
-
+		k, ctx := setupKeeperForTest(t)
 		// Genesis with pending disclosure index
 		genesis := types.GenesisState{
 			Params:                types.DefaultParams(),

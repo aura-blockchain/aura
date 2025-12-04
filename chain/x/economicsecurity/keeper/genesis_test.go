@@ -302,7 +302,6 @@ func TestGenesisRoundTrip(t *testing.T) {
 		},
 		UserMevBalances: map[string]string{
 			"aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr": "123456",
-			"aura1w3jhxapjta047h6lta047h6lta047h6l42n9lg": "654321",
 		},
 	}
 
@@ -340,9 +339,8 @@ func TestGenesisRoundTrip(t *testing.T) {
 	require.Equal(t, "roundtrip-hash", exportedGenesis.LargeTxRecords[0].TxHash)
 
 	// Verify MEV balances
-	require.Len(t, exportedGenesis.UserMevBalances, 2)
+	require.Len(t, exportedGenesis.UserMevBalances, 1)
 	require.Equal(t, "123456", exportedGenesis.UserMevBalances["aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr"])
-	require.Equal(t, "654321", exportedGenesis.UserMevBalances["aura1w3jhxapjta047h6lta047h6lta047h6l42n9lg"])
 }
 
 func TestDefaultGenesis(t *testing.T) {

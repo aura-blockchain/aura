@@ -47,12 +47,13 @@ func TestAllInvariants(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test with valid treasury tx
+	// NOTE: Signatures must be non-nil empty slice, not nil
 	validTx := &types.PendingTreasuryTx{
 		TxId:          "test-tx-1",
 		Recipient:     "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
 		Amount:        "100000",
 		Proposer:      "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
-		Signatures:    []string{},
+		Signatures:    make([]string, 0), // Empty slice, not nil
 		CreatedAt:     timestamppb.New(time.Now()),
 		ExecutableAt:  timestamppb.New(time.Now().Add(24 * time.Hour)),
 	}

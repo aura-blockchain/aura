@@ -57,7 +57,6 @@ func TestNewKeeper(t *testing.T) {
 // ============================
 
 func TestSetGetVCRecord(t *testing.T) {
-	t.Skip("This test requires refactoring to use proper SDK context - see keeper_kv_persistence_test.go for examples")
 	tests := []struct {
 		name      string
 		vcRecord  *types.VCRecord
@@ -107,10 +106,10 @@ func TestSetGetVCRecord(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			keeper := NewKeeper(nil, "authority")
+			keeper, ctx := setupKeeperForTest(t)
 
 			// Test SetVCRecord
-			err := keeper.SetVCRecord(context.Background(), *tt.vcRecord)
+			err := keeper.SetVCRecord(ctx, *tt.vcRecord)
 			if (err != nil) != tt.shouldErr {
 				t.Fatalf("SetVCRecord error: expected err=%v, got %v", tt.shouldErr, err)
 			}
@@ -123,7 +122,7 @@ func TestSetGetVCRecord(t *testing.T) {
 			}
 
 			// Test GetVCRecord
-			retrieved, ok := keeper.GetVCRecord(context.Background(), tt.vcRecord.VcId)
+			retrieved, ok := keeper.GetVCRecord(ctx, tt.vcRecord.VcId)
 			if !ok {
 				t.Fatal("expected to find VC record")
 			}
@@ -148,8 +147,8 @@ func TestSetGetVCRecord(t *testing.T) {
 // ============================
 
 func TestListUserVCs(t *testing.T) {
-	t.Skip("This test requires refactoring to use proper SDK context - see keeper_kv_persistence_test.go for examples")
-	keeper := NewKeeper(nil, "authority")
+	// Fixed: Now using setupKeeperForTest for proper SDK context with KV store
+	keeper, ctx := setupKeeperForTest(t)
 	holderAddr := "aura1testuser"
 
 	// Create multiple VCs with different types and statuses
@@ -190,7 +189,7 @@ func TestListUserVCs(t *testing.T) {
 
 	// Store all VCs
 	for _, vc := range vcs {
-		err := keeper.SetVCRecord(context.Background(), *vc)
+		err := keeper.SetVCRecord(ctx, *vc)
 		if err != nil {
 			t.Fatalf("failed to set VC record: %v", err)
 		}
@@ -241,7 +240,7 @@ func TestListUserVCs(t *testing.T) {
 				addr = "aura1unknown"
 			}
 
-			result := keeper.ListUserVCs(context.Background(), addr, tt.statusFilt, tt.typeFilt)
+			result := keeper.ListUserVCs(ctx, addr, tt.statusFilt, tt.typeFilt)
 			if len(result) != tt.expected {
 				t.Errorf("expected %d VCs, got %d", tt.expected, len(result))
 			}
@@ -254,8 +253,8 @@ func TestListUserVCs(t *testing.T) {
 // ============================
 
 func TestCheckVCStatus(t *testing.T) {
-	t.Skip("This test requires refactoring to use proper SDK context - see keeper_kv_persistence_test.go for examples")
-	keeper := NewKeeper(nil, "authority")
+	// Fixed: Now using setupKeeperForTest for proper SDK context with KV store
+	keeper, ctx := setupKeeperForTest(t)
 	currentTime := time.Now().Unix()
 	keeper.SetCurrentTime(currentTime)
 
@@ -349,10 +348,10 @@ func TestCheckVCStatus(t *testing.T) {
 					ExpiresAt:       tt.vcRecord.ExpiresAt,
 					IssuedHeight:    tt.vcRecord.IssuedHeight,
 				}
-				keeper.SetVCRecord(context.Background(), typesRecord)
+				keeper.SetVCRecord(ctx, typesRecord)
 			}
 
-			status, valid, err := keeper.CheckVCStatus(context.Background(), tt.vcID)
+			status, valid, err := keeper.CheckVCStatus(ctx, tt.vcID)
 
 			if (err != nil) != tt.shouldErr {
 				t.Fatalf("expected err=%v, got %v", tt.shouldErr, err)
@@ -375,11 +374,8 @@ func TestCheckVCStatus(t *testing.T) {
 // ============================
 
 func TestRevokeVC(t *testing.T) {
-	t.Skip("This test requires refactoring to use proper SDK context - see keeper_kv_persistence_test.go for examples")
-	keeper := NewKeeper(nil, "authority")
+	// Fixed: Now using setupKeeperForTest for proper SDK context with KV store
 	currentTime := time.Now().Unix()
-	keeper.SetCurrentTime(currentTime)
-	keeper.SetCurrentHeight(1000)
 
 	tests := []struct {
 		name      string
@@ -433,7 +429,7 @@ func TestRevokeVC(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Reset keeper for each test
-			keeper := NewKeeper(nil, "authority")
+			keeper, ctx := setupKeeperForTest(t)
 			keeper.SetCurrentTime(currentTime)
 			keeper.SetCurrentHeight(1000)
 
@@ -451,10 +447,10 @@ func TestRevokeVC(t *testing.T) {
 					ExpiresAt:       tt.vcRecord.ExpiresAt,
 					IssuedHeight:    tt.vcRecord.IssuedHeight,
 				}
-				keeper.SetVCRecord(context.Background(), typesRecord)
+				keeper.SetVCRecord(ctx, typesRecord)
 			}
 
-			err := keeper.RevokeVC(context.Background(), tt.vcID, tt.reason, tt.revoker, tt.evidence)
+			err := keeper.RevokeVC(ctx, tt.vcID, tt.reason, tt.revoker, tt.evidence)
 
 			if (err != nil) != tt.shouldErr {
 				t.Fatalf("expected err=%v, got %v", tt.shouldErr, err)
@@ -468,7 +464,7 @@ func TestRevokeVC(t *testing.T) {
 			}
 
 			// Verify revocation was recorded
-			revRecord, ok := keeper.GetRevocationRecord(context.Background(), tt.vcID)
+			revRecord, ok := keeper.GetRevocationRecord(ctx, tt.vcID)
 			if !ok {
 				t.Fatal("expected to find revocation record")
 			}
@@ -482,7 +478,7 @@ func TestRevokeVC(t *testing.T) {
 			}
 
 			// Verify VC status was updated
-			vc, ok := keeper.GetVCRecord(context.Background(), tt.vcID)
+			vc, ok := keeper.GetVCRecord(ctx, tt.vcID)
 			if !ok {
 				t.Fatal("expected to find VC record")
 			}
@@ -492,7 +488,7 @@ func TestRevokeVC(t *testing.T) {
 			}
 
 			// Verify revocation list was updated
-			revList := keeper.GetRevocationList(context.Background())
+			revList := keeper.GetRevocationList(ctx)
 			if revList.TotalRevocations == 0 {
 				t.Error("expected revocation list to be updated")
 			}
@@ -505,10 +501,8 @@ func TestRevokeVC(t *testing.T) {
 // ============================
 
 func TestDIDManagement(t *testing.T) {
-	t.Skip("This test requires refactoring to use proper SDK context - see keeper_kv_persistence_test.go for examples")
-	keeper := NewKeeper(nil, "authority")
+	// Fixed: Now using setupKeeperForTest for proper SDK context with KV store
 	currentTime := time.Now().Unix()
-	keeper.SetCurrentTime(currentTime)
 
 	t.Run("RegisterDID", func(t *testing.T) {
 		tests := []struct {
@@ -556,15 +550,15 @@ func TestDIDManagement(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				keeper := NewKeeper(nil, "authority")
+				keeper, ctx := setupKeeperForTest(t)
 				keeper.SetCurrentTime(currentTime)
 
 				// If testing duplicate, first registration should succeed
 				if tt.name == "duplicate DID" {
-					keeper.RegisterDID(context.Background(), tt.did, tt.controller, tt.methods, tt.metadataURI)
+					keeper.RegisterDID(ctx, tt.did, tt.controller, tt.methods, tt.metadataURI)
 				}
 
-				err := keeper.RegisterDID(context.Background(), tt.did, tt.controller, tt.methods, tt.metadataURI)
+				err := keeper.RegisterDID(ctx, tt.did, tt.controller, tt.methods, tt.metadataURI)
 
 				if (err != nil) != tt.shouldErr {
 					t.Fatalf("expected err=%v, got %v", tt.shouldErr, err)
@@ -578,7 +572,7 @@ func TestDIDManagement(t *testing.T) {
 				}
 
 				// Verify DID was registered
-				doc, ok := keeper.GetDIDDocument(context.Background(), tt.did)
+				doc, ok := keeper.GetDIDDocument(ctx, tt.did)
 				if !ok {
 					t.Fatal("expected to find DID document")
 				}
@@ -595,17 +589,17 @@ func TestDIDManagement(t *testing.T) {
 	})
 
 	t.Run("GetDIDDocument", func(t *testing.T) {
-		keeper := NewKeeper(nil, "authority")
+		keeper, ctx := setupKeeperForTest(t)
 		keeper.SetCurrentTime(currentTime)
 
 		did := "did:aura:gettest"
 		controller := "aura1gettest"
 
 		// Register DID
-		keeper.RegisterDID(context.Background(), did, controller, []*vcregistrypb.VerificationMethod{}, "")
+		keeper.RegisterDID(ctx, did, controller, []*vcregistrypb.VerificationMethod{}, "")
 
 		// Retrieve DID
-		doc, ok := keeper.GetDIDDocument(context.Background(), did)
+		doc, ok := keeper.GetDIDDocument(ctx, did)
 		if !ok {
 			t.Fatal("expected to find DID document")
 		}
@@ -619,17 +613,16 @@ func TestDIDManagement(t *testing.T) {
 		}
 
 		// Try to get non-existent DID
-		_, ok = keeper.GetDIDDocument(context.Background(), "did:aura:nonexistent")
+		_, ok = keeper.GetDIDDocument(ctx, "did:aura:nonexistent")
 		if ok {
 			t.Error("expected not to find non-existent DID")
 		}
 	})
 
 	t.Run("UpdateDIDDocument", func(t *testing.T) {
-		keeper := NewKeeper(nil, "authority")
+		keeper, ctx := setupKeeperForTest(t)
 		keeper.SetCurrentTime(currentTime)
 
-		ctx := context.Background()
 
 		did := "did:aura:updatetest"
 		controller := "aura1updatetest"
@@ -672,7 +665,7 @@ func TestDIDManagement(t *testing.T) {
 	})
 
 	t.Run("GetDIDsByAddress", func(t *testing.T) {
-		keeper := NewKeeper(nil, "authority")
+		keeper, ctx := setupKeeperForTest(t)
 		keeper.SetCurrentTime(currentTime)
 
 		controller := "aura1multi"
@@ -680,27 +673,26 @@ func TestDIDManagement(t *testing.T) {
 		// Register multiple DIDs for same controller
 		dids := []string{"did:aura:multi1", "did:aura:multi2", "did:aura:multi3"}
 		for _, did := range dids {
-			keeper.RegisterDID(context.Background(), did, controller, []*vcregistrypb.VerificationMethod{}, "")
+			keeper.RegisterDID(ctx, did, controller, []*vcregistrypb.VerificationMethod{}, "")
 		}
 
 		// Retrieve DIDs by address
-		result := keeper.GetDIDsByAddress(context.Background(), controller)
+		result := keeper.GetDIDsByAddress(ctx, controller)
 		if len(result) != len(dids) {
 			t.Errorf("expected %d DIDs, got %d", len(dids), len(result))
 		}
 
 		// Retrieve DIDs for unknown address
-		result = keeper.GetDIDsByAddress(context.Background(), "aura1unknown")
+		result = keeper.GetDIDsByAddress(ctx, "aura1unknown")
 		if len(result) != 0 {
 			t.Errorf("expected 0 DIDs for unknown address, got %d", len(result))
 		}
 	})
 
 	t.Run("AddCredentialToDID", func(t *testing.T) {
-		keeper := NewKeeper(nil, "authority")
+		keeper, ctx := setupKeeperForTest(t)
 		keeper.SetCurrentTime(currentTime)
 
-		ctx := context.Background()
 
 		did := "did:aura:credtest"
 		controller := "aura1credtest"
@@ -740,10 +732,9 @@ func TestDIDManagement(t *testing.T) {
 	})
 
 	t.Run("RemoveCredentialFromDID", func(t *testing.T) {
-		keeper := NewKeeper(nil, "authority")
+		keeper, ctx := setupKeeperForTest(t)
 		keeper.SetCurrentTime(currentTime)
 
-		ctx := context.Background()
 
 		did := "did:aura:removaltest"
 		controller := "aura1removaltest"
@@ -788,10 +779,8 @@ func TestDIDManagement(t *testing.T) {
 // ============================
 
 func TestVCPolicyManagement(t *testing.T) {
-	t.Skip("This test requires refactoring to use proper SDK context - see keeper_kv_persistence_test.go for examples")
-	keeper := NewKeeper(nil, "authority")
+	// Fixed: Now using setupKeeperForTest for proper SDK context with KV store
 	currentTime := time.Now().Unix()
-	keeper.SetCurrentTime(currentTime)
 
 	t.Run("SetGetVCPolicy", func(t *testing.T) {
 		tests := []struct {
@@ -823,10 +812,10 @@ func TestVCPolicyManagement(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				keeper := NewKeeper(nil, "authority")
+				keeper, ctx := setupKeeperForTest(t)
 				keeper.SetCurrentTime(currentTime)
 
-				err := keeper.SetVCPolicy(context.Background(), *tt.policy)
+				err := keeper.SetVCPolicy(ctx, *tt.policy)
 
 				if (err != nil) != tt.shouldErr {
 					t.Fatalf("expected err=%v, got %v", tt.shouldErr, err)
@@ -837,7 +826,7 @@ func TestVCPolicyManagement(t *testing.T) {
 				}
 
 				// Get policy
-				retrieved, ok := keeper.GetVCPolicy(context.Background(), tt.policy.VcTypeName)
+				retrieved, ok := keeper.GetVCPolicy(ctx, tt.policy.VcTypeName)
 				if !ok {
 					t.Fatal("expected to find policy")
 				}
@@ -854,7 +843,7 @@ func TestVCPolicyManagement(t *testing.T) {
 	})
 
 	t.Run("ListVCPolicies", func(t *testing.T) {
-		keeper := NewKeeper(nil, "authority")
+		keeper, ctx := setupKeeperForTest(t)
 		keeper.SetCurrentTime(currentTime)
 
 		// Create policies with different statuses
@@ -882,23 +871,23 @@ func TestVCPolicyManagement(t *testing.T) {
 		}
 
 		for _, policy := range policies {
-			keeper.SetVCPolicy(context.Background(), *policy)
+			keeper.SetVCPolicy(ctx, *policy)
 		}
 
 		// Test listing all policies
-		all := keeper.ListVcPolicies(context.Background(), types.VCPolicyStatusUnspecified)
+		all := keeper.ListVcPolicies(ctx, types.VCPolicyStatusUnspecified)
 		if len(all) != 4 {
 			t.Errorf("expected 4 policies, got %d", len(all))
 		}
 
 		// Test filtering by active status
-		active := keeper.ListVcPolicies(context.Background(), types.VCPolicyStatusActive)
+		active := keeper.ListVcPolicies(ctx, types.VCPolicyStatusActive)
 		if len(active) != 2 {
 			t.Errorf("expected 2 active policies, got %d", len(active))
 		}
 
 		// Test filtering by draft status
-		draft := keeper.ListVcPolicies(context.Background(), types.VCPolicyStatusDraft)
+		draft := keeper.ListVcPolicies(ctx, types.VCPolicyStatusDraft)
 		if len(draft) != 1 {
 			t.Errorf("expected 1 draft policy, got %d", len(draft))
 		}
@@ -910,9 +899,9 @@ func TestVCPolicyManagement(t *testing.T) {
 // ============================
 
 func TestRateLimiting(t *testing.T) {
-	t.Skip("This test requires refactoring to use proper SDK context - see keeper_kv_persistence_test.go for examples")
+	// Fixed: Now using setupKeeperForTest for proper SDK context with KV store
 	t.Run("CheckMintRateLimit", func(t *testing.T) {
-		keeper := NewKeeper(nil, "authority")
+		keeper, ctx := setupKeeperForTest(t)
 		currentTime := time.Now().Unix()
 		keeper.SetCurrentTime(currentTime)
 
@@ -924,18 +913,18 @@ func TestRateLimiting(t *testing.T) {
 		holderAddr := "aura1ratelimituser"
 
 		// Test: no mints yet - should pass
-		err := keeper.CheckMintRateLimit(context.Background(), holderAddr)
+		err := keeper.CheckMintRateLimit(ctx, holderAddr)
 		if err != nil {
 			t.Errorf("first rate limit check should pass, got %v", err)
 		}
 
 		// Increment mint count to max
 		for i := 0; i < int(params.MaxMintPerDay); i++ {
-			keeper.IncrementMintCount(context.Background(), holderAddr)
+			keeper.IncrementMintCount(ctx, holderAddr)
 		}
 
 		// Test: should fail when exceeding limit
-		err = keeper.CheckMintRateLimit(context.Background(), holderAddr)
+		err = keeper.CheckMintRateLimit(ctx, holderAddr)
 		if err != types.ErrRateLimitExceeded {
 			t.Errorf("expected ErrRateLimitExceeded, got %v", err)
 		}
@@ -944,28 +933,28 @@ func TestRateLimiting(t *testing.T) {
 		params.RateLimitingEnabled = false
 		keeper.SetParams(*params)
 
-		err = keeper.CheckMintRateLimit(context.Background(), holderAddr)
+		err = keeper.CheckMintRateLimit(ctx, holderAddr)
 		if err != nil {
 			t.Errorf("rate limit check should pass when disabled, got %v", err)
 		}
 	})
 
 	t.Run("IncrementMintCount", func(t *testing.T) {
-		keeper := NewKeeper(nil, "authority")
+		keeper, ctx := setupKeeperForTest(t)
 		currentTime := time.Now().Unix()
 		keeper.SetCurrentTime(currentTime)
 
 		holderAddr := "aura1incrementuser"
 
 		// Verify initial state
-		err := keeper.CheckMintRateLimit(context.Background(), holderAddr)
+		err := keeper.CheckMintRateLimit(ctx, holderAddr)
 		if err != nil {
 			t.Errorf("should have no mints yet, got %v", err)
 		}
 
 		// Increment multiple times
 		for i := 0; i < 3; i++ {
-			keeper.IncrementMintCount(context.Background(), holderAddr)
+			keeper.IncrementMintCount(ctx, holderAddr)
 		}
 
 		// Verify count was incremented
@@ -975,31 +964,31 @@ func TestRateLimiting(t *testing.T) {
 		keeper.SetParams(*params)
 
 		// Should now fail (count=3, limit=2)
-		err = keeper.CheckMintRateLimit(context.Background(), holderAddr)
+		err = keeper.CheckMintRateLimit(ctx, holderAddr)
 		if err != types.ErrRateLimitExceeded {
 			t.Errorf("expected rate limit exceeded after 3 increments, got %v", err)
 		}
 	})
 
 	t.Run("CleanupOldMintCounts", func(t *testing.T) {
-		keeper := NewKeeper(nil, "authority")
+		keeper, ctx := setupKeeperForTest(t)
 		currentTime := time.Now().Unix()
 		keeper.SetCurrentTime(currentTime)
 
 		holderAddr := "aura1cleanupuser"
 
 		// Add mint count for current day
-		keeper.IncrementMintCount(context.Background(), holderAddr)
+		keeper.IncrementMintCount(ctx, holderAddr)
 
 		// Simulate time passing (8 days later)
 		newTime := currentTime + (8 * 86400)
 		keeper.SetCurrentTime(newTime)
 
 		// Add mint count for new day
-		keeper.IncrementMintCount(context.Background(), holderAddr)
+		keeper.IncrementMintCount(ctx, holderAddr)
 
 		// Run cleanup
-		keeper.CleanupOldMintCounts(context.Background())
+		keeper.CleanupOldMintCounts(ctx)
 
 		// Old entries should be removed (older than 7 days)
 		// We can't directly verify the internal state, but we can test that
@@ -1012,8 +1001,8 @@ func TestRateLimiting(t *testing.T) {
 // ============================
 
 func TestGetStats(t *testing.T) {
-	t.Skip("This test requires refactoring to use proper SDK context - see keeper_kv_persistence_test.go for examples")
-	keeper := NewKeeper(nil, "authority")
+	// Fixed: Now using setupKeeperForTest for proper SDK context with KV store
+	keeper, ctx := setupKeeperForTest(t)
 	currentTime := time.Now().Unix()
 	keeper.SetCurrentTime(currentTime)
 
@@ -1051,7 +1040,7 @@ func TestGetStats(t *testing.T) {
 	}
 
 	// Convert vcregistrypb.VCRecord to types.VCRecord
-	keeper.SetVCRecord(context.Background(), types.VCRecord{
+	keeper.SetVCRecord(ctx, types.VCRecord{
 		VcId:            activeVC.VcId,
 		VcType:          activeVC.VcType,
 		VcTypeCustom:    activeVC.VcTypeCustom,
@@ -1062,7 +1051,7 @@ func TestGetStats(t *testing.T) {
 		IssuedAt:        activeVC.IssuedAt,
 		IssuedHeight:    activeVC.IssuedHeight,
 	})
-	keeper.SetVCRecord(context.Background(), types.VCRecord{
+	keeper.SetVCRecord(ctx, types.VCRecord{
 		VcId:            revokedVC.VcId,
 		VcType:          revokedVC.VcType,
 		VcTypeCustom:    revokedVC.VcTypeCustom,
@@ -1073,7 +1062,7 @@ func TestGetStats(t *testing.T) {
 		IssuedAt:        revokedVC.IssuedAt,
 		IssuedHeight:    revokedVC.IssuedHeight,
 	})
-	keeper.SetVCRecord(context.Background(), types.VCRecord{
+	keeper.SetVCRecord(ctx, types.VCRecord{
 		VcId:            expiredVC.VcId,
 		VcType:          expiredVC.VcType,
 		VcTypeCustom:    expiredVC.VcTypeCustom,
@@ -1086,15 +1075,15 @@ func TestGetStats(t *testing.T) {
 	})
 
 	// Add DIDs and policies
-	keeper.RegisterDID(context.Background(), "did:aura:stats", holderAddr, []*vcregistrypb.VerificationMethod{}, "")
-	keeper.SetVCPolicy(context.Background(), vcregistrypb.VCPolicy{
+	keeper.RegisterDID(ctx, "did:aura:stats", holderAddr, []*vcregistrypb.VerificationMethod{}, "")
+	keeper.SetVCPolicy(ctx, vcregistrypb.VCPolicy{
 		VcTypeName: "TestVC",
 		Status:     vcregistrypb.VCPolicyStatus_VC_POLICY_STATUS_ACTIVE,
 		CreatedAt:  timestamppb.Now(),
 	})
 
 	// Get stats
-	stats := keeper.GetStats(context.Background())
+	stats := keeper.GetStats(ctx)
 
 	if stats.TotalVCs != 3 {
 		t.Errorf("expected 3 total VCs, got %d", stats.TotalVCs)
@@ -1132,8 +1121,8 @@ func TestGetStats(t *testing.T) {
 // ============================
 
 func TestInitExportGenesis(t *testing.T) {
-	t.Skip("This test requires refactoring to use proper SDK context - see keeper_kv_persistence_test.go for examples")
-	keeper := NewKeeper(nil, "authority")
+	// Fixed: Now using setupKeeperForTest for proper SDK context with KV store
+	keeper, ctx := setupKeeperForTest(t)
 	currentTime := time.Now().Unix()
 	keeper.SetCurrentTime(currentTime)
 
@@ -1160,7 +1149,7 @@ func TestInitExportGenesis(t *testing.T) {
 	}
 
 	// Convert vcregistrypb.VCRecord to types.VCRecord
-	keeper.SetVCRecord(context.Background(), types.VCRecord{
+	keeper.SetVCRecord(ctx, types.VCRecord{
 		VcId:            vcRecord.VcId,
 		VcType:          vcRecord.VcType,
 		VcTypeCustom:    vcRecord.VcTypeCustom,
@@ -1171,11 +1160,11 @@ func TestInitExportGenesis(t *testing.T) {
 		IssuedAt:        vcRecord.IssuedAt,
 		IssuedHeight:    vcRecord.IssuedHeight,
 	})
-	keeper.RegisterDID(context.Background(), didDoc.Did, didDoc.Controller, []*vcregistrypb.VerificationMethod{}, "")
-	keeper.SetVCPolicy(context.Background(), *policy)
+	keeper.RegisterDID(ctx, didDoc.Did, didDoc.Controller, []*vcregistrypb.VerificationMethod{}, "")
+	keeper.SetVCPolicy(ctx, *policy)
 
 	// Export genesis
-	genesis := keeper.ExportGenesis(context.Background())
+	genesis := keeper.ExportGenesis(ctx)
 
 	if len(genesis.VcRecords) != 1 {
 		t.Errorf("expected 1 VC record in genesis, got %d", len(genesis.VcRecords))
@@ -1191,13 +1180,13 @@ func TestInitExportGenesis(t *testing.T) {
 
 	// Re-import and verify
 	keeper2 := NewKeeper(nil, "authority")
-	err := keeper2.InitGenesis(context.Background(), genesis)
+	err := keeper2.InitGenesis(ctx, genesis)
 	if err != nil {
 		t.Fatalf("failed to init genesis: %v", err)
 	}
 
 	// Verify data was loaded
-	retrievedVC, ok := keeper2.GetVCRecord(context.Background(), vcRecord.VcId)
+	retrievedVC, ok := keeper2.GetVCRecord(ctx, vcRecord.VcId)
 	if !ok {
 		t.Fatal("expected to find VC after genesis init")
 	}

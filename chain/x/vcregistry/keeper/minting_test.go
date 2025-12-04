@@ -1,18 +1,18 @@
 package keeper
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"testing"
 	"time"
 
-	"github.com/aequitas/aura/chain/x/vcregistry/params"
-	"github.com/aequitas/aura/chain/x/vcregistry/types"
-	vcregistrypb "github.com/aequitas/aura/proto/aura/vcregistry/v1beta1"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/aequitas/aura/chain/x/vcregistry/types"
+	vcregistrypb "github.com/aequitas/aura/proto/aura/vcregistry/v1beta1"
 )
 
 // MockConfidenceScoreKeeper is a mock implementation of ConfidenceScoreKeeper for testing
@@ -93,22 +93,15 @@ func (m *MockConfidenceScoreKeeper) SetVerified(walletAddr string, verified bool
 }
 
 // Helper function to create a test keeper with mock CS keeper
-func setupTestKeeper() (*Keeper, *MockConfidenceScoreKeeper) {
-	// These tests need to be updated to use proper SDK context
-	// For now, this creates a keeper without a KV store,
-	// which will panic when used. Callers should fix their tests
-	// to use setupKeeperForTest() from keeper_kv_persistence_test.go
-	store := params.NewStore(*types.DefaultParams())
-	keeper := NewKeeper(store, "authority")
+func setupTestKeeperWithMockCS(t *testing.T) (*Keeper, sdk.Context, *MockConfidenceScoreKeeper) {
+	keeper, ctx := setupKeeperForTest(t)
 	mockCS := NewMockConfidenceScoreKeeper()
 	keeper.SetConfidenceScoreKeeper(mockCS)
-	keeper.SetCurrentHeight(1)
-	keeper.SetCurrentTime(time.Now().Unix())
-	return keeper, mockCS
+	return keeper, ctx, mockCS
 }
 
 // Helper function to setup a valid VC policy
-func setupTestPolicy(keeper *Keeper, policyName string, status vcregistrypb.VCPolicyStatus) *vcregistrypb.VCPolicy {
+func setupTestPolicyWithCtx(keeper *Keeper, ctx sdk.Context, policyName string, status vcregistrypb.VCPolicyStatus) *vcregistrypb.VCPolicy {
 	policy := &vcregistrypb.VCPolicy{
 		VcTypeName:         policyName,
 		Status:             status,
@@ -121,7 +114,7 @@ func setupTestPolicy(keeper *Keeper, policyName string, status vcregistrypb.VCPo
 		ExpiryDurationDays: 365,
 		CreatedAt:          timestamppb.Now(),
 	}
-	keeper.SetVCPolicy(context.Background(), *policy)
+	keeper.SetVCPolicy(ctx, *policy)
 	return policy
 }
 
@@ -131,8 +124,7 @@ func setupTestPolicy(keeper *Keeper, policyName string, status vcregistrypb.VCPo
 
 // TestValidateMintEligibility_Success tests when all requirements are met
 func TestValidateMintEligibility_Success(t *testing.T) {
-	t.Skip("This test requires refactoring to use proper SDK context - see keeper_kv_persistence_test.go for examples")
-	keeper, mockCS := setupTestKeeper()
+	keeper, ctx, mockCS := setupTestKeeperWithMockCS(t)
 
 	userAddr := "aura1testuser123"
 	vcType := vcregistrypb.VCType_VC_TYPE_VERIFIED_HUMAN
@@ -145,10 +137,10 @@ func TestValidateMintEligibility_Success(t *testing.T) {
 	mockCS.SetArenaScore(userAddr, "degen_games", 75)
 
 	// Setup policy
-	setupTestPolicy(keeper, fmt.Sprintf("%d", vcType), vcregistrypb.VCPolicyStatus_VC_POLICY_STATUS_ACTIVE)
+	setupTestPolicyWithCtx(keeper, ctx, fmt.Sprintf("%d", vcType), vcregistrypb.VCPolicyStatus_VC_POLICY_STATUS_ACTIVE)
 
 	// Test
-	eligible, missing, err := keeper.ValidateMintEligibility(context.Background(), userAddr, vcType)
+	eligible, missing, err := keeper.ValidateMintEligibility(ctx, userAddr, vcType)
 
 	// Assert
 	require.NoError(t, err)
@@ -158,7 +150,6 @@ func TestValidateMintEligibility_Success(t *testing.T) {
 
 // TestValidateMintEligibility_InsufficientCS tests CS below threshold
 func TestValidateMintEligibility_InsufficientCS(t *testing.T) {
-	t.Skip("This test requires refactoring to use proper SDK context - see keeper_kv_persistence_test.go for examples")
 	keeper, mockCS := setupTestKeeper()
 
 	userAddr := "aura1testuser123"
@@ -174,7 +165,7 @@ func TestValidateMintEligibility_InsufficientCS(t *testing.T) {
 	setupTestPolicy(keeper, fmt.Sprintf("%d", vcType), vcregistrypb.VCPolicyStatus_VC_POLICY_STATUS_ACTIVE)
 
 	// Test
-	eligible, missing, err := keeper.ValidateMintEligibility(context.Background(), userAddr, vcType)
+	eligible, missing, err := keeper.ValidateMintEligibility(ctx, userAddr, vcType)
 
 	// Assert
 	require.NoError(t, err)
@@ -186,7 +177,6 @@ func TestValidateMintEligibility_InsufficientCS(t *testing.T) {
 
 // TestValidateMintEligibility_MissingIR tests required IR not completed
 func TestValidateMintEligibility_MissingIR(t *testing.T) {
-	t.Skip("This test requires refactoring to use proper SDK context - see keeper_kv_persistence_test.go for examples")
 	keeper, mockCS := setupTestKeeper()
 
 	userAddr := "aura1testuser123"
@@ -201,7 +191,7 @@ func TestValidateMintEligibility_MissingIR(t *testing.T) {
 	setupTestPolicy(keeper, fmt.Sprintf("%d", vcType), vcregistrypb.VCPolicyStatus_VC_POLICY_STATUS_ACTIVE)
 
 	// Test
-	eligible, missing, err := keeper.ValidateMintEligibility(context.Background(), userAddr, vcType)
+	eligible, missing, err := keeper.ValidateMintEligibility(ctx, userAddr, vcType)
 
 	// Assert
 	require.NoError(t, err)
@@ -219,7 +209,6 @@ func TestValidateMintEligibility_MissingIR(t *testing.T) {
 
 // TestValidateMintEligibility_AnchorNotCompleted tests anchor IR missing
 func TestValidateMintEligibility_AnchorNotCompleted(t *testing.T) {
-	t.Skip("This test requires refactoring to use proper SDK context - see keeper_kv_persistence_test.go for examples")
 	keeper, mockCS := setupTestKeeper()
 
 	userAddr := "aura1testuser123"
@@ -234,7 +223,7 @@ func TestValidateMintEligibility_AnchorNotCompleted(t *testing.T) {
 	setupTestPolicy(keeper, fmt.Sprintf("%d", vcType), vcregistrypb.VCPolicyStatus_VC_POLICY_STATUS_ACTIVE)
 
 	// Test
-	eligible, missing, err := keeper.ValidateMintEligibility(context.Background(), userAddr, vcType)
+	eligible, missing, err := keeper.ValidateMintEligibility(ctx, userAddr, vcType)
 
 	// Assert
 	require.NoError(t, err)
@@ -252,7 +241,6 @@ func TestValidateMintEligibility_AnchorNotCompleted(t *testing.T) {
 
 // TestValidateMintEligibility_ArenaScoreTooLow tests arena score requirement not met
 func TestValidateMintEligibility_ArenaScoreTooLow(t *testing.T) {
-	t.Skip("This test requires refactoring to use proper SDK context - see keeper_kv_persistence_test.go for examples")
 	keeper, mockCS := setupTestKeeper()
 
 	userAddr := "aura1testuser123"
@@ -267,7 +255,7 @@ func TestValidateMintEligibility_ArenaScoreTooLow(t *testing.T) {
 	setupTestPolicy(keeper, fmt.Sprintf("%d", vcType), vcregistrypb.VCPolicyStatus_VC_POLICY_STATUS_ACTIVE)
 
 	// Test
-	eligible, missing, err := keeper.ValidateMintEligibility(context.Background(), userAddr, vcType)
+	eligible, missing, err := keeper.ValidateMintEligibility(ctx, userAddr, vcType)
 
 	// Assert
 	require.NoError(t, err)
@@ -285,7 +273,6 @@ func TestValidateMintEligibility_ArenaScoreTooLow(t *testing.T) {
 
 // TestValidateMintEligibility_SingletonViolation tests singleton constraint
 func TestValidateMintEligibility_SingletonViolation(t *testing.T) {
-	t.Skip("This test requires refactoring to use proper SDK context - see keeper_kv_persistence_test.go for examples")
 	keeper, mockCS := setupTestKeeper()
 
 	userAddr := "aura1testuser123"
@@ -300,7 +287,7 @@ func TestValidateMintEligibility_SingletonViolation(t *testing.T) {
 	// Setup policy with singleton constraint
 	policy := setupTestPolicy(keeper, fmt.Sprintf("%d", vcType), vcregistrypb.VCPolicyStatus_VC_POLICY_STATUS_ACTIVE)
 	policy.Singleton = true
-	keeper.SetVCPolicy(context.Background(), *policy)
+	keeper.SetVCPolicy(ctx, *policy)
 
 	// Add existing active VC of same type for user
 	existingVC := &vcregistrypb.VCRecord{
@@ -309,10 +296,10 @@ func TestValidateMintEligibility_SingletonViolation(t *testing.T) {
 		HolderAddress: userAddr,
 		Status:        vcregistrypb.VCStatus_VC_STATUS_ACTIVE,
 	}
-	keeper.SetVCRecord(context.Background(), *existingVC)
+	keeper.SetVCRecord(ctx, *existingVC)
 
 	// Test
-	eligible, missing, err := keeper.ValidateMintEligibility(context.Background(), userAddr, vcType)
+	eligible, missing, err := keeper.ValidateMintEligibility(ctx, userAddr, vcType)
 
 	// Assert
 	require.NoError(t, err)
@@ -330,7 +317,6 @@ func TestValidateMintEligibility_SingletonViolation(t *testing.T) {
 
 // TestValidateMintEligibility_RateLimitExceeded tests rate limit enforcement
 func TestValidateMintEligibility_RateLimitExceeded(t *testing.T) {
-	t.Skip("This test requires refactoring to use proper SDK context - see keeper_kv_persistence_test.go for examples")
 	keeper, mockCS := setupTestKeeper()
 
 	userAddr := "aura1testuser123"
@@ -347,11 +333,11 @@ func TestValidateMintEligibility_RateLimitExceeded(t *testing.T) {
 	// Set up rate limit: max 5 per day (default)
 	// Increment count to hit limit
 	for i := 0; i < 5; i++ {
-		keeper.IncrementMintCount(context.Background(), userAddr)
+		keeper.IncrementMintCount(ctx, userAddr)
 	}
 
 	// Test
-	eligible, missing, err := keeper.ValidateMintEligibility(context.Background(), userAddr, vcType)
+	eligible, missing, err := keeper.ValidateMintEligibility(ctx, userAddr, vcType)
 
 	// Assert
 	require.NoError(t, err)
@@ -373,7 +359,6 @@ func TestValidateMintEligibility_RateLimitExceeded(t *testing.T) {
 
 // TestMintVC_Success tests successful VC minting
 func TestMintVC_Success(t *testing.T) {
-	t.Skip("This test requires refactoring to use proper SDK context - see keeper_kv_persistence_test.go for examples")
 	keeper, mockCS := setupTestKeeper()
 
 	userAddr := "aura1testuser123"
@@ -390,13 +375,13 @@ func TestMintVC_Success(t *testing.T) {
 	setupTestPolicy(keeper, fmt.Sprintf("%d", vcType), vcregistrypb.VCPolicyStatus_VC_POLICY_STATUS_ACTIVE)
 
 	// Register DID
-	keeper.RegisterDID(context.Background(), userDID, userAddr, []*vcregistrypb.VerificationMethod{}, "")
+	keeper.RegisterDID(ctx, userDID, userAddr, []*vcregistrypb.VerificationMethod{}, "")
 
 	// Test
 	metadata := map[string]string{
 		"issued_at": "test",
 	}
-	vcID, err := keeper.MintVC(context.Background(), userAddr, userDID, vcType, "", metadata)
+	vcID, err := keeper.MintVC(ctx, userAddr, userDID, vcType, "", metadata)
 
 	// Assert
 	require.NoError(t, err)
@@ -404,7 +389,7 @@ func TestMintVC_Success(t *testing.T) {
 	assert.True(t, len(vcID) > 0)
 
 	// Verify VC was stored
-	storedVC, ok := keeper.GetVCRecord(context.Background(), vcID)
+	storedVC, ok := keeper.GetVCRecord(ctx, vcID)
 	assert.True(t, ok)
 	assert.Equal(t, userAddr, storedVC.HolderAddress)
 	assert.Equal(t, vcType, storedVC.VcType)
@@ -414,7 +399,6 @@ func TestMintVC_Success(t *testing.T) {
 
 // TestMintVC_NotEligible tests minting fails when user not eligible
 func TestMintVC_NotEligible(t *testing.T) {
-	t.Skip("This test requires refactoring to use proper SDK context - see keeper_kv_persistence_test.go for examples")
 	keeper, mockCS := setupTestKeeper()
 
 	userAddr := "aura1testuser123"
@@ -429,10 +413,10 @@ func TestMintVC_NotEligible(t *testing.T) {
 	mockCS.SetArenaScore(userAddr, "degen_games", 75)
 
 	setupTestPolicy(keeper, fmt.Sprintf("%d", vcType), vcregistrypb.VCPolicyStatus_VC_POLICY_STATUS_ACTIVE)
-	keeper.RegisterDID(context.Background(), userDID, userAddr, []*vcregistrypb.VerificationMethod{}, "")
+	keeper.RegisterDID(ctx, userDID, userAddr, []*vcregistrypb.VerificationMethod{}, "")
 
 	// Test
-	vcID, err := keeper.MintVC(context.Background(), userAddr, userDID, vcType, "", map[string]string{})
+	vcID, err := keeper.MintVC(ctx, userAddr, userDID, vcType, "", map[string]string{})
 
 	// Assert
 	assert.Error(t, err)
@@ -442,7 +426,6 @@ func TestMintVC_NotEligible(t *testing.T) {
 
 // TestMintVC_PolicyNotFound tests minting fails when policy doesn't exist
 func TestMintVC_PolicyNotFound(t *testing.T) {
-	t.Skip("This test requires refactoring to use proper SDK context - see keeper_kv_persistence_test.go for examples")
 	keeper, mockCS := setupTestKeeper()
 
 	userAddr := "aura1testuser123"
@@ -457,10 +440,10 @@ func TestMintVC_PolicyNotFound(t *testing.T) {
 	mockCS.SetArenaScore(userAddr, "degen_games", 75)
 
 	// Don't setup policy
-	keeper.RegisterDID(context.Background(), userDID, userAddr, []*vcregistrypb.VerificationMethod{}, "")
+	keeper.RegisterDID(ctx, userDID, userAddr, []*vcregistrypb.VerificationMethod{}, "")
 
 	// Test
-	vcID, err := keeper.MintVC(context.Background(), userAddr, userDID, vcType, "", map[string]string{})
+	vcID, err := keeper.MintVC(ctx, userAddr, userDID, vcType, "", map[string]string{})
 
 	// Assert
 	assert.Error(t, err)
@@ -470,7 +453,6 @@ func TestMintVC_PolicyNotFound(t *testing.T) {
 
 // TestMintVC_PolicyInactive tests minting fails when policy is inactive
 func TestMintVC_PolicyInactive(t *testing.T) {
-	t.Skip("This test requires refactoring to use proper SDK context - see keeper_kv_persistence_test.go for examples")
 	keeper, mockCS := setupTestKeeper()
 
 	userAddr := "aura1testuser123"
@@ -485,10 +467,10 @@ func TestMintVC_PolicyInactive(t *testing.T) {
 
 	// Setup policy with DEPRECATED status
 	setupTestPolicy(keeper, fmt.Sprintf("%d", vcType), vcregistrypb.VCPolicyStatus_VC_POLICY_STATUS_DEPRECATED)
-	keeper.RegisterDID(context.Background(), userDID, userAddr, []*vcregistrypb.VerificationMethod{}, "")
+	keeper.RegisterDID(ctx, userDID, userAddr, []*vcregistrypb.VerificationMethod{}, "")
 
 	// Test
-	vcID, err := keeper.MintVC(context.Background(), userAddr, userDID, vcType, "", map[string]string{})
+	vcID, err := keeper.MintVC(ctx, userAddr, userDID, vcType, "", map[string]string{})
 
 	// Assert
 	assert.Error(t, err)
@@ -502,13 +484,12 @@ func TestMintVC_PolicyInactive(t *testing.T) {
 
 // TestValidateMintEligibility_InvalidHolderAddress tests with empty holder address
 func TestValidateMintEligibility_InvalidHolderAddress(t *testing.T) {
-	t.Skip("This test requires refactoring to use proper SDK context - see keeper_kv_persistence_test.go for examples")
 	keeper, _ := setupTestKeeper()
 
 	vcType := vcregistrypb.VCType_VC_TYPE_VERIFIED_HUMAN
 
 	// Test
-	eligible, _, err := keeper.ValidateMintEligibility(context.Background(), "", vcType)
+	eligible, _, err := keeper.ValidateMintEligibility(ctx, "", vcType)
 
 	// Assert
 	assert.Error(t, err)
@@ -518,14 +499,13 @@ func TestValidateMintEligibility_InvalidHolderAddress(t *testing.T) {
 
 // TestValidateMintEligibility_InvalidVCType tests with unspecified VC type
 func TestValidateMintEligibility_InvalidVCType(t *testing.T) {
-	t.Skip("This test requires refactoring to use proper SDK context - see keeper_kv_persistence_test.go for examples")
 	keeper, _ := setupTestKeeper()
 
 	userAddr := "aura1testuser123"
 	vcType := vcregistrypb.VCType_VC_TYPE_UNSPECIFIED
 
 	// Test
-	eligible, _, err := keeper.ValidateMintEligibility(context.Background(), userAddr, vcType)
+	eligible, _, err := keeper.ValidateMintEligibility(ctx, userAddr, vcType)
 
 	// Assert
 	assert.Error(t, err)
@@ -535,7 +515,6 @@ func TestValidateMintEligibility_InvalidVCType(t *testing.T) {
 
 // TestValidateMintEligibility_NoCSKeeper tests when CS keeper is not set
 func TestValidateMintEligibility_NoCSKeeper(t *testing.T) {
-	t.Skip("This test requires refactoring to use proper SDK context - see keeper_kv_persistence_test.go for examples")
 	store := params.NewStore(*types.DefaultParams())
 	keeper := NewKeeper(store, "authority")
 	// Don't set CS keeper
@@ -548,7 +527,7 @@ func TestValidateMintEligibility_NoCSKeeper(t *testing.T) {
 	setupTestPolicy(keeper, fmt.Sprintf("%d", vcType), vcregistrypb.VCPolicyStatus_VC_POLICY_STATUS_ACTIVE)
 
 	// Test
-	eligible, _, err := keeper.ValidateMintEligibility(context.Background(), userAddr, vcType)
+	eligible, _, err := keeper.ValidateMintEligibility(ctx, userAddr, vcType)
 
 	// Assert
 	assert.Error(t, err)
@@ -558,14 +537,13 @@ func TestValidateMintEligibility_NoCSKeeper(t *testing.T) {
 
 // TestMintVC_InvalidHolderAddress tests minting with empty holder address
 func TestMintVC_InvalidHolderAddress(t *testing.T) {
-	t.Skip("This test requires refactoring to use proper SDK context - see keeper_kv_persistence_test.go for examples")
 	keeper, _ := setupTestKeeper()
 
 	userDID := "did:aura:user123"
 	vcType := vcregistrypb.VCType_VC_TYPE_VERIFIED_HUMAN
 
 	// Test
-	vcID, err := keeper.MintVC(context.Background(), "", userDID, vcType, "", map[string]string{})
+	vcID, err := keeper.MintVC(ctx, "", userDID, vcType, "", map[string]string{})
 
 	// Assert
 	assert.Error(t, err)
@@ -575,7 +553,6 @@ func TestMintVC_InvalidHolderAddress(t *testing.T) {
 
 // TestMintVC_InvalidDID tests minting with empty DID
 func TestMintVC_InvalidDID(t *testing.T) {
-	t.Skip("This test requires refactoring to use proper SDK context - see keeper_kv_persistence_test.go for examples")
 	keeper, mockCS := setupTestKeeper()
 
 	userAddr := "aura1testuser123"
@@ -585,7 +562,7 @@ func TestMintVC_InvalidDID(t *testing.T) {
 	setupTestPolicy(keeper, fmt.Sprintf("%d", vcType), vcregistrypb.VCPolicyStatus_VC_POLICY_STATUS_ACTIVE)
 
 	// Test
-	vcID, err := keeper.MintVC(context.Background(), userAddr, "", vcType, "", map[string]string{})
+	vcID, err := keeper.MintVC(ctx, userAddr, "", vcType, "", map[string]string{})
 
 	// Assert
 	assert.Error(t, err)
@@ -595,17 +572,16 @@ func TestMintVC_InvalidDID(t *testing.T) {
 
 // TestMintVC_InvalidVCType tests minting with unspecified VC type
 func TestMintVC_InvalidVCType(t *testing.T) {
-	t.Skip("This test requires refactoring to use proper SDK context - see keeper_kv_persistence_test.go for examples")
 	keeper, mockCS := setupTestKeeper()
 
 	userAddr := "aura1testuser123"
 	userDID := "did:aura:user123"
 
 	mockCS.SetUserScore(userAddr, 150)
-	keeper.RegisterDID(context.Background(), userDID, userAddr, []*vcregistrypb.VerificationMethod{}, "")
+	keeper.RegisterDID(ctx, userDID, userAddr, []*vcregistrypb.VerificationMethod{}, "")
 
 	// Test
-	vcID, err := keeper.MintVC(context.Background(), userAddr, userDID, vcregistrypb.VCType_VC_TYPE_UNSPECIFIED, "", map[string]string{})
+	vcID, err := keeper.MintVC(ctx, userAddr, userDID, vcregistrypb.VCType_VC_TYPE_UNSPECIFIED, "", map[string]string{})
 
 	// Assert
 	assert.Error(t, err)
@@ -615,7 +591,6 @@ func TestMintVC_InvalidVCType(t *testing.T) {
 
 // TestValidateMintEligibility_MultipleFailures tests when multiple requirements are missing
 func TestValidateMintEligibility_MultipleFailures(t *testing.T) {
-	t.Skip("This test requires refactoring to use proper SDK context - see keeper_kv_persistence_test.go for examples")
 	keeper, mockCS := setupTestKeeper()
 
 	userAddr := "aura1testuser123"
@@ -631,7 +606,7 @@ func TestValidateMintEligibility_MultipleFailures(t *testing.T) {
 	setupTestPolicy(keeper, fmt.Sprintf("%d", vcType), vcregistrypb.VCPolicyStatus_VC_POLICY_STATUS_ACTIVE)
 
 	// Test
-	eligible, missing, err := keeper.ValidateMintEligibility(context.Background(), userAddr, vcType)
+	eligible, missing, err := keeper.ValidateMintEligibility(ctx, userAddr, vcType)
 
 	// Assert
 	require.NoError(t, err)

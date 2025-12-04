@@ -40,7 +40,6 @@ func (suite *KeeperTestSuite) TestHandleDoubleSignSameVotes() {
 }
 
 func (suite *KeeperTestSuite) TestHandleDoubleSignTombstoned() {
-	suite.T().Skip("Requires staking keeper mock - skipped for unit tests")
 	validatorAddr := "auravaloper1doubletomb"
 
 	// Setup
@@ -60,9 +59,8 @@ func (suite *KeeperTestSuite) TestHandleDoubleSignTombstoned() {
 }
 
 func (suite *KeeperTestSuite) TestGetAllDoubleSignEvidences() {
-	// FIXME: Test suite state isolation issue - evidence count varies based on test execution order
-	suite.T().Skip("Test suite state contamination - needs test isolation")
 	// Create multiple evidences with different validator addresses
+	// Using unique validator addresses to avoid test isolation issues
 	val1 := newValAddr()
 	val2 := newValAddr()
 	val3 := newValAddr()
@@ -97,9 +95,9 @@ func (suite *KeeperTestSuite) TestGetAllDoubleSignEvidences() {
 	}
 	suite.keeper.SetDoubleSignEvidence(suite.ctx, evidence3)
 
-	// Get all evidences
+	// Get all evidences - check that we have at least the 3 we just created
 	evidences := suite.keeper.GetAllDoubleSignEvidences(suite.ctx)
-	suite.Require().GreaterOrEqual(len(evidences), 3)
+	suite.Require().GreaterOrEqual(len(evidences), 3, "Should have at least 3 evidences")
 }
 
 func (suite *KeeperTestSuite) TestValidateMinimumStakeExtended() {
@@ -142,7 +140,6 @@ func (suite *KeeperTestSuite) TestHandleDowntimeNoViolation() {
 }
 
 func (suite *KeeperTestSuite) TestHandleDowntimeAlreadyJailed() {
-	suite.T().Skip("Requires staking keeper mock - skipped for unit tests")
 	validatorAddr := "auravaloper1jaileddowntime"
 
 	// Setup
@@ -165,7 +162,6 @@ func (suite *KeeperTestSuite) TestHandleDowntimeAlreadyJailed() {
 }
 
 func (suite *KeeperTestSuite) TestHandleDowntimeTombstoned() {
-	suite.T().Skip("Requires staking keeper mock - skipped for unit tests")
 	validatorAddr := "auravaloper1tombdowntime"
 
 	// Setup
