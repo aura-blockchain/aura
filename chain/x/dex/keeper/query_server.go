@@ -131,7 +131,9 @@ func (qs queryServer) Orderbook(ctx context.Context, req *dexpb.QueryOrderbookRe
 		TotalPending: uint64(len(orders)),
 	}
 
-	var bestBid, bestAsk sdkmath.LegacyDec
+	// Initialize to zero to prevent nil pointer dereference on empty orderbook
+	bestBid := sdkmath.LegacyZeroDec()
+	bestAsk := sdkmath.LegacyZeroDec()
 	firstBid := true
 	firstAsk := true
 

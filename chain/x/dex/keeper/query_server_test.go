@@ -76,3 +76,36 @@ func TestQuerySpotPrice(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, resp.Price)
 }
+
+// TestQueryEmptyOrderbook tests that querying an empty orderbook does not panic
+// Regression test for nil pointer dereference bug
+func TestQueryEmptyOrderbook(t *testing.T) {
+	k, ctx, _ := setupTestKeeper(t)
+
+	server := keeper.NewQueryServerImpl(k)
+
+	// Query orderbook with no orders (empty state)
+	resp, err := server.Orderbook(sdk.WrapSDKContext(ctx), &dexpb.QueryOrderbookRequest{
+		Pair: "AURA/STAKE",
+	})
+
+	// Should not panic and should return empty orderbook
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	require.NotNil(t, resp.Orderbook)
+
+	// Verify empty orderbook structure
+	require.Equal(t, "aura-stake", resp.Orderbook.Pair)
+	require.Empty(t, resp.Orderbook.BuyOrders)
+	require.Empty(t, resp.Orderbook.SellOrders)
+	require.Equal(t, uint64(0), resp.Orderbook.TotalPending)
+
+	// Verify best bid/ask are zero (not nil)
+	require.NotEmpty(t, resp.Orderbook.BestBid)
+	require.NotEmpty(t, resp.Orderbook.BestAsk)
+	require.Equal(t, "0.000000000000000000", resp.Orderbook.BestBid)
+	require.Equal(t, "0.000000000000000000", resp.Orderbook.BestAsk)
+
+	// Spread should be empty or "0" when no orders exist
+	require.NotNil(t, resp.Orderbook.SpreadPercent)
+}
