@@ -2,55 +2,125 @@ package auth
 
 import (
 	"context"
+	"encoding/json"
 
-	"github.com/aequitas/aura/chain/x/auth/client/cli"
+	"cosmossdk.io/core/appmodule"
+	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/codec"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/module"
+	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+
 	"github.com/aequitas/aura/chain/x/auth/keeper"
+	"github.com/aequitas/aura/chain/x/auth/types"
 	authproto "github.com/aequitas/aura/proto/aura/auth/v1beta1"
-	"github.com/spf13/cobra"
-	"google.golang.org/grpc"
 )
 
-// AppModule represents the auth module
+var (
+	_ module.AppModuleBasic = AppModuleBasic{}
+	_ module.HasGenesis     = AppModule{}
+	_ module.HasServices    = AppModule{}
+	_ appmodule.AppModule   = AppModule{}
+)
+
+// AppModuleBasic defines the basic application module used by the auth module.
+type AppModuleBasic struct {
+	cdc codec.Codec
+}
+
+// Name returns the auth module's name.
+func (AppModuleBasic) Name() string {
+	return types.ModuleName
+}
+
+// RegisterLegacyAminoCodec registers the auth module's types on the LegacyAmino codec.
+func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
+	types.RegisterLegacyAminoCodec(cdc)
+}
+
+// RegisterInterfaces registers the module's interface types
+func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
+	types.RegisterInterfaces(registry)
+}
+
+// DefaultGenesis returns default genesis state as raw bytes for the auth module.
+func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
+	return cdc.MustMarshalJSON(types.DefaultGenesis())
+}
+
+// ValidateGenesis performs genesis state validation for the auth module.
+func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncodingConfig, bz json.RawMessage) error {
+	var genesis types.GenesisState
+	if err := cdc.UnmarshalJSON(bz, &genesis); err != nil {
+		return err
+	}
+	return types.ValidateGenesis(&genesis)
+}
+
+// RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the auth module.
+func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
+	// Register gRPC Gateway routes if needed
+	// authproto.RegisterQueryHandlerClient(context.Background(), mux, authproto.NewQueryClient(clientCtx))
+}
+
+// AppModule implements the AppModule interface for the auth module.
 type AppModule struct {
+	AppModuleBasic
 	keeper *keeper.Keeper
 }
 
-// NewAppModule creates a new auth module
-func NewAppModule(keeper *keeper.Keeper) AppModule {
+// NewAppModule creates a new AppModule object
+func NewAppModule(cdc codec.Codec, keeper *keeper.Keeper) AppModule {
 	return AppModule{
-		keeper: keeper,
+		AppModuleBasic: AppModuleBasic{cdc: cdc},
+		keeper:         keeper,
 	}
 }
 
-// RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the auth module
-func (am AppModule) RegisterGRPCGatewayRoutes(clientCtx interface{}, mux interface{}) {
-	// Register HTTP handlers if needed
+// IsOnePerModuleType implements the depinject.OnePerModuleType interface.
+func (am AppModule) IsOnePerModuleType() {}
+
+// IsAppModule implements the appmodule.AppModule interface.
+func (am AppModule) IsAppModule() {}
+
+// RegisterServices registers module services with the configurator.
+func (am AppModule) RegisterServices(cfg module.Configurator) {
+	authproto.RegisterMsgServer(cfg.MsgServer(), NewMsgServer(am.keeper))
+	authproto.RegisterQueryServer(cfg.QueryServer(), keeper.NewQueryServerImpl(am.keeper))
 }
 
-// RegisterServices registers module services
-func (am AppModule) RegisterServices(cfg interface{}) error {
-	// In a real implementation, this would register with the Cosmos SDK module manager
-	return nil
+// InitGenesis performs genesis initialization for the auth module.
+// It returns no validator updates.
+func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) {
+	var genesis types.GenesisState
+	cdc.MustUnmarshalJSON(data, &genesis)
+
+	// Initialize keeper state from genesis
+	if err := am.keeper.InitGenesis(ctx, &genesis); err != nil {
+		panic(err)
+	}
+
+	// Initialize default roles if no roles exist
+	if len(genesis.Roles) == 0 {
+		if err := am.keeper.InitializeDefaultRoles(ctx); err != nil {
+			panic(err)
+		}
+	}
 }
 
-// RegisterGRPCServer registers the gRPC services
-func (am AppModule) RegisterGRPCServer(server *grpc.Server) {
-	authproto.RegisterMsgServer(server, NewMsgServer(am.keeper))
-	authproto.RegisterQueryServer(server, keeper.NewQueryServerImpl(am.keeper))
+// ExportGenesis returns the exported genesis state as raw bytes for the auth module.
+func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
+	genesis := am.keeper.ExportGenesis(ctx)
+	return cdc.MustMarshalJSON(genesis)
 }
 
-// IsAppModule tags this module for Cosmos SDK module manager compatibility.
-func (AppModule) IsAppModule() {}
+// ConsensusVersion implements AppModule/ConsensusVersion.
+func (AppModule) ConsensusVersion() uint64 { return 1 }
 
-// GetTxCmd returns the transaction commands for this module
-func (am AppModule) GetTxCmd() *cobra.Command {
-	return cli.GetTxCmd()
-}
-
-// GetQueryCmd returns the query commands for this module
-func (am AppModule) GetQueryCmd() *cobra.Command {
-	return cli.GetQueryCmd()
-}
+// ============================================================================
+// Message Server Implementation
+// ============================================================================
 
 // MsgServer implements the auth Msg service
 type MsgServer struct {

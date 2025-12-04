@@ -1,0 +1,146 @@
+syntax = "proto3";
+package aura.monitoring.v1beta1;
+
+import "google/api/annotations.proto";
+import "aura/monitoring/v1beta1/monitoring.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/monitoring/v1beta1";
+
+// Query defines the gRPC query service for the monitoring module
+service Query {
+  // GetNetworkHealth returns network health information
+  rpc GetNetworkHealth(QueryNetworkHealthRequest) returns (QueryNetworkHealthResponse) {
+    option (google.api.http).get = "/aura/monitoring/v1beta1/network_health";
+  }
+
+  // GetValidatorUptime returns validator uptime information
+  rpc GetValidatorUptime(QueryValidatorUptimeRequest) returns (QueryValidatorUptimeResponse) {
+    option (google.api.http).get = "/aura/monitoring/v1beta1/validator_uptime/{validator_address}";
+  }
+
+  // GetAlerts returns active alerts
+  rpc GetAlerts(QueryAlertsRequest) returns (QueryAlertsResponse) {
+    option (google.api.http).get = "/aura/monitoring/v1beta1/alerts";
+  }
+
+  // GetGasPriceTracking returns gas price tracking data
+  rpc GetGasPriceTracking(QueryGasPriceRequest) returns (QueryGasPriceResponse) {
+    option (google.api.http).get = "/aura/monitoring/v1beta1/gas_price";
+  }
+
+  // GetTVLMonitoring returns TVL monitoring data
+  rpc GetTVLMonitoring(QueryTVLRequest) returns (QueryTVLResponse) {
+    option (google.api.http).get = "/aura/monitoring/v1beta1/tvl";
+  }
+}
+
+// QueryNetworkHealthRequest is the request for network health
+message QueryNetworkHealthRequest {}
+
+// QueryNetworkHealthResponse is the response with network health
+message QueryNetworkHealthResponse {
+  NetworkHealth health = 1;
+}
+
+// NetworkHealth represents network health metrics
+message NetworkHealth {
+  bool is_healthy = 1;
+  int64 block_height = 2;
+  double block_time_seconds = 3;
+  int32 active_validators = 4;
+  double network_hash_rate = 5;
+  int64 total_transactions = 6;
+}
+
+// QueryValidatorUptimeRequest is the request for validator uptime
+message QueryValidatorUptimeRequest {
+  string validator_address = 1;
+}
+
+// QueryValidatorUptimeResponse is the response with validator uptime
+message QueryValidatorUptimeResponse {
+  ValidatorUptime uptime = 1;
+}
+
+// ValidatorUptime represents validator uptime information
+message ValidatorUptime {
+  string validator_address = 1;
+  double uptime_percentage = 2;
+  int64 blocks_signed = 3;
+  int64 blocks_missed = 4;
+  int64 last_active_height = 5;
+}
+
+// QueryAlertsRequest is the request for active alerts
+message QueryAlertsRequest {
+  string severity = 1;
+  string type = 2;
+}
+
+// QueryAlertsResponse is the response with active alerts
+message QueryAlertsResponse {
+  repeated Alert alerts = 1;
+}
+
+// Alert represents a monitoring alert
+message Alert {
+  string id = 1;
+  AlertType type = 2;
+  AlertSeverity severity = 3;
+  string message = 4;
+  int64 timestamp = 5;
+  bool acknowledged = 6;
+  string acknowledged_by = 7;
+  bool resolved = 8;
+}
+
+// AlertType defines the type of alert
+enum AlertType {
+  ALERT_TYPE_UNSPECIFIED = 0;
+  ALERT_TYPE_VALIDATOR_DOWN = 1;
+  ALERT_TYPE_HIGH_GAS_PRICE = 2;
+  ALERT_TYPE_LOW_TVL = 3;
+  ALERT_TYPE_NETWORK_CONGESTION = 4;
+  ALERT_TYPE_SECURITY_THREAT = 5;
+}
+
+// AlertSeverity defines the severity level
+enum AlertSeverity {
+  ALERT_SEVERITY_UNSPECIFIED = 0;
+  ALERT_SEVERITY_INFO = 1;
+  ALERT_SEVERITY_WARNING = 2;
+  ALERT_SEVERITY_ERROR = 3;
+  ALERT_SEVERITY_CRITICAL = 4;
+}
+
+// QueryGasPriceRequest is the request for gas price tracking
+message QueryGasPriceRequest {}
+
+// QueryGasPriceResponse is the response with gas price tracking
+message QueryGasPriceResponse {
+  GasPriceTracking tracking = 1;
+}
+
+// GasPriceTracking represents gas price tracking data
+message GasPriceTracking {
+  string current_price = 1;
+  string average_price = 2;
+  string min_price = 3;
+  string max_price = 4;
+  int64 last_updated = 5;
+}
+
+// QueryTVLRequest is the request for TVL monitoring
+message QueryTVLRequest {}
+
+// QueryTVLResponse is the response with TVL monitoring
+message QueryTVLResponse {
+  TVLMonitoring tvl = 1;
+}
+
+// TVLMonitoring represents Total Value Locked monitoring
+message TVLMonitoring {
+  string total_value_locked = 1;
+  map<string, string> pool_values = 2;
+  int64 last_updated = 3;
+}

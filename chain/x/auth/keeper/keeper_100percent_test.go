@@ -91,7 +91,7 @@ func TestInitializeDefaultRoles_AllRoles(t *testing.T) {
 	k.DeleteRole(ctx, "user")
 
 	// Initialize
-	err := k.initializeDefaultRoles(ctx)
+	err := k.InitializeDefaultRoles(ctx)
 	require.NoError(t, err)
 
 	// Verify admin role

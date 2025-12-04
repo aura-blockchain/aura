@@ -20,7 +20,7 @@ func TestInitializeDefaultRoles(t *testing.T) {
 	k, ctx := setupTestKeeper(t)
 
 	// Call initializeDefaultRoles directly
-	err := k.initializeDefaultRoles(ctx)
+	err := k.InitializeDefaultRoles(ctx)
 	require.NoError(t, err)
 
 	// Verify admin role

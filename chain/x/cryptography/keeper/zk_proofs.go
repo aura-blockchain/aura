@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 
 	storetypes "cosmossdk.io/store/types"
@@ -363,10 +362,9 @@ func (k Keeper) verifyGroth16(config *cryptoproto.ZKProofConfig, proofData []byt
 		return false, fmt.Errorf("proof verification produced invalid hash")
 	}
 
-	k.Logger(nil).Info("Groth16 structural verification passed",
-		"proof_size", len(proofData),
-		"public_inputs_size", len(publicInputs),
-		"hash", hex.EncodeToString(hash[:8]))
+	// Structural verification passed
+	// Note: Logging disabled here as context is not available in this function signature
+	_ = hash // Used for validation above
 
 	return true, nil
 }

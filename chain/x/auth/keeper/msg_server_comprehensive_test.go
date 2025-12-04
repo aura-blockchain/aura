@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/aequitas/aura/chain/testing/testutil"
@@ -106,7 +105,7 @@ func (s *AuthMsgServerTestSuite) TestCreateMultisigWallet_Success() {
 		Creator:    s.fixtures.Addresses[0].String(),
 		Signers:    []string{s.fixtures.Addresses[1].String(), s.fixtures.Addresses[2].String()},
 		Threshold:  2,
-		WalletType: authproto.MultisigWalletType_STANDARD,
+		WalletType: authproto.WalletType_WALLET_TYPE_CUSTOM,
 	}
 
 	resp, err := s.msgServer.CreateMultisigWallet(s.ctx, msg)
@@ -120,7 +119,7 @@ func (s *AuthMsgServerTestSuite) TestCreateMultisigWallet_InvalidThreshold() {
 		Creator:    s.fixtures.Addresses[0].String(),
 		Signers:    []string{s.fixtures.Addresses[1].String()},
 		Threshold:  0,
-		WalletType: authproto.MultisigWalletType_STANDARD,
+		WalletType: authproto.WalletType_WALLET_TYPE_CUSTOM,
 	}
 
 	_, err := s.msgServer.CreateMultisigWallet(s.ctx, msg)

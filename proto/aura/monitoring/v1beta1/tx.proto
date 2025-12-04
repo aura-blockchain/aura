@@ -1,0 +1,44 @@
+syntax = "proto3";
+package aura.monitoring.v1beta1;
+
+import "google/api/annotations.proto";
+import "cosmos/msg/v1/msg.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/monitoring/v1beta1";
+
+// Msg defines the monitoring module's Msg service
+service Msg {
+  option (cosmos.msg.v1.service) = true;
+
+  // AcknowledgeAlert acknowledges an alert
+  rpc AcknowledgeAlert(MsgAcknowledgeAlert) returns (MsgAcknowledgeAlertResponse);
+
+  // ResolveAlert resolves an alert
+  rpc ResolveAlert(MsgResolveAlert) returns (MsgResolveAlertResponse);
+}
+
+// MsgAcknowledgeAlert acknowledges an alert
+message MsgAcknowledgeAlert {
+  option (cosmos.msg.v1.signer) = "acknowledged_by";
+
+  string alert_id = 1;
+  string acknowledged_by = 2;
+}
+
+// MsgAcknowledgeAlertResponse is the response for acknowledging an alert
+message MsgAcknowledgeAlertResponse {
+  bool success = 1;
+}
+
+// MsgResolveAlert resolves an alert
+message MsgResolveAlert {
+  option (cosmos.msg.v1.signer) = "resolver";
+
+  string alert_id = 1;
+  string resolver = 2;
+}
+
+// MsgResolveAlertResponse is the response for resolving an alert
+message MsgResolveAlertResponse {
+  bool success = 1;
+}

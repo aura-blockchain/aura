@@ -212,7 +212,7 @@ func TestThresholdSignatures(t *testing.T) {
 			messageHash,
 		)
 		require.NoError(t, err)
-		require.Equal(t, int32(1), shares1)
+		require.Equal(t, uint32(1), shares1)
 		require.False(t, reached1)
 
 		// Submit second share - threshold reached
@@ -224,7 +224,7 @@ func TestThresholdSignatures(t *testing.T) {
 			messageHash,
 		)
 		require.NoError(t, err)
-		require.Equal(t, int32(2), shares2)
+		require.Equal(t, uint32(2), shares2)
 		require.True(t, reached2)
 		require.NotEmpty(t, combined)
 	})

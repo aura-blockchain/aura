@@ -104,7 +104,7 @@ func TestCountAuditLogsByActor_NotFound(t *testing.T) {
 func TestInitializeDefaultRoles_Complete(t *testing.T) {
 	k, ctx := setupTestKeeper(t)
 
-	err := k.initializeDefaultRoles(ctx)
+	err := k.InitializeDefaultRoles(ctx)
 	require.NoError(t, err)
 
 	// Verify all 4 roles exist

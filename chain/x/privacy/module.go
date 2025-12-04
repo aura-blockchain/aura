@@ -13,6 +13,7 @@ import (
 
 	"github.com/aequitas/aura/chain/x/privacy/keeper"
 	"github.com/aequitas/aura/chain/x/privacy/types"
+	privacypb "github.com/aequitas/aura/proto/aura/privacy/v1beta1"
 )
 
 var (
@@ -83,9 +84,8 @@ func (am AppModule) IsAppModule() {}
 
 // RegisterServices registers the module's message and query servers
 func (am AppModule) RegisterServices(cfg module.Configurator) {
-	// Services registration - uncomment when proto types are generated
-	// types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper))
-	// types.RegisterQueryServer(cfg.QueryServer(), keeper.NewQueryServerImpl(am.keeper))
+	privacypb.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper))
+	privacypb.RegisterQueryServer(cfg.QueryServer(), keeper.NewQueryServerImpl(am.keeper))
 }
 
 // InitGenesis initializes module state from genesis

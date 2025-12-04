@@ -14,6 +14,7 @@ import (
 
 	"github.com/aequitas/aura/chain/x/monitoring/keeper"
 	"github.com/aequitas/aura/chain/x/monitoring/types"
+	monitoringpb "github.com/aequitas/aura/proto/aura/monitoring/v1beta1"
 )
 
 var (
@@ -92,9 +93,8 @@ func (am AppModule) IsAppModule() {}
 
 // RegisterServices registers the module's message and query servers
 func (am AppModule) RegisterServices(cfg module.Configurator) {
-	// Server registration commented out - proto types need to be generated
-	// types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServer(am.keeper))
-	// types.RegisterQueryServer(cfg.QueryServer(), keeper.NewQueryServer(am.keeper))
+	monitoringpb.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServer(am.keeper))
+	monitoringpb.RegisterQueryServer(cfg.QueryServer(), keeper.NewQueryServer(am.keeper))
 }
 
 // InitGenesis initializes module state from genesis
