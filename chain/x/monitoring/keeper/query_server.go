@@ -150,9 +150,9 @@ func convertAlertToProto(alert *types.Alert) *monitoringpb.Alert {
 	switch alert.Type {
 	case types.AlertTypeSecurityThreat:
 		alertType = monitoringpb.AlertType_ALERT_TYPE_SECURITY_THREAT
-	case types.AlertTypeHighGasPrice:
+	case types.AlertTypeGasPriceSpike:
 		alertType = monitoringpb.AlertType_ALERT_TYPE_HIGH_GAS_PRICE
-	case types.AlertTypeLowTVL:
+	case types.AlertTypeTVLChange:
 		alertType = monitoringpb.AlertType_ALERT_TYPE_LOW_TVL
 	case types.AlertTypeNetworkCongestion:
 		alertType = monitoringpb.AlertType_ALERT_TYPE_NETWORK_CONGESTION
@@ -165,13 +165,13 @@ func convertAlertToProto(alert *types.Alert) *monitoringpb.Alert {
 	// Map string-based severity to proto enums
 	var severity monitoringpb.AlertSeverity
 	switch alert.Severity {
-	case types.AlertSeverityInfo:
+	case types.SeverityInfo:
 		severity = monitoringpb.AlertSeverity_ALERT_SEVERITY_INFO
-	case types.AlertSeverityWarning:
+	case types.SeverityLow:
 		severity = monitoringpb.AlertSeverity_ALERT_SEVERITY_WARNING
-	case types.AlertSeverityError:
+	case types.SeverityMedium, types.SeverityHigh:
 		severity = monitoringpb.AlertSeverity_ALERT_SEVERITY_ERROR
-	case types.AlertSeverityCritical:
+	case types.SeverityCritical:
 		severity = monitoringpb.AlertSeverity_ALERT_SEVERITY_CRITICAL
 	default:
 		severity = monitoringpb.AlertSeverity_ALERT_SEVERITY_UNSPECIFIED

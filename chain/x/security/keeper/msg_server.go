@@ -48,9 +48,7 @@ func (ms msgServer) UnbanPeer(ctx context.Context, msg *securitypb.MsgUnbanPeer)
 func (ms msgServer) UpdatePeerReputation(ctx context.Context, msg *securitypb.MsgUpdatePeerReputation) (*securitypb.MsgUpdatePeerReputationResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	ms.keeper.Logger(sdkCtx).Info("UpdatePeerReputation called", "peer_id", msg.PeerId)
-	return &securitypb.MsgUpdatePeerReputationResponse{
-		NewReputationScore: 0,
-	}, nil
+	return &securitypb.MsgUpdatePeerReputationResponse{}, nil
 }
 
 func (ms msgServer) ResolveForkAlert(ctx context.Context, msg *securitypb.MsgResolveForkAlert) (*securitypb.MsgResolveForkAlertResponse, error) {
@@ -83,22 +81,20 @@ func (ms msgServer) UpdateValidatorSecurity(ctx context.Context, msg *securitypb
 
 func (ms msgServer) RegisterSentryNode(ctx context.Context, msg *securitypb.MsgRegisterSentryNode) (*securitypb.MsgRegisterSentryNodeResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	ms.keeper.Logger(sdkCtx).Info("RegisterSentryNode called", "sentry_id", msg.SentryId)
+	ms.keeper.Logger(sdkCtx).Info("RegisterSentryNode called")
 	return &securitypb.MsgRegisterSentryNodeResponse{}, nil
 }
 
 func (ms msgServer) RemoveSentryNode(ctx context.Context, msg *securitypb.MsgRemoveSentryNode) (*securitypb.MsgRemoveSentryNodeResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	ms.keeper.Logger(sdkCtx).Info("RemoveSentryNode called", "sentry_id", msg.SentryId)
+	ms.keeper.Logger(sdkCtx).Info("RemoveSentryNode called")
 	return &securitypb.MsgRemoveSentryNodeResponse{}, nil
 }
 
 func (ms msgServer) ReportDoubleSign(ctx context.Context, msg *securitypb.MsgReportDoubleSign) (*securitypb.MsgReportDoubleSignResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	ms.keeper.Logger(sdkCtx).Info("ReportDoubleSign called", "validator", msg.ValidatorAddress)
-	return &securitypb.MsgReportDoubleSignResponse{
-		SlashingApplied: false,
-	}, nil
+	return &securitypb.MsgReportDoubleSignResponse{}, nil
 }
 
 func (ms msgServer) AcknowledgeValidatorAlert(ctx context.Context, msg *securitypb.MsgAcknowledgeValidatorAlert) (*securitypb.MsgAcknowledgeValidatorAlertResponse, error) {
@@ -110,10 +106,7 @@ func (ms msgServer) AcknowledgeValidatorAlert(ctx context.Context, msg *security
 func (ms msgServer) TriggerFailover(ctx context.Context, msg *securitypb.MsgTriggerFailover) (*securitypb.MsgTriggerFailoverResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	ms.keeper.Logger(sdkCtx).Info("TriggerFailover called", "validator", msg.ValidatorAddress)
-	return &securitypb.MsgTriggerFailoverResponse{
-		Success:          false,
-		FailoverNodeId:   "",
-	}, nil
+	return &securitypb.MsgTriggerFailoverResponse{}, nil
 }
 
 // ========================
@@ -123,41 +116,31 @@ func (ms msgServer) TriggerFailover(ctx context.Context, msg *securitypb.MsgTrig
 func (ms msgServer) RegisterHardwareWallet(ctx context.Context, msg *securitypb.MsgRegisterHardwareWallet) (*securitypb.MsgRegisterHardwareWalletResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	ms.keeper.Logger(sdkCtx).Info("RegisterHardwareWallet called", "address", msg.Address)
-	return &securitypb.MsgRegisterHardwareWalletResponse{
-		Success: false,
-	}, nil
+	return &securitypb.MsgRegisterHardwareWalletResponse{}, nil
 }
 
 func (ms msgServer) CreateMultiSigWallet(ctx context.Context, msg *securitypb.MsgCreateMultiSigWallet) (*securitypb.MsgCreateMultiSigWalletResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	ms.keeper.Logger(sdkCtx).Info("CreateMultiSigWallet called")
-	return &securitypb.MsgCreateMultiSigWalletResponse{
-		MultiSigAddress: "",
-	}, nil
+	return &securitypb.MsgCreateMultiSigWalletResponse{}, nil
 }
 
 func (ms msgServer) ProposeMultiSigTransaction(ctx context.Context, msg *securitypb.MsgProposeMultiSigTransaction) (*securitypb.MsgProposeMultiSigTransactionResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	ms.keeper.Logger(sdkCtx).Info("ProposeMultiSigTransaction called", "wallet", msg.WalletAddress)
-	return &securitypb.MsgProposeMultiSigTransactionResponse{
-		TxId: "",
-	}, nil
+	ms.keeper.Logger(sdkCtx).Info("ProposeMultiSigTransaction called")
+	return &securitypb.MsgProposeMultiSigTransactionResponse{}, nil
 }
 
 func (ms msgServer) SignMultiSigTransaction(ctx context.Context, msg *securitypb.MsgSignMultiSigTransaction) (*securitypb.MsgSignMultiSigTransactionResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	ms.keeper.Logger(sdkCtx).Info("SignMultiSigTransaction called", "tx_id", msg.TxId)
-	return &securitypb.MsgSignMultiSigTransactionResponse{
-		ThresholdReached: false,
-	}, nil
+	return &securitypb.MsgSignMultiSigTransactionResponse{}, nil
 }
 
 func (ms msgServer) ExecuteMultiSigTransaction(ctx context.Context, msg *securitypb.MsgExecuteMultiSigTransaction) (*securitypb.MsgExecuteMultiSigTransactionResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	ms.keeper.Logger(sdkCtx).Info("ExecuteMultiSigTransaction called", "tx_id", msg.TxId)
-	return &securitypb.MsgExecuteMultiSigTransactionResponse{
-		Success: false,
-	}, nil
+	return &securitypb.MsgExecuteMultiSigTransactionResponse{}, nil
 }
 
 func (ms msgServer) ConfigureSocialRecovery(ctx context.Context, msg *securitypb.MsgConfigureSocialRecovery) (*securitypb.MsgConfigureSocialRecoveryResponse, error) {
@@ -168,26 +151,20 @@ func (ms msgServer) ConfigureSocialRecovery(ctx context.Context, msg *securitypb
 
 func (ms msgServer) InitiateRecovery(ctx context.Context, msg *securitypb.MsgInitiateRecovery) (*securitypb.MsgInitiateRecoveryResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	ms.keeper.Logger(sdkCtx).Info("InitiateRecovery called", "address", msg.Address)
-	return &securitypb.MsgInitiateRecoveryResponse{
-		RequestId: "",
-	}, nil
+	ms.keeper.Logger(sdkCtx).Info("InitiateRecovery called")
+	return &securitypb.MsgInitiateRecoveryResponse{}, nil
 }
 
 func (ms msgServer) ApproveRecovery(ctx context.Context, msg *securitypb.MsgApproveRecovery) (*securitypb.MsgApproveRecoveryResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	ms.keeper.Logger(sdkCtx).Info("ApproveRecovery called", "request_id", msg.RequestId)
-	return &securitypb.MsgApproveRecoveryResponse{
-		ThresholdReached: false,
-	}, nil
+	ms.keeper.Logger(sdkCtx).Info("ApproveRecovery called")
+	return &securitypb.MsgApproveRecoveryResponse{}, nil
 }
 
 func (ms msgServer) ExecuteRecovery(ctx context.Context, msg *securitypb.MsgExecuteRecovery) (*securitypb.MsgExecuteRecoveryResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	ms.keeper.Logger(sdkCtx).Info("ExecuteRecovery called", "request_id", msg.RequestId)
-	return &securitypb.MsgExecuteRecoveryResponse{
-		Success: false,
-	}, nil
+	ms.keeper.Logger(sdkCtx).Info("ExecuteRecovery called")
+	return &securitypb.MsgExecuteRecoveryResponse{}, nil
 }
 
 func (ms msgServer) SetSpendingLimits(ctx context.Context, msg *securitypb.MsgSetSpendingLimits) (*securitypb.MsgSetSpendingLimitsResponse, error) {
@@ -209,9 +186,7 @@ func (ms msgServer) RegisterBiometric(ctx context.Context, msg *securitypb.MsgRe
 func (ms msgServer) CreateIncident(ctx context.Context, msg *securitypb.MsgCreateIncident) (*securitypb.MsgCreateIncidentResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	ms.keeper.Logger(sdkCtx).Info("CreateIncident called", "title", msg.Title)
-	return &securitypb.MsgCreateIncidentResponse{
-		IncidentId: "",
-	}, nil
+	return &securitypb.MsgCreateIncidentResponse{}, nil
 }
 
 func (ms msgServer) UpdateIncident(ctx context.Context, msg *securitypb.MsgUpdateIncident) (*securitypb.MsgUpdateIncidentResponse, error) {
@@ -245,33 +220,25 @@ func (ms msgServer) AddAuditLogEntry(ctx context.Context, msg *securitypb.MsgAdd
 func (ms msgServer) CreateKeyRotationSchedule(ctx context.Context, msg *securitypb.MsgCreateKeyRotationSchedule) (*securitypb.MsgCreateKeyRotationScheduleResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	ms.keeper.Logger(sdkCtx).Info("CreateKeyRotationSchedule called", "key_id", msg.KeyId)
-	return &securitypb.MsgCreateKeyRotationScheduleResponse{
-		ScheduleId: "",
-	}, nil
+	return &securitypb.MsgCreateKeyRotationScheduleResponse{}, nil
 }
 
 func (ms msgServer) RotateKey(ctx context.Context, msg *securitypb.MsgRotateKey) (*securitypb.MsgRotateKeyResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	ms.keeper.Logger(sdkCtx).Info("RotateKey called", "key_id", msg.KeyId)
-	return &securitypb.MsgRotateKeyResponse{
-		NewKeyId: "",
-	}, nil
+	return &securitypb.MsgRotateKeyResponse{}, nil
 }
 
 func (ms msgServer) CreateThresholdScheme(ctx context.Context, msg *securitypb.MsgCreateThresholdScheme) (*securitypb.MsgCreateThresholdSchemeResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	ms.keeper.Logger(sdkCtx).Info("CreateThresholdScheme called")
-	return &securitypb.MsgCreateThresholdSchemeResponse{
-		SchemeId: "",
-	}, nil
+	return &securitypb.MsgCreateThresholdSchemeResponse{}, nil
 }
 
 func (ms msgServer) SubmitThresholdSignatureShare(ctx context.Context, msg *securitypb.MsgSubmitThresholdSignatureShare) (*securitypb.MsgSubmitThresholdSignatureShareResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	ms.keeper.Logger(sdkCtx).Info("SubmitThresholdSignatureShare called", "scheme_id", msg.SchemeId)
-	return &securitypb.MsgSubmitThresholdSignatureShareResponse{
-		ThresholdReached: false,
-	}, nil
+	return &securitypb.MsgSubmitThresholdSignatureShareResponse{}, nil
 }
 
 func (ms msgServer) RegisterZKProofCircuit(ctx context.Context, msg *securitypb.MsgRegisterZKProofCircuit) (*securitypb.MsgRegisterZKProofCircuitResponse, error) {
@@ -283,17 +250,13 @@ func (ms msgServer) RegisterZKProofCircuit(ctx context.Context, msg *securitypb.
 func (ms msgServer) SubmitZKProof(ctx context.Context, msg *securitypb.MsgSubmitZKProof) (*securitypb.MsgSubmitZKProofResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	ms.keeper.Logger(sdkCtx).Info("SubmitZKProof called", "circuit_id", msg.CircuitId)
-	return &securitypb.MsgSubmitZKProofResponse{
-		Verified: false,
-	}, nil
+	return &securitypb.MsgSubmitZKProofResponse{}, nil
 }
 
 func (ms msgServer) GenerateQuantumResistantKey(ctx context.Context, msg *securitypb.MsgGenerateQuantumResistantKey) (*securitypb.MsgGenerateQuantumResistantKeyResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	ms.keeper.Logger(sdkCtx).Info("GenerateQuantumResistantKey called", "algorithm", msg.Algorithm)
-	return &securitypb.MsgGenerateQuantumResistantKeyResponse{
-		KeyId: "",
-	}, nil
+	return &securitypb.MsgGenerateQuantumResistantKeyResponse{}, nil
 }
 
 // ========================
@@ -303,9 +266,7 @@ func (ms msgServer) GenerateQuantumResistantKey(ctx context.Context, msg *securi
 func (ms msgServer) CreateMixingPool(ctx context.Context, msg *securitypb.MsgCreateMixingPool) (*securitypb.MsgCreateMixingPoolResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	ms.keeper.Logger(sdkCtx).Info("CreateMixingPool called")
-	return &securitypb.MsgCreateMixingPoolResponse{
-		PoolId: "",
-	}, nil
+	return &securitypb.MsgCreateMixingPoolResponse{}, nil
 }
 
 func (ms msgServer) JoinMixingPool(ctx context.Context, msg *securitypb.MsgJoinMixingPool) (*securitypb.MsgJoinMixingPoolResponse, error) {
@@ -323,25 +284,19 @@ func (ms msgServer) ExecuteMixing(ctx context.Context, msg *securitypb.MsgExecut
 func (ms msgServer) GenerateStealthAddress(ctx context.Context, msg *securitypb.MsgGenerateStealthAddress) (*securitypb.MsgGenerateStealthAddressResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	ms.keeper.Logger(sdkCtx).Info("GenerateStealthAddress called")
-	return &securitypb.MsgGenerateStealthAddressResponse{
-		StealthAddress: "",
-	}, nil
+	return &securitypb.MsgGenerateStealthAddressResponse{}, nil
 }
 
 func (ms msgServer) CreateRingSignature(ctx context.Context, msg *securitypb.MsgCreateRingSignature) (*securitypb.MsgCreateRingSignatureResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	ms.keeper.Logger(sdkCtx).Info("CreateRingSignature called")
-	return &securitypb.MsgCreateRingSignatureResponse{
-		SignatureId: "",
-	}, nil
+	return &securitypb.MsgCreateRingSignatureResponse{}, nil
 }
 
 func (ms msgServer) CreateConfidentialTransaction(ctx context.Context, msg *securitypb.MsgCreateConfidentialTransaction) (*securitypb.MsgCreateConfidentialTransactionResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	ms.keeper.Logger(sdkCtx).Info("CreateConfidentialTransaction called")
-	return &securitypb.MsgCreateConfidentialTransactionResponse{
-		TxId: "",
-	}, nil
+	return &securitypb.MsgCreateConfidentialTransactionResponse{}, nil
 }
 
 // ========================

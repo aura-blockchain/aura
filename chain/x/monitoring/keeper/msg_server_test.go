@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/aequitas/aura/chain/x/monitoring/types"
+	monitoringpb "github.com/aequitas/aura/proto/aura/monitoring/v1beta1"
 )
 
 func TestMsgServer_AcknowledgeAlert(t *testing.T) {
@@ -25,7 +26,7 @@ func TestMsgServer_AcknowledgeAlert(t *testing.T) {
 	require.Equal(t, types.ErrInvalidTransaction, err)
 
 	// Test with empty alert ID
-	resp, err = ms.AcknowledgeAlert(ctx, &types.MsgAcknowledgeAlert{
+	resp, err = ms.AcknowledgeAlert(ctx, &monitoringpb.MsgAcknowledgeAlert{
 		AlertId:        "",
 		AcknowledgedBy: "user123",
 	})
@@ -34,7 +35,7 @@ func TestMsgServer_AcknowledgeAlert(t *testing.T) {
 	require.Equal(t, types.ErrAlertNotFound, err)
 
 	// Test with empty acknowledged by
-	resp, err = ms.AcknowledgeAlert(ctx, &types.MsgAcknowledgeAlert{
+	resp, err = ms.AcknowledgeAlert(ctx, &monitoringpb.MsgAcknowledgeAlert{
 		AlertId:        "alert123",
 		AcknowledgedBy: "",
 	})
@@ -43,7 +44,7 @@ func TestMsgServer_AcknowledgeAlert(t *testing.T) {
 	require.Equal(t, types.ErrInvalidTransaction, err)
 
 	// Test with non-existent alert
-	resp, err = ms.AcknowledgeAlert(ctx, &types.MsgAcknowledgeAlert{
+	resp, err = ms.AcknowledgeAlert(ctx, &monitoringpb.MsgAcknowledgeAlert{
 		AlertId:        "alert123",
 		AcknowledgedBy: "user123",
 	})
