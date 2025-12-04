@@ -1,11 +1,11 @@
-package keeper
+package keeper_test
 
 import (
 	"crypto/rand"
 	"strings"
 	"testing"
 
-	"github.com/aequitas/aura/chain/x/cryptography/types"
+	"github.com/aequitas/aura/chain/x/cryptography/keeper"
 	cryptoproto "github.com/aequitas/aura/proto/aura/cryptography/v1beta1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
@@ -448,12 +448,15 @@ func TestZKProofVerification_CurvePointValidation(t *testing.T) {
 
 // Helper functions
 
-func setupKeeperForTest(t *testing.T) (*Keeper, sdk.Context) {
-	// This should use the existing test setup from other test files
-	// For now, returning nil to show the test structure
-	// In actual implementation, use proper test fixtures
-	t.Skip("Test requires proper keeper setup - implement when running full test suite")
-	return nil, sdk.Context{}
+func setupKeeperForTest(t *testing.T) (keeper.Keeper, sdk.Context) {
+	// Use the standard keeper setup from test_helpers_test.go
+	k, ctx := setupKeeper(t)
+	// Type assert context.Context back to sdk.Context
+	sdkCtx, ok := ctx.(sdk.Context)
+	if !ok {
+		t.Fatal("context is not sdk.Context")
+	}
+	return k, sdkCtx
 }
 
 func makeValidLookingProof(size int) []byte {
