@@ -49,7 +49,7 @@ func TestValidQuery(t *testing.T) {
 	// Set up test data - vesting schedule
 	schedule := &types.VestingSchedule{
 		ScheduleId:          "query-test-schedule",
-		BeneficiaryAddress:  "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
+		BeneficiaryAddress:  "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
 		TotalAmount:         "1000000",
 		VestedAmount:        "100000",
 		VestingDuration:     31536000,
@@ -69,7 +69,7 @@ func TestValidQuery(t *testing.T) {
 	// Set up test data - vote lock
 	lock := &types.VoteLock{
 		LockId:      "query-test-lock",
-		Owner:       "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
+		Owner:       "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
 		Amount:      "500000",
 		LockStart:   timestamppb.New(time.Now()),
 		LockEnd:     timestamppb.New(time.Now().Add(30 * 24 * time.Hour)),
@@ -121,7 +121,7 @@ func TestPagination(t *testing.T) {
 	for i := 1; i <= 25; i++ {
 		schedule := &types.VestingSchedule{
 			ScheduleId:          "schedule-" + string(rune('a'+i-1)),
-			BeneficiaryAddress:  "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
+			BeneficiaryAddress:  "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
 			TotalAmount:         "1000000",
 			VestedAmount:        "0",
 			VestingDuration:     31536000,
@@ -146,7 +146,7 @@ func TestPagination(t *testing.T) {
 	for i := 1; i <= 15; i++ {
 		lock := &types.VoteLock{
 			LockId:      "lock-" + string(rune('a'+i-1)),
-			Owner:       "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
+			Owner:       "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
 			Amount:      "100000",
 			LockStart:   timestamppb.New(time.Now()),
 			LockEnd:     timestamppb.New(time.Now().Add(30 * 24 * time.Hour)),

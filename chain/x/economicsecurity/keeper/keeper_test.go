@@ -20,7 +20,7 @@ func TestKeeperFunctionality(t *testing.T) {
 	// Test authority
 	authority := k.GetAuthority()
 	require.NotEmpty(t, authority)
-	require.Equal(t, "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn", authority)
+	require.Equal(t, "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr", authority)
 
 	// Test params operations
 	params := k.GetParams()
@@ -41,7 +41,7 @@ func TestKeeperFunctionality(t *testing.T) {
 	// Test vesting schedule operations
 	schedule := &types.VestingSchedule{
 		ScheduleId:          "test-schedule-1",
-		BeneficiaryAddress:  "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
+		BeneficiaryAddress:  "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
 		TotalAmount:         "10000000",
 		VestedAmount:        "1000000",
 		VestingDuration:     31536000,
@@ -72,7 +72,7 @@ func TestKeeperFunctionality(t *testing.T) {
 	// Test vote lock operations
 	lock := &types.VoteLock{
 		LockId:      "test-lock-1",
-		Owner:       "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
+		Owner:       "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
 		Amount:      "1000000",
 		LockStart:   timestamppb.New(time.Now()),
 		LockEnd:     timestamppb.New(time.Now().Add(30 * 24 * time.Hour)),
@@ -101,9 +101,9 @@ func TestKeeperFunctionality(t *testing.T) {
 	// Test pending treasury tx operations
 	tx := &types.PendingTreasuryTx{
 		TxId:         "test-tx-1",
-		Recipient:    "aura1fl48vsnmsdzcv85q5d2q4z5ajdha8yu34mf0eh",
+		Recipient:    "aura1w3jhxapjta047h6lta047h6lta047h6l42n9lg",
 		Amount:       "500000",
-		Proposer:     "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
+		Proposer:     "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
 		Signatures:   []string{"sig1", "sig2"},
 		CreatedAt:    timestamppb.New(time.Now()),
 		ExecutableAt: timestamppb.New(time.Now().Add(48 * time.Hour)),
@@ -151,8 +151,8 @@ func TestKeeperFunctionality(t *testing.T) {
 	// Test large tx record operations
 	record := &types.LargeTxRecord{
 		TxHash:             "test-hash-1",
-		Sender:             "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
-		Recipient:          "aura1fl48vsnmsdzcv85q5d2q4z5ajdha8yu34mf0eh",
+		Sender:             "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
+		Recipient:          "aura1w3jhxapjta047h6lta047h6lta047h6l42n9lg",
 		Amount:             "5000000",
 		Timestamp:          timestamppb.New(time.Now()),
 		BlockHeight:        12345,
@@ -170,10 +170,10 @@ func TestKeeperFunctionality(t *testing.T) {
 	require.Equal(t, record.Amount, retrievedRecord.Amount)
 
 	// Test user MEV balance operations
-	err = k.SetUserMEVBalance(ctx, "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn", "75000")
+	err = k.SetUserMEVBalance(ctx, "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr", "75000")
 	require.NoError(t, err)
 
-	balance, err := k.GetUserMEVBalance(ctx, "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn")
+	balance, err := k.GetUserMEVBalance(ctx, "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr")
 	require.NoError(t, err)
 	require.Equal(t, "75000", balance)
 
@@ -204,18 +204,18 @@ func TestKeeperFunctionality(t *testing.T) {
 
 	// Test last large tx time operations
 	lastTxTime := time.Now().Unix()
-	err = k.SetLastLargeTxTime(ctx, "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn", lastTxTime)
+	err = k.SetLastLargeTxTime(ctx, "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr", lastTxTime)
 	require.NoError(t, err)
 
-	retrievedLastTxTime, err := k.GetLastLargeTxTime(ctx, "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn")
+	retrievedLastTxTime, err := k.GetLastLargeTxTime(ctx, "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr")
 	require.NoError(t, err)
 	require.Equal(t, lastTxTime, retrievedLastTxTime)
 
 	// Test address holding operations
-	err = k.SetAddressHolding(ctx, "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn", "1000000")
+	err = k.SetAddressHolding(ctx, "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr", "1000000")
 	require.NoError(t, err)
 
-	holding, err := k.GetAddressHolding(ctx, "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn")
+	holding, err := k.GetAddressHolding(ctx, "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr")
 	require.NoError(t, err)
 	require.Equal(t, "1000000", holding)
 
@@ -228,26 +228,26 @@ func TestKeeperFunctionality(t *testing.T) {
 	require.Equal(t, uint64(1000), prevInflation)
 
 	// Test user vesting index operations
-	err = k.AddUserVestingSchedule(ctx, "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn", "schedule-1")
+	err = k.AddUserVestingSchedule(ctx, "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr", "schedule-1")
 	require.NoError(t, err)
 
-	err = k.AddUserVestingSchedule(ctx, "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn", "schedule-2")
+	err = k.AddUserVestingSchedule(ctx, "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr", "schedule-2")
 	require.NoError(t, err)
 
-	scheduleIDs, err := k.GetUserVestingIndex(ctx, "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn")
+	scheduleIDs, err := k.GetUserVestingIndex(ctx, "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr")
 	require.NoError(t, err)
 	require.Len(t, scheduleIDs, 2)
 	require.Contains(t, scheduleIDs, "schedule-1")
 	require.Contains(t, scheduleIDs, "schedule-2")
 
 	// Test user vote lock index operations
-	err = k.AddUserVoteLock(ctx, "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn", "lock-1")
+	err = k.AddUserVoteLock(ctx, "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr", "lock-1")
 	require.NoError(t, err)
 
-	err = k.AddUserVoteLock(ctx, "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn", "lock-2")
+	err = k.AddUserVoteLock(ctx, "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr", "lock-2")
 	require.NoError(t, err)
 
-	lockIDs, err := k.GetUserVoteLockIndex(ctx, "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn")
+	lockIDs, err := k.GetUserVoteLockIndex(ctx, "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr")
 	require.NoError(t, err)
 	require.Len(t, lockIDs, 2)
 	require.Contains(t, lockIDs, "lock-1")

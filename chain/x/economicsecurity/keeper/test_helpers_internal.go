@@ -39,7 +39,7 @@ func setupKeeperForTest(t *testing.T) (*Keeper, sdk.Context) {
 	cdc := codec.NewProtoCodec(registry)
 
 	logger := log.NewNopLogger()
-	authority := "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn" // test governance address
+	authority := "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr" // test governance address
 
 	// Create params store with default params
 	defaultParams := types.DefaultParams()
