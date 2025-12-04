@@ -17,6 +17,7 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
+	"github.com/aequitas/aura/chain/x/identity/client/cli"
 	"github.com/aequitas/aura/chain/x/identity/keeper"
 	"github.com/aequitas/aura/chain/x/identity/types"
 )
@@ -72,14 +73,12 @@ func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *r
 
 // GetTxCmd returns the root tx command for the identity module.
 func (AppModuleBasic) GetTxCmd() *cobra.Command {
-	// Return transaction commands
-	return nil
+	return cli.GetTxCmd()
 }
 
-// GetQueryCmd returns no root query command for the identity module.
+// GetQueryCmd returns the root query command for the identity module.
 func (AppModuleBasic) GetQueryCmd() *cobra.Command {
-	// Return query commands
-	return nil
+	return cli.GetQueryCmd()
 }
 
 // ============================================================================
