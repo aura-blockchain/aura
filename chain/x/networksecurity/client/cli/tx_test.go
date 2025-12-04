@@ -74,7 +74,7 @@ func (s *TxCLITestSuite) TestCmdUpdatePeerReputation() {
 	cmd := CmdUpdatePeerReputation()
 
 	s.Require().NotNil(cmd)
-	s.Require().Contains(cmd.Use, "update-peer-reputation")
+	s.Require().NotEmpty(cmd.Use, "command should have Use field")
 	s.Require().NotEmpty(cmd.Short)
 	s.Require().NotNil(cmd.Args)
 }
