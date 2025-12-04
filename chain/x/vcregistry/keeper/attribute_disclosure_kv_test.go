@@ -188,13 +188,14 @@ func TestGenesisRoundTripKVSelectiveDisclosure(t *testing.T) {
 
 	// Seed a VC to satisfy presentation creation
 	vc := types.VCRecord{
-		VcId:          "vc-genesis",
-		HolderAddress: holder,
-		HolderDid:     "did:aura:holder",
-		Status:        types.VCStatus_VC_STATUS_ACTIVE,
-		IssuedAt:      timestamppb.New(time.Unix(now, 0)),
-		ExpiresAt:     timestamppb.New(time.Unix(now+7200, 0)),
-		VcType:        vcregistrypb.VCType_VC_TYPE_CUSTOM,
+		VcId:              "vc-genesis",
+		HolderAddress:     holder,
+		HolderDid:         "did:aura:holder",
+		Status:            types.VCStatus_VC_STATUS_ACTIVE,
+		IssuedAt:          timestamppb.New(time.Unix(now, 0)),
+		ExpiresAt:         timestamppb.New(time.Unix(now+7200, 0)),
+		VcType:            vcregistrypb.VCType_VC_TYPE_CUSTOM,
+		IssuerAssistant:   "aura1issuer",
 	}
 	require.NoError(t, keeper1.SetVCRecord(ctx1, vc))
 
