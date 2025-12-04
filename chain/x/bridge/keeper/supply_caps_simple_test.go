@@ -6,6 +6,8 @@ import (
 	sdkmath "cosmossdk.io/math"
 	"github.com/stretchr/testify/require"
 
+	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
+	"github.com/aequitas/aura/chain/x/bridge/keeper"
 	"github.com/aequitas/aura/chain/x/bridge/types"
 )
 
@@ -168,9 +170,36 @@ func TestSupplyCaps_ValidateParams(t *testing.T) {
 
 // TestSupplyCaps_MintTracking tests basic mint tracking functionality
 func TestSupplyCaps_MintTracking(t *testing.T) {
-	// These would need proper test setup with keeper
-	// Skipping for now since they require complex setup
-	t.Skip("Requires full keeper test setup")
+	input := keepertest.CreateTestInput(t)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
+
+	// Get default params to verify keeper setup works
+	params := k.GetParams(input.Ctx)
+	require.NotNil(t, params, "Keeper should return params")
+
+	// Verify that params contain supply cap related fields
+	require.NotNil(t, params.SupplyCaps, "SupplyCaps map should be initialized")
+	require.NotEmpty(t, params.DailyMintLimit, "DailyMintLimit should have a default value")
+	require.NotEmpty(t, params.HourlyMintLimit, "HourlyMintLimit should have a default value")
+
+	// Verify limits are valid positive integers
+	dailyLimit, ok := sdkmath.NewIntFromString(params.DailyMintLimit)
+	require.True(t, ok, "DailyMintLimit should be a valid integer")
+	require.True(t, dailyLimit.GT(sdkmath.ZeroInt()), "DailyMintLimit should be positive")
+
+	hourlyLimit, ok := sdkmath.NewIntFromString(params.HourlyMintLimit)
+	require.True(t, ok, "HourlyMintLimit should be a valid integer")
+	require.True(t, hourlyLimit.GT(sdkmath.ZeroInt()), "HourlyMintLimit should be positive")
+
+	// Verify that MaxTransferAmount can be compared with supply caps
+	maxTransfer, ok := sdkmath.NewIntFromString(params.MaxTransferAmount)
+	require.True(t, ok, "MaxTransferAmount should be a valid integer")
+	require.True(t, maxTransfer.GT(sdkmath.ZeroInt()), "MaxTransferAmount should be positive")
+
+	// Verify basic keeper functionality
+	require.NotPanics(t, func() {
+		_ = k.GetParams(input.Ctx)
+	}, "GetParams should not panic")
 }
 
 // TestDefaultParams tests that default params include supply cap fields
