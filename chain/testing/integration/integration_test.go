@@ -2,6 +2,7 @@ package integration_test
 
 import (
 	"testing"
+	"time"
 
 	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -83,9 +84,98 @@ func (integrationBankKeeper) BurnCoins(ctx sdk.Context, moduleName string, amt s
 	return nil
 }
 
+// integrationAccountKeeper implements the AccountKeeper interface
+type integrationAccountKeeper struct{}
+
+func (integrationAccountKeeper) GetAccount(ctx sdk.Context, addr sdk.AccAddress) sdk.AccountI {
+	return nil
+}
+
+func (integrationAccountKeeper) SetAccount(ctx sdk.Context, acc sdk.AccountI) {}
+
+func (integrationAccountKeeper) NewAccountWithAddress(ctx sdk.Context, addr sdk.AccAddress) sdk.AccountI {
+	return nil
+}
+
+// integrationVCRegistryKeeper implements the VCRegistryKeeper interface
+type integrationVCRegistryKeeper struct{}
+
+func (integrationVCRegistryKeeper) GetIRScore(ctx sdk.Context, address string) uint64 {
+	return 0
+}
+
+func (integrationVCRegistryKeeper) IsVerified(ctx sdk.Context, address string) bool {
+	return false
+}
+
+// integrationSecurityKeeper implements the SecurityKeeper interface
+type integrationSecurityKeeper struct{}
+
+func (integrationSecurityKeeper) EnterNoReentrant(ctx sdk.Context, key string) error {
+	return nil
+}
+
+func (integrationSecurityKeeper) ExitNoReentrant(ctx sdk.Context, key string) {}
+
+func (integrationSecurityKeeper) WithReentrancyGuard(ctx sdk.Context, key string, fn func() error) error {
+	return fn()
+}
+
+func (integrationSecurityKeeper) RequireNotPaused(ctx sdk.Context, moduleName string) error {
+	return nil
+}
+
+func (integrationSecurityKeeper) PauseModule(ctx sdk.Context, moduleName string, pausedBy string) error {
+	return nil
+}
+
+func (integrationSecurityKeeper) UnpauseModule(ctx sdk.Context, moduleName string, unpausedBy string) error {
+	return nil
+}
+
+func (integrationSecurityKeeper) IsModulePaused(ctx sdk.Context, moduleName string) bool {
+	return false
+}
+
+func (integrationSecurityKeeper) CheckGuardRateLimit(ctx sdk.Context, key string, limit uint64, window time.Duration) error {
+	return nil
+}
+
+func (integrationSecurityKeeper) IncrementGuardRateLimit(ctx sdk.Context, key string, window time.Duration) {}
+
+func (integrationSecurityKeeper) ValidateAddress(address string) error {
+	return nil
+}
+
+func (integrationSecurityKeeper) ValidateAmount(amount sdkmath.Int, min, max sdkmath.Int) error {
+	return nil
+}
+
+func (integrationSecurityKeeper) ValidateNonEmpty(value string, fieldName string) error {
+	return nil
+}
+
+func (integrationSecurityKeeper) ValidateStringLength(value string, fieldName string, minLen, maxLen int) error {
+	return nil
+}
+
+func (integrationSecurityKeeper) CheckAuthorization(ctx sdk.Context, address string, action string) error {
+	return nil
+}
+
+func (integrationSecurityKeeper) LogSecurityEvent(ctx sdk.Context, eventType string, severity string, actor string, action string, details string) {
+}
+
 func setupDEXIntegrationKeeper(t *testing.T) (*dexkeeper.Keeper, sdk.Context) {
 	input := keepertest.CreateTestInput(t)
-	k := dexkeeper.NewKeeper(input.Cdc, input.StoreKey, integrationBankKeeper{}, nil, nil)
+	k := dexkeeper.NewKeeper(
+		input.Cdc,
+		input.StoreKey,
+		integrationBankKeeper{},
+		integrationAccountKeeper{},
+		integrationVCRegistryKeeper{},
+		integrationSecurityKeeper{},
+	)
 	return k, input.Ctx
 }
 

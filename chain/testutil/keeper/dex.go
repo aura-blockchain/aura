@@ -37,6 +37,7 @@ func DexKeeper(t *testing.T) (*keeper.Keeper, sdk.Context) {
 	bankKeeper := mocks.NewMockBankKeeper()
 	accountKeeper := mocks.NewMockAccountKeeper()
 	vcKeeper := mocks.NewMockVCRegistryKeeper()
+	securityKeeper := mocks.NewMockSecurityKeeper()
 
 	k := keeper.NewKeeper(
 		cdc,
@@ -44,6 +45,7 @@ func DexKeeper(t *testing.T) (*keeper.Keeper, sdk.Context) {
 		bankKeeper,
 		accountKeeper,
 		vcKeeper,
+		securityKeeper,
 	)
 
 	ctx := sdk.NewContext(stateStore, cmtproto.Header{}, false, log.NewNopLogger())
@@ -56,7 +58,7 @@ func DexKeeper(t *testing.T) (*keeper.Keeper, sdk.Context) {
 }
 
 // DexKeeperWithMocks creates a dex keeper with controllable mocks
-func DexKeeperWithMocks(t *testing.T) (*keeper.Keeper, sdk.Context, *mocks.MockBankKeeper, *mocks.MockAccountKeeper, *mocks.MockVCRegistryKeeper) {
+func DexKeeperWithMocks(t *testing.T) (*keeper.Keeper, sdk.Context, *mocks.MockBankKeeper, *mocks.MockAccountKeeper, *mocks.MockVCRegistryKeeper, *mocks.MockSecurityKeeper) {
 	t.Helper()
 
 	storeKey := storetypes.NewKVStoreKey(types.StoreKey)
@@ -73,6 +75,7 @@ func DexKeeperWithMocks(t *testing.T) (*keeper.Keeper, sdk.Context, *mocks.MockB
 	bankKeeper := mocks.NewMockBankKeeper()
 	accountKeeper := mocks.NewMockAccountKeeper()
 	vcKeeper := mocks.NewMockVCRegistryKeeper()
+	securityKeeper := mocks.NewMockSecurityKeeper()
 
 	k := keeper.NewKeeper(
 		cdc,
@@ -80,6 +83,7 @@ func DexKeeperWithMocks(t *testing.T) (*keeper.Keeper, sdk.Context, *mocks.MockB
 		bankKeeper,
 		accountKeeper,
 		vcKeeper,
+		securityKeeper,
 	)
 
 	ctx := sdk.NewContext(stateStore, cmtproto.Header{}, false, log.NewNopLogger())
@@ -88,5 +92,5 @@ func DexKeeperWithMocks(t *testing.T) (*keeper.Keeper, sdk.Context, *mocks.MockB
 	params := types.DefaultParams()
 	require.NoError(t, k.SetParams(ctx, params))
 
-	return k, ctx, bankKeeper, accountKeeper, vcKeeper
+	return k, ctx, bankKeeper, accountKeeper, vcKeeper, securityKeeper
 }

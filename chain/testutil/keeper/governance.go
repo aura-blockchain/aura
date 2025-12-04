@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 	"testing"
+	"time"
 
 	"cosmossdk.io/log"
 	sdkmath "cosmossdk.io/math"
@@ -75,8 +76,9 @@ func GovernanceKeeper(t *testing.T) (*keeper.Keeper, sdk.Context) {
 	// Create mock keepers
 	stakingKeeper := NewMockStakingKeeper()
 	bankKeeper := NewMockBankKeeper()
+	securityKeeper := NewMockSecurityKeeper()
 
-	k := keeper.NewKeeper(cdc, storeKey, stakingKeeper, bankKeeper)
+	k := keeper.NewKeeper(cdc, storeKey, stakingKeeper, bankKeeper, securityKeeper)
 
 	ctx := sdk.NewContext(stateStore, cmtproto.Header{}, false, log.NewNopLogger())
 
@@ -104,4 +106,66 @@ func (m *MockBankKeeper) SendCoinsFromModuleToAccount(ctx context.Context, sende
 
 func (m *MockBankKeeper) GetBalance(ctx context.Context, addr sdk.AccAddress, denom string) sdk.Coin {
 	return sdk.NewCoin(denom, sdkmath.ZeroInt())
+}
+
+// MockSecurityKeeper is a mock security keeper for testing
+type MockSecurityKeeper struct{}
+
+func NewMockSecurityKeeper() *MockSecurityKeeper {
+	return &MockSecurityKeeper{}
+}
+
+func (m *MockSecurityKeeper) EnterNoReentrant(ctx sdk.Context, key string) error {
+	return nil
+}
+
+func (m *MockSecurityKeeper) ExitNoReentrant(ctx sdk.Context, key string) {}
+
+func (m *MockSecurityKeeper) WithReentrancyGuard(ctx sdk.Context, key string, fn func() error) error {
+	return fn()
+}
+
+func (m *MockSecurityKeeper) RequireNotPaused(ctx sdk.Context, moduleName string) error {
+	return nil
+}
+
+func (m *MockSecurityKeeper) PauseModule(ctx sdk.Context, moduleName string, pausedBy string) error {
+	return nil
+}
+
+func (m *MockSecurityKeeper) UnpauseModule(ctx sdk.Context, moduleName string, unpausedBy string) error {
+	return nil
+}
+
+func (m *MockSecurityKeeper) IsModulePaused(ctx sdk.Context, moduleName string) bool {
+	return false
+}
+
+func (m *MockSecurityKeeper) CheckGuardRateLimit(ctx sdk.Context, key string, limit uint64, window time.Duration) error {
+	return nil
+}
+
+func (m *MockSecurityKeeper) IncrementGuardRateLimit(ctx sdk.Context, key string, window time.Duration) {}
+
+func (m *MockSecurityKeeper) ValidateAddress(address string) error {
+	return nil
+}
+
+func (m *MockSecurityKeeper) ValidateAmount(amount sdkmath.Int, min, max sdkmath.Int) error {
+	return nil
+}
+
+func (m *MockSecurityKeeper) ValidateNonEmpty(value string, fieldName string) error {
+	return nil
+}
+
+func (m *MockSecurityKeeper) ValidateStringLength(value string, fieldName string, minLen, maxLen int) error {
+	return nil
+}
+
+func (m *MockSecurityKeeper) CheckAuthorization(ctx sdk.Context, address string, action string) error {
+	return nil
+}
+
+func (m *MockSecurityKeeper) LogSecurityEvent(ctx sdk.Context, eventType string, severity string, actor string, action string, details string) {
 }
