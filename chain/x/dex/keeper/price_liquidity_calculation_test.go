@@ -7,6 +7,8 @@ import (
 	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
+
+	"github.com/aequitas/aura/chain/x/dex/types"
 )
 
 // ============================================================================
@@ -214,6 +216,11 @@ func TestGetCurrentMinimumLiquidity_TierLogic(t *testing.T) {
 		{"$10.00 - scale tier", "10.00", "100000"},
 	}
 
+	// These subtests share context, so we need to update the same pool instead of creating new ones
+	// First, create the usdt pool once
+	creatorAddr := genTestAddr()
+	creator := creatorAddr.String()
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Calculate reserves to achieve target price
@@ -222,16 +229,23 @@ func TestGetCurrentMinimumLiquidity_TierLogic(t *testing.T) {
 			require.NoError(t, err)
 			reserveUSDT := sdkmath.LegacyNewDec(reserveAura).Mul(priceDec).TruncateInt64()
 
-			// Create unique addresses for each test
-			creatorAddr := genTestAddr()
-			creator := creatorAddr.String()
-			mockBank.SetBalance(creatorAddr, "uaura", sdkmath.NewInt(reserveAura))
-			mockBank.SetBalance(creatorAddr, "usdt", sdkmath.NewInt(reserveUSDT))
+			// Get the existing pool or create it
+			pool := k.GetPoolByDenoms(ctx, "uaura", "usdt")
+			if pool == nil {
+				// Create pool for first test
+				mockBank.SetBalance(creatorAddr, "uaura", sdkmath.NewInt(reserveAura))
+				mockBank.SetBalance(creatorAddr, "usdt", sdkmath.NewInt(reserveUSDT))
 
-			_, _, err = k.CreatePool(ctx, creator, "uaura", "usdt",
-				sdk.NewCoin("uaura", sdkmath.NewInt(reserveAura)),
-				sdk.NewCoin("usdt", sdkmath.NewInt(reserveUSDT)))
-			require.NoError(t, err)
+				pool, _, err = k.CreatePool(ctx, creator, "uaura", "usdt",
+					sdk.NewCoin("uaura", sdkmath.NewInt(reserveAura)),
+					sdk.NewCoin("usdt", sdkmath.NewInt(reserveUSDT)))
+				require.NoError(t, err)
+			} else {
+				// Update existing pool reserves to change price
+				pool.ReserveA = sdkmath.NewInt(reserveAura).String()
+				pool.ReserveB = sdkmath.NewInt(reserveUSDT).String()
+				k.SetPool(ctx, pool)
+			}
 
 			minLiquidity := k.GetCurrentMinimumLiquidity(ctx)
 
