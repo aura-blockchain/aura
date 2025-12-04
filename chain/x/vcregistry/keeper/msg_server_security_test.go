@@ -1,4 +1,4 @@
-package keeper_test
+package keeper
 
 import (
 	"testing"
@@ -6,16 +6,14 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 
-	"github.com/aequitas/aura/chain/x/vcregistry/keeper"
 	"github.com/aequitas/aura/chain/x/vcregistry/types"
 	vcregistrypb "github.com/aequitas/aura/proto/aura/vcregistry/v1beta1"
 )
 
 // TestCreatePresentation_SignerVerification tests that CreatePresentation rejects unauthorized signers
 func TestCreatePresentation_SignerVerification(t *testing.T) {
-	t.Skip("This test requires refactoring to use proper SDK context - see keeper_kv_persistence_test.go for examples")
 	k, ctx := setupKeeperForTest(t)
-	_ = keeper.NewMsgServer(k)
+	_ = NewMsgServer(k)
 
 	// Create two different addresses
 	alice := sdk.AccAddress("alice_______________")
@@ -28,6 +26,15 @@ func TestCreatePresentation_SignerVerification(t *testing.T) {
 	aliceDID := "did:aura:alice"
 	k.SetCurrentTime(1000)
 	k.SetCurrentHeight(100)
+
+	// Initialize disclosure policy for Alice
+	policy := types.DisclosurePolicy{
+		HolderAddress: aliceAddr,
+		DefaultMode:   types.DisclosurePolicyMode_DISCLOSURE_POLICY_MODE_ALLOW,
+		Rules:         []*types.AttributeDisclosureRule{},
+	}
+	err := k.SetDisclosurePolicy(ctx, policy)
+	require.NoError(t, err)
 
 	vcID, err := k.MintVC(ctx, aliceAddr, aliceDID, types.VCType_VC_TYPE_VERIFIED_HUMAN, "", nil)
 	require.NoError(t, err)
@@ -58,9 +65,8 @@ func TestCreatePresentation_SignerVerification(t *testing.T) {
 
 // TestMintVC_SignerVerification tests that MintVC rejects unauthorized signers
 func TestMintVC_SignerVerification(t *testing.T) {
-	t.Skip("This test requires refactoring to use proper SDK context - see keeper_kv_persistence_test.go for examples")
 	k, ctx := setupKeeperForTest(t)
-	_ = keeper.NewMsgServer(k)
+	_ = NewMsgServer(k)
 
 	alice := sdk.AccAddress("alice_______________")
 	bob := sdk.AccAddress("bob_________________")
@@ -88,9 +94,8 @@ func TestMintVC_SignerVerification(t *testing.T) {
 
 // TestRevokeVC_SignerVerification tests that RevokeVC rejects unauthorized signers
 func TestRevokeVC_SignerVerification(t *testing.T) {
-	t.Skip("This test requires refactoring to use proper SDK context - see keeper_kv_persistence_test.go for examples")
 	k, ctx := setupKeeperForTest(t)
-	_ = keeper.NewMsgServer(k)
+	_ = NewMsgServer(k)
 
 	alice := sdk.AccAddress("alice_______________")
 	bob := sdk.AccAddress("bob_________________")
@@ -103,6 +108,16 @@ func TestRevokeVC_SignerVerification(t *testing.T) {
 
 	// Setup: Create a VC for Alice
 	aliceDID := "did:aura:alice"
+
+	// Initialize disclosure policy for Alice
+	policy := types.DisclosurePolicy{
+		HolderAddress: aliceAddr,
+		DefaultMode:   types.DisclosurePolicyMode_DISCLOSURE_POLICY_MODE_ALLOW,
+		Rules:         []*types.AttributeDisclosureRule{},
+	}
+	err := k.SetDisclosurePolicy(ctx, policy)
+	require.NoError(t, err)
+
 	vcID, err := k.MintVC(ctx, aliceAddr, aliceDID, types.VCType_VC_TYPE_VERIFIED_HUMAN, "", nil)
 	require.NoError(t, err)
 
@@ -122,9 +137,8 @@ func TestRevokeVC_SignerVerification(t *testing.T) {
 
 // TestRegisterDID_SignerVerification tests that RegisterDID rejects unauthorized signers
 func TestRegisterDID_SignerVerification(t *testing.T) {
-	t.Skip("This test requires refactoring to use proper SDK context - see keeper_kv_persistence_test.go for examples")
 	k, ctx := setupKeeperForTest(t)
-	_ = keeper.NewMsgServer(k)
+	_ = NewMsgServer(k)
 
 	alice := sdk.AccAddress("alice_______________")
 	bob := sdk.AccAddress("bob_________________")
@@ -155,9 +169,8 @@ func TestRegisterDID_SignerVerification(t *testing.T) {
 
 // TestUpdateDIDDocument_SignerVerification tests that UpdateDIDDocument rejects unauthorized signers
 func TestUpdateDIDDocument_SignerVerification(t *testing.T) {
-	t.Skip("This test requires refactoring to use proper SDK context - see keeper_kv_persistence_test.go for examples")
 	k, ctx := setupKeeperForTest(t)
-	_ = keeper.NewMsgServer(k)
+	_ = NewMsgServer(k)
 
 	alice := sdk.AccAddress("alice_______________")
 	bob := sdk.AccAddress("bob_________________")
@@ -199,9 +212,8 @@ func TestUpdateDIDDocument_SignerVerification(t *testing.T) {
 
 // TestCreateAttributeVC_SignerVerification tests that CreateAttributeVC rejects unauthorized signers
 func TestCreateAttributeVC_SignerVerification(t *testing.T) {
-	t.Skip("This test requires refactoring to use proper SDK context - see keeper_kv_persistence_test.go for examples")
 	k, ctx := setupKeeperForTest(t)
-	_ = keeper.NewMsgServer(k)
+	_ = NewMsgServer(k)
 
 	alice := sdk.AccAddress("alice_______________")
 	bob := sdk.AccAddress("bob_________________")
@@ -228,9 +240,8 @@ func TestCreateAttributeVC_SignerVerification(t *testing.T) {
 
 // TestRevokeAttributeVC_SignerVerification tests that RevokeAttributeVC rejects unauthorized signers
 func TestRevokeAttributeVC_SignerVerification(t *testing.T) {
-	t.Skip("This test requires refactoring to use proper SDK context - see keeper_kv_persistence_test.go for examples")
 	k, ctx := setupKeeperForTest(t)
-	_ = keeper.NewMsgServer(k)
+	_ = NewMsgServer(k)
 
 	alice := sdk.AccAddress("alice_______________")
 	bob := sdk.AccAddress("bob_________________")
@@ -267,9 +278,8 @@ func TestRevokeAttributeVC_SignerVerification(t *testing.T) {
 
 // TestUpdateDisclosurePolicy_SignerVerification tests that UpdateDisclosurePolicy rejects unauthorized signers
 func TestUpdateDisclosurePolicy_SignerVerification(t *testing.T) {
-	t.Skip("This test requires refactoring to use proper SDK context - see keeper_kv_persistence_test.go for examples")
 	k, ctx := setupKeeperForTest(t)
-	_ = keeper.NewMsgServer(k)
+	_ = NewMsgServer(k)
 
 	alice := sdk.AccAddress("alice_______________")
 	bob := sdk.AccAddress("bob_________________")
@@ -293,9 +303,8 @@ func TestUpdateDisclosurePolicy_SignerVerification(t *testing.T) {
 
 // TestRespondToDisclosureRequest_SignerVerification tests that RespondToDisclosureRequest rejects unauthorized signers
 func TestRespondToDisclosureRequest_SignerVerification(t *testing.T) {
-	t.Skip("This test requires refactoring to use proper SDK context - see keeper_kv_persistence_test.go for examples")
 	k, ctx := setupKeeperForTest(t)
-	_ = keeper.NewMsgServer(k)
+	_ = NewMsgServer(k)
 
 	alice := sdk.AccAddress("alice_______________")
 	bob := sdk.AccAddress("bob_________________")
@@ -317,11 +326,3 @@ func TestRespondToDisclosureRequest_SignerVerification(t *testing.T) {
 	_ = ctx
 }
 
-// Helper function to setup keeper for testing
-func setupKeeperForTest(t *testing.T) (*keeper.Keeper, sdk.Context) {
-	// This is a simplified setup - in real tests you would use the full test setup
-	// from existing test files
-	k := keeper.NewKeeper(nil, "authority")
-	ctx := sdk.Context{} // Simplified - real tests would use full context
-	return k, ctx
-}
