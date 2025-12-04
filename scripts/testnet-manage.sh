@@ -252,6 +252,21 @@ Examples:
     $0 query validator-3
     $0 bft-test
 
+Advanced Monitoring:
+    For comprehensive monitoring and health checks, use:
+        ./scripts/testnet-monitor.sh <command>
+
+    Available monitoring commands:
+        quick               Quick health check (single command)
+        watch               Live monitoring dashboard
+        watch-blocks        Real-time block production
+        performance         Performance metrics
+        network             Network health check
+        diagnose            Full diagnostic report
+        check-logs          Scan logs for errors
+
+    See: TESTNET_MONITORING_GUIDE.md or MONITORING_CHEATSHEET.md
+
 EOF
 }
 
