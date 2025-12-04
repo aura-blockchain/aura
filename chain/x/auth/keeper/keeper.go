@@ -985,3 +985,159 @@ func (k *Keeper) ResetRateLimitWindow(ctx sdk.Context, userAddress string) {
 
 	k.SetRateLimitConfig(ctx, config)
 }
+
+// CheckRateLimit checks if a user has exceeded their rate limit and increments counters.
+//
+// This method retrieves or creates a rate limit configuration for the user, resets
+// expired time windows, checks against minute/hour/day limits, and increments counters.
+//
+// Parameters:
+//   - ctx: SDK context for state access
+//   - userAddress: Address of the user to check
+//
+// Returns:
+//   - error: ErrRateLimitExceeded if any limit is exceeded, or other errors
+//
+// Security considerations:
+//   - Creates default config from params if user has no custom limit
+//   - Automatically resets counters when time windows expire
+//   - Checks all three time windows (minute, hour, day)
+//   - Increments counters atomically after successful check
+func (k *Keeper) CheckRateLimit(ctx sdk.Context, userAddress string) error {
+	if userAddress == "" {
+		return fmt.Errorf("user address required")
+	}
+
+	// Try to get existing config, or create default from params
+	config, err := k.GetRateLimitConfig(ctx, userAddress)
+	if err != nil {
+		// No custom config, create default from params
+		params, err := k.GetParams(ctx)
+		if err != nil {
+			return err
+		}
+
+		config = &authproto.RateLimitConfig{
+			UserAddress:        userAddress,
+			RequestsPerMinute:  params.DefaultRequestsPerMinute,
+			RequestsPerHour:    params.DefaultRequestsPerHour,
+			RequestsPerDay:     params.DefaultRequestsPerDay,
+			CurrentMinuteCount: 0,
+			CurrentHourCount:   0,
+			CurrentDayCount:    0,
+			WindowStart:        timestamppb.New(ctx.BlockTime()),
+		}
+	}
+
+	// Reset counters if time windows have passed
+	now := ctx.BlockTime()
+	windowStart := config.WindowStart.AsTime()
+
+	if now.Sub(windowStart) >= time.Minute {
+		config.CurrentMinuteCount = 0
+	}
+	if now.Sub(windowStart) >= time.Hour {
+		config.CurrentHourCount = 0
+	}
+	if now.Sub(windowStart) >= 24*time.Hour {
+		config.CurrentDayCount = 0
+		config.WindowStart = timestamppb.New(now)
+	}
+
+	// Check limits (only if limits are configured)
+	if config.RequestsPerMinute > 0 && config.CurrentMinuteCount >= config.RequestsPerMinute {
+		return types.ErrRateLimitExceeded
+	}
+	if config.RequestsPerHour > 0 && config.CurrentHourCount >= config.RequestsPerHour {
+		return types.ErrRateLimitExceeded
+	}
+	if config.RequestsPerDay > 0 && config.CurrentDayCount >= config.RequestsPerDay {
+		return types.ErrRateLimitExceeded
+	}
+
+	// Increment counters
+	config.CurrentMinuteCount++
+	config.CurrentHourCount++
+	config.CurrentDayCount++
+
+	// Save updated config
+	return k.SetRateLimitConfig(ctx, config)
+}
+
+// SetCustomRateLimit sets a custom rate limit configuration for a user.
+//
+// This method allows an admin to override the default rate limits for a specific user.
+// The admin must have the RoleAdmin permission to perform this operation.
+//
+// Parameters:
+//   - ctx: SDK context for state access
+//   - adminAddress: Address of the admin setting the limit (must have RoleAdmin)
+//   - userAddress: Address of the user whose limit is being set
+//   - requestsPerMinute: Maximum requests allowed per minute (0 = no limit)
+//   - requestsPerHour: Maximum requests allowed per hour (0 = no limit)
+//   - requestsPerDay: Maximum requests allowed per day (0 = no limit)
+//
+// Returns:
+//   - error: Permission denied if admin lacks RoleAdmin, or validation errors
+//
+// Security considerations:
+//   - Requires admin to have RoleAdmin permission
+//   - Validates all rate limit values are non-negative
+//   - Creates new config or updates existing one
+//   - Preserves current counters if config exists
+func (k *Keeper) SetCustomRateLimit(ctx sdk.Context, adminAddress, userAddress string, requestsPerMinute, requestsPerHour, requestsPerDay uint64) error {
+	if adminAddress == "" {
+		return fmt.Errorf("admin address required")
+	}
+	if userAddress == "" {
+		return fmt.Errorf("user address required")
+	}
+
+	// Verify admin has RoleAdmin permission
+	roleAssignments, err := k.GetRoleAssignmentsForAddress(ctx, adminAddress)
+	if err != nil {
+		return fmt.Errorf("failed to get admin roles: %w", err)
+	}
+
+	hasAdminRole := false
+	for _, assignment := range roleAssignments {
+		if assignment.RoleName == types.RoleAdmin {
+			hasAdminRole = true
+			break
+		}
+	}
+	if !hasAdminRole {
+		return types.ErrInsufficientPermissions
+	}
+
+	// Try to get existing config to preserve current counters
+	existingConfig, err := k.GetRateLimitConfig(ctx, userAddress)
+
+	var config *authproto.RateLimitConfig
+	if err != nil {
+		// No existing config, create new one
+		config = &authproto.RateLimitConfig{
+			UserAddress:        userAddress,
+			RequestsPerMinute:  requestsPerMinute,
+			RequestsPerHour:    requestsPerHour,
+			RequestsPerDay:     requestsPerDay,
+			CurrentMinuteCount: 0,
+			CurrentHourCount:   0,
+			CurrentDayCount:    0,
+			WindowStart:        timestamppb.New(ctx.BlockTime()),
+		}
+	} else {
+		// Update existing config, preserve counters
+		config = existingConfig
+		config.RequestsPerMinute = requestsPerMinute
+		config.RequestsPerHour = requestsPerHour
+		config.RequestsPerDay = requestsPerDay
+	}
+
+	// Validate config
+	if err := types.ValidateRateLimitConfig(config); err != nil {
+		return err
+	}
+
+	return k.SetRateLimitConfig(ctx, config)
+}

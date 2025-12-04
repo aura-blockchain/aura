@@ -477,7 +477,6 @@ func TestSessionManagement(t *testing.T) {
 // Rate Limiting Tests
 
 func TestRateLimit(t *testing.T) {
-	t.Skip("CheckRateLimit method not implemented yet")
 	k, ctx := setupKeeper(t)
 
 	// Set low limit for testing
@@ -490,21 +489,20 @@ func TestRateLimit(t *testing.T) {
 
 	// First 3 requests should succeed
 	for i := 0; i < 3; i++ {
-		// err := k.CheckRateLimit(ctx, "user1")
-		// if err != nil {
-		// 	t.Fatalf("Request %d should not be rate limited: %v", i+1, err)
-		// }
+		err := k.CheckRateLimit(ctx, "user1")
+		if err != nil {
+			t.Fatalf("Request %d should not be rate limited: %v", i+1, err)
+		}
 	}
 
 	// 4th request should be limited
-	// err := k.CheckRateLimit(ctx, "user1")
-	// if err != types.ErrRateLimitExceeded {
-	// 	t.Errorf("Expected ErrRateLimitExceeded, got %v", err)
-	// }
+	err = k.CheckRateLimit(ctx, "user1")
+	if err != types.ErrRateLimitExceeded {
+		t.Errorf("Expected ErrRateLimitExceeded, got %v", err)
+	}
 }
 
 func TestCustomRateLimit(t *testing.T) {
-	t.Skip("SetCustomRateLimit method not implemented yet")
 	k, ctx := setupKeeper(t)
 
 	// Assign admin
@@ -513,21 +511,21 @@ func TestCustomRateLimit(t *testing.T) {
 		t.Fatalf("Failed to assign admin role: %v", err)
 	}
 
-	// Set custom limit - method not implemented
-	// err = k.SetCustomRateLimit(ctx, "admin1", "user1", 100, 6000, 144000)
-	// if err != nil {
-	// 	t.Fatalf("Failed to set custom rate limit: %v", err)
-	// }
+	// Set custom limit
+	err = k.SetCustomRateLimit(ctx, "admin1", "user1", 100, 6000, 144000)
+	if err != nil {
+		t.Fatalf("Failed to set custom rate limit: %v", err)
+	}
 
 	// Verify custom limit
-	// config, err := k.GetRateLimitConfig(ctx, "user1")
-	// if err != nil {
-	// 	t.Fatalf("Failed to get rate limit config: %v", err)
-	// }
+	config, err := k.GetRateLimitConfig(ctx, "user1")
+	if err != nil {
+		t.Fatalf("Failed to get rate limit config: %v", err)
+	}
 
-	// if config.RequestsPerMinute != 100 {
-	// 	t.Errorf("Expected 100 requests per minute, got %d", config.RequestsPerMinute)
-	// }
+	if config.RequestsPerMinute != 100 {
+		t.Errorf("Expected 100 requests per minute, got %d", config.RequestsPerMinute)
+	}
 }
 
 // Audit Logging Tests
