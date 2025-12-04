@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"cosmossdk.io/log"
+	"cosmossdk.io/math"
 	"cosmossdk.io/store"
 	"cosmossdk.io/store/metrics"
 	storetypes "cosmossdk.io/store/types"
@@ -24,11 +25,12 @@ import (
 type KeeperTestSuite struct {
 	suite.Suite
 
-	ctx           sdk.Context
-	keeper        keeper.Keeper
-	cdc           codec.Codec
-	stakingKeeper *MockStakingKeeper
-	bankKeeper    *MockBankKeeper
+	ctx            sdk.Context
+	keeper         keeper.Keeper
+	cdc            codec.Codec
+	stakingKeeper  *MockStakingKeeper
+	slashingKeeper *MockSlashingKeeper
+	bankKeeper     *MockBankKeeper
 }
 
 func TestKeeperTestSuite(t *testing.T) {
@@ -38,7 +40,7 @@ func TestKeeperTestSuite(t *testing.T) {
 // MockValidator implements the Validator interface for testing
 type MockValidator struct {
 	operator sdk.ValAddress
-	tokens   sdk.Int
+	tokens   math.Int
 	status   int32
 }
 
@@ -46,7 +48,7 @@ func (m MockValidator) GetOperator() sdk.ValAddress { return m.operator }
 func (m MockValidator) GetConsPubKey() (interface{}, error) { return nil, nil }
 func (m MockValidator) GetConsAddr() (sdk.ConsAddress, error) { return nil, nil }
 func (m MockValidator) GetStatus() int32 { return m.status }
-func (m MockValidator) GetTokens() sdk.Int { return m.tokens }
+func (m MockValidator) GetTokens() math.Int { return m.tokens }
 
 // MockStakingKeeper implements a mock StakingKeeper for testing
 type MockStakingKeeper struct {
@@ -60,15 +62,15 @@ func NewMockStakingKeeper() *MockStakingKeeper {
 }
 
 func (m *MockStakingKeeper) Validator(ctx context.Context, addr sdk.ValAddress) (keeper.Validator, error) {
-	return MockValidator{operator: addr, tokens: sdk.NewInt(1000000), status: 3}, nil
+	return MockValidator{operator: addr, tokens: math.NewInt(1000000), status: 3}, nil
 }
 
 func (m *MockStakingKeeper) ValidatorByConsAddr(ctx context.Context, consAddr sdk.ConsAddress) (keeper.Validator, error) {
-	return MockValidator{tokens: sdk.NewInt(1000000), status: 3}, nil
+	return MockValidator{tokens: math.NewInt(1000000), status: 3}, nil
 }
 
-func (m *MockStakingKeeper) Slash(ctx context.Context, consAddr sdk.ConsAddress, infractionHeight int64, power int64, slashFactor sdk.Dec) (sdk.Int, error) {
-	return sdk.NewInt(100), nil
+func (m *MockStakingKeeper) Slash(ctx context.Context, consAddr sdk.ConsAddress, infractionHeight int64, power int64, slashFactor math.LegacyDec) (math.Int, error) {
+	return math.NewInt(100), nil
 }
 
 func (m *MockStakingKeeper) Jail(ctx context.Context, consAddr sdk.ConsAddress) error {
@@ -85,8 +87,35 @@ func (m *MockStakingKeeper) GetAllValidators(ctx context.Context) ([]keeper.Vali
 	return []keeper.Validator{}, nil
 }
 
-func (m *MockStakingKeeper) PowerReduction(ctx context.Context) sdk.Int {
-	return sdk.NewInt(1000000)
+func (m *MockStakingKeeper) PowerReduction(ctx context.Context) math.Int {
+	return math.NewInt(1000000)
+}
+
+// MockSlashingKeeper implements a mock SlashingKeeper for testing
+type MockSlashingKeeper struct {
+	Tombstoned map[string]bool
+	JailTime   map[string]time.Time
+}
+
+func NewMockSlashingKeeper() *MockSlashingKeeper {
+	return &MockSlashingKeeper{
+		Tombstoned: make(map[string]bool),
+		JailTime:   make(map[string]time.Time),
+	}
+}
+
+func (m *MockSlashingKeeper) IsTombstoned(ctx context.Context, consAddr sdk.ConsAddress) bool {
+	return m.Tombstoned[consAddr.String()]
+}
+
+func (m *MockSlashingKeeper) Tombstone(ctx context.Context, consAddr sdk.ConsAddress) error {
+	m.Tombstoned[consAddr.String()] = true
+	return nil
+}
+
+func (m *MockSlashingKeeper) JailUntil(ctx context.Context, consAddr sdk.ConsAddress, jailTime time.Time) error {
+	m.JailTime[consAddr.String()] = jailTime
+	return nil
 }
 
 // MockBankKeeper implements a mock BankKeeper for testing
@@ -112,7 +141,7 @@ func (m *MockBankKeeper) GetBalance(ctx context.Context, addr sdk.AccAddress, de
 	if coins, ok := m.Balances[addr.String()]; ok {
 		return sdk.NewCoin(denom, coins.AmountOf(denom))
 	}
-	return sdk.NewCoin(denom, sdk.ZeroInt())
+	return sdk.NewCoin(denom, math.ZeroInt())
 }
 
 func (suite *KeeperTestSuite) SetupTest() {
@@ -140,6 +169,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 
 	// Create mock keepers
 	stakingKeeper := NewMockStakingKeeper()
+	slashingKeeper := NewMockSlashingKeeper()
 	bankKeeper := NewMockBankKeeper()
 
 	// Create keeper with mocks
@@ -148,15 +178,16 @@ func (suite *KeeperTestSuite) SetupTest() {
 		storeKey,
 		memStoreKey,
 		"authority",
-		stakingKeeper, // staking keeper mock
-		nil,           // slashing keeper mock (not needed for these tests)
-		bankKeeper,    // bank keeper mock
+		stakingKeeper,  // staking keeper mock
+		slashingKeeper, // slashing keeper mock
+		bankKeeper,     // bank keeper mock
 	)
 
 	suite.ctx = ctx
 	suite.keeper = k
 	suite.cdc = cdc
 	suite.stakingKeeper = stakingKeeper
+	suite.slashingKeeper = slashingKeeper
 	suite.bankKeeper = bankKeeper
 }
 

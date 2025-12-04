@@ -46,7 +46,7 @@ func TestCmdQueryValidatorSecurityInfoStructure(t *testing.T) {
 	cmd := CmdQueryValidatorSecurityInfo()
 
 	require.NotNil(t, cmd)
-	require.Contains(t, cmd.Use, "validator-info")
+	require.Contains(t, cmd.Use, "validator")
 	require.NotEmpty(t, cmd.Short)
 
 	// Test argument validation
@@ -146,7 +146,7 @@ func TestQueryCommandIntegration(t *testing.T) {
 	}
 
 	require.True(t, commandNames["params"], "Should have params command")
-	require.True(t, commandNames["validator-info"], "Should have validator-info command")
+	require.True(t, commandNames["validator"], "Should have validator command")
 	require.True(t, commandNames["validators"], "Should have validators command")
 	require.True(t, commandNames["jailed"], "Should have jailed command")
 	require.True(t, commandNames["tombstoned"], "Should have tombstoned command")

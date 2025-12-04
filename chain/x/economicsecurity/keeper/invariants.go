@@ -345,11 +345,8 @@ func PendingTreasuryTxsInvariant(k *Keeper) sdk.Invariant {
 				return true
 			}
 
-			// Validate signatures list is not nil
-			if tx.Signatures == nil {
-				invalidTx = fmt.Sprintf("treasury tx %s has nil signatures list", tx.TxId)
-				return true
-			}
+			// Note: Signatures can be nil or empty slice (protobuf repeated fields)
+			// Both are semantically equivalent and valid for a new treasury tx
 
 			// Validate creation timestamp
 			if tx.CreatedAt == nil {
