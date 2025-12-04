@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/aequitas/aura/chain/x/monitoring/types"
 	"github.com/stretchr/testify/require"
@@ -24,8 +25,8 @@ func TestInitGenesis(t *testing.T) {
 		require.NoError(t, err)
 
 		// Verify params are set
-		params := k.GetParams()
-		require.NotNil(t, params)
+		params, err := k.GetParams(ctx)
+		require.NoError(t, err)
 		require.Equal(t, genesis.Params.EnableTransactionMonitoring, params.EnableTransactionMonitoring)
 	})
 
@@ -35,12 +36,9 @@ func TestInitGenesis(t *testing.T) {
 		genesis := &types.GenesisState{
 			Params: types.Params{
 				EnableTransactionMonitoring: true,
-				EnablePerformanceMonitoring: true,
-				EnableSecurityMonitoring:    true,
-				EnableHealthChecks:          true,
-				MetricsRetentionPeriod:      86400,
-				AlertThresholdLatency:       1000,
-				AlertThresholdErrorRate:     5,
+				EnableAlerts:                true,
+				EnableAnomalyDetection:      true,
+				MetricsRetentionPeriod:      86400 * time.Second,
 			},
 		}
 
@@ -48,12 +46,12 @@ func TestInitGenesis(t *testing.T) {
 		require.NoError(t, err)
 
 		// Verify custom params
-		params := k.GetParams()
+		params, err := k.GetParams(ctx)
+		require.NoError(t, err)
 		require.True(t, params.EnableTransactionMonitoring)
-		require.True(t, params.EnablePerformanceMonitoring)
-		require.True(t, params.EnableSecurityMonitoring)
-		require.Equal(t, uint64(86400), params.MetricsRetentionPeriod)
-		require.Equal(t, uint64(1000), params.AlertThresholdLatency)
+		require.True(t, params.EnableAlerts)
+		require.True(t, params.EnableAnomalyDetection)
+		require.Equal(t, 86400*time.Second, params.MetricsRetentionPeriod)
 	})
 
 	t.Run("init with invalid params fails", func(t *testing.T) {
@@ -61,7 +59,7 @@ func TestInitGenesis(t *testing.T) {
 
 		genesis := &types.GenesisState{
 			Params: types.Params{
-				MetricsRetentionPeriod: 0, // Invalid - must be positive
+				LargeTransactionThreshold: 0, // Invalid - must be positive
 			},
 		}
 
@@ -86,12 +84,10 @@ func TestExportGenesis(t *testing.T) {
 		originalGenesis := &types.GenesisState{
 			Params: types.Params{
 				EnableTransactionMonitoring: true,
-				EnablePerformanceMonitoring: false,
-				EnableSecurityMonitoring:    true,
-				EnableHealthChecks:          true,
-				MetricsRetentionPeriod:      7200,
-				AlertThresholdLatency:       500,
-				AlertThresholdErrorRate:     3,
+				EnableAlerts:                false,
+				EnableAnomalyDetection:      true,
+				EnablePrometheusMetrics:     true,
+				MetricsRetentionPeriod:      7200 * time.Second,
 			},
 		}
 
@@ -101,9 +97,9 @@ func TestExportGenesis(t *testing.T) {
 		exported := k.ExportGenesis(ctx)
 
 		require.Equal(t, originalGenesis.Params.EnableTransactionMonitoring, exported.Params.EnableTransactionMonitoring)
-		require.Equal(t, originalGenesis.Params.EnablePerformanceMonitoring, exported.Params.EnablePerformanceMonitoring)
+		require.Equal(t, originalGenesis.Params.EnableAlerts, exported.Params.EnableAlerts)
+		require.Equal(t, originalGenesis.Params.EnableAnomalyDetection, exported.Params.EnableAnomalyDetection)
 		require.Equal(t, originalGenesis.Params.MetricsRetentionPeriod, exported.Params.MetricsRetentionPeriod)
-		require.Equal(t, originalGenesis.Params.AlertThresholdLatency, exported.Params.AlertThresholdLatency)
 	})
 }
 
@@ -114,12 +110,10 @@ func TestGenesisRoundTrip(t *testing.T) {
 		originalGenesis := &types.GenesisState{
 			Params: types.Params{
 				EnableTransactionMonitoring: true,
-				EnablePerformanceMonitoring: true,
-				EnableSecurityMonitoring:    false,
-				EnableHealthChecks:          true,
-				MetricsRetentionPeriod:      3600,
-				AlertThresholdLatency:       750,
-				AlertThresholdErrorRate:     10,
+				EnableAlerts:                true,
+				EnableAnomalyDetection:      false,
+				EnablePrometheusMetrics:     true,
+				MetricsRetentionPeriod:      3600 * time.Second,
 			},
 		}
 
@@ -139,7 +133,7 @@ func TestGenesisRoundTrip(t *testing.T) {
 		k2, ctx2 := setupKeeper(t)
 
 		genesis := types.DefaultGenesisState()
-		genesis.Params.MetricsRetentionPeriod = 9999
+		genesis.Params.MetricsRetentionPeriod = 9999 * time.Second
 
 		// First round trip
 		err := k1.InitGenesis(ctx1, genesis)
@@ -178,8 +172,8 @@ func TestDefaultGenesis(t *testing.T) {
 		require.NotNil(t, genesis.Params)
 
 		// Verify sensible defaults
-		require.Greater(t, genesis.Params.MetricsRetentionPeriod, uint64(0))
-		require.Greater(t, genesis.Params.AlertThresholdLatency, uint64(0))
+		require.Greater(t, genesis.Params.MetricsRetentionPeriod, time.Duration(0))
+		require.Greater(t, genesis.Params.LargeTransactionThreshold, uint64(0))
 	})
 
 	t.Run("can init with default genesis", func(t *testing.T) {
@@ -190,7 +184,8 @@ func TestDefaultGenesis(t *testing.T) {
 		require.NoError(t, err)
 
 		// Verify params were set
-		params := k.GetParams()
+		params, err := k.GetParams(ctx)
+		require.NoError(t, err)
 		require.Equal(t, genesis.Params, params)
 	})
 

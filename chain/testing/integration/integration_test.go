@@ -84,6 +84,10 @@ func (integrationBankKeeper) BurnCoins(ctx sdk.Context, moduleName string, amt s
 	return nil
 }
 
+func (integrationBankKeeper) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin {
+	return sdk.NewCoin(denom, sdkmath.NewInt(1000000))
+}
+
 // integrationAccountKeeper implements the AccountKeeper interface
 type integrationAccountKeeper struct{}
 

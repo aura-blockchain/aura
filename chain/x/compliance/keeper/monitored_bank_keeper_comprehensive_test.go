@@ -19,12 +19,11 @@ import (
 // ============================================================================
 
 func TestMonitoredBankKeeper_InputOutputCoins_SingleInput_SingleOutput(t *testing.T) {
-	// Setup
-	complianceInput := keepertest.CreateTestInputWithKeys(t, "compliance")
-	complianceKeeper := keeper.NewKeeper(complianceInput.Cdc, complianceInput.StoreKey)
+	// Setup - create single test input with both store keys
+	testInput := keepertest.CreateTestInputWithKeys(t, "compliance", "bank")
+	complianceKeeper := keeper.NewKeeper(testInput.Cdc, testInput.StoreKeys["compliance"])
 
-	bankInput := keepertest.CreateTestInputWithKeys(t, "bank")
-	baseBankKeeper := keepertest.BankKeeperWithMockAccountKeeper(t, bankInput)
+	baseBankKeeper := keepertest.BankKeeperWithMockAccountKeeper(t, testInput)
 
 	monitoredKeeper := keeper.NewMonitoredBankKeeper(baseBankKeeper, complianceKeeper)
 
@@ -36,7 +35,7 @@ func TestMonitoredBankKeeper_InputOutputCoins_SingleInput_SingleOutput(t *testin
 		SanctionsScreeningEnabled:    false,
 		StructuringThresholdCount:    5,
 	}
-	err := complianceKeeper.SetParams(complianceInput.Ctx, params)
+	err := complianceKeeper.SetParams(testInput.Ctx, params)
 	require.NoError(t, err)
 
 	// Create addresses
@@ -60,7 +59,7 @@ func TestMonitoredBankKeeper_InputOutputCoins_SingleInput_SingleOutput(t *testin
 
 	// Execute - monitoring should happen (bank transfer will fail due to mocks, but that's OK)
 	// We're testing the monitoring path, not the bank keeper
-	_ = monitoredKeeper.InputOutputCoins(complianceInput.Ctx, inputs, outputs)
+	_ = monitoredKeeper.InputOutputCoins(testInput.Ctx, inputs, outputs)
 
 	// The test passes if no panic occurs - monitoring code was executed
 	// Note: Actual transfer fails at bank keeper level, but monitoring logic runs first
@@ -314,12 +313,11 @@ func TestMonitoredBankKeeper_InputOutputCoins_EventEmission(t *testing.T) {
 // ============================================================================
 
 func TestMonitoredBankKeeper_SendCoinsFromModuleToAccount_Allowed(t *testing.T) {
-	// Setup
-	complianceInput := keepertest.CreateTestInputWithKeys(t, "compliance")
-	complianceKeeper := keeper.NewKeeper(complianceInput.Cdc, complianceInput.StoreKey)
+	// Setup - create single test input with both store keys
+	testInput := keepertest.CreateTestInputWithKeys(t, "compliance", "bank")
+	complianceKeeper := keeper.NewKeeper(testInput.Cdc, testInput.StoreKeys["compliance"])
 
-	bankInput := keepertest.CreateTestInputWithKeys(t, "bank")
-	baseBankKeeper := keepertest.BankKeeperWithMockAccountKeeper(t, bankInput)
+	baseBankKeeper := keepertest.BankKeeperWithMockAccountKeeper(t, testInput)
 
 	monitoredKeeper := keeper.NewMonitoredBankKeeper(baseBankKeeper, complianceKeeper)
 
@@ -330,7 +328,7 @@ func TestMonitoredBankKeeper_SendCoinsFromModuleToAccount_Allowed(t *testing.T) 
 		SanctionsScreeningEnabled:    false,
 		StructuringThresholdCount:    5,
 	}
-	err := complianceKeeper.SetParams(complianceInput.Ctx, params)
+	err := complianceKeeper.SetParams(testInput.Ctx, params)
 	require.NoError(t, err)
 
 	// Test module to account transfer
@@ -339,7 +337,7 @@ func TestMonitoredBankKeeper_SendCoinsFromModuleToAccount_Allowed(t *testing.T) 
 	amount := sdk.NewCoins(sdk.NewInt64Coin("uaura", 100))
 
 	// Execute - monitoring should happen (bank transfer will fail at mock level)
-	_ = monitoredKeeper.SendCoinsFromModuleToAccount(complianceInput.Ctx, moduleName, recipientAddr, amount)
+	_ = monitoredKeeper.SendCoinsFromModuleToAccount(testInput.Ctx, moduleName, recipientAddr, amount)
 
 	// Test passes if monitoring code executed without panic
 	require.True(t, true, "monitoring code path executed successfully")
@@ -389,12 +387,11 @@ func TestMonitoredBankKeeper_SendCoinsFromModuleToAccount_Blocked_LargeWithdrawa
 }
 
 func TestMonitoredBankKeeper_SendCoinsFromModuleToAccount_InvalidModule(t *testing.T) {
-	// Setup
-	complianceInput := keepertest.CreateTestInputWithKeys(t, "compliance")
-	complianceKeeper := keeper.NewKeeper(complianceInput.Cdc, complianceInput.StoreKey)
+	// Setup - create single test input with both store keys
+	testInput := keepertest.CreateTestInputWithKeys(t, "compliance", "bank")
+	complianceKeeper := keeper.NewKeeper(testInput.Cdc, testInput.StoreKeys["compliance"])
 
-	bankInput := keepertest.CreateTestInputWithKeys(t, "bank")
-	baseBankKeeper := keepertest.BankKeeperWithMockAccountKeeper(t, bankInput)
+	baseBankKeeper := keepertest.BankKeeperWithMockAccountKeeper(t, testInput)
 
 	monitoredKeeper := keeper.NewMonitoredBankKeeper(baseBankKeeper, complianceKeeper)
 
@@ -406,7 +403,7 @@ func TestMonitoredBankKeeper_SendCoinsFromModuleToAccount_InvalidModule(t *testi
 	amount := sdk.NewCoins(sdk.NewInt64Coin("uaura", 100))
 
 	// Execute - will get a module address but transfer will fail at bank keeper level
-	_ = monitoredKeeper.SendCoinsFromModuleToAccount(complianceInput.Ctx, invalidModuleName, recipientAddr, amount)
+	_ = monitoredKeeper.SendCoinsFromModuleToAccount(testInput.Ctx, invalidModuleName, recipientAddr, amount)
 
 	// The function should not panic - it handles module addresses gracefully
 	require.True(t, true, "monitoring handles invalid modules gracefully")
@@ -476,12 +473,11 @@ func TestMonitoredBankKeeper_SendCoinsFromModuleToAccount_EventEmission(t *testi
 // ============================================================================
 
 func TestMonitoredBankKeeper_SendCoinsFromAccountToModule_Allowed(t *testing.T) {
-	// Setup
-	complianceInput := keepertest.CreateTestInputWithKeys(t, "compliance")
-	complianceKeeper := keeper.NewKeeper(complianceInput.Cdc, complianceInput.StoreKey)
+	// Setup - create single test input with both store keys
+	testInput := keepertest.CreateTestInputWithKeys(t, "compliance", "bank")
+	complianceKeeper := keeper.NewKeeper(testInput.Cdc, testInput.StoreKeys["compliance"])
 
-	bankInput := keepertest.CreateTestInputWithKeys(t, "bank")
-	baseBankKeeper := keepertest.BankKeeperWithMockAccountKeeper(t, bankInput)
+	baseBankKeeper := keepertest.BankKeeperWithMockAccountKeeper(t, testInput)
 
 	monitoredKeeper := keeper.NewMonitoredBankKeeper(baseBankKeeper, complianceKeeper)
 
@@ -492,7 +488,7 @@ func TestMonitoredBankKeeper_SendCoinsFromAccountToModule_Allowed(t *testing.T) 
 		SanctionsScreeningEnabled:    false,
 		StructuringThresholdCount:    5,
 	}
-	err := complianceKeeper.SetParams(complianceInput.Ctx, params)
+	err := complianceKeeper.SetParams(testInput.Ctx, params)
 	require.NoError(t, err)
 
 	// Test account to module transfer
@@ -501,7 +497,7 @@ func TestMonitoredBankKeeper_SendCoinsFromAccountToModule_Allowed(t *testing.T) 
 	amount := sdk.NewCoins(sdk.NewInt64Coin("uaura", 100))
 
 	// Execute - monitoring should happen (bank transfer will fail at mock level)
-	_ = monitoredKeeper.SendCoinsFromAccountToModule(complianceInput.Ctx, senderAddr, moduleName, amount)
+	_ = monitoredKeeper.SendCoinsFromAccountToModule(testInput.Ctx, senderAddr, moduleName, amount)
 
 	// Test passes if monitoring code executed without panic
 	require.True(t, true, "monitoring code path executed successfully")
@@ -749,12 +745,11 @@ func TestMonitoredBankKeeper_IntegrationFlow_RewardDistribution(t *testing.T) {
 	// 2. Monitoring checks for abuse (farming, large withdrawals)
 	// 3. Updates AML profiles
 
-	// Setup
-	complianceInput := keepertest.CreateTestInputWithKeys(t, "compliance")
-	complianceKeeper := keeper.NewKeeper(complianceInput.Cdc, complianceInput.StoreKey)
+	// Setup - create single test input with both store keys
+	testInput := keepertest.CreateTestInputWithKeys(t, "compliance", "bank")
+	complianceKeeper := keeper.NewKeeper(testInput.Cdc, testInput.StoreKeys["compliance"])
 
-	bankInput := keepertest.CreateTestInputWithKeys(t, "bank")
-	baseBankKeeper := keepertest.BankKeeperWithMockAccountKeeper(t, bankInput)
+	baseBankKeeper := keepertest.BankKeeperWithMockAccountKeeper(t, testInput)
 
 	monitoredKeeper := keeper.NewMonitoredBankKeeper(baseBankKeeper, complianceKeeper)
 
@@ -765,7 +760,7 @@ func TestMonitoredBankKeeper_IntegrationFlow_RewardDistribution(t *testing.T) {
 		SanctionsScreeningEnabled:    false,
 		StructuringThresholdCount:    5,
 	}
-	err := complianceKeeper.SetParams(complianceInput.Ctx, params)
+	err := complianceKeeper.SetParams(testInput.Ctx, params)
 	require.NoError(t, err)
 
 	// Distribute rewards to multiple users
@@ -777,7 +772,7 @@ func TestMonitoredBankKeeper_IntegrationFlow_RewardDistribution(t *testing.T) {
 
 	for _, user := range users {
 		amount := sdk.NewCoins(sdk.NewInt64Coin("uaura", 500))
-		_ = monitoredKeeper.SendCoinsFromModuleToAccount(complianceInput.Ctx, "distribution", user, amount)
+		_ = monitoredKeeper.SendCoinsFromModuleToAccount(testInput.Ctx, "distribution", user, amount)
 	}
 
 	// Verify monitoring occurred
@@ -790,12 +785,11 @@ func TestMonitoredBankKeeper_IntegrationFlow_Staking(t *testing.T) {
 	// 2. Monitoring checks for large stakes
 	// 3. Updates AML profiles
 
-	// Setup
-	complianceInput := keepertest.CreateTestInputWithKeys(t, "compliance")
-	complianceKeeper := keeper.NewKeeper(complianceInput.Cdc, complianceInput.StoreKey)
+	// Setup - create single test input with both store keys
+	testInput := keepertest.CreateTestInputWithKeys(t, "compliance", "bank")
+	complianceKeeper := keeper.NewKeeper(testInput.Cdc, testInput.StoreKeys["compliance"])
 
-	bankInput := keepertest.CreateTestInputWithKeys(t, "bank")
-	baseBankKeeper := keepertest.BankKeeperWithMockAccountKeeper(t, bankInput)
+	baseBankKeeper := keepertest.BankKeeperWithMockAccountKeeper(t, testInput)
 
 	monitoredKeeper := keeper.NewMonitoredBankKeeper(baseBankKeeper, complianceKeeper)
 
@@ -806,14 +800,14 @@ func TestMonitoredBankKeeper_IntegrationFlow_Staking(t *testing.T) {
 		SanctionsScreeningEnabled:    false,
 		StructuringThresholdCount:    5,
 	}
-	err := complianceKeeper.SetParams(complianceInput.Ctx, params)
+	err := complianceKeeper.SetParams(testInput.Ctx, params)
 	require.NoError(t, err)
 
 	// User stakes tokens
 	user := sdk.AccAddress([]byte("staker"))
 	stakeAmount := sdk.NewCoins(sdk.NewInt64Coin("uaura", 10000))
 
-	_ = monitoredKeeper.SendCoinsFromAccountToModule(complianceInput.Ctx, user, "staking", stakeAmount)
+	_ = monitoredKeeper.SendCoinsFromAccountToModule(testInput.Ctx, user, "staking", stakeAmount)
 
 	// Verify monitoring occurred
 }

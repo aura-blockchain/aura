@@ -212,18 +212,18 @@ func TestPresentationPersistenceAndGenesisMapFallback(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, qr)
 
-	storedPres, ok := keeper.presentations[pres.PresentationId]
+	storedPres, ok := keeper.store.getPresentation(ctx, pres.PresentationId)
 	require.True(t, ok)
 	require.Equal(t, pres.PresentationId, storedPres.PresentationId)
-	require.Contains(t, keeper.userPresentations[holder], pres.PresentationId)
+	require.Contains(t, keeper.store.listUserPresentations(ctx, holder), pres.PresentationId)
 
 	gs := keeper.ExportGenesis(ctx)
 	restore := NewKeeper(params.NewStore(*types.DefaultParams()), "authority")
 	restore.SetCurrentTime(now)
 	require.NoError(t, restore.InitGenesis(ctx, gs))
 
-	restoredPres, ok := restore.presentations[pres.PresentationId]
+	restoredPres, ok := restore.store.getPresentation(ctx, pres.PresentationId)
 	require.True(t, ok)
 	require.Equal(t, pres.PresentationId, restoredPres.PresentationId)
-	require.Contains(t, restore.userPresentations[holder], pres.PresentationId)
+	require.Contains(t, restore.store.listUserPresentations(ctx, holder), pres.PresentationId)
 }

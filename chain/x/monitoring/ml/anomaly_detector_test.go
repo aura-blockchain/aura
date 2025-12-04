@@ -5,6 +5,9 @@ import (
 	"time"
 
 	"github.com/aequitas/aura/chain/x/monitoring/types"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"cosmossdk.io/log"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -17,6 +20,9 @@ func TestNewAnomalyDetector(t *testing.T) {
 
 func TestDetectTransactionAnomaly(t *testing.T) {
 	detector := NewAnomalyDetector(0.75, 24*time.Hour)
+
+	// Create SDK context for consensus-safe operations
+	ctx := sdk.NewContext(nil, cmtproto.Header{}, false, log.NewNopLogger())
 
 	tx := &types.TransactionMonitorData{
 		TxHash:      "test-hash",
@@ -31,7 +37,7 @@ func TestDetectTransactionAnomaly(t *testing.T) {
 		Module:      "bank",
 	}
 
-	detection, err := detector.DetectTransactionAnomaly(tx)
+	detection, err := detector.DetectTransactionAnomaly(ctx, tx)
 	require.NoError(t, err)
 	require.NotNil(t, detection)
 
@@ -158,6 +164,9 @@ func TestCalculateAnomalyScore(t *testing.T) {
 func TestDetectNetworkAnomaly(t *testing.T) {
 	detector := NewAnomalyDetector(0.75, 24*time.Hour)
 
+	// Create SDK context for consensus-safe operations
+	ctx := sdk.NewContext(nil, cmtproto.Header{}, false, log.NewNopLogger())
+
 	health := &types.NetworkHealth{
 		Timestamp:         time.Now(),
 		BlockHeight:       1000,
@@ -171,7 +180,7 @@ func TestDetectNetworkAnomaly(t *testing.T) {
 		ConsensusHealth:   0.95,
 	}
 
-	detection, err := detector.DetectNetworkAnomaly(health)
+	detection, err := detector.DetectNetworkAnomaly(ctx, health)
 	require.NoError(t, err)
 	require.NotNil(t, detection)
 

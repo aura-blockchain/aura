@@ -18,7 +18,7 @@ func TestQueryServerTestSuite(t *testing.T) {
 
 func (suite *QueryServerTestSuite) SetupTest() {
 	suite.KeeperTestSuite.SetupTest()
-	suite.queryServer = NewQueryServerImpl(suite.Keeper)
+	suite.queryServer = NewQueryServer(suite.Keeper)
 }
 
 func (suite *QueryServerTestSuite) TestQueryServerImplementation() {

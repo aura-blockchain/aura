@@ -301,11 +301,15 @@ func createVotingProposal(t *testing.T, k *Keeper, ctx sdk.Context) uint64 {
 }
 
 func castVote(t *testing.T, k *Keeper, ctx sdk.Context, proposalID uint64, voter string, option types.VoteOption) {
+	// Calculate actual voting power from staking keeper
+	votingPower, err := k.GetVotingPower(ctx, voter)
+	require.NoError(t, err, "Failed to get voting power for voter")
+
 	vote := &types.Vote{
 		ProposalId:  proposalID,
 		Voter:       voter,
 		Option:      option,
-		VotingPower: "0", // Actual power comes from staking keeper
+		VotingPower: votingPower.String(), // Use actual calculated power
 		Timestamp:   timestamppb.Now(),
 	}
 	require.NoError(t, k.SetVote(ctx, vote))

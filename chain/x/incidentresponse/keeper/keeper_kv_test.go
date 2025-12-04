@@ -5,13 +5,18 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/log"
+	"cosmossdk.io/store"
+	"cosmossdk.io/store/metrics"
 	storetypes "cosmossdk.io/store/types"
-	"github.com/aequitas/aura/chain/x/incidentresponse/types"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
+
+	"github.com/aequitas/aura/chain/x/incidentresponse/types"
 )
 
 // setupKeeperForTest creates a keeper with KV store for testing
@@ -23,9 +28,17 @@ func setupKeeperForTest(t *testing.T) (*KeeperKV, sdk.Context) {
 	// Create store key
 	storeKey := storetypes.NewKVStoreKey(types.StoreKey)
 
-	// Create in-memory store
-	stateStore := runtime.NewKVStoreService(storeKey)
-	ctx := sdk.NewContext(nil, false, nil).WithKVStoreService(stateStore)
+	// Create in-memory store using the proper Cosmos SDK testing pattern
+	db := dbm.NewMemDB()
+	cms := store.NewCommitMultiStore(db, log.NewNopLogger(), metrics.NewNoOpMetrics())
+	cms.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, db)
+	require.NoError(t, cms.LoadLatestVersion())
+
+	// Create context with proper store
+	ctx := sdk.NewContext(cms, cmtproto.Header{
+		Height: 1,
+		Time:   time.Now(),
+	}, false, log.NewNopLogger())
 
 	// Create keeper
 	keeper := NewKeeperKV(storeKey, cdc)

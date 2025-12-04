@@ -106,7 +106,7 @@ func TestValidateGenesisState(t *testing.T) {
 					require.NoError(t, err)
 				}
 			case *governancetypes.GenesisState:
-				err := gen.Validate()
+				err := governancetypes.ValidateGenesis(gen)
 				if tt.expectErr {
 					require.Error(t, err)
 				} else {
@@ -130,8 +130,8 @@ func TestGenesisImportExport(t *testing.T) {
 	require.NoError(t, a.InitBridgeGenesis(ctx, bridgeGenesis))
 
 	exported := a.ExportBridgeGenesis(ctx)
-	require.Len(t, exported, 1)
-	require.Equal(t, bridgeGenesis.Params, exported[0].Params)
+	require.NotNil(t, exported.Params)
+	require.Equal(t, bridgeGenesis.Params, exported.Params)
 }
 
 // Test Invalid Genesis States

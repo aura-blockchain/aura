@@ -1,9 +1,8 @@
 package optimization
 
 import (
-	"context"
+	"io"
 	"testing"
-	"time"
 
 	storetypes "cosmossdk.io/store/types"
 	"github.com/stretchr/testify/require"
@@ -104,6 +103,28 @@ func (m *mockStore) Iterator(start, end []byte) storetypes.Iterator {
 
 func (m *mockStore) ReverseIterator(start, end []byte) storetypes.Iterator {
 	return nil
+}
+
+func (m *mockStore) GetStoreType() storetypes.StoreType {
+	return storetypes.StoreTypeDB
+}
+
+func (m *mockStore) CacheWrap() storetypes.CacheWrap {
+	// Return a new mockStore with copied data for caching
+	newData := make(map[string][]byte)
+	for k, v := range m.data {
+		newData[k] = v
+	}
+	return &mockStore{data: newData}
+}
+
+func (m *mockStore) CacheWrapWithTrace(w io.Writer, tc storetypes.TraceContext) storetypes.CacheWrap {
+	// For testing, ignore tracing and just return CacheWrap
+	return m.CacheWrap()
+}
+
+func (m *mockStore) Write() {
+	// No-op for mock implementation
 }
 
 func TestParallelIterator(t *testing.T) {
