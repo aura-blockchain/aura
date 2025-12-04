@@ -13,6 +13,7 @@ import (
 	"github.com/aequitas/aura/chain/app"
 	compliancecli "github.com/aequitas/aura/chain/x/compliance/client/cli"
 	confidencescorecli "github.com/aequitas/aura/chain/x/confidencescore/client/cli"
+	dexcli "github.com/aequitas/aura/chain/x/dex/client/cli"
 	wasmcli "github.com/aequitas/aura/chain/x/wasm/client/cli"
 )
 
@@ -52,6 +53,7 @@ func TxCmd() *cobra.Command {
 	cmd.AddCommand(
 		confidencescorecli.GetTxCmd(),
 		compliancecli.GetTxCmd(),
+		dexcli.GetTxCmd(),
 		wasmcli.GetTxCmd(),
 	)
 
