@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -23,13 +24,95 @@ import (
 type KeeperTestSuite struct {
 	suite.Suite
 
-	ctx    sdk.Context
-	keeper keeper.Keeper
-	cdc    codec.Codec
+	ctx           sdk.Context
+	keeper        keeper.Keeper
+	cdc           codec.Codec
+	stakingKeeper *MockStakingKeeper
+	bankKeeper    *MockBankKeeper
 }
 
 func TestKeeperTestSuite(t *testing.T) {
 	suite.Run(t, new(KeeperTestSuite))
+}
+
+// MockValidator implements the Validator interface for testing
+type MockValidator struct {
+	operator sdk.ValAddress
+	tokens   sdk.Int
+	status   int32
+}
+
+func (m MockValidator) GetOperator() sdk.ValAddress { return m.operator }
+func (m MockValidator) GetConsPubKey() (interface{}, error) { return nil, nil }
+func (m MockValidator) GetConsAddr() (sdk.ConsAddress, error) { return nil, nil }
+func (m MockValidator) GetStatus() int32 { return m.status }
+func (m MockValidator) GetTokens() sdk.Int { return m.tokens }
+
+// MockStakingKeeper implements a mock StakingKeeper for testing
+type MockStakingKeeper struct {
+	Validators map[string]bool
+}
+
+func NewMockStakingKeeper() *MockStakingKeeper {
+	return &MockStakingKeeper{
+		Validators: make(map[string]bool),
+	}
+}
+
+func (m *MockStakingKeeper) Validator(ctx context.Context, addr sdk.ValAddress) (keeper.Validator, error) {
+	return MockValidator{operator: addr, tokens: sdk.NewInt(1000000), status: 3}, nil
+}
+
+func (m *MockStakingKeeper) ValidatorByConsAddr(ctx context.Context, consAddr sdk.ConsAddress) (keeper.Validator, error) {
+	return MockValidator{tokens: sdk.NewInt(1000000), status: 3}, nil
+}
+
+func (m *MockStakingKeeper) Slash(ctx context.Context, consAddr sdk.ConsAddress, infractionHeight int64, power int64, slashFactor sdk.Dec) (sdk.Int, error) {
+	return sdk.NewInt(100), nil
+}
+
+func (m *MockStakingKeeper) Jail(ctx context.Context, consAddr sdk.ConsAddress) error {
+	m.Validators[consAddr.String()] = true
+	return nil
+}
+
+func (m *MockStakingKeeper) Unjail(ctx context.Context, consAddr sdk.ConsAddress) error {
+	m.Validators[consAddr.String()] = false
+	return nil
+}
+
+func (m *MockStakingKeeper) GetAllValidators(ctx context.Context) ([]keeper.Validator, error) {
+	return []keeper.Validator{}, nil
+}
+
+func (m *MockStakingKeeper) PowerReduction(ctx context.Context) sdk.Int {
+	return sdk.NewInt(1000000)
+}
+
+// MockBankKeeper implements a mock BankKeeper for testing
+type MockBankKeeper struct {
+	Balances map[string]sdk.Coins
+}
+
+func NewMockBankKeeper() *MockBankKeeper {
+	return &MockBankKeeper{
+		Balances: make(map[string]sdk.Coins),
+	}
+}
+
+func (m *MockBankKeeper) SendCoinsFromAccountToModule(ctx context.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
+	return nil
+}
+
+func (m *MockBankKeeper) SendCoinsFromModuleToAccount(ctx context.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
+	return nil
+}
+
+func (m *MockBankKeeper) GetBalance(ctx context.Context, addr sdk.AccAddress, denom string) sdk.Coin {
+	if coins, ok := m.Balances[addr.String()]; ok {
+		return sdk.NewCoin(denom, coins.AmountOf(denom))
+	}
+	return sdk.NewCoin(denom, sdk.ZeroInt())
 }
 
 func (suite *KeeperTestSuite) SetupTest() {
@@ -55,20 +138,26 @@ func (suite *KeeperTestSuite) SetupTest() {
 	}
 	ctx := sdk.NewContext(cms, header, false, log.NewNopLogger())
 
-	// Create keeper
+	// Create mock keepers
+	stakingKeeper := NewMockStakingKeeper()
+	bankKeeper := NewMockBankKeeper()
+
+	// Create keeper with mocks
 	k := keeper.NewKeeper(
 		cdc,
 		storeKey,
 		memStoreKey,
 		"authority",
-		nil, // staking keeper mock
-		nil, // slashing keeper mock
-		nil, // bank keeper mock
+		stakingKeeper, // staking keeper mock
+		nil,           // slashing keeper mock (not needed for these tests)
+		bankKeeper,    // bank keeper mock
 	)
 
 	suite.ctx = ctx
 	suite.keeper = k
 	suite.cdc = cdc
+	suite.stakingKeeper = stakingKeeper
+	suite.bankKeeper = bankKeeper
 }
 
 func (suite *KeeperTestSuite) TestParams() {

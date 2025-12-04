@@ -162,15 +162,14 @@ func TestCompleteWalletSecurityWorkflow(t *testing.T) {
 	require.True(t, simulation.Success)
 	t.Logf("Transaction simulated - Risk level: %s", simulation.RiskLevel.String())
 	// 11. Check spending limit before transaction
-	// TODO: CheckSpendingLimit method not implemented yet
-	// err = suite.keeper.CheckSpendingLimit(
-	// 	suite.ctx,
-	// 	multiSigWallet.WalletId,
-	// 	"uatom",
-	// 	"500000", // 0.5 ATOM - within limit
-	// )
-	// require.NoError(t, err)
-	t.Logf("Spending limit check skipped (not implemented)")
+	err = suite.keeper.CheckSpendingLimit(
+		suite.ctx,
+		multiSigWallet.WalletId,
+		"uatom",
+		"500000", // 0.5 ATOM - within limit
+	)
+	require.NoError(t, err)
+	t.Logf("Spending limit check passed: 0.5 ATOM within daily limit of 1 ATOM")
 
 	// 12. Validate address checksum
 	testAddress := "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed"

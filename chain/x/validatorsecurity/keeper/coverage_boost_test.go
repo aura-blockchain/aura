@@ -5,7 +5,6 @@ import (
 )
 
 func (suite *KeeperTestSuite) TestDecrementRegionCount() {
-	suite.T().Skip("Requires staking keeper mock - skipped for unit tests")
 	params := types.DefaultParams()
 	params.EnableGeoDistribution = true
 	params.MaxValidatorsPerRegion = 10
@@ -21,7 +20,6 @@ func (suite *KeeperTestSuite) TestDecrementRegionCount() {
 }
 
 func (suite *KeeperTestSuite) TestGetJailedValidatorsWithPrefix() {
-	suite.T().Skip("Requires staking keeper mock - skipped for unit tests")
 	// Register and jail multiple validators
 	val1 := newValAddr()
 	val2 := newValAddr()
@@ -41,7 +39,6 @@ func (suite *KeeperTestSuite) TestGetJailedValidatorsWithPrefix() {
 }
 
 func (suite *KeeperTestSuite) TestGetTombstonedValidatorsWithPrefix() {
-	suite.T().Skip("Requires staking keeper mock - skipped for unit tests")
 	// Register and tombstone multiple validators
 	val1 := newValAddr()
 	val2 := newValAddr()
@@ -61,7 +58,6 @@ func (suite *KeeperTestSuite) TestGetTombstonedValidatorsWithPrefix() {
 }
 
 func (suite *KeeperTestSuite) TestMonitorAllValidatorsMultiple() {
-	suite.T().Skip("Requires bank keeper mock - skipped for unit tests")
 	// Setup multiple validators with various states
 	for i := 0; i < 5; i++ {
 		addr := newValAddr()

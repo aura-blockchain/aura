@@ -11,7 +11,6 @@ type QueryCLITestSuite struct {
 }
 
 func TestQueryCLITestSuite(t *testing.T) {
-	t.Skip("CLI query tests require a live node; skipping in unit runs")
 	suite.Run(t, new(QueryCLITestSuite))
 }
 
@@ -27,330 +26,208 @@ func (s *QueryCLITestSuite) TestGetQueryCmd() {
 
 // TestCmdQueryHardwareWallet tests hardware wallet query command
 func (s *QueryCLITestSuite) TestCmdQueryHardwareWallet() {
-	tests := []struct {
-		name      string
-		args      []string
-		expectErr bool
-	}{
-		{
-			name:      "valid wallet ID",
-			args:      []string{"wallet123"},
-			expectErr: false,
-		},
-		{
-			name:      "missing wallet ID",
-			args:      []string{},
-			expectErr: true,
-		},
-		{
-			name:      "too many arguments",
-			args:      []string{"wallet123", "extra"},
-			expectErr: true,
-		},
-	}
+	cmd := CmdQueryHardwareWallet()
 
-	for _, tc := range tests {
-		s.Run(tc.name, func() {
-			cmd := CmdQueryHardwareWallet()
-			cmd.SetArgs(tc.args)
+	// Test command structure
+	s.Require().NotNil(cmd)
+	s.Require().Contains(cmd.Use, "hw-wallet")
+	s.Require().Greater(len(cmd.Short), 0)
 
-			err := cmd.Execute()
-			if tc.expectErr {
-				s.Require().Error(err)
-			}
-		})
-	}
+	// Test argument validation - expects exactly 1 arg
+	err := cmd.Args(cmd, []string{"wallet123"})
+	s.Require().NoError(err)
+
+	err = cmd.Args(cmd, []string{})
+	s.Require().Error(err, "should error with missing wallet ID")
+
+	err = cmd.Args(cmd, []string{"wallet123", "extra"})
+	s.Require().Error(err, "should error with too many args")
 }
 
 // TestCmdQueryMultiSigWallet tests multi-sig wallet query command
 func (s *QueryCLITestSuite) TestCmdQueryMultiSigWallet() {
-	tests := []struct {
-		name      string
-		args      []string
-		expectErr bool
-	}{
-		{
-			name:      "valid wallet ID",
-			args:      []string{"wallet456"},
-			expectErr: false,
-		},
-		{
-			name:      "missing wallet ID",
-			args:      []string{},
-			expectErr: true,
-		},
-	}
+	cmd := CmdQueryMultiSigWallet()
 
-	for _, tc := range tests {
-		s.Run(tc.name, func() {
-			cmd := CmdQueryMultiSigWallet()
-			cmd.SetArgs(tc.args)
+	// Test command structure
+	s.Require().NotNil(cmd)
+	s.Require().Contains(cmd.Use, "multisig")
+	s.Require().Greater(len(cmd.Short), 0)
 
-			err := cmd.Execute()
-			if tc.expectErr {
-				s.Require().Error(err)
-			}
-		})
-	}
+	// Test argument validation - expects exactly 1 arg
+	err := cmd.Args(cmd, []string{"wallet456"})
+	s.Require().NoError(err)
+
+	err = cmd.Args(cmd, []string{})
+	s.Require().Error(err, "should error with missing wallet ID")
 }
 
 // TestCmdQueryPendingMultiSigTx tests pending multi-sig transaction query command
 func (s *QueryCLITestSuite) TestCmdQueryPendingMultiSigTx() {
-	tests := []struct {
-		name      string
-		args      []string
-		expectErr bool
-	}{
-		{
-			name:      "valid tx ID",
-			args:      []string{"tx789"},
-			expectErr: false,
-		},
-		{
-			name:      "missing tx ID",
-			args:      []string{},
-			expectErr: true,
-		},
-	}
+	cmd := CmdQueryPendingMultiSigTx()
 
-	for _, tc := range tests {
-		s.Run(tc.name, func() {
-			cmd := CmdQueryPendingMultiSigTx()
-			cmd.SetArgs(tc.args)
+	// Test command structure
+	s.Require().NotNil(cmd)
+	s.Require().Contains(cmd.Use, "pending-multisig-tx")
+	s.Require().Greater(len(cmd.Short), 0)
 
-			err := cmd.Execute()
-			if tc.expectErr {
-				s.Require().Error(err)
-			}
-		})
-	}
+	// Test argument validation - expects exactly 1 arg
+	err := cmd.Args(cmd, []string{"tx789"})
+	s.Require().NoError(err)
+
+	err = cmd.Args(cmd, []string{})
+	s.Require().Error(err, "should error with missing tx ID")
 }
 
 // TestCmdQuerySocialRecoveryConfig tests social recovery config query command
 func (s *QueryCLITestSuite) TestCmdQuerySocialRecoveryConfig() {
-	tests := []struct {
-		name      string
-		args      []string
-		expectErr bool
-	}{
-		{
-			name:      "valid wallet ID",
-			args:      []string{"wallet123"},
-			expectErr: false,
-		},
-		{
-			name:      "missing wallet ID",
-			args:      []string{},
-			expectErr: true,
-		},
-	}
+	cmd := CmdQuerySocialRecoveryConfig()
 
-	for _, tc := range tests {
-		s.Run(tc.name, func() {
-			cmd := CmdQuerySocialRecoveryConfig()
-			cmd.SetArgs(tc.args)
+	// Test command structure
+	s.Require().NotNil(cmd)
+	s.Require().Contains(cmd.Use, "social-recovery")
+	s.Require().Greater(len(cmd.Short), 0)
 
-			err := cmd.Execute()
-			if tc.expectErr {
-				s.Require().Error(err)
-			}
-		})
-	}
+	// Test argument validation - expects exactly 1 arg
+	err := cmd.Args(cmd, []string{"wallet123"})
+	s.Require().NoError(err)
+
+	err = cmd.Args(cmd, []string{})
+	s.Require().Error(err, "should error with missing wallet ID")
 }
 
 // TestCmdQueryRecoveryRequest tests recovery request query command
 func (s *QueryCLITestSuite) TestCmdQueryRecoveryRequest() {
-	tests := []struct {
-		name      string
-		args      []string
-		expectErr bool
-	}{
-		{
-			name:      "valid request ID",
-			args:      []string{"req123"},
-			expectErr: false,
-		},
-		{
-			name:      "missing request ID",
-			args:      []string{},
-			expectErr: true,
-		},
-	}
+	cmd := CmdQueryRecoveryRequest()
 
-	for _, tc := range tests {
-		s.Run(tc.name, func() {
-			cmd := CmdQueryRecoveryRequest()
-			cmd.SetArgs(tc.args)
+	// Test command structure
+	s.Require().NotNil(cmd)
+	s.Require().Contains(cmd.Use, "recovery-request")
+	s.Require().Greater(len(cmd.Short), 0)
 
-			err := cmd.Execute()
-			if tc.expectErr {
-				s.Require().Error(err)
-			}
-		})
-	}
+	// Test argument validation - expects exactly 1 arg
+	err := cmd.Args(cmd, []string{"req123"})
+	s.Require().NoError(err)
+
+	err = cmd.Args(cmd, []string{})
+	s.Require().Error(err, "should error with missing request ID")
 }
 
 // TestCmdQuerySpendingLimit tests spending limit query command
 func (s *QueryCLITestSuite) TestCmdQuerySpendingLimit() {
-	tests := []struct {
-		name      string
-		args      []string
-		expectErr bool
-	}{
-		{
-			name:      "valid wallet and denom",
-			args:      []string{"wallet123", "uaura"},
-			expectErr: false,
-		},
-		{
-			name:      "missing denom",
-			args:      []string{"wallet123"},
-			expectErr: true,
-		},
-		{
-			name:      "no arguments",
-			args:      []string{},
-			expectErr: true,
-		},
-	}
+	cmd := CmdQuerySpendingLimit()
 
-	for _, tc := range tests {
-		s.Run(tc.name, func() {
-			cmd := CmdQuerySpendingLimit()
-			cmd.SetArgs(tc.args)
+	// Test command structure
+	s.Require().NotNil(cmd)
+	s.Require().Contains(cmd.Use, "spending-limit")
+	s.Require().Greater(len(cmd.Short), 0)
 
-			err := cmd.Execute()
-			if tc.expectErr {
-				s.Require().Error(err)
-			}
-		})
-	}
+	// Test argument validation - expects exactly 2 args
+	err := cmd.Args(cmd, []string{"wallet123", "uaura"})
+	s.Require().NoError(err)
+
+	err = cmd.Args(cmd, []string{"wallet123"})
+	s.Require().Error(err, "should error with missing denom")
+
+	err = cmd.Args(cmd, []string{})
+	s.Require().Error(err, "should error with no arguments")
 }
 
 // TestCmdQuerySessionConfig tests session config query command
 func (s *QueryCLITestSuite) TestCmdQuerySessionConfig() {
-	tests := []struct {
-		name      string
-		args      []string
-		expectErr bool
-	}{
-		{
-			name:      "valid session ID",
-			args:      []string{"session456"},
-			expectErr: false,
-		},
-		{
-			name:      "missing session ID",
-			args:      []string{},
-			expectErr: true,
-		},
-	}
+	cmd := CmdQuerySessionConfig()
 
-	for _, tc := range tests {
-		s.Run(tc.name, func() {
-			cmd := CmdQuerySessionConfig()
-			cmd.SetArgs(tc.args)
+	// Test command structure
+	s.Require().NotNil(cmd)
+	s.Require().Contains(cmd.Use, "session")
+	s.Require().Greater(len(cmd.Short), 0)
 
-			err := cmd.Execute()
-			if tc.expectErr {
-				s.Require().Error(err)
-			}
-		})
-	}
+	// Test argument validation - expects exactly 1 arg
+	err := cmd.Args(cmd, []string{"session456"})
+	s.Require().NoError(err)
+
+	err = cmd.Args(cmd, []string{})
+	s.Require().Error(err, "should error with missing session ID")
 }
 
 // TestCmdQuerySecurityMetrics tests security metrics query command
 func (s *QueryCLITestSuite) TestCmdQuerySecurityMetrics() {
-	tests := []struct {
-		name      string
-		args      []string
-		expectErr bool
-	}{
-		{
-			name:      "valid wallet ID",
-			args:      []string{"wallet123"},
-			expectErr: false,
-		},
-		{
-			name:      "missing wallet ID",
-			args:      []string{},
-			expectErr: true,
-		},
-	}
+	cmd := CmdQuerySecurityMetrics()
 
-	for _, tc := range tests {
-		s.Run(tc.name, func() {
-			cmd := CmdQuerySecurityMetrics()
-			cmd.SetArgs(tc.args)
+	// Test command structure
+	s.Require().NotNil(cmd)
+	s.Require().Contains(cmd.Use, "security-metrics")
+	s.Require().Greater(len(cmd.Short), 0)
 
-			err := cmd.Execute()
-			if tc.expectErr {
-				s.Require().Error(err)
-			}
-		})
-	}
+	// Test argument validation - expects exactly 1 arg
+	err := cmd.Args(cmd, []string{"wallet123"})
+	s.Require().NoError(err)
+
+	err = cmd.Args(cmd, []string{})
+	s.Require().Error(err, "should error with missing wallet ID")
 }
 
 // TestCmdQueryDomainVerification tests domain verification query command
 func (s *QueryCLITestSuite) TestCmdQueryDomainVerification() {
-	tests := []struct {
-		name      string
-		args      []string
-		expectErr bool
-	}{
-		{
-			name:      "valid domain",
-			args:      []string{"app.aura.network"},
-			expectErr: false,
-		},
-		{
-			name:      "missing domain",
-			args:      []string{},
-			expectErr: true,
-		},
-	}
+	cmd := CmdQueryDomainVerification()
 
-	for _, tc := range tests {
-		s.Run(tc.name, func() {
-			cmd := CmdQueryDomainVerification()
-			cmd.SetArgs(tc.args)
+	// Test command structure
+	s.Require().NotNil(cmd)
+	s.Require().Contains(cmd.Use, "domain-verification")
+	s.Require().Greater(len(cmd.Short), 0)
 
-			err := cmd.Execute()
-			if tc.expectErr {
-				s.Require().Error(err)
-			}
-		})
-	}
+	// Test argument validation - expects exactly 1 arg
+	err := cmd.Args(cmd, []string{"app.aura.network"})
+	s.Require().NoError(err)
+
+	err = cmd.Args(cmd, []string{})
+	s.Require().Error(err, "should error with missing domain")
 }
 
 // TestCmdQueryDustFilter tests dust filter query command
 func (s *QueryCLITestSuite) TestCmdQueryDustFilter() {
-	tests := []struct {
-		name      string
-		args      []string
-		expectErr bool
-	}{
-		{
-			name:      "valid wallet ID",
-			args:      []string{"wallet123"},
-			expectErr: false,
-		},
-		{
-			name:      "missing wallet ID",
-			args:      []string{},
-			expectErr: true,
-		},
+	cmd := CmdQueryDustFilter()
+
+	// Test command structure
+	s.Require().NotNil(cmd)
+	s.Require().Contains(cmd.Use, "dust-filter")
+	s.Require().Greater(len(cmd.Short), 0)
+
+	// Test argument validation - expects exactly 1 arg
+	err := cmd.Args(cmd, []string{"wallet123"})
+	s.Require().NoError(err)
+
+	err = cmd.Args(cmd, []string{})
+	s.Require().Error(err, "should error with missing wallet ID")
+}
+
+// TestAllQueryCommandsExist ensures all expected query commands are registered
+func (s *QueryCLITestSuite) TestAllQueryCommandsExist() {
+	cmd := GetQueryCmd()
+	subcommands := cmd.Commands()
+
+	// Verify we have the expected number of commands
+	s.Require().GreaterOrEqual(len(subcommands), 10, "should have at least 10 query subcommands")
+
+	// Verify specific commands exist by checking their names
+	commandNames := make(map[string]bool)
+	for _, subcmd := range subcommands {
+		commandNames[subcmd.Name()] = true
 	}
 
-	for _, tc := range tests {
-		s.Run(tc.name, func() {
-			cmd := CmdQueryDustFilter()
-			cmd.SetArgs(tc.args)
+	expectedCommands := []string{
+		"hw-wallet",
+		"multisig",
+		"pending-multisig-tx",
+		"social-recovery",
+		"recovery-request",
+		"spending-limit",
+		"session",
+		"security-metrics",
+		"domain-verification",
+		"dust-filter",
+	}
 
-			err := cmd.Execute()
-			if tc.expectErr {
-				s.Require().Error(err)
-			}
-		})
+	for _, expected := range expectedCommands {
+		s.Require().True(commandNames[expected], "query command %s should exist", expected)
 	}
 }

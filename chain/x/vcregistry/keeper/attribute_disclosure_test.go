@@ -1,11 +1,9 @@
 package keeper
 
 import (
-	"context"
 	"testing"
 	"time"
 
-	"github.com/aequitas/aura/chain/x/vcregistry/params"
 	"github.com/aequitas/aura/chain/x/vcregistry/types"
 	vcregistrypb "github.com/aequitas/aura/proto/aura/vcregistry/v1beta1"
 	"github.com/stretchr/testify/require"
@@ -13,9 +11,7 @@ import (
 )
 
 func TestCreateAttributeVC_ValidationAndSingleton(t *testing.T) {
-	t.Skip("This test requires refactoring to use proper SDK context - see keeper_kv_persistence_test.go for examples")
-	keeper, _ := setupTestKeeper()
-	ctx := context.Background()
+	keeper, ctx := setupKeeperForTest(t)
 	now := time.Now().Unix()
 	keeper.SetCurrentTime(now)
 
@@ -70,9 +66,7 @@ func TestCreateAttributeVC_ValidationAndSingleton(t *testing.T) {
 }
 
 func TestDisclosureRequestResponseFlow(t *testing.T) {
-	t.Skip("This test requires refactoring to use proper SDK context - see keeper_kv_persistence_test.go for examples")
-	keeper, _ := setupTestKeeper()
-	ctx := context.Background()
+	keeper, ctx := setupKeeperForTest(t)
 	now := time.Now().Unix()
 	keeper.SetCurrentTime(now)
 
@@ -128,9 +122,7 @@ func TestDisclosureRequestResponseFlow(t *testing.T) {
 }
 
 func TestGenesisRoundTripSelectiveDisclosure(t *testing.T) {
-	t.Skip("This test requires refactoring to use proper SDK context - see keeper_kv_persistence_test.go for examples")
-	keeper := NewKeeper(params.NewStore(*types.DefaultParams()), "authority")
-	ctx := context.Background()
+	keeper, ctx := setupKeeperForTest(t)
 	now := time.Now().Unix()
 	keeper.SetCurrentTime(now)
 
@@ -170,33 +162,31 @@ func TestGenesisRoundTripSelectiveDisclosure(t *testing.T) {
 	// Export and re-import
 	gs := keeper.ExportGenesis(ctx)
 
-	keeper2 := NewKeeper(params.NewStore(*types.DefaultParams()), "authority")
-	require.NoError(t, keeper2.InitGenesis(ctx, gs))
+	keeper2, ctx2 := setupKeeperForTest(t)
+	require.NoError(t, keeper2.InitGenesis(ctx2, gs))
 
 	// Attribute restored
-	avcOut, ok := keeper2.GetAttributeVC(ctx, avc.AttributeVcId)
+	avcOut, ok := keeper2.GetAttributeVC(ctx2, avc.AttributeVcId)
 	require.True(t, ok)
 	require.Equal(t, avc.AttributeType, avcOut.AttributeType)
 
 	// Disclosure policy restored
-	polOut, ok := keeper2.GetDisclosurePolicy(ctx, pol.HolderAddress)
+	polOut, ok := keeper2.GetDisclosurePolicy(ctx2, pol.HolderAddress)
 	require.True(t, ok)
 	require.Equal(t, pol.DefaultMode, polOut.DefaultMode)
 
 	// Pending request restored
-	reqOut, ok := keeper2.GetDisclosureRequest(ctx, req.RequestId)
+	reqOut, ok := keeper2.GetDisclosureRequest(ctx2, req.RequestId)
 	require.True(t, ok)
 	require.Equal(t, req.VerifierAddress, reqOut.VerifierAddress)
 
 	// Verify pending index via genesis export
-	genesis2 := keeper2.ExportGenesis(ctx)
+	genesis2 := keeper2.ExportGenesis(ctx2)
 	require.Contains(t, genesis2.PendingDisclosureIndex["addr1"].Ids, req.RequestId)
 }
 
 func TestPresentationPersistenceAndGenesisMapFallback(t *testing.T) {
-	t.Skip("This test requires refactoring to use proper SDK context - see keeper_kv_persistence_test.go for examples")
-	keeper := NewKeeper(params.NewStore(*types.DefaultParams()), "authority")
-	ctx := context.Background()
+	keeper, ctx := setupKeeperForTest(t)
 	now := time.Now().Unix()
 	keeper.SetCurrentTime(now)
 
@@ -222,12 +212,12 @@ func TestPresentationPersistenceAndGenesisMapFallback(t *testing.T) {
 	require.Contains(t, keeper.store.listUserPresentations(ctx, holder), pres.PresentationId)
 
 	gs := keeper.ExportGenesis(ctx)
-	restore := NewKeeper(params.NewStore(*types.DefaultParams()), "authority")
+	restore, ctx2 := setupKeeperForTest(t)
 	restore.SetCurrentTime(now)
-	require.NoError(t, restore.InitGenesis(ctx, gs))
+	require.NoError(t, restore.InitGenesis(ctx2, gs))
 
-	restoredPres, ok := restore.store.getPresentation(ctx, pres.PresentationId)
+	restoredPres, ok := restore.store.getPresentation(ctx2, pres.PresentationId)
 	require.True(t, ok)
 	require.Equal(t, pres.PresentationId, restoredPres.PresentationId)
-	require.Contains(t, restore.store.listUserPresentations(ctx, holder), pres.PresentationId)
+	require.Contains(t, restore.store.listUserPresentations(ctx2, holder), pres.PresentationId)
 }

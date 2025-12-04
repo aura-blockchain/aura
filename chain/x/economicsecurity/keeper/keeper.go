@@ -321,6 +321,7 @@ func (k Keeper) DeletePendingTreasuryTx(ctx context.Context, txID string) error 
 }
 
 // IteratePendingTreasuryTxs iterates over all pending treasury transactions
+// The callback should return true to stop iteration, false to continue
 func (k Keeper) IteratePendingTreasuryTxs(ctx context.Context, cb func(tx *types.PendingTreasuryTx) bool) error {
 	store := k.storeService.OpenKVStore(ctx)
 	iterator, err := store.Iterator(types.PendingTreasuryTxPrefix, storeprefixend(types.PendingTreasuryTxPrefix))
@@ -334,8 +335,8 @@ func (k Keeper) IteratePendingTreasuryTxs(ctx context.Context, cb func(tx *types
 		if err := k.cdc.Unmarshal(iterator.Value(), &tx); err != nil {
 			return err
 		}
-		if !cb(&tx) {
-			break
+		if cb(&tx) {
+			break // Callback returned true = stop iteration
 		}
 	}
 	return nil
@@ -626,6 +627,7 @@ func (k Keeper) GetPreviousInflation(ctx context.Context) (uint64, error) {
 // ============================
 
 // IterateVestingSchedules iterates over all vesting schedules
+// The callback should return true to stop iteration, false to continue
 func (k Keeper) IterateVestingSchedules(ctx context.Context, cb func(schedule *types.VestingSchedule) bool) error {
 	store := k.storeService.OpenKVStore(ctx)
 	iterator, err := store.Iterator(types.VestingSchedulePrefix, storeprefixend(types.VestingSchedulePrefix))
@@ -639,14 +641,15 @@ func (k Keeper) IterateVestingSchedules(ctx context.Context, cb func(schedule *t
 		if err := k.cdc.Unmarshal(iterator.Value(), &schedule); err != nil {
 			return err
 		}
-		if !cb(&schedule) {
-			break
+		if cb(&schedule) {
+			break // Callback returned true = stop iteration
 		}
 	}
 	return nil
 }
 
 // IterateVoteLocks iterates over all vote locks
+// The callback should return true to stop iteration, false to continue
 func (k Keeper) IterateVoteLocks(ctx context.Context, cb func(lock *types.VoteLock) bool) error {
 	store := k.storeService.OpenKVStore(ctx)
 	iterator, err := store.Iterator(types.VoteLockPrefix, storeprefixend(types.VoteLockPrefix))
@@ -660,8 +663,8 @@ func (k Keeper) IterateVoteLocks(ctx context.Context, cb func(lock *types.VoteLo
 		if err := k.cdc.Unmarshal(iterator.Value(), &lock); err != nil {
 			return err
 		}
-		if !cb(&lock) {
-			break
+		if cb(&lock) {
+			break // Callback returned true = stop iteration
 		}
 	}
 	return nil
