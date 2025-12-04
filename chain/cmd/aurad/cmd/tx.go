@@ -28,7 +28,7 @@ func TxCmd() *cobra.Command {
 
 	// Core signing helpers and tx utilities
 	cmd.AddCommand(
-		authcli.GetSignCommand(),
+		GetAuraSignCommand(),
 		authcli.GetSignBatchCommand(),
 		authcli.GetMultiSignCommand(),
 		authcli.GetValidateSignaturesCommand(),
