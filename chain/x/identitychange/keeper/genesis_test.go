@@ -2,13 +2,12 @@ package keeper
 
 import (
 	"testing"
-	"time"
 
-	"github.com/aequitas/aura/chain/x/identitychange/params"
+	"github.com/stretchr/testify/require"
+
+	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 	"github.com/aequitas/aura/chain/x/identitychange/types"
 	pb "github.com/aequitas/aura/proto/aura/identitychange/v1beta1"
-	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestInitGenesis(t *testing.T) {
@@ -22,59 +21,60 @@ func TestInitGenesis(t *testing.T) {
 			name: "valid genesis with all data",
 			genesis: types.GenesisState{
 				Params: &pb.Params{
-					IdentityChangeFee:         "1000",
-					MaxChangesPerUser:         10,
-					ChangeWaitingPeriodBlocks: 1000,
-					EnableTimelock:            true,
-					TimelockDuration:          86400,
-					RequireApproval:           false,
+					MaxRequestsPerWalletPerMonth:   10,
+					MinConfidenceAfterChange:       50,
+					StalenessHeightThreshold:       1000,
+					AssistantSlashOnFalsePositive:  true,
+					StalenessInvestigatorChain:     "aura-testnet",
 				},
-				ChangeRequests: []*pb.IdentityChangeRequest{
+				Records: []*pb.IdentityRecord{
 					{
-						RequestId:     "req-1",
-						TargetDid:     "did:aura:123",
-						OldAddress:    "aura1old1",
-						NewAddress:    "aura1new1",
-						RequestHeight: 1000,
-						RequestTime:   timestamppb.Now(),
-						Status:        pb.IdentityChangeStatus_IDENTITY_CHANGE_STATUS_PENDING,
-						Reason:        "Key rotation",
-					},
-					{
-						RequestId:     "req-2",
-						TargetDid:     "did:aura:456",
-						OldAddress:    "aura1old2",
-						NewAddress:    "aura1new2",
-						RequestHeight: 2000,
-						RequestTime:   timestamppb.Now(),
-						Status:        pb.IdentityChangeStatus_IDENTITY_CHANGE_STATUS_APPROVED,
-						Reason:        "Lost key",
-						ApprovalTxId:  "tx-approval-1",
+						Did:               "did:aura:123",
+						Owner:             "aura1owner",
+						ConfidenceScore:   75,
+						MetadataHash:      "hash123",
+						LatestIrVersion:   "v1",
+						LastChangedHeight: 1000,
+						Status:            pb.IdentityChangeStatus_IDENTITY_CHANGE_STATUS_IDLE,
 					},
 				},
-				OwnershipRecords: []*pb.OwnershipRecord{
+				Requests: []*pb.IdentityChangeRequest{
 					{
-						AssetId:      "asset-1",
-						AssetType:    "NFT",
-						OldOwner:     "aura1old1",
-						NewOwner:     "aura1new1",
-						TransferTime: timestamppb.Now(),
-						TransferTxId: "tx-transfer-1",
+						RequestId:       "req-1",
+						TargetDid:       "did:aura:123",
+						Requester:       "aura1requester",
+						Assistant:       "",
+						IrId:            "ir-1",
+						ProofHash:       "proof-hash-1",
+						RequestMetaHash: "meta-hash-1",
+						Status:          pb.IdentityChangeStatus_IDENTITY_CHANGE_STATUS_PENDING_VERIFICATION,
+						Reason:          "Key rotation",
+						CreatedHeight:   1000,
+						VerdictHeight:   0,
 					},
 				},
-				CurrentOwners: map[string]string{
-					"asset-1": "aura1new1",
+				History: []*pb.IdentityChangeHistory{
+					{
+						RequestId:           "req-1",
+						TargetDid:           "did:aura:123",
+						PrevConfidenceScore: 70,
+						NewConfidenceScore:  75,
+						TransitionReason:    "applied",
+						ChangedHeight:       1001,
+					},
 				},
+				Suspended: false,
 			},
 			wantErr: false,
 		},
 		{
 			name: "default genesis",
 			genesis: types.GenesisState{
-				Params:           nil,
-				ChangeRequests:   []*pb.IdentityChangeRequest{},
-				OwnershipRecords: []*pb.OwnershipRecord{},
-				CurrentOwners:    make(map[string]string),
+				Params:    nil,
+				Records:   []*pb.IdentityRecord{},
+				Requests:  []*pb.IdentityChangeRequest{},
+				History:   []*pb.IdentityChangeHistory{},
+				Suspended: false,
 			},
 			wantErr: false,
 		},
@@ -82,24 +82,26 @@ func TestInitGenesis(t *testing.T) {
 			name: "invalid genesis - duplicate request IDs",
 			genesis: types.GenesisState{
 				Params: nil,
-				ChangeRequests: []*pb.IdentityChangeRequest{
+				Requests: []*pb.IdentityChangeRequest{
 					{
-						RequestId:     "req-1",
-						TargetDid:     "did:aura:123",
-						OldAddress:    "aura1old1",
-						NewAddress:    "aura1new1",
-						RequestHeight: 1000,
-						RequestTime:   timestamppb.Now(),
-						Status:        pb.IdentityChangeStatus_IDENTITY_CHANGE_STATUS_PENDING,
+						RequestId:       "req-1",
+						TargetDid:       "did:aura:123",
+						Requester:       "aura1requester",
+						IrId:            "ir-1",
+						ProofHash:       "proof-1",
+						RequestMetaHash: "meta-1",
+						Status:          pb.IdentityChangeStatus_IDENTITY_CHANGE_STATUS_PENDING_VERIFICATION,
+						CreatedHeight:   1000,
 					},
 					{
-						RequestId:     "req-1", // Duplicate
-						TargetDid:     "did:aura:456",
-						OldAddress:    "aura1old2",
-						NewAddress:    "aura1new2",
-						RequestHeight: 2000,
-						RequestTime:   timestamppb.Now(),
-						Status:        pb.IdentityChangeStatus_IDENTITY_CHANGE_STATUS_PENDING,
+						RequestId:       "req-1", // Duplicate
+						TargetDid:       "did:aura:456",
+						Requester:       "aura1requester2",
+						IrId:            "ir-2",
+						ProofHash:       "proof-2",
+						RequestMetaHash: "meta-2",
+						Status:          pb.IdentityChangeStatus_IDENTITY_CHANGE_STATUS_PENDING_VERIFICATION,
+						CreatedHeight:   2000,
 					},
 				},
 			},
@@ -110,15 +112,16 @@ func TestInitGenesis(t *testing.T) {
 			name: "invalid genesis - empty request ID",
 			genesis: types.GenesisState{
 				Params: nil,
-				ChangeRequests: []*pb.IdentityChangeRequest{
+				Requests: []*pb.IdentityChangeRequest{
 					{
-						RequestId:     "",
-						TargetDid:     "did:aura:123",
-						OldAddress:    "aura1old",
-						NewAddress:    "aura1new",
-						RequestHeight: 1000,
-						RequestTime:   timestamppb.Now(),
-						Status:        pb.IdentityChangeStatus_IDENTITY_CHANGE_STATUS_PENDING,
+						RequestId:       "",
+						TargetDid:       "did:aura:123",
+						Requester:       "aura1requester",
+						IrId:            "ir-1",
+						ProofHash:       "proof-1",
+						RequestMetaHash: "meta-1",
+						Status:          pb.IdentityChangeStatus_IDENTITY_CHANGE_STATUS_PENDING_VERIFICATION,
+						CreatedHeight:   1000,
 					},
 				},
 			},
@@ -129,15 +132,16 @@ func TestInitGenesis(t *testing.T) {
 			name: "invalid genesis - empty target DID",
 			genesis: types.GenesisState{
 				Params: nil,
-				ChangeRequests: []*pb.IdentityChangeRequest{
+				Requests: []*pb.IdentityChangeRequest{
 					{
-						RequestId:     "req-1",
-						TargetDid:     "",
-						OldAddress:    "aura1old",
-						NewAddress:    "aura1new",
-						RequestHeight: 1000,
-						RequestTime:   timestamppb.Now(),
-						Status:        pb.IdentityChangeStatus_IDENTITY_CHANGE_STATUS_PENDING,
+						RequestId:       "req-1",
+						TargetDid:       "",
+						Requester:       "aura1requester",
+						IrId:            "ir-1",
+						ProofHash:       "proof-1",
+						RequestMetaHash: "meta-1",
+						Status:          pb.IdentityChangeStatus_IDENTITY_CHANGE_STATUS_PENDING_VERIFICATION,
+						CreatedHeight:   1000,
 					},
 				},
 			},
@@ -158,41 +162,39 @@ func TestInitGenesis(t *testing.T) {
 				return
 			}
 
-			paramsStore := params.NewStore(types.DefaultParams())
-			keeper := NewKeeper(paramsStore)
+			input := keepertest.CreateTestInput(t)
+			keeper := NewKeeper(
+				keepertest.WrapStoreService(input.StoreKey),
+				input.Cdc,
+				nil,
+				"authority",
+				keepertest.Logger(),
+			)
 
-			err := keeper.InitGenesis(tt.genesis)
+			err := keeper.InitGenesis(input.Ctx, tt.genesis)
 			require.NoError(t, err)
 
 			// Verify params were set
 			p := keeper.GetParams()
 			require.NotNil(t, p)
 
-			// Verify change requests were loaded
-			if len(tt.genesis.ChangeRequests) > 0 {
-				for _, request := range tt.genesis.ChangeRequests {
-					retrieved := keeper.GetChangeRequest(request.RequestId)
-					require.NotNil(t, retrieved)
+			// Verify requests were loaded
+			if len(tt.genesis.Requests) > 0 {
+				for _, request := range tt.genesis.Requests {
+					retrieved, found := keeper.GetRequest(input.Ctx, request.RequestId)
+					require.True(t, found)
 					require.Equal(t, request.TargetDid, retrieved.TargetDid)
-					require.Equal(t, request.OldAddress, retrieved.OldAddress)
-					require.Equal(t, request.NewAddress, retrieved.NewAddress)
+					require.Equal(t, request.Requester, retrieved.Requester)
 				}
 			}
 
-			// Verify ownership records were loaded
-			if len(tt.genesis.OwnershipRecords) > 0 {
-				for _, record := range tt.genesis.OwnershipRecords {
-					retrieved := keeper.GetOwnershipHistory(record.AssetId)
-					require.NotNil(t, retrieved)
-					require.NotEmpty(t, retrieved)
-				}
-			}
-
-			// Verify current owners were loaded
-			if len(tt.genesis.CurrentOwners) > 0 {
-				for assetId, expectedOwner := range tt.genesis.CurrentOwners {
-					actualOwner := keeper.GetCurrentOwner(assetId)
-					require.Equal(t, expectedOwner, actualOwner)
+			// Verify records were loaded
+			if len(tt.genesis.Records) > 0 {
+				for _, record := range tt.genesis.Records {
+					retrieved, found := keeper.GetIdentityRecord(input.Ctx, record.Did)
+					require.True(t, found)
+					require.Equal(t, record.Owner, retrieved.Owner)
+					require.Equal(t, record.ConfidenceScore, retrieved.ConfidenceScore)
 				}
 			}
 		})
@@ -200,176 +202,142 @@ func TestInitGenesis(t *testing.T) {
 }
 
 func TestExportGenesis(t *testing.T) {
-	paramsStore := params.NewStore(types.DefaultParams())
-	keeper := NewKeeper(paramsStore)
+	input := keepertest.CreateTestInput(t)
+	keeper := NewKeeper(
+		keepertest.WrapStoreService(input.StoreKey),
+		input.Cdc,
+		nil,
+		"authority",
+		keepertest.Logger(),
+	)
+
+	// Set default params
+	params := types.DefaultParams()
+	err := keeper.SetParams(params)
+	require.NoError(t, err)
 
 	// Create test data
-	now := time.Now()
+	request1 := types.IdentityChangeRequest{
+		RequestId:       "req-export-1",
+		TargetDid:       "did:aura:export1",
+		Requester:       "aura1requester1",
+		IrId:            "ir-export-1",
+		ProofHash:       "proof-hash-1",
+		RequestMetaHash: "meta-hash-1",
+		Status:          pb.IdentityChangeStatus_IDENTITY_CHANGE_STATUS_PENDING_VERIFICATION,
+		CreatedHeight:   1000,
+	}
+	err = keeper.SetRequest(input.Ctx, request1)
+	require.NoError(t, err)
 
-	// Submit identity change requests
-	reqID1 := keeper.SubmitIdentityChangeRequest(
-		"did:aura:test1",
-		"aura1old1",
-		"aura1new1",
-		1000,
-		now,
-		"Key rotation test",
-	)
-	require.NotEmpty(t, reqID1)
-
-	reqID2 := keeper.SubmitIdentityChangeRequest(
-		"did:aura:test2",
-		"aura1old2",
-		"aura1new2",
-		2000,
-		now,
-		"Lost key test",
-	)
-	require.NotEmpty(t, reqID2)
-
-	// Record ownership transfer
-	keeper.RecordOwnershipTransfer(
-		"asset-test-1",
-		"NFT",
-		"aura1old1",
-		"aura1new1",
-		now,
-		"tx-test-1",
-	)
+	record1 := types.IdentityRecord{
+		Did:               "did:aura:export1",
+		Owner:             "aura1owner1",
+		ConfidenceScore:   80,
+		MetadataHash:      "metadata-hash-1",
+		LatestIrVersion:   "v1",
+		LastChangedHeight: 1001,
+		Status:            pb.IdentityChangeStatus_IDENTITY_CHANGE_STATUS_APPLIED,
+	}
+	err = keeper.SetIdentityRecord(input.Ctx, record1)
+	require.NoError(t, err)
 
 	// Export genesis
-	exported := keeper.ExportGenesis()
+	exported := keeper.ExportGenesis(input.Ctx)
 
 	// Verify exported data
 	require.NotNil(t, exported.Params)
-	require.Greater(t, exported.Params.MaxChangesPerUser, uint64(0))
+	require.Len(t, exported.Requests, 1)
+	require.Len(t, exported.Records, 1)
 
-	require.Len(t, exported.ChangeRequests, 2)
+	// Verify request exported correctly
+	require.Equal(t, "req-export-1", exported.Requests[0].RequestId)
+	require.Equal(t, "did:aura:export1", exported.Requests[0].TargetDid)
 
-	// Find the exported requests
-	var foundReq1, foundReq2 bool
-	for _, req := range exported.ChangeRequests {
-		if req.TargetDid == "did:aura:test1" {
-			foundReq1 = true
-			require.Equal(t, "aura1old1", req.OldAddress)
-			require.Equal(t, "aura1new1", req.NewAddress)
-		}
-		if req.TargetDid == "did:aura:test2" {
-			foundReq2 = true
-			require.Equal(t, "aura1old2", req.OldAddress)
-			require.Equal(t, "aura1new2", req.NewAddress)
-		}
-	}
-	require.True(t, foundReq1, "First request should be exported")
-	require.True(t, foundReq2, "Second request should be exported")
-
-	require.Len(t, exported.OwnershipRecords, 1)
-	require.Equal(t, "asset-test-1", exported.OwnershipRecords[0].AssetId)
-	require.Equal(t, "NFT", exported.OwnershipRecords[0].AssetType)
-
-	require.Contains(t, exported.CurrentOwners, "asset-test-1")
-	require.Equal(t, "aura1new1", exported.CurrentOwners["asset-test-1"])
+	// Verify record exported correctly
+	require.Equal(t, "did:aura:export1", exported.Records[0].Did)
+	require.Equal(t, "aura1owner1", exported.Records[0].Owner)
 }
 
 func TestGenesisRoundTrip(t *testing.T) {
 	// Create first keeper with initial state
-	paramsStore1 := params.NewStore(types.DefaultParams())
-	keeper1 := NewKeeper(paramsStore1)
+	input1 := keepertest.CreateTestInput(t)
+	keeper1 := NewKeeper(
+		keepertest.WrapStoreService(input1.StoreKey),
+		input1.Cdc,
+		nil,
+		"authority",
+		keepertest.Logger(),
+	)
 
-	now := time.Now()
+	// Set params
+	params := types.DefaultParams()
+	err := keeper1.SetParams(params)
+	require.NoError(t, err)
 
 	// Create comprehensive test data
-	reqID1 := keeper1.SubmitIdentityChangeRequest(
-		"did:aura:roundtrip1",
-		"aura1oldrt1",
-		"aura1newrt1",
-		5000,
-		now,
-		"Round trip test 1",
-	)
-	require.NotEmpty(t, reqID1)
+	request := types.IdentityChangeRequest{
+		RequestId:       "req-roundtrip",
+		TargetDid:       "did:aura:roundtrip",
+		Requester:       "aura1requesterrt",
+		IrId:            "ir-rt",
+		ProofHash:       "proof-rt",
+		RequestMetaHash: "meta-rt",
+		Status:          pb.IdentityChangeStatus_IDENTITY_CHANGE_STATUS_PENDING_VERIFICATION,
+		CreatedHeight:   5000,
+	}
+	err = keeper1.SetRequest(input1.Ctx, request)
+	require.NoError(t, err)
 
-	reqID2 := keeper1.SubmitIdentityChangeRequest(
-		"did:aura:roundtrip2",
-		"aura1oldrt2",
-		"aura1newrt2",
-		6000,
-		now,
-		"Round trip test 2",
-	)
-	require.NotEmpty(t, reqID2)
-
-	// Approve one request
-	keeper1.ApproveIdentityChange(reqID2, "tx-approval-rt")
-
-	// Record ownership transfers
-	keeper1.RecordOwnershipTransfer(
-		"asset-rt-1",
-		"Token",
-		"aura1oldrt1",
-		"aura1newrt1",
-		now,
-		"tx-rt-1",
-	)
-	keeper1.RecordOwnershipTransfer(
-		"asset-rt-2",
-		"NFT",
-		"aura1oldrt2",
-		"aura1newrt2",
-		now,
-		"tx-rt-2",
-	)
+	record := types.IdentityRecord{
+		Did:               "did:aura:roundtrip",
+		Owner:             "aura1ownerrt",
+		ConfidenceScore:   85,
+		MetadataHash:      "metadata-rt",
+		LatestIrVersion:   "v1",
+		LastChangedHeight: 5001,
+		Status:            pb.IdentityChangeStatus_IDENTITY_CHANGE_STATUS_APPLIED,
+	}
+	err = keeper1.SetIdentityRecord(input1.Ctx, record)
+	require.NoError(t, err)
 
 	// Export genesis from keeper1
-	exported := keeper1.ExportGenesis()
+	exported := keeper1.ExportGenesis(input1.Ctx)
 
 	// Create a new keeper and import the exported genesis
-	paramsStore2 := params.NewStore(types.DefaultParams())
-	keeper2 := NewKeeper(paramsStore2)
-	err := keeper2.InitGenesis(exported)
+	input2 := keepertest.CreateTestInput(t)
+	keeper2 := NewKeeper(
+		keepertest.WrapStoreService(input2.StoreKey),
+		input2.Cdc,
+		nil,
+		"authority",
+		keepertest.Logger(),
+	)
+	err = keeper2.InitGenesis(input2.Ctx, exported)
 	require.NoError(t, err)
 
 	// Verify all data was preserved
 	params1 := keeper1.GetParams()
 	params2 := keeper2.GetParams()
-	require.Equal(t, params1.MaxChangesPerUser, params2.MaxChangesPerUser)
-	require.Equal(t, params1.EnableTimelock, params2.EnableTimelock)
+	require.Equal(t, params1.MaxRequestsPerWalletPerMonth, params2.MaxRequestsPerWalletPerMonth)
+	require.Equal(t, params1.MinConfidenceAfterChange, params2.MinConfidenceAfterChange)
 
-	// Verify first request
-	req1 := keeper2.GetChangeRequest(reqID1)
-	require.NotNil(t, req1)
-	require.Equal(t, "did:aura:roundtrip1", req1.TargetDid)
-	require.Equal(t, "aura1oldrt1", req1.OldAddress)
-	require.Equal(t, pb.IdentityChangeStatus_IDENTITY_CHANGE_STATUS_PENDING, req1.Status)
+	// Verify request
+	req, found := keeper2.GetRequest(input2.Ctx, "req-roundtrip")
+	require.True(t, found)
+	require.Equal(t, "did:aura:roundtrip", req.TargetDid)
+	require.Equal(t, pb.IdentityChangeStatus_IDENTITY_CHANGE_STATUS_PENDING_VERIFICATION, req.Status)
 
-	// Verify second request (approved)
-	req2 := keeper2.GetChangeRequest(reqID2)
-	require.NotNil(t, req2)
-	require.Equal(t, "did:aura:roundtrip2", req2.TargetDid)
-	require.Equal(t, pb.IdentityChangeStatus_IDENTITY_CHANGE_STATUS_APPROVED, req2.Status)
-	require.Equal(t, "tx-approval-rt", req2.ApprovalTxId)
-
-	// Verify ownership records
-	history1 := keeper2.GetOwnershipHistory("asset-rt-1")
-	require.Len(t, history1, 1)
-	require.Equal(t, "Token", history1[0].AssetType)
-
-	history2 := keeper2.GetOwnershipHistory("asset-rt-2")
-	require.Len(t, history2, 1)
-	require.Equal(t, "NFT", history2[0].AssetType)
-
-	// Verify current owners
-	owner1 := keeper2.GetCurrentOwner("asset-rt-1")
-	require.Equal(t, "aura1newrt1", owner1)
-
-	owner2 := keeper2.GetCurrentOwner("asset-rt-2")
-	require.Equal(t, "aura1newrt2", owner2)
+	// Verify record
+	rec, found := keeper2.GetIdentityRecord(input2.Ctx, "did:aura:roundtrip")
+	require.True(t, found)
+	require.Equal(t, "aura1ownerrt", rec.Owner)
+	require.Equal(t, int64(85), rec.ConfidenceScore)
 
 	// Export again and verify consistency
-	exported2 := keeper2.ExportGenesis()
-	require.Equal(t, len(exported.ChangeRequests), len(exported2.ChangeRequests))
-	require.Equal(t, len(exported.OwnershipRecords), len(exported2.OwnershipRecords))
-	require.Equal(t, len(exported.CurrentOwners), len(exported2.CurrentOwners))
+	exported2 := keeper2.ExportGenesis(input2.Ctx)
+	require.Equal(t, len(exported.Requests), len(exported2.Requests))
+	require.Equal(t, len(exported.Records), len(exported2.Records))
 }
 
 func TestDefaultGenesis(t *testing.T) {
@@ -383,118 +351,27 @@ func TestDefaultGenesis(t *testing.T) {
 
 	// Verify default params
 	require.NotNil(t, defaultGen.Params)
-	require.NotEmpty(t, defaultGen.Params.IdentityChangeFee)
-	require.Greater(t, defaultGen.Params.MaxChangesPerUser, uint64(0))
+	require.Greater(t, defaultGen.Params.MaxRequestsPerWalletPerMonth, int32(0))
 
 	// Verify default collections are empty
-	require.Empty(t, defaultGen.ChangeRequests)
-	require.Empty(t, defaultGen.OwnershipRecords)
-	require.NotNil(t, defaultGen.CurrentOwners)
+	require.Empty(t, defaultGen.Requests)
+	require.Empty(t, defaultGen.Records)
+	require.Empty(t, defaultGen.History)
 
 	// Test importing default genesis
-	paramsStore := params.NewStore(types.DefaultParams())
-	keeper := NewKeeper(paramsStore)
-	err = keeper.InitGenesis(*defaultGen)
+	input := keepertest.CreateTestInput(t)
+	keeper := NewKeeper(
+		keepertest.WrapStoreService(input.StoreKey),
+		input.Cdc,
+		nil,
+		"authority",
+		keepertest.Logger(),
+	)
+	err = keeper.InitGenesis(input.Ctx, *defaultGen)
 	require.NoError(t, err)
 
 	// Verify keeper state after importing default genesis
 	p := keeper.GetParams()
 	require.NotNil(t, p)
-	require.Greater(t, p.MaxChangesPerUser, uint64(0))
-}
-
-func TestInitGenesis_WithMultipleRequests(t *testing.T) {
-	now := time.Now()
-	genesis := types.GenesisState{
-		Params: nil,
-		ChangeRequests: []*pb.IdentityChangeRequest{
-			{
-				RequestId:     "multi-req-1",
-				TargetDid:     "did:aura:multi1",
-				OldAddress:    "aura1oldm1",
-				NewAddress:    "aura1newm1",
-				RequestHeight: 1000,
-				RequestTime:   timestamppb.New(now),
-				Status:        pb.IdentityChangeStatus_IDENTITY_CHANGE_STATUS_PENDING,
-				Reason:        "Test 1",
-			},
-			{
-				RequestId:     "multi-req-2",
-				TargetDid:     "did:aura:multi2",
-				OldAddress:    "aura1oldm2",
-				NewAddress:    "aura1newm2",
-				RequestHeight: 2000,
-				RequestTime:   timestamppb.New(now),
-				Status:        pb.IdentityChangeStatus_IDENTITY_CHANGE_STATUS_APPROVED,
-				Reason:        "Test 2",
-				ApprovalTxId:  "tx-approve-multi",
-			},
-			{
-				RequestId:     "multi-req-3",
-				TargetDid:     "did:aura:multi3",
-				OldAddress:    "aura1oldm3",
-				NewAddress:    "aura1newm3",
-				RequestHeight: 3000,
-				RequestTime:   timestamppb.New(now),
-				Status:        pb.IdentityChangeStatus_IDENTITY_CHANGE_STATUS_EXECUTED,
-				Reason:        "Test 3",
-				ExecutedAt:    timestamppb.New(now.Add(24 * time.Hour)),
-			},
-		},
-		OwnershipRecords: []*pb.OwnershipRecord{
-			{
-				AssetId:      "multi-asset-1",
-				AssetType:    "Token",
-				OldOwner:     "aura1oldm1",
-				NewOwner:     "aura1newm1",
-				TransferTime: timestamppb.New(now),
-				TransferTxId: "tx-multi-1",
-			},
-			{
-				AssetId:      "multi-asset-2",
-				AssetType:    "NFT",
-				OldOwner:     "aura1oldm2",
-				NewOwner:     "aura1newm2",
-				TransferTime: timestamppb.New(now),
-				TransferTxId: "tx-multi-2",
-			},
-		},
-		CurrentOwners: map[string]string{
-			"multi-asset-1": "aura1newm1",
-			"multi-asset-2": "aura1newm2",
-		},
-	}
-
-	paramsStore := params.NewStore(types.DefaultParams())
-	keeper := NewKeeper(paramsStore)
-
-	err := keeper.InitGenesis(genesis)
-	require.NoError(t, err)
-
-	// Verify all requests were loaded
-	req1 := keeper.GetChangeRequest("multi-req-1")
-	require.NotNil(t, req1)
-	require.Equal(t, pb.IdentityChangeStatus_IDENTITY_CHANGE_STATUS_PENDING, req1.Status)
-
-	req2 := keeper.GetChangeRequest("multi-req-2")
-	require.NotNil(t, req2)
-	require.Equal(t, pb.IdentityChangeStatus_IDENTITY_CHANGE_STATUS_APPROVED, req2.Status)
-	require.Equal(t, "tx-approve-multi", req2.ApprovalTxId)
-
-	req3 := keeper.GetChangeRequest("multi-req-3")
-	require.NotNil(t, req3)
-	require.Equal(t, pb.IdentityChangeStatus_IDENTITY_CHANGE_STATUS_EXECUTED, req3.Status)
-
-	// Verify ownership records
-	history1 := keeper.GetOwnershipHistory("multi-asset-1")
-	require.Len(t, history1, 1)
-	require.Equal(t, "Token", history1[0].AssetType)
-
-	history2 := keeper.GetOwnershipHistory("multi-asset-2")
-	require.Len(t, history2, 1)
-	require.Equal(t, "NFT", history2[0].AssetType)
-
-	// Verify current owners
-	require.Equal(t, "aura1newm1", keeper.GetCurrentOwner("multi-asset-1"))
-	require.Equal(t, "aura1newm2", keeper.GetCurrentOwner("multi-asset-2"))
+	require.Greater(t, p.MaxRequestsPerWalletPerMonth, int32(0))
 }

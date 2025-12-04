@@ -17,6 +17,7 @@ import (
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	runtime "github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	banktestutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
 	"github.com/stretchr/testify/require"
@@ -235,6 +236,33 @@ func BankKeeperWithMockAccountKeeper(t testing.TB, testInput TestInput) bankkeep
 	mockAccountKeeper.EXPECT().
 		GetAccount(gomock.Any(), gomock.Any()).
 		Return(nil).
+		AnyTimes()
+
+	// Allow HasAccount to be called (used by InputOutputCoins)
+	mockAccountKeeper.EXPECT().
+		HasAccount(gomock.Any(), gomock.Any()).
+		Return(true).
+		AnyTimes()
+
+	// Allow GetModuleAddress to be called (used by SendCoinsFromModuleToAccount)
+	// Returns a deterministic module address based on the module name
+	mockAccountKeeper.EXPECT().
+		GetModuleAddress(gomock.Any()).
+		DoAndReturn(func(moduleName string) sdk.AccAddress {
+			return sdk.AccAddress([]byte("module_" + moduleName))
+		}).
+		AnyTimes()
+
+	// Allow GetModuleAccount to be called (used by SendCoinsFromAccountToModule)
+	// Returns a valid module account to allow transfers to succeed
+	mockAccountKeeper.EXPECT().
+		GetModuleAccount(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(ctx sdk.Context, moduleName string) sdk.ModuleAccountI {
+			// Create a basic module account
+			moduleAddr := authtypes.NewModuleAddress(moduleName)
+			baseAcc := authtypes.NewBaseAccountWithAddress(moduleAddr)
+			return authtypes.NewModuleAccount(baseAcc, moduleName)
+		}).
 		AnyTimes()
 
 	// Generate a valid authority address using the module name pattern

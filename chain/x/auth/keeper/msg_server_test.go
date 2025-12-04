@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"context"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"

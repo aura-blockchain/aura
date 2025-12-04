@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"context"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -19,7 +18,7 @@ func TestMsgServerTestSuite(t *testing.T) {
 
 func (suite *MsgServerTestSuite) SetupTest() {
 	suite.KeeperTestSuite.SetupTest()
-	suite.msgServer = NewMsgServerImpl(suite.Keeper)
+	suite.msgServer = NewMsgServer(suite.Keeper)
 }
 
 func (suite *MsgServerTestSuite) TestMsgServerImplementation() {

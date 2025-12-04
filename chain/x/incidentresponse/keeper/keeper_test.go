@@ -4,9 +4,41 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aequitas/aura/chain/x/incidentresponse/types"
+	"cosmossdk.io/log"
+	"cosmossdk.io/store"
+	"cosmossdk.io/store/metrics"
+	storetypes "cosmossdk.io/store/types"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	dbm "github.com/cosmos/cosmos-db"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
+
+	"github.com/aequitas/aura/chain/x/incidentresponse/types"
 )
+
+// setupTestKeeper creates a keeper with proper context for testing
+func setupTestKeeper(t *testing.T) (*Keeper, sdk.Context) {
+	storeKey := storetypes.NewKVStoreKey(types.StoreKey)
+
+	// Create database and commit multi-store
+	db := dbm.NewMemDB()
+	cms := store.NewCommitMultiStore(db, log.NewNopLogger(), metrics.NewNoOpMetrics())
+	cms.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, db)
+	require.NoError(t, cms.LoadLatestVersion())
+
+	// Create context with proper store
+	header := cmtproto.Header{
+		Height: 1,
+		Time:   time.Now(),
+	}
+	ctx := sdk.NewContext(cms, header, false, log.NewNopLogger())
+
+	// Create keeper with default params
+	params := types.DefaultParams()
+	k := NewKeeper(params)
+
+	return k, ctx
+}
 
 func TestNewKeeper(t *testing.T) {
 	params := types.DefaultParams()
@@ -16,9 +48,10 @@ func TestNewKeeper(t *testing.T) {
 }
 
 func TestReportIncident(t *testing.T) {
-	k := NewKeeper(types.DefaultParams())
+	k, ctx := setupTestKeeper(t)
 
 	incidentID, err := k.ReportIncident(
+		ctx,
 		"Database breach detected",
 		"Unauthorized access to validator database",
 		types.SeverityCritical,
@@ -30,7 +63,7 @@ func TestReportIncident(t *testing.T) {
 	require.NotEmpty(t, incidentID)
 
 	// Retrieve incident
-	incident, err := k.GetIncident(incidentID)
+	incident, err := k.GetIncident(ctx, incidentID)
 	require.NoError(t, err)
 	require.Equal(t, types.SeverityCritical, incident.Severity)
 	require.Equal(t, types.StatusNew, incident.Status)
@@ -39,10 +72,11 @@ func TestReportIncident(t *testing.T) {
 }
 
 func TestUpdateIncidentStatus(t *testing.T) {
-	k := NewKeeper(types.DefaultParams())
+	k, ctx := setupTestKeeper(t)
 
 	// Create incident
 	incidentID, _ := k.ReportIncident(
+		ctx,
 		"Test incident",
 		"Test description",
 		types.SeverityHigh,
@@ -52,6 +86,7 @@ func TestUpdateIncidentStatus(t *testing.T) {
 
 	// Update status
 	err := k.UpdateIncidentStatus(
+		ctx,
 		incidentID,
 		types.StatusInvestigation,
 		"security-analyst",
@@ -60,7 +95,7 @@ func TestUpdateIncidentStatus(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify update
-	incident, err := k.GetIncident(incidentID)
+	incident, err := k.GetIncident(ctx, incidentID)
 	require.NoError(t, err)
 	require.Equal(t, types.StatusInvestigation, incident.Status)
 	require.Len(t, incident.Timeline, 2)
@@ -71,9 +106,11 @@ func TestEmergencyChainPause(t *testing.T) {
 	params.PauseAuthorizedKeys = []string{"admin1", "admin2", "admin3"}
 	params.PauseRequiredSigners = 1
 	k := NewKeeper(params)
+	_, ctx := setupTestKeeper(t)
 
 	// Request pause
 	err := k.RequestChainPause(
+		ctx,
 		"admin1",
 		types.PauseLevelFull,
 		"Critical security vulnerability detected",
@@ -84,7 +121,7 @@ func TestEmergencyChainPause(t *testing.T) {
 
 	// Verify chain is paused
 	require.True(t, k.IsChainPaused())
-	pauseState := k.GetChainPauseState()
+	pauseState := k.GetChainPauseState(ctx)
 	require.Equal(t, types.PauseLevelFull, pauseState.PauseLevel)
 	require.Equal(t, "admin1", pauseState.PausedBy)
 }
@@ -93,9 +130,11 @@ func TestChainPauseUnauthorized(t *testing.T) {
 	params := types.DefaultParams()
 	params.PauseAuthorizedKeys = []string{"admin1"}
 	k := NewKeeper(params)
+	_, ctx := setupTestKeeper(t)
 
 	// Try to pause with unauthorized key
 	err := k.RequestChainPause(
+		ctx,
 		"hacker",
 		types.PauseLevelFull,
 		"Malicious pause attempt",
@@ -112,9 +151,11 @@ func TestChainPauseMultiSig(t *testing.T) {
 	params.PauseAuthorizedKeys = []string{"admin1", "admin2", "admin3"}
 	params.PauseRequiredSigners = 2
 	k := NewKeeper(params)
+	_, ctx := setupTestKeeper(t)
 
 	// First approval - not enough
 	err := k.RequestChainPause(
+		ctx,
 		"admin1",
 		types.PauseLevelFull,
 		"Test pause",
@@ -134,9 +175,11 @@ func TestResumeChain(t *testing.T) {
 	params.PauseAuthorizedKeys = []string{"admin1"}
 	params.PauseRequiredSigners = 1
 	k := NewKeeper(params)
+	_, ctx := setupTestKeeper(t)
 
 	// Pause chain
 	k.RequestChainPause(
+		ctx,
 		"admin1",
 		types.PauseLevelFull,
 		"Test pause",
@@ -146,7 +189,7 @@ func TestResumeChain(t *testing.T) {
 	require.True(t, k.IsChainPaused())
 
 	// Resume chain
-	err := k.ResumeChain("admin1", "Issue resolved")
+	err := k.ResumeChain(ctx, "admin1", "Issue resolved")
 	require.NoError(t, err)
 	require.False(t, k.IsChainPaused())
 }
@@ -154,9 +197,11 @@ func TestResumeChain(t *testing.T) {
 func TestHotWalletLimits(t *testing.T) {
 	params := types.DefaultParams()
 	k := NewKeeper(params)
+	_, ctx := setupTestKeeper(t)
 
 	// Set wallet limits
 	err := k.SetWalletLimits(
+		ctx,
 		"wallet1",
 		"1000000", // max balance
 		"100000",  // max tx size
@@ -165,16 +210,16 @@ func TestHotWalletLimits(t *testing.T) {
 	require.NoError(t, err)
 
 	// Check valid transaction
-	err = k.CheckWalletLimit("wallet1", "50000", "500000")
+	err = k.CheckWalletLimit(ctx, "wallet1", "50000", "500000")
 	require.NoError(t, err)
 
 	// Check transaction exceeding max balance
-	err = k.CheckWalletLimit("wallet1", "600000", "500000")
+	err = k.CheckWalletLimit(ctx, "wallet1", "600000", "500000")
 	require.Error(t, err)
 	require.Equal(t, types.ErrWalletLimitExceeded, err)
 
 	// Check transaction exceeding max tx size
-	err = k.CheckWalletLimit("wallet1", "150000", "500000")
+	err = k.CheckWalletLimit(ctx, "wallet1", "150000", "500000")
 	require.Error(t, err)
 	require.Equal(t, types.ErrWalletLimitExceeded, err)
 }
@@ -182,9 +227,11 @@ func TestHotWalletLimits(t *testing.T) {
 func TestHotWalletDailyLimit(t *testing.T) {
 	params := types.DefaultParams()
 	k := NewKeeper(params)
+	_, ctx := setupTestKeeper(t)
 
 	// Set wallet limits
 	k.SetWalletLimits(
+		ctx,
 		"wallet1",
 		"1000000",
 		"100000",
@@ -192,11 +239,11 @@ func TestHotWalletDailyLimit(t *testing.T) {
 	)
 
 	// First transaction
-	err := k.CheckWalletLimit("wallet1", "100000", "500000")
+	err := k.CheckWalletLimit(ctx, "wallet1", "100000", "500000")
 	require.NoError(t, err)
 
 	// Second transaction - should exceed daily limit
-	err = k.CheckWalletLimit("wallet1", "150000", "500000")
+	err = k.CheckWalletLimit(ctx, "wallet1", "150000", "500000")
 	require.Error(t, err)
 	require.Equal(t, types.ErrWalletLimitExceeded, err)
 }
@@ -231,10 +278,11 @@ func TestColdStorageValidation(t *testing.T) {
 }
 
 func TestPostMortem(t *testing.T) {
-	k := NewKeeper(types.DefaultParams())
+	k, ctx := setupTestKeeper(t)
 
 	// Create incident
 	incidentID, _ := k.ReportIncident(
+		ctx,
 		"Service outage",
 		"API server down",
 		types.SeverityHigh,
@@ -243,7 +291,7 @@ func TestPostMortem(t *testing.T) {
 	)
 
 	// Update to resolved
-	k.UpdateIncidentStatus(incidentID, types.StatusResolved, "ops-team", "Service restored")
+	k.UpdateIncidentStatus(ctx, incidentID, types.StatusResolved, "ops-team", "Service restored")
 
 	// Create post-mortem
 	actionItems := []types.ActionItem{
@@ -258,6 +306,7 @@ func TestPostMortem(t *testing.T) {
 	}
 
 	err := k.CreatePostMortem(
+		ctx,
 		incidentID,
 		"tech-lead",
 		"Service outage due to memory leak",
@@ -270,7 +319,7 @@ func TestPostMortem(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify post-mortem
-	incident, err := k.GetIncident(incidentID)
+	incident, err := k.GetIncident(ctx, incidentID)
 	require.NoError(t, err)
 	require.NotNil(t, incident.PostMortem)
 	require.Equal(t, "Memory leak in API handler", incident.PostMortem.RootCause)
@@ -278,10 +327,11 @@ func TestPostMortem(t *testing.T) {
 }
 
 func TestCloseIncident(t *testing.T) {
-	k := NewKeeper(types.DefaultParams())
+	k, ctx := setupTestKeeper(t)
 
 	// Create incident
 	incidentID, _ := k.ReportIncident(
+		ctx,
 		"Test incident",
 		"Test description",
 		types.SeverityLow,
@@ -290,12 +340,13 @@ func TestCloseIncident(t *testing.T) {
 	)
 
 	// Try to close without post-mortem
-	err := k.CloseIncident(incidentID, "admin")
+	err := k.CloseIncident(ctx, incidentID, "admin")
 	require.Error(t, err)
 	require.Equal(t, types.ErrPostMortemNotCompleted, err)
 
 	// Create post-mortem
 	k.CreatePostMortem(
+		ctx,
 		incidentID,
 		"admin",
 		"Summary",
@@ -307,11 +358,11 @@ func TestCloseIncident(t *testing.T) {
 	)
 
 	// Now close incident
-	err = k.CloseIncident(incidentID, "admin")
+	err = k.CloseIncident(ctx, incidentID, "admin")
 	require.NoError(t, err)
 
 	// Verify closed
-	incident, err := k.GetIncident(incidentID)
+	incident, err := k.GetIncident(ctx, incidentID)
 	require.NoError(t, err)
 	require.Equal(t, types.StatusClosed, incident.Status)
 }
@@ -320,8 +371,9 @@ func TestBackupTrigger(t *testing.T) {
 	params := types.DefaultParams()
 	params.DisasterRecovery.Enabled = true
 	k := NewKeeper(params)
+	_, ctx := setupTestKeeper(t)
 
-	backupID, err := k.TriggerBackup("state", "admin")
+	backupID, err := k.TriggerBackup(ctx, "state", "admin")
 	require.NoError(t, err)
 	require.NotEmpty(t, backupID)
 }
@@ -331,9 +383,11 @@ func TestInsuranceClaim(t *testing.T) {
 	params.Insurance.Enabled = true
 	params.Insurance.RequiredSigners = []string{"signer1", "signer2"}
 	k := NewKeeper(params)
+	_, ctx := setupTestKeeper(t)
 
 	// Create critical incident
 	incidentID, _ := k.ReportIncident(
+		ctx,
 		"Major security breach",
 		"Funds stolen",
 		types.SeverityCritical,
@@ -343,6 +397,7 @@ func TestInsuranceClaim(t *testing.T) {
 
 	// Submit insurance claim
 	claimID, err := k.TriggerInsuranceClaim(
+		ctx,
 		incidentID,
 		"10000000",
 		[]string{"signer1", "signer2"},
@@ -351,7 +406,7 @@ func TestInsuranceClaim(t *testing.T) {
 	require.NotEmpty(t, claimID)
 
 	// Verify incident timeline updated
-	incident, _ := k.GetIncident(incidentID)
+	incident, _ := k.GetIncident(ctx, incidentID)
 	hasClaimEntry := false
 	for _, entry := range incident.Timeline {
 		if entry.Action == "insurance_claim_submitted" {
@@ -363,14 +418,14 @@ func TestInsuranceClaim(t *testing.T) {
 }
 
 func TestGetAllIncidents(t *testing.T) {
-	k := NewKeeper(types.DefaultParams())
+	k, ctx := setupTestKeeper(t)
 
 	// Create multiple incidents
-	k.ReportIncident("Incident 1", "Desc 1", types.SeverityLow, "admin", []string{})
-	k.ReportIncident("Incident 2", "Desc 2", types.SeverityMedium, "admin", []string{})
-	k.ReportIncident("Incident 3", "Desc 3", types.SeverityHigh, "admin", []string{})
+	k.ReportIncident(ctx, "Incident 1", "Desc 1", types.SeverityLow, "admin", []string{})
+	k.ReportIncident(ctx, "Incident 2", "Desc 2", types.SeverityMedium, "admin", []string{})
+	k.ReportIncident(ctx, "Incident 3", "Desc 3", types.SeverityHigh, "admin", []string{})
 
-	incidents := k.GetAllIncidents()
+	incidents := k.GetAllIncidents(ctx)
 	require.Len(t, incidents, 3)
 }
 
@@ -378,11 +433,12 @@ func TestValidatorHealthCheck(t *testing.T) {
 	params := types.DefaultParams()
 	params.BackupValidators.Enabled = true
 	k := NewKeeper(params)
+	_, ctx := setupTestKeeper(t)
 
-	err := k.CheckValidatorHealth()
+	err := k.CheckValidatorHealth(ctx)
 	require.NoError(t, err)
 
-	config := k.GetBackupValidatorConfig()
+	config := k.GetBackupValidatorConfig(ctx)
 	require.False(t, config.LastHealthCheck.IsZero())
 }
 
@@ -392,9 +448,11 @@ func TestMaxPauseDuration(t *testing.T) {
 	params.PauseRequiredSigners = 1
 	params.MaxPauseDuration = 1 * time.Hour
 	k := NewKeeper(params)
+	_, ctx := setupTestKeeper(t)
 
 	// Try to pause for longer than max duration
 	err := k.RequestChainPause(
+		ctx,
 		"admin1",
 		types.PauseLevelFull,
 		"Test",
@@ -409,8 +467,10 @@ func TestInvalidPauseLevel(t *testing.T) {
 	params := types.DefaultParams()
 	params.PauseAuthorizedKeys = []string{"admin1"}
 	k := NewKeeper(params)
+	_, ctx := setupTestKeeper(t)
 
 	err := k.RequestChainPause(
+		ctx,
 		"admin1",
 		types.PauseLevel("invalid"),
 		"Test",
@@ -424,8 +484,9 @@ func TestInvalidPauseLevel(t *testing.T) {
 func TestGetParams(t *testing.T) {
 	params := types.DefaultParams()
 	k := NewKeeper(params)
+	_, ctx := setupTestKeeper(t)
 
-	retrievedParams := k.GetParams()
+	retrievedParams := k.GetParams(ctx)
 	require.Equal(t, params.EmergencyPauseEnabled, retrievedParams.EmergencyPauseEnabled)
 	require.Equal(t, params.MaxPauseDuration, retrievedParams.MaxPauseDuration)
 }
