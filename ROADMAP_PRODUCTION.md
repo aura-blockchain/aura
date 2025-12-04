@@ -148,6 +148,8 @@ All modules have keepers, protos, and tests:
 - [x] Deploy: `docker-compose -f docker-compose.monitoring.yml up -d` (config ready)
 - [x] Import dashboards from `/grafana/dashboards/` → `/docker/monitoring/grafana/dashboards/`
 - [x] Configure alerts for chain halt, high resource usage, low peer count → `/docker/monitoring/prometheus/rules/aura-alerts.yml`
+- [x] Create monitoring and health check tools → `/scripts/testnet-monitor.sh`, `/scripts/continuous-monitor.sh`
+- [x] Create comprehensive monitoring documentation → `TESTNET_MONITORING_GUIDE.md`, `MONITORING_CHEATSHEET.md`, `docs/runbooks/TESTNET_MONITORING.md`
 
 ### Module Architecture Alignment (Cosmos SDK + Native Parity)
 - [x] Add lightweight `IsAppModule` tags/adapters for many Aura modules; scaffold adapter wrapper (`chain/app/module_adapters.go`).
