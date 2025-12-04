@@ -17,35 +17,44 @@ import (
 
 // RotateDIDKey initiates a DID key rotation with grace period
 func (k *Keeper) RotateDIDKey(ctx sdk.Context, did, initiator, newVerificationMethod, reason string) (*types.DIDKeyRotation, error) {
+	// Get metrics instance
+	metrics := GetIdentityMetrics()
+
 	// Validate inputs
 	if did == "" {
+		metrics.DIDKeyRotationFails.WithLabelValues("invalid_did").Inc()
 		return nil, types.ErrInvalidDID.Wrap("DID cannot be empty")
 	}
 	if newVerificationMethod == "" {
+		metrics.DIDKeyRotationFails.WithLabelValues("invalid_verification_method").Inc()
 		return nil, types.ErrInvalidVerificationMethod.Wrap("verification method cannot be empty")
 	}
 
 	// Get identity record
 	record, err := k.GetIdentityRecord(ctx, did)
 	if err != nil {
+		metrics.DIDKeyRotationFails.WithLabelValues("identity_not_found").Inc()
 		return nil, types.ErrIdentityNotFound.Wrapf("identity not found: %s", did)
 	}
 
 	// Check authorization: initiator must be DID owner or have permission
 	if record.Address != initiator {
 		if err := k.RequirePermission(ctx, initiator, types.PermissionManageIdentity); err != nil {
+			metrics.DIDKeyRotationFails.WithLabelValues("unauthorized").Inc()
 			return nil, types.ErrUnauthorized.Wrapf("initiator %s not authorized to rotate keys for %s", initiator, did)
 		}
 	}
 
 	// Check if identity is erased
 	if record.Erased {
+		metrics.DIDKeyRotationFails.WithLabelValues("identity_erased").Inc()
 		return nil, types.ErrIdentityErased.Wrapf("cannot rotate keys for erased identity %s", did)
 	}
 
 	// Check if rotation already in progress
 	existingRotation, err := k.GetDIDKeyRotation(ctx, did)
 	if err == nil && existingRotation.Status == types.DIDKeyRotationStatusPending {
+		metrics.DIDKeyRotationFails.WithLabelValues("rotation_in_progress").Inc()
 		return nil, types.ErrDIDKeyRotationInProgress.Wrapf("rotation already in progress for %s", did)
 	}
 
@@ -124,6 +133,18 @@ func (k *Keeper) RotateDIDKey(ctx sdk.Context, did, initiator, newVerificationMe
 			sdk.NewAttribute("grace_period_end", gracePeriodEnd.Format(time.RFC3339)),
 		),
 	)
+
+	// Record successful key rotation metric
+	// Determine key type from verification method (simplified - could be enhanced)
+	keyType := "unknown"
+	if len(newVerificationMethod) > 0 {
+		if newVerificationMethod[0:2] == "Ed" {
+			keyType = "ed25519"
+		} else if newVerificationMethod[0:3] == "Sec" {
+			keyType = "secp256k1"
+		}
+	}
+	metrics.DIDKeyRotations.WithLabelValues(did, keyType).Inc()
 
 	return rotation, nil
 }
