@@ -3,7 +3,6 @@ package keeper_test
 import (
 	"testing"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 
 	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
@@ -31,16 +30,16 @@ func TestAllInvariants(t *testing.T) {
 	item1 := types.DataItem{
 		DataId:          "test-data-1",
 		OwnerAddress:    "aura1owner",
-		DataType:        types.DataItemType_DataItemType_DATA_ITEM_TYPE_PHOTO,
-		ContentHash:     []byte("hash1",
+		DataType:        types.DataItemType_DATA_ITEM_TYPE_PHOTO,
+		ContentHash:     []byte("hash1"),
 		StorageLocation: "ipfs://test1",
-		Status:          types.DataItemStatus_DataItemStatus_DATA_ITEM_STATUS_PENDING_VERIFICATION,
+		Status:          types.DataItemStatus_DATA_ITEM_STATUS_PENDING_VERIFICATION,
 	}
 
 	require.NoError(t, k.SetDataItem(input.Ctx, item1))
 
 	// Test all invariants pass
-	msg, broken := keeper.AllInvariants(k)(input.Ctx)
+	msg, broken := keeper.AllInvariants(k)()
 	require.False(t, broken, "invariants should not be broken")
 	require.Empty(t, msg, "no invariant violations expected")
 }
@@ -58,11 +57,8 @@ func TestRegisterInvariants(t *testing.T) {
 			keepertest.Logger(),
 		)
 
-		// Create a mock invariant router
-		ir := sdk.NewInvariantRegistry()
-
 		// Register invariants
-		keeper.RegisterInvariants(ir, k)
+		keeper.RegisterInvariants(k)
 	})
 }
 
@@ -83,7 +79,7 @@ func TestParamsInvariant(t *testing.T) {
 
 	t.Run("ValidParams", func(t *testing.T) {
 		// Test params invariant with valid params
-		msg, broken := keeper.ParamsInvariant(k)(input.Ctx)
+		msg, broken := keeper.ParamsInvariant(k)()
 		require.False(t, broken, "params invariant should not be broken with valid params")
 		require.Empty(t, msg, "no invariant violations expected")
 	})
@@ -95,7 +91,7 @@ func TestParamsInvariant(t *testing.T) {
 		require.NoError(t, k.SetParams(customParams))
 
 		// Test params invariant still passes
-		msg, broken := keeper.ParamsInvariant(k)(input.Ctx)
+		msg, broken := keeper.ParamsInvariant(k)()
 		require.False(t, broken, "params invariant should not be broken with custom params")
 		require.Empty(t, msg, "no invariant violations expected")
 

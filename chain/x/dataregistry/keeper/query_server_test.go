@@ -144,9 +144,8 @@ func TestQueryServerFunctionality(t *testing.T) {
 		resp, err := queryServer.Stats(input.Ctx, req)
 		require.NoError(t, err)
 		require.NotNil(t, resp)
-		require.NotNil(t, resp.Stats)
-		require.Equal(t, uint64(2), resp.Stats.TotalDataItems)
-		require.Equal(t, uint64(1), resp.Stats.TotalVerifiedItems)
+		require.Equal(t, uint64(2), resp.TotalDataItems)
+		require.Equal(t, uint64(1), resp.TotalVerifiedItems)
 	})
 
 	t.Run("QueryParams", func(t *testing.T) {

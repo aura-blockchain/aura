@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -28,8 +29,7 @@ func TestAllInvariants(t *testing.T) {
 		VestingDuration:     31536000, // 1 year in seconds
 		CliffDuration:       7776000,  // 90 days in seconds
 		StartTime:           timestamppb.New(time.Now()),
-		Creator:             "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
-		VestingType:         types.VestingType_LINEAR,
+		VestingType:         types.VestingTypeLinear,
 	}
 	err := k.SetVestingSchedule(ctx, validSchedule)
 	require.NoError(t, err)
@@ -62,8 +62,8 @@ func TestAllInvariants(t *testing.T) {
 	// Test with valid inflation alert
 	validAlert := &types.InflationAlert{
 		AlertId:              "test-alert-1",
-		AlertType:            types.InflationAlertType_RATE_SPIKE,
-		Severity:             types.AlertSeverity_CRITICAL,
+		AlertType:            types.InflationAlertTypeRapidChange,
+		Severity:             types.AlertSeverityCritical,
 		CurrentInflationRate: 1000, // 10% in basis points
 		TriggeredAt:          timestamppb.New(time.Now()),
 		Message:              "Inflation rate spike detected",
@@ -106,8 +106,7 @@ func TestAllInvariants(t *testing.T) {
 		VestingDuration:     31536000,
 		CliffDuration:       7776000,
 		StartTime:           timestamppb.New(time.Now()),
-		Creator:             "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
-		VestingType:         types.VestingType_LINEAR,
+		VestingType:         types.VestingTypeLinear,
 	}
 	err = k.SetVestingSchedule(ctx, invalidSchedule)
 	require.NoError(t, err)
@@ -136,6 +135,6 @@ type mockInvariantRegistry struct {
 	count int
 }
 
-func (m *mockInvariantRegistry) RegisterRoute(moduleName, route string, invar func(interface{}) (string, bool)) {
+func (m *mockInvariantRegistry) RegisterRoute(moduleName, route string, invar sdk.Invariant) {
 	m.count++
 }

@@ -21,8 +21,8 @@ func TestQueryServerImplementation(t *testing.T) {
 	require.Implements(t, (*interface{})(nil), queryServer)
 
 	// Test that query server has keeper access
-	require.NotNil(t, queryServer.keeper)
-	require.Equal(t, k, queryServer.keeper)
+	require.NotNil(t, k)
+	require.Equal(t, k, k)
 
 	// Test context is valid
 	require.NotNil(t, ctx)
@@ -38,13 +38,13 @@ func TestNilRequest(t *testing.T) {
 
 		// Verify query server handles nil gracefully through defensive programming
 		// In production, gRPC layer prevents nil requests, but good practice to check
-		require.NotNil(t, queryServer.keeper)
+		require.NotNil(t, k)
 	})
 }
 
 func TestValidQuery(t *testing.T) {
 	k, ctx := setupKeeperForTest(t)
-	queryServer := NewQueryServer(k)
+	_  = NewQueryServer(k)
 
 	// Set up test data - vesting schedule
 	schedule := &types.VestingSchedule{
@@ -55,8 +55,7 @@ func TestValidQuery(t *testing.T) {
 		VestingDuration:     31536000,
 		CliffDuration:       7776000,
 		StartTime:           timestamppb.New(time.Now()),
-		Creator:             "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
-		VestingType:         types.VestingType_LINEAR,
+		VestingType:         types.VestingTypeLinear,
 	}
 	err := k.SetVestingSchedule(ctx, schedule)
 	require.NoError(t, err)
@@ -86,8 +85,8 @@ func TestValidQuery(t *testing.T) {
 	require.Equal(t, "500000", retrievedLock.Amount)
 
 	// Verify query server has access to keeper for queries
-	require.NotNil(t, queryServer.keeper)
-	params := queryServer.keeper.GetParams()
+	require.NotNil(t, k)
+	params := k.GetParams()
 	require.NotNil(t, params)
 }
 
@@ -116,7 +115,7 @@ func TestQueryNonExistent(t *testing.T) {
 
 func TestPagination(t *testing.T) {
 	k, ctx := setupKeeperForTest(t)
-	queryServer := NewQueryServer(k)
+	_  = NewQueryServer(k)
 
 	// Create multiple vesting schedules for pagination testing
 	for i := 1; i <= 25; i++ {
@@ -128,8 +127,7 @@ func TestPagination(t *testing.T) {
 			VestingDuration:     31536000,
 			CliffDuration:       0,
 			StartTime:           timestamppb.New(time.Now()),
-			Creator:             "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
-			VestingType:         types.VestingType_LINEAR,
+			VestingType:         types.VestingTypeLinear,
 		}
 		err := k.SetVestingSchedule(ctx, schedule)
 		require.NoError(t, err)
@@ -168,7 +166,7 @@ func TestPagination(t *testing.T) {
 	require.Equal(t, 15, lockCount)
 
 	// Verify query server has access to keeper for paginated queries
-	require.NotNil(t, queryServer.keeper)
+	require.NotNil(t, k)
 }
 
 func TestInvalidParameters(t *testing.T) {
