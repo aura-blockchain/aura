@@ -14,6 +14,7 @@ import (
 
 	"github.com/aequitas/aura/chain/x/economicsecurity/keeper"
 	"github.com/aequitas/aura/chain/x/economicsecurity/types"
+	economicsecuritypb "github.com/aequitas/aura/proto/aura/economicsecurity/v1beta1"
 )
 
 var (
@@ -84,23 +85,28 @@ func (am AppModule) IsAppModule() {}
 
 // RegisterServices registers the module's message and query servers
 func (am AppModule) RegisterServices(cfg module.Configurator) {
-	// Server registration commented out - proto types need to be generated
-	// types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServer(am.keeper))
-	// types.RegisterQueryServer(cfg.QueryServer(), keeper.NewQueryServer(am.keeper))
+	economicsecuritypb.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServer(am.keeper))
+	economicsecuritypb.RegisterQueryServer(cfg.QueryServer(), keeper.NewQueryServer(am.keeper))
 }
 
 // InitGenesis initializes module state from genesis
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) {
 	var genesis types.GenesisState
 	cdc.MustUnmarshalJSON(data, &genesis)
-	// Genesis initialization - set default params if needed
-	// Keeper InitGenesis method not available
+
+	// Initialize keeper state from genesis
+	if err := am.keeper.InitGenesis(ctx, genesis); err != nil {
+		panic(err)
+	}
 }
 
 // ExportGenesis exports module state for genesis
 func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
-	genesis := types.DefaultGenesis()
-	return cdc.MustMarshalJSON(genesis)
+	genesis, err := am.keeper.ExportGenesis(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return cdc.MustMarshalJSON(&genesis)
 }
 
 // ConsensusVersion returns the consensus state-breaking version
