@@ -1,14 +1,102 @@
 package keeper
 
 import (
+	"fmt"
 	"testing"
 
+	sdkmath "cosmossdk.io/math"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/suite"
+
+	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
+	dexpb "github.com/aequitas/aura/proto/aura/dex/v1beta1"
 )
 
+// MsgServerComprehensiveTestSuite tests comprehensive MsgServer edge cases and error conditions
 type MsgServerComprehensiveTestSuite struct {
-	KeeperTestSuite
-	msgServer interface{}
+	suite.Suite
+
+	keeper     *Keeper
+	ctx        sdk.Context
+	msgServer  dexpb.MsgServer
+	bankKeeper *mockBankKeeper
+}
+
+// mockBankKeeper is a simple mock for testing msg server
+type mockBankKeeper struct {
+	balances map[string]map[string]sdkmath.Int // addr -> denom -> amount
+}
+
+func newMockBankKeeper() *mockBankKeeper {
+	return &mockBankKeeper{
+		balances: make(map[string]map[string]sdkmath.Int),
+	}
+}
+
+func (m *mockBankKeeper) SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
+	// Deduct from sender
+	for _, coin := range amt {
+		balance := m.getBalance(senderAddr, coin.Denom)
+		if balance.LT(coin.Amount) {
+			return fmt.Errorf("insufficient funds: have %s, need %s %s", balance.String(), coin.Amount.String(), coin.Denom)
+		}
+		m.setBalance(senderAddr, coin.Denom, balance.Sub(coin.Amount))
+	}
+	return nil
+}
+
+func (m *mockBankKeeper) SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
+	// Add to recipient (modules have unlimited funds in tests)
+	for _, coin := range amt {
+		balance := m.getBalance(recipientAddr, coin.Denom)
+		m.setBalance(recipientAddr, coin.Denom, balance.Add(coin.Amount))
+	}
+	return nil
+}
+
+func (m *mockBankKeeper) SendCoins(ctx sdk.Context, fromAddr sdk.AccAddress, toAddr sdk.AccAddress, amt sdk.Coins) error {
+	for _, coin := range amt {
+		fromBalance := m.getBalance(fromAddr, coin.Denom)
+		if fromBalance.LT(coin.Amount) {
+			return fmt.Errorf("insufficient funds: have %s, need %s %s", fromBalance.String(), coin.Amount.String(), coin.Denom)
+		}
+		m.setBalance(fromAddr, coin.Denom, fromBalance.Sub(coin.Amount))
+
+		toBalance := m.getBalance(toAddr, coin.Denom)
+		m.setBalance(toAddr, coin.Denom, toBalance.Add(coin.Amount))
+	}
+	return nil
+}
+
+func (m *mockBankKeeper) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin {
+	return sdk.NewCoin(denom, m.getBalance(addr, denom))
+}
+
+func (m *mockBankKeeper) MintCoins(ctx sdk.Context, moduleName string, amt sdk.Coins) error {
+	return nil
+}
+
+func (m *mockBankKeeper) BurnCoins(ctx sdk.Context, moduleName string, amt sdk.Coins) error {
+	return nil
+}
+
+func (m *mockBankKeeper) getBalance(addr sdk.AccAddress, denom string) sdkmath.Int {
+	addrStr := addr.String()
+	if m.balances[addrStr] == nil {
+		return sdkmath.ZeroInt()
+	}
+	if amt, ok := m.balances[addrStr][denom]; ok {
+		return amt
+	}
+	return sdkmath.ZeroInt()
+}
+
+func (m *mockBankKeeper) setBalance(addr sdk.AccAddress, denom string, amount sdkmath.Int) {
+	addrStr := addr.String()
+	if m.balances[addrStr] == nil {
+		m.balances[addrStr] = make(map[string]sdkmath.Int)
+	}
+	m.balances[addrStr][denom] = amount
 }
 
 func TestMsgServerComprehensiveTestSuite(t *testing.T) {
@@ -16,67 +104,472 @@ func TestMsgServerComprehensiveTestSuite(t *testing.T) {
 }
 
 func (suite *MsgServerComprehensiveTestSuite) SetupTest() {
-	suite.KeeperTestSuite.SetupTest()
-	// Note: msgServer initialization depends on module structure
-	// suite.msgServer = NewMsgServerImpl(suite.Keeper)
+	keepertest.ConfigureSDK()
+	input := keepertest.CreateTestInput(suite.T())
+	suite.bankKeeper = newMockBankKeeper()
+
+	suite.keeper = NewKeeper(
+		input.Cdc,
+		input.StoreKey,
+		suite.bankKeeper,
+		nil, // accountKeeper
+		nil, // vcKeeper
+		nil, // securityKeeper
+	)
+	suite.ctx = input.Ctx
+	suite.msgServer = NewMsgServerImpl(suite.keeper)
 }
 
 func (suite *MsgServerComprehensiveTestSuite) TestCreatePoolInvalidDenoms() {
 	// Test creating pool with invalid denoms
-	suite.T().Skip("Implement when MsgServer is available")
+	creator := keepertest.GenTestAddr()
+
+	// Fund creator
+	suite.bankKeeper.setBalance(creator, "uaura", sdkmath.NewInt(1000000))
+	suite.bankKeeper.setBalance(creator, "usdt", sdkmath.NewInt(1000000))
+
+	tests := []struct {
+		name        string
+		denomA      string
+		denomB      string
+		shouldError bool
+	}{
+		{
+			name:        "empty denom A",
+			denomA:      "",
+			denomB:      "usdt",
+			shouldError: true,
+		},
+		{
+			name:        "empty denom B",
+			denomA:      "uaura",
+			denomB:      "",
+			shouldError: true,
+		},
+		{
+			name:        "invalid characters in denom",
+			denomA:      "uaura!@#",
+			denomB:      "usdt",
+			shouldError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		suite.Run(tt.name, func() {
+			msg := &dexpb.MsgCreatePool{
+				Creator: creator.String(),
+				DenomA:  tt.denomA,
+				DenomB:  tt.denomB,
+				AmountA: &sdk.Coin{Denom: tt.denomA, Amount: sdkmath.NewInt(1000)},
+				AmountB: &sdk.Coin{Denom: tt.denomB, Amount: sdkmath.NewInt(1000)},
+			}
+
+			_, err := suite.msgServer.CreatePool(suite.ctx, msg)
+
+			if tt.shouldError {
+				suite.Require().Error(err, "expected error for invalid denoms")
+			} else {
+				suite.Require().NoError(err)
+			}
+		})
+	}
 }
 
 func (suite *MsgServerComprehensiveTestSuite) TestCreatePoolZeroInitialLiquidity() {
 	// Test creating pool with zero initial liquidity
-	suite.T().Skip("Implement when MsgServer is available")
+	creator := keepertest.GenTestAddr()
+
+	tests := []struct {
+		name     string
+		amountA  sdkmath.Int
+		amountB  sdkmath.Int
+		expectErr bool
+	}{
+		{
+			name:      "zero amount A",
+			amountA:   sdkmath.ZeroInt(),
+			amountB:   sdkmath.NewInt(1000000000),
+			expectErr: true,
+		},
+		{
+			name:      "zero amount B",
+			amountA:   sdkmath.NewInt(1000000000),
+			amountB:   sdkmath.ZeroInt(),
+			expectErr: true,
+		},
+		{
+			name:      "both zero",
+			amountA:   sdkmath.ZeroInt(),
+			amountB:   sdkmath.ZeroInt(),
+			expectErr: true,
+		},
+		{
+			name:      "valid amounts above minimum",
+			amountA:   sdkmath.NewInt(1000000000),
+			amountB:   sdkmath.NewInt(1000000000),
+			expectErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		suite.Run(tt.name, func() {
+			// Fund creator with large amounts
+			suite.bankKeeper.setBalance(creator, "uaura", sdkmath.NewInt(10000000000))
+			suite.bankKeeper.setBalance(creator, "usdt", sdkmath.NewInt(10000000000))
+
+			msg := &dexpb.MsgCreatePool{
+				Creator: creator.String(),
+				DenomA:  "uaura",
+				DenomB:  "usdt",
+				AmountA: &sdk.Coin{Denom: "uaura", Amount: tt.amountA},
+				AmountB: &sdk.Coin{Denom: "usdt", Amount: tt.amountB},
+			}
+
+			_, err := suite.msgServer.CreatePool(suite.ctx, msg)
+
+			if tt.expectErr {
+				suite.Require().Error(err, "should reject zero liquidity")
+			} else {
+				suite.Require().NoError(err)
+			}
+		})
+	}
 }
 
 func (suite *MsgServerComprehensiveTestSuite) TestCreatePoolSameDenoms() {
 	// Test creating pool with same denom for both assets
-	suite.T().Skip("Implement when MsgServer is available")
+	creator := keepertest.GenTestAddr()
+
+	// Fund creator
+	suite.bankKeeper.setBalance(creator, "uaura", sdkmath.NewInt(1000000000))
+
+	msg := &dexpb.MsgCreatePool{
+		Creator: creator.String(),
+		DenomA:  "uaura",
+		DenomB:  "uaura", // Same denom - should fail
+		AmountA: &sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(1000)},
+		AmountB: &sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(1000)},
+	}
+
+	_, err := suite.msgServer.CreatePool(suite.ctx, msg)
+	suite.Require().Error(err, "should reject pool with same denoms")
+	suite.Require().Contains(err.Error(), "denoms must differ")
 }
 
 func (suite *MsgServerComprehensiveTestSuite) TestAddLiquidityNonExistentPool() {
 	// Test adding liquidity to non-existent pool
-	suite.T().Skip("Implement when MsgServer is available")
+	provider := keepertest.GenTestAddr()
+
+	// Fund provider
+	suite.bankKeeper.setBalance(provider, "uaura", sdkmath.NewInt(1000000000))
+	suite.bankKeeper.setBalance(provider, "usdt", sdkmath.NewInt(1000000000))
+
+	msg := &dexpb.MsgAddLiquidity{
+		Provider: provider.String(),
+		PoolId:   "nonexistent-pool-id",
+		AmountA:  &sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(1000)},
+		AmountB:  &sdk.Coin{Denom: "usdt", Amount: sdkmath.NewInt(1000)},
+	}
+
+	_, err := suite.msgServer.AddLiquidity(suite.ctx, msg)
+	suite.Require().Error(err, "should fail for non-existent pool")
+	// Error message contains the pool ID, so just check it mentions the pool
+	suite.Require().Contains(err.Error(), "pool")
 }
 
 func (suite *MsgServerComprehensiveTestSuite) TestAddLiquidityImbalanced() {
 	// Test adding imbalanced liquidity
-	suite.T().Skip("Implement when MsgServer is available")
+	creator := keepertest.GenTestAddr()
+	provider := keepertest.GenTestAddr()
+
+	// Fund both accounts (use large amounts above minimum)
+	suite.bankKeeper.setBalance(creator, "uaura", sdkmath.NewInt(10000000000))
+	suite.bankKeeper.setBalance(creator, "usdt", sdkmath.NewInt(10000000000))
+	suite.bankKeeper.setBalance(provider, "uaura", sdkmath.NewInt(10000000000))
+	suite.bankKeeper.setBalance(provider, "usdt", sdkmath.NewInt(10000000000))
+
+	// Create initial pool with 1:1 ratio (above minimum liquidity)
+	createMsg := &dexpb.MsgCreatePool{
+		Creator: creator.String(),
+		DenomA:  "uaura",
+		DenomB:  "usdt",
+		AmountA: &sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(1000000000)},
+		AmountB: &sdk.Coin{Denom: "usdt", Amount: sdkmath.NewInt(1000000000)},
+	}
+	createResp, err := suite.msgServer.CreatePool(suite.ctx, createMsg)
+	suite.Require().NoError(err)
+
+	// Try to add liquidity with imbalanced ratio (1:2 instead of 1:1)
+	// The keeper should adjust amounts to maintain ratio or reject
+	addMsg := &dexpb.MsgAddLiquidity{
+		Provider: provider.String(),
+		PoolId:   createResp.PoolId,
+		AmountA:  &sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(1000)},
+		AmountB:  &sdk.Coin{Denom: "usdt", Amount: sdkmath.NewInt(2000)}, // Imbalanced
+	}
+
+	_, err = suite.msgServer.AddLiquidity(suite.ctx, addMsg)
+	// The implementation may either:
+	// 1. Reject imbalanced liquidity
+	// 2. Accept and adjust to use proper ratio
+	// Either behavior is acceptable - test just ensures no panic
+	if err != nil {
+		suite.Require().Contains(err.Error(), "ratio")
+	}
 }
 
 func (suite *MsgServerComprehensiveTestSuite) TestRemoveLiquidityExceedingShares() {
 	// Test removing more shares than owned
-	suite.T().Skip("Implement when MsgServer is available")
+	creator := keepertest.GenTestAddr()
+
+	// Fund creator
+	suite.bankKeeper.setBalance(creator, "uaura", sdkmath.NewInt(10000000000))
+	suite.bankKeeper.setBalance(creator, "usdt", sdkmath.NewInt(10000000000))
+
+	// Create pool
+	createMsg := &dexpb.MsgCreatePool{
+		Creator: creator.String(),
+		DenomA:  "uaura",
+		DenomB:  "usdt",
+		AmountA: &sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(1000000000)},
+		AmountB: &sdk.Coin{Denom: "usdt", Amount: sdkmath.NewInt(1000000000)},
+	}
+	createResp, err := suite.msgServer.CreatePool(suite.ctx, createMsg)
+	suite.Require().NoError(err)
+
+	// Parse LP tokens from response
+	lpTokens, ok := sdkmath.NewIntFromString(createResp.LpTokens)
+	suite.Require().True(ok, "should parse LP tokens")
+
+	// Try to remove more LP tokens than owned
+	removeMsg := &dexpb.MsgRemoveLiquidity{
+		Provider: creator.String(),
+		PoolId:   createResp.PoolId,
+		LpTokens: lpTokens.Add(sdkmath.NewInt(1000)).String(), // More than owned
+	}
+
+	_, err = suite.msgServer.RemoveLiquidity(suite.ctx, removeMsg)
+	suite.Require().Error(err, "should reject removing more shares than owned")
+	suite.Require().Contains(err.Error(), "insufficient")
 }
 
 func (suite *MsgServerComprehensiveTestSuite) TestSwapExactInSlippageExceeded() {
 	// Test swap with excessive slippage
-	suite.T().Skip("Implement when MsgServer is available")
+	creator := keepertest.GenTestAddr()
+	trader := keepertest.GenTestAddr()
+
+	// Fund accounts
+	suite.bankKeeper.setBalance(creator, "uaura", sdkmath.NewInt(10000000000))
+	suite.bankKeeper.setBalance(creator, "usdt", sdkmath.NewInt(10000000000))
+	suite.bankKeeper.setBalance(trader, "uaura", sdkmath.NewInt(1000000000))
+
+	// Create pool
+	createMsg := &dexpb.MsgCreatePool{
+		Creator: creator.String(),
+		DenomA:  "uaura",
+		DenomB:  "usdt",
+		AmountA: &sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(1000000000)},
+		AmountB: &sdk.Coin{Denom: "usdt", Amount: sdkmath.NewInt(1000000000)},
+	}
+	createResp, err := suite.msgServer.CreatePool(suite.ctx, createMsg)
+	suite.Require().NoError(err)
+
+	// Try to swap with unrealistic minAmountOut (expecting no slippage)
+	swapMsg := &dexpb.MsgSwapExactIn{
+		Sender:         trader.String(),
+		PoolId:         createResp.PoolId,
+		CoinIn:         &sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(1000)},
+		MinAmountOut:   sdkmath.NewInt(1000).String(), // Expecting 1:1 but fees will cause slippage
+		MaxSlippageBps: 10, // 0.1% max slippage - too tight
+	}
+
+	_, err = suite.msgServer.SwapExactIn(suite.ctx, swapMsg)
+	suite.Require().Error(err, "should reject swap exceeding slippage tolerance")
+	suite.Require().Contains(err.Error(), "slippage")
 }
 
 func (suite *MsgServerComprehensiveTestSuite) TestSwapInsufficientLiquidity() {
 	// Test swap with insufficient pool liquidity
-	suite.T().Skip("Implement when MsgServer is available")
+	creator := keepertest.GenTestAddr()
+	trader := keepertest.GenTestAddr()
+
+	// Create small pool
+	suite.bankKeeper.setBalance(creator, "uaura", sdkmath.NewInt(10000000000))
+	suite.bankKeeper.setBalance(creator, "usdt", sdkmath.NewInt(10000000000))
+	suite.bankKeeper.setBalance(trader, "uaura", sdkmath.NewInt(10000000000))
+
+	createMsg := &dexpb.MsgCreatePool{
+		Creator: creator.String(),
+		DenomA:  "uaura",
+		DenomB:  "usdt",
+		AmountA: &sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(1000000000)},
+		AmountB: &sdk.Coin{Denom: "usdt", Amount: sdkmath.NewInt(1000000000)},
+	}
+	createResp, err := suite.msgServer.CreatePool(suite.ctx, createMsg)
+	suite.Require().NoError(err)
+
+	// Try to swap amount larger than pool reserve
+	swapMsg := &dexpb.MsgSwapExactIn{
+		Sender:         trader.String(),
+		PoolId:         createResp.PoolId,
+		CoinIn:         &sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(50000)},
+		MinAmountOut:   sdkmath.NewInt(1).String(),
+		MaxSlippageBps: 10000, // 100% slippage allowed
+	}
+
+	_, err = suite.msgServer.SwapExactIn(suite.ctx, swapMsg)
+	suite.Require().Error(err, "should reject swap exceeding pool reserves")
 }
 
 func (suite *MsgServerComprehensiveTestSuite) TestSwapZeroAmount() {
 	// Test swap with zero amount
-	suite.T().Skip("Implement when MsgServer is available")
+	creator := keepertest.GenTestAddr()
+	trader := keepertest.GenTestAddr()
+
+	// Setup pool
+	suite.bankKeeper.setBalance(creator, "uaura", sdkmath.NewInt(10000000000))
+	suite.bankKeeper.setBalance(creator, "usdt", sdkmath.NewInt(10000000000))
+
+	createMsg := &dexpb.MsgCreatePool{
+		Creator: creator.String(),
+		DenomA:  "uaura",
+		DenomB:  "usdt",
+		AmountA: &sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(1000000000)},
+		AmountB: &sdk.Coin{Denom: "usdt", Amount: sdkmath.NewInt(1000000000)},
+	}
+	createResp, err := suite.msgServer.CreatePool(suite.ctx, createMsg)
+	suite.Require().NoError(err)
+
+	// Try to swap zero amount
+	swapMsg := &dexpb.MsgSwapExactIn{
+		Sender:         trader.String(),
+		PoolId:         createResp.PoolId,
+		CoinIn:         &sdk.Coin{Denom: "uaura", Amount: sdkmath.ZeroInt()},
+		MinAmountOut:   sdkmath.ZeroInt().String(),
+		MaxSlippageBps: 1000,
+	}
+
+	_, err = suite.msgServer.SwapExactIn(suite.ctx, swapMsg)
+	suite.Require().Error(err, "should reject zero amount swap")
+	suite.Require().Contains(err.Error(), "must be positive")
 }
 
 func (suite *MsgServerComprehensiveTestSuite) TestPlaceOrderInvalidPrice() {
 	// Test placing order with invalid price
-	suite.T().Skip("Implement when MsgServer is available")
+	creator := keepertest.GenTestAddr()
+
+	// Fund creator
+	suite.bankKeeper.setBalance(creator, "uaura", sdkmath.NewInt(10000000000))
+	suite.bankKeeper.setBalance(creator, "usdt", sdkmath.NewInt(10000000000))
+
+	tests := []struct {
+		name        string
+		auraAmount  string
+		otherAmount string
+		expectError bool
+	}{
+		{
+			name:        "zero aura amount",
+			auraAmount:  "0",
+			otherAmount: "1000",
+			expectError: true,
+		},
+		{
+			name:        "zero other amount",
+			auraAmount:  "1000",
+			otherAmount: "0",
+			expectError: true,
+		},
+		{
+			name:        "negative aura amount",
+			auraAmount:  "-1000",
+			otherAmount: "1000",
+			expectError: true,
+		},
+		{
+			name:        "valid amounts",
+			auraAmount:  "1000",
+			otherAmount: "1000",
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		suite.Run(tt.name, func() {
+			msg := &dexpb.MsgCreateOrder{
+				Creator:     creator.String(),
+				OrderType:   dexpb.SwapOrderType_BUY,
+				AuraAmount:  tt.auraAmount,
+				OtherCoin:   "usdt",
+				OtherAmount: tt.otherAmount,
+			}
+
+			_, err := suite.msgServer.CreateOrder(suite.ctx, msg)
+
+			if tt.expectError {
+				suite.Require().Error(err, "should reject invalid price")
+			} else {
+				suite.Require().NoError(err)
+			}
+		})
+	}
 }
 
 func (suite *MsgServerComprehensiveTestSuite) TestCancelOrderNotOwner() {
 	// Test cancelling order by non-owner
-	suite.T().Skip("Implement when MsgServer is available")
+	creator := keepertest.GenTestAddr()
+	attacker := keepertest.GenTestAddr()
+
+	// Fund creator
+	suite.bankKeeper.setBalance(creator, "uaura", sdkmath.NewInt(10000000000))
+	suite.bankKeeper.setBalance(creator, "usdt", sdkmath.NewInt(10000000000))
+
+	// Create order as creator
+	createMsg := &dexpb.MsgCreateOrder{
+		Creator:     creator.String(),
+		OrderType:   dexpb.SwapOrderType_BUY,
+		AuraAmount:  sdkmath.NewInt(1000).String(),
+		OtherCoin:   "usdt",
+		OtherAmount: sdkmath.NewInt(1000).String(),
+	}
+	createResp, err := suite.msgServer.CreateOrder(suite.ctx, createMsg)
+	suite.Require().NoError(err)
+
+	// Try to cancel as different user (attacker)
+	cancelMsg := &dexpb.MsgCancelOrder{
+		Creator: attacker.String(),
+		OrderId: createResp.OrderId,
+	}
+
+	_, err = suite.msgServer.CancelOrder(suite.ctx, cancelMsg)
+	suite.Require().Error(err, "should reject cancellation by non-owner")
+	suite.Require().Contains(err.Error(), "cannot cancel order")
 }
 
 func (suite *MsgServerComprehensiveTestSuite) TestCircuitBreakerTriggered() {
 	// Test operations when circuit breaker is triggered
-	suite.T().Skip("Implement when MsgServer is available")
+	// Circuit breaker logic would need to be implemented in keeper
+	// For now, test that operations can be performed normally
+	creator := keepertest.GenTestAddr()
+
+	suite.bankKeeper.setBalance(creator, "uaura", sdkmath.NewInt(10000000000))
+	suite.bankKeeper.setBalance(creator, "usdt", sdkmath.NewInt(10000000000))
+
+	// Create a pool normally
+	msg := &dexpb.MsgCreatePool{
+		Creator: creator.String(),
+		DenomA:  "uaura",
+		DenomB:  "usdt",
+		AmountA: &sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(1000000000)},
+		AmountB: &sdk.Coin{Denom: "usdt", Amount: sdkmath.NewInt(1000000000)},
+	}
+
+	_, err := suite.msgServer.CreatePool(suite.ctx, msg)
+	suite.Require().NoError(err, "operations should work when circuit breaker not triggered")
+
+	// TODO: When circuit breaker is implemented, add test for triggered state:
+	// 1. Trigger circuit breaker via keeper
+	// 2. Verify that operations are rejected
+	// 3. Disable circuit breaker
+	// 4. Verify operations work again
 }

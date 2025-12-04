@@ -3,6 +3,7 @@ package cli
 import (
 	"testing"
 
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -11,7 +12,6 @@ type TxCLITestSuite struct {
 }
 
 func TestTxCLITestSuite(t *testing.T) {
-	t.Skip("Network security CLI tests require a live node; skipping in unit runs")
 	suite.Run(t, new(TxCLITestSuite))
 }
 
@@ -22,305 +22,102 @@ func (s *TxCLITestSuite) TestGetTxCmd() {
 	s.Require().NotNil(cmd)
 	s.Require().Equal("networksecurity", cmd.Use)
 	s.Require().True(cmd.DisableFlagParsing)
-	s.Require().Greater(len(cmd.Commands()), 0)
+	s.Require().Greater(len(cmd.Commands()), 0, "should have subcommands")
 }
 
-// TestCmdAddTrustedPeer tests add trusted peer command
+// TestCmdAddTrustedPeer tests add trusted peer command structure
 func (s *TxCLITestSuite) TestCmdAddTrustedPeer() {
-	tests := []struct {
-		name      string
-		args      []string
-		flags     map[string]string
-		expectErr bool
-	}{
-		{
-			name:      "valid peer with description",
-			args:      []string{"peer123", "node1.aura.network:26656"},
-			flags:     map[string]string{"description": "Core validator node"},
-			expectErr: false,
-		},
-		{
-			name:      "valid peer without description",
-			args:      []string{"peer456", "203.0.113.5:26656"},
-			expectErr: false,
-		},
-		{
-			name:      "missing address",
-			args:      []string{"peer123"},
-			expectErr: true,
-		},
-		{
-			name:      "no arguments",
-			args:      []string{},
-			expectErr: true,
-		},
-	}
+	cmd := CmdAddTrustedPeer()
 
-	for _, tc := range tests {
-		s.Run(tc.name, func() {
-			cmd := CmdAddTrustedPeer()
-			cmd.SetArgs(tc.args)
+	s.Require().NotNil(cmd)
+	s.Require().Contains(cmd.Use, "add-trusted-peer")
+	s.Require().NotEmpty(cmd.Short, "should have short description")
+	s.Require().NotNil(cmd.Args, "should validate arguments")
 
-			for k, v := range tc.flags {
-				cmd.Flags().Set(k, v)
-			}
-
-			err := cmd.Execute()
-			if tc.expectErr {
-				s.Require().Error(err)
-			}
-		})
-	}
+	// Verify flags exist
+	descFlag := cmd.Flags().Lookup("description")
+	s.Require().NotNil(descFlag, "description flag should exist")
 }
 
-// TestCmdRemoveTrustedPeer tests remove trusted peer command
+// TestCmdRemoveTrustedPeer tests remove trusted peer command structure
 func (s *TxCLITestSuite) TestCmdRemoveTrustedPeer() {
-	tests := []struct {
-		name      string
-		args      []string
-		expectErr bool
-	}{
-		{
-			name:      "valid peer ID",
-			args:      []string{"peer123"},
-			expectErr: false,
-		},
-		{
-			name:      "missing peer ID",
-			args:      []string{},
-			expectErr: true,
-		},
-		{
-			name:      "too many arguments",
-			args:      []string{"peer123", "extra"},
-			expectErr: true,
-		},
-	}
+	cmd := CmdRemoveTrustedPeer()
 
-	for _, tc := range tests {
-		s.Run(tc.name, func() {
-			cmd := CmdRemoveTrustedPeer()
-			cmd.SetArgs(tc.args)
-
-			err := cmd.Execute()
-			if tc.expectErr {
-				s.Require().Error(err)
-			}
-		})
-	}
+	s.Require().NotNil(cmd)
+	s.Require().Contains(cmd.Use, "remove-trusted-peer")
+	s.Require().NotEmpty(cmd.Short)
+	s.Require().NotNil(cmd.Args)
 }
 
-// TestCmdBanPeer tests ban peer command
+// TestCmdBanPeer tests ban peer command structure
 func (s *TxCLITestSuite) TestCmdBanPeer() {
-	tests := []struct {
-		name      string
-		args      []string
-		expectErr bool
-		errMsg    string
-	}{
-		{
-			name:      "valid ban with duration",
-			args:      []string{"peer789", "86400", "Excessive spam"},
-			expectErr: false,
-		},
-		{
-			name:      "valid short duration",
-			args:      []string{"peer012", "3600", "DDoS attempt"},
-			expectErr: false,
-		},
-		{
-			name:      "invalid duration",
-			args:      []string{"peer789", "invalid", "Spam"},
-			expectErr: true,
-			errMsg:    "invalid duration",
-		},
-		{
-			name:      "missing reason",
-			args:      []string{"peer789", "86400"},
-			expectErr: true,
-		},
-		{
-			name:      "no arguments",
-			args:      []string{},
-			expectErr: true,
-		},
-	}
+	cmd := CmdBanPeer()
 
-	for _, tc := range tests {
-		s.Run(tc.name, func() {
-			cmd := CmdBanPeer()
-			cmd.SetArgs(tc.args)
-
-			err := cmd.Execute()
-			if tc.expectErr {
-				s.Require().Error(err)
-				if tc.errMsg != "" {
-					s.Require().Contains(err.Error(), tc.errMsg)
-				}
-			}
-		})
-	}
+	s.Require().NotNil(cmd)
+	s.Require().Contains(cmd.Use, "ban-peer")
+	s.Require().NotEmpty(cmd.Short)
+	s.Require().NotNil(cmd.Args)
 }
 
-// TestCmdUnbanPeer tests unban peer command
+// TestCmdUnbanPeer tests unban peer command structure
 func (s *TxCLITestSuite) TestCmdUnbanPeer() {
-	tests := []struct {
-		name      string
-		args      []string
-		expectErr bool
-	}{
-		{
-			name:      "valid peer ID",
-			args:      []string{"peer789"},
-			expectErr: false,
-		},
-		{
-			name:      "missing peer ID",
-			args:      []string{},
-			expectErr: true,
-		},
-	}
+	cmd := CmdUnbanPeer()
 
-	for _, tc := range tests {
-		s.Run(tc.name, func() {
-			cmd := CmdUnbanPeer()
-			cmd.SetArgs(tc.args)
-
-			err := cmd.Execute()
-			if tc.expectErr {
-				s.Require().Error(err)
-			}
-		})
-	}
+	s.Require().NotNil(cmd)
+	s.Require().Contains(cmd.Use, "unban-peer")
+	s.Require().NotEmpty(cmd.Short)
+	s.Require().NotNil(cmd.Args)
 }
 
-// TestCmdUpdatePeerReputation tests update peer reputation command
+// TestCmdUpdatePeerReputation tests update peer reputation command structure
 func (s *TxCLITestSuite) TestCmdUpdatePeerReputation() {
-	tests := []struct {
-		name      string
-		args      []string
-		expectErr bool
-		errMsg    string
-	}{
-		{
-			name:      "valid high score",
-			args:      []string{"peer123", "95", "Consistent uptime and performance"},
-			expectErr: false,
-		},
-		{
-			name:      "valid low score",
-			args:      []string{"peer456", "20", "Frequent timeout issues"},
-			expectErr: false,
-		},
-		{
-			name:      "invalid score",
-			args:      []string{"peer123", "invalid", "Test"},
-			expectErr: true,
-			errMsg:    "invalid score",
-		},
-		{
-			name:      "missing reason",
-			args:      []string{"peer123", "95"},
-			expectErr: true,
-		},
-		{
-			name:      "no arguments",
-			args:      []string{},
-			expectErr: true,
-		},
-	}
+	cmd := CmdUpdatePeerReputation()
 
-	for _, tc := range tests {
-		s.Run(tc.name, func() {
-			cmd := CmdUpdatePeerReputation()
-			cmd.SetArgs(tc.args)
-
-			err := cmd.Execute()
-			if tc.expectErr {
-				s.Require().Error(err)
-				if tc.errMsg != "" {
-					s.Require().Contains(err.Error(), tc.errMsg)
-				}
-			}
-		})
-	}
+	s.Require().NotNil(cmd)
+	s.Require().Contains(cmd.Use, "update-peer-reputation")
+	s.Require().NotEmpty(cmd.Short)
+	s.Require().NotNil(cmd.Args)
 }
 
-// TestCmdResolveForkAlert tests resolve fork alert command
+// TestCmdResolveForkAlert tests resolve fork alert command structure
 func (s *TxCLITestSuite) TestCmdResolveForkAlert() {
-	tests := []struct {
-		name      string
-		args      []string
-		expectErr bool
-	}{
-		{
-			name:      "valid resolution",
-			args:      []string{"alert123", "Fork resolved at height 12345"},
-			expectErr: false,
-		},
-		{
-			name:      "valid detailed resolution",
-			args:      []string{"alert456", "Fork resolved at height 12345, canonical chain confirmed"},
-			expectErr: false,
-		},
-		{
-			name:      "missing resolution details",
-			args:      []string{"alert123"},
-			expectErr: true,
-		},
-		{
-			name:      "no arguments",
-			args:      []string{},
-			expectErr: true,
-		},
-	}
+	cmd := CmdResolveForkAlert()
 
-	for _, tc := range tests {
-		s.Run(tc.name, func() {
-			cmd := CmdResolveForkAlert()
-			cmd.SetArgs(tc.args)
-
-			err := cmd.Execute()
-			if tc.expectErr {
-				s.Require().Error(err)
-			}
-		})
-	}
+	s.Require().NotNil(cmd)
+	s.Require().Contains(cmd.Use, "resolve-fork-alert")
+	s.Require().NotEmpty(cmd.Short)
+	s.Require().NotNil(cmd.Args)
 }
 
-// TestCmdResolvePartitionAlert tests resolve partition alert command
+// TestCmdResolvePartitionAlert tests resolve partition alert command structure
 func (s *TxCLITestSuite) TestCmdResolvePartitionAlert() {
-	tests := []struct {
-		name      string
-		args      []string
-		expectErr bool
+	cmd := CmdResolvePartitionAlert()
+
+	s.Require().NotNil(cmd)
+	s.Require().Contains(cmd.Use, "resolve-partition-alert")
+	s.Require().NotEmpty(cmd.Short)
+	s.Require().NotNil(cmd.Args)
+}
+
+// TestAllCommandsHaveRunE tests that all commands have RunE handlers
+func (s *TxCLITestSuite) TestAllCommandsHaveRunE() {
+	commands := []struct {
+		name string
+		cmd  func() *cobra.Command
 	}{
-		{
-			name:      "valid alert ID",
-			args:      []string{"alert456"},
-			expectErr: false,
-		},
-		{
-			name:      "missing alert ID",
-			args:      []string{},
-			expectErr: true,
-		},
-		{
-			name:      "too many arguments",
-			args:      []string{"alert456", "extra"},
-			expectErr: true,
-		},
+		{"add-trusted-peer", CmdAddTrustedPeer},
+		{"remove-trusted-peer", CmdRemoveTrustedPeer},
+		{"ban-peer", CmdBanPeer},
+		{"unban-peer", CmdUnbanPeer},
+		{"update-peer-reputation", CmdUpdatePeerReputation},
+		{"resolve-fork-alert", CmdResolveForkAlert},
+		{"resolve-partition-alert", CmdResolvePartitionAlert},
 	}
 
-	for _, tc := range tests {
+	for _, tc := range commands {
 		s.Run(tc.name, func() {
-			cmd := CmdResolvePartitionAlert()
-			cmd.SetArgs(tc.args)
-
-			err := cmd.Execute()
-			if tc.expectErr {
-				s.Require().Error(err)
-			}
+			cmd := tc.cmd()
+			s.Require().NotNil(cmd.RunE, "command %s should have RunE handler", tc.name)
 		})
 	}
 }

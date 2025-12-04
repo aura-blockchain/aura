@@ -448,42 +448,106 @@ func TestGetScoreHistory(t *testing.T) {
 }
 
 func TestGetSlashRecords(t *testing.T) {
-	t.Skip("legacy expectations not aligned with current keeper storage; revisit")
 	ctx, k := setupConfKeeperWithTime(t)
 	ctx = ctx.WithBlockHeight(100).WithBlockTime(time.Now())
 
 	walletAddr := "aura1test"
 
-	// No slash records
+	// Test 1: No slash records for new wallet
 	records := k.GetSlashRecords(ctx, walletAddr)
 	if len(records) != 0 {
 		t.Errorf("expected 0 slash records, got %d", len(records))
 	}
 
-	// Create user and slash
+	// Test 2: Create user and perform slashes
 	record := types.UserConfidenceRecord{
 		WalletAddress: walletAddr,
 		TotalScore:    10000,
 	}
 	k.SetUserRecord(ctx, record)
 
-	k.SlashScore(ctx, walletAddr, "IR-001", 1000, types.SlashReasonFraudDetected, "gov1", "ev1")
-	k.SlashScore(ctx, walletAddr, "IR-002", 500, types.SlashReasonCollusion, "gov1", "ev2")
+	// First slash
+	_, _, _, slashTxHash1, err := k.SlashScore(ctx, walletAddr, "IR-001", 1000, types.SlashReasonFraudDetected, "gov1", "ev1")
+	if err != nil {
+		t.Fatalf("failed to create first slash: %v", err)
+	}
 
-	// Get slash records
+	// Second slash (move forward in time to ensure different tx hash)
+	ctx = ctx.WithBlockHeight(101)
+	_, _, _, slashTxHash2, err := k.SlashScore(ctx, walletAddr, "IR-002", 500, types.SlashReasonCollusion, "gov1", "ev2")
+	if err != nil {
+		t.Fatalf("failed to create second slash: %v", err)
+	}
+
+	// Test 3: Get all slash records
 	records = k.GetSlashRecords(ctx, walletAddr)
 	if len(records) != 2 {
 		t.Errorf("expected 2 slash records, got %d", len(records))
 	}
 
-	// Verify details
-	if records[0].SlashAmount != 1000 && records[1].SlashAmount != 1000 {
-		t.Error("expected one slash with amount 1000")
+	// Test 4: Verify specific slash records exist and have correct data
+	slash1, ok1 := k.GetSlashRecord(ctx, walletAddr, slashTxHash1)
+	if !ok1 {
+		t.Error("expected first slash record to exist")
+	} else {
+		if slash1.SlashAmount != 1000 {
+			t.Errorf("expected slash amount 1000, got %d", slash1.SlashAmount)
+		}
+		if slash1.Reason != types.SlashReasonFraudDetected {
+			t.Errorf("expected fraud reason, got %v", slash1.Reason)
+		}
+		if slash1.RelatedIrId != "IR-001" {
+			t.Errorf("expected IR-001, got %s", slash1.RelatedIrId)
+		}
+		if slash1.WalletAddress != walletAddr {
+			t.Errorf("expected wallet %s, got %s", walletAddr, slash1.WalletAddress)
+		}
 	}
 
-	if records[0].Reason != types.SlashReasonFraudDetected &&
-		records[1].Reason != types.SlashReasonFraudDetected {
-		t.Error("expected one slash with fraud reason")
+	slash2, ok2 := k.GetSlashRecord(ctx, walletAddr, slashTxHash2)
+	if !ok2 {
+		t.Error("expected second slash record to exist")
+	} else {
+		if slash2.SlashAmount != 500 {
+			t.Errorf("expected slash amount 500, got %d", slash2.SlashAmount)
+		}
+		if slash2.Reason != types.SlashReasonCollusion {
+			t.Errorf("expected collusion reason, got %v", slash2.Reason)
+		}
+		if slash2.RelatedIrId != "IR-002" {
+			t.Errorf("expected IR-002, got %s", slash2.RelatedIrId)
+		}
+	}
+
+	// Test 5: Verify records match what GetSlashRecords returns
+	foundSlash1 := false
+	foundSlash2 := false
+	for _, rec := range records {
+		if rec.SlashTxHash == slashTxHash1 {
+			foundSlash1 = true
+			if rec.SlashAmount != 1000 {
+				t.Error("slash 1 amount mismatch in GetSlashRecords")
+			}
+		}
+		if rec.SlashTxHash == slashTxHash2 {
+			foundSlash2 = true
+			if rec.SlashAmount != 500 {
+				t.Error("slash 2 amount mismatch in GetSlashRecords")
+			}
+		}
+	}
+	if !foundSlash1 {
+		t.Error("slash 1 not found in GetSlashRecords")
+	}
+	if !foundSlash2 {
+		t.Error("slash 2 not found in GetSlashRecords")
+	}
+
+	// Test 6: Test isolation - different wallet should not see these slashes
+	otherWallet := "aura1other"
+	otherRecords := k.GetSlashRecords(ctx, otherWallet)
+	if len(otherRecords) != 0 {
+		t.Errorf("expected 0 records for different wallet, got %d", len(otherRecords))
 	}
 }
 

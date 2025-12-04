@@ -191,8 +191,76 @@ func TestSwapOverflowPrevention(t *testing.T) {
 
 // TestGetQuoteOverflowPrevention tests that quotes reject overflow
 func TestGetQuoteOverflowPrevention(t *testing.T) {
-	// Skip actual pool creation for now as it requires bank keeper setup
-	t.Skip("Test requires full integration setup with bank keeper")
+	k, ctx, mockBank := setupTestKeeper(t)
+	creator := keepertest.GenTestAddr()
+
+	// Setup: Create a pool first
+	tokenA := "uaura"
+	tokenB := "usdt"
+	poolLiquidityA := sdk.NewCoin(tokenA, sdkmath.NewInt(1_000_000_000))
+	poolLiquidityB := sdk.NewCoin(tokenB, sdkmath.NewInt(1_000_000_000))
+
+	// Fund creator and create pool
+	mockBank.SetBalance(creator, tokenA, poolLiquidityA.Amount)
+	mockBank.SetBalance(creator, tokenB, poolLiquidityB.Amount)
+
+	poolID := k.GeneratePoolID(tokenA, tokenB)
+	pool, _, err := k.CreatePool(ctx, creator.String(), tokenA, tokenB, poolLiquidityA, poolLiquidityB)
+	require.NoError(t, err, "Pool creation should succeed")
+
+	tests := []struct {
+		name          string
+		amountIn      sdkmath.Int
+		expectError   bool
+		errorContains string
+	}{
+		{
+			name:        "normal quote amount",
+			amountIn:    sdkmath.NewInt(1_000_000),
+			expectError: false,
+		},
+		{
+			name:        "large but safe quote amount",
+			amountIn:    sdkmath.NewInt(100_000_000),
+			expectError: false,
+		},
+		{
+			name:          "extremely large quote - should be rejected",
+			amountIn:      sdkmath.NewInt(1_000_000_000_000_000),
+			expectError:   true,
+			errorContains: "exceeds maximum",
+		},
+		{
+			name:          "zero amount rejected",
+			amountIn:      sdkmath.ZeroInt(),
+			expectError:   true,
+			errorContains: "must be positive",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Get quote for swapping tokenA -> tokenB
+			// GetQuote returns: (amountOut, effectivePrice, priceImpact, fee, error)
+			amountOut, _, _, _, err := k.GetQuote(ctx, poolID, tokenA, tt.amountIn)
+
+			if tt.expectError {
+				require.Error(t, err)
+				if tt.errorContains != "" {
+					require.Contains(t, err.Error(), tt.errorContains)
+				}
+			} else {
+				require.NoError(t, err)
+				require.False(t, amountOut.IsNegative(), "quote output should never be negative")
+				require.True(t, amountOut.IsPositive(), "quote output should be positive for valid input")
+
+				// Verify the quote makes sense (less than pool reserve due to fees)
+				reserveB, ok := sdkmath.NewIntFromString(pool.ReserveB)
+				require.True(t, ok, "should parse pool reserve B")
+				require.True(t, amountOut.LT(reserveB), "output quote should be less than pool reserve")
+			}
+		})
+	}
 }
 
 // TestExtremeValueRejection tests that extremely large values that would overflow are rejected

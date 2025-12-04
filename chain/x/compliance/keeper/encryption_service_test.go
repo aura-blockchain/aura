@@ -557,9 +557,7 @@ func TestKeyRotation(t *testing.T) {
 // ============================================================================
 
 func TestEncryptionPerformance(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping performance test in short mode")
-	}
+	// Performance test runs in all modes to verify encryption meets production requirements
 
 	masterKey := generateRandomKey(t)
 	service, err := NewEncryptionService(masterKey)
