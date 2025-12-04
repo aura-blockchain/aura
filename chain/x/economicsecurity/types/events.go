@@ -4,14 +4,15 @@ import "fmt"
 
 // Event types for the economicsecurity module
 const (
-	EventTypeFeeAdjusted           = "fee_adjusted"
-	EventTypeMEVDetected           = "mev_detected"
-	EventTypeMEVPrevented          = "mev_prevented"
-	EventTypeWhaleLimitTriggered   = "whale_limit_triggered"
+	EventTypeFeeAdjusted             = "fee_adjusted"
+	EventTypeMEVDetected             = "mev_detected"
+	EventTypeMEVPrevented            = "mev_prevented"
+	EventTypeWhaleLimitTriggered     = "whale_limit_triggered"
 	EventTypeCircuitBreakerTriggered = "circuit_breaker_triggered"
-	EventTypeCircuitBreakerReset   = "circuit_breaker_reset"
-	EventTypeCongestionDetected    = "congestion_detected"
-	EventTypeParamsUpdated         = "params_updated"
+	EventTypeCircuitBreakerReset     = "circuit_breaker_reset"
+	EventTypeCongestionDetected      = "congestion_detected"
+	EventTypeParamsUpdated           = "params_updated"
+	EventTypeInflationAdjusted       = "inflation_adjusted"
 )
 
 // Event attribute keys
@@ -36,6 +37,9 @@ const (
 	AttributeKeyBlockHeight       = "block_height"
 	AttributeKeyBlockTime         = "block_time"
 	AttributeKeyTimestamp         = "timestamp"
+	AttributeKeyOldRate           = "old_rate"
+	AttributeKeyNewRate           = "new_rate"
+	AttributeKeyAuthority         = "authority"
 )
 
 // Helper functions for creating event attributes
