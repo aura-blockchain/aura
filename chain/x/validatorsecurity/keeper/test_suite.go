@@ -75,7 +75,6 @@ func (suite *KeeperTestSuite) TearDownTest() {
 
 // TestKeeperTestSuite runs the keeper test suite
 func TestKeeperTestSuite(t *testing.T) {
-	t.Skip("Validatorsecurity keeper tests require full staking context; skipping in this run")
 	suite.Run(t, new(KeeperTestSuite))
 }
 

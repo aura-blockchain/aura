@@ -93,8 +93,8 @@ func (suite *KeeperTestSuite) TestRecordSentryRequest() {
 	// Verify counts
 	node, err := suite.keeper.GetSentryNodeInfo(suite.ctx, "sentry1")
 	suite.Require().NoError(err)
-	suite.Require().Equal(uint64(2), node.RequestCount)
-	suite.Require().Equal(uint64(1), node.BlockedRequests)
+	suite.Require().Equal(int64(2), node.RequestCount)
+	suite.Require().Equal(int64(1), node.BlockedRequests)
 }
 
 func (suite *KeeperTestSuite) TestRecordSentryRequestNotFound() {

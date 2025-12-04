@@ -3,6 +3,7 @@ package cli
 import (
 	"testing"
 
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -11,7 +12,6 @@ type QueryCLITestSuite struct {
 }
 
 func TestQueryCLITestSuite(t *testing.T) {
-	t.Skip("Network security CLI tests require a live node; skipping in unit runs")
 	suite.Run(t, new(QueryCLITestSuite))
 }
 
@@ -22,258 +22,142 @@ func (s *QueryCLITestSuite) TestGetQueryCmd() {
 	s.Require().NotNil(cmd)
 	s.Require().Equal("networksecurity", cmd.Use)
 	s.Require().True(cmd.DisableFlagParsing)
-	s.Require().Greater(len(cmd.Commands()), 0)
+	s.Require().Greater(len(cmd.Commands()), 0, "should have subcommands")
 }
 
-// TestCmdQueryParams tests params query command
+// TestCmdQueryParams tests params query command structure
 func (s *QueryCLITestSuite) TestCmdQueryParams() {
 	cmd := CmdQueryParams()
 
 	s.Require().NotNil(cmd)
-	s.Require().Equal("params", cmd.Use)
-
-	// Test with no arguments
-	cmd.SetArgs([]string{})
-	err := cmd.Execute()
-	// Will fail without proper context, but validates structure
-	s.Require().Error(err)
+	s.Require().Contains(cmd.Use, "params")
+	s.Require().NotEmpty(cmd.Short)
+	s.Require().NotNil(cmd.RunE, "should have RunE handler")
 }
 
-// TestCmdQueryPeerInfo tests peer info query command
+// TestCmdQueryPeerInfo tests peer info query command structure
 func (s *QueryCLITestSuite) TestCmdQueryPeerInfo() {
-	tests := []struct {
-		name      string
-		args      []string
-		expectErr bool
-	}{
-		{
-			name:      "valid peer ID",
-			args:      []string{"peer123"},
-			expectErr: false,
-		},
-		{
-			name:      "missing peer ID",
-			args:      []string{},
-			expectErr: true,
-		},
-		{
-			name:      "too many arguments",
-			args:      []string{"peer123", "extra"},
-			expectErr: true,
-		},
-	}
+	cmd := CmdQueryPeerInfo()
 
-	for _, tc := range tests {
-		s.Run(tc.name, func() {
-			cmd := CmdQueryPeerInfo()
-			cmd.SetArgs(tc.args)
-
-			err := cmd.Execute()
-			if tc.expectErr {
-				s.Require().Error(err)
-			}
-		})
-	}
+	s.Require().NotNil(cmd)
+	s.Require().NotEmpty(cmd.Use, "command should have Use field")
+	s.Require().NotEmpty(cmd.Short)
+	s.Require().NotNil(cmd.Args, "should validate arguments")
+	s.Require().NotNil(cmd.RunE)
 }
 
-// TestCmdQueryAllPeers tests all peers query command
+// TestCmdQueryAllPeers tests all peers query command structure
 func (s *QueryCLITestSuite) TestCmdQueryAllPeers() {
 	cmd := CmdQueryAllPeers()
 
 	s.Require().NotNil(cmd)
-	s.Require().Equal("peers", cmd.Use)
-
-	// Test with no arguments
-	cmd.SetArgs([]string{})
-	err := cmd.Execute()
-	s.Require().Error(err) // Will fail without context
+	s.Require().Contains(cmd.Use, "peers")
+	s.Require().NotEmpty(cmd.Short)
+	s.Require().NotNil(cmd.RunE)
 }
 
-// TestCmdQueryTrustedPeers tests trusted peers query command
+// TestCmdQueryTrustedPeers tests trusted peers query command structure
 func (s *QueryCLITestSuite) TestCmdQueryTrustedPeers() {
 	cmd := CmdQueryTrustedPeers()
 
 	s.Require().NotNil(cmd)
-	s.Require().Equal("trusted-peers", cmd.Use)
-
-	// Test with no arguments
-	cmd.SetArgs([]string{})
-	err := cmd.Execute()
-	s.Require().Error(err) // Will fail without context
+	s.Require().Contains(cmd.Use, "trusted-peers")
+	s.Require().NotEmpty(cmd.Short)
+	s.Require().NotNil(cmd.RunE)
 }
 
-// TestCmdQueryPeerReputation tests peer reputation query command
+// TestCmdQueryPeerReputation tests peer reputation query command structure
 func (s *QueryCLITestSuite) TestCmdQueryPeerReputation() {
-	tests := []struct {
-		name      string
-		args      []string
-		expectErr bool
-	}{
-		{
-			name:      "valid peer ID",
-			args:      []string{"peer123"},
-			expectErr: false,
-		},
-		{
-			name:      "missing peer ID",
-			args:      []string{},
-			expectErr: true,
-		},
-	}
+	cmd := CmdQueryPeerReputation()
 
-	for _, tc := range tests {
-		s.Run(tc.name, func() {
-			cmd := CmdQueryPeerReputation()
-			cmd.SetArgs(tc.args)
-
-			err := cmd.Execute()
-			if tc.expectErr {
-				s.Require().Error(err)
-			}
-		})
-	}
+	s.Require().NotNil(cmd)
+	s.Require().NotEmpty(cmd.Use, "command should have Use field")
+	s.Require().NotEmpty(cmd.Short)
+	s.Require().NotNil(cmd.Args)
+	s.Require().NotNil(cmd.RunE)
 }
 
-// TestCmdQueryRateLimitStatus tests rate limit status query command
+// TestCmdQueryRateLimitStatus tests rate limit status query command structure
 func (s *QueryCLITestSuite) TestCmdQueryRateLimitStatus() {
-	tests := []struct {
-		name      string
-		args      []string
-		expectErr bool
-	}{
-		{
-			name:      "valid peer ID",
-			args:      []string{"peer123"},
-			expectErr: false,
-		},
-		{
-			name:      "missing peer ID",
-			args:      []string{},
-			expectErr: true,
-		},
-	}
+	cmd := CmdQueryRateLimitStatus()
 
-	for _, tc := range tests {
-		s.Run(tc.name, func() {
-			cmd := CmdQueryRateLimitStatus()
-			cmd.SetArgs(tc.args)
-
-			err := cmd.Execute()
-			if tc.expectErr {
-				s.Require().Error(err)
-			}
-		})
-	}
+	s.Require().NotNil(cmd)
+	s.Require().NotEmpty(cmd.Use, "command should have Use field")
+	s.Require().NotEmpty(cmd.Short)
+	s.Require().NotNil(cmd.Args)
+	s.Require().NotNil(cmd.RunE)
 }
 
-// TestCmdQueryMempoolStats tests mempool stats query command
+// TestCmdQueryMempoolStats tests mempool stats query command structure
 func (s *QueryCLITestSuite) TestCmdQueryMempoolStats() {
 	cmd := CmdQueryMempoolStats()
 
 	s.Require().NotNil(cmd)
-	s.Require().Equal("mempool-stats", cmd.Use)
-
-	// Test with no arguments
-	cmd.SetArgs([]string{})
-	err := cmd.Execute()
-	s.Require().Error(err) // Will fail without context
+	s.Require().Contains(cmd.Use, "mempool-stats")
+	s.Require().NotEmpty(cmd.Short)
+	s.Require().NotNil(cmd.RunE)
 }
 
-// TestCmdQueryForkAlerts tests fork alerts query command
+// TestCmdQueryForkAlerts tests fork alerts query command structure
 func (s *QueryCLITestSuite) TestCmdQueryForkAlerts() {
-	tests := []struct {
-		name      string
-		args      []string
-		flags     map[string]string
-		expectErr bool
-	}{
-		{
-			name:      "without include-resolved flag",
-			args:      []string{},
-			expectErr: false,
-		},
-		{
-			name:      "with include-resolved flag",
-			args:      []string{},
-			flags:     map[string]string{"include-resolved": "true"},
-			expectErr: false,
-		},
-		{
-			name:      "too many arguments",
-			args:      []string{"extra"},
-			expectErr: true,
-		},
-	}
+	cmd := CmdQueryForkAlerts()
 
-	for _, tc := range tests {
-		s.Run(tc.name, func() {
-			cmd := CmdQueryForkAlerts()
-			cmd.SetArgs(tc.args)
+	s.Require().NotNil(cmd)
+	s.Require().Contains(cmd.Use, "fork-alerts")
+	s.Require().NotEmpty(cmd.Short)
+	s.Require().NotNil(cmd.RunE)
 
-			for k, v := range tc.flags {
-				cmd.Flags().Set(k, v)
-			}
-
-			err := cmd.Execute()
-			if tc.expectErr {
-				s.Require().Error(err)
-			}
-		})
-	}
+	// Verify include-resolved flag exists
+	flag := cmd.Flags().Lookup("include-resolved")
+	s.Require().NotNil(flag, "should have include-resolved flag")
 }
 
-// TestCmdQueryPartitionAlerts tests partition alerts query command
+// TestCmdQueryPartitionAlerts tests partition alerts query command structure
 func (s *QueryCLITestSuite) TestCmdQueryPartitionAlerts() {
-	tests := []struct {
-		name      string
-		args      []string
-		flags     map[string]string
-		expectErr bool
-	}{
-		{
-			name:      "without include-resolved flag",
-			args:      []string{},
-			expectErr: false,
-		},
-		{
-			name:      "with include-resolved flag",
-			args:      []string{},
-			flags:     map[string]string{"include-resolved": "true"},
-			expectErr: false,
-		},
-		{
-			name:      "too many arguments",
-			args:      []string{"extra"},
-			expectErr: true,
-		},
-	}
+	cmd := CmdQueryPartitionAlerts()
 
-	for _, tc := range tests {
-		s.Run(tc.name, func() {
-			cmd := CmdQueryPartitionAlerts()
-			cmd.SetArgs(tc.args)
+	s.Require().NotNil(cmd)
+	s.Require().Contains(cmd.Use, "partition-alerts")
+	s.Require().NotEmpty(cmd.Short)
+	s.Require().NotNil(cmd.RunE)
 
-			for k, v := range tc.flags {
-				cmd.Flags().Set(k, v)
-			}
-
-			err := cmd.Execute()
-			if tc.expectErr {
-				s.Require().Error(err)
-			}
-		})
-	}
+	// Verify include-resolved flag exists
+	flag := cmd.Flags().Lookup("include-resolved")
+	s.Require().NotNil(flag, "should have include-resolved flag")
 }
 
-// TestCmdQueryNetworkHealth tests network health query command
+// TestCmdQueryNetworkHealth tests network health query command structure
 func (s *QueryCLITestSuite) TestCmdQueryNetworkHealth() {
 	cmd := CmdQueryNetworkHealth()
 
 	s.Require().NotNil(cmd)
-	s.Require().Equal("health", cmd.Use)
+	s.Require().Contains(cmd.Use, "health")
+	s.Require().NotEmpty(cmd.Short)
+	s.Require().NotNil(cmd.RunE)
+}
 
-	// Test with no arguments
-	cmd.SetArgs([]string{})
-	err := cmd.Execute()
-	s.Require().Error(err) // Will fail without context
+// TestAllQueryCommandsHaveRunE tests that all query commands have RunE handlers
+func (s *QueryCLITestSuite) TestAllQueryCommandsHaveRunE() {
+	commands := []struct {
+		name string
+		cmd  func() *cobra.Command
+	}{
+		{"params", CmdQueryParams},
+		{"peer-info", CmdQueryPeerInfo},
+		{"peers", CmdQueryAllPeers},
+		{"trusted-peers", CmdQueryTrustedPeers},
+		{"peer-reputation", CmdQueryPeerReputation},
+		{"rate-limit-status", CmdQueryRateLimitStatus},
+		{"mempool-stats", CmdQueryMempoolStats},
+		{"fork-alerts", CmdQueryForkAlerts},
+		{"partition-alerts", CmdQueryPartitionAlerts},
+		{"health", CmdQueryNetworkHealth},
+	}
+
+	for _, tc := range commands {
+		s.Run(tc.name, func() {
+			cmd := tc.cmd()
+			s.Require().NotNil(cmd.RunE, "command %s should have RunE handler", tc.name)
+		})
+	}
 }

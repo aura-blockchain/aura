@@ -111,8 +111,8 @@ func (suite *KeeperTestSuite) TestRecordMultipleSentryRequests() {
 
 	node, err := suite.keeper.GetSentryNodeInfo(suite.ctx, "sentry_req")
 	suite.Require().NoError(err)
-	suite.Require().Equal(uint64(10), node.RequestCount)
-	suite.Require().Greater(node.BlockedRequests, uint64(0))
+	suite.Require().Equal(int64(10), node.RequestCount)
+	suite.Require().Greater(node.BlockedRequests, int64(0))
 }
 
 func (suite *KeeperTestSuite) TestGetParamsDefault() {

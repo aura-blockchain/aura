@@ -9,6 +9,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 	"github.com/aequitas/aura/chain/x/dex/keeper"
 	dexpb "github.com/aequitas/aura/proto/aura/dex/v1beta1"
 )
@@ -26,12 +27,12 @@ func TestSignerVerification(t *testing.T) {
 
 	// Fund both addresses
 	suite.fundAccount(addr1, sdk.NewCoins(
-		sdk.NewCoin("aura", sdkmath.NewInt(1000000)),
-		sdk.NewCoin("usdt", sdkmath.NewInt(1000000)),
+		sdk.NewCoin("aura", sdkmath.NewInt(10000000000)),
+		sdk.NewCoin("usdt", sdkmath.NewInt(10000000000)),
 	))
 	suite.fundAccount(addr2, sdk.NewCoins(
-		sdk.NewCoin("aura", sdkmath.NewInt(1000000)),
-		sdk.NewCoin("usdt", sdkmath.NewInt(1000000)),
+		sdk.NewCoin("aura", sdkmath.NewInt(10000000000)),
+		sdk.NewCoin("usdt", sdkmath.NewInt(10000000000)),
 	))
 
 	t.Run("CreatePool - reject mismatched signer", func(t *testing.T) {
@@ -39,8 +40,8 @@ func TestSignerVerification(t *testing.T) {
 			Creator: addr2.String(), // Claiming to be addr2
 			DenomA:  "aura",
 			DenomB:  "usdt",
-			AmountA: &sdk.Coin{Denom: "aura", Amount: sdkmath.NewInt(1000)},
-			AmountB: &sdk.Coin{Denom: "usdt", Amount: sdkmath.NewInt(1000)},
+			AmountA: &sdk.Coin{Denom: "aura", Amount: sdkmath.NewInt(10000000)},
+			AmountB: &sdk.Coin{Denom: "usdt", Amount: sdkmath.NewInt(10000000)},
 		}
 
 		// But transaction is signed by addr1
@@ -61,8 +62,8 @@ func TestSignerVerification(t *testing.T) {
 			Creator: addr1.String(),
 			DenomA:  "aura",
 			DenomB:  "usdt",
-			AmountA: &sdk.Coin{Denom: "aura", Amount: sdkmath.NewInt(1000)},
-			AmountB: &sdk.Coin{Denom: "usdt", Amount: sdkmath.NewInt(1000)},
+			AmountA: &sdk.Coin{Denom: "aura", Amount: sdkmath.NewInt(10000000)},
+			AmountB: &sdk.Coin{Denom: "usdt", Amount: sdkmath.NewInt(10000000)},
 		}
 		resp, err := msgServer.CreatePool(suite.ctx, createMsg)
 		require.NoError(t, err)
@@ -148,8 +149,8 @@ func TestSignerVerification(t *testing.T) {
 			Creator: addr1.String(),
 			DenomA:  "aura",
 			DenomB:  "usdt",
-			AmountA: &sdk.Coin{Denom: "aura", Amount: sdkmath.NewInt(10000)},
-			AmountB: &sdk.Coin{Denom: "usdt", Amount: sdkmath.NewInt(10000)},
+			AmountA: &sdk.Coin{Denom: "aura", Amount: sdkmath.NewInt(1000000000)},
+			AmountB: &sdk.Coin{Denom: "usdt", Amount: sdkmath.NewInt(1000000000)},
 		}
 		poolResp, err := msgServer.CreatePool(suite.ctx, createMsg)
 		require.NoError(t, err)
@@ -226,20 +227,36 @@ func TestSignerVerification(t *testing.T) {
 }
 
 // Helper function to setup test suite
-func setupMsgServerTestSuite(t *testing.T) *testSuite {
-	// This would normally use the existing test suite setup
-	// For now, return a minimal setup
-	// TODO: Integrate with existing test infrastructure
-	t.Skip("Integration with existing test suite required")
-	return nil
+func setupMsgServerTestSuite(t *testing.T) *msgServerTestSuite {
+	keepertest.ConfigureSDK()
+	input := keepertest.CreateTestInput(t)
+	bankKeeper := NewMockBankKeeper()
+
+	k := keeper.NewKeeper(
+		input.Cdc,
+		input.StoreKey,
+		bankKeeper,
+		nil, // accountKeeper
+		nil, // vcKeeper
+		nil, // securityKeeper
+	)
+
+	return &msgServerTestSuite{
+		ctx:        input.Ctx,
+		keeper:     k,
+		bankKeeper: bankKeeper,
+	}
 }
 
-// Helper to fund an account
-func (s *testSuite) fundAccount(addr sdk.AccAddress, coins sdk.Coins) {
-	// Implementation would use bank keeper to fund account
+type msgServerTestSuite struct {
+	ctx        sdk.Context
+	keeper     *keeper.Keeper
+	bankKeeper *MockBankKeeper
 }
 
-type testSuite struct {
-	ctx    sdk.Context
-	keeper *keeper.Keeper
+// fundAccount funds an account with coins using the mock bank keeper
+func (s *msgServerTestSuite) fundAccount(addr sdk.AccAddress, coins sdk.Coins) {
+	for _, coin := range coins {
+		s.bankKeeper.SetBalance(addr, coin.Denom, coin.Amount)
+	}
 }

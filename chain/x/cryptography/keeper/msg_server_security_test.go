@@ -12,13 +12,103 @@ import (
 	cryptoproto "github.com/aequitas/aura/proto/aura/cryptography/v1beta1"
 )
 
+// Test addresses for security tests
+const (
+	testAddr1 = "aura1qyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqszqgpq0u5rdk"
+	testAddr2 = "aura1xzqszqgpqyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqszqgpqm3m3k7"
+)
+
 // TestSignerVerification tests that message handlers properly implement signer verification
 // Note: Invalid bech32 addresses cause panic in GetSigners() before reaching our validation,
 // which is correct behavior - the Cosmos SDK handles address validation at the transaction level
 func TestSignerVerification(t *testing.T) {
-	// This test is implicitly tested by all other tests - valid addresses pass,
-	// and the SDK transaction handling will reject invalid addresses before reaching handlers
-	t.Skip("Signer verification is handled by Cosmos SDK transaction validation and GetSigners()")
+	k, ctx := setupKeeper(t)
+	msgServer := keeper.NewMsgServerImpl(&k)
+
+	validUser := testAddr1
+
+	// Test that valid signers work correctly across all message types
+	t.Run("All message types accept valid signers", func(t *testing.T) {
+		// Test CreateKeyRotationSchedule
+		scheduleMsg := &cryptoproto.MsgCreateKeyRotationSchedule{
+			Creator:                 validUser,
+			KeyId:                   "test-key-signer",
+			RotationIntervalSeconds: 86400,
+		}
+		scheduleResp, err := msgServer.CreateKeyRotationSchedule(ctx, scheduleMsg)
+		require.NoError(t, err)
+		require.NotEmpty(t, scheduleResp.ScheduleId)
+
+		// Test RotateKey
+		rotateMsg := &cryptoproto.MsgRotateKey{
+			Creator:      validUser,
+			KeyId:        "test-key-signer",
+			NewPublicKey: make([]byte, 32),
+		}
+		rotateResp, err := msgServer.RotateKey(ctx, rotateMsg)
+		require.NoError(t, err)
+		require.NotEmpty(t, rotateResp.RotationId)
+
+		// Test RegisterZKProofCircuit
+		zkMsg := &cryptoproto.MsgRegisterZKProofCircuit{
+			Creator:          validUser,
+			ProofType:        cryptoproto.ZKProofType_ZK_PROOF_TYPE_GROTH16,
+			PublicParameters: make([]byte, 128),
+			VerificationKey:  make([]byte, 64),
+			CircuitId:        "test-circuit-signer",
+		}
+		zkResp, err := msgServer.RegisterZKProofCircuit(ctx, zkMsg)
+		require.NoError(t, err)
+		require.NotEmpty(t, zkResp.ProofId)
+
+		// Test SubmitZKProof
+		submitMsg := &cryptoproto.MsgSubmitZKProof{
+			Submitter:    validUser,
+			ProofId:      zkResp.ProofId,
+			ProofData:    make([]byte, 128),
+			PublicInputs: make([]byte, 32),
+		}
+		submitResp, err := msgServer.SubmitZKProof(ctx, submitMsg)
+		require.NoError(t, err)
+		require.NotEmpty(t, submitResp.VerificationId)
+
+		// Test RegisterSecureEnclave
+		enclaveMsg := &cryptoproto.MsgRegisterSecureEnclave{
+			Creator:         validUser,
+			EnclaveType:     cryptoproto.SecureEnclaveType_SECURE_ENCLAVE_TYPE_SGX,
+			AttestationData: make([]byte, 64),
+			EnclaveMetadata: map[string]string{"version": "1.0"},
+		}
+		enclaveResp, err := msgServer.RegisterSecureEnclave(ctx, enclaveMsg)
+		require.NoError(t, err)
+		require.NotEmpty(t, enclaveResp.EnclaveId)
+
+		// Test GenerateQuantumResistantKey
+		quantumMsg := &cryptoproto.MsgGenerateQuantumResistantKey{
+			Creator:   validUser,
+			Algorithm: cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_KYBER,
+			ExpiresAt: timestamppb.Now(),
+		}
+		quantumResp, err := msgServer.GenerateQuantumResistantKey(ctx, quantumMsg)
+		require.NoError(t, err)
+		require.NotEmpty(t, quantumResp.KeyId)
+
+		// Test AddCertificatePin
+		certMsg := &cryptoproto.MsgAddCertificatePin{
+			Creator:           validUser,
+			Hostname:          "secure.example.com",
+			CertificateHashes: [][]byte{make([]byte, 32)},
+			PinType:           cryptoproto.CertificatePinType_CERTIFICATE_PIN_TYPE_SPKI,
+			ExpiresAt:         timestamppb.Now(),
+		}
+		certResp, err := msgServer.AddCertificatePin(ctx, certMsg)
+		require.NoError(t, err)
+		require.NotEmpty(t, certResp.PinId)
+	})
+
+	// Note: Invalid signers (malformed bech32 addresses) are caught by the Cosmos SDK
+	// at the transaction validation layer via GetSigners() before reaching message handlers.
+	// This is the correct security architecture - address validation happens at the SDK level.
 }
 
 // TestKeyRotationOwnership tests that unauthorized users cannot rotate keys
