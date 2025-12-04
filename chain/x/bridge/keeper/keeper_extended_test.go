@@ -62,34 +62,96 @@ func (suite *BridgeKeeperTestSuite) TestSetParams() {
 // Bridge Transfer Tests
 
 func TestInitiateBridgeTransfer(t *testing.T) {
-	t.Skip("InitiateTransfer method not implemented yet")
-	// input := keepertest.CreateTestInput(t)
-	// k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
+	input := keepertest.CreateTestInput(t)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 
-	// sender := keepertest.GenTestAddr()
-	// recipient := "0x1234567890123456789012345678901234567890"
-	// amount := sdk.NewCoins(sdk.NewCoin("uaura", math.NewInt(1000000)))
+	// Setup chain config for ethereum
+	chainConfig := types.ChainConfig{
+		ChainId:   "ethereum",
+		ChainName: "Ethereum",
+		Enabled:   true,
+	}
+	err := k.AddSupportedChain(input.Ctx, chainConfig)
+	require.NoError(t, err)
 
-	// Test initiating transfer - method not implemented
-	// transferID, err := k.InitiateTransfer(input.Ctx, sender.String(), recipient, amount, "ethereum")
-	// require.NoError(t, err)
-	// require.NotEmpty(t, transferID)
+	sender := keepertest.GenTestAddr()
+	recipient := "0x1234567890123456789012345678901234567890"
+	amount := sdk.NewCoins(sdk.NewCoin("uaura", math.NewInt(1000000)))
+
+	transferID, err := k.InitiateTransfer(input.Ctx, sender.String(), recipient, amount, "ethereum")
+	require.NoError(t, err)
+	require.NotEmpty(t, transferID)
+
+	// Verify transfer was created
+	transfer, found := k.GetTransfer(input.Ctx, transferID)
+	require.True(t, found)
+	require.Equal(t, sender.String(), transfer.Sender)
+	require.Equal(t, recipient, transfer.Recipient)
+	require.Equal(t, "ethereum", transfer.TargetChain)
 }
 
 func TestInitiateBridgeTransferInvalidChain(t *testing.T) {
-	t.Skip("InitiateTransfer method not implemented yet")
+	input := keepertest.CreateTestInput(t)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
+
+	sender := keepertest.GenTestAddr()
+	recipient := "0x1234567890123456789012345678901234567890"
+	amount := sdk.NewCoins(sdk.NewCoin("uaura", math.NewInt(1000000)))
+
+	// Should fail because chain is not configured
+	_, err := k.InitiateTransfer(input.Ctx, sender.String(), recipient, amount, "unsupported")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "unsupported chain")
 }
 
 func TestInitiateBridgeTransferZeroAmount(t *testing.T) {
-	t.Skip("InitiateTransfer method not implemented yet")
+	input := keepertest.CreateTestInput(t)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
+
+	sender := keepertest.GenTestAddr()
+	recipient := "0x1234567890123456789012345678901234567890"
+	amount := sdk.NewCoins()
+
+	_, err := k.InitiateTransfer(input.Ctx, sender.String(), recipient, amount, "ethereum")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "amount must be positive")
 }
 
 func TestGetBridgeTransfer(t *testing.T) {
-	t.Skip("InitiateTransfer and GetTransfer methods not implemented yet")
+	input := keepertest.CreateTestInput(t)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
+
+	// Setup chain config for ethereum
+	chainConfig := types.ChainConfig{
+		ChainId:   "ethereum",
+		ChainName: "Ethereum",
+		Enabled:   true,
+	}
+	err := k.AddSupportedChain(input.Ctx, chainConfig)
+	require.NoError(t, err)
+
+	sender := keepertest.GenTestAddr()
+	recipient := "0x1234567890123456789012345678901234567890"
+	amount := sdk.NewCoins(sdk.NewCoin("uaura", math.NewInt(1000000)))
+
+	// Create a transfer
+	transferID, err := k.InitiateTransfer(input.Ctx, sender.String(), recipient, amount, "ethereum")
+	require.NoError(t, err)
+
+	// Retrieve the transfer
+	transfer, found := k.GetTransfer(input.Ctx, transferID)
+	require.True(t, found)
+	require.Equal(t, transferID, transfer.TransferId)
+	require.Equal(t, sender.String(), transfer.Sender)
+	require.Equal(t, recipient, transfer.Recipient)
 }
 
 func TestGetNonExistentTransfer(t *testing.T) {
-	t.Skip("GetTransfer method not implemented yet")
+	input := keepertest.CreateTestInput(t)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
+
+	_, found := k.GetTransfer(input.Ctx, "nonexistent-transfer-id")
+	require.False(t, found)
 }
 
 func TestGetAllTransfers(t *testing.T) {
@@ -99,15 +161,20 @@ func TestGetAllTransfers(t *testing.T) {
 // Validator Attestation Tests
 
 func TestSubmitAttestation(t *testing.T) {
-	t.Skip("SubmitAttestation method not implemented yet")
-	// input := keepertest.CreateTestInput(t)
-	// k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
+	input := keepertest.CreateTestInput(t)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 
-	// validator := keepertest.GenTestAddr()
-	// transferID := "transfer_1"
+	validator := keepertest.GenTestAddr()
+	transferID := "transfer_1"
+	seedBridgeTransfer(t, input, transferID, math.NewInt(1000).String(), 0)
 
-	// err := k.SubmitAttestation(input.Ctx, transferID, validator.String(), true)
-	// require.NoError(t, err)
+	err := k.SubmitAttestation(input.Ctx, transferID, validator.String(), true)
+	require.NoError(t, err)
+
+	// Verify attestation was recorded
+	attestations := k.GetAttestations(input.Ctx, transferID)
+	require.Len(t, attestations, 1)
+	require.Equal(t, validator.String(), attestations[0])
 }
 
 func TestSubmitMultipleAttestations(t *testing.T) {
