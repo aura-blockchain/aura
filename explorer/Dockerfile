@@ -1,48 +1,36 @@
-# AURA Block Explorer Dockerfile
-# Multi-stage build for production deployment
+# Dockerfile for Ping.pub Block Explorer - Aura Blockchain
+# Multi-stage build for optimized production image
 
-FROM python:3.11-slim as builder
-
-# Set working directory
-WORKDIR /app
+FROM node:20-alpine AS builder
 
 # Install build dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache git python3 make g++
 
-# Copy requirements and install dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir --user -r requirements.txt
-
-# Final stage
-FROM python:3.11-slim
-
-# Set working directory
 WORKDIR /app
 
-# Copy Python dependencies from builder
-COPY --from=builder /root/.local /root/.local
+# Copy explorer source
+COPY ping-pub-explorer/package.json ping-pub-explorer/yarn.lock ./
+RUN yarn install --frozen-lockfile --ignore-engines --network-timeout 100000
 
-# Copy application files
-COPY config.py .
-COPY explorer_backend.py .
+# Copy all source files
+COPY ping-pub-explorer/ ./
 
-# Create directory for database
-RUN mkdir -p /data
+# Build production bundle
+RUN yarn build
 
-# Set environment variables
-ENV PATH=/root/.local/bin:$PATH \
-    PYTHONUNBUFFERED=1 \
-    EXPLORER_DB_PATH=/data/explorer.db \
-    EXPLORER_ENV=production
+# Production stage
+FROM nginx:alpine
 
-# Expose port
-EXPOSE 8082
+# Copy custom nginx config
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:8082/health', timeout=5)" || exit 1
+# Copy built files from builder
+COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Run with gunicorn for production
-CMD ["gunicorn", "--bind", "0.0.0.0:8082", "--workers", "4", "--worker-class", "gevent", "--timeout", "120", "--log-level", "info", "explorer_backend:app"]
+# Add health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost/ || exit 1
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]

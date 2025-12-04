@@ -1,0 +1,67 @@
+# Prometheus configuration for Aura RPC Node monitoring
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'aura-testnet'
+    environment: 'testnet'
+
+# Alertmanager configuration (optional)
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets:
+#           - alertmanager:9093
+
+# Load rules once and periodically evaluate them
+# rule_files:
+#   - "alerts/*.yml"
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'prometheus'
+
+  # Aura RPC Node Tendermint metrics
+  - job_name: 'aura-rpc-tendermint'
+    scrape_interval: 10s
+    static_configs:
+      - targets: ['aura-rpc-node:26660']
+        labels:
+          service: 'aura-rpc'
+          component: 'tendermint'
+          node_type: 'rpc'
+
+  # Aura RPC Node Cosmos SDK metrics
+  - job_name: 'aura-rpc-cosmos'
+    scrape_interval: 10s
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['aura-rpc-node:26660']
+        labels:
+          service: 'aura-rpc'
+          component: 'cosmos-sdk'
+          node_type: 'rpc'
+
+  # Node Exporter (system metrics)
+  - job_name: 'node-exporter'
+    scrape_interval: 30s
+    static_configs:
+      - targets: ['node-exporter:9100']
+        labels:
+          service: 'system'
+          component: 'node-exporter'
+
+  # Nginx metrics (if nginx-prometheus-exporter is added)
+  # - job_name: 'nginx'
+  #   scrape_interval: 10s
+  #   static_configs:
+  #     - targets: ['nginx-exporter:9113']
+  #       labels:
+  #         service: 'nginx'
+  #         component: 'reverse-proxy'

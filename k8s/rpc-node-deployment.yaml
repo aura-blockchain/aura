@@ -1,0 +1,442 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aura-testnet
+  labels:
+    name: aura-testnet
+    environment: testnet
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aura-rpc-config
+  namespace: aura-testnet
+data:
+  config.toml: |
+    # This will be populated from the config file in networks/testnet/config.toml
+    # Mount as a volume in the deployment
+  app.toml: |
+    # This will be populated from the config file in networks/testnet/app.toml
+    # Mount as a volume in the deployment
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: aura-rpc-tls
+  namespace: aura-testnet
+type: kubernetes.io/tls
+data:
+  # Base64 encoded certificate and key
+  # Create with: kubectl create secret tls aura-rpc-tls --cert=nginx/ssl/aura-testnet.crt --key=nginx/ssl/aura-testnet.key -n aura-testnet
+  tls.crt: ""
+  tls.key: ""
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: aura-rpc-data
+  namespace: aura-testnet
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Gi
+  storageClassName: standard
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aura-rpc-node
+  namespace: aura-testnet
+  labels:
+    app: aura-rpc-node
+    component: rpc
+    environment: testnet
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: aura-rpc-node
+  template:
+    metadata:
+      labels:
+        app: aura-rpc-node
+        component: rpc
+        environment: testnet
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "26660"
+        prometheus.io/path: "/metrics"
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - aura-rpc-node
+                topologyKey: kubernetes.io/hostname
+
+      initContainers:
+        - name: init-node
+          image: aura-node:latest
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              if [ ! -f /root/.aura/config/genesis.json ]; then
+                echo "Initializing Aura node..."
+                aurad init rpc-node --chain-id aura-testnet-1 --home /root/.aura
+                # Copy configuration files
+                cp /config/config.toml /root/.aura/config/config.toml
+                cp /config/app.toml /root/.aura/config/app.toml
+                # Download genesis file
+                # TODO: Update with actual genesis URL
+                # wget -O /root/.aura/config/genesis.json https://raw.githubusercontent.com/aura/networks/testnet/genesis.json
+              fi
+          volumeMounts:
+            - name: data
+              mountPath: /root/.aura
+            - name: config
+              mountPath: /config
+
+      containers:
+        - name: aura-node
+          image: aura-node:latest
+          imagePullPolicy: IfNotPresent
+          command: ["aurad"]
+          args:
+            - "start"
+            - "--home=/root/.aura"
+            - "--pruning=default"
+            - "--rpc.laddr=tcp://0.0.0.0:26657"
+            - "--api.enable=true"
+            - "--api.address=tcp://0.0.0.0:1317"
+            - "--grpc.enable=true"
+            - "--grpc.address=0.0.0.0:9090"
+
+          ports:
+            - name: rpc
+              containerPort: 26657
+              protocol: TCP
+            - name: api
+              containerPort: 1317
+              protocol: TCP
+            - name: grpc
+              containerPort: 9090
+              protocol: TCP
+            - name: grpc-web
+              containerPort: 9091
+              protocol: TCP
+            - name: p2p
+              containerPort: 26656
+              protocol: TCP
+            - name: metrics
+              containerPort: 26660
+              protocol: TCP
+
+          env:
+            - name: AURA_HOME
+              value: "/root/.aura"
+            - name: AURA_CHAIN_ID
+              value: "aura-testnet-1"
+
+          resources:
+            requests:
+              cpu: "2"
+              memory: "4Gi"
+            limits:
+              cpu: "4"
+              memory: "8Gi"
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 26657
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+
+          readinessProbe:
+            httpGet:
+              path: /status
+              port: 26657
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          volumeMounts:
+            - name: data
+              mountPath: /root/.aura
+            - name: config
+              mountPath: /root/.aura/config
+              readOnly: true
+
+        - name: nginx
+          image: nginx:1.25-alpine
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - name: https
+              containerPort: 443
+              protocol: TCP
+            - name: http
+              containerPort: 80
+              protocol: TCP
+            - name: grpc-ssl
+              containerPort: 9090
+              protocol: TCP
+            - name: grpc-web-ssl
+              containerPort: 9091
+              protocol: TCP
+
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 30
+
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/conf.d
+              readOnly: true
+            - name: tls-certs
+              mountPath: /etc/nginx/ssl
+              readOnly: true
+
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: aura-rpc-data
+        - name: config
+          configMap:
+            name: aura-rpc-config
+        - name: nginx-config
+          configMap:
+            name: nginx-rpc-config
+        - name: tls-certs
+          secret:
+            secretName: aura-rpc-tls
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aura-rpc-service
+  namespace: aura-testnet
+  labels:
+    app: aura-rpc-node
+    component: rpc
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+spec:
+  type: LoadBalancer
+  selector:
+    app: aura-rpc-node
+  ports:
+    - name: https
+      port: 443
+      targetPort: 443
+      protocol: TCP
+    - name: http
+      port: 80
+      targetPort: 80
+      protocol: TCP
+    - name: grpc
+      port: 9090
+      targetPort: 9090
+      protocol: TCP
+    - name: grpc-web
+      port: 9091
+      targetPort: 9091
+      protocol: TCP
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 3600
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aura-rpc-metrics
+  namespace: aura-testnet
+  labels:
+    app: aura-rpc-node
+    component: metrics
+spec:
+  type: ClusterIP
+  selector:
+    app: aura-rpc-node
+  ports:
+    - name: metrics
+      port: 26660
+      targetPort: 26660
+      protocol: TCP
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-rpc-config
+  namespace: aura-testnet
+data:
+  default.conf: |
+    # Rate limiting zones
+    limit_req_zone $binary_remote_addr zone=rpc_limit:10m rate=30r/s;
+    limit_req_zone $binary_remote_addr zone=api_limit:10m rate=50r/s;
+    limit_req_zone $binary_remote_addr zone=grpc_limit:10m rate=100r/s;
+    limit_conn_zone $binary_remote_addr zone=conn_limit:10m;
+
+    # HTTP redirect to HTTPS
+    server {
+        listen 80;
+        server_name _;
+
+        location /health {
+            access_log off;
+            return 200 "healthy\n";
+            add_header Content-Type text/plain;
+        }
+
+        location / {
+            return 301 https://$host$request_uri;
+        }
+    }
+
+    # HTTPS server
+    server {
+        listen 443 ssl http2;
+        server_name _;
+
+        ssl_certificate /etc/nginx/ssl/tls.crt;
+        ssl_certificate_key /etc/nginx/ssl/tls.key;
+        ssl_protocols TLSv1.2 TLSv1.3;
+        ssl_ciphers HIGH:!aNULL:!MD5;
+
+        # Security headers
+        add_header Strict-Transport-Security "max-age=31536000" always;
+        add_header X-Content-Type-Options "nosniff" always;
+
+        # CORS
+        add_header Access-Control-Allow-Origin "*" always;
+        add_header Access-Control-Allow-Methods "GET, POST, OPTIONS" always;
+        add_header Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range" always;
+
+        limit_conn conn_limit 100;
+
+        # RPC endpoints
+        location /rpc/ {
+            limit_req zone=rpc_limit burst=20 nodelay;
+            rewrite ^/rpc/(.*) /$1 break;
+            proxy_pass http://localhost:26657;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        }
+
+        # API endpoints
+        location /api/ {
+            limit_req zone=api_limit burst=30 nodelay;
+            rewrite ^/api/(.*) /$1 break;
+            proxy_pass http://localhost:1317;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        }
+
+        location / {
+            return 302 /swagger/;
+        }
+    }
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: aura-rpc-hpa
+  namespace: aura-testnet
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: aura-rpc-node
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Percent
+          value: 50
+          periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+        - type: Percent
+          value: 100
+          periodSeconds: 60
+        - type: Pods
+          value: 2
+          periodSeconds: 60
+      selectPolicy: Max
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: aura-rpc-pdb
+  namespace: aura-testnet
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: aura-rpc-node

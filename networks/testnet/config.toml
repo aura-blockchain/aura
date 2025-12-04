@@ -1,0 +1,345 @@
+# Aura Testnet Public RPC Node Configuration
+# For more information, see https://docs.tendermint.com/master/nodes/configuration.html
+
+#######################################################################
+###                   Main Base Config Options                      ###
+#######################################################################
+
+# The version of the Tendermint binary
+version = "v0.38.0"
+
+# A custom human readable name for this node
+moniker = "aura-testnet-rpc-node"
+
+# Database backend: goleveldb | cleveldb | boltdb | rocksdb | badgerdb
+db_backend = "goleveldb"
+
+# Database directory
+db_dir = "data"
+
+# Output level for logging, including package level options
+log_level = "info"
+
+# Output format: 'plain' (colored text) or 'json'
+log_format = "json"
+
+##### additional base config options #####
+
+# Path to the JSON file containing the initial validator set and other meta data
+genesis_file = "config/genesis.json"
+
+# Path to the JSON file containing the private key to use as a validator in the consensus protocol
+priv_validator_key_file = "config/priv_validator_key.json"
+
+# Path to the JSON file containing the last sign state of a validator
+priv_validator_state_file = "data/priv_validator_state.json"
+
+# TCP or UNIX socket address for Tendermint to listen on for
+# connections from an external PrivValidator process
+priv_validator_laddr = ""
+
+# Path to the JSON file containing the private key to use for node authentication in the p2p protocol
+node_key_file = "config/node_key.json"
+
+# Mechanism to connect to the ABCI application: socket | grpc
+abci = "socket"
+
+# If true, query the ABCI app on connecting to a new peer
+# so the app can decide if we should keep the connection or not
+filter_peers = false
+
+
+#######################################################################
+###                 Advanced Configuration Options                  ###
+#######################################################################
+
+#######################################################
+###       RPC Server Configuration Options          ###
+#######################################################
+[rpc]
+
+# TCP or UNIX socket address for the RPC server to listen on
+# Listen on all interfaces for public access
+laddr = "tcp://0.0.0.0:26657"
+
+# A list of origins a cross-domain request can be executed from
+# Allow all origins for public RPC access (will be secured by nginx)
+cors_allowed_origins = ["*"]
+
+# A list of methods the client is allowed to use with cross-domain requests
+cors_allowed_methods = ["HEAD", "GET", "POST"]
+
+# A list of non simple headers the client is allowed to use with cross-domain requests
+cors_allowed_headers = ["Origin", "Accept", "Content-Type", "X-Requested-With", "X-Server-Time"]
+
+# TCP or UNIX socket address for the gRPC server to listen on
+# NOTE: This server only supports /broadcast_tx_commit
+grpc_laddr = ""
+
+# Maximum number of simultaneous connections.
+# Increased for public RPC node to handle more traffic
+# Does not include RPC (HTTP&WebSocket) connections. See max_open_connections
+grpc_max_open_connections = 1000
+
+# Activate unsafe RPC commands like /dial_seeds and /unsafe_flush_mempool
+# SECURITY: Keep disabled for public RPC nodes
+unsafe = false
+
+# Maximum number of simultaneous connections (including WebSocket).
+# Increased for public RPC node
+# Does not include gRPC connections. See grpc_max_open_connections
+max_open_connections = 1000
+
+# Maximum number of unique clientIDs that can /subscribe
+# Limited to prevent resource exhaustion
+max_subscription_clients = 100
+
+# Maximum number of unique queries a given client can /subscribe to
+# Limited to prevent abuse
+max_subscriptions_per_client = 5
+
+# Experimental parameter to specify the maximum number of events a node will
+# buffer, per subscription, before returning an error and closing the
+# subscription. Must be set to at least 100, but higher values will accommodate
+# higher event throughput rates (and will use more memory).
+experimental_subscription_buffer_size = 200
+
+# Experimental parameter to specify the maximum number of RPC responses that
+# can be buffered per WebSocket client. If clients cannot read from the
+# WebSocket endpoint fast enough, they will be disconnected, so increasing this
+# parameter may reduce the chances of them being disconnected (but will cause
+# the node to use more memory).
+experimental_websocket_write_buffer_size = 200
+
+# If a WebSocket client cannot read fast enough, at present we may
+# silently drop events instead of generating an error or disconnecting the
+# client.
+#
+# Enabling this experimental parameter will cause the WebSocket connection to
+# be closed instead if it cannot read fast enough, allowing for greater
+# predictability in subscription behavior.
+experimental_close_on_slow_client = true
+
+# How long to wait for a tx to be committed during /broadcast_tx_commit.
+# WARNING: Using a value larger than 10s will result in increasing the
+# global HTTP write timeout, which applies to all connections and endpoints.
+timeout_broadcast_tx_commit = "10s"
+
+# Maximum size of request body, in bytes
+# Limited to prevent abuse
+max_body_bytes = 1000000
+
+# Maximum size of request header, in bytes
+max_header_bytes = 1048576
+
+# The path to a file containing certificate that is used to create the HTTPS server.
+# SSL/TLS will be handled by nginx reverse proxy
+tls_cert_file = ""
+
+# The path to a file containing matching private key that is used to create the HTTPS server.
+# SSL/TLS will be handled by nginx reverse proxy
+tls_key_file = ""
+
+# pprof listen address (https://golang.org/pkg/net/http/pprof)
+# Disabled for public nodes for security
+pprof_laddr = ""
+
+#######################################################
+###           P2P Configuration Options             ###
+#######################################################
+[p2p]
+
+# Address to listen for incoming connections
+laddr = "tcp://0.0.0.0:26656"
+
+# Address to advertise to peers for them to dial
+# Should be set to the public IP/domain for testnet
+external_address = ""
+
+# Comma separated list of seed nodes to connect to
+# TODO: Add testnet seed nodes
+seeds = ""
+
+# Comma separated list of nodes to keep persistent connections to
+# RPC nodes should connect to validator nodes
+persistent_peers = ""
+
+# UPNP port forwarding
+upnp = false
+
+# Path to address book
+addr_book_file = "config/addrbook.json"
+
+# Set true for strict address routability rules
+# Set false for private or local networks
+addr_book_strict = true
+
+# Maximum number of inbound peers
+# Increased for public RPC node
+max_num_inbound_peers = 100
+
+# Maximum number of outbound peers to connect to, excluding persistent peers
+max_num_outbound_peers = 20
+
+# List of node IDs, to which a connection will be (re)established ignoring any existing limits
+unconditional_peer_ids = ""
+
+# Maximum pause when redialing a persistent peer (if zero, exponential backoff is used)
+persistent_peers_max_dial_period = "0s"
+
+# Time to wait before flushing messages out on the connection
+flush_throttle_timeout = "100ms"
+
+# Maximum size of a message packet payload, in bytes
+max_packet_msg_payload_size = 1024
+
+# Rate at which packets can be sent, in bytes/second
+send_rate = 5120000
+
+# Rate at which packets can be received, in bytes/second
+recv_rate = 5120000
+
+# Set true to enable the peer-exchange reactor
+pex = true
+
+# Seed mode, in which node constantly crawls the network and looks for
+# peers. If another node asks it for addresses, it responds and disconnects.
+seed_mode = false
+
+# Comma separated list of peer IDs to keep private (will not be gossiped to other peers)
+private_peer_ids = ""
+
+# Toggle to disable guard against peers connecting from the same ip.
+allow_duplicate_ip = false
+
+# Peer connection configuration.
+handshake_timeout = "20s"
+dial_timeout = "3s"
+
+#######################################################
+###          Mempool Configuration Option          ###
+#######################################################
+[mempool]
+
+# Mempool version to use:
+#   1) "v0" - (default) FIFO mempool.
+#   2) "v1" - prioritized mempool.
+version = "v0"
+
+recheck = true
+broadcast = true
+wal_dir = ""
+
+# Maximum number of transactions in the mempool
+size = 5000
+
+# Limit the total size of all txs in the mempool.
+max_txs_bytes = 1073741824
+
+# Size of the cache (used to filter transactions we saw earlier) in transactions
+cache_size = 10000
+
+# Do not remove invalid transactions from the cache
+keep-invalid-txs-in-cache = false
+
+# Maximum size of a single transaction.
+max_tx_bytes = 1048576
+
+# Maximum size of a batch of transactions to send to a peer
+max_batch_bytes = 0
+
+#######################################################
+###         State Sync Configuration Options        ###
+#######################################################
+[statesync]
+
+# State sync rapidly bootstraps a new node by discovering, fetching, and restoring a state machine
+# snapshot from peers instead of fetching and replaying historical blocks.
+enable = true
+
+# RPC servers (comma-separated) for light client verification
+# TODO: Add testnet RPC servers for state sync
+rpc_servers = ""
+
+# Trust height and corresponding header hash to verify the state machine snapshot.
+trust_height = 0
+trust_hash = ""
+
+# Time period during which validators can be trusted.
+trust_period = "168h0m0s"
+
+# The timeout duration before re-requesting a chunk
+chunk_request_timeout = "10s"
+
+# The number of concurrent chunk fetchers to run
+chunk_fetchers = "4"
+
+#######################################################
+###       Fast Sync Configuration Connections       ###
+#######################################################
+[fastsync]
+
+# Fast Sync version to use
+version = "v0"
+
+#######################################################
+###         Consensus Configuration Options         ###
+#######################################################
+[consensus]
+
+wal_file = "data/cs.wal/wal"
+
+# Consensus timeouts - optimized for testnet
+timeout_propose = "3s"
+timeout_propose_delta = "500ms"
+timeout_prevote = "1s"
+timeout_prevote_delta = "500ms"
+timeout_precommit = "1s"
+timeout_precommit_delta = "500ms"
+timeout_commit = "5s"
+
+# Double sign protection
+# SECURITY: Set to 10 for production to detect double signing attempts
+# RPC nodes don't validate, but keeping for consistency
+double_sign_check_height = 10
+
+# Make progress as soon as we have all the precommits
+skip_timeout_commit = false
+
+# EmptyBlocks mode and possible interval between empty blocks
+create_empty_blocks = true
+create_empty_blocks_interval = "0s"
+
+# Reactor sleep duration parameters
+peer_gossip_sleep_duration = "100ms"
+peer_query_maj23_sleep_duration = "2s"
+
+#######################################################
+###   Transaction Indexer Configuration Options     ###
+#######################################################
+[tx_index]
+
+# What indexer to use for transactions
+# Use "kv" for public RPC nodes to support transaction queries
+indexer = "kv"
+
+# The PostgreSQL connection configuration
+psql-conn = ""
+
+#######################################################
+###       Instrumentation Configuration Options     ###
+#######################################################
+[instrumentation]
+
+# When true, Prometheus metrics are served under /metrics on
+# PrometheusListenAddr.
+prometheus = true
+
+# Address to listen for Prometheus collector(s) connections
+prometheus_listen_addr = ":26660"
+
+# Maximum number of simultaneous connections.
+max_open_connections = 3
+
+# Instrumentation namespace
+namespace = "cometbft"
