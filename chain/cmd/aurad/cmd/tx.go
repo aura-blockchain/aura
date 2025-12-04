@@ -57,6 +57,13 @@ func TxCmd() *cobra.Command {
 		wasmcli.GetTxCmd(),
 	)
 
+	// Note: Additional module tx commands can be added here as modules are completed:
+	// - monitoring module txs (x/monitoring/client/cli)
+	// - security module txs (x/networksecurity/client/cli)
+	// - identity module txs (x/identity/client/cli)
+	// - vcregistry txs (x/vcregistry/client/cli)
+	// etc.
+
 	enforceLegacyAminoSignMode(cmd)
 
 	return cmd

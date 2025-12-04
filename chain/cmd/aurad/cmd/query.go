@@ -34,12 +34,20 @@ func QueryCmd() *cobra.Command {
 		queryAccountCmd(),
 	)
 
+	// Add module query commands
 	cmd.AddCommand(
 		confidencescorecli.GetQueryCmd(),
 		compliancecli.GetQueryCmd(),
 		dexcli.GetQueryCmd(),
 		wasmcli.GetQueryCmd(),
 	)
+
+	// Note: Additional module query commands can be added here as modules are completed:
+	// - monitoring module queries (x/monitoring/client/cli)
+	// - security module queries (x/networksecurity/client/cli)
+	// - identity module queries (x/identity/client/cli)
+	// - vcregistry queries (x/vcregistry/client/cli)
+	// etc.
 
 	return cmd
 }

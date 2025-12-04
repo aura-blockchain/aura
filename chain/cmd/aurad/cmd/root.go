@@ -158,6 +158,14 @@ func addSubcommands(rootCmd *cobra.Command, txEncCfg client.TxConfig) {
 		BatchCmd(),
 		HelpCmd(),
 		MnemonicSignerCmd(), // Bypass SDK 0.53.x keyring bug
+		ValidatorCmd(),      // Validator operations and management
+		MonitoringCmd(),     // Enhanced monitoring and metrics
+		SecurityCmd(),       // Security module operations
+		DebugCmd(),          // Debug and troubleshooting tools
+		TendermintCmd(),     // CometBFT/Tendermint operations
+		RollbackCmd(),       // Rollback blockchain state
+		SnapshotsCmd(),      // State sync snapshot management
+		ExportCmd(),         // Export blockchain state
 	)
 }
 
