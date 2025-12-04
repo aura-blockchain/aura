@@ -149,69 +149,8 @@ func TestUnlockTokens_CombinedSecurityChecks(t *testing.T) {
 	})
 }
 
-// TestComputeSignatureSetHash tests the signature set hashing function
-func TestComputeSignatureSetHash(t *testing.T) {
-	t.Run("empty_signatures", func(t *testing.T) {
-		// TODO: Implement test
-		// Expected: Should return nil for empty signature set
-	})
-
-	t.Run("single_signature", func(t *testing.T) {
-		// TODO: Implement test
-		// sig1 := []byte("signature1")
-		// Compute hash manually
-		// expected := sha256.Sum256(sig1)
-
-		// TODO: Call keeper.computeSignatureSetHash([sig1])
-		// Expected: Should match manual computation
-	})
-
-	t.Run("multiple_signatures_order_independent", func(t *testing.T) {
-		// TODO: Implement test
-		// sig1 := []byte("signature1")
-		// sig2 := []byte("signature2")
-		// sig3 := []byte("signature3")
-
-		// TODO: Call keeper.computeSignatureSetHash([sig1, sig2, sig3])
-		// TODO: Call keeper.computeSignatureSetHash([sig3, sig1, sig2])
-		// TODO: Call keeper.computeSignatureSetHash([sig2, sig3, sig1])
-		// Expected: All three should produce identical hash
-	})
-
-	t.Run("duplicate_signatures_handled", func(t *testing.T) {
-		// TODO: Implement test
-		// sig1 := []byte("signature1")
-
-		// TODO: Call keeper.computeSignatureSetHash([sig1, sig1, sig1])
-		// Expected: Should handle duplicates consistently
-	})
-}
-
-// TestIsValidatorActive tests the validator authorization check
-func TestIsValidatorActive(t *testing.T) {
-	t.Run("active_validator_returns_true", func(t *testing.T) {
-		// TODO: Implement test
-		// Setup: Register active validator
-		// Expected: IsValidatorActive returns true
-	})
-
-	t.Run("inactive_validator_returns_false", func(t *testing.T) {
-		// TODO: Implement test
-		// Setup: Register validator with Active=false
-		// Expected: IsValidatorActive returns false
-	})
-
-	t.Run("nonexistent_validator_returns_false", func(t *testing.T) {
-		// TODO: Implement test
-		// Setup: Don't register validator
-		// Expected: IsValidatorActive returns false
-	})
-
-	t.Run("empty_address_returns_false", func(t *testing.T) {
-		// TODO: Implement test
-		// Expected: IsValidatorActive("") returns false
-	})
-}
+// NOTE: TestComputeSignatureSetHash and TestIsValidatorActive are now implemented
+// in keeper_coverage_test.go to provide full test coverage for these functions.
 
 // TestGetActiveValidators tests the active validator list retrieval
 func TestGetActiveValidators(t *testing.T) {

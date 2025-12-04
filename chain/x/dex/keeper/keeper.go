@@ -259,6 +259,11 @@ func (k Keeper) CheckMinimumLiquidity(
 
 // IsUserVerified checks if user has completed 100 IR points
 func (k Keeper) IsUserVerified(ctx sdk.Context, address string) bool {
+	// If vcKeeper is not set, treat all users as unverified
+	if k.vcKeeper == nil {
+		return false
+	}
+
 	// Query vcregistry keeper for IR status
 	irScore := k.vcKeeper.GetIRScore(ctx, address)
 	return irScore >= 100

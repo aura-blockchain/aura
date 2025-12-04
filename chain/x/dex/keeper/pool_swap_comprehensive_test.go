@@ -128,21 +128,21 @@ func (suite *PoolSwapComprehensiveTestSuite) TestPoolCreation_ExtremeRatios() {
 		shouldOk bool
 	}{
 		{
-			name:     "1:1000000 ratio - very small A",
-			amountA:  sdkmath.NewInt(1),
-			amountB:  sdkmath.NewInt(1000000),
+			name:     "1:1000 ratio - small A",
+			amountA:  sdkmath.NewInt(1_000_000),    // Minimum liquidity
+			amountB:  sdkmath.NewInt(1_000_000_000), // 1000x ratio
 			shouldOk: true,
 		},
 		{
-			name:     "1000000:1 ratio - very small B",
-			amountA:  sdkmath.NewInt(1000000),
-			amountB:  sdkmath.NewInt(1),
+			name:     "1000:1 ratio - small B",
+			amountA:  sdkmath.NewInt(1_000_000_000), // 1000x ratio
+			amountB:  sdkmath.NewInt(1_000_000),    // Minimum liquidity
 			shouldOk: true,
 		},
 		{
-			name:     "1:1000000000 ratio - extreme",
-			amountA:  sdkmath.NewInt(1),
-			amountB:  sdkmath.NewInt(1000000000),
+			name:     "1:1000000 ratio - very extreme",
+			amountA:  sdkmath.NewInt(1_000_000),      // Minimum liquidity
+			amountB:  sdkmath.NewInt(1_000_000_000_000), // 1,000,000x ratio
 			shouldOk: true,
 		},
 	}
@@ -259,16 +259,16 @@ func (suite *PoolSwapComprehensiveTestSuite) TestSwap_ExtremelySmallInput() {
 	swapper := suite.addr("swapper")
 
 	// Create pool with reasonable liquidity
-	suite.fundAccount(creator, "tokenA", 10000000)
-	suite.fundAccount(creator, "tokenB", 10000000)
+	suite.fundAccount(creator, "tokenA", 100_000_000)
+	suite.fundAccount(creator, "tokenB", 100_000_000)
 
 	pool, _, err := suite.Keeper.CreatePool(
 		suite.SdkCtx,
 		creator,
 		"tokenA",
 		"tokenB",
-		sdk.NewCoin("tokenA", sdkmath.NewInt(1000000)),
-		sdk.NewCoin("tokenB", sdkmath.NewInt(1000000)),
+		sdk.NewCoin("tokenA", sdkmath.NewInt(10_000_000)), // Large pool to allow minimum swaps
+		sdk.NewCoin("tokenB", sdkmath.NewInt(10_000_000)), // Large pool to allow minimum swaps
 	)
 	suite.NoError(err)
 
@@ -301,8 +301,8 @@ func (suite *PoolSwapComprehensiveTestSuite) TestSwap_LargeInputRelativeToPool()
 	swapper := suite.addr("swapper")
 
 	// Create pool
-	suite.fundAccount(creator, "tokenA", 10000000)
-	suite.fundAccount(creator, "tokenB", 10000000)
+	suite.fundAccount(creator, "tokenA", 100_000_000)
+	suite.fundAccount(creator, "tokenB", 100_000_000)
 
 	pool, _, err := suite.Keeper.CreatePool(
 		suite.SdkCtx,
@@ -348,34 +348,39 @@ func (suite *PoolSwapComprehensiveTestSuite) TestSwap_MultipleSequentialSwaps() 
 	creator := suite.addr("creator")
 	swapper := suite.addr("swapper")
 
-	// Create pool
-	suite.fundAccount(creator, "tokenA", 10000000)
-	suite.fundAccount(creator, "tokenB", 10000000)
+	// Create large pool to keep price impact below 10% for 1M swaps
+	suite.fundAccount(creator, "tokenA", 1_000_000_000)
+	suite.fundAccount(creator, "tokenB", 1_000_000_000)
 
 	pool, _, err := suite.Keeper.CreatePool(
 		suite.SdkCtx,
 		creator,
 		"tokenA",
 		"tokenB",
-		sdk.NewCoin("tokenA", sdkmath.NewInt(1000000)),
-		sdk.NewCoin("tokenB", sdkmath.NewInt(1000000)),
+		sdk.NewCoin("tokenA", sdkmath.NewInt(100_000_000)), // 100M pool keeps 1M swaps under 10% impact
+		sdk.NewCoin("tokenB", sdkmath.NewInt(100_000_000)), // 100M pool keeps 1M swaps under 10% impact
 	)
 	suite.NoError(err)
 
 	// Fund swapper
-	suite.fundAccount(swapper, "tokenA", 100000)
+	suite.fundAccount(swapper, "tokenA", 50_000_000)
 
 	// Record initial reserves
 	initialReserveA, _ := sdkmath.NewIntFromString(pool.ReserveA)
 	initialReserveB, _ := sdkmath.NewIntFromString(pool.ReserveB)
 	initialK := initialReserveA.Mul(initialReserveB)
 
-	// Perform multiple small swaps
+	// Perform multiple swaps (must meet minimum of 1,000,000 uaura)
 	totalAmountOut := sdkmath.ZeroInt()
-	swapAmount := sdkmath.NewInt(1000)
+	swapAmount := sdkmath.NewInt(1_000_000) // Minimum swap amount
 	numSwaps := 10
 
 	for i := 0; i < numSwaps; i++ {
+		// Advance blocks to avoid front-running protection (requires 2 block wait)
+		if i > 0 {
+			suite.SdkCtx = suite.SdkCtx.WithBlockHeight(suite.SdkCtx.BlockHeight() + 2)
+		}
+
 		amountOut, _, _, err := suite.Keeper.SecureSwapExactIn(
 			suite.SdkCtx,
 			swapper,
@@ -416,8 +421,8 @@ func (suite *PoolSwapComprehensiveTestSuite) TestSwap_BothDirections() {
 	swapper2 := suite.addr("swapper2")
 
 	// Create pool
-	suite.fundAccount(creator, "tokenA", 10000000)
-	suite.fundAccount(creator, "tokenB", 10000000)
+	suite.fundAccount(creator, "tokenA", 100_000_000)
+	suite.fundAccount(creator, "tokenB", 100_000_000)
 
 	pool, _, err := suite.Keeper.CreatePool(
 		suite.SdkCtx,
@@ -534,14 +539,14 @@ func (suite *PoolSwapComprehensiveTestSuite) TestFeeCalculation_ZeroFee() {
 	suite.NoError(err)
 
 	// Fund swapper
-	suite.fundAccount(swapper, "tokenA", 10000)
+	suite.fundAccount(swapper, "tokenA", 20_000_000)
 
 	// Swap should work with zero fees
 	amountOut, _, _, err := suite.Keeper.SecureSwapExactIn(
 		suite.SdkCtx,
 		swapper,
 		pool.PoolId,
-		sdk.NewCoin("tokenA", sdkmath.NewInt(1000)),
+		sdk.NewCoin("tokenA", sdkmath.NewInt(1_000_000)), // Minimum swap amount
 		sdkmath.NewInt(1), // Minimum output
 		10000,
 	)
@@ -574,14 +579,14 @@ func (suite *PoolSwapComprehensiveTestSuite) TestFeeCalculation_MaximumFee() {
 	suite.NoError(err)
 
 	// Fund swapper
-	suite.fundAccount(swapper, "tokenA", 10000)
+	suite.fundAccount(swapper, "tokenA", 20_000_000)
 
 	// Swap with high fee
 	amountOut, _, _, err := suite.Keeper.SecureSwapExactIn(
 		suite.SdkCtx,
 		swapper,
 		pool.PoolId,
-		sdk.NewCoin("tokenA", sdkmath.NewInt(1000)),
+		sdk.NewCoin("tokenA", sdkmath.NewInt(1_000_000)), // Minimum swap amount
 		sdkmath.NewInt(1), // Minimum output
 		10000,
 	)
@@ -591,7 +596,7 @@ func (suite *PoolSwapComprehensiveTestSuite) TestFeeCalculation_MaximumFee() {
 	// Output should be significantly reduced due to high fee
 	// With 10% fee, output should be notably less than no-fee scenario
 	suite.True(amountOut.GT(sdkmath.ZeroInt()))
-	suite.True(amountOut.LT(sdkmath.NewInt(1000)),
+	suite.True(amountOut.LT(sdkmath.NewInt(1_000_000)), // Minimum swap amount
 		"Output should be reduced by fees")
 }
 
@@ -601,16 +606,16 @@ func (suite *PoolSwapComprehensiveTestSuite) TestFeeCalculation_FeeAccumulation(
 	swapper := suite.addr("swapper")
 
 	// Create pool
-	suite.fundAccount(creator, "tokenA", 10000000)
-	suite.fundAccount(creator, "tokenB", 10000000)
+	suite.fundAccount(creator, "tokenA", 100_000_000)
+	suite.fundAccount(creator, "tokenB", 100_000_000)
 
 	pool, _, err := suite.Keeper.CreatePool(
 		suite.SdkCtx,
 		creator,
 		"tokenA",
 		"tokenB",
-		sdk.NewCoin("tokenA", sdkmath.NewInt(1000000)),
-		sdk.NewCoin("tokenB", sdkmath.NewInt(1000000)),
+		sdk.NewCoin("tokenA", sdkmath.NewInt(10_000_000)), // Large pool to allow minimum swaps
+		sdk.NewCoin("tokenB", sdkmath.NewInt(10_000_000)), // Large pool to allow minimum swaps
 	)
 	suite.NoError(err)
 
@@ -620,14 +625,14 @@ func (suite *PoolSwapComprehensiveTestSuite) TestFeeCalculation_FeeAccumulation(
 	initialK := initialReserveA.Mul(initialReserveB)
 
 	// Perform multiple swaps
-	suite.fundAccount(swapper, "tokenA", 100000)
+	suite.fundAccount(swapper, "tokenA", 50_000_000)
 
 	for i := 0; i < 20; i++ {
 		_, _, _, err := suite.Keeper.SecureSwapExactIn(
 			suite.SdkCtx,
 			swapper,
 			pool.PoolId,
-			sdk.NewCoin("tokenA", sdkmath.NewInt(1000)),
+			sdk.NewCoin("tokenA", sdkmath.NewInt(1_000_000)), // Minimum swap amount
 			sdkmath.NewInt(1), // Minimum output
 			10000,
 		)
@@ -698,7 +703,7 @@ func (suite *PoolSwapComprehensiveTestSuite) TestGasGuardrails_SwapOperation() {
 	suite.NoError(err)
 
 	// Fund swapper
-	suite.fundAccount(swapper, "tokenA", 10000)
+	suite.fundAccount(swapper, "tokenA", 20_000_000)
 
 	// Measure gas for swap
 	gasBefore := suite.SdkCtx.GasMeter().GasConsumed()
@@ -707,7 +712,7 @@ func (suite *PoolSwapComprehensiveTestSuite) TestGasGuardrails_SwapOperation() {
 		suite.SdkCtx,
 		swapper,
 		pool.PoolId,
-		sdk.NewCoin("tokenA", sdkmath.NewInt(1000)),
+		sdk.NewCoin("tokenA", sdkmath.NewInt(1_000_000)), // Minimum swap amount
 		sdkmath.NewInt(1), // Minimum output
 		10000,
 	)
@@ -748,14 +753,14 @@ func (suite *PoolSwapComprehensiveTestSuite) TestSlippageProtection_ExactMinimum
 	)
 	suite.NoError(err)
 
-	suite.fundAccount(swapper, "tokenA", 10000)
+	suite.fundAccount(swapper, "tokenA", 20_000_000)
 
 	// First, do a test swap to see what output we get
 	testOutput, _, _, err := suite.Keeper.SecureSwapExactIn(
 		suite.SdkCtx,
 		swapper,
 		pool.PoolId,
-		sdk.NewCoin("tokenA", sdkmath.NewInt(1000)),
+		sdk.NewCoin("tokenA", sdkmath.NewInt(1_000_000)), // Minimum swap amount
 		sdkmath.NewInt(1), // Minimum output
 		10000,
 	)
@@ -776,14 +781,14 @@ func (suite *PoolSwapComprehensiveTestSuite) TestSlippageProtection_ExactMinimum
 	)
 	suite.NoError(err)
 
-	suite.fundAccount(swapper, "tokenA", 10000)
+	suite.fundAccount(swapper, "tokenA", 20_000_000)
 
 	// Swap with exact minimum output
 	actualOutput, _, _, err := suite.Keeper.SecureSwapExactIn(
 		suite.SdkCtx,
 		swapper,
 		pool2.PoolId,
-		sdk.NewCoin("tokenA", sdkmath.NewInt(1000)),
+		sdk.NewCoin("tokenA", sdkmath.NewInt(1_000_000)), // Minimum swap amount
 		testOutput, // Use exact expected output as minimum
 		10000,
 	)
@@ -812,7 +817,7 @@ func (suite *PoolSwapComprehensiveTestSuite) TestSlippageProtection_BelowMinimum
 	)
 	suite.NoError(err)
 
-	suite.fundAccount(swapper, "tokenA", 10000)
+	suite.fundAccount(swapper, "tokenA", 20_000_000)
 
 	// Set unrealistically high minimum output
 	unrealisticMinimum := sdkmath.NewInt(10000)
@@ -821,7 +826,7 @@ func (suite *PoolSwapComprehensiveTestSuite) TestSlippageProtection_BelowMinimum
 		suite.SdkCtx,
 		swapper,
 		pool.PoolId,
-		sdk.NewCoin("tokenA", sdkmath.NewInt(1000)),
+		sdk.NewCoin("tokenA", sdkmath.NewInt(1_000_000)), // Minimum swap amount
 		unrealisticMinimum,
 		10000,
 	)
@@ -850,7 +855,7 @@ func (suite *PoolSwapComprehensiveTestSuite) TestSlippageProtection_MaxSlippageB
 	)
 	suite.NoError(err)
 
-	suite.fundAccount(swapper, "tokenA", 100000)
+	suite.fundAccount(swapper, "tokenA", 50_000_000)
 
 	testCases := []struct {
 		name          string
@@ -926,7 +931,7 @@ func (suite *PoolSwapComprehensiveTestSuite) TestSlippageProtection_PriceImpactC
 	)
 	suite.NoError(err)
 
-	suite.fundAccount(swapper, "tokenA", 100000)
+	suite.fundAccount(swapper, "tokenA", 50_000_000)
 
 	testCases := []struct {
 		name                string

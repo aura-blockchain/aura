@@ -157,6 +157,9 @@ func (k Keeper) GetTWAPPrice(ctx sdk.Context, poolID string, windowBlocks uint64
 		if err != nil {
 			return sdkmath.LegacyZeroDec(), err
 		}
+		if reserveA.IsZero() {
+			return sdkmath.LegacyZeroDec(), fmt.Errorf("pool reserve is zero")
+		}
 		reserveB, err := k.parseReserve(pool.ReserveB)
 		if err != nil {
 			return sdkmath.LegacyZeroDec(), err
