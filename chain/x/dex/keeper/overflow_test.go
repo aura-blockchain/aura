@@ -64,10 +64,7 @@ func TestSwapFeeOverflowPrevention(t *testing.T) {
 
 // TestPoolCreationOverflowPrevention tests that pool creation rejects overflow
 func TestPoolCreationOverflowPrevention(t *testing.T) {
-	// Skip - requires bank keeper setup for token transfers
-	t.Skip("Test requires full integration setup with bank keeper")
-
-	ctx, k := setupTest(t)
+	k, ctx, mockBank := setupTestKeeper(t)
 	creator := keepertest.GenTestAddr()
 
 	tests := []struct {
@@ -105,6 +102,10 @@ func TestPoolCreationOverflowPrevention(t *testing.T) {
 			// Clean up any existing pool
 			k.DeletePool(ctx, poolID)
 
+			// Fund creator with test amounts BEFORE CreatePool
+			mockBank.SetBalance(creator, tt.amountA.Denom, tt.amountA.Amount.Add(sdkmath.NewInt(1000)))
+			mockBank.SetBalance(creator, tt.amountB.Denom, tt.amountB.Amount.Add(sdkmath.NewInt(1000)))
+
 			pool, lpTokens, err := k.CreatePool(
 				ctx,
 				creator.String(),
@@ -131,9 +132,61 @@ func TestPoolCreationOverflowPrevention(t *testing.T) {
 
 // TestSwapOverflowPrevention tests that swaps reject overflow in k-constant calculation
 func TestSwapOverflowPrevention(t *testing.T) {
-	// Skip actual pool creation/swap for now as it requires bank keeper setup
-	// This test is primarily testing the overflow detection logic
-	t.Skip("Test requires full integration setup with bank keeper")
+	k, ctx, mockBank := setupTestKeeper(t)
+	creator := keepertest.GenTestAddr()
+	trader := keepertest.GenTestAddr()
+
+	// Setup: Create a pool first
+	tokenA := "uaura"
+	tokenB := "usdt"
+	poolLiquidityA := sdk.NewCoin(tokenA, sdkmath.NewInt(1_000_000_000))
+	poolLiquidityB := sdk.NewCoin(tokenB, sdkmath.NewInt(1_000_000_000))
+
+	// Fund creator and create pool
+	mockBank.SetBalance(creator, tokenA, poolLiquidityA.Amount)
+	mockBank.SetBalance(creator, tokenB, poolLiquidityB.Amount)
+
+	poolID := k.GeneratePoolID(tokenA, tokenB)
+	_, _, err := k.CreatePool(ctx, creator.String(), tokenA, tokenB, poolLiquidityA, poolLiquidityB)
+	require.NoError(t, err, "Pool creation should succeed")
+
+	tests := []struct {
+		name          string
+		coinIn        sdk.Coin
+		expectError   bool
+		errorContains string
+	}{
+		{
+			name:        "normal swap amount",
+			coinIn:      sdk.NewCoin(tokenA, sdkmath.NewInt(1_000_000)),
+			expectError: false,
+		},
+		{
+			name:          "extremely large swap - should be rejected",
+			coinIn:        sdk.NewCoin(tokenA, sdkmath.NewInt(1_000_000_000_000_000)),
+			expectError:   true,
+			errorContains: "exceeds maximum",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Fund trader
+			mockBank.SetBalance(trader, tt.coinIn.Denom, tt.coinIn.Amount)
+
+			// Attempt swap with SwapExactIn (maxSlippageBps = 10000 = 100%)
+			_, _, _, err := k.SwapExactIn(ctx, trader.String(), poolID, tt.coinIn, sdkmath.NewInt(1), 10000)
+
+			if tt.expectError {
+				require.Error(t, err)
+				if tt.errorContains != "" {
+					require.Contains(t, err.Error(), tt.errorContains)
+				}
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
 }
 
 // TestGetQuoteOverflowPrevention tests that quotes reject overflow
