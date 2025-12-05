@@ -75,7 +75,11 @@ func (k *Keeper) CheckQueryRateLimit(ctx sdk.Context, address string) error {
 	k.mu.Lock()
 	defer k.mu.Unlock()
 
-	k.ResetQueryRateLimits(ctx)
+	// Reset rate limits if we're in a new block (inline to avoid deadlock)
+	if ctx.BlockHeight() > k.currentBlock {
+		k.currentBlock = ctx.BlockHeight()
+		k.queryRateLimits = make(map[string]int)
+	}
 
 	count := k.queryRateLimits[address]
 	if count >= types.MaxQueriesPerBlock {
