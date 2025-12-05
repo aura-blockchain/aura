@@ -3,8 +3,6 @@ package types
 import (
 	"time"
 
-	"cosmossdk.io/math"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	economicspb "github.com/aequitas/aura/proto/aura/economics/v1beta1"
@@ -64,15 +62,10 @@ func DefaultTreasuryParams() *economicspb.TreasuryParams {
 
 // DefaultGovernanceParams returns default governance parameters
 func DefaultGovernanceParams() *economicspb.GovernanceParams {
-	minDepositCoins := sdk.NewCoins(sdk.NewCoin("uaura", math.NewInt(10000000)))
-	// Convert sdk.Coins to []*sdk.Coin for protobuf compatibility
-	minDeposit := make([]*sdk.Coin, len(minDepositCoins))
-	for i := range minDepositCoins {
-		coin := minDepositCoins[i]
-		minDeposit[i] = &coin
-	}
+	// Note: MinDeposit is set to nil to avoid protobuf serialization issues
+	// with sdk.Coin types. This should be set properly in genesis or via governance.
 	return &economicspb.GovernanceParams{
-		MinDeposit:              minDeposit,
+		MinDeposit:              nil, // TODO: Set in genesis - []*sdk.Coin not serializable with protoc-gen-go
 		MaxDepositPeriod:        durationpb.New(7 * 24 * time.Hour),
 		VotingPeriod:            durationpb.New(7 * 24 * time.Hour),
 		Quorum:                  3333, // 33.33%
