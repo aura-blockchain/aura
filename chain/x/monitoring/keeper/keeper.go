@@ -28,6 +28,7 @@ var (
 	LogEntryKeyPrefix         = []byte{0x0A}
 	ParamsKey                 = []byte{0x0B} // Single entry
 	ExplorerIntegrationKey    = []byte{0x0C} // Single entry
+	LogCounterKey             = []byte{0x0D} // Single entry - log ID counter
 )
 
 // Keeper handles all monitoring operations with persistent KV store.
@@ -757,8 +758,9 @@ func (k Keeper) SetExplorerIntegration(ctx context.Context, integration *types.E
 func (k Keeper) LogEntry(ctx context.Context, level types.LogLevel, module string, message string, fields map[string]interface{}, traceID string, spanID string) error {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
-	// Generate unique log ID with timestamp for ordering
-	logID := fmt.Sprintf("log_%d_%d", sdkCtx.BlockTime().UnixNano(), sdkCtx.BlockHeight())
+	// Generate unique log ID with timestamp, block height, and counter for uniqueness
+	counter := k.getAndIncrementLogCounter(ctx)
+	logID := fmt.Sprintf("log_%d_%d_%d", sdkCtx.BlockTime().UnixNano(), sdkCtx.BlockHeight(), counter)
 
 	entry := &types.LogEntry{
 		ID:        logID,
@@ -910,6 +912,30 @@ func (k Keeper) GetFailedTransactionPatterns(ctx context.Context) ([]*types.Fail
 
 // Counter key for generating unique IDs within a block
 var CounterKeyPrefix = []byte{0x0F}
+
+// getAndIncrementLogCounter gets the current log counter value and increments it atomically
+func (k Keeper) getAndIncrementLogCounter(ctx context.Context) uint64 {
+	store := k.storeService.OpenKVStore(ctx)
+
+	// Get current counter value
+	bz, err := store.Get(LogCounterKey)
+	var counter uint64
+	if err != nil || bz == nil {
+		counter = 0
+	} else {
+		counter = sdk.BigEndianToUint64(bz)
+	}
+
+	// Increment and store
+	nextCounter := counter + 1
+	if err := store.Set(LogCounterKey, sdk.Uint64ToBigEndian(nextCounter)); err != nil {
+		// If increment fails, use timestamp-based fallback
+		sdkCtx := sdk.UnwrapSDKContext(ctx)
+		return uint64(sdkCtx.BlockTime().UnixNano())
+	}
+
+	return counter
+}
 
 // generateID generates a unique ID with a prefix using block time and counter for consensus safety
 func (k Keeper) generateID(ctx context.Context, prefix string) string {

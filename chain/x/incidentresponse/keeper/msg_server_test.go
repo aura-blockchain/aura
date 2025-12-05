@@ -145,18 +145,6 @@ func TestMsgServer_UpdateIncidentStatus(t *testing.T) {
 }
 
 func TestMsgServer_RequestChainPause(t *testing.T) {
-	keeper, ctx := setupKeeperForTest(t)
-	msgServer := NewMsgServerImpl(keeper)
-
-	// Setup params with authorized keys
-	params := types.DefaultParams()
-	params.EmergencyPauseEnabled = true
-	params.PauseAuthorizedKeys = []string{"admin1", "admin2", "admin3"}
-	params.PauseRequiredSigners = 1
-	params.MaxPauseDuration = 24 * time.Hour
-	err := keeper.SetParams(ctx, params)
-	require.NoError(t, err)
-
 	tests := []struct {
 		name    string
 		msg     *types.MsgRequestChainPause
@@ -196,7 +184,20 @@ func TestMsgServer_RequestChainPause(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			resp, err := msgServer.RequestChainPause(ctx, tt.msg)
+			// Create fresh keeper and context for each test case
+			freshKeeper, freshCtx := setupKeeperForTest(t)
+			freshMsgServer := NewMsgServerImpl(freshKeeper)
+
+			// Setup params for this test case
+			params := types.DefaultParams()
+			params.EmergencyPauseEnabled = true
+			params.PauseAuthorizedKeys = []string{"admin1", "admin2", "admin3"}
+			params.PauseRequiredSigners = 1
+			params.MaxPauseDuration = 24 * time.Hour
+			err := freshKeeper.SetParams(freshCtx, params)
+			require.NoError(t, err)
+
+			resp, err := freshMsgServer.RequestChainPause(freshCtx, tt.msg)
 
 			if tt.wantErr {
 				require.Error(t, err)
@@ -208,7 +209,7 @@ func TestMsgServer_RequestChainPause(t *testing.T) {
 				require.NotNil(t, resp)
 
 				// Verify chain is paused
-				pauseState := keeper.GetChainPauseState(ctx)
+				pauseState := freshKeeper.GetChainPauseState(freshCtx)
 				require.True(t, pauseState.IsPaused)
 				require.Equal(t, types.PauseLevel(tt.msg.PauseLevel), pauseState.PauseLevel)
 			}

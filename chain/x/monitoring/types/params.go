@@ -174,5 +174,19 @@ func ValidateParams(p Params) error {
 		return ErrInvalidThreshold
 	}
 
+	// Validate retention periods are non-negative
+	if p.AlertRetentionPeriod < 0 {
+		return ErrInvalidThreshold
+	}
+	if p.MetricsRetentionPeriod < 0 {
+		return ErrInvalidThreshold
+	}
+	if p.SIEMRetentionPeriod < 0 {
+		return ErrInvalidThreshold
+	}
+	if p.LogRetentionPeriod < 0 {
+		return ErrInvalidThreshold
+	}
+
 	return nil
 }
