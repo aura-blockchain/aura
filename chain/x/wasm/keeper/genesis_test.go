@@ -161,7 +161,7 @@ func (suite *GenesisTestSuite) TestInitGenesisWithInvalidData() {
 
 	err := suite.keeper.InitGenesis(ctx, *genState)
 	suite.Error(err)
-	suite.Contains(err.Error(), "max_wasm_code_size must be positive")
+	suite.Contains(err.Error(), "max wasm code size must be positive")
 }
 
 func (suite *GenesisTestSuite) TestDefaultGenesis() {

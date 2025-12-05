@@ -55,11 +55,11 @@ func (suite *ContractHooksTestSuite) SetupTest() {
 	err := cms.LoadLatestVersion()
 	require.NoError(suite.T(), err)
 
-	// Create context
+	// Create context with gas meter
 	suite.ctx = sdk.NewContext(cms, tmproto.Header{
 		Height: 1,
 		Time:   time.Now(),
-	}, false, logger)
+	}, false, logger).WithGasMeter(storetypes.NewGasMeter(10_000_000)) // 10M gas limit
 
 	// Create registry keeper - note the correct argument order: storeKey, cdc, authority
 	suite.registryKeeper = contractregistrykeeper.NewKeeper(
@@ -179,7 +179,7 @@ func (suite *ContractHooksTestSuite) TestBeforeInstantiateHook_CreatorLimit() {
 		"test-contract-2",
 	)
 	require.Error(suite.T(), err)
-	require.Contains(suite.T(), err.Error(), "too many contracts")
+	require.Contains(suite.T(), err.Error(), "contract limit exceeded")
 }
 
 func (suite *ContractHooksTestSuite) TestBeforeInstantiateHook_RateLimit() {
@@ -235,7 +235,7 @@ func (suite *ContractHooksTestSuite) TestAfterInstantiateHook_Success() {
 	require.Equal(suite.T(), suite.creator.String(), info.Creator)
 	require.Equal(suite.T(), suite.admin.String(), info.Admin)
 	require.Equal(suite.T(), "test-contract", info.Metadata.Name)
-	require.Equal(suite.T(), contractregistrytypes.ContractStatus_CONTRACT_STATUS_ACTIVE, info.Status)
+	require.Equal(suite.T(), pb.ContractStatus_CONTRACT_STATUS_ACTIVE, info.Status)
 }
 
 func (suite *ContractHooksTestSuite) TestAfterInstantiateHook_NoRegistry() {
@@ -255,9 +255,10 @@ func (suite *ContractHooksTestSuite) TestAfterInstantiateHook_NoRegistry() {
 }
 
 func (suite *ContractHooksTestSuite) TestAfterInstantiateHook_CircuitBreakerOpen() {
-	// Open circuit breaker
+	// Open circuit breaker with recent failure time (so timeout hasn't elapsed)
 	circuitBreaker.mu.Lock()
 	circuitBreaker.state = "open"
+	circuitBreaker.lastFailure = time.Now() // Recent failure keeps circuit open
 	circuitBreaker.mu.Unlock()
 
 	err := suite.wasmKeeper.AfterInstantiateHook(
@@ -317,7 +318,7 @@ func (suite *ContractHooksTestSuite) TestBeforeExecuteHook_Success() {
 		},
 		SecurityPolicy: &pb.SecurityPolicy{
 			AllowPause:       true,
-			MaxGasPerTx:      5000000,
+			MaxGasPerTx:      20000000, // 20M gas - must be >= context gas meter limit (10M)
 			RateLimitPerUser: 100,
 		},
 		Status: pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
@@ -378,6 +379,7 @@ func (suite *ContractHooksTestSuite) TestBeforeExecuteHook_RateLimitExceeded() {
 		},
 		SecurityPolicy: &pb.SecurityPolicy{
 			AllowPause:       true,
+			MaxGasPerTx:      20000000, // Must be >= context gas meter limit
 			RateLimitPerUser: 5,
 		},
 		Status: pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
@@ -385,19 +387,22 @@ func (suite *ContractHooksTestSuite) TestBeforeExecuteHook_RateLimitExceeded() {
 	err := suite.registryKeeper.RegisterContract(suite.ctx, info)
 	require.NoError(suite.T(), err)
 
-	// Execute 5 times successfully
+	// Execute 5 times successfully - use different block heights to bypass validation cache
 	for i := 0; i < 5; i++ {
+		// Create new context with different block height to avoid cache hits
+		ctx := suite.ctx.WithBlockHeight(int64(i + 10))
 		err = suite.wasmKeeper.BeforeExecuteHook(
-			suite.ctx,
+			ctx,
 			suite.contractAddr,
 			suite.sender,
 		)
-		require.NoError(suite.T(), err)
+		require.NoError(suite.T(), err, "call %d should succeed", i+1)
 	}
 
-	// 6th execution should fail
+	// 6th execution should fail - use yet another block height
+	ctx := suite.ctx.WithBlockHeight(20)
 	err = suite.wasmKeeper.BeforeExecuteHook(
-		suite.ctx,
+		ctx,
 		suite.contractAddr,
 		suite.sender,
 	)

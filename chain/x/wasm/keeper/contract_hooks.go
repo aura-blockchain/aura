@@ -40,8 +40,8 @@ const (
 
 // checkCircuitBreaker returns true if we should skip registry calls
 func (cb *circuitBreakerState) shouldSkip(ctx context.Context) bool {
-	cb.mu.RLock()
-	defer cb.mu.RUnlock()
+	cb.mu.Lock()
+	defer cb.mu.Unlock()
 
 	if cb.state == "closed" {
 		return false
@@ -52,6 +52,8 @@ func (cb *circuitBreakerState) shouldSkip(ctx context.Context) bool {
 		elapsed := determinism.TimeSince(ctx, cb.lastFailure)
 		if elapsed > time.Duration(circuitBreakerTimeout)*time.Second {
 			// Transition to half-open
+			cb.state = "half-open"
+			cb.consecutiveSuccess = 0
 			return false
 		}
 		return true
@@ -494,10 +496,8 @@ func (k Keeper) BeforeExecuteHook(
 		return err
 	}
 
-	// Note: IncrementRateLimit is not implemented in the contract registry keeper
-	// Rate limiting is checked via CheckRateLimit in ValidateContractExecution above
-	// TODO: Implement IncrementRateLimit if explicit increment tracking is needed
-	// k.contractRegistry.IncrementRateLimit(ctx, contractAddr.String(), sender.String())
+	// Increment rate limit counter after successful validation
+	k.contractRegistry.IncrementRateLimit(ctx, contractAddr.String(), sender.String())
 
 	// Record success
 	circuitBreaker.recordSuccess()

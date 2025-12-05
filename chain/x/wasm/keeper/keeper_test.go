@@ -93,7 +93,7 @@ func (suite *KeeperTestSuite) TestParamsValidation() {
 
 	err := suite.keeper.SetParams(suite.ctx, invalidParams)
 	suite.Require().Error(err)
-	suite.Require().Contains(err.Error(), "max_wasm_code_size must be positive")
+	suite.Require().Contains(err.Error(), "max wasm code size must be positive")
 
 	// Test contract size too large (over reasonable limit)
 	invalidParams.MaxWasmCodeSize = 11 * 1024 * 1024 // 11MB - may be considered too large
@@ -222,6 +222,14 @@ func (suite *KeeperTestSuite) TestValidateContractUpload() {
 	suite.Require().Contains(err.Error(), "exceeds maximum")
 
 	// Unauthorized uploader
+	// First, set params to restrict uploads to only authorized uploaders
+	params.CodeUploadAccess = &types.AccessConfig{
+		Permission: types.AccessTypeOnlyAddress,
+		Address:    address, // Only the authorized address can upload
+	}
+	err = suite.keeper.SetParams(suite.ctx, params)
+	suite.Require().NoError(err)
+
 	unauthorizedAddr := "aura1xyz789abc456def123ghi456jkl789mno012pq"
 	err = suite.keeper.ValidateContractUpload(suite.ctx, unauthorizedAddr, validCode)
 	suite.Require().Error(err)
@@ -344,7 +352,7 @@ func TestParamsValidation(t *testing.T) {
 				RequireAdminForMigrate:       false,
 			},
 			expectErr: true,
-			errMsg:    "max_wasm_code_size must be positive",
+			errMsg:    "max wasm code size must be positive",
 		},
 		{
 			name: "contract size too large",
@@ -374,7 +382,7 @@ func TestParamsValidation(t *testing.T) {
 				RequireAdminForMigrate:       false,
 			},
 			expectErr: true,
-			errMsg:    "max_gas_wasm_execution must be positive",
+			errMsg:    "max gas wasm execution must be positive",
 		},
 	}
 
