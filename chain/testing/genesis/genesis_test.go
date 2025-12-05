@@ -123,9 +123,14 @@ func TestGenesisImportExport(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
 	require.NotNil(t, input.Ctx)
 
+	// Create app and load stores before using
 	a := app.NewApp()
-	ctx := a.BaseApp.NewUncachedContext(false, tmproto.Header{})
+	err := a.LoadLatestVersion()
+	require.NoError(t, err, "LoadLatestVersion should succeed")
 
+	ctx := a.BaseApp.NewUncachedContext(false, tmproto.Header{Height: 1})
+
+	// Test bridge genesis initialization with properly initialized app
 	bridgeGenesis := *bridgetypes.DefaultGenesis()
 	require.NoError(t, a.InitBridgeGenesis(ctx, bridgeGenesis))
 
