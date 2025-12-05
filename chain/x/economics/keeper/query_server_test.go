@@ -202,8 +202,8 @@ func TestQueryVestingSchedulesByAddressEmpty(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.Empty(t, resp.Schedules)
-	require.Empty(t, resp.TotalVested)
-	require.Empty(t, resp.TotalVesting)
+	require.True(t, resp.TotalVested.IsZero())
+	require.True(t, resp.TotalVesting.IsZero())
 }
 
 func TestQueryAllVestingSchedules(t *testing.T) {
@@ -371,7 +371,7 @@ func TestQueryVoteNotFound(t *testing.T) {
 		Voter:      generateTestAddress("voter"),
 	})
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "not found")
+	require.Contains(t, err.Error(), "invalid vote")
 }
 
 func TestQueryVotes(t *testing.T) {
@@ -474,7 +474,7 @@ func TestQueryDepositNotFound(t *testing.T) {
 		Depositor:  generateTestAddress("depositor"),
 	})
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "not found")
+	require.Contains(t, err.Error(), "invalid deposit")
 }
 
 func TestQueryDeposits(t *testing.T) {
@@ -656,8 +656,8 @@ func TestQueryVoteLocksByOwnerEmpty(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.Empty(t, resp.Locks)
-	require.Empty(t, resp.TotalLocked)
-	require.Empty(t, resp.TotalVotingPower)
+	require.True(t, resp.TotalLocked.IsZero())
+	require.True(t, resp.TotalVotingPower.IsZero())
 }
 
 // ============================
@@ -667,7 +667,7 @@ func TestQueryVoteLocksByOwnerEmpty(t *testing.T) {
 func TestQueryVotingPower(t *testing.T) {
 	keeper, ctx, server := setupQueryServer(t)
 
-	testAddr := "aura1voter"
+	testAddr := generateTestAddress("voter")
 
 	// Create vote locks for the address
 	lock1 := createTestVoteLock("lock-1", testAddr, 1000000)
