@@ -351,8 +351,9 @@ func TestExecuteTimeLockedAction_AuditLog(t *testing.T) {
 	action, err := k.ProposeTimeLockedAction(sdk.WrapSDKContext(ctx), "admin1", "action", []byte("data"), 1)
 	require.NoError(t, err)
 
-	// Wait for action to be ready
-	time.Sleep(2 * time.Second)
+	// Advance blockchain time past delay
+	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(2 * time.Second))
+	ctx = ctx.WithBlockHeight(ctx.BlockHeight() + 1)
 
 	err = k.ExecuteTimeLockedAction(sdk.WrapSDKContext(ctx), "admin1", action.Id)
 	require.NoError(t, err)

@@ -348,6 +348,28 @@ func (suite *MsgServerComprehensiveTestSuite) TestRemoveLiquidityExceedingShares
 		LpTokens: lpTokens.Add(sdkmath.NewInt(1000)).String(), // More than owned
 	}
 
+	// Reset test state to avoid cooldown period from previous operations
+	suite.SetupTest()
+
+	// Re-fund creator
+	suite.bankKeeper.setBalance(creator, "uaura", sdkmath.NewInt(10000000000))
+	suite.bankKeeper.setBalance(creator, "usdt", sdkmath.NewInt(10000000000))
+
+	// Re-create pool
+	createResp, err = suite.msgServer.CreatePool(suite.ctx, createMsg)
+	suite.Require().NoError(err)
+
+	// Parse LP tokens from response
+	lpTokens, ok = sdkmath.NewIntFromString(createResp.LpTokens)
+	suite.Require().True(ok, "should parse LP tokens")
+
+	// Try to remove more LP tokens than owned
+	removeMsg = &dexpb.MsgRemoveLiquidity{
+		Provider: creator.String(),
+		PoolId:   createResp.PoolId,
+		LpTokens: lpTokens.Add(sdkmath.NewInt(1000)).String(), // More than owned
+	}
+
 	_, err = suite.msgServer.RemoveLiquidity(suite.ctx, removeMsg)
 	suite.Require().Error(err, "should reject removing more shares than owned")
 	// Error could be "insufficient" or "liquidity is locked" depending on timing
