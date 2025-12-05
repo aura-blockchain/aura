@@ -1127,11 +1127,13 @@ func TestInitExportGenesis(t *testing.T) {
 
 	// Create test data
 	vcRecord := &vcregistrypb.VCRecord{
-		VcId:          "vc:genesis1",
-		HolderAddress: "aura1genesisuser",
-		HolderDid:     "did:aura:genesis",
-		Status:        types.VCStatus_VC_STATUS_ACTIVE,
-		IssuedAt:      timestamppb.Now(),
+		VcId:            "vc:genesis1",
+		HolderAddress:   "aura1genesisuser",
+		HolderDid:       "did:aura:genesis",
+		IssuerAssistant: "issuer1",
+		VcType:          vcregistrypb.VCType_VC_TYPE_VERIFIED_HUMAN,
+		Status:          types.VCStatus_VC_STATUS_ACTIVE,
+		IssuedAt:        timestamppb.Now(),
 	}
 
 	didDoc := &vcregistrypb.DIDDocument{
@@ -1143,6 +1145,7 @@ func TestInitExportGenesis(t *testing.T) {
 
 	policy := &vcregistrypb.VCPolicy{
 		VcTypeName: "GenesisVC",
+		VcTypeEnum: vcregistrypb.VCType_VC_TYPE_VERIFIED_HUMAN,
 		Status:     vcregistrypb.VCPolicyStatus_VC_POLICY_STATUS_ACTIVE,
 		CreatedAt:  timestamppb.Now(),
 	}
@@ -1178,14 +1181,14 @@ func TestInitExportGenesis(t *testing.T) {
 	}
 
 	// Re-import and verify
-	keeper2 := NewKeeper(nil, "authority")
-	err := keeper2.InitGenesis(ctx, genesis)
+	keeper2, ctx2 := setupKeeperForTest(t)
+	err := keeper2.InitGenesis(ctx2, genesis)
 	if err != nil {
 		t.Fatalf("failed to init genesis: %v", err)
 	}
 
 	// Verify data was loaded
-	retrievedVC, ok := keeper2.GetVCRecord(ctx, vcRecord.VcId)
+	retrievedVC, ok := keeper2.GetVCRecord(ctx2, vcRecord.VcId)
 	if !ok {
 		t.Fatal("expected to find VC after genesis init")
 	}

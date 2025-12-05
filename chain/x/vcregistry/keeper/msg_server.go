@@ -120,6 +120,9 @@ func (m *MsgServer) MintVC(
 	msg *vcregistrypb.MsgMintVC,
 ) (*vcregistrypb.MsgMintVCResponse, error) {
 	// Validate inputs
+	if msg == nil {
+		return nil, fmt.Errorf("request cannot be nil")
+	}
 	if msg.HolderAddress == "" {
 		return nil, types.ErrInvalidHolderAddress
 	}
