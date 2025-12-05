@@ -8,31 +8,11 @@ import (
 	sdkmath "cosmossdk.io/math"
 	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/economics/types"
 	economicspb "github.com/aequitas/aura/proto/aura/economics/v1beta1"
 )
 
-// coinsToProto converts sdk.Coins to []*sdk.Coin for proto marshaling
-func coinsToProto(coins sdk.Coins) []*sdk.Coin {
-	result := make([]*sdk.Coin, len(coins))
-	for i := range coins {
-		result[i] = &coins[i]
-	}
-	return result
-}
-
-// protoCoinsToSDK converts []*sdk.Coin to sdk.Coins
-func protoCoinsToSDK(coins []*sdk.Coin) sdk.Coins {
-	result := make(sdk.Coins, len(coins))
-	for i, coin := range coins {
-		if coin != nil {
-			result[i] = *coin
-		}
-	}
-	return result
-}
 
 // ============================
 // VESTING OPERATIONS
@@ -50,8 +30,22 @@ func (k Keeper) CreateVestingSchedule(
 	vestingType economicspb.VestingType,
 	scheduleType economicspb.ScheduleType,
 ) (string, error) {
-	// Generate unique schedule ID
-	scheduleID := fmt.Sprintf("schedule-%s-%d", beneficiaryAddress, startTime.Unix())
+	// Validate amount > 0
+	if totalAmount.Amount.IsZero() || totalAmount.Amount.IsNegative() {
+		return "", errorsmod.Wrap(types.ErrInvalidAmount, "vesting amount must be greater than zero")
+	}
+
+	// Validate vesting duration > 0
+	if vestingDuration == 0 {
+		return "", errorsmod.Wrap(types.ErrInvalidRequest, "invalid vesting duration")
+	}
+
+	// Generate unique schedule ID using counter
+	scheduleNum, err := k.GetNextScheduleID(ctx)
+	if err != nil {
+		return "", err
+	}
+	scheduleID := fmt.Sprintf("schedule-%s-%d", beneficiaryAddress, scheduleNum)
 
 	// Calculate end time
 	endTime := startTime.Add(time.Duration(vestingDuration) * time.Second)
@@ -61,10 +55,10 @@ func (k Keeper) CreateVestingSchedule(
 	schedule := &economicspb.VestingSchedule{
 		Id:              scheduleID,
 		Address:         beneficiaryAddress,
-		OriginalAmount:  &totalAmount,
-		VestedAmount:    &vestedCoin,
-		StartTime:       timestamppb.New(startTime),
-		EndTime:         timestamppb.New(endTime),
+		OriginalAmount:  totalAmount,
+		VestedAmount:    vestedCoin,
+		StartTime:       startTime,
+		EndTime:         endTime,
 		CliffDuration:   cliffDuration,
 		VestingType:     vestingType,
 		ScheduleType:    scheduleType,
@@ -115,7 +109,7 @@ func (k Keeper) ReleaseVestedTokens(ctx context.Context, beneficiary sdk.AccAddr
 
 	// Update schedule
 	newVestedCoin := sdk.NewCoin(schedule.OriginalAmount.Denom, vestedAmount)
-	schedule.VestedAmount = &newVestedCoin
+	schedule.VestedAmount = newVestedCoin
 	if err := k.SetVestingSchedule(ctx, schedule); err != nil {
 		return sdk.Coin{}, err
 	}
@@ -144,7 +138,8 @@ func (k Keeper) RevokeVestingSchedule(ctx context.Context, revoker sdk.AccAddres
 	// Mark as revoked
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	schedule.Revoked = true
-	schedule.RevokedAt = timestamppb.New(sdkCtx.BlockTime())
+	revokedTime := sdkCtx.BlockTime()
+	schedule.RevokedAt = &revokedTime
 	schedule.RevokedReason = reason
 
 	// Update schedule
@@ -169,6 +164,16 @@ func (k Keeper) SubmitProposal(
 	initialDeposit sdk.Coins,
 	isEmergency bool,
 ) (uint64, error) {
+	// Validate title not empty
+	if title == "" {
+		return 0, errorsmod.Wrap(types.ErrInvalidRequest, "invalid title")
+	}
+
+	// Validate description not empty
+	if description == "" {
+		return 0, errorsmod.Wrap(types.ErrInvalidRequest, "invalid description")
+	}
+
 	// Get next proposal ID
 	proposalID, err := k.GetNextProposalID(ctx)
 	if err != nil {
@@ -187,14 +192,14 @@ func (k Keeper) SubmitProposal(
 	// Calculate timeframes
 	var votingPeriod time.Duration
 	if isEmergency {
-		votingPeriod = params.Governance.EmergencyVotingPeriod.AsDuration()
+		votingPeriod = params.Governance.EmergencyVotingPeriod
 	} else {
-		votingPeriod = params.Governance.VotingPeriod.AsDuration()
+		votingPeriod = params.Governance.VotingPeriod
 	}
 
-	depositPeriod := params.Governance.MaxDepositPeriod.AsDuration()
+	depositPeriod := params.Governance.MaxDepositPeriod
 
-	// Create proposal (TotalDeposit needs to be converted to proto type)
+	// Create proposal
 	proposal := &economicspb.Proposal{
 		Id:              proposalID,
 		Title:           title,
@@ -202,20 +207,21 @@ func (k Keeper) SubmitProposal(
 		Category:        category,
 		Proposer:        proposer.String(),
 		Status:          economicspb.ProposalStatus_PROPOSAL_STATUS_DEPOSIT_PERIOD,
-		SubmitTime:      timestamppb.New(now),
-		DepositEndTime:  timestamppb.New(now.Add(depositPeriod)),
-		TotalDeposit:    coinsToProto(initialDeposit),
+		SubmitTime:      now,
+		DepositEndTime:  now.Add(depositPeriod),
+		TotalDeposit:    initialDeposit,
 		IsEmergency:     isEmergency,
-		ExecutionDelay:  params.Governance.ExecutionDelay,
+		ExecutionDelay:  &params.Governance.ExecutionDelay,
 	}
 
 	// Check if initial deposit meets minimum
-	minDepositCoins := protoCoinsToSDK(params.Governance.MinDeposit)
-	if initialDeposit.IsAllGTE(minDepositCoins) {
+	if initialDeposit.IsAllGTE(params.Governance.MinDeposit) {
 		// Move to voting period
 		proposal.Status = economicspb.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD
-		proposal.VotingStartTime = timestamppb.New(now)
-		proposal.VotingEndTime = timestamppb.New(now.Add(votingPeriod))
+		votingStart := now
+		votingEnd := now.Add(votingPeriod)
+		proposal.VotingStartTime = &votingStart
+		proposal.VotingEndTime = &votingEnd
 	}
 
 	// Store proposal
@@ -228,8 +234,8 @@ func (k Keeper) SubmitProposal(
 		deposit := &economicspb.Deposit{
 			ProposalId: proposalID,
 			Depositor:  proposer.String(),
-			Amount:     coinsToProto(initialDeposit),
-			Timestamp:  timestamppb.New(now),
+			Amount:     initialDeposit,
+			Timestamp:  now,
 		}
 		if err := k.SetDeposit(ctx, deposit); err != nil {
 			return 0, err
@@ -264,8 +270,8 @@ func (k Keeper) AddDeposit(ctx context.Context, proposalID uint64, depositor sdk
 	deposit := &economicspb.Deposit{
 		ProposalId: proposalID,
 		Depositor:  depositor.String(),
-		Amount:     coinsToProto(amount),
-		Timestamp:  timestamppb.New(now),
+		Amount:     amount,
+		Timestamp:  now,
 	}
 
 	if err := k.SetDeposit(ctx, deposit); err != nil {
@@ -273,9 +279,8 @@ func (k Keeper) AddDeposit(ctx context.Context, proposalID uint64, depositor sdk
 	}
 
 	// Update total deposit
-	totalDepositCoins := protoCoinsToSDK(proposal.TotalDeposit)
-	totalDepositCoins = totalDepositCoins.Add(amount...)
-	proposal.TotalDeposit = coinsToProto(totalDepositCoins)
+	totalDepositCoins := proposal.TotalDeposit.Add(amount...)
+	proposal.TotalDeposit = totalDepositCoins
 
 	// Check if minimum deposit met
 	params, err := k.GetParams(ctx)
@@ -283,17 +288,18 @@ func (k Keeper) AddDeposit(ctx context.Context, proposalID uint64, depositor sdk
 		return err
 	}
 
-	minDepositCoins := protoCoinsToSDK(params.Governance.MinDeposit)
-	if totalDepositCoins.IsAllGTE(minDepositCoins) {
+	if totalDepositCoins.IsAllGTE(params.Governance.MinDeposit) {
 		// Move to voting period
-		votingPeriod := params.Governance.VotingPeriod.AsDuration()
+		votingPeriod := params.Governance.VotingPeriod
 		if proposal.IsEmergency {
-			votingPeriod = params.Governance.EmergencyVotingPeriod.AsDuration()
+			votingPeriod = params.Governance.EmergencyVotingPeriod
 		}
 
 		proposal.Status = economicspb.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD
-		proposal.VotingStartTime = timestamppb.New(now)
-		proposal.VotingEndTime = timestamppb.New(now.Add(votingPeriod))
+		votingStart := now
+		votingEnd := now.Add(votingPeriod)
+		proposal.VotingStartTime = &votingStart
+		proposal.VotingEndTime = &votingEnd
 	}
 
 	return k.SetProposal(ctx, proposal)
@@ -301,6 +307,11 @@ func (k Keeper) AddDeposit(ctx context.Context, proposalID uint64, depositor sdk
 
 // AddVote casts a vote on a proposal
 func (k Keeper) AddVote(ctx context.Context, proposalID uint64, voter sdk.AccAddress, option economicspb.VoteOption, isSecret bool, voteCommitment string) error {
+	// Validate vote option is not unspecified
+	if option == economicspb.VoteOption_VOTE_OPTION_UNSPECIFIED {
+		return errorsmod.Wrap(types.ErrInvalidVote, "invalid vote option")
+	}
+
 	// Get proposal
 	proposal, err := k.GetProposal(ctx, proposalID)
 	if err != nil {
@@ -320,8 +331,8 @@ func (k Keeper) AddVote(ctx context.Context, proposalID uint64, voter sdk.AccAdd
 		ProposalId:     proposalID,
 		Voter:          voter.String(),
 		Option:         option,
-		Timestamp:      timestamppb.New(sdkCtx.BlockTime()),
-		VotingPower:    votingPower.String(),
+		Timestamp:      sdkCtx.BlockTime(),
+		VotingPower:    votingPower,
 		IsSecret:       isSecret,
 		VoteCommitment: voteCommitment,
 	}
@@ -331,6 +342,11 @@ func (k Keeper) AddVote(ctx context.Context, proposalID uint64, voter sdk.AccAdd
 
 // AddWeightedVote casts a weighted vote on a proposal
 func (k Keeper) AddWeightedVote(ctx context.Context, proposalID uint64, voter sdk.AccAddress, options []*economicspb.WeightedVoteOption) error {
+	// Validate options not empty
+	if len(options) == 0 {
+		return errorsmod.Wrap(types.ErrInvalidVote, "invalid vote options")
+	}
+
 	// Get proposal
 	proposal, err := k.GetProposal(ctx, proposalID)
 	if err != nil {
@@ -345,11 +361,7 @@ func (k Keeper) AddWeightedVote(ctx context.Context, proposalID uint64, voter sd
 	// Validate weights sum to 1
 	totalWeight := sdkmath.LegacyZeroDec()
 	for _, opt := range options {
-		weight, err := sdkmath.LegacyNewDecFromStr(opt.Weight)
-		if err != nil {
-			return errorsmod.Wrap(types.ErrInvalidVote, "invalid weight format")
-		}
-		totalWeight = totalWeight.Add(weight)
+		totalWeight = totalWeight.Add(opt.Weight)
 	}
 	if !totalWeight.Equal(sdkmath.LegacyOneDec()) {
 		return errorsmod.Wrap(types.ErrInvalidVote, "weights must sum to 1.0")
@@ -364,8 +376,8 @@ func (k Keeper) AddWeightedVote(ctx context.Context, proposalID uint64, voter sd
 		ProposalId:  proposalID,
 		Voter:       voter.String(),
 		Option:      options[0].Option, // Store first option as primary
-		Timestamp:   timestamppb.New(sdkCtx.BlockTime()),
-		VotingPower: votingPower.String(),
+		Timestamp:   sdkCtx.BlockTime(),
+		VotingPower: votingPower,
 	}
 
 	return k.SetVote(ctx, vote)
@@ -373,6 +385,11 @@ func (k Keeper) AddWeightedVote(ctx context.Context, proposalID uint64, voter sd
 
 // DelegateVote delegates voting power to another address
 func (k Keeper) DelegateVote(ctx context.Context, delegator sdk.AccAddress, delegate sdk.AccAddress, categories []economicspb.ProposalCategory) error {
+	// Prevent self-delegation
+	if delegator.String() == delegate.String() {
+		return errorsmod.Wrap(types.ErrInvalidRequest, "cannot delegate to self")
+	}
+
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
 	// Create delegation
@@ -380,8 +397,8 @@ func (k Keeper) DelegateVote(ctx context.Context, delegator sdk.AccAddress, dele
 	delegation := &economicspb.VoteDelegation{
 		Delegator:      delegator.String(),
 		Delegate:       delegate.String(),
-		DelegationTime: timestamppb.New(sdkCtx.BlockTime()),
-		DelegatedPower: delegatedPower.String(),
+		DelegationTime: sdkCtx.BlockTime(),
+		DelegatedPower: delegatedPower,
 		Categories:     categories,
 	}
 
@@ -414,14 +431,9 @@ func (k Keeper) ExecuteProposal(ctx context.Context, proposalID uint64, executor
 	}
 
 	// Check if execution delay has passed
-	params, err := k.GetParams(ctx)
-	if err != nil {
-		return err
-	}
-
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	if proposal.VotingEndTime != nil {
-		executionTime := proposal.VotingEndTime.AsTime().Add(params.Governance.ExecutionDelay.AsDuration())
+	if proposal.VotingEndTime != nil && proposal.ExecutionDelay != nil {
+		executionTime := proposal.VotingEndTime.Add(*proposal.ExecutionDelay)
 		if sdkCtx.BlockTime().Before(executionTime) {
 			return errorsmod.Wrap(types.ErrExecutionDelayNotMet, "execution delay not met")
 		}
@@ -429,13 +441,19 @@ func (k Keeper) ExecuteProposal(ctx context.Context, proposalID uint64, executor
 
 	// Mark as executed
 	proposal.Status = economicspb.ProposalStatus_PROPOSAL_STATUS_EXECUTED
-	proposal.ExecutionTime = timestamppb.New(sdkCtx.BlockTime())
+	executionTime := sdkCtx.BlockTime()
+	proposal.ExecutionTime = &executionTime
 
 	return k.SetProposal(ctx, proposal)
 }
 
 // RevealSecretVote reveals a secret ballot vote
 func (k Keeper) RevealSecretVote(ctx context.Context, proposalID uint64, voter sdk.AccAddress, option economicspb.VoteOption, revealKey string) error {
+	// Validate reveal key not empty
+	if revealKey == "" {
+		return errorsmod.Wrap(types.ErrInvalidRequest, "invalid reveal key")
+	}
+
 	// Get existing vote
 	vote, err := k.GetVote(ctx, proposalID, voter.String())
 	if err != nil {
@@ -461,6 +479,16 @@ func (k Keeper) RevealSecretVote(ctx context.Context, proposalID uint64, voter s
 
 // LockVotingTokens locks tokens for voting power boost
 func (k Keeper) LockVotingTokens(ctx context.Context, owner sdk.AccAddress, amount sdk.Coin, lockDuration uint64) (string, sdkmath.Int, error) {
+	// Validate amount > 0
+	if amount.Amount.IsZero() || amount.Amount.IsNegative() {
+		return "", sdkmath.ZeroInt(), errorsmod.Wrap(types.ErrInvalidAmount, "lock amount must be greater than zero")
+	}
+
+	// Validate lock duration > 0
+	if lockDuration == 0 {
+		return "", sdkmath.ZeroInt(), errorsmod.Wrap(types.ErrInvalidRequest, "invalid lock duration")
+	}
+
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	now := sdkCtx.BlockTime()
 
@@ -478,10 +506,10 @@ func (k Keeper) LockVotingTokens(ctx context.Context, owner sdk.AccAddress, amou
 	lock := &economicspb.VoteLock{
 		Id:          lockID,
 		Owner:       owner.String(),
-		Amount:      &amount,
-		LockStart:   timestamppb.New(now),
-		LockEnd:     timestamppb.New(now.Add(time.Duration(lockDuration) * time.Second)),
-		VotingPower: votingPower.String(),
+		Amount:      amount,
+		LockStart:   now,
+		LockEnd:     now.Add(time.Duration(lockDuration) * time.Second),
+		VotingPower: votingPower,
 		Withdrawn:   false,
 	}
 
@@ -518,7 +546,7 @@ func (k Keeper) UnlockVotingTokens(ctx context.Context, owner sdk.AccAddress, lo
 
 	// Check if lock period ended
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	if sdkCtx.BlockTime().Before(lock.LockEnd.AsTime()) {
+	if sdkCtx.BlockTime().Before(lock.LockEnd) {
 		return sdk.Coin{}, errorsmod.Wrap(types.ErrLockNotEnded, "lock period not ended")
 	}
 
@@ -528,10 +556,7 @@ func (k Keeper) UnlockVotingTokens(ctx context.Context, owner sdk.AccAddress, lo
 		return sdk.Coin{}, err
 	}
 
-	if lock.Amount != nil {
-		return *lock.Amount, nil
-	}
-	return sdk.Coin{}, nil
+	return lock.Amount, nil
 }
 
 // ============================
@@ -539,10 +564,20 @@ func (k Keeper) UnlockVotingTokens(ctx context.Context, owner sdk.AccAddress, lo
 // ============================
 
 // ProposeTreasurySpend proposes a treasury spend
-func (k Keeper) ProposeTreasurySpend(ctx context.Context, proposer sdk.AccAddress, recipient sdk.AccAddress, amount sdk.Coins, description string) (string, *timestamppb.Timestamp, error) {
+func (k Keeper) ProposeTreasurySpend(ctx context.Context, proposer sdk.AccAddress, recipient sdk.AccAddress, amount sdk.Coins, description string) (string, time.Time, error) {
+	// Validate amount > 0
+	if amount.IsZero() || !amount.IsValid() {
+		return "", time.Time{}, errorsmod.Wrap(types.ErrInvalidAmount, "treasury spend amount must be greater than zero")
+	}
+
+	// Validate description not empty
+	if description == "" {
+		return "", time.Time{}, errorsmod.Wrap(types.ErrInvalidRequest, "invalid description")
+	}
+
 	params, err := k.GetParams(ctx)
 	if err != nil {
-		return "", nil, err
+		return "", time.Time{}, err
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -552,27 +587,27 @@ func (k Keeper) ProposeTreasurySpend(ctx context.Context, proposer sdk.AccAddres
 	txID := fmt.Sprintf("treasury-tx-%d", now.Unix())
 
 	// Calculate executable time (after timelock)
-	executableAt := now.Add(params.Treasury.TimelockDuration.AsDuration())
+	executableAt := now.Add(params.Treasury.TimelockDuration)
 
 	// Create pending transaction
 	tx := &economicspb.PendingTreasuryTx{
 		TxId:         txID,
 		Recipient:    recipient.String(),
-		Amount:       coinsToProto(amount),
+		Amount:       amount,
 		Description:  description,
 		Proposer:     proposer.String(),
 		Signatures:   []string{},
-		CreatedAt:    timestamppb.New(now),
-		ExecutableAt: timestamppb.New(executableAt),
+		CreatedAt:    now,
+		ExecutableAt: executableAt,
 		Executed:     false,
 		Rejected:     false,
 	}
 
 	if err := k.SetPendingTreasuryTx(ctx, tx); err != nil {
-		return "", nil, err
+		return "", time.Time{}, err
 	}
 
-	return txID, timestamppb.New(executableAt), nil
+	return txID, executableAt, nil
 }
 
 // SignTreasurySpend signs a treasury spend proposal
@@ -644,7 +679,7 @@ func (k Keeper) ExecuteTreasurySpend(ctx context.Context, executor sdk.AccAddres
 
 	// Check if timelock passed
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	if sdkCtx.BlockTime().Before(tx.ExecutableAt.AsTime()) {
+	if sdkCtx.BlockTime().Before(tx.ExecutableAt) {
 		return false, errorsmod.Wrap(types.ErrTimelockNotMet, "timelock not met")
 	}
 
@@ -682,6 +717,17 @@ func (k Keeper) AdjustInflationRate(ctx context.Context, authority sdk.AccAddres
 	// Verify authority
 	if authority.String() != k.GetAuthority() {
 		return 0, 0, errorsmod.Wrapf(types.ErrUnauthorized, "unauthorized: expected %s, got %s", k.GetAuthority(), authority.String())
+	}
+
+	// Validate reason
+	if reason == "" {
+		return 0, 0, errorsmod.Wrap(types.ErrInvalidRequest, "invalid reason: reason cannot be empty")
+	}
+
+	// Validate inflation rate (basis points: max 10000 = 100%)
+	// Allowing up to 10000 basis points (100%) as maximum reasonable inflation rate
+	if newRate > 10000 {
+		return 0, 0, errorsmod.Wrapf(types.ErrInvalidInflationRate, "invalid inflation rate: %d basis points exceeds maximum of 10000 (100%%)", newRate)
 	}
 
 	// Get current rate

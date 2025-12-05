@@ -153,7 +153,7 @@ func (am AppModule) BeginBlock(ctx context.Context) error {
 	}
 
 	// Check inflation periodically
-	if params.Tokenomics != nil && params.Tokenomics.InflationCheckInterval > 0 && height%params.Tokenomics.InflationCheckInterval == 0 {
+	if params.Tokenomics.InflationCheckInterval > 0 && height%params.Tokenomics.InflationCheckInterval == 0 {
 		// Would implement inflation monitoring here
 		// currentInflation := calculateInflation()
 		// if abs(currentInflation - targetInflation) > threshold {
@@ -186,7 +186,7 @@ func (am AppModule) EndBlock(ctx context.Context) error {
 	// Check for proposals that need status updates
 	err = am.keeper.IterateProposals(sdkCtx, func(proposal *economicspb.Proposal) bool {
 		// Update proposal status based on time
-		if proposal.VotingEndTime != nil && proposal.Status == economicspb.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD && currentTime >= proposal.VotingEndTime.AsTime().Unix() {
+		if proposal.VotingEndTime != nil && proposal.Status == economicspb.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD && currentTime >= proposal.VotingEndTime.Unix() {
 			// Would call UpdateProposalStatus here
 			_ = am.keeper.UpdateProposalStatus(sdkCtx, proposal.Id)
 		}

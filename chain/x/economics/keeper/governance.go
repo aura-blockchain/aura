@@ -5,6 +5,8 @@ import (
 	"encoding/binary"
 	"math/big"
 
+	"cosmossdk.io/math"
+
 	"github.com/aequitas/aura/chain/x/economics/types"
 	economicspb "github.com/aequitas/aura/proto/aura/economics/v1beta1"
 )
@@ -332,9 +334,8 @@ func (k Keeper) CalculateTally(ctx context.Context, proposalID uint64) (*economi
 	vetoVotes := big.NewInt(0)
 
 	err := k.IterateVotes(ctx, proposalID, func(vote *economicspb.Vote) bool {
-		// VotingPower is a string, parse it to big.Int
-		weight := new(big.Int)
-		weight.SetString(vote.VotingPower, 10)
+		// VotingPower is math.Int, convert to big.Int
+		weight := vote.VotingPower.BigInt()
 
 		switch vote.Option {
 		case economicspb.VoteOption_VOTE_OPTION_YES:
@@ -360,11 +361,11 @@ func (k Keeper) CalculateTally(ctx context.Context, proposalID uint64) (*economi
 	totalVotes.Add(totalVotes, vetoVotes)
 
 	return &economicspb.TallyResult{
-		YesCount:         yesVotes.String(),
-		NoCount:          noVotes.String(),
-		AbstainCount:     abstainVotes.String(),
-		NoWithVetoCount:  vetoVotes.String(),
-		TotalVotingPower: totalVotes.String(),
+		YesCount:         math.NewIntFromBigInt(yesVotes),
+		NoCount:          math.NewIntFromBigInt(noVotes),
+		AbstainCount:     math.NewIntFromBigInt(abstainVotes),
+		NoWithVetoCount:  math.NewIntFromBigInt(vetoVotes),
+		TotalVotingPower: math.NewIntFromBigInt(totalVotes),
 	}, nil
 }
 
@@ -388,11 +389,7 @@ func (k Keeper) UpdateProposalStatus(ctx context.Context, proposalID uint64) err
 	proposal.FinalTallyResult = tally
 
 	// Determine if proposal passed based on tally
-	yesVotes := new(big.Int)
-	yesVotes.SetString(tally.YesCount, 10)
-
-	totalVotes := new(big.Int)
-	totalVotes.SetString(tally.TotalVotingPower, 10)
+	totalVotes := tally.TotalVotingPower.BigInt()
 
 	if totalVotes.Sign() > 0 {
 		// Simple majority check (would need proper quorum/threshold logic from params)

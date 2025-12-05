@@ -81,35 +81,38 @@ func (k Keeper) SetParams(ctx context.Context, params *economicspb.Params) error
 // InitGenesis initializes the module state from genesis
 func (k Keeper) InitGenesis(ctx context.Context, gs *economicspb.GenesisState) error {
 	// Set params
-	if err := k.SetParams(ctx, gs.Params); err != nil {
+	if err := k.SetParams(ctx, &gs.Params); err != nil {
 		return err
 	}
 
 	// Initialize vesting schedules
 	for _, schedule := range gs.VestingSchedules {
-		if err := k.SetVestingSchedule(ctx, schedule); err != nil {
+		scheduleCopy := schedule
+		if err := k.SetVestingSchedule(ctx, &scheduleCopy); err != nil {
 			return err
 		}
 		// Update user index
-		if err := k.AddUserVestingSchedule(ctx, schedule.Address, schedule.Id); err != nil {
+		if err := k.AddUserVestingSchedule(ctx, scheduleCopy.Address, scheduleCopy.Id); err != nil {
 			return err
 		}
 	}
 
 	// Initialize vote locks
 	for _, lock := range gs.VoteLocks {
-		if err := k.SetVoteLock(ctx, lock); err != nil {
+		lockCopy := lock
+		if err := k.SetVoteLock(ctx, &lockCopy); err != nil {
 			return err
 		}
 		// Update user index
-		if err := k.AddUserVoteLock(ctx, lock.Owner, lock.Id); err != nil {
+		if err := k.AddUserVoteLock(ctx, lockCopy.Owner, lockCopy.Id); err != nil {
 			return err
 		}
 	}
 
 	// Initialize pending treasury transactions
 	for _, tx := range gs.PendingTreasuryTxs {
-		if err := k.SetPendingTreasuryTx(ctx, tx); err != nil {
+		txCopy := tx
+		if err := k.SetPendingTreasuryTx(ctx, &txCopy); err != nil {
 			return err
 		}
 	}
@@ -120,25 +123,29 @@ func (k Keeper) InitGenesis(ctx context.Context, gs *economicspb.GenesisState) e
 	}
 
 	for _, proposal := range gs.Proposals {
-		if err := k.SetProposal(ctx, proposal); err != nil {
+		proposalCopy := proposal
+		if err := k.SetProposal(ctx, &proposalCopy); err != nil {
 			return err
 		}
 	}
 
 	for _, vote := range gs.Votes {
-		if err := k.SetVote(ctx, vote); err != nil {
+		voteCopy := vote
+		if err := k.SetVote(ctx, &voteCopy); err != nil {
 			return err
 		}
 	}
 
 	for _, deposit := range gs.Deposits {
-		if err := k.SetDeposit(ctx, deposit); err != nil {
+		depositCopy := deposit
+		if err := k.SetDeposit(ctx, &depositCopy); err != nil {
 			return err
 		}
 	}
 
 	for _, delegation := range gs.VoteDelegations {
-		if err := k.SetVoteDelegation(ctx, delegation); err != nil {
+		delegationCopy := delegation
+		if err := k.SetVoteDelegation(ctx, &delegationCopy); err != nil {
 			return err
 		}
 	}
@@ -183,19 +190,19 @@ func (k Keeper) ExportGenesis(ctx context.Context) (*economicspb.GenesisState, e
 	}
 
 	gs := &economicspb.GenesisState{
-		Params:             params,
-		VestingSchedules:   []*economicspb.VestingSchedule{},
-		VoteLocks:          []*economicspb.VoteLock{},
-		PendingTreasuryTxs: []*economicspb.PendingTreasuryTx{},
-		Proposals:          []*economicspb.Proposal{},
-		Votes:              []*economicspb.Vote{},
-		Deposits:           []*economicspb.Deposit{},
-		VoteDelegations:    []*economicspb.VoteDelegation{},
+		Params:             *params,
+		VestingSchedules:   []economicspb.VestingSchedule{},
+		VoteLocks:          []economicspb.VoteLock{},
+		PendingTreasuryTxs: []economicspb.PendingTreasuryTx{},
+		Proposals:          []economicspb.Proposal{},
+		Votes:              []economicspb.Vote{},
+		Deposits:           []economicspb.Deposit{},
+		VoteDelegations:    []economicspb.VoteDelegation{},
 	}
 
 	// Export vesting schedules
 	if err := k.IterateVestingSchedules(ctx, func(schedule *economicspb.VestingSchedule) bool {
-		gs.VestingSchedules = append(gs.VestingSchedules, schedule)
+		gs.VestingSchedules = append(gs.VestingSchedules, *schedule)
 		return false
 	}); err != nil {
 		return nil, err
@@ -203,7 +210,7 @@ func (k Keeper) ExportGenesis(ctx context.Context) (*economicspb.GenesisState, e
 
 	// Export vote locks
 	if err := k.IterateVoteLocks(ctx, func(lock *economicspb.VoteLock) bool {
-		gs.VoteLocks = append(gs.VoteLocks, lock)
+		gs.VoteLocks = append(gs.VoteLocks, *lock)
 		return false
 	}); err != nil {
 		return nil, err
@@ -211,7 +218,7 @@ func (k Keeper) ExportGenesis(ctx context.Context) (*economicspb.GenesisState, e
 
 	// Export pending treasury transactions
 	if err := k.IteratePendingTreasuryTxs(ctx, func(tx *economicspb.PendingTreasuryTx) bool {
-		gs.PendingTreasuryTxs = append(gs.PendingTreasuryTxs, tx)
+		gs.PendingTreasuryTxs = append(gs.PendingTreasuryTxs, *tx)
 		return false
 	}); err != nil {
 		return nil, err
@@ -222,7 +229,7 @@ func (k Keeper) ExportGenesis(ctx context.Context) (*economicspb.GenesisState, e
 	gs.NextProposalId = nextProposalID
 
 	if err := k.IterateProposals(ctx, func(proposal *economicspb.Proposal) bool {
-		gs.Proposals = append(gs.Proposals, proposal)
+		gs.Proposals = append(gs.Proposals, *proposal)
 		return false
 	}); err != nil {
 		return nil, err
@@ -573,9 +580,9 @@ func (k Keeper) GetInflationMetrics(ctx context.Context) (*economicspb.Inflation
 		// Return default metrics if not found
 		return &economicspb.InflationMetrics{
 			CurrentRate:       0,
-			CirculatingSupply: "0",
-			TotalVested:       "0",
-			TotalVesting:      "0",
+			CirculatingSupply: sdkmath.ZeroInt(),
+			TotalVested:       sdkmath.ZeroInt(),
+			TotalVesting:      sdkmath.ZeroInt(),
 		}, nil
 	}
 
@@ -606,9 +613,9 @@ func (k Keeper) GetMEVStats(ctx context.Context) (*economicspb.MEVStats, error) 
 	if bz == nil {
 		// Return default stats if not found
 		return &economicspb.MEVStats{
-			TotalCaptured:         "0",
-			TotalRedistributed:    "0",
-			PendingRedistribution: "0",
+			TotalCaptured:         sdkmath.ZeroInt(),
+			TotalRedistributed:    sdkmath.ZeroInt(),
+			PendingRedistribution: sdkmath.ZeroInt(),
 		}, nil
 	}
 
@@ -640,9 +647,9 @@ func (k Keeper) GetLiquidityMiningStats(ctx context.Context) (*economicspb.Liqui
 		// Return default stats if not found
 		return &economicspb.LiquidityMiningStats{
 			CurrentEpoch:           0,
-			TotalDistributed:       "0",
-			RemainingRewards:       "0",
-			RewardsThisEpoch:       "0",
+			TotalDistributed:       sdkmath.ZeroInt(),
+			RemainingRewards:       sdkmath.ZeroInt(),
+			RewardsThisEpoch:       sdkmath.ZeroInt(),
 			NextDistributionHeight: 0,
 		}, nil
 	}
@@ -720,18 +727,17 @@ func (k Keeper) CalculateVotingPower(ctx context.Context, address sdk.AccAddress
 		}
 
 		// Check if lock is still active
-		if lock.LockEnd != nil && currentTime.Before(lock.LockEnd.AsTime()) {
+		if !lock.LockEnd.IsZero() && currentTime.Before(lock.LockEnd) {
 			activeLocks++
 
 			// Add to locked amount
-			if lock.Amount != nil {
+			if !lock.Amount.IsNil() {
 				lockedAmount = lockedAmount.Add(lock.Amount.Amount)
 			}
 
-			// Add to voting power (lock.VotingPower is a string)
-			lockPower, ok := sdkmath.NewIntFromString(lock.VotingPower)
-			if ok {
-				votingPower = votingPower.Add(lockPower)
+			// Add to voting power (lock.VotingPower is already math.Int)
+			if !lock.VotingPower.IsNil() && !lock.VotingPower.IsZero() {
+				votingPower = votingPower.Add(lock.VotingPower)
 			}
 		}
 	}
