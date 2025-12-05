@@ -227,12 +227,14 @@ func setupDatabase(t *testing.T, dbPath string) (*dbm.GoLevelDB, store.CommitMul
 	cms := store.NewCommitMultiStore(db, logger, metrics.NewNoOpMetrics())
 
 	// Mount multiple stores to simulate a real chain
-	cms.MountStoreWithDB(mainStoreKey, storetypes.StoreTypeIAVL, db)
-	cms.MountStoreWithDB(bankStoreKey, storetypes.StoreTypeIAVL, db)
-	cms.MountStoreWithDB(stakingStoreKey, storetypes.StoreTypeIAVL, db)
-	cms.MountStoreWithDB(identityStoreKey, storetypes.StoreTypeIAVL, db)
-	cms.MountStoreWithDB(vcregistryStoreKey, storetypes.StoreTypeIAVL, db)
-	cms.MountStoreWithDB(dexStoreKey, storetypes.StoreTypeIAVL, db)
+	// Pass nil for the DB parameter - the multistore handles key prefixing internally
+	// This prevents IAVL version conflicts between stores
+	cms.MountStoreWithDB(mainStoreKey, storetypes.StoreTypeIAVL, nil)
+	cms.MountStoreWithDB(bankStoreKey, storetypes.StoreTypeIAVL, nil)
+	cms.MountStoreWithDB(stakingStoreKey, storetypes.StoreTypeIAVL, nil)
+	cms.MountStoreWithDB(identityStoreKey, storetypes.StoreTypeIAVL, nil)
+	cms.MountStoreWithDB(vcregistryStoreKey, storetypes.StoreTypeIAVL, nil)
+	cms.MountStoreWithDB(dexStoreKey, storetypes.StoreTypeIAVL, nil)
 
 	// Load latest version (or initialize if new)
 	err = cms.LoadLatestVersion()
@@ -497,8 +499,8 @@ func TestConcurrentStoreAccess(t *testing.T) {
 	blockHeight := int64(2)
 	ctx = ctx.WithBlockHeight(blockHeight)
 
-	// Write to store
-	mainStore := ctx.KVStore(storetypes.NewKVStoreKey("main"))
+	// Write to store - use the mounted key, not a new one
+	mainStore := ctx.KVStore(mainStoreKey)
 	mainStore.Set([]byte("concurrent_key"), []byte("concurrent_value"))
 
 	// Multiple reads
