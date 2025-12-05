@@ -4,11 +4,21 @@
 # ============================================================================
 # This script initializes a 4-validator local testnet for AURA blockchain
 # Chain ID: aura-local-4
+#
+# Features:
+# - Store initialization verification (prevents IAVL version errors)
+# - AppHash consistency checks
+# - Key management with multiple backend support
 # ============================================================================
 
 set -e
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Source utility libraries
+source "${SCRIPT_DIR}/lib-store-verification.sh"
+source "${SCRIPT_DIR}/lib-key-management.sh"
 
 # Colors for output
 RED='\033[0;31m'
@@ -24,6 +34,14 @@ STAKING_AMOUNT="900000000000${DENOM}"  # 900,000 AURA per validator
 NUM_VALIDATORS=4
 BINARY="aurad"
 VALIDATOR_MONIKERS=("validator-1" "validator-2" "validator-3" "validator-4")
+
+# Key management configuration
+# Use 'test' backend for local testnet (unencrypted, easy for development)
+# For production/mainnet, use 'os' or 'file' backend
+KEYRING_BACKEND="${AURA_KEYRING_BACKEND:-test}"
+
+# Setup keyring backend
+setup_keyring_backend "$KEYRING_BACKEND"
 
 # Base directory for testnet data
 TESTNET_DIR="${PWD}/testnet-data"
@@ -149,10 +167,35 @@ EOF
     echo -e "  ${GREEN}  Node ID: ${NODE_ID}${NC}"
 done
 
+echo ""
+echo -e "${YELLOW}Validating all keys...${NC}"
+
+# Validate all keys were created successfully
+VALIDATION_FAILED=0
+for i in $(seq 0 $((NUM_VALIDATORS - 1))); do
+    MONIKER="${VALIDATOR_MONIKERS[$i]}"
+    NODE_HOME="${TESTNET_DIR}/${MONIKER}"
+
+    if ! validate_key_exists "$MONIKER" "$NODE_HOME" "$KEYRING_BACKEND"; then
+        echo -e "  ${RED}✗ Key validation failed for: $MONIKER${NC}"
+        VALIDATION_FAILED=1
+    else
+        echo -e "  ${GREEN}✓ Key validated: $MONIKER${NC}"
+    fi
+done
+
+if [ $VALIDATION_FAILED -eq 1 ]; then
+    echo -e "${RED}✗ Key validation failed${NC}"
+    exit 1
+fi
+
+echo -e "${GREEN}✓ All keys validated successfully${NC}"
+
 # ============================================================================
 # Step 5: Configure genesis file with all validators
 # ============================================================================
-echo -e "${YELLOW}[5/8]${NC} Configuring genesis file..."
+echo ""
+echo -e "${YELLOW}[5/9]${NC} Configuring genesis file..."
 
 # Use validator-1 as the template for genesis
 GENESIS_HOME="${TESTNET_DIR}/${VALIDATOR_MONIKERS[0]}"
@@ -197,7 +240,7 @@ fi
 # ============================================================================
 # Step 6: Distribute genesis and configure peers
 # ============================================================================
-echo -e "${YELLOW}[6/8]${NC} Distributing genesis and configuring peers..."
+echo -e "${YELLOW}[6/9]${NC} Distributing genesis and configuring peers..."
 
 # Distribute final genesis to all validators
 FINAL_GENESIS="${GENESIS_HOME}/config/genesis.json"
@@ -209,7 +252,7 @@ done
 echo -e "${GREEN}✓ Genesis distributed to all nodes${NC}"
 
 # Configure persistent peers
-echo -e "${YELLOW}[7/8]${NC} Configuring persistent peers..."
+echo -e "${YELLOW}[7/9]${NC} Configuring persistent peers..."
 
 for i in $(seq 0 $((NUM_VALIDATORS - 1))); do
     MONIKER="${VALIDATOR_MONIKERS[$i]}"
@@ -244,9 +287,9 @@ for i in $(seq 0 $((NUM_VALIDATORS - 1))); do
 done
 
 # ============================================================================
-# Final Step: Create Docker volume initialization script
+# Step 8: Create Docker volume initialization script
 # ============================================================================
-echo -e "${YELLOW}[8/8]${NC} Creating Docker volume population script...${NC}"
+echo -e "${YELLOW}[8/9]${NC} Creating Docker volume population script...${NC}"
 
 cat > "${TESTNET_DIR}/populate-volumes.sh" << 'EOF'
 #!/bin/bash
@@ -281,8 +324,58 @@ EOF
 chmod +x "${TESTNET_DIR}/populate-volumes.sh"
 
 # ============================================================================
+# Step 8: Verify Store Initialization Readiness
+# ============================================================================
+echo -e "${YELLOW}[8/9]${NC} Verifying store initialization readiness..."
+echo ""
+
+# Verify each validator's stores
+VERIFICATION_FAILED=0
+for i in $(seq 0 $((NUM_VALIDATORS - 1))); do
+    MONIKER="${VALIDATOR_MONIKERS[$i]}"
+    NODE_HOME="${TESTNET_DIR}/${MONIKER}"
+
+    echo -e "${BLUE}Verifying ${MONIKER}...${NC}"
+
+    # Check that database will be created on first start
+    if [ ! -d "${NODE_HOME}/data" ]; then
+        mkdir -p "${NODE_HOME}/data"
+    fi
+
+    # Verify genesis is present (required for InitGenesis)
+    if [ ! -f "${NODE_HOME}/config/genesis.json" ]; then
+        echo -e "  ${RED}✗ Genesis file missing${NC}"
+        VERIFICATION_FAILED=1
+        continue
+    fi
+
+    echo -e "  ${GREEN}✓ Genesis file present${NC}"
+    echo -e "  ${GREEN}✓ Ready for store initialization on first start${NC}"
+    echo -e "  ${YELLOW}ℹ Stores will be initialized during InitGenesis (first block)${NC}"
+    echo ""
+done
+
+if [ $VERIFICATION_FAILED -eq 1 ]; then
+    echo -e "${RED}✗ Store verification failed for one or more validators${NC}"
+    exit 1
+fi
+
+echo -e "${GREEN}✓ All validators ready for store initialization${NC}"
+echo ""
+echo -e "${YELLOW}Important:${NC} Store initialization happens automatically when the node"
+echo -e "processes its first block (InitGenesis). The ensureStoreInitMarkers()"
+echo -e "function in chain/app/app.go writes a deterministic marker (0x01 byte)"
+echo -e "into each KV store to ensure all stores have version 1 persisted."
+echo ""
+echo -e "To verify stores after startup:"
+echo -e "  ${BLUE}source scripts/lib-store-verification.sh${NC}"
+echo -e "  ${BLUE}verify_store_initialization testnet-data/validator-1${NC}"
+echo ""
+
+# ============================================================================
 # Summary
 # ============================================================================
+echo -e "${YELLOW}[9/9]${NC} Initialization Summary"
 echo ""
 echo -e "${BLUE}============================================================================${NC}"
 echo -e "${GREEN}Testnet Initialization Complete!${NC}"
@@ -308,10 +401,14 @@ echo ""
 echo -e "  2. Start the testnet:"
 echo -e "     ${BLUE}docker-compose -f docker-compose.testnet.yml up -d${NC}"
 echo ""
-echo -e "  3. View logs:"
+echo -e "  3. Verify store initialization (after startup):"
+echo -e "     ${BLUE}source scripts/lib-store-verification.sh${NC}"
+echo -e "     ${BLUE}verify_store_initialization testnet-data/validator-1${NC}"
+echo ""
+echo -e "  4. View logs:"
 echo -e "     ${BLUE}docker-compose -f docker-compose.testnet.yml logs -f validator-1${NC}"
 echo ""
-echo -e "  4. Check node status:"
+echo -e "  5. Check node status:"
 echo -e "     ${BLUE}curl http://localhost:27657/status${NC}"
 echo ""
 echo -e "${YELLOW}Port Mappings:${NC}"

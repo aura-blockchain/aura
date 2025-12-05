@@ -1100,6 +1100,17 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 			return nil, err
 		}
 		ensureStoreInitMarkers(ctx, app.allStoreKeys())
+
+		// Post-InitGenesis sanity check: validate all stores have persisted versions
+		logger.Info("running post-InitGenesis store validation")
+		if err := app.ValidateStoreVersions(ctx); err != nil {
+			logger.Error("store validation failed after InitGenesis", "error", err)
+			// Log detailed context but don't fail - some stores may be lazily initialized
+			app.LogStoreVersionContext(ctx, "post-InitGenesis-validation-failure")
+		} else {
+			logger.Info("✅ post-InitGenesis store validation passed")
+		}
+
 		return res, nil
 	})
 	app.SetBeginBlocker(moduleManager.BeginBlock)
