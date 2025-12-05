@@ -59,33 +59,91 @@ func (k *Keeper) SetContractRegistry(registry *contractregistrykeeper.Keeper) {
 
 // InitGenesis initializes the module's state from a genesis state
 func (k Keeper) InitGenesis(ctx sdk.Context, data types.GenesisState) error {
-	if k.wasmKeeper == nil {
-		return fmt.Errorf("wasm keeper not configured")
+	// First validate the genesis state
+	if err := types.ValidateGenesis(&data); err != nil {
+		return err
 	}
 
-	wasmGenesis := wasmtypes.GenesisState{
-		Params: wasmtypes.DefaultParams(),
+	// Set params if provided
+	if data.Params != nil {
+		if err := k.SetParams(ctx, *data.Params); err != nil {
+			return fmt.Errorf("failed to set params: %w", err)
+		}
 	}
-	_, err := wasmkeeper.InitGenesis(ctx, k.wasmKeeper, wasmGenesis)
-	return err
+
+	// Set authorized uploaders
+	for _, uploader := range data.AuthorizedUploaders {
+		if err := k.AuthorizeUploader(ctx, uploader); err != nil {
+			return fmt.Errorf("failed to authorize uploader %s: %w", uploader, err)
+		}
+	}
+
+	// Set paused contracts
+	for _, contract := range data.PausedContracts {
+		if err := k.PauseContract(ctx, contract); err != nil {
+			return fmt.Errorf("failed to pause contract %s: %w", contract, err)
+		}
+	}
+
+	// Set security stats if provided
+	if data.SecurityStats != nil {
+		k.SetSecurityStats(ctx, *data.SecurityStats)
+	}
+
+	// Only initialize wasmd keeper if configured (for full integration)
+	// In unit tests without wasmd, we still want params/state to work
+	if k.wasmKeeper != nil {
+		wasmGenesis := wasmtypes.GenesisState{
+			Params: wasmtypes.DefaultParams(),
+		}
+		_, err := wasmkeeper.InitGenesis(ctx, k.wasmKeeper, wasmGenesis)
+		if err != nil {
+			return fmt.Errorf("failed to init wasmd genesis: %w", err)
+		}
+	}
+
+	return nil
 }
 
 // ExportGenesis exports the module's state to a genesis state
 func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
-	if k.wasmKeeper == nil {
-		return types.NewGenesisState(
-			types.DefaultParams(),
-			[]*types.Code{},
-			[]*types.Contract{},
-			[]*types.Sequence{},
-			[]string{},
-			[]string{},
-			types.DefaultSecurityStats(),
-		)
+	// Get current params
+	params := k.GetParams(ctx)
+
+	// Get authorized uploaders by iterating over the prefix
+	var authorizedUploaders []string
+	store := ctx.KVStore(k.storeKey)
+	iterator := store.Iterator(types.AuthorizedUploaderPrefix, storetypes.PrefixEndBytes(types.AuthorizedUploaderPrefix))
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+		// Key is prefix + address string, extract the address
+		key := iterator.Key()
+		address := string(key[len(types.AuthorizedUploaderPrefix):])
+		authorizedUploaders = append(authorizedUploaders, address)
 	}
 
-	_ = wasmkeeper.ExportGenesis(ctx, k.wasmKeeper) // rely on defaults for Aura module export
-	return types.DefaultGenesisState()
+	// Get paused contracts by iterating over the prefix
+	var pausedContracts []string
+	pauseIterator := store.Iterator(types.PausedContractPrefix, storetypes.PrefixEndBytes(types.PausedContractPrefix))
+	defer pauseIterator.Close()
+	for ; pauseIterator.Valid(); pauseIterator.Next() {
+		key := pauseIterator.Key()
+		contractAddr := string(key[len(types.PausedContractPrefix):])
+		pausedContracts = append(pausedContracts, contractAddr)
+	}
+
+	// Get security stats
+	stats := k.GetSecurityStats(ctx)
+
+	return types.NewGenesisState(
+		&params,
+		[]*types.Code{},
+		[]*types.Contract{},
+		[]*types.Sequence{},
+		authorizedUploaders,
+		pausedContracts,
+		&stats,
+	)
 }
 
 // ============================================================================

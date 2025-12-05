@@ -22,10 +22,11 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 		return *types.DefaultParams()
 	}
 
-	params := types.DefaultParams()
-	// Direct field assignment since types.Params is not a proto message
-	// In production, this would use proper proto unmarshaling
-	return *params
+	var params types.Params
+	if err := json.Unmarshal(bz, &params); err != nil {
+		return *types.DefaultParams()
+	}
+	return params
 }
 
 // SetParams sets the module parameters
@@ -35,9 +36,10 @@ func (k Keeper) SetParams(ctx sdk.Context, params types.Params) error {
 	}
 
 	store := ctx.KVStore(k.storeKey)
-	// Direct storage since types.Params is not a proto message
-	// In production, this would use proper proto marshaling
-	bz := []byte(fmt.Sprintf("%v", params))
+	bz, err := json.Marshal(params)
+	if err != nil {
+		return err
+	}
 	store.Set(types.ParamsKey, bz)
 	return nil
 }
@@ -293,18 +295,20 @@ func (k Keeper) GetSecurityStats(ctx sdk.Context) types.SecurityStats {
 		return types.SecurityStats{}
 	}
 
-	// Simple deserialization since SecurityStats is a simple struct
-	stats := types.SecurityStats{}
-	// In production, use proper unmarshaling
+	var stats types.SecurityStats
+	if err := json.Unmarshal(bz, &stats); err != nil {
+		return types.SecurityStats{}
+	}
 	return stats
 }
 
 // SetSecurityStats sets security statistics (exported for testing)
 func (k Keeper) SetSecurityStats(ctx sdk.Context, stats types.SecurityStats) {
 	store := ctx.KVStore(k.storeKey)
-	// Simple serialization since SecurityStats is a simple struct
-	// In production, use proper marshaling
-	bz := []byte(fmt.Sprintf("%v", stats))
+	bz, err := json.Marshal(stats)
+	if err != nil {
+		return
+	}
 	store.Set(types.SecurityStatsKey, bz)
 }
 

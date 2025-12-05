@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"encoding/json"
 	"testing"
 
 	storetypes "cosmossdk.io/store/types"
@@ -33,12 +34,12 @@ func (suite *InvariantsTestSuite) SetupTest() {
 	types.RegisterInterfaces(registry)
 	suite.cdc = codec.NewProtoCodec(registry)
 
-	// Create keeper
+	// Create keeper with valid authority address
 	suite.keeper = keeper.NewKeeper(
 		suite.cdc,
 		storeKey,
 		nil, // wasmd keeper not needed for invariant tests
-		"aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
+		sdk.AccAddress("authority___________").String(),
 	)
 }
 
@@ -117,7 +118,8 @@ func (suite *InvariantsTestSuite) TestCodeSizeLimitsInvariant() {
 	// Test: Valid code size parameters
 	params := types.DefaultParams()
 	params.MaxWasmCodeSize = 600 * 1024 // 600KB - reasonable
-	suite.keeper.SetParams(ctx, *params)
+	err := suite.keeper.SetParams(ctx, *params)
+	suite.NoError(err)
 
 	inv := keeper.CodeSizeLimitsInvariant(suite.keeper)
 	msg, broken := inv(ctx)
@@ -125,31 +127,47 @@ func (suite *InvariantsTestSuite) TestCodeSizeLimitsInvariant() {
 	suite.Empty(msg)
 
 	// Test: Zero max code size (invalid)
-	params.MaxWasmCodeSize = 0
-	suite.keeper.SetParams(ctx, *params)
+	// SetParams validates and rejects 0, so we write directly to store
+	invalidParams := *params
+	invalidParams.MaxWasmCodeSize = 0
+	suite.writeParamsDirectly(ctx, invalidParams)
 
 	msg, broken = inv(ctx)
 	suite.True(broken, "should fail with zero max code size")
 	suite.Contains(msg, "cannot be zero")
 
 	// Test: Extremely large max code size (invalid)
-	params.MaxWasmCodeSize = 20 * 1024 * 1024 // 20MB - too large
-	suite.keeper.SetParams(ctx, *params)
+	// SetParams validates and rejects > 10MB, so we write directly to store
+	invalidParams.MaxWasmCodeSize = 20 * 1024 * 1024 // 20MB - too large
+	suite.writeParamsDirectly(ctx, invalidParams)
 
 	msg, broken = inv(ctx)
 	suite.True(broken, "should fail with excessive max code size")
 	suite.Contains(msg, "exceeds reasonable limit")
 }
 
+// writeParamsDirectly writes params directly to store, bypassing validation
+// This is needed to test invariants that should fail with invalid params
+func (suite *InvariantsTestSuite) writeParamsDirectly(ctx sdk.Context, params types.Params) {
+	store := ctx.KVStore(suite.keeper.GetStoreKey())
+	bz, _ := json.Marshal(params)
+	store.Set(types.ParamsKey, bz)
+}
+
 func (suite *InvariantsTestSuite) TestUploadAuthEnforcementInvariant() {
 	ctx := suite.ctx
+
+	// Use valid bech32 test addresses
+	testAddr := sdk.AccAddress("test_address________").String()
+	testAddr2 := sdk.AccAddress("test_address2_______").String()
 
 	// Test: AccessTypeNobody with no authorized uploaders (valid)
 	params := types.DefaultParams()
 	params.CodeUploadAccess = &types.AccessConfig{
 		Permission: types.AccessTypeNobody,
 	}
-	suite.keeper.SetParams(ctx, *params)
+	err := suite.keeper.SetParams(ctx, *params)
+	suite.NoError(err)
 
 	inv := keeper.UploadAuthEnforcementInvariant(suite.keeper)
 	msg, broken := inv(ctx)
@@ -157,7 +175,6 @@ func (suite *InvariantsTestSuite) TestUploadAuthEnforcementInvariant() {
 	suite.Empty(msg)
 
 	// Test: AccessTypeNobody but with authorized uploader (invalid)
-	testAddr := "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
 	suite.keeper.AuthorizeUploader(ctx, testAddr)
 
 	msg, broken = inv(ctx)
@@ -172,18 +189,21 @@ func (suite *InvariantsTestSuite) TestUploadAuthEnforcementInvariant() {
 		Permission: types.AccessTypeOnlyAddress,
 		Address:    testAddr,
 	}
-	suite.keeper.SetParams(ctx, *params)
+	err = suite.keeper.SetParams(ctx, *params)
+	suite.NoError(err)
 
 	msg, broken = inv(ctx)
 	suite.False(broken, "should pass with valid address")
 	suite.Empty(msg)
 
 	// Test: AccessTypeOnlyAddress with invalid address
-	params.CodeUploadAccess = &types.AccessConfig{
+	// Need to write directly to store to bypass validation
+	invalidParams := *params
+	invalidParams.CodeUploadAccess = &types.AccessConfig{
 		Permission: types.AccessTypeOnlyAddress,
 		Address:    "invalid-address",
 	}
-	suite.keeper.SetParams(ctx, *params)
+	suite.writeParamsDirectly(ctx, invalidParams)
 
 	msg, broken = inv(ctx)
 	suite.True(broken, "should fail with invalid address")
@@ -192,20 +212,23 @@ func (suite *InvariantsTestSuite) TestUploadAuthEnforcementInvariant() {
 	// Test: AccessTypeAnyOfAddresses with valid addresses
 	params.CodeUploadAccess = &types.AccessConfig{
 		Permission: types.AccessTypeAnyOfAddresses,
-		Addresses:  []string{testAddr, "aura1fl48vsnmsdzcv85q5d2q4z5ajdha8yu34mf0eh"},
+		Addresses:  []string{testAddr, testAddr2},
 	}
-	suite.keeper.SetParams(ctx, *params)
+	err = suite.keeper.SetParams(ctx, *params)
+	suite.NoError(err)
 
 	msg, broken = inv(ctx)
 	suite.False(broken, "should pass with valid addresses")
 	suite.Empty(msg)
 
 	// Test: AccessTypeAnyOfAddresses with invalid address in list
-	params.CodeUploadAccess = &types.AccessConfig{
+	// Write directly to store to bypass validation
+	invalidParams = *params
+	invalidParams.CodeUploadAccess = &types.AccessConfig{
 		Permission: types.AccessTypeAnyOfAddresses,
 		Addresses:  []string{testAddr, "invalid-address"},
 	}
-	suite.keeper.SetParams(ctx, *params)
+	suite.writeParamsDirectly(ctx, invalidParams)
 
 	msg, broken = inv(ctx)
 	suite.True(broken, "should fail with invalid address in list")
@@ -218,7 +241,8 @@ func (suite *InvariantsTestSuite) TestGasCapsInvariant() {
 	// Test: Valid gas cap
 	params := types.DefaultParams()
 	params.MaxGasWasmExecution = 10_000_000 // 10M gas - reasonable
-	suite.keeper.SetParams(ctx, *params)
+	err := suite.keeper.SetParams(ctx, *params)
+	suite.NoError(err)
 
 	inv := keeper.GasCapsInvariant(suite.keeper)
 	msg, broken := inv(ctx)
@@ -226,24 +250,27 @@ func (suite *InvariantsTestSuite) TestGasCapsInvariant() {
 	suite.Empty(msg)
 
 	// Test: Zero gas cap (invalid)
-	params.MaxGasWasmExecution = 0
-	suite.keeper.SetParams(ctx, *params)
+	// SetParams validates and rejects 0, so write directly
+	invalidParams := *params
+	invalidParams.MaxGasWasmExecution = 0
+	suite.writeParamsDirectly(ctx, invalidParams)
 
 	msg, broken = inv(ctx)
 	suite.True(broken, "should fail with zero gas cap")
 	suite.Contains(msg, "cannot be zero")
 
 	// Test: Excessive gas cap (invalid)
-	params.MaxGasWasmExecution = 100_000_000 // 100M gas - too high
-	suite.keeper.SetParams(ctx, *params)
+	// SetParams may or may not reject this, write directly to be sure
+	invalidParams.MaxGasWasmExecution = 100_000_000 // 100M gas - too high
+	suite.writeParamsDirectly(ctx, invalidParams)
 
 	msg, broken = inv(ctx)
 	suite.True(broken, "should fail with excessive gas cap")
 	suite.Contains(msg, "exceeds reasonable limit")
 
 	// Test: Too low gas cap (invalid)
-	params.MaxGasWasmExecution = 50_000 // 50K gas - too low
-	suite.keeper.SetParams(ctx, *params)
+	invalidParams.MaxGasWasmExecution = 50_000 // 50K gas - too low
+	suite.writeParamsDirectly(ctx, invalidParams)
 
 	msg, broken = inv(ctx)
 	suite.True(broken, "should fail with too low gas cap")
@@ -253,10 +280,15 @@ func (suite *InvariantsTestSuite) TestGasCapsInvariant() {
 func (suite *InvariantsTestSuite) TestAdminEnforcementInvariant() {
 	ctx := suite.ctx
 
+	// Use valid bech32 test addresses
+	contractAddr := sdk.AccAddress("test_contract_______")
+	adminAddr := sdk.AccAddress("test_admin__________")
+
 	// Test: Admin enforcement disabled (should pass)
 	params := types.DefaultParams()
 	params.RequireAdminForMigrate = false
-	suite.keeper.SetParams(ctx, *params)
+	err := suite.keeper.SetParams(ctx, *params)
+	suite.NoError(err)
 
 	inv := keeper.AdminEnforcementInvariant(suite.keeper)
 	msg, broken := inv(ctx)
@@ -265,21 +297,23 @@ func (suite *InvariantsTestSuite) TestAdminEnforcementInvariant() {
 
 	// Test: Admin enforcement enabled with valid admin entries
 	params.RequireAdminForMigrate = true
-	suite.keeper.SetParams(ctx, *params)
+	err = suite.keeper.SetParams(ctx, *params)
+	suite.NoError(err)
 
-	contractAddr, _ := sdk.AccAddressFromBech32("aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn")
-	adminAddr, _ := sdk.AccAddressFromBech32("aura1fl48vsnmsdzcv85q5d2q4z5ajdha8yu34mf0eh")
-
-	suite.keeper.SetContractAdmin(ctx, contractAddr, adminAddr)
+	err = suite.keeper.SetContractAdmin(ctx, contractAddr, adminAddr)
+	suite.NoError(err)
 
 	msg, broken = inv(ctx)
 	suite.False(broken, "should pass with valid admin entry")
 	suite.Empty(msg)
 
+	// Clean up valid admin entry
+	suite.keeper.DeleteContractAdmin(ctx, contractAddr)
+
 	// Test: Invalid contract address in admin storage
 	store := ctx.KVStore(suite.keeper.GetStoreKey())
 	invalidKey := append(types.ContractAdminPrefix, []byte("invalid-address")...)
-	store.Set(invalidKey, []byte("aura1fl48vsnmsdzcv85q5d2q4z5ajdha8yu34mf0eh"))
+	store.Set(invalidKey, []byte(adminAddr.String()))
 
 	msg, broken = inv(ctx)
 	suite.True(broken, "should fail with invalid contract address")
@@ -289,7 +323,7 @@ func (suite *InvariantsTestSuite) TestAdminEnforcementInvariant() {
 	store.Delete(invalidKey)
 
 	// Test: Empty admin address
-	emptyAdminKey := append(types.ContractAdminPrefix, []byte("aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn")...)
+	emptyAdminKey := append(types.ContractAdminPrefix, []byte(contractAddr.String())...)
 	store.Set(emptyAdminKey, []byte(""))
 
 	msg, broken = inv(ctx)
@@ -300,7 +334,7 @@ func (suite *InvariantsTestSuite) TestAdminEnforcementInvariant() {
 	store.Delete(emptyAdminKey)
 
 	// Test: Invalid admin address
-	invalidAdminKey := append(types.ContractAdminPrefix, []byte("aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn")...)
+	invalidAdminKey := append(types.ContractAdminPrefix, []byte(contractAddr.String())...)
 	store.Set(invalidAdminKey, []byte("invalid-admin"))
 
 	msg, broken = inv(ctx)
@@ -311,20 +345,27 @@ func (suite *InvariantsTestSuite) TestAdminEnforcementInvariant() {
 func (suite *InvariantsTestSuite) TestCodeSizeLimitViolations() {
 	ctx := suite.ctx
 
+	// Use valid test address
+	testAddr := sdk.AccAddress("test_uploader______").String()
+
+	// Authorize the uploader first
+	suite.keeper.AuthorizeUploader(ctx, testAddr)
+
 	// Test: Code upload respects size limits
 	params := types.DefaultParams()
 	maxSize := uint64(1000) // 1KB max
 	params.MaxWasmCodeSize = maxSize
-	suite.keeper.SetParams(ctx, *params)
+	err := suite.keeper.SetParams(ctx, *params)
+	suite.NoError(err)
 
 	// Test valid size code
 	validCode := make([]byte, maxSize-1)
-	err := suite.keeper.ValidateContractUpload(ctx, "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn", validCode)
+	err = suite.keeper.ValidateContractUpload(ctx, testAddr, validCode)
 	suite.NoError(err, "should accept code within size limit")
 
 	// Test oversized code
 	oversizedCode := make([]byte, maxSize+1)
-	err = suite.keeper.ValidateContractUpload(ctx, "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn", oversizedCode)
+	err = suite.keeper.ValidateContractUpload(ctx, testAddr, oversizedCode)
 	suite.Error(err, "should reject oversized code")
 	suite.Contains(err.Error(), "exceeds maximum")
 }
@@ -332,23 +373,29 @@ func (suite *InvariantsTestSuite) TestCodeSizeLimitViolations() {
 func (suite *InvariantsTestSuite) TestUploadAuthorizationEnforcement() {
 	ctx := suite.ctx
 
+	// Use valid test addresses
+	authorizedAddr := sdk.AccAddress("authorized_addr_____").String()
+	unauthorizedAddr := sdk.AccAddress("unauthorized_addr___").String()
+
 	// Test: Unauthorized uploader cannot upload when access is restricted
+	// Note: ValidateContractUpload checks IsAuthorizedUploader (store-based), not params.CodeUploadAccess.Address
 	params := types.DefaultParams()
 	params.CodeUploadAccess = &types.AccessConfig{
 		Permission: types.AccessTypeOnlyAddress,
-		Address:    "aura1fl48vsnmsdzcv85q5d2q4z5ajdha8yu34mf0eh",
+		Address:    authorizedAddr,
 	}
-	suite.keeper.SetParams(ctx, *params)
+	err := suite.keeper.SetParams(ctx, *params)
+	suite.NoError(err)
 
-	unauthorizedAddr := "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
 	code := []byte{0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00}
 
-	err := suite.keeper.ValidateContractUpload(ctx, unauthorizedAddr, code)
+	err = suite.keeper.ValidateContractUpload(ctx, unauthorizedAddr, code)
 	suite.Error(err, "should reject unauthorized uploader")
 	suite.Contains(err.Error(), "not authorized")
 
 	// Test: Authorized uploader can upload
-	authorizedAddr := "aura1fl48vsnmsdzcv85q5d2q4z5ajdha8yu34mf0eh"
+	// Must explicitly authorize the address via AuthorizeUploader
+	suite.keeper.AuthorizeUploader(ctx, authorizedAddr)
 	err = suite.keeper.ValidateContractUpload(ctx, authorizedAddr, code)
 	suite.NoError(err, "should accept authorized uploader")
 }
@@ -357,7 +404,9 @@ func (suite *InvariantsTestSuite) TestGasConsumptionTracking() {
 	// Test: Gas consumption is tracked per contract execution
 	execCtx := types.NewExecutionContext(10)
 
-	contractAddr := "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
+	// Use valid test addresses
+	contractAddr := sdk.AccAddress("test_contract1______").String()
+	contractAddr2 := sdk.AccAddress("test_contract2______").String()
 	gasConsumed := uint64(50000)
 
 	execCtx.RecordGasConsumption(contractAddr, gasConsumed)
@@ -368,7 +417,6 @@ func (suite *InvariantsTestSuite) TestGasConsumptionTracking() {
 	suite.Equal(gasConsumed*2, execCtx.GetGasConsumed(contractAddr), "gas should accumulate")
 
 	// Test: Different contracts tracked separately
-	contractAddr2 := "aura1fl48vsnmsdzcv85q5d2q4z5ajdha8yu34mf0eh"
 	execCtx.RecordGasConsumption(contractAddr2, gasConsumed)
 	suite.Equal(gasConsumed, execCtx.GetGasConsumed(contractAddr2), "separate contract gas tracking")
 	suite.Equal(gasConsumed*2, execCtx.GetGasConsumed(contractAddr), "first contract gas unchanged")
@@ -378,8 +426,9 @@ func (suite *InvariantsTestSuite) TestEventEmissionOnOperations() {
 	ctx := suite.ctx
 
 	// Test: Events are emitted for security operations
-	contractAddr := "aura10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
-	sender := "aura1fl48vsnmsdzcv85q5d2q4z5ajdha8yu34mf0eh"
+	// Use valid test addresses
+	contractAddr := sdk.AccAddress("event_contract______").String()
+	sender := sdk.AccAddress("event_sender________").String()
 
 	// Create security audit event
 	event := types.NewSecurityAuditEvent(

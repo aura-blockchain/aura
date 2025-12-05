@@ -33,14 +33,14 @@ func TestQuerySecurityStats(t *testing.T) {
 	k, ctx := keepertest.WasmKeeper(t)
 	queryServer := keeper.NewQueryServerImpl(k)
 
-	// Setup some stats
-	sender := sdk.AccAddress("sender______________")
-	err := k.AuthorizeUploader(ctx, sender.String())
-	require.NoError(t, err)
-
-	// Store a code to increment stats
-	_, err = k.StoreCode(ctx, sender, []byte("dummy code"))
-	require.NoError(t, err)
+	// Setup some stats directly (StoreCode requires full wasmd setup)
+	stats := types.SecurityStats{
+		TotalCodesAnalyzed: 1,
+		TotalExecutions:    5,
+		CodesRejected:      0,
+		ContractsPaused:    0,
+	}
+	k.SetSecurityStats(ctx, stats)
 
 	t.Run("success - query security stats", func(t *testing.T) {
 		req := &types.QuerySecurityStatsRequest{}
