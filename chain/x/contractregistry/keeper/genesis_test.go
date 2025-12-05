@@ -293,8 +293,9 @@ func (suite *GenesisTestSuite) TestGenesisEdgeCases() {
 		}
 
 		for i := 0; i < 50; i++ {
+			// Generate unique addresses using zero-padded hex to ensure exactly 50 contracts
 			genesis.Contracts[i] = &pb.ContractInfo{
-				Address:   "aura1contract" + string(rune('a'+i)),
+				Address:   fmt.Sprintf("aura1contract%02d", i),
 				Creator:   "aura1creator",
 				CodeId:    uint64(i + 1),
 				CreatedAt: timestamppb.Now(),

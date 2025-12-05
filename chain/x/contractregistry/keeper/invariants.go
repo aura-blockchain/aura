@@ -184,35 +184,38 @@ func ContractAddressValidityInvariant(k *Keeper) sdk.Invariant {
 func VersionConsistencyInvariant(k *Keeper) sdk.Invariant {
 	return func(ctx sdk.Context) (string, bool) {
 		store := ctx.KVStore(k.storeKey)
-		prefixStore := storeprefix.NewStore(store, types.ContractMetadataKeyPrefix)
+		prefixStore := storeprefix.NewStore(store, types.ContractInfoPrefix)
 
 		iterator := prefixStore.Iterator(nil, nil)
 		defer iterator.Close()
 
 		for ; iterator.Valid(); iterator.Next() {
-			var metadata types.ContractMetadata
-			if err := json.Unmarshal(iterator.Value(), &metadata); err != nil {
+			var info pb.ContractInfo
+			if err := k.cdc.Unmarshal(iterator.Value(), &info); err != nil {
 				continue
 			}
 
-			// Check version format (should be semver-like)
-			if len(metadata.Version) > 100 {
-				return sdk.FormatInvariant(
-					types.ModuleName,
-					"version-consistency",
-					fmt.Sprintf("contract %s has overly long version string: %d chars",
-						metadata.ContractAddress, len(metadata.Version)),
-				), true
+			// Check metadata if present
+			if info.Metadata != nil {
+				// Check version format (should be semver-like)
+				if len(info.Metadata.Version) > 100 {
+					return sdk.FormatInvariant(
+						types.ModuleName,
+						"version-consistency",
+						fmt.Sprintf("contract %s has overly long version string: %d chars",
+							info.Address, len(info.Metadata.Version)),
+					), true
+				}
 			}
 
-			// If updated, updated_at should be set
-			if metadata.UpdatedAt != nil && metadata.CreatedAt != nil {
-				if metadata.UpdatedAt.AsTime().Before(metadata.CreatedAt.AsTime()) {
+			// If updated, updated_at should be after created_at
+			if info.UpdatedAt != nil && info.CreatedAt != nil {
+				if info.UpdatedAt.AsTime().Before(info.CreatedAt.AsTime()) {
 					return sdk.FormatInvariant(
 						types.ModuleName,
 						"version-consistency",
 						fmt.Sprintf("contract %s updated_at is before created_at",
-							metadata.ContractAddress),
+							info.Address),
 					), true
 				}
 			}
