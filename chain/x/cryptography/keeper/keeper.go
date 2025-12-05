@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/binary"
+	"fmt"
 
 	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"
@@ -60,7 +61,9 @@ func (k Keeper) GetParams(ctx context.Context) (*cryptoproto.Params, error) {
 	}
 
 	var params cryptoproto.Params
-	k.cdc.MustUnmarshal(bz, &params)
+	if err := k.cdc.Unmarshal(bz, &params); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal params: %w", err)
+	}
 	return &params, nil
 }
 

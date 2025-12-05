@@ -22,6 +22,7 @@ var (
 	_ module.AppModuleBasic     = AppModuleBasic{}
 	_ appmodule.AppModule       = AppModule{}
 	_ module.HasServices        = AppModule{}
+	_ module.HasGenesis         = AppModule{}
 	_ appmodule.HasBeginBlocker = AppModule{}
 )
 
@@ -70,7 +71,7 @@ func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 }
 
 // ValidateGenesis performs genesis state validation for the cryptography module
-func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, _ interface{}, bz json.RawMessage) error {
+func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, _ client.TxEncodingConfig, bz json.RawMessage) error {
 	var data cryptoproto.GenesisState
 	if err := cdc.UnmarshalJSON(bz, &data); err != nil {
 		return err
