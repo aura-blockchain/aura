@@ -264,24 +264,21 @@ func (k Keeper) BeforeInstantiateHook(
 
 	startTime := determinism.GetBlockTime(ctx)
 
-	// This will be called AFTER instantiation when we have the contract address
-	// For now, we just validate that the creator is eligible
-	//
-	// Note: Contract limit check is disabled because GetCreatorContractCount method
-	// is not yet implemented in the contract registry keeper
-	// TODO: Re-enable when GetCreatorContractCount is implemented
-	//
-	// params := k.contractRegistry.GetParams(ctx)
-	// if params.MaxContractsPerCreator > 0 {
-	//     count := k.contractRegistry.GetCreatorContractCount(ctx, creator.String())
-	//     if count >= params.MaxContractsPerCreator {
-	//         k.Logger(ctx).Error("creator contract limit exceeded",
-	//             "creator", creator.String(),
-	//             "current", count,
-	//             "max", params.MaxContractsPerCreator)
-	//         return fmt.Errorf("creator contract limit exceeded")
-	//     }
-	// }
+	// Validate that the creator is eligible (check contract limit)
+	params := k.contractRegistry.GetParams(ctx)
+	if params.MaxContractsPerCreator > 0 {
+		// Use GetCreatorContracts to count existing contracts
+		contracts := k.contractRegistry.GetCreatorContracts(ctx, creator.String())
+		count := uint64(len(contracts))
+		if count >= params.MaxContractsPerCreator {
+			k.Logger(ctx).Error("creator contract limit exceeded",
+				"creator", creator.String(),
+				"current", count,
+				"max", params.MaxContractsPerCreator)
+			circuitBreaker.recordFailure(ctx)
+			return types.ErrUnauthorized.Wrapf("creator contract limit exceeded: %d >= %d", count, params.MaxContractsPerCreator)
+		}
+	}
 
 	// Record success
 	circuitBreaker.recordSuccess()

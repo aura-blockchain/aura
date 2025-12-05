@@ -146,7 +146,8 @@ func (suite *IntegrationTestSuite) TestFullContractLifecycle() {
 	require.Equal(suite.T(), codeID, info.CodeId)
 	require.Equal(suite.T(), creator.String(), info.Creator)
 	require.Equal(suite.T(), label, info.Metadata.Name)
-	require.Equal(suite.T(), contractregistrytypes.ContractStatus_CONTRACT_STATUS_ACTIVE, info.Status)
+	// Convert both status types to int32 for comparison
+	require.Equal(suite.T(), int32(contractregistrytypes.ContractStatus_CONTRACT_STATUS_ACTIVE), int32(info.Status))
 
 	suite.T().Log("✓ Contract successfully instantiated and registered")
 
