@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 	"testing"
+	"time"
 
 	"cosmossdk.io/log"
 	"cosmossdk.io/store"
@@ -33,8 +34,11 @@ func NewTestKeeper(t *testing.T) (Keeper, sdk.Context) {
 	interfaceRegistry := codectypes.NewInterfaceRegistry()
 	cdc := codec.NewProtoCodec(interfaceRegistry)
 
-	// Create context with proper store
-	ctx := sdk.NewContext(cms, tmproto.Header{Height: 1}, false, log.NewNopLogger())
+	// Create context with proper store and realistic block time
+	ctx := sdk.NewContext(cms, tmproto.Header{
+		Height: 1,
+		Time:   time.Now(),
+	}, false, log.NewNopLogger())
 
 	// Create store service from runtime
 	storeService := runtime.NewKVStoreService(storeKey)

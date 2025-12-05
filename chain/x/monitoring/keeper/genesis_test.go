@@ -32,13 +32,15 @@ func TestInitGenesis(t *testing.T) {
 	t.Run("init with custom params", func(t *testing.T) {
 		k, ctx := NewTestKeeper(t)
 
+		// Start with default params and modify specific fields
+		customParams := types.DefaultParams()
+		customParams.EnableTransactionMonitoring = true
+		customParams.EnableAlerts = true
+		customParams.EnableAnomalyDetection = true
+		customParams.MetricsRetentionPeriod = 86400 * time.Second
+
 		genesis := &types.GenesisState{
-			Params: types.Params{
-				EnableTransactionMonitoring: true,
-				EnableAlerts:                true,
-				EnableAnomalyDetection:      true,
-				MetricsRetentionPeriod:      86400 * time.Second,
-			},
+			Params: customParams,
 		}
 
 		err := k.InitGenesis(ctx, genesis)
@@ -80,14 +82,16 @@ func TestExportGenesis(t *testing.T) {
 	t.Run("export after init preserves params", func(t *testing.T) {
 		k, ctx := NewTestKeeper(t)
 
+		// Start with default params and modify specific fields
+		customParams := types.DefaultParams()
+		customParams.EnableTransactionMonitoring = true
+		customParams.EnableAlerts = false
+		customParams.EnableAnomalyDetection = true
+		customParams.EnablePrometheusMetrics = true
+		customParams.MetricsRetentionPeriod = 7200 * time.Second
+
 		originalGenesis := &types.GenesisState{
-			Params: types.Params{
-				EnableTransactionMonitoring: true,
-				EnableAlerts:                false,
-				EnableAnomalyDetection:      true,
-				EnablePrometheusMetrics:     true,
-				MetricsRetentionPeriod:      7200 * time.Second,
-			},
+			Params: customParams,
 		}
 
 		err := k.InitGenesis(ctx, originalGenesis)
@@ -106,14 +110,16 @@ func TestGenesisRoundTrip(t *testing.T) {
 	t.Run("init then export produces same state", func(t *testing.T) {
 		k, ctx := NewTestKeeper(t)
 
+		// Start with default params and modify specific fields
+		customParams := types.DefaultParams()
+		customParams.EnableTransactionMonitoring = true
+		customParams.EnableAlerts = true
+		customParams.EnableAnomalyDetection = false
+		customParams.EnablePrometheusMetrics = true
+		customParams.MetricsRetentionPeriod = 3600 * time.Second
+
 		originalGenesis := &types.GenesisState{
-			Params: types.Params{
-				EnableTransactionMonitoring: true,
-				EnableAlerts:                true,
-				EnableAnomalyDetection:      false,
-				EnablePrometheusMetrics:     true,
-				MetricsRetentionPeriod:      3600 * time.Second,
-			},
+			Params: customParams,
 		}
 
 		// Import

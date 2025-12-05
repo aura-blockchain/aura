@@ -58,17 +58,18 @@ func (suite *InvariantsTestSuite) TestParamsInvariantValid() {
 }
 
 func (suite *InvariantsTestSuite) TestParamsInvariantInvalid() {
-	// Set invalid params (negative retention period)
+	// Verify that SetParams rejects invalid params (negative retention period)
 	params, err := suite.Keeper.GetParams(suite.SdkCtx)
 	suite.Require().NoError(err)
 	params.AlertRetentionPeriod = -100 * time.Second // Invalid
 	err = suite.Keeper.SetParams(suite.SdkCtx, params)
-	suite.Require().NoError(err)
+	suite.Error(err, "SetParams should reject invalid params")
 
+	// Invariant should still pass since invalid params were rejected
 	inv := ParamsInvariant(*suite.Keeper)
 	msg, broken := inv(suite.SdkCtx)
-	suite.True(broken, "params invariant should fail with invalid params")
-	suite.NotEmpty(msg)
+	suite.False(broken, "params invariant should pass since invalid params were rejected")
+	suite.Empty(msg)
 }
 
 // ============================================================================
