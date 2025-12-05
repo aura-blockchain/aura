@@ -24,6 +24,13 @@ func (suite *MsgServerComprehensiveTestSuite) SetupTest() {
 	suite.msgServer = NewMsgServer(suite.Keeper)
 }
 
+// Helper function to generate valid test addresses
+func (suite *MsgServerComprehensiveTestSuite) testAddress(name string) string {
+	// Create a 20-byte address and convert to bech32
+	addr := sdk.AccAddress([]byte(name + "____________")[:20])
+	return addr.String()
+}
+
 // ============================
 // MintVC Tests
 // ============================

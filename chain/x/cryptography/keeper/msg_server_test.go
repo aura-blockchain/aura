@@ -146,18 +146,18 @@ func TestMsgServer(t *testing.T) {
 	})
 
 	t.Run("SubmitThresholdSignatureShare - success", func(t *testing.T) {
-		// First create a scheme
+		// First create a scheme with valid bech32 addresses as participants
 		createMsg := &cryptoproto.MsgCreateThresholdScheme{
 			Creator:           testCreatorAddr,
 			Threshold:         2,
 			TotalParticipants: 3,
-			ParticipantIds:    []string{"p1", "p2", "p3"},
+			ParticipantIds:    []string{testCreatorAddr, "aura14gdaqycntmhn82hd7xwsy95c3cf6kv7whaa96z", "aura1fl48vsnmsdzcv85q5d2q4z5ajdha8yu3rn02v0"},
 			SchemeType:        cryptoproto.ThresholdSchemeType_THRESHOLD_SCHEME_TYPE_ECDSA,
 		}
 		createResp, err := msgServer.CreateThresholdScheme(ctx, createMsg)
 		require.NoError(t, err)
 
-		// Submit share (using valid bech32 address)
+		// Submit share (using valid bech32 address that is a participant)
 		msg := &cryptoproto.MsgSubmitThresholdSignatureShare{
 			Submitter:      testCreatorAddr,
 			SchemeId:       createResp.SchemeId,
@@ -195,7 +195,7 @@ func TestMsgServer(t *testing.T) {
 		require.Error(t, err)
 	})
 
-	t.Run("RegisterZKProofCircuit - not implemented", func(t *testing.T) {
+	t.Run("RegisterZKProofCircuit - success", func(t *testing.T) {
 		msg := &cryptoproto.MsgRegisterZKProofCircuit{
 			Creator:          testCreatorAddr,
 			CircuitId:        "circuit-1",
@@ -204,8 +204,9 @@ func TestMsgServer(t *testing.T) {
 			VerificationKey:  make([]byte, 32),
 		}
 
-		_, err := msgServer.RegisterZKProofCircuit(ctx, msg)
-		require.Error(t, err)
+		resp, err := msgServer.RegisterZKProofCircuit(ctx, msg)
+		require.NoError(t, err)
+		require.NotEmpty(t, resp.ProofId)
 	})
 
 	t.Run("RegisterZKProofCircuit - empty circuit_id", func(t *testing.T) {
@@ -234,21 +235,39 @@ func TestMsgServer(t *testing.T) {
 		require.Error(t, err)
 	})
 
-	t.Run("SubmitZKProof - not implemented", func(t *testing.T) {
+	t.Run("SubmitZKProof - circuit not found", func(t *testing.T) {
+		// Create valid-looking proof with proper curve point structure
+		proofData := make([]byte, 128)
+		proofData[0] = 0x02 // Compressed point marker
+		for i := 1; i < len(proofData); i++ {
+			if i%3 == 0 {
+				proofData[i] = byte(i % 256)
+			} else if i%7 == 0 {
+				proofData[i] = 0xFF
+			}
+		}
+
+		// Create valid public inputs (non-zero)
+		publicInputs := make([]byte, 32)
+		for i := range publicInputs {
+			publicInputs[i] = byte(i + 1)
+		}
+
 		msg := &cryptoproto.MsgSubmitZKProof{
-			Submitter:    "submitter",
-			ProofId:      "proof-1",
-			ProofData:    make([]byte, 32),
-			PublicInputs: make([]byte, 32),
+			Submitter:    testCreatorAddr,
+			ProofId:      "non-existent-proof-1",
+			ProofData:    proofData,
+			PublicInputs: publicInputs,
 		}
 
 		_, err := msgServer.SubmitZKProof(ctx, msg)
 		require.Error(t, err)
+		require.Contains(t, err.Error(), "ZK proof circuit not found")
 	})
 
 	t.Run("SubmitZKProof - empty proof_id", func(t *testing.T) {
 		msg := &cryptoproto.MsgSubmitZKProof{
-			Submitter:    "submitter",
+			Submitter:    testCreatorAddr,
 			ProofId:      "",
 			ProofData:    make([]byte, 32),
 			PublicInputs: make([]byte, 32),
@@ -260,7 +279,7 @@ func TestMsgServer(t *testing.T) {
 
 	t.Run("SubmitZKProof - empty proof data", func(t *testing.T) {
 		msg := &cryptoproto.MsgSubmitZKProof{
-			Submitter:    "submitter",
+			Submitter:    testCreatorAddr,
 			ProofId:      "proof-1",
 			ProofData:    []byte{},
 			PublicInputs: make([]byte, 32),
