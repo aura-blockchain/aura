@@ -80,6 +80,11 @@ func (k Keeper) CreateVestingSchedule(
 
 // ReleaseVestedTokens releases vested tokens for a beneficiary (wrapper for msg_server)
 func (k Keeper) ReleaseVestedTokens(ctx context.Context, beneficiary sdk.AccAddress, scheduleID string) (sdk.Coin, error) {
+	// Validate schedule ID not empty
+	if scheduleID == "" {
+		return sdk.Coin{}, errorsmod.Wrap(types.ErrInvalidScheduleID, "invalid schedule ID")
+	}
+
 	// Get the schedule
 	schedule, err := k.GetVestingSchedule(ctx, scheduleID)
 	if err != nil {
