@@ -1,0 +1,161 @@
+syntax = "proto3";
+package aura.prevalidation.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "cosmos/msg/v1/msg.proto";
+import "aura/prevalidation/v1beta1/prevalidation.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/prevalidation/v1beta1";
+
+// Msg defines the prevalidation Msg service
+service Msg {
+  // PreValidateTransaction pre-validates a transaction for later execution
+  rpc PreValidateTransaction(MsgPreValidateTransaction) returns (MsgPreValidateTransactionResponse);
+
+  // BatchPreValidate pre-validates multiple transactions in a single call
+  rpc BatchPreValidate(MsgBatchPreValidate) returns (MsgBatchPreValidateResponse);
+
+  // UpdateParams updates module parameters (governance only)
+  rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
+
+  // SimulateTransaction simulates a transaction without executing it
+  rpc SimulateTransaction(MsgSimulateTransaction) returns (MsgSimulateTransactionResponse);
+
+  // CancelPreValidation cancels a pre-validated transaction
+  rpc CancelPreValidation(MsgCancelPreValidation) returns (MsgCancelPreValidationResponse);
+
+  // CreateTemplate creates a new validation template
+  rpc CreateTemplate(MsgCreateTemplate) returns (MsgCreateTemplateResponse);
+
+  // UpdateTemplate updates an existing validation template
+  rpc UpdateTemplate(MsgUpdateTemplate) returns (MsgUpdateTemplateResponse);
+
+  // DeactivateTemplate deactivates a validation template
+  rpc DeactivateTemplate(MsgDeactivateTemplate) returns (MsgDeactivateTemplateResponse);
+}
+
+// MsgPreValidateTransaction pre-validates a transaction
+message MsgPreValidateTransaction {
+  option (cosmos.msg.v1.signer) = "sender";
+
+  string sender = 1;
+  string recipient = 2;
+  string amount = 3;
+  bytes data = 4;
+  uint64 nonce = 5;
+  bytes signature = 6;
+  TransactionType tx_type = 7;
+  string template_id = 8;
+}
+
+message MsgPreValidateTransactionResponse {
+  bool valid = 1;
+  uint64 gas_estimate = 2;
+  string tx_hash = 3;
+  string pre_validation_id = 4;
+}
+
+// MsgBatchPreValidate pre-validates multiple transactions
+message MsgBatchPreValidate {
+  option (cosmos.msg.v1.signer) = "sender";
+
+  string sender = 1;
+  repeated MsgPreValidateTransaction transactions = 2;
+}
+
+message ValidationResult {
+  string tx_hash = 1;
+  bool valid = 2;
+  uint64 gas_estimate = 3;
+  string error = 4;
+  string pre_validation_id = 5;
+}
+
+message MsgBatchPreValidateResponse {
+  repeated ValidationResult results = 1;
+}
+
+// MsgUpdateParams updates module parameters
+message MsgUpdateParams {
+  option (cosmos.msg.v1.signer) = "authority";
+
+  string authority = 1;
+  Params params = 2;
+}
+
+message MsgUpdateParamsResponse {}
+
+// MsgSimulateTransaction simulates a transaction
+message MsgSimulateTransaction {
+  option (cosmos.msg.v1.signer) = "sender";
+
+  string sender = 1;
+  string recipient = 2;
+  string amount = 3;
+  bytes data = 4;
+  uint64 nonce = 5;
+  TransactionType tx_type = 6;
+}
+
+message MsgSimulateTransactionResponse {
+  bool success = 1;
+  uint64 gas_used = 2;
+  uint64 gas_limit = 3;
+  string error = 4;
+}
+
+// MsgCancelPreValidation cancels a pre-validated transaction
+message MsgCancelPreValidation {
+  option (cosmos.msg.v1.signer) = "sender";
+
+  string sender = 1;
+  string tx_hash = 2;
+}
+
+message MsgCancelPreValidationResponse {}
+
+// MsgCreateTemplate creates a new validation template
+message MsgCreateTemplate {
+  option (cosmos.msg.v1.signer) = "creator";
+
+  string creator = 1;
+  TransactionType tx_type = 2;
+  string name = 3;
+  string description = 4;
+  string validation_rules = 5;
+  string parameter_schema = 6;
+  string gas_formula = 7;
+  uint32 priority_weight = 8;
+  uint64 min_confidence_score = 9;
+}
+
+message MsgCreateTemplateResponse {
+  string template_id = 1;
+}
+
+// MsgUpdateTemplate updates an existing validation template
+message MsgUpdateTemplate {
+  option (cosmos.msg.v1.signer) = "updater";
+
+  string updater = 1;
+  string template_id = 2;
+  string name = 3;
+  string description = 4;
+  string validation_rules = 5;
+  string parameter_schema = 6;
+  string gas_formula = 7;
+  uint32 priority_weight = 8;
+  uint64 min_confidence_score = 9;
+}
+
+message MsgUpdateTemplateResponse {}
+
+// MsgDeactivateTemplate deactivates a validation template
+message MsgDeactivateTemplate {
+  option (cosmos.msg.v1.signer) = "deactivator";
+
+  string deactivator = 1;
+  string template_id = 2;
+}
+
+message MsgDeactivateTemplateResponse {}

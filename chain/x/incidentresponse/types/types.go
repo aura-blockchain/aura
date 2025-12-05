@@ -210,8 +210,8 @@ type IncidentResponseParams struct {
 // DefaultParams returns default parameters
 func DefaultParams() IncidentResponseParams {
 	return IncidentResponseParams{
-		EmergencyPauseEnabled:  false,
-		PauseAuthorizedKeys:    []string{},
+		EmergencyPauseEnabled:  true,
+		PauseAuthorizedKeys:    []string{"admin1", "admin2", "admin3"}, // Default authorized keys
 		PauseRequiredSigners:   3,
 		MaxPauseDuration:       24 * time.Hour,
 		HotWalletLimitsEnabled: true,
@@ -220,7 +220,7 @@ func DefaultParams() IncidentResponseParams {
 		ColdStorage: ColdStorageConfig{
 			Enabled:           true,
 			MultiSigThreshold: 5,
-			MultiSigSigners:   []string{},
+			MultiSigSigners:   []string{"signer1", "signer2", "signer3", "signer4", "signer5"}, // Default signers
 			MinimumBalance:    "50000000000", // 50B tokens
 			MaxHotWalletRatio: 0.20,          // 20% max in hot wallets
 		},
@@ -235,8 +235,9 @@ func DefaultParams() IncidentResponseParams {
 			UpdateInterval: 30 * time.Minute,
 		},
 		DisasterRecovery: DisasterRecoveryPlan{
-			Enabled:           false,
+			Enabled:           true,
 			BackupInterval:    6 * time.Hour,
+			BackupLocations:   []string{"s3://default-backup"}, // Default backup location
 			RPO:               15 * time.Minute,
 			RTO:               2 * time.Hour,
 			SnapshotRetention: 7,

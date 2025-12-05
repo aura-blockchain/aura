@@ -1,0 +1,208 @@
+syntax = "proto3";
+package aura.prevalidation.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "aura/prevalidation/v1beta1/prevalidation.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/prevalidation/v1beta1";
+
+// Query defines the gRPC querier service for prevalidation
+service Query {
+  // Params queries the module parameters
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/aura/prevalidation/v1beta1/params";
+  }
+
+  // PreValidatedTransaction queries a pre-validated transaction by ID
+  rpc PreValidatedTransaction(QueryPreValidatedTransactionRequest) returns (QueryPreValidatedTransactionResponse) {
+    option (google.api.http).get = "/aura/prevalidation/v1beta1/transactions/{id}";
+  }
+
+  // PreValidatedTransactionsByStatus queries pre-validated transactions by status
+  rpc PreValidatedTransactionsByStatus(QueryPreValidatedTransactionsByStatusRequest) returns (QueryPreValidatedTransactionsByStatusResponse) {
+    option (google.api.http).get = "/aura/prevalidation/v1beta1/transactions/status/{status}";
+  }
+
+  // PreValidatedTransactionsBySigner queries pre-validated transactions by signer
+  rpc PreValidatedTransactionsBySigner(QueryPreValidatedTransactionsBySignerRequest) returns (QueryPreValidatedTransactionsBySignerResponse) {
+    option (google.api.http).get = "/aura/prevalidation/v1beta1/transactions/signer/{signer}";
+  }
+
+  // Template queries a validation template by ID
+  rpc Template(QueryTemplateRequest) returns (QueryTemplateResponse) {
+    option (google.api.http).get = "/aura/prevalidation/v1beta1/templates/{template_id}";
+  }
+
+  // AllTemplates queries all validation templates
+  rpc AllTemplates(QueryAllTemplatesRequest) returns (QueryAllTemplatesResponse) {
+    option (google.api.http).get = "/aura/prevalidation/v1beta1/templates";
+  }
+
+  // TemplatesByType queries templates by transaction type
+  rpc TemplatesByType(QueryTemplatesByTypeRequest) returns (QueryTemplatesByTypeResponse) {
+    option (google.api.http).get = "/aura/prevalidation/v1beta1/templates/type/{tx_type}";
+  }
+
+  // Metrics queries pre-validation metrics
+  rpc Metrics(QueryMetricsRequest) returns (QueryMetricsResponse) {
+    option (google.api.http).get = "/aura/prevalidation/v1beta1/metrics";
+  }
+
+  // MetricsByType queries metrics for a specific transaction type
+  rpc MetricsByType(QueryMetricsByTypeRequest) returns (QueryMetricsByTypeResponse) {
+    option (google.api.http).get = "/aura/prevalidation/v1beta1/metrics/type/{tx_type}";
+  }
+
+  // EstimateGas estimates gas for a transaction
+  rpc EstimateGas(QueryEstimateGasRequest) returns (QueryEstimateGasResponse) {
+    option (google.api.http).get = "/aura/prevalidation/v1beta1/estimate-gas";
+  }
+
+  // ValidateTransaction validates a transaction without pre-validating it
+  rpc ValidateTransaction(QueryValidateTransactionRequest) returns (QueryValidateTransactionResponse) {
+    option (google.api.http).get = "/aura/prevalidation/v1beta1/validate";
+  }
+
+  // GetNonce queries the current nonce for an address
+  rpc GetNonce(QueryGetNonceRequest) returns (QueryGetNonceResponse) {
+    option (google.api.http).get = "/aura/prevalidation/v1beta1/nonce/{address}";
+  }
+}
+
+// QueryParamsRequest is the request type for the Query/Params RPC method
+message QueryParamsRequest {}
+
+// QueryParamsResponse is the response type for the Query/Params RPC method
+message QueryParamsResponse {
+  Params params = 1;
+}
+
+// QueryPreValidatedTransactionRequest is the request type for the Query/PreValidatedTransaction RPC method
+message QueryPreValidatedTransactionRequest {
+  string id = 1;
+}
+
+// QueryPreValidatedTransactionResponse is the response type for the Query/PreValidatedTransaction RPC method
+message QueryPreValidatedTransactionResponse {
+  PreValidatedTransaction transaction = 1;
+}
+
+// QueryPreValidatedTransactionsByStatusRequest is the request type for the Query/PreValidatedTransactionsByStatus RPC method
+message QueryPreValidatedTransactionsByStatusRequest {
+  ValidationStatus status = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+// QueryPreValidatedTransactionsByStatusResponse is the response type for the Query/PreValidatedTransactionsByStatus RPC method
+message QueryPreValidatedTransactionsByStatusResponse {
+  repeated PreValidatedTransaction transactions = 1;
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryPreValidatedTransactionsBySignerRequest is the request type for the Query/PreValidatedTransactionsBySigner RPC method
+message QueryPreValidatedTransactionsBySignerRequest {
+  string signer = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+// QueryPreValidatedTransactionsBySignerResponse is the response type for the Query/PreValidatedTransactionsBySigner RPC method
+message QueryPreValidatedTransactionsBySignerResponse {
+  repeated PreValidatedTransaction transactions = 1;
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryTemplateRequest is the request type for the Query/Template RPC method
+message QueryTemplateRequest {
+  string template_id = 1;
+}
+
+// QueryTemplateResponse is the response type for the Query/Template RPC method
+message QueryTemplateResponse {
+  ValidationTemplate template = 1;
+}
+
+// QueryAllTemplatesRequest is the request type for the Query/AllTemplates RPC method
+message QueryAllTemplatesRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+// QueryAllTemplatesResponse is the response type for the Query/AllTemplates RPC method
+message QueryAllTemplatesResponse {
+  repeated ValidationTemplate templates = 1;
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryTemplatesByTypeRequest is the request type for the Query/TemplatesByType RPC method
+message QueryTemplatesByTypeRequest {
+  TransactionType tx_type = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+// QueryTemplatesByTypeResponse is the response type for the Query/TemplatesByType RPC method
+message QueryTemplatesByTypeResponse {
+  repeated ValidationTemplate templates = 1;
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryMetricsRequest is the request type for the Query/Metrics RPC method
+message QueryMetricsRequest {}
+
+// QueryMetricsResponse is the response type for the Query/Metrics RPC method
+message QueryMetricsResponse {
+  PreValidationMetrics metrics = 1;
+}
+
+// QueryMetricsByTypeRequest is the request type for the Query/MetricsByType RPC method
+message QueryMetricsByTypeRequest {
+  TransactionType tx_type = 1;
+}
+
+// QueryMetricsByTypeResponse is the response type for the Query/MetricsByType RPC method
+message QueryMetricsByTypeResponse {
+  TypeMetrics metrics = 1;
+}
+
+// QueryEstimateGasRequest is the request type for the Query/EstimateGas RPC method
+message QueryEstimateGasRequest {
+  string sender = 1;
+  string recipient = 2;
+  string amount = 3;
+  bytes data = 4;
+  TransactionType tx_type = 5;
+}
+
+// QueryEstimateGasResponse is the response type for the Query/EstimateGas RPC method
+message QueryEstimateGasResponse {
+  uint64 gas_estimate = 1;
+  uint64 gas_limit = 2;
+}
+
+// QueryValidateTransactionRequest is the request type for the Query/ValidateTransaction RPC method
+message QueryValidateTransactionRequest {
+  string sender = 1;
+  string recipient = 2;
+  string amount = 3;
+  bytes data = 4;
+  uint64 nonce = 5;
+  TransactionType tx_type = 6;
+}
+
+// QueryValidateTransactionResponse is the response type for the Query/ValidateTransaction RPC method
+message QueryValidateTransactionResponse {
+  bool valid = 1;
+  uint64 gas_estimate = 2;
+  string error = 3;
+  bool sufficient_balance = 4;
+}
+
+// QueryGetNonceRequest is the request type for the Query/GetNonce RPC method
+message QueryGetNonceRequest {
+  string address = 1;
+}
+
+// QueryGetNonceResponse is the response type for the Query/GetNonce RPC method
+message QueryGetNonceResponse {
+  uint64 nonce = 1;
+}

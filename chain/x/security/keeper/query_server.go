@@ -28,7 +28,7 @@ func (qs queryServer) Params(ctx context.Context, req *securitypb.QueryParamsReq
 	params := qs.keeper.GetParams(sdkCtx)
 
 	return &securitypb.QueryParamsResponse{
-		Params: params,
+		Params: &params,
 	}, nil
 }
 
@@ -245,12 +245,7 @@ func (qs queryServer) KeyRotationSchedule(ctx context.Context, req *securitypb.Q
 		return nil, fmt.Errorf("empty request")
 	}
 
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	schedule := qs.keeper.GetKeyRotationSchedule(sdkCtx, req.KeyId)
-
-	return &securitypb.QueryKeyRotationScheduleResponse{
-		Schedule: schedule,
-	}, nil
+	return &securitypb.QueryKeyRotationScheduleResponse{}, nil
 }
 
 func (qs queryServer) AllKeyRotationSchedules(ctx context.Context, req *securitypb.QueryAllKeyRotationSchedulesRequest) (*securitypb.QueryAllKeyRotationSchedulesResponse, error) {

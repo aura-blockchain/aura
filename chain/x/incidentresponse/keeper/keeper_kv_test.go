@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -16,6 +17,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 
+	"github.com/aequitas/aura/chain/x/common/determinism"
 	"github.com/aequitas/aura/chain/x/incidentresponse/types"
 )
 
@@ -306,25 +308,26 @@ func TestMultiSigPause_KVPersistence(t *testing.T) {
 	require.NoError(t, err)
 
 	// Request pause (first signer)
-	pauseReqID := "pause-key1-" + time.Now().Format("20060102150405")
+	blockTime := determinism.GetBlockTime(ctx)
+	pauseReqID := fmt.Sprintf("pause-%s-%d", "key1", blockTime.Unix())
 	err = keeper.RequestChainPause(ctx, "key1", types.PauseLevelFull, "Emergency", "", 1*time.Hour)
 	require.NoError(t, err)
 
-	// Chain should not be paused yet
+	// Chain should not be paused yet (needs 3 signers)
 	require.False(t, keeper.IsChainPaused(ctx))
 
 	// Second approval
 	err = keeper.ApproveChainPause(ctx, pauseReqID, "key2")
 	require.NoError(t, err)
 
-	// Still not paused
+	// Still not paused (needs 3 signers)
 	require.False(t, keeper.IsChainPaused(ctx))
 
 	// Third approval
 	err = keeper.ApproveChainPause(ctx, pauseReqID, "key3")
 	require.NoError(t, err)
 
-	// Now should be paused
+	// Now should be paused (3 signers reached)
 	require.True(t, keeper.IsChainPaused(ctx))
 }
 

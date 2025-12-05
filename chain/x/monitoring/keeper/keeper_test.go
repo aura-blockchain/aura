@@ -11,8 +11,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func setupTestKeeper(t *testing.T) (Keeper, sdk.Context) {
-	return NewTestKeeper(t)
+func setupTestKeeper(t *testing.T) (*Keeper, sdk.Context) {
+	k, ctx := NewTestKeeper(t)
+	return &k, ctx
 }
 
 func TestNewKeeper(t *testing.T) {

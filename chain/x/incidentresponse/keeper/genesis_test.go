@@ -363,6 +363,7 @@ func TestInitGenesis_WithPausedChain(t *testing.T) {
 			MaxPauseDuration:      24 * time.Hour,
 			DisasterRecovery: types.DisasterRecoveryPlan{
 				Enabled:         true,
+				BackupInterval:  6 * time.Hour,
 				BackupLocations: []string{"s3://backup"},
 			},
 		},

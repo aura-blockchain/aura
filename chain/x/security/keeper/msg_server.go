@@ -249,7 +249,7 @@ func (ms msgServer) RegisterZKProofCircuit(ctx context.Context, msg *securitypb.
 
 func (ms msgServer) SubmitZKProof(ctx context.Context, msg *securitypb.MsgSubmitZKProof) (*securitypb.MsgSubmitZKProofResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	ms.keeper.Logger(sdkCtx).Info("SubmitZKProof called", "circuit_id", msg.CircuitId)
+	ms.keeper.Logger(sdkCtx).Info("SubmitZKProof called")
 	return &securitypb.MsgSubmitZKProofResponse{}, nil
 }
 
