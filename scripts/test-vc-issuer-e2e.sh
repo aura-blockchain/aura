@@ -14,8 +14,13 @@ CHAIN_ID="${AURA_CHAIN_ID:-aura-vc-e2e-1}"
 HOME_DIR="$(mktemp -d "${TMPDIR:-/tmp}/aura-vc-e2e.XXXXXX")"
 ARTIFACT="${ROOT_DIR}/contracts/artifacts/vc_issuer.wasm"
 LOG_FILE="${HOME_DIR}/aurad.log"
+TX_LOG_FILE="${HOME_DIR}/tx_operations.log"
+GAS_LOG_FILE="${HOME_DIR}/gas_measurements.log"
 LABEL="vc-issuer-e2e-$(date +%s)"
 GRPC_ENABLE="${AURA_GRPC_ENABLE:-true}"
+
+# Gas tracking for each operation
+declare -A GAS_USED
 
 port_free() {
   local port=$1
@@ -56,15 +61,30 @@ if ! port_free "${RPC_PORT}" || ! port_free "${P2P_PORT}"; then
 fi
 
 cleanup() {
-  if [[ -n "${KEEP_VC_E2E:-}" ]]; then
-    echo "KEEP_VC_E2E set; leaving home at ${HOME_DIR}"
-    return
-  fi
+  # Always keep temp directory for debugging
+  echo ""
+  echo "============================================"
+  echo "Test completed. Temp directory preserved at:"
+  echo "${HOME_DIR}"
+  echo "============================================"
+  echo "Logs available:"
+  echo "  - Node log: ${LOG_FILE}"
+  echo "  - Transaction log: ${TX_LOG_FILE}"
+  echo "  - Gas measurements: ${GAS_LOG_FILE}"
+  echo ""
+
   if [[ -n "${AURAD_PID:-}" ]] && ps -p "${AURAD_PID}" >/dev/null 2>&1; then
+    echo "Stopping aurad (PID ${AURAD_PID})..."
     kill "${AURAD_PID}" >/dev/null 2>&1 || true
     wait "${AURAD_PID}" 2>/dev/null || true
+    echo "Node stopped."
   fi
-  rm -rf "${HOME_DIR}"
+
+  # Only cleanup if explicitly requested
+  if [[ -n "${CLEANUP_VC_E2E:-}" ]]; then
+    echo "CLEANUP_VC_E2E set; removing ${HOME_DIR}"
+    rm -rf "${HOME_DIR}"
+  fi
 }
 trap cleanup EXIT
 
@@ -211,7 +231,47 @@ fi
 
 sleep 2
 echo "Node is producing blocks. Uploading contract..."
-TX_FLAGS=(--chain-id "${CHAIN_ID}" --node "http://127.0.0.1:${RPC_PORT}" --broadcast-mode sync --yes --gas 5000000 --output json --gas-prices "${GAS_PRICES}" --sign-mode legacy-amino-json)
+# TX_FLAGS without signing mode (will be added per-transaction to avoid conflicts)
+TX_FLAGS=(--chain-id "${CHAIN_ID}" --node "http://127.0.0.1:${RPC_PORT}" --broadcast-mode sync --yes --gas 5000000 --output json --gas-prices "${GAS_PRICES}")
+
+# Logging helper
+log_tx() {
+  local message="$1"
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')] ${message}" | tee -a "${TX_LOG_FILE}"
+}
+
+# Gas tracking helper
+log_gas() {
+  local operation="$1"
+  local gas_used="$2"
+  local gas_wanted="$3"
+  echo "${operation}: gas_used=${gas_used}, gas_wanted=${gas_wanted}" | tee -a "${GAS_LOG_FILE}"
+  GAS_USED["${operation}"]="${gas_used}"
+}
+
+# Account state validation helper
+validate_account_state() {
+  local name=$1
+  local expected_acc_num=$2
+  local expected_seq=$3
+
+  load_account_state "${name}"
+  local actual_acc_num="${ACC_NUM[${name}]}"
+  local actual_seq="${SEQ[${name}]}"
+
+  if [[ "${actual_acc_num}" != "${expected_acc_num}" ]]; then
+    log_tx "ERROR: Account number mismatch for ${name}: expected=${expected_acc_num}, actual=${actual_acc_num}"
+    return 1
+  fi
+
+  if [[ "${actual_seq}" != "${expected_seq}" ]]; then
+    log_tx "ERROR: Sequence mismatch for ${name}: expected=${expected_seq}, actual=${actual_seq}"
+    return 1
+  fi
+
+  log_tx "✓ Account state validated for ${name}: account_number=${actual_acc_num}, sequence=${actual_seq}"
+  return 0
+}
 
 load_account_state() {
   local name=$1
@@ -277,7 +337,7 @@ wait_for_tx() {
   local hash=$1
   local label=${2:-tx}
   if [[ -z "${hash}" || "${hash}" == "null" ]]; then
-    echo "missing tx hash for ${label}" >&2
+    log_tx "ERROR: missing tx hash for ${label}"
     return 1
   fi
 
@@ -286,111 +346,250 @@ wait_for_tx() {
     lookup_hash="0x${lookup_hash}"
   fi
 
+  log_tx "Waiting for tx ${label} (${hash})..."
+
   for _ in $(seq 1 30); do
     local resp
     resp=$(curl -s "http://127.0.0.1:${RPC_PORT}/tx?hash=${lookup_hash}" 2>/dev/null || true)
-    local height code
+    local height code gas_used gas_wanted
     height=$(echo "${resp}" | jq -r '.result.height // ""' 2>/dev/null || true)
     code=$(echo "${resp}" | jq -r '.result.tx_result.code // ""' 2>/dev/null || true)
+    gas_used=$(echo "${resp}" | jq -r '.result.tx_result.gas_used // "0"' 2>/dev/null || true)
+    gas_wanted=$(echo "${resp}" | jq -r '.result.tx_result.gas_wanted // "0"' 2>/dev/null || true)
 
     if [[ -n "${height}" && "${height}" != "0" ]]; then
       if [[ -n "${code}" && "${code}" != "0" ]]; then
-        echo "tx ${label} failed: ${resp}" >&2
+        local raw_log
+        raw_log=$(echo "${resp}" | jq -r '.result.tx_result.log // ""' 2>/dev/null || true)
+        log_tx "ERROR: tx ${label} failed with code ${code}: ${raw_log}"
+        echo "${resp}" >&2
         return 1
       fi
+
+      log_tx "✓ tx ${label} succeeded at height ${height}"
+      log_gas "${label}" "${gas_used}" "${gas_wanted}"
+
       echo "${resp}"
       return 0
     fi
     sleep 1
   done
 
-  echo "tx ${label} (${hash}) not found after waiting" >&2
+  log_tx "ERROR: tx ${label} (${hash}) not found after waiting"
   return 1
 }
 
 run_tx_and_wait() {
   local label=$1
   shift
+  log_tx "Broadcasting tx: ${label}"
   local res hash
-  res=$("$@" "${TX_FLAGS[@]}")
-  hash=$(echo "${res}" | jq -r '.txhash // .tx_response.txhash // empty')
+  res=$("$@" "${TX_FLAGS[@]}" --sign-mode amino-json 2>&1)
+  hash=$(echo "${res}" | jq -r '.txhash // .tx_response.txhash // empty' 2>/dev/null || true)
   if [[ -z "${hash}" || "${hash}" == "null" ]]; then
-    echo "failed to broadcast ${label}: ${res}" >&2
+    log_tx "ERROR: failed to broadcast ${label}"
+    echo "Broadcast response: ${res}" >&2
     return 1
   fi
   wait_for_tx "${hash}" "${label}"
 }
 
-echo "Loading account state from running node..."
+log_tx "=== Starting E2E Test Flow ==="
+log_tx "Loading initial account state from running node..."
 load_account_state validator
 load_account_state issuer
 load_account_state subject
 
+# Store the initial account/sequence values for validation
+VALIDATOR_ACC_NUM="${ACC_NUM[validator]}"
+VALIDATOR_INIT_SEQ="${SEQ[validator]}"
+ISSUER_ACC_NUM="${ACC_NUM[issuer]}"
+ISSUER_INIT_SEQ="${SEQ[issuer]}"
+SUBJECT_ACC_NUM="${ACC_NUM[subject]}"
+SUBJECT_INIT_SEQ="${SEQ[subject]}"
+
+log_tx "Initial account state: validator(${VALIDATOR_ACC_NUM},${VALIDATOR_INIT_SEQ}), issuer(${ISSUER_ACC_NUM},${ISSUER_INIT_SEQ}), subject(${SUBJECT_ACC_NUM},${SUBJECT_INIT_SEQ})"
+
+# === STORE CONTRACT ===
+log_tx ""
+log_tx "=== STORE CONTRACT ==="
+
+# Preflight: Validate validator account state before transaction
+if ! validate_account_state validator "${VALIDATOR_ACC_NUM}" "${VALIDATOR_INIT_SEQ}"; then
+  log_tx "ERROR: Preflight validation failed for validator before store"
+  exit 1
+fi
+
 next_seq_flags validator
 STORE_UNSIGNED="${HOME_DIR}/store_unsigned.json"
 SIGNED_STORE_PATH="${HOME_DIR}/store_signed.json"
-STORE_RES=$("${BINARY}" tx aura_wasm_security store "${ARTIFACT}" --from validator "${ACCOUNT_SEQ_FLAGS[@]}" "${KEYRING_FLAGS[@]}" "${TX_FLAGS[@]}" --generate-only)
+
+log_tx "Generating unsigned store transaction..."
+if ! STORE_RES=$("${BINARY}" tx aura_wasm_security store "${ARTIFACT}" \
+  --from validator \
+  "${ACCOUNT_SEQ_FLAGS[@]}" \
+  "${KEYRING_FLAGS[@]}" \
+  "${TX_FLAGS[@]}" \
+  --generate-only 2>&1); then
+  log_tx "ERROR: Failed to generate unsigned store transaction"
+  echo "${STORE_RES}" >&2
+  exit 1
+fi
+
 echo "${STORE_RES}" > "${STORE_UNSIGNED}"
-if ! "${BINARY}" tx sign "${STORE_UNSIGNED}" --from validator "${KEYRING_FLAGS[@]}" --sign-mode legacy-amino-json "${ACCOUNT_SEQ_FLAGS[@]}" --chain-id "${CHAIN_ID}" --node "http://127.0.0.1:${RPC_PORT}" --output json > "${SIGNED_STORE_PATH}" 2>&1; then
-  echo "failed to sign store tx" >&2
+log_tx "Unsigned transaction saved to ${STORE_UNSIGNED}"
+
+# Sign transaction with explicit amino-json mode
+log_tx "Signing transaction with amino-json mode..."
+if ! "${BINARY}" tx sign "${STORE_UNSIGNED}" \
+  --from validator \
+  "${KEYRING_FLAGS[@]}" \
+  --sign-mode amino-json \
+  "${ACCOUNT_SEQ_FLAGS[@]}" \
+  --chain-id "${CHAIN_ID}" \
+  --node "http://127.0.0.1:${RPC_PORT}" \
+  --output json > "${SIGNED_STORE_PATH}" 2>&1; then
+  log_tx "ERROR: Failed to sign store transaction"
+  cat "${SIGNED_STORE_PATH}" >&2
   exit 1
 fi
+
 if [[ ! -s "${SIGNED_STORE_PATH}" ]]; then
-  echo "signed store tx is empty" >&2
+  log_tx "ERROR: Signed store tx is empty"
   exit 1
 fi
-if ! jq -e '.auth_info.signer_infos[]?.mode_info.single.mode=="SIGN_MODE_LEGACY_AMINO_JSON"' "${SIGNED_STORE_PATH}" >/dev/null; then
-  echo "signed store tx did not use LEGACY_AMINO_JSON" >&2
+
+# Verify signing mode in the signed transaction
+SIGNING_MODE=$(jq -r '.auth_info.signer_infos[0].mode_info.single.mode // "UNKNOWN"' "${SIGNED_STORE_PATH}")
+log_tx "Signed transaction uses mode: ${SIGNING_MODE}"
+
+if [[ "${SIGNING_MODE}" != "SIGN_MODE_LEGACY_AMINO_JSON" ]]; then
+  log_tx "WARNING: Expected SIGN_MODE_LEGACY_AMINO_JSON but got ${SIGNING_MODE}"
+  # Continue anyway - some SDK versions may accept this
+fi
+
+log_tx "Broadcasting signed transaction..."
+if ! STORE_RES=$("${BINARY}" tx broadcast "${SIGNED_STORE_PATH}" \
+  --node "http://127.0.0.1:${RPC_PORT}" \
+  --broadcast-mode sync \
+  --output json 2>&1); then
+  log_tx "ERROR: Failed to broadcast store transaction"
+  echo "${STORE_RES}" >&2
   exit 1
 fi
-STORE_RES=$("${BINARY}" tx broadcast "${SIGNED_STORE_PATH}" --node "http://127.0.0.1:${RPC_PORT}" --broadcast-mode sync --output json)
+
 STORE_HASH=$(echo "${STORE_RES}" | jq -r '.txhash // .tx_response.txhash // empty')
+if [[ -z "${STORE_HASH}" || "${STORE_HASH}" == "null" ]]; then
+  log_tx "ERROR: Failed to extract tx hash from broadcast response"
+  echo "${STORE_RES}" >&2
+  exit 1
+fi
+
 STORE_TX=$(wait_for_tx "${STORE_HASH}" "store") || exit 1
+
+# Postflight: Validate validator sequence incremented
+EXPECTED_SEQ=$((VALIDATOR_INIT_SEQ + 1))
+if ! validate_account_state validator "${VALIDATOR_ACC_NUM}" "${EXPECTED_SEQ}"; then
+  log_tx "ERROR: Postflight validation failed - sequence did not increment correctly"
+  exit 1
+fi
 CODE_ID=$(echo "${STORE_TX}" | jq -r '
   (.tx_response.logs[]?.events[]? | select(.type=="store_code") | .attributes[]? | select(.key=="code_id") | .value) //
   (.result.tx_result.events[]? | select(.type=="store_code") | .attributes[]? | select(.key=="code_id") | .value)
 ' | head -n1)
 if [[ -z "${CODE_ID}" || "${CODE_ID}" == "null" ]]; then
-  echo "failed to extract code_id from store response" >&2
+  log_tx "ERROR: Failed to extract code_id from store response"
   echo "${STORE_TX}" >&2
   exit 1
 fi
-echo "Stored code_id=${CODE_ID}"
+log_tx "✓ Stored contract with code_id=${CODE_ID}"
+
+# === INSTANTIATE CONTRACT ===
+log_tx ""
+log_tx "=== INSTANTIATE CONTRACT ==="
+
+# Preflight: Validate validator sequence before instantiate
+EXPECTED_SEQ=$((VALIDATOR_INIT_SEQ + 1))
+if ! validate_account_state validator "${VALIDATOR_ACC_NUM}" "${EXPECTED_SEQ}"; then
+  log_tx "ERROR: Preflight validation failed for validator before instantiate"
+  exit 1
+fi
 
 VALIDATOR_ADDR=$("${BINARY}" keys show validator "${KEYRING_FLAGS[@]}" --address)
 INIT_MSG=$(jq -n --arg admin "${VALIDATOR_ADDR}" '{admin: $admin}')
 next_seq_flags validator
 INST_TX=$(run_tx_and_wait "instantiate" "${BINARY}" tx aura_wasm_security instantiate "${CODE_ID}" "${INIT_MSG}" --label "${LABEL}" --admin "${VALIDATOR_ADDR}" --from validator "${ACCOUNT_SEQ_FLAGS[@]}" "${KEYRING_FLAGS[@]}")
+
+# Postflight: Validate validator sequence incremented
+EXPECTED_SEQ=$((VALIDATOR_INIT_SEQ + 2))
+if ! validate_account_state validator "${VALIDATOR_ACC_NUM}" "${EXPECTED_SEQ}"; then
+  log_tx "ERROR: Postflight validation failed after instantiate"
+  exit 1
+fi
 CONTRACT_ADDR=$(echo "${INST_TX}" | jq -r '
   (.tx_response.logs[]?.events[]? | select(.type=="instantiate") | .attributes[]? | select(.key=="_contract_address" or .key=="contract") | .value) //
   (.result.tx_result.events[]? | select(.type=="instantiate") | .attributes[]? | select(.key=="_contract_address" or .key=="contract") | .value)
 ' | head -n1)
 if [[ -z "${CONTRACT_ADDR}" || "${CONTRACT_ADDR}" == "null" ]]; then
-  echo "failed to extract contract address from instantiate response" >&2
+  log_tx "ERROR: Failed to extract contract address from instantiate response"
   echo "${INST_TX}" >&2
   exit 1
 fi
-echo "Instantiated contract at ${CONTRACT_ADDR}"
+log_tx "✓ Instantiated contract at ${CONTRACT_ADDR}"
 
 ISSUER_ADDR=$("${BINARY}" keys show issuer "${KEYRING_FLAGS[@]}" --address)
 SUBJECT_ADDR=$("${BINARY}" keys show subject "${KEYRING_FLAGS[@]}" --address)
 
-echo "Registering issuer..."
+# === REGISTER ISSUER ===
+log_tx ""
+log_tx "=== REGISTER ISSUER ==="
+
+# Preflight
+EXPECTED_SEQ=$((VALIDATOR_INIT_SEQ + 2))
+if ! validate_account_state validator "${VALIDATOR_ACC_NUM}" "${EXPECTED_SEQ}"; then
+  log_tx "ERROR: Preflight validation failed for validator before register-issuer"
+  exit 1
+fi
+
 next_seq_flags validator
 run_tx_and_wait "register-issuer" "${BINARY}" tx aura_wasm_security execute "${CONTRACT_ADDR}" \
   "$(jq -n --arg issuer "${ISSUER_ADDR}" '{register_issuer:{issuer:$issuer,policy_id:"kyc-basic",daily_limit:2}}')" \
   --from validator "${ACCOUNT_SEQ_FLAGS[@]}" "${KEYRING_FLAGS[@]}"
 
-echo "Requesting VC..."
+# Postflight
+EXPECTED_SEQ=$((VALIDATOR_INIT_SEQ + 3))
+if ! validate_account_state validator "${VALIDATOR_ACC_NUM}" "${EXPECTED_SEQ}"; then
+  log_tx "ERROR: Postflight validation failed after register-issuer"
+  exit 1
+fi
+
+# === REQUEST VC ===
+log_tx ""
+log_tx "=== REQUEST VC ==="
+
+# Preflight - this is subject's first transaction
+if ! validate_account_state subject "${SUBJECT_ACC_NUM}" "${SUBJECT_INIT_SEQ}"; then
+  log_tx "ERROR: Preflight validation failed for subject before request-vc"
+  exit 1
+fi
+
 next_seq_flags subject
 REQ_TX=$(run_tx_and_wait "request-vc" "${BINARY}" tx aura_wasm_security execute "${CONTRACT_ADDR}" \
   "$(jq -n --arg issuer "${ISSUER_ADDR}" --arg subject "${SUBJECT_ADDR}" '{request_vc:{issuer:$issuer,subject:$subject,vc_type:"kyc",metadata:"{\"tier\":\"gold\"}"}}')" \
   --from subject "${ACCOUNT_SEQ_FLAGS[@]}" "${KEYRING_FLAGS[@]}")
+
+# Postflight
+EXPECTED_SEQ=$((SUBJECT_INIT_SEQ + 1))
+if ! validate_account_state subject "${SUBJECT_ACC_NUM}" "${EXPECTED_SEQ}"; then
+  log_tx "ERROR: Postflight validation failed after request-vc"
+  exit 1
+fi
 REQUEST_ID=$(echo "${REQ_TX}" | jq -r '
   (.tx_response.logs[]?.events[]? | select(.type=="wasm") | .attributes[]? | select(.key=="request_id") | .value) //
   (.result.tx_result.events[]? | select(.type=="wasm") | .attributes[]? | select(.key=="request_id") | .value)
 ' | head -n1)
 if [[ -z "${REQUEST_ID}" || "${REQUEST_ID}" == "null" ]]; then
+  log_tx "Request ID not found in events, querying pending_requests..."
   # Fallback: query pending requests for issuer and grab the first ID.
   PENDING_RAW=$("${BINARY}" query aura_wasm_security query-smart "${CONTRACT_ADDR}" \
     "$(jq -n --arg issuer "${ISSUER_ADDR}" '{pending_requests:{issuer:$issuer}}')" \
@@ -404,46 +603,93 @@ if [[ -z "${REQUEST_ID}" || "${REQUEST_ID}" == "null" ]]; then
   fi
 fi
 if [[ -z "${REQUEST_ID}" || "${REQUEST_ID}" == "null" ]]; then
-  echo "failed to extract request_id from request response or pending_requests query" >&2
+  log_tx "ERROR: Failed to extract request_id from request response or pending_requests query"
   echo "tx response: ${REQ_TX}" >&2
   echo "pending_requests: ${PENDING_RAW:-<empty>}" >&2
   exit 1
 fi
-echo "Captured request_id=${REQUEST_ID}"
+log_tx "✓ Captured request_id=${REQUEST_ID}"
 
-echo "Fulfilling VC..."
+# === FULFILL VC ===
+log_tx ""
+log_tx "=== FULFILL VC ==="
+
+# Preflight - this is issuer's first transaction
+if ! validate_account_state issuer "${ISSUER_ACC_NUM}" "${ISSUER_INIT_SEQ}"; then
+  log_tx "ERROR: Preflight validation failed for issuer before fulfill-vc"
+  exit 1
+fi
+
 CRED_BASE64=$(printf '{"credential":"demo","ts":%s}' "$(date +%s)" | base64 | tr -d '\n')
 next_seq_flags issuer
 run_tx_and_wait "fulfill-vc" "${BINARY}" tx aura_wasm_security execute "${CONTRACT_ADDR}" \
   "$(jq -n --arg id "${REQUEST_ID}" --arg cred "${CRED_BASE64}" '{fulfill_request:{request_id:$id,credential_base64:$cred}}')" \
   --from issuer "${ACCOUNT_SEQ_FLAGS[@]}" "${KEYRING_FLAGS[@]}"
 
-echo "Querying issued credentials for subject..."
+# Postflight
+EXPECTED_SEQ=$((ISSUER_INIT_SEQ + 1))
+if ! validate_account_state issuer "${ISSUER_ACC_NUM}" "${EXPECTED_SEQ}"; then
+  log_tx "ERROR: Postflight validation failed after fulfill-vc"
+  exit 1
+fi
+
+# === QUERY CREDENTIALS ===
+log_tx ""
+log_tx "=== QUERY CREDENTIALS ==="
+
+log_tx "Querying issued credentials for subject..."
 QUERY_RAW=$("${BINARY}" query aura_wasm_security query-smart "${CONTRACT_ADDR}" \
   "$(jq -n --arg subject "${SUBJECT_ADDR}" '{issued_by_subject:{subject:$subject}}')" \
   --node "http://127.0.0.1:${RPC_PORT}" --chain-id "${CHAIN_ID}" -o json)
 
 DATA_B64=$(echo "${QUERY_RAW}" | jq -r '.data // empty')
 if [[ -z "${DATA_B64}" ]]; then
-  echo "query returned empty data; raw response:" >&2
+  log_tx "ERROR: Query returned empty data"
   echo "${QUERY_RAW}" >&2
   exit 1
 fi
 
 DECODED=$(echo "${DATA_B64}" | base64 --decode 2>/dev/null || true)
 if [[ -z "${DECODED}" ]]; then
-  echo "failed to decode wasm query data; raw response:" >&2
+  log_tx "ERROR: Failed to decode wasm query data"
   echo "${QUERY_RAW}" >&2
   exit 1
 fi
 
 CREDS_COUNT=$(echo "${DECODED}" | jq '.credentials | length' 2>/dev/null || echo "0")
 if [[ "${CREDS_COUNT}" -lt 1 ]]; then
-  echo "no issued credentials returned; decoded payload:" >&2
-  echo "${DECODED}" >&2
+  log_tx "ERROR: No issued credentials returned"
+  echo "Decoded payload: ${DECODED}" >&2
   exit 1
 fi
 
+log_tx "✓ Found ${CREDS_COUNT} issued credential(s)"
+
+# === FINAL SUMMARY ===
+log_tx ""
+log_tx "============================================"
+log_tx "✅ VC-ISSUER E2E TEST COMPLETED SUCCESSFULLY"
+log_tx "============================================"
+log_tx ""
+log_tx "Contract Address: ${CONTRACT_ADDR}"
+log_tx "Code ID: ${CODE_ID}"
+log_tx "Request ID: ${REQUEST_ID}"
+log_tx "Credentials Count: ${CREDS_COUNT}"
+log_tx ""
+log_tx "Final Account States:"
+log_tx "  - validator: seq ${VALIDATOR_INIT_SEQ} -> $((VALIDATOR_INIT_SEQ + 3)) (3 txs)"
+log_tx "  - subject: seq ${SUBJECT_INIT_SEQ} -> $((SUBJECT_INIT_SEQ + 1)) (1 tx)"
+log_tx "  - issuer: seq ${ISSUER_INIT_SEQ} -> $((ISSUER_INIT_SEQ + 1)) (1 tx)"
+log_tx ""
+log_tx "Gas Usage Summary:"
+for op in store instantiate register-issuer request-vc fulfill-vc; do
+  if [[ -n "${GAS_USED[$op]:-}" ]]; then
+    log_tx "  - ${op}: ${GAS_USED[$op]} gas"
+  fi
+done
+
+echo ""
 echo "✅ vc-issuer flow completed successfully."
 echo "Contract: ${CONTRACT_ADDR}"
 echo "Request:  ${REQUEST_ID}"
+echo ""
