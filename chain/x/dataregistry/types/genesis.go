@@ -12,8 +12,9 @@ import (
 func DefaultGenesisState() *pb.GenesisState {
 	params := DefaultParams()
 	return &pb.GenesisState{
-		Params:    &params,
-		DataItems: []*pb.DataItem{},
+		Params:     &params,
+		DataItems:  []*pb.DataItem{},
+		NextDataId: 1,
 	}
 }
 

@@ -2,7 +2,9 @@ package keeper
 
 import (
 	"fmt"
+	"strings"
 	"testing"
+	"time"
 
 	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -319,6 +321,9 @@ func (suite *MsgServerComprehensiveTestSuite) TestAddLiquidityImbalanced() {
 }
 
 func (suite *MsgServerComprehensiveTestSuite) TestRemoveLiquidityExceedingShares() {
+	// Reset test state to start fresh
+	suite.SetupTest()
+
 	// Test removing more shares than owned
 	creator := keepertest.GenTestAddr()
 
@@ -341,6 +346,9 @@ func (suite *MsgServerComprehensiveTestSuite) TestRemoveLiquidityExceedingShares
 	lpTokens, ok := sdkmath.NewIntFromString(createResp.LpTokens)
 	suite.Require().True(ok, "should parse LP tokens")
 
+	// Fast-forward time past cooldown period (24 hours + 1 second)
+	suite.ctx = suite.ctx.WithBlockTime(suite.ctx.BlockTime().Add(24*time.Hour + time.Second))
+
 	// Try to remove more LP tokens than owned
 	removeMsg := &dexpb.MsgRemoveLiquidity{
 		Provider: creator.String(),
@@ -348,38 +356,18 @@ func (suite *MsgServerComprehensiveTestSuite) TestRemoveLiquidityExceedingShares
 		LpTokens: lpTokens.Add(sdkmath.NewInt(1000)).String(), // More than owned
 	}
 
-	// Reset test state to avoid cooldown period from previous operations
-	suite.SetupTest()
-
-	// Re-fund creator
-	suite.bankKeeper.setBalance(creator, "uaura", sdkmath.NewInt(10000000000))
-	suite.bankKeeper.setBalance(creator, "usdt", sdkmath.NewInt(10000000000))
-
-	// Re-create pool
-	createResp, err = suite.msgServer.CreatePool(suite.ctx, createMsg)
-	suite.Require().NoError(err)
-
-	// Parse LP tokens from response
-	lpTokens, ok = sdkmath.NewIntFromString(createResp.LpTokens)
-	suite.Require().True(ok, "should parse LP tokens")
-
-	// Try to remove more LP tokens than owned
-	removeMsg = &dexpb.MsgRemoveLiquidity{
-		Provider: creator.String(),
-		PoolId:   createResp.PoolId,
-		LpTokens: lpTokens.Add(sdkmath.NewInt(1000)).String(), // More than owned
-	}
-
 	_, err = suite.msgServer.RemoveLiquidity(suite.ctx, removeMsg)
 	suite.Require().Error(err, "should reject removing more shares than owned")
-	// Error could be "insufficient" or "liquidity is locked" depending on timing
-	suite.Require().True(
-		suite.Contains(err.Error(), "insufficient") || suite.Contains(err.Error(), "locked"),
-		"error should mention insufficient funds or liquidity lock",
+	// Now that cooldown is passed, error should be about insufficient funds
+	suite.Require().Contains(err.Error(), "insufficient",
+		"error should mention insufficient funds after cooldown period",
 	)
 }
 
 func (suite *MsgServerComprehensiveTestSuite) TestSwapExactInSlippageExceeded() {
+	// Reset test state to avoid interference from previous tests
+	suite.SetupTest()
+
 	// Test swap with excessive slippage
 	creator := keepertest.GenTestAddr()
 	trader := keepertest.GenTestAddr()
@@ -412,9 +400,10 @@ func (suite *MsgServerComprehensiveTestSuite) TestSwapExactInSlippageExceeded() 
 	_, err = suite.msgServer.SwapExactIn(suite.ctx, swapMsg)
 	suite.Require().Error(err, "should reject swap with dust amount or excessive slippage")
 	// Error could be about dust attack or slippage
+	errMsg := err.Error()
 	suite.Require().True(
-		suite.Contains(err.Error(), "slippage") || suite.Contains(err.Error(), "dust") || suite.Contains(err.Error(), "minimum"),
-		"error should mention slippage, dust, or minimum amount",
+		strings.Contains(errMsg, "slippage") || strings.Contains(errMsg, "dust") || strings.Contains(errMsg, "minimum"),
+		"error should mention slippage, dust, or minimum amount, got: %s", errMsg,
 	)
 }
 

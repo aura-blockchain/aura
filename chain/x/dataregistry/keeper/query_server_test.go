@@ -39,6 +39,8 @@ func TestQueryServerFunctionality(t *testing.T) {
 		Status:          types.DataItemStatus_DATA_ITEM_STATUS_PENDING_VERIFICATION,
 		Title:           "Photo 1",
 		Tags:            []string{"test"},
+		CreatedAt:       input.Ctx.BlockTime(),
+		AccessPolicy:    &types.AccessPolicy{},
 	}
 
 	item2 := types.DataItem{
@@ -50,6 +52,8 @@ func TestQueryServerFunctionality(t *testing.T) {
 		Status:          types.DataItemStatus_DATA_ITEM_STATUS_VERIFIED,
 		Title:           "Video 1",
 		Tags:            []string{"test", "video"},
+		CreatedAt:       input.Ctx.BlockTime(),
+		AccessPolicy:    &types.AccessPolicy{},
 	}
 
 	require.NoError(t, k.SetDataItem(input.Ctx, item1))

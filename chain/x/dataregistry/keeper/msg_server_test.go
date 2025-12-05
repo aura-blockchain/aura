@@ -91,9 +91,11 @@ func TestMsgServerFunctionality(t *testing.T) {
 	t.Run("UpdateDataItem_Unauthorized", func(t *testing.T) {
 		// Store data as one owner
 		storeMsg := &types.MsgStoreDataItem{
-			Creator:     "aura1owner",
-			DataType:    types.DataItemType_DATA_ITEM_TYPE_PHOTO,
-			ContentHash: []byte("hash789"),
+			Creator:         "aura1owner",
+			DataType:        types.DataItemType_DATA_ITEM_TYPE_PHOTO,
+			ContentHash:     []byte("hash789"),
+			Title:           "Original Photo",
+			StorageLocation: "ipfs://original",
 		}
 
 		storeResp, err := msgServer.StoreDataItem(input.Ctx, storeMsg)
@@ -114,9 +116,11 @@ func TestMsgServerFunctionality(t *testing.T) {
 	t.Run("DeleteDataItem", func(t *testing.T) {
 		// Store data
 		storeMsg := &types.MsgStoreDataItem{
-			Creator:     "aura1owner",
-			DataType:    types.DataItemType_DATA_ITEM_TYPE_PHOTO,
-			ContentHash: []byte("hash_delete"),
+			Creator:         "aura1owner",
+			DataType:        types.DataItemType_DATA_ITEM_TYPE_PHOTO,
+			ContentHash:     []byte("hash_delete"),
+			Title:           "Photo to Delete",
+			StorageLocation: "ipfs://delete",
 		}
 
 		storeResp, err := msgServer.StoreDataItem(input.Ctx, storeMsg)
@@ -140,9 +144,11 @@ func TestMsgServerFunctionality(t *testing.T) {
 	t.Run("DeleteDataItem_Unauthorized", func(t *testing.T) {
 		// Store data
 		storeMsg := &types.MsgStoreDataItem{
-			Creator:     "aura1owner",
-			DataType:    types.DataItemType_DATA_ITEM_TYPE_PHOTO,
-			ContentHash: []byte("hash_delete2"),
+			Creator:         "aura1owner",
+			DataType:        types.DataItemType_DATA_ITEM_TYPE_PHOTO,
+			ContentHash:     []byte("hash_delete2"),
+			Title:           "Protected Photo",
+			StorageLocation: "ipfs://protected",
 		}
 
 		storeResp, err := msgServer.StoreDataItem(input.Ctx, storeMsg)

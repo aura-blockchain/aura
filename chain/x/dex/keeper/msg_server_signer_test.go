@@ -2,6 +2,7 @@ package keeper_test
 
 import (
 	"testing"
+	"time"
 
 	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -23,14 +24,16 @@ func TestSignerVerification(t *testing.T) {
 	addr1 := keepertest.GenTestAddr()
 	addr2 := keepertest.GenTestAddr()
 
-	// Fund both addresses
+	// Fund both addresses with all required denominations
 	suite.fundAccount(addr1, sdk.NewCoins(
 		sdk.NewCoin("aura", sdkmath.NewInt(10000000000)),
 		sdk.NewCoin("usdt", sdkmath.NewInt(10000000000)),
+		sdk.NewCoin("usdt2", sdkmath.NewInt(10000000000)),
 	))
 	suite.fundAccount(addr2, sdk.NewCoins(
 		sdk.NewCoin("aura", sdkmath.NewInt(10000000000)),
 		sdk.NewCoin("usdt", sdkmath.NewInt(10000000000)),
+		sdk.NewCoin("usdt2", sdkmath.NewInt(10000000000)),
 	))
 
 	t.Run("CreatePool with valid signer", func(t *testing.T) {
@@ -87,6 +90,9 @@ func TestSignerVerification(t *testing.T) {
 	})
 
 	t.Run("SwapExactIn with valid signer", func(t *testing.T) {
+		// Advance time to avoid pool creation cooldown from previous tests
+		suite.ctx = suite.ctx.WithBlockTime(suite.ctx.BlockTime().Add(3601 * time.Second))
+
 		// Create a pool first
 		createMsg := &dexpb.MsgCreatePool{
 			Creator: addr1.String(),

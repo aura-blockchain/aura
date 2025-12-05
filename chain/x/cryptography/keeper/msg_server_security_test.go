@@ -348,7 +348,7 @@ func TestSecurityAcrossAllFunctions(t *testing.T) {
 		// First register a circuit
 		registerMsg := &cryptoproto.MsgRegisterZKProofCircuit{
 			Creator:          validUser,
-			ProofType:        cryptoproto.ZKProofType_ZK_PROOF_TYPE_BULLETPROOFS,
+			ProofType:        cryptoproto.ZKProofType_ZK_PROOF_TYPE_GROTH16,
 			PublicParameters: make([]byte, 128),
 			VerificationKey:  make([]byte, 64),
 			CircuitId:        "proof-circuit",

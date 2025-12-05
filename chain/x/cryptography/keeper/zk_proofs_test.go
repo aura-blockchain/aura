@@ -460,13 +460,21 @@ func setupKeeperForTest(t *testing.T) (keeper.Keeper, sdk.Context) {
 }
 
 func makeValidLookingProof(size int) []byte {
-	// Create a proof that looks structurally valid
+	// Create a proof that looks structurally valid with proper curve point structure
 	proof := make([]byte, size)
-	_, _ = rand.Read(proof)
-
-	// Set first byte to non-zero to pass structure checks
-	proof[0] = 0x03 // Typical compressed point marker
-
+	if size > 0 {
+		proof[0] = 0x02 // Compressed point marker (even y-coordinate)
+	}
+	// Mix of zero and non-zero bytes for realistic curve point structure
+	// This ensures the proof has both zeros and non-zeros as required by hasValidCurvePointStructure
+	for i := 1; i < len(proof); i++ {
+		if i%3 == 0 {
+			proof[i] = byte(i % 256)
+		} else if i%7 == 0 {
+			proof[i] = 0xFF
+		}
+		// else remains 0x00 for zero bytes
+	}
 	return proof
 }
 
