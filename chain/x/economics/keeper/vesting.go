@@ -135,10 +135,10 @@ func (k Keeper) AddUserVestingSchedule(ctx context.Context, userAddress, schedul
 // ============================
 
 // CalculateVestedAmount calculates the vested amount at a given time
-func (k Keeper) CalculateVestedAmount(schedule *economicspb.VestingSchedule, currentTime time.Time) (string, error) {
+func (k Keeper) CalculateVestedAmount(schedule *economicspb.VestingSchedule, currentTime time.Time) (sdkmath.Int, error) {
 	// Check if schedule is revoked
 	if schedule.Revoked {
-		return schedule.VestedAmount.Amount.String(), nil
+		return schedule.VestedAmount.Amount, nil
 	}
 
 	// Convert protobuf timestamps to time.Time
@@ -148,18 +148,16 @@ func (k Keeper) CalculateVestedAmount(schedule *economicspb.VestingSchedule, cur
 	// Check if cliff period has passed
 	cliffEnd := startTime.Add(time.Duration(schedule.CliffDuration) * time.Second)
 	if currentTime.Before(cliffEnd) {
-		return "0", nil
+		return sdkmath.ZeroInt(), nil
 	}
 
 	// Check if vesting is complete
 	if currentTime.After(endTime) || currentTime.Equal(endTime) {
-		return schedule.OriginalAmount.Amount.String(), nil
+		return schedule.OriginalAmount.Amount, nil
 	}
 
-	// Parse total amount
-	totalAmountStr := schedule.OriginalAmount.Amount.String()
-	totalAmount := new(big.Int)
-	totalAmount.SetString(totalAmountStr, 10)
+	// Get total amount
+	totalAmount := schedule.OriginalAmount.Amount
 
 	switch schedule.VestingType {
 	case economicspb.VestingType_VESTING_TYPE_LINEAR:
@@ -171,25 +169,25 @@ func (k Keeper) CalculateVestedAmount(schedule *economicspb.VestingSchedule, cur
 		elapsed := big.NewFloat(elapsedTime)
 		duration := big.NewFloat(vestingDuration)
 
-		totalAmountFloat := new(big.Float).SetInt(totalAmount)
+		totalAmountFloat := new(big.Float).SetInt(totalAmount.BigInt())
 		vestedAmount := new(big.Float).Mul(totalAmountFloat, elapsed)
 		vestedAmount.Quo(vestedAmount, duration)
 
 		result, _ := vestedAmount.Int(nil)
-		return result.String(), nil
+		return sdkmath.NewIntFromBigInt(result), nil
 
 	case economicspb.VestingType_VESTING_TYPE_MILESTONE:
 		// For milestone vesting, would need additional milestone data
 		// For now, return 0 (would be implemented with milestone tracking)
-		return "0", nil
+		return sdkmath.ZeroInt(), nil
 
 	default:
-		return "0", fmt.Errorf("unknown vesting type: %v", schedule.VestingType)
+		return sdkmath.ZeroInt(), fmt.Errorf("unknown vesting type: %v", schedule.VestingType)
 	}
 }
 
-// ReleaseVestedTokens releases vested tokens to the beneficiary
-func (k Keeper) ReleaseVestedTokens(ctx context.Context, scheduleID string) (string, error) {
+// ReleaseVestedTokensInternal releases vested tokens to the beneficiary (internal method)
+func (k Keeper) ReleaseVestedTokensInternal(ctx context.Context, scheduleID string) (string, error) {
 	schedule, err := k.GetVestingSchedule(ctx, scheduleID)
 	if err != nil {
 		return "0", err
@@ -228,8 +226,8 @@ func (k Keeper) ReleaseVestedTokens(ctx context.Context, scheduleID string) (str
 	return releasable.String(), nil
 }
 
-// RevokeVestingSchedule revokes a vesting schedule
-func (k Keeper) RevokeVestingSchedule(ctx context.Context, scheduleID string) error {
+// RevokeVestingScheduleInternal revokes a vesting schedule (internal method)
+func (k Keeper) RevokeVestingScheduleInternal(ctx context.Context, scheduleID string) error {
 	schedule, err := k.GetVestingSchedule(ctx, scheduleID)
 	if err != nil {
 		return err
@@ -363,7 +361,7 @@ func (k Keeper) AddUserVoteLock(ctx context.Context, userAddress, lockID string)
 }
 
 // CalculateVotingPower calculates voting power based on locked tokens
-func (k Keeper) CalculateVotingPower(amount string, lockDuration int64) string {
+func (k Keeper) CalculateVotingPowerFromDuration(amount string, lockDuration int64) string {
 	// Parse amount
 	amountBig := new(big.Int)
 	amountBig.SetString(amount, 10)

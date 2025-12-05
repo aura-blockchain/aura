@@ -27,12 +27,17 @@ var (
 	// Vesting errors
 	// ============================
 	ErrVestingScheduleNotFound  = errors.New("vesting schedule not found")
+	ErrScheduleNotFound         = errors.New("schedule not found")
+	ErrScheduleRevoked          = errors.New("schedule already revoked")
 	ErrVestingAlreadyRevoked    = errors.New("vesting schedule already revoked")
 	ErrNoVestedTokens           = errors.New("no tokens available to vest")
 	ErrCliffNotReached          = errors.New("cliff period not yet reached")
 	ErrInvalidBeneficiary       = errors.New("invalid beneficiary address")
 	ErrInsufficientVestedAmount = errors.New("insufficient vested amount")
 	ErrVoteLockNotFound         = errors.New("vote lock not found")
+	ErrLockNotFound             = errors.New("lock not found")
+	ErrLockWithdrawn            = errors.New("lock already withdrawn")
+	ErrLockNotEnded             = errors.New("lock period not ended")
 	ErrVoteLockNotExpired       = errors.New("vote lock has not expired yet")
 	ErrInvalidLockDuration      = errors.New("invalid lock duration")
 	ErrLockDurationTooShort     = errors.New("lock duration below minimum")
@@ -46,9 +51,13 @@ var (
 	ErrInvalidThresholdValue       = errors.New("invalid threshold value")
 	ErrInsufficientSignatures      = errors.New("insufficient signatures")
 	ErrTxNotFound                  = errors.New("treasury transaction not found")
+	ErrTreasuryTxNotFound          = errors.New("treasury transaction not found")
+	ErrTreasuryTxExecuted          = errors.New("treasury transaction already executed")
+	ErrTreasuryTxRejected          = errors.New("treasury transaction rejected")
 	ErrTxAlreadyExecuted           = errors.New("transaction already executed")
 	ErrTxAlreadyRejected           = errors.New("transaction already rejected")
 	ErrTimelockNotExpired          = errors.New("timelock period not expired")
+	ErrTimelockNotMet              = errors.New("timelock not met")
 	ErrInvalidSigner               = errors.New("invalid signer")
 	ErrAlreadySigned               = errors.New("already signed by this address")
 	ErrInsufficientTreasuryBalance = errors.New("insufficient treasury balance")
@@ -56,10 +65,12 @@ var (
 	// ============================
 	// Governance proposal errors
 	// ============================
+	ErrInvalidRequest         = errors.New("invalid request")
 	ErrInvalidProposal        = errors.New("invalid proposal")
 	ErrProposalNotFound       = errors.New("proposal not found")
 	ErrInvalidProposalStatus  = errors.New("invalid proposal status")
 	ErrProposalNotPassed      = errors.New("proposal has not passed")
+	ErrExecutionDelayNotMet   = errors.New("execution delay not met")
 	ErrAlreadyExecuted        = errors.New("proposal already executed")
 	ErrInsufficientStake      = errors.New("insufficient stake for governance proposal")
 	ErrInvalidProposalDeposit = errors.New("invalid proposal deposit")
@@ -68,6 +79,7 @@ var (
 	// Governance voting errors
 	// ============================
 	ErrInvalidVote            = errors.New("invalid vote")
+	ErrVoteNotFound           = errors.New("vote not found")
 	ErrAlreadyVoted           = errors.New("already voted")
 	ErrVotingPeriodEnded      = errors.New("voting period has ended")
 	ErrVotingPeriodNotStarted = errors.New("voting period has not started")

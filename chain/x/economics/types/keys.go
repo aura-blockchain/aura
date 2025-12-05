@@ -44,6 +44,7 @@ var (
 	VoteCommitmentPrefix   = []byte{0x36}
 	VetoRequestPrefix      = []byte{0x37}
 	TokenLockPrefix        = []byte{0x38}
+	TallyResultPrefix      = []byte{0x39}
 
 	// Economic monitoring keys
 	InflationAlertPrefix   = []byte{0x40}
@@ -51,11 +52,14 @@ var (
 	LastLargeTxTimePrefix  = []byte{0x42}
 	AddressHoldingPrefix   = []byte{0x43}
 	PreviousInflationKey   = []byte{0x44}
+	InflationMetricsKey    = []byte{0x45}
 
 	// MEV keys
 	UserMEVBalancePrefix   = []byte{0x50}
 	TotalMEVPendingKey     = []byte{0x51}
 	TotalBurnedKey         = []byte{0x52}
+	MEVStatsKey            = []byte{0x53}
+	LiquidityMiningStatsKey = []byte{0x54}
 
 	// State tracking keys
 	CurrentHeightKey = []byte{0x60}
@@ -214,4 +218,18 @@ func GetAddressHoldingKey(address string) []byte {
 // GetUserMEVBalanceKey returns the store key for user MEV balance
 func GetUserMEVBalanceKey(address string) []byte {
 	return append(UserMEVBalancePrefix, []byte(address)...)
+}
+
+// GetTallyResultKey returns the store key for a proposal's tally result
+func GetTallyResultKey(proposalID uint64) []byte {
+	bz := make([]byte, 8)
+	bz[0] = byte(proposalID >> 56)
+	bz[1] = byte(proposalID >> 48)
+	bz[2] = byte(proposalID >> 40)
+	bz[3] = byte(proposalID >> 32)
+	bz[4] = byte(proposalID >> 24)
+	bz[5] = byte(proposalID >> 16)
+	bz[6] = byte(proposalID >> 8)
+	bz[7] = byte(proposalID)
+	return append(TallyResultPrefix, bz...)
 }
