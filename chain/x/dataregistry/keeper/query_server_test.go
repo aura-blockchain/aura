@@ -63,23 +63,44 @@ func TestQueryServerFunctionality(t *testing.T) {
 
 	t.Run("QueryDataItem", func(t *testing.T) {
 		req := &types.QueryDataItemRequest{
-			DataId: "test-data-1",
+			DataId:    "test-data-1",
+			Requester: "aura1owner", // Must match owner for PRIVATE access policy
 		}
 
 		resp, err := queryServer.DataItem(input.Ctx, req)
 		require.NoError(t, err)
 		require.NotNil(t, resp)
+		require.True(t, resp.HasAccess)
+		require.NotNil(t, resp.DataItem)
 		require.Equal(t, item1.DataId, resp.DataItem.DataId)
 		require.Equal(t, item1.OwnerAddress, resp.DataItem.OwnerAddress)
 	})
 
 	t.Run("QueryDataItem_NotFound", func(t *testing.T) {
 		req := &types.QueryDataItemRequest{
-			DataId: "nonexistent",
+			DataId:    "nonexistent",
+			Requester: "aura1owner",
 		}
 
-		_, err := queryServer.DataItem(input.Ctx, req)
-		require.Error(t, err)
+		resp, err := queryServer.DataItem(input.Ctx, req)
+		require.NoError(t, err)
+		require.NotNil(t, resp)
+		require.False(t, resp.Exists)
+		require.Nil(t, resp.DataItem)
+	})
+
+	t.Run("QueryDataItem_AccessDenied", func(t *testing.T) {
+		req := &types.QueryDataItemRequest{
+			DataId:    "test-data-1",
+			Requester: "aura1other", // Different user, private access policy
+		}
+
+		resp, err := queryServer.DataItem(input.Ctx, req)
+		require.NoError(t, err)
+		require.NotNil(t, resp)
+		require.True(t, resp.Exists)
+		require.False(t, resp.HasAccess)
+		require.Nil(t, resp.DataItem)
 	})
 
 	t.Run("QueryUserDataItems", func(t *testing.T) {
