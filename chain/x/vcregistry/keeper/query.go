@@ -77,10 +77,7 @@ func (q *QueryServer) GetVC(
 
 	vcRecord, exists := q.keeper.GetVCRecord(ctx, req.VcId)
 	if !exists {
-		return &vcregistrypb.QueryGetVCResponse{
-			Vc:     nil,
-			Exists: false,
-		}, nil
+		return nil, types.ErrVCNotFound
 	}
 
 	return &vcregistrypb.QueryGetVCResponse{
@@ -274,10 +271,7 @@ func (q *QueryServer) GetVCPolicy(
 
 	policy, exists := q.keeper.GetVCPolicy(ctx, req.VcTypeName)
 	if !exists {
-		return &vcregistrypb.QueryGetVCPolicyResponse{
-			Policy: nil,
-			Exists: false,
-		}, nil
+		return nil, types.ErrPolicyNotFound
 	}
 
 	return &vcregistrypb.QueryGetVCPolicyResponse{
@@ -428,11 +422,7 @@ func (q *QueryServer) ResolveDID(
 
 	didDoc, exists := q.keeper.GetDIDDocument(ctx, req.Did)
 	if !exists {
-		return &vcregistrypb.QueryResolveDIDResponse{
-			DidDocument: nil,
-			Exists:      false,
-			Credentials: nil,
-		}, nil
+		return nil, types.ErrDIDNotFound
 	}
 
 	// Get associated active credentials

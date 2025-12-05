@@ -340,7 +340,7 @@ func TestExportGenesis(t *testing.T) {
 			DidDocuments:          []*pb.DIDDocument{{Did: "did:aura:1", Controller: "controller1"}},
 			VcPolicies:            []*pb.VCPolicy{{VcTypeName: "policy1", VcTypeEnum: pb.VCType_VC_TYPE_VERIFIED_HUMAN}},
 			UserMintCounts:        map[string]uint64{"user1": 5},
-			Presentations:         []*pb.VCPresentation{{PresentationId: "pres1", HolderAddress: "user1", HolderDid: "did:aura:user1"}},
+			Presentations:         []*pb.VCPresentation{{PresentationId: "pres1", HolderAddress: "user1", HolderDid: "did:aura:user1", VcIds: []string{"vc1"}}},
 			UserPresentationIndex: map[string]*pb.PresentationIds{"user1": {Ids: []string{"pres1"}}},
 			AttributeVcs:          []*pb.AttributeVC{{AttributeVcId: "attr1", HolderAddress: "user1", AttributeType: pb.AttributeType_ATTRIBUTE_TYPE_EMAIL}},
 			UserAttributeIndex:    map[string]*pb.AttributeVcIds{"user1": {Ids: []string{"attr1"}}},
