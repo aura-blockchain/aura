@@ -157,9 +157,9 @@ func TestMsgServer(t *testing.T) {
 		createResp, err := msgServer.CreateThresholdScheme(ctx, createMsg)
 		require.NoError(t, err)
 
-		// Submit share
+		// Submit share (using valid bech32 address)
 		msg := &cryptoproto.MsgSubmitThresholdSignatureShare{
-			Submitter:      "p1",
+			Submitter:      testCreatorAddr,
 			SchemeId:       createResp.SchemeId,
 			SignatureShare: make([]byte, 64),
 			MessageHash:    make([]byte, 32),
@@ -173,7 +173,7 @@ func TestMsgServer(t *testing.T) {
 
 	t.Run("SubmitThresholdSignatureShare - empty scheme_id", func(t *testing.T) {
 		msg := &cryptoproto.MsgSubmitThresholdSignatureShare{
-			Submitter:      "p1",
+			Submitter:      testCreatorAddr,
 			SchemeId:       "",
 			SignatureShare: make([]byte, 64),
 			MessageHash:    make([]byte, 32),
@@ -185,7 +185,7 @@ func TestMsgServer(t *testing.T) {
 
 	t.Run("SubmitThresholdSignatureShare - empty signature", func(t *testing.T) {
 		msg := &cryptoproto.MsgSubmitThresholdSignatureShare{
-			Submitter:      "p1",
+			Submitter:      testCreatorAddr,
 			SchemeId:       "scheme-1",
 			SignatureShare: []byte{},
 			MessageHash:    make([]byte, 32),

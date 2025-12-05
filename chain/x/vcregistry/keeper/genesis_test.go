@@ -22,6 +22,7 @@ func TestInitGenesis(t *testing.T) {
 
 	t.Run("init with VC records", func(t *testing.T) {
 		k, ctx := setupKeeperForTest(t)
+		now := time.Now()
 
 		genesis := types.GenesisState{
 			Params: types.DefaultParams(),
@@ -33,6 +34,7 @@ func TestInitGenesis(t *testing.T) {
 					IssuerAssistant: "issuer1",
 					VcType:          pb.VCType_VC_TYPE_VERIFIED_HUMAN,
 					Status:          pb.VCStatus_VC_STATUS_ACTIVE,
+					IssuedAt:        timestamppb.New(now),
 				},
 				{
 					VcId:            "vc2",
@@ -41,6 +43,7 @@ func TestInitGenesis(t *testing.T) {
 					IssuerAssistant: "issuer1",
 					VcType:          pb.VCType_VC_TYPE_KYC_VERIFICATION,
 					Status:          pb.VCStatus_VC_STATUS_ACTIVE,
+					IssuedAt:        timestamppb.New(now),
 				},
 			},
 			RevocationRecords:     []*pb.RevocationRecord{},
@@ -263,7 +266,7 @@ func TestInitGenesis(t *testing.T) {
 		require.Error(t, err)
 	})
 
-	t.Run("init skips nil entries", func(t *testing.T) {
+	t.Run("init rejects nil entries", func(t *testing.T) {
 		k, ctx := setupKeeperForTest(t)
 		genesis := types.GenesisState{
 			Params: types.DefaultParams(),
@@ -272,24 +275,20 @@ func TestInitGenesis(t *testing.T) {
 				{VcId: "vc1", HolderAddress: "holder1", HolderDid: "did:aura:holder1", IssuerAssistant: "issuer1"},
 				nil,
 			},
-			RevocationRecords:     []*pb.RevocationRecord{nil},
+			RevocationRecords:     []*pb.RevocationRecord{},
 			RevocationList:        &pb.RevocationList{},
-			DidDocuments:          []*pb.DIDDocument{nil},
-			VcPolicies:            []*pb.VCPolicy{nil},
+			DidDocuments:          []*pb.DIDDocument{},
+			VcPolicies:            []*pb.VCPolicy{},
 			UserMintCounts:        map[string]uint64{},
-			Presentations:         []*pb.VCPresentation{nil},
+			Presentations:         []*pb.VCPresentation{},
 			UserPresentationIndex: map[string]*pb.PresentationIds{},
-			AttributeVcs:          []*pb.AttributeVC{nil},
+			AttributeVcs:          []*pb.AttributeVC{},
 			UserAttributeIndex:    map[string]*pb.AttributeVcIds{},
 		}
 
 		err := k.InitGenesis(ctx, genesis)
-		require.NoError(t, err)
-
-		// Verify only valid VC was imported
-		vc, ok := k.GetVCRecord(ctx, "vc1")
-		require.True(t, ok)
-		require.Equal(t, "holder1", vc.HolderAddress)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "nil")
 	})
 }
 
@@ -308,12 +307,27 @@ func TestExportGenesis(t *testing.T) {
 
 	t.Run("export with data", func(t *testing.T) {
 		k, ctx := setupKeeperForTest(t)
+		now := time.Now()
 		// Initialize with data
 		initGenesis := types.GenesisState{
 			Params: types.DefaultParams(),
 			VcRecords: []*pb.VCRecord{
-				{VcId: "vc1", HolderAddress: "holder1", HolderDid: "did:aura:holder1", IssuerAssistant: "issuer1"},
-				{VcId: "vc2", HolderAddress: "holder2", HolderDid: "did:aura:holder2", IssuerAssistant: "issuer1"},
+				{
+					VcId:            "vc1",
+					HolderAddress:   "holder1",
+					HolderDid:       "did:aura:holder1",
+					IssuerAssistant: "issuer1",
+					VcType:          pb.VCType_VC_TYPE_VERIFIED_HUMAN,
+					IssuedAt:        timestamppb.New(now),
+				},
+				{
+					VcId:            "vc2",
+					HolderAddress:   "holder2",
+					HolderDid:       "did:aura:holder2",
+					IssuerAssistant: "issuer1",
+					VcType:          pb.VCType_VC_TYPE_KYC_VERIFICATION,
+					IssuedAt:        timestamppb.New(now),
+				},
 			},
 			RevocationRecords: []*pb.RevocationRecord{
 				{VcId: "vc1", Reason: pb.RevocationReason_REVOCATION_REASON_USER_REQUEST},
@@ -347,6 +361,7 @@ func TestExportGenesis(t *testing.T) {
 func TestGenesisRoundTrip(t *testing.T) {
 	t.Run("init then export produces same state", func(t *testing.T) {
 		k, ctx := setupKeeperForTest(t)
+		now := time.Now()
 		originalGenesis := types.GenesisState{
 			Params: types.DefaultParams(),
 			VcRecords: []*pb.VCRecord{
@@ -357,6 +372,7 @@ func TestGenesisRoundTrip(t *testing.T) {
 					IssuerAssistant: "issuer1",
 					VcType:          pb.VCType_VC_TYPE_VERIFIED_HUMAN,
 					Status:          pb.VCStatus_VC_STATUS_ACTIVE,
+					IssuedAt:        timestamppb.New(now),
 				},
 			},
 			RevocationRecords:  []*pb.RevocationRecord{},
@@ -394,9 +410,17 @@ func TestGenesisRoundTrip(t *testing.T) {
 	t.Run("multiple round trips are deterministic", func(t *testing.T) {
 		k1, ctx1 := setupKeeperForTest(t)
 		k2, ctx2 := setupKeeperForTest(t)
+		now := time.Now()
 		genesis := types.DefaultGenesisState()
 		genesis.VcRecords = []*pb.VCRecord{
-			{VcId: "vc1", HolderAddress: "holder1", HolderDid: "did:aura:holder1", IssuerAssistant: "issuer1"},
+			{
+				VcId:            "vc1",
+				HolderAddress:   "holder1",
+				HolderDid:       "did:aura:holder1",
+				IssuerAssistant: "issuer1",
+				VcType:          pb.VCType_VC_TYPE_VERIFIED_HUMAN,
+				IssuedAt:        timestamppb.New(now),
+			},
 		}
 
 		// First round trip

@@ -192,13 +192,14 @@ func TestPresentationPersistenceAndGenesisMapFallback(t *testing.T) {
 
 	holder := "holder1"
 	vc := types.VCRecord{
-		VcId:          "vc-map-1",
-		HolderAddress: holder,
-		HolderDid:     "did:aura:holder1",
-		Status:        types.VCStatus_VC_STATUS_ACTIVE,
-		IssuedAt:      timestamppb.New(time.Unix(now, 0)),
-		ExpiresAt:     timestamppb.New(time.Unix(now+600, 0)),
-		VcType:        vcregistrypb.VCType_VC_TYPE_VERIFIED_HUMAN,
+		VcId:            "vc-map-1",
+		HolderAddress:   holder,
+		HolderDid:       "did:aura:holder1",
+		IssuerAssistant: "issuer1",
+		Status:          types.VCStatus_VC_STATUS_ACTIVE,
+		IssuedAt:        timestamppb.New(time.Unix(now, 0)),
+		ExpiresAt:       timestamppb.New(time.Unix(now+600, 0)),
+		VcType:          vcregistrypb.VCType_VC_TYPE_VERIFIED_HUMAN,
 	}
 	require.NoError(t, keeper.SetVCRecord(ctx, vc))
 

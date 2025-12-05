@@ -846,6 +846,19 @@ func (k Keeper) GetQuote(
 	denomIn string,
 	amountIn sdkmath.Int,
 ) (sdkmath.Int, sdkmath.LegacyDec, sdkmath.LegacyDec, sdkmath.Int, error) {
+	// SECURITY: Validate input amount to prevent division by zero and overflow
+	if !amountIn.IsPositive() {
+		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec(), sdkmath.ZeroInt(),
+			errors.Wrap(types.ErrInvalidRequest, "swap amount must be positive")
+	}
+
+	// SECURITY: Prevent overflow attacks with extremely large amounts
+	maxSwapAmount := sdkmath.NewInt(1_000_000_000_000) // 1 trillion units max per swap
+	if amountIn.GT(maxSwapAmount) {
+		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec(), sdkmath.ZeroInt(),
+			errors.Wrapf(types.ErrInvalidRequest, "swap amount %s exceeds maximum %s", amountIn, maxSwapAmount)
+	}
+
 	pool := k.GetPool(ctx, poolID)
 	if pool == nil {
 		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec(), sdkmath.ZeroInt(),
