@@ -5,7 +5,7 @@
 # ============================================================================
 # Stage 1: Security Scanner Base
 # ============================================================================
-FROM golang:1.23-bullseye AS security-scanner
+FROM golang:1.23-bookworm AS security-scanner
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends git && \
@@ -21,7 +21,7 @@ RUN go install github.com/securego/gosec/v2/cmd/gosec@v2.17.0
 # ============================================================================
 # Stage 2: Builder
 # ============================================================================
-FROM golang:1.23-bullseye AS builder
+FROM golang:1.23-bookworm AS builder
 
 # Security: Run as non-root during build
 RUN groupadd -g 10001 builder && \
@@ -118,6 +118,12 @@ RUN apt-get update && \
 # Copy binary from builder with ownership
 COPY --from=builder --chown=aura:aura /app/build/aurad /usr/local/bin/aurad
 
+# Copy wasmvm shared library from builder
+COPY --from=builder /app/third_party/wasmvm/internal/api/libwasmvm.x86_64.so /usr/lib/
+
+# Update library cache
+RUN ldconfig
+
 # Verify binary is executable
 RUN /usr/local/bin/aurad version
 
@@ -155,7 +161,7 @@ ENV AURA_HOME=/home/aura/.aura \
 
 # Default command with graceful shutdown
 ENTRYPOINT ["aurad"]
-CMD ["start", "--log_level=$AURA_LOG_LEVEL"]
+CMD ["start"]
 
 # ============================================================================
 # Metadata Labels (OCI Standard)
