@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	errorsmod "cosmossdk.io/errors"
-	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	economicspb "github.com/aequitas/aura/proto/aura/economics/v1beta1"

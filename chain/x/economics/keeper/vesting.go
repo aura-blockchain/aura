@@ -202,7 +202,7 @@ func (k Keeper) ReleaseVestedTokensInternal(ctx context.Context, scheduleID stri
 
 	// Calculate releasable amount
 	totalVested := new(big.Int)
-	totalVested.SetString(vestedAmount, 10)
+	totalVested.SetString(vestedAmount.String(), 10)
 
 	alreadyReleased := schedule.VestedAmount.Amount.BigInt()
 
