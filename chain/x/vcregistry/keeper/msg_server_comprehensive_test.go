@@ -1,10 +1,12 @@
 package keeper
 
 import (
+	"fmt"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/suite"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/vcregistry/types"
 	vcregistrypb "github.com/aequitas/aura/proto/aura/vcregistry/v1beta1"
@@ -22,6 +24,9 @@ func TestMsgServerComprehensiveTestSuite(t *testing.T) {
 func (suite *MsgServerComprehensiveTestSuite) SetupTest() {
 	suite.KeeperTestSuite.SetupTest()
 	suite.msgServer = NewMsgServer(suite.Keeper)
+
+	// Setup default policies for common VC types needed by tests
+	suite.setupDefaultPolicies()
 }
 
 // Helper function to generate valid test addresses
@@ -29,6 +34,23 @@ func (suite *MsgServerComprehensiveTestSuite) testAddress(name string) string {
 	// Create a 20-byte address and convert to bech32
 	addr := sdk.AccAddress([]byte(name + "____________")[:20])
 	return addr.String()
+}
+
+// Setup default policies for testing
+func (suite *MsgServerComprehensiveTestSuite) setupDefaultPolicies() {
+	// Create policy for VERIFIED_HUMAN
+	policy := vcregistrypb.VCPolicy{
+		VcTypeName:         fmt.Sprintf("%d", vcregistrypb.VCType_VC_TYPE_VERIFIED_HUMAN),
+		VcTypeEnum:         vcregistrypb.VCType_VC_TYPE_VERIFIED_HUMAN,
+		Status:             vcregistrypb.VCPolicyStatus_VC_POLICY_STATUS_ACTIVE,
+		Version:            "1",
+		CsThreshold:        0, // No threshold for tests
+		RequiredIrIds:      []string{},
+		Singleton:          false,
+		ExpiryDurationDays: 365,
+		CreatedAt:          timestamppb.Now(),
+	}
+	suite.Keeper.SetVCPolicy(suite.SdkCtx, policy)
 }
 
 // ============================
@@ -63,7 +85,7 @@ func (suite *MsgServerComprehensiveTestSuite) TestMintVCInvalidVCType() {
 
 	// Test invalid VC type
 	msg := &vcregistrypb.MsgMintVC{
-		HolderAddress: "aura1holder123",
+		HolderAddress: suite.testAddress("holder"),
 		VcType:        vcregistrypb.VCType_VC_TYPE_UNSPECIFIED,
 		HolderDid:     "did:aura:holder1",
 	}
@@ -75,9 +97,10 @@ func (suite *MsgServerComprehensiveTestSuite) TestMintVCInvalidVCType() {
 func (suite *MsgServerComprehensiveTestSuite) TestMintVCSuccess() {
 	ctx := sdk.WrapSDKContext(suite.SdkCtx)
 
+	holderAddr := suite.testAddress("holder")
 	// Test successful VC minting
 	msg := &vcregistrypb.MsgMintVC{
-		HolderAddress: "aura1holder123",
+		HolderAddress: holderAddr,
 		VcType:        vcregistrypb.VCType_VC_TYPE_VERIFIED_HUMAN,
 		HolderDid:     "did:aura:holder1",
 	}
@@ -103,7 +126,7 @@ func (suite *MsgServerComprehensiveTestSuite) TestRevokeVCNonExistent() {
 
 	// Test revoking non-existent credential
 	msg := &vcregistrypb.MsgRevokeVC{
-		HolderAddress: "aura1holder123",
+		HolderAddress: suite.testAddress("holder"),
 		VcId:          "nonexistent-vc-id",
 		ReasonText:    "test",
 	}
@@ -118,7 +141,7 @@ func (suite *MsgServerComprehensiveTestSuite) TestRevokeVCSuccess() {
 
 	// First create a VC
 	mintMsg := &vcregistrypb.MsgMintVC{
-		HolderAddress: "aura1holder123",
+		HolderAddress: suite.testAddress("holder"),
 		VcType:        vcregistrypb.VCType_VC_TYPE_VERIFIED_HUMAN,
 		HolderDid:     "did:aura:holder1",
 	}
@@ -128,7 +151,7 @@ func (suite *MsgServerComprehensiveTestSuite) TestRevokeVCSuccess() {
 
 	// Now revoke it
 	revokeMsg := &vcregistrypb.MsgRevokeVC{
-		HolderAddress: "aura1holder123",
+		HolderAddress: suite.testAddress("holder"),
 		VcId:          mintResp.VcId,
 		ReasonText:    "user requested revocation",
 	}
@@ -152,7 +175,7 @@ func (suite *MsgServerComprehensiveTestSuite) TestRevokeVCAlreadyRevoked() {
 
 	// Create and revoke a VC
 	mintMsg := &vcregistrypb.MsgMintVC{
-		HolderAddress: "aura1holder123",
+		HolderAddress: suite.testAddress("holder"),
 		VcType:        vcregistrypb.VCType_VC_TYPE_VERIFIED_HUMAN,
 		HolderDid:     "did:aura:holder1",
 	}
@@ -161,7 +184,7 @@ func (suite *MsgServerComprehensiveTestSuite) TestRevokeVCAlreadyRevoked() {
 	suite.Require().NoError(err)
 
 	revokeMsg := &vcregistrypb.MsgRevokeVC{
-		HolderAddress: "aura1holder123",
+		HolderAddress: suite.testAddress("holder"),
 		VcId:          mintResp.VcId,
 		ReasonText:    "first revocation",
 	}
@@ -171,7 +194,7 @@ func (suite *MsgServerComprehensiveTestSuite) TestRevokeVCAlreadyRevoked() {
 
 	// Try to revoke again
 	revokeMsg2 := &vcregistrypb.MsgRevokeVC{
-		HolderAddress: "aura1holder123",
+		HolderAddress: suite.testAddress("holder"),
 		VcId:          mintResp.VcId,
 		ReasonText:    "second revocation attempt",
 	}
@@ -190,7 +213,7 @@ func (suite *MsgServerComprehensiveTestSuite) TestCreatePresentationEmptyVCList(
 
 	// Test creating presentation with no VCs
 	msg := &vcregistrypb.MsgCreatePresentation{
-		Creator:          "aura1holder123",
+		Creator:          suite.testAddress("holder"),
 		VcIds:            []string{},
 		Context:          &vcregistrypb.PresentationContext{ShowFullName: true},
 		ExpiresInSeconds: 300,
@@ -206,7 +229,7 @@ func (suite *MsgServerComprehensiveTestSuite) TestCreatePresentationSuccess() {
 
 	// First create a VC
 	mintMsg := &vcregistrypb.MsgMintVC{
-		HolderAddress: "aura1holder123",
+		HolderAddress: suite.testAddress("holder"),
 		VcType:        vcregistrypb.VCType_VC_TYPE_VERIFIED_HUMAN,
 		HolderDid:     "did:aura:holder1",
 	}
@@ -216,7 +239,7 @@ func (suite *MsgServerComprehensiveTestSuite) TestCreatePresentationSuccess() {
 
 	// Create presentation
 	presentMsg := &vcregistrypb.MsgCreatePresentation{
-		Creator:          "aura1holder123",
+		Creator:          suite.testAddress("holder"),
 		VcIds:            []string{mintResp.VcId},
 		Context:          &vcregistrypb.PresentationContext{ShowFullName: true, ShowAge: true},
 		ExpiresInSeconds: 300,
@@ -230,7 +253,7 @@ func (suite *MsgServerComprehensiveTestSuite) TestCreatePresentationSuccess() {
 	// Verify presentation was stored
 	presentation, ok := suite.Keeper.GetPresentation(suite.SdkCtx, resp.PresentationId)
 	suite.Require().True(ok, "presentation should be retrievable")
-	suite.Require().Equal("aura1holder123", presentation.HolderAddress)
+	suite.Require().Equal(suite.testAddress("holder"), presentation.HolderAddress)
 	suite.Require().Contains(presentation.VcIds, mintResp.VcId)
 }
 
@@ -243,7 +266,7 @@ func (suite *MsgServerComprehensiveTestSuite) TestRegisterDIDSuccess() {
 
 	// Test successful DID registration
 	msg := &vcregistrypb.MsgRegisterDID{
-		Controller: "aura1controller",
+		Controller: suite.testAddress("controller"),
 		Did:        "did:aura:testdid123",
 		VerificationMethods: []*vcregistrypb.VerificationMethod{
 			{
@@ -272,7 +295,7 @@ func (suite *MsgServerComprehensiveTestSuite) TestRegisterDIDDuplicate() {
 
 	// Register a DID
 	msg := &vcregistrypb.MsgRegisterDID{
-		Controller: "aura1controller",
+		Controller: suite.testAddress("controller"),
 		Did:        "did:aura:duplicate",
 		VerificationMethods: []*vcregistrypb.VerificationMethod{
 			{
@@ -326,10 +349,10 @@ func (suite *MsgServerComprehensiveTestSuite) TestCreateAttributeVCSuccess() {
 	ctx := sdk.WrapSDKContext(suite.SdkCtx)
 
 	msg := &vcregistrypb.MsgCreateAttributeVC{
-		Creator:          "aura1issuer",
+		Creator:          suite.testAddress("issuer"),
 		AttributeType:    vcregistrypb.AttributeType_ATTRIBUTE_TYPE_AGE,
 		EncryptedValue:   []byte("encrypted-age-data"),
-		Issuer:           "aura1issuer",
+		Issuer:           suite.testAddress("issuer"),
 		ExpiresInSeconds: 31536000, // 365 days in seconds
 	}
 
@@ -352,7 +375,7 @@ func (suite *MsgServerComprehensiveTestSuite) TestUpdateDisclosurePolicySuccess(
 	ctx := sdk.WrapSDKContext(suite.SdkCtx)
 
 	msg := &vcregistrypb.MsgUpdateDisclosurePolicy{
-		Creator:     "aura1holder",
+		Creator:     suite.testAddress("holder2"),
 		DefaultMode: vcregistrypb.DisclosurePolicyMode_DISCLOSURE_POLICY_MODE_DENY,
 		Rules: []*vcregistrypb.AttributeDisclosureRule{
 			{
@@ -381,8 +404,8 @@ func (suite *MsgServerComprehensiveTestSuite) TestCreateDisclosureRequestSuccess
 	ctx := sdk.WrapSDKContext(suite.SdkCtx)
 
 	msg := &vcregistrypb.MsgCreateDisclosureRequest{
-		Verifier:            "aura1verifier",
-		HolderAddress:       "aura1holder",
+		Verifier:            suite.testAddress("verifier"),
+		HolderAddress:       suite.testAddress("holder2"),
 		VerifierName:        "Test Verifier",
 		RequestedAttributes: []vcregistrypb.AttributeType{vcregistrypb.AttributeType_ATTRIBUTE_TYPE_AGE},
 		Purpose:             "age verification",
