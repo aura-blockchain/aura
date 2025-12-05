@@ -64,8 +64,15 @@ func DefaultTreasuryParams() *economicspb.TreasuryParams {
 
 // DefaultGovernanceParams returns default governance parameters
 func DefaultGovernanceParams() *economicspb.GovernanceParams {
+	minDepositCoins := sdk.NewCoins(sdk.NewCoin("uaura", math.NewInt(10000000)))
+	// Convert sdk.Coins to []*sdk.Coin for protobuf compatibility
+	minDeposit := make([]*sdk.Coin, len(minDepositCoins))
+	for i := range minDepositCoins {
+		coin := minDepositCoins[i]
+		minDeposit[i] = &coin
+	}
 	return &economicspb.GovernanceParams{
-		MinDeposit:              []*sdk.Coin{{Denom: "uaura", Amount: math.NewInt(10000000)}},
+		MinDeposit:              minDeposit,
 		MaxDepositPeriod:        durationpb.New(7 * 24 * time.Hour),
 		VotingPeriod:            durationpb.New(7 * 24 * time.Hour),
 		Quorum:                  3333, // 33.33%

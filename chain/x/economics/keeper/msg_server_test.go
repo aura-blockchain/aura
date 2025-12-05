@@ -5,6 +5,7 @@ import (
 	"time"
 
 	sdkmath "cosmossdk.io/math"
+	"cosmossdk.io/log"
 	"cosmossdk.io/store"
 	"cosmossdk.io/store/metrics"
 	storetypes "cosmossdk.io/store/types"
@@ -46,7 +47,7 @@ func (suite *MsgServerTestSuite) SetupTest() {
 	key := storetypes.NewKVStoreKey("economics")
 	storeService := runtime.NewKVStoreService(key)
 	db := dbm.NewMemDB()
-	stateStore := store.NewCommitMultiStore(db, nil, metrics.NewNoOpMetrics())
+	stateStore := store.NewCommitMultiStore(db, log.NewNopLogger(), metrics.NewNoOpMetrics())
 	stateStore.MountStoreWithDB(key, storetypes.StoreTypeIAVL, db)
 	err := stateStore.LoadLatestVersion()
 	suite.Require().NoError(err)
