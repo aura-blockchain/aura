@@ -213,8 +213,9 @@ func TestRoleExpiration(t *testing.T) {
 		t.Errorf("Expected 1 assignment, got %d", len(assignments))
 	}
 
-	// Wait for expiry
-	time.Sleep(2 * time.Second)
+	// Advance blockchain time past expiry
+	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(2 * time.Second))
+	ctx = ctx.WithBlockHeight(ctx.BlockHeight() + 1)
 
 	// Should be filtered out
 	assignments, err = k.GetRoleAssignmentsForAddress(ctx, "user1")
@@ -344,8 +345,9 @@ func TestTimeLockedAction(t *testing.T) {
 		t.Errorf("Expected ErrActionNotReady, got %v", err)
 	}
 
-	// Wait for delay
-	time.Sleep(3 * time.Second)
+	// Advance blockchain time past delay
+	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(3 * time.Second))
+	ctx = ctx.WithBlockHeight(ctx.BlockHeight() + 1)
 
 	// Should be ready now
 	err = k.ExecuteTimeLockedAction(ctx, "admin1", action.Id)
