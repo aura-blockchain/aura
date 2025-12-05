@@ -36,7 +36,7 @@ func (qs queryServer) Params(goCtx context.Context, req *economicspb.QueryParams
 	}
 
 	return &economicspb.QueryParamsResponse{
-		Params: *params,
+		Params: params,
 	}, nil
 }
 
@@ -64,9 +64,9 @@ func (qs queryServer) VestingSchedule(goCtx context.Context, req *economicspb.Qu
 	remainingAmount := schedule.OriginalAmount.Amount.Sub(vestedAmount)
 
 	return &economicspb.QueryVestingScheduleResponse{
-		Schedule:        *schedule,
-		VestedAmount:    vestedAmount,
-		RemainingAmount: remainingAmount,
+		Schedule:        schedule,
+		VestedAmount:    vestedAmount.String(),
+		RemainingAmount: remainingAmount.String(),
 	}, nil
 }
 
@@ -107,8 +107,8 @@ func (qs queryServer) VestingSchedulesByAddress(goCtx context.Context, req *econ
 
 	return &economicspb.QueryVestingSchedulesByAddressResponse{
 		Schedules:     schedules,
-		TotalVested:   totalVested,
-		TotalVesting:  totalVesting,
+		TotalVested:   totalVested.String(),
+		TotalVesting:  totalVesting.String(),
 	}, nil
 }
 
@@ -136,7 +136,7 @@ func (qs queryServer) Proposal(goCtx context.Context, req *economicspb.QueryProp
 	}
 
 	return &economicspb.QueryProposalResponse{
-		Proposal: *proposal,
+		Proposal: proposal,
 	}, nil
 }
 
@@ -205,7 +205,7 @@ func (qs queryServer) Vote(goCtx context.Context, req *economicspb.QueryVoteRequ
 	}
 
 	return &economicspb.QueryVoteResponse{
-		Vote: *vote,
+		Vote: vote,
 	}, nil
 }
 
@@ -239,7 +239,7 @@ func (qs queryServer) Deposit(goCtx context.Context, req *economicspb.QueryDepos
 	}
 
 	return &economicspb.QueryDepositResponse{
-		Deposit: *deposit,
+		Deposit: deposit,
 	}, nil
 }
 
@@ -267,7 +267,7 @@ func (qs queryServer) TallyResult(goCtx context.Context, req *economicspb.QueryT
 	}
 
 	return &economicspb.QueryTallyResultResponse{
-		Tally: *tally,
+		Tally: tally,
 	}, nil
 }
 
@@ -281,7 +281,7 @@ func (qs queryServer) VoteLock(goCtx context.Context, req *economicspb.QueryVote
 	}
 
 	return &economicspb.QueryVoteLockResponse{
-		Lock: *lock,
+		Lock: lock,
 	}, nil
 }
 
@@ -316,8 +316,8 @@ func (qs queryServer) VoteLocksByOwner(goCtx context.Context, req *economicspb.Q
 
 	return &economicspb.QueryVoteLocksByOwnerResponse{
 		Locks:             locks,
-		TotalLocked:       totalLocked,
-		TotalVotingPower:  totalVotingPower,
+		TotalLocked:       totalLocked.String(),
+		TotalVotingPower:  totalVotingPower.String(),
 	}, nil
 }
 
@@ -337,9 +337,9 @@ func (qs queryServer) VotingPower(goCtx context.Context, req *economicspb.QueryV
 	}
 
 	return &economicspb.QueryVotingPowerResponse{
-		VotingPower:    votingPower,
-		LockedAmount:   lockedAmount,
-		DelegatedPower: delegatedPower,
+		VotingPower:    votingPower.String(),
+		LockedAmount:   lockedAmount.String(),
+		DelegatedPower: delegatedPower.String(),
 		ActiveLocks:    activeLocks,
 	}, nil
 }
@@ -374,7 +374,7 @@ func (qs queryServer) PendingTreasuryTx(goCtx context.Context, req *economicspb.
 	}
 
 	return &economicspb.QueryPendingTreasuryTxResponse{
-		Transaction: *tx,
+		Transaction: tx,
 	}, nil
 }
 
@@ -405,7 +405,7 @@ func (qs queryServer) InflationMetrics(goCtx context.Context, req *economicspb.Q
 	inflationChange24h := uint64(0)
 
 	return &economicspb.QueryInflationMetricsResponse{
-		Metrics:             *metrics,
+		Metrics:             metrics,
 		InflationChange_24H: inflationChange24h,
 	}, nil
 }
@@ -432,7 +432,7 @@ func (qs queryServer) MEVStats(goCtx context.Context, req *economicspb.QueryMEVS
 	}
 
 	return &economicspb.QueryMEVStatsResponse{
-		Stats:    *stats,
+		Stats:    stats,
 		Enabled:  enabled,
 		Strategy: strategy,
 	}, nil
@@ -465,8 +465,8 @@ func (qs queryServer) UserMEVBalance(goCtx context.Context, req *economicspb.Que
 	lifetimeReceived := balance
 
 	return &economicspb.QueryUserMEVBalanceResponse{
-		Balance:          balance,
-		LifetimeReceived: lifetimeReceived,
+		Balance:          balance.String(),
+		LifetimeReceived: lifetimeReceived.String(),
 	}, nil
 }
 
@@ -487,7 +487,7 @@ func (qs queryServer) LiquidityMiningStats(goCtx context.Context, req *economics
 	enabled := params.LiquidityMining != nil && params.LiquidityMining.Enabled
 
 	return &economicspb.QueryLiquidityMiningStatsResponse{
-		Stats:   *stats,
+		Stats:   stats,
 		Enabled: enabled,
 	}, nil
 }
@@ -561,15 +561,15 @@ func (qs queryServer) TokenomicsStats(goCtx context.Context, req *economicspb.Qu
 	transferTaxCollected24h := math.ZeroInt()
 
 	return &economicspb.QueryTokenomicsStatsResponse{
-		MaxSupply:                  maxSupply,
-		CirculatingSupply:          circulatingSupply,
-		TotalVested:                totalVested,
-		TotalVesting:               totalVesting,
-		TotalLockedGovernance:      totalLockedGovernance,
-		TreasuryBalance:            treasuryBalance,
+		MaxSupply:                  maxSupply.String(),
+		CirculatingSupply:          circulatingSupply.String(),
+		TotalVested:                totalVested.String(),
+		TotalVesting:               totalVesting.String(),
+		TotalLockedGovernance:      totalLockedGovernance.String(),
+		TreasuryBalance:            treasuryBalance.String(),
 		CurrentInflationRate:       currentInflationRate,
-		TotalBurned:                totalBurned,
+		TotalBurned:                totalBurned.String(),
 		WhaleProtectionTriggers_24H: whaleProtectionTriggers24h,
-		TransferTaxCollected_24H:   transferTaxCollected24h,
+		TransferTaxCollected_24H:   transferTaxCollected24h.String(),
 	}, nil
 }
