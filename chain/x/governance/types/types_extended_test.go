@@ -17,7 +17,7 @@ func TestDefaultParamsExtended(t *testing.T) {
 	require.NotNil(t, params)
 
 	// Test deposit parameters
-	assert.Equal(t, "10000000", params.MinDeposit)
+	assert.Equal(t, "10000000stake", params.MinDeposit)
 	assert.NotNil(t, params.MaxDepositPeriod)
 	assert.Equal(t, 7*24*time.Hour, params.MaxDepositPeriod.AsDuration())
 

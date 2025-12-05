@@ -40,7 +40,7 @@ func SetupTestContext(t testing.TB) *TestContext {
 	ctx := sdk.NewContext(cms, header, false, log.NewNopLogger())
 
 	return &TestContext{
-		Ctx:    context.Background(),
+		Ctx:    ctx,
 		SdkCtx: ctx,
 		DB:     db,
 		CMS:    cms,

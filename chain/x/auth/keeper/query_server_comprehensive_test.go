@@ -1,29 +1,28 @@
-package keeper_test
+package keeper
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
 
 	"github.com/aequitas/aura/chain/testing/testutil"
-	"github.com/aequitas/aura/chain/x/auth/keeper"
 	authproto "github.com/aequitas/aura/proto/aura/auth/v1beta1"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 type AuthQueryServerTestSuite struct {
 	suite.Suite
-	keeper      *keeper.Keeper
+	keeper      *Keeper
 	queryServer authproto.QueryServer
-	ctx         context.Context
+	ctx         sdk.Context
 	fixtures    *testutil.TestFixtures
 }
 
 func (s *AuthQueryServerTestSuite) SetupTest() {
-	testCtx := testutil.SetupTestContext(s.T())
-	s.ctx = testCtx.Ctx
-	s.keeper = &keeper.Keeper{}
-	s.queryServer = keeper.NewQueryServerImpl(s.keeper)
+	k, ctx := setupKeeper(s.T())
+	s.keeper = k
+	s.ctx = ctx
+	s.queryServer = NewQueryServerImpl(s.keeper)
 	s.fixtures = testutil.NewTestFixtures()
 }
 

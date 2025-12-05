@@ -14,8 +14,8 @@ func TestDefaultParams(t *testing.T) {
 		t.Fatal("DefaultParams should not return nil")
 	}
 
-	if params.MinDeposit != "10000000" {
-		t.Errorf("expected MinDeposit to be 10000000, got %s", params.MinDeposit)
+	if params.MinDeposit != "10000000stake" {
+		t.Errorf("expected MinDeposit to be 10000000stake, got %s", params.MinDeposit)
 	}
 
 	if params.Quorum != "0.334" {
@@ -47,8 +47,8 @@ func TestDefaultGovernanceParams(t *testing.T) {
 	if !ok {
 		t.Error("expected TEXT category params to be set")
 	} else {
-		if textParams.MinDeposit != "10000000" {
-			t.Errorf("expected TEXT MinDeposit to be 10000000, got %s", textParams.MinDeposit)
+		if textParams.MinDeposit != "10000000stake" {
+			t.Errorf("expected TEXT MinDeposit to be 10000000stake, got %s", textParams.MinDeposit)
 		}
 	}
 

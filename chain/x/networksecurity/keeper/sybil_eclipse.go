@@ -44,6 +44,12 @@ func (sd *SybilDetector) AnalyzePeerDistribution(peers []types.PeerInfo) (isSybi
 		return false, ""
 	}
 
+	// Don't apply concentration checks with very few peers (< 5)
+	// Single peer or small peer sets aren't statistically significant
+	if totalPeers < 5 {
+		return false, ""
+	}
+
 	// Analyze distribution
 	for _, peer := range peers {
 		// Get subnet from IP
@@ -61,8 +67,14 @@ func (sd *SybilDetector) AnalyzePeerDistribution(peers []types.PeerInfo) (isSybi
 		}
 	}
 
-	// Check for suspicious concentration
-	// 1. Too many peers from same subnet (>30% from single /24 subnet)
+	// 1. Insufficient diversity check (less than 3 unique ASNs with >=5 peers)
+	// This is checked first as it's a more fundamental issue
+	uniqueASNs := len(sd.asnCounts)
+	if uniqueASNs < 3 {
+		return true, fmt.Sprintf("insufficient ASN diversity: only %d unique ASNs with %d peers", uniqueASNs, totalPeers)
+	}
+
+	// 2. Too many peers from same subnet (>30% from single /24 subnet)
 	for subnet, count := range sd.subnetCounts {
 		percentage := float64(count) / float64(totalPeers) * 100
 		if percentage > 30.0 {
@@ -70,7 +82,7 @@ func (sd *SybilDetector) AnalyzePeerDistribution(peers []types.PeerInfo) (isSybi
 		}
 	}
 
-	// 2. Too many peers from same ASN (>40% from single ASN)
+	// 3. Too many peers from same ASN (>40% from single ASN)
 	for asn, count := range sd.asnCounts {
 		percentage := float64(count) / float64(totalPeers) * 100
 		if percentage > 40.0 {
@@ -78,18 +90,12 @@ func (sd *SybilDetector) AnalyzePeerDistribution(peers []types.PeerInfo) (isSybi
 		}
 	}
 
-	// 3. Too many peers from same region (>50% from single region)
+	// 4. Too many peers from same region (>50% from single region)
 	for region, count := range sd.regionCounts {
 		percentage := float64(count) / float64(totalPeers) * 100
 		if percentage > 50.0 {
 			return true, fmt.Sprintf("suspicious peer concentration: %.1f%% from region %s", percentage, region)
 		}
-	}
-
-	// 4. Insufficient diversity (less than 3 unique ASNs with >5 peers)
-	uniqueASNs := len(sd.asnCounts)
-	if totalPeers > 5 && uniqueASNs < 3 {
-		return true, fmt.Sprintf("insufficient ASN diversity: only %d unique ASNs with %d peers", uniqueASNs, totalPeers)
 	}
 
 	return false, ""
@@ -185,13 +191,18 @@ func (ed *EclipseDetector) DetectEclipse(peers []types.PeerInfo, trustedPeers []
 	ipCounts := make(map[string]uint32)
 	for _, peer := range peers {
 		subnet := getSubnet(peer.IpAddress)
-		ipCounts[subnet]++
+		if subnet != "" { // Only count valid subnets
+			ipCounts[subnet]++
+		}
 	}
 
-	for subnet, count := range ipCounts {
-		concentration := float64(count) / float64(totalPeers) * 100
-		if concentration > 25.0 { // Max 25% from single /24 subnet
-			return true, fmt.Sprintf("excessive concentration from subnet %s: %.1f%%", subnet, concentration)
+	// Only check subnet concentration if we have valid IP data
+	if len(ipCounts) > 0 {
+		for subnet, count := range ipCounts {
+			concentration := float64(count) / float64(totalPeers) * 100
+			if concentration > 25.0 { // Max 25% from single /24 subnet
+				return true, fmt.Sprintf("excessive concentration from subnet %s: %.1f%%", subnet, concentration)
+			}
 		}
 	}
 
