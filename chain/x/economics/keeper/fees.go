@@ -18,7 +18,7 @@ func (k Keeper) RecordBlockUtilization(ctx context.Context, utilization uint64) 
 		return err
 	}
 
-	if params.Fees == nil || !params.Fees.DynamicFeesEnabled {
+	if !params.Fees.DynamicFeesEnabled {
 		return nil
 	}
 
@@ -36,7 +36,7 @@ func (k Keeper) AdjustDynamicFees(ctx context.Context, currentUtilization uint64
 		return err
 	}
 
-	if params.Fees == nil || !params.Fees.DynamicFeesEnabled {
+	if !params.Fees.DynamicFeesEnabled {
 		return nil
 	}
 
@@ -109,7 +109,7 @@ func (k Keeper) GetCurrentFeeMultiplier(ctx context.Context) (string, error) {
 		return "1.0", err
 	}
 
-	if params.Fees == nil || !params.Fees.DynamicFeesEnabled {
+	if !params.Fees.DynamicFeesEnabled {
 		return "1.0", nil
 	}
 
@@ -213,7 +213,7 @@ func (k Keeper) GetFeeStatistics(ctx context.Context) (map[string]interface{}, e
 
 	stats := make(map[string]interface{})
 
-	if params.Fees != nil {
+	if true {
 		stats["dynamic_fees_enabled"] = params.Fees.DynamicFeesEnabled
 		stats["max_multiplier"] = params.Fees.MaxFeeMultiplier
 		stats["target_utilization"] = params.Fees.TargetBlockUtilization

@@ -27,6 +27,7 @@ var (
 	UserVestingIndexPrefix = []byte{0x11}
 	VoteLockPrefix        = []byte{0x12}
 	UserVoteLockIndexPrefix = []byte{0x13}
+	NextScheduleIDKey     = []byte{0x14}
 
 	// Treasury keys
 	TreasuryMultisigKey       = []byte{0x20}

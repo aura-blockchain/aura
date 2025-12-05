@@ -29,6 +29,11 @@ func NewMsgServer(keeper *Keeper) economicspb.MsgServer {
 func (ms msgServer) CreateVestingSchedule(goCtx context.Context, msg *economicspb.MsgCreateVestingSchedule) (*economicspb.MsgCreateVestingScheduleResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	// Validate message is not nil
+	if msg == nil {
+		return nil, errorsmod.Wrap(types.ErrInvalidRequest, "message cannot be nil")
+	}
+
 	// Validate creator address
 	creator, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
@@ -46,8 +51,8 @@ func (ms msgServer) CreateVestingSchedule(goCtx context.Context, msg *economicsp
 		ctx,
 		creator.String(),
 		beneficiary.String(),
-		*msg.TotalAmount,
-		msg.StartTime.AsTime(),
+		msg.TotalAmount,
+		msg.StartTime,
 		msg.CliffDuration,
 		msg.VestingDuration,
 		msg.VestingType,
@@ -100,7 +105,7 @@ func (ms msgServer) ReleaseVestedTokens(goCtx context.Context, msg *economicspb.
 	)
 
 	return &economicspb.MsgReleaseVestedTokensResponse{
-		AmountReleased: &amountReleased,
+		AmountReleased: amountReleased,
 	}, nil
 }
 
@@ -132,7 +137,7 @@ func (ms msgServer) RevokeVestingSchedule(goCtx context.Context, msg *economicsp
 	)
 
 	return &economicspb.MsgRevokeVestingScheduleResponse{
-		UnvestedAmountReturned: &unvestedAmount,
+		UnvestedAmountReturned: unvestedAmount,
 	}, nil
 }
 
@@ -147,11 +152,7 @@ func (ms msgServer) SubmitProposal(goCtx context.Context, msg *economicspb.MsgSu
 	}
 
 	// Convert coins from proto format
-	depositCoins := make([]sdk.Coin, len(msg.InitialDeposit))
-	for i, coin := range msg.InitialDeposit {
-		depositCoins[i] = *coin
-	}
-	initialDeposit := sdk.NewCoins(depositCoins...)
+	initialDeposit := sdk.NewCoins(msg.InitialDeposit...)
 
 	// Submit proposal via keeper
 	proposalID, err := ms.keeper.SubmitProposal(
@@ -192,12 +193,13 @@ func (ms msgServer) Deposit(goCtx context.Context, msg *economicspb.MsgDeposit) 
 		return nil, errorsmod.Wrapf(types.ErrInvalidAddress, "invalid depositor address: %s", err)
 	}
 
-	// Convert coins from proto format
-	coins := make([]sdk.Coin, len(msg.Amount))
-	for i, coin := range msg.Amount {
-		coins[i] = *coin
+	// Amount is already sdk.Coins type due to castrepeated
+	amount := msg.Amount
+
+	// Validate deposit amount
+	if amount.IsZero() || !amount.IsValid() {
+		return nil, errorsmod.Wrap(types.ErrInvalidAmount, "invalid deposit amount")
 	}
-	amount := sdk.NewCoins(coins...)
 
 	// Add deposit via keeper
 	if err := ms.keeper.AddDeposit(ctx, msg.ProposalId, depositor, amount); err != nil {
@@ -255,8 +257,14 @@ func (ms msgServer) VoteWeighted(goCtx context.Context, msg *economicspb.MsgVote
 		return nil, errorsmod.Wrapf(types.ErrInvalidAddress, "invalid voter address: %s", err)
 	}
 
+	// Convert options to pointer slice
+	options := make([]*economicspb.WeightedVoteOption, len(msg.Options))
+	for i := range msg.Options {
+		options[i] = &msg.Options[i]
+	}
+
 	// Cast weighted vote via keeper
-	if err := ms.keeper.AddWeightedVote(ctx, msg.ProposalId, voter, msg.Options); err != nil {
+	if err := ms.keeper.AddWeightedVote(ctx, msg.ProposalId, voter, options); err != nil {
 		return nil, err
 	}
 
@@ -403,7 +411,7 @@ func (ms msgServer) LockVotingTokens(goCtx context.Context, msg *economicspb.Msg
 	}
 
 	// Lock tokens via keeper
-	lockID, votingPower, err := ms.keeper.LockVotingTokens(ctx, owner, *msg.Amount, msg.LockDuration)
+	lockID, votingPower, err := ms.keeper.LockVotingTokens(ctx, owner, msg.Amount, msg.LockDuration)
 	if err != nil {
 		return nil, err
 	}
@@ -421,7 +429,7 @@ func (ms msgServer) LockVotingTokens(goCtx context.Context, msg *economicspb.Msg
 
 	return &economicspb.MsgLockVotingTokensResponse{
 		LockId:      lockID,
-		VotingPower: votingPower.String(),
+		VotingPower: votingPower,
 	}, nil
 }
 
@@ -452,7 +460,7 @@ func (ms msgServer) UnlockVotingTokens(goCtx context.Context, msg *economicspb.M
 	)
 
 	return &economicspb.MsgUnlockVotingTokensResponse{
-		AmountUnlocked: &amountUnlocked,
+		AmountUnlocked: amountUnlocked,
 	}, nil
 }
 
@@ -472,12 +480,8 @@ func (ms msgServer) ProposeTreasurySpend(goCtx context.Context, msg *economicspb
 		return nil, errorsmod.Wrapf(types.ErrInvalidAddress, "invalid recipient address: %s", err)
 	}
 
-	// Convert coins from proto format
-	treasuryCoins := make([]sdk.Coin, len(msg.Amount))
-	for i, coin := range msg.Amount {
-		treasuryCoins[i] = *coin
-	}
-	amount := sdk.NewCoins(treasuryCoins...)
+	// Amount is already sdk.Coins type due to castrepeated
+	amount := msg.Amount
 
 	// Propose treasury spend via keeper
 	txID, executableAt, err := ms.keeper.ProposeTreasurySpend(ctx, proposer, recipient, amount, msg.Description)
@@ -576,7 +580,7 @@ func (ms msgServer) UpdateParams(goCtx context.Context, msg *economicspb.MsgUpda
 	}
 
 	// Update params via keeper
-	if err := ms.keeper.UpdateParams(ctx, authority, msg.Params); err != nil {
+	if err := ms.keeper.UpdateParams(ctx, authority, &msg.Params); err != nil {
 		return nil, err
 	}
 

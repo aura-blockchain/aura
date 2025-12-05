@@ -10,14 +10,14 @@ import (
 // DefaultGenesisState returns the default genesis state for the economics module
 func DefaultGenesisState() *economicspb.GenesisState {
 	return &economicspb.GenesisState{
-		Params:               DefaultParams(),
-		VestingSchedules:     []*economicspb.VestingSchedule{},
-		Proposals:            []*economicspb.Proposal{},
-		Votes:                []*economicspb.Vote{},
-		Deposits:             []*economicspb.Deposit{},
-		VoteLocks:            []*economicspb.VoteLock{},
-		VoteDelegations:      []*economicspb.VoteDelegation{},
-		PendingTreasuryTxs:   []*economicspb.PendingTreasuryTx{},
+		Params:               *DefaultParams(),
+		VestingSchedules:     []economicspb.VestingSchedule{},
+		Proposals:            []economicspb.Proposal{},
+		Votes:                []economicspb.Vote{},
+		Deposits:             []economicspb.Deposit{},
+		VoteLocks:            []economicspb.VoteLock{},
+		VoteDelegations:      []economicspb.VoteDelegation{},
+		PendingTreasuryTxs:   []economicspb.PendingTreasuryTx{},
 		UserMevBalances:      make(map[string]string),
 		LastLargeTxTimes:     make(map[string]int64),
 		NextProposalId:       1,
@@ -34,10 +34,8 @@ func ValidateGenesisState(gs *economicspb.GenesisState) error {
 	}
 
 	// Validate params
-	if gs.Params != nil {
-		if err := ValidateParamsProto(gs.Params); err != nil {
-			return fmt.Errorf("invalid params: %w", err)
-		}
+	if err := ValidateParamsProto(&gs.Params); err != nil {
+		return fmt.Errorf("invalid params: %w", err)
 	}
 
 	// Validate vesting schedules
@@ -137,49 +135,37 @@ func ValidateParamsProto(p *economicspb.Params) error {
 	}
 
 	// Validate fee params
-	if p.Fees != nil {
-		if p.Fees.TargetBlockUtilization > 10000 {
-			return errors.New("target block utilization cannot exceed 100%")
-		}
-		if p.Fees.MaxFeeMultiplier < p.Fees.MinFeeMultiplier {
-			return errors.New("max fee multiplier must be >= min fee multiplier")
-		}
+	if p.Fees.TargetBlockUtilization > 10000 {
+		return errors.New("target block utilization cannot exceed 100%")
+	}
+	if p.Fees.MaxFeeMultiplier < p.Fees.MinFeeMultiplier {
+		return errors.New("max fee multiplier must be >= min fee multiplier")
 	}
 
 	// Validate vesting params
-	if p.Vesting != nil {
-		if p.Vesting.MinVestingDuration != nil && p.Vesting.MaxVestingDuration != nil {
-			if p.Vesting.MaxVestingDuration.AsDuration() < p.Vesting.MinVestingDuration.AsDuration() {
-				return errors.New("max vesting duration must be >= min vesting duration")
-			}
-		}
+	if p.Vesting.MaxVestingDuration < p.Vesting.MinVestingDuration {
+		return errors.New("max vesting duration must be >= min vesting duration")
 	}
 
 	// Validate governance params
-	if p.Governance != nil {
-		if p.Governance.Quorum > 10000 {
-			return errors.New("governance quorum cannot exceed 100%")
-		}
-		if p.Governance.Threshold > 10000 {
-			return errors.New("governance threshold cannot exceed 100%")
-		}
-		if p.Governance.VetoThreshold > 10000 {
-			return errors.New("governance veto threshold cannot exceed 100%")
-		}
+	if p.Governance.Quorum > 10000 {
+		return errors.New("governance quorum cannot exceed 100%")
+	}
+	if p.Governance.Threshold > 10000 {
+		return errors.New("governance threshold cannot exceed 100%")
+	}
+	if p.Governance.VetoThreshold > 10000 {
+		return errors.New("governance veto threshold cannot exceed 100%")
 	}
 
 	// Validate tokenomics params
-	if p.Tokenomics != nil {
-		if p.Tokenomics.MaxInflationRate < p.Tokenomics.MinInflationRate {
-			return errors.New("max inflation rate must be >= min inflation rate")
-		}
+	if p.Tokenomics.MaxInflationRate < p.Tokenomics.MinInflationRate {
+		return errors.New("max inflation rate must be >= min inflation rate")
 	}
 
 	// Validate whale protection params
-	if p.WhaleProtection != nil {
-		if p.WhaleProtection.MaxHoldingPercentage > 10000 {
-			return errors.New("max holding percentage cannot exceed 100%")
-		}
+	if p.WhaleProtection.MaxHoldingPercentage > 10000 {
+		return errors.New("max holding percentage cannot exceed 100%")
 	}
 
 	return nil

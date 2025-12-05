@@ -36,7 +36,7 @@ func (qs queryServer) Params(goCtx context.Context, req *economicspb.QueryParams
 	}
 
 	return &economicspb.QueryParamsResponse{
-		Params: params,
+		Params: *params,
 	}, nil
 }
 
@@ -64,9 +64,9 @@ func (qs queryServer) VestingSchedule(goCtx context.Context, req *economicspb.Qu
 	remainingAmount := schedule.OriginalAmount.Amount.Sub(vestedAmount)
 
 	return &economicspb.QueryVestingScheduleResponse{
-		Schedule:        schedule,
-		VestedAmount:    vestedAmount.String(),
-		RemainingAmount: remainingAmount.String(),
+		Schedule:        *schedule,
+		VestedAmount:    vestedAmount,
+		RemainingAmount: remainingAmount,
 	}, nil
 }
 
@@ -105,10 +105,18 @@ func (qs queryServer) VestingSchedulesByAddress(goCtx context.Context, req *econ
 		totalVesting = totalVesting.Add(schedule.OriginalAmount.Amount.Sub(vestedAmount))
 	}
 
+	// Convert from []*VestingSchedule to []VestingSchedule
+	schedulesValues := make([]economicspb.VestingSchedule, len(schedules))
+	for i, schedule := range schedules {
+		if schedule != nil {
+			schedulesValues[i] = *schedule
+		}
+	}
+
 	return &economicspb.QueryVestingSchedulesByAddressResponse{
-		Schedules:     schedules,
-		TotalVested:   totalVested.String(),
-		TotalVesting:  totalVesting.String(),
+		Schedules:     schedulesValues,
+		TotalVested:   totalVested,
+		TotalVesting:  totalVesting,
 	}, nil
 }
 
@@ -121,8 +129,16 @@ func (qs queryServer) AllVestingSchedules(goCtx context.Context, req *economicsp
 		return nil, err
 	}
 
+	// Convert from []*VestingSchedule to []VestingSchedule
+	schedulesValues := make([]economicspb.VestingSchedule, len(schedules))
+	for i, schedule := range schedules {
+		if schedule != nil {
+			schedulesValues[i] = *schedule
+		}
+	}
+
 	return &economicspb.QueryAllVestingSchedulesResponse{
-		Schedules: schedules,
+		Schedules: schedulesValues,
 	}, nil
 }
 
@@ -136,7 +152,7 @@ func (qs queryServer) Proposal(goCtx context.Context, req *economicspb.QueryProp
 	}
 
 	return &economicspb.QueryProposalResponse{
-		Proposal: proposal,
+		Proposal: *proposal,
 	}, nil
 }
 
@@ -184,8 +200,16 @@ func (qs queryServer) Proposals(goCtx context.Context, req *economicspb.QueryPro
 		return nil, err
 	}
 
+	// Convert from []*Proposal to []Proposal
+	proposalsValues := make([]economicspb.Proposal, len(proposals))
+	for i, proposal := range proposals {
+		if proposal != nil {
+			proposalsValues[i] = *proposal
+		}
+	}
+	
 	return &economicspb.QueryProposalsResponse{
-		Proposals: proposals,
+		Proposals: proposalsValues,
 	}, nil
 }
 
@@ -205,7 +229,7 @@ func (qs queryServer) Vote(goCtx context.Context, req *economicspb.QueryVoteRequ
 	}
 
 	return &economicspb.QueryVoteResponse{
-		Vote: vote,
+		Vote: *vote,
 	}, nil
 }
 
@@ -218,8 +242,16 @@ func (qs queryServer) Votes(goCtx context.Context, req *economicspb.QueryVotesRe
 		return nil, err
 	}
 
+	// Convert from []*Vote to []Vote
+	votesValues := make([]economicspb.Vote, len(votes))
+	for i, vote := range votes {
+		if vote != nil {
+			votesValues[i] = *vote
+		}
+	}
+
 	return &economicspb.QueryVotesResponse{
-		Votes: votes,
+		Votes: votesValues,
 	}, nil
 }
 
@@ -238,8 +270,14 @@ func (qs queryServer) Deposit(goCtx context.Context, req *economicspb.QueryDepos
 		return nil, err
 	}
 
+	// Convert from *Deposit to Deposit
+	var depositValue economicspb.Deposit
+	if deposit != nil {
+		depositValue = *deposit
+	}
+
 	return &economicspb.QueryDepositResponse{
-		Deposit: deposit,
+		Deposit: depositValue,
 	}, nil
 }
 
@@ -252,8 +290,16 @@ func (qs queryServer) Deposits(goCtx context.Context, req *economicspb.QueryDepo
 		return nil, err
 	}
 
+	// Convert from []*Deposit to []Deposit
+	depositsValues := make([]economicspb.Deposit, len(deposits))
+	for i, deposit := range deposits {
+		if deposit != nil {
+			depositsValues[i] = *deposit
+		}
+	}
+
 	return &economicspb.QueryDepositsResponse{
-		Deposits: deposits,
+		Deposits: depositsValues,
 	}, nil
 }
 
@@ -267,7 +313,7 @@ func (qs queryServer) TallyResult(goCtx context.Context, req *economicspb.QueryT
 	}
 
 	return &economicspb.QueryTallyResultResponse{
-		Tally: tally,
+		Tally: *tally,
 	}, nil
 }
 
@@ -281,7 +327,7 @@ func (qs queryServer) VoteLock(goCtx context.Context, req *economicspb.QueryVote
 	}
 
 	return &economicspb.QueryVoteLockResponse{
-		Lock: lock,
+		Lock: *lock,
 	}, nil
 }
 
@@ -308,16 +354,22 @@ func (qs queryServer) VoteLocksByOwner(goCtx context.Context, req *economicspb.Q
 		totalLocked = totalLocked.Add(lock.Amount.Amount)
 
 		// Parse voting power from string (customtype field)
-		lockVotingPower, ok := math.NewIntFromString(lock.VotingPower)
-		if ok {
-			totalVotingPower = totalVotingPower.Add(lockVotingPower)
+		lockVotingPower := lock.VotingPower
+		totalVotingPower = totalVotingPower.Add(lockVotingPower)
+	}
+
+	// Convert from []*VoteLock to []VoteLock
+	locksValues := make([]economicspb.VoteLock, len(locks))
+	for i, lock := range locks {
+		if lock != nil {
+			locksValues[i] = *lock
 		}
 	}
 
 	return &economicspb.QueryVoteLocksByOwnerResponse{
-		Locks:             locks,
-		TotalLocked:       totalLocked.String(),
-		TotalVotingPower:  totalVotingPower.String(),
+		Locks:             locksValues,
+		TotalLocked:       totalLocked,
+		TotalVotingPower:  totalVotingPower,
 	}, nil
 }
 
@@ -337,9 +389,9 @@ func (qs queryServer) VotingPower(goCtx context.Context, req *economicspb.QueryV
 	}
 
 	return &economicspb.QueryVotingPowerResponse{
-		VotingPower:    votingPower.String(),
-		LockedAmount:   lockedAmount.String(),
-		DelegatedPower: delegatedPower.String(),
+		VotingPower:    votingPower,
+		LockedAmount:   lockedAmount,
+		DelegatedPower: delegatedPower,
 		ActiveLocks:    activeLocks,
 	}, nil
 }
@@ -359,8 +411,16 @@ func (qs queryServer) VoteDelegations(goCtx context.Context, req *economicspb.Qu
 		return nil, err
 	}
 
+	// Convert from []*VoteDelegation to []VoteDelegation
+	delegationsValues := make([]economicspb.VoteDelegation, len(delegations))
+	for i, delegation := range delegations {
+		if delegation != nil {
+			delegationsValues[i] = *delegation
+		}
+	}
+
 	return &economicspb.QueryVoteDelegationsResponse{
-		Delegations: delegations,
+		Delegations: delegationsValues,
 	}, nil
 }
 
@@ -374,7 +434,7 @@ func (qs queryServer) PendingTreasuryTx(goCtx context.Context, req *economicspb.
 	}
 
 	return &economicspb.QueryPendingTreasuryTxResponse{
-		Transaction: tx,
+		Transaction: *tx,
 	}, nil
 }
 
@@ -387,15 +447,22 @@ func (qs queryServer) PendingTreasuryTxs(goCtx context.Context, req *economicspb
 		return nil, err
 	}
 
+	// Convert from []*PendingTreasuryTx to []PendingTreasuryTx
+	txsValues := make([]economicspb.PendingTreasuryTx, len(txs))
+	for i, tx := range txs {
+		if tx != nil {
+			txsValues[i] = *tx
+		}
+	}
+	
 	return &economicspb.QueryPendingTreasuryTxsResponse{
-		Transactions: txs,
+		Transactions: txsValues,
 	}, nil
 }
 
 // InflationMetrics queries current inflation metrics
 func (qs queryServer) InflationMetrics(goCtx context.Context, req *economicspb.QueryInflationMetricsRequest) (*economicspb.QueryInflationMetricsResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-
 	metrics, err := qs.keeper.GetInflationMetrics(ctx)
 	if err != nil {
 		return nil, err
@@ -405,7 +472,7 @@ func (qs queryServer) InflationMetrics(goCtx context.Context, req *economicspb.Q
 	inflationChange24h := uint64(0)
 
 	return &economicspb.QueryInflationMetricsResponse{
-		Metrics:             metrics,
+		Metrics:             *metrics,
 		InflationChange_24H: inflationChange24h,
 	}, nil
 }
@@ -424,15 +491,21 @@ func (qs queryServer) MEVStats(goCtx context.Context, req *economicspb.QueryMEVS
 		return nil, err
 	}
 
-	enabled := params.Mev != nil && params.Mev.Enabled
+	enabled := params.Mev.Enabled
 	// Use default strategy (proportional to stake is most common)
 	strategy := economicspb.MEVRedistributionStrategy_MEV_STRATEGY_PROPORTIONAL_TO_STAKE
 	if !enabled {
 		strategy = economicspb.MEVRedistributionStrategy_MEV_STRATEGY_UNSPECIFIED
 	}
 
+	// Convert from *MEVStats to MEVStats
+	var statsValue economicspb.MEVStats
+	if stats != nil {
+		statsValue = *stats
+	}
+
 	return &economicspb.QueryMEVStatsResponse{
-		Stats:    stats,
+		Stats:    statsValue,
 		Enabled:  enabled,
 		Strategy: strategy,
 	}, nil
@@ -465,8 +538,8 @@ func (qs queryServer) UserMEVBalance(goCtx context.Context, req *economicspb.Que
 	lifetimeReceived := balance
 
 	return &economicspb.QueryUserMEVBalanceResponse{
-		Balance:          balance.String(),
-		LifetimeReceived: lifetimeReceived.String(),
+		Balance:          balance,
+		LifetimeReceived: lifetimeReceived,
 	}, nil
 }
 
@@ -484,10 +557,16 @@ func (qs queryServer) LiquidityMiningStats(goCtx context.Context, req *economics
 		return nil, err
 	}
 
-	enabled := params.LiquidityMining != nil && params.LiquidityMining.Enabled
+	enabled := params.LiquidityMining.Enabled
+
+	// Convert from *LiquidityMiningStats to LiquidityMiningStats
+	var statsValue economicspb.LiquidityMiningStats
+	if stats != nil {
+		statsValue = *stats
+	}
 
 	return &economicspb.QueryLiquidityMiningStatsResponse{
-		Stats:   stats,
+		Stats:   statsValue,
 		Enabled: enabled,
 	}, nil
 }
@@ -502,18 +581,9 @@ func (qs queryServer) TokenomicsStats(goCtx context.Context, req *economicspb.Qu
 		return nil, err
 	}
 
-	// Get max supply from params (it's a math.Int stored as string in proto)
-	maxSupply := math.ZeroInt()
-	currentInflationRate := uint64(0)
-	if params.Tokenomics != nil {
-		// MaxSupply is customtype math.Int (string in proto)
-		var ok bool
-		maxSupply, ok = math.NewIntFromString(params.Tokenomics.MaxSupply)
-		if !ok {
-			maxSupply = math.ZeroInt()
-		}
-		currentInflationRate = params.Tokenomics.TargetInflationRate
-	}
+	// Get max supply from params (already a math.Int due to customtype)
+	maxSupply := params.Tokenomics.MaxSupply
+	currentInflationRate := params.Tokenomics.TargetInflationRate
 
 	// Calculate circulating supply (placeholder)
 	circulatingSupply := math.ZeroInt()
@@ -561,15 +631,15 @@ func (qs queryServer) TokenomicsStats(goCtx context.Context, req *economicspb.Qu
 	transferTaxCollected24h := math.ZeroInt()
 
 	return &economicspb.QueryTokenomicsStatsResponse{
-		MaxSupply:                  maxSupply.String(),
-		CirculatingSupply:          circulatingSupply.String(),
-		TotalVested:                totalVested.String(),
-		TotalVesting:               totalVesting.String(),
-		TotalLockedGovernance:      totalLockedGovernance.String(),
-		TreasuryBalance:            treasuryBalance.String(),
+		MaxSupply:                  maxSupply,
+		CirculatingSupply:          circulatingSupply,
+		TotalVested:                totalVested,
+		TotalVesting:               totalVesting,
+		TotalLockedGovernance:      totalLockedGovernance,
+		TreasuryBalance:            treasuryBalance,
 		CurrentInflationRate:       currentInflationRate,
-		TotalBurned:                totalBurned.String(),
+		TotalBurned:                totalBurned,
 		WhaleProtectionTriggers_24H: whaleProtectionTriggers24h,
-		TransferTaxCollected_24H:   transferTaxCollected24h.String(),
+		TransferTaxCollected_24H:   transferTaxCollected24h,
 	}, nil
 }

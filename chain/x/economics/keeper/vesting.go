@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"encoding/binary"
 	"fmt"
 	"math/big"
 	"time"
@@ -10,6 +11,36 @@ import (
 	"github.com/aequitas/aura/chain/x/economics/types"
 	economicspb "github.com/aequitas/aura/proto/aura/economics/v1beta1"
 )
+
+// ============================
+// SCHEDULE ID COUNTER
+// ============================
+
+// GetNextScheduleID returns the next schedule ID and increments the counter
+func (k Keeper) GetNextScheduleID(ctx context.Context) (uint64, error) {
+	store := k.storeService.OpenKVStore(ctx)
+	bz, err := store.Get(types.NextScheduleIDKey)
+	if err != nil {
+		return 0, err
+	}
+
+	var id uint64
+	if bz == nil {
+		id = 1
+	} else {
+		id = binary.BigEndian.Uint64(bz)
+	}
+
+	// Increment for next time
+	nextID := id + 1
+	nextBz := make([]byte, 8)
+	binary.BigEndian.PutUint64(nextBz, nextID)
+	if err := store.Set(types.NextScheduleIDKey, nextBz); err != nil {
+		return 0, err
+	}
+
+	return id, nil
+}
 
 // ============================
 // VESTING SCHEDULE OPERATIONS
@@ -141,9 +172,9 @@ func (k Keeper) CalculateVestedAmount(schedule *economicspb.VestingSchedule, cur
 		return schedule.VestedAmount.Amount, nil
 	}
 
-	// Convert protobuf timestamps to time.Time
-	startTime := schedule.StartTime.AsTime()
-	endTime := schedule.EndTime.AsTime()
+	// Get start and end times (already time.Time due to stdtime annotation)
+	startTime := schedule.StartTime
+	endTime := schedule.EndTime
 
 	// Check if cliff period has passed
 	cliffEnd := startTime.Add(time.Duration(schedule.CliffDuration) * time.Second)
@@ -218,7 +249,7 @@ func (k Keeper) ReleaseVestedTokensInternal(ctx context.Context, scheduleID stri
 		return "0", fmt.Errorf("failed to convert releasable amount")
 	}
 	newVestedCoin := schedule.VestedAmount.AddAmount(releasableInt)
-	schedule.VestedAmount = &newVestedCoin
+	schedule.VestedAmount = newVestedCoin
 	if err := k.SetVestingSchedule(ctx, schedule); err != nil {
 		return "0", err
 	}

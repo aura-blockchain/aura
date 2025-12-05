@@ -12,52 +12,36 @@ func ValidateParams(params *economicspb.Params) error {
 		return fmt.Errorf("params cannot be nil")
 	}
 
-	if params.Fees != nil {
-		if err := ValidateFeeParams(params.Fees); err != nil {
-			return fmt.Errorf("invalid fee params: %w", err)
-		}
+	if err := ValidateFeeParams(&params.Fees); err != nil {
+		return fmt.Errorf("invalid fee params: %w", err)
 	}
 
-	if params.Vesting != nil {
-		if err := ValidateVestingParams(params.Vesting); err != nil {
-			return fmt.Errorf("invalid vesting params: %w", err)
-		}
+	if err := ValidateVestingParams(&params.Vesting); err != nil {
+		return fmt.Errorf("invalid vesting params: %w", err)
 	}
 
-	if params.Treasury != nil {
-		if err := ValidateTreasuryParams(params.Treasury); err != nil {
-			return fmt.Errorf("invalid treasury params: %w", err)
-		}
+	if err := ValidateTreasuryParams(&params.Treasury); err != nil {
+		return fmt.Errorf("invalid treasury params: %w", err)
 	}
 
-	if params.Governance != nil {
-		if err := ValidateGovernanceParams(params.Governance); err != nil {
-			return fmt.Errorf("invalid governance params: %w", err)
-		}
+	if err := ValidateGovernanceParams(&params.Governance); err != nil {
+		return fmt.Errorf("invalid governance params: %w", err)
 	}
 
-	if params.Mev != nil {
-		if err := ValidateMEVParams(params.Mev); err != nil {
-			return fmt.Errorf("invalid MEV params: %w", err)
-		}
+	if err := ValidateMEVParams(&params.Mev); err != nil {
+		return fmt.Errorf("invalid MEV params: %w", err)
 	}
 
-	if params.WhaleProtection != nil {
-		if err := ValidateWhaleProtectionParams(params.WhaleProtection); err != nil {
-			return fmt.Errorf("invalid whale protection params: %w", err)
-		}
+	if err := ValidateWhaleProtectionParams(&params.WhaleProtection); err != nil {
+		return fmt.Errorf("invalid whale protection params: %w", err)
 	}
 
-	if params.LiquidityMining != nil {
-		if err := ValidateLiquidityMiningParams(params.LiquidityMining); err != nil {
-			return fmt.Errorf("invalid liquidity mining params: %w", err)
-		}
+	if err := ValidateLiquidityMiningParams(&params.LiquidityMining); err != nil {
+		return fmt.Errorf("invalid liquidity mining params: %w", err)
 	}
 
-	if params.Tokenomics != nil {
-		if err := ValidateTokenomicsParams(params.Tokenomics); err != nil {
-			return fmt.Errorf("invalid tokenomics params: %w", err)
-		}
+	if err := ValidateTokenomicsParams(&params.Tokenomics); err != nil {
+		return fmt.Errorf("invalid tokenomics params: %w", err)
 	}
 
 	return nil
@@ -67,11 +51,6 @@ func ValidateParams(params *economicspb.Params) error {
 func ValidateFeeParams(params *economicspb.FeeParams) error {
 	if params == nil {
 		return nil // Optional params
-	}
-
-	// BaseFee and MinGasPrice are strings - basic validation
-	if params.BaseFee == "" {
-		return fmt.Errorf("base fee cannot be empty")
 	}
 
 	if params.MinFeeMultiplier > params.MaxFeeMultiplier {
@@ -91,10 +70,8 @@ func ValidateVestingParams(params *economicspb.VestingParams) error {
 		return nil // Optional params
 	}
 
-	if params.MinVestingDuration != nil && params.MaxVestingDuration != nil {
-		if params.MaxVestingDuration.AsDuration() < params.MinVestingDuration.AsDuration() {
-			return fmt.Errorf("max vesting duration must be greater than or equal to min vesting duration")
-		}
+	if params.MaxVestingDuration < params.MinVestingDuration {
+		return fmt.Errorf("max vesting duration must be greater than or equal to min vesting duration")
 	}
 
 	if params.EarlyUnlockPenalty > 10000 {

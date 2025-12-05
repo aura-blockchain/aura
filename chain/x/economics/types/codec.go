@@ -12,7 +12,7 @@ import (
 
 // RegisterInterfaces registers the economics module interfaces
 func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
-	msgservice.RegisterMsgServiceDesc(registry, &economicspb.Msg_ServiceDesc)
+	msgservice.RegisterMsgServiceDesc(registry, &economicspb.Msg_serviceDesc)
 
 	registry.RegisterImplementations((*sdk.Msg)(nil),
 		&economicspb.MsgCreateVestingSchedule{},
