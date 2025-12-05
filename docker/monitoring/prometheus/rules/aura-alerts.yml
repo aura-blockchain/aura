@@ -72,3 +72,60 @@ groups:
         annotations:
           summary: "Low disk space"
           description: "Disk usage is {{ $value }}% (threshold: 80%)"
+
+  - name: wasm-module
+    rules:
+      # WASM transaction failure rate
+      - alert: WASMTransactionFailureRate
+        expr: (rate(aura_wasm_tx_failures_total[5m]) / clamp_min(rate(aura_wasm_tx_total[5m]), 0.0001)) > 0.01
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "WASM transaction failure rate exceeds 1%"
+          description: "WASM tx failure rate is {{ $value | humanizePercentage }} (threshold: 1%). Contract: {{ $labels.contract_address }}, Error: {{ $labels.error_type }}"
+          runbook_url: "https://github.com/decristofaroj/aura/blob/main/docs/monitoring/wasm-bridge-security-monitoring.md#wasmtransactionfailurerate"
+
+      # WASM signature mismatch
+      - alert: WASMSignatureMismatch
+        expr: rate(aura_bridge_signature_mismatches_total[5m]) > 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "WASM signature verification mismatches detected"
+          description: "Signature mismatch rate: {{ $value | humanize }}/sec. Chain: {{ $labels.chain }}, Type: {{ $labels.signature_type }}, Reason: {{ $labels.error_reason }}"
+          runbook_url: "https://github.com/decristofaroj/aura/blob/main/docs/monitoring/wasm-bridge-security-monitoring.md#signaturemismatchratehigh"
+
+      # WASM contract deployment failure
+      - alert: WASMContractDeploymentFailure
+        expr: increase(aura_wasm_instantiation_failures_total[10m]) > 3
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "WASM contract deployment failures detected"
+          description: "{{ $value }} contract instantiation failures in last 10 minutes. Code ID: {{ $labels.code_id }}, Error: {{ $labels.error_type }}"
+          runbook_url: "https://github.com/decristofaroj/aura/blob/main/docs/monitoring/wasm-bridge-security-monitoring.md#wasminstantiationfailures"
+
+      # WASM execution timeout
+      - alert: WASMExecutionTimeout
+        expr: histogram_quantile(0.95, rate(aura_wasm_execution_duration_seconds_bucket[5m])) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "WASM contract execution is timing out"
+          description: "95th percentile execution time is {{ $value }}s (threshold: 5s). Contract: {{ $labels.contract_address }}. Consider optimizing contract code or increasing gas limits."
+          runbook_url: "https://github.com/decristofaroj/aura/blob/main/docs/monitoring/wasm-bridge-security-monitoring.md#wasm-execution-performance"
+
+      # WASM gas exhaustion
+      - alert: WASMGasExhaustion
+        expr: rate(aura_wasm_tx_failures_total{error_type="out_of_gas"}[5m]) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High rate of WASM gas exhaustion errors"
+          description: "Out-of-gas errors: {{ $value | humanize }}/sec. Contract: {{ $labels.contract_address }}. Users may need higher gas limits or contract code needs optimization."
+          runbook_url: "https://github.com/decristofaroj/aura/blob/main/docs/monitoring/wasm-bridge-security-monitoring.md#wasmoutofgasspike"
