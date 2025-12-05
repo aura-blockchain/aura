@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Helper script to regenerate the VC registry protobuf bindings.
 # Requires either `buf` (preferred) or `protoc` + `protoc-gen-go` + `protoc-gen-go-grpc`.

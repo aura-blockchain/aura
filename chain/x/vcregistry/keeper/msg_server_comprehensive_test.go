@@ -5,7 +5,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/suite"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/vcregistry/types"
 	vcregistrypb "github.com/aequitas/aura/proto/aura/vcregistry/v1beta1"
@@ -303,7 +302,7 @@ func (suite *MsgServerComprehensiveTestSuite) TestCreateVCPolicySuccess() {
 
 	resp, err := suite.msgServer.CreateVCPolicy(ctx, msg)
 	suite.Require().NoError(err, "policy creation should succeed")
-	suite.Require().Equal(msg.VcTypeName, resp.VcTypeName)
+	suite.Require().NotEmpty(resp.PolicyId, "response should contain policy ID")
 
 	// Verify policy was created
 	policy, ok := suite.Keeper.GetVCPolicy(suite.SdkCtx, msg.VcTypeName)
@@ -320,14 +319,11 @@ func (suite *MsgServerComprehensiveTestSuite) TestCreateAttributeVCSuccess() {
 	ctx := sdk.WrapSDKContext(suite.SdkCtx)
 
 	msg := &vcregistrypb.MsgCreateAttributeVC{
-		Creator:           "aura1issuer",
-		HolderAddress:     "aura1holder",
-		AttributeType:     vcregistrypb.AttributeType_ATTRIBUTE_TYPE_AGE,
-		EncryptedValue:    []byte("encrypted-age-data"),
-		ValueHash:         []byte("hash-of-value"),
-		ExpiryDays:        365,
-		Issuer:            "aura1issuer",
-		VerificationLevel: 50,
+		Creator:          "aura1issuer",
+		AttributeType:    vcregistrypb.AttributeType_ATTRIBUTE_TYPE_AGE,
+		EncryptedValue:   []byte("encrypted-age-data"),
+		Issuer:           "aura1issuer",
+		ExpiresInSeconds: 31536000, // 365 days in seconds
 	}
 
 	resp, err := suite.msgServer.CreateAttributeVC(ctx, msg)
@@ -337,7 +333,6 @@ func (suite *MsgServerComprehensiveTestSuite) TestCreateAttributeVCSuccess() {
 	// Verify attribute VC was created
 	attrVC, ok := suite.Keeper.GetAttributeVC(suite.SdkCtx, resp.AttributeVcId)
 	suite.Require().True(ok, "attribute VC should be retrievable")
-	suite.Require().Equal(msg.HolderAddress, attrVC.HolderAddress)
 	suite.Require().Equal(msg.AttributeType, attrVC.AttributeType)
 	suite.Require().Equal(types.VCStatus_VC_STATUS_ACTIVE, attrVC.Status)
 }
@@ -362,7 +357,7 @@ func (suite *MsgServerComprehensiveTestSuite) TestUpdateDisclosurePolicySuccess(
 
 	resp, err := suite.msgServer.UpdateDisclosurePolicy(ctx, msg)
 	suite.Require().NoError(err, "policy update should succeed")
-	suite.Require().Equal(msg.Creator, resp.HolderAddress)
+	suite.Require().NotNil(resp.UpdatedAt, "response should contain updated timestamp")
 
 	// Verify policy was set
 	policy, ok := suite.Keeper.GetDisclosurePolicy(suite.SdkCtx, msg.Creator)
@@ -379,8 +374,9 @@ func (suite *MsgServerComprehensiveTestSuite) TestCreateDisclosureRequestSuccess
 	ctx := sdk.WrapSDKContext(suite.SdkCtx)
 
 	msg := &vcregistrypb.MsgCreateDisclosureRequest{
-		Creator:             "aura1verifier",
+		Verifier:            "aura1verifier",
 		HolderAddress:       "aura1holder",
+		VerifierName:        "Test Verifier",
 		RequestedAttributes: []vcregistrypb.AttributeType{vcregistrypb.AttributeType_ATTRIBUTE_TYPE_AGE},
 		Purpose:             "age verification",
 		ExpiresInSeconds:    600,
@@ -393,6 +389,6 @@ func (suite *MsgServerComprehensiveTestSuite) TestCreateDisclosureRequestSuccess
 	// Verify request was created
 	request, ok := suite.Keeper.GetDisclosureRequest(suite.SdkCtx, resp.RequestId)
 	suite.Require().True(ok, "request should be retrievable")
-	suite.Require().Equal(msg.Creator, request.VerifierAddress)
+	suite.Require().Equal(msg.Verifier, request.VerifierAddress)
 	suite.Require().Equal(msg.Purpose, request.Purpose)
 }

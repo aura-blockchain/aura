@@ -3,7 +3,9 @@ package types
 import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	// "github.com/cosmos/cosmos-sdk/types/msgservice"
+	"github.com/cosmos/cosmos-sdk/types/msgservice"
+
+	incidentresponsepb "github.com/aequitas/aura/proto/aura/incidentresponse/v1beta1"
 )
 
 // RegisterLegacyAminoCodec registers the necessary x/incidentresponse interfaces and concrete types
@@ -15,5 +17,5 @@ func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 // RegisterInterfaces registers the x/incidentresponse interfaces types with the interface registry
 func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 	// Register message types with the interface registry
-	// msgservice.RegisterMsgServiceDesc(registry, &_IncidentResponseService_serviceDesc)
+	msgservice.RegisterMsgServiceDesc(registry, &incidentresponsepb.Msg_ServiceDesc)
 }

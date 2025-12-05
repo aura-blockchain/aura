@@ -22,6 +22,12 @@ import (
 )
 
 func setupKeeper(t *testing.T) (keeper.Keeper, context.Context) {
+	// Configure bech32 prefixes for "aura" chain
+	config := sdk.GetConfig()
+	config.SetBech32PrefixForAccount("aura", "aurapub")
+	config.SetBech32PrefixForValidator("auravaloper", "auravaloper pub")
+	config.SetBech32PrefixForConsensusNode("auravalcons", "auravalconspub")
+
 	storeKey := storetypes.NewKVStoreKey(types.ModuleName)
 
 	// Create database and commit multi-store

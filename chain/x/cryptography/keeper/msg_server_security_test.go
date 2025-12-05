@@ -12,11 +12,29 @@ import (
 	cryptoproto "github.com/aequitas/aura/proto/aura/cryptography/v1beta1"
 )
 
-// Test addresses for security tests
+// Test addresses for security tests (valid bech32)
 const (
-	testAddr1 = "aura1qyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqszqgpq0u5rdk"
-	testAddr2 = "aura1xzqszqgpqyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqszqgpqm3m3k7"
+	testAddr1 = "aura1y4vu63zplwjaudtm25u5g3peugzevzgdmsely0"
+	testAddr2 = "aura14gdaqycntmhn82hd7xwsy95c3cf6kv7whaa96z"
 )
+
+// createValidProofData creates realistic ZK proof data with proper curve point structure
+func createValidProofData(size int) []byte {
+	proofData := make([]byte, size)
+	if size > 0 {
+		proofData[0] = 0x02 // Compressed point marker (even y-coordinate)
+	}
+	// Mix of zero and non-zero bytes for realistic curve point structure
+	for i := 1; i < len(proofData); i++ {
+		if i%3 == 0 {
+			proofData[i] = byte(i % 256)
+		} else if i%7 == 0 {
+			proofData[i] = 0xFF
+		}
+		// else remains 0x00 for zero bytes
+	}
+	return proofData
+}
 
 // TestSignerVerification tests that message handlers properly implement signer verification
 // Note: Invalid bech32 addresses cause panic in GetSigners() before reaching our validation,
@@ -62,11 +80,15 @@ func TestSignerVerification(t *testing.T) {
 		require.NotEmpty(t, zkResp.ProofId)
 
 		// Test SubmitZKProof
+		publicInputs := make([]byte, 32)
+		for i := range publicInputs {
+			publicInputs[i] = byte(i + 1) // Non-zero public inputs
+		}
 		submitMsg := &cryptoproto.MsgSubmitZKProof{
 			Submitter:    validUser,
 			ProofId:      zkResp.ProofId,
-			ProofData:    make([]byte, 128),
-			PublicInputs: make([]byte, 32),
+			ProofData:    createValidProofData(128),
+			PublicInputs: publicInputs,
 		}
 		submitResp, err := msgServer.SubmitZKProof(ctx, submitMsg)
 		require.NoError(t, err)
@@ -76,7 +98,7 @@ func TestSignerVerification(t *testing.T) {
 		enclaveMsg := &cryptoproto.MsgRegisterSecureEnclave{
 			Creator:         validUser,
 			EnclaveType:     cryptoproto.SecureEnclaveType_SECURE_ENCLAVE_TYPE_SGX,
-			AttestationData: make([]byte, 64),
+			AttestationData: make([]byte, 432), // SGX quote minimum size
 			EnclaveMetadata: map[string]string{"version": "1.0"},
 		}
 		enclaveResp, err := msgServer.RegisterSecureEnclave(ctx, enclaveMsg)
@@ -171,8 +193,8 @@ func TestZKProofCircuitExistence(t *testing.T) {
 		msg := &cryptoproto.MsgSubmitZKProof{
 			Submitter:    creator,
 			ProofId:      "non-existent-proof",
-			ProofData:    make([]byte, 128),
-			PublicInputs: make([]byte, 32),
+			ProofData:    createValidProofData(128),
+			PublicInputs: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32},
 		}
 
 		_, err := msgServer.SubmitZKProof(ctx, msg)
@@ -200,8 +222,8 @@ func TestZKProofCircuitExistence(t *testing.T) {
 			submitMsg := &cryptoproto.MsgSubmitZKProof{
 				Submitter:    creator,
 				ProofId:      resp.ProofId,
-				ProofData:    make([]byte, 128),
-				PublicInputs: make([]byte, 32),
+				ProofData:    createValidProofData(128),
+				PublicInputs: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32},
 			}
 
 			submitResp, err := msgServer.SubmitZKProof(ctx, submitMsg)
@@ -338,8 +360,8 @@ func TestSecurityAcrossAllFunctions(t *testing.T) {
 		submitMsg := &cryptoproto.MsgSubmitZKProof{
 			Submitter:    validUser,
 			ProofId:      registerResp.ProofId,
-			ProofData:    make([]byte, 256),
-			PublicInputs: make([]byte, 64),
+			ProofData:    createValidProofData(256),
+			PublicInputs: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64},
 		}
 		resp, err := msgServer.SubmitZKProof(ctx, submitMsg)
 		require.NoError(t, err)
@@ -350,7 +372,7 @@ func TestSecurityAcrossAllFunctions(t *testing.T) {
 		msg := &cryptoproto.MsgRegisterSecureEnclave{
 			Creator:         validUser,
 			EnclaveType:     cryptoproto.SecureEnclaveType_SECURE_ENCLAVE_TYPE_SGX,
-			AttestationData: make([]byte, 64),
+			AttestationData: make([]byte, 432), // SGX quote minimum size
 			EnclaveMetadata: map[string]string{"version": "1.0"},
 		}
 
@@ -445,8 +467,8 @@ func TestAttackScenarios(t *testing.T) {
 		attackMsg := &cryptoproto.MsgSubmitZKProof{
 			Submitter:    attacker,
 			ProofId:      resp.ProofId,
-			ProofData:    make([]byte, 128),
-			PublicInputs: make([]byte, 32),
+			ProofData:    createValidProofData(128),
+			PublicInputs: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32},
 		}
 
 		// This should succeed because submitting proofs doesn't require ownership of the circuit

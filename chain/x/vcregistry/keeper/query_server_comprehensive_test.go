@@ -201,7 +201,7 @@ func (suite *QueryServerComprehensiveTestSuite) TestCheckVCStatusValid() {
 	resp, err := suite.queryServer.CheckVCStatus(ctx, req)
 	suite.Require().NoError(err)
 	suite.Require().Equal(vcregistrypb.VCStatus_VC_STATUS_ACTIVE, resp.Status)
-	suite.Require().True(resp.IsValid, "active VC should be valid")
+	suite.Require().True(resp.Valid, "active VC should be valid")
 }
 
 // ============================
@@ -226,7 +226,7 @@ func (suite *QueryServerComprehensiveTestSuite) TestGetVCPolicyNonExistent() {
 
 	_, err := suite.queryServer.GetVCPolicy(ctx, req)
 	suite.Require().Error(err, "non-existent policy should fail")
-	suite.Require().ErrorIs(err, types.ErrVCPolicyNotFound)
+	suite.Require().ErrorIs(err, types.ErrPolicyNotFound)
 }
 
 func (suite *QueryServerComprehensiveTestSuite) TestGetVCPolicySuccess() {
@@ -352,7 +352,7 @@ func (suite *QueryServerComprehensiveTestSuite) TestCheckRevocationNotRevoked() 
 
 	resp, err := suite.queryServer.CheckRevocation(ctx, req)
 	suite.Require().NoError(err)
-	suite.Require().False(resp.IsRevoked, "active VC should not be revoked")
+	suite.Require().False(resp.Revoked, "active VC should not be revoked")
 }
 
 func (suite *QueryServerComprehensiveTestSuite) TestCheckRevocationRevoked() {
@@ -380,9 +380,9 @@ func (suite *QueryServerComprehensiveTestSuite) TestCheckRevocationRevoked() {
 
 	resp, err := suite.queryServer.CheckRevocation(ctx, req)
 	suite.Require().NoError(err)
-	suite.Require().True(resp.IsRevoked, "revoked VC should be marked as revoked")
-	suite.Require().NotNil(resp.RevocationRecord)
-	suite.Require().Equal("revoked-vc", resp.RevocationRecord.VcId)
+	suite.Require().True(resp.Revoked, "revoked VC should be marked as revoked")
+	suite.Require().NotNil(resp.Record)
+	suite.Require().Equal("revoked-vc", resp.Record.VcId)
 }
 
 func (suite *QueryServerComprehensiveTestSuite) TestCheckRevocationNonExistent() {
@@ -395,8 +395,8 @@ func (suite *QueryServerComprehensiveTestSuite) TestCheckRevocationNonExistent()
 
 	resp, err := suite.queryServer.CheckRevocation(ctx, req)
 	suite.Require().NoError(err)
-	suite.Require().False(resp.IsRevoked, "non-existent VC should return not revoked")
-	suite.Require().Nil(resp.RevocationRecord)
+	suite.Require().False(resp.Revoked, "non-existent VC should return not revoked")
+	suite.Require().Nil(resp.Record)
 }
 
 // ============================
@@ -411,9 +411,9 @@ func (suite *QueryServerComprehensiveTestSuite) TestStatsEmpty() {
 
 	resp, err := suite.queryServer.Stats(ctx, req)
 	suite.Require().NoError(err)
-	suite.Require().NotNil(resp.Stats)
-	suite.Require().Equal(uint64(0), resp.Stats.TotalVCs)
-	suite.Require().Equal(uint64(0), resp.Stats.ActiveVCs)
+	suite.Require().NotNil(resp)
+	suite.Require().Equal(uint64(0), resp.TotalVcsMinted)
+	suite.Require().Equal(uint64(0), resp.TotalActiveVcs)
 }
 
 func (suite *QueryServerComprehensiveTestSuite) TestStatsWithData() {
@@ -454,10 +454,10 @@ func (suite *QueryServerComprehensiveTestSuite) TestStatsWithData() {
 
 	resp, err := suite.queryServer.Stats(ctx, req)
 	suite.Require().NoError(err)
-	suite.Require().NotNil(resp.Stats)
-	suite.Require().Equal(uint64(3), resp.Stats.TotalVCs)
-	suite.Require().Equal(uint64(2), resp.Stats.ActiveVCs)
-	suite.Require().Equal(uint64(1), resp.Stats.RevokedVCs)
+	suite.Require().NotNil(resp)
+	suite.Require().Equal(uint64(3), resp.TotalVcsMinted)
+	suite.Require().Equal(uint64(2), resp.TotalActiveVcs)
+	suite.Require().Equal(uint64(1), resp.TotalRevokedVcs)
 }
 
 // ============================
