@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -98,7 +97,7 @@ func (suite *MsgServerTestSuite) TestMsgCreateVestingSchedule() {
 			msg: &economicspb.MsgCreateVestingSchedule{
 				Creator:            suite.testAddrs[0].String(),
 				BeneficiaryAddress: suite.testAddrs[1].String(),
-				TotalAmount: sdk.Coin{
+				TotalAmount: &sdk.Coin{
 					Denom:  "uaura",
 					Amount: sdkmath.NewInt(1000000),
 				},
@@ -115,7 +114,7 @@ func (suite *MsgServerTestSuite) TestMsgCreateVestingSchedule() {
 			msg: &economicspb.MsgCreateVestingSchedule{
 				Creator:            "",
 				BeneficiaryAddress: suite.testAddrs[1].String(),
-				TotalAmount: sdk.Coin{
+				TotalAmount: &sdk.Coin{
 					Denom:  "uaura",
 					Amount: sdkmath.NewInt(1000000),
 				},
@@ -131,7 +130,7 @@ func (suite *MsgServerTestSuite) TestMsgCreateVestingSchedule() {
 			msg: &economicspb.MsgCreateVestingSchedule{
 				Creator:            suite.testAddrs[0].String(),
 				BeneficiaryAddress: "",
-				TotalAmount: sdk.Coin{
+				TotalAmount: &sdk.Coin{
 					Denom:  "uaura",
 					Amount: sdkmath.NewInt(1000000),
 				},
@@ -147,7 +146,7 @@ func (suite *MsgServerTestSuite) TestMsgCreateVestingSchedule() {
 			msg: &economicspb.MsgCreateVestingSchedule{
 				Creator:            suite.testAddrs[0].String(),
 				BeneficiaryAddress: suite.testAddrs[1].String(),
-				TotalAmount: sdk.Coin{
+				TotalAmount: &sdk.Coin{
 					Denom:  "uaura",
 					Amount: sdkmath.ZeroInt(),
 				},
@@ -163,7 +162,7 @@ func (suite *MsgServerTestSuite) TestMsgCreateVestingSchedule() {
 			msg: &economicspb.MsgCreateVestingSchedule{
 				Creator:            suite.testAddrs[0].String(),
 				BeneficiaryAddress: suite.testAddrs[1].String(),
-				TotalAmount: sdk.Coin{
+				TotalAmount: &sdk.Coin{
 					Denom:  "uaura",
 					Amount: sdkmath.NewInt(1000000),
 				},
@@ -201,7 +200,7 @@ func (suite *MsgServerTestSuite) TestMsgReleaseVestedTokens() {
 	createMsg := &economicspb.MsgCreateVestingSchedule{
 		Creator:            suite.testAddrs[0].String(),
 		BeneficiaryAddress: suite.testAddrs[1].String(),
-		TotalAmount: sdk.Coin{
+		TotalAmount: &sdk.Coin{
 			Denom:  "uaura",
 			Amount: sdkmath.NewInt(1000000),
 		},
@@ -285,7 +284,7 @@ func (suite *MsgServerTestSuite) TestMsgRevokeVestingSchedule() {
 	createMsg := &economicspb.MsgCreateVestingSchedule{
 		Creator:            suite.testAddrs[0].String(),
 		BeneficiaryAddress: suite.testAddrs[1].String(),
-		TotalAmount: sdk.Coin{
+		TotalAmount: &sdk.Coin{
 			Denom:  "uaura",
 			Amount: sdkmath.NewInt(1000000),
 		},
@@ -373,7 +372,7 @@ func (suite *MsgServerTestSuite) TestMsgSubmitProposal() {
 				Description: "This is a test proposal for the economics module",
 				Category:    economicspb.ProposalCategory_PROPOSAL_CATEGORY_TEXT,
 				Proposer:    suite.testAddrs[0].String(),
-				InitialDeposit: sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(1000000))),
+				InitialDeposit: []*sdk.Coin{&sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(1000000)}},
 				IsEmergency: false,
 			},
 			shouldErr: false,
@@ -385,7 +384,7 @@ func (suite *MsgServerTestSuite) TestMsgSubmitProposal() {
 				Description: "Proposal to adjust fee parameters",
 				Category:    economicspb.ProposalCategory_PROPOSAL_CATEGORY_PARAMETER_CHANGE,
 				Proposer:    suite.testAddrs[0].String(),
-				InitialDeposit: sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(1000000))),
+				InitialDeposit: []*sdk.Coin{&sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(1000000)}},
 				IsEmergency: false,
 			},
 			shouldErr: false,
@@ -397,7 +396,7 @@ func (suite *MsgServerTestSuite) TestMsgSubmitProposal() {
 				Description: "Emergency proposal to fix security issue",
 				Category:    economicspb.ProposalCategory_PROPOSAL_CATEGORY_EMERGENCY,
 				Proposer:    suite.testAddrs[0].String(),
-				InitialDeposit: sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(5000000))),
+				InitialDeposit: []*sdk.Coin{&sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(5000000)}},
 				IsEmergency: true,
 			},
 			shouldErr: false,
@@ -409,7 +408,7 @@ func (suite *MsgServerTestSuite) TestMsgSubmitProposal() {
 				Description: "Test description",
 				Category:    economicspb.ProposalCategory_PROPOSAL_CATEGORY_TEXT,
 				Proposer:    suite.testAddrs[0].String(),
-				InitialDeposit: sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(1000000))),
+				InitialDeposit: []*sdk.Coin{&sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(1000000)}},
 			},
 			shouldErr: true,
 			errMsg:    "invalid title",
@@ -421,7 +420,7 @@ func (suite *MsgServerTestSuite) TestMsgSubmitProposal() {
 				Description: "",
 				Category:    economicspb.ProposalCategory_PROPOSAL_CATEGORY_TEXT,
 				Proposer:    suite.testAddrs[0].String(),
-				InitialDeposit: sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(1000000))),
+				InitialDeposit: []*sdk.Coin{&sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(1000000)}},
 			},
 			shouldErr: true,
 			errMsg:    "invalid description",
@@ -433,7 +432,7 @@ func (suite *MsgServerTestSuite) TestMsgSubmitProposal() {
 				Description: "Test description",
 				Category:    economicspb.ProposalCategory_PROPOSAL_CATEGORY_TEXT,
 				Proposer:    "",
-				InitialDeposit: sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(1000000))),
+				InitialDeposit: []*sdk.Coin{&sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(1000000)}},
 			},
 			shouldErr: true,
 			errMsg:    "invalid proposer",
@@ -467,7 +466,7 @@ func (suite *MsgServerTestSuite) TestMsgDeposit() {
 		Description: "Test proposal description",
 		Category:    economicspb.ProposalCategory_PROPOSAL_CATEGORY_TEXT,
 		Proposer:    suite.testAddrs[0].String(),
-		InitialDeposit: sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(500000))),
+		InitialDeposit: []*sdk.Coin{&sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(500000)}},
 	}
 
 	goCtx := sdk.WrapSDKContext(suite.ctx)
@@ -486,7 +485,7 @@ func (suite *MsgServerTestSuite) TestMsgDeposit() {
 			msg: &economicspb.MsgDeposit{
 				ProposalId: proposalID,
 				Depositor:  suite.testAddrs[1].String(),
-				Amount:     sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(500000))),
+				Amount:     []*sdk.Coin{&sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(500000)}},
 			},
 			shouldErr: false,
 		},
@@ -495,7 +494,7 @@ func (suite *MsgServerTestSuite) TestMsgDeposit() {
 			msg: &economicspb.MsgDeposit{
 				ProposalId: proposalID,
 				Depositor:  "",
-				Amount:     sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(100000))),
+				Amount:     []*sdk.Coin{&sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(100000)}},
 			},
 			shouldErr: true,
 			errMsg:    "invalid depositor",
@@ -505,7 +504,7 @@ func (suite *MsgServerTestSuite) TestMsgDeposit() {
 			msg: &economicspb.MsgDeposit{
 				ProposalId: proposalID,
 				Depositor:  suite.testAddrs[1].String(),
-				Amount:     sdk.NewCoins(),
+				Amount:     []*sdk.Coin{},
 			},
 			shouldErr: true,
 			errMsg:    "invalid deposit amount",
@@ -515,7 +514,7 @@ func (suite *MsgServerTestSuite) TestMsgDeposit() {
 			msg: &economicspb.MsgDeposit{
 				ProposalId: 99999,
 				Depositor:  suite.testAddrs[1].String(),
-				Amount:     sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(100000))),
+				Amount:     []*sdk.Coin{&sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(100000)}},
 			},
 			shouldErr: true,
 			errMsg:    "proposal not found",
@@ -547,7 +546,7 @@ func (suite *MsgServerTestSuite) TestMsgVote() {
 		Description: "Test proposal description",
 		Category:    economicspb.ProposalCategory_PROPOSAL_CATEGORY_TEXT,
 		Proposer:    suite.testAddrs[0].String(),
-		InitialDeposit: sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(10000000))), // Large deposit to activate voting
+		InitialDeposit: []*sdk.Coin{&sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(10000000)}}, // Large deposit to activate voting
 	}
 
 	goCtx := sdk.WrapSDKContext(suite.ctx)
@@ -648,7 +647,7 @@ func (suite *MsgServerTestSuite) TestMsgVoteWeighted() {
 		Description: "Test proposal description",
 		Category:    economicspb.ProposalCategory_PROPOSAL_CATEGORY_TEXT,
 		Proposer:    suite.testAddrs[0].String(),
-		InitialDeposit: sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(10000000))),
+		InitialDeposit: []*sdk.Coin{&sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(10000000)}},
 	}
 
 	goCtx := sdk.WrapSDKContext(suite.ctx)
@@ -670,11 +669,11 @@ func (suite *MsgServerTestSuite) TestMsgVoteWeighted() {
 				Options: []*economicspb.WeightedVoteOption{
 					{
 						Option: economicspb.VoteOption_VOTE_OPTION_YES,
-						Weight: sdkmath.LegacyMustNewDecFromStr("0.7"),
+						Weight: sdkmath.LegacyMustNewDecFromStr("0.7").String(),
 					},
 					{
 						Option: economicspb.VoteOption_VOTE_OPTION_ABSTAIN,
-						Weight: sdkmath.LegacyMustNewDecFromStr("0.3"),
+						Weight: sdkmath.LegacyMustNewDecFromStr("0.3").String(),
 					},
 				},
 			},
@@ -688,7 +687,7 @@ func (suite *MsgServerTestSuite) TestMsgVoteWeighted() {
 				Options: []*economicspb.WeightedVoteOption{
 					{
 						Option: economicspb.VoteOption_VOTE_OPTION_YES,
-						Weight: sdkmath.LegacyMustNewDecFromStr("1.0"),
+						Weight: sdkmath.LegacyMustNewDecFromStr("1.0").String(),
 					},
 				},
 			},
@@ -878,7 +877,7 @@ func (suite *MsgServerTestSuite) TestMsgExecuteProposal() {
 		Description: "Test proposal description",
 		Category:    economicspb.ProposalCategory_PROPOSAL_CATEGORY_TEXT,
 		Proposer:    suite.testAddrs[0].String(),
-		InitialDeposit: sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(10000000))),
+		InitialDeposit: []*sdk.Coin{&sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(10000000)}},
 	}
 
 	goCtx := sdk.WrapSDKContext(suite.ctx)
@@ -946,7 +945,7 @@ func (suite *MsgServerTestSuite) TestMsgRevealSecretVote() {
 		Description: "Test proposal description",
 		Category:    economicspb.ProposalCategory_PROPOSAL_CATEGORY_TEXT,
 		Proposer:    suite.testAddrs[0].String(),
-		InitialDeposit: sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(10000000))),
+		InitialDeposit: []*sdk.Coin{&sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(10000000)}},
 	}
 
 	goCtx := sdk.WrapSDKContext(suite.ctx)
@@ -1038,7 +1037,7 @@ func (suite *MsgServerTestSuite) TestMsgLockVotingTokens() {
 			name: "valid lock - 1 year",
 			msg: &economicspb.MsgLockVotingTokens{
 				Owner: suite.testAddrs[0].String(),
-				Amount: sdk.Coin{
+				Amount: &sdk.Coin{
 					Denom:  "uaura",
 					Amount: sdkmath.NewInt(1000000),
 				},
@@ -1050,7 +1049,7 @@ func (suite *MsgServerTestSuite) TestMsgLockVotingTokens() {
 			name: "valid lock - 4 years",
 			msg: &economicspb.MsgLockVotingTokens{
 				Owner: suite.testAddrs[1].String(),
-				Amount: sdk.Coin{
+				Amount: &sdk.Coin{
 					Denom:  "uaura",
 					Amount: sdkmath.NewInt(5000000),
 				},
@@ -1062,7 +1061,7 @@ func (suite *MsgServerTestSuite) TestMsgLockVotingTokens() {
 			name: "invalid - empty owner",
 			msg: &economicspb.MsgLockVotingTokens{
 				Owner: "",
-				Amount: sdk.Coin{
+				Amount: &sdk.Coin{
 					Denom:  "uaura",
 					Amount: sdkmath.NewInt(1000000),
 				},
@@ -1075,7 +1074,7 @@ func (suite *MsgServerTestSuite) TestMsgLockVotingTokens() {
 			name: "invalid - zero amount",
 			msg: &economicspb.MsgLockVotingTokens{
 				Owner: suite.testAddrs[0].String(),
-				Amount: sdk.Coin{
+				Amount: &sdk.Coin{
 					Denom:  "uaura",
 					Amount: sdkmath.ZeroInt(),
 				},
@@ -1088,7 +1087,7 @@ func (suite *MsgServerTestSuite) TestMsgLockVotingTokens() {
 			name: "invalid - zero lock duration",
 			msg: &economicspb.MsgLockVotingTokens{
 				Owner: suite.testAddrs[0].String(),
-				Amount: sdk.Coin{
+				Amount: &sdk.Coin{
 					Denom:  "uaura",
 					Amount: sdkmath.NewInt(1000000),
 				},
@@ -1115,7 +1114,9 @@ func (suite *MsgServerTestSuite) TestMsgLockVotingTokens() {
 				suite.Require().NotNil(resp)
 				suite.Require().NotEmpty(resp.LockId)
 				// Voting power should be greater than locked amount due to time multiplier
-				suite.Require().True(resp.VotingPower.GTE(tt.msg.Amount.Amount))
+				votingPower, ok := sdkmath.NewIntFromString(resp.VotingPower)
+				suite.Require().True(ok)
+				suite.Require().True(votingPower.GTE(tt.msg.Amount.Amount))
 			}
 		})
 	}
@@ -1125,7 +1126,7 @@ func (suite *MsgServerTestSuite) TestMsgUnlockVotingTokens() {
 	// First create a lock
 	lockMsg := &economicspb.MsgLockVotingTokens{
 		Owner: suite.testAddrs[0].String(),
-		Amount: sdk.Coin{
+		Amount: &sdk.Coin{
 			Denom:  "uaura",
 			Amount: sdkmath.NewInt(1000000),
 		},
@@ -1207,7 +1208,7 @@ func (suite *MsgServerTestSuite) TestMsgProposeTreasurySpend() {
 			msg: &economicspb.MsgProposeTreasurySpend{
 				Proposer:    suite.testAddrs[0].String(),
 				Recipient:   suite.testAddrs[1].String(),
-				Amount:      sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(100000))),
+				Amount:      []*sdk.Coin{&sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(100000)}},
 				Description: "Development grant for team X",
 			},
 			shouldErr: false,
@@ -1217,7 +1218,7 @@ func (suite *MsgServerTestSuite) TestMsgProposeTreasurySpend() {
 			msg: &economicspb.MsgProposeTreasurySpend{
 				Proposer:    "",
 				Recipient:   suite.testAddrs[1].String(),
-				Amount:      sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(100000))),
+				Amount:      []*sdk.Coin{&sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(100000)}},
 				Description: "Test",
 			},
 			shouldErr: true,
@@ -1228,7 +1229,7 @@ func (suite *MsgServerTestSuite) TestMsgProposeTreasurySpend() {
 			msg: &economicspb.MsgProposeTreasurySpend{
 				Proposer:    suite.testAddrs[0].String(),
 				Recipient:   "",
-				Amount:      sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(100000))),
+				Amount:      []*sdk.Coin{&sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(100000)}},
 				Description: "Test",
 			},
 			shouldErr: true,
@@ -1239,7 +1240,7 @@ func (suite *MsgServerTestSuite) TestMsgProposeTreasurySpend() {
 			msg: &economicspb.MsgProposeTreasurySpend{
 				Proposer:    suite.testAddrs[0].String(),
 				Recipient:   suite.testAddrs[1].String(),
-				Amount:      sdk.NewCoins(),
+				Amount:      []*sdk.Coin{},
 				Description: "Test",
 			},
 			shouldErr: true,
@@ -1250,7 +1251,7 @@ func (suite *MsgServerTestSuite) TestMsgProposeTreasurySpend() {
 			msg: &economicspb.MsgProposeTreasurySpend{
 				Proposer:  suite.testAddrs[0].String(),
 				Recipient: suite.testAddrs[1].String(),
-				Amount:    sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(100000))),
+				Amount:    []*sdk.Coin{&sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(100000)}},
 			},
 			shouldErr: true,
 			errMsg:    "invalid description",
@@ -1282,7 +1283,7 @@ func (suite *MsgServerTestSuite) TestMsgSignTreasurySpend() {
 	proposeMsg := &economicspb.MsgProposeTreasurySpend{
 		Proposer:    suite.testAddrs[0].String(),
 		Recipient:   suite.testAddrs[1].String(),
-		Amount:      sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(100000))),
+		Amount:      []*sdk.Coin{&sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(100000)}},
 		Description: "Test treasury spend",
 	}
 
@@ -1349,7 +1350,7 @@ func (suite *MsgServerTestSuite) TestMsgExecuteTreasurySpend() {
 	proposeMsg := &economicspb.MsgProposeTreasurySpend{
 		Proposer:    suite.testAddrs[0].String(),
 		Recipient:   suite.testAddrs[1].String(),
-		Amount:      sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(100000))),
+		Amount:      []*sdk.Coin{&sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(100000)}},
 		Description: "Test treasury spend",
 	}
 
@@ -1418,7 +1419,7 @@ func (suite *MsgServerTestSuite) TestMsgExecuteTreasurySpend() {
 
 func (suite *MsgServerTestSuite) TestMsgUpdateParams() {
 	newParams := types.DefaultParams()
-	newParams.Fees.BaseFee = sdkmath.NewInt(2000)
+	newParams.Fees.BaseFee = sdkmath.NewInt(2000).String()
 
 	tests := []struct {
 		name      string
@@ -1555,7 +1556,7 @@ func (suite *MsgServerTestSuite) TestAuthorizationChecks() {
 		msg := &economicspb.MsgCreateVestingSchedule{
 			Creator:            "invalid_address",
 			BeneficiaryAddress: suite.testAddrs[1].String(),
-			TotalAmount: sdk.Coin{
+			TotalAmount: &sdk.Coin{
 				Denom:  "uaura",
 				Amount: sdkmath.NewInt(1000000),
 			},
@@ -1603,7 +1604,7 @@ func (suite *MsgServerTestSuite) TestEdgeCases() {
 		msg := &economicspb.MsgCreateVestingSchedule{
 			Creator:            suite.testAddrs[0].String(),
 			BeneficiaryAddress: suite.testAddrs[1].String(),
-			TotalAmount: sdk.Coin{
+			TotalAmount: &sdk.Coin{
 				Denom:  "uaura",
 				Amount: sdkmath.NewInt(1000000),
 			},
@@ -1657,7 +1658,7 @@ func (suite *MsgServerTestSuite) TestEventEmission() {
 		msg := &economicspb.MsgCreateVestingSchedule{
 			Creator:            suite.testAddrs[0].String(),
 			BeneficiaryAddress: suite.testAddrs[1].String(),
-			TotalAmount: sdk.Coin{
+			TotalAmount: &sdk.Coin{
 				Denom:  "uaura",
 				Amount: sdkmath.NewInt(1000000),
 			},
@@ -1681,7 +1682,7 @@ func (suite *MsgServerTestSuite) TestEventEmission() {
 			Description: "Testing event emission",
 			Category:    economicspb.ProposalCategory_PROPOSAL_CATEGORY_TEXT,
 			Proposer:    suite.testAddrs[0].String(),
-			InitialDeposit: sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(1000000))),
+			InitialDeposit: []*sdk.Coin{&sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(1000000)}},
 		}
 
 		eventsBefore := suite.ctx.EventManager().Events()
@@ -1710,7 +1711,7 @@ func (suite *MsgServerTestSuite) createVotingProposal() uint64 {
 		Description: "Test proposal for voting tests",
 		Category:    economicspb.ProposalCategory_PROPOSAL_CATEGORY_TEXT,
 		Proposer:    suite.testAddrs[0].String(),
-		InitialDeposit: sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(10000000))),
+		InitialDeposit: []*sdk.Coin{&sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(10000000)}},
 	}
 
 	goCtx := sdk.WrapSDKContext(suite.ctx)
