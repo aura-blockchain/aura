@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
@@ -43,7 +44,7 @@ func TestWasmParameters(t *testing.T) {
 	require.NotNil(t, app, "app should not be nil")
 	require.NotNil(t, app.WasmKeeper, "wasm keeper should not be nil")
 
-	ctx := app.NewUncachedContext(true, sdk.NewBlockHeader())
+	ctx := app.NewUncachedContext(true, tmproto.Header{})
 	params := app.WasmKeeper.GetParams(sdk.WrapSDKContext(ctx))
 
 	// Test code upload access (should be set to nobody initially - governance only)
@@ -99,7 +100,7 @@ func TestAppLoadLatestVersion(t *testing.T) {
 
 	// The app should have loaded successfully in NewApp
 	// Try to create a context to ensure stores are accessible
-	ctx := app.NewUncachedContext(true, sdk.NewBlockHeader())
+	ctx := app.NewUncachedContext(true, tmproto.Header{})
 	require.NotNil(t, ctx, "context should not be nil")
 }
 
@@ -108,7 +109,7 @@ func TestWasmStoreIsMounted(t *testing.T) {
 	app := NewApp()
 	require.NotNil(t, app, "app should not be nil")
 
-	ctx := app.NewUncachedContext(true, sdk.NewBlockHeader())
+	ctx := app.NewUncachedContext(true, tmproto.Header{})
 	store := ctx.KVStore(app.storeKeys.wasm)
 	require.NotNil(t, store, "wasm store should be accessible")
 }
@@ -122,7 +123,7 @@ func TestWasmModuleGasConfiguration(t *testing.T) {
 	// Note: We can't directly access wasmConfig after initialization,
 	// but we verify it was set during keeper creation by checking
 	// the keeper exists and params are set
-	ctx := app.NewUncachedContext(true, sdk.NewBlockHeader())
+	ctx := app.NewUncachedContext(true, tmproto.Header{})
 	params := app.WasmKeeper.GetParams(sdk.WrapSDKContext(ctx))
 	require.NotNil(t, params, "wasm params should be set")
 }

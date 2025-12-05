@@ -257,9 +257,10 @@ func (suite *GenesisTestSuite) TestGenesisRoundTrip() {
 }
 
 func (suite *GenesisTestSuite) TestGenesisEdgeCases() {
-	ctx := suite.ctx
-
 	suite.Run("contract with multiple tags", func() {
+		// Setup fresh state for this subtest
+		suite.SetupTest()
+		ctx := suite.ctx
 		genesis := &pb.GenesisState{
 			Params: types.DefaultParams(),
 			Contracts: []*pb.ContractInfo{
@@ -287,6 +288,9 @@ func (suite *GenesisTestSuite) TestGenesisEdgeCases() {
 	})
 
 	suite.Run("many contracts", func() {
+		// Setup fresh state for this subtest
+		suite.SetupTest()
+		ctx := suite.ctx
 		genesis := &pb.GenesisState{
 			Params:    types.DefaultParams(),
 			Contracts: make([]*pb.ContractInfo, 50),
@@ -311,6 +315,9 @@ func (suite *GenesisTestSuite) TestGenesisEdgeCases() {
 	})
 
 	suite.Run("paused contract", func() {
+		// Setup fresh state for this subtest
+		suite.SetupTest()
+		ctx := suite.ctx
 		genesis := &pb.GenesisState{
 			Params: types.DefaultParams(),
 			Contracts: []*pb.ContractInfo{

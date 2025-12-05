@@ -15,6 +15,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	runtime "github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -110,14 +111,16 @@ func CreateTestInputWithKeys(t testing.TB, keys ...string) TestInput {
 
 // GenTestAddr generates a random test address
 func GenTestAddr() sdk.AccAddress {
-	return sdk.AccAddress([]byte("test_address_______"))
+	// Import crypto packages at top of file
+	return sdk.AccAddress(secp256k1.GenPrivKey().PubKey().Address())
 }
 
 // GenTestAddrs generates multiple test addresses
 func GenTestAddrs(count int) []sdk.AccAddress {
 	addrs := make([]sdk.AccAddress, count)
 	for i := 0; i < count; i++ {
-		addrs[i] = sdk.AccAddress(append([]byte("addr"), byte(i)))
+		// Generate unique random addresses instead of sequential ones
+		addrs[i] = sdk.AccAddress(secp256k1.GenPrivKey().PubKey().Address())
 	}
 	return addrs
 }

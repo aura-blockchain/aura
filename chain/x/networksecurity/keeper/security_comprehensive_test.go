@@ -46,20 +46,21 @@ func TestSybilDetector_SubnetConcentration(t *testing.T) {
 	detector := keeper.NewSybilDetector()
 
 	// Create 10 peers, 7 from same subnet (70% > 30% threshold)
+	// Use at least 3 ASNs to avoid triggering the diversity check
 	peers := make([]types.PeerInfo, 10)
 	for i := 0; i < 7; i++ {
 		peers[i] = types.PeerInfo{
 			PeerId:    "peer" + string(rune('0'+i)),
 			IpAddress: "192.168.1." + string(rune('0'+i)), // Same /24 subnet
-			Asn:       12345,
+			Asn:       uint32(12345 + i),                  // Different ASNs
 			Region:    "US-WEST",
 		}
 	}
 	for i := 7; i < 10; i++ {
 		peers[i] = types.PeerInfo{
 			PeerId:    "peer" + string(rune('0'+i)),
-			IpAddress: "10.0.0." + string(rune('0'+i)), // Different subnet
-			Asn:       54321,
+			IpAddress: "10.0.0." + string(rune('0'+i)),    // Different subnet
+			Asn:       uint32(54321 + i),                  // Different ASNs
 			Region:    "US-EAST",
 		}
 	}

@@ -231,7 +231,7 @@ func (suite *InvariantsTestSuite) TestMultisigQuorumInvariant() {
 
 	msg, broken = inv(ctx)
 	suite.True(broken, "wallet with zero threshold should break invariant")
-	suite.Contains(msg, "zero quorum")
+	suite.Contains(msg, "zero threshold")
 
 	// Clean up
 	suite.deleteMultisigWallet(ctx, zeroThresholdWallet.Id)
@@ -297,7 +297,7 @@ func (suite *InvariantsTestSuite) TestTimeLockInvariant() {
 
 	msg, broken = inv(ctx)
 	suite.True(broken, "action with execution time before creation should break invariant")
-	suite.Contains(msg, "execution time before creation time")
+	suite.Contains(msg, "executable time before proposed time")
 
 	// Clean up
 	suite.deleteTimeLockedAction(ctx, "action-2")
@@ -320,7 +320,7 @@ func (suite *InvariantsTestSuite) TestTimeLockInvariant() {
 
 	msg, broken = inv(ctx)
 	suite.True(broken, "action with invalid proposer should break invariant")
-	suite.Contains(msg, "invalid creator address")
+	suite.Contains(msg, "invalid proposer address")
 }
 
 func (suite *InvariantsTestSuite) TestSessionValidityInvariant() {

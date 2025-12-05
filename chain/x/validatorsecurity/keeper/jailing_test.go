@@ -58,16 +58,23 @@ func (suite *KeeperTestSuite) TestJailValidatorAlreadyJailed() {
 func (suite *KeeperTestSuite) TestUnjailValidator() {
 	validatorAddr := newValAddr()
 
-	// Setup
+	// Setup - disable sentry node requirement for this test
+	params := types.DefaultParams()
+	params.RequireSentryNodes = false
+	suite.Require().NoError(suite.keeper.SetParams(suite.ctx, params))
+
 	err := suite.keeper.RegisterValidator(suite.ctx, validatorAddr, "hot", "cold", "region", "US", 37.0, -122.0, nil)
 	suite.Require().NoError(err)
 
 	// Jail
-	err = suite.keeper.JailValidator(suite.ctx, validatorAddr, time.Nanosecond)
+	duration := time.Hour
+	err = suite.keeper.JailValidator(suite.ctx, validatorAddr, duration)
 	suite.Require().NoError(err)
 
-	// Wait for jail period
-	time.Sleep(time.Millisecond * 10)
+	// Advance block time to after jail period
+	header := suite.ctx.BlockHeader()
+	header.Time = header.Time.Add(duration + time.Second)
+	suite.ctx = suite.ctx.WithBlockHeader(header)
 
 	// Unjail
 	err = suite.keeper.UnjailValidator(suite.ctx, validatorAddr)
@@ -120,7 +127,7 @@ func (suite *KeeperTestSuite) TestTombstoneValidator() {
 }
 
 func (suite *KeeperTestSuite) TestTombstoneValidatorAlreadyTombstoned() {
-	validatorAddr := "auravaloper1tomb2"
+	validatorAddr := newValAddr()
 
 	// Setup
 	err := suite.keeper.RegisterValidator(suite.ctx, validatorAddr, "hot", "cold", "region", "US", 37.0, -122.0, nil)
@@ -136,10 +143,10 @@ func (suite *KeeperTestSuite) TestTombstoneValidatorAlreadyTombstoned() {
 }
 
 func (suite *KeeperTestSuite) TestGetJailedValidators() {
-	// Setup multiple validators
-	val1 := "auravaloper1jailed1"
-	val2 := "auravaloper1jailed2"
-	val3 := "auravaloper1notjailed"
+	// Setup multiple validators using valid bech32 addresses
+	val1 := newValAddr()
+	val2 := newValAddr()
+	val3 := newValAddr()
 
 	err := suite.keeper.RegisterValidator(suite.ctx, val1, "hot1", "cold1", "region", "US", 37.0, -122.0, nil)
 	suite.Require().NoError(err)
@@ -160,9 +167,9 @@ func (suite *KeeperTestSuite) TestGetJailedValidators() {
 }
 
 func (suite *KeeperTestSuite) TestGetTombstonedValidators() {
-	// Setup validators
-	val1 := "auravaloper1tomb1"
-	val2 := "auravaloper1tomb2"
+	// Setup validators using valid bech32 addresses
+	val1 := newValAddr()
+	val2 := newValAddr()
 
 	err := suite.keeper.RegisterValidator(suite.ctx, val1, "hot1", "cold1", "region", "US", 37.0, -122.0, nil)
 	suite.Require().NoError(err)
@@ -179,7 +186,7 @@ func (suite *KeeperTestSuite) TestGetTombstonedValidators() {
 }
 
 func (suite *KeeperTestSuite) TestJailTombstonedValidator() {
-	validatorAddr := "auravaloper1tombjail"
+	validatorAddr := newValAddr()
 
 	// Setup
 	err := suite.keeper.RegisterValidator(suite.ctx, validatorAddr, "hot", "cold", "region", "US", 37.0, -122.0, nil)
@@ -196,7 +203,7 @@ func (suite *KeeperTestSuite) TestJailTombstonedValidator() {
 }
 
 func (suite *KeeperTestSuite) TestUnjailTombstonedValidator() {
-	validatorAddr := "auravaloper1tombunjail"
+	validatorAddr := newValAddr()
 
 	// Setup
 	err := suite.keeper.RegisterValidator(suite.ctx, validatorAddr, "hot", "cold", "region", "US", 37.0, -122.0, nil)
