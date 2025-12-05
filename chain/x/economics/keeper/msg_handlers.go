@@ -14,6 +14,26 @@ import (
 	economicspb "github.com/aequitas/aura/proto/aura/economics/v1beta1"
 )
 
+// coinsToProto converts sdk.Coins to []*sdk.Coin for proto marshaling
+func coinsToProto(coins sdk.Coins) []*sdk.Coin {
+	result := make([]*sdk.Coin, len(coins))
+	for i := range coins {
+		result[i] = &coins[i]
+	}
+	return result
+}
+
+// protoCoinsToSDK converts []*sdk.Coin to sdk.Coins
+func protoCoinsToSDK(coins []*sdk.Coin) sdk.Coins {
+	result := make(sdk.Coins, len(coins))
+	for i, coin := range coins {
+		if coin != nil {
+			result[i] = *coin
+		}
+	}
+	return result
+}
+
 // ============================
 // VESTING OPERATIONS
 // ============================
@@ -174,14 +194,7 @@ func (k Keeper) SubmitProposal(
 
 	depositPeriod := params.Governance.MaxDepositPeriod.AsDuration()
 
-	// Convert sdk.Coins to []*Coin for proto
-	var totalDepositProto []*sdk.Coin
-	for _, coin := range initialDeposit {
-		coinCopy := coin
-		totalDepositProto = append(totalDepositProto, &coinCopy)
-	}
-
-	// Create proposal
+	// Create proposal (TotalDeposit needs to be converted to proto type)
 	proposal := &economicspb.Proposal{
 		Id:              proposalID,
 		Title:           title,
@@ -191,18 +204,13 @@ func (k Keeper) SubmitProposal(
 		Status:          economicspb.ProposalStatus_PROPOSAL_STATUS_DEPOSIT_PERIOD,
 		SubmitTime:      timestamppb.New(now),
 		DepositEndTime:  timestamppb.New(now.Add(depositPeriod)),
-		TotalDeposit:    totalDepositProto,
+		TotalDeposit:    coinsToProto(initialDeposit),
 		IsEmergency:     isEmergency,
 		ExecutionDelay:  params.Governance.ExecutionDelay,
 	}
 
-	// Convert min deposit proto to Coins for comparison
-	minDepositCoins := make(sdk.Coins, len(params.Governance.MinDeposit))
-	for i, coin := range params.Governance.MinDeposit {
-		minDepositCoins[i] = *coin
-	}
-
 	// Check if initial deposit meets minimum
+	minDepositCoins := protoCoinsToSDK(params.Governance.MinDeposit)
 	if initialDeposit.IsAllGTE(minDepositCoins) {
 		// Move to voting period
 		proposal.Status = economicspb.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD
@@ -220,7 +228,7 @@ func (k Keeper) SubmitProposal(
 		deposit := &economicspb.Deposit{
 			ProposalId: proposalID,
 			Depositor:  proposer.String(),
-			Amount:     totalDepositProto,
+			Amount:     coinsToProto(initialDeposit),
 			Timestamp:  timestamppb.New(now),
 		}
 		if err := k.SetDeposit(ctx, deposit); err != nil {
@@ -252,18 +260,11 @@ func (k Keeper) AddDeposit(ctx context.Context, proposalID uint64, depositor sdk
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	now := sdkCtx.BlockTime()
 
-	// Convert amount to proto format
-	var amountProto []*sdk.Coin
-	for _, coin := range amount {
-		coinCopy := coin
-		amountProto = append(amountProto, &coinCopy)
-	}
-
 	// Add deposit
 	deposit := &economicspb.Deposit{
 		ProposalId: proposalID,
 		Depositor:  depositor.String(),
-		Amount:     amountProto,
+		Amount:     coinsToProto(amount),
 		Timestamp:  timestamppb.New(now),
 	}
 
@@ -272,18 +273,9 @@ func (k Keeper) AddDeposit(ctx context.Context, proposalID uint64, depositor sdk
 	}
 
 	// Update total deposit
-	totalDepositCoins := make(sdk.Coins, len(proposal.TotalDeposit))
-	for i, coin := range proposal.TotalDeposit {
-		totalDepositCoins[i] = *coin
-	}
+	totalDepositCoins := protoCoinsToSDK(proposal.TotalDeposit)
 	totalDepositCoins = totalDepositCoins.Add(amount...)
-
-	// Convert back to proto
-	proposal.TotalDeposit = make([]*sdk.Coin, len(totalDepositCoins))
-	for i, coin := range totalDepositCoins {
-		coinCopy := coin
-		proposal.TotalDeposit[i] = &coinCopy
-	}
+	proposal.TotalDeposit = coinsToProto(totalDepositCoins)
 
 	// Check if minimum deposit met
 	params, err := k.GetParams(ctx)
@@ -291,11 +283,7 @@ func (k Keeper) AddDeposit(ctx context.Context, proposalID uint64, depositor sdk
 		return err
 	}
 
-	minDepositCoins := make(sdk.Coins, len(params.Governance.MinDeposit))
-	for i, coin := range params.Governance.MinDeposit {
-		minDepositCoins[i] = *coin
-	}
-
+	minDepositCoins := protoCoinsToSDK(params.Governance.MinDeposit)
 	if totalDepositCoins.IsAllGTE(minDepositCoins) {
 		// Move to voting period
 		votingPeriod := params.Governance.VotingPeriod.AsDuration()
@@ -540,7 +528,10 @@ func (k Keeper) UnlockVotingTokens(ctx context.Context, owner sdk.AccAddress, lo
 		return sdk.Coin{}, err
 	}
 
-	return *lock.Amount, nil
+	if lock.Amount != nil {
+		return *lock.Amount, nil
+	}
+	return sdk.Coin{}, nil
 }
 
 // ============================
@@ -563,18 +554,11 @@ func (k Keeper) ProposeTreasurySpend(ctx context.Context, proposer sdk.AccAddres
 	// Calculate executable time (after timelock)
 	executableAt := now.Add(params.Treasury.TimelockDuration.AsDuration())
 
-	// Convert amount to proto format
-	var amountProto []*sdk.Coin
-	for _, coin := range amount {
-		coinCopy := coin
-		amountProto = append(amountProto, &coinCopy)
-	}
-
 	// Create pending transaction
 	tx := &economicspb.PendingTreasuryTx{
 		TxId:         txID,
 		Recipient:    recipient.String(),
-		Amount:       amountProto,
+		Amount:       coinsToProto(amount),
 		Description:  description,
 		Proposer:     proposer.String(),
 		Signatures:   []string{},
