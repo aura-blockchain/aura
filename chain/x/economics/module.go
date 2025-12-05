@@ -15,6 +15,7 @@ import (
 
 	"github.com/aequitas/aura/chain/x/economics/keeper"
 	"github.com/aequitas/aura/chain/x/economics/types"
+	economicspb "github.com/aequitas/aura/proto/aura/economics/v1beta1"
 )
 
 var (
@@ -36,12 +37,12 @@ func (AppModuleBasic) Name() string {
 
 // RegisterLegacyAminoCodec registers the module's types on the LegacyAmino codec
 func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
-	// Register types if needed
+	types.RegisterLegacyAminoCodec(cdc)
 }
 
 // RegisterInterfaces registers the module's interface types
 func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
-	// Register interfaces if needed
+	types.RegisterInterfaces(registry)
 }
 
 // DefaultGenesis returns default genesis state
@@ -63,7 +64,9 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncod
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
-	// Register gRPC Gateway routes if needed
+	if err := economicspb.RegisterQueryHandlerClient(context.Background(), mux, economicspb.NewQueryClient(clientCtx)); err != nil {
+		panic(err)
+	}
 }
 
 // AppModule implements the app module interface
@@ -88,9 +91,10 @@ func (am AppModule) IsAppModule() {}
 
 // RegisterServices registers the module's message and query servers
 func (am AppModule) RegisterServices(cfg module.Configurator) {
-	// Server registration - proto types need to be generated
-	// types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServer(am.keeper))
-	// types.RegisterQueryServer(cfg.QueryServer(), keeper.NewQueryServer(am.keeper))
+	// Register query server
+	economicspb.RegisterQueryServer(cfg.QueryServer(), keeper.NewQueryServer(am.keeper))
+	// Register message server
+	economicspb.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServer(am.keeper))
 }
 
 // InitGenesis initializes module state from genesis
@@ -179,9 +183,9 @@ func (am AppModule) EndBlock(ctx context.Context) error {
 	}
 
 	// Check for proposals that need status updates
-	err = am.keeper.IterateProposals(sdkCtx, func(proposal *types.Proposal) bool {
+	err = am.keeper.IterateProposals(sdkCtx, func(proposal *economicspb.Proposal) bool {
 		// Update proposal status based on time
-		if proposal.VotingEndTime != nil && proposal.Status == types.ProposalStatusVotingPeriod && currentTime >= proposal.VotingEndTime.AsTime().Unix() {
+		if proposal.VotingEndTime != nil && proposal.Status == economicspb.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD && currentTime >= proposal.VotingEndTime.AsTime().Unix() {
 			// Would call UpdateProposalStatus here
 			_ = am.keeper.UpdateProposalStatus(sdkCtx, proposal.Id)
 		}
