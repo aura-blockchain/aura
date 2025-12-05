@@ -12,13 +12,17 @@ import (
 	cryptoproto "github.com/aequitas/aura/proto/aura/cryptography/v1beta1"
 )
 
+const (
+	testCreatorAddr = "aura1y4vu63zplwjaudtm25u5g3peugzevzgdmsely0"
+)
+
 func TestMsgServer(t *testing.T) {
 	k, ctx := setupKeeper(t)
 	msgServer := keeper.NewMsgServerImpl(&k)
 
 	t.Run("CreateKeyRotationSchedule - success", func(t *testing.T) {
 		msg := &cryptoproto.MsgCreateKeyRotationSchedule{
-			Creator:                 "creator",
+			Creator:                 testCreatorAddr,
 			KeyId:                   "test-key-1",
 			RotationIntervalSeconds: 86400,
 			Policy:                  nil,
@@ -31,7 +35,7 @@ func TestMsgServer(t *testing.T) {
 
 	t.Run("CreateKeyRotationSchedule - empty key_id", func(t *testing.T) {
 		msg := &cryptoproto.MsgCreateKeyRotationSchedule{
-			Creator:                 "creator",
+			Creator:                 testCreatorAddr,
 			KeyId:                   "",
 			RotationIntervalSeconds: 86400,
 		}
@@ -42,7 +46,7 @@ func TestMsgServer(t *testing.T) {
 
 	t.Run("CreateKeyRotationSchedule - invalid interval", func(t *testing.T) {
 		msg := &cryptoproto.MsgCreateKeyRotationSchedule{
-			Creator:                 "creator",
+			Creator:                 testCreatorAddr,
 			KeyId:                   "test-key",
 			RotationIntervalSeconds: 0,
 		}
@@ -54,7 +58,7 @@ func TestMsgServer(t *testing.T) {
 	t.Run("RotateKey - success", func(t *testing.T) {
 		publicKey := make([]byte, 32)
 		msg := &cryptoproto.MsgRotateKey{
-			Creator:      "creator",
+			Creator:      testCreatorAddr,
 			KeyId:        "test-key-2",
 			NewPublicKey: publicKey,
 		}
@@ -67,7 +71,7 @@ func TestMsgServer(t *testing.T) {
 
 	t.Run("RotateKey - empty key_id", func(t *testing.T) {
 		msg := &cryptoproto.MsgRotateKey{
-			Creator:      "creator",
+			Creator:      testCreatorAddr,
 			KeyId:        "",
 			NewPublicKey: []byte("key"),
 		}
@@ -78,7 +82,7 @@ func TestMsgServer(t *testing.T) {
 
 	t.Run("RotateKey - empty public key", func(t *testing.T) {
 		msg := &cryptoproto.MsgRotateKey{
-			Creator:      "creator",
+			Creator:      testCreatorAddr,
 			KeyId:        "test-key",
 			NewPublicKey: []byte{},
 		}
@@ -89,7 +93,7 @@ func TestMsgServer(t *testing.T) {
 
 	t.Run("CreateThresholdScheme - success", func(t *testing.T) {
 		msg := &cryptoproto.MsgCreateThresholdScheme{
-			Creator:           "creator",
+			Creator:           testCreatorAddr,
 			Threshold:         2,
 			TotalParticipants: 3,
 			ParticipantIds:    []string{"p1", "p2", "p3"},
@@ -104,7 +108,7 @@ func TestMsgServer(t *testing.T) {
 
 	t.Run("CreateThresholdScheme - invalid threshold", func(t *testing.T) {
 		msg := &cryptoproto.MsgCreateThresholdScheme{
-			Creator:           "creator",
+			Creator:           testCreatorAddr,
 			Threshold:         0,
 			TotalParticipants: 3,
 			ParticipantIds:    []string{"p1", "p2", "p3"},
@@ -117,7 +121,7 @@ func TestMsgServer(t *testing.T) {
 
 	t.Run("CreateThresholdScheme - threshold > participants", func(t *testing.T) {
 		msg := &cryptoproto.MsgCreateThresholdScheme{
-			Creator:           "creator",
+			Creator:           testCreatorAddr,
 			Threshold:         5,
 			TotalParticipants: 3,
 			ParticipantIds:    []string{"p1", "p2", "p3"},
@@ -130,7 +134,7 @@ func TestMsgServer(t *testing.T) {
 
 	t.Run("CreateThresholdScheme - mismatched participant count", func(t *testing.T) {
 		msg := &cryptoproto.MsgCreateThresholdScheme{
-			Creator:           "creator",
+			Creator:           testCreatorAddr,
 			Threshold:         2,
 			TotalParticipants: 5,
 			ParticipantIds:    []string{"p1", "p2", "p3"},
@@ -144,7 +148,7 @@ func TestMsgServer(t *testing.T) {
 	t.Run("SubmitThresholdSignatureShare - success", func(t *testing.T) {
 		// First create a scheme
 		createMsg := &cryptoproto.MsgCreateThresholdScheme{
-			Creator:           "creator",
+			Creator:           testCreatorAddr,
 			Threshold:         2,
 			TotalParticipants: 3,
 			ParticipantIds:    []string{"p1", "p2", "p3"},
@@ -193,7 +197,7 @@ func TestMsgServer(t *testing.T) {
 
 	t.Run("RegisterZKProofCircuit - not implemented", func(t *testing.T) {
 		msg := &cryptoproto.MsgRegisterZKProofCircuit{
-			Creator:          "creator",
+			Creator:          testCreatorAddr,
 			CircuitId:        "circuit-1",
 			ProofType:        cryptoproto.ZKProofType_ZK_PROOF_TYPE_GROTH16,
 			PublicParameters: make([]byte, 32),
@@ -206,7 +210,7 @@ func TestMsgServer(t *testing.T) {
 
 	t.Run("RegisterZKProofCircuit - empty circuit_id", func(t *testing.T) {
 		msg := &cryptoproto.MsgRegisterZKProofCircuit{
-			Creator:          "creator",
+			Creator:          testCreatorAddr,
 			CircuitId:        "",
 			ProofType:        cryptoproto.ZKProofType_ZK_PROOF_TYPE_GROTH16,
 			PublicParameters: make([]byte, 32),
@@ -219,7 +223,7 @@ func TestMsgServer(t *testing.T) {
 
 	t.Run("RegisterZKProofCircuit - empty verification key", func(t *testing.T) {
 		msg := &cryptoproto.MsgRegisterZKProofCircuit{
-			Creator:          "creator",
+			Creator:          testCreatorAddr,
 			CircuitId:        "circuit-1",
 			ProofType:        cryptoproto.ZKProofType_ZK_PROOF_TYPE_GROTH16,
 			PublicParameters: make([]byte, 32),
@@ -268,7 +272,7 @@ func TestMsgServer(t *testing.T) {
 
 	t.Run("RegisterSecureEnclave - success", func(t *testing.T) {
 		msg := &cryptoproto.MsgRegisterSecureEnclave{
-			Creator:         "creator",
+			Creator:         testCreatorAddr,
 			EnclaveType:     cryptoproto.SecureEnclaveType_SECURE_ENCLAVE_TYPE_SGX,
 			AttestationData: make([]byte, 432),
 			EnclaveMetadata: map[string]string{"version": "1.0"},
@@ -281,7 +285,7 @@ func TestMsgServer(t *testing.T) {
 
 	t.Run("RegisterSecureEnclave - empty attestation", func(t *testing.T) {
 		msg := &cryptoproto.MsgRegisterSecureEnclave{
-			Creator:         "creator",
+			Creator:         testCreatorAddr,
 			EnclaveType:     cryptoproto.SecureEnclaveType_SECURE_ENCLAVE_TYPE_SGX,
 			AttestationData: []byte{},
 			EnclaveMetadata: nil,
@@ -294,7 +298,7 @@ func TestMsgServer(t *testing.T) {
 	t.Run("GenerateQuantumResistantKey - success", func(t *testing.T) {
 		expiresAt := time.Now().Add(365 * 24 * time.Hour)
 		msg := &cryptoproto.MsgGenerateQuantumResistantKey{
-			Creator:   "creator",
+			Creator:   testCreatorAddr,
 			Algorithm: cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_DILITHIUM,
 			ExpiresAt: timestamppb.New(expiresAt),
 		}
@@ -307,7 +311,7 @@ func TestMsgServer(t *testing.T) {
 
 	t.Run("GenerateQuantumResistantKey - nil expires_at", func(t *testing.T) {
 		msg := &cryptoproto.MsgGenerateQuantumResistantKey{
-			Creator:   "creator",
+			Creator:   testCreatorAddr,
 			Algorithm: cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_KYBER,
 			ExpiresAt: nil,
 		}
@@ -321,7 +325,7 @@ func TestMsgServer(t *testing.T) {
 		hash := make([]byte, 32)
 		expiresAt := time.Now().Add(365 * 24 * time.Hour)
 		msg := &cryptoproto.MsgAddCertificatePin{
-			Creator:           "creator",
+			Creator:           testCreatorAddr,
 			Hostname:          "test.example.com",
 			CertificateHashes: [][]byte{hash},
 			PinType:           cryptoproto.CertificatePinType_CERTIFICATE_PIN_TYPE_SPKI,
@@ -336,7 +340,7 @@ func TestMsgServer(t *testing.T) {
 	t.Run("AddCertificatePin - empty hostname", func(t *testing.T) {
 		hash := make([]byte, 32)
 		msg := &cryptoproto.MsgAddCertificatePin{
-			Creator:           "creator",
+			Creator:           testCreatorAddr,
 			Hostname:          "",
 			CertificateHashes: [][]byte{hash},
 			PinType:           cryptoproto.CertificatePinType_CERTIFICATE_PIN_TYPE_SPKI,
@@ -348,7 +352,7 @@ func TestMsgServer(t *testing.T) {
 
 	t.Run("AddCertificatePin - empty hashes", func(t *testing.T) {
 		msg := &cryptoproto.MsgAddCertificatePin{
-			Creator:           "creator",
+			Creator:           testCreatorAddr,
 			Hostname:          "test.com",
 			CertificateHashes: [][]byte{},
 			PinType:           cryptoproto.CertificatePinType_CERTIFICATE_PIN_TYPE_SPKI,
@@ -361,7 +365,7 @@ func TestMsgServer(t *testing.T) {
 	t.Run("AddCertificatePin - nil expires_at", func(t *testing.T) {
 		hash := make([]byte, 32)
 		msg := &cryptoproto.MsgAddCertificatePin{
-			Creator:           "creator",
+			Creator:           testCreatorAddr,
 			Hostname:          "test2.example.com",
 			CertificateHashes: [][]byte{hash},
 			PinType:           cryptoproto.CertificatePinType_CERTIFICATE_PIN_TYPE_SPKI,
