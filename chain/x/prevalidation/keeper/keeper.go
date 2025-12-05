@@ -11,6 +11,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/aequitas/aura/chain/x/prevalidation/types"
+	pb "github.com/aequitas/aura/proto/aura/prevalidation/v1beta1"
 )
 
 type Keeper struct {
@@ -36,19 +37,24 @@ func NewKeeper(cdc codec.BinaryCodec, storeKey storetypes.StoreKey) *Keeper {
 }
 
 // GetParams returns the current parameters
-func (k *Keeper) GetParams(ctx sdk.Context) *types.Params {
+func (k *Keeper) GetParams(ctx sdk.Context) (*pb.Params, error) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get([]byte("params"))
 	if bz == nil {
-		return types.DefaultParams()
+		return types.DefaultParams(), nil
 	}
-	var params types.Params
-	k.cdc.MustUnmarshal(bz, &params)
-	return &params
+	var params pb.Params
+	if err := k.cdc.Unmarshal(bz, &params); err != nil {
+		return nil, err
+	}
+	return &params, nil
 }
 
 // SetParams sets the parameters
-func (k *Keeper) SetParams(ctx sdk.Context, params *types.Params) error {
+func (k *Keeper) SetParams(ctx sdk.Context, params *pb.Params) error {
+	if params == nil {
+		return fmt.Errorf("params cannot be nil")
+	}
 	store := ctx.KVStore(k.storeKey)
 	bz := k.cdc.MustMarshal(params)
 	store.Set([]byte("params"), bz)
@@ -259,7 +265,10 @@ func (k *Keeper) Logger(ctx sdk.Context) log.Logger {
 
 // RunScheduler runs scheduled pre-validation tasks
 func (k *Keeper) RunScheduler(ctx sdk.Context) error {
-	params := k.GetParams(ctx)
+	params, err := k.GetParams(ctx)
+	if err != nil {
+		return err
+	}
 	if params == nil || !params.Enabled {
 		return types.ErrSchedulerDisabled
 	}
@@ -351,7 +360,10 @@ func (k *Keeper) CleanupExpiredTransactions(ctx sdk.Context) error {
 
 // UpdateMetrics updates prevalidation metrics
 func (k *Keeper) UpdateMetrics(ctx sdk.Context) error {
-	params := k.GetParams(ctx)
+	params, err := k.GetParams(ctx)
+	if err != nil {
+		return err
+	}
 	if params == nil || !params.MetricsEnabled {
 		return nil
 	}
@@ -393,4 +405,43 @@ func (k *Keeper) UpdateMetrics(ctx sdk.Context) error {
 	// telemetry.SetGauge(float32(pendingCount), "prevalidation", "pending_count")
 
 	return nil
+}
+
+// GetMetrics returns the current prevalidation metrics
+func (k *Keeper) GetMetrics(ctx sdk.Context) *pb.PreValidationMetrics {
+	// In production, retrieve actual metrics from state
+	// For now, return empty metrics
+	return &pb.PreValidationMetrics{
+		TotalPreValidations:   0,
+		TotalExecuted:         0,
+		TotalExpired:          0,
+		TotalCacheHits:        0,
+		TotalCacheMisses:      0,
+		OverallCacheHitRate:   0.0,
+		AvgTimeSavingsMs:      0.0,
+		TotalTimeSavedMs:      0,
+		TotalEnergySavedKwh:   0.0,
+		MetricsByType:         make(map[string]*pb.TypeMetrics),
+		CurrentHour:           nil,
+		Last_24Hours:          []*pb.HourlyMetrics{},
+		ControlGroup:          nil,
+	}
+}
+
+// GetTypeMetrics returns metrics for a specific transaction type
+func (k *Keeper) GetTypeMetrics(ctx sdk.Context, txType pb.TransactionType) *pb.TypeMetrics {
+	// In production, retrieve actual metrics from state
+	// For now, return empty metrics
+	return &pb.TypeMetrics{
+		TxType:                txType,
+		TotalPreValidated:     0,
+		TotalExecuted:         0,
+		TotalExpired:          0,
+		CacheHits:             0,
+		CacheMisses:           0,
+		CacheHitRate:          0.0,
+		AvgTimeSavingsMs:      0.0,
+		AvgExecutionTimeMs:    0.0,
+		AvgValidationTimeMs:   0.0,
+	}
 }

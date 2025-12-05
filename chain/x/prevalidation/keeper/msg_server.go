@@ -6,83 +6,23 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/aequitas/aura/chain/x/prevalidation/types"
-)
-
-// Local stub types for messages until proto is properly defined
-type MsgServer interface{}
-
-// Stub message types
-type (
-	MsgPreValidateTransaction struct {
-		Sender    string
-		Recipient string
-		Amount    string
-		Data      []byte
-		Nonce     uint64
-		Signature []byte
-	}
-
-	MsgPreValidateTransactionResponse struct {
-		Valid       bool
-		GasEstimate uint64
-		TxHash      string
-	}
-
-	MsgBatchPreValidate struct {
-		Transactions []*MsgPreValidateTransaction
-	}
-
-	MsgBatchPreValidateResponse struct {
-		Results []*ValidationResult
-	}
-
-	MsgUpdateParams struct {
-		Params *types.Params
-	}
-
-	MsgUpdateParamsResponse struct{}
-
-	MsgSimulateTransaction struct {
-		Sender    string
-		Recipient string
-		Amount    string
-		Data      []byte
-		Nonce     uint64
-	}
-
-	MsgSimulateTransactionResponse struct {
-		Success  bool
-		GasUsed  uint64
-		GasLimit uint64
-		Error    string
-	}
-
-	MsgCancelPreValidation struct {
-		Sender string
-		TxHash string
-	}
-
-	MsgCancelPreValidationResponse struct{}
-
-	ValidationResult struct {
-		TxHash      string
-		Valid       bool
-		GasEstimate uint64
-		Error       string
-	}
+	pb "github.com/aequitas/aura/proto/aura/prevalidation/v1beta1"
 )
 
 type msgServer struct {
+	pb.UnimplementedMsgServer
 	keeper *Keeper
 }
 
 // NewMsgServerImpl returns an implementation of the MsgServer interface
-func NewMsgServerImpl(keeper *Keeper) MsgServer {
+func NewMsgServerImpl(keeper *Keeper) pb.MsgServer {
 	return &msgServer{keeper: keeper}
 }
 
+var _ pb.MsgServer = (*msgServer)(nil)
+
 // PreValidateTransaction pre-validates a transaction
-func (ms msgServer) PreValidateTransaction(goCtx context.Context, msg *MsgPreValidateTransaction) (*MsgPreValidateTransactionResponse, error) {
+func (ms msgServer) PreValidateTransaction(goCtx context.Context, msg *pb.MsgPreValidateTransaction) (*pb.MsgPreValidateTransactionResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	// Convert proto message to internal transaction type
@@ -123,6 +63,9 @@ func (ms msgServer) PreValidateTransaction(goCtx context.Context, msg *MsgPreVal
 		return nil, err
 	}
 
+	// Generate transaction hash
+	txHash := ms.keeper.GetTransactionHash(tx)
+
 	// Emit event
 	ctx.EventManager().EmitEvent(sdk.NewEvent(
 		"prevalidate_transaction",
@@ -130,20 +73,22 @@ func (ms msgServer) PreValidateTransaction(goCtx context.Context, msg *MsgPreVal
 		sdk.NewAttribute("recipient", tx.Recipient),
 		sdk.NewAttribute("amount", tx.Amount),
 		sdk.NewAttribute("gas_estimate", fmt.Sprintf("%d", gasEstimate)),
+		sdk.NewAttribute("tx_hash", txHash),
 	))
 
-	return &MsgPreValidateTransactionResponse{
-		Valid:       true,
-		GasEstimate: gasEstimate,
-		TxHash:      ms.keeper.GetTransactionHash(tx),
+	return &pb.MsgPreValidateTransactionResponse{
+		Valid:            true,
+		GasEstimate:      gasEstimate,
+		TxHash:           txHash,
+		PreValidationId:  txHash, // Use tx hash as pre-validation ID
 	}, nil
 }
 
 // BatchPreValidate pre-validates multiple transactions
-func (ms msgServer) BatchPreValidate(goCtx context.Context, msg *MsgBatchPreValidate) (*MsgBatchPreValidateResponse, error) {
+func (ms msgServer) BatchPreValidate(goCtx context.Context, msg *pb.MsgBatchPreValidate) (*pb.MsgBatchPreValidateResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	results := make([]*ValidationResult, len(msg.Transactions))
+	results := make([]*pb.ValidationResult, len(msg.Transactions))
 
 	for i, txMsg := range msg.Transactions {
 		tx := types.Transaction{
@@ -155,11 +100,13 @@ func (ms msgServer) BatchPreValidate(goCtx context.Context, msg *MsgBatchPreVali
 			Signature: txMsg.Signature,
 		}
 
+		txHash := ms.keeper.GetTransactionHash(tx)
 		valid, err := ms.keeper.ValidateTransaction(ctx, tx)
-		result := &ValidationResult{
-			TxHash:      ms.keeper.GetTransactionHash(tx),
-			Valid:       valid,
-			GasEstimate: ms.keeper.EstimateGas(ctx, tx),
+		result := &pb.ValidationResult{
+			TxHash:          txHash,
+			Valid:           valid,
+			GasEstimate:     ms.keeper.EstimateGas(ctx, tx),
+			PreValidationId: txHash,
 		}
 
 		if err != nil {
@@ -175,32 +122,32 @@ func (ms msgServer) BatchPreValidate(goCtx context.Context, msg *MsgBatchPreVali
 		results[i] = result
 	}
 
-	return &MsgBatchPreValidateResponse{
+	return &pb.MsgBatchPreValidateResponse{
 		Results: results,
 	}, nil
 }
 
 // UpdateParams updates module parameters
-func (ms msgServer) UpdateParams(goCtx context.Context, msg *MsgUpdateParams) (*MsgUpdateParamsResponse, error) {
+func (ms msgServer) UpdateParams(goCtx context.Context, msg *pb.MsgUpdateParams) (*pb.MsgUpdateParamsResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	// In production, verify authority
-	params := msg.Params
-
-	if err := ms.keeper.SetParams(ctx, params); err != nil {
+	// In production, verify authority matches governance module address
+	// For now, accept the parameters
+	if err := ms.keeper.SetParams(ctx, msg.Params); err != nil {
 		return nil, err
 	}
 
 	ctx.EventManager().EmitEvent(sdk.NewEvent(
 		"params_updated",
 		sdk.NewAttribute("module", "prevalidation"),
+		sdk.NewAttribute("authority", msg.Authority),
 	))
 
-	return &MsgUpdateParamsResponse{}, nil
+	return &pb.MsgUpdateParamsResponse{}, nil
 }
 
 // SimulateTransaction simulates a transaction without executing it
-func (ms msgServer) SimulateTransaction(goCtx context.Context, msg *MsgSimulateTransaction) (*MsgSimulateTransactionResponse, error) {
+func (ms msgServer) SimulateTransaction(goCtx context.Context, msg *pb.MsgSimulateTransaction) (*pb.MsgSimulateTransactionResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	tx := types.Transaction{
@@ -215,7 +162,7 @@ func (ms msgServer) SimulateTransaction(goCtx context.Context, msg *MsgSimulateT
 	gasUsed := ms.keeper.EstimateGas(ctx, tx)
 	valid, err := ms.keeper.ValidateTransaction(ctx, tx)
 
-	response := &MsgSimulateTransactionResponse{
+	response := &pb.MsgSimulateTransactionResponse{
 		Success:  valid && err == nil,
 		GasUsed:  gasUsed,
 		GasLimit: gasUsed + (gasUsed / 10), // Add 10% buffer
@@ -235,7 +182,7 @@ func (ms msgServer) SimulateTransaction(goCtx context.Context, msg *MsgSimulateT
 }
 
 // CancelPreValidation cancels a pre-validated transaction
-func (ms msgServer) CancelPreValidation(goCtx context.Context, msg *MsgCancelPreValidation) (*MsgCancelPreValidationResponse, error) {
+func (ms msgServer) CancelPreValidation(goCtx context.Context, msg *pb.MsgCancelPreValidation) (*pb.MsgCancelPreValidationResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	// Remove from mempool
@@ -247,5 +194,55 @@ func (ms msgServer) CancelPreValidation(goCtx context.Context, msg *MsgCancelPre
 		sdk.NewAttribute("sender", msg.Sender),
 	))
 
-	return &MsgCancelPreValidationResponse{}, nil
+	return &pb.MsgCancelPreValidationResponse{}, nil
+}
+
+// CreateTemplate creates a new validation template
+func (ms msgServer) CreateTemplate(goCtx context.Context, msg *pb.MsgCreateTemplate) (*pb.MsgCreateTemplateResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// Generate template ID from hash of name and creator
+	templateID := fmt.Sprintf("%s-%s", msg.Name, msg.Creator[:8])
+
+	// Create template (would store in state in production)
+	ctx.EventManager().EmitEvent(sdk.NewEvent(
+		"template_created",
+		sdk.NewAttribute("template_id", templateID),
+		sdk.NewAttribute("creator", msg.Creator),
+		sdk.NewAttribute("name", msg.Name),
+		sdk.NewAttribute("tx_type", msg.TxType.String()),
+	))
+
+	return &pb.MsgCreateTemplateResponse{
+		TemplateId: templateID,
+	}, nil
+}
+
+// UpdateTemplate updates an existing validation template
+func (ms msgServer) UpdateTemplate(goCtx context.Context, msg *pb.MsgUpdateTemplate) (*pb.MsgUpdateTemplateResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// Update template (would update state in production)
+	ctx.EventManager().EmitEvent(sdk.NewEvent(
+		"template_updated",
+		sdk.NewAttribute("template_id", msg.TemplateId),
+		sdk.NewAttribute("updater", msg.Updater),
+		sdk.NewAttribute("name", msg.Name),
+	))
+
+	return &pb.MsgUpdateTemplateResponse{}, nil
+}
+
+// DeactivateTemplate deactivates a validation template
+func (ms msgServer) DeactivateTemplate(goCtx context.Context, msg *pb.MsgDeactivateTemplate) (*pb.MsgDeactivateTemplateResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// Deactivate template (would update state in production)
+	ctx.EventManager().EmitEvent(sdk.NewEvent(
+		"template_deactivated",
+		sdk.NewAttribute("template_id", msg.TemplateId),
+		sdk.NewAttribute("deactivator", msg.Deactivator),
+	))
+
+	return &pb.MsgDeactivateTemplateResponse{}, nil
 }

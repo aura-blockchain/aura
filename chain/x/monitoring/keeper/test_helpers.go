@@ -72,3 +72,21 @@ func (s storeServiceWrapper) OpenKVStore(ctx context.Context) storetypes.KVStore
 func NewStoreServiceWrapper(key storetypes.StoreKey) storeServiceWrapper {
 	return storeServiceWrapper{key: key}
 }
+
+// TestKeeperWithContext wraps Keeper and Context for tests that need both
+type TestKeeperWithContext struct {
+	*Keeper
+	Ctx sdk.Context
+}
+
+// Close is a no-op for test cleanup compatibility
+func (tk *TestKeeperWithContext) Close() {}
+
+// SetupTestKeeperWithContext creates a test keeper wrapper for tests expecting Close()
+func SetupTestKeeperWithContext(t *testing.T) *TestKeeperWithContext {
+	k, ctx := NewTestKeeper(t)
+	return &TestKeeperWithContext{
+		Keeper: &k,
+		Ctx:    ctx,
+	}
+}

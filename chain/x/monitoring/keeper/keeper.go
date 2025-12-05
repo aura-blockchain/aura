@@ -749,11 +749,185 @@ func (k Keeper) SetExplorerIntegration(ctx context.Context, integration *types.E
 }
 
 // ============================================================================
+// Log Aggregation Methods
+// ============================================================================
+
+// LogEntry creates and stores a log entry with distributed tracing support
+// Signature: LogEntry(ctx, level, module, message, fields, traceID, spanID)
+func (k Keeper) LogEntry(ctx context.Context, level types.LogLevel, module string, message string, fields map[string]interface{}, traceID string, spanID string) error {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
+	// Generate unique log ID with timestamp for ordering
+	logID := fmt.Sprintf("log_%d_%d", sdkCtx.BlockTime().UnixNano(), sdkCtx.BlockHeight())
+
+	entry := &types.LogEntry{
+		ID:        logID,
+		Level:     level,
+		Module:    module,
+		Message:   message,
+		Fields:    fields,
+		Timestamp: sdkCtx.BlockTime(),
+		TraceID:   traceID,
+		SpanID:    spanID,
+	}
+
+	return k.SetLogEntry(ctx, entry)
+}
+
+// GetLogs retrieves log entries filtered by module with pagination limit
+func (k Keeper) GetLogs(ctx context.Context, module string, limit int) ([]*types.LogEntry, error) {
+	var logs []*types.LogEntry
+	count := 0
+
+	err := k.IterateLogEntries(ctx, func(entry *types.LogEntry) bool {
+		if module == "" || entry.Module == module {
+			logs = append(logs, entry)
+			count++
+			if limit > 0 && count >= limit {
+				return true // Stop iteration
+			}
+		}
+		return false
+	})
+
+	return logs, err
+}
+
+// GetErrorLogs retrieves only error-level log entries with pagination limit
+func (k Keeper) GetErrorLogs(ctx context.Context, limit int) ([]*types.LogEntry, error) {
+	var errorLogs []*types.LogEntry
+	count := 0
+
+	err := k.IterateLogEntries(ctx, func(entry *types.LogEntry) bool {
+		if entry.Level == types.LogLevelError || entry.Level == types.LogLevelFatal {
+			errorLogs = append(errorLogs, entry)
+			count++
+			if limit > 0 && count >= limit {
+				return true // Stop iteration
+			}
+		}
+		return false
+	})
+
+	return errorLogs, err
+}
+
+// GetLogsByTraceID retrieves all log entries for a specific distributed trace
+func (k Keeper) GetLogsByTraceID(ctx context.Context, traceID string) ([]*types.LogEntry, error) {
+	var tracedLogs []*types.LogEntry
+
+	err := k.IterateLogEntries(ctx, func(entry *types.LogEntry) bool {
+		if entry.TraceID == traceID {
+			tracedLogs = append(tracedLogs, entry)
+		}
+		return false
+	})
+
+	return tracedLogs, err
+}
+
+// ============================================================================
+// Failed Transaction Pattern Analysis Methods
+// ============================================================================
+
+// RecordFailedTransaction records a failed transaction and updates pattern tracking
+// Signature: RecordFailedTransaction(ctx, tx, failureReason)
+func (k Keeper) RecordFailedTransaction(ctx context.Context, tx *types.TransactionMonitorData, failureReason string) error {
+	if tx == nil {
+		return types.ErrInvalidTransaction
+	}
+
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
+	// Store the failed transaction first
+	if err := k.SetTransaction(ctx, tx); err != nil {
+		return err
+	}
+
+	// Use failure reason as pattern ID for grouping
+	patternID := failureReason
+
+	// Try to get existing pattern
+	pattern, err := k.GetFailedTxPattern(ctx, patternID)
+	if err != nil {
+		// Create new pattern
+		pattern = &types.FailedTransactionPattern{
+			ID:                patternID,
+			Pattern:           failureReason, // Use failure reason as pattern identifier
+			FailureReason:     failureReason,
+			Occurrences:       1,
+			FirstSeen:         sdkCtx.BlockTime(),
+			LastSeen:          sdkCtx.BlockTime(),
+			AffectedAddresses: []string{tx.Sender}, // Track affected sender addresses
+			Severity:          types.SeverityMedium,
+			Metadata: map[string]interface{}{
+				"module":  tx.Module,
+				"tx_hash": tx.TxHash,
+			},
+		}
+	} else {
+		// Update existing pattern
+		pattern.Occurrences++
+		pattern.LastSeen = sdkCtx.BlockTime()
+
+		// Add sender to affected addresses if not already present
+		found := false
+		for _, addr := range pattern.AffectedAddresses {
+			if addr == tx.Sender {
+				found = true
+				break
+			}
+		}
+		if !found {
+			pattern.AffectedAddresses = append(pattern.AffectedAddresses, tx.Sender)
+		}
+
+		// Limit affected addresses to last 100 to prevent unbounded growth
+		if len(pattern.AffectedAddresses) > 100 {
+			pattern.AffectedAddresses = pattern.AffectedAddresses[len(pattern.AffectedAddresses)-100:]
+		}
+
+		// Update severity based on occurrences
+		if pattern.Occurrences > 100 {
+			pattern.Severity = types.SeverityCritical
+		} else if pattern.Occurrences > 50 {
+			pattern.Severity = types.SeverityHigh
+		}
+	}
+
+	return k.SetFailedTxPattern(ctx, pattern)
+}
+
+// GetFailedTransactionPatterns retrieves all failed transaction patterns
+// Returns a slice of patterns, not a map
+func (k Keeper) GetFailedTransactionPatterns(ctx context.Context) ([]*types.FailedTransactionPattern, error) {
+	return k.GetAllFailedTxPatterns(ctx)
+}
+
+// ============================================================================
 // Helper Functions
 // ============================================================================
 
-// generateID generates a unique ID with a prefix using block time for consensus safety
+// Counter key for generating unique IDs within a block
+var CounterKeyPrefix = []byte{0x0F}
+
+// generateID generates a unique ID with a prefix using block time and counter for consensus safety
 func (k Keeper) generateID(ctx context.Context, prefix string) string {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	return fmt.Sprintf("%s_%d", prefix, sdkCtx.BlockTime().UnixNano())
+
+	// Get and increment counter for this block to ensure uniqueness
+	store := k.storeService.OpenKVStore(ctx)
+	counterKey := append(CounterKeyPrefix, []byte(prefix)...)
+
+	var counter uint64
+	bz, err := store.Get(counterKey)
+	if err == nil && bz != nil {
+		counter = sdk.BigEndianToUint64(bz)
+	}
+	counter++
+
+	// Store updated counter
+	_ = store.Set(counterKey, sdk.Uint64ToBigEndian(counter))
+
+	return fmt.Sprintf("%s_%d_%d", prefix, sdkCtx.BlockTime().UnixNano(), counter)
 }

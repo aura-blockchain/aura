@@ -1,0 +1,108 @@
+syntax = "proto3";
+package aura.incidentresponse.v1beta1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/incidentresponse/v1beta1";
+
+// Query defines the gRPC query service for the incidentresponse module
+service Query {
+  // GetIncident returns incident details
+  rpc GetIncident(QueryGetIncidentRequest) returns (QueryGetIncidentResponse) {
+    option (google.api.http).get = "/aura/incidentresponse/v1beta1/incident/{incident_id}";
+  }
+
+  // GetChainPauseState returns current chain pause state
+  rpc GetChainPauseState(QueryGetChainPauseStateRequest) returns (QueryGetChainPauseStateResponse) {
+    option (google.api.http).get = "/aura/incidentresponse/v1beta1/pause_state";
+  }
+
+  // CheckWalletLimit checks if an amount is within wallet limits
+  rpc CheckWalletLimit(QueryCheckWalletLimitRequest) returns (QueryCheckWalletLimitResponse) {
+    option (google.api.http).get = "/aura/incidentresponse/v1beta1/wallet_limit/{address}";
+  }
+
+  // GetParams returns module parameters
+  rpc GetParams(QueryGetParamsRequest) returns (QueryGetParamsResponse) {
+    option (google.api.http).get = "/aura/incidentresponse/v1beta1/params";
+  }
+}
+
+// QueryGetIncidentRequest is the request for getting an incident
+message QueryGetIncidentRequest {
+  string incident_id = 1;
+}
+
+// QueryGetIncidentResponse is the response with incident details
+message QueryGetIncidentResponse {
+  Incident incident = 1;
+}
+
+// Incident represents a security incident
+message Incident {
+  string id = 1;
+  string title = 2;
+  string description = 3;
+  string severity = 4;
+  string status = 5;
+  string reported_by = 6;
+  google.protobuf.Timestamp reported_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+  google.protobuf.Timestamp resolved_at = 9;
+  repeated string affected_systems = 10;
+  repeated string response_team = 11;
+}
+
+// QueryGetChainPauseStateRequest is the request for pause state
+message QueryGetChainPauseStateRequest {}
+
+// QueryGetChainPauseStateResponse is the response with pause state
+message QueryGetChainPauseStateResponse {
+  ChainPauseState pause_state = 1;
+}
+
+// ChainPauseState represents the pause state of the chain
+message ChainPauseState {
+  bool is_paused = 1;
+  string pause_level = 2;
+  google.protobuf.Timestamp paused_at = 3;
+  string paused_by = 4;
+  string reason = 5;
+  string incident_id = 6;
+  repeated string paused_modules = 7;
+  google.protobuf.Timestamp estimated_resume = 8;
+}
+
+// QueryCheckWalletLimitRequest is the request for checking wallet limits
+message QueryCheckWalletLimitRequest {
+  string address = 1;
+  string amount = 2;
+  string current_balance = 3;
+}
+
+// QueryCheckWalletLimitResponse is the response for wallet limit check
+message QueryCheckWalletLimitResponse {
+  bool allowed = 1;
+  string reason = 2;
+}
+
+// QueryGetParamsRequest is the request for getting module parameters
+message QueryGetParamsRequest {}
+
+// QueryGetParamsResponse is the response with module parameters
+message QueryGetParamsResponse {
+  IncidentResponseParams params = 1;
+}
+
+// IncidentResponseParams represents the module parameters
+message IncidentResponseParams {
+  bool emergency_pause_enabled = 1;
+  repeated string pause_authorized_keys = 2;
+  uint32 pause_required_signers = 3;
+  google.protobuf.Duration max_pause_duration = 4;
+  bool hot_wallet_limits_enabled = 5;
+  string global_max_hot_wallet = 6;
+  string global_daily_limit = 7;
+}

@@ -36,7 +36,8 @@ func TestPrevalidationKeeperTestSuite(t *testing.T) {
 // Params Tests
 
 func (suite *PrevalidationKeeperTestSuite) TestGetParams() {
-	params := suite.keeper.GetParams(suite.ctx)
+	params, err := suite.keeper.GetParams(suite.ctx)
+	suite.Require().NoError(err)
 	suite.Require().NotNil(params)
 }
 
@@ -45,7 +46,8 @@ func (suite *PrevalidationKeeperTestSuite) TestSetParams() {
 	err := suite.keeper.SetParams(suite.ctx, params)
 	suite.Require().NoError(err)
 
-	retrieved := suite.keeper.GetParams(suite.ctx)
+	retrieved, err := suite.keeper.GetParams(suite.ctx)
+	suite.Require().NoError(err)
 
 	// Use proto.Equal to compare protobuf messages and avoid sizeCache differences
 	suite.Require().True(proto.Equal(params, retrieved), "params should be equal")

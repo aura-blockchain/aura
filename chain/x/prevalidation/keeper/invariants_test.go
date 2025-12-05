@@ -18,12 +18,13 @@ func TestInvariantsTestSuite(t *testing.T) {
 
 // Test params are valid
 func (suite *InvariantsTestSuite) TestParamsValid() {
-	params := suite.Keeper.GetParams(suite.SdkCtx)
+	params, err := suite.Keeper.GetParams(suite.SdkCtx)
+	suite.Require().NoError(err)
 	suite.Require().NotNil(params)
 
 	// Validate params
-	err := types.ValidateParams(params)
-	suite.Require().NoError(err, "default params should be valid")
+	validateErr := types.ValidateParams(params)
+	suite.Require().NoError(validateErr, "default params should be valid")
 }
 
 // Test params validation catches invalid values
@@ -45,7 +46,8 @@ func (suite *InvariantsTestSuite) TestParamsSetGet() {
 	err := suite.Keeper.SetParams(suite.SdkCtx, newParams)
 	suite.Require().NoError(err)
 
-	retrieved := suite.Keeper.GetParams(suite.SdkCtx)
+	retrieved, err := suite.Keeper.GetParams(suite.SdkCtx)
+	suite.Require().NoError(err)
 	suite.Require().Equal(newParams.Enabled, retrieved.Enabled)
 	suite.Require().Equal(newParams.MaxCacheSize, retrieved.MaxCacheSize)
 }

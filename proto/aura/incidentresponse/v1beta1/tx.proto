@@ -1,0 +1,158 @@
+syntax = "proto3";
+package aura.incidentresponse.v1beta1;
+
+import "google/api/annotations.proto";
+import "cosmos/msg/v1/msg.proto";
+import "google/protobuf/duration.proto";
+
+option go_package = "github.com/aequitas/aura/proto/aura/incidentresponse/v1beta1";
+
+// Msg defines the incidentresponse module's Msg service
+service Msg {
+  option (cosmos.msg.v1.service) = true;
+
+  // ReportIncident reports a new security incident
+  rpc ReportIncident(MsgReportIncident) returns (MsgReportIncidentResponse);
+
+  // UpdateIncidentStatus updates an incident's status
+  rpc UpdateIncidentStatus(MsgUpdateIncidentStatus) returns (MsgUpdateIncidentStatusResponse);
+
+  // RequestChainPause requests an emergency chain pause
+  rpc RequestChainPause(MsgRequestChainPause) returns (MsgRequestChainPauseResponse);
+
+  // ResumeChain resumes chain operations after pause
+  rpc ResumeChain(MsgResumeChain) returns (MsgResumeChainResponse);
+
+  // SetWalletLimits sets security limits for a hot wallet
+  rpc SetWalletLimits(MsgSetWalletLimits) returns (MsgSetWalletLimitsResponse);
+
+  // CreatePostMortem creates a post-incident analysis
+  rpc CreatePostMortem(MsgCreatePostMortem) returns (MsgCreatePostMortemResponse);
+
+  // TriggerBackup triggers a disaster recovery backup
+  rpc TriggerBackup(MsgTriggerBackup) returns (MsgTriggerBackupResponse);
+
+  // TriggerInsuranceClaim triggers an insurance claim
+  rpc TriggerInsuranceClaim(MsgTriggerInsuranceClaim) returns (MsgTriggerInsuranceClaimResponse);
+}
+
+// MsgReportIncident reports a new security incident
+message MsgReportIncident {
+  option (cosmos.msg.v1.signer) = "reported_by";
+
+  string title = 1;
+  string description = 2;
+  string severity = 3;
+  string reported_by = 4;
+  repeated string affected_systems = 5;
+}
+
+// MsgReportIncidentResponse is the response for reporting an incident
+message MsgReportIncidentResponse {
+  string incident_id = 1;
+}
+
+// MsgUpdateIncidentStatus updates an incident's status
+message MsgUpdateIncidentStatus {
+  option (cosmos.msg.v1.signer) = "updated_by";
+
+  string incident_id = 1;
+  string status = 2;
+  string updated_by = 3;
+  string notes = 4;
+}
+
+// MsgUpdateIncidentStatusResponse is the response for updating status
+message MsgUpdateIncidentStatusResponse {
+  bool success = 1;
+}
+
+// MsgRequestChainPause requests an emergency chain pause
+message MsgRequestChainPause {
+  option (cosmos.msg.v1.signer) = "requester";
+
+  string requester = 1;
+  string pause_level = 2;
+  string reason = 3;
+  string incident_id = 4;
+  google.protobuf.Duration duration = 5;
+}
+
+// MsgRequestChainPauseResponse is the response for pause request
+message MsgRequestChainPauseResponse {
+  bool success = 1;
+}
+
+// MsgResumeChain resumes chain operations after pause
+message MsgResumeChain {
+  option (cosmos.msg.v1.signer) = "resumed_by";
+
+  string resumed_by = 1;
+  string reason = 2;
+}
+
+// MsgResumeChainResponse is the response for resuming chain
+message MsgResumeChainResponse {
+  bool success = 1;
+}
+
+// MsgSetWalletLimits sets security limits for a hot wallet
+message MsgSetWalletLimits {
+  option (cosmos.msg.v1.signer) = "authority";
+
+  string authority = 1;
+  string address = 2;
+  string max_balance = 3;
+  string max_transaction_size = 4;
+  string daily_limit = 5;
+}
+
+// MsgSetWalletLimitsResponse is the response for setting limits
+message MsgSetWalletLimitsResponse {
+  bool success = 1;
+}
+
+// MsgCreatePostMortem creates a post-incident analysis
+message MsgCreatePostMortem {
+  option (cosmos.msg.v1.signer) = "created_by";
+
+  string incident_id = 1;
+  string created_by = 2;
+  string summary = 3;
+  string root_cause = 4;
+  string impact = 5;
+  string resolution = 6;
+  repeated string lessons_learned = 7;
+}
+
+// MsgCreatePostMortemResponse is the response for creating post-mortem
+message MsgCreatePostMortemResponse {
+  bool success = 1;
+}
+
+// MsgTriggerBackup triggers a disaster recovery backup
+message MsgTriggerBackup {
+  option (cosmos.msg.v1.signer) = "triggered_by";
+
+  string backup_type = 1;
+  string triggered_by = 2;
+}
+
+// MsgTriggerBackupResponse is the response for backup trigger
+message MsgTriggerBackupResponse {
+  string backup_id = 1;
+}
+
+// MsgTriggerInsuranceClaim triggers an insurance claim
+message MsgTriggerInsuranceClaim {
+  option (cosmos.msg.v1.signer) = "signers";
+
+  string incident_id = 1;
+  string amount = 2;
+  repeated string signers = 3;
+}
+
+// MsgTriggerInsuranceClaimResponse is the response for insurance claim
+message MsgTriggerInsuranceClaimResponse {
+  string claim_id = 1;
+}

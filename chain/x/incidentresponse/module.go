@@ -11,6 +11,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 
+	incidentresponsepb "github.com/aequitas/aura/proto/aura/incidentresponse/v1beta1"
 	"github.com/aequitas/aura/chain/x/incidentresponse/keeper"
 	"github.com/aequitas/aura/chain/x/incidentresponse/types"
 )
@@ -88,20 +89,9 @@ func (am AppModule) IsAppModule() {}
 
 // RegisterServices registers the module's message and query servers
 func (am AppModule) RegisterServices(cfg module.Configurator) {
-	// NOTE: Server registration is not enabled because this module uses manually-defined
-	// service interfaces in types/service.go rather than proto-generated gRPC services.
-	// The keeper implements msg_server.go and query_server.go using these manual types.
-	// This approach works for internal module operations but does not expose gRPC endpoints.
-	// To enable full gRPC services:
-	// 1. Create proto/aura/incidentresponse/v1beta1/tx.proto with service Msg definitions
-	// 2. Create proto/aura/incidentresponse/v1beta1/query.proto with service Query definitions
-	// 3. Run make proto-gen to generate gRPC code
-	// 4. Update keeper servers to use proto-generated request/response types
-	// 5. Remove types/service.go manual types
-	// 6. Uncomment registration below
-	//
-	// incidentresponsepb.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper))
-	// incidentresponsepb.RegisterQueryServer(cfg.QueryServer(), keeper.NewQueryServerImpl(am.keeper))
+	// Register proto-based gRPC services
+	incidentresponsepb.RegisterMsgServer(cfg.MsgServer(), keeper.NewProtoMsgServerImpl(am.keeper))
+	incidentresponsepb.RegisterQueryServer(cfg.QueryServer(), keeper.NewProtoQueryServerImpl(am.keeper))
 }
 
 // InitGenesis initializes module state from genesis
