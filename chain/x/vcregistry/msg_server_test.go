@@ -69,7 +69,9 @@ func TestMsgServerMintVCSyncsBlockMetadata(t *testing.T) {
 	}
 	require.NoError(t, k.SetVCPolicy(sdkCtx, policy))
 
-	holderAddr := "aura1holder"
+	// Generate valid bech32 address
+	holderAccAddr := sdk.AccAddress([]byte("holder______________")[:20])
+	holderAddr := holderAccAddr.String()
 	holderDID := "did:aura:holder"
 	require.NoError(t, k.RegisterDID(sdkCtx, holderDID, holderAddr, []*types.VerificationMethod{}, "meta"))
 
@@ -104,21 +106,28 @@ func TestMsgServerDisclosureFlowUpdatesIndices(t *testing.T) {
 	sdkCtx = sdkCtx.WithBlockTime(blockTime).WithBlockHeight(7)
 	k.SetCurrentTime(blockTime.Unix())
 	srv := keeper.NewMsgServer(k)
-	holder := "aura1attr"
+
+	// Generate valid bech32 addresses
+	holderAccAddr := sdk.AccAddress([]byte("attr________________")[:20])
+	holder := holderAccAddr.String()
+	issuerAccAddr := sdk.AccAddress([]byte("issuer______________")[:20])
+	issuer := issuerAccAddr.String()
+	verifierAccAddr := sdk.AccAddress([]byte("verifier____________")[:20])
+	verifier := verifierAccAddr.String()
 
 	// Create an attribute VC
 	_, err := srv.CreateAttributeVC(sdk.WrapSDKContext(sdkCtx), &vcregistrypb.MsgCreateAttributeVC{
 		Creator:        holder,
 		AttributeType:  vcregistrypb.AttributeType_ATTRIBUTE_TYPE_EMAIL,
 		EncryptedValue: []byte("cipher"),
-		Issuer:         "issuer",
+		Issuer:         issuer,
 	})
 	require.NoError(t, err)
 
 	// Create a disclosure request
 	reqResp, err := srv.CreateDisclosureRequest(sdk.WrapSDKContext(sdkCtx), &vcregistrypb.MsgCreateDisclosureRequest{
 		HolderAddress: holder,
-		Verifier:      "verifier1",
+		Verifier:      verifier,
 		VerifierName:  "Verifier One",
 		RequestedAttributes: []vcregistrypb.AttributeType{
 			vcregistrypb.AttributeType_ATTRIBUTE_TYPE_EMAIL,
