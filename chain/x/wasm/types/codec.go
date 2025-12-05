@@ -4,7 +4,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/msgservice"
 
 	wasmpb "github.com/aequitas/aura/proto/aura/wasm/v1beta1"
 )
@@ -41,8 +40,8 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 		&wasmpb.MsgUpdateParams{},
 	)
 
-	// Register the Msg service descriptor
-	msgservice.RegisterMsgServiceDesc(registry, &wasmpb.Msg_ServiceDesc)
+	// Note: msgservice.RegisterMsgServiceDesc is not needed when using RegisterServices
+	// The service registration happens in module.go via RegisterServices method
 }
 
 var (

@@ -40,7 +40,7 @@ func (suite *KeeperTestSuite) TestHandleDoubleSignSameVotes() {
 }
 
 func (suite *KeeperTestSuite) TestHandleDoubleSignTombstoned() {
-	validatorAddr := "auravaloper1doubletomb"
+	validatorAddr := newValAddr()
 
 	// Setup
 	err := suite.keeper.RegisterValidator(suite.ctx, validatorAddr, "hot", "cold", "region", "US", 37.0, -122.0, nil)
@@ -140,7 +140,7 @@ func (suite *KeeperTestSuite) TestHandleDowntimeNoViolation() {
 }
 
 func (suite *KeeperTestSuite) TestHandleDowntimeAlreadyJailed() {
-	validatorAddr := "auravaloper1jaileddowntime"
+	validatorAddr := newValAddr()
 
 	// Setup
 	err := suite.keeper.RegisterValidator(suite.ctx, validatorAddr, "hot", "cold", "region", "US", 37.0, -122.0, nil)
@@ -162,7 +162,7 @@ func (suite *KeeperTestSuite) TestHandleDowntimeAlreadyJailed() {
 }
 
 func (suite *KeeperTestSuite) TestHandleDowntimeTombstoned() {
-	validatorAddr := "auravaloper1tombdowntime"
+	validatorAddr := newValAddr()
 
 	// Setup
 	err := suite.keeper.RegisterValidator(suite.ctx, validatorAddr, "hot", "cold", "region", "US", 37.0, -122.0, nil)

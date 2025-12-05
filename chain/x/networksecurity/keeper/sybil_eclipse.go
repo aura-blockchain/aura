@@ -200,7 +200,7 @@ func (ed *EclipseDetector) DetectEclipse(peers []types.PeerInfo, trustedPeers []
 	if len(ipCounts) > 0 {
 		for subnet, count := range ipCounts {
 			concentration := float64(count) / float64(totalPeers) * 100
-			if concentration > 25.0 { // Max 25% from single /24 subnet
+			if concentration > 30.0 { // Max 30% from single /24 subnet
 				return true, fmt.Sprintf("excessive concentration from subnet %s: %.1f%%", subnet, concentration)
 			}
 		}

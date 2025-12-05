@@ -184,10 +184,10 @@ func (suite *MsgServerComprehensiveTestSuite) TestCreatePresentationEmptyVCList(
 
 	// Test creating presentation with no VCs
 	msg := &vcregistrypb.MsgCreatePresentation{
-		Creator:     "aura1holder123",
-		VcIds:       []string{},
-		Context:     &vcregistrypb.PresentationContext{Purpose: "test"},
-		ExpiryInSec: 300,
+		Creator:          "aura1holder123",
+		VcIds:            []string{},
+		Context:          &vcregistrypb.PresentationContext{ShowFullName: true},
+		ExpiresInSeconds: 300,
 	}
 
 	_, err := suite.msgServer.CreatePresentation(ctx, msg)
@@ -210,16 +210,16 @@ func (suite *MsgServerComprehensiveTestSuite) TestCreatePresentationSuccess() {
 
 	// Create presentation
 	presentMsg := &vcregistrypb.MsgCreatePresentation{
-		Creator:     "aura1holder123",
-		VcIds:       []string{mintResp.VcId},
-		Context:     &vcregistrypb.PresentationContext{Purpose: "identity verification"},
-		ExpiryInSec: 300,
+		Creator:          "aura1holder123",
+		VcIds:            []string{mintResp.VcId},
+		Context:          &vcregistrypb.PresentationContext{ShowFullName: true, ShowAge: true},
+		ExpiresInSeconds: 300,
 	}
 
 	resp, err := suite.msgServer.CreatePresentation(ctx, presentMsg)
 	suite.Require().NoError(err, "presentation creation should succeed")
 	suite.Require().NotEmpty(resp.PresentationId, "response should contain presentation ID")
-	suite.Require().NotEmpty(resp.QrCode, "response should contain QR code")
+	suite.Require().NotEmpty(resp.QrCodeData, "response should contain QR code")
 
 	// Verify presentation was stored
 	presentation, ok := suite.Keeper.GetPresentation(suite.SdkCtx, resp.PresentationId)
@@ -237,8 +237,8 @@ func (suite *MsgServerComprehensiveTestSuite) TestRegisterDIDSuccess() {
 
 	// Test successful DID registration
 	msg := &vcregistrypb.MsgRegisterDID{
-		Creator: "aura1controller",
-		Did:     "did:aura:testdid123",
+		Controller: "aura1controller",
+		Did:        "did:aura:testdid123",
 		VerificationMethods: []*vcregistrypb.VerificationMethod{
 			{
 				Id:        "key-1",
@@ -256,7 +256,7 @@ func (suite *MsgServerComprehensiveTestSuite) TestRegisterDIDSuccess() {
 	// Verify DID was created
 	didDoc, ok := suite.Keeper.GetDIDDocument(suite.SdkCtx, msg.Did)
 	suite.Require().True(ok, "DID should be retrievable")
-	suite.Require().Equal(msg.Creator, didDoc.Controller)
+	suite.Require().Equal(msg.Controller, didDoc.Controller)
 	suite.Require().Equal(msg.Did, didDoc.Did)
 	suite.Require().Len(didDoc.VerificationMethods, 1)
 }
@@ -266,8 +266,8 @@ func (suite *MsgServerComprehensiveTestSuite) TestRegisterDIDDuplicate() {
 
 	// Register a DID
 	msg := &vcregistrypb.MsgRegisterDID{
-		Creator: "aura1controller",
-		Did:     "did:aura:duplicate",
+		Controller: "aura1controller",
+		Did:        "did:aura:duplicate",
 		VerificationMethods: []*vcregistrypb.VerificationMethod{
 			{
 				Id:        "key-1",
@@ -294,7 +294,7 @@ func (suite *MsgServerComprehensiveTestSuite) TestCreateVCPolicySuccess() {
 	ctx := sdk.WrapSDKContext(suite.SdkCtx)
 
 	msg := &vcregistrypb.MsgCreateVCPolicy{
-		Creator:            suite.Keeper.Authority(),
+		Authority:          suite.Keeper.GetAuthority(),
 		VcTypeName:         "TestPolicy",
 		VcTypeEnum:         vcregistrypb.VCType_VC_TYPE_VERIFIED_HUMAN,
 		CsThreshold:        100,

@@ -220,8 +220,8 @@ func (suite *KeeperTestSuite) TestTriggerFailoverNoBackups() {
 }
 
 func (suite *KeeperTestSuite) TestTriggerFailoverInvalidBackup() {
-	validatorAddr := "auravaloper1invalidbackup"
-	backupAddr := "auravaloper1jailedbackup"
+	validatorAddr := newValAddr()
+	backupAddr := newValAddr()
 
 	// Setup with jailed backup
 	err := suite.keeper.RegisterValidator(suite.ctx, validatorAddr, "hot", "cold", "region", "US", 37.0, -122.0, []string{backupAddr})

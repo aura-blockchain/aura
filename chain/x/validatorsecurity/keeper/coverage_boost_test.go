@@ -11,11 +11,12 @@ func (suite *KeeperTestSuite) TestDecrementRegionCount() {
 	suite.Require().NoError(suite.keeper.SetParams(suite.ctx, params))
 
 	// Register validator to increment count
-	err := suite.keeper.RegisterValidator(suite.ctx, newValAddr(), "hot1", "cold1", "decrement-region", "US", 37.0, -122.0, nil)
+	validatorAddr := newValAddr()
+	err := suite.keeper.RegisterValidator(suite.ctx, validatorAddr, "hot1", "cold1", "decrement-region", "US", 37.0, -122.0, nil)
 	suite.Require().NoError(err)
 
-	// Now tombstone to trigger decrement
-	err = suite.keeper.TombstoneValidator(suite.ctx, newValAddr())
+	// Now tombstone to trigger decrement (use the same validator address)
+	err = suite.keeper.TombstoneValidator(suite.ctx, validatorAddr)
 	suite.Require().NoError(err)
 }
 

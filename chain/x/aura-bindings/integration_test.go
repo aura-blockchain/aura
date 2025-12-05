@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/suite"
 
@@ -36,7 +35,7 @@ func (s *IntegrationTestSuite) SetupTest() {
 	s.Require().NotNil(s.App.WasmKeeper, "wasm keeper should not be nil")
 
 	// Create context with proper block header (using NewUncachedContext for testing as in app_wasm_test.go)
-	s.Ctx = s.App.NewUncachedContext(true, sdk.NewBlockHeader())
+	s.Ctx = s.App.NewUncachedContext(true, tmproto.Header{})
 	s.MsgServer = keeper.NewMsgServerImpl(s.App.WasmKeeper)
 
 	// Set up creator account with funds

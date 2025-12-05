@@ -197,7 +197,7 @@ func (suite *KeeperTestSuite) TestTrackBlockSignMissed() {
 }
 
 func (suite *KeeperTestSuite) TestTrackBlockSignTombstoned() {
-	validatorAddr := "auravaloper1tracktomb"
+	validatorAddr := newValAddr()
 
 	// Setup
 	err := suite.keeper.RegisterValidator(suite.ctx, validatorAddr, "hot", "cold", "region", "US", 37.0, -122.0, nil)

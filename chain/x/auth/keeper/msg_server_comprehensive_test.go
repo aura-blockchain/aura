@@ -24,6 +24,15 @@ func (s *AuthMsgServerTestSuite) SetupTest() {
 	s.ctx = ctx
 	s.msgServer = NewMsgServerImpl(s.keeper)
 	s.fixtures = testutil.NewTestFixtures()
+
+	// Assign admin role to the first test address so tests can perform privileged operations
+	assignment := &authproto.RoleAssignment{
+		Address:  s.fixtures.Addresses[0].String(),
+		RoleName: "admin",
+		ExpiresAt: nil, // Never expires
+	}
+	err := s.keeper.SetRoleAssignment(s.ctx, assignment)
+	s.Require().NoError(err)
 }
 
 func TestAuthMsgServerTestSuite(t *testing.T) {
@@ -34,16 +43,16 @@ func TestAuthMsgServerTestSuite(t *testing.T) {
 func (s *AuthMsgServerTestSuite) TestCreateRole_Success() {
 	msg := &authproto.MsgCreateRole{
 		Creator:     s.fixtures.Addresses[0].String(),
-		Name:        "admin",
+		Name:        "customrole",
 		Permissions: []string{"read", "write", "delete"},
-		Description: "Administrator role",
+		Description: "Custom test role",
 	}
 
 	resp, err := s.msgServer.CreateRole(s.ctx, msg)
 	s.Require().NoError(err)
 	s.Require().NotNil(resp)
 	s.Require().NotNil(resp.Role)
-	s.Require().Equal("admin", resp.Role.Name)
+	s.Require().Equal("customrole", resp.Role.Name)
 }
 
 func (s *AuthMsgServerTestSuite) TestCreateRole_EmptyName() {
@@ -126,9 +135,22 @@ func (s *AuthMsgServerTestSuite) TestCreateMultisigWallet_InvalidThreshold() {
 }
 
 func (s *AuthMsgServerTestSuite) TestCreateMultisigProposal_Success() {
+	// First create a multisig wallet
+	walletMsg := &authproto.MsgCreateMultisigWallet{
+		Creator:    s.fixtures.Addresses[0].String(),
+		Signers:    []string{s.fixtures.Addresses[0].String(), s.fixtures.Addresses[1].String()},
+		Threshold:  1,
+		WalletType: authproto.WalletType_WALLET_TYPE_CUSTOM,
+	}
+	walletResp, err := s.msgServer.CreateMultisigWallet(s.ctx, walletMsg)
+	s.Require().NoError(err)
+	s.Require().NotNil(walletResp)
+	s.Require().NotNil(walletResp.Wallet)
+
+	// Now create a proposal for this wallet
 	msg := &authproto.MsgCreateMultisigProposal{
 		Proposer:         s.fixtures.Addresses[0].String(),
-		WalletId:         "wallet123",
+		WalletId:         walletResp.Wallet.Id,
 		Title:            "Test Proposal",
 		Description:      "Test Description",
 		Payload:          []byte("test payload"),
@@ -185,6 +207,17 @@ func (s *AuthMsgServerTestSuite) TestActivateEmergencyAdmin_Success() {
 }
 
 func (s *AuthMsgServerTestSuite) TestDeactivateEmergencyAdmin_Success() {
+	// First activate an emergency admin
+	activateMsg := &authproto.MsgActivateEmergencyAdmin{
+		Activator:        s.fixtures.Addresses[0].String(),
+		AdminAddress:     s.fixtures.Addresses[1].String(),
+		Privileges:       []string{"halt_chain"},
+		ExpiresInSeconds: 3600,
+	}
+	_, err := s.msgServer.ActivateEmergencyAdmin(s.ctx, activateMsg)
+	s.Require().NoError(err)
+
+	// Now deactivate it
 	msg := &authproto.MsgDeactivateEmergencyAdmin{
 		Deactivator:  s.fixtures.Addresses[0].String(),
 		AdminAddress: s.fixtures.Addresses[1].String(),
@@ -209,9 +242,19 @@ func (s *AuthMsgServerTestSuite) TestCreateSession_Success() {
 }
 
 func (s *AuthMsgServerTestSuite) TestRevokeSession_Success() {
+	// First create a session
+	createMsg := &authproto.MsgCreateSession{
+		UserAddress: s.fixtures.Addresses[0].String(),
+	}
+	createResp, err := s.msgServer.CreateSession(s.ctx, createMsg)
+	s.Require().NoError(err)
+	s.Require().NotNil(createResp)
+	s.Require().NotNil(createResp.Session)
+
+	// Now revoke it
 	msg := &authproto.MsgRevokeSession{
 		UserAddress: s.fixtures.Addresses[0].String(),
-		SessionId:   "session123",
+		SessionId:   createResp.Session.SessionId,
 	}
 
 	resp, err := s.msgServer.RevokeSession(s.ctx, msg)
