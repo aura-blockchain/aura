@@ -3,6 +3,8 @@ package keeper_test
 import (
 	"testing"
 
+	"google.golang.org/protobuf/types/known/timestamppb"
+
 	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 	"github.com/aequitas/aura/chain/x/dataregistry/keeper"
 	"github.com/aequitas/aura/chain/x/dataregistry/params"
@@ -39,7 +41,7 @@ func TestQueryServerFunctionality(t *testing.T) {
 		Status:          types.DataItemStatus_DATA_ITEM_STATUS_PENDING_VERIFICATION,
 		Title:           "Photo 1",
 		Tags:            []string{"test"},
-		CreatedAt:       input.Ctx.BlockTime(),
+		CreatedAt:       timestamppb.New(input.Ctx.BlockTime()),
 		AccessPolicy:    &types.AccessPolicy{},
 	}
 
@@ -52,7 +54,7 @@ func TestQueryServerFunctionality(t *testing.T) {
 		Status:          types.DataItemStatus_DATA_ITEM_STATUS_VERIFIED,
 		Title:           "Video 1",
 		Tags:            []string{"test", "video"},
-		CreatedAt:       input.Ctx.BlockTime(),
+		CreatedAt:       timestamppb.New(input.Ctx.BlockTime()),
 		AccessPolicy:    &types.AccessPolicy{},
 	}
 

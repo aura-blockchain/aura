@@ -330,7 +330,11 @@ func TestExportGenesis(t *testing.T) {
 				},
 			},
 			RevocationRecords: []*pb.RevocationRecord{
-				{VcId: "vc1", Reason: pb.RevocationReason_REVOCATION_REASON_USER_REQUEST},
+				{
+					VcId:      "vc1",
+					RevokedAt: timestamppb.New(now),
+					Reason:    pb.RevocationReason_REVOCATION_REASON_USER_REQUEST,
+				},
 			},
 			RevocationList:        &pb.RevocationList{},
 			DidDocuments:          []*pb.DIDDocument{{Did: "did:aura:1", Controller: "controller1"}},
