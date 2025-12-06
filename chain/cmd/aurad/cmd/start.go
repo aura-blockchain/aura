@@ -724,24 +724,41 @@ func loadCometConfig(homeDir string) (*cmtcfg.Config, error) {
 			return nil, fmt.Errorf("failed to read config: %w", err)
 		}
 
-		// Manually set some critical fields from viper
+		// Unmarshal P2P section directly into the P2P config struct
+		// This properly maps TOML [p2p] section to P2PConfig fields via mapstructure tags
+		if cfgViper.IsSet("p2p") {
+			if err := cfgViper.UnmarshalKey("p2p", &cmtConfig.P2P); err != nil {
+				return nil, fmt.Errorf("failed to unmarshal p2p config: %w", err)
+			}
+		}
+
+		// Unmarshal RPC section
+		if cfgViper.IsSet("rpc") {
+			if err := cfgViper.UnmarshalKey("rpc", &cmtConfig.RPC); err != nil {
+				return nil, fmt.Errorf("failed to unmarshal rpc config: %w", err)
+			}
+		}
+
+		// Unmarshal consensus section
+		if cfgViper.IsSet("consensus") {
+			if err := cfgViper.UnmarshalKey("consensus", &cmtConfig.Consensus); err != nil {
+				return nil, fmt.Errorf("failed to unmarshal consensus config: %w", err)
+			}
+		}
+
+		// Unmarshal mempool section
+		if cfgViper.IsSet("mempool") {
+			if err := cfgViper.UnmarshalKey("mempool", &cmtConfig.Mempool); err != nil {
+				return nil, fmt.Errorf("failed to unmarshal mempool config: %w", err)
+			}
+		}
+
+		// Handle non-standard fields that don't match CometBFT struct tags
 		if chainID := cfgViper.GetString("chain-id"); chainID != "" {
 			cmtConfig.BaseConfig.Moniker = chainID
 		}
 		if moniker := cfgViper.GetString("moniker"); moniker != "" {
 			cmtConfig.Moniker = moniker
-		}
-		if rpcAddr := cfgViper.GetString("rpc.laddr"); rpcAddr != "" {
-			cmtConfig.RPC.ListenAddress = rpcAddr
-		}
-		if pprofAddr := cfgViper.GetString("rpc.pprof_laddr"); pprofAddr != "" {
-			cmtConfig.RPC.PprofListenAddress = pprofAddr
-		}
-		if p2pAddr := cfgViper.GetString("p2p.laddr"); p2pAddr != "" {
-			cmtConfig.P2P.ListenAddress = p2pAddr
-		}
-		if externalAddr := cfgViper.GetString("p2p.external_address"); externalAddr != "" {
-			cmtConfig.P2P.ExternalAddress = externalAddr
 		}
 	}
 

@@ -1,0 +1,35 @@
+# Lightweight Dockerfile using pre-built binary
+# Use this to avoid memory-intensive Go compilation in Docker
+
+FROM debian:bookworm-slim
+
+# Install runtime dependencies only
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    ca-certificates \
+    tzdata && \
+    rm -rf /var/lib/apt/lists/* && \
+    groupadd -g 1000 aura && \
+    useradd -m -u 1000 -g aura aura && \
+    mkdir -p /home/aura/.aura/config \
+             /home/aura/.aura/data && \
+    chown -R aura:aura /home/aura
+
+# Copy pre-built binary
+COPY --chown=aura:aura chain/aurad /usr/local/bin/aurad
+
+# Copy wasmvm library
+COPY third_party/wasmvm/internal/api/libwasmvm.x86_64.so /usr/lib/
+
+RUN ldconfig && chmod +x /usr/local/bin/aurad
+
+# Verify binary works
+RUN /usr/local/bin/aurad version
+
+WORKDIR /home/aura
+USER aura
+
+EXPOSE 26656 26657 26660 9090 1317
+
+ENTRYPOINT ["/usr/local/bin/aurad"]
+CMD ["start", "--home", "/home/aura/.aura"]

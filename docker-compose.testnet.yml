@@ -25,16 +25,14 @@ services:
   # Validator 1 - Primary Validator
   # ==========================================================================
   validator-1:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        VERSION: "v1.0.0-testnet"
-        COMMIT: "${GIT_COMMIT:-unknown}"
-        BUILD_DATE: "${BUILD_DATE:-unknown}"
+    image: aurad:latest
     container_name: aura-validator-1
     hostname: validator-1
     restart: unless-stopped
+    # Memory limits to prevent WSL2 OOM crashes
+    mem_limit: 2g
+    memswap_limit: 3g
+    cpus: 2
     ports:
       # P2P (base + 1000)
       - "27656:26656"
@@ -74,16 +72,14 @@ services:
   # Validator 2
   # ==========================================================================
   validator-2:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        VERSION: "v1.0.0-testnet"
-        COMMIT: "${GIT_COMMIT:-unknown}"
-        BUILD_DATE: "${BUILD_DATE:-unknown}"
+    image: aurad:latest
     container_name: aura-validator-2
     hostname: validator-2
     restart: unless-stopped
+    # Memory limits to prevent WSL2 OOM crashes
+    mem_limit: 2g
+    memswap_limit: 3g
+    cpus: 2
     ports:
       # P2P (offset by 100)
       - "27756:26656"
@@ -125,16 +121,14 @@ services:
   # Validator 3
   # ==========================================================================
   validator-3:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        VERSION: "v1.0.0-testnet"
-        COMMIT: "${GIT_COMMIT:-unknown}"
-        BUILD_DATE: "${BUILD_DATE:-unknown}"
+    image: aurad:latest
     container_name: aura-validator-3
     hostname: validator-3
     restart: unless-stopped
+    # Memory limits to prevent WSL2 OOM crashes
+    mem_limit: 2g
+    memswap_limit: 3g
+    cpus: 2
     ports:
       # P2P (offset by 200)
       - "27856:26656"
@@ -176,16 +170,14 @@ services:
   # Validator 4
   # ==========================================================================
   validator-4:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        VERSION: "v1.0.0-testnet"
-        COMMIT: "${GIT_COMMIT:-unknown}"
-        BUILD_DATE: "${BUILD_DATE:-unknown}"
+    image: aurad:latest
     container_name: aura-validator-4
     hostname: validator-4
     restart: unless-stopped
+    # Memory limits to prevent WSL2 OOM crashes
+    mem_limit: 2g
+    memswap_limit: 3g
+    cpus: 2
     ports:
       # P2P (offset by 300)
       - "27956:26656"
@@ -230,6 +222,9 @@ services:
     image: prom/prometheus:latest
     container_name: aura-testnet-prometheus
     restart: unless-stopped
+    mem_limit: 512m
+    memswap_limit: 768m
+    cpus: 0.5
     ports:
       - "9094:9090"
     volumes:
@@ -258,6 +253,9 @@ services:
     image: grafana/grafana:latest
     container_name: aura-testnet-grafana
     restart: unless-stopped
+    mem_limit: 256m
+    memswap_limit: 384m
+    cpus: 0.5
     ports:
       - "3002:3000"
     volumes:
