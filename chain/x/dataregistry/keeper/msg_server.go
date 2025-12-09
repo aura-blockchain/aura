@@ -110,8 +110,7 @@ func (s *msgServer) UpdateDataItem(ctx context.Context, msg *pb.MsgUpdateDataIte
 		return nil, err
 	}
 
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	updatedAt := sdkCtx.BlockTime()
+	updatedAt := timestampFromTime(sdk.UnwrapSDKContext(ctx).BlockTime())
 
 	if sdkCtx, ok := sdkContextFromCtx(ctx); ok {
 		sdkCtx.EventManager().EmitEvents(sdk.Events{
@@ -167,8 +166,7 @@ func (s *msgServer) DeleteDataItem(ctx context.Context, msg *pb.MsgDeleteDataIte
 		return nil, err
 	}
 
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	deletedAt := sdkCtx.BlockTime()
+	deletedAt := timestampFromTime(sdk.UnwrapSDKContext(ctx).BlockTime())
 
 	if sdkCtx, ok := sdkContextFromCtx(ctx); ok {
 		emitDataItemEvent(
@@ -217,8 +215,7 @@ func (s *msgServer) VerifyDataItem(ctx context.Context, msg *pb.MsgVerifyDataIte
 	// Get verification reward from params
 	params := s.keeper.GetParams()
 
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	verifiedAt := sdkCtx.BlockTime()
+	verifiedAt := timestampFromTime(sdk.UnwrapSDKContext(ctx).BlockTime())
 
 	if sdkCtx, ok := sdkContextFromCtx(ctx); ok {
 		emitDataItemEvent(
@@ -300,8 +297,7 @@ func (s *msgServer) RevokeDataItem(ctx context.Context, msg *pb.MsgRevokeDataIte
 		return nil, err
 	}
 
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	revokedAt := sdkCtx.BlockTime()
+	revokedAt := timestampFromTime(sdk.UnwrapSDKContext(ctx).BlockTime())
 
 	if sdkCtx, ok := sdkContextFromCtx(ctx); ok {
 		emitDataItemEvent(
@@ -471,3 +467,4 @@ func sdkContextFromCtx(ctx context.Context) (sdk.Context, bool) {
 	sdkCtx = sdk.UnwrapSDKContext(ctx)
 	return sdkCtx, ok
 }
+
