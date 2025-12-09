@@ -35,7 +35,7 @@ func TestMsgServerLockTokens_Success(t *testing.T) {
 		Sender:      keepertest.GenTestAddr().String(),
 		TargetChain: "paw",
 		Recipient:   "paw1recipient",
-		Amount:      &amount,
+		Amount:      amount,
 	}
 
 	resp, err := ms.LockTokens(sdk.WrapSDKContext(ctx), msg)
@@ -58,7 +58,7 @@ func TestMsgServerLockTokens_MissingChain(t *testing.T) {
 		Sender:      keepertest.GenTestAddr().String(),
 		TargetChain: "unknown",
 		Recipient:   "paw1recipient",
-		Amount:      &amount,
+		Amount:      amount,
 	}
 
 	_, err := ms.LockTokens(sdk.WrapSDKContext(ctx), msg)
@@ -130,7 +130,7 @@ func TestMsgServerUnlockTokens_CompletesTransfer(t *testing.T) {
 		TransferId:            transferID,
 		Sender:                sender,
 		Recipient:             sender,
-		Amount:                amount,
+		Amount:                sdkmath.NewIntFromString(amount),
 		Denom:                 denom,
 		SourceChain:           sourceChain,
 		TargetChain:           "aura",
@@ -138,7 +138,7 @@ func TestMsgServerUnlockTokens_CompletesTransfer(t *testing.T) {
 		SourceTxHash:          burnTxHash,
 		RequiredConfirmations: minConfirmations,
 		Confirmations:         0,
-		Timestamp:             timestamppb.New(ctx.BlockTime()),
+		Timestamp:             ctx.BlockTime(),
 	}
 	k.SetTransfer(ctx, transfer)
 	k.IndexTransferHash(ctx, burnTxHash, transferID)

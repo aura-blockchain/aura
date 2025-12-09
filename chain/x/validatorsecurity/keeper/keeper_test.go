@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"cosmossdk.io/log"
-	"cosmossdk.io/math"
+	sdkmath "cosmossdk.io/math"
 	"cosmossdk.io/store"
 	"cosmossdk.io/store/metrics"
 	storetypes "cosmossdk.io/store/types"
@@ -16,7 +16,6 @@ import (
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/suite"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/validatorsecurity/keeper"
 	"github.com/aequitas/aura/chain/x/validatorsecurity/types"
@@ -364,14 +363,15 @@ func (suite *KeeperTestSuite) TestRegisterSentryNode() {
 
 func (suite *KeeperTestSuite) TestDoubleSignEvidence() {
 	validatorAddr := "auravaloper1test"
+	now := time.Now()
 
 	evidence := types.DoubleSignEvidence{
 		ValidatorAddress: validatorAddr,
 		Height:           100,
-		Time:             timestamppb.New(time.Now()),
+		Time:             &now,
 		VoteA:            []byte("vote_a"),
 		VoteB:            []byte("vote_b"),
-		SlashFraction:    "0.05",
+		SlashFraction:    sdkmath.LegacyMustNewDecFromStr("0.05"),
 	}
 
 	suite.keeper.SetDoubleSignEvidence(suite.ctx, evidence)

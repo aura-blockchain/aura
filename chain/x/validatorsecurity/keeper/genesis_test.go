@@ -277,22 +277,22 @@ func TestExportGenesis(t *testing.T) {
 
 		// Initialize with data
 		initGenesis := &types.GenesisState{
-			Params: types.DefaultParams(),
-			Validators: []*types.ValidatorSecurityInfo{
+			Params: *types.DefaultParams(),
+			Validators: []types.ValidatorSecurityInfo{
 				{ValidatorAddress: "validator1", HotKey: "hk1", ColdKey: "ck1", KeysSeparated: true, IsJailed: false, IsTombstoned: false},
 				{ValidatorAddress: "validator2", HotKey: "hk2", ColdKey: "ck2", KeysSeparated: true, IsJailed: false, IsTombstoned: false},
 			},
-			DoubleSignEvidences: []*types.DoubleSignEvidence{
-				&types.DoubleSignEvidence{ValidatorAddress: "validator1", Height: 100, SlashFraction: "0.05"},
+			DoubleSignEvidences: []types.DoubleSignEvidence{
+				{ValidatorAddress: "validator1", Height: 100, SlashFraction: sdkmath.LegacyMustNewDecFromStr("0.05")},
 			},
-			DowntimeInfractions: []*types.DowntimeInfraction{
-				&types.DowntimeInfraction{ValidatorAddress: "validator2", MissedBlocks: 50, WindowSize: 1000, SlashFraction: "0.0001"},
+			DowntimeInfractions: []types.DowntimeInfraction{
+				{ValidatorAddress: "validator2", MissedBlocks: 50, WindowSize: 1000, SlashFraction: sdkmath.LegacyMustNewDecFromStr("0.0001")},
 			},
-			Alerts: []*types.ValidatorAlert{
-				&types.ValidatorAlert{Id: "alert1", ValidatorAddress: "validator1", AlertType: types.ValidatorAlert_DOWNTIME, Severity: types.ValidatorAlert_WARNING, Acknowledged: false},
+			Alerts: []types.ValidatorAlert{
+				{Id: "alert1", ValidatorAddress: "validator1", AlertType: types.ValidatorAlert_DOWNTIME, Severity: types.ValidatorAlert_WARNING, Acknowledged: false},
 			},
-			SentryNodes: []*types.SentryNodeInfo{
-				&types.SentryNodeInfo{Address: "sentry1", ValidatorAddress: "validator1", IsActive: true},
+			SentryNodes: []types.SentryNodeInfo{
+				{Address: "sentry1", ValidatorAddress: "validator1", IsActive: true},
 			},
 		}
 
@@ -312,16 +312,16 @@ func TestExportGenesis(t *testing.T) {
 		k, ctx := setupTestKeeper(t)
 
 		initGenesis := &types.GenesisState{
-			Params:              types.DefaultParams(),
-			Validators:          make([]*types.ValidatorSecurityInfo, 0),
-			DoubleSignEvidences: make([]*types.DoubleSignEvidence, 0),
-			DowntimeInfractions: make([]*types.DowntimeInfraction, 0),
-			Alerts: []*types.ValidatorAlert{
+			Params:              *types.DefaultParams(),
+			Validators:          []types.ValidatorSecurityInfo{},
+			DoubleSignEvidences: []types.DoubleSignEvidence{},
+			DowntimeInfractions: []types.DowntimeInfraction{},
+			Alerts: []types.ValidatorAlert{
 				{Id: "alert1", ValidatorAddress: "val1", AlertType: types.ValidatorAlert_DOWNTIME, Severity: types.ValidatorAlert_INFO, Acknowledged: false},
 				{Id: "alert2", ValidatorAddress: "val1", AlertType: types.ValidatorAlert_DOWNTIME, Severity: types.ValidatorAlert_INFO, Acknowledged: true},
 				{Id: "alert3", ValidatorAddress: "val1", AlertType: types.ValidatorAlert_DOWNTIME, Severity: types.ValidatorAlert_INFO, Acknowledged: false},
 			},
-			SentryNodes: make([]*types.SentryNodeInfo, 0),
+			SentryNodes: []types.SentryNodeInfo{},
 		}
 
 		err := k.InitGenesis(ctx, initGenesis)
@@ -342,8 +342,8 @@ func TestGenesisRoundTrip(t *testing.T) {
 
 		// Use DefaultParams() which has all required fields populated
 		originalGenesis := &types.GenesisState{
-			Params: types.DefaultParams(),
-			Validators: []*types.ValidatorSecurityInfo{
+			Params: *types.DefaultParams(),
+			Validators: []types.ValidatorSecurityInfo{
 				{
 					ValidatorAddress: "validator1",
 					HotKey:           "hotkey1",
@@ -355,16 +355,16 @@ func TestGenesisRoundTrip(t *testing.T) {
 					IsTombstoned:     false,
 				},
 			},
-			DoubleSignEvidences: []*types.DoubleSignEvidence{
-				{ValidatorAddress: "validator1", Height: 100, SlashFraction: "0.05"},
+			DoubleSignEvidences: []types.DoubleSignEvidence{
+				{ValidatorAddress: "validator1", Height: 100, SlashFraction: sdkmath.LegacyMustNewDecFromStr("0.05")},
 			},
-			DowntimeInfractions: []*types.DowntimeInfraction{
-				{ValidatorAddress: "validator1", MissedBlocks: 50, WindowSize: 1000, SlashFraction: "0.0001"},
+			DowntimeInfractions: []types.DowntimeInfraction{
+				{ValidatorAddress: "validator1", MissedBlocks: 50, WindowSize: 1000, SlashFraction: sdkmath.LegacyMustNewDecFromStr("0.0001")},
 			},
-			Alerts: []*types.ValidatorAlert{
+			Alerts: []types.ValidatorAlert{
 				{Id: "alert1", ValidatorAddress: "validator1", AlertType: types.ValidatorAlert_DOWNTIME, Severity: types.ValidatorAlert_WARNING, Acknowledged: false},
 			},
-			SentryNodes: []*types.SentryNodeInfo{
+			SentryNodes: []types.SentryNodeInfo{
 				{Address: "sentry1", ValidatorAddress: "validator1", IsActive: true},
 			},
 		}
@@ -388,7 +388,7 @@ func TestGenesisRoundTrip(t *testing.T) {
 		k2, ctx2 := setupTestKeeper(t)
 
 		genesis := types.DefaultGenesisState()
-		genesis.Validators = []*types.ValidatorSecurityInfo{
+		genesis.Validators = []types.ValidatorSecurityInfo{
 			{ValidatorAddress: "val1", IsJailed: false, IsTombstoned: false},
 		}
 
