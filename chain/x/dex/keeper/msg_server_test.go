@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/suite"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/dex/types"
 	dexpb "github.com/aequitas/aura/proto/aura/dex/v1beta1"
@@ -37,10 +37,10 @@ func (suite *MsgServerTestSuite) TestNilRequest() {
 	_, err := suite.msgServer.SwapExactIn(ctx, &dexpb.MsgSwapExactIn{
 		Sender: suite.addr("swap-sender"),
 		PoolId: "pool-1",
-		// CoinIn intentionally nil to exercise input validation before keeper deps (bank) are used
-		CoinIn: nil,
+		// CoinIn intentionally empty to exercise input validation before keeper deps (bank) are used
+		CoinIn: sdk.Coin{},
 		// MinAmountOut must be a valid int string to reach coin validation
-		MinAmountOut:   "1",
+		MinAmountOut:   sdkmath.NewInt(1),
 		MaxSlippageBps: 100,
 	})
 	suite.Error(err)
@@ -53,12 +53,12 @@ func (suite *MsgServerTestSuite) TestInvalidSigner() {
 	_, err := suite.msgServer.CreateOrder(ctx, &dexpb.MsgCreateOrder{
 		Creator:     suite.addr("creator-invalid-aura"),
 		OrderType:   types.SwapOrderType_BUY,
-		AuraAmount:  "not-a-number",
+		AuraAmount:  sdkmath.ZeroInt(), // Invalid: zero amount
 		OtherCoin:   "utoken",
-		OtherAmount: "1000",
+		OtherAmount: sdkmath.NewInt(1000),
 	})
 	suite.Error(err)
-	suite.Contains(err.Error(), "invalid aura amount")
+	suite.Contains(err.Error(), "invalid")
 }
 
 func (suite *MsgServerTestSuite) TestValidMessage() {
@@ -81,14 +81,14 @@ func (suite *MsgServerTestSuite) TestUnauthorized() {
 	order := &types.SwapOrder{
 		OrderId:      "order-1",
 		OrderType:    types.SwapOrderType_BUY,
-		AuraAmount:   "10",
+		AuraAmount:   sdkmath.NewInt(10),
 		OtherCoin:    "utoken",
-		OtherAmount:  "20",
+		OtherAmount:  sdkmath.NewInt(20),
 		UserAddress:  owner,
 		Status:       types.SwapOrderStatus_PENDING,
-		Timestamp:    timestamppb.New(suite.SdkCtx.BlockTime()),
-		ExpiresAt:    timestamppb.New(suite.SdkCtx.BlockTime().Add(time.Hour)),
-		PricePerAura: "2",
+		Timestamp:    suite.SdkCtx.BlockTime(),
+		ExpiresAt:    suite.SdkCtx.BlockTime().Add(time.Hour),
+		PricePerAura: sdkmath.LegacyMustNewDecFromStr("2"),
 	}
 	suite.Keeper.SetOrder(suite.SdkCtx, order)
 
