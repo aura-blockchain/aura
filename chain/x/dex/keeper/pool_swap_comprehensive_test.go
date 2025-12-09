@@ -368,8 +368,8 @@ func (suite *PoolSwapComprehensiveTestSuite) TestSwap_MultipleSequentialSwaps() 
 	suite.fundAccount(swapper, "tokenA", 50_000_000)
 
 	// Record initial reserves
-	initialReserveA, _ := sdkmath.NewIntFromString(pool.ReserveA)
-	initialReserveB, _ := sdkmath.NewIntFromString(pool.ReserveB)
+	initialReserveA := pool.ReserveA
+	initialReserveB := pool.ReserveB
 	initialK := initialReserveA.Mul(initialReserveB)
 
 	// Perform multiple swaps (must meet minimum of 1,000,000 uaura)
@@ -405,8 +405,8 @@ func (suite *PoolSwapComprehensiveTestSuite) TestSwap_MultipleSequentialSwaps() 
 	suite.NotNil(updatedPool)
 
 	// Verify reserves changed correctly
-	finalReserveA, _ := sdkmath.NewIntFromString(updatedPool.ReserveA)
-	finalReserveB, _ := sdkmath.NewIntFromString(updatedPool.ReserveB)
+	finalReserveA := updatedPool.ReserveA
+	finalReserveB := updatedPool.ReserveB
 
 	// Reserve A should increase (we added tokenA)
 	suite.True(finalReserveA.GT(initialReserveA))
@@ -478,8 +478,8 @@ func (suite *PoolSwapComprehensiveTestSuite) TestSwap_BothDirections() {
 	finalPool := suite.Keeper.GetPool(suite.SdkCtx, pool.PoolId)
 	suite.NotNil(finalPool)
 
-	reserveA, _ := sdkmath.NewIntFromString(finalPool.ReserveA)
-	reserveB, _ := sdkmath.NewIntFromString(finalPool.ReserveB)
+	reserveA := finalPool.ReserveA
+	reserveB := finalPool.ReserveB
 
 	suite.True(reserveA.GT(sdkmath.ZeroInt()))
 	suite.True(reserveB.GT(sdkmath.ZeroInt()))
@@ -632,8 +632,8 @@ func (suite *PoolSwapComprehensiveTestSuite) TestFeeCalculation_FeeAccumulation(
 	suite.NoError(err)
 
 	// Record initial k
-	initialReserveA, _ := sdkmath.NewIntFromString(pool.ReserveA)
-	initialReserveB, _ := sdkmath.NewIntFromString(pool.ReserveB)
+	initialReserveA := pool.ReserveA
+	initialReserveB := pool.ReserveB
 	initialK := initialReserveA.Mul(initialReserveB)
 
 	// Perform multiple swaps with different swappers to avoid wash trading detection
@@ -660,8 +660,8 @@ func (suite *PoolSwapComprehensiveTestSuite) TestFeeCalculation_FeeAccumulation(
 
 	// Get final pool state
 	finalPool := suite.Keeper.GetPool(suite.SdkCtx, pool.PoolId)
-	finalReserveA, _ := sdkmath.NewIntFromString(finalPool.ReserveA)
-	finalReserveB, _ := sdkmath.NewIntFromString(finalPool.ReserveB)
+	finalReserveA := finalPool.ReserveA
+	finalReserveB := finalPool.ReserveB
 	finalK := finalReserveA.Mul(finalReserveB)
 
 	// K should be preserved or increased due to fee accumulation

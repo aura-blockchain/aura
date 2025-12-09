@@ -255,8 +255,7 @@ func TestGetQuoteOverflowPrevention(t *testing.T) {
 				require.True(t, amountOut.IsPositive(), "quote output should be positive for valid input")
 
 				// Verify the quote makes sense (less than pool reserve due to fees)
-				reserveB, ok := sdkmath.NewIntFromString(pool.ReserveB)
-				require.True(t, ok, "should parse pool reserve B")
+				reserveB := pool.ReserveB
 				require.True(t, amountOut.LT(reserveB), "output quote should be less than pool reserve")
 			}
 		})
