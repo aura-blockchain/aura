@@ -196,7 +196,7 @@ func (suite *LPTokenInvariantTestSuite) TestValidateLPTokenInvariant_InvalidProv
 
 	err := suite.Keeper.validateLPTokenInvariant(pool)
 	suite.Error(err, "invalid provider LP tokens should fail")
-	suite.Contains(err.Error(), "invalid LP tokens for provider")
+	suite.Contains(err.Error(), "LP token invariant violated")
 }
 
 // TestValidateLPTokenInvariant_InvalidTotalTokens tests detection of invalid total tokens
@@ -219,7 +219,7 @@ func (suite *LPTokenInvariantTestSuite) TestValidateLPTokenInvariant_InvalidTota
 
 	err := suite.Keeper.validateLPTokenInvariant(pool)
 	suite.Error(err, "invalid total LP tokens should fail")
-	suite.Contains(err.Error(), "invalid total LP tokens")
+	suite.Contains(err.Error(), "LP token invariant violated")
 }
 
 // TestCreatePool_InvariantValidation tests that CreatePool validates invariant

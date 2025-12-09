@@ -208,8 +208,8 @@ func (suite *InvariantsComprehensiveTestSuite) TestOrderNilTimestamp() {
 	suite.storeOrder(ctx, &order)
 
 	msg, broken := inv(ctx)
-	suite.True(broken, "order with nil timestamp should break invariant")
-	suite.Contains(msg, "nil timestamp")
+	suite.True(broken, "order with zero timestamp should break invariant")
+	suite.Contains(msg, "zero timestamp")
 }
 
 func (suite *InvariantsComprehensiveTestSuite) TestLiquidityProviderConsistencyInvariant() {
