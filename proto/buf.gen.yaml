@@ -7,7 +7,7 @@ plugins:
       - Mgoogle/protobuf/any.proto=github.com/cosmos/cosmos-sdk/codec/types
       - Mgoogle/protobuf/timestamp.proto=github.com/cosmos/gogoproto/types
       - Mgoogle/protobuf/duration.proto=github.com/cosmos/gogoproto/types
-      - Mcosmos/base/v1beta1/coin.proto=cosmossdk.io/math
+      - Mcosmos/base/v1beta1/coin.proto=github.com/cosmos/cosmos-sdk/types
       - Mcosmos/base/query/v1beta1/pagination.proto=github.com/cosmos/cosmos-sdk/types/query
       - paths=source_relative
   # grpc-gateway temporarily disabled due to gogoproto compatibility issues

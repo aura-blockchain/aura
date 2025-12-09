@@ -120,7 +120,7 @@ func (k *Keeper) AppealSlash(
 	// Check if appeal deadline has passed
 	var deadlineUnix int64
 	if slashRecord.AppealDeadline != nil {
-		deadlineUnix = slashRecord.AppealDeadline.AsTime().Unix()
+		deadlineUnix = slashRecord.AppealDeadline.Seconds
 	}
 	if ctx.BlockTime().Unix() > deadlineUnix {
 		return false, 0, types.ErrAppealExpired
@@ -270,7 +270,7 @@ func (k *Keeper) GetPendingAppeals(ctx sdk.Context) []types.SlashRecord {
 			// Check if appeal is still within review window
 			var appealDeadline int64
 			if record.AppealDeadline != nil {
-				appealDeadline = record.AppealDeadline.AsTime().Unix()
+				appealDeadline = record.AppealDeadline.Seconds
 			}
 			if currentTime < appealDeadline+(14*24*3600) {
 				pending = append(pending, record)

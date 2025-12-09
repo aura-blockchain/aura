@@ -49,12 +49,12 @@ func ParamsInvariant(k *Keeper) func() (string, bool) {
 		params := k.GetParams()
 
 		// Validate parameters exist and have reasonable values
-		if params.MaxDataSize == 0 {
-			return formatInvariant("params", "max data size is zero"), true
+		if params.MaxStorageBytes == 0 {
+			return formatInvariant("params", "max storage bytes is zero"), true
 		}
 
-		if params.MaxMetadataSize == 0 {
-			return formatInvariant("params", "max metadata size is zero"), true
+		if params.MaxDataItemsPerUser == 0 {
+			return formatInvariant("params", "max data items per user is zero"), true
 		}
 
 		// NOTE: Additional validation can be added via a Validate() method on the Params type

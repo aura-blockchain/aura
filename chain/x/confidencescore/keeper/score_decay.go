@@ -1,9 +1,10 @@
 package keeper
 
 import (
-	storetypes "cosmossdk.io/store/types"
 	"fmt"
+	"time"
 
+	storetypes "cosmossdk.io/store/types"
 	"github.com/aequitas/aura/chain/x/confidencescore/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -68,7 +69,7 @@ func (k *Keeper) ApplyScoreDecay(ctx sdk.Context, walletAddr string) (uint64, ui
 
 	// Check inactivity period
 	if record.LastUpdated != nil {
-		lastActivity := record.LastUpdated.AsTime()
+		lastActivity := time.Unix(record.LastUpdated.Seconds, int64(record.LastUpdated.Nanos))
 		daysSinceActivity := ctx.BlockTime().Sub(lastActivity).Hours() / 24
 
 		if daysSinceActivity < float64(config.InactivityDays) {
@@ -193,7 +194,7 @@ func (k *Keeper) ShouldApplyDecay(ctx sdk.Context, walletAddr string) (bool, str
 	}
 
 	if record.LastUpdated != nil {
-		lastActivity := record.LastUpdated.AsTime()
+		lastActivity := time.Unix(record.LastUpdated.Seconds, int64(record.LastUpdated.Nanos))
 		daysSinceActivity := ctx.BlockTime().Sub(lastActivity).Hours() / 24
 
 		if daysSinceActivity < float64(config.InactivityDays) {

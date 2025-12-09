@@ -60,7 +60,7 @@ func (k *Keeper) StoreDataItem(ctx sdk.Context,
 		Description:       description,
 		Metadata:          metadata,
 		Tags:              tags,
-		CreatedAt:         time.Now(),
+		CreatedAt:         timestampFromTime(time.Now()),
 		GeoLocation:       geoLocation,
 		Verifications:     []*types.Verification{},
 		AccessPolicy:      accessPolicy,
@@ -73,6 +73,19 @@ func (k *Keeper) StoreDataItem(ctx sdk.Context,
 	}
 
 	return dataID, nil
+}
+
+// timestampFromTime converts time.Time to gogoproto timestamp
+func timestampFromTime(t time.Time) *gogotypes.Timestamp {
+	if t.IsZero() {
+		return nil
+	}
+	seconds := t.Unix()
+	nanos := int32(t.UnixNano() - (seconds * 1000000000))
+	return &gogotypes.Timestamp{
+		Seconds: seconds,
+		Nanos:   nanos,
+	}
 }
 
 // StoreDataItemWithContent stores a new data item with content uploaded to IPFS
@@ -137,7 +150,7 @@ func (k *Keeper) StoreDataItemWithContent(sdkCtx sdk.Context,
 		Description:       description,
 		Metadata:          metadata,
 		Tags:              tags,
-		CreatedAt:         time.Now(),
+		CreatedAt:         timestampFromTime(time.Now()),
 		GeoLocation:       geoLocation,
 		Verifications:     []*types.Verification{},
 		AccessPolicy:      accessPolicy,
@@ -261,7 +274,7 @@ func (k *Keeper) VerifyDataItem(ctx sdk.Context,
 	verification := &types.Verification{
 		VerifierAddress:    verifierAddress,
 		Level:              level,
-		VerifiedAt:         time.Now(),
+		VerifiedAt:         timestampFromTime(time.Now()),
 		VerificationMethod: verificationMethod,
 		ConfidenceScore:    confidenceScore,
 		Notes:              notes,
@@ -277,7 +290,7 @@ func (k *Keeper) VerifyDataItem(ctx sdk.Context,
 	}
 	if level >= types.VerificationLevel_VERIFICATION_LEVEL_PEER_VERIFIED {
 		item.Status = types.DataItemStatus_DATA_ITEM_STATUS_VERIFIED
-		item.VerifiedAt = time.Now()
+		item.VerifiedAt = timestampFromTime(time.Now())
 		item.VerifiedBy = verifierAddress
 	}
 

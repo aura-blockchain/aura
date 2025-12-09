@@ -325,10 +325,11 @@ func (k *Keeper) calculateAccuracy(item types.DataItem) uint64 {
 
 func (k *Keeper) calculateTimeliness(item types.DataItem) uint64 {
 	// Based on how recent the data is
-	if item.CreatedAt.IsZero() {
+	if item.CreatedAt == nil {
 		return 25
 	}
-	age := time.Since(item.CreatedAt).Hours() / 24
+	createdAt := time.Unix(item.CreatedAt.Seconds, int64(item.CreatedAt.Nanos))
+	age := time.Since(createdAt).Hours() / 24
 	if age < 7 { return 100 }
 	if age < 30 { return 75 }
 	if age < 90 { return 50 }

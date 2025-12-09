@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"google.golang.org/protobuf/types/known/timestamppb"
+	gogotypes "github.com/cosmos/gogoproto/types"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -89,13 +89,20 @@ Response includes:
 				return fmt.Errorf("invalid verifier hash (must be hex): %w", err)
 			}
 
+			// Create gogoproto timestamp from current time
+			now := time.Now()
+			ts := &gogotypes.Timestamp{
+				Seconds: now.Unix(),
+				Nanos:   int32(now.UnixNano() - (now.Unix() * 1000000000)),
+			}
+
 			msg := &v1beta1.MsgRecordIRCompletion{
 				WalletAddress:    args[0],
 				IrId:             args[1],
 				ProofHash:        proofHash,
 				VerifierHash:     verifierHash,
 				AssistantAddress: clientCtx.GetFromAddress().String(),
-				Timestamp:        timestamppb.New(time.Now()),
+				Timestamp:        ts,
 			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
