@@ -70,7 +70,8 @@ func setupDEXBenchmark(b *testing.B) (*keeper.Keeper, sdk.Context) {
 // BenchmarkCreatePool benchmarks the creation of a liquidity pool
 func BenchmarkCreatePool(b *testing.B) {
 	k, ctx := setupDEXBenchmark(b)
-	creator := "aura1creator"
+	// Valid bech32 address
+	creator := "aura1qyqszqgpqyqszqgpqyqszqgpqyqszqgpj4w6"
 
 	denomA := "uaura"
 	denomB := "usdt"
@@ -98,7 +99,7 @@ func BenchmarkCreatePool(b *testing.B) {
 // BenchmarkAddLiquidity benchmarks adding liquidity to an existing pool
 func BenchmarkAddLiquidity(b *testing.B) {
 	k, ctx := setupDEXBenchmark(b)
-	creator := "aura1creator"
+	creator := "aura1qyqszqgpqyqszqgpqyqszqgpqyqszqgpj4w6"
 
 	// Create initial pool
 	denomA := "uaura"
@@ -130,7 +131,7 @@ func BenchmarkAddLiquidity(b *testing.B) {
 // BenchmarkSwap_SmallPool benchmarks swap operations on a small liquidity pool
 func BenchmarkSwap_SmallPool(b *testing.B) {
 	k, ctx := setupDEXBenchmark(b)
-	creator := "aura1creator"
+	creator := "aura1qyqszqgpqyqszqgpqyqszqgpqyqszqgpj4w6"
 
 	// Create small pool: 100k AURA / 50k USDT
 	denomA := "uaura"
@@ -158,7 +159,7 @@ func BenchmarkSwap_SmallPool(b *testing.B) {
 // BenchmarkSwap_LargePool benchmarks swap operations on a large liquidity pool
 func BenchmarkSwap_LargePool(b *testing.B) {
 	k, ctx := setupDEXBenchmark(b)
-	creator := "aura1creator"
+	creator := "aura1qyqszqgpqyqszqgpqyqszqgpqyqszqgpj4w6"
 
 	// Create large pool: 100M AURA / 50M USDT
 	denomA := "uaura"
@@ -197,7 +198,7 @@ func BenchmarkBatchExecution_100Orders(b *testing.B) {
 	amountA := sdk.NewCoin(denomA, math.NewInt(100000000))
 	amountB := sdk.NewCoin(denomB, math.NewInt(50000000))
 
-	_, _, err := k.CreatePool(ctx, "aura1creator", denomA, denomB, amountA, amountB)
+	_, _, err := k.CreatePool(ctx, "aura1qyqszqgpqyqszqgpqyqszqgpqyqszqgpj4w6", denomA, denomB, amountA, amountB)
 	if err != nil {
 		b.Fatalf("Failed to create pool: %v", err)
 	}
@@ -220,7 +221,7 @@ func BenchmarkBatchExecution_1000Orders(b *testing.B) {
 	amountA := sdk.NewCoin(denomA, math.NewInt(100000000))
 	amountB := sdk.NewCoin(denomB, math.NewInt(50000000))
 
-	_, _, err := k.CreatePool(ctx, "aura1creator", denomA, denomB, amountA, amountB)
+	_, _, err := k.CreatePool(ctx, "aura1qyqszqgpqyqszqgpqyqszqgpqyqszqgpj4w6", denomA, denomB, amountA, amountB)
 	if err != nil {
 		b.Fatalf("Failed to create pool: %v", err)
 	}
@@ -281,7 +282,7 @@ func BenchmarkGetPool(b *testing.B) {
 	amountA := sdk.NewCoin(denomA, math.NewInt(100000000))
 	amountB := sdk.NewCoin(denomB, math.NewInt(50000000))
 
-	pool, _, err := k.CreatePool(ctx, "aura1creator", denomA, denomB, amountA, amountB)
+	pool, _, err := k.CreatePool(ctx, "aura1qyqszqgpqyqszqgpqyqszqgpqyqszqgpj4w6", denomA, denomB, amountA, amountB)
 	if err != nil {
 		b.Fatalf("Failed to create pool: %v", err)
 	}
@@ -305,7 +306,7 @@ func BenchmarkGetAllPools(b *testing.B) {
 		amountA := sdk.NewCoin(denomA, math.NewInt(100000000))
 		amountB := sdk.NewCoin(denomB, math.NewInt(50000000))
 
-		_, _, err := k.CreatePool(ctx, "aura1creator", denomA, denomB, amountA, amountB)
+		_, _, err := k.CreatePool(ctx, "aura1qyqszqgpqyqszqgpqyqszqgpqyqszqgpj4w6", denomA, denomB, amountA, amountB)
 		if err != nil {
 			b.Fatalf("Failed to create pool %d: %v", i, err)
 		}
