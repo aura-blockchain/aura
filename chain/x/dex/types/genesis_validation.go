@@ -220,10 +220,12 @@ func validateLiquidityPool(pool *v1beta1.LiquidityPool, index int) error {
 		totalLPTokens = totalLPTokens.Add(provider.LpTokens)
 	}
 
-	// Verify that sum of provider LP tokens matches total (if providers exist)
-	if len(pool.Providers) > 0 && !totalLPTokens.Equal(pool.TotalLpTokens) {
-		return fmt.Errorf("sum of provider LP tokens (%s) does not match total LP tokens (%s)",
-			totalLPTokens.String(), pool.TotalLpTokens.String())
+	// Verify that sum of provider LP tokens + locked liquidity matches total
+	// Invariant: TotalLpTokens = Sum(Provider LP Tokens) + LockedLiquidity
+	expectedTotal := totalLPTokens.Add(pool.LockedLiquidity)
+	if len(pool.Providers) > 0 && !expectedTotal.Equal(pool.TotalLpTokens) {
+		return fmt.Errorf("sum of provider LP tokens (%s) + locked liquidity (%s) does not match total LP tokens (%s)",
+			totalLPTokens.String(), pool.LockedLiquidity.String(), pool.TotalLpTokens.String())
 	}
 
 	return nil
