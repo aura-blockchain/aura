@@ -104,8 +104,8 @@ func (k *Keeper) LockVotingTokens(ctx context.Context, owner, amount string, loc
 		LockId:      lockID,
 		Owner:       owner,
 		Amount:      amount,
-		LockStart:   timestamppb.New(time.Unix(currentTime, 0)),
-		LockEnd:     timestamppb.New(time.Unix(currentTime+int64(lockDuration), 0)),
+		LockStart:   time.Unix(currentTime, 0),
+		LockEnd:     time.Unix(currentTime+int64(lockDuration), 0),
 		VotingPower: votingPowerInt.String(),
 		Withdrawn:   false,
 	}
@@ -143,7 +143,7 @@ func (k *Keeper) UnlockVotingTokens(ctx context.Context, owner, lockID string) (
 		return "0", err
 	}
 
-	lockEnd := lock.LockEnd.AsTime().Unix()
+	lockEnd := lock.LockEnd.Unix()
 	if currentTime < lockEnd {
 		return "0", types.ErrVoteLockNotExpired
 	}
@@ -180,7 +180,7 @@ func (k *Keeper) GetVotingPower(ctx context.Context, address string) (string, st
 		}
 
 		// Check if lock is still active
-		lockEnd := lock.LockEnd.AsTime().Unix()
+		lockEnd := lock.LockEnd.Unix()
 		if currentTime >= lockEnd {
 			continue
 		}
@@ -241,7 +241,7 @@ func (k *Keeper) GetActiveVoteLocks(ctx context.Context, owner string) ([]*types
 			continue
 		}
 
-		lockEnd := lock.LockEnd.AsTime().Unix()
+		lockEnd := lock.LockEnd.Unix()
 		if currentTime >= lockEnd {
 			continue
 		}
@@ -290,7 +290,7 @@ func (k *Keeper) GetTotalLockedGovernance(ctx context.Context) (string, error) {
 			return true
 		}
 
-		lockEnd := lock.LockEnd.AsTime().Unix()
+		lockEnd := lock.LockEnd.Unix()
 		if currentTime >= lockEnd {
 			return true
 		}

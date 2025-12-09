@@ -56,11 +56,12 @@ func (k *Keeper) GrantAttributeAccess(ctx sdk.Context, owner, attribute, grantee
 	now := ctx.BlockTime()
 
 	// Create permission record
+	// GrantedAt is time.Time, ExpiresAt is *time.Time (nullable)
 	permission := &identitypb.AttributePermission{
 		AttributeName: attribute,
 		GrantedTo:     grantee,
-		GrantedAt:     timestamppb.New(now),
-		ExpiresAt:     timestamppb.New(expiry),
+		GrantedAt:     now,
+		ExpiresAt:     &expiry,
 		AccessLevel:   level,
 		GrantedBy:     owner,
 		Metadata:      purpose,
@@ -78,13 +79,14 @@ func (k *Keeper) GrantAttributeAccess(ctx sdk.Context, owner, attribute, grantee
 	}
 
 	// Record consent
+	// ConsentedAt is time.Time, ExpiresAt is *time.Time (nullable)
 	consent := &identitypb.AttributeConsentRecord{
 		Did:           owner,
 		AttributeName: attribute,
 		Grantee:       grantee,
 		Purpose:       purpose,
-		ConsentedAt:   timestamppb.New(now),
-		ExpiresAt:     timestamppb.New(expiry),
+		ConsentedAt:   now,
+		ExpiresAt:     &expiry,
 		Revoked:       false,
 		AccessLevel:   level,
 	}
@@ -157,7 +159,7 @@ func (k *Keeper) RevokeAttributeAccess(ctx sdk.Context, owner, attribute, grante
 		var consent identitypb.AttributeConsentRecord
 		if err := k.cdc.Unmarshal(consentBz, &consent); err == nil {
 			consent.Revoked = true
-			consent.RevokedAt = timestamppb.New(now)
+			consent.RevokedAt = &now
 			consent.RevocationReason = reason
 
 			updatedBz, err := k.cdc.Marshal(&consent)
@@ -213,11 +215,11 @@ func (k *Keeper) CanAccessAttribute(ctx sdk.Context, owner, attribute, requester
 	if err == nil && bz != nil {
 		var permission identitypb.AttributePermission
 		if err := k.cdc.Unmarshal(bz, &permission); err == nil {
-			// Check expiry
-			if permission.ExpiresAt != nil && !permission.ExpiresAt.AsTime().IsZero() {
-				if now.After(permission.ExpiresAt.AsTime()) {
+			// Check expiry - ExpiresAt is *time.Time (nullable pointer)
+			if permission.ExpiresAt != nil && !permission.ExpiresAt.IsZero() {
+				if now.After(*permission.ExpiresAt) {
 					return identitypb.AccessLevel_ACCESS_LEVEL_NONE, types.ErrAccessExpired.Wrapf(
-						"permission expired at %s", permission.ExpiresAt.AsTime())
+						"permission expired at %s", *permission.ExpiresAt)
 				}
 			}
 			return permission.AccessLevel, nil
@@ -230,11 +232,11 @@ func (k *Keeper) CanAccessAttribute(ctx sdk.Context, owner, attribute, requester
 	if err == nil && publicBz != nil {
 		var permission identitypb.AttributePermission
 		if err := k.cdc.Unmarshal(publicBz, &permission); err == nil {
-			// Check expiry
-			if permission.ExpiresAt != nil && !permission.ExpiresAt.AsTime().IsZero() {
-				if now.After(permission.ExpiresAt.AsTime()) {
+			// Check expiry - ExpiresAt is *time.Time (nullable pointer)
+			if permission.ExpiresAt != nil && !permission.ExpiresAt.IsZero() {
+				if now.After(*permission.ExpiresAt) {
 					return identitypb.AccessLevel_ACCESS_LEVEL_NONE, types.ErrAccessExpired.Wrapf(
-						"public permission expired at %s", permission.ExpiresAt.AsTime())
+						"public permission expired at %s", *permission.ExpiresAt)
 				}
 			}
 			return permission.AccessLevel, nil
