@@ -19,7 +19,10 @@ func TestGenesis(t *testing.T) {
 	})
 
 	t.Run("InitGenesis - empty genesis", func(t *testing.T) {
-		genesis := &cryptoproto.GenesisState{}
+		// Empty genesis must have valid default params
+		genesis := &cryptoproto.GenesisState{
+			Params: types.DefaultParams(),
+		}
 		err := k.InitGenesis(ctx, genesis)
 		require.NoError(t, err)
 	})

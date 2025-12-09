@@ -113,15 +113,33 @@ func TestParamsConsistency(t *testing.T) {
 	params2 := DefaultParams()
 
 	// Verify that multiple calls return consistent values
-	if params1.TradingFee != params2.TradingFee {
-		t.Error("DefaultParams should return consistent values")
+	if !params1.TradingFee.Equal(params2.TradingFee) {
+		t.Errorf("DefaultParams should return consistent TradingFee values, got %s and %s",
+			params1.TradingFee, params2.TradingFee)
 	}
 
-	if params1.ProtocolFee != params2.ProtocolFee {
-		t.Error("DefaultParams should return consistent values")
+	if !params1.ProtocolFee.Equal(params2.ProtocolFee) {
+		t.Errorf("DefaultParams should return consistent ProtocolFee values, got %s and %s",
+			params1.ProtocolFee, params2.ProtocolFee)
 	}
 
 	if params1.MaxSlippageBps != params2.MaxSlippageBps {
-		t.Error("DefaultParams should return consistent values")
+		t.Errorf("DefaultParams should return consistent MaxSlippageBps values, got %d and %d",
+			params1.MaxSlippageBps, params2.MaxSlippageBps)
+	}
+
+	if !params1.MinSwapAmount.Equal(params2.MinSwapAmount) {
+		t.Errorf("DefaultParams should return consistent MinSwapAmount values, got %s and %s",
+			params1.MinSwapAmount, params2.MinSwapAmount)
+	}
+
+	if !params1.CommitRevealThreshold.Equal(params2.CommitRevealThreshold) {
+		t.Errorf("DefaultParams should return consistent CommitRevealThreshold values, got %s and %s",
+			params1.CommitRevealThreshold, params2.CommitRevealThreshold)
+	}
+
+	if !params1.GovernanceFallbackPrice.Equal(params2.GovernanceFallbackPrice) {
+		t.Errorf("DefaultParams should return consistent GovernanceFallbackPrice values, got %s and %s",
+			params1.GovernanceFallbackPrice, params2.GovernanceFallbackPrice)
 	}
 }

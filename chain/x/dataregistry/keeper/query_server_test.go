@@ -36,7 +36,7 @@ func TestQueryServerFunctionality(t *testing.T) {
 	item1 := drtypes.DataItem{
 		DataId:          "test-data-1",
 		OwnerAddress:    "aura1owner",
-		DataType:        drdrtypes.DataItemType_DATA_ITEM_TYPE_PHOTO,
+		DataType:        drtypes.DataItemType_DATA_ITEM_TYPE_PHOTO,
 		ContentHash:     []byte("hash1"),
 		StorageLocation: "ipfs://test1",
 		Status:          drtypes.DataItemStatus_DATA_ITEM_STATUS_PENDING_VERIFICATION,
@@ -53,7 +53,7 @@ func TestQueryServerFunctionality(t *testing.T) {
 		DataType:        drtypes.DataItemType_DATA_ITEM_TYPE_VIDEO,
 		ContentHash:     []byte("hash2"),
 		StorageLocation: "ipfs://test2",
-		Status:          drdrtypes.DataItemStatus_DATA_ITEM_STATUS_VERIFIED,
+		Status:          drtypes.DataItemStatus_DATA_ITEM_STATUS_VERIFIED,
 		Title:           "Video 1",
 		Tags:            []string{"test", "video"},
 		CreatedAt:       createdAt2,
@@ -143,7 +143,7 @@ func TestQueryServerFunctionality(t *testing.T) {
 	})
 
 	t.Run("QuerySearchDataItems", func(t *testing.T) {
-		req := &types.QuerySearchDataItemsRequest{
+		req := &drtypes.QuerySearchDataItemsRequest{
 			Tags:      []string{"test"},
 			Requester: "aura1owner",
 		}
@@ -155,8 +155,8 @@ func TestQueryServerFunctionality(t *testing.T) {
 	})
 
 	t.Run("QuerySearchDataItems_WithTypeFilter", func(t *testing.T) {
-		req := &types.QuerySearchDataItemsRequest{
-			TypeFilter: types.DataItemType_DATA_ITEM_TYPE_VIDEO,
+		req := &drtypes.QuerySearchDataItemsRequest{
+			TypeFilter: drtypes.DataItemType_DATA_ITEM_TYPE_VIDEO,
 			Requester:  "aura1owner",
 		}
 
@@ -164,11 +164,11 @@ func TestQueryServerFunctionality(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, resp)
 		require.Len(t, resp.DataItems, 1)
-		require.Equal(t, types.DataItemType_DATA_ITEM_TYPE_VIDEO, resp.DataItems[0].DataType)
+		require.Equal(t, drtypes.DataItemType_DATA_ITEM_TYPE_VIDEO, resp.DataItems[0].DataType)
 	})
 
 	t.Run("QueryStats", func(t *testing.T) {
-		req := &types.QueryStatsRequest{}
+		req := &drtypes.QueryStatsRequest{}
 
 		resp, err := queryServer.Stats(input.Ctx, req)
 		require.NoError(t, err)
@@ -178,7 +178,7 @@ func TestQueryServerFunctionality(t *testing.T) {
 	})
 
 	t.Run("QueryParams", func(t *testing.T) {
-		req := &types.QueryParamsRequest{}
+		req := &drtypes.QueryParamsRequest{}
 
 		resp, err := queryServer.Params(input.Ctx, req)
 		require.NoError(t, err)
