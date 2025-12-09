@@ -7,6 +7,7 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	gogotypes "github.com/cosmos/gogoproto/types"
 
 	"github.com/aequitas/aura/chain/x/vcregistry/types"
 	vcregistrypb "github.com/aequitas/aura/proto/aura/vcregistry/v1beta1"
@@ -745,11 +746,21 @@ func (m *MsgServer) emitEvent(ctx context.Context, eventType string, attrs map[s
 	sdkCtx.EventManager().EmitEvent(sdk.NewEvent(eventType, eventAttrs...))
 }
 
-func formatTimestamp(ts *timestamppb.Timestamp) string {
-	if ts == nil {
+func formatTimestamp(ts interface{}) string {
+	switch t := ts.(type) {
+	case *timestamppb.Timestamp:
+		if t == nil {
+			return ""
+		}
+		return t.AsTime().UTC().Format(time.RFC3339Nano)
+	case *gogotypes.Timestamp:
+		if t == nil {
+			return ""
+		}
+		return time.Unix(t.Seconds, int64(t.Nanos)).UTC().Format(time.RFC3339Nano)
+	default:
 		return ""
 	}
-	return ts.AsTime().UTC().Format(time.RFC3339Nano)
 }
 
 func (m *MsgServer) emitVCRevokedEvent(ctx context.Context, vcID, vcType, reason, revoker string, revokedAt *timestamppb.Timestamp) {

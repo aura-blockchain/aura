@@ -8,7 +8,6 @@ import (
 	sdkerrors "cosmossdk.io/errors"
 	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/auth/types"
 	authproto "github.com/aequitas/aura/proto/aura/auth/v1beta1"
@@ -185,7 +184,7 @@ func (k *Keeper) migrateRoles(ctx sdk.Context, migration *AccountMigration) erro
 			Address:    migration.NewAddress,
 			RoleName:   assignment.RoleName,
 			AssignedBy: "migration:" + migration.ID,
-			AssignedAt: timestamppb.Now(),
+			AssignedAt: time.Now(),
 			ExpiresAt:  assignment.ExpiresAt,
 		}
 		if err := k.SetRoleAssignment(ctx, newAssignment); err != nil {

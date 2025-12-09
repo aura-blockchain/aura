@@ -26,10 +26,10 @@ func (k *Keeper) GetAuditLogs(actor, action string, startTime, endTime int64, li
 			if action != "" && log.Action != action {
 				continue
 			}
-			if startTime > 0 && log.Timestamp != nil && log.Timestamp.AsTime().Unix() < startTime {
+			if startTime > 0 && !log.Timestamp.IsZero() && log.Timestamp.Unix() < startTime {
 				continue
 			}
-			if endTime > 0 && log.Timestamp != nil && log.Timestamp.AsTime().Unix() > endTime {
+			if endTime > 0 && !log.Timestamp.IsZero() && log.Timestamp.Unix() > endTime {
 				continue
 			}
 
@@ -39,10 +39,10 @@ func (k *Keeper) GetAuditLogs(actor, action string, startTime, endTime int64, li
 
 	// Sort by timestamp (most recent first)
 	sort.Slice(filtered, func(i, j int) bool {
-		if filtered[i].Timestamp == nil || filtered[j].Timestamp == nil {
+		if filtered[i].Timestamp.IsZero() || filtered[j].Timestamp.IsZero() {
 			return false
 		}
-		return filtered[i].Timestamp.AsTime().After(filtered[j].Timestamp.AsTime())
+		return filtered[i].Timestamp.After(filtered[j].Timestamp)
 	})
 
 	// Apply limit
@@ -80,10 +80,10 @@ func (k *Keeper) GetAuditLogsByResource(resource string, limit uint64) []*authpr
 
 	// Sort by timestamp (most recent first)
 	sort.Slice(filtered, func(i, j int) bool {
-		if filtered[i].Timestamp == nil || filtered[j].Timestamp == nil {
+		if filtered[i].Timestamp.IsZero() || filtered[j].Timestamp.IsZero() {
 			return false
 		}
-		return filtered[i].Timestamp.AsTime().After(filtered[j].Timestamp.AsTime())
+		return filtered[i].Timestamp.After(filtered[j].Timestamp)
 	})
 
 	// Apply limit
@@ -125,14 +125,13 @@ func (k *Keeper) LogAudit(ctx interface{}, actor, action, resource, status strin
 	k.mu.Lock()
 	defer k.mu.Unlock()
 
-	now := time.Now()
 	log := &authproto.AuditLog{
-		Id:           fmt.Sprintf("%s-%d", actor, now.UnixNano()),
+		Id:           fmt.Sprintf("%s-%d", actor, time.Now().UnixNano()),
 		Actor:        actor,
 		Action:       action,
 		Resource:     resource,
 		Result:       status,
-		Timestamp:    timestamppb.New(now),
+		Timestamp:    time.Now(),
 		Metadata:     metadata,
 		ErrorMessage: errorMsg,
 	}
@@ -190,10 +189,10 @@ func (k *Keeper) SearchAuditLogs(criteria map[string]string, limit uint64) []*au
 
 	// Sort by timestamp (most recent first)
 	sort.Slice(filtered, func(i, j int) bool {
-		if filtered[i].Timestamp == nil || filtered[j].Timestamp == nil {
+		if filtered[i].Timestamp.IsZero() || filtered[j].Timestamp.IsZero() {
 			return false
 		}
-		return filtered[i].Timestamp.AsTime().After(filtered[j].Timestamp.AsTime())
+		return filtered[i].Timestamp.After(filtered[j].Timestamp)
 	})
 
 	// Apply limit

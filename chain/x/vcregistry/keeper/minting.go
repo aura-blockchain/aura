@@ -140,10 +140,10 @@ func (k *Keeper) MintVC(ctx context.Context, holderAddress, holderDID string, vc
 	// 5. Calculate expiration
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	currentTime := sdkCtx.BlockTime().Unix()
-	var expiresAt *timestamppb.Timestamp
+	var expiresAt *gogotypes.Timestamp
 	if policy.ExpiryDurationDays > 0 {
 		expiryTime := currentTime + (int64(policy.ExpiryDurationDays) * 86400) // days to seconds
-		expiresAt = timestamppb.New(timestamppb.New(unixToTime(expiryTime)).AsTime())
+		expiresAt = &gogotypes.Timestamp{Seconds: expiryTime, Nanos: 0}
 	}
 
 	// 6. Get current CS score

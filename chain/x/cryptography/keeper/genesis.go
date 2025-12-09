@@ -20,7 +20,8 @@ func (k *Keeper) InitGenesis(ctx context.Context, data *cryptoproto.GenesisState
 	// Set parameters
 	if data.Params != nil {
 		if err := k.SetParams(ctx, data.Params); err != nil {
-			k.Logger(ctx).Error("failed to set params", "error", err)
+			sdkCtx := sdk.UnwrapSDKContext(ctx)
+			k.Logger(sdkCtx).Error("failed to set params", "error", err)
 			return err
 		}
 	}
@@ -28,67 +29,67 @@ func (k *Keeper) InitGenesis(ctx context.Context, data *cryptoproto.GenesisState
 	// Initialize key rotation schedules
 	for _, schedule := range data.KeyRotationSchedules {
 		if err := k.SetKeyRotationSchedule(ctx, schedule); err != nil {
-			k.Logger(ctx).Error("failed to initialize key rotation schedule", "key_id", schedule.KeyId, "error", err)
+			k.Logger(sdkCtx).Error("failed to initialize key rotation schedule", "key_id", schedule.KeyId, "error", err)
 		}
 	}
 
 	// Initialize threshold signature schemes
 	for _, scheme := range data.ThresholdSchemes {
 		if err := k.SetThresholdScheme(ctx, scheme); err != nil {
-			k.Logger(ctx).Error("failed to initialize threshold scheme", "scheme_id", scheme.SchemeId, "error", err)
+			k.Logger(sdkCtx).Error("failed to initialize threshold scheme", "scheme_id", scheme.SchemeId, "error", err)
 		}
 	}
 
 	// Initialize ZK proof configs
 	for _, config := range data.ZkProofConfigs {
 		if err := k.SetZKProofConfig(sdkCtx, config); err != nil {
-			k.Logger(ctx).Error("failed to initialize ZK proof config", "proof_id", config.ProofId, "error", err)
+			k.Logger(sdkCtx).Error("failed to initialize ZK proof config", "proof_id", config.ProofId, "error", err)
 		}
 	}
 
 	// Initialize secure enclaves
 	for _, enclave := range data.SecureEnclaves {
 		if err := k.SetSecureEnclaveConfig(sdkCtx, enclave); err != nil {
-			k.Logger(ctx).Error("failed to initialize secure enclave", "enclave_id", enclave.EnclaveId, "error", err)
+			k.Logger(sdkCtx).Error("failed to initialize secure enclave", "enclave_id", enclave.EnclaveId, "error", err)
 		}
 	}
 
 	// Initialize quantum-resistant keys
 	for _, key := range data.QuantumResistantKeys {
 		if err := k.SetQuantumResistantKey(sdkCtx, key); err != nil {
-			k.Logger(ctx).Error("failed to initialize quantum-resistant key", "key_id", key.KeyId, "error", err)
+			k.Logger(sdkCtx).Error("failed to initialize quantum-resistant key", "key_id", key.KeyId, "error", err)
 		}
 	}
 
 	// Initialize random sources
 	for _, source := range data.RandomSources {
 		if err := k.SetRandomSource(ctx, source); err != nil {
-			k.Logger(ctx).Error("failed to initialize random source", "source_id", source.SourceId, "error", err)
+			k.Logger(sdkCtx).Error("failed to initialize random source", "source_id", source.SourceId, "error", err)
 		}
 	}
 
 	// Initialize key stretching configs
 	for _, config := range data.KeyStretchingConfigs {
 		if err := k.SetKeyStretchingConfig(ctx, config); err != nil {
-			k.Logger(ctx).Error("failed to initialize key stretching config", "config_id", config.ConfigId, "error", err)
+			k.Logger(sdkCtx).Error("failed to initialize key stretching config", "config_id", config.ConfigId, "error", err)
 		}
 	}
 
 	// Initialize certificate pins
 	for _, pin := range data.CertificatePins {
 		if err := k.SetCertificatePin(ctx, pin); err != nil {
-			k.Logger(ctx).Error("failed to initialize certificate pin", "domain", pin.Hostname, "error", err)
+			k.Logger(sdkCtx).Error("failed to initialize certificate pin", "domain", pin.Hostname, "error", err)
 		}
 	}
 
 	// Initialize ZK proof verifications
 	for _, verification := range data.ZkProofVerifications {
 		if err := k.SetZKProofVerification(ctx, verification); err != nil {
-			k.Logger(ctx).Error("failed to initialize ZK proof verification", "verification_id", verification.VerificationId, "error", err)
+			k.Logger(sdkCtx).Error("failed to initialize ZK proof verification", "verification_id", verification.VerificationId, "error", err)
 		}
 	}
 
-	k.Logger(ctx).Info("cryptography module initialized from genesis")
+	k.Logger(sdkCtx).Info("cryptography module initialized from genesis")
 	return nil
 }
 
@@ -100,7 +101,7 @@ func (k *Keeper) ExportGenesis(ctx context.Context) *cryptoproto.GenesisState {
 	// Get parameters
 	params, err := k.GetParams(ctx)
 	if err != nil {
-		k.Logger(ctx).Error("failed to get params during export", "error", err)
+		k.Logger(sdkCtx).Error("failed to get params during export", "error", err)
 		params = &cryptoproto.Params{}
 	}
 
