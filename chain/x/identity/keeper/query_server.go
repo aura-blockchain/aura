@@ -35,7 +35,7 @@ func (qs queryServer) Params(goCtx context.Context, req *identitypb.QueryParamsR
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &identitypb.QueryParamsResponse{Params: *params}, nil
+	return &identitypb.QueryParamsResponse{Params: params}, nil
 }
 
 // IdentityRecord queries an identity record by DID
@@ -53,7 +53,7 @@ func (qs queryServer) IdentityRecord(goCtx context.Context, req *identitypb.Quer
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
-	return &identitypb.QueryIdentityRecordResponse{Record: *record}, nil
+	return &identitypb.QueryIdentityRecordResponse{Record: record}, nil
 }
 
 // IdentityRecordByAddress queries an identity record by address
@@ -75,7 +75,7 @@ func (qs queryServer) IdentityRecordByAddress(goCtx context.Context, req *identi
 
 	for _, record := range allRecords {
 		if record.Address == req.Address {
-			return &identitypb.QueryIdentityRecordByAddressResponse{Record: *record}, nil
+			return &identitypb.QueryIdentityRecordByAddressResponse{Record: record}, nil
 		}
 	}
 
@@ -112,7 +112,7 @@ func (qs queryServer) ChangeRequest(goCtx context.Context, req *identitypb.Query
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
-	return &identitypb.QueryChangeRequestResponse{Request: *request}, nil
+	return &identitypb.QueryChangeRequestResponse{Request: request}, nil
 }
 
 // ChangeRequestsByDID queries change requests for a DID
@@ -174,7 +174,7 @@ func (qs queryServer) Role(goCtx context.Context, req *identitypb.QueryRoleReque
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
-	return &identitypb.QueryRoleResponse{Role: *role}, nil
+	return &identitypb.QueryRoleResponse{Role: role}, nil
 }
 
 // AllRoles queries all roles
@@ -264,7 +264,7 @@ func (qs queryServer) MultisigWallet(goCtx context.Context, req *identitypb.Quer
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
-	return &identitypb.QueryMultisigWalletResponse{Wallet: wallet}, nil
+	return &identitypb.QueryMultisigWalletResponse{Wallet: &wallet}, nil
 }
 
 // AllMultisigWallets queries all multisig wallets
@@ -297,7 +297,7 @@ func (qs queryServer) MultisigProposal(goCtx context.Context, req *identitypb.Qu
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
-	return &identitypb.QueryMultisigProposalResponse{Proposal: proposal}, nil
+	return &identitypb.QueryMultisigProposalResponse{Proposal: &proposal}, nil
 }
 
 // MultisigProposalsByWallet queries proposals for a wallet

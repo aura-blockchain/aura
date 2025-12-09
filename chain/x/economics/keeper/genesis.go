@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"encoding/binary"
 	"fmt"
 
 	economicspb "github.com/aequitas/aura/proto/aura/economics/v1beta1"
@@ -211,25 +212,37 @@ func (k Keeper) ExportGenesis(ctx context.Context) (*economicspb.GenesisState, e
 		return nil, fmt.Errorf("failed to export proposals: %w", err)
 	}
 
-	if err := k.IterateAllVotes(ctx, func(vote *economicspb.Vote) bool {
-		gs.Votes = append(gs.Votes, *vote)
-		return false
-	}); err != nil {
-		return nil, fmt.Errorf("failed to export votes: %w", err)
+	// Export votes for all proposals
+	for _, proposal := range gs.Proposals {
+		votes, err := k.GetVotes(ctx, proposal.Id)
+		if err == nil {
+			for _, vote := range votes {
+				gs.Votes = append(gs.Votes, *vote)
+			}
+		}
 	}
 
-	if err := k.IterateAllDeposits(ctx, func(deposit *economicspb.Deposit) bool {
-		gs.Deposits = append(gs.Deposits, *deposit)
-		return false
-	}); err != nil {
-		return nil, fmt.Errorf("failed to export deposits: %w", err)
+	// Export deposits for all proposals
+	for _, proposal := range gs.Proposals {
+		deposits, err := k.GetDeposits(ctx, proposal.Id)
+		if err == nil {
+			for _, deposit := range deposits {
+				gs.Deposits = append(gs.Deposits, *deposit)
+			}
+		}
 	}
 
-	if err := k.IterateAllVoteDelegations(ctx, func(delegation *economicspb.VoteDelegation) bool {
-		gs.VoteDelegations = append(gs.VoteDelegations, *delegation)
-		return false
-	}); err != nil {
-		return nil, fmt.Errorf("failed to export vote delegations: %w", err)
+	// Export vote delegations (iterate using store prefix)
+	store := k.storeService.OpenKVStore(ctx)
+	delegationIterator, err := store.Iterator(types.VoteDelegationPrefix, storeprefixend(types.VoteDelegationPrefix))
+	if err == nil {
+		defer delegationIterator.Close()
+		for ; delegationIterator.Valid(); delegationIterator.Next() {
+			var delegation economicspb.VoteDelegation
+			if err := k.cdc.Unmarshal(delegationIterator.Value(), &delegation); err == nil {
+				gs.VoteDelegations = append(gs.VoteDelegations, delegation)
+			}
+		}
 	}
 
 	// Export inflation metrics
@@ -250,20 +263,26 @@ func (k Keeper) ExportGenesis(ctx context.Context) (*economicspb.GenesisState, e
 		gs.LiquidityMiningStats = lmStats
 	}
 
-	// Export user MEV balances
-	if err := k.IterateUserMEVBalances(ctx, func(addr string, balance string) bool {
-		gs.UserMevBalances[addr] = balance
-		return false
-	}); err != nil {
-		return nil, fmt.Errorf("failed to export user MEV balances: %w", err)
+	// Export user MEV balances (iterate using store prefix)
+	mevIterator, err := store.Iterator(types.UserMEVBalancePrefix, storeprefixend(types.UserMEVBalancePrefix))
+	if err == nil {
+		defer mevIterator.Close()
+		for ; mevIterator.Valid(); mevIterator.Next() {
+			addr := string(mevIterator.Key()[len(types.UserMEVBalancePrefix):])
+			balance := string(mevIterator.Value())
+			gs.UserMevBalances[addr] = balance
+		}
 	}
 
-	// Export last large tx times
-	if err := k.IterateLastLargeTxTimes(ctx, func(addr string, timestamp int64) bool {
-		gs.LastLargeTxTimes[addr] = timestamp
-		return false
-	}); err != nil {
-		return nil, fmt.Errorf("failed to export last large tx times: %w", err)
+	// Export last large tx times (iterate using store prefix)
+	txTimeIterator, err := store.Iterator(types.LastLargeTxTimePrefix, storeprefixend(types.LastLargeTxTimePrefix))
+	if err == nil {
+		defer txTimeIterator.Close()
+		for ; txTimeIterator.Valid(); txTimeIterator.Next() {
+			addr := string(txTimeIterator.Key()[len(types.LastLargeTxTimePrefix):])
+			timestamp := int64(binary.BigEndian.Uint64(txTimeIterator.Value()))
+			gs.LastLargeTxTimes[addr] = timestamp
+		}
 	}
 
 	return gs, nil
