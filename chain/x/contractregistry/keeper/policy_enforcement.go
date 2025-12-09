@@ -112,7 +112,7 @@ func (k Keeper) EnforceSecurityPolicy(ctx sdk.Context, contractAddr, executor st
 
 		// Enforce confidence score requirements
 		if metadata.MinConfidenceScore > 0 && k.csKeeper != nil {
-			score, found := k.csKeeper.GetUserScore(executor)
+			score, found := k.csKeeper.GetUserScore(ctx, executor)
 			if !found || score < metadata.MinConfidenceScore {
 				return types.ErrLowConfidenceScore
 			}

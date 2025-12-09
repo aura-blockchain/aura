@@ -175,11 +175,16 @@ func (k Keeper) extractBlockHeightFromTransferID(transferID string) (int64, int6
 	return 0, 0, false
 }
 
-func (k Keeper) setTransfer(ctx sdk.Context, transfer *types.CrossChainTransfer) {
+func (k Keeper) setTransfer(ctx sdk.Context, transfer *types.CrossChainTransfer) error {
 	if transfer == nil || transfer.TransferId == "" {
-		return
+		return nil
 	}
-	k.store(ctx).Set(types.TransferKey(transfer.TransferId), k.cdc.MustMarshal(transfer))
+	bz, err := k.cdc.Marshal(transfer)
+	if err != nil {
+		return types.ErrMarshalFailed.Wrapf("failed to marshal transfer %s: %v", transfer.TransferId, err)
+	}
+	k.store(ctx).Set(types.TransferKey(transfer.TransferId), bz)
+	return nil
 }
 
 func (k Keeper) getTransfer(ctx sdk.Context, transferID string) (*types.CrossChainTransfer, bool) {
@@ -228,8 +233,13 @@ func (k Keeper) transferIDByHash(ctx sdk.Context, hash string) (string, bool) {
 	return string(bz), true
 }
 
-func (k Keeper) setChainConfig(ctx sdk.Context, config types.ChainConfig) {
-	k.store(ctx).Set(types.ChainConfigKey(strings.ToLower(config.ChainId)), k.cdc.MustMarshal(&config))
+func (k Keeper) setChainConfig(ctx sdk.Context, config types.ChainConfig) error {
+	bz, err := k.cdc.Marshal(&config)
+	if err != nil {
+		return types.ErrMarshalFailed.Wrapf("failed to marshal chain config %s: %v", config.ChainId, err)
+	}
+	k.store(ctx).Set(types.ChainConfigKey(strings.ToLower(config.ChainId)), bz)
+	return nil
 }
 
 func (k Keeper) getChainConfig(ctx sdk.Context, chainID string) (types.ChainConfig, bool) {
@@ -263,11 +273,16 @@ func (k Keeper) getAllChainConfigs(ctx sdk.Context) []types.ChainConfig {
 	return configs
 }
 
-func (k Keeper) setSharedIdentity(ctx sdk.Context, identity *types.SharedIdentity) {
+func (k Keeper) setSharedIdentity(ctx sdk.Context, identity *types.SharedIdentity) error {
 	if identity == nil || identity.Address == "" {
-		return
+		return nil
 	}
-	k.store(ctx).Set(types.SharedIdentityKey(identity.Address), k.cdc.MustMarshal(identity))
+	bz, err := k.cdc.Marshal(identity)
+	if err != nil {
+		return types.ErrMarshalFailed.Wrapf("failed to marshal shared identity %s: %v", identity.Address, err)
+	}
+	k.store(ctx).Set(types.SharedIdentityKey(identity.Address), bz)
+	return nil
 }
 
 func (k Keeper) getSharedIdentity(ctx sdk.Context, address string) (*types.SharedIdentity, bool) {
@@ -399,38 +414,61 @@ func (k Keeper) verifyPawAddressOwnership(ctx sdk.Context, auraAddress string, p
 	// Extract R and S components (first 64 bytes)
 	sigBytes := signature[:64]
 
-	// Attempt to recover the public key from the signature
-	// We try all possible recovery IDs (0-7) to find the correct one
-	var recoveredPubKey []byte
-	for recID := byte(0); recID <= 7; recID++ {
-		// Use the provided recovery ID first, then try others
-		tryRecID := (recoveryID + recID) % 8
-
-		// Attempt recovery with this ID
-		pubKey, err := k.recoverPubKeyFromSignature(msgHash[:], sigBytes, tryRecID)
-		if err != nil {
-			continue
-		}
-
-		// Derive address from recovered public key
-		derivedAddress := k.derivePawAddressFromPubKey(pubKey)
-
-		// Check if derived address matches claimed PAW address
-		if derivedAddress == pawAddress {
-			recoveredPubKey = pubKey
-			break
-		}
+	// SECURITY FIX: Check replay protection before attempting signature verification
+	// This prevents the same signature from being reused
+	signatureHash := sha256.Sum256(signature)
+	if k.isSignatureUsed(ctx, signatureHash[:]) {
+		ctx.Logger().Error("PAW signature replay attack detected",
+			"paw_address", pawAddress,
+			"aura_address", auraAddress,
+			"signature_hash", hex.EncodeToString(signatureHash[:]))
+		k.recordSignatureMismatch("paw", "link_address", "signature_replay")
+		k.recordSignatureVerification("paw", "link_address", false, time.Since(startTime))
+		return false
 	}
 
-	if recoveredPubKey == nil {
+	// SECURITY FIX: Check rate limiting before expensive cryptographic operations
+	// This prevents DoS attacks via signature grinding
+	if err := k.checkSignatureRateLimit(ctx, pawAddress); err != nil {
+		ctx.Logger().Error("PAW signature rate limit exceeded",
+			"paw_address", pawAddress,
+			"aura_address", auraAddress,
+			"error", err.Error())
+		k.recordSignatureMismatch("paw", "link_address", "rate_limit_exceeded")
+		k.recordSignatureVerification("paw", "link_address", false, time.Since(startTime))
+		return false
+	}
+
+	// SECURITY FIX: Use only the claimed recovery ID, not all possible IDs
+	// This prevents signature malleability and DoS amplification attacks
+	pubKey, err := k.recoverPubKeyFromSignature(msgHash[:], sigBytes, recoveryID)
+	if err != nil {
 		ctx.Logger().Error("Failed to recover public key from PAW signature",
 			"paw_address", pawAddress,
-			"aura_address", auraAddress)
+			"aura_address", auraAddress,
+			"recovery_id", recoveryID,
+			"error", err.Error())
 		k.recordPubKeyRecoveryFailure("paw", fmt.Sprintf("%d", recoveryID))
 		k.recordSignatureMismatch("paw", "link_address", "pubkey_recovery_failed")
 		k.recordSignatureVerification("paw", "link_address", false, time.Since(startTime))
 		return false
 	}
+
+	// Derive address from recovered public key
+	derivedAddress := k.derivePawAddressFromPubKey(pubKey)
+
+	// Verify that the derived address matches the claimed PAW address
+	if derivedAddress != pawAddress {
+		ctx.Logger().Error("PAW address mismatch",
+			"claimed", pawAddress,
+			"derived", derivedAddress,
+			"recovery_id", recoveryID)
+		k.recordSignatureMismatch("paw", "link_address", "address_mismatch")
+		k.recordSignatureVerification("paw", "link_address", false, time.Since(startTime))
+		return false
+	}
+
+	recoveredPubKey := pubKey
 
 	// Additional verification: Verify the signature with the recovered public key
 	// Use ecdsa library directly since external wallets (PAW) use different signature formats
@@ -447,6 +485,9 @@ func (k Keeper) verifyPawAddressOwnership(ctx sdk.Context, auraAddress string, p
 	ctx.Logger().Info("PAW address ownership verified successfully",
 		"paw_address", pawAddress,
 		"aura_address", auraAddress)
+
+	// SECURITY FIX: Mark signature as used to prevent replay attacks
+	k.markSignatureUsed(ctx, signatureHash[:], ctx.BlockHeight())
 
 	// TELEMETRY: Record successful verification
 	k.recordSignatureVerification("paw", "link_address", true, time.Since(startTime))
@@ -528,38 +569,61 @@ func (k Keeper) verifyXaiAddressOwnership(ctx sdk.Context, auraAddress string, x
 	// Extract R and S components (first 64 bytes)
 	sigBytes := signature[:64]
 
-	// Attempt to recover the public key from the signature
-	// We try all possible recovery IDs (0-7) to find the correct one
-	var recoveredPubKey []byte
-	for recID := byte(0); recID <= 7; recID++ {
-		// Use the provided recovery ID first, then try others
-		tryRecID := (recoveryID + recID) % 8
-
-		// Attempt recovery with this ID
-		pubKey, err := k.recoverPubKeyFromSignature(msgHash[:], sigBytes, tryRecID)
-		if err != nil {
-			continue
-		}
-
-		// Derive address from recovered public key
-		derivedAddress := k.deriveXaiAddressFromPubKey(pubKey)
-
-		// Check if derived address matches claimed XAI address
-		if derivedAddress == xaiAddress {
-			recoveredPubKey = pubKey
-			break
-		}
+	// SECURITY FIX: Check replay protection before attempting signature verification
+	// This prevents the same signature from being reused
+	signatureHash := sha256.Sum256(signature)
+	if k.isSignatureUsed(ctx, signatureHash[:]) {
+		ctx.Logger().Error("XAI signature replay attack detected",
+			"xai_address", xaiAddress,
+			"aura_address", auraAddress,
+			"signature_hash", hex.EncodeToString(signatureHash[:]))
+		k.recordSignatureMismatch("xai", "link_address", "signature_replay")
+		k.recordSignatureVerification("xai", "link_address", false, time.Since(startTime))
+		return false
 	}
 
-	if recoveredPubKey == nil {
+	// SECURITY FIX: Check rate limiting before expensive cryptographic operations
+	// This prevents DoS attacks via signature grinding
+	if err := k.checkSignatureRateLimit(ctx, xaiAddress); err != nil {
+		ctx.Logger().Error("XAI signature rate limit exceeded",
+			"xai_address", xaiAddress,
+			"aura_address", auraAddress,
+			"error", err.Error())
+		k.recordSignatureMismatch("xai", "link_address", "rate_limit_exceeded")
+		k.recordSignatureVerification("xai", "link_address", false, time.Since(startTime))
+		return false
+	}
+
+	// SECURITY FIX: Use only the claimed recovery ID, not all possible IDs
+	// This prevents signature malleability and DoS amplification attacks
+	pubKey, err := k.recoverPubKeyFromSignature(msgHash[:], sigBytes, recoveryID)
+	if err != nil {
 		ctx.Logger().Error("Failed to recover public key from XAI signature",
 			"xai_address", xaiAddress,
-			"aura_address", auraAddress)
+			"aura_address", auraAddress,
+			"recovery_id", recoveryID,
+			"error", err.Error())
 		k.recordPubKeyRecoveryFailure("xai", fmt.Sprintf("%d", recoveryID))
 		k.recordSignatureMismatch("xai", "link_address", "pubkey_recovery_failed")
 		k.recordSignatureVerification("xai", "link_address", false, time.Since(startTime))
 		return false
 	}
+
+	// Derive address from recovered public key
+	derivedAddress := k.deriveXaiAddressFromPubKey(pubKey)
+
+	// Verify that the derived address matches the claimed XAI address
+	if derivedAddress != xaiAddress {
+		ctx.Logger().Error("XAI address mismatch",
+			"claimed", xaiAddress,
+			"derived", derivedAddress,
+			"recovery_id", recoveryID)
+		k.recordSignatureMismatch("xai", "link_address", "address_mismatch")
+		k.recordSignatureVerification("xai", "link_address", false, time.Since(startTime))
+		return false
+	}
+
+	recoveredPubKey := pubKey
 
 	// Additional verification: Verify the signature with the recovered public key
 	// Use ecdsa library directly since external wallets (XAI) use different signature formats
@@ -577,17 +641,25 @@ func (k Keeper) verifyXaiAddressOwnership(ctx sdk.Context, auraAddress string, x
 		"xai_address", xaiAddress,
 		"aura_address", auraAddress)
 
+	// SECURITY FIX: Mark signature as used to prevent replay attacks
+	k.markSignatureUsed(ctx, signatureHash[:], ctx.BlockHeight())
+
 	// TELEMETRY: Record successful verification
 	k.recordSignatureVerification("xai", "link_address", true, time.Since(startTime))
 
 	return true
 }
 
-func (k Keeper) setSwap(ctx sdk.Context, swap *types.CrossChainSwap) {
+func (k Keeper) setSwap(ctx sdk.Context, swap *types.CrossChainSwap) error {
 	if swap == nil || swap.SwapId == "" {
-		return
+		return nil
 	}
-	k.store(ctx).Set(types.SwapKey(swap.SwapId), k.cdc.MustMarshal(swap))
+	bz, err := k.cdc.Marshal(swap)
+	if err != nil {
+		return types.ErrMarshalFailed.Wrapf("failed to marshal swap %s: %v", swap.SwapId, err)
+	}
+	k.store(ctx).Set(types.SwapKey(swap.SwapId), bz)
+	return nil
 }
 
 func (k Keeper) getSwap(ctx sdk.Context, swapID string) (*types.CrossChainSwap, bool) {
@@ -614,11 +686,16 @@ func (k Keeper) getWrappedToken(ctx sdk.Context, denom string) (*types.WrappedTo
 	return &token, true
 }
 
-func (k Keeper) setWrappedToken(ctx sdk.Context, token *types.WrappedToken) {
+func (k Keeper) setWrappedToken(ctx sdk.Context, token *types.WrappedToken) error {
 	if token == nil || token.WrappedDenom == "" {
-		return
+		return nil
 	}
-	k.store(ctx).Set(types.WrappedTokenKey(token.WrappedDenom), k.cdc.MustMarshal(token))
+	bz, err := k.cdc.Marshal(token)
+	if err != nil {
+		return types.ErrMarshalFailed.Wrapf("failed to marshal wrapped token %s: %v", token.WrappedDenom, err)
+	}
+	k.store(ctx).Set(types.WrappedTokenKey(token.WrappedDenom), bz)
+	return nil
 }
 
 func (k Keeper) getAllWrappedTokens(ctx sdk.Context) []types.WrappedToken {
@@ -675,14 +752,19 @@ func (k Keeper) recordRelayerStats(ctx sdk.Context, relayer string, success bool
 	// stats.TotalVolume is already math.Int, use directly
 	stats.TotalVolume = stats.TotalVolume.Add(volume)
 	stats.LastRelay = &blockTime
-	k.setRelayerStats(ctx, stats)
+	_ = k.setRelayerStats(ctx, stats) // Best effort, stats are non-critical
 }
 
-func (k Keeper) setRelayerStats(ctx sdk.Context, stats *types.RelayerStats) {
+func (k Keeper) setRelayerStats(ctx sdk.Context, stats *types.RelayerStats) error {
 	if stats == nil || stats.RelayerAddress == "" {
-		return
+		return nil
 	}
-	k.store(ctx).Set(types.RelayerKey(stats.RelayerAddress), k.cdc.MustMarshal(stats))
+	bz, err := k.cdc.Marshal(stats)
+	if err != nil {
+		return types.ErrMarshalFailed.Wrapf("failed to marshal relayer stats %s: %v", stats.RelayerAddress, err)
+	}
+	k.store(ctx).Set(types.RelayerKey(stats.RelayerAddress), bz)
+	return nil
 }
 
 func (k Keeper) markTransferFraudulent(ctx sdk.Context, transferID string) (*types.CrossChainTransfer, error) {
@@ -716,11 +798,16 @@ func (k Keeper) getAllRelayerStats(ctx sdk.Context) []*types.RelayerStats {
 	return statsList
 }
 
-func (k Keeper) setValidator(ctx sdk.Context, validator *types.BridgeValidator) {
+func (k Keeper) setValidator(ctx sdk.Context, validator *types.BridgeValidator) error {
 	if validator == nil || validator.Address == "" {
-		return
+		return nil
 	}
-	k.store(ctx).Set(types.ValidatorKey(validator.Address), k.cdc.MustMarshal(validator))
+	bz, err := k.cdc.Marshal(validator)
+	if err != nil {
+		return types.ErrMarshalFailed.Wrapf("failed to marshal validator %s: %v", validator.Address, err)
+	}
+	k.store(ctx).Set(types.ValidatorKey(validator.Address), bz)
+	return nil
 }
 
 func (k Keeper) getValidator(ctx sdk.Context, address string) (*types.BridgeValidator, bool) {
@@ -1065,11 +1152,16 @@ func (k Keeper) ExecuteWithdrawal(ctx sdk.Context, withdrawalID string) error {
 	return nil
 }
 
-func (k Keeper) setFraudProof(ctx sdk.Context, proof *types.FraudProof) {
+func (k Keeper) setFraudProof(ctx sdk.Context, proof *types.FraudProof) error {
 	if proof == nil || proof.ChallengedTransferId == "" {
-		return
+		return nil
 	}
-	k.store(ctx).Set(types.FraudProofKey(proof.ChallengedTransferId), k.cdc.MustMarshal(proof))
+	bz, err := k.cdc.Marshal(proof)
+	if err != nil {
+		return types.ErrMarshalFailed.Wrapf("failed to marshal fraud proof for transfer %s: %v", proof.ChallengedTransferId, err)
+	}
+	k.store(ctx).Set(types.FraudProofKey(proof.ChallengedTransferId), bz)
+	return nil
 }
 
 func (k Keeper) getFraudProof(ctx sdk.Context, transferID string) (*types.FraudProof, bool) {
@@ -2205,13 +2297,18 @@ func (k Keeper) ResetHourlyMint(ctx sdk.Context) {
 // Parameters:
 //   - ctx: SDK context for state access
 //   - pendingTransfer: The pending transfer to store
-func (k Keeper) setPendingTransfer(ctx sdk.Context, pendingTransfer *types.PendingTransfer) {
+func (k Keeper) setPendingTransfer(ctx sdk.Context, pendingTransfer *types.PendingTransfer) error {
 	if pendingTransfer == nil || pendingTransfer.TransferId == "" {
-		return
+		return nil
 	}
 	store := k.store(ctx)
 	key := types.PendingTransferKey(pendingTransfer.TransferId)
-	store.Set(key, k.cdc.MustMarshal(pendingTransfer))
+	bz, err := k.cdc.Marshal(pendingTransfer)
+	if err != nil {
+		return types.ErrMarshalFailed.Wrapf("failed to marshal pending transfer %s: %v", pendingTransfer.TransferId, err)
+	}
+	store.Set(key, bz)
+	return nil
 }
 
 // SetPendingTransfer is a public exported method for setting pending transfers (for tests).
@@ -2857,4 +2954,153 @@ func (k Keeper) verifyEcdsaSignature(pubKeyBytes []byte, msgHash []byte, signatu
 
 	// Verify signature
 	return sig.Verify(msgHash, pubKey)
+}
+
+// ========================================================================
+// SIGNATURE REPLAY PROTECTION AND RATE LIMITING
+// ========================================================================
+
+// isSignatureUsed checks if a signature has already been used.
+//
+// SECURITY CRITICAL: This function prevents replay attacks by tracking used signatures.
+// Each signature can only be accepted once, even if it's cryptographically valid.
+//
+// The signature hash is stored in the KV store after successful verification.
+// This prevents an attacker from reusing the same signature to perform the same
+// action multiple times (e.g., linking the same address multiple times).
+//
+// Parameters:
+//   - ctx: SDK context for state access
+//   - signatureHash: SHA256 hash of the complete signature (32 bytes)
+//
+// Returns:
+//   - bool: true if signature has been used before, false if it's fresh
+func (k Keeper) isSignatureUsed(ctx sdk.Context, signatureHash []byte) bool {
+	if len(signatureHash) != 32 {
+		return true // Invalid hash length, reject to be safe
+	}
+
+	store := k.store(ctx)
+	key := types.SignatureUsedKey(signatureHash)
+	return store.Has(key)
+}
+
+// markSignatureUsed marks a signature as used to prevent replay attacks.
+//
+// SECURITY CRITICAL: This function stores the signature hash in the KV store
+// along with the block height at which it was used. This creates an immutable
+// audit trail of signature usage.
+//
+// Once marked as used, the signature will be rejected by isSignatureUsed(),
+// preventing replay attacks.
+//
+// Storage format:
+//   - Key: SignatureUsedPrefix + signatureHash (32 bytes)
+//   - Value: blockHeight (8 bytes, big-endian uint64)
+//
+// Parameters:
+//   - ctx: SDK context for state access
+//   - signatureHash: SHA256 hash of the complete signature (32 bytes)
+//   - blockHeight: Block height at which signature was verified
+//
+// Implementation note: The block height is stored for potential future cleanup
+// of old signature records, though this is not currently implemented to maintain
+// maximum security (no automatic deletion of replay protection data).
+func (k Keeper) markSignatureUsed(ctx sdk.Context, signatureHash []byte, blockHeight int64) {
+	if len(signatureHash) != 32 {
+		// Invalid hash length, log error but don't panic
+		// This should never happen if called correctly
+		ctx.Logger().Error("Attempted to mark invalid signature hash",
+			"hash_length", len(signatureHash),
+			"expected", 32)
+		return
+	}
+
+	store := k.store(ctx)
+	key := types.SignatureUsedKey(signatureHash)
+
+	// Store block height as 8-byte big-endian uint64
+	value := make([]byte, 8)
+	binary.BigEndian.PutUint64(value, uint64(blockHeight))
+
+	store.Set(key, value)
+
+	// Emit event for audit trail
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			"signature_marked_used",
+			sdk.NewAttribute("signature_hash", hex.EncodeToString(signatureHash)),
+			sdk.NewAttribute("block_height", fmt.Sprintf("%d", blockHeight)),
+		),
+	)
+}
+
+// checkSignatureRateLimit enforces rate limiting on signature verification attempts.
+//
+// SECURITY CRITICAL: This function prevents DoS attacks where an attacker floods
+// the system with signature verification requests, consuming computational resources.
+//
+// Rate limiting is enforced per address with a sliding window approach:
+//   - Window size: 100 blocks (~10 minutes at 6s block time)
+//   - Max attempts per window: 10 signatures
+//
+// The rate limit is tracked separately from signature replay protection because:
+//  1. It tracks attempts, not just successful verifications
+//  2. It uses a sliding window that can be cleaned up
+//  3. It provides DoS protection even for invalid signatures
+//
+// Parameters:
+//   - ctx: SDK context for state access
+//   - address: Address attempting signature verification
+//
+// Returns:
+//   - error: ErrSignatureRateLimit if rate limit exceeded, nil otherwise
+func (k Keeper) checkSignatureRateLimit(ctx sdk.Context, address string) error {
+	const (
+		// Rate limit parameters
+		maxAttemptsPerWindow = 10  // Maximum signature attempts per window
+		rateLimitWindowSize  = 100 // Window size in blocks (~10 minutes)
+	)
+
+	currentHeight := ctx.BlockHeight()
+	windowStart := (currentHeight / rateLimitWindowSize) * rateLimitWindowSize
+
+	store := k.store(ctx)
+	key := types.SignatureRateLimitKey(address, windowStart)
+
+	// Get current attempt count for this window
+	var attemptCount uint64
+	bz := store.Get(key)
+	if bz != nil && len(bz) == 8 {
+		attemptCount = binary.BigEndian.Uint64(bz)
+	}
+
+	// Check if rate limit exceeded
+	if attemptCount >= maxAttemptsPerWindow {
+		ctx.Logger().Warn("Signature verification rate limit exceeded",
+			"address", address,
+			"window_start", windowStart,
+			"current_height", currentHeight,
+			"attempts", attemptCount,
+			"max_allowed", maxAttemptsPerWindow)
+
+		return types.ErrSignatureRateLimit
+	}
+
+	// Increment attempt count
+	attemptCount++
+	newValue := make([]byte, 8)
+	binary.BigEndian.PutUint64(newValue, attemptCount)
+	store.Set(key, newValue)
+
+	// Log rate limit check for monitoring
+	if attemptCount > maxAttemptsPerWindow/2 {
+		ctx.Logger().Info("Signature rate limit warning",
+			"address", address,
+			"attempts", attemptCount,
+			"max_allowed", maxAttemptsPerWindow,
+			"window_blocks_remaining", rateLimitWindowSize-(currentHeight-windowStart))
+	}
+
+	return nil
 }

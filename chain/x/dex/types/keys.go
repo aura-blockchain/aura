@@ -14,6 +14,13 @@ const (
 
 	// QuerierRoute defines the module's query routing key
 	QuerierRoute = ModuleName
+
+	// EndBlocker operation limits to prevent consensus failure
+	// These limits ensure EndBlocker completes in <500ms regardless of chain load
+	MaxOrdersCleanupPerBlock = 100 // Maximum expired orders to cleanup per block
+	MaxHTLCsCleanupPerBlock  = 50  // Maximum expired HTLCs to process per block
+	MaxPoolsTWAPPerBlock     = 20  // Maximum pools to update TWAP per block
+	MaxBatchExecutionSize    = 100 // Maximum orders to execute in batch per block
 )
 
 // KVStore key prefixes
@@ -47,6 +54,11 @@ var (
 
 	// Queued order keys (batch execution)
 	QueuedOrderPrefix = []byte{0x0A}
+
+	// EndBlocker cursor state keys (for batched operations)
+	OrderCleanupCursorPrefix = []byte{0x0B}
+	HTLCCleanupCursorPrefix  = []byte{0x0C}
+	TWAPCursorPrefix         = []byte{0x0D}
 )
 
 // PoolKey returns the store key for a liquidity pool
@@ -120,4 +132,19 @@ func OrderCommitmentKey(commitID string) []byte {
 // QueuedOrderKey returns the store key for a queued order
 func QueuedOrderKey(orderID string) []byte {
 	return append(QueuedOrderPrefix, []byte(orderID)...)
+}
+
+// OrderCleanupCursorKey returns the store key for order cleanup cursor
+func OrderCleanupCursorKey() []byte {
+	return OrderCleanupCursorPrefix
+}
+
+// HTLCCleanupCursorKey returns the store key for HTLC cleanup cursor
+func HTLCCleanupCursorKey() []byte {
+	return HTLCCleanupCursorPrefix
+}
+
+// TWAPCursorKey returns the store key for TWAP update cursor
+func TWAPCursorKey() []byte {
+	return TWAPCursorPrefix
 }

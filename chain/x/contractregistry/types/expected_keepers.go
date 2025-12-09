@@ -18,7 +18,7 @@ type VCKeeper interface {
 
 // ConfidenceScoreKeeper defines the expected interface for the confidence score keeper
 type ConfidenceScoreKeeper interface {
-	GetUserScore(address string) (uint64, bool)
+	GetUserScore(ctx sdk.Context, address string) (uint64, bool)
 }
 
 // Type aliases for proto-generated interfaces

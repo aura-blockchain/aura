@@ -2,10 +2,8 @@ package keeper
 
 import (
 	"context"
-	"fmt"
 	"time"
 
-	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

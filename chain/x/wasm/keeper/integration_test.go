@@ -20,7 +20,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // IntegrationTestSuite tests end-to-end contract lifecycle with hooks
@@ -254,11 +253,11 @@ func (suite *IntegrationTestSuite) TestPolicyEnforcement_Blacklist() {
 		Creator:   creator.String(),
 		Admin:     admin.String(),
 		Label:     "blacklist-test",
-		CreatedAt: timestamppb.Now(),
-		Metadata: &pb.ContractMetadata{
+		CreatedAt: time.Now(),
+		Metadata: pb.ContractMetadata{
 			Name: "blacklist-test",
 		},
-		SecurityPolicy: &pb.SecurityPolicy{
+		SecurityPolicy: pb.SecurityPolicy{
 			AllowPause:           true,
 			BlacklistedAddresses: []string{blacklistedSender.String()},
 		},
@@ -292,11 +291,11 @@ func (suite *IntegrationTestSuite) TestPolicyEnforcement_Whitelist() {
 		Creator:   creator.String(),
 		Admin:     admin.String(),
 		Label:     "whitelist-test",
-		CreatedAt: timestamppb.Now(),
-		Metadata: &pb.ContractMetadata{
+		CreatedAt: time.Now(),
+		Metadata: pb.ContractMetadata{
 			Name: "whitelist-test",
 		},
-		SecurityPolicy: &pb.SecurityPolicy{
+		SecurityPolicy: pb.SecurityPolicy{
 			AllowPause:           true,
 			WhitelistedAddresses: []string{whitelistedSender.String()},
 		},
@@ -332,11 +331,11 @@ func (suite *IntegrationTestSuite) TestPolicyEnforcement_GasLimit() {
 		Creator:   creator.String(),
 		Admin:     admin.String(),
 		Label:     "gas-test",
-		CreatedAt: timestamppb.Now(),
-		Metadata: &pb.ContractMetadata{
+		CreatedAt: time.Now(),
+		Metadata: pb.ContractMetadata{
 			Name: "gas-test",
 		},
-		SecurityPolicy: &pb.SecurityPolicy{
+		SecurityPolicy: pb.SecurityPolicy{
 			AllowPause:  true,
 			MaxGasPerTx: 100000, // Low limit
 		},
@@ -376,11 +375,11 @@ func (suite *IntegrationTestSuite) TestCircuitBreaker_GracefulDegradation() {
 		Creator:   creator.String(),
 		Admin:     admin.String(),
 		Label:     "circuit-breaker-test",
-		CreatedAt: timestamppb.Now(),
-		Metadata: &pb.ContractMetadata{
+		CreatedAt: time.Now(),
+		Metadata: pb.ContractMetadata{
 			Name: "circuit-breaker-test",
 		},
-		SecurityPolicy: &pb.SecurityPolicy{
+		SecurityPolicy: pb.SecurityPolicy{
 			AllowPause: true,
 		},
 		Status: pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
@@ -427,11 +426,11 @@ func (suite *IntegrationTestSuite) TestPerformance_ValidationOverhead() {
 		Creator:   creator.String(),
 		Admin:     admin.String(),
 		Label:     "performance-test",
-		CreatedAt: timestamppb.Now(),
-		Metadata: &pb.ContractMetadata{
+		CreatedAt: time.Now(),
+		Metadata: pb.ContractMetadata{
 			Name: "performance-test",
 		},
-		SecurityPolicy: &pb.SecurityPolicy{
+		SecurityPolicy: pb.SecurityPolicy{
 			AllowPause:       true,
 			RateLimitPerUser: 10000, // High limit
 		},
@@ -570,11 +569,11 @@ func (suite *IntegrationTestSuite) TestValidationCache_Performance() {
 		Creator:   creator.String(),
 		Admin:     admin.String(),
 		Label:     "cache-test",
-		CreatedAt: timestamppb.Now(),
-		Metadata: &pb.ContractMetadata{
+		CreatedAt: time.Now(),
+		Metadata: pb.ContractMetadata{
 			Name: "cache-test",
 		},
-		SecurityPolicy: &pb.SecurityPolicy{
+		SecurityPolicy: pb.SecurityPolicy{
 			AllowPause:       true,
 			RateLimitPerUser: 10000,
 		},

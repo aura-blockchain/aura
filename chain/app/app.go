@@ -49,6 +49,9 @@ import (
 	stakingmodule "github.com/cosmos/cosmos-sdk/x/staking"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	upgrademodule "cosmossdk.io/x/upgrade"
+	upgradekeeper "cosmossdk.io/x/upgrade/keeper"
+	upgradetypes "cosmossdk.io/x/upgrade/types"
 	"github.com/cosmos/gogoproto/proto"
 	"google.golang.org/grpc"
 
@@ -192,6 +195,7 @@ type storeKeys struct {
 	distribution *storetypes.KVStoreKey
 	params       *storetypes.KVStoreKey
 	consensus    *storetypes.KVStoreKey
+	upgrade      *storetypes.KVStoreKey
 
 	// Security module keys (individual)
 	walletSecurity    *storetypes.KVStoreKey
@@ -238,6 +242,7 @@ func (s *storeKeys) Names() []string {
 		distrtypes.StoreKey,
 		paramstypes.StoreKey,
 		consensustypes.StoreKey,
+		upgradetypes.StoreKey,
 		walletsecuritytypes.StoreKey,
 		validatorsecuritytypes.StoreKey,
 		cryptographytypes.StoreKey,
@@ -278,6 +283,7 @@ func (s *storeKeys) AsMap() map[string]*storetypes.KVStoreKey {
 		distrtypes.StoreKey:     s.distribution,
 		paramstypes.StoreKey:    s.params,
 		consensustypes.StoreKey: s.consensus,
+		upgradetypes.StoreKey:   s.upgrade,
 
 		// Security module keys (individual)
 		walletsecuritytypes.StoreKey:    s.walletSecurity,
@@ -326,6 +332,7 @@ func initStoreKeys() *storeKeys {
 		distribution: storetypes.NewKVStoreKey(distrtypes.StoreKey),
 		params:       storetypes.NewKVStoreKey(paramstypes.StoreKey),
 		consensus:    storetypes.NewKVStoreKey(consensustypes.StoreKey),
+		upgrade:      storetypes.NewKVStoreKey(upgradetypes.StoreKey),
 
 		// Security module keys (individual)
 		walletSecurity:    storetypes.NewKVStoreKey(walletsecuritytypes.StoreKey),
@@ -366,9 +373,10 @@ func initStoreKeys() *storeKeys {
 type App struct {
 	*baseapp.BaseApp
 
-	moduleManager *sdkmodule.Manager
-	grpcServer    *grpc.Server
-	encoding      EncodingConfig
+	moduleManager      *sdkmodule.Manager
+	moduleConfigurator sdkmodule.Configurator
+	grpcServer         *grpc.Server
+	encoding           EncodingConfig
 
 	AccountKeeper      authkeeper.AccountKeeper
 	BankKeeper         bankkeeper.BaseKeeper
@@ -376,6 +384,7 @@ type App struct {
 	SlashingKeeper     slashingkeeper.Keeper
 	DistributionKeeper distrkeeper.Keeper
 	ConsensusKeeper    consensuskeeper.Keeper
+	UpgradeKeeper      *upgradekeeper.Keeper
 	WasmKeeper         *wasmkeeper.Keeper
 
 	// Security module keepers (individual)
@@ -583,6 +592,17 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 	// Set the ParamStore on BaseApp - this is REQUIRED in SDK v0.53+ for InitChain to store consensus params
 	base.SetParamStore(consensusKeeper.ParamsStore)
 
+	// Upgrade keeper - required for protocol upgrades without hard forks
+	// The skip upgrade heights map is empty initially - can be populated via CLI flags if needed
+	upgradeKeeper := upgradekeeper.NewKeeper(
+		map[int64]bool{}, // skipUpgradeHeights - empty by default
+		runtime.NewKVStoreService(keys.upgrade),
+		encoding.Codec,
+		filepath.Join("/tmp", "aura-upgrades"), // Upgrade info directory
+		base,                                    // BaseApp for halting
+		authorityAddr,
+	)
+
 	// ============================================================================
 	// KEEPER INITIALIZATION - STRICT DEPENDENCY ORDER
 	// ============================================================================
@@ -784,10 +804,15 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 		encoding.Codec,
 		authorityAddr,
 	)
-	// Note: Keeper dependencies not wired due to interface mismatches - fix in follow-up
-	// contractRegistryKeeper.SetVCRegistryKeeper(vcKeeper)
-	// contractRegistryKeeper.SetComplianceKeeper(complianceKeeper)
-	// contractRegistryKeeper.SetConfidenceScoreKeeper(csKeeper)
+
+	// Wire keeper dependencies using adapters to bridge interface mismatches
+	contractRegistryVCAdapter := newContractRegistryVCAdapter(vcKeeper)
+	contractRegistryComplianceAdapter := newContractRegistryComplianceAdapter(complianceKeeper)
+	contractRegistryCSAdapter := newContractRegistryConfidenceScoreAdapter(csKeeper)
+
+	contractRegistryKeeper.SetVCKeeper(contractRegistryVCAdapter)
+	contractRegistryKeeper.SetComplianceKeeper(contractRegistryComplianceAdapter)
+	contractRegistryKeeper.SetConfidenceScoreKeeper(contractRegistryCSAdapter)
 
 	logger.Info("initializing keepers", "phase", "tier-7-dex-bridge-ai")
 
@@ -898,6 +923,7 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 		distribution.NewAppModule(encoding.Codec, distributionKeeper, accountKeeper, bankKeeper, stakingKeeper, nil),
 		params.NewAppModule(paramsKeeper),
 		consensus.NewAppModule(encoding.Codec, consensusKeeper),
+		upgrademodule.NewAppModule(upgradeKeeper, accountCodec),
 		genutilmodule.NewAppModule(accountKeeper, stakingKeeper, base, encoding.TxConfig),
 		wasmSecurityModule,
 		contractRegistryModule,
@@ -944,6 +970,7 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 		stakingtypes.ModuleName,
 		slashingtypes.ModuleName,
 		consensustypes.ModuleName,
+		upgradetypes.ModuleName,
 		paramstypes.ModuleName,
 		genutiltypes.ModuleName,
 		wasmtypes.ModuleName,
@@ -976,6 +1003,7 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 	moduleManager.SetOrderBeginBlockers(
 		genutiltypes.ModuleName,
 		consensustypes.ModuleName,
+		upgradetypes.ModuleName,
 		slashingtypes.ModuleName,
 		stakingtypes.ModuleName,
 		distrtypes.ModuleName,
@@ -1010,6 +1038,7 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 	)
 
 	moduleManager.SetOrderEndBlockers(
+		upgradetypes.ModuleName,
 		slashingtypes.ModuleName,
 		stakingtypes.ModuleName,
 		distrtypes.ModuleName,
@@ -1050,6 +1079,7 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 	app := &App{
 		BaseApp:            base,
 		moduleManager:      moduleManager,
+		moduleConfigurator: configurator,
 		encoding:           encoding,
 		AccountKeeper:      accountKeeper,
 		BankKeeper:         bankKeeper,
@@ -1057,6 +1087,7 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 		SlashingKeeper:     slashingKeeper,
 		DistributionKeeper: distributionKeeper,
 		ConsensusKeeper:    consensusKeeper,
+		UpgradeKeeper:      upgradeKeeper,
 		WasmKeeper:         &wasmKeeper,
 		// Individual security module keepers
 		walletsecurityKeeper:    walletsecurityKeeper,
@@ -1147,8 +1178,9 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 	// during the ABCI handshake or by the caller for testing
 	app.SetupAnteHandler()
 
-	// Note: Upgrade handlers deferred - upgrades.go requires updates
-	// app.RegisterUpgradeHandlers()
+	// Register upgrade handlers for protocol upgrades
+	// This must be called before LoadLatestVersion to ensure handlers are ready
+	app.RegisterUpgradeHandlers()
 
 	// Note: App validation deferred - validation.go requires updates
 	// validationResult := app.ValidateApp()
@@ -1209,6 +1241,7 @@ func (app *App) allStoreKeys() []storetypes.StoreKey {
 		app.storeKeys.distribution,
 		app.storeKeys.params,
 		app.storeKeys.consensus,
+		app.storeKeys.upgrade,
 		app.storeKeys.walletSecurity,
 		app.storeKeys.validatorSecurity,
 		app.storeKeys.cryptography,
@@ -1319,6 +1352,11 @@ func (a *App) SetGRPCServer(server *grpc.Server) {
 // Encoding returns the codec configuration currently in use.
 func (a *App) Encoding() EncodingConfig {
 	return a.encoding
+}
+
+// configurator returns the module configurator for migrations and upgrades.
+func (a *App) configurator() sdkmodule.Configurator {
+	return a.moduleConfigurator
 }
 
 // InitBridgeGenesis initializes the bridge module state directly via the keeper.

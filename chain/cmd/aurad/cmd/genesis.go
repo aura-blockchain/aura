@@ -332,8 +332,9 @@ func ensureGenesisSections(cmd *cobra.Command, args []string, mbm module.BasicMa
 	if raw := genState[contractregistrytypes.ModuleName]; len(raw) != 0 {
 		var gs contractregistrypb.GenesisState
 		if err := json.Unmarshal(raw, &gs); err == nil {
-			if gs.Params == nil {
-				gs.Params = contractregistrytypes.DefaultParams()
+			// Params is a value type, check if it's zero-valued by checking a field
+			if gs.Params.MaxContractsPerCreator == 0 {
+				gs.Params = *contractregistrytypes.DefaultParams()
 				genState[contractregistrytypes.ModuleName] = clientCtx.Codec.MustMarshalJSON(&gs)
 				updated = true
 			}

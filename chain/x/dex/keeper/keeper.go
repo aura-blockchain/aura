@@ -16,6 +16,14 @@ var (
 	ParamsKey = []byte{0x00}
 )
 
+const (
+	// MinTWAPObservations is the minimum number of TWAP price observations required
+	// before using TWAP price. This prevents oracle manipulation attacks by ensuring
+	// sufficient historical data exists before trusting the TWAP calculation.
+	// With insufficient observations, the governance fallback price is used instead.
+	MinTWAPObservations = 100
+)
+
 // Keeper of the dex store
 type Keeper struct {
 	storeKey storetypes.StoreKey
@@ -73,7 +81,10 @@ func (k Keeper) SetParams(ctx sdk.Context, params *types.Params) error {
 		return fmt.Errorf("params cannot be nil")
 	}
 	store := ctx.KVStore(k.storeKey)
-	bz := k.cdc.MustMarshal(params)
+	bz, err := k.cdc.Marshal(params)
+	if err != nil {
+		return types.ErrMarshalFailed.Wrapf("failed to marshal params: %v", err)
+	}
 	store.Set(ParamsKey, bz)
 	return nil
 }
@@ -82,58 +93,92 @@ func (k Keeper) SetParams(ctx sdk.Context, params *types.Params) error {
 // Dynamic Minimum Liquidity (BRILLIANT FEATURE!)
 // ============================================================================
 
+// GetGovernanceFallbackPrice returns the governance-controlled fallback price for AURA.
+// This price is used when TWAP data is insufficient (< MinTWAPObservations) to prevent
+// oracle manipulation attacks.
+//
+// SECURITY: The fallback price can only be modified through governance proposals,
+// preventing attackers from manipulating it. This ensures that even with insufficient
+// TWAP data, minimum liquidity requirements are calculated using a safe, governance-
+// controlled price rather than an easily manipulable spot price.
+//
+// Returns:
+//   - Governance fallback price from params, or $0.10 default if not set
+func (k Keeper) GetGovernanceFallbackPrice(ctx sdk.Context) sdkmath.LegacyDec {
+	params := k.GetParams(ctx)
+
+	// Validate fallback price is positive
+	if params.GovernanceFallbackPrice.IsNil() || params.GovernanceFallbackPrice.IsZero() || params.GovernanceFallbackPrice.IsNegative() {
+		// Default to $0.10 if not set or invalid
+		return sdkmath.LegacyNewDecWithPrec(10, 2) // $0.10
+	}
+
+	return params.GovernanceFallbackPrice
+}
+
 // GetAuraPrice returns current AURA price in USD from USDT pool.
 //
-// SECURITY: This function now uses TWAP (Time-Weighted Average Price) to prevent
-// flash loan attacks and single-block price manipulation. The price is calculated
-// from historical observations with the following protections:
+// SECURITY: This function implements comprehensive oracle manipulation protection:
 //
-// 1. TWAP calculation over configurable window (prevents single-block manipulation)
-// 2. Price sanity checks reject movements > 10% per block
-// 3. Fallback to validated spot price if insufficient TWAP data
+// 1. TWAP Requirement: Requires minimum MinTWAPObservations (100) before using TWAP.
+//    This prevents manipulation during bootstrap when observation count is low.
+//
+// 2. Governance Fallback: When TWAP has insufficient observations, uses governance-
+//    controlled fallback price instead of manipulable spot price. This price can only
+//    be updated through governance proposals, preventing attacker manipulation.
+//
+// 3. No Spot Price Fallback: NEVER uses spot price from pools, as these can be
+//    manipulated via flash loans, large trades, or low liquidity attacks.
 //
 // Attack Vectors Prevented:
-// - Flash loan price manipulation
-// - Single-block oracle attacks
-// - Sandwich attacks with extreme price movements
+// - Flash loan price manipulation (eliminated by TWAP + governance fallback)
+// - Bootstrap/low-observation manipulation (min observation requirement)
+// - Governance-based manipulation (requires full governance process)
+// - Spot price manipulation (spot price never used)
+//
+// Price Selection Logic:
+// - IF TWAP observations >= MinTWAPObservations (100): Use TWAP price ✓ (secure)
+// - ELSE: Use governance fallback price ✓ (secure, governance-controlled)
+// - NEVER: Use spot price ✗ (manipulable, forbidden)
 func (k Keeper) GetAuraPrice(ctx sdk.Context) sdkmath.LegacyDec {
 	poolID := "uaura-usdt"
 	params := k.GetSecurityParams(ctx)
 
-	// Try TWAP first (uses configured window from security params)
-	twapPrice, err := k.GetTWAPPrice(ctx, poolID, params.TwapWindowBlocks)
-	if err == nil && !twapPrice.IsZero() {
+	// Try TWAP with observation count check
+	twapPrice, observationCount, err := k.GetTWAPPriceWithCount(ctx, poolID, params.TwapWindowBlocks)
+	if err == nil && !twapPrice.IsZero() && observationCount >= MinTWAPObservations {
+		// Sufficient observations (>= 100), TWAP is trustworthy
+		ctx.Logger().Debug("using TWAP price for AURA",
+			"price", twapPrice.String(),
+			"observations", observationCount,
+			"pool_id", poolID)
 		return twapPrice
 	}
 
-	// Fallback: get pool and return spot price
-	pool := k.GetPoolByDenoms(ctx, "uaura", "usdt")
-	if pool == nil {
-		// Default to very low price if no pool exists yet
-		// This ensures bootstrap phase minimum ($1,000) applies
-		return sdkmath.LegacyNewDecWithPrec(10, 2) // $0.10
-	}
+	// Insufficient TWAP data: use governance fallback price instead of spot price
+	// This prevents oracle manipulation attacks that exploit low observation counts
+	fallbackPrice := k.GetGovernanceFallbackPrice(ctx)
 
-	// Parse reserves
-	if pool.ReserveA.IsZero() {
-		return sdkmath.LegacyNewDecWithPrec(10, 2) // $0.10 fallback
-	}
+	ctx.Logger().Info("using governance fallback price for AURA",
+		"fallback_price", fallbackPrice.String(),
+		"reason", "insufficient_twap_observations",
+		"observation_count", observationCount,
+		"min_required", MinTWAPObservations,
+		"pool_id", poolID)
 
-	// Calculate spot price
-	spotPrice := sdkmath.LegacyNewDecFromInt(pool.ReserveB).Quo(sdkmath.LegacyNewDecFromInt(pool.ReserveA))
+	// Emit event for monitoring/alerting
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			"aura_price_fallback",
+			sdk.NewAttribute("pool_id", poolID),
+			sdk.NewAttribute("fallback_price", fallbackPrice.String()),
+			sdk.NewAttribute("observation_count", fmt.Sprintf("%d", observationCount)),
+			sdk.NewAttribute("min_required", fmt.Sprintf("%d", MinTWAPObservations)),
+			sdk.NewAttribute("reason", "insufficient_twap_observations"),
+		),
+	)
 
-	// Apply price sanity check even on fallback
-	lastPrice := k.GetLastRecordedPrice(ctx, poolID)
-	if !lastPrice.IsZero() {
-		// Reject if movement > 10%
-		maxChange := lastPrice.Mul(sdkmath.LegacyNewDecWithPrec(10, 2)) // 10%
-		if spotPrice.Sub(lastPrice).Abs().GT(maxChange) {
-			// Suspicious movement, return last valid price
-			return lastPrice
-		}
-	}
-
-	return spotPrice
+	return fallbackPrice
 }
 
 // GetCurrentMinimumLiquidity returns minimum liquidity based on current AURA price
@@ -450,12 +495,16 @@ func (k Keeper) GetCollectedFees(ctx sdk.Context, poolID string) (sdkmath.Int, e
 }
 
 // SetPool stores a pool
-func (k Keeper) SetPool(ctx sdk.Context, pool *types.LiquidityPool) {
+func (k Keeper) SetPool(ctx sdk.Context, pool *types.LiquidityPool) error {
 	store := ctx.KVStore(k.storeKey)
 	key := types.PoolKey(pool.PoolId)
 
-	bz := k.cdc.MustMarshal(pool)
+	bz, err := k.cdc.Marshal(pool)
+	if err != nil {
+		return types.ErrMarshalFailed.Wrapf("failed to marshal pool %s: %v", pool.PoolId, err)
+	}
 	store.Set(key, bz)
+	return nil
 }
 
 // DeletePool removes a pool

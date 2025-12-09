@@ -57,7 +57,7 @@ func (suite *KeeperTestSuite) TestParams() {
 
 	// Test setting custom params
 	newParams := types.Params{
-		CodeUploadAccess: &types.AccessConfig{
+		CodeUploadAccess: types.AccessConfig{
 			Permission: types.AccessTypeEverybody,
 		},
 		InstantiateDefaultPermission: types.AccessTypeEverybody,
@@ -81,7 +81,7 @@ func (suite *KeeperTestSuite) TestParams() {
 func (suite *KeeperTestSuite) TestParamsValidation() {
 	// Test invalid params
 	invalidParams := types.Params{
-		CodeUploadAccess: &types.AccessConfig{
+		CodeUploadAccess: types.AccessConfig{
 			Permission: types.AccessTypeEverybody,
 		},
 		InstantiateDefaultPermission: types.AccessTypeEverybody,
@@ -175,7 +175,7 @@ func (suite *KeeperTestSuite) TestSecurityStats() {
 
 	// Update stats by calling internal methods
 	// (In real usage, these are updated by the keeper methods)
-	newStats := &types.SecurityStats{
+	newStats := types.SecurityStats{
 		TotalCodesAnalyzed: 5,
 		CodesRejected:      1,
 		ContractsPaused:    2,
@@ -184,7 +184,7 @@ func (suite *KeeperTestSuite) TestSecurityStats() {
 		GasConsumedTotal:   1000000,
 		LastSecurityScan:   12345,
 	}
-	suite.keeper.SetSecurityStats(suite.ctx, *newStats)
+	suite.keeper.SetSecurityStats(suite.ctx, newStats)
 
 	// Verify stats were set
 	stats = suite.keeper.GetSecurityStats(suite.ctx)
@@ -223,7 +223,7 @@ func (suite *KeeperTestSuite) TestValidateContractUpload() {
 
 	// Unauthorized uploader
 	// First, set params to restrict uploads to only authorized uploaders
-	params.CodeUploadAccess = &types.AccessConfig{
+	params.CodeUploadAccess = types.AccessConfig{
 		Permission: types.AccessTypeOnlyAddress,
 		Address:    address, // Only the authorized address can upload
 	}
@@ -264,7 +264,7 @@ func (suite *KeeperTestSuite) TestValidateContractExecution() {
 func (suite *KeeperTestSuite) TestGenesisExportImport() {
 	// Set up some state
 	params := types.Params{
-		CodeUploadAccess: &types.AccessConfig{
+		CodeUploadAccess: types.AccessConfig{
 			Permission: types.AccessTypeEverybody,
 		},
 		InstantiateDefaultPermission: types.AccessTypeEverybody,
@@ -302,10 +302,10 @@ func (suite *KeeperTestSuite) TestGenesisExportImport() {
 	// Export genesis
 	exported := suite.keeper.ExportGenesis(suite.ctx)
 	suite.Require().NotNil(exported)
-	suite.Require().Equal(params.GetMaxWasmCodeSize(), exported.GetParams().GetMaxWasmCodeSize())
+	suite.Require().Equal(params.GetMaxWasmCodeSize(), exported.Params.MaxWasmCodeSize)
 	suite.Require().Len(exported.GetAuthorizedUploaders(), 2)
 	suite.Require().Len(exported.GetPausedContracts(), 1)
-	suite.Require().Equal(stats.GetTotalCodesAnalyzed(), exported.GetSecurityStats().GetTotalCodesAnalyzed())
+	suite.Require().Equal(stats.GetTotalCodesAnalyzed(), exported.SecurityStats.TotalCodesAnalyzed)
 
 	// Create new context for import
 	newStoreKey := storetypes.NewKVStoreKey("test-new")
@@ -342,7 +342,7 @@ func TestParamsValidation(t *testing.T) {
 		{
 			name: "zero max wasm code size",
 			params: types.Params{
-				CodeUploadAccess: &types.AccessConfig{
+				CodeUploadAccess: types.AccessConfig{
 					Permission: types.AccessTypeEverybody,
 				},
 				InstantiateDefaultPermission: types.AccessTypeEverybody,
@@ -357,7 +357,7 @@ func TestParamsValidation(t *testing.T) {
 		{
 			name: "contract size too large",
 			params: types.Params{
-				CodeUploadAccess: &types.AccessConfig{
+				CodeUploadAccess: types.AccessConfig{
 					Permission: types.AccessTypeEverybody,
 				},
 				InstantiateDefaultPermission: types.AccessTypeEverybody,
@@ -372,7 +372,7 @@ func TestParamsValidation(t *testing.T) {
 		{
 			name: "zero max gas",
 			params: types.Params{
-				CodeUploadAccess: &types.AccessConfig{
+				CodeUploadAccess: types.AccessConfig{
 					Permission: types.AccessTypeEverybody,
 				},
 				InstantiateDefaultPermission: types.AccessTypeEverybody,

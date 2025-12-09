@@ -64,6 +64,14 @@ message Params {
 
   // Batch execution interval in blocks (orders accumulated and executed together)
   uint64 batch_execution_interval = 14;
+
+  // Governance-controlled fallback price for AURA when TWAP data is insufficient
+  // This prevents oracle manipulation by providing a safe fallback that can only
+  // be updated through governance proposals. Default: $0.10 USD
+  string governance_fallback_price = 15 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
 }
 
 // MinLiquidityTier defines minimum liquidity requirements that adjust with price

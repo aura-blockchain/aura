@@ -16,6 +16,7 @@ import (
 	sdkmath "cosmossdk.io/math"
 
 	compliancekeeper "github.com/aequitas/aura/chain/x/compliance/keeper"
+	confidencescorekeeper "github.com/aequitas/aura/chain/x/confidencescore/keeper"
 	securitykeeper "github.com/aequitas/aura/chain/x/security/keeper"
 	validatorsecuritykeeper "github.com/aequitas/aura/chain/x/validatorsecurity/keeper"
 	validatorsecuritytypes "github.com/aequitas/aura/chain/x/validatorsecurity/types"
@@ -520,6 +521,93 @@ func (a vcRegistryKeeperAdapter) IsVerified(ctx sdk.Context, address string) boo
 		return false
 	}
 	return cs.IsVerified(address)
+}
+
+// ============================================================================
+// CONTRACT REGISTRY KEEPER ADAPTERS
+// ============================================================================
+
+// contractRegistryComplianceAdapter wraps the compliance keeper for contract registry expectations.
+type contractRegistryComplianceAdapter struct {
+	inner *compliancekeeper.Keeper
+}
+
+func newContractRegistryComplianceAdapter(inner *compliancekeeper.Keeper) contractRegistryComplianceAdapter {
+	return contractRegistryComplianceAdapter{inner: inner}
+}
+
+// GetKYCLevel retrieves the KYC level for an address.
+// Returns the KYC level as uint32 (matching the KYCLevel enum values).
+func (a contractRegistryComplianceAdapter) GetKYCLevel(ctx sdk.Context, address string) (uint32, error) {
+	record, err := a.inner.GetKYCRecord(ctx, address)
+	if err != nil {
+		// Return NONE level if no record found
+		return 1, nil // KYC_LEVEL_NONE = 1
+	}
+	return uint32(record.KycLevel), nil
+}
+
+// ScreenForSanctions checks if an address is sanctioned.
+// Returns true if the address is sanctioned (blocked), false otherwise.
+func (a contractRegistryComplianceAdapter) ScreenForSanctions(ctx sdk.Context, address string) (bool, error) {
+	isSanctioned := a.inner.IsAddressSanctioned(ctx, address)
+	return isSanctioned, nil
+}
+
+// contractRegistryVCAdapter wraps the VC registry keeper for contract registry expectations.
+type contractRegistryVCAdapter struct {
+	inner *vckeeper.Keeper
+}
+
+func newContractRegistryVCAdapter(inner *vckeeper.Keeper) contractRegistryVCAdapter {
+	return contractRegistryVCAdapter{inner: inner}
+}
+
+// HasVC checks if a user has a specific type of verifiable credential.
+// The ctx parameter is interface{} to match the expected interface, but we unwrap it to sdk.Context.
+func (a contractRegistryVCAdapter) HasVC(ctx interface{}, address string, vcType string) bool {
+	// Unwrap context - support both sdk.Context and context.Context
+	var sdkCtx sdk.Context
+	switch c := ctx.(type) {
+	case sdk.Context:
+		sdkCtx = c
+	case context.Context:
+		sdkCtx = sdk.UnwrapSDKContext(c)
+	default:
+		return false
+	}
+
+	// List all VCs for the user
+	vcs := a.inner.ListUserVCs(sdkCtx, address, 0, 0)
+
+	// Check if any active VC matches the requested type
+	for _, vc := range vcs {
+		if vc.Status == 1 { // VCStatus_VC_STATUS_ACTIVE = 1
+			// Match by VC type string representation
+			vcTypeStr := vc.VcType.String()
+			if vcTypeStr == vcType {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+// contractRegistryConfidenceScoreAdapter wraps the confidence score keeper for contract registry expectations.
+// This adapter forwards calls to the actual confidence score keeper with proper context handling.
+type contractRegistryConfidenceScoreAdapter struct {
+	inner *confidencescorekeeper.Keeper
+}
+
+func newContractRegistryConfidenceScoreAdapter(inner *confidencescorekeeper.Keeper) contractRegistryConfidenceScoreAdapter {
+	return contractRegistryConfidenceScoreAdapter{inner: inner}
+}
+
+// GetUserScore retrieves the total confidence score for a user.
+// The ctx parameter is passed through to the underlying keeper for proper state access.
+func (a contractRegistryConfidenceScoreAdapter) GetUserScore(ctx sdk.Context, address string) (uint64, bool) {
+	return a.inner.GetUserScore(ctx, address)
 }
 
 // ============================================================================

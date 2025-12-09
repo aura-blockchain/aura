@@ -1,7 +1,6 @@
 package keeper_test
 
 import (
-	"encoding/json"
 	"testing"
 
 	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
@@ -29,13 +28,13 @@ func TestMsgStoreCode(t *testing.T) {
 
 		msg := &types.MsgStoreCode{
 			Sender:       sender.String(),
-			WasmByteCode: []byte("dummy wasm code"),
+			WASMByteCode: []byte("dummy wasm code"),
 		}
 
 		resp, err := msgServer.StoreCode(ctx, msg)
 		require.NoError(t, err)
 		require.NotNil(t, resp)
-		require.Greater(t, resp.CodeId, uint64(0))
+		require.Greater(t, resp.CodeID, uint64(0))
 
 		// Verify security stats updated
 		stats := k.GetSecurityStats(ctx)
@@ -52,7 +51,7 @@ func TestMsgStoreCode(t *testing.T) {
 
 		msg := &types.MsgStoreCode{
 			Sender:       unauthorizedSender.String(),
-			WasmByteCode: []byte("dummy wasm code"),
+			WASMByteCode: []byte("dummy wasm code"),
 		}
 
 		_, err := msgServer.StoreCode(ctx, msg)
@@ -63,7 +62,7 @@ func TestMsgStoreCode(t *testing.T) {
 	t.Run("failure - empty code", func(t *testing.T) {
 		msg := &types.MsgStoreCode{
 			Sender:       sender.String(),
-			WasmByteCode: []byte{},
+			WASMByteCode: []byte{},
 		}
 
 		_, err := msgServer.StoreCode(ctx, msg)
@@ -77,7 +76,7 @@ func TestMsgStoreCode(t *testing.T) {
 
 		msg := &types.MsgStoreCode{
 			Sender:       sender.String(),
-			WasmByteCode: largeCode,
+			WASMByteCode: largeCode,
 		}
 
 		_, err := msgServer.StoreCode(ctx, msg)
@@ -99,12 +98,12 @@ func TestMsgInstantiateContract(t *testing.T) {
 			t.Skip("skipping test that requires wasmd keeper")
 		}
 
-		initMsg := json.RawMessage(`{"init":"data"}`)
+		initMsg := []byte(`{"init":"data"}`)
 
 		msg := &types.MsgInstantiateContract{
 			Sender: sender.String(),
 			Admin:  admin.String(),
-			CodeId: 1,
+			CodeID: 1,
 			Label:  "test contract",
 			Msg:    initMsg,
 			Funds:  nil,
@@ -125,12 +124,12 @@ func TestMsgInstantiateContract(t *testing.T) {
 			t.Skip("skipping test that requires wasmd keeper")
 		}
 
-		initMsg := json.RawMessage(`{"init":"data"}`)
+		initMsg := []byte(`{"init":"data"}`)
 
 		msg := &types.MsgInstantiateContract{
 			Sender: sender.String(),
 			Admin:  "",
-			CodeId: 1,
+			CodeID: 1,
 			Label:  "test contract no admin",
 			Msg:    initMsg,
 			Funds:  nil,
@@ -142,12 +141,12 @@ func TestMsgInstantiateContract(t *testing.T) {
 	})
 
 	t.Run("failure - invalid code id", func(t *testing.T) {
-		initMsg := json.RawMessage(`{"init":"data"}`)
+		initMsg := []byte(`{"init":"data"}`)
 
 		msg := &types.MsgInstantiateContract{
 			Sender: sender.String(),
 			Admin:  admin.String(),
-			CodeId: 0,
+			CodeID: 0,
 			Label:  "test",
 			Msg:    initMsg,
 			Funds:  nil,
@@ -172,7 +171,7 @@ func TestMsgExecuteContract(t *testing.T) {
 			t.Skip("skipping test that requires wasmd keeper")
 		}
 
-		execMsg := json.RawMessage(`{"execute":"action"}`)
+		execMsg := []byte(`{"execute":"action"}`)
 
 		msg := &types.MsgExecuteContract{
 			Sender:   sender.String(),
@@ -195,7 +194,7 @@ func TestMsgExecuteContract(t *testing.T) {
 		err := k.PauseContract(ctx, contractAddr.String())
 		require.NoError(t, err)
 
-		execMsg := json.RawMessage(`{"execute":"action"}`)
+		execMsg := []byte(`{"execute":"action"}`)
 
 		msg := &types.MsgExecuteContract{
 			Sender:   sender.String(),
@@ -222,7 +221,7 @@ func TestMsgExecuteContract(t *testing.T) {
 		// Mark contract as executing
 		k.SetExecuting(ctx, contractAddr.String(), true)
 
-		execMsg := json.RawMessage(`{"execute":"action"}`)
+		execMsg := []byte(`{"execute":"action"}`)
 
 		msg := &types.MsgExecuteContract{
 			Sender:   sender.String(),
@@ -257,12 +256,12 @@ func TestMsgMigrateContract(t *testing.T) {
 		}
 
 		// Migration is controlled by admin check, not a param
-		migrateMsg := json.RawMessage(`{"migrate":"data"}`)
+		migrateMsg := []byte(`{"migrate":"data"}`)
 
 		msg := &types.MsgMigrateContract{
 			Sender:   sender.String(),
 			Contract: contractAddr.String(),
-			CodeId:   2,
+			CodeID:   2,
 			Msg:      migrateMsg,
 		}
 
@@ -273,13 +272,13 @@ func TestMsgMigrateContract(t *testing.T) {
 
 	t.Run("failure - unauthorized migration", func(t *testing.T) {
 		// Migration without admin should fail
-		migrateMsg := json.RawMessage(`{"migrate":"data"}`)
+		migrateMsg := []byte(`{"migrate":"data"}`)
 
 		unauthorizedSender := sdk.AccAddress("unauthorized________")
 		msg := &types.MsgMigrateContract{
 			Sender:   unauthorizedSender.String(),
 			Contract: contractAddr.String(),
-			CodeId:   2,
+			CodeID:   2,
 			Msg:      migrateMsg,
 		}
 
@@ -380,7 +379,7 @@ func TestMsgUpdateParams(t *testing.T) {
 
 		msg := &types.MsgUpdateParams{
 			Authority: authority,
-			Params:    newParams,
+			Params:    *newParams,
 		}
 
 		resp, err := msgServer.UpdateParams(ctx, msg)
@@ -399,7 +398,7 @@ func TestMsgUpdateParams(t *testing.T) {
 
 		msg := &types.MsgUpdateParams{
 			Authority: authority,
-			Params:    invalidParams,
+			Params:    *invalidParams,
 		}
 
 		// Should fail when executing due to validation
@@ -683,7 +682,7 @@ func TestAdminMigrationAuth(t *testing.T) {
 		msg := &types.MsgMigrateContract{
 			Sender:   nonAdmin.String(),
 			Contract: contractAddr.String(),
-			CodeId:   2,
+			CodeID:   2,
 			Msg:      []byte("{}"),
 		}
 
@@ -696,7 +695,7 @@ func TestAdminMigrationAuth(t *testing.T) {
 		msg := &types.MsgMigrateContract{
 			Sender:   adminAddr.String(),
 			Contract: contractAddr.String(),
-			CodeId:   2,
+			CodeID:   2,
 			Msg:      []byte("{}"),
 		}
 
@@ -715,7 +714,7 @@ func TestAdminMigrationAuth(t *testing.T) {
 		msg := &types.MsgMigrateContract{
 			Sender:   adminAddr.String(),
 			Contract: contractAddr.String(),
-			CodeId:   2,
+			CodeID:   2,
 			Msg:      []byte("{}"),
 		}
 

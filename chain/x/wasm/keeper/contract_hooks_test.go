@@ -20,7 +20,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // ContractHooksTestSuite is the test suite for contract hooks
@@ -158,11 +157,11 @@ func (suite *ContractHooksTestSuite) TestBeforeInstantiateHook_CreatorLimit() {
 		Creator:   suite.creator.String(),
 		Admin:     suite.admin.String(),
 		Label:     "contract1",
-		CreatedAt: timestamppb.Now(),
-		Metadata: &pb.ContractMetadata{
+		CreatedAt: time.Now(),
+		Metadata: pb.ContractMetadata{
 			Name: "contract1",
 		},
-		SecurityPolicy: &pb.SecurityPolicy{
+		SecurityPolicy: pb.SecurityPolicy{
 			AllowPause: true,
 		},
 		Status: pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
@@ -312,11 +311,11 @@ func (suite *ContractHooksTestSuite) TestBeforeExecuteHook_Success() {
 		Creator:   suite.creator.String(),
 		Admin:     suite.admin.String(),
 		Label:     "test-contract",
-		CreatedAt: timestamppb.Now(),
-		Metadata: &pb.ContractMetadata{
+		CreatedAt: time.Now(),
+		Metadata: pb.ContractMetadata{
 			Name: "test-contract",
 		},
-		SecurityPolicy: &pb.SecurityPolicy{
+		SecurityPolicy: pb.SecurityPolicy{
 			AllowPause:       true,
 			MaxGasPerTx:      20000000, // 20M gas - must be >= context gas meter limit (10M)
 			RateLimitPerUser: 100,
@@ -343,11 +342,11 @@ func (suite *ContractHooksTestSuite) TestBeforeExecuteHook_ContractPaused() {
 		Creator:   suite.creator.String(),
 		Admin:     suite.admin.String(),
 		Label:     "test-contract",
-		CreatedAt: timestamppb.Now(),
-		Metadata: &pb.ContractMetadata{
+		CreatedAt: time.Now(),
+		Metadata: pb.ContractMetadata{
 			Name: "test-contract",
 		},
-		SecurityPolicy: &pb.SecurityPolicy{
+		SecurityPolicy: pb.SecurityPolicy{
 			AllowPause: true,
 		},
 		Status: pb.ContractStatus_CONTRACT_STATUS_PAUSED,
@@ -373,11 +372,11 @@ func (suite *ContractHooksTestSuite) TestBeforeExecuteHook_RateLimitExceeded() {
 		Creator:   suite.creator.String(),
 		Admin:     suite.admin.String(),
 		Label:     "test-contract",
-		CreatedAt: timestamppb.Now(),
-		Metadata: &pb.ContractMetadata{
+		CreatedAt: time.Now(),
+		Metadata: pb.ContractMetadata{
 			Name: "test-contract",
 		},
-		SecurityPolicy: &pb.SecurityPolicy{
+		SecurityPolicy: pb.SecurityPolicy{
 			AllowPause:       true,
 			MaxGasPerTx:      20000000, // Must be >= context gas meter limit
 			RateLimitPerUser: 5,
@@ -418,11 +417,11 @@ func (suite *ContractHooksTestSuite) TestBeforeExecuteHook_ValidationCache() {
 		Creator:   suite.creator.String(),
 		Admin:     suite.admin.String(),
 		Label:     "test-contract",
-		CreatedAt: timestamppb.Now(),
-		Metadata: &pb.ContractMetadata{
+		CreatedAt: time.Now(),
+		Metadata: pb.ContractMetadata{
 			Name: "test-contract",
 		},
-		SecurityPolicy: &pb.SecurityPolicy{
+		SecurityPolicy: pb.SecurityPolicy{
 			AllowPause:       true,
 			RateLimitPerUser: 100,
 		},
@@ -484,11 +483,11 @@ func (suite *ContractHooksTestSuite) TestAfterExecuteHook_Success() {
 		Creator:   suite.creator.String(),
 		Admin:     suite.admin.String(),
 		Label:     "test-contract",
-		CreatedAt: timestamppb.Now(),
-		Metadata: &pb.ContractMetadata{
+		CreatedAt: time.Now(),
+		Metadata: pb.ContractMetadata{
 			Name: "test-contract",
 		},
-		SecurityPolicy: &pb.SecurityPolicy{
+		SecurityPolicy: pb.SecurityPolicy{
 			AllowPause: true,
 		},
 		Status: pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
@@ -521,11 +520,11 @@ func (suite *ContractHooksTestSuite) TestAfterExecuteHook_Failure() {
 		Creator:   suite.creator.String(),
 		Admin:     suite.admin.String(),
 		Label:     "test-contract",
-		CreatedAt: timestamppb.Now(),
-		Metadata: &pb.ContractMetadata{
+		CreatedAt: time.Now(),
+		Metadata: pb.ContractMetadata{
 			Name: "test-contract",
 		},
-		SecurityPolicy: &pb.SecurityPolicy{
+		SecurityPolicy: pb.SecurityPolicy{
 			AllowPause: true,
 		},
 		Status: pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
@@ -558,11 +557,11 @@ func (suite *ContractHooksTestSuite) TestAfterExecuteHook_MetricsBufferFlush() {
 		Creator:   suite.creator.String(),
 		Admin:     suite.admin.String(),
 		Label:     "test-contract",
-		CreatedAt: timestamppb.Now(),
-		Metadata: &pb.ContractMetadata{
+		CreatedAt: time.Now(),
+		Metadata: pb.ContractMetadata{
 			Name: "test-contract",
 		},
-		SecurityPolicy: &pb.SecurityPolicy{
+		SecurityPolicy: pb.SecurityPolicy{
 			AllowPause: true,
 		},
 		Status: pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
@@ -663,11 +662,11 @@ func (suite *ContractHooksTestSuite) TestBeforeExecuteHook_PerformanceTarget() {
 		Creator:   suite.creator.String(),
 		Admin:     suite.admin.String(),
 		Label:     "test-contract",
-		CreatedAt: timestamppb.Now(),
-		Metadata: &pb.ContractMetadata{
+		CreatedAt: time.Now(),
+		Metadata: pb.ContractMetadata{
 			Name: "test-contract",
 		},
-		SecurityPolicy: &pb.SecurityPolicy{
+		SecurityPolicy: pb.SecurityPolicy{
 			AllowPause:       true,
 			RateLimitPerUser: 100,
 		},
@@ -704,11 +703,11 @@ func (suite *ContractHooksTestSuite) TestConcurrentExecution() {
 		Creator:   suite.creator.String(),
 		Admin:     suite.admin.String(),
 		Label:     "test-contract",
-		CreatedAt: timestamppb.Now(),
-		Metadata: &pb.ContractMetadata{
+		CreatedAt: time.Now(),
+		Metadata: pb.ContractMetadata{
 			Name: "test-contract",
 		},
-		SecurityPolicy: &pb.SecurityPolicy{
+		SecurityPolicy: pb.SecurityPolicy{
 			AllowPause:       true,
 			RateLimitPerUser: 1000,
 		},

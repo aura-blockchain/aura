@@ -72,7 +72,7 @@ func (suite *GenesisTestSuite) TestGenesisRoundTrip() {
 
 	// Set up some state
 	params := types.Params{
-		CodeUploadAccess: &types.AccessConfig{
+		CodeUploadAccess: types.AccessConfig{
 			Permission: types.AccessTypeEverybody,
 		},
 		InstantiateDefaultPermission: types.AccessTypeEverybody,
@@ -108,8 +108,8 @@ func (suite *GenesisTestSuite) TestInitGenesisWithValidData() {
 
 	// Create valid genesis state
 	genState := &types.GenesisState{
-		Params: &types.Params{
-			CodeUploadAccess: &types.AccessConfig{
+		Params: types.Params{
+			CodeUploadAccess: types.AccessConfig{
 				Permission: types.AccessTypeEverybody,
 			},
 			InstantiateDefaultPermission: types.AccessTypeEverybody,
@@ -120,7 +120,7 @@ func (suite *GenesisTestSuite) TestInitGenesisWithValidData() {
 		},
 		AuthorizedUploaders: []string{"aura1abc123", "aura1def456"},
 		PausedContracts:     []string{},
-		SecurityStats: &types.SecurityStats{
+		SecurityStats: types.SecurityStats{
 			TotalCodesAnalyzed: 0,
 			CodesRejected:      0,
 			ContractsPaused:    0,
@@ -144,8 +144,8 @@ func (suite *GenesisTestSuite) TestInitGenesisWithInvalidData() {
 
 	// Create genesis state with invalid params
 	genState := &types.GenesisState{
-		Params: &types.Params{
-			CodeUploadAccess: &types.AccessConfig{
+		Params: types.Params{
+			CodeUploadAccess: types.AccessConfig{
 				Permission: types.AccessTypeEverybody,
 			},
 			InstantiateDefaultPermission: types.AccessTypeEverybody,
@@ -156,7 +156,7 @@ func (suite *GenesisTestSuite) TestInitGenesisWithInvalidData() {
 		},
 		AuthorizedUploaders: []string{},
 		PausedContracts:     []string{},
-		SecurityStats:       &types.SecurityStats{},
+		SecurityStats:       types.SecurityStats{},
 	}
 
 	err := suite.keeper.InitGenesis(ctx, *genState)

@@ -22,7 +22,7 @@ func TestWasmGasDecorator(t *testing.T) {
 	t.Run("success - store code", func(t *testing.T) {
 		msg := &types.MsgStoreCode{
 			Sender:       sender.String(),
-			WasmByteCode: []byte("dummy code"),
+			WASMByteCode: []byte("dummy code"),
 		}
 
 		tx := mockTx{msgs: []sdk.Msg{msg}}
@@ -37,7 +37,7 @@ func TestWasmGasDecorator(t *testing.T) {
 
 		msg := &types.MsgStoreCode{
 			Sender:       sender.String(),
-			WasmByteCode: largeCode,
+			WASMByteCode: largeCode,
 		}
 
 		tx := mockTx{msgs: []sdk.Msg{msg}}
@@ -61,7 +61,7 @@ func TestWasmAuthDecorator(t *testing.T) {
 	t.Run("success - authorized uploader", func(t *testing.T) {
 		msg := &types.MsgStoreCode{
 			Sender:       authorizedSender.String(),
-			WasmByteCode: []byte("dummy code"),
+			WASMByteCode: []byte("dummy code"),
 		}
 
 		tx := mockTx{msgs: []sdk.Msg{msg}}
@@ -73,7 +73,7 @@ func TestWasmAuthDecorator(t *testing.T) {
 	t.Run("failure - unauthorized uploader", func(t *testing.T) {
 		msg := &types.MsgStoreCode{
 			Sender:       unauthorizedSender.String(),
-			WasmByteCode: []byte("dummy code"),
+			WASMByteCode: []byte("dummy code"),
 		}
 
 		tx := mockTx{msgs: []sdk.Msg{msg}}
@@ -138,7 +138,7 @@ func TestWasmSecurityDecorator(t *testing.T) {
 	t.Run("success - valid code", func(t *testing.T) {
 		msg := &types.MsgStoreCode{
 			Sender:       sender.String(),
-			WasmByteCode: []byte("valid wasm code"),
+			WASMByteCode: []byte("valid wasm code"),
 		}
 
 		tx := mockTx{msgs: []sdk.Msg{msg}}
@@ -150,7 +150,7 @@ func TestWasmSecurityDecorator(t *testing.T) {
 	t.Run("failure - empty code", func(t *testing.T) {
 		msg := &types.MsgStoreCode{
 			Sender:       sender.String(),
-			WasmByteCode: []byte{},
+			WASMByteCode: []byte{},
 		}
 
 		tx := mockTx{msgs: []sdk.Msg{msg}}
@@ -169,7 +169,7 @@ func TestWasmSecurityDecorator(t *testing.T) {
 		msg := &types.MsgMigrateContract{
 			Sender:   sender.String(),
 			Contract: contractAddr.String(),
-			CodeId:   2,
+			CodeID:   2,
 			Msg:      []byte(`{"migrate":"data"}`),
 		}
 

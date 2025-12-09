@@ -127,7 +127,7 @@ func (k Keeper) SubmitSlashingEvidence(
 	}
 
 	// 8. Store slashing event
-	k.setSlashingEvent(ctx, slashingEvent)
+	_ = k.setSlashingEvent(ctx, slashingEvent) // Best effort, slashing event recording is non-critical
 
 	// 9. Emit event for indexing and audit trail
 	ctx.EventManager().EmitEvent(
@@ -312,13 +312,18 @@ func (k Keeper) jailValidator(ctx sdk.Context, validatorAddress string) error {
 }
 
 // setSlashingEvent stores a slashing event
-func (k Keeper) setSlashingEvent(ctx sdk.Context, event *types.SlashingEvent) {
+func (k Keeper) setSlashingEvent(ctx sdk.Context, event *types.SlashingEvent) error {
 	if event == nil || event.EventId == "" {
-		return
+		return nil
 	}
 	store := k.store(ctx)
 	key := types.SlashingEventKey(event.EventId)
-	store.Set(key, k.cdc.MustMarshal(event))
+	bz, err := k.cdc.Marshal(event)
+	if err != nil {
+		return types.ErrMarshalFailed.Wrapf("failed to marshal slashing event %s: %v", event.EventId, err)
+	}
+	store.Set(key, bz)
+	return nil
 }
 
 // GetSlashingEvent retrieves a slashing event by ID

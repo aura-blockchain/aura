@@ -102,6 +102,10 @@ const (
 	CodeUnsupportedProofType      uint32 = 714
 	CodeProofDeserializationError uint32 = 715
 
+	// Serialization error codes (800-819)
+	CodeMarshalFailed   uint32 = 800
+	CodeUnmarshalFailed uint32 = 801
+
 	// General error codes (900-999)
 	CodeInvalidAddress uint32 = 900
 	CodeInvalidInput   uint32 = 901
@@ -226,6 +230,12 @@ var (
 	ErrInvalidPublicInputs       = errors.Register(ModuleName, CodeInvalidPublicInputs, "invalid public inputs")
 	ErrUnsupportedProofType      = errors.Register(ModuleName, CodeUnsupportedProofType, "unsupported proof type")
 	ErrProofDeserializationError = errors.Register(ModuleName, CodeProofDeserializationError, "proof deserialization failed")
+)
+
+// Serialization errors
+var (
+	ErrMarshalFailed   = errors.Register(ModuleName, CodeMarshalFailed, "failed to marshal data")
+	ErrUnmarshalFailed = errors.Register(ModuleName, CodeUnmarshalFailed, "failed to unmarshal data")
 )
 
 // General errors
