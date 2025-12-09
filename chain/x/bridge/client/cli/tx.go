@@ -139,7 +139,7 @@ Transfer ID will be returned for tracking.
 				Sender:      clientCtx.GetFromAddress().String(),
 				TargetChain: targetChain,
 				Recipient:   recipient,
-				Amount:      &amount,
+				Amount:      amount,
 			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
@@ -197,7 +197,7 @@ Requires validator signatures to prove tokens were burned on the source chain.
 				Sender:              clientCtx.GetFromAddress().String(),
 				SourceChain:         sourceChain,
 				BurnTxHash:          burnTxHash,
-				Amount:              amount.String(),
+				Amount:              amount,
 				Denom:               denom,
 				ValidatorSignatures: validatorSignatures,
 			}
@@ -256,7 +256,7 @@ Requires validator signature over (source_chain, source_tx_hash, recipient, amou
 				SourceChain:        sourceChain,
 				SourceTxHash:       sourceTxHash,
 				Recipient:          recipient,
-				Amount:             amount.String(),
+				Amount:             amount,
 				Denom:              denom,
 				ValidatorSignature: validatorSig,
 			}
@@ -302,7 +302,7 @@ Transfer ID will be returned for tracking.
 				Sender:      clientCtx.GetFromAddress().String(),
 				TargetChain: targetChain,
 				Recipient:   recipient,
-				Amount:      &amount,
+				Amount:      amount,
 			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
@@ -359,10 +359,10 @@ The swap may route through multiple chains (e.g., AURA -> Osmosis -> PAW).
 			msg := &types.MsgCrossChainSwap{
 				Sender:          clientCtx.GetFromAddress().String(),
 				SourceChain:     sourceChain,
-				InputCoin:       &inputCoin,
+				InputCoin:       inputCoin,
 				TargetChain:     targetChain,
 				TargetDenom:     targetDenom,
-				MinTargetAmount: minTargetAmount.String(),
+				MinTargetAmount: minTargetAmount,
 				Recipient:       recipient,
 				MaxSlippageBps:  maxSlippageBps,
 			}
