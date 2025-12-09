@@ -723,6 +723,7 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 
 	identityKeeper := identitykeeper.NewKeeper(
 		runtime.NewKVStoreService(keys.identity),
+		keys.identity,
 		encoding.Codec,
 		authorityAddr,
 		logger.With("module", identitytypes.ModuleName),

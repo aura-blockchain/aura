@@ -3,7 +3,9 @@ package keeper
 import (
 	"context"
 
+	"cosmossdk.io/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/query"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -82,27 +84,35 @@ func (qs queryServer) IdentityRecordByAddress(goCtx context.Context, req *identi
 	return nil, status.Error(codes.NotFound, "identity record not found for address")
 }
 
-// AllIdentityRecords queries all identity records
+// AllIdentityRecords queries all identity records with pagination
 func (qs queryServer) AllIdentityRecords(goCtx context.Context, req *identitypb.QueryAllIdentityRecordsRequest) (*identitypb.QueryAllIdentityRecordsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	records, err := qs.Keeper.GetAllIdentityRecords(ctx)
+	store := ctx.KVStore(qs.Keeper.storeKey)
+
+	// Create prefix store for identity records
+	identityStore := prefix.NewStore(store, types.IdentityRecordPrefix)
+
+	var records []identitypb.IdentityRecord
+	pageRes, err := query.Paginate(identityStore, req.Pagination, func(key, value []byte) error {
+		var record identitypb.IdentityRecord
+		if err := qs.Keeper.cdc.Unmarshal(value, &record); err != nil {
+			return err
+		}
+		records = append(records, record)
+		return nil
+	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// Convert pointer slice to value slice
-	recordValues := make([]identitypb.IdentityRecord, len(records))
-	for i, r := range records {
-		if r != nil {
-			recordValues[i] = *r
-		}
-	}
-
-	return &identitypb.QueryAllIdentityRecordsResponse{Records: recordValues}, nil
+	return &identitypb.QueryAllIdentityRecordsResponse{
+		Records:    records,
+		Pagination: pageRes,
+	}, nil
 }
 
 // ChangeRequest queries a change request by ID
@@ -123,7 +133,7 @@ func (qs queryServer) ChangeRequest(goCtx context.Context, req *identitypb.Query
 	return &identitypb.QueryChangeRequestResponse{Request: *request}, nil
 }
 
-// ChangeRequestsByDID queries change requests for a DID
+// ChangeRequestsByDID queries change requests for a DID with pagination
 func (qs queryServer) ChangeRequestsByDID(goCtx context.Context, req *identitypb.QueryChangeRequestsByDIDRequest) (*identitypb.QueryChangeRequestsByDIDResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
@@ -133,23 +143,34 @@ func (qs queryServer) ChangeRequestsByDID(goCtx context.Context, req *identitypb
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	allRequests, err := qs.Keeper.GetAllChangeRequests(ctx)
+	store := ctx.KVStore(qs.Keeper.storeKey)
+
+	// Create prefix store for all change requests
+	changeRequestStore := prefix.NewStore(store, types.ChangeRequestPrefix)
+
+	var requests []identitypb.ChangeRequest
+	pageRes, err := query.Paginate(changeRequestStore, req.Pagination, func(key, value []byte) error {
+		var request identitypb.ChangeRequest
+		if err := qs.Keeper.cdc.Unmarshal(value, &request); err != nil {
+			return err
+		}
+		// Filter by DID
+		if request.Did == req.Did {
+			requests = append(requests, request)
+		}
+		return nil
+	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// Filter by DID
-	var filtered []identitypb.ChangeRequest
-	for _, request := range allRequests {
-		if request.Did == req.Did {
-			filtered = append(filtered, *request)
-		}
-	}
-
-	return &identitypb.QueryChangeRequestsByDIDResponse{Requests: filtered}, nil
+	return &identitypb.QueryChangeRequestsByDIDResponse{
+		Requests:   requests,
+		Pagination: pageRes,
+	}, nil
 }
 
-// ChangeHistory queries change history for a DID
+// ChangeHistory queries change history for a DID with pagination
 func (qs queryServer) ChangeHistory(goCtx context.Context, req *identitypb.QueryChangeHistoryRequest) (*identitypb.QueryChangeHistoryResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
@@ -159,20 +180,30 @@ func (qs queryServer) ChangeHistory(goCtx context.Context, req *identitypb.Query
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	entries, err := qs.Keeper.GetChangeHistory(ctx, req.Did)
+	store := ctx.KVStore(qs.Keeper.storeKey)
+
+	// Create prefix for this DID's change history
+	didPrefix := append(types.ChangeHistoryPrefix, []byte(req.Did)...)
+	didPrefix = append(didPrefix, []byte("/")...)
+	changeHistoryStore := prefix.NewStore(store, didPrefix)
+
+	var entries []identitypb.ChangeHistory
+	pageRes, err := query.Paginate(changeHistoryStore, req.Pagination, func(key, value []byte) error {
+		var entry identitypb.ChangeHistory
+		if err := qs.Keeper.cdc.Unmarshal(value, &entry); err != nil {
+			return err
+		}
+		entries = append(entries, entry)
+		return nil
+	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// Convert pointer slice to value slice
-	entryValues := make([]identitypb.ChangeHistory, len(entries))
-	for i, e := range entries {
-		if e != nil {
-			entryValues[i] = *e
-		}
-	}
-
-	return &identitypb.QueryChangeHistoryResponse{Entries: entryValues}, nil
+	return &identitypb.QueryChangeHistoryResponse{
+		Entries:    entries,
+		Pagination: pageRes,
+	}, nil
 }
 
 // Role queries a role by name
@@ -193,27 +224,35 @@ func (qs queryServer) Role(goCtx context.Context, req *identitypb.QueryRoleReque
 	return &identitypb.QueryRoleResponse{Role: *role}, nil
 }
 
-// AllRoles queries all roles
+// AllRoles queries all roles with pagination
 func (qs queryServer) AllRoles(goCtx context.Context, req *identitypb.QueryAllRolesRequest) (*identitypb.QueryAllRolesResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	roles, err := qs.Keeper.GetAllRoles(ctx)
+	store := ctx.KVStore(qs.Keeper.storeKey)
+
+	// Create prefix store for roles
+	roleStore := prefix.NewStore(store, types.RolePrefix)
+
+	var roles []identitypb.Role
+	pageRes, err := query.Paginate(roleStore, req.Pagination, func(key, value []byte) error {
+		var role identitypb.Role
+		if err := qs.Keeper.cdc.Unmarshal(value, &role); err != nil {
+			return err
+		}
+		roles = append(roles, role)
+		return nil
+	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// Convert pointer slice to value slice
-	roleValues := make([]identitypb.Role, len(roles))
-	for i, r := range roles {
-		if r != nil {
-			roleValues[i] = *r
-		}
-	}
-
-	return &identitypb.QueryAllRolesResponse{Roles: roleValues}, nil
+	return &identitypb.QueryAllRolesResponse{
+		Roles:      roles,
+		Pagination: pageRes,
+	}, nil
 }
 
 // RoleAssignments queries role assignments for an address
@@ -299,27 +338,35 @@ func (qs queryServer) MultisigWallet(goCtx context.Context, req *identitypb.Quer
 	return &identitypb.QueryMultisigWalletResponse{Wallet: wallet}, nil
 }
 
-// AllMultisigWallets queries all multisig wallets
+// AllMultisigWallets queries all multisig wallets with pagination
 func (qs queryServer) AllMultisigWallets(goCtx context.Context, req *identitypb.QueryAllMultisigWalletsRequest) (*identitypb.QueryAllMultisigWalletsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	wallets, err := qs.Keeper.GetAllMultisigWallets(ctx)
+	store := ctx.KVStore(qs.Keeper.storeKey)
+
+	// Create prefix store for multisig wallets
+	walletStore := prefix.NewStore(store, types.MultisigWalletPrefix)
+
+	var wallets []identitypb.MultisigWallet
+	pageRes, err := query.Paginate(walletStore, req.Pagination, func(key, value []byte) error {
+		var wallet identitypb.MultisigWallet
+		if err := qs.Keeper.cdc.Unmarshal(value, &wallet); err != nil {
+			return err
+		}
+		wallets = append(wallets, wallet)
+		return nil
+	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// Convert pointer slice to value slice
-	walletValues := make([]identitypb.MultisigWallet, len(wallets))
-	for i, w := range wallets {
-		if w != nil {
-			walletValues[i] = *w
-		}
-	}
-
-	return &identitypb.QueryAllMultisigWalletsResponse{Wallets: walletValues}, nil
+	return &identitypb.QueryAllMultisigWalletsResponse{
+		Wallets:    wallets,
+		Pagination: pageRes,
+	}, nil
 }
 
 // MultisigProposal queries a multisig proposal by ID
@@ -340,7 +387,7 @@ func (qs queryServer) MultisigProposal(goCtx context.Context, req *identitypb.Qu
 	return &identitypb.QueryMultisigProposalResponse{Proposal: proposal}, nil
 }
 
-// MultisigProposalsByWallet queries proposals for a wallet
+// MultisigProposalsByWallet queries proposals for a wallet with pagination
 func (qs queryServer) MultisigProposalsByWallet(goCtx context.Context, req *identitypb.QueryMultisigProposalsByWalletRequest) (*identitypb.QueryMultisigProposalsByWalletResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
@@ -350,20 +397,31 @@ func (qs queryServer) MultisigProposalsByWallet(goCtx context.Context, req *iden
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	allProposals, err := qs.Keeper.GetAllMultisigProposals(ctx)
+	store := ctx.KVStore(qs.Keeper.storeKey)
+
+	// Create prefix store for all multisig proposals
+	proposalStore := prefix.NewStore(store, types.MultisigProposalPrefix)
+
+	var proposals []identitypb.MultisigProposal
+	pageRes, err := query.Paginate(proposalStore, req.Pagination, func(key, value []byte) error {
+		var proposal identitypb.MultisigProposal
+		if err := qs.Keeper.cdc.Unmarshal(value, &proposal); err != nil {
+			return err
+		}
+		// Filter by wallet ID
+		if proposal.WalletId == req.WalletId {
+			proposals = append(proposals, proposal)
+		}
+		return nil
+	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// Filter by wallet ID
-	var filtered []identitypb.MultisigProposal
-	for _, proposal := range allProposals {
-		if proposal.WalletId == req.WalletId {
-			filtered = append(filtered, *proposal)
-		}
-	}
-
-	return &identitypb.QueryMultisigProposalsByWalletResponse{Proposals: filtered}, nil
+	return &identitypb.QueryMultisigProposalsByWalletResponse{
+		Proposals:  proposals,
+		Pagination: pageRes,
+	}, nil
 }
 
 // TimeLockedAction queries a time-locked action by ID
@@ -384,27 +442,35 @@ func (qs queryServer) TimeLockedAction(goCtx context.Context, req *identitypb.Qu
 	return &identitypb.QueryTimeLockedActionResponse{Action: action}, nil
 }
 
-// AllTimeLockedActions queries all time-locked actions
+// AllTimeLockedActions queries all time-locked actions with pagination
 func (qs queryServer) AllTimeLockedActions(goCtx context.Context, req *identitypb.QueryAllTimeLockedActionsRequest) (*identitypb.QueryAllTimeLockedActionsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	actions, err := qs.Keeper.GetAllTimeLockedActions(ctx)
+	store := ctx.KVStore(qs.Keeper.storeKey)
+
+	// Create prefix store for time-locked actions
+	actionStore := prefix.NewStore(store, types.TimeLockedActionPrefix)
+
+	var actions []identitypb.TimeLockedAction
+	pageRes, err := query.Paginate(actionStore, req.Pagination, func(key, value []byte) error {
+		var action identitypb.TimeLockedAction
+		if err := qs.Keeper.cdc.Unmarshal(value, &action); err != nil {
+			return err
+		}
+		actions = append(actions, action)
+		return nil
+	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// Convert pointer slice to value slice
-	actionValues := make([]identitypb.TimeLockedAction, len(actions))
-	for i, a := range actions {
-		if a != nil {
-			actionValues[i] = *a
-		}
-	}
-
-	return &identitypb.QueryAllTimeLockedActionsResponse{Actions: actionValues}, nil
+	return &identitypb.QueryAllTimeLockedActionsResponse{
+		Actions:    actions,
+		Pagination: pageRes,
+	}, nil
 }
 
 // EmergencyAdmin queries an emergency admin by address
@@ -425,27 +491,35 @@ func (qs queryServer) EmergencyAdmin(goCtx context.Context, req *identitypb.Quer
 	return &identitypb.QueryEmergencyAdminResponse{Admin: admin}, nil
 }
 
-// AllEmergencyAdmins queries all emergency admins
+// AllEmergencyAdmins queries all emergency admins with pagination
 func (qs queryServer) AllEmergencyAdmins(goCtx context.Context, req *identitypb.QueryAllEmergencyAdminsRequest) (*identitypb.QueryAllEmergencyAdminsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	admins, err := qs.Keeper.GetAllEmergencyAdmins(ctx)
+	store := ctx.KVStore(qs.Keeper.storeKey)
+
+	// Create prefix store for emergency admins
+	adminStore := prefix.NewStore(store, types.EmergencyAdminPrefix)
+
+	var admins []identitypb.EmergencyAdmin
+	pageRes, err := query.Paginate(adminStore, req.Pagination, func(key, value []byte) error {
+		var admin identitypb.EmergencyAdmin
+		if err := qs.Keeper.cdc.Unmarshal(value, &admin); err != nil {
+			return err
+		}
+		admins = append(admins, admin)
+		return nil
+	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// Convert pointer slice to value slice
-	adminValues := make([]identitypb.EmergencyAdmin, len(admins))
-	for i, a := range admins {
-		if a != nil {
-			adminValues[i] = *a
-		}
-	}
-
-	return &identitypb.QueryAllEmergencyAdminsResponse{Admins: adminValues}, nil
+	return &identitypb.QueryAllEmergencyAdminsResponse{
+		Admins:     admins,
+		Pagination: pageRes,
+	}, nil
 }
 
 // ValidatorRotation queries a validator rotation by address
@@ -484,7 +558,7 @@ func (qs queryServer) Session(goCtx context.Context, req *identitypb.QuerySessio
 	return &identitypb.QuerySessionResponse{Session: session}, nil
 }
 
-// SessionsByAddress queries sessions for an address
+// SessionsByAddress queries sessions for an address with pagination
 func (qs queryServer) SessionsByAddress(goCtx context.Context, req *identitypb.QuerySessionsByAddressRequest) (*identitypb.QuerySessionsByAddressResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
@@ -494,22 +568,31 @@ func (qs queryServer) SessionsByAddress(goCtx context.Context, req *identitypb.Q
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	sessionIDs, err := qs.Keeper.GetUserSessions(ctx, req.Address)
+	store := ctx.KVStore(qs.Keeper.storeKey)
+
+	// Create prefix store for all sessions
+	sessionStore := prefix.NewStore(store, types.SessionPrefix)
+
+	var sessions []identitypb.Session
+	pageRes, err := query.Paginate(sessionStore, req.Pagination, func(key, value []byte) error {
+		var session identitypb.Session
+		if err := qs.Keeper.cdc.Unmarshal(value, &session); err != nil {
+			return err
+		}
+		// Filter by address
+		if session.Address == req.Address {
+			sessions = append(sessions, session)
+		}
+		return nil
+	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// Get full session objects
-	var sessions []identitypb.Session
-	for _, sessionID := range sessionIDs {
-		session, err := qs.Keeper.GetSession(ctx, sessionID)
-		if err != nil {
-			continue
-		}
-		sessions = append(sessions, session)
-	}
-
-	return &identitypb.QuerySessionsByAddressResponse{Sessions: sessions}, nil
+	return &identitypb.QuerySessionsByAddressResponse{
+		Sessions:   sessions,
+		Pagination: pageRes,
+	}, nil
 }
 
 // RateLimit queries rate limit config for an address
@@ -530,30 +613,38 @@ func (qs queryServer) RateLimit(goCtx context.Context, req *identitypb.QueryRate
 	return &identitypb.QueryRateLimitResponse{Config: config}, nil
 }
 
-// AuditLogs queries audit logs
+// AuditLogs queries audit logs with pagination
 func (qs queryServer) AuditLogs(goCtx context.Context, req *identitypb.QueryAuditLogsRequest) (*identitypb.QueryAuditLogsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	logs, err := qs.Keeper.GetAllAuditLogs(ctx)
+	store := ctx.KVStore(qs.Keeper.storeKey)
+
+	// Create prefix store for audit logs
+	auditLogStore := prefix.NewStore(store, types.AuditLogPrefix)
+
+	var logs []identitypb.AuditLog
+	pageRes, err := query.Paginate(auditLogStore, req.Pagination, func(key, value []byte) error {
+		var log identitypb.AuditLog
+		if err := qs.Keeper.cdc.Unmarshal(value, &log); err != nil {
+			return err
+		}
+		logs = append(logs, log)
+		return nil
+	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// Convert pointer slice to value slice
-	logValues := make([]identitypb.AuditLog, len(logs))
-	for i, l := range logs {
-		if l != nil {
-			logValues[i] = *l
-		}
-	}
-
-	return &identitypb.QueryAuditLogsResponse{Logs: logValues}, nil
+	return &identitypb.QueryAuditLogsResponse{
+		Logs:       logs,
+		Pagination: pageRes,
+	}, nil
 }
 
-// AuditLogsByActor queries audit logs by actor
+// AuditLogsByActor queries audit logs by actor with pagination
 func (qs queryServer) AuditLogsByActor(goCtx context.Context, req *identitypb.QueryAuditLogsByActorRequest) (*identitypb.QueryAuditLogsByActorResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
@@ -563,18 +654,29 @@ func (qs queryServer) AuditLogsByActor(goCtx context.Context, req *identitypb.Qu
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	allLogs, err := qs.Keeper.GetAllAuditLogs(ctx)
+	store := ctx.KVStore(qs.Keeper.storeKey)
+
+	// Create prefix store for audit logs
+	auditLogStore := prefix.NewStore(store, types.AuditLogPrefix)
+
+	var logs []identitypb.AuditLog
+	pageRes, err := query.Paginate(auditLogStore, req.Pagination, func(key, value []byte) error {
+		var log identitypb.AuditLog
+		if err := qs.Keeper.cdc.Unmarshal(value, &log); err != nil {
+			return err
+		}
+		// Filter by actor
+		if log.Actor == req.Actor {
+			logs = append(logs, log)
+		}
+		return nil
+	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// Filter by actor
-	var filtered []identitypb.AuditLog
-	for _, log := range allLogs {
-		if log.Actor == req.Actor {
-			filtered = append(filtered, *log)
-		}
-	}
-
-	return &identitypb.QueryAuditLogsByActorResponse{Logs: filtered}, nil
+	return &identitypb.QueryAuditLogsByActorResponse{
+		Logs:       logs,
+		Pagination: pageRes,
+	}, nil
 }
