@@ -18,13 +18,15 @@ func (k *Keeper) InitGenesis(ctx sdk.Context, gs *types.GenesisState) error {
 	store := k.storeService.OpenKVStore(ctx)
 
 	// Set params
-	if err := k.SetParams(ctx, gs.Params); err != nil {
+	// Params is a value type (nullable=false), take address for SetParams
+	if err := k.SetParams(ctx, &gs.Params); err != nil {
 		return fmt.Errorf("failed to set params: %w", err)
 	}
 
 	// Initialize roles
 	seenRoleNames := make(map[string]bool)
-	for _, role := range gs.Roles {
+	for i := range gs.Roles {
+		role := &gs.Roles[i]
 		// CRITICAL SECURITY: Detect duplicate role names during import
 		if seenRoleNames[role.Name] {
 			return fmt.Errorf("duplicate role name in genesis: %s", role.Name)
@@ -44,14 +46,16 @@ func (k *Keeper) InitGenesis(ctx sdk.Context, gs *types.GenesisState) error {
 	}
 
 	// Initialize role assignments
-	for _, assignment := range gs.RoleAssignments {
+	for i := range gs.RoleAssignments {
+		assignment := &gs.RoleAssignments[i]
 		if err := k.SetRoleAssignment(ctx, assignment); err != nil {
 			return fmt.Errorf("failed to set role assignment for %s: %w", assignment.Address, err)
 		}
 	}
 
 	// Initialize audit logs
-	for _, log := range gs.AuditLogs {
+	for i := range gs.AuditLogs {
+		log := &gs.AuditLogs[i]
 		if err := k.SetAuditLog(ctx, log); err != nil {
 			return fmt.Errorf("failed to set audit log: %w", err)
 		}
@@ -59,7 +63,8 @@ func (k *Keeper) InitGenesis(ctx sdk.Context, gs *types.GenesisState) error {
 
 	// Initialize sessions
 	seenSessionIDs := make(map[string]bool)
-	for _, session := range gs.Sessions {
+	for i := range gs.Sessions {
+		session := &gs.Sessions[i]
 		// CRITICAL SECURITY: Detect duplicate session IDs during import
 		if seenSessionIDs[session.Id] {
 			return fmt.Errorf("duplicate session ID in genesis: %s", session.Id)
@@ -72,7 +77,8 @@ func (k *Keeper) InitGenesis(ctx sdk.Context, gs *types.GenesisState) error {
 	}
 
 	// Initialize rate limit configs
-	for _, config := range gs.RateLimits {
+	for i := range gs.RateLimits {
+		config := &gs.RateLimits[i]
 		if err := k.SetRateLimitConfig(ctx, config); err != nil {
 			return fmt.Errorf("failed to set rate limit config for %s: %w", config.UserAddress, err)
 		}
@@ -80,7 +86,8 @@ func (k *Keeper) InitGenesis(ctx sdk.Context, gs *types.GenesisState) error {
 
 	// Initialize multisig wallets
 	seenWalletIDs := make(map[string]bool)
-	for _, wallet := range gs.MultisigWallets {
+	for i := range gs.MultisigWallets {
+		wallet := &gs.MultisigWallets[i]
 		// CRITICAL SECURITY: Detect duplicate wallet IDs during import
 		if seenWalletIDs[wallet.Id] {
 			return fmt.Errorf("duplicate multisig wallet ID in genesis: %s", wallet.Id)
@@ -94,7 +101,8 @@ func (k *Keeper) InitGenesis(ctx sdk.Context, gs *types.GenesisState) error {
 
 	// Initialize multisig proposals
 	seenProposalIDs := make(map[string]bool)
-	for _, proposal := range gs.MultisigProposals {
+	for i := range gs.MultisigProposals {
+		proposal := &gs.MultisigProposals[i]
 		// CRITICAL SECURITY: Detect duplicate proposal IDs during import
 		if seenProposalIDs[proposal.Id] {
 			return fmt.Errorf("duplicate multisig proposal ID in genesis: %s", proposal.Id)
@@ -108,7 +116,8 @@ func (k *Keeper) InitGenesis(ctx sdk.Context, gs *types.GenesisState) error {
 
 	// Initialize time-locked actions
 	seenActionIDs := make(map[string]bool)
-	for _, action := range gs.TimeLockedActions {
+	for i := range gs.TimeLockedActions {
+		action := &gs.TimeLockedActions[i]
 		// CRITICAL SECURITY: Detect duplicate action IDs during import
 		if seenActionIDs[action.Id] {
 			return fmt.Errorf("duplicate time-locked action ID in genesis: %s", action.Id)
@@ -121,14 +130,16 @@ func (k *Keeper) InitGenesis(ctx sdk.Context, gs *types.GenesisState) error {
 	}
 
 	// Initialize emergency admins
-	for _, admin := range gs.EmergencyAdmins {
+	for i := range gs.EmergencyAdmins {
+		admin := &gs.EmergencyAdmins[i]
 		if err := k.SetEmergencyAdmin(ctx, admin); err != nil {
 			return fmt.Errorf("failed to set emergency admin %s: %w", admin.Address, err)
 		}
 	}
 
 	// Initialize validator rotations
-	for _, rotation := range gs.ValidatorRotations {
+	for i := range gs.ValidatorRotations {
+		rotation := &gs.ValidatorRotations[i]
 		if err := k.SetValidatorRotation(ctx, rotation); err != nil {
 			return fmt.Errorf("failed to set validator rotation for %s: %w", rotation.ValidatorAddress, err)
 		}
@@ -136,7 +147,8 @@ func (k *Keeper) InitGenesis(ctx sdk.Context, gs *types.GenesisState) error {
 
 	// Initialize identity records
 	seenDIDs := make(map[string]bool)
-	for _, record := range gs.IdentityRecords {
+	for i := range gs.IdentityRecords {
+		record := &gs.IdentityRecords[i]
 		// CRITICAL SECURITY: Detect duplicate DIDs during import
 		if seenDIDs[record.Did] {
 			return fmt.Errorf("duplicate DID in genesis: %s", record.Did)
@@ -150,7 +162,8 @@ func (k *Keeper) InitGenesis(ctx sdk.Context, gs *types.GenesisState) error {
 
 	// Initialize credential revocations
 	seenCredentialIDs := make(map[string]bool)
-	for _, revocation := range gs.CredentialRevocations {
+	for i := range gs.CredentialRevocations {
+		revocation := &gs.CredentialRevocations[i]
 		// CRITICAL SECURITY: Detect duplicate credential IDs during import
 		if seenCredentialIDs[revocation.CredentialId] {
 			return fmt.Errorf("duplicate credential revocation in genesis: %s", revocation.CredentialId)
@@ -168,14 +181,16 @@ func (k *Keeper) InitGenesis(ctx sdk.Context, gs *types.GenesisState) error {
 	}
 
 	// Initialize DID key rotations
-	for _, rotation := range gs.DidKeyRotations {
+	for i := range gs.DidKeyRotations {
+		rotation := &gs.DidKeyRotations[i]
 		if err := k.SetDIDKeyRotation(ctx, rotation); err != nil {
 			return fmt.Errorf("failed to set DID key rotation for %s: %w", rotation.Did, err)
 		}
 	}
 
 	// Initialize DID key histories
-	for _, history := range gs.DidKeyHistories {
+	for i := range gs.DidKeyHistories {
+		history := &gs.DidKeyHistories[i]
 		if err := k.SetDIDKeyHistory(ctx, history); err != nil {
 			return fmt.Errorf("failed to set DID key history for %s: %w", history.Did, err)
 		}
@@ -183,7 +198,8 @@ func (k *Keeper) InitGenesis(ctx sdk.Context, gs *types.GenesisState) error {
 
 	// Initialize change requests
 	seenChangeRequestIDs := make(map[string]bool)
-	for _, request := range gs.ChangeRequests {
+	for i := range gs.ChangeRequests {
+		request := &gs.ChangeRequests[i]
 		// CRITICAL SECURITY: Detect duplicate change request IDs during import
 		if seenChangeRequestIDs[request.Id] {
 			return fmt.Errorf("duplicate change request ID in genesis: %s", request.Id)
@@ -196,7 +212,8 @@ func (k *Keeper) InitGenesis(ctx sdk.Context, gs *types.GenesisState) error {
 	}
 
 	// Initialize change history
-	for _, history := range gs.ChangeHistory {
+	for i := range gs.ChangeHistory {
+		history := &gs.ChangeHistory[i]
 		if err := k.SetChangeHistory(ctx, history); err != nil {
 			return fmt.Errorf("failed to set change history: %w", err)
 		}
@@ -345,24 +362,105 @@ func (k *Keeper) ExportGenesis(ctx sdk.Context) (*types.GenesisState, error) {
 
 	// nextChangeRequestID counter skipped - not in proto yet
 
+	// Convert pointer slices to value slices for GenesisState
+	rolesVal := make([]types.Role, len(roles))
+	for i, r := range roles {
+		rolesVal[i] = *r
+	}
+
+	roleAssignmentsVal := make([]types.RoleAssignment, len(roleAssignments))
+	for i, ra := range roleAssignments {
+		roleAssignmentsVal[i] = *ra
+	}
+
+	auditLogsVal := make([]types.AuditLog, len(auditLogs))
+	for i, al := range auditLogs {
+		auditLogsVal[i] = *al
+	}
+
+	sessionsVal := make([]types.Session, len(sessions))
+	for i, s := range sessions {
+		sessionsVal[i] = *s
+	}
+
+	rateLimitConfigsVal := make([]types.RateLimitConfig, len(rateLimitConfigs))
+	for i, rlc := range rateLimitConfigs {
+		rateLimitConfigsVal[i] = *rlc
+	}
+
+	multisigWalletsVal := make([]types.MultisigWallet, len(multisigWallets))
+	for i, mw := range multisigWallets {
+		multisigWalletsVal[i] = *mw
+	}
+
+	multisigProposalsVal := make([]types.MultisigProposal, len(multisigProposals))
+	for i, mp := range multisigProposals {
+		multisigProposalsVal[i] = *mp
+	}
+
+	timeLockedActionsVal := make([]types.TimeLockedAction, len(timeLockedActions))
+	for i, tla := range timeLockedActions {
+		timeLockedActionsVal[i] = *tla
+	}
+
+	emergencyAdminsVal := make([]types.EmergencyAdmin, len(emergencyAdmins))
+	for i, ea := range emergencyAdmins {
+		emergencyAdminsVal[i] = *ea
+	}
+
+	validatorRotationsVal := make([]types.ValidatorKeyRotation, len(validatorRotations))
+	for i, vr := range validatorRotations {
+		validatorRotationsVal[i] = *vr
+	}
+
+	identityRecordsVal := make([]types.IdentityRecord, len(identityRecords))
+	for i, ir := range identityRecords {
+		identityRecordsVal[i] = *ir
+	}
+
+	credentialRevocationsVal := make([]types.CredentialRevocation, len(credentialRevocations))
+	for i, cr := range credentialRevocations {
+		credentialRevocationsVal[i] = *cr
+	}
+
+	didKeyRotationsVal := make([]types.DIDKeyRotation, len(didKeyRotations))
+	for i, dkr := range didKeyRotations {
+		didKeyRotationsVal[i] = *dkr
+	}
+
+	didKeyHistoriesVal := make([]types.DIDKeyHistory, len(didKeyHistories))
+	for i, dkh := range didKeyHistories {
+		didKeyHistoriesVal[i] = *dkh
+	}
+
+	changeRequestsVal := make([]types.ChangeRequest, len(changeRequests))
+	for i, cr := range changeRequests {
+		changeRequestsVal[i] = *cr
+	}
+
+	changeHistoryVal := make([]types.ChangeHistory, len(changeHistory))
+	for i, ch := range changeHistory {
+		changeHistoryVal[i] = *ch
+	}
+
 	return &types.GenesisState{
-		Params:                   params,
-		Roles:                    roles,
-		RoleAssignments:          roleAssignments,
-		AuditLogs:                auditLogs,
-		Sessions:                 sessions,
-		RateLimits:               rateLimitConfigs,
-		MultisigWallets:          multisigWallets,
-		MultisigProposals:        multisigProposals,
-		TimeLockedActions:        timeLockedActions,
-		EmergencyAdmins:          emergencyAdmins,
-		ValidatorRotations:       validatorRotations,
-		IdentityRecords:          identityRecords,
-		CredentialRevocations:    credentialRevocations,
-		DidKeyRotations:          didKeyRotations,
-		DidKeyHistories:          didKeyHistories,
-		ChangeRequests:           changeRequests,
-		ChangeHistory:            changeHistory,
+		Params:                   *params,
+		Roles:                    rolesVal,
+		RoleAssignments:          roleAssignmentsVal,
+		AuditLogs:                auditLogsVal,
+		Sessions:                 sessionsVal,
+		RateLimits:               rateLimitConfigsVal,
+		MultisigWallets:          multisigWalletsVal,
+		MultisigProposals:        multisigProposalsVal,
+		TimeLockedActions:        timeLockedActionsVal,
+		EmergencyAdmins:          emergencyAdminsVal,
+		ValidatorRotations:       validatorRotationsVal,
+		IdentityRecords:          identityRecordsVal,
+		CredentialRevocations:    credentialRevocationsVal,
+		DidKeyRotations:          didKeyRotationsVal,
+		DidKeyHistories:          didKeyHistoriesVal,
+		ChangeRequests:           changeRequestsVal,
+		ChangeHistory:            changeHistoryVal,
 		IdentityChangesSuspended: suspended,
 		NextAuditLogId:           nextAuditLogID,
 	}, nil
