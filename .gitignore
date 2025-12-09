@@ -63,6 +63,7 @@ coverage.html
 
 # Backup files
 *.bak
+*.bak2
 *.old
 *.old[0-9]
 *.orig
