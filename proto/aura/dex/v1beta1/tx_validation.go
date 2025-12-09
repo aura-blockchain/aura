@@ -58,19 +58,13 @@ func (m *MsgCreatePool) ValidateBasic() error {
 		return fmt.Errorf("denom_a and denom_b must be different")
 	}
 
-	// Validate amount A
-	if m.AmountA == nil {
-		return fmt.Errorf("amount_a cannot be nil")
-	}
-	if err := validation.ValidateCoin(*m.AmountA, "amount_a"); err != nil {
+	// Validate amount A (value type with gogoproto.nullable = false)
+	if err := validation.ValidateCoin(m.AmountA, "amount_a"); err != nil {
 		return err
 	}
 
-	// Validate amount B
-	if m.AmountB == nil {
-		return fmt.Errorf("amount_b cannot be nil")
-	}
-	if err := validation.ValidateCoin(*m.AmountB, "amount_b"); err != nil {
+	// Validate amount B (value type with gogoproto.nullable = false)
+	if err := validation.ValidateCoin(m.AmountB, "amount_b"); err != nil {
 		return err
 	}
 
@@ -98,19 +92,13 @@ func (m *MsgAddLiquidity) ValidateBasic() error {
 		return err
 	}
 
-	// Validate amount A
-	if m.AmountA == nil {
-		return fmt.Errorf("amount_a cannot be nil")
-	}
-	if err := validation.ValidateCoin(*m.AmountA, "amount_a"); err != nil {
+	// Validate amount A (value type with gogoproto.nullable = false)
+	if err := validation.ValidateCoin(m.AmountA, "amount_a"); err != nil {
 		return err
 	}
 
-	// Validate amount B
-	if m.AmountB == nil {
-		return fmt.Errorf("amount_b cannot be nil")
-	}
-	if err := validation.ValidateCoin(*m.AmountB, "amount_b"); err != nil {
+	// Validate amount B (value type with gogoproto.nullable = false)
+	if err := validation.ValidateCoin(m.AmountB, "amount_b"); err != nil {
 		return err
 	}
 
@@ -134,8 +122,8 @@ func (m *MsgRemoveLiquidity) ValidateBasic() error {
 		return err
 	}
 
-	// Validate LP tokens amount (stored as string)
-	if err := parseAndValidatePositiveInt(m.LpTokens, "lp_tokens"); err != nil {
+	// Validate LP tokens amount (cosmossdk.io/math.Int value type)
+	if err := validation.ValidatePositiveInt(m.LpTokens, "lp_tokens"); err != nil {
 		return err
 	}
 
@@ -154,16 +142,13 @@ func (m *MsgSwapExactIn) ValidateBasic() error {
 		return err
 	}
 
-	// Validate coin in
-	if m.CoinIn == nil {
-		return fmt.Errorf("coin_in cannot be nil")
-	}
-	if err := validation.ValidateCoin(*m.CoinIn, "coin_in"); err != nil {
+	// Validate coin in (value type with gogoproto.nullable = false)
+	if err := validation.ValidateCoin(m.CoinIn, "coin_in"); err != nil {
 		return err
 	}
 
-	// Validate minimum amount out (stored as string)
-	if err := parseAndValidatePositiveInt(m.MinAmountOut, "min_amount_out"); err != nil {
+	// Validate minimum amount out (cosmossdk.io/math.Int value type)
+	if err := validation.ValidatePositiveInt(m.MinAmountOut, "min_amount_out"); err != nil {
 		return err
 	}
 
@@ -188,8 +173,8 @@ func (m *MsgCreateOrder) ValidateBasic() error {
 		return fmt.Errorf("order_type must be valid")
 	}
 
-	// Validate AURA amount (stored as string)
-	if err := parseAndValidatePositiveInt(m.AuraAmount, "aura_amount"); err != nil {
+	// Validate AURA amount (cosmossdk.io/math.Int value type)
+	if err := validation.ValidatePositiveInt(m.AuraAmount, "aura_amount"); err != nil {
 		return err
 	}
 
@@ -198,8 +183,8 @@ func (m *MsgCreateOrder) ValidateBasic() error {
 		return fmt.Errorf("other_coin: %w", err)
 	}
 
-	// Validate other amount (stored as string)
-	if err := parseAndValidatePositiveInt(m.OtherAmount, "other_amount"); err != nil {
+	// Validate other amount (cosmossdk.io/math.Int value type)
+	if err := validation.ValidatePositiveInt(m.OtherAmount, "other_amount"); err != nil {
 		return err
 	}
 
@@ -258,11 +243,8 @@ func (m *MsgCreateHTLC) ValidateBasic() error {
 		return fmt.Errorf("sender and recipient must be different")
 	}
 
-	// Validate amount
-	if m.Amount == nil {
-		return fmt.Errorf("amount cannot be nil")
-	}
-	if err := validation.ValidateCoin(*m.Amount, "amount"); err != nil {
+	// Validate amount (value type with gogoproto.nullable = false)
+	if err := validation.ValidateCoin(m.Amount, "amount"); err != nil {
 		return err
 	}
 
