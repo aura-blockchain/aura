@@ -4,112 +4,112 @@ import (
 	"cosmossdk.io/errors"
 )
 
-// Identity module error codes
+// Identity module error codes (100-199 range)
 const (
-	// Auth-related error codes (1-99)
-	CodeRoleNotFound            uint32 = 1
-	CodeRoleAlreadyExists       uint32 = 2
-	CodeInvalidRole             uint32 = 3
-	CodeInsufficientPermissions uint32 = 4
-	CodePermissionDenied        uint32 = 5
-	CodeInvalidRoleAssignment   uint32 = 6
+	// Auth-related error codes (100-109)
+	CodeRoleNotFound            uint32 = 100
+	CodeRoleAlreadyExists       uint32 = 101
+	CodeInvalidRole             uint32 = 102
+	CodeInsufficientPermissions uint32 = 103
+	CodePermissionDenied        uint32 = 104
+	CodeInvalidRoleAssignment   uint32 = 105
 
-	// Account and Session error codes (100-199)
-	CodeAccountNotFound        uint32 = 100
-	CodeAccountAlreadyExists   uint32 = 101
-	CodeSessionNotFound        uint32 = 102
-	CodeSessionExpired         uint32 = 103
-	CodeSessionInactive        uint32 = 104
-	CodeInvalidSession         uint32 = 105
-	CodeRateLimitExceeded      uint32 = 106
-	CodeInvalidRateLimitConfig uint32 = 107
+	// Account and Session error codes (110-119)
+	CodeAccountNotFound        uint32 = 110
+	CodeAccountAlreadyExists   uint32 = 111
+	CodeSessionNotFound        uint32 = 112
+	CodeSessionExpired         uint32 = 113
+	CodeSessionInactive        uint32 = 114
+	CodeInvalidSession         uint32 = 115
+	CodeRateLimitExceeded      uint32 = 116
+	CodeInvalidRateLimitConfig uint32 = 117
 
-	// Multisig error codes (200-299)
-	CodeMultisigWalletNotFound  uint32 = 200
-	CodeMultisigWalletExists    uint32 = 201
-	CodeInvalidMultisigWallet   uint32 = 202
-	CodeNotWalletSigner         uint32 = 203
-	CodeAlreadySigned           uint32 = 204
-	CodeProposalNotFound        uint32 = 205
-	CodeProposalExpired         uint32 = 206
-	CodeProposalNotApproved     uint32 = 207
-	CodeProposalAlreadyExecuted uint32 = 208
-	CodeInvalidProposal         uint32 = 209
+	// Multisig error codes (120-129)
+	CodeMultisigWalletNotFound  uint32 = 120
+	CodeMultisigWalletExists    uint32 = 121
+	CodeInvalidMultisigWallet   uint32 = 122
+	CodeNotWalletSigner         uint32 = 123
+	CodeAlreadySigned           uint32 = 124
+	CodeProposalNotFound        uint32 = 125
+	CodeProposalExpired         uint32 = 126
+	CodeProposalNotApproved     uint32 = 127
+	CodeProposalAlreadyExecuted uint32 = 128
+	CodeInvalidProposal         uint32 = 129
 
-	// Time-locked action error codes (300-399)
-	CodeActionNotFound        uint32 = 300
-	CodeActionNotReady        uint32 = 301
-	CodeActionAlreadyExecuted uint32 = 302
-	CodeInvalidAction         uint32 = 303
+	// Time-locked action error codes (130-134)
+	CodeActionNotFound        uint32 = 130
+	CodeActionNotReady        uint32 = 131
+	CodeActionAlreadyExecuted uint32 = 132
+	CodeInvalidAction         uint32 = 133
 
-	// Emergency admin error codes (400-499)
-	CodeEmergencyAdminNotFound uint32 = 400
-	CodeEmergencyAdminInactive uint32 = 401
-	CodeInvalidEmergencyAdmin  uint32 = 402
+	// Emergency admin error codes (135-137)
+	CodeEmergencyAdminNotFound uint32 = 135
+	CodeEmergencyAdminInactive uint32 = 136
+	CodeInvalidEmergencyAdmin  uint32 = 137
 
-	// Validator error codes (500-599)
-	CodeValidatorNotFound  uint32 = 500
-	CodeRotationInProgress uint32 = 501
-	CodeRotationNotFound   uint32 = 502
+	// Validator error codes (138-140)
+	CodeValidatorNotFound  uint32 = 138
+	CodeRotationInProgress uint32 = 139
+	CodeRotationNotFound   uint32 = 140
 
-	// DID Key Rotation error codes (550-559)
-	CodeDIDKeyRotationNotFound    uint32 = 550
-	CodeDIDKeyRotationInProgress  uint32 = 551
-	CodeInvalidVerificationMethod uint32 = 552
-	CodeKeyInGracePeriod          uint32 = 553
-	CodeKeyNotValid               uint32 = 554
-	CodeInvalidSignature          uint32 = 555
+	// DID Key Rotation error codes (141-146)
+	CodeDIDKeyRotationNotFound    uint32 = 141
+	CodeDIDKeyRotationInProgress  uint32 = 142
+	CodeInvalidVerificationMethod uint32 = 143
+	CodeKeyInGracePeriod          uint32 = 144
+	CodeKeyNotValid               uint32 = 145
+	CodeInvalidSignature          uint32 = 146
 
-	// Identity change error codes (600-699)
-	CodeIdentityNotFound            uint32 = 600
-	CodeIdentityAlreadyExists       uint32 = 601
-	CodeChangeRequestNotFound       uint32 = 602
-	CodeChangeRequestInvalid        uint32 = 603
-	CodeChangeRequestExpired        uint32 = 604
-	CodeChangeRequestPending        uint32 = 605
-	CodeChangeRequestAlreadyApplied uint32 = 606
-	CodeChangeRequestLimitExceeded  uint32 = 607
-	CodeIdentityChangeSuspended     uint32 = 608
-	CodeInvalidDID                  uint32 = 609
-	CodeInvalidChangeRequest        uint32 = 610
+	// Identity change error codes (147-157)
+	CodeIdentityNotFound            uint32 = 147
+	CodeIdentityAlreadyExists       uint32 = 148
+	CodeChangeRequestNotFound       uint32 = 149
+	CodeChangeRequestInvalid        uint32 = 150
+	CodeChangeRequestExpired        uint32 = 151
+	CodeChangeRequestPending        uint32 = 152
+	CodeChangeRequestAlreadyApplied uint32 = 153
+	CodeChangeRequestLimitExceeded  uint32 = 154
+	CodeIdentityChangeSuspended     uint32 = 155
+	CodeInvalidDID                  uint32 = 156
+	CodeInvalidChangeRequest        uint32 = 157
 
-	// GDPR-related error codes (650-669)
-	CodeIdentityAlreadyErased uint32 = 650
-	CodeIdentityErased        uint32 = 651
-	CodeNoCommitment          uint32 = 652
-	CodeInvalidCommitment     uint32 = 653
-	CodeUnauthorized          uint32 = 654
+	// GDPR-related error codes (158-162)
+	CodeIdentityAlreadyErased uint32 = 158
+	CodeIdentityErased        uint32 = 159
+	CodeNoCommitment          uint32 = 160
+	CodeInvalidCommitment     uint32 = 161
+	CodeUnauthorized          uint32 = 162
 
-	// Credential revocation error codes (670-689)
-	CodeCredentialRevoked        uint32 = 670
-	CodeCredentialNotFound       uint32 = 671
-	CodeCredentialAlreadyRevoked uint32 = 672
-	CodeInvalidCredentialID      uint32 = 673
+	// Credential revocation error codes (163-166)
+	CodeCredentialRevoked        uint32 = 163
+	CodeCredentialNotFound       uint32 = 164
+	CodeCredentialAlreadyRevoked uint32 = 165
+	CodeInvalidCredentialID      uint32 = 166
 
-	// Attribute Access Control error codes (690-709)
-	CodeAttributeNotFound  uint32 = 690
-	CodeAccessDenied       uint32 = 691
-	CodeAccessExpired      uint32 = 692
-	CodeInvalidPermission  uint32 = 693
-	CodePermissionNotFound uint32 = 694
-	CodeInvalidAccessLevel uint32 = 695
+	// Attribute Access Control error codes (167-172)
+	CodeAttributeNotFound  uint32 = 167
+	CodeAccessDenied       uint32 = 168
+	CodeAccessExpired      uint32 = 169
+	CodeInvalidPermission  uint32 = 170
+	CodePermissionNotFound uint32 = 171
+	CodeInvalidAccessLevel uint32 = 172
 
-	// ZK Proof error codes (710-729)
-	CodeInvalidProof              uint32 = 710
-	CodeProofVerificationFailed   uint32 = 711
-	CodeInvalidVerifyingKey       uint32 = 712
-	CodeInvalidPublicInputs       uint32 = 713
-	CodeUnsupportedProofType      uint32 = 714
-	CodeProofDeserializationError uint32 = 715
+	// ZK Proof error codes (173-178)
+	CodeInvalidProof              uint32 = 173
+	CodeProofVerificationFailed   uint32 = 174
+	CodeInvalidVerifyingKey       uint32 = 175
+	CodeInvalidPublicInputs       uint32 = 176
+	CodeUnsupportedProofType      uint32 = 177
+	CodeProofDeserializationError uint32 = 178
 
-	// Serialization error codes (800-819)
-	CodeMarshalFailed   uint32 = 800
-	CodeUnmarshalFailed uint32 = 801
+	// Serialization error codes (179-180)
+	CodeMarshalFailed   uint32 = 179
+	CodeUnmarshalFailed uint32 = 180
 
-	// General error codes (900-999)
-	CodeInvalidAddress uint32 = 900
-	CodeInvalidInput   uint32 = 901
-	CodeInternal       uint32 = 999
+	// General error codes (181-199)
+	CodeInvalidAddress uint32 = 181
+	CodeInvalidInput   uint32 = 182
+	CodeInternal       uint32 = 199
 )
 
 // Auth-related errors
@@ -243,4 +243,9 @@ var (
 	ErrInvalidAddress = errors.Register(ModuleName, CodeInvalidAddress, "invalid address")
 	ErrInvalidInput   = errors.Register(ModuleName, CodeInvalidInput, "invalid input")
 	ErrInternal       = errors.Register(ModuleName, CodeInternal, "internal error")
+)
+
+// IBC errors
+var (
+	ErrIBCNotEnabled = errors.Register(ModuleName, 999, "IBC not enabled for identity module - cross-chain identity features will be available in v2.0")
 )
