@@ -45,7 +45,10 @@ func (k Keeper) GetAllMixingPools(ctx sdk.Context) []*securitypb.MixingPool {
 	var pools []*securitypb.MixingPool
 	for ; iterator.Valid(); iterator.Next() {
 		var pool securitypb.MixingPool
-		k.cdc.MustUnmarshal(iterator.Value(), &pool)
+		if err := k.cdc.Unmarshal(iterator.Value(), &pool); err != nil {
+			ctx.Logger().Error("failed to unmarshal mixing pool during iteration", "error", err)
+			continue
+		}
 		pools = append(pools, &pool)
 	}
 	return pools
@@ -102,7 +105,10 @@ func (k Keeper) GetAllRegisteredViewKeys(ctx sdk.Context) []*types.ViewKey {
 	var viewKeys []*types.ViewKey
 	for ; iterator.Valid(); iterator.Next() {
 		var viewKey types.ViewKey
-		k.cdc.MustUnmarshal(iterator.Value(), &viewKey)
+		if err := k.cdc.Unmarshal(iterator.Value(), &viewKey); err != nil {
+			ctx.Logger().Error("failed to unmarshal view key during iteration", "error", err)
+			continue
+		}
 		viewKeys = append(viewKeys, &viewKey)
 	}
 	return viewKeys

@@ -5,6 +5,7 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/query"
 	"github.com/stretchr/testify/require"
 
 	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
@@ -108,4 +109,141 @@ func TestQueryEmptyOrderbook(t *testing.T) {
 
 	// Spread should be empty or "0" when no orders exist
 	require.NotNil(t, resp.Orderbook.SpreadPercent)
+}
+
+// TestQueryAllPoolsPagination tests that AllPools query supports Cosmos SDK pagination
+func TestQueryAllPoolsPagination(t *testing.T) {
+	k, ctx, mockBank := setupTestKeeper(t)
+	userAddr := keepertest.GenTestAddr()
+	user := userAddr.String()
+
+	// Create multiple pools for pagination testing
+	poolPairs := []struct {
+		denomA string
+		denomB string
+		amtA   int64
+		amtB   int64
+	}{
+		{"uaura", "usdt", 1_000000, 2_000000},
+		{"uaura", "usdc", 1_000000, 2_000000},
+		{"uaura", "btc", 1_000000, 100},
+	}
+
+	for _, pair := range poolPairs {
+		mockBank.SetBalance(userAddr, pair.denomA, math.NewInt(pair.amtA))
+		mockBank.SetBalance(userAddr, pair.denomB, math.NewInt(pair.amtB))
+		_, _, err := k.CreatePool(ctx, user, pair.denomA, pair.denomB,
+			sdk.NewCoin(pair.denomA, math.NewInt(pair.amtA)),
+			sdk.NewCoin(pair.denomB, math.NewInt(pair.amtB)))
+		require.NoError(t, err)
+	}
+
+	server := keeper.NewQueryServerImpl(k)
+
+	// Test 1: Query without pagination (should get default limit)
+	resp1, err := server.AllPools(sdk.WrapSDKContext(ctx), &dexpb.QueryAllPoolsRequest{})
+	require.NoError(t, err)
+	require.NotNil(t, resp1)
+	require.Len(t, resp1.Pools, 3)
+	require.NotNil(t, resp1.Pagination)
+
+	// Test 2: Query with limit=2
+	resp2, err := server.AllPools(sdk.WrapSDKContext(ctx), &dexpb.QueryAllPoolsRequest{
+		Pagination: &query.PageRequest{
+			Limit: 2,
+		},
+	})
+	require.NoError(t, err)
+	require.Len(t, resp2.Pools, 2)
+	require.NotNil(t, resp2.Pagination)
+	require.NotEmpty(t, resp2.Pagination.NextKey)
+
+	// Test 3: Query next page using NextKey
+	resp3, err := server.AllPools(sdk.WrapSDKContext(ctx), &dexpb.QueryAllPoolsRequest{
+		Pagination: &query.PageRequest{
+			Key:   resp2.Pagination.NextKey,
+			Limit: 2,
+		},
+	})
+	require.NoError(t, err)
+	require.Len(t, resp3.Pools, 1)
+	require.NotNil(t, resp3.Pagination)
+
+	// Test 4: Verify no duplicates across pages
+	allPoolIDs := make(map[string]bool)
+	for _, pool := range resp2.Pools {
+		allPoolIDs[pool.PoolId] = true
+	}
+	for _, pool := range resp3.Pools {
+		require.False(t, allPoolIDs[pool.PoolId], "duplicate pool found across pages")
+	}
+}
+
+// TestQueryUserOrdersPagination tests that UserOrders query supports Cosmos SDK pagination
+func TestQueryUserOrdersPagination(t *testing.T) {
+	k, ctx, mockBank := setupTestKeeperWithMock(t)
+
+	userAddr := keepertest.GenTestAddr()
+	user := userAddr.String()
+
+	// Set up sufficient balance for multiple orders
+	mockBank.SetBalance(userAddr, "usdt", math.NewInt(10000))
+
+	// Create multiple orders for pagination testing
+	for i := 0; i < 5; i++ {
+		_, err := k.CreateOrder(ctx, user, types.SwapOrderType_BUY, math.NewInt(100), "usdt", math.NewInt(200), 60)
+		require.NoError(t, err)
+	}
+
+	server := keeper.NewQueryServerImpl(k)
+
+	// Test 1: Query without pagination (should get default limit)
+	resp1, err := server.UserOrders(sdk.WrapSDKContext(ctx), &dexpb.QueryUserOrdersRequest{
+		Address: user,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, resp1)
+	require.Len(t, resp1.Orders, 5)
+	require.NotNil(t, resp1.Pagination)
+
+	// Test 2: Query with limit=3
+	resp2, err := server.UserOrders(sdk.WrapSDKContext(ctx), &dexpb.QueryUserOrdersRequest{
+		Address: user,
+		Pagination: &query.PageRequest{
+			Limit: 3,
+		},
+	})
+	require.NoError(t, err)
+	require.Len(t, resp2.Orders, 3)
+	require.NotNil(t, resp2.Pagination)
+	require.NotEmpty(t, resp2.Pagination.NextKey)
+
+	// Test 3: Query next page using NextKey
+	resp3, err := server.UserOrders(sdk.WrapSDKContext(ctx), &dexpb.QueryUserOrdersRequest{
+		Address: user,
+		Pagination: &query.PageRequest{
+			Key:   resp2.Pagination.NextKey,
+			Limit: 3,
+		},
+	})
+	require.NoError(t, err)
+	require.Len(t, resp3.Orders, 2)
+	require.NotNil(t, resp3.Pagination)
+
+	// Test 4: Verify all orders belong to the correct user
+	for _, order := range resp2.Orders {
+		require.Equal(t, user, order.UserAddress)
+	}
+	for _, order := range resp3.Orders {
+		require.Equal(t, user, order.UserAddress)
+	}
+
+	// Test 5: Verify no duplicates across pages
+	allOrderIDs := make(map[string]bool)
+	for _, order := range resp2.Orders {
+		allOrderIDs[order.OrderId] = true
+	}
+	for _, order := range resp3.Orders {
+		require.False(t, allOrderIDs[order.OrderId], "duplicate order found across pages")
+	}
 }

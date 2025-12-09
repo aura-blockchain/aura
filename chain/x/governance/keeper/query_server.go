@@ -48,32 +48,24 @@ func (qs queryServer) Proposal(goCtx context.Context, req *govpb.QueryProposalRe
 // Proposals queries all proposals
 func (qs queryServer) Proposals(goCtx context.Context, req *govpb.QueryProposalsRequest) (*govpb.QueryProposalsResponse, error) {
 	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
+		req = &govpb.QueryProposalsRequest{}
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	store := ctx.KVStore(qs.Keeper.storeKey)
 	proposalStore := prefix.NewStore(store, ProposalsKeyPrefix)
 
-	// Default pagination limits
-	const defaultLimit = 100
-
-	proposals := []*types.Proposal{}
-	count := 0
-
-	iterator := proposalStore.Iterator(nil, nil)
-	defer iterator.Close()
-
-	for ; iterator.Valid() && count < defaultLimit; iterator.Next() {
+	var proposals []*types.Proposal
+	pageRes, err := query.Paginate(proposalStore, req.Pagination, func(key []byte, value []byte) error {
 		var proposal types.Proposal
-		if err := qs.Keeper.cdc.Unmarshal(iterator.Value(), &proposal); err != nil {
-			continue
+		if err := qs.Keeper.cdc.Unmarshal(value, &proposal); err != nil {
+			return err
 		}
 
 		// Filter by status if provided
 		if req.Status != govpb.ProposalStatus_PROPOSAL_STATUS_UNSPECIFIED {
 			if proposal.Status != req.Status {
-				continue
+				return nil // Skip this proposal
 			}
 		}
 
@@ -81,7 +73,7 @@ func (qs queryServer) Proposals(goCtx context.Context, req *govpb.QueryProposals
 		if req.Voter != "" {
 			_, err := qs.Keeper.GetVote(ctx, proposal.Id, req.Voter)
 			if err != nil {
-				continue
+				return nil // Skip this proposal
 			}
 		}
 
@@ -89,15 +81,21 @@ func (qs queryServer) Proposals(goCtx context.Context, req *govpb.QueryProposals
 		if req.Depositor != "" {
 			_, err := qs.Keeper.GetDeposit(ctx, proposal.Id, req.Depositor)
 			if err != nil {
-				continue
+				return nil // Skip this proposal
 			}
 		}
 
 		proposals = append(proposals, &proposal)
-		count++
+		return nil
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &govpb.QueryProposalsResponse{Proposals: proposals}, nil
+	return &govpb.QueryProposalsResponse{
+		Proposals:  proposals,
+		Pagination: pageRes,
+	}, nil
 }
 
 // Vote queries a vote by proposal id and voter

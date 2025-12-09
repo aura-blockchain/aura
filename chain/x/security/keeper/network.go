@@ -30,7 +30,10 @@ func (k Keeper) GetRateLimit(ctx sdk.Context, peerId string) (*securitypb.RateLi
 		return nil, false
 	}
 	var rl securitypb.RateLimitEntry
-	k.cdc.MustUnmarshal(bz, &rl)
+	if err := k.cdc.Unmarshal(bz, &rl); err != nil {
+		k.Logger(ctx).Error("failed to unmarshal rate limit entry", "error", err, "peer_id", peerId)
+		return nil, false
+	}
 	return &rl, true
 }
 
@@ -43,7 +46,10 @@ func (k Keeper) GetAllRateLimits(ctx sdk.Context) []*securitypb.RateLimitEntry {
 	var rateLimits []*securitypb.RateLimitEntry
 	for ; iterator.Valid(); iterator.Next() {
 		var rl securitypb.RateLimitEntry
-		k.cdc.MustUnmarshal(iterator.Value(), &rl)
+		if err := k.cdc.Unmarshal(iterator.Value(), &rl); err != nil {
+			k.Logger(ctx).Error("failed to unmarshal rate limit entry during iteration", "error", err)
+			continue
+		}
 		rateLimits = append(rateLimits, &rl)
 	}
 	return rateLimits
@@ -73,7 +79,10 @@ func (k Keeper) GetPeerReputation(ctx sdk.Context, peerID string) (*securitypb.N
 		return nil, false
 	}
 	var rep securitypb.NodeReputation
-	k.cdc.MustUnmarshal(bz, &rep)
+	if err := k.cdc.Unmarshal(bz, &rep); err != nil {
+		k.Logger(ctx).Error("failed to unmarshal node reputation", "error", err, "peer_id", peerID)
+		return nil, false
+	}
 	return &rep, true
 }
 
@@ -86,7 +95,10 @@ func (k Keeper) GetAllPeerReputations(ctx sdk.Context) []*securitypb.NodeReputat
 	var reputations []*securitypb.NodeReputation
 	for ; iterator.Valid(); iterator.Next() {
 		var rep securitypb.NodeReputation
-		k.cdc.MustUnmarshal(iterator.Value(), &rep)
+		if err := k.cdc.Unmarshal(iterator.Value(), &rep); err != nil {
+			k.Logger(ctx).Error("failed to unmarshal node reputation during iteration", "error", err)
+			continue
+		}
 		reputations = append(reputations, &rep)
 	}
 	return reputations
@@ -109,7 +121,10 @@ func (k Keeper) GetTrustedPeer(ctx sdk.Context, peerID string) (*securitypb.Trus
 		return nil, false
 	}
 	var peer securitypb.TrustedPeer
-	k.cdc.MustUnmarshal(bz, &peer)
+	if err := k.cdc.Unmarshal(bz, &peer); err != nil {
+		k.Logger(ctx).Error("failed to unmarshal trusted peer", "error", err, "peer_id", peerID)
+		return nil, false
+	}
 	return &peer, true
 }
 
@@ -122,7 +137,10 @@ func (k Keeper) GetAllTrustedPeers(ctx sdk.Context) []*securitypb.TrustedPeer {
 	var peers []*securitypb.TrustedPeer
 	for ; iterator.Valid(); iterator.Next() {
 		var peer securitypb.TrustedPeer
-		k.cdc.MustUnmarshal(iterator.Value(), &peer)
+		if err := k.cdc.Unmarshal(iterator.Value(), &peer); err != nil {
+			k.Logger(ctx).Error("failed to unmarshal trusted peer during iteration", "error", err)
+			continue
+		}
 		peers = append(peers, &peer)
 	}
 	return peers
@@ -152,7 +170,10 @@ func (k Keeper) GetBlacklistEntry(ctx sdk.Context, identifier string) (*types.Bl
 		return nil, false
 	}
 	var entry types.BlacklistEntry
-	k.cdc.MustUnmarshal(bz, &entry)
+	if err := k.cdc.Unmarshal(bz, &entry); err != nil {
+		k.Logger(ctx).Error("failed to unmarshal blacklist entry", "error", err, "identifier", identifier)
+		return nil, false
+	}
 	return &entry, true
 }
 
@@ -165,7 +186,10 @@ func (k Keeper) GetAllBlacklistEntries(ctx sdk.Context) []*types.BlacklistEntry 
 	var entries []*types.BlacklistEntry
 	for ; iterator.Valid(); iterator.Next() {
 		var entry types.BlacklistEntry
-		k.cdc.MustUnmarshal(iterator.Value(), &entry)
+		if err := k.cdc.Unmarshal(iterator.Value(), &entry); err != nil {
+			k.Logger(ctx).Error("failed to unmarshal blacklist entry during iteration", "error", err)
+			continue
+		}
 		entries = append(entries, &entry)
 	}
 	return entries
@@ -209,7 +233,10 @@ func (k Keeper) GetAllForkAlerts(ctx sdk.Context) []*securitypb.ForkAlert {
 	var alerts []*securitypb.ForkAlert
 	for ; iterator.Valid(); iterator.Next() {
 		var alert securitypb.ForkAlert
-		k.cdc.MustUnmarshal(iterator.Value(), &alert)
+		if err := k.cdc.Unmarshal(iterator.Value(), &alert); err != nil {
+			k.Logger(ctx).Error("failed to unmarshal fork alert during iteration", "error", err)
+			continue
+		}
 		alerts = append(alerts, &alert)
 	}
 	return alerts
@@ -232,7 +259,10 @@ func (k Keeper) GetAllPartitionAlerts(ctx sdk.Context) []*securitypb.PartitionAl
 	var alerts []*securitypb.PartitionAlert
 	for ; iterator.Valid(); iterator.Next() {
 		var alert securitypb.PartitionAlert
-		k.cdc.MustUnmarshal(iterator.Value(), &alert)
+		if err := k.cdc.Unmarshal(iterator.Value(), &alert); err != nil {
+			k.Logger(ctx).Error("failed to unmarshal partition alert during iteration", "error", err)
+			continue
+		}
 		alerts = append(alerts, &alert)
 	}
 	return alerts

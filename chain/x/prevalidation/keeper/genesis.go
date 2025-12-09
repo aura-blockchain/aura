@@ -82,7 +82,12 @@ func (k Keeper) ExportGenesis(ctx context.Context) *pb.GenesisState {
 	var params pb.Params
 	paramsBytes := store.Get(types.ParamsKey)
 	if paramsBytes != nil {
-		k.cdc.MustUnmarshal(paramsBytes, &params)
+		if err := k.cdc.Unmarshal(paramsBytes, &params); err != nil {
+			if k.logger != nil {
+				k.logger.Error("failed to unmarshal params during export", "error", err)
+			}
+			params = *types.DefaultParams()
+		}
 	} else {
 		params = *types.DefaultParams()
 	}
@@ -118,8 +123,13 @@ func (k Keeper) ExportGenesis(ctx context.Context) *pb.GenesisState {
 	var metrics pb.PreValidationMetrics
 	metricsBytes := store.Get(types.MetricsKey)
 	if metricsBytes != nil {
-		k.cdc.MustUnmarshal(metricsBytes, &metrics)
-		genesis.Metrics = &metrics
+		if err := k.cdc.Unmarshal(metricsBytes, &metrics); err != nil {
+			if k.logger != nil {
+				k.logger.Error("failed to unmarshal metrics during export", "error", err)
+			}
+		} else {
+			genesis.Metrics = &metrics
+		}
 	}
 
 	return genesis

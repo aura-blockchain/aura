@@ -84,7 +84,10 @@ func (k Keeper) IterateContractInfo(ctx sdk.Context, cb func(*pb.ContractInfo) b
 		}
 
 		var info pb.ContractInfo
-		k.cdc.MustUnmarshal(iterator.Value(), &info)
+		if err := k.cdc.Unmarshal(iterator.Value(), &info); err != nil {
+			// Log error and skip invalid entry
+			continue
+		}
 		if cb(&info) {
 			break
 		}

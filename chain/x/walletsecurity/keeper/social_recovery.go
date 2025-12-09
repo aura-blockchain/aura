@@ -103,7 +103,13 @@ func (k Keeper) ConfirmGuardian(ctx context.Context, walletID, guardianAddress s
 	}
 
 	var config wsproto.SocialRecoveryConfig
-	k.cdc.MustUnmarshal(configBytes, &config)
+	if err := k.cdc.Unmarshal(configBytes, &config); err != nil {
+
+		k.logger.Error("failed to unmarshal", "error", err)
+
+		continue
+
+	}
 
 	// Find and confirm guardian
 	found := false
@@ -141,7 +147,13 @@ func (k Keeper) InitiateRecovery(
 	}
 
 	var config wsproto.SocialRecoveryConfig
-	k.cdc.MustUnmarshal(configBytes, &config)
+	if err := k.cdc.Unmarshal(configBytes, &config); err != nil {
+
+		k.logger.Error("failed to unmarshal", "error", err)
+
+		continue
+
+	}
 
 	if !config.Enabled {
 		return nil, types.ErrRecoveryNotEnabled
@@ -201,7 +213,13 @@ func (k Keeper) ApproveRecovery(
 	}
 
 	var request wsproto.RecoveryRequest
-	k.cdc.MustUnmarshal(requestBytes, &request)
+	if err := k.cdc.Unmarshal(requestBytes, &request); err != nil {
+
+		k.logger.Error("failed to unmarshal", "error", err)
+
+		continue
+
+	}
 
 	// Check if already executed
 	if request.Status == wsproto.RecoveryStatus_RECOVERY_STATUS_EXECUTED {
@@ -215,7 +233,13 @@ func (k Keeper) ApproveRecovery(
 	}
 
 	var config wsproto.SocialRecoveryConfig
-	k.cdc.MustUnmarshal(configBytes, &config)
+	if err := k.cdc.Unmarshal(configBytes, &config); err != nil {
+
+		k.logger.Error("failed to unmarshal", "error", err)
+
+		continue
+
+	}
 
 	// Verify guardian is authorized and confirmed
 	if !k.isConfirmedGuardian(guardianAddress, config.Guardians) {
@@ -274,7 +298,13 @@ func (k Keeper) ExecuteRecovery(ctx context.Context, requestID string) error {
 	}
 
 	var request wsproto.RecoveryRequest
-	k.cdc.MustUnmarshal(requestBytes, &request)
+	if err := k.cdc.Unmarshal(requestBytes, &request); err != nil {
+
+		k.logger.Error("failed to unmarshal", "error", err)
+
+		continue
+
+	}
 
 	// Check if already executed
 	if request.Status == wsproto.RecoveryStatus_RECOVERY_STATUS_EXECUTED {
@@ -288,7 +318,13 @@ func (k Keeper) ExecuteRecovery(ctx context.Context, requestID string) error {
 	}
 
 	var config wsproto.SocialRecoveryConfig
-	k.cdc.MustUnmarshal(configBytes, &config)
+	if err := k.cdc.Unmarshal(configBytes, &config); err != nil {
+
+		k.logger.Error("failed to unmarshal", "error", err)
+
+		continue
+
+	}
 
 	// Verify threshold is met
 	if request.ApprovalsCount < config.RecoveryThreshold {
@@ -333,7 +369,13 @@ func (k Keeper) CancelRecovery(ctx context.Context, requestID string, walletOwne
 	}
 
 	var request wsproto.RecoveryRequest
-	k.cdc.MustUnmarshal(requestBytes, &request)
+	if err := k.cdc.Unmarshal(requestBytes, &request); err != nil {
+
+		k.logger.Error("failed to unmarshal", "error", err)
+
+		continue
+
+	}
 
 	// Only wallet owner can cancel
 	// In production, verify walletOwner actually owns the wallet
@@ -384,7 +426,13 @@ func (k Keeper) incrementGuardianRecoveryCount(ctx context.Context, walletID, gu
 	}
 
 	var config wsproto.SocialRecoveryConfig
-	k.cdc.MustUnmarshal(configBytes, &config)
+	if err := k.cdc.Unmarshal(configBytes, &config); err != nil {
+
+		k.logger.Error("failed to unmarshal", "error", err)
+
+		continue
+
+	}
 
 	for _, guardian := range config.Guardians {
 		if guardian.Address == guardianAddress {
@@ -407,7 +455,13 @@ func (k Keeper) AddGuardian(ctx context.Context, walletID string, guardian *wspr
 	}
 
 	var config wsproto.SocialRecoveryConfig
-	k.cdc.MustUnmarshal(configBytes, &config)
+	if err := k.cdc.Unmarshal(configBytes, &config); err != nil {
+
+		k.logger.Error("failed to unmarshal", "error", err)
+
+		continue
+
+	}
 
 	// Check max guardians
 	if len(config.Guardians) >= int(config.MaxGuardians) {
@@ -441,7 +495,13 @@ func (k Keeper) RemoveGuardian(ctx context.Context, walletID, guardianAddress st
 	}
 
 	var config wsproto.SocialRecoveryConfig
-	k.cdc.MustUnmarshal(configBytes, &config)
+	if err := k.cdc.Unmarshal(configBytes, &config); err != nil {
+
+		k.logger.Error("failed to unmarshal", "error", err)
+
+		continue
+
+	}
 
 	// Remove guardian
 	newGuardians := make([]*wsproto.Guardian, 0, len(config.Guardians)-1)

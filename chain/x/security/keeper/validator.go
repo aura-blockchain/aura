@@ -29,7 +29,11 @@ func (k Keeper) GetValidatorSecurityInfo(ctx sdk.Context, valAddr string) (*secu
 		return nil, false
 	}
 	var info securitypb.ValidatorSecurityInfo
-	k.cdc.MustUnmarshal(bz, &info)
+	if err := k.cdc.Unmarshal(bz, &info); err != nil {
+		k.Logger(ctx).Error("failed to unmarshal validator security info", "error", err, "addr", valAddr)
+		return nil, false
+	}
+
 	return &info, true
 }
 
@@ -42,7 +46,10 @@ func (k Keeper) GetAllValidatorSecurityInfos(ctx sdk.Context) []*securitypb.Vali
 	var infos []*securitypb.ValidatorSecurityInfo
 	for ; iterator.Valid(); iterator.Next() {
 		var info securitypb.ValidatorSecurityInfo
-		k.cdc.MustUnmarshal(iterator.Value(), &info)
+		if err := k.cdc.Unmarshal(iterator.Value(), &info); err != nil {
+			k.Logger(ctx).Error("failed to unmarshal validator security info during iteration", "error", err)
+			continue
+		}
 		infos = append(infos, &info)
 	}
 	return infos
@@ -66,7 +73,10 @@ func (k Keeper) GetAllDoubleSignEvidence(ctx sdk.Context) []*securitypb.DoubleSi
 	var evidences []*securitypb.DoubleSignEvidence
 	for ; iterator.Valid(); iterator.Next() {
 		var evidence securitypb.DoubleSignEvidence
-		k.cdc.MustUnmarshal(iterator.Value(), &evidence)
+		if err := k.cdc.Unmarshal(iterator.Value(), &evidence); err != nil {
+			k.Logger(ctx).Error("failed to unmarshal double sign evidence during iteration", "error", err)
+			continue
+		}
 		evidences = append(evidences, &evidence)
 	}
 	return evidences
@@ -90,7 +100,10 @@ func (k Keeper) GetAllDowntimeInfractions(ctx sdk.Context) []*securitypb.Downtim
 	var infractions []*securitypb.DowntimeInfraction
 	for ; iterator.Valid(); iterator.Next() {
 		var infraction securitypb.DowntimeInfraction
-		k.cdc.MustUnmarshal(iterator.Value(), &infraction)
+		if err := k.cdc.Unmarshal(iterator.Value(), &infraction); err != nil {
+			k.Logger(ctx).Error("failed to unmarshal downtime infraction during iteration", "error", err)
+			continue
+		}
 		infractions = append(infractions, &infraction)
 	}
 	return infractions
@@ -113,7 +126,10 @@ func (k Keeper) GetAllValidatorAlerts(ctx sdk.Context) []*securitypb.ValidatorAl
 	var alerts []*securitypb.ValidatorAlert
 	for ; iterator.Valid(); iterator.Next() {
 		var alert securitypb.ValidatorAlert
-		k.cdc.MustUnmarshal(iterator.Value(), &alert)
+		if err := k.cdc.Unmarshal(iterator.Value(), &alert); err != nil {
+			k.Logger(ctx).Error("failed to unmarshal validator alert during iteration", "error", err)
+			continue
+		}
 		alerts = append(alerts, &alert)
 	}
 	return alerts
@@ -137,7 +153,10 @@ func (k Keeper) GetAllSentryNodes(ctx sdk.Context) []*securitypb.SentryNodeInfo 
 	var sentries []*securitypb.SentryNodeInfo
 	for ; iterator.Valid(); iterator.Next() {
 		var sentry securitypb.SentryNodeInfo
-		k.cdc.MustUnmarshal(iterator.Value(), &sentry)
+		if err := k.cdc.Unmarshal(iterator.Value(), &sentry); err != nil {
+			k.Logger(ctx).Error("failed to unmarshal sentry node during iteration", "error", err)
+			continue
+		}
 		sentries = append(sentries, &sentry)
 	}
 	return sentries

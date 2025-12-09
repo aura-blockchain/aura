@@ -6,8 +6,8 @@ import (
 	"time"
 
 	storetypes "cosmossdk.io/store/types"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/networksecurity/types"
 )
@@ -280,7 +280,10 @@ func (k Keeper) CleanupExpiredRateLimits(ctx sdk.Context) {
 	var toDelete []string
 	for ; iterator.Valid(); iterator.Next() {
 		var entry types.RateLimitEntry
-		k.cdc.MustUnmarshal(iterator.Value(), &entry)
+		if err := k.cdc.Unmarshal(iterator.Value(), &entry); err != nil {
+			k.logger.Error("failed to unmarshal rate limit entry", "error", err)
+			continue
+		}
 
 		// Check if window has expired
 		if entry.WindowStart != nil {

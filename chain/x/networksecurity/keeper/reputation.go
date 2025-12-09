@@ -173,7 +173,10 @@ func (k Keeper) GetBannedPeers(ctx sdk.Context) []string {
 	var bannedPeers []string
 	for ; iterator.Valid(); iterator.Next() {
 		var entry types.RateLimitEntry
-		k.cdc.MustUnmarshal(iterator.Value(), &entry)
+		if err := k.cdc.Unmarshal(iterator.Value(), &entry); err != nil {
+			k.logger.Error("failed to unmarshal rate limit entry", "error", err)
+			continue
+		}
 
 		if entry.IsBanned {
 			// Check if ban is still active

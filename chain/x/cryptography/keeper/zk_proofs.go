@@ -233,7 +233,10 @@ func (k Keeper) GetZKProofConfig(ctx sdk.Context, proofID string) (*cryptoproto.
 	}
 
 	var config cryptoproto.ZKProofConfig
-	k.cdc.MustUnmarshal(bz, &config)
+	if err := k.cdc.Unmarshal(bz, &config); err != nil {
+		k.Logger(ctx).Error("failed to unmarshal ZK proof config", "error", err, "proof_id", proofID)
+		return nil, fmt.Errorf("failed to unmarshal ZK proof config: %w", err)
+	}
 
 	return &config, nil
 }
@@ -262,7 +265,10 @@ func (k Keeper) GetAllZKProofConfigs(ctx sdk.Context) []*cryptoproto.ZKProofConf
 
 	for ; iterator.Valid(); iterator.Next() {
 		var config cryptoproto.ZKProofConfig
-		k.cdc.MustUnmarshal(iterator.Value(), &config)
+		if err := k.cdc.Unmarshal(iterator.Value(), &config); err != nil {
+			k.Logger(ctx).Error("failed to unmarshal ZK proof config during iteration", "error", err)
+			continue
+		}
 		configs = append(configs, &config)
 	}
 
