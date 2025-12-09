@@ -180,7 +180,7 @@ func (k *Keeper) hasActiveStreak(ctx sdk.Context, walletAddr string, minDays int
 		hasCompletionThisDay := false
 		for _, completion := range record.CompletedIrs {
 			if completion.CompletedAt != nil {
-				completionTime := completion.CompletedAt.AsTime()
+				completionTime := time.Unix(completion.CompletedAt.Seconds, int64(completion.CompletedAt.Nanos))
 				if completionTime.After(dayStart) && completionTime.Before(dayEnd) {
 					hasCompletionThisDay = true
 					break

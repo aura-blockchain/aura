@@ -1,6 +1,7 @@
 syntax = "proto3";
 package aura.inclusionroutines.v1beta1;
 
+import "gogoproto/gogo.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
 
 option go_package = "github.com/aequitas/aura/proto/aura/inclusionroutines/v1beta1";
@@ -80,7 +81,7 @@ message Params {
 
 // GenesisState defines the initial state of the inclusionroutines module
 message GenesisState {
-  Params params = 1;
+  Params params = 1 [(gogoproto.nullable) = false];
   repeated IRDefinition irs = 2;
   repeated IRPrerequisite prerequisites = 3;
   repeated IRRateLimit rate_limits = 4;

@@ -47,7 +47,7 @@ message BridgeParams {
 
   // Maximum transfer amount per transaction
   string max_transfer_amount = 3 [
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
     (gogoproto.nullable) = false
   ];
 

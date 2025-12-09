@@ -83,6 +83,9 @@ type (
 	AccessType                       = wasmpb.AccessType
 	ContractCodeHistoryOperationType = wasmpb.ContractCodeHistoryOperationType
 
+	// Custom types
+	RawContractMessage = wasmpb.RawContractMessage
+
 	// Service interfaces from generated gRPC
 	QueryServer                      = wasmpb.QueryServer
 	MsgServer                        = wasmpb.MsgServer

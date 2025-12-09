@@ -20,7 +20,7 @@ func (k *Keeper) QueryUserScore(ctx sdk.Context, walletAddr string) (uint64, boo
 	// Convert timestamp to Unix time for return
 	var lastUpdated int64
 	if record.LastUpdated != nil {
-		lastUpdated = record.LastUpdated.AsTime().Unix()
+		lastUpdated = record.LastUpdated.Seconds
 	}
 
 	return record.TotalScore,

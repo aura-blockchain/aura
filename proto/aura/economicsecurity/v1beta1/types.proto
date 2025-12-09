@@ -1,6 +1,7 @@
 syntax = "proto3";
 package aura.economicsecurity.v1beta1;
 
+import "gogoproto/gogo.proto";
 import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/aequitas/aura/proto/aura/economicsecurity/v1beta1";

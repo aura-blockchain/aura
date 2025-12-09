@@ -335,11 +335,11 @@ func (k *Keeper) CalculateVelocityBonus(ctx sdk.Context, walletAddr string) floa
 	anchorTime := record.AnchorInfo.CompletedAt
 	currentTime := ctx.BlockTime()
 
-	// Convert anchorTime from protobuf timestamp to time.Time
+	// Calculate days elapsed since anchor completion
 	var daysElapsed float64
 	if anchorTime != nil {
-		anchorUnix := anchorTime.AsTime()
-		daysElapsed = currentTime.Sub(anchorUnix).Hours() / 24.0
+		anchorTimeGo := time.Unix(anchorTime.Seconds, int64(anchorTime.Nanos))
+		daysElapsed = currentTime.Sub(anchorTimeGo).Hours() / 24.0
 	}
 
 	// Apply velocity bonuses based on time tiers

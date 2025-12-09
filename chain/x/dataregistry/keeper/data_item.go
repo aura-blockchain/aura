@@ -6,9 +6,9 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	gogotypes "github.com/cosmos/gogoproto/types"
 	"github.com/aequitas/aura/chain/x/dataregistry/ipfs"
 	"github.com/aequitas/aura/chain/x/dataregistry/types"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // StoreDataItem stores a new data item (legacy - uses pre-computed hash and CID)
@@ -60,7 +60,7 @@ func (k *Keeper) StoreDataItem(ctx sdk.Context,
 		Description:       description,
 		Metadata:          metadata,
 		Tags:              tags,
-		CreatedAt:         timestamppb.New(time.Now()),
+		CreatedAt:         time.Now(),
 		GeoLocation:       geoLocation,
 		Verifications:     []*types.Verification{},
 		AccessPolicy:      accessPolicy,
@@ -137,7 +137,7 @@ func (k *Keeper) StoreDataItemWithContent(sdkCtx sdk.Context,
 		Description:       description,
 		Metadata:          metadata,
 		Tags:              tags,
-		CreatedAt:         timestamppb.New(time.Now()),
+		CreatedAt:         time.Now(),
 		GeoLocation:       geoLocation,
 		Verifications:     []*types.Verification{},
 		AccessPolicy:      accessPolicy,
@@ -261,7 +261,7 @@ func (k *Keeper) VerifyDataItem(ctx sdk.Context,
 	verification := &types.Verification{
 		VerifierAddress:    verifierAddress,
 		Level:              level,
-		VerifiedAt:         timestamppb.New(time.Now()),
+		VerifiedAt:         time.Now(),
 		VerificationMethod: verificationMethod,
 		ConfidenceScore:    confidenceScore,
 		Notes:              notes,
@@ -277,7 +277,7 @@ func (k *Keeper) VerifyDataItem(ctx sdk.Context,
 	}
 	if level >= types.VerificationLevel_VERIFICATION_LEVEL_PEER_VERIFIED {
 		item.Status = types.DataItemStatus_DATA_ITEM_STATUS_VERIFIED
-		item.VerifiedAt = timestamppb.New(time.Now())
+		item.VerifiedAt = time.Now()
 		item.VerifiedBy = verifierAddress
 	}
 

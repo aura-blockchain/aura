@@ -9,7 +9,6 @@ import (
 
 	"github.com/aequitas/aura/chain/x/dataregistry/types"
 	pb "github.com/aequitas/aura/proto/aura/dataregistry/v1beta1"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // Ensure msgServer implements MsgServer interface
@@ -111,7 +110,8 @@ func (s *msgServer) UpdateDataItem(ctx context.Context, msg *pb.MsgUpdateDataIte
 		return nil, err
 	}
 
-	updatedAt := timestamppb.Now()
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	updatedAt := sdkCtx.BlockTime()
 
 	if sdkCtx, ok := sdkContextFromCtx(ctx); ok {
 		sdkCtx.EventManager().EmitEvents(sdk.Events{
@@ -167,7 +167,8 @@ func (s *msgServer) DeleteDataItem(ctx context.Context, msg *pb.MsgDeleteDataIte
 		return nil, err
 	}
 
-	deletedAt := timestamppb.Now()
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	deletedAt := sdkCtx.BlockTime()
 
 	if sdkCtx, ok := sdkContextFromCtx(ctx); ok {
 		emitDataItemEvent(
@@ -216,7 +217,8 @@ func (s *msgServer) VerifyDataItem(ctx context.Context, msg *pb.MsgVerifyDataIte
 	// Get verification reward from params
 	params := s.keeper.GetParams()
 
-	verifiedAt := timestamppb.Now()
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	verifiedAt := sdkCtx.BlockTime()
 
 	if sdkCtx, ok := sdkContextFromCtx(ctx); ok {
 		emitDataItemEvent(
@@ -298,7 +300,8 @@ func (s *msgServer) RevokeDataItem(ctx context.Context, msg *pb.MsgRevokeDataIte
 		return nil, err
 	}
 
-	revokedAt := timestamppb.Now()
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	revokedAt := sdkCtx.BlockTime()
 
 	if sdkCtx, ok := sdkContextFromCtx(ctx); ok {
 		emitDataItemEvent(

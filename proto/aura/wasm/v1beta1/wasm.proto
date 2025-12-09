@@ -26,6 +26,7 @@ enum AccessType {
 // AccessConfig defines access control configuration
 message AccessConfig {
   option (gogoproto.goproto_stringer) = true;
+  option (gogoproto.equal) = true;
 
   AccessType permission = 1;
   // Address is only used when permission is AccessTypeOnlyAddress
@@ -36,7 +37,7 @@ message AccessConfig {
 
 // Params defines the parameters for the wasm module
 message Params {
-  option (gogoproto.goproto_stringer) = false;
+  option (gogoproto.goproto_stringer) = true;
 
   // code_upload_access defines access control for code upload
   AccessConfig code_upload_access = 1 [(gogoproto.nullable) = false];

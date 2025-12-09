@@ -3,6 +3,7 @@ package aura.vcregistry.v1beta1;
 
 import "cosmos/base/query/v1beta1/pagination.proto";
 import "google/protobuf/timestamp.proto";
+import "gogoproto/gogo.proto";
 import "aura/vcregistry/v1beta1/types.proto";
 import "aura/vcregistry/v1beta1/presentation.proto";
 import "aura/vcregistry/v1beta1/attributes.proto";
@@ -128,7 +129,7 @@ message Params {
 
 // GenesisState defines the initial state of the vcregistry module
 message GenesisState {
-  Params params = 1;
+  Params params = 1 [(gogoproto.nullable) = false];
   repeated VCRecord vc_records = 2;
   repeated RevocationRecord revocation_records = 3;
   RevocationList revocation_list = 4;
