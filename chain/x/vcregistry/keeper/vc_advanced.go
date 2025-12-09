@@ -10,9 +10,9 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	gogotypes "github.com/cosmos/gogoproto/types"
 
 	"github.com/aequitas/aura/chain/x/vcregistry/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // ============================
@@ -671,7 +671,7 @@ func (k *Keeper) RenewVC(ctx context.Context, vcID string, holderAddress string,
 	// Extend expiration
 	currentExpiry := vcRecord.ExpiresAt.Seconds
 	newExpiry := currentExpiry + (int64(extensionDays) * 86400)
-	vcRecord.ExpiresAt = timestamppb.New(time.Unix(newExpiry, 0))
+	vcRecord.ExpiresAt = &gogotypes.Timestamp{Seconds: newExpiry, Nanos: 0}
 
 	// Add renewal metadata
 	if vcRecord.Metadata == nil {

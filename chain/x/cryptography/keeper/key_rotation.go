@@ -66,7 +66,7 @@ func (k Keeper) CreateKeyRotationSchedule(
 		return "", err
 	}
 
-	k.Logger(ctx).Info("created key rotation schedule",
+	k.Logger(sdkCtx).Info("created key rotation schedule",
 		"schedule_id", scheduleID,
 		"key_id", keyID,
 		"interval", rotationIntervalSeconds,
@@ -108,7 +108,7 @@ func (k Keeper) RotateKey(
 		}
 	}
 
-	k.Logger(ctx).Info("rotated key",
+	k.Logger(rotateCtx).Info("rotated key",
 		"rotation_id", rotationID,
 		"key_id", keyID,
 		"creator", creator,
@@ -139,7 +139,7 @@ func (k Keeper) ProcessScheduledRotations(ctx context.Context) error {
 
 	// Process rotations
 	for _, schedule := range schedulesToRotate {
-		k.Logger(ctx).Info("processing scheduled key rotation",
+		k.Logger(processCtx).Info("processing scheduled key rotation",
 			"schedule_id", schedule.Id,
 			"key_id", schedule.KeyId,
 		)
@@ -177,7 +177,8 @@ func (k Keeper) DisableKeyRotationSchedule(ctx context.Context, scheduleID strin
 		return err
 	}
 
-	k.Logger(ctx).Info("disabled key rotation schedule", "schedule_id", scheduleID)
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	k.Logger(sdkCtx).Info("disabled key rotation schedule", "schedule_id", scheduleID)
 
 	return nil
 }
@@ -195,7 +196,8 @@ func (k Keeper) EnableKeyRotationSchedule(ctx context.Context, scheduleID string
 		return err
 	}
 
-	k.Logger(ctx).Info("enabled key rotation schedule", "schedule_id", scheduleID)
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	k.Logger(sdkCtx).Info("enabled key rotation schedule", "schedule_id", scheduleID)
 
 	return nil
 }

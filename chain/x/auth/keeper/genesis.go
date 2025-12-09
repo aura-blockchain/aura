@@ -7,6 +7,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/aequitas/aura/chain/x/auth/types"
+	authproto "github.com/aequitas/aura/proto/aura/auth/v1beta1"
 )
 
 // InitGenesis initializes the module state from genesis data
@@ -20,108 +21,76 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) error
 	logger := sdk.UnwrapSDKContext(ctx).Logger()
 
 	// Set params
-	if data.Params != nil {
-		if err := k.SetParams(sdkCtx, data.Params); err != nil {
-			return fmt.Errorf("failed to set params: %w", err)
-		}
+	if err := k.SetParams(sdkCtx, &data.Params); err != nil {
+		return fmt.Errorf("failed to set params: %w", err)
 	}
 
 	// Import roles
-	for _, role := range data.Roles {
-		if role == nil {
-			continue
-		}
-		if err := k.SetRole(sdkCtx, role); err != nil {
+	for i := range data.Roles {
+		if err := k.SetRole(sdkCtx, &data.Roles[i]); err != nil {
 			return fmt.Errorf("failed to set role: %w", err)
 		}
 	}
 
 	// Import role assignments
-	for _, assignment := range data.RoleAssignments {
-		if assignment == nil {
-			continue
-		}
-		if err := k.SetRoleAssignment(sdkCtx, assignment); err != nil {
+	for i := range data.RoleAssignments {
+		if err := k.SetRoleAssignment(sdkCtx, &data.RoleAssignments[i]); err != nil {
 			return fmt.Errorf("failed to set role assignment: %w", err)
 		}
 	}
 
 	// Import multisig wallets
-	for _, wallet := range data.MultisigWallets {
-		if wallet == nil {
-			continue
-		}
-		if err := k.SetMultisigWallet(sdkCtx, wallet); err != nil {
+	for i := range data.MultisigWallets {
+		if err := k.SetMultisigWallet(sdkCtx, &data.MultisigWallets[i]); err != nil {
 			return fmt.Errorf("failed to set multisig wallet: %w", err)
 		}
 	}
 
 	// Import multisig proposals
-	for _, proposal := range data.MultisigProposals {
-		if proposal == nil {
-			continue
-		}
-		if err := k.SetMultisigProposal(sdkCtx, proposal); err != nil {
+	for i := range data.MultisigProposals {
+		if err := k.SetMultisigProposal(sdkCtx, &data.MultisigProposals[i]); err != nil {
 			return fmt.Errorf("failed to set multisig proposal: %w", err)
 		}
 	}
 
 	// Import time-locked actions
-	for _, action := range data.TimeLockedActions {
-		if action == nil {
-			continue
-		}
-		if err := k.SetTimeLockedAction(sdkCtx, action); err != nil {
+	for i := range data.TimeLockedActions {
+		if err := k.SetTimeLockedAction(sdkCtx, &data.TimeLockedActions[i]); err != nil {
 			return fmt.Errorf("failed to set time-locked action: %w", err)
 		}
 	}
 
 	// Import emergency admin records
-	for _, admin := range data.EmergencyAdmins {
-		if admin == nil {
-			continue
-		}
-		if err := k.SetEmergencyAdmin(sdkCtx, admin); err != nil {
+	for i := range data.EmergencyAdmins {
+		if err := k.SetEmergencyAdmin(sdkCtx, &data.EmergencyAdmins[i]); err != nil {
 			return fmt.Errorf("failed to set emergency admin: %w", err)
 		}
 	}
 
 	// Import validator key rotations
-	for _, rotation := range data.ValidatorKeyRotations {
-		if rotation == nil {
-			continue
-		}
-		if err := k.SetValidatorKeyRotation(sdkCtx, rotation); err != nil {
+	for i := range data.ValidatorKeyRotations {
+		if err := k.SetValidatorKeyRotation(sdkCtx, &data.ValidatorKeyRotations[i]); err != nil {
 			return fmt.Errorf("failed to set validator key rotation: %w", err)
 		}
 	}
 
 	// Import sessions
-	for _, session := range data.Sessions {
-		if session == nil {
-			continue
-		}
-		if err := k.SetSession(sdkCtx, session); err != nil {
+	for i := range data.Sessions {
+		if err := k.SetSession(sdkCtx, &data.Sessions[i]); err != nil {
 			return fmt.Errorf("failed to set session: %w", err)
 		}
 	}
 
 	// Import rate limit configs
-	for _, config := range data.RateLimitConfigs {
-		if config == nil {
-			continue
-		}
-		if err := k.SetRateLimitConfig(sdkCtx, config); err != nil {
+	for i := range data.RateLimitConfigs {
+		if err := k.SetRateLimitConfig(sdkCtx, &data.RateLimitConfigs[i]); err != nil {
 			return fmt.Errorf("failed to set rate limit config: %w", err)
 		}
 	}
 
 	// Import audit logs
-	for i, auditLog := range data.AuditLogs {
-		if auditLog == nil {
-			continue
-		}
-		auditBytes, err := k.cdc.Marshal(auditLog)
+	for i := range data.AuditLogs {
+		auditBytes, err := k.cdc.Marshal(&data.AuditLogs[i])
 		if err != nil {
 			return fmt.Errorf("failed to marshal audit log: %w", err)
 		}
@@ -150,23 +119,26 @@ func (k Keeper) ExportGenesis(ctx context.Context) *types.GenesisState {
 
 	// Export params
 	params, err := k.GetParams(sdkCtx)
+	var paramsValue authproto.Params
 	if err != nil || params == nil {
 		defaultParams := types.DefaultParams()
-		params = defaultParams
+		paramsValue = *defaultParams
+	} else {
+		paramsValue = *params
 	}
 
 	genesis := &types.GenesisState{
-		Params:                params,
-		Roles:                 []*types.Role{},
-		RoleAssignments:       []*types.RoleAssignment{},
-		MultisigWallets:       []*types.MultisigWallet{},
-		MultisigProposals:     []*types.MultisigProposal{},
-		TimeLockedActions:     []*types.TimeLockedAction{},
-		EmergencyAdmins:       []*types.EmergencyAdmin{},
-		ValidatorKeyRotations: []*types.ValidatorKeyRotation{},
-		Sessions:              []*types.Session{},
-		RateLimitConfigs:      []*types.RateLimitConfig{},
-		AuditLogs:             []*types.AuditLog{},
+		Params:                paramsValue,
+		Roles:                 []authproto.Role{},
+		RoleAssignments:       []authproto.RoleAssignment{},
+		MultisigWallets:       []authproto.MultisigWallet{},
+		MultisigProposals:     []authproto.MultisigProposal{},
+		TimeLockedActions:     []authproto.TimeLockedAction{},
+		EmergencyAdmins:       []authproto.EmergencyAdmin{},
+		ValidatorKeyRotations: []authproto.ValidatorKeyRotation{},
+		Sessions:              []authproto.Session{},
+		RateLimitConfigs:      []authproto.RateLimitConfig{},
+		AuditLogs:             []authproto.AuditLog{},
 	}
 
 	// Export all roles

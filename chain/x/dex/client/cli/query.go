@@ -228,7 +228,7 @@ Use this to check prices before submitting a swap transaction.
 			req := &types.QueryGetQuoteRequest{
 				PoolId:   args[0],
 				DenomIn:  args[1],
-				AmountIn: amountIn.String(),
+				AmountIn: amountIn,
 			}
 
 			res, err := queryClient.GetQuote(cmd.Context(), req)
@@ -331,7 +331,7 @@ This command derives the price from current pool reserves (no swap is executed).
 				PoolID:     poolID,
 				BaseDenom:  strings.ToLower(base),
 				QuoteDenom: strings.ToLower(quote),
-				Price:      resp.Price,
+				Price:      resp.Price.String(),
 			}
 
 			return clientCtx.PrintObjectLegacy(result)

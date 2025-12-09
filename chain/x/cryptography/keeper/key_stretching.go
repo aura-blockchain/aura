@@ -63,7 +63,8 @@ func (k Keeper) CreateKeyStretchingConfig(
 	bz := k.cdc.MustMarshal(config)
 	store.Set(types.GetKeyStretchingConfigKey(configID), bz)
 
-	k.Logger(ctx).Info("created key stretching config",
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	k.Logger(sdkCtx).Info("created key stretching config",
 		"config_id", configID,
 		"algorithm", algorithm.String(),
 		"iterations", iterations,

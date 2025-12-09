@@ -7,12 +7,11 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"time"
 
 	"github.com/aequitas/aura/chain/x/common/determinism"
 	"github.com/aequitas/aura/chain/x/vcregistry/types"
 	vcregistrypb "github.com/aequitas/aura/proto/aura/vcregistry/v1beta1"
-	"google.golang.org/protobuf/types/known/timestamppb"
+	gogotypes "github.com/cosmos/gogoproto/types"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
@@ -90,8 +89,8 @@ func (k *Keeper) CreatePresentation(
 	nonce := k.generateNonce(ctx)
 
 	// Create timestamps
-	createdAt := timestamppb.New(time.Unix(currentTime, 0))
-	expiresAt := timestamppb.New(time.Unix(currentTime+int64(expiresInSeconds), 0))
+	createdAt := &gogotypes.Timestamp{Seconds: currentTime, Nanos: 0}
+	expiresAt := &gogotypes.Timestamp{Seconds: currentTime + int64(expiresInSeconds), Nanos: 0}
 
 	// Create presentation
 	presentation := &vcregistrypb.VCPresentation{
@@ -143,7 +142,7 @@ func (k *Keeper) VerifyPresentation(
 		return &vcregistrypb.VerificationResult{
 			IsValid:           false,
 			VerificationError: fmt.Sprintf("Invalid QR code format: %v", err),
-			VerifiedAt:        timestamppb.New(time.Unix(currentTime, 0)),
+			VerifiedAt:        &gogotypes.Timestamp{Seconds: currentTime, Nanos: 0},
 		}, nil
 	}
 
@@ -153,7 +152,7 @@ func (k *Keeper) VerifyPresentation(
 			IsValid:           false,
 			HolderDid:         qrData.HolderDID,
 			VerificationError: "Presentation has expired",
-			VerifiedAt:        timestamppb.New(time.Unix(currentTime, 0)),
+			VerifiedAt:        &gogotypes.Timestamp{Seconds: currentTime, Nanos: 0},
 		}, nil
 	}
 
@@ -163,7 +162,7 @@ func (k *Keeper) VerifyPresentation(
 			IsValid:           false,
 			HolderDid:         qrData.HolderDID,
 			VerificationError: "Nonce has already been used (replay attack detected)",
-			VerifiedAt:        timestamppb.New(time.Unix(currentTime, 0)),
+			VerifiedAt:        &gogotypes.Timestamp{Seconds: currentTime, Nanos: 0},
 		}, nil
 	}
 
@@ -174,7 +173,7 @@ func (k *Keeper) VerifyPresentation(
 			IsValid:           false,
 			HolderDid:         qrData.HolderDID,
 			VerificationError: "Invalid signature",
-			VerifiedAt:        timestamppb.New(time.Unix(currentTime, 0)),
+			VerifiedAt:        &gogotypes.Timestamp{Seconds: currentTime, Nanos: 0},
 		}, nil
 	}
 
@@ -220,7 +219,7 @@ func (k *Keeper) VerifyPresentation(
 		IsValid:    allValid,
 		HolderDid:  qrData.HolderDID,
 		VcDetails:  vcDetails,
-		VerifiedAt: timestamppb.New(time.Unix(currentTime, 0)),
+		VerifiedAt: &gogotypes.Timestamp{Seconds: currentTime, Nanos: 0},
 		Attributes: attributes,
 	}
 

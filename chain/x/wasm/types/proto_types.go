@@ -95,19 +95,19 @@ type (
 
 // AccessType constants
 const (
-	AccessTypeUnspecified   = wasmpb.AccessType_ACCESS_TYPE_UNSPECIFIED
-	AccessTypeNobody        = wasmpb.AccessType_ACCESS_TYPE_NOBODY
-	AccessTypeOnlyAddress   = wasmpb.AccessType_ACCESS_TYPE_ONLY_ADDRESS
-	AccessTypeEverybody     = wasmpb.AccessType_ACCESS_TYPE_EVERYBODY
-	AccessTypeAnyOfAddresses = wasmpb.AccessType_ACCESS_TYPE_ANY_OF_ADDRESSES
+	AccessTypeUnspecified   = wasmpb.AccessTypeUnspecified
+	AccessTypeNobody        = wasmpb.AccessTypeNobody
+	AccessTypeOnlyAddress   = wasmpb.AccessTypeOnlyAddress
+	AccessTypeEverybody     = wasmpb.AccessTypeEverybody
+	AccessTypeAnyOfAddresses = wasmpb.AccessTypeAnyOfAddresses
 )
 
 // ContractCodeHistoryOperationType constants
 const (
-	ContractCodeHistoryOperationTypeUnspecified = wasmpb.ContractCodeHistoryOperationType_CONTRACT_CODE_HISTORY_OPERATION_TYPE_UNSPECIFIED
-	ContractCodeHistoryOperationTypeInit        = wasmpb.ContractCodeHistoryOperationType_CONTRACT_CODE_HISTORY_OPERATION_TYPE_INIT
-	ContractCodeHistoryOperationTypeMigrate     = wasmpb.ContractCodeHistoryOperationType_CONTRACT_CODE_HISTORY_OPERATION_TYPE_MIGRATE
-	ContractCodeHistoryOperationTypeGenesis     = wasmpb.ContractCodeHistoryOperationType_CONTRACT_CODE_HISTORY_OPERATION_TYPE_GENESIS
+	ContractCodeHistoryOperationTypeUnspecified = wasmpb.ContractCodeHistoryOperationTypeUnspecified
+	ContractCodeHistoryOperationTypeInit        = wasmpb.ContractCodeHistoryOperationTypeInit
+	ContractCodeHistoryOperationTypeMigrate     = wasmpb.ContractCodeHistoryOperationTypeMigrate
+	ContractCodeHistoryOperationTypeGenesis     = wasmpb.ContractCodeHistoryOperationTypeGenesis
 )
 
 // Re-export gRPC registration functions
@@ -119,8 +119,6 @@ var (
 // Re-export gRPC client constructor
 var NewQueryClient = wasmpb.NewQueryClient
 
-// Re-export service descriptors for gRPC
-var (
-	Query_ServiceDesc = wasmpb.Query_ServiceDesc
-	Msg_ServiceDesc   = wasmpb.Msg_serviceDesc
-)
+// Note: Service descriptors (_Query_serviceDesc, _Msg_serviceDesc) are not exported
+// from the proto package as they are internal to gRPC. Access them via the
+// RegisterQueryServer and RegisterMsgServer functions instead.

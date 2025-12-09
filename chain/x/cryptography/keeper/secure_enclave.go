@@ -50,7 +50,8 @@ func (k Keeper) RegisterSecureEnclave(
 		return "", err
 	}
 
-	k.Logger(ctx).Info("registered secure enclave",
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	k.Logger(sdkCtx).Info("registered secure enclave",
 		"enclave_id", enclaveID,
 		"type", enclaveType.String(),
 	)
@@ -153,7 +154,8 @@ func (k Keeper) SealDataToEnclave(
 		sealedData[i+32] = data[i] ^ sealedData[i%32]
 	}
 
-	k.Logger(ctx).Info("sealed data to enclave",
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	k.Logger(sdkCtx).Info("sealed data to enclave",
 		"enclave_id", enclaveID,
 		"data_length", len(data),
 	)
@@ -186,7 +188,8 @@ func (k Keeper) UnsealDataFromEnclave(
 		data[i] = sealedData[i+32] ^ enclave.AttestationData[i%32]
 	}
 
-	k.Logger(ctx).Info("unsealed data from enclave",
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	k.Logger(sdkCtx).Info("unsealed data from enclave",
 		"enclave_id", enclaveID,
 		"data_length", len(data),
 	)
@@ -211,7 +214,8 @@ func (k Keeper) UpdateEnclaveStatus(
 		return err
 	}
 
-	k.Logger(ctx).Info("updated enclave status",
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	k.Logger(sdkCtx).Info("updated enclave status",
 		"enclave_id", enclaveID,
 		"status", status.String(),
 	)
@@ -232,14 +236,15 @@ func (k Keeper) RemoteAttestEnclave(
 	}
 
 	// Generate attestation report
-	blockTime := sdk.UnwrapSDKContext(ctx).BlockTime()
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	blockTime := sdkCtx.BlockTime()
 	h := sha256.New()
 	h.Write(enclave.AttestationData)
 	h.Write([]byte(enclaveID))
 	h.Write([]byte(blockTime.Format(time.RFC3339)))
 	report := h.Sum(nil)
 
-	k.Logger(ctx).Info("generated remote attestation",
+	k.Logger(sdkCtx).Info("generated remote attestation",
 		"enclave_id", enclaveID,
 	)
 

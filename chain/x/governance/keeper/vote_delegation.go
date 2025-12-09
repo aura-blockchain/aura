@@ -5,7 +5,6 @@ import (
 	"math/big"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/governance/types"
 )
@@ -59,7 +58,7 @@ func (k *Keeper) DelegateVote(
 	delegation := &types.VoteDelegation{
 		Delegator:      delegator,
 		Delegate:       delegate,
-		DelegationTime: timestamppb.Now(),
+		DelegationTime: timestampFromTime(ctx.BlockTime()),
 		DelegatedPower: fmt.Sprintf("%d", percentage),
 	}
 
@@ -122,7 +121,7 @@ func (k *Keeper) VoteWithDelegatedPower(
 		Voter:       delegate,
 		Option:      option,
 		VotingPower: totalPower,
-		Timestamp:   timestamppb.Now(),
+		Timestamp:   timestampFromTime(ctx.BlockTime()),
 		IsSecret:    false,
 	}
 

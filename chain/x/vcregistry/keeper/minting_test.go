@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"time"
 	"errors"
 	"fmt"
 	"testing"
@@ -8,7 +9,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
+	gogotypes "github.com/cosmos/gogoproto/types"
 
 	"github.com/aequitas/aura/chain/x/vcregistry/types"
 	vcregistrypb "github.com/aequitas/aura/proto/aura/vcregistry/v1beta1"
@@ -111,7 +112,7 @@ func setupTestPolicyWithCtx(keeper *Keeper, ctx sdk.Context, policyName string, 
 		RequiredArenaScore: 50,
 		Singleton:          false,
 		ExpiryDurationDays: 365,
-		CreatedAt:          timestamppb.Now(),
+		CreatedAt:          &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: int32(time.Now().Nanosecond())},
 	}
 	keeper.SetVCPolicy(ctx, *policy)
 	return policy

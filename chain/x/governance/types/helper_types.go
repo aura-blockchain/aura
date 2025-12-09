@@ -1,7 +1,7 @@
 package types
 
 import (
-	"google.golang.org/protobuf/types/known/timestamppb"
+	gogotypes "github.com/cosmos/gogoproto/types"
 )
 
 // ProposalTemplate represents a template for creating proposals
@@ -27,7 +27,7 @@ type ExecutionResult struct {
 // ProposalExecution represents a proposal execution record
 type ProposalExecution struct {
 	ProposalId    uint64
-	ExecutedAt    *timestamppb.Timestamp
+	ExecutedAt    *gogotypes.Timestamp
 	Success       bool
 	ErrorMessage  string
 	GasUsed       uint64

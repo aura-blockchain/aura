@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	gogotypes "github.com/cosmos/gogoproto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/governance/types"
 )
@@ -13,6 +13,19 @@ import (
 // ============================
 // PROPOSAL EXECUTION AUTOMATION (Feature 5)
 // ============================
+
+// timestampFromTime converts a time.Time to gogotypes.Timestamp
+func timestampFromTime(t time.Time) *gogotypes.Timestamp {
+	return &gogotypes.Timestamp{Seconds: t.Unix(), Nanos: int32(t.Nanosecond())}
+}
+
+// timeFromTimestamp converts a gogotypes.Timestamp to time.Time
+func timeFromTimestamp(ts *gogotypes.Timestamp) time.Time {
+	if ts == nil {
+		return time.Time{}
+	}
+	return time.Unix(ts.Seconds, int64(ts.Nanos))
+}
 
 // ProcessAutomaticExecutions processes all proposals ready for automatic execution
 func (k *Keeper) ProcessAutomaticExecutions(ctx sdk.Context) ([]*types.ProposalExecution, error) {
@@ -32,14 +45,14 @@ func (k *Keeper) ProcessAutomaticExecutions(ctx sdk.Context) ([]*types.ProposalE
 
 	for _, proposal := range passedProposals {
 		// Check if execution time has arrived
-		if proposal.ExecutionTime != nil && !currentTime.Before(proposal.ExecutionTime.AsTime()) {
+		if proposal.ExecutionTime != nil && !currentTime.Before(timeFromTimestamp(proposal.ExecutionTime)) {
 			execution, err := k.executeProposalAutomatically(ctx, proposal)
 			if err != nil {
 				// Log error but continue with other proposals
 				ctx.Logger().Error("Failed to execute proposal", "proposal_id", proposal.Id, "error", err)
 				execution = &types.ProposalExecution{
 					ProposalId:    proposal.Id,
-					ExecutedAt:    timestamppb.New(currentTime),
+					ExecutedAt:    timestampFromTime(currentTime),
 					Success:       false,
 					ErrorMessage:  err.Error(),
 					GasUsed:       0,
@@ -84,7 +97,7 @@ func (k *Keeper) executeProposalAutomatically(ctx sdk.Context, proposal *types.P
 
 	execution := &types.ProposalExecution{
 		ProposalId:    proposal.Id,
-		ExecutedAt:    timestamppb.Now(),
+		ExecutedAt:    timestampFromTime(ctx.BlockTime()),
 		Success:       err == nil,
 		ErrorMessage:  "",
 		GasUsed:       gasUsed,
@@ -164,7 +177,7 @@ func (k *Keeper) ScheduleProposalExecution(
 
 	// Set execution time
 	executionTime := ctx.BlockTime().Add(time.Duration(executionDelay) * time.Second)
-	proposal.ExecutionTime = timestamppb.New(executionTime)
+	proposal.ExecutionTime = timestampFromTime(executionTime)
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
@@ -210,7 +223,7 @@ func (k *Keeper) GetPendingExecutions(ctx sdk.Context) []*types.Proposal {
 	currentTime := ctx.BlockTime()
 
 	for _, proposal := range proposals {
-		if proposal.ExecutionTime != nil && currentTime.Before(proposal.ExecutionTime.AsTime()) {
+		if proposal.ExecutionTime != nil && currentTime.Before(timeFromTimestamp(proposal.ExecutionTime)) {
 			pending = append(pending, proposal)
 		}
 	}

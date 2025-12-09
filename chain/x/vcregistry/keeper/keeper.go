@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"time"
 
 	storetypes "cosmossdk.io/store/types"
 	"github.com/aequitas/aura/chain/x/vcregistry/params"

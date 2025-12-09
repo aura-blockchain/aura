@@ -6,8 +6,8 @@ import (
 
 	sdkmath "cosmossdk.io/math"
 	"github.com/aequitas/aura/chain/x/common/determinism"
+	gogotypes "github.com/cosmos/gogoproto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/governance/types"
 )
@@ -38,8 +38,8 @@ func (k *Keeper) CreateProposal(
 		Proposer:        proposer,
 		Status:          types.ProposalStatus_PROPOSAL_STATUS_DEPOSIT_PERIOD,
 		Category:        category,
-		SubmitTime:      timestamppb.New(determinism.GetBlockTime(ctx)),
-		DepositEndTime:  timestamppb.New(determinism.GetBlockTime(ctx).Add(time.Duration(types.GetDepositPeriodSeconds(params)) * time.Second)),
+		SubmitTime:      timestampFromTime(determinism.GetBlockTime(ctx)),
+		DepositEndTime:  timestampFromTime(determinism.GetBlockTime(ctx).Add(time.Duration(types.GetDepositPeriodSeconds(params)) * time.Second)),
 		VotingStartTime: nil,
 		VotingEndTime:   nil,
 		TotalDeposit:    "0",
@@ -81,7 +81,7 @@ func (k *Keeper) AdvanceProposalStatus(ctx sdk.Context, proposalID uint64) error
 	switch proposal.Status {
 	case types.ProposalStatus_PROPOSAL_STATUS_DEPOSIT_PERIOD:
 		// Check if deposit period ended
-		if currentTime.After(proposal.DepositEndTime.AsTime()) {
+		if currentTime.After(timeFromTimestamp(proposal.DepositEndTime)) {
 			// Check if minimum deposit reached
 			if k.hasMinimumDeposit(proposal, params) {
 				return k.moveToVotingPeriod(ctx, proposal, params)
@@ -92,17 +92,17 @@ func (k *Keeper) AdvanceProposalStatus(ctx sdk.Context, proposalID uint64) error
 
 	case types.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD:
 		// Check if voting period ended
-		if proposal.VotingEndTime != nil && currentTime.After(proposal.VotingEndTime.AsTime()) {
+		if proposal.VotingEndTime != nil && currentTime.After(timeFromTimestamp(proposal.VotingEndTime)) {
 			return k.finalizeProposal(ctx, proposal, params)
 		}
 
 	case types.ProposalStatus_PROPOSAL_STATUS_PASSED:
 		// Check if ready for execution
 		if proposal.ExecutionTime == nil {
-			proposal.ExecutionTime = timestamppb.New(currentTime.Add(time.Duration(types.GetExecutionDelaySeconds(params)) * time.Second))
+			proposal.ExecutionTime = timestampFromTime(currentTime.Add(time.Duration(types.GetExecutionDelaySeconds(params)) * time.Second))
 		}
 
-		if currentTime.After(proposal.ExecutionTime.AsTime()) {
+		if currentTime.After(timeFromTimestamp(proposal.ExecutionTime)) {
 			return k.executeProposal(ctx, proposal)
 		}
 
@@ -118,14 +118,14 @@ func (k *Keeper) AdvanceProposalStatus(ctx sdk.Context, proposalID uint64) error
 func (k *Keeper) moveToVotingPeriod(ctx sdk.Context, proposal *types.Proposal, params *types.GovernanceParams) error {
 	currentTime := determinism.GetBlockTime(ctx)
 	proposal.Status = types.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD
-	proposal.VotingStartTime = timestamppb.New(currentTime)
-	proposal.VotingEndTime = timestamppb.New(currentTime.Add(time.Duration(types.GetVotingPeriodSeconds(params)) * time.Second))
+	proposal.VotingStartTime = timestampFromTime(currentTime)
+	proposal.VotingEndTime = timestampFromTime(currentTime.Add(time.Duration(types.GetVotingPeriodSeconds(params)) * time.Second))
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			"voting_period_started",
 			sdk.NewAttribute("proposal_id", fmt.Sprintf("%d", proposal.Id)),
-			sdk.NewAttribute("voting_end_time", proposal.VotingEndTime.AsTime().String()),
+			sdk.NewAttribute("voting_end_time", timeFromTimestamp(proposal.VotingEndTime).String()),
 		),
 	)
 

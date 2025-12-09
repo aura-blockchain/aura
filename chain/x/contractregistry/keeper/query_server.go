@@ -105,12 +105,11 @@ func (qs queryServer) ContractsByTag(goCtx context.Context, req *pb.QueryContrac
 	// Get all contracts with tag - simplified for now
 	var tagContracts []*pb.ContractInfo
 	qs.IterateContractInfo(ctx, func(info *pb.ContractInfo) bool {
-		if info.Metadata != nil {
-			for _, tag := range info.Metadata.Tags {
-				if tag == req.Tag {
-					tagContracts = append(tagContracts, info)
-					break
-				}
+		// Metadata is a value type, check if it has tags
+		for _, tag := range info.Metadata.Tags {
+			if tag == req.Tag {
+				tagContracts = append(tagContracts, info)
+				break
 			}
 		}
 		return false

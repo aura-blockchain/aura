@@ -106,10 +106,10 @@ func (k *Keeper) GetRecentAuditLogs(limit uint64) []*authproto.AuditLog {
 
 	// Sort by timestamp (most recent first)
 	sort.Slice(all, func(i, j int) bool {
-		if all[i].Timestamp == nil || all[j].Timestamp == nil {
+		if all[i].Timestamp.IsZero() || all[j].Timestamp.IsZero() {
 			return false
 		}
-		return all[i].Timestamp.AsTime().After(all[j].Timestamp.AsTime())
+		return all[i].Timestamp.After(all[j].Timestamp)
 	})
 
 	// Apply limit

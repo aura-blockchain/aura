@@ -7,7 +7,7 @@ import (
 	"github.com/aequitas/aura/chain/x/vcregistry/types"
 	vcregistrypb "github.com/aequitas/aura/proto/aura/vcregistry/v1beta1"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
+	gogotypes "github.com/cosmos/gogoproto/types"
 )
 
 func TestCreateAttributeVC_ValidationAndSingleton(t *testing.T) {
@@ -20,7 +20,7 @@ func TestCreateAttributeVC_ValidationAndSingleton(t *testing.T) {
 		AttributeVcId:     keeper.GenerateAttributeVCID(ctx, "addr1", types.AttributeType_ATTRIBUTE_TYPE_AGE),
 		HolderAddress:     "addr1",
 		AttributeType:     types.AttributeType_ATTRIBUTE_TYPE_AGE,
-		ExpiresAt:         timestamppb.New(time.Unix(now+3600, 0)),
+		ExpiresAt:         &gogotypes.Timestamp{Seconds: now+3600, Nanos: 0},
 		VerificationLevel: 10,
 	}
 	err := keeper.CreateAttributeVC(ctx, avcMissing)
@@ -32,7 +32,7 @@ func TestCreateAttributeVC_ValidationAndSingleton(t *testing.T) {
 		HolderAddress:     "addr1",
 		AttributeType:     types.AttributeType_ATTRIBUTE_TYPE_AGE,
 		EncryptedValue:    []byte("ciphertext"),
-		ExpiresAt:         timestamppb.New(time.Unix(now+3600, 0)),
+		ExpiresAt:         &gogotypes.Timestamp{Seconds: now+3600, Nanos: 0},
 		Issuer:            "issuer1",
 		VerificationLevel: 50,
 	}
@@ -76,7 +76,7 @@ func TestDisclosureRequestResponseFlow(t *testing.T) {
 		VerifierAddress:     "verifier1",
 		RequestedAttributes: []types.AttributeType{types.AttributeType_ATTRIBUTE_TYPE_AGE},
 		Purpose:             "age check",
-		RequestedAt:         timestamppb.New(time.Unix(now, 0)),
+		RequestedAt:         &gogotypes.Timestamp{Seconds: now, Nanos: 0},
 		ExpiresInSeconds:    600,
 	}
 
@@ -132,7 +132,7 @@ func TestGenesisRoundTripSelectiveDisclosure(t *testing.T) {
 		HolderAddress:  "addr1",
 		AttributeType:  types.AttributeType_ATTRIBUTE_TYPE_AGE,
 		EncryptedValue: []byte("cipher"),
-		ExpiresAt:      timestamppb.New(time.Unix(now+3600, 0)),
+		ExpiresAt:      &gogotypes.Timestamp{Seconds: now+3600, Nanos: 0},
 	}
 	require.NoError(t, keeper.CreateAttributeVC(ctx, avc))
 
@@ -154,7 +154,7 @@ func TestGenesisRoundTripSelectiveDisclosure(t *testing.T) {
 		RequestId:           "req-genesis",
 		VerifierAddress:     "verifier1",
 		RequestedAttributes: []types.AttributeType{types.AttributeType_ATTRIBUTE_TYPE_AGE},
-		RequestedAt:         timestamppb.New(time.Unix(now, 0)),
+		RequestedAt:         &gogotypes.Timestamp{Seconds: now, Nanos: 0},
 		ExpiresInSeconds:    600,
 	}
 	require.NoError(t, keeper.CreateDisclosureRequest(ctx, "addr1", req))
@@ -197,8 +197,8 @@ func TestPresentationPersistenceAndGenesisMapFallback(t *testing.T) {
 		HolderDid:       "did:aura:holder1",
 		IssuerAssistant: "issuer1",
 		Status:          types.VCStatus_VC_STATUS_ACTIVE,
-		IssuedAt:        timestamppb.New(time.Unix(now, 0)),
-		ExpiresAt:       timestamppb.New(time.Unix(now+600, 0)),
+		IssuedAt:        &gogotypes.Timestamp{Seconds: now, Nanos: 0},
+		ExpiresAt:       &gogotypes.Timestamp{Seconds: now+600, Nanos: 0},
 		VcType:          vcregistrypb.VCType_VC_TYPE_VERIFIED_HUMAN,
 	}
 	require.NoError(t, keeper.SetVCRecord(ctx, vc))

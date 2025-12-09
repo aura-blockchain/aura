@@ -137,7 +137,8 @@ func (k Keeper) DeleteQuantumResistantKey(ctx context.Context, keyID string) err
 	store := k.getStore(ctx)
 	store.Delete(types.GetQuantumResistantKeyKey(keyID))
 
-	k.Logger(ctx).Info("deleted quantum-resistant key", "key_id", keyID)
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	k.Logger(sdkCtx).Info("deleted quantum-resistant key", "key_id", keyID)
 	return nil
 }
 

@@ -16,7 +16,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
+	gogotypes "github.com/cosmos/gogoproto/types"
 
 	"github.com/aequitas/aura/chain/x/vcregistry/params"
 	"github.com/aequitas/aura/chain/x/vcregistry/types"
@@ -63,8 +63,8 @@ func TestVCRecord_KVPersistence(t *testing.T) {
 		HolderAddress: "holder1",
 		VcType:        types.VCType_VC_TYPE_VERIFIED_HUMAN,
 		Status:        types.VCStatus_VC_STATUS_ACTIVE,
-		IssuedAt:      timestamppb.New(time.Now()),
-		ExpiresAt:     timestamppb.New(time.Now().Add(365 * 24 * time.Hour)),
+		IssuedAt:      &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: int32(time.Now().Nanosecond())},
+		ExpiresAt:     &gogotypes.Timestamp{Seconds: time.Now().Add(365 * 24 * time.Hour).Unix(), Nanos: int32(time.Now().Add(365 * 24 * time.Hour).Nanosecond())},
 	}
 
 	// Store VC
@@ -94,7 +94,7 @@ func TestVCRevocation_KVPersistence(t *testing.T) {
 		HolderAddress: "holder1",
 		VcType:        types.VCType_VC_TYPE_VERIFIED_HUMAN,
 		Status:        types.VCStatus_VC_STATUS_ACTIVE,
-		IssuedAt:      timestamppb.New(time.Now()),
+		IssuedAt:      &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: int32(time.Now().Nanosecond())},
 	}
 	err := keeper.SetVCRecord(ctx, vcRecord)
 	require.NoError(t, err)
@@ -182,7 +182,7 @@ func TestAttributeVC_KVPersistence(t *testing.T) {
 		EncryptedValue: []byte("encrypted-email"),
 		ValueHash:      []byte("hash-of-value"),
 		Status:         types.VCStatus_VC_STATUS_ACTIVE,
-		IssuedAt:       timestamppb.New(time.Now()),
+		IssuedAt:       &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: int32(time.Now().Nanosecond())},
 	}
 
 	err := keeper.CreateAttributeVC(ctx, avc)
@@ -223,7 +223,7 @@ func TestDisclosurePolicy_KVPersistence(t *testing.T) {
 				Mode:          types.DisclosurePolicyMode_DISCLOSURE_POLICY_MODE_ALLOW,
 			},
 		},
-		UpdatedAt: timestamppb.New(time.Now()),
+		UpdatedAt: &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: int32(time.Now().Nanosecond())},
 	}
 
 	err := keeper.SetDisclosurePolicy(ctx, policy)
@@ -277,7 +277,7 @@ func TestGenesis_RoundTrip(t *testing.T) {
 		HolderAddress:   "holder1",
 		VcType:          types.VCType_VC_TYPE_VERIFIED_HUMAN,
 		Status:          types.VCStatus_VC_STATUS_ACTIVE,
-		IssuedAt:        timestamppb.New(time.Now()),
+		IssuedAt:        &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: int32(time.Now().Nanosecond())},
 		IssuerAssistant: "aura1issuer",
 	}
 	err := keeper.SetVCRecord(ctx, vcRecord)
@@ -333,7 +333,7 @@ func TestNoMemoryLeaks(t *testing.T) {
 			HolderAddress: fmt.Sprintf("holder%d", i%10),
 			VcType:        types.VCType_VC_TYPE_VERIFIED_HUMAN,
 			Status:        types.VCStatus_VC_STATUS_ACTIVE,
-			IssuedAt:      timestamppb.New(time.Now()),
+			IssuedAt:      &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: int32(time.Now().Nanosecond())},
 		}
 		err := keeper.SetVCRecord(ctx, vcRecord)
 		require.NoError(t, err)

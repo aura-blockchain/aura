@@ -1,11 +1,12 @@
 package keeper
 
 import (
+	"time"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/suite"
-	"google.golang.org/protobuf/types/known/timestamppb"
+	gogotypes "github.com/cosmos/gogoproto/types"
 
 	"github.com/aequitas/aura/chain/x/vcregistry/types"
 	vcregistrypb "github.com/aequitas/aura/proto/aura/vcregistry/v1beta1"
@@ -73,7 +74,7 @@ func (suite *QueryServerComprehensiveTestSuite) TestGetVCValid() {
 		HolderDid:     "did:aura:holder1",
 		VcType:        vcregistrypb.VCType_VC_TYPE_VERIFIED_HUMAN,
 		Status:        types.VCStatus_VC_STATUS_ACTIVE,
-		IssuedAt:      timestamppb.Now(),
+		IssuedAt:      &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: int32(time.Now().Nanosecond())},
 	}
 	err := suite.Keeper.SetVCRecord(suite.SdkCtx, vcRecord)
 	suite.Require().NoError(err)
@@ -140,7 +141,7 @@ func (suite *QueryServerComprehensiveTestSuite) TestListUserVCsWithFilters() {
 		HolderDid:     "did:aura:multi",
 		VcType:        vcregistrypb.VCType_VC_TYPE_VERIFIED_HUMAN,
 		Status:        types.VCStatus_VC_STATUS_ACTIVE,
-		IssuedAt:      timestamppb.Now(),
+		IssuedAt:      &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: int32(time.Now().Nanosecond())},
 	}
 	vcRevoked := types.VCRecord{
 		VcId:          "vc-revoked",
@@ -148,7 +149,7 @@ func (suite *QueryServerComprehensiveTestSuite) TestListUserVCsWithFilters() {
 		HolderDid:     "did:aura:multi",
 		VcType:        vcregistrypb.VCType_VC_TYPE_KYC_VERIFICATION,
 		Status:        types.VCStatus_VC_STATUS_REVOKED,
-		IssuedAt:      timestamppb.Now(),
+		IssuedAt:      &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: int32(time.Now().Nanosecond())},
 	}
 
 	suite.Require().NoError(suite.Keeper.SetVCRecord(suite.SdkCtx, vcActive))
@@ -189,7 +190,7 @@ func (suite *QueryServerComprehensiveTestSuite) TestCheckVCStatusValid() {
 		HolderDid:     "did:aura:holder",
 		VcType:        vcregistrypb.VCType_VC_TYPE_VERIFIED_HUMAN,
 		Status:        types.VCStatus_VC_STATUS_ACTIVE,
-		IssuedAt:      timestamppb.Now(),
+		IssuedAt:      &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: int32(time.Now().Nanosecond())},
 	}
 	suite.Require().NoError(suite.Keeper.SetVCRecord(suite.SdkCtx, vcRecord))
 
@@ -239,7 +240,7 @@ func (suite *QueryServerComprehensiveTestSuite) TestGetVCPolicySuccess() {
 		CsThreshold:        100,
 		ExpiryDurationDays: 365,
 		Status:             vcregistrypb.VCPolicyStatus_VC_POLICY_STATUS_ACTIVE,
-		CreatedAt:          timestamppb.Now(),
+		CreatedAt:          &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: int32(time.Now().Nanosecond())},
 	}
 	suite.Require().NoError(suite.Keeper.SetVCPolicy(suite.SdkCtx, policy))
 
@@ -270,7 +271,7 @@ func (suite *QueryServerComprehensiveTestSuite) TestListVCPoliciesWithPagination
 			CsThreshold:        uint64(i * 100),
 			ExpiryDurationDays: 365,
 			Status:             vcregistrypb.VCPolicyStatus_VC_POLICY_STATUS_ACTIVE,
-			CreatedAt:          timestamppb.Now(),
+			CreatedAt:          &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: int32(time.Now().Nanosecond())},
 		}
 		suite.Require().NoError(suite.Keeper.SetVCPolicy(suite.SdkCtx, policy))
 	}
@@ -341,7 +342,7 @@ func (suite *QueryServerComprehensiveTestSuite) TestCheckRevocationNotRevoked() 
 		HolderDid:     "did:aura:holder",
 		VcType:        vcregistrypb.VCType_VC_TYPE_VERIFIED_HUMAN,
 		Status:        types.VCStatus_VC_STATUS_ACTIVE,
-		IssuedAt:      timestamppb.Now(),
+		IssuedAt:      &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: int32(time.Now().Nanosecond())},
 	}
 	suite.Require().NoError(suite.Keeper.SetVCRecord(suite.SdkCtx, vcRecord))
 
@@ -365,7 +366,7 @@ func (suite *QueryServerComprehensiveTestSuite) TestCheckRevocationRevoked() {
 		HolderDid:     "did:aura:holder",
 		VcType:        vcregistrypb.VCType_VC_TYPE_VERIFIED_HUMAN,
 		Status:        types.VCStatus_VC_STATUS_ACTIVE,
-		IssuedAt:      timestamppb.Now(),
+		IssuedAt:      &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: int32(time.Now().Nanosecond())},
 	}
 	suite.Require().NoError(suite.Keeper.SetVCRecord(suite.SdkCtx, vcRecord))
 
@@ -426,7 +427,7 @@ func (suite *QueryServerComprehensiveTestSuite) TestStatsWithData() {
 		HolderDid:     "did:aura:holder1",
 		VcType:        vcregistrypb.VCType_VC_TYPE_VERIFIED_HUMAN,
 		Status:        types.VCStatus_VC_STATUS_ACTIVE,
-		IssuedAt:      timestamppb.Now(),
+		IssuedAt:      &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: int32(time.Now().Nanosecond())},
 	}
 	vcActive2 := types.VCRecord{
 		VcId:          "vc-active-2",
@@ -434,7 +435,7 @@ func (suite *QueryServerComprehensiveTestSuite) TestStatsWithData() {
 		HolderDid:     "did:aura:holder2",
 		VcType:        vcregistrypb.VCType_VC_TYPE_KYC_VERIFICATION,
 		Status:        types.VCStatus_VC_STATUS_ACTIVE,
-		IssuedAt:      timestamppb.Now(),
+		IssuedAt:      &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: int32(time.Now().Nanosecond())},
 	}
 	vcRevoked := types.VCRecord{
 		VcId:          "vc-revoked",
@@ -442,7 +443,7 @@ func (suite *QueryServerComprehensiveTestSuite) TestStatsWithData() {
 		HolderDid:     "did:aura:holder3",
 		VcType:        vcregistrypb.VCType_VC_TYPE_VERIFIED_HUMAN,
 		Status:        types.VCStatus_VC_STATUS_REVOKED,
-		IssuedAt:      timestamppb.Now(),
+		IssuedAt:      &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: int32(time.Now().Nanosecond())},
 	}
 
 	suite.Require().NoError(suite.Keeper.SetVCRecord(suite.SdkCtx, vcActive1))
