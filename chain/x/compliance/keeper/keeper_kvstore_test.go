@@ -33,7 +33,7 @@ func TestSetGetKYCRecord(t *testing.T) {
 		Address:              "cosmos1test",
 		KycLevel:             types.KYCLevel_KYC_LEVEL_BASIC,
 		Provider:             "provider1",
-		VerifiedAt:           timestamppb.New(now),
+		VerifiedAt: now,
 		ExpiresAt:            timestamppb.New(now.Add(365 * 24 * time.Hour)),
 		PiiCommitment: make([]byte, 32),
 		EnhancedDueDiligence: false,
@@ -71,7 +71,7 @@ func TestGetAllKYCRecords(t *testing.T) {
 			Address:        "cosmos1addr1",
 			KycLevel:       types.KYCLevel_KYC_LEVEL_BASIC,
 			Provider:       "provider1",
-			VerifiedAt:     timestamppb.New(now),
+			VerifiedAt: now,
 			ExpiresAt:      timestamppb.New(now.Add(365 * 24 * time.Hour)),
 			PiiCommitment: make([]byte, 32),
 		},
@@ -79,7 +79,7 @@ func TestGetAllKYCRecords(t *testing.T) {
 			Address:        "cosmos1addr2",
 			KycLevel:       types.KYCLevel_KYC_LEVEL_ADVANCED,
 			Provider:       "provider2",
-			VerifiedAt:     timestamppb.New(now),
+			VerifiedAt: now,
 			ExpiresAt:      timestamppb.New(now.Add(365 * 24 * time.Hour)),
 			PiiCommitment: make([]byte, 32),
 		},
@@ -115,7 +115,7 @@ func TestSetGetAMLProfile(t *testing.T) {
 		Address:           "cosmos1test",
 		RiskLevel:         types.AMLRiskLevel_AML_RISK_MEDIUM,
 		RiskFactors:       []string{"high_volume", "unusual_pattern"},
-		LastAssessment:    timestamppb.New(now),
+		LastAssessment: now,
 		TotalTransactions: 100,
 		TotalVolume:       "1000000",
 		PepStatus:         false,
@@ -151,14 +151,14 @@ func TestGetAllAMLProfiles(t *testing.T) {
 		{
 			Address:           "cosmos1addr1",
 			RiskLevel:         types.AMLRiskLevel_AML_RISK_LOW,
-			LastAssessment:    timestamppb.New(now),
+			LastAssessment: now,
 			TotalTransactions: 50,
 			TotalVolume:       "500000",
 		},
 		{
 			Address:           "cosmos1addr2",
 			RiskLevel:         types.AMLRiskLevel_AML_RISK_HIGH,
-			LastAssessment:    timestamppb.New(now),
+			LastAssessment: now,
 			TotalTransactions: 200,
 			TotalVolume:       "2000000",
 		},
@@ -499,7 +499,7 @@ func TestSetGetGDPRConsent(t *testing.T) {
 		Address:        "cosmos1test",
 		ConsentType:    "data_processing",
 		Consented:      true,
-		ConsentGivenAt: timestamppb.New(now),
+		ConsentGivenAt: now,
 		ConsentVersion: "v1.0",
 	}
 
@@ -731,7 +731,7 @@ func TestKVStore_UpdateExisting(t *testing.T) {
 		Address:        "cosmos1test",
 		KycLevel:       types.KYCLevel_KYC_LEVEL_BASIC,
 		Provider:       "provider1",
-		VerifiedAt:     timestamppb.New(now),
+		VerifiedAt: now,
 		PiiCommitment: make([]byte, 32),
 	}
 	err := keeper.SetKYCRecord(ctx, record)
@@ -761,7 +761,7 @@ func TestKVStore_MultipleAddressesIterator(t *testing.T) {
 			Address:        "cosmos1test" + string(rune('0'+i)),
 			KycLevel:       types.KYCLevel_KYC_LEVEL_BASIC,
 			Provider:       "provider1",
-			VerifiedAt:     timestamppb.New(now),
+			VerifiedAt: now,
 			PiiCommitment: make([]byte, 32),
 		}
 		err := keeper.SetKYCRecord(ctx, record)
@@ -963,7 +963,7 @@ func TestSetGDPRConsent_WithExistingConsent(t *testing.T) {
 		Address:        "cosmos1test",
 		ConsentType:    "data_processing",
 		Consented:      true,
-		ConsentGivenAt: timestamppb.New(now),
+		ConsentGivenAt: now,
 	}
 
 	// First consent
@@ -975,7 +975,7 @@ func TestSetGDPRConsent_WithExistingConsent(t *testing.T) {
 		Address:        "cosmos1test",
 		ConsentType:    "marketing",
 		Consented:      false,
-		ConsentGivenAt: timestamppb.New(now),
+		ConsentGivenAt: now,
 	}
 
 	err = keeper.SetGDPRConsent(ctx, consent2)
@@ -1179,7 +1179,7 @@ func TestGetGDPRConsent_Found(t *testing.T) {
 		Address:        "cosmos1test",
 		ConsentType:    "data_processing",
 		Consented:      true,
-		ConsentGivenAt: timestamppb.New(now),
+		ConsentGivenAt: now,
 	}
 
 	err := keeper.SetGDPRConsent(ctx, consent)
@@ -1209,7 +1209,7 @@ func TestGetGDPRConsent_WrongConsentType(t *testing.T) {
 		Address:        "cosmos1test",
 		ConsentType:    "data_processing",
 		Consented:      true,
-		ConsentGivenAt: timestamppb.New(now),
+		ConsentGivenAt: now,
 	}
 
 	err := keeper.SetGDPRConsent(ctx, consent)
@@ -1233,7 +1233,7 @@ func TestCanProcessData_WithValidConsent(t *testing.T) {
 		Address:        address,
 		ConsentType:    purpose,
 		Consented:      true,
-		ConsentGivenAt: timestamppb.New(now),
+		ConsentGivenAt: now,
 	}
 
 	err := keeper.SetGDPRConsent(ctx, consent)
@@ -1255,8 +1255,9 @@ func TestCanProcessData_WithWithdrawnConsent(t *testing.T) {
 		Address:             address,
 		ConsentType:         purpose,
 		Consented:           false,
-		ConsentGivenAt:      timestamppb.New(now),
-		ConsentWithdrawnAt:  timestamppb.New(now),
+		ConsentGivenAt: now,
+		withdrawnAt := now
+		ConsentWithdrawnAt:  &withdrawnAt,
 	}
 
 	err := keeper.SetGDPRConsent(ctx, consent)
@@ -1278,7 +1279,7 @@ func TestCanProcessData_WithProcessingRestriction(t *testing.T) {
 		Address:        address,
 		ConsentType:    purpose,
 		Consented:      true,
-		ConsentGivenAt: timestamppb.New(now),
+		ConsentGivenAt: now,
 	}
 
 	err := keeper.SetGDPRConsent(ctx, consent)
@@ -1358,7 +1359,7 @@ func TestConsentWithdrawalEnforcement_CompleteFlow(t *testing.T) {
 		Address:        address,
 		ConsentType:    purpose,
 		Consented:      true,
-		ConsentGivenAt: timestamppb.New(now),
+		ConsentGivenAt: now,
 	}
 
 	err := keeper.SetGDPRConsent(ctx, consent)
@@ -1408,7 +1409,7 @@ func TestCanProcessData_MultipleConsents(t *testing.T) {
 		Address:        address,
 		ConsentType:    "data_processing",
 		Consented:      true,
-		ConsentGivenAt: timestamppb.New(now),
+		ConsentGivenAt: now,
 	}
 	err := keeper.SetGDPRConsent(ctx, consent1)
 	require.NoError(t, err)
@@ -1418,8 +1419,9 @@ func TestCanProcessData_MultipleConsents(t *testing.T) {
 		Address:            address,
 		ConsentType:        "marketing",
 		Consented:          false,
-		ConsentGivenAt:     timestamppb.New(now),
-		ConsentWithdrawnAt: timestamppb.New(now),
+		ConsentGivenAt: now,
+		withdrawnAt := now
+		ConsentWithdrawnAt:  &withdrawnAt,
 	}
 	err = keeper.SetGDPRConsent(ctx, consent2)
 	require.NoError(t, err)

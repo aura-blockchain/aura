@@ -209,10 +209,12 @@ func TestInitGenesis(t *testing.T) {
 	t.Run("init with invalid genesis fails", func(t *testing.T) {
 		k, ctx := setupTestKeeper(t)
 
+		// Start with default params and modify to make it invalid
+		invalidParams := *types.DefaultParams()
+		invalidParams.SignedBlocksWindow = -100 // Invalid - negative value
+
 		genesis := &types.GenesisState{
-			Params: types.ValidatorSecurityParams{
-				SignedBlocksWindow: -100, // Invalid - negative value
-			},
+			Params:              invalidParams,
 			Validators:          []types.ValidatorSecurityInfo{},
 			DoubleSignEvidences: []types.DoubleSignEvidence{},
 			DowntimeInfractions: []types.DowntimeInfraction{},
