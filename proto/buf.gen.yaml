@@ -10,8 +10,12 @@ plugins:
       - Mcosmos/base/v1beta1/coin.proto=cosmossdk.io/math
       - Mcosmos/base/query/v1beta1/pagination.proto=github.com/cosmos/cosmos-sdk/types/query
       - paths=source_relative
-  - name: grpc-gateway
-    out: .
-    opt:
-      - paths=source_relative
-      - logtostderr=true
+  # grpc-gateway temporarily disabled due to gogoproto compatibility issues
+  # The standard grpc-gateway plugin expects google.golang.org/protobuf types
+  # but we use github.com/cosmos/gogoproto types.
+  # TODO: Either use grpc-gateway-gogo plugin or configure properly for gogoproto
+  # - name: grpc-gateway
+  #   out: .
+  #   opt:
+  #     - paths=source_relative
+  #     - logtostderr=true

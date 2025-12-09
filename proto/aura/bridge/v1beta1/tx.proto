@@ -80,7 +80,7 @@ message MsgMintTokens {
 
   // Amount to mint
   string amount = 5 [
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
     (gogoproto.nullable) = false
   ];
 
@@ -111,7 +111,7 @@ message MsgUnlockTokens {
 
   // Amount to unlock
   string amount = 4 [
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
     (gogoproto.nullable) = false
   ];
 
@@ -209,7 +209,7 @@ message MsgCrossChainSwap {
 
   // Minimum amount to receive
   string min_target_amount = 6 [
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
     (gogoproto.nullable) = false
   ];
 
@@ -296,7 +296,7 @@ message MsgFinalizeTransferResponse {
 
   // Amount unlocked/minted
   string amount = 2 [
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
     (gogoproto.nullable) = false
   ];
 

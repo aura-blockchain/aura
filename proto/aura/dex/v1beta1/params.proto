@@ -9,13 +9,13 @@ option go_package = "github.com/aequitas/aura/proto/aura/dex/v1beta1";
 message Params {
   // Trading fee percentage (0.003 = 0.3%)
   string trading_fee = 1 [
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
     (gogoproto.nullable) = false
   ];
 
   // Protocol fee percentage (0.0005 = 0.05%)
   string protocol_fee = 2 [
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
     (gogoproto.nullable) = false
   ];
 
@@ -30,7 +30,7 @@ message Params {
 
   // Minimum swap amount (to prevent dust attacks)
   string min_swap_amount = 5 [
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
     (gogoproto.nullable) = false
   ];
 
@@ -52,7 +52,7 @@ message Params {
   // Commit-reveal scheme parameters for front-running protection
   // Minimum order size that requires commit-reveal (prevents MEV on large orders)
   string commit_reveal_threshold = 11 [
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
     (gogoproto.nullable) = false
   ];
 
@@ -71,13 +71,13 @@ message MinLiquidityTier {
   // Maximum AURA price (in USD) for this tier
   // Use "0" for unlimited (highest tier)
   string max_aura_price_usd = 1 [
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
     (gogoproto.nullable) = false
   ];
 
   // Minimum liquidity in USD equivalent
   string min_liquidity_usd = 2 [
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
     (gogoproto.nullable) = false
   ];
 

@@ -9,7 +9,7 @@ import (
 	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
+	gogotypes "github.com/cosmos/gogoproto/types"
 
 	"github.com/aequitas/aura/chain/x/confidencescore/params"
 	"github.com/aequitas/aura/chain/x/confidencescore/types"
@@ -525,10 +525,15 @@ func (k *Keeper) ListVerifiedUsers(ctx sdk.Context, minScore uint64, limit int) 
 	return wallets, scores
 }
 
-// timestampFromTime converts time.Time to protobuf timestamp
-func timestampFromTime(t time.Time) *timestamppb.Timestamp {
+// timestampFromTime converts time.Time to gogoproto timestamp
+func timestampFromTime(t time.Time) *gogotypes.Timestamp {
 	if t.IsZero() {
 		return nil
 	}
-	return timestamppb.New(t)
+	seconds := t.Unix()
+	nanos := int32(t.UnixNano() - (seconds * 1000000000))
+	return &gogotypes.Timestamp{
+		Seconds: seconds,
+		Nanos:   nanos,
+	}
 }
