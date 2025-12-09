@@ -400,7 +400,7 @@ func TestGetAllEmergencyAdmins(t *testing.T) {
 			Address:     "admin" + string(rune('1'+i)),
 			Privileges:  []string{types.PermissionAdmin},
 			ActivatedAt: time.Now(),
-			ExpiresAt:   time.Now().Add(1 * time.Hour),
+			ExpiresAt:   func() *time.Time { t := time.Now().Add(1 * time.Hour); return &t }(),
 			ActivatedBy: "activator",
 			IsActive:    true,
 		}
@@ -433,7 +433,7 @@ func TestDeleteEmergencyAdmin(t *testing.T) {
 		Address:     "temp_admin",
 		Privileges:  []string{types.PermissionAdmin},
 		ActivatedAt: time.Now(),
-		ExpiresAt:   time.Now().Add(1 * time.Hour),
+		ExpiresAt:   func() *time.Time { t := time.Now().Add(1 * time.Hour); return &t }(),
 		ActivatedBy: "activator",
 		IsActive:    true,
 	}
@@ -584,7 +584,7 @@ func TestGetAllSessions(t *testing.T) {
 			SessionId:   "session" + string(rune('1'+i)),
 			UserAddress: "user1",
 			CreatedAt:   time.Now(),
-			ExpiresAt:   time.Now().Add(1 * time.Hour),
+			ExpiresAt:   func() *time.Time { t := time.Now().Add(1 * time.Hour); return &t }(),
 			IpAddress:   "127.0.0.1",
 		}
 		err := k.SetSession(ctx, session)
@@ -638,7 +638,7 @@ func TestRemoveUserSession_EmptyResult(t *testing.T) {
 		SessionId:   "session1",
 		UserAddress: "user1",
 		CreatedAt:   time.Now(),
-		ExpiresAt:   time.Now().Add(1 * time.Hour),
+		ExpiresAt:   func() *time.Time { t := time.Now().Add(1 * time.Hour); return &t }(),
 	}
 	err := k.SetSession(ctx, session)
 	require.NoError(t, err)
@@ -886,7 +886,7 @@ func TestCleanupExpiredSessions(t *testing.T) {
 		SessionId:   "expired_session",
 		UserAddress: "user1",
 		CreatedAt:   time.Now().Add(-2 * time.Hour),
-		ExpiresAt:   time.Now().Add(-1 * time.Hour),
+		ExpiresAt:   func() *time.Time { t := time.Now().Add(-1 * time.Hour); return &t }(),
 	}
 	err := k.SetSession(ctx, expiredSession)
 	require.NoError(t, err)
@@ -896,7 +896,7 @@ func TestCleanupExpiredSessions(t *testing.T) {
 		SessionId:   "active_session",
 		UserAddress: "user1",
 		CreatedAt:   time.Now(),
-		ExpiresAt:   time.Now().Add(1 * time.Hour),
+		ExpiresAt:   func() *time.Time { t := time.Now().Add(1 * time.Hour); return &t }(),
 	}
 	err = k.SetSession(ctx, activeSession)
 	require.NoError(t, err)
@@ -933,7 +933,7 @@ func TestCleanupExpiredProposals(t *testing.T) {
 		Description: "Expired proposal",
 		Payload:     []byte("data"),
 		CreatedAt:   time.Now().Add(-2 * time.Hour),
-		ExpiresAt:   time.Now().Add(-1 * time.Hour),
+		ExpiresAt:   func() *time.Time { t := time.Now().Add(-1 * time.Hour); return &t }(),
 		Status:      authproto.ProposalStatus_PROPOSAL_STATUS_PENDING,
 		Signatures:  []string{},
 	}
@@ -948,7 +948,7 @@ func TestCleanupExpiredProposals(t *testing.T) {
 		Description: "Active proposal",
 		Payload:     []byte("data"),
 		CreatedAt:   time.Now(),
-		ExpiresAt:   time.Now().Add(1 * time.Hour),
+		ExpiresAt:   func() *time.Time { t := time.Now().Add(1 * time.Hour); return &t }(),
 		Status:      authproto.ProposalStatus_PROPOSAL_STATUS_PENDING,
 		Signatures:  []string{},
 	}
@@ -981,7 +981,7 @@ func TestCleanupExpiredProposals_AlreadyExecuted(t *testing.T) {
 		Description: "Executed proposal",
 		Payload:     []byte("data"),
 		CreatedAt:   time.Now().Add(-2 * time.Hour),
-		ExpiresAt:   time.Now().Add(-1 * time.Hour),
+		ExpiresAt:   func() *time.Time { t := time.Now().Add(-1 * time.Hour); return &t }(),
 		Status:      authproto.ProposalStatus_PROPOSAL_STATUS_EXECUTED,
 		Signatures:  []string{},
 	}
