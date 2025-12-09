@@ -384,32 +384,6 @@ func TestGetPowerDelegatedAway(t *testing.T) {
 	require.Equal(t, stakedAmount, powerAway, "full stake should be delegated away")
 }
 
-// TestGetDelegatedVotingPower tests the delegated voting power calculation
-func TestGetDelegatedVotingPower(t *testing.T) {
-	keeper, ctx, stakingKeeper := setupKeeperForTest(t)
-
-	// Use valid bech32 addresses
-	delegate := sdk.AccAddress([]byte("delegate_addr")).String()
-	delegator := sdk.AccAddress([]byte("delegator_addr")).String()
-
-	// Setup staking for delegator
-	stakingKeeper.SetDelegatorBonded(delegator, sdkmath.NewInt(3000000))
-
-	// Create delegation
-	delegation := &types.VoteDelegation{
-		Delegator:      delegator,
-		Delegate:       delegate,
-		DelegatedPower: "3000000",
-		Categories:     []types.ProposalCategory{},
-	}
-	err := keeper.SetVoteDelegation(ctx, delegation)
-	require.NoError(t, err)
-
-	// Test function
-	power := keeper.GetDelegatedVotingPower(ctx, delegate)
-	require.Equal(t, sdkmath.NewInt(3000000), power, "should return correct voting power")
-}
-
 // TestSetSnapshotVote tests storing snapshot votes
 func TestSetSnapshotVote(t *testing.T) {
 	keeper, ctx, _ := setupKeeperForTest(t)

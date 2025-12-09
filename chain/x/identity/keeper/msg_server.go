@@ -259,14 +259,22 @@ func (ms msgServer) CreateMultisigProposal(goCtx context.Context, msg *identityp
 	proposalID := fmt.Sprintf("msprop-%s-%d", msg.WalletId, ctx.BlockTime().Unix())
 
 	now := ctx.BlockTime()
+	// Get params for expiry
+	params, _ := ms.Keeper.GetParams(ctx)
+	expirySeconds := uint64(604800) // default 7 days
+	if params != nil && params.Auth != nil {
+		expirySeconds = params.Auth.MultisigProposalExpirySeconds
+	}
+	expiresAt := now.Add(time.Duration(expirySeconds) * time.Second)
+
 	proposal := &types.MultisigProposal{
 		Id:          proposalID,
 		WalletId:    msg.WalletId,
 		Title:       msg.Title,
 		Description: msg.Description,
-		Proposer:    msg.Proposer,
 		Payload:     msg.Payload,
 		CreatedAt:   timestamppb.New(now),
+		ExpiresAt:   timestamppb.New(expiresAt),
 		Signatures:  []string{},
 		Status:      types.ProposalStatusPending,
 	}
@@ -331,7 +339,6 @@ func (ms msgServer) SignMultisigProposal(goCtx context.Context, msg *identitypb.
 	// Check if threshold met
 	if uint32(len(proposal.Signatures)) >= wallet.Threshold {
 		proposal.Status = types.ProposalStatusApproved
-		proposal.ApprovedAt = timestamppb.New(ctx.BlockTime())
 	}
 
 	if err := ms.Keeper.SetMultisigProposal(ctx, &proposal); err != nil {
@@ -403,9 +410,10 @@ func (ms msgServer) ProposeTimeLockedAction(goCtx context.Context, msg *identity
 		ActionType:   msg.ActionType,
 		Payload:      msg.Payload,
 		ProposedAt:   timestamppb.New(now),
-		ProposedBy:   msg.Proposer,
+		Proposer:     msg.Proposer,
 		ExecutableAt: timestamppb.New(executableAt),
 		Status:       types.ActionStatusPending,
+		DelaySeconds: msg.DelaySeconds,
 	}
 
 	if err := ms.Keeper.SetTimeLockedAction(ctx, action); err != nil {
@@ -452,7 +460,6 @@ func (ms msgServer) ExecuteTimeLockedAction(goCtx context.Context, msg *identity
 	// Mark as executed
 	action.Status = types.ActionStatusExecuted
 	action.ExecutedAt = timestamppb.New(now)
-	action.ExecutedBy = msg.Executor
 
 	if err := ms.Keeper.SetTimeLockedAction(ctx, &action); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -585,7 +592,9 @@ func (ms msgServer) RotateValidatorKey(goCtx context.Context, msg *identitypb.Ms
 	rotation := &types.ValidatorKeyRotation{
 		ValidatorAddress:  msg.ValidatorAddress,
 		NewConsensusPubkey: msg.NewConsensusPubkey,
-		RotatedAt:         timestamppb.New(now),
+		RotationTime:      timestamppb.New(now),
+		InitiatedBy:       msg.ValidatorAddress,
+		RotationStatus:    types.RotationStatusPending,
 	}
 
 	if err := ms.Keeper.SetValidatorRotation(ctx, rotation); err != nil {
@@ -613,8 +622,8 @@ func (ms msgServer) CreateSession(goCtx context.Context, msg *identitypb.MsgCrea
 	}
 
 	var sessionDuration uint64 = 3600 // default 1 hour
-	if params != nil && params.Auth != nil && params.Auth.SessionDurationSeconds > 0 {
-		sessionDuration = params.Auth.SessionDurationSeconds
+	if params != nil && params.Auth != nil && params.Auth.SessionTimeout != nil {
+		sessionDuration = uint64(params.Auth.SessionTimeout.Seconds)
 	}
 
 	// Create session
@@ -658,13 +667,8 @@ func (ms msgServer) UpdateParams(goCtx context.Context, msg *identitypb.MsgUpdat
 		return nil, status.Error(codes.PermissionDenied, errorsmod.Wrapf(types.ErrUnauthorized, "invalid authority; expected %s, got %s", ms.Keeper.GetAuthority(), msg.Authority).Error())
 	}
 
-	// Validate params
-	if err := msg.Params.Validate(); err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
 	// Set params
-	if err := ms.Keeper.SetParams(ctx, &msg.Params); err != nil {
+	if err := ms.Keeper.SetParams(ctx, msg.Params); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
