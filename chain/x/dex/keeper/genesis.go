@@ -8,65 +8,50 @@ import (
 
 // InitGenesis initializes the dex module state from genesis.
 func (k Keeper) InitGenesis(ctx sdk.Context, data types.GenesisState) error {
-	if data.Params == nil {
-		data.Params = types.DefaultParams()
-	}
 	if err := types.ValidateGenesis(&data); err != nil {
 		return err
 	}
 
-	if err := k.SetParams(ctx, data.Params); err != nil {
+	if err := k.SetParams(ctx, &data.Params); err != nil {
 		return err
 	}
 
-	for _, pool := range data.LiquidityPools {
-		if pool == nil {
-			continue
-		}
+	for i := range data.LiquidityPools {
+		pool := &data.LiquidityPools[i]
 		k.SetPool(ctx, pool)
 	}
 
-	for _, order := range data.SwapOrders {
-		if order == nil {
-			continue
-		}
+	for i := range data.SwapOrders {
+		order := &data.SwapOrders[i]
 		k.SetOrder(ctx, order)
 		if order.Status == types.SwapOrderStatus_PENDING {
 			k.AddToOrderbook(ctx, order)
 		}
 	}
 
-	for _, book := range data.Orderbooks {
-		if book == nil {
-			continue
+	for i := range data.Orderbooks {
+		book := &data.Orderbooks[i]
+		for j := range book.BuyOrders {
+			k.addPendingOrderToIndex(ctx, &book.BuyOrders[j])
 		}
-		for _, entry := range book.BuyOrders {
-			k.addPendingOrderToIndex(ctx, entry)
-		}
-		for _, entry := range book.SellOrders {
-			k.addPendingOrderToIndex(ctx, entry)
+		for j := range book.SellOrders {
+			k.addPendingOrderToIndex(ctx, &book.SellOrders[j])
 		}
 	}
 
-	for _, stats := range data.SwapStats {
-		if stats == nil {
-			continue
-		}
+	for i := range data.SwapStats {
+		stats := &data.SwapStats[i]
 		k.setSwapStats(ctx, stats)
 	}
 
-	for _, price := range data.MarketPrices {
-		if price == nil {
-			continue
-		}
+	for i := range data.MarketPrices {
+		price := &data.MarketPrices[i]
 		k.setMarketPrice(ctx, price)
 	}
 
 	// Import pool creation records (audit trail)
-	for _, record := range data.PoolCreationRecords {
-		if record == nil {
-			continue
-		}
+	for i := range data.PoolCreationRecords {
+		record := &data.PoolCreationRecords[i]
 		store := ctx.KVStore(k.storeKey)
 		key := types.PoolCreationKey(record.Creator)
 		bz := k.cdc.MustMarshal(record)
@@ -74,19 +59,15 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data types.GenesisState) error {
 	}
 
 	// Import order commitments (commit-reveal scheme)
-	for _, commitment := range data.OrderCommitments {
-		if commitment == nil {
-			continue
-		}
+	for i := range data.OrderCommitments {
+		commitment := &data.OrderCommitments[i]
 		k.SetOrderCommitment(ctx, commitment)
 	}
 
 	// Import queued orders (batch execution)
-	for _, queuedOrder := range data.QueuedOrders {
-		if queuedOrder == nil || queuedOrder.Order == nil {
-			continue
-		}
-		k.QueueOrderForBatch(ctx, queuedOrder.Order, queuedOrder.Salt)
+	for i := range data.QueuedOrders {
+		queuedOrder := &data.QueuedOrders[i]
+		k.QueueOrderForBatch(ctx, &queuedOrder.Order, queuedOrder.Salt)
 	}
 
 	return nil
@@ -95,17 +76,58 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data types.GenesisState) error {
 // ExportGenesis exports the dex module state to genesis.
 func (k Keeper) ExportGenesis(ctx sdk.Context) types.GenesisState {
 	params := k.GetParams(ctx)
-	pools := k.GetAllPools(ctx)
-	orders := k.GetAllOrders(ctx)
-	orderbooks := k.exportOrderbooks(ctx)
-	swapStats := k.GetAllSwapStats(ctx)
-	marketPrices := k.GetAllMarketPrices(ctx)
-	poolCreationRecords := k.GetAllPoolCreationRecords(ctx)
-	orderCommitments := k.GetAllOrderCommitments(ctx)
-	queuedOrders := k.GetAllQueuedOrders(ctx)
+	poolsPtrs := k.GetAllPools(ctx)
+	ordersPtrs := k.GetAllOrders(ctx)
+	orderbooksPtrs := k.exportOrderbooks(ctx)
+	swapStatsPtrs := k.GetAllSwapStats(ctx)
+	marketPricesPtrs := k.GetAllMarketPrices(ctx)
+	poolCreationRecordsPtrs := k.GetAllPoolCreationRecords(ctx)
+	orderCommitmentsPtrs := k.GetAllOrderCommitments(ctx)
+	queuedOrdersPtrs := k.GetAllQueuedOrders(ctx)
+
+	// Convert pointer slices to value slices for genesis state
+	pools := make([]types.LiquidityPool, len(poolsPtrs))
+	for i, p := range poolsPtrs {
+		pools[i] = *p
+	}
+
+	orders := make([]types.SwapOrder, len(ordersPtrs))
+	for i, o := range ordersPtrs {
+		orders[i] = *o
+	}
+
+	orderbooks := make([]types.Orderbook, len(orderbooksPtrs))
+	for i, ob := range orderbooksPtrs {
+		orderbooks[i] = *ob
+	}
+
+	swapStats := make([]types.SwapStats, len(swapStatsPtrs))
+	for i, s := range swapStatsPtrs {
+		swapStats[i] = *s
+	}
+
+	marketPrices := make([]types.MarketPrice, len(marketPricesPtrs))
+	for i, mp := range marketPricesPtrs {
+		marketPrices[i] = *mp
+	}
+
+	poolCreationRecords := make([]types.PoolCreationRecord, len(poolCreationRecordsPtrs))
+	for i, pcr := range poolCreationRecordsPtrs {
+		poolCreationRecords[i] = *pcr
+	}
+
+	orderCommitments := make([]types.OrderCommitment, len(orderCommitmentsPtrs))
+	for i, oc := range orderCommitmentsPtrs {
+		orderCommitments[i] = *oc
+	}
+
+	queuedOrders := make([]types.QueuedOrder, len(queuedOrdersPtrs))
+	for i, qo := range queuedOrdersPtrs {
+		queuedOrders[i] = *qo
+	}
 
 	return types.GenesisState{
-		Params:              params,
+		Params:              *params,
 		LiquidityPools:      pools,
 		SwapOrders:          orders,
 		Orderbooks:          orderbooks,
