@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/suite"
 
@@ -112,22 +113,26 @@ func (suite *InvariantsTestSuite) TestRateLimitValidityInvariant_MissingWindow()
 func (suite *InvariantsTestSuite) TestRateLimitValidityInvariant_NilWindow() {
 	ctx := suite.SdkCtx
 
+	// Use zero time to represent invalid/uninitialized window start
 	rl := types.RateLimitEntry{
 		PeerId:      "peer-nil-window",
-		WindowStart: nil,
+		WindowStart: time.Time{}, // Zero time
 	}
 	suite.Require().NoError(suite.Keeper.SetRateLimitEntry(ctx, rl))
 
 	msg, broken := RateLimitValidityInvariant(&suite.Keeper)(ctx)
-	suite.True(broken, "nil window should break invariant")
+	suite.True(broken, "zero time window should break invariant")
 	suite.Contains(msg, "nil window_start")
 }
 
 func (suite *InvariantsTestSuite) TestParamsInvariant_NilConnectionConfig() {
 	ctx := suite.SdkCtx
-	// Persist params with nil connection to trigger invariant without passing validation.
+	// Create params with zero-value connection config to trigger invariant
+	// Since Connection is now a value type (not pointer), we use zero values
 	store := suite.Keeper.storeService.OpenKVStore(ctx)
-	params := types.Params{Connection: nil}
+	params := types.Params{
+		Connection: types.ConnectionConfig{}, // Zero-value struct with all fields zero
+	}
 	bz := suite.Keeper.cdc.MustMarshal(&params)
 	_ = store.Set(types.ParamsKey, bz)
 

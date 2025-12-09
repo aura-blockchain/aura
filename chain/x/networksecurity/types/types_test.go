@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/math"
 	"github.com/stretchr/testify/require"
-	durationpb "google.golang.org/protobuf/types/known/durationpb"
 )
 
 func TestDefaultParams(t *testing.T) {
@@ -82,9 +82,9 @@ func TestValidateParams_Connection(t *testing.T) {
 			wantError: "max_inbound_connections must be greater than 0",
 		},
 		{
-			name: "nil connection timeout",
+			name: "zero connection timeout",
 			mutate: func(p *Params) {
-				p.Connection.ConnectionTimeout = nil
+				p.Connection.ConnectionTimeout = 0
 			},
 			wantError: "connection_timeout cannot be nil",
 		},
@@ -240,15 +240,15 @@ func TestDefaultParams_Values(t *testing.T) {
 	// RateLimit
 	require.Equal(t, uint64(100), params.RateLimit.MaxRequestsPerSecond)
 	require.Equal(t, uint64(200), params.RateLimit.BurstSize)
-	require.Equal(t, 60*time.Second, params.RateLimit.WindowDuration.AsDuration())
-	require.Equal(t, 3600*time.Second, params.RateLimit.BanDuration.AsDuration())
+	require.Equal(t, 60*time.Second, params.RateLimit.WindowDuration)
+	require.Equal(t, 3600*time.Second, params.RateLimit.BanDuration)
 	require.Equal(t, uint64(1048576), params.RateLimit.BandwidthLimitPerPeer)
 
 	// Connection
 	require.Equal(t, uint32(50), params.Connection.MaxInboundConnections)
 	require.Equal(t, uint32(10), params.Connection.MaxOutboundConnections)
 	require.Equal(t, uint32(5), params.Connection.MaxConnectionsPerIp)
-	require.Equal(t, 60*time.Second, params.Connection.ConnectionTimeout.AsDuration())
+	require.Equal(t, 60*time.Second, params.Connection.ConnectionTimeout)
 	require.False(t, params.Connection.TrustedPeersOnly)
 	require.Equal(t, uint32(3), params.Connection.MinPeerDiversity)
 
@@ -272,7 +272,7 @@ func TestDefaultParams_Values(t *testing.T) {
 	// Gossip
 	require.True(t, params.Gossip.VerifySignatures)
 	require.Equal(t, uint64(1048576), params.Gossip.MaxMessageSize)
-	require.Equal(t, 300*time.Second, params.Gossip.MessageTtl.AsDuration())
+	require.Equal(t, 300*time.Second, params.Gossip.MessageTtl)
 	require.True(t, params.Gossip.EnableRedundancyFilter)
 	require.Equal(t, uint32(10), params.Gossip.MaxFanout)
 
@@ -285,36 +285,36 @@ func TestDefaultParams_Values(t *testing.T) {
 	// PartitionDetection
 	require.True(t, params.PartitionDetection.EnableDetection)
 	require.Equal(t, uint32(5), params.PartitionDetection.MinConnectedPeers)
-	require.Equal(t, 60*time.Second, params.PartitionDetection.CheckInterval.AsDuration())
+	require.Equal(t, 60*time.Second, params.PartitionDetection.CheckInterval)
 	require.Equal(t, uint32(3), params.PartitionDetection.PartitionThreshold)
 }
 
 func TestParams_CustomValues(t *testing.T) {
 	params := &Params{
-		RateLimit: &RateLimitConfig{
+		RateLimit: RateLimitConfig{
 			MaxRequestsPerSecond:  200,
 			BurstSize:             400,
-			WindowDuration:        durationpb.New(120 * time.Second),
-			BanDuration:           durationpb.New(7200 * time.Second),
+			WindowDuration:        120 * time.Second,
+			BanDuration:           7200 * time.Second,
 			BandwidthLimitPerPeer: 2097152,
 		},
-		Connection: &ConnectionConfig{
+		Connection: ConnectionConfig{
 			MaxInboundConnections:  100,
 			MaxOutboundConnections: 20,
 			MaxConnectionsPerIp:    10,
-			ConnectionTimeout:      durationpb.New(120 * time.Second),
+			ConnectionTimeout:      120 * time.Second,
 			TrustedPeersOnly:       true,
 			MinPeerDiversity:       5,
 		},
-		Mempool: &MempoolConfig{
+		Mempool: MempoolConfig{
 			MaxSize:            10000,
 			MaxBytes:           20971520,
-			MinPriorityFee:     "2000",
+			MinPriorityFee:     math.NewInt(2000),
 			MaxTxsPerAccount:   200,
 			EvictionPolicy:     "priority",
 			EnablePriorityFees: true,
 		},
-		Reputation: &ReputationConfig{
+		Reputation: ReputationConfig{
 			EnableTracking:     true,
 			InitialScore:       75,
 			MinScoreToConnect:  25,
@@ -323,23 +323,23 @@ func TestParams_CustomValues(t *testing.T) {
 			MisbehaviorPenalty: 15,
 			GoodBehaviorReward: 10,
 		},
-		Gossip: &GossipConfig{
+		Gossip: GossipConfig{
 			VerifySignatures:       true,
 			MaxMessageSize:         2097152,
-			MessageTtl:             durationpb.New(600 * time.Second),
+			MessageTtl:             600 * time.Second,
 			EnableRedundancyFilter: true,
 			MaxFanout:              15,
 		},
-		ForkDetection: &ForkDetectionConfig{
+		ForkDetection: ForkDetectionConfig{
 			EnableDetection:      true,
 			HeightDiffThreshold:  200,
 			EnableAutoResolution: true,
 			ConfirmationDepth:    12,
 		},
-		PartitionDetection: &PartitionDetectionConfig{
+		PartitionDetection: PartitionDetectionConfig{
 			EnableDetection:    true,
 			MinConnectedPeers:  10,
-			CheckInterval:      durationpb.New(120 * time.Second),
+			CheckInterval:      120 * time.Second,
 			PartitionThreshold: 5,
 		},
 	}

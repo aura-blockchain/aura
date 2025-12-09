@@ -1,7 +1,6 @@
 package keeper_test
 
 import (
-	"reflect"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"

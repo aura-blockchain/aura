@@ -13,7 +13,7 @@ func TestInitGenesisWithState(t *testing.T) {
 	ctx, keeper := setupInclusionKeeper(t)
 
 	genesis := types.GenesisState{
-		Params: &inclusionroutinespb.Params{
+		Params: inclusionroutinespb.Params{
 			MaxIrPerLocale:       100,
 			DefaultRateLimitHour: 10,
 			SuspensionFee:        "1000",
@@ -68,7 +68,8 @@ func TestExportGenesisReflectsState(t *testing.T) {
 	require.NoError(t, keeper.SetRateLimit(ctx, types.IRRateLimit{IrId: ir.Id, PerWalletPerHour: 5}))
 
 	export := keeper.ExportGenesis(ctx)
-	require.NotNil(t, export.Params)
+	// Params is a value type, check for non-zero values instead of nil
+	require.NotEqual(t, inclusionroutinespb.Params{}, export.Params, "Params should not be empty")
 	require.Len(t, export.Irs, 1)
 	require.Equal(t, ir.Id, export.Irs[0].Id)
 	require.Len(t, export.RateLimits, 1)

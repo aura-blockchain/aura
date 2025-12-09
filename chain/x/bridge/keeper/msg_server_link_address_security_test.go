@@ -374,13 +374,19 @@ func TestLinkAddress_UpdateOwnLink(t *testing.T) {
 	xaiMessage := "Link XAI address " + xaiAddress + " to Aura address " + user.String()
 	xaiSignature := signMessage(t, xaiPrivKey, xaiMessage)
 
+	// Generate a fresh PAW signature for the update (replay protection requires unique signatures)
+	// Note: Adding a timestamp/nonce to make the message unique and prevent replay detection
+	// In production, the UI would include a timestamp or nonce in the signed message
+	pawMessage2 := "Link PAW address " + pawAddress + " to Aura address " + user.String() + " nonce:update"
+	pawSignature2 := signMessage(t, pawPrivKey, pawMessage2)
+
 	// Update to add XAI address (should succeed - same owner)
 	msg2 := &types.MsgLinkAddress{
 		Signer:       user.String(),
 		AuraAddress:  user.String(),
-		PawAddress:   pawAddress, // Keep same PAW
-		PawSignature: pawSignature,
-		XaiAddress:   xaiAddress, // Add XAI
+		PawAddress:   pawAddress,   // Keep same PAW
+		PawSignature: pawSignature2, // Use fresh signature for replay protection
+		XaiAddress:   xaiAddress,    // Add XAI
 		XaiSignature: xaiSignature,
 	}
 

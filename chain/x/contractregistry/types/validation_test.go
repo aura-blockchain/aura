@@ -27,8 +27,8 @@ func TestValidateGenesis(t *testing.T) {
 		{
 			name: "valid genesis with contracts",
 			genesis: &GenesisState{
-				Params: DefaultParams(),
-				Contracts: []*pb.ContractInfo{
+				Params: *DefaultParams(),
+				Contracts: []pb.ContractInfo{
 					{
 						Address: "cosmos1contract",
 						CodeId:  1,
@@ -42,7 +42,7 @@ func TestValidateGenesis(t *testing.T) {
 		{
 			name: "invalid params",
 			genesis: &GenesisState{
-				Params: &ContractRegistryParams{
+				Params: ContractRegistryParams{
 					MaxContractsPerCreator: 20000, // exceeds limit
 				},
 			},
@@ -51,8 +51,8 @@ func TestValidateGenesis(t *testing.T) {
 		{
 			name: "missing contract address",
 			genesis: &GenesisState{
-				Params: DefaultParams(),
-				Contracts: []*pb.ContractInfo{
+				Params: *DefaultParams(),
+				Contracts: []pb.ContractInfo{
 					{
 						Address: "", // invalid
 						CodeId:  1,
@@ -66,8 +66,8 @@ func TestValidateGenesis(t *testing.T) {
 		{
 			name: "duplicate contract address",
 			genesis: &GenesisState{
-				Params: DefaultParams(),
-				Contracts: []*pb.ContractInfo{
+				Params: *DefaultParams(),
+				Contracts: []pb.ContractInfo{
 					{
 						Address: "cosmos1contract",
 						CodeId:  1,
@@ -87,8 +87,8 @@ func TestValidateGenesis(t *testing.T) {
 		{
 			name: "invalid code ID",
 			genesis: &GenesisState{
-				Params: DefaultParams(),
-				Contracts: []*pb.ContractInfo{
+				Params: *DefaultParams(),
+				Contracts: []pb.ContractInfo{
 					{
 						Address: "cosmos1contract",
 						CodeId:  0, // invalid
@@ -102,8 +102,8 @@ func TestValidateGenesis(t *testing.T) {
 		{
 			name: "invalid status",
 			genesis: &GenesisState{
-				Params: DefaultParams(),
-				Contracts: []*pb.ContractInfo{
+				Params: *DefaultParams(),
+				Contracts: []pb.ContractInfo{
 					{
 						Address: "cosmos1contract",
 						CodeId:  1,
@@ -117,8 +117,8 @@ func TestValidateGenesis(t *testing.T) {
 		{
 			name: "metrics without matching contract",
 			genesis: &GenesisState{
-				Params: DefaultParams(),
-				Contracts: []*pb.ContractInfo{},
+				Params: *DefaultParams(),
+				Contracts: []pb.ContractInfo{},
 				Metrics: []*pb.ContractMetrics{
 					{
 						ContractAddress: "cosmos1nonexistent",
