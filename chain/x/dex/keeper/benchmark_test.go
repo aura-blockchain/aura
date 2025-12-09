@@ -25,7 +25,7 @@ import (
 // ============================================================================
 
 // Helper function to setup keeper for benchmarking
-func setupDEXBenchmark(b *testing.B) (*k.Keeper, sdk.Context) {
+func setupDEXBenchmark(b *testing.B) (*keeper.Keeper, sdk.Context) {
 	b.Helper()
 
 	storeKey := storetypes.NewKVStoreKey(types.StoreKey)
@@ -46,7 +46,7 @@ func setupDEXBenchmark(b *testing.B) (*k.Keeper, sdk.Context) {
 	vcKeeper := mocks.NewMockVCRegistryKeeper()
 	securityKeeper := mocks.NewMockSecurityKeeper()
 
-	k := k.NewKeeper(
+	k := keeper.NewKeeper(
 		cdc,
 		storeKey,
 		bankKeeper,
