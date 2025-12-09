@@ -17,8 +17,8 @@ func (k *Keeper) InitGenesis(ctx context.Context, data types.GenesisState) error
 	k.requireStore()
 
 	// Set params
-	if data.Params != nil && k.paramsStore != nil {
-		if err := k.paramsStore.SetParams(*data.Params); err != nil {
+	if k.paramsStore != nil {
+		if err := k.paramsStore.SetParams(data.Params); err != nil {
 			return fmt.Errorf("failed to set params: %w", err)
 		}
 	}
@@ -327,7 +327,7 @@ func (k *Keeper) ExportGenesis(ctx context.Context) types.GenesisState {
 	}
 
 	return types.GenesisState{
-		Params:                 &params,
+		Params:                 params,
 		VcRecords:              vcRecords,
 		RevocationRecords:      revocationRecords,
 		RevocationList:         revocationList,

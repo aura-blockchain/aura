@@ -8,7 +8,7 @@ import (
 func DefaultGenesis() *cryptoproto.GenesisState {
 	params := DefaultParams()
 	return &cryptoproto.GenesisState{
-		Params:               &params,
+		Params:               params,
 		KeyRotationSchedules: []*cryptoproto.KeyRotationSchedule{},
 		ThresholdSchemes:     []*cryptoproto.ThresholdSignatureScheme{},
 		ZkProofConfigs:       []*cryptoproto.ZKProofConfig{},
@@ -22,7 +22,7 @@ func DefaultGenesis() *cryptoproto.GenesisState {
 
 // ValidateGenesis validates the genesis state
 func ValidateGenesis(data *cryptoproto.GenesisState) error {
-	if err := ValidateParams(data.Params); err != nil {
+	if err := ValidateParams(&data.Params); err != nil {
 		return err
 	}
 

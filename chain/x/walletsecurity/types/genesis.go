@@ -12,7 +12,7 @@ type GenesisState = pb.GenesisState
 // DefaultGenesisState returns a deterministic, protobuf-backed genesis state.
 func DefaultGenesisState() *GenesisState {
 	return &pb.GenesisState{
-		Params: &pb.WalletSecurityParams{
+		Params: pb.WalletSecurityParams{
 			HardwareWalletEnabled:        true,
 			SupportedHardwareTypes:       []int32{},
 			MaxSigners:                   5,
@@ -69,9 +69,6 @@ func DefaultGenesis() *GenesisState {
 func ValidateGenesis(gen *GenesisState) error {
 	if gen == nil {
 		return fmt.Errorf("genesis state cannot be nil")
-	}
-	if gen.Params == nil {
-		return fmt.Errorf("params cannot be nil")
 	}
 	if gen.Params.MinThreshold < 1 || gen.Params.MaxThreshold < gen.Params.MinThreshold {
 		return fmt.Errorf("invalid multisig thresholds: min %d max %d", gen.Params.MinThreshold, gen.Params.MaxThreshold)

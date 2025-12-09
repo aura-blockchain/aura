@@ -7,7 +7,7 @@ import (
 // DefaultGenesis returns the default genesis state
 func DefaultGenesis() *pb.GenesisState {
 	return &pb.GenesisState{
-		Params:                   DefaultParams(),
+		Params:                   *DefaultParams(),
 		PreValidatedTransactions: []*pb.PreValidatedTransaction{},
 		Templates:                []*pb.ValidationTemplate{},
 		Metrics:                  &pb.PreValidationMetrics{},
@@ -16,7 +16,7 @@ func DefaultGenesis() *pb.GenesisState {
 
 // ValidateGenesis validates the genesis state
 func ValidateGenesis(data *pb.GenesisState) error {
-	if err := ValidateParams(data.Params); err != nil {
+	if err := ValidateParams(&data.Params); err != nil {
 		return err
 	}
 

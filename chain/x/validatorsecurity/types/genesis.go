@@ -5,80 +5,77 @@ import (
 )
 
 // NewGenesisState creates a new GenesisState instance
-func NewGenesisState(params *ValidatorSecurityParams) *GenesisState {
+func NewGenesisState(params ValidatorSecurityParams) *GenesisState {
 	return &GenesisState{
 		Params:              params,
-		Validators:          []*ValidatorSecurityInfo{},
-		DoubleSignEvidences: []*DoubleSignEvidence{},
-		DowntimeInfractions: []*DowntimeInfraction{},
-		Alerts:              []*ValidatorAlert{},
-		SentryNodes:         []*SentryNodeInfo{},
+		Validators:          []ValidatorSecurityInfo{},
+		DoubleSignEvidences: []DoubleSignEvidence{},
+		DowntimeInfractions: []DowntimeInfraction{},
+		Alerts:              []ValidatorAlert{},
+		SentryNodes:         []SentryNodeInfo{},
 	}
 }
 
 // DefaultGenesisState returns the default genesis state
 func DefaultGenesisState() *GenesisState {
-	return NewGenesisState(DefaultParams())
+	return NewGenesisState(*DefaultParams())
 }
 
 // ValidateGenesisState performs basic genesis state validation
 func ValidateGenesisState(gs *GenesisState) error {
-	if gs.Params == nil {
-		return fmt.Errorf("params cannot be nil")
-	}
-	if err := ValidateParams(gs.Params); err != nil {
+	if err := ValidateParams(&gs.Params); err != nil {
 		return fmt.Errorf("invalid params: %w", err)
 	}
 
 	// Validate validators
 	seenValidators := make(map[string]bool)
-	for i, validator := range gs.Validators {
-		if err := ValidateValidatorInfo(validator); err != nil {
+	for i := range gs.Validators {
+		if err := ValidateValidatorInfo(&gs.Validators[i]); err != nil {
 			return fmt.Errorf("invalid validator at index %d: %w", i, err)
 		}
-		if seenValidators[validator.ValidatorAddress] {
-			return fmt.Errorf("duplicate validator address: %s", validator.ValidatorAddress)
+		if seenValidators[gs.Validators[i].ValidatorAddress] {
+			return fmt.Errorf("duplicate validator address: %s", gs.Validators[i].ValidatorAddress)
 		}
-		seenValidators[validator.ValidatorAddress] = true
+		seenValidators[gs.Validators[i].ValidatorAddress] = true
 	}
 
 	// Validate double sign evidences
-	for i, evidence := range gs.DoubleSignEvidences {
-		if err := ValidateDoubleSignEvidence(evidence); err != nil {
+	for i := range gs.DoubleSignEvidences {
+		if err := ValidateDoubleSignEvidence(&gs.DoubleSignEvidences[i]); err != nil {
 			return fmt.Errorf("invalid double sign evidence at index %d: %w", i, err)
 		}
 	}
 
 	// Validate downtime infractions
-	for i, infraction := range gs.DowntimeInfractions {
-		if err := ValidateDowntimeInfraction(infraction); err != nil {
+	for i := range gs.DowntimeInfractions {
+		if err := ValidateDowntimeInfraction(&gs.DowntimeInfractions[i]); err != nil {
 			return fmt.Errorf("invalid downtime infraction at index %d: %w", i, err)
 		}
 	}
 
 	// Validate alerts
 	seenAlertIDs := make(map[string]bool)
-	for i, alert := range gs.Alerts {
-		if err := ValidateValidatorAlert(alert); err != nil {
+	for i := range gs.Alerts {
+		if err := ValidateValidatorAlert(&gs.Alerts[i]); err != nil {
 			return fmt.Errorf("invalid alert at index %d: %w", i, err)
 		}
-		if seenAlertIDs[alert.Id] {
-			return fmt.Errorf("duplicate alert ID: %s", alert.Id)
+		if seenAlertIDs[gs.Alerts[i].Id] {
+			return fmt.Errorf("duplicate alert ID: %s", gs.Alerts[i].Id)
 		}
-		seenAlertIDs[alert.Id] = true
+		seenAlertIDs[gs.Alerts[i].Id] = true
 	}
 
 	// Validate sentry nodes
 	seenSentryNodes := make(map[string]bool)
-	for i, node := range gs.SentryNodes {
-		if err := ValidateSentryNodeInfo(node); err != nil {
+	for i := range gs.SentryNodes {
+		if err := ValidateSentryNodeInfo(&gs.SentryNodes[i]); err != nil {
 			return fmt.Errorf("invalid sentry node at index %d: %w", i, err)
 		}
 		// Check for duplicate sentry node addresses
-		if seenSentryNodes[node.Address] {
-			return fmt.Errorf("duplicate sentry node address: %s", node.Address)
+		if seenSentryNodes[gs.SentryNodes[i].Address] {
+			return fmt.Errorf("duplicate sentry node address: %s", gs.SentryNodes[i].Address)
 		}
-		seenSentryNodes[node.Address] = true
+		seenSentryNodes[gs.SentryNodes[i].Address] = true
 	}
 
 	return nil

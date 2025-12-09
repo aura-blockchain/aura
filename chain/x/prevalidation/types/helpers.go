@@ -87,10 +87,12 @@ func CalculateNewAmount(a *AutoScalingConfig, currentAmount uint64, scaleUp bool
 
 // IsExpired checks if a pre-validated transaction has expired
 func IsExpired(p *PreValidatedTransaction, currentTime time.Time) bool {
-	if p.ExpiresAt == nil {
+	// ExpiresAt is a time.Time value (non-nullable in proto)
+	// Zero time means no expiry
+	if p.ExpiresAt.IsZero() {
 		return false
 	}
-	return currentTime.After(p.ExpiresAt.AsTime())
+	return currentTime.After(p.ExpiresAt)
 }
 
 // CanExecute checks if a pre-validated transaction can be executed
@@ -104,7 +106,7 @@ func CanExecute(p *PreValidatedTransaction, currentTime time.Time) bool {
 // MarkExecuted marks the transaction as executed
 func MarkExecuted(p *PreValidatedTransaction, blockHeight uint64, executionTime time.Time) {
 	p.Status = ValidationStatus_VALIDATION_STATUS_EXECUTED
-	p.ExecutedAt = timestamppb.New(executionTime)
+	p.ExecutedAt = executionTime
 	p.ExecutedHeight = blockHeight
 }
 
