@@ -619,7 +619,7 @@ func TestExportGenesis(t *testing.T) {
 
 func testBridgeGenesisState() types.GenesisState {
 	now := time.Unix(1, 0)
-	transfer := &types.CrossChainTransfer{
+	transfer := types.CrossChainTransfer{
 		TransferId:  "transfer-1",
 		SourceChain: "aura",
 		TargetChain: "paw",
@@ -630,28 +630,28 @@ func testBridgeGenesisState() types.GenesisState {
 		Status:      types.TransferStatus_CONFIRMED,
 		Timestamp:   now,
 	}
-	chainCfg := &types.ChainConfig{
+	chainCfg := types.ChainConfig{
 		ChainId:   "aura",
 		ChainName: "Aura",
 		Enabled:   true,
 	}
-	validator := &types.BridgeValidator{
+	validator := types.BridgeValidator{
 		Address: "auravaloper1validator",
 		Active:  true,
 		Chains:  []string{"aura"},
 	}
-	wrapped := &types.WrappedToken{
+	wrapped := types.WrappedToken{
 		WrappedDenom:  "paw.token",
 		OriginalDenom: "token",
 		SourceChain:   "paw",
 		TotalSupply:   math.NewInt(500),
 		LockedAmount:  math.NewInt(500),
 	}
-	identity := &types.SharedIdentity{
+	identity := types.SharedIdentity{
 		Address:      "aura1identity",
 		VerifiedAura: true,
 	}
-	swap := &types.CrossChainSwap{
+	swap := types.CrossChainSwap{
 		SwapId:          "swap-1",
 		SourceChain:     "aura",
 		TargetChain:     "paw",
@@ -663,29 +663,29 @@ func testBridgeGenesisState() types.GenesisState {
 		Status:          "pending",
 		InitiatedAt:     now,
 	}
-	relayerStats := &types.RelayerStats{
+	relayerStats := types.RelayerStats{
 		RelayerAddress:        "aura1relayer",
 		TotalTransfersRelayed: 5,
 		SuccessfulTransfers:   5,
 		FailedTransfers:       0,
 		TotalVolume:           math.NewInt(1000),
-		LastRelay:             now,
+		LastRelay:             &now,
 		UptimePercentage:      math.LegacyNewDec(1),
 	}
 	return types.GenesisState{
-		Params: &types.BridgeParams{
+		Params: types.BridgeParams{
 			Enabled:                      true,
 			MinConfirmations:             2,
 			BridgeFeeBasisPoints:         25,
 			MaxTransferAmount:            math.NewInt(1000000000),
 			ValidatorThresholdPercentage: 66,
 		},
-		Transfers:        []*types.CrossChainTransfer{transfer},
-		ChainConfigs:     []*types.ChainConfig{chainCfg},
-		Validators:       []*types.BridgeValidator{validator},
-		WrappedTokens:    []*types.WrappedToken{wrapped},
-		SharedIdentities: []*types.SharedIdentity{identity},
-		CrossChainSwaps:  []*types.CrossChainSwap{swap},
-		RelayerStats:     []*types.RelayerStats{relayerStats},
+		Transfers:        []types.CrossChainTransfer{transfer},
+		ChainConfigs:     []types.ChainConfig{chainCfg},
+		Validators:       []types.BridgeValidator{validator},
+		WrappedTokens:    []types.WrappedToken{wrapped},
+		SharedIdentities: []types.SharedIdentity{identity},
+		CrossChainSwaps:  []types.CrossChainSwap{swap},
+		RelayerStats:     []types.RelayerStats{relayerStats},
 	}
 }

@@ -46,14 +46,14 @@ func TestGenesisStateValidation(t *testing.T) {
 			errMsg:  "genesis state cannot be nil",
 		},
 		{
-			name: "nil params",
+			name: "invalid params - negative max VCs",
 			setup: func() *pb.GenesisState {
 				gs := DefaultGenesisState()
-				gs.Params = nil
+				gs.Params.MaxVcsPerUser = 0 // Invalid: must be positive
 				return gs
 			},
 			wantErr: true,
-			errMsg:  "params cannot be nil",
+			errMsg:  "invalid params",
 		},
 		{
 			name: "nil revocation list",

@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
+	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/compliance/types"
 )
@@ -16,11 +16,12 @@ func TestBeginBlockerBatching(t *testing.T) {
 	k, ctx := setupKeeper(t)
 
 	// Create an expired KYC record
+	expiresAt := ctx.BlockTime().Add(-1 * time.Hour)
 	expiredRecord := &types.KYCRecord{
 		Address:      "aura1expireduser",
 		KycLevel:     types.KYCLevel_KYC_LEVEL_BASIC,
 		VerifiedAt:   ctx.BlockTime().Add(-365 * 24 * time.Hour), // 1 year ago
-		ExpiresAt:    ctx.BlockTime().Add(-1 * time.Hour),        // Expired 1 hour ago
+		ExpiresAt:    &expiresAt,                                 // Expired 1 hour ago
 		Provider:     "test-provider",
 		Jurisdiction: "US",
 	}
@@ -102,7 +103,7 @@ func TestBeginBlockerBatchingPerformance(t *testing.T) {
 			Address:      "aura1user" + string(rune(i)),
 			KycLevel:     types.KYCLevel_KYC_LEVEL_BASIC,
 			VerifiedAt:   currentTime.Add(-30 * 24 * time.Hour),
-			ExpiresAt:    expiresAt,
+			ExpiresAt:    &expiresAt,
 			Provider:     "test-provider",
 			Jurisdiction: "US",
 		}
@@ -114,7 +115,7 @@ func TestBeginBlockerBatchingPerformance(t *testing.T) {
 	// Measure gas on non-batched blocks (should be minimal)
 	nonBatchedBlocks := 0
 	for i := int64(1); i < 50; i++ {
-		ctx = ctx.WithBlockHeight(i).WithGasMeter(sdk.NewInfiniteGasMeter())
+		ctx = ctx.WithBlockHeight(i).WithGasMeter(storetypes.NewInfiniteGasMeter())
 		gasBefore := ctx.GasMeter().GasConsumed()
 
 		k.BeginBlocker(ctx)
@@ -127,7 +128,7 @@ func TestBeginBlockerBatchingPerformance(t *testing.T) {
 	}
 
 	// Measure gas on batched block (will be higher due to iteration)
-	ctx = ctx.WithBlockHeight(50).WithGasMeter(sdk.NewInfiniteGasMeter())
+	ctx = ctx.WithBlockHeight(50).WithGasMeter(storetypes.NewInfiniteGasMeter())
 	gasBefore := ctx.GasMeter().GasConsumed()
 
 	k.BeginBlocker(ctx)
@@ -176,11 +177,12 @@ func TestBeginBlockerExpiryDetection(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		expiresAtPtr := tc.expiresAt
 		record := &types.KYCRecord{
 			Address:      tc.address,
 			KycLevel:     types.KYCLevel_KYC_LEVEL_BASIC,
 			VerifiedAt:   currentTime.Add(-30 * 24 * time.Hour),
-			ExpiresAt:    tc.expiresAt,
+			ExpiresAt:    &expiresAtPtr,
 			Provider:     "test-provider",
 			Jurisdiction: "US",
 		}

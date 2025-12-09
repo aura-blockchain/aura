@@ -177,7 +177,7 @@ func TestCalculateFeeBoost_VerifiedUserWith40Percent(t *testing.T) {
 	params := types.DefaultParams()
 	params.IrBoostEnabled = true
 	params.IrBoostPercent = 40
-	err := k.SetParams(ctx, params)
+	err := k.SetParams(ctx, &params)
 	require.NoError(t, err)
 
 	boost := k.CalculateFeeBoost(ctx, address)
@@ -200,7 +200,7 @@ func TestCalculateFeeBoost_UnverifiedUser(t *testing.T) {
 	params := types.DefaultParams()
 	params.IrBoostEnabled = true
 	params.IrBoostPercent = 40
-	err := k.SetParams(ctx, params)
+	err := k.SetParams(ctx, &params)
 	require.NoError(t, err)
 
 	boost := k.CalculateFeeBoost(ctx, address)
@@ -222,7 +222,7 @@ func TestCalculateFeeBoost_BoostDisabled(t *testing.T) {
 	params := types.DefaultParams()
 	params.IrBoostEnabled = false
 	params.IrBoostPercent = 40
-	err := k.SetParams(ctx, params)
+	err := k.SetParams(ctx, &params)
 	require.NoError(t, err)
 
 	boost := k.CalculateFeeBoost(ctx, address)
@@ -244,7 +244,7 @@ func TestCalculateFeeBoost_InvalidBoostPercentageNegative(t *testing.T) {
 	params := types.DefaultParams()
 	params.IrBoostEnabled = true
 	params.IrBoostPercent = ^uint64(0) // Max uint64 (wraps to huge number in int64)
-	err := k.SetParams(ctx, params)
+	err := k.SetParams(ctx, &params)
 	require.NoError(t, err)
 
 	boost := k.CalculateFeeBoost(ctx, address)
@@ -266,7 +266,7 @@ func TestCalculateFeeBoost_InvalidBoostPercentageOver100(t *testing.T) {
 	params := types.DefaultParams()
 	params.IrBoostEnabled = true
 	params.IrBoostPercent = 150 // 150% is excessive
-	err := k.SetParams(ctx, params)
+	err := k.SetParams(ctx, &params)
 	require.NoError(t, err)
 
 	boost := k.CalculateFeeBoost(ctx, address)
@@ -304,7 +304,7 @@ func TestCalculateFeeBoost_ValidBoostPercentages(t *testing.T) {
 			params := types.DefaultParams()
 			params.IrBoostEnabled = true
 			params.IrBoostPercent = tt.boostPercent
-			err := k.SetParams(ctx, params)
+			err := k.SetParams(ctx, &params)
 			require.NoError(t, err)
 
 			boost := k.CalculateFeeBoost(ctx, address)
@@ -330,7 +330,7 @@ func TestCalculateEffectiveFee_VerifiedUserWith40PercentBoost(t *testing.T) {
 	params := types.DefaultParams()
 	params.IrBoostEnabled = true
 	params.IrBoostPercent = 40
-	err := k.SetParams(ctx, params)
+	err := k.SetParams(ctx, &params)
 	require.NoError(t, err)
 
 	// Base fee: 0.003 (0.3%)
@@ -356,7 +356,7 @@ func TestCalculateEffectiveFee_UnverifiedUser(t *testing.T) {
 	params := types.DefaultParams()
 	params.IrBoostEnabled = true
 	params.IrBoostPercent = 40
-	err := k.SetParams(ctx, params)
+	err := k.SetParams(ctx, &params)
 	require.NoError(t, err)
 
 	// Base fee: 0.003 (0.3%)
@@ -417,7 +417,7 @@ func TestCalculateEffectiveFee_LargeBaseFee(t *testing.T) {
 	params := types.DefaultParams()
 	params.IrBoostEnabled = true
 	params.IrBoostPercent = 40
-	err := k.SetParams(ctx, params)
+	err := k.SetParams(ctx, &params)
 	require.NoError(t, err)
 
 	// Large base fee: 1000000
@@ -496,7 +496,7 @@ func TestCalculateEffectiveFee_RealisticScenarios(t *testing.T) {
 			params := types.DefaultParams()
 			params.IrBoostEnabled = true
 			params.IrBoostPercent = scenario.boostPercent
-			err := k.SetParams(ctx, params)
+			err := k.SetParams(ctx, &params)
 			require.NoError(t, err)
 
 			// Parse base fee
@@ -532,7 +532,7 @@ func TestCalculateEffectiveFee_NoOverflow(t *testing.T) {
 	params := types.DefaultParams()
 	params.IrBoostEnabled = true
 	params.IrBoostPercent = 100 // 100% boost (2x multiplier)
-	err := k.SetParams(ctx, params)
+	err := k.SetParams(ctx, &params)
 	require.NoError(t, err)
 
 	// Very large base fee (but should not overflow with 2x multiplier)
