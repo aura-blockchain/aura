@@ -51,7 +51,7 @@ func TestRotateDIDKey(t *testing.T) {
 	params, err := keeper.GetParams(ctx)
 	require.NoError(t, err)
 	expectedGracePeriod := ctx.BlockTime().Add(time.Duration(params.Change.KeyRotationGracePeriodSeconds) * time.Second)
-	require.Equal(t, expectedGracePeriod.Unix(), rotation.GracePeriodEnd.AsTime().Unix())
+	require.Equal(t, expectedGracePeriod.Unix(), rotation.GracePeriodEnd.Unix())
 
 	// Verify identity record updated
 	updatedIdentity, err := keeper.GetIdentityRecord(ctx, did)
@@ -216,7 +216,7 @@ func TestValidateDIDKey_AfterGracePeriod(t *testing.T) {
 	require.NoError(t, err)
 
 	// Advance time past grace period
-	newTime := rotation.GracePeriodEnd.AsTime().Add(1 * time.Hour)
+	newTime := rotation.GracePeriodEnd.Add(1 * time.Hour)
 	ctx = ctx.WithBlockTime(newTime)
 
 	// Complete rotation
@@ -266,7 +266,7 @@ func TestCompleteKeyRotation(t *testing.T) {
 	require.Contains(t, err.Error(), "grace period not yet ended")
 
 	// Advance time past grace period
-	newTime := rotation.GracePeriodEnd.AsTime().Add(1 * time.Hour)
+	newTime := rotation.GracePeriodEnd.Add(1 * time.Hour)
 	ctx = ctx.WithBlockTime(newTime)
 
 	// Complete rotation
@@ -433,7 +433,7 @@ func TestIsKeyInGracePeriod(t *testing.T) {
 	require.False(t, inGrace)
 
 	// After grace period ends
-	ctx = ctx.WithBlockTime(rotation.GracePeriodEnd.AsTime().Add(1 * time.Hour))
+	ctx = ctx.WithBlockTime(rotation.GracePeriodEnd.Add(1 * time.Hour))
 	inGrace = keeper.IsKeyInGracePeriod(ctx, did, oldKey)
 	require.False(t, inGrace)
 }

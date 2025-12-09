@@ -2,9 +2,9 @@ package keeper
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/identity/types"
 )
@@ -35,8 +35,8 @@ func TestPIIOffChain_OnlyCommitmentsStored(t *testing.T) {
 		Did:              did,
 		Address:          address,
 		Status:           types.IdentityStatusActive,
-		CreatedAt:        timestamppb.New(ctx.BlockTime()),
-		UpdatedAt:        timestamppb.New(ctx.BlockTime()),
+		CreatedAt:        ctx.BlockTime(),
+		UpdatedAt:        func() *time.Time { t := ctx.BlockTime(); return &t }(),
 		PiiCommitment:    commitment,
 		CommitmentSalt:   salt,
 		OffChainDataRef:  "ipfs://QmTestHash123456789",
@@ -89,7 +89,7 @@ func TestPIIOffChain_VerificationWorksWithCommitments(t *testing.T) {
 		Did:              did,
 		Address:          address,
 		Status:           types.IdentityStatusActive,
-		CreatedAt:        timestamppb.New(ctx.BlockTime()),
+		CreatedAt:        ctx.BlockTime(),
 		PiiCommitment:    commitment,
 		CommitmentSalt:   salt,
 		OffChainDataRef:  "ipfs://QmBobData",
@@ -143,7 +143,7 @@ func TestPIIOffChain_ErasureCompliance(t *testing.T) {
 		Did:              did,
 		Address:          address,
 		Status:           types.IdentityStatusActive,
-		CreatedAt:        timestamppb.New(ctx.BlockTime()),
+		CreatedAt:        ctx.BlockTime(),
 		PiiCommitment:    commitment,
 		CommitmentSalt:   salt,
 		OffChainDataRef:  "ipfs://QmCarolData",
@@ -214,7 +214,7 @@ func TestPIIOffChain_DataCannotBeRecovered(t *testing.T) {
 		Did:            did,
 		Address:        address,
 		Status:         types.IdentityStatusActive,
-		CreatedAt:      timestamppb.New(ctx.BlockTime()),
+		CreatedAt:      ctx.BlockTime(),
 		PiiCommitment:  commitment,
 		CommitmentSalt: salt,
 	}
@@ -270,7 +270,7 @@ func TestPIIOffChain_MultipleAttributeChanges(t *testing.T) {
 		Did:              did,
 		Address:          address,
 		Status:           types.IdentityStatusActive,
-		CreatedAt:        timestamppb.New(ctx.BlockTime()),
+		CreatedAt:        ctx.BlockTime(),
 		PiiCommitment:    commitment1,
 		CommitmentSalt:   salt1,
 		OffChainDataRef:  "ipfs://QmV1",
@@ -331,7 +331,7 @@ func TestPIIOffChain_UnauthorizedAccess(t *testing.T) {
 		Did:            did,
 		Address:        owner,
 		Status:         types.IdentityStatusActive,
-		CreatedAt:      timestamppb.New(ctx.BlockTime()),
+		CreatedAt:      ctx.BlockTime(),
 		PiiCommitment:  commitment,
 		CommitmentSalt: salt,
 	}
@@ -400,8 +400,8 @@ func TestPIIOffChain_ProtobufFieldsCompliance(t *testing.T) {
 		Did:                  did,
 		Address:              address,
 		Status:               types.IdentityStatusActive,
-		CreatedAt:            timestamppb.New(ctx.BlockTime()),
-		UpdatedAt:            timestamppb.New(ctx.BlockTime()),
+		CreatedAt:            ctx.BlockTime(),
+		UpdatedAt:            func() *time.Time { t := ctx.BlockTime(); return &t }(),
 		VerificationMethods:  []string{"key1", "key2"},
 		ConfidenceScore:      95,
 		MetadataHash:         "hash123",
@@ -459,7 +459,7 @@ func TestPIIOffChain_AuditTrailPreservation(t *testing.T) {
 		Did:            did,
 		Address:        address,
 		Status:         types.IdentityStatusActive,
-		CreatedAt:      timestamppb.New(ctx.BlockTime()),
+		CreatedAt:      ctx.BlockTime(),
 		PiiCommitment:  commitment,
 		CommitmentSalt: salt,
 	}
@@ -539,7 +539,7 @@ func TestPIIOffChain_OffChainStorageReferences(t *testing.T) {
 				Did:              did,
 				Address:          address,
 				Status:           types.IdentityStatusActive,
-				CreatedAt:        timestamppb.New(ctx.BlockTime()),
+				CreatedAt:        ctx.BlockTime(),
 				PiiCommitment:    commitment,
 				CommitmentSalt:   salt,
 				OffChainDataRef:  tc.dataRef,

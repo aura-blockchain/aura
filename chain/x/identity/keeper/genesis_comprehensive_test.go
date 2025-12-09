@@ -2,9 +2,9 @@ package keeper
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/identity/types"
 )
@@ -23,7 +23,8 @@ func TestInitGenesis_Empty(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
 
 	gs := &types.GenesisState{
-		Params: types.DefaultParams(),
+		Params:         *types.DefaultParams(),
+		NextAuditLogId: 1, // Required: must be at least 1
 	}
 
 	err := keeper.InitGenesis(ctx, gs)
@@ -48,28 +49,29 @@ func TestInitGenesis_Empty(t *testing.T) {
 func TestInitGenesis_WithRoles(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
 
-	customRoles := []*types.Role{
+	customRoles := []types.Role{
 		{
 			Name:         "custom_role_1",
 			Permissions:  []string{types.PermissionAdmin},
 			Description:  "Custom role 1",
-			CreatedAt:    timestamppb.Now(),
+			CreatedAt:    time.Now(),
 			IsSystemRole: false,
-			UpdatedAt:    timestamppb.Now(),
+			UpdatedAt:    func() *time.Time { t := time.Now(); return &t }(),
 		},
 		{
 			Name:         "custom_role_2",
 			Permissions:  []string{types.PermissionViewAuditLogs, types.PermissionManageIdentity},
 			Description:  "Custom role 2",
-			CreatedAt:    timestamppb.Now(),
+			CreatedAt:    time.Now(),
 			IsSystemRole: false,
-			UpdatedAt:    timestamppb.Now(),
+			UpdatedAt:    func() *time.Time { t := time.Now(); return &t }(),
 		},
 	}
 
 	gs := &types.GenesisState{
-		Params: types.DefaultParams(),
-		Roles:  customRoles,
+		Params:         *types.DefaultParams(),
+		Roles:          customRoles,
+		NextAuditLogId: 1, // Required: must be at least 1
 	}
 
 	err := keeper.InitGenesis(ctx, gs)
@@ -95,24 +97,46 @@ func TestInitGenesis_WithRoles(t *testing.T) {
 func TestInitGenesis_WithRoleAssignments(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
 
-	roleAssignments := []*types.RoleAssignment{
+	// Create roles first (required for validation)
+	roles := []types.Role{
+		{
+			Name:         types.RoleAdmin,
+			Permissions:  []string{types.PermissionAdmin},
+			Description:  "Admin role",
+			CreatedAt:    time.Now(),
+			IsSystemRole: true,
+			UpdatedAt:    func() *time.Time { t := time.Now(); return &t }(),
+		},
+		{
+			Name:         types.RoleModerator,
+			Permissions:  []string{types.PermissionManageIdentity},
+			Description:  "Moderator role",
+			CreatedAt:    time.Now(),
+			IsSystemRole: true,
+			UpdatedAt:    func() *time.Time { t := time.Now(); return &t }(),
+		},
+	}
+
+	roleAssignments := []types.RoleAssignment{
 		{
 			Address:    "aura1user1",
 			RoleName:   types.RoleAdmin,
-			AssignedAt: timestamppb.Now(),
+			AssignedAt: time.Now(),
 			AssignedBy: "genesis",
 		},
 		{
 			Address:    "aura1user2",
 			RoleName:   types.RoleModerator,
-			AssignedAt: timestamppb.Now(),
+			AssignedAt: time.Now(),
 			AssignedBy: "genesis",
 		},
 	}
 
 	gs := &types.GenesisState{
-		Params:          types.DefaultParams(),
+		Params:          *types.DefaultParams(),
+		Roles:           roles,
 		RoleAssignments: roleAssignments,
+		NextAuditLogId:  1, // Required: must be at least 1
 	}
 
 	err := keeper.InitGenesis(ctx, gs)
@@ -142,26 +166,29 @@ func TestInitGenesis_WithRoleAssignments(t *testing.T) {
 func TestInitGenesis_WithIdentityRecords(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
 
-	identityRecords := []*types.IdentityRecord{
+	identityRecords := []types.IdentityRecord{
 		{
-			Did:       "did:aura:test1",
-			Address:   "aura1test1",
-			Status:    types.IdentityStatusActive,
-			CreatedAt: timestamppb.Now(),
-			UpdatedAt: timestamppb.Now(),
+			Did:                 "did:aura:test1",
+			Address:             "aura1test1",
+			Status:              types.IdentityStatusActive,
+			VerificationMethods: []string{"key1"}, // Required: at least one verification method
+			CreatedAt:           time.Now(),
+			UpdatedAt:           func() *time.Time { t := time.Now(); return &t }(),
 		},
 		{
-			Did:       "did:aura:test2",
-			Address:   "aura1test2",
-			Status:    types.IdentityStatusActive,
-			CreatedAt: timestamppb.Now(),
-			UpdatedAt: timestamppb.Now(),
+			Did:                 "did:aura:test2",
+			Address:             "aura1test2",
+			Status:              types.IdentityStatusActive,
+			VerificationMethods: []string{"key2"}, // Required: at least one verification method
+			CreatedAt:           time.Now(),
+			UpdatedAt:           func() *time.Time { t := time.Now(); return &t }(),
 		},
 	}
 
 	gs := &types.GenesisState{
-		Params:          types.DefaultParams(),
+		Params:          *types.DefaultParams(),
 		IdentityRecords: identityRecords,
+		NextAuditLogId:  1, // Required: must be at least 1
 	}
 
 	err := keeper.InitGenesis(ctx, gs)
@@ -182,26 +209,27 @@ func TestInitGenesis_WithIdentityRecords(t *testing.T) {
 func TestInitGenesis_WithSessions(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
 
-	sessions := []*types.Session{
+	sessions := []types.Session{
 		{
 			Id:        "session1",
 			Address:   "aura1user1",
-			CreatedAt: timestamppb.Now(),
-			ExpiresAt: timestamppb.Now(),
+			CreatedAt: time.Now(),
+			ExpiresAt: time.Now(),
 			IsActive:  true,
 		},
 		{
 			Id:        "session2",
 			Address:   "aura1user2",
-			CreatedAt: timestamppb.Now(),
-			ExpiresAt: timestamppb.Now(),
+			CreatedAt: time.Now(),
+			ExpiresAt: time.Now(),
 			IsActive:  false,
 		},
 	}
 
 	gs := &types.GenesisState{
-		Params:   types.DefaultParams(),
-		Sessions: sessions,
+		Params:         *types.DefaultParams(),
+		Sessions:       sessions,
+		NextAuditLogId: 1, // Required: must be at least 1
 	}
 
 	err := keeper.InitGenesis(ctx, gs)
@@ -222,26 +250,27 @@ func TestInitGenesis_WithSessions(t *testing.T) {
 func TestInitGenesis_WithMultisigWallets(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
 
-	multisigWallets := []*types.MultisigWallet{
+	multisigWallets := []types.MultisigWallet{
 		{
 			Id:        "wallet1",
 			Signers:   []string{"aura1owner1", "aura1owner2"},
 			Threshold: 2,
-			CreatedAt: timestamppb.Now(),
+			CreatedAt: time.Now(),
 			CreatedBy: "genesis",
 		},
 		{
 			Id:        "wallet2",
 			Signers:   []string{"aura1owner3", "aura1owner4", "aura1owner5"},
 			Threshold: 2,
-			CreatedAt: timestamppb.Now(),
+			CreatedAt: time.Now(),
 			CreatedBy: "genesis",
 		},
 	}
 
 	gs := &types.GenesisState{
-		Params:          types.DefaultParams(),
+		Params:          *types.DefaultParams(),
 		MultisigWallets: multisigWallets,
+		NextAuditLogId:  1, // Required: must be at least 1
 	}
 
 	err := keeper.InitGenesis(ctx, gs)
@@ -262,24 +291,48 @@ func TestInitGenesis_WithMultisigWallets(t *testing.T) {
 func TestInitGenesis_WithCredentialRevocations(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
 
-	credentialRevocations := []*types.CredentialRevocation{
+	// Create identity records first (required for validation)
+	identityRecords := []types.IdentityRecord{
+		{
+			Did:                 "did:aura:issuer1",
+			Address:             "aura1issuer1",
+			Status:              types.IdentityStatusActive,
+			VerificationMethods: []string{"key1"},
+			CreatedAt:           time.Now(),
+			UpdatedAt:           func() *time.Time { t := time.Now(); return &t }(),
+		},
+		{
+			Did:                 "did:aura:issuer2",
+			Address:             "aura1issuer2",
+			Status:              types.IdentityStatusActive,
+			VerificationMethods: []string{"key2"},
+			CreatedAt:           time.Now(),
+			UpdatedAt:           func() *time.Time { t := time.Now(); return &t }(),
+		},
+	}
+
+	credentialRevocations := []types.CredentialRevocation{
 		{
 			CredentialId: "cred1",
-			RevokedAt:    timestamppb.Now(),
+			Did:          "did:aura:issuer1", // Required: DID must be provided and exist
+			RevokedAt:    time.Now(),
 			RevokedBy:    "aura1issuer1",
 			Reason:       "Compromised",
 		},
 		{
 			CredentialId: "cred2",
-			RevokedAt:    timestamppb.Now(),
+			Did:          "did:aura:issuer2", // Required: DID must be provided and exist
+			RevokedAt:    time.Now(),
 			RevokedBy:    "aura1issuer2",
 			Reason:       "Expired",
 		},
 	}
 
 	gs := &types.GenesisState{
-		Params:                types.DefaultParams(),
+		Params:                *types.DefaultParams(),
+		IdentityRecords:       identityRecords,
 		CredentialRevocations: credentialRevocations,
+		NextAuditLogId:        1, // Required: must be at least 1
 	}
 
 	err := keeper.InitGenesis(ctx, gs)
@@ -300,14 +353,34 @@ func TestInitGenesis_WithCredentialRevocations(t *testing.T) {
 func TestInitGenesis_WithChangeRequests(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
 
-	changeRequests := []*types.ChangeRequest{
+	// Create identity records first (required for validation)
+	identityRecords := []types.IdentityRecord{
+		{
+			Did:                 "did:aura:test1",
+			Address:             "aura1user1",
+			Status:              types.IdentityStatusActive,
+			VerificationMethods: []string{"key1"},
+			CreatedAt:           time.Now(),
+			UpdatedAt:           func() *time.Time { t := time.Now(); return &t }(),
+		},
+		{
+			Did:                 "did:aura:test2",
+			Address:             "aura1user2",
+			Status:              types.IdentityStatusActive,
+			VerificationMethods: []string{"key2"},
+			CreatedAt:           time.Now(),
+			UpdatedAt:           func() *time.Time { t := time.Now(); return &t }(),
+		},
+	}
+
+	changeRequests := []types.ChangeRequest{
 		{
 			Id:          "change1",
 			Did:         "did:aura:test1",
 			Requester:   "aura1user1",
 			ChangeType:  types.ChangeTypeUpdateAttributes,
 			Status:      types.ChangeStatusPending,
-			RequestedAt: timestamppb.Now(),
+			RequestedAt: time.Now(),
 		},
 		{
 			Id:          "change2",
@@ -315,13 +388,15 @@ func TestInitGenesis_WithChangeRequests(t *testing.T) {
 			Requester:   "aura1user2",
 			ChangeType:  types.ChangeTypeUpdateMetadata,
 			Status:      types.ChangeStatusApproved,
-			RequestedAt: timestamppb.Now(),
+			RequestedAt: time.Now(),
 		},
 	}
 
 	gs := &types.GenesisState{
-		Params:         types.DefaultParams(),
-		ChangeRequests: changeRequests,
+		Params:          *types.DefaultParams(),
+		IdentityRecords: identityRecords,
+		ChangeRequests:  changeRequests,
+		NextAuditLogId:  1, // Required: must be at least 1
 	}
 
 	err := keeper.InitGenesis(ctx, gs)
@@ -344,8 +419,9 @@ func TestInitGenesis_WithSuspendedFlag(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
 
 	gs := &types.GenesisState{
-		Params:                   types.DefaultParams(),
+		Params:                   *types.DefaultParams(),
 		IdentityChangesSuspended: true,
+		NextAuditLogId:           1, // Required: must be at least 1
 	}
 
 	err := keeper.InitGenesis(ctx, gs)
@@ -364,7 +440,7 @@ func TestInitGenesis_WithCounters(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
 
 	gs := &types.GenesisState{
-		Params:         types.DefaultParams(),
+		Params:         *types.DefaultParams(),
 		NextAuditLogId: 42,
 	}
 
@@ -386,7 +462,8 @@ func TestExportGenesis_Empty(t *testing.T) {
 
 	// Initialize with minimal genesis
 	err := keeper.InitGenesis(ctx, &types.GenesisState{
-		Params: types.DefaultParams(),
+		Params:         *types.DefaultParams(),
+		NextAuditLogId: 1, // Required: must be at least 1
 	})
 	require.NoError(t, err)
 
@@ -403,46 +480,47 @@ func TestExportGenesis_RoundTrip(t *testing.T) {
 	keeper1, ctx1 := setupKeeperForTest(t)
 
 	// Create comprehensive genesis state
-	customParams := types.DefaultParams()
+	customParams := *types.DefaultParams()
 	customParams.Auth.EnableRbac = true
 	customParams.Auth.MaxRolesPerAccount = 5
 	customParams.Change.MaxRequestsPerWalletPerMonth = 20
 
 	originalGs := &types.GenesisState{
 		Params: customParams,
-		Roles: []*types.Role{
+		Roles: []types.Role{
 			{
 				Name:         "custom_role",
 				Permissions:  []string{types.PermissionAdmin},
 				Description:  "Custom role",
-				CreatedAt:    timestamppb.Now(),
+				CreatedAt:    time.Now(),
 				IsSystemRole: false,
-				UpdatedAt:    timestamppb.Now(),
+				UpdatedAt:    func() *time.Time { t := time.Now(); return &t }(),
 			},
 		},
-		RoleAssignments: []*types.RoleAssignment{
+		RoleAssignments: []types.RoleAssignment{
 			{
 				Address:    "aura1test",
 				RoleName:   "custom_role",
-				AssignedAt: timestamppb.Now(),
+				AssignedAt: time.Now(),
 				AssignedBy: "genesis",
 			},
 		},
-		IdentityRecords: []*types.IdentityRecord{
+		IdentityRecords: []types.IdentityRecord{
 			{
-				Did:       "did:aura:test123",
-				Address:   "aura1test",
-				Status:    types.IdentityStatusActive,
-				CreatedAt: timestamppb.Now(),
-				UpdatedAt: timestamppb.Now(),
+				Did:                 "did:aura:test123",
+				Address:             "aura1test",
+				Status:              types.IdentityStatusActive,
+				VerificationMethods: []string{"key1"}, // Required: at least one verification method
+				CreatedAt:           time.Now(),
+				UpdatedAt:           func() *time.Time { t := time.Now(); return &t }(),
 			},
 		},
-		Sessions: []*types.Session{
+		Sessions: []types.Session{
 			{
 				Id:        "session123",
 				Address:   "aura1test",
-				CreatedAt: timestamppb.Now(),
-				ExpiresAt: timestamppb.Now(),
+				CreatedAt: time.Now(),
+				ExpiresAt: time.Now(),
 				IsActive:  true,
 			},
 		},
@@ -483,13 +561,26 @@ func TestExportGenesis_RoundTrip(t *testing.T) {
 func TestExportGenesis_AllDataTypes(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
 
+	// Create identity record first (required for DID key rotations)
+	identityRecords := []types.IdentityRecord{
+		{
+			Did:                 "did:aura:test",
+			Address:             "aura1user",
+			Status:              types.IdentityStatusActive,
+			VerificationMethods: []string{"key1"},
+			CreatedAt:           time.Now(),
+			UpdatedAt:           func() *time.Time { t := time.Now(); return &t }(),
+		},
+	}
+
 	// Initialize with comprehensive data
 	gs := &types.GenesisState{
-		Params: types.DefaultParams(),
-		AuditLogs: []*types.AuditLog{
+		Params:          *types.DefaultParams(),
+		IdentityRecords: identityRecords,
+		AuditLogs: []types.AuditLog{
 			{
 				Id:        "1",
-				Timestamp: timestamppb.Now(),
+				Timestamp: time.Now(),
 				Action:    "CREATE_IDENTITY",
 				Actor:     "aura1user",
 				Target:    "did:aura:test",
@@ -497,7 +588,7 @@ func TestExportGenesis_AllDataTypes(t *testing.T) {
 				Result:    types.AuditResultSuccess,
 			},
 		},
-		RateLimits: []*types.RateLimitConfig{
+		RateLimits: []types.RateLimitConfig{
 			{
 				UserAddress:        "aura1user",
 				RequestsPerMinute:  60,
@@ -508,7 +599,7 @@ func TestExportGenesis_AllDataTypes(t *testing.T) {
 				CurrentDayCount:    0,
 			},
 		},
-		MultisigProposals: []*types.MultisigProposal{
+		MultisigProposals: []types.MultisigProposal{
 			{
 				Id:          "proposal1",
 				WalletId:    "wallet1",
@@ -517,60 +608,60 @@ func TestExportGenesis_AllDataTypes(t *testing.T) {
 				Payload:     []byte("test_payload"),
 				Signatures:  []string{},
 				Status:      types.ProposalStatusPending,
-				CreatedAt:   timestamppb.Now(),
-				ExpiresAt:   timestamppb.Now(),
+				CreatedAt:   time.Now(),
+				ExpiresAt:   time.Now(),
 			},
 		},
-		TimeLockedActions: []*types.TimeLockedAction{
+		TimeLockedActions: []types.TimeLockedAction{
 			{
 				Id:           "action1",
 				ActionType:   "REVOKE_CREDENTIAL",
 				Payload:      []byte("test_payload"),
 				Proposer:     "aura1creator",
-				ProposedAt:   timestamppb.Now(),
-				ExecutableAt: timestamppb.Now(),
+				ProposedAt:   time.Now(),
+				ExecutableAt: time.Now(),
 				Status:       types.ActionStatusPending,
 				DelaySeconds: 3600,
 			},
 		},
-		EmergencyAdmins: []*types.EmergencyAdmin{
+		EmergencyAdmins: []types.EmergencyAdmin{
 			{
 				Address:     "aura1admin",
 				Privileges:  []string{types.PermissionAdmin},
-				ActivatedAt: timestamppb.Now(),
+				ActivatedAt: time.Now(),
 			},
 		},
-		ValidatorRotations: []*types.ValidatorKeyRotation{
+		ValidatorRotations: []types.ValidatorKeyRotation{
 			{
 				ValidatorAddress:   "auravaloper1val",
 				OldConsensusPubkey: "oldkey",
 				NewConsensusPubkey: "newkey",
-				RotationTime:       timestamppb.Now(),
+				RotationTime:       time.Now(),
 				InitiatedBy:        "aura1initiator",
 			},
 		},
-		DidKeyRotations: []*types.DIDKeyRotation{
+		DidKeyRotations: []types.DIDKeyRotation{
 			{
 				Did:                    "did:aura:test",
 				OldVerificationMethod:  "oldkey",
 				NewVerificationMethod:  "newkey",
-				RotationTime:           timestamppb.Now(),
+				RotationTime:           time.Now(),
 				InitiatedBy:            "aura1initiator",
 			},
 		},
-		DidKeyHistories: []*types.DIDKeyHistory{
+		DidKeyHistories: []types.DIDKeyHistory{
 			{
 				Did: "did:aura:test",
 				Entries: []*types.DIDKeyHistoryEntry{
 					{
 						VerificationMethod: "key1",
-						ActiveFrom:         timestamppb.Now(),
-						ActiveUntil:        timestamppb.Now(),
+						ActiveFrom:         time.Now(),
+						ActiveUntil:        func() *time.Time { t := time.Now(); return &t }(),
 					},
 				},
 			},
 		},
-		ChangeHistory: []*types.ChangeHistory{
+		ChangeHistory: []types.ChangeHistory{
 			{
 				RequestId:           "change1",
 				TargetDid:           "did:aura:test",
@@ -578,7 +669,7 @@ func TestExportGenesis_AllDataTypes(t *testing.T) {
 				NewConfidenceScore:  85,
 				TransitionReason:    "Identity verified",
 				ChangedHeight:       100,
-				ChangedAt:           timestamppb.Now(),
+				ChangedAt:           time.Now(),
 			},
 		},
 	}
@@ -606,24 +697,25 @@ func TestExportGenesis_AllDataTypes(t *testing.T) {
 func TestInitGenesis_InvalidRole(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
 
-	// Role with empty name (should be validated by SetRole)
+	// Role with empty name (should be caught by ValidateGenesisState)
 	gs := &types.GenesisState{
-		Params: types.DefaultParams(),
-		Roles: []*types.Role{
+		Params:         *types.DefaultParams(),
+		NextAuditLogId: 1,
+		Roles: []types.Role{
 			{
 				Name:         "", // Invalid: empty name
 				Permissions:  []string{types.PermissionAdmin},
 				Description:  "Invalid role",
-				CreatedAt:    timestamppb.Now(),
+				CreatedAt:    time.Now(),
 				IsSystemRole: false,
-				UpdatedAt:    timestamppb.Now(),
+				UpdatedAt:    func() *time.Time { t := time.Now(); return &t }(),
 			},
 		},
 	}
 
 	err := keeper.InitGenesis(ctx, gs)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "failed to set role")
+	require.Contains(t, err.Error(), "role name cannot be empty")
 }
 
 // TestExportGenesis_PreservesOrder tests that export maintains data consistency
@@ -631,32 +723,32 @@ func TestExportGenesis_PreservesOrder(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
 
 	// Create multiple identity records
-	identities := []*types.IdentityRecord{
+	identities := []types.IdentityRecord{
 		{
 			Did:       "did:aura:aaa",
 			Address:   "aura1aaa",
 			Status:    types.IdentityStatusActive,
-			CreatedAt: timestamppb.Now(),
-			UpdatedAt: timestamppb.Now(),
+			CreatedAt: time.Now(),
+			UpdatedAt: func() *time.Time { t := time.Now(); return &t }(),
 		},
 		{
 			Did:       "did:aura:bbb",
 			Address:   "aura1bbb",
 			Status:    types.IdentityStatusActive,
-			CreatedAt: timestamppb.Now(),
-			UpdatedAt: timestamppb.Now(),
+			CreatedAt: time.Now(),
+			UpdatedAt: func() *time.Time { t := time.Now(); return &t }(),
 		},
 		{
 			Did:       "did:aura:ccc",
 			Address:   "aura1ccc",
 			Status:    types.IdentityStatusActive,
-			CreatedAt: timestamppb.Now(),
-			UpdatedAt: timestamppb.Now(),
+			CreatedAt: time.Now(),
+			UpdatedAt: func() *time.Time { t := time.Now(); return &t }(),
 		},
 	}
 
 	gs := &types.GenesisState{
-		Params:          types.DefaultParams(),
+		Params:          *types.DefaultParams(),
 		IdentityRecords: identities,
 	}
 

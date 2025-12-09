@@ -2,9 +2,9 @@ package keeper
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/identity/types"
 )
@@ -19,9 +19,9 @@ func TestGetAuthority(t *testing.T) {
 
 // TestLogger tests the Logger function
 func TestLogger(t *testing.T) {
-	keeper, _ := setupKeeperForTest(t)
+	keeper, ctx := setupKeeperForTest(t)
 
-	logger := keeper.Logger()
+	logger := keeper.Logger(ctx)
 	require.NotNil(t, logger, "logger should not be nil")
 }
 
@@ -44,25 +44,25 @@ func TestGetAllDataForPrefix_WithData(t *testing.T) {
 			Name:         "role1",
 			Permissions:  []string{types.PermissionAdmin},
 			Description:  "First role",
-			CreatedAt:    timestamppb.New(ctx.BlockTime()),
+			CreatedAt:    ctx.BlockTime(),
 			IsSystemRole: false,
-			UpdatedAt:    timestamppb.New(ctx.BlockTime()),
+			UpdatedAt:    func() *time.Time { t := ctx.BlockTime(); return &t }(),
 		},
 		{
 			Name:         "role2",
 			Permissions:  []string{types.PermissionViewAuditLogs},
 			Description:  "Second role",
-			CreatedAt:    timestamppb.New(ctx.BlockTime()),
+			CreatedAt:    ctx.BlockTime(),
 			IsSystemRole: false,
-			UpdatedAt:    timestamppb.New(ctx.BlockTime()),
+			UpdatedAt:    func() *time.Time { t := ctx.BlockTime(); return &t }(),
 		},
 		{
 			Name:         "role3",
 			Permissions:  []string{types.PermissionManageIdentity},
 			Description:  "Third role",
-			CreatedAt:    timestamppb.New(ctx.BlockTime()),
+			CreatedAt:    ctx.BlockTime(),
 			IsSystemRole: false,
-			UpdatedAt:    timestamppb.New(ctx.BlockTime()),
+			UpdatedAt:    func() *time.Time { t := ctx.BlockTime(); return &t }(),
 		},
 	}
 
@@ -95,9 +95,9 @@ func TestGetAllDataForPrefix_DifferentPrefixes(t *testing.T) {
 		Name:         "test_role",
 		Permissions:  []string{types.PermissionAdmin},
 		Description:  "Test role",
-		CreatedAt:    timestamppb.New(ctx.BlockTime()),
+		CreatedAt:    ctx.BlockTime(),
 		IsSystemRole: false,
-		UpdatedAt:    timestamppb.New(ctx.BlockTime()),
+		UpdatedAt:    func() *time.Time { t := ctx.BlockTime(); return &t }(),
 	}
 	err := keeper.SetRole(ctx, role)
 	require.NoError(t, err)
@@ -107,8 +107,8 @@ func TestGetAllDataForPrefix_DifferentPrefixes(t *testing.T) {
 		Did:       "did:aura:test123",
 		Address:   "aura1test",
 		Status:    types.IdentityStatusActive,
-		CreatedAt: timestamppb.New(ctx.BlockTime()),
-		UpdatedAt: timestamppb.New(ctx.BlockTime()),
+		CreatedAt: ctx.BlockTime(),
+		UpdatedAt: func() *time.Time { t := ctx.BlockTime(); return &t }(),
 	}
 	err = keeper.SetIdentityRecord(ctx, identity)
 	require.NoError(t, err)
