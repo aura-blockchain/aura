@@ -58,7 +58,7 @@ func TestUnlockTokens_ValidatorAuthorization(t *testing.T) {
 		msg := &bridgepb.MsgUnlockTokens{
 			Sender:              sender,
 			BurnTxHash:          burnTxHash,
-			Amount:              amount,
+			Amount:              amountInt,
 			Denom:               "uaura",
 			SourceChain:         "paw",
 			ValidatorSignatures: [][]byte{sig1, sig2},
@@ -100,7 +100,7 @@ func TestUnlockTokens_ValidatorAuthorization(t *testing.T) {
 		msg := &bridgepb.MsgUnlockTokens{
 			Sender:              sender,
 			BurnTxHash:          burnTxHash,
-			Amount:              amount,
+			Amount:              amountInt,
 			Denom:               "uaura",
 			SourceChain:         "paw",
 			ValidatorSignatures: [][]byte{sig1, sig2},
@@ -148,7 +148,7 @@ func TestUnlockTokens_ValidatorAuthorization(t *testing.T) {
 		msg := &bridgepb.MsgUnlockTokens{
 			Sender:              sender,
 			BurnTxHash:          burnTxHash,
-			Amount:              amount,
+			Amount:              amountInt,
 			Denom:               "uaura",
 			SourceChain:         "paw",
 			ValidatorSignatures: [][]byte{sig1, sig2, sig3, sig4, sig5},
@@ -190,7 +190,7 @@ func TestUnlockTokens_ValidatorAuthorization(t *testing.T) {
 		msg := &bridgepb.MsgUnlockTokens{
 			Sender:              sender,
 			BurnTxHash:          burnTxHash,
-			Amount:              amount,
+			Amount:              amountInt,
 			Denom:               "uaura",
 			SourceChain:         "paw",
 			ValidatorSignatures: [][]byte{sig1},
@@ -242,7 +242,7 @@ func TestUnlockTokens_SignatureSetReplay(t *testing.T) {
 		msg := &bridgepb.MsgUnlockTokens{
 			Sender:              sender,
 			BurnTxHash:          burnTxHash,
-			Amount:              amount,
+			Amount:              amountInt,
 			Denom:               "uaura",
 			SourceChain:         "paw",
 			ValidatorSignatures: sigs,
@@ -357,7 +357,7 @@ func TestUnlockTokens_ValidatorRotation(t *testing.T) {
 		msg := &bridgepb.MsgUnlockTokens{
 			Sender:              sender,
 			BurnTxHash:          burnTxHash,
-			Amount:              amount,
+			Amount:              amountInt,
 			Denom:               "uaura",
 			SourceChain:         "paw",
 			ValidatorSignatures: sigs,
@@ -410,7 +410,7 @@ func TestUnlockTokens_ValidatorRotation(t *testing.T) {
 		msg := &bridgepb.MsgUnlockTokens{
 			Sender:              sender,
 			BurnTxHash:          burnTxHash,
-			Amount:              amount,
+			Amount:              amountInt,
 			Denom:               "uaura",
 			SourceChain:         "paw",
 			ValidatorSignatures: sigs,
@@ -455,7 +455,7 @@ func TestUnlockTokens_ValidatorRotation(t *testing.T) {
 		msg := &bridgepb.MsgUnlockTokens{
 			Sender:              sender,
 			BurnTxHash:          burnTxHash,
-			Amount:              amount,
+			Amount:              amountInt,
 			Denom:               "uaura",
 			SourceChain:         "paw",
 			ValidatorSignatures: sigs,
@@ -510,7 +510,7 @@ func TestUnlockTokens_CombinedSecurityChecks(t *testing.T) {
 		msg := &bridgepb.MsgUnlockTokens{
 			Sender:              sender,
 			BurnTxHash:          burnTxHash,
-			Amount:              amount,
+			Amount:              amountInt,
 			Denom:               "uaura",
 			SourceChain:         "paw",
 			ValidatorSignatures: sigs,
@@ -560,7 +560,7 @@ func TestUnlockTokens_CombinedSecurityChecks(t *testing.T) {
 		msg := &bridgepb.MsgUnlockTokens{
 			Sender:              sender,
 			BurnTxHash:          burnTxHash,
-			Amount:              amount,
+			Amount:              amountInt,
 			Denom:               "uaura",
 			SourceChain:         "paw",
 			ValidatorSignatures: [][]byte{sig1, sig2},
@@ -606,7 +606,7 @@ func TestUnlockTokens_CombinedSecurityChecks(t *testing.T) {
 		msg := &bridgepb.MsgUnlockTokens{
 			Sender:              sender,
 			BurnTxHash:          burnTxHash,
-			Amount:              amount,
+			Amount:              amountInt,
 			Denom:               "uaura",
 			SourceChain:         "paw",
 			ValidatorSignatures: sigs,
@@ -656,7 +656,7 @@ func TestUnlockTokens_CombinedSecurityChecks(t *testing.T) {
 		msg := &bridgepb.MsgUnlockTokens{
 			Sender:              sender,
 			BurnTxHash:          burnTxHash,
-			Amount:              amount,
+			Amount:              amountInt,
 			Denom:               "uaura",
 			SourceChain:         "paw",
 			ValidatorSignatures: sigs,
