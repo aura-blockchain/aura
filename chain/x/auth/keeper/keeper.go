@@ -9,7 +9,6 @@ import (
 	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/auth/types"
 	authproto "github.com/aequitas/aura/proto/aura/auth/v1beta1"
@@ -52,7 +51,6 @@ func NewKeeper(cdc codec.BinaryCodec, storeKey storetypes.StoreKey) *Keeper {
 // InitializeDefaultRoles creates predefined roles
 func (k *Keeper) InitializeDefaultRoles(ctx sdk.Context) error {
 	now := ctx.BlockTime()
-	nowProto := timestamppb.New(now)
 
 	// Admin role with all permissions
 	adminRole := &authproto.Role{
@@ -70,8 +68,8 @@ func (k *Keeper) InitializeDefaultRoles(ctx sdk.Context) error {
 			types.PermissionViewAuditLogs,
 		},
 		Description: "Full administrative access",
-		CreatedAt:   nowProto,
-		UpdatedAt:   nowProto,
+		CreatedAt:   now,
+		UpdatedAt:   now,
 	}
 	if err := k.SetRole(ctx, adminRole); err != nil {
 		return err
@@ -87,8 +85,8 @@ func (k *Keeper) InitializeDefaultRoles(ctx sdk.Context) error {
 			types.PermissionViewAuditLogs,
 		},
 		Description: "Moderate user permissions",
-		CreatedAt:   nowProto,
-		UpdatedAt:   nowProto,
+		CreatedAt:   now,
+		UpdatedAt:   now,
 	}
 	if err := k.SetRole(ctx, moderatorRole); err != nil {
 		return err
@@ -101,8 +99,8 @@ func (k *Keeper) InitializeDefaultRoles(ctx sdk.Context) error {
 			types.PermissionRotateValidatorKey,
 		},
 		Description: "Validator-specific permissions",
-		CreatedAt:   nowProto,
-		UpdatedAt:   nowProto,
+		CreatedAt:   now,
+		UpdatedAt:   now,
 	}
 	if err := k.SetRole(ctx, validatorRole); err != nil {
 		return err
@@ -113,8 +111,8 @@ func (k *Keeper) InitializeDefaultRoles(ctx sdk.Context) error {
 		Name:        types.RoleUser,
 		Permissions: []string{},
 		Description: "Basic user permissions",
-		CreatedAt:   nowProto,
-		UpdatedAt:   nowProto,
+		CreatedAt:   now,
+		UpdatedAt:   now,
 	}
 	return k.SetRole(ctx, userRole)
 }
@@ -183,18 +181,18 @@ func (k *Keeper) GetRoleFromStore(ctx sdk.Context, name string) (*authproto.Role
 }
 
 // GetAllRoles retrieves all roles from the KVStore
-func (k *Keeper) GetAllRoles(ctx sdk.Context) ([]*authproto.Role, error) {
+func (k *Keeper) GetAllRoles(ctx sdk.Context) ([]authproto.Role, error) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := storetypes.KVStorePrefixIterator(store, RolesKeyPrefix)
 	defer iterator.Close()
 
-	var roles []*authproto.Role
+	var roles []authproto.Role
 	for ; iterator.Valid(); iterator.Next() {
 		var role authproto.Role
 		if err := k.cdc.Unmarshal(iterator.Value(), &role); err != nil {
 			return nil, err
 		}
-		roles = append(roles, &role)
+		roles = append(roles, role)
 	}
 	return roles, nil
 }
@@ -260,7 +258,7 @@ func (k *Keeper) GetRoleAssignmentsForAddress(ctx sdk.Context, address string) (
 	now := ctx.BlockTime()
 	filtered := make([]*authproto.RoleAssignment, 0)
 	for _, assignment := range assignmentList.Assignments {
-		if assignment.ExpiresAt != nil && now.After(assignment.ExpiresAt.AsTime()) {
+		if assignment.ExpiresAt != nil && now.After(*assignment.ExpiresAt) {
 			continue
 		}
 		filtered = append(filtered, assignment)
@@ -300,18 +298,23 @@ func (k *Keeper) DeleteRoleAssignment(ctx sdk.Context, address, roleName string)
 }
 
 // GetAllRoleAssignments retrieves all role assignments
-func (k *Keeper) GetAllRoleAssignments(ctx sdk.Context) ([]*authproto.RoleAssignment, error) {
+func (k *Keeper) GetAllRoleAssignments(ctx sdk.Context) ([]authproto.RoleAssignment, error) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := storetypes.KVStorePrefixIterator(store, RoleAssignmentsKeyPrefix)
 	defer iterator.Close()
 
-	var allAssignments []*authproto.RoleAssignment
+	var allAssignments []authproto.RoleAssignment
 	for ; iterator.Valid(); iterator.Next() {
 		var assignmentList authproto.RoleAssignmentList
 		if err := k.cdc.Unmarshal(iterator.Value(), &assignmentList); err != nil {
 			return nil, err
 		}
-		allAssignments = append(allAssignments, assignmentList.Assignments...)
+		// Convert pointer slice to value slice
+		for _, assignment := range assignmentList.Assignments {
+			if assignment != nil {
+				allAssignments = append(allAssignments, *assignment)
+			}
+		}
 	}
 	return allAssignments, nil
 }
@@ -359,18 +362,18 @@ func (k *Keeper) GetMultisigWallet(ctx sdk.Context, walletID string) (*authproto
 }
 
 // GetAllMultisigWallets retrieves all multisig wallets
-func (k *Keeper) GetAllMultisigWallets(ctx sdk.Context) ([]*authproto.MultisigWallet, error) {
+func (k *Keeper) GetAllMultisigWallets(ctx sdk.Context) ([]authproto.MultisigWallet, error) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := storetypes.KVStorePrefixIterator(store, MultisigWalletsKeyPrefix)
 	defer iterator.Close()
 
-	var wallets []*authproto.MultisigWallet
+	var wallets []authproto.MultisigWallet
 	for ; iterator.Valid(); iterator.Next() {
 		var wallet authproto.MultisigWallet
 		if err := k.cdc.Unmarshal(iterator.Value(), &wallet); err != nil {
 			return nil, err
 		}
-		wallets = append(wallets, &wallet)
+		wallets = append(wallets, wallet)
 	}
 	return wallets, nil
 }
@@ -415,18 +418,18 @@ func (k *Keeper) GetMultisigProposal(ctx sdk.Context, proposalID string) (*authp
 }
 
 // GetAllMultisigProposals retrieves all multisig proposals
-func (k *Keeper) GetAllMultisigProposals(ctx sdk.Context) ([]*authproto.MultisigProposal, error) {
+func (k *Keeper) GetAllMultisigProposals(ctx sdk.Context) ([]authproto.MultisigProposal, error) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := storetypes.KVStorePrefixIterator(store, MultisigProposalsKeyPrefix)
 	defer iterator.Close()
 
-	var proposals []*authproto.MultisigProposal
+	var proposals []authproto.MultisigProposal
 	for ; iterator.Valid(); iterator.Next() {
 		var proposal authproto.MultisigProposal
 		if err := k.cdc.Unmarshal(iterator.Value(), &proposal); err != nil {
 			return nil, err
 		}
-		proposals = append(proposals, &proposal)
+		proposals = append(proposals, proposal)
 	}
 	return proposals, nil
 }
@@ -471,18 +474,18 @@ func (k *Keeper) GetTimeLockedAction(ctx sdk.Context, actionID string) (*authpro
 }
 
 // GetAllTimeLockedActions retrieves all time-locked actions
-func (k *Keeper) GetAllTimeLockedActions(ctx sdk.Context) ([]*authproto.TimeLockedAction, error) {
+func (k *Keeper) GetAllTimeLockedActions(ctx sdk.Context) ([]authproto.TimeLockedAction, error) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := storetypes.KVStorePrefixIterator(store, TimeLockedActionsKeyPrefix)
 	defer iterator.Close()
 
-	var actions []*authproto.TimeLockedAction
+	var actions []authproto.TimeLockedAction
 	for ; iterator.Valid(); iterator.Next() {
 		var action authproto.TimeLockedAction
 		if err := k.cdc.Unmarshal(iterator.Value(), &action); err != nil {
 			return nil, err
 		}
-		actions = append(actions, &action)
+		actions = append(actions, action)
 	}
 	return actions, nil
 }
@@ -527,18 +530,18 @@ func (k *Keeper) GetEmergencyAdmin(ctx sdk.Context, address string) (*authproto.
 }
 
 // GetAllEmergencyAdmins retrieves all emergency admins
-func (k *Keeper) GetAllEmergencyAdmins(ctx sdk.Context) ([]*authproto.EmergencyAdmin, error) {
+func (k *Keeper) GetAllEmergencyAdmins(ctx sdk.Context) ([]authproto.EmergencyAdmin, error) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := storetypes.KVStorePrefixIterator(store, EmergencyAdminsKeyPrefix)
 	defer iterator.Close()
 
-	var admins []*authproto.EmergencyAdmin
+	var admins []authproto.EmergencyAdmin
 	for ; iterator.Valid(); iterator.Next() {
 		var admin authproto.EmergencyAdmin
 		if err := k.cdc.Unmarshal(iterator.Value(), &admin); err != nil {
 			return nil, err
 		}
-		admins = append(admins, &admin)
+		admins = append(admins, admin)
 	}
 	return admins, nil
 }
@@ -583,18 +586,18 @@ func (k *Keeper) GetValidatorKeyRotation(ctx sdk.Context, validatorAddress strin
 }
 
 // GetAllValidatorKeyRotations retrieves all validator key rotations
-func (k *Keeper) GetAllValidatorKeyRotations(ctx sdk.Context) ([]*authproto.ValidatorKeyRotation, error) {
+func (k *Keeper) GetAllValidatorKeyRotations(ctx sdk.Context) ([]authproto.ValidatorKeyRotation, error) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := storetypes.KVStorePrefixIterator(store, ValidatorRotationsKeyPrefix)
 	defer iterator.Close()
 
-	var rotations []*authproto.ValidatorKeyRotation
+	var rotations []authproto.ValidatorKeyRotation
 	for ; iterator.Valid(); iterator.Next() {
 		var rotation authproto.ValidatorKeyRotation
 		if err := k.cdc.Unmarshal(iterator.Value(), &rotation); err != nil {
 			return nil, err
 		}
-		rotations = append(rotations, &rotation)
+		rotations = append(rotations, rotation)
 	}
 	return rotations, nil
 }
@@ -641,18 +644,18 @@ func (k *Keeper) GetSession(ctx sdk.Context, sessionID string) (*authproto.Sessi
 }
 
 // GetAllSessions retrieves all sessions
-func (k *Keeper) GetAllSessions(ctx sdk.Context) ([]*authproto.Session, error) {
+func (k *Keeper) GetAllSessions(ctx sdk.Context) ([]authproto.Session, error) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := storetypes.KVStorePrefixIterator(store, SessionsKeyPrefix)
 	defer iterator.Close()
 
-	var sessions []*authproto.Session
+	var sessions []authproto.Session
 	for ; iterator.Valid(); iterator.Next() {
 		var session authproto.Session
 		if err := k.cdc.Unmarshal(iterator.Value(), &session); err != nil {
 			return nil, err
 		}
-		sessions = append(sessions, &session)
+		sessions = append(sessions, session)
 	}
 	return sessions, nil
 }
@@ -763,18 +766,18 @@ func (k *Keeper) GetRateLimitConfig(ctx sdk.Context, userAddress string) (*authp
 }
 
 // GetAllRateLimitConfigs retrieves all rate limit configs
-func (k *Keeper) GetAllRateLimitConfigs(ctx sdk.Context) ([]*authproto.RateLimitConfig, error) {
+func (k *Keeper) GetAllRateLimitConfigs(ctx sdk.Context) ([]authproto.RateLimitConfig, error) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := storetypes.KVStorePrefixIterator(store, RateLimitsKeyPrefix)
 	defer iterator.Close()
 
-	var configs []*authproto.RateLimitConfig
+	var configs []authproto.RateLimitConfig
 	for ; iterator.Valid(); iterator.Next() {
 		var config authproto.RateLimitConfig
 		if err := k.cdc.Unmarshal(iterator.Value(), &config); err != nil {
 			return nil, err
 		}
-		configs = append(configs, &config)
+		configs = append(configs, config)
 	}
 	return configs, nil
 }
@@ -827,18 +830,18 @@ func (k *Keeper) cleanupOldAuditLogs(ctx sdk.Context) {
 }
 
 // GetAllAuditLogs retrieves all audit logs
-func (k *Keeper) GetAllAuditLogs(ctx sdk.Context) ([]*authproto.AuditLog, error) {
+func (k *Keeper) GetAllAuditLogs(ctx sdk.Context) ([]authproto.AuditLog, error) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := storetypes.KVStorePrefixIterator(store, AuditLogsKeyPrefix)
 	defer iterator.Close()
 
-	var logs []*authproto.AuditLog
+	var logs []authproto.AuditLog
 	for ; iterator.Valid(); iterator.Next() {
 		var log authproto.AuditLog
 		if err := k.cdc.Unmarshal(iterator.Value(), &log); err != nil {
 			return nil, err
 		}
-		logs = append(logs, &log)
+		logs = append(logs, log)
 	}
 	return logs, nil
 }
@@ -860,7 +863,7 @@ func (k *Keeper) HasPermission(ctx sdk.Context, address, permission string) bool
 		now := ctx.BlockTime()
 		for _, assignment := range assignments {
 			// Check if assignment is still valid
-			if assignment.ExpiresAt != nil && now.After(assignment.ExpiresAt.AsTime()) {
+			if assignment.ExpiresAt != nil && now.After(*assignment.ExpiresAt) {
 				continue
 			}
 
@@ -922,7 +925,7 @@ func (k *Keeper) CleanupExpiredSessions(ctx sdk.Context) int {
 	now := ctx.BlockTime()
 
 	for _, session := range sessions {
-		if session.ExpiresAt != nil && now.After(session.ExpiresAt.AsTime()) {
+		if !session.ExpiresAt.IsZero() && now.After(session.ExpiresAt) {
 			if err := k.DeleteSession(ctx, session.SessionId); err == nil {
 				count++
 			}
@@ -941,10 +944,10 @@ func (k *Keeper) CleanupExpiredProposals(ctx sdk.Context) int {
 
 	count := 0
 	for _, proposal := range proposals {
-		if types.IsProposalExpired(proposal) &&
+		if types.IsProposalExpired(&proposal) &&
 			proposal.Status != authproto.ProposalStatus_PROPOSAL_STATUS_EXECUTED {
 			proposal.Status = authproto.ProposalStatus_PROPOSAL_STATUS_EXPIRED
-			if err := k.SetMultisigProposal(ctx, proposal); err == nil {
+			if err := k.SetMultisigProposal(ctx, &proposal); err == nil {
 				count++
 			}
 		}
@@ -963,24 +966,24 @@ func (k *Keeper) ResetRateLimitWindow(ctx sdk.Context, userAddress string) {
 	now := ctx.BlockTime()
 	windowStart := config.WindowStart
 
-	if windowStart == nil {
+	if windowStart.IsZero() {
 		return
 	}
 
 	// Reset minute counter
-	if now.Sub(windowStart.AsTime()) >= time.Minute {
+	if now.Sub(windowStart) >= time.Minute {
 		config.CurrentMinuteCount = 0
 	}
 
 	// Reset hour counter
-	if now.Sub(windowStart.AsTime()) >= time.Hour {
+	if now.Sub(windowStart) >= time.Hour {
 		config.CurrentHourCount = 0
 	}
 
 	// Reset day counter
-	if now.Sub(windowStart.AsTime()) >= 24*time.Hour {
+	if now.Sub(windowStart) >= 24*time.Hour {
 		config.CurrentDayCount = 0
-		config.WindowStart = timestamppb.New(now)
+		config.WindowStart = now
 	}
 
 	k.SetRateLimitConfig(ctx, config)
@@ -1025,13 +1028,13 @@ func (k *Keeper) CheckRateLimit(ctx sdk.Context, userAddress string) error {
 			CurrentMinuteCount: 0,
 			CurrentHourCount:   0,
 			CurrentDayCount:    0,
-			WindowStart:        timestamppb.New(ctx.BlockTime()),
+			WindowStart:        ctx.BlockTime(),
 		}
 	}
 
 	// Reset counters if time windows have passed
 	now := ctx.BlockTime()
-	windowStart := config.WindowStart.AsTime()
+	windowStart := config.WindowStart
 
 	if now.Sub(windowStart) >= time.Minute {
 		config.CurrentMinuteCount = 0
@@ -1041,7 +1044,7 @@ func (k *Keeper) CheckRateLimit(ctx sdk.Context, userAddress string) error {
 	}
 	if now.Sub(windowStart) >= 24*time.Hour {
 		config.CurrentDayCount = 0
-		config.WindowStart = timestamppb.New(now)
+		config.WindowStart = now
 	}
 
 	// Check limits (only if limits are configured)
@@ -1124,7 +1127,7 @@ func (k *Keeper) SetCustomRateLimit(ctx sdk.Context, adminAddress, userAddress s
 			CurrentMinuteCount: 0,
 			CurrentHourCount:   0,
 			CurrentDayCount:    0,
-			WindowStart:        timestamppb.New(ctx.BlockTime()),
+			WindowStart:        ctx.BlockTime(),
 		}
 	} else {
 		// Update existing config, preserve counters

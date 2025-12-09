@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/economicsecurity/types"
 )
@@ -55,7 +54,7 @@ func TestValidQuery(t *testing.T) {
 		VestedAmount:        "100000",
 		VestingDuration:     31536000,
 		CliffDuration:       7776000,
-		StartTime:           timestamppb.New(time.Now()),
+		StartTime:           time.Now(),
 		VestingType:         types.VestingTypeLinear,
 	}
 	err := k.SetVestingSchedule(ctx, schedule)
@@ -72,8 +71,8 @@ func TestValidQuery(t *testing.T) {
 		LockId:      "query-test-lock",
 		Owner:       "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
 		Amount:      "500000",
-		LockStart:   timestamppb.New(time.Now()),
-		LockEnd:     timestamppb.New(time.Now().Add(30 * 24 * time.Hour)),
+		LockStart:   time.Now(),
+		LockEnd:     time.Now().Add(30 * 24 * time.Hour),
 		VotingPower: "500000",
 	}
 	err = k.SetVoteLock(ctx, lock)
@@ -127,7 +126,7 @@ func TestPagination(t *testing.T) {
 			VestedAmount:        "0",
 			VestingDuration:     31536000,
 			CliffDuration:       0,
-			StartTime:           timestamppb.New(time.Now()),
+			StartTime:           time.Now(),
 			VestingType:         types.VestingTypeLinear,
 		}
 		err := k.SetVestingSchedule(ctx, schedule)
@@ -149,8 +148,8 @@ func TestPagination(t *testing.T) {
 			LockId:      fmt.Sprintf("lock-%d", i),
 			Owner:       "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
 			Amount:      "100000",
-			LockStart:   timestamppb.New(time.Now()),
-			LockEnd:     timestamppb.New(time.Now().Add(30 * 24 * time.Hour)),
+			LockStart:   time.Now(),
+			LockEnd:     time.Now().Add(30 * 24 * time.Hour),
 			VotingPower: "100000",
 		}
 		err := k.SetVoteLock(ctx, lock)

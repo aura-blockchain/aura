@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/aequitas/aura/chain/x/economicsecurity/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // ============================
@@ -20,11 +19,11 @@ import (
 func (k *Keeper) ProposeTreasurySpend(
 	ctx context.Context,
 	proposer, recipient, amount, description string,
-) (txID string, executableAt *timestamppb.Timestamp, err error) {
+) (txID string, executableAt time.Time, err error) {
 	params := k.GetParams()
 
 	if params.TreasuryMultisig.TreasuryAddress == "" {
-		return "", nil, types.ErrInvalidTreasuryAddress
+		return "", time.Time{}, types.ErrInvalidTreasuryAddress
 	}
 
 	// Validate proposer is a signer
@@ -36,19 +35,19 @@ func (k *Keeper) ProposeTreasurySpend(
 		}
 	}
 	if !isSigner {
-		return "", nil, types.ErrInvalidSigner
+		return "", time.Time{}, types.ErrInvalidSigner
 	}
 
 	// Validate amount
 	transferAmt := new(big.Int)
 	if _, ok := transferAmt.SetString(amount, 10); !ok {
-		return "", nil, types.ErrInvalidAmount
+		return "", time.Time{}, types.ErrInvalidAmount
 	}
 
 	// Get current time
 	currentTime, err := k.GetCurrentTime(ctx)
 	if err != nil {
-		return "", nil, err
+		return "", time.Time{}, err
 	}
 
 	// Generate transaction ID
@@ -64,15 +63,15 @@ func (k *Keeper) ProposeTreasurySpend(
 		Description:  description,
 		Proposer:     proposer,
 		Signatures:   []string{proposer}, // Proposer automatically signs
-		CreatedAt:    timestamppb.New(time.Unix(currentTime, 0)),
-		ExecutableAt: timestamppb.New(executableAtTime),
+		CreatedAt:    time.Unix(currentTime, 0),
+		ExecutableAt: executableAtTime,
 		Executed:     false,
 		Rejected:     false,
 	}
 
 	// Store the transaction
 	if err := k.SetPendingTreasuryTx(ctx, tx); err != nil {
-		return "", nil, err
+		return "", time.Time{}, err
 	}
 
 	return txID, tx.ExecutableAt, nil
@@ -162,7 +161,7 @@ func (k *Keeper) ExecuteTreasurySpend(
 		return err
 	}
 
-	executableAt := tx.ExecutableAt.AsTime().Unix()
+	executableAt := tx.ExecutableAt.Unix()
 	if currentTime < executableAt {
 		return types.ErrTimelockNotExpired
 	}
@@ -282,7 +281,7 @@ func (k *Keeper) CleanupExecutedTreasuryTxs(ctx context.Context, retentionPeriod
 
 	err = k.IteratePendingTreasuryTxs(ctx, func(tx *types.PendingTreasuryTx) bool {
 		if tx.Executed || tx.Rejected {
-			createdAt := tx.CreatedAt.AsTime().Unix()
+			createdAt := tx.CreatedAt.Unix()
 			if currentTime-createdAt > retentionPeriod {
 				txsToDelete = append(txsToDelete, tx.TxId)
 			}

@@ -6,7 +6,6 @@ import (
 
 	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/identity/types"
 )
@@ -95,7 +94,7 @@ func (k *Keeper) RevokeCredential(ctx sdk.Context, credentialID, did, revoker, r
 	revocation := &types.CredentialRevocation{
 		CredentialId: credentialID,
 		Did:          did,
-		RevokedAt:    timestamppb.New(now),
+		RevokedAt:    now,
 		RevokedBy:    revoker,
 		Reason:       reason,
 		Metadata:     metadata,
@@ -247,7 +246,7 @@ func (k *Keeper) VerifyCredential(ctx sdk.Context, credentialID, did string) err
 			return types.ErrCredentialRevoked.Wrapf(
 				"credential %s was revoked at %s by %s, reason: %s",
 				credentialID,
-				revocation.RevokedAt.AsTime().Format(time.RFC3339),
+				revocation.RevokedAt.Format(time.RFC3339),
 				revocation.RevokedBy,
 				revocation.Reason,
 			)
@@ -364,7 +363,7 @@ func (k *Keeper) RestoreCredential(ctx sdk.Context, credentialID, admin, reason 
 	}
 	if revocation != nil {
 		auditMetadata["previous_revoked_by"] = revocation.RevokedBy
-		auditMetadata["previous_revoked_at"] = revocation.RevokedAt.AsTime().Format(time.RFC3339)
+		auditMetadata["previous_revoked_at"] = revocation.RevokedAt.Format(time.RFC3339)
 		auditMetadata["previous_reason"] = revocation.Reason
 	}
 	k.LogAudit(ctx, admin, "restore_credential", credentialID, "success", auditMetadata, "")

@@ -52,7 +52,13 @@ func (qs queryServer) ListRoles(goCtx context.Context, req *authproto.QueryListR
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &authproto.QueryListRolesResponse{Roles: roles}, nil
+	// Convert value slice to pointer slice
+	result := make([]*authproto.Role, len(roles))
+	for i := range roles {
+		result[i] = &roles[i]
+	}
+
+	return &authproto.QueryListRolesResponse{Roles: result}, nil
 }
 
 // GetRoleAssignments queries role assignments for an address
@@ -153,7 +159,13 @@ func (qs queryServer) ListMultisigWallets(goCtx context.Context, req *authproto.
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &authproto.QueryListMultisigWalletsResponse{Wallets: wallets}, nil
+	// Convert value slice to pointer slice
+	result := make([]*authproto.MultisigWallet, len(wallets))
+	for i := range wallets {
+		result[i] = &wallets[i]
+	}
+
+	return &authproto.QueryListMultisigWalletsResponse{Wallets: result}, nil
 }
 
 // GetMultisigProposal queries a multisig proposal
@@ -189,19 +201,15 @@ func (qs queryServer) ListMultisigProposals(goCtx context.Context, req *authprot
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// Filter by wallet_id if specified
-	proposals := allProposals
-	if req.WalletId != "" {
-		filteredProposals := []*authproto.MultisigProposal{}
-		for _, p := range allProposals {
-			if p.WalletId == req.WalletId {
-				filteredProposals = append(filteredProposals, p)
-			}
+	// Filter by wallet_id if specified and convert to pointer slice for response
+	var result []*authproto.MultisigProposal
+	for i := range allProposals {
+		if req.WalletId == "" || allProposals[i].WalletId == req.WalletId {
+			result = append(result, &allProposals[i])
 		}
-		proposals = filteredProposals
 	}
 
-	return &authproto.QueryListMultisigProposalsResponse{Proposals: proposals}, nil
+	return &authproto.QueryListMultisigProposalsResponse{Proposals: result}, nil
 }
 
 // GetTimeLockedAction queries a time-locked action
@@ -235,7 +243,13 @@ func (qs queryServer) ListTimeLockedActions(goCtx context.Context, req *authprot
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &authproto.QueryListTimeLockedActionsResponse{Actions: actions}, nil
+	// Convert value slice to pointer slice
+	result := make([]*authproto.TimeLockedAction, len(actions))
+	for i := range actions {
+		result[i] = &actions[i]
+	}
+
+	return &authproto.QueryListTimeLockedActionsResponse{Actions: result}, nil
 }
 
 // GetEmergencyAdmin queries emergency admin status
@@ -269,7 +283,13 @@ func (qs queryServer) ListEmergencyAdmins(goCtx context.Context, req *authproto.
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &authproto.QueryListEmergencyAdminsResponse{Admins: admins}, nil
+	// Convert to pointer slice for response
+	result := make([]*authproto.EmergencyAdmin, len(admins))
+	for i := range admins {
+		result[i] = &admins[i]
+	}
+
+	return &authproto.QueryListEmergencyAdminsResponse{Admins: result}, nil
 }
 
 // GetValidatorKeyRotation queries validator key rotation status

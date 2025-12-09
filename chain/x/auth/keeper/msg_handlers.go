@@ -6,7 +6,6 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/auth/types"
 	authproto "github.com/aequitas/aura/proto/aura/auth/v1beta1"
@@ -31,8 +30,8 @@ func (k *Keeper) CreateRole(ctx context.Context, creator string, name string, pe
 		Name:        name,
 		Permissions: permissions,
 		Description: description,
-		CreatedAt:   timestamppb.New(now),
-		UpdatedAt:   timestamppb.New(now),
+		CreatedAt:   now,
+		UpdatedAt:   now,
 	}
 
 	if err := k.SetRole(sdkCtx, role); err != nil {
@@ -67,12 +66,12 @@ func (k *Keeper) AssignRole(ctx context.Context, assigner string, address string
 		Address:    address,
 		RoleName:   roleName,
 		AssignedBy: assigner,
-		AssignedAt: timestamppb.New(now),
+		AssignedAt: now,
 	}
 
 	if expiresInSeconds > 0 {
 		expiresAt := now.Add(time.Duration(expiresInSeconds) * time.Second)
-		assignment.ExpiresAt = timestamppb.New(expiresAt)
+		assignment.ExpiresAt = &expiresAt
 	}
 
 	if err := k.SetRoleAssignment(sdkCtx, assignment); err != nil {
@@ -123,7 +122,7 @@ func (k *Keeper) CreateMultisigWallet(ctx context.Context, creator string, signe
 		Signers:    signers,
 		Threshold:  threshold,
 		WalletType: authproto.WalletType_WALLET_TYPE_CUSTOM,
-		CreatedAt:  timestamppb.New(now),
+		CreatedAt:  now,
 		CreatedBy:  creator,
 	}
 
@@ -167,14 +166,13 @@ func (k *Keeper) CreateMultisigProposal(ctx context.Context, proposer string, wa
 		Title:       title,
 		Description: description,
 		Payload:     payload,
-		CreatedAt:   timestamppb.New(now),
+		CreatedAt:   now,
 		Status:      authproto.ProposalStatus_PROPOSAL_STATUS_PENDING,
 		Signatures:  []string{proposer}, // Proposer auto-signs
 	}
 
 	if expiresInSeconds > 0 {
-		expiresAt := now.Add(time.Duration(expiresInSeconds) * time.Second)
-		proposal.ExpiresAt = timestamppb.New(expiresAt)
+		proposal.ExpiresAt = now.Add(time.Duration(expiresInSeconds) * time.Second)
 	}
 
 	if err := k.SetMultisigProposal(sdkCtx, proposal); err != nil {
@@ -253,7 +251,8 @@ func (k *Keeper) ExecuteMultisigProposal(ctx context.Context, executor string, p
 
 	// Mark as executed
 	proposal.Status = authproto.ProposalStatus_PROPOSAL_STATUS_EXECUTED
-	proposal.ExecutedAt = timestamppb.New(sdkCtx.BlockTime())
+	executedAt := sdkCtx.BlockTime()
+	proposal.ExecutedAt = &executedAt
 
 	if err := k.SetMultisigProposal(sdkCtx, proposal); err != nil {
 		return err
@@ -283,8 +282,8 @@ func (k *Keeper) ProposeTimeLockedAction(ctx context.Context, proposer string, a
 		ActionType:    actionType,
 		Payload:       payload,
 		Proposer:      proposer,
-		ProposedAt:    timestamppb.New(now),
-		ExecutableAt:  timestamppb.New(readyAt),
+		ProposedAt:    now,
+		ExecutableAt:  readyAt,
 		Status:        authproto.ActionStatus_ACTION_STATUS_PENDING,
 		DelaySeconds:  delaySeconds,
 	}
@@ -314,13 +313,13 @@ func (k *Keeper) ExecuteTimeLockedAction(ctx context.Context, executor string, a
 
 	// Verify action is ready
 	now := sdkCtx.BlockTime()
-	if now.Before(action.ExecutableAt.AsTime()) {
+	if now.Before(action.ExecutableAt) {
 		return types.ErrActionNotReady
 	}
 
 	// Mark as executed
 	action.Status = authproto.ActionStatus_ACTION_STATUS_EXECUTED
-	action.ExecutedAt = timestamppb.New(now)
+	action.ExecutedAt = &now
 
 	if err := k.SetTimeLockedAction(sdkCtx, action); err != nil {
 		return err
@@ -371,8 +370,8 @@ func (k *Keeper) ActivateEmergencyAdmin(ctx context.Context, activator string, a
 	admin := &authproto.EmergencyAdmin{
 		Address:    adminAddress,
 		Privileges: privileges,
-		ActivatedAt: timestamppb.New(now),
-		ExpiresAt:  timestamppb.New(expiresAt),
+		ActivatedAt: now,
+		ExpiresAt:  &expiresAt,
 		ActivatedBy: activator,
 		IsActive:   true,
 	}
@@ -424,7 +423,7 @@ func (k *Keeper) RotateValidatorKey(ctx context.Context, validator string, newPu
 		ValidatorAddress:    validator,
 		OldConsensusPubkey:  "", // Would be retrieved from staking module
 		NewConsensusPubkey:  string(newPubKey),
-		RotationTime:        timestamppb.New(now),
+		RotationTime:        now,
 		InitiatedBy:         validator,
 		RotationStatus:      authproto.RotationStatus_ROTATION_STATUS_PENDING,
 	}
@@ -450,8 +449,8 @@ func (k *Keeper) CreateSession(ctx context.Context, userAddress string, expiresI
 	session := &authproto.Session{
 		SessionId:   sessionID,
 		UserAddress: userAddress,
-		CreatedAt:   timestamppb.New(now),
-		ExpiresAt:   timestamppb.New(expiresAt),
+		CreatedAt:   now,
+		ExpiresAt:   expiresAt,
 		IpAddress:   k.getIPFromContext(ctx),
 	}
 
@@ -489,7 +488,7 @@ func (k *Keeper) InitiateValidatorKeyRotation(ctx context.Context, initiator str
 		ValidatorAddress:    validatorAddress,
 		OldConsensusPubkey:  "", // Would be retrieved from staking module
 		NewConsensusPubkey:  string(newConsensusPubkey),
-		RotationTime:        timestamppb.New(now),
+		RotationTime:        now,
 		InitiatedBy:         initiator,
 		RotationStatus:      authproto.RotationStatus_ROTATION_STATUS_PENDING,
 	}
@@ -519,7 +518,7 @@ func (k *Keeper) CompleteValidatorKeyRotation(ctx context.Context, completer str
 
 	// Mark as completed
 	rotation.RotationStatus = authproto.RotationStatus_ROTATION_STATUS_COMPLETED
-	rotation.RotationTime = timestamppb.New(sdkCtx.BlockTime())
+	rotation.RotationTime = sdkCtx.BlockTime()
 
 	if err := k.SetValidatorKeyRotation(sdkCtx, rotation); err != nil {
 		return err

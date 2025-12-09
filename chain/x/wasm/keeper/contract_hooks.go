@@ -331,18 +331,18 @@ func (k Keeper) AfterInstantiateHook(
 		Creator: creator.String(),
 		Admin:   admin.String(),
 		Label:   label,
-		Metadata: &pb.ContractMetadata{
+		Metadata: pb.ContractMetadata{
 			Name:        label,
 			Description: fmt.Sprintf("Auto-registered WASM contract (code ID: %d)", codeID),
 			Tags:        []string{"wasm", "auto-registered"},
 		},
-		SecurityPolicy: &pb.SecurityPolicy{
+		SecurityPolicy: pb.SecurityPolicy{
 			AllowPause:       true,
 			AllowMigration:   !wasmParams.RequireAdminForMigrate,
 			MaxGasPerTx:      1_000_000, // Default 1M gas per tx
 			RateLimitPerUser: 100,       // Default 100 calls per hour
 		},
-		Compliance: &pb.ComplianceRequirements{},
+		Compliance: pb.ComplianceRequirements{},
 		Status:     pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
 	}
 

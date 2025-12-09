@@ -6,7 +6,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/economicsecurity/types"
 )
@@ -24,8 +23,8 @@ func TestAdjustInflationRate_Success(t *testing.T) {
 		TargetInflationRate: 500,          // 5.00%
 		MinInflationRate:    100,          // 1.00%
 		MaxInflationRate:    1000,         // 10.00%
-		LastInflationAdjustment: timestamppb.Now(),
-		LastInflationCheck:      timestamppb.Now(),
+		LastInflationAdjustment: time.Now(),
+		LastInflationCheck:      time.Now(),
 	}
 	require.NoError(t, keeper.SetParams(params))
 
@@ -237,8 +236,8 @@ func TestGetInflationMetrics_Success(t *testing.T) {
 		TargetInflationRate:     500, // 5.00%
 		MinInflationRate:        100,
 		MaxInflationRate:        1000,
-		LastInflationAdjustment: timestamppb.New(lastAdjustmentTime),
-		LastInflationCheck:      timestamppb.New(lastCheckTime),
+		LastInflationAdjustment: lastAdjustmentTime,
+		LastInflationCheck:      lastCheckTime,
 	}
 	params.InflationCheckInterval = 100 // blocks
 	require.NoError(t, keeper.SetParams(params))
@@ -258,10 +257,10 @@ func TestGetInflationMetrics_Success(t *testing.T) {
 	require.NotNil(t, nextCheck)
 
 	// Verify last adjustment time matches
-	require.True(t, lastAdj.AsTime().Equal(lastAdjustmentTime))
+	require.True(t, lastAdj.Equal(lastAdjustmentTime))
 
 	// Verify next check is after last check
-	require.True(t, nextCheck.AsTime().After(lastCheckTime))
+	require.True(t, nextCheck.After(lastCheckTime))
 }
 
 // TestGetInflationMetrics_NoHistory tests metrics when no historical data exists
@@ -388,10 +387,10 @@ func TestUpdateInflationCheckTimestamp(t *testing.T) {
 
 	// Verify timestamp was set
 	updatedParams := keeper.GetParams()
-	require.NotNil(t, updatedParams.Tokenomics.LastInflationCheck)
+	require.False(t, updatedParams.Tokenomics.LastInflationCheck.IsZero())
 
 	// Verify it's recent (within last minute)
-	checkTime := updatedParams.Tokenomics.LastInflationCheck.AsTime()
+	checkTime := updatedParams.Tokenomics.LastInflationCheck
 	require.True(t, time.Since(checkTime) < time.Minute)
 }
 
@@ -448,8 +447,8 @@ func TestInflationFunctions_Integration(t *testing.T) {
 		TargetInflationRate: 500,  // 5.00%
 		MinInflationRate:    100,  // 1.00%
 		MaxInflationRate:    1000, // 10.00%
-		LastInflationAdjustment: timestamppb.Now(),
-		LastInflationCheck:      timestamppb.Now(),
+		LastInflationAdjustment: time.Now(),
+		LastInflationCheck:      time.Now(),
 	}
 	params.InflationCheckInterval = 100
 	require.NoError(t, keeper.SetParams(params))

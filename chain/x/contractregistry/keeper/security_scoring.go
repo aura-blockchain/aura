@@ -152,10 +152,6 @@ func (k Keeper) ComputeSecurityScore(ctx sdk.Context, contractAddr string) (Secu
 
 // calculateAuditScore computes the audit component of the security score
 func (k Keeper) calculateAuditScore(ctx sdk.Context, info *pb.ContractInfo, weights SecurityScoreWeights) float64 {
-	if info.Compliance == nil {
-		return 0
-	}
-
 	compliance := info.Compliance
 	var score float64 = 0
 
@@ -169,8 +165,8 @@ func (k Keeper) calculateAuditScore(ctx sdk.Context, info *pb.ContractInfo, weig
 		score += weights.AuditWeight * 0.3 // 30% for having audit report
 
 		// Check audit freshness
-		if compliance.LastAuditDate != nil {
-			auditAge := ctx.BlockTime().Sub(compliance.LastAuditDate.AsTime())
+		if compliance.LastAuditDate != nil && !compliance.LastAuditDate.IsZero() {
+			auditAge := ctx.BlockTime().Sub(*compliance.LastAuditDate)
 			auditAgeDays := int64(auditAge.Hours() / 24)
 
 			if auditAgeDays <= weights.AuditAgePenaltyDays {
@@ -226,10 +222,6 @@ func (k Keeper) calculateMetricsScore(metrics *pb.ContractMetrics, weights Secur
 
 // calculateComplianceScore computes the compliance configuration component
 func (k Keeper) calculateComplianceScore(info *pb.ContractInfo, weights SecurityScoreWeights) float64 {
-	if info.Compliance == nil {
-		return 0
-	}
-
 	compliance := info.Compliance
 	var score float64 = 0
 
@@ -260,10 +252,6 @@ func (k Keeper) calculateComplianceScore(info *pb.ContractInfo, weights Security
 
 // calculatePolicyScore computes the security policy configuration component
 func (k Keeper) calculatePolicyScore(info *pb.ContractInfo, weights SecurityScoreWeights) float64 {
-	if info.SecurityPolicy == nil {
-		return 0
-	}
-
 	policy := info.SecurityPolicy
 	var score float64 = 0
 
@@ -324,10 +312,6 @@ func (k Keeper) calculateHistoryScore(ctx sdk.Context, contractAddr string, metr
 
 // calculateSourceCodeScore computes the source code availability component
 func (k Keeper) calculateSourceCodeScore(info *pb.ContractInfo, weights SecurityScoreWeights) float64 {
-	if info.Metadata == nil {
-		return 0
-	}
-
 	metadata := info.Metadata
 	var score float64 = 0
 
@@ -405,14 +389,14 @@ func (k Keeper) generateRecommendations(ctx sdk.Context, info *pb.ContractInfo, 
 
 	// Audit recommendations
 	if score.AuditScore < 20 {
-		if info.Compliance == nil || info.Compliance.AuditReportUri == "" {
+		if info.Compliance.AuditReportUri == "" {
 			recommendations = append(recommendations, "Add a security audit report to improve trust")
 		}
-		if info.Compliance == nil || !info.Compliance.RequireAudit {
+		if !info.Compliance.RequireAudit {
 			recommendations = append(recommendations, "Enable audit requirement in compliance settings")
 		}
-		if info.Compliance != nil && info.Compliance.LastAuditDate != nil {
-			auditAge := ctx.BlockTime().Sub(info.Compliance.LastAuditDate.AsTime())
+		if info.Compliance.LastAuditDate != nil && !info.Compliance.LastAuditDate.IsZero() {
+			auditAge := ctx.BlockTime().Sub(*info.Compliance.LastAuditDate)
 			if auditAge.Hours()/24 > 90 {
 				recommendations = append(recommendations, "Update security audit - current audit is more than 90 days old")
 			}
@@ -421,20 +405,20 @@ func (k Keeper) generateRecommendations(ctx sdk.Context, info *pb.ContractInfo, 
 
 	// Compliance recommendations
 	if score.ComplianceScore < 15 {
-		if info.Compliance == nil || !info.Compliance.EnforceKyc {
+		if !info.Compliance.EnforceKyc {
 			recommendations = append(recommendations, "Enable KYC enforcement for improved compliance")
 		}
-		if info.Compliance == nil || !info.Compliance.EnforceSanctionsCheck {
+		if !info.Compliance.EnforceSanctionsCheck {
 			recommendations = append(recommendations, "Enable sanctions screening for regulatory compliance")
 		}
 	}
 
 	// Policy recommendations
 	if score.PolicyScore < 10 {
-		if info.SecurityPolicy == nil || info.SecurityPolicy.MaxGasPerTx == 0 {
+		if info.SecurityPolicy.MaxGasPerTx == 0 {
 			recommendations = append(recommendations, "Set maximum gas per transaction to prevent abuse")
 		}
-		if info.SecurityPolicy == nil || info.SecurityPolicy.RateLimitPerUser == 0 {
+		if info.SecurityPolicy.RateLimitPerUser == 0 {
 			recommendations = append(recommendations, "Enable rate limiting to prevent spam attacks")
 		}
 	}
@@ -454,7 +438,7 @@ func (k Keeper) generateRecommendations(ctx sdk.Context, info *pb.ContractInfo, 
 
 	// Source code recommendations
 	if score.SourceCodeScore < 3 {
-		if info.Metadata == nil || info.Metadata.SourceCodeUrl == "" {
+		if info.Metadata.SourceCodeUrl == "" {
 			recommendations = append(recommendations, "Publish source code to improve transparency and trust")
 		}
 	}

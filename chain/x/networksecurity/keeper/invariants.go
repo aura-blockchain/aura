@@ -50,57 +50,8 @@ func ParamsInvariant(k *Keeper) sdk.Invariant {
 				fmt.Sprintf("failed to get params: %s", err.Error()),
 			), true
 		}
-		// Check for nil sub-configs before validation
-		if params.Connection == nil {
-			return sdk.FormatInvariant(
-				types.ModuleName,
-				"params-valid",
-				"params has nil connection config",
-			), true
-		}
-		if params.RateLimit == nil {
-			return sdk.FormatInvariant(
-				types.ModuleName,
-				"params-valid",
-				"params has nil rate_limit config",
-			), true
-		}
-		if params.Mempool == nil {
-			return sdk.FormatInvariant(
-				types.ModuleName,
-				"params-valid",
-				"params has nil mempool config",
-			), true
-		}
-		if params.Reputation == nil {
-			return sdk.FormatInvariant(
-				types.ModuleName,
-				"params-valid",
-				"params has nil reputation config",
-			), true
-		}
-		if params.Gossip == nil {
-			return sdk.FormatInvariant(
-				types.ModuleName,
-				"params-valid",
-				"params has nil gossip config",
-			), true
-		}
-		if params.ForkDetection == nil {
-			return sdk.FormatInvariant(
-				types.ModuleName,
-				"params-valid",
-				"params has nil fork_detection config",
-			), true
-		}
-		if params.PartitionDetection == nil {
-			return sdk.FormatInvariant(
-				types.ModuleName,
-				"params-valid",
-				"params has nil partition_detection config",
-			), true
-		}
-		// Validate params using the validation function
+		// Sub-configs are value types (gogoproto.nullable = false), so they can't be nil
+		// Validate params using the validation function instead
 		if err := types.ValidateParams(&params); err != nil {
 			return sdk.FormatInvariant(
 				types.ModuleName,
@@ -166,12 +117,12 @@ func RateLimitValidityInvariant(k *Keeper) sdk.Invariant {
 				), true
 			}
 
-			// Check window start is not nil
-			if rateLimit.WindowStart == nil {
+			// WindowStart is a value type (time.Time), check if it's zero instead
+			if rateLimit.WindowStart.IsZero() {
 				return sdk.FormatInvariant(
 					types.ModuleName,
 					"rate-limit-validity",
-					fmt.Sprintf("rate limit for peer %s has nil window_start", rateLimit.PeerId),
+					fmt.Sprintf("rate limit for peer %s has zero window_start", rateLimit.PeerId),
 				), true
 			}
 		}

@@ -208,7 +208,7 @@ func (k Keeper) IsBanned(ctx sdk.Context, peerID string) bool {
 
 	// Check if ban has expired
 	if rateLimitEntry.IsBanned {
-		if rateLimitEntry.BanExpiresAt != nil && ctx.BlockTime().After(rateLimitEntry.BanExpiresAt.AsTime()) {
+		if rateLimitEntry.BanExpiresAt != nil && ctx.BlockTime().After(*rateLimitEntry.BanExpiresAt) {
 			// Ban expired, remove it
 			k.UnbanPeer(ctx, peerID)
 			return false
@@ -227,9 +227,9 @@ func (k Keeper) BanPeer(ctx sdk.Context, peerID string, duration int64, reason s
 		}
 	}
 
-	banExpiresAt := timestamppb.New(ctx.BlockTime().Add(time.Duration(duration)))
+	banTime := ctx.BlockTime().Add(time.Duration(duration))
 	rateLimitEntry.IsBanned = true
-	rateLimitEntry.BanExpiresAt = banExpiresAt
+	rateLimitEntry.BanExpiresAt = &banTime
 
 	k.SetRateLimitEntry(ctx, rateLimitEntry)
 

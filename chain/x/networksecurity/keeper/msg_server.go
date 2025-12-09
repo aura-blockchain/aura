@@ -31,11 +31,11 @@ func (ms msgServer) UpdateParams(goCtx context.Context, msg *types.MsgUpdatePara
 	}
 
 	// Validate and set params
-	if err := types.ValidateParams(msg.Params); err != nil {
+	if err := types.ValidateParams(&msg.Params); err != nil {
 		return nil, err
 	}
 
-	if err := ms.SetParams(ctx, *msg.Params); err != nil {
+	if err := ms.SetParams(ctx, msg.Params); err != nil {
 		return nil, err
 	}
 
@@ -65,10 +65,10 @@ func (ms msgServer) AddTrustedPeer(goCtx context.Context, msg *types.MsgAddTrust
 	}
 
 	// Set added timestamp
-	msg.Peer.AddedAt = timestamppb.New(ctx.BlockTime())
+	msg.Peer.AddedAt = ctx.BlockTime()
 
 	// Add trusted peer
-	if err := ms.SetTrustedPeer(ctx, *msg.Peer); err != nil {
+	if err := ms.SetTrustedPeer(ctx, msg.Peer); err != nil {
 		return nil, err
 	}
 

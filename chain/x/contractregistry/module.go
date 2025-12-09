@@ -105,7 +105,7 @@ func (AppModule) Name() string {
 // RegisterServices registers module services
 func (am AppModule) RegisterServices(cfg module.Configurator) {
 	msgServer := keeper.NewMsgServerImpl(am.keeper)
-	queryServer := keeper.NewQueryServerImpl(am.keeper)
+	queryServer := keeper.NewQueryServerImpl(&am.keeper)
 
 	// Register using the proto types
 	pb.RegisterMsgServer(cfg.MsgServer(), msgServer)

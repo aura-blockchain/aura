@@ -9,7 +9,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/aequitas/aura/chain/x/cryptography/types"
 	cryptoproto "github.com/aequitas/aura/proto/aura/cryptography/v1beta1"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // RegisterSecureEnclave registers a secure enclave for key storage
@@ -40,7 +39,7 @@ func (k Keeper) RegisterSecureEnclave(
 		EnclaveId:       enclaveID,
 		EnclaveType:     enclaveType,
 		AttestationData: attestationData,
-		AttestationTime: timestamppb.New(blockTime),
+		AttestationTime: blockTime,
 		Status:          cryptoproto.SecureEnclaveStatus_SECURE_ENCLAVE_STATUS_READY,
 		EnclaveMetadata: enclaveMetadata,
 	}

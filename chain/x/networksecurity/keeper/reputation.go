@@ -130,8 +130,8 @@ func (k Keeper) UpdatePeerUptime(ctx sdk.Context, peerID string) {
 
 	// Calculate uptime in seconds
 	var uptime float64
-	if peerInfo.ConnectedAt != nil {
-		uptime = ctx.BlockTime().Sub(peerInfo.ConnectedAt.AsTime()).Seconds()
+	if !peerInfo.ConnectedAt.IsZero() {
+		uptime = ctx.BlockTime().Sub(peerInfo.ConnectedAt).Seconds()
 	}
 
 	reputation, found := k.GetReputation(ctx, peerID)
@@ -180,7 +180,7 @@ func (k Keeper) GetBannedPeers(ctx sdk.Context) []string {
 
 		if entry.IsBanned {
 			// Check if ban is still active
-			if entry.BanExpiresAt == nil || ctx.BlockTime().Before(entry.BanExpiresAt.AsTime()) {
+			if entry.BanExpiresAt == nil || ctx.BlockTime().Before(*entry.BanExpiresAt) {
 				bannedPeers = append(bannedPeers, entry.PeerId)
 			}
 		}

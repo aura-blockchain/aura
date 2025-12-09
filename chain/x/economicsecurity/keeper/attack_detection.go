@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/aequitas/aura/chain/x/economicsecurity/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // ============================
@@ -320,7 +319,7 @@ func (k *Keeper) createAttackAlert(
 		AttackType:       attackType,
 		Severity:         severity,
 		Message:          message,
-		DetectedAt:       timestamppb.New(time.Unix(currentTime, 0)),
+		DetectedAt:       time.Unix(currentTime, 0),
 		SuspectAddress:   suspectAddress,
 		EvidenceCount:    evidenceCount,
 		AutoMitigated:    false,

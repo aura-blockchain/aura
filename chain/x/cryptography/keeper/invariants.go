@@ -103,17 +103,18 @@ func KeyRotationValidityInvariant(k Keeper) sdk.Invariant {
 			}
 
 			// Check next rotation time
-			if schedule.NextRotationTime == nil {
+			if schedule.NextRotationTime.IsZero() {
 				return sdk.FormatInvariant(
 					types.ModuleName,
 					"key-rotation-validity",
-					fmt.Sprintf("key %s has nil next rotation time", schedule.KeyId),
+					fmt.Sprintf("key %s has zero next rotation time", schedule.KeyId),
 				), true
 			}
 
 			// Check last rotation time is before next rotation time
-			if schedule.LastRotation != nil && schedule.NextRotationTime != nil {
-				if schedule.NextRotationTime.AsTime().Before(schedule.LastRotation.AsTime()) {
+			if schedule.LastRotation != nil && !schedule.LastRotation.IsZero() &&
+			   !schedule.NextRotationTime.IsZero() {
+				if schedule.NextRotationTime.Before(*schedule.LastRotation) {
 					return sdk.FormatInvariant(
 						types.ModuleName,
 						"key-rotation-validity",

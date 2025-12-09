@@ -173,7 +173,7 @@ func (k Keeper) ValidateGossipMessage(ctx sdk.Context, msg *GossipMessage) error
 
 	// 3. Check message TTL
 	age := time.Since(msg.Timestamp)
-	if age > params.Gossip.MessageTtl.AsDuration() {
+	if age > params.Gossip.MessageTtl {
 		return types.ErrMessageExpired
 	}
 
@@ -480,7 +480,7 @@ func (k Keeper) SelectPeersForGossip(ctx sdk.Context, peers []types.PeerInfo, co
 // CleanupMessageCache performs periodic cleanup of message cache
 func (k Keeper) CleanupMessageCache(ctx sdk.Context) {
 	params, _ := k.GetParams(ctx)
-	k.messageCache.Cleanup(ctx, params.Gossip.MessageTtl.AsDuration()*2)
+	k.messageCache.Cleanup(ctx, params.Gossip.MessageTtl*2)
 	stats := k.messageCache.Stats()
 
 	telemetry.SetGauge(float32(stats.Size), "networksecurity", "gossip", "cache_size")

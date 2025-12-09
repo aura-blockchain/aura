@@ -7,7 +7,6 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/cryptography/types"
 	cryptoproto "github.com/aequitas/aura/proto/aura/cryptography/v1beta1"
@@ -52,18 +51,13 @@ func (k Keeper) GenerateQuantumResistantKey(
 	blockTime := sdk.UnwrapSDKContext(ctx).BlockTime()
 	keyID := fmt.Sprintf("qr_%s_%d", algorithm.String(), blockTime.Unix())
 
-	var expiresAtProto *timestamppb.Timestamp
-	if expiresAt != nil {
-		expiresAtProto = timestamppb.New(*expiresAt)
-	}
-
 	qrKey := &cryptoproto.QuantumResistantKey{
 		KeyId:       keyID,
 		Algorithm:   algorithm,
 		PublicKey:   publicKey,
 		KeyMetadata: keyMetadata,
-		CreatedAt:   timestamppb.New(blockTime),
-		ExpiresAt:   expiresAtProto,
+		CreatedAt:   blockTime,
+		ExpiresAt:   expiresAt,
 	}
 
 	// Store in KV store
@@ -161,7 +155,7 @@ func (k Keeper) ValidateQuantumResistantKey(ctx context.Context, keyID string) e
 
 	// Check expiration
 	blockTime := sdk.UnwrapSDKContext(ctx).BlockTime()
-	if key.ExpiresAt != nil && key.ExpiresAt.AsTime().Before(blockTime) {
+	if key.ExpiresAt != nil && !key.ExpiresAt.IsZero() && key.ExpiresAt.Before(blockTime) {
 		return types.ErrKeyExpired
 	}
 

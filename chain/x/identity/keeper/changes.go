@@ -6,7 +6,6 @@ import (
 
 	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/identity/types"
 )
@@ -88,16 +87,20 @@ func (k *Keeper) EraseIdentity(ctx sdk.Context, did, requester, reason string) e
 
 	// Check if already erased
 	if record.Erased {
-		return types.ErrIdentityAlreadyErased.Wrapf("identity %s already erased at %s", did, record.ErasedAt.AsTime())
+		erasedAtStr := "unknown"
+		if record.ErasedAt != nil {
+			erasedAtStr = record.ErasedAt.String()
+		}
+		return types.ErrIdentityAlreadyErased.Wrapf("identity %s already erased at %s", did, erasedAtStr)
 	}
 
 	now := ctx.BlockTime()
 
 	// Mark as erased (keep commitment for audit trail)
 	record.Erased = true
-	record.ErasedAt = timestamppb.New(now)
+	record.ErasedAt = &now
 	record.Status = types.IdentityStatusErased
-	record.UpdatedAt = timestamppb.New(now)
+	record.UpdatedAt = &now
 
 	// Clear off-chain data reference (if any)
 	// The off-chain storage system should delete actual PII separately
@@ -173,7 +176,8 @@ func (k *Keeper) UpdatePIICommitment(ctx sdk.Context, did, updater string, piiDa
 	record.CommitmentSalt = salt
 	record.OffChainDataRef = offChainRef
 	record.OffChainDataType = offChainType
-	record.UpdatedAt = timestamppb.New(ctx.BlockTime())
+	updatedAt := ctx.BlockTime()
+	record.UpdatedAt = &updatedAt
 
 	if err := k.SetIdentityRecord(ctx, record); err != nil {
 		return fmt.Errorf("failed to update PII commitment: %w", err)
@@ -277,14 +281,13 @@ func (k *Keeper) CreateChangeRequest(ctx sdk.Context, requester, targetDID, irID
 	}
 
 	now := ctx.BlockTime()
-	nowProto := timestamppb.New(now)
 	request := &types.ChangeRequest{
 		Id:           fmt.Sprintf("req-%d", requestID),
 		Requester:    requester,
 		Did:          targetDID,
 		IrId:         irID,
 		Status:       types.ChangeStatusPending,
-		RequestedAt:  nowProto,
+		RequestedAt:  now,
 		ChangeType:   types.ChangeTypeUpdateMetadata,
 		ProofHash:    metadataHash,
 	}
@@ -383,8 +386,8 @@ func (k *Keeper) ApplyChange(ctx sdk.Context, requestID, applier string) (*types
 			Did:       request.Did,
 			Address:   request.Requester,
 			Status:    types.IdentityStatusActive,
-			CreatedAt: timestamppb.New(now),
-			UpdatedAt: timestamppb.New(now),
+			CreatedAt: now,
+			UpdatedAt: &now,
 		}
 	}
 
@@ -396,10 +399,11 @@ func (k *Keeper) ApplyChange(ctx sdk.Context, requestID, applier string) (*types
 	record.MetadataHash = request.ProofHash
 	record.LatestIrVersion = request.IrId
 	record.Status = types.IdentityStatusActive
-	record.UpdatedAt = timestamppb.New(ctx.BlockTime())
+	updatedAt := ctx.BlockTime()
+	record.UpdatedAt = &updatedAt
 
 	// Apply minimum confidence score
-	if params != nil && params.Change != nil && record.ConfidenceScore < int64(params.Change.MinConfidenceAfterChange) {
+	if params != nil && record.ConfidenceScore < int64(params.Change.MinConfidenceAfterChange) {
 		record.ConfidenceScore = int64(params.Change.MinConfidenceAfterChange)
 	}
 
@@ -415,7 +419,7 @@ func (k *Keeper) ApplyChange(ctx sdk.Context, requestID, applier string) (*types
 		NewConfidenceScore:  record.ConfidenceScore,
 		TransitionReason:    "applied",
 		ChangedHeight:       ctx.BlockHeight(),
-		ChangedAt:           timestamppb.New(ctx.BlockTime()),
+		ChangedAt:           ctx.BlockTime(),
 	}
 
 	if err := k.SetChangeHistory(ctx, history); err != nil {
@@ -488,7 +492,7 @@ func (k *Keeper) countChangeRequests(ctx sdk.Context, requester string) int {
 		if err := k.cdc.Unmarshal(iterator.Value(), &req); err != nil {
 			continue
 		}
-		if req.Requester == requester && req.RequestedAt.AsTime().After(cutoff) {
+		if req.Requester == requester && req.RequestedAt.After(cutoff) {
 			count++
 		}
 	}

@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"time"
 
 	"github.com/aequitas/aura/chain/x/economicsecurity/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // ============================
@@ -141,7 +141,7 @@ func (k *Keeper) recordLargeTx(ctx context.Context, sender, recipient, amount st
 		Amount:             amount,
 		PercentageOfSupply: percentage.Uint64(),
 		BlockHeight:        currentHeight,
-		Timestamp:          timestamppb.Now(),
+		Timestamp:          time.Now(),
 		Flagged:            false,
 	}
 
@@ -195,7 +195,7 @@ func (k *Keeper) GetWhaleProtectionTriggers24h(ctx context.Context) (uint64, err
 	count := uint64(0)
 
 	err = k.IterateLargeTxRecords(ctx, func(record *types.LargeTxRecord) bool {
-		if record.Timestamp.Seconds >= cutoff && record.Flagged {
+		if record.Timestamp.Unix() >= cutoff && record.Flagged {
 			count++
 		}
 		return true

@@ -6,7 +6,6 @@ import (
 	"crypto/sha256"
 	"crypto/sha512"
 	"fmt"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"golang.org/x/crypto/argon2"
@@ -55,7 +54,7 @@ func (k Keeper) CreateKeyStretchingConfig(
 		Parallelism: parallelism,
 		KeyLength:   keyLength,
 		Salt:        salt,
-		CreatedAt:   timestamppb.New(blockTime),
+		CreatedAt:   blockTime,
 	}
 
 	// Store in state

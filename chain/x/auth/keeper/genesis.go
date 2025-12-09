@@ -129,16 +129,16 @@ func (k Keeper) ExportGenesis(ctx context.Context) *types.GenesisState {
 
 	genesis := &types.GenesisState{
 		Params:                paramsValue,
-		Roles:                 []authproto.Role{},
-		RoleAssignments:       []authproto.RoleAssignment{},
-		MultisigWallets:       []authproto.MultisigWallet{},
-		MultisigProposals:     []authproto.MultisigProposal{},
-		TimeLockedActions:     []authproto.TimeLockedAction{},
-		EmergencyAdmins:       []authproto.EmergencyAdmin{},
-		ValidatorKeyRotations: []authproto.ValidatorKeyRotation{},
-		Sessions:              []authproto.Session{},
-		RateLimitConfigs:      []authproto.RateLimitConfig{},
-		AuditLogs:             []authproto.AuditLog{},
+		Roles:                 make([]authproto.Role, 0),
+		RoleAssignments:       make([]authproto.RoleAssignment, 0),
+		MultisigWallets:       make([]authproto.MultisigWallet, 0),
+		MultisigProposals:     make([]authproto.MultisigProposal, 0),
+		TimeLockedActions:     make([]authproto.TimeLockedAction, 0),
+		EmergencyAdmins:       make([]authproto.EmergencyAdmin, 0),
+		ValidatorKeyRotations: make([]authproto.ValidatorKeyRotation, 0),
+		Sessions:              make([]authproto.Session, 0),
+		RateLimitConfigs:      make([]authproto.RateLimitConfig, 0),
+		AuditLogs:             make([]authproto.AuditLog, 0),
 	}
 
 	// Export all roles

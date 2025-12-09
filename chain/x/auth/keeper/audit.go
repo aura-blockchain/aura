@@ -7,7 +7,6 @@ import (
 	"time"
 
 	authproto "github.com/aequitas/aura/proto/aura/auth/v1beta1"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // GetAuditLogs retrieves audit logs with optional filters

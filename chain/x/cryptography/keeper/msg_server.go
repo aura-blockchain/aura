@@ -2,11 +2,9 @@ package keeper
 
 import (
 	"context"
-	"time"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/cryptography/types"
 	cryptoproto "github.com/aequitas/aura/proto/aura/cryptography/v1beta1"
@@ -92,7 +90,7 @@ func (ms msgServer) RotateKey(goCtx context.Context, msg *cryptoproto.MsgRotateK
 
 	return &cryptoproto.MsgRotateKeyResponse{
 		RotationId:   rotationID,
-		RotationTime: timestamppb.New(rotationTime),
+		RotationTime: rotationTime,
 	}, nil
 }
 
@@ -284,14 +282,8 @@ func (ms msgServer) GenerateQuantumResistantKey(goCtx context.Context, msg *cryp
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	// Convert timestamppb.Timestamp to *time.Time
-	var expiresAt *time.Time
-	if msg.ExpiresAt != nil {
-		t := msg.ExpiresAt.AsTime()
-		expiresAt = &t
-	}
-
-	keyID, publicKey, err := ms.Keeper.GenerateQuantumResistantKey(ctx, msg.Creator, msg.Algorithm, expiresAt)
+	// msg.ExpiresAt is already *time.Time, no conversion needed
+	keyID, publicKey, err := ms.Keeper.GenerateQuantumResistantKey(ctx, msg.Creator, msg.Algorithm, msg.ExpiresAt)
 	if err != nil {
 		return nil, err
 	}
@@ -324,14 +316,8 @@ func (ms msgServer) AddCertificatePin(goCtx context.Context, msg *cryptoproto.Ms
 		return nil, types.ErrInvalidInput.Wrap("hostname and certificate_hashes are required")
 	}
 
-	// Convert timestamppb.Timestamp to *time.Time
-	var expiresAt *time.Time
-	if msg.ExpiresAt != nil {
-		t := msg.ExpiresAt.AsTime()
-		expiresAt = &t
-	}
-
-	pinID, err := ms.Keeper.AddCertificatePin(ctx, msg.Creator, msg.Hostname, msg.CertificateHashes, msg.PinType, expiresAt)
+	// msg.ExpiresAt is already *time.Time, no conversion needed
+	pinID, err := ms.Keeper.AddCertificatePin(ctx, msg.Creator, msg.Hostname, msg.CertificateHashes, msg.PinType, msg.ExpiresAt)
 	if err != nil {
 		return nil, err
 	}
@@ -342,7 +328,7 @@ func (ms msgServer) AddCertificatePin(goCtx context.Context, msg *cryptoproto.Ms
 func (ms msgServer) UpdateParams(goCtx context.Context, msg *cryptoproto.MsgUpdateParams) (*cryptoproto.MsgUpdateParamsResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	if err := ms.Keeper.UpdateParams(ctx, msg.Authority, msg.Params); err != nil {
+	if err := ms.Keeper.UpdateParams(ctx, msg.Authority, &msg.Params); err != nil {
 		return nil, err
 	}
 

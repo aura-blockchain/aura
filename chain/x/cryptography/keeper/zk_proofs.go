@@ -8,7 +8,6 @@ import (
 	"github.com/aequitas/aura/chain/x/cryptography/types"
 	cryptoproto "github.com/aequitas/aura/proto/aura/cryptography/v1beta1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // ============================
@@ -47,7 +46,7 @@ func (k Keeper) RegisterZKProofCircuit(ctx sdk.Context, creator string, proofTyp
 		ProofType:        proofType,
 		PublicParameters: publicParams,
 		VerificationKey:  verificationKey,
-		CreatedAt:        timestamppb.New(now),
+		CreatedAt:        now,
 		Status:           cryptoproto.ZKProofStatus_ZK_PROOF_STATUS_ACTIVE,
 		TotalProofs:      0,
 		SuccessfulProofs: 0,
@@ -129,7 +128,7 @@ func (k Keeper) SubmitZKProof(ctx sdk.Context, submitter string, proofID string,
 		ProofData:      proofData,
 		PublicInputs:   publicInputs,
 		Verified:       verified,
-		VerifiedAt:     timestamppb.New(sdkCtx.BlockTime()),
+		VerifiedAt:     sdkCtx.BlockTime(),
 		VerifierNode:   string(sdkCtx.BlockHeader().ProposerAddress),
 		ErrorMessage:   errorMessage,
 	}

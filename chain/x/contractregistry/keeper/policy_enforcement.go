@@ -234,7 +234,7 @@ func (k Keeper) UpdateComplianceRequirements(ctx sdk.Context, contractAddr, admi
 		return err
 	}
 
-	info.Compliance = reqs
+	info.Compliance = *reqs
 	k.SetContractInfo(ctx, &info)
 
 	// Record in audit trail

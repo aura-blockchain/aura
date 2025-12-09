@@ -2,8 +2,6 @@ package types
 
 import (
 	"time"
-
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // Helper functions for SchedulerConfig
@@ -106,7 +104,7 @@ func CanExecute(p *PreValidatedTransaction, currentTime time.Time) bool {
 // MarkExecuted marks the transaction as executed
 func MarkExecuted(p *PreValidatedTransaction, blockHeight uint64, executionTime time.Time) {
 	p.Status = ValidationStatus_VALIDATION_STATUS_EXECUTED
-	p.ExecutedAt = executionTime
+	p.ExecutedAt = &executionTime
 	p.ExecutedHeight = blockHeight
 }
 

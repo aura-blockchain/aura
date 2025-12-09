@@ -10,7 +10,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"golang.org/x/crypto/blake2b"
 	"golang.org/x/crypto/sha3"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/cryptography/types"
 	cryptoproto "github.com/aequitas/aura/proto/aura/cryptography/v1beta1"
@@ -46,22 +45,19 @@ func (k Keeper) CreateSaltedHash(
 	blockTime := sdkCtx.BlockTime()
 	hashID := fmt.Sprintf("hash_%s_%d", algorithm.String(), blockTime.Unix())
 
-	now := blockTime
 	saltedHash := &cryptoproto.SaltedHash{
 		HashId:     hashID,
 		Salt:       salt,
 		Hash:       hash,
 		Algorithm:  algorithm,
 		Iterations: iterations,
-		CreatedAt:  timestamppb.New(now),
+		CreatedAt:  blockTime,
 	}
 
 	// Store in state
 	store := k.getStore(ctx)
 	bz := k.cdc.MustMarshal(saltedHash)
 	store.Set(types.GetSaltedHashKey(hashID), bz)
-
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	k.Logger(sdkCtx).Info("created salted hash",
 		"hash_id", hashID,
 		"algorithm", algorithm.String(),

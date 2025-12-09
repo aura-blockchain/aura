@@ -101,19 +101,19 @@ func RoleConsistencyInvariant(k *Keeper) sdk.Invariant {
 			}
 
 			// Check timestamps are valid
-			if role.CreatedAt == nil {
+			if role.CreatedAt.IsZero() {
 				return sdk.FormatInvariant(
 					types.ModuleName,
 					"role-consistency",
-					fmt.Sprintf("role %s has nil created_at", role.Name),
+					fmt.Sprintf("role %s has zero created_at", role.Name),
 				), true
 			}
 
-			if role.UpdatedAt == nil {
+			if role.UpdatedAt.IsZero() {
 				return sdk.FormatInvariant(
 					types.ModuleName,
 					"role-consistency",
-					fmt.Sprintf("role %s has nil updated_at", role.Name),
+					fmt.Sprintf("role %s has zero updated_at", role.Name),
 				), true
 			}
 		}
@@ -173,11 +173,11 @@ func RoleAssignmentConsistencyInvariant(k *Keeper) sdk.Invariant {
 			}
 
 			// Check timestamp
-			if assignment.AssignedAt == nil {
+			if assignment.AssignedAt.IsZero() {
 				return sdk.FormatInvariant(
 					types.ModuleName,
 					"role-assignment-consistency",
-					fmt.Sprintf("assignment for %s has nil assigned_at", assignment.Address),
+					fmt.Sprintf("assignment for %s has zero assigned_at", assignment.Address),
 				), true
 			}
 		}
@@ -296,17 +296,17 @@ func TimeLockInvariant(k *Keeper) sdk.Invariant {
 				continue
 			}
 
-			// Check timestamps are not nil
-			if action.ProposedAt == nil || action.ExecutableAt == nil {
+			// Check timestamps are not zero
+			if action.ProposedAt.IsZero() || action.ExecutableAt.IsZero() {
 				return sdk.FormatInvariant(
 					types.ModuleName,
 					"timelock-validity",
-					fmt.Sprintf("action %s has nil timestamp", action.Id),
+					fmt.Sprintf("action %s has zero timestamp", action.Id),
 				), true
 			}
 
 			// Check executable time is after proposed time
-			if action.ExecutableAt.AsTime().Before(action.ProposedAt.AsTime()) {
+			if action.ExecutableAt.Before(action.ProposedAt) {
 				return sdk.FormatInvariant(
 					types.ModuleName,
 					"timelock-validity",
@@ -368,11 +368,11 @@ func SessionValidityInvariant(k *Keeper) sdk.Invariant {
 			}
 
 			// Check timestamps
-			if session.CreatedAt == nil || session.ExpiresAt == nil {
+			if session.CreatedAt.IsZero() || session.ExpiresAt.IsZero() {
 				return sdk.FormatInvariant(
 					types.ModuleName,
 					"session-validity",
-					fmt.Sprintf("session %s has nil timestamp", session.SessionId),
+					fmt.Sprintf("session %s has zero timestamp", session.SessionId),
 				), true
 			}
 
@@ -386,7 +386,7 @@ func SessionValidityInvariant(k *Keeper) sdk.Invariant {
 			}
 
 			// Check expiration is after creation
-			if session.ExpiresAt.AsTime().Before(session.CreatedAt.AsTime()) {
+			if session.ExpiresAt.Before(session.CreatedAt) {
 				return sdk.FormatInvariant(
 					types.ModuleName,
 					"session-validity",
@@ -490,17 +490,17 @@ func AuditLogIntegrityInvariant(k *Keeper) sdk.Invariant {
 				continue
 			}
 
-			// Check timestamp is not nil
-			if log.Timestamp == nil {
+			// Check timestamp is not zero
+			if log.Timestamp.IsZero() {
 				return sdk.FormatInvariant(
 					types.ModuleName,
 					"audit-log-integrity",
-					"audit log has nil timestamp",
+					"audit log has zero timestamp",
 				), true
 			}
 
 			// Check timestamps are monotonically increasing (optional, depends on storage order)
-			currentTimestamp := log.Timestamp.AsTime().Unix()
+			currentTimestamp := log.Timestamp.Unix()
 			if currentTimestamp < prevTimestamp {
 				return sdk.FormatInvariant(
 					types.ModuleName,
