@@ -7,7 +7,6 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/governance/types"
 )
@@ -43,7 +42,7 @@ func (k *Keeper) CommitVote(
 		ProposalId:  proposalID,
 		Voter:       voter,
 		VoteHash:    voteHash,
-		CommittedAt: timestamppb.Now(),
+		CommittedAt: timestampFromTime(ctx.BlockTime()),
 		Revealed:    false,
 	}
 
@@ -97,7 +96,7 @@ func (k *Keeper) RevealVote(
 		ProposalId:  proposalID,
 		Voter:       voter,
 		Option:      option,
-		Timestamp:   timestamppb.Now(),
+		Timestamp:   timestampFromTime(ctx.BlockTime()),
 		IsSecret:    true,
 		VotingPower: votingPower.String(),
 	}

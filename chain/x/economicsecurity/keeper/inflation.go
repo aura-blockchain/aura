@@ -6,7 +6,6 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/economicsecurity/types"
 )
@@ -82,7 +81,9 @@ func (k Keeper) AdjustInflationRate(ctx context.Context, authority string, newRa
 
 	// Update inflation rate in params
 	params.Tokenomics.InflationRate = newRate
-	params.Tokenomics.LastInflationAdjustment = time.Now()
+	// Get deterministic block time from SDK context
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	params.Tokenomics.LastInflationAdjustment = sdkCtx.BlockTime()
 
 	if err := k.SetParams(params); err != nil {
 		return oldRate, fmt.Errorf("failed to update params: %w", err)
@@ -90,7 +91,6 @@ func (k Keeper) AdjustInflationRate(ctx context.Context, authority string, newRa
 
 	// Emit event for transparency and audit trail
 	// This is critical for governance accountability
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	sdkCtx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			types.EventTypeInflationAdjusted,
@@ -132,19 +132,19 @@ func (k Keeper) GetInflationMetrics(ctx context.Context) (
 	currentRate uint64,
 	targetRate uint64,
 	change24h int64,
-	lastAdjustment *timestamppb.Timestamp,
-	nextCheck *timestamppb.Timestamp,
+	lastAdjustment time.Time,
+	nextCheck time.Time,
 	err error,
 ) {
 	// Get current params
 	params := k.GetParams()
 	if params.Tokenomics == nil {
-		return 0, 0, 0, nil, nil, fmt.Errorf("tokenomics config not initialized")
+		return 0, 0, 0, time.Time{}, time.Time{}, fmt.Errorf("tokenomics config not initialized")
 	}
 
 	currentRate = params.Tokenomics.InflationRate
 	targetRate = params.Tokenomics.TargetInflationRate
-	lastAdjustment = timestamppb.New(params.Tokenomics.LastInflationAdjustment)
+	lastAdjustment = params.Tokenomics.LastInflationAdjustment
 
 	// Calculate 24h change
 	change24h, err = k.CalculateInflation24hChange(ctx)
@@ -157,12 +157,11 @@ func (k Keeper) GetInflationMetrics(ctx context.Context) (
 	// Check interval is in blocks, so we need to estimate time
 	if !params.Tokenomics.LastInflationCheck.IsZero() {
 		checkInterval := time.Duration(params.InflationCheckInterval) * 6 * time.Second // Assuming 6s block time
-		nextCheckTime := params.Tokenomics.LastInflationCheck.Add(checkInterval)
-		nextCheck = timestamppb.New(nextCheckTime)
+		nextCheck = params.Tokenomics.LastInflationCheck.Add(checkInterval)
 	} else {
 		// If never checked, use current time
 		sdkCtx := sdk.UnwrapSDKContext(ctx)
-		nextCheck = timestamppb.New(sdkCtx.BlockTime())
+		nextCheck = sdkCtx.BlockTime()
 	}
 
 	return currentRate, targetRate, change24h, lastAdjustment, nextCheck, nil
@@ -237,7 +236,9 @@ func (k Keeper) UpdateInflationCheckTimestamp(ctx context.Context) error {
 		return fmt.Errorf("tokenomics config not initialized")
 	}
 
-	params.Tokenomics.LastInflationCheck = timestamppb.Now()
+	// Get deterministic block time from SDK context
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	params.Tokenomics.LastInflationCheck = sdkCtx.BlockTime()
 
 	if err := k.SetParams(params); err != nil {
 		return fmt.Errorf("failed to update check timestamp: %w", err)

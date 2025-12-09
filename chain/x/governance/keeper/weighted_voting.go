@@ -6,7 +6,6 @@ import (
 
 	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/governance/types"
 )
@@ -51,7 +50,7 @@ func (k *Keeper) CastWeightedVote(
 		Voter:       voter,
 		Option:      types.VoteOption_VOTE_OPTION_UNSPECIFIED, // Not used for weighted votes
 		VotingPower: votingPower.String(),
-		Timestamp:   timestamppb.Now(),
+		Timestamp:   timestampFromTime(ctx.BlockTime()),
 	}
 
 	// Store vote

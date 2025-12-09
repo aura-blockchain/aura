@@ -7,7 +7,7 @@ import (
 	"github.com/aequitas/aura/chain/x/vcregistry/params"
 	"github.com/aequitas/aura/chain/x/vcregistry/types"
 	vcregistrypb "github.com/aequitas/aura/proto/aura/vcregistry/v1beta1"
-	"google.golang.org/protobuf/types/known/timestamppb"
+	gogotypes "github.com/cosmos/gogoproto/types"
 )
 
 // ============================
@@ -70,7 +70,7 @@ func TestSetGetVCRecord(t *testing.T) {
 				HolderAddress: "aura1holder123",
 				HolderDid:     "did:aura:test123",
 				Status:        types.VCStatus_VC_STATUS_ACTIVE,
-				IssuedAt:      timestamppb.Now(),
+				IssuedAt:      &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: int32(time.Now().Nanosecond())},
 				IssuedHeight:  100,
 			},
 			shouldErr: false,
@@ -83,7 +83,7 @@ func TestSetGetVCRecord(t *testing.T) {
 				HolderAddress: "aura1holder123",
 				HolderDid:     "did:aura:test123",
 				Status:        types.VCStatus_VC_STATUS_ACTIVE,
-				IssuedAt:      timestamppb.Now(),
+				IssuedAt:      &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: int32(time.Now().Nanosecond())},
 			},
 			shouldErr: true,
 			errType:   types.ErrInvalidVCID,
@@ -96,7 +96,7 @@ func TestSetGetVCRecord(t *testing.T) {
 				HolderAddress: "",
 				HolderDid:     "did:aura:test456",
 				Status:        types.VCStatus_VC_STATUS_ACTIVE,
-				IssuedAt:      timestamppb.Now(),
+				IssuedAt:      &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: int32(time.Now().Nanosecond())},
 			},
 			shouldErr: true,
 			errType:   types.ErrInvalidHolderAddress,
@@ -158,7 +158,7 @@ func TestListUserVCs(t *testing.T) {
 			HolderAddress: holderAddr,
 			HolderDid:     "did:aura:holder1",
 			Status:        types.VCStatus_VC_STATUS_ACTIVE,
-			IssuedAt:      timestamppb.Now(),
+			IssuedAt:      &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: int32(time.Now().Nanosecond())},
 		},
 		{
 			VcId:          "vc:active2",
@@ -166,7 +166,7 @@ func TestListUserVCs(t *testing.T) {
 			HolderAddress: holderAddr,
 			HolderDid:     "did:aura:holder1",
 			Status:        types.VCStatus_VC_STATUS_ACTIVE,
-			IssuedAt:      timestamppb.Now(),
+			IssuedAt:      &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: int32(time.Now().Nanosecond())},
 		},
 		{
 			VcId:          "vc:revoked1",
@@ -174,7 +174,7 @@ func TestListUserVCs(t *testing.T) {
 			HolderAddress: holderAddr,
 			HolderDid:     "did:aura:holder1",
 			Status:        types.VCStatus_VC_STATUS_REVOKED,
-			IssuedAt:      timestamppb.Now(),
+			IssuedAt:      &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: int32(time.Now().Nanosecond())},
 		},
 		{
 			VcId:          "vc:expired1",
@@ -182,7 +182,7 @@ func TestListUserVCs(t *testing.T) {
 			HolderAddress: holderAddr,
 			HolderDid:     "did:aura:holder1",
 			Status:        types.VCStatus_VC_STATUS_EXPIRED,
-			IssuedAt:      timestamppb.Now(),
+			IssuedAt:      &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: int32(time.Now().Nanosecond())},
 		},
 	}
 
@@ -279,8 +279,8 @@ func TestCheckVCStatus(t *testing.T) {
 				HolderAddress: "aura1holder",
 				HolderDid:     "did:aura:holder",
 				Status:        types.VCStatus_VC_STATUS_ACTIVE,
-				IssuedAt:      timestamppb.New(time.Unix(currentTime-3600, 0)),
-				ExpiresAt:     timestamppb.New(time.Unix(currentTime+86400, 0)), // Expires tomorrow
+				IssuedAt:      &gogotypes.Timestamp{Seconds: currentTime-3600, Nanos: 0},
+				ExpiresAt:     &gogotypes.Timestamp{Seconds: currentTime+86400, Nanos: 0}, // Expires tomorrow
 			},
 			shouldErr:      false,
 			expectedValid:  true,
@@ -294,8 +294,8 @@ func TestCheckVCStatus(t *testing.T) {
 				HolderAddress: "aura1holder",
 				HolderDid:     "did:aura:holder",
 				Status:        types.VCStatus_VC_STATUS_ACTIVE,
-				IssuedAt:      timestamppb.New(time.Unix(currentTime-86400*2, 0)),
-				ExpiresAt:     timestamppb.New(time.Unix(currentTime-3600, 0)), // Expired 1 hour ago
+				IssuedAt:      &gogotypes.Timestamp{Seconds: currentTime-86400*2, Nanos: 0},
+				ExpiresAt:     &gogotypes.Timestamp{Seconds: currentTime-3600, Nanos: 0}, // Expired 1 hour ago
 			},
 			shouldErr:      false,
 			expectedValid:  false,
@@ -309,7 +309,7 @@ func TestCheckVCStatus(t *testing.T) {
 				HolderAddress: "aura1holder",
 				HolderDid:     "did:aura:holder",
 				Status:        types.VCStatus_VC_STATUS_REVOKED,
-				IssuedAt:      timestamppb.New(time.Unix(currentTime-3600, 0)),
+				IssuedAt:      &gogotypes.Timestamp{Seconds: currentTime-3600, Nanos: 0},
 			},
 			shouldErr:      false,
 			expectedValid:  false,
@@ -323,7 +323,7 @@ func TestCheckVCStatus(t *testing.T) {
 				HolderAddress: "aura1holder",
 				HolderDid:     "did:aura:holder",
 				Status:        types.VCStatus_VC_STATUS_SUSPENDED,
-				IssuedAt:      timestamppb.New(time.Unix(currentTime-3600, 0)),
+				IssuedAt:      &gogotypes.Timestamp{Seconds: currentTime-3600, Nanos: 0},
 			},
 			shouldErr:      false,
 			expectedValid:  false,
@@ -400,7 +400,7 @@ func TestRevokeVC(t *testing.T) {
 				HolderAddress: "aura1holder",
 				HolderDid:     "did:aura:holder",
 				Status:        types.VCStatus_VC_STATUS_ACTIVE,
-				IssuedAt:      timestamppb.New(time.Unix(currentTime-3600, 0)),
+				IssuedAt:      &gogotypes.Timestamp{Seconds: currentTime-3600, Nanos: 0},
 			},
 			reason:    types.RevocationReason_REVOCATION_REASON_USER_REQUEST,
 			revoker:   "aura1revoker",
@@ -415,7 +415,7 @@ func TestRevokeVC(t *testing.T) {
 				HolderAddress: "aura1holder",
 				HolderDid:     "did:aura:holder",
 				Status:        types.VCStatus_VC_STATUS_REVOKED,
-				IssuedAt:      timestamppb.New(time.Unix(currentTime-3600, 0)),
+				IssuedAt:      &gogotypes.Timestamp{Seconds: currentTime-3600, Nanos: 0},
 			},
 			reason:    types.RevocationReason_REVOCATION_REASON_USER_REQUEST,
 			revoker:   "aura1revoker",
@@ -794,7 +794,7 @@ func TestVCPolicyManagement(t *testing.T) {
 					Status:             vcregistrypb.VCPolicyStatus_VC_POLICY_STATUS_ACTIVE,
 					CsThreshold:        1000,
 					ExpiryDurationDays: 365,
-					CreatedAt:          timestamppb.New(time.Unix(currentTime, 0)),
+					CreatedAt:          &gogotypes.Timestamp{Seconds: currentTime, Nanos: 0},
 				},
 				shouldErr: false,
 			},
@@ -803,7 +803,7 @@ func TestVCPolicyManagement(t *testing.T) {
 				policy: &vcregistrypb.VCPolicy{
 					VcTypeName: "",
 					Status:     vcregistrypb.VCPolicyStatus_VC_POLICY_STATUS_ACTIVE,
-					CreatedAt:  timestamppb.New(time.Unix(currentTime, 0)),
+					CreatedAt:  &gogotypes.Timestamp{Seconds: currentTime, Nanos: 0},
 				},
 				shouldErr: true,
 			},
@@ -850,22 +850,22 @@ func TestVCPolicyManagement(t *testing.T) {
 			{
 				VcTypeName: "ActiveVC1",
 				Status:     vcregistrypb.VCPolicyStatus_VC_POLICY_STATUS_ACTIVE,
-				CreatedAt:  timestamppb.Now(),
+				CreatedAt:  &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: int32(time.Now().Nanosecond())},
 			},
 			{
 				VcTypeName: "ActiveVC2",
 				Status:     vcregistrypb.VCPolicyStatus_VC_POLICY_STATUS_ACTIVE,
-				CreatedAt:  timestamppb.Now(),
+				CreatedAt:  &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: int32(time.Now().Nanosecond())},
 			},
 			{
 				VcTypeName: "DraftVC",
 				Status:     vcregistrypb.VCPolicyStatus_VC_POLICY_STATUS_DRAFT,
-				CreatedAt:  timestamppb.Now(),
+				CreatedAt:  &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: int32(time.Now().Nanosecond())},
 			},
 			{
 				VcTypeName: "DeprecatedVC",
 				Status:     vcregistrypb.VCPolicyStatus_VC_POLICY_STATUS_DEPRECATED,
-				CreatedAt:  timestamppb.Now(),
+				CreatedAt:  &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: int32(time.Now().Nanosecond())},
 			},
 		}
 
@@ -1015,7 +1015,7 @@ func TestGetStats(t *testing.T) {
 		HolderAddress: holderAddr,
 		HolderDid:     "did:aura:stats",
 		Status:        types.VCStatus_VC_STATUS_ACTIVE,
-		IssuedAt:      timestamppb.Now(),
+		IssuedAt:      &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: int32(time.Now().Nanosecond())},
 	}
 
 	revokedVC := &vcregistrypb.VCRecord{
@@ -1025,7 +1025,7 @@ func TestGetStats(t *testing.T) {
 		HolderAddress: holderAddr,
 		HolderDid:     "did:aura:stats",
 		Status:        types.VCStatus_VC_STATUS_REVOKED,
-		IssuedAt:      timestamppb.Now(),
+		IssuedAt:      &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: int32(time.Now().Nanosecond())},
 	}
 
 	expiredVC := &vcregistrypb.VCRecord{
@@ -1035,7 +1035,7 @@ func TestGetStats(t *testing.T) {
 		HolderAddress: holderAddr,
 		HolderDid:     "did:aura:stats",
 		Status:        types.VCStatus_VC_STATUS_EXPIRED,
-		IssuedAt:      timestamppb.Now(),
+		IssuedAt:      &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: int32(time.Now().Nanosecond())},
 	}
 
 	// Convert vcregistrypb.VCRecord to types.VCRecord
@@ -1078,7 +1078,7 @@ func TestGetStats(t *testing.T) {
 	keeper.SetVCPolicy(ctx, vcregistrypb.VCPolicy{
 		VcTypeName: "TestVC",
 		Status:     vcregistrypb.VCPolicyStatus_VC_POLICY_STATUS_ACTIVE,
-		CreatedAt:  timestamppb.Now(),
+		CreatedAt:  &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: int32(time.Now().Nanosecond())},
 	})
 
 	// Get stats
@@ -1133,21 +1133,21 @@ func TestInitExportGenesis(t *testing.T) {
 		IssuerAssistant: "issuer1",
 		VcType:          vcregistrypb.VCType_VC_TYPE_VERIFIED_HUMAN,
 		Status:          types.VCStatus_VC_STATUS_ACTIVE,
-		IssuedAt:        timestamppb.Now(),
+		IssuedAt:      &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: int32(time.Now().Nanosecond())},
 	}
 
 	didDoc := &vcregistrypb.DIDDocument{
 		Did:        "did:aura:genesis",
 		Controller: "aura1genesisuser",
-		Created:    timestamppb.Now(),
-		Updated:    timestamppb.Now(),
+		Created:    &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: int32(time.Now().Nanosecond())},
+		Updated:    &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: int32(time.Now().Nanosecond())},
 	}
 
 	policy := &vcregistrypb.VCPolicy{
 		VcTypeName: "GenesisVC",
 		VcTypeEnum: vcregistrypb.VCType_VC_TYPE_VERIFIED_HUMAN,
 		Status:     vcregistrypb.VCPolicyStatus_VC_POLICY_STATUS_ACTIVE,
-		CreatedAt:  timestamppb.Now(),
+		CreatedAt:  &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: int32(time.Now().Nanosecond())},
 	}
 
 	// Convert vcregistrypb.VCRecord to types.VCRecord

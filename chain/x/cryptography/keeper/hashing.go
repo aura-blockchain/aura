@@ -61,7 +61,8 @@ func (k Keeper) CreateSaltedHash(
 	bz := k.cdc.MustMarshal(saltedHash)
 	store.Set(types.GetSaltedHashKey(hashID), bz)
 
-	k.Logger(ctx).Info("created salted hash",
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	k.Logger(sdkCtx).Info("created salted hash",
 		"hash_id", hashID,
 		"algorithm", algorithm.String(),
 		"iterations", iterations,

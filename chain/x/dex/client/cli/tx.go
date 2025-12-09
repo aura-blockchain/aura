@@ -87,8 +87,8 @@ The pool ID will be automatically generated from the token pair (alphabetically 
 				Creator: clientCtx.GetFromAddress().String(),
 				DenomA:  args[0],
 				DenomB:  args[2],
-				AmountA: &amountA,
-				AmountB: &amountB,
+				AmountA: amountA,
+				AmountB: amountB,
 			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
@@ -135,8 +135,8 @@ New liquidity providers must meet current minimum requirements.
 			msg := &types.MsgAddLiquidity{
 				Provider: clientCtx.GetFromAddress().String(),
 				PoolId:   args[0],
-				AmountA:  &amountA,
-				AmountB:  &amountB,
+				AmountA:  amountA,
+				AmountB:  amountB,
 			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
@@ -176,7 +176,7 @@ Note: You will receive tokens proportional to your share of the pool.
 			msg := &types.MsgRemoveLiquidity{
 				Provider: clientCtx.GetFromAddress().String(),
 				PoolId:   args[0],
-				LpTokens: lpTokens.String(),
+				LpTokens: lpTokens,
 			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
@@ -234,8 +234,8 @@ Note: Verified users (100+ IR points) earn 40% more fees!
 			msg := &types.MsgSwapExactIn{
 				Sender:         clientCtx.GetFromAddress().String(),
 				PoolId:         args[0],
-				CoinIn:         &coinIn,
-				MinAmountOut:   minAmountOut.String(),
+				CoinIn:         coinIn,
+				MinAmountOut:   minAmountOut,
 				MaxSlippageBps: maxSlippageBps,
 			}
 
@@ -303,9 +303,9 @@ Orders expire after 24 hours by default.
 			msg := &types.MsgCreateOrder{
 				Creator:     clientCtx.GetFromAddress().String(),
 				OrderType:   orderType,
-				AuraAmount:  auraAmount.String(),
+				AuraAmount:  auraAmount,
 				OtherCoin:   args[2],
-				OtherAmount: otherAmount.String(),
+				OtherAmount: otherAmount,
 			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
@@ -435,7 +435,7 @@ Workflow:
 			msg := &types.MsgCreateHTLC{
 				Sender:           clientCtx.GetFromAddress().String(),
 				Recipient:        args[0],
-				Amount:           &amount,
+				Amount:           amount,
 				SecretHash:       args[2],
 				TimelockDuration: timelockDuration,
 			}

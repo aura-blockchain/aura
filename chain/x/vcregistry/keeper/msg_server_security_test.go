@@ -1,12 +1,13 @@
 package keeper
 
 import (
+	"time"
 	"fmt"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
+	gogotypes "github.com/cosmos/gogoproto/types"
 
 	"github.com/aequitas/aura/chain/x/vcregistry/types"
 	vcregistrypb "github.com/aequitas/aura/proto/aura/vcregistry/v1beta1"
@@ -76,7 +77,7 @@ func TestCreatePresentation_SignerVerification(t *testing.T) {
 		RequiredArenaScore: 0,
 		Singleton:          false,
 		ExpiryDurationDays: 365,
-		CreatedAt:          timestamppb.Now(),
+		CreatedAt:          &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: int32(time.Now().Nanosecond())},
 	}
 	err = k.SetVCPolicy(ctx, vcPolicy)
 	require.NoError(t, err)
@@ -179,7 +180,7 @@ func TestRevokeVC_SignerVerification(t *testing.T) {
 		RequiredArenaScore: 0,
 		Singleton:          false,
 		ExpiryDurationDays: 365,
-		CreatedAt:          timestamppb.Now(),
+		CreatedAt:          &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: int32(time.Now().Nanosecond())},
 	}
 	err = k.SetVCPolicy(ctx, vcPolicy)
 	require.NoError(t, err)

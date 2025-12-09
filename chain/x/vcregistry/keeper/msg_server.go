@@ -11,7 +11,6 @@ import (
 
 	"github.com/aequitas/aura/chain/x/vcregistry/types"
 	vcregistrypb "github.com/aequitas/aura/proto/aura/vcregistry/v1beta1"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // MsgServer implements the Msg service
@@ -26,6 +25,11 @@ func NewMsgServer(keeper *Keeper) *MsgServer {
 }
 
 var _ vcregistrypb.MsgServer = &MsgServer{}
+
+// timestampFromTime converts time.Time to gogotypes.Timestamp
+func timestampFromTime(t time.Time) *gogotypes.Timestamp {
+	return &gogotypes.Timestamp{Seconds: t.Unix(), Nanos: int32(t.Nanosecond())}
+}
 
 // ============================
 // PRESENTATION MESSAGES
@@ -86,10 +90,11 @@ func (m *MsgServer) CreatePresentation(
 	}
 
 	// Emit event
-	var presentationExpiresAt *timestamppb.Timestamp
+	var presentationExpiresAt *gogotypes.Timestamp
 	if presentation.CreatedAt != nil && presentation.ExpiresInSeconds > 0 {
-		presentationExpiresAt = timestamppb.New(
-			presentation.CreatedAt.AsTime().Add(time.Duration(presentation.ExpiresInSeconds) * time.Second),
+		createdTime := time.Unix(presentation.CreatedAt.Seconds, int64(presentation.CreatedAt.Nanos))
+		presentationExpiresAt = timestampFromTime(
+			createdTime.Add(time.Duration(presentation.ExpiresInSeconds) * time.Second),
 		)
 	}
 
@@ -339,13 +344,13 @@ func (m *MsgServer) SuspendVC(
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	currentTime := sdkCtx.BlockTime().Unix()
-	suspendedAt := timestamppb.New(time.Unix(currentTime, 0))
+	suspendedAt := timestampFromTime(time.Unix(currentTime, 0))
 
 	// Calculate reactivation time if duration specified
-	var reactivateAt *timestamppb.Timestamp
+	var reactivateAt *gogotypes.Timestamp
 	if msg.SuspensionDurationDays > 0 {
 		reactivateTime := currentTime + (int64(msg.SuspensionDurationDays) * 86400)
-		reactivateAt = timestamppb.New(time.Unix(reactivateTime, 0))
+		reactivateAt = timestampFromTime(time.Unix(reactivateTime, 0))
 	}
 
 	m.emitEvent(ctx, types.EventTypeVCSuspended, types.NewEventVCSuspended(
@@ -397,7 +402,7 @@ func (m *MsgServer) ReactivateVC(
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	currentTime := sdkCtx.BlockTime().Unix()
-	reactivatedAt := timestamppb.New(time.Unix(currentTime, 0))
+	reactivatedAt := timestampFromTime(time.Unix(currentTime, 0))
 
 	m.emitEvent(ctx, types.EventTypeVCReactivated, types.NewEventVCReactivated(
 		msg.VcId,
@@ -452,7 +457,7 @@ func (m *MsgServer) CreateVCPolicy(
 		MetadataUri:           msg.MetadataUri,
 		Status:                types.VCPolicyStatus_VC_POLICY_STATUS_ACTIVE,
 		Version:               version,
-		CreatedAt:             timestamppb.New(time.Unix(currentTime, 0)),
+		CreatedAt:             timestampFromTime(time.Unix(currentTime, 0)),
 		CreatedHeight:         currentHeight,
 		Creator:               msg.Authority,
 	}
@@ -581,7 +586,7 @@ func (m *MsgServer) DeprecateVCPolicy(
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	currentTime := sdkCtx.BlockTime().Unix()
-	deprecatedAt := timestamppb.New(time.Unix(currentTime, 0))
+	deprecatedAt := timestampFromTime(time.Unix(currentTime, 0))
 
 	m.emitEvent(ctx, types.EventTypeVCPolicyDeprecated, types.NewEventVCPolicyDeprecated(
 		msg.VcTypeName,
@@ -640,7 +645,7 @@ func (m *MsgServer) RegisterDID(
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	currentTime := sdkCtx.BlockTime().Unix()
-	createdAt := timestamppb.New(time.Unix(currentTime, 0))
+	createdAt := timestampFromTime(time.Unix(currentTime, 0))
 	{
 		attrs := types.NewEventDIDRegistered(
 			msg.Did,
@@ -713,7 +718,7 @@ func (m *MsgServer) UpdateDIDDocument(
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	currentTime := sdkCtx.BlockTime().Unix()
-	updatedAt := timestamppb.New(time.Unix(currentTime, 0))
+	updatedAt := timestampFromTime(time.Unix(currentTime, 0))
 	{
 		attrs := types.NewEventDIDUpdated(
 			msg.Did,
@@ -746,24 +751,14 @@ func (m *MsgServer) emitEvent(ctx context.Context, eventType string, attrs map[s
 	sdkCtx.EventManager().EmitEvent(sdk.NewEvent(eventType, eventAttrs...))
 }
 
-func formatTimestamp(ts interface{}) string {
-	switch t := ts.(type) {
-	case *timestamppb.Timestamp:
-		if t == nil {
-			return ""
-		}
-		return t.AsTime().UTC().Format(time.RFC3339Nano)
-	case *gogotypes.Timestamp:
-		if t == nil {
-			return ""
-		}
-		return time.Unix(t.Seconds, int64(t.Nanos)).UTC().Format(time.RFC3339Nano)
-	default:
+func formatTimestamp(ts *gogotypes.Timestamp) string {
+	if ts == nil {
 		return ""
 	}
+	return time.Unix(ts.Seconds, int64(ts.Nanos)).UTC().Format(time.RFC3339Nano)
 }
 
-func (m *MsgServer) emitVCRevokedEvent(ctx context.Context, vcID, vcType, reason, revoker string, revokedAt *timestamppb.Timestamp) {
+func (m *MsgServer) emitVCRevokedEvent(ctx context.Context, vcID, vcType, reason, revoker string, revokedAt *gogotypes.Timestamp) {
 	sdkCtx := m.keeper.sdkContext(ctx)
 	{
 		attrs := types.NewEventVCRevoked(
@@ -821,10 +816,10 @@ func (m *MsgServer) CreateAttributeVC(
 	avcID := m.keeper.GenerateAttributeVCID(ctx, msg.Creator, msg.AttributeType)
 
 	// Calculate expiration
-	var expiresAt *timestamppb.Timestamp
+	var expiresAt *gogotypes.Timestamp
 	if msg.ExpiresInSeconds > 0 {
 		expirationTime := time.Unix(m.keeper.getCurrentTime(ctx), 0).Add(time.Duration(msg.ExpiresInSeconds) * time.Second)
-		expiresAt = timestamppb.New(expirationTime)
+		expiresAt = timestampFromTime(expirationTime)
 	}
 
 	// Create attribute VC
@@ -835,7 +830,7 @@ func (m *MsgServer) CreateAttributeVC(
 		EncryptedValue: msg.EncryptedValue,
 		Issuer:         msg.Issuer,
 		Status:         types.VCStatus_VC_STATUS_ACTIVE,
-		IssuedAt:       timestamppb.New(time.Unix(m.keeper.getCurrentTime(ctx), 0)),
+		IssuedAt:       timestampFromTime(time.Unix(m.keeper.getCurrentTime(ctx), 0)),
 		ExpiresAt:      expiresAt,
 	}
 
@@ -909,7 +904,7 @@ func (m *MsgServer) RevokeAttributeVC(
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	currentTime := sdkCtx.BlockTime().Unix()
-	revokedAt := timestamppb.New(time.Unix(currentTime, 0))
+	revokedAt := timestampFromTime(time.Unix(currentTime, 0))
 
 	m.emitEvent(ctx, "attribute_vc_revoked", map[string]string{
 		"attribute_vc_id": msg.AttributeVcId,
@@ -958,7 +953,7 @@ func (m *MsgServer) UpdateDisclosurePolicy(
 		HolderAddress: msg.Creator,
 		DefaultMode:   msg.DefaultMode,
 		Rules:         msg.Rules,
-		UpdatedAt:     timestamppb.New(time.Unix(m.keeper.getCurrentTime(ctx), 0)),
+		UpdatedAt:     timestampFromTime(time.Unix(m.keeper.getCurrentTime(ctx), 0)),
 	}
 
 	if err := m.keeper.SetDisclosurePolicy(ctx, policy); err != nil {
@@ -1015,7 +1010,7 @@ func (m *MsgServer) CreateDisclosureRequest(
 		RequestedAttributes: msg.RequestedAttributes,
 		Purpose:             msg.Purpose,
 		ExpiresInSeconds:    msg.ExpiresInSeconds,
-		RequestedAt:         timestamppb.New(sdkCtx.BlockTime()),
+		RequestedAt:         timestampFromTime(sdkCtx.BlockTime()),
 	}
 
 	if err := m.keeper.CreateDisclosureRequest(ctx, msg.HolderAddress, req); err != nil {
@@ -1023,7 +1018,7 @@ func (m *MsgServer) CreateDisclosureRequest(
 	}
 
 	// Calculate expiration time
-	expiresAt := timestamppb.New(sdkCtx.BlockTime().Add(time.Duration(msg.ExpiresInSeconds) * time.Second))
+	expiresAt := timestampFromTime(sdkCtx.BlockTime().Add(time.Duration(msg.ExpiresInSeconds) * time.Second))
 
 	m.emitEvent(ctx, "disclosure_request_created", map[string]string{
 		"request_id":      requestID,
@@ -1099,7 +1094,7 @@ func (m *MsgServer) RespondToDisclosureRequest(
 		HolderAddress:       msg.Creator,
 		Approved:            msg.Approved,
 		DisclosedAttributes: disclosedAttrs,
-		RespondedAt:         timestamppb.New(time.Unix(m.keeper.getCurrentTime(ctx), 0)),
+		RespondedAt:         timestampFromTime(time.Unix(m.keeper.getCurrentTime(ctx), 0)),
 	}
 
 	if err := m.keeper.RespondToDisclosureRequest(ctx, resp); err != nil {

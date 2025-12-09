@@ -71,7 +71,8 @@ func (k Keeper) GenerateQuantumResistantKey(
 		return "", nil, err
 	}
 
-	k.Logger(ctx).Info("generated quantum-resistant key",
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	k.Logger(sdkCtx).Info("generated quantum-resistant key",
 		"key_id", keyID,
 		"algorithm", algorithm.String(),
 	)
@@ -208,7 +209,8 @@ func (k Keeper) RotateQuantumResistantKey(
 		return "", nil, err
 	}
 
-	k.Logger(ctx).Info("rotated quantum-resistant key",
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	k.Logger(sdkCtx).Info("rotated quantum-resistant key",
 		"old_key_id", keyID,
 		"new_key_id", newKeyID,
 		"algorithm", oldKey.Algorithm.String(),

@@ -220,13 +220,15 @@ func (k Keeper) PinCertificate(ctx sdk.Context, domain string, certificate []byt
 	// Create pin
 	blockTime := ctx.BlockTime()
 	expiryTime := blockTime.AddDate(1, 0, 0) // 1 year
+	blockTimeCopy := blockTime
+	expiryTimeCopy := expiryTime
 	pin := &cryptoproto.CertificatePin{
 		PinId:             fmt.Sprintf("pin-%s-%d", domain, ctx.BlockHeight()),
 		Hostname:          domain,
 		CertificateHashes: [][]byte{certificate}, // Store cert hash
 		PinType:           cryptoproto.CertificatePinType_CERTIFICATE_PIN_TYPE_FULL_CERT,
-		CreatedAt:         &gogotypes.Timestamp{Seconds: blockTime.Unix(), Nanos: int32(blockTime.Nanosecond())},
-		ExpiresAt:         &expiryTime, // Pointer to time.Time
+		CreatedAt:         &blockTimeCopy,
+		ExpiresAt:         &expiryTimeCopy,
 		Enabled:           true,
 	}
 

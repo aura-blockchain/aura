@@ -259,19 +259,19 @@ func VoteLocksInvariant(k *Keeper) sdk.Invariant {
 			}
 
 			// Validate lock end time is set
-			if lock.LockEnd == nil {
-				invalidLock = fmt.Sprintf("lock %s has nil lock end time", lock.LockId)
+			if lock.LockEnd.IsZero() {
+				invalidLock = fmt.Sprintf("lock %s has zero lock end time", lock.LockId)
 				return true
 			}
 
 			// Validate lock start time is set
-			if lock.LockStart == nil {
-				invalidLock = fmt.Sprintf("lock %s has nil lock start time", lock.LockId)
+			if lock.LockStart.IsZero() {
+				invalidLock = fmt.Sprintf("lock %s has zero lock start time", lock.LockId)
 				return true
 			}
 
 			// Validate lock end is after lock start
-			if lock.LockEnd.Seconds < lock.LockStart.Seconds {
+			if lock.LockEnd.Before(lock.LockStart) {
 				invalidLock = fmt.Sprintf("lock %s has end time before start time", lock.LockId)
 				return true
 			}
@@ -349,14 +349,14 @@ func PendingTreasuryTxsInvariant(k *Keeper) sdk.Invariant {
 			// Both are semantically equivalent and valid for a new treasury tx
 
 			// Validate creation timestamp
-			if tx.CreatedAt == nil {
-				invalidTx = fmt.Sprintf("treasury tx %s has nil creation time", tx.TxId)
+			if tx.CreatedAt.IsZero() {
+				invalidTx = fmt.Sprintf("treasury tx %s has zero creation time", tx.TxId)
 				return true
 			}
 
 			// Validate executable time if set
-			if tx.ExecutableAt != nil && tx.CreatedAt != nil {
-				if tx.ExecutableAt.Seconds < tx.CreatedAt.Seconds {
+			if !tx.ExecutableAt.IsZero() && !tx.CreatedAt.IsZero() {
+				if tx.ExecutableAt.Before(tx.CreatedAt) {
 					invalidTx = fmt.Sprintf("treasury tx %s executable time before creation time", tx.TxId)
 					return true
 				}
@@ -418,8 +418,8 @@ func InflationAlertsInvariant(k *Keeper) sdk.Invariant {
 			}
 
 			// Validate triggered timestamp is set
-			if alert.TriggeredAt == nil {
-				invalidAlert = fmt.Sprintf("alert %s has nil triggered_at timestamp", alert.AlertId)
+			if alert.TriggeredAt.IsZero() {
+				invalidAlert = fmt.Sprintf("alert %s has zero triggered_at timestamp", alert.AlertId)
 				return true
 			}
 
@@ -487,8 +487,8 @@ func WhaleLimitsInvariant(k *Keeper) sdk.Invariant {
 			}
 
 			// Validate timestamp is set
-			if record.Timestamp == nil {
-				invalidRecord = fmt.Sprintf("large tx record %s has nil timestamp", record.TxHash)
+			if record.Timestamp.IsZero() {
+				invalidRecord = fmt.Sprintf("large tx record %s has zero timestamp", record.TxHash)
 				return true
 			}
 

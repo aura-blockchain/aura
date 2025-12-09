@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
+	gogotypes "github.com/cosmos/gogoproto/types"
 
 	"github.com/aequitas/aura/chain/x/vcregistry/types"
 	pb "github.com/aequitas/aura/proto/aura/vcregistry/v1beta1"
@@ -25,7 +25,7 @@ func TestInitGenesis(t *testing.T) {
 		now := time.Now()
 
 		genesis := types.GenesisState{
-			Params: types.DefaultParams(),
+			Params: *types.DefaultParams(),
 			VcRecords: []*pb.VCRecord{
 				{
 					VcId:            "vc1",
@@ -34,7 +34,7 @@ func TestInitGenesis(t *testing.T) {
 					IssuerAssistant: "issuer1",
 					VcType:          pb.VCType_VC_TYPE_VERIFIED_HUMAN,
 					Status:          pb.VCStatus_VC_STATUS_ACTIVE,
-					IssuedAt:        timestamppb.New(now),
+					IssuedAt:        &gogotypes.Timestamp{Seconds: (now).Unix(), Nanos: int32((now).Nanosecond())},
 				},
 				{
 					VcId:            "vc2",
@@ -43,7 +43,7 @@ func TestInitGenesis(t *testing.T) {
 					IssuerAssistant: "issuer1",
 					VcType:          pb.VCType_VC_TYPE_KYC_VERIFICATION,
 					Status:          pb.VCStatus_VC_STATUS_ACTIVE,
-					IssuedAt:        timestamppb.New(now),
+					IssuedAt:        &gogotypes.Timestamp{Seconds: (now).Unix(), Nanos: int32((now).Nanosecond())},
 				},
 			},
 			RevocationRecords:     []*pb.RevocationRecord{},
@@ -73,18 +73,18 @@ func TestInitGenesis(t *testing.T) {
 	t.Run("init with revocation records", func(t *testing.T) {
 		k, ctx := setupKeeperForTest(t)
 		genesis := types.GenesisState{
-			Params:    types.DefaultParams(),
+			Params:            *types.DefaultParams(),
 			VcRecords: []*pb.VCRecord{},
 			RevocationRecords: []*pb.RevocationRecord{
 				{
 					VcId:      "vc1",
-					RevokedAt: timestamppb.New(time.Unix(1000, 0)),
+					RevokedAt: &gogotypes.Timestamp{Seconds: 1000, Nanos: 0},
 					Reason:    pb.RevocationReason_REVOCATION_REASON_USER_REQUEST,
 					Revoker:   "issuer1",
 				},
 				{
 					VcId:      "vc2",
-					RevokedAt: timestamppb.New(time.Unix(2000, 0)),
+					RevokedAt: &gogotypes.Timestamp{Seconds: 2000, Nanos: 0},
 					Reason:    pb.RevocationReason_REVOCATION_REASON_EXPIRED,
 					Revoker:   "issuer2",
 				},
@@ -110,7 +110,7 @@ func TestInitGenesis(t *testing.T) {
 	t.Run("init with DID documents", func(t *testing.T) {
 		k, ctx := setupKeeperForTest(t)
 		genesis := types.GenesisState{
-			Params:            types.DefaultParams(),
+			Params:            *types.DefaultParams(),
 			VcRecords:         []*pb.VCRecord{},
 			RevocationRecords: []*pb.RevocationRecord{},
 			RevocationList:    &pb.RevocationList{},
@@ -139,7 +139,7 @@ func TestInitGenesis(t *testing.T) {
 	t.Run("init with VC policies", func(t *testing.T) {
 		k, ctx := setupKeeperForTest(t)
 		genesis := types.GenesisState{
-			Params:            types.DefaultParams(),
+			Params:            *types.DefaultParams(),
 			VcRecords:         []*pb.VCRecord{},
 			RevocationRecords: []*pb.RevocationRecord{},
 			RevocationList:    &pb.RevocationList{},
@@ -166,7 +166,7 @@ func TestInitGenesis(t *testing.T) {
 	t.Run("init with user mint counts", func(t *testing.T) {
 		k, ctx := setupKeeperForTest(t)
 		genesis := types.GenesisState{
-			Params:                types.DefaultParams(),
+			Params:            *types.DefaultParams(),
 			VcRecords:             []*pb.VCRecord{},
 			RevocationRecords:     []*pb.RevocationRecord{},
 			RevocationList:        &pb.RevocationList{},
@@ -190,7 +190,7 @@ func TestInitGenesis(t *testing.T) {
 	t.Run("init with presentations", func(t *testing.T) {
 		k, ctx := setupKeeperForTest(t)
 		genesis := types.GenesisState{
-			Params:            types.DefaultParams(),
+			Params:            *types.DefaultParams(),
 			VcRecords:         []*pb.VCRecord{},
 			RevocationRecords: []*pb.RevocationRecord{},
 			RevocationList:    &pb.RevocationList{},
@@ -219,7 +219,7 @@ func TestInitGenesis(t *testing.T) {
 	t.Run("init with attribute VCs", func(t *testing.T) {
 		k, ctx := setupKeeperForTest(t)
 		genesis := types.GenesisState{
-			Params:                types.DefaultParams(),
+			Params:            *types.DefaultParams(),
 			VcRecords:             []*pb.VCRecord{},
 			RevocationRecords:     []*pb.RevocationRecord{},
 			RevocationList:        &pb.RevocationList{},
@@ -247,7 +247,7 @@ func TestInitGenesis(t *testing.T) {
 	t.Run("init with invalid genesis fails", func(t *testing.T) {
 		k, ctx := setupKeeperForTest(t)
 		genesis := types.GenesisState{
-			Params: &pb.Params{
+			Params: pb.Params{
 				MaxVcsPerUser: 0, // Invalid
 			},
 			VcRecords:             []*pb.VCRecord{},
@@ -269,7 +269,7 @@ func TestInitGenesis(t *testing.T) {
 	t.Run("init rejects nil entries", func(t *testing.T) {
 		k, ctx := setupKeeperForTest(t)
 		genesis := types.GenesisState{
-			Params: types.DefaultParams(),
+			Params: *types.DefaultParams(),
 			VcRecords: []*pb.VCRecord{
 				nil,
 				{VcId: "vc1", HolderAddress: "holder1", HolderDid: "did:aura:holder1", IssuerAssistant: "issuer1"},
@@ -310,7 +310,7 @@ func TestExportGenesis(t *testing.T) {
 		now := time.Now()
 		// Initialize with data
 		initGenesis := types.GenesisState{
-			Params: types.DefaultParams(),
+			Params: *types.DefaultParams(),
 			VcRecords: []*pb.VCRecord{
 				{
 					VcId:            "vc1",
@@ -318,7 +318,7 @@ func TestExportGenesis(t *testing.T) {
 					HolderDid:       "did:aura:holder1",
 					IssuerAssistant: "issuer1",
 					VcType:          pb.VCType_VC_TYPE_VERIFIED_HUMAN,
-					IssuedAt:        timestamppb.New(now),
+					IssuedAt:        &gogotypes.Timestamp{Seconds: (now).Unix(), Nanos: int32((now).Nanosecond())},
 				},
 				{
 					VcId:            "vc2",
@@ -326,13 +326,13 @@ func TestExportGenesis(t *testing.T) {
 					HolderDid:       "did:aura:holder2",
 					IssuerAssistant: "issuer1",
 					VcType:          pb.VCType_VC_TYPE_KYC_VERIFICATION,
-					IssuedAt:        timestamppb.New(now),
+					IssuedAt:        &gogotypes.Timestamp{Seconds: (now).Unix(), Nanos: int32((now).Nanosecond())},
 				},
 			},
 			RevocationRecords: []*pb.RevocationRecord{
 				{
 					VcId:      "vc1",
-					RevokedAt: timestamppb.New(now),
+					RevokedAt: &gogotypes.Timestamp{Seconds: (now).Unix(), Nanos: int32((now).Nanosecond())},
 					Reason:    pb.RevocationReason_REVOCATION_REASON_USER_REQUEST,
 				},
 			},
@@ -367,7 +367,7 @@ func TestGenesisRoundTrip(t *testing.T) {
 		k, ctx := setupKeeperForTest(t)
 		now := time.Now()
 		originalGenesis := types.GenesisState{
-			Params: types.DefaultParams(),
+			Params: *types.DefaultParams(),
 			VcRecords: []*pb.VCRecord{
 				{
 					VcId:            "vc1",
@@ -376,7 +376,7 @@ func TestGenesisRoundTrip(t *testing.T) {
 					IssuerAssistant: "issuer1",
 					VcType:          pb.VCType_VC_TYPE_VERIFIED_HUMAN,
 					Status:          pb.VCStatus_VC_STATUS_ACTIVE,
-					IssuedAt:        timestamppb.New(now),
+					IssuedAt:        &gogotypes.Timestamp{Seconds: (now).Unix(), Nanos: int32((now).Nanosecond())},
 				},
 			},
 			RevocationRecords:  []*pb.RevocationRecord{},
@@ -423,7 +423,7 @@ func TestGenesisRoundTrip(t *testing.T) {
 				HolderDid:       "did:aura:holder1",
 				IssuerAssistant: "issuer1",
 				VcType:          pb.VCType_VC_TYPE_VERIFIED_HUMAN,
-				IssuedAt:        timestamppb.New(now),
+				IssuedAt:        &gogotypes.Timestamp{Seconds: (now).Unix(), Nanos: int32((now).Nanosecond())},
 			},
 		}
 
@@ -475,7 +475,7 @@ func TestGenesisIndexNoDuplicates(t *testing.T) {
 		k, ctx := setupKeeperForTest(t)
 		// Genesis with presentations AND their index
 		genesis := types.GenesisState{
-			Params:            types.DefaultParams(),
+			Params:            *types.DefaultParams(),
 			VcRecords:         []*pb.VCRecord{},
 			RevocationRecords: []*pb.RevocationRecord{},
 			RevocationList:    &pb.RevocationList{},
@@ -487,13 +487,13 @@ func TestGenesisIndexNoDuplicates(t *testing.T) {
 					PresentationId: "pres1",
 					HolderAddress:  "holder1",
 					VcIds:          []string{"vc1"},
-					CreatedAt:      timestamppb.New(time.Unix(1000, 0)),
+					CreatedAt:      &gogotypes.Timestamp{Seconds: 1000, Nanos: 0},
 				},
 				{
 					PresentationId: "pres2",
 					HolderAddress:  "holder1",
 					VcIds:          []string{"vc2"},
-					CreatedAt:      timestamppb.New(time.Unix(2000, 0)),
+					CreatedAt:      &gogotypes.Timestamp{Seconds: 2000, Nanos: 0},
 				},
 			},
 			UserPresentationIndex: map[string]*pb.PresentationIds{
@@ -527,7 +527,7 @@ func TestGenesisIndexNoDuplicates(t *testing.T) {
 		k, ctx := setupKeeperForTest(t)
 		// Genesis with attribute VCs AND their index
 		genesis := types.GenesisState{
-			Params:                types.DefaultParams(),
+			Params:            *types.DefaultParams(),
 			VcRecords:             []*pb.VCRecord{},
 			RevocationRecords:     []*pb.RevocationRecord{},
 			RevocationList:        &pb.RevocationList{},
@@ -577,7 +577,7 @@ func TestGenesisIndexNoDuplicates(t *testing.T) {
 		k, ctx := setupKeeperForTest(t)
 		// Genesis with presentations but MISMATCHED index
 		genesis := types.GenesisState{
-			Params:            types.DefaultParams(),
+			Params:            *types.DefaultParams(),
 			VcRecords:         []*pb.VCRecord{},
 			RevocationRecords: []*pb.RevocationRecord{},
 			RevocationList:    &pb.RevocationList{},
@@ -589,7 +589,7 @@ func TestGenesisIndexNoDuplicates(t *testing.T) {
 					PresentationId: "pres1",
 					HolderAddress:  "holder1",
 					VcIds:          []string{"vc1"},
-					CreatedAt:      timestamppb.New(time.Unix(1000, 0)),
+					CreatedAt:      &gogotypes.Timestamp{Seconds: 1000, Nanos: 0},
 				},
 			},
 			UserPresentationIndex: map[string]*pb.PresentationIds{
@@ -609,7 +609,7 @@ func TestGenesisIndexNoDuplicates(t *testing.T) {
 		k, ctx := setupKeeperForTest(t)
 		// Genesis with presentations but WRONG COUNT in index
 		genesis := types.GenesisState{
-			Params:            types.DefaultParams(),
+			Params:            *types.DefaultParams(),
 			VcRecords:         []*pb.VCRecord{},
 			RevocationRecords: []*pb.RevocationRecord{},
 			RevocationList:    &pb.RevocationList{},
@@ -621,7 +621,7 @@ func TestGenesisIndexNoDuplicates(t *testing.T) {
 					PresentationId: "pres1",
 					HolderAddress:  "holder1",
 					VcIds:          []string{"vc1"},
-					CreatedAt:      timestamppb.New(time.Unix(1000, 0)),
+					CreatedAt:      &gogotypes.Timestamp{Seconds: 1000, Nanos: 0},
 				},
 			},
 			UserPresentationIndex: map[string]*pb.PresentationIds{
@@ -641,7 +641,7 @@ func TestGenesisIndexNoDuplicates(t *testing.T) {
 		k, ctx := setupKeeperForTest(t)
 		// Genesis with pending disclosure index
 		genesis := types.GenesisState{
-			Params:                types.DefaultParams(),
+			Params:            *types.DefaultParams(),
 			VcRecords:             []*pb.VCRecord{},
 			RevocationRecords:     []*pb.RevocationRecord{},
 			RevocationList:        &pb.RevocationList{},

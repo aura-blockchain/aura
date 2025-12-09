@@ -8,7 +8,6 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/cryptography/types"
 	cryptoproto "github.com/aequitas/aura/proto/aura/cryptography/v1beta1"
@@ -51,12 +50,13 @@ func (k Keeper) AddCertificatePin(
 		expiresAtTime = expiresAt
 	}
 
+	blockTimeCopy := blockTime
 	pin := &cryptoproto.CertificatePin{
 		PinId:             pinID,
 		Hostname:          hostname,
 		CertificateHashes: certificateHashes,
 		PinType:           pinType,
-		CreatedAt:         blockTime,
+		CreatedAt:         &blockTimeCopy,
 		ExpiresAt:         expiresAtTime,
 		Enabled:           true,
 	}
@@ -66,7 +66,8 @@ func (k Keeper) AddCertificatePin(
 		return "", err
 	}
 
-	k.Logger(ctx).Info("added certificate pin",
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	k.Logger(sdkCtx).Info("added certificate pin",
 		"pin_id", pinID,
 		"hostname", hostname,
 		"pin_type", pinType.String(),
@@ -193,7 +194,8 @@ func (k Keeper) UpdateCertificatePin(
 		return err
 	}
 
-	k.Logger(ctx).Info("updated certificate pin",
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	k.Logger(sdkCtx).Info("updated certificate pin",
 		"hostname", hostname,
 	)
 
@@ -206,7 +208,8 @@ func (k Keeper) RemoveCertificatePin(ctx context.Context, hostname string) error
 		return err
 	}
 
-	k.Logger(ctx).Info("removed certificate pin",
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	k.Logger(sdkCtx).Info("removed certificate pin",
 		"hostname", hostname,
 	)
 
@@ -226,7 +229,8 @@ func (k Keeper) EnableCertificatePin(ctx context.Context, hostname string) error
 		return err
 	}
 
-	k.Logger(ctx).Info("enabled certificate pin", "hostname", hostname)
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	k.Logger(sdkCtx).Info("enabled certificate pin", "hostname", hostname)
 
 	return nil
 }
@@ -244,7 +248,8 @@ func (k Keeper) DisableCertificatePin(ctx context.Context, hostname string) erro
 		return err
 	}
 
-	k.Logger(ctx).Info("disabled certificate pin", "hostname", hostname)
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	k.Logger(sdkCtx).Info("disabled certificate pin", "hostname", hostname)
 
 	return nil
 }
@@ -277,7 +282,8 @@ func (k Keeper) RotateCertificatePin(
 		return err
 	}
 
-	k.Logger(ctx).Info("rotated certificate pin",
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	k.Logger(sdkCtx).Info("rotated certificate pin",
 		"hostname", hostname,
 		"total_hashes", len(pin.CertificateHashes),
 	)
@@ -302,7 +308,8 @@ func (k Keeper) CleanupExpiredPins(ctx context.Context) error {
 			return err
 		}
 
-		k.Logger(ctx).Info("removed expired certificate pin",
+		sdkCtx := sdk.UnwrapSDKContext(ctx)
+	k.Logger(sdkCtx).Info("removed expired certificate pin",
 			"hostname", hostname,
 		)
 	}

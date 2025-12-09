@@ -57,7 +57,8 @@ func (k Keeper) InitializeRandomSource(
 		return "", err
 	}
 
-	k.Logger(ctx).Info("initialized random source",
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	k.Logger(sdkCtx).Info("initialized random source",
 		"source_id", sourceID,
 		"type", sourceType.String(),
 		"entropy_bits", entropyBits,
@@ -162,7 +163,7 @@ func (k Keeper) ReseedRandomSource(
 		return err
 	}
 
-	k.Logger(ctx).Info("reseeded random source",
+	k.Logger(reseedCtx).Info("reseeded random source",
 		"source_id", sourceID,
 		"additional_entropy_bits", entropyBits,
 	)
@@ -189,11 +190,12 @@ func (k Keeper) updateRandomSourceStatus(
 // CheckEntropyHealth checks the health of all random sources
 func (k Keeper) CheckEntropyHealth(ctx context.Context) error {
 	params, _ := k.GetParams(ctx)
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
 	return k.IterateRandomSources(ctx, func(source *cryptoproto.CryptoRandomSource) bool {
 		// Check if source needs reseeding (older than 24 hours)
 		if time.Since(source.LastSeeded.AsTime()) > 24*time.Hour {
-			k.Logger(ctx).Warn("random source needs reseeding",
+			k.Logger(sdkCtx).Warn("random source needs reseeding",
 				"source_id", source.SourceId,
 				"last_seeded", source.LastSeeded,
 			)
@@ -201,7 +203,7 @@ func (k Keeper) CheckEntropyHealth(ctx context.Context) error {
 
 		// Check entropy level
 		if source.EntropyBits < int64(params.MinEntropyBits) {
-			k.Logger(ctx).Warn("random source has low entropy",
+			k.Logger(sdkCtx).Warn("random source has low entropy",
 				"source_id", source.SourceId,
 				"entropy_bits", source.EntropyBits,
 			)
