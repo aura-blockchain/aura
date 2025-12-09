@@ -339,9 +339,8 @@ func TestRequiresCommitReveal(t *testing.T) {
 	ctx := suite.Ctx
 
 	params := suite.Keeper.GetParams(ctx)
-	// Parse threshold from string (proto customtype not yet applied)
-	threshold, ok := sdkmath.NewIntFromString(params.CommitRevealThreshold)
-	require.True(t, ok, "threshold should parse correctly")
+	// CommitRevealThreshold is already math.Int (customtype applied in proto)
+	threshold := params.CommitRevealThreshold
 
 	// Amount below threshold
 	smallAmount := threshold.Sub(sdkmath.NewInt(1))
