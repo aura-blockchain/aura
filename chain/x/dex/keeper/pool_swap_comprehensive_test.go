@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"github.com/aequitas/aura/chain/testing/testutil"
 	"crypto/sha256"
 	"fmt"
 	"testing"
@@ -39,9 +40,9 @@ func (suite *PoolSwapComprehensiveTestSuite) SetupTest() {
 		input.Cdc,
 		input.StoreKey,
 		suite.BankKeeper,
-		nil, // accountKeeper
-		nil, // vcKeeper
-		nil, // securityKeeper
+		testutil.NewMockAccountKeeper(),
+		testutil.NewMockVCRegistryKeeper(),
+		testutil.NewMockSecurityKeeper(),
 	)
 	suite.SdkCtx = input.Ctx
 }

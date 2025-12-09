@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 
 	authproto "github.com/aequitas/aura/proto/aura/auth/v1beta1"
 )
@@ -66,7 +65,7 @@ func TestCleanupOldAuditLogs_Deletion(t *testing.T) {
 			Action:    "action1",
 			Resource:  "resource1",
 			Result:    "success",
-			Timestamp: timestamppb.New(time.Now()),
+			Timestamp: time.Now(),
 		}
 		bz, err := k.cdc.Marshal(log)
 		require.NoError(t, err)
@@ -125,8 +124,8 @@ func TestSet_Functions_Success(t *testing.T) {
 		Name:        "test_role",
 		Permissions: []string{"perm1"},
 		Description: "Test",
-		CreatedAt:   timestamppb.New(time.Now()),
-		UpdatedAt:   timestamppb.New(time.Now()),
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
 	}
 	err := k.SetRole(ctx, role)
 	require.NoError(t, err)
@@ -136,7 +135,7 @@ func TestSet_Functions_Success(t *testing.T) {
 		Address:    "user1",
 		RoleName:   "test_role",
 		AssignedBy: "admin1",
-		AssignedAt: timestamppb.New(time.Now()),
+		AssignedAt: time.Now(),
 	}
 	err = k.SetRoleAssignment(ctx, assignment)
 	require.NoError(t, err)
@@ -146,7 +145,7 @@ func TestSet_Functions_Success(t *testing.T) {
 		Id:        "wallet1",
 		Signers:   []string{"s1", "s2"},
 		Threshold: 2,
-		CreatedAt: timestamppb.New(time.Now()),
+		CreatedAt: time.Now(),
 	}
 	err = k.SetMultisigWallet(ctx, wallet)
 	require.NoError(t, err)
@@ -160,7 +159,7 @@ func TestSet_Functions_Success(t *testing.T) {
 		Payload:     []byte("data"),
 		Status:      authproto.ProposalStatus_PROPOSAL_STATUS_PENDING,
 		Signatures:  []string{},
-		CreatedAt:   timestamppb.New(time.Now()),
+		CreatedAt:   time.Now(),
 	}
 	err = k.SetMultisigProposal(ctx, proposal)
 	require.NoError(t, err)
@@ -171,8 +170,8 @@ func TestSet_Functions_Success(t *testing.T) {
 		ActionType:   "test",
 		Payload:      []byte("data"),
 		Proposer:     "proposer1",
-		ProposedAt:   timestamppb.New(time.Now()),
-		ExecutableAt: timestamppb.New(time.Now().Add(1 * time.Hour)),
+		ProposedAt:   time.Now(),
+		ExecutableAt: time.Now().Add(1 * time.Hour),
 		Status:       authproto.ActionStatus_ACTION_STATUS_PENDING,
 		DelaySeconds: 3600,
 	}
@@ -180,11 +179,12 @@ func TestSet_Functions_Success(t *testing.T) {
 	require.NoError(t, err)
 
 	// SetEmergencyAdmin
+	expiresAt := time.Now().Add(1 * time.Hour)
 	admin := &authproto.EmergencyAdmin{
 		Address:     "emergency1",
 		Privileges:  []string{"perm1"},
-		ActivatedAt: timestamppb.New(time.Now()),
-		ExpiresAt:   timestamppb.New(time.Now().Add(1 * time.Hour)),
+		ActivatedAt: time.Now(),
+		ExpiresAt:   &expiresAt,
 		ActivatedBy: "activator",
 		IsActive:    true,
 	}
@@ -196,7 +196,7 @@ func TestSet_Functions_Success(t *testing.T) {
 		ValidatorAddress:   "validator1",
 		OldConsensusPubkey: "old_key",
 		NewConsensusPubkey: "new_key",
-		RotationTime:       timestamppb.New(time.Now()),
+		RotationTime:       time.Now(),
 		InitiatedBy:        "initiator",
 		RotationStatus:     authproto.RotationStatus_ROTATION_STATUS_PENDING,
 	}
@@ -207,8 +207,8 @@ func TestSet_Functions_Success(t *testing.T) {
 	session := &authproto.Session{
 		SessionId:   "session1",
 		UserAddress: "user1",
-		CreatedAt:   timestamppb.New(time.Now()),
-		ExpiresAt:   timestamppb.New(time.Now().Add(1 * time.Hour)),
+		CreatedAt:   time.Now(),
+		ExpiresAt:   time.Now().Add(1 * time.Hour),
 		IpAddress:   "127.0.0.1",
 	}
 	err = k.SetSession(ctx, session)
@@ -223,7 +223,7 @@ func TestSet_Functions_Success(t *testing.T) {
 		CurrentMinuteCount: 0,
 		CurrentHourCount:   0,
 		CurrentDayCount:    0,
-		WindowStart:        timestamppb.New(time.Now()),
+		WindowStart:        time.Now(),
 	}
 	err = k.SetRateLimitConfig(ctx, config)
 	require.NoError(t, err)
@@ -321,7 +321,7 @@ func TestDeleteRoleAssignment_Success(t *testing.T) {
 		Address:    "user1",
 		RoleName:   "role1",
 		AssignedBy: "admin1",
-		AssignedAt: timestamppb.New(time.Now()),
+		AssignedAt: time.Now(),
 	}
 	err := k.SetRoleAssignment(ctx, assignment)
 	require.NoError(t, err)
@@ -348,7 +348,7 @@ func TestResetRateLimitWindow_MinuteOnly(t *testing.T) {
 		CurrentMinuteCount: 50,
 		CurrentHourCount:   500,
 		CurrentDayCount:    5000,
-		WindowStart:        timestamppb.New(oldTime),
+		WindowStart:        oldTime,
 	}
 	err := k.SetRateLimitConfig(ctx, config)
 	require.NoError(t, err)
@@ -377,7 +377,7 @@ func TestResetRateLimitWindow_HourReset(t *testing.T) {
 		CurrentMinuteCount: 50,
 		CurrentHourCount:   500,
 		CurrentDayCount:    5000,
-		WindowStart:        timestamppb.New(oldTime),
+		WindowStart:        oldTime,
 	}
 	err := k.SetRateLimitConfig(ctx, config)
 	require.NoError(t, err)
@@ -429,7 +429,7 @@ func TestHasPermission_NoExpiry(t *testing.T) {
 		Address:    "user1",
 		RoleName:   "admin",
 		AssignedBy: "system",
-		AssignedAt: timestamppb.New(time.Now()),
+		AssignedAt: time.Now(),
 		ExpiresAt:  nil, // No expiry
 	}
 	err := k.SetRoleAssignment(ctx, assignment)
@@ -448,7 +448,7 @@ func TestHasPermission_EmergencyAdminNoExpiry(t *testing.T) {
 	admin := &authproto.EmergencyAdmin{
 		Address:     "emergency1",
 		Privileges:  []string{"admin"},
-		ActivatedAt: timestamppb.New(time.Now()),
+		ActivatedAt: time.Now(),
 		ExpiresAt:   nil, // No expiry
 		ActivatedBy: "activator",
 		IsActive:    true,

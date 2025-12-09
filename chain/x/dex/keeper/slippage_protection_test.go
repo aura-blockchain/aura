@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"github.com/aequitas/aura/chain/testing/testutil"
 	"testing"
 
 	sdkmath "cosmossdk.io/math"
@@ -20,7 +21,7 @@ func setupSlippageTestKeeper(t *testing.T) (*keeper.Keeper, sdk.Context, *MockBa
 	// Use the existing MockBankKeeper from keeper_comprehensive_test.go
 	mockBank := NewMockBankKeeper()
 
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, mockBank, nil, nil, nil)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey, mockBank, testutil.NewMockAccountKeeper(), testutil.NewMockVCRegistryKeeper(), testutil.NewMockSecurityKeeper())
 	return k, input.Ctx, mockBank
 }
 

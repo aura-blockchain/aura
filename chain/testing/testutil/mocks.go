@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"fmt"
+	"time"
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -168,4 +169,184 @@ func (m *MockGovernanceKeeper) GetProposal(ctx sdk.Context, proposalID uint64) (
 // SetProposal sets a proposal
 func (m *MockGovernanceKeeper) SetProposal(ctx sdk.Context, proposalID uint64, proposal interface{}) {
 	m.Proposals[proposalID] = proposal
+}
+
+// MockVCRegistryKeeper is a mock implementation of the VC registry keeper
+type MockVCRegistryKeeper struct {
+	Credentials map[string]interface{}
+	IRScores    map[string]uint64
+	Verified    map[string]bool
+}
+
+// NewMockVCRegistryKeeper creates a new mock VC registry keeper
+func NewMockVCRegistryKeeper() *MockVCRegistryKeeper {
+	return &MockVCRegistryKeeper{
+		Credentials: make(map[string]interface{}),
+		IRScores:    make(map[string]uint64),
+		Verified:    make(map[string]bool),
+	}
+}
+
+// VerifyCredential verifies a credential
+func (m *MockVCRegistryKeeper) VerifyCredential(ctx sdk.Context, credentialID string) (bool, error) {
+	_, exists := m.Credentials[credentialID]
+	return exists, nil
+}
+
+// GetIRScore returns the IR score for an address
+func (m *MockVCRegistryKeeper) GetIRScore(ctx sdk.Context, address string) uint64 {
+	if score, ok := m.IRScores[address]; ok {
+		return score
+	}
+	return 0
+}
+
+// IsVerified checks if an address is verified
+func (m *MockVCRegistryKeeper) IsVerified(ctx sdk.Context, address string) bool {
+	if verified, ok := m.Verified[address]; ok {
+		return verified
+	}
+	return false
+}
+
+// MockSecurityKeeper is a mock implementation of the security keeper
+type MockSecurityKeeper struct {
+	SecurityEvents   map[string]interface{}
+	PausedModules    map[string]bool
+	ReentrantKeys    map[string]bool
+	Authorizations   map[string]map[string]bool // address -> action -> authorized
+}
+
+// NewMockSecurityKeeper creates a new mock security keeper
+func NewMockSecurityKeeper() *MockSecurityKeeper {
+	return &MockSecurityKeeper{
+		SecurityEvents: make(map[string]interface{}),
+		PausedModules:  make(map[string]bool),
+		ReentrantKeys:  make(map[string]bool),
+		Authorizations: make(map[string]map[string]bool),
+	}
+}
+
+// RecordSecurityEvent records a security event
+func (m *MockSecurityKeeper) RecordSecurityEvent(ctx sdk.Context, eventID string, event interface{}) error {
+	m.SecurityEvents[eventID] = event
+	return nil
+}
+
+// EnterNoReentrant marks a key as entered
+func (m *MockSecurityKeeper) EnterNoReentrant(ctx sdk.Context, key string) error {
+	if m.ReentrantKeys[key] {
+		return fmt.Errorf("reentrant call detected for key: %s", key)
+	}
+	m.ReentrantKeys[key] = true
+	return nil
+}
+
+// ExitNoReentrant marks a key as exited
+func (m *MockSecurityKeeper) ExitNoReentrant(ctx sdk.Context, key string) {
+	delete(m.ReentrantKeys, key)
+}
+
+// WithReentrancyGuard executes a function with reentrancy protection
+func (m *MockSecurityKeeper) WithReentrancyGuard(ctx sdk.Context, key string, fn func() error) error {
+	if err := m.EnterNoReentrant(ctx, key); err != nil {
+		return err
+	}
+	defer m.ExitNoReentrant(ctx, key)
+	return fn()
+}
+
+// RequireNotPaused checks if a module is not paused
+func (m *MockSecurityKeeper) RequireNotPaused(ctx sdk.Context, moduleName string) error {
+	if m.PausedModules[moduleName] {
+		return fmt.Errorf("module %s is paused", moduleName)
+	}
+	return nil
+}
+
+// PauseModule pauses a module
+func (m *MockSecurityKeeper) PauseModule(ctx sdk.Context, moduleName string, pausedBy string) error {
+	m.PausedModules[moduleName] = true
+	return nil
+}
+
+// UnpauseModule unpauses a module
+func (m *MockSecurityKeeper) UnpauseModule(ctx sdk.Context, moduleName string, unpausedBy string) error {
+	delete(m.PausedModules, moduleName)
+	return nil
+}
+
+// IsModulePaused checks if a module is paused
+func (m *MockSecurityKeeper) IsModulePaused(ctx sdk.Context, moduleName string) bool {
+	return m.PausedModules[moduleName]
+}
+
+// CheckGuardRateLimit checks rate limit (mock always allows)
+func (m *MockSecurityKeeper) CheckGuardRateLimit(ctx sdk.Context, key string, limit uint64, window time.Duration) error {
+	return nil
+}
+
+// IncrementGuardRateLimit increments rate limit counter (mock does nothing)
+func (m *MockSecurityKeeper) IncrementGuardRateLimit(ctx sdk.Context, key string, window time.Duration) {
+}
+
+// ValidateAddress validates an address format (mock always succeeds)
+func (m *MockSecurityKeeper) ValidateAddress(address string) error {
+	if address == "" {
+		return fmt.Errorf("address cannot be empty")
+	}
+	return nil
+}
+
+// ValidateAmount validates an amount is within bounds
+func (m *MockSecurityKeeper) ValidateAmount(amount math.Int, min, max math.Int) error {
+	if amount.LT(min) {
+		return fmt.Errorf("amount %s is less than minimum %s", amount, min)
+	}
+	if !max.IsZero() && amount.GT(max) {
+		return fmt.Errorf("amount %s is greater than maximum %s", amount, max)
+	}
+	return nil
+}
+
+// ValidateNonEmpty validates a string is not empty
+func (m *MockSecurityKeeper) ValidateNonEmpty(value string, fieldName string) error {
+	if value == "" {
+		return fmt.Errorf("%s cannot be empty", fieldName)
+	}
+	return nil
+}
+
+// ValidateStringLength validates string length
+func (m *MockSecurityKeeper) ValidateStringLength(value string, fieldName string, minLen, maxLen int) error {
+	length := len(value)
+	if length < minLen {
+		return fmt.Errorf("%s length %d is less than minimum %d", fieldName, length, minLen)
+	}
+	if maxLen > 0 && length > maxLen {
+		return fmt.Errorf("%s length %d is greater than maximum %d", fieldName, length, maxLen)
+	}
+	return nil
+}
+
+// CheckAuthorization checks if an address is authorized for an action
+func (m *MockSecurityKeeper) CheckAuthorization(ctx sdk.Context, address string, action string) error {
+	if actions, ok := m.Authorizations[address]; ok {
+		if authorized, exists := actions[action]; exists && authorized {
+			return nil
+		}
+	}
+	// Mock allows all by default
+	return nil
+}
+
+// LogSecurityEvent logs a security event
+func (m *MockSecurityKeeper) LogSecurityEvent(ctx sdk.Context, eventType string, severity string, actor string, action string, details string) {
+	// Mock implementation - just store the event
+	m.SecurityEvents[eventType] = map[string]string{
+		"severity": severity,
+		"actor":    actor,
+		"action":   action,
+		"details":  details,
+	}
 }

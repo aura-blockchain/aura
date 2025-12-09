@@ -38,9 +38,9 @@ func (suite *LPTokenInvariantTestSuite) SetupTest() {
 		input.Cdc,
 		input.StoreKey,
 		suite.BankKeeper,
-		nil, // accountKeeper
-		nil, // vcKeeper
-		nil, // securityKeeper
+		testutil.NewMockAccountKeeper(),
+		testutil.NewMockVCRegistryKeeper(),
+		testutil.NewMockSecurityKeeper(),
 	)
 	suite.SdkCtx = input.Ctx
 }

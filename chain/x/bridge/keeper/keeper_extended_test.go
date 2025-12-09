@@ -382,7 +382,8 @@ func TestResolveFraudProofValid(t *testing.T) {
 	require.Equal(t, types.FraudProofStatus_FRAUD_PROOF_VALID, resolved.Status)
 	require.NotNil(t, resolved.ResolvedAt)
 	params := types.DefaultSecurityParams()
-	require.Equal(t, params.FraudProofReward.String(), resolved.RewardAmount)
+	require.True(t, resolved.RewardAmount.Equal(params.FraudProofReward),
+		"expected reward %s, got %s", params.FraudProofReward.String(), resolved.RewardAmount.String())
 
 	transfer := getBridgeTransfer(t, input, transferID)
 	require.Equal(t, types.TransferStatus_FAILED, transfer.Status)
@@ -402,7 +403,8 @@ func TestResolveFraudProofInvalid(t *testing.T) {
 	resolved, err := k.ResolveFraudProof(input.Ctx, transferID, false)
 	require.NoError(t, err)
 	require.Equal(t, types.FraudProofStatus_FRAUD_PROOF_INVALID, resolved.Status)
-	require.Equal(t, "0", resolved.RewardAmount)
+	require.True(t, resolved.RewardAmount.IsZero(),
+		"expected zero reward, got %s", resolved.RewardAmount.String())
 
 	transfer := getBridgeTransfer(t, input, transferID)
 	require.Equal(t, types.TransferStatus_PENDING, transfer.Status)

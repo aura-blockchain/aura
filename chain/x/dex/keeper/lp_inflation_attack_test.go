@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"github.com/aequitas/aura/chain/testing/testutil"
 	"math/big"
 	"testing"
 
@@ -39,9 +40,9 @@ func (suite *LPInflationAttackTestSuite) SetupTest() {
 		input.Cdc,
 		input.StoreKey,
 		suite.BankKeeper,
-		nil, // accountKeeper
-		nil, // vcKeeper
-		nil, // securityKeeper
+		testutil.NewMockAccountKeeper(),
+		testutil.NewMockVCRegistryKeeper(),
+		testutil.NewMockSecurityKeeper(),
 	)
 	suite.SdkCtx = input.Ctx
 }

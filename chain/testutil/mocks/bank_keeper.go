@@ -114,6 +114,22 @@ func (m *MockBankKeeper) SendCoinsFromModuleToAccount(ctx sdk.Context, senderMod
 		return m.SendCoinsError
 	}
 
+	// Check module balance (module accounts are stored with module name as key)
+	moduleKey := senderModule
+	if moduleBalance, ok := m.Balances[moduleKey]; ok {
+		// Verify module has sufficient balance
+		if !moduleBalance.IsAllGTE(amt) {
+			return fmt.Errorf("insufficient module balance: module %s has %s, needs %s",
+				senderModule, moduleBalance.String(), amt.String())
+		}
+		// Deduct from module balance
+		m.Balances[moduleKey] = moduleBalance.Sub(amt...)
+	} else {
+		// Module has no balance
+		return fmt.Errorf("insufficient module balance: module %s has no balance", senderModule)
+	}
+
+	// Add to recipient balance
 	recipientKey := recipientAddr.String()
 	if balance, ok := m.Balances[recipientKey]; ok {
 		m.Balances[recipientKey] = balance.Add(amt...)
@@ -136,6 +152,16 @@ func (m *MockBankKeeper) SendCoinsFromAccountToModule(ctx sdk.Context, senderAdd
 			return fmt.Errorf("insufficient funds")
 		}
 		m.Balances[senderKey] = balance.Sub(amt...)
+	} else {
+		return fmt.Errorf("insufficient funds: account has no balance")
+	}
+
+	// Add to module balance (module accounts are stored with module name as key)
+	moduleKey := recipientModule
+	if moduleBalance, ok := m.Balances[moduleKey]; ok {
+		m.Balances[moduleKey] = moduleBalance.Add(amt...)
+	} else {
+		m.Balances[moduleKey] = amt
 	}
 
 	return nil

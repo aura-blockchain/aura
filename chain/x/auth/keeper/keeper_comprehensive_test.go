@@ -124,7 +124,7 @@ func TestSetRoleAssignment_UpdateExisting(t *testing.T) {
 		Address:    "user1",
 		RoleName:   types.RoleUser,
 		AssignedBy: "admin1",
-		AssignedAt: timestamppb.New(time.Now()),
+		AssignedAt: time.Now(),
 	}
 
 	// Set once
@@ -132,7 +132,8 @@ func TestSetRoleAssignment_UpdateExisting(t *testing.T) {
 	require.NoError(t, err)
 
 	// Update with new expiry
-	assignment.ExpiresAt = timestamppb.New(time.Now().Add(1 * time.Hour))
+	expiresAt := time.Now().Add(1 * time.Hour)
+	assignment.ExpiresAt = &expiresAt
 	err = k.SetRoleAssignment(ctx, assignment)
 	require.NoError(t, err)
 
@@ -164,7 +165,7 @@ func TestDeleteRoleAssignment_EmptyResult(t *testing.T) {
 		Address:    "user1",
 		RoleName:   types.RoleUser,
 		AssignedBy: "admin1",
-		AssignedAt: timestamppb.New(time.Now()),
+		AssignedAt: time.Now(),
 	}
 	err := k.SetRoleAssignment(ctx, assignment)
 	require.NoError(t, err)
@@ -315,8 +316,8 @@ func TestGetAllTimeLockedActions(t *testing.T) {
 			ActionType:   "test",
 			Payload:      []byte("data"),
 			Proposer:     "proposer1",
-			ProposedAt:   timestamppb.New(time.Now()),
-			ExecutableAt: timestamppb.New(time.Now().Add(1 * time.Hour)),
+			ProposedAt:   time.Now(),
+			ExecutableAt: time.Now().Add(1 * time.Hour),
 			Status:       authproto.ActionStatus_ACTION_STATUS_PENDING,
 			DelaySeconds: 3600,
 		}
@@ -350,8 +351,8 @@ func TestDeleteTimeLockedAction(t *testing.T) {
 		ActionType:   "test",
 		Payload:      []byte("data"),
 		Proposer:     "proposer1",
-		ProposedAt:   timestamppb.New(time.Now()),
-		ExecutableAt: timestamppb.New(time.Now().Add(1 * time.Hour)),
+		ProposedAt:   time.Now(),
+		ExecutableAt: time.Now().Add(1 * time.Hour),
 		Status:       authproto.ActionStatus_ACTION_STATUS_PENDING,
 		DelaySeconds: 3600,
 	}
@@ -398,8 +399,8 @@ func TestGetAllEmergencyAdmins(t *testing.T) {
 		admin := &authproto.EmergencyAdmin{
 			Address:     "admin" + string(rune('1'+i)),
 			Privileges:  []string{types.PermissionAdmin},
-			ActivatedAt: timestamppb.New(time.Now()),
-			ExpiresAt:   timestamppb.New(time.Now().Add(1 * time.Hour)),
+			ActivatedAt: time.Now(),
+			ExpiresAt:   time.Now().Add(1 * time.Hour),
 			ActivatedBy: "activator",
 			IsActive:    true,
 		}
@@ -431,8 +432,8 @@ func TestDeleteEmergencyAdmin(t *testing.T) {
 	admin := &authproto.EmergencyAdmin{
 		Address:     "temp_admin",
 		Privileges:  []string{types.PermissionAdmin},
-		ActivatedAt: timestamppb.New(time.Now()),
-		ExpiresAt:   timestamppb.New(time.Now().Add(1 * time.Hour)),
+		ActivatedAt: time.Now(),
+		ExpiresAt:   time.Now().Add(1 * time.Hour),
 		ActivatedBy: "activator",
 		IsActive:    true,
 	}
@@ -457,7 +458,7 @@ func TestSetValidatorKeyRotation(t *testing.T) {
 		ValidatorAddress:   "validator1",
 		OldConsensusPubkey: "old_key",
 		NewConsensusPubkey: "new_key",
-		RotationTime:       timestamppb.New(time.Now()),
+		RotationTime:       time.Now(),
 		InitiatedBy:        "initiator",
 		RotationStatus:     authproto.RotationStatus_ROTATION_STATUS_PENDING,
 	}
@@ -502,7 +503,7 @@ func TestGetAllValidatorKeyRotations(t *testing.T) {
 			ValidatorAddress:   "validator" + string(rune('1'+i)),
 			OldConsensusPubkey: "old_key",
 			NewConsensusPubkey: "new_key",
-			RotationTime:       timestamppb.New(time.Now()),
+			RotationTime:       time.Now(),
 			InitiatedBy:        "initiator",
 			RotationStatus:     authproto.RotationStatus_ROTATION_STATUS_PENDING,
 		}
@@ -535,7 +536,7 @@ func TestDeleteValidatorKeyRotation(t *testing.T) {
 		ValidatorAddress:   "temp_validator",
 		OldConsensusPubkey: "old_key",
 		NewConsensusPubkey: "new_key",
-		RotationTime:       timestamppb.New(time.Now()),
+		RotationTime:       time.Now(),
 		InitiatedBy:        "initiator",
 		RotationStatus:     authproto.RotationStatus_ROTATION_STATUS_PENDING,
 	}
@@ -582,8 +583,8 @@ func TestGetAllSessions(t *testing.T) {
 		session := &authproto.Session{
 			SessionId:   "session" + string(rune('1'+i)),
 			UserAddress: "user1",
-			CreatedAt:   timestamppb.New(time.Now()),
-			ExpiresAt:   timestamppb.New(time.Now().Add(1 * time.Hour)),
+			CreatedAt:   time.Now(),
+			ExpiresAt:   time.Now().Add(1 * time.Hour),
 			IpAddress:   "127.0.0.1",
 		}
 		err := k.SetSession(ctx, session)
@@ -636,8 +637,8 @@ func TestRemoveUserSession_EmptyResult(t *testing.T) {
 	session := &authproto.Session{
 		SessionId:   "session1",
 		UserAddress: "user1",
-		CreatedAt:   timestamppb.New(time.Now()),
-		ExpiresAt:   timestamppb.New(time.Now().Add(1 * time.Hour)),
+		CreatedAt:   time.Now(),
+		ExpiresAt:   time.Now().Add(1 * time.Hour),
 	}
 	err := k.SetSession(ctx, session)
 	require.NoError(t, err)
@@ -667,7 +668,7 @@ func TestSetRateLimitConfig(t *testing.T) {
 		CurrentMinuteCount: 0,
 		CurrentHourCount:   0,
 		CurrentDayCount:    0,
-		WindowStart:        timestamppb.New(time.Now()),
+		WindowStart:        time.Now(),
 	}
 
 	err := k.SetRateLimitConfig(ctx, config)
@@ -713,7 +714,7 @@ func TestGetAllRateLimitConfigs(t *testing.T) {
 			CurrentMinuteCount: 0,
 			CurrentHourCount:   0,
 			CurrentDayCount:    0,
-			WindowStart:        timestamppb.New(time.Now()),
+			WindowStart:        time.Now(),
 		}
 		err := k.SetRateLimitConfig(ctx, config)
 		require.NoError(t, err)
@@ -745,7 +746,7 @@ func TestDeleteRateLimitConfig(t *testing.T) {
 		RequestsPerMinute: 100,
 		RequestsPerHour:   6000,
 		RequestsPerDay:    144000,
-		WindowStart:       timestamppb.New(time.Now()),
+		WindowStart:       time.Now(),
 	}
 	err := k.SetRateLimitConfig(ctx, config)
 	require.NoError(t, err)
@@ -884,8 +885,8 @@ func TestCleanupExpiredSessions(t *testing.T) {
 	expiredSession := &authproto.Session{
 		SessionId:   "expired_session",
 		UserAddress: "user1",
-		CreatedAt:   timestamppb.New(time.Now().Add(-2 * time.Hour)),
-		ExpiresAt:   timestamppb.New(time.Now().Add(-1 * time.Hour)),
+		CreatedAt:   time.Now().Add(-2 * time.Hour),
+		ExpiresAt:   time.Now().Add(-1 * time.Hour),
 	}
 	err := k.SetSession(ctx, expiredSession)
 	require.NoError(t, err)
@@ -894,8 +895,8 @@ func TestCleanupExpiredSessions(t *testing.T) {
 	activeSession := &authproto.Session{
 		SessionId:   "active_session",
 		UserAddress: "user1",
-		CreatedAt:   timestamppb.New(time.Now()),
-		ExpiresAt:   timestamppb.New(time.Now().Add(1 * time.Hour)),
+		CreatedAt:   time.Now(),
+		ExpiresAt:   time.Now().Add(1 * time.Hour),
 	}
 	err = k.SetSession(ctx, activeSession)
 	require.NoError(t, err)
@@ -931,8 +932,8 @@ func TestCleanupExpiredProposals(t *testing.T) {
 		Title:       "Expired",
 		Description: "Expired proposal",
 		Payload:     []byte("data"),
-		CreatedAt:   timestamppb.New(time.Now().Add(-2 * time.Hour)),
-		ExpiresAt:   timestamppb.New(time.Now().Add(-1 * time.Hour)),
+		CreatedAt:   time.Now().Add(-2 * time.Hour),
+		ExpiresAt:   time.Now().Add(-1 * time.Hour),
 		Status:      authproto.ProposalStatus_PROPOSAL_STATUS_PENDING,
 		Signatures:  []string{},
 	}
@@ -946,8 +947,8 @@ func TestCleanupExpiredProposals(t *testing.T) {
 		Title:       "Active",
 		Description: "Active proposal",
 		Payload:     []byte("data"),
-		CreatedAt:   timestamppb.New(time.Now()),
-		ExpiresAt:   timestamppb.New(time.Now().Add(1 * time.Hour)),
+		CreatedAt:   time.Now(),
+		ExpiresAt:   time.Now().Add(1 * time.Hour),
 		Status:      authproto.ProposalStatus_PROPOSAL_STATUS_PENDING,
 		Signatures:  []string{},
 	}
@@ -979,8 +980,8 @@ func TestCleanupExpiredProposals_AlreadyExecuted(t *testing.T) {
 		Title:       "Executed",
 		Description: "Executed proposal",
 		Payload:     []byte("data"),
-		CreatedAt:   timestamppb.New(time.Now().Add(-2 * time.Hour)),
-		ExpiresAt:   timestamppb.New(time.Now().Add(-1 * time.Hour)),
+		CreatedAt:   time.Now().Add(-2 * time.Hour),
+		ExpiresAt:   time.Now().Add(-1 * time.Hour),
 		Status:      authproto.ProposalStatus_PROPOSAL_STATUS_EXECUTED,
 		Signatures:  []string{},
 	}
@@ -1057,7 +1058,7 @@ func TestHasPermission_RoleNotFound(t *testing.T) {
 		Address:    "user1",
 		RoleName:   "nonexistent_role",
 		AssignedBy: "system",
-		AssignedAt: timestamppb.New(time.Now()),
+		AssignedAt: time.Now(),
 	}
 	err := k.SetRoleAssignment(ctx, assignment)
 	require.NoError(t, err)

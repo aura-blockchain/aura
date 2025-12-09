@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"github.com/aequitas/aura/chain/testing/testutil"
 	"testing"
 
 	sdkmath "cosmossdk.io/math"
@@ -29,9 +30,9 @@ func SetupKeeperTest(t *testing.T) TestFixture {
 		input.Cdc,
 		input.StoreKey,
 		bankKeeper,
-		nil, // accountKeeper
-		nil, // vcKeeper
-		nil, // securityKeeper
+		testutil.NewMockAccountKeeper(),
+		testutil.NewMockVCRegistryKeeper(),
+		testutil.NewMockSecurityKeeper(),
 	)
 
 	// Generate test addresses

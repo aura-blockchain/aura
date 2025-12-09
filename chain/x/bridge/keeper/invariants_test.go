@@ -57,7 +57,7 @@ func (suite *InvariantsTestSuite) TestRegisterInvariants() {
 	})
 
 	// Verify all expected invariants are registered
-	suite.Equal(6, registry.count, "should register 6 invariants")
+	suite.Equal(7, registry.count, "should register 7 invariants")
 }
 
 // mockInvariantRegistry implements sdk.InvariantRegistry for testing

@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
+	"github.com/aequitas/aura/chain/testing/testutil"
 )
 
 // KeeperTestSuite is a base test suite for keeper tests in the keeper package
@@ -29,10 +30,10 @@ func (suite *KeeperTestSuite) SetupTest() {
 	suite.Keeper = NewKeeper(
 		input.Cdc,
 		input.StoreKey,
-		nil, // bankKeeper
-		nil, // accountKeeper
-		nil, // vcKeeper
-		nil, // securityKeeper
+		testutil.NewMockBankKeeper(),
+		testutil.NewMockAccountKeeper(),
+		testutil.NewMockVCRegistryKeeper(),
+		testutil.NewMockSecurityKeeper(),
 	)
 	suite.SdkCtx = input.Ctx
 	suite.Cdc = input.Cdc

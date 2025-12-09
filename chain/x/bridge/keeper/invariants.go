@@ -95,6 +95,17 @@ func TransferBalanceInvariant(k Keeper) sdk.Invariant {
 				), true
 			}
 
+			// CRITICAL SECURITY: Validate transfer amount is positive
+			// Negative amounts would break accounting and allow exploits
+			if transfer.Amount.IsNegative() {
+				return sdk.FormatInvariant(
+					types.ModuleName,
+					"transfer-balance",
+					fmt.Sprintf("invalid transfer amount: transfer %s has negative amount %s",
+						transfer.TransferId, transfer.Amount.String()),
+				), true
+			}
+
 			// Only count pending and confirmed transfers (locked in escrow)
 			if transfer.Status == types.TransferStatus_PENDING ||
 				transfer.Status == types.TransferStatus_CONFIRMED {

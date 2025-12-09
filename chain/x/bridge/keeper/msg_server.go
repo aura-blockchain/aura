@@ -618,6 +618,12 @@ func (ms msgServer) BurnTokens(goCtx context.Context, msg *bridgepb.MsgBurnToken
 	if msg == nil {
 		return nil, status.Error(codes.InvalidArgument, "request cannot be nil")
 	}
+
+	// CRITICAL SECURITY: Validate amount is positive before any operations
+	if !msg.Amount.IsPositive() {
+		return nil, status.Error(codes.InvalidArgument, "amount must be positive")
+	}
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	chainID := normalizeChain(msg.TargetChain)
 	if chainID == "" {

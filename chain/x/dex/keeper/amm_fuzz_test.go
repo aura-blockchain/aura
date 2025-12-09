@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"github.com/aequitas/aura/chain/testing/testutil"
 	"testing"
 
 	sdkmath "cosmossdk.io/math"
@@ -38,7 +39,7 @@ func FuzzGetQuote_ConstantProductBounds(f *testing.F) {
 		}
 
 		input := keepertest.CreateTestInput(t)
-		k := NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil)
+		k := NewKeeper(input.Cdc, input.StoreKey, testutil.NewMockBankKeeper(), testutil.NewMockAccountKeeper(), testutil.NewMockVCRegistryKeeper(), testutil.NewMockSecurityKeeper())
 		ctx := input.Ctx
 
 		pool := &types.LiquidityPool{
