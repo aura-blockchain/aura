@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"github.com/aequitas/aura/chain/testing/testutil"
 	"fmt"
 	"testing"
 	"time"
@@ -439,10 +440,10 @@ func setupTest(t *testing.T) (sdk.Context, *keeper.Keeper) {
 	k := keeper.NewKeeper(
 		input.Cdc,
 		input.StoreKey,
-		nil, // bankKeeper
+		testutil.NewMockBankKeeper(),
 		nil, // authKeeper
-		nil, // vcKeeper
-		nil, // securityKeeper
+		testutil.NewMockVCRegistryKeeper(),
+		testutil.NewMockSecurityKeeper(),
 	)
 	return input.Ctx, k
 }

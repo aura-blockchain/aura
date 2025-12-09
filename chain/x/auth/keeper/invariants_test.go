@@ -6,7 +6,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/suite"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/auth/types"
 	authproto "github.com/aequitas/aura/proto/aura/auth/v1beta1"
@@ -30,7 +29,7 @@ func (suite *InvariantsTestSuite) TestRoleConsistencyInvariant() {
 	suite.Empty(msg)
 
 	// Create valid role
-	now := timestamppb.New(time.Now())
+	now := time.Now()
 	role := &authproto.Role{
 		Name:        "test-role",
 		Permissions: []string{types.PermissionAdmin, types.PermissionCreateRole},
@@ -64,12 +63,12 @@ func (suite *InvariantsTestSuite) TestRoleConsistencyInvariant() {
 	// Clean up
 	suite.deleteRole(ctx, "invalid-role")
 
-	// Test: Role with nil created_at
+	// Test: Role with zero created_at
 	nilCreatedRole := &authproto.Role{
 		Name:        "nil-created",
 		Permissions: []string{types.PermissionAdmin},
-		Description: "Role with nil created_at",
-		CreatedAt:   nil,
+		Description: "Role with zero created_at",
+		CreatedAt:   time.Time{},
 		UpdatedAt:   now,
 	}
 	suite.storeRole(ctx, nilCreatedRole)
@@ -81,13 +80,13 @@ func (suite *InvariantsTestSuite) TestRoleConsistencyInvariant() {
 	// Clean up
 	suite.deleteRole(ctx, "nil-created")
 
-	// Test: Role with nil updated_at
+	// Test: Role with zero updated_at
 	nilUpdatedRole := &authproto.Role{
 		Name:        "nil-updated",
 		Permissions: []string{types.PermissionAdmin},
-		Description: "Role with nil updated_at",
+		Description: "Role with zero updated_at",
 		CreatedAt:   now,
-		UpdatedAt:   nil,
+		UpdatedAt:   time.Time{},
 	}
 	suite.storeRole(ctx, nilUpdatedRole)
 
@@ -100,7 +99,7 @@ func (suite *InvariantsTestSuite) TestRoleAssignmentConsistencyInvariant() {
 	ctx := suite.SdkCtx
 
 	// Create a valid role first
-	now := timestamppb.New(time.Now())
+	now := time.Now()
 	role := &authproto.Role{
 		Name:        "test-role",
 		Permissions: []string{types.PermissionAdmin},
@@ -161,11 +160,11 @@ func (suite *InvariantsTestSuite) TestRoleAssignmentConsistencyInvariant() {
 	// Clean up
 	suite.deleteRoleAssignment(ctx, nonExistentRoleAssignment)
 
-	// Test: Assignment with nil timestamp
+	// Test: Assignment with zero timestamp
 	nilTimestampAssignment := &authproto.RoleAssignment{
 		Address:    addr.String(),
 		RoleName:   "test-role",
-		AssignedAt: nil,
+		AssignedAt: time.Time{},
 	}
 	suite.storeRoleAssignment(ctx, nilTimestampAssignment)
 
@@ -186,7 +185,7 @@ func (suite *InvariantsTestSuite) TestMultisigQuorumInvariant() {
 	// Create valid multisig wallet
 	addr1 := sdk.AccAddress("test_address1_____")
 	addr2 := sdk.AccAddress("test_address2_____")
-	now := timestamppb.New(time.Now())
+	now := time.Now()
 	wallet := &authproto.MultisigWallet{
 		Id:        sdk.AccAddress("wallet_address____").String(),
 		Signers:   []string{addr1.String(), addr2.String()},
@@ -270,8 +269,8 @@ func (suite *InvariantsTestSuite) TestTimeLockInvariant() {
 		ActionType:   "test-action",
 		Payload:      []byte("test data"),
 		Proposer:     proposer.String(),
-		ProposedAt:   timestamppb.New(now),
-		ExecutableAt: timestamppb.New(later),
+		ProposedAt:   now,
+		ExecutableAt: later,
 		Status:       authproto.ActionStatus_ACTION_STATUS_PENDING,
 		DelaySeconds: 86400, // 24 hours
 	}
@@ -288,8 +287,8 @@ func (suite *InvariantsTestSuite) TestTimeLockInvariant() {
 		ActionType:   "invalid-time-action",
 		Payload:      []byte("test data"),
 		Proposer:     proposer.String(),
-		ProposedAt:   timestamppb.New(later),
-		ExecutableAt: timestamppb.New(now),
+		ProposedAt:   later,
+		ExecutableAt: now,
 		Status:       authproto.ActionStatus_ACTION_STATUS_PENDING,
 		DelaySeconds: 86400,
 	}
@@ -311,8 +310,8 @@ func (suite *InvariantsTestSuite) TestTimeLockInvariant() {
 		ActionType:   "invalid-proposer-action",
 		Payload:      []byte("test data"),
 		Proposer:     "invalid-address",
-		ProposedAt:   timestamppb.New(now),
-		ExecutableAt: timestamppb.New(later),
+		ProposedAt:   now,
+		ExecutableAt: later,
 		Status:       authproto.ActionStatus_ACTION_STATUS_PENDING,
 		DelaySeconds: 86400,
 	}
@@ -340,9 +339,9 @@ func (suite *InvariantsTestSuite) TestSessionValidityInvariant() {
 	session := &authproto.Session{
 		SessionId:    "session-1",
 		UserAddress:  userAddr.String(),
-		CreatedAt:    timestamppb.New(now),
-		ExpiresAt:    timestamppb.New(later),
-		LastAccessed: timestamppb.New(now),
+		CreatedAt:    now,
+		ExpiresAt:    later,
+		LastAccessed: now,
 		IsActive:     true,
 	}
 	suite.storeSession(ctx, session)
@@ -356,9 +355,9 @@ func (suite *InvariantsTestSuite) TestSessionValidityInvariant() {
 	invalidExpirySession := &authproto.Session{
 		SessionId:    "session-2",
 		UserAddress:  userAddr.String(),
-		CreatedAt:    timestamppb.New(later),
-		ExpiresAt:    timestamppb.New(now),
-		LastAccessed: timestamppb.New(later),
+		CreatedAt:    later,
+		ExpiresAt:    now,
+		LastAccessed: later,
 		IsActive:     true,
 	}
 	suite.storeSession(ctx, invalidExpirySession)
@@ -374,9 +373,9 @@ func (suite *InvariantsTestSuite) TestSessionValidityInvariant() {
 	invalidAddrSession := &authproto.Session{
 		SessionId:    "session-3",
 		UserAddress:  "invalid-address",
-		CreatedAt:    timestamppb.New(now),
-		ExpiresAt:    timestamppb.New(later),
-		LastAccessed: timestamppb.New(now),
+		CreatedAt:    now,
+		ExpiresAt:    later,
+		LastAccessed: now,
 		IsActive:     true,
 	}
 	suite.storeSession(ctx, invalidAddrSession)
@@ -405,7 +404,7 @@ func (suite *InvariantsTestSuite) TestRateLimitInvariant() {
 		CurrentMinuteCount:  30,
 		CurrentHourCount:    1800,
 		CurrentDayCount:     43200,
-		WindowStart:         timestamppb.New(time.Now()),
+		WindowStart:         time.Now(),
 	}
 	suite.storeRateLimit(ctx, rateLimit)
 
@@ -419,7 +418,7 @@ func (suite *InvariantsTestSuite) TestRateLimitInvariant() {
 		UserAddress:        "invalid-address",
 		RequestsPerMinute:  60,
 		CurrentMinuteCount: 30,
-		WindowStart:        timestamppb.New(time.Now()),
+		WindowStart:        time.Now(),
 	}
 	suite.storeRateLimit(ctx, invalidAddrRate)
 
@@ -438,7 +437,7 @@ func (suite *InvariantsTestSuite) TestRateLimitInvariant() {
 		RequestsPerHour:    0,
 		RequestsPerDay:     0,
 		CurrentMinuteCount: 0,
-		WindowStart:        timestamppb.New(time.Now()),
+		WindowStart:        time.Now(),
 	}
 	suite.storeRateLimit(ctx, zeroLimitsRate)
 
@@ -455,7 +454,7 @@ func (suite *InvariantsTestSuite) TestRateLimitInvariant() {
 		UserAddress:        userAddr3.String(),
 		RequestsPerMinute:  60,
 		CurrentMinuteCount: 100, // Exceeds limit
-		WindowStart:        timestamppb.New(time.Now()),
+		WindowStart:        time.Now(),
 	}
 	suite.storeRateLimit(ctx, exceededRate)
 
@@ -482,7 +481,7 @@ func (suite *InvariantsTestSuite) TestAuditLogIntegrityInvariant() {
 		Actor:     actor.String(),
 		Action:    "create-role",
 		Resource:  "role:test-role",
-		Timestamp: timestamppb.New(now),
+		Timestamp: now,
 		Result:    "success",
 	}
 	suite.storeAuditLog(ctx, log1)
@@ -498,7 +497,7 @@ func (suite *InvariantsTestSuite) TestAuditLogIntegrityInvariant() {
 		Actor:     "invalid-address",
 		Action:    "test-action",
 		Resource:  "test-resource",
-		Timestamp: timestamppb.New(now.Add(1 * time.Second)),
+		Timestamp: now.Add(1 * time.Second),
 		Result:    "failure",
 	}
 	suite.storeAuditLog(ctx, invalidActorLog)
@@ -518,7 +517,7 @@ func (suite *InvariantsTestSuite) TestAllInvariants() {
 	suite.Empty(msg)
 
 	// Create valid data
-	now := timestamppb.New(time.Now())
+	now := time.Now()
 	role := &authproto.Role{
 		Name:        "admin",
 		Permissions: []string{types.PermissionAdmin},

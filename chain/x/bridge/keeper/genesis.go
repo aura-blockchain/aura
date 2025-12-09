@@ -46,6 +46,12 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data types.GenesisState) error {
 	for i := range data.Transfers {
 		transfer := &data.Transfers[i]
 
+		// Skip empty/nil transfers gracefully - they may appear in malformed genesis
+		// but should not cause import failure
+		if transfer.TransferId == "" {
+			continue
+		}
+
 		// CRITICAL SECURITY: Detect duplicate transfer IDs during import
 		// Duplicate IDs would cause silent overwrites of existing transfers
 		if seenTransferIDs[transfer.TransferId] {

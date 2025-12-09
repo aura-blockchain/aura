@@ -1507,6 +1507,7 @@ func MakeEncodingConfig() EncodingConfig {
 	stakingtypes.RegisterInterfaces(interfaceRegistry)
 	slashingtypes.RegisterInterfaces(interfaceRegistry)
 	distrtypes.RegisterInterfaces(interfaceRegistry)
+	upgradetypes.RegisterInterfaces(interfaceRegistry)
 	wasmtypes.RegisterInterfaces(interfaceRegistry)
 
 	// Register interfaces for all modules tracked by ModuleBasics so

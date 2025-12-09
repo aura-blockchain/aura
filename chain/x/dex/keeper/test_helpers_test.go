@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"github.com/aequitas/aura/chain/testing/testutil"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -33,9 +34,9 @@ func SetupKeeperTestSuite(t *testing.T) *KeeperTestSuite {
 		input.Cdc,
 		input.StoreKey,
 		bankKeeper,
-		nil, // accountKeeper
-		nil, // vcKeeper
-		nil, // securityKeeper
+		testutil.NewMockAccountKeeper(),
+		testutil.NewMockVCRegistryKeeper(),
+		testutil.NewMockSecurityKeeper(),
 	)
 
 	// Generate test accounts

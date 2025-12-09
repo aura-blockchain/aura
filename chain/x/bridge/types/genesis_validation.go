@@ -22,6 +22,11 @@ func ValidateGenesis(gen *GenesisState) error {
 	// Validate transfers
 	transferIDs := make(map[string]bool)
 	for i, transfer := range gen.Transfers {
+		// Skip empty transfers gracefully - they will be ignored during import
+		if transfer.TransferId == "" {
+			continue
+		}
+
 		if err := validateTransfer(&transfer, i); err != nil {
 			return fmt.Errorf("invalid transfer at index %d: %w", i, err)
 		}

@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"github.com/aequitas/aura/chain/testing/testutil"
 	"testing"
 
 	sdkmath "cosmossdk.io/math"
@@ -64,10 +65,10 @@ func setupTestWithVCKeeper(t *testing.T) (*keeper.Keeper, sdk.Context, *MockVCRe
 	k := keeper.NewKeeper(
 		input.Cdc,
 		input.StoreKey,
-		nil, // bankKeeper
-		nil, // accountKeeper
+		testutil.NewMockBankKeeper(),
+		testutil.NewMockAccountKeeper(),
 		vcKeeper,
-		nil, // securityKeeper
+		testutil.NewMockSecurityKeeper(),
 	)
 
 	return k, input.Ctx, vcKeeper

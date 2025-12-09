@@ -35,7 +35,7 @@ func (suite *MsgServerIntegrationSuite) SetupTest() {
 	suite.bank = testutil.NewMockBankKeeper()
 	suite.accounts = testutil.NewMockAccountKeeper()
 
-	suite.keeper = NewKeeper(input.Cdc, input.StoreKey, suite.bank, suite.accounts, nil, nil)
+	suite.keeper = NewKeeper(input.Cdc, input.StoreKey, suite.bank, suite.accounts, testutil.NewMockVCRegistryKeeper(), testutil.NewMockSecurityKeeper())
 	suite.ctx = input.Ctx
 	suite.msgServer = NewMsgServerImpl(suite.keeper)
 }

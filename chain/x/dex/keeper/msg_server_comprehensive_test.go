@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
+	"github.com/aequitas/aura/chain/testing/testutil"
 	dexpb "github.com/aequitas/aura/proto/aura/dex/v1beta1"
 )
 
@@ -114,9 +115,9 @@ func (suite *MsgServerComprehensiveTestSuite) SetupTest() {
 		input.Cdc,
 		input.StoreKey,
 		suite.bankKeeper,
-		nil, // accountKeeper
-		nil, // vcKeeper
-		nil, // securityKeeper
+		testutil.NewMockAccountKeeper(),
+		testutil.NewMockVCRegistryKeeper(),
+		testutil.NewMockSecurityKeeper(),
 	)
 	suite.ctx = input.Ctx
 	suite.msgServer = NewMsgServerImpl(suite.keeper)
