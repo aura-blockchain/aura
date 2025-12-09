@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/identity/types"
 )
@@ -19,13 +18,14 @@ func TestRotateDIDKey(t *testing.T) {
 	owner := "aura1testowner"
 	oldKey := "old-verification-method"
 
+	now := ctx.BlockTime()
 	identity := &types.IdentityRecord{
 		Did:                 did,
 		Address:             owner,
 		Status:              types.IdentityStatusActive,
 		VerificationMethods: []string{oldKey},
-		CreatedAt:           timestamppb.New(ctx.BlockTime()),
-		UpdatedAt:           timestamppb.New(ctx.BlockTime()),
+		CreatedAt:           now,
+		UpdatedAt:           &now,
 	}
 
 	err := keeper.SetIdentityRecord(ctx, identity)
@@ -69,13 +69,14 @@ func TestRotateDIDKey_Unauthorized(t *testing.T) {
 	owner := "aura1testowner"
 	unauthorized := "aura1unauthorized"
 
+	now := ctx.BlockTime()
 	identity := &types.IdentityRecord{
 		Did:                 did,
 		Address:             owner,
 		Status:              types.IdentityStatusActive,
 		VerificationMethods: []string{"old-key"},
-		CreatedAt:           timestamppb.New(ctx.BlockTime()),
-		UpdatedAt:           timestamppb.New(ctx.BlockTime()),
+		CreatedAt:           now,
+		UpdatedAt:           &now,
 	}
 
 	err := keeper.SetIdentityRecord(ctx, identity)
@@ -95,13 +96,14 @@ func TestRotateDIDKey_RotationInProgress(t *testing.T) {
 	did := "did:aura:test123"
 	owner := "aura1testowner"
 
+	now := ctx.BlockTime()
 	identity := &types.IdentityRecord{
 		Did:                 did,
 		Address:             owner,
 		Status:              types.IdentityStatusActive,
 		VerificationMethods: []string{"old-key"},
-		CreatedAt:           timestamppb.New(ctx.BlockTime()),
-		UpdatedAt:           timestamppb.New(ctx.BlockTime()),
+		CreatedAt:           now,
+		UpdatedAt:           &now,
 	}
 
 	err := keeper.SetIdentityRecord(ctx, identity)
@@ -125,15 +127,16 @@ func TestRotateDIDKey_ErasedIdentity(t *testing.T) {
 	did := "did:aura:test123"
 	owner := "aura1testowner"
 
+	now := ctx.BlockTime()
 	identity := &types.IdentityRecord{
 		Did:                 did,
 		Address:             owner,
 		Status:              types.IdentityStatusErased,
 		Erased:              true,
-		ErasedAt:            timestamppb.New(ctx.BlockTime()),
+		ErasedAt:            &now,
 		VerificationMethods: []string{"old-key"},
-		CreatedAt:           timestamppb.New(ctx.BlockTime()),
-		UpdatedAt:           timestamppb.New(ctx.BlockTime()),
+		CreatedAt:           now,
+		UpdatedAt:           &now,
 	}
 
 	err := keeper.SetIdentityRecord(ctx, identity)
@@ -155,13 +158,14 @@ func TestValidateDIDKey(t *testing.T) {
 	oldKey := "old-key"
 	newKey := "new-key"
 
+	now := ctx.BlockTime()
 	identity := &types.IdentityRecord{
 		Did:                 did,
 		Address:             owner,
 		Status:              types.IdentityStatusActive,
 		VerificationMethods: []string{oldKey},
-		CreatedAt:           timestamppb.New(ctx.BlockTime()),
-		UpdatedAt:           timestamppb.New(ctx.BlockTime()),
+		CreatedAt:           now,
+		UpdatedAt:           &now,
 	}
 
 	err := keeper.SetIdentityRecord(ctx, identity)
@@ -194,13 +198,14 @@ func TestValidateDIDKey_AfterGracePeriod(t *testing.T) {
 	oldKey := "old-key"
 	newKey := "new-key"
 
+	now := ctx.BlockTime()
 	identity := &types.IdentityRecord{
 		Did:                 did,
 		Address:             owner,
 		Status:              types.IdentityStatusActive,
 		VerificationMethods: []string{oldKey},
-		CreatedAt:           timestamppb.New(ctx.BlockTime()),
-		UpdatedAt:           timestamppb.New(ctx.BlockTime()),
+		CreatedAt:           now,
+		UpdatedAt:           &now,
 	}
 
 	err := keeper.SetIdentityRecord(ctx, identity)
@@ -238,13 +243,14 @@ func TestCompleteKeyRotation(t *testing.T) {
 	oldKey := "old-key"
 	newKey := "new-key"
 
+	now := ctx.BlockTime()
 	identity := &types.IdentityRecord{
 		Did:                 did,
 		Address:             owner,
 		Status:              types.IdentityStatusActive,
 		VerificationMethods: []string{oldKey},
-		CreatedAt:           timestamppb.New(ctx.BlockTime()),
-		UpdatedAt:           timestamppb.New(ctx.BlockTime()),
+		CreatedAt:           now,
+		UpdatedAt:           &now,
 	}
 
 	err := keeper.SetIdentityRecord(ctx, identity)

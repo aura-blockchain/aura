@@ -32,7 +32,7 @@ func setupKeeperForTest(t *testing.T) (*Keeper, sdk.Context) {
 	cdc := codec.NewProtoCodec(registry)
 
 	storeService := runtime.NewKVStoreService(storeKey)
-	keeper := NewKeeper(storeService, cdc, "authority", log.NewNopLogger())
+	keeper := NewKeeper(storeService, storeKey, cdc, "authority", log.NewNopLogger())
 
 	ctx := sdk.NewContext(stateStore, cmtproto.Header{Time: time.Now()}, false, log.NewNopLogger())
 
