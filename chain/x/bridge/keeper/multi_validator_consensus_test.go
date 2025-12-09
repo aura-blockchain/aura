@@ -647,6 +647,7 @@ func createTestValidators(t *testing.T, input keepertest.TestInput, k *keeper.Ke
 func createTestTransfer(t *testing.T, input keepertest.TestInput, k *keeper.Keeper, transferID string, burnTxHash string, amount string, requiredConfirmations uint64) *types.CrossChainTransfer {
 	t.Helper()
 
+	amountInt, _ := sdkmath.NewIntFromString(amount)
 	transfer := &bridgepb.CrossChainTransfer{
 		TransferId:            transferID,
 		SourceChain:           "paw",
@@ -654,7 +655,7 @@ func createTestTransfer(t *testing.T, input keepertest.TestInput, k *keeper.Keep
 		Sender:                keepertest.GenTestAddr().String(),
 		Recipient:             keepertest.GenTestAddr().String(),
 		Denom:                 "uaura",
-		Amount:                amount,
+		Amount:                amountInt,
 		Status:                bridgepb.TransferStatus_PENDING,
 		Timestamp:             input.Ctx.BlockTime(),
 		RequiredConfirmations: requiredConfirmations,
