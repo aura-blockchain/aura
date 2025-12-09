@@ -33,7 +33,7 @@ func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 
 // RegisterInterfaces registers the x/auth interfaces types with the interface registry
 func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
-	msgservice.RegisterMsgServiceDesc(registry, &authpb.Msg_ServiceDesc)
+	msgservice.RegisterMsgServiceDesc(registry, &authpb.Msg_serviceDesc)
 
 	registry.RegisterImplementations(
 		(*sdk.Msg)(nil),

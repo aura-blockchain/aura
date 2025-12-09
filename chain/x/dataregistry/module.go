@@ -39,7 +39,7 @@ func (AppModuleBasic) RegisterServices(ModuleServices) {}
 
 // RegisterInterfaces wires the data registry msg service into the interface registry.
 func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
-	msgservice.RegisterMsgServiceDesc(registry, &pb.Msg_ServiceDesc)
+	msgservice.RegisterMsgServiceDesc(registry, &pb.Msg_serviceDesc)
 
 	registry.RegisterImplementations(
 		(*sdk.Msg)(nil),
@@ -75,7 +75,7 @@ func (AppModule) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtim
 
 // RegisterInterfaces registers the module's interface types
 func (AppModule) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
-	msgservice.RegisterMsgServiceDesc(registry, &pb.Msg_ServiceDesc)
+	msgservice.RegisterMsgServiceDesc(registry, &pb.Msg_serviceDesc)
 
 	registry.RegisterImplementations(
 		(*sdk.Msg)(nil),

@@ -17,7 +17,7 @@ func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 
 // RegisterInterfaces registers compliance protobuf interfaces.
 func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
-	msgservice.RegisterMsgServiceDesc(registry, &compliancepb.Msg_ServiceDesc)
+	msgservice.RegisterMsgServiceDesc(registry, &compliancepb.Msg_serviceDesc)
 
 	registry.RegisterImplementations((*sdk.Msg)(nil),
 		&compliancepb.MsgSubmitKYC{},

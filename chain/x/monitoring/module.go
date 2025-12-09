@@ -112,7 +112,7 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 // ExportGenesis exports module state for genesis
 func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
 	genesis := am.keeper.ExportGenesis(ctx)
-	data, err := json.Marshal(genesis)
+	data, err := json.Marshal(*genesis)
 	if err != nil {
 		panic(err)
 	}

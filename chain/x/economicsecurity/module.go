@@ -106,7 +106,7 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 	if err != nil {
 		panic(err)
 	}
-	return cdc.MustMarshalJSON(&genesis)
+	return cdc.MustMarshalJSON(genesis)
 }
 
 // ConsensusVersion returns the consensus state-breaking version

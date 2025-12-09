@@ -119,5 +119,5 @@ var NewQueryClient = wasmpb.NewQueryClient
 // Re-export service descriptors for gRPC
 var (
 	Query_ServiceDesc = wasmpb.Query_ServiceDesc
-	Msg_ServiceDesc   = wasmpb.Msg_ServiceDesc
+	Msg_ServiceDesc   = wasmpb.Msg_serviceDesc
 )

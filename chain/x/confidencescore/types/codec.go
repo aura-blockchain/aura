@@ -10,7 +10,7 @@ import (
 
 // RegisterInterfaces registers confidencescore module interfaces. Currently relies on proto-generated registrations.
 func RegisterInterfaces(reg codectypes.InterfaceRegistry) {
-	msgservice.RegisterMsgServiceDesc(reg, &cspb.Msg_ServiceDesc)
+	msgservice.RegisterMsgServiceDesc(reg, &cspb.Msg_serviceDesc)
 
 	reg.RegisterImplementations(
 		(*sdk.Msg)(nil),

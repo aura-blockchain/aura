@@ -10,7 +10,7 @@ import (
 
 // RegisterInterfaces registers the bridge module's interface types
 func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
-	msgservice.RegisterMsgServiceDesc(registry, &bridgepb.Msg_ServiceDesc)
+	msgservice.RegisterMsgServiceDesc(registry, &bridgepb.Msg_serviceDesc)
 
 	registry.RegisterImplementations(
 		(*sdk.Msg)(nil),

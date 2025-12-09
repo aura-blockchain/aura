@@ -26,10 +26,10 @@ message TokenomicsConfig {
   uint64 max_inflation_rate = 6;
 
   // Last inflation adjustment timestamp
-  google.protobuf.Timestamp last_inflation_adjustment = 7;
+  google.protobuf.Timestamp last_inflation_adjustment = 7 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
 
   // Last inflation check timestamp
-  google.protobuf.Timestamp last_inflation_check = 8;
+  google.protobuf.Timestamp last_inflation_check = 8 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
 }
 
 // VestingSchedule represents a vesting schedule for tokens
@@ -47,7 +47,7 @@ message VestingSchedule {
   string vested_amount = 4;
 
   // Start time of vesting
-  google.protobuf.Timestamp start_time = 5;
+  google.protobuf.Timestamp start_time = 5 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
 
   // Cliff duration in seconds
   uint64 cliff_duration = 6;
@@ -65,7 +65,7 @@ message VestingSchedule {
   bool revoked = 10;
 
   // Revocation time
-  google.protobuf.Timestamp revoked_at = 11;
+  google.protobuf.Timestamp revoked_at = 11 [(gogoproto.stdtime) = true];
 
   // Revocation reason
   string revoked_reason = 12;
@@ -212,10 +212,10 @@ message VoteLock {
   string amount = 3;
 
   // Lock start time
-  google.protobuf.Timestamp lock_start = 4;
+  google.protobuf.Timestamp lock_start = 4 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
 
   // Lock end time
-  google.protobuf.Timestamp lock_end = 5;
+  google.protobuf.Timestamp lock_end = 5 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
 
   // Voting power (amount * time multiplier)
   string voting_power = 6;
@@ -263,10 +263,10 @@ message PendingTreasuryTx {
   repeated string signatures = 6;
 
   // Creation time
-  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp created_at = 7 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
 
   // Execution time (after timelock)
-  google.protobuf.Timestamp executable_at = 8;
+  google.protobuf.Timestamp executable_at = 8 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
 
   // Whether executed
   bool executed = 9;
@@ -356,7 +356,7 @@ message InflationAlert {
   uint64 target_inflation_rate = 4;
 
   // Timestamp when alert was triggered
-  google.protobuf.Timestamp triggered_at = 5;
+  google.protobuf.Timestamp triggered_at = 5 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
 
   // Alert message
   string message = 6;
@@ -411,7 +411,7 @@ message LargeTxRecord {
   uint64 block_height = 6;
 
   // Timestamp
-  google.protobuf.Timestamp timestamp = 7;
+  google.protobuf.Timestamp timestamp = 7 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
 
   // Whether flagged for review
   bool flagged = 8;

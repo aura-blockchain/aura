@@ -17,7 +17,7 @@ func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 
 // RegisterInterfaces registers the DEX module proto interfaces.
 func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
-	msgservice.RegisterMsgServiceDesc(registry, &dexpb.Msg_ServiceDesc)
+	msgservice.RegisterMsgServiceDesc(registry, &dexpb.Msg_serviceDesc)
 
 	// Register all DEX message types as sdk.Msg implementations
 	registry.RegisterImplementations((*sdk.Msg)(nil),
