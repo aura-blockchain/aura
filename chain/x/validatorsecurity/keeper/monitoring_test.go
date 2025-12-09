@@ -118,7 +118,7 @@ func (suite *KeeperTestSuite) TestMonitorValidatorSentryNodes() {
 	node, err := suite.keeper.GetSentryNodeInfo(suite.ctx, "sentry1")
 	suite.Require().NoError(err)
 	oldTime := time.Now().Add(-5 * time.Minute)
-	node.LastHeartbeat = timestamppb.New(oldTime)
+	node.LastHeartbeat = &oldTime
 	suite.keeper.SetSentryNodeInfo(suite.ctx, node)
 
 	// Monitor - should create alert about offline sentry
@@ -177,13 +177,14 @@ func (suite *KeeperTestSuite) TestCreateAlertAutoID() {
 	suite.Require().NoError(err)
 
 	// Create alert without ID
+	now := time.Now()
 	alert := types.ValidatorAlert{
 		Id:               "", // Empty ID
 		ValidatorAddress: validatorAddr,
 		AlertType:        types.ValidatorAlert_DOWNTIME,
 		Severity:         types.ValidatorAlert_WARNING,
 		Message:          "Test auto ID",
-		Timestamp:        timestamppb.New(time.Now()),
+		Timestamp:        &now,
 		Acknowledged:     false,
 	}
 	suite.keeper.CreateAlert(suite.ctx, alert)
