@@ -14,7 +14,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 	"github.com/aequitas/aura/chain/x/bridge/keeper"
@@ -76,7 +75,7 @@ func TestMsgServerMintTokens_CreatesWrappedToken(t *testing.T) {
 		SourceChain:  "paw",
 		SourceTxHash: "0xabc",
 		Recipient:    keepertest.GenTestAddr().String(),
-		Amount:       "1000",
+		Amount:       sdkmath.NewInt(1000),
 		Denom:        "paw.token",
 	}
 
@@ -126,11 +125,12 @@ func TestMsgServerUnlockTokens_CompletesTransfer(t *testing.T) {
 	denom := "uaura"
 	sourceChain := "paw"
 
+	amountInt, _ := sdkmath.NewIntFromString(amount)
 	transfer := &bridgepb.CrossChainTransfer{
 		TransferId:            transferID,
 		Sender:                sender,
 		Recipient:             sender,
-		Amount:                sdkmath.NewIntFromString(amount),
+		Amount:                amountInt,
 		Denom:                 denom,
 		SourceChain:           sourceChain,
 		TargetChain:           "aura",
@@ -160,7 +160,7 @@ func TestMsgServerUnlockTokens_CompletesTransfer(t *testing.T) {
 		unlockMsg := &bridgepb.MsgUnlockTokens{
 			BurnTxHash:          burnTxHash,
 			Sender:              sender,
-			Amount:              amount,
+			Amount:              amountInt,
 			Denom:               denom,
 			SourceChain:         sourceChain,
 			ValidatorSignatures: signatures,
@@ -186,7 +186,7 @@ func TestMsgServerUnlockTokens_CompletesTransfer(t *testing.T) {
 			TransferId:            transferID2,
 			Sender:                sender,
 			Recipient:             sender,
-			Amount:                amount,
+			Amount:                amountInt,
 			Denom:                 denom,
 			SourceChain:           sourceChain,
 			TargetChain:           "aura",
@@ -194,7 +194,7 @@ func TestMsgServerUnlockTokens_CompletesTransfer(t *testing.T) {
 			SourceTxHash:          burnTxHash2,
 			RequiredConfirmations: minConfirmations,
 			Confirmations:         0,
-			Timestamp:             timestamppb.New(ctx.BlockTime()),
+			Timestamp:             ctx.BlockTime(),
 		}
 		k.SetTransfer(ctx, transfer2)
 		k.IndexTransferHash(ctx, burnTxHash2, transferID2)
@@ -214,7 +214,7 @@ func TestMsgServerUnlockTokens_CompletesTransfer(t *testing.T) {
 		unlockMsg := &bridgepb.MsgUnlockTokens{
 			BurnTxHash:          burnTxHash2,
 			Sender:              sender,
-			Amount:              amount,
+			Amount:              amountInt,
 			Denom:               denom,
 			SourceChain:         sourceChain,
 			ValidatorSignatures: signatures,

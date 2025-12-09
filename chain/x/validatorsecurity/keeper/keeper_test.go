@@ -385,13 +385,14 @@ func (suite *KeeperTestSuite) TestDoubleSignEvidence() {
 
 func (suite *KeeperTestSuite) TestDowntimeInfraction() {
 	validatorAddr := "auravaloper1test"
+	now := time.Now()
 
 	infraction := types.DowntimeInfraction{
 		ValidatorAddress: validatorAddr,
 		MissedBlocks:     100,
 		WindowSize:       1000,
-		DetectedAt:       timestamppb.New(time.Now()),
-		SlashFraction:    "0.0001",
+		DetectedAt:       &now,
+		SlashFraction:    sdkmath.LegacyMustNewDecFromStr("0.0001"),
 	}
 
 	suite.keeper.SetDowntimeInfraction(suite.ctx, infraction)
@@ -404,13 +405,14 @@ func (suite *KeeperTestSuite) TestDowntimeInfraction() {
 }
 
 func (suite *KeeperTestSuite) TestCreateAlert() {
+	now := time.Now()
 	alert := types.ValidatorAlert{
 		Id:               "test-alert-1",
 		ValidatorAddress: "auravaloper1test",
 		AlertType:        types.ValidatorAlert_DOWNTIME,
 		Severity:         types.ValidatorAlert_WARNING,
 		Message:          "Test alert message",
-		Timestamp:        timestamppb.New(time.Now()),
+		Timestamp:        &now,
 		Acknowledged:     false,
 	}
 
@@ -424,13 +426,14 @@ func (suite *KeeperTestSuite) TestCreateAlert() {
 }
 
 func (suite *KeeperTestSuite) TestAcknowledgeAlert() {
+	now := time.Now()
 	alert := types.ValidatorAlert{
 		Id:               "alert-1",
 		ValidatorAddress: "val1",
 		AlertType:        types.ValidatorAlert_DOWNTIME,
 		Severity:         types.ValidatorAlert_WARNING,
 		Message:          "Test",
-		Timestamp:        timestamppb.New(time.Now()),
+		Timestamp:        &now,
 		Acknowledged:     false,
 	}
 

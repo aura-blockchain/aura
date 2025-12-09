@@ -4,9 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/timestamppb"
-
 	"github.com/aequitas/aura/chain/x/validatorsecurity/types"
 )
 
@@ -52,13 +49,14 @@ func (suite *KeeperTestSuite) TestGetAllAlerts() {
 
 	// Create multiple alerts
 	for i := 0; i < 3; i++ {
+		now := time.Now()
 		alert := types.ValidatorAlert{
 			Id:               fmt.Sprintf("alert-%d", i),
 			ValidatorAddress: validatorAddr,
 			AlertType:        types.ValidatorAlert_DOWNTIME,
 			Severity:         types.ValidatorAlert_WARNING,
 			Message:          fmt.Sprintf("Test alert %d", i),
-			Timestamp:        timestamppb.New(time.Now()),
+			Timestamp:        &now,
 			Acknowledged:     false,
 		}
 		suite.keeper.CreateAlert(suite.ctx, alert)
@@ -74,8 +72,8 @@ func (suite *KeeperTestSuite) TestMonitorValidatorInactive() {
 
 	// Setup
 	params := types.DefaultParams()
-	// MonitoringInterval is a google.protobuf.Duration, set to 60 seconds
-	params.MonitoringInterval = durationpb.New(60 * time.Second)
+	// MonitoringInterval is a time.Duration with (gogoproto.stdduration) = true
+	params.MonitoringInterval = 60 * time.Second
 	suite.Require().NoError(suite.keeper.SetParams(suite.ctx, params))
 
 	err := suite.keeper.RegisterValidator(suite.ctx, validatorAddr, "hot", "cold", "region", "US", 37.0, -122.0, nil)
@@ -85,7 +83,7 @@ func (suite *KeeperTestSuite) TestMonitorValidatorInactive() {
 	info, err := suite.keeper.GetValidatorSecurityInfo(suite.ctx, validatorAddr)
 	suite.Require().NoError(err)
 	oldTime := time.Now().Add(-5 * time.Minute)
-	info.LastSeen = timestamppb.New(oldTime)
+	info.LastSeen = &oldTime
 	suite.keeper.SetValidatorSecurityInfo(suite.ctx, info)
 
 	// Monitor - should create alert
@@ -104,7 +102,7 @@ func (suite *KeeperTestSuite) TestMonitorValidatorSentryNodes() {
 	params := types.DefaultParams()
 	params.RequireSentryNodes = true
 	params.MinSentryNodes = 2
-	params.MonitoringInterval = durationpb.New(60 * time.Second)
+	params.MonitoringInterval = 60 * time.Second
 	suite.Require().NoError(suite.keeper.SetParams(suite.ctx, params))
 
 	err := suite.keeper.RegisterValidator(suite.ctx, validatorAddr, "hot", "cold", "region", "US", 37.0, -122.0, nil)
