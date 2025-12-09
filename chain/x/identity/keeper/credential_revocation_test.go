@@ -49,8 +49,8 @@ func TestIsCredentialRevoked(t *testing.T) {
 				Did:             did,
 				Address:         owner,
 				Status:          types.IdentityStatusActive,
-				CreatedAt:       timestamppb.New(time.Now()),
-				UpdatedAt:       timestamppb.New(time.Now()),
+				CreatedAt:       time.Now(),
+				UpdatedAt:       time.Now(),
 				ConfidenceScore: 80,
 			}
 			require.NoError(t, k.SetIdentityRecord(ctx, identity))
@@ -81,8 +81,8 @@ func TestRevokeCredential(t *testing.T) {
 		Did:             did,
 		Address:         owner,
 		Status:          types.IdentityStatusActive,
-		CreatedAt:       timestamppb.New(time.Now()),
-		UpdatedAt:       timestamppb.New(time.Now()),
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
 		ConfidenceScore: 80,
 	}
 	require.NoError(t, k.SetIdentityRecord(ctx, identity))
@@ -223,8 +223,8 @@ func TestBatchRevokeCredentials(t *testing.T) {
 		Did:             did,
 		Address:         owner,
 		Status:          types.IdentityStatusActive,
-		CreatedAt:       timestamppb.New(time.Now()),
-		UpdatedAt:       timestamppb.New(time.Now()),
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
 		ConfidenceScore: 80,
 	}
 	require.NoError(t, k.SetIdentityRecord(ctx, identity))
@@ -327,8 +327,8 @@ func TestVerifyCredential(t *testing.T) {
 		Did:             did,
 		Address:         owner,
 		Status:          types.IdentityStatusActive,
-		CreatedAt:       timestamppb.New(time.Now()),
-		UpdatedAt:       timestamppb.New(time.Now()),
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
 		ConfidenceScore: 80,
 	}
 	require.NoError(t, k.SetIdentityRecord(ctx, identity))
@@ -340,9 +340,9 @@ func TestVerifyCredential(t *testing.T) {
 		Address:         "aura1erased",
 		Status:          types.IdentityStatusErased,
 		Erased:          true,
-		ErasedAt:        timestamppb.New(time.Now()),
-		CreatedAt:       timestamppb.New(time.Now()),
-		UpdatedAt:       timestamppb.New(time.Now()),
+		ErasedAt:        time.Now(),
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
 		ConfidenceScore: 0,
 	}
 	require.NoError(t, k.SetIdentityRecord(ctx, erasedIdentity))
@@ -353,8 +353,8 @@ func TestVerifyCredential(t *testing.T) {
 		Did:             suspendedDID,
 		Address:         "aura1suspended",
 		Status:          types.IdentityStatusSuspended,
-		CreatedAt:       timestamppb.New(time.Now()),
-		UpdatedAt:       timestamppb.New(time.Now()),
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
 		ConfidenceScore: 50,
 	}
 	require.NoError(t, k.SetIdentityRecord(ctx, suspendedIdentity))
@@ -461,8 +461,8 @@ func TestGetCredentialRevocation(t *testing.T) {
 		Did:             did,
 		Address:         owner,
 		Status:          types.IdentityStatusActive,
-		CreatedAt:       timestamppb.New(time.Now()),
-		UpdatedAt:       timestamppb.New(time.Now()),
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
 		ConfidenceScore: 80,
 	}
 	require.NoError(t, k.SetIdentityRecord(ctx, identity))
@@ -512,8 +512,8 @@ func TestGetAllCredentialRevocations(t *testing.T) {
 		Did:             did,
 		Address:         owner,
 		Status:          types.IdentityStatusActive,
-		CreatedAt:       timestamppb.New(time.Now()),
-		UpdatedAt:       timestamppb.New(time.Now()),
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
 		ConfidenceScore: 80,
 	}
 	require.NoError(t, k.SetIdentityRecord(ctx, identity))
@@ -560,8 +560,8 @@ func TestGetCredentialRevocationsByDID(t *testing.T) {
 		Did:             did1,
 		Address:         owner1,
 		Status:          types.IdentityStatusActive,
-		CreatedAt:       timestamppb.New(time.Now()),
-		UpdatedAt:       timestamppb.New(time.Now()),
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
 		ConfidenceScore: 80,
 	}
 	require.NoError(t, k.SetIdentityRecord(ctx, identity1))
@@ -572,8 +572,8 @@ func TestGetCredentialRevocationsByDID(t *testing.T) {
 		Did:             did2,
 		Address:         owner2,
 		Status:          types.IdentityStatusActive,
-		CreatedAt:       timestamppb.New(time.Now()),
-		UpdatedAt:       timestamppb.New(time.Now()),
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
 		ConfidenceScore: 80,
 	}
 	require.NoError(t, k.SetIdentityRecord(ctx, identity2))
@@ -624,8 +624,8 @@ func TestRestoreCredential(t *testing.T) {
 		Did:             did,
 		Address:         owner,
 		Status:          types.IdentityStatusActive,
-		CreatedAt:       timestamppb.New(time.Now()),
-		UpdatedAt:       timestamppb.New(time.Now()),
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
 		ConfidenceScore: 80,
 	}
 	require.NoError(t, k.SetIdentityRecord(ctx, identity))
@@ -635,8 +635,8 @@ func TestRestoreCredential(t *testing.T) {
 		Name:         types.RoleAdmin,
 		Permissions:  []string{types.PermissionAdmin},
 		Description:  "Administrator",
-		CreatedAt:    timestamppb.New(time.Now()),
-		UpdatedAt:    timestamppb.New(time.Now()),
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
 		IsSystemRole: true,
 	}
 	require.NoError(t, k.SetRole(ctx, adminRole))
@@ -645,7 +645,7 @@ func TestRestoreCredential(t *testing.T) {
 	assignment := &types.RoleAssignment{
 		Address:    admin,
 		RoleName:   types.RoleAdmin,
-		AssignedAt: timestamppb.New(time.Now()),
+		AssignedAt: time.Now(),
 		AssignedBy: admin,
 	}
 	require.NoError(t, k.SetRoleAssignment(ctx, assignment))
@@ -690,8 +690,8 @@ func TestCredentialRevocationIntegration(t *testing.T) {
 		Did:             did,
 		Address:         owner,
 		Status:          types.IdentityStatusActive,
-		CreatedAt:       timestamppb.New(time.Now()),
-		UpdatedAt:       timestamppb.New(time.Now()),
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
 		ConfidenceScore: 80,
 		VerificationMethods: []string{
 			"pubkey1",

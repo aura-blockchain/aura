@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/suite"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -32,9 +33,9 @@ func (suite *InvariantsComprehensiveTestSuite) TestPoolReservesConsistencyInvari
 		PoolId:        "pool-1",
 		DenomA:        "uaura",
 		DenomB:        "utoken",
-		ReserveA:      "1000000",
-		ReserveB:      "2000000",
-		TotalLpTokens: "1414213",
+		ReserveA:      sdkmath.NewInt(1000000),
+		ReserveB:      sdkmath.NewInt(2000000),
+		TotalLpTokens: sdkmath.NewInt(1414213),
 	}
 	suite.storePool(ctx, &pool)
 
@@ -51,9 +52,9 @@ func (suite *InvariantsComprehensiveTestSuite) TestPoolEmptyID() {
 		PoolId:        "",
 		DenomA:        "uaura",
 		DenomB:        "utoken",
-		ReserveA:      "1000000",
-		ReserveB:      "2000000",
-		TotalLpTokens: "1414213",
+		ReserveA:      sdkmath.NewInt(1000000),
+		ReserveB:      sdkmath.NewInt(2000000),
+		TotalLpTokens: sdkmath.NewInt(1414213),
 	}
 	suite.storePool(ctx, &pool)
 
@@ -70,9 +71,9 @@ func (suite *InvariantsComprehensiveTestSuite) TestPoolEmptyDenoms() {
 		PoolId:        "pool-2",
 		DenomA:        "",
 		DenomB:        "utoken",
-		ReserveA:      "1000000",
-		ReserveB:      "2000000",
-		TotalLpTokens: "1414213",
+		ReserveA:      sdkmath.NewInt(1000000),
+		ReserveB:      sdkmath.NewInt(2000000),
+		TotalLpTokens: sdkmath.NewInt(1414213),
 	}
 	suite.storePool(ctx, &pool)
 
@@ -89,9 +90,9 @@ func (suite *InvariantsComprehensiveTestSuite) TestPoolNegativeReserves() {
 		PoolId:        "pool-3",
 		DenomA:        "uaura",
 		DenomB:        "utoken",
-		ReserveA:      "-1000000",
-		ReserveB:      "2000000",
-		TotalLpTokens: "1414213",
+		ReserveA:      sdkmath.NewInt(-1000000),
+		ReserveB:      sdkmath.NewInt(2000000),
+		TotalLpTokens: sdkmath.NewInt(1414213),
 	}
 	suite.storePool(ctx, &pool)
 
@@ -108,9 +109,9 @@ func (suite *InvariantsComprehensiveTestSuite) TestPoolReservesButZeroShares() {
 		PoolId:        "pool-4",
 		DenomA:        "uaura",
 		DenomB:        "utoken",
-		ReserveA:      "1000000",
-		ReserveB:      "2000000",
-		TotalLpTokens: "0",
+		ReserveA:      sdkmath.NewInt(1000000),
+		ReserveB:      sdkmath.NewInt(2000000),
+		TotalLpTokens: sdkmath.ZeroInt(),
 	}
 	suite.storePool(ctx, &pool)
 
@@ -130,14 +131,14 @@ func (suite *InvariantsComprehensiveTestSuite) TestOrderValidityInvariant() {
 	order := types.SwapOrder{
 		OrderId:      "order-1",
 		OrderType:    types.SwapOrderType_BUY,
-		AuraAmount:   "1000",
+		AuraAmount:   sdkmath.NewInt(1000),
 		OtherCoin:    "utoken",
-		OtherAmount:  "900",
+		OtherAmount:  sdkmath.NewInt(900),
 		UserAddress:  suite.testAddr("trader"),
 		Status:       types.SwapOrderStatus_PENDING,
-		Timestamp:    timestamppb.New(ctx.BlockTime()),
-		ExpiresAt:    timestamppb.New(ctx.BlockTime().Add(time.Hour)),
-		PricePerAura: "0.9",
+		Timestamp:    ctx.BlockTime(),
+		ExpiresAt:    ctx.BlockTime().Add(time.Hour),
+		PricePerAura: sdkmath.LegacyMustNewDecFromStr("0.9"),
 	}
 	suite.storeOrder(ctx, &order)
 
@@ -153,13 +154,13 @@ func (suite *InvariantsComprehensiveTestSuite) TestOrderZeroID() {
 	order := types.SwapOrder{
 		OrderId:      "",
 		OrderType:    types.SwapOrderType_BUY,
-		AuraAmount:   "1000",
+		AuraAmount:   sdkmath.NewInt(1000),
 		OtherCoin:    "utoken",
-		OtherAmount:  "900",
+		OtherAmount:  sdkmath.NewInt(900),
 		UserAddress:  suite.testAddr("trader-zero"),
-		Timestamp:    timestamppb.New(ctx.BlockTime()),
-		ExpiresAt:    timestamppb.New(ctx.BlockTime().Add(time.Hour)),
-		PricePerAura: "0.9",
+		Timestamp:    ctx.BlockTime(),
+		ExpiresAt:    ctx.BlockTime().Add(time.Hour),
+		PricePerAura: sdkmath.LegacyMustNewDecFromStr("0.9"),
 	}
 	suite.storeOrder(ctx, &order)
 
@@ -175,13 +176,13 @@ func (suite *InvariantsComprehensiveTestSuite) TestOrderInvalidTrader() {
 	order := types.SwapOrder{
 		OrderId:      "order-2",
 		OrderType:    types.SwapOrderType_BUY,
-		AuraAmount:   "1000",
+		AuraAmount:   sdkmath.NewInt(1000),
 		OtherCoin:    "utoken",
-		OtherAmount:  "900",
+		OtherAmount:  sdkmath.NewInt(900),
 		UserAddress:  "invalid-address",
-		Timestamp:    timestamppb.New(ctx.BlockTime()),
-		ExpiresAt:    timestamppb.New(ctx.BlockTime().Add(time.Hour)),
-		PricePerAura: "0.9",
+		Timestamp:    ctx.BlockTime(),
+		ExpiresAt:    ctx.BlockTime().Add(time.Hour),
+		PricePerAura: sdkmath.LegacyMustNewDecFromStr("0.9"),
 	}
 	suite.storeOrder(ctx, &order)
 
@@ -197,13 +198,13 @@ func (suite *InvariantsComprehensiveTestSuite) TestOrderNilTimestamp() {
 	order := types.SwapOrder{
 		OrderId:      "order-3",
 		OrderType:    types.SwapOrderType_BUY,
-		AuraAmount:   "1000",
+		AuraAmount:   sdkmath.NewInt(1000),
 		OtherCoin:    "utoken",
-		OtherAmount:  "900",
+		OtherAmount:  sdkmath.NewInt(900),
 		UserAddress:  suite.testAddr("no-timestamp"),
-		Timestamp:    nil,
-		ExpiresAt:    timestamppb.New(ctx.BlockTime().Add(time.Hour)),
-		PricePerAura: "0.9",
+		Timestamp:    time.Time{},
+		ExpiresAt:    ctx.BlockTime().Add(time.Hour),
+		PricePerAura: sdkmath.LegacyMustNewDecFromStr("0.9"),
 	}
 	suite.storeOrder(ctx, &order)
 
@@ -225,11 +226,11 @@ func (suite *InvariantsComprehensiveTestSuite) TestLiquidityProviderConsistencyI
 		PoolId:        "pool-1",
 		DenomA:        "uaura",
 		DenomB:        "usdt",
-		ReserveA:      "1000",
-		ReserveB:      "2000",
-		TotalLpTokens: "3000",
-		Providers: []*types.LiquidityProvider{
-			{Address: lpAddr, LpTokens: "3000"},
+		ReserveA:      sdkmath.NewInt(1000),
+		ReserveB:      sdkmath.NewInt(2000),
+		TotalLpTokens: sdkmath.NewInt(3000),
+		Providers: []types.LiquidityProvider{
+			{Address: lpAddr, LpTokens: sdkmath.NewInt(3000)},
 		},
 	}
 	suite.storePool(ctx, &pool)
@@ -247,11 +248,11 @@ func (suite *InvariantsComprehensiveTestSuite) TestLPProviderInvalidAddress() {
 		PoolId:        "pool-1",
 		DenomA:        "uaura",
 		DenomB:        "usdt",
-		ReserveA:      "1000",
-		ReserveB:      "2000",
-		TotalLpTokens: "3000",
-		Providers: []*types.LiquidityProvider{
-			{Address: "invalid-address", LpTokens: "3000"},
+		ReserveA:      sdkmath.NewInt(1000),
+		ReserveB:      sdkmath.NewInt(2000),
+		TotalLpTokens: sdkmath.NewInt(3000),
+		Providers: []types.LiquidityProvider{
+			{Address: "invalid-address", LpTokens: sdkmath.NewInt(3000)},
 		},
 	}
 	suite.storePool(ctx, &pool)
@@ -269,12 +270,12 @@ func (suite *InvariantsComprehensiveTestSuite) TestLPProviderMismatchedTotals() 
 		PoolId:        "pool-2",
 		DenomA:        "uaura",
 		DenomB:        "usdc",
-		ReserveA:      "5000",
-		ReserveB:      "10000",
-		TotalLpTokens: "5000",
-		Providers: []*types.LiquidityProvider{
-			{Address: suite.testAddr("lp-1"), LpTokens: "2000"},
-			{Address: suite.testAddr("lp-2"), LpTokens: "2000"},
+		ReserveA:      sdkmath.NewInt(5000),
+		ReserveB:      sdkmath.NewInt(10000),
+		TotalLpTokens: sdkmath.NewInt(5000),
+		Providers: []types.LiquidityProvider{
+			{Address: suite.testAddr("lp-1"), LpTokens: sdkmath.NewInt(2000)},
+			{Address: suite.testAddr("lp-2"), LpTokens: sdkmath.NewInt(2000)},
 		},
 	}
 	suite.storePool(ctx, &pool)

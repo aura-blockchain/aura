@@ -337,7 +337,7 @@ func TestGetAttributeWithAccessControl_Success(t *testing.T) {
 		Did:           owner,
 		Address:       owner,
 		Status:        identitypb.IdentityStatus_IDENTITY_STATUS_ACTIVE,
-		CreatedAt:     timestamppb.New(ctx.BlockTime()),
+		CreatedAt:     ctx.BlockTime(),
 		PiiCommitment: []byte("commitment"),
 		MetadataHash:  "metadata_hash",
 	}
@@ -367,7 +367,7 @@ func TestGetAttributeWithAccessControl_VerifyOnlyReturnsCommitment(t *testing.T)
 		Did:           owner,
 		Address:       owner,
 		Status:        identitypb.IdentityStatus_IDENTITY_STATUS_ACTIVE,
-		CreatedAt:     timestamppb.New(ctx.BlockTime()),
+		CreatedAt:     ctx.BlockTime(),
 		PiiCommitment: commitment,
 		MetadataHash:  "metadata",
 	}
@@ -396,7 +396,7 @@ func TestGetAttributeWithAccessControl_AccessDenied(t *testing.T) {
 		Did:       owner,
 		Address:   owner,
 		Status:    identitypb.IdentityStatus_IDENTITY_STATUS_ACTIVE,
-		CreatedAt: timestamppb.New(ctx.BlockTime()),
+		CreatedAt: ctx.BlockTime(),
 	}
 	err := keeper.SetIdentityRecord(ctx, record)
 	require.NoError(t, err)
@@ -440,7 +440,7 @@ func TestAttributeAccessLogging_Success(t *testing.T) {
 		Did:       owner,
 		Address:   owner,
 		Status:    identitypb.IdentityStatus_IDENTITY_STATUS_ACTIVE,
-		CreatedAt: timestamppb.New(ctx.BlockTime()),
+		CreatedAt: ctx.BlockTime(),
 	}
 	err := keeper.SetIdentityRecord(ctx, record)
 	require.NoError(t, err)
@@ -483,7 +483,7 @@ func TestAttributeAccessLogging_Failed(t *testing.T) {
 		Did:       owner,
 		Address:   owner,
 		Status:    identitypb.IdentityStatus_IDENTITY_STATUS_ACTIVE,
-		CreatedAt: timestamppb.New(ctx.BlockTime()),
+		CreatedAt: ctx.BlockTime(),
 	}
 	err := keeper.SetIdentityRecord(ctx, record)
 	require.NoError(t, err)
