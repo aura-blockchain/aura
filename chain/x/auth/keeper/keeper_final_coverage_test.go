@@ -6,7 +6,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/auth/types"
 	authproto "github.com/aequitas/aura/proto/aura/auth/v1beta1"
@@ -135,7 +134,7 @@ func TestDeleteRoleAssignment_MultipleRoles(t *testing.T) {
 		Address:    "user1",
 		RoleName:   types.RoleUser,
 		AssignedBy: "admin1",
-		AssignedAt: timestamppb.New(time.Now()),
+		AssignedAt: time.Now(),
 	}
 	err := k.SetRoleAssignment(ctx, assignment1)
 	require.NoError(t, err)
@@ -144,7 +143,7 @@ func TestDeleteRoleAssignment_MultipleRoles(t *testing.T) {
 		Address:    "user1",
 		RoleName:   types.RoleModerator,
 		AssignedBy: "admin1",
-		AssignedAt: timestamppb.New(time.Now()),
+		AssignedAt: time.Now(),
 	}
 	err = k.SetRoleAssignment(ctx, assignment2)
 	require.NoError(t, err)
@@ -183,7 +182,7 @@ func TestResetRateLimitWindow_DayReset(t *testing.T) {
 		CurrentMinuteCount: 50,
 		CurrentHourCount:   500,
 		CurrentDayCount:    5000,
-		WindowStart:        timestamppb.New(oldTime),
+		WindowStart:        oldTime,
 	}
 	err := k.SetRateLimitConfig(ctx, config)
 	require.NoError(t, err)
@@ -494,11 +493,12 @@ func TestHasPermission_EmergencyAdminInactive(t *testing.T) {
 	k, ctx := setupTestKeeper(t)
 
 	// Create inactive emergency admin
+	expiresAt := time.Now().Add(1 * time.Hour)
 	admin := &authproto.EmergencyAdmin{
 		Address:     "emergency1",
 		Privileges:  []string{types.PermissionAdmin},
-		ActivatedAt: timestamppb.New(time.Now()),
-		ExpiresAt:   timestamppb.New(time.Now().Add(1 * time.Hour)),
+		ActivatedAt: time.Now(),
+		ExpiresAt:   &expiresAt,
 		ActivatedBy: "activator",
 		IsActive:    false,
 	}
@@ -518,8 +518,8 @@ func TestCleanupExpiredSessions_DeleteError(t *testing.T) {
 	expiredSession := &authproto.Session{
 		SessionId:   "expired_session",
 		UserAddress: "user1",
-		CreatedAt:   timestamppb.New(time.Now().Add(-2 * time.Hour)),
-		ExpiresAt:   timestamppb.New(time.Now().Add(-1 * time.Hour)),
+		CreatedAt:   time.Now().Add(-2 * time.Hour),
+		ExpiresAt:   time.Now().Add(-1 * time.Hour),
 	}
 	err := k.SetSession(ctx, expiredSession)
 	require.NoError(t, err)
@@ -540,8 +540,8 @@ func TestCleanupExpiredProposals_SaveError(t *testing.T) {
 		Title:       "Expired",
 		Description: "Expired proposal",
 		Payload:     []byte("data"),
-		CreatedAt:   timestamppb.New(time.Now().Add(-2 * time.Hour)),
-		ExpiresAt:   timestamppb.New(time.Now().Add(-1 * time.Hour)),
+		CreatedAt:   time.Now().Add(-2 * time.Hour),
+		ExpiresAt:   time.Now().Add(-1 * time.Hour),
 		Status:      authproto.ProposalStatus_PROPOSAL_STATUS_PENDING,
 		Signatures:  []string{},
 	}

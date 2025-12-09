@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/auth/types"
 	authproto "github.com/aequitas/aura/proto/aura/auth/v1beta1"
@@ -773,7 +772,7 @@ func TestResetRateLimitWindow(t *testing.T) {
 		CurrentMinuteCount: 50,
 		CurrentHourCount:   500,
 		CurrentDayCount:    5000,
-		WindowStart:        timestamppb.New(oldTime),
+		WindowStart:        oldTime,
 	}
 	err := k.SetRateLimitConfig(ctx, config)
 	require.NoError(t, err)
@@ -804,7 +803,7 @@ func TestResetRateLimitWindow_NilWindowStart(t *testing.T) {
 		RequestsPerHour:    6000,
 		RequestsPerDay:     144000,
 		CurrentMinuteCount: 50,
-		WindowStart:        nil,
+		WindowStart:        time.Time{},
 	}
 	err := k.SetRateLimitConfig(ctx, config)
 	require.NoError(t, err)
@@ -838,7 +837,7 @@ func TestGetAllAuditLogs(t *testing.T) {
 			Action:    "action" + string(rune('1'+i)),
 			Resource:  "resource1",
 			Result:    "success",
-			Timestamp: timestamppb.New(now),
+			Timestamp: now,
 		}
 
 		store := ctx.KVStore(k.storeKey)

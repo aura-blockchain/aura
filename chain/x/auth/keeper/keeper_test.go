@@ -65,8 +65,8 @@ func setupKeeper(t testing.TB) (*Keeper, sdk.Context) {
 			types.PermissionViewAuditLogs,
 		},
 		Description: "Administrator role with all permissions",
-		CreatedAt:   nil,
-		UpdatedAt:   nil,
+		CreatedAt:   time.Time{},
+		UpdatedAt:   time.Time{},
 	}
 	if err := k.SetRole(ctx, adminRole); err != nil {
 		panic(err)
@@ -80,8 +80,8 @@ func setupKeeper(t testing.TB) (*Keeper, sdk.Context) {
 			types.PermissionViewAuditLogs,
 		},
 		Description: "Moderator role with limited permissions",
-		CreatedAt:   nil,
-		UpdatedAt:   nil,
+		CreatedAt:   time.Time{},
+		UpdatedAt:   time.Time{},
 	}
 	if err := k.SetRole(ctx, moderatorRole); err != nil {
 		panic(err)
@@ -94,8 +94,8 @@ func setupKeeper(t testing.TB) (*Keeper, sdk.Context) {
 			types.PermissionRotateValidatorKey,
 		},
 		Description: "Validator role for consensus validators",
-		CreatedAt:   nil,
-		UpdatedAt:   nil,
+		CreatedAt:   time.Time{},
+		UpdatedAt:   time.Time{},
 	}
 	if err := k.SetRole(ctx, validatorRole); err != nil {
 		panic(err)
@@ -106,8 +106,8 @@ func setupKeeper(t testing.TB) (*Keeper, sdk.Context) {
 		Name:        types.RoleUser,
 		Permissions: []string{},
 		Description: "Basic user role",
-		CreatedAt:   nil,
-		UpdatedAt:   nil,
+		CreatedAt:   time.Time{},
+		UpdatedAt:   time.Time{},
 	}
 	if err := k.SetRole(ctx, userRole); err != nil {
 		panic(err)
@@ -118,7 +118,7 @@ func setupKeeper(t testing.TB) (*Keeper, sdk.Context) {
 		Address:    "system",
 		RoleName:   types.RoleAdmin,
 		AssignedBy: "genesis",
-		AssignedAt: nil,
+		AssignedAt: time.Now(),
 	}
 	if err := k.SetRoleAssignment(ctx, systemAssignment); err != nil {
 		panic(err)

@@ -14,7 +14,6 @@ import (
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/auth/types"
 	authproto "github.com/aequitas/aura/proto/aura/auth/v1beta1"
@@ -70,8 +69,8 @@ func setupTestKeeper(t testing.TB) (*Keeper, sdk.Context) {
 			types.PermissionViewAuditLogs,
 		},
 		Description: "Administrator role with all permissions",
-		CreatedAt:   timestamppb.New(now),
-		UpdatedAt:   timestamppb.New(now),
+		CreatedAt:   now,
+		UpdatedAt:   now,
 	}
 	require.NoError(t, k.SetRole(ctx, adminRole))
 
@@ -83,8 +82,8 @@ func setupTestKeeper(t testing.TB) (*Keeper, sdk.Context) {
 			types.PermissionViewAuditLogs,
 		},
 		Description: "Moderator role with limited permissions",
-		CreatedAt:   timestamppb.New(now),
-		UpdatedAt:   timestamppb.New(now),
+		CreatedAt:   now,
+		UpdatedAt:   now,
 	}
 	require.NoError(t, k.SetRole(ctx, moderatorRole))
 
@@ -95,8 +94,8 @@ func setupTestKeeper(t testing.TB) (*Keeper, sdk.Context) {
 			types.PermissionRotateValidatorKey,
 		},
 		Description: "Validator role for consensus validators",
-		CreatedAt:   timestamppb.New(now),
-		UpdatedAt:   timestamppb.New(now),
+		CreatedAt:   now,
+		UpdatedAt:   now,
 	}
 	require.NoError(t, k.SetRole(ctx, validatorRole))
 
@@ -105,8 +104,8 @@ func setupTestKeeper(t testing.TB) (*Keeper, sdk.Context) {
 		Name:        types.RoleUser,
 		Permissions: []string{},
 		Description: "Basic user role",
-		CreatedAt:   timestamppb.New(now),
-		UpdatedAt:   timestamppb.New(now),
+		CreatedAt:   now,
+		UpdatedAt:   now,
 	}
 	require.NoError(t, k.SetRole(ctx, userRole))
 
@@ -115,7 +114,7 @@ func setupTestKeeper(t testing.TB) (*Keeper, sdk.Context) {
 		Address:    "system",
 		RoleName:   types.RoleAdmin,
 		AssignedBy: "genesis",
-		AssignedAt: timestamppb.New(now),
+		AssignedAt: now,
 	}
 	require.NoError(t, k.SetRoleAssignment(ctx, systemAssignment))
 
@@ -309,7 +308,7 @@ func TestGetAllMultisigWallets(t *testing.T) {
 			Id:        "wallet" + string(rune('1'+i)),
 			Signers:   []string{"owner1", "owner2"},
 			Threshold: 2,
-			CreatedAt: timestamppb.New(time.Unix(1234567890, 0)),
+			CreatedAt: time.Unix(1234567890, 0),
 		}
 		err := k.SetMultisigWallet(ctx, wallet)
 		require.NoError(t, err)
@@ -327,7 +326,7 @@ func TestDeleteMultisigWallet(t *testing.T) {
 		Id:        "temp_wallet",
 		Signers:   []string{"owner1", "owner2"},
 		Threshold: 2,
-		CreatedAt: timestamppb.New(time.Unix(1234567890, 0)),
+		CreatedAt: time.Unix(1234567890, 0),
 	}
 	err := k.SetMultisigWallet(ctx, wallet)
 	require.NoError(t, err)
@@ -360,7 +359,7 @@ func TestMultisigWalletThreshold(t *testing.T) {
 				Id:        "wallet_" + tt.name,
 				Signers:   tt.owners,
 				Threshold: uint32(tt.threshold),
-				CreatedAt: timestamppb.New(time.Unix(1234567890, 0)),
+				CreatedAt: time.Unix(1234567890, 0),
 			}
 			err := k.SetMultisigWallet(ctx, wallet)
 			if tt.shouldErr {
@@ -394,7 +393,7 @@ func TestGetAllMultisigProposals(t *testing.T) {
 			Description: "Test proposal description",
 			Signatures:  []string{},
 			Status:      authproto.ProposalStatus_PROPOSAL_STATUS_PENDING,
-			CreatedAt:   timestamppb.New(time.Unix(1234567890, 0)),
+			CreatedAt:   time.Unix(1234567890, 0),
 		}
 		err := k.SetMultisigProposal(ctx, proposal)
 		require.NoError(t, err)
@@ -415,7 +414,7 @@ func TestDeleteMultisigProposal(t *testing.T) {
 		Description: "Temp proposal description",
 		Signatures:  []string{},
 		Status:      authproto.ProposalStatus_PROPOSAL_STATUS_PENDING,
-		CreatedAt:   timestamppb.New(time.Unix(1234567890, 0)),
+		CreatedAt:   time.Unix(1234567890, 0),
 	}
 	err := k.SetMultisigProposal(ctx, proposal)
 	require.NoError(t, err)
