@@ -9,7 +9,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/aequitas/aura/chain/x/common/security"
 	"github.com/aequitas/aura/chain/x/dex/types"
 )
 
@@ -27,15 +26,6 @@ type Keeper struct {
 	accountKeeper  types.AccountKeeper
 	vcKeeper       types.VCRegistryKeeper // For IR verification check
 	securityKeeper types.SecurityKeeper   // Centralized security primitives
-
-	// Legacy security primitives (kept for backward compatibility during migration)
-	// NOTE: Future enhancement - Remove these once all code is migrated to securityKeeper
-	reentrancyGuard *security.ReentrancyGuard
-	pauseGuard      *security.PauseGuard
-	inputValidator  *security.InputValidator
-	safeMath        *security.SafeMath
-	gasLimitGuard   *security.GasLimitGuard
-	accessControl   *security.AccessControl
 }
 
 // NewKeeper creates a new dex Keeper instance
@@ -54,15 +44,6 @@ func NewKeeper(
 		accountKeeper:  accountKeeper,
 		vcKeeper:       vcKeeper,
 		securityKeeper: securityKeeper,
-
-		// Initialize legacy security primitives (for backward compatibility)
-		// NOTE: Future enhancement - Remove these once all code is migrated to securityKeeper
-		reentrancyGuard: security.NewReentrancyGuard(),
-		pauseGuard:      security.NewPauseGuard(""), // Admin will be set via params
-		inputValidator:  security.NewInputValidator(),
-		safeMath:        security.NewSafeMath(),
-		gasLimitGuard:   security.NewGasLimitGuard(1_000_000), // 1M gas default
-		accessControl:   security.NewAccessControl([]string{}), // Admins set via params
 	}
 }
 
