@@ -428,34 +428,6 @@ func (k *Keeper) getDelegation(ctx sdk.Context, delegationID string) (*ScoreDele
 	return &delegation, true
 }
 
-// DEPRECATED: getAllDelegations loads ALL delegations into memory
-// At scale (100K+ delegations), this will cause chain halts
-// Use getDelegationsPaginated or getDelegationsExpiringAtHeight instead
-func (k *Keeper) getAllDelegations(ctx sdk.Context) []ScoreDelegation {
-	k.logger.Warn("getAllDelegations called - this loads all delegations into memory and should be avoided")
-
-	store := k.storeService.OpenKVStore(ctx)
-	prefix := []byte(types.DelegationStoreKeyPrefix)
-	iterator, err := store.Iterator(prefix, storetypes.PrefixEndBytes(prefix))
-	if err != nil {
-		k.logger.Error("failed to create delegation iterator", "error", err)
-		return []ScoreDelegation{}
-	}
-	defer iterator.Close()
-
-	delegations := []ScoreDelegation{}
-	for ; iterator.Valid(); iterator.Next() {
-		var delegation ScoreDelegation
-		if err := json.Unmarshal(iterator.Value(), &delegation); err != nil {
-			k.logger.Error("failed to unmarshal delegation in getAllDelegations", "error", err)
-			continue
-		}
-		delegations = append(delegations, delegation)
-	}
-
-	return delegations
-}
-
 // getDelegationsPaginated retrieves delegations with pagination to prevent unbounded iteration
 // Returns delegations and whether there are more results
 func (k *Keeper) getDelegationsPaginated(ctx sdk.Context, offset, limit int) ([]ScoreDelegation, bool, error) {

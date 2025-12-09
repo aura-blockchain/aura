@@ -44,7 +44,7 @@ func TestStoreKeysCentralization(t *testing.T) {
 // TestAppInitializationWithCentralizedKeys verifies that the app can be created
 // successfully with the centralized store key architecture.
 func TestAppInitializationWithCentralizedKeys(t *testing.T) {
-	app := NewApp()
+	app := NewAppWithOptions(nil, nil, "")
 	require.NotNil(t, app, "App should be created successfully")
 	require.NotNil(t, app.storeKeys, "Store keys should be initialized")
 

@@ -50,12 +50,62 @@ func ParamsInvariant(k *Keeper) sdk.Invariant {
 				fmt.Sprintf("failed to get params: %s", err.Error()),
 			), true
 		}
-		// Basic sanity checks on params
+		// Check for nil sub-configs before validation
 		if params.Connection == nil {
 			return sdk.FormatInvariant(
 				types.ModuleName,
 				"params-valid",
 				"params has nil connection config",
+			), true
+		}
+		if params.RateLimit == nil {
+			return sdk.FormatInvariant(
+				types.ModuleName,
+				"params-valid",
+				"params has nil rate_limit config",
+			), true
+		}
+		if params.Mempool == nil {
+			return sdk.FormatInvariant(
+				types.ModuleName,
+				"params-valid",
+				"params has nil mempool config",
+			), true
+		}
+		if params.Reputation == nil {
+			return sdk.FormatInvariant(
+				types.ModuleName,
+				"params-valid",
+				"params has nil reputation config",
+			), true
+		}
+		if params.Gossip == nil {
+			return sdk.FormatInvariant(
+				types.ModuleName,
+				"params-valid",
+				"params has nil gossip config",
+			), true
+		}
+		if params.ForkDetection == nil {
+			return sdk.FormatInvariant(
+				types.ModuleName,
+				"params-valid",
+				"params has nil fork_detection config",
+			), true
+		}
+		if params.PartitionDetection == nil {
+			return sdk.FormatInvariant(
+				types.ModuleName,
+				"params-valid",
+				"params has nil partition_detection config",
+			), true
+		}
+		// Validate params using the validation function
+		if err := types.ValidateParams(&params); err != nil {
+			return sdk.FormatInvariant(
+				types.ModuleName,
+				"params-valid",
+				fmt.Sprintf("invalid params: %s", err.Error()),
 			), true
 		}
 		return "", false
@@ -170,6 +220,13 @@ func SybilDetectionIntegrityInvariant(k *Keeper) sdk.Invariant {
 					types.ModuleName,
 					"sybil-detection-integrity",
 					"fork alert has empty ID",
+				), true
+			}
+			if alert.BlockHeight < 0 {
+				return sdk.FormatInvariant(
+					types.ModuleName,
+					"sybil-detection-integrity",
+					fmt.Sprintf("fork alert %s has negative height %d", alert.AlertId, alert.BlockHeight),
 				), true
 			}
 		}

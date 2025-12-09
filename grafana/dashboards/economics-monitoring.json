@@ -1,124 +1,142 @@
 {
-  "dashboard": {
-    "title": "Aura Economics Monitoring Dashboard",
-    "tags": ["aura", "economics", "tvl", "gas"],
-    "timezone": "browser",
-    "schemaVersion": 16,
-    "version": 1,
-    "refresh": "1m",
-    "panels": [
-      {
-        "id": 1,
-        "title": "Total Value Locked (TVL)",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "aura_monitoring_total_tvl",
-            "legendFormat": "Total TVL"
-          }
-        ]
-      },
-      {
-        "id": 2,
-        "title": "TVL by Module",
-        "type": "piechart",
-        "targets": [
-          {
-            "expr": "aura_monitoring_tvl_by_module",
-            "legendFormat": "{{module}}"
-          }
-        ]
-      },
-      {
-        "id": 3,
-        "title": "TVL Change 24h",
-        "type": "stat",
-        "targets": [
-          {
-            "expr": "aura_monitoring_tvl_change_24h_percentage",
-            "legendFormat": "24h Change"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "unit": "percent",
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {"value": -20, "color": "red"},
-                {"value": -10, "color": "yellow"},
-                {"value": 0, "color": "green"},
-                {"value": 10, "color": "yellow"},
-                {"value": 20, "color": "red"}
-              ]
-            }
+  "title": "Aura Economics Monitoring Dashboard",
+  "tags": [
+    "aura",
+    "economics",
+    "tvl",
+    "gas"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 16,
+  "version": 1,
+  "refresh": "1m",
+  "panels": [
+    {
+      "id": 1,
+      "title": "Total Value Locked (TVL)",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "aura_monitoring_total_tvl",
+          "legendFormat": "Total TVL"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "TVL by Module",
+      "type": "piechart",
+      "targets": [
+        {
+          "expr": "aura_monitoring_tvl_by_module",
+          "legendFormat": "{{module}}"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "TVL Change 24h",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "aura_monitoring_tvl_change_24h_percentage",
+          "legendFormat": "24h Change"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": -20,
+                "color": "red"
+              },
+              {
+                "value": -10,
+                "color": "yellow"
+              },
+              {
+                "value": 0,
+                "color": "green"
+              },
+              {
+                "value": 10,
+                "color": "yellow"
+              },
+              {
+                "value": 20,
+                "color": "red"
+              }
+            ]
           }
         }
-      },
-      {
-        "id": 4,
-        "title": "TVL Change 7d",
-        "type": "stat",
-        "targets": [
-          {
-            "expr": "aura_monitoring_tvl_change_7d_percentage",
-            "legendFormat": "7d Change"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "unit": "percent"
-          }
-        }
-      },
-      {
-        "id": 5,
-        "title": "Current Gas Price",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "aura_monitoring_current_gas_price",
-            "legendFormat": "Current"
-          },
-          {
-            "expr": "aura_monitoring_average_gas_price",
-            "legendFormat": "Average"
-          }
-        ]
-      },
-      {
-        "id": 6,
-        "title": "Gas Price Volatility",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "aura_monitoring_gas_price_volatility",
-            "legendFormat": "Volatility"
-          }
-        ]
-      },
-      {
-        "id": 7,
-        "title": "Gas Price Spikes",
-        "type": "stat",
-        "targets": [
-          {
-            "expr": "increase(aura_monitoring_gas_price_spikes_total[24h])",
-            "legendFormat": "Spikes (24h)"
-          }
-        ]
-      },
-      {
-        "id": 8,
-        "title": "Transaction Gas Usage",
-        "type": "heatmap",
-        "targets": [
-          {
-            "expr": "aura_monitoring_transaction_gas_used",
-            "legendFormat": "{{module}}"
-          }
-        ]
       }
-    ]
-  }
+    },
+    {
+      "id": 4,
+      "title": "TVL Change 7d",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "aura_monitoring_tvl_change_7d_percentage",
+          "legendFormat": "7d Change"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent"
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Current Gas Price",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "aura_monitoring_current_gas_price",
+          "legendFormat": "Current"
+        },
+        {
+          "expr": "aura_monitoring_average_gas_price",
+          "legendFormat": "Average"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Gas Price Volatility",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "aura_monitoring_gas_price_volatility",
+          "legendFormat": "Volatility"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Gas Price Spikes",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "increase(aura_monitoring_gas_price_spikes_total[24h])",
+          "legendFormat": "Spikes (24h)"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Transaction Gas Usage",
+      "type": "heatmap",
+      "targets": [
+        {
+          "expr": "aura_monitoring_transaction_gas_used",
+          "legendFormat": "{{module}}"
+        }
+      ]
+    }
+  ]
 }

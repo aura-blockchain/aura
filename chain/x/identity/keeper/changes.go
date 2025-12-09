@@ -70,14 +70,6 @@ func (k *Keeper) GetAllIdentityRecords(ctx sdk.Context) ([]*types.IdentityRecord
 	return records, nil
 }
 
-// DeleteIdentityRecord removes an identity record
-// DEPRECATED: Use EraseIdentity for GDPR compliance instead
-func (k *Keeper) DeleteIdentityRecord(ctx sdk.Context, did string) error {
-	store := k.storeService.OpenKVStore(ctx)
-	key := types.GetIdentityRecordKey(did)
-	return store.Delete(key)
-}
-
 // EraseIdentity implements GDPR Right to Erasure
 // Marks identity as erased while preserving audit trail (commitment)
 func (k *Keeper) EraseIdentity(ctx sdk.Context, did, requester, reason string) error {

@@ -1,6 +1,7 @@
 package types
 
 import (
+	"github.com/stretchr/testify/require"
 	"testing"
 )
 
@@ -285,4 +286,29 @@ func TestEnumAliases(t *testing.T) {
 	if VestingTypeLinear != VestingType_VESTING_TYPE_LINEAR {
 		t.Error("VestingTypeLinear alias mismatch")
 	}
+}
+
+func FuzzValidateParamsBounds(f *testing.F) {
+	f.Add(uint64(1000), uint64(500), uint64(800), uint32(5000))
+	f.Add(uint64(200), uint64(400), uint64(300), uint32(12000))
+
+	f.Fuzz(func(t *testing.T, maxInfl, minInfl, rate uint64, whalePct uint32) {
+		params := DefaultParams()
+		params.Tokenomics.MaxInflationRate = maxInfl
+		params.Tokenomics.MinInflationRate = minInfl
+		params.Tokenomics.InflationRate = rate
+
+		// Limit whale percentage to avoid overflow in validation bounds check
+		params.WhaleProtection.MaxHoldingPercentage = uint64(whalePct)
+
+		err := ValidateParams(params)
+
+		if maxInfl < minInfl {
+			require.Error(t, err)
+		} else if whalePct > 10000 {
+			require.Error(t, err)
+		} else {
+			require.NoError(t, err)
+		}
+	})
 }

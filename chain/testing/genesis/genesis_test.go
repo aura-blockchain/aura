@@ -124,7 +124,7 @@ func TestGenesisImportExport(t *testing.T) {
 	require.NotNil(t, input.Ctx)
 
 	// Create app and load stores before using
-	a := app.NewApp()
+	a := app.NewAppWithOptions(nil, nil, "")
 	err := a.LoadLatestVersion()
 	require.NoError(t, err, "LoadLatestVersion should succeed")
 

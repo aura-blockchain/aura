@@ -17,6 +17,13 @@ use crate::state::{
 const MAX_REQUESTS_RETURNED: usize = 25;
 const SECONDS_PER_DAY: u64 = 86_400;
 
+// Input validation constants to prevent DoS attacks from unbounded strings
+const MAX_METADATA_LEN: usize = 10_000;
+const MAX_CREDENTIAL_LEN: usize = 50_000;
+const MAX_REASON_LEN: usize = 1_000;
+const MAX_POLICY_ID_LEN: usize = 256;
+const MAX_VC_TYPE_LEN: usize = 256;
+
 #[entry_point]
 pub fn instantiate(
     deps: DepsMut,
@@ -124,6 +131,11 @@ fn execute_register_issuer(
     policy_id: String,
     daily_limit: u64,
 ) -> Result<Response<AuraMsg>, ContractError> {
+    // Validate policy_id length to prevent DoS
+    if policy_id.len() > MAX_POLICY_ID_LEN {
+        return Err(ContractError::PolicyIdTooLarge(MAX_POLICY_ID_LEN));
+    }
+
     let config = CONFIG.load(deps.storage)?;
     if info.sender != config.admin {
         return Err(ContractError::Unauthorized);
@@ -179,6 +191,16 @@ fn execute_request_vc(
     vc_type: String,
     metadata: String,
 ) -> Result<Response<AuraMsg>, ContractError> {
+    // Validate vc_type length to prevent DoS
+    if vc_type.len() > MAX_VC_TYPE_LEN {
+        return Err(ContractError::VcTypeTooLarge(MAX_VC_TYPE_LEN));
+    }
+
+    // Validate metadata length to prevent DoS
+    if metadata.len() > MAX_METADATA_LEN {
+        return Err(ContractError::MetadataTooLarge(MAX_METADATA_LEN));
+    }
+
     let issuer_addr = deps.api.addr_validate(&issuer)?;
     let subject_addr = deps.api.addr_validate(&subject)?;
     let profile = ISSUERS
@@ -230,6 +252,11 @@ fn execute_fulfill_request(
     request_id: String,
     credential_base64: String,
 ) -> Result<Response<AuraMsg>, ContractError> {
+    // Validate credential_base64 length to prevent DoS
+    if credential_base64.len() > MAX_CREDENTIAL_LEN {
+        return Err(ContractError::CredentialTooLarge(MAX_CREDENTIAL_LEN));
+    }
+
     let mut request = REQUESTS
         .may_load(deps.storage, &request_id)?
         .ok_or(ContractError::RequestNotFound)?;
@@ -299,6 +326,11 @@ fn execute_revoke_vc(
     vc_id: String,
     reason: String,
 ) -> Result<Response<AuraMsg>, ContractError> {
+    // Validate reason length to prevent DoS
+    if reason.len() > MAX_REASON_LEN {
+        return Err(ContractError::ReasonTooLarge(MAX_REASON_LEN));
+    }
+
     let record = ISSUED
         .may_load(deps.storage, &vc_id)?
         .ok_or(ContractError::CredentialNotFound)?;
@@ -374,6 +406,7 @@ fn enforce_mint_limit(
 mod tests {
     use super::*;
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
+    use cosmwasm_std::Api;
 
     fn instantiate_with_admin(deps: DepsMut, admin: &str) {
         instantiate(
@@ -546,5 +579,372 @@ mod tests {
         )
         .unwrap_err();
         assert_eq!(err, ContractError::MintLimitReached);
+    }
+
+    #[test]
+    fn test_register_issuer_policy_id_too_large() {
+        let mut deps = mock_dependencies();
+        instantiate_with_admin(deps.as_mut(), "admin");
+
+        let large_policy_id = "a".repeat(MAX_POLICY_ID_LEN + 1);
+        let err = execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info("admin", &[]),
+            ExecuteMsg::RegisterIssuer {
+                issuer: "issuer".into(),
+                policy_id: large_policy_id,
+                daily_limit: 5,
+            },
+        )
+        .unwrap_err();
+        assert_eq!(err, ContractError::PolicyIdTooLarge(MAX_POLICY_ID_LEN));
+    }
+
+    #[test]
+    fn test_register_issuer_policy_id_at_max_allowed() {
+        let mut deps = mock_dependencies();
+        instantiate_with_admin(deps.as_mut(), "admin");
+
+        let max_policy_id = "a".repeat(MAX_POLICY_ID_LEN);
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info("admin", &[]),
+            ExecuteMsg::RegisterIssuer {
+                issuer: "issuer".into(),
+                policy_id: max_policy_id.clone(),
+                daily_limit: 5,
+            },
+        )
+        .unwrap();
+
+        let issuer = ISSUERS
+            .load(
+                deps.as_ref().storage,
+                &deps.api.addr_validate("issuer").unwrap(),
+            )
+            .unwrap();
+        assert_eq!(issuer.policy_id, max_policy_id);
+    }
+
+    #[test]
+    fn test_request_vc_metadata_too_large() {
+        let mut deps = mock_dependencies();
+        instantiate_with_admin(deps.as_mut(), "admin");
+        register_default_issuer(deps.as_mut(), mock_env(), "admin", 5);
+
+        let large_metadata = "m".repeat(MAX_METADATA_LEN + 1);
+        let err = execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info("user", &[]),
+            ExecuteMsg::RequestVc {
+                issuer: "issuer".into(),
+                subject: "holder".into(),
+                vc_type: "kyc".into(),
+                metadata: large_metadata,
+            },
+        )
+        .unwrap_err();
+        assert_eq!(err, ContractError::MetadataTooLarge(MAX_METADATA_LEN));
+    }
+
+    #[test]
+    fn test_request_vc_metadata_at_max_allowed() {
+        let mut deps = mock_dependencies();
+        instantiate_with_admin(deps.as_mut(), "admin");
+        register_default_issuer(deps.as_mut(), mock_env(), "admin", 5);
+
+        let max_metadata = "m".repeat(MAX_METADATA_LEN);
+        let resp = execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info("user", &[]),
+            ExecuteMsg::RequestVc {
+                issuer: "issuer".into(),
+                subject: "holder".into(),
+                vc_type: "kyc".into(),
+                metadata: max_metadata.clone(),
+            },
+        )
+        .unwrap();
+
+        let req_id = resp
+            .attributes
+            .iter()
+            .find(|a| a.key == "request_id")
+            .unwrap()
+            .value
+            .clone();
+
+        let request = REQUESTS.load(deps.as_ref().storage, &req_id).unwrap();
+        assert_eq!(request.metadata, max_metadata);
+    }
+
+    #[test]
+    fn test_request_vc_type_too_large() {
+        let mut deps = mock_dependencies();
+        instantiate_with_admin(deps.as_mut(), "admin");
+        register_default_issuer(deps.as_mut(), mock_env(), "admin", 5);
+
+        let large_vc_type = "t".repeat(MAX_VC_TYPE_LEN + 1);
+        let err = execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info("user", &[]),
+            ExecuteMsg::RequestVc {
+                issuer: "issuer".into(),
+                subject: "holder".into(),
+                vc_type: large_vc_type,
+                metadata: "{}".into(),
+            },
+        )
+        .unwrap_err();
+        assert_eq!(err, ContractError::VcTypeTooLarge(MAX_VC_TYPE_LEN));
+    }
+
+    #[test]
+    fn test_request_vc_type_at_max_allowed() {
+        let mut deps = mock_dependencies();
+        instantiate_with_admin(deps.as_mut(), "admin");
+        register_default_issuer(deps.as_mut(), mock_env(), "admin", 5);
+
+        let max_vc_type = "t".repeat(MAX_VC_TYPE_LEN);
+        let resp = execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info("user", &[]),
+            ExecuteMsg::RequestVc {
+                issuer: "issuer".into(),
+                subject: "holder".into(),
+                vc_type: max_vc_type.clone(),
+                metadata: "{}".into(),
+            },
+        )
+        .unwrap();
+
+        let req_id = resp
+            .attributes
+            .iter()
+            .find(|a| a.key == "request_id")
+            .unwrap()
+            .value
+            .clone();
+
+        let request = REQUESTS.load(deps.as_ref().storage, &req_id).unwrap();
+        assert_eq!(request.vc_type, max_vc_type);
+    }
+
+    #[test]
+    fn test_fulfill_request_credential_too_large() {
+        let mut deps = mock_dependencies();
+        instantiate_with_admin(deps.as_mut(), "admin");
+        register_default_issuer(deps.as_mut(), mock_env(), "admin", 5);
+
+        let resp = execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info("user", &[]),
+            ExecuteMsg::RequestVc {
+                issuer: "issuer".into(),
+                subject: "holder".into(),
+                vc_type: "kyc".into(),
+                metadata: "{}".into(),
+            },
+        )
+        .unwrap();
+
+        let req_id = resp
+            .attributes
+            .iter()
+            .find(|a| a.key == "request_id")
+            .unwrap()
+            .value
+            .clone();
+
+        let large_credential = "c".repeat(MAX_CREDENTIAL_LEN + 1);
+        let err = execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info("issuer", &[]),
+            ExecuteMsg::FulfillRequest {
+                request_id: req_id,
+                credential_base64: large_credential,
+            },
+        )
+        .unwrap_err();
+        assert_eq!(err, ContractError::CredentialTooLarge(MAX_CREDENTIAL_LEN));
+    }
+
+    #[test]
+    fn test_fulfill_request_credential_at_max_allowed() {
+        let mut deps = mock_dependencies();
+        instantiate_with_admin(deps.as_mut(), "admin");
+        register_default_issuer(deps.as_mut(), mock_env(), "admin", 5);
+
+        let resp = execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info("user", &[]),
+            ExecuteMsg::RequestVc {
+                issuer: "issuer".into(),
+                subject: "holder".into(),
+                vc_type: "kyc".into(),
+                metadata: "{}".into(),
+            },
+        )
+        .unwrap();
+
+        let req_id = resp
+            .attributes
+            .iter()
+            .find(|a| a.key == "request_id")
+            .unwrap()
+            .value
+            .clone();
+
+        let max_credential = "c".repeat(MAX_CREDENTIAL_LEN);
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info("issuer", &[]),
+            ExecuteMsg::FulfillRequest {
+                request_id: req_id.clone(),
+                credential_base64: max_credential,
+            },
+        )
+        .unwrap();
+
+        let request = REQUESTS.load(deps.as_ref().storage, &req_id).unwrap();
+        assert!(matches!(request.status, RequestStatus::Fulfilled { .. }));
+    }
+
+    #[test]
+    fn test_revoke_vc_reason_too_large() {
+        let mut deps = mock_dependencies();
+        instantiate_with_admin(deps.as_mut(), "admin");
+        register_default_issuer(deps.as_mut(), mock_env(), "admin", 5);
+
+        let resp = execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info("user", &[]),
+            ExecuteMsg::RequestVc {
+                issuer: "issuer".into(),
+                subject: "holder".into(),
+                vc_type: "kyc".into(),
+                metadata: "{}".into(),
+            },
+        )
+        .unwrap();
+
+        let req_id = resp
+            .attributes
+            .iter()
+            .find(|a| a.key == "request_id")
+            .unwrap()
+            .value
+            .clone();
+
+        let fulfill_resp = execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info("issuer", &[]),
+            ExecuteMsg::FulfillRequest {
+                request_id: req_id,
+                credential_base64: "ZGF0YQ==".into(),
+            },
+        )
+        .unwrap();
+
+        let vc_id = fulfill_resp
+            .attributes
+            .iter()
+            .find(|a| a.key == "vc_id")
+            .unwrap()
+            .value
+            .clone();
+
+        let large_reason = "r".repeat(MAX_REASON_LEN + 1);
+        let err = execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info("issuer", &[]),
+            ExecuteMsg::RevokeVc {
+                vc_id,
+                reason: large_reason,
+            },
+        )
+        .unwrap_err();
+        assert_eq!(err, ContractError::ReasonTooLarge(MAX_REASON_LEN));
+    }
+
+    #[test]
+    fn test_revoke_vc_reason_at_max_allowed() {
+        let mut deps = mock_dependencies();
+        instantiate_with_admin(deps.as_mut(), "admin");
+        register_default_issuer(deps.as_mut(), mock_env(), "admin", 5);
+
+        let resp = execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info("user", &[]),
+            ExecuteMsg::RequestVc {
+                issuer: "issuer".into(),
+                subject: "holder".into(),
+                vc_type: "kyc".into(),
+                metadata: "{}".into(),
+            },
+        )
+        .unwrap();
+
+        let req_id = resp
+            .attributes
+            .iter()
+            .find(|a| a.key == "request_id")
+            .unwrap()
+            .value
+            .clone();
+
+        let fulfill_resp = execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info("issuer", &[]),
+            ExecuteMsg::FulfillRequest {
+                request_id: req_id,
+                credential_base64: "ZGF0YQ==".into(),
+            },
+        )
+        .unwrap();
+
+        let vc_id = fulfill_resp
+            .attributes
+            .iter()
+            .find(|a| a.key == "vc_id")
+            .unwrap()
+            .value
+            .clone();
+
+        let max_reason = "r".repeat(MAX_REASON_LEN);
+        let resp = execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info("issuer", &[]),
+            ExecuteMsg::RevokeVc {
+                vc_id: vc_id.clone(),
+                reason: max_reason.clone(),
+            },
+        )
+        .unwrap();
+
+        let reason_attr = resp
+            .attributes
+            .iter()
+            .find(|a| a.key == "reason")
+            .unwrap()
+            .value
+            .clone();
+        assert_eq!(reason_attr, max_reason);
     }
 }

@@ -1,6 +1,8 @@
 package keeper_test
 
 import (
+	"time"
+
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/networksecurity/types"
@@ -54,12 +56,27 @@ func (suite *KeeperTestSuite) TestTrustedPeersExtended() {
 func (suite *KeeperTestSuite) TestBanUnbanPeer() {
 	peerId := "peer_to_ban"
 
-	// Ban peer
-	suite.keeper.BanPeer(suite.ctx, peerId, suite.ctx.BlockHeight(), "misbehavior")
+	// Ban peer (ensure duration > 0 so ban is active)
+	suite.keeper.BanPeer(suite.ctx, peerId, 3600, "misbehavior")
 
 	// Check if banned
 	isBanned := suite.keeper.IsBanned(suite.ctx, peerId)
 	suite.Require().True(isBanned)
+
+	// Ensure banned peer shows up in exported list
+	bannedPeers := suite.keeper.GetBannedPeers(suite.ctx)
+	suite.Contains(bannedPeers, peerId)
+
+	// When ban is expired, IsBanned should return false and entry should be cleaned on check.
+	expired := timestamppb.New(suite.ctx.BlockTime().Add(-1 * time.Hour))
+	entry, found := suite.keeper.GetRateLimitEntry(suite.ctx, peerId)
+	suite.Require().True(found)
+	entry.BanExpiresAt = expired
+	entry.IsBanned = true
+	suite.Require().NoError(suite.keeper.SetRateLimitEntry(suite.ctx, entry))
+	suite.False(suite.keeper.IsBanned(suite.ctx, peerId))
+	entryAfter, _ := suite.keeper.GetRateLimitEntry(suite.ctx, peerId)
+	suite.False(entryAfter.IsBanned)
 
 	// Unban peer
 	suite.keeper.UnbanPeer(suite.ctx, peerId)
@@ -67,6 +84,22 @@ func (suite *KeeperTestSuite) TestBanUnbanPeer() {
 	// Verify unbanned
 	isBanned = suite.keeper.IsBanned(suite.ctx, peerId)
 	suite.Require().False(isBanned)
+
+	// Banned list should no longer include the peer
+	bannedPeers = suite.keeper.GetBannedPeers(suite.ctx)
+	suite.NotContains(bannedPeers, peerId)
+}
+
+func (suite *KeeperTestSuite) TestBanPersistsAcrossBlocksUntilExpiry() {
+	peerID := "peer_persist"
+	// duration is in nanoseconds inside BanPeer, so provide explicit nanoseconds to avoid premature expiry
+	duration := int64((24 * time.Hour).Nanoseconds())
+	suite.keeper.BanPeer(suite.ctx, peerID, duration, "test")
+	suite.True(suite.keeper.IsBanned(suite.ctx, peerID))
+
+	// Advance block time but still within ban window
+	nextCtx := suite.ctx.WithBlockTime(suite.ctx.BlockTime().Add(30 * time.Minute))
+	suite.True(suite.keeper.IsBanned(nextCtx, peerID), "ban should persist across blocks until expiry")
 }
 
 func (suite *KeeperTestSuite) TestReputationExtended() {
@@ -182,6 +215,13 @@ func (suite *KeeperTestSuite) TestConnectionCount() {
 	suite.keeper.DecrementConnectionCount(suite.ctx, peerId)
 	count = suite.keeper.GetConnectionCount(suite.ctx, peerId)
 	suite.Require().Equal(uint32(5), count)
+
+	// Stress increments should not overflow and stay monotonic
+	for i := 0; i < 1000; i++ {
+		suite.keeper.IncrementConnectionCount(suite.ctx, peerId)
+	}
+	count = suite.keeper.GetConnectionCount(suite.ctx, peerId)
+	suite.Require().GreaterOrEqual(count, uint32(1005))
 }
 
 func (suite *KeeperTestSuite) TestGetAuthority() {

@@ -10,7 +10,7 @@ import (
 // functions properly use the centralized store key architecture instead
 // of maintaining their own hardcoded lists.
 func TestValidationUsesCentralizedStoreKeys(t *testing.T) {
-	app := NewApp()
+	app := NewAppWithOptions(nil, nil, "")
 	require.NotNil(t, app)
 
 	// Run app validation
@@ -31,7 +31,7 @@ func TestValidationUsesCentralizedStoreKeys(t *testing.T) {
 // This test ensures that adding a new module only requires updating the
 // centralized storeKeys struct and its methods.
 func TestValidateStoreKeysUsesCentralizedMap(t *testing.T) {
-	app := NewApp()
+	app := NewAppWithOptions(nil, nil, "")
 	require.NotNil(t, app)
 
 	result := ValidationResult{Valid: true}
@@ -57,7 +57,7 @@ func TestValidateStoreKeysUsesCentralizedMap(t *testing.T) {
 // TestStoreKeyConsistencyAcrossAppAndValidation verifies that the store keys
 // used by the app match those validated by the validation functions.
 func TestStoreKeyConsistencyAcrossAppAndValidation(t *testing.T) {
-	app := NewApp()
+	app := NewAppWithOptions(nil, nil, "")
 	require.NotNil(t, app)
 
 	// Get keys from centralized source
@@ -112,7 +112,7 @@ func TestAddingNewModuleWorkflow(t *testing.T) {
 	//
 	// This test verifies that the current implementation follows this pattern.
 
-	app := NewApp()
+	app := NewAppWithOptions(nil, nil, "")
 
 	// Verify the centralized methods work correctly
 	names := app.storeKeys.Names()
@@ -146,7 +146,7 @@ func TestAddingNewModuleWorkflow(t *testing.T) {
 // TestNoDuplicateStoreKeys verifies that there are no duplicate store key names
 // in the centralized system.
 func TestNoDuplicateStoreKeys(t *testing.T) {
-	app := NewApp()
+	app := NewAppWithOptions(nil, nil, "")
 
 	keyMap := app.storeKeys.AsMap()
 	seen := make(map[string]string)
@@ -166,7 +166,7 @@ func TestNoDuplicateStoreKeys(t *testing.T) {
 // TestStoreKeysMatchExpectedModules verifies that all expected modules
 // have store keys defined in the centralized system.
 func TestStoreKeysMatchExpectedModules(t *testing.T) {
-	app := NewApp()
+	app := NewAppWithOptions(nil, nil, "")
 	keyMap := app.storeKeys.AsMap()
 
 	// Core Cosmos SDK modules (must exist)

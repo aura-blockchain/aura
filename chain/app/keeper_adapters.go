@@ -111,14 +111,14 @@ func (a monitoredBankKeeperAdapter) SendCoins(ctx sdk.Context, fromAddr sdk.AccA
 	}
 
 	// Update AML profiles after successful transfer
-	if err := a.complianceKeeper.UpdateAMLProfile(ctx, fromAddr, amt); err != nil {
+	if err := a.complianceKeeper.UpdateAMLProfileOnTransaction(ctx, fromAddr.String(), amt); err != nil {
 		ctx.Logger().Error("failed to update sender AML profile",
 			"address", fromAddr.String(),
 			"error", err.Error(),
 		)
 	}
 
-	if err := a.complianceKeeper.UpdateAMLProfile(ctx, toAddr, amt); err != nil {
+	if err := a.complianceKeeper.UpdateAMLProfileOnTransaction(ctx, toAddr.String(), amt); err != nil {
 		ctx.Logger().Error("failed to update recipient AML profile",
 			"address", toAddr.String(),
 			"error", err.Error(),
@@ -164,7 +164,7 @@ func (a monitoredBankKeeperAdapter) SendCoinsFromAccountToModule(ctx sdk.Context
 	}
 
 	// Update sender AML profile
-	if err := a.complianceKeeper.UpdateAMLProfile(ctx, senderAddr, amt); err != nil {
+	if err := a.complianceKeeper.UpdateAMLProfileOnTransaction(ctx, senderAddr.String(), amt); err != nil {
 		ctx.Logger().Error("failed to update sender AML profile",
 			"address", senderAddr.String(),
 			"error", err.Error(),
@@ -210,7 +210,7 @@ func (a monitoredBankKeeperAdapter) SendCoinsFromModuleToAccount(ctx sdk.Context
 	}
 
 	// Update recipient AML profile
-	if err := a.complianceKeeper.UpdateAMLProfile(ctx, recipientAddr, amt); err != nil {
+	if err := a.complianceKeeper.UpdateAMLProfileOnTransaction(ctx, recipientAddr.String(), amt); err != nil {
 		ctx.Logger().Error("failed to update recipient AML profile",
 			"address", recipientAddr.String(),
 			"error", err.Error(),

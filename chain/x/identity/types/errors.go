@@ -15,13 +15,13 @@ const (
 	CodeInvalidRoleAssignment   uint32 = 6
 
 	// Account and Session error codes (100-199)
-	CodeAccountNotFound       uint32 = 100
-	CodeAccountAlreadyExists  uint32 = 101
-	CodeSessionNotFound       uint32 = 102
-	CodeSessionExpired        uint32 = 103
-	CodeSessionInactive       uint32 = 104
-	CodeInvalidSession        uint32 = 105
-	CodeRateLimitExceeded     uint32 = 106
+	CodeAccountNotFound        uint32 = 100
+	CodeAccountAlreadyExists   uint32 = 101
+	CodeSessionNotFound        uint32 = 102
+	CodeSessionExpired         uint32 = 103
+	CodeSessionInactive        uint32 = 104
+	CodeInvalidSession         uint32 = 105
+	CodeRateLimitExceeded      uint32 = 106
 	CodeInvalidRateLimitConfig uint32 = 107
 
 	// Multisig error codes (200-299)
@@ -53,19 +53,20 @@ const (
 	CodeRotationNotFound   uint32 = 502
 
 	// DID Key Rotation error codes (550-559)
-	CodeDIDKeyRotationNotFound      uint32 = 550
-	CodeDIDKeyRotationInProgress    uint32 = 551
-	CodeInvalidVerificationMethod   uint32 = 552
-	CodeKeyInGracePeriod            uint32 = 553
-	CodeKeyNotValid                 uint32 = 554
+	CodeDIDKeyRotationNotFound    uint32 = 550
+	CodeDIDKeyRotationInProgress  uint32 = 551
+	CodeInvalidVerificationMethod uint32 = 552
+	CodeKeyInGracePeriod          uint32 = 553
+	CodeKeyNotValid               uint32 = 554
+	CodeInvalidSignature          uint32 = 555
 
 	// Identity change error codes (600-699)
-	CodeIdentityNotFound         uint32 = 600
-	CodeIdentityAlreadyExists    uint32 = 601
-	CodeChangeRequestNotFound    uint32 = 602
-	CodeChangeRequestInvalid     uint32 = 603
-	CodeChangeRequestExpired     uint32 = 604
-	CodeChangeRequestPending     uint32 = 605
+	CodeIdentityNotFound            uint32 = 600
+	CodeIdentityAlreadyExists       uint32 = 601
+	CodeChangeRequestNotFound       uint32 = 602
+	CodeChangeRequestInvalid        uint32 = 603
+	CodeChangeRequestExpired        uint32 = 604
+	CodeChangeRequestPending        uint32 = 605
 	CodeChangeRequestAlreadyApplied uint32 = 606
 	CodeChangeRequestLimitExceeded  uint32 = 607
 	CodeIdentityChangeSuspended     uint32 = 608
@@ -80,18 +81,18 @@ const (
 	CodeUnauthorized          uint32 = 654
 
 	// Credential revocation error codes (670-689)
-	CodeCredentialRevoked         uint32 = 670
-	CodeCredentialNotFound        uint32 = 671
-	CodeCredentialAlreadyRevoked  uint32 = 672
-	CodeInvalidCredentialID       uint32 = 673
+	CodeCredentialRevoked        uint32 = 670
+	CodeCredentialNotFound       uint32 = 671
+	CodeCredentialAlreadyRevoked uint32 = 672
+	CodeInvalidCredentialID      uint32 = 673
 
 	// Attribute Access Control error codes (690-709)
-	CodeAttributeNotFound     uint32 = 690
-	CodeAccessDenied          uint32 = 691
-	CodeAccessExpired         uint32 = 692
-	CodeInvalidPermission     uint32 = 693
-	CodePermissionNotFound    uint32 = 694
-	CodeInvalidAccessLevel    uint32 = 695
+	CodeAttributeNotFound  uint32 = 690
+	CodeAccessDenied       uint32 = 691
+	CodeAccessExpired      uint32 = 692
+	CodeInvalidPermission  uint32 = 693
+	CodePermissionNotFound uint32 = 694
+	CodeInvalidAccessLevel uint32 = 695
 
 	// General error codes (900-999)
 	CodeInvalidAddress uint32 = 900
@@ -111,13 +112,13 @@ var (
 
 // Account and Session errors
 var (
-	ErrAccountNotFound       = errors.Register(ModuleName, CodeAccountNotFound, "account not found")
-	ErrAccountAlreadyExists  = errors.Register(ModuleName, CodeAccountAlreadyExists, "account already exists")
-	ErrSessionNotFound       = errors.Register(ModuleName, CodeSessionNotFound, "session not found")
-	ErrSessionExpired        = errors.Register(ModuleName, CodeSessionExpired, "session has expired")
-	ErrSessionInactive       = errors.Register(ModuleName, CodeSessionInactive, "session is inactive")
-	ErrInvalidSession        = errors.Register(ModuleName, CodeInvalidSession, "invalid session")
-	ErrRateLimitExceeded     = errors.Register(ModuleName, CodeRateLimitExceeded, "rate limit exceeded")
+	ErrAccountNotFound        = errors.Register(ModuleName, CodeAccountNotFound, "account not found")
+	ErrAccountAlreadyExists   = errors.Register(ModuleName, CodeAccountAlreadyExists, "account already exists")
+	ErrSessionNotFound        = errors.Register(ModuleName, CodeSessionNotFound, "session not found")
+	ErrSessionExpired         = errors.Register(ModuleName, CodeSessionExpired, "session has expired")
+	ErrSessionInactive        = errors.Register(ModuleName, CodeSessionInactive, "session is inactive")
+	ErrInvalidSession         = errors.Register(ModuleName, CodeInvalidSession, "invalid session")
+	ErrRateLimitExceeded      = errors.Register(ModuleName, CodeRateLimitExceeded, "rate limit exceeded")
 	ErrInvalidRateLimitConfig = errors.Register(ModuleName, CodeInvalidRateLimitConfig, "invalid rate limit config")
 )
 
@@ -164,16 +165,17 @@ var (
 	ErrInvalidVerificationMethod = errors.Register(ModuleName, CodeInvalidVerificationMethod, "invalid verification method")
 	ErrKeyInGracePeriod          = errors.Register(ModuleName, CodeKeyInGracePeriod, "old key still in grace period")
 	ErrKeyNotValid               = errors.Register(ModuleName, CodeKeyNotValid, "key is not valid")
+	ErrInvalidSignature          = errors.Register(ModuleName, CodeInvalidSignature, "invalid signature")
 )
 
 // Identity change errors
 var (
-	ErrIdentityNotFound         = errors.Register(ModuleName, CodeIdentityNotFound, "identity not found")
-	ErrIdentityAlreadyExists    = errors.Register(ModuleName, CodeIdentityAlreadyExists, "identity already exists")
-	ErrChangeRequestNotFound    = errors.Register(ModuleName, CodeChangeRequestNotFound, "change request not found")
-	ErrChangeRequestInvalid     = errors.Register(ModuleName, CodeChangeRequestInvalid, "change request is invalid")
-	ErrChangeRequestExpired     = errors.Register(ModuleName, CodeChangeRequestExpired, "change request has expired")
-	ErrChangeRequestPending     = errors.Register(ModuleName, CodeChangeRequestPending, "change request is pending")
+	ErrIdentityNotFound            = errors.Register(ModuleName, CodeIdentityNotFound, "identity not found")
+	ErrIdentityAlreadyExists       = errors.Register(ModuleName, CodeIdentityAlreadyExists, "identity already exists")
+	ErrChangeRequestNotFound       = errors.Register(ModuleName, CodeChangeRequestNotFound, "change request not found")
+	ErrChangeRequestInvalid        = errors.Register(ModuleName, CodeChangeRequestInvalid, "change request is invalid")
+	ErrChangeRequestExpired        = errors.Register(ModuleName, CodeChangeRequestExpired, "change request has expired")
+	ErrChangeRequestPending        = errors.Register(ModuleName, CodeChangeRequestPending, "change request is pending")
 	ErrChangeRequestAlreadyApplied = errors.Register(ModuleName, CodeChangeRequestAlreadyApplied, "change request already applied")
 	ErrChangeRequestLimitExceeded  = errors.Register(ModuleName, CodeChangeRequestLimitExceeded, "change request limit exceeded")
 	ErrIdentityChangeSuspended     = errors.Register(ModuleName, CodeIdentityChangeSuspended, "identity changes are suspended")
@@ -200,12 +202,12 @@ var (
 
 // Attribute Access Control errors
 var (
-	ErrAttributeNotFound   = errors.Register(ModuleName, CodeAttributeNotFound, "attribute not found")
-	ErrAccessDenied        = errors.Register(ModuleName, CodeAccessDenied, "access denied")
-	ErrAccessExpired       = errors.Register(ModuleName, CodeAccessExpired, "access permission expired")
-	ErrInvalidPermission   = errors.Register(ModuleName, CodeInvalidPermission, "invalid permission")
-	ErrPermissionNotFound  = errors.Register(ModuleName, CodePermissionNotFound, "permission not found")
-	ErrInvalidAccessLevel  = errors.Register(ModuleName, CodeInvalidAccessLevel, "invalid access level")
+	ErrAttributeNotFound  = errors.Register(ModuleName, CodeAttributeNotFound, "attribute not found")
+	ErrAccessDenied       = errors.Register(ModuleName, CodeAccessDenied, "access denied")
+	ErrAccessExpired      = errors.Register(ModuleName, CodeAccessExpired, "access permission expired")
+	ErrInvalidPermission  = errors.Register(ModuleName, CodeInvalidPermission, "invalid permission")
+	ErrPermissionNotFound = errors.Register(ModuleName, CodePermissionNotFound, "permission not found")
+	ErrInvalidAccessLevel = errors.Register(ModuleName, CodeInvalidAccessLevel, "invalid access level")
 )
 
 // General errors

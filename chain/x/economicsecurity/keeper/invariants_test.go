@@ -22,26 +22,26 @@ func TestAllInvariants(t *testing.T) {
 
 	// Test with valid vesting schedule
 	validSchedule := &types.VestingSchedule{
-		ScheduleId:          "test-schedule-1",
-		BeneficiaryAddress:  "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
-		TotalAmount:         "1000000",
-		VestedAmount:        "100000",
-		VestingDuration:     31536000, // 1 year in seconds
-		CliffDuration:       7776000,  // 90 days in seconds
-		StartTime:           timestamppb.New(time.Now()),
-		VestingType:         types.VestingTypeLinear,
+		ScheduleId:         "test-schedule-1",
+		BeneficiaryAddress: "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
+		TotalAmount:        "1000000",
+		VestedAmount:       "100000",
+		VestingDuration:    31536000, // 1 year in seconds
+		CliffDuration:      7776000,  // 90 days in seconds
+		StartTime:          timestamppb.New(time.Now()),
+		VestingType:        types.VestingTypeLinear,
 	}
 	err := k.SetVestingSchedule(ctx, validSchedule)
 	require.NoError(t, err)
 
 	// Test with valid vote lock
 	validLock := &types.VoteLock{
-		LockId:       "test-lock-1",
-		Owner:        "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
-		Amount:       "500000",
-		LockStart:    timestamppb.New(time.Now()),
-		LockEnd:      timestamppb.New(time.Now().Add(30 * 24 * time.Hour)),
-		VotingPower:  "500000",
+		LockId:      "test-lock-1",
+		Owner:       "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
+		Amount:      "500000",
+		LockStart:   timestamppb.New(time.Now()),
+		LockEnd:     timestamppb.New(time.Now().Add(30 * 24 * time.Hour)),
+		VotingPower: "500000",
 	}
 	err = k.SetVoteLock(ctx, validLock)
 	require.NoError(t, err)
@@ -49,13 +49,13 @@ func TestAllInvariants(t *testing.T) {
 	// Test with valid treasury tx
 	// NOTE: Signatures must be non-nil empty slice, not nil
 	validTx := &types.PendingTreasuryTx{
-		TxId:          "test-tx-1",
-		Recipient:     "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
-		Amount:        "100000",
-		Proposer:      "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
-		Signatures:    make([]string, 0), // Empty slice, not nil
-		CreatedAt:     timestamppb.New(time.Now()),
-		ExecutableAt:  timestamppb.New(time.Now().Add(24 * time.Hour)),
+		TxId:         "test-tx-1",
+		Recipient:    "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
+		Amount:       "100000",
+		Proposer:     "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
+		Signatures:   make([]string, 0), // Empty slice, not nil
+		CreatedAt:    timestamppb.New(time.Now()),
+		ExecutableAt: timestamppb.New(time.Now().Add(24 * time.Hour)),
 	}
 	err = k.SetPendingTreasuryTx(ctx, validTx)
 	require.NoError(t, err)
@@ -100,14 +100,14 @@ func TestAllInvariants(t *testing.T) {
 
 	// Test with invalid vesting schedule (vested > total)
 	invalidSchedule := &types.VestingSchedule{
-		ScheduleId:          "invalid-schedule",
-		BeneficiaryAddress:  "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
-		TotalAmount:         "1000000",
-		VestedAmount:        "2000000", // More than total - INVALID
-		VestingDuration:     31536000,
-		CliffDuration:       7776000,
-		StartTime:           timestamppb.New(time.Now()),
-		VestingType:         types.VestingTypeLinear,
+		ScheduleId:         "invalid-schedule",
+		BeneficiaryAddress: "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
+		TotalAmount:        "1000000",
+		VestedAmount:       "2000000", // More than total - INVALID
+		VestingDuration:    31536000,
+		CliffDuration:      7776000,
+		StartTime:          timestamppb.New(time.Now()),
+		VestingType:        types.VestingTypeLinear,
 	}
 	err = k.SetVestingSchedule(ctx, invalidSchedule)
 	require.NoError(t, err)
@@ -116,6 +116,41 @@ func TestAllInvariants(t *testing.T) {
 	msg, broken = invariant(ctx)
 	require.True(t, broken, "invariant should be broken with invalid vesting schedule")
 	require.Contains(t, msg, "exceeds total")
+}
+
+func TestParamsInvariant_CirculatingSupplyExceedsMax(t *testing.T) {
+	params := types.DefaultParams()
+	params.Tokenomics.MaxSupply = "100"
+	params.Tokenomics.CirculatingSupply = "200"
+
+	k, ctx := setupKeeperWithCustomParams(t, params)
+
+	msg, broken := ParamsInvariant(k)(ctx)
+	require.True(t, broken, "circulating supply above max must break invariant")
+	require.Contains(t, msg, "exceeds max supply")
+}
+
+func TestParamsInvariant_WhaleProtectionCooldownTooLong(t *testing.T) {
+	params := types.DefaultParams()
+	params.WhaleProtection.LargeTxCooldown = 31 * 24 * 60 * 60
+
+	k, ctx := setupKeeperWithCustomParams(t, params)
+
+	msg, broken := ParamsInvariant(k)(ctx)
+	require.True(t, broken, "cooldown beyond policy window should break invariant")
+	require.Contains(t, msg, "large tx cooldown")
+}
+
+func TestMEVBalancesInvariantDetectsMismatch(t *testing.T) {
+	k, ctx := setupKeeperForTest(t)
+
+	require.NoError(t, k.SetUserMEVBalance(ctx, "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr", "100"))
+	require.NoError(t, k.SetUserMEVBalance(ctx, "aura1w3jhxapjta047h6lta047h6lta047h6l42n9lg", "200"))
+	require.NoError(t, k.SetTotalMEVPending(ctx, "50")) // mismatch on purpose
+
+	msg, broken := MEVBalancesInvariant(k)(ctx)
+	require.True(t, broken, "mismatched MEV totals should break invariant")
+	require.Contains(t, msg, "doesn't match sum")
 }
 
 func TestRegisterInvariants(t *testing.T) {

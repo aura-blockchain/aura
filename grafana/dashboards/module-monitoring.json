@@ -1,208 +1,277 @@
 {
-  "dashboard": {
-    "title": "Aura Module-Specific Monitoring",
-    "tags": ["aura", "modules", "monitoring"],
-    "timezone": "browser",
-    "schemaVersion": 16,
-    "version": 1,
-    "refresh": "30s",
-    "panels": [
-      {
-        "id": 1,
-        "title": "DEX Trading Volume",
-        "type": "graph",
-        "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
-        "targets": [
-          {
-            "expr": "rate(aura_dex_trades_total[5m])",
-            "legendFormat": "Trades/sec"
-          },
-          {
-            "expr": "aura_dex_total_liquidity_usd",
-            "legendFormat": "Total Liquidity USD"
-          }
-        ]
+  "title": "Aura Module-Specific Monitoring",
+  "tags": [
+    "aura",
+    "modules",
+    "monitoring"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 16,
+  "version": 1,
+  "refresh": "30s",
+  "panels": [
+    {
+      "id": 1,
+      "title": "DEX Trading Volume",
+      "type": "graph",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
       },
-      {
-        "id": 2,
-        "title": "Bridge Operations",
-        "type": "graph",
-        "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
-        "targets": [
-          {
-            "expr": "rate(aura_bridge_transfers_total[5m])",
-            "legendFormat": "Transfers/sec"
-          },
-          {
-            "expr": "aura_bridge_pending_transfers",
-            "legendFormat": "Pending"
-          },
-          {
-            "expr": "rate(aura_bridge_transfer_failures_total[5m])",
-            "legendFormat": "Failures/sec"
-          }
-        ]
+      "targets": [
+        {
+          "expr": "rate(aura_dex_trades_total[5m])",
+          "legendFormat": "Trades/sec"
+        },
+        {
+          "expr": "aura_dex_total_liquidity_usd",
+          "legendFormat": "Total Liquidity USD"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Bridge Operations",
+      "type": "graph",
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
       },
-      {
-        "id": 3,
-        "title": "VC Registry Activity",
-        "type": "graph",
-        "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8},
-        "targets": [
-          {
-            "expr": "aura_vcregistry_total_vcs",
-            "legendFormat": "Total VCs"
-          },
-          {
-            "expr": "aura_vcregistry_pending_verifications",
-            "legendFormat": "Pending Verifications"
-          },
-          {
-            "expr": "rate(aura_vcregistry_vcs_issued_total[5m])",
-            "legendFormat": "Issuance Rate"
-          }
-        ]
+      "targets": [
+        {
+          "expr": "rate(aura_bridge_transfers_total[5m])",
+          "legendFormat": "Transfers/sec"
+        },
+        {
+          "expr": "aura_bridge_pending_transfers",
+          "legendFormat": "Pending"
+        },
+        {
+          "expr": "rate(aura_bridge_transfer_failures_total[5m])",
+          "legendFormat": "Failures/sec"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "VC Registry Activity",
+      "type": "graph",
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
       },
-      {
-        "id": 4,
-        "title": "Confidence Score Distribution",
-        "type": "heatmap",
-        "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8},
-        "targets": [
-          {
-            "expr": "aura_confidence_score_value",
-            "legendFormat": "{{identity}}"
-          }
-        ]
+      "targets": [
+        {
+          "expr": "aura_vcregistry_total_vcs",
+          "legendFormat": "Total VCs"
+        },
+        {
+          "expr": "aura_vcregistry_pending_verifications",
+          "legendFormat": "Pending Verifications"
+        },
+        {
+          "expr": "rate(aura_vcregistry_vcs_issued_total[5m])",
+          "legendFormat": "Issuance Rate"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Confidence Score Distribution",
+      "type": "heatmap",
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 8
       },
-      {
-        "id": 5,
-        "title": "Compliance Check Success Rate",
-        "type": "gauge",
-        "gridPos": {"x": 0, "y": 16, "w": 6, "h": 8},
-        "targets": [
-          {
-            "expr": "rate(aura_compliance_checks_passed_total[5m]) / rate(aura_compliance_checks_total[5m])",
-            "legendFormat": "Success Rate"
-          }
-        ],
-        "thresholds": [
-          {"value": 0.95, "color": "green"},
-          {"value": 0.90, "color": "yellow"},
-          {"value": 0, "color": "red"}
-        ]
+      "targets": [
+        {
+          "expr": "aura_confidence_score_value",
+          "legendFormat": "{{identity}}"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Compliance Check Success Rate",
+      "type": "gauge",
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 6,
+        "h": 8
       },
-      {
-        "id": 6,
-        "title": "Data Registry Items",
-        "type": "stat",
-        "gridPos": {"x": 6, "y": 16, "w": 6, "h": 8},
-        "targets": [
-          {
-            "expr": "aura_dataregistry_total_items",
-            "legendFormat": "Total Items"
-          },
-          {
-            "expr": "aura_dataregistry_verified_items",
-            "legendFormat": "Verified"
-          }
-        ]
+      "targets": [
+        {
+          "expr": "rate(aura_compliance_checks_passed_total[5m]) / rate(aura_compliance_checks_total[5m])",
+          "legendFormat": "Success Rate"
+        }
+      ],
+      "thresholds": [
+        {
+          "value": 0.95,
+          "color": "green"
+        },
+        {
+          "value": 0.90,
+          "color": "yellow"
+        },
+        {
+          "value": 0,
+          "color": "red"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Data Registry Items",
+      "type": "stat",
+      "gridPos": {
+        "x": 6,
+        "y": 16,
+        "w": 6,
+        "h": 8
       },
-      {
-        "id": 7,
-        "title": "Inclusion Routines Completion Rate",
-        "type": "graph",
-        "gridPos": {"x": 12, "y": 16, "w": 12, "h": 8},
-        "targets": [
-          {
-            "expr": "rate(aura_ir_completions_total[5m])",
-            "legendFormat": "Completions/sec"
-          },
-          {
-            "expr": "aura_ir_pending_count",
-            "legendFormat": "Pending"
-          },
-          {
-            "expr": "rate(aura_ir_failures_total[5m])",
-            "legendFormat": "Failures/sec"
-          }
-        ]
+      "targets": [
+        {
+          "expr": "aura_dataregistry_total_items",
+          "legendFormat": "Total Items"
+        },
+        {
+          "expr": "aura_dataregistry_verified_items",
+          "legendFormat": "Verified"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Inclusion Routines Completion Rate",
+      "type": "graph",
+      "gridPos": {
+        "x": 12,
+        "y": 16,
+        "w": 12,
+        "h": 8
       },
-      {
-        "id": 8,
-        "title": "Network Security Events",
-        "type": "graph",
-        "gridPos": {"x": 0, "y": 24, "w": 12, "h": 8},
-        "targets": [
-          {
-            "expr": "rate(aura_networksecurity_sybil_attempts_total[5m])",
-            "legendFormat": "Sybil Attempts"
-          },
-          {
-            "expr": "rate(aura_networksecurity_eclipse_attempts_total[5m])",
-            "legendFormat": "Eclipse Attempts"
-          },
-          {
-            "expr": "rate(aura_networksecurity_rate_limit_exceeded_total[5m])",
-            "legendFormat": "Rate Limits Hit"
-          }
-        ]
+      "targets": [
+        {
+          "expr": "rate(aura_ir_completions_total[5m])",
+          "legendFormat": "Completions/sec"
+        },
+        {
+          "expr": "aura_ir_pending_count",
+          "legendFormat": "Pending"
+        },
+        {
+          "expr": "rate(aura_ir_failures_total[5m])",
+          "legendFormat": "Failures/sec"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Network Security Events",
+      "type": "graph",
+      "gridPos": {
+        "x": 0,
+        "y": 24,
+        "w": 12,
+        "h": 8
       },
-      {
-        "id": 9,
-        "title": "Wallet Security Blocks",
-        "type": "graph",
-        "gridPos": {"x": 12, "y": 24, "w": 12, "h": 8},
-        "targets": [
-          {
-            "expr": "rate(walletsecurity_spending_limit_blocked_total[5m])",
-            "legendFormat": "Spending Limits"
-          },
-          {
-            "expr": "rate(walletsecurity_dust_filter_blocked_total[5m])",
-            "legendFormat": "Dust Filters"
-          },
-          {
-            "expr": "rate(walletsecurity_suspicious_tx_blocked_total[5m])",
-            "legendFormat": "Suspicious Tx"
-          }
-        ]
+      "targets": [
+        {
+          "expr": "rate(aura_networksecurity_sybil_attempts_total[5m])",
+          "legendFormat": "Sybil Attempts"
+        },
+        {
+          "expr": "rate(aura_networksecurity_eclipse_attempts_total[5m])",
+          "legendFormat": "Eclipse Attempts"
+        },
+        {
+          "expr": "rate(aura_networksecurity_rate_limit_exceeded_total[5m])",
+          "legendFormat": "Rate Limits Hit"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "title": "Wallet Security Blocks",
+      "type": "graph",
+      "gridPos": {
+        "x": 12,
+        "y": 24,
+        "w": 12,
+        "h": 8
       },
-      {
-        "id": 10,
-        "title": "Cryptography Operations",
-        "type": "graph",
-        "gridPos": {"x": 0, "y": 32, "w": 12, "h": 8},
-        "targets": [
-          {
-            "expr": "rate(aura_cryptography_signatures_total[5m])",
-            "legendFormat": "Signatures/sec"
-          },
-          {
-            "expr": "rate(aura_cryptography_encryptions_total[5m])",
-            "legendFormat": "Encryptions/sec"
-          },
-          {
-            "expr": "rate(aura_cryptography_key_rotations_total[5m])",
-            "legendFormat": "Key Rotations"
-          }
-        ]
+      "targets": [
+        {
+          "expr": "rate(walletsecurity_spending_limit_blocked_total[5m])",
+          "legendFormat": "Spending Limits"
+        },
+        {
+          "expr": "rate(walletsecurity_dust_filter_blocked_total[5m])",
+          "legendFormat": "Dust Filters"
+        },
+        {
+          "expr": "rate(walletsecurity_suspicious_tx_blocked_total[5m])",
+          "legendFormat": "Suspicious Tx"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "title": "Cryptography Operations",
+      "type": "graph",
+      "gridPos": {
+        "x": 0,
+        "y": 32,
+        "w": 12,
+        "h": 8
       },
-      {
-        "id": 11,
-        "title": "Validator Security Score",
-        "type": "graph",
-        "gridPos": {"x": 12, "y": 32, "w": 12, "h": 8},
-        "targets": [
-          {
-            "expr": "aura_validator_security_score",
-            "legendFormat": "{{validator}}"
-          }
-        ],
-        "yaxes": [
-          {"min": 0, "max": 100}
-        ]
-      }
-    ]
-  }
+      "targets": [
+        {
+          "expr": "rate(aura_cryptography_signatures_total[5m])",
+          "legendFormat": "Signatures/sec"
+        },
+        {
+          "expr": "rate(aura_cryptography_encryptions_total[5m])",
+          "legendFormat": "Encryptions/sec"
+        },
+        {
+          "expr": "rate(aura_cryptography_key_rotations_total[5m])",
+          "legendFormat": "Key Rotations"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "title": "Validator Security Score",
+      "type": "graph",
+      "gridPos": {
+        "x": 12,
+        "y": 32,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "expr": "aura_validator_security_score",
+          "legendFormat": "{{validator}}"
+        }
+      ],
+      "yaxes": [
+        {
+          "min": 0,
+          "max": 100
+        }
+      ]
+    }
+  ]
 }

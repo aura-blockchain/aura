@@ -421,18 +421,6 @@ type App struct {
 	}
 }
 
-// NewApp builds the Aura application shell with default logging and in-memory database.
-// Use NewAppWithOptions for production use with persistent storage.
-func NewApp() *App {
-	return NewAppWithOptions(nil, nil, "")
-}
-
-// NewAppWithLogger builds the Aura application shell with the provided logger.
-// Deprecated: Use NewAppWithOptions instead for production deployments.
-func NewAppWithLogger(logger tmlog.Logger) *App {
-	return NewAppWithOptions(logger, nil, "")
-}
-
 // StoreKeyNames lists all KV store names mounted by the app.
 // Uses the centralized storeKeys.Names() as the single source of truth.
 func StoreKeyNames() []string {
@@ -440,12 +428,6 @@ func StoreKeyNames() []string {
 	// This ensures Names() is the single source of truth
 	keys := &storeKeys{}
 	return keys.Names()
-}
-
-// NewAppWithDB builds the Aura application shell with the provided logger and database.
-// Deprecated: Use NewAppWithOptions to also specify chainID for SDK v0.53 compatibility.
-func NewAppWithDB(logger tmlog.Logger, db dbm.DB) *App {
-	return NewAppWithOptions(logger, db, "")
 }
 
 // NewAppWithOptions builds the Aura application shell with full configuration.
@@ -875,6 +857,13 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 	wasmSecurityModule := wasm.NewAppModule(encoding.Codec, wasmSecurityKeeperInstance)
 	prevalidationModule := prevalidation.NewAppModule(encoding.Codec, prevalidationKeeper)
 	aurabindingsModule := aurabindings.NewAppModule(encoding.Codec, *aurabindingsKeeper)
+
+	// Initialize Prometheus metrics for all modules (must be done before serving /metrics)
+	// These use promauto which registers with the default Prometheus registry
+	logger.Info("initializing Prometheus metrics for all modules")
+	_ = identitykeeper.NewIdentityMetrics()
+	_ = dexkeeper.NewDEXMetrics()
+	logger.Info("Prometheus metrics initialized successfully")
 
 	coreModules := []sdkmodule.AppModule{
 		auth.NewAppModule(encoding.Codec, accountKeeper, nil, nil),

@@ -817,13 +817,6 @@ func (k *Keeper) GetPowerDelegatedAway(ctx sdk.Context, delegator string) sdkmat
 	return sdkmath.ZeroInt()
 }
 
-// GetDelegatedPower returns the delegated voting power for an address (legacy compatibility)
-// Deprecated: Use GetDelegatedVotingPower instead
-func (k *Keeper) GetDelegatedPower(ctx sdk.Context, address string) string {
-	power := k.GetDelegatedVotingPower(ctx, address)
-	return power.String()
-}
-
 // ============================================================================
 // Token Lock KVStore Methods
 // ============================================================================

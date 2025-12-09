@@ -269,7 +269,7 @@ func TestUpdateAMLProfile_NewProfile(t *testing.T) {
 	amount := sdk.NewCoins(sdk.NewInt64Coin("uaura", 5000))
 
 	// Update AML profile (creates new profile)
-	err = k.UpdateAMLProfile(ctx, addr, amount)
+	err = k.UpdateAMLProfileOnTransaction(ctx, addr.String(), amount)
 	require.NoError(t, err)
 
 	// Verify profile was created
@@ -306,7 +306,7 @@ func TestUpdateAMLProfile_ExistingProfile(t *testing.T) {
 
 	// Update with new transaction
 	amount := sdk.NewCoins(sdk.NewInt64Coin("uaura", 5000))
-	err = k.UpdateAMLProfile(ctx, addr, amount)
+	err = k.UpdateAMLProfileOnTransaction(ctx, addr.String(), amount)
 	require.NoError(t, err)
 
 	// Verify profile was updated

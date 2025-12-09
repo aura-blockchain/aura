@@ -384,8 +384,8 @@ func TestGetPowerDelegatedAway(t *testing.T) {
 	require.Equal(t, stakedAmount, powerAway, "full stake should be delegated away")
 }
 
-// TestGetDelegatedPower tests legacy compatibility function
-func TestGetDelegatedPower(t *testing.T) {
+// TestGetDelegatedVotingPower tests the delegated voting power calculation
+func TestGetDelegatedVotingPower(t *testing.T) {
 	keeper, ctx, stakingKeeper := setupKeeperForTest(t)
 
 	// Use valid bech32 addresses
@@ -405,9 +405,9 @@ func TestGetDelegatedPower(t *testing.T) {
 	err := keeper.SetVoteDelegation(ctx, delegation)
 	require.NoError(t, err)
 
-	// Test legacy function
-	powerStr := keeper.GetDelegatedPower(ctx, delegate)
-	require.Equal(t, "3000000", powerStr, "should return power as string")
+	// Test function
+	power := keeper.GetDelegatedVotingPower(ctx, delegate)
+	require.Equal(t, sdkmath.NewInt(3000000), power, "should return correct voting power")
 }
 
 // TestSetSnapshotVote tests storing snapshot votes
