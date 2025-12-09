@@ -3,7 +3,9 @@ package keeper
 import (
 	"context"
 
+	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/query"
 
 	"github.com/aequitas/aura/chain/x/networksecurity/types"
 )
@@ -46,17 +48,31 @@ func (qs queryServer) PeerInfo(goCtx context.Context, req *types.QueryPeerInfoRe
 
 // AllPeers queries information about all connected peers
 func (qs queryServer) AllPeers(goCtx context.Context, req *types.QueryAllPeersRequest) (*types.QueryAllPeersResponse, error) {
-	ctx := sdk.UnwrapSDKContext(goCtx)
-
-	peers := qs.GetAllPeers(ctx)
-
-	// Convert to pointers
-	peerPtrs := make([]*types.PeerInfo, len(peers))
-	for i := range peers {
-		peerPtrs[i] = &peers[i]
+	if req == nil {
+		req = &types.QueryAllPeersRequest{}
 	}
 
-	return &types.QueryAllPeersResponse{Peers: peerPtrs}, nil
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	store := ctx.KVStore(qs.storeKey)
+	peerStore := prefix.NewStore(store, types.PeerInfoPrefix)
+
+	peers := []*types.PeerInfo{}
+	pageRes, err := query.Paginate(peerStore, req.Pagination, func(key []byte, value []byte) error {
+		var peer types.PeerInfo
+		if err := qs.cdc.Unmarshal(value, &peer); err != nil {
+			return err
+		}
+		peers = append(peers, &peer)
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &types.QueryAllPeersResponse{
+		Peers:      peers,
+		Pagination: pageRes,
+	}, nil
 }
 
 // TrustedPeers queries all trusted peers

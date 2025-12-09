@@ -77,7 +77,10 @@ func (k Keeper) GetParams(ctx sdk.Context) (types.Params, error) {
 	}
 
 	var params types.Params
-	k.cdc.MustUnmarshal(bz, &params)
+	if err := k.cdc.Unmarshal(bz, &params); err != nil {
+		k.logger.Error("failed to unmarshal network security params", "error", err)
+		return types.Params{}, types.ErrCorruptedState
+	}
 	return params, nil
 }
 
@@ -101,7 +104,10 @@ func (k Keeper) GetPeerInfo(ctx sdk.Context, peerID string) (types.PeerInfo, boo
 	}
 
 	var peerInfo types.PeerInfo
-	k.cdc.MustUnmarshal(bz, &peerInfo)
+	if err := k.cdc.Unmarshal(bz, &peerInfo); err != nil {
+		k.logger.Error("failed to unmarshal peer info", "peer_id", peerID, "error", err)
+		return types.PeerInfo{}, false
+	}
 	return peerInfo, true
 }
 
@@ -124,7 +130,10 @@ func (k Keeper) GetAllPeers(ctx sdk.Context) []types.PeerInfo {
 	var peers []types.PeerInfo
 	for ; iterator.Valid(); iterator.Next() {
 		var peer types.PeerInfo
-		k.cdc.MustUnmarshal(iterator.Value(), &peer)
+		if err := k.cdc.Unmarshal(iterator.Value(), &peer); err != nil {
+			k.logger.Error("failed to unmarshal peer in GetAllPeers, skipping", "error", err)
+			continue
+		}
 		peers = append(peers, peer)
 	}
 	return peers
@@ -149,7 +158,10 @@ func (k Keeper) GetTrustedPeer(ctx sdk.Context, peerID string) (types.TrustedPee
 	}
 
 	var peer types.TrustedPeer
-	k.cdc.MustUnmarshal(bz, &peer)
+	if err := k.cdc.Unmarshal(bz, &peer); err != nil {
+		k.logger.Error("failed to unmarshal trusted peer", "peer_id", peerID, "error", err)
+		return types.TrustedPeer{}, false
+	}
 	return peer, true
 }
 
@@ -178,7 +190,10 @@ func (k Keeper) GetAllTrustedPeers(ctx sdk.Context) []types.TrustedPeer {
 	var peers []types.TrustedPeer
 	for ; iterator.Valid(); iterator.Next() {
 		var peer types.TrustedPeer
-		k.cdc.MustUnmarshal(iterator.Value(), &peer)
+		if err := k.cdc.Unmarshal(iterator.Value(), &peer); err != nil {
+			k.logger.Error("failed to unmarshal trusted peer in GetAllTrustedPeers, skipping", "error", err)
+			continue
+		}
 		peers = append(peers, peer)
 	}
 	return peers
@@ -248,7 +263,10 @@ func (k Keeper) GetRateLimitEntry(ctx sdk.Context, peerID string) (types.RateLim
 	}
 
 	var entry types.RateLimitEntry
-	k.cdc.MustUnmarshal(bz, &entry)
+	if err := k.cdc.Unmarshal(bz, &entry); err != nil {
+		k.logger.Error("failed to unmarshal rate limit entry", "peer_id", peerID, "error", err)
+		return types.RateLimitEntry{}, false
+	}
 	return entry, true
 }
 
@@ -268,7 +286,10 @@ func (k Keeper) GetReputation(ctx sdk.Context, peerID string) (types.NodeReputat
 	}
 
 	var reputation types.NodeReputation
-	k.cdc.MustUnmarshal(bz, &reputation)
+	if err := k.cdc.Unmarshal(bz, &reputation); err != nil {
+		k.logger.Error("failed to unmarshal node reputation", "peer_id", peerID, "error", err)
+		return types.NodeReputation{}, false
+	}
 	return reputation, true
 }
 
@@ -291,7 +312,10 @@ func (k Keeper) GetAllReputations(ctx sdk.Context) []types.NodeReputation {
 	var reputations []types.NodeReputation
 	for ; iterator.Valid(); iterator.Next() {
 		var rep types.NodeReputation
-		k.cdc.MustUnmarshal(iterator.Value(), &rep)
+		if err := k.cdc.Unmarshal(iterator.Value(), &rep); err != nil {
+			k.logger.Error("failed to unmarshal reputation in GetAllReputations, skipping", "error", err)
+			continue
+		}
 		reputations = append(reputations, rep)
 	}
 	return reputations
@@ -306,7 +330,10 @@ func (k Keeper) GetMempoolStats(ctx sdk.Context) types.MempoolStats {
 	}
 
 	var stats types.MempoolStats
-	k.cdc.MustUnmarshal(bz, &stats)
+	if err := k.cdc.Unmarshal(bz, &stats); err != nil {
+		k.logger.Error("failed to unmarshal mempool stats", "error", err)
+		return types.MempoolStats{}
+	}
 	return stats
 }
 
@@ -326,7 +353,10 @@ func (k Keeper) GetForkAlert(ctx sdk.Context, alertID string) (types.ForkAlert, 
 	}
 
 	var alert types.ForkAlert
-	k.cdc.MustUnmarshal(bz, &alert)
+	if err := k.cdc.Unmarshal(bz, &alert); err != nil {
+		k.logger.Error("failed to unmarshal fork alert", "alert_id", alertID, "error", err)
+		return types.ForkAlert{}, false
+	}
 	return alert, true
 }
 
@@ -349,7 +379,10 @@ func (k Keeper) GetAllForkAlerts(ctx sdk.Context, includeResolved bool) []types.
 	var alerts []types.ForkAlert
 	for ; iterator.Valid(); iterator.Next() {
 		var alert types.ForkAlert
-		k.cdc.MustUnmarshal(iterator.Value(), &alert)
+		if err := k.cdc.Unmarshal(iterator.Value(), &alert); err != nil {
+			k.logger.Error("failed to unmarshal fork alert in GetAllForkAlerts, skipping", "error", err)
+			continue
+		}
 		if includeResolved || !alert.Resolved {
 			alerts = append(alerts, alert)
 		}
@@ -366,7 +399,10 @@ func (k Keeper) GetPartitionAlert(ctx sdk.Context, alertID string) (types.Partit
 	}
 
 	var alert types.PartitionAlert
-	k.cdc.MustUnmarshal(bz, &alert)
+	if err := k.cdc.Unmarshal(bz, &alert); err != nil {
+		k.logger.Error("failed to unmarshal partition alert", "alert_id", alertID, "error", err)
+		return types.PartitionAlert{}, false
+	}
 	return alert, true
 }
 
@@ -389,7 +425,10 @@ func (k Keeper) GetAllPartitionAlerts(ctx sdk.Context, includeResolved bool) []t
 	var alerts []types.PartitionAlert
 	for ; iterator.Valid(); iterator.Next() {
 		var alert types.PartitionAlert
-		k.cdc.MustUnmarshal(iterator.Value(), &alert)
+		if err := k.cdc.Unmarshal(iterator.Value(), &alert); err != nil {
+			k.logger.Error("failed to unmarshal partition alert in GetAllPartitionAlerts, skipping", "error", err)
+			continue
+		}
 		if includeResolved || !alert.Resolved {
 			alerts = append(alerts, alert)
 		}

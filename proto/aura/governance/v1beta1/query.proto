@@ -1,6 +1,7 @@
 syntax = "proto3";
 package aura.governance.v1beta1;
 
+import "cosmos/base/query/v1beta1/pagination.proto";
 import "aura/governance/v1beta1/governance.proto";
 
 option go_package = "github.com/aequitas/aura/proto/aura/governance/v1beta1";
@@ -59,10 +60,12 @@ message QueryProposalsRequest {
   ProposalStatus status = 1;
   string voter = 2;
   string depositor = 3;
+  cosmos.base.query.v1beta1.PageRequest pagination = 4;
 }
 
 message QueryProposalsResponse {
   repeated Proposal proposals = 1;
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 message QueryVoteRequest {

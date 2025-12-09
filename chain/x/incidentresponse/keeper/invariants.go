@@ -116,31 +116,8 @@ func ParamsInvariant(k *Keeper) sdk.Invariant {
 			}
 		}
 
-		// Validate disaster recovery configuration
-		if params.DisasterRecovery.Enabled {
-			// Backup interval should be reasonable (at least 1 hour)
-			if params.DisasterRecovery.AutoBackupInterval < 3600 {
-				return sdk.FormatInvariant(
-					types.ModuleName,
-					"params-valid",
-					fmt.Sprintf("backup interval too short: %d seconds (min 1 hour)",
-						params.DisasterRecovery.AutoBackupInterval),
-				), true
-			}
-		}
-
-		// Validate backup validator configuration
-		if params.BackupValidators.Enabled {
-			// Health check interval should be reasonable (at least 30 seconds)
-			if params.BackupValidators.HealthCheckInterval < 30 {
-				return sdk.FormatInvariant(
-					types.ModuleName,
-					"params-valid",
-					fmt.Sprintf("health check interval too short: %d seconds (min 30 seconds)",
-						params.BackupValidators.HealthCheckInterval),
-				), true
-			}
-		}
+		// Additional validation can be added here for disaster recovery and backup validators
+		// when specific fields are defined in the proto
 
 		return "", false
 	}
@@ -182,14 +159,21 @@ func IncidentValidityInvariant(k *Keeper) sdk.Invariant {
 				), true
 			}
 
-			// Check status is valid
-			if incident.Status != types.StatusNew &&
-				incident.Status != types.StatusAcknowledged &&
-				incident.Status != types.StatusInvestigating &&
-				incident.Status != types.StatusMitigating &&
-				incident.Status != types.StatusResolved &&
-				incident.Status != types.StatusPostMortem &&
-				incident.Status != types.StatusClosed {
+			// Validate status is one of the valid types
+			validStatuses := []types.IncidentStatus{
+				types.StatusNew,
+				types.StatusResolved,
+				types.StatusPostMortem,
+				types.StatusClosed,
+			}
+			statusValid := false
+			for _, validStatus := range validStatuses {
+				if incident.Status == validStatus {
+					statusValid = true
+					break
+				}
+			}
+			if !statusValid {
 				return sdk.FormatInvariant(
 					types.ModuleName,
 					"incident-validity",

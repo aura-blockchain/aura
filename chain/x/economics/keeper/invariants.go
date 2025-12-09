@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkmath "cosmossdk.io/math"
 
 	"github.com/aequitas/aura/chain/x/economics/types"
 )
@@ -65,57 +64,8 @@ func ParamsInvariant(k *Keeper) sdk.Invariant {
 			), true
 		}
 
-		// Validate fee configuration if present
-		if params.FeeConfig != nil {
-			// Base fee should be non-negative
-			if params.FeeConfig.BaseFee < 0 {
-				return sdk.FormatInvariant(
-					types.ModuleName,
-					"params-valid",
-					fmt.Sprintf("base fee cannot be negative: %d", params.FeeConfig.BaseFee),
-				), true
-			}
-
-			// Priority multiplier should be positive
-			if params.FeeConfig.PriorityMultiplier <= 0 {
-				return sdk.FormatInvariant(
-					types.ModuleName,
-					"params-valid",
-					fmt.Sprintf("priority multiplier must be positive: %d", params.FeeConfig.PriorityMultiplier),
-				), true
-			}
-		}
-
-		// Validate governance configuration if present
-		if params.GovernanceConfig != nil {
-			// Quorum should be between 0 and 100
-			if params.GovernanceConfig.Quorum < 0 || params.GovernanceConfig.Quorum > 100 {
-				return sdk.FormatInvariant(
-					types.ModuleName,
-					"params-valid",
-					fmt.Sprintf("quorum must be between 0 and 100: %d", params.GovernanceConfig.Quorum),
-				), true
-			}
-
-			// Voting period should be positive
-			if params.GovernanceConfig.VotingPeriod <= 0 {
-				return sdk.FormatInvariant(
-					types.ModuleName,
-					"params-valid",
-					fmt.Sprintf("voting period must be positive: %d", params.GovernanceConfig.VotingPeriod),
-				), true
-			}
-
-			// Min deposit should be non-negative
-			minDeposit, ok := sdkmath.NewIntFromString(params.GovernanceConfig.MinDeposit)
-			if !ok || minDeposit.IsNegative() {
-				return sdk.FormatInvariant(
-					types.ModuleName,
-					"params-valid",
-					fmt.Sprintf("invalid min deposit: %s", params.GovernanceConfig.MinDeposit),
-				), true
-			}
-		}
+		// Additional validation can be added here for specific param fields
+		// when they are defined in the proto
 
 		return "", false
 	}

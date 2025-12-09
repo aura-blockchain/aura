@@ -419,6 +419,31 @@ type App struct {
 	transientKeys struct {
 		params *storetypes.TransientStoreKey
 	}
+
+	// invariantRegistry holds registered invariant functions
+	invariantRegistry InvariantRegistry
+}
+
+// InvariantRegistry implements sdk.InvariantRegistry for storing module invariants
+type InvariantRegistry struct {
+	invariants map[string]sdk.Invariant
+}
+
+// RegisterRoute implements sdk.InvariantRegistry
+func (ir *InvariantRegistry) RegisterRoute(moduleName, route string, invariant sdk.Invariant) {
+	if ir.invariants == nil {
+		ir.invariants = make(map[string]sdk.Invariant)
+	}
+	key := moduleName + "/" + route
+	ir.invariants[key] = invariant
+}
+
+// AllInvariants returns all registered invariants
+func (ir *InvariantRegistry) AllInvariants() map[string]sdk.Invariant {
+	if ir.invariants == nil {
+		return make(map[string]sdk.Invariant)
+	}
+	return ir.invariants
 }
 
 // StoreKeyNames lists all KV store names mounted by the app.
@@ -1328,19 +1353,19 @@ func (a *App) ExportBridgeGenesis(ctx sdk.Context) bridgetypes.GenesisState {
 //  3. Periodically in production (configurable via governance)
 //  4. On-demand via CLI commands for debugging
 func (a *App) registerInvariants() {
-	// Register invariants through the module manager, which implements InvariantRegistry.
+	// Register invariants using the app's invariant registry.
 	// Each module's RegisterInvariants function is called, which registers individual
-	// invariant routes that can be executed via the crisis module or CheckInvariants().
+	// invariant routes that can be executed via CheckInvariants().
 	//
-	// The module manager acts as the central invariant registry, and modules register
-	// their invariants through their keeper's RegisterInvariants function.
+	// Note: Since we don't use a crisis keeper, we use a custom invariant registry
+	// stored on the app. Invariants are run via CheckInvariants() method.
 
 	// DEX module invariants (AURA custom)
 	// 1. Pool reserves match stored values
 	// 2. Constant product (k = x * y) holds for all pools
 	// 3. LP token supply matches pool shares
 	if a.dexKeeper != nil {
-		dexkeeper.RegisterInvariants(a.moduleManager, a.dexKeeper)
+		dexkeeper.RegisterInvariants(&a.invariantRegistry, a.dexKeeper)
 		a.Logger().Info("registered dex invariants", "checks", "pool-reserves,constant-product,lp-tokens")
 	}
 
@@ -1349,7 +1374,7 @@ func (a *App) registerInvariants() {
 	// 2. Merkle roots are consistent with transfer records
 	// 3. Nonce sequence is monotonic and gap-free
 	if a.bridgeKeeper != nil {
-		bridgekeeper.RegisterInvariants(a.moduleManager, *a.bridgeKeeper)
+		bridgekeeper.RegisterInvariants(&a.invariantRegistry, *a.bridgeKeeper)
 		a.Logger().Info("registered bridge invariants", "checks", "locked-tokens,merkle-consistency,nonce-sequence")
 	}
 
@@ -1358,7 +1383,7 @@ func (a *App) registerInvariants() {
 	// 2. Vesting schedules are valid
 	// 3. MEV tracking is accurate
 	if a.economicsecurityKeeper != nil {
-		economicsecuritykeeper.RegisterInvariants(a.moduleManager, a.economicsecurityKeeper)
+		economicsecuritykeeper.RegisterInvariants(&a.invariantRegistry, a.economicsecurityKeeper)
 		a.Logger().Info("registered economicsecurity invariants", "checks", "fee-config,vesting,mev-tracking")
 	}
 
@@ -1367,7 +1392,7 @@ func (a *App) registerInvariants() {
 	// 2. Rate limit configurations are consistent
 	// 3. Mempool security state is valid
 	// 4. Sybil detection integrity checks
-	networksecuritykeeper.RegisterInvariants(a.moduleManager, &a.networksecurityKeeper)
+	networksecuritykeeper.RegisterInvariants(&a.invariantRegistry, &a.networksecurityKeeper)
 	a.Logger().Info("registered networksecurity invariants", "checks", "peer-reputation,rate-limits,mempool-security,sybil-detection")
 
 	a.Logger().Info("all module invariants registered successfully")

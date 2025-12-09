@@ -117,7 +117,10 @@ func (k Keeper) GetParams(ctx sdk.Context) securitypb.Params {
 		return types.DefaultParams()
 	}
 	var params securitypb.Params
-	k.cdc.MustUnmarshal(bz, &params)
+	if err := k.cdc.Unmarshal(bz, &params); err != nil {
+		ctx.Logger().Error("failed to unmarshal security params", "error", err)
+		return types.DefaultParams()
+	}
 	return params
 }
 
@@ -142,7 +145,10 @@ func (k Keeper) GetAllSpendingLimits(ctx sdk.Context) []*securitypb.SpendingLimi
 	var limits []*securitypb.SpendingLimit
 	for ; iterator.Valid(); iterator.Next() {
 		var limit securitypb.SpendingLimit
-		k.cdc.MustUnmarshal(iterator.Value(), &limit)
+		if err := k.cdc.Unmarshal(iterator.Value(), &limit); err != nil {
+			ctx.Logger().Error("failed to unmarshal spending limit in GetAllSpendingLimits, skipping", "error", err)
+			continue
+		}
 		limits = append(limits, &limit)
 	}
 	return limits
@@ -157,7 +163,10 @@ func (k Keeper) GetSpendingLimit(ctx sdk.Context, walletID string) (*securitypb.
 		return nil, false
 	}
 	var limit securitypb.SpendingLimit
-	k.cdc.MustUnmarshal(bz, &limit)
+	if err := k.cdc.Unmarshal(bz, &limit); err != nil {
+		ctx.Logger().Error("failed to unmarshal spending limit", "wallet_id", walletID, "error", err)
+		return nil, false
+	}
 	return &limit, true
 }
 
@@ -216,7 +225,10 @@ func (k Keeper) GetAllAuditLogEntries(ctx sdk.Context) []*securitypb.AuditLogEnt
 	var entries []*securitypb.AuditLogEntry
 	for ; iterator.Valid(); iterator.Next() {
 		var entry securitypb.AuditLogEntry
-		k.cdc.MustUnmarshal(iterator.Value(), &entry)
+		if err := k.cdc.Unmarshal(iterator.Value(), &entry); err != nil {
+			ctx.Logger().Error("failed to unmarshal audit log entry in GetAllAuditLogEntries, skipping", "error", err)
+			continue
+		}
 		entries = append(entries, &entry)
 	}
 	return entries
@@ -240,7 +252,10 @@ func (k Keeper) GetAllStealthAddresses(ctx sdk.Context) []*securitypb.StealthAdd
 	var addrs []*securitypb.StealthAddress
 	for ; iterator.Valid(); iterator.Next() {
 		var addr securitypb.StealthAddress
-		k.cdc.MustUnmarshal(iterator.Value(), &addr)
+		if err := k.cdc.Unmarshal(iterator.Value(), &addr); err != nil {
+			ctx.Logger().Error("failed to unmarshal stealth address in GetAllStealthAddresses, skipping", "error", err)
+			continue
+		}
 		addrs = append(addrs, &addr)
 	}
 	return addrs

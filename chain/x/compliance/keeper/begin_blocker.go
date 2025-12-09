@@ -12,9 +12,15 @@ import (
 // This implements automatic KYC expiry monitoring and enforcement.
 //
 // Processing workflow:
-//   1. Iterate through all KYC records
+//   1. Every 50 blocks: Full scan of all KYC records for expiry
 //   2. Check if record has expired (BlockTime > ExpiresAt)
 //   3. Emit EventTypeKYCExpired for each newly expired record
+//
+// Performance optimization:
+//   - Batched processing every 50 blocks (~5 minutes with 6s blocks)
+//   - Reduces gas cost from O(n) per block to O(n) per 50 blocks
+//   - KYC expiry is not time-critical (50 blocks = ~5 min delay acceptable)
+//   - With 10,000 KYC records: saves ~99% of BeginBlocker gas
 //
 // The events emitted allow:
 //   - Off-chain monitoring systems to detect expiry
@@ -27,21 +33,17 @@ import (
 //   - Time-based: Uses blockchain time (cannot be manipulated)
 //   - Event-driven: External systems react to events
 //   - Gas-bounded: Processing limited by block gas limit
+//   - Batching delay: Max 5 minutes to detect expiry (acceptable for KYC)
 //
 // Compliance:
 //   - FinCEN: Continuous KYC status monitoring
 //   - FATF Recommendation 10: Ongoing due diligence enforcement
 //   - BSA: Customer verification status tracking
 //   - Provides immutable audit trail of all expiry events
-//
-// Performance considerations:
-//   - O(n) where n is total KYC records
-//   - Event emission is gas-efficient
-//   - No storage writes (read-only iteration)
-//   - Future optimization: Track "next expiry" to avoid full scans
+//   - 5-minute detection delay is compliant (KYC validity is measured in days/months)
 //
 // Events emitted:
-//   - EventTypeKYCExpired: For each record that has expired since last block
+//   - EventTypeKYCExpired: For each record that has expired since last check
 //     Attributes: address, expired_at, kyc_level, provider
 //
 // Example event consumer (off-chain):
@@ -53,6 +55,13 @@ import (
 //       // Trigger compliance review
 //   }
 func (k *Keeper) BeginBlocker(ctx sdk.Context) {
+	// Batch processing every 50 blocks to reduce gas cost
+	// KYC expiry is not time-critical - a few minutes delay is acceptable
+	// for a compliance metric measured in days/months
+	if ctx.BlockHeight()%50 != 0 {
+		return
+	}
+
 	// Get current block time for expiry checks
 	currentTime := ctx.BlockTime()
 
@@ -60,6 +69,7 @@ func (k *Keeper) BeginBlocker(ctx sdk.Context) {
 	expiredCount := 0
 
 	// Iterate all KYC records and check for expiry
+	// This only happens every 50 blocks, so the O(n) cost is amortized
 	k.IterateKYCRecords(ctx, func(record types.KYCRecord) bool {
 		// Check if record has expired
 		if currentTime.After(record.ExpiresAt.AsTime()) {

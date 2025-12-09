@@ -15,6 +15,7 @@ var (
 	ErrNotFound           = errors.Register(ModuleName, 4, "not found")
 	ErrAlreadyExists      = errors.Register(ModuleName, 5, "already exists")
 	ErrInvalidState       = errors.Register(ModuleName, 6, "invalid state")
+	ErrCorruptedState     = errors.Register(ModuleName, 7, "corrupted state data")
 
 	// Network security errors (10-29)
 	ErrRateLimitExceeded  = errors.Register(ModuleName, 10, "rate limit exceeded")
