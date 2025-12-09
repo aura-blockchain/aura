@@ -1,14 +1,20 @@
-package keeper_test
+package keeper
 
 import (
 	"testing"
 	"time"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 
-	"github.com/aequitas/aura/chain/x/networksecurity/keeper"
 	"github.com/aequitas/aura/chain/x/networksecurity/types"
 )
+
+// setupKeeper is a helper function for batch operation tests
+// It wraps NewTestKeeperWithContext to provide a consistent interface
+func setupKeeper(t *testing.T) (Keeper, sdk.Context) {
+	return NewTestKeeperWithContext(t)
+}
 
 // TestUpdateThreatMetricsBatched verifies threat metric updates are batched correctly
 func TestUpdateThreatMetricsBatched(t *testing.T) {
@@ -135,7 +141,7 @@ func TestRefreshReputationScoresBatched(t *testing.T) {
 	k.SetParams(ctx, *params)
 
 	// Create test reputations with old timestamps
-	oldHeight := ctx.BlockHeight() - keeper.REPUTATION_REFRESH_INTERVAL - 10
+	oldHeight := ctx.BlockHeight() - REPUTATION_REFRESH_INTERVAL - 10
 
 	reputations := []types.NodeReputation{
 		{
@@ -212,7 +218,7 @@ func TestRefreshReputationScoresBatchedWithUptime(t *testing.T) {
 		PeerId:            "peer1",
 		Score:             100,
 		Uptime:            0,
-		LastUpdatedHeight: ctx.BlockHeight() - keeper.REPUTATION_REFRESH_INTERVAL - 1,
+		LastUpdatedHeight: ctx.BlockHeight() - REPUTATION_REFRESH_INTERVAL - 1,
 	}
 	k.SetReputation(ctx, rep)
 
@@ -325,7 +331,7 @@ func TestBatchOperationsUnderLoad(t *testing.T) {
 		rep := types.NodeReputation{
 			PeerId:            generateTestPeerID(i),
 			Score:             100,
-			LastUpdatedHeight: ctx.BlockHeight() - keeper.REPUTATION_REFRESH_INTERVAL - 1,
+			LastUpdatedHeight: ctx.BlockHeight() - REPUTATION_REFRESH_INTERVAL - 1,
 		}
 		k.SetReputation(ctx, rep)
 	}
@@ -335,7 +341,7 @@ func TestBatchOperationsUnderLoad(t *testing.T) {
 	maxIterations := 30 // Should process 1000 entries with batches of ~50
 
 	for i := 0; i < maxIterations; i++ {
-		processed := k.UpdateThreatMetricsBatched(ctx, keeper.MAX_THREAT_UPDATES_PER_BLOCK)
+		processed := k.UpdateThreatMetricsBatched(ctx, MAX_THREAT_UPDATES_PER_BLOCK)
 		totalProcessed += processed
 		if processed == 0 {
 			break // Completed all entries

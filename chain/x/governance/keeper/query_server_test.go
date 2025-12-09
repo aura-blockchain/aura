@@ -7,6 +7,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/query"
 	"github.com/stretchr/testify/require"
 
+	testkeeper "github.com/aequitas/aura/chain/testutil/keeper"
+	govkeeper "github.com/aequitas/aura/chain/x/governance/keeper"
 	govpb "github.com/aequitas/aura/proto/aura/governance/v1beta1"
 )
 
@@ -19,10 +21,14 @@ func TestQueryProposalsPagination(t *testing.T) {
 
 	// Create multiple proposals for pagination testing
 	for i := 0; i < 5; i++ {
-		_, err := keeper.SubmitProposal(ctx, &govpb.Proposal{
+		proposal := &govpb.Proposal{
 			Title:       "Test Proposal",
 			Description: "Test Description",
-		})
+			Status:      govpb.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD,
+		}
+		proposal.Id = keeper.GetNextProposalID(ctx)
+		keeper.SetNextProposalID(ctx, proposal.Id+1)
+		err := keeper.SetProposal(ctx, proposal)
 		require.NoError(t, err)
 	}
 
@@ -74,23 +80,27 @@ func TestQueryProposalsPaginationWithFilters(t *testing.T) {
 
 	// Create proposals with different statuses
 	for i := 0; i < 3; i++ {
-		proposal, err := keeper.SubmitProposal(ctx, &govpb.Proposal{
+		proposal := &govpb.Proposal{
 			Title:       "Voting Proposal",
 			Description: "Test Description",
 			Status:      govpb.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD,
-		})
+		}
+		proposal.Id = keeper.GetNextProposalID(ctx)
+		keeper.SetNextProposalID(ctx, proposal.Id+1)
+		err := keeper.SetProposal(ctx, proposal)
 		require.NoError(t, err)
-		require.NotNil(t, proposal)
 	}
 
 	for i := 0; i < 2; i++ {
-		proposal, err := keeper.SubmitProposal(ctx, &govpb.Proposal{
+		proposal := &govpb.Proposal{
 			Title:       "Passed Proposal",
 			Description: "Test Description",
 			Status:      govpb.ProposalStatus_PROPOSAL_STATUS_PASSED,
-		})
+		}
+		proposal.Id = keeper.GetNextProposalID(ctx)
+		keeper.SetNextProposalID(ctx, proposal.Id+1)
+		err := keeper.SetProposal(ctx, proposal)
 		require.NoError(t, err)
-		require.NotNil(t, proposal)
 	}
 
 	// Test 1: Query only voting proposals with pagination
@@ -135,14 +145,26 @@ func TestQueryProposalsPaginationNilRequest(t *testing.T) {
 	require.NotNil(t, resp.Pagination)
 }
 
-// Helper function to setup test suite
-func setupTestSuite(t *testing.T) *struct {
+// testSuite holds the test dependencies
+type testSuite struct {
 	ctx         sdk.Context
-	keeper      *Keeper
+	keeper      *govkeeper.Keeper
 	queryServer govpb.QueryServer
-} {
-	// This is a placeholder - actual implementation would use proper test setup
-	// For now, just return nil to allow compilation
-	t.Skip("Test setup needs to be implemented with proper keeper initialization")
-	return nil
+}
+
+// Helper function to setup test suite
+func setupTestSuite(t *testing.T) *testSuite {
+	t.Helper()
+
+	// Create keeper and context using testutil
+	k, ctx := testkeeper.GovernanceKeeper(t)
+
+	// Create query server
+	queryServer := govkeeper.NewQueryServerImpl(k)
+
+	return &testSuite{
+		ctx:         ctx,
+		keeper:      k,
+		queryServer: queryServer,
+	}
 }

@@ -91,19 +91,43 @@ func TestSecurityParamsConsistency(t *testing.T) {
 
 	// Verify that multiple calls return consistent values
 	if params1.MinBlockDelay != params2.MinBlockDelay {
-		t.Error("DefaultSecurityParams should return consistent values")
+		t.Errorf("DefaultSecurityParams should return consistent MinBlockDelay values, got %d and %d",
+			params1.MinBlockDelay, params2.MinBlockDelay)
 	}
 
-	if params1.MaxTradeSizePercent != params2.MaxTradeSizePercent {
-		t.Error("DefaultSecurityParams should return consistent values")
+	if !params1.MaxTradeSizePercent.Equal(params2.MaxTradeSizePercent) {
+		t.Errorf("DefaultSecurityParams should return consistent MaxTradeSizePercent values, got %s and %s",
+			params1.MaxTradeSizePercent, params2.MaxTradeSizePercent)
+	}
+
+	if !params1.MaxPriceImpactPercent.Equal(params2.MaxPriceImpactPercent) {
+		t.Errorf("DefaultSecurityParams should return consistent MaxPriceImpactPercent values, got %s and %s",
+			params1.MaxPriceImpactPercent, params2.MaxPriceImpactPercent)
+	}
+
+	if !params1.MinPoolCreationLiquidity.Equal(params2.MinPoolCreationLiquidity) {
+		t.Errorf("DefaultSecurityParams should return consistent MinPoolCreationLiquidity values, got %s and %s",
+			params1.MinPoolCreationLiquidity, params2.MinPoolCreationLiquidity)
+	}
+
+	if !params1.MinTradeAmount.Equal(params2.MinTradeAmount) {
+		t.Errorf("DefaultSecurityParams should return consistent MinTradeAmount values, got %s and %s",
+			params1.MinTradeAmount, params2.MinTradeAmount)
+	}
+
+	if !params1.MaxOrderVariance.Equal(params2.MaxOrderVariance) {
+		t.Errorf("DefaultSecurityParams should return consistent MaxOrderVariance values, got %s and %s",
+			params1.MaxOrderVariance, params2.MaxOrderVariance)
 	}
 
 	if params1.CircuitBreakerEnabled != params2.CircuitBreakerEnabled {
-		t.Error("DefaultSecurityParams should return consistent values")
+		t.Errorf("DefaultSecurityParams should return consistent CircuitBreakerEnabled values, got %v and %v",
+			params1.CircuitBreakerEnabled, params2.CircuitBreakerEnabled)
 	}
 
 	if params1.MevProtectionEnabled != params2.MevProtectionEnabled {
-		t.Error("DefaultSecurityParams should return consistent values")
+		t.Errorf("DefaultSecurityParams should return consistent MevProtectionEnabled values, got %v and %v",
+			params1.MevProtectionEnabled, params2.MevProtectionEnabled)
 	}
 }
 

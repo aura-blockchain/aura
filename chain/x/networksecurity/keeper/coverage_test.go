@@ -130,7 +130,7 @@ func (suite *KeeperTestSuite) TestRateLimit() {
 	entry := types.RateLimitEntry{
 		PeerId:       peerId,
 		RequestCount: 10,
-		WindowStart:  timestamppb.New(suite.ctx.BlockTime()),
+		WindowStart:  suite.ctx.BlockTime(),
 	}
 	suite.keeper.SetRateLimitEntry(suite.ctx, entry)
 
