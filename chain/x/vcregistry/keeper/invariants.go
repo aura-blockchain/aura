@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/aequitas/aura/chain/x/vcregistry/types"
@@ -108,7 +109,9 @@ func VCConsistencyInvariant(k *Keeper) sdk.Invariant {
 
 			// Expiration should be after issuance
 			if vc.ExpiresAt != nil && vc.IssuedAt != nil {
-				if vc.ExpiresAt.AsTime().Before(vc.IssuedAt.AsTime()) {
+				expiresTime := time.Unix(vc.ExpiresAt.Seconds, int64(vc.ExpiresAt.Nanos))
+				issuedTime := time.Unix(vc.IssuedAt.Seconds, int64(vc.IssuedAt.Nanos))
+				if expiresTime.Before(issuedTime) {
 					return sdk.FormatInvariant(
 						types.ModuleName,
 						"vc-consistency",

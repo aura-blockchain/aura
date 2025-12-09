@@ -3,11 +3,12 @@ package keeper
 import (
 	"context"
 	"fmt"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	gogotypes "github.com/cosmos/gogoproto/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/governance/types"
 	govpb "github.com/aequitas/aura/proto/aura/governance/v1beta1"
@@ -56,6 +57,7 @@ func (ms msgServer) SubmitProposal(goCtx context.Context, msg *govpb.MsgSubmitPr
 	ms.Keeper.SetNextProposalID(ctx, proposalID+1)
 
 	// Create proposal
+	now := time.Now()
 	proposal := &types.Proposal{
 		Id:          proposalID,
 		Title:       msg.Title,
@@ -63,13 +65,16 @@ func (ms msgServer) SubmitProposal(goCtx context.Context, msg *govpb.MsgSubmitPr
 		Category:    msg.Category,
 		Status:      govpb.ProposalStatus_PROPOSAL_STATUS_DEPOSIT_PERIOD,
 		Proposer:    msg.Proposer,
-		SubmitTime:  timestamppb.Now(),
+		SubmitTime:  &gogotypes.Timestamp{Seconds: now.Unix(), Nanos: int32(now.Nanosecond())},
 		IsEmergency: msg.IsEmergency,
 	}
 
 	// Set deposit and voting periods based on params
 	params := ms.Keeper.GetParams(ctx)
-	proposal.DepositEndTime = timestamppb.New(ctx.BlockTime().Add(params.MaxDepositPeriod.AsDuration()))
+	// Convert Duration to time.Duration manually
+	depositDuration := time.Duration(params.MaxDepositPeriod.Seconds)*time.Second + time.Duration(params.MaxDepositPeriod.Nanos)*time.Nanosecond
+	depositEndTime := ctx.BlockTime().Add(depositDuration)
+	proposal.DepositEndTime = &gogotypes.Timestamp{Seconds: depositEndTime.Unix(), Nanos: int32(depositEndTime.Nanosecond())}
 
 	// Store proposal
 	if err := ms.Keeper.SetProposal(ctx, proposal); err != nil {
@@ -108,11 +113,12 @@ func (ms msgServer) SubmitProposal(goCtx context.Context, msg *govpb.MsgSubmitPr
 		}
 
 		// Store deposit record
+		depositNow := time.Now()
 		depositRecord := &types.Deposit{
 			ProposalId: proposalID,
 			Depositor:  msg.Proposer,
 			Amount:     msg.InitialDeposit,
-			Timestamp:  timestamppb.Now(),
+			Timestamp:  &gogotypes.Timestamp{Seconds: depositNow.Unix(), Nanos: int32(depositNow.Nanosecond())},
 		}
 		if err := ms.Keeper.SetDeposit(ctx, depositRecord); err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
@@ -187,11 +193,12 @@ func (ms msgServer) Deposit(goCtx context.Context, msg *govpb.MsgDeposit) (*govp
 	}
 
 	// Store deposit record
+	depositNow := time.Now()
 	deposit := &types.Deposit{
 		ProposalId: msg.ProposalId,
 		Depositor:  msg.Depositor,
 		Amount:     msg.Amount,
-		Timestamp:  timestamppb.Now(),
+		Timestamp:  &gogotypes.Timestamp{Seconds: depositNow.Unix(), Nanos: int32(depositNow.Nanosecond())},
 	}
 	if err := ms.Keeper.SetDeposit(ctx, deposit); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -255,8 +262,9 @@ func (ms msgServer) Vote(goCtx context.Context, msg *govpb.MsgVote) (*govpb.MsgV
 	if err == nil && existingVote != nil {
 		// Vote already exists - allow update by overwriting
 		// This is standard governance behavior: users can change their vote during voting period
+		voteUpdateNow := time.Now()
 		existingVote.Option = msg.Option
-		existingVote.Timestamp = timestamppb.Now()
+		existingVote.Timestamp = &gogotypes.Timestamp{Seconds: voteUpdateNow.Unix(), Nanos: int32(voteUpdateNow.Nanosecond())}
 		existingVote.VotingPower = votingPower.String()
 
 		// Handle secret ballot update
@@ -284,11 +292,12 @@ func (ms msgServer) Vote(goCtx context.Context, msg *govpb.MsgVote) (*govpb.MsgV
 	}
 
 	// Create new vote with cached voting power
+	voteNow := time.Now()
 	vote := &types.Vote{
 		ProposalId:  msg.ProposalId,
 		Voter:       msg.Voter,
 		Option:      msg.Option,
-		Timestamp:   timestamppb.Now(),
+		Timestamp:   &gogotypes.Timestamp{Seconds: voteNow.Unix(), Nanos: int32(voteNow.Nanosecond())},
 		IsSecret:    msg.IsSecret,
 		VotingPower: votingPower.String(),
 	}
@@ -356,8 +365,9 @@ func (ms msgServer) VoteWeighted(goCtx context.Context, msg *govpb.MsgVoteWeight
 	existingVote, err := ms.Keeper.GetVote(ctx, msg.ProposalId, msg.Voter)
 	if err == nil && existingVote != nil {
 		// Vote already exists - allow update by overwriting
+		voteWeightedUpdateNow := time.Now()
 		existingVote.Option = msg.Options[0].Option
-		existingVote.Timestamp = timestamppb.Now()
+		existingVote.Timestamp = &gogotypes.Timestamp{Seconds: voteWeightedUpdateNow.Unix(), Nanos: int32(voteWeightedUpdateNow.Nanosecond())}
 
 		if err := ms.Keeper.SetVote(ctx, existingVote); err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
@@ -377,11 +387,12 @@ func (ms msgServer) VoteWeighted(goCtx context.Context, msg *govpb.MsgVoteWeight
 	}
 
 	// Create new weighted vote (simplified: store first option only)
+	voteWeightedNow := time.Now()
 	vote := &types.Vote{
 		ProposalId: msg.ProposalId,
 		Voter:      msg.Voter,
 		Option:     msg.Options[0].Option,
-		Timestamp:  timestamppb.Now(),
+		Timestamp:  &gogotypes.Timestamp{Seconds: voteWeightedNow.Unix(), Nanos: int32(voteWeightedNow.Nanosecond())},
 	}
 
 	if err := ms.Keeper.SetVote(ctx, vote); err != nil {
@@ -518,11 +529,12 @@ func (ms msgServer) SubmitVeto(goCtx context.Context, msg *govpb.MsgSubmitVeto) 
 	}
 
 	// Store veto request
+	vetoNow := time.Now()
 	veto := &types.VetoRequest{
 		ProposalId: msg.ProposalId,
 		Vetoer:     msg.Vetoer,
 		Reason:     msg.Reason,
-		Timestamp:  timestamppb.Now(),
+		Timestamp:  &gogotypes.Timestamp{Seconds: vetoNow.Unix(), Nanos: int32(vetoNow.Nanosecond())},
 		Cosigners:  []string{},
 	}
 
@@ -674,9 +686,10 @@ func (ms msgServer) SubmitSnapshotVote(goCtx context.Context, msg *govpb.MsgSubm
 	existingVote, err := ms.Keeper.GetSnapshotVote(ctx, msg.ProposalId, msg.Voter)
 	if err == nil && existingVote != nil {
 		// Snapshot vote already exists - allow update
+		snapshotUpdateNow := time.Now()
 		existingVote.Option = msg.Option
 		existingVote.Signature = msg.Signature
-		existingVote.Timestamp = timestamppb.Now()
+		existingVote.Timestamp = &gogotypes.Timestamp{Seconds: snapshotUpdateNow.Unix(), Nanos: int32(snapshotUpdateNow.Nanosecond())}
 
 		if err := ms.Keeper.SetSnapshotVote(ctx, existingVote); err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
@@ -696,12 +709,13 @@ func (ms msgServer) SubmitSnapshotVote(goCtx context.Context, msg *govpb.MsgSubm
 	}
 
 	// Create new snapshot vote
+	snapshotNow := time.Now()
 	snapshotVote := &types.SnapshotVote{
 		ProposalId: msg.ProposalId,
 		Voter:      msg.Voter,
 		Option:     msg.Option,
 		Signature:  msg.Signature,
-		Timestamp:  timestamppb.Now(),
+		Timestamp:  &gogotypes.Timestamp{Seconds: snapshotNow.Unix(), Nanos: int32(snapshotNow.Nanosecond())},
 	}
 
 	if err := ms.Keeper.SetSnapshotVote(ctx, snapshotVote); err != nil {

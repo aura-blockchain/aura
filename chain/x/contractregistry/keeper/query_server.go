@@ -12,15 +12,15 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-var _ pb.QueryServer = queryServer{}
+var _ pb.QueryServer = (*queryServer)(nil)
 
 type queryServer struct {
 	pb.UnimplementedQueryServer
-	Keeper
+	*Keeper
 }
 
 // NewQueryServerImpl returns an implementation of the QueryServer interface
-func NewQueryServerImpl(keeper Keeper) pb.QueryServer {
+func NewQueryServerImpl(keeper *Keeper) pb.QueryServer {
 	return &queryServer{Keeper: keeper}
 }
 

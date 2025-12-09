@@ -355,11 +355,9 @@ func (k Keeper) RegisterContract(ctx sdk.Context, info *pb.ContractInfo) error {
 	// Add to creator index
 	k.AddCreatorContract(ctx, info.Creator, info.Address)
 
-	// Add to tag indexes
-	if info.Metadata != nil {
-		for _, tag := range info.Metadata.Tags {
-			k.AddTagContract(ctx, tag, info.Address)
-		}
+	// Add to tag indexes - Metadata is always present as value type
+	for _, tag := range info.Metadata.Tags {
+		k.AddTagContract(ctx, tag, info.Address)
 	}
 
 	// Initialize metrics
@@ -386,22 +384,18 @@ func (k Keeper) UpdateContractMetadata(ctx sdk.Context, contractAddr, signer str
 		return types.ErrNotContractAdmin
 	}
 
-	// Remove old tag indexes
-	if info.Metadata != nil {
-		for _, tag := range info.Metadata.Tags {
-			k.RemoveTagContract(ctx, tag, contractAddr)
-		}
+	// Remove old tag indexes - Metadata is always present as value type
+	for _, tag := range info.Metadata.Tags {
+		k.RemoveTagContract(ctx, tag, contractAddr)
 	}
 
 	// Update metadata
-	info.Metadata = metadata
+	info.Metadata = *metadata
 	k.SetContractInfo(ctx, &info)
 
 	// Add new tag indexes
-	if metadata != nil {
-		for _, tag := range metadata.Tags {
-			k.AddTagContract(ctx, tag, contractAddr)
-		}
+	for _, tag := range metadata.Tags {
+		k.AddTagContract(ctx, tag, contractAddr)
 	}
 
 	return nil
@@ -419,8 +413,8 @@ func (k Keeper) UpdateSecurityPolicy(ctx sdk.Context, contractAddr, signer strin
 		return types.ErrNotContractAdmin
 	}
 
-	// Update security policy
-	info.SecurityPolicy = policy
+	// Update security policy - SecurityPolicy is a value type
+	info.SecurityPolicy = *policy
 	k.SetContractInfo(ctx, &info)
 
 	return nil
@@ -434,7 +428,8 @@ func (k Keeper) PauseContract(ctx sdk.Context, contractAddr, signer, reason stri
 	}
 
 	// Check if pause is allowed by security policy
-	if info.SecurityPolicy != nil && !info.SecurityPolicy.AllowPause {
+	// SecurityPolicy is a value type, always present
+	if !info.SecurityPolicy.AllowPause {
 		return types.ErrInvalidRequest
 	}
 
