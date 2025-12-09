@@ -10,7 +10,6 @@ import (
 	storetypes "cosmossdk.io/store/types"
 	"github.com/aequitas/aura/chain/x/dex/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const userOrderHistoryLimit = 200
@@ -108,7 +107,9 @@ func (k Keeper) CreateOrder(
 	}
 
 	// Store order BEFORE external call
-	k.SetOrder(ctx, order)
+	if err := k.SetOrder(ctx, order); err != nil {
+		return nil, err
+	}
 
 	// Add to orderbook index BEFORE external call
 	k.AddToOrderbook(ctx, order)
@@ -234,7 +235,9 @@ func (k Keeper) MatchOrder(
 	order.MatcherAddress = matcher
 	matchedTime := ctx.BlockTime()
 	order.MatchedAt = &matchedTime
-	k.SetOrder(ctx, order)
+	if err := k.SetOrder(ctx, order); err != nil {
+		return err
+	}
 
 	// Remove from orderbook BEFORE external calls (prevents double-matching)
 	k.RemoveFromOrderbook(ctx, orderID)
@@ -250,7 +253,7 @@ func (k Keeper) MatchOrder(
 			order.Status = types.SwapOrderStatus_PENDING
 			order.MatcherAddress = ""
 			order.MatchedAt = nil
-			k.SetOrder(ctx, order)
+			_ = k.SetOrder(ctx, order) // Best effort rollback
 			return fmt.Errorf("failed to lock matcher funds: %w", err)
 		}
 	} else {
@@ -261,7 +264,7 @@ func (k Keeper) MatchOrder(
 			order.Status = types.SwapOrderStatus_PENDING
 			order.MatcherAddress = ""
 			order.MatchedAt = nil
-			k.SetOrder(ctx, order)
+			_ = k.SetOrder(ctx, order) // Best effort rollback
 			return fmt.Errorf("failed to lock matcher funds: %w", err)
 		}
 	}
@@ -275,13 +278,15 @@ func (k Keeper) MatchOrder(
 		order.Status = types.SwapOrderStatus_PENDING
 		order.MatcherAddress = ""
 		order.MatchedAt = nil
-		k.SetOrder(ctx, order)
+		_ = k.SetOrder(ctx, order) // Best effort rollback
 		return fmt.Errorf("failed to execute swap: %w", err)
 	}
 
 	// Mark as completed AFTER successful swap
 	order.Status = types.SwapOrderStatus_COMPLETED
-	k.SetOrder(ctx, order)
+	if err := k.SetOrder(ctx, order); err != nil {
+		return err
+	}
 
 	// Emit event (safe - no state changes after this)
 	ctx.EventManager().EmitEvent(
@@ -335,7 +340,9 @@ func (k Keeper) CancelOrder(
 
 	// Update status BEFORE external call
 	order.Status = types.SwapOrderStatus_CANCELLED
-	k.SetOrder(ctx, order)
+	if err := k.SetOrder(ctx, order); err != nil {
+		return err
+	}
 
 	// Remove from orderbook BEFORE external call
 	k.RemoveFromOrderbook(ctx, orderID)
@@ -347,7 +354,7 @@ func (k Keeper) CancelOrder(
 		// Rollback state changes
 		k.AddToOrderbook(ctx, order)
 		order.Status = types.SwapOrderStatus_PENDING
-		k.SetOrder(ctx, order)
+		_ = k.SetOrder(ctx, order) // Best effort rollback
 		return fmt.Errorf("failed to unlock funds: %w", err)
 	}
 
@@ -457,18 +464,22 @@ func (k Keeper) GetOrder(ctx sdk.Context, orderID string) *types.SwapOrder {
 }
 
 // SetOrder stores an order
-func (k Keeper) SetOrder(ctx sdk.Context, order *types.SwapOrder) {
+func (k Keeper) SetOrder(ctx sdk.Context, order *types.SwapOrder) error {
 	store := ctx.KVStore(k.storeKey)
 	key := types.OrderKey(order.OrderId)
 
 	isNew := store.Get(key) == nil
 
-	bz := k.cdc.MustMarshal(order)
+	bz, err := k.cdc.Marshal(order)
+	if err != nil {
+		return types.ErrMarshalFailed.Wrapf("failed to marshal order %s: %v", order.OrderId, err)
+	}
 	store.Set(key, bz)
 
 	if isNew {
 		k.indexUserOrder(ctx, order)
 	}
+	return nil
 }
 
 // DeleteOrder removes an order
@@ -663,6 +674,7 @@ func (k Keeper) GenerateOrderID(ctx sdk.Context, creator string) string {
 }
 
 // CleanupExpiredOrders removes expired orders (should be called in EndBlocker)
+// DEPRECATED: Use CleanupExpiredOrdersBatched for production to prevent consensus failure
 func (k Keeper) CleanupExpiredOrders(ctx sdk.Context) {
 	orders := k.GetOrdersByStatus(ctx, types.SwapOrderStatus_PENDING)
 
@@ -671,6 +683,92 @@ func (k Keeper) CleanupExpiredOrders(ctx sdk.Context) {
 			k.CancelOrder(ctx, order.OrderId, "expired")
 		}
 	}
+}
+
+// CleanupExpiredOrdersBatched removes up to 'limit' expired orders per call.
+// Uses cursor-based pagination to track progress across blocks, ensuring
+// all expired orders are eventually processed without blocking consensus.
+//
+// SECURITY: This function is designed to prevent consensus failure by limiting
+// the number of operations per block. With 10,000+ orders, unbounded cleanup
+// causes block production to exceed timeout, halting the chain.
+//
+// Returns: number of orders processed in this batch
+func (k Keeper) CleanupExpiredOrdersBatched(ctx sdk.Context, limit int) int {
+	if limit <= 0 {
+		limit = types.MaxOrdersCleanupPerBlock
+	}
+
+	store := ctx.KVStore(k.storeKey)
+
+	// Get cursor (last processed order ID)
+	cursorKey := types.OrderCleanupCursorKey()
+	cursorBytes := store.Get(cursorKey)
+	var cursor []byte
+	if cursorBytes != nil {
+		cursor = cursorBytes
+	}
+
+	// Get all pending orders starting from cursor
+	orders := k.GetOrdersByStatus(ctx, types.SwapOrderStatus_PENDING)
+	if len(orders) == 0 {
+		// No orders to process, reset cursor
+		store.Delete(cursorKey)
+		return 0
+	}
+
+	// Find start position based on cursor
+	startIdx := 0
+	if cursor != nil {
+		cursorOrderID := string(cursor)
+		for i, order := range orders {
+			if order.OrderId == cursorOrderID {
+				// Start from next order after cursor
+				startIdx = i + 1
+				break
+			}
+		}
+	}
+
+	// If cursor points beyond end of list, reset and start from beginning
+	if startIdx >= len(orders) {
+		startIdx = 0
+	}
+
+	// Process up to 'limit' orders
+	processed := 0
+	var lastProcessedOrderID string
+
+	for i := startIdx; i < len(orders) && processed < limit; i++ {
+		order := orders[i]
+		lastProcessedOrderID = order.OrderId
+
+		// Check if order expired
+		if ctx.BlockTime().After(order.ExpiresAt) {
+			// Cancel expired order
+			if err := k.CancelOrder(ctx, order.OrderId, "expired"); err != nil {
+				// Log error but continue processing other orders
+				ctx.Logger().Error("failed to cancel expired order",
+					"order_id", order.OrderId,
+					"error", err)
+			}
+		}
+
+		processed++
+	}
+
+	// Update cursor for next block
+	if processed > 0 {
+		if startIdx+processed >= len(orders) {
+			// Completed full pass, reset cursor for next iteration
+			store.Delete(cursorKey)
+		} else {
+			// Save cursor pointing to last processed order
+			store.Set(cursorKey, []byte(lastProcessedOrderID))
+		}
+	}
+
+	return processed
 }
 
 func (k Keeper) indexUserOrder(ctx sdk.Context, order *types.SwapOrder) {

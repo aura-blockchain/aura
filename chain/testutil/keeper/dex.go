@@ -52,7 +52,7 @@ func DexKeeper(t *testing.T) (*keeper.Keeper, sdk.Context) {
 
 	// Initialize params
 	params := types.DefaultParams()
-	require.NoError(t, k.SetParams(ctx, params))
+	require.NoError(t, k.SetParams(ctx, &params))
 
 	return k, ctx
 }
@@ -90,7 +90,7 @@ func DexKeeperWithMocks(t *testing.T) (*keeper.Keeper, sdk.Context, *mocks.MockB
 
 	// Initialize params
 	params := types.DefaultParams()
-	require.NoError(t, k.SetParams(ctx, params))
+	require.NoError(t, k.SetParams(ctx, &params))
 
 	return k, ctx, bankKeeper, accountKeeper, vcKeeper, securityKeeper
 }

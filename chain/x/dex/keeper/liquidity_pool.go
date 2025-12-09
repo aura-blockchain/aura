@@ -11,7 +11,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	metrics "github.com/hashicorp/go-metrics"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/dex/types"
 )
@@ -176,7 +175,9 @@ func (k Keeper) CreatePool(
 	}
 
 	// Store pool
-	k.SetPool(ctx, pool)
+	if err := k.SetPool(ctx, pool); err != nil {
+		return nil, sdkmath.ZeroInt(), err
+	}
 
 	// NOTE: Pool creation recording (audit trail) is handled by SecureCreatePool wrapper.
 	// This avoids duplicate recording when called through the secure path.
@@ -350,7 +351,9 @@ func (k Keeper) AddLiquidity(
 	}
 
 	// Save pool
-	k.SetPool(ctx, pool)
+	if err := k.SetPool(ctx, pool); err != nil {
+		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), err
+	}
 
 	// Emit event
 	ctx.EventManager().EmitEvent(
@@ -484,7 +487,9 @@ func (k Keeper) RemoveLiquidity(
 	}
 
 	// Save pool
-	k.SetPool(ctx, pool)
+	if err := k.SetPool(ctx, pool); err != nil {
+		return sdk.Coin{}, sdk.Coin{}, err
+	}
 
 	// Transfer tokens back to provider
 	providerAddr, err := sdk.AccAddressFromBech32(provider)
@@ -708,7 +713,9 @@ func (k Keeper) SwapExactIn(
 		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec(), err
 	}
 
-	k.SetPool(ctx, pool)
+	if err := k.SetPool(ctx, pool); err != nil {
+		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec(), err
+	}
 
 	// Transfer tokens
 	senderAddr, err := sdk.AccAddressFromBech32(sender)
@@ -852,7 +859,9 @@ func (k Keeper) RecordSwapStats(
 		AmountOut:      amountOut,
 		EffectivePrice: price,
 	}
-	k.setSwapStats(ctx, stats)
+	if err := k.setSwapStats(ctx, stats); err != nil {
+		ctx.Logger().Error("failed to record swap stats", "pool_id", poolID, "error", err)
+	}
 
 	telemetry.IncrCounter(float32(1), "dex", "swap", "recorded")
 	telemetry.SetGaugeWithLabels(
@@ -885,7 +894,9 @@ func (k Keeper) updateMarketPrice(
 	priceEntry.UpdatedAt = timestamp
 	priceEntry.SampleSize++
 
-	k.setMarketPrice(ctx, priceEntry)
+	if err := k.setMarketPrice(ctx, priceEntry); err != nil {
+		ctx.Logger().Error("failed to update market price", "coin", coin, "error", err)
+	}
 
 	telemetry.SetGaugeWithLabels(
 		[]string{"dex", "market_price", "price_aura"},

@@ -247,25 +247,16 @@ func (ki *KeeperInitializer) initTier5Keepers(container *KeeperContainer) error 
 		return fmt.Errorf("contract registry keeper not initialized")
 	}
 
-	// TODO: Wire dependencies after interface alignment
-	// The ContractRegistryKeeper expects these interfaces:
-	//
-	// 1. VCRegistryKeeper interface needs:
-	//    - HasVC(walletAddr, vcType string) bool  // <- MISSING in VCRegistryKeeper
-	//    (plus other methods that may exist)
-	//
-	// 2. ComplianceKeeper interface needs:
-	//    - GetKYCLevel(walletAddr string) (string, error)  // <- MISSING in ComplianceKeeper
-	//    (plus other methods that may exist)
-	//
-	// 3. ConfidenceScoreKeeper interface needs:
-	//    - Methods without sdk.Context as mentioned in tier 4
-	//
-	// Currently commented out until all required interface methods are implemented.
-	//
-	// container.ContractRegistryKeeper.SetVCRegistryKeeper(container.VCRegistryKeeper)
-	// container.ContractRegistryKeeper.SetComplianceKeeper(container.ComplianceKeeper)
-	// container.ContractRegistryKeeper.SetConfidenceScoreKeeper(container.ConfidenceScoreKeeper)
+	// Wire dependencies using adapters to bridge interface mismatches
+	// These adapters are defined in app/keeper_adapters.go and handle context wrapping
+	// and method signature differences between the keepers and expected interfaces.
+	contractRegistryVCAdapter := newContractRegistryVCAdapter(container.VCRegistryKeeper)
+	contractRegistryComplianceAdapter := newContractRegistryComplianceAdapter(container.ComplianceKeeper)
+	contractRegistryCSAdapter := newContractRegistryConfidenceScoreAdapter(container.ConfidenceScoreKeeper)
+
+	container.ContractRegistryKeeper.SetVCKeeper(contractRegistryVCAdapter)
+	container.ContractRegistryKeeper.SetComplianceKeeper(contractRegistryComplianceAdapter)
+	container.ContractRegistryKeeper.SetConfidenceScoreKeeper(contractRegistryCSAdapter)
 
 	// BridgeKeeper and DexKeeper are already initialized
 	if container.BridgeKeeper == nil {

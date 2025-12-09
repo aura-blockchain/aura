@@ -10,7 +10,6 @@ import (
 	sdkmath "cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/dex/types"
 )
@@ -102,14 +101,11 @@ func (k Keeper) RecordTWAPObservation(ctx sdk.Context, poolID string) error {
 
 	var cumulativePrice sdkmath.LegacyDec
 	if prevObservation != nil {
-		// Parse previous cumulative price from string
-		prevCumulativePrice, err := sdkmath.LegacyNewDecFromStr(prevObservation.CumulativePrice)
-		if err != nil {
-			return err
-		}
+		// prevObservation.CumulativePrice is already LegacyDec
+		prevCumulativePrice := prevObservation.CumulativePrice
 
 		// Time elapsed since last observation
-		timeElapsed := ctx.BlockTime().Unix() - prevObservation.Timestamp.AsTime().Unix()
+		timeElapsed := ctx.BlockTime().Unix() - prevObservation.Timestamp.Unix()
 
 		// Cumulative price = previous cumulative + (spot price * time elapsed)
 		cumulativePrice = prevCumulativePrice.Add(
@@ -122,15 +118,17 @@ func (k Keeper) RecordTWAPObservation(ctx sdk.Context, poolID string) error {
 
 	observation := &types.TWAPPrice{
 		PoolId:          poolID,
-		CumulativePrice: cumulativePrice.String(),
+		CumulativePrice: cumulativePrice,
 		BlockHeight:     ctx.BlockHeight(),
-		Timestamp:       timestamppb.New(ctx.BlockTime()),
+		Timestamp:       ctx.BlockTime(),
 		ReserveA:        pool.ReserveA,
 		ReserveB:        pool.ReserveB,
-		SpotPrice:       spotPrice.String(),
+		SpotPrice:       spotPrice,
 	}
 
-	k.SetTWAPObservation(ctx, observation)
+	if err := k.SetTWAPObservation(ctx, observation); err != nil {
+		ctx.Logger().Error("failed to store TWAP observation", "pool_id", poolID, "error", err)
+	}
 
 	// Prune old observations outside TWAP window
 	k.PruneTWAPObservations(ctx, poolID)
@@ -171,37 +169,76 @@ func (k Keeper) GetTWAPPrice(ctx sdk.Context, poolID string, windowBlocks uint64
 	latest := observations[0]
 	oldest := observations[len(observations)-1]
 
-	timeElapsed := latest.Timestamp.AsTime().Unix() - oldest.Timestamp.AsTime().Unix()
+	timeElapsed := latest.Timestamp.Unix() - oldest.Timestamp.Unix()
 	if timeElapsed == 0 {
-		spotPrice, err := sdkmath.LegacyNewDecFromStr(latest.SpotPrice)
-		if err != nil {
-			return sdkmath.LegacyZeroDec(), err
-		}
-		return spotPrice, nil
+		return latest.SpotPrice, nil
 	}
 
-	// Parse cumulative prices from strings
-	latestCumulativePrice, err := sdkmath.LegacyNewDecFromStr(latest.CumulativePrice)
-	if err != nil {
-		return sdkmath.LegacyZeroDec(), err
-	}
-	oldestCumulativePrice, err := sdkmath.LegacyNewDecFromStr(oldest.CumulativePrice)
-	if err != nil {
-		return sdkmath.LegacyZeroDec(), err
-	}
+	// Cumulative prices are already LegacyDec
+	latestCumulativePrice := latest.CumulativePrice
+	oldestCumulativePrice := oldest.CumulativePrice
 
 	twap := latestCumulativePrice.Sub(oldestCumulativePrice).QuoInt64(timeElapsed)
 
 	return twap, nil
 }
 
+// GetTWAPPriceWithCount calculates TWAP and returns the observation count.
+// This is used to determine if there are sufficient observations (>= MinTWAPObservations)
+// to trust the TWAP price, preventing oracle manipulation attacks.
+//
+// SECURITY: The observation count check is critical for preventing manipulation.
+// With insufficient observations, attackers could manipulate early price observations
+// to affect TWAP calculations. By requiring MinTWAPObservations (100), we ensure
+// sufficient historical data exists before trusting TWAP.
+//
+// Returns:
+//   - price: TWAP price if sufficient observations, zero otherwise
+//   - count: number of TWAP observations available
+//   - error: any error during calculation
+func (k Keeper) GetTWAPPriceWithCount(ctx sdk.Context, poolID string, windowBlocks uint64) (price sdkmath.LegacyDec, count int, err error) {
+	params := k.GetSecurityParams(ctx)
+	if windowBlocks == 0 {
+		windowBlocks = params.TwapWindowBlocks
+	}
+
+	observations := k.GetTWAPObservations(ctx, poolID, windowBlocks)
+	count = len(observations)
+
+	if count < 2 {
+		// Need at least 2 observations for TWAP calculation
+		return sdkmath.LegacyZeroDec(), count, fmt.Errorf("insufficient observations for TWAP: %d < 2", count)
+	}
+
+	// TWAP = (cumulative_price_end - cumulative_price_start) / time_elapsed
+	latest := observations[0]
+	oldest := observations[len(observations)-1]
+
+	timeElapsed := latest.Timestamp.Unix() - oldest.Timestamp.Unix()
+	if timeElapsed == 0 {
+		return latest.SpotPrice, count, nil
+	}
+
+	// Cumulative prices are already LegacyDec
+	latestCumulativePrice := latest.CumulativePrice
+	oldestCumulativePrice := oldest.CumulativePrice
+
+	twap := latestCumulativePrice.Sub(oldestCumulativePrice).QuoInt64(timeElapsed)
+
+	return twap, count, nil
+}
+
 // SetTWAPObservation stores a TWAP observation
-func (k Keeper) SetTWAPObservation(ctx sdk.Context, obs *types.TWAPPrice) {
+func (k Keeper) SetTWAPObservation(ctx sdk.Context, obs *types.TWAPPrice) error {
 	store := ctx.KVStore(k.storeKey)
 	key := types.TWAPKey(obs.PoolId, obs.BlockHeight)
 
-	bz := k.cdc.MustMarshal(obs)
+	bz, err := k.cdc.Marshal(obs)
+	if err != nil {
+		return types.ErrMarshalFailed.Wrapf("failed to marshal TWAP observation for pool %s: %v", obs.PoolId, err)
+	}
 	store.Set(key, bz)
+	return nil
 }
 
 // GetLatestTWAPObservation retrieves the most recent TWAP observation
@@ -330,6 +367,7 @@ func (k Keeper) GetLastRecordedPrice(ctx sdk.Context, poolID string) sdkmath.Leg
 
 // RecordAllPoolPrices records TWAP observations for all active pools with price validation.
 // This should be called in EndBlocker to build TWAP history and reject manipulation.
+// DEPRECATED: Use RecordAllPoolPricesBatched for production to prevent consensus failure
 func (k Keeper) RecordAllPoolPrices(ctx sdk.Context) {
 	pools := k.GetAllPools(ctx)
 
@@ -378,6 +416,129 @@ func (k Keeper) RecordAllPoolPrices(ctx sdk.Context) {
 		// Update last recorded price
 		k.SetLastRecordedPrice(ctx, pool.PoolId, spotPrice)
 	}
+}
+
+// RecordAllPoolPricesBatched records TWAP observations for up to 'limit' pools per call.
+// Uses cursor-based rotation to cycle through all pools across multiple blocks,
+// ensuring all pools are eventually updated without blocking consensus.
+//
+// SECURITY: This function is designed to prevent consensus failure by limiting
+// the number of operations per block. With many pools, unbounded TWAP recording
+// causes block production to exceed timeout, halting the chain.
+//
+// The rotation ensures that even with 1000+ pools, each pool gets its TWAP
+// updated regularly (every N blocks where N = total_pools / limit).
+//
+// Returns: number of pools processed in this batch
+func (k Keeper) RecordAllPoolPricesBatched(ctx sdk.Context, limit int) int {
+	if limit <= 0 {
+		limit = types.MaxPoolsTWAPPerBlock
+	}
+
+	pools := k.GetAllPools(ctx)
+	if len(pools) == 0 {
+		return 0
+	}
+
+	store := ctx.KVStore(k.storeKey)
+
+	// Get cursor (index of last processed pool)
+	cursorKey := types.TWAPCursorKey()
+	cursorBytes := store.Get(cursorKey)
+
+	startIdx := 0
+	if cursorBytes != nil && len(cursorBytes) >= 8 {
+		// Decode cursor as uint64
+		startIdx = int(sdk.BigEndianToUint64(cursorBytes))
+	}
+
+	// Wrap around if cursor is beyond pool list
+	if startIdx >= len(pools) {
+		startIdx = 0
+	}
+
+	processed := 0
+	currentIdx := startIdx
+
+	// Process up to 'limit' pools in round-robin fashion
+	for processed < limit && processed < len(pools) {
+		pool := pools[currentIdx]
+
+		// Skip empty pools
+		reserveA, err := k.parseReserve(pool.ReserveA)
+		if err != nil || reserveA.IsZero() {
+			// Move to next pool
+			currentIdx = (currentIdx + 1) % len(pools)
+			processed++
+			// Prevent infinite loop if all pools are invalid
+			if processed >= len(pools) {
+				break
+			}
+			continue
+		}
+
+		reserveB, err := k.parseReserve(pool.ReserveB)
+		if err != nil || reserveB.IsZero() {
+			// Move to next pool
+			currentIdx = (currentIdx + 1) % len(pools)
+			processed++
+			if processed >= len(pools) {
+				break
+			}
+			continue
+		}
+
+		// Calculate spot price
+		spotPrice := reserveB.ToLegacyDec().Quo(reserveA.ToLegacyDec())
+
+		// Validate price movement before recording
+		if err := k.ValidatePriceMovement(ctx, pool.PoolId, spotPrice); err != nil {
+			// Price movement too large, emit event and skip recording
+			ctx.EventManager().EmitEvent(
+				sdk.NewEvent(
+					"suspicious_price_movement",
+					sdk.NewAttribute("pool_id", pool.PoolId),
+					sdk.NewAttribute("rejected_price", spotPrice.String()),
+					sdk.NewAttribute("last_price", k.GetLastRecordedPrice(ctx, pool.PoolId).String()),
+					sdk.NewAttribute("reason", err.Error()),
+				),
+			)
+			// Move to next pool
+			currentIdx = (currentIdx + 1) % len(pools)
+			processed++
+			continue
+		}
+
+		// Record TWAP observation
+		if err := k.RecordTWAPObservation(ctx, pool.PoolId); err != nil {
+			// Log error but don't fail EndBlocker
+			ctx.EventManager().EmitEvent(
+				sdk.NewEvent(
+					"twap_recording_error",
+					sdk.NewAttribute("pool_id", pool.PoolId),
+					sdk.NewAttribute("error", err.Error()),
+				),
+			)
+			// Move to next pool
+			currentIdx = (currentIdx + 1) % len(pools)
+			processed++
+			continue
+		}
+
+		// Update last recorded price
+		k.SetLastRecordedPrice(ctx, pool.PoolId, spotPrice)
+
+		// Move to next pool
+		currentIdx = (currentIdx + 1) % len(pools)
+		processed++
+	}
+
+	// Save cursor for next block (next pool to process)
+	nextIdx := currentIdx % len(pools)
+	cursorBytes = sdk.Uint64ToBigEndian(uint64(nextIdx))
+	store.Set(cursorKey, cursorBytes)
+
+	return processed
 }
 
 // ============================================================================
@@ -485,18 +646,15 @@ func (k Keeper) CheckPoolSlippageLimit(
 ) error {
 	params := k.GetSecurityParams(ctx)
 
-	// Parse max price impact from string
-	maxPriceImpact, err := sdkmath.LegacyNewDecFromStr(params.MaxPriceImpactPercent)
-	if err != nil {
-		return err
-	}
+	// MaxPriceImpactPercent is already LegacyDec
+	maxPriceImpact := params.MaxPriceImpactPercent
 
 	// Convert price impact percentage to decimal (5% = 5.0)
 	if priceImpact.GT(maxPriceImpact) {
 		return fmt.Errorf(
 			"price impact %s%% exceeds maximum %s%%: %w",
 			priceImpact.String(),
-			params.MaxPriceImpactPercent,
+			maxPriceImpact.String(),
 			types.ErrPriceImpactTooHigh,
 		)
 	}
@@ -520,15 +678,14 @@ func (k Keeper) CheckMaxTradeSize(
 		return types.ErrPoolNotFound
 	}
 
-	// Parse reserve and max trade size percent
+	// Parse reserve
 	reserveA, err := k.parseReserve(pool.ReserveA)
 	if err != nil {
 		return err
 	}
-	maxTradeSizePercent, err := sdkmath.LegacyNewDecFromStr(params.MaxTradeSizePercent)
-	if err != nil {
-		return err
-	}
+
+	// MaxTradeSizePercent is already LegacyDec
+	maxTradeSizePercent := params.MaxTradeSizePercent
 
 	// Determine reserve based on input denom
 	// Assuming input is denomA, check against reserveA
@@ -558,17 +715,14 @@ func (k Keeper) CheckPriceImpactThreshold(
 ) error {
 	params := k.GetSecurityParams(ctx)
 
-	// Parse max price impact from string
-	maxPriceImpact, err := sdkmath.LegacyNewDecFromStr(params.MaxPriceImpactPercent)
-	if err != nil {
-		return err
-	}
+	// MaxPriceImpactPercent is already LegacyDec
+	maxPriceImpact := params.MaxPriceImpactPercent
 
 	if priceImpact.GT(maxPriceImpact) {
 		return fmt.Errorf(
 			"price impact %s%% exceeds threshold %s%%: %w",
 			priceImpact.String(),
-			params.MaxPriceImpactPercent,
+			maxPriceImpact.String(),
 			types.ErrPriceImpactTooHigh,
 		)
 	}
@@ -597,13 +751,15 @@ func (k Keeper) CreateLiquidityLock(
 	lock := &types.LiquidityLock{
 		PoolId:         poolID,
 		Provider:       provider,
-		LockedLpTokens: lpTokens.String(),
-		LockStart:      timestamppb.New(ctx.BlockTime()),
-		LockEnd:        timestamppb.New(lockEnd),
+		LockedLpTokens: lpTokens,
+		LockStart:      ctx.BlockTime(),
+		LockEnd:        lockEnd,
 		IsActive:       true,
 	}
 
-	k.SetLiquidityLock(ctx, lock)
+	if err := k.SetLiquidityLock(ctx, lock); err != nil {
+		return err
+	}
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
@@ -630,7 +786,7 @@ func (k Keeper) CheckLiquidityLock(
 		return nil // No active lock
 	}
 
-	lockEndTime := lock.LockEnd.AsTime()
+	lockEndTime := lock.LockEnd
 	if ctx.BlockTime().Before(lockEndTime) {
 		return fmt.Errorf(
 			"liquidity locked until %s (current: %s): %w",
@@ -642,18 +798,24 @@ func (k Keeper) CheckLiquidityLock(
 
 	// Lock expired, mark as inactive
 	lock.IsActive = false
-	k.SetLiquidityLock(ctx, lock)
+	if err := k.SetLiquidityLock(ctx, lock); err != nil {
+		return err
+	}
 
 	return nil
 }
 
 // SetLiquidityLock stores a liquidity lock
-func (k Keeper) SetLiquidityLock(ctx sdk.Context, lock *types.LiquidityLock) {
+func (k Keeper) SetLiquidityLock(ctx sdk.Context, lock *types.LiquidityLock) error {
 	store := ctx.KVStore(k.storeKey)
 	key := types.LiquidityLockKey(lock.Provider, lock.PoolId)
 
-	bz := k.cdc.MustMarshal(lock)
+	bz, err := k.cdc.Marshal(lock)
+	if err != nil {
+		return types.ErrMarshalFailed.Wrapf("failed to marshal liquidity lock for provider %s pool %s: %v", lock.Provider, lock.PoolId, err)
+	}
 	store.Set(key, bz)
+	return nil
 }
 
 // GetLiquidityLock retrieves a liquidity lock
@@ -706,11 +868,8 @@ func (k Keeper) DetectOrderManipulation(
 		return nil // Insufficient data for reliable detection
 	}
 
-	// Parse max order variance from string
-	maxOrderVariance, err := sdkmath.LegacyNewDecFromStr(params.MaxOrderVariance)
-	if err != nil {
-		return err
-	}
+	// MaxOrderVariance is already LegacyDec
+	maxOrderVariance := params.MaxOrderVariance
 
 	// Check for order size variance (spoofing indicator)
 	avgSize := k.CalculateAverageOrderSize(recentOrders)
@@ -738,7 +897,7 @@ func (k Keeper) FlagOrderManipulation(ctx sdk.Context, address string, poolID st
 	detection := &types.OrderManipulationDetection{
 		Address:       address,
 		PoolId:        poolID,
-		DetectedAt:    timestamppb.New(ctx.BlockTime()),
+		DetectedAt:    ctx.BlockTime(),
 		IsFlagged:     true,
 		RapidChanges:  k.CountRapidChanges(ctx, address, poolID),
 		LayeringCount: k.DetectLayering(ctx, address, poolID),
@@ -746,7 +905,14 @@ func (k Keeper) FlagOrderManipulation(ctx sdk.Context, address string, poolID st
 	}
 
 	key := types.OrderManipulationKey(address, poolID)
-	bz := k.cdc.MustMarshal(detection)
+	bz, err := k.cdc.Marshal(detection)
+	if err != nil {
+		ctx.Logger().Error("failed to marshal order manipulation detection",
+			"address", address,
+			"pool_id", poolID,
+			"error", err)
+		return
+	}
 	store.Set(key, bz)
 
 	ctx.EventManager().EmitEvent(
@@ -836,10 +1002,8 @@ func (k Keeper) DetectSpoofing(ctx sdk.Context, address string, poolID string) u
 	}
 
 	params := k.GetSecurityParams(ctx)
-	minTrade, ok := sdkmath.NewIntFromString(params.MinTradeAmount)
-	if !ok {
-		minTrade = sdkmath.NewInt(1_000000)
-	}
+	// MinTradeAmount is already Int
+	minTrade := params.MinTradeAmount
 	threshold := minTrade.MulRaw(2)
 
 	var count uint64
@@ -906,14 +1070,9 @@ func (k Keeper) getOrderSamples(ctx sdk.Context, address string, poolID string, 
 		if normalizedPool != "" && !matchesPool(order, normalizedPool) {
 			continue
 		}
-		amt, ok := sdkmath.NewIntFromString(order.AuraAmount)
-		if !ok {
-			continue
-		}
-		ts := time.Unix(0, 0)
-		if order.Timestamp != nil {
-			ts = order.Timestamp.AsTime()
-		}
+		// AuraAmount is already Int
+		amt := order.AuraAmount
+		ts := order.Timestamp
 		price := orderPriceDec(order)
 
 		samples = append(samples, orderSample{
@@ -956,14 +1115,14 @@ func matchesPool(order *types.SwapOrder, normalizedPool string) bool {
 }
 
 func orderPriceDec(order *types.SwapOrder) sdkmath.LegacyDec {
-	if order.PricePerAura != "" {
-		if dec, err := sdkmath.LegacyNewDecFromStr(order.PricePerAura); err == nil {
-			return dec
-		}
+	// PricePerAura is already LegacyDec
+	if !order.PricePerAura.IsZero() {
+		return order.PricePerAura
 	}
-	auraAmt, okA := sdkmath.NewIntFromString(order.AuraAmount)
-	otherAmt, okB := sdkmath.NewIntFromString(order.OtherAmount)
-	if !okA || !okB || auraAmt.IsZero() {
+	// AuraAmount and OtherAmount are already Int
+	auraAmt := order.AuraAmount
+	otherAmt := order.OtherAmount
+	if auraAmt.IsZero() {
 		return sdkmath.LegacyZeroDec()
 	}
 	return otherAmt.ToLegacyDec().Quo(auraAmt.ToLegacyDec())
@@ -987,7 +1146,7 @@ func (k Keeper) DetectWashTrading(
 	}
 
 	// Check if trades are too frequent (wash trading indicator)
-	timeSinceLastTrade := ctx.BlockTime().Unix() - history.LastTradeTime.AsTime().Unix()
+	timeSinceLastTrade := ctx.BlockTime().Unix() - history.LastTradeTime.Unix()
 
 	if timeSinceLastTrade < params.WashTradeMinInterval {
 		// Increment suspicious trade counter
@@ -1019,8 +1178,8 @@ func (k Keeper) IncrementWashTradeDetection(ctx sdk.Context, address string, poo
 			Address:          address,
 			PoolId:           poolID,
 			SuspiciousTrades: 1,
-			FirstDetection:   timestamppb.New(ctx.BlockTime()),
-			LastDetection:    timestamppb.New(ctx.BlockTime()),
+			FirstDetection:   ctx.BlockTime(),
+			LastDetection:    ctx.BlockTime(),
 			IsFlagged:        false,
 			ConfidenceScore:  10,
 		}
@@ -1035,14 +1194,14 @@ func (k Keeper) IncrementWashTradeDetection(ctx sdk.Context, address string, poo
 				Address:          address,
 				PoolId:           poolID,
 				SuspiciousTrades: 1,
-				FirstDetection:   timestamppb.New(ctx.BlockTime()),
-				LastDetection:    timestamppb.New(ctx.BlockTime()),
+				FirstDetection:   ctx.BlockTime(),
+				LastDetection:    ctx.BlockTime(),
 				IsFlagged:        false,
 				ConfidenceScore:  10,
 			}
 		} else {
 			detection.SuspiciousTrades++
-			detection.LastDetection = timestamppb.New(ctx.BlockTime())
+			detection.LastDetection = ctx.BlockTime()
 			detection.ConfidenceScore = min(100, detection.ConfidenceScore+10)
 
 			if detection.SuspiciousTrades >= 5 {
@@ -1051,7 +1210,15 @@ func (k Keeper) IncrementWashTradeDetection(ctx sdk.Context, address string, poo
 		}
 	}
 
-	store.Set(key, k.cdc.MustMarshal(&detection))
+	bz, err := k.cdc.Marshal(&detection)
+	if err != nil {
+		ctx.Logger().Error("failed to marshal wash trade detection",
+			"address", address,
+			"pool_id", poolID,
+			"error", err)
+		return
+	}
+	store.Set(key, bz)
 }
 
 // GetWashTradeDetection retrieves wash trade detection record
@@ -1084,17 +1251,14 @@ func (k Keeper) GetWashTradeDetection(ctx sdk.Context, address string, poolID st
 func (k Keeper) CheckDustAttack(ctx sdk.Context, amountIn sdkmath.Int) error {
 	params := k.GetSecurityParams(ctx)
 
-	// Parse min trade amount from string
-	minTradeAmount, ok := sdkmath.NewIntFromString(params.MinTradeAmount)
-	if !ok {
-		return fmt.Errorf("invalid min trade amount: %s", params.MinTradeAmount)
-	}
+	// MinTradeAmount is already Int
+	minTradeAmount := params.MinTradeAmount
 
 	if amountIn.LT(minTradeAmount) {
 		return fmt.Errorf(
 			"trade amount %s below minimum %s: %w",
 			amountIn.String(),
-			params.MinTradeAmount,
+			minTradeAmount.String(),
 			types.ErrDustAttack,
 		)
 	}
@@ -1114,18 +1278,15 @@ func (k Keeper) CheckPoolCreationLimits(
 ) error {
 	params := k.GetSecurityParams(ctx)
 
-	// Parse min pool creation liquidity from string
-	minPoolCreationLiquidity, ok := sdkmath.NewIntFromString(params.MinPoolCreationLiquidity)
-	if !ok {
-		return fmt.Errorf("invalid min pool creation liquidity: %s", params.MinPoolCreationLiquidity)
-	}
+	// MinPoolCreationLiquidity is already Int
+	minPoolCreationLiquidity := params.MinPoolCreationLiquidity
 
 	// Check minimum liquidity
 	if initialLiquidity.LT(minPoolCreationLiquidity) {
 		return fmt.Errorf(
 			"initial liquidity %s below minimum %s: %w",
 			initialLiquidity.String(),
-			params.MinPoolCreationLiquidity,
+			minPoolCreationLiquidity.String(),
 			types.ErrInsufficientPoolLiquidity,
 		)
 	}
@@ -1133,7 +1294,7 @@ func (k Keeper) CheckPoolCreationLimits(
 	// Check pool creation cooldown
 	record := k.GetPoolCreationRecord(ctx, creator)
 	if record != nil {
-		timeSinceLastPool := ctx.BlockTime().Unix() - record.LastCreationTime.AsTime().Unix()
+		timeSinceLastPool := ctx.BlockTime().Unix() - record.LastCreationTime.Unix()
 		if timeSinceLastPool < params.PoolCreationCooldown {
 			return fmt.Errorf(
 				"must wait %d seconds between pool creations (waited: %d): %w",
@@ -1171,12 +1332,12 @@ func (k Keeper) ActivateCircuitBreaker(
 	breaker := &types.CircuitBreaker{
 		IsPaused:      true,
 		PauseReason:   reason,
-		PausedAt:      timestamppb.New(ctx.BlockTime()),
+		PausedAt:      ctx.BlockTime(),
 		PausedBy:      pausedBy,
 		AffectedPools: affectedPools,
 	}
 
-	k.SetCircuitBreaker(ctx, breaker)
+	_ = k.SetCircuitBreaker(ctx, breaker) // Best effort, log if needed
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
@@ -1192,7 +1353,7 @@ func (k Keeper) DeactivateCircuitBreaker(ctx sdk.Context) {
 	breaker := k.GetCircuitBreaker(ctx)
 	if breaker != nil {
 		breaker.IsPaused = false
-		k.SetCircuitBreaker(ctx, breaker)
+		_ = k.SetCircuitBreaker(ctx, breaker) // Best effort, log if needed
 	}
 
 	ctx.EventManager().EmitEvent(
@@ -1225,12 +1386,16 @@ func (k Keeper) IsCircuitBreakerActive(ctx sdk.Context, poolID string) bool {
 }
 
 // SetCircuitBreaker stores circuit breaker state
-func (k Keeper) SetCircuitBreaker(ctx sdk.Context, breaker *types.CircuitBreaker) {
+func (k Keeper) SetCircuitBreaker(ctx sdk.Context, breaker *types.CircuitBreaker) error {
 	store := ctx.KVStore(k.storeKey)
 	key := types.CircuitBreakerKey()
 
-	bz := k.cdc.MustMarshal(breaker)
+	bz, err := k.cdc.Marshal(breaker)
+	if err != nil {
+		return types.ErrMarshalFailed.Wrapf("failed to marshal circuit breaker: %v", err)
+	}
 	store.Set(key, bz)
+	return nil
 }
 
 // GetCircuitBreaker retrieves circuit breaker state
@@ -1278,11 +1443,11 @@ func (k Keeper) UpdateTradeHistory(ctx sdk.Context, address string, poolID strin
 		history = types.TradeHistory{
 			Address:          address,
 			PoolId:           poolID,
-			LastTradeTime:    timestamppb.New(ctx.BlockTime()),
+			LastTradeTime:    ctx.BlockTime(),
 			LastTradeBlock:   currentBlock,
 			TradesInBlock:    1,
 			RecentTradeCount: 1,
-			RecentVolume:     sdkmath.ZeroInt().String(),
+			RecentVolume:     sdkmath.ZeroInt(),
 		}
 	} else {
 		if err := k.cdc.Unmarshal(bz, &history); err != nil {
@@ -1293,11 +1458,11 @@ func (k Keeper) UpdateTradeHistory(ctx sdk.Context, address string, poolID strin
 			history = types.TradeHistory{
 				Address:          address,
 				PoolId:           poolID,
-				LastTradeTime:    timestamppb.New(ctx.BlockTime()),
+				LastTradeTime:    ctx.BlockTime(),
 				LastTradeBlock:   currentBlock,
 				TradesInBlock:    1,
 				RecentTradeCount: 1,
-				RecentVolume:     sdkmath.ZeroInt().String(),
+				RecentVolume:     sdkmath.ZeroInt(),
 			}
 		} else {
 			if history.LastTradeBlock == currentBlock {
@@ -1306,13 +1471,21 @@ func (k Keeper) UpdateTradeHistory(ctx sdk.Context, address string, poolID strin
 				history.TradesInBlock = 1
 			}
 
-			history.LastTradeTime = timestamppb.New(ctx.BlockTime())
+			history.LastTradeTime = ctx.BlockTime()
 			history.LastTradeBlock = currentBlock
 			history.RecentTradeCount++
 		}
 	}
 
-	store.Set(key, k.cdc.MustMarshal(&history))
+	bz, err := k.cdc.Marshal(&history)
+	if err != nil {
+		ctx.Logger().Error("failed to marshal trade history",
+			"address", address,
+			"pool_id", poolID,
+			"error", err)
+		return
+	}
+	store.Set(key, bz)
 }
 
 // GetTradeHistory retrieves trade history
@@ -1389,7 +1562,7 @@ func (k Keeper) RecordPoolCreation(ctx sdk.Context, creator string, poolID strin
 		record = types.PoolCreationRecord{
 			Creator:          creator,
 			PoolIds:          []string{poolID},
-			LastCreationTime: timestamppb.New(ctx.BlockTime()),
+			LastCreationTime: ctx.BlockTime(),
 			TotalPools:       1,
 		}
 	} else {
@@ -1402,18 +1575,26 @@ func (k Keeper) RecordPoolCreation(ctx sdk.Context, creator string, poolID strin
 			record = types.PoolCreationRecord{
 				Creator:          creator,
 				PoolIds:          []string{poolID},
-				LastCreationTime: timestamppb.New(ctx.BlockTime()),
+				LastCreationTime: ctx.BlockTime(),
 				TotalPools:       1,
 			}
 		} else {
 			record.PoolIds = append(record.PoolIds, poolID)
-			record.LastCreationTime = timestamppb.New(ctx.BlockTime())
+			record.LastCreationTime = ctx.BlockTime()
 			record.TotalPools++
 		}
 	}
 
 	// Store updated record
-	store.Set(key, k.cdc.MustMarshal(&record))
+	bz, err := k.cdc.Marshal(&record)
+	if err != nil {
+		ctx.Logger().Error("failed to marshal pool creation record",
+			"creator", creator,
+			"pool_id", poolID,
+			"error", err)
+		return
+	}
+	store.Set(key, bz)
 
 	// Emit detailed audit event
 	ctx.EventManager().EmitEvent(
@@ -1522,7 +1703,7 @@ func (k Keeper) CheckPoolCreationCooldown(ctx sdk.Context, creator string) error
 	}
 
 	// Calculate time since last pool creation
-	lastCreationTime := record.LastCreationTime.AsTime()
+	lastCreationTime := record.LastCreationTime
 	currentTime := ctx.BlockTime()
 	timeSinceLastCreation := currentTime.Sub(lastCreationTime)
 

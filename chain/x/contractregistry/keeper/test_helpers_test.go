@@ -146,7 +146,7 @@ type mockConfidenceScoreKeeper struct {
 	found bool
 }
 
-func (m *mockConfidenceScoreKeeper) GetUserScore(address string) (uint64, bool) {
+func (m *mockConfidenceScoreKeeper) GetUserScore(ctx sdk.Context, address string) (uint64, bool) {
 	return m.score, m.found
 }
 

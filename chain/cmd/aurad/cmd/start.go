@@ -1163,8 +1163,9 @@ func reconcileGenesisState(homeDir string, logger security.Logger) error {
 			return fmt.Errorf("failed to decode contractregistry genesis: %w", err)
 		}
 	}
-	if contractGenesis.Params == nil {
-		contractGenesis.Params = contractregistrytypes.DefaultParams()
+	// Params is a value type, check if it's zero-valued by checking a field
+	if contractGenesis.Params.MaxContractsPerCreator == 0 {
+		contractGenesis.Params = *contractregistrytypes.DefaultParams()
 		logger.Info("populated default contractregistry params")
 	}
 	genState[contractregistrytypes.ModuleName] = encCfg.Codec.MustMarshalJSON(&contractGenesis)

@@ -163,7 +163,7 @@ func (suite *InvariantsTestSuite) TestUploadAuthEnforcementInvariant() {
 
 	// Test: AccessTypeNobody with no authorized uploaders (valid)
 	params := types.DefaultParams()
-	params.CodeUploadAccess = &types.AccessConfig{
+	params.CodeUploadAccess = types.AccessConfig{
 		Permission: types.AccessTypeNobody,
 	}
 	err := suite.keeper.SetParams(ctx, *params)
@@ -185,7 +185,7 @@ func (suite *InvariantsTestSuite) TestUploadAuthEnforcementInvariant() {
 	suite.keeper.RevokeUploader(ctx, testAddr)
 
 	// Test: AccessTypeOnlyAddress with valid address
-	params.CodeUploadAccess = &types.AccessConfig{
+	params.CodeUploadAccess = types.AccessConfig{
 		Permission: types.AccessTypeOnlyAddress,
 		Address:    testAddr,
 	}
@@ -199,7 +199,7 @@ func (suite *InvariantsTestSuite) TestUploadAuthEnforcementInvariant() {
 	// Test: AccessTypeOnlyAddress with invalid address
 	// Need to write directly to store to bypass validation
 	invalidParams := *params
-	invalidParams.CodeUploadAccess = &types.AccessConfig{
+	invalidParams.CodeUploadAccess = types.AccessConfig{
 		Permission: types.AccessTypeOnlyAddress,
 		Address:    "invalid-address",
 	}
@@ -210,7 +210,7 @@ func (suite *InvariantsTestSuite) TestUploadAuthEnforcementInvariant() {
 	suite.Contains(msg, "invalid upload address")
 
 	// Test: AccessTypeAnyOfAddresses with valid addresses
-	params.CodeUploadAccess = &types.AccessConfig{
+	params.CodeUploadAccess = types.AccessConfig{
 		Permission: types.AccessTypeAnyOfAddresses,
 		Addresses:  []string{testAddr, testAddr2},
 	}
@@ -224,7 +224,7 @@ func (suite *InvariantsTestSuite) TestUploadAuthEnforcementInvariant() {
 	// Test: AccessTypeAnyOfAddresses with invalid address in list
 	// Write directly to store to bypass validation
 	invalidParams = *params
-	invalidParams.CodeUploadAccess = &types.AccessConfig{
+	invalidParams.CodeUploadAccess = types.AccessConfig{
 		Permission: types.AccessTypeAnyOfAddresses,
 		Addresses:  []string{testAddr, "invalid-address"},
 	}
@@ -380,7 +380,7 @@ func (suite *InvariantsTestSuite) TestUploadAuthorizationEnforcement() {
 	// Test: Unauthorized uploader cannot upload when access is restricted
 	// Note: ValidateContractUpload checks IsAuthorizedUploader (store-based), not params.CodeUploadAccess.Address
 	params := types.DefaultParams()
-	params.CodeUploadAccess = &types.AccessConfig{
+	params.CodeUploadAccess = types.AccessConfig{
 		Permission: types.AccessTypeOnlyAddress,
 		Address:    authorizedAddr,
 	}

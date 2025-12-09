@@ -18,12 +18,16 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data types.GenesisState) error {
 
 	for i := range data.LiquidityPools {
 		pool := &data.LiquidityPools[i]
-		k.SetPool(ctx, pool)
+		if err := k.SetPool(ctx, pool); err != nil {
+			return err
+		}
 	}
 
 	for i := range data.SwapOrders {
 		order := &data.SwapOrders[i]
-		k.SetOrder(ctx, order)
+		if err := k.SetOrder(ctx, order); err != nil {
+			return err
+		}
 		if order.Status == types.SwapOrderStatus_PENDING {
 			k.AddToOrderbook(ctx, order)
 		}
@@ -41,12 +45,16 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data types.GenesisState) error {
 
 	for i := range data.SwapStats {
 		stats := &data.SwapStats[i]
-		k.setSwapStats(ctx, stats)
+		if err := k.setSwapStats(ctx, stats); err != nil {
+			return err
+		}
 	}
 
 	for i := range data.MarketPrices {
 		price := &data.MarketPrices[i]
-		k.setMarketPrice(ctx, price)
+		if err := k.setMarketPrice(ctx, price); err != nil {
+			return err
+		}
 	}
 
 	// Import pool creation records (audit trail)
@@ -54,20 +62,27 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data types.GenesisState) error {
 		record := &data.PoolCreationRecords[i]
 		store := ctx.KVStore(k.storeKey)
 		key := types.PoolCreationKey(record.Creator)
-		bz := k.cdc.MustMarshal(record)
+		bz, err := k.cdc.Marshal(record)
+		if err != nil {
+			return types.ErrMarshalFailed.Wrapf("failed to marshal pool creation record for creator %s: %v", record.Creator, err)
+		}
 		store.Set(key, bz)
 	}
 
 	// Import order commitments (commit-reveal scheme)
 	for i := range data.OrderCommitments {
 		commitment := &data.OrderCommitments[i]
-		k.SetOrderCommitment(ctx, commitment)
+		if err := k.SetOrderCommitment(ctx, commitment); err != nil {
+			return err
+		}
 	}
 
 	// Import queued orders (batch execution)
 	for i := range data.QueuedOrders {
 		queuedOrder := &data.QueuedOrders[i]
-		k.QueueOrderForBatch(ctx, &queuedOrder.Order, queuedOrder.Salt)
+		if err := k.QueueOrderForBatch(ctx, &queuedOrder.Order, queuedOrder.Salt); err != nil {
+			return err
+		}
 	}
 
 	return nil

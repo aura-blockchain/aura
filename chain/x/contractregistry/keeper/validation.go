@@ -128,7 +128,7 @@ func (k Keeper) checkCompliance(ctx sdk.Context, sender string, compliance *pb.C
 	// Check confidence score
 	if metadata.MinConfidenceScore > 0 {
 		if k.csKeeper != nil {
-			score, exists := k.csKeeper.GetUserScore(sender)
+			score, exists := k.csKeeper.GetUserScore(ctx, sender)
 			if !exists || score < metadata.MinConfidenceScore {
 				return types.ErrInsufficientCS
 			}

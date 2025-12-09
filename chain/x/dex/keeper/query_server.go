@@ -13,7 +13,6 @@ import (
 	metrics "github.com/hashicorp/go-metrics"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -44,7 +43,7 @@ func (qs queryServer) Pool(ctx context.Context, req *dexpb.QueryPoolRequest) (*d
 		return nil, status.Error(codes.NotFound, "pool not found")
 	}
 
-	return &dexpb.QueryPoolResponse{Pool: pool}, nil
+	return &dexpb.QueryPoolResponse{Pool: *pool}, nil
 }
 
 func (qs queryServer) AllPools(ctx context.Context, req *dexpb.QueryAllPoolsRequest) (*dexpb.QueryAllPoolsResponse, error) {
@@ -133,7 +132,7 @@ func (qs queryServer) PoolStats(ctx context.Context, req *dexpb.QueryPoolStatsRe
 		ReserveB:                pool.ReserveB,
 		TotalLpTokens:           pool.TotalLpTokens,
 		LiquidityProvidersCount: uint64(len(pool.Providers)),
-		CurrentPrice:            price.String(),
+		CurrentPrice:            price,
 		TotalVolume:             pool.TotalVolume,
 		TotalFeesCollected:      pool.TotalFeesCollected,
 		SwapCount:               pool.SwapCount,
@@ -203,7 +202,7 @@ func (qs queryServer) Orderbook(ctx context.Context, req *dexpb.QueryOrderbookRe
 		orderbook.SpreadPercent = bestAsk.Sub(bestBid).Quo(bestAsk).MulInt64(100)
 	}
 
-	return &dexpb.QueryOrderbookResponse{Orderbook: orderbook}, nil
+	return &dexpb.QueryOrderbookResponse{Orderbook: *orderbook}, nil
 }
 
 func (qs queryServer) Order(ctx context.Context, req *dexpb.QueryOrderRequest) (*dexpb.QueryOrderResponse, error) {
@@ -255,8 +254,14 @@ func (qs queryServer) UserOrders(ctx context.Context, req *dexpb.QueryUserOrders
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	// Convert pointer slice to value slice
+	orderValues := make([]dexpb.SwapOrder, len(orders))
+	for i, order := range orders {
+		orderValues[i] = *order
+	}
+
 	return &dexpb.QueryUserOrdersResponse{
-		Orders:     orders,
+		Orders:     orderValues,
 		Pagination: pageRes,
 	}, nil
 }
@@ -322,7 +327,7 @@ func (qs queryServer) SpotPrice(ctx context.Context, req *dexpb.QuerySpotPriceRe
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	return &dexpb.QuerySpotPriceResponse{Price: price.String()}, nil
+	return &dexpb.QuerySpotPriceResponse{Price: price}, nil
 }
 
 func (qs queryServer) SupportedCoins(ctx context.Context, _ *dexpb.QuerySupportedCoinsRequest) (*dexpb.QuerySupportedCoinsResponse, error) {

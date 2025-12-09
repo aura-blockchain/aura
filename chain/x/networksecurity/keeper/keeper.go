@@ -512,3 +512,36 @@ func (k Keeper) CheckGossipMessage(ctx sdk.Context, messageData []byte) (bool, s
 func (k Keeper) GetMessageCacheStats() MessageCacheStats {
 	return k.messageCache.Stats()
 }
+
+// Batch processing constants for BeginBlocker performance optimization
+const (
+	MAX_THREAT_UPDATES_PER_BLOCK = 50
+	MAX_ALERTS_PER_BLOCK         = 20
+	REPUTATION_REFRESH_INTERVAL  = 100 // blocks
+)
+
+// GetBatchCursor retrieves a batch processing cursor from state
+func (k Keeper) GetBatchCursor(ctx sdk.Context, cursorKey []byte) (uint64, error) {
+	store := k.storeService.OpenKVStore(ctx)
+	bz, err := store.Get(cursorKey)
+	if err != nil || bz == nil {
+		return 0, nil
+	}
+
+	if len(bz) != 8 {
+		return 0, nil
+	}
+	return sdk.BigEndianToUint64(bz), nil
+}
+
+// SetBatchCursor stores a batch processing cursor in state
+func (k Keeper) SetBatchCursor(ctx sdk.Context, cursorKey []byte, cursor uint64) error {
+	store := k.storeService.OpenKVStore(ctx)
+	bz := sdk.Uint64ToBigEndian(cursor)
+	return store.Set(cursorKey, bz)
+}
+
+// KVStoreService returns the keeper's store service (for testing)
+func (k Keeper) KVStoreService() store.KVStoreService {
+	return k.storeService
+}

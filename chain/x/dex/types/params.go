@@ -12,20 +12,21 @@ import (
 // DefaultParams returns default parameters
 func DefaultParams() v1beta1.Params {
 	return v1beta1.Params{
-		TradingFee:             math.LegacyMustNewDecFromStr("0.003"),
-		ProtocolFee:            math.LegacyMustNewDecFromStr("0.0005"),
-		MinLiquidityTiers:      []v1beta1.MinLiquidityTier{},
-		MaxSlippageBps:         10000,
-		MinSwapAmount:          math.NewInt(1000000),
-		IrBoostEnabled:         true,
-		IrBoostPercent:         40,
-		BondingCurveEnabled:    true,
-		BuybackBurnEnabled:     true,
-		BuybackPercent:         100,
-		CommitRevealThreshold:  math.NewInt(10000000000), // 10,000 AURA (large orders require commit-reveal)
-		CommitRevealWindow:     60,                       // 60 seconds to reveal
-		BatchExecutionEnabled:  true,
-		BatchExecutionInterval: 5, // Execute batch every 5 blocks
+		TradingFee:                math.LegacyMustNewDecFromStr("0.003"),
+		ProtocolFee:               math.LegacyMustNewDecFromStr("0.0005"),
+		MinLiquidityTiers:         []v1beta1.MinLiquidityTier{},
+		MaxSlippageBps:            10000,
+		MinSwapAmount:             math.NewInt(1000000),
+		IrBoostEnabled:            true,
+		IrBoostPercent:            40,
+		BondingCurveEnabled:       true,
+		BuybackBurnEnabled:        true,
+		BuybackPercent:            100,
+		CommitRevealThreshold:     math.NewInt(10000000000), // 10,000 AURA (large orders require commit-reveal)
+		CommitRevealWindow:        60,                       // 60 seconds to reveal
+		BatchExecutionEnabled:     true,
+		BatchExecutionInterval:    5,                                       // Execute batch every 5 blocks
+		GovernanceFallbackPrice:   math.LegacyNewDecWithPrec(10, 2),        // $0.10 USD default fallback price
 	}
 }
 

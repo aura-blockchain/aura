@@ -229,20 +229,14 @@ func (k Keeper) ValidateSecurityParams(params types.SecurityParams) error {
 		return types.ErrInvalidParam
 	}
 
-	// Parse and validate MaxTradeSizePercent
-	maxTradeSizePercent, err := math.LegacyNewDecFromStr(params.MaxTradeSizePercent)
-	if err != nil {
-		return types.ErrInvalidParam
-	}
+	// MaxTradeSizePercent is already LegacyDec
+	maxTradeSizePercent := params.MaxTradeSizePercent
 	if maxTradeSizePercent.LTE(math.LegacyZeroDec()) || maxTradeSizePercent.GT(math.LegacyOneDec()) {
 		return types.ErrInvalidParam
 	}
 
-	// Parse and validate MaxPriceImpactPercent
-	maxPriceImpactPercent, err := math.LegacyNewDecFromStr(params.MaxPriceImpactPercent)
-	if err != nil {
-		return types.ErrInvalidParam
-	}
+	// MaxPriceImpactPercent is already LegacyDec
+	maxPriceImpactPercent := params.MaxPriceImpactPercent
 	if maxPriceImpactPercent.LTE(math.LegacyZeroDec()) || maxPriceImpactPercent.GT(math.LegacyNewDec(100)) {
 		return types.ErrInvalidParam
 	}
@@ -263,11 +257,8 @@ func (k Keeper) ValidateSecurityParams(params types.SecurityParams) error {
 		return types.ErrInvalidParam
 	}
 
-	// Parse and validate MinPoolCreationLiquidity
-	minPoolCreationLiquidity, ok := math.NewIntFromString(params.MinPoolCreationLiquidity)
-	if !ok {
-		return types.ErrInvalidParam
-	}
+	// MinPoolCreationLiquidity is already Int
+	minPoolCreationLiquidity := params.MinPoolCreationLiquidity
 	if minPoolCreationLiquidity.IsNegative() {
 		return types.ErrInvalidParam
 	}
@@ -280,20 +271,14 @@ func (k Keeper) ValidateSecurityParams(params types.SecurityParams) error {
 		return types.ErrInvalidParam
 	}
 
-	// Parse and validate MinTradeAmount
-	minTradeAmount, ok := math.NewIntFromString(params.MinTradeAmount)
-	if !ok {
-		return types.ErrInvalidParam
-	}
+	// MinTradeAmount is already Int
+	minTradeAmount := params.MinTradeAmount
 	if minTradeAmount.IsNegative() {
 		return types.ErrInvalidParam
 	}
 
-	// Parse and validate MaxOrderVariance
-	maxOrderVariance, err := math.LegacyNewDecFromStr(params.MaxOrderVariance)
-	if err != nil {
-		return types.ErrInvalidParam
-	}
+	// MaxOrderVariance is already LegacyDec
+	maxOrderVariance := params.MaxOrderVariance
 	if maxOrderVariance.LTE(math.LegacyZeroDec()) {
 		return types.ErrInvalidParam
 	}

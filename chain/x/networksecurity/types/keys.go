@@ -73,3 +73,10 @@ func GetConnectionCountKey(ipAddress string) []byte {
 func GetGossipMessageCacheKey(messageHash string) []byte {
 	return append(GossipMessageCachePrefix, []byte(messageHash)...)
 }
+
+// Batch processing cursor keys
+var (
+	ThreatUpdateCursorKey    = []byte{0x0c}
+	SecurityAlertCursorKey   = []byte{0x0d}
+	ReputationRefreshCursorKey = []byte{0x0e}
+)

@@ -7,20 +7,30 @@ import (
 	"github.com/aequitas/aura/chain/x/dex/types"
 )
 
-func (k Keeper) setSwapStats(ctx sdk.Context, stats *types.SwapStats) {
+func (k Keeper) setSwapStats(ctx sdk.Context, stats *types.SwapStats) error {
 	if stats == nil {
-		return
+		return nil
 	}
 	store := ctx.KVStore(k.storeKey)
-	store.Set(types.SwapStatsKey(stats.PoolId), k.cdc.MustMarshal(stats))
+	bz, err := k.cdc.Marshal(stats)
+	if err != nil {
+		return types.ErrMarshalFailed.Wrapf("failed to marshal swap stats for pool %s: %v", stats.PoolId, err)
+	}
+	store.Set(types.SwapStatsKey(stats.PoolId), bz)
+	return nil
 }
 
-func (k Keeper) setMarketPrice(ctx sdk.Context, price *types.MarketPrice) {
+func (k Keeper) setMarketPrice(ctx sdk.Context, price *types.MarketPrice) error {
 	if price == nil {
-		return
+		return nil
 	}
 	store := ctx.KVStore(k.storeKey)
-	store.Set(types.MarketPriceKey(price.Coin), k.cdc.MustMarshal(price))
+	bz, err := k.cdc.Marshal(price)
+	if err != nil {
+		return types.ErrMarshalFailed.Wrapf("failed to marshal market price for coin %s: %v", price.Coin, err)
+	}
+	store.Set(types.MarketPriceKey(price.Coin), bz)
+	return nil
 }
 
 func (k Keeper) GetSwapStats(ctx sdk.Context, poolID string) (*types.SwapStats, bool) {

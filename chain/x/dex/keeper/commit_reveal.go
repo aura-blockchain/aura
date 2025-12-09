@@ -70,7 +70,9 @@ func (k Keeper) CommitOrder(
 	}
 
 	// Store commitment
-	k.SetOrderCommitment(ctx, commitment)
+	if err := k.SetOrderCommitment(ctx, commitment); err != nil {
+		return "", err
+	}
 
 	// === 3. INTERACTIONS - External calls (none needed) ===
 
@@ -158,14 +160,14 @@ func (k Keeper) RevealOrder(
 	order := &types.SwapOrder{
 		OrderId:      orderID,
 		OrderType:    orderType,
-		AuraAmount:   auraAmount,   // math.Int directly (customtype)
+		AuraAmount:   auraAmount, // math.Int directly (customtype)
 		OtherCoin:    otherCoin,
-		OtherAmount:  otherAmount,  // math.Int directly (customtype)
+		OtherAmount:  otherAmount, // math.Int directly (customtype)
 		UserAddress:  sender,
 		Status:       types.SwapOrderStatus_PENDING,
-		Timestamp:    ctx.BlockTime(),    // time.Time directly (gogoproto.stdtime)
-		ExpiresAt:    expirationTime,     // time.Time directly (gogoproto.stdtime)
-		PricePerAura: pricePerAura,       // math.LegacyDec directly (customtype)
+		Timestamp:    ctx.BlockTime(), // time.Time directly (gogoproto.stdtime)
+		ExpiresAt:    expirationTime,  // time.Time directly (gogoproto.stdtime)
+		PricePerAura: pricePerAura,    // math.LegacyDec directly (customtype)
 	}
 
 	// Delete commitment (prevent reuse)
@@ -175,7 +177,9 @@ func (k Keeper) RevealOrder(
 	params := k.GetParams(ctx)
 	if params.BatchExecutionEnabled {
 		// Queue order for batch execution
-		k.QueueOrderForBatch(ctx, order, salt)
+		if err := k.QueueOrderForBatch(ctx, order, salt); err != nil {
+			return "", err
+		}
 
 		// Emit event
 		ctx.EventManager().EmitEvent(
@@ -213,7 +217,9 @@ func (k Keeper) RevealOrder(
 	}
 
 	// Store order
-	k.SetOrder(ctx, order)
+	if err := k.SetOrder(ctx, order); err != nil {
+		return "", err
+	}
 
 	// Add to orderbook
 	k.AddToOrderbook(ctx, order)
@@ -262,12 +268,31 @@ func (k Keeper) RequiresCommitReveal(ctx sdk.Context, amount sdkmath.Int) bool {
 // SECURITY: Batch execution with price-priority sorting eliminates time-based ordering
 // advantages, making front-running ineffective. This should be called in EndBlocker
 // at regular intervals (e.g., every N blocks).
+//
+// CRITICAL CONSENSUS SAFETY: This function now limits batch size to prevent consensus
+// failure. With 10,000+ orders, unbounded execution causes block production to exceed
+// timeout, halting the chain. The limit ensures EndBlocker completes in <500ms.
+//
+// Orders that don't fit in the current batch remain queued for the next batch interval.
 func (k Keeper) ExecuteBatch(ctx sdk.Context) error {
 	// Get all queued orders
 	queuedOrders := k.GetAllQueuedOrders(ctx)
 
 	if len(queuedOrders) == 0 {
 		return nil // Nothing to execute
+	}
+
+	// CRITICAL: Limit batch size to prevent consensus failure
+	// With MaxBatchExecutionSize=100, even 10,000+ orders won't cause timeout
+	maxBatchSize := types.MaxBatchExecutionSize
+	if len(queuedOrders) > maxBatchSize {
+		ctx.Logger().Info("batch size limited for consensus safety",
+			"queued_orders", len(queuedOrders),
+			"max_batch_size", maxBatchSize,
+			"will_process_in_next_batch", len(queuedOrders)-maxBatchSize)
+
+		// Only process first maxBatchSize orders this block
+		queuedOrders = queuedOrders[:maxBatchSize]
 	}
 
 	// Sort orders by price priority (best prices first)
@@ -279,15 +304,23 @@ func (k Keeper) ExecuteBatch(ctx sdk.Context) error {
 
 	// Execute each order
 	successCount := 0
+	processedOrderIDs := make([]string, 0, len(queuedOrders))
+
 	for _, queuedOrder := range queuedOrders {
 		order := queuedOrder.Order
+		processedOrderIDs = append(processedOrderIDs, order.OrderId)
 
 		// AuraAmount and OtherAmount are already math.Int (customtype in proto)
 		auraAmount := order.AuraAmount
 		otherAmount := order.OtherAmount
 
 		// Store order
-		k.SetOrder(ctx, &order)
+		if err := k.SetOrder(ctx, &order); err != nil {
+			ctx.Logger().Error("failed to store order during batch execution",
+				"order_id", order.OrderId,
+				"error", err)
+			continue
+		}
 
 		// Add to orderbook
 		k.AddToOrderbook(ctx, &order)
@@ -319,8 +352,8 @@ func (k Keeper) ExecuteBatch(ctx sdk.Context) error {
 		)
 	}
 
-	// Clear the queue
-	k.ClearOrderQueue(ctx)
+	// Remove only the processed orders from queue (not all orders)
+	k.RemoveProcessedOrdersFromQueue(ctx, processedOrderIDs)
 
 	// Emit batch summary event
 	ctx.EventManager().EmitEvent(
@@ -339,11 +372,15 @@ func (k Keeper) ExecuteBatch(ctx sdk.Context) error {
 // ============================
 
 // SetOrderCommitment stores an order commitment
-func (k Keeper) SetOrderCommitment(ctx sdk.Context, commitment *types.OrderCommitment) {
+func (k Keeper) SetOrderCommitment(ctx sdk.Context, commitment *types.OrderCommitment) error {
 	store := ctx.KVStore(k.storeKey)
 	key := types.OrderCommitmentKey(commitment.CommitId)
-	bz := k.cdc.MustMarshal(commitment)
+	bz, err := k.cdc.Marshal(commitment)
+	if err != nil {
+		return types.ErrMarshalFailed.Wrapf("failed to marshal order commitment %s: %v", commitment.CommitId, err)
+	}
 	store.Set(key, bz)
+	return nil
 }
 
 // GetOrderCommitment retrieves an order commitment by ID
@@ -410,7 +447,7 @@ func (k Keeper) GetCommitmentsBySender(ctx sdk.Context, sender string) []*types.
 }
 
 // QueueOrderForBatch adds an order to the batch execution queue
-func (k Keeper) QueueOrderForBatch(ctx sdk.Context, order *types.SwapOrder, salt []byte) {
+func (k Keeper) QueueOrderForBatch(ctx sdk.Context, order *types.SwapOrder, salt []byte) error {
 	store := ctx.KVStore(k.storeKey)
 
 	queuedOrder := &types.QueuedOrder{
@@ -420,8 +457,12 @@ func (k Keeper) QueueOrderForBatch(ctx sdk.Context, order *types.SwapOrder, salt
 	}
 
 	key := types.QueuedOrderKey(order.OrderId)
-	bz := k.cdc.MustMarshal(queuedOrder)
+	bz, err := k.cdc.Marshal(queuedOrder)
+	if err != nil {
+		return types.ErrMarshalFailed.Wrapf("failed to marshal queued order %s: %v", order.OrderId, err)
+	}
 	store.Set(key, bz)
+	return nil
 }
 
 // GetAllQueuedOrders returns all orders queued for batch execution
@@ -446,6 +487,7 @@ func (k Keeper) GetAllQueuedOrders(ctx sdk.Context) []*types.QueuedOrder {
 }
 
 // ClearOrderQueue removes all queued orders (called after batch execution)
+// DEPRECATED: Use RemoveProcessedOrdersFromQueue when batch size is limited
 func (k Keeper) ClearOrderQueue(ctx sdk.Context) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := storetypes.KVStorePrefixIterator(store, types.QueuedOrderPrefix)
@@ -457,6 +499,21 @@ func (k Keeper) ClearOrderQueue(ctx sdk.Context) {
 	}
 
 	for _, key := range keysToDelete {
+		store.Delete(key)
+	}
+}
+
+// RemoveProcessedOrdersFromQueue removes specific processed orders from queue.
+// Used when batch size is limited and only a subset of orders are processed.
+func (k Keeper) RemoveProcessedOrdersFromQueue(ctx sdk.Context, orderIDs []string) {
+	if len(orderIDs) == 0 {
+		return
+	}
+
+	store := ctx.KVStore(k.storeKey)
+
+	for _, orderID := range orderIDs {
+		key := types.QueuedOrderKey(orderID)
 		store.Delete(key)
 	}
 }

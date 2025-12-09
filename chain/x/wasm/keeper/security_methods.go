@@ -426,3 +426,14 @@ func (k Keeper) LogSecurityEvent(ctx sdk.Context, event types.SecurityAuditEvent
 		sdk.NewEvent("wasm_security_audit", attrs...),
 	)
 }
+
+// ============================================================================
+// REENTRANCY DETECTION
+// ============================================================================
+
+// IsContractExecuting checks if a contract is currently executing (for reentrancy detection)
+func (k Keeper) IsContractExecuting(ctx sdk.Context, contractAddr string) bool {
+	store := ctx.KVStore(k.storeKey)
+	key := types.GetContractExecutingKey(contractAddr)
+	return store.Has(key)
+}

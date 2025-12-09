@@ -57,4 +57,8 @@ var (
 
 	// Balance errors (110-119)
 	ErrInsufficientBalance = errorsmod.Register(ModuleName, 110, "insufficient balance")
+
+	// Serialization errors (120-129)
+	ErrMarshalFailed   = errorsmod.Register(ModuleName, 120, "failed to marshal data")
+	ErrUnmarshalFailed = errorsmod.Register(ModuleName, 121, "failed to unmarshal data")
 )

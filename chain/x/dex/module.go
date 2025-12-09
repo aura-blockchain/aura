@@ -104,7 +104,7 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 // ExportGenesis exports module state for genesis
 func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
 	gen := am.keeper.ExportGenesis(ctx)
-	return cdc.MustMarshalJSON(gen)
+	return cdc.MustMarshalJSON(&gen)
 }
 
 // ConsensusVersion returns the module consensus version
@@ -114,19 +114,48 @@ func (AppModule) ConsensusVersion() uint64 { return 1 }
 func (m AppModule) BeginBlock(_ sdk.Context) {}
 
 // EndBlock executes all ABCI EndBlock logic
+//
+// CRITICAL CONSENSUS SAFETY: This function now uses batched operations to prevent
+// consensus failure. With 10,000+ orders/HTLCs/pools, unbounded operations cause
+// block production to exceed timeout, halting the chain.
+//
+// Solution: Cap operations per block using cursor-based pagination. All items are
+// eventually processed across multiple blocks without risking consensus failure.
 func (m AppModule) EndBlock(ctx sdk.Context) {
-	// Run housekeeping such as pruning expired orders
-	m.keeper.CleanupExpiredOrders(ctx)
-	m.keeper.CleanupExpiredHTLCs(ctx)
+	// Run housekeeping with batched operations to prevent consensus failure
+	// Each operation is limited to a safe maximum per block
 
-	// Record TWAP price observations for all active pools
-	// This provides flash loan attack protection
-	m.keeper.RecordAllPoolPrices(ctx)
+	// Cleanup expired orders (max 100 per block)
+	ordersProcessed := m.keeper.CleanupExpiredOrdersBatched(ctx, types.MaxOrdersCleanupPerBlock)
+	if ordersProcessed > 0 {
+		ctx.Logger().Debug("cleaned up expired orders",
+			"count", ordersProcessed,
+			"block_height", ctx.BlockHeight())
+	}
+
+	// Cleanup expired HTLCs (max 50 per block)
+	htlcsProcessed := m.keeper.CleanupExpiredHTLCsBatched(ctx, types.MaxHTLCsCleanupPerBlock)
+	if htlcsProcessed > 0 {
+		ctx.Logger().Debug("cleaned up expired HTLCs",
+			"count", htlcsProcessed,
+			"block_height", ctx.BlockHeight())
+	}
+
+	// Record TWAP price observations for pools in round-robin fashion (max 20 per block)
+	// This provides flash loan attack protection while preventing consensus failure
+	poolsProcessed := m.keeper.RecordAllPoolPricesBatched(ctx, types.MaxPoolsTWAPPerBlock)
+	if poolsProcessed > 0 {
+		ctx.Logger().Debug("recorded TWAP prices",
+			"count", poolsProcessed,
+			"block_height", ctx.BlockHeight())
+	}
 
 	// Cleanup expired order commitments (commit-reveal scheme)
+	// This operation is already lightweight and doesn't need batching
 	m.keeper.CleanupExpiredCommitments(ctx)
 
 	// Execute batch of revealed orders (front-running protection)
+	// ExecuteBatch now internally limits batch size to MaxBatchExecutionSize (100)
 	params := m.keeper.GetParams(ctx)
 	if params.BatchExecutionEnabled {
 		// Execute batch every N blocks

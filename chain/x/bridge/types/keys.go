@@ -71,6 +71,12 @@ var (
 
 	// Pending transfers (awaiting fraud proof window expiry)
 	PendingTransferPrefix = []byte{0x23}
+
+	// Signature replay protection (signature hash -> block height)
+	SignatureUsedPrefix = []byte{0x24}
+
+	// Signature rate limiting (address -> attempt count + window)
+	SignatureRateLimitPrefix = []byte{0x25}
 )
 
 // TransferKey returns the store key for a cross-chain transfer
@@ -173,4 +179,20 @@ func VerifiedBlockHashKey(sourceChain string, blockHeight uint64) []byte {
 // Format: PendingTransferPrefix + transferID
 func PendingTransferKey(transferID string) []byte {
 	return append(PendingTransferPrefix, []byte(transferID)...)
+}
+
+// SignatureUsedKey returns the store key for tracking used signatures
+// Format: SignatureUsedPrefix + signatureHash (32 bytes SHA256)
+func SignatureUsedKey(signatureHash []byte) []byte {
+	return append(SignatureUsedPrefix, signatureHash...)
+}
+
+// SignatureRateLimitKey returns the store key for signature rate limiting
+// Format: SignatureRateLimitPrefix + address + ":" + windowStart (8 bytes)
+func SignatureRateLimitKey(address string, windowStart int64) []byte {
+	windowBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(windowBytes, uint64(windowStart))
+	key := append(SignatureRateLimitPrefix, []byte(address)...)
+	key = append(key, byte(':'))
+	return append(key, windowBytes...)
 }
