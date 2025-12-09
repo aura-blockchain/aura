@@ -59,14 +59,14 @@ func (suite *LPTokenInvariantTestSuite) TestValidateLPTokenInvariant_ValidPool()
 		PoolId:          "uaura-usdt",
 		DenomA:          "uaura",
 		DenomB:          "usdt",
-		ReserveA:        "1000000",
-		ReserveB:        "500000",
-		TotalLpTokens:   "707106", // sqrt(1000000 * 500000)
-		LockedLiquidity: "1000",   // MinimumLiquidity locked
-		Providers: []*types.LiquidityProvider{
+		ReserveA:        sdkmath.NewInt(1000000),
+		ReserveB:        sdkmath.NewInt(500000),
+		TotalLpTokens:   sdkmath.NewInt(707106), // sqrt(1000000 * 500000)
+		LockedLiquidity: sdkmath.NewInt(1000),   // MinimumLiquidity locked
+		Providers: []types.LiquidityProvider{
 			{
 				Address:  suite.testAddr("provider1"),
-				LpTokens: "706106", // Total - Locked = 707106 - 1000
+				LpTokens: sdkmath.NewInt(706106), // Total - Locked = 707106 - 1000
 			},
 		},
 	}
@@ -81,22 +81,22 @@ func (suite *LPTokenInvariantTestSuite) TestValidateLPTokenInvariant_MultiplePro
 		PoolId:          "uaura-usdc",
 		DenomA:          "uaura",
 		DenomB:          "usdc",
-		ReserveA:        "2000000",
-		ReserveB:        "1000000",
-		TotalLpTokens:   "1415213", // sqrt(2000000 * 1000000) + locked
-		LockedLiquidity: "1000",
-		Providers: []*types.LiquidityProvider{
+		ReserveA:        sdkmath.NewInt(2000000),
+		ReserveB:        sdkmath.NewInt(1000000),
+		TotalLpTokens:   sdkmath.NewInt(1415213), // sqrt(2000000 * 1000000) + locked
+		LockedLiquidity: sdkmath.NewInt(1000),
+		Providers: []types.LiquidityProvider{
 			{
 				Address:  suite.testAddr("provider1"),
-				LpTokens: "500000",
+				LpTokens: sdkmath.NewInt(500000),
 			},
 			{
 				Address:  suite.testAddr("provider2"),
-				LpTokens: "500000",
+				LpTokens: sdkmath.NewInt(500000),
 			},
 			{
 				Address:  suite.testAddr("provider3"),
-				LpTokens: "414213", // Remainder
+				LpTokens: sdkmath.NewInt(414213), // Remainder
 			},
 		},
 	}
@@ -111,14 +111,14 @@ func (suite *LPTokenInvariantTestSuite) TestValidateLPTokenInvariant_MismatchedT
 		PoolId:          "uaura-dai",
 		DenomA:          "uaura",
 		DenomB:          "dai",
-		ReserveA:        "1000000",
-		ReserveB:        "500000",
-		TotalLpTokens:   "1000000", // WRONG: doesn't match provider sum + locked
-		LockedLiquidity: "1000",
-		Providers: []*types.LiquidityProvider{
+		ReserveA:        sdkmath.NewInt(1000000),
+		ReserveB:        sdkmath.NewInt(500000),
+		TotalLpTokens:   sdkmath.NewInt(1000000), // WRONG: doesn't match provider sum + locked
+		LockedLiquidity: sdkmath.NewInt(1000),
+		Providers: []types.LiquidityProvider{
 			{
 				Address:  suite.testAddr("provider1"),
-				LpTokens: "500000", // Sum + locked = 500000 + 1000 = 501000 != 1000000
+				LpTokens: sdkmath.NewInt(500000), // Sum + locked = 500000 + 1000 = 501000 != 1000000
 			},
 		},
 	}
@@ -136,14 +136,14 @@ func (suite *LPTokenInvariantTestSuite) TestValidateLPTokenInvariant_InflatedSup
 		PoolId:          "uaura-busd",
 		DenomA:          "uaura",
 		DenomB:          "busd",
-		ReserveA:        "1000000",
-		ReserveB:        "500000",
-		TotalLpTokens:   "500000", // WRONG: less than provider tokens
-		LockedLiquidity: "1000",
-		Providers: []*types.LiquidityProvider{
+		ReserveA:        sdkmath.NewInt(1000000),
+		ReserveB:        sdkmath.NewInt(500000),
+		TotalLpTokens:   sdkmath.NewInt(500000), // WRONG: less than provider tokens
+		LockedLiquidity: sdkmath.NewInt(1000),
+		Providers: []types.LiquidityProvider{
 			{
 				Address:  suite.testAddr("provider1"),
-				LpTokens: "600000", // Provider has more than total!
+				LpTokens: sdkmath.NewInt(600000), // Provider has more than total!
 			},
 		},
 	}
@@ -160,14 +160,14 @@ func (suite *LPTokenInvariantTestSuite) TestValidateLPTokenInvariant_NoLockedLiq
 		PoolId:          "uaura-test",
 		DenomA:          "uaura",
 		DenomB:          "test",
-		ReserveA:        "1000000",
-		ReserveB:        "500000",
-		TotalLpTokens:   "707106",
-		LockedLiquidity: "", // No locked liquidity
-		Providers: []*types.LiquidityProvider{
+		ReserveA:        sdkmath.NewInt(1000000),
+		ReserveB:        sdkmath.NewInt(500000),
+		TotalLpTokens:   sdkmath.NewInt(707106),
+		LockedLiquidity: sdkmath.NewInt(), // No locked liquidity
+		Providers: []types.LiquidityProvider{
 			{
 				Address:  suite.testAddr("provider1"),
-				LpTokens: "707106", // All tokens to provider
+				LpTokens: sdkmath.NewInt(707106), // All tokens to provider
 			},
 		},
 	}
@@ -182,11 +182,11 @@ func (suite *LPTokenInvariantTestSuite) TestValidateLPTokenInvariant_InvalidProv
 		PoolId:          "uaura-invalid",
 		DenomA:          "uaura",
 		DenomB:          "invalid",
-		ReserveA:        "1000000",
-		ReserveB:        "500000",
-		TotalLpTokens:   "707106",
-		LockedLiquidity: "1000",
-		Providers: []*types.LiquidityProvider{
+		ReserveA:        sdkmath.NewInt(1000000),
+		ReserveB:        sdkmath.NewInt(500000),
+		TotalLpTokens:   sdkmath.NewInt(707106),
+		LockedLiquidity: sdkmath.NewInt(1000),
+		Providers: []types.LiquidityProvider{
 			{
 				Address:  suite.testAddr("provider1"),
 				LpTokens: "not-a-number", // Invalid
@@ -205,14 +205,14 @@ func (suite *LPTokenInvariantTestSuite) TestValidateLPTokenInvariant_InvalidTota
 		PoolId:          "uaura-invalid2",
 		DenomA:          "uaura",
 		DenomB:          "invalid2",
-		ReserveA:        "1000000",
-		ReserveB:        "500000",
+		ReserveA:        sdkmath.NewInt(1000000),
+		ReserveB:        sdkmath.NewInt(500000),
 		TotalLpTokens:   "invalid-total",
-		LockedLiquidity: "1000",
-		Providers: []*types.LiquidityProvider{
+		LockedLiquidity: sdkmath.NewInt(1000),
+		Providers: []types.LiquidityProvider{
 			{
 				Address:  suite.testAddr("provider1"),
-				LpTokens: "706106",
+				LpTokens: sdkmath.NewInt(706106),
 			},
 		},
 	}
@@ -414,7 +414,7 @@ func (suite *LPTokenInvariantTestSuite) TestInvariant_DetectsManualCorruption() 
 	suite.Require().NoError(err)
 
 	// Manually corrupt the pool state (simulating a bug)
-	pool.Providers[0].LpTokens = "999999999" // Way more than total
+	pool.Providers[0].LpTokens = sdkmath.NewInt(999999999) // Way more than total
 	suite.Keeper.SetPool(ctx, pool)
 
 	// Verify the invariant now fails
@@ -429,11 +429,11 @@ func (suite *LPTokenInvariantTestSuite) TestInvariant_ZeroProviders() {
 		PoolId:          "uaura-empty",
 		DenomA:          "uaura",
 		DenomB:          "empty",
-		ReserveA:        "1000000",
-		ReserveB:        "500000",
-		TotalLpTokens:   "1000", // Only locked liquidity
-		LockedLiquidity: "1000",
-		Providers:       []*types.LiquidityProvider{}, // No providers
+		ReserveA:        sdkmath.NewInt(1000000),
+		ReserveB:        sdkmath.NewInt(500000),
+		TotalLpTokens:   sdkmath.NewInt(1000), // Only locked liquidity
+		LockedLiquidity: sdkmath.NewInt(1000),
+		Providers: []types.LiquidityProvider{}, // No providers
 	}
 
 	err := suite.Keeper.validateLPTokenInvariant(pool)
@@ -447,18 +447,18 @@ func (suite *LPTokenInvariantTestSuite) TestInvariant_AccountingErrorPrevention(
 		PoolId:          "uaura-error",
 		DenomA:          "uaura",
 		DenomB:          "error",
-		ReserveA:        "1000000",
-		ReserveB:        "500000",
-		TotalLpTokens:   "707106",
-		LockedLiquidity: "1000",
-		Providers: []*types.LiquidityProvider{
+		ReserveA:        sdkmath.NewInt(1000000),
+		ReserveB:        sdkmath.NewInt(500000),
+		TotalLpTokens:   sdkmath.NewInt(707106),
+		LockedLiquidity: sdkmath.NewInt(1000),
+		Providers: []types.LiquidityProvider{
 			{
 				Address:  suite.testAddr("provider1"),
-				LpTokens: "300000",
+				LpTokens: sdkmath.NewInt(300000),
 			},
 			{
 				Address:  suite.testAddr("provider2"),
-				LpTokens: "400000", // Sum = 700000, but should be 706106 (707106 - 1000)
+				LpTokens: sdkmath.NewInt(400000), // Sum = 700000, but should be 706106 (707106 - 1000)
 			},
 			// Missing 6106 tokens - accounting error!
 		},
@@ -542,7 +542,7 @@ func (suite *LPTokenInvariantTestSuite) TestModuleLevelInvariant_DetectsViolatio
 	suite.Require().NoError(err)
 
 	// Manually corrupt the pool (simulate accounting error)
-	pool.TotalLpTokens = sdkmath.NewInt(999999999).String() // Inflate total
+	pool.TotalLpTokens = sdkmath.NewInt(999999999) // Inflate total
 	suite.Keeper.SetPool(ctx, pool)
 
 	// Run the module-level invariant
@@ -564,14 +564,14 @@ func (suite *LPTokenInvariantTestSuite) TestModuleLevelInvariant_WithLockedLiqui
 		PoolId:          "uaura-test",
 		DenomA:          "uaura",
 		DenomB:          "test",
-		ReserveA:        "1000000",
-		ReserveB:        "500000",
-		TotalLpTokens:   "707106",
-		LockedLiquidity: "1000",
-		Providers: []*types.LiquidityProvider{
+		ReserveA:        sdkmath.NewInt(1000000),
+		ReserveB:        sdkmath.NewInt(500000),
+		TotalLpTokens:   sdkmath.NewInt(707106),
+		LockedLiquidity: sdkmath.NewInt(1000),
+		Providers: []types.LiquidityProvider{
 			{
 				Address:  suite.testAddr("provider1"),
-				LpTokens: "706106", // Total - Locked = 707106 - 1000
+				LpTokens: sdkmath.NewInt(706106), // Total - Locked = 707106 - 1000
 			},
 		},
 	}
@@ -594,14 +594,14 @@ func (suite *LPTokenInvariantTestSuite) TestModuleLevelInvariant_MissingLockedLi
 		PoolId:          "uaura-error",
 		DenomA:          "uaura",
 		DenomB:          "error",
-		ReserveA:        "1000000",
-		ReserveB:        "500000",
-		TotalLpTokens:   "707106",
-		LockedLiquidity: "1000",
-		Providers: []*types.LiquidityProvider{
+		ReserveA:        sdkmath.NewInt(1000000),
+		ReserveB:        sdkmath.NewInt(500000),
+		TotalLpTokens:   sdkmath.NewInt(707106),
+		LockedLiquidity: sdkmath.NewInt(1000),
+		Providers: []types.LiquidityProvider{
 			{
 				Address:  suite.testAddr("provider1"),
-				LpTokens: "700000", // Sum + locked = 701000, but total is 707106!
+				LpTokens: sdkmath.NewInt(700000), // Sum + locked = 701000, but total is 707106!
 			},
 		},
 	}
@@ -627,14 +627,14 @@ func (suite *LPTokenInvariantTestSuite) TestModuleLevelInvariant_InvalidLockedLi
 		PoolId:          "uaura-invalid",
 		DenomA:          "uaura",
 		DenomB:          "invalid",
-		ReserveA:        "1000000",
-		ReserveB:        "500000",
-		TotalLpTokens:   "707106",
+		ReserveA:        sdkmath.NewInt(1000000),
+		ReserveB:        sdkmath.NewInt(500000),
+		TotalLpTokens:   sdkmath.NewInt(707106),
 		LockedLiquidity: "invalid-number",
-		Providers: []*types.LiquidityProvider{
+		Providers: []types.LiquidityProvider{
 			{
 				Address:  suite.testAddr("provider1"),
-				LpTokens: "706106",
+				LpTokens: sdkmath.NewInt(706106),
 			},
 		},
 	}
@@ -657,14 +657,14 @@ func (suite *LPTokenInvariantTestSuite) TestModuleLevelInvariant_EmptyLockedLiqu
 		PoolId:          "uaura-legacy",
 		DenomA:          "uaura",
 		DenomB:          "legacy",
-		ReserveA:        "1000000",
-		ReserveB:        "500000",
-		TotalLpTokens:   "707106",
-		LockedLiquidity: "", // Empty string - no locked liquidity
-		Providers: []*types.LiquidityProvider{
+		ReserveA:        sdkmath.NewInt(1000000),
+		ReserveB:        sdkmath.NewInt(500000),
+		TotalLpTokens:   sdkmath.NewInt(707106),
+		LockedLiquidity: sdkmath.NewInt(), // Empty string - no locked liquidity
+		Providers: []types.LiquidityProvider{
 			{
 				Address:  suite.testAddr("provider1"),
-				LpTokens: "707106", // All tokens to provider
+				LpTokens: sdkmath.NewInt(707106), // All tokens to provider
 			},
 		},
 	}

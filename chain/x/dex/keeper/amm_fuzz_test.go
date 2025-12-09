@@ -45,12 +45,12 @@ func FuzzGetQuote_ConstantProductBounds(f *testing.F) {
 			PoolId:                "pool-a",
 			DenomA:                "tokenA",
 			DenomB:                "tokenB",
-			ReserveA:              sdkmath.NewIntFromUint64(reserveA).String(),
-			ReserveB:              sdkmath.NewIntFromUint64(reserveB).String(),
-			FeePercentage:         "0.003",
-			ProtocolFeePercentage: "0.001",
-			TotalLpTokens:         sdkmath.NewIntFromUint64(reserveA + reserveB).String(),
-			Providers:             []*types.LiquidityProvider{},
+			ReserveA:              sdkmath.NewIntFromUint64(reserveA),
+			ReserveB:              sdkmath.NewIntFromUint64(reserveB),
+			FeePercentage:         sdkmath.LegacyMustNewDecFromStr("0.003"),
+			ProtocolFeePercentage: sdkmath.LegacyMustNewDecFromStr("0.001"),
+			TotalLpTokens:         sdkmath.NewIntFromUint64(reserveA + reserveB),
+			Providers:             []types.LiquidityProvider{},
 		}
 		k.SetPool(ctx, pool)
 
@@ -70,8 +70,8 @@ func FuzzGetQuote_ConstantProductBounds(f *testing.F) {
 
 		// Slippage: expected output with zero fees should be at least as large as fee-adjusted output.
 		// Compare against a zero-fee quote to ensure fees never increase output.
-		pool.FeePercentage = "0"
-		pool.ProtocolFeePercentage = "0"
+		pool.FeePercentage = sdkmath.LegacyZeroDec()
+		pool.ProtocolFeePercentage = sdkmath.LegacyZeroDec()
 		k.SetPool(ctx, pool)
 		noFeeOut, _, _, _, err := k.GetQuote(ctx, pool.PoolId, pool.DenomA, amountIn)
 		if err == nil {

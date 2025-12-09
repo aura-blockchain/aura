@@ -36,7 +36,7 @@ func setupTestKeeper(t *testing.T) (*Keeper, sdk.Context) {
 	cdc := codec.NewProtoCodec(registry)
 
 	storeService := runtime.NewKVStoreService(storeKey)
-	keeper := NewKeeper(storeService, cdc, "authority", log.NewNopLogger())
+	keeper := NewKeeper(storeService, storeKey, cdc, "authority", log.NewNopLogger())
 
 	ctx := sdk.NewContext(stateStore, cmtproto.Header{Time: time.Now()}, false, log.NewNopLogger())
 
@@ -236,7 +236,7 @@ func TestAttributeAccessControlWithIdentityRecord(t *testing.T) {
 		Did:           owner,
 		Address:       owner,
 		Status:        identitypb.IdentityStatus_IDENTITY_STATUS_ACTIVE,
-		CreatedAt:     timestamppb.New(ctx.BlockTime()),
+		CreatedAt:     ctx.BlockTime(),
 		PiiCommitment: commitment,
 		MetadataHash:  "metadata_hash",
 	}
