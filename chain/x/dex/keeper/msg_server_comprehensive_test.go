@@ -162,8 +162,8 @@ func (suite *MsgServerComprehensiveTestSuite) TestCreatePoolInvalidDenoms() {
 				Creator: creator.String(),
 				DenomA:  tt.denomA,
 				DenomB:  tt.denomB,
-				AmountA: &sdk.Coin{Denom: tt.denomA, Amount: sdkmath.NewInt(1000)},
-				AmountB: &sdk.Coin{Denom: tt.denomB, Amount: sdkmath.NewInt(1000)},
+				AmountA: sdk.NewCoin(tt.denomA, sdkmath.NewInt(1000)),
+				AmountB: sdk.NewCoin(tt.denomB, sdkmath.NewInt(1000)),
 			}
 
 			_, err := suite.msgServer.CreatePool(suite.ctx, msg)
@@ -223,8 +223,8 @@ func (suite *MsgServerComprehensiveTestSuite) TestCreatePoolZeroInitialLiquidity
 				Creator: creator.String(),
 				DenomA:  "uaura",
 				DenomB:  "usdt",
-				AmountA: &sdk.Coin{Denom: "uaura", Amount: tt.amountA},
-				AmountB: &sdk.Coin{Denom: "usdt", Amount: tt.amountB},
+				AmountA: sdk.NewCoin("uaura", tt.amountA),
+				AmountB: sdk.NewCoin("usdt", tt.amountB),
 			}
 
 			_, err := suite.msgServer.CreatePool(suite.ctx, msg)
@@ -249,8 +249,8 @@ func (suite *MsgServerComprehensiveTestSuite) TestCreatePoolSameDenoms() {
 		Creator: creator.String(),
 		DenomA:  "uaura",
 		DenomB:  "uaura", // Same denom - should fail
-		AmountA: &sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(1000)},
-		AmountB: &sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(1000)},
+		AmountA: sdk.NewCoin("uaura", sdkmath.NewInt(1000)),
+		AmountB: sdk.NewCoin("uaura", sdkmath.NewInt(1000)),
 	}
 
 	_, err := suite.msgServer.CreatePool(suite.ctx, msg)
@@ -269,8 +269,8 @@ func (suite *MsgServerComprehensiveTestSuite) TestAddLiquidityNonExistentPool() 
 	msg := &dexpb.MsgAddLiquidity{
 		Provider: provider.String(),
 		PoolId:   "nonexistent-pool-id",
-		AmountA:  &sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(1000)},
-		AmountB:  &sdk.Coin{Denom: "usdt", Amount: sdkmath.NewInt(1000)},
+		AmountA:  sdk.NewCoin("uaura", sdkmath.NewInt(1000)),
+		AmountB:  sdk.NewCoin("usdt", sdkmath.NewInt(1000)),
 	}
 
 	_, err := suite.msgServer.AddLiquidity(suite.ctx, msg)
@@ -295,8 +295,8 @@ func (suite *MsgServerComprehensiveTestSuite) TestAddLiquidityImbalanced() {
 		Creator: creator.String(),
 		DenomA:  "uaura",
 		DenomB:  "usdt",
-		AmountA: &sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(1000000000)},
-		AmountB: &sdk.Coin{Denom: "usdt", Amount: sdkmath.NewInt(1000000000)},
+		AmountA: sdk.NewCoin("uaura", sdkmath.NewInt(1000000000)),
+		AmountB: sdk.NewCoin("usdt", sdkmath.NewInt(1000000000)),
 	}
 	createResp, err := suite.msgServer.CreatePool(suite.ctx, createMsg)
 	suite.Require().NoError(err)
@@ -306,8 +306,8 @@ func (suite *MsgServerComprehensiveTestSuite) TestAddLiquidityImbalanced() {
 	addMsg := &dexpb.MsgAddLiquidity{
 		Provider: provider.String(),
 		PoolId:   createResp.PoolId,
-		AmountA:  &sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(1000)},
-		AmountB:  &sdk.Coin{Denom: "usdt", Amount: sdkmath.NewInt(2000)}, // Imbalanced
+		AmountA:  sdk.NewCoin("uaura", sdkmath.NewInt(1000)),
+		AmountB:  sdk.NewCoin("usdt", sdkmath.NewInt(2000)), // Imbalanced
 	}
 
 	_, err = suite.msgServer.AddLiquidity(suite.ctx, addMsg)
@@ -336,15 +336,14 @@ func (suite *MsgServerComprehensiveTestSuite) TestRemoveLiquidityExceedingShares
 		Creator: creator.String(),
 		DenomA:  "uaura",
 		DenomB:  "usdt",
-		AmountA: &sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(1000000000)},
-		AmountB: &sdk.Coin{Denom: "usdt", Amount: sdkmath.NewInt(1000000000)},
+		AmountA: sdk.NewCoin("uaura", sdkmath.NewInt(1000000000)),
+		AmountB: sdk.NewCoin("usdt", sdkmath.NewInt(1000000000)),
 	}
 	createResp, err := suite.msgServer.CreatePool(suite.ctx, createMsg)
 	suite.Require().NoError(err)
 
 	// Parse LP tokens from response
-	lpTokens, ok := sdkmath.NewIntFromString(createResp.LpTokens)
-	suite.Require().True(ok, "should parse LP tokens")
+	lpTokens := createResp.LpTokens
 
 	// Fast-forward time past cooldown period (24 hours + 1 second)
 	suite.ctx = suite.ctx.WithBlockTime(suite.ctx.BlockTime().Add(24*time.Hour + time.Second))
@@ -353,7 +352,7 @@ func (suite *MsgServerComprehensiveTestSuite) TestRemoveLiquidityExceedingShares
 	removeMsg := &dexpb.MsgRemoveLiquidity{
 		Provider: creator.String(),
 		PoolId:   createResp.PoolId,
-		LpTokens: lpTokens.Add(sdkmath.NewInt(1000)).String(), // More than owned
+		LpTokens: lpTokens.Add(sdkmath.NewInt(1000)), // More than owned
 	}
 
 	_, err = suite.msgServer.RemoveLiquidity(suite.ctx, removeMsg)
@@ -382,8 +381,8 @@ func (suite *MsgServerComprehensiveTestSuite) TestSwapExactInSlippageExceeded() 
 		Creator: creator.String(),
 		DenomA:  "uaura",
 		DenomB:  "usdt",
-		AmountA: &sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(1000000000)},
-		AmountB: &sdk.Coin{Denom: "usdt", Amount: sdkmath.NewInt(1000000000)},
+		AmountA: sdk.NewCoin("uaura", sdkmath.NewInt(1000000000)),
+		AmountB: sdk.NewCoin("usdt", sdkmath.NewInt(1000000000)),
 	}
 	createResp, err := suite.msgServer.CreatePool(suite.ctx, createMsg)
 	suite.Require().NoError(err)
@@ -392,8 +391,8 @@ func (suite *MsgServerComprehensiveTestSuite) TestSwapExactInSlippageExceeded() 
 	swapMsg := &dexpb.MsgSwapExactIn{
 		Sender:         trader.String(),
 		PoolId:         createResp.PoolId,
-		CoinIn:         &sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(1000)},
-		MinAmountOut:   sdkmath.NewInt(1000).String(),
+		CoinIn:         sdk.NewCoin("uaura", sdkmath.NewInt(1000)),
+		MinAmountOut:   sdkmath.NewInt(1000),
 		MaxSlippageBps: 10, // 0.1% max slippage - too tight
 	}
 
@@ -421,8 +420,8 @@ func (suite *MsgServerComprehensiveTestSuite) TestSwapInsufficientLiquidity() {
 		Creator: creator.String(),
 		DenomA:  "uaura",
 		DenomB:  "usdt",
-		AmountA: &sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(1000000000)},
-		AmountB: &sdk.Coin{Denom: "usdt", Amount: sdkmath.NewInt(1000000000)},
+		AmountA: sdk.NewCoin("uaura", sdkmath.NewInt(1000000000)),
+		AmountB: sdk.NewCoin("usdt", sdkmath.NewInt(1000000000)),
 	}
 	createResp, err := suite.msgServer.CreatePool(suite.ctx, createMsg)
 	suite.Require().NoError(err)
@@ -431,8 +430,8 @@ func (suite *MsgServerComprehensiveTestSuite) TestSwapInsufficientLiquidity() {
 	swapMsg := &dexpb.MsgSwapExactIn{
 		Sender:         trader.String(),
 		PoolId:         createResp.PoolId,
-		CoinIn:         &sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(50000)},
-		MinAmountOut:   sdkmath.NewInt(1).String(),
+		CoinIn:         sdk.NewCoin("uaura", sdkmath.NewInt(50000)),
+		MinAmountOut:   sdkmath.NewInt(1),
 		MaxSlippageBps: 10000, // 100% slippage allowed
 	}
 
@@ -453,8 +452,8 @@ func (suite *MsgServerComprehensiveTestSuite) TestSwapZeroAmount() {
 		Creator: creator.String(),
 		DenomA:  "uaura",
 		DenomB:  "usdt",
-		AmountA: &sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(1000000000)},
-		AmountB: &sdk.Coin{Denom: "usdt", Amount: sdkmath.NewInt(1000000000)},
+		AmountA: sdk.NewCoin("uaura", sdkmath.NewInt(1000000000)),
+		AmountB: sdk.NewCoin("usdt", sdkmath.NewInt(1000000000)),
 	}
 	createResp, err := suite.msgServer.CreatePool(suite.ctx, createMsg)
 	suite.Require().NoError(err)
@@ -463,8 +462,8 @@ func (suite *MsgServerComprehensiveTestSuite) TestSwapZeroAmount() {
 	swapMsg := &dexpb.MsgSwapExactIn{
 		Sender:         trader.String(),
 		PoolId:         createResp.PoolId,
-		CoinIn:         &sdk.Coin{Denom: "uaura", Amount: sdkmath.ZeroInt()},
-		MinAmountOut:   sdkmath.ZeroInt().String(),
+		CoinIn:         sdk.NewCoin("uaura", sdkmath.ZeroInt()),
+		MinAmountOut:   sdkmath.ZeroInt(),
 		MaxSlippageBps: 1000,
 	}
 
@@ -483,32 +482,32 @@ func (suite *MsgServerComprehensiveTestSuite) TestPlaceOrderInvalidPrice() {
 
 	tests := []struct {
 		name        string
-		auraAmount  string
-		otherAmount string
+		auraAmount  sdkmath.Int
+		otherAmount sdkmath.Int
 		expectError bool
 	}{
 		{
 			name:        "zero aura amount",
-			auraAmount:  "0",
-			otherAmount: "1000",
+			auraAmount:  sdkmath.ZeroInt(),
+			otherAmount: sdkmath.NewInt(1000),
 			expectError: true,
 		},
 		{
 			name:        "zero other amount",
-			auraAmount:  "1000",
-			otherAmount: "0",
+			auraAmount:  sdkmath.NewInt(1000),
+			otherAmount: sdkmath.ZeroInt(),
 			expectError: true,
 		},
 		{
 			name:        "negative aura amount",
-			auraAmount:  "-1000",
-			otherAmount: "1000",
+			auraAmount:  sdkmath.NewInt(-1000),
+			otherAmount: sdkmath.NewInt(1000),
 			expectError: true,
 		},
 		{
 			name:        "valid amounts",
-			auraAmount:  "1000",
-			otherAmount: "1000",
+			auraAmount:  sdkmath.NewInt(1000),
+			otherAmount: sdkmath.NewInt(1000),
 			expectError: false,
 		},
 	}
@@ -550,9 +549,9 @@ func (suite *MsgServerComprehensiveTestSuite) TestCancelOrderNotOwner() {
 	createMsg := &dexpb.MsgCreateOrder{
 		Creator:     creator.String(),
 		OrderType:   dexpb.SwapOrderType_BUY,
-		AuraAmount:  sdkmath.NewInt(10000000).String(),
+		AuraAmount:  sdkmath.NewInt(10000000),
 		OtherCoin:   "usdt",
-		OtherAmount: sdkmath.NewInt(10000000).String(),
+		OtherAmount: sdkmath.NewInt(10000000),
 	}
 	createResp, err := suite.msgServer.CreateOrder(suite.ctx, createMsg)
 	suite.Require().NoError(err)
@@ -583,8 +582,8 @@ func (suite *MsgServerComprehensiveTestSuite) TestCircuitBreakerTriggered() {
 		Creator: creator.String(),
 		DenomA:  "uaura",
 		DenomB:  "usdt",
-		AmountA: &sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(1000000000)},
-		AmountB: &sdk.Coin{Denom: "usdt", Amount: sdkmath.NewInt(1000000000)},
+		AmountA: sdk.NewCoin("uaura", sdkmath.NewInt(1000000000)),
+		AmountB: sdk.NewCoin("usdt", sdkmath.NewInt(1000000000)),
 	}
 
 	_, err := suite.msgServer.CreatePool(suite.ctx, msg)

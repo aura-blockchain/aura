@@ -163,7 +163,7 @@ func (suite *LPTokenInvariantTestSuite) TestValidateLPTokenInvariant_NoLockedLiq
 		ReserveA:        sdkmath.NewInt(1000000),
 		ReserveB:        sdkmath.NewInt(500000),
 		TotalLpTokens:   sdkmath.NewInt(707106),
-		LockedLiquidity: sdkmath.NewInt(), // No locked liquidity
+		LockedLiquidity: sdkmath.ZeroInt(), // No locked liquidity
 		Providers: []types.LiquidityProvider{
 			{
 				Address:  suite.testAddr("provider1"),
@@ -189,7 +189,7 @@ func (suite *LPTokenInvariantTestSuite) TestValidateLPTokenInvariant_InvalidProv
 		Providers: []types.LiquidityProvider{
 			{
 				Address:  suite.testAddr("provider1"),
-				LpTokens: "not-a-number", // Invalid
+				LpTokens: sdkmath.NewInt(-1), // Invalid - negative tokens should fail validation
 			},
 		},
 	}
@@ -207,7 +207,7 @@ func (suite *LPTokenInvariantTestSuite) TestValidateLPTokenInvariant_InvalidTota
 		DenomB:          "invalid2",
 		ReserveA:        sdkmath.NewInt(1000000),
 		ReserveB:        sdkmath.NewInt(500000),
-		TotalLpTokens:   "invalid-total",
+		TotalLpTokens:   sdkmath.NewInt(-1), // Invalid - negative total tokens should fail validation
 		LockedLiquidity: sdkmath.NewInt(1000),
 		Providers: []types.LiquidityProvider{
 			{
@@ -630,7 +630,7 @@ func (suite *LPTokenInvariantTestSuite) TestModuleLevelInvariant_InvalidLockedLi
 		ReserveA:        sdkmath.NewInt(1000000),
 		ReserveB:        sdkmath.NewInt(500000),
 		TotalLpTokens:   sdkmath.NewInt(707106),
-		LockedLiquidity: "invalid-number",
+		LockedLiquidity: sdkmath.NewInt(-1), // Invalid - negative locked liquidity should fail validation
 		Providers: []types.LiquidityProvider{
 			{
 				Address:  suite.testAddr("provider1"),
@@ -660,7 +660,7 @@ func (suite *LPTokenInvariantTestSuite) TestModuleLevelInvariant_EmptyLockedLiqu
 		ReserveA:        sdkmath.NewInt(1000000),
 		ReserveB:        sdkmath.NewInt(500000),
 		TotalLpTokens:   sdkmath.NewInt(707106),
-		LockedLiquidity: sdkmath.NewInt(), // Empty string - no locked liquidity
+		LockedLiquidity: sdkmath.ZeroInt(), // No locked liquidity
 		Providers: []types.LiquidityProvider{
 			{
 				Address:  suite.testAddr("provider1"),
