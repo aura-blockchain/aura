@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"testing"
 
+	sdkmath "cosmossdk.io/math"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
@@ -24,42 +25,42 @@ func (suite *GenesisTestSuite) TestInitGenesis() {
 
 	// Test: InitGenesis with default/empty state should not error
 	suite.Run("default genesis", func() {
-		defaultGenesis := &types.GenesisState{
-			Params: &bridgepb.BridgeParams{
+		defaultGenesis := types.GenesisState{
+			Params: bridgepb.BridgeParams{
 				Enabled:                      true,
 				MinConfirmations:             6,
 				BridgeFeeBasisPoints:         30,
-				MaxTransferAmount:            "1000000000000",
+				MaxTransferAmount:            sdkmath.NewInt(1000000000000),
 				ValidatorThresholdPercentage: 67,
 			},
 		}
-		err := suite.Keeper.InitGenesis(ctx, *defaultGenesis)
+		err := suite.Keeper.InitGenesis(ctx, defaultGenesis)
 		suite.NoError(err, "InitGenesis should not error with default state")
 	})
 
 	// Test: InitGenesis with valid data
 	suite.Run("valid genesis with data", func() {
 		genesis := types.GenesisState{
-			Params: &bridgepb.BridgeParams{
+			Params: bridgepb.BridgeParams{
 				Enabled:                      true,
 				MinConfirmations:             6,
 				BridgeFeeBasisPoints:         30,
-				MaxTransferAmount:            "1000000000000",
+				MaxTransferAmount:            sdkmath.NewInt(1000000000000),
 				ValidatorThresholdPercentage: 67,
 			},
-			Transfers: []*types.CrossChainTransfer{
+			Transfers: []bridgepb.CrossChainTransfer{
 				{
 					TransferId:  "transfer-1",
 					SourceChain: "ethereum",
 					TargetChain: "aura",
 					Sender:      "0x123",
 					Recipient:   "aura1test",
-					Amount:      "1000000",
+					Amount:      sdkmath.NewInt(1000000),
 					Denom:       "uaura",
 					Status:      types.TransferStatus_PENDING,
 				},
 			},
-			ChainConfigs: []*bridgepb.ChainConfig{
+			ChainConfigs: []bridgepb.ChainConfig{
 				{
 					ChainId:          "ethereum",
 					ChainName:        "Ethereum",
@@ -67,19 +68,19 @@ func (suite *GenesisTestSuite) TestInitGenesis() {
 					MinConfirmations: 12,
 				},
 			},
-			Validators: []*bridgepb.BridgeValidator{
+			Validators: []bridgepb.BridgeValidator{
 				{
 					Address: "aura1validator",
 					Active:  true,
 				},
 			},
-			WrappedTokens: []*bridgepb.WrappedToken{
+			WrappedTokens: []bridgepb.WrappedToken{
 				{
 					SourceChain:   "ethereum",
 					OriginalDenom: "ETH",
 					WrappedDenom:  "wETH",
-					TotalSupply:   "5000000",
-					LockedAmount:  "5000000",
+					TotalSupply:   sdkmath.NewInt(5000000),
+					LockedAmount:  sdkmath.NewInt(5000000),
 				},
 			},
 		}
@@ -99,7 +100,7 @@ func (suite *GenesisTestSuite) TestInitGenesisWithInvalidData() {
 
 	suite.Run("nil params", func() {
 		genesis := types.GenesisState{
-			Params: nil,
+			Params: bridgepb.BridgeParams{},
 		}
 		err := suite.Keeper.InitGenesis(ctx, genesis)
 		suite.Error(err, "InitGenesis should error with nil params")
@@ -107,11 +108,11 @@ func (suite *GenesisTestSuite) TestInitGenesisWithInvalidData() {
 
 	suite.Run("invalid params - zero min confirmations", func() {
 		genesis := types.GenesisState{
-			Params: &bridgepb.BridgeParams{
+			Params: bridgepb.BridgeParams{
 				Enabled:                      true,
 				MinConfirmations:             0, // Invalid
 				BridgeFeeBasisPoints:         30,
-				MaxTransferAmount:            "1000000",
+				MaxTransferAmount:            sdkmath.NewInt(1000000),
 				ValidatorThresholdPercentage: 67,
 			},
 		}
@@ -121,11 +122,11 @@ func (suite *GenesisTestSuite) TestInitGenesisWithInvalidData() {
 
 	suite.Run("invalid params - high fee basis points", func() {
 		genesis := types.GenesisState{
-			Params: &bridgepb.BridgeParams{
+			Params: bridgepb.BridgeParams{
 				Enabled:                      true,
 				MinConfirmations:             6,
 				BridgeFeeBasisPoints:         20000, // Invalid > 10000
-				MaxTransferAmount:            "1000000",
+				MaxTransferAmount:            sdkmath.NewInt(1000000),
 				ValidatorThresholdPercentage: 67,
 			},
 		}
@@ -135,11 +136,11 @@ func (suite *GenesisTestSuite) TestInitGenesisWithInvalidData() {
 
 	suite.Run("invalid params - invalid validator threshold", func() {
 		genesis := types.GenesisState{
-			Params: &bridgepb.BridgeParams{
+			Params: bridgepb.BridgeParams{
 				Enabled:                      true,
 				MinConfirmations:             6,
 				BridgeFeeBasisPoints:         30,
-				MaxTransferAmount:            "1000000",
+				MaxTransferAmount:            sdkmath.NewInt(1000000),
 				ValidatorThresholdPercentage: 0, // Invalid
 			},
 		}
@@ -149,11 +150,11 @@ func (suite *GenesisTestSuite) TestInitGenesisWithInvalidData() {
 
 	suite.Run("invalid params - empty max transfer amount", func() {
 		genesis := types.GenesisState{
-			Params: &bridgepb.BridgeParams{
+			Params: bridgepb.BridgeParams{
 				Enabled:                      true,
 				MinConfirmations:             6,
 				BridgeFeeBasisPoints:         30,
-				MaxTransferAmount:            "", // Invalid
+				MaxTransferAmount:            sdkmath.Int{}, // Invalid
 				ValidatorThresholdPercentage: 67,
 			},
 		}
@@ -163,14 +164,14 @@ func (suite *GenesisTestSuite) TestInitGenesisWithInvalidData() {
 
 	suite.Run("nil transfer", func() {
 		genesis := types.GenesisState{
-			Params: &bridgepb.BridgeParams{
+			Params: bridgepb.BridgeParams{
 				Enabled:                      true,
 				MinConfirmations:             6,
 				BridgeFeeBasisPoints:         30,
-				MaxTransferAmount:            "1000000",
+				MaxTransferAmount:            sdkmath.NewInt(1000000),
 				ValidatorThresholdPercentage: 67,
 			},
-			Transfers: []*types.CrossChainTransfer{nil},
+			Transfers: []bridgepb.CrossChainTransfer{},
 		}
 		// Should skip nil transfers without error
 		err := suite.Keeper.InitGenesis(ctx, genesis)
@@ -194,26 +195,26 @@ func (suite *GenesisTestSuite) TestExportGenesis() {
 	suite.Run("export with data", func() {
 		// Initialize with some data
 		genesis := types.GenesisState{
-			Params: &bridgepb.BridgeParams{
+			Params: bridgepb.BridgeParams{
 				Enabled:                      true,
 				MinConfirmations:             6,
 				BridgeFeeBasisPoints:         30,
-				MaxTransferAmount:            "1000000000000",
+				MaxTransferAmount:            sdkmath.NewInt(1000000000000),
 				ValidatorThresholdPercentage: 67,
 			},
-			Transfers: []*types.CrossChainTransfer{
+			Transfers: []bridgepb.CrossChainTransfer{
 				{
 					TransferId:  "transfer-1",
 					SourceChain: "ethereum",
 					TargetChain: "aura",
 					Sender:      "0x123",
 					Recipient:   "aura1test",
-					Amount:      "1000000",
+					Amount:      sdkmath.NewInt(1000000),
 					Denom:       "uaura",
 					Status:      types.TransferStatus_PENDING,
 				},
 			},
-			ChainConfigs: []*bridgepb.ChainConfig{
+			ChainConfigs: []bridgepb.ChainConfig{
 				{
 					ChainId:          "ethereum",
 					ChainName:        "Ethereum",
@@ -240,17 +241,17 @@ func (suite *GenesisTestSuite) TestExportGenesis() {
 func (suite *GenesisTestSuite) TestDefaultGenesis() {
 	suite.Run("default genesis is valid", func() {
 		defaultGenesis := &types.GenesisState{
-			Params: &bridgepb.BridgeParams{
+			Params: bridgepb.BridgeParams{
 				Enabled:                      true,
 				MinConfirmations:             6,
 				BridgeFeeBasisPoints:         30,
-				MaxTransferAmount:            "1000000000000",
+				MaxTransferAmount:            sdkmath.NewInt(1000000000000),
 				ValidatorThresholdPercentage: 67,
 			},
-			Transfers:     []*types.CrossChainTransfer{}, // Initialize empty slices
-			ChainConfigs:  []*bridgepb.ChainConfig{},
-			Validators:    []*bridgepb.BridgeValidator{},
-			WrappedTokens: []*bridgepb.WrappedToken{},
+			Transfers:     []bridgepb.CrossChainTransfer{}, // Initialize empty slices
+			ChainConfigs:  []bridgepb.ChainConfig{},
+			Validators:    []bridgepb.BridgeValidator{},
+			WrappedTokens: []bridgepb.WrappedToken{},
 		}
 		suite.NotNil(defaultGenesis, "DefaultGenesis should not return nil")
 
@@ -266,11 +267,11 @@ func (suite *GenesisTestSuite) TestDefaultGenesis() {
 	suite.Run("default genesis can be initialized", func() {
 		ctx := suite.SdkCtx
 		defaultGenesis := &types.GenesisState{
-			Params: &bridgepb.BridgeParams{
+			Params: bridgepb.BridgeParams{
 				Enabled:                      true,
 				MinConfirmations:             6,
 				BridgeFeeBasisPoints:         30,
-				MaxTransferAmount:            "1000000000000",
+				MaxTransferAmount:            sdkmath.NewInt(1000000000000),
 				ValidatorThresholdPercentage: 67,
 			},
 		}
@@ -285,11 +286,11 @@ func (suite *GenesisTestSuite) TestGenesisRoundTrip() {
 
 	suite.Run("round trip with empty state", func() {
 		genesis := &types.GenesisState{
-			Params: &bridgepb.BridgeParams{
+			Params: bridgepb.BridgeParams{
 				Enabled:                      true,
 				MinConfirmations:             6,
 				BridgeFeeBasisPoints:         30,
-				MaxTransferAmount:            "1000000000000",
+				MaxTransferAmount:            sdkmath.NewInt(1000000000000),
 				ValidatorThresholdPercentage: 67,
 			},
 		}
@@ -309,37 +310,37 @@ func (suite *GenesisTestSuite) TestGenesisRoundTrip() {
 
 	suite.Run("round trip with data", func() {
 		genesis := types.GenesisState{
-			Params: &bridgepb.BridgeParams{
+			Params: bridgepb.BridgeParams{
 				Enabled:                      true,
 				MinConfirmations:             6,
 				BridgeFeeBasisPoints:         30,
-				MaxTransferAmount:            "1000000000000",
+				MaxTransferAmount:            sdkmath.NewInt(1000000000000),
 				ValidatorThresholdPercentage: 67,
 			},
-			Transfers: []*types.CrossChainTransfer{
+			Transfers: []bridgepb.CrossChainTransfer{
 				{
 					TransferId:  "transfer-1",
 					SourceChain: "ethereum",
 					TargetChain: "aura",
 					Sender:      "0x123",
 					Recipient:   "aura1test1",
-					Amount:      "1000000",
+					Amount:      sdkmath.NewInt(1000000),
 					Denom:       "uaura",
 					Status:      types.TransferStatus_PENDING,
 					// SubmittedHeight field removed -100,
 				},
 				{
-					TransferId:       "transfer-2",
-					SourceChain:      "polygon",
+					TransferId:  "transfer-2",
+					SourceChain: "polygon",
 					TargetChain: "aura",
-					Sender:           "0x456",
-					Recipient:        "aura1test2",
-					Amount:           "2000000",
-					Status: types.TransferStatus_CONFIRMED,
+					Sender:      "0x456",
+					Recipient:   "aura1test2",
+					Amount:      sdkmath.NewInt(2000000),
+					Status:      types.TransferStatus_CONFIRMED,
 					// SubmittedHeight field removed -200,
 				},
 			},
-			ChainConfigs: []*bridgepb.ChainConfig{
+			ChainConfigs: []bridgepb.ChainConfig{
 				{
 					ChainId:          "ethereum",
 					ChainName:        "Ethereum",
@@ -353,7 +354,7 @@ func (suite *GenesisTestSuite) TestGenesisRoundTrip() {
 					MinConfirmations: 64,
 				},
 			},
-			Validators: []*bridgepb.BridgeValidator{
+			Validators: []bridgepb.BridgeValidator{
 				{
 					Address: "aura1validator1",
 					Active:  true,
@@ -363,13 +364,13 @@ func (suite *GenesisTestSuite) TestGenesisRoundTrip() {
 					Active:  true,
 				},
 			},
-			WrappedTokens: []*bridgepb.WrappedToken{
+			WrappedTokens: []bridgepb.WrappedToken{
 				{
 					SourceChain:   "ethereum",
 					OriginalDenom: "ETH",
 					WrappedDenom:  "wETH",
-					TotalSupply:   "5000000",
-					LockedAmount:  "5000000",
+					TotalSupply:   sdkmath.NewInt(5000000),
+					LockedAmount:  sdkmath.NewInt(5000000),
 				},
 			},
 		}
@@ -407,17 +408,17 @@ func (suite *GenesisTestSuite) TestGenesisEdgeCases() {
 
 	suite.Run("empty lists", func() {
 		genesis := types.GenesisState{
-			Params: &bridgepb.BridgeParams{
+			Params: bridgepb.BridgeParams{
 				Enabled:                      true,
 				MinConfirmations:             6,
 				BridgeFeeBasisPoints:         30,
-				MaxTransferAmount:            "1000000",
+				MaxTransferAmount:            sdkmath.NewInt(1000000),
 				ValidatorThresholdPercentage: 67,
 			},
-			Transfers:     []*types.CrossChainTransfer{},
-			ChainConfigs:  []*bridgepb.ChainConfig{},
-			Validators:    []*bridgepb.BridgeValidator{},
-			WrappedTokens: []*bridgepb.WrappedToken{},
+			Transfers:     []bridgepb.CrossChainTransfer{},
+			ChainConfigs:  []bridgepb.ChainConfig{},
+			Validators:    []bridgepb.BridgeValidator{},
+			WrappedTokens: []bridgepb.WrappedToken{},
 		}
 
 		err := suite.Keeper.InitGenesis(ctx, genesis)
@@ -433,24 +434,24 @@ func (suite *GenesisTestSuite) TestGenesisEdgeCases() {
 
 	suite.Run("many transfers", func() {
 		genesis := types.GenesisState{
-			Params: &bridgepb.BridgeParams{
+			Params: bridgepb.BridgeParams{
 				Enabled:                      true,
 				MinConfirmations:             6,
 				BridgeFeeBasisPoints:         30,
-				MaxTransferAmount:            "1000000000000",
+				MaxTransferAmount:            sdkmath.NewInt(1000000000000),
 				ValidatorThresholdPercentage: 67,
 			},
-			Transfers: make([]*types.CrossChainTransfer, 100),
+			Transfers: make([]bridgepb.CrossChainTransfer, 100),
 		}
 
 		for i := 0; i < 100; i++ {
-			genesis.Transfers[i] = &types.CrossChainTransfer{
-				TransferId:       "transfer-" + string(rune(i)),
-				SourceChain:      "ethereum",
+			genesis.Transfers[i] = bridgepb.CrossChainTransfer{
+				TransferId:  "transfer-" + string(rune(i)),
+				SourceChain: "ethereum",
 				TargetChain: "aura",
 				Sender:      "0xsender",
 				Recipient:   "aura1recipient",
-				Amount:      "1000000",
+				Amount:      sdkmath.NewInt(1000000),
 				Denom:       "uaura",
 				Status:      types.TransferStatus_PENDING,
 				// SubmittedHeight field removed - uint64(100 + i),
@@ -466,11 +467,11 @@ func (suite *GenesisTestSuite) TestGenesisEdgeCases() {
 
 	suite.Run("disabled bridge", func() {
 		genesis := types.GenesisState{
-			Params: &bridgepb.BridgeParams{
+			Params: bridgepb.BridgeParams{
 				Enabled:                      false,
 				MinConfirmations:             6,
 				BridgeFeeBasisPoints:         30,
-				MaxTransferAmount:            "1000000",
+				MaxTransferAmount:            sdkmath.NewInt(1000000),
 				ValidatorThresholdPercentage: 67,
 			},
 		}
@@ -484,23 +485,23 @@ func (suite *GenesisTestSuite) TestGenesisEdgeCases() {
 
 	suite.Run("transfer counter preservation", func() {
 		genesis := types.GenesisState{
-			Params: &bridgepb.BridgeParams{
+			Params: bridgepb.BridgeParams{
 				Enabled:                      true,
 				MinConfirmations:             6,
 				BridgeFeeBasisPoints:         30,
-				MaxTransferAmount:            "1000000",
+				MaxTransferAmount:            sdkmath.NewInt(1000000),
 				ValidatorThresholdPercentage: 67,
 			},
-			Transfers: []*types.CrossChainTransfer{
+			Transfers: []bridgepb.CrossChainTransfer{
 				{
-					TransferId:       "transfer-100",
-					SourceChain:      "ethereum",
+					TransferId:  "transfer-100",
+					SourceChain: "ethereum",
 					TargetChain: "aura",
-					Sender:           "0x123",
-					Recipient:        "aura1test",
-					Amount: "1000000",
-				Denom: "uaura",
-					Status: types.TransferStatus_PENDING,
+					Sender:      "0x123",
+					Recipient:   "aura1test",
+					Amount:      sdkmath.NewInt(1000000),
+					Denom:       "uaura",
+					Status:      types.TransferStatus_PENDING,
 					// SubmittedHeight field removed -100,
 				},
 			},
@@ -521,21 +522,21 @@ func (suite *GenesisTestSuite) TestTransferCounterOffByOneError() {
 		ctx := suite.SdkCtx
 
 		genesis := types.GenesisState{
-			Params: &bridgepb.BridgeParams{
+			Params: bridgepb.BridgeParams{
 				Enabled:                      true,
 				MinConfirmations:             6,
 				BridgeFeeBasisPoints:         30,
-				MaxTransferAmount:            "1000000000000",
+				MaxTransferAmount:            sdkmath.NewInt(1000000000000),
 				ValidatorThresholdPercentage: 67,
 			},
-			Transfers: []*types.CrossChainTransfer{
+			Transfers: []bridgepb.CrossChainTransfer{
 				{
 					TransferId:  "transfer-1",
 					SourceChain: "ethereum",
 					TargetChain: "aura",
 					Sender:      "0x123",
 					Recipient:   "aura1test",
-					Amount:      "1000000",
+					Amount:      sdkmath.NewInt(1000000),
 					Denom:       "uaura",
 					Status:      types.TransferStatus_PENDING,
 				},
@@ -545,7 +546,7 @@ func (suite *GenesisTestSuite) TestTransferCounterOffByOneError() {
 					TargetChain: "aura",
 					Sender:      "0x456",
 					Recipient:   "aura1test2",
-					Amount:      "2000000",
+					Amount:      sdkmath.NewInt(2000000),
 					Denom:       "uaura",
 					Status:      types.TransferStatus_CONFIRMED,
 				},
@@ -555,7 +556,7 @@ func (suite *GenesisTestSuite) TestTransferCounterOffByOneError() {
 					TargetChain: "aura",
 					Sender:      "0x789",
 					Recipient:   "aura1test3",
-					Amount:      "3000000",
+					Amount:      sdkmath.NewInt(3000000),
 					Denom:       "uaura",
 					Status:      types.TransferStatus_PENDING,
 				},
@@ -589,21 +590,21 @@ func (suite *GenesisTestSuite) TestTransferCounterOffByOneError() {
 		ctx := suite.SdkCtx
 
 		genesis := types.GenesisState{
-			Params: &bridgepb.BridgeParams{
+			Params: bridgepb.BridgeParams{
 				Enabled:                      true,
 				MinConfirmations:             6,
 				BridgeFeeBasisPoints:         30,
-				MaxTransferAmount:            "1000000000000",
+				MaxTransferAmount:            sdkmath.NewInt(1000000000000),
 				ValidatorThresholdPercentage: 67,
 			},
-			Transfers: []*types.CrossChainTransfer{
+			Transfers: []bridgepb.CrossChainTransfer{
 				{
 					TransferId:  "transfer-100",
 					SourceChain: "ethereum",
 					TargetChain: "aura",
 					Sender:      "0x123",
 					Recipient:   "aura1test",
-					Amount:      "1000000",
+					Amount:      sdkmath.NewInt(1000000),
 					Denom:       "uaura",
 					Status:      types.TransferStatus_PENDING,
 				},
@@ -631,14 +632,14 @@ func (suite *GenesisTestSuite) TestTransferCounterOffByOneError() {
 		ctx := suite.SdkCtx
 
 		genesis := types.GenesisState{
-			Params: &bridgepb.BridgeParams{
+			Params: bridgepb.BridgeParams{
 				Enabled:                      true,
 				MinConfirmations:             6,
 				BridgeFeeBasisPoints:         30,
-				MaxTransferAmount:            "1000000000000",
+				MaxTransferAmount:            sdkmath.NewInt(1000000000000),
 				ValidatorThresholdPercentage: 67,
 			},
-			Transfers: []*types.CrossChainTransfer{},
+			Transfers: []bridgepb.CrossChainTransfer{},
 		}
 
 		err := suite.Keeper.InitGenesis(ctx, genesis)
@@ -661,21 +662,21 @@ func (suite *GenesisTestSuite) TestTransferCounterOffByOneError() {
 		ctx := suite.SdkCtx
 
 		genesis := types.GenesisState{
-			Params: &bridgepb.BridgeParams{
+			Params: bridgepb.BridgeParams{
 				Enabled:                      true,
 				MinConfirmations:             6,
 				BridgeFeeBasisPoints:         30,
-				MaxTransferAmount:            "1000000000000",
+				MaxTransferAmount:            sdkmath.NewInt(1000000000000),
 				ValidatorThresholdPercentage: 67,
 			},
-			Transfers: []*types.CrossChainTransfer{
+			Transfers: []bridgepb.CrossChainTransfer{
 				{
 					TransferId:  "transfer-10",
 					SourceChain: "ethereum",
 					TargetChain: "aura",
 					Sender:      "0x123",
 					Recipient:   "aura1test",
-					Amount:      "1000000",
+					Amount:      sdkmath.NewInt(1000000),
 					Denom:       "uaura",
 					Status:      types.TransferStatus_PENDING,
 				},
@@ -685,7 +686,7 @@ func (suite *GenesisTestSuite) TestTransferCounterOffByOneError() {
 					TargetChain: "aura",
 					Sender:      "0x456",
 					Recipient:   "aura1test2",
-					Amount:      "2000000",
+					Amount:      sdkmath.NewInt(2000000),
 					Denom:       "uaura",
 					Status:      types.TransferStatus_CONFIRMED,
 				},
@@ -695,7 +696,7 @@ func (suite *GenesisTestSuite) TestTransferCounterOffByOneError() {
 					TargetChain: "aura",
 					Sender:      "0x789",
 					Recipient:   "aura1test3",
-					Amount:      "3000000",
+					Amount:      sdkmath.NewInt(3000000),
 					Denom:       "uaura",
 					Status:      types.TransferStatus_PENDING,
 				},
@@ -724,21 +725,21 @@ func (suite *GenesisTestSuite) TestDuplicateTransferIDDetection() {
 
 	suite.Run("detect duplicate transfer IDs in genesis", func() {
 		genesis := types.GenesisState{
-			Params: &bridgepb.BridgeParams{
+			Params: bridgepb.BridgeParams{
 				Enabled:                      true,
 				MinConfirmations:             6,
 				BridgeFeeBasisPoints:         30,
-				MaxTransferAmount:            "1000000000000",
+				MaxTransferAmount:            sdkmath.NewInt(1000000000000),
 				ValidatorThresholdPercentage: 67,
 			},
-			Transfers: []*types.CrossChainTransfer{
+			Transfers: []bridgepb.CrossChainTransfer{
 				{
 					TransferId:  "transfer-1",
 					SourceChain: "ethereum",
 					TargetChain: "aura",
 					Sender:      "0x123",
 					Recipient:   "aura1test",
-					Amount:      "1000000",
+					Amount:      sdkmath.NewInt(1000000),
 					Denom:       "uaura",
 					Status:      types.TransferStatus_PENDING,
 				},
@@ -748,7 +749,7 @@ func (suite *GenesisTestSuite) TestDuplicateTransferIDDetection() {
 					TargetChain: "aura",
 					Sender:      "0x456",
 					Recipient:   "aura1test2",
-					Amount:      "2000000",
+					Amount:      sdkmath.NewInt(2000000),
 					Denom:       "uaura",
 					Status:      types.TransferStatus_CONFIRMED,
 				},
@@ -758,7 +759,7 @@ func (suite *GenesisTestSuite) TestDuplicateTransferIDDetection() {
 					TargetChain: "aura",
 					Sender:      "0x789",
 					Recipient:   "aura1test3",
-					Amount:      "3000000",
+					Amount:      sdkmath.NewInt(3000000),
 					Denom:       "uaura",
 					Status:      types.TransferStatus_PENDING,
 				},
@@ -774,21 +775,21 @@ func (suite *GenesisTestSuite) TestDuplicateTransferIDDetection() {
 
 	suite.Run("reject ALL duplicate IDs including non-sequential", func() {
 		genesis := types.GenesisState{
-			Params: &bridgepb.BridgeParams{
+			Params: bridgepb.BridgeParams{
 				Enabled:                      true,
 				MinConfirmations:             6,
 				BridgeFeeBasisPoints:         30,
-				MaxTransferAmount:            "1000000000000",
+				MaxTransferAmount:            sdkmath.NewInt(1000000000000),
 				ValidatorThresholdPercentage: 67,
 			},
-			Transfers: []*types.CrossChainTransfer{
+			Transfers: []bridgepb.CrossChainTransfer{
 				{
 					TransferId:  "transfer-1",
 					SourceChain: "ethereum",
 					TargetChain: "aura",
 					Sender:      "0x123",
 					Recipient:   "aura1test",
-					Amount:      "1000000",
+					Amount:      sdkmath.NewInt(1000000),
 					Denom:       "uaura",
 					Status:      types.TransferStatus_PENDING,
 				},
@@ -798,7 +799,7 @@ func (suite *GenesisTestSuite) TestDuplicateTransferIDDetection() {
 					TargetChain: "aura",
 					Sender:      "0x456",
 					Recipient:   "aura1test2",
-					Amount:      "2000000",
+					Amount:      sdkmath.NewInt(2000000),
 					Denom:       "uaura",
 					Status:      types.TransferStatus_CONFIRMED,
 				},
@@ -808,7 +809,7 @@ func (suite *GenesisTestSuite) TestDuplicateTransferIDDetection() {
 					TargetChain: "aura",
 					Sender:      "0x789",
 					Recipient:   "aura1test3",
-					Amount:      "3000000",
+					Amount:      sdkmath.NewInt(3000000),
 					Denom:       "uaura",
 					Status:      types.TransferStatus_PENDING,
 				},
@@ -824,21 +825,21 @@ func (suite *GenesisTestSuite) TestDuplicateTransferIDDetection() {
 
 	suite.Run("detect multiple duplicates", func() {
 		genesis := types.GenesisState{
-			Params: &bridgepb.BridgeParams{
+			Params: bridgepb.BridgeParams{
 				Enabled:                      true,
 				MinConfirmations:             6,
 				BridgeFeeBasisPoints:         30,
-				MaxTransferAmount:            "1000000000000",
+				MaxTransferAmount:            sdkmath.NewInt(1000000000000),
 				ValidatorThresholdPercentage: 67,
 			},
-			Transfers: []*types.CrossChainTransfer{
+			Transfers: []bridgepb.CrossChainTransfer{
 				{
 					TransferId:  "transfer-5",
 					SourceChain: "ethereum",
 					TargetChain: "aura",
 					Sender:      "0x123",
 					Recipient:   "aura1test",
-					Amount:      "1000000",
+					Amount:      sdkmath.NewInt(1000000),
 					Denom:       "uaura",
 					Status:      types.TransferStatus_PENDING,
 				},
@@ -848,7 +849,7 @@ func (suite *GenesisTestSuite) TestDuplicateTransferIDDetection() {
 					TargetChain: "aura",
 					Sender:      "0x456",
 					Recipient:   "aura1test2",
-					Amount:      "2000000",
+					Amount:      sdkmath.NewInt(2000000),
 					Denom:       "uaura",
 					Status:      types.TransferStatus_CONFIRMED,
 				},
@@ -858,7 +859,7 @@ func (suite *GenesisTestSuite) TestDuplicateTransferIDDetection() {
 					TargetChain: "aura",
 					Sender:      "0x789",
 					Recipient:   "aura1test3",
-					Amount:      "3000000",
+					Amount:      sdkmath.NewInt(3000000),
 					Denom:       "uaura",
 					Status:      types.TransferStatus_PENDING,
 				},
@@ -887,18 +888,18 @@ func TestValidateGenesis(t *testing.T) {
 		{
 			name: "nil params",
 			genesis: &types.GenesisState{
-				Params: nil,
+				Params: bridgepb.BridgeParams{},
 			},
 			expectErr: true,
 		},
 		{
 			name: "valid default genesis",
 			genesis: &types.GenesisState{
-				Params: &bridgepb.BridgeParams{
+				Params: bridgepb.BridgeParams{
 					Enabled:                      true,
 					MinConfirmations:             6,
 					BridgeFeeBasisPoints:         30,
-					MaxTransferAmount:            "1000000000000",
+					MaxTransferAmount:            sdkmath.NewInt(1000000000000),
 					ValidatorThresholdPercentage: 67,
 				},
 			},
@@ -907,11 +908,11 @@ func TestValidateGenesis(t *testing.T) {
 		{
 			name: "valid genesis with data",
 			genesis: &types.GenesisState{
-				Params: &bridgepb.BridgeParams{
+				Params: bridgepb.BridgeParams{
 					Enabled:                      true,
 					MinConfirmations:             6,
 					BridgeFeeBasisPoints:         30,
-					MaxTransferAmount:            "1000000",
+					MaxTransferAmount:            sdkmath.NewInt(1000000),
 					ValidatorThresholdPercentage: 67,
 				},
 			},
@@ -920,11 +921,11 @@ func TestValidateGenesis(t *testing.T) {
 		{
 			name: "invalid - zero min confirmations",
 			genesis: &types.GenesisState{
-				Params: &bridgepb.BridgeParams{
+				Params: bridgepb.BridgeParams{
 					Enabled:                      true,
 					MinConfirmations:             0,
 					BridgeFeeBasisPoints:         30,
-					MaxTransferAmount:            "1000000",
+					MaxTransferAmount:            sdkmath.NewInt(1000000),
 					ValidatorThresholdPercentage: 67,
 				},
 			},
@@ -933,11 +934,11 @@ func TestValidateGenesis(t *testing.T) {
 		{
 			name: "invalid - high fee basis points",
 			genesis: &types.GenesisState{
-				Params: &bridgepb.BridgeParams{
+				Params: bridgepb.BridgeParams{
 					Enabled:                      true,
 					MinConfirmations:             6,
 					BridgeFeeBasisPoints:         15000,
-					MaxTransferAmount:            "1000000",
+					MaxTransferAmount:            sdkmath.NewInt(1000000),
 					ValidatorThresholdPercentage: 67,
 				},
 			},

@@ -30,9 +30,10 @@ func TestGenesisCounterTestSuite(t *testing.T) {
 // Counter must be restored to MAX+1 (not MAX) to prevent duplicate IDs.
 //
 // Bug scenario (what this test prevents):
-//   Genesis has: transfer-1, transfer-2, transfer-5
-//   WRONG: counter = 5 → next transfer gets ID 5 → COLLISION with existing transfer-5
-//   RIGHT: counter = 6 → next transfer gets ID 6 → no collision
+//
+//	Genesis has: transfer-1, transfer-2, transfer-5
+//	WRONG: counter = 5 → next transfer gets ID 5 → COLLISION with existing transfer-5
+//	RIGHT: counter = 6 → next transfer gets ID 6 → no collision
 func (suite *GenesisCounterTestSuite) TestCounterRestorationToMaxPlusOne() {
 	suite.Run("counter set to max+1 with multiple legacy transfers", func() {
 		suite.SetupTest()
@@ -120,7 +121,7 @@ func (suite *GenesisCounterTestSuite) TestCounterRestorationToMaxPlusOne() {
 				Enabled:                      true,
 				MinConfirmations:             6,
 				BridgeFeeBasisPoints:         30,
-				MaxTransferAmount:      sdkmath.NewInt(1000000000000),
+				MaxTransferAmount:            sdkmath.NewInt(1000000000000),
 				ValidatorThresholdPercentage: 67,
 			},
 			Transfers: []types.CrossChainTransfer{
@@ -161,7 +162,7 @@ func (suite *GenesisCounterTestSuite) TestCounterRestorationToMaxPlusOne() {
 				Enabled:                      true,
 				MinConfirmations:             6,
 				BridgeFeeBasisPoints:         30,
-				MaxTransferAmount:      sdkmath.NewInt(1000000000000),
+				MaxTransferAmount:            sdkmath.NewInt(1000000000000),
 				ValidatorThresholdPercentage: 67,
 			},
 			Transfers: []types.CrossChainTransfer{},
@@ -188,7 +189,7 @@ func (suite *GenesisCounterTestSuite) TestCounterRestorationToMaxPlusOne() {
 				Enabled:                      true,
 				MinConfirmations:             6,
 				BridgeFeeBasisPoints:         30,
-				MaxTransferAmount:      sdkmath.NewInt(1000000000000),
+				MaxTransferAmount:            sdkmath.NewInt(1000000000000),
 				ValidatorThresholdPercentage: 67,
 			},
 			Transfers: []types.CrossChainTransfer{
@@ -228,7 +229,7 @@ func (suite *GenesisCounterTestSuite) TestCounterRestorationToMaxPlusOne() {
 				Enabled:                      true,
 				MinConfirmations:             6,
 				BridgeFeeBasisPoints:         30,
-				MaxTransferAmount:      sdkmath.NewInt(1000000000000),
+				MaxTransferAmount:            sdkmath.NewInt(1000000000000),
 				ValidatorThresholdPercentage: 67,
 			},
 			Transfers: []types.CrossChainTransfer{
@@ -297,7 +298,7 @@ func (suite *GenesisCounterTestSuite) TestDuplicateTransferIDRejection() {
 				Enabled:                      true,
 				MinConfirmations:             6,
 				BridgeFeeBasisPoints:         30,
-				MaxTransferAmount:      sdkmath.NewInt(1000000000000),
+				MaxTransferAmount:            sdkmath.NewInt(1000000000000),
 				ValidatorThresholdPercentage: 67,
 			},
 			Transfers: []types.CrossChainTransfer{
@@ -344,7 +345,7 @@ func (suite *GenesisCounterTestSuite) TestDuplicateTransferIDRejection() {
 				Enabled:                      true,
 				MinConfirmations:             6,
 				BridgeFeeBasisPoints:         30,
-				MaxTransferAmount:      sdkmath.NewInt(1000000000000),
+				MaxTransferAmount:            sdkmath.NewInt(1000000000000),
 				ValidatorThresholdPercentage: 67,
 			},
 			Transfers: []types.CrossChainTransfer{
@@ -386,7 +387,7 @@ func (suite *GenesisCounterTestSuite) TestDuplicateTransferIDRejection() {
 				Enabled:                      true,
 				MinConfirmations:             6,
 				BridgeFeeBasisPoints:         30,
-				MaxTransferAmount:      sdkmath.NewInt(1000000000000),
+				MaxTransferAmount:            sdkmath.NewInt(1000000000000),
 				ValidatorThresholdPercentage: 67,
 			},
 			Transfers: []types.CrossChainTransfer{
@@ -452,7 +453,7 @@ func (suite *GenesisCounterTestSuite) TestGenesisRoundTrip() {
 				Enabled:                      true,
 				MinConfirmations:             6,
 				BridgeFeeBasisPoints:         30,
-				MaxTransferAmount:      sdkmath.NewInt(1000000000000),
+				MaxTransferAmount:            sdkmath.NewInt(1000000000000),
 				ValidatorThresholdPercentage: 67,
 			},
 			Transfers: []types.CrossChainTransfer{
@@ -539,7 +540,7 @@ func (suite *GenesisCounterTestSuite) TestCounterAfterRestart() {
 				Enabled:                      true,
 				MinConfirmations:             6,
 				BridgeFeeBasisPoints:         30,
-				MaxTransferAmount:      sdkmath.NewInt(1000000000000),
+				MaxTransferAmount:            sdkmath.NewInt(1000000000000),
 				ValidatorThresholdPercentage: 67,
 			},
 			Transfers: []types.CrossChainTransfer{
@@ -594,7 +595,7 @@ func (suite *GenesisCounterTestSuite) TestCounterAfterRestart() {
 				Enabled:                      true,
 				MinConfirmations:             6,
 				BridgeFeeBasisPoints:         30,
-				MaxTransferAmount:      sdkmath.NewInt(1000000000000),
+				MaxTransferAmount:            sdkmath.NewInt(1000000000000),
 				ValidatorThresholdPercentage: 67,
 			},
 			Transfers: []types.CrossChainTransfer{
@@ -636,7 +637,7 @@ func (suite *GenesisCounterTestSuite) TestNilTransferHandling() {
 				Enabled:                      true,
 				MinConfirmations:             6,
 				BridgeFeeBasisPoints:         30,
-				MaxTransferAmount:      sdkmath.NewInt(1000000000000),
+				MaxTransferAmount:            sdkmath.NewInt(1000000000000),
 				ValidatorThresholdPercentage: 67,
 			},
 			Transfers: []types.CrossChainTransfer{
@@ -650,7 +651,7 @@ func (suite *GenesisCounterTestSuite) TestNilTransferHandling() {
 					Denom:       "uaura",
 					Status:      types.TransferStatus_PENDING,
 				},
-				nil, // Nil transfer - should be safely ignored
+				types.CrossChainTransfer{}, // Empty transfer - should be safely ignored
 				{
 					TransferId:  "transfer-10",
 					SourceChain: "bsc",
@@ -696,7 +697,7 @@ func (suite *GenesisCounterTestSuite) TestInvalidTransferIDFormats() {
 				Enabled:                      true,
 				MinConfirmations:             6,
 				BridgeFeeBasisPoints:         30,
-				MaxTransferAmount:      sdkmath.NewInt(1000000000000),
+				MaxTransferAmount:            sdkmath.NewInt(1000000000000),
 				ValidatorThresholdPercentage: 67,
 			},
 			Transfers: []types.CrossChainTransfer{
@@ -783,7 +784,7 @@ func (suite *GenesisCounterTestSuite) TestNonSequentialIDsAllowed() {
 				Enabled:                      true,
 				MinConfirmations:             6,
 				BridgeFeeBasisPoints:         30,
-				MaxTransferAmount:      sdkmath.NewInt(1000000000000),
+				MaxTransferAmount:            sdkmath.NewInt(1000000000000),
 				ValidatorThresholdPercentage: 67,
 			},
 			Transfers: []types.CrossChainTransfer{
@@ -846,7 +847,7 @@ func (suite *GenesisCounterTestSuite) TestEmptyTransferID() {
 				Enabled:                      true,
 				MinConfirmations:             6,
 				BridgeFeeBasisPoints:         30,
-				MaxTransferAmount:      sdkmath.NewInt(1000000000000),
+				MaxTransferAmount:            sdkmath.NewInt(1000000000000),
 				ValidatorThresholdPercentage: 67,
 			},
 			Transfers: []types.CrossChainTransfer{
@@ -884,7 +885,7 @@ func (suite *GenesisCounterTestSuite) TestZeroTransferID() {
 				Enabled:                      true,
 				MinConfirmations:             6,
 				BridgeFeeBasisPoints:         30,
-				MaxTransferAmount:      sdkmath.NewInt(1000000000000),
+				MaxTransferAmount:            sdkmath.NewInt(1000000000000),
 				ValidatorThresholdPercentage: 67,
 			},
 			Transfers: []types.CrossChainTransfer{
@@ -945,7 +946,7 @@ func (suite *GenesisCounterTestSuite) TestGenesisImportPerformance() {
 				Enabled:                      true,
 				MinConfirmations:             6,
 				BridgeFeeBasisPoints:         30,
-				MaxTransferAmount:      sdkmath.NewInt(1000000000000),
+				MaxTransferAmount:            sdkmath.NewInt(1000000000000),
 				ValidatorThresholdPercentage: 67,
 			},
 			Transfers: transfers,
