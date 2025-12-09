@@ -62,7 +62,7 @@ func TestGetAuraPrice_ZeroReserveA(t *testing.T) {
 	require.NoError(t, err)
 
 	// Corrupt reserve to zero
-	pool.ReserveA = "0"
+	pool.ReserveA = sdkmath.ZeroInt()
 	k.SetPool(ctx, pool)
 
 	price := k.GetAuraPrice(ctx)
@@ -86,8 +86,9 @@ func TestGetAuraPrice_InvalidReserveFormat(t *testing.T) {
 		sdk.NewCoin("usdt", sdkmath.NewInt(200_000)))
 	require.NoError(t, err)
 
-	// Corrupt reserve with invalid format
-	pool.ReserveA = "invalid"
+	// Set reserve to negative value (sdkmath.Int validates and will reject invalid values)
+	// This test verifies that even with corrupted state, the price calculation handles it gracefully
+	pool.ReserveA = sdkmath.NewInt(-1)
 	k.SetPool(ctx, pool)
 
 	price := k.GetAuraPrice(ctx)
@@ -161,11 +162,11 @@ func TestGetCurrentMinimumLiquidity_WithConfiguredTiers(t *testing.T) {
 
 	// Configure tiers
 	params := k.GetParams(ctx)
-	params.MinLiquidityTiers = []*types.MinLiquidityTier{
-		{MaxAuraPriceUsd: "0.20", MinLiquidityUsd: "1000"},   // Bootstrap: < $0.20
-		{MaxAuraPriceUsd: "1.00", MinLiquidityUsd: "5000"},   // Growth: $0.20 - $1.00
-		{MaxAuraPriceUsd: "5.00", MinLiquidityUsd: "25000"},  // Maturity: $1.00 - $5.00
-		{MaxAuraPriceUsd: "0", MinLiquidityUsd: "100000"},    // Scale: > $5.00 (0 = no max)
+	params.MinLiquidityTiers = []types.MinLiquidityTier{
+		{MaxAuraPriceUsd: sdkmath.LegacyMustNewDecFromStr("0.20"), MinLiquidityUsd: sdkmath.LegacyMustNewDecFromStr("1000")},   // Bootstrap: < $0.20
+		{MaxAuraPriceUsd: sdkmath.LegacyMustNewDecFromStr("1.00"), MinLiquidityUsd: sdkmath.LegacyMustNewDecFromStr("5000")},   // Growth: $0.20 - $1.00
+		{MaxAuraPriceUsd: sdkmath.LegacyMustNewDecFromStr("5.00"), MinLiquidityUsd: sdkmath.LegacyMustNewDecFromStr("25000")},  // Maturity: $1.00 - $5.00
+		{MaxAuraPriceUsd: sdkmath.LegacyZeroDec(), MinLiquidityUsd: sdkmath.LegacyMustNewDecFromStr("100000")},                 // Scale: > $5.00 (0 = no max)
 	}
 	err := k.SetParams(ctx, params)
 	require.NoError(t, err)
@@ -193,11 +194,11 @@ func TestGetCurrentMinimumLiquidity_TierLogic(t *testing.T) {
 
 	// Configure tiers with specific boundaries
 	params := k.GetParams(ctx)
-	params.MinLiquidityTiers = []*types.MinLiquidityTier{
-		{MaxAuraPriceUsd: "0.20", MinLiquidityUsd: "1000"},   // Bootstrap: < $0.20
-		{MaxAuraPriceUsd: "1.00", MinLiquidityUsd: "5000"},   // Growth: $0.20 - $1.00
-		{MaxAuraPriceUsd: "5.00", MinLiquidityUsd: "25000"},  // Maturity: $1.00 - $5.00
-		{MaxAuraPriceUsd: "0", MinLiquidityUsd: "100000"},    // Scale: > $5.00 (0 = no max)
+	params.MinLiquidityTiers = []types.MinLiquidityTier{
+		{MaxAuraPriceUsd: sdkmath.LegacyMustNewDecFromStr("0.20"), MinLiquidityUsd: sdkmath.LegacyMustNewDecFromStr("1000")},   // Bootstrap: < $0.20
+		{MaxAuraPriceUsd: sdkmath.LegacyMustNewDecFromStr("1.00"), MinLiquidityUsd: sdkmath.LegacyMustNewDecFromStr("5000")},   // Growth: $0.20 - $1.00
+		{MaxAuraPriceUsd: sdkmath.LegacyMustNewDecFromStr("5.00"), MinLiquidityUsd: sdkmath.LegacyMustNewDecFromStr("25000")},  // Maturity: $1.00 - $5.00
+		{MaxAuraPriceUsd: sdkmath.LegacyZeroDec(), MinLiquidityUsd: sdkmath.LegacyMustNewDecFromStr("100000")},                 // Scale: > $5.00 (0 = no max)
 	}
 	err := k.SetParams(ctx, params)
 	require.NoError(t, err)
@@ -242,8 +243,8 @@ func TestGetCurrentMinimumLiquidity_TierLogic(t *testing.T) {
 				require.NoError(t, err)
 			} else {
 				// Update existing pool reserves to change price
-				pool.ReserveA = sdkmath.NewInt(reserveAura).String()
-				pool.ReserveB = sdkmath.NewInt(reserveUSDT).String()
+				pool.ReserveA = sdkmath.NewInt(reserveAura)
+				pool.ReserveB = sdkmath.NewInt(reserveUSDT)
 				k.SetPool(ctx, pool)
 			}
 
@@ -331,7 +332,7 @@ func TestGetPoolPrice_ZeroReserve(t *testing.T) {
 	require.NoError(t, err)
 
 	// Corrupt reserve to zero
-	pool.ReserveA = "0"
+	pool.ReserveA = sdkmath.ZeroInt()
 	k.SetPool(ctx, pool)
 
 	// Should error on zero reserve

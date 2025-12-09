@@ -8,7 +8,6 @@ import (
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 	"github.com/aequitas/aura/chain/x/bridge/keeper"
@@ -47,7 +46,7 @@ func TestFraudProofWindowEnforcement(t *testing.T) {
 		TargetChain: "aura",
 		Sender:      "ethereum:0xsender",
 		Recipient:   recipient.String(),
-		Amount:      amount.String(),
+		Amount:      amount,
 		Denom:       denom,
 		Status:      types.TransferStatus_RELAYED,
 	}
@@ -60,12 +59,12 @@ func TestFraudProofWindowEnforcement(t *testing.T) {
 	pending := &types.PendingTransfer{
 		TransferId:   transferID,
 		Recipient:    recipient.String(),
-		Amount:       amount.String(),
+		Amount:       amount,
 		Denom:        denom,
 		SourceChain:  sourceChain,
 		SourceTxHash: burnTxHash,
-		CreatedAt:    timestamppb.New(currentTime),
-		UnlockTime:   timestamppb.New(unlockTime),
+		CreatedAt:    currentTime,
+		UnlockTime:   unlockTime,
 		Challenged:   false,
 	}
 	k.SetPendingTransfer(ctx, pending)
@@ -75,10 +74,10 @@ func TestFraudProofWindowEnforcement(t *testing.T) {
 	require.True(t, found, "pending transfer should be created")
 	require.Equal(t, transferID, retrievedPending.TransferId)
 	require.Equal(t, recipient.String(), retrievedPending.Recipient)
-	require.Equal(t, amount.String(), retrievedPending.Amount)
+	require.True(t, retrievedPending.Amount.Equal(amount))
 	require.Equal(t, denom, retrievedPending.Denom)
 	require.False(t, retrievedPending.Challenged)
-	require.Equal(t, unlockTime, retrievedPending.UnlockTime.AsTime())
+	require.Equal(t, unlockTime, retrievedPending.UnlockTime)
 
 	// TEST 1: Attempt to finalize immediately (should fail - window not expired)
 	err = k.FinalizeTransfer(ctx, transferID)
@@ -102,7 +101,7 @@ func TestFraudProofWindowEnforcement(t *testing.T) {
 	require.True(t, balance.Amount.IsZero(), "tokens should not be minted yet")
 
 	// TEST 3: Advance time to exactly when window expires
-	ctx = ctx.WithBlockTime(pending.UnlockTime.AsTime())
+	ctx = ctx.WithBlockTime(pending.UnlockTime)
 
 	// Now finalization should succeed
 	err = k.FinalizeTransfer(ctx, transferID)
@@ -153,7 +152,7 @@ func TestFraudProofChallengeBlocksFinalization(t *testing.T) {
 		TargetChain: "aura",
 		Sender:      "ethereum:0xsender",
 		Recipient:   recipient.String(),
-		Amount:      amount.String(),
+		Amount:      amount,
 		Denom:       denom,
 		Status:      types.TransferStatus_RELAYED,
 	}
@@ -165,12 +164,12 @@ func TestFraudProofChallengeBlocksFinalization(t *testing.T) {
 	pending := &types.PendingTransfer{
 		TransferId:   transferID,
 		Recipient:    recipient.String(),
-		Amount:       amount.String(),
+		Amount:       amount,
 		Denom:        denom,
 		SourceChain:  sourceChain,
 		SourceTxHash: burnTxHash,
-		CreatedAt:    timestamppb.New(currentTime),
-		UnlockTime:   timestamppb.New(unlockTime),
+		CreatedAt:    currentTime,
+		UnlockTime:   unlockTime,
 		Challenged:   false,
 	}
 	k.SetPendingTransfer(ctx, pending)
@@ -194,7 +193,7 @@ func TestFraudProofChallengeBlocksFinalization(t *testing.T) {
 	require.NotEmpty(t, pending.FraudProofId)
 
 	// Advance time past the fraud proof window
-	ctx = ctx.WithBlockTime(pending.UnlockTime.AsTime().Add(1 * time.Hour))
+	ctx = ctx.WithBlockTime(pending.UnlockTime.Add(1 * time.Hour))
 
 	// Attempt to finalize (should fail because transfer is challenged)
 	err = k.FinalizeTransfer(ctx, transferID)
@@ -242,12 +241,12 @@ func TestFraudProofSubmissionAfterWindowFails(t *testing.T) {
 	pending := &types.PendingTransfer{
 		TransferId:   transferID,
 		Recipient:    recipient.String(),
-		Amount:       amount.String(),
+		Amount:       amount,
 		Denom:        denom,
 		SourceChain:  "ethereum",
 		SourceTxHash: "0xhash",
-		CreatedAt:    timestamppb.New(currentTime),
-		UnlockTime:   timestamppb.New(unlockTime),
+		CreatedAt:    currentTime,
+		UnlockTime:   unlockTime,
 		Challenged:   false,
 	}
 	// Use internal helper to set pending transfer
@@ -292,12 +291,12 @@ func TestMultiplePendingTransfers(t *testing.T) {
 		pending := &types.PendingTransfer{
 			TransferId:   transferID,
 			Recipient:    recipient.String(),
-			Amount:       math.NewInt(int64((i + 1) * 1000000)).String(),
+			Amount:       math.NewInt(int64((i + 1) * 1000000)),
 			Denom:        "uatom",
 			SourceChain:  "ethereum",
 			SourceTxHash: fmt.Sprintf("0xhash%d", i),
-			CreatedAt:    timestamppb.New(ctx.BlockTime()),
-			UnlockTime:   timestamppb.New(ctx.BlockTime().Add(1 * time.Hour)),
+			CreatedAt:    ctx.BlockTime(),
+			UnlockTime:   ctx.BlockTime().Add(1 * time.Hour),
 			Challenged:   false,
 		}
 		k.SetPendingTransfer(ctx, pending)

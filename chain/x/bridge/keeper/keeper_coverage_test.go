@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/codec"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 	"github.com/aequitas/aura/chain/x/bridge/keeper"
@@ -898,12 +898,12 @@ func TestProcessExpiredPendingTransfers(t *testing.T) {
 		pending := &types.PendingTransfer{
 			TransferId:   transferID,
 			Recipient:    "cosmos1recipient",
-			Amount:       "1000",
+			Amount:       math.NewInt(1000),
 			Denom:        "uaura",
 			SourceChain:  "ethereum",
 			SourceTxHash: "0xhash",
-			CreatedAt:    timestamppb.New(input.Ctx.BlockTime()),
-			UnlockTime:   timestamppb.New(input.Ctx.BlockTime().Add(-1 * time.Hour)), // Expired
+			CreatedAt:    input.Ctx.BlockTime(),
+			UnlockTime:   input.Ctx.BlockTime().Add(-1 * time.Hour), // Expired
 			Challenged:   true, // Challenged
 			FraudProofId: "fraud-001",
 		}
@@ -930,12 +930,12 @@ func TestProcessExpiredPendingTransfers(t *testing.T) {
 			pending := &types.PendingTransfer{
 				TransferId:   transferID,
 				Recipient:    "cosmos1recipient",
-				Amount:       "1000",
+				Amount:       math.NewInt(1000),
 				Denom:        "uaura",
 				SourceChain:  "ethereum",
 				SourceTxHash: "0xhash" + string(rune('0'+i)),
-				CreatedAt:    timestamppb.New(input.Ctx.BlockTime()),
-				UnlockTime:   timestamppb.New(input.Ctx.BlockTime().Add(1 * time.Hour)), // Not expired
+				CreatedAt:    input.Ctx.BlockTime(),
+				UnlockTime:   input.Ctx.BlockTime().Add(1 * time.Hour), // Not expired
 				Challenged:   false,
 				FraudProofId: "",
 			}
@@ -974,12 +974,12 @@ func TestProcessExpiredPendingTransfers(t *testing.T) {
 		pending := &types.PendingTransfer{
 			TransferId:   transferID,
 			Recipient:    "cosmos1recipient",
-			Amount:       "1000",
+			Amount:       math.NewInt(1000),
 			Denom:        "uaura",
 			SourceChain:  "ethereum",
 			SourceTxHash: "0xhash",
-			CreatedAt:    timestamppb.New(input.Ctx.BlockTime()),
-			UnlockTime:   timestamppb.New(input.Ctx.BlockTime().Add(24 * time.Hour)), // Future
+			CreatedAt:    input.Ctx.BlockTime(),
+			UnlockTime:   input.Ctx.BlockTime().Add(24 * time.Hour), // Future
 			Challenged:   false,
 			FraudProofId: "",
 		}
@@ -1005,12 +1005,12 @@ func TestProcessExpiredPendingTransfers(t *testing.T) {
 		pending := &types.PendingTransfer{
 			TransferId:   transferID,
 			Recipient:    "cosmos1recipient",
-			Amount:       "1000",
+			Amount:       math.NewInt(1000),
 			Denom:        "uaura",
 			SourceChain:  "ethereum",
 			SourceTxHash: "0xhash",
-			CreatedAt:    timestamppb.New(input.Ctx.BlockTime()),
-			UnlockTime:   timestamppb.New(input.Ctx.BlockTime().Add(-1 * time.Hour)), // Expired
+			CreatedAt:    input.Ctx.BlockTime(),
+			UnlockTime:   input.Ctx.BlockTime().Add(-1 * time.Hour), // Expired
 			Challenged:   true, // Challenged
 			FraudProofId: "fraud-001",
 		}

@@ -52,7 +52,7 @@ func TestCrossChainTransferFlowWithMerkleProof(t *testing.T) {
 			Sender:      sender,
 			Recipient:   recipient,
 			TargetChain: "paw",
-			Amount:      &coin,
+			Amount:      coin,
 		})
 		require.NoError(t, err)
 		require.NotEmpty(t, resp.TransferId)
@@ -78,7 +78,7 @@ func TestCrossChainTransferFlowWithMerkleProof(t *testing.T) {
 	leaves := make([][]byte, len(exported.Transfers))
 	targetIdx := -1
 	for i, tf := range exported.Transfers {
-		leaves[i] = input.Cdc.MustMarshal(tf)
+		leaves[i] = input.Cdc.MustMarshal(&tf)
 		if tf.TransferId == transferID {
 			targetIdx = i
 		}

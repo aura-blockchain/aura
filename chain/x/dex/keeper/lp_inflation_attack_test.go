@@ -349,11 +349,11 @@ func (suite *LPInflationAttackTestSuite) TestDonationAttack_LPInvariantProtectio
 	suite.Require().NoError(err, "LP invariant should hold even after donation")
 
 	// Verify the values haven't changed
-	suite.Require().Equal(initialTotalLP, pool.TotalLpTokens,
+	suite.Require().Equal(initialTotalLP.String(), pool.TotalLpTokens.String(),
 		"donation should not affect total LP tokens")
-	suite.Require().Equal(initialLockedLP, pool.LockedLiquidity,
+	suite.Require().Equal(initialLockedLP.String(), pool.LockedLiquidity.String(),
 		"donation should not affect locked liquidity")
-	suite.Require().Equal(creatorLP.String(), pool.Providers[0].LpTokens,
+	suite.Require().Equal(creatorLP.String(), pool.Providers[0].LpTokens.String(),
 		"donation should not affect provider LP tokens")
 }
 
@@ -572,7 +572,7 @@ func (suite *LPInflationAttackTestSuite) TestLargePoolCreation_MinimumLiquidityN
 
 	// Calculate expected LP: sqrt(10^24) = 10^12
 	expectedTotalLP := math.NewInt(1_000_000_000_000)
-	suite.Require().Equal(expectedTotalLP.String(), pool.TotalLpTokens)
+	suite.Require().Equal(expectedTotalLP.String(), pool.TotalLpTokens.String())
 
 	// Locked liquidity is 1000 (negligible compared to 10^12)
 	lockedLP := math.NewInt(1000)
@@ -643,8 +643,8 @@ func (suite *LPInflationAttackTestSuite) TestEdgeCase_ExactMinimumBurn() {
 	)
 
 	suite.Require().NoError(err, "pool with minimum amounts should succeed")
-	suite.Require().Equal("10000", pool.TotalLpTokens)
-	suite.Require().Equal("1000", pool.LockedLiquidity)
+	suite.Require().Equal(math.NewInt(10000).String(), pool.TotalLpTokens.String())
+	suite.Require().Equal(math.NewInt(1000).String(), pool.LockedLiquidity.String())
 	suite.Require().Equal("9000", creatorLP.String(), "creator gets total - locked")
 }
 
@@ -727,7 +727,7 @@ func (suite *LPInflationAttackTestSuite) TestGenesisExportImport_LockedLiquidity
 	suite.Require().NoError(err)
 
 	// Verify locked liquidity is set
-	suite.Require().Equal("1000", originalPool.LockedLiquidity)
+	suite.Require().Equal(math.NewInt(1000).String(), originalPool.LockedLiquidity.String())
 
 	// Simulate genesis export by reading the pool
 	exportedPool := suite.Keeper.GetPool(ctx, "uaura-usdc")
@@ -739,9 +739,9 @@ func (suite *LPInflationAttackTestSuite) TestGenesisExportImport_LockedLiquidity
 
 	// Verify locked liquidity persisted
 	importedPool := suite.Keeper.GetPool(ctx, "uaura-usdc")
-	suite.Require().Equal(originalPool.LockedLiquidity, importedPool.LockedLiquidity,
+	suite.Require().Equal(originalPool.LockedLiquidity.String(), importedPool.LockedLiquidity.String(),
 		"locked liquidity should persist through export/import")
-	suite.Require().Equal("1000", importedPool.LockedLiquidity)
+	suite.Require().Equal(math.NewInt(1000).String(), importedPool.LockedLiquidity.String())
 
 	// Verify invariant still holds
 	err = suite.Keeper.ValidateLPTokenInvariantExported(importedPool)
@@ -844,7 +844,7 @@ func (suite *LPInflationAttackTestSuite) TestInvariantCheck_AfterEveryOperation(
 	suite.Require().NoError(err, "invariant should hold even with only locked liquidity remaining")
 
 	// Verify only locked liquidity remains
-	suite.Require().Equal("1000", pool.TotalLpTokens)
-	suite.Require().Equal("1000", pool.LockedLiquidity)
+	suite.Require().Equal(math.NewInt(1000).String(), pool.TotalLpTokens.String())
+	suite.Require().Equal(math.NewInt(1000).String(), pool.LockedLiquidity.String())
 	suite.Require().Len(pool.Providers, 0, "no providers should remain")
 }
