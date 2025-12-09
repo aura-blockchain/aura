@@ -70,3 +70,22 @@ func VerificationIndexKey(dataID string, verifier string) []byte {
 	key := append(VerificationIndexKeyPrefix, []byte(dataID)...)
 	return append(key, []byte(verifier)...)
 }
+
+// PrefixEndBytes returns the end bytes for a prefix, used for iteration
+func PrefixEndBytes(prefix []byte) []byte {
+	if len(prefix) == 0 {
+		return nil
+	}
+
+	end := make([]byte, len(prefix))
+	copy(end, prefix)
+
+	for i := len(end) - 1; i >= 0; i-- {
+		end[i]++
+		if end[i] != 0 {
+			return end
+		}
+	}
+
+	return nil
+}

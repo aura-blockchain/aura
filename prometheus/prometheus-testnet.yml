@@ -27,7 +27,7 @@ scrape_configs:
   # =========================================================================
   - job_name: 'validator-1'
     static_configs:
-      - targets: ['validator-1:26660']
+      - targets: ['172.26.0.10:26660']
         labels:
           validator: 'validator-1'
           validator_index: '1'
@@ -39,7 +39,7 @@ scrape_configs:
   # =========================================================================
   - job_name: 'validator-2'
     static_configs:
-      - targets: ['validator-2:26660']
+      - targets: ['172.26.0.11:26660']
         labels:
           validator: 'validator-2'
           validator_index: '2'
@@ -51,7 +51,7 @@ scrape_configs:
   # =========================================================================
   - job_name: 'validator-3'
     static_configs:
-      - targets: ['validator-3:26660']
+      - targets: ['172.26.0.12:26660']
         labels:
           validator: 'validator-3'
           validator_index: '3'
@@ -63,7 +63,7 @@ scrape_configs:
   # =========================================================================
   - job_name: 'validator-4'
     static_configs:
-      - targets: ['validator-4:26660']
+      - targets: ['172.26.0.13:26660']
         labels:
           validator: 'validator-4'
           validator_index: '4'
@@ -80,13 +80,6 @@ scrape_configs:
           role: 'monitoring'
 
 # ============================================================================
-# Metric Relabeling - Standardize Labels
+# Note: metric_relabel_configs would be added per-job if needed
+# Global external_labels above already apply chain/network context
 # ============================================================================
-# Add chain-specific labels to all metrics
-metric_relabel_configs:
-  - source_labels: [__name__]
-    target_label: chain
-    replacement: 'aura'
-  - source_labels: [__name__]
-    target_label: network
-    replacement: 'testnet'

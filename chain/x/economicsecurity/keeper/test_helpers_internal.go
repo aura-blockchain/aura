@@ -21,7 +21,8 @@ import (
 )
 
 const (
-	testStoreKey = "economicsecurity"
+	testStoreKey  = "economicsecurity"
+	testAuthority = "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr"
 )
 
 var (
@@ -56,11 +57,35 @@ func setupKeeperForTest(t *testing.T) (*Keeper, sdk.Context) {
 	cdc := codec.NewProtoCodec(registry)
 
 	logger := log.NewNopLogger()
-	authority := "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr" // test governance address
+	authority := testAuthority // test governance address
 
 	// Create params store with default params
 	defaultParams := types.DefaultParams()
-	paramsStore := params.NewStore(*defaultParams)
+	k, ctx := buildKeeperWithParams(t, storeKey, cdc, authority, defaultParams, stateStore, logger)
+
+	// Initialize params
+	require.NoError(t, k.SetParams(*defaultParams))
+
+	return k, ctx
+}
+
+// buildKeeperWithParams constructs a keeper using the provided params without validating them first.
+func buildKeeperWithParams(
+	t *testing.T,
+	storeKey *storetypes.KVStoreKey,
+	cdc codec.BinaryCodec,
+	authority string,
+	paramsVal *types.Params,
+	stateStore store.CommitMultiStore,
+	logger log.Logger,
+) (*Keeper, sdk.Context) {
+	t.Helper()
+
+	if paramsVal == nil {
+		paramsVal = types.DefaultParams()
+	}
+
+	paramsStore := params.NewStore(*paramsVal)
 
 	k := NewKeeper(
 		cdc,
@@ -70,9 +95,32 @@ func setupKeeperForTest(t *testing.T) (*Keeper, sdk.Context) {
 	)
 
 	ctx := sdk.NewContext(stateStore, cmtproto.Header{}, false, logger)
-
-	// Initialize params
-	require.NoError(t, k.SetParams(*defaultParams))
-
 	return k, ctx
+}
+
+// setupKeeperWithCustomParams builds a keeper initialized with the supplied params.
+// Params are not re-validated here so tests can construct deliberately invalid configurations.
+func setupKeeperWithCustomParams(t *testing.T, paramsVal *types.Params) (*Keeper, sdk.Context) {
+	t.Helper()
+
+	setupSDKConfigOnce.Do(func() {
+		config := sdk.GetConfig()
+		config.SetBech32PrefixForAccount("aura", "aurapub")
+		config.SetBech32PrefixForValidator("auravaloper", "auravaloper pub")
+		config.SetBech32PrefixForConsensusNode("auravalcons", "auravalconspub")
+		config.Seal()
+	})
+
+	storeKey := storetypes.NewKVStoreKey(testStoreKey)
+	db := dbm.NewMemDB()
+	stateStore := store.NewCommitMultiStore(db, log.NewNopLogger(), metrics.NewNoOpMetrics())
+	stateStore.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, db)
+	require.NoError(t, stateStore.LoadLatestVersion())
+
+	registry := codectypes.NewInterfaceRegistry()
+	cdc := codec.NewProtoCodec(registry)
+
+	logger := log.NewNopLogger()
+
+	return buildKeeperWithParams(t, storeKey, cdc, testAuthority, paramsVal, stateStore, logger)
 }

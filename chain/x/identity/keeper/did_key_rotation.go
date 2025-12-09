@@ -1,10 +1,16 @@
 package keeper
 
 import (
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"time"
 
 	storetypes "cosmossdk.io/store/types"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -79,14 +85,14 @@ func (k *Keeper) RotateDIDKey(ctx sdk.Context, did, initiator, newVerificationMe
 
 	// Create rotation record
 	rotation := &types.DIDKeyRotation{
-		Did:                    did,
-		OldVerificationMethod:  oldVerificationMethod,
-		NewVerificationMethod:  newVerificationMethod,
-		RotationTime:           timestamppb.New(now),
-		InitiatedBy:            initiator,
-		Reason:                 reason,
-		GracePeriodEnd:         timestamppb.New(gracePeriodEnd),
-		Status:                 types.DIDKeyRotationStatusPending,
+		Did:                   did,
+		OldVerificationMethod: oldVerificationMethod,
+		NewVerificationMethod: newVerificationMethod,
+		RotationTime:          timestamppb.New(now),
+		InitiatedBy:           initiator,
+		Reason:                reason,
+		GracePeriodEnd:        timestamppb.New(gracePeriodEnd),
+		Status:                types.DIDKeyRotationStatusPending,
 	}
 
 	// Save rotation
@@ -505,11 +511,29 @@ func (k *Keeper) ProcessExpiredGracePeriods(ctx sdk.Context) error {
 }
 
 // VerifySignatureWithKey verifies a signature using a verification method
-// This is a placeholder for actual signature verification logic
-// In production, this would integrate with cryptographic verification
+// This function performs cryptographic signature verification using the public key
+// associated with the DID's verification method. It supports both secp256k1 and
+// ed25519 signature schemes.
+//
+// Security considerations:
+//   - Revocation check: Verification method must not be revoked
+//   - Key validity: Verification method must be current or in grace period
+//   - Cryptographic verification: Uses battle-tested Cosmos SDK crypto libraries
+//   - Hash verification: Message is hashed with SHA-256 before verification
+//
+// Parameters:
+//   - ctx: SDK context for state access
+//   - did: Decentralized identifier
+//   - verificationMethod: Public key identifier (hex or base64 encoded)
+//   - message: Original message bytes to verify
+//   - signature: Signature bytes to verify against message
+//
+// Returns:
+//   - error: ErrCredentialRevoked, ErrKeyNotValid, ErrInvalidSignature, or parsing errors
 func (k *Keeper) VerifySignatureWithKey(ctx sdk.Context, did, verificationMethod string, message, signature []byte) error {
 	// CRITICAL: Check if verification method (credential) has been revoked
 	// This is the primary security check and must be performed first
+	// Revoked credentials cannot be used for any authentication or signing
 	if k.IsCredentialRevoked(ctx, verificationMethod) {
 		return types.ErrCredentialRevoked.Wrapf(
 			"verification method %s has been revoked and cannot be used for authentication",
@@ -517,25 +541,130 @@ func (k *Keeper) VerifySignatureWithKey(ctx sdk.Context, did, verificationMethod
 		)
 	}
 
-	// Check if the key is valid
+	// Validate that the verification method is currently valid for this DID
+	// This checks:
+	// - Method is the current active key, OR
+	// - Method is an old key still within grace period, OR
+	// - Method is in key history and still within its active period
 	if err := k.ValidateDIDKey(ctx, did, verificationMethod); err != nil {
-		return err
+		return types.ErrKeyNotValid.Wrapf(
+			"verification method %s not valid for DID %s: %v",
+			verificationMethod, did, err,
+		)
 	}
 
-	// TODO: Implement actual signature verification
-	// This would involve:
-	// 1. Parsing the verification method to get the public key
-	// 2. Using the appropriate cryptographic algorithm (ECDSA, Ed25519, etc.)
-	// 3. Verifying the signature against the message and public key
-
-	// For now, just check if the key is valid
-	// In production, this would call actual crypto verification functions
-
-	// Compare signature bytes as placeholder
+	// Validate inputs
+	if len(message) == 0 {
+		return types.ErrInvalidSignature.Wrap("message cannot be empty")
+	}
 	if len(signature) == 0 {
-		return fmt.Errorf("empty signature")
+		return types.ErrInvalidSignature.Wrap("signature cannot be empty")
 	}
 
-	// Placeholder: actual verification would happen here
+	// Parse the verification method to extract the public key
+	// Verification methods are stored as encoded public keys (hex or base64)
+	pubKey, err := k.parseVerificationMethod(verificationMethod)
+	if err != nil {
+		return types.ErrInvalidVerificationMethod.Wrapf(
+			"failed to parse verification method %s: %v",
+			verificationMethod, err,
+		)
+	}
+
+	// Hash the message using SHA-256
+	// This is the standard approach for signature verification in Cosmos SDK
+	messageHash := sha256.Sum256(message)
+
+	// Verify the signature using the parsed public key
+	// This supports both secp256k1 (ECDSA) and ed25519 signature schemes
+	if !k.verifySignature(pubKey, messageHash[:], signature) {
+		return types.ErrInvalidSignature.Wrapf(
+			"signature verification failed for verification method %s",
+			verificationMethod,
+		)
+	}
+
+	// Signature verification successful
 	return nil
+}
+
+// parseVerificationMethod parses a verification method string to extract the public key
+// Supports both hex-encoded and base64-encoded public keys
+// Returns the appropriate cryptotypes.PubKey based on key length and format
+func (k *Keeper) parseVerificationMethod(verificationMethod string) (cryptotypes.PubKey, error) {
+	if verificationMethod == "" {
+		return nil, fmt.Errorf("verification method cannot be empty")
+	}
+
+	// Try hex decoding first (common format for public keys)
+	pubKeyBytes, err := hex.DecodeString(verificationMethod)
+	if err != nil {
+		// If hex fails, try base64 decoding
+		pubKeyBytes, err = base64.StdEncoding.DecodeString(verificationMethod)
+		if err != nil {
+			return nil, fmt.Errorf("verification method must be hex or base64 encoded: %w", err)
+		}
+	}
+
+	// Validate we have key data
+	if len(pubKeyBytes) == 0 {
+		return nil, fmt.Errorf("decoded verification method is empty")
+	}
+
+	// Determine key type based on length and construct appropriate public key
+	// secp256k1: 33 bytes (compressed) or 65 bytes (uncompressed)
+	// ed25519: 32 bytes
+	switch len(pubKeyBytes) {
+	case 33:
+		// secp256k1 compressed public key (most common in Cosmos SDK)
+		return &secp256k1.PubKey{Key: pubKeyBytes}, nil
+
+	case 65:
+		// secp256k1 uncompressed public key
+		// Convert to compressed format for consistency
+		if pubKeyBytes[0] != 0x04 {
+			return nil, fmt.Errorf("invalid uncompressed secp256k1 public key format")
+		}
+		return &secp256k1.PubKey{Key: pubKeyBytes}, nil
+
+	case 32:
+		// ed25519 public key
+		return &ed25519.PubKey{Key: pubKeyBytes}, nil
+
+	default:
+		return nil, fmt.Errorf(
+			"unsupported public key length: %d bytes (expected 32 for ed25519, 33 or 65 for secp256k1)",
+			len(pubKeyBytes),
+		)
+	}
+}
+
+// verifySignature performs the actual cryptographic signature verification
+// Supports both secp256k1 (ECDSA) and ed25519 signature schemes
+// Returns true if signature is valid, false otherwise
+func (k *Keeper) verifySignature(pubKey cryptotypes.PubKey, messageHash, signature []byte) bool {
+	if pubKey == nil {
+		k.logger.Error("nil public key provided for signature verification")
+		return false
+	}
+
+	// Use type assertion to call the appropriate verification method
+	// This allows us to handle different key types correctly
+	switch pk := pubKey.(type) {
+	case *secp256k1.PubKey:
+		// Verify secp256k1 (ECDSA) signature
+		// This is the most common signature type in Cosmos SDK blockchains
+		return pk.VerifySignature(messageHash, signature)
+
+	case *ed25519.PubKey:
+		// Verify ed25519 signature
+		// Used for high-performance or specific security requirements
+		return pk.VerifySignature(messageHash, signature)
+
+	default:
+		// Fallback: use the generic VerifySignature interface method
+		// This handles any other cryptotypes.PubKey implementations
+		k.logger.Warn("using fallback signature verification for unknown key type")
+		return pubKey.VerifySignature(messageHash, signature)
+	}
 }

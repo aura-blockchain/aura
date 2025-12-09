@@ -1,516 +1,734 @@
 {
-  "dashboard": {
-    "title": "Aura Blockchain - Comprehensive Metrics (107 Total)",
-    "tags": ["aura", "comprehensive", "identity", "dex", "all-modules"],
-    "timezone": "browser",
-    "schemaVersion": 38,
-    "version": 1,
-    "refresh": "30s",
-    "panels": [
-      {
-        "id": 1,
-        "title": "Identity Module Overview (30 Metrics)",
-        "type": "row",
-        "gridPos": {"x": 0, "y": 0, "w": 24, "h": 1},
-        "collapsed": false
+  "title": "Aura Blockchain - Comprehensive Metrics (107 Total)",
+  "tags": [
+    "aura",
+    "comprehensive",
+    "identity",
+    "dex",
+    "all-modules"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "30s",
+  "panels": [
+    {
+      "id": 1,
+      "title": "Identity Module Overview (30 Metrics)",
+      "type": "row",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
       },
-      {
-        "id": 2,
-        "title": "Identity: DID Registrations",
-        "type": "timeseries",
-        "gridPos": {"x": 0, "y": 1, "w": 8, "h": 6},
-        "targets": [
-          {
-            "expr": "rate(aura_identity_did_registrations_total[5m])",
-            "legendFormat": "Registrations/sec"
-          }
-        ]
+      "collapsed": false
+    },
+    {
+      "id": 2,
+      "title": "Identity: DID Registrations",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 8,
+        "h": 6
       },
-      {
-        "id": 3,
-        "title": "Identity: DID Updates",
-        "type": "timeseries",
-        "gridPos": {"x": 8, "y": 1, "w": 8, "h": 6},
-        "targets": [
-          {
-            "expr": "rate(aura_identity_did_updates_total[5m])",
-            "legendFormat": "Updates/sec"
-          }
-        ]
+      "targets": [
+        {
+          "expr": "rate(aura_identity_did_registrations_total[5m])",
+          "legendFormat": "Registrations/sec"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Identity: DID Updates",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 8,
+        "y": 1,
+        "w": 8,
+        "h": 6
       },
-      {
-        "id": 4,
-        "title": "Identity: DID Resolution Latency",
-        "type": "timeseries",
-        "gridPos": {"x": 16, "y": 1, "w": 8, "h": 6},
-        "targets": [
-          {
-            "expr": "histogram_quantile(0.95, rate(aura_identity_did_resolution_time_seconds_bucket[5m]))",
-            "legendFormat": "p95"
-          }
-        ]
+      "targets": [
+        {
+          "expr": "rate(aura_identity_did_updates_total[5m])",
+          "legendFormat": "Updates/sec"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Identity: DID Resolution Latency",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 16,
+        "y": 1,
+        "w": 8,
+        "h": 6
       },
-      {
-        "id": 5,
-        "title": "Identity: DID Key Rotations",
-        "type": "stat",
-        "gridPos": {"x": 0, "y": 7, "w": 6, "h": 4},
-        "targets": [
-          {
-            "expr": "sum(aura_identity_did_key_rotations_total)",
-            "legendFormat": "Total Rotations"
-          }
-        ]
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, rate(aura_identity_did_resolution_time_seconds_bucket[5m]))",
+          "legendFormat": "p95"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Identity: DID Key Rotations",
+      "type": "stat",
+      "gridPos": {
+        "x": 0,
+        "y": 7,
+        "w": 6,
+        "h": 4
       },
-      {
-        "id": 6,
-        "title": "Identity: Credentials Issued",
-        "type": "timeseries",
-        "gridPos": {"x": 6, "y": 7, "w": 9, "h": 4},
-        "targets": [
-          {
-            "expr": "rate(aura_identity_credentials_issued_total[5m])",
-            "legendFormat": "{{credential_type}}"
-          }
-        ]
+      "targets": [
+        {
+          "expr": "sum(aura_identity_did_key_rotations_total)",
+          "legendFormat": "Total Rotations"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Identity: Credentials Issued",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 6,
+        "y": 7,
+        "w": 9,
+        "h": 4
       },
-      {
-        "id": 7,
-        "title": "Identity: Credentials Revoked",
-        "type": "timeseries",
-        "gridPos": {"x": 15, "y": 7, "w": 9, "h": 4},
-        "targets": [
-          {
-            "expr": "rate(aura_identity_credentials_revoked_total[5m])",
-            "legendFormat": "{{reason}}"
-          }
-        ]
+      "targets": [
+        {
+          "expr": "rate(aura_identity_credentials_issued_total[5m])",
+          "legendFormat": "{{credential_type}}"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Identity: Credentials Revoked",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 15,
+        "y": 7,
+        "w": 9,
+        "h": 4
       },
-      {
-        "id": 8,
-        "title": "Identity: Credential Verifications",
-        "type": "timeseries",
-        "gridPos": {"x": 0, "y": 11, "w": 12, "h": 6},
-        "targets": [
-          {
-            "expr": "rate(aura_identity_credentials_verified_total[5m])",
-            "legendFormat": "Verifications/sec"
-          }
-        ]
+      "targets": [
+        {
+          "expr": "rate(aura_identity_credentials_revoked_total[5m])",
+          "legendFormat": "{{reason}}"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Identity: Credential Verifications",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 11,
+        "w": 12,
+        "h": 6
       },
-      {
-        "id": 9,
-        "title": "Identity: Credential Age Distribution",
-        "type": "heatmap",
-        "gridPos": {"x": 12, "y": 11, "w": 12, "h": 6},
-        "targets": [
-          {
-            "expr": "rate(aura_identity_credential_age_days_bucket[5m])",
-            "format": "heatmap"
-          }
-        ]
+      "targets": [
+        {
+          "expr": "rate(aura_identity_credentials_verified_total[5m])",
+          "legendFormat": "Verifications/sec"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "title": "Identity: Credential Age Distribution",
+      "type": "heatmap",
+      "gridPos": {
+        "x": 12,
+        "y": 11,
+        "w": 12,
+        "h": 6
       },
-      {
-        "id": 10,
-        "title": "Identity: Active Sessions",
-        "type": "gauge",
-        "gridPos": {"x": 0, "y": 17, "w": 6, "h": 6},
-        "targets": [
-          {
-            "expr": "aura_identity_sessions_active",
-            "legendFormat": "Active Sessions"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "thresholds": {
-              "steps": [
-                {"value": 0, "color": "green"},
-                {"value": 1000, "color": "yellow"},
-                {"value": 10000, "color": "red"}
-              ]
-            }
+      "targets": [
+        {
+          "expr": "rate(aura_identity_credential_age_days_bucket[5m])",
+          "format": "heatmap"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "title": "Identity: Active Sessions",
+      "type": "gauge",
+      "gridPos": {
+        "x": 0,
+        "y": 17,
+        "w": 6,
+        "h": 6
+      },
+      "targets": [
+        {
+          "expr": "aura_identity_sessions_active",
+          "legendFormat": "Active Sessions"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "steps": [
+              {
+                "value": 0,
+                "color": "green"
+              },
+              {
+                "value": 1000,
+                "color": "yellow"
+              },
+              {
+                "value": 10000,
+                "color": "red"
+              }
+            ]
           }
         }
-      },
-      {
-        "id": 11,
-        "title": "Identity: Sessions Created",
-        "type": "timeseries",
-        "gridPos": {"x": 6, "y": 17, "w": 9, "h": 6},
-        "targets": [
-          {
-            "expr": "rate(aura_identity_sessions_created_total[5m])",
-            "legendFormat": "Sessions/sec"
-          }
-        ]
-      },
-      {
-        "id": 12,
-        "title": "Identity: Sessions Terminated",
-        "type": "timeseries",
-        "gridPos": {"x": 15, "y": 17, "w": 9, "h": 6},
-        "targets": [
-          {
-            "expr": "rate(aura_identity_sessions_terminated_total[5m])",
-            "legendFormat": "{{reason}}"
-          }
-        ]
-      },
-      {
-        "id": 13,
-        "title": "Identity: Multisig Proposals",
-        "type": "stat",
-        "gridPos": {"x": 0, "y": 23, "w": 8, "h": 4},
-        "targets": [
-          {
-            "expr": "aura_identity_multisig_proposals_pending",
-            "legendFormat": "Pending Proposals"
-          }
-        ]
-      },
-      {
-        "id": 14,
-        "title": "Identity: Multisig Executions",
-        "type": "timeseries",
-        "gridPos": {"x": 8, "y": 23, "w": 8, "h": 4},
-        "targets": [
-          {
-            "expr": "rate(aura_identity_multisig_executions_total[5m])",
-            "legendFormat": "Executions/sec"
-          }
-        ]
-      },
-      {
-        "id": 15,
-        "title": "Identity: Role Assignments",
-        "type": "stat",
-        "gridPos": {"x": 16, "y": 23, "w": 8, "h": 4},
-        "targets": [
-          {
-            "expr": "sum(aura_identity_role_assignments_total)",
-            "legendFormat": "Total Assignments"
-          }
-        ]
-      },
-      {
-        "id": 16,
-        "title": "DEX Module Overview (35 Metrics)",
-        "type": "row",
-        "gridPos": {"x": 0, "y": 27, "w": 24, "h": 1},
-        "collapsed": false
-      },
-      {
-        "id": 17,
-        "title": "DEX: Total Swaps",
-        "type": "timeseries",
-        "gridPos": {"x": 0, "y": 28, "w": 8, "h": 6},
-        "targets": [
-          {
-            "expr": "sum(rate(aura_dex_swaps_total{status=\"success\"}[5m])) by (pool)",
-            "legendFormat": "Success - {{pool}}"
-          },
-          {
-            "expr": "sum(rate(aura_dex_swaps_total{status=\"failed\"}[5m])) by (pool)",
-            "legendFormat": "Failed - {{pool}}"
-          }
-        ]
-      },
-      {
-        "id": 18,
-        "title": "DEX: Swap Volume",
-        "type": "timeseries",
-        "gridPos": {"x": 8, "y": 28, "w": 8, "h": 6},
-        "targets": [
-          {
-            "expr": "rate(aura_dex_swap_volume[5m])",
-            "legendFormat": "{{pool}} - {{denom}}"
-          }
-        ]
-      },
-      {
-        "id": 19,
-        "title": "DEX: Swap Latency",
-        "type": "timeseries",
-        "gridPos": {"x": 16, "y": 28, "w": 8, "h": 6},
-        "targets": [
-          {
-            "expr": "histogram_quantile(0.95, rate(aura_dex_swap_latency_seconds_bucket[5m]))",
-            "legendFormat": "p95"
-          }
-        ]
-      },
-      {
-        "id": 20,
-        "title": "DEX: Swap Slippage",
-        "type": "gauge",
-        "gridPos": {"x": 0, "y": 34, "w": 8, "h": 6},
-        "targets": [
-          {
-            "expr": "avg(aura_dex_swap_slippage)",
-            "legendFormat": "Avg Slippage %"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "unit": "percent",
-            "thresholds": {
-              "steps": [
-                {"value": 0, "color": "green"},
-                {"value": 1, "color": "yellow"},
-                {"value": 5, "color": "red"}
-              ]
-            }
-          }
-        }
-      },
-      {
-        "id": 21,
-        "title": "DEX: Swap Fees Collected",
-        "type": "timeseries",
-        "gridPos": {"x": 8, "y": 34, "w": 8, "h": 6},
-        "targets": [
-          {
-            "expr": "rate(aura_dex_swap_fees_collected[5m])",
-            "legendFormat": "{{pool}} - {{denom}}"
-          }
-        ]
-      },
-      {
-        "id": 22,
-        "title": "DEX: Orderbook Orders Placed",
-        "type": "timeseries",
-        "gridPos": {"x": 16, "y": 34, "w": 8, "h": 6},
-        "targets": [
-          {
-            "expr": "rate(aura_dex_orderbook_orders_placed_total[5m])",
-            "legendFormat": "{{order_type}}"
-          }
-        ]
-      },
-      {
-        "id": 23,
-        "title": "DEX: Orderbook Orders Filled",
-        "type": "timeseries",
-        "gridPos": {"x": 0, "y": 40, "w": 12, "h": 6},
-        "targets": [
-          {
-            "expr": "rate(aura_dex_orderbook_orders_filled_total[5m])",
-            "legendFormat": "Filled/sec"
-          }
-        ]
-      },
-      {
-        "id": 24,
-        "title": "DEX: Active Limit Orders",
-        "type": "gauge",
-        "gridPos": {"x": 12, "y": 40, "w": 12, "h": 6},
-        "targets": [
-          {
-            "expr": "aura_dex_orderbook_active_limit_orders",
-            "legendFormat": "Active Orders"
-          }
-        ]
-      },
-      {
-        "id": 25,
-        "title": "DEX: Liquidity Added",
-        "type": "timeseries",
-        "gridPos": {"x": 0, "y": 46, "w": 8, "h": 6},
-        "targets": [
-          {
-            "expr": "rate(aura_dex_liquidity_added[5m])",
-            "legendFormat": "{{pool}} - {{denom}}"
-          }
-        ]
-      },
-      {
-        "id": 26,
-        "title": "DEX: Liquidity Removed",
-        "type": "timeseries",
-        "gridPos": {"x": 8, "y": 46, "w": 8, "h": 6},
-        "targets": [
-          {
-            "expr": "rate(aura_dex_liquidity_removed[5m])",
-            "legendFormat": "{{pool}} - {{denom}}"
-          }
-        ]
-      },
-      {
-        "id": 27,
-        "title": "DEX: Pool Reserves",
-        "type": "timeseries",
-        "gridPos": {"x": 16, "y": 46, "w": 8, "h": 6},
-        "targets": [
-          {
-            "expr": "aura_dex_pool_reserves",
-            "legendFormat": "{{pool}} - {{denom}}"
-          }
-        ]
-      },
-      {
-        "id": 28,
-        "title": "DEX: LP Token Supply",
-        "type": "stat",
-        "gridPos": {"x": 0, "y": 52, "w": 6, "h": 4},
-        "targets": [
-          {
-            "expr": "sum(aura_dex_lp_token_supply)",
-            "legendFormat": "Total Supply"
-          }
-        ]
-      },
-      {
-        "id": 29,
-        "title": "DEX: Total TVL (USD)",
-        "type": "stat",
-        "gridPos": {"x": 6, "y": 52, "w": 6, "h": 4},
-        "targets": [
-          {
-            "expr": "sum(aura_dex_pool_tvl_usd)",
-            "legendFormat": "Total TVL"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "unit": "currencyUSD"
-          }
-        }
-      },
-      {
-        "id": 30,
-        "title": "DEX: Pool Count",
-        "type": "stat",
-        "gridPos": {"x": 12, "y": 52, "w": 6, "h": 4},
-        "targets": [
-          {
-            "expr": "aura_dex_pools_count",
-            "legendFormat": "Active Pools"
-          }
-        ]
-      },
-      {
-        "id": 31,
-        "title": "DEX: Pool Imbalance",
-        "type": "gauge",
-        "gridPos": {"x": 18, "y": 52, "w": 6, "h": 4},
-        "targets": [
-          {
-            "expr": "aura_dex_pool_imbalance",
-            "legendFormat": "{{pool}}"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "unit": "percent"
-          }
-        }
-      },
-      {
-        "id": 32,
-        "title": "DEX: HTLC Operations",
-        "type": "timeseries",
-        "gridPos": {"x": 0, "y": 56, "w": 12, "h": 6},
-        "targets": [
-          {
-            "expr": "rate(aura_dex_htlc_created_total[5m])",
-            "legendFormat": "Created"
-          },
-          {
-            "expr": "rate(aura_dex_htlc_claimed_total[5m])",
-            "legendFormat": "Claimed"
-          },
-          {
-            "expr": "rate(aura_dex_htlc_refunded_total[5m])",
-            "legendFormat": "Refunded"
-          }
-        ]
-      },
-      {
-        "id": 33,
-        "title": "DEX: Active HTLCs",
-        "type": "gauge",
-        "gridPos": {"x": 12, "y": 56, "w": 12, "h": 6},
-        "targets": [
-          {
-            "expr": "aura_dex_htlc_active",
-            "legendFormat": "Active HTLCs"
-          }
-        ]
-      },
-      {
-        "id": 34,
-        "title": "DEX: Circuit Breaker Triggers",
-        "type": "stat",
-        "gridPos": {"x": 0, "y": 62, "w": 8, "h": 4},
-        "targets": [
-          {
-            "expr": "sum(aura_dex_circuit_breaker_triggers_total)",
-            "legendFormat": "Total Triggers"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "thresholds"
-            },
-            "thresholds": {
-              "steps": [
-                {"value": 0, "color": "green"},
-                {"value": 1, "color": "red"}
-              ]
-            }
-          }
-        }
-      },
-      {
-        "id": 35,
-        "title": "DEX: MEV Protection Events",
-        "type": "stat",
-        "gridPos": {"x": 8, "y": 62, "w": 8, "h": 4},
-        "targets": [
-          {
-            "expr": "sum(aura_dex_mev_protection_events_total)",
-            "legendFormat": "MEV Events"
-          }
-        ]
-      },
-      {
-        "id": 36,
-        "title": "DEX: TWAP Updates",
-        "type": "timeseries",
-        "gridPos": {"x": 16, "y": 62, "w": 8, "h": 4},
-        "targets": [
-          {
-            "expr": "rate(aura_dex_twap_updates_total[5m])",
-            "legendFormat": "TWAP Updates/sec"
-          }
-        ]
-      },
-      {
-        "id": 37,
-        "title": "DEX: IBC Swaps",
-        "type": "timeseries",
-        "gridPos": {"x": 0, "y": 66, "w": 12, "h": 6},
-        "targets": [
-          {
-            "expr": "rate(aura_dex_ibc_swaps_total[5m])",
-            "legendFormat": "{{source_chain}}"
-          }
-        ]
-      },
-      {
-        "id": 38,
-        "title": "DEX: IBC Latency",
-        "type": "timeseries",
-        "gridPos": {"x": 12, "y": 66, "w": 12, "h": 6},
-        "targets": [
-          {
-            "expr": "histogram_quantile(0.95, rate(aura_dex_cross_chain_latency_seconds_bucket[5m]))",
-            "legendFormat": "{{chain}}"
-          }
-        ]
       }
-    ]
-  }
+    },
+    {
+      "id": 11,
+      "title": "Identity: Sessions Created",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 6,
+        "y": 17,
+        "w": 9,
+        "h": 6
+      },
+      "targets": [
+        {
+          "expr": "rate(aura_identity_sessions_created_total[5m])",
+          "legendFormat": "Sessions/sec"
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "title": "Identity: Sessions Terminated",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 15,
+        "y": 17,
+        "w": 9,
+        "h": 6
+      },
+      "targets": [
+        {
+          "expr": "rate(aura_identity_sessions_terminated_total[5m])",
+          "legendFormat": "{{reason}}"
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "title": "Identity: Multisig Proposals",
+      "type": "stat",
+      "gridPos": {
+        "x": 0,
+        "y": 23,
+        "w": 8,
+        "h": 4
+      },
+      "targets": [
+        {
+          "expr": "aura_identity_multisig_proposals_pending",
+          "legendFormat": "Pending Proposals"
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "title": "Identity: Multisig Executions",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 8,
+        "y": 23,
+        "w": 8,
+        "h": 4
+      },
+      "targets": [
+        {
+          "expr": "rate(aura_identity_multisig_executions_total[5m])",
+          "legendFormat": "Executions/sec"
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "title": "Identity: Role Assignments",
+      "type": "stat",
+      "gridPos": {
+        "x": 16,
+        "y": 23,
+        "w": 8,
+        "h": 4
+      },
+      "targets": [
+        {
+          "expr": "sum(aura_identity_role_assignments_total)",
+          "legendFormat": "Total Assignments"
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "title": "DEX Module Overview (35 Metrics)",
+      "type": "row",
+      "gridPos": {
+        "x": 0,
+        "y": 27,
+        "w": 24,
+        "h": 1
+      },
+      "collapsed": false
+    },
+    {
+      "id": 17,
+      "title": "DEX: Total Swaps",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 28,
+        "w": 8,
+        "h": 6
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(aura_dex_swaps_total{status=\"success\"}[5m])) by (pool)",
+          "legendFormat": "Success - {{pool}}"
+        },
+        {
+          "expr": "sum(rate(aura_dex_swaps_total{status=\"failed\"}[5m])) by (pool)",
+          "legendFormat": "Failed - {{pool}}"
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "title": "DEX: Swap Volume",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 8,
+        "y": 28,
+        "w": 8,
+        "h": 6
+      },
+      "targets": [
+        {
+          "expr": "rate(aura_dex_swap_volume[5m])",
+          "legendFormat": "{{pool}} - {{denom}}"
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "title": "DEX: Swap Latency",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 16,
+        "y": 28,
+        "w": 8,
+        "h": 6
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, rate(aura_dex_swap_latency_seconds_bucket[5m]))",
+          "legendFormat": "p95"
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "title": "DEX: Swap Slippage",
+      "type": "gauge",
+      "gridPos": {
+        "x": 0,
+        "y": 34,
+        "w": 8,
+        "h": 6
+      },
+      "targets": [
+        {
+          "expr": "avg(aura_dex_swap_slippage)",
+          "legendFormat": "Avg Slippage %"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "steps": [
+              {
+                "value": 0,
+                "color": "green"
+              },
+              {
+                "value": 1,
+                "color": "yellow"
+              },
+              {
+                "value": 5,
+                "color": "red"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 21,
+      "title": "DEX: Swap Fees Collected",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 8,
+        "y": 34,
+        "w": 8,
+        "h": 6
+      },
+      "targets": [
+        {
+          "expr": "rate(aura_dex_swap_fees_collected[5m])",
+          "legendFormat": "{{pool}} - {{denom}}"
+        }
+      ]
+    },
+    {
+      "id": 22,
+      "title": "DEX: Orderbook Orders Placed",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 16,
+        "y": 34,
+        "w": 8,
+        "h": 6
+      },
+      "targets": [
+        {
+          "expr": "rate(aura_dex_orderbook_orders_placed_total[5m])",
+          "legendFormat": "{{order_type}}"
+        }
+      ]
+    },
+    {
+      "id": 23,
+      "title": "DEX: Orderbook Orders Filled",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 40,
+        "w": 12,
+        "h": 6
+      },
+      "targets": [
+        {
+          "expr": "rate(aura_dex_orderbook_orders_filled_total[5m])",
+          "legendFormat": "Filled/sec"
+        }
+      ]
+    },
+    {
+      "id": 24,
+      "title": "DEX: Active Limit Orders",
+      "type": "gauge",
+      "gridPos": {
+        "x": 12,
+        "y": 40,
+        "w": 12,
+        "h": 6
+      },
+      "targets": [
+        {
+          "expr": "aura_dex_orderbook_active_limit_orders",
+          "legendFormat": "Active Orders"
+        }
+      ]
+    },
+    {
+      "id": 25,
+      "title": "DEX: Liquidity Added",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 46,
+        "w": 8,
+        "h": 6
+      },
+      "targets": [
+        {
+          "expr": "rate(aura_dex_liquidity_added[5m])",
+          "legendFormat": "{{pool}} - {{denom}}"
+        }
+      ]
+    },
+    {
+      "id": 26,
+      "title": "DEX: Liquidity Removed",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 8,
+        "y": 46,
+        "w": 8,
+        "h": 6
+      },
+      "targets": [
+        {
+          "expr": "rate(aura_dex_liquidity_removed[5m])",
+          "legendFormat": "{{pool}} - {{denom}}"
+        }
+      ]
+    },
+    {
+      "id": 27,
+      "title": "DEX: Pool Reserves",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 16,
+        "y": 46,
+        "w": 8,
+        "h": 6
+      },
+      "targets": [
+        {
+          "expr": "aura_dex_pool_reserves",
+          "legendFormat": "{{pool}} - {{denom}}"
+        }
+      ]
+    },
+    {
+      "id": 28,
+      "title": "DEX: LP Token Supply",
+      "type": "stat",
+      "gridPos": {
+        "x": 0,
+        "y": 52,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "expr": "sum(aura_dex_lp_token_supply)",
+          "legendFormat": "Total Supply"
+        }
+      ]
+    },
+    {
+      "id": 29,
+      "title": "DEX: Total TVL (USD)",
+      "type": "stat",
+      "gridPos": {
+        "x": 6,
+        "y": 52,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "expr": "sum(aura_dex_pool_tvl_usd)",
+          "legendFormat": "Total TVL"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD"
+        }
+      }
+    },
+    {
+      "id": 30,
+      "title": "DEX: Pool Count",
+      "type": "stat",
+      "gridPos": {
+        "x": 12,
+        "y": 52,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "expr": "aura_dex_pools_count",
+          "legendFormat": "Active Pools"
+        }
+      ]
+    },
+    {
+      "id": 31,
+      "title": "DEX: Pool Imbalance",
+      "type": "gauge",
+      "gridPos": {
+        "x": 18,
+        "y": 52,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "expr": "aura_dex_pool_imbalance",
+          "legendFormat": "{{pool}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent"
+        }
+      }
+    },
+    {
+      "id": 32,
+      "title": "DEX: HTLC Operations",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 56,
+        "w": 12,
+        "h": 6
+      },
+      "targets": [
+        {
+          "expr": "rate(aura_dex_htlc_created_total[5m])",
+          "legendFormat": "Created"
+        },
+        {
+          "expr": "rate(aura_dex_htlc_claimed_total[5m])",
+          "legendFormat": "Claimed"
+        },
+        {
+          "expr": "rate(aura_dex_htlc_refunded_total[5m])",
+          "legendFormat": "Refunded"
+        }
+      ]
+    },
+    {
+      "id": 33,
+      "title": "DEX: Active HTLCs",
+      "type": "gauge",
+      "gridPos": {
+        "x": 12,
+        "y": 56,
+        "w": 12,
+        "h": 6
+      },
+      "targets": [
+        {
+          "expr": "aura_dex_htlc_active",
+          "legendFormat": "Active HTLCs"
+        }
+      ]
+    },
+    {
+      "id": 34,
+      "title": "DEX: Circuit Breaker Triggers",
+      "type": "stat",
+      "gridPos": {
+        "x": 0,
+        "y": 62,
+        "w": 8,
+        "h": 4
+      },
+      "targets": [
+        {
+          "expr": "sum(aura_dex_circuit_breaker_triggers_total)",
+          "legendFormat": "Total Triggers"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "steps": [
+              {
+                "value": 0,
+                "color": "green"
+              },
+              {
+                "value": 1,
+                "color": "red"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 35,
+      "title": "DEX: MEV Protection Events",
+      "type": "stat",
+      "gridPos": {
+        "x": 8,
+        "y": 62,
+        "w": 8,
+        "h": 4
+      },
+      "targets": [
+        {
+          "expr": "sum(aura_dex_mev_protection_events_total)",
+          "legendFormat": "MEV Events"
+        }
+      ]
+    },
+    {
+      "id": 36,
+      "title": "DEX: TWAP Updates",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 16,
+        "y": 62,
+        "w": 8,
+        "h": 4
+      },
+      "targets": [
+        {
+          "expr": "rate(aura_dex_twap_updates_total[5m])",
+          "legendFormat": "TWAP Updates/sec"
+        }
+      ]
+    },
+    {
+      "id": 37,
+      "title": "DEX: IBC Swaps",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 66,
+        "w": 12,
+        "h": 6
+      },
+      "targets": [
+        {
+          "expr": "rate(aura_dex_ibc_swaps_total[5m])",
+          "legendFormat": "{{source_chain}}"
+        }
+      ]
+    },
+    {
+      "id": 38,
+      "title": "DEX: IBC Latency",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 12,
+        "y": 66,
+        "w": 12,
+        "h": 6
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, rate(aura_dex_cross_chain_latency_seconds_bucket[5m]))",
+          "legendFormat": "{{chain}}"
+        }
+      ]
+    }
+  ]
 }

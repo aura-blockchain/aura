@@ -52,6 +52,7 @@ func (s *ComprehensiveIntegrationTestSuite) TestDEXBridgeIntegration() {
 	// 4. Bridge tokens back
 	// 5. Verify all balances and state
 
+	// Placeholder ensures suite remains runnable; implement when integration harness is available.
 	s.Require().NotNil(s.ctx)
 }
 
@@ -66,6 +67,7 @@ func (s *ComprehensiveIntegrationTestSuite) TestIRConfidenceScorePrevalidation()
 	// 4. Confidence score calculated
 	// 5. Data included or rejected based on score
 
+	// Placeholder ensures suite remains runnable; implement when integration harness is available.
 	s.Require().NotNil(s.ctx)
 }
 

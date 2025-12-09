@@ -5,7 +5,7 @@ import tmlog "cosmossdk.io/log"
 // CosmosApp aliases App to preserve backwards compatibility with existing tests.
 type CosmosApp = App
 
-// NewCosmosApp mirrors the old constructor while reusing the fully wired application.
+// NewCosmosApp creates a fully wired Cosmos SDK application with the provided logger.
 func NewCosmosApp(logger tmlog.Logger) *CosmosApp {
-	return NewAppWithLogger(logger)
+	return NewAppWithOptions(logger, nil, "")
 }

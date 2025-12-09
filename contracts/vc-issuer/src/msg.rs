@@ -2,7 +2,7 @@ use cosmwasm_schema::{cw_serde, QueryResponses};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::state::{IssueRecord, IssueRequest};
+use crate::state::{IssueRecord, IssueRequest, IssuerProfile};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {

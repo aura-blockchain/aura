@@ -12,14 +12,14 @@ import (
 
 // TestWasmKeeperInitialization tests that the wasm keeper is properly initialized
 func TestWasmKeeperInitialization(t *testing.T) {
-	app := NewApp()
+	app := NewAppWithOptions(nil, nil, "")
 	require.NotNil(t, app, "app should not be nil")
 	require.NotNil(t, app.WasmKeeper, "wasm keeper should not be nil")
 }
 
 // TestWasmStoreKeyRegistration tests that the wasm store key is properly registered
 func TestWasmStoreKeyRegistration(t *testing.T) {
-	app := NewApp()
+	app := NewAppWithOptions(nil, nil, "")
 	require.NotNil(t, app, "app should not be nil")
 	require.NotNil(t, app.storeKeys.wasm, "wasm store key should not be nil")
 	require.Equal(t, wasmtypes.StoreKey, app.storeKeys.wasm.Name(), "wasm store key should have correct name")
@@ -40,7 +40,7 @@ func TestWasmModuleAccountReceiving(t *testing.T) {
 
 // TestWasmParameters tests that wasm parameters are properly configured
 func TestWasmParameters(t *testing.T) {
-	app := NewApp()
+	app := NewAppWithOptions(nil, nil, "")
 	require.NotNil(t, app, "app should not be nil")
 	require.NotNil(t, app.WasmKeeper, "wasm keeper should not be nil")
 
@@ -75,7 +75,7 @@ func TestWasmInterfaceRegistration(t *testing.T) {
 
 // TestWasmKeeperDependencies tests that wasm keeper has all required dependencies
 func TestWasmKeeperDependencies(t *testing.T) {
-	app := NewApp()
+	app := NewAppWithOptions(nil, nil, "")
 	require.NotNil(t, app, "app should not be nil")
 
 	// Test that required keepers are initialized
@@ -89,13 +89,13 @@ func TestWasmKeeperDependencies(t *testing.T) {
 // TestAppBuildSuccess tests that the full app builds without errors
 func TestAppBuildSuccess(t *testing.T) {
 	require.NotPanics(t, func() {
-		NewApp()
+		NewAppWithOptions(nil, nil, "")
 	}, "app creation should not panic")
 }
 
 // TestAppLoadLatestVersion tests that the app can load the latest version
 func TestAppLoadLatestVersion(t *testing.T) {
-	app := NewApp()
+	app := NewAppWithOptions(nil, nil, "")
 	require.NotNil(t, app, "app should not be nil")
 
 	// The app should have loaded successfully in NewApp
@@ -106,7 +106,7 @@ func TestAppLoadLatestVersion(t *testing.T) {
 
 // TestWasmStoreIsMounted tests that the wasm store is properly mounted
 func TestWasmStoreIsMounted(t *testing.T) {
-	app := NewApp()
+	app := NewAppWithOptions(nil, nil, "")
 	require.NotNil(t, app, "app should not be nil")
 
 	ctx := app.NewUncachedContext(true, tmproto.Header{})
@@ -116,7 +116,7 @@ func TestWasmStoreIsMounted(t *testing.T) {
 
 // TestWasmModuleGasConfiguration tests wasm gas configuration
 func TestWasmModuleGasConfiguration(t *testing.T) {
-	app := NewApp()
+	app := NewAppWithOptions(nil, nil, "")
 	require.NotNil(t, app, "app should not be nil")
 
 	// The wasm config should be set with reasonable gas limits
@@ -135,7 +135,7 @@ func TestEncodingConfigCompatibility(t *testing.T) {
 	require.NotNil(t, encoding.InterfaceRegistry, "interface registry should not be nil")
 
 	// Test that we can create a new app with this encoding
-	app := NewApp()
+	app := NewAppWithOptions(nil, nil, "")
 	require.NotNil(t, app, "app should not be nil")
 	require.Equal(t, encoding.Codec.(*codec.ProtoCodec).InterfaceRegistry(), app.encoding.InterfaceRegistry,
 		"encoding configs should use compatible interface registries")

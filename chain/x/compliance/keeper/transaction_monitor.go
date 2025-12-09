@@ -308,12 +308,6 @@ func (k Keeper) IsAddressSanctioned(ctx sdk.Context, address string) bool {
 		result.Status == types.SanctionsStatus_SANCTIONS_CONFIRMED
 }
 
-// UpdateAMLProfile is DEPRECATED. Use UpdateAMLProfileOnTransaction instead.
-// This function is kept for backwards compatibility but delegates to the new implementation.
-func (k Keeper) UpdateAMLProfile(ctx sdk.Context, address sdk.AccAddress, amount sdk.Coins) error {
-	return k.UpdateAMLProfileOnTransaction(ctx, address.String(), amount)
-}
-
 // ShouldBlockTransaction determines if a transaction should be blocked based on alerts
 //
 // This function evaluates alerts and returns true if the transaction poses

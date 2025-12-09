@@ -129,8 +129,8 @@ func TestDelegationExpirationIndexCleanup(t *testing.T) {
 	require.Len(t, expiringDelegations, 0, "delegation should be removed from expiration index when inactive")
 }
 
-// TestGetAllDelegations_PaginationWarning verifies that getAllDelegations logs a warning
-func TestGetAllDelegations_PaginationWarning(t *testing.T) {
+// TestGetDelegationsPaginatedSmallSet verifies that pagination works with small dataset
+func TestGetDelegationsPaginatedSmallSet(t *testing.T) {
 	ctx, keeper := setupConfKeeper(t)
 
 	// Create multiple delegations
@@ -153,10 +153,11 @@ func TestGetAllDelegations_PaginationWarning(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	// Call getAllDelegations (deprecated method)
-	// This should log a warning but still work
-	delegations := keeper.getAllDelegations(ctx)
+	// Use paginated method to retrieve all
+	delegations, hasMore, err := keeper.getDelegationsPaginated(ctx, 0, 100)
+	require.NoError(t, err)
 	require.Len(t, delegations, 5, "expected 5 delegations")
+	require.False(t, hasMore, "should not have more results")
 }
 
 // TestGetDelegationsPaginated verifies that pagination works correctly

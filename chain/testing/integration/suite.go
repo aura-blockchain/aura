@@ -25,7 +25,7 @@ type IntegrationTestSuite struct {
 
 // SetupSuite runs once before all tests
 func (s *IntegrationTestSuite) SetupSuite() {
-	s.App = app.NewApp()
+	s.App = app.NewAppWithOptions(nil, nil, "")
 	header := tmproto.Header{
 		Height: 1,
 		Time:   time.Now(),
