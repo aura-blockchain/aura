@@ -437,3 +437,47 @@ func HTLCValidityInvariant(k *Keeper) sdk.Invariant {
 		return "", false
 	}
 }
+
+// OrderPoolIntegrityInvariant checks that all orders reference existing liquidity pools
+//
+// CRITICAL SECURITY: This invariant ensures referential integrity between orders and pools.
+// Without this check, orphaned orders could exist after pool deletion, leading to:
+//   - Orders that can never be filled (no pool to execute against)
+//   - Inability to process or cancel orders properly
+//   - Locked user funds in unfillable orders
+//   - Invalid state in the orderbook
+//
+// The invariant validates that every order's implied pool (derived from coin pair) exists.
+// This prevents the scenario where a pool is deleted but orders still reference it.
+//
+// Returns:
+//   - ("", false) if all orders reference valid pools
+//   - (error message, true) if any order references a non-existent pool
+func OrderPoolIntegrityInvariant(k *Keeper) sdk.Invariant {
+	return func(ctx sdk.Context) (string, bool) {
+		// Create cache context for consistent snapshot reads
+		cacheCtx, _ := ctx.CacheContext()
+
+		// Get all orders
+		orders := k.GetAllOrders(cacheCtx)
+
+		for _, order := range orders {
+			// Derive the pool ID from the order's coin pair
+			// Orders trade "uaura" against order.OtherCoin
+			poolID := k.GeneratePoolID("uaura", order.OtherCoin)
+
+			// Check if the pool exists
+			pool := k.GetPool(cacheCtx, poolID)
+			if pool == nil {
+				return sdk.FormatInvariant(
+					types.ModuleName,
+					"order-pool-integrity",
+					fmt.Sprintf("Order %s references non-existent pool %s (uaura/%s)",
+						order.OrderId, poolID, order.OtherCoin),
+				), true
+			}
+		}
+
+		return "", false
+	}
+}

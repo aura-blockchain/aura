@@ -341,7 +341,7 @@ func (qs queryServer) TimeLockedAction(goCtx context.Context, req *identitypb.Qu
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
-	return &identitypb.QueryTimeLockedActionResponse{Action: action}, nil
+	return &identitypb.QueryTimeLockedActionResponse{Action: &action}, nil
 }
 
 // AllTimeLockedActions queries all time-locked actions
@@ -374,7 +374,7 @@ func (qs queryServer) EmergencyAdmin(goCtx context.Context, req *identitypb.Quer
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
-	return &identitypb.QueryEmergencyAdminResponse{Admin: admin}, nil
+	return &identitypb.QueryEmergencyAdminResponse{Admin: &admin}, nil
 }
 
 // AllEmergencyAdmins queries all emergency admins
@@ -407,7 +407,7 @@ func (qs queryServer) ValidatorRotation(goCtx context.Context, req *identitypb.Q
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
-	return &identitypb.QueryValidatorRotationResponse{Rotation: rotation}, nil
+	return &identitypb.QueryValidatorRotationResponse{Rotation: &rotation}, nil
 }
 
 // Session queries a session by ID
@@ -425,7 +425,7 @@ func (qs queryServer) Session(goCtx context.Context, req *identitypb.QuerySessio
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
-	return &identitypb.QuerySessionResponse{Session: session}, nil
+	return &identitypb.QuerySessionResponse{Session: &session}, nil
 }
 
 // SessionsByAddress queries sessions for an address
@@ -471,7 +471,7 @@ func (qs queryServer) RateLimit(goCtx context.Context, req *identitypb.QueryRate
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &identitypb.QueryRateLimitResponse{Config: config}, nil
+	return &identitypb.QueryRateLimitResponse{Config: &config}, nil
 }
 
 // AuditLogs queries audit logs

@@ -130,7 +130,7 @@ If so, the node will attempt to gracefully shutdown and the block will not be co
 			if !withCMT {
 				// Stand-alone mode: create app here if not provided
 				if *auraApp == nil {
-					*auraApp = app.NewAppWithLogger(logger)
+					*auraApp = app.NewAppWithOptions(logger, nil, "")
 				}
 				logger.Info("starting ABCI without CometBFT")
 				return startStandAlone(cmd, *auraApp, logger)
@@ -953,7 +953,7 @@ func (w *CometABCIWrapper) VerifyVoteExtension(ctx context.Context, req *abci.Re
 // createAppWithDB creates a new app instance with the given database and trace writer
 // Deprecated: Use createAppWithOptions to also specify chainID
 func createAppWithDB(logger log.Logger, db dbm.DB, traceWriter io.WriteCloser) *app.App {
-	return app.NewAppWithDB(logger, db)
+	return app.NewAppWithOptions(logger, db, "")
 }
 
 // createAppWithOptions creates a new app instance with full configuration
