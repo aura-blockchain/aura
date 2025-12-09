@@ -434,7 +434,7 @@ func TestPoolCreationRecord_TimestampUpdates(t *testing.T) {
 	keeper.RecordPoolCreation(ctx, creator, "pool1", "uaura", "usdt", amountA, amountB)
 
 	record := keeper.GetPoolCreationRecord(ctx, creator)
-	firstTimestamp := record.LastCreationTime.AsTime()
+	firstTimestamp := record.LastCreationTime
 	require.True(t, firstTimestamp.Equal(initialTime), "First timestamp should match block time")
 
 	// Advance time and create second pool
@@ -443,7 +443,7 @@ func TestPoolCreationRecord_TimestampUpdates(t *testing.T) {
 	keeper.RecordPoolCreation(ctx, creator, "pool2", "uaura", "usdc", amountA, amountB)
 
 	record = keeper.GetPoolCreationRecord(ctx, creator)
-	secondTimestamp := record.LastCreationTime.AsTime()
+	secondTimestamp := record.LastCreationTime
 	require.True(t, secondTimestamp.Equal(newTime), "Second timestamp should be updated")
 	require.True(t, secondTimestamp.After(firstTimestamp), "Second timestamp should be after first")
 }
@@ -478,7 +478,7 @@ func TestPoolCreationRecord_AuditTrailCompleteness(t *testing.T) {
 
 	// Check timestamp
 	require.NotNil(t, record.LastCreationTime, "Creation timestamp should be recorded")
-	require.True(t, record.LastCreationTime.AsTime().Before(time.Now()), "Timestamp should be valid")
+	require.True(t, record.LastCreationTime.Before(time.Now()), "Timestamp should be valid")
 
 	// Check total pools counter
 	require.Greater(t, record.TotalPools, uint64(0), "Total pools should be positive")
