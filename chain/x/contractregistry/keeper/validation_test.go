@@ -20,19 +20,19 @@ func (suite *KeeperTestSuite) TestValidateContractExecution() {
 		Creator: admin,
 		Admin:   admin,
 		Label:   "test-contract",
-		Metadata: &pb.ContractMetadata{
+		Metadata: pb.ContractMetadata{
 			Name:               "Test Contract",
 			RequiresVc:         false,
 			MinConfidenceScore: 0,
 		},
-		SecurityPolicy: &pb.SecurityPolicy{
+		SecurityPolicy: pb.SecurityPolicy{
 			AllowPause:           true, // Enable pause functionality
 			MaxGasPerTx:          1000000,
 			RateLimitPerUser:     10,
 			BlacklistedAddresses: []string{},
 			WhitelistedAddresses: []string{},
 		},
-		Compliance: &pb.ComplianceRequirements{
+		Compliance: pb.ComplianceRequirements{
 			EnforceKyc:            false,
 			EnforceSanctionsCheck: false,
 		},
@@ -79,11 +79,11 @@ func (suite *KeeperTestSuite) TestValidateBlacklist() {
 		Creator: admin,
 		Admin:   admin,
 		Label:   "test-contract",
-		Metadata: &pb.ContractMetadata{Name: "Test"},
-		SecurityPolicy: &pb.SecurityPolicy{
+		Metadata: pb.ContractMetadata{Name: "Test"},
+		SecurityPolicy: pb.SecurityPolicy{
 			BlacklistedAddresses: []string{blacklistedUser},
 		},
-		Compliance: &pb.ComplianceRequirements{},
+		Compliance: pb.ComplianceRequirements{},
 		Status:     pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
 	}
 	suite.NoError(suite.keeper.RegisterContract(suite.ctx, info))
@@ -110,11 +110,11 @@ func (suite *KeeperTestSuite) TestValidateWhitelist() {
 		Creator: admin,
 		Admin:   admin,
 		Label:   "test-contract",
-		Metadata: &pb.ContractMetadata{Name: "Test"},
-		SecurityPolicy: &pb.SecurityPolicy{
+		Metadata: pb.ContractMetadata{Name: "Test"},
+		SecurityPolicy: pb.SecurityPolicy{
 			WhitelistedAddresses: []string{whitelistedUser},
 		},
-		Compliance: &pb.ComplianceRequirements{},
+		Compliance: pb.ComplianceRequirements{},
 		Status:     pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
 	}
 	suite.NoError(suite.keeper.RegisterContract(suite.ctx, info))

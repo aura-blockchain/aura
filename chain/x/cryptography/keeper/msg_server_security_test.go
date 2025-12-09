@@ -2,11 +2,11 @@ package keeper_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/cryptography/keeper"
 	cryptoproto "github.com/aequitas/aura/proto/aura/cryptography/v1beta1"
@@ -106,22 +106,24 @@ func TestSignerVerification(t *testing.T) {
 		require.NotEmpty(t, enclaveResp.EnclaveId)
 
 		// Test GenerateQuantumResistantKey
+		expiresAtQ := time.Now().Add(365 * 24 * time.Hour)
 		quantumMsg := &cryptoproto.MsgGenerateQuantumResistantKey{
 			Creator:   validUser,
 			Algorithm: cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_KYBER,
-			ExpiresAt: timestamppb.Now(),
+			ExpiresAt: &expiresAtQ,
 		}
 		quantumResp, err := msgServer.GenerateQuantumResistantKey(ctx, quantumMsg)
 		require.NoError(t, err)
 		require.NotEmpty(t, quantumResp.KeyId)
 
 		// Test AddCertificatePin
+		expiresAtC := time.Now().Add(365 * 24 * time.Hour)
 		certMsg := &cryptoproto.MsgAddCertificatePin{
 			Creator:           validUser,
 			Hostname:          "secure.example.com",
 			CertificateHashes: [][]byte{make([]byte, 32)},
 			PinType:           cryptoproto.CertificatePinType_CERTIFICATE_PIN_TYPE_SPKI,
-			ExpiresAt:         timestamppb.Now(),
+			ExpiresAt:         &expiresAtC,
 		}
 		certResp, err := msgServer.AddCertificatePin(ctx, certMsg)
 		require.NoError(t, err)
@@ -382,10 +384,11 @@ func TestSecurityAcrossAllFunctions(t *testing.T) {
 	})
 
 	t.Run("GenerateQuantumResistantKey requires valid signer", func(t *testing.T) {
+		expiresAt := time.Now().Add(365 * 24 * time.Hour)
 		msg := &cryptoproto.MsgGenerateQuantumResistantKey{
 			Creator:   validUser,
 			Algorithm: cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_KYBER,
-			ExpiresAt: timestamppb.Now(),
+			ExpiresAt: &expiresAt,
 		}
 
 		resp, err := msgServer.GenerateQuantumResistantKey(ctx, msg)
@@ -395,12 +398,13 @@ func TestSecurityAcrossAllFunctions(t *testing.T) {
 	})
 
 	t.Run("AddCertificatePin requires valid signer", func(t *testing.T) {
+		expiresAt := time.Now().Add(365 * 24 * time.Hour)
 		msg := &cryptoproto.MsgAddCertificatePin{
 			Creator:           validUser,
 			Hostname:          "secure.example.com",
 			CertificateHashes: [][]byte{make([]byte, 32)},
 			PinType:           cryptoproto.CertificatePinType_CERTIFICATE_PIN_TYPE_SPKI,
-			ExpiresAt:         timestamppb.Now(),
+			ExpiresAt:         &expiresAt,
 		}
 
 		resp, err := msgServer.AddCertificatePin(ctx, msg)

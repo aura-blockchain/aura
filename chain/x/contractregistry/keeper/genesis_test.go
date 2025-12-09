@@ -1,12 +1,12 @@
 package keeper_test
 
 import (
+	"time"
 	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/contractregistry/types"
 	pb "github.com/aequitas/aura/proto/aura/contractregistry/v1beta1"
@@ -25,9 +25,9 @@ func (suite *GenesisTestSuite) TestInitGenesis() {
 
 	suite.Run("default genesis", func() {
 		defaultGenesis := &pb.GenesisState{
-			Params:    types.DefaultParams(),
-			Contracts: []*pb.ContractInfo{},
-			Metrics:   []*pb.ContractMetrics{},
+			Params: *types.DefaultParams(),
+			Contracts: []pb.ContractInfo{},
+			Metrics: []pb.ContractMetrics{},
 		}
 		err := suite.keeper.InitGenesis(ctx, defaultGenesis)
 		suite.NoError(err, "InitGenesis should not error with default state")
@@ -35,15 +35,15 @@ func (suite *GenesisTestSuite) TestInitGenesis() {
 
 	suite.Run("valid genesis with data", func() {
 		genesis := &pb.GenesisState{
-			Params: types.DefaultParams(),
-			Contracts: []*pb.ContractInfo{
+			Params: *types.DefaultParams(),
+			Contracts: []pb.ContractInfo{
 				{
 					Address:   "aura1contract1",
 					Creator:   "aura1creator",
 					CodeId:    1,
-					CreatedAt: timestamppb.Now(),
+					CreatedAt: time.Now(),
 					Status:    pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
-					Metadata: &pb.ContractMetadata{
+					Metadata: pb.ContractMetadata{
 						Name:        "Test Contract",
 						Description: "A test contract",
 						Version:     "1.0.0",
@@ -51,7 +51,7 @@ func (suite *GenesisTestSuite) TestInitGenesis() {
 					},
 				},
 			},
-			Metrics: []*pb.ContractMetrics{
+			Metrics: []pb.ContractMetrics{
 				{
 					ContractAddress:      "aura1contract1",
 					TotalExecutions:      100,
@@ -80,30 +80,43 @@ func (suite *GenesisTestSuite) TestInitGenesisWithInvalidData() {
 		suite.Error(err, "InitGenesis should error with nil state")
 	})
 
-	suite.Run("nil params", func() {
+	suite.Run("invalid params", func() {
 		genesis := &pb.GenesisState{
-			Params: nil,
+			Params: pb.ContractRegistryParams{
+				MaxContractsPerCreator: 20000, // exceeds limit
+			},
 		}
 		err := suite.keeper.InitGenesis(ctx, genesis)
-		suite.Error(err, "InitGenesis should error with nil params")
+		suite.Error(err, "InitGenesis should error with invalid params")
 	})
 
-	suite.Run("nil contract", func() {
+	suite.Run("invalid contract", func() {
 		genesis := &pb.GenesisState{
-			Params:    types.DefaultParams(),
-			Contracts: []*pb.ContractInfo{nil},
+			Params: *types.DefaultParams(),
+			Contracts: []pb.ContractInfo{
+				{
+					Address: "", // invalid: empty address
+					CodeId:  1,
+					Creator: "aura1creator",
+					Status:  pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
+				},
+			},
 		}
 		err := suite.keeper.InitGenesis(ctx, genesis)
-		suite.NoError(err, "InitGenesis should skip nil contracts")
+		suite.Error(err, "InitGenesis should error with invalid contract")
 	})
 
-	suite.Run("nil metrics", func() {
+	suite.Run("invalid metrics", func() {
 		genesis := &pb.GenesisState{
-			Params:  types.DefaultParams(),
-			Metrics: []*pb.ContractMetrics{nil},
+			Params: *types.DefaultParams(),
+			Metrics: []pb.ContractMetrics{
+				{
+					ContractAddress: "", // invalid: empty address
+				},
+			},
 		}
 		err := suite.keeper.InitGenesis(ctx, genesis)
-		suite.NoError(err, "InitGenesis should skip nil metrics")
+		suite.Error(err, "InitGenesis should error with invalid metrics")
 	})
 }
 
@@ -120,22 +133,22 @@ func (suite *GenesisTestSuite) TestExportGenesis() {
 
 	suite.Run("export with data", func() {
 		genesis := &pb.GenesisState{
-			Params: types.DefaultParams(),
-			Contracts: []*pb.ContractInfo{
+			Params: *types.DefaultParams(),
+			Contracts: []pb.ContractInfo{
 				{
 					Address:   "aura1contract1",
 					Creator:   "aura1creator",
 					CodeId:    1,
-					CreatedAt: timestamppb.Now(),
+					CreatedAt: time.Now(),
 					Status:    pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
-					Metadata: &pb.ContractMetadata{
+					Metadata: pb.ContractMetadata{
 						Name:    "Test Contract",
 						Version: "1.0.0",
 						Tags:    []string{"test"},
 					},
 				},
 			},
-			Metrics: []*pb.ContractMetrics{
+			Metrics: []pb.ContractMetrics{
 				{
 					ContractAddress: "aura1contract1",
 					TotalExecutions: 100,
@@ -157,9 +170,9 @@ func (suite *GenesisTestSuite) TestExportGenesis() {
 func (suite *GenesisTestSuite) TestDefaultGenesis() {
 	suite.Run("default genesis is valid", func() {
 		defaultGenesis := &pb.GenesisState{
-			Params:    types.DefaultParams(),
-			Contracts: []*pb.ContractInfo{},
-			Metrics:   []*pb.ContractMetrics{},
+			Params: *types.DefaultParams(),
+			Contracts: []pb.ContractInfo{},
+			Metrics: []pb.ContractMetrics{},
 		}
 		suite.NotNil(defaultGenesis)
 		suite.NotNil(defaultGenesis.Params)
@@ -169,9 +182,9 @@ func (suite *GenesisTestSuite) TestDefaultGenesis() {
 	suite.Run("default genesis can be initialized", func() {
 		ctx := suite.ctx
 		defaultGenesis := &pb.GenesisState{
-			Params:    types.DefaultParams(),
-			Contracts: []*pb.ContractInfo{},
-			Metrics:   []*pb.ContractMetrics{},
+			Params: *types.DefaultParams(),
+			Contracts: []pb.ContractInfo{},
+			Metrics: []pb.ContractMetrics{},
 		}
 
 		err := suite.keeper.InitGenesis(ctx, defaultGenesis)
@@ -184,9 +197,9 @@ func (suite *GenesisTestSuite) TestGenesisRoundTrip() {
 
 	suite.Run("round trip with empty state", func() {
 		genesis := &pb.GenesisState{
-			Params:    types.DefaultParams(),
-			Contracts: []*pb.ContractInfo{},
-			Metrics:   []*pb.ContractMetrics{},
+			Params: *types.DefaultParams(),
+			Contracts: []pb.ContractInfo{},
+			Metrics: []pb.ContractMetrics{},
 		}
 
 		err := suite.keeper.InitGenesis(ctx, genesis)
@@ -199,15 +212,15 @@ func (suite *GenesisTestSuite) TestGenesisRoundTrip() {
 
 	suite.Run("round trip with data", func() {
 		genesis := &pb.GenesisState{
-			Params: types.DefaultParams(),
-			Contracts: []*pb.ContractInfo{
+			Params: *types.DefaultParams(),
+			Contracts: []pb.ContractInfo{
 				{
 					Address:   "aura1contract1",
 					Creator:   "aura1creator1",
 					CodeId:    1,
-					CreatedAt: timestamppb.Now(),
+					CreatedAt: time.Now(),
 					Status:    pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
-					Metadata: &pb.ContractMetadata{
+					Metadata: pb.ContractMetadata{
 						Name:    "Contract 1",
 						Version: "1.0.0",
 						Tags:    []string{"tag1"},
@@ -217,16 +230,16 @@ func (suite *GenesisTestSuite) TestGenesisRoundTrip() {
 					Address:   "aura1contract2",
 					Creator:   "aura1creator2",
 					CodeId:    2,
-					CreatedAt: timestamppb.Now(),
+					CreatedAt: time.Now(),
 					Status:    pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
-					Metadata: &pb.ContractMetadata{
+					Metadata: pb.ContractMetadata{
 						Name:    "Contract 2",
 						Version: "2.0.0",
 						Tags:    []string{"tag2"},
 					},
 				},
 			},
-			Metrics: []*pb.ContractMetrics{
+			Metrics: []pb.ContractMetrics{
 				{
 					ContractAddress: "aura1contract1",
 					TotalExecutions: 100,
@@ -262,15 +275,15 @@ func (suite *GenesisTestSuite) TestGenesisEdgeCases() {
 		suite.SetupTest()
 		ctx := suite.ctx
 		genesis := &pb.GenesisState{
-			Params: types.DefaultParams(),
-			Contracts: []*pb.ContractInfo{
+			Params: *types.DefaultParams(),
+			Contracts: []pb.ContractInfo{
 				{
 					Address:   "aura1contract1",
 					Creator:   "aura1creator",
 					CodeId:    1,
-					CreatedAt: timestamppb.Now(),
+					CreatedAt: time.Now(),
 					Status:    pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
-					Metadata: &pb.ContractMetadata{
+					Metadata: pb.ContractMetadata{
 						Name:    "Multi-Tag Contract",
 						Version: "1.0.0",
 						Tags:    []string{"tag1", "tag2", "tag3"},
@@ -291,20 +304,22 @@ func (suite *GenesisTestSuite) TestGenesisEdgeCases() {
 		// Setup fresh state for this subtest
 		suite.SetupTest()
 		ctx := suite.ctx
-		genesis := &pb.GenesisState{
-			Params:    types.DefaultParams(),
-			Contracts: make([]*pb.ContractInfo, 50),
-		}
 
+		contracts := make([]pb.ContractInfo, 50)
 		for i := 0; i < 50; i++ {
 			// Generate unique addresses using zero-padded hex to ensure exactly 50 contracts
-			genesis.Contracts[i] = &pb.ContractInfo{
+			contracts[i] = pb.ContractInfo{
 				Address:   fmt.Sprintf("aura1contract%02d", i),
 				Creator:   "aura1creator",
 				CodeId:    uint64(i + 1),
-				CreatedAt: timestamppb.Now(),
+				CreatedAt: time.Now(),
 				Status:    pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
 			}
+		}
+
+		genesis := &pb.GenesisState{
+			Params:    *types.DefaultParams(),
+			Contracts: contracts,
 		}
 
 		err := suite.keeper.InitGenesis(ctx, genesis)
@@ -319,13 +334,13 @@ func (suite *GenesisTestSuite) TestGenesisEdgeCases() {
 		suite.SetupTest()
 		ctx := suite.ctx
 		genesis := &pb.GenesisState{
-			Params: types.DefaultParams(),
-			Contracts: []*pb.ContractInfo{
+			Params: *types.DefaultParams(),
+			Contracts: []pb.ContractInfo{
 				{
 					Address:   "aura1pausedcontract",
 					Creator:   "aura1creator",
 					CodeId:    1,
-					CreatedAt: timestamppb.Now(),
+					CreatedAt: time.Now(),
 					Status:    pb.ContractStatus_CONTRACT_STATUS_PAUSED,
 				},
 			},
@@ -352,31 +367,33 @@ func TestValidateGenesis(t *testing.T) {
 			expectErr: true,
 		},
 		{
-			name: "nil params",
+			name: "invalid params",
 			genesis: &pb.GenesisState{
-				Params: nil,
+				Params: pb.ContractRegistryParams{
+					MaxContractsPerCreator: 20000, // exceeds limit
+				},
 			},
 			expectErr: true,
 		},
 		{
 			name: "valid default genesis",
 			genesis: &pb.GenesisState{
-				Params:    types.DefaultParams(),
-				Contracts: []*pb.ContractInfo{},
-				Metrics:   []*pb.ContractMetrics{},
+				Params: *types.DefaultParams(),
+				Contracts: []pb.ContractInfo{},
+				Metrics: []pb.ContractMetrics{},
 			},
 			expectErr: false,
 		},
 		{
 			name: "valid genesis with data",
 			genesis: &pb.GenesisState{
-				Params: types.DefaultParams(),
-				Contracts: []*pb.ContractInfo{
+				Params: *types.DefaultParams(),
+				Contracts: []pb.ContractInfo{
 					{
 						Address:   "aura1contract1",
 						Creator:   "aura1creator",
 						CodeId:    1,
-						CreatedAt: timestamppb.Now(),
+						CreatedAt: time.Now(),
 						Status:    pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
 					},
 				},
@@ -390,8 +407,9 @@ func TestValidateGenesis(t *testing.T) {
 			var err error
 			if tt.genesis == nil {
 				err = fmt.Errorf("genesis is nil")
-			} else if tt.genesis.Params == nil {
-				err = fmt.Errorf("params is nil")
+			} else {
+				// Validate params
+				err = types.ValidateParams(&tt.genesis.Params)
 			}
 
 			if tt.expectErr {

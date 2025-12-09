@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"google.golang.org/protobuf/types/known/durationpb"
+	gogotypes "github.com/cosmos/gogoproto/types"
 )
 
 // validTestGenesis creates a properly formatted genesis for testing
@@ -254,7 +254,7 @@ func TestValidateGenesis_InvalidPeriods(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name+" (voting_period)", func(t *testing.T) {
 			genesis := validTestGenesis()
-			genesis.Params.VotingPeriod = durationpb.New(time.Duration(tt.seconds) * time.Second)
+			genesis.Params.VotingPeriod = gogotypes.DurationProto(time.Duration(tt.seconds) * time.Second)
 
 			err := ValidateGenesis(genesis)
 			if (err != nil) != tt.wantErr {
@@ -264,7 +264,7 @@ func TestValidateGenesis_InvalidPeriods(t *testing.T) {
 
 		t.Run(tt.name+" (max_deposit_period)", func(t *testing.T) {
 			genesis := validTestGenesis()
-			genesis.Params.MaxDepositPeriod = durationpb.New(time.Duration(tt.seconds) * time.Second)
+			genesis.Params.MaxDepositPeriod = gogotypes.DurationProto(time.Duration(tt.seconds) * time.Second)
 
 			err := ValidateGenesis(genesis)
 			if (err != nil) != tt.wantErr {
@@ -333,7 +333,7 @@ func TestValidateGenesis_ExecutionDelay(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			genesis := validTestGenesis()
-			genesis.Params.ExecutionDelay = durationpb.New(time.Duration(tt.seconds) * time.Second)
+			genesis.Params.ExecutionDelay = gogotypes.DurationProto(time.Duration(tt.seconds) * time.Second)
 
 			err := ValidateGenesis(genesis)
 			if (err != nil) != tt.wantErr {
@@ -358,7 +358,7 @@ func TestValidateGenesis_TokenLockValidation(t *testing.T) {
 	t.Run("token lock duration too short", func(t *testing.T) {
 		genesis := validTestGenesis()
 		genesis.Params.RequireTokenLock = true
-		genesis.Params.TokenLockDuration = durationpb.New(30 * time.Second)
+		genesis.Params.TokenLockDuration = gogotypes.DurationProto(30 * time.Second)
 
 		err := ValidateGenesis(genesis)
 		if err == nil {
@@ -369,7 +369,7 @@ func TestValidateGenesis_TokenLockValidation(t *testing.T) {
 	t.Run("token lock duration too long", func(t *testing.T) {
 		genesis := validTestGenesis()
 		genesis.Params.RequireTokenLock = true
-		genesis.Params.TokenLockDuration = durationpb.New(2 * 365 * 24 * time.Hour)
+		genesis.Params.TokenLockDuration = gogotypes.DurationProto(2 * 365 * 24 * time.Hour)
 
 		err := ValidateGenesis(genesis)
 		if err == nil {
@@ -380,7 +380,7 @@ func TestValidateGenesis_TokenLockValidation(t *testing.T) {
 	t.Run("valid token lock duration", func(t *testing.T) {
 		genesis := validTestGenesis()
 		genesis.Params.RequireTokenLock = true
-		genesis.Params.TokenLockDuration = durationpb.New(7 * 24 * time.Hour)
+		genesis.Params.TokenLockDuration = gogotypes.DurationProto(7 * 24 * time.Hour)
 
 		err := ValidateGenesis(genesis)
 		if err != nil {
@@ -404,7 +404,7 @@ func TestValidateGenesis_SecretBallotValidation(t *testing.T) {
 	t.Run("reveal period too short", func(t *testing.T) {
 		genesis := validTestGenesis()
 		genesis.Params.SecretBallotEnabled = true
-		genesis.Params.RevealPeriod = durationpb.New(30 * time.Second)
+		genesis.Params.RevealPeriod = gogotypes.DurationProto(30 * time.Second)
 
 		err := ValidateGenesis(genesis)
 		if err == nil {
@@ -415,7 +415,7 @@ func TestValidateGenesis_SecretBallotValidation(t *testing.T) {
 	t.Run("reveal period too long", func(t *testing.T) {
 		genesis := validTestGenesis()
 		genesis.Params.SecretBallotEnabled = true
-		genesis.Params.RevealPeriod = durationpb.New(31 * 24 * time.Hour)
+		genesis.Params.RevealPeriod = gogotypes.DurationProto(31 * 24 * time.Hour)
 
 		err := ValidateGenesis(genesis)
 		if err == nil {
@@ -426,7 +426,7 @@ func TestValidateGenesis_SecretBallotValidation(t *testing.T) {
 	t.Run("valid reveal period", func(t *testing.T) {
 		genesis := validTestGenesis()
 		genesis.Params.SecretBallotEnabled = true
-		genesis.Params.RevealPeriod = durationpb.New(24 * time.Hour)
+		genesis.Params.RevealPeriod = gogotypes.DurationProto(24 * time.Hour)
 
 		err := ValidateGenesis(genesis)
 		if err != nil {
@@ -450,11 +450,11 @@ func TestValidateGenesis_CategoryParams(t *testing.T) {
 		genesis := validTestGenesis()
 		genesis.Params.CategoryParams["test_category"] = &CategoryParams{
 			MinDeposit:     "10000000aura",
-			VotingPeriod:   durationpb.New(7 * 24 * time.Hour),
+			VotingPeriod:   gogotypes.DurationProto(7 * 24 * time.Hour),
 			Quorum:         "1.5", // Invalid: > 1.0
 			Threshold:      "0.5",
 			VetoThreshold:  "0.334",
-			ExecutionDelay: durationpb.New(48 * time.Hour),
+			ExecutionDelay: gogotypes.DurationProto(48 * time.Hour),
 		}
 
 		err := ValidateGenesis(genesis)
@@ -467,11 +467,11 @@ func TestValidateGenesis_CategoryParams(t *testing.T) {
 		genesis := validTestGenesis()
 		genesis.Params.CategoryParams["test_category"] = &CategoryParams{
 			MinDeposit:     "10000000aura",
-			VotingPeriod:   durationpb.New(7 * 24 * time.Hour),
+			VotingPeriod:   gogotypes.DurationProto(7 * 24 * time.Hour),
 			Quorum:         "0.334",
 			Threshold:      "0.5",
 			VetoThreshold:  "0.6", // Invalid: > threshold
-			ExecutionDelay: durationpb.New(48 * time.Hour),
+			ExecutionDelay: gogotypes.DurationProto(48 * time.Hour),
 		}
 
 		err := ValidateGenesis(genesis)
@@ -484,11 +484,11 @@ func TestValidateGenesis_CategoryParams(t *testing.T) {
 		genesis := validTestGenesis()
 		genesis.Params.CategoryParams["test_category"] = &CategoryParams{
 			MinDeposit:     "0aura", // Invalid: not positive
-			VotingPeriod:   durationpb.New(7 * 24 * time.Hour),
+			VotingPeriod:   gogotypes.DurationProto(7 * 24 * time.Hour),
 			Quorum:         "0.334",
 			Threshold:      "0.5",
 			VetoThreshold:  "0.334",
-			ExecutionDelay: durationpb.New(48 * time.Hour),
+			ExecutionDelay: gogotypes.DurationProto(48 * time.Hour),
 		}
 
 		err := ValidateGenesis(genesis)
@@ -501,11 +501,11 @@ func TestValidateGenesis_CategoryParams(t *testing.T) {
 		genesis := validTestGenesis()
 		genesis.Params.CategoryParams["test_category"] = &CategoryParams{
 			MinDeposit:     "10000000aura",
-			VotingPeriod:   durationpb.New(30 * time.Second), // Invalid: < 1 minute
+			VotingPeriod:   gogotypes.DurationProto(30 * time.Second), // Invalid: < 1 minute
 			Quorum:         "0.334",
 			Threshold:      "0.5",
 			VetoThreshold:  "0.334",
-			ExecutionDelay: durationpb.New(48 * time.Hour),
+			ExecutionDelay: gogotypes.DurationProto(48 * time.Hour),
 		}
 
 		err := ValidateGenesis(genesis)
@@ -518,11 +518,11 @@ func TestValidateGenesis_CategoryParams(t *testing.T) {
 		genesis := validTestGenesis()
 		genesis.Params.CategoryParams["test_category"] = &CategoryParams{
 			MinDeposit:     "10000000aura",
-			VotingPeriod:   durationpb.New(7 * 24 * time.Hour),
+			VotingPeriod:   gogotypes.DurationProto(7 * 24 * time.Hour),
 			Quorum:         "0.334",
 			Threshold:      "0.5",
 			VetoThreshold:  "0.334",
-			ExecutionDelay: durationpb.New(-1 * time.Hour), // Invalid: negative
+			ExecutionDelay: gogotypes.DurationProto(-1 * time.Hour), // Invalid: negative
 		}
 
 		err := ValidateGenesis(genesis)
@@ -535,11 +535,11 @@ func TestValidateGenesis_CategoryParams(t *testing.T) {
 		genesis := validTestGenesis()
 		genesis.Params.CategoryParams["test_category"] = &CategoryParams{
 			MinDeposit:     "10000000aura",
-			VotingPeriod:   durationpb.New(7 * 24 * time.Hour),
+			VotingPeriod:   gogotypes.DurationProto(7 * 24 * time.Hour),
 			Quorum:         "0.334",
 			Threshold:      "0.5",
 			VetoThreshold:  "0.334",
-			ExecutionDelay: durationpb.New(48 * time.Hour),
+			ExecutionDelay: gogotypes.DurationProto(48 * time.Hour),
 		}
 
 		err := ValidateGenesis(genesis)

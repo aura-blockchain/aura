@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/cryptography/types"
 	cryptoproto "github.com/aequitas/aura/proto/aura/cryptography/v1beta1"
@@ -35,7 +34,7 @@ func TestGenesis(t *testing.T) {
 		schedule := &cryptoproto.KeyRotationSchedule{
 			Id:                      "schedule-1",
 			KeyId:                   "key-1",
-			NextRotationTime:        timestamppb.New(now.Add(24 * time.Hour)),
+			NextRotationTime:        now.Add(24 * time.Hour),
 			RotationIntervalSeconds: 86400,
 			Enabled:                 true,
 			CreatedBy:               "creator",
@@ -52,19 +51,20 @@ func TestGenesis(t *testing.T) {
 			EnclaveId:       "enclave-1",
 			EnclaveType:     cryptoproto.SecureEnclaveType_SECURE_ENCLAVE_TYPE_SGX,
 			AttestationData: make([]byte, 432),
-			AttestationTime: timestamppb.New(now),
+			AttestationTime: now,
 			Status:          cryptoproto.SecureEnclaveStatus_SECURE_ENCLAVE_STATUS_READY,
 			EnclaveMetadata: map[string]string{"version": "1.0"},
 		}
 
 		// Quantum resistant key
+		expiresAt := now.Add(365 * 24 * time.Hour)
 		qrKey := &cryptoproto.QuantumResistantKey{
 			KeyId:       "qr-key-1",
 			Algorithm:   cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_DILITHIUM,
 			PublicKey:   make([]byte, 1312),
 			KeyMetadata: []byte("dilithium2"),
-			CreatedAt:   timestamppb.New(now),
-			ExpiresAt:   timestamppb.New(now.Add(365 * 24 * time.Hour)),
+			CreatedAt:   now,
+			ExpiresAt:   &expiresAt,
 		}
 
 		// Random source
@@ -73,7 +73,7 @@ func TestGenesis(t *testing.T) {
 			SourceType:      cryptoproto.RandomSourceType_RANDOM_SOURCE_TYPE_SYSTEM,
 			EntropyPoolHash: make([]byte, 32),
 			EntropyBits:     512,
-			LastSeeded:      timestamppb.New(now),
+			LastSeeded:      now,
 			Status:          cryptoproto.RandomSourceStatus_RANDOM_SOURCE_STATUS_HEALTHY,
 		}
 
@@ -86,22 +86,23 @@ func TestGenesis(t *testing.T) {
 			Parallelism: 4,
 			KeyLength:   32,
 			Salt:        make([]byte, 16),
-			CreatedAt:   timestamppb.New(now),
+			CreatedAt:   now,
 		}
 
 		// Certificate pin
+		certPinExpiresAt := now.Add(365 * 24 * time.Hour)
 		certPin := &cryptoproto.CertificatePin{
 			PinId:             "pin-1",
 			Hostname:          "genesis-test.com",
 			CertificateHashes: [][]byte{make([]byte, 32)},
 			PinType:           cryptoproto.CertificatePinType_CERTIFICATE_PIN_TYPE_SPKI,
-			CreatedAt:         timestamppb.New(now),
-			ExpiresAt:         timestamppb.New(now.Add(365 * 24 * time.Hour)),
+			CreatedAt:         now,
+			ExpiresAt:         &certPinExpiresAt,
 			Enabled:           true,
 		}
 
 		genesis := &cryptoproto.GenesisState{
-			Params:               &params,
+			Params:               params,
 			KeyRotationSchedules: []*cryptoproto.KeyRotationSchedule{schedule},
 			ThresholdSchemes:     []*cryptoproto.ThresholdSignatureScheme{},
 			ZkProofConfigs:       []*cryptoproto.ZKProofConfig{},
@@ -146,7 +147,7 @@ func TestGenesis(t *testing.T) {
 		invalidParams.MinThresholdParticipants = 0 // Invalid
 
 		genesis := &cryptoproto.GenesisState{
-			Params: &invalidParams,
+			Params: invalidParams,
 		}
 
 		err := k.InitGenesis(ctx, genesis)
@@ -197,14 +198,14 @@ func TestGenesis(t *testing.T) {
 		schedule := &cryptoproto.KeyRotationSchedule{
 			Id:                      "roundtrip-schedule",
 			KeyId:                   "roundtrip-key",
-			NextRotationTime:        timestamppb.New(now.Add(24 * time.Hour)),
+			NextRotationTime:        now.Add(24 * time.Hour),
 			RotationIntervalSeconds: 86400,
 			Enabled:                 true,
 			CreatedBy:               "creator",
 		}
 
 		genesis := &cryptoproto.GenesisState{
-			Params:               &params,
+			Params:               params,
 			KeyRotationSchedules: []*cryptoproto.KeyRotationSchedule{schedule},
 		}
 

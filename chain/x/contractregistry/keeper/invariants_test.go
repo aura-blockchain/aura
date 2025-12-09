@@ -6,7 +6,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/suite"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/contractregistry/keeper"
 	"github.com/aequitas/aura/chain/x/contractregistry/types"
@@ -99,7 +98,7 @@ func (suite *InvariantsTestSuite) TestContractMetadataConsistencyInvariant_Valid
 	// Create valid contract info
 	contractAddr := sdk.AccAddress([]byte("contract_____________")).String()
 	creator := sdk.AccAddress([]byte("creator______________")).String()
-	now := timestamppb.New(time.Now())
+	now := time.Now()
 
 	validInfo := &pb.ContractInfo{
 		Address:   contractAddr,
@@ -109,7 +108,7 @@ func (suite *InvariantsTestSuite) TestContractMetadataConsistencyInvariant_Valid
 		Label:     "test",
 		CreatedAt: now,
 		UpdatedAt: now,
-		Metadata: &pb.ContractMetadata{
+		Metadata: pb.ContractMetadata{
 			Name:    "Test Contract",
 			Version: "1.0.0",
 		},
@@ -135,7 +134,7 @@ func (suite *InvariantsTestSuite) TestContractMetadataConsistencyInvariant_Inval
 	// Create info with valid contract address
 	contractAddr := sdk.AccAddress([]byte("contract_____________")).String()
 	creator := sdk.AccAddress([]byte("creator______________")).String()
-	now := timestamppb.New(time.Now())
+	now := time.Now()
 
 	validInfo := &pb.ContractInfo{
 		Address:   contractAddr,
@@ -145,7 +144,7 @@ func (suite *InvariantsTestSuite) TestContractMetadataConsistencyInvariant_Inval
 		Label:     "test",
 		CreatedAt: now,
 		UpdatedAt: now,
-		Metadata: &pb.ContractMetadata{
+		Metadata: pb.ContractMetadata{
 			Name:    "Test Contract",
 			Version: "1.0.0",
 		},
@@ -167,7 +166,7 @@ func (suite *InvariantsTestSuite) TestContractMetadataConsistencyInvariant_Empty
 	// Create info with empty metadata name
 	contractAddr := sdk.AccAddress([]byte("contract_____________")).String()
 	creator := sdk.AccAddress([]byte("creator______________")).String()
-	now := timestamppb.New(time.Now())
+	now := time.Now()
 
 	invalidInfo := &pb.ContractInfo{
 		Address:   contractAddr,
@@ -177,7 +176,7 @@ func (suite *InvariantsTestSuite) TestContractMetadataConsistencyInvariant_Empty
 		Label:     "test",
 		CreatedAt: now,
 		UpdatedAt: now,
-		Metadata: &pb.ContractMetadata{
+		Metadata: pb.ContractMetadata{
 			Name:    "", // Empty name
 			Version: "1.0.0",
 		},
@@ -201,7 +200,7 @@ func (suite *InvariantsTestSuite) TestContractMetadataConsistencyInvariant_Empty
 	// Create info with empty version
 	contractAddr := sdk.AccAddress([]byte("contract_____________")).String()
 	creator := sdk.AccAddress([]byte("creator______________")).String()
-	now := timestamppb.New(time.Now())
+	now := time.Now()
 
 	invalidInfo := &pb.ContractInfo{
 		Address:   contractAddr,
@@ -211,7 +210,7 @@ func (suite *InvariantsTestSuite) TestContractMetadataConsistencyInvariant_Empty
 		Label:     "test",
 		CreatedAt: now,
 		UpdatedAt: now,
-		Metadata: &pb.ContractMetadata{
+		Metadata: pb.ContractMetadata{
 			Name:    "Test Contract",
 			Version: "", // Empty version
 		},
@@ -240,7 +239,7 @@ func (suite *InvariantsTestSuite) TestContractMetadataConsistencyInvariant_Inval
 	// Create info with valid creator address
 	contractAddr := sdk.AccAddress([]byte("contract_____________")).String()
 	creator := sdk.AccAddress([]byte("creator______________")).String()
-	now := timestamppb.New(time.Now())
+	now := time.Now()
 
 	validInfo := &pb.ContractInfo{
 		Address:   contractAddr,
@@ -250,7 +249,7 @@ func (suite *InvariantsTestSuite) TestContractMetadataConsistencyInvariant_Inval
 		Label:     "test",
 		CreatedAt: now,
 		UpdatedAt: now,
-		Metadata: &pb.ContractMetadata{
+		Metadata: pb.ContractMetadata{
 			Name:    "Test Contract",
 			Version: "1.0.0",
 		},
@@ -279,9 +278,9 @@ func (suite *InvariantsTestSuite) TestContractMetadataConsistencyInvariant_NilCr
 		Creator:   creator,
 		Admin:     creator,
 		Label:     "test",
-		CreatedAt: nil, // Nil timestamp
-		UpdatedAt: timestamppb.New(time.Now()),
-		Metadata: &pb.ContractMetadata{
+		CreatedAt: time.Time{}, // Zero timestamp (invalid)
+		UpdatedAt: time.Now(),
+		Metadata: pb.ContractMetadata{
 			Name:    "Test Contract",
 			Version: "1.0.0",
 		},
@@ -320,7 +319,7 @@ func (suite *InvariantsTestSuite) TestContractAddressValidityInvariant_ValidAddr
 
 	contractAddr := sdk.AccAddress([]byte("contract_____________")).String()
 	creator := sdk.AccAddress([]byte("creator______________")).String()
-	now := timestamppb.New(time.Now())
+	now := time.Now()
 
 	validInfo := &pb.ContractInfo{
 		Address:   contractAddr,
@@ -330,7 +329,7 @@ func (suite *InvariantsTestSuite) TestContractAddressValidityInvariant_ValidAddr
 		Label:     "test",
 		CreatedAt: now,
 		UpdatedAt: now,
-		Metadata: &pb.ContractMetadata{
+		Metadata: pb.ContractMetadata{
 			Name:    "Test Contract",
 			Version: "1.0.0",
 		},
@@ -366,7 +365,7 @@ func (suite *InvariantsTestSuite) TestVersionConsistencyInvariant_ValidVersion()
 
 	contractAddr := sdk.AccAddress([]byte("contract_____________")).String()
 	creator := sdk.AccAddress([]byte("creator______________")).String()
-	now := timestamppb.New(time.Now())
+	now := time.Now()
 
 	validInfo := &pb.ContractInfo{
 		Address:   contractAddr,
@@ -376,7 +375,7 @@ func (suite *InvariantsTestSuite) TestVersionConsistencyInvariant_ValidVersion()
 		Label:     "test",
 		CreatedAt: now,
 		UpdatedAt: now,
-		Metadata: &pb.ContractMetadata{
+		Metadata: pb.ContractMetadata{
 			Name:    "Test Contract",
 			Version: "1.0.0",
 		},
@@ -398,7 +397,7 @@ func (suite *InvariantsTestSuite) TestVersionConsistencyInvariant_OverlyLongVers
 
 	contractAddr := sdk.AccAddress([]byte("contract_____________")).String()
 	creator := sdk.AccAddress([]byte("creator______________")).String()
-	now := timestamppb.New(time.Now())
+	now := time.Now()
 
 	// Create version string longer than reasonable limit (e.g., > 100 characters)
 	longVersion := string(make([]byte, 200))
@@ -414,7 +413,7 @@ func (suite *InvariantsTestSuite) TestVersionConsistencyInvariant_OverlyLongVers
 		Label:     "test",
 		CreatedAt: now,
 		UpdatedAt: now,
-		Metadata: &pb.ContractMetadata{
+		Metadata: pb.ContractMetadata{
 			Name:    "Test Contract",
 			Version: longVersion,
 		},
@@ -444,9 +443,9 @@ func (suite *InvariantsTestSuite) TestVersionConsistencyInvariant_UpdatedBeforeC
 		Creator:   creator,
 		Admin:     creator,
 		Label:     "test",
-		CreatedAt: timestamppb.New(now),
-		UpdatedAt: timestamppb.New(now.Add(-1 * time.Hour)), // Updated before created
-		Metadata: &pb.ContractMetadata{
+		CreatedAt: now,
+		UpdatedAt: now.Add(-1 * time.Hour), // Updated before created
+		Metadata: pb.ContractMetadata{
 			Name:    "Test Contract",
 			Version: "1.0.0",
 		},
@@ -469,7 +468,7 @@ func (suite *InvariantsTestSuite) TestAllInvariantsWithMultipleInvalidStates() {
 	// Add invalid contract info - empty name
 	contractAddr := sdk.AccAddress([]byte("contract_____________")).String()
 	creator := sdk.AccAddress([]byte("creator______________")).String()
-	now := timestamppb.New(time.Now())
+	now := time.Now()
 
 	invalidInfo := &pb.ContractInfo{
 		Address:   contractAddr,
@@ -479,7 +478,7 @@ func (suite *InvariantsTestSuite) TestAllInvariantsWithMultipleInvalidStates() {
 		Label:     "test",
 		CreatedAt: now,
 		UpdatedAt: now,
-		Metadata: &pb.ContractMetadata{
+		Metadata: pb.ContractMetadata{
 			Name:    "", // Empty name - will fail
 			Version: "1.0.0",
 		},
@@ -502,7 +501,7 @@ func (suite *InvariantsTestSuite) TestAllInvariantsWithValidData() {
 	// Add valid contract info
 	contractAddr := sdk.AccAddress([]byte("contract_____________")).String()
 	creator := sdk.AccAddress([]byte("creator______________")).String()
-	now := timestamppb.New(time.Now())
+	now := time.Now()
 
 	validInfo := &pb.ContractInfo{
 		Address:   contractAddr,
@@ -512,7 +511,7 @@ func (suite *InvariantsTestSuite) TestAllInvariantsWithValidData() {
 		Label:     "test",
 		CreatedAt: now,
 		UpdatedAt: now,
-		Metadata: &pb.ContractMetadata{
+		Metadata: pb.ContractMetadata{
 			Name:    "Test Contract",
 			Version: "1.0.0",
 		},
@@ -535,7 +534,7 @@ func (suite *InvariantsTestSuite) TestMultipleContractsWithMixedValidity() {
 	// Add one valid contract
 	validAddr := sdk.AccAddress([]byte("valid_contract_______")).String()
 	creator1 := sdk.AccAddress([]byte("creator1_____________")).String()
-	now := timestamppb.New(time.Now())
+	now := time.Now()
 
 	validInfo := &pb.ContractInfo{
 		Address:   validAddr,
@@ -545,7 +544,7 @@ func (suite *InvariantsTestSuite) TestMultipleContractsWithMixedValidity() {
 		Label:     "valid",
 		CreatedAt: now,
 		UpdatedAt: now,
-		Metadata: &pb.ContractMetadata{
+		Metadata: pb.ContractMetadata{
 			Name:    "Valid Contract",
 			Version: "1.0.0",
 		},
@@ -566,7 +565,7 @@ func (suite *InvariantsTestSuite) TestMultipleContractsWithMixedValidity() {
 		Label:     "invalid",
 		CreatedAt: now,
 		UpdatedAt: now,
-		Metadata: &pb.ContractMetadata{
+		Metadata: pb.ContractMetadata{
 			Name:    "", // Invalid: empty name
 			Version: "1.0.0",
 		},

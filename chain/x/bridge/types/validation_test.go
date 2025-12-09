@@ -3,6 +3,7 @@ package types
 import (
 	"testing"
 
+	sdkmath "cosmossdk.io/math"
 	"github.com/stretchr/testify/require"
 )
 
@@ -108,14 +109,14 @@ func TestBridgeParamsStruct(t *testing.T) {
 		Enabled:                      true,
 		MinConfirmations:             12,
 		BridgeFeeBasisPoints:         30,
-		MaxTransferAmount:            "1000000",
+		MaxTransferAmount:            sdkmath.NewInt(1000000),
 		ValidatorThresholdPercentage: 67,
 	}
 
 	require.True(t, params.Enabled)
 	require.Greater(t, params.MinConfirmations, uint64(0))
 	require.Greater(t, params.BridgeFeeBasisPoints, uint64(0))
-	require.NotEmpty(t, params.MaxTransferAmount)
+	require.False(t, params.MaxTransferAmount.IsNil())
 	require.Greater(t, params.ValidatorThresholdPercentage, uint64(0))
 }
 
@@ -126,7 +127,7 @@ func TestCrossChainTransferStruct(t *testing.T) {
 		TargetChain: "paw",
 		Sender:      "aura1sender",
 		Recipient:   "paw1recipient",
-		Amount:      "1000000",
+		Amount:      sdkmath.NewInt(1000000),
 		Denom:       "uaura",
 		Status:      TransferStatus_PENDING,
 	}
@@ -136,7 +137,7 @@ func TestCrossChainTransferStruct(t *testing.T) {
 	require.NotEmpty(t, transfer.TargetChain)
 	require.NotEmpty(t, transfer.Sender)
 	require.NotEmpty(t, transfer.Recipient)
-	require.NotEmpty(t, transfer.Amount)
+	require.False(t, transfer.Amount.IsNil())
 	require.NotEmpty(t, transfer.Denom)
 }
 

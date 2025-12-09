@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"time"
 	"testing"
 
 	storetypes "cosmossdk.io/store/types"
@@ -12,7 +13,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/testutil"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // TestIsContractRegistered tests the IsContractRegistered method
@@ -36,8 +36,8 @@ func TestIsContractRegistered(t *testing.T) {
 		Creator:   "cosmos1creator",
 		Admin:     "cosmos1admin",
 		Label:     "test-contract",
-		CreatedAt: timestamppb.Now(),
-		UpdatedAt: timestamppb.Now(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 		Status:    pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
 	}
 	k.SetContractInfo(ctx, info)
@@ -72,8 +72,8 @@ func TestGetCreatorContracts(t *testing.T) {
 			Creator:   creator,
 			Admin:     creator,
 			Label:     "test",
-			CreatedAt: timestamppb.Now(),
-			UpdatedAt: timestamppb.Now(),
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
 			Status:    pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
 		}
 		k.SetContractInfo(ctx, info)
@@ -115,9 +115,9 @@ func TestGetTagContracts(t *testing.T) {
 			Creator:   "cosmos1creator",
 			Admin:     "cosmos1admin",
 			Label:     "test",
-			CreatedAt: timestamppb.Now(),
-			UpdatedAt: timestamppb.Now(),
-			Metadata: &pb.ContractMetadata{
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+			Metadata: pb.ContractMetadata{
 				Name:        "Test Contract",
 				Description: "A test contract",
 				Version:     "1.0.0",
@@ -163,8 +163,8 @@ func TestGetAllContracts(t *testing.T) {
 			Creator:   "cosmos1creator",
 			Admin:     "cosmos1admin",
 			Label:     "test",
-			CreatedAt: timestamppb.Now(),
-			UpdatedAt: timestamppb.Now(),
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
 			Status:    pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
 		}
 		k.SetContractInfo(ctx, info)
@@ -194,8 +194,8 @@ func TestDeleteContractInfo(t *testing.T) {
 		Creator:   "cosmos1creator",
 		Admin:     "cosmos1admin",
 		Label:     "test-contract",
-		CreatedAt: timestamppb.Now(),
-		UpdatedAt: timestamppb.Now(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 		Status:    pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
 	}
 	k.SetContractInfo(ctx, info)

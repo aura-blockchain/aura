@@ -78,7 +78,7 @@ func ParamsInvariant(k *Keeper) sdk.Invariant {
 					types.ModuleName,
 					"params-valid",
 					fmt.Sprintf("max pause duration too long: %d seconds (max 7 days)",
-						params.MaxPauseDuration.Seconds()),
+						int64(params.MaxPauseDuration.Seconds())),
 				), true
 			}
 		}

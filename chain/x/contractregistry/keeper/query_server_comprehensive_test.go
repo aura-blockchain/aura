@@ -46,7 +46,7 @@ func (suite *QueryServerComprehensiveTestSuite) SetupTest() {
 	params := types.DefaultParams()
 	suite.NoError(suite.keeper.SetParams(suite.ctx, &params))
 
-	suite.queryServer = keeper.NewQueryServerImpl(*suite.keeper)
+	suite.queryServer = keeper.NewQueryServerImpl(suite.keeper)
 }
 
 // ============================
@@ -62,16 +62,16 @@ func (suite *QueryServerComprehensiveTestSuite) TestQueryContractInfo_Success() 
 		Creator:  "cosmos1creator",
 		Admin:    "cosmos1admin",
 		Label:    "test-contract",
-		Metadata: &pb.ContractMetadata{
+		Metadata: pb.ContractMetadata{
 			Name:        "Test Contract",
 			Description: "A test contract",
 			Version:     "1.0.0",
 			Tags:        []string{"test"},
 		},
-		SecurityPolicy: &pb.SecurityPolicy{
+		SecurityPolicy: pb.SecurityPolicy{
 			MaxGasPerTx: 1000000,
 		},
-		Compliance: &pb.ComplianceRequirements{},
+		Compliance: pb.ComplianceRequirements{},
 		Status:     pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
 	}
 	suite.NoError(suite.keeper.RegisterContract(suite.ctx, info))
@@ -120,9 +120,9 @@ func (suite *QueryServerComprehensiveTestSuite) TestQueryContractsByCreator_Succ
 			Creator:        creator,
 			Admin:          creator,
 			Label:          "test",
-			Metadata:       &pb.ContractMetadata{Name: "Test " + string(rune('0'+i))},
-			SecurityPolicy: &pb.SecurityPolicy{},
-			Compliance:     &pb.ComplianceRequirements{},
+			Metadata: pb.ContractMetadata{Name: "Test " + string(rune('0'+i))},
+			SecurityPolicy: pb.SecurityPolicy{},
+			Compliance: pb.ComplianceRequirements{},
 			Status:         pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
 		}
 		suite.NoError(suite.keeper.RegisterContract(suite.ctx, info))
@@ -152,9 +152,9 @@ func (suite *QueryServerComprehensiveTestSuite) TestQueryContractsByCreator_With
 			Creator:        creator,
 			Admin:          creator,
 			Label:          "test",
-			Metadata:       &pb.ContractMetadata{Name: "Test"},
-			SecurityPolicy: &pb.SecurityPolicy{},
-			Compliance:     &pb.ComplianceRequirements{},
+			Metadata: pb.ContractMetadata{Name: "Test"},
+			SecurityPolicy: pb.SecurityPolicy{},
+			Compliance: pb.ComplianceRequirements{},
 			Status:         pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
 		}
 		suite.NoError(suite.keeper.RegisterContract(suite.ctx, info))
@@ -207,12 +207,12 @@ func (suite *QueryServerComprehensiveTestSuite) TestQueryContractsByTag_Success(
 			Creator:  "cosmos1creator",
 			Admin:    "cosmos1admin",
 			Label:    "test",
-			Metadata: &pb.ContractMetadata{
+			Metadata: pb.ContractMetadata{
 				Name: "Test",
 				Tags: []string{tag, "other"},
 			},
-			SecurityPolicy: &pb.SecurityPolicy{},
-			Compliance:     &pb.ComplianceRequirements{},
+			SecurityPolicy: pb.SecurityPolicy{},
+			Compliance: pb.ComplianceRequirements{},
 			Status:         pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
 		}
 		suite.NoError(suite.keeper.RegisterContract(suite.ctx, info))
@@ -240,9 +240,9 @@ func (suite *QueryServerComprehensiveTestSuite) TestQueryContractsByTag_WithPagi
 			Creator:        "cosmos1creator",
 			Admin:          "cosmos1admin",
 			Label:          "test",
-			Metadata:       &pb.ContractMetadata{Name: "Test", Tags: []string{tag}},
-			SecurityPolicy: &pb.SecurityPolicy{},
-			Compliance:     &pb.ComplianceRequirements{},
+			Metadata: pb.ContractMetadata{Name: "Test", Tags: []string{tag}},
+			SecurityPolicy: pb.SecurityPolicy{},
+			Compliance: pb.ComplianceRequirements{},
 			Status:         pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
 		}
 		suite.NoError(suite.keeper.RegisterContract(suite.ctx, info))
@@ -285,9 +285,9 @@ func (suite *QueryServerComprehensiveTestSuite) TestQueryRegisteredContracts_Suc
 			Creator:        "cosmos1creator",
 			Admin:          "cosmos1admin",
 			Label:          "test",
-			Metadata:       &pb.ContractMetadata{Name: "Test"},
-			SecurityPolicy: &pb.SecurityPolicy{},
-			Compliance:     &pb.ComplianceRequirements{},
+			Metadata: pb.ContractMetadata{Name: "Test"},
+			SecurityPolicy: pb.SecurityPolicy{},
+			Compliance: pb.ComplianceRequirements{},
 			Status:         pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
 		}
 		suite.NoError(suite.keeper.RegisterContract(suite.ctx, info))
@@ -316,9 +316,9 @@ func (suite *QueryServerComprehensiveTestSuite) TestQueryRegisteredContracts_Wit
 			Creator:        "cosmos1creator",
 			Admin:          "cosmos1admin",
 			Label:          "test",
-			Metadata:       &pb.ContractMetadata{Name: "Test"},
-			SecurityPolicy: &pb.SecurityPolicy{AllowPause: true},
-			Compliance:     &pb.ComplianceRequirements{},
+			Metadata: pb.ContractMetadata{Name: "Test"},
+			SecurityPolicy: pb.SecurityPolicy{AllowPause: true},
+			Compliance: pb.ComplianceRequirements{},
 			Status:         status,
 		}
 		suite.NoError(suite.keeper.RegisterContract(suite.ctx, info))
@@ -364,9 +364,9 @@ func (suite *QueryServerComprehensiveTestSuite) TestQueryContractMetrics_Success
 		Creator:        "cosmos1creator",
 		Admin:          "cosmos1admin",
 		Label:          "test",
-		Metadata:       &pb.ContractMetadata{Name: "Test"},
-		SecurityPolicy: &pb.SecurityPolicy{},
-		Compliance:     &pb.ComplianceRequirements{},
+		Metadata: pb.ContractMetadata{Name: "Test"},
+		SecurityPolicy: pb.SecurityPolicy{},
+		Compliance: pb.ComplianceRequirements{},
 		Status:         pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
 	}
 	suite.NoError(suite.keeper.RegisterContract(suite.ctx, info))
@@ -430,9 +430,9 @@ func (suite *QueryServerComprehensiveTestSuite) TestQueryContracts_MultipleStatu
 			Creator:        "cosmos1creator",
 			Admin:          "cosmos1admin",
 			Label:          "test",
-			Metadata:       &pb.ContractMetadata{Name: "Test"},
-			SecurityPolicy: &pb.SecurityPolicy{AllowPause: true},
-			Compliance:     &pb.ComplianceRequirements{},
+			Metadata: pb.ContractMetadata{Name: "Test"},
+			SecurityPolicy: pb.SecurityPolicy{AllowPause: true},
+			Compliance: pb.ComplianceRequirements{},
 			Status:         status,
 		}
 		suite.NoError(suite.keeper.RegisterContract(suite.ctx, info))
@@ -455,12 +455,12 @@ func (suite *QueryServerComprehensiveTestSuite) TestQueryContractsByCreator_Mult
 		Creator: creator,
 		Admin:   creator,
 		Label:   "test",
-		Metadata: &pb.ContractMetadata{
+		Metadata: pb.ContractMetadata{
 			Name: "Multi-tag Contract",
 			Tags: []string{"defi", "nft", "gaming"},
 		},
-		SecurityPolicy: &pb.SecurityPolicy{},
-		Compliance:     &pb.ComplianceRequirements{},
+		SecurityPolicy: pb.SecurityPolicy{},
+		Compliance: pb.ComplianceRequirements{},
 		Status:         pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
 	}
 	suite.NoError(suite.keeper.RegisterContract(suite.ctx, info))
