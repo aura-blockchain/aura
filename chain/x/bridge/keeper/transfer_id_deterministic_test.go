@@ -5,6 +5,7 @@ import (
 	"sync"
 	"testing"
 
+	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/codec"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/stretchr/testify/require"
@@ -311,7 +312,7 @@ func (suite *TransferIDTestSuite) TestTransferIDDuplicateDetection() {
 		TargetChain: "paw",
 		Sender:      "sender1",
 		Recipient:   "recipient1",
-		Amount:      "100",
+		Amount:      math.NewInt(100),
 		Denom:       "uaura",
 		Status:      types.TransferStatus_PENDING,
 	}
