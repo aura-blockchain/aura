@@ -25,7 +25,7 @@ func TestGetAllKYCRecordsPaginated(t *testing.T) {
 			Address:    fmt.Sprintf("address%d", i),
 			KycLevel:   types.KYCLevel_KYC_LEVEL_BASIC,
 			Provider:   "test-provider",
-			VerifiedAt: timestamppb.New(time.Now()),
+			VerifiedAt: time.Now(),
 			ExpiresAt:  timestamppb.New(time.Now().Add(365 * 24 * time.Hour)),
 		}
 		err := keeper.SetKYCRecord(ctx, record)
@@ -90,7 +90,7 @@ func TestGetAllAMLProfilesPaginated(t *testing.T) {
 			RiskLevel:         types.AMLRiskLevel_AML_RISK_LOW,
 			TotalTransactions: uint64(i),
 			TotalVolume:       math.NewInt(int64(i * 1000)).String(),
-			LastAssessment:    timestamppb.New(time.Now()),
+			LastAssessment: time.Now(),
 		}
 		err := keeper.SetAMLProfile(ctx, profile)
 		require.NoError(t, err)
@@ -165,7 +165,7 @@ func TestGetAllGDPRConsentsPaginated(t *testing.T) {
 			Address:         fmt.Sprintf("address%d", i),
 			ConsentType:     "data_processing",
 			Consented:       true,
-			ConsentGivenAt:  timestamppb.New(time.Now()),
+			ConsentGivenAt: time.Now(),
 			ConsentVersion:  "v1.0",
 		}
 		err := keeper.SetGDPRConsent(ctx, consent)
@@ -304,7 +304,7 @@ func TestPaginationLargeDataset(t *testing.T) {
 			Address:    fmt.Sprintf("address%03d", i), // Zero-padded for consistent ordering
 			KycLevel:   types.KYCLevel_KYC_LEVEL_BASIC,
 			Provider:   "test-provider",
-			VerifiedAt: timestamppb.New(time.Now()),
+			VerifiedAt: time.Now(),
 			ExpiresAt:  timestamppb.New(time.Now().Add(365 * 24 * time.Hour)),
 		}
 		err := keeper.SetKYCRecord(ctx, record)
@@ -372,7 +372,7 @@ func TestPaginationDefaultLimit(t *testing.T) {
 			Address:    fmt.Sprintf("address%d", i),
 			KycLevel:   types.KYCLevel_KYC_LEVEL_BASIC,
 			Provider:   "test-provider",
-			VerifiedAt: timestamppb.New(time.Now()),
+			VerifiedAt: time.Now(),
 			ExpiresAt:  timestamppb.New(time.Now().Add(365 * 24 * time.Hour)),
 		}
 		err := keeper.SetKYCRecord(ctx, record)

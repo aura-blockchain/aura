@@ -3,11 +3,11 @@ package keeper_test
 import (
 	"testing"
 
+	sdkmath "cosmossdk.io/math"
 	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 	"github.com/aequitas/aura/chain/x/bridge/keeper"
 	"github.com/aequitas/aura/chain/x/bridge/types"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // ========================================================================
@@ -23,12 +23,12 @@ func TestUnmarshalError_CorruptedPendingTransfer(t *testing.T) {
 	validPending := &types.PendingTransfer{
 		TransferId:   "valid-123",
 		Recipient:    "recipient-address",
-		Amount:       "1000",
+		Amount:       sdkmath.NewInt(1000),
 		Denom:        "uaura",
 		SourceChain:  "ethereum",
 		SourceTxHash: "0xabc123",
-		CreatedAt:    timestamppb.New(input.Ctx.BlockTime()),
-		UnlockTime:   timestamppb.New(input.Ctx.BlockTime().Add(types.DefaultFraudProofWindow)),
+		CreatedAt:    input.Ctx.BlockTime(),
+		UnlockTime:   input.Ctx.BlockTime().Add(types.DefaultFraudProofWindow),
 		Challenged:   false,
 	}
 	k.SetPendingTransfer(input.Ctx, validPending)
@@ -124,12 +124,12 @@ func TestUnmarshalError_MixedValidAndCorrupted(t *testing.T) {
 		pending := &types.PendingTransfer{
 			TransferId:   "transfer-" + string(rune('0'+i)),
 			Recipient:    "recipient",
-			Amount:       "1000",
+			Amount:       sdkmath.NewInt(1000),
 			Denom:        "uaura",
 			SourceChain:  "ethereum",
 			SourceTxHash: "0xabc",
-			CreatedAt:    timestamppb.New(input.Ctx.BlockTime()),
-			UnlockTime:   timestamppb.New(input.Ctx.BlockTime().Add(types.DefaultFraudProofWindow)),
+			CreatedAt:    input.Ctx.BlockTime(),
+			UnlockTime:   input.Ctx.BlockTime().Add(types.DefaultFraudProofWindow),
 			Challenged:   false,
 		}
 		k.SetPendingTransfer(input.Ctx, pending)

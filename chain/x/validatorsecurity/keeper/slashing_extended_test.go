@@ -118,7 +118,7 @@ func (suite *KeeperTestSuite) TestHandleDowntimeNoViolation() {
 	// Setup
 	params := types.DefaultParams()
 	params.SignedBlocksWindow = 1000
-	params.MinSignedPerWindow = "0.5"
+	params.MinSignedPerWindow = sdkmath.LegacyMustNewDecFromStr("0.5")
 	suite.Require().NoError(suite.keeper.SetParams(suite.ctx, params))
 
 	err := suite.keeper.RegisterValidator(suite.ctx, validatorAddr, "hot", "cold", "region", "US", 37.0, -122.0, nil)

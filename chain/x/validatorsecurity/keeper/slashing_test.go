@@ -1,6 +1,8 @@
 package keeper_test
 
 import (
+	sdkmath "cosmossdk.io/math"
+
 	"github.com/aequitas/aura/chain/x/validatorsecurity/types"
 )
 
@@ -15,25 +17,25 @@ func (suite *KeeperTestSuite) TestValidateMinimumStake() {
 func (suite *KeeperTestSuite) TestSlashFractionValidation() {
 	params := types.DefaultParams()
 
-	// Test valid slash fractions (they're now strings)
+	// Test valid slash fractions (they're LegacyDec types)
 	suite.Require().NoError(types.ValidateParams(params))
-	suite.Require().NotEmpty(params.DoubleSignSlashFraction)
-	suite.Require().NotEmpty(params.DowntimeSlashFraction)
-	// String values should be valid decimals
-	suite.Require().Equal("0.05", params.DoubleSignSlashFraction)
-	suite.Require().Equal("0.01", params.DowntimeSlashFraction)
+	suite.Require().False(params.DoubleSignSlashFraction.IsNil())
+	suite.Require().False(params.DowntimeSlashFraction.IsNil())
+	// Check expected values
+	suite.Require().Equal(sdkmath.LegacyMustNewDecFromStr("0.05").String(), params.DoubleSignSlashFraction.String())
+	suite.Require().Equal(sdkmath.LegacyMustNewDecFromStr("0.01").String(), params.DowntimeSlashFraction.String())
 }
 
 func (suite *KeeperTestSuite) TestInvalidSlashFraction() {
 	params := types.DefaultParams()
 
-	// Test empty slash fraction
-	params.DoubleSignSlashFraction = ""
+	// Test negative slash fraction
+	params.DoubleSignSlashFraction = sdkmath.LegacyMustNewDecFromStr("-0.05")
 	suite.Require().Error(types.ValidateParams(params))
 
-	// Test empty downtime slash fraction
+	// Test slash fraction > 1
 	params = types.DefaultParams()
-	params.DowntimeSlashFraction = ""
+	params.DowntimeSlashFraction = sdkmath.LegacyMustNewDecFromStr("1.5")
 	suite.Require().Error(types.ValidateParams(params))
 }
 

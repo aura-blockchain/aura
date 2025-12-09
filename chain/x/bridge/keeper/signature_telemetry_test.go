@@ -304,14 +304,14 @@ func TestSignatureTelemetry_TransferIDCollision(t *testing.T) {
 	ctx := input.Ctx
 
 	// Create a transfer to occupy a specific ID
-	// Amount field is a string in the protobuf definition
+	// Amount field is math.Int in the protobuf definition
 	existingTransfer := &types.CrossChainTransfer{
 		TransferId:  "transfer-12345678",
 		SourceChain: "paw",
 		TargetChain: "aura",
 		Sender:      "paw1test",
 		Recipient:   "aura1test",
-		Amount:      "1000",
+		Amount:      math.NewInt(1000),
 		Status:      types.TransferStatus_PENDING,
 	}
 

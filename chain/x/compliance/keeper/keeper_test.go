@@ -181,7 +181,7 @@ func TestKeeper_FullKYCWorkflow(t *testing.T) {
 		Address:              address,
 		KycLevel:             types.KYCLevel_KYC_LEVEL_BASIC,
 		Provider:             "provider1",
-		VerifiedAt:           timestamppb.New(now),
+		VerifiedAt: now,
 		ExpiresAt:            timestamppb.New(now.Add(365 * 24 * time.Hour)),
 		PiiCommitment: make([]byte, 32),
 		EnhancedDueDiligence: false,
@@ -217,7 +217,7 @@ func TestKeeper_FullAMLWorkflow(t *testing.T) {
 		Address:           address,
 		RiskLevel:         types.AMLRiskLevel_AML_RISK_LOW,
 		RiskFactors:       []string{},
-		LastAssessment:    timestamppb.New(now),
+		LastAssessment: now,
 		TotalTransactions: 0,
 		TotalVolume:       "0",
 		PepStatus:         false,
@@ -290,7 +290,7 @@ func TestKeeper_GDPRWorkflow(t *testing.T) {
 		Address:        address,
 		ConsentType:    "data_processing",
 		Consented:      true,
-		ConsentGivenAt: timestamppb.New(now),
+		ConsentGivenAt: now,
 		ConsentVersion: "v1.0",
 	}
 

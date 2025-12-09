@@ -5,9 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
-	"github.com/aequitas/aura/chain/x/bridge/keeper"
-	"github.com/aequitas/aura/chain/x/bridge/types"
+	sdkmath "cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
@@ -16,8 +14,10 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
+	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
+	"github.com/aequitas/aura/chain/x/bridge/keeper"
+	"github.com/aequitas/aura/chain/x/bridge/types"
 	bridgepb "github.com/aequitas/aura/proto/aura/bridge/v1beta1"
 )
 
@@ -101,6 +101,7 @@ func TestMultiValidatorConsensus_InsufficientValidatorsRejected(t *testing.T) {
 			transfer := createTestTransfer(t, input, k, transferID, burnTxHash, "1000000", tc.minRequired)
 			sender := keepertest.GenTestAddr().String()
 			amount := "1000000"
+		amountInt, _ := sdkmath.NewIntFromString(amount)
 			denom := "uaura"
 			sourceChain := "paw"
 
@@ -125,7 +126,7 @@ func TestMultiValidatorConsensus_InsufficientValidatorsRejected(t *testing.T) {
 			unlockMsg := &bridgepb.MsgUnlockTokens{
 				BurnTxHash:          burnTxHash,
 				Sender:              sender,
-				Amount:              amount,
+				Amount:              amountInt,
 				Denom:               denom,
 				SourceChain:         sourceChain,
 				ValidatorSignatures: signatures,
@@ -218,6 +219,7 @@ func TestMultiValidatorConsensus_DuplicateValidatorSignaturesRejected(t *testing
 			burnTxHash := "0xduplicate123"
 			sender := keepertest.GenTestAddr().String()
 			amount := "1000000"
+		amountInt, _ := sdkmath.NewIntFromString(amount)
 			denom := "uaura"
 			sourceChain := "paw"
 
@@ -252,7 +254,7 @@ func TestMultiValidatorConsensus_DuplicateValidatorSignaturesRejected(t *testing
 			unlockMsg := &bridgepb.MsgUnlockTokens{
 				BurnTxHash:          burnTxHash,
 				Sender:              sender,
-				Amount:              amount,
+				Amount:              amountInt,
 				Denom:               denom,
 				SourceChain:         sourceChain,
 				ValidatorSignatures: signatures,
@@ -344,6 +346,7 @@ func TestMultiValidatorConsensus_MinimumThresholdEnforced(t *testing.T) {
 			transfer := createTestTransfer(t, input, k, transferID, burnTxHash, "1000000", tc.paramsMinRequired)
 			sender := keepertest.GenTestAddr().String()
 			amount := "1000000"
+		amountInt, _ := sdkmath.NewIntFromString(amount)
 			denom := "uaura"
 			sourceChain := "paw"
 
@@ -368,7 +371,7 @@ func TestMultiValidatorConsensus_MinimumThresholdEnforced(t *testing.T) {
 			unlockMsg := &bridgepb.MsgUnlockTokens{
 				BurnTxHash:          burnTxHash,
 				Sender:              sender,
-				Amount:              amount,
+				Amount:              amountInt,
 				Denom:               denom,
 				SourceChain:         sourceChain,
 				ValidatorSignatures: signatures,
@@ -477,6 +480,7 @@ func TestMultiValidatorConsensus_InactiveValidatorsNotCounted(t *testing.T) {
 			transfer := createTestTransfer(t, input, k, transferID, burnTxHash, "1000000", tc.minRequired)
 			sender := keepertest.GenTestAddr().String()
 			amount := "1000000"
+		amountInt, _ := sdkmath.NewIntFromString(amount)
 			denom := "uaura"
 			sourceChain := "paw"
 
@@ -507,7 +511,7 @@ func TestMultiValidatorConsensus_InactiveValidatorsNotCounted(t *testing.T) {
 			unlockMsg := &bridgepb.MsgUnlockTokens{
 				BurnTxHash:          burnTxHash,
 				Sender:              sender,
-				Amount:              amount,
+				Amount:              amountInt,
 				Denom:               denom,
 				SourceChain:         sourceChain,
 				ValidatorSignatures: signatures,
@@ -652,7 +656,7 @@ func createTestTransfer(t *testing.T, input keepertest.TestInput, k *keeper.Keep
 		Denom:                 "uaura",
 		Amount:                amount,
 		Status:                bridgepb.TransferStatus_PENDING,
-		Timestamp:             timestamppb.New(input.Ctx.BlockTime()),
+		Timestamp:             input.Ctx.BlockTime(),
 		RequiredConfirmations: requiredConfirmations,
 	}
 
