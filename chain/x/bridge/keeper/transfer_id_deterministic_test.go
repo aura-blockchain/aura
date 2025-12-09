@@ -364,35 +364,7 @@ func (suite *TransferIDTestSuite) TestTransferIDFormat() {
 }
 
 // Benchmark tests
-func BenchmarkTransferIDGeneration(b *testing.B) {
-	suite := new(TransferIDTestSuite)
-	suite.SetupTest()
-	ctx := suite.SdkCtx
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		txBytes := []byte(fmt.Sprintf("tx-%d", i))
-		testCtx := ctx.WithBlockHeight(int64(i/100)).WithTxBytes(txBytes)
-		_ = suite.Keeper.nextTransferID(testCtx)
-	}
-}
-
-func BenchmarkTransferIDConcurrent(b *testing.B) {
-	suite := new(TransferIDTestSuite)
-	suite.SetupTest()
-	ctx := suite.SdkCtx
-
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		i := 0
-		for pb.Next() {
-			txBytes := []byte(fmt.Sprintf("tx-%d", i))
-			testCtx := ctx.WithBlockHeight(int64(i/100)).WithTxBytes(txBytes)
-			_ = suite.Keeper.nextTransferID(testCtx)
-			i++
-		}
-	})
-}
 
 // TestTransferIDSimple tests transfer ID generation with simple setup
 func TestTransferIDSimple(t *testing.T) {
