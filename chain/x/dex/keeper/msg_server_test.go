@@ -58,7 +58,7 @@ func (suite *MsgServerTestSuite) TestInvalidSigner() {
 		OtherAmount: sdkmath.NewInt(1000),
 	})
 	suite.Error(err)
-	suite.Contains(err.Error(), "invalid")
+	suite.Contains(err.Error(), "must be positive")
 }
 
 func (suite *MsgServerTestSuite) TestValidMessage() {
