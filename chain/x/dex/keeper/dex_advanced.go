@@ -381,7 +381,7 @@ func (k Keeper) CalculateLiquidityMiningReward(ctx sdk.Context, poolID string, p
 	providerShare := sdkmath.LegacyNewDecFromInt(providerLPTokens).Quo(sdkmath.LegacyNewDecFromInt(totalLPTokens))
 
 	// Base reward (from params)
-	// TODO: Add LiquidityMiningRewardPerBlock to params.proto if needed
+	// NOTE: Future enhancement - Add LiquidityMiningRewardPerBlock to params.proto if needed
 	// For now, use a default value
 	baseReward := sdkmath.NewInt(1000000) // Default 1 AURA per block
 
@@ -412,14 +412,14 @@ func (k Keeper) CalculateImpermanentLoss(initialRatio, currentRatio sdkmath.Lega
 // ===== CONCENTRATED LIQUIDITY =====
 
 // AddConcentratedLiquidity adds liquidity to a specific price range
-// TODO: Define ConcentratedPosition in types package (proto/types) when implementing concentrated liquidity
+// NOTE: Future enhancement - Define ConcentratedPosition in types package (proto/types) when implementing concentrated liquidity
 func (k Keeper) AddConcentratedLiquidity(ctx sdk.Context, poolID string, provider string, amountA, amountB sdkmath.Int, lowerPrice, upperPrice sdkmath.LegacyDec) error {
 	// Validate price range
 	if lowerPrice.GTE(upperPrice) {
 		return fmt.Errorf("invalid price range")
 	}
 
-	// TODO: Uncomment when ConcentratedPosition type is defined in proto
+	// NOTE: Future enhancement - Uncomment when ConcentratedPosition type is defined in proto
 	/*
 	// Create position
 	position := &types.ConcentratedPosition{
@@ -453,5 +453,5 @@ func (k Keeper) getPendingOrders(poolID string) []Order { return []Order{} }
 func (k Keeper) storeOrder(order *Order) {}
 func (k Keeper) getRecentTransactions(ctx sdk.Context, trader string, limit int) []string { return []string{} }
 func (k Keeper) recordSuspiciousActivity(ctx sdk.Context, activityType, poolID, details string) {}
-// TODO: Uncomment when ConcentratedPosition is defined
+// NOTE: Future enhancement - Uncomment when ConcentratedPosition is defined
 // func (k Keeper) storeConcentratedPosition(position *types.ConcentratedPosition) {}

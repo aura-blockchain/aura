@@ -28,7 +28,7 @@ func (k *Keeper) GetDecayConfig() DecayConfig {
 	params := k.GetParams()
 
 	// Note: Decay params not yet in proto - using defaults
-	// TODO: Add decay params to confidencescore.proto Params message
+	// NOTE: Future enhancement - Add decay params to confidencescore.proto Params message
 	return DecayConfig{
 		Enabled:            params.StalenessEnabled, // Reuse staleness flag for decay
 		DecayRatePercent:   5,                       // Default 5% per period

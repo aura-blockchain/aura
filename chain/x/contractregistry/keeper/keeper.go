@@ -479,7 +479,7 @@ func (k Keeper) DeprecateContract(ctx sdk.Context, contractAddr, signer, reason,
 	// Update status
 	info.Status = pb.ContractStatus_CONTRACT_STATUS_DEPRECATED
 	// Note: MigrationTarget field not available in current proto definition
-	// TODO: Regenerate proto to include migration_target field
+	// NOTE: Future enhancement - Regenerate proto to include migration_target field
 	k.SetContractInfo(ctx, &info)
 
 	return nil

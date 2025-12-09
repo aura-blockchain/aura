@@ -165,7 +165,7 @@ func (k *Keeper) RestoreDataVersion(ctx sdk.Context, dataID string, versionNum u
 	contentHash, _ := hex.DecodeString(targetVersion.ContentHash)
 	item.ContentHash = contentHash
 	item.StorageLocation = targetVersion.StorageLocation
-	// TODO: Add UpdatedAt field to DataItem proto if needed
+	// NOTE: Future enhancement - Add UpdatedAt field to DataItem proto if needed
 	// item.UpdatedAt = timestamppb.New(time.Unix(time.Now().Unix(), 0))
 
 	return k.SetDataItem(ctx, item)

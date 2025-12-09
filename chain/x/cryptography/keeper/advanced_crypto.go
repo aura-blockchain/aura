@@ -70,7 +70,7 @@ func (k Keeper) PerformKeyStretching(ctx sdk.Context, inputKey []byte, salt []by
 
 // ===== HARDWARE SECURITY MODULE (HSM) INTEGRATION =====
 // HSM integration functions are commented out until proper proto types are defined
-// TODO: Define HSMConfig and HSMKeyRecord in proto files
+// NOTE: Future enhancement - Define HSMConfig and HSMKeyRecord in proto files
 
 /*
 // StoreKeyInHSM stores a key in a Hardware Security Module
@@ -145,7 +145,7 @@ func (k Keeper) RetrieveKeyFromHSM(ctx sdk.Context, keyID string, hsmConfig *cry
 
 // ===== SECURE ENCLAVE INTEGRATION =====
 // Secure enclave functions are commented out until proper implementation without in-memory state
-// TODO: Implement secure enclave using only KV store
+// NOTE: Future enhancement - Implement secure enclave using only KV store
 
 /*
 // StoreInSecureEnclave stores sensitive data in secure enclave

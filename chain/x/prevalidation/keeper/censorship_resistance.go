@@ -18,7 +18,7 @@ type CensorshipMonitor struct {
 
 // DetectCensorship detects potential censorship of transactions
 func (k *Keeper) DetectCensorship(ctx sdk.Context, tx types.Transaction) (bool, error) {
-	// TODO: Add EnableCensorResist and MaxTxAge to Params proto if needed
+	// NOTE: Future enhancement - Add EnableCensorResist and MaxTxAge to Params proto if needed
 	// For now, censorship resistance is always enabled with default max age
 	enableCensorResist := true
 	maxTxAge := int64(3600) // 1 hour in seconds

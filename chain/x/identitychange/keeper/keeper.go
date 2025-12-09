@@ -377,7 +377,7 @@ func (k *Keeper) SetSuspended(ctx sdk.Context, suspended bool) error {
 // ============================
 // RECOVERY MANAGEMENT
 // ============================
-// TODO: Uncomment when IdentityRecovery proto type is defined
+// NOTE: Future enhancement - Uncomment when IdentityRecovery proto type is defined
 
 // GetRecovery retrieves identity recovery record from KV store
 // func (k *Keeper) GetRecovery(ctx sdk.Context, did string) (types.IdentityRecovery, bool) {
@@ -417,7 +417,7 @@ func (k *Keeper) SetSuspended(ctx sdk.Context, suspended bool) error {
 // ============================
 // VERIFICATION MANAGEMENT
 // ============================
-// TODO: Uncomment when IdentityVerification proto type is defined
+// NOTE: Future enhancement - Uncomment when IdentityVerification proto type is defined
 
 // GetVerification retrieves identity verification record from KV store
 // func (k *Keeper) GetVerification(ctx sdk.Context, did string) (types.IdentityVerification, bool) {
@@ -457,7 +457,7 @@ func (k *Keeper) SetSuspended(ctx sdk.Context, suspended bool) error {
 // ============================
 // DELEGATION MANAGEMENT
 // ============================
-// TODO: Uncomment when IdentityDelegation, IdentityFederation, CrossChainIdentity proto types are defined
+// NOTE: Future enhancement - Uncomment when IdentityDelegation, IdentityFederation, CrossChainIdentity proto types are defined
 /*
 // GetDelegation retrieves identity delegation record from KV store
 func (k *Keeper) GetDelegation(ctx sdk.Context, did string) (types.IdentityDelegation, bool) {

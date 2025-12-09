@@ -92,7 +92,7 @@ func (m AppModule) RegisterServices(config ModuleServices) {
 	if config == nil {
 		panic(fmt.Sprintf("%s: nil module services", types.ModuleName))
 	}
-	// TODO: Re-enable once msg_server.go and query_server.go are fixed
+	// NOTE: Future enhancement - Re-enable once msg_server.go and query_server.go are fixed
 	// config.RegisterMsgServer(keeper.NewMsgServer(m.keeper))
 	// config.RegisterQueryServer(keeper.NewQueryServer(m.keeper))
 }

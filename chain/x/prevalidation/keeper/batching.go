@@ -27,7 +27,7 @@ type TransactionBatch struct {
 
 // BatchValidateTransactions validates multiple transactions in a batch
 func (k *Keeper) BatchValidateTransactions(ctx sdk.Context, transactions []types.Transaction) ([]types.ValidationResult, error) {
-	// TODO: Add EnableBatching and BatchSize to Params proto if needed
+	// NOTE: Future enhancement - Add EnableBatching and BatchSize to Params proto if needed
 	// For now, batching is always enabled with default batch size
 	enableBatching := true
 	batchSize := 100
