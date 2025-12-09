@@ -172,8 +172,8 @@ func (suite *PoolSwapComprehensiveTestSuite) TestPoolCreation_ExtremeRatios() {
 				suite.True(lpTokens.GT(sdkmath.ZeroInt()), "LP tokens should be positive")
 
 				// Verify k = x * y invariant is set correctly
-				suite.Equal(tc.amountA.String(), pool.ReserveA)
-				suite.Equal(tc.amountB.String(), pool.ReserveB)
+				suite.Equal(tc.amountA.String(), pool.ReserveA.String())
+				suite.Equal(tc.amountB.String(), pool.ReserveB.String())
 			} else {
 				suite.Error(err)
 			}

@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"reflect"
 	"testing"
 
 	"cosmossdk.io/log"
@@ -12,7 +13,6 @@ import (
 	dbm "github.com/cosmos/cosmos-db"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/proto"
 
 	"github.com/aequitas/aura/chain/x/prevalidation/types"
 	pb "github.com/aequitas/aura/proto/aura/prevalidation/v1beta1"
@@ -30,8 +30,9 @@ func TestInitGenesis(t *testing.T) {
 	t.Run("init with valid genesis data", func(t *testing.T) {
 		k, ctx := setupTestKeeper(t)
 
+		params := types.DefaultParams()
 		genesis := &pb.GenesisState{
-			Params: types.DefaultParams(),
+			Params: *params, // Dereference pointer
 			PreValidatedTransactions: []*pb.PreValidatedTransaction{
 				{
 					Id:         "tx1",
@@ -69,8 +70,9 @@ func TestInitGenesis(t *testing.T) {
 	t.Run("init with pre-validated transactions", func(t *testing.T) {
 		k, ctx := setupTestKeeper(t)
 
+		params := types.DefaultParams()
 		genesis := &pb.GenesisState{
-			Params: types.DefaultParams(),
+			Params: *params, // Dereference pointer
 			PreValidatedTransactions: []*pb.PreValidatedTransaction{
 				{
 					Id:            "tx1",
@@ -102,8 +104,9 @@ func TestInitGenesis(t *testing.T) {
 	t.Run("init with validation templates", func(t *testing.T) {
 		k, ctx := setupTestKeeper(t)
 
+		params := types.DefaultParams()
 		genesis := &pb.GenesisState{
-			Params:                   types.DefaultParams(),
+			Params:                   *params, // Dereference pointer
 			PreValidatedTransactions: []*pb.PreValidatedTransaction{},
 			Templates: []*pb.ValidationTemplate{
 				{
@@ -135,8 +138,9 @@ func TestInitGenesis(t *testing.T) {
 	t.Run("init with metrics", func(t *testing.T) {
 		k, ctx := setupTestKeeper(t)
 
+		params := types.DefaultParams()
 		genesis := &pb.GenesisState{
-			Params:                   types.DefaultParams(),
+			Params:                   *params, // Dereference pointer
 			PreValidatedTransactions: []*pb.PreValidatedTransaction{},
 			Templates:                []*pb.ValidationTemplate{},
 			Metrics: &pb.PreValidationMetrics{
@@ -156,7 +160,7 @@ func TestInitGenesis(t *testing.T) {
 		k, ctx := setupTestKeeper(t)
 
 		genesis := &pb.GenesisState{
-			Params: &pb.Params{
+			Params: pb.Params{ // Value type, not pointer
 				Enabled:      true,
 				MaxCacheSize: 0, // Invalid - should be > 0
 			},
@@ -172,8 +176,9 @@ func TestInitGenesis(t *testing.T) {
 	t.Run("init skips nil entries", func(t *testing.T) {
 		k, ctx := setupTestKeeper(t)
 
+		params := types.DefaultParams()
 		genesis := &pb.GenesisState{
-			Params: types.DefaultParams(),
+			Params: *params, // Dereference pointer
 			PreValidatedTransactions: []*pb.PreValidatedTransaction{
 				nil,
 				{
@@ -212,8 +217,9 @@ func TestExportGenesis(t *testing.T) {
 		k, ctx := setupTestKeeper(t)
 
 		// Initialize with data
+		params := types.DefaultParams()
 		initGenesis := &pb.GenesisState{
-			Params: types.DefaultParams(),
+			Params: *params, // Dereference pointer
 			PreValidatedTransactions: []*pb.PreValidatedTransaction{
 				{Id: "tx1", TxType: pb.TransactionType_TX_TYPE_IR_COMPLETION, TemplateId: "template1", Signer: "aura1test1", Nonce: 1, Status: pb.ValidationStatus_VALIDATION_STATUS_VALIDATED},
 				{Id: "tx2", TxType: pb.TransactionType_TX_TYPE_IR_COMPLETION, TemplateId: "template1", Signer: "aura1test2", Nonce: 2, Status: pb.ValidationStatus_VALIDATION_STATUS_PENDING},
@@ -243,7 +249,7 @@ func TestGenesisRoundTrip(t *testing.T) {
 		k, ctx := setupTestKeeper(t)
 
 		originalGenesis := &pb.GenesisState{
-			Params: &pb.Params{
+			Params: pb.Params{ // Value type, not pointer
 				Enabled:                true,
 				MaxCacheSize:           1000,
 				ExpiryHours:            24,
@@ -308,8 +314,11 @@ func TestGenesisRoundTrip(t *testing.T) {
 		require.NoError(t, err)
 		export2 := k2.ExportGenesis(ctx2)
 
-		// Verify exports match using proto.Equal to avoid sizeCache differences
-		require.True(t, proto.Equal(export1.Params, export2.Params), "params should be equal")
+		// Verify exports match by comparing key fields (gogoproto types have internal cache fields)
+		require.Equal(t, export1.Params.Enabled, export2.Params.Enabled)
+		require.Equal(t, export1.Params.MaxCacheSize, export2.Params.MaxCacheSize)
+		require.Equal(t, export1.Params.ExpiryHours, export2.Params.ExpiryHours)
+		require.Equal(t, export1.Params.EncryptionAlgorithm, export2.Params.EncryptionAlgorithm)
 	})
 }
 

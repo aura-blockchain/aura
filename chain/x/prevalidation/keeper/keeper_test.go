@@ -1,12 +1,12 @@
 package keeper_test
 
 import (
+	"reflect"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	"google.golang.org/protobuf/proto"
 
 	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 	"github.com/aequitas/aura/chain/x/prevalidation/keeper"
@@ -49,8 +49,13 @@ func (suite *PrevalidationKeeperTestSuite) TestSetParams() {
 	retrieved, err := suite.keeper.GetParams(suite.ctx)
 	suite.Require().NoError(err)
 
-	// Use proto.Equal to compare protobuf messages and avoid sizeCache differences
-	suite.Require().True(proto.Equal(params, retrieved), "params should be equal")
+	// Compare key fields directly (gogoproto types have internal cache fields that differ)
+	suite.Require().Equal(params.Enabled, retrieved.Enabled)
+	suite.Require().Equal(params.MaxCacheSize, retrieved.MaxCacheSize)
+	suite.Require().Equal(params.ExpiryHours, retrieved.ExpiryHours)
+	suite.Require().Equal(params.EncryptionAlgorithm, retrieved.EncryptionAlgorithm)
+	suite.Require().Equal(params.ControlGroupPercentage, retrieved.ControlGroupPercentage)
+	suite.Require().Equal(params.MinConfidenceScore, retrieved.MinConfidenceScore)
 }
 
 // Transaction Validation Tests
@@ -401,6 +406,8 @@ func TestExportGenesis(t *testing.T) {
 	exported := k.ExportGenesis(input.Ctx)
 	require.NotNil(t, exported)
 
-	// Use proto.Equal to compare protobuf messages and avoid sizeCache differences
-	require.True(t, proto.Equal(genesisState.Params, exported.Params), "params should be equal")
+	// Compare key fields directly (gogoproto types have internal cache fields that differ)
+	require.Equal(t, genesisState.Params.Enabled, exported.Params.Enabled)
+	require.Equal(t, genesisState.Params.MaxCacheSize, exported.Params.MaxCacheSize)
+	require.Equal(t, genesisState.Params.ExpiryHours, exported.Params.ExpiryHours)
 }

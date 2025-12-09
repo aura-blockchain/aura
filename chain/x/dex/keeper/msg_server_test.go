@@ -44,7 +44,8 @@ func (suite *MsgServerTestSuite) TestNilRequest() {
 		MaxSlippageBps: 100,
 	})
 	suite.Error(err)
-	suite.Contains(err.Error(), "coin required")
+	// Empty coin denom triggers "invalid denom" error
+	suite.Contains(err.Error(), "invalid denom")
 }
 
 func (suite *MsgServerTestSuite) TestInvalidSigner() {

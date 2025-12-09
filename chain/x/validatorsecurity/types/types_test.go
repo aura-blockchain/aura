@@ -4,18 +4,18 @@ import (
 	"testing"
 	"time"
 
+	sdkmath "cosmossdk.io/math"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/durationpb"
 )
 
 func TestDefaultParams(t *testing.T) {
 	params := DefaultParams()
 	require.NotNil(t, params)
-	require.Equal(t, "0.05", params.DoubleSignSlashFraction)
-	require.Equal(t, "0.01", params.DowntimeSlashFraction)
+	require.Equal(t, sdkmath.LegacyNewDecWithPrec(5, 2), params.DoubleSignSlashFraction)
+	require.Equal(t, sdkmath.LegacyNewDecWithPrec(1, 2), params.DowntimeSlashFraction)
 	require.Equal(t, int64(1000), params.SignedBlocksWindow)
-	require.Equal(t, "0.5", params.MinSignedPerWindow)
-	require.Equal(t, "1000000", params.MinimumStakeAmount)
+	require.Equal(t, sdkmath.LegacyNewDecWithPrec(5, 1), params.MinSignedPerWindow)
+	require.Equal(t, sdkmath.NewInt(1000000), params.MinimumStakeAmount)
 
 	// Validate default params
 	require.NoError(t, ValidateParams(params))
@@ -33,17 +33,17 @@ func TestValidateParams_NilParams(t *testing.T) {
 	require.Contains(t, err.Error(), "params cannot be nil")
 }
 
-func TestValidateParams_EmptyDoubleSignSlashFraction(t *testing.T) {
+func TestValidateParams_InvalidDoubleSignSlashFraction(t *testing.T) {
 	params := DefaultParams()
-	params.DoubleSignSlashFraction = ""
+	params.DoubleSignSlashFraction = sdkmath.LegacyMustNewDecFromStr("1.5") // > 1.0
 	err := ValidateParams(params)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "double_sign_slash_fraction")
 }
 
-func TestValidateParams_EmptyDowntimeSlashFraction(t *testing.T) {
+func TestValidateParams_InvalidDowntimeSlashFraction(t *testing.T) {
 	params := DefaultParams()
-	params.DowntimeSlashFraction = ""
+	params.DowntimeSlashFraction = sdkmath.LegacyMustNewDecFromStr("-0.01") // negative
 	err := ValidateParams(params)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "downtime_slash_fraction")
@@ -51,14 +51,19 @@ func TestValidateParams_EmptyDowntimeSlashFraction(t *testing.T) {
 
 func TestValidateParams_CustomValues(t *testing.T) {
 	params := &ValidatorSecurityParams{
-		DoubleSignSlashFraction: "0.10",
-		DowntimeSlashFraction:   "0.02",
+		DoubleSignSlashFraction: sdkmath.LegacyMustNewDecFromStr("0.10"),
+		DowntimeSlashFraction:   sdkmath.LegacyMustNewDecFromStr("0.02"),
 		SignedBlocksWindow:      200,
-		MinSignedPerWindow:      "0.75",
-		MinimumStakeAmount:      "5000000",
-		DowntimeJailDuration:    durationpb.New(30 * time.Minute),
-		MonitoringInterval:      durationpb.New(2 * time.Minute),
-		FailoverTimeout:         durationpb.New(10 * time.Minute),
+		MinSignedPerWindow:      sdkmath.LegacyMustNewDecFromStr("0.75"),
+		MinimumStakeAmount:      sdkmath.NewInt(5000000),
+		DowntimeJailDuration:    30 * time.Minute,
+		MonitoringInterval:      2 * time.Minute,
+		FailoverTimeout:         10 * time.Minute,
+		EnableGeoDistribution:   false,
+		MaxValidatorsPerRegion:  0,
+		RequireSentryNodes:      false,
+		MinSentryNodes:          0,
+		EnableAutoFailover:      true,
 	}
 
 	err := ValidateParams(params)
