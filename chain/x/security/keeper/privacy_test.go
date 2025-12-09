@@ -6,6 +6,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	sdkmath "cosmossdk.io/math"
+
 	"github.com/aequitas/aura/chain/testutil"
 	"github.com/aequitas/aura/chain/x/security/types"
 	securitypb "github.com/aequitas/aura/proto/aura/security/v1beta1"
@@ -18,7 +20,7 @@ func TestMixingPoolCRUD(t *testing.T) {
 		PoolId:          "pool-1",
 		MinParticipants: 2,
 		MaxParticipants: 4,
-		Denomination:    "1000000",
+		Denomination:    sdkmath.NewInt(1000000),
 		MixingRounds:    3,
 		Status:          "active",
 	}
@@ -49,14 +51,14 @@ func TestGetMixingPoolByDenomination(t *testing.T) {
 		PoolId:          "active-pool",
 		MinParticipants: 2,
 		MaxParticipants: 4,
-		Denomination:    "10",
+		Denomination:    sdkmath.NewInt(10),
 		Status:          "active",
 	}
 	inactive := &securitypb.MixingPool{
 		PoolId:          "inactive-pool",
 		MinParticipants: 2,
 		MaxParticipants: 4,
-		Denomination:    "10",
+		Denomination:    sdkmath.NewInt(10),
 		Status:          "paused",
 	}
 
@@ -157,7 +159,7 @@ func TestJoinMixingPoolValidation(t *testing.T) {
 		Status:          "paused",
 		MinParticipants: 2,
 		MaxParticipants: 4,
-		Denomination:    "5",
+		Denomination:    sdkmath.NewInt(5),
 	}
 	k.SetMixingPool(ctx, inactive)
 	err = k.JoinMixingPool(ctx, inactive.PoolId)
@@ -169,7 +171,7 @@ func TestJoinMixingPoolValidation(t *testing.T) {
 		Status:          "active",
 		MinParticipants: 1,
 		MaxParticipants: 2,
-		Denomination:    "5",
+		Denomination:    sdkmath.NewInt(5),
 	}
 	k.SetMixingPool(ctx, active)
 	err = k.JoinMixingPool(ctx, active.PoolId)
