@@ -55,8 +55,7 @@ func (k Keeper) ValidateTransaction(ctx sdk.Context, tx sdk.Tx, txBytes []byte, 
 
 	// 4. Check minimum priority fee
 	if params.Mempool.EnablePriorityFees {
-		minFee, ok := math.NewIntFromString(params.Mempool.MinPriorityFee)
-		if ok && priorityFee.LT(minFee) {
+		if priorityFee.LT(params.Mempool.MinPriorityFee) {
 			return types.ErrPriorityFeeTooLow
 		}
 	}
@@ -72,8 +71,7 @@ func (k Keeper) ValidateTransaction(ctx sdk.Context, tx sdk.Tx, txBytes []byte, 
 	// 6. If mempool is full and priority fees are enabled, check if we can evict
 	if stats.TxCount >= params.Mempool.MaxSize && params.Mempool.EnablePriorityFees {
 		// Check if this tx has higher priority than lowest in mempool
-		avgFee, ok := math.NewIntFromString(stats.AvgPriorityFee)
-		if ok && priorityFee.LTE(avgFee) {
+		if priorityFee.LTE(stats.AvgPriorityFee) {
 			return types.ErrPriorityFeeTooLow
 		}
 		// Evict lowest priority transaction
@@ -106,16 +104,12 @@ func (k Keeper) AddToMempool(ctx sdk.Context, tx sdk.Tx, txBytes []byte, sender 
 
 	// Update average priority fee (running average)
 	if stats.TxCount == 1 {
-		stats.AvgPriorityFee = priorityFee.String()
+		stats.AvgPriorityFee = priorityFee
 	} else {
 		// Calculate new average: avg = (avg * (n-1) + new) / n
-		avgFee, ok := math.NewIntFromString(stats.AvgPriorityFee)
-		if !ok {
-			avgFee = math.ZeroInt()
-		}
-		totalFee := avgFee.Mul(math.NewInt(int64(stats.TxCount - 1)))
+		totalFee := stats.AvgPriorityFee.Mul(math.NewInt(int64(stats.TxCount - 1)))
 		totalFee = totalFee.Add(priorityFee)
-		stats.AvgPriorityFee = totalFee.Quo(math.NewInt(int64(stats.TxCount))).String()
+		stats.AvgPriorityFee = totalFee.Quo(math.NewInt(int64(stats.TxCount)))
 	}
 
 	k.SetMempoolStats(ctx, stats)

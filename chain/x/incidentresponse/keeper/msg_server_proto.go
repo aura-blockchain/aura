@@ -131,7 +131,7 @@ func (ms protoMsgServer) RequestChainPause(goCtx context.Context, msg *incidentr
 
 	var duration time.Duration
 	if msg.Duration != nil {
-		duration = msg.Duration.AsDuration()
+		duration = time.Duration(msg.Duration.Seconds)*time.Second + time.Duration(msg.Duration.Nanos)*time.Nanosecond
 	}
 
 	err := ms.keeper.RequestChainPause(

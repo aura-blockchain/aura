@@ -3,9 +3,11 @@ package keeper
 import (
 	"context"
 	"fmt"
+	"time"
 
 	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	gogotypes "github.com/cosmos/gogoproto/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 
 	economicsecuritypb "github.com/aequitas/aura/proto/aura/economicsecurity/v1beta1"
@@ -62,12 +64,20 @@ func (m *MsgServer) CreateVestingSchedule(
 		return nil, errorsmod.Wrap(types.ErrInvalidDuration, "cliff duration cannot exceed vesting duration")
 	}
 
+	// Convert gogoproto Timestamp to time.Time
+	var startTime time.Time
+	if msg.StartTime != nil {
+		startTime = time.Unix(msg.StartTime.Seconds, int64(msg.StartTime.Nanos))
+	} else {
+		startTime = time.Now()
+	}
+
 	// Create the vesting schedule via keeper
 	scheduleID, err := m.keeper.CreateVestingSchedule(
 		goCtx,
 		msg.BeneficiaryAddress,
 		msg.TotalAmount,
-		msg.StartTime,
+		startTime,
 		msg.CliffDuration,
 		msg.VestingDuration,
 		msg.VestingType,
@@ -345,6 +355,12 @@ func (m *MsgServer) ProposeTreasurySpend(
 		return nil, errorsmod.Wrap(err, "failed to propose treasury spend")
 	}
 
+	// Convert time.Time to gogoproto Timestamp for response
+	executableAtProto := &gogotypes.Timestamp{
+		Seconds: executableAt.Unix(),
+		Nanos:   int32(executableAt.Nanosecond()),
+	}
+
 	// Emit event
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	ctx.EventManager().EmitEvent(
@@ -355,13 +371,13 @@ func (m *MsgServer) ProposeTreasurySpend(
 			sdk.NewAttribute("recipient", msg.Recipient),
 			sdk.NewAttribute("amount", msg.Amount),
 			sdk.NewAttribute("description", msg.Description),
-			sdk.NewAttribute("executable_at", fmt.Sprintf("%d", executableAt.Seconds)),
+			sdk.NewAttribute("executable_at", fmt.Sprintf("%d", executableAt.Unix())),
 		),
 	)
 
 	return &types.MsgProposeTreasurySpendResponse{
 		TxId:         txID,
-		ExecutableAt: executableAt,
+		ExecutableAt: executableAtProto,
 	}, nil
 }
 

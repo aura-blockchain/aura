@@ -110,11 +110,7 @@ func (k Keeper) CreatePendingMultiSigTransaction(
 
 	var wallet wsproto.MultiSigWallet
 	if err := k.cdc.Unmarshal(walletBytes, &wallet); err != nil {
-
-		k.logger.Error("failed to unmarshal", "error", err)
-
-		continue
-
+		return nil, fmt.Errorf("failed to unmarshal multi-sig wallet: %w", err)
 	}
 
 	// Check time lock
@@ -192,11 +188,7 @@ func (k Keeper) SignMultiSigTransaction(
 
 	var wallet wsproto.MultiSigWallet
 	if err := k.cdc.Unmarshal(walletBytes, &wallet); err != nil {
-
-		k.logger.Error("failed to unmarshal", "error", err)
-
-		continue
-
+		return false, fmt.Errorf("failed to unmarshal multi-sig wallet: %w", err)
 	}
 
 	// Verify signer is authorized
@@ -255,11 +247,7 @@ func (k Keeper) ExecuteMultiSigTransaction(ctx context.Context, txID string) err
 
 	var pendingTx wsproto.PendingMultiSigTransaction
 	if err := k.cdc.Unmarshal(txBytes, &pendingTx); err != nil {
-
-		k.logger.Error("failed to unmarshal", "error", err)
-
-		continue
-
+		return fmt.Errorf("failed to unmarshal pending multi-sig transaction: %w", err)
 	}
 
 	// Check expiration
@@ -275,11 +263,7 @@ func (k Keeper) ExecuteMultiSigTransaction(ctx context.Context, txID string) err
 
 	var wallet wsproto.MultiSigWallet
 	if err := k.cdc.Unmarshal(walletBytes, &wallet); err != nil {
-
-		k.logger.Error("failed to unmarshal", "error", err)
-
-		continue
-
+		return fmt.Errorf("failed to unmarshal multi-sig wallet: %w", err)
 	}
 
 	// Verify ready to execute
@@ -382,11 +366,7 @@ func (k Keeper) AddSignerToMultiSigWallet(
 
 	var wallet wsproto.MultiSigWallet
 	if err := k.cdc.Unmarshal(walletBytes, &wallet); err != nil {
-
-		k.logger.Error("failed to unmarshal", "error", err)
-
-		continue
-
+		return fmt.Errorf("failed to unmarshal multi-sig wallet: %w", err)
 	}
 
 	// Verify requester is authorized
@@ -422,11 +402,7 @@ func (k Keeper) RemoveSignerFromMultiSigWallet(
 
 	var wallet wsproto.MultiSigWallet
 	if err := k.cdc.Unmarshal(walletBytes, &wallet); err != nil {
-
-		k.logger.Error("failed to unmarshal", "error", err)
-
-		continue
-
+		return fmt.Errorf("failed to unmarshal multi-sig wallet: %w", err)
 	}
 
 	// Verify requester is authorized

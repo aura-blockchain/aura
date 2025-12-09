@@ -9,7 +9,6 @@ import (
 	"github.com/aequitas/aura/chain/x/cryptography/types"
 	cryptoproto "github.com/aequitas/aura/proto/aura/cryptography/v1beta1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	gogotypes "github.com/cosmos/gogoproto/types"
 	"golang.org/x/crypto/argon2"
 	"golang.org/x/crypto/pbkdf2"
 )
@@ -220,15 +219,13 @@ func (k Keeper) PinCertificate(ctx sdk.Context, domain string, certificate []byt
 	// Create pin
 	blockTime := ctx.BlockTime()
 	expiryTime := blockTime.AddDate(1, 0, 0) // 1 year
-	blockTimeCopy := blockTime
-	expiryTimeCopy := expiryTime
 	pin := &cryptoproto.CertificatePin{
 		PinId:             fmt.Sprintf("pin-%s-%d", domain, ctx.BlockHeight()),
 		Hostname:          domain,
 		CertificateHashes: [][]byte{certificate}, // Store cert hash
 		PinType:           cryptoproto.CertificatePinType_CERTIFICATE_PIN_TYPE_FULL_CERT,
-		CreatedAt:         &blockTimeCopy,
-		ExpiresAt:         &expiryTimeCopy,
+		CreatedAt:         blockTime,
+		ExpiresAt:         &expiryTime,
 		Enabled:           true,
 	}
 

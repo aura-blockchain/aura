@@ -8,7 +8,7 @@ import (
 // This creates a Params proto type with sensible defaults.
 func DefaultParams() *Params {
 	return &Params{
-		CodeUploadAccess: &AccessConfig{
+		CodeUploadAccess: AccessConfig{
 			Permission: AccessTypeEverybody,
 		},
 		InstantiateDefaultPermission: AccessTypeEverybody,
@@ -22,25 +22,25 @@ func DefaultParams() *Params {
 // DefaultGenesisState returns the default genesis state for the wasm module.
 func DefaultGenesisState() *GenesisState {
 	return &GenesisState{
-		Params:              DefaultParams(),
-		Codes:               []*Code{},
-		Contracts:           []*Contract{},
-		Sequences:           []*Sequence{},
+		Params:              *DefaultParams(),
+		Codes:               []Code{},
+		Contracts:           []Contract{},
+		Sequences:           []Sequence{},
 		AuthorizedUploaders: []string{},
 		PausedContracts:     []string{},
-		SecurityStats:       &SecurityStats{},
+		SecurityStats:       *DefaultSecurityStats(),
 	}
 }
 
 // NewGenesisState creates a new GenesisState object.
 func NewGenesisState(
-	params *Params,
-	codes []*Code,
-	contracts []*Contract,
-	sequences []*Sequence,
+	params Params,
+	codes []Code,
+	contracts []Contract,
+	sequences []Sequence,
 	authorizedUploaders []string,
 	pausedContracts []string,
-	securityStats *SecurityStats,
+	securityStats SecurityStats,
 ) *GenesisState {
 	return &GenesisState{
 		Params:              params,
@@ -55,11 +55,7 @@ func NewGenesisState(
 
 // Validate performs basic validation of genesis data.
 func ValidateGenesis(gs *GenesisState) error {
-	if gs.Params == nil {
-		return fmt.Errorf("params cannot be nil")
-	}
-
-	if err := ValidateParams(gs.Params); err != nil {
+	if err := ValidateParams(&gs.Params); err != nil {
 		return fmt.Errorf("invalid params: %w", err)
 	}
 
@@ -99,10 +95,7 @@ func ValidateParams(p *Params) error {
 
 // GetCodeUploadAccess returns the code upload access config.
 func GetCodeUploadAccess(p *Params) *AccessConfig {
-	if p.CodeUploadAccess == nil {
-		return &AccessConfig{Permission: AccessTypeEverybody}
-	}
-	return p.CodeUploadAccess
+	return &p.CodeUploadAccess
 }
 
 // DefaultSecurityStats returns default security statistics.

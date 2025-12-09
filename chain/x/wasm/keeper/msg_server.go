@@ -33,12 +33,12 @@ func (ms msgServer) StoreCode(goCtx context.Context, msg *types.MsgStoreCode) (*
 	}
 
 	// Validate upload authorization and contract code
-	if err := ms.Keeper.ValidateContractUpload(ctx, msg.Sender, msg.WasmByteCode); err != nil {
+	if err := ms.Keeper.ValidateContractUpload(ctx, msg.Sender, msg.WASMByteCode); err != nil {
 		return nil, err
 	}
 
 	// Store the code
-	codeID, err := ms.Keeper.StoreCode(ctx, sender, msg.WasmByteCode)
+	codeID, err := ms.Keeper.StoreCode(ctx, sender, msg.WASMByteCode)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +53,7 @@ func (ms msgServer) StoreCode(goCtx context.Context, msg *types.MsgStoreCode) (*
 	})
 
 	return &types.MsgStoreCodeResponse{
-		CodeId: codeID,
+		CodeID: codeID,
 	}, nil
 }
 
@@ -77,15 +77,15 @@ func (ms msgServer) InstantiateContract(goCtx context.Context, msg *types.MsgIns
 	// Convert funds from proto type to sdk.Coins
 	funds := sdk.NewCoins()
 	for _, coin := range msg.Funds {
-		if coin != nil {
-			funds = funds.Add(sdk.Coin{Denom: coin.Denom, Amount: coin.Amount})
+		if !coin.IsZero() {
+			funds = funds.Add(coin)
 		}
 	}
 
 	// Instantiate contract
 	contractAddr, data, err := ms.Keeper.InstantiateContract(
 		ctx,
-		msg.CodeId,
+		msg.CodeID,
 		creator,
 		admin,
 		msg.Msg,
@@ -112,7 +112,7 @@ func (ms msgServer) InstantiateContract(goCtx context.Context, msg *types.MsgIns
 		sdk.NewEvent(
 			types.EventTypeInstantiate,
 			sdk.NewAttribute(types.AttributeKeyContract, contractAddr.String()),
-			sdk.NewAttribute(types.AttributeKeyCodeID, fmt.Sprintf("%d", msg.CodeId)),
+			sdk.NewAttribute(types.AttributeKeyCodeID, fmt.Sprintf("%d", msg.CodeID)),
 			sdk.NewAttribute(types.AttributeKeySender, msg.Sender),
 		),
 	})
@@ -178,8 +178,8 @@ func (ms msgServer) ExecuteContract(goCtx context.Context, msg *types.MsgExecute
 	// Convert funds from proto type to sdk.Coins
 	funds := sdk.NewCoins()
 	for _, coin := range msg.Funds {
-		if coin != nil {
-			funds = funds.Add(sdk.Coin{Denom: coin.Denom, Amount: coin.Amount})
+		if !coin.IsZero() {
+			funds = funds.Add(coin)
 		}
 	}
 
@@ -249,7 +249,7 @@ func (ms msgServer) MigrateContract(goCtx context.Context, msg *types.MsgMigrate
 	}
 
 	// Migrate contract
-	data, err := ms.Keeper.Migrate(ctx, contractAddr, caller, msg.CodeId, msg.Msg)
+	data, err := ms.Keeper.Migrate(ctx, contractAddr, caller, msg.CodeID, msg.Msg)
 	if err != nil {
 		return nil, err
 	}
@@ -259,7 +259,7 @@ func (ms msgServer) MigrateContract(goCtx context.Context, msg *types.MsgMigrate
 		sdk.NewEvent(
 			types.EventTypeMigrate,
 			sdk.NewAttribute(types.AttributeKeyContract, msg.Contract),
-			sdk.NewAttribute(types.AttributeKeyCodeID, fmt.Sprintf("%d", msg.CodeId)),
+			sdk.NewAttribute(types.AttributeKeyCodeID, fmt.Sprintf("%d", msg.CodeID)),
 			sdk.NewAttribute(types.AttributeKeySender, msg.Sender),
 		),
 	})
@@ -519,7 +519,7 @@ func (ms msgServer) UpdateParams(goCtx context.Context, msg *types.MsgUpdatePara
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	// Update params using keeper method which validates authority
-	if err := ms.Keeper.UpdateParams(goCtx, msg.Authority, *msg.Params); err != nil {
+	if err := ms.Keeper.UpdateParams(goCtx, msg.Authority, msg.Params); err != nil {
 		return nil, err
 	}
 

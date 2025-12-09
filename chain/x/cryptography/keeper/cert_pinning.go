@@ -50,13 +50,12 @@ func (k Keeper) AddCertificatePin(
 		expiresAtTime = expiresAt
 	}
 
-	blockTimeCopy := blockTime
 	pin := &cryptoproto.CertificatePin{
 		PinId:             pinID,
 		Hostname:          hostname,
 		CertificateHashes: certificateHashes,
 		PinType:           pinType,
-		CreatedAt:         &blockTimeCopy,
+		CreatedAt:         blockTime,
 		ExpiresAt:         expiresAtTime,
 		Enabled:           true,
 	}

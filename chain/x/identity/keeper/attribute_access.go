@@ -6,7 +6,6 @@ import (
 
 	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/identity/types"
 	identitypb "github.com/aequitas/aura/proto/aura/identity/v1beta1"
@@ -375,7 +374,7 @@ func (k *Keeper) logAttributeAccess(ctx sdk.Context, owner, attribute, requester
 		AttributeName: attribute,
 		Requester:     requester,
 		AccessLevel:   level,
-		AccessedAt:    timestamppb.New(now),
+		AccessedAt:    now,
 		Success:       success,
 		ErrorMessage:  errorMsg,
 		BlockHeight:   ctx.BlockHeight(),

@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/aequitas/aura/chain/x/economicsecurity/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // ============================
@@ -21,7 +20,7 @@ func (k *Keeper) CreateVestingSchedule(
 	ctx context.Context,
 	beneficiary string,
 	totalAmount string,
-	startTime *timestamppb.Timestamp,
+	startTime time.Time,
 	cliffDuration, vestingDuration uint64,
 	vestingType types.VestingType,
 	scheduleType types.ScheduleType,
@@ -150,9 +149,10 @@ func (k *Keeper) RevokeVestingSchedule(ctx context.Context, scheduleID, reason s
 		return "0", err
 	}
 
-	// Update schedule
+	// Update schedule (RevokedAt is *time.Time pointer)
 	schedule.Revoked = true
-	schedule.RevokedAt = timestamppb.New(time.Unix(currentTime, 0))
+	revokedAt := time.Unix(currentTime, 0)
+	schedule.RevokedAt = &revokedAt
 	schedule.RevokedReason = reason
 	schedule.VestedAmount = vested.String()
 
@@ -192,7 +192,7 @@ func (k *Keeper) calculateVestedAmount(ctx context.Context, schedule *types.Vest
 		return "0", err
 	}
 
-	startTime := schedule.StartTime.AsTime().Unix()
+	startTime := schedule.StartTime.Unix()
 	cliffEnd := startTime + int64(schedule.CliffDuration)
 	vestingEnd := startTime + int64(schedule.VestingDuration)
 
@@ -289,11 +289,11 @@ func (k *Keeper) GetVestingScheduleInfo(ctx context.Context, scheduleID string) 
 	return schedule, currentVested, nil
 }
 
-func generateScheduleID(beneficiary, amount string, startTime *timestamppb.Timestamp, currentTime int64) string {
+func generateScheduleID(beneficiary, amount string, startTime time.Time, currentTime int64) string {
 	h := sha256.New()
 	h.Write([]byte(beneficiary))
 	h.Write([]byte(amount))
-	h.Write([]byte(fmt.Sprintf("%d", startTime.Seconds)))
+	h.Write([]byte(fmt.Sprintf("%d", startTime.Unix())))
 	h.Write([]byte(fmt.Sprintf("%d", currentTime)))
 	return "vs:" + hex.EncodeToString(h.Sum(nil))[:32]
 }

@@ -150,19 +150,13 @@ func GetCmdInstantiateContract() *cobra.Command {
 				}
 			}
 
-			// Convert sdk.Coins to []*sdk.Coin for proto message
-			fundsProto := make([]*sdk.Coin, len(funds))
-			for i := range funds {
-				fundsProto[i] = &funds[i]
-			}
-
 			msg := &types.MsgInstantiateContract{
 				Sender: clientCtx.GetFromAddress().String(),
 				Admin:  admin,
 				CodeId: codeID,
 				Label:  label,
 				Msg:    initMsg,
-				Funds:  fundsProto,
+				Funds:  funds,
 			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
@@ -214,17 +208,11 @@ func GetCmdExecuteContract() *cobra.Command {
 				}
 			}
 
-			// Convert sdk.Coins to []*sdk.Coin for proto message
-			fundsProto := make([]*sdk.Coin, len(funds))
-			for i := range funds {
-				fundsProto[i] = &funds[i]
-			}
-
 			msg := &types.MsgExecuteContract{
 				Sender:   clientCtx.GetFromAddress().String(),
 				Contract: contractAddr,
 				Msg:      execMsg,
-				Funds:    fundsProto,
+				Funds:    funds,
 			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)

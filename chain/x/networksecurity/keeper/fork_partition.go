@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	"fmt"
 	"time"
 
@@ -54,12 +53,13 @@ func (k Keeper) DetectFork(ctx sdk.Context, height int64, blockHash []byte) erro
 				height, existingHash, hashStr))
 
 			// Create fork alert
+			detectedAt := ctx.BlockTime()
 			alert := types.ForkAlert{
 				AlertId:     generateAlertID("fork", height, ctx.BlockTime().Unix()),
 				BlockHeight: height,
 				ChainAHash:  existingHashBz,
 				ChainBHash:  blockHash,
-				DetectedAt:  timestamppb.New(ctx.BlockTime()),
+				DetectedAt:  detectedAt,
 				Resolved:    false,
 			}
 
@@ -153,8 +153,8 @@ func (k Keeper) ValidateSyncData(ctx sdk.Context, peerID string, blockHeight int
 	// 4. Check for suspicious patterns (e.g., always sending incorrect data)
 	if k.IsSuspiciousSyncPeer(ctx, peerID) {
 		k.logger.Warn(fmt.Sprintf("Peer %s showing suspicious sync behavior", peerID))
-		banDuration := params.RateLimit.BanDuration.AsDuration() * 2
-		k.BanPeer(ctx, peerID, int64(banDuration.Seconds()), "suspicious sync behavior")
+		banDuration := params.RateLimit.BanDuration
+		k.BanPeer(ctx, peerID, int64(banDuration.Seconds())*2, "suspicious sync behavior")
 		return types.ErrSyncAttack
 	}
 
@@ -188,8 +188,8 @@ func (k Keeper) RecordInvalidBlock(ctx sdk.Context, peerID string) {
 
 		// If too many invalid blocks, ban the peer
 		if reputation.MisbehaviorCount > 5 {
-			banDuration := params.RateLimit.BanDuration.AsDuration() * 3
-			k.BanPeer(ctx, peerID, int64(banDuration.Seconds()), "repeated invalid blocks")
+			banDuration := params.RateLimit.BanDuration
+			k.BanPeer(ctx, peerID, int64(banDuration.Seconds())*3, "repeated invalid blocks")
 		}
 	}
 }
@@ -259,12 +259,13 @@ func (k Keeper) DetectPartition(ctx sdk.Context) error {
 				k.logger.Error(fmt.Sprintf("Potential network partition: %.1f%% peer drop", dropPercent))
 
 				// Create partition alert
+				detectedAt := ctx.BlockTime()
 				alert := types.PartitionAlert{
 					AlertId:        generateAlertID("partition", ctx.BlockHeight(), ctx.BlockTime().Unix()),
 					ConnectedPeers: currentPeerCount,
 					ExpectedPeers:  expectedPeers,
 					MissingPeerIds: k.GetMissingPeerIDs(ctx),
-					DetectedAt:     timestamppb.New(ctx.BlockTime()),
+					DetectedAt:     detectedAt,
 					Resolved:       false,
 				}
 
@@ -428,7 +429,7 @@ func (k Keeper) CleanupResolvedAlerts(ctx sdk.Context) {
 	// Cleanup partition alerts older than 1 hour
 	partitionAlerts := k.GetAllPartitionAlerts(ctx, true)
 	for _, alert := range partitionAlerts {
-		if alert.Resolved && alert.DetectedAt != nil && ctx.BlockTime().Sub(alert.DetectedAt.AsTime()) > time.Hour {
+		if alert.Resolved && !alert.DetectedAt.IsZero() && ctx.BlockTime().Sub(alert.DetectedAt) > time.Hour {
 			store := k.storeService.OpenKVStore(ctx)
 			store.Delete(types.GetPartitionAlertKey(alert.AlertId))
 		}

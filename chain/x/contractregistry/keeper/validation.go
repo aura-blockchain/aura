@@ -27,7 +27,7 @@ func (k Keeper) ValidateContractExecution(ctx sdk.Context, contractAddr, sender 
 	}
 
 	// 3. Check blacklist/whitelist
-	if err := k.checkAddressLists(sender, info.SecurityPolicy); err != nil {
+	if err := k.checkAddressLists(sender, &info.SecurityPolicy); err != nil {
 		return err
 	}
 
@@ -45,7 +45,7 @@ func (k Keeper) ValidateContractExecution(ctx sdk.Context, contractAddr, sender 
 	}
 
 	// 6. Check compliance requirements
-	if err := k.checkCompliance(ctx, sender, info.Compliance, info.Metadata); err != nil {
+	if err := k.checkCompliance(ctx, sender, &info.Compliance, &info.Metadata); err != nil {
 		k.IncrementMetricsCounter(ctx, contractAddr, "compliance_failure")
 		return err
 	}

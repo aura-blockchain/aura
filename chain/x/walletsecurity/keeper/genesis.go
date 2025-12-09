@@ -228,11 +228,8 @@ func (k Keeper) ExportGenesis(ctx context.Context) *pb.GenesisState {
 	paramsBytes, _ := store.Get(types.ParamsKey)
 	if paramsBytes != nil {
 		if err := k.cdc.Unmarshal(paramsBytes, &params); err != nil {
-
-			k.logger.Error("failed to unmarshal", "error", err)
-
-			continue
-
+			k.logger.Error("failed to unmarshal params", "error", err)
+			// Continue with default params on error
 		}
 	}
 

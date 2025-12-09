@@ -90,7 +90,7 @@ func (k Keeper) GetRateLimiter(ctx sdk.Context, peerID string) *RateLimiter {
 	limiter := NewRateLimiter(
 		params.RateLimit.MaxRequestsPerSecond,
 		params.RateLimit.BurstSize,
-		params.RateLimit.WindowDuration.AsDuration(),
+		params.RateLimit.WindowDuration,
 	)
 	k.rateLimiters[peerID] = limiter
 	return limiter
@@ -116,7 +116,7 @@ func (k Keeper) CheckRateLimit(ctx sdk.Context, peerID string) error {
 		if !found {
 			entry = types.RateLimitEntry{
 				PeerId:      peerID,
-				WindowStart: timestamppb.New(ctx.BlockTime()),
+				WindowStart: ctx.BlockTime(),
 			}
 		}
 
@@ -125,7 +125,7 @@ func (k Keeper) CheckRateLimit(ctx sdk.Context, peerID string) error {
 		// Check if we should ban this peer
 		if entry.RequestCount > params.RateLimit.MaxRequestsPerSecond*10 {
 			// Too many violations, ban the peer
-			banDurationSecs := int64(params.RateLimit.BanDuration.AsDuration().Seconds())
+			banDurationSecs := int64(params.RateLimit.BanDuration.Seconds())
 			k.BanPeer(ctx, peerID, banDurationSecs, "rate limit violations")
 
 			// Penalize reputation
@@ -141,7 +141,7 @@ func (k Keeper) CheckRateLimit(ctx sdk.Context, peerID string) error {
 	if !found {
 		entry = types.RateLimitEntry{
 			PeerId:      peerID,
-			WindowStart: timestamppb.New(ctx.BlockTime()),
+			WindowStart: ctx.BlockTime(),
 		}
 	}
 	entry.RequestCount++
@@ -225,7 +225,7 @@ func (k Keeper) GetBandwidthTracker(ctx sdk.Context, peerID string) *BandwidthTr
 	params, _ := k.GetParams(ctx)
 	tracker := NewBandwidthTracker(
 		params.RateLimit.BandwidthLimitPerPeer,
-		params.RateLimit.WindowDuration.AsDuration(),
+		params.RateLimit.WindowDuration,
 	)
 	k.bandwidthTrackers[peerID] = tracker
 	return tracker
@@ -252,7 +252,7 @@ func (k Keeper) CheckBandwidthLimit(ctx sdk.Context, peerID string, bytes uint64
 		if !found {
 			entry = types.RateLimitEntry{
 				PeerId:      peerID,
-				WindowStart: timestamppb.New(ctx.BlockTime()),
+				WindowStart: ctx.BlockTime(),
 			}
 		}
 
@@ -286,16 +286,16 @@ func (k Keeper) CleanupExpiredRateLimits(ctx sdk.Context) {
 		}
 
 		// Check if window has expired
-		if entry.WindowStart != nil {
-			windowDuration := params.RateLimit.WindowDuration.AsDuration()
-			if ctx.BlockTime().Sub(entry.WindowStart.AsTime()) > windowDuration*2 {
+		if !entry.WindowStart.IsZero() {
+			windowDuration := params.RateLimit.WindowDuration
+			if ctx.BlockTime().Sub(entry.WindowStart) > windowDuration*2 {
 				toDelete = append(toDelete, entry.PeerId)
 			}
 		}
 
 		// Check if ban has expired
 		if entry.IsBanned && entry.BanExpiresAt != nil {
-			if ctx.BlockTime().After(entry.BanExpiresAt.AsTime()) {
+			if ctx.BlockTime().After(*entry.BanExpiresAt) {
 				k.UnbanPeer(ctx, entry.PeerId)
 			}
 		}

@@ -38,7 +38,7 @@ func (qs queryServer) ContractInfo(goCtx context.Context, req *pb.QueryContractI
 	}
 
 	return &pb.QueryContractInfoResponse{
-		Contract: &info,
+		Contract: info,
 	}, nil
 }
 
@@ -49,13 +49,13 @@ func (qs queryServer) ContractsByCreator(goCtx context.Context, req *pb.QueryCon
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	var contracts []*pb.ContractInfo
+	var contracts []pb.ContractInfo
 
 	// Get all contracts - simplified for now
-	var creatorContracts []*pb.ContractInfo
+	var creatorContracts []pb.ContractInfo
 	qs.IterateContractInfo(ctx, func(info *pb.ContractInfo) bool {
 		if info.Creator == req.CreatorAddress {
-			creatorContracts = append(creatorContracts, info)
+			creatorContracts = append(creatorContracts, *info)
 		}
 		return false
 	})
@@ -100,15 +100,15 @@ func (qs queryServer) ContractsByTag(goCtx context.Context, req *pb.QueryContrac
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	var contracts []*pb.ContractInfo
+	var contracts []pb.ContractInfo
 
 	// Get all contracts with tag - simplified for now
-	var tagContracts []*pb.ContractInfo
+	var tagContracts []pb.ContractInfo
 	qs.IterateContractInfo(ctx, func(info *pb.ContractInfo) bool {
 		// Metadata is a value type, check if it has tags
 		for _, tag := range info.Metadata.Tags {
 			if tag == req.Tag {
-				tagContracts = append(tagContracts, info)
+				tagContracts = append(tagContracts, *info)
 				break
 			}
 		}
@@ -154,7 +154,7 @@ func (qs queryServer) RegisteredContracts(goCtx context.Context, req *pb.QueryRe
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	var contracts []*pb.ContractInfo
+	var contracts []pb.ContractInfo
 
 	store := ctx.KVStore(qs.storeKey)
 
@@ -175,7 +175,7 @@ func (qs queryServer) RegisteredContracts(goCtx context.Context, req *pb.QueryRe
 			}
 		}
 
-		contracts = append(contracts, &info)
+		contracts = append(contracts, info)
 	}
 
 	// Simple pagination response
@@ -198,12 +198,14 @@ func (qs queryServer) ContractMetrics(goCtx context.Context, req *pb.QueryContra
 	metrics, found := qs.GetContractMetrics(ctx, req.ContractAddress)
 	if !found {
 		// Return zero metrics if not found
-		metrics = &pb.ContractMetrics{
-			ContractAddress: req.ContractAddress,
-		}
+		return &pb.QueryContractMetricsResponse{
+			Metrics: pb.ContractMetrics{
+				ContractAddress: req.ContractAddress,
+			},
+		}, nil
 	}
 
 	return &pb.QueryContractMetricsResponse{
-		Metrics: metrics,
+		Metrics: *metrics,
 	}, nil
 }

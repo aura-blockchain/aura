@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/aequitas/aura/chain/x/economicsecurity/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // ============================

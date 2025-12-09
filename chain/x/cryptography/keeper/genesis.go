@@ -18,12 +18,10 @@ func (k *Keeper) InitGenesis(ctx context.Context, data *cryptoproto.GenesisState
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
 	// Set parameters
-	if data.Params != nil {
-		if err := k.SetParams(ctx, data.Params); err != nil {
-			sdkCtx := sdk.UnwrapSDKContext(ctx)
-			k.Logger(sdkCtx).Error("failed to set params", "error", err)
-			return err
-		}
+	if err := k.SetParams(ctx, &data.Params); err != nil {
+		sdkCtx := sdk.UnwrapSDKContext(ctx)
+		k.Logger(sdkCtx).Error("failed to set params", "error", err)
+		return err
 	}
 
 	// Initialize key rotation schedules
@@ -157,7 +155,7 @@ func (k *Keeper) ExportGenesis(ctx context.Context) *cryptoproto.GenesisState {
 	})
 
 	return &cryptoproto.GenesisState{
-		Params:               params,
+		Params:               *params,
 		KeyRotationSchedules: keyRotationSchedules,
 		ThresholdSchemes:     thresholdSchemes,
 		ZkProofConfigs:       zkProofConfigs,

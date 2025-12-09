@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/economicsecurity/types"
 )
@@ -46,7 +45,7 @@ func TestKeeperFunctionality(t *testing.T) {
 		VestedAmount:        "1000000",
 		VestingDuration:     31536000,
 		CliffDuration:       7776000,
-		StartTime:           timestamppb.New(time.Now()),
+		StartTime:           time.Now(),
 		VestingType:         types.VestingTypeLinear,
 	}
 
@@ -74,8 +73,8 @@ func TestKeeperFunctionality(t *testing.T) {
 		LockId:      "test-lock-1",
 		Owner:       "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
 		Amount:      "1000000",
-		LockStart:   timestamppb.New(time.Now()),
-		LockEnd:     timestamppb.New(time.Now().Add(30 * 24 * time.Hour)),
+		LockStart:   time.Now(),
+		LockEnd:     time.Now().Add(30 * 24 * time.Hour),
 		VotingPower: "1500000",
 	}
 
@@ -105,8 +104,8 @@ func TestKeeperFunctionality(t *testing.T) {
 		Amount:       "500000",
 		Proposer:     "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
 		Signatures:   []string{"sig1", "sig2"},
-		CreatedAt:    timestamppb.New(time.Now()),
-		ExecutableAt: timestamppb.New(time.Now().Add(48 * time.Hour)),
+		CreatedAt:    time.Now(),
+		ExecutableAt: time.Now().Add(48 * time.Hour),
 	}
 
 	// Set pending treasury tx
@@ -134,7 +133,7 @@ func TestKeeperFunctionality(t *testing.T) {
 		AlertType:            types.InflationAlertTypeRapidChange,
 		Severity:             types.AlertSeverityCritical,
 		CurrentInflationRate: 2000,
-		TriggeredAt:          timestamppb.New(time.Now()),
+		TriggeredAt:          time.Now(),
 		Message:              "Critical inflation spike detected",
 	}
 
@@ -154,7 +153,7 @@ func TestKeeperFunctionality(t *testing.T) {
 		Sender:             "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
 		Recipient:          "aura1w3jhxapjta047h6lta047h6lta047h6l42n9lg",
 		Amount:             "5000000",
-		Timestamp:          timestamppb.New(time.Now()),
+		Timestamp:          time.Now(),
 		BlockHeight:        12345,
 		PercentageOfSupply: 500,
 	}

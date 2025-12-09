@@ -65,10 +65,8 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data types.GenesisState) error {
 	}
 
 	// Set params if provided
-	if data.Params != nil {
-		if err := k.SetParams(ctx, *data.Params); err != nil {
-			return fmt.Errorf("failed to set params: %w", err)
-		}
+	if err := k.SetParams(ctx, data.Params); err != nil {
+		return fmt.Errorf("failed to set params: %w", err)
 	}
 
 	// Set authorized uploaders
@@ -86,9 +84,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data types.GenesisState) error {
 	}
 
 	// Set security stats if provided
-	if data.SecurityStats != nil {
-		k.SetSecurityStats(ctx, *data.SecurityStats)
-	}
+	k.SetSecurityStats(ctx, data.SecurityStats)
 
 	// Only initialize wasmd keeper if configured (for full integration)
 	// In unit tests without wasmd, we still want params/state to work
@@ -136,13 +132,13 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	stats := k.GetSecurityStats(ctx)
 
 	return types.NewGenesisState(
-		&params,
-		[]*types.Code{},
-		[]*types.Contract{},
-		[]*types.Sequence{},
+		params,
+		[]types.Code{},
+		[]types.Contract{},
+		[]types.Sequence{},
 		authorizedUploaders,
 		pausedContracts,
-		&stats,
+		stats,
 	)
 }
 

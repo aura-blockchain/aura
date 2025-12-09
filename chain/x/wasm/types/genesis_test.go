@@ -10,10 +10,9 @@ import (
 func TestDefaultGenesisState(t *testing.T) {
 	genesis := types.DefaultGenesisState()
 	require.NotNil(t, genesis)
-	require.Equal(t, types.DefaultParams(), genesis.Params)
+	require.Equal(t, *types.DefaultParams(), genesis.Params)
 	require.Empty(t, genesis.AuthorizedUploaders)
 	require.Empty(t, genesis.PausedContracts)
-	require.NotNil(t, genesis.SecurityStats)
 }
 
 func TestGenesisStateValidation(t *testing.T) {
@@ -31,8 +30,8 @@ func TestGenesisStateValidation(t *testing.T) {
 		{
 			name: "valid custom genesis",
 			genesis: types.GenesisState{
-				Params: &types.Params{
-					CodeUploadAccess: &types.AccessConfig{
+				Params: types.Params{
+					CodeUploadAccess: types.AccessConfig{
 						Permission: types.AccessTypeEverybody,
 					},
 					InstantiateDefaultPermission: types.AccessTypeEverybody,
@@ -43,15 +42,15 @@ func TestGenesisStateValidation(t *testing.T) {
 				},
 				AuthorizedUploaders: []string{"aura1abc123", "aura1def456"},
 				PausedContracts:     []string{"aura14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9s4hmalr"},
-				SecurityStats: &types.SecurityStats{},
+				SecurityStats: types.SecurityStats{},
 			},
 			expectErr: false,
 		},
 		{
 			name: "invalid params",
 			genesis: types.GenesisState{
-				Params: &types.Params{
-					CodeUploadAccess: &types.AccessConfig{
+				Params: types.Params{
+					CodeUploadAccess: types.AccessConfig{
 						Permission: types.AccessTypeEverybody,
 					},
 					InstantiateDefaultPermission: types.AccessTypeEverybody,
@@ -62,7 +61,7 @@ func TestGenesisStateValidation(t *testing.T) {
 				},
 				AuthorizedUploaders: []string{},
 				PausedContracts:     []string{},
-				SecurityStats:       &types.SecurityStats{},
+				SecurityStats:       types.SecurityStats{},
 			},
 			expectErr: true,
 			errMsg:    "invalid params",
@@ -70,10 +69,10 @@ func TestGenesisStateValidation(t *testing.T) {
 		{
 			name: "empty authorized uploader address",
 			genesis: types.GenesisState{
-				Params:              types.DefaultParams(),
+				Params:              *types.DefaultParams(),
 				AuthorizedUploaders: []string{""},
 				PausedContracts:     []string{},
-				SecurityStats:       &types.SecurityStats{},
+				SecurityStats:       *types.DefaultSecurityStats(),
 			},
 			expectErr: true,
 			errMsg:    "empty authorized uploader address",
@@ -81,10 +80,10 @@ func TestGenesisStateValidation(t *testing.T) {
 		{
 			name: "empty paused contract address",
 			genesis: types.GenesisState{
-				Params:              types.DefaultParams(),
+				Params:              *types.DefaultParams(),
 				AuthorizedUploaders: []string{},
 				PausedContracts:     []string{""},
-				SecurityStats:       &types.SecurityStats{},
+				SecurityStats:       *types.DefaultSecurityStats(),
 			},
 			expectErr: true,
 			errMsg:    "empty paused contract address",
@@ -107,8 +106,8 @@ func TestGenesisStateValidation(t *testing.T) {
 }
 
 func TestNewGenesisState(t *testing.T) {
-	params := &types.Params{
-		CodeUploadAccess: &types.AccessConfig{
+	params := types.Params{
+		CodeUploadAccess: types.AccessConfig{
 			Permission: types.AccessTypeEverybody,
 		},
 		InstantiateDefaultPermission: types.AccessTypeEverybody,
@@ -117,12 +116,12 @@ func TestNewGenesisState(t *testing.T) {
 		SecurityAnalysisEnabled:      true,
 		RequireAdminForMigrate:       true,
 	}
-	codes := []*types.Code{}
-	contracts := []*types.Contract{}
-	sequences := []*types.Sequence{}
+	codes := []types.Code{}
+	contracts := []types.Contract{}
+	sequences := []types.Sequence{}
 	uploaders := []string{"aura1abc123"}
 	paused := []string{"aura14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9s4hmalr"}
-	stats := &types.SecurityStats{}
+	stats := types.SecurityStats{}
 
 	genesis := types.NewGenesisState(params, codes, contracts, sequences, uploaders, paused, stats)
 	require.NotNil(t, genesis)
@@ -135,7 +134,6 @@ func TestNewGenesisState(t *testing.T) {
 func TestDefaultParams(t *testing.T) {
 	params := types.DefaultParams()
 	require.NotNil(t, params)
-	require.NotNil(t, params.CodeUploadAccess)
 	require.Equal(t, types.AccessTypeEverybody, params.CodeUploadAccess.Permission)
 	require.Equal(t, types.AccessTypeEverybody, params.InstantiateDefaultPermission)
 	require.Equal(t, uint64(600*1024), params.MaxWasmCodeSize)

@@ -9,7 +9,6 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/cryptography/types"
 	cryptoproto "github.com/aequitas/aura/proto/aura/cryptography/v1beta1"
@@ -48,7 +47,7 @@ func (k Keeper) InitializeRandomSource(
 		SourceType:      sourceType,
 		EntropyPoolHash: entropyPoolHash,
 		EntropyBits:     int64(entropyBits),
-		LastSeeded:      timestamppb.New(now),
+		LastSeeded:      now,
 		Status:          cryptoproto.RandomSourceStatus_RANDOM_SOURCE_STATUS_HEALTHY,
 	}
 
@@ -56,8 +55,6 @@ func (k Keeper) InitializeRandomSource(
 	if err := k.SetRandomSource(ctx, source); err != nil {
 		return "", err
 	}
-
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	k.Logger(sdkCtx).Info("initialized random source",
 		"source_id", sourceID,
 		"type", sourceType.String(),
@@ -155,7 +152,7 @@ func (k Keeper) ReseedRandomSource(
 	now := reseedCtx.BlockTime()
 	source.EntropyPoolHash = newEntropyPoolHash
 	source.EntropyBits += int64(entropyBits)
-	source.LastSeeded = timestamppb.New(now)
+	source.LastSeeded = now
 	source.Status = cryptoproto.RandomSourceStatus_RANDOM_SOURCE_STATUS_HEALTHY
 
 	// Store updated source
@@ -163,7 +160,8 @@ func (k Keeper) ReseedRandomSource(
 		return err
 	}
 
-	k.Logger(reseedCtx).Info("reseeded random source",
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	k.Logger(sdkCtx).Info("reseeded random source",
 		"source_id", sourceID,
 		"additional_entropy_bits", entropyBits,
 	)
@@ -194,7 +192,7 @@ func (k Keeper) CheckEntropyHealth(ctx context.Context) error {
 
 	return k.IterateRandomSources(ctx, func(source *cryptoproto.CryptoRandomSource) bool {
 		// Check if source needs reseeding (older than 24 hours)
-		if time.Since(source.LastSeeded.AsTime()) > 24*time.Hour {
+		if time.Since(source.LastSeeded) > 24*time.Hour {
 			k.Logger(sdkCtx).Warn("random source needs reseeding",
 				"source_id", source.SourceId,
 				"last_seeded", source.LastSeeded,

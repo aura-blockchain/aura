@@ -7,7 +7,6 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/cryptography/types"
 	cryptoproto "github.com/aequitas/aura/proto/aura/cryptography/v1beta1"
@@ -87,14 +86,15 @@ func (k Keeper) CreateThresholdScheme(
 		PublicKey:         publicKey,
 		SchemeType:        schemeType,
 		Status:            cryptoproto.ThresholdSchemeStatus_THRESHOLD_SCHEME_STATUS_ACTIVE,
-		CreatedAt:         timestamppb.New(blockTime),
+		CreatedAt:         blockTime,
 	}
 
 	if err := k.SetThresholdScheme(ctx, scheme); err != nil {
 		return "", nil, err
 	}
 
-	k.Logger(ctx).Info("created threshold signature scheme",
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	k.Logger(sdkCtx).Info("created threshold signature scheme",
 		"scheme_id", schemeID,
 		"threshold", threshold,
 		"total_participants", totalParticipants,
@@ -178,7 +178,7 @@ func (k Keeper) SubmitThresholdSignatureShare(
 		ParticipantId:  submitter,
 		SignatureShare: signatureShare,
 		MessageHash:    messageHash,
-		SignedAt:       timestamppb.New(blockTime),
+		SignedAt:       blockTime,
 	}
 
 	if err := k.SetThresholdSignatureShare(ctx, share); err != nil {
@@ -189,7 +189,8 @@ func (k Keeper) SubmitThresholdSignatureShare(
 	allShares := k.GetThresholdSignatureSharesForScheme(ctx, schemeID, messageHash)
 	sharesCollected := uint32(len(allShares))
 
-	k.Logger(ctx).Info("threshold signature share submitted",
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	k.Logger(sdkCtx).Info("threshold signature share submitted",
 		"scheme_id", schemeID,
 		"participant", submitter,
 		"shares_collected", sharesCollected,
@@ -206,7 +207,7 @@ func (k Keeper) SubmitThresholdSignatureShare(
 		// and verify the combined signature
 		combinedSignature = k.combineThresholdSignatures(allShares, scheme)
 
-		k.Logger(ctx).Info("threshold reached - signature combined",
+		k.Logger(sdkCtx).Info("threshold reached - signature combined",
 			"scheme_id", schemeID,
 			"shares_used", sharesCollected,
 			"threshold", scheme.Threshold,

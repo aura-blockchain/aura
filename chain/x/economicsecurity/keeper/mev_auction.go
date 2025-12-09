@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/aequitas/aura/chain/x/economicsecurity/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // ============================
@@ -491,7 +490,7 @@ func (k *Keeper) ConvertAuctionToProto(auction *MEVAuction) map[string]interface
 			"bidder":    bid.Bidder,
 			"amount":    bid.Amount,
 			"priority":  bid.Priority,
-			"timestamp": timestamppb.New(time.Unix(bid.Timestamp, 0)),
+			"timestamp": time.Unix(bid.Timestamp, 0),
 			"status":    bid.Status,
 		})
 	}
@@ -503,8 +502,8 @@ func (k *Keeper) ConvertAuctionToProto(auction *MEVAuction) map[string]interface
 		"winning_bid_id": auction.WinningBidID,
 		"total_value":    auction.TotalValue,
 		"status":         auction.Status,
-		"created_at":     timestamppb.New(time.Unix(auction.CreatedAt, 0)),
-		"closed_at":      timestamppb.New(time.Unix(auction.ClosedAt, 0)),
+		"created_at":     time.Unix(auction.CreatedAt, 0),
+		"closed_at":      time.Unix(auction.ClosedAt, 0),
 		"minimum_bid":    auction.MinimumBid,
 		"reserve_price":  auction.ReservePrice,
 		"auction_type":   string(auction.AuctionType),

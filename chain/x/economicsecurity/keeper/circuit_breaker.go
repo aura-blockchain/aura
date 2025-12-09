@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/aequitas/aura/chain/x/economicsecurity/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // ============================
@@ -309,7 +308,7 @@ func (k *Keeper) createCircuitBreakerEvent(
 		BreakerId:     fmt.Sprintf("cb_%d", currentTime),
 		BreakerType:   breakerType,
 		Severity:      severity,
-		TriggeredAt:   timestamppb.New(time.Unix(currentTime, 0)),
+		TriggeredAt:   time.Unix(currentTime, 0),
 		Message:       message,
 		CurrentValue:  currentValue,
 		Threshold:     threshold,
@@ -330,7 +329,7 @@ func (k *Keeper) ActivateCircuitBreaker(ctx context.Context, breakerType types.C
 		BreakerId:     fmt.Sprintf("manual_cb_%d", currentTime),
 		BreakerType:   breakerType,
 		Severity:      types.AlertSeverity_ALERT_SEVERITY_CRITICAL,
-		TriggeredAt:   timestamppb.New(time.Unix(currentTime, 0)),
+		TriggeredAt:   time.Unix(currentTime, 0),
 		Message:       fmt.Sprintf("Manual activation: %s", reason),
 		CurrentValue:  "manual",
 		Threshold:     "manual",

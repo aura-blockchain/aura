@@ -7,8 +7,7 @@ import (
 	incidentresponsepb "github.com/aequitas/aura/proto/aura/incidentresponse/v1beta1"
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
-	"google.golang.org/protobuf/types/known/durationpb"
+	"github.com/cosmos/gogoproto/types"
 )
 
 var _ incidentresponsepb.QueryServer = protoQueryServer{}
@@ -48,14 +47,14 @@ func (qs protoQueryServer) GetIncident(goCtx context.Context, req *incidentrespo
 		Severity:        string(incident.Severity),
 		Status:          string(incident.Status),
 		ReportedBy:      incident.ReportedBy,
-		ReportedAt:      timestamppb.New(incident.ReportedAt),
-		UpdatedAt:       timestamppb.New(incident.UpdatedAt),
+		ReportedAt:      &incident.ReportedAt,
+		UpdatedAt:       &incident.UpdatedAt,
 		AffectedSystems: incident.AffectedSystems,
 		ResponseTeam:    incident.ResponseTeam,
 	}
 
 	if !incident.ResolvedAt.IsZero() {
-		protoIncident.ResolvedAt = timestamppb.New(incident.ResolvedAt)
+		protoIncident.ResolvedAt = &incident.ResolvedAt
 	}
 
 	return &incidentresponsepb.QueryGetIncidentResponse{
@@ -84,11 +83,11 @@ func (qs protoQueryServer) GetChainPauseState(goCtx context.Context, req *incide
 	}
 
 	if !pauseState.PausedAt.IsZero() {
-		protoPauseState.PausedAt = timestamppb.New(pauseState.PausedAt)
+		protoPauseState.PausedAt = &pauseState.PausedAt
 	}
 
 	if !pauseState.EstimatedResume.IsZero() {
-		protoPauseState.EstimatedResume = timestamppb.New(pauseState.EstimatedResume)
+		protoPauseState.EstimatedResume = &pauseState.EstimatedResume
 	}
 
 	return &incidentresponsepb.QueryGetChainPauseStateResponse{
@@ -201,7 +200,7 @@ func (qs protoQueryServer) GetParams(goCtx context.Context, req *incidentrespons
 		EmergencyPauseEnabled:  params.EmergencyPauseEnabled,
 		PauseAuthorizedKeys:    params.PauseAuthorizedKeys,
 		PauseRequiredSigners:   params.PauseRequiredSigners,
-		MaxPauseDuration:       durationpb.New(params.MaxPauseDuration),
+		MaxPauseDuration:       types.DurationProto(params.MaxPauseDuration),
 		HotWalletLimitsEnabled: params.HotWalletLimitsEnabled,
 		GlobalMaxHotWallet:     params.GlobalMaxHotWallet,
 		GlobalDailyLimit:       params.GlobalDailyLimit,

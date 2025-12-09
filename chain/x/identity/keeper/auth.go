@@ -7,7 +7,6 @@ import (
 
 	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/identity/types"
 )
@@ -93,20 +92,19 @@ func (k *Keeper) CreateRole(ctx sdk.Context, creator, name string, permissions [
 
 	// Validate permissions count
 	params, _ := k.GetParams(ctx)
-	if params != nil && params.Auth != nil && uint32(len(permissions)) > params.Auth.MaxRolesPerAccount {
+	if params != nil && uint32(len(permissions)) > params.Auth.MaxRolesPerAccount {
 		return nil, types.ErrInvalidRole.Wrap("exceeds maximum permissions per role")
 	}
 
 	now := ctx.BlockTime()
-	nowProto := timestamppb.New(now)
 	role := &types.Role{
 		Name:         name,
 		Permissions:  permissions,
 		Description:  description,
-		CreatedAt:    nowProto,
+		CreatedAt:    now,
 		CreatedBy:    creator,
 		IsSystemRole: false,
-		UpdatedAt:    nowProto,
+		UpdatedAt:    &now,
 	}
 
 	if err := k.SetRole(ctx, role); err != nil {
@@ -137,7 +135,8 @@ func (k *Keeper) UpdateRole(ctx sdk.Context, updater, name string, permissions [
 	// Update fields
 	role.Permissions = permissions
 	role.Description = description
-	role.UpdatedAt = timestamppb.New(ctx.BlockTime())
+	updatedAt := ctx.BlockTime()
+	role.UpdatedAt = &updatedAt
 
 	if err := k.SetRole(ctx, role); err != nil {
 		return types.Role{}, err
@@ -214,7 +213,7 @@ func (k *Keeper) GetRoleAssignments(ctx sdk.Context, address string) ([]*types.R
 	now := ctx.BlockTime()
 	var filtered []*types.RoleAssignment
 	for _, assignment := range assignmentList.Assignments {
-		if assignment.ExpiresAt != nil && now.After(assignment.ExpiresAt.AsTime()) {
+		if assignment.ExpiresAt != nil && now.After(*assignment.ExpiresAt) {
 			continue
 		}
 		filtered = append(filtered, assignment)
@@ -286,24 +285,23 @@ func (k *Keeper) AssignRole(ctx sdk.Context, assigner, address, roleName string,
 	// Check max roles per address
 	params, _ := k.GetParams(ctx)
 	assignments, _ := k.GetRoleAssignments(ctx, address)
-	if params != nil && params.Auth != nil && uint32(len(assignments)) >= params.Auth.MaxRolesPerAccount {
+	if params != nil && uint32(len(assignments)) >= params.Auth.MaxRolesPerAccount {
 		return types.RoleAssignment{}, types.ErrInvalidRoleAssignment.Wrap("exceeds maximum roles per address")
 	}
 
 	now := ctx.BlockTime()
-	nowProto := timestamppb.New(now)
-	var expiresAtProto *timestamppb.Timestamp
+	var expiresAt *time.Time
 	if expirySeconds > 0 {
 		expiry := now.Add(time.Duration(expirySeconds) * time.Second)
-		expiresAtProto = timestamppb.New(expiry)
+		expiresAt = &expiry
 	}
 
 	assignment := &types.RoleAssignment{
 		Address:    address,
 		RoleName:   roleName,
 		AssignedBy: assigner,
-		AssignedAt: nowProto,
-		ExpiresAt:  expiresAtProto,
+		AssignedAt: now,
+		ExpiresAt:  expiresAt,
 	}
 
 	if err := k.SetRoleAssignment(ctx, assignment); err != nil {
@@ -368,7 +366,7 @@ func (k *Keeper) HasPermission(ctx sdk.Context, address, permission string) bool
 	admin, err := k.GetEmergencyAdmin(ctx, address)
 	if err == nil && admin.IsActive {
 		now := ctx.BlockTime()
-		if admin.ExpiresAt != nil && !now.After(admin.ExpiresAt.AsTime()) {
+		if admin.ExpiresAt != nil && !now.After(*admin.ExpiresAt) {
 			for _, priv := range admin.Privileges {
 				if priv == types.PermissionAdmin || priv == permission {
 					return true
@@ -396,7 +394,7 @@ func (k *Keeper) RequirePermission(ctx sdk.Context, address, permission string) 
 // LogAudit creates an audit log entry
 func (k *Keeper) LogAudit(ctx sdk.Context, actor, action, target, result string, metadata map[string]string, errorDetail string) {
 	params, _ := k.GetParams(ctx)
-	if params == nil || params.Auth == nil || !params.Auth.EnableAuditLogging {
+	if params == nil || !params.Auth.EnableAuditLogging {
 		return
 	}
 
@@ -420,12 +418,13 @@ func (k *Keeper) LogAudit(ctx sdk.Context, actor, action, target, result string,
 		auditResult = types.AuditResultDenied
 	}
 
+	timestamp := ctx.BlockTime()
 	auditLog := &types.AuditLog{
 		Id:        fmt.Sprintf("%d", logID),
 		Actor:     actor,
 		Action:    action,
 		Target:    target,
-		Timestamp: timestamppb.New(ctx.BlockTime()),
+		Timestamp: timestamp,
 		Result:    auditResult,
 		Details:   errorDetail,
 	}

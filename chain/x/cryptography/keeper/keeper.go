@@ -113,7 +113,7 @@ func (k Keeper) GetQuantumResistantKey(ctx context.Context, keyID string) (*cryp
 
 	// Check expiration
 	blockTime := sdk.UnwrapSDKContext(ctx).BlockTime()
-	if key.ExpiresAt != nil && key.ExpiresAt.AsTime().Before(blockTime) {
+	if key.ExpiresAt != nil && !key.ExpiresAt.IsZero() && key.ExpiresAt.Before(blockTime) {
 		return nil, types.ErrKeyExpired
 	}
 

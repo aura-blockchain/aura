@@ -6,7 +6,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/economicsecurity/types"
 )
@@ -28,7 +27,7 @@ func TestAllInvariants(t *testing.T) {
 		VestedAmount:       "100000",
 		VestingDuration:    31536000, // 1 year in seconds
 		CliffDuration:      7776000,  // 90 days in seconds
-		StartTime:          timestamppb.New(time.Now()),
+		StartTime:          time.Now(),
 		VestingType:        types.VestingTypeLinear,
 	}
 	err := k.SetVestingSchedule(ctx, validSchedule)
@@ -39,8 +38,8 @@ func TestAllInvariants(t *testing.T) {
 		LockId:      "test-lock-1",
 		Owner:       "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
 		Amount:      "500000",
-		LockStart:   timestamppb.New(time.Now()),
-		LockEnd:     timestamppb.New(time.Now().Add(30 * 24 * time.Hour)),
+		LockStart:   time.Now(),
+		LockEnd:     time.Now().Add(30 * 24 * time.Hour),
 		VotingPower: "500000",
 	}
 	err = k.SetVoteLock(ctx, validLock)
@@ -54,8 +53,8 @@ func TestAllInvariants(t *testing.T) {
 		Amount:       "100000",
 		Proposer:     "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
 		Signatures:   make([]string, 0), // Empty slice, not nil
-		CreatedAt:    timestamppb.New(time.Now()),
-		ExecutableAt: timestamppb.New(time.Now().Add(24 * time.Hour)),
+		CreatedAt:    time.Now(),
+		ExecutableAt: time.Now().Add(24 * time.Hour),
 	}
 	err = k.SetPendingTreasuryTx(ctx, validTx)
 	require.NoError(t, err)
@@ -66,7 +65,7 @@ func TestAllInvariants(t *testing.T) {
 		AlertType:            types.InflationAlertTypeRapidChange,
 		Severity:             types.AlertSeverityCritical,
 		CurrentInflationRate: 1000, // 10% in basis points
-		TriggeredAt:          timestamppb.New(time.Now()),
+		TriggeredAt:          time.Now(),
 		Message:              "Inflation rate spike detected",
 	}
 	err = k.SetInflationAlert(ctx, validAlert)
@@ -78,7 +77,7 @@ func TestAllInvariants(t *testing.T) {
 		Sender:             "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
 		Recipient:          "aura1w3jhxapjta047h6lta047h6lta047h6l42n9lg",
 		Amount:             "1000000",
-		Timestamp:          timestamppb.New(time.Now()),
+		Timestamp:          time.Now(),
 		BlockHeight:        12345,
 		PercentageOfSupply: 100, // 1% in basis points
 	}
@@ -106,7 +105,7 @@ func TestAllInvariants(t *testing.T) {
 		VestedAmount:       "2000000", // More than total - INVALID
 		VestingDuration:    31536000,
 		CliffDuration:      7776000,
-		StartTime:          timestamppb.New(time.Now()),
+		StartTime:          time.Now(),
 		VestingType:        types.VestingTypeLinear,
 	}
 	err = k.SetVestingSchedule(ctx, invalidSchedule)

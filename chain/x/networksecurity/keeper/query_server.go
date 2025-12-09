@@ -31,7 +31,7 @@ func (qs queryServer) Params(goCtx context.Context, req *types.QueryParamsReques
 		return nil, err
 	}
 
-	return &types.QueryParamsResponse{Params: &params}, nil
+	return &types.QueryParamsResponse{Params: params}, nil
 }
 
 // PeerInfo queries information about a specific peer
@@ -43,7 +43,7 @@ func (qs queryServer) PeerInfo(goCtx context.Context, req *types.QueryPeerInfoRe
 		return nil, types.ErrPeerNotFound
 	}
 
-	return &types.QueryPeerInfoResponse{Peer: &peer}, nil
+	return &types.QueryPeerInfoResponse{Peer: peer}, nil
 }
 
 // AllPeers queries information about all connected peers
@@ -53,25 +53,18 @@ func (qs queryServer) AllPeers(goCtx context.Context, req *types.QueryAllPeersRe
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	store := ctx.KVStore(qs.storeKey)
-	peerStore := prefix.NewStore(store, types.PeerInfoPrefix)
 
-	var peers []*types.PeerInfo
-	pageRes, err := query.Paginate(peerStore, req.Pagination, func(key []byte, value []byte) error {
-		var peer types.PeerInfo
-		if err := qs.cdc.Unmarshal(value, &peer); err != nil {
-			return err
-		}
-		peers = append(peers, &peer)
-		return nil
-	})
-	if err != nil {
-		return nil, err
+	// Get all peers using the keeper method
+	allPeers := qs.GetAllPeers(ctx)
+
+	// Convert to value types for the response
+	peers := make([]types.PeerInfo, len(allPeers))
+	for i := range allPeers {
+		peers[i] = allPeers[i]
 	}
 
 	return &types.QueryAllPeersResponse{
-		Peers:      peers,
-		Pagination: pageRes,
+		Peers: peers,
 	}, nil
 }
 
@@ -81,13 +74,7 @@ func (qs queryServer) TrustedPeers(goCtx context.Context, req *types.QueryTruste
 
 	peers := qs.GetAllTrustedPeers(ctx)
 
-	// Convert to pointers
-	peerPtrs := make([]*types.TrustedPeer, len(peers))
-	for i := range peers {
-		peerPtrs[i] = &peers[i]
-	}
-
-	return &types.QueryTrustedPeersResponse{Peers: peerPtrs}, nil
+	return &types.QueryTrustedPeersResponse{Peers: peers}, nil
 }
 
 // PeerReputation queries reputation for a specific peer
@@ -99,7 +86,7 @@ func (qs queryServer) PeerReputation(goCtx context.Context, req *types.QueryPeer
 		return nil, types.ErrPeerNotFound
 	}
 
-	return &types.QueryPeerReputationResponse{Reputation: &reputation}, nil
+	return &types.QueryPeerReputationResponse{Reputation: reputation}, nil
 }
 
 // RateLimitStatus queries rate limit status for a peer
@@ -114,7 +101,7 @@ func (qs queryServer) RateLimitStatus(goCtx context.Context, req *types.QueryRat
 		}
 	}
 
-	return &types.QueryRateLimitStatusResponse{Status: &status}, nil
+	return &types.QueryRateLimitStatusResponse{Status: status}, nil
 }
 
 // MempoolStats queries current mempool statistics
@@ -123,7 +110,7 @@ func (qs queryServer) MempoolStats(goCtx context.Context, req *types.QueryMempoo
 
 	stats := qs.GetMempoolStats(ctx)
 
-	return &types.QueryMempoolStatsResponse{Stats: &stats}, nil
+	return &types.QueryMempoolStatsResponse{Stats: stats}, nil
 }
 
 // ForkAlerts queries active fork alerts
@@ -132,13 +119,7 @@ func (qs queryServer) ForkAlerts(goCtx context.Context, req *types.QueryForkAler
 
 	alerts := qs.GetAllForkAlerts(ctx, req.IncludeResolved)
 
-	// Convert to pointers
-	alertPtrs := make([]*types.ForkAlert, len(alerts))
-	for i := range alerts {
-		alertPtrs[i] = &alerts[i]
-	}
-
-	return &types.QueryForkAlertsResponse{Alerts: alertPtrs}, nil
+	return &types.QueryForkAlertsResponse{Alerts: alerts}, nil
 }
 
 // PartitionAlerts queries active partition alerts
@@ -147,13 +128,7 @@ func (qs queryServer) PartitionAlerts(goCtx context.Context, req *types.QueryPar
 
 	alerts := qs.GetAllPartitionAlerts(ctx, req.IncludeResolved)
 
-	// Convert to pointers
-	alertPtrs := make([]*types.PartitionAlert, len(alerts))
-	for i := range alerts {
-		alertPtrs[i] = &alerts[i]
-	}
-
-	return &types.QueryPartitionAlertsResponse{Alerts: alertPtrs}, nil
+	return &types.QueryPartitionAlertsResponse{Alerts: alerts}, nil
 }
 
 // NetworkHealth queries overall network health status
@@ -199,6 +174,6 @@ func (qs queryServer) NetworkHealth(goCtx context.Context, req *types.QueryNetwo
 		AverageReputation: avgReputation,
 		IsPartitioned:     isPartitioned,
 		HasActiveForks:    hasActiveForks,
-		MempoolStats:      &mempoolStats,
+		MempoolStats:      mempoolStats,
 	}, nil
 }

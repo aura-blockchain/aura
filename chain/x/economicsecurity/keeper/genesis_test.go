@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/economicsecurity/types"
 )
@@ -24,7 +23,7 @@ func TestInitGenesis(t *testing.T) {
 				VestedAmount:        "1000000",
 				VestingDuration:     31536000, // 1 year
 				CliffDuration:       7776000,  // 90 days
-				StartTime:           timestamppb.New(time.Now()),
+				StartTime:           time.Now(),
 				VestingType:         types.VestingTypeLinear,
 			},
 			{
@@ -34,7 +33,7 @@ func TestInitGenesis(t *testing.T) {
 				VestedAmount:        "0",
 				VestingDuration:     15768000, // 6 months
 				CliffDuration:       2592000,  // 30 days
-				StartTime:           timestamppb.New(time.Now()),
+				StartTime:           time.Now(),
 				VestingType:         types.VestingTypeCliffThenLinear,
 			},
 		},
@@ -43,8 +42,8 @@ func TestInitGenesis(t *testing.T) {
 				LockId:      "vote-lock-1",
 				Owner:       "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
 				Amount:      "1000000",
-				LockStart:   timestamppb.New(time.Now()),
-				LockEnd:     timestamppb.New(time.Now().Add(30 * 24 * time.Hour)),
+				LockStart:   time.Now(),
+				LockEnd:     time.Now().Add(30 * 24 * time.Hour),
 				VotingPower: "1500000", // 1.5x multiplier for long lock
 			},
 		},
@@ -55,8 +54,8 @@ func TestInitGenesis(t *testing.T) {
 				Amount:       "100000",
 				Proposer:     "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
 				Signatures:   []string{"sig1", "sig2"},
-				CreatedAt:    timestamppb.New(time.Now()),
-				ExecutableAt: timestamppb.New(time.Now().Add(48 * time.Hour)),
+				CreatedAt:    time.Now(),
+				ExecutableAt: time.Now().Add(48 * time.Hour),
 			},
 		},
 		InflationAlerts: []*types.InflationAlert{
@@ -65,7 +64,7 @@ func TestInitGenesis(t *testing.T) {
 				AlertType:            types.InflationAlertTypeRapidChange,
 				Severity:             types.AlertSeverityWarning,
 				CurrentInflationRate: 1200,
-				TriggeredAt:          timestamppb.New(time.Now()),
+				TriggeredAt:          time.Now(),
 				Message:              "Inflation spike detected",
 			},
 		},
@@ -75,7 +74,7 @@ func TestInitGenesis(t *testing.T) {
 				Sender:             "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
 				Recipient:          "aura1w3jhxapjta047h6lta047h6lta047h6l42n9lg",
 				Amount:             "5000000",
-				Timestamp:          timestamppb.New(time.Now()),
+				Timestamp:          time.Now(),
 				BlockHeight:        12345,
 				PercentageOfSupply: 250, // 2.5%
 			},
@@ -157,7 +156,7 @@ func TestExportGenesis(t *testing.T) {
 		VestedAmount:        "100000",
 		VestingDuration:     31536000,
 		CliffDuration:       7776000,
-		StartTime:           timestamppb.New(time.Now()),
+		StartTime:           time.Now(),
 		VestingType:         types.VestingTypeLinear,
 	}
 	err := k.SetVestingSchedule(ctx, schedule)
@@ -167,8 +166,8 @@ func TestExportGenesis(t *testing.T) {
 		LockId:      "export-test-lock",
 		Owner:       "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
 		Amount:      "500000",
-		LockStart:   timestamppb.New(time.Now()),
-		LockEnd:     timestamppb.New(time.Now().Add(30 * 24 * time.Hour)),
+		LockStart:   time.Now(),
+		LockEnd:     time.Now().Add(30 * 24 * time.Hour),
 		VotingPower: "500000",
 	}
 	err = k.SetVoteLock(ctx, lock)
@@ -180,8 +179,8 @@ func TestExportGenesis(t *testing.T) {
 		Amount:       "100000",
 		Proposer:     "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
 		Signatures:   []string{},
-		CreatedAt:    timestamppb.New(time.Now()),
-		ExecutableAt: timestamppb.New(time.Now().Add(24 * time.Hour)),
+		CreatedAt:    time.Now(),
+		ExecutableAt: time.Now().Add(24 * time.Hour),
 	}
 	err = k.SetPendingTreasuryTx(ctx, tx)
 	require.NoError(t, err)
@@ -191,7 +190,7 @@ func TestExportGenesis(t *testing.T) {
 		AlertType:            types.InflationAlertTypeBelowTarget,
 		Severity:             types.AlertSeverityInfo,
 		CurrentInflationRate: 800,
-		TriggeredAt:          timestamppb.New(time.Now()),
+		TriggeredAt:          time.Now(),
 		Message:              "Test alert",
 	}
 	err = k.SetInflationAlert(ctx, alert)
@@ -202,7 +201,7 @@ func TestExportGenesis(t *testing.T) {
 		Sender:             "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
 		Recipient:          "aura1w3jhxapjta047h6lta047h6lta047h6l42n9lg",
 		Amount:             "1000000",
-		Timestamp:          timestamppb.New(time.Now()),
+		Timestamp:          time.Now(),
 		BlockHeight:        12345,
 		PercentageOfSupply: 100,
 	}
@@ -251,7 +250,7 @@ func TestGenesisRoundTrip(t *testing.T) {
 				VestedAmount:        "1000000",
 				VestingDuration:     31536000,
 				CliffDuration:       7776000,
-				StartTime:           timestamppb.New(time.Now()),
+				StartTime:           time.Now(),
 				VestingType:         types.VestingTypeLinear,
 			},
 		},
@@ -260,8 +259,8 @@ func TestGenesisRoundTrip(t *testing.T) {
 				LockId:      "roundtrip-lock",
 				Owner:       "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
 				Amount:      "1000000",
-				LockStart:   timestamppb.New(time.Now()),
-				LockEnd:     timestamppb.New(time.Now().Add(30 * 24 * time.Hour)),
+				LockStart:   time.Now(),
+				LockEnd:     time.Now().Add(30 * 24 * time.Hour),
 				VotingPower: "1500000",
 			},
 		},
@@ -272,8 +271,8 @@ func TestGenesisRoundTrip(t *testing.T) {
 				Amount:       "100000",
 				Proposer:     "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
 				Signatures:   []string{"sig1"},
-				CreatedAt:    timestamppb.New(time.Now()),
-				ExecutableAt: timestamppb.New(time.Now().Add(48 * time.Hour)),
+				CreatedAt:    time.Now(),
+				ExecutableAt: time.Now().Add(48 * time.Hour),
 			},
 		},
 		InflationAlerts: []*types.InflationAlert{
@@ -282,7 +281,7 @@ func TestGenesisRoundTrip(t *testing.T) {
 				AlertType:            types.InflationAlertTypeRapidChange,
 				Severity:             types.AlertSeverityCritical,
 				CurrentInflationRate: 1500,
-				TriggeredAt:          timestamppb.New(time.Now()),
+				TriggeredAt:          time.Now(),
 				Message:              "Critical inflation alert",
 			},
 		},
@@ -292,7 +291,7 @@ func TestGenesisRoundTrip(t *testing.T) {
 				Sender:             "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
 				Recipient:          "aura1w3jhxapjta047h6lta047h6lta047h6l42n9lg",
 				Amount:             "5000000",
-				Timestamp:          timestamppb.New(time.Now()),
+				Timestamp:          time.Now(),
 				BlockHeight:        67890,
 				PercentageOfSupply: 500,
 			},
@@ -370,7 +369,7 @@ func TestInitGenesis_WithMultipleSchedules(t *testing.T) {
 				VestedAmount:        "500000",
 				VestingDuration:     31536000,
 				CliffDuration:       7776000,
-				StartTime:           timestamppb.New(time.Now()),
+				StartTime:           time.Now(),
 				VestingType:         types.VestingTypeLinear,
 			},
 			{
@@ -380,7 +379,7 @@ func TestInitGenesis_WithMultipleSchedules(t *testing.T) {
 				VestedAmount:        "0",
 				VestingDuration:     15768000,
 				CliffDuration:       2592000,
-				StartTime:           timestamppb.New(time.Now().Add(-30 * 24 * time.Hour)),
+				StartTime:           time.Now().Add(-30 * 24 * time.Hour),
 				VestingType:         types.VestingTypeCliffThenLinear,
 			},
 			{
@@ -390,7 +389,7 @@ func TestInitGenesis_WithMultipleSchedules(t *testing.T) {
 				VestedAmount:        "200000",
 				VestingDuration:     15768000,
 				CliffDuration:       2592000,
-				StartTime:           timestamppb.New(time.Now()),
+				StartTime:           time.Now(),
 				VestingType:         types.VestingTypeLinear,
 			},
 		},

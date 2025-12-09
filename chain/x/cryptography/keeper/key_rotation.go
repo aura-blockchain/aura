@@ -6,7 +6,6 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/cryptography/types"
 	cryptoproto "github.com/aequitas/aura/proto/aura/cryptography/v1beta1"
@@ -53,7 +52,7 @@ func (k Keeper) CreateKeyRotationSchedule(
 	schedule := &cryptoproto.KeyRotationSchedule{
 		Id:                      scheduleID,
 		KeyId:                   keyID,
-		NextRotationTime:        timestamppb.New(nextRotation),
+		NextRotationTime:        nextRotation,
 		RotationIntervalSeconds: rotationIntervalSeconds,
 		Enabled:                 true,
 		CreatedBy:               creator,
@@ -98,9 +97,9 @@ func (k Keeper) RotateKey(
 	// Update any associated rotation schedules
 	schedules := k.GetSchedulesForKey(ctx, keyID)
 	for _, schedule := range schedules {
-		schedule.LastRotation = timestamppb.New(rotationTime)
+		schedule.LastRotation = &rotationTime
 		nextRotation := rotationTime.Add(time.Duration(schedule.RotationIntervalSeconds) * time.Second)
-		schedule.NextRotationTime = timestamppb.New(nextRotation)
+		schedule.NextRotationTime = nextRotation
 
 		// Update in store
 		if err := k.SetKeyRotationSchedule(ctx, schedule); err != nil {
@@ -128,7 +127,7 @@ func (k Keeper) ProcessScheduledRotations(ctx context.Context) error {
 		if schedule.Enabled &&
 			schedule.Policy != nil &&
 			schedule.Policy.AutoRotate &&
-			schedule.NextRotationTime.AsTime().Before(now) {
+			schedule.NextRotationTime.Before(now) {
 			schedulesToRotate = append(schedulesToRotate, schedule)
 		}
 		return false
@@ -151,9 +150,9 @@ func (k Keeper) ProcessScheduledRotations(ctx context.Context) error {
 		// 4. Archive the old key
 
 		// Update schedule
-		schedule.LastRotation = timestamppb.New(now)
+		schedule.LastRotation = &now
 		nextRotation := now.Add(time.Duration(schedule.RotationIntervalSeconds) * time.Second)
-		schedule.NextRotationTime = timestamppb.New(nextRotation)
+		schedule.NextRotationTime = nextRotation
 
 		// Update in store
 		if err := k.SetKeyRotationSchedule(ctx, schedule); err != nil {

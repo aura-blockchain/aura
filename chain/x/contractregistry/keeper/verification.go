@@ -411,12 +411,6 @@ func (k Keeper) verifyCompilerVersion(version string) error {
 
 // performBasicVerification performs level 1 verification
 func (k Keeper) performBasicVerification(ctx sdk.Context, info *pb.ContractInfo, req VerificationRequest, result *VerificationResult) error {
-	// Basic verification: verify source code can be processed
-	if info.Metadata == nil {
-		result.Warnings = append(result.Warnings, "Contract has no metadata for verification")
-		return nil
-	}
-
 	// Check source code URL availability
 	if info.Metadata.SourceCodeUrl != "" {
 		result.Warnings = append(result.Warnings,
@@ -434,13 +428,11 @@ func (k Keeper) performStandardVerification(ctx sdk.Context, info *pb.ContractIn
 	}
 
 	// Verify metadata completeness
-	if info.Metadata != nil {
-		if info.Metadata.Description == "" {
-			result.Warnings = append(result.Warnings, "Contract lacks description")
-		}
-		if info.Metadata.Version == "" {
-			result.Warnings = append(result.Warnings, "Contract version not specified")
-		}
+	if info.Metadata.Description == "" {
+		result.Warnings = append(result.Warnings, "Contract lacks description")
+	}
+	if info.Metadata.Version == "" {
+		result.Warnings = append(result.Warnings, "Contract version not specified")
 	}
 
 	// Check constructor arguments if provided
@@ -459,7 +451,7 @@ func (k Keeper) performFullVerification(ctx sdk.Context, info *pb.ContractInfo, 
 	}
 
 	// Verify audit status via compliance requirements
-	if info.Compliance == nil || !info.Compliance.RequireAudit {
+	if !info.Compliance.RequireAudit {
 		result.Issues = append(result.Issues, VerificationIssue{
 			Severity:    "medium",
 			Code:        "NO_AUDIT_REQUIREMENT",
@@ -470,9 +462,8 @@ func (k Keeper) performFullVerification(ctx sdk.Context, info *pb.ContractInfo, 
 		result.AuditReferences = append(result.AuditReferences, info.Compliance.AuditReportUri)
 
 		// Check audit date if available
-		if info.Compliance.LastAuditDate != nil {
-			auditTime := info.Compliance.LastAuditDate.AsTime()
-			daysSinceAudit := ctx.BlockTime().Sub(auditTime).Hours() / 24
+		if info.Compliance.LastAuditDate != nil && !info.Compliance.LastAuditDate.IsZero() {
+			daysSinceAudit := ctx.BlockTime().Sub(*info.Compliance.LastAuditDate).Hours() / 24
 			if daysSinceAudit > 365 {
 				result.Warnings = append(result.Warnings,
 					fmt.Sprintf("Audit is over 1 year old (%.0f days)", daysSinceAudit))
@@ -481,17 +472,13 @@ func (k Keeper) performFullVerification(ctx sdk.Context, info *pb.ContractInfo, 
 	}
 
 	// Verify security policy
-	if info.SecurityPolicy == nil {
-		result.Warnings = append(result.Warnings, "Contract has no security policy defined")
-	} else {
-		if !info.SecurityPolicy.AllowPause {
-			result.Warnings = append(result.Warnings,
-				"Contract pause functionality is disabled")
-		}
-		if info.SecurityPolicy.RateLimitPerUser == 0 {
-			result.Warnings = append(result.Warnings,
-				"No rate limiting configured for this contract")
-		}
+	if !info.SecurityPolicy.AllowPause {
+		result.Warnings = append(result.Warnings,
+			"Contract pause functionality is disabled")
+	}
+	if info.SecurityPolicy.RateLimitPerUser == 0 {
+		result.Warnings = append(result.Warnings,
+			"No rate limiting configured for this contract")
 	}
 
 	return nil
@@ -505,7 +492,7 @@ func (k Keeper) performCertifiedVerification(ctx sdk.Context, info *pb.ContractI
 	}
 
 	// Require audit for certification
-	if info.Compliance == nil || info.Compliance.AuditReportUri == "" {
+	if info.Compliance.AuditReportUri == "" {
 		result.Issues = append(result.Issues, VerificationIssue{
 			Severity:    "high",
 			Code:        "NO_AUDIT_FOR_CERTIFICATION",
@@ -516,9 +503,8 @@ func (k Keeper) performCertifiedVerification(ctx sdk.Context, info *pb.ContractI
 	}
 
 	// Check audit is recent (within 1 year)
-	if info.Compliance.LastAuditDate != nil {
-		auditTime := info.Compliance.LastAuditDate.AsTime()
-		daysSinceAudit := ctx.BlockTime().Sub(auditTime).Hours() / 24
+	if info.Compliance.LastAuditDate != nil && !info.Compliance.LastAuditDate.IsZero() {
+		daysSinceAudit := ctx.BlockTime().Sub(*info.Compliance.LastAuditDate).Hours() / 24
 		if daysSinceAudit > 365 {
 			result.Issues = append(result.Issues, VerificationIssue{
 				Severity:    "high",

@@ -12,7 +12,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/identity/types"
 )
@@ -88,10 +87,10 @@ func (k *Keeper) RotateDIDKey(ctx sdk.Context, did, initiator, newVerificationMe
 		Did:                   did,
 		OldVerificationMethod: oldVerificationMethod,
 		NewVerificationMethod: newVerificationMethod,
-		RotationTime:          timestamppb.New(now),
+		RotationTime:          now,
 		InitiatedBy:           initiator,
 		Reason:                reason,
-		GracePeriodEnd:        timestamppb.New(gracePeriodEnd),
+		GracePeriodEnd:        gracePeriodEnd,
 		Status:                types.DIDKeyRotationStatusPending,
 	}
 
@@ -114,7 +113,8 @@ func (k *Keeper) RotateDIDKey(ctx sdk.Context, did, initiator, newVerificationMe
 		newMethods = append(newMethods, oldVerificationMethod)
 	}
 	record.VerificationMethods = newMethods
-	record.UpdatedAt = timestamppb.New(now)
+	updatedAt := now
+	record.UpdatedAt = &updatedAt
 
 	if err := k.SetIdentityRecord(ctx, record); err != nil {
 		return nil, fmt.Errorf("failed to update identity record: %w", err)
@@ -175,7 +175,7 @@ func (k *Keeper) ValidateDIDKey(ctx sdk.Context, did, verificationMethod string)
 		// Check if old key matches and grace period hasn't expired
 		if rotation.OldVerificationMethod == verificationMethod {
 			now := ctx.BlockTime()
-			if now.Before(rotation.GracePeriodEnd.AsTime()) {
+			if now.Before(rotation.GracePeriodEnd) {
 				// Old key is still valid in grace period
 				return nil
 			}
@@ -189,7 +189,7 @@ func (k *Keeper) ValidateDIDKey(ctx sdk.Context, did, verificationMethod string)
 		for _, entry := range history.Entries {
 			if entry.VerificationMethod == verificationMethod {
 				// Check if this historical key is still in grace period
-				if entry.ActiveUntil != nil && now.Before(entry.ActiveUntil.AsTime()) {
+				if entry.ActiveUntil != nil && now.Before(*entry.ActiveUntil) {
 					return nil
 				}
 			}
@@ -212,7 +212,7 @@ func (k *Keeper) CompleteKeyRotation(ctx sdk.Context, did string) error {
 	}
 
 	now := ctx.BlockTime()
-	if now.Before(rotation.GracePeriodEnd.AsTime()) {
+	if now.Before(rotation.GracePeriodEnd) {
 		return types.ErrKeyInGracePeriod.Wrapf("grace period not yet ended for %s", did)
 	}
 
@@ -236,7 +236,8 @@ func (k *Keeper) CompleteKeyRotation(ctx sdk.Context, did string) error {
 		}
 	}
 	record.VerificationMethods = newMethods
-	record.UpdatedAt = timestamppb.New(now)
+	updatedAt2 := now
+	record.UpdatedAt = &updatedAt2
 
 	if err := k.SetIdentityRecord(ctx, record); err != nil {
 		return fmt.Errorf("failed to update identity record: %w", err)
@@ -350,14 +351,11 @@ func (k *Keeper) AddKeyToHistory(ctx sdk.Context, did, verificationMethod string
 	// Create history entry
 	entry := &types.DIDKeyHistoryEntry{
 		VerificationMethod: verificationMethod,
-		ActiveFrom:         timestamppb.New(activeFrom),
+		ActiveFrom:         activeFrom,
 		RotatedBy:          rotatedBy,
 		RotationReason:     reason,
 		IsCurrent:          isCurrent,
-	}
-
-	if activeUntil != nil {
-		entry.ActiveUntil = timestamppb.New(*activeUntil)
+		ActiveUntil:        activeUntil,
 	}
 
 	// Add to history
@@ -377,9 +375,7 @@ func (k *Keeper) UpdateKeyHistoryActiveUntil(ctx sdk.Context, did, verificationM
 	found := false
 	for i, entry := range history.Entries {
 		if entry.VerificationMethod == verificationMethod {
-			if activeUntil != nil {
-				history.Entries[i].ActiveUntil = timestamppb.New(*activeUntil)
-			}
+			history.Entries[i].ActiveUntil = activeUntil
 			history.Entries[i].IsCurrent = false
 			found = true
 			break
@@ -468,7 +464,7 @@ func (k *Keeper) IsKeyInGracePeriod(ctx sdk.Context, did, verificationMethod str
 	}
 
 	now := ctx.BlockTime()
-	return now.Before(rotation.GracePeriodEnd.AsTime())
+	return now.Before(rotation.GracePeriodEnd)
 }
 
 // GetCurrentVerificationMethod returns the current (primary) verification method for a DID
@@ -496,7 +492,7 @@ func (k *Keeper) ProcessExpiredGracePeriods(ctx sdk.Context) error {
 	now := ctx.BlockTime()
 	for _, rotation := range rotations {
 		if rotation.Status == types.DIDKeyRotationStatusPending {
-			if !now.Before(rotation.GracePeriodEnd.AsTime()) {
+			if !now.Before(rotation.GracePeriodEnd) {
 				// Grace period has expired, complete the rotation
 				if err := k.CompleteKeyRotation(ctx, rotation.Did); err != nil {
 					k.logger.Error("failed to complete key rotation", "did", rotation.Did, "error", err)

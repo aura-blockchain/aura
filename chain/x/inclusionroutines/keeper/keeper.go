@@ -72,10 +72,7 @@ func (k *Keeper) GetAuthority() string {
 
 // GetParams returns the current module parameters
 func (k *Keeper) GetParams() types.Params {
-	if k.paramsStore != nil {
-		return k.paramsStore.GetParams()
-	}
-	return types.DefaultParams()
+	return k.paramsStore.GetParams()
 }
 
 // SetParams sets new module parameters
@@ -465,10 +462,8 @@ func (k *Keeper) InitGenesis(ctx sdk.Context, genesis types.GenesisState) error 
 	}
 
 	// Set params
-	if genesis.Params != nil {
-		if err := k.paramsStore.SetParams(*genesis.Params); err != nil {
-			return fmt.Errorf("failed to set params: %w", err)
-		}
+	if err := k.paramsStore.SetParams(genesis.Params); err != nil {
+		return fmt.Errorf("failed to set params: %w", err)
 	}
 
 	for _, ir := range genesis.Irs {
@@ -552,7 +547,7 @@ func (k *Keeper) ExportGenesis(ctx sdk.Context) types.GenesisState {
 
 	params := k.GetParams()
 	return types.GenesisState{
-		Params:        &params,
+		Params:        params,
 		Irs:           irDefinitions,
 		Prerequisites: prerequisites,
 		RateLimits:    rateLimits,

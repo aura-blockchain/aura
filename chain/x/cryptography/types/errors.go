@@ -36,4 +36,5 @@ var (
 	ErrInvalidSeed                   = errorsmod.Register("cryptography", 28, "invalid seed")
 	ErrKeyExpired                    = errorsmod.Register("cryptography", 29, "key has expired")
 	ErrUnauthorized                  = errorsmod.Register("cryptography", 30, "unauthorized operation")
+	ErrInvalidState                  = errorsmod.Register("cryptography", 31, "invalid state detected")
 )

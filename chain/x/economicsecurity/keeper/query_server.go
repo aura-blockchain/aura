@@ -4,9 +4,8 @@ import (
 	"context"
 	"fmt"
 	"math/big"
-	"time"
 
-	"google.golang.org/protobuf/types/known/timestamppb"
+	gogotypes "github.com/cosmos/gogoproto/types"
 
 	economicsecuritypb "github.com/aequitas/aura/proto/aura/economicsecurity/v1beta1"
 	"github.com/aequitas/aura/chain/x/economicsecurity/types"
@@ -65,11 +64,17 @@ func (qs *QueryServer) VestingSchedule(ctx context.Context, req *economicsecurit
 	// Calculate vested amount, remaining amount, and next vest time
 	vestedAmount, remainingAmount, nextVestTime := calculateVestingDetails(schedule, currentTime)
 
+	// Convert time.Time to gogoproto Timestamp
+	nextVestTimeProto := &gogotypes.Timestamp{
+		Seconds: nextVestTime,
+		Nanos:   0,
+	}
+
 	return &economicsecuritypb.QueryVestingScheduleResponse{
 		Schedule:        schedule,
 		VestedAmount:    vestedAmount,
 		RemainingAmount: remainingAmount,
-		NextVestTime:    timestamppb.New(time.Unix(nextVestTime, 0)),
+		NextVestTime:    nextVestTimeProto,
 	}, nil
 }
 
@@ -350,12 +355,22 @@ func (qs *QueryServer) InflationMetrics(ctx context.Context, req *economicsecuri
 	blocksUntilCheck := params.InflationCheckInterval - (currentHeight % params.InflationCheckInterval)
 	nextCheckTime := currentTime + int64(blocksUntilCheck*6)
 
+	// Convert time.Time to gogoproto Timestamp
+	lastAdjustmentProto := &gogotypes.Timestamp{
+		Seconds: params.Tokenomics.LastInflationAdjustment.Unix(),
+		Nanos:   int32(params.Tokenomics.LastInflationAdjustment.Nanosecond()),
+	}
+	nextCheckProto := &gogotypes.Timestamp{
+		Seconds: nextCheckTime,
+		Nanos:   0,
+	}
+
 	return &economicsecuritypb.QueryInflationMetricsResponse{
 		CurrentInflationRate: params.Tokenomics.InflationRate,
 		TargetInflationRate:  params.Tokenomics.TargetInflationRate,
 		InflationChange_24H:  inflationChange24h,
-		LastAdjustment:       params.Tokenomics.LastInflationAdjustment,
-		NextCheck:            timestamppb.New(time.Unix(nextCheckTime, 0)),
+		LastAdjustment:       lastAdjustmentProto,
+		NextCheck:            nextCheckProto,
 	}, nil
 }
 
@@ -572,7 +587,7 @@ func (qs *QueryServer) TokenomicsStats(ctx context.Context, req *economicsecurit
 	oneDayAgo := currentTime - 86400 // 24 hours in seconds
 
 	err = qs.keeper.IterateLargeTxRecords(ctx, func(record *types.LargeTxRecord) bool {
-		if record.Timestamp != nil && record.Timestamp.Seconds >= oneDayAgo {
+		if !record.Timestamp.IsZero() && record.Timestamp.Unix() >= oneDayAgo {
 			whaleProtectionTriggers++
 		}
 		return false // Continue iteration
@@ -613,7 +628,7 @@ func calculateVestingDetails(schedule *types.VestingSchedule, currentTime int64)
 	}
 
 	// Calculate time-based vesting
-	startTime := schedule.StartTime.Seconds
+	startTime := schedule.StartTime.Unix()
 	cliffEnd := startTime + int64(schedule.CliffDuration)
 	vestingEnd := startTime + int64(schedule.VestingDuration)
 
