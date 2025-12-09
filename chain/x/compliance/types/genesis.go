@@ -13,7 +13,7 @@ type GenesisState = pb.GenesisState
 func DefaultGenesis() *GenesisState {
     params := DefaultParams()
     return &GenesisState{
-        Params:               &params,
+        Params:               params,
         KycRecords:           []*pb.KYCRecord{},
         AmlProfiles:          []*pb.AMLProfile{},
         SuspiciousActivities: []*pb.SuspiciousActivity{},
@@ -31,10 +31,7 @@ func ValidateGenesis(gen *GenesisState) error {
     if gen == nil {
         return fmt.Errorf("genesis state cannot be nil")
     }
-    if gen.Params == nil {
-        return fmt.Errorf("params cannot be nil")
-    }
-    if err := ValidateParams(*gen.Params); err != nil {
+    if err := ValidateParams(gen.Params); err != nil {
         return err
     }
     return nil

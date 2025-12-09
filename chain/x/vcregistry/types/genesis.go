@@ -12,7 +12,7 @@ import (
 func DefaultGenesisState() *pb.GenesisState {
 	params := DefaultParams()
 	return &pb.GenesisState{
-		Params:                 params,
+		Params:                 *params,
 		VcRecords:              []*pb.VCRecord{},
 		RevocationRecords:      []*pb.RevocationRecord{},
 		RevocationList:         &pb.RevocationList{},
@@ -32,12 +32,7 @@ func ValidateGenesisState(state *pb.GenesisState) error {
 		return fmt.Errorf("genesis state cannot be nil")
 	}
 
-	// Validate params - params must not be nil
-	if state.Params == nil {
-		return fmt.Errorf("params cannot be nil")
-	}
-
-	if err := ValidateParams(state.Params); err != nil {
+	if err := ValidateParams(&state.Params); err != nil {
 		return fmt.Errorf("invalid params: %w", err)
 	}
 

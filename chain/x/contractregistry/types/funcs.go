@@ -20,14 +20,14 @@ func DefaultParams() *pb.ContractRegistryParams {
 func DefaultGenesis() *pb.GenesisState {
 	params := DefaultParams()
 	return &pb.GenesisState{
-		Params:    params,
-		Contracts: []*pb.ContractInfo{},
-		Metrics:   []*pb.ContractMetrics{},
+		Params:    *params,
+		Contracts: []pb.ContractInfo{},
+		Metrics:   []pb.ContractMetrics{},
 	}
 }
 
 // NewGenesisState creates a new GenesisState instance
-func NewGenesisState(params *pb.ContractRegistryParams, contracts []*pb.ContractInfo, metrics []*pb.ContractMetrics) *pb.GenesisState {
+func NewGenesisState(params pb.ContractRegistryParams, contracts []pb.ContractInfo, metrics []pb.ContractMetrics) *pb.GenesisState {
 	return &pb.GenesisState{
 		Params:    params,
 		Contracts: contracts,
@@ -37,10 +37,8 @@ func NewGenesisState(params *pb.ContractRegistryParams, contracts []*pb.Contract
 
 // ValidateGenesis performs basic genesis state validation
 func ValidateGenesis(gs *pb.GenesisState) error {
-	if gs.Params != nil {
-		if err := ValidateParams(gs.Params); err != nil {
-			return err
-		}
+	if err := ValidateParams(&gs.Params); err != nil {
+		return err
 	}
 
 	// Validate each contract

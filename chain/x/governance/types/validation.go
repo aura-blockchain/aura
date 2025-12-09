@@ -3,8 +3,20 @@ package types
 import (
 	"time"
 
-	"google.golang.org/protobuf/types/known/durationpb"
+	gogotypes "github.com/cosmos/gogoproto/types"
 )
+
+// durationFromGo converts a Go time.Duration to a gogoproto Duration.
+// This is necessary because the proto files use gogoproto/types.Duration,
+// not the standard protobuf durationpb.Duration.
+func durationFromGo(d time.Duration) *gogotypes.Duration {
+	seconds := int64(d.Seconds())
+	nanos := int32((d - time.Duration(seconds)*time.Second).Nanoseconds())
+	return &gogotypes.Duration{
+		Seconds: seconds,
+		Nanos:   nanos,
+	}
+}
 
 // Enum constant aliases for backward compatibility and convenience
 const (
@@ -47,70 +59,70 @@ func DefaultGovernanceParams() GovernanceParams {
 	categoryParams := map[string]*CategoryParams{
 		CategoryText.String(): {
 			MinDeposit:     "10000000stake",                      // 10 AURA
-			VotingPeriod:   durationpb.New(7 * 24 * time.Hour),   // 7 days
+			VotingPeriod:   durationFromGo(7 * 24 * time.Hour),   // 7 days
 			Quorum:         "0.334",                              // 33.4%
 			Threshold:      "0.50",                               // 50%
 			VetoThreshold:  "0.334",                              // 33.4%
-			ExecutionDelay: durationpb.New(48 * time.Hour),       // 48 hours
+			ExecutionDelay: durationFromGo(48 * time.Hour),       // 48 hours
 		},
 		CategoryParameterChange.String(): {
 			MinDeposit:     "10000000stake",                      // 10 AURA
-			VotingPeriod:   durationpb.New(7 * 24 * time.Hour),   // 7 days
+			VotingPeriod:   durationFromGo(7 * 24 * time.Hour),   // 7 days
 			Quorum:         "0.334",                              // 33.4%
 			Threshold:      "0.50",                               // 50%
 			VetoThreshold:  "0.334",                              // 33.4%
-			ExecutionDelay: durationpb.New(48 * time.Hour),       // 48 hours
+			ExecutionDelay: durationFromGo(48 * time.Hour),       // 48 hours
 		},
 		CategorySoftwareUpgrade.String(): {
 			MinDeposit:     "10000000stake",                      // 10 AURA
-			VotingPeriod:   durationpb.New(7 * 24 * time.Hour),   // 7 days
+			VotingPeriod:   durationFromGo(7 * 24 * time.Hour),   // 7 days
 			Quorum:         "0.334",                              // 33.4%
 			Threshold:      "0.50",                               // 50%
 			VetoThreshold:  "0.334",                              // 33.4%
-			ExecutionDelay: durationpb.New(48 * time.Hour),       // 48 hours
+			ExecutionDelay: durationFromGo(48 * time.Hour),       // 48 hours
 		},
 		CategorySpending.String(): {
 			MinDeposit:     "10000000stake",                      // 10 AURA
-			VotingPeriod:   durationpb.New(7 * 24 * time.Hour),   // 7 days
+			VotingPeriod:   durationFromGo(7 * 24 * time.Hour),   // 7 days
 			Quorum:         "0.334",                              // 33.4%
 			Threshold:      "0.50",                               // 50%
 			VetoThreshold:  "0.334",                              // 33.4%
-			ExecutionDelay: durationpb.New(48 * time.Hour),       // 48 hours
+			ExecutionDelay: durationFromGo(48 * time.Hour),       // 48 hours
 		},
 		CategoryEmergency.String(): {
 			MinDeposit:     "10000000stake",                      // 10 AURA
-			VotingPeriod:   durationpb.New(24 * time.Hour),       // 24 hours
+			VotingPeriod:   durationFromGo(24 * time.Hour),       // 24 hours
 			Quorum:         "0.600",                              // 60%
 			Threshold:      "0.750",                              // 75%
 			VetoThreshold:  "0.334",                              // 33.4%
-			ExecutionDelay: durationpb.New(0),                    // No delay for emergency
+			ExecutionDelay: durationFromGo(0),                    // No delay for emergency
 		},
 		CategoryConstitution.String(): {
 			MinDeposit:     "10000000stake",                      // 10 AURA
-			VotingPeriod:   durationpb.New(7 * 24 * time.Hour),   // 7 days
+			VotingPeriod:   durationFromGo(7 * 24 * time.Hour),   // 7 days
 			Quorum:         "0.667",                              // 66.7%
 			Threshold:      "0.750",                              // 75%
 			VetoThreshold:  "0.334",                              // 33.4%
-			ExecutionDelay: durationpb.New(48 * time.Hour),       // 48 hours
+			ExecutionDelay: durationFromGo(48 * time.Hour),       // 48 hours
 		},
 	}
 
 	return GovernanceParams{
 		// Deposit parameters
 		MinDeposit:       "10000000stake", // 10 AURA (using stake denom for genesis compatibility)
-		MaxDepositPeriod: durationpb.New(7 * 24 * time.Hour), // 7 days
+		MaxDepositPeriod: durationFromGo(7 * 24 * time.Hour), // 7 days
 
 		// Voting parameters
-		VotingPeriod:   durationpb.New(7 * 24 * time.Hour), // 7 days
+		VotingPeriod:   durationFromGo(7 * 24 * time.Hour), // 7 days
 		Quorum:         "0.334",                            // 33.4%
 		Threshold:      "0.50",                             // 50%
 		VetoThreshold:  "0.334",                            // 33.4%
 
 		// Execution delay (time-lock)
-		ExecutionDelay: durationpb.New(48 * time.Hour), // 48 hours
+		ExecutionDelay: durationFromGo(48 * time.Hour), // 48 hours
 
 		// Emergency fast-track
-		EmergencyVotingPeriod: durationpb.New(24 * time.Hour), // 24 hours
+		EmergencyVotingPeriod: durationFromGo(24 * time.Hour), // 24 hours
 		EmergencyQuorum:       "0.50",                         // 50%
 		EmergencyThreshold:    "0.667",                        // 66.7%
 
@@ -123,7 +135,7 @@ func DefaultGovernanceParams() GovernanceParams {
 
 		// Token lock parameters
 		RequireTokenLock:   false,
-		TokenLockDuration:  durationpb.New(7 * 24 * time.Hour), // 7 days
+		TokenLockDuration:  durationFromGo(7 * 24 * time.Hour), // 7 days
 
 		// Snapshot voting
 		SnapshotVotingEnabled: false,
@@ -131,6 +143,6 @@ func DefaultGovernanceParams() GovernanceParams {
 
 		// Secret ballot
 		SecretBallotEnabled: false,
-		RevealPeriod:        durationpb.New(24 * time.Hour), // 24 hours
+		RevealPeriod:        durationFromGo(24 * time.Hour), // 24 hours
 	}
 }
