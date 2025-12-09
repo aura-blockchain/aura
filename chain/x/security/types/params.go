@@ -37,10 +37,10 @@ func DefaultParams() securitypb.Params {
 			PartitionDetection: securitypb.PartitionDetectionConfig{},
 		},
 		Validator: securitypb.ValidatorSecurityParams{
-			DoubleSignSlashFraction: "0.050000000000000000",
-			DowntimeSlashFraction:   "0.010000000000000000",
+			DoubleSignSlashFraction: math.LegacyMustNewDecFromStr("0.050000000000000000"),
+			DowntimeSlashFraction:   math.LegacyMustNewDecFromStr("0.010000000000000000"),
 			SignedBlocksWindow:      10000,
-			MinSignedPerWindow:      "0.500000000000000000",
+			MinSignedPerWindow:      math.LegacyMustNewDecFromStr("0.500000000000000000"),
 		},
 		Wallet:   securitypb.WalletSecurityParams{},
 		Incident: securitypb.IncidentResponseParams{},
