@@ -28,4 +28,5 @@ var (
 	ErrInvalidBackupValidator     = errors.Register(ModuleName, 21, "invalid backup validator")
 	ErrEvidenceNotFound           = errors.Register(ModuleName, 22, "double sign evidence not found")
 	ErrInfractionNotFound         = errors.Register(ModuleName, 23, "downtime infraction not found")
+	ErrCorruptedState             = errors.Register(ModuleName, 24, "corrupted state data")
 )

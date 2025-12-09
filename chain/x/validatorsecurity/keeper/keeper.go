@@ -79,7 +79,10 @@ func (k Keeper) GetParams(ctx context.Context) *types.ValidatorSecurityParams {
 	}
 
 	var params types.ValidatorSecurityParams
-	k.cdc.MustUnmarshal(bz, &params)
+	if err := k.cdc.Unmarshal(bz, &params); err != nil {
+		k.logger.Error("failed to unmarshal validator security params", "error", err)
+		return types.DefaultParams()
+	}
 	return &params
 }
 
@@ -233,7 +236,10 @@ func (k Keeper) GetValidatorSecurityInfo(ctx context.Context, validatorAddr stri
 	}
 
 	var info types.ValidatorSecurityInfo
-	k.cdc.MustUnmarshal(bz, &info)
+	if err := k.cdc.Unmarshal(bz, &info); err != nil {
+		k.logger.Error("failed to unmarshal validator security info", "validator", validatorAddr, "error", err)
+		return types.ValidatorSecurityInfo{}, types.ErrCorruptedState
+	}
 	return info, nil
 }
 
@@ -253,7 +259,10 @@ func (k Keeper) GetAllValidators(ctx context.Context) []types.ValidatorSecurityI
 	var validators []types.ValidatorSecurityInfo
 	for ; iterator.Valid(); iterator.Next() {
 		var info types.ValidatorSecurityInfo
-		k.cdc.MustUnmarshal(iterator.Value(), &info)
+		if err := k.cdc.Unmarshal(iterator.Value(), &info); err != nil {
+			k.logger.Error("failed to unmarshal validator info in GetAllValidators, skipping", "error", err)
+			continue
+		}
 		validators = append(validators, info)
 	}
 

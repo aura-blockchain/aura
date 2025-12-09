@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	sdkmath "cosmossdk.io/math"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
+	"cosmossdk.io/store/prefix"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	"github.com/cosmos/cosmos-sdk/types/query"
 	metrics "github.com/hashicorp/go-metrics"
