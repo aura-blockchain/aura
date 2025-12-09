@@ -3,10 +3,11 @@ package keeper
 import (
 	"fmt"
 	"testing"
+	"time"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/suite"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/bridge/types"
 	bridgepb "github.com/aequitas/aura/proto/aura/bridge/v1beta1"
@@ -75,10 +76,10 @@ func (suite *QueryServerComprehensiveTestSuite) TestQueryTransferValid() {
 		TargetChain: "ethereum",
 		Sender:      sdk.AccAddress("sender____________").String(),
 		Recipient:   "0x123",
-		Amount:      "1000",
+		Amount:      sdkmath.NewInt(1000),
 		Denom:       "uaura",
 		Status:      types.TransferStatus_PENDING,
-		Timestamp:   timestamppb.Now(),
+		Timestamp:   time.Now(),
 	}
 	suite.Keeper.setTransfer(suite.SdkCtx, transfer)
 
@@ -122,10 +123,10 @@ func (suite *QueryServerComprehensiveTestSuite) TestQueryTransfersMultiple() {
 			TargetChain: "ethereum",
 			Sender:      sdk.AccAddress("sender____________").String(),
 			Recipient:   "0x123",
-			Amount:      "1000",
+			Amount:      sdkmath.NewInt(1000),
 			Denom:       "uaura",
 			Status:      types.TransferStatus_PENDING,
-			Timestamp:   timestamppb.Now(),
+			Timestamp:   time.Now(),
 		}
 		suite.Keeper.setTransfer(suite.SdkCtx, transfer)
 	}

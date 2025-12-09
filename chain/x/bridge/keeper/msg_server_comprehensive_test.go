@@ -39,7 +39,7 @@ func (suite *MsgServerComprehensiveTestSuite) TestLockTokensZeroAmount() {
 	msg := &bridgepb.MsgLockTokens{
 		Sender:      sdk.AccAddress("sender____________").String(),
 		Recipient:   "recipient",
-		Amount:      &coin,
+		Amount:      coin,
 		TargetChain: "ethereum",
 	}
 
@@ -55,7 +55,7 @@ func (suite *MsgServerComprehensiveTestSuite) TestLockTokensInvalidSender() {
 	msg := &bridgepb.MsgLockTokens{
 		Sender:      "invalid-address",
 		Recipient:   "recipient",
-		Amount:      &coin,
+		Amount:      coin,
 		TargetChain: "ethereum",
 	}
 
@@ -70,7 +70,7 @@ func (suite *MsgServerComprehensiveTestSuite) TestLockTokensEmptyTargetChain() {
 	msg := &bridgepb.MsgLockTokens{
 		Sender:      sdk.AccAddress("sender____________").String(),
 		Recipient:   "recipient",
-		Amount:      &coin,
+		Amount:      coin,
 		TargetChain: "",
 	}
 
@@ -93,7 +93,7 @@ func (suite *MsgServerComprehensiveTestSuite) TestMintTokensEmptyValidator() {
 	msg := &bridgepb.MsgMintTokens{
 		Validator:     "",
 		Recipient:     sdk.AccAddress("recipient_________").String(),
-		Amount:        "1000",
+		Amount:        sdkmath.NewInt(1000),
 		Denom:         "uaura",
 		SourceChain:   "ethereum",
 		SourceTxHash:  "0x123",
@@ -107,10 +107,11 @@ func (suite *MsgServerComprehensiveTestSuite) TestMintTokensEmptyValidator() {
 func (suite *MsgServerComprehensiveTestSuite) TestMintTokensInvalidAmount() {
 	ctx := sdk.WrapSDKContext(suite.SdkCtx)
 
+	// Use negative amount to test invalid amount validation
 	msg := &bridgepb.MsgMintTokens{
 		Validator:     sdk.ValAddress("validator_________").String(),
 		Recipient:     sdk.AccAddress("recipient_________").String(),
-		Amount:        "invalid",
+		Amount:        sdkmath.NewInt(-1),
 		Denom:         "uaura",
 		SourceChain:   "ethereum",
 		SourceTxHash:  "0x123",
@@ -127,7 +128,7 @@ func (suite *MsgServerComprehensiveTestSuite) TestMintTokensZeroAmount() {
 	msg := &bridgepb.MsgMintTokens{
 		Validator:     sdk.ValAddress("validator_________").String(),
 		Recipient:     sdk.AccAddress("recipient_________").String(),
-		Amount:        "0",
+		Amount:        sdkmath.ZeroInt(),
 		Denom:         "uaura",
 		SourceChain:   "ethereum",
 		SourceTxHash:  "0x123",
