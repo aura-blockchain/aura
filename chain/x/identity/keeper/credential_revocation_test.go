@@ -10,6 +10,11 @@ import (
 	"github.com/aequitas/aura/chain/x/identity/types"
 )
 
+// timePtr returns a pointer to a time.Time value
+func timePtr(t time.Time) *time.Time {
+	return &t
+}
+
 // TestIsCredentialRevoked tests the basic revocation check
 func TestIsCredentialRevoked(t *testing.T) {
 	k, ctx := setupKeeperForTest(t)
@@ -45,12 +50,13 @@ func TestIsCredentialRevoked(t *testing.T) {
 			// Setup: Create identity
 			did := "did:aura:test-" + tt.name
 			owner := "aura1owner123456789"
+			now := time.Now()
 			identity := &types.IdentityRecord{
 				Did:             did,
 				Address:         owner,
 				Status:          types.IdentityStatusActive,
-				CreatedAt:       time.Now(),
-				UpdatedAt:       time.Now(),
+				CreatedAt:       now,
+				UpdatedAt:       timePtr(now),
 				ConfidenceScore: 80,
 			}
 			require.NoError(t, k.SetIdentityRecord(ctx, identity))
@@ -77,12 +83,13 @@ func TestRevokeCredential(t *testing.T) {
 	// Setup: Create identity
 	did := "did:aura:test-revoke"
 	owner := "aura1owner123456789"
+	now := time.Now()
 	identity := &types.IdentityRecord{
 		Did:             did,
 		Address:         owner,
 		Status:          types.IdentityStatusActive,
-		CreatedAt:       time.Now(),
-		UpdatedAt:       time.Now(),
+		CreatedAt:       now,
+		UpdatedAt:       timePtr(now),
 		ConfidenceScore: 80,
 	}
 	require.NoError(t, k.SetIdentityRecord(ctx, identity))
@@ -219,12 +226,13 @@ func TestBatchRevokeCredentials(t *testing.T) {
 	// Setup: Create identity
 	did := "did:aura:test-batch"
 	owner := "aura1owner123456789"
+	now := time.Now()
 	identity := &types.IdentityRecord{
 		Did:             did,
 		Address:         owner,
 		Status:          types.IdentityStatusActive,
-		CreatedAt:       time.Now(),
-		UpdatedAt:       time.Now(),
+		CreatedAt:       now,
+		UpdatedAt:       timePtr(now),
 		ConfidenceScore: 80,
 	}
 	require.NoError(t, k.SetIdentityRecord(ctx, identity))
@@ -323,38 +331,41 @@ func TestVerifyCredential(t *testing.T) {
 	// Setup: Create active identity
 	did := "did:aura:test-verify"
 	owner := "aura1owner123456789"
+	now := time.Now()
 	identity := &types.IdentityRecord{
 		Did:             did,
 		Address:         owner,
 		Status:          types.IdentityStatusActive,
-		CreatedAt:       time.Now(),
-		UpdatedAt:       time.Now(),
+		CreatedAt:       now,
+		UpdatedAt:       timePtr(now),
 		ConfidenceScore: 80,
 	}
 	require.NoError(t, k.SetIdentityRecord(ctx, identity))
 
 	// Setup: Create erased identity
 	erasedDID := "did:aura:test-erased"
+	erasedNow := time.Now()
 	erasedIdentity := &types.IdentityRecord{
 		Did:             erasedDID,
 		Address:         "aura1erased",
 		Status:          types.IdentityStatusErased,
 		Erased:          true,
-		ErasedAt:        time.Now(),
-		CreatedAt:       time.Now(),
-		UpdatedAt:       time.Now(),
+		ErasedAt:        timePtr(erasedNow),
+		CreatedAt:       erasedNow,
+		UpdatedAt:       timePtr(erasedNow),
 		ConfidenceScore: 0,
 	}
 	require.NoError(t, k.SetIdentityRecord(ctx, erasedIdentity))
 
 	// Setup: Create suspended identity
 	suspendedDID := "did:aura:test-suspended"
+	suspendedNow := time.Now()
 	suspendedIdentity := &types.IdentityRecord{
 		Did:             suspendedDID,
 		Address:         "aura1suspended",
 		Status:          types.IdentityStatusSuspended,
-		CreatedAt:       time.Now(),
-		UpdatedAt:       time.Now(),
+		CreatedAt:       suspendedNow,
+		UpdatedAt:       timePtr(suspendedNow),
 		ConfidenceScore: 50,
 	}
 	require.NoError(t, k.SetIdentityRecord(ctx, suspendedIdentity))
@@ -457,12 +468,13 @@ func TestGetCredentialRevocation(t *testing.T) {
 	// Setup: Create identity and revoke a credential
 	did := "did:aura:test-get"
 	owner := "aura1owner123456789"
+	now := time.Now()
 	identity := &types.IdentityRecord{
 		Did:             did,
 		Address:         owner,
 		Status:          types.IdentityStatusActive,
-		CreatedAt:       time.Now(),
-		UpdatedAt:       time.Now(),
+		CreatedAt:       now,
+		UpdatedAt:       timePtr(now),
 		ConfidenceScore: 80,
 	}
 	require.NoError(t, k.SetIdentityRecord(ctx, identity))
@@ -508,12 +520,13 @@ func TestGetAllCredentialRevocations(t *testing.T) {
 	// Setup: Create identity
 	did := "did:aura:test-getall"
 	owner := "aura1owner123456789"
+	now := time.Now()
 	identity := &types.IdentityRecord{
 		Did:             did,
 		Address:         owner,
 		Status:          types.IdentityStatusActive,
-		CreatedAt:       time.Now(),
-		UpdatedAt:       time.Now(),
+		CreatedAt:       now,
+		UpdatedAt:       timePtr(now),
 		ConfidenceScore: 80,
 	}
 	require.NoError(t, k.SetIdentityRecord(ctx, identity))
@@ -556,24 +569,26 @@ func TestGetCredentialRevocationsByDID(t *testing.T) {
 	// Setup: Create multiple identities
 	did1 := "did:aura:test-filter-1"
 	owner1 := "aura1owner1"
+	now1 := time.Now()
 	identity1 := &types.IdentityRecord{
 		Did:             did1,
 		Address:         owner1,
 		Status:          types.IdentityStatusActive,
-		CreatedAt:       time.Now(),
-		UpdatedAt:       time.Now(),
+		CreatedAt:       now1,
+		UpdatedAt:       timePtr(now1),
 		ConfidenceScore: 80,
 	}
 	require.NoError(t, k.SetIdentityRecord(ctx, identity1))
 
 	did2 := "did:aura:test-filter-2"
 	owner2 := "aura1owner2"
+	now2 := time.Now()
 	identity2 := &types.IdentityRecord{
 		Did:             did2,
 		Address:         owner2,
 		Status:          types.IdentityStatusActive,
-		CreatedAt:       time.Now(),
-		UpdatedAt:       time.Now(),
+		CreatedAt:       now2,
+		UpdatedAt:       timePtr(now2),
 		ConfidenceScore: 80,
 	}
 	require.NoError(t, k.SetIdentityRecord(ctx, identity2))
@@ -620,23 +635,25 @@ func TestRestoreCredential(t *testing.T) {
 	// Setup: Create identity
 	did := "did:aura:test-restore"
 	owner := "aura1owner123456789"
+	now := time.Now()
 	identity := &types.IdentityRecord{
 		Did:             did,
 		Address:         owner,
 		Status:          types.IdentityStatusActive,
-		CreatedAt:       time.Now(),
-		UpdatedAt:       time.Now(),
+		CreatedAt:       now,
+		UpdatedAt:       timePtr(now),
 		ConfidenceScore: 80,
 	}
 	require.NoError(t, k.SetIdentityRecord(ctx, identity))
 
 	// Setup: Create admin role and assign it
+	roleNow := time.Now()
 	adminRole := &types.Role{
 		Name:         types.RoleAdmin,
 		Permissions:  []string{types.PermissionAdmin},
 		Description:  "Administrator",
-		CreatedAt:    time.Now(),
-		UpdatedAt:    time.Now(),
+		CreatedAt:    roleNow,
+		UpdatedAt:    timePtr(roleNow),
 		IsSystemRole: true,
 	}
 	require.NoError(t, k.SetRole(ctx, adminRole))
@@ -686,12 +703,13 @@ func TestCredentialRevocationIntegration(t *testing.T) {
 	// Setup: Create identity
 	did := "did:aura:test-integration"
 	owner := "aura1owner123456789"
+	now := time.Now()
 	identity := &types.IdentityRecord{
 		Did:             did,
 		Address:         owner,
 		Status:          types.IdentityStatusActive,
-		CreatedAt:       time.Now(),
-		UpdatedAt:       time.Now(),
+		CreatedAt:       now,
+		UpdatedAt:       timePtr(now),
 		ConfidenceScore: 80,
 		VerificationMethods: []string{
 			"pubkey1",

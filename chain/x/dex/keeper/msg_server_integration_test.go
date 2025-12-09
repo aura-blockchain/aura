@@ -53,8 +53,8 @@ func (suite *MsgServerIntegrationSuite) TestCreatePoolHappyPath() {
 			Creator: creator,
 			DenomA:  "uaura",
 			DenomB:  "usdt",
-			AmountA: coinPtr("uaura", 1_200_000_000),
-			AmountB: coinPtr("usdt", 1_200_000_000),
+			AmountA: sdk.NewInt64Coin("uaura", 1_200_000_000),
+			AmountB: sdk.NewInt64Coin("usdt", 1_200_000_000),
 		},
 	)
 
@@ -83,8 +83,8 @@ func (suite *MsgServerIntegrationSuite) TestAddLiquidityHappyPath() {
 		&dexpb.MsgAddLiquidity{
 			Provider: creator,
 			PoolId:   poolID,
-			AmountA:  coinPtr("uaura", 500_000_000),
-			AmountB:  coinPtr("usdt", 500_000_000),
+			AmountA:  sdk.NewInt64Coin("uaura", 500_000_000),
+			AmountB:  sdk.NewInt64Coin("usdt", 500_000_000),
 		},
 	)
 
@@ -93,9 +93,7 @@ func (suite *MsgServerIntegrationSuite) TestAddLiquidityHappyPath() {
 
 	pool := suite.keeper.GetPool(suite.ctx, poolID)
 	suite.Require().NotNil(pool)
-	totalLPTokens, ok := sdkmath.NewIntFromString(pool.TotalLpTokens)
-	suite.Require().True(ok)
-	suite.True(totalLPTokens.GT(sdkmath.ZeroInt()))
+	suite.True(pool.TotalLpTokens.GT(sdkmath.ZeroInt()))
 	suite.Len(pool.Providers, 1)
 }
 
@@ -114,8 +112,8 @@ func (suite *MsgServerIntegrationSuite) TestSwapExactInHappyPath() {
 		&dexpb.MsgAddLiquidity{
 			Provider: creator,
 			PoolId:   poolID,
-			AmountA:  coinPtr("uaura", 400_000_000),
-			AmountB:  coinPtr("usdt", 400_000_000),
+			AmountA:  sdk.NewInt64Coin("uaura", 400_000_000),
+			AmountB:  sdk.NewInt64Coin("usdt", 400_000_000),
 		},
 	)
 	suite.Require().NoError(err)
@@ -129,16 +127,14 @@ func (suite *MsgServerIntegrationSuite) TestSwapExactInHappyPath() {
 		&dexpb.MsgSwapExactIn{
 			Sender:         swapper,
 			PoolId:         poolID,
-			CoinIn:         coinPtr("uaura", 5_000_000),
-			MinAmountOut:   "1",
+			CoinIn:         sdk.NewInt64Coin("uaura", 5_000_000),
+			MinAmountOut:   sdkmath.NewInt(1),
 			MaxSlippageBps: 10000, // allow up to 100% for test simplicity
 		},
 	)
 
 	suite.Require().NoError(err)
-	outAmt, ok := sdkmath.NewIntFromString(swapResp.AmountOut)
-	suite.Require().True(ok)
-	suite.True(outAmt.GT(sdkmath.ZeroInt()))
+	suite.True(swapResp.AmountOut.GT(sdkmath.ZeroInt()))
 }
 
 func (suite *MsgServerIntegrationSuite) createPool(creator string) string {
@@ -154,8 +150,8 @@ func (suite *MsgServerIntegrationSuite) createPool(creator string) string {
 			Creator: creator,
 			DenomA:  "uaura",
 			DenomB:  "usdt",
-			AmountA: coinPtr("uaura", 1_200_000_000),
-			AmountB: coinPtr("usdt", 1_200_000_000),
+			AmountA: sdk.NewInt64Coin("uaura", 1_200_000_000),
+			AmountB: sdk.NewInt64Coin("usdt", 1_200_000_000),
 		},
 	)
 	suite.Require().NoError(err)
@@ -177,9 +173,4 @@ func (suite *MsgServerIntegrationSuite) addr(seed string) string {
 	bech32, err := sdk.Bech32ifyAddressBytes("aura", sum[:20])
 	suite.Require().NoError(err)
 	return bech32
-}
-
-func coinPtr(denom string, amount int64) *sdk.Coin {
-	c := sdk.NewInt64Coin(denom, amount)
-	return &c
 }
