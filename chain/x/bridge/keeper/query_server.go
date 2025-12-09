@@ -241,10 +241,7 @@ func (qs queryServer) BridgeStats(goCtx context.Context, req *bridgeproto.QueryB
 		if chainID == "" {
 			chainID = "unknown"
 		}
-		amount, ok := sdkmath.NewIntFromString(transfer.Amount)
-		if !ok {
-			continue
-		}
+		amount := transfer.Amount
 		if existing, ok := sdkmath.NewIntFromString(volumeByChain[chainID]); ok {
 			volumeByChain[chainID] = existing.Add(amount).String()
 		} else {
@@ -283,9 +280,17 @@ func (qs queryServer) Validators(goCtx context.Context, req *bridgeproto.QueryVa
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	validators := qs.collectValidators(ctx)
-	if len(validators) == 0 {
-		validators = qs.validatorsFromChains(ctx)
+	validatorPtrs := qs.collectValidators(ctx)
+	if len(validatorPtrs) == 0 {
+		validatorPtrs = qs.validatorsFromChains(ctx)
+	}
+
+	// Convert pointers to values for proto response
+	validators := make([]bridgeproto.BridgeValidator, 0, len(validatorPtrs))
+	for _, v := range validatorPtrs {
+		if v != nil {
+			validators = append(validators, *v)
+		}
 	}
 
 	return &bridgeproto.QueryValidatorsResponse{Validators: validators}, nil
@@ -307,7 +312,7 @@ func (qs queryServer) RelayerStats(goCtx context.Context, req *bridgeproto.Query
 		return nil, status.Error(codes.NotFound, "relayer stats not found")
 	}
 
-	return &bridgeproto.QueryRelayerStatsResponse{Stats: stats}, nil
+	return &bridgeproto.QueryRelayerStatsResponse{Stats: *stats}, nil
 }
 
 func (qs queryServer) collectValidators(ctx sdk.Context) []*bridgeproto.BridgeValidator {

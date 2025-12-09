@@ -7,7 +7,7 @@ import (
 	"fmt"
 
 	"cosmossdk.io/log"
-	"cosmossdk.io/math"
+	sdkmath "cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -91,6 +91,12 @@ func (k Keeper) SetParams(ctx context.Context, params types.Params) error {
 	store := k.getStore(ctx)
 
 	// Convert to proto for storage
+	// Convert MixingFee from string to math.Int
+	mixingFee, ok := sdkmath.NewIntFromString(params.MixingFee)
+	if !ok {
+		mixingFee = sdkmath.ZeroInt()
+	}
+
 	protoParams := &privacyproto.Params{
 		EnableZkProofs:                 params.EnableZkProofs,
 		EnableStealthAddresses:         params.EnableStealthAddresses,
@@ -101,7 +107,7 @@ func (k Keeper) SetParams(ctx context.Context, params types.Params) error {
 		MinRingSize:                    params.MinRingSize,
 		MaxRingSize:                    params.MaxRingSize,
 		MinMixingParticipants:          params.MinMixingParticipants,
-		MixingFee:                      params.MixingFee,
+		MixingFee:                      mixingFee,
 		ZkProofVerificationCost:        params.ZkProofVerificationCost,
 	}
 
@@ -136,7 +142,7 @@ func (k Keeper) GetParams(ctx context.Context) types.Params {
 		MinRingSize:                    protoParams.MinRingSize,
 		MaxRingSize:                    protoParams.MaxRingSize,
 		MinMixingParticipants:          protoParams.MinMixingParticipants,
-		MixingFee:                      protoParams.MixingFee,
+		MixingFee:                      protoParams.MixingFee.String(),
 		ZkProofVerificationCost:        protoParams.ZkProofVerificationCost,
 	}
 }
@@ -349,13 +355,13 @@ func (k Keeper) VerifyZKProof(ctx context.Context, proofID string) bool {
 type ShieldedTransferRecord struct {
 	ID         string
 	Sender     string
-	Amount     math.Int
+	Amount     sdkmath.Int
 	Commitment []byte
 	Proof      []byte
 }
 
 // ShieldedTransfer performs a shielded transfer
-func (k Keeper) ShieldedTransfer(ctx context.Context, sender string, amount math.Int, commitment []byte, proof []byte) (string, error) {
+func (k Keeper) ShieldedTransfer(ctx context.Context, sender string, amount sdkmath.Int, commitment []byte, proof []byte) (string, error) {
 	if amount.IsZero() || amount.IsNegative() {
 		return "", fmt.Errorf("invalid transfer amount")
 	}
@@ -388,7 +394,7 @@ func (k Keeper) GetShieldedTransfer(ctx context.Context, transferID string) (*Sh
 }
 
 // Unshield performs an unshield operation
-func (k Keeper) Unshield(ctx context.Context, recipient string, amount math.Int, nullifier []byte, proof []byte) error {
+func (k Keeper) Unshield(ctx context.Context, recipient string, amount sdkmath.Int, nullifier []byte, proof []byte) error {
 	if k.NullifierExists(ctx, nullifier) {
 		return types.ErrNullifierExists
 	}

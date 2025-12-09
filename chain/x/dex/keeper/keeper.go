@@ -52,7 +52,8 @@ func (k Keeper) GetParams(ctx sdk.Context) *types.Params {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(ParamsKey)
 	if bz == nil {
-		return types.DefaultParams()
+		defaults := types.DefaultParams()
+		return &defaults
 	}
 
 	var params types.Params
@@ -60,7 +61,8 @@ func (k Keeper) GetParams(ctx sdk.Context) *types.Params {
 		ctx.Logger().Error("failed to unmarshal DEX params, returning defaults",
 			"error", err,
 			"data_len", len(bz))
-		return types.DefaultParams()
+		defaults := types.DefaultParams()
+		return &defaults
 	}
 	return &params
 }
@@ -113,17 +115,12 @@ func (k Keeper) GetAuraPrice(ctx sdk.Context) sdkmath.LegacyDec {
 	}
 
 	// Parse reserves
-	reserveA, ok := sdkmath.NewIntFromString(pool.ReserveA)
-	if !ok || reserveA.IsZero() {
-		return sdkmath.LegacyNewDecWithPrec(10, 2) // $0.10 fallback
-	}
-	reserveB, ok := sdkmath.NewIntFromString(pool.ReserveB)
-	if !ok {
+	if pool.ReserveA.IsZero() {
 		return sdkmath.LegacyNewDecWithPrec(10, 2) // $0.10 fallback
 	}
 
 	// Calculate spot price
-	spotPrice := sdkmath.LegacyNewDecFromInt(reserveB).Quo(sdkmath.LegacyNewDecFromInt(reserveA))
+	spotPrice := sdkmath.LegacyNewDecFromInt(pool.ReserveB).Quo(sdkmath.LegacyNewDecFromInt(pool.ReserveA))
 
 	// Apply price sanity check even on fallback
 	lastPrice := k.GetLastRecordedPrice(ctx, poolID)
@@ -146,23 +143,14 @@ func (k Keeper) GetCurrentMinimumLiquidity(ctx sdk.Context) sdkmath.LegacyDec {
 
 	// Find appropriate tier
 	for _, tier := range params.MinLiquidityTiers {
-		maxPrice, err := sdkmath.LegacyNewDecFromStr(tier.MaxAuraPriceUsd)
-		if err != nil {
-			continue
-		}
-		minLiq, err := sdkmath.LegacyNewDecFromStr(tier.MinLiquidityUsd)
-		if err != nil {
-			continue
-		}
-
 		// If max_price is 0, it's the highest tier (no maximum)
-		if maxPrice.IsZero() {
-			return minLiq
+		if tier.MaxAuraPriceUsd.IsZero() {
+			return tier.MinLiquidityUsd
 		}
 
 		// If current price is below tier maximum, use this tier
-		if auraPrice.LT(maxPrice) {
-			return minLiq
+		if auraPrice.LT(tier.MaxAuraPriceUsd) {
+			return tier.MinLiquidityUsd
 		}
 	}
 

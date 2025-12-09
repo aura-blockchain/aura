@@ -3,6 +3,9 @@ package keeper
 import (
 	"context"
 
+	sdkmath "cosmossdk.io/math"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	"github.com/aequitas/aura/chain/x/privacy/types"
 	privacyproto "github.com/aequitas/aura/proto/aura/privacy/v1beta1"
 )
@@ -13,34 +16,34 @@ func (k *Keeper) InitGenesisProto(ctx context.Context, data *privacyproto.Genesi
 		return nil
 	}
 
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
 	// Convert proto params to types.Params
-	if data.Params != nil {
-		params := types.Params{
-			EnableZkProofs:                 data.Params.EnableZkProofs,
-			EnableStealthAddresses:         data.Params.EnableStealthAddresses,
-			EnableRingSignatures:           data.Params.EnableRingSignatures,
-			EnableConfidentialTransactions: data.Params.EnableConfidentialTransactions,
-			EnableNetworkPrivacy:           data.Params.EnableNetworkPrivacy,
-			EnableMixing:                   data.Params.EnableMixing,
-			MinRingSize:                    data.Params.MinRingSize,
-			MaxRingSize:                    data.Params.MaxRingSize,
-			MinMixingParticipants:          data.Params.MinMixingParticipants,
-			MixingFee:                      data.Params.MixingFee,
-			ZkProofVerificationCost:        data.Params.ZkProofVerificationCost,
-		}
-
-		// Validate params before setting
-		if err := types.ValidateParams(params); err != nil {
-			return err
-		}
-
-		if err := k.SetParams(ctx, params); err != nil {
-			k.Logger(ctx).Error("failed to set params", "error", err)
-			return err
-		}
+	params := types.Params{
+		EnableZkProofs:                 data.Params.EnableZkProofs,
+		EnableStealthAddresses:         data.Params.EnableStealthAddresses,
+		EnableRingSignatures:           data.Params.EnableRingSignatures,
+		EnableConfidentialTransactions: data.Params.EnableConfidentialTransactions,
+		EnableNetworkPrivacy:           data.Params.EnableNetworkPrivacy,
+		EnableMixing:                   data.Params.EnableMixing,
+		MinRingSize:                    data.Params.MinRingSize,
+		MaxRingSize:                    data.Params.MaxRingSize,
+		MinMixingParticipants:          data.Params.MinMixingParticipants,
+		MixingFee:                      data.Params.MixingFee.String(),
+		ZkProofVerificationCost:        data.Params.ZkProofVerificationCost,
 	}
 
-	k.Logger(ctx).Info("privacy module initialized from genesis")
+	// Validate params before setting
+	if err := types.ValidateParams(params); err != nil {
+		return err
+	}
+
+	if err := k.SetParams(ctx, params); err != nil {
+		sdkCtx.Logger().Error("failed to set params", "error", err)
+		return err
+	}
+
+	sdkCtx.Logger().Info("privacy module initialized from genesis")
 	return nil
 }
 
@@ -49,7 +52,13 @@ func (k *Keeper) ExportGenesisProto(ctx context.Context) *privacyproto.GenesisSt
 	// Get parameters
 	params := k.GetParams(ctx)
 
-	protoParams := &privacyproto.Params{
+	// Convert MixingFee from string to math.Int
+	mixingFee, ok := sdkmath.NewIntFromString(params.MixingFee)
+	if !ok {
+		mixingFee = sdkmath.ZeroInt()
+	}
+
+	protoParams := privacyproto.Params{
 		EnableZkProofs:                 params.EnableZkProofs,
 		EnableStealthAddresses:         params.EnableStealthAddresses,
 		EnableRingSignatures:           params.EnableRingSignatures,
@@ -59,7 +68,7 @@ func (k *Keeper) ExportGenesisProto(ctx context.Context) *privacyproto.GenesisSt
 		MinRingSize:                    params.MinRingSize,
 		MaxRingSize:                    params.MaxRingSize,
 		MinMixingParticipants:          params.MinMixingParticipants,
-		MixingFee:                      params.MixingFee,
+		MixingFee:                      mixingFee,
 		ZkProofVerificationCost:        params.ZkProofVerificationCost,
 	}
 
