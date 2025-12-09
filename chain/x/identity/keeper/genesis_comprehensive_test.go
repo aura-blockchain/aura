@@ -599,6 +599,15 @@ func TestExportGenesis_AllDataTypes(t *testing.T) {
 				CurrentDayCount:    0,
 			},
 		},
+		MultisigWallets: []types.MultisigWallet{
+			{
+				Id:        "wallet1",
+				Signers:   []string{"aura1signer1", "aura1signer2"},
+				Threshold: 2,
+				CreatedAt: time.Now(),
+				CreatedBy: "genesis",
+			},
+		},
 		MultisigProposals: []types.MultisigProposal{
 			{
 				Id:          "proposal1",
@@ -672,6 +681,7 @@ func TestExportGenesis_AllDataTypes(t *testing.T) {
 				ChangedAt:           time.Now(),
 			},
 		},
+		NextAuditLogId: 1, // Required: must be at least 1
 	}
 
 	err := keeper.InitGenesis(ctx, gs)
@@ -684,6 +694,7 @@ func TestExportGenesis_AllDataTypes(t *testing.T) {
 
 	require.Len(t, exportedGs.AuditLogs, 1)
 	require.Len(t, exportedGs.RateLimits, 1)
+	require.Len(t, exportedGs.MultisigWallets, 1)
 	require.Len(t, exportedGs.MultisigProposals, 1)
 	require.Len(t, exportedGs.TimeLockedActions, 1)
 	require.Len(t, exportedGs.EmergencyAdmins, 1)
@@ -725,31 +736,35 @@ func TestExportGenesis_PreservesOrder(t *testing.T) {
 	// Create multiple identity records
 	identities := []types.IdentityRecord{
 		{
-			Did:       "did:aura:aaa",
-			Address:   "aura1aaa",
-			Status:    types.IdentityStatusActive,
-			CreatedAt: time.Now(),
-			UpdatedAt: func() *time.Time { t := time.Now(); return &t }(),
+			Did:                 "did:aura:aaa",
+			Address:             "aura1aaa",
+			Status:              types.IdentityStatusActive,
+			VerificationMethods: []string{"key1"}, // Required: at least one verification method
+			CreatedAt:           time.Now(),
+			UpdatedAt:           func() *time.Time { t := time.Now(); return &t }(),
 		},
 		{
-			Did:       "did:aura:bbb",
-			Address:   "aura1bbb",
-			Status:    types.IdentityStatusActive,
-			CreatedAt: time.Now(),
-			UpdatedAt: func() *time.Time { t := time.Now(); return &t }(),
+			Did:                 "did:aura:bbb",
+			Address:             "aura1bbb",
+			Status:              types.IdentityStatusActive,
+			VerificationMethods: []string{"key2"}, // Required: at least one verification method
+			CreatedAt:           time.Now(),
+			UpdatedAt:           func() *time.Time { t := time.Now(); return &t }(),
 		},
 		{
-			Did:       "did:aura:ccc",
-			Address:   "aura1ccc",
-			Status:    types.IdentityStatusActive,
-			CreatedAt: time.Now(),
-			UpdatedAt: func() *time.Time { t := time.Now(); return &t }(),
+			Did:                 "did:aura:ccc",
+			Address:             "aura1ccc",
+			Status:              types.IdentityStatusActive,
+			VerificationMethods: []string{"key3"}, // Required: at least one verification method
+			CreatedAt:           time.Now(),
+			UpdatedAt:           func() *time.Time { t := time.Now(); return &t }(),
 		},
 	}
 
 	gs := &types.GenesisState{
 		Params:          *types.DefaultParams(),
 		IdentityRecords: identities,
+		NextAuditLogId:  1, // Required: must be at least 1
 	}
 
 	err := keeper.InitGenesis(ctx, gs)
