@@ -57,7 +57,7 @@ func TestCircuitBreaker_GlobalPauseBlocksAllOperations(t *testing.T) {
 	lockMsg := &types.MsgLockTokens{
 		Sender:      keepertest.GenTestAddr().String(),
 		Recipient:   "paw1recipient",
-		Amount:      &amount,
+		Amount:      amount,
 		TargetChain: "paw",
 	}
 	_, err := ms.LockTokens(sdk.WrapSDKContext(ctx), lockMsg)
@@ -70,7 +70,7 @@ func TestCircuitBreaker_GlobalPauseBlocksAllOperations(t *testing.T) {
 		SourceChain:  "paw",
 		SourceTxHash: "0x123",
 		Recipient:    keepertest.GenTestAddr().String(),
-		Amount:       "1000000",
+		Amount:       sdkmath.NewInt(1000000),
 		Denom:        "upaw",
 	}
 	_, err = ms.MintTokens(sdk.WrapSDKContext(ctx), mintMsg)
@@ -82,7 +82,7 @@ func TestCircuitBreaker_GlobalPauseBlocksAllOperations(t *testing.T) {
 		Sender:      keepertest.GenTestAddr().String(),
 		SourceChain: "paw",
 		BurnTxHash:  "0x456",
-		Amount:      "1000000",
+		Amount:      sdkmath.NewInt(1000000),
 		Denom:       "uaura",
 	}
 	_, err = ms.UnlockTokens(sdk.WrapSDKContext(ctx), unlockMsg)
@@ -365,7 +365,7 @@ func TestCircuitBreaker_MintTokensAutopauses(t *testing.T) {
 		SourceChain:  "paw",
 		SourceTxHash: "0xtest123",
 		Recipient:    keepertest.GenTestAddr().String(),
-		Amount:       "2000000", // 2 million (exceeds threshold)
+		Amount:       sdkmath.NewInt(2000000), // 2 million (exceeds threshold)
 		Denom:        "upaw",
 	}
 
@@ -401,7 +401,7 @@ func TestCircuitBreaker_MultipleOperationsAfterPause(t *testing.T) {
 		lockMsg := &types.MsgLockTokens{
 			Sender:      keepertest.GenTestAddr().String(),
 			Recipient:   "paw1recipient",
-			Amount:      &lockAmount,
+			Amount:      lockAmount,
 			TargetChain: "paw",
 		}
 		_, err := ms.LockTokens(sdk.WrapSDKContext(ctx), lockMsg)
@@ -416,7 +416,7 @@ func TestCircuitBreaker_MultipleOperationsAfterPause(t *testing.T) {
 			SourceChain:  "paw",
 			SourceTxHash: "0xtest" + string(rune(i)),
 			Recipient:    keepertest.GenTestAddr().String(),
-			Amount:       "1000000",
+			Amount:       sdkmath.NewInt(1000000),
 			Denom:        "upaw",
 		}
 		_, err := ms.MintTokens(sdk.WrapSDKContext(ctx), mintMsg)
@@ -430,7 +430,7 @@ func TestCircuitBreaker_MultipleOperationsAfterPause(t *testing.T) {
 			Sender:      keepertest.GenTestAddr().String(),
 			SourceChain: "paw",
 			BurnTxHash:  "0xburn" + string(rune(i)),
-			Amount:      "1000000",
+			Amount:      sdkmath.NewInt(1000000),
 			Denom:       "uaura",
 		}
 		_, err := ms.UnlockTokens(sdk.WrapSDKContext(ctx), unlockMsg)
@@ -534,7 +534,7 @@ func TestCircuitBreaker_IntegrationWithLockTokens(t *testing.T) {
 		Sender:      keepertest.GenTestAddr().String(),
 		TargetChain: "paw",
 		Recipient:   "paw1recipient",
-		Amount:      &amount,
+		Amount:      amount,
 	}
 
 	// Should succeed when not paused
@@ -564,7 +564,7 @@ func TestCircuitBreaker_IntegrationWithMintTokens(t *testing.T) {
 		SourceChain:  "paw",
 		SourceTxHash: "0xabc",
 		Recipient:    keepertest.GenTestAddr().String(),
-		Amount:       "1000",
+		Amount:       sdkmath.NewInt(1000),
 		Denom:        "paw.token",
 	}
 
@@ -584,7 +584,7 @@ func TestCircuitBreaker_IntegrationWithMintTokens(t *testing.T) {
 		SourceChain:  "paw",
 		SourceTxHash: "0xdef",
 		Recipient:    keepertest.GenTestAddr().String(),
-		Amount:       "1000",
+		Amount:       sdkmath.NewInt(1000),
 		Denom:        "paw.token",
 	}
 	_, err = ms.MintTokens(sdk.WrapSDKContext(ctx), msg2)
@@ -608,7 +608,7 @@ func TestCircuitBreaker_IntegrationWithUnlockTokens(t *testing.T) {
 		Sender:      keepertest.GenTestAddr().String(),
 		SourceChain: "paw",
 		BurnTxHash:  "0x123",
-		Amount:      "1000",
+		Amount:      sdkmath.NewInt(1000),
 		Denom:       "uaura",
 	}
 

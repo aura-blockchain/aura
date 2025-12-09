@@ -129,8 +129,8 @@ func (suite *LPInflationAttackTestSuite) TestFirstDepositorAttack_MinimumThresho
 	suite.Require().NotNil(pool)
 
 	// Verify minimum liquidity was burned
-	suite.Require().Equal("10000", pool.TotalLpTokens, "total LP tokens should be 10000")
-	suite.Require().Equal("1000", pool.LockedLiquidity, "locked liquidity should be 1000")
+	suite.Require().Equal(math.NewInt(10000).String(), pool.TotalLpTokens.String(), "total LP tokens should be 10000")
+	suite.Require().Equal(math.NewInt(1000).String(), pool.LockedLiquidity.String(), "locked liquidity should be 1000")
 	suite.Require().Equal("9000", lpTokens.String(), "creator should receive 9000 LP tokens (10000 - 1000)")
 
 	// Verify LP token invariant holds
@@ -169,11 +169,11 @@ func (suite *LPInflationAttackTestSuite) TestFirstDepositorAttack_LargerPool() {
 	expectedTotal := math.NewIntFromBigInt(new(big.Int).Sqrt(
 		amountA.Mul(amountB).BigInt(),
 	))
-	suite.Require().Equal(expectedTotal.String(), pool.TotalLpTokens,
+	suite.Require().Equal(expectedTotal.String(), pool.TotalLpTokens.String(),
 		"total LP tokens should be sqrt(x*y)")
 
 	// Verify minimum liquidity was locked
-	suite.Require().Equal("1000", pool.LockedLiquidity)
+	suite.Require().Equal(math.NewInt(1000).String(), pool.LockedLiquidity.String())
 
 	// Creator receives total minus locked
 	expectedCreatorLP := expectedTotal.Sub(math.NewInt(1000))
@@ -222,8 +222,8 @@ func (suite *LPInflationAttackTestSuite) TestDustAttack_Prevention() {
 	// This would normally be done by sending tokens directly to the module account
 	// For simplicity, we'll manually inflate the reserves
 	inflatedReserve := largeAmount.Mul(math.NewInt(1000)) // 1000x inflation
-	pool.ReserveA = inflatedReserve.String()
-	pool.ReserveB = inflatedReserve.String()
+	pool.ReserveA = inflatedReserve
+	pool.ReserveB = inflatedReserve
 	suite.Keeper.SetPool(ctx, pool)
 
 	// Victim attempts to add liquidity with small amount
@@ -338,8 +338,8 @@ func (suite *LPInflationAttackTestSuite) TestDonationAttack_LPInvariantProtectio
 	donationAmount := math.NewInt(10_000_000) // 10x donation
 	newReserveA := initialAmount.Add(donationAmount)
 	newReserveB := initialAmount.Add(donationAmount)
-	pool.ReserveA = newReserveA.String()
-	pool.ReserveB = newReserveB.String()
+	pool.ReserveA = newReserveA
+	pool.ReserveB = newReserveB
 	// NOTE: TotalLpTokens and LockedLiquidity remain unchanged - this is the attack!
 	suite.Keeper.SetPool(ctx, pool)
 
@@ -382,11 +382,11 @@ func (suite *LPInflationAttackTestSuite) TestMinimumLiquidityLocked_Permanent() 
 	suite.Require().NoError(err)
 
 	// Verify locked liquidity is set
-	suite.Require().Equal("1000", pool.LockedLiquidity)
+	suite.Require().Equal(math.NewInt(1000).String(), pool.LockedLiquidity.String())
 
 	// Total LP = sqrt(1000000 * 1000000) = 1000000
-	totalLP, _ := math.NewIntFromString(pool.TotalLpTokens)
-	lockedLP, _ := math.NewIntFromString(pool.LockedLiquidity)
+	totalLP := pool.TotalLpTokens
+	lockedLP := pool.LockedLiquidity
 
 	// Creator receives total minus locked
 	suite.Require().Equal(totalLP.Sub(lockedLP).String(), creatorLP.String())
@@ -403,9 +403,9 @@ func (suite *LPInflationAttackTestSuite) TestMinimumLiquidityLocked_Permanent() 
 	// Verify locked liquidity remains in pool
 	pool = suite.Keeper.GetPool(ctx, "dai-uaura")
 	suite.Require().NotNil(pool)
-	suite.Require().Equal("1000", pool.LockedLiquidity,
+	suite.Require().Equal(math.NewInt(1000).String(), pool.LockedLiquidity.String(),
 		"locked liquidity should remain even after all providers exit")
-	suite.Require().Equal("1000", pool.TotalLpTokens,
+	suite.Require().Equal(math.NewInt(1000).String(), pool.TotalLpTokens.String(),
 		"only locked liquidity should remain in total LP tokens")
 }
 
@@ -480,7 +480,7 @@ func (suite *LPInflationAttackTestSuite) TestMultipleProviders_AfterMinimumLock(
 	)
 	suite.Require().NoError(err)
 
-	initialTotalLP, _ := math.NewIntFromString(pool.TotalLpTokens)
+	initialTotalLP := pool.TotalLpTokens
 
 	// Second provider adds liquidity
 	provider2Addr := keepertest.GenTestAddrs(3)[1]
@@ -527,14 +527,14 @@ func (suite *LPInflationAttackTestSuite) TestMultipleProviders_AfterMinimumLock(
 	suite.Require().NoError(err)
 
 	// Verify total LP increased correctly
-	finalTotalLP, _ := math.NewIntFromString(pool.TotalLpTokens)
+	finalTotalLP := pool.TotalLpTokens
 	expectedIncrease := lp2.Add(lp3)
 	actualIncrease := finalTotalLP.Sub(initialTotalLP)
 	suite.Require().Equal(expectedIncrease.String(), actualIncrease.String(),
 		"total LP should increase by sum of new LP tokens")
 
 	// Verify locked liquidity unchanged
-	suite.Require().Equal("1000", pool.LockedLiquidity,
+	suite.Require().Equal(math.NewInt(1000).String(), pool.LockedLiquidity.String(),
 		"locked liquidity should never change after pool creation")
 
 	// Verify provider balances sum correctly
