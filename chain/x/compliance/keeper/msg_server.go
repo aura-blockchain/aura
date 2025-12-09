@@ -10,7 +10,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/compliance/types"
 )
@@ -126,13 +125,13 @@ func (s *msgServer) SubmitKYC(goCtx context.Context, req *types.MsgSubmitKYC) (*
 	}
 
 	now := ctx.BlockTime()
-	expiresAt := timestamppb.New(now.Add(time.Duration(params.KycExpiryDays) * 24 * time.Hour))
+	expiresAt := now.Add(time.Duration(params.KycExpiryDays) * 24 * time.Hour)
 	record := &types.KYCRecord{
 		Address:              req.Address,
 		KycLevel:             req.KycLevel,
 		Provider:             req.Provider,
-		VerifiedAt:           timestamppb.New(now),
-		ExpiresAt:            expiresAt,
+		VerifiedAt:           now,
+		ExpiresAt:            &expiresAt,
 		PiiCommitment:        req.PiiCommitment,
 		EnhancedDueDiligence: req.KycLevel == types.KYCLevel_KYC_LEVEL_ADVANCED,
 		Jurisdiction:         req.Jurisdiction,
@@ -212,14 +211,16 @@ func (s *msgServer) ReportSuspiciousActivity(goCtx context.Context, req *types.M
 
 	now := ctx.BlockTime()
 	id := fmt.Sprintf("sar-%s-%d", req.TransactionHash, now.UnixNano())
+	nowPtr := now
 	activity := &types.SuspiciousActivity{
 		Id:              id,
 		Address:         req.Address,
 		TransactionHash: req.TransactionHash,
 		ActivityType:    req.ActivityType,
 		Description:     req.Description,
-		DetectedAt:      timestamppb.New(now),
-		ReportedAt:      timestamppb.New(now),
+		Amount:          "", // Set externally or via analysis
+		DetectedAt:      now,
+		ReportedAt:      &nowPtr,
 		Indicators:      req.Indicators,
 		FiledSar:        false,
 	}
@@ -288,7 +289,7 @@ func (s *msgServer) ScreenSanctions(goCtx context.Context, req *types.MsgScreenS
 			// This prevents using stale "CLEAR" status for newly sanctioned addresses
 			params := s.Keeper.GetParams(ctx)
 			if params.ScreeningCacheHours > 0 {
-				cacheAge := ctx.BlockTime().Sub(result.ScreenedAt.AsTime())
+				cacheAge := ctx.BlockTime().Sub(result.ScreenedAt)
 				maxCacheAge := time.Duration(params.ScreeningCacheHours) * time.Hour
 
 				if cacheAge > maxCacheAge {
@@ -342,8 +343,8 @@ func (s *msgServer) performSanctionsScreen(ctx sdk.Context, address string) (*ty
 			provider := s.Keeper.sanctionsProviders[name]
 			res, err := provider.ScreenAddress(address)
 			if err == nil && res != nil {
-				if res.ScreenedAt == nil {
-					res.ScreenedAt = timestamppb.New(now)
+				if res.ScreenedAt.IsZero() {
+					res.ScreenedAt = now
 				}
 				res.ScreeningProvider = name
 				return res, nil
@@ -354,7 +355,7 @@ func (s *msgServer) performSanctionsScreen(ctx sdk.Context, address string) (*ty
 		Address:              address,
 		Status:               types.SanctionsStatus_SANCTIONS_CLEAR,
 		Matches:              []*types.SanctionsMatch{},
-		ScreenedAt:           timestamppb.New(now),
+		ScreenedAt:           now,
 		ScreeningProvider:    "internal",
 		RequiresManualReview: false,
 	}, nil
@@ -390,10 +391,11 @@ func (s *msgServer) RecordGDPRConsent(goCtx context.Context, req *types.MsgRecor
 		ConsentType:    req.ConsentType,
 		Consented:      req.Consented,
 		ConsentVersion: req.ConsentVersion,
-		ConsentGivenAt: timestamppb.New(now),
+		ConsentGivenAt: now,
 	}
 	if !req.Consented {
-		consent.ConsentWithdrawnAt = timestamppb.New(now)
+		nowPtr := now
+		consent.ConsentWithdrawnAt = &nowPtr
 	}
 	if err := s.Keeper.SetGDPRConsent(ctx, consent); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -484,7 +486,7 @@ func (s *msgServer) RequestGDPRData(goCtx context.Context, req *types.MsgRequest
 		Id:          id,
 		Address:     req.Address,
 		RequestType: req.RequestType,
-		RequestedAt: timestamppb.New(now),
+		RequestedAt: now,
 		Status:      "pending",
 	}
 	if err := s.Keeper.SetGDPRRequest(ctx, request); err != nil {
@@ -555,7 +557,7 @@ func (s *msgServer) GenerateTaxReport(goCtx context.Context, req *types.MsgGener
 		TaxYear:      req.TaxYear,
 		Jurisdiction: req.Jurisdiction,
 		ReportType:   req.ReportType,
-		GeneratedAt:  timestamppb.New(now),
+		GeneratedAt:  now,
 		FilePath:     filePath,
 		Filed:        false,
 	}

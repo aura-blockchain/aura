@@ -7,7 +7,6 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/compliance/types"
 )
@@ -167,7 +166,7 @@ func (k Keeper) evaluateVelocityRule(ctx sdk.Context, rule *types.TransactionMon
 			Address:           txCtx.From.String(),
 			RiskLevel:         types.AMLRiskLevel_AML_RISK_LOW,
 			TotalVolume:       "0",
-			LastAssessment:    timestamppb.New(txCtx.Timestamp),
+			LastAssessment:    txCtx.Timestamp,
 			TotalTransactions: 0,
 		}
 	}
@@ -192,7 +191,7 @@ func (k Keeper) evaluateVelocityRule(ctx sdk.Context, rule *types.TransactionMon
 			RuleId:      rule.Id,
 			RiskLevel:   rule.RiskLevel,
 			Description: fmt.Sprintf("24h transaction velocity exceeds threshold: %s > %s", currentVolume.String(), threshold.String()),
-			TriggeredAt: timestamppb.New(txCtx.Timestamp),
+			TriggeredAt: txCtx.Timestamp,
 			Reviewed:    false,
 		}, nil
 	}
@@ -219,7 +218,7 @@ func (k Keeper) evaluateStructuringRule(ctx sdk.Context, rule *types.Transaction
 			RuleId:      rule.Id,
 			RiskLevel:   rule.RiskLevel,
 			Description: fmt.Sprintf("Potential structuring detected: %d transactions in monitoring period", profile.TotalTransactions),
-			TriggeredAt: timestamppb.New(txCtx.Timestamp),
+			TriggeredAt: txCtx.Timestamp,
 			Reviewed:    false,
 		}, nil
 	}
@@ -252,7 +251,7 @@ func (k Keeper) evaluateLargeTransactionRule(ctx sdk.Context, rule *types.Transa
 				RuleId:      rule.Id,
 				RiskLevel:   rule.RiskLevel,
 				Description: fmt.Sprintf("Large transaction detected: %s %s exceeds threshold %s", coin.Amount.String(), coin.Denom, limit.String()),
-				TriggeredAt: timestamppb.New(txCtx.Timestamp),
+				TriggeredAt: txCtx.Timestamp,
 				Reviewed:    false,
 			}, nil
 		}
@@ -273,7 +272,7 @@ func (k Keeper) checkSanctions(ctx sdk.Context, from, to sdk.AccAddress, txCtx *
 			RuleId:      "sanctions_check",
 			RiskLevel:   types.TransactionRiskLevel_TX_RISK_CRITICAL,
 			Description: "Transaction from sanctioned address",
-			TriggeredAt: timestamppb.New(txCtx.Timestamp),
+			TriggeredAt: txCtx.Timestamp,
 			Reviewed:    false,
 		})
 	}
@@ -286,7 +285,7 @@ func (k Keeper) checkSanctions(ctx sdk.Context, from, to sdk.AccAddress, txCtx *
 			RuleId:      "sanctions_check",
 			RiskLevel:   types.TransactionRiskLevel_TX_RISK_CRITICAL,
 			Description: "Transaction to sanctioned address",
-			TriggeredAt: timestamppb.New(txCtx.Timestamp),
+			TriggeredAt: txCtx.Timestamp,
 			Reviewed:    false,
 		})
 	}

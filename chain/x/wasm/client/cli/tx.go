@@ -79,7 +79,7 @@ func GetCmdStoreCode() *cobra.Command {
 
 			msg := &types.MsgStoreCode{
 				Sender:       clientCtx.GetFromAddress().String(),
-				WasmByteCode: wasmCode,
+				WASMByteCode: wasmCode,
 			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
@@ -153,9 +153,9 @@ func GetCmdInstantiateContract() *cobra.Command {
 			msg := &types.MsgInstantiateContract{
 				Sender: clientCtx.GetFromAddress().String(),
 				Admin:  admin,
-				CodeId: codeID,
+				CodeID: codeID,
 				Label:  label,
-				Msg:    initMsg,
+				Msg:    types.RawContractMessage(initMsg),
 				Funds:  funds,
 			}
 
@@ -211,7 +211,7 @@ func GetCmdExecuteContract() *cobra.Command {
 			msg := &types.MsgExecuteContract{
 				Sender:   clientCtx.GetFromAddress().String(),
 				Contract: contractAddr,
-				Msg:      execMsg,
+				Msg:      types.RawContractMessage(execMsg),
 				Funds:    funds,
 			}
 
@@ -255,8 +255,8 @@ func GetCmdMigrateContract() *cobra.Command {
 			msg := &types.MsgMigrateContract{
 				Sender:   clientCtx.GetFromAddress().String(),
 				Contract: contractAddr,
-				CodeId:   newCodeID,
-				Msg:      migrateMsg,
+				CodeID:   newCodeID,
+				Msg:      types.RawContractMessage(migrateMsg),
 			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
@@ -472,7 +472,7 @@ func GetCmdUpdateParams() *cobra.Command {
 
 			msg := &types.MsgUpdateParams{
 				Authority: clientCtx.GetFromAddress().String(),
-				Params:    &params,
+				Params:    params,
 			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)

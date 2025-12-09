@@ -40,6 +40,8 @@ func (qs protoQueryServer) GetIncident(goCtx context.Context, req *incidentrespo
 	}
 
 	// Convert to proto incident
+	// Note: Proto fields use stdtime=true
+	// ReportedAt is non-nullable (time.Time), UpdatedAt/ResolvedAt are nullable (*time.Time)
 	protoIncident := &incidentresponsepb.Incident{
 		Id:              incident.ID,
 		Title:           incident.Title,
@@ -47,7 +49,7 @@ func (qs protoQueryServer) GetIncident(goCtx context.Context, req *incidentrespo
 		Severity:        string(incident.Severity),
 		Status:          string(incident.Status),
 		ReportedBy:      incident.ReportedBy,
-		ReportedAt:      &incident.ReportedAt,
+		ReportedAt:      incident.ReportedAt,
 		UpdatedAt:       &incident.UpdatedAt,
 		AffectedSystems: incident.AffectedSystems,
 		ResponseTeam:    incident.ResponseTeam,
@@ -73,6 +75,7 @@ func (qs protoQueryServer) GetChainPauseState(goCtx context.Context, req *incide
 	pauseState := qs.keeper.GetChainPauseState(ctx)
 
 	// Convert to proto pause state
+	// Note: Proto fields use stdtime=true with nullable (*time.Time) fields
 	protoPauseState := &incidentresponsepb.ChainPauseState{
 		IsPaused:      pauseState.IsPaused,
 		PauseLevel:    string(pauseState.PauseLevel),

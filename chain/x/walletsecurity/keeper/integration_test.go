@@ -64,7 +64,7 @@ func TestCompleteWalletSecurityWorkflow(t *testing.T) {
 		multiSigWallet.WalletId,
 		guardians,
 		2, // 2-of-3 threshold
-		durationpb.New(48*time.Hour),
+		&gogotypes.Duration{Seconds: int64(48*time.Hour.Seconds()), Nanos: int32(48*time.Hour.Nanoseconds() % 1e9)},
 	)
 	require.NoError(t, err)
 	require.NotNil(t, recoveryConfig)
@@ -87,7 +87,7 @@ func TestCompleteWalletSecurityWorkflow(t *testing.T) {
 	sessionConfig, err := suite.keeper.ConfigureSession(
 		suite.ctx,
 		multiSigWallet.WalletId,
-		durationpb.New(30*time.Minute),
+		&gogotypes.Duration{Seconds: int64(30*time.Minute.Seconds()), Nanos: int32(30*time.Minute.Nanoseconds() % 1e9)},
 		true, // auto-lock enabled
 		300,  // 5 minutes inactivity
 	)
@@ -217,7 +217,7 @@ func TestMultiSigWithRecoveryWorkflow(t *testing.T) {
 		wallet.WalletId,
 		guardians,
 		2,
-		durationpb.New(1*time.Second), // Short delay for testing
+		&gogotypes.Duration{Seconds: int64(1*time.Second.Seconds()), Nanos: int32(1*time.Second.Nanoseconds() % 1e9)}, // Short delay for testing
 	)
 	require.NoError(t, err)
 
@@ -299,7 +299,7 @@ func TestSecurityLayeredDefense(t *testing.T) {
 	_, err = suite.keeper.ConfigureSession(
 		suite.ctx,
 		walletID,
-		durationpb.New(15*time.Minute),
+		&gogotypes.Duration{Seconds: int64(15*time.Minute.Seconds()), Nanos: int32(15*time.Minute.Nanoseconds() % 1e9)},
 		true,
 		180,
 	)

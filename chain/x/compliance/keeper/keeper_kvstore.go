@@ -9,8 +9,6 @@ import (
 	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/compliance/types"
 )
@@ -38,8 +36,8 @@ var (
 
 func (k *Keeper) SetKYCRecord(ctx sdk.Context, record *types.KYCRecord) error {
 	store := ctx.KVStore(k.storeKey)
-	// Use proto.Marshal for protoimpl-generated types (not gogoproto)
-	bz, err := proto.Marshal(record)
+	// Use codec for gogoproto-generated types
+	bz, err := k.cdc.Marshal(record)
 	if err != nil {
 		return err
 	}
@@ -57,8 +55,8 @@ func (k *Keeper) GetKYCRecord(ctx sdk.Context, address string) (*types.KYCRecord
 	}
 
 	var record types.KYCRecord
-	// Use proto.Unmarshal for protoimpl-generated types (not gogoproto)
-	if err := proto.Unmarshal(bz, &record); err != nil {
+	// Use codec for gogoproto-generated types
+	if err := k.cdc.Unmarshal(bz, &record); err != nil {
 		return nil, err
 	}
 	return &record, nil
@@ -129,7 +127,7 @@ func (k *Keeper) UpdateKYCRecord(ctx sdk.Context, newRecord *types.KYCRecord, re
 			Address:      existing.Address,
 			Version:      existing.Version,
 			Snapshot:     existing,
-			UpdatedAt:    timestamppb.New(ctx.BlockTime()),
+			UpdatedAt:    ctx.BlockTime(),
 			UpdatedBy:    newRecord.Provider,
 			UpdateReason: reason,
 		}
@@ -197,8 +195,8 @@ func (k *Keeper) AddKYCHistory(ctx sdk.Context, entry *types.KYCHistoryEntry) er
 
 	// Store updated history list
 	list := &types.KYCHistoryList{Entries: history}
-	// Use proto.Marshal for protoimpl-generated types
-	bz, err := proto.Marshal(list)
+	// Use codec for gogoproto-generated types
+	bz, err := k.cdc.Marshal(list)
 	if err != nil {
 		return err
 	}
@@ -233,8 +231,8 @@ func (k *Keeper) GetKYCHistory(ctx sdk.Context, address string) ([]*types.KYCHis
 	}
 
 	var list types.KYCHistoryList
-	// Use proto.Unmarshal for protoimpl-generated types
-	if err := proto.Unmarshal(bz, &list); err != nil {
+	// Use codec for gogoproto-generated types
+	if err := k.cdc.Unmarshal(bz, &list); err != nil {
 		return nil, err
 	}
 
@@ -354,7 +352,7 @@ func (k *Keeper) UpdateAMLProfileOnTransaction(ctx sdk.Context, address string, 
 			TotalTransactions: 0,
 			TotalVolume:      "0",
 			RiskFactors:      []string{},
-			LastAssessment:   timestamppb.New(ctx.BlockTime()),
+			LastAssessment:   ctx.BlockTime(),
 			PepStatus:        false,
 			SourceOfFunds:    []string{},
 			Occupation:       "",
@@ -363,7 +361,7 @@ func (k *Keeper) UpdateAMLProfileOnTransaction(ctx sdk.Context, address string, 
 
 	// Update transaction metrics
 	profile.TotalTransactions++
-	profile.LastAssessment = timestamppb.New(ctx.BlockTime())
+	profile.LastAssessment = ctx.BlockTime()
 
 	// Calculate total transaction volume (sum all denominations)
 	// Parse existing volume
@@ -1161,7 +1159,7 @@ func (k *Keeper) CheckRateLimit(ctx sdk.Context, address string, operation strin
 			Address:     address,
 			Operation:   operation,
 			Count:       0,
-			WindowStart: timestamppb.New(ctx.BlockTime()),
+			WindowStart: ctx.BlockTime(),
 		}
 	}
 
@@ -1172,13 +1170,13 @@ func (k *Keeper) CheckRateLimit(ctx sdk.Context, address string, operation strin
 		windowDuration = time.Hour
 	}
 
-	windowStart := entry.WindowStart.AsTime()
+	windowStart := entry.WindowStart
 	timeSinceWindowStart := ctx.BlockTime().Sub(windowStart)
 
 	if timeSinceWindowStart >= windowDuration {
 		// Reset window - new time period
 		entry.Count = 0
-		entry.WindowStart = timestamppb.New(ctx.BlockTime())
+		entry.WindowStart = ctx.BlockTime()
 	}
 
 	// Determine limit for this operation
@@ -1225,13 +1223,13 @@ func (k *Keeper) CheckRateLimit(ctx sdk.Context, address string, operation strin
 				sdk.NewAttribute(types.AttributeKeyOperation, operation),
 				sdk.NewAttribute(types.AttributeKeyCount, fmt.Sprintf("%d", entry.Count)),
 				sdk.NewAttribute(types.AttributeKeyLimit, fmt.Sprintf("%d", limit)),
-				sdk.NewAttribute(types.AttributeKeyWindowStart, entry.WindowStart.AsTime().Format(time.RFC3339)),
+				sdk.NewAttribute(types.AttributeKeyWindowStart, entry.WindowStart.Format(time.RFC3339)),
 			),
 		)
 
 		return fmt.Errorf("rate limit exceeded for %s: %d/%d requests in window (resets at %s)",
 			operation, entry.Count, limit,
-			entry.WindowStart.AsTime().Add(windowDuration).Format(time.RFC3339))
+			entry.WindowStart.Add(windowDuration).Format(time.RFC3339))
 	}
 
 	// Increment counter and save

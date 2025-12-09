@@ -5,7 +5,6 @@ import (
 
 	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/security/types"
 	securitypb "github.com/aequitas/aura/proto/aura/security/v1beta1"
@@ -330,9 +329,8 @@ func (k Keeper) CheckKeyRotationDue(ctx sdk.Context) []*securitypb.KeyRotationSc
 	blockTime := ctx.BlockTime()
 
 	for _, schedule := range schedules {
-		if schedule.Enabled && schedule.NextRotationTime != nil {
-			nextRotation := schedule.NextRotationTime.AsTime()
-			if blockTime.After(nextRotation) {
+		if schedule.Enabled && !schedule.NextRotationTime.IsZero() {
+			if blockTime.After(schedule.NextRotationTime) {
 				dueForRotation = append(dueForRotation, schedule)
 			}
 		}
@@ -379,11 +377,11 @@ func (k Keeper) RotateKey(ctx sdk.Context, scheduleId string) error {
 
 	// Update last rotation time
 	now := ctx.BlockTime()
-	schedule.LastRotation = timestamppb.New(now)
+	schedule.LastRotation = &now
 
 	// Calculate next rotation time
 	nextRotation := now.Add(time.Duration(schedule.RotationIntervalSeconds) * time.Second)
-	schedule.NextRotationTime = timestamppb.New(nextRotation)
+	schedule.NextRotationTime = nextRotation
 
 	// Save updated schedule
 	k.SetKeyRotationSchedule(ctx, schedule)

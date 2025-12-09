@@ -19,52 +19,47 @@ func (k Keeper) InitGenesis(ctx context.Context, gs *types.GenesisState) error {
 		return fmt.Errorf("invalid genesis state: %w", err)
 	}
 
-	// Set module parameters (gs.Params is already a pointer in GenesisState)
-	if err := k.SetParams(ctx, gs.Params); err != nil {
+	// Set module parameters (gs.Params is a value type with nullable=false)
+	if err := k.SetParams(ctx, &gs.Params); err != nil {
 		return fmt.Errorf("failed to set params: %w", err)
 	}
 
-	// Import validator security info
-	for _, info := range gs.Validators {
-		if info != nil {
-			k.SetValidatorSecurityInfo(ctx, *info) // Dereference pointer
+	// Import validator security info (nullable=false means slice contains values, not pointers)
+	for i := range gs.Validators {
+		info := &gs.Validators[i]
+		k.SetValidatorSecurityInfo(ctx, *info)
 
-			// Update region counts
-			if gs.Params.EnableGeoDistribution && info.Region != "" {
-				k.incrementRegionCount(ctx, info.Region)
-			}
+		// Update region counts
+		if gs.Params.EnableGeoDistribution && info.Region != "" {
+			k.incrementRegionCount(ctx, info.Region)
 		}
 	}
 
-	// Import double sign evidences
-	for _, evidence := range gs.DoubleSignEvidences {
-		if evidence != nil {
-			k.SetDoubleSignEvidence(ctx, *evidence) // Dereference pointer
-		}
+	// Import double sign evidences (nullable=false means slice contains values, not pointers)
+	for i := range gs.DoubleSignEvidences {
+		evidence := &gs.DoubleSignEvidences[i]
+		k.SetDoubleSignEvidence(ctx, *evidence)
 	}
 
-	// Import downtime infractions
-	for _, infraction := range gs.DowntimeInfractions {
-		if infraction != nil {
-			k.SetDowntimeInfraction(ctx, *infraction) // Dereference pointer
-		}
+	// Import downtime infractions (nullable=false means slice contains values, not pointers)
+	for i := range gs.DowntimeInfractions {
+		infraction := &gs.DowntimeInfractions[i]
+		k.SetDowntimeInfraction(ctx, *infraction)
 	}
 
-	// Import alerts
-	for _, alert := range gs.Alerts {
-		if alert != nil {
-			k.SetValidatorAlert(ctx, *alert) // Dereference pointer
-		}
+	// Import alerts (nullable=false means slice contains values, not pointers)
+	for i := range gs.Alerts {
+		alert := &gs.Alerts[i]
+		k.SetValidatorAlert(ctx, *alert)
 	}
 
-	// Import sentry nodes
-	for _, sentry := range gs.SentryNodes {
-		if sentry != nil {
-			k.SetSentryNode(ctx, *sentry) // Dereference pointer
-		}
+	// Import sentry nodes (nullable=false means slice contains values, not pointers)
+	for i := range gs.SentryNodes {
+		sentry := &gs.SentryNodes[i]
+		k.SetSentryNode(ctx, *sentry)
 	}
 
-	k.Logger(ctx).Info("validator security genesis state initialized",
+	k.Logger(sdkCtx).Info("validator security genesis state initialized",
 		"validators", len(gs.Validators),
 		"double_sign_evidences", len(gs.DoubleSignEvidences),
 		"downtime_infractions", len(gs.DowntimeInfractions),
@@ -86,6 +81,8 @@ func (k Keeper) InitGenesis(ctx context.Context, gs *types.GenesisState) error {
 
 // ExportGenesis exports the validator security module's state for genesis
 func (k Keeper) ExportGenesis(ctx context.Context) *types.GenesisState {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
 	// Get current parameters
 	params := k.GetParams(ctx)
 
@@ -104,7 +101,7 @@ func (k Keeper) ExportGenesis(ctx context.Context) *types.GenesisState {
 	// Export sentry nodes
 	sentryNodes := k.GetAllSentryNodes(ctx)
 
-	k.Logger(ctx).Info("validator security genesis state exported",
+	k.Logger(sdkCtx).Info("validator security genesis state exported",
 		"validators", len(validators),
 		"double_sign_evidences", len(doubleSignEvidences),
 		"downtime_infractions", len(downtimeInfractions),
@@ -112,44 +109,20 @@ func (k Keeper) ExportGenesis(ctx context.Context) *types.GenesisState {
 		"sentry_nodes", len(sentryNodes),
 	)
 
-	// Convert slices to pointer slices for genesis state
-	validatorPtrs := make([]*types.ValidatorSecurityInfo, len(validators))
-	for i := range validators {
-		validatorPtrs[i] = &validators[i]
-	}
-
-	evidencePtrs := make([]*types.DoubleSignEvidence, len(doubleSignEvidences))
-	for i := range doubleSignEvidences {
-		evidencePtrs[i] = &doubleSignEvidences[i]
-	}
-
-	infractionPtrs := make([]*types.DowntimeInfraction, len(downtimeInfractions))
-	for i := range downtimeInfractions {
-		infractionPtrs[i] = &downtimeInfractions[i]
-	}
-
-	alertPtrs := make([]*types.ValidatorAlert, len(alerts))
-	for i := range alerts {
-		alertPtrs[i] = &alerts[i]
-	}
-
-	sentryPtrs := make([]*types.SentryNodeInfo, len(sentryNodes))
-	for i := range sentryNodes {
-		sentryPtrs[i] = &sentryNodes[i]
-	}
-
+	// GenesisState expects value types (nullable=false), so return slices directly
 	return &types.GenesisState{
-		Params:              params, // params is already a pointer
-		Validators:          validatorPtrs,
-		DoubleSignEvidences: evidencePtrs,
-		DowntimeInfractions: infractionPtrs,
-		Alerts:              alertPtrs,
-		SentryNodes:         sentryPtrs,
+		Params:              *params, // Dereference params to value type
+		Validators:          validators,
+		DoubleSignEvidences: doubleSignEvidences,
+		DowntimeInfractions: downtimeInfractions,
+		Alerts:              alerts,
+		SentryNodes:         sentryNodes,
 	}
 }
 
 // GetAllDoubleSignEvidences retrieves all double sign evidences
 func (k Keeper) GetAllDoubleSignEvidences(ctx context.Context) []types.DoubleSignEvidence {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	store := k.getStore(ctx)
 	iterator := storetypes.KVStorePrefixIterator(store, types.DoubleSignEvidenceKey)
 	defer iterator.Close()
@@ -158,11 +131,8 @@ func (k Keeper) GetAllDoubleSignEvidences(ctx context.Context) []types.DoubleSig
 	for ; iterator.Valid(); iterator.Next() {
 		var evidence types.DoubleSignEvidence
 		if err := k.cdc.Unmarshal(iterator.Value(), &evidence); err != nil {
-
-			k.logger.Error("failed to unmarshal", "error", err)
-
+			k.Logger(sdkCtx).Error("failed to unmarshal double sign evidence", "error", err)
 			continue
-
 		}
 		evidences = append(evidences, evidence)
 	}
@@ -180,6 +150,7 @@ func (k Keeper) SetDoubleSignEvidence(ctx context.Context, evidence types.Double
 
 // GetDoubleSignEvidence retrieves double sign evidence for a validator
 func (k Keeper) GetDoubleSignEvidence(ctx context.Context, validatorAddr string) (*types.DoubleSignEvidence, error) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	store := k.getStore(ctx)
 	key := append(types.DoubleSignEvidenceKey, []byte(validatorAddr)...)
 	bz := store.Get(key)
@@ -189,17 +160,15 @@ func (k Keeper) GetDoubleSignEvidence(ctx context.Context, validatorAddr string)
 
 	var evidence types.DoubleSignEvidence
 	if err := k.cdc.Unmarshal(bz, &evidence); err != nil {
-
-		k.logger.Error("failed to unmarshal", "error", err)
-
-		continue
-
+		k.Logger(sdkCtx).Error("failed to unmarshal double sign evidence", "error", err)
+		return nil, err
 	}
 	return &evidence, nil
 }
 
 // GetAllDowntimeInfractions retrieves all downtime infractions
 func (k Keeper) GetAllDowntimeInfractions(ctx context.Context) []types.DowntimeInfraction {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	store := k.getStore(ctx)
 	iterator := storetypes.KVStorePrefixIterator(store, types.DowntimeInfractionKey)
 	defer iterator.Close()
@@ -208,11 +177,8 @@ func (k Keeper) GetAllDowntimeInfractions(ctx context.Context) []types.DowntimeI
 	for ; iterator.Valid(); iterator.Next() {
 		var infraction types.DowntimeInfraction
 		if err := k.cdc.Unmarshal(iterator.Value(), &infraction); err != nil {
-
-			k.logger.Error("failed to unmarshal", "error", err)
-
+			k.Logger(sdkCtx).Error("failed to unmarshal downtime infraction", "error", err)
 			continue
-
 		}
 		infractions = append(infractions, infraction)
 	}
@@ -230,6 +196,7 @@ func (k Keeper) SetDowntimeInfraction(ctx context.Context, infraction types.Down
 
 // GetDowntimeInfraction retrieves downtime infraction for a validator
 func (k Keeper) GetDowntimeInfraction(ctx context.Context, validatorAddr string) (*types.DowntimeInfraction, error) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	store := k.getStore(ctx)
 	key := append(types.DowntimeInfractionKey, []byte(validatorAddr)...)
 	bz := store.Get(key)
@@ -239,11 +206,8 @@ func (k Keeper) GetDowntimeInfraction(ctx context.Context, validatorAddr string)
 
 	var infraction types.DowntimeInfraction
 	if err := k.cdc.Unmarshal(bz, &infraction); err != nil {
-
-		k.logger.Error("failed to unmarshal", "error", err)
-
-		continue
-
+		k.Logger(sdkCtx).Error("failed to unmarshal downtime infraction", "error", err)
+		return nil, err
 	}
 	return &infraction, nil
 }
@@ -264,6 +228,7 @@ func (k Keeper) GetActiveValidatorAlerts(ctx context.Context) []types.ValidatorA
 
 // GetAllValidatorAlerts retrieves all validator alerts
 func (k Keeper) GetAllValidatorAlerts(ctx context.Context) []types.ValidatorAlert {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	store := k.getStore(ctx)
 	iterator := storetypes.KVStorePrefixIterator(store, types.ValidatorAlertKey)
 	defer iterator.Close()
@@ -272,11 +237,8 @@ func (k Keeper) GetAllValidatorAlerts(ctx context.Context) []types.ValidatorAler
 	for ; iterator.Valid(); iterator.Next() {
 		var alert types.ValidatorAlert
 		if err := k.cdc.Unmarshal(iterator.Value(), &alert); err != nil {
-
-			k.logger.Error("failed to unmarshal", "error", err)
-
+			k.Logger(sdkCtx).Error("failed to unmarshal validator alert", "error", err)
 			continue
-
 		}
 		alerts = append(alerts, alert)
 	}
@@ -294,6 +256,7 @@ func (k Keeper) SetValidatorAlert(ctx context.Context, alert types.ValidatorAler
 
 // GetAllSentryNodes retrieves all sentry nodes
 func (k Keeper) GetAllSentryNodes(ctx context.Context) []types.SentryNodeInfo {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	store := k.getStore(ctx)
 	iterator := storetypes.KVStorePrefixIterator(store, types.SentryNodeKey)
 	defer iterator.Close()
@@ -302,11 +265,8 @@ func (k Keeper) GetAllSentryNodes(ctx context.Context) []types.SentryNodeInfo {
 	for ; iterator.Valid(); iterator.Next() {
 		var node types.SentryNodeInfo
 		if err := k.cdc.Unmarshal(iterator.Value(), &node); err != nil {
-
-			k.logger.Error("failed to unmarshal", "error", err)
-
+			k.Logger(sdkCtx).Error("failed to unmarshal sentry node", "error", err)
 			continue
-
 		}
 		sentryNodes = append(sentryNodes, node)
 	}

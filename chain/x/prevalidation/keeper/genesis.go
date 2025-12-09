@@ -20,14 +20,12 @@ func (k Keeper) InitGenesis(ctx context.Context, data *pb.GenesisState) error {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	store := sdkCtx.KVStore(k.storeKey)
 
-	// Set params
-	if data.Params != nil {
-		paramsBytes, err := k.cdc.Marshal(data.Params)
-		if err != nil {
-			return fmt.Errorf("failed to marshal params: %w", err)
-		}
-		store.Set(types.ParamsKey, paramsBytes)
+	// Set params (Params is a value type, not a pointer)
+	paramsBytes, err := k.cdc.Marshal(&data.Params)
+	if err != nil {
+		return fmt.Errorf("failed to marshal params: %w", err)
 	}
+	store.Set(types.ParamsKey, paramsBytes)
 
 	// Import pre-validated transactions
 	for _, tx := range data.PreValidatedTransactions {
@@ -93,7 +91,7 @@ func (k Keeper) ExportGenesis(ctx context.Context) *pb.GenesisState {
 	}
 
 	genesis := &pb.GenesisState{
-		Params:                   &params,
+		Params:                   params,
 		PreValidatedTransactions: []*pb.PreValidatedTransaction{},
 		Templates:                []*pb.ValidationTemplate{},
 		Metrics:                  &pb.PreValidationMetrics{},

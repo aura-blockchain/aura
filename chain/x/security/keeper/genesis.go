@@ -16,10 +16,8 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *securitypb.GenesisState) 
 		return fmt.Errorf("invalid genesis state: %w", err)
 	}
 
-	// Store params
-	if genState.Params != nil {
-		k.SetParams(ctx, *genState.Params)
-	}
+	// Store params (Params is a value type, always present)
+	k.SetParams(ctx, genState.Params)
 
 	// Initialize network security state
 	if genState.NetworkSecurity != nil {
@@ -29,52 +27,52 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *securitypb.GenesisState) 
 		seenPeerIDs := make(map[string]bool)
 		seenAlertIDs := make(map[string]bool)
 
-		for _, rl := range ns.RateLimits {
+		for i := range ns.RateLimits {
 			// CRITICAL SECURITY: Detect duplicate peer IDs in rate limits
-			if seenPeerIDs[rl.PeerId] {
-				return fmt.Errorf("duplicate peer ID in rate limits: %s", rl.PeerId)
+			if seenPeerIDs[ns.RateLimits[i].PeerId] {
+				return fmt.Errorf("duplicate peer ID in rate limits: %s", ns.RateLimits[i].PeerId)
 			}
-			seenPeerIDs[rl.PeerId] = true
-			k.SetRateLimit(ctx, rl)
+			seenPeerIDs[ns.RateLimits[i].PeerId] = true
+			k.SetRateLimit(ctx, &ns.RateLimits[i])
 		}
 
 		seenPeerIDs = make(map[string]bool)
-		for _, rep := range ns.Reputations {
+		for i := range ns.Reputations {
 			// CRITICAL SECURITY: Detect duplicate peer IDs in reputations
-			if seenPeerIDs[rep.PeerId] {
-				return fmt.Errorf("duplicate peer ID in reputations: %s", rep.PeerId)
+			if seenPeerIDs[ns.Reputations[i].PeerId] {
+				return fmt.Errorf("duplicate peer ID in reputations: %s", ns.Reputations[i].PeerId)
 			}
-			seenPeerIDs[rep.PeerId] = true
-			k.SetPeerReputation(ctx, rep)
+			seenPeerIDs[ns.Reputations[i].PeerId] = true
+			k.SetPeerReputation(ctx, &ns.Reputations[i])
 		}
 
 		seenPeerIDs = make(map[string]bool)
-		for _, peer := range ns.TrustedPeers {
+		for i := range ns.TrustedPeers {
 			// CRITICAL SECURITY: Detect duplicate peer IDs in trusted peers
-			if seenPeerIDs[peer.PeerId] {
-				return fmt.Errorf("duplicate peer ID in trusted peers: %s", peer.PeerId)
+			if seenPeerIDs[ns.TrustedPeers[i].PeerId] {
+				return fmt.Errorf("duplicate peer ID in trusted peers: %s", ns.TrustedPeers[i].PeerId)
 			}
-			seenPeerIDs[peer.PeerId] = true
-			k.SetTrustedPeer(ctx, peer)
+			seenPeerIDs[ns.TrustedPeers[i].PeerId] = true
+			k.SetTrustedPeer(ctx, &ns.TrustedPeers[i])
 		}
 
-		for _, alert := range ns.ForkAlerts {
+		for i := range ns.ForkAlerts {
 			// CRITICAL SECURITY: Detect duplicate alert IDs
-			if seenAlertIDs[alert.AlertId] {
-				return fmt.Errorf("duplicate fork alert ID: %s", alert.AlertId)
+			if seenAlertIDs[ns.ForkAlerts[i].AlertId] {
+				return fmt.Errorf("duplicate fork alert ID: %s", ns.ForkAlerts[i].AlertId)
 			}
-			seenAlertIDs[alert.AlertId] = true
-			k.SetForkAlert(ctx, alert)
+			seenAlertIDs[ns.ForkAlerts[i].AlertId] = true
+			k.SetForkAlert(ctx, &ns.ForkAlerts[i])
 		}
 
 		seenAlertIDs = make(map[string]bool)
-		for _, alert := range ns.PartitionAlerts {
+		for i := range ns.PartitionAlerts {
 			// CRITICAL SECURITY: Detect duplicate alert IDs
-			if seenAlertIDs[alert.AlertId] {
-				return fmt.Errorf("duplicate partition alert ID: %s", alert.AlertId)
+			if seenAlertIDs[ns.PartitionAlerts[i].AlertId] {
+				return fmt.Errorf("duplicate partition alert ID: %s", ns.PartitionAlerts[i].AlertId)
 			}
-			seenAlertIDs[alert.AlertId] = true
-			k.SetPartitionAlert(ctx, alert)
+			seenAlertIDs[ns.PartitionAlerts[i].AlertId] = true
+			k.SetPartitionAlert(ctx, &ns.PartitionAlerts[i])
 		}
 	}
 
@@ -85,34 +83,34 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *securitypb.GenesisState) 
 		seenValidators := make(map[string]bool)
 		seenAlertIDs := make(map[string]bool)
 
-		for _, vi := range vs.Validators {
+		for i := range vs.Validators {
 			// CRITICAL SECURITY: Detect duplicate validator addresses
-			if seenValidators[vi.ValidatorAddress] {
-				return fmt.Errorf("duplicate validator address in security info: %s", vi.ValidatorAddress)
+			if seenValidators[vs.Validators[i].ValidatorAddress] {
+				return fmt.Errorf("duplicate validator address in security info: %s", vs.Validators[i].ValidatorAddress)
 			}
-			seenValidators[vi.ValidatorAddress] = true
-			k.SetValidatorSecurityInfo(ctx, vi)
+			seenValidators[vs.Validators[i].ValidatorAddress] = true
+			k.SetValidatorSecurityInfo(ctx, &vs.Validators[i])
 		}
 
-		for _, ev := range vs.DoubleSignEvidences {
-			k.SetDoubleSignEvidence(ctx, ev)
+		for i := range vs.DoubleSignEvidences {
+			k.SetDoubleSignEvidence(ctx, &vs.DoubleSignEvidences[i])
 		}
 
-		for _, inf := range vs.DowntimeInfractions {
-			k.SetDowntimeInfraction(ctx, inf)
+		for i := range vs.DowntimeInfractions {
+			k.SetDowntimeInfraction(ctx, &vs.DowntimeInfractions[i])
 		}
 
-		for _, alert := range vs.Alerts {
+		for i := range vs.Alerts {
 			// CRITICAL SECURITY: Detect duplicate alert IDs
-			if seenAlertIDs[alert.Id] {
-				return fmt.Errorf("duplicate validator alert ID: %s", alert.Id)
+			if seenAlertIDs[vs.Alerts[i].Id] {
+				return fmt.Errorf("duplicate validator alert ID: %s", vs.Alerts[i].Id)
 			}
-			seenAlertIDs[alert.Id] = true
-			k.SetValidatorAlert(ctx, alert)
+			seenAlertIDs[vs.Alerts[i].Id] = true
+			k.SetValidatorAlert(ctx, &vs.Alerts[i])
 		}
 
-		for _, sn := range vs.SentryNodes {
-			k.SetSentryNode(ctx, sn)
+		for i := range vs.SentryNodes {
+			k.SetSentryNode(ctx, &vs.SentryNodes[i])
 		}
 	}
 
@@ -124,49 +122,49 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *securitypb.GenesisState) 
 		seenTxIDs := make(map[string]bool)
 		seenRequestIDs := make(map[string]bool)
 
-		for _, hw := range ws.HardwareWallets {
+		for i := range ws.HardwareWallets {
 			// CRITICAL SECURITY: Detect duplicate wallet IDs
-			if seenWalletIDs[hw.WalletId] {
-				return fmt.Errorf("duplicate hardware wallet ID: %s", hw.WalletId)
+			if seenWalletIDs[ws.HardwareWallets[i].WalletId] {
+				return fmt.Errorf("duplicate hardware wallet ID: %s", ws.HardwareWallets[i].WalletId)
 			}
-			seenWalletIDs[hw.WalletId] = true
-			k.SetHardwareWallet(ctx, hw)
+			seenWalletIDs[ws.HardwareWallets[i].WalletId] = true
+			k.SetHardwareWallet(ctx, &ws.HardwareWallets[i])
 		}
 
 		seenWalletIDs = make(map[string]bool)
-		for _, ms := range ws.MultisigWallets {
+		for i := range ws.MultisigWallets {
 			// CRITICAL SECURITY: Detect duplicate wallet IDs
-			if seenWalletIDs[ms.WalletId] {
-				return fmt.Errorf("duplicate multisig wallet ID: %s", ms.WalletId)
+			if seenWalletIDs[ws.MultisigWallets[i].WalletId] {
+				return fmt.Errorf("duplicate multisig wallet ID: %s", ws.MultisigWallets[i].WalletId)
 			}
-			seenWalletIDs[ms.WalletId] = true
-			k.SetMultiSigWallet(ctx, ms)
+			seenWalletIDs[ws.MultisigWallets[i].WalletId] = true
+			k.SetMultiSigWallet(ctx, &ws.MultisigWallets[i])
 		}
 
-		for _, tx := range ws.PendingMultisigTxs {
+		for i := range ws.PendingMultisigTxs {
 			// CRITICAL SECURITY: Detect duplicate transaction IDs
-			if seenTxIDs[tx.TxId] {
-				return fmt.Errorf("duplicate pending multisig tx ID: %s", tx.TxId)
+			if seenTxIDs[ws.PendingMultisigTxs[i].TxId] {
+				return fmt.Errorf("duplicate pending multisig tx ID: %s", ws.PendingMultisigTxs[i].TxId)
 			}
-			seenTxIDs[tx.TxId] = true
-			k.SetPendingMultiSigTx(ctx, tx)
+			seenTxIDs[ws.PendingMultisigTxs[i].TxId] = true
+			k.SetPendingMultiSigTx(ctx, &ws.PendingMultisigTxs[i])
 		}
 
-		for _, src := range ws.SocialRecoveryConfigs {
-			k.SetSocialRecoveryConfig(ctx, src)
+		for i := range ws.SocialRecoveryConfigs {
+			k.SetSocialRecoveryConfig(ctx, &ws.SocialRecoveryConfigs[i])
 		}
 
-		for _, req := range ws.RecoveryRequests {
+		for i := range ws.RecoveryRequests {
 			// CRITICAL SECURITY: Detect duplicate request IDs
-			if seenRequestIDs[req.RequestId] {
-				return fmt.Errorf("duplicate recovery request ID: %s", req.RequestId)
+			if seenRequestIDs[ws.RecoveryRequests[i].RequestId] {
+				return fmt.Errorf("duplicate recovery request ID: %s", ws.RecoveryRequests[i].RequestId)
 			}
-			seenRequestIDs[req.RequestId] = true
-			k.SetRecoveryRequest(ctx, req)
+			seenRequestIDs[ws.RecoveryRequests[i].RequestId] = true
+			k.SetRecoveryRequest(ctx, &ws.RecoveryRequests[i])
 		}
 
-		for _, sl := range ws.SpendingLimits {
-			k.SetSpendingLimit(ctx, sl)
+		for i := range ws.SpendingLimits {
+			k.SetSpendingLimit(ctx, &ws.SpendingLimits[i])
 		}
 	}
 
@@ -177,22 +175,22 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *securitypb.GenesisState) 
 		seenIncidentIDs := make(map[string]bool)
 		seenLogIDs := make(map[string]bool)
 
-		for _, inc := range ir.Incidents {
+		for i := range ir.Incidents {
 			// CRITICAL SECURITY: Detect duplicate incident IDs
-			if seenIncidentIDs[inc.IncidentId] {
-				return fmt.Errorf("duplicate incident ID: %s", inc.IncidentId)
+			if seenIncidentIDs[ir.Incidents[i].IncidentId] {
+				return fmt.Errorf("duplicate incident ID: %s", ir.Incidents[i].IncidentId)
 			}
-			seenIncidentIDs[inc.IncidentId] = true
-			k.SetIncident(ctx, inc)
+			seenIncidentIDs[ir.Incidents[i].IncidentId] = true
+			k.SetIncident(ctx, &ir.Incidents[i])
 		}
 
-		for _, entry := range ir.AuditLogs {
+		for i := range ir.AuditLogs {
 			// CRITICAL SECURITY: Detect duplicate log IDs
-			if seenLogIDs[entry.LogId] {
-				return fmt.Errorf("duplicate audit log ID: %s", entry.LogId)
+			if seenLogIDs[ir.AuditLogs[i].LogId] {
+				return fmt.Errorf("duplicate audit log ID: %s", ir.AuditLogs[i].LogId)
 			}
-			seenLogIDs[entry.LogId] = true
-			k.SetAuditLogEntry(ctx, entry)
+			seenLogIDs[ir.AuditLogs[i].LogId] = true
+			k.SetAuditLogEntry(ctx, &ir.AuditLogs[i])
 		}
 		// Note: NextIncidentId is stored separately in KV store, not imported from genesis
 	}
@@ -206,40 +204,40 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *securitypb.GenesisState) 
 		seenProofIDs := make(map[string]bool)
 		seenKeyIDs := make(map[string]bool)
 
-		for _, krs := range crypto.KeyRotationSchedules {
+		for i := range crypto.KeyRotationSchedules {
 			// CRITICAL SECURITY: Detect duplicate schedule IDs
-			if seenScheduleIDs[krs.Id] {
-				return fmt.Errorf("duplicate key rotation schedule ID: %s", krs.Id)
+			if seenScheduleIDs[crypto.KeyRotationSchedules[i].Id] {
+				return fmt.Errorf("duplicate key rotation schedule ID: %s", crypto.KeyRotationSchedules[i].Id)
 			}
-			seenScheduleIDs[krs.Id] = true
-			k.SetKeyRotationSchedule(ctx, krs)
+			seenScheduleIDs[crypto.KeyRotationSchedules[i].Id] = true
+			k.SetKeyRotationSchedule(ctx, &crypto.KeyRotationSchedules[i])
 		}
 
-		for _, ts := range crypto.ThresholdSchemes {
+		for i := range crypto.ThresholdSchemes {
 			// CRITICAL SECURITY: Detect duplicate scheme IDs
-			if seenSchemeIDs[ts.SchemeId] {
-				return fmt.Errorf("duplicate threshold scheme ID: %s", ts.SchemeId)
+			if seenSchemeIDs[crypto.ThresholdSchemes[i].SchemeId] {
+				return fmt.Errorf("duplicate threshold scheme ID: %s", crypto.ThresholdSchemes[i].SchemeId)
 			}
-			seenSchemeIDs[ts.SchemeId] = true
-			k.SetThresholdScheme(ctx, ts)
+			seenSchemeIDs[crypto.ThresholdSchemes[i].SchemeId] = true
+			k.SetThresholdScheme(ctx, &crypto.ThresholdSchemes[i])
 		}
 
-		for _, zk := range crypto.ZkProofConfigs {
+		for i := range crypto.ZkProofConfigs {
 			// CRITICAL SECURITY: Detect duplicate proof IDs
-			if seenProofIDs[zk.ProofId] {
-				return fmt.Errorf("duplicate ZK proof config ID: %s", zk.ProofId)
+			if seenProofIDs[crypto.ZkProofConfigs[i].ProofId] {
+				return fmt.Errorf("duplicate ZK proof config ID: %s", crypto.ZkProofConfigs[i].ProofId)
 			}
-			seenProofIDs[zk.ProofId] = true
-			k.SetZKProofConfig(ctx, zk)
+			seenProofIDs[crypto.ZkProofConfigs[i].ProofId] = true
+			k.SetZKProofConfig(ctx, &crypto.ZkProofConfigs[i])
 		}
 
-		for _, qrk := range crypto.QuantumResistantKeys {
+		for i := range crypto.QuantumResistantKeys {
 			// CRITICAL SECURITY: Detect duplicate key IDs
-			if seenKeyIDs[qrk.KeyId] {
-				return fmt.Errorf("duplicate quantum resistant key ID: %s", qrk.KeyId)
+			if seenKeyIDs[crypto.QuantumResistantKeys[i].KeyId] {
+				return fmt.Errorf("duplicate quantum resistant key ID: %s", crypto.QuantumResistantKeys[i].KeyId)
 			}
-			seenKeyIDs[qrk.KeyId] = true
-			k.SetQuantumResistantKey(ctx, qrk)
+			seenKeyIDs[crypto.QuantumResistantKeys[i].KeyId] = true
+			k.SetQuantumResistantKey(ctx, &crypto.QuantumResistantKeys[i])
 		}
 	}
 
@@ -249,23 +247,23 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *securitypb.GenesisState) 
 
 		seenPoolIDs := make(map[string]bool)
 
-		for _, mp := range priv.MixingPools {
+		for i := range priv.MixingPools {
 			// CRITICAL SECURITY: Detect duplicate pool IDs
-			if seenPoolIDs[mp.PoolId] {
-				return fmt.Errorf("duplicate mixing pool ID: %s", mp.PoolId)
+			if seenPoolIDs[priv.MixingPools[i].PoolId] {
+				return fmt.Errorf("duplicate mixing pool ID: %s", priv.MixingPools[i].PoolId)
 			}
-			seenPoolIDs[mp.PoolId] = true
-			k.SetMixingPool(ctx, mp)
+			seenPoolIDs[priv.MixingPools[i].PoolId] = true
+			k.SetMixingPool(ctx, &priv.MixingPools[i])
 		}
 
-		for _, sa := range priv.StealthAddresses {
+		for i := range priv.StealthAddresses {
 			// Use hex encoding of OneTimeAddress as key since StealthAddress has no id field
-			k.SetStealthAddress(ctx, sa)
+			k.SetStealthAddress(ctx, &priv.StealthAddresses[i])
 		}
 
-		for _, rs := range priv.RingSignatures {
+		for i := range priv.RingSignatures {
 			// Use hex encoding of KeyImage as key since RingSignature has no id field
-			k.SetRingSignature(ctx, rs)
+			k.SetRingSignature(ctx, &priv.RingSignatures[i])
 		}
 	}
 
@@ -278,7 +276,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *securitypb.GenesisState {
 	params := k.GetParams(ctx)
 
 	return &securitypb.GenesisState{
-		Params: &params,
+		Params: params,
 		NetworkSecurity: &securitypb.NetworkSecurityState{
 			RateLimits:      k.GetAllRateLimits(ctx),
 			Reputations:     k.GetAllPeerReputations(ctx),

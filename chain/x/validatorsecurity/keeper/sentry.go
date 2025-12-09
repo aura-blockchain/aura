@@ -6,7 +6,6 @@ import (
 
 	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/validatorsecurity/types"
 )
@@ -35,13 +34,14 @@ func (k Keeper) RegisterSentryNode(
 	}
 
 	// Create sentry node info
+	blockTime := sdkCtx.BlockTime()
 	sentryNode := types.SentryNodeInfo{
 		Address:          sentryAddr,
 		ValidatorAddress: validatorAddr,
 		IpAddress:        ipAddress,
 		Port:             port,
 		IsActive:         true,
-		LastHeartbeat:    timestamppb.New(sdkCtx.BlockTime()),
+		LastHeartbeat:    &blockTime,
 		RequestCount:     0,
 		BlockedRequests:  0,
 	}
@@ -64,7 +64,7 @@ func (k Keeper) RegisterSentryNode(
 	info.SentryNodeAddresses = append(info.SentryNodeAddresses, sentryAddr)
 	k.SetValidatorSecurityInfo(ctx, info)
 
-	k.Logger(ctx).Info("sentry node registered",
+	k.Logger(sdkCtx).Info("sentry node registered",
 		"validator", validatorAddr,
 		"sentry", sentryAddr,
 		"ip", ipAddress,
@@ -84,6 +84,7 @@ func (k Keeper) SetSentryNodeInfo(ctx context.Context, node types.SentryNodeInfo
 
 // GetSentryNodeInfo retrieves sentry node information
 func (k Keeper) GetSentryNodeInfo(ctx context.Context, sentryAddr string) (types.SentryNodeInfo, error) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	store := k.getStore(ctx)
 	key := types.GetSentryNodeInfoKey(sentryAddr)
 	bz := store.Get(key)
@@ -93,17 +94,15 @@ func (k Keeper) GetSentryNodeInfo(ctx context.Context, sentryAddr string) (types
 
 	var node types.SentryNodeInfo
 	if err := k.cdc.Unmarshal(bz, &node); err != nil {
-
-		k.logger.Error("failed to unmarshal", "error", err)
-
-		continue
-
+		k.Logger(sdkCtx).Error("failed to unmarshal sentry node", "error", err)
+		return types.SentryNodeInfo{}, err
 	}
 	return node, nil
 }
 
 // GetValidatorSentryNodes retrieves all sentry nodes for a validator
 func (k Keeper) GetValidatorSentryNodes(ctx context.Context, validatorAddr string) []types.SentryNodeInfo {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	store := k.getStore(ctx)
 	iterator := storetypes.KVStorePrefixIterator(store, types.SentryNodeInfoKey)
 	defer iterator.Close()
@@ -112,11 +111,8 @@ func (k Keeper) GetValidatorSentryNodes(ctx context.Context, validatorAddr strin
 	for ; iterator.Valid(); iterator.Next() {
 		var node types.SentryNodeInfo
 		if err := k.cdc.Unmarshal(iterator.Value(), &node); err != nil {
-
-			k.logger.Error("failed to unmarshal", "error", err)
-
+			k.Logger(sdkCtx).Error("failed to unmarshal", "error", err)
 			continue
-
 		}
 		if node.ValidatorAddress == validatorAddr {
 			nodes = append(nodes, node)
@@ -135,8 +131,8 @@ func (k Keeper) UpdateSentryHeartbeat(ctx context.Context, sentryAddr string) er
 		return err
 	}
 
-	now := sdkCtx.BlockTime()
-	node.LastHeartbeat = timestamppb.New(now)
+	blockTime := sdkCtx.BlockTime()
+	node.LastHeartbeat = &blockTime
 	node.IsActive = true
 
 	k.SetSentryNodeInfo(ctx, node)
@@ -183,20 +179,21 @@ func (k Keeper) DeactivateSentryNode(ctx context.Context, sentryAddr string) err
 		if int32(activeCount) < params.MinSentryNodes {
 			// Create critical alert
 			sdkCtx := sdk.UnwrapSDKContext(ctx)
+			blockTime := sdkCtx.BlockTime()
 			k.CreateAlert(ctx, types.ValidatorAlert{
 				Id:               fmt.Sprintf("sentry-critical-%s-%d", node.ValidatorAddress, sdkCtx.BlockHeight()),
 				ValidatorAddress: node.ValidatorAddress,
 				AlertType:        types.ValidatorAlert_SENTRY_NODE_OFFLINE,
 				Severity:         types.ValidatorAlert_CRITICAL,
 				Message:          fmt.Sprintf("Active sentry nodes (%d) below minimum (%d)", activeCount, params.MinSentryNodes),
-				Timestamp:        timestamppb.New(sdkCtx.BlockTime()),
+				Timestamp:        &blockTime,
 				Acknowledged:     false,
 			})
 
 			// Attempt failover if enabled
 			if params.EnableAutoFailover {
 				if err := k.TriggerFailover(ctx, node.ValidatorAddress); err != nil {
-					k.Logger(ctx).Error("failover failed", "validator", node.ValidatorAddress, "error", err)
+					k.Logger(sdkCtx).Error("failover failed", "validator", node.ValidatorAddress, "error", err)
 				}
 			}
 		}
@@ -245,17 +242,18 @@ func (k Keeper) TriggerFailover(ctx context.Context, validatorAddr string) error
 	info.ActiveBackup = selectedBackup
 	k.SetValidatorSecurityInfo(ctx, info)
 
+	blockTime := sdkCtx.BlockTime()
 	k.CreateAlert(ctx, types.ValidatorAlert{
 		Id:               fmt.Sprintf("failover-%s-%d", validatorAddr, sdkCtx.BlockHeight()),
 		ValidatorAddress: validatorAddr,
 		AlertType:        types.ValidatorAlert_FAILOVER_TRIGGERED,
 		Severity:         types.ValidatorAlert_CRITICAL,
 		Message:          fmt.Sprintf("Failover triggered to backup validator: %s", selectedBackup),
-		Timestamp:        timestamppb.New(sdkCtx.BlockTime()),
+		Timestamp:        &blockTime,
 		Acknowledged:     false,
 	})
 
-	k.Logger(ctx).Info("failover triggered",
+	k.Logger(sdkCtx).Info("failover triggered",
 		"validator", validatorAddr,
 		"backup", selectedBackup,
 	)
@@ -296,17 +294,18 @@ func (k Keeper) RestoreFromFailover(ctx context.Context, validatorAddr string) e
 	k.SetValidatorSecurityInfo(ctx, info)
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	blockTime := sdkCtx.BlockTime()
 	k.CreateAlert(ctx, types.ValidatorAlert{
 		Id:               fmt.Sprintf("failover-restored-%s-%d", validatorAddr, sdkCtx.BlockHeight()),
 		ValidatorAddress: validatorAddr,
 		AlertType:        types.ValidatorAlert_FAILOVER_TRIGGERED,
 		Severity:         types.ValidatorAlert_INFO,
 		Message:          "Validator restored from failover",
-		Timestamp:        timestamppb.New(sdkCtx.BlockTime()),
+		Timestamp:        &blockTime,
 		Acknowledged:     false,
 	})
 
-	k.Logger(ctx).Info("validator restored from failover", "validator", validatorAddr)
+	k.Logger(sdkCtx).Info("validator restored from failover", "validator", validatorAddr)
 
 	return nil
 }

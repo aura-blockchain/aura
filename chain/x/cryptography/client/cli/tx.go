@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -474,14 +473,14 @@ Algorithms:
 
 			// Parse optional expiration
 			expiresIn, _ := cmd.Flags().GetString("expires-in")
-			var expiresAt *timestamppb.Timestamp
+			var expiresAt *time.Time
 			if expiresIn != "" {
 				duration, err := time.ParseDuration(expiresIn)
 				if err != nil {
 					return fmt.Errorf("invalid expires-in duration: %w", err)
 				}
 				t := time.Now().Add(duration)
-				expiresAt = timestamppb.New(t)
+				expiresAt = &t
 			}
 
 			msg := &v1beta1.MsgGenerateQuantumResistantKey{
@@ -550,14 +549,14 @@ Pin types:
 
 			// Parse optional expiration
 			expiresIn, _ := cmd.Flags().GetString("expires-in")
-			var expiresAt *timestamppb.Timestamp
+			var expiresAt *time.Time
 			if expiresIn != "" {
 				duration, err := time.ParseDuration(expiresIn)
 				if err != nil {
 					return fmt.Errorf("invalid expires-in duration: %w", err)
 				}
 				t := time.Now().Add(duration)
-				expiresAt = timestamppb.New(t)
+				expiresAt = &t
 			}
 
 			msg := &v1beta1.MsgAddCertificatePin{

@@ -42,7 +42,7 @@ func (qs queryServer) Transfer(goCtx context.Context, req *bridgeproto.QueryTran
 		return nil, status.Error(codes.NotFound, "transfer not found")
 	}
 
-	return &bridgeproto.QueryTransferResponse{Transfer: transfer}, nil
+	return &bridgeproto.QueryTransferResponse{Transfer: *transfer}, nil
 }
 
 // AllTransfers queries all cross-chain transfers
@@ -67,12 +67,12 @@ func (qs queryServer) AllTransfers(goCtx context.Context, req *bridgeproto.Query
 		hasStatus = true
 	}
 
-	var transfers []*bridgeproto.CrossChainTransfer
+	var transfers []bridgeproto.CrossChainTransfer
 	for _, transfer := range qs.Keeper.getAllTransfers(ctx) {
 		if hasStatus && transfer.Status != statusValue {
 			continue
 		}
-		transfers = append(transfers, transfer)
+		transfers = append(transfers, *transfer)
 	}
 
 	return &bridgeproto.QueryAllTransfersResponse{Transfers: transfers}, nil
@@ -90,7 +90,7 @@ func (qs queryServer) UserTransfers(goCtx context.Context, req *bridgeproto.Quer
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	chainFilter := normalizeChain(strings.TrimSpace(req.Chain))
-	var transfers []*bridgeproto.CrossChainTransfer
+	var transfers []bridgeproto.CrossChainTransfer
 
 	for _, transfer := range qs.Keeper.getAllTransfers(ctx) {
 		if transfer == nil {
@@ -106,7 +106,7 @@ func (qs queryServer) UserTransfers(goCtx context.Context, req *bridgeproto.Quer
 				continue
 			}
 		}
-		transfers = append(transfers, transfer)
+		transfers = append(transfers, *transfer)
 	}
 
 	return &bridgeproto.QueryUserTransfersResponse{Transfers: transfers}, nil
@@ -128,7 +128,7 @@ func (qs queryServer) ChainConfig(goCtx context.Context, req *bridgeproto.QueryC
 		return nil, status.Error(codes.NotFound, "chain config not found")
 	}
 
-	return &bridgeproto.QueryChainConfigResponse{Config: &config}, nil
+	return &bridgeproto.QueryChainConfigResponse{Config: config}, nil
 }
 
 // AllChains queries all connected chains
@@ -139,11 +139,9 @@ func (qs queryServer) AllChains(goCtx context.Context, req *bridgeproto.QueryAll
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	chainConfigs := qs.Keeper.getAllChainConfigs(ctx)
-	configs := make([]*bridgeproto.ChainConfig, 0, len(chainConfigs))
+	configs := make([]bridgeproto.ChainConfig, 0, len(chainConfigs))
 	for i := range chainConfigs {
-		cfg := chainConfigs[i]
-		cfgCopy := cfg
-		configs = append(configs, &cfgCopy)
+		configs = append(configs, chainConfigs[i])
 	}
 
 	return &bridgeproto.QueryAllChainsResponse{Chains: configs}, nil
@@ -165,7 +163,7 @@ func (qs queryServer) WrappedToken(goCtx context.Context, req *bridgeproto.Query
 		return nil, status.Error(codes.NotFound, "wrapped token not found")
 	}
 
-	return &bridgeproto.QueryWrappedTokenResponse{Token: token}, nil
+	return &bridgeproto.QueryWrappedTokenResponse{Token: *token}, nil
 }
 
 // AllWrappedTokens queries all wrapped tokens
@@ -176,11 +174,9 @@ func (qs queryServer) AllWrappedTokens(goCtx context.Context, req *bridgeproto.Q
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	storedTokens := qs.Keeper.getAllWrappedTokens(ctx)
-	tokens := make([]*bridgeproto.WrappedToken, 0, len(storedTokens))
+	tokens := make([]bridgeproto.WrappedToken, 0, len(storedTokens))
 	for i := range storedTokens {
-		tok := storedTokens[i]
-		tokCopy := tok
-		tokens = append(tokens, &tokCopy)
+		tokens = append(tokens, storedTokens[i])
 	}
 
 	return &bridgeproto.QueryAllWrappedTokensResponse{Tokens: tokens}, nil
@@ -202,7 +198,7 @@ func (qs queryServer) SharedIdentity(goCtx context.Context, req *bridgeproto.Que
 		return nil, status.Error(codes.NotFound, "shared identity not found")
 	}
 
-	return &bridgeproto.QuerySharedIdentityResponse{Identity: identity}, nil
+	return &bridgeproto.QuerySharedIdentityResponse{Identity: *identity}, nil
 }
 
 // CrossChainSwap queries cross-chain swap status
@@ -221,7 +217,7 @@ func (qs queryServer) CrossChainSwap(goCtx context.Context, req *bridgeproto.Que
 		return nil, status.Error(codes.NotFound, "swap not found")
 	}
 
-	return &bridgeproto.QueryCrossChainSwapResponse{Swap: swap}, nil
+	return &bridgeproto.QueryCrossChainSwapResponse{Swap: *swap}, nil
 }
 
 // BridgeStats queries bridge statistics

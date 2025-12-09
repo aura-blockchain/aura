@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	wsproto "github.com/aequitas/aura/proto/aura/walletsecurity/v1beta1"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // RegisterDevice registers a new device for a wallet
@@ -19,8 +18,8 @@ func (k Keeper) RegisterDevice(ctx context.Context, walletID, deviceID, deviceNa
 		Fingerprint:   fingerprint,
 		FingerprintHash: k.hashFingerprint(fingerprint),
 		Trusted:       true,
-		RegisteredAt:  timestamppb.Now(),
-		LastSeenAt:    timestamppb.Now(),
+		RegisteredAt:  gogoTimestampNow(),
+		LastSeenAt:    gogoTimestampNow(),
 	}
 
 	deviceBytes, err := k.cdc.Marshal(device)
@@ -61,7 +60,7 @@ func (k Keeper) VerifyDevice(ctx context.Context, walletID, deviceID string, fin
 	}
 
 	// Update last seen
-	device.LastSeenAt = timestamppb.Now()
+	device.LastSeenAt = gogoTimestampNow()
 	updatedBytes, _ := k.cdc.Marshal(&device)
 	store.Set(key, updatedBytes)
 
@@ -84,7 +83,7 @@ func (k Keeper) RevokeDevice(ctx context.Context, walletID, deviceID string) err
 	}
 
 	device.Trusted = false
-	device.RevokedAt = timestamppb.Now()
+	device.RevokedAt = gogoTimestampNow()
 
 	updatedBytes, err := k.cdc.Marshal(&device)
 	if err != nil {

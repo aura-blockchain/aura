@@ -7,11 +7,10 @@ import (
 	"fmt"
 	"time"
 
+	gogotypes "github.com/cosmos/gogoproto/types"
 	"github.com/aequitas/aura/chain/x/common/determinism"
 	"github.com/aequitas/aura/chain/x/walletsecurity/types"
 	wsproto "github.com/aequitas/aura/proto/aura/walletsecurity/v1beta1"
-	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
@@ -26,7 +25,7 @@ func (k Keeper) ConfigureSocialRecovery(
 	walletID string,
 	guardians []*wsproto.Guardian,
 	recoveryThreshold int32,
-	recoveryDelay *durationpb.Duration,
+	recoveryDelay *gogotypes.Duration,
 ) (*wsproto.SocialRecoveryConfig, error) {
 	// Validate inputs
 	if len(guardians) == 0 {
@@ -56,15 +55,15 @@ func (k Keeper) ConfigureSocialRecovery(
 
 		// Initialize guardian
 		guardian.Confirmed = false
-		guardian.AddedAt = timestamppb.New(determinism.GetBlockTime(ctx))
+		guardian.AddedAt = blockTimeToGogoTimestamp(ctx)
 		guardian.RecoveryRequestsCount = 0
 	}
 
 	// Create configuration
-	now := timestamppb.New(determinism.GetBlockTime(ctx))
+	now := blockTimeToGogoTimestamp(ctx)
 	delay := recoveryDelay
 	if delay == nil {
-		delay = durationpb.New(DefaultRecoveryDelay)
+		delay = &gogotypes.Duration{Seconds: int64(DefaultRecoveryDelay.Seconds()), Nanos: int32(DefaultRecoveryDelay.Nanoseconds() % 1e9)}
 	}
 
 	config := &wsproto.SocialRecoveryConfig{
@@ -84,11 +83,11 @@ func (k Keeper) ConfigureSocialRecovery(
 		return nil, err
 	}
 
-	k.Logger(ctx).Info("configured social recovery",
+	k.logger.Info("configured social recovery",
 		"wallet_id", walletID,
 		"guardians", len(guardians),
 		"threshold", recoveryThreshold,
-		"delay", delay.AsDuration(),
+		"delay", gogoDurationToTime(delay),
 	)
 
 	return config, nil
@@ -107,8 +106,6 @@ func (k Keeper) ConfirmGuardian(ctx context.Context, walletID, guardianAddress s
 
 		k.logger.Error("failed to unmarshal", "error", err)
 
-		continue
-
 	}
 
 	// Find and confirm guardian
@@ -116,7 +113,7 @@ func (k Keeper) ConfirmGuardian(ctx context.Context, walletID, guardianAddress s
 	for _, guardian := range config.Guardians {
 		if guardian.Address == guardianAddress {
 			guardian.Confirmed = true
-			guardian.ConfirmedAt = timestamppb.New(determinism.GetBlockTime(ctx))
+			guardian.ConfirmedAt = blockTimeToGogoTimestamp(ctx)
 			found = true
 			break
 		}
@@ -126,7 +123,7 @@ func (k Keeper) ConfirmGuardian(ctx context.Context, walletID, guardianAddress s
 		return types.ErrGuardianNotFound
 	}
 
-	config.LastModified = timestamppb.New(determinism.GetBlockTime(ctx))
+	config.LastModified = blockTimeToGogoTimestamp(ctx)
 
 	// Store updated configuration
 	updatedBytes := k.cdc.MustMarshal(&config)
@@ -151,8 +148,6 @@ func (k Keeper) InitiateRecovery(
 
 		k.logger.Error("failed to unmarshal", "error", err)
 
-		continue
-
 	}
 
 	if !config.Enabled {
@@ -168,8 +163,8 @@ func (k Keeper) InitiateRecovery(
 	requestID := k.generateRecoveryRequestID(walletID, newAddress)
 
 	// Create recovery request
-	now := timestamppb.New(determinism.GetBlockTime(ctx))
-	executableAt := timestamppb.New(determinism.GetBlockTime(ctx).Add(config.RecoveryDelay.AsDuration()))
+	now := blockTimeToGogoTimestamp(ctx)
+	executableAt := blockTimeWithOffsetToGogoTimestamp(ctx, gogoDurationToTime(config.RecoveryDelay))
 
 	request := &wsproto.RecoveryRequest{
 		RequestId:      requestID,
@@ -189,11 +184,11 @@ func (k Keeper) InitiateRecovery(
 		return nil, err
 	}
 
-	k.Logger(ctx).Info("initiated recovery request",
+	k.logger.Info("initiated recovery request",
 		"request_id", requestID,
 		"wallet_id", walletID,
 		"initiator", initiator,
-		"executable_at", executableAt.AsTime(),
+		"executable_at", gogoTimestampToTime(executableAt),
 	)
 
 	return request, nil
@@ -217,8 +212,6 @@ func (k Keeper) ApproveRecovery(
 
 		k.logger.Error("failed to unmarshal", "error", err)
 
-		continue
-
 	}
 
 	// Check if already executed
@@ -236,8 +229,6 @@ func (k Keeper) ApproveRecovery(
 	if err := k.cdc.Unmarshal(configBytes, &config); err != nil {
 
 		k.logger.Error("failed to unmarshal", "error", err)
-
-		continue
 
 	}
 
@@ -278,7 +269,7 @@ func (k Keeper) ApproveRecovery(
 		return false, err
 	}
 
-	k.Logger(ctx).Info("approved recovery request",
+	k.logger.Info("approved recovery request",
 		"request_id", requestID,
 		"guardian", guardianAddress,
 		"approvals", request.ApprovalsCount,
@@ -302,8 +293,6 @@ func (k Keeper) ExecuteRecovery(ctx context.Context, requestID string) error {
 
 		k.logger.Error("failed to unmarshal", "error", err)
 
-		continue
-
 	}
 
 	// Check if already executed
@@ -322,8 +311,6 @@ func (k Keeper) ExecuteRecovery(ctx context.Context, requestID string) error {
 
 		k.logger.Error("failed to unmarshal", "error", err)
 
-		continue
-
 	}
 
 	// Verify threshold is met
@@ -332,7 +319,7 @@ func (k Keeper) ExecuteRecovery(ctx context.Context, requestID string) error {
 	}
 
 	// Check if recovery delay has elapsed
-	if determinism.GetBlockTime(ctx).Before(request.ExecutableAt.AsTime()) {
+	if determinism.GetBlockTime(ctx).Before(gogoTimestampToTime(request.ExecutableAt)) {
 		return types.ErrRecoveryDelayNotElapsed
 	}
 
@@ -343,7 +330,7 @@ func (k Keeper) ExecuteRecovery(ctx context.Context, requestID string) error {
 	// 4. Create audit log entry
 
 	request.Status = wsproto.RecoveryStatus_RECOVERY_STATUS_EXECUTED
-	request.ExecutedAt = timestamppb.New(determinism.GetBlockTime(ctx))
+	request.ExecutedAt = blockTimeToGogoTimestamp(ctx)
 
 	// Store updated request
 	updatedBytes := k.cdc.MustMarshal(&request)
@@ -351,7 +338,7 @@ func (k Keeper) ExecuteRecovery(ctx context.Context, requestID string) error {
 		return err
 	}
 
-	k.Logger(ctx).Info("executed recovery request",
+	k.logger.Info("executed recovery request",
 		"request_id", requestID,
 		"wallet_id", request.WalletId,
 		"new_address", request.NewAddress,
@@ -372,8 +359,6 @@ func (k Keeper) CancelRecovery(ctx context.Context, requestID string, walletOwne
 	if err := k.cdc.Unmarshal(requestBytes, &request); err != nil {
 
 		k.logger.Error("failed to unmarshal", "error", err)
-
-		continue
 
 	}
 
@@ -430,8 +415,6 @@ func (k Keeper) incrementGuardianRecoveryCount(ctx context.Context, walletID, gu
 
 		k.logger.Error("failed to unmarshal", "error", err)
 
-		continue
-
 	}
 
 	for _, guardian := range config.Guardians {
@@ -441,7 +424,7 @@ func (k Keeper) incrementGuardianRecoveryCount(ctx context.Context, walletID, gu
 		}
 	}
 
-	config.LastModified = timestamppb.New(determinism.GetBlockTime(ctx))
+	config.LastModified = blockTimeToGogoTimestamp(ctx)
 
 	updatedBytes := k.cdc.MustMarshal(&config)
 	return k.SetSocialRecoveryConfig(ctx, walletID, updatedBytes)
@@ -459,8 +442,6 @@ func (k Keeper) AddGuardian(ctx context.Context, walletID string, guardian *wspr
 
 		k.logger.Error("failed to unmarshal", "error", err)
 
-		continue
-
 	}
 
 	// Check max guardians
@@ -476,12 +457,12 @@ func (k Keeper) AddGuardian(ctx context.Context, walletID string, guardian *wspr
 	}
 
 	// Initialize new guardian
-	guardian.AddedAt = timestamppb.New(determinism.GetBlockTime(ctx))
+	guardian.AddedAt = blockTimeToGogoTimestamp(ctx)
 	guardian.Confirmed = false
 	guardian.RecoveryRequestsCount = 0
 
 	config.Guardians = append(config.Guardians, guardian)
-	config.LastModified = timestamppb.New(determinism.GetBlockTime(ctx))
+	config.LastModified = blockTimeToGogoTimestamp(ctx)
 
 	updatedBytes := k.cdc.MustMarshal(&config)
 	return k.SetSocialRecoveryConfig(ctx, walletID, updatedBytes)
@@ -499,8 +480,6 @@ func (k Keeper) RemoveGuardian(ctx context.Context, walletID, guardianAddress st
 
 		k.logger.Error("failed to unmarshal", "error", err)
 
-		continue
-
 	}
 
 	// Remove guardian
@@ -517,7 +496,7 @@ func (k Keeper) RemoveGuardian(ctx context.Context, walletID, guardianAddress st
 	}
 
 	config.Guardians = newGuardians
-	config.LastModified = timestamppb.New(determinism.GetBlockTime(ctx))
+	config.LastModified = blockTimeToGogoTimestamp(ctx)
 
 	updatedBytes := k.cdc.MustMarshal(&config)
 	return k.SetSocialRecoveryConfig(ctx, walletID, updatedBytes)

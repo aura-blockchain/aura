@@ -13,7 +13,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/bridge/types"
 	bridgepb "github.com/aequitas/aura/proto/aura/bridge/v1beta1"
@@ -145,7 +144,7 @@ func (ms msgServer) LockTokens(goCtx context.Context, msg *bridgepb.MsgLockToken
 	if msg == nil {
 		return nil, status.Error(codes.InvalidArgument, "request cannot be nil")
 	}
-	if msg.Amount == nil || !msg.Amount.Amount.IsPositive() {
+	if !msg.Amount.IsValid() || !msg.Amount.Amount.IsPositive() {
 		return nil, status.Error(codes.InvalidArgument, "amount must be positive")
 	}
 	ctx := sdk.UnwrapSDKContext(goCtx)
@@ -190,10 +189,10 @@ func (ms msgServer) LockTokens(goCtx context.Context, msg *bridgepb.MsgLockToken
 		TargetChain:           chainID,
 		Sender:                msg.Sender,
 		Recipient:             msg.Recipient,
-		Amount:                amnt.Amount.String(),
+		Amount:                amnt.Amount,
 		Denom:                 amnt.Denom,
 		Status:                bridgepb.TransferStatus_PENDING,
-		Timestamp:             timestamppb.New(ctx.BlockTime()),
+		Timestamp:             ctx.BlockTime(),
 		RequiredConfirmations: params.MinConfirmations,
 	}
 	ms.Keeper.setTransfer(ctx, transfer)
@@ -211,8 +210,9 @@ func (ms msgServer) MintTokens(goCtx context.Context, msg *bridgepb.MsgMintToken
 	if msg.Validator == "" {
 		return nil, status.Error(codes.InvalidArgument, "validator required")
 	}
-	amount, ok := sdkmath.NewIntFromString(msg.Amount)
-	if !ok || !amount.IsPositive() {
+	// msg.Amount is already math.Int, use directly
+	amount := msg.Amount
+	if !amount.IsPositive() {
 		return nil, status.Error(codes.InvalidArgument, "invalid amount")
 	}
 	ctx := sdk.UnwrapSDKContext(goCtx)
@@ -241,10 +241,10 @@ func (ms msgServer) MintTokens(goCtx context.Context, msg *bridgepb.MsgMintToken
 			TargetChain: sourceChainAura,
 			Sender:      msg.SourceChain,
 			Recipient:   msg.Recipient,
-			Amount:      amount.String(),
+			Amount:      amount,
 			Denom:       msg.Denom,
 			Status:      bridgepb.TransferStatus_CONFIRMED,
-			Timestamp:   timestamppb.New(ctx.BlockTime()),
+			Timestamp:   ctx.BlockTime(),
 		}
 		ms.Keeper.setTransfer(ctx, transfer)
 		ms.Keeper.indexTransferHash(ctx, msg.SourceTxHash, transferID)
@@ -269,7 +269,7 @@ func (ms msgServer) MintTokens(goCtx context.Context, msg *bridgepb.MsgMintToken
 		}
 		transfer.Status = bridgepb.TransferStatus_COMPLETED
 		transfer.TargetTxHash = msg.SourceTxHash
-		transfer.Timestamp = timestamppb.New(ctx.BlockTime())
+		transfer.Timestamp = ctx.BlockTime()
 		ms.Keeper.setTransfer(ctx, transfer)
 
 		// CRITICAL SECURITY: Record minted amount for hourly tracking (auto-pause detection)
@@ -282,12 +282,11 @@ func (ms msgServer) MintTokens(goCtx context.Context, msg *bridgepb.MsgMintToken
 			WrappedDenom:  wrappedDenom,
 			OriginalDenom: msg.Denom,
 			SourceChain:   normalizeChain(msg.SourceChain),
-			TotalSupply:   amount.String(),
+			TotalSupply:   amount,
 		}
 	} else {
-		if total, ok := sdkmath.NewIntFromString(token.TotalSupply); ok {
-			token.TotalSupply = total.Add(amount).String()
-		}
+		// token.TotalSupply is already math.Int, use directly
+		token.TotalSupply = token.TotalSupply.Add(amount)
 	}
 	ms.Keeper.setWrappedToken(ctx, token)
 	return &bridgepb.MsgMintTokensResponse{Success: true, WrappedDenom: wrappedDenom}, nil
@@ -298,8 +297,9 @@ func (ms msgServer) UnlockTokens(goCtx context.Context, msg *bridgepb.MsgUnlockT
 	if msg == nil {
 		return nil, status.Error(codes.InvalidArgument, "request cannot be nil")
 	}
-	amount, ok := sdkmath.NewIntFromString(msg.Amount)
-	if !ok || !amount.IsPositive() {
+	// msg.Amount is already math.Int, use directly
+	amount := msg.Amount
+	if !amount.IsPositive() {
 		return nil, status.Error(codes.InvalidArgument, "invalid amount")
 	}
 	ctx := sdk.UnwrapSDKContext(goCtx)
@@ -448,7 +448,7 @@ func (ms msgServer) UnlockTokens(goCtx context.Context, msg *bridgepb.MsgUnlockT
 			transfer.SourceChain,
 			msg.BurnTxHash,
 			msg.Sender,
-			msg.Amount,
+			msg.Amount.String(),
 			msg.Denom,
 		)
 
@@ -574,12 +574,12 @@ func (ms msgServer) UnlockTokens(goCtx context.Context, msg *bridgepb.MsgUnlockT
 	pendingTransfer := &types.PendingTransfer{
 		TransferId:   transferID,
 		Recipient:    msg.Sender,
-		Amount:       amount.String(), // Store as string for protobuf compatibility
+		Amount:      amount, // Store as string for protobuf compatibility
 		Denom:        msg.Denom,
 		SourceChain:  sourceChain,
 		SourceTxHash: msg.BurnTxHash,
-		CreatedAt:    timestamppb.New(ctx.BlockTime()),
-		UnlockTime:   timestamppb.New(unlockTime),
+		CreatedAt:    ctx.BlockTime(),
+		UnlockTime:   unlockTime,
 		Challenged:   false,
 		FraudProofId: "",
 	}
@@ -589,7 +589,7 @@ func (ms msgServer) UnlockTokens(goCtx context.Context, msg *bridgepb.MsgUnlockT
 	// Update transfer status to RELAYED (awaiting finalization)
 	transfer.Status = bridgepb.TransferStatus_RELAYED
 	transfer.TargetTxHash = msg.BurnTxHash
-	transfer.Timestamp = timestamppb.New(ctx.BlockTime())
+	transfer.Timestamp = ctx.BlockTime()
 	ms.Keeper.setTransfer(ctx, transfer)
 
 	// Emit event for pending transfer creation
@@ -636,10 +636,10 @@ func (ms msgServer) BurnTokens(goCtx context.Context, msg *bridgepb.MsgBurnToken
 	}
 	amnt := msg.Amount
 	if ms.Keeper.bankKeeper != nil {
-		if err := ms.Keeper.bankKeeper.SendCoinsFromAccountToModule(ctx, sender, types.ModuleName, sdk.NewCoins(*amnt)); err != nil {
+		if err := ms.Keeper.bankKeeper.SendCoinsFromAccountToModule(ctx, sender, types.ModuleName, sdk.NewCoins(amnt)); err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
-		if err := ms.Keeper.bankKeeper.BurnCoins(ctx, types.ModuleName, sdk.NewCoins(*amnt)); err != nil {
+		if err := ms.Keeper.bankKeeper.BurnCoins(ctx, types.ModuleName, sdk.NewCoins(amnt)); err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 	}
@@ -650,10 +650,10 @@ func (ms msgServer) BurnTokens(goCtx context.Context, msg *bridgepb.MsgBurnToken
 		TargetChain: chainID,
 		Sender:      msg.Sender,
 		Recipient:   msg.Recipient,
-		Amount:      amnt.Amount.String(),
+		Amount:      amnt.Amount,
 		Denom:       amnt.Denom,
 		Status:      bridgepb.TransferStatus_CONFIRMED,
-		Timestamp:   timestamppb.New(ctx.BlockTime()),
+		Timestamp:   ctx.BlockTime(),
 	}
 	ms.Keeper.setTransfer(ctx, transfer)
 	ms.Keeper.indexTransferHash(ctx, transferID, transferID)
@@ -760,7 +760,7 @@ func (ms msgServer) LinkAddress(goCtx context.Context, msg *bridgepb.MsgLinkAddr
 		VerifiedPaw:     msg.PawAddress != "" && len(msg.PawSignature) > 0,
 		VerifiedXai:     msg.XaiAddress != "" && len(msg.XaiSignature) > 0,
 		LinkedAddresses: linked,
-		VerifiedAt:      timestamppb.New(ctx.BlockTime()),
+		VerifiedAt:      ctx.BlockTime(),
 	}
 
 	if ms.Keeper.vcKeeper != nil {
@@ -790,7 +790,7 @@ func (ms msgServer) CrossChainSwap(goCtx context.Context, msg *bridgepb.MsgCross
 	if msg == nil {
 		return nil, status.Error(codes.InvalidArgument, "request cannot be nil")
 	}
-	if msg.InputCoin == nil || !msg.InputCoin.Amount.IsPositive() {
+	if !msg.InputCoin.IsValid() || !msg.InputCoin.Amount.IsPositive() {
 		return nil, status.Error(codes.InvalidArgument, "input amount required")
 	}
 	ctx := sdk.UnwrapSDKContext(goCtx)
@@ -803,7 +803,7 @@ func (ms msgServer) CrossChainSwap(goCtx context.Context, msg *bridgepb.MsgCross
 		SourceCoin:  msg.InputCoin,
 		TargetDenom: msg.TargetDenom,
 		Status:      "pending",
-		InitiatedAt: timestamppb.New(ctx.BlockTime()),
+		InitiatedAt: ctx.BlockTime(),
 	}
 	ms.Keeper.setSwap(ctx, swap)
 	route := []string{normalizeChain(msg.SourceChain), normalizeChain(msg.TargetChain)}
@@ -841,10 +841,10 @@ func (ms msgServer) RelayTransfer(goCtx context.Context, msg *bridgepb.MsgRelayT
 		transfer.Status = bridgepb.TransferStatus_REFUNDED
 	}
 	transfer.TargetTxHash = msg.TargetTxHash
-	transfer.Timestamp = timestamppb.New(ctx.BlockTime())
+	transfer.Timestamp = ctx.BlockTime()
 	ms.Keeper.setTransfer(ctx, transfer)
-	vol, _ := sdkmath.NewIntFromString(transfer.Amount)
-	ms.Keeper.recordRelayerStats(ctx, msg.Relayer, true, vol)
+	// transfer.Amount is already math.Int, use directly
+	ms.Keeper.recordRelayerStats(ctx, msg.Relayer, true, transfer.Amount)
 	return &bridgepb.MsgRelayTransferResponse{Success: true}, nil
 }
 
@@ -889,7 +889,7 @@ func (ms msgServer) FinalizeTransfer(goCtx context.Context, msg *bridgepb.MsgFin
 	// CRITICAL SECURITY: Check if fraud proof window has expired
 	// This ensures adequate time for fraud proof submission before finalizing
 	currentTime := ctx.BlockTime()
-	unlockTime := pendingTransfer.UnlockTime.AsTime()
+	unlockTime := pendingTransfer.UnlockTime
 
 	if currentTime.Before(unlockTime) {
 		return nil, status.Error(codes.FailedPrecondition,
@@ -905,11 +905,11 @@ func (ms msgServer) FinalizeTransfer(goCtx context.Context, msg *bridgepb.MsgFin
 				pendingTransfer.FraudProofId))
 	}
 
-	// Parse amount
-	amount, ok := sdkmath.NewIntFromString(pendingTransfer.Amount)
-	if !ok || !amount.IsPositive() {
+	// pendingTransfer.Amount is already math.Int, use directly
+	amount := pendingTransfer.Amount
+	if !amount.IsPositive() {
 		return nil, status.Error(codes.Internal,
-			fmt.Sprintf("invalid amount in pending transfer: %s", pendingTransfer.Amount))
+			fmt.Sprintf("invalid amount in pending transfer: %s", amount.String()))
 	}
 
 	// Parse recipient address
@@ -928,7 +928,7 @@ func (ms msgServer) FinalizeTransfer(goCtx context.Context, msg *bridgepb.MsgFin
 	transfer, found := ms.Keeper.GetTransfer(ctx, msg.TransferId)
 	if found {
 		transfer.Status = bridgepb.TransferStatus_COMPLETED
-		transfer.Timestamp = timestamppb.New(currentTime)
+		transfer.Timestamp = currentTime
 		ms.Keeper.setTransfer(ctx, transfer)
 	}
 
@@ -962,7 +962,7 @@ func (ms msgServer) FinalizeTransfer(goCtx context.Context, msg *bridgepb.MsgFin
 
 	return &bridgepb.MsgFinalizeTransferResponse{
 		Success:   true,
-		Amount:    amount.String(),
+		Amount:      amount,
 		Recipient: pendingTransfer.Recipient,
 	}, nil
 }
@@ -1015,7 +1015,7 @@ func (ms msgServer) SubmitFraudProof(goCtx context.Context, msg *bridgepb.MsgSub
 	// CRITICAL SECURITY: Check if fraud proof window is still open
 	// Fraud proofs can only be submitted during the window
 	currentTime := ctx.BlockTime()
-	unlockTime := pendingTransfer.UnlockTime.AsTime()
+	unlockTime := pendingTransfer.UnlockTime
 
 	if currentTime.After(unlockTime) {
 		return nil, status.Error(codes.FailedPrecondition,
@@ -1058,7 +1058,7 @@ func (ms msgServer) SubmitFraudProof(goCtx context.Context, msg *bridgepb.MsgSub
 		FraudType:            fraudType,
 		Evidence:             msg.Evidence,
 		Status:               bridgepb.FraudProofStatus_FRAUD_PROOF_PENDING,
-		SubmittedAt:          timestamppb.New(currentTime),
+		SubmittedAt:          currentTime,
 	}
 
 	// Store fraud proof

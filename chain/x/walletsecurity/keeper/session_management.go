@@ -5,12 +5,11 @@ import (
 	"fmt"
 	"time"
 
+	gogotypes "github.com/cosmos/gogoproto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/aequitas/aura/chain/x/common/determinism"
 	"github.com/aequitas/aura/chain/x/walletsecurity/types"
 	wsproto "github.com/aequitas/aura/proto/aura/walletsecurity/v1beta1"
-	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // CreateSession creates a new wallet session
@@ -22,10 +21,10 @@ func (k Keeper) CreateSession(ctx context.Context, walletID string, duration tim
 		SessionId:                  sessionID,
 		WalletId:                   walletID,
 		DeviceFingerprint:          deviceFingerprint,
-		StartedAt:                  timestamppb.New(blockTime),
-		LastActivity:               timestamppb.New(blockTime),
-		TimeoutDuration:            durationpb.New(duration),
-		ExpiresAt:                  timestamppb.New(blockTime.Add(duration)),
+		StartedAt:                  timeToGogoTimestamp(blockTime),
+		LastActivity:               timeToGogoTimestamp(blockTime),
+		TimeoutDuration:            &gogotypes.Duration{Seconds: int64(duration.Seconds()), Nanos: int32(duration.Nanoseconds() % 1e9)},
+		ExpiresAt:                  timeToGogoTimestamp(blockTime.Add(duration)),
 		AutoLockEnabled:            true,
 		InactivityThresholdSeconds: 300, // 5 minutes
 		Locked:                     false,
@@ -73,14 +72,14 @@ func (k Keeper) ValidateSession(ctx context.Context, sessionID string) (bool, er
 	}
 
 	// Check expiration
-	if session.ExpiresAt != nil && blockTime.After(session.ExpiresAt.AsTime()) {
+	if session.ExpiresAt != nil && blockTime.After(gogoTimestampToTime(session.ExpiresAt)) {
 		k.TerminateSession(ctx, sessionID)
 		return false, types.ErrSessionExpired
 	}
 
 	// Check inactivity timeout
 	if session.AutoLockEnabled && session.LastActivity != nil {
-		inactiveDuration := blockTime.Sub(session.LastActivity.AsTime())
+		inactiveDuration := blockTime.Sub(gogoTimestampToTime(session.LastActivity))
 		thresholdDuration := time.Duration(session.InactivityThresholdSeconds) * time.Second
 		if inactiveDuration > thresholdDuration {
 			k.LockSessionDueToInactivity(ctx, sessionID)
@@ -104,7 +103,7 @@ func (k Keeper) UpdateSessionActivity(ctx context.Context, sessionID string) err
 	}
 
 	blockTime := determinism.GetBlockTime(ctx)
-	session.LastActivity = timestamppb.New(blockTime)
+	session.LastActivity = timeToGogoTimestamp(blockTime)
 
 	updatedBytes, err := k.cdc.Marshal(&session)
 	if err != nil {
@@ -166,7 +165,7 @@ func (k Keeper) UnlockSessionAfterAuth(ctx context.Context, sessionID string, au
 
 	blockTime := determinism.GetBlockTime(ctx)
 	session.Locked = false
-	session.LastActivity = timestamppb.New(blockTime)
+	session.LastActivity = timeToGogoTimestamp(blockTime)
 
 	updatedBytes, err := k.cdc.Marshal(&session)
 	if err != nil {

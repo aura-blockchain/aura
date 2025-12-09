@@ -105,7 +105,8 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
 	// Convert sdk.Context to context.Context for keeper
 	gen := am.keeper.ExportGenesis(sdk.WrapSDKContext(ctx))
-	return cdc.MustMarshalJSON(gen)
+	// MustMarshalJSON expects proto.Message which requires pointer receiver
+	return cdc.MustMarshalJSON(&gen)
 }
 
 // ConsensusVersion returns the module consensus version

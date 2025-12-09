@@ -35,7 +35,7 @@ func (qs queryServer) Params(goCtx context.Context, req *identitypb.QueryParamsR
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &identitypb.QueryParamsResponse{Params: params}, nil
+	return &identitypb.QueryParamsResponse{Params: *params}, nil
 }
 
 // IdentityRecord queries an identity record by DID
@@ -53,7 +53,7 @@ func (qs queryServer) IdentityRecord(goCtx context.Context, req *identitypb.Quer
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
-	return &identitypb.QueryIdentityRecordResponse{Record: record}, nil
+	return &identitypb.QueryIdentityRecordResponse{Record: *record}, nil
 }
 
 // IdentityRecordByAddress queries an identity record by address
@@ -75,7 +75,7 @@ func (qs queryServer) IdentityRecordByAddress(goCtx context.Context, req *identi
 
 	for _, record := range allRecords {
 		if record.Address == req.Address {
-			return &identitypb.QueryIdentityRecordByAddressResponse{Record: record}, nil
+			return &identitypb.QueryIdentityRecordByAddressResponse{Record: *record}, nil
 		}
 	}
 
@@ -94,7 +94,15 @@ func (qs queryServer) AllIdentityRecords(goCtx context.Context, req *identitypb.
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &identitypb.QueryAllIdentityRecordsResponse{Records: records}, nil
+	// Convert pointer slice to value slice
+	recordValues := make([]identitypb.IdentityRecord, len(records))
+	for i, r := range records {
+		if r != nil {
+			recordValues[i] = *r
+		}
+	}
+
+	return &identitypb.QueryAllIdentityRecordsResponse{Records: recordValues}, nil
 }
 
 // ChangeRequest queries a change request by ID
@@ -112,7 +120,7 @@ func (qs queryServer) ChangeRequest(goCtx context.Context, req *identitypb.Query
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
-	return &identitypb.QueryChangeRequestResponse{Request: request}, nil
+	return &identitypb.QueryChangeRequestResponse{Request: *request}, nil
 }
 
 // ChangeRequestsByDID queries change requests for a DID
@@ -131,10 +139,10 @@ func (qs queryServer) ChangeRequestsByDID(goCtx context.Context, req *identitypb
 	}
 
 	// Filter by DID
-	var filtered []*types.ChangeRequest
+	var filtered []identitypb.ChangeRequest
 	for _, request := range allRequests {
 		if request.Did == req.Did {
-			filtered = append(filtered, request)
+			filtered = append(filtered, *request)
 		}
 	}
 
@@ -156,7 +164,15 @@ func (qs queryServer) ChangeHistory(goCtx context.Context, req *identitypb.Query
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &identitypb.QueryChangeHistoryResponse{Entries: entries}, nil
+	// Convert pointer slice to value slice
+	entryValues := make([]identitypb.ChangeHistory, len(entries))
+	for i, e := range entries {
+		if e != nil {
+			entryValues[i] = *e
+		}
+	}
+
+	return &identitypb.QueryChangeHistoryResponse{Entries: entryValues}, nil
 }
 
 // Role queries a role by name
@@ -174,7 +190,7 @@ func (qs queryServer) Role(goCtx context.Context, req *identitypb.QueryRoleReque
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
-	return &identitypb.QueryRoleResponse{Role: role}, nil
+	return &identitypb.QueryRoleResponse{Role: *role}, nil
 }
 
 // AllRoles queries all roles
@@ -189,7 +205,15 @@ func (qs queryServer) AllRoles(goCtx context.Context, req *identitypb.QueryAllRo
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &identitypb.QueryAllRolesResponse{Roles: roles}, nil
+	// Convert pointer slice to value slice
+	roleValues := make([]identitypb.Role, len(roles))
+	for i, r := range roles {
+		if r != nil {
+			roleValues[i] = *r
+		}
+	}
+
+	return &identitypb.QueryAllRolesResponse{Roles: roleValues}, nil
 }
 
 // RoleAssignments queries role assignments for an address
@@ -207,7 +231,15 @@ func (qs queryServer) RoleAssignments(goCtx context.Context, req *identitypb.Que
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &identitypb.QueryRoleAssignmentsResponse{Assignments: assignments}, nil
+	// Convert pointer slice to value slice
+	assignmentValues := make([]identitypb.RoleAssignment, len(assignments))
+	for i, a := range assignments {
+		if a != nil {
+			assignmentValues[i] = *a
+		}
+	}
+
+	return &identitypb.QueryRoleAssignmentsResponse{Assignments: assignmentValues}, nil
 }
 
 // HasPermission checks if an address has a specific permission
@@ -264,7 +296,7 @@ func (qs queryServer) MultisigWallet(goCtx context.Context, req *identitypb.Quer
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
-	return &identitypb.QueryMultisigWalletResponse{Wallet: &wallet}, nil
+	return &identitypb.QueryMultisigWalletResponse{Wallet: wallet}, nil
 }
 
 // AllMultisigWallets queries all multisig wallets
@@ -279,7 +311,15 @@ func (qs queryServer) AllMultisigWallets(goCtx context.Context, req *identitypb.
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &identitypb.QueryAllMultisigWalletsResponse{Wallets: wallets}, nil
+	// Convert pointer slice to value slice
+	walletValues := make([]identitypb.MultisigWallet, len(wallets))
+	for i, w := range wallets {
+		if w != nil {
+			walletValues[i] = *w
+		}
+	}
+
+	return &identitypb.QueryAllMultisigWalletsResponse{Wallets: walletValues}, nil
 }
 
 // MultisigProposal queries a multisig proposal by ID
@@ -297,7 +337,7 @@ func (qs queryServer) MultisigProposal(goCtx context.Context, req *identitypb.Qu
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
-	return &identitypb.QueryMultisigProposalResponse{Proposal: &proposal}, nil
+	return &identitypb.QueryMultisigProposalResponse{Proposal: proposal}, nil
 }
 
 // MultisigProposalsByWallet queries proposals for a wallet
@@ -316,10 +356,10 @@ func (qs queryServer) MultisigProposalsByWallet(goCtx context.Context, req *iden
 	}
 
 	// Filter by wallet ID
-	var filtered []*types.MultisigProposal
+	var filtered []identitypb.MultisigProposal
 	for _, proposal := range allProposals {
 		if proposal.WalletId == req.WalletId {
-			filtered = append(filtered, proposal)
+			filtered = append(filtered, *proposal)
 		}
 	}
 
@@ -341,7 +381,7 @@ func (qs queryServer) TimeLockedAction(goCtx context.Context, req *identitypb.Qu
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
-	return &identitypb.QueryTimeLockedActionResponse{Action: &action}, nil
+	return &identitypb.QueryTimeLockedActionResponse{Action: action}, nil
 }
 
 // AllTimeLockedActions queries all time-locked actions
@@ -356,7 +396,15 @@ func (qs queryServer) AllTimeLockedActions(goCtx context.Context, req *identityp
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &identitypb.QueryAllTimeLockedActionsResponse{Actions: actions}, nil
+	// Convert pointer slice to value slice
+	actionValues := make([]identitypb.TimeLockedAction, len(actions))
+	for i, a := range actions {
+		if a != nil {
+			actionValues[i] = *a
+		}
+	}
+
+	return &identitypb.QueryAllTimeLockedActionsResponse{Actions: actionValues}, nil
 }
 
 // EmergencyAdmin queries an emergency admin by address
@@ -374,7 +422,7 @@ func (qs queryServer) EmergencyAdmin(goCtx context.Context, req *identitypb.Quer
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
-	return &identitypb.QueryEmergencyAdminResponse{Admin: &admin}, nil
+	return &identitypb.QueryEmergencyAdminResponse{Admin: admin}, nil
 }
 
 // AllEmergencyAdmins queries all emergency admins
@@ -389,7 +437,15 @@ func (qs queryServer) AllEmergencyAdmins(goCtx context.Context, req *identitypb.
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &identitypb.QueryAllEmergencyAdminsResponse{Admins: admins}, nil
+	// Convert pointer slice to value slice
+	adminValues := make([]identitypb.EmergencyAdmin, len(admins))
+	for i, a := range admins {
+		if a != nil {
+			adminValues[i] = *a
+		}
+	}
+
+	return &identitypb.QueryAllEmergencyAdminsResponse{Admins: adminValues}, nil
 }
 
 // ValidatorRotation queries a validator rotation by address
@@ -407,7 +463,7 @@ func (qs queryServer) ValidatorRotation(goCtx context.Context, req *identitypb.Q
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
-	return &identitypb.QueryValidatorRotationResponse{Rotation: &rotation}, nil
+	return &identitypb.QueryValidatorRotationResponse{Rotation: rotation}, nil
 }
 
 // Session queries a session by ID
@@ -425,7 +481,7 @@ func (qs queryServer) Session(goCtx context.Context, req *identitypb.QuerySessio
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
-	return &identitypb.QuerySessionResponse{Session: &session}, nil
+	return &identitypb.QuerySessionResponse{Session: session}, nil
 }
 
 // SessionsByAddress queries sessions for an address
@@ -444,13 +500,13 @@ func (qs queryServer) SessionsByAddress(goCtx context.Context, req *identitypb.Q
 	}
 
 	// Get full session objects
-	var sessions []*types.Session
+	var sessions []identitypb.Session
 	for _, sessionID := range sessionIDs {
 		session, err := qs.Keeper.GetSession(ctx, sessionID)
 		if err != nil {
 			continue
 		}
-		sessions = append(sessions, &session)
+		sessions = append(sessions, session)
 	}
 
 	return &identitypb.QuerySessionsByAddressResponse{Sessions: sessions}, nil
@@ -471,7 +527,7 @@ func (qs queryServer) RateLimit(goCtx context.Context, req *identitypb.QueryRate
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &identitypb.QueryRateLimitResponse{Config: &config}, nil
+	return &identitypb.QueryRateLimitResponse{Config: config}, nil
 }
 
 // AuditLogs queries audit logs
@@ -486,7 +542,15 @@ func (qs queryServer) AuditLogs(goCtx context.Context, req *identitypb.QueryAudi
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &identitypb.QueryAuditLogsResponse{Logs: logs}, nil
+	// Convert pointer slice to value slice
+	logValues := make([]identitypb.AuditLog, len(logs))
+	for i, l := range logs {
+		if l != nil {
+			logValues[i] = *l
+		}
+	}
+
+	return &identitypb.QueryAuditLogsResponse{Logs: logValues}, nil
 }
 
 // AuditLogsByActor queries audit logs by actor
@@ -505,10 +569,10 @@ func (qs queryServer) AuditLogsByActor(goCtx context.Context, req *identitypb.Qu
 	}
 
 	// Filter by actor
-	var filtered []*types.AuditLog
+	var filtered []identitypb.AuditLog
 	for _, log := range allLogs {
 		if log.Actor == req.Actor {
-			filtered = append(filtered, log)
+			filtered = append(filtered, *log)
 		}
 	}
 

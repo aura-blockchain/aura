@@ -108,19 +108,19 @@ func RoleConsistencyInvariant(k *Keeper) sdk.Invariant {
 			}
 
 			// Validate timestamps are set
-			if role.CreatedAt == nil {
+			if role.CreatedAt.IsZero() {
 				return sdk.FormatInvariant(
 					types.ModuleName,
 					"role-consistency",
-					fmt.Sprintf("role %s has nil created_at", role.Name),
+					fmt.Sprintf("role %s has zero created_at", role.Name),
 				), true
 			}
 
-			if role.UpdatedAt == nil {
+			if role.UpdatedAt == nil || role.UpdatedAt.IsZero() {
 				return sdk.FormatInvariant(
 					types.ModuleName,
 					"role-consistency",
-					fmt.Sprintf("role %s has nil updated_at", role.Name),
+					fmt.Sprintf("role %s has nil or zero updated_at", role.Name),
 				), true
 			}
 

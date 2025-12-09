@@ -10,7 +10,6 @@ import (
 
 	"github.com/aequitas/aura/chain/x/common/determinism"
 	wsproto "github.com/aequitas/aura/proto/aura/walletsecurity/v1beta1"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // AnomalyScore represents an anomaly detection score
@@ -136,7 +135,7 @@ func (k Keeper) recordAnomaly(ctx context.Context, walletID string, score *Anoma
 		WalletId:   walletID,
 		Score:      score.Score,
 		Threshold:  score.Threshold,
-		DetectedAt: timestamppb.Now(),
+		DetectedAt: gogoTimestampNow(),
 		Resolved:   false,
 	}
 

@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"google.golang.org/protobuf/proto"
 
 	"github.com/aequitas/aura/chain/x/compliance/types"
 )
@@ -175,8 +174,20 @@ func (k *Keeper) SetAMLProfileEncrypted(ctx sdk.Context, profile *types.AMLProfi
 		return k.SetAMLProfile(ctx, profile)
 	}
 
-	// Create a copy to avoid modifying the input
-	encryptedProfile := proto.Clone(profile).(*types.AMLProfile)
+	// Create a copy to avoid modifying the input (manual copy for gogo-protobuf)
+	encryptedProfile := &types.AMLProfile{
+		Address:              profile.Address,
+		RiskLevel:            profile.RiskLevel,
+		TotalTransactions:    profile.TotalTransactions,
+		TotalVolume:          profile.TotalVolume,
+		LastAssessment:       profile.LastAssessment,
+		PepStatus:            profile.PepStatus,
+		SuspiciousActivities: profile.SuspiciousActivities,
+		// Will be replaced with encrypted data below
+		RiskFactors:   nil,
+		SourceOfFunds: nil,
+		Occupation:    "",
+	}
 
 	// Prepare sensitive data for encryption
 	sensitiveData := EncryptedAMLProfileData{
@@ -289,8 +300,21 @@ func (k *Keeper) SetSuspiciousActivityEncrypted(ctx sdk.Context, activity *types
 		return k.SetSuspiciousActivity(ctx, activity)
 	}
 
-	// Create a copy to avoid modifying the input
-	encryptedActivity := proto.Clone(activity).(*types.SuspiciousActivity)
+	// Create a copy to avoid modifying the input (manual copy for gogo-protobuf)
+	encryptedActivity := &types.SuspiciousActivity{
+		Id:              activity.Id,
+		Address:         activity.Address,
+		TransactionHash: activity.TransactionHash,
+		ActivityType:    activity.ActivityType,
+		Amount:          activity.Amount,
+		DetectedAt:      activity.DetectedAt,
+		ReportedAt:      activity.ReportedAt,
+		FiledSar:        activity.FiledSar,
+		SarReference:    activity.SarReference,
+		// Will be replaced with encrypted data below
+		Description: "",
+		Indicators:  nil,
+	}
 
 	// Prepare sensitive data for encryption
 	sensitiveData := map[string]interface{}{
@@ -401,8 +425,17 @@ func (k *Keeper) SetGDPRConsentEncrypted(ctx sdk.Context, consent *types.GDPRCon
 		return k.SetGDPRConsent(ctx, consent)
 	}
 
-	// Create a copy to avoid modifying the input
-	encryptedConsent := proto.Clone(consent).(*types.GDPRConsent)
+	// Create a copy to avoid modifying the input (manual copy for gogo-protobuf)
+	encryptedConsent := &types.GDPRConsent{
+		Address:             consent.Address,
+		ConsentType:         consent.ConsentType,
+		Consented:           consent.Consented,
+		ConsentGivenAt:      consent.ConsentGivenAt,
+		ConsentWithdrawnAt:  consent.ConsentWithdrawnAt,
+		ConsentVersion:      consent.ConsentVersion,
+		// Will be replaced with encrypted data below
+		AuditCommitment: nil,
+	}
 
 	// Create audit data to encrypt (timestamps, version)
 	auditData := map[string]interface{}{

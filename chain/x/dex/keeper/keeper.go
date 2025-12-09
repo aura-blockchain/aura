@@ -518,12 +518,9 @@ func (k Keeper) GeneratePoolID(denomA, denomB string) string {
 // Reserve Parsing Helpers
 // ============================================================================
 
-// parseReserve parses a reserve string to math.Int
-func (k Keeper) parseReserve(reserveStr string) (sdkmath.Int, error) {
-	reserve, ok := sdkmath.NewIntFromString(reserveStr)
-	if !ok {
-		return sdkmath.Int{}, fmt.Errorf("invalid reserve amount: %s", reserveStr)
-	}
+// parseReserve returns the reserve value directly (customtype in proto means it's already math.Int)
+// This function is kept for backward compatibility but now just returns the value
+func (k Keeper) parseReserve(reserve sdkmath.Int) (sdkmath.Int, error) {
 	return reserve, nil
 }
 

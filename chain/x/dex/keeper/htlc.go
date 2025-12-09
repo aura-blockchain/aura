@@ -8,7 +8,6 @@ import (
 	sdkmath "cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/dex/types"
 )
@@ -57,11 +56,11 @@ func (k Keeper) CreateHTLC(
 	htlc := &types.HTLCData{
 		SecretHash:    secretHash,
 		Secret:        "",
-		Timelock:      timestamppb.New(expiry),
+		Timelock:      expiry,
 		Status:        htlcStatusActive,
 		Sender:        sender,
 		Recipient:     recipient,
-		Amount:        amount.Amount.String(),
+		Amount:        amount.Amount,
 		Denom:         amount.Denom,
 		RefundAddress: sender,
 	}
@@ -83,7 +82,7 @@ func (k Keeper) ClaimHTLC(ctx sdk.Context, recipient string, htlcID string, secr
 	if htlc.Recipient != recipient {
 		return fmt.Errorf("unauthorized recipient")
 	}
-	if ctx.BlockTime().After(htlc.Timelock.AsTime()) {
+	if ctx.BlockTime().After(htlc.Timelock) {
 		return types.ErrHTLCExpired
 	}
 
@@ -92,17 +91,12 @@ func (k Keeper) ClaimHTLC(ctx sdk.Context, recipient string, htlcID string, secr
 		return fmt.Errorf("secret does not match hash")
 	}
 
-	amount, ok := sdkmath.NewIntFromString(htlc.Amount)
-	if !ok {
-		return fmt.Errorf("invalid HTLC amount")
-	}
-
 	recipientAddr, err := sdk.AccAddressFromBech32(recipient)
 	if err != nil {
 		return err
 	}
 
-	if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, recipientAddr, sdk.NewCoins(sdk.NewCoin(htlc.Denom, amount))); err != nil {
+	if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, recipientAddr, sdk.NewCoins(sdk.NewCoin(htlc.Denom, htlc.Amount))); err != nil {
 		return err
 	}
 
@@ -125,13 +119,8 @@ func (k Keeper) RefundHTLC(ctx sdk.Context, sender string, htlcID string) error 
 	if htlc.Sender != sender {
 		return fmt.Errorf("unauthorized sender")
 	}
-	if ctx.BlockTime().Before(htlc.Timelock.AsTime()) {
+	if ctx.BlockTime().Before(htlc.Timelock) {
 		return fmt.Errorf("htlc not yet expired")
-	}
-
-	amount, ok := sdkmath.NewIntFromString(htlc.Amount)
-	if !ok {
-		return fmt.Errorf("invalid HTLC amount")
 	}
 
 	senderAddr, err := sdk.AccAddressFromBech32(sender)
@@ -139,7 +128,7 @@ func (k Keeper) RefundHTLC(ctx sdk.Context, sender string, htlcID string) error 
 		return err
 	}
 
-	if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, senderAddr, sdk.NewCoins(sdk.NewCoin(htlc.Denom, amount))); err != nil {
+	if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, senderAddr, sdk.NewCoins(sdk.NewCoin(htlc.Denom, htlc.Amount))); err != nil {
 		return err
 	}
 
@@ -196,13 +185,12 @@ func (k Keeper) CleanupExpiredHTLCs(ctx sdk.Context) {
 		if data.Status != htlcStatusActive {
 			continue
 		}
-		if data.Timelock == nil || now.Before(data.Timelock.AsTime()) {
+		if data.Timelock.IsZero() || now.Before(data.Timelock) {
 			continue
 		}
 
-		amount, ok := sdkmath.NewIntFromString(data.Amount)
-		if !ok || amount.IsZero() {
-			ctx.Logger().Error("htlc cleanup skipped due to invalid amount", "amount", data.Amount)
+		if data.Amount.IsZero() {
+			ctx.Logger().Error("htlc cleanup skipped due to invalid amount", "amount", data.Amount.String())
 			continue
 		}
 
@@ -216,7 +204,7 @@ func (k Keeper) CleanupExpiredHTLCs(ctx sdk.Context) {
 			continue
 		}
 
-		if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, addr, sdk.NewCoins(sdk.NewCoin(data.Denom, amount))); err != nil {
+		if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, addr, sdk.NewCoins(sdk.NewCoin(data.Denom, data.Amount))); err != nil {
 			ctx.Logger().Error("failed to refund expired htlc", "address", refundAddr, "error", err)
 			continue
 		}

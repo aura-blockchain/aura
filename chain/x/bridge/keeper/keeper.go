@@ -20,7 +20,6 @@ import (
 	secp256k1Curve "github.com/decred/dcrd/dcrec/secp256k1/v4"
 	"github.com/decred/dcrd/dcrec/secp256k1/v4/ecdsa"
 	"golang.org/x/crypto/ripemd160"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/bridge/types"
 )
@@ -658,12 +657,13 @@ func (k Keeper) recordRelayerStats(ctx sdk.Context, relayer string, success bool
 		return
 	}
 	stats, _ := k.getRelayerStats(ctx, relayer)
+	blockTime := ctx.BlockTime()
 	if stats == nil {
 		stats = &types.RelayerStats{
 			RelayerAddress:   relayer,
-			TotalVolume:      "0",
-			UptimePercentage: "100",
-			LastRelay:        timestamppb.New(ctx.BlockTime()),
+			TotalVolume:      math.ZeroInt(),
+			UptimePercentage: math.LegacyNewDec(100),
+			LastRelay:        &blockTime,
 		}
 	}
 	stats.TotalTransfersRelayed++
@@ -672,12 +672,9 @@ func (k Keeper) recordRelayerStats(ctx sdk.Context, relayer string, success bool
 	} else {
 		stats.FailedTransfers++
 	}
-	if vol, ok := math.NewIntFromString(stats.TotalVolume); ok {
-		stats.TotalVolume = vol.Add(volume).String()
-	} else {
-		stats.TotalVolume = volume.String()
-	}
-	stats.LastRelay = timestamppb.New(ctx.BlockTime())
+	// stats.TotalVolume is already math.Int, use directly
+	stats.TotalVolume = stats.TotalVolume.Add(volume)
+	stats.LastRelay = &blockTime
 	k.setRelayerStats(ctx, stats)
 }
 
@@ -694,7 +691,7 @@ func (k Keeper) markTransferFraudulent(ctx sdk.Context, transferID string) (*typ
 		return nil, types.ErrTransferNotFound
 	}
 	transfer.Status = types.TransferStatus_FAILED
-	transfer.Timestamp = timestamppb.New(ctx.BlockTime())
+	transfer.Timestamp = ctx.BlockTime()
 	k.setTransfer(ctx, transfer)
 	return transfer, nil
 }
@@ -874,7 +871,7 @@ func (k Keeper) SubmitAttestation(ctx sdk.Context, transferID string, validator 
 		transfer.RequiredConfirmations = params.MinConfirmations
 	}
 	if approved {
-		transfer.ValidatorSignatures = append(transfer.ValidatorSignatures, &types.ValidatorSignature{
+		transfer.ValidatorSignatures = append(transfer.ValidatorSignatures, types.ValidatorSignature{
 			ValidatorAddress: validator,
 		})
 	}
@@ -929,7 +926,7 @@ func (k Keeper) ProcessWithdrawal(ctx sdk.Context, recipient string, amount sdk.
 		return types.ErrTransferNotFound
 	}
 	transfer.Status = types.TransferStatus_COMPLETED
-	transfer.Timestamp = timestamppb.New(ctx.BlockTime())
+	transfer.Timestamp = ctx.BlockTime()
 	k.setTransfer(ctx, transfer)
 	return nil
 }
@@ -1005,10 +1002,10 @@ func (k Keeper) InitiateTransfer(ctx sdk.Context, sender string, recipient strin
 		TargetChain: targetChain,
 		Sender:      sender,
 		Recipient:   recipient,
-		Amount:      transferAmt.String(),
+		Amount:      transferAmt,
 		Denom:       amount[0].Denom,
 		Status:      types.TransferStatus_PENDING,
-		Timestamp:   timestamppb.New(ctx.BlockTime()),
+		Timestamp:   ctx.BlockTime(),
 	}
 
 	// Store transfer
@@ -1039,10 +1036,10 @@ func (k Keeper) InitiateWithdrawal(ctx sdk.Context, recipient string, amount sdk
 		TargetChain: sourceChainAura,
 		Sender:      sourceChainAura,
 		Recipient:   recipient,
-		Amount:      amount.AmountOf(amount[0].Denom).String(),
+		Amount:      amount.AmountOf(amount[0].Denom),
 		Denom:       amount[0].Denom,
 		Status:      types.TransferStatus_PENDING,
-		Timestamp:   timestamppb.New(ctx.BlockTime()),
+		Timestamp:   ctx.BlockTime(),
 	}
 	k.setTransfer(ctx, transfer)
 	return transferID, nil
@@ -1057,8 +1054,8 @@ func (k Keeper) ExecuteWithdrawal(ctx sdk.Context, withdrawalID string) error {
 	if transfer.Status != types.TransferStatus_PENDING {
 		return nil
 	}
-	if transfer.Timestamp != nil {
-		deadline := transfer.Timestamp.AsTime().Add(types.DefaultTimelockDuration)
+	if !transfer.Timestamp.IsZero() {
+		deadline := transfer.Timestamp.Add(types.DefaultTimelockDuration)
 		if ctx.BlockTime().Before(deadline) {
 			return types.ErrTimelockNotElapsed
 		}
@@ -1165,8 +1162,8 @@ func (k Keeper) SubmitFraudProof(ctx sdk.Context, transferID string, submitter s
 		FraudType:            types.FraudType_FRAUD_INVALID_SIGNATURE,
 		Evidence:             proof,
 		Status:               types.FraudProofStatus_FRAUD_PROOF_INVESTIGATING,
-		SubmittedAt:          timestamppb.New(ctx.BlockTime()),
-		RewardAmount:         math.ZeroInt().String(),
+		SubmittedAt:          ctx.BlockTime(),
+		RewardAmount:         math.ZeroInt(),
 	}
 	k.setFraudProof(ctx, fraudProof)
 
@@ -1202,7 +1199,8 @@ func (k Keeper) ResolveFraudProof(ctx sdk.Context, transferID string, valid bool
 		k.setFraudProof(ctx, proof)
 		return types.FraudProof{}, types.ErrFraudProofExpired
 	}
-	proof.ResolvedAt = timestamppb.New(ctx.BlockTime())
+	resolvedAt := ctx.BlockTime()
+	proof.ResolvedAt = &resolvedAt
 	reward := math.ZeroInt()
 	if valid {
 		proof.Status = types.FraudProofStatus_FRAUD_PROOF_VALID
@@ -1228,7 +1226,7 @@ func (k Keeper) ResolveFraudProof(ctx sdk.Context, transferID string, valid bool
 	} else {
 		proof.Status = types.FraudProofStatus_FRAUD_PROOF_INVALID
 	}
-	proof.RewardAmount = reward.String()
+	proof.RewardAmount = reward
 	k.setFraudProof(ctx, proof)
 	return *proof, nil
 }
@@ -1245,14 +1243,14 @@ func (k Keeper) GetFraudProof(ctx sdk.Context, transferID string) (types.FraudPr
 // IsInFraudProofWindow checks if a transfer is still in the fraud proof window
 func (k Keeper) IsInFraudProofWindow(ctx sdk.Context, transferID string) bool {
 	transfer, found := k.getTransfer(ctx, transferID)
-	if !found || transfer.Timestamp == nil {
+	if !found || transfer.Timestamp.IsZero() {
 		return false
 	}
 	window := k.getFraudProofWindow(ctx)
 	if window <= 0 {
 		return false
 	}
-	return ctx.BlockTime().Sub(transfer.Timestamp.AsTime()) <= window
+	return ctx.BlockTime().Sub(transfer.Timestamp) <= window
 }
 
 // AddSupportedChain adds a new supported chain configuration
@@ -2306,11 +2304,11 @@ func (k Keeper) GetAllPendingTransfers(ctx sdk.Context) []*types.PendingTransfer
 // Returns:
 //   - bool: true if window has expired and transfer can be finalized
 func (k Keeper) IsPendingTransferExpired(ctx sdk.Context, pendingTransfer *types.PendingTransfer) bool {
-	if pendingTransfer == nil || pendingTransfer.UnlockTime == nil {
+	if pendingTransfer == nil || pendingTransfer.UnlockTime.IsZero() {
 		return false
 	}
-	return ctx.BlockTime().After(pendingTransfer.UnlockTime.AsTime()) ||
-		ctx.BlockTime().Equal(pendingTransfer.UnlockTime.AsTime())
+	return ctx.BlockTime().After(pendingTransfer.UnlockTime) ||
+		ctx.BlockTime().Equal(pendingTransfer.UnlockTime)
 }
 
 // MarkPendingTransferChallenged marks a pending transfer as challenged with a fraud proof.
@@ -2382,7 +2380,7 @@ func (k Keeper) FinalizeTransfer(ctx sdk.Context, transferID string) error {
 	// 2. CRITICAL SECURITY: Check fraud proof window has expired
 	if !k.IsPendingTransferExpired(ctx, pending) {
 		return fmt.Errorf("fraud proof window not expired: unlocks at %s, current time %s",
-			pending.UnlockTime.AsTime(), ctx.BlockTime())
+			pending.UnlockTime, ctx.BlockTime())
 	}
 
 	// 3. CRITICAL SECURITY: Check if challenged by fraud proof
@@ -2397,11 +2395,8 @@ func (k Keeper) FinalizeTransfer(ctx sdk.Context, transferID string) error {
 		return fmt.Errorf("invalid recipient address: %w", err)
 	}
 
-	// 5. Parse amount from string
-	amount, ok := math.NewIntFromString(pending.Amount)
-	if !ok {
-		return fmt.Errorf("invalid amount string: %s", pending.Amount)
-	}
+	// 5. pending.Amount is already math.Int, use directly
+	amount := pending.Amount
 
 	// Create coin to mint
 	coin := sdk.NewCoin(pending.Denom, amount)
@@ -2461,7 +2456,7 @@ func (k Keeper) FinalizeTransfer(ctx sdk.Context, transferID string) error {
 	transfer, found := k.getTransfer(ctx, transferID)
 	if found {
 		transfer.Status = types.TransferStatus_COMPLETED
-		transfer.Timestamp = timestamppb.New(ctx.BlockTime())
+		transfer.Timestamp = ctx.BlockTime()
 		k.setTransfer(ctx, transfer)
 	}
 
@@ -2534,7 +2529,7 @@ func (k Keeper) ProcessExpiredPendingTransfers(ctx sdk.Context) {
 			k.Logger(ctx).Info("skipping challenged pending transfer",
 				"transfer_id", pending.TransferId,
 				"fraud_proof_id", pending.FraudProofId,
-				"unlock_time", pending.UnlockTime.AsTime())
+				"unlock_time", pending.UnlockTime)
 			continue
 		}
 
@@ -2554,7 +2549,7 @@ func (k Keeper) ProcessExpiredPendingTransfers(ctx sdk.Context) {
 				"recipient", pending.Recipient,
 				"amount", pending.Amount,
 				"denom", pending.Denom,
-				"unlock_time", pending.UnlockTime.AsTime(),
+				"unlock_time", pending.UnlockTime,
 				"error", err.Error())
 			continue
 		}
@@ -2567,7 +2562,7 @@ func (k Keeper) ProcessExpiredPendingTransfers(ctx sdk.Context) {
 			"recipient", pending.Recipient,
 			"amount", pending.Amount,
 			"denom", pending.Denom,
-			"unlock_time", pending.UnlockTime.AsTime())
+			"unlock_time", pending.UnlockTime)
 	}
 
 	// Emit summary event if any transfers were processed

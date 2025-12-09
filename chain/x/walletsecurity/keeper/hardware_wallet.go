@@ -5,11 +5,9 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"time"
 
 	"github.com/aequitas/aura/chain/x/walletsecurity/types"
 	wsproto "github.com/aequitas/aura/proto/aura/walletsecurity/v1beta1"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // RegisterHardwareWallet registers a new hardware wallet
@@ -47,7 +45,7 @@ func (k Keeper) RegisterHardwareWallet(
 	}
 
 	// Create hardware wallet configuration
-	now := timestamppb.New(time.Now())
+	now := gogoTimestampNow()
 	config := &wsproto.HardwareWalletConfig{
 		WalletId:           walletID,
 		Address:            address,
@@ -65,7 +63,7 @@ func (k Keeper) RegisterHardwareWallet(
 
 	// Add device-specific metadata
 	config.Metadata["device_type"] = hwType.String()
-	config.Metadata["registered_timestamp"] = now.String()
+	config.Metadata["registered_timestamp"] = gogoTimestampToTime(now).String()
 
 	// Store the configuration
 	configBytes := k.cdc.MustMarshal(config)
@@ -73,7 +71,7 @@ func (k Keeper) RegisterHardwareWallet(
 		return nil, err
 	}
 
-	k.Logger(ctx).Info("registered hardware wallet",
+	k.logger.Info("registered hardware wallet",
 		"wallet_id", walletID,
 		"type", hwType.String(),
 		"address", address,
@@ -94,7 +92,7 @@ func (k Keeper) UpdateHardwareWalletUsage(ctx context.Context, walletID string) 
 		return fmt.Errorf("failed to unmarshal hardware wallet config: %w", err)
 	}
 
-	config.LastUsedAt = timestamppb.New(time.Now())
+	config.LastUsedAt = gogoTimestampNow()
 	config.SignatureCount++
 
 	updatedBytes := k.cdc.MustMarshal(&config)
@@ -150,7 +148,7 @@ func (k Keeper) validateHardwareWalletSignature(address, deviceID string, signat
 		return types.ErrInvalidDeviceSignature
 	}
 
-	k.Logger(context.Background()).Info("validated hardware wallet signature",
+	k.logger.Info("validated hardware wallet signature",
 		"address", address,
 		"device_id", deviceID,
 	)
@@ -169,7 +167,7 @@ func (k Keeper) validateLedgerSignature(txData, signature []byte, address string
 		return types.ErrInvalidDeviceSignature
 	}
 
-	k.Logger(context.Background()).Info("validated Ledger signature",
+	k.logger.Info("validated Ledger signature",
 		"address", address,
 		"tx_size", len(txData),
 	)
@@ -188,7 +186,7 @@ func (k Keeper) validateTrezorSignature(txData, signature []byte, address string
 		return types.ErrInvalidDeviceSignature
 	}
 
-	k.Logger(context.Background()).Info("validated Trezor signature",
+	k.logger.Info("validated Trezor signature",
 		"address", address,
 		"tx_size", len(txData),
 	)
@@ -202,7 +200,7 @@ func (k Keeper) validateKeepKeySignature(txData, signature []byte, address strin
 		return types.ErrInvalidDeviceSignature
 	}
 
-	k.Logger(context.Background()).Info("validated KeepKey signature",
+	k.logger.Info("validated KeepKey signature",
 		"address", address,
 		"tx_size", len(txData),
 	)
@@ -216,7 +214,7 @@ func (k Keeper) validateColdCardSignature(txData, signature []byte, address stri
 		return types.ErrInvalidDeviceSignature
 	}
 
-	k.Logger(context.Background()).Info("validated ColdCard signature",
+	k.logger.Info("validated ColdCard signature",
 		"address", address,
 		"tx_size", len(txData),
 	)

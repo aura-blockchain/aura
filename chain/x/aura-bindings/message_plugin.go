@@ -11,8 +11,8 @@ import (
 	vckeeper "github.com/aequitas/aura/chain/x/vcregistry/keeper"
 	vctypes "github.com/aequitas/aura/chain/x/vcregistry/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	gogotypes "github.com/cosmos/gogoproto/types"
 	"github.com/google/uuid"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // Define the custom message structure that the smart contracts will use.
@@ -96,6 +96,13 @@ func (m MessageHandler) DispatchMsg(ctx sdk.Context, contractAddr sdk.AccAddress
 			// Generate a UUID for vc_id
 			vcID := uuid.New().String()
 
+			// Create timestamp for IssuedAt field
+			now := time.Now()
+			issuedAtTimestamp, err := gogotypes.TimestampProto(now)
+			if err != nil {
+				return nil, nil, errors.Wrap(err, "failed to create timestamp")
+			}
+
 			vcRecord := vctypes.VCRecord{
 				VcId:           vcID,
 				VcType:         vctypes.VCType_VC_TYPE_CUSTOM, // Using custom for now
@@ -103,7 +110,7 @@ func (m MessageHandler) DispatchMsg(ctx sdk.Context, contractAddr sdk.AccAddress
 				HolderDid:      "did:aura:" + addr.String(), // Dummy DID for now
 				HolderAddress:  addr.String(),
 				Status:         vctypes.VCStatus_VC_STATUS_ACTIVE,
-				IssuedAt:       timestamppb.New(time.Now()),
+				IssuedAt:       issuedAtTimestamp,
 				ExpiresAt:      nil, // No expiry for now
 				IssuedHeight:   uint64(ctx.BlockHeight()),
 				CredentialHash: []byte(auraMsg.VCRegistry.RegisterVC.VCBase64), // Using base64 as hash for now

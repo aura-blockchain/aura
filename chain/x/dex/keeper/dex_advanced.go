@@ -367,7 +367,8 @@ func (k Keeper) CalculateLiquidityMiningReward(ctx sdk.Context, poolID string, p
 	var providerLPTokens sdkmath.Int
 	for _, p := range pool.Providers {
 		if p.Address == provider {
-			providerLPTokens, _ = sdkmath.NewIntFromString(p.LpTokens)
+			// LpTokens is already math.Int (customtype in proto)
+			providerLPTokens = p.LpTokens
 			break
 		}
 	}
@@ -377,7 +378,8 @@ func (k Keeper) CalculateLiquidityMiningReward(ctx sdk.Context, poolID string, p
 	}
 
 	// Calculate time-weighted liquidity
-	totalLPTokens, _ := sdkmath.NewIntFromString(pool.TotalLpTokens)
+	// TotalLpTokens is already math.Int (customtype in proto)
+	totalLPTokens := pool.TotalLpTokens
 	providerShare := sdkmath.LegacyNewDecFromInt(providerLPTokens).Quo(sdkmath.LegacyNewDecFromInt(totalLPTokens))
 
 	// Base reward (from params)

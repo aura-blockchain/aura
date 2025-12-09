@@ -104,16 +104,8 @@ func TransferBalanceInvariant(k Keeper) sdk.Invariant {
 					lockedAmounts[denom] = sdkmath.ZeroInt()
 				}
 
-				amt, ok := sdkmath.NewIntFromString(transfer.Amount)
-				if !ok {
-					return sdk.FormatInvariant(
-						types.ModuleName,
-						"transfer-balance",
-						fmt.Sprintf("invalid transfer amount: %s", transfer.Amount),
-					), true
-				}
-
-				lockedAmounts[denom] = lockedAmounts[denom].Add(amt)
+				// transfer.Amount is already math.Int, use directly
+				lockedAmounts[denom] = lockedAmounts[denom].Add(transfer.Amount)
 			}
 		}
 
@@ -341,24 +333,15 @@ func TransferLimitInvariant(k Keeper) sdk.Invariant {
 				continue
 			}
 
-			// Check transfer amount
-			amt, ok := sdkmath.NewIntFromString(transfer.Amount)
-			if !ok {
-				return sdk.FormatInvariant(
-					types.ModuleName,
-					"transfer-limits",
-					fmt.Sprintf("invalid transfer amount: %s", transfer.Amount),
-				), true
-			}
-
+			// transfer.Amount is already math.Int, use directly
 			// Validate against max transfer
 			maxTransfer, ok := sdkmath.NewIntFromString(params.MaxTransferAmount)
-			if ok && amt.GT(maxTransfer) {
+			if ok && transfer.Amount.GT(maxTransfer) {
 				return sdk.FormatInvariant(
 					types.ModuleName,
 					"transfer-limits",
 					fmt.Sprintf("transfer amount (%s) exceeds maximum (%s)",
-						amt.String(), maxTransfer.String()),
+						transfer.Amount.String(), maxTransfer.String()),
 				), true
 			}
 

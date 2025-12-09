@@ -7,7 +7,6 @@ import (
 	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/validatorsecurity/types"
 )
@@ -71,6 +70,7 @@ func (k Keeper) SetParams(ctx context.Context, params *types.ValidatorSecurityPa
 
 // GetParams gets the module parameters
 func (k Keeper) GetParams(ctx context.Context) *types.ValidatorSecurityParams {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	store := k.getStore(ctx)
 	bz := store.Get(types.ParamsKey)
 	if bz == nil {
@@ -79,7 +79,7 @@ func (k Keeper) GetParams(ctx context.Context) *types.ValidatorSecurityParams {
 
 	var params types.ValidatorSecurityParams
 	if err := k.cdc.Unmarshal(bz, &params); err != nil {
-		k.logger.Error("failed to unmarshal validator security params", "error", err)
+		k.Logger(sdkCtx).Error("failed to unmarshal validator security params", "error", err)
 		return types.DefaultParams()
 	}
 	return &params
@@ -126,6 +126,7 @@ func (k Keeper) RegisterValidator(
 
 	// Create validator security info
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	blockTime := sdkCtx.BlockTime()
 	info := types.ValidatorSecurityInfo{
 		ValidatorAddress:         validatorAddr,
 		HotKey:                   hotKey,
@@ -140,7 +141,7 @@ func (k Keeper) RegisterValidator(
 		IsTombstoned:             false,
 		MissedBlocksCounter:      0,
 		IndexOffset:              0,
-		LastSeen:                 timestamppb.New(sdkCtx.BlockTime()),
+		LastSeen:                 &blockTime, // LastSeen is *time.Time with stdtime=true
 		BackupValidatorAddresses: backupValidators,
 		FailoverActive:           false,
 	}
@@ -227,6 +228,7 @@ func (k Keeper) SetValidatorSecurityInfo(ctx context.Context, info types.Validat
 
 // GetValidatorSecurityInfo gets the security info for a validator
 func (k Keeper) GetValidatorSecurityInfo(ctx context.Context, validatorAddr string) (types.ValidatorSecurityInfo, error) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	store := k.getStore(ctx)
 	key := types.GetValidatorSecurityInfoKey(validatorAddr)
 	bz := store.Get(key)
@@ -236,7 +238,7 @@ func (k Keeper) GetValidatorSecurityInfo(ctx context.Context, validatorAddr stri
 
 	var info types.ValidatorSecurityInfo
 	if err := k.cdc.Unmarshal(bz, &info); err != nil {
-		k.logger.Error("failed to unmarshal validator security info", "validator", validatorAddr, "error", err)
+		k.Logger(sdkCtx).Error("failed to unmarshal validator security info", "validator", validatorAddr, "error", err)
 		return types.ValidatorSecurityInfo{}, types.ErrCorruptedState
 	}
 	return info, nil
@@ -251,6 +253,7 @@ func (k Keeper) HasValidatorSecurityInfo(ctx context.Context, validatorAddr stri
 
 // GetAllValidators returns all validator security info
 func (k Keeper) GetAllValidators(ctx context.Context) []types.ValidatorSecurityInfo {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	store := k.getStore(ctx)
 	iterator := storetypes.KVStorePrefixIterator(store, types.ValidatorSecurityInfoKey)
 	defer iterator.Close()
@@ -259,7 +262,7 @@ func (k Keeper) GetAllValidators(ctx context.Context) []types.ValidatorSecurityI
 	for ; iterator.Valid(); iterator.Next() {
 		var info types.ValidatorSecurityInfo
 		if err := k.cdc.Unmarshal(iterator.Value(), &info); err != nil {
-			k.logger.Error("failed to unmarshal validator info in GetAllValidators, skipping", "error", err)
+			k.Logger(sdkCtx).Error("failed to unmarshal validator info in GetAllValidators, skipping", "error", err)
 			continue
 		}
 		validators = append(validators, info)

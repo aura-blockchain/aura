@@ -6,7 +6,6 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/validatorsecurity/types"
 )
@@ -59,11 +58,8 @@ func (k Keeper) HandleDoubleSign(
 	powerReduction := k.stakingKeeper.PowerReduction(ctx)
 	power := tokens.Quo(powerReduction).Int64()
 
-	// Parse slash fraction from string
-	slashFraction, err := math.LegacyNewDecFromStr(params.DoubleSignSlashFraction)
-	if err != nil {
-		return math.ZeroInt(), fmt.Errorf("invalid double sign slash fraction: %w", err)
-	}
+	// Get slash fraction (already a LegacyDec)
+	slashFraction := params.DoubleSignSlashFraction
 
 	// Slash the validator
 	slashAmount, err := k.stakingKeeper.Slash(
@@ -83,10 +79,11 @@ func (k Keeper) HandleDoubleSign(
 	}
 
 	// Store evidence
+	blockTime := sdkCtx.BlockTime()
 	evidence := types.DoubleSignEvidence{
 		ValidatorAddress: validatorAddr,
 		Height:           height,
-		Time:             timestamppb.New(sdkCtx.BlockTime()),
+		Time:             &blockTime,
 		VoteA:            voteA,
 		VoteB:            voteB,
 		SlashFraction:    params.DoubleSignSlashFraction,
@@ -95,17 +92,18 @@ func (k Keeper) HandleDoubleSign(
 	k.SetDoubleSignEvidence(ctx, evidence)
 
 	// Create critical alert
+	alertTime := sdkCtx.BlockTime()
 	k.CreateAlert(ctx, types.ValidatorAlert{
 		Id:               fmt.Sprintf("double-sign-%s-%d", validatorAddr, height),
 		ValidatorAddress: validatorAddr,
 		AlertType:        types.ValidatorAlert_DOUBLE_SIGN,
 		Severity:         types.ValidatorAlert_CRITICAL,
 		Message:          fmt.Sprintf("Double sign detected at height %d, validator tombstoned", height),
-		Timestamp:        timestamppb.New(sdkCtx.BlockTime()),
+		Timestamp:        &alertTime,
 		Acknowledged:     false,
 	})
 
-	k.Logger(ctx).Error("validator double signed and tombstoned",
+	k.Logger(sdkCtx).Error("validator double signed and tombstoned",
 		"validator", validatorAddr,
 		"height", height,
 		"slash_amount", slashAmount,
@@ -132,11 +130,8 @@ func (k Keeper) HandleDowntime(ctx context.Context, validatorAddr string) error 
 
 	// Check if downtime threshold exceeded
 	missedBlocks := info.MissedBlocksCounter
-	// Parse MinSignedPerWindow from string
-	minSignedDec, err := math.LegacyNewDecFromStr(params.MinSignedPerWindow)
-	if err != nil {
-		return fmt.Errorf("invalid min_signed_per_window: %w", err)
-	}
+	// MinSignedPerWindow is already a LegacyDec
+	minSignedDec := params.MinSignedPerWindow
 	minSigned := minSignedDec.MulInt64(params.SignedBlocksWindow).TruncateInt64()
 	maxMissed := params.SignedBlocksWindow - minSigned
 
@@ -165,11 +160,8 @@ func (k Keeper) HandleDowntime(ctx context.Context, validatorAddr string) error 
 	powerReduction := k.stakingKeeper.PowerReduction(ctx)
 	power := tokens.Quo(powerReduction).Int64()
 
-	// Parse downtime slash fraction
-	slashFraction, err := math.LegacyNewDecFromStr(params.DowntimeSlashFraction)
-	if err != nil {
-		return fmt.Errorf("invalid downtime slash fraction: %w", err)
-	}
+	// Get downtime slash fraction (already a LegacyDec)
+	slashFraction := params.DowntimeSlashFraction
 
 	// Slash for downtime
 	slashAmount, err := k.stakingKeeper.Slash(
@@ -183,35 +175,36 @@ func (k Keeper) HandleDowntime(ctx context.Context, validatorAddr string) error 
 		return err
 	}
 
-	// Jail the validator
-	jailDuration := params.DowntimeJailDuration.AsDuration()
-	if err := k.JailValidator(ctx, validatorAddr, jailDuration); err != nil {
+	// Jail the validator (DowntimeJailDuration is already a time.Duration)
+	if err := k.JailValidator(ctx, validatorAddr, params.DowntimeJailDuration); err != nil {
 		return err
 	}
 
 	// Store infraction
+	blockTime := sdkCtx.BlockTime()
 	infraction := types.DowntimeInfraction{
 		ValidatorAddress: validatorAddr,
 		MissedBlocks:     missedBlocks,
 		WindowSize:       params.SignedBlocksWindow,
-		DetectedAt:       timestamppb.New(sdkCtx.BlockTime()),
+		DetectedAt:       &blockTime,
 		SlashFraction:    params.DowntimeSlashFraction,
 	}
 
 	k.SetDowntimeInfraction(ctx, infraction)
 
 	// Create alert
+	alertTime := sdkCtx.BlockTime()
 	k.CreateAlert(ctx, types.ValidatorAlert{
 		Id:               fmt.Sprintf("downtime-%s-%d", validatorAddr, sdkCtx.BlockHeight()),
 		ValidatorAddress: validatorAddr,
 		AlertType:        types.ValidatorAlert_DOWNTIME,
 		Severity:         types.ValidatorAlert_WARNING,
 		Message:          fmt.Sprintf("Downtime violation: missed %d blocks, slashed %s", missedBlocks, slashAmount),
-		Timestamp:        timestamppb.New(sdkCtx.BlockTime()),
+		Timestamp:        &alertTime,
 		Acknowledged:     false,
 	})
 
-	k.Logger(ctx).Warn("validator jailed for downtime",
+	k.Logger(sdkCtx).Warn("validator jailed for downtime",
 		"validator", validatorAddr,
 		"missed_blocks", missedBlocks,
 		"slash_amount", slashAmount,
@@ -235,22 +228,20 @@ func (k Keeper) ValidateMinimumStake(ctx context.Context, validatorAddr string) 
 	}
 
 	tokens := validator.GetTokens()
-	// Parse minimum stake amount from string
-	minStake, ok := math.NewIntFromString(params.MinimumStakeAmount)
-	if !ok {
-		return fmt.Errorf("invalid minimum stake amount: %s", params.MinimumStakeAmount)
-	}
+	// MinimumStakeAmount is already a math.Int
+	minStake := params.MinimumStakeAmount
 
 	if tokens.LT(minStake) {
 		// Create alert
 		sdkCtx := sdk.UnwrapSDKContext(ctx)
+		blockTime := sdkCtx.BlockTime()
 		k.CreateAlert(ctx, types.ValidatorAlert{
 			Id:               fmt.Sprintf("low-stake-%s-%d", validatorAddr, sdkCtx.BlockHeight()),
 			ValidatorAddress: validatorAddr,
 			AlertType:        types.ValidatorAlert_LOW_STAKE,
 			Severity:         types.ValidatorAlert_WARNING,
 			Message:          fmt.Sprintf("Stake %s below minimum requirement %s", tokens, params.MinimumStakeAmount),
-			Timestamp:        timestamppb.New(sdkCtx.BlockTime()),
+			Timestamp:        &blockTime,
 			Acknowledged:     false,
 		})
 

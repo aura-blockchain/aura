@@ -47,7 +47,12 @@ func (k Keeper) IsKYCExpired(ctx sdk.Context, address string) bool {
 	}
 
 	// Check if current time is after expiry time
-	return ctx.BlockTime().After(record.ExpiresAt.AsTime())
+	// ExpiresAt is *time.Time (nullable), dereference if not nil
+	if record.ExpiresAt != nil {
+		return ctx.BlockTime().After(*record.ExpiresAt)
+	}
+	// No expiry time set = never expires
+	return false
 }
 
 // ValidateKYCStatus performs comprehensive KYC validation for compliance operations.
@@ -104,10 +109,14 @@ func (k Keeper) ValidateKYCStatus(ctx sdk.Context, address string) error {
 
 	// Check if KYC has expired
 	if k.IsKYCExpired(ctx, address) {
+		expiryTimeStr := "never"
+		if record.ExpiresAt != nil {
+			expiryTimeStr = record.ExpiresAt.Format("2006-01-02 15:04:05")
+		}
 		return errorsmod.Wrapf(types.ErrKYCExpired,
 			"KYC expired for address %s (expired at %s, current time %s)",
 			address,
-			record.ExpiresAt.AsTime().Format("2006-01-02 15:04:05"),
+			expiryTimeStr,
 			ctx.BlockTime().Format("2006-01-02 15:04:05"))
 	}
 
@@ -221,10 +230,13 @@ func (k Keeper) GetExpiringKYCRecords(ctx sdk.Context, withinDuration time.Durat
 	expiryThreshold := ctx.BlockTime().Add(withinDuration)
 
 	k.IterateKYCRecords(ctx, func(record types.KYCRecord) bool {
-		expiresAt := record.ExpiresAt.AsTime()
-		// Record expires after now but before threshold
-		if expiresAt.After(ctx.BlockTime()) && expiresAt.Before(expiryThreshold) {
-			expiringRecords = append(expiringRecords, &record)
+		// ExpiresAt is *time.Time (nullable), check for nil
+		if record.ExpiresAt != nil {
+			expiresAt := *record.ExpiresAt
+			// Record expires after now but before threshold
+			if expiresAt.After(ctx.BlockTime()) && expiresAt.Before(expiryThreshold) {
+				expiringRecords = append(expiringRecords, &record)
+			}
 		}
 		return false // Continue iteration
 	})
@@ -258,7 +270,8 @@ func (k Keeper) GetExpiredKYCRecords(ctx sdk.Context) []*types.KYCRecord {
 	var expiredRecords []*types.KYCRecord
 
 	k.IterateKYCRecords(ctx, func(record types.KYCRecord) bool {
-		if ctx.BlockTime().After(record.ExpiresAt.AsTime()) {
+		// ExpiresAt is *time.Time (nullable), check for nil and dereference
+		if record.ExpiresAt != nil && ctx.BlockTime().After(*record.ExpiresAt) {
 			expiredRecords = append(expiredRecords, &record)
 		}
 		return false // Continue iteration

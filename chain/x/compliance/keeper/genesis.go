@@ -15,10 +15,9 @@ func (k *Keeper) InitGenesis(ctx sdk.Context, data *types.GenesisState) error {
 	}
 
 	// Set params
-	if data.Params != nil {
-		if err := k.SetParams(ctx, *data.Params); err != nil {
-			return fmt.Errorf("failed to set params: %w", err)
-		}
+	// Params is a value type (nullable=false), always present
+	if err := k.SetParams(ctx, data.Params); err != nil {
+		return fmt.Errorf("failed to set params: %w", err)
 	}
 
 	// Import KYC records
@@ -227,7 +226,7 @@ func (k *Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	}
 
 	return &types.GenesisState{
-		Params:               &params,
+		Params:               params,
 		KycRecords:           kycRecords,
 		KycHistory:           kycHistory,
 		AmlProfiles:          amlProfiles,

@@ -85,8 +85,8 @@ func (m *MsgCreateMixingPool) ValidateBasic() error {
 		return fmt.Errorf("min_participants must be <= max_participants, got %d > %d", m.MinParticipants, m.MaxParticipants)
 	}
 
-	// Validate denomination (stored as string with custom type)
-	if err := parseAndValidatePositiveInt(m.Denomination, "denomination"); err != nil {
+	// Validate denomination (customtype is already math.Int, not string)
+	if err := validation.ValidatePositiveInt(m.Denomination, "denomination"); err != nil {
 		return err
 	}
 
