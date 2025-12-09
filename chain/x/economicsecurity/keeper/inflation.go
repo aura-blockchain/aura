@@ -82,7 +82,7 @@ func (k Keeper) AdjustInflationRate(ctx context.Context, authority string, newRa
 
 	// Update inflation rate in params
 	params.Tokenomics.InflationRate = newRate
-	params.Tokenomics.LastInflationAdjustment = timestamppb.Now()
+	params.Tokenomics.LastInflationAdjustment = time.Now()
 
 	if err := k.SetParams(params); err != nil {
 		return oldRate, fmt.Errorf("failed to update params: %w", err)
@@ -144,7 +144,7 @@ func (k Keeper) GetInflationMetrics(ctx context.Context) (
 
 	currentRate = params.Tokenomics.InflationRate
 	targetRate = params.Tokenomics.TargetInflationRate
-	lastAdjustment = params.Tokenomics.LastInflationAdjustment
+	lastAdjustment = timestamppb.New(params.Tokenomics.LastInflationAdjustment)
 
 	// Calculate 24h change
 	change24h, err = k.CalculateInflation24hChange(ctx)
@@ -155,9 +155,9 @@ func (k Keeper) GetInflationMetrics(ctx context.Context) (
 
 	// Calculate next check time based on check interval
 	// Check interval is in blocks, so we need to estimate time
-	if params.Tokenomics.LastInflationCheck != nil {
+	if !params.Tokenomics.LastInflationCheck.IsZero() {
 		checkInterval := time.Duration(params.InflationCheckInterval) * 6 * time.Second // Assuming 6s block time
-		nextCheckTime := params.Tokenomics.LastInflationCheck.AsTime().Add(checkInterval)
+		nextCheckTime := params.Tokenomics.LastInflationCheck.Add(checkInterval)
 		nextCheck = timestamppb.New(nextCheckTime)
 	} else {
 		// If never checked, use current time

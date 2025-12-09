@@ -63,7 +63,7 @@ Flags:
 			address := args[1]
 			description, _ := cmd.Flags().GetString("description")
 
-			peer := &v1beta1.TrustedPeer{
+			peer := v1beta1.TrustedPeer{
 				PeerId:      peerID,
 				Address:     address,
 				Description: description,

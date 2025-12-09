@@ -77,8 +77,8 @@ func (ms msgServer) RegisterContract(goCtx context.Context, msg *pb.MsgRegisterC
 func (ms msgServer) UpdateContractMetadata(goCtx context.Context, msg *pb.MsgUpdateContractMetadata) (*pb.MsgUpdateContractMetadataResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	// Update metadata
-	if err := ms.Keeper.UpdateContractMetadata(ctx, msg.ContractAddress, msg.Signer, msg.Metadata); err != nil {
+	// Update metadata - pass pointer to value type
+	if err := ms.Keeper.UpdateContractMetadata(ctx, msg.ContractAddress, msg.Signer, &msg.Metadata); err != nil {
 		return nil, err
 	}
 
@@ -91,8 +91,8 @@ func (ms msgServer) UpdateContractMetadata(goCtx context.Context, msg *pb.MsgUpd
 func (ms msgServer) UpdateSecurityPolicy(goCtx context.Context, msg *pb.MsgUpdateSecurityPolicy) (*pb.MsgUpdateSecurityPolicyResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	// Update security policy
-	if err := ms.Keeper.UpdateSecurityPolicy(ctx, msg.ContractAddress, msg.Signer, msg.SecurityPolicy); err != nil {
+	// Update security policy - pass pointer to value type
+	if err := ms.Keeper.UpdateSecurityPolicy(ctx, msg.ContractAddress, msg.Signer, &msg.SecurityPolicy); err != nil {
 		return nil, err
 	}
 
