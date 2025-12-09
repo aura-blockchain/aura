@@ -8,6 +8,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/aequitas/aura/chain/pkg/log"
 	dexpb "github.com/aequitas/aura/proto/aura/dex/v1beta1"
 )
 
@@ -56,25 +57,31 @@ func verifySigner(msg sdk.Msg, claimedAddr string) error {
 
 func (ms msgServer) CreatePool(goCtx context.Context, msg *dexpb.MsgCreatePool) (*dexpb.MsgCreatePoolResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
+	log.TxStart(ctx, "MsgCreatePool", msg.Creator)
 
 	// Verify that the message creator is the transaction signer
 	if err := verifySigner(msg, msg.Creator); err != nil {
+		log.TxError(ctx, "MsgCreatePool", err, "creator", msg.Creator)
 		return nil, err
 	}
 
 	// Validate coins (they are value types, not pointers)
 	if err := msg.AmountA.Validate(); err != nil {
+		log.TxError(ctx, "MsgCreatePool", err, "creator", msg.Creator)
 		return nil, err
 	}
 	if err := msg.AmountB.Validate(); err != nil {
+		log.TxError(ctx, "MsgCreatePool", err, "creator", msg.Creator)
 		return nil, err
 	}
 
 	pool, lpTokens, err := ms.keeper.SecureCreatePool(ctx, msg.Creator, msg.DenomA, msg.DenomB, msg.AmountA, msg.AmountB)
 	if err != nil {
+		log.TxError(ctx, "MsgCreatePool", err, "creator", msg.Creator, "denomA", msg.DenomA, "denomB", msg.DenomB)
 		return nil, err
 	}
 
+	log.TxSuccess(ctx, "MsgCreatePool", "creator", msg.Creator, "pool_id", pool.PoolId, "lp_tokens", lpTokens.String())
 	return &dexpb.MsgCreatePoolResponse{
 		PoolId:   pool.PoolId,
 		LpTokens: lpTokens,
@@ -83,25 +90,31 @@ func (ms msgServer) CreatePool(goCtx context.Context, msg *dexpb.MsgCreatePool) 
 
 func (ms msgServer) AddLiquidity(goCtx context.Context, msg *dexpb.MsgAddLiquidity) (*dexpb.MsgAddLiquidityResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
+	log.TxStart(ctx, "MsgAddLiquidity", msg.Provider)
 
 	// Verify that the message provider is the transaction signer
 	if err := verifySigner(msg, msg.Provider); err != nil {
+		log.TxError(ctx, "MsgAddLiquidity", err, "provider", msg.Provider)
 		return nil, err
 	}
 
 	// Validate coins (they are value types, not pointers)
 	if err := msg.AmountA.Validate(); err != nil {
+		log.TxError(ctx, "MsgAddLiquidity", err, "provider", msg.Provider)
 		return nil, err
 	}
 	if err := msg.AmountB.Validate(); err != nil {
+		log.TxError(ctx, "MsgAddLiquidity", err, "provider", msg.Provider)
 		return nil, err
 	}
 
 	lpTokens, poolShare, err := ms.keeper.SecureAddLiquidity(ctx, msg.Provider, msg.PoolId, msg.AmountA, msg.AmountB)
 	if err != nil {
+		log.TxError(ctx, "MsgAddLiquidity", err, "provider", msg.Provider, "pool_id", msg.PoolId)
 		return nil, err
 	}
 
+	log.TxSuccess(ctx, "MsgAddLiquidity", "provider", msg.Provider, "pool_id", msg.PoolId, "lp_tokens", lpTokens.String())
 	return &dexpb.MsgAddLiquidityResponse{
 		LpTokensMinted:   lpTokens,
 		PoolSharePercent: poolShare,
@@ -110,18 +123,22 @@ func (ms msgServer) AddLiquidity(goCtx context.Context, msg *dexpb.MsgAddLiquidi
 
 func (ms msgServer) RemoveLiquidity(goCtx context.Context, msg *dexpb.MsgRemoveLiquidity) (*dexpb.MsgRemoveLiquidityResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
+	log.TxStart(ctx, "MsgRemoveLiquidity", msg.Provider)
 
 	// Verify that the message provider is the transaction signer
 	if err := verifySigner(msg, msg.Provider); err != nil {
+		log.TxError(ctx, "MsgRemoveLiquidity", err, "provider", msg.Provider)
 		return nil, err
 	}
 
 	// LpTokens is already math.Int type (customtype in proto)
 	coinA, coinB, err := ms.keeper.SecureRemoveLiquidity(ctx, msg.Provider, msg.PoolId, msg.LpTokens)
 	if err != nil {
+		log.TxError(ctx, "MsgRemoveLiquidity", err, "provider", msg.Provider, "pool_id", msg.PoolId)
 		return nil, err
 	}
 
+	log.TxSuccess(ctx, "MsgRemoveLiquidity", "provider", msg.Provider, "pool_id", msg.PoolId, "amountA", coinA.String(), "amountB", coinB.String())
 	return &dexpb.MsgRemoveLiquidityResponse{
 		AmountA: coinA,
 		AmountB: coinB,
@@ -130,23 +147,28 @@ func (ms msgServer) RemoveLiquidity(goCtx context.Context, msg *dexpb.MsgRemoveL
 
 func (ms msgServer) SwapExactIn(goCtx context.Context, msg *dexpb.MsgSwapExactIn) (*dexpb.MsgSwapExactInResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
+	log.TxStart(ctx, "MsgSwapExactIn", msg.Sender)
 
 	// Verify that the message sender is the transaction signer
 	if err := verifySigner(msg, msg.Sender); err != nil {
+		log.TxError(ctx, "MsgSwapExactIn", err, "sender", msg.Sender)
 		return nil, err
 	}
 
 	// Validate coin (value type, not pointer)
 	if err := msg.CoinIn.Validate(); err != nil {
+		log.TxError(ctx, "MsgSwapExactIn", err, "sender", msg.Sender)
 		return nil, err
 	}
 	// MinAmountOut is already math.Int type (customtype in proto)
 
 	amountOut, effectivePrice, priceImpact, err := ms.keeper.SecureSwapExactIn(ctx, msg.Sender, msg.PoolId, msg.CoinIn, msg.MinAmountOut, msg.MaxSlippageBps)
 	if err != nil {
+		log.TxError(ctx, "MsgSwapExactIn", err, "sender", msg.Sender, "pool_id", msg.PoolId, "coin_in", msg.CoinIn.String())
 		return nil, err
 	}
 
+	log.TxSuccess(ctx, "MsgSwapExactIn", "sender", msg.Sender, "pool_id", msg.PoolId, "amount_out", amountOut.String(), "price_impact", priceImpact)
 	return &dexpb.MsgSwapExactInResponse{
 		AmountOut:          amountOut,
 		EffectivePrice:     effectivePrice,
