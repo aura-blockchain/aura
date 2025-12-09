@@ -179,8 +179,8 @@ func TestCalculateSwapFee_OverflowEdgeCases(t *testing.T) {
 
 	// Set up params with standard 0.3% fee
 	params := types.DefaultParams()
-	params.TradingFee = "0.003"
-	err := k.SetParams(ctx, params)
+	params.TradingFee = sdkmath.LegacyMustNewDecFromStr("0.003")
+	err := k.SetParams(ctx, &params)
 	require.NoError(t, err)
 
 	// MaxInt256 = 2^255 - 1
@@ -258,9 +258,9 @@ func TestCalculateSwapFee_NegativeFeeRateRejection(t *testing.T) {
 
 	// Try to set negative fee rate (should be prevented by params validation)
 	params := types.DefaultParams()
-	params.TradingFee = "-0.001" // Negative fee
+	params.TradingFee = sdkmath.LegacyMustNewDecFromStr("-0.001") // Negative fee
 
-	err := k.SetParams(ctx, params)
+	err := k.SetParams(ctx, &params)
 	require.NoError(t, err) // Params may accept it
 
 	// But CalculateSwapFee should reject it
@@ -311,8 +311,8 @@ func TestCalculateSwapFee_FeeRateBoundary(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			params := types.DefaultParams()
-			params.TradingFee = tt.feeRate
-			err := k.SetParams(ctx, params)
+			params.TradingFee = sdkmath.LegacyMustNewDecFromStr(tt.feeRate)
+			err := k.SetParams(ctx, &params)
 			require.NoError(t, err)
 
 			fee, err := k.CalculateSwapFee(ctx, tt.amount)
@@ -339,8 +339,8 @@ func TestFeeCalculation_RealisticScenarios(t *testing.T) {
 
 	// Set 0.3% fee
 	params := types.DefaultParams()
-	params.TradingFee = "0.003"
-	err := k.SetParams(ctx, params)
+	params.TradingFee = sdkmath.LegacyMustNewDecFromStr("0.003")
+	err := k.SetParams(ctx, &params)
 	require.NoError(t, err)
 
 	scenarios := []struct {

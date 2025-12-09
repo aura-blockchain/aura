@@ -23,8 +23,8 @@ func TestGenesisRoundTrip(t *testing.T) {
 	mockBank.SetBalance(creatorAddr, "usdt", math.NewInt(2_200000)) // Pool needs 2M, order needs 200
 
 	params := types.DefaultParams()
-	params.TradingFee = "0.001"
-	require.NoError(t, k.SetParams(ctx, params))
+	params.TradingFee = math.LegacyMustNewDecFromStr("0.001")
+	require.NoError(t, k.SetParams(ctx, &params))
 
 	_, _, err := k.CreatePool(ctx, creator, "uaura", "usdt", sdk.NewCoin("uaura", math.NewInt(1_000000)), sdk.NewCoin("usdt", math.NewInt(2_000000)))
 	require.NoError(t, err)
