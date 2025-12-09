@@ -39,15 +39,18 @@ func (k Keeper) CreatePool(
 	amountB sdk.Coin,
 ) (*types.LiquidityPool, sdkmath.Int, error) {
 	// SECURITY CHECK 1: Pause Guard - Check if DEX module is paused
-	if err := k.pauseGuard.CheckNotPaused(); err != nil {
+	if err := k.securityKeeper.RequireNotPaused(ctx, types.ModuleName); err != nil {
 		return nil, sdkmath.ZeroInt(), errors.Wrap(err, "dex module paused")
 	}
 
 	// SECURITY CHECK 2: Reentrancy Guard - Prevent reentrancy attacks
-	if err := k.reentrancyGuard.Enter(); err != nil {
+	// NOTE: Cosmos SDK context is deterministic and single-threaded per block execution,
+	// making reentrancy impossible in the traditional sense. However, we maintain this
+	// check for cross-module call protection and future-proofing.
+	if err := k.securityKeeper.EnterNoReentrant(ctx, "dex:CreatePool"); err != nil {
 		return nil, sdkmath.ZeroInt(), errors.Wrap(err, "reentrancy detected in CreatePool")
 	}
-	defer k.reentrancyGuard.Exit()
+	defer k.securityKeeper.ExitNoReentrant(ctx, "dex:CreatePool")
 
 	// SECURITY CHECK 3: Pool Creation Limit - Prevent spam pool creation
 	if err := k.CheckPoolCreationLimit(ctx, creator); err != nil {
@@ -209,41 +212,26 @@ func (k Keeper) AddLiquidity(
 	amountB sdk.Coin,
 ) (sdkmath.Int, sdkmath.LegacyDec, error) {
 	// SECURITY CHECK 1: Pause Guard - Check if DEX module is paused
-	// Use securityKeeper if available, otherwise fall back to legacy pauseGuard
-	if k.securityKeeper != nil {
-		if err := k.securityKeeper.RequireNotPaused(ctx, "dex"); err != nil {
-			return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), errors.Wrap(err, "dex module paused")
-		}
-	} else if k.pauseGuard != nil {
-		if err := k.pauseGuard.CheckNotPaused(); err != nil {
-			return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), errors.Wrap(err, "dex module paused")
-		}
+	if err := k.securityKeeper.RequireNotPaused(ctx, types.ModuleName); err != nil {
+		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), errors.Wrap(err, "dex module paused")
 	}
 
 	// SECURITY CHECK 2: Reentrancy Guard - Prevent reentrancy attacks
-	// Use securityKeeper if available, otherwise fall back to legacy reentrancyGuard
+	// NOTE: Cosmos SDK context is deterministic and single-threaded per block execution,
+	// making reentrancy impossible in the traditional sense. However, we maintain this
+	// check for cross-module call protection and future-proofing.
 	reentrancyKey := fmt.Sprintf("dex:addliquidity:%s:%s", poolID, provider)
-	if k.securityKeeper != nil {
-		if err := k.securityKeeper.EnterNoReentrant(ctx, reentrancyKey); err != nil {
-			return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), errors.Wrap(err, "reentrancy detected in AddLiquidity")
-		}
-		defer k.securityKeeper.ExitNoReentrant(ctx, reentrancyKey)
-	} else if k.reentrancyGuard != nil {
-		if err := k.reentrancyGuard.Enter(); err != nil {
-			return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), errors.Wrap(err, "reentrancy detected in AddLiquidity")
-		}
-		defer k.reentrancyGuard.Exit()
+	if err := k.securityKeeper.EnterNoReentrant(ctx, reentrancyKey); err != nil {
+		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), errors.Wrap(err, "reentrancy detected in AddLiquidity")
 	}
+	defer k.securityKeeper.ExitNoReentrant(ctx, reentrancyKey)
 
 	// SECURITY CHECK 3: Rate limiting - Prevent spam
-	// Only use securityKeeper for rate limiting (no legacy equivalent)
-	if k.securityKeeper != nil {
-		rateLimitKey := fmt.Sprintf("addliquidity:%s", provider)
-		if err := k.securityKeeper.CheckGuardRateLimit(ctx, rateLimitKey, 100, time.Minute); err != nil {
-			return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), errors.Wrap(err, "rate limit exceeded")
-		}
-		defer k.securityKeeper.IncrementGuardRateLimit(ctx, rateLimitKey, time.Minute)
+	rateLimitKey := fmt.Sprintf("addliquidity:%s", provider)
+	if err := k.securityKeeper.CheckGuardRateLimit(ctx, rateLimitKey, 100, time.Minute); err != nil {
+		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), errors.Wrap(err, "rate limit exceeded")
 	}
+	defer k.securityKeeper.IncrementGuardRateLimit(ctx, rateLimitKey, time.Minute)
 
 	// Get pool
 	pool := k.GetPool(ctx, poolID)
@@ -404,40 +392,26 @@ func (k Keeper) RemoveLiquidity(
 ) (sdk.Coin, sdk.Coin, error) {
 	// SECURITY CHECK 1: Pause Guard - Check if DEX module is paused
 	// Use securityKeeper if available, otherwise fall back to legacy pauseGuard
-	if k.securityKeeper != nil {
-		if err := k.securityKeeper.RequireNotPaused(ctx, "dex"); err != nil {
-			return sdk.Coin{}, sdk.Coin{}, errors.Wrap(err, "dex module paused")
-		}
-	} else if k.pauseGuard != nil {
-		if err := k.pauseGuard.CheckNotPaused(); err != nil {
-			return sdk.Coin{}, sdk.Coin{}, errors.Wrap(err, "dex module paused")
-		}
+	if err := k.securityKeeper.RequireNotPaused(ctx, types.ModuleName); err != nil {
+		return sdk.Coin{}, sdk.Coin{}, errors.Wrap(err, "dex module paused")
 	}
 
 	// SECURITY CHECK 2: Reentrancy Guard - Prevent reentrancy attacks
-	// Use securityKeeper if available, otherwise fall back to legacy reentrancyGuard
+	// NOTE: Cosmos SDK context is deterministic and single-threaded per block execution,
+	// making reentrancy impossible in the traditional sense. However, we maintain this
+	// check for cross-module call protection and future-proofing.
 	reentrancyKey := fmt.Sprintf("dex:removeliquidity:%s:%s", poolID, provider)
-	if k.securityKeeper != nil {
-		if err := k.securityKeeper.EnterNoReentrant(ctx, reentrancyKey); err != nil {
-			return sdk.Coin{}, sdk.Coin{}, errors.Wrap(err, "reentrancy detected in RemoveLiquidity")
-		}
-		defer k.securityKeeper.ExitNoReentrant(ctx, reentrancyKey)
-	} else if k.reentrancyGuard != nil {
-		if err := k.reentrancyGuard.Enter(); err != nil {
-			return sdk.Coin{}, sdk.Coin{}, errors.Wrap(err, "reentrancy detected in RemoveLiquidity")
-		}
-		defer k.reentrancyGuard.Exit()
+	if err := k.securityKeeper.EnterNoReentrant(ctx, reentrancyKey); err != nil {
+		return sdk.Coin{}, sdk.Coin{}, errors.Wrap(err, "reentrancy detected in RemoveLiquidity")
 	}
+	defer k.securityKeeper.ExitNoReentrant(ctx, reentrancyKey)
 
 	// SECURITY CHECK 3: Rate limiting - Prevent spam
-	// Only use securityKeeper for rate limiting (no legacy equivalent)
-	if k.securityKeeper != nil {
-		rateLimitKey := fmt.Sprintf("removeliquidity:%s", provider)
-		if err := k.securityKeeper.CheckGuardRateLimit(ctx, rateLimitKey, 100, time.Minute); err != nil {
-			return sdk.Coin{}, sdk.Coin{}, errors.Wrap(err, "rate limit exceeded")
-		}
-		defer k.securityKeeper.IncrementGuardRateLimit(ctx, rateLimitKey, time.Minute)
+	rateLimitKey := fmt.Sprintf("removeliquidity:%s", provider)
+	if err := k.securityKeeper.CheckGuardRateLimit(ctx, rateLimitKey, 100, time.Minute); err != nil {
+		return sdk.Coin{}, sdk.Coin{}, errors.Wrap(err, "rate limit exceeded")
 	}
+	defer k.securityKeeper.IncrementGuardRateLimit(ctx, rateLimitKey, time.Minute)
 
 	// Get pool
 	pool := k.GetPool(ctx, poolID)
@@ -572,41 +546,26 @@ func (k Keeper) SwapExactIn(
 	maxSlippageBps uint64,
 ) (sdkmath.Int, sdkmath.LegacyDec, sdkmath.LegacyDec, error) {
 	// SECURITY CHECK 1: Pause Guard - Check if DEX module is paused
-	// Use securityKeeper if available, otherwise fall back to legacy pauseGuard
-	if k.securityKeeper != nil {
-		if err := k.securityKeeper.RequireNotPaused(ctx, "dex"); err != nil {
-			return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec(), errors.Wrap(err, "dex module paused")
-		}
-	} else if k.pauseGuard != nil {
-		if err := k.pauseGuard.CheckNotPaused(); err != nil {
-			return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec(), errors.Wrap(err, "dex module paused")
-		}
+	if err := k.securityKeeper.RequireNotPaused(ctx, types.ModuleName); err != nil {
+		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec(), errors.Wrap(err, "dex module paused")
 	}
 
 	// SECURITY CHECK 2: Reentrancy Guard - Prevent reentrancy attacks
-	// Use securityKeeper if available, otherwise fall back to legacy reentrancyGuard
+	// NOTE: Cosmos SDK context is deterministic and single-threaded per block execution,
+	// making reentrancy impossible in the traditional sense. However, we maintain this
+	// check for cross-module call protection and future-proofing.
 	reentrancyKey := fmt.Sprintf("dex:swap:%s:%s", poolID, sender)
-	if k.securityKeeper != nil {
-		if err := k.securityKeeper.EnterNoReentrant(ctx, reentrancyKey); err != nil {
-			return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec(), errors.Wrap(err, "reentrancy detected in SwapExactIn")
-		}
-		defer k.securityKeeper.ExitNoReentrant(ctx, reentrancyKey)
-	} else if k.reentrancyGuard != nil {
-		if err := k.reentrancyGuard.Enter(); err != nil {
-			return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec(), errors.Wrap(err, "reentrancy detected in SwapExactIn")
-		}
-		defer k.reentrancyGuard.Exit()
+	if err := k.securityKeeper.EnterNoReentrant(ctx, reentrancyKey); err != nil {
+		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec(), errors.Wrap(err, "reentrancy detected in SwapExactIn")
 	}
+	defer k.securityKeeper.ExitNoReentrant(ctx, reentrancyKey)
 
 	// SECURITY CHECK 3: Rate limiting - Prevent spam and flash loan attacks
-	// Only use securityKeeper for rate limiting (no legacy equivalent)
-	if k.securityKeeper != nil {
-		rateLimitKey := fmt.Sprintf("swap:%s", sender)
-		if err := k.securityKeeper.CheckGuardRateLimit(ctx, rateLimitKey, 1000, time.Minute); err != nil {
-			return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec(), errors.Wrap(err, "rate limit exceeded")
-		}
-		defer k.securityKeeper.IncrementGuardRateLimit(ctx, rateLimitKey, time.Minute)
+	rateLimitKey := fmt.Sprintf("swap:%s", sender)
+	if err := k.securityKeeper.CheckGuardRateLimit(ctx, rateLimitKey, 1000, time.Minute); err != nil {
+		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec(), errors.Wrap(err, "rate limit exceeded")
 	}
+	defer k.securityKeeper.IncrementGuardRateLimit(ctx, rateLimitKey, time.Minute)
 
 	// Validate non-zero input
 	if coinIn.Amount.IsZero() {

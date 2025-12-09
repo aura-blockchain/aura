@@ -38,10 +38,13 @@ func (k Keeper) CreateOrder(
 	scope := fmt.Sprintf("orderbook:%s", poolID)
 
 	// Acquire reentrancy lock for this orderbook
-	if err := k.reentrancyGuard.EnterScoped(scope); err != nil {
+	// NOTE: Cosmos SDK context is deterministic and single-threaded per block execution,
+	// making reentrancy impossible in the traditional sense. However, we maintain this
+	// check for cross-module call protection and future-proofing.
+	if err := k.securityKeeper.EnterNoReentrant(ctx, scope); err != nil {
 		return nil, fmt.Errorf("reentrancy detected: %w", err)
 	}
-	defer k.reentrancyGuard.ExitScoped(scope)
+	defer k.securityKeeper.ExitNoReentrant(ctx, scope)
 
 	// === 1. CHECKS - Validate all inputs and state ===
 
@@ -169,10 +172,13 @@ func (k Keeper) MatchOrder(
 	scope := fmt.Sprintf("orderbook:%s", poolID)
 
 	// Acquire reentrancy lock for this orderbook
-	if err := k.reentrancyGuard.EnterScoped(scope); err != nil {
+	// NOTE: Cosmos SDK context is deterministic and single-threaded per block execution,
+	// making reentrancy impossible in the traditional sense. However, we maintain this
+	// check for cross-module call protection and future-proofing.
+	if err := k.securityKeeper.EnterNoReentrant(ctx, scope); err != nil {
 		return fmt.Errorf("reentrancy detected: %w", err)
 	}
-	defer k.reentrancyGuard.ExitScoped(scope)
+	defer k.securityKeeper.ExitNoReentrant(ctx, scope)
 
 	// === 1. CHECKS - Validate all inputs and state ===
 
@@ -315,10 +321,13 @@ func (k Keeper) CancelOrder(
 	scope := fmt.Sprintf("orderbook:%s", poolID)
 
 	// Acquire reentrancy lock for this orderbook
-	if err := k.reentrancyGuard.EnterScoped(scope); err != nil {
+	// NOTE: Cosmos SDK context is deterministic and single-threaded per block execution,
+	// making reentrancy impossible in the traditional sense. However, we maintain this
+	// check for cross-module call protection and future-proofing.
+	if err := k.securityKeeper.EnterNoReentrant(ctx, scope); err != nil {
 		return fmt.Errorf("reentrancy detected: %w", err)
 	}
-	defer k.reentrancyGuard.ExitScoped(scope)
+	defer k.securityKeeper.ExitNoReentrant(ctx, scope)
 
 	// === 1. CHECKS - Validate state ===
 

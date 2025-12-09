@@ -8,31 +8,21 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/aequitas/aura/chain/x/common/security"
 	"github.com/aequitas/aura/chain/x/security/types"
 )
 
-// SecurityGuards provides centralized security primitives for all modules
-// This implements the security guard functionality that all modules should use
-type SecurityGuards struct {
-	reentrancyGuard *security.ReentrancyGuard
-	pauseGuard      *security.PauseGuard
-	inputValidator  *security.InputValidator
-	safeMath        *security.SafeMath
-	gasLimitGuard   *security.GasLimitGuard
-	accessControl   *security.AccessControl
-}
+// SecurityGuards provides centralized security primitives for all modules.
+// This implements the security guard functionality that all modules should use.
+//
+// NOTE: This struct is intentionally empty as all security functionality is now
+// implemented directly in the Keeper methods using SDK-native primitives.
+// The struct is kept for backward compatibility but may be removed in future versions.
+type SecurityGuards struct{}
 
-// NewSecurityGuards creates a new security guards instance
+// NewSecurityGuards creates a new security guards instance.
+// The parameters are kept for backward compatibility but are no longer used.
 func NewSecurityGuards(admin string, maxGasPerTx uint64, initialAdmins []string) *SecurityGuards {
-	return &SecurityGuards{
-		reentrancyGuard: security.NewReentrancyGuard(),
-		pauseGuard:      security.NewPauseGuard(admin),
-		inputValidator:  security.NewInputValidator(),
-		safeMath:        security.NewSafeMath(),
-		gasLimitGuard:   security.NewGasLimitGuard(maxGasPerTx),
-		accessControl:   security.NewAccessControl(initialAdmins),
-	}
+	return &SecurityGuards{}
 }
 
 // =============================================================================

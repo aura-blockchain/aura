@@ -23,7 +23,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/bridge/types"
-	"github.com/aequitas/aura/chain/x/common/security"
 )
 
 const sourceChainAura = "aura"
@@ -39,14 +38,6 @@ type Keeper struct {
 	accountKeeper types.AccountKeeper
 	vcKeeper      types.VCRegistryKeeper // For shared identity verification
 	stakingKeeper types.StakingKeeper    // For validator slashing
-
-	// Security features
-	reentrancyGuard *security.ReentrancyGuard
-	pauseGuard      *security.PauseGuard
-	inputValidator  *security.InputValidator
-	safeMath        *security.SafeMath
-	gasLimitGuard   *security.GasLimitGuard
-	accessControl   *security.AccessControl
 }
 
 // NewKeeper creates a new bridge Keeper instance
@@ -69,19 +60,13 @@ func NewKeeper(
 	}
 
 	return &Keeper{
-		storeKey:        storeKey,
-		cdc:             cdc,
-		paramstore:      paramstore,
-		bankKeeper:      bankKeeper,
-		accountKeeper:   accountKeeper,
-		vcKeeper:        vcKeeper,
-		stakingKeeper:   stakingKeeper,
-		reentrancyGuard: security.NewReentrancyGuard(),
-		pauseGuard:      security.NewPauseGuard(""),
-		inputValidator:  security.NewInputValidator(),
-		safeMath:        security.NewSafeMath(),
-		gasLimitGuard:   security.NewGasLimitGuard(1_000_000),
-		accessControl:   security.NewAccessControl([]string{}),
+		storeKey:      storeKey,
+		cdc:           cdc,
+		paramstore:    paramstore,
+		bankKeeper:    bankKeeper,
+		accountKeeper: accountKeeper,
+		vcKeeper:      vcKeeper,
+		stakingKeeper: stakingKeeper,
 	}
 }
 
@@ -347,10 +332,10 @@ func (k Keeper) findSharedIdentityByLinkedAddress(ctx sdk.Context, chainName str
 //   - Recovery ID (V) is used to recover the public key from the signature
 //
 // Verification process:
-//   1. Hash the expected message using SHA256
-//   2. Recover the public key from signature using recovery ID
-//   3. Derive the address from the recovered public key
-//   4. Compare derived address with claimed PAW address
+//  1. Hash the expected message using SHA256
+//  2. Recover the public key from signature using recovery ID
+//  3. Derive the address from the recovered public key
+//  4. Compare derived address with claimed PAW address
 //
 // Parameters:
 //   - ctx: SDK context (for logging)
@@ -481,10 +466,10 @@ func (k Keeper) verifyPawAddressOwnership(ctx sdk.Context, auraAddress string, p
 //   - Recovery ID (V) is used to recover the public key from the signature
 //
 // Verification process:
-//   1. Hash the expected message using SHA256
-//   2. Recover the public key from signature using recovery ID
-//   3. Derive the address from the recovered public key
-//   4. Compare derived address with claimed XAI address
+//  1. Hash the expected message using SHA256
+//  2. Recover the public key from signature using recovery ID
+//  3. Derive the address from the recovered public key
+//  4. Compare derived address with claimed XAI address
 //
 // Parameters:
 //   - ctx: SDK context (for logging)
@@ -1197,10 +1182,10 @@ func (k Keeper) SubmitFraudProof(ctx sdk.Context, transferID string, submitter s
 // ResolveFraudProof finalizes an open fraud proof, rewarding challengers and marking transfers.
 //
 // SECURITY CRITICAL: When a fraud proof is validated as correct (valid=true), this function:
-//   1. Marks the transfer as fraudulent
-//   2. Slashes ALL validators who signed the fraudulent transfer
-//   3. Pays out reward to the fraud proof challenger
-//   4. Prevents the transfer from being finalized
+//  1. Marks the transfer as fraudulent
+//  2. Slashes ALL validators who signed the fraudulent transfer
+//  3. Pays out reward to the fraud proof challenger
+//  4. Prevents the transfer from being finalized
 func (k Keeper) ResolveFraudProof(ctx sdk.Context, transferID string, valid bool) (types.FraudProof, error) {
 	proof, found := k.getFraudProof(ctx, transferID)
 	if !found {
@@ -1689,9 +1674,9 @@ func (k Keeper) computeSignatureSetHash(signatures [][]byte) []byte {
 // not a historical or future set.
 //
 // SECURITY CRITICAL: This function prevents attacks where:
-//   1. Validators are compromised and then removed from the active set
-//   2. Attacker replays signatures after validator set changes
-//   3. Signatures from validators who are no longer active are accepted
+//  1. Validators are compromised and then removed from the active set
+//  2. Attacker replays signatures after validator set changes
+//  3. Signatures from validators who are no longer active are accepted
 //
 // The function implements validator authorization by:
 //   - Checking validator status at the current block height
@@ -2372,9 +2357,9 @@ func (k Keeper) MarkPendingTransferChallenged(ctx sdk.Context, transferID string
 // FinalizeTransfer completes a pending transfer after fraud proof window expires.
 //
 // SECURITY CRITICAL: This function releases tokens to the recipient ONLY if:
-//   1. The fraud proof window has fully elapsed
-//   2. No valid fraud proof has been submitted against the transfer
-//   3. All security checks pass (replay protection, supply caps, etc.)
+//  1. The fraud proof window has fully elapsed
+//  2. No valid fraud proof has been submitted against the transfer
+//  3. All security checks pass (replay protection, supply caps, etc.)
 //
 // This implements the fraud proof challenge period mechanism:
 //   - Transfers are held in pending state during the window
@@ -2512,11 +2497,11 @@ func (k Keeper) FinalizeTransfer(ctx sdk.Context, transferID string) error {
 // requiring manual finalization.
 //
 // Process:
-//   1. Retrieve all pending transfers from state
-//   2. Check each transfer's unlock time against current block time
-//   3. Skip challenged transfers (require governance resolution)
-//   4. Finalize unchallenged expired transfers
-//   5. Log all operations for audit trail
+//  1. Retrieve all pending transfers from state
+//  2. Check each transfer's unlock time against current block time
+//  3. Skip challenged transfers (require governance resolution)
+//  4. Finalize unchallenged expired transfers
+//  5. Log all operations for audit trail
 //
 // Security considerations:
 //   - Only processes transfers with expired fraud proof windows
@@ -2610,10 +2595,10 @@ func (k Keeper) ProcessExpiredPendingTransfers(ctx sdk.Context) {
 // It is used to verify that a signature was created by the holder of a specific private key.
 //
 // Process:
-//   1. Parse R and S components from signature bytes
-//   2. Use recovery ID to determine which of the 4 possible public keys is correct
-//   3. Recover the public key using secp256k1 curve parameters
-//   4. Return compressed public key (33 bytes)
+//  1. Parse R and S components from signature bytes
+//  2. Use recovery ID to determine which of the 4 possible public keys is correct
+//  3. Recover the public key using secp256k1 curve parameters
+//  4. Return compressed public key (33 bytes)
 //
 // Parameters:
 //   - msgHash: SHA256 hash of the signed message (32 bytes)
@@ -2664,10 +2649,10 @@ func (k Keeper) recoverPubKeyFromSignature(msgHash []byte, signature []byte, rec
 // derivePawAddressFromPubKey derives a PAW (Cosmos SDK) address from a public key.
 //
 // Address derivation process for Cosmos SDK chains:
-//   1. Take the compressed public key (33 bytes)
-//   2. Hash with SHA256
-//   3. Hash with RIPEMD160
-//   4. Encode with Bech32 using "paw" prefix
+//  1. Take the compressed public key (33 bytes)
+//  2. Hash with SHA256
+//  3. Hash with RIPEMD160
+//  4. Encode with Bech32 using "paw" prefix
 //
 // For simplicity, this implementation returns the hex-encoded hash.
 // In production, you would use the full Bech32 encoding with proper prefix.
@@ -2703,10 +2688,10 @@ func (k Keeper) derivePawAddressFromPubKey(pubKey []byte) string {
 // deriveXaiAddressFromPubKey derives an XAI (Cosmos SDK) address from a public key.
 //
 // Address derivation process for Cosmos SDK chains:
-//   1. Take the compressed public key (33 bytes)
-//   2. Hash with SHA256
-//   3. Hash with RIPEMD160
-//   4. Encode with Bech32 using "xai" prefix
+//  1. Take the compressed public key (33 bytes)
+//  2. Hash with SHA256
+//  3. Hash with RIPEMD160
+//  4. Encode with Bech32 using "xai" prefix
 //
 // For simplicity, this implementation returns the hex-encoded hash.
 // In production, you would use the full Bech32 encoding with proper prefix.
@@ -2828,10 +2813,10 @@ func (k Keeper) normalizeLowS(signature []byte) []byte {
 // with Cosmos SDK's native secp256k1 implementation due to different encoding formats.
 //
 // Process:
-//   1. Parse R and S components from signature bytes
-//   2. Create secp256k1.PublicKey from compressed public key bytes
-//   3. Create ecdsa.Signature from R and S
-//   4. Verify signature against message hash
+//  1. Parse R and S components from signature bytes
+//  2. Create secp256k1.PublicKey from compressed public key bytes
+//  3. Create ecdsa.Signature from R and S
+//  4. Verify signature against message hash
 //
 // Parameters:
 //   - pubKeyBytes: Compressed public key (33 bytes)

@@ -86,6 +86,11 @@ func (am AppModule) IsAppModule() {}
 func (am AppModule) RegisterServices(cfg module.Configurator) {
 	privacypb.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper))
 	privacypb.RegisterQueryServer(cfg.QueryServer(), keeper.NewQueryServerImpl(am.keeper))
+
+	// Register migration handlers
+	// Note: migrations.NewMigrator requires storeKey and cdc which are only available
+	// in the keeper. For actual migration registration during chain upgrades,
+	// use the upgrade handler in app.go
 }
 
 // InitGenesis initializes module state from genesis
