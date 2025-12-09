@@ -253,8 +253,9 @@ func TestSubmitKYC_BlockedAfterConsentWithdrawal(t *testing.T) {
 		ConsentType:        "kyc_processing",
 		Consented:          false,
 		ConsentVersion:     "v1",
-		ConsentGivenAt: time.Now().Add(-1 * time.Hour)),
-		ConsentWithdrawnAt: timestamppb.New(time.Now()),
+		ConsentGivenAt: time.Now().Add(-1 * time.Hour),
+		withdrawnAt := time.Now(
+		ConsentWithdrawnAt:  &withdrawnAt),
 	}
 	err = keeper.SetGDPRConsent(ctx, withdrawnConsent)
 	require.NoError(t, err)
@@ -379,8 +380,9 @@ func TestReportSuspiciousActivity_BlockedAfterConsentWithdrawal(t *testing.T) {
 		ConsentType:        "aml_monitoring",
 		Consented:          false,
 		ConsentVersion:     "v1",
-		ConsentGivenAt: time.Now().Add(-1 * time.Hour)),
-		ConsentWithdrawnAt: timestamppb.New(time.Now()),
+		ConsentGivenAt: time.Now().Add(-1 * time.Hour),
+		withdrawnAt := time.Now(
+		ConsentWithdrawnAt:  &withdrawnAt),
 	}
 	err = keeper.SetGDPRConsent(ctx, withdrawnConsent)
 	require.NoError(t, err)
@@ -491,8 +493,9 @@ func TestScreenSanctions_BlockedAfterConsentWithdrawal(t *testing.T) {
 		ConsentType:        "sanctions_screening",
 		Consented:          false,
 		ConsentVersion:     "v1",
-		ConsentGivenAt: time.Now().Add(-1 * time.Hour)),
-		ConsentWithdrawnAt: timestamppb.New(time.Now()),
+		ConsentGivenAt: time.Now().Add(-1 * time.Hour),
+		withdrawnAt := time.Now(
+		ConsentWithdrawnAt:  &withdrawnAt),
 	}
 	err = keeper.SetGDPRConsent(ctx, withdrawnConsent)
 	require.NoError(t, err)
@@ -590,8 +593,9 @@ func TestMultiplePurposes_WithdrawOneKeepOthers(t *testing.T) {
 		ConsentType:        "kyc_processing",
 		Consented:          false,
 		ConsentVersion:     "v1",
-		ConsentGivenAt: time.Now().Add(-1 * time.Hour)),
-		ConsentWithdrawnAt: timestamppb.New(time.Now()),
+		ConsentGivenAt: time.Now().Add(-1 * time.Hour),
+		withdrawnAt := time.Now(
+		ConsentWithdrawnAt:  &withdrawnAt),
 	}
 	err = keeper.SetGDPRConsent(ctx, withdrawnKycConsent)
 	require.NoError(t, err)
