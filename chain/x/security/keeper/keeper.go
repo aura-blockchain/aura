@@ -279,7 +279,10 @@ func (k Keeper) GetAllRingSignatures(ctx sdk.Context) []*securitypb.RingSignatur
 	var sigs []*securitypb.RingSignature
 	for ; iterator.Valid(); iterator.Next() {
 		var sig securitypb.RingSignature
-		k.cdc.MustUnmarshal(iterator.Value(), &sig)
+		if err := k.cdc.Unmarshal(iterator.Value(), &sig); err != nil {
+			ctx.Logger().Error("failed to unmarshal ring signature in GetAllRingSignatures, skipping", "error", err)
+			continue
+		}
 		sigs = append(sigs, &sig)
 	}
 	return sigs
