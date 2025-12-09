@@ -1,197 +1,200 @@
 package types
 
-import "errors"
+import (
+	errorsmod "cosmossdk.io/errors"
+)
 
-// Economics module errors - consolidated from economicsecurity and governance
+// Economics module error codes - consolidated from economicsecurity and governance
 var (
 	// ============================
-	// General errors
+	// General errors (1-9)
 	// ============================
-	ErrUnauthorized      = errors.New("unauthorized")
-	ErrInvalidAmount     = errors.New("invalid amount")
-	ErrInvalidAddress    = errors.New("invalid address")
-	ErrInvalidDuration   = errors.New("invalid duration")
-	ErrInvalidScheduleID = errors.New("invalid schedule ID")
+	ErrUnauthorized      = errorsmod.Register(ModuleName, 1, "unauthorized")
+	ErrInvalidAmount     = errorsmod.Register(ModuleName, 2, "invalid amount")
+	ErrInvalidAddress    = errorsmod.Register(ModuleName, 3, "invalid address")
+	ErrInvalidDuration   = errorsmod.Register(ModuleName, 4, "invalid duration")
+	ErrInvalidScheduleID = errorsmod.Register(ModuleName, 5, "invalid schedule ID")
 
 	// ============================
-	// Fee management errors
+	// Fee management errors (10-19)
 	// ============================
-	ErrInvalidFeeMultiplier     = errors.New("invalid fee multiplier")
-	ErrInvalidTargetUtilization = errors.New("invalid target utilization")
-	ErrInvalidAdjustmentSpeed   = errors.New("invalid adjustment speed")
-	ErrInvalidTaxConfig         = errors.New("invalid transfer tax configuration")
-	ErrTaxRateTooHigh           = errors.New("tax rate exceeds maximum")
-	ErrInvalidTaxRecipient      = errors.New("invalid tax recipient address")
+	ErrInvalidFeeMultiplier     = errorsmod.Register(ModuleName, 10, "invalid fee multiplier")
+	ErrInvalidTargetUtilization = errorsmod.Register(ModuleName, 11, "invalid target utilization")
+	ErrInvalidAdjustmentSpeed   = errorsmod.Register(ModuleName, 12, "invalid adjustment speed")
+	ErrInvalidTaxConfig         = errorsmod.Register(ModuleName, 13, "invalid transfer tax configuration")
+	ErrTaxRateTooHigh           = errorsmod.Register(ModuleName, 14, "tax rate exceeds maximum")
+	ErrInvalidTaxRecipient      = errorsmod.Register(ModuleName, 15, "invalid tax recipient address")
 
 	// ============================
-	// Vesting errors
+	// Vesting errors (20-49)
 	// ============================
-	ErrVestingScheduleNotFound  = errors.New("vesting schedule not found")
-	ErrScheduleNotFound         = errors.New("schedule not found")
-	ErrScheduleRevoked          = errors.New("schedule already revoked")
-	ErrVestingAlreadyRevoked    = errors.New("vesting schedule already revoked")
-	ErrNoVestedTokens           = errors.New("no tokens available to vest")
-	ErrCliffNotReached          = errors.New("cliff period not yet reached")
-	ErrInvalidBeneficiary       = errors.New("invalid beneficiary address")
-	ErrInsufficientVestedAmount = errors.New("insufficient vested amount")
-	ErrVoteLockNotFound         = errors.New("vote lock not found")
-	ErrLockNotFound             = errors.New("lock not found")
-	ErrLockWithdrawn            = errors.New("lock already withdrawn")
-	ErrLockNotEnded             = errors.New("lock period not ended")
-	ErrVoteLockNotExpired       = errors.New("vote lock has not expired yet")
-	ErrInvalidLockDuration      = errors.New("invalid lock duration")
-	ErrLockDurationTooShort     = errors.New("lock duration below minimum")
-	ErrLockDurationTooLong      = errors.New("lock duration exceeds maximum")
-	ErrVoteLockAlreadyWithdrawn = errors.New("vote lock already withdrawn")
+	ErrVestingScheduleNotFound  = errorsmod.Register(ModuleName, 20, "vesting schedule not found")
+	ErrScheduleNotFound         = errorsmod.Register(ModuleName, 21, "schedule not found")
+	ErrScheduleRevoked          = errorsmod.Register(ModuleName, 22, "schedule already revoked")
+	ErrVestingAlreadyRevoked    = errorsmod.Register(ModuleName, 23, "vesting schedule already revoked")
+	ErrNoVestedTokens           = errorsmod.Register(ModuleName, 24, "no tokens available to vest")
+	ErrCliffNotReached          = errorsmod.Register(ModuleName, 25, "cliff period not yet reached")
+	ErrInvalidBeneficiary       = errorsmod.Register(ModuleName, 26, "invalid beneficiary address")
+	ErrInsufficientVestedAmount = errorsmod.Register(ModuleName, 27, "insufficient vested amount")
+	ErrVoteLockNotFound         = errorsmod.Register(ModuleName, 28, "vote lock not found")
+	ErrLockNotFound             = errorsmod.Register(ModuleName, 29, "lock not found")
+	ErrLockWithdrawn            = errorsmod.Register(ModuleName, 30, "lock already withdrawn")
+	ErrLockNotEnded             = errorsmod.Register(ModuleName, 31, "lock period not ended")
+	ErrVoteLockNotExpired       = errorsmod.Register(ModuleName, 32, "vote lock has not expired yet")
+	ErrInvalidLockDuration      = errorsmod.Register(ModuleName, 33, "invalid lock duration")
+	ErrLockDurationTooShort     = errorsmod.Register(ModuleName, 34, "lock duration below minimum")
+	ErrLockDurationTooLong      = errorsmod.Register(ModuleName, 35, "lock duration exceeds maximum")
+	ErrVoteLockAlreadyWithdrawn = errorsmod.Register(ModuleName, 36, "vote lock already withdrawn")
 
 	// ============================
-	// Treasury errors
+	// Treasury errors (50-69)
 	// ============================
-	ErrInvalidTreasuryAddress      = errors.New("invalid treasury address")
-	ErrInvalidThresholdValue       = errors.New("invalid threshold value")
-	ErrInsufficientSignatures      = errors.New("insufficient signatures")
-	ErrTxNotFound                  = errors.New("treasury transaction not found")
-	ErrTreasuryTxNotFound          = errors.New("treasury transaction not found")
-	ErrTreasuryTxExecuted          = errors.New("treasury transaction already executed")
-	ErrTreasuryTxRejected          = errors.New("treasury transaction rejected")
-	ErrTxAlreadyExecuted           = errors.New("transaction already executed")
-	ErrTxAlreadyRejected           = errors.New("transaction already rejected")
-	ErrTimelockNotExpired          = errors.New("timelock period not expired")
-	ErrTimelockNotMet              = errors.New("timelock not met")
-	ErrInvalidSigner               = errors.New("invalid signer")
-	ErrAlreadySigned               = errors.New("already signed by this address")
-	ErrInsufficientTreasuryBalance = errors.New("insufficient treasury balance")
+	ErrInvalidTreasuryAddress      = errorsmod.Register(ModuleName, 50, "invalid treasury address")
+	ErrInvalidThresholdValue       = errorsmod.Register(ModuleName, 51, "invalid threshold value")
+	ErrInsufficientSignatures      = errorsmod.Register(ModuleName, 52, "insufficient signatures")
+	ErrTxNotFound                  = errorsmod.Register(ModuleName, 53, "treasury transaction not found")
+	ErrTreasuryTxNotFound          = errorsmod.Register(ModuleName, 54, "treasury transaction not found")
+	ErrTreasuryTxExecuted          = errorsmod.Register(ModuleName, 55, "treasury transaction already executed")
+	ErrTreasuryTxRejected          = errorsmod.Register(ModuleName, 56, "treasury transaction rejected")
+	ErrTxAlreadyExecuted           = errorsmod.Register(ModuleName, 57, "transaction already executed")
+	ErrTxAlreadyRejected           = errorsmod.Register(ModuleName, 58, "transaction already rejected")
+	ErrTimelockNotExpired          = errorsmod.Register(ModuleName, 59, "timelock period not expired")
+	ErrTimelockNotMet              = errorsmod.Register(ModuleName, 60, "timelock not met")
+	ErrInvalidSigner               = errorsmod.Register(ModuleName, 61, "invalid signer")
+	ErrAlreadySigned               = errorsmod.Register(ModuleName, 62, "already signed by this address")
+	ErrInsufficientTreasuryBalance = errorsmod.Register(ModuleName, 63, "insufficient treasury balance")
 
 	// ============================
-	// Governance proposal errors
+	// Governance proposal errors (70-89)
 	// ============================
-	ErrInvalidRequest         = errors.New("invalid request")
-	ErrInvalidProposal        = errors.New("invalid proposal")
-	ErrProposalNotFound       = errors.New("proposal not found")
-	ErrInvalidProposalStatus  = errors.New("invalid proposal status")
-	ErrProposalNotPassed      = errors.New("proposal has not passed")
-	ErrExecutionDelayNotMet   = errors.New("execution delay not met")
-	ErrAlreadyExecuted        = errors.New("proposal already executed")
-	ErrInsufficientStake      = errors.New("insufficient stake for governance proposal")
-	ErrInvalidProposalDeposit = errors.New("invalid proposal deposit")
+	ErrInvalidRequest         = errorsmod.Register(ModuleName, 70, "invalid request")
+	ErrInvalidProposal        = errorsmod.Register(ModuleName, 71, "invalid proposal")
+	ErrProposalNotFound       = errorsmod.Register(ModuleName, 72, "proposal not found")
+	ErrInvalidProposalStatus  = errorsmod.Register(ModuleName, 73, "invalid proposal status")
+	ErrProposalNotPassed      = errorsmod.Register(ModuleName, 74, "proposal has not passed")
+	ErrExecutionDelayNotMet   = errorsmod.Register(ModuleName, 75, "execution delay not met")
+	ErrAlreadyExecuted        = errorsmod.Register(ModuleName, 76, "proposal already executed")
+	ErrInsufficientStake      = errorsmod.Register(ModuleName, 77, "insufficient stake for governance proposal")
+	ErrInvalidProposalDeposit = errorsmod.Register(ModuleName, 78, "invalid proposal deposit")
 
 	// ============================
-	// Governance voting errors
+	// Governance voting errors (90-119)
 	// ============================
-	ErrInvalidVote            = errors.New("invalid vote")
-	ErrVoteNotFound           = errors.New("vote not found")
-	ErrAlreadyVoted           = errors.New("already voted")
-	ErrVotingPeriodEnded      = errors.New("voting period has ended")
-	ErrVotingPeriodNotStarted = errors.New("voting period has not started")
-	ErrInvalidQuorum          = errors.New("invalid quorum percentage")
-	ErrInvalidThreshold       = errors.New("invalid threshold percentage")
-	ErrInvalidWeight          = errors.New("invalid vote weight")
-	ErrWeightedVoteNotEnabled = errors.New("weighted voting not enabled")
+	ErrInvalidVote             = errorsmod.Register(ModuleName, 90, "invalid vote")
+	ErrVoteNotFound            = errorsmod.Register(ModuleName, 91, "vote not found")
+	ErrAlreadyVoted            = errorsmod.Register(ModuleName, 92, "already voted")
+	ErrVotingPeriodEnded       = errorsmod.Register(ModuleName, 93, "voting period has ended")
+	ErrVotingPeriodNotStarted  = errorsmod.Register(ModuleName, 94, "voting period has not started")
+	ErrInvalidQuorum           = errorsmod.Register(ModuleName, 95, "invalid quorum percentage")
+	ErrInvalidThreshold        = errorsmod.Register(ModuleName, 96, "invalid threshold percentage")
+	ErrInvalidWeight           = errorsmod.Register(ModuleName, 97, "invalid vote weight")
+	ErrWeightedVoteNotEnabled  = errorsmod.Register(ModuleName, 98, "weighted voting not enabled")
+	ErrInsufficientVotingPower = errorsmod.Register(ModuleName, 99, "insufficient voting power")
 
 	// ============================
-	// Governance deposit errors
+	// Governance deposit errors (120-129)
 	// ============================
-	ErrInsufficientDeposit = errors.New("insufficient deposit")
-	ErrInvalidDeposit      = errors.New("invalid deposit")
-	ErrDepositPeriodEnded  = errors.New("deposit period has ended")
+	ErrInsufficientDeposit = errorsmod.Register(ModuleName, 120, "insufficient deposit")
+	ErrInvalidDeposit      = errorsmod.Register(ModuleName, 121, "invalid deposit")
+	ErrDepositPeriodEnded  = errorsmod.Register(ModuleName, 122, "deposit period has ended")
 
 	// ============================
-	// Governance delegation errors
+	// Governance delegation errors (130-139)
 	// ============================
-	ErrInvalidDelegation  = errors.New("invalid vote delegation")
-	ErrDelegationNotFound = errors.New("vote delegation not found")
+	ErrInvalidDelegation  = errorsmod.Register(ModuleName, 130, "invalid vote delegation")
+	ErrDelegationNotFound = errorsmod.Register(ModuleName, 131, "vote delegation not found")
 
 	// ============================
-	// Governance veto errors
+	// Governance veto errors (140-149)
 	// ============================
-	ErrUnauthorizedVeto          = errors.New("unauthorized veto")
-	ErrInsufficientVetoCosigners = errors.New("insufficient veto cosigners")
-	ErrInvalidVeto               = errors.New("invalid veto")
-	ErrExecutionDelayNotPassed   = errors.New("execution delay has not passed")
+	ErrUnauthorizedVeto          = errorsmod.Register(ModuleName, 140, "unauthorized veto")
+	ErrInsufficientVetoCosigners = errorsmod.Register(ModuleName, 141, "insufficient veto cosigners")
+	ErrInvalidVeto               = errorsmod.Register(ModuleName, 142, "invalid veto")
+	ErrExecutionDelayNotPassed   = errorsmod.Register(ModuleName, 143, "execution delay has not passed")
 
 	// ============================
-	// Secret ballot voting errors
+	// Secret ballot voting errors (150-169)
 	// ============================
-	ErrInvalidSnapshot        = errors.New("invalid snapshot vote")
-	ErrInvalidReveal          = errors.New("invalid vote reveal")
-	ErrRevealPeriodNotStarted = errors.New("reveal period has not started")
-	ErrRevealPeriodEnded      = errors.New("reveal period has ended")
-	ErrInvalidCommitment      = errors.New("invalid vote commitment")
-	ErrSecretBallotDisabled   = errors.New("secret ballot voting is disabled")
-	ErrVoteAlreadyRevealed    = errors.New("vote has already been revealed")
-	ErrInvalidVoteReveal      = errors.New("invalid vote reveal")
-	ErrNoVoteCommitment       = errors.New("no vote commitment found")
+	ErrInvalidSnapshot        = errorsmod.Register(ModuleName, 150, "invalid snapshot vote")
+	ErrInvalidReveal          = errorsmod.Register(ModuleName, 151, "invalid vote reveal")
+	ErrRevealPeriodNotStarted = errorsmod.Register(ModuleName, 152, "reveal period has not started")
+	ErrRevealPeriodEnded      = errorsmod.Register(ModuleName, 153, "reveal period has ended")
+	ErrInvalidCommitment      = errorsmod.Register(ModuleName, 154, "invalid vote commitment")
+	ErrSecretBallotDisabled   = errorsmod.Register(ModuleName, 155, "secret ballot voting is disabled")
+	ErrVoteAlreadyRevealed    = errorsmod.Register(ModuleName, 156, "vote has already been revealed")
+	ErrInvalidVoteReveal      = errorsmod.Register(ModuleName, 157, "invalid vote reveal")
+	ErrNoVoteCommitment       = errorsmod.Register(ModuleName, 158, "no vote commitment found")
 
 	// ============================
-	// Quadratic voting errors
+	// Quadratic voting errors (170-179)
 	// ============================
-	ErrQuadraticVotingDisabled = errors.New("quadratic voting is disabled")
-	ErrInsufficientVoteCredits = errors.New("insufficient vote credits")
+	ErrQuadraticVotingDisabled = errorsmod.Register(ModuleName, 170, "quadratic voting is disabled")
+	ErrInsufficientVoteCredits = errorsmod.Register(ModuleName, 171, "insufficient vote credits")
 
 	// ============================
-	// Token lock errors
+	// Token lock errors (180-189)
 	// ============================
-	ErrInsufficientTokens = errors.New("insufficient tokens for lock")
-	ErrTokensLocked       = errors.New("tokens are locked")
+	ErrInsufficientTokens = errorsmod.Register(ModuleName, 180, "insufficient tokens for lock")
+	ErrTokensLocked       = errorsmod.Register(ModuleName, 181, "tokens are locked")
 
 	// ============================
-	// Inflation errors
+	// Inflation errors (190-199)
 	// ============================
-	ErrInflationRateTooHigh = errors.New("inflation rate exceeds maximum")
-	ErrInflationRateTooLow  = errors.New("inflation rate below minimum")
-	ErrInvalidInflationRate = errors.New("invalid inflation rate")
+	ErrInflationRateTooHigh = errorsmod.Register(ModuleName, 190, "inflation rate exceeds maximum")
+	ErrInflationRateTooLow  = errorsmod.Register(ModuleName, 191, "inflation rate below minimum")
+	ErrInvalidInflationRate = errorsmod.Register(ModuleName, 192, "invalid inflation rate")
 
 	// ============================
-	// Whale protection errors
+	// Whale protection errors (200-209)
 	// ============================
-	ErrWhaleHoldingLimitExceeded = errors.New("whale holding limit exceeded")
-	ErrWhaleTxLimitExceeded      = errors.New("whale transaction limit exceeded")
-	ErrLargeTxCooldownActive     = errors.New("large transaction cooldown period active")
-	ErrInvalidWhaleConfig        = errors.New("invalid whale protection configuration")
+	ErrWhaleHoldingLimitExceeded = errorsmod.Register(ModuleName, 200, "whale holding limit exceeded")
+	ErrWhaleTxLimitExceeded      = errorsmod.Register(ModuleName, 201, "whale transaction limit exceeded")
+	ErrLargeTxCooldownActive     = errorsmod.Register(ModuleName, 202, "large transaction cooldown period active")
+	ErrInvalidWhaleConfig        = errorsmod.Register(ModuleName, 203, "invalid whale protection configuration")
 
 	// ============================
-	// Liquidity mining errors
+	// Liquidity mining errors (210-219)
 	// ============================
-	ErrLiquidityRewardCapExceeded = errors.New("liquidity mining reward cap exceeded")
-	ErrInvalidEpoch               = errors.New("invalid epoch")
-	ErrInsufficientRewards        = errors.New("insufficient rewards available")
-	ErrLiquidityMiningDisabled    = errors.New("liquidity mining disabled")
+	ErrLiquidityRewardCapExceeded = errorsmod.Register(ModuleName, 210, "liquidity mining reward cap exceeded")
+	ErrInvalidEpoch               = errorsmod.Register(ModuleName, 211, "invalid epoch")
+	ErrInsufficientRewards        = errorsmod.Register(ModuleName, 212, "insufficient rewards available")
+	ErrLiquidityMiningDisabled    = errorsmod.Register(ModuleName, 213, "liquidity mining disabled")
 
 	// ============================
-	// MEV errors
+	// MEV errors (220-239)
 	// ============================
-	ErrMEVRedistributionDisabled     = errors.New("MEV redistribution disabled")
-	ErrInvalidMEVConfig              = errors.New("invalid MEV configuration")
-	ErrInvalidRedistributionStrategy = errors.New("invalid redistribution strategy")
-	ErrInsufficientMEVBalance        = errors.New("insufficient MEV balance")
-	ErrMEVAuctionDisabled            = errors.New("MEV auction disabled")
-	ErrAuctionNotFound               = errors.New("auction not found")
-	ErrAuctionClosed                 = errors.New("auction is closed")
-	ErrAuctionAlreadyClosed          = errors.New("auction already closed")
-	ErrBidTooLow                     = errors.New("bid amount below minimum")
-	ErrBidderAlreadyBid              = errors.New("bidder already placed a bid")
+	ErrMEVRedistributionDisabled     = errorsmod.Register(ModuleName, 220, "MEV redistribution disabled")
+	ErrInvalidMEVConfig              = errorsmod.Register(ModuleName, 221, "invalid MEV configuration")
+	ErrInvalidRedistributionStrategy = errorsmod.Register(ModuleName, 222, "invalid redistribution strategy")
+	ErrInsufficientMEVBalance        = errorsmod.Register(ModuleName, 223, "insufficient MEV balance")
+	ErrMEVAuctionDisabled            = errorsmod.Register(ModuleName, 224, "MEV auction disabled")
+	ErrAuctionNotFound               = errorsmod.Register(ModuleName, 225, "auction not found")
+	ErrAuctionClosed                 = errorsmod.Register(ModuleName, 226, "auction is closed")
+	ErrAuctionAlreadyClosed          = errorsmod.Register(ModuleName, 227, "auction already closed")
+	ErrBidTooLow                     = errorsmod.Register(ModuleName, 228, "bid amount below minimum")
+	ErrBidderAlreadyBid              = errorsmod.Register(ModuleName, 229, "bidder already placed a bid")
 
 	// ============================
-	// Supply cap errors
+	// Supply cap errors (240-249)
 	// ============================
-	ErrMaxSupplyExceeded   = errors.New("maximum supply cap exceeded")
-	ErrSupplyCapAlreadySet = errors.New("supply cap already set and is immutable")
-	ErrInvalidSupplyCap    = errors.New("invalid supply cap")
+	ErrMaxSupplyExceeded   = errorsmod.Register(ModuleName, 240, "maximum supply cap exceeded")
+	ErrSupplyCapAlreadySet = errorsmod.Register(ModuleName, 241, "supply cap already set and is immutable")
+	ErrInvalidSupplyCap    = errorsmod.Register(ModuleName, 242, "invalid supply cap")
 
 	// ============================
-	// Circuit breaker errors
+	// Circuit breaker errors (250-259)
 	// ============================
-	ErrCircuitBreakerNotFound = errors.New("circuit breaker not found")
+	ErrCircuitBreakerNotFound = errorsmod.Register(ModuleName, 250, "circuit breaker not found")
 
 	// ============================
-	// Gas prediction errors
+	// Gas prediction errors (260-269)
 	// ============================
-	ErrInvalidPriority = errors.New("invalid priority level")
+	ErrInvalidPriority = errorsmod.Register(ModuleName, 260, "invalid priority level")
 
 	// ============================
-	// Transaction batching errors
+	// Transaction batching errors (270-279)
 	// ============================
-	ErrBatchingDisabled = errors.New("transaction batching disabled")
-	ErrBatchTooSmall    = errors.New("batch size below minimum threshold")
-	ErrBatchNotFound    = errors.New("no pending batch found")
+	ErrBatchingDisabled = errorsmod.Register(ModuleName, 270, "transaction batching disabled")
+	ErrBatchTooSmall    = errorsmod.Register(ModuleName, 271, "batch size below minimum threshold")
+	ErrBatchNotFound    = errorsmod.Register(ModuleName, 272, "no pending batch found")
 )

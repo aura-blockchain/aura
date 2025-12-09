@@ -82,9 +82,8 @@ func (k Keeper) GetAuthority() string {
 }
 
 // Logger returns a module-specific logger
-func (k Keeper) Logger(ctx context.Context) log.Logger {
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	return sdkCtx.Logger().With("module", "x/privacy")
+func (k Keeper) Logger(ctx sdk.Context) log.Logger {
+	return ctx.Logger().With("module", "x/"+types.ModuleName)
 }
 
 // SetParams sets the privacy module parameters

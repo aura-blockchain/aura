@@ -1,54 +1,57 @@
 package types
 
-import "errors"
+import (
+	errorsmod "cosmossdk.io/errors"
+)
 
+// Bridge security error codes (100-199 range)
 var (
-	// Security errors
-	ErrBridgePaused           = errors.New("bridge is paused")
-	ErrInvalidMerkleProof     = errors.New("invalid Merkle proof")
-	ErrInvalidTSSSignature    = errors.New("invalid threshold signature")
-	ErrInsufficientSignatures = errors.New("insufficient validator signatures")
-	ErrValidatorNotFound      = errors.New("validator not found")
-	ErrValidatorNotActive     = errors.New("validator is not active")
-	ErrInvalidNonce           = errors.New("invalid nonce")
-	ErrNonceAlreadyUsed       = errors.New("nonce already used")
+	// Security errors (100-109)
+	ErrBridgePaused           = errorsmod.Register(ModuleName, 100, "bridge is paused")
+	ErrInvalidMerkleProof     = errorsmod.Register(ModuleName, 101, "invalid Merkle proof")
+	ErrInvalidTSSSignature    = errorsmod.Register(ModuleName, 102, "invalid threshold signature")
+	ErrInsufficientSignatures = errorsmod.Register(ModuleName, 103, "insufficient validator signatures")
+	ErrValidatorNotFound      = errorsmod.Register(ModuleName, 104, "validator not found")
+	ErrValidatorNotActive     = errorsmod.Register(ModuleName, 105, "validator is not active")
+	ErrInvalidNonce           = errorsmod.Register(ModuleName, 106, "invalid nonce")
+	ErrNonceAlreadyUsed       = errorsmod.Register(ModuleName, 107, "nonce already used")
 
-	// Transfer limit errors
-	ErrAmountBelowMinimum   = errors.New("amount below minimum transfer limit")
-	ErrAmountExceedsMaximum = errors.New("amount exceeds maximum transfer limit")
-	ErrDailyLimitExceeded   = errors.New("daily withdrawal limit exceeded")
-	ErrTimeLockRequired     = errors.New("time-lock required for large transfer")
-	ErrTimeLockNotExpired   = errors.New("time-lock has not expired")
-	ErrTimeLockChallenged   = errors.New("time-lock has been challenged")
+	// Transfer limit errors (110-119)
+	ErrAmountBelowMinimum   = errorsmod.Register(ModuleName, 110, "amount below minimum transfer limit")
+	ErrAmountExceedsMaximum = errorsmod.Register(ModuleName, 111, "amount exceeds maximum transfer limit")
+	ErrDailyLimitExceeded   = errorsmod.Register(ModuleName, 112, "daily withdrawal limit exceeded")
+	ErrTimeLockRequired     = errorsmod.Register(ModuleName, 113, "time-lock required for large transfer")
+	ErrTimeLockNotExpired   = errorsmod.Register(ModuleName, 114, "time-lock has not expired")
+	ErrTimeLockChallenged   = errorsmod.Register(ModuleName, 115, "time-lock has been challenged")
 
-	// Circuit breaker errors
-	ErrCircuitBreakerOpen     = errors.New("circuit breaker is open")
-	ErrHourlyVolumeExceeded   = errors.New("hourly volume limit exceeded")
-	ErrTooManyFailedTransfers = errors.New("too many failed transfers")
+	// Circuit breaker errors (120-129)
+	ErrCircuitBreakerOpen     = errorsmod.Register(ModuleName, 120, "circuit breaker is open")
+	ErrHourlyVolumeExceeded   = errorsmod.Register(ModuleName, 121, "hourly volume limit exceeded")
+	ErrTooManyFailedTransfers = errorsmod.Register(ModuleName, 122, "too many failed transfers")
 
-	// Permission errors
-	ErrAddressBlacklisted    = errors.New("address is blacklisted")
-	ErrAddressNotWhitelisted = errors.New("address is not whitelisted")
-	ErrWhitelistEnabled      = errors.New("whitelist is enabled")
+	// Permission errors (130-139)
+	ErrAddressBlacklisted    = errorsmod.Register(ModuleName, 130, "address is blacklisted")
+	ErrAddressNotWhitelisted = errorsmod.Register(ModuleName, 131, "address is not whitelisted")
+	ErrWhitelistEnabled      = errorsmod.Register(ModuleName, 132, "whitelist is enabled")
 
-	// Fraud proof errors
-	ErrFraudProofExpired         = errors.New("fraud proof has expired")
-	ErrFraudProofAlreadyResolved = errors.New("fraud proof already resolved")
-	ErrFraudProofPending         = errors.New("fraud proof already pending review")
-	ErrFraudProofNotFound        = errors.New("fraud proof not found")
-	ErrInvalidEvidence           = errors.New("invalid evidence")
+	// Fraud proof errors (140-149)
+	ErrFraudProofExpired         = errorsmod.Register(ModuleName, 140, "fraud proof has expired")
+	ErrFraudProofAlreadyResolved = errorsmod.Register(ModuleName, 141, "fraud proof already resolved")
+	ErrFraudProofPending         = errorsmod.Register(ModuleName, 142, "fraud proof already pending review")
+	ErrFraudProofNotFound        = errorsmod.Register(ModuleName, 143, "fraud proof not found")
+	ErrInvalidEvidence           = errorsmod.Register(ModuleName, 144, "invalid evidence")
 
-	// Insurance fund errors
-	ErrInsufficientInsuranceFund = errors.New("insufficient insurance fund balance")
-	ErrClaimNotFound             = errors.New("insurance claim not found")
-	ErrClaimAlreadyResolved      = errors.New("claim already resolved")
+	// Insurance fund errors (150-159)
+	ErrInsufficientInsuranceFund = errorsmod.Register(ModuleName, 150, "insufficient insurance fund balance")
+	ErrClaimNotFound             = errorsmod.Register(ModuleName, 151, "insurance claim not found")
+	ErrClaimAlreadyResolved      = errorsmod.Register(ModuleName, 152, "claim already resolved")
 
-	// Validator errors
-	ErrValidatorSlashed        = errors.New("validator has been slashed")
-	ErrValidatorJailed         = errors.New("validator is jailed")
-	ErrRotationNotApproved     = errors.New("validator rotation not approved")
-	ErrRotationNotEffective    = errors.New("validator rotation not yet effective")
-	ErrValidatorUnauthorized   = errors.New("validator is not authorized")
-	ErrNoActiveValidators      = errors.New("no active validators available")
-	ErrSignatureSetAlreadyUsed = errors.New("signature set already used for this transfer")
+	// Validator errors (160-199)
+	ErrValidatorSlashed        = errorsmod.Register(ModuleName, 160, "validator has been slashed")
+	ErrValidatorJailed         = errorsmod.Register(ModuleName, 161, "validator is jailed")
+	ErrRotationNotApproved     = errorsmod.Register(ModuleName, 162, "validator rotation not approved")
+	ErrRotationNotEffective    = errorsmod.Register(ModuleName, 163, "validator rotation not yet effective")
+	ErrValidatorUnauthorized   = errorsmod.Register(ModuleName, 164, "validator is not authorized")
+	ErrNoActiveValidators      = errorsmod.Register(ModuleName, 165, "no active validators available")
+	ErrSignatureSetAlreadyUsed = errorsmod.Register(ModuleName, 166, "signature set already used for this transfer")
 )
