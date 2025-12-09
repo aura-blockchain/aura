@@ -115,9 +115,9 @@ func TestGetEffectiveLimit(t *testing.T) {
 }
 
 func TestDefaultPageLimit(t *testing.T) {
-	require.Equal(t, uint64(100), common.DefaultPageLimit)
+	require.Equal(t, uint64(100), uint64(common.DefaultPageLimit))
 }
 
 func TestMaxPageLimit(t *testing.T) {
-	require.Equal(t, uint64(1000), common.MaxPageLimit)
+	require.Equal(t, uint64(1000), uint64(common.MaxPageLimit))
 }

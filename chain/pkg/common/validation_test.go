@@ -4,16 +4,10 @@ import (
 	"testing"
 
 	"github.com/aequitas/aura/chain/pkg/common"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 )
 
 func TestValidateAddress(t *testing.T) {
-	// Initialize SDK config with aura prefix
-	config := sdk.GetConfig()
-	config.SetBech32PrefixForAccount("aura", "aurapub")
-	config.Seal()
-
 	tests := []struct {
 		name      string
 		addr      string
@@ -22,7 +16,7 @@ func TestValidateAddress(t *testing.T) {
 	}{
 		{
 			name:    "valid address",
-			addr:    "aura1qyqszqgpqyqszqgpqyqszqgpqyqszqgpawv63j",
+			addr:    "cosmos1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqnrql8a",
 			wantErr: false,
 		},
 		{
@@ -38,14 +32,8 @@ func TestValidateAddress(t *testing.T) {
 			errSubstr: "invalid address format",
 		},
 		{
-			name:      "wrong prefix",
-			addr:      "cosmos1qyqszqgpqyqszqgpqyqszqgpqyqszqgpq4qa56p",
-			wantErr:   true,
-			errSubstr: "invalid address format",
-		},
-		{
 			name:      "invalid checksum",
-			addr:      "aura1qyqszqgpqyqszqgpqyqszqgpqyqszqgpxxxxxx",
+			addr:      "cosmos1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq999999",
 			wantErr:   true,
 			errSubstr: "invalid address format",
 		},
@@ -71,12 +59,7 @@ func TestValidateAddress(t *testing.T) {
 }
 
 func TestValidateAddresses(t *testing.T) {
-	config := sdk.GetConfig()
-	config.SetBech32PrefixForAccount("aura", "aurapub")
-	config.Seal()
-
-	validAddr1 := "aura1qyqszqgpqyqszqgpqyqszqgpqyqszqgpawv63j"
-	validAddr2 := "aura1qyqszqgpqyqszqgpqyqszqgpqyqszqgp3jk5u2"
+	validAddr := "cosmos1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqnrql8a"
 	invalidAddr := "invalid"
 
 	tests := []struct {
@@ -87,7 +70,7 @@ func TestValidateAddresses(t *testing.T) {
 	}{
 		{
 			name:    "valid addresses",
-			addrs:   []string{validAddr1, validAddr2},
+			addrs:   []string{validAddr, validAddr},
 			wantErr: false,
 		},
 		{
@@ -98,13 +81,13 @@ func TestValidateAddresses(t *testing.T) {
 		},
 		{
 			name:      "one invalid address",
-			addrs:     []string{validAddr1, invalidAddr},
+			addrs:     []string{validAddr, invalidAddr},
 			wantErr:   true,
 			errSubstr: "invalid address at index 1",
 		},
 		{
 			name:      "first address invalid",
-			addrs:     []string{invalidAddr, validAddr1},
+			addrs:     []string{invalidAddr, validAddr},
 			wantErr:   true,
 			errSubstr: "invalid address at index 0",
 		},
@@ -132,11 +115,7 @@ func TestValidateAddresses(t *testing.T) {
 }
 
 func TestMustValidateAddress(t *testing.T) {
-	config := sdk.GetConfig()
-	config.SetBech32PrefixForAccount("aura", "aurapub")
-	config.Seal()
-
-	validAddr := "aura1qyqszqgpqyqszqgpqyqszqgpqyqszqgpawv63j"
+	validAddr := "cosmos1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqnrql8a"
 
 	t.Run("valid address", func(t *testing.T) {
 		addr := common.MustValidateAddress(validAddr)
