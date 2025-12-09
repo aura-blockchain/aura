@@ -32,44 +32,44 @@ func ValidateGenesis(gen *GenesisState) error {
         return fmt.Errorf("genesis state cannot be nil")
     }
 
-    for _, role := range gen.Roles {
-        if err := ValidateRole(role); err != nil {
+    for i := range gen.Roles {
+        if err := ValidateRole(&gen.Roles[i]); err != nil {
             return err
         }
     }
 
-    for _, assignment := range gen.RoleAssignments {
-        if err := ValidateRoleAssignment(assignment); err != nil {
+    for i := range gen.RoleAssignments {
+        if err := ValidateRoleAssignment(&gen.RoleAssignments[i]); err != nil {
             return err
         }
     }
 
-    for _, wallet := range gen.MultisigWallets {
-        if err := ValidateMultisigWallet(wallet); err != nil {
+    for i := range gen.MultisigWallets {
+        if err := ValidateMultisigWallet(&gen.MultisigWallets[i]); err != nil {
             return err
         }
     }
 
-    for _, proposal := range gen.MultisigProposals {
-        if err := ValidateMultisigProposal(proposal); err != nil {
+    for i := range gen.MultisigProposals {
+        if err := ValidateMultisigProposal(&gen.MultisigProposals[i]); err != nil {
             return err
         }
     }
 
-    for _, action := range gen.TimeLockedActions {
-        if err := ValidateTimeLockedAction(action); err != nil {
+    for i := range gen.TimeLockedActions {
+        if err := ValidateTimeLockedAction(&gen.TimeLockedActions[i]); err != nil {
             return err
         }
     }
 
-    for _, admin := range gen.EmergencyAdmins {
-        if err := ValidateEmergencyAdmin(admin); err != nil {
+    for i := range gen.EmergencyAdmins {
+        if err := ValidateEmergencyAdmin(&gen.EmergencyAdmins[i]); err != nil {
             return err
         }
     }
 
-    for _, session := range gen.Sessions {
-        if err := ValidateSession(session); err != nil {
+    for i := range gen.Sessions {
+        if err := ValidateSession(&gen.Sessions[i]); err != nil {
             return err
         }
     }

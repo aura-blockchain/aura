@@ -7,18 +7,18 @@ import (
 // DefaultGenesisState returns the default genesis state
 func DefaultGenesisState() *GenesisState {
 	return &GenesisState{
-		Params:          DefaultParams(),
-		TrustedPeers:    []*TrustedPeer{},
-		Reputations:     []*NodeReputation{},
-		RateLimits:      []*RateLimitEntry{},
-		ForkAlerts:      []*ForkAlert{},
-		PartitionAlerts: []*PartitionAlert{},
+		Params:          *DefaultParams(),
+		TrustedPeers:    []TrustedPeer{},
+		Reputations:     []NodeReputation{},
+		RateLimits:      []RateLimitEntry{},
+		ForkAlerts:      []ForkAlert{},
+		PartitionAlerts: []PartitionAlert{},
 	}
 }
 
 // ValidateGenesisState performs basic validation of genesis data
 func ValidateGenesisState(gs *GenesisState) error {
-	if err := ValidateParams(gs.Params); err != nil {
+	if err := ValidateParams(&gs.Params); err != nil {
 		return fmt.Errorf("invalid params: %w", err)
 	}
 

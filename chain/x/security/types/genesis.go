@@ -9,13 +9,13 @@ import (
 // DefaultGenesis returns the default genesis state for the security module
 func DefaultGenesis() *securitypb.GenesisState {
 	return &securitypb.GenesisState{
-		Params:            &securitypb.Params{},
-		NetworkSecurity:   &securitypb.NetworkSecurityState{},
-		ValidatorSecurity: &securitypb.ValidatorSecurityState{},
-		WalletSecurity:    &securitypb.WalletSecurityState{},
-		IncidentResponse:  &securitypb.IncidentResponseState{},
-		Cryptography:      &securitypb.CryptographyState{},
-		Privacy:           &securitypb.PrivacyState{},
+		Params:            securitypb.Params{},
+		NetworkSecurity:   securitypb.NetworkSecurityState{},
+		ValidatorSecurity: securitypb.ValidatorSecurityState{},
+		WalletSecurity:    securitypb.WalletSecurityState{},
+		IncidentResponse:  securitypb.IncidentResponseState{},
+		Cryptography:      securitypb.CryptographyState{},
+		Privacy:           securitypb.PrivacyState{},
 	}
 }
 
@@ -25,53 +25,39 @@ func ValidateGenesisState(gs *securitypb.GenesisState) error {
 		return fmt.Errorf("genesis state cannot be nil")
 	}
 
-	// Validate params if present
-	if gs.Params != nil {
-		if err := ValidateParams(gs.Params); err != nil {
-			return fmt.Errorf("invalid params: %w", err)
-		}
+	// Validate params
+	if err := ValidateParams(&gs.Params); err != nil {
+		return fmt.Errorf("invalid params: %w", err)
 	}
 
 	// Validate network security state
-	if gs.NetworkSecurity != nil {
-		if err := validateNetworkSecurityState(gs.NetworkSecurity); err != nil {
-			return fmt.Errorf("invalid network security state: %w", err)
-		}
+	if err := validateNetworkSecurityState(&gs.NetworkSecurity); err != nil {
+		return fmt.Errorf("invalid network security state: %w", err)
 	}
 
 	// Validate validator security state
-	if gs.ValidatorSecurity != nil {
-		if err := validateValidatorSecurityState(gs.ValidatorSecurity); err != nil {
-			return fmt.Errorf("invalid validator security state: %w", err)
-		}
+	if err := validateValidatorSecurityState(&gs.ValidatorSecurity); err != nil {
+		return fmt.Errorf("invalid validator security state: %w", err)
 	}
 
 	// Validate wallet security state
-	if gs.WalletSecurity != nil {
-		if err := validateWalletSecurityState(gs.WalletSecurity); err != nil {
-			return fmt.Errorf("invalid wallet security state: %w", err)
-		}
+	if err := validateWalletSecurityState(&gs.WalletSecurity); err != nil {
+		return fmt.Errorf("invalid wallet security state: %w", err)
 	}
 
 	// Validate incident response state
-	if gs.IncidentResponse != nil {
-		if err := validateIncidentResponseState(gs.IncidentResponse); err != nil {
-			return fmt.Errorf("invalid incident response state: %w", err)
-		}
+	if err := validateIncidentResponseState(&gs.IncidentResponse); err != nil {
+		return fmt.Errorf("invalid incident response state: %w", err)
 	}
 
 	// Validate cryptography state
-	if gs.Cryptography != nil {
-		if err := validateCryptographyState(gs.Cryptography); err != nil {
-			return fmt.Errorf("invalid cryptography state: %w", err)
-		}
+	if err := validateCryptographyState(&gs.Cryptography); err != nil {
+		return fmt.Errorf("invalid cryptography state: %w", err)
 	}
 
 	// Validate privacy state
-	if gs.Privacy != nil {
-		if err := validatePrivacyState(gs.Privacy); err != nil {
-			return fmt.Errorf("invalid privacy state: %w", err)
-		}
+	if err := validatePrivacyState(&gs.Privacy); err != nil {
+		return fmt.Errorf("invalid privacy state: %w", err)
 	}
 
 	return nil

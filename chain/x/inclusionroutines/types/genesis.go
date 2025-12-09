@@ -36,7 +36,7 @@ type IRDataFile struct {
 func DefaultGenesisState() *inclusionroutinespb.GenesisState {
 	params := DefaultParams()
 	return &inclusionroutinespb.GenesisState{
-		Params: &inclusionroutinespb.Params{
+		Params: inclusionroutinespb.Params{
 			MaxIrPerLocale:       params.MaxIrPerLocale,
 			DefaultRateLimitHour: params.DefaultRateLimitHour,
 			SuspensionFee:        params.SuspensionFee,
@@ -92,17 +92,15 @@ func ValidateGenesisState(state *inclusionroutinespb.GenesisState) error {
 	}
 
 	// Validate params
-	if state.Params != nil {
-		// Convert proto params to local Params for validation
-		localParams := &Params{
-			MaxIrPerLocale:       state.Params.MaxIrPerLocale,
-			DefaultRateLimitHour: state.Params.DefaultRateLimitHour,
-			SuspensionFee:        state.Params.SuspensionFee,
-			MinGovernanceDeposit: state.Params.MinGovernanceDeposit,
-		}
-		if err := ValidateParams(localParams); err != nil {
-			return fmt.Errorf("params validation failed: %w", err)
-		}
+	// Convert proto params to local Params for validation
+	localParams := &Params{
+		MaxIrPerLocale:       state.Params.MaxIrPerLocale,
+		DefaultRateLimitHour: state.Params.DefaultRateLimitHour,
+		SuspensionFee:        state.Params.SuspensionFee,
+		MinGovernanceDeposit: state.Params.MinGovernanceDeposit,
+	}
+	if err := ValidateParams(localParams); err != nil {
+		return fmt.Errorf("params validation failed: %w", err)
 	}
 
 	// Validate IR definitions

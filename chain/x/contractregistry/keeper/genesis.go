@@ -16,25 +16,18 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data *pb.GenesisState) error {
 	}
 
 	// Set params (required)
-	if data.Params == nil {
-		return types.ErrInvalidRequest
-	}
-	if err := k.SetParams(ctx, data.Params); err != nil {
+	if err := k.SetParams(ctx, &data.Params); err != nil {
 		return err
 	}
 
 	// Import contracts
-	for _, contract := range data.Contracts {
-		if contract != nil {
-			k.SetContractInfo(ctx, contract)
-		}
+	for i := range data.Contracts {
+		k.SetContractInfo(ctx, &data.Contracts[i])
 	}
 
 	// Import metrics
-	for _, metrics := range data.Metrics {
-		if metrics != nil {
-			k.SetContractMetrics(ctx, metrics)
-		}
+	for i := range data.Metrics {
+		k.SetContractMetrics(ctx, &data.Metrics[i])
 	}
 
 	return nil
@@ -42,22 +35,22 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data *pb.GenesisState) error {
 
 // ExportGenesis exports the module state to genesis
 func (k Keeper) ExportGenesis(ctx sdk.Context) *pb.GenesisState {
-	contracts := []*pb.ContractInfo{}
-	metrics := []*pb.ContractMetrics{}
+	contracts := []pb.ContractInfo{}
+	metrics := []pb.ContractMetrics{}
 
 	// Export all contracts
 	k.IterateContractInfo(ctx, func(info *pb.ContractInfo) bool {
-		contracts = append(contracts, info)
+		contracts = append(contracts, *info)
 
 		// Export metrics for each contract
 		if m, found := k.GetContractMetrics(ctx, info.Address); found {
-			metrics = append(metrics, m)
+			metrics = append(metrics, *m)
 		}
 		return false
 	})
 
 	return &pb.GenesisState{
-		Params:    types.DefaultParams(),
+		Params:    *types.DefaultParams(),
 		Contracts: contracts,
 		Metrics:   metrics,
 	}

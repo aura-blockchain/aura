@@ -7,23 +7,23 @@ import (
 // DefaultGenesisState returns the default genesis state
 func DefaultGenesisState() *identitypb.GenesisState {
 	return &identitypb.GenesisState{
-		Params:                   DefaultParams(),
-		Roles:                    []*identitypb.Role{},
-		RoleAssignments:          []*identitypb.RoleAssignment{},
-		AuditLogs:                []*identitypb.AuditLog{},
-		Sessions:                 []*identitypb.Session{},
-		RateLimits:               []*identitypb.RateLimitConfig{},
-		MultisigWallets:          []*identitypb.MultisigWallet{},
-		MultisigProposals:        []*identitypb.MultisigProposal{},
-		TimeLockedActions:        []*identitypb.TimeLockedAction{},
-		EmergencyAdmins:          []*identitypb.EmergencyAdmin{},
-		ValidatorRotations:       []*identitypb.ValidatorKeyRotation{},
-		IdentityRecords:          []*identitypb.IdentityRecord{},
-		CredentialRevocations:    []*identitypb.CredentialRevocation{},
-		DidKeyRotations:          []*identitypb.DIDKeyRotation{},
-		DidKeyHistories:          []*identitypb.DIDKeyHistory{},
-		ChangeRequests:           []*identitypb.ChangeRequest{},
-		ChangeHistory:            []*identitypb.ChangeHistory{},
+		Params:                   *DefaultParams(),
+		Roles:                    []identitypb.Role{},
+		RoleAssignments:          []identitypb.RoleAssignment{},
+		AuditLogs:                []identitypb.AuditLog{},
+		Sessions:                 []identitypb.Session{},
+		RateLimits:               []identitypb.RateLimitConfig{},
+		MultisigWallets:          []identitypb.MultisigWallet{},
+		MultisigProposals:        []identitypb.MultisigProposal{},
+		TimeLockedActions:        []identitypb.TimeLockedAction{},
+		EmergencyAdmins:          []identitypb.EmergencyAdmin{},
+		ValidatorRotations:       []identitypb.ValidatorKeyRotation{},
+		IdentityRecords:          []identitypb.IdentityRecord{},
+		CredentialRevocations:    []identitypb.CredentialRevocation{},
+		DidKeyRotations:          []identitypb.DIDKeyRotation{},
+		DidKeyHistories:          []identitypb.DIDKeyHistory{},
+		ChangeRequests:           []identitypb.ChangeRequest{},
+		ChangeHistory:            []identitypb.ChangeHistory{},
 		IdentityChangesSuspended: false,
 		NextAuditLogId:           1,
 	}
@@ -31,16 +31,8 @@ func DefaultGenesisState() *identitypb.GenesisState {
 
 // ValidateGenesisState performs basic validation of genesis data
 func ValidateGenesisState(gs *identitypb.GenesisState) error {
-	// Validate params
-	if gs.Params == nil {
-		return ErrInvalidInput.Wrap("params cannot be nil")
-	}
-	if gs.Params.Auth == nil {
-		return ErrInvalidInput.Wrap("auth params cannot be nil")
-	}
-	if gs.Params.Change == nil {
-		return ErrInvalidInput.Wrap("change params cannot be nil")
-	}
+	// Note: Params.Auth and Params.Change are non-nullable in proto
+	// They will never be nil, just validate their contents
 
 	if gs.Params.Auth.MaxRolesPerAccount == 0 {
 		return ErrInvalidInput.Wrap("max_roles_per_account must be greater than 0")
