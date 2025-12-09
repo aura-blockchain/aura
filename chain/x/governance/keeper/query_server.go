@@ -55,18 +55,25 @@ func (qs queryServer) Proposals(goCtx context.Context, req *govpb.QueryProposals
 	store := ctx.KVStore(qs.Keeper.storeKey)
 	proposalStore := prefix.NewStore(store, ProposalsKeyPrefix)
 
-	// Pre-filter proposals with pagination
+	// Default pagination limits
+	const defaultLimit = 100
+
 	proposals := []*types.Proposal{}
-	pageRes, err := query.FilteredPaginate(proposalStore, req.Pagination, func(key []byte, value []byte) (bool, error) {
+	count := 0
+
+	iterator := proposalStore.Iterator(nil, nil)
+	defer iterator.Close()
+
+	for ; iterator.Valid() && count < defaultLimit; iterator.Next() {
 		var proposal types.Proposal
-		if err := qs.Keeper.cdc.Unmarshal(value, &proposal); err != nil {
-			return false, err
+		if err := qs.Keeper.cdc.Unmarshal(iterator.Value(), &proposal); err != nil {
+			continue
 		}
 
 		// Filter by status if provided
 		if req.Status != govpb.ProposalStatus_PROPOSAL_STATUS_UNSPECIFIED {
 			if proposal.Status != req.Status {
-				return false, nil
+				continue
 			}
 		}
 
@@ -74,7 +81,7 @@ func (qs queryServer) Proposals(goCtx context.Context, req *govpb.QueryProposals
 		if req.Voter != "" {
 			_, err := qs.Keeper.GetVote(ctx, proposal.Id, req.Voter)
 			if err != nil {
-				return false, nil
+				continue
 			}
 		}
 
@@ -82,21 +89,15 @@ func (qs queryServer) Proposals(goCtx context.Context, req *govpb.QueryProposals
 		if req.Depositor != "" {
 			_, err := qs.Keeper.GetDeposit(ctx, proposal.Id, req.Depositor)
 			if err != nil {
-				return false, nil
+				continue
 			}
 		}
 
 		proposals = append(proposals, &proposal)
-		return true, nil
-	})
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		count++
 	}
 
-	return &govpb.QueryProposalsResponse{
-		Proposals:  proposals,
-		Pagination: pageRes,
-	}, nil
+	return &govpb.QueryProposalsResponse{Proposals: proposals}, nil
 }
 
 // Vote queries a vote by proposal id and voter

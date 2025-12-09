@@ -73,16 +73,8 @@ func (k *Keeper) GetAuthority() string {
 }
 
 // Logger returns a module-specific logger
-func (k *Keeper) Logger(ctx context.Context) interface{} {
-	return struct {
-		Info  func(msg string, keyvals ...interface{})
-		Error func(msg string, keyvals ...interface{})
-		Debug func(msg string, keyvals ...interface{})
-	}{
-		Info:  func(msg string, keyvals ...interface{}) {},
-		Error: func(msg string, keyvals ...interface{}) {},
-		Debug: func(msg string, keyvals ...interface{}) {},
-	}
+func (k Keeper) Logger(ctx sdk.Context) log.Logger {
+	return ctx.Logger().With("module", "x/"+types.ModuleName)
 }
 
 // SetIPFSClient sets the IPFS client (useful for testing)

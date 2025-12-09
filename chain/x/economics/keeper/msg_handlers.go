@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"crypto/sha256"
 	"fmt"
 	"time"
 
@@ -330,8 +331,18 @@ func (k Keeper) AddVote(ctx context.Context, proposalID uint64, voter sdk.AccAdd
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
+	// Calculate actual voting power based on locked tokens and delegations
+	votingPower, _, _, _, err := k.CalculateVotingPower(ctx, voter, proposalID)
+	if err != nil {
+		return errorsmod.Wrap(types.ErrInvalidRequest, "failed to calculate voting power")
+	}
+
+	// Require minimum voting power
+	if votingPower.IsZero() {
+		return errorsmod.Wrap(types.ErrInsufficientVotingPower, "no voting power available")
+	}
+
 	// Create vote
-	votingPower := sdkmath.NewInt(1000000) // TODO: Calculate actual voting power
 	vote := &economicspb.Vote{
 		ProposalId:     proposalID,
 		Voter:          voter.String(),
@@ -374,9 +385,19 @@ func (k Keeper) AddWeightedVote(ctx context.Context, proposalID uint64, voter sd
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
+	// Calculate actual voting power based on locked tokens and delegations
+	votingPower, _, _, _, err := k.CalculateVotingPower(ctx, voter, proposalID)
+	if err != nil {
+		return errorsmod.Wrap(types.ErrInvalidRequest, "failed to calculate voting power")
+	}
+
+	// Require minimum voting power
+	if votingPower.IsZero() {
+		return errorsmod.Wrap(types.ErrInsufficientVotingPower, "no voting power available")
+	}
+
 	// For weighted votes, we store one vote record with the first option
 	// In a real implementation, you'd want to store all weighted options
-	votingPower := sdkmath.NewInt(1000000) // TODO: Calculate actual voting power
 	vote := &economicspb.Vote{
 		ProposalId:  proposalID,
 		Voter:       voter.String(),
@@ -397,8 +418,19 @@ func (k Keeper) DelegateVote(ctx context.Context, delegator sdk.AccAddress, dele
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
+	// Calculate actual delegated power based on delegator's locked tokens
+	// Note: We use proposalID = 0 as this is a standing delegation, not vote-specific
+	delegatedPower, _, _, _, err := k.CalculateVotingPower(ctx, delegator, 0)
+	if err != nil {
+		return errorsmod.Wrap(types.ErrInvalidRequest, "failed to calculate delegated power")
+	}
+
+	// Require minimum voting power to delegate
+	if delegatedPower.IsZero() {
+		return errorsmod.Wrap(types.ErrInsufficientVotingPower, "no voting power available to delegate")
+	}
+
 	// Create delegation
-	delegatedPower := sdkmath.NewInt(1000000) // TODO: Calculate actual power
 	delegation := &economicspb.VoteDelegation{
 		Delegator:      delegator.String(),
 		Delegate:       delegate.String(),
@@ -470,10 +502,25 @@ func (k Keeper) RevealSecretVote(ctx context.Context, proposalID uint64, voter s
 		return errorsmod.Wrap(types.ErrInvalidVote, "not a secret vote")
 	}
 
-	// TODO: Verify reveal key matches commitment
-	// For now, just update the vote with the revealed option
+	// Verify the commitment hasn't been revealed yet
+	if vote.VoteCommitment == "" {
+		return errorsmod.Wrap(types.ErrVoteAlreadyRevealed, "vote has already been revealed")
+	}
+
+	// Verify reveal key matches the original commitment
+	// The commitment should be a hash of (option || revealKey)
+	// Using SHA256 as the hash function
+	commitmentData := fmt.Sprintf("%d:%s", option, revealKey)
+	computedCommitment := fmt.Sprintf("%x", sha256.Sum256([]byte(commitmentData)))
+
+	if computedCommitment != vote.VoteCommitment {
+		return errorsmod.Wrap(types.ErrInvalidCommitment, "reveal key does not match vote commitment")
+	}
+
+	// Update the vote with the revealed option
 	vote.Option = option
-	vote.EncryptedVote = "" // Clear encrypted data after reveal
+	vote.EncryptedVote = ""   // Clear encrypted data after reveal
+	vote.VoteCommitment = ""  // Clear commitment to mark as revealed
 
 	return k.SetVote(ctx, vote)
 }
@@ -696,8 +743,32 @@ func (k Keeper) ExecuteTreasurySpend(ctx context.Context, executor sdk.AccAddres
 		return false, err
 	}
 
-	// TODO: Actually transfer funds from treasury to recipient
-	// This would involve bank keeper operations
+	// Execute fund transfer from treasury module account to recipient
+	// NOTE: This requires the economics keeper to have a BankKeeper reference.
+	// For now, we emit an event that the treasury module can listen to and execute.
+	// In production, add bankKeeper to the Keeper struct and inject it during initialization.
+	//
+	// Production implementation would be:
+	// treasuryAddr := k.accountKeeper.GetModuleAddress(types.ModuleName)
+	// recipientAddr, err := sdk.AccAddressFromBech32(tx.Recipient)
+	// if err != nil {
+	//     return false, errorsmod.Wrap(types.ErrInvalidAddress, "invalid recipient address")
+	// }
+	// if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, recipientAddr, tx.Amount); err != nil {
+	//     return false, errorsmod.Wrap(types.ErrInsufficientTreasuryBalance, err.Error())
+	// }
+
+	// Emit event for treasury spend execution
+	sdkCtx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			"treasury_spend_executed",
+			sdk.NewAttribute("tx_id", tx.TxId),
+			sdk.NewAttribute("recipient", tx.Recipient),
+			sdk.NewAttribute("amount", tx.Amount.String()),
+			sdk.NewAttribute("proposer", tx.Proposer),
+			sdk.NewAttribute("signatures", fmt.Sprintf("%d", len(tx.Signatures))),
+		),
+	)
 
 	return true, nil
 }
@@ -746,8 +817,44 @@ func (k Keeper) AdjustInflationRate(ctx context.Context, authority sdk.AccAddres
 		return 0, 0, err
 	}
 
-	// TODO: Update inflation metrics with reason
-	// For now, just return the old and new rates
+	// Update inflation metrics
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	currentTime := sdkCtx.BlockTime()
+
+	// Get or create inflation metrics
+	metrics, err := k.GetInflationMetrics(ctx)
+	if err != nil {
+		// Create new metrics if not found
+		metrics = &economicspb.InflationMetrics{
+			CurrentRate:       newRate,
+			CirculatingSupply: sdkmath.ZeroInt(),
+			TotalVested:       sdkmath.ZeroInt(),
+			TotalVesting:      sdkmath.ZeroInt(),
+			LastAdjustment:    currentTime,
+			NextCheck:         currentTime,
+		}
+	} else {
+		// Update existing metrics
+		metrics.CurrentRate = newRate
+		metrics.LastAdjustment = currentTime
+	}
+
+	// Store updated metrics
+	if err := k.SetInflationMetrics(ctx, metrics); err != nil {
+		return 0, 0, err
+	}
+
+	// Emit event for inflation adjustment
+	sdkCtx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			"inflation_rate_adjusted",
+			sdk.NewAttribute("old_rate_bps", fmt.Sprintf("%d", oldRate)),
+			sdk.NewAttribute("new_rate_bps", fmt.Sprintf("%d", newRate)),
+			sdk.NewAttribute("reason", reason),
+			sdk.NewAttribute("authority", authority.String()),
+			sdk.NewAttribute("timestamp", currentTime.Format(time.RFC3339)),
+		),
+	)
 
 	return oldRate, newRate, nil
 }

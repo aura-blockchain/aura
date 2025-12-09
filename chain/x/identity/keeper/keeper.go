@@ -42,8 +42,8 @@ func (k *Keeper) GetAuthority() string {
 }
 
 // Logger returns the module logger
-func (k *Keeper) Logger() log.Logger {
-	return k.logger
+func (k Keeper) Logger(ctx sdk.Context) log.Logger {
+	return ctx.Logger().With("module", "x/"+types.ModuleName)
 }
 
 // ============================================================================

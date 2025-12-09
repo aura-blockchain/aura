@@ -1,15 +1,16 @@
 package types
 
 import (
-	"errors"
+	errorsmod "cosmossdk.io/errors"
 )
 
+// Privacy module error codes
 var (
-	ErrInvalidRingSize        = errors.New("invalid ring size")
-	ErrInvalidMixingParams    = errors.New("invalid mixing parameters")
-	ErrInvalidCommitment      = errors.New("invalid commitment")
-	ErrInvalidProof           = errors.New("invalid proof")
-	ErrNullifierExists        = errors.New("nullifier already exists")
-	ErrInvalidNullifier       = errors.New("invalid nullifier")
-	ErrKeyImageAlreadyUsed    = errors.New("key image already used")
+	ErrInvalidRingSize     = errorsmod.Register(ModuleName, 1, "invalid ring size")
+	ErrInvalidMixingParams = errorsmod.Register(ModuleName, 2, "invalid mixing parameters")
+	ErrInvalidCommitment   = errorsmod.Register(ModuleName, 3, "invalid commitment")
+	ErrInvalidProof        = errorsmod.Register(ModuleName, 4, "invalid proof")
+	ErrNullifierExists     = errorsmod.Register(ModuleName, 5, "nullifier already exists")
+	ErrInvalidNullifier    = errorsmod.Register(ModuleName, 6, "invalid nullifier")
+	ErrKeyImageAlreadyUsed = errorsmod.Register(ModuleName, 7, "key image already used")
 )

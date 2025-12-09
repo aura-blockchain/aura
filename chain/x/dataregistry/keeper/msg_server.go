@@ -239,16 +239,9 @@ func (s *msgServer) VerifyDataItem(ctx context.Context, msg *pb.MsgVerifyDataIte
 			if s.keeper.bankKeeper != nil {
 				if err := s.keeper.bankKeeper.MintCoins(sdkCtx, types.ModuleName, rewardCoins); err == nil {
 					if err := s.keeper.bankKeeper.SendCoinsFromModuleToAccount(sdkCtx, types.ModuleName, verifierAddr, rewardCoins); err == nil {
-						logger := s.keeper.Logger(ctx)
-						if loggerStruct, ok := logger.(struct {
-							Info  func(msg string, keyvals ...interface{})
-							Error func(msg string, keyvals ...interface{})
-							Debug func(msg string, keyvals ...interface{})
-						}); ok {
-							loggerStruct.Info("minted verification reward",
-								"verifier", msg.Verifier,
-								"amount", params.VerificationReward)
-						}
+						s.keeper.Logger(sdkCtx).Info("minted verification reward",
+							"verifier", msg.Verifier,
+							"amount", params.VerificationReward)
 					}
 				}
 			}

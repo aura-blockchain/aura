@@ -40,9 +40,8 @@ func NewKeeper(
 }
 
 // Logger returns a module-specific logger
-func (k Keeper) Logger(ctx context.Context) log.Logger {
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	return k.logger.With("module", "x/"+types.ModuleName, "height", sdkCtx.BlockHeight())
+func (k Keeper) Logger(ctx sdk.Context) log.Logger {
+	return ctx.Logger().With("module", "x/"+types.ModuleName)
 }
 
 // getStore returns the KVStore
