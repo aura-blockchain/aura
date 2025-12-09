@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"reflect"
 	"testing"
 	"time"
 
@@ -10,8 +11,6 @@ import (
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	proto "google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 	"github.com/aequitas/aura/chain/x/bridge/keeper"
@@ -587,46 +586,46 @@ func TestExportGenesis(t *testing.T) {
 	require.NoError(t, k.InitGenesis(input.Ctx, genesisState))
 
 	exported := k.ExportGenesis(input.Ctx)
-	require.True(t, proto.Equal(genesisState.Params, exported.Params))
+	require.True(t, reflect.DeepEqual(genesisState.Params, exported.Params))
 	require.Len(t, exported.Transfers, len(genesisState.Transfers))
 	for i := range genesisState.Transfers {
-		require.True(t, proto.Equal(genesisState.Transfers[i], exported.Transfers[i]))
+		require.True(t, reflect.DeepEqual(genesisState.Transfers[i], exported.Transfers[i]))
 	}
 	require.Len(t, exported.ChainConfigs, len(genesisState.ChainConfigs))
 	for i := range genesisState.ChainConfigs {
-		require.True(t, proto.Equal(genesisState.ChainConfigs[i], exported.ChainConfigs[i]))
+		require.True(t, reflect.DeepEqual(genesisState.ChainConfigs[i], exported.ChainConfigs[i]))
 	}
 	require.Len(t, exported.Validators, len(genesisState.Validators))
 	for i := range genesisState.Validators {
-		require.True(t, proto.Equal(genesisState.Validators[i], exported.Validators[i]))
+		require.True(t, reflect.DeepEqual(genesisState.Validators[i], exported.Validators[i]))
 	}
 	require.Len(t, exported.WrappedTokens, len(genesisState.WrappedTokens))
 	for i := range genesisState.WrappedTokens {
-		require.True(t, proto.Equal(genesisState.WrappedTokens[i], exported.WrappedTokens[i]))
+		require.True(t, reflect.DeepEqual(genesisState.WrappedTokens[i], exported.WrappedTokens[i]))
 	}
 	require.Len(t, exported.SharedIdentities, len(genesisState.SharedIdentities))
 	for i := range genesisState.SharedIdentities {
-		require.True(t, proto.Equal(genesisState.SharedIdentities[i], exported.SharedIdentities[i]))
+		require.True(t, reflect.DeepEqual(genesisState.SharedIdentities[i], exported.SharedIdentities[i]))
 	}
 	require.Len(t, exported.CrossChainSwaps, len(genesisState.CrossChainSwaps))
 	for i := range genesisState.CrossChainSwaps {
-		require.True(t, proto.Equal(genesisState.CrossChainSwaps[i], exported.CrossChainSwaps[i]))
+		require.True(t, reflect.DeepEqual(genesisState.CrossChainSwaps[i], exported.CrossChainSwaps[i]))
 	}
 	require.Len(t, exported.RelayerStats, len(genesisState.RelayerStats))
 	for i := range genesisState.RelayerStats {
-		require.True(t, proto.Equal(genesisState.RelayerStats[i], exported.RelayerStats[i]))
+		require.True(t, reflect.DeepEqual(genesisState.RelayerStats[i], exported.RelayerStats[i]))
 	}
 }
 
 func testBridgeGenesisState() types.GenesisState {
-	now := timestamppb.New(time.Unix(1, 0))
+	now := time.Unix(1, 0)
 	transfer := &types.CrossChainTransfer{
 		TransferId:  "transfer-1",
 		SourceChain: "aura",
 		TargetChain: "paw",
 		Sender:      "aura1sender",
 		Recipient:   "paw1recipient",
-		Amount:      "1000",
+		Amount:      math.NewInt(1000),
 		Denom:       "uaura",
 		Status:      types.TransferStatus_CONFIRMED,
 		Timestamp:   now,
@@ -645,8 +644,8 @@ func testBridgeGenesisState() types.GenesisState {
 		WrappedDenom:  "paw.token",
 		OriginalDenom: "token",
 		SourceChain:   "paw",
-		TotalSupply:   "500",
-		LockedAmount:  "500",
+		TotalSupply:   math.NewInt(500),
+		LockedAmount:  math.NewInt(500),
 	}
 	identity := &types.SharedIdentity{
 		Address:      "aura1identity",
@@ -657,7 +656,7 @@ func testBridgeGenesisState() types.GenesisState {
 		SourceChain:     "aura",
 		TargetChain:     "paw",
 		TargetDenom:     "pawcoin",
-		MinTargetAmount: "200",
+		MinTargetAmount: math.NewInt(200),
 		Sender:          "aura1sender",
 		Recipient:       "paw1recipient",
 		Route:           []string{"aura", "osmosis", "paw"},
@@ -669,16 +668,16 @@ func testBridgeGenesisState() types.GenesisState {
 		TotalTransfersRelayed: 5,
 		SuccessfulTransfers:   5,
 		FailedTransfers:       0,
-		TotalVolume:           "1000",
+		TotalVolume:           math.NewInt(1000),
 		LastRelay:             now,
-		UptimePercentage:      "1.0",
+		UptimePercentage:      math.LegacyNewDec(1),
 	}
 	return types.GenesisState{
 		Params: &types.BridgeParams{
 			Enabled:                      true,
 			MinConfirmations:             2,
 			BridgeFeeBasisPoints:         25,
-			MaxTransferAmount:            "1000000000",
+			MaxTransferAmount:            math.NewInt(1000000000),
 			ValidatorThresholdPercentage: 66,
 		},
 		Transfers:        []*types.CrossChainTransfer{transfer},

@@ -7,8 +7,8 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	gogotypes "github.com/cosmos/gogoproto/types"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/vcregistry/keeper"
 	"github.com/aequitas/aura/chain/x/vcregistry/types"
@@ -63,8 +63,8 @@ func TestQueryServerCheckVCStatusReflectsContextTime(t *testing.T) {
 		HolderDid:     "did:aura:holder1",
 		Status:        types.VCStatus_VC_STATUS_ACTIVE,
 		VcType:        types.VCType_VC_TYPE_KYC_VERIFICATION,
-		IssuedAt:      timestamppb.New(time.Unix(base, 0)),
-		ExpiresAt:     timestamppb.New(time.Unix(base+10, 0)),
+		IssuedAt:      &gogotypes.Timestamp{Seconds: base, Nanos: 0},
+		ExpiresAt:     &gogotypes.Timestamp{Seconds: base + 10, Nanos: 0},
 	}
 	require.NoError(t, k.SetVCRecord(ctx, vc))
 
@@ -109,7 +109,7 @@ func TestQueryServerValidateMintEligibilityEdgeCases(t *testing.T) {
 		RequiredArenaScore: 10,
 		Singleton:          true,
 		Version:            "1.0.0",
-		CreatedAt:          timestamppb.New(ctx.BlockTime()),
+		CreatedAt:          &gogotypes.Timestamp{Seconds: ctx.BlockTime().Unix(), Nanos: int32(ctx.BlockTime().Nanosecond())},
 		CreatedHeight:      uint64(ctx.BlockHeight()),
 		Creator:            "governance",
 	}
@@ -146,7 +146,7 @@ func TestQueryServerValidateMintEligibilityEdgeCases(t *testing.T) {
 			HolderDid:     "did:aura:holder",
 			VcType:        types.VCType_VC_TYPE_KYC_VERIFICATION,
 			Status:        types.VCStatus_VC_STATUS_ACTIVE,
-			IssuedAt:      timestamppb.New(ctx.BlockTime()),
+			IssuedAt:      &gogotypes.Timestamp{Seconds: ctx.BlockTime().Unix(), Nanos: int32(ctx.BlockTime().Nanosecond())},
 		}
 		require.NoError(t, k.SetVCRecord(ctx, existingVC))
 
@@ -219,7 +219,7 @@ func TestQueryServerResolveDIDIncludesMintedCredential(t *testing.T) {
 		RequiredArenaScore: 0,
 		Singleton:          false,
 		Version:            "1.0.0",
-		CreatedAt:          timestamppb.New(ctx.BlockTime()),
+		CreatedAt:          &gogotypes.Timestamp{Seconds: ctx.BlockTime().Unix(), Nanos: int32(ctx.BlockTime().Nanosecond())},
 		CreatedHeight:      uint64(ctx.BlockHeight()),
 		Creator:            "governance",
 	}

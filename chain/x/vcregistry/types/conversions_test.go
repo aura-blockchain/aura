@@ -2,9 +2,10 @@ package types
 
 import (
 	"testing"
+	"time"
 
+	gogotypes "github.com/cosmos/gogoproto/types"
 	"github.com/stretchr/testify/require"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestVCPolicyFromProto_Nil(t *testing.T) {
@@ -13,7 +14,7 @@ func TestVCPolicyFromProto_Nil(t *testing.T) {
 }
 
 func TestVCPolicyFromProto_Valid(t *testing.T) {
-	now := timestamppb.Now()
+	now := &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: 0}
 	pb := &VCPolicy{
 		VcTypeName:            "VerifiedHuman",
 		VcTypeEnum:            VCType_VC_TYPE_VERIFIED_HUMAN,
@@ -112,7 +113,7 @@ func TestVCRecordToProto_Nil(t *testing.T) {
 }
 
 func TestVCRecordToProto_Valid(t *testing.T) {
-	now := timestamppb.Now()
+	now := &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: 0}
 	record := &VCRecord{
 		VcId:               "vc123",
 		VcType:             VCType_VC_TYPE_VERIFIED_HUMAN,
@@ -149,7 +150,7 @@ func TestVCPolicyToProto_Nil(t *testing.T) {
 }
 
 func TestVCPolicyToProto_Valid(t *testing.T) {
-	now := timestamppb.Now()
+	now := &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: 0}
 	policy := &VCPolicy{
 		VcTypeName:            "VerifiedHuman",
 		VcTypeEnum:            VCType_VC_TYPE_VERIFIED_HUMAN,
@@ -181,7 +182,7 @@ func TestDIDDocumentToProto_Nil(t *testing.T) {
 }
 
 func TestDIDDocumentToProto_Valid(t *testing.T) {
-	now := timestamppb.Now()
+	now := &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: 0}
 	doc := &DIDDocument{
 		Did:        "did:aura:test",
 		Controller: "aura1controller",
@@ -241,7 +242,7 @@ func TestRevocationRecordToProto_Nil(t *testing.T) {
 }
 
 func TestRevocationRecordToProto_Valid(t *testing.T) {
-	now := timestamppb.Now()
+	now := &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: 0}
 	record := &RevocationRecord{
 		VcId:          "vc123",
 		RevokedAt:     now,
@@ -266,7 +267,7 @@ func TestRevocationListToProto_Nil(t *testing.T) {
 }
 
 func TestRevocationListToProto_Valid(t *testing.T) {
-	now := timestamppb.Now()
+	now := &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: 0}
 	list := &RevocationList{
 		MerkleRoot:        []byte("root"),
 		TotalRevocations:  100,

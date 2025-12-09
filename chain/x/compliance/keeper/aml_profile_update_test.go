@@ -64,7 +64,7 @@ func TestUpdateAMLProfileOnTransaction_ExistingProfile(t *testing.T) {
 		RiskLevel:         types.AMLRiskLevel_AML_RISK_LOW,
 		TotalTransactions: 5,
 		TotalVolume:       "5000",
-		LastAssessment:    timestamppb.New(ctx.BlockTime()),
+		LastAssessment:    ctx.BlockTime(),
 	}
 	err = keeper.SetAMLProfile(ctx, initialProfile)
 	require.NoError(t, err)

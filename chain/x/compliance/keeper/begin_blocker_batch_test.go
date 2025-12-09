@@ -19,8 +19,8 @@ func TestBeginBlockerBatching(t *testing.T) {
 	expiredRecord := &types.KYCRecord{
 		Address:      "aura1expireduser",
 		KycLevel:     types.KYCLevel_KYC_LEVEL_BASIC,
-		VerifiedAt:   timestamppb.New(ctx.BlockTime().Add(-365 * 24 * time.Hour)), // 1 year ago
-		ExpiresAt:    timestamppb.New(ctx.BlockTime().Add(-1 * time.Hour)),        // Expired 1 hour ago
+		VerifiedAt:   ctx.BlockTime().Add(-365 * 24 * time.Hour), // 1 year ago
+		ExpiresAt:    ctx.BlockTime().Add(-1 * time.Hour),        // Expired 1 hour ago
 		Provider:     "test-provider",
 		Jurisdiction: "US",
 	}
@@ -101,8 +101,8 @@ func TestBeginBlockerBatchingPerformance(t *testing.T) {
 		record := &types.KYCRecord{
 			Address:      "aura1user" + string(rune(i)),
 			KycLevel:     types.KYCLevel_KYC_LEVEL_BASIC,
-			VerifiedAt:   timestamppb.New(currentTime.Add(-30 * 24 * time.Hour)),
-			ExpiresAt:    timestamppb.New(expiresAt),
+			VerifiedAt:   currentTime.Add(-30 * 24 * time.Hour),
+			ExpiresAt:    expiresAt,
 			Provider:     "test-provider",
 			Jurisdiction: "US",
 		}
@@ -179,8 +179,8 @@ func TestBeginBlockerExpiryDetection(t *testing.T) {
 		record := &types.KYCRecord{
 			Address:      tc.address,
 			KycLevel:     types.KYCLevel_KYC_LEVEL_BASIC,
-			VerifiedAt:   timestamppb.New(currentTime.Add(-30 * 24 * time.Hour)),
-			ExpiresAt:    timestamppb.New(tc.expiresAt),
+			VerifiedAt:   currentTime.Add(-30 * 24 * time.Hour),
+			ExpiresAt:    tc.expiresAt,
 			Provider:     "test-provider",
 			Jurisdiction: "US",
 		}
