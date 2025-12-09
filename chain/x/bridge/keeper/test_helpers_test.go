@@ -3,14 +3,18 @@ package keeper_test
 import (
 	"testing"
 
+	sdkmath "cosmossdk.io/math"
 	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 	"github.com/aequitas/aura/chain/x/bridge/types"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func seedBridgeTransfer(t *testing.T, input keepertest.TestInput, transferID string, amount string, requiredConfirmations uint64) {
 	t.Helper()
+
+	// Parse amount string to math.Int
+	amountInt, ok := sdkmath.NewIntFromString(amount)
+	require.True(t, ok, "invalid amount string")
 
 	transfer := &types.CrossChainTransfer{
 		TransferId:            transferID,
@@ -19,9 +23,9 @@ func seedBridgeTransfer(t *testing.T, input keepertest.TestInput, transferID str
 		Sender:                keepertest.GenTestAddr().String(),
 		Recipient:             keepertest.GenTestAddr().String(),
 		Denom:                 "uaura",
-		Amount:                amount,
+		Amount:                amountInt,
 		Status:                types.TransferStatus_PENDING,
-		Timestamp:             timestamppb.New(input.Ctx.BlockTime()),
+		Timestamp:             input.Ctx.BlockTime(),
 		RequiredConfirmations: requiredConfirmations,
 	}
 
@@ -36,6 +40,10 @@ func seedBridgeTransferWithPending(t *testing.T, input keepertest.TestInput, tra
 	// Create the regular transfer
 	seedBridgeTransfer(t, input, transferID, amount, requiredConfirmations)
 
+	// Parse amount string to math.Int
+	amountInt, ok := sdkmath.NewIntFromString(amount)
+	require.True(t, ok, "invalid amount string")
+
 	// Create the pending transfer with unlock time in the future
 	// Use the fraud proof window from default params (7 days)
 	unlockTime := input.Ctx.BlockTime().Add(types.DefaultFraudProofWindow)
@@ -43,12 +51,12 @@ func seedBridgeTransferWithPending(t *testing.T, input keepertest.TestInput, tra
 	pending := &types.PendingTransfer{
 		TransferId:   transferID,
 		Recipient:    keepertest.GenTestAddr().String(),
-		Amount:       amount, // Amount is stored as string
+		Amount:       amountInt,
 		Denom:        "uaura",
 		SourceChain:  "paw",
 		SourceTxHash: "0xabcd1234",
-		CreatedAt:    timestamppb.New(input.Ctx.BlockTime()),
-		UnlockTime:   timestamppb.New(unlockTime),
+		CreatedAt:    input.Ctx.BlockTime(),
+		UnlockTime:   unlockTime,
 		Challenged:   false,
 		FraudProofId: "",
 	}

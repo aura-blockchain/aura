@@ -41,8 +41,8 @@ func TestSignerVerification(t *testing.T) {
 			Creator: addr1.String(),
 			DenomA:  "aura",
 			DenomB:  "usdt",
-			AmountA: &sdk.Coin{Denom: "aura", Amount: sdkmath.NewInt(1000000000)},
-			AmountB: &sdk.Coin{Denom: "usdt", Amount: sdkmath.NewInt(1000000000)},
+			AmountA: sdk.NewCoin("aura", sdkmath.NewInt(1000000000)),
+			AmountB: sdk.NewCoin("usdt", sdkmath.NewInt(1000000000)),
 		}
 
 		_, err := msgServer.CreatePool(suite.ctx, msg)
@@ -61,9 +61,9 @@ func TestSignerVerification(t *testing.T) {
 		createMsg := &dexpb.MsgCreateOrder{
 			Creator:     addr1.String(),
 			OrderType:   dexpb.SwapOrderType_BUY,
-			AuraAmount:  sdkmath.NewInt(10000000).String(),
+			AuraAmount:  sdkmath.NewInt(10000000),
 			OtherCoin:   "usdt",
-			OtherAmount: sdkmath.NewInt(10000000).String(),
+			OtherAmount: sdkmath.NewInt(10000000),
 		}
 		createResp, err := msgServer.CreateOrder(suite.ctx, createMsg)
 		require.NoError(t, err)
@@ -98,8 +98,8 @@ func TestSignerVerification(t *testing.T) {
 			Creator: addr1.String(),
 			DenomA:  "aura",
 			DenomB:  "usdt2",
-			AmountA: &sdk.Coin{Denom: "aura", Amount: sdkmath.NewInt(1000000000)},
-			AmountB: &sdk.Coin{Denom: "usdt2", Amount: sdkmath.NewInt(1000000000)},
+			AmountA: sdk.NewCoin("aura", sdkmath.NewInt(1000000000)),
+			AmountB: sdk.NewCoin("usdt2", sdkmath.NewInt(1000000000)),
 		}
 		poolResp, err := msgServer.CreatePool(suite.ctx, createMsg)
 		require.NoError(t, err)
@@ -108,8 +108,8 @@ func TestSignerVerification(t *testing.T) {
 		swapMsg := &dexpb.MsgSwapExactIn{
 			Sender:         addr2.String(),
 			PoolId:         poolResp.PoolId,
-			CoinIn:         &sdk.Coin{Denom: "aura", Amount: sdkmath.NewInt(10000000)},
-			MinAmountOut:   sdkmath.NewInt(1).String(),
+			CoinIn:         sdk.NewCoin("aura", sdkmath.NewInt(10000000)),
+			MinAmountOut:   sdkmath.NewInt(1),
 			MaxSlippageBps: 10000, // 100% slippage allowed for test
 		}
 
@@ -122,7 +122,7 @@ func TestSignerVerification(t *testing.T) {
 		createMsg := &dexpb.MsgCreateHTLC{
 			Sender:           addr1.String(),
 			Recipient:        addr2.String(),
-			Amount:           &sdk.Coin{Denom: "aura", Amount: sdkmath.NewInt(10000000)},
+			Amount:           sdk.NewCoin("aura", sdkmath.NewInt(10000000)),
 			SecretHash:       "testhash123",
 			TimelockDuration: 3600,
 		}
