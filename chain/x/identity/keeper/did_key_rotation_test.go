@@ -294,13 +294,14 @@ func TestDIDKeyHistory(t *testing.T) {
 	owner := "aura1testowner"
 	key1 := "key-1"
 
+	now := ctx.BlockTime()
 	identity := &types.IdentityRecord{
 		Did:                 did,
 		Address:             owner,
 		Status:              types.IdentityStatusActive,
 		VerificationMethods: []string{key1},
-		CreatedAt:           timestamppb.New(ctx.BlockTime()),
-		UpdatedAt:           timestamppb.New(ctx.BlockTime()),
+		CreatedAt:           now,
+		UpdatedAt:           &now,
 	}
 
 	err := keeper.SetIdentityRecord(ctx, identity)
@@ -353,14 +354,15 @@ func TestProcessExpiredGracePeriods(t *testing.T) {
 	did3 := "did:aura:test3"
 	owner := "aura1testowner"
 
+	now := ctx.BlockTime()
 	for _, did := range []string{did1, did2, did3} {
 		identity := &types.IdentityRecord{
 			Did:                 did,
 			Address:             owner,
 			Status:              types.IdentityStatusActive,
 			VerificationMethods: []string{"old-key"},
-			CreatedAt:           timestamppb.New(ctx.BlockTime()),
-			UpdatedAt:           timestamppb.New(ctx.BlockTime()),
+			CreatedAt:           now,
+			UpdatedAt:           &now,
 		}
 
 		err := keeper.SetIdentityRecord(ctx, identity)
@@ -401,13 +403,14 @@ func TestIsKeyInGracePeriod(t *testing.T) {
 	oldKey := "old-key"
 	newKey := "new-key"
 
+	now := ctx.BlockTime()
 	identity := &types.IdentityRecord{
 		Did:                 did,
 		Address:             owner,
 		Status:              types.IdentityStatusActive,
 		VerificationMethods: []string{oldKey},
-		CreatedAt:           timestamppb.New(ctx.BlockTime()),
-		UpdatedAt:           timestamppb.New(ctx.BlockTime()),
+		CreatedAt:           now,
+		UpdatedAt:           &now,
 	}
 
 	err := keeper.SetIdentityRecord(ctx, identity)
@@ -444,13 +447,14 @@ func TestGetCurrentVerificationMethod(t *testing.T) {
 	owner := "aura1testowner"
 	key1 := "key-1"
 
+	now := ctx.BlockTime()
 	identity := &types.IdentityRecord{
 		Did:                 did,
 		Address:             owner,
 		Status:              types.IdentityStatusActive,
 		VerificationMethods: []string{key1},
-		CreatedAt:           timestamppb.New(ctx.BlockTime()),
-		UpdatedAt:           timestamppb.New(ctx.BlockTime()),
+		CreatedAt:           now,
+		UpdatedAt:           &now,
 	}
 
 	err := keeper.SetIdentityRecord(ctx, identity)
@@ -481,13 +485,14 @@ func TestMultipleRotations(t *testing.T) {
 	owner := "aura1testowner"
 	key1 := "key-1"
 
+	now := ctx.BlockTime()
 	identity := &types.IdentityRecord{
 		Did:                 did,
 		Address:             owner,
 		Status:              types.IdentityStatusActive,
 		VerificationMethods: []string{key1},
-		CreatedAt:           timestamppb.New(ctx.BlockTime()),
-		UpdatedAt:           timestamppb.New(ctx.BlockTime()),
+		CreatedAt:           now,
+		UpdatedAt:           &now,
 	}
 
 	err := keeper.SetIdentityRecord(ctx, identity)
