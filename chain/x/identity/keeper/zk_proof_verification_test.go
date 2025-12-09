@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"crypto/rand"
-	"crypto/sha256"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -468,7 +467,12 @@ func TestVerifySimpleProof_InvalidProofs(t *testing.T) {
 func TestVerifyGroth16Proof(t *testing.T) {
 	k, ctx := setupKeeperForTest(t)
 
-	// Register verification key
+	// NOTE: This test uses random data for verification key and proof
+	// because setting up a real Groth16 circuit requires a full constraint
+	// system and trusted setup ceremony. In production, verification keys
+	// come from the trusted setup, and proofs come from client-side proving.
+
+	// Register verification key (random bytes - will fail deserialization)
 	vkData := make([]byte, 128)
 	_, err := rand.Read(vkData)
 	require.NoError(t, err)
@@ -476,46 +480,40 @@ func TestVerifyGroth16Proof(t *testing.T) {
 	err = k.SetZKVerificationKey(ctx, ZKProofTypeGroth16, vkData, "Test Groth16 key")
 	require.NoError(t, err)
 
-	// Create valid proof structure
+	// Create public inputs
 	publicInputs := make([]byte, 64)
 	_, err = rand.Read(publicInputs)
 	require.NoError(t, err)
 
-	// Generate a valid proof for our placeholder implementation
-	validProof := make([]byte, 128)
-	_, err = rand.Read(validProof[:96]) // Random proof data
-
-	// Compute expected commitment for last 32 bytes
-	hasher := sha256.New()
-	hasher.Write(publicInputs)
-	hasher.Write(vkData)
-	commitment := hasher.Sum(nil)
-	copy(validProof[96:], commitment)
-
-	// Test valid proof
-	t.Run("valid groth16 proof", func(t *testing.T) {
-		verified, err := k.VerifyZKProof(ctx, ZKProofTypeGroth16, validProof, publicInputs)
-		require.NoError(t, err)
-		require.True(t, verified, "Valid Groth16 proof should verify")
-	})
-
-	// Test invalid proofs
-	t.Run("invalid groth16 proof - wrong commitment", func(t *testing.T) {
-		invalidProof := make([]byte, 128)
-		copy(invalidProof, validProof)
-		invalidProof[100] ^= 0xFF // Corrupt commitment
-
-		verified, err := k.VerifyZKProof(ctx, ZKProofTypeGroth16, invalidProof, publicInputs)
-		require.NoError(t, err)
-		require.False(t, verified, "Invalid proof should not verify")
-	})
-
-	t.Run("random groth16 proof", func(t *testing.T) {
+	// Test with random proof - should fail deserialization
+	t.Run("invalid groth16 proof - deserialization error", func(t *testing.T) {
 		randomProof := randomBytes(t, 128)
-		verified, err := k.VerifyZKProof(ctx, ZKProofTypeGroth16, randomProof, publicInputs)
-		require.NoError(t, err)
-		require.False(t, verified, "Random proof should not verify")
+		_, err := k.VerifyZKProof(ctx, ZKProofTypeGroth16, randomProof, publicInputs)
+		// With real gnark verification, random data will fail deserialization
+		require.Error(t, err, "Random proof should fail deserialization")
+		require.Contains(t, err.Error(), "verification key", "Error should mention verification key issue")
 	})
+
+	t.Run("groth16 proof too short", func(t *testing.T) {
+		shortProof := randomBytes(t, 32)
+		_, err := k.VerifyZKProof(ctx, ZKProofTypeGroth16, shortProof, publicInputs)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "proof too short")
+	})
+
+	t.Run("groth16 proof too long", func(t *testing.T) {
+		longProof := randomBytes(t, 300)
+		_, err := k.VerifyZKProof(ctx, ZKProofTypeGroth16, longProof, publicInputs)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "proof too long")
+	})
+
+	// Note: Testing valid proof verification requires:
+	// 1. A real circuit definition
+	// 2. Compilation to R1CS
+	// 3. Trusted setup to generate proving/verification keys
+	// 4. Witness generation and proof creation
+	// This is beyond the scope of unit tests and requires integration testing
 }
 
 // ============================================================================
@@ -525,7 +523,10 @@ func TestVerifyGroth16Proof(t *testing.T) {
 func TestVerifyPLONKProof(t *testing.T) {
 	k, ctx := setupKeeperForTest(t)
 
-	// Register verification key
+	// NOTE: Similar to Groth16, real PLONK verification requires a circuit
+	// definition, SRS (Structured Reference String), and proper proof generation
+
+	// Register verification key (random bytes - will fail deserialization)
 	vkData := make([]byte, 128)
 	_, err := rand.Read(vkData)
 	require.NoError(t, err)
@@ -533,36 +534,32 @@ func TestVerifyPLONKProof(t *testing.T) {
 	err = k.SetZKVerificationKey(ctx, ZKProofTypePLONK, vkData, "Test PLONK key")
 	require.NoError(t, err)
 
-	// Create valid proof structure
+	// Create public inputs
 	publicInputs := make([]byte, 64)
 	_, err = rand.Read(publicInputs)
 	require.NoError(t, err)
 
-	// Generate a valid proof for our placeholder implementation
-	validProof := make([]byte, 128)
-	_, err = rand.Read(validProof[:96])
-
-	// Compute expected commitment for last 32 bytes
-	hasher := sha256.New()
-	hasher.Write(publicInputs)
-	hasher.Write(vkData)
-	hasher.Write([]byte("plonk"))
-	commitment := hasher.Sum(nil)
-	copy(validProof[96:], commitment)
-
-	// Test valid proof
-	t.Run("valid plonk proof", func(t *testing.T) {
-		verified, err := k.VerifyZKProof(ctx, ZKProofTypePLONK, validProof, publicInputs)
-		require.NoError(t, err)
-		require.True(t, verified, "Valid PLONK proof should verify")
+	// Test with random proof - should fail deserialization
+	t.Run("invalid plonk proof - deserialization error", func(t *testing.T) {
+		randomProof := randomBytes(t, 128)
+		_, err := k.VerifyZKProof(ctx, ZKProofTypePLONK, randomProof, publicInputs)
+		// With real gnark verification, random data will fail deserialization
+		require.Error(t, err, "Random proof should fail deserialization")
+		require.Contains(t, err.Error(), "verification key", "Error should mention verification key issue")
 	})
 
-	// Test invalid proof
-	t.Run("invalid plonk proof", func(t *testing.T) {
-		invalidProof := randomBytes(t, 128)
-		verified, err := k.VerifyZKProof(ctx, ZKProofTypePLONK, invalidProof, publicInputs)
-		require.NoError(t, err)
-		require.False(t, verified, "Random PLONK proof should not verify")
+	t.Run("plonk proof too short", func(t *testing.T) {
+		shortProof := randomBytes(t, 32)
+		_, err := k.VerifyZKProof(ctx, ZKProofTypePLONK, shortProof, publicInputs)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "proof too short")
+	})
+
+	t.Run("plonk proof too long", func(t *testing.T) {
+		longProof := randomBytes(t, 600)
+		_, err := k.VerifyZKProof(ctx, ZKProofTypePLONK, longProof, publicInputs)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "proof too long")
 	})
 }
 
@@ -581,37 +578,25 @@ func TestVerifyBulletProof(t *testing.T) {
 	err = k.SetZKVerificationKey(ctx, ZKProofTypeBulletProofs, vkData, "Test BulletProofs key")
 	require.NoError(t, err)
 
-	// Create valid proof structure
+	// Create public inputs
 	publicInputs := make([]byte, 64)
 	_, err = rand.Read(publicInputs)
 	require.NoError(t, err)
 
-	// Generate a valid proof for our placeholder implementation
-	validProof := make([]byte, 256)
-	_, err = rand.Read(validProof[:224])
-
-	// Compute expected commitment for last 32 bytes
-	hasher := sha256.New()
-	hasher.Write(publicInputs)
-	hasher.Write(vkData)
-	hasher.Write([]byte("bulletproof"))
-	commitment := hasher.Sum(nil)
-	copy(validProof[224:], commitment)
-
-	// Test valid proof
-	t.Run("valid bulletproof", func(t *testing.T) {
-		verified, err := k.VerifyZKProof(ctx, ZKProofTypeBulletProofs, validProof, publicInputs)
-		require.NoError(t, err)
-		require.True(t, verified, "Valid BulletProof should verify")
+	// Test bulletproof verification - should return unsupported error
+	t.Run("bulletproof not yet supported", func(t *testing.T) {
+		proof := randomBytes(t, 256)
+		_, err := k.VerifyZKProof(ctx, ZKProofTypeBulletProofs, proof, publicInputs)
+		require.Error(t, err, "Bulletproof verification should return error")
+		require.Contains(t, err.Error(), "not yet implemented", "Error should indicate bulletproofs are not yet implemented")
+		require.Contains(t, err.Error(), "Groth16 or PLONK", "Error should suggest alternatives")
 	})
 
-	// Test invalid proof
-	t.Run("invalid bulletproof", func(t *testing.T) {
-		invalidProof := randomBytes(t, 256)
-		verified, err := k.VerifyZKProof(ctx, ZKProofTypeBulletProofs, invalidProof, publicInputs)
-		require.NoError(t, err)
-		require.False(t, verified, "Random BulletProof should not verify")
-	})
+	// Note: Bulletproof support requires:
+	// 1. A mature Go bulletproof library (currently no good option for BN254)
+	// 2. Integration with curve25519/ristretto255 if using standard bulletproofs
+	// 3. Alternative: Implement range proofs within Groth16/PLONK circuits
+	// For now, explicitly returning unsupported is safer than stub implementation
 }
 
 // ============================================================================

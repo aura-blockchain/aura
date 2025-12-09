@@ -94,6 +94,14 @@ const (
 	CodePermissionNotFound uint32 = 694
 	CodeInvalidAccessLevel uint32 = 695
 
+	// ZK Proof error codes (710-729)
+	CodeInvalidProof              uint32 = 710
+	CodeProofVerificationFailed   uint32 = 711
+	CodeInvalidVerifyingKey       uint32 = 712
+	CodeInvalidPublicInputs       uint32 = 713
+	CodeUnsupportedProofType      uint32 = 714
+	CodeProofDeserializationError uint32 = 715
+
 	// General error codes (900-999)
 	CodeInvalidAddress uint32 = 900
 	CodeInvalidInput   uint32 = 901
@@ -208,6 +216,16 @@ var (
 	ErrInvalidPermission  = errors.Register(ModuleName, CodeInvalidPermission, "invalid permission")
 	ErrPermissionNotFound = errors.Register(ModuleName, CodePermissionNotFound, "permission not found")
 	ErrInvalidAccessLevel = errors.Register(ModuleName, CodeInvalidAccessLevel, "invalid access level")
+)
+
+// ZK Proof errors
+var (
+	ErrInvalidProof              = errors.Register(ModuleName, CodeInvalidProof, "invalid zero-knowledge proof")
+	ErrProofVerificationFailed   = errors.Register(ModuleName, CodeProofVerificationFailed, "proof verification failed")
+	ErrInvalidVerifyingKey       = errors.Register(ModuleName, CodeInvalidVerifyingKey, "invalid verification key")
+	ErrInvalidPublicInputs       = errors.Register(ModuleName, CodeInvalidPublicInputs, "invalid public inputs")
+	ErrUnsupportedProofType      = errors.Register(ModuleName, CodeUnsupportedProofType, "unsupported proof type")
+	ErrProofDeserializationError = errors.Register(ModuleName, CodeProofDeserializationError, "proof deserialization failed")
 )
 
 // General errors
