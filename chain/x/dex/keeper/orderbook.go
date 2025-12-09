@@ -97,14 +97,14 @@ func (k Keeper) CreateOrder(
 	order := &types.SwapOrder{
 		OrderId:      orderID,
 		OrderType:    orderType,
-		AuraAmount:   auraAmount.String(),
+		AuraAmount:   auraAmount,
 		OtherCoin:    otherCoin,
-		OtherAmount:  otherAmount.String(),
+		OtherAmount:  otherAmount,
 		UserAddress:  creator,
 		Status:       types.SwapOrderStatus_PENDING,
-		Timestamp:    timestamppb.New(ctx.BlockTime()),
-		ExpiresAt:    timestamppb.New(expirationTime),
-		PricePerAura: pricePerAura.String(),
+		Timestamp:    ctx.BlockTime(),
+		ExpiresAt:    expirationTime,
+		PricePerAura: pricePerAura,
 	}
 
 	// Store order BEFORE external call
@@ -188,21 +188,15 @@ func (k Keeper) MatchOrder(
 	}
 
 	// Check expiration
-	if ctx.BlockTime().After(order.ExpiresAt.AsTime()) {
+	if ctx.BlockTime().After(order.ExpiresAt) {
 		// Order expired, cancel it
 		k.CancelOrder(ctx, orderID, "expired")
 		return fmt.Errorf("order has expired")
 	}
 
-	// Parse amounts
-	auraAmount, ok := sdkmath.NewIntFromString(order.AuraAmount)
-	if !ok {
-		return fmt.Errorf("invalid AURA amount")
-	}
-	otherAmount, ok := sdkmath.NewIntFromString(order.OtherAmount)
-	if !ok {
-		return fmt.Errorf("invalid other amount")
-	}
+	// AuraAmount and OtherAmount are already math.Int types (customtype in proto)
+	auraAmount := order.AuraAmount
+	otherAmount := order.OtherAmount
 
 	// Validate matcher is not the order creator (can't match own order)
 	if matcher == order.UserAddress {
@@ -238,7 +232,8 @@ func (k Keeper) MatchOrder(
 	// Update order status to MATCHED BEFORE external calls
 	order.Status = types.SwapOrderStatus_MATCHED
 	order.MatcherAddress = matcher
-	order.MatchedAt = timestamppb.New(ctx.BlockTime())
+	matchedTime := ctx.BlockTime()
+	order.MatchedAt = &matchedTime
 	k.SetOrder(ctx, order)
 
 	// Remove from orderbook BEFORE external calls (prevents double-matching)
@@ -377,14 +372,9 @@ func (k Keeper) CancelOrder(
 func (k Keeper) ExecuteSwap(ctx sdk.Context, order *types.SwapOrder) error {
 	// === 1. CHECKS - Parse and validate amounts ===
 
-	auraAmount, ok := sdkmath.NewIntFromString(order.AuraAmount)
-	if !ok {
-		return fmt.Errorf("invalid AURA amount in order")
-	}
-	otherAmount, ok := sdkmath.NewIntFromString(order.OtherAmount)
-	if !ok {
-		return fmt.Errorf("invalid other amount in order")
-	}
+	// AuraAmount and OtherAmount are already math.Int types (customtype in proto)
+	auraAmount := order.AuraAmount
+	otherAmount := order.OtherAmount
 
 	// Validate order is in MATCHED status
 	if order.Status != types.SwapOrderStatus_MATCHED {
@@ -627,8 +617,9 @@ func (k Keeper) UnlockFundsForOrder(ctx sdk.Context, address string, order *type
 		return err
 	}
 
-	auraAmount, _ := sdkmath.NewIntFromString(order.AuraAmount)
-	otherAmount, _ := sdkmath.NewIntFromString(order.OtherAmount)
+	// AuraAmount and OtherAmount are already math.Int types (customtype in proto)
+	auraAmount := order.AuraAmount
+	otherAmount := order.OtherAmount
 
 	var coins sdk.Coins
 	if order.OrderType == types.SwapOrderType_SELL {
@@ -676,7 +667,7 @@ func (k Keeper) CleanupExpiredOrders(ctx sdk.Context) {
 	orders := k.GetOrdersByStatus(ctx, types.SwapOrderStatus_PENDING)
 
 	for _, order := range orders {
-		if ctx.BlockTime().After(order.ExpiresAt.AsTime()) {
+		if ctx.BlockTime().After(order.ExpiresAt) {
 			k.CancelOrder(ctx, order.OrderId, "expired")
 		}
 	}
@@ -687,10 +678,8 @@ func (k Keeper) indexUserOrder(ctx sdk.Context, order *types.SwapOrder) {
 		return
 	}
 
-	ts := ctx.BlockTime().Unix()
-	if order.Timestamp != nil {
-		ts = order.Timestamp.AsTime().Unix()
-	}
+	// Timestamp is time.Time, not *timestamppb.Timestamp
+	ts := order.Timestamp.Unix()
 	if ts < 0 {
 		ts = 0
 	}
@@ -772,8 +761,8 @@ func (k Keeper) exportOrderbooks(ctx sdk.Context) []*types.Orderbook {
 		orders := pairs[pair]
 		book := &types.Orderbook{
 			Pair:         pair,
-			BuyOrders:    []*types.SwapOrder{},
-			SellOrders:   []*types.SwapOrder{},
+			BuyOrders:    []types.SwapOrder{},
+			SellOrders:   []types.SwapOrder{},
 			TotalPending: uint64(len(orders)),
 		}
 
@@ -786,13 +775,15 @@ func (k Keeper) exportOrderbooks(ctx sdk.Context) []*types.Orderbook {
 			price := orderPriceDec(order)
 
 			if order.OrderType == types.SwapOrderType_BUY {
-				book.BuyOrders = append(book.BuyOrders, order)
+				// Dereference pointer to append value
+				book.BuyOrders = append(book.BuyOrders, *order)
 				if firstBid || price.GT(bestBid) {
 					bestBid = price
 					firstBid = false
 				}
 			} else {
-				book.SellOrders = append(book.SellOrders, order)
+				// Dereference pointer to append value
+				book.SellOrders = append(book.SellOrders, *order)
 				if firstAsk || price.LT(bestAsk) || bestAsk.IsZero() {
 					bestAsk = price
 					firstAsk = false
@@ -801,17 +792,17 @@ func (k Keeper) exportOrderbooks(ctx sdk.Context) []*types.Orderbook {
 		}
 
 		sort.Slice(book.BuyOrders, func(i, j int) bool {
-			return orderPriceDec(book.BuyOrders[i]).GT(orderPriceDec(book.BuyOrders[j]))
+			return orderPriceDec(&book.BuyOrders[i]).GT(orderPriceDec(&book.BuyOrders[j]))
 		})
 		sort.Slice(book.SellOrders, func(i, j int) bool {
-			return orderPriceDec(book.SellOrders[i]).LT(orderPriceDec(book.SellOrders[j]))
+			return orderPriceDec(&book.SellOrders[i]).LT(orderPriceDec(&book.SellOrders[j]))
 		})
 
-		book.BestBid = bestBid.String()
-		book.BestAsk = bestAsk.String()
+		book.BestBid = bestBid
+		book.BestAsk = bestAsk
 
 		if !bestAsk.IsZero() && !bestBid.IsZero() {
-			book.SpreadPercent = bestAsk.Sub(bestBid).Quo(bestAsk).MulInt64(100).String()
+			book.SpreadPercent = bestAsk.Sub(bestBid).Quo(bestAsk).MulInt64(100)
 		}
 
 		orderbooks = append(orderbooks, book)

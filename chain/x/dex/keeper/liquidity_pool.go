@@ -150,23 +150,23 @@ func (k Keeper) CreatePool(
 		PoolId:                poolID,
 		DenomA:                denomA,
 		DenomB:                denomB,
-		ReserveA:              amountA.Amount.String(),
-		ReserveB:              amountB.Amount.String(),
-		TotalLpTokens:         initialLpTokens.String(), // Total includes locked liquidity
+		ReserveA:              amountA.Amount,
+		ReserveB:              amountB.Amount,
+		TotalLpTokens:         initialLpTokens, // Total includes locked liquidity
 		FeePercentage:         params.TradingFee,
 		ProtocolFeePercentage: params.ProtocolFee,
-		TotalVolume:           sdkmath.ZeroInt().String(),
-		TotalFeesCollected:    sdkmath.ZeroInt().String(),
+		TotalVolume:           sdkmath.ZeroInt(),
+		TotalFeesCollected:    sdkmath.ZeroInt(),
 		SwapCount:             0,
-		ProtocolFeeBalance:    sdkmath.ZeroInt().String(),
-		LockedLiquidity:       minimumLiquidity.String(), // Permanently locked
-		Providers: []*types.LiquidityProvider{
+		ProtocolFeeBalance:    sdkmath.ZeroInt(),
+		LockedLiquidity:       minimumLiquidity, // Permanently locked
+		Providers: []types.LiquidityProvider{
 			{
 				Address:  creator,
-				LpTokens: lpTokens.String(), // Creator receives total minus locked
+				LpTokens: lpTokens, // Creator receives total minus locked
 			},
 		},
-		CreatedAt: timestamppb.New(ctx.BlockTime()),
+		CreatedAt: ctx.BlockTime(),
 	}
 
 	// SECURITY: Validate LP token invariant before storing
@@ -280,13 +280,9 @@ func (k Keeper) AddLiquidity(
 
 	// Calculate LP tokens proportional to contribution (Python line 116)
 	// lp_tokens = (xai_amount / self.xai_reserve) * self.total_liquidity_tokens
-	totalLpTokens, err := k.parseLPTokens(pool.TotalLpTokens)
-	if err != nil {
-		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), err
-	}
 	lpTokens := actualAmountA.ToLegacyDec().
 		Quo(reserveA.ToLegacyDec()).
-		Mul(totalLpTokens.ToLegacyDec()).
+		Mul(pool.TotalLpTokens.ToLegacyDec()).
 		TruncateInt()
 
 	// SECURITY: Prevent dust/rounding attacks by rejecting deposits that would receive 0 LP tokens
@@ -323,32 +319,28 @@ func (k Keeper) AddLiquidity(
 	}
 
 	// Update reserves
-	pool.ReserveA = reserveA.Add(actualAmountA).String()
-	pool.ReserveB = reserveB.Add(actualAmountB).String()
-	pool.TotalLpTokens = totalLpTokens.Add(lpTokens).String()
+	pool.ReserveA = reserveA.Add(actualAmountA)
+	pool.ReserveB = reserveB.Add(actualAmountB)
+	pool.TotalLpTokens = pool.TotalLpTokens.Add(lpTokens)
 
 	// Update or add provider
 	found := false
 	for i, p := range pool.Providers {
 		if p.Address == provider {
-			providerLpTokens, err := k.parseLPTokens(p.LpTokens)
-			if err != nil {
-				return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), err
-			}
-			pool.Providers[i].LpTokens = providerLpTokens.Add(lpTokens).String()
+			pool.Providers[i].LpTokens = p.LpTokens.Add(lpTokens)
 			found = true
 			break
 		}
 	}
 	if !found {
-		pool.Providers = append(pool.Providers, &types.LiquidityProvider{
+		pool.Providers = append(pool.Providers, types.LiquidityProvider{
 			Address:  provider,
-			LpTokens: lpTokens.String(),
+			LpTokens: lpTokens,
 		})
 	}
 
 	// Calculate pool share
-	newTotalLpTokens := totalLpTokens.Add(lpTokens)
+	newTotalLpTokens := pool.TotalLpTokens
 	poolShare := lpTokens.ToLegacyDec().Quo(newTotalLpTokens.ToLegacyDec()).MulInt64(100)
 
 	// SECURITY: Validate LP token invariant after minting new LP tokens
@@ -428,7 +420,7 @@ func (k Keeper) RemoveLiquidity(
 	var providerIndex int
 	for i, p := range pool.Providers {
 		if p.Address == provider {
-			providerLP = p
+			providerLP = &pool.Providers[i]
 			providerIndex = i
 			break
 		}
@@ -441,18 +433,12 @@ func (k Keeper) RemoveLiquidity(
 		)
 	}
 
-	// Parse provider LP tokens
-	providerLpTokens, err := k.parseLPTokens(providerLP.LpTokens)
-	if err != nil {
-		return sdk.Coin{}, sdk.Coin{}, err
-	}
-
 	// Check sufficient LP tokens
-	if lpTokens.GT(providerLpTokens) {
+	if lpTokens.GT(providerLP.LpTokens) {
 		return sdk.Coin{}, sdk.Coin{}, errors.Wrapf(
 			types.ErrInsufficientLPTokens,
 			"insufficient LP tokens: have %s, requested %s",
-			providerLpTokens.String(),
+			providerLP.LpTokens.String(),
 			lpTokens.String(),
 		)
 	}
@@ -462,10 +448,7 @@ func (k Keeper) RemoveLiquidity(
 	if err != nil {
 		return sdk.Coin{}, sdk.Coin{}, err
 	}
-	totalLpTokens, err := k.parseLPTokens(pool.TotalLpTokens)
-	if err != nil {
-		return sdk.Coin{}, sdk.Coin{}, err
-	}
+	totalLpTokens := pool.TotalLpTokens
 
 	// Calculate share of pool (Python line 170)
 	// share = lp_tokens / self.total_liquidity_tokens
@@ -478,13 +461,13 @@ func (k Keeper) RemoveLiquidity(
 	amountB := share.MulInt(reserveB).TruncateInt()
 
 	// Update reserves
-	pool.ReserveA = reserveA.Sub(amountA).String()
-	pool.ReserveB = reserveB.Sub(amountB).String()
-	pool.TotalLpTokens = totalLpTokens.Sub(lpTokens).String()
+	pool.ReserveA = reserveA.Sub(amountA)
+	pool.ReserveB = reserveB.Sub(amountB)
+	pool.TotalLpTokens = totalLpTokens.Sub(lpTokens)
 
 	// Update provider
-	newProviderLpTokens := providerLpTokens.Sub(lpTokens)
-	pool.Providers[providerIndex].LpTokens = newProviderLpTokens.String()
+	newProviderLpTokens := providerLP.LpTokens.Sub(lpTokens)
+	pool.Providers[providerIndex].LpTokens = newProviderLpTokens
 
 	// Remove provider if they have no LP tokens left
 	if newProviderLpTokens.IsZero() {
@@ -629,19 +612,9 @@ func (k Keeper) SwapExactIn(
 		)
 	}
 
-	// Parse fee percentages
-	feePercentage, err := k.parseFeePercentage(pool.FeePercentage)
-	if err != nil {
-		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec(), err
-	}
-	protocolFeePercentage, err := k.parseFeePercentage(pool.ProtocolFeePercentage)
-	if err != nil {
-		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec(), err
-	}
-
 	// Apply fees (Python line 215)
 	// xai_after_fee = xai_amount * (1 - self.fee_percentage - self.protocol_fee_percentage)
-	totalFeeRate := feePercentage.Add(protocolFeePercentage)
+	totalFeeRate := pool.FeePercentage.Add(pool.ProtocolFeePercentage)
 	amountAfterFee := coinIn.Amount.ToLegacyDec().
 		Mul(sdkmath.LegacyOneDec().Sub(totalFeeRate)).
 		TruncateInt()
@@ -699,14 +672,14 @@ func (k Keeper) SwapExactIn(
 
 	// Calculate fees (Python lines 241-242)
 	// SECURITY: Use SafeMulDec to prevent overflow in fee calculations
-	feeAmount, err := types.SafeMulDec(coinIn.Amount, feePercentage)
+	feeAmount, err := types.SafeMulDec(coinIn.Amount, pool.FeePercentage)
 	if err != nil {
 		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec(), errors.Wrap(
 			types.ErrInvalidRequest,
 			fmt.Sprintf("fee amount calculation overflow: %v", err),
 		)
 	}
-	protocolFee, err := types.SafeMulDec(coinIn.Amount, protocolFeePercentage)
+	protocolFee, err := types.SafeMulDec(coinIn.Amount, pool.ProtocolFeePercentage)
 	if err != nil {
 		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec(), errors.Wrap(
 			types.ErrInvalidRequest,
@@ -714,32 +687,18 @@ func (k Keeper) SwapExactIn(
 		)
 	}
 
-	// Parse existing volume and fees
-	totalVolume, err := k.parseReserve(pool.TotalVolume)
-	if err != nil {
-		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec(), err
-	}
-	totalFeesCollected, err := k.parseReserve(pool.TotalFeesCollected)
-	if err != nil {
-		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec(), err
-	}
-	protocolFeeBalance, err := k.parseReserve(pool.ProtocolFeeBalance)
-	if err != nil {
-		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec(), err
-	}
-
 	// Update pool state
 	if isAtoB {
-		pool.ReserveA = newReserveIn.String()
-		pool.ReserveB = newReserveOut.String()
+		pool.ReserveA = newReserveIn
+		pool.ReserveB = newReserveOut
 	} else {
-		pool.ReserveB = newReserveIn.String()
-		pool.ReserveA = newReserveOut.String()
+		pool.ReserveB = newReserveIn
+		pool.ReserveA = newReserveOut
 	}
 
-	pool.TotalVolume = totalVolume.Add(coinIn.Amount).String()
-	pool.TotalFeesCollected = totalFeesCollected.Add(feeAmount).String()
-	pool.ProtocolFeeBalance = protocolFeeBalance.Add(protocolFee).String()
+	pool.TotalVolume = pool.TotalVolume.Add(coinIn.Amount)
+	pool.TotalFeesCollected = pool.TotalFeesCollected.Add(feeAmount)
+	pool.ProtocolFeeBalance = pool.ProtocolFeeBalance.Add(protocolFee)
 	pool.SwapCount++
 
 	// SECURITY: Validate LP token invariant after swap
@@ -841,17 +800,7 @@ func (k Keeper) GetQuote(
 		reserveOut = reserveA
 	}
 
-	// Parse fee percentages
-	feePercentage, err := k.parseFeePercentage(pool.FeePercentage)
-	if err != nil {
-		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec(), sdkmath.ZeroInt(), err
-	}
-	protocolFeePercentage, err := k.parseFeePercentage(pool.ProtocolFeePercentage)
-	if err != nil {
-		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec(), sdkmath.ZeroInt(), err
-	}
-
-	totalFeeRate := feePercentage.Add(protocolFeePercentage)
+	totalFeeRate := pool.FeePercentage.Add(pool.ProtocolFeePercentage)
 	amountAfterFee := amountIn.ToLegacyDec().Mul(sdkmath.LegacyOneDec().Sub(totalFeeRate)).TruncateInt()
 
 	// SECURITY: Use SafeMul for k-constant calculation in quote
@@ -874,7 +823,7 @@ func (k Keeper) GetQuote(
 	}
 
 	// SECURITY: Use SafeMulDec for fee calculation in quote
-	feeAmount, err := types.SafeMulDec(amountIn, feePercentage)
+	feeAmount, err := types.SafeMulDec(amountIn, pool.FeePercentage)
 	if err != nil {
 		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec(), sdkmath.ZeroInt(),
 			errors.Wrap(types.ErrInvalidRequest, fmt.Sprintf("fee calculation overflow: %v", err))
@@ -898,10 +847,10 @@ func (k Keeper) RecordSwapStats(
 
 	stats := &types.SwapStats{
 		PoolId:         poolID,
-		Timestamp:      timestamppb.New(timestamp),
-		AmountIn:       amountIn.String(),
-		AmountOut:      amountOut.String(),
-		EffectivePrice: price.String(),
+		Timestamp:      timestamp,
+		AmountIn:       amountIn,
+		AmountOut:      amountOut,
+		EffectivePrice: price,
 	}
 	k.setSwapStats(ctx, stats)
 
@@ -927,13 +876,13 @@ func (k Keeper) updateMarketPrice(
 		priceEntry = &types.MarketPrice{Coin: coin}
 	}
 
-	priceEntry.PriceAura = effectivePrice.String()
+	priceEntry.PriceAura = effectivePrice
 	if isUSDStable(coin) {
-		priceEntry.PriceUsd = sdkmath.LegacyOneDec().String()
+		priceEntry.PriceUsd = sdkmath.LegacyOneDec()
 	} else {
-		priceEntry.PriceUsd = sdkmath.LegacyZeroDec().String()
+		priceEntry.PriceUsd = sdkmath.LegacyZeroDec()
 	}
-	priceEntry.UpdatedAt = timestamppb.New(timestamp)
+	priceEntry.UpdatedAt = timestamp
 	priceEntry.SampleSize++
 
 	k.setMarketPrice(ctx, priceEntry)
@@ -987,41 +936,18 @@ func isUSDStable(denom string) bool {
 // Returns error immediately if invariant is violated rather than silently continuing,
 // ensuring atomic operation failure and state rollback.
 func (k Keeper) validateLPTokenInvariant(pool *types.LiquidityPool) error {
-	// Parse total pool LP tokens
-	totalShares, err := k.parseLPTokens(pool.TotalLpTokens)
-	if err != nil {
-		return errors.Wrap(
-			types.ErrInvalidRequest,
-			fmt.Sprintf("invalid total LP tokens for pool %s: %v", pool.PoolId, err),
-		)
-	}
+	// Total pool LP tokens (already math.Int type)
+	totalShares := pool.TotalLpTokens
 
 	// Sum up all provider LP tokens (excluding locked liquidity which is not assigned to any provider)
 	sumProviderShares := sdkmath.ZeroInt()
 	for _, provider := range pool.Providers {
-		providerTokens, err := k.parseLPTokens(provider.LpTokens)
-		if err != nil {
-			return errors.Wrap(
-				types.ErrInvalidRequest,
-				fmt.Sprintf("invalid LP tokens for provider %s in pool %s: %v",
-					provider.Address, pool.PoolId, err),
-			)
-		}
-		sumProviderShares = sumProviderShares.Add(providerTokens)
+		sumProviderShares = sumProviderShares.Add(provider.LpTokens)
 	}
 
 	// Account for permanently locked liquidity (MinimumLiquidity burned on pool creation)
 	// The locked liquidity is included in TotalLpTokens but not assigned to any provider
-	lockedLiquidity := sdkmath.ZeroInt()
-	if pool.LockedLiquidity != "" {
-		lockedLiquidity, err = k.parseLPTokens(pool.LockedLiquidity)
-		if err != nil {
-			return errors.Wrap(
-				types.ErrInvalidRequest,
-				fmt.Sprintf("invalid locked liquidity for pool %s: %v", pool.PoolId, err),
-			)
-		}
-	}
+	lockedLiquidity := pool.LockedLiquidity
 
 	// Invariant: TotalLpTokens = Sum(Provider LP Tokens) + LockedLiquidity
 	expectedTotal := sumProviderShares.Add(lockedLiquidity)

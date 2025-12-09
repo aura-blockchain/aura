@@ -194,11 +194,11 @@ func AuditLogIntegrityInvariant(k *Keeper) sdk.Invariant {
 			logIDs[log.LogId] = true
 
 			// Timestamp should be set
-			if log.Timestamp == nil {
+			if log.Timestamp.IsZero() {
 				return sdk.FormatInvariant(
 					types.ModuleName,
 					"audit-log-integrity",
-					fmt.Sprintf("audit log %s has nil timestamp", log.LogId),
+					fmt.Sprintf("audit log %s has zero timestamp", log.LogId),
 				), true
 			}
 

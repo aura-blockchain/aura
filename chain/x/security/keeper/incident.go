@@ -7,7 +7,6 @@ import (
 	sdkmath "cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/security/types"
 	securitypb "github.com/aequitas/aura/proto/aura/security/v1beta1"
@@ -157,7 +156,7 @@ func (k Keeper) CreateIncident(ctx sdk.Context, incidentType, severity, descript
 		IncidentId:  fmt.Sprintf("INC-%d", id),
 		Title:       incidentType,
 		Description: description,
-		DetectedAt:  timestamppb.New(ctx.BlockTime()),
+		DetectedAt:  ctx.BlockTime(),
 		Status:      securitypb.IncidentStatus_INCIDENT_STATUS_DETECTED,
 	}
 
@@ -267,7 +266,8 @@ func (k Keeper) ResolveIncident(ctx sdk.Context, incidentID string, actionsTaken
 	}
 
 	incident.Status = securitypb.IncidentStatus_INCIDENT_STATUS_RESOLVED
-	incident.ResolvedAt = timestamppb.New(ctx.BlockTime())
+	resolvedTime := ctx.BlockTime()
+	incident.ResolvedAt = &resolvedTime
 
 	k.SetIncident(ctx, incident)
 

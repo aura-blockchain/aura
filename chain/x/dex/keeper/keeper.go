@@ -180,11 +180,7 @@ func (k Keeper) IsExistingLP(ctx sdk.Context, address string, poolID string) boo
 	// Check if address has LP tokens
 	for _, provider := range pool.Providers {
 		if provider.Address == address {
-			lpTokens, ok := sdkmath.NewIntFromString(provider.LpTokens)
-			if !ok {
-				return false
-			}
-			return !lpTokens.IsZero()
+			return !provider.LpTokens.IsZero()
 		}
 	}
 
@@ -418,10 +414,7 @@ func (k Keeper) CalculateSwapFee(ctx sdk.Context, amount sdkmath.Int) (sdkmath.I
 	}
 
 	params := k.GetParams(ctx)
-	feeDec, err := sdkmath.LegacyNewDecFromStr(params.TradingFee)
-	if err != nil {
-		return sdkmath.ZeroInt(), fmt.Errorf("invalid trading fee: %w", err)
-	}
+	feeDec := params.TradingFee
 
 	// Validate fee rate is non-negative
 	if feeDec.IsNegative() {
