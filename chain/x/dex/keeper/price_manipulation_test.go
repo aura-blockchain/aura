@@ -130,9 +130,9 @@ func TestRecordAllPoolPrices_WithValidation(t *testing.T) {
 		PoolId:       poolID,
 		DenomA:       "uaura",
 		DenomB:       "usdt",
-		ReserveA:     sdkmath.NewInt(1_000_000).String(),
-		ReserveB:     sdkmath.NewInt(200_000).String(),
-		TotalLpTokens: sdkmath.NewInt(1000).String(),
+		ReserveA:     sdkmath.NewInt(1_000_000),
+		ReserveB:     sdkmath.NewInt(200_000),
+		TotalLpTokens: sdkmath.NewInt(1000),
 	}
 	k.SetPool(ctx, pool)
 
@@ -155,9 +155,9 @@ func TestRecordAllPoolPrices_RejectsManipulation(t *testing.T) {
 		PoolId:       poolID,
 		DenomA:       "uaura",
 		DenomB:       "usdt",
-		ReserveA:     sdkmath.NewInt(1_000_000).String(),
-		ReserveB:     sdkmath.NewInt(200_000).String(),
-		TotalLpTokens: sdkmath.NewInt(1000).String(),
+		ReserveA:     sdkmath.NewInt(1_000_000),
+		ReserveB:     sdkmath.NewInt(200_000),
+		TotalLpTokens: sdkmath.NewInt(1000),
 	}
 	k.SetPool(ctx, pool)
 
@@ -167,7 +167,7 @@ func TestRecordAllPoolPrices_RejectsManipulation(t *testing.T) {
 	require.False(t, initialPrice.IsZero(), "initial price should be recorded")
 
 	// Simulate flash loan attack: double the price
-	pool.ReserveB = sdkmath.NewInt(400_000).String() // Price = 0.40 (+100%)
+	pool.ReserveB = sdkmath.NewInt(400_000) // Price = 0.40 (+100%)
 	k.SetPool(ctx, pool)
 
 	// Advance block
@@ -190,9 +190,9 @@ func TestRecordAllPoolPrices_SkipsEmptyPools(t *testing.T) {
 		PoolId:       "uaura-btc",
 		DenomA:       "uaura",
 		DenomB:       "btc",
-		ReserveA:     sdkmath.ZeroInt().String(),
-		ReserveB:     sdkmath.ZeroInt().String(),
-		TotalLpTokens: sdkmath.ZeroInt().String(),
+		ReserveA:     sdkmath.ZeroInt(),
+		ReserveB:     sdkmath.ZeroInt(),
+		TotalLpTokens: sdkmath.ZeroInt(),
 	}
 	k.SetPool(ctx, emptyPool)
 
@@ -216,9 +216,9 @@ func TestGetAuraPrice_UsesTWAP(t *testing.T) {
 		PoolId:       "uaura-usdt",
 		DenomA:       "uaura",
 		DenomB:       "usdt",
-		ReserveA:     sdkmath.NewInt(1_000_000).String(),
-		ReserveB:     sdkmath.NewInt(200_000).String(),
-		TotalLpTokens: sdkmath.NewInt(1000).String(),
+		ReserveA:     sdkmath.NewInt(1_000_000),
+		ReserveB:     sdkmath.NewInt(200_000),
+		TotalLpTokens: sdkmath.NewInt(1000),
 	}
 	k.SetPool(ctx, pool)
 
@@ -245,9 +245,9 @@ func TestGetAuraPrice_FallbackToSpot(t *testing.T) {
 		PoolId:       "uaura-usdt",
 		DenomA:       "uaura",
 		DenomB:       "usdt",
-		ReserveA:     sdkmath.NewInt(1_000_000).String(),
-		ReserveB:     sdkmath.NewInt(200_000).String(),
-		TotalLpTokens: sdkmath.NewInt(1000).String(),
+		ReserveA:     sdkmath.NewInt(1_000_000),
+		ReserveB:     sdkmath.NewInt(200_000),
+		TotalLpTokens: sdkmath.NewInt(1000),
 	}
 	k.SetPool(ctx, pool)
 
@@ -281,9 +281,9 @@ func TestPriceManipulationProtection_EndToEnd(t *testing.T) {
 		PoolId:       poolID,
 		DenomA:       "uaura",
 		DenomB:       "usdt",
-		ReserveA:     sdkmath.NewInt(1_000_000).String(),
-		ReserveB:     sdkmath.NewInt(200_000).String(),
-		TotalLpTokens: sdkmath.NewInt(1000).String(),
+		ReserveA:     sdkmath.NewInt(1_000_000),
+		ReserveB:     sdkmath.NewInt(200_000),
+		TotalLpTokens: sdkmath.NewInt(1000),
 	}
 	k.SetPool(ctx, pool)
 
@@ -296,7 +296,7 @@ func TestPriceManipulationProtection_EndToEnd(t *testing.T) {
 	require.True(t, lastRecordedPrice.Equal(expectedPrice))
 
 	// Simulate flash loan attack: double the price
-	pool.ReserveB = sdkmath.NewInt(400_000).String()
+	pool.ReserveB = sdkmath.NewInt(400_000)
 	k.SetPool(ctx, pool)
 
 	// Advance block
