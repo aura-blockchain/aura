@@ -8,7 +8,6 @@ import (
 	sdkmath "cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/bridge/types"
 )
@@ -120,10 +119,10 @@ func (k Keeper) SubmitSlashingEvidence(
 		EventId:          eventID,
 		ValidatorAddress: validatorAddress,
 		Reason:           reason,
-		SlashAmount:      slashAmount.String(),
+		SlashAmount:      slashAmount,
 		EvidenceHash:     evidenceHash,
 		InfractionHeight: uint64(ctx.BlockHeight()),
-		Timestamp:        timestamppb.New(ctx.BlockTime()),
+		Timestamp:        ctx.BlockTime(),
 		Jailed:           jailValidator,
 	}
 
@@ -619,7 +618,7 @@ func (k Keeper) slashValidatorsForFraudulentTransfer(ctx sdk.Context, transferID
 
 	// Slash each validator who signed this fraudulent transfer
 	for _, sig := range transfer.ValidatorSignatures {
-		if sig == nil || sig.ValidatorAddress == "" {
+		if sig.ValidatorAddress == "" {
 			continue
 		}
 

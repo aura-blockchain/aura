@@ -3,7 +3,6 @@ package keeper
 import (
 	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/security/types"
 	securitypb "github.com/aequitas/aura/proto/aura/security/v1beta1"
@@ -279,7 +278,7 @@ func (k Keeper) CheckRateLimit(ctx sdk.Context, peerId string) error {
 		rl = &securitypb.RateLimitEntry{
 			PeerId:       peerId,
 			RequestCount: 1,
-			WindowStart:  timestamppb.New(blockTime),
+			WindowStart:  blockTime,
 			IsBanned:     false,
 		}
 		k.SetRateLimit(ctx, rl)
@@ -288,7 +287,7 @@ func (k Keeper) CheckRateLimit(ctx sdk.Context, peerId string) error {
 
 	// Check if banned
 	if rl.IsBanned {
-		if rl.BanExpiresAt != nil && blockTime.Before(rl.BanExpiresAt.AsTime()) {
+		if rl.BanExpiresAt != nil && blockTime.Before(*rl.BanExpiresAt) {
 			return types.ErrRateLimitExceeded
 		}
 		// Unban
@@ -297,18 +296,18 @@ func (k Keeper) CheckRateLimit(ctx sdk.Context, peerId string) error {
 	}
 
 	// Check if we're in a new window (1 second)
-	if rl.WindowStart != nil && blockTime.Sub(rl.WindowStart.AsTime()).Seconds() >= 1 {
-		rl.WindowStart = timestamppb.New(blockTime)
+	if !rl.WindowStart.IsZero() && blockTime.Sub(rl.WindowStart).Seconds() >= 1 {
+		rl.WindowStart = blockTime
 		rl.RequestCount = 1
 	} else {
 		rl.RequestCount++
 	}
 
 	// Check if rate exceeded
-	if params.Network.RateLimit != nil && rl.RequestCount > params.Network.RateLimit.MaxRequestsPerSecond {
+	if rl.RequestCount > params.Network.RateLimit.MaxRequestsPerSecond {
 		rl.IsBanned = true
 		blockedUntil := blockTime.Add(3600 * 1e9) // 1 hour
-		rl.BanExpiresAt = timestamppb.New(blockedUntil)
+		rl.BanExpiresAt = &blockedUntil
 		k.SetRateLimit(ctx, rl)
 		return types.ErrRateLimitExceeded
 	}

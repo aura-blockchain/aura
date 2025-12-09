@@ -289,8 +289,8 @@ func (am AppModule) processKeyRotations(ctx sdk.Context) error {
 	blockTime := ctx.BlockTime()
 
 	for _, schedule := range schedules {
-		if schedule.NextRotationTime != nil && schedule.Enabled {
-			nextRotation := schedule.NextRotationTime.AsTime()
+		if !schedule.NextRotationTime.IsZero() && schedule.Enabled {
+			nextRotation := schedule.NextRotationTime
 			if nextRotation.Before(blockTime) || nextRotation.Equal(blockTime) {
 				// Key rotation logic would be implemented here
 				// For now, just log that rotation is due

@@ -64,23 +64,22 @@ func (ms msgServer) CreatePool(goCtx context.Context, msg *dexpb.MsgCreatePool) 
 		return nil, err
 	}
 
-	amountA, err := protoCoinToSDK(msg.AmountA)
-	if err != nil {
+	// Validate coins (they are value types, not pointers)
+	if err := msg.AmountA.Validate(); err != nil {
 		return nil, err
 	}
-	amountB, err := protoCoinToSDK(msg.AmountB)
-	if err != nil {
+	if err := msg.AmountB.Validate(); err != nil {
 		return nil, err
 	}
 
-	pool, lpTokens, err := ms.keeper.SecureCreatePool(ctx, msg.Creator, msg.DenomA, msg.DenomB, amountA, amountB)
+	pool, lpTokens, err := ms.keeper.SecureCreatePool(ctx, msg.Creator, msg.DenomA, msg.DenomB, msg.AmountA, msg.AmountB)
 	if err != nil {
 		return nil, err
 	}
 
 	return &dexpb.MsgCreatePoolResponse{
 		PoolId:   pool.PoolId,
-		LpTokens: lpTokens.String(),
+		LpTokens: lpTokens,
 	}, nil
 }
 
@@ -92,23 +91,22 @@ func (ms msgServer) AddLiquidity(goCtx context.Context, msg *dexpb.MsgAddLiquidi
 		return nil, err
 	}
 
-	amountA, err := protoCoinToSDK(msg.AmountA)
-	if err != nil {
+	// Validate coins (they are value types, not pointers)
+	if err := msg.AmountA.Validate(); err != nil {
 		return nil, err
 	}
-	amountB, err := protoCoinToSDK(msg.AmountB)
-	if err != nil {
+	if err := msg.AmountB.Validate(); err != nil {
 		return nil, err
 	}
 
-	lpTokens, poolShare, err := ms.keeper.SecureAddLiquidity(ctx, msg.Provider, msg.PoolId, amountA, amountB)
+	lpTokens, poolShare, err := ms.keeper.SecureAddLiquidity(ctx, msg.Provider, msg.PoolId, msg.AmountA, msg.AmountB)
 	if err != nil {
 		return nil, err
 	}
 
 	return &dexpb.MsgAddLiquidityResponse{
-		LpTokensMinted:   lpTokens.String(),
-		PoolSharePercent: poolShare.String(),
+		LpTokensMinted:   lpTokens,
+		PoolSharePercent: poolShare,
 	}, nil
 }
 
@@ -120,19 +118,15 @@ func (ms msgServer) RemoveLiquidity(goCtx context.Context, msg *dexpb.MsgRemoveL
 		return nil, err
 	}
 
-	lpTokens, ok := sdkmath.NewIntFromString(msg.LpTokens)
-	if !ok {
-		return nil, fmt.Errorf("invalid lp token amount")
-	}
-
-	coinA, coinB, err := ms.keeper.SecureRemoveLiquidity(ctx, msg.Provider, msg.PoolId, lpTokens)
+	// LpTokens is already math.Int type (customtype in proto)
+	coinA, coinB, err := ms.keeper.SecureRemoveLiquidity(ctx, msg.Provider, msg.PoolId, msg.LpTokens)
 	if err != nil {
 		return nil, err
 	}
 
 	return &dexpb.MsgRemoveLiquidityResponse{
-		AmountA: convertCoinToProto(coinA),
-		AmountB: convertCoinToProto(coinB),
+		AmountA: coinA,
+		AmountB: coinB,
 	}, nil
 }
 
@@ -144,24 +138,21 @@ func (ms msgServer) SwapExactIn(goCtx context.Context, msg *dexpb.MsgSwapExactIn
 		return nil, err
 	}
 
-	coinIn, err := protoCoinToSDK(msg.CoinIn)
-	if err != nil {
+	// Validate coin (value type, not pointer)
+	if err := msg.CoinIn.Validate(); err != nil {
 		return nil, err
 	}
-	minAmountOut, ok := sdkmath.NewIntFromString(msg.MinAmountOut)
-	if !ok {
-		return nil, fmt.Errorf("invalid min_amount_out")
-	}
+	// MinAmountOut is already math.Int type (customtype in proto)
 
-	amountOut, effectivePrice, priceImpact, err := ms.keeper.SecureSwapExactIn(ctx, msg.Sender, msg.PoolId, coinIn, minAmountOut, msg.MaxSlippageBps)
+	amountOut, effectivePrice, priceImpact, err := ms.keeper.SecureSwapExactIn(ctx, msg.Sender, msg.PoolId, msg.CoinIn, msg.MinAmountOut, msg.MaxSlippageBps)
 	if err != nil {
 		return nil, err
 	}
 
 	return &dexpb.MsgSwapExactInResponse{
-		AmountOut:          amountOut.String(),
-		EffectivePrice:     effectivePrice.String(),
-		PriceImpactPercent: priceImpact.String(),
+		AmountOut:          amountOut,
+		EffectivePrice:     effectivePrice,
+		PriceImpactPercent: priceImpact,
 	}, nil
 }
 
@@ -173,16 +164,8 @@ func (ms msgServer) CreateOrder(goCtx context.Context, msg *dexpb.MsgCreateOrder
 		return nil, err
 	}
 
-	auraAmount, ok := sdkmath.NewIntFromString(msg.AuraAmount)
-	if !ok {
-		return nil, fmt.Errorf("invalid aura amount")
-	}
-	otherAmount, ok := sdkmath.NewIntFromString(msg.OtherAmount)
-	if !ok {
-		return nil, fmt.Errorf("invalid other coin amount")
-	}
-
-	order, err := ms.keeper.CreateOrder(ctx, msg.Creator, msg.OrderType, auraAmount, msg.OtherCoin, otherAmount, 1440)
+	// AuraAmount and OtherAmount are already math.Int types (customtype in proto)
+	order, err := ms.keeper.CreateOrder(ctx, msg.Creator, msg.OrderType, msg.AuraAmount, msg.OtherCoin, msg.OtherAmount, 1440)
 	if err != nil {
 		return nil, err
 	}
@@ -247,12 +230,12 @@ func (ms msgServer) CreateHTLC(goCtx context.Context, msg *dexpb.MsgCreateHTLC) 
 		return nil, err
 	}
 
-	amount, err := protoCoinToSDK(msg.Amount)
-	if err != nil {
+	// Validate coin (value type, not pointer)
+	if err := msg.Amount.Validate(); err != nil {
 		return nil, err
 	}
 
-	htlcID, err := ms.keeper.CreateHTLC(ctx, msg.Sender, msg.Recipient, amount, msg.SecretHash, msg.TimelockDuration)
+	htlcID, err := ms.keeper.CreateHTLC(ctx, msg.Sender, msg.Recipient, msg.Amount, msg.SecretHash, msg.TimelockDuration)
 	if err != nil {
 		return nil, err
 	}
@@ -311,7 +294,7 @@ func (ms msgServer) CommitOrder(goCtx context.Context, msg *dexpb.MsgCommitOrder
 
 	return &dexpb.MsgCommitOrderResponse{
 		CommitId:       commitID,
-		RevealDeadline: commitment.RevealDeadline.AsTime().Format(time.RFC3339),
+		RevealDeadline: commitment.RevealDeadline.Format(time.RFC3339),
 	}, nil
 }
 
@@ -323,24 +306,15 @@ func (ms msgServer) RevealOrder(goCtx context.Context, msg *dexpb.MsgRevealOrder
 		return nil, err
 	}
 
-	// Parse amounts from string (proto customtype not yet applied)
-	auraAmount, ok := sdkmath.NewIntFromString(msg.AuraAmount)
-	if !ok {
-		return nil, fmt.Errorf("invalid aura amount: %s", msg.AuraAmount)
-	}
-	otherAmount, ok := sdkmath.NewIntFromString(msg.OtherAmount)
-	if !ok {
-		return nil, fmt.Errorf("invalid other amount: %s", msg.OtherAmount)
-	}
-
+	// AuraAmount and OtherAmount are already math.Int types (customtype in proto)
 	orderID, err := ms.keeper.RevealOrder(
 		ctx,
 		msg.CommitId,
 		msg.Sender,
 		msg.OrderType,
-		auraAmount,
+		msg.AuraAmount,
 		msg.OtherCoin,
-		otherAmount,
+		msg.OtherAmount,
 		msg.Salt,
 	)
 	if err != nil {
@@ -359,21 +333,4 @@ func (ms msgServer) RevealOrder(goCtx context.Context, msg *dexpb.MsgRevealOrder
 		OrderId: orderID,
 		Message: message,
 	}, nil
-}
-
-func protoCoinToSDK(coin *sdk.Coin) (sdk.Coin, error) {
-	if coin == nil {
-		return sdk.Coin{}, fmt.Errorf("coin required")
-	}
-	if err := coin.Validate(); err != nil {
-		return sdk.Coin{}, err
-	}
-	return *coin, nil
-}
-
-func convertCoinToProto(coin sdk.Coin) *sdk.Coin {
-	return &sdk.Coin{
-		Denom:  coin.Denom,
-		Amount: coin.Amount,
-	}
 }

@@ -6,7 +6,6 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/security/types"
 )
@@ -389,10 +388,11 @@ func (k Keeper) LogSecurityEvent(
 ) {
 	// Create audit log entry
 	logID := fmt.Sprintf("audit_%d", ctx.BlockHeight())
+	blockTime := ctx.BlockTime()
 
 	entry := &types.AuditLogEntry{
 		LogId:     logID,
-		Timestamp: timestamppb.New(ctx.BlockTime()),
+		Timestamp: blockTime,
 		EventType: eventType,
 		Actor:     actor,
 		Resource:  details, // Use resource field for details

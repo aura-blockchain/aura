@@ -69,8 +69,14 @@ func (qs queryServer) AllPools(ctx context.Context, req *dexpb.QueryAllPoolsRequ
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	// Convert []*LiquidityPool to []LiquidityPool (value slice)
+	poolValues := make([]dexpb.LiquidityPool, len(pools))
+	for i, pool := range pools {
+		poolValues[i] = *pool
+	}
+
 	return &dexpb.QueryAllPoolsResponse{
-		Pools:      pools,
+		Pools:      poolValues,
 		Pagination: pageRes,
 	}, nil
 }
@@ -79,26 +85,22 @@ func (qs queryServer) GetQuote(ctx context.Context, req *dexpb.QueryGetQuoteRequ
 	if req == nil || req.PoolId == "" {
 		return nil, status.Error(codes.InvalidArgument, "pool id required")
 	}
-	if req.DenomIn == "" || req.AmountIn == "" {
+	if req.DenomIn == "" || req.AmountIn.IsZero() {
 		return nil, status.Error(codes.InvalidArgument, "input denom and amount required")
 	}
 
-	amountIn, ok := sdkmath.NewIntFromString(req.AmountIn)
-	if !ok {
-		return nil, status.Error(codes.InvalidArgument, "invalid amount")
-	}
-
+	// AmountIn is already math.Int type (customtype in proto)
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	estimated, effective, impact, fee, err := qs.keeper.GetQuote(sdkCtx, req.PoolId, req.DenomIn, amountIn)
+	estimated, effective, impact, fee, err := qs.keeper.GetQuote(sdkCtx, req.PoolId, req.DenomIn, req.AmountIn)
 	if err != nil {
 		return nil, err
 	}
 
 	return &dexpb.QueryGetQuoteResponse{
-		EstimatedOutput:    estimated.String(),
-		EffectivePrice:     effective.String(),
-		PriceImpactPercent: impact.String(),
-		FeeAmount:          fee.String(),
+		EstimatedOutput:    estimated,
+		EffectivePrice:     effective,
+		PriceImpactPercent: impact,
+		FeeAmount:          fee,
 	}, nil
 }
 
@@ -151,8 +153,8 @@ func (qs queryServer) Orderbook(ctx context.Context, req *dexpb.QueryOrderbookRe
 
 	orderbook := &dexpb.Orderbook{
 		Pair:         fmt.Sprintf("%s-%s", base, quote),
-		BuyOrders:    []*dexpb.SwapOrder{},
-		SellOrders:   []*dexpb.SwapOrder{},
+		BuyOrders:    []dexpb.SwapOrder{},
+		SellOrders:   []dexpb.SwapOrder{},
 		TotalPending: uint64(len(orders)),
 	}
 
@@ -164,16 +166,18 @@ func (qs queryServer) Orderbook(ctx context.Context, req *dexpb.QueryOrderbookRe
 
 	for _, order := range orders {
 		price := orderPriceDec(order)
-		order.PricePerAura = price.String()
+		// Create a copy and update PricePerAura
+		orderCopy := *order
+		orderCopy.PricePerAura = price
 
 		if order.OrderType == dexpb.SwapOrderType_BUY {
-			orderbook.BuyOrders = append(orderbook.BuyOrders, order)
+			orderbook.BuyOrders = append(orderbook.BuyOrders, orderCopy)
 			if firstBid || price.GT(bestBid) {
 				bestBid = price
 				firstBid = false
 			}
 		} else {
-			orderbook.SellOrders = append(orderbook.SellOrders, order)
+			orderbook.SellOrders = append(orderbook.SellOrders, orderCopy)
 			if firstAsk || price.LT(bestAsk) || bestAsk.IsZero() {
 				bestAsk = price
 				firstAsk = false
@@ -182,22 +186,21 @@ func (qs queryServer) Orderbook(ctx context.Context, req *dexpb.QueryOrderbookRe
 	}
 
 	sort.Slice(orderbook.BuyOrders, func(i, j int) bool {
-		left := orderPriceDec(orderbook.BuyOrders[i])
-		right := orderPriceDec(orderbook.BuyOrders[j])
+		left := orderPriceDec(&orderbook.BuyOrders[i])
+		right := orderPriceDec(&orderbook.BuyOrders[j])
 		return left.GT(right)
 	})
 	sort.Slice(orderbook.SellOrders, func(i, j int) bool {
-		left := orderPriceDec(orderbook.SellOrders[i])
-		right := orderPriceDec(orderbook.SellOrders[j])
+		left := orderPriceDec(&orderbook.SellOrders[i])
+		right := orderPriceDec(&orderbook.SellOrders[j])
 		return left.LT(right)
 	})
 
-	orderbook.BestBid = bestBid.String()
-	orderbook.BestAsk = bestAsk.String()
+	orderbook.BestBid = bestBid
+	orderbook.BestAsk = bestAsk
 
 	if !bestAsk.IsZero() && !bestBid.IsZero() {
-		spread := bestAsk.Sub(bestBid).Quo(bestAsk).MulInt64(100)
-		orderbook.SpreadPercent = spread.String()
+		orderbook.SpreadPercent = bestAsk.Sub(bestBid).Quo(bestAsk).MulInt64(100)
 	}
 
 	return &dexpb.QueryOrderbookResponse{Orderbook: orderbook}, nil
@@ -216,7 +219,8 @@ func (qs queryServer) Order(ctx context.Context, req *dexpb.QueryOrderRequest) (
 		return nil, status.Error(codes.NotFound, "order not found")
 	}
 
-	return &dexpb.QueryOrderResponse{Order: order}, nil
+	// Dereference pointer for value type
+	return &dexpb.QueryOrderResponse{Order: *order}, nil
 }
 
 func (qs queryServer) UserOrders(ctx context.Context, req *dexpb.QueryUserOrdersRequest) (*dexpb.QueryUserOrdersResponse, error) {
@@ -269,7 +273,8 @@ func (qs queryServer) MarketPrice(ctx context.Context, req *dexpb.QueryMarketPri
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
 	if price, found := qs.keeper.GetMarketPrice(sdkCtx, coin); found {
-		return &dexpb.QueryMarketPriceResponse{Price: price}, nil
+		// Dereference pointer for value type
+		return &dexpb.QueryMarketPriceResponse{Price: *price}, nil
 	}
 
 	pool := qs.keeper.GetPool(sdkCtx, poolID)
@@ -294,11 +299,11 @@ func (qs queryServer) MarketPrice(ctx context.Context, req *dexpb.QueryMarketPri
 	}
 
 	return &dexpb.QueryMarketPriceResponse{
-		Price: &dexpb.MarketPrice{
+		Price: dexpb.MarketPrice{
 			Coin:       coin,
-			PriceUsd:   priceUSD.String(),
-			PriceAura:  priceAura.String(),
-			UpdatedAt:  timestamppb.New(sdkCtx.BlockTime()),
+			PriceUsd:   priceUSD,
+			PriceAura:  priceAura,
+			UpdatedAt:  sdkCtx.BlockTime(),
 			SampleSize: pool.SwapCount,
 		},
 	}, nil
@@ -356,7 +361,8 @@ func (qs queryServer) HTLC(ctx context.Context, req *dexpb.QueryHTLCRequest) (*d
 		return nil, status.Error(codes.NotFound, "htlc not found")
 	}
 
-	return &dexpb.QueryHTLCResponse{Htlc: htlc}, nil
+	// Dereference pointer for value type
+	return &dexpb.QueryHTLCResponse{Htlc: *htlc}, nil
 }
 
 func parsePair(pair string) (string, string) {
