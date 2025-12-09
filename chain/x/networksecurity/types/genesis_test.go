@@ -2,9 +2,9 @@ package types
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestDefaultGenesisState(t *testing.T) {
@@ -49,7 +49,7 @@ func TestValidateGenesisState_TrustedPeers(t *testing.T) {
 		{
 			name: "empty peer_id",
 			setup: func(gs *GenesisState) {
-				gs.TrustedPeers = []*TrustedPeer{
+				gs.TrustedPeers = []TrustedPeer{
 					{
 						PeerId:  "",
 						Address: "192.168.1.1:26656",
@@ -61,7 +61,7 @@ func TestValidateGenesisState_TrustedPeers(t *testing.T) {
 		{
 			name: "empty address",
 			setup: func(gs *GenesisState) {
-				gs.TrustedPeers = []*TrustedPeer{
+				gs.TrustedPeers = []TrustedPeer{
 					{
 						PeerId:  "peer1",
 						Address: "",
@@ -73,7 +73,7 @@ func TestValidateGenesisState_TrustedPeers(t *testing.T) {
 		{
 			name: "duplicate peer_id",
 			setup: func(gs *GenesisState) {
-				gs.TrustedPeers = []*TrustedPeer{
+				gs.TrustedPeers = []TrustedPeer{
 					{
 						PeerId:  "peer1",
 						Address: "192.168.1.1:26656",
@@ -101,16 +101,17 @@ func TestValidateGenesisState_TrustedPeers(t *testing.T) {
 
 func TestValidateGenesisState_TrustedPeers_Valid(t *testing.T) {
 	gs := DefaultGenesisState()
-	gs.TrustedPeers = []*TrustedPeer{
+	now := time.Now()
+	gs.TrustedPeers = []TrustedPeer{
 		{
 			PeerId:  "peer1",
 			Address: "192.168.1.1:26656",
-			AddedAt: timestamppb.Now(),
+			AddedAt: now,
 		},
 		{
 			PeerId:  "peer2",
 			Address: "192.168.1.2:26656",
-			AddedAt: timestamppb.Now(),
+			AddedAt: now,
 		},
 	}
 	err := ValidateGenesisState(gs)
@@ -126,7 +127,7 @@ func TestValidateGenesisState_Reputations(t *testing.T) {
 		{
 			name: "empty peer_id",
 			setup: func(gs *GenesisState) {
-				gs.Reputations = []*NodeReputation{
+				gs.Reputations = []NodeReputation{
 					{
 						PeerId: "",
 						Score:  50,
@@ -138,7 +139,7 @@ func TestValidateGenesisState_Reputations(t *testing.T) {
 		{
 			name: "duplicate peer_id",
 			setup: func(gs *GenesisState) {
-				gs.Reputations = []*NodeReputation{
+				gs.Reputations = []NodeReputation{
 					{
 						PeerId: "peer1",
 						Score:  50,
@@ -154,7 +155,7 @@ func TestValidateGenesisState_Reputations(t *testing.T) {
 		{
 			name: "score below minimum",
 			setup: func(gs *GenesisState) {
-				gs.Reputations = []*NodeReputation{
+				gs.Reputations = []NodeReputation{
 					{
 						PeerId: "peer1",
 						Score:  -10,
@@ -166,7 +167,7 @@ func TestValidateGenesisState_Reputations(t *testing.T) {
 		{
 			name: "score above maximum",
 			setup: func(gs *GenesisState) {
-				gs.Reputations = []*NodeReputation{
+				gs.Reputations = []NodeReputation{
 					{
 						PeerId: "peer1",
 						Score:  150,
@@ -190,7 +191,7 @@ func TestValidateGenesisState_Reputations(t *testing.T) {
 
 func TestValidateGenesisState_Reputations_Valid(t *testing.T) {
 	gs := DefaultGenesisState()
-	gs.Reputations = []*NodeReputation{
+	gs.Reputations = []NodeReputation{
 		{
 			PeerId: "peer1",
 			Score:  50,
@@ -217,7 +218,7 @@ func TestValidateGenesisState_RateLimits(t *testing.T) {
 		{
 			name: "empty peer_id",
 			setup: func(gs *GenesisState) {
-				gs.RateLimits = []*RateLimitEntry{
+				gs.RateLimits = []RateLimitEntry{
 					{
 						PeerId:       "",
 						RequestCount: 10,
@@ -229,7 +230,7 @@ func TestValidateGenesisState_RateLimits(t *testing.T) {
 		{
 			name: "duplicate peer_id",
 			setup: func(gs *GenesisState) {
-				gs.RateLimits = []*RateLimitEntry{
+				gs.RateLimits = []RateLimitEntry{
 					{
 						PeerId:       "peer1",
 						RequestCount: 10,
@@ -264,7 +265,7 @@ func TestValidateGenesisState_ForkAlerts(t *testing.T) {
 		{
 			name: "empty alert_id",
 			setup: func(gs *GenesisState) {
-				gs.ForkAlerts = []*ForkAlert{
+				gs.ForkAlerts = []ForkAlert{
 					{
 						AlertId:     "",
 						BlockHeight: 1000,
@@ -276,7 +277,7 @@ func TestValidateGenesisState_ForkAlerts(t *testing.T) {
 		{
 			name: "duplicate alert_id",
 			setup: func(gs *GenesisState) {
-				gs.ForkAlerts = []*ForkAlert{
+				gs.ForkAlerts = []ForkAlert{
 					{
 						AlertId:     "alert1",
 						BlockHeight: 1000,
@@ -292,7 +293,7 @@ func TestValidateGenesisState_ForkAlerts(t *testing.T) {
 		{
 			name: "negative block height",
 			setup: func(gs *GenesisState) {
-				gs.ForkAlerts = []*ForkAlert{
+				gs.ForkAlerts = []ForkAlert{
 					{
 						AlertId:     "alert1",
 						BlockHeight: -100,
@@ -323,7 +324,7 @@ func TestValidateGenesisState_PartitionAlerts(t *testing.T) {
 		{
 			name: "empty alert_id",
 			setup: func(gs *GenesisState) {
-				gs.PartitionAlerts = []*PartitionAlert{
+				gs.PartitionAlerts = []PartitionAlert{
 					{
 						AlertId: "",
 					},
@@ -334,7 +335,7 @@ func TestValidateGenesisState_PartitionAlerts(t *testing.T) {
 		{
 			name: "duplicate alert_id",
 			setup: func(gs *GenesisState) {
-				gs.PartitionAlerts = []*PartitionAlert{
+				gs.PartitionAlerts = []PartitionAlert{
 					{
 						AlertId: "alert1",
 					},
@@ -359,38 +360,40 @@ func TestValidateGenesisState_PartitionAlerts(t *testing.T) {
 }
 
 func TestValidateGenesisState_CompleteValid(t *testing.T) {
+	params := DefaultParams()
+	now := time.Now()
 	gs := &GenesisState{
-		Params: DefaultParams(),
-		TrustedPeers: []*TrustedPeer{
+		Params: *params,
+		TrustedPeers: []TrustedPeer{
 			{
 				PeerId:  "peer1",
 				Address: "192.168.1.1:26656",
-				AddedAt: timestamppb.Now(),
+				AddedAt: now,
 			},
 		},
-		Reputations: []*NodeReputation{
+		Reputations: []NodeReputation{
 			{
 				PeerId: "peer1",
 				Score:  75,
 			},
 		},
-		RateLimits: []*RateLimitEntry{
+		RateLimits: []RateLimitEntry{
 			{
 				PeerId:       "peer1",
 				RequestCount: 50,
 			},
 		},
-		ForkAlerts: []*ForkAlert{
+		ForkAlerts: []ForkAlert{
 			{
 				AlertId:     "fork1",
 				BlockHeight: 1000,
-				DetectedAt:  timestamppb.Now(),
+				DetectedAt:  now,
 			},
 		},
-		PartitionAlerts: []*PartitionAlert{
+		PartitionAlerts: []PartitionAlert{
 			{
 				AlertId:    "partition1",
-				DetectedAt: timestamppb.Now(),
+				DetectedAt: now,
 			},
 		},
 	}

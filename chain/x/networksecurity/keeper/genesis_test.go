@@ -6,7 +6,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/networksecurity/types"
 )
@@ -28,28 +27,29 @@ func TestInitGenesis(t *testing.T) {
 	t.Run("init with trusted peers", func(t *testing.T) {
 		k, ctx := setupTestKeeper(t)
 
+		params := types.DefaultParams()
 		genesis := &types.GenesisState{
-			Params: types.DefaultParams(),
-			TrustedPeers: []*types.TrustedPeer{
+			Params: *params,
+			TrustedPeers: []types.TrustedPeer{
 				{
 					PeerId:      "peer1",
 					Address:     "192.168.1.1",
 					PublicKey:   []byte("pubkey1"),
 					Description: "Test peer 1",
-					AddedAt:     timestamppb.New(time.Unix(1000, 0)),
+					AddedAt:     time.Unix(1000, 0),
 				},
 				{
 					PeerId:      "peer2",
 					Address:     "192.168.1.2",
 					PublicKey:   []byte("pubkey2"),
 					Description: "Test peer 2",
-					AddedAt:     timestamppb.New(time.Unix(2000, 0)),
+					AddedAt:     time.Unix(2000, 0),
 				},
 			},
-			Reputations:      []*types.NodeReputation{},
-			RateLimits:       []*types.RateLimitEntry{},
-			ForkAlerts:       []*types.ForkAlert{},
-			PartitionAlerts:  []*types.PartitionAlert{},
+			Reputations:     []types.NodeReputation{},
+			RateLimits:      []types.RateLimitEntry{},
+			ForkAlerts:      []types.ForkAlert{},
+			PartitionAlerts: []types.PartitionAlert{},
 		}
 
 		err := k.InitGenesis(ctx, genesis)
@@ -64,24 +64,25 @@ func TestInitGenesis(t *testing.T) {
 	t.Run("init with reputations", func(t *testing.T) {
 		k, ctx := setupTestKeeper(t)
 
+		params := types.DefaultParams()
 		genesis := &types.GenesisState{
-			Params:       types.DefaultParams(),
-			TrustedPeers: []*types.TrustedPeer{},
-			Reputations: []*types.NodeReputation{
+			Params:       *params,
+			TrustedPeers: []types.TrustedPeer{},
+			Reputations: []types.NodeReputation{
 				{
-					PeerId:           "peer1",
-					Score:            75,
-					MessagesReceived: 100,
-					ValidMessages:    95,
-					InvalidMessages:  5,
-					Uptime:           3600,
+					PeerId:            "peer1",
+					Score:             75,
+					MessagesReceived:  100,
+					ValidMessages:     95,
+					InvalidMessages:   5,
+					Uptime:            3600,
 					LastUpdatedHeight: 5000,
-					MisbehaviorCount: 0,
+					MisbehaviorCount:  0,
 				},
 			},
-			RateLimits:      []*types.RateLimitEntry{},
-			ForkAlerts:      []*types.ForkAlert{},
-			PartitionAlerts: []*types.PartitionAlert{},
+			RateLimits:      []types.RateLimitEntry{},
+			ForkAlerts:      []types.ForkAlert{},
+			PartitionAlerts: []types.PartitionAlert{},
 		}
 
 		err := k.InitGenesis(ctx, genesis)
@@ -95,22 +96,24 @@ func TestInitGenesis(t *testing.T) {
 	t.Run("init with rate limits", func(t *testing.T) {
 		k, ctx := setupTestKeeper(t)
 
+		params := types.DefaultParams()
+		windowStart := time.Unix(1000, 0)
 		genesis := &types.GenesisState{
-			Params:       types.DefaultParams(),
-			TrustedPeers: []*types.TrustedPeer{},
-			Reputations:  []*types.NodeReputation{},
-			RateLimits: []*types.RateLimitEntry{
+			Params:       *params,
+			TrustedPeers: []types.TrustedPeer{},
+			Reputations:  []types.NodeReputation{},
+			RateLimits: []types.RateLimitEntry{
 				{
-					PeerId:       "peer1",
-					RequestCount: 50,
-					WindowStart:  timestamppb.New(time.Unix(1000, 0)),
-					IsBanned:     false,
-					BytesSent:    1024,
+					PeerId:        "peer1",
+					RequestCount:  50,
+					WindowStart:   windowStart,
+					IsBanned:      false,
+					BytesSent:     1024,
 					BytesReceived: 2048,
 				},
 			},
-			ForkAlerts:      []*types.ForkAlert{},
-			PartitionAlerts: []*types.PartitionAlert{},
+			ForkAlerts:      []types.ForkAlert{},
+			PartitionAlerts: []types.PartitionAlert{},
 		}
 
 		err := k.InitGenesis(ctx, genesis)
@@ -124,29 +127,32 @@ func TestInitGenesis(t *testing.T) {
 	t.Run("init with fork and partition alerts", func(t *testing.T) {
 		k, ctx := setupTestKeeper(t)
 
+		params := types.DefaultParams()
+		forkDetectedAt := time.Unix(1000, 0)
+		partitionDetectedAt := time.Unix(2000, 0)
 		genesis := &types.GenesisState{
-			Params:       types.DefaultParams(),
-			TrustedPeers: []*types.TrustedPeer{},
-			Reputations:  []*types.NodeReputation{},
-			RateLimits:   []*types.RateLimitEntry{},
-			ForkAlerts: []*types.ForkAlert{
+			Params:       *params,
+			TrustedPeers: []types.TrustedPeer{},
+			Reputations:  []types.NodeReputation{},
+			RateLimits:   []types.RateLimitEntry{},
+			ForkAlerts: []types.ForkAlert{
 				{
-					AlertId:     "fork1",
-					BlockHeight: 100,
-					ChainAHash:  []byte("hash_a"),
-					ChainBHash:  []byte("hash_b"),
-					DetectedAt:  timestamppb.New(time.Unix(1000, 0)),
-					Resolved:    false,
+					AlertId:           "fork1",
+					BlockHeight:       100,
+					ChainAHash:        []byte("hash_a"),
+					ChainBHash:        []byte("hash_b"),
+					DetectedAt:        forkDetectedAt,
+					Resolved:          false,
 					ResolutionDetails: "",
 				},
 			},
-			PartitionAlerts: []*types.PartitionAlert{
+			PartitionAlerts: []types.PartitionAlert{
 				{
 					AlertId:        "partition1",
 					ConnectedPeers: 2,
 					ExpectedPeers:  10,
 					MissingPeerIds: []string{"peer3", "peer4"},
-					DetectedAt:     timestamppb.New(time.Unix(2000, 0)),
+					DetectedAt:     partitionDetectedAt,
 					Resolved:       false,
 				},
 			},
@@ -171,12 +177,12 @@ func TestInitGenesis(t *testing.T) {
 		invalidParams.RateLimit.MaxRequestsPerSecond = 0 // Invalid - must be > 0
 
 		genesis := &types.GenesisState{
-			Params:          invalidParams,
-			TrustedPeers:    []*types.TrustedPeer{},
-			Reputations:     []*types.NodeReputation{},
-			RateLimits:      []*types.RateLimitEntry{},
-			ForkAlerts:      []*types.ForkAlert{},
-			PartitionAlerts: []*types.PartitionAlert{},
+			Params:          *invalidParams,
+			TrustedPeers:    []types.TrustedPeer{},
+			Reputations:     []types.NodeReputation{},
+			RateLimits:      []types.RateLimitEntry{},
+			ForkAlerts:      []types.ForkAlert{},
+			PartitionAlerts: []types.PartitionAlert{},
 		}
 
 		err := k.InitGenesis(ctx, genesis)
@@ -200,30 +206,31 @@ func TestExportGenesis(t *testing.T) {
 		k, ctx := setupTestKeeper(t)
 
 		// Initialize with data
+		params := types.DefaultParams()
 		initGenesis := &types.GenesisState{
-			Params: types.DefaultParams(),
-			TrustedPeers: []*types.TrustedPeer{
+			Params: *params,
+			TrustedPeers: []types.TrustedPeer{
 				{
 					PeerId:      "peer1",
 					Address:     "192.168.1.1",
 					PublicKey:   []byte("pubkey1"),
 					Description: "Peer 1",
-					AddedAt:     timestamppb.New(time.Unix(1000, 0)),
+					AddedAt:     time.Unix(1000, 0),
 				},
 				{
 					PeerId:      "peer2",
 					Address:     "192.168.1.2",
 					PublicKey:   []byte("pubkey2"),
 					Description: "Peer 2",
-					AddedAt:     timestamppb.New(time.Unix(2000, 0)),
+					AddedAt:     time.Unix(2000, 0),
 				},
 			},
-			Reputations: []*types.NodeReputation{
+			Reputations: []types.NodeReputation{
 				{PeerId: "peer1", Score: 80},
 			},
-			RateLimits:      []*types.RateLimitEntry{},
-			ForkAlerts:      []*types.ForkAlert{},
-			PartitionAlerts: []*types.PartitionAlert{},
+			RateLimits:      []types.RateLimitEntry{},
+			ForkAlerts:      []types.ForkAlert{},
+			PartitionAlerts: []types.PartitionAlert{},
 		}
 
 		err := k.InitGenesis(ctx, initGenesis)
@@ -241,18 +248,20 @@ func TestGenesisRoundTrip(t *testing.T) {
 	t.Run("init then export produces same state", func(t *testing.T) {
 		k, ctx := setupTestKeeper(t)
 
+		params := types.DefaultParams()
+		windowStart := time.Unix(1000, 0)
 		originalGenesis := &types.GenesisState{
-			Params: types.DefaultParams(),
-			TrustedPeers: []*types.TrustedPeer{
+			Params: *params,
+			TrustedPeers: []types.TrustedPeer{
 				{
 					PeerId:      "peer1",
 					Address:     "192.168.1.1",
 					PublicKey:   []byte("key1"),
 					Description: "Test peer",
-					AddedAt:     timestamppb.New(time.Unix(1000, 0)),
+					AddedAt:     time.Unix(1000, 0),
 				},
 			},
-			Reputations: []*types.NodeReputation{
+			Reputations: []types.NodeReputation{
 				{
 					PeerId:           "peer1",
 					Score:            75,
@@ -261,16 +270,16 @@ func TestGenesisRoundTrip(t *testing.T) {
 					InvalidMessages:  5,
 				},
 			},
-			RateLimits: []*types.RateLimitEntry{
+			RateLimits: []types.RateLimitEntry{
 				{
 					PeerId:       "peer1",
 					RequestCount: 10,
-					WindowStart:  timestamppb.New(time.Unix(1000, 0)),
+					WindowStart:  windowStart,
 					IsBanned:     false,
 				},
 			},
-			ForkAlerts:      []*types.ForkAlert{},
-			PartitionAlerts: []*types.PartitionAlert{},
+			ForkAlerts:      []types.ForkAlert{},
+			PartitionAlerts: []types.PartitionAlert{},
 		}
 
 		// Import
@@ -291,13 +300,13 @@ func TestGenesisRoundTrip(t *testing.T) {
 		k2, ctx2 := setupTestKeeper(t)
 
 		genesis := types.DefaultGenesisState()
-		genesis.TrustedPeers = []*types.TrustedPeer{
+		genesis.TrustedPeers = []types.TrustedPeer{
 			{
 				PeerId:      "peer1",
 				Address:     "192.168.1.1",
 				PublicKey:   []byte("key1"),
 				Description: "Test peer",
-				AddedAt:     timestamppb.New(time.Unix(1000, 0)),
+				AddedAt:     time.Unix(1000, 0),
 			},
 		}
 

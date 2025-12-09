@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestDefaultParams(t *testing.T) {
@@ -348,7 +347,7 @@ func TestIsExpired(t *testing.T) {
 		{
 			name: "expired transaction",
 			tx: &PreValidatedTransaction{
-				ExpiresAt: timestamppb.New(past),
+				ExpiresAt: past, // time.Time value, not pointer
 			},
 			now:      now,
 			expected: true,
@@ -356,14 +355,16 @@ func TestIsExpired(t *testing.T) {
 		{
 			name: "not expired transaction",
 			tx: &PreValidatedTransaction{
-				ExpiresAt: timestamppb.New(future),
+				ExpiresAt: future, // time.Time value, not pointer
 			},
 			now:      now,
 			expected: false,
 		},
 		{
-			name:     "nil expires_at",
-			tx:       &PreValidatedTransaction{},
+			name: "zero time (no expiry)",
+			tx: &PreValidatedTransaction{
+				ExpiresAt: time.Time{}, // Zero time means no expiry
+			},
 			now:      now,
 			expected: false,
 		},
@@ -392,7 +393,7 @@ func TestCanExecute(t *testing.T) {
 			name: "validated and not expired",
 			tx: &PreValidatedTransaction{
 				Status:    ValidationStatus_VALIDATION_STATUS_VALIDATED,
-				ExpiresAt: timestamppb.New(future),
+				ExpiresAt: future, // time.Time value, not pointer
 			},
 			now:      now,
 			expected: true,
@@ -401,7 +402,7 @@ func TestCanExecute(t *testing.T) {
 			name: "validated but expired",
 			tx: &PreValidatedTransaction{
 				Status:    ValidationStatus_VALIDATION_STATUS_VALIDATED,
-				ExpiresAt: timestamppb.New(past),
+				ExpiresAt: past, // time.Time value, not pointer
 			},
 			now:      now,
 			expected: false,
@@ -410,7 +411,7 @@ func TestCanExecute(t *testing.T) {
 			name: "pending status",
 			tx: &PreValidatedTransaction{
 				Status:    ValidationStatus_VALIDATION_STATUS_PENDING,
-				ExpiresAt: timestamppb.New(future),
+				ExpiresAt: future, // time.Time value, not pointer
 			},
 			now:      now,
 			expected: false,
@@ -419,7 +420,7 @@ func TestCanExecute(t *testing.T) {
 			name: "already executed",
 			tx: &PreValidatedTransaction{
 				Status:    ValidationStatus_VALIDATION_STATUS_EXECUTED,
-				ExpiresAt: timestamppb.New(future),
+				ExpiresAt: future, // time.Time value, not pointer
 			},
 			now:      now,
 			expected: false,
@@ -447,7 +448,8 @@ func TestMarkExecuted(t *testing.T) {
 	require.Equal(t, ValidationStatus_VALIDATION_STATUS_EXECUTED, tx.Status)
 	require.NotNil(t, tx.ExecutedAt)
 	require.Equal(t, blockHeight, tx.ExecutedHeight)
-	require.Equal(t, executionTime.Unix(), tx.ExecutedAt.AsTime().Unix())
+	// ExecutedAt is *time.Time, so dereference it to compare
+	require.Equal(t, executionTime.Unix(), tx.ExecutedAt.Unix())
 }
 
 func TestMarkExpired(t *testing.T) {

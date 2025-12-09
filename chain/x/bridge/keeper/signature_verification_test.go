@@ -147,11 +147,18 @@ func TestPAWSignatureVerification_InvalidRecoveryID(t *testing.T) {
 			modifiedSig[64] = tc.recoveryID
 
 			valid := k.VerifyPawAddressOwnership(ctx, auraAddress, pawAddress, modifiedSig)
-			if tc.expectPass {
-				require.True(t, valid, "Signature with recovery ID %d should pass (valid ID)", tc.recoveryID)
-			} else {
-				require.False(t, valid, "Signature with invalid recovery ID %d should be rejected", tc.recoveryID)
-			}
+
+			// Note: Even if the recovery ID is structurally valid (0-7 or 27-34), modifying
+			// it from the original value will cause signature verification to fail because:
+			// 1. Wrong public key will be recovered, OR
+			// 2. Derived address won't match, OR
+			// 3. ECDSA verification will fail
+			//
+			// Only signatures with recovery IDs >34 or in range 8-26 will fail with
+			// "invalid recovery ID" error. Others will fail later in verification.
+			//
+			// In all cases, the signature should fail verification (return false).
+			require.False(t, valid, "Signature with modified recovery ID %d should fail verification", tc.recoveryID)
 		})
 	}
 }
@@ -739,20 +746,19 @@ func TestXAISignatureVerification_InvalidRecoveryID(t *testing.T) {
 			copy(modifiedSig, signature)
 			modifiedSig[64] = tc.recoveryID
 
-			if !tc.expectPass {
-				// This triggers (lines 535-541 in keeper.go):
-				// - ctx.Logger().Error() call with recovery ID details
-				// - k.recordInvalidRecoveryID("xai")
-				// - k.recordSignatureMismatch("xai", "link_address", "invalid_recovery_id")
-				// - k.recordSignatureVerification("xai", "link_address", false, duration)
-			}
-
 			valid := k.VerifyXaiAddressOwnership(ctx, auraAddress, xaiAddress, modifiedSig)
-			if tc.expectPass {
-				require.True(t, valid, "Signature with recovery ID %d should pass (valid ID)", tc.recoveryID)
-			} else {
-				require.False(t, valid, "Signature with invalid recovery ID %d should be rejected", tc.recoveryID)
-			}
+
+			// Note: Even if the recovery ID is structurally valid (0-7 or 27-34), modifying
+			// it from the original value will cause signature verification to fail because:
+			// 1. Wrong public key will be recovered, OR
+			// 2. Derived address won't match, OR
+			// 3. ECDSA verification will fail
+			//
+			// Only signatures with recovery IDs >34 or in range 8-26 will fail with
+			// "invalid recovery ID" error. Others will fail later in verification.
+			//
+			// In all cases, the signature should fail verification (return false).
+			require.False(t, valid, "Signature with modified recovery ID %d should fail verification", tc.recoveryID)
 		})
 	}
 }

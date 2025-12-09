@@ -6,8 +6,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"google.golang.org/protobuf/types/known/timestamppb"
-
 	"github.com/aequitas/aura/chain/x/networksecurity/types"
 )
 
@@ -34,10 +32,11 @@ func TestBandwidthLimitRespectsExistingBan(t *testing.T) {
 	ctx = ctx.WithBlockTime(time.Now())
 	peer := "peer-banned"
 
+	banExpiresAt := ctx.BlockTime().Add(1 * time.Hour)
 	entry := types.RateLimitEntry{
 		PeerId:       peer,
 		IsBanned:     true,
-		BanExpiresAt: timestamppb.New(ctx.BlockTime().Add(1 * time.Hour)),
+		BanExpiresAt: &banExpiresAt,
 	}
 	require.NoError(t, keeper.SetRateLimitEntry(ctx, entry))
 

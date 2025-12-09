@@ -7,23 +7,25 @@ import (
 )
 
 func TestDefaultGenesis(t *testing.T) {
+	params := DefaultParams()
 	gs := &GenesisState{
-		Params: DefaultParams(),
+		Params: *params, // Dereference pointer
 	}
 
 	require.NotNil(t, gs)
-	require.NotNil(t, gs.Params)
 
-	// Validate params
-	require.NoError(t, ValidateParams(gs.Params))
+	// Validate params - pass pointer to Params
+	require.NoError(t, ValidateParams(&gs.Params))
 }
 
 func TestGenesisState_EmptyCollections(t *testing.T) {
+	params := DefaultParams()
 	gs := &GenesisState{
-		Params: DefaultParams(),
+		Params: *params, // Dereference pointer
 	}
 
-	require.NotNil(t, gs.Params)
+	// Params is a value type, not a pointer, so we just check it's set correctly
+	require.Equal(t, true, gs.Params.Enabled)
 }
 
 func TestTransactionType_Constants(t *testing.T) {

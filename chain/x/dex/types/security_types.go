@@ -2,11 +2,13 @@ package types
 
 import (
 	"cosmossdk.io/math"
+
+	v1beta1 "github.com/aequitas/aura/proto/aura/dex/v1beta1"
 )
 
 // DefaultSecurityParams returns default security parameters
-func DefaultSecurityParams() *SecurityParams {
-	return &SecurityParams{
+func DefaultSecurityParams() *v1beta1.SecurityParams {
+	return &v1beta1.SecurityParams{
 		MinBlockDelay:            2,                                   // 2 blocks between trades
 		MaxTradeSizePercent:      math.LegacyNewDecWithPrec(20, 2),    // 20% of pool
 		MaxPriceImpactPercent:    math.LegacyNewDecWithPrec(10, 0),    // 10%

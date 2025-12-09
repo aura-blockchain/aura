@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
+	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/networksecurity/keeper"
 	"github.com/aequitas/aura/chain/x/networksecurity/types"
@@ -18,16 +18,16 @@ func TestBeginBlockerPeerUptimeBatching(t *testing.T) {
 
 	// Create test peers
 	peer1 := types.PeerInfo{
-		PeerId:      "peer1",
-		Address:     "192.168.1.1:26656",
-		ConnectedAt: timestamppb.New(ctx.BlockTime().Add(-1 * time.Hour)),
-		IsInbound:   true,
+		PeerId:         "peer1",
+		IpAddress:      "192.168.1.1",
+		ConnectionType: "inbound",
+		ConnectedAt:    ctx.BlockTime().Add(-1 * time.Hour),
 	}
 	peer2 := types.PeerInfo{
-		PeerId:      "peer2",
-		Address:     "192.168.1.2:26656",
-		ConnectedAt: timestamppb.New(ctx.BlockTime().Add(-2 * time.Hour)),
-		IsInbound:   false,
+		PeerId:         "peer2",
+		IpAddress:      "192.168.1.2",
+		ConnectionType: "outbound",
+		ConnectedAt:    ctx.BlockTime().Add(-2 * time.Hour),
 	}
 
 	err := k.SetPeerInfo(ctx, peer1)
@@ -105,11 +105,15 @@ func TestBeginBlockerBatchingPerformance(t *testing.T) {
 
 	// Create 1000 test peers
 	for i := 0; i < 1000; i++ {
+		connType := "outbound"
+		if i%2 == 0 {
+			connType = "inbound"
+		}
 		peer := types.PeerInfo{
-			PeerId:      string(rune(i)),
-			Address:     "192.168.1.1:26656",
-			ConnectedAt: timestamppb.New(ctx.BlockTime().Add(-1 * time.Hour)),
-			IsInbound:   i%2 == 0,
+			PeerId:         string(rune(i)),
+			IpAddress:      "192.168.1.1",
+			ConnectionType: connType,
+			ConnectedAt:    ctx.BlockTime().Add(-1 * time.Hour),
 		}
 		err := k.SetPeerInfo(ctx, peer)
 		require.NoError(t, err)
@@ -127,7 +131,7 @@ func TestBeginBlockerBatchingPerformance(t *testing.T) {
 	// Measure gas on non-batched blocks
 	var nonBatchedGasTotal uint64
 	for i := int64(1); i < 100; i++ {
-		ctx = ctx.WithBlockHeight(i).WithGasMeter(sdk.NewInfiniteGasMeter())
+		ctx = ctx.WithBlockHeight(i).WithGasMeter(storetypes.NewInfiniteGasMeter())
 		gasBefore := ctx.GasMeter().GasConsumed()
 
 		BeginBlocker(ctx, k)
@@ -139,7 +143,7 @@ func TestBeginBlockerBatchingPerformance(t *testing.T) {
 	avgNonBatchedGas := nonBatchedGasTotal / 99
 
 	// Measure gas on batched block
-	ctx = ctx.WithBlockHeight(100).WithGasMeter(sdk.NewInfiniteGasMeter())
+	ctx = ctx.WithBlockHeight(100).WithGasMeter(storetypes.NewInfiniteGasMeter())
 	gasBefore := ctx.GasMeter().GasConsumed()
 
 	BeginBlocker(ctx, k)

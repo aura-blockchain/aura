@@ -6,8 +6,9 @@ import (
 
 // DefaultGenesis returns the default genesis state
 func DefaultGenesis() *pb.GenesisState {
+	params := DefaultParams()
 	return &pb.GenesisState{
-		Params:                   *DefaultParams(),
+		Params:                   *params, // Dereference pointer to get value
 		PreValidatedTransactions: []*pb.PreValidatedTransaction{},
 		Templates:                []*pb.ValidationTemplate{},
 		Metrics:                  &pb.PreValidationMetrics{},

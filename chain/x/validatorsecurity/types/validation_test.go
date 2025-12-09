@@ -4,9 +4,8 @@ import (
 	"testing"
 	"time"
 
+	sdkmath "cosmossdk.io/math"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/durationpb"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestValidateValidatorInfo_Valid(t *testing.T) {
@@ -143,10 +142,11 @@ func TestValidateValidatorInfo_ValidLongitude(t *testing.T) {
 }
 
 func TestValidateDoubleSignEvidence_Valid(t *testing.T) {
+	now := time.Now()
 	evidence := &DoubleSignEvidence{
 		ValidatorAddress: "auravaloper1test",
 		Height:           1000,
-		Time:             timestamppb.Now(),
+		Time:             &now,
 	}
 
 	err := ValidateDoubleSignEvidence(evidence)
@@ -175,11 +175,11 @@ func TestValidateParams(t *testing.T) {
 	require.NoError(t, ValidateParams(params))
 
 	invalidSlash := DefaultParams()
-	invalidSlash.DoubleSignSlashFraction = "1.5"
+	invalidSlash.DoubleSignSlashFraction = sdkmath.LegacyMustNewDecFromStr("1.5")
 	require.Error(t, ValidateParams(invalidSlash))
 
 	invalidDowntime := DefaultParams()
-	invalidDowntime.DowntimeSlashFraction = "-0.1"
+	invalidDowntime.DowntimeSlashFraction = sdkmath.LegacyMustNewDecFromStr("-0.1")
 	require.Error(t, ValidateParams(invalidDowntime))
 
 	invalidWindow := DefaultParams()
@@ -187,18 +187,18 @@ func TestValidateParams(t *testing.T) {
 	require.Error(t, ValidateParams(invalidWindow))
 
 	invalidMonitoring := DefaultParams()
-	invalidMonitoring.MonitoringInterval = durationpb.New(0)
+	invalidMonitoring.MonitoringInterval = 0
 	require.Error(t, ValidateParams(invalidMonitoring))
 
 	invalidFailover := DefaultParams()
-	invalidFailover.FailoverTimeout = durationpb.New(0)
+	invalidFailover.FailoverTimeout = 0
 	require.Error(t, ValidateParams(invalidFailover))
 
 	paramsNoGeo := DefaultParams()
 	paramsNoGeo.EnableGeoDistribution = false
 	paramsNoGeo.RequireSentryNodes = false
 	paramsNoGeo.EnableAutoFailover = false
-	paramsNoGeo.MonitoringInterval = durationpb.New(30 * time.Second)
+	paramsNoGeo.MonitoringInterval = 30 * time.Second
 	require.NoError(t, ValidateParams(paramsNoGeo))
 }
 

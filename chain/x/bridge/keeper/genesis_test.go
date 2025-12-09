@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	sdkmath "cosmossdk.io/math"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
@@ -64,14 +65,16 @@ func (suite *GenesisTestSuite) TestInitGenesis() {
 				{
 					ChainId:          "ethereum",
 					ChainName:        "Ethereum",
+					AddressPrefix:    "0x",
 					Enabled:          true,
 					MinConfirmations: 12,
 				},
 			},
 			Validators: []bridgepb.BridgeValidator{
 				{
-					Address: "aura1validator",
+					Address: sdk.AccAddress("validator1__________").String(),
 					Active:  true,
+					Power:   100,
 				},
 			},
 			WrappedTokens: []bridgepb.WrappedToken{
@@ -218,6 +221,7 @@ func (suite *GenesisTestSuite) TestExportGenesis() {
 				{
 					ChainId:          "ethereum",
 					ChainName:        "Ethereum",
+					AddressPrefix:    "0x",
 					Enabled:          true,
 					MinConfirmations: 12,
 				},
@@ -336,6 +340,7 @@ func (suite *GenesisTestSuite) TestGenesisRoundTrip() {
 					Sender:      "0x456",
 					Recipient:   "aura1test2",
 					Amount:      sdkmath.NewInt(2000000),
+					Denom:       "uaura",
 					Status:      types.TransferStatus_CONFIRMED,
 					// SubmittedHeight field removed -200,
 				},
@@ -344,24 +349,28 @@ func (suite *GenesisTestSuite) TestGenesisRoundTrip() {
 				{
 					ChainId:          "ethereum",
 					ChainName:        "Ethereum",
+					AddressPrefix:    "0x",
 					Enabled:          true,
 					MinConfirmations: 12,
 				},
 				{
 					ChainId:          "polygon",
 					ChainName:        "Polygon",
+					AddressPrefix:    "0x",
 					Enabled:          true,
 					MinConfirmations: 64,
 				},
 			},
 			Validators: []bridgepb.BridgeValidator{
 				{
-					Address: "aura1validator1",
+					Address: sdk.AccAddress("validator1__________").String(),
 					Active:  true,
+					Power:   100,
 				},
 				{
-					Address: "aura1validator2",
+					Address: sdk.AccAddress("validator2__________").String(),
 					Active:  true,
+					Power:   150,
 				},
 			},
 			WrappedTokens: []bridgepb.WrappedToken{
