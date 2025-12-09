@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/aequitas/aura/chain/pkg/log"
 	"github.com/aequitas/aura/chain/x/compliance/types"
 )
 
@@ -96,6 +97,7 @@ func (s *msgServer) SubmitKYC(goCtx context.Context, req *types.MsgSubmitKYC) (*
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
+	log.TxStart(ctx, "MsgSubmitKYC", req.Provider)
 
 	// Check if provider is authorized (validate authority first)
 	params := s.Keeper.GetParams(ctx)
@@ -152,8 +154,12 @@ func (s *msgServer) SubmitKYC(goCtx context.Context, req *types.MsgSubmitKYC) (*
 	}
 
 	if err := s.Keeper.UpdateKYCRecord(ctx, record, updateReason); err != nil {
+		log.TxError(ctx, "MsgSubmitKYC", err, "provider", req.Provider, "address", req.Address)
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+
+	log.TxSuccess(ctx, "MsgSubmitKYC", "provider", req.Provider, "address", req.Address, "kyc_level", req.KycLevel.String(), "jurisdiction", req.Jurisdiction)
+	log.StateChange(ctx, "kyc_record", "updated", req.Address)
 
 	// Additional event with jurisdiction and PII commitment (version event emitted by UpdateKYCRecord)
 	ctx.EventManager().EmitEvent(

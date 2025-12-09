@@ -10,6 +10,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/aequitas/aura/chain/pkg/log"
 	"github.com/aequitas/aura/chain/x/identity/types"
 	identitypb "github.com/aequitas/aura/proto/aura/identity/v1beta1"
 )
@@ -33,13 +34,17 @@ func (ms msgServer) RequestIdentityChange(goCtx context.Context, msg *identitypb
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
+	log.TxStart(ctx, "MsgRequestIdentityChange", msg.Requester)
 
 	// Create change request
 	request, err := ms.Keeper.CreateChangeRequest(ctx, msg.Requester, msg.TargetDid, msg.IrId, msg.MetadataHash)
 	if err != nil {
+		log.TxError(ctx, "MsgRequestIdentityChange", err, "requester", msg.Requester, "target_did", msg.TargetDid)
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	log.TxSuccess(ctx, "MsgRequestIdentityChange", "requester", msg.Requester, "request_id", request.Id, "target_did", msg.TargetDid)
+	log.StateChange(ctx, "identity_change_request", "created", request.Id)
 	return &identitypb.MsgRequestIdentityChangeResponse{
 		RequestId: request.Id,
 	}, nil

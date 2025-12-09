@@ -14,6 +14,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/aequitas/aura/chain/pkg/log"
 	"github.com/aequitas/aura/chain/x/bridge/types"
 	bridgepb "github.com/aequitas/aura/proto/aura/bridge/v1beta1"
 )
@@ -148,6 +149,7 @@ func (ms msgServer) LockTokens(goCtx context.Context, msg *bridgepb.MsgLockToken
 		return nil, status.Error(codes.InvalidArgument, "amount must be positive")
 	}
 	ctx := sdk.UnwrapSDKContext(goCtx)
+	log.TxStart(ctx, "MsgLockTokens", msg.Sender)
 	if err := ms.Keeper.ensureBridgeEnabled(ctx); err != nil {
 		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}
@@ -196,6 +198,8 @@ func (ms msgServer) LockTokens(goCtx context.Context, msg *bridgepb.MsgLockToken
 		RequiredConfirmations: params.MinConfirmations,
 	}
 	ms.Keeper.setTransfer(ctx, transfer)
+	log.TxSuccess(ctx, "MsgLockTokens", "sender", msg.Sender, "transfer_id", transferID, "target_chain", chainID, "amount", amnt.String())
+	log.StateChange(ctx, "cross_chain_transfer", "created", transferID)
 	return &bridgepb.MsgLockTokensResponse{
 		TransferId:          transferID,
 		EstimatedCompletion: 600,
