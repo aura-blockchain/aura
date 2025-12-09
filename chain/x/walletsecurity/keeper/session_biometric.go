@@ -5,20 +5,19 @@ import (
 	"fmt"
 	"time"
 
+	gogotypes "github.com/cosmos/gogoproto/types"
 	"github.com/aequitas/aura/chain/x/common/determinism"
 	wsproto "github.com/aequitas/aura/proto/aura/walletsecurity/v1beta1"
-	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func (k Keeper) ConfigureSession(ctx context.Context, walletID string, timeoutDuration *durationpb.Duration, autoLockEnabled bool, inactivityThresholdSeconds int32) (*wsproto.SessionConfig, error) {
+func (k Keeper) ConfigureSession(ctx context.Context, walletID string, timeoutDuration *gogotypes.Duration, autoLockEnabled bool, inactivityThresholdSeconds int32) (*wsproto.SessionConfig, error) {
 	config := &wsproto.SessionConfig{
 		SessionId:                  fmt.Sprintf("session_%s_%d", walletID, determinism.GetBlockTime(ctx).Unix()),
 		WalletId:                   walletID,
 		TimeoutDuration:            timeoutDuration,
 		AutoLockEnabled:            autoLockEnabled,
 		InactivityThresholdSeconds: inactivityThresholdSeconds,
-		StartedAt:                  timestamppb.New(determinism.GetBlockTime(ctx)),
+		StartedAt:                  blockTimeToGogoTimestamp(ctx),
 		Locked:                     false,
 	}
 	configBytes, err := k.cdc.Marshal(config)
@@ -61,7 +60,7 @@ func (k Keeper) UnlockSession(ctx context.Context, sessionID string, authProof [
 		return fmt.Errorf("session is not locked")
 	}
 	config.Locked = false
-	config.LastActivity = timestamppb.New(determinism.GetBlockTime(ctx))
+	config.LastActivity = blockTimeToGogoTimestamp(ctx)
 	configBytes, err = k.cdc.Marshal(&config)
 	if err != nil {
 		return err
@@ -73,7 +72,7 @@ func (k Keeper) EnrollBiometric(ctx context.Context, walletID string, bioType ws
 	auth := &wsproto.BiometricAuth{
 		WalletId:       walletID,
 		Type:           bioType,
-		EnrolledAt:     timestamppb.New(determinism.GetBlockTime(ctx)),
+		EnrolledAt:     blockTimeToGogoTimestamp(ctx),
 		Enabled:        true,
 		EnrollmentHash: fmt.Sprintf("%x", enrollmentData),
 	}
@@ -107,14 +106,14 @@ func (k Keeper) AuthenticateBiometric(ctx context.Context, walletID string, biom
 	proofHash := fmt.Sprintf("%x", biometricProof)
 	authenticated := proofHash == auth.EnrollmentHash
 
-	auth.LastAttempt = timestamppb.New(determinism.GetBlockTime(ctx))
+	auth.LastAttempt = blockTimeToGogoTimestamp(ctx)
 	if !authenticated {
 		auth.FailedAttempts++
 		// Lock out after 5 failed attempts
 		if auth.FailedAttempts >= 5 {
 			auth.LockedOut = true
 			// Set lockout for 30 minutes
-			auth.LockoutUntil = timestamppb.New(determinism.GetBlockTime(ctx).Add(30 * time.Minute))
+			auth.LockoutUntil = blockTimeWithOffsetToGogoTimestamp(ctx, 30 * time.Minute)
 		}
 	} else {
 		auth.FailedAttempts = 0
@@ -135,7 +134,7 @@ func (k Keeper) StoreInSecureEnclave(ctx context.Context, walletID string, encla
 		EnclaveId:              fmt.Sprintf("enclave_%s_%d", walletID, determinism.GetBlockTime(ctx).Unix()),
 		EnclaveType:            enclaveType,
 		EncryptedKeyMaterial:   encryptedKeyMaterial,
-		CreatedAt:              timestamppb.New(determinism.GetBlockTime(ctx)),
+		CreatedAt:              blockTimeToGogoTimestamp(ctx),
 		HardwareBacked:         true,
 		AttestationCertificate: attestationCertificate,
 	}
@@ -159,7 +158,7 @@ func (k Keeper) CreateEncryptedBackup(ctx context.Context, walletID string, encr
 		KeyDerivationFunction: keyDerivationFunction,
 		Salt:                  salt,
 		Iterations:            iterations,
-		CreatedAt:             timestamppb.New(determinism.GetBlockTime(ctx)),
+		CreatedAt:             blockTimeToGogoTimestamp(ctx),
 		Location:              location,
 		Checksum:              fmt.Sprintf("%x", encryptedSeed),
 	}
@@ -180,7 +179,7 @@ func (k Keeper) ConfigureDustFilter(ctx context.Context, walletID string, enable
 		MinimumAmount:               minimumAmount,
 		MaxDustTransactionsPerBlock: maxDustTransactionsPerBlock,
 		SuspiciousPatternThreshold:  suspiciousPatternThreshold,
-		LastUpdated:                 timestamppb.New(determinism.GetBlockTime(ctx)),
+		LastUpdated:                 blockTimeToGogoTimestamp(ctx),
 	}
 	filterBytes, err := k.cdc.Marshal(filter)
 	if err != nil {

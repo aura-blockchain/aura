@@ -243,7 +243,7 @@ func (k Keeper) PruneLowReputationPeers(ctx sdk.Context) {
 				rep.PeerId, rep.Score, rep.MisbehaviorCount))
 
 			// Ban the peer
-			banDuration := int64(params.RateLimit.BanDuration.AsDuration().Seconds() * 2)
+			banDuration := int64(params.RateLimit.BanDuration.Seconds() * 2)
 			k.BanPeer(ctx, rep.PeerId, banDuration, "low reputation with high misbehavior")
 
 			// Disconnect

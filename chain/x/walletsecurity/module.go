@@ -13,9 +13,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
+	gogoproto "github.com/cosmos/gogoproto/proto"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
-	"google.golang.org/protobuf/proto"
 
 	"github.com/aequitas/aura/chain/x/walletsecurity/keeper"
 	"github.com/aequitas/aura/chain/x/walletsecurity/types"
@@ -569,7 +569,7 @@ func (q *QueryServerImpl) GetHardwareWallet(
 	}
 
 	var config wsproto.HardwareWalletConfig
-	if err := proto.Unmarshal(configBytes, &config); err != nil {
+	if err := gogoproto.Unmarshal(configBytes, &config); err != nil {
 		return nil, err
 	}
 
@@ -588,7 +588,7 @@ func (q *QueryServerImpl) GetMultiSigWallet(
 	}
 
 	var wallet wsproto.MultiSigWallet
-	if err := proto.Unmarshal(walletBytes, &wallet); err != nil {
+	if err := gogoproto.Unmarshal(walletBytes, &wallet); err != nil {
 		return nil, err
 	}
 
@@ -607,7 +607,7 @@ func (q *QueryServerImpl) GetPendingMultiSigTx(
 	}
 
 	var tx wsproto.PendingMultiSigTransaction
-	if err := proto.Unmarshal(txBytes, &tx); err != nil {
+	if err := gogoproto.Unmarshal(txBytes, &tx); err != nil {
 		return nil, err
 	}
 
@@ -626,7 +626,7 @@ func (q *QueryServerImpl) GetSocialRecoveryConfig(
 	}
 
 	var config wsproto.SocialRecoveryConfig
-	if err := proto.Unmarshal(configBytes, &config); err != nil {
+	if err := gogoproto.Unmarshal(configBytes, &config); err != nil {
 		return nil, err
 	}
 
@@ -645,7 +645,7 @@ func (q *QueryServerImpl) GetRecoveryRequest(
 	}
 
 	var request wsproto.RecoveryRequest
-	if err := proto.Unmarshal(requestBytes, &request); err != nil {
+	if err := gogoproto.Unmarshal(requestBytes, &request); err != nil {
 		return nil, err
 	}
 
@@ -664,7 +664,7 @@ func (q *QueryServerImpl) GetSpendingLimit(
 	}
 
 	var limit wsproto.SpendingLimit
-	if err := proto.Unmarshal(limitBytes, &limit); err != nil {
+	if err := gogoproto.Unmarshal(limitBytes, &limit); err != nil {
 		return nil, err
 	}
 
@@ -683,7 +683,7 @@ func (q *QueryServerImpl) GetSessionConfig(
 	}
 
 	var config wsproto.SessionConfig
-	if err := proto.Unmarshal(configBytes, &config); err != nil {
+	if err := gogoproto.Unmarshal(configBytes, &config); err != nil {
 		return nil, err
 	}
 
@@ -702,7 +702,7 @@ func (q *QueryServerImpl) GetSecurityMetrics(
 	}
 
 	var metrics wsproto.WalletSecurityMetrics
-	if err := proto.Unmarshal(metricsBytes, &metrics); err != nil {
+	if err := gogoproto.Unmarshal(metricsBytes, &metrics); err != nil {
 		return nil, err
 	}
 
@@ -721,7 +721,7 @@ func (q *QueryServerImpl) GetDomainVerification(
 	}
 
 	var verification wsproto.DomainVerification
-	if err := proto.Unmarshal(verificationBytes, &verification); err != nil {
+	if err := gogoproto.Unmarshal(verificationBytes, &verification); err != nil {
 		return nil, err
 	}
 
@@ -740,7 +740,7 @@ func (q *QueryServerImpl) GetDustFilter(
 	}
 
 	var filter wsproto.DustAttackFilter
-	if err := proto.Unmarshal(filterBytes, &filter); err != nil {
+	if err := gogoproto.Unmarshal(filterBytes, &filter); err != nil {
 		return nil, err
 	}
 

@@ -70,13 +70,13 @@ func (wgd WasmGasDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool
 
 		case *types.MsgStoreCode:
 			// Calculate storage gas cost (per byte)
-			storageGas := types.CalculateStorageGas(uint64(len(m.WasmByteCode)), types.GasPerByte)
+			storageGas := types.CalculateStorageGas(uint64(len(m.WASMByteCode)), types.GasPerByte)
 
 			// Consume gas for code storage BEFORE storing
 			ctx.GasMeter().ConsumeGas(storageGas, "code_storage")
 
 			// Validate contract size doesn't exceed per-block limit
-			if err := wgd.validateContractSize(ctx, m.WasmByteCode); err != nil {
+			if err := wgd.validateContractSize(ctx, m.WASMByteCode); err != nil {
 				return ctx, err
 			}
 		}
@@ -253,7 +253,7 @@ func (wsd WasmSecurityDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate
 		switch m := msg.(type) {
 		case *types.MsgStoreCode:
 			// Validate contract code
-			if err := wsd.validateContractCode(ctx, m.WasmByteCode); err != nil {
+			if err := wsd.validateContractCode(ctx, m.WASMByteCode); err != nil {
 				return ctx, err
 			}
 
@@ -309,15 +309,8 @@ func (wsd WasmSecurityDecorator) validateExecution(ctx sdk.Context, msg *types.M
 
 	// Validate funds
 	if len(msg.Funds) > 0 {
-		// Convert []*sdk.Coin to []sdk.Coin for validation
-		coins := make([]sdk.Coin, len(msg.Funds))
-		for i, coin := range msg.Funds {
-			if coin != nil {
-				coins[i] = *coin
-			}
-		}
-		funds := sdk.NewCoins(coins...)
-		if !funds.IsValid() {
+		// Funds is already sdk.Coins, just validate it
+		if !msg.Funds.IsValid() {
 			return fmt.Errorf("invalid funds")
 		}
 	}

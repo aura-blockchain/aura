@@ -24,7 +24,7 @@ func EndBlocker(ctx context.Context, k keeper.Keeper) error {
 	params := k.GetParams(ctx)
 
 	// Run monitoring checks at intervals
-	monitoringInterval := params.MonitoringInterval.AsDuration()
+	monitoringInterval := params.MonitoringInterval
 	if shouldRunMonitoring(sdkCtx, monitoringInterval) {
 		k.MonitorAllValidators(ctx)
 	}
@@ -32,11 +32,11 @@ func EndBlocker(ctx context.Context, k keeper.Keeper) error {
 	// Auto-unjail validators whose jail period has expired
 	jailedValidators := k.GetJailedValidators(ctx)
 	for _, val := range jailedValidators {
-		if val.JailedUntil != nil && sdkCtx.BlockTime().After(val.JailedUntil.AsTime()) {
+		if val.JailedUntil != nil && sdkCtx.BlockTime().After(*val.JailedUntil) {
 			// Don't auto-unjail, just log that they can unjail themselves
-			k.Logger(ctx).Info("validator can now unjail",
+			sdkCtx.Logger().Info("validator can now unjail",
 				"validator", val.ValidatorAddress,
-				"jailed_until", val.JailedUntil.AsTime(),
+				"jailed_until", *val.JailedUntil,
 			)
 		}
 	}

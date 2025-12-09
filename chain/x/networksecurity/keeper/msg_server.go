@@ -3,7 +3,6 @@ package keeper
 import (
 	"context"
 
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/aequitas/aura/chain/x/networksecurity/types"

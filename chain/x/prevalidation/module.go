@@ -121,9 +121,8 @@ func (am AppModule) initGenesis(ctx sdk.Context, gs *pb.GenesisState) {
 
 // exportGenesis exports the module's state to genesis
 func (am AppModule) exportGenesis(ctx sdk.Context) *pb.GenesisState {
-	return &pb.GenesisState{
-		Params: nil, // Will use proto params when available
-	}
+	// Use keeper to export genesis state
+	return am.keeper.ExportGenesis(ctx)
 }
 
 // BeginBlock performs module-specific logic at the beginning of each block

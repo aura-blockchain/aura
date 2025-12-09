@@ -7,11 +7,10 @@ import (
 	"fmt"
 	"time"
 
+	gogotypes "github.com/cosmos/gogoproto/types"
 	"github.com/aequitas/aura/chain/x/common/determinism"
 	"github.com/aequitas/aura/chain/x/walletsecurity/types"
 	wsproto "github.com/aequitas/aura/proto/aura/walletsecurity/v1beta1"
-	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // CreateMultiSigWallet creates a new multi-signature wallet
@@ -22,7 +21,7 @@ func (k Keeper) CreateMultiSigWallet(
 	threshold int32,
 	signerWeights map[string]int32,
 	weightThreshold int32,
-	timeLock *durationpb.Duration,
+	timeLock *gogotypes.Duration,
 ) (*wsproto.MultiSigWallet, error) {
 	// Validate inputs
 	if len(signers) == 0 {
@@ -58,7 +57,7 @@ func (k Keeper) CreateMultiSigWallet(
 	}
 
 	// Create multi-sig wallet
-	now := timestamppb.New(determinism.GetBlockTime(ctx))
+	now := blockTimeToGogoTimestamp(ctx)
 	wallet := &wsproto.MultiSigWallet{
 		WalletId:        walletID,
 		Signers:         signers,
@@ -73,8 +72,8 @@ func (k Keeper) CreateMultiSigWallet(
 	}
 
 	if timeLock != nil {
-		unlockTime := determinism.GetBlockTime(ctx).Add(timeLock.AsDuration())
-		wallet.UnlockTime = timestamppb.New(unlockTime)
+		unlockTime := determinism.GetBlockTime(ctx).Add(gogoDurationToTime(timeLock))
+		wallet.UnlockTime = timeToGogoTimestamp(unlockTime)
 	}
 
 	// Store the wallet
@@ -83,7 +82,7 @@ func (k Keeper) CreateMultiSigWallet(
 		return nil, err
 	}
 
-	k.Logger(ctx).Info("created multi-sig wallet",
+	k.logger.Info("created multi-sig wallet",
 		"wallet_id", walletID,
 		"creator", creator,
 		"signers", len(signers),
@@ -114,16 +113,16 @@ func (k Keeper) CreatePendingMultiSigTransaction(
 	}
 
 	// Check time lock
-	if wallet.TimeLocked && determinism.GetBlockTime(ctx).Before(wallet.UnlockTime.AsTime()) {
-		return nil, fmt.Errorf("wallet is time-locked until %s", wallet.UnlockTime.AsTime())
+	if wallet.TimeLocked && determinism.GetBlockTime(ctx).Before(gogoTimestampToTime(wallet.UnlockTime)) {
+		return nil, fmt.Errorf("wallet is time-locked until %s", gogoTimestampToTime(wallet.UnlockTime))
 	}
 
 	// Generate transaction ID
 	txID := k.generateTxID(walletID, txData)
 
 	// Create pending transaction
-	now := timestamppb.New(determinism.GetBlockTime(ctx))
-	expiresAt := timestamppb.New(determinism.GetBlockTime(ctx).Add(expirationDuration))
+	now := blockTimeToGogoTimestamp(ctx)
+	expiresAt := blockTimeWithOffsetToGogoTimestamp(ctx, expirationDuration)
 
 	pendingTx := &wsproto.PendingMultiSigTransaction{
 		TxId:          txID,
@@ -144,7 +143,7 @@ func (k Keeper) CreatePendingMultiSigTransaction(
 		return nil, err
 	}
 
-	k.Logger(ctx).Info("created pending multi-sig transaction",
+	k.logger.Info("created pending multi-sig transaction",
 		"tx_id", txID,
 		"wallet_id", walletID,
 		"type", txType,
@@ -171,12 +170,10 @@ func (k Keeper) SignMultiSigTransaction(
 
 		k.logger.Error("failed to unmarshal", "error", err)
 
-		continue
-
 	}
 
 	// Check expiration
-	if determinism.GetBlockTime(ctx).After(pendingTx.ExpiresAt.AsTime()) {
+	if determinism.GetBlockTime(ctx).After(gogoTimestampToTime(pendingTx.ExpiresAt)) {
 		return false, types.ErrMultiSigTxExpired
 	}
 
@@ -227,7 +224,7 @@ func (k Keeper) SignMultiSigTransaction(
 	// Check if ready to execute
 	readyToExecute := k.isReadyToExecute(&pendingTx, &wallet)
 
-	k.Logger(ctx).Info("signed multi-sig transaction",
+	k.logger.Info("signed multi-sig transaction",
 		"tx_id", txID,
 		"signer", signer,
 		"signatures", len(pendingTx.SignedBy),
@@ -251,7 +248,7 @@ func (k Keeper) ExecuteMultiSigTransaction(ctx context.Context, txID string) err
 	}
 
 	// Check expiration
-	if determinism.GetBlockTime(ctx).After(pendingTx.ExpiresAt.AsTime()) {
+	if determinism.GetBlockTime(ctx).After(gogoTimestampToTime(pendingTx.ExpiresAt)) {
 		return types.ErrMultiSigTxExpired
 	}
 
@@ -282,7 +279,7 @@ func (k Keeper) ExecuteMultiSigTransaction(ctx context.Context, txID string) err
 		return err
 	}
 
-	k.Logger(ctx).Info("executed multi-sig transaction",
+	k.logger.Info("executed multi-sig transaction",
 		"tx_id", txID,
 		"wallet_id", pendingTx.WalletId,
 	)

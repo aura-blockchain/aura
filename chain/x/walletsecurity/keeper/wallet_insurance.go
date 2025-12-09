@@ -8,7 +8,6 @@ import (
 	"cosmossdk.io/math"
 	"github.com/aequitas/aura/chain/x/common/determinism"
 	wsproto "github.com/aequitas/aura/proto/aura/walletsecurity/v1beta1"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // PurchaseInsurance allows a wallet to purchase insurance coverage
@@ -21,8 +20,8 @@ func (k Keeper) PurchaseInsurance(ctx context.Context, walletID string, coverage
 		CoverageAmount: coverageAmount.String(),
 		Premium:        premium.String(),
 		Active:         true,
-		PurchasedAt:    timestamppb.Now(),
-		ExpiresAt:      timestamppb.New(determinism.GetBlockTime(ctx).Add(365 * 24 * time.Hour)), // 1 year
+		PurchasedAt:    gogoTimestampNow(),
+		ExpiresAt:      blockTimeWithOffsetToGogoTimestamp(ctx, 365 * 24 * time.Hour), // 1 year
 		ClaimsPaid:     "0",
 	}
 
@@ -68,7 +67,7 @@ func (k Keeper) FileClaim(ctx context.Context, policyID, reason string, claimAmo
 		Amount:     claimAmount.String(),
 		Reason:     reason,
 		Status:     "pending",
-		FiledAt:    timestamppb.Now(),
+		FiledAt:    gogoTimestampNow(),
 		ApprovedAt: nil,
 	}
 
@@ -100,7 +99,7 @@ func (k Keeper) ProcessClaim(ctx context.Context, claimID string, approved bool)
 
 	if approved {
 		claim.Status = "approved"
-		claim.ApprovedAt = timestamppb.Now()
+		claim.ApprovedAt = gogoTimestampNow()
 
 		// Update policy claims paid
 		policyKey := []byte(fmt.Sprintf("insurance_%s", claim.PolicyId))

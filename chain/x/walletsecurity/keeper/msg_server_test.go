@@ -46,7 +46,7 @@ func (suite *MsgServerTestSuite) TestSignMultiSigTransaction_UnauthorizedSigner(
 		Signers:      []string{authorizedSigner1.String(), authorizedSigner2.String()},
 		Threshold:    2,
 		TotalSigners: 2,
-		CreatedAt:    timestamppb.Now(),
+		CreatedAt:    gogoTimestampNow(),
 		Creator:      creator.String(),
 	}
 
@@ -63,7 +63,7 @@ func (suite *MsgServerTestSuite) TestSignMultiSigTransaction_UnauthorizedSigner(
 		Signatures:    []string{},
 		SignedBy:      []string{},
 		CurrentWeight: 0,
-		CreatedAt:     timestamppb.Now(),
+		CreatedAt:     gogoTimestampNow(),
 	}
 
 	txBytes, err := suite.cdc.Marshal(tx)
@@ -107,7 +107,7 @@ func (suite *MsgServerTestSuite) TestSignMultiSigTransaction_DuplicateSignature(
 		Signers:      []string{signer1.String(), signer2.String()},
 		Threshold:    2,
 		TotalSigners: 2,
-		CreatedAt:    timestamppb.Now(),
+		CreatedAt:    gogoTimestampNow(),
 		Creator:      creator.String(),
 	}
 
@@ -124,7 +124,7 @@ func (suite *MsgServerTestSuite) TestSignMultiSigTransaction_DuplicateSignature(
 		Signatures:    []string{"signature1"},
 		SignedBy:      []string{signer1.String()},
 		CurrentWeight: 1,
-		CreatedAt:     timestamppb.Now(),
+		CreatedAt:     gogoTimestampNow(),
 	}
 
 	txBytes, err := suite.cdc.Marshal(tx)
@@ -167,7 +167,7 @@ func (suite *MsgServerTestSuite) TestSignMultiSigTransaction_WeightedMultiSig() 
 		Signers:      []string{heavySigner.String(), normalSigner1.String(), normalSigner2.String()},
 		Threshold:    3, // Number of signers (not used when WeightThreshold is set)
 		TotalSigners: 3,
-		CreatedAt:    timestamppb.Now(),
+		CreatedAt:    gogoTimestampNow(),
 		Creator:      creator.String(),
 		SignerWeights: map[string]int32{
 			heavySigner.String():   3,
@@ -217,7 +217,7 @@ func (suite *MsgServerTestSuite) TestSignMultiSigTransaction_WeightThresholdCalc
 		Signers:      []string{signer1.String(), signer2.String()},
 		Threshold:    2, // Regular threshold (ignored when WeightThreshold is set)
 		TotalSigners: 2,
-		CreatedAt:    timestamppb.Now(),
+		CreatedAt:    gogoTimestampNow(),
 		Creator:      creator.String(),
 		SignerWeights: map[string]int32{
 			signer1.String(): 2,
@@ -258,7 +258,7 @@ func (suite *MsgServerTestSuite) TestSignMultiSigTransaction_DefaultWeightForSig
 		Signers:      []string{weightedSigner.String(), defaultSigner.String()},
 		Threshold:    2,
 		TotalSigners: 2,
-		CreatedAt:    timestamppb.Now(),
+		CreatedAt:    gogoTimestampNow(),
 		Creator:      creator.String(),
 		SignerWeights: map[string]int32{
 			weightedSigner.String(): 5,

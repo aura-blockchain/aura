@@ -30,11 +30,8 @@ func (k Keeper) GetHardwareWallet(ctx sdk.Context, walletId string) (*securitypb
 	}
 	var hw securitypb.HardwareWalletConfig
 	if err := k.cdc.Unmarshal(bz, &hw); err != nil {
-
-		k.Logger(ctx).Error.Error("failed to unmarshal", "error", err)
-
-		continue
-
+		k.Logger(ctx).Error("failed to unmarshal hardware wallet", "error", err, "walletId", walletId)
+		return nil, false
 	}
 	return &hw, true
 }
@@ -49,11 +46,8 @@ func (k Keeper) GetAllHardwareWallets(ctx sdk.Context) []*securitypb.HardwareWal
 	for ; iterator.Valid(); iterator.Next() {
 		var hw securitypb.HardwareWalletConfig
 		if err := k.cdc.Unmarshal(iterator.Value(), &hw); err != nil {
-
-			k.Logger(ctx).Error.Error("failed to unmarshal", "error", err)
-
+			k.Logger(ctx).Error("failed to unmarshal hardware wallet during iteration", "error", err)
 			continue
-
 		}
 		wallets = append(wallets, &hw)
 	}
@@ -78,11 +72,8 @@ func (k Keeper) GetMultiSigWallet(ctx sdk.Context, walletId string) (*securitypb
 	}
 	var ms securitypb.MultiSigWallet
 	if err := k.cdc.Unmarshal(bz, &ms); err != nil {
-
-		k.Logger(ctx).Error.Error("failed to unmarshal", "error", err)
-
-		continue
-
+		k.Logger(ctx).Error("failed to unmarshal multisig wallet", "error", err, "walletId", walletId)
+		return nil, false
 	}
 	return &ms, true
 }
@@ -97,11 +88,8 @@ func (k Keeper) GetAllMultiSigWallets(ctx sdk.Context) []*securitypb.MultiSigWal
 	for ; iterator.Valid(); iterator.Next() {
 		var ms securitypb.MultiSigWallet
 		if err := k.cdc.Unmarshal(iterator.Value(), &ms); err != nil {
-
-			k.Logger(ctx).Error.Error("failed to unmarshal", "error", err)
-
+			k.Logger(ctx).Error("failed to unmarshal multisig wallet during iteration", "error", err)
 			continue
-
 		}
 		wallets = append(wallets, &ms)
 	}
@@ -126,11 +114,8 @@ func (k Keeper) GetPendingMultiSigTx(ctx sdk.Context, id string) (*securitypb.Pe
 	}
 	var tx securitypb.PendingMultiSigTransaction
 	if err := k.cdc.Unmarshal(bz, &tx); err != nil {
-
-		k.Logger(ctx).Error.Error("failed to unmarshal", "error", err)
-
-		continue
-
+		k.Logger(ctx).Error("failed to unmarshal pending multisig transaction", "error", err, "id", id)
+		return nil, false
 	}
 	return &tx, true
 }
@@ -145,11 +130,8 @@ func (k Keeper) GetAllPendingMultiSigTxs(ctx sdk.Context) []*securitypb.PendingM
 	for ; iterator.Valid(); iterator.Next() {
 		var tx securitypb.PendingMultiSigTransaction
 		if err := k.cdc.Unmarshal(iterator.Value(), &tx); err != nil {
-
-			k.Logger(ctx).Error.Error("failed to unmarshal", "error", err)
-
+			k.Logger(ctx).Error("failed to unmarshal pending multisig transaction during iteration", "error", err)
 			continue
-
 		}
 		txs = append(txs, &tx)
 	}
@@ -181,11 +163,8 @@ func (k Keeper) GetSocialRecoveryConfig(ctx sdk.Context, walletId string) (*secu
 	}
 	var config securitypb.SocialRecoveryConfig
 	if err := k.cdc.Unmarshal(bz, &config); err != nil {
-
-		k.Logger(ctx).Error.Error("failed to unmarshal", "error", err)
-
-		continue
-
+		k.Logger(ctx).Error("failed to unmarshal social recovery config", "error", err, "walletId", walletId)
+		return nil, false
 	}
 	return &config, true
 }
@@ -200,11 +179,8 @@ func (k Keeper) GetAllSocialRecoveryConfigs(ctx sdk.Context) []*securitypb.Socia
 	for ; iterator.Valid(); iterator.Next() {
 		var config securitypb.SocialRecoveryConfig
 		if err := k.cdc.Unmarshal(iterator.Value(), &config); err != nil {
-
-			k.Logger(ctx).Error.Error("failed to unmarshal", "error", err)
-
+			k.Logger(ctx).Error("failed to unmarshal social recovery config during iteration", "error", err)
 			continue
-
 		}
 		configs = append(configs, &config)
 	}
@@ -229,11 +205,8 @@ func (k Keeper) GetRecoveryRequest(ctx sdk.Context, id string) (*securitypb.Reco
 	}
 	var request securitypb.RecoveryRequest
 	if err := k.cdc.Unmarshal(bz, &request); err != nil {
-
-		k.Logger(ctx).Error.Error("failed to unmarshal", "error", err)
-
-		continue
-
+		k.Logger(ctx).Error("failed to unmarshal recovery request", "error", err, "id", id)
+		return nil, false
 	}
 	return &request, true
 }
@@ -248,11 +221,8 @@ func (k Keeper) GetAllRecoveryRequests(ctx sdk.Context) []*securitypb.RecoveryRe
 	for ; iterator.Valid(); iterator.Next() {
 		var request securitypb.RecoveryRequest
 		if err := k.cdc.Unmarshal(iterator.Value(), &request); err != nil {
-
-			k.Logger(ctx).Error.Error("failed to unmarshal", "error", err)
-
+			k.Logger(ctx).Error("failed to unmarshal recovery request during iteration", "error", err)
 			continue
-
 		}
 		requests = append(requests, &request)
 	}
@@ -277,11 +247,8 @@ func (k Keeper) GetAllDeviceFingerprints(ctx sdk.Context) []*types.DeviceFingerp
 	for ; iterator.Valid(); iterator.Next() {
 		var fp types.DeviceFingerprint
 		if err := k.cdc.Unmarshal(iterator.Value(), &fp); err != nil {
-
-			k.Logger(ctx).Error.Error("failed to unmarshal", "error", err)
-
+			k.Logger(ctx).Error("failed to unmarshal device fingerprint during iteration", "error", err)
 			continue
-
 		}
 		fps = append(fps, &fp)
 	}
@@ -306,11 +273,8 @@ func (k Keeper) GetSession(ctx sdk.Context, id string) (*types.WalletSession, bo
 	}
 	var session types.WalletSession
 	if err := k.cdc.Unmarshal(bz, &session); err != nil {
-
-		k.Logger(ctx).Error.Error("failed to unmarshal", "error", err)
-
-		continue
-
+		k.Logger(ctx).Error("failed to unmarshal session", "error", err, "id", id)
+		return nil, false
 	}
 	return &session, true
 }
@@ -325,11 +289,8 @@ func (k Keeper) GetAllSessions(ctx sdk.Context) []*types.WalletSession {
 	for ; iterator.Valid(); iterator.Next() {
 		var session types.WalletSession
 		if err := k.cdc.Unmarshal(iterator.Value(), &session); err != nil {
-
-			k.Logger(ctx).Error.Error("failed to unmarshal", "error", err)
-
+			k.Logger(ctx).Error("failed to unmarshal session during iteration", "error", err)
 			continue
-
 		}
 		sessions = append(sessions, &session)
 	}
@@ -374,11 +335,8 @@ func (k Keeper) GetAllAnomalyDetections(ctx sdk.Context) []*types.AnomalyDetecti
 	for ; iterator.Valid(); iterator.Next() {
 		var anomaly types.AnomalyDetection
 		if err := k.cdc.Unmarshal(iterator.Value(), &anomaly); err != nil {
-
-			k.Logger(ctx).Error.Error("failed to unmarshal", "error", err)
-
+			k.Logger(ctx).Error("failed to unmarshal anomaly detection during iteration", "error", err)
 			continue
-
 		}
 		anomalies = append(anomalies, &anomaly)
 	}
@@ -400,7 +358,7 @@ func (k Keeper) ValidateMultiSigTx(ctx sdk.Context, txID string) error {
 	if int32(len(tx.SignedBy)) < tx.CurrentWeight {
 		return types.ErrInsufficientSigs
 	}
-	if tx.ExpiresAt != nil && ctx.BlockTime().After(tx.ExpiresAt.AsTime()) {
+	if tx.ExpiresAt != nil && ctx.BlockTime().After(*tx.ExpiresAt) {
 		return types.ErrInvalidRequest
 	}
 	return nil

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net"
 
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/aequitas/aura/chain/x/networksecurity/types"
@@ -334,7 +333,7 @@ func (k Keeper) AcceptConnection(ctx sdk.Context, peerInfo types.PeerInfo) error
 	}
 
 	// Store peer info
-	peerInfo.ConnectedAt = timestamppb.New(ctx.BlockTime())
+	peerInfo.ConnectedAt = ctx.BlockTime()
 	k.SetPeerInfo(ctx, peerInfo)
 
 	// Increment connection count for IP

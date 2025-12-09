@@ -112,11 +112,12 @@ func KYCRecordConsistencyInvariant(k *Keeper) sdk.Invariant {
 			}
 
 			// Check verified_at timestamp
-			if record.VerifiedAt == nil {
+			// VerifiedAt is time.Time (non-nullable), check for zero value
+			if record.VerifiedAt.IsZero() {
 				return sdk.FormatInvariant(
 					types.ModuleName,
 					"kyc-record-consistency",
-					fmt.Sprintf("KYC record for %s has nil verified_at", record.Address),
+					fmt.Sprintf("KYC record for %s has zero verified_at", record.Address),
 				), true
 			}
 		}
@@ -152,11 +153,12 @@ func SanctionsScreeningInvariant(k *Keeper) sdk.Invariant {
 			}
 
 			// Check screening date
-			if result.ScreenedAt == nil {
+			// ScreenedAt is time.Time (non-nullable), check for zero value
+			if result.ScreenedAt.IsZero() {
 				return sdk.FormatInvariant(
 					types.ModuleName,
 					"sanctions-screening-validity",
-					fmt.Sprintf("sanctions screening for %s has nil screened_at", result.Address),
+					fmt.Sprintf("sanctions screening for %s has zero screened_at", result.Address),
 				), true
 			}
 
@@ -218,11 +220,12 @@ func GDPRDataIntegrityInvariant(k *Keeper) sdk.Invariant {
 			}
 
 			// Check timestamps
-			if request.RequestedAt == nil {
+			// RequestedAt is time.Time (non-nullable), check for zero value
+			if request.RequestedAt.IsZero() {
 				return sdk.FormatInvariant(
 					types.ModuleName,
 					"gdpr-data-integrity",
-					fmt.Sprintf("GDPR request has nil requested_at"),
+					fmt.Sprintf("GDPR request has zero requested_at"),
 				), true
 			}
 

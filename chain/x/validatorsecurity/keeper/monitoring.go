@@ -6,7 +6,6 @@ import (
 
 	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/validatorsecurity/types"
 )
@@ -50,7 +49,7 @@ func (k Keeper) TrackBlockSign(ctx context.Context, validatorAddr string, signed
 	// Update last seen time if signed
 	if signed {
 		now := sdkCtx.BlockTime()
-		info.LastSeen = timestamppb.New(now)
+		info.LastSeen = &now // LastSeen is *time.Time with stdtime=true
 	}
 
 	// Increment index
@@ -61,7 +60,7 @@ func (k Keeper) TrackBlockSign(ctx context.Context, validatorAddr string, signed
 
 	// Check for downtime violation
 	if err := k.HandleDowntime(ctx, validatorAddr); err != nil {
-		k.Logger(ctx).Error("error handling downtime", "validator", validatorAddr, "error", err)
+		k.Logger(sdkCtx).Error("error handling downtime", "validator", validatorAddr, "error", err)
 	}
 
 	return nil
@@ -80,16 +79,18 @@ func (k Keeper) MonitorValidator(ctx context.Context, validatorAddr string) erro
 
 	// Check last seen time
 	if info.LastSeen != nil {
-		timeSinceLastSeen := sdkCtx.BlockTime().Sub(info.LastSeen.AsTime())
-		monitoringThreshold := params.MonitoringInterval.AsDuration() * 2
+		// LastSeen is *time.Time with stdtime=true, MonitoringInterval is time.Duration
+		timeSinceLastSeen := sdkCtx.BlockTime().Sub(*info.LastSeen)
+		monitoringThreshold := params.MonitoringInterval * 2
 		if timeSinceLastSeen > monitoringThreshold {
+			alertTime := sdkCtx.BlockTime()
 			k.CreateAlert(ctx, types.ValidatorAlert{
 				Id:               fmt.Sprintf("inactive-%s-%d", validatorAddr, sdkCtx.BlockHeight()),
 				ValidatorAddress: validatorAddr,
 				AlertType:        types.ValidatorAlert_DOWNTIME,
 				Severity:         types.ValidatorAlert_WARNING,
 				Message:          fmt.Sprintf("Validator inactive for %s", timeSinceLastSeen),
-				Timestamp:        timestamppb.New(sdkCtx.BlockTime()),
+				Timestamp:        &alertTime, // Timestamp is *time.Time with stdtime=true
 				Acknowledged:     false,
 			})
 		}
@@ -97,7 +98,7 @@ func (k Keeper) MonitorValidator(ctx context.Context, validatorAddr string) erro
 
 	// Check minimum stake
 	if err := k.ValidateMinimumStake(ctx, validatorAddr); err != nil {
-		k.Logger(ctx).Warn("validator below minimum stake", "validator", validatorAddr)
+		k.Logger(sdkCtx).Warn("validator below minimum stake", "validator", validatorAddr)
 	}
 
 	// Check sentry nodes
@@ -108,16 +109,18 @@ func (k Keeper) MonitorValidator(ctx context.Context, validatorAddr string) erro
 			if node.IsActive {
 				// Check sentry node heartbeat
 				if node.LastHeartbeat != nil {
-					timeSinceHeartbeat := sdkCtx.BlockTime().Sub(node.LastHeartbeat.AsTime())
-					monitoringThreshold := params.MonitoringInterval.AsDuration() * 2
+					// LastHeartbeat is *time.Time with stdtime=true, MonitoringInterval is time.Duration
+					timeSinceHeartbeat := sdkCtx.BlockTime().Sub(*node.LastHeartbeat)
+					monitoringThreshold := params.MonitoringInterval * 2
 					if timeSinceHeartbeat > monitoringThreshold {
+						alertTime := sdkCtx.BlockTime()
 						k.CreateAlert(ctx, types.ValidatorAlert{
 							Id:               fmt.Sprintf("sentry-offline-%s-%s", validatorAddr, node.Address),
 							ValidatorAddress: validatorAddr,
 							AlertType:        types.ValidatorAlert_SENTRY_NODE_OFFLINE,
 							Severity:         types.ValidatorAlert_CRITICAL,
 							Message:          fmt.Sprintf("Sentry node %s offline for %s", node.Address, timeSinceHeartbeat),
-							Timestamp:        timestamppb.New(sdkCtx.BlockTime()),
+							Timestamp:        &alertTime, // Timestamp is *time.Time with stdtime=true
 							Acknowledged:     false,
 						})
 					} else {
@@ -128,13 +131,14 @@ func (k Keeper) MonitorValidator(ctx context.Context, validatorAddr string) erro
 		}
 
 		if int32(activeCount) < params.MinSentryNodes {
+			alertTime := sdkCtx.BlockTime()
 			k.CreateAlert(ctx, types.ValidatorAlert{
 				Id:               fmt.Sprintf("sentry-insufficient-%s-%d", validatorAddr, sdkCtx.BlockHeight()),
 				ValidatorAddress: validatorAddr,
 				AlertType:        types.ValidatorAlert_SENTRY_NODE_OFFLINE,
 				Severity:         types.ValidatorAlert_CRITICAL,
 				Message:          fmt.Sprintf("Only %d active sentry nodes, minimum required: %d", activeCount, params.MinSentryNodes),
-				Timestamp:        timestamppb.New(sdkCtx.BlockTime()),
+				Timestamp:        &alertTime, // Timestamp is *time.Time with stdtime=true
 				Acknowledged:     false,
 			})
 		}
@@ -144,13 +148,14 @@ func (k Keeper) MonitorValidator(ctx context.Context, validatorAddr string) erro
 	if params.EnableGeoDistribution && info.Region != "" {
 		regionCount := k.getRegionValidatorCount(ctx, info.Region)
 		if regionCount > int64(params.MaxValidatorsPerRegion) {
+			alertTime := sdkCtx.BlockTime()
 			k.CreateAlert(ctx, types.ValidatorAlert{
 				Id:               fmt.Sprintf("geo-violation-%s-%d", validatorAddr, sdkCtx.BlockHeight()),
 				ValidatorAddress: validatorAddr,
 				AlertType:        types.ValidatorAlert_GEOGRAPHIC_VIOLATION,
 				Severity:         types.ValidatorAlert_WARNING,
 				Message:          fmt.Sprintf("Region %s has %d validators, exceeding limit of %d", info.Region, regionCount, params.MaxValidatorsPerRegion),
-				Timestamp:        timestamppb.New(sdkCtx.BlockTime()),
+				Timestamp:        &alertTime, // Timestamp is *time.Time with stdtime=true
 				Acknowledged:     false,
 			})
 		}
@@ -158,13 +163,14 @@ func (k Keeper) MonitorValidator(ctx context.Context, validatorAddr string) erro
 
 	// Check if failover is active
 	if info.FailoverActive {
+		alertTime := sdkCtx.BlockTime()
 		k.CreateAlert(ctx, types.ValidatorAlert{
 			Id:               fmt.Sprintf("failover-active-%s-%d", validatorAddr, sdkCtx.BlockHeight()),
 			ValidatorAddress: validatorAddr,
 			AlertType:        types.ValidatorAlert_FAILOVER_TRIGGERED,
 			Severity:         types.ValidatorAlert_INFO,
 			Message:          fmt.Sprintf("Failover active, using backup: %s", info.ActiveBackup),
-			Timestamp:        timestamppb.New(sdkCtx.BlockTime()),
+			Timestamp:        &alertTime, // Timestamp is *time.Time with stdtime=true
 			Acknowledged:     false,
 		})
 	}
@@ -174,11 +180,12 @@ func (k Keeper) MonitorValidator(ctx context.Context, validatorAddr string) erro
 
 // MonitorAllValidators runs monitoring for all validators
 func (k Keeper) MonitorAllValidators(ctx context.Context) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	validators := k.GetAllValidators(ctx)
 
 	for _, info := range validators {
 		if err := k.MonitorValidator(ctx, info.ValidatorAddress); err != nil {
-			k.Logger(ctx).Error("error monitoring validator",
+			k.Logger(sdkCtx).Error("error monitoring validator",
 				"validator", info.ValidatorAddress,
 				"error", err,
 			)
@@ -188,6 +195,7 @@ func (k Keeper) MonitorAllValidators(ctx context.Context) {
 
 // CreateAlert creates a new validator alert
 func (k Keeper) CreateAlert(ctx context.Context, alert types.ValidatorAlert) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	store := k.getStore(ctx)
 
 	// Generate ID if not provided
@@ -201,7 +209,7 @@ func (k Keeper) CreateAlert(ctx context.Context, alert types.ValidatorAlert) {
 	bz := k.cdc.MustMarshal(&alert)
 	store.Set(key, bz)
 
-	k.Logger(ctx).Info("alert created",
+	k.Logger(sdkCtx).Info("alert created",
 		"id", alert.Id,
 		"validator", alert.ValidatorAddress,
 		"type", alert.AlertType,
@@ -211,6 +219,7 @@ func (k Keeper) CreateAlert(ctx context.Context, alert types.ValidatorAlert) {
 
 // GetValidatorAlerts returns all alerts for a validator
 func (k Keeper) GetValidatorAlerts(ctx context.Context, validatorAddr string) []types.ValidatorAlert {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	store := k.getStore(ctx)
 	iterator := storetypes.KVStorePrefixIterator(store, types.ValidatorAlertKey)
 	defer iterator.Close()
@@ -219,11 +228,8 @@ func (k Keeper) GetValidatorAlerts(ctx context.Context, validatorAddr string) []
 	for ; iterator.Valid(); iterator.Next() {
 		var alert types.ValidatorAlert
 		if err := k.cdc.Unmarshal(iterator.Value(), &alert); err != nil {
-
-			k.logger.Error("failed to unmarshal", "error", err)
-
+			k.Logger(sdkCtx).Error("failed to unmarshal alert", "error", err)
 			continue
-
 		}
 		if alert.ValidatorAddress == validatorAddr {
 			alerts = append(alerts, alert)
@@ -235,6 +241,7 @@ func (k Keeper) GetValidatorAlerts(ctx context.Context, validatorAddr string) []
 
 // GetAllAlerts returns all alerts
 func (k Keeper) GetAllAlerts(ctx context.Context) []types.ValidatorAlert {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	store := k.getStore(ctx)
 	iterator := storetypes.KVStorePrefixIterator(store, types.ValidatorAlertKey)
 	defer iterator.Close()
@@ -243,11 +250,8 @@ func (k Keeper) GetAllAlerts(ctx context.Context) []types.ValidatorAlert {
 	for ; iterator.Valid(); iterator.Next() {
 		var alert types.ValidatorAlert
 		if err := k.cdc.Unmarshal(iterator.Value(), &alert); err != nil {
-
-			k.logger.Error("failed to unmarshal", "error", err)
-
+			k.Logger(sdkCtx).Error("failed to unmarshal alert", "error", err)
 			continue
-
 		}
 		alerts = append(alerts, alert)
 	}
@@ -268,16 +272,13 @@ func (k Keeper) AcknowledgeAlert(ctx context.Context, alertID, acknowledgerAddr 
 
 	var alert types.ValidatorAlert
 	if err := k.cdc.Unmarshal(bz, &alert); err != nil {
-
-		k.logger.Error("failed to unmarshal", "error", err)
-
-		continue
-
+		k.Logger(sdkCtx).Error("failed to unmarshal alert", "error", err)
+		return err
 	}
 
 	now := sdkCtx.BlockTime()
 	alert.Acknowledged = true
-	alert.AcknowledgedAt = timestamppb.New(now)
+	alert.AcknowledgedAt = &now // AcknowledgedAt is *time.Time with stdtime=true
 	alert.AcknowledgedBy = acknowledgerAddr
 
 	bz = k.cdc.MustMarshal(&alert)

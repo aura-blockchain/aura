@@ -11,7 +11,6 @@ import (
 	storetypes "cosmossdk.io/store/types"
 	"github.com/aequitas/aura/chain/x/dex/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // ============================
@@ -65,8 +64,8 @@ func (k Keeper) CommitOrder(
 		CommitId:       commitID,
 		Sender:         sender,
 		CommitHash:     commitHash,
-		CommittedAt:    timestamppb.New(ctx.BlockTime()),
-		RevealDeadline: timestamppb.New(revealDeadline),
+		CommittedAt:    ctx.BlockTime(), // time.Time directly (gogoproto.stdtime)
+		RevealDeadline: revealDeadline,  // time.Time directly (gogoproto.stdtime)
 		CommitHeight:   ctx.BlockHeight(),
 	}
 
@@ -117,7 +116,7 @@ func (k Keeper) RevealOrder(
 	}
 
 	// Verify reveal deadline
-	if ctx.BlockTime().After(commitment.RevealDeadline.AsTime()) {
+	if ctx.BlockTime().After(commitment.RevealDeadline) {
 		// Cleanup expired commitment
 		k.DeleteOrderCommitment(ctx, commitID)
 		return "", types.ErrRevealDeadlineExpired
@@ -159,14 +158,14 @@ func (k Keeper) RevealOrder(
 	order := &types.SwapOrder{
 		OrderId:      orderID,
 		OrderType:    orderType,
-		AuraAmount:   auraAmount.String(),
+		AuraAmount:   auraAmount,   // math.Int directly (customtype)
 		OtherCoin:    otherCoin,
-		OtherAmount:  otherAmount.String(),
+		OtherAmount:  otherAmount,  // math.Int directly (customtype)
 		UserAddress:  sender,
 		Status:       types.SwapOrderStatus_PENDING,
-		Timestamp:    timestamppb.New(ctx.BlockTime()),
-		ExpiresAt:    timestamppb.New(expirationTime),
-		PricePerAura: pricePerAura.String(),
+		Timestamp:    ctx.BlockTime(),    // time.Time directly (gogoproto.stdtime)
+		ExpiresAt:    expirationTime,     // time.Time directly (gogoproto.stdtime)
+		PricePerAura: pricePerAura,       // math.LegacyDec directly (customtype)
 	}
 
 	// Delete commitment (prevent reuse)
@@ -253,14 +252,8 @@ func (k Keeper) RevealOrder(
 func (k Keeper) RequiresCommitReveal(ctx sdk.Context, amount sdkmath.Int) bool {
 	params := k.GetParams(ctx)
 
-	// Parse threshold from string (proto customtype not yet applied)
-	threshold, ok := sdkmath.NewIntFromString(params.CommitRevealThreshold)
-	if !ok {
-		// If parsing fails, disable commit-reveal (threshold = max)
-		return false
-	}
-
-	return amount.GTE(threshold)
+	// CommitRevealThreshold is already math.Int (customtype in proto)
+	return amount.GTE(params.CommitRevealThreshold)
 }
 
 // ExecuteBatch executes all queued orders in a batch
@@ -281,7 +274,7 @@ func (k Keeper) ExecuteBatch(ctx sdk.Context) error {
 	// Buy orders: highest price first (willing to pay more)
 	// Sell orders: lowest price first (willing to accept less)
 	sort.Slice(queuedOrders, func(i, j int) bool {
-		return k.compareOrderPriority(queuedOrders[i].Order, queuedOrders[j].Order)
+		return k.compareOrderPriority(&queuedOrders[i].Order, &queuedOrders[j].Order)
 	})
 
 	// Execute each order
@@ -289,21 +282,15 @@ func (k Keeper) ExecuteBatch(ctx sdk.Context) error {
 	for _, queuedOrder := range queuedOrders {
 		order := queuedOrder.Order
 
-		// Parse amounts
-		auraAmount, ok := sdkmath.NewIntFromString(order.AuraAmount)
-		if !ok {
-			continue
-		}
-		otherAmount, ok := sdkmath.NewIntFromString(order.OtherAmount)
-		if !ok {
-			continue
-		}
+		// AuraAmount and OtherAmount are already math.Int (customtype in proto)
+		auraAmount := order.AuraAmount
+		otherAmount := order.OtherAmount
 
 		// Store order
-		k.SetOrder(ctx, order)
+		k.SetOrder(ctx, &order)
 
 		// Add to orderbook
-		k.AddToOrderbook(ctx, order)
+		k.AddToOrderbook(ctx, &order)
 
 		// Lock funds
 		var lockErr error
@@ -427,9 +414,9 @@ func (k Keeper) QueueOrderForBatch(ctx sdk.Context, order *types.SwapOrder, salt
 	store := ctx.KVStore(k.storeKey)
 
 	queuedOrder := &types.QueuedOrder{
-		Order:    order,
+		Order:    *order,
 		Salt:     salt,
-		QueuedAt: timestamppb.New(ctx.BlockTime()),
+		QueuedAt: ctx.BlockTime(), // time.Time directly (gogoproto.stdtime)
 	}
 
 	key := types.QueuedOrderKey(order.OrderId)
@@ -480,7 +467,7 @@ func (k Keeper) CleanupExpiredCommitments(ctx sdk.Context) {
 	commitments := k.GetAllOrderCommitments(ctx)
 
 	for _, commitment := range commitments {
-		if ctx.BlockTime().After(commitment.RevealDeadline.AsTime()) {
+		if ctx.BlockTime().After(commitment.RevealDeadline) {
 			k.DeleteOrderCommitment(ctx, commitment.CommitId)
 
 			// Emit event
@@ -536,8 +523,9 @@ func (k Keeper) ComputeOrderHash(
 // compareOrderPriority compares two orders for batch execution priority
 // Returns true if order i should be executed before order j
 func (k Keeper) compareOrderPriority(orderI, orderJ *types.SwapOrder) bool {
-	priceI, _ := sdkmath.LegacyNewDecFromStr(orderI.PricePerAura)
-	priceJ, _ := sdkmath.LegacyNewDecFromStr(orderJ.PricePerAura)
+	// PricePerAura is already a LegacyDec (customtype in proto)
+	priceI := orderI.PricePerAura
+	priceJ := orderJ.PricePerAura
 
 	// Same order type: sort by price
 	if orderI.OrderType == orderJ.OrderType {

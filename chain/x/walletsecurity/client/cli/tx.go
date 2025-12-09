@@ -8,11 +8,11 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
+	"github.com/cosmos/gogoproto/types"
 
 	"github.com/aequitas/aura/proto/aura/walletsecurity/v1beta1"
 )
@@ -160,13 +160,16 @@ Flags:
 
 			weightThreshold, _ := cmd.Flags().GetInt32("weight-threshold")
 			timeLockStr, _ := cmd.Flags().GetString("time-lock")
-			var timeLock *durationpb.Duration
+			var timeLock *types.Duration
 			if timeLockStr != "" {
 				d, err := time.ParseDuration(timeLockStr)
 				if err != nil {
 					return fmt.Errorf("invalid time-lock: %w", err)
 				}
-				timeLock = durationpb.New(d)
+				timeLock = &types.Duration{
+					Seconds: int64(d.Seconds()),
+					Nanos:   int32(d.Nanoseconds() % 1e9),
+				}
 			}
 
 			msg := &v1beta1.MsgCreateMultiSigWallet{
@@ -271,7 +274,10 @@ The delay specifies how long to wait before recovery can be executed after thres
 				WalletId:          walletID,
 				Guardians:         guardians,
 				RecoveryThreshold: int32(threshold),
-				RecoveryDelay:     durationpb.New(delay),
+				RecoveryDelay: &types.Duration{
+					Seconds: int64(delay.Seconds()),
+					Nanos:   int32(delay.Nanoseconds() % 1e9),
+				},
 			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
@@ -511,10 +517,13 @@ Examples:
 			}
 
 			msg := &v1beta1.MsgConfigureSession{
-				WalletId:                    args[0],
-				TimeoutDuration:             durationpb.New(timeout),
-				AutoLockEnabled:             autoLock,
-				InactivityThresholdSeconds:  int32(inactivityThreshold),
+				WalletId: args[0],
+				TimeoutDuration: &types.Duration{
+					Seconds: int64(timeout.Seconds()),
+					Nanos:   int32(timeout.Nanoseconds() % 1e9),
+				},
+				AutoLockEnabled:            autoLock,
+				InactivityThresholdSeconds: int32(inactivityThreshold),
 			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)

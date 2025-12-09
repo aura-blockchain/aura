@@ -281,7 +281,7 @@ func (suite *KeeperTestSuite) TestConfigureSocialRecovery() {
 		{Address: "cosmos1guardian3", Name: "Guardian 3"},
 	}
 	threshold := int32(2)
-	delay := durationpb.New(48 * time.Hour)
+	delay := &gogotypes.Duration{Seconds: int64(48 * time.Hour.Seconds()), Nanos: int32(48 * time.Hour.Nanoseconds() % 1e9)}
 
 	config, err := suite.keeper.ConfigureSocialRecovery(
 		suite.ctx,
@@ -330,7 +330,7 @@ func (suite *KeeperTestSuite) TestInitiateRecovery() {
 		walletID,
 		guardians,
 		2,
-		durationpb.New(48*time.Hour),
+		&gogotypes.Duration{Seconds: int64(48*time.Hour.Seconds()), Nanos: int32(48*time.Hour.Nanoseconds() % 1e9)},
 	)
 	suite.Require().NoError(err)
 
@@ -369,7 +369,7 @@ func (suite *KeeperTestSuite) TestApproveRecovery_Success() {
 		walletID,
 		guardians,
 		2,
-		durationpb.New(48*time.Hour),
+		&gogotypes.Duration{Seconds: int64(48*time.Hour.Seconds()), Nanos: int32(48*time.Hour.Nanoseconds() % 1e9)},
 	)
 	suite.Require().NoError(err)
 
@@ -422,7 +422,7 @@ func (suite *KeeperTestSuite) TestApproveRecovery_UnauthorizedGuardian() {
 		walletID,
 		guardians,
 		2,
-		durationpb.New(48*time.Hour),
+		&gogotypes.Duration{Seconds: int64(48*time.Hour.Seconds()), Nanos: int32(48*time.Hour.Nanoseconds() % 1e9)},
 	)
 	suite.Require().NoError(err)
 
@@ -471,7 +471,7 @@ func (suite *KeeperTestSuite) TestApproveRecovery_DuplicateApproval() {
 		walletID,
 		guardians,
 		2,
-		durationpb.New(48*time.Hour),
+		&gogotypes.Duration{Seconds: int64(48*time.Hour.Seconds()), Nanos: int32(48*time.Hour.Nanoseconds() % 1e9)},
 	)
 	suite.Require().NoError(err)
 
@@ -519,7 +519,7 @@ func (suite *KeeperTestSuite) TestApproveRecovery_UnconfirmedGuardian() {
 		walletID,
 		guardians,
 		2,
-		durationpb.New(48*time.Hour),
+		&gogotypes.Duration{Seconds: int64(48*time.Hour.Seconds()), Nanos: int32(48*time.Hour.Nanoseconds() % 1e9)},
 	)
 	suite.Require().NoError(err)
 
@@ -636,7 +636,7 @@ func (suite *KeeperTestSuite) TestCheckSpendingLimit_WithinLimit() {
 
 func (suite *KeeperTestSuite) TestConfigureSession() {
 	walletID := "wallet123"
-	timeout := durationpb.New(30 * time.Minute)
+	timeout := &gogotypes.Duration{Seconds: int64(30 * time.Minute.Seconds()), Nanos: int32(30 * time.Minute.Nanoseconds() % 1e9)}
 
 	config, err := suite.keeper.ConfigureSession(
 		suite.ctx,
@@ -655,7 +655,7 @@ func (suite *KeeperTestSuite) TestConfigureSession() {
 
 func (suite *KeeperTestSuite) TestLockAndUnlockSession() {
 	walletID := "wallet123"
-	timeout := durationpb.New(30 * time.Minute)
+	timeout := &gogotypes.Duration{Seconds: int64(30 * time.Minute.Seconds()), Nanos: int32(30 * time.Minute.Nanoseconds() % 1e9)}
 
 	config, err := suite.keeper.ConfigureSession(
 		suite.ctx,

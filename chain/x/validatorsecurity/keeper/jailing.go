@@ -7,7 +7,6 @@ import (
 
 	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/validatorsecurity/types"
 )
@@ -58,10 +57,10 @@ func (k Keeper) JailValidator(ctx context.Context, validatorAddr string, duratio
 
 	// Update validator info
 	info.IsJailed = true
-	info.JailedUntil = timestamppb.New(jailUntil)
+	info.JailedUntil = &jailUntil // JailedUntil is *time.Time with stdtime=true
 	k.SetValidatorSecurityInfo(ctx, info)
 
-	k.Logger(ctx).Info("validator jailed",
+	k.Logger(sdkCtx).Info("validator jailed",
 		"validator", validatorAddr,
 		"duration", duration,
 		"jailed_until", jailUntil,
@@ -91,8 +90,9 @@ func (k Keeper) UnjailValidator(ctx context.Context, validatorAddr string) error
 	}
 
 	// Check if jail period has passed
-	if info.JailedUntil != nil && sdkCtx.BlockTime().Before(info.JailedUntil.AsTime()) {
-		return fmt.Errorf("cannot unjail before %s", info.JailedUntil.AsTime())
+	// JailedUntil is *time.Time with stdtime=true
+	if info.JailedUntil != nil && sdkCtx.BlockTime().Before(*info.JailedUntil) {
+		return fmt.Errorf("cannot unjail before %s", *info.JailedUntil)
 	}
 
 	// Verify minimum stake requirement
@@ -136,7 +136,7 @@ func (k Keeper) UnjailValidator(ctx context.Context, validatorAddr string) error
 	info.MissedBlocksCounter = 0
 	k.SetValidatorSecurityInfo(ctx, info)
 
-	k.Logger(ctx).Info("validator unjailed", "validator", validatorAddr)
+	k.Logger(sdkCtx).Info("validator unjailed", "validator", validatorAddr)
 
 	return nil
 }
@@ -187,7 +187,7 @@ func (k Keeper) TombstoneValidator(ctx context.Context, validatorAddr string) er
 	// Update validator info
 	tombstonedAt := sdkCtx.BlockTime()
 	info.IsTombstoned = true
-	info.TombstonedAt = timestamppb.New(tombstonedAt)
+	info.TombstonedAt = &tombstonedAt // TombstonedAt is *time.Time with stdtime=true
 	info.IsJailed = true
 	k.SetValidatorSecurityInfo(ctx, info)
 
@@ -197,7 +197,7 @@ func (k Keeper) TombstoneValidator(ctx context.Context, validatorAddr string) er
 		k.decrementRegionCount(ctx, info.Region)
 	}
 
-	k.Logger(ctx).Error("validator tombstoned (permanent ban)",
+	k.Logger(sdkCtx).Error("validator tombstoned (permanent ban)",
 		"validator", validatorAddr,
 		"tombstoned_at", tombstonedAt,
 	)

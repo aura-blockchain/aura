@@ -19,14 +19,12 @@ func (k Keeper) InitGenesis(ctx context.Context, data *pb.GenesisState) error {
 
 	store := k.getStore(ctx)
 
-	// Set params
-	if data.Params != nil {
-		paramsBytes, err := k.cdc.Marshal(data.Params)
-		if err != nil {
-			return fmt.Errorf("failed to marshal params: %w", err)
-		}
-		store.Set(types.ParamsKey, paramsBytes)
+	// Set params (Params field is non-nullable in proto)
+	paramsBytes, err := k.cdc.Marshal(&data.Params)
+	if err != nil {
+		return fmt.Errorf("failed to marshal params: %w", err)
 	}
+	store.Set(types.ParamsKey, paramsBytes)
 
 	// Import hardware wallet configs
 	for _, hw := range data.HardwareWallets {
@@ -234,7 +232,7 @@ func (k Keeper) ExportGenesis(ctx context.Context) *pb.GenesisState {
 	}
 
 	genesis := &pb.GenesisState{
-		Params:              &params,
+		Params:              params,
 		HardwareWallets:     []*pb.HardwareWalletConfig{},
 		MultisigWallets:     []*pb.MultiSigWallet{},
 		PendingTransactions: []*pb.PendingMultiSigTransaction{},

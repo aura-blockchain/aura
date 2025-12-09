@@ -8,7 +8,6 @@ import (
 	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/identity/types"
 )
@@ -113,11 +112,11 @@ func (k *Keeper) initializeDefaultRoles(ctx sdk.Context) error {
 			types.PermissionVerifyIdentity,
 			types.PermissionApproveChangeRequest,
 		},
-		Description: "Full administrative access",
-		CreatedAt: timestamppb.New(now),
-		CreatedBy:   "",
+		Description:  "Full administrative access",
+		CreatedAt:    now,
+		CreatedBy:    "",
 		IsSystemRole: true,
-		UpdatedAt: timestamppb.New(now),
+		UpdatedAt:    &now,
 	}
 	if err := k.SetRole(ctx, adminRole); err != nil {
 		return err
@@ -133,11 +132,11 @@ func (k *Keeper) initializeDefaultRoles(ctx sdk.Context) error {
 			types.PermissionViewAuditLogs,
 			types.PermissionVerifyIdentity,
 		},
-		Description: "Moderate user permissions and verify identities",
-		CreatedAt: timestamppb.New(now),
-		CreatedBy:   "",
+		Description:  "Moderate user permissions and verify identities",
+		CreatedAt:    now,
+		CreatedBy:    "",
 		IsSystemRole: true,
-		UpdatedAt: timestamppb.New(now),
+		UpdatedAt:    &now,
 	}
 	if err := k.SetRole(ctx, moderatorRole); err != nil {
 		return err
@@ -149,11 +148,11 @@ func (k *Keeper) initializeDefaultRoles(ctx sdk.Context) error {
 		Permissions: []string{
 			types.PermissionRotateValidatorKey,
 		},
-		Description: "Validator-specific permissions",
-		CreatedAt: timestamppb.New(now),
-		CreatedBy:   "",
+		Description:  "Validator-specific permissions",
+		CreatedAt:    now,
+		CreatedBy:    "",
 		IsSystemRole: true,
-		UpdatedAt: timestamppb.New(now),
+		UpdatedAt:    &now,
 	}
 	if err := k.SetRole(ctx, validatorRole); err != nil {
 		return err
@@ -161,13 +160,13 @@ func (k *Keeper) initializeDefaultRoles(ctx sdk.Context) error {
 
 	// User role (basic)
 	userRole := &types.Role{
-		Name:        types.RoleUser,
-		Permissions: []string{},
-		Description: "Basic user permissions",
-		CreatedAt: timestamppb.New(now),
-		CreatedBy:   "",
+		Name:         types.RoleUser,
+		Permissions:  []string{},
+		Description:  "Basic user permissions",
+		CreatedAt:    now,
+		CreatedBy:    "",
 		IsSystemRole: true,
-		UpdatedAt: timestamppb.New(now),
+		UpdatedAt:    &now,
 	}
 	return k.SetRole(ctx, userRole)
 }

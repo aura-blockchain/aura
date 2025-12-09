@@ -72,17 +72,18 @@ func (k *Keeper) BeginBlocker(ctx sdk.Context) {
 	// This only happens every 50 blocks, so the O(n) cost is amortized
 	k.IterateKYCRecords(ctx, func(record types.KYCRecord) bool {
 		// Check if record has expired
-		if currentTime.After(record.ExpiresAt.AsTime()) {
+		// ExpiresAt is *time.Time (nullable), need to check for nil and dereference
+		if record.ExpiresAt != nil && currentTime.After(*record.ExpiresAt) {
 			// Emit event for expired KYC record
 			ctx.EventManager().EmitEvent(
 				sdk.NewEvent(
 					types.EventTypeKYCExpired,
 					sdk.NewAttribute(types.AttributeKeyAddress, record.Address),
-					sdk.NewAttribute("expired_at", record.ExpiresAt.AsTime().Format("2006-01-02 15:04:05 MST")),
+					sdk.NewAttribute("expired_at", record.ExpiresAt.Format("2006-01-02 15:04:05 MST")),
 					sdk.NewAttribute("kyc_level", record.KycLevel.String()),
 					sdk.NewAttribute("provider", record.Provider),
 					sdk.NewAttribute("jurisdiction", record.Jurisdiction),
-					sdk.NewAttribute("verified_at", record.VerifiedAt.AsTime().Format("2006-01-02 15:04:05 MST")),
+					sdk.NewAttribute("verified_at", record.VerifiedAt.Format("2006-01-02 15:04:05 MST")),
 					sdk.NewAttribute(types.AttributeKeyBlockHeight, fmt.Sprintf("%d", ctx.BlockHeight())),
 					sdk.NewAttribute(types.AttributeKeyBlockTime, currentTime.Format("2006-01-02 15:04:05 MST")),
 					sdk.NewAttribute(types.AttributeKeyTimestamp, fmt.Sprintf("%d", currentTime.Unix())),
@@ -95,7 +96,7 @@ func (k *Keeper) BeginBlocker(ctx sdk.Context) {
 			k.logger(ctx).Info(
 				"KYC record expired",
 				"address", record.Address,
-				"expired_at", record.ExpiresAt.AsTime().Format("2006-01-02 15:04:05"),
+				"expired_at", record.ExpiresAt.Format("2006-01-02 15:04:05"),
 				"kyc_level", record.KycLevel.String(),
 				"provider", record.Provider,
 			)

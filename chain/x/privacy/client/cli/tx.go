@@ -144,7 +144,7 @@ breaking the transaction graph and enhancing privacy.
 				Creator:          clientCtx.GetFromAddress().String(),
 				MinParticipants:  uint32(minParticipants),
 				MaxParticipants:  uint32(maxParticipants),
-				Denomination:     denomination.String(),
+				Denomination:     denomination,
 				MixingRounds:     uint32(mixingRounds),
 				DeadlineDuration: deadlineDuration,
 			}

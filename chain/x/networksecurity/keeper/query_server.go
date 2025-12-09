@@ -3,9 +3,7 @@ package keeper
 import (
 	"context"
 
-	"cosmossdk.io/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/query"
 
 	"github.com/aequitas/aura/chain/x/networksecurity/types"
 )

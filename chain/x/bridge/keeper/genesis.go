@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/aequitas/aura/chain/x/bridge/types"
@@ -42,10 +43,8 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data types.GenesisState) error {
 	var maxTransferCounter uint64 = 0
 	legacyIDsFound := false
 
-	for _, transfer := range data.Transfers {
-		if transfer == nil {
-			continue
-		}
+	for i := range data.Transfers {
+		transfer := &data.Transfers[i]
 
 		// CRITICAL SECURITY: Detect duplicate transfer IDs during import
 		// Duplicate IDs would cause silent overwrites of existing transfers
@@ -90,30 +89,27 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data types.GenesisState) error {
 	}
 
 	for _, cfg := range data.ChainConfigs {
-		if cfg == nil {
-			continue
-		}
-		k.setChainConfig(ctx, *cfg)
+		k.setChainConfig(ctx, cfg)
 	}
 
-	for _, validator := range data.Validators {
-		k.setValidator(ctx, validator)
+	for i := range data.Validators {
+		k.setValidator(ctx, &data.Validators[i])
 	}
 
-	for _, token := range data.WrappedTokens {
-		k.setWrappedToken(ctx, token)
+	for i := range data.WrappedTokens {
+		k.setWrappedToken(ctx, &data.WrappedTokens[i])
 	}
 
-	for _, identity := range data.SharedIdentities {
-		k.setSharedIdentity(ctx, identity)
+	for i := range data.SharedIdentities {
+		k.setSharedIdentity(ctx, &data.SharedIdentities[i])
 	}
 
-	for _, swap := range data.CrossChainSwaps {
-		k.setSwap(ctx, swap)
+	for i := range data.CrossChainSwaps {
+		k.setSwap(ctx, &data.CrossChainSwaps[i])
 	}
 
-	for _, stats := range data.RelayerStats {
-		k.setRelayerStats(ctx, stats)
+	for i := range data.RelayerStats {
+		k.setRelayerStats(ctx, &data.RelayerStats[i])
 	}
 
 	// Import processed source hashes for replay attack prevention
@@ -130,20 +126,8 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data types.GenesisState) error {
 func (k Keeper) ExportGenesis(ctx sdk.Context) types.GenesisState {
 	params := k.GetParams(ctx)
 	wrappedTokens := k.getAllWrappedTokens(ctx)
-	wrappedPtrs := make([]*types.WrappedToken, 0, len(wrappedTokens))
-	for i := range wrappedTokens {
-		token := wrappedTokens[i]
-		tokenCopy := token
-		wrappedPtrs = append(wrappedPtrs, &tokenCopy)
-	}
 
 	chainConfigs := k.getAllChainConfigs(ctx)
-	chainConfigPtrs := make([]*types.ChainConfig, 0, len(chainConfigs))
-	for i := range chainConfigs {
-		cfg := chainConfigs[i]
-		cfgCopy := cfg
-		chainConfigPtrs = append(chainConfigPtrs, &cfgCopy)
-	}
 
 	// Export processed source hashes for replay attack prevention
 	processedHashes := k.GetAllProcessedSourceHashes(ctx)
@@ -152,40 +136,88 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) types.GenesisState {
 		processedHashList = append(processedHashList, compositeKey)
 	}
 
+	// Get all transfers and convert to non-pointer slice
+	transfersPtrs := k.getAllTransfers(ctx)
+	transfers := make([]types.CrossChainTransfer, 0, len(transfersPtrs))
+	for _, t := range transfersPtrs {
+		if t != nil {
+			transfers = append(transfers, *t)
+		}
+	}
+
+	// Get all validators and convert to non-pointer slice
+	validatorsPtrs := k.getAllValidators(ctx)
+	validators := make([]types.BridgeValidator, 0, len(validatorsPtrs))
+	for _, v := range validatorsPtrs {
+		if v != nil {
+			validators = append(validators, *v)
+		}
+	}
+
+	// Get all shared identities and convert to non-pointer slice
+	identitiesPtrs := k.getAllSharedIdentities(ctx)
+	identities := make([]types.SharedIdentity, 0, len(identitiesPtrs))
+	for _, id := range identitiesPtrs {
+		if id != nil {
+			identities = append(identities, *id)
+		}
+	}
+
+	// Get all swaps and convert to non-pointer slice
+	swapsPtrs := k.getAllSwaps(ctx)
+	swaps := make([]types.CrossChainSwap, 0, len(swapsPtrs))
+	for _, s := range swapsPtrs {
+		if s != nil {
+			swaps = append(swaps, *s)
+		}
+	}
+
+	// Get all relayer stats and convert to non-pointer slice
+	statsPtrs := k.getAllRelayerStats(ctx)
+	stats := make([]types.RelayerStats, 0, len(statsPtrs))
+	for _, st := range statsPtrs {
+		if st != nil {
+			stats = append(stats, *st)
+		}
+	}
+
 	return types.GenesisState{
 		Params:                 bridgeParamsToProto(params),
-		Transfers:              k.getAllTransfers(ctx),
-		ChainConfigs:           chainConfigPtrs,
-		Validators:             k.getAllValidators(ctx),
-		WrappedTokens:          wrappedPtrs,
-		SharedIdentities:       k.getAllSharedIdentities(ctx),
-		CrossChainSwaps:        k.getAllSwaps(ctx),
-		RelayerStats:           k.getAllRelayerStats(ctx),
+		Transfers:              transfers,
+		ChainConfigs:           chainConfigs,
+		Validators:             validators,
+		WrappedTokens:          wrappedTokens,
+		SharedIdentities:       identities,
+		CrossChainSwaps:        swaps,
+		RelayerStats:           stats,
 		ProcessedSourceHashes:  processedHashList,
 	}
 }
 
-func bridgeParamsFromProto(params *types.BridgeParams) types.Params {
-	if params == nil {
-		return types.DefaultParams()
-	}
+func bridgeParamsFromProto(params types.BridgeParams) types.Params {
 	// Start with defaults to ensure all required fields are populated
 	result := types.DefaultParams()
 	// Override with genesis values
 	result.BridgeEnabled = params.Enabled
 	result.MinConfirmations = params.MinConfirmations
 	result.BridgeFeeBasisPoints = params.BridgeFeeBasisPoints
-	result.MaxTransferAmount = params.MaxTransferAmount
+	result.MaxTransferAmount = params.MaxTransferAmount.String()
 	result.ValidatorThresholdPercentage = params.ValidatorThresholdPercentage
 	return result
 }
 
-func bridgeParamsToProto(params types.Params) *types.BridgeParams {
-	return &types.BridgeParams{
+func bridgeParamsToProto(params types.Params) types.BridgeParams {
+	// Parse MaxTransferAmount from string to math.Int
+	maxTransferAmt, ok := sdkmath.NewIntFromString(params.MaxTransferAmount)
+	if !ok {
+		// Default fallback if parsing fails
+		maxTransferAmt = sdkmath.NewInt(1000000000)
+	}
+	return types.BridgeParams{
 		Enabled:                      params.BridgeEnabled,
 		MinConfirmations:             params.MinConfirmations,
 		BridgeFeeBasisPoints:         params.BridgeFeeBasisPoints,
-		MaxTransferAmount:            params.MaxTransferAmount,
+		MaxTransferAmount:            maxTransferAmt,
 		ValidatorThresholdPercentage: params.ValidatorThresholdPercentage,
 	}
 }

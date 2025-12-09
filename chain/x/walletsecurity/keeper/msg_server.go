@@ -10,7 +10,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/walletsecurity/types"
 	wspb "github.com/aequitas/aura/proto/aura/walletsecurity/v1beta1"
@@ -64,7 +63,7 @@ func (ms msgServer) RegisterHardwareWallet(goCtx context.Context, msg *wspb.MsgR
 		DeviceId:        msg.DeviceId,
 		FirmwareVersion: msg.FirmwareVersion,
 		DerivationPath:  msg.DerivationPath,
-		RegisteredAt:    timestamppb.Now(),
+		RegisteredAt:    gogoTimestampNow(),
 		SignatureCount:  0,
 	}
 
@@ -134,7 +133,7 @@ func (ms msgServer) CreateMultiSigWallet(goCtx context.Context, msg *wspb.MsgCre
 		Signers:       msg.Signers,
 		Threshold:     msg.Threshold,
 		TotalSigners:  int32(len(msg.Signers)),
-		CreatedAt:     timestamppb.Now(),
+		CreatedAt:     gogoTimestampNow(),
 		Creator:       msg.Creator,
 		SignerWeights: msg.SignerWeights,
 		WeightThreshold: msg.WeightThreshold,
@@ -142,7 +141,7 @@ func (ms msgServer) CreateMultiSigWallet(goCtx context.Context, msg *wspb.MsgCre
 
 	if msg.TimeLock != nil {
 		wallet.TimeLocked = true
-		wallet.UnlockTime = timestamppb.New(determinism.GetBlockTime(ctx).Add(msg.TimeLock.AsDuration()))
+		wallet.UnlockTime = blockTimeWithOffsetToGogoTimestamp(ctx, gogoDurationToTime(msg.TimeLock))
 	}
 
 	walletBytes, err := ms.Keeper.cdc.Marshal(wallet)
@@ -313,7 +312,7 @@ func (ms msgServer) ConfigureSocialRecovery(goCtx context.Context, msg *wspb.Msg
 		RecoveryThreshold: msg.RecoveryThreshold,
 		RecoveryDelay:     msg.RecoveryDelay,
 		Enabled:           true,
-		ConfiguredAt:      timestamppb.Now(),
+		ConfiguredAt:      gogoTimestampNow(),
 		MaxGuardians:      int32(len(msg.Guardians)),
 	}
 
@@ -373,7 +372,7 @@ func (ms msgServer) InitiateRecovery(goCtx context.Context, msg *wspb.MsgInitiat
 	requestID := fmt.Sprintf("recovery_%s_%d", msg.WalletId, ctx.BlockHeight())
 
 	now := determinism.GetBlockTime(ctx)
-	executableAt := now.Add(config.RecoveryDelay.AsDuration())
+	executableAt := now.Add(gogoDurationToTime(config.RecoveryDelay))
 
 	request := &wspb.RecoveryRequest{
 		RequestId:      requestID,
@@ -381,8 +380,8 @@ func (ms msgServer) InitiateRecovery(goCtx context.Context, msg *wspb.MsgInitiat
 		NewAddress:     msg.NewAddress,
 		Approvals:      []string{msg.Initiator},
 		ApprovalsCount: 1,
-		InitiatedAt:    timestamppb.New(now),
-		ExecutableAt:   timestamppb.New(executableAt),
+		InitiatedAt:    timeToGogoTimestamp(now),
+		ExecutableAt:   timeToGogoTimestamp(executableAt),
 		Status:         wspb.RecoveryStatus_RECOVERY_STATUS_PENDING,
 		Initiator:      msg.Initiator,
 	}
@@ -550,12 +549,12 @@ func (ms msgServer) ExecuteRecovery(goCtx context.Context, msg *wspb.MsgExecuteR
 	}
 
 	// Check if executable time has passed
-	if determinism.GetBlockTime(ctx).Before(request.ExecutableAt.AsTime()) {
+	if determinism.GetBlockTime(ctx).Before(gogoTimestampToTime(request.ExecutableAt)) {
 		return nil, status.Error(codes.FailedPrecondition, "recovery delay not passed")
 	}
 
 	request.Status = wspb.RecoveryStatus_RECOVERY_STATUS_EXECUTED
-	request.ExecutedAt = timestamppb.Now()
+	request.ExecutedAt = gogoTimestampNow()
 
 	updatedRequestBytes, err := ms.Keeper.cdc.Marshal(&request)
 	if err != nil {
@@ -757,7 +756,7 @@ func (ms msgServer) UnlockSession(goCtx context.Context, msg *wspb.MsgUnlockSess
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	expiresAt := timestamppb.New(determinism.GetBlockTime(ctx).Add(1 * time.Hour))
+	expiresAt := blockTimeWithOffsetToGogoTimestamp(ctx, 1 * time.Hour)
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
@@ -821,7 +820,7 @@ func (ms msgServer) EnrollBiometric(goCtx context.Context, msg *wspb.MsgEnrollBi
 		WalletId:       msg.WalletId,
 		Type:           msg.Type,
 		EnrollmentHash: enrollmentHashStr, // Store hash, not raw data
-		EnrolledAt:     timestamppb.Now(),
+		EnrolledAt:     gogoTimestampNow(),
 		Enabled:        true,
 		FailedAttempts: 0,
 		LockedOut:      false,
@@ -931,7 +930,7 @@ func (ms msgServer) AuthenticateBiometric(goCtx context.Context, msg *wspb.MsgAu
 	// CRITICAL: Check if currently locked out
 	if biometricAuth.LockedOut {
 		now := determinism.GetBlockTime(ctx)
-		if biometricAuth.LockoutUntil != nil && now.Before(biometricAuth.LockoutUntil.AsTime()) {
+		if biometricAuth.LockoutUntil != nil && now.Before(gogoTimestampToTime(biometricAuth.LockoutUntil)) {
 			return &wspb.MsgAuthenticateBiometricResponse{
 				Authenticated:  false,
 				FailedAttempts: biometricAuth.FailedAttempts,
@@ -963,7 +962,7 @@ func (ms msgServer) AuthenticateBiometric(goCtx context.Context, msg *wspb.MsgAu
 
 		// Reset failed attempts on successful authentication
 		biometricAuth.FailedAttempts = 0
-		biometricAuth.LastAttempt = timestamppb.New(determinism.GetBlockTime(ctx))
+		biometricAuth.LastAttempt = blockTimeToGogoTimestamp(ctx)
 
 		// Update biometric auth record
 		updatedAuthBytes, err := ms.Keeper.cdc.Marshal(&biometricAuth)
@@ -992,7 +991,7 @@ func (ms msgServer) AuthenticateBiometric(goCtx context.Context, msg *wspb.MsgAu
 
 	// Authentication failed - increment failed attempts
 	biometricAuth.FailedAttempts++
-	biometricAuth.LastAttempt = timestamppb.New(determinism.GetBlockTime(ctx))
+	biometricAuth.LastAttempt = blockTimeToGogoTimestamp(ctx)
 
 	// CRITICAL: Lock out after max failed attempts (e.g., 5)
 	const MaxFailedAttempts = 5
@@ -1000,7 +999,7 @@ func (ms msgServer) AuthenticateBiometric(goCtx context.Context, msg *wspb.MsgAu
 
 	if biometricAuth.FailedAttempts >= MaxFailedAttempts {
 		biometricAuth.LockedOut = true
-		biometricAuth.LockoutUntil = timestamppb.New(determinism.GetBlockTime(ctx).Add(LockoutDuration))
+		biometricAuth.LockoutUntil = blockTimeWithOffsetToGogoTimestamp(ctx, LockoutDuration)
 	}
 
 	// Update biometric auth record with incremented failed attempts
@@ -1041,7 +1040,7 @@ func (ms msgServer) StoreInSecureEnclave(goCtx context.Context, msg *wspb.MsgSto
 		WalletId:               msg.WalletId,
 		EnclaveType:            msg.EnclaveType,
 		AttestationCertificate: msg.AttestationCertificate,
-		CreatedAt:              timestamppb.Now(),
+		CreatedAt:              gogoTimestampNow(),
 	}
 
 	configBytes, err := ms.Keeper.cdc.Marshal(config)
@@ -1074,7 +1073,7 @@ func (ms msgServer) CreateEncryptedBackup(goCtx context.Context, msg *wspb.MsgCr
 		Salt:                   msg.Salt,
 		Iterations:             msg.Iterations,
 		Location:               msg.Location,
-		CreatedAt:              timestamppb.Now(),
+		CreatedAt:              gogoTimestampNow(),
 	}
 
 	backupBytes, err := ms.Keeper.cdc.Marshal(backup)

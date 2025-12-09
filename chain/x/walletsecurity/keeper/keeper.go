@@ -19,8 +19,6 @@ import (
 	"github.com/aequitas/aura/chain/x/common/determinism"
 	"github.com/aequitas/aura/chain/x/walletsecurity/types"
 	wsproto "github.com/aequitas/aura/proto/aura/walletsecurity/v1beta1"
-
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // Keeper manages wallet security operations
@@ -382,7 +380,7 @@ func (k Keeper) CheckDustTransaction(ctx context.Context, walletID, txHash, from
 			ToAddress:    toAddress,
 			Amount:       amount,
 			Denom:        denom,
-			DetectedAt:   timestamppb.New(determinism.GetBlockTime(ctx)),
+			DetectedAt:   blockTimeToGogoTimestamp(ctx),
 			Blocked:      true,
 			Reason:       reason,
 			PatternScore: filter.SuspiciousPatternThreshold,
@@ -453,7 +451,7 @@ func (k Keeper) SimulateTransaction(ctx context.Context, txData []byte, sender s
 		GasUsed:      100000,
 		GasWanted:    200000,
 		ErrorMessage: "",
-		SimulatedAt:  timestamppb.New(determinism.GetBlockTime(ctx)),
+		SimulatedAt:  blockTimeToGogoTimestamp(ctx),
 	}
 
 	return simulation, nil
@@ -466,8 +464,8 @@ func (k Keeper) VerifyDomain(ctx context.Context, domain string, certificateHash
 		Verified:        true,
 		CertificateHash: certificateHash,
 		Verifier:        verifier,
-		VerifiedAt:      timestamppb.New(determinism.GetBlockTime(ctx)),
-		ExpiresAt:       timestamppb.New(determinism.GetBlockTime(ctx).Add(365 * 24 * time.Hour)),
+		VerifiedAt:      blockTimeToGogoTimestamp(ctx),
+		ExpiresAt:       blockTimeWithOffsetToGogoTimestamp(ctx, 365 * 24 * time.Hour),
 	}
 
 	// Store verification
@@ -495,9 +493,9 @@ func (k Keeper) SetSpendingLimit(ctx context.Context, walletID string, denom str
 		CurrentWeeklySpent:  "0",
 		CurrentMonthlySpent: "0",
 		Enabled:             true,
-		DailyResetAt:        timestamppb.New(determinism.GetBlockTime(ctx).Add(24 * time.Hour)),
-		WeeklyResetAt:       timestamppb.New(determinism.GetBlockTime(ctx).Add(7 * 24 * time.Hour)),
-		MonthlyResetAt:      timestamppb.New(determinism.GetBlockTime(ctx).Add(30 * 24 * time.Hour)),
+		DailyResetAt:        blockTimeWithOffsetToGogoTimestamp(ctx, 24 * time.Hour),
+		WeeklyResetAt:       blockTimeWithOffsetToGogoTimestamp(ctx, 7 * 24 * time.Hour),
+		MonthlyResetAt:      blockTimeWithOffsetToGogoTimestamp(ctx, 30 * 24 * time.Hour),
 	}
 
 	// Marshal and store
@@ -615,17 +613,17 @@ func (k Keeper) CheckSpendingLimit(ctx context.Context, walletID, denom, amount 
 	}
 
 	now := determinism.GetBlockTime(ctx)
-	if limit.DailyResetAt == nil || now.After(limit.DailyResetAt.AsTime()) {
+	if limit.DailyResetAt == nil || now.After(gogoTimestampToTime(limit.DailyResetAt)) {
 		limit.CurrentDailySpent = "0"
-		limit.DailyResetAt = timestamppb.New(now.Add(24 * time.Hour))
+		limit.DailyResetAt = timeToGogoTimestamp(now.Add(24 * time.Hour))
 	}
-	if limit.WeeklyResetAt == nil || now.After(limit.WeeklyResetAt.AsTime()) {
+	if limit.WeeklyResetAt == nil || now.After(gogoTimestampToTime(limit.WeeklyResetAt)) {
 		limit.CurrentWeeklySpent = "0"
-		limit.WeeklyResetAt = timestamppb.New(now.Add(7 * 24 * time.Hour))
+		limit.WeeklyResetAt = timeToGogoTimestamp(now.Add(7 * 24 * time.Hour))
 	}
-	if limit.MonthlyResetAt == nil || now.After(limit.MonthlyResetAt.AsTime()) {
+	if limit.MonthlyResetAt == nil || now.After(gogoTimestampToTime(limit.MonthlyResetAt)) {
 		limit.CurrentMonthlySpent = "0"
-		limit.MonthlyResetAt = timestamppb.New(now.Add(30 * 24 * time.Hour))
+		limit.MonthlyResetAt = timeToGogoTimestamp(now.Add(30 * 24 * time.Hour))
 	}
 
 	dailyLimit, err := parseAmountString(limit.DailyLimit)

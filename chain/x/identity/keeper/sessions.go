@@ -7,7 +7,6 @@ import (
 
 	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/identity/types"
 )
@@ -157,7 +156,7 @@ func (k *Keeper) CreateSession(ctx sdk.Context, userAddress string, expirySecond
 	// Check max sessions per user (use max roles per account as proxy for now)
 	sessions, _ := k.GetUserSessions(ctx, userAddress)
 	maxSessions := uint32(10) // default max sessions
-	if params != nil && params.Auth != nil && params.Auth.MaxRolesPerAccount > 0 {
+	if params != nil && params.Auth.MaxRolesPerAccount > 0 {
 		maxSessions = params.Auth.MaxRolesPerAccount
 	}
 	if uint32(len(sessions)) >= maxSessions {
@@ -173,9 +172,9 @@ func (k *Keeper) CreateSession(ctx sdk.Context, userAddress string, expirySecond
 	session := &types.Session{
 		Id:           sessionID,
 		Address:      userAddress,
-		CreatedAt:    timestamppb.New(now),
-		ExpiresAt:    timestamppb.New(expiresAt),
-		LastAccessed: timestamppb.New(now),
+		CreatedAt:    now,
+		ExpiresAt:    expiresAt,
+		LastAccessed: &now,
 		IsActive:     true,
 	}
 
@@ -257,7 +256,7 @@ func (k *Keeper) GetRateLimitConfig(ctx sdk.Context, userAddress string) (types.
 		// Return default config if not found
 		params, _ := k.GetParams(ctx)
 		var defaultPerMinute, defaultPerHour, defaultPerDay uint64 = 60, 3600, 86400
-		if params != nil && params.Auth != nil {
+		if params != nil {
 			defaultPerMinute = params.Auth.DefaultRequestsPerMinute
 			defaultPerHour = params.Auth.DefaultRequestsPerHour
 			defaultPerDay = params.Auth.DefaultRequestsPerDay
@@ -267,7 +266,7 @@ func (k *Keeper) GetRateLimitConfig(ctx sdk.Context, userAddress string) (types.
 			RequestsPerMinute: defaultPerMinute,
 			RequestsPerHour:   defaultPerHour,
 			RequestsPerDay:    defaultPerDay,
-			WindowStart:       timestamppb.New(ctx.BlockTime()),
+			WindowStart:       ctx.BlockTime(),
 		}, nil
 	}
 

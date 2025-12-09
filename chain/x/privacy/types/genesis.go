@@ -1,6 +1,7 @@
 package types
 
 import (
+	sdkmath "cosmossdk.io/math"
 	pb "github.com/aequitas/aura/proto/aura/privacy/v1beta1"
 )
 
@@ -19,7 +20,7 @@ func DefaultGenesis() *GenesisState {
 // DefaultGenesisState returns the default genesis state in proto format
 func DefaultGenesisState() *pb.GenesisState {
 	return &pb.GenesisState{
-		Params: &pb.Params{
+		Params: pb.Params{
 			EnableZkProofs:                 true,
 			EnableStealthAddresses:         true,
 			EnableRingSignatures:           true,
@@ -29,7 +30,7 @@ func DefaultGenesisState() *pb.GenesisState {
 			MinRingSize:                    3,
 			MaxRingSize:                    7,
 			MinMixingParticipants:          2,
-			MixingFee:                      "100",
+			MixingFee:                      sdkmath.NewInt(100),
 			ZkProofVerificationCost:        50,
 		},
 		MixingPools:        make([]*pb.MixingPool, 0),
