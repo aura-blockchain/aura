@@ -92,7 +92,13 @@ func (k Keeper) GetSentryNodeInfo(ctx context.Context, sentryAddr string) (types
 	}
 
 	var node types.SentryNodeInfo
-	k.cdc.MustUnmarshal(bz, &node)
+	if err := k.cdc.Unmarshal(bz, &node); err != nil {
+
+		k.logger.Error("failed to unmarshal", "error", err)
+
+		continue
+
+	}
 	return node, nil
 }
 
@@ -105,7 +111,13 @@ func (k Keeper) GetValidatorSentryNodes(ctx context.Context, validatorAddr strin
 	var nodes []types.SentryNodeInfo
 	for ; iterator.Valid(); iterator.Next() {
 		var node types.SentryNodeInfo
-		k.cdc.MustUnmarshal(iterator.Value(), &node)
+		if err := k.cdc.Unmarshal(iterator.Value(), &node); err != nil {
+
+			k.logger.Error("failed to unmarshal", "error", err)
+
+			continue
+
+		}
 		if node.ValidatorAddress == validatorAddr {
 			nodes = append(nodes, node)
 		}

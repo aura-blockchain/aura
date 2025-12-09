@@ -90,7 +90,13 @@ func (k Keeper) UpdateHardwareWalletUsage(ctx context.Context, walletID string) 
 	}
 
 	var config wsproto.HardwareWalletConfig
-	k.cdc.MustUnmarshal(configBytes, &config)
+	if err := k.cdc.Unmarshal(configBytes, &config); err != nil {
+
+		k.logger.Error("failed to unmarshal", "error", err)
+
+		continue
+
+	}
 
 	config.LastUsedAt = timestamppb.New(time.Now())
 	config.SignatureCount++
@@ -113,7 +119,13 @@ func (k Keeper) ValidateHardwareWalletTransaction(
 	}
 
 	var config wsproto.HardwareWalletConfig
-	k.cdc.MustUnmarshal(configBytes, &config)
+	if err := k.cdc.Unmarshal(configBytes, &config); err != nil {
+
+		k.logger.Error("failed to unmarshal", "error", err)
+
+		continue
+
+	}
 
 	// Validate signature based on hardware wallet type
 	switch config.Type {
@@ -242,7 +254,13 @@ func (k Keeper) RequiresPinConfirmation(ctx context.Context, walletID string) (b
 	}
 
 	var config wsproto.HardwareWalletConfig
-	k.cdc.MustUnmarshal(configBytes, &config)
+	if err := k.cdc.Unmarshal(configBytes, &config); err != nil {
+
+		k.logger.Error("failed to unmarshal", "error", err)
+
+		continue
+
+	}
 
 	return config.RequiresPin, nil
 }
@@ -255,7 +273,13 @@ func (k Keeper) RequiresPassphrase(ctx context.Context, walletID string) (bool, 
 	}
 
 	var config wsproto.HardwareWalletConfig
-	k.cdc.MustUnmarshal(configBytes, &config)
+	if err := k.cdc.Unmarshal(configBytes, &config); err != nil {
+
+		k.logger.Error("failed to unmarshal", "error", err)
+
+		continue
+
+	}
 
 	return config.RequiresPassphrase, nil
 }

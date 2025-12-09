@@ -32,7 +32,10 @@ func (k Keeper) GetKeyRotationSchedule(ctx sdk.Context, id string) (*securitypb.
 		return nil, false
 	}
 	var schedule securitypb.KeyRotationSchedule
-	k.cdc.MustUnmarshal(bz, &schedule)
+	if err := k.cdc.Unmarshal(bz, &schedule); err != nil {
+		k.Logger(ctx).Error("failed to unmarshal key rotation schedule", "error", err, "id", id)
+		return nil, false
+	}
 	return &schedule, true
 }
 
@@ -45,7 +48,10 @@ func (k Keeper) GetAllKeyRotationSchedules(ctx sdk.Context) []*securitypb.KeyRot
 	var schedules []*securitypb.KeyRotationSchedule
 	for ; iterator.Valid(); iterator.Next() {
 		var schedule securitypb.KeyRotationSchedule
-		k.cdc.MustUnmarshal(iterator.Value(), &schedule)
+		if err := k.cdc.Unmarshal(iterator.Value(), &schedule); err != nil {
+			k.Logger(ctx).Error("failed to unmarshal key rotation schedule during iteration", "error", err)
+			continue
+		}
 		schedules = append(schedules, &schedule)
 	}
 	return schedules
@@ -75,7 +81,10 @@ func (k Keeper) GetThresholdScheme(ctx sdk.Context, id string) (*securitypb.Thre
 		return nil, false
 	}
 	var scheme securitypb.ThresholdSignatureScheme
-	k.cdc.MustUnmarshal(bz, &scheme)
+	if err := k.cdc.Unmarshal(bz, &scheme); err != nil {
+		k.Logger(ctx).Error("failed to unmarshal threshold scheme", "error", err, "id", id)
+		return nil, false
+	}
 	return &scheme, true
 }
 
@@ -88,7 +97,10 @@ func (k Keeper) GetAllThresholdSchemes(ctx sdk.Context) []*securitypb.ThresholdS
 	var schemes []*securitypb.ThresholdSignatureScheme
 	for ; iterator.Valid(); iterator.Next() {
 		var scheme securitypb.ThresholdSignatureScheme
-		k.cdc.MustUnmarshal(iterator.Value(), &scheme)
+		if err := k.cdc.Unmarshal(iterator.Value(), &scheme); err != nil {
+			k.Logger(ctx).Error("failed to unmarshal threshold scheme during iteration", "error", err)
+			continue
+		}
 		schemes = append(schemes, &scheme)
 	}
 	return schemes
@@ -111,7 +123,10 @@ func (k Keeper) GetZKProofConfig(ctx sdk.Context, id string) (*securitypb.ZKProo
 		return nil, false
 	}
 	var config securitypb.ZKProofConfig
-	k.cdc.MustUnmarshal(bz, &config)
+	if err := k.cdc.Unmarshal(bz, &config); err != nil {
+		k.Logger(ctx).Error("failed to unmarshal ZK proof config", "error", err, "id", id)
+		return nil, false
+	}
 	return &config, true
 }
 
@@ -124,7 +139,10 @@ func (k Keeper) GetAllZKProofConfigs(ctx sdk.Context) []*securitypb.ZKProofConfi
 	var configs []*securitypb.ZKProofConfig
 	for ; iterator.Valid(); iterator.Next() {
 		var config securitypb.ZKProofConfig
-		k.cdc.MustUnmarshal(iterator.Value(), &config)
+		if err := k.cdc.Unmarshal(iterator.Value(), &config); err != nil {
+			k.Logger(ctx).Error("failed to unmarshal ZK proof config during iteration", "error", err)
+			continue
+		}
 		configs = append(configs, &config)
 	}
 	return configs
@@ -147,7 +165,10 @@ func (k Keeper) GetSecureEnclave(ctx sdk.Context, id string) (*types.SecureEncla
 		return nil, false
 	}
 	var enclave types.SecureEnclave
-	k.cdc.MustUnmarshal(bz, &enclave)
+	if err := k.cdc.Unmarshal(bz, &enclave); err != nil {
+		k.Logger(ctx).Error("failed to unmarshal secure enclave", "error", err, "id", id)
+		return nil, false
+	}
 	return &enclave, true
 }
 
@@ -160,7 +181,10 @@ func (k Keeper) GetAllSecureEnclaves(ctx sdk.Context) []*types.SecureEnclave {
 	var enclaves []*types.SecureEnclave
 	for ; iterator.Valid(); iterator.Next() {
 		var enclave types.SecureEnclave
-		k.cdc.MustUnmarshal(iterator.Value(), &enclave)
+		if err := k.cdc.Unmarshal(iterator.Value(), &enclave); err != nil {
+			k.Logger(ctx).Error("failed to unmarshal secure enclave during iteration", "error", err)
+			continue
+		}
 		enclaves = append(enclaves, &enclave)
 	}
 	return enclaves
@@ -183,7 +207,10 @@ func (k Keeper) GetQuantumResistantKey(ctx sdk.Context, id string) (*securitypb.
 		return nil, false
 	}
 	var qrk securitypb.QuantumResistantKey
-	k.cdc.MustUnmarshal(bz, &qrk)
+	if err := k.cdc.Unmarshal(bz, &qrk); err != nil {
+		k.Logger(ctx).Error("failed to unmarshal quantum resistant key", "error", err, "id", id)
+		return nil, false
+	}
 	return &qrk, true
 }
 
@@ -196,7 +223,10 @@ func (k Keeper) GetAllQuantumResistantKeys(ctx sdk.Context) []*securitypb.Quantu
 	var keys []*securitypb.QuantumResistantKey
 	for ; iterator.Valid(); iterator.Next() {
 		var qrk securitypb.QuantumResistantKey
-		k.cdc.MustUnmarshal(iterator.Value(), &qrk)
+		if err := k.cdc.Unmarshal(iterator.Value(), &qrk); err != nil {
+			k.Logger(ctx).Error("failed to unmarshal quantum resistant key during iteration", "error", err)
+			continue
+		}
 		keys = append(keys, &qrk)
 	}
 	return keys
@@ -219,7 +249,10 @@ func (k Keeper) GetRandomSource(ctx sdk.Context, id string) (*types.RandomSource
 		return nil, false
 	}
 	var source types.RandomSource
-	k.cdc.MustUnmarshal(bz, &source)
+	if err := k.cdc.Unmarshal(bz, &source); err != nil {
+		k.Logger(ctx).Error("failed to unmarshal random source", "error", err, "id", id)
+		return nil, false
+	}
 	return &source, true
 }
 
@@ -232,7 +265,10 @@ func (k Keeper) GetAllRandomSources(ctx sdk.Context) []*types.RandomSource {
 	var sources []*types.RandomSource
 	for ; iterator.Valid(); iterator.Next() {
 		var source types.RandomSource
-		k.cdc.MustUnmarshal(iterator.Value(), &source)
+		if err := k.cdc.Unmarshal(iterator.Value(), &source); err != nil {
+			k.Logger(ctx).Error("failed to unmarshal random source during iteration", "error", err)
+			continue
+		}
 		sources = append(sources, &source)
 	}
 	return sources
@@ -255,7 +291,10 @@ func (k Keeper) GetCertificatePin(ctx sdk.Context, id string) (*types.Certificat
 		return nil, false
 	}
 	var pin types.CertificatePin
-	k.cdc.MustUnmarshal(bz, &pin)
+	if err := k.cdc.Unmarshal(bz, &pin); err != nil {
+		k.Logger(ctx).Error("failed to unmarshal certificate pin", "error", err, "id", id)
+		return nil, false
+	}
 	return &pin, true
 }
 
@@ -268,7 +307,10 @@ func (k Keeper) GetAllCertificatePins(ctx sdk.Context) []*types.CertificatePin {
 	var pins []*types.CertificatePin
 	for ; iterator.Valid(); iterator.Next() {
 		var pin types.CertificatePin
-		k.cdc.MustUnmarshal(iterator.Value(), &pin)
+		if err := k.cdc.Unmarshal(iterator.Value(), &pin); err != nil {
+			k.Logger(ctx).Error("failed to unmarshal certificate pin during iteration", "error", err)
+			continue
+		}
 		pins = append(pins, &pin)
 	}
 	return pins

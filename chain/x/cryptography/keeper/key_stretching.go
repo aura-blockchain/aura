@@ -86,7 +86,9 @@ func (k Keeper) StretchKey(
 	}
 
 	var config cryptoproto.KeyStretchingConfig
-	k.cdc.MustUnmarshal(bz, &config)
+	if err := k.cdc.Unmarshal(bz, &config); err != nil {
+		return nil, types.ErrInvalidState
+	}
 
 	// Perform key stretching
 	return k.performKeyStretching(password, &config)

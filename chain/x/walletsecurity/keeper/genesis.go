@@ -227,7 +227,13 @@ func (k Keeper) ExportGenesis(ctx context.Context) *pb.GenesisState {
 	var params pb.WalletSecurityParams
 	paramsBytes, _ := store.Get(types.ParamsKey)
 	if paramsBytes != nil {
-		k.cdc.MustUnmarshal(paramsBytes, &params)
+		if err := k.cdc.Unmarshal(paramsBytes, &params); err != nil {
+
+			k.logger.Error("failed to unmarshal", "error", err)
+
+			continue
+
+		}
 	}
 
 	genesis := &pb.GenesisState{

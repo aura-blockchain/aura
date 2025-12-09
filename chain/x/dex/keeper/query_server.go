@@ -47,33 +47,32 @@ func (qs queryServer) Pool(ctx context.Context, req *dexpb.QueryPoolRequest) (*d
 	return &dexpb.QueryPoolResponse{Pool: pool}, nil
 }
 
-func (qs queryServer) AllPools(ctx context.Context, _ *dexpb.QueryAllPoolsRequest) (*dexpb.QueryAllPoolsResponse, error) {
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
+func (qs queryServer) AllPools(ctx context.Context, req *dexpb.QueryAllPoolsRequest) (*dexpb.QueryAllPoolsResponse, error) {
+	if req == nil {
+		req = &dexpb.QueryAllPoolsRequest{}
+	}
 
-	// Get all pools using pagination-aware iteration
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	store := sdkCtx.KVStore(qs.keeper.storeKey)
 	poolStore := prefix.NewStore(store, types.PoolPrefix)
 
-	// Default pagination limits
-	const defaultLimit = 100
-	const maxLimit = 1000
-
-	pools := []*dexpb.LiquidityPool{}
-	count := 0
-
-	iterator := poolStore.Iterator(nil, nil)
-	defer iterator.Close()
-
-	for ; iterator.Valid() && count < defaultLimit; iterator.Next() {
+	var pools []*dexpb.LiquidityPool
+	pageRes, err := query.Paginate(poolStore, req.Pagination, func(key []byte, value []byte) error {
 		var pool dexpb.LiquidityPool
-		if err := qs.keeper.cdc.Unmarshal(iterator.Value(), &pool); err != nil {
-			continue
+		if err := qs.keeper.cdc.Unmarshal(value, &pool); err != nil {
+			return err
 		}
 		pools = append(pools, &pool)
-		count++
+		return nil
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &dexpb.QueryAllPoolsResponse{Pools: pools}, nil
+	return &dexpb.QueryAllPoolsResponse{
+		Pools:      pools,
+		Pagination: pageRes,
+	}, nil
 }
 
 func (qs queryServer) GetQuote(ctx context.Context, req *dexpb.QueryGetQuoteRequest) (*dexpb.QueryGetQuoteResponse, error) {
@@ -234,30 +233,28 @@ func (qs queryServer) UserOrders(ctx context.Context, req *dexpb.QueryUserOrders
 	store := sdkCtx.KVStore(qs.keeper.storeKey)
 	userOrderStore := prefix.NewStore(store, types.UserOrderAddressPrefix(req.Address))
 
-	// Default pagination limits
-	const defaultLimit = 100
-
-	orders := []*dexpb.SwapOrder{}
-	count := 0
-
-	iterator := userOrderStore.Iterator(nil, nil)
-	defer iterator.Close()
-
-	for ; iterator.Valid() && count < defaultLimit; iterator.Next() {
+	var orders []*dexpb.SwapOrder
+	pageRes, err := query.Paginate(userOrderStore, req.Pagination, func(key []byte, value []byte) error {
 		// The value stored is just the order ID reference, we need to fetch the actual order
 		// Extract order ID from the key (it's after the timestamp bytes)
-		key := iterator.Key()
 		if len(key) >= 8 {
 			orderID := string(key[8:])
 			order := qs.keeper.GetOrder(sdkCtx, orderID)
 			if order != nil {
 				orders = append(orders, order)
-				count++
 			}
 		}
+		return nil
+	})
+	if err != nil {
+		qs.logError(ctx, "user_orders", err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &dexpb.QueryUserOrdersResponse{Orders: orders}, nil
+	return &dexpb.QueryUserOrdersResponse{
+		Orders:     orders,
+		Pagination: pageRes,
+	}, nil
 }
 
 func (qs queryServer) MarketPrice(ctx context.Context, req *dexpb.QueryMarketPriceRequest) (*dexpb.QueryMarketPriceResponse, error) {

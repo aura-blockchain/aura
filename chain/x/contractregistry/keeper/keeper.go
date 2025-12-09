@@ -66,7 +66,13 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 	}
 
 	var protoParams pb.ContractRegistryParams
-	k.cdc.MustUnmarshal(bz, &protoParams)
+	if err := k.cdc.Unmarshal(bz, &protoParams); err != nil {
+		// Return default params on unmarshal error
+		return types.Params{
+			AuditWarningDays:       90,
+			MaxContractsPerCreator: 100,
+		}
+	}
 
 	// Convert proto params to types.Params
 	return types.Params{
@@ -119,7 +125,9 @@ func (k Keeper) GetContractInfo(ctx sdk.Context, contractAddr string) (pb.Contra
 	}
 
 	var info pb.ContractInfo
-	k.cdc.MustUnmarshal(bz, &info)
+	if err := k.cdc.Unmarshal(bz, &info); err != nil {
+		return pb.ContractInfo{}, false
+	}
 	return info, true
 }
 
@@ -141,7 +149,9 @@ func (k Keeper) GetContractMetrics(ctx sdk.Context, contractAddr string) (*pb.Co
 	}
 
 	var metrics pb.ContractMetrics
-	k.cdc.MustUnmarshal(bz, &metrics)
+	if err := k.cdc.Unmarshal(bz, &metrics); err != nil {
+		return nil, false
+	}
 	return &metrics, true
 }
 
@@ -612,7 +622,10 @@ func (k Keeper) GetAllContracts(ctx sdk.Context) []*pb.ContractInfo {
 
 	for ; iterator.Valid(); iterator.Next() {
 		var info pb.ContractInfo
-		k.cdc.MustUnmarshal(iterator.Value(), &info)
+		if err := k.cdc.Unmarshal(iterator.Value(), &info); err != nil {
+			// Skip invalid entries
+			continue
+		}
 		contracts = append(contracts, &info)
 	}
 

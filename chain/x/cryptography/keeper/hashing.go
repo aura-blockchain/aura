@@ -84,7 +84,9 @@ func (k Keeper) VerifySaltedHash(
 	}
 
 	var storedHash cryptoproto.SaltedHash
-	k.cdc.MustUnmarshal(bz, &storedHash)
+	if err := k.cdc.Unmarshal(bz, &storedHash); err != nil {
+		return false, fmt.Errorf("failed to unmarshal stored hash: %w", err)
+	}
 
 	// Compute hash with stored salt
 	computedHash, err := k.computeSaltedHash(data, storedHash.Salt, storedHash.Algorithm, storedHash.Iterations)

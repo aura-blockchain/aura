@@ -4,8 +4,8 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	storetypes "cosmossdk.io/store/types"
 	sdkmath "cosmossdk.io/math"
+	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -34,7 +34,10 @@ func (k Keeper) GetIncident(ctx sdk.Context, id string) (*securitypb.Incident, b
 		return nil, false
 	}
 	var incident securitypb.Incident
-	k.cdc.MustUnmarshal(bz, &incident)
+	if err := k.cdc.Unmarshal(bz, &incident); err != nil {
+		k.Logger(ctx).Error("failed to unmarshal incident", "error", err, "id", id)
+		return nil, false
+	}
 	return &incident, true
 }
 
@@ -47,7 +50,10 @@ func (k Keeper) GetAllIncidents(ctx sdk.Context) []*securitypb.Incident {
 	var incidents []*securitypb.Incident
 	for ; iterator.Valid(); iterator.Next() {
 		var incident securitypb.Incident
-		k.cdc.MustUnmarshal(iterator.Value(), &incident)
+		if err := k.cdc.Unmarshal(iterator.Value(), &incident); err != nil {
+			k.Logger(ctx).Error("failed to unmarshal incident during iteration", "error", err)
+			continue
+		}
 		incidents = append(incidents, &incident)
 	}
 	return incidents
@@ -68,7 +74,10 @@ func (k Keeper) GetPauseState(ctx sdk.Context) *types.PauseState {
 		return &types.PauseState{IsPaused: false, PauseLevel: 0}
 	}
 	var state types.PauseState
-	k.cdc.MustUnmarshal(bz, &state)
+	if err := k.cdc.Unmarshal(bz, &state); err != nil {
+		k.Logger(ctx).Error("failed to unmarshal pause state", "error", err)
+		return &types.PauseState{IsPaused: false, PauseLevel: 0}
+	}
 	return &state
 }
 
@@ -89,7 +98,10 @@ func (k Keeper) GetWalletLimit(ctx sdk.Context, walletAddr string) (*types.Walle
 		return nil, false
 	}
 	var limit types.WalletLimit
-	k.cdc.MustUnmarshal(bz, &limit)
+	if err := k.cdc.Unmarshal(bz, &limit); err != nil {
+		k.Logger(ctx).Error("failed to unmarshal wallet limit", "error", err, "wallet", walletAddr)
+		return nil, false
+	}
 	return &limit, true
 }
 
@@ -102,7 +114,10 @@ func (k Keeper) GetAllWalletLimits(ctx sdk.Context) []*types.WalletLimit {
 	var limits []*types.WalletLimit
 	for ; iterator.Valid(); iterator.Next() {
 		var limit types.WalletLimit
-		k.cdc.MustUnmarshal(iterator.Value(), &limit)
+		if err := k.cdc.Unmarshal(iterator.Value(), &limit); err != nil {
+			k.Logger(ctx).Error("failed to unmarshal wallet limit during iteration", "error", err)
+			continue
+		}
 		limits = append(limits, &limit)
 	}
 	return limits

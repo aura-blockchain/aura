@@ -29,7 +29,13 @@ func (k Keeper) GetHardwareWallet(ctx sdk.Context, walletId string) (*securitypb
 		return nil, false
 	}
 	var hw securitypb.HardwareWalletConfig
-	k.cdc.MustUnmarshal(bz, &hw)
+	if err := k.cdc.Unmarshal(bz, &hw); err != nil {
+
+		k.Logger(ctx).Error.Error("failed to unmarshal", "error", err)
+
+		continue
+
+	}
 	return &hw, true
 }
 
@@ -42,7 +48,13 @@ func (k Keeper) GetAllHardwareWallets(ctx sdk.Context) []*securitypb.HardwareWal
 	var wallets []*securitypb.HardwareWalletConfig
 	for ; iterator.Valid(); iterator.Next() {
 		var hw securitypb.HardwareWalletConfig
-		k.cdc.MustUnmarshal(iterator.Value(), &hw)
+		if err := k.cdc.Unmarshal(iterator.Value(), &hw); err != nil {
+
+			k.Logger(ctx).Error.Error("failed to unmarshal", "error", err)
+
+			continue
+
+		}
 		wallets = append(wallets, &hw)
 	}
 	return wallets
@@ -65,7 +77,13 @@ func (k Keeper) GetMultiSigWallet(ctx sdk.Context, walletId string) (*securitypb
 		return nil, false
 	}
 	var ms securitypb.MultiSigWallet
-	k.cdc.MustUnmarshal(bz, &ms)
+	if err := k.cdc.Unmarshal(bz, &ms); err != nil {
+
+		k.Logger(ctx).Error.Error("failed to unmarshal", "error", err)
+
+		continue
+
+	}
 	return &ms, true
 }
 
@@ -78,7 +96,13 @@ func (k Keeper) GetAllMultiSigWallets(ctx sdk.Context) []*securitypb.MultiSigWal
 	var wallets []*securitypb.MultiSigWallet
 	for ; iterator.Valid(); iterator.Next() {
 		var ms securitypb.MultiSigWallet
-		k.cdc.MustUnmarshal(iterator.Value(), &ms)
+		if err := k.cdc.Unmarshal(iterator.Value(), &ms); err != nil {
+
+			k.Logger(ctx).Error.Error("failed to unmarshal", "error", err)
+
+			continue
+
+		}
 		wallets = append(wallets, &ms)
 	}
 	return wallets
@@ -101,7 +125,13 @@ func (k Keeper) GetPendingMultiSigTx(ctx sdk.Context, id string) (*securitypb.Pe
 		return nil, false
 	}
 	var tx securitypb.PendingMultiSigTransaction
-	k.cdc.MustUnmarshal(bz, &tx)
+	if err := k.cdc.Unmarshal(bz, &tx); err != nil {
+
+		k.Logger(ctx).Error.Error("failed to unmarshal", "error", err)
+
+		continue
+
+	}
 	return &tx, true
 }
 
@@ -114,7 +144,13 @@ func (k Keeper) GetAllPendingMultiSigTxs(ctx sdk.Context) []*securitypb.PendingM
 	var txs []*securitypb.PendingMultiSigTransaction
 	for ; iterator.Valid(); iterator.Next() {
 		var tx securitypb.PendingMultiSigTransaction
-		k.cdc.MustUnmarshal(iterator.Value(), &tx)
+		if err := k.cdc.Unmarshal(iterator.Value(), &tx); err != nil {
+
+			k.Logger(ctx).Error.Error("failed to unmarshal", "error", err)
+
+			continue
+
+		}
 		txs = append(txs, &tx)
 	}
 	return txs
@@ -144,7 +180,13 @@ func (k Keeper) GetSocialRecoveryConfig(ctx sdk.Context, walletId string) (*secu
 		return nil, false
 	}
 	var config securitypb.SocialRecoveryConfig
-	k.cdc.MustUnmarshal(bz, &config)
+	if err := k.cdc.Unmarshal(bz, &config); err != nil {
+
+		k.Logger(ctx).Error.Error("failed to unmarshal", "error", err)
+
+		continue
+
+	}
 	return &config, true
 }
 
@@ -157,7 +199,13 @@ func (k Keeper) GetAllSocialRecoveryConfigs(ctx sdk.Context) []*securitypb.Socia
 	var configs []*securitypb.SocialRecoveryConfig
 	for ; iterator.Valid(); iterator.Next() {
 		var config securitypb.SocialRecoveryConfig
-		k.cdc.MustUnmarshal(iterator.Value(), &config)
+		if err := k.cdc.Unmarshal(iterator.Value(), &config); err != nil {
+
+			k.Logger(ctx).Error.Error("failed to unmarshal", "error", err)
+
+			continue
+
+		}
 		configs = append(configs, &config)
 	}
 	return configs
@@ -180,7 +228,13 @@ func (k Keeper) GetRecoveryRequest(ctx sdk.Context, id string) (*securitypb.Reco
 		return nil, false
 	}
 	var request securitypb.RecoveryRequest
-	k.cdc.MustUnmarshal(bz, &request)
+	if err := k.cdc.Unmarshal(bz, &request); err != nil {
+
+		k.Logger(ctx).Error.Error("failed to unmarshal", "error", err)
+
+		continue
+
+	}
 	return &request, true
 }
 
@@ -193,7 +247,13 @@ func (k Keeper) GetAllRecoveryRequests(ctx sdk.Context) []*securitypb.RecoveryRe
 	var requests []*securitypb.RecoveryRequest
 	for ; iterator.Valid(); iterator.Next() {
 		var request securitypb.RecoveryRequest
-		k.cdc.MustUnmarshal(iterator.Value(), &request)
+		if err := k.cdc.Unmarshal(iterator.Value(), &request); err != nil {
+
+			k.Logger(ctx).Error.Error("failed to unmarshal", "error", err)
+
+			continue
+
+		}
 		requests = append(requests, &request)
 	}
 	return requests
@@ -216,7 +276,13 @@ func (k Keeper) GetAllDeviceFingerprints(ctx sdk.Context) []*types.DeviceFingerp
 	var fps []*types.DeviceFingerprint
 	for ; iterator.Valid(); iterator.Next() {
 		var fp types.DeviceFingerprint
-		k.cdc.MustUnmarshal(iterator.Value(), &fp)
+		if err := k.cdc.Unmarshal(iterator.Value(), &fp); err != nil {
+
+			k.Logger(ctx).Error.Error("failed to unmarshal", "error", err)
+
+			continue
+
+		}
 		fps = append(fps, &fp)
 	}
 	return fps
@@ -239,7 +305,13 @@ func (k Keeper) GetSession(ctx sdk.Context, id string) (*types.WalletSession, bo
 		return nil, false
 	}
 	var session types.WalletSession
-	k.cdc.MustUnmarshal(bz, &session)
+	if err := k.cdc.Unmarshal(bz, &session); err != nil {
+
+		k.Logger(ctx).Error.Error("failed to unmarshal", "error", err)
+
+		continue
+
+	}
 	return &session, true
 }
 
@@ -252,7 +324,13 @@ func (k Keeper) GetAllSessions(ctx sdk.Context) []*types.WalletSession {
 	var sessions []*types.WalletSession
 	for ; iterator.Valid(); iterator.Next() {
 		var session types.WalletSession
-		k.cdc.MustUnmarshal(iterator.Value(), &session)
+		if err := k.cdc.Unmarshal(iterator.Value(), &session); err != nil {
+
+			k.Logger(ctx).Error.Error("failed to unmarshal", "error", err)
+
+			continue
+
+		}
 		sessions = append(sessions, &session)
 	}
 	return sessions
@@ -295,7 +373,13 @@ func (k Keeper) GetAllAnomalyDetections(ctx sdk.Context) []*types.AnomalyDetecti
 	var anomalies []*types.AnomalyDetection
 	for ; iterator.Valid(); iterator.Next() {
 		var anomaly types.AnomalyDetection
-		k.cdc.MustUnmarshal(iterator.Value(), &anomaly)
+		if err := k.cdc.Unmarshal(iterator.Value(), &anomaly); err != nil {
+
+			k.Logger(ctx).Error.Error("failed to unmarshal", "error", err)
+
+			continue
+
+		}
 		anomalies = append(anomalies, &anomaly)
 	}
 	return anomalies

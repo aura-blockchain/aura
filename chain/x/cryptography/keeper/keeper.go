@@ -107,7 +107,9 @@ func (k Keeper) GetQuantumResistantKey(ctx context.Context, keyID string) (*cryp
 	}
 
 	var key cryptoproto.QuantumResistantKey
-	k.cdc.MustUnmarshal(bz, &key)
+	if err := k.cdc.Unmarshal(bz, &key); err != nil {
+		return nil, types.ErrInvalidState
+	}
 
 	// Check expiration
 	blockTime := sdk.UnwrapSDKContext(ctx).BlockTime()
@@ -147,7 +149,10 @@ func (k Keeper) IterateQuantumKeys(ctx context.Context, fn func(key *cryptoproto
 
 	for ; iterator.Valid(); iterator.Next() {
 		var key cryptoproto.QuantumResistantKey
-		k.cdc.MustUnmarshal(iterator.Value(), &key)
+		if err := k.cdc.Unmarshal(iterator.Value(), &key); err != nil {
+			// Skip invalid entries
+			continue
+		}
 		if fn(&key) {
 			break
 		}
@@ -169,7 +174,9 @@ func (k Keeper) GetCertificatePin(ctx context.Context, hostname string) (*crypto
 	}
 
 	var pin cryptoproto.CertificatePin
-	k.cdc.MustUnmarshal(bz, &pin)
+	if err := k.cdc.Unmarshal(bz, &pin); err != nil {
+		return nil, types.ErrInvalidState
+	}
 	return &pin, nil
 }
 
@@ -200,7 +207,10 @@ func (k Keeper) IterateCertificatePins(ctx context.Context, fn func(pin *cryptop
 
 	for ; iterator.Valid(); iterator.Next() {
 		var pin cryptoproto.CertificatePin
-		k.cdc.MustUnmarshal(iterator.Value(), &pin)
+		if err := k.cdc.Unmarshal(iterator.Value(), &pin); err != nil {
+			// Skip invalid entries
+			continue
+		}
 		if fn(&pin) {
 			break
 		}
@@ -232,7 +242,9 @@ func (k Keeper) GetKeyRotationSchedule(ctx context.Context, scheduleID string) (
 	}
 
 	var schedule cryptoproto.KeyRotationSchedule
-	k.cdc.MustUnmarshal(bz, &schedule)
+	if err := k.cdc.Unmarshal(bz, &schedule); err != nil {
+		return nil, types.ErrInvalidState
+	}
 	return &schedule, nil
 }
 
@@ -263,7 +275,10 @@ func (k Keeper) IterateKeyRotationSchedules(ctx context.Context, fn func(schedul
 
 	for ; iterator.Valid(); iterator.Next() {
 		var schedule cryptoproto.KeyRotationSchedule
-		k.cdc.MustUnmarshal(iterator.Value(), &schedule)
+		if err := k.cdc.Unmarshal(iterator.Value(), &schedule); err != nil {
+			// Skip invalid entries
+			continue
+		}
 		if fn(&schedule) {
 			break
 		}
@@ -307,7 +322,9 @@ func (k Keeper) GetKeyStretchingConfig(ctx context.Context, configID string) (*c
 	}
 
 	var config cryptoproto.KeyStretchingConfig
-	k.cdc.MustUnmarshal(bz, &config)
+	if err := k.cdc.Unmarshal(bz, &config); err != nil {
+		return nil, types.ErrInvalidState
+	}
 	return &config, nil
 }
 
@@ -321,7 +338,10 @@ func (k Keeper) IterateKeyStretchingConfigs(ctx context.Context, fn func(config 
 
 	for ; iterator.Valid(); iterator.Next() {
 		var config cryptoproto.KeyStretchingConfig
-		k.cdc.MustUnmarshal(iterator.Value(), &config)
+		if err := k.cdc.Unmarshal(iterator.Value(), &config); err != nil {
+			// Skip invalid entries
+			continue
+		}
 		if fn(&config) {
 			break
 		}
@@ -343,7 +363,9 @@ func (k Keeper) GetSecureEnclave(ctx context.Context, enclaveID string) (*crypto
 	}
 
 	var enclave cryptoproto.SecureEnclaveConfig
-	k.cdc.MustUnmarshal(bz, &enclave)
+	if err := k.cdc.Unmarshal(bz, &enclave); err != nil {
+		return nil, types.ErrInvalidState
+	}
 	return &enclave, nil
 }
 
@@ -374,7 +396,10 @@ func (k Keeper) IterateSecureEnclaves(ctx context.Context, fn func(enclave *cryp
 
 	for ; iterator.Valid(); iterator.Next() {
 		var enclave cryptoproto.SecureEnclaveConfig
-		k.cdc.MustUnmarshal(iterator.Value(), &enclave)
+		if err := k.cdc.Unmarshal(iterator.Value(), &enclave); err != nil {
+			// Skip invalid entries
+			continue
+		}
 		if fn(&enclave) {
 			break
 		}
@@ -406,7 +431,9 @@ func (k Keeper) GetRandomSource(ctx context.Context, sourceID string) (*cryptopr
 	}
 
 	var source cryptoproto.CryptoRandomSource
-	k.cdc.MustUnmarshal(bz, &source)
+	if err := k.cdc.Unmarshal(bz, &source); err != nil {
+		return nil, types.ErrInvalidState
+	}
 	return &source, nil
 }
 
@@ -437,7 +464,10 @@ func (k Keeper) IterateRandomSources(ctx context.Context, fn func(source *crypto
 
 	for ; iterator.Valid(); iterator.Next() {
 		var source cryptoproto.CryptoRandomSource
-		k.cdc.MustUnmarshal(iterator.Value(), &source)
+		if err := k.cdc.Unmarshal(iterator.Value(), &source); err != nil {
+			// Skip invalid entries
+			continue
+		}
 		if fn(&source) {
 			break
 		}
@@ -469,7 +499,9 @@ func (k Keeper) GetThresholdScheme(ctx context.Context, schemeID string) (*crypt
 	}
 
 	var scheme cryptoproto.ThresholdSignatureScheme
-	k.cdc.MustUnmarshal(bz, &scheme)
+	if err := k.cdc.Unmarshal(bz, &scheme); err != nil {
+		return nil, types.ErrInvalidState
+	}
 	return &scheme, nil
 }
 
@@ -500,7 +532,10 @@ func (k Keeper) IterateThresholdSchemes(ctx context.Context, fn func(scheme *cry
 
 	for ; iterator.Valid(); iterator.Next() {
 		var scheme cryptoproto.ThresholdSignatureScheme
-		k.cdc.MustUnmarshal(iterator.Value(), &scheme)
+		if err := k.cdc.Unmarshal(iterator.Value(), &scheme); err != nil {
+			// Skip invalid entries
+			continue
+		}
 		if fn(&scheme) {
 			break
 		}
@@ -532,7 +567,9 @@ func (k Keeper) GetThresholdSignatureShare(ctx context.Context, schemeID, partic
 	}
 
 	var share cryptoproto.ThresholdSignatureShare
-	k.cdc.MustUnmarshal(bz, &share)
+	if err := k.cdc.Unmarshal(bz, &share); err != nil {
+		return nil, types.ErrInvalidState
+	}
 	return &share, nil
 }
 
@@ -569,7 +606,10 @@ func (k Keeper) GetThresholdSignatureSharesForScheme(ctx context.Context, scheme
 
 	for ; iterator.Valid(); iterator.Next() {
 		var share cryptoproto.ThresholdSignatureShare
-		k.cdc.MustUnmarshal(iterator.Value(), &share)
+		if err := k.cdc.Unmarshal(iterator.Value(), &share); err != nil {
+			// Skip invalid entries
+			continue
+		}
 
 		// Filter by message hash if provided
 		if messageHash == nil || string(share.MessageHash) == string(messageHash) {
@@ -599,7 +639,9 @@ func (k Keeper) GetZKProof(ctx context.Context, proofID string) (*cryptoproto.ZK
 	}
 
 	var proof cryptoproto.ZKProof
-	k.cdc.MustUnmarshal(bz, &proof)
+	if err := k.cdc.Unmarshal(bz, &proof); err != nil {
+		return nil, types.ErrInvalidState
+	}
 	return &proof, nil
 }
 
@@ -630,7 +672,10 @@ func (k Keeper) IterateZKProofs(ctx context.Context, fn func(proof *cryptoproto.
 
 	for ; iterator.Valid(); iterator.Next() {
 		var proof cryptoproto.ZKProof
-		k.cdc.MustUnmarshal(iterator.Value(), &proof)
+		if err := k.cdc.Unmarshal(iterator.Value(), &proof); err != nil {
+			// Skip invalid entries
+			continue
+		}
 		if fn(&proof) {
 			break
 		}
@@ -652,7 +697,9 @@ func (k Keeper) GetZKProofVerification(ctx context.Context, verificationID strin
 	}
 
 	var verification cryptoproto.ZKProofVerification
-	k.cdc.MustUnmarshal(bz, &verification)
+	if err := k.cdc.Unmarshal(bz, &verification); err != nil {
+		return nil, types.ErrInvalidState
+	}
 	return &verification, nil
 }
 
@@ -683,7 +730,10 @@ func (k Keeper) IterateZKProofVerifications(ctx context.Context, fn func(verific
 
 	for ; iterator.Valid(); iterator.Next() {
 		var verification cryptoproto.ZKProofVerification
-		k.cdc.MustUnmarshal(iterator.Value(), &verification)
+		if err := k.cdc.Unmarshal(iterator.Value(), &verification); err != nil {
+			// Skip invalid entries
+			continue
+		}
 		if fn(&verification) {
 			break
 		}
@@ -717,7 +767,9 @@ func (k Keeper) GetSaltedHash(ctx context.Context, hashID string) (*cryptoproto.
 	}
 
 	var hash cryptoproto.SaltedHash
-	k.cdc.MustUnmarshal(bz, &hash)
+	if err := k.cdc.Unmarshal(bz, &hash); err != nil {
+		return nil, types.ErrInvalidState
+	}
 	return &hash, nil
 }
 
@@ -748,7 +800,10 @@ func (k Keeper) IterateSaltedHashes(ctx context.Context, fn func(hash *cryptopro
 
 	for ; iterator.Valid(); iterator.Next() {
 		var hash cryptoproto.SaltedHash
-		k.cdc.MustUnmarshal(iterator.Value(), &hash)
+		if err := k.cdc.Unmarshal(iterator.Value(), &hash); err != nil {
+			// Skip invalid entries
+			continue
+		}
 		if fn(&hash) {
 			break
 		}
@@ -770,7 +825,9 @@ func (k Keeper) GetHDKeyDerivation(ctx context.Context, masterKeyID string) (*cr
 	}
 
 	var derivation cryptoproto.HDKeyDerivation
-	k.cdc.MustUnmarshal(bz, &derivation)
+	if err := k.cdc.Unmarshal(bz, &derivation); err != nil {
+		return nil, types.ErrInvalidState
+	}
 	return &derivation, nil
 }
 

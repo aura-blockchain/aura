@@ -218,7 +218,13 @@ func (k Keeper) GetValidatorAlerts(ctx context.Context, validatorAddr string) []
 	var alerts []types.ValidatorAlert
 	for ; iterator.Valid(); iterator.Next() {
 		var alert types.ValidatorAlert
-		k.cdc.MustUnmarshal(iterator.Value(), &alert)
+		if err := k.cdc.Unmarshal(iterator.Value(), &alert); err != nil {
+
+			k.logger.Error("failed to unmarshal", "error", err)
+
+			continue
+
+		}
 		if alert.ValidatorAddress == validatorAddr {
 			alerts = append(alerts, alert)
 		}
@@ -236,7 +242,13 @@ func (k Keeper) GetAllAlerts(ctx context.Context) []types.ValidatorAlert {
 	var alerts []types.ValidatorAlert
 	for ; iterator.Valid(); iterator.Next() {
 		var alert types.ValidatorAlert
-		k.cdc.MustUnmarshal(iterator.Value(), &alert)
+		if err := k.cdc.Unmarshal(iterator.Value(), &alert); err != nil {
+
+			k.logger.Error("failed to unmarshal", "error", err)
+
+			continue
+
+		}
 		alerts = append(alerts, alert)
 	}
 
@@ -255,7 +267,13 @@ func (k Keeper) AcknowledgeAlert(ctx context.Context, alertID, acknowledgerAddr 
 	}
 
 	var alert types.ValidatorAlert
-	k.cdc.MustUnmarshal(bz, &alert)
+	if err := k.cdc.Unmarshal(bz, &alert); err != nil {
+
+		k.logger.Error("failed to unmarshal", "error", err)
+
+		continue
+
+	}
 
 	now := sdkCtx.BlockTime()
 	alert.Acknowledged = true

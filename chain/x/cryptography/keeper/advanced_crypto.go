@@ -126,7 +126,9 @@ func (k Keeper) RetrieveKeyFromHSM(ctx sdk.Context, keyID string, hsmConfig *cry
 	}
 
 	var hsmKey cryptoproto.HSMKeyRecord
-	k.cdc.MustUnmarshal(bz, &hsmKey)
+	if err := k.cdc.Unmarshal(bz, &hsmKey); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal HSM key: %w", err)
+	}
 
 	if !hsmKey.Accessible {
 		return nil, fmt.Errorf("HSM key is not accessible")

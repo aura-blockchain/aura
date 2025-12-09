@@ -109,7 +109,13 @@ func (k Keeper) CreatePendingMultiSigTransaction(
 	}
 
 	var wallet wsproto.MultiSigWallet
-	k.cdc.MustUnmarshal(walletBytes, &wallet)
+	if err := k.cdc.Unmarshal(walletBytes, &wallet); err != nil {
+
+		k.logger.Error("failed to unmarshal", "error", err)
+
+		continue
+
+	}
 
 	// Check time lock
 	if wallet.TimeLocked && determinism.GetBlockTime(ctx).Before(wallet.UnlockTime.AsTime()) {
@@ -165,7 +171,13 @@ func (k Keeper) SignMultiSigTransaction(
 	}
 
 	var pendingTx wsproto.PendingMultiSigTransaction
-	k.cdc.MustUnmarshal(txBytes, &pendingTx)
+	if err := k.cdc.Unmarshal(txBytes, &pendingTx); err != nil {
+
+		k.logger.Error("failed to unmarshal", "error", err)
+
+		continue
+
+	}
 
 	// Check expiration
 	if determinism.GetBlockTime(ctx).After(pendingTx.ExpiresAt.AsTime()) {
@@ -179,7 +191,13 @@ func (k Keeper) SignMultiSigTransaction(
 	}
 
 	var wallet wsproto.MultiSigWallet
-	k.cdc.MustUnmarshal(walletBytes, &wallet)
+	if err := k.cdc.Unmarshal(walletBytes, &wallet); err != nil {
+
+		k.logger.Error("failed to unmarshal", "error", err)
+
+		continue
+
+	}
 
 	// Verify signer is authorized
 	if !k.isAuthorizedSigner(signer, wallet.Signers) {
@@ -236,7 +254,13 @@ func (k Keeper) ExecuteMultiSigTransaction(ctx context.Context, txID string) err
 	}
 
 	var pendingTx wsproto.PendingMultiSigTransaction
-	k.cdc.MustUnmarshal(txBytes, &pendingTx)
+	if err := k.cdc.Unmarshal(txBytes, &pendingTx); err != nil {
+
+		k.logger.Error("failed to unmarshal", "error", err)
+
+		continue
+
+	}
 
 	// Check expiration
 	if determinism.GetBlockTime(ctx).After(pendingTx.ExpiresAt.AsTime()) {
@@ -250,7 +274,13 @@ func (k Keeper) ExecuteMultiSigTransaction(ctx context.Context, txID string) err
 	}
 
 	var wallet wsproto.MultiSigWallet
-	k.cdc.MustUnmarshal(walletBytes, &wallet)
+	if err := k.cdc.Unmarshal(walletBytes, &wallet); err != nil {
+
+		k.logger.Error("failed to unmarshal", "error", err)
+
+		continue
+
+	}
 
 	// Verify ready to execute
 	if !k.isReadyToExecute(&pendingTx, &wallet) {
@@ -351,7 +381,13 @@ func (k Keeper) AddSignerToMultiSigWallet(
 	}
 
 	var wallet wsproto.MultiSigWallet
-	k.cdc.MustUnmarshal(walletBytes, &wallet)
+	if err := k.cdc.Unmarshal(walletBytes, &wallet); err != nil {
+
+		k.logger.Error("failed to unmarshal", "error", err)
+
+		continue
+
+	}
 
 	// Verify requester is authorized
 	if !k.isAuthorizedSigner(requester, wallet.Signers) {
@@ -385,7 +421,13 @@ func (k Keeper) RemoveSignerFromMultiSigWallet(
 	}
 
 	var wallet wsproto.MultiSigWallet
-	k.cdc.MustUnmarshal(walletBytes, &wallet)
+	if err := k.cdc.Unmarshal(walletBytes, &wallet); err != nil {
+
+		k.logger.Error("failed to unmarshal", "error", err)
+
+		continue
+
+	}
 
 	// Verify requester is authorized
 	if !k.isAuthorizedSigner(requester, wallet.Signers) {

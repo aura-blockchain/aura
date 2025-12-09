@@ -157,7 +157,13 @@ func (k Keeper) GetAllDoubleSignEvidences(ctx context.Context) []types.DoubleSig
 	var evidences []types.DoubleSignEvidence
 	for ; iterator.Valid(); iterator.Next() {
 		var evidence types.DoubleSignEvidence
-		k.cdc.MustUnmarshal(iterator.Value(), &evidence)
+		if err := k.cdc.Unmarshal(iterator.Value(), &evidence); err != nil {
+
+			k.logger.Error("failed to unmarshal", "error", err)
+
+			continue
+
+		}
 		evidences = append(evidences, evidence)
 	}
 
@@ -182,7 +188,13 @@ func (k Keeper) GetDoubleSignEvidence(ctx context.Context, validatorAddr string)
 	}
 
 	var evidence types.DoubleSignEvidence
-	k.cdc.MustUnmarshal(bz, &evidence)
+	if err := k.cdc.Unmarshal(bz, &evidence); err != nil {
+
+		k.logger.Error("failed to unmarshal", "error", err)
+
+		continue
+
+	}
 	return &evidence, nil
 }
 
@@ -195,7 +207,13 @@ func (k Keeper) GetAllDowntimeInfractions(ctx context.Context) []types.DowntimeI
 	var infractions []types.DowntimeInfraction
 	for ; iterator.Valid(); iterator.Next() {
 		var infraction types.DowntimeInfraction
-		k.cdc.MustUnmarshal(iterator.Value(), &infraction)
+		if err := k.cdc.Unmarshal(iterator.Value(), &infraction); err != nil {
+
+			k.logger.Error("failed to unmarshal", "error", err)
+
+			continue
+
+		}
 		infractions = append(infractions, infraction)
 	}
 
@@ -220,7 +238,13 @@ func (k Keeper) GetDowntimeInfraction(ctx context.Context, validatorAddr string)
 	}
 
 	var infraction types.DowntimeInfraction
-	k.cdc.MustUnmarshal(bz, &infraction)
+	if err := k.cdc.Unmarshal(bz, &infraction); err != nil {
+
+		k.logger.Error("failed to unmarshal", "error", err)
+
+		continue
+
+	}
 	return &infraction, nil
 }
 
@@ -247,7 +271,13 @@ func (k Keeper) GetAllValidatorAlerts(ctx context.Context) []types.ValidatorAler
 	var alerts []types.ValidatorAlert
 	for ; iterator.Valid(); iterator.Next() {
 		var alert types.ValidatorAlert
-		k.cdc.MustUnmarshal(iterator.Value(), &alert)
+		if err := k.cdc.Unmarshal(iterator.Value(), &alert); err != nil {
+
+			k.logger.Error("failed to unmarshal", "error", err)
+
+			continue
+
+		}
 		alerts = append(alerts, alert)
 	}
 
@@ -271,7 +301,13 @@ func (k Keeper) GetAllSentryNodes(ctx context.Context) []types.SentryNodeInfo {
 	var sentryNodes []types.SentryNodeInfo
 	for ; iterator.Valid(); iterator.Next() {
 		var node types.SentryNodeInfo
-		k.cdc.MustUnmarshal(iterator.Value(), &node)
+		if err := k.cdc.Unmarshal(iterator.Value(), &node); err != nil {
+
+			k.logger.Error("failed to unmarshal", "error", err)
+
+			continue
+
+		}
 		sentryNodes = append(sentryNodes, node)
 	}
 

@@ -56,25 +56,23 @@ func (qs queryServer) AllPeers(goCtx context.Context, req *types.QueryAllPeersRe
 	store := ctx.KVStore(qs.storeKey)
 	peerStore := prefix.NewStore(store, types.PeerInfoPrefix)
 
-	// Default pagination limits
-	const defaultLimit = 100
-
-	peers := []*types.PeerInfo{}
-	count := 0
-
-	iterator := peerStore.Iterator(nil, nil)
-	defer iterator.Close()
-
-	for ; iterator.Valid() && count < defaultLimit; iterator.Next() {
+	var peers []*types.PeerInfo
+	pageRes, err := query.Paginate(peerStore, req.Pagination, func(key []byte, value []byte) error {
 		var peer types.PeerInfo
-		if err := qs.cdc.Unmarshal(iterator.Value(), &peer); err != nil {
-			continue
+		if err := qs.cdc.Unmarshal(value, &peer); err != nil {
+			return err
 		}
 		peers = append(peers, &peer)
-		count++
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
 
-	return &types.QueryAllPeersResponse{Peers: peers}, nil
+	return &types.QueryAllPeersResponse{
+		Peers:      peers,
+		Pagination: pageRes,
+	}, nil
 }
 
 // TrustedPeers queries all trusted peers
