@@ -3,7 +3,7 @@ package keeper_test
 import (
 	"time"
 
-	"google.golang.org/protobuf/types/known/timestamppb"
+	sdkmath "cosmossdk.io/math"
 
 	"github.com/aequitas/aura/chain/x/validatorsecurity/types"
 )
@@ -64,34 +64,35 @@ func (suite *KeeperTestSuite) TestGetAllDoubleSignEvidences() {
 	val1 := newValAddr()
 	val2 := newValAddr()
 	val3 := newValAddr()
+	now := time.Now()
 
 	evidence1 := types.DoubleSignEvidence{
 		ValidatorAddress: val1,
 		Height:           100,
-		Time:             timestamppb.New(time.Now()),
+		Time:             &now,
 		VoteA:            []byte("vote_a1"),
 		VoteB:            []byte("vote_b1"),
-		SlashFraction:    "0.05",
+		SlashFraction:    sdkmath.LegacyMustNewDecFromStr("0.05"),
 	}
 	suite.keeper.SetDoubleSignEvidence(suite.ctx, evidence1)
 
 	evidence2 := types.DoubleSignEvidence{
 		ValidatorAddress: val2,
 		Height:           101,
-		Time:             timestamppb.New(time.Now()),
+		Time:             &now,
 		VoteA:            []byte("vote_a2"),
 		VoteB:            []byte("vote_b2"),
-		SlashFraction:    "0.05",
+		SlashFraction:    sdkmath.LegacyMustNewDecFromStr("0.05"),
 	}
 	suite.keeper.SetDoubleSignEvidence(suite.ctx, evidence2)
 
 	evidence3 := types.DoubleSignEvidence{
 		ValidatorAddress: val3,
 		Height:           102,
-		Time:             timestamppb.New(time.Now()),
+		Time:             &now,
 		VoteA:            []byte("vote_a3"),
 		VoteB:            []byte("vote_b3"),
-		SlashFraction:    "0.05",
+		SlashFraction:    sdkmath.LegacyMustNewDecFromStr("0.05"),
 	}
 	suite.keeper.SetDoubleSignEvidence(suite.ctx, evidence3)
 
@@ -199,13 +200,14 @@ func (suite *KeeperTestSuite) TestGetDowntimeInfractionNotFound() {
 
 func (suite *KeeperTestSuite) TestSetAndGetDowntimeInfraction() {
 	validatorAddr := "auravaloper1infraction"
+	now := time.Now()
 
 	infraction := types.DowntimeInfraction{
 		ValidatorAddress: validatorAddr,
 		MissedBlocks:     200,
 		WindowSize:       1000,
-		DetectedAt:       timestamppb.New(time.Now()),
-		SlashFraction:    "0.0001",
+		DetectedAt:       &now,
+		SlashFraction:    sdkmath.LegacyMustNewDecFromStr("0.0001"),
 	}
 
 	suite.keeper.SetDowntimeInfraction(suite.ctx, infraction)
