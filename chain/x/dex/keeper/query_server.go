@@ -7,7 +7,9 @@ import (
 	"strings"
 
 	sdkmath "cosmossdk.io/math"
+	"github.com/cosmos/cosmos-sdk/store/prefix"
 	"github.com/cosmos/cosmos-sdk/telemetry"
+	"github.com/cosmos/cosmos-sdk/types/query"
 	metrics "github.com/hashicorp/go-metrics"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -15,6 +17,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	"github.com/aequitas/aura/chain/x/dex/types"
 	dexpb "github.com/aequitas/aura/proto/aura/dex/v1beta1"
 )
 
@@ -44,10 +47,32 @@ func (qs queryServer) Pool(ctx context.Context, req *dexpb.QueryPoolRequest) (*d
 	return &dexpb.QueryPoolResponse{Pool: pool}, nil
 }
 
-func (qs queryServer) AllPools(ctx context.Context, _ *dexpb.QueryAllPoolsRequest) (*dexpb.QueryAllPoolsResponse, error) {
+func (qs queryServer) AllPools(ctx context.Context, req *dexpb.QueryAllPoolsRequest) (*dexpb.QueryAllPoolsResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	pools := qs.keeper.GetAllPools(sdkCtx)
-	return &dexpb.QueryAllPoolsResponse{Pools: pools}, nil
+	store := sdkCtx.KVStore(qs.keeper.storeKey)
+	poolStore := prefix.NewStore(store, types.PoolPrefix)
+
+	pools := []*dexpb.LiquidityPool{}
+	pageRes, err := query.Paginate(poolStore, req.Pagination, func(key []byte, value []byte) error {
+		var pool dexpb.LiquidityPool
+		if err := qs.keeper.cdc.Unmarshal(value, &pool); err != nil {
+			return err
+		}
+		pools = append(pools, &pool)
+		return nil
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &dexpb.QueryAllPoolsResponse{
+		Pools:      pools,
+		Pagination: pageRes,
+	}, nil
 }
 
 func (qs queryServer) GetQuote(ctx context.Context, req *dexpb.QueryGetQuoteRequest) (*dexpb.QueryGetQuoteResponse, error) {
@@ -205,8 +230,31 @@ func (qs queryServer) UserOrders(ctx context.Context, req *dexpb.QueryUserOrders
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	orders := qs.keeper.GetOrdersByUser(sdkCtx, req.Address)
-	return &dexpb.QueryUserOrdersResponse{Orders: orders}, nil
+	store := sdkCtx.KVStore(qs.keeper.storeKey)
+	userOrderStore := prefix.NewStore(store, types.UserOrderAddressPrefix(req.Address))
+
+	orders := []*dexpb.SwapOrder{}
+	pageRes, err := query.Paginate(userOrderStore, req.Pagination, func(key []byte, value []byte) error {
+		// The value stored is just the order ID reference, we need to fetch the actual order
+		// Extract order ID from the key (it's after the timestamp bytes)
+		if len(key) >= 8 {
+			orderID := string(key[8:])
+			order := qs.keeper.GetOrder(sdkCtx, orderID)
+			if order != nil {
+				orders = append(orders, order)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		qs.logError(ctx, "user_orders", err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &dexpb.QueryUserOrdersResponse{
+		Orders:     orders,
+		Pagination: pageRes,
+	}, nil
 }
 
 func (qs queryServer) MarketPrice(ctx context.Context, req *dexpb.QueryMarketPriceRequest) (*dexpb.QueryMarketPriceResponse, error) {

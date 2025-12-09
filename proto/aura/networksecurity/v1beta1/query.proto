@@ -3,6 +3,7 @@ package aura.networksecurity.v1beta1;
 
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
 import "aura/networksecurity/v1beta1/networksecurity.proto";
 
 option go_package = "github.com/aequitas/aura/proto/aura/networksecurity/v1beta1";
@@ -74,10 +75,13 @@ message QueryPeerInfoResponse {
   PeerInfo peer = 1 [(gogoproto.nullable) = false];
 }
 
-message QueryAllPeersRequest {}
+message QueryAllPeersRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
 
 message QueryAllPeersResponse {
   repeated PeerInfo peers = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 message QueryTrustedPeersRequest {}

@@ -3,6 +3,7 @@ package aura.dex.v1beta1;
 
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
 import "aura/dex/v1beta1/liquidity_pool.proto";
 import "aura/dex/v1beta1/swap.proto";
 
@@ -75,10 +76,13 @@ message QueryPoolResponse {
   LiquidityPool pool = 1 [(gogoproto.nullable) = false];
 }
 
-message QueryAllPoolsRequest {}
+message QueryAllPoolsRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
 
 message QueryAllPoolsResponse {
   repeated LiquidityPool pools = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 // Quote queries
@@ -175,10 +179,12 @@ message QueryOrderResponse {
 
 message QueryUserOrdersRequest {
   string address = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
 }
 
 message QueryUserOrdersResponse {
   repeated SwapOrder orders = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 // Market price queries

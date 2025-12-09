@@ -4,7 +4,9 @@ import (
 	"context"
 
 	sdkmath "cosmossdk.io/math"
+	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/query"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -50,44 +52,51 @@ func (qs queryServer) Proposals(goCtx context.Context, req *govpb.QueryProposals
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	proposals := qs.Keeper.GetAllProposals(ctx)
+	store := ctx.KVStore(qs.Keeper.storeKey)
+	proposalStore := prefix.NewStore(store, ProposalsKeyPrefix)
 
-	// Filter by status if provided
-	if req.Status != govpb.ProposalStatus_PROPOSAL_STATUS_UNSPECIFIED {
-		var filtered []*types.Proposal
-		for _, p := range proposals {
-			if p.Status == req.Status {
-				filtered = append(filtered, p)
+	// Pre-filter proposals with pagination
+	proposals := []*types.Proposal{}
+	pageRes, err := query.FilteredPaginate(proposalStore, req.Pagination, func(key []byte, value []byte) (bool, error) {
+		var proposal types.Proposal
+		if err := qs.Keeper.cdc.Unmarshal(value, &proposal); err != nil {
+			return false, err
+		}
+
+		// Filter by status if provided
+		if req.Status != govpb.ProposalStatus_PROPOSAL_STATUS_UNSPECIFIED {
+			if proposal.Status != req.Status {
+				return false, nil
 			}
 		}
-		proposals = filtered
-	}
 
-	// Filter by voter if provided
-	if req.Voter != "" {
-		var filtered []*types.Proposal
-		for _, p := range proposals {
-			_, err := qs.Keeper.GetVote(ctx, p.Id, req.Voter)
-			if err == nil {
-				filtered = append(filtered, p)
+		// Filter by voter if provided
+		if req.Voter != "" {
+			_, err := qs.Keeper.GetVote(ctx, proposal.Id, req.Voter)
+			if err != nil {
+				return false, nil
 			}
 		}
-		proposals = filtered
-	}
 
-	// Filter by depositor if provided
-	if req.Depositor != "" {
-		var filtered []*types.Proposal
-		for _, p := range proposals {
-			_, err := qs.Keeper.GetDeposit(ctx, p.Id, req.Depositor)
-			if err == nil {
-				filtered = append(filtered, p)
+		// Filter by depositor if provided
+		if req.Depositor != "" {
+			_, err := qs.Keeper.GetDeposit(ctx, proposal.Id, req.Depositor)
+			if err != nil {
+				return false, nil
 			}
 		}
-		proposals = filtered
+
+		proposals = append(proposals, &proposal)
+		return true, nil
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &govpb.QueryProposalsResponse{Proposals: proposals}, nil
+	return &govpb.QueryProposalsResponse{
+		Proposals:  proposals,
+		Pagination: pageRes,
+	}, nil
 }
 
 // Vote queries a vote by proposal id and voter

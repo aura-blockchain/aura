@@ -55,87 +55,14 @@ func ParamsInvariant(k *Keeper) sdk.Invariant {
 			), true
 		}
 
-		// Validate max mempool size
-		if params.MaxMempoolSize > 0 && params.MaxMempoolSize < 100 {
-			return sdk.FormatInvariant(
-				types.ModuleName,
-				"params-valid",
-				fmt.Sprintf("max mempool size too small: %d (min 100)", params.MaxMempoolSize),
-			), true
-		}
-
-		// Validate max transaction age (should be at least 1 hour if set)
-		if params.MaxTransactionAge > 0 && params.MaxTransactionAge < 3600 {
-			return sdk.FormatInvariant(
-				types.ModuleName,
-				"params-valid",
-				fmt.Sprintf("max transaction age too short: %d seconds (min 1 hour)", params.MaxTransactionAge),
-			), true
-		}
-
-		// Validate batch size configuration
-		if params.BatchConfig != nil {
-			if params.BatchConfig.MaxBatchSize == 0 {
-				return sdk.FormatInvariant(
-					types.ModuleName,
-					"params-valid",
-					"batch config max batch size cannot be zero",
-				), true
-			}
-
-			if params.BatchConfig.MaxBatchSize > 10000 {
-				return sdk.FormatInvariant(
-					types.ModuleName,
-					"params-valid",
-					fmt.Sprintf("batch config max batch size too large: %d (max 10000)", params.BatchConfig.MaxBatchSize),
-				), true
-			}
-
-			if params.BatchConfig.BatchTimeoutMs == 0 {
-				return sdk.FormatInvariant(
-					types.ModuleName,
-					"params-valid",
-					"batch config timeout cannot be zero",
-				), true
-			}
-
-			if params.BatchConfig.BatchTimeoutMs > 60000 {
-				return sdk.FormatInvariant(
-					types.ModuleName,
-					"params-valid",
-					fmt.Sprintf("batch config timeout too long: %d ms (max 60000)", params.BatchConfig.BatchTimeoutMs),
-				), true
-			}
-		}
-
-		// Validate scheduler configuration
+		// Validate scheduler configuration if present
 		if params.SchedulerConfig != nil && params.SchedulerConfig.Enabled {
-			// Off-peak hours should be valid (0-23)
-			if params.SchedulerConfig.OffPeakStartHour > 23 {
-				return sdk.FormatInvariant(
-					types.ModuleName,
-					"params-valid",
-					fmt.Sprintf("off-peak start hour invalid: %d (max 23)", params.SchedulerConfig.OffPeakStartHour),
-				), true
-			}
-
-			if params.SchedulerConfig.OffPeakEndHour > 23 {
-				return sdk.FormatInvariant(
-					types.ModuleName,
-					"params-valid",
-					fmt.Sprintf("off-peak end hour invalid: %d (max 23)", params.SchedulerConfig.OffPeakEndHour),
-				), true
-			}
-
-			// Auto-scaling thresholds should be reasonable (0-100%)
-			if params.SchedulerConfig.AutoScaleThreshold > 100 {
-				return sdk.FormatInvariant(
-					types.ModuleName,
-					"params-valid",
-					fmt.Sprintf("auto-scale threshold invalid: %d (max 100)", params.SchedulerConfig.AutoScaleThreshold),
-				), true
-			}
+			// Basic validation on scheduler being enabled
+			// Additional field validation can be added when fields are defined in proto
 		}
+
+		// Additional validation can be added here for specific param fields
+		// when they are defined in the proto
 
 		return "", false
 	}
@@ -146,26 +73,14 @@ func MempoolConsistencyInvariant(k *Keeper) sdk.Invariant {
 	return func(ctx sdk.Context) (string, bool) {
 		transactions := k.GetMempoolTransactions(ctx)
 
-		// Get max mempool size from params
-		params, err := k.GetParams(ctx)
-		if err != nil {
+		// Basic validation on mempool size (reasonable upper bound)
+		// Max mempool size check can be added when the field is defined in params proto
+		if len(transactions) > 100000 {
 			return sdk.FormatInvariant(
 				types.ModuleName,
 				"mempool-consistency",
-				fmt.Sprintf("failed to get params: %s", err.Error()),
+				fmt.Sprintf("mempool size (%d) exceeds reasonable maximum (100000)", len(transactions)),
 			), true
-		}
-
-		// Check mempool size doesn't exceed max
-		if params != nil && params.MaxMempoolSize > 0 {
-			if uint64(len(transactions)) > params.MaxMempoolSize {
-				return sdk.FormatInvariant(
-					types.ModuleName,
-					"mempool-consistency",
-					fmt.Sprintf("mempool size (%d) exceeds max (%d)",
-						len(transactions), params.MaxMempoolSize),
-				), true
-			}
 		}
 
 		// Track seen transaction hashes to detect duplicates
@@ -244,9 +159,6 @@ func NonceValidityInvariant(k *Keeper) sdk.Invariant {
 		addressNonces := make(map[string]uint64)
 
 		for _, tx := range transactions {
-			// Get current nonce for sender
-			currentNonce := k.GetNonce(ctx, tx.Sender)
-
 			// Track highest nonce seen for this address
 			if highestNonce, exists := addressNonces[tx.Sender]; exists {
 				if tx.Nonce > highestNonce {
@@ -265,9 +177,10 @@ func NonceValidityInvariant(k *Keeper) sdk.Invariant {
 				), true
 			}
 
-			// Validate transaction is valid according to current nonce
-			valid, err := k.ValidateTransaction(ctx, tx)
-			if err != nil && !valid {
+			// Validate transaction nonce is reasonable
+			// ValidateTransaction checks nonce is >= current nonce
+			_, err := k.ValidateTransaction(ctx, tx)
+			if err != nil {
 				return sdk.FormatInvariant(
 					types.ModuleName,
 					"nonce-validity",

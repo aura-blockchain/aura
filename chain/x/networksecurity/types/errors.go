@@ -35,4 +35,5 @@ var (
 	ErrInvalidASN                = errors.Register(ModuleName, 28, "invalid ASN")
 	ErrConnectionTimeout         = errors.Register(ModuleName, 29, "connection timeout")
 	ErrInvalidPublicKey          = errors.Register(ModuleName, 30, "invalid public key")
+	ErrCorruptedState            = errors.Register(ModuleName, 31, "corrupted state data")
 )

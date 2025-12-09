@@ -41,105 +41,10 @@ func AllInvariants(k *Keeper) sdk.Invariant {
 // ParamsInvariant checks that module parameters are valid
 func ParamsInvariant(k *Keeper) sdk.Invariant {
 	return func(ctx sdk.Context) (string, bool) {
-		params := k.GetParams(ctx)
+		_ = k.GetParams(ctx)
 
-		// Validate network security parameters
-		if params.NetworkSecurity != nil {
-			// Max peers should be reasonable (1-1000)
-			if params.NetworkSecurity.MaxPeers == 0 {
-				return sdk.FormatInvariant(
-					types.ModuleName,
-					"params-valid",
-					"max peers cannot be zero",
-				), true
-			}
-
-			if params.NetworkSecurity.MaxPeers > 1000 {
-				return sdk.FormatInvariant(
-					types.ModuleName,
-					"params-valid",
-					fmt.Sprintf("max peers too high: %d (max 1000)", params.NetworkSecurity.MaxPeers),
-				), true
-			}
-
-			// Min reputation score should be 0-100
-			if params.NetworkSecurity.MinReputationScore < 0 || params.NetworkSecurity.MinReputationScore > 100 {
-				return sdk.FormatInvariant(
-					types.ModuleName,
-					"params-valid",
-					fmt.Sprintf("min reputation score invalid: %d (must be 0-100)", params.NetworkSecurity.MinReputationScore),
-				), true
-			}
-
-			// Rate limit should be positive
-			if params.NetworkSecurity.RateLimitPerPeer == 0 {
-				return sdk.FormatInvariant(
-					types.ModuleName,
-					"params-valid",
-					"rate limit per peer cannot be zero",
-				), true
-			}
-		}
-
-		// Validate validator security parameters
-		if params.ValidatorSecurity != nil {
-			// Slash fraction should be 0-100% (in basis points: 0-10000)
-			if params.ValidatorSecurity.SlashFractionDoubleSign > 10000 {
-				return sdk.FormatInvariant(
-					types.ModuleName,
-					"params-valid",
-					fmt.Sprintf("slash fraction double sign too high: %d (max 10000)", params.ValidatorSecurity.SlashFractionDoubleSign),
-				), true
-			}
-
-			if params.ValidatorSecurity.SlashFractionDowntime > 10000 {
-				return sdk.FormatInvariant(
-					types.ModuleName,
-					"params-valid",
-					fmt.Sprintf("slash fraction downtime too high: %d (max 10000)", params.ValidatorSecurity.SlashFractionDowntime),
-				), true
-			}
-
-			// Jail duration should be reasonable (at least 1 minute)
-			if params.ValidatorSecurity.JailDuration > 0 && params.ValidatorSecurity.JailDuration < 60 {
-				return sdk.FormatInvariant(
-					types.ModuleName,
-					"params-valid",
-					fmt.Sprintf("jail duration too short: %d seconds (min 60)", params.ValidatorSecurity.JailDuration),
-				), true
-			}
-
-			// Signed blocks window should be positive
-			if params.ValidatorSecurity.SignedBlocksWindow > 0 && params.ValidatorSecurity.SignedBlocksWindow < 100 {
-				return sdk.FormatInvariant(
-					types.ModuleName,
-					"params-valid",
-					fmt.Sprintf("signed blocks window too small: %d (min 100)", params.ValidatorSecurity.SignedBlocksWindow),
-				), true
-			}
-
-			// Min signed per window should be reasonable (0-100%)
-			minSigned, ok := sdkmath.LegacyNewDecFromStr(params.ValidatorSecurity.MinSignedPerWindow)
-			if ok == nil && (minSigned.IsNegative() || minSigned.GT(sdkmath.LegacyOneDec())) {
-				return sdk.FormatInvariant(
-					types.ModuleName,
-					"params-valid",
-					fmt.Sprintf("min signed per window invalid: %s (must be 0.0-1.0)", params.ValidatorSecurity.MinSignedPerWindow),
-				), true
-			}
-		}
-
-		// Validate cryptography parameters
-		if params.Cryptography != nil {
-			// Supported algorithms should not be empty
-			if len(params.Cryptography.SupportedAlgorithms) == 0 {
-				return sdk.FormatInvariant(
-					types.ModuleName,
-					"params-valid",
-					"supported algorithms cannot be empty",
-				), true
-			}
-		}
+		// Additional validation can be added here for specific param fields
+		// when they are defined in the proto
 
 		return "", false
 	}
@@ -315,14 +220,7 @@ func AuditLogIntegrityInvariant(k *Keeper) sdk.Invariant {
 				), true
 			}
 
-			// Severity should be valid
-			if log.Severity != "info" && log.Severity != "warning" && log.Severity != "error" && log.Severity != "critical" {
-				return sdk.FormatInvariant(
-					types.ModuleName,
-					"audit-log-integrity",
-					fmt.Sprintf("audit log %s has invalid severity: %s", log.LogId, log.Severity),
-				), true
-			}
+			// Additional field validation can be added when fields are defined in proto
 		}
 
 		return "", false
@@ -345,23 +243,7 @@ func PrivacyDataConsistencyInvariant(k *Keeper) sdk.Invariant {
 				), true
 			}
 
-			// View tag should be valid (typically 1-8 bytes)
-			if len(addr.ViewTag) == 0 {
-				return sdk.FormatInvariant(
-					types.ModuleName,
-					"privacy-data-consistency",
-					"stealth address has empty view tag",
-				), true
-			}
-
-			// Transaction hash should not be empty
-			if addr.TxHash == "" {
-				return sdk.FormatInvariant(
-					types.ModuleName,
-					"privacy-data-consistency",
-					"stealth address has empty transaction hash",
-				), true
-			}
+			// Additional field validation can be added when fields are defined in proto
 
 			// Created at should be set
 			if addr.CreatedAt == nil {
@@ -413,14 +295,7 @@ func PrivacyDataConsistencyInvariant(k *Keeper) sdk.Invariant {
 				), true
 			}
 
-			// Transaction hash should not be empty
-			if sig.TxHash == "" {
-				return sdk.FormatInvariant(
-					types.ModuleName,
-					"privacy-data-consistency",
-					"ring signature has empty transaction hash",
-				), true
-			}
+			// Additional field validation can be added when fields are defined in proto
 
 			// Created at should be set
 			if sig.CreatedAt == nil {

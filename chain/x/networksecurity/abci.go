@@ -26,10 +26,13 @@ func BeginBlocker(ctx sdk.Context, k keeper.Keeper) {
 		k.CleanupMessageCache(ctx)
 	}
 
-	// 5. Update peer uptimes
-	peers := k.GetAllPeers(ctx)
-	for _, peer := range peers {
-		k.UpdatePeerUptime(ctx, peer.PeerId)
+	// 5. Update peer uptimes (batched every 100 blocks to reduce gas)
+	// Uptime is a derived metric that doesn't need per-block precision
+	if ctx.BlockHeight()%100 == 0 {
+		peers := k.GetAllPeers(ctx)
+		for _, peer := range peers {
+			k.UpdatePeerUptime(ctx, peer.PeerId)
+		}
 	}
 
 	// 6. Check mempool health
