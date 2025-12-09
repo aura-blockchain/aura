@@ -39,6 +39,7 @@ func TestUnlockTokens_ValidatorAuthorization(t *testing.T) {
 		transferID := "transfer-001"
 		burnTxHash := "0xabcd1234"
 		amount := "1000"
+		amountInt, _ := sdk.NewIntFromString(amount)
 		sender := keepertest.GenTestAddr().String()
 		createTestTransferForUnlock(t, input, k, transferID, burnTxHash, amount, types.MinAllowedConfirmations)
 
@@ -80,6 +81,7 @@ func TestUnlockTokens_ValidatorAuthorization(t *testing.T) {
 		transferID := "transfer-002"
 		burnTxHash := "0xdef56789"
 		amount := "2000"
+		amountInt, _ := sdk.NewIntFromString(amount)
 		sender := keepertest.GenTestAddr().String()
 		createTestTransferForUnlock(t, input, k, transferID, burnTxHash, amount, types.MinAllowedConfirmations)
 
@@ -122,6 +124,7 @@ func TestUnlockTokens_ValidatorAuthorization(t *testing.T) {
 		transferID := "transfer-003"
 		burnTxHash := "0x11223344"
 		amount := "3000"
+		amountInt, _ := sdk.NewIntFromString(amount)
 		sender := keepertest.GenTestAddr().String()
 		createTestTransferForUnlock(t, input, k, transferID, burnTxHash, amount, types.MinAllowedConfirmations)
 
@@ -171,6 +174,7 @@ func TestUnlockTokens_ValidatorAuthorization(t *testing.T) {
 		transferID := "transfer-004"
 		burnTxHash := "0x55667788"
 		amount := "4000"
+		amountInt, _ := sdk.NewIntFromString(amount)
 		sender := keepertest.GenTestAddr().String()
 		createTestTransferForUnlock(t, input, k, transferID, burnTxHash, amount, types.MinAllowedConfirmations)
 
@@ -220,6 +224,7 @@ func TestUnlockTokens_SignatureSetReplay(t *testing.T) {
 		transferID := "transfer-replay-001"
 		burnTxHash := "0xreplay1234"
 		amount := "5000"
+		amountInt, _ := sdk.NewIntFromString(amount)
 		sender := keepertest.GenTestAddr().String()
 		createTestTransferForUnlock(t, input, k, transferID, burnTxHash, amount, types.MinAllowedConfirmations)
 
@@ -326,6 +331,7 @@ func TestUnlockTokens_ValidatorRotation(t *testing.T) {
 		transferID := "transfer-rotation-001"
 		burnTxHash := "0xrot1234"
 		amount := "6000"
+		amountInt, _ := sdk.NewIntFromString(amount)
 		sender := keepertest.GenTestAddr().String()
 		createTestTransferForUnlock(t, input, k, transferID, burnTxHash, amount, types.MinAllowedConfirmations)
 
@@ -380,6 +386,7 @@ func TestUnlockTokens_ValidatorRotation(t *testing.T) {
 		transferID := "transfer-rotation-002"
 		burnTxHash := "0xrot5678"
 		amount := "7000"
+		amountInt, _ := sdk.NewIntFromString(amount)
 		sender := keepertest.GenTestAddr().String()
 		createTestTransferForUnlock(t, input, k, transferID, burnTxHash, amount, types.MinAllowedConfirmations)
 
@@ -432,6 +439,7 @@ func TestUnlockTokens_ValidatorRotation(t *testing.T) {
 		transferID := "transfer-rotation-003"
 		burnTxHash := "0xrot9999"
 		amount := "8000"
+		amountInt, _ := sdk.NewIntFromString(amount)
 		sender := keepertest.GenTestAddr().String()
 		createTestTransferForUnlock(t, input, k, transferID, burnTxHash, amount, types.MinAllowedConfirmations)
 
@@ -488,6 +496,7 @@ func TestUnlockTokens_CombinedSecurityChecks(t *testing.T) {
 		transferID := "transfer-combined-001"
 		burnTxHash := "0xcombined1234"
 		amount := "9000"
+		amountInt, _ := sdk.NewIntFromString(amount)
 		sender := keepertest.GenTestAddr().String()
 		createTestTransferForUnlock(t, input, k, transferID, burnTxHash, amount, types.MinAllowedConfirmations)
 
@@ -542,6 +551,7 @@ func TestUnlockTokens_CombinedSecurityChecks(t *testing.T) {
 		transferID := "transfer-attack-001"
 		burnTxHash := "0xattack1234"
 		amount := "10000"
+		amountInt, _ := sdk.NewIntFromString(amount)
 		sender := keepertest.GenTestAddr().String()
 		createTestTransferForUnlock(t, input, k, transferID, burnTxHash, amount, types.MinAllowedConfirmations)
 
@@ -584,6 +594,7 @@ func TestUnlockTokens_CombinedSecurityChecks(t *testing.T) {
 		transferID := "transfer-attack-002"
 		burnTxHash := "0xattack5678"
 		amount := "11000"
+		amountInt, _ := sdk.NewIntFromString(amount)
 		sender := keepertest.GenTestAddr().String()
 		createTestTransferForUnlock(t, input, k, transferID, burnTxHash, amount, types.MinAllowedConfirmations)
 
@@ -635,6 +646,7 @@ func TestUnlockTokens_CombinedSecurityChecks(t *testing.T) {
 		transferID := "transfer-attack-003"
 		burnTxHash := "0xattack9999"
 		amount := "12000"
+		amountInt, _ := sdk.NewIntFromString(amount)
 		sender := keepertest.GenTestAddr().String()
 		createTestTransferForUnlock(t, input, k, transferID, burnTxHash, amount, types.MinAllowedConfirmations)
 
