@@ -48,7 +48,7 @@ func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *r
 
 // RegisterInterfaces registers the wallet security module's interface types.
 func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
-	msgservice.RegisterMsgServiceDesc(registry, &wsproto.Msg_ServiceDesc)
+	msgservice.RegisterMsgServiceDesc(registry, &wsproto.Msg_serviceDesc)
 
 	registry.RegisterImplementations(
 		(*sdk.Msg)(nil),

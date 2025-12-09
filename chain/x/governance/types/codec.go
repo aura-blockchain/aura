@@ -17,7 +17,7 @@ func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 
 // RegisterInterfaces registers the governance module proto interfaces.
 func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
-	msgservice.RegisterMsgServiceDesc(registry, &govpb.Msg_ServiceDesc)
+	msgservice.RegisterMsgServiceDesc(registry, &govpb.Msg_serviceDesc)
 
 	registry.RegisterImplementations((*sdk.Msg)(nil),
 		&govpb.MsgSubmitProposal{},

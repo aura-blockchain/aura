@@ -41,7 +41,7 @@ func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {}
 
 // RegisterInterfaces registers the module's interface types
 func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
-	msgservice.RegisterMsgServiceDesc(registry, &cryptoproto.Msg_ServiceDesc)
+	msgservice.RegisterMsgServiceDesc(registry, &cryptoproto.Msg_serviceDesc)
 
 	registry.RegisterImplementations(
 		(*sdk.Msg)(nil),

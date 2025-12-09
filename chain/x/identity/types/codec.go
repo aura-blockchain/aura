@@ -92,5 +92,5 @@ func RegisterInterfaces(registry types.InterfaceRegistry) {
 		&identitypb.MsgUpdateParams{},
 	)
 
-	msgservice.RegisterMsgServiceDesc(registry, &identitypb.Msg_ServiceDesc)
+	msgservice.RegisterMsgServiceDesc(registry, &identitypb.Msg_serviceDesc)
 }

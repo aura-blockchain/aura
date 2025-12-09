@@ -17,5 +17,5 @@ func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 // RegisterInterfaces registers the x/prevalidation interfaces types with the interface registry
 func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 	// Register message types with the interface registry
-	msgservice.RegisterMsgServiceDesc(registry, &prevalidationpb.Msg_ServiceDesc)
+	msgservice.RegisterMsgServiceDesc(registry, &prevalidationpb.Msg_serviceDesc)
 }

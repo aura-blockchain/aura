@@ -21,7 +21,7 @@ func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 // RegisterInterfaces registers the x/monitoring interfaces types with the interface registry
 func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 	// Register message service
-	msgservice.RegisterMsgServiceDesc(registry, &monitoringpb.Msg_ServiceDesc)
+	msgservice.RegisterMsgServiceDesc(registry, &monitoringpb.Msg_serviceDesc)
 
 	// Register message implementations
 	registry.RegisterImplementations(

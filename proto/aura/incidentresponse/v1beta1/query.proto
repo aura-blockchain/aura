@@ -1,6 +1,7 @@
 syntax = "proto3";
 package aura.incidentresponse.v1beta1;
 
+import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/duration.proto";
@@ -48,9 +49,9 @@ message Incident {
   string severity = 4;
   string status = 5;
   string reported_by = 6;
-  google.protobuf.Timestamp reported_at = 7;
-  google.protobuf.Timestamp updated_at = 8;
-  google.protobuf.Timestamp resolved_at = 9;
+  google.protobuf.Timestamp reported_at = 7 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  google.protobuf.Timestamp updated_at = 8 [(gogoproto.stdtime) = true];
+  google.protobuf.Timestamp resolved_at = 9 [(gogoproto.stdtime) = true];
   repeated string affected_systems = 10;
   repeated string response_team = 11;
 }
@@ -67,12 +68,12 @@ message QueryGetChainPauseStateResponse {
 message ChainPauseState {
   bool is_paused = 1;
   string pause_level = 2;
-  google.protobuf.Timestamp paused_at = 3;
+  google.protobuf.Timestamp paused_at = 3 [(gogoproto.stdtime) = true];
   string paused_by = 4;
   string reason = 5;
   string incident_id = 6;
   repeated string paused_modules = 7;
-  google.protobuf.Timestamp estimated_resume = 8;
+  google.protobuf.Timestamp estimated_resume = 8 [(gogoproto.stdtime) = true];
 }
 
 // QueryCheckWalletLimitRequest is the request for checking wallet limits

@@ -3,6 +3,7 @@ package aura.compliance.v1beta1;
 
 option go_package = "github.com/aequitas/aura/proto/aura/compliance/v1beta1";
 
+import "gogoproto/gogo.proto";
 import "google/protobuf/timestamp.proto";
 import "cosmos/msg/v1/msg.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
@@ -50,8 +51,8 @@ message KYCRecord {
   string address = 1;
   KYCLevel kyc_level = 2;
   string provider = 3;                              // KYC provider name
-  google.protobuf.Timestamp verified_at = 4;
-  google.protobuf.Timestamp expires_at = 5;
+  google.protobuf.Timestamp verified_at = 4 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  google.protobuf.Timestamp expires_at = 5 [(gogoproto.stdtime) = true];
   bytes pii_commitment = 6;                         // SHA-256 hash of off-chain PII data
   bool enhanced_due_diligence = 7;                  // EDD required flag
   string jurisdiction = 8;                          // ISO 3166-1 alpha-2 country code
@@ -64,7 +65,7 @@ message KYCHistoryEntry {
   string address = 1;
   uint64 version = 2;
   KYCRecord snapshot = 3;                           // Complete KYC record at this version
-  google.protobuf.Timestamp updated_at = 4;
+  google.protobuf.Timestamp updated_at = 4 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
   string updated_by = 5;                            // Provider that performed the update
   string update_reason = 6;                         // Reason for update (audit trail)
 }
@@ -79,7 +80,7 @@ message AMLProfile {
   string address = 1;
   AMLRiskLevel risk_level = 2;
   repeated string risk_factors = 3;
-  google.protobuf.Timestamp last_assessment = 4;
+  google.protobuf.Timestamp last_assessment = 4 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
   uint64 total_transactions = 5;
   string total_volume = 6;                         // Total transaction volume
   repeated SuspiciousActivity suspicious_activities = 7;
@@ -96,8 +97,8 @@ message SuspiciousActivity {
   string activity_type = 4;                        // Type of suspicious activity
   string description = 5;
   string amount = 6;
-  google.protobuf.Timestamp detected_at = 7;
-  google.protobuf.Timestamp reported_at = 8;
+  google.protobuf.Timestamp detected_at = 7 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  google.protobuf.Timestamp reported_at = 8 [(gogoproto.stdtime) = true];
   bool filed_sar = 9;                             // SAR (Suspicious Activity Report) filed
   string sar_reference = 10;                       // SAR reference number
   repeated string indicators = 11;                 // Risk indicators triggered
@@ -112,8 +113,8 @@ message TransactionMonitoringRule {
   map<string, string> parameters = 5;             // Rule-specific parameters
   TransactionRiskLevel risk_level = 6;
   bool enabled = 7;
-  google.protobuf.Timestamp created_at = 8;
-  google.protobuf.Timestamp updated_at = 9;
+  google.protobuf.Timestamp created_at = 8 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  google.protobuf.Timestamp updated_at = 9 [(gogoproto.stdtime) = true];
 }
 
 // TransactionAlert represents a monitoring alert
@@ -124,9 +125,9 @@ message TransactionAlert {
   string rule_id = 4;                             // Rule that triggered alert
   TransactionRiskLevel risk_level = 5;
   string description = 6;
-  google.protobuf.Timestamp triggered_at = 7;
+  google.protobuf.Timestamp triggered_at = 7 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
   bool reviewed = 8;
-  google.protobuf.Timestamp reviewed_at = 9;
+  google.protobuf.Timestamp reviewed_at = 9 [(gogoproto.stdtime) = true];
   string reviewer = 10;
   string resolution = 11;                          // escalate, dismiss, file_sar
   string notes = 12;
@@ -142,10 +143,10 @@ message SanctionsScreeningResult {
   string address = 1;
   SanctionsStatus status = 2;
   repeated SanctionsMatch matches = 3;
-  google.protobuf.Timestamp screened_at = 4;
+  google.protobuf.Timestamp screened_at = 4 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
   string screening_provider = 5;
   bool requires_manual_review = 6;
-  google.protobuf.Timestamp reviewed_at = 7;
+  google.protobuf.Timestamp reviewed_at = 7 [(gogoproto.stdtime) = true];
   string reviewer = 8;
   string review_decision = 9;
 }
@@ -168,8 +169,8 @@ message GDPRConsent {
   string address = 1;
   string consent_type = 2;                        // data_processing, marketing, etc.
   bool consented = 3;
-  google.protobuf.Timestamp consent_given_at = 4;
-  google.protobuf.Timestamp consent_withdrawn_at = 5;
+  google.protobuf.Timestamp consent_given_at = 4 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  google.protobuf.Timestamp consent_withdrawn_at = 5 [(gogoproto.stdtime) = true];
   string consent_version = 6;                     // Version of privacy policy
   bytes audit_commitment = 7;                     // SHA-256 hash for audit trail (optional)
 }
@@ -184,8 +185,8 @@ message GDPRDataRequest {
   string id = 1;
   string address = 2;
   string request_type = 3;                        // access, rectification, erasure, portability
-  google.protobuf.Timestamp requested_at = 4;
-  google.protobuf.Timestamp completed_at = 5;
+  google.protobuf.Timestamp requested_at = 4 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  google.protobuf.Timestamp completed_at = 5 [(gogoproto.stdtime) = true];
   string status = 6;                              // pending, processing, completed, rejected
   string fulfillment_data = 7;                    // JSON data for access requests
   string notes = 8;
@@ -202,10 +203,10 @@ message TaxReport {
   string total_income = 7;
   string total_capital_gains = 8;
   string total_capital_losses = 9;
-  google.protobuf.Timestamp generated_at = 10;
+  google.protobuf.Timestamp generated_at = 10 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
   string file_path = 11;                          // Path to generated PDF/CSV
   bool filed = 12;
-  google.protobuf.Timestamp filed_at = 13;
+  google.protobuf.Timestamp filed_at = 13 [(gogoproto.stdtime) = true];
 }
 
 // TaxReportList stores generated tax reports keyed by address
@@ -216,7 +217,7 @@ message TaxReportList {
 // TaxTransaction represents a taxable transaction
 message TaxTransaction {
   string transaction_hash = 1;
-  google.protobuf.Timestamp timestamp = 2;
+  google.protobuf.Timestamp timestamp = 2 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
   string transaction_type = 3;                    // trade, stake, reward, airdrop, etc.
   string asset = 4;
   string amount = 5;
@@ -231,7 +232,7 @@ message RateLimitEntry {
   string address = 1;                             // Address being rate limited
   string operation = 2;                           // Operation type (sanctions_screening, kyc_verification, etc.)
   int64 count = 3;                                // Number of queries in current window
-  google.protobuf.Timestamp window_start = 4;     // Start of current rate limit window
+  google.protobuf.Timestamp window_start = 4 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];     // Start of current rate limit window
 }
 
 // ComplianceParams defines module parameters

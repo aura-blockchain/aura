@@ -11,7 +11,7 @@ import (
 // RegisterInterfaces wires validatorsecurity messages into the SDK interface registry
 // so MsgService registration can resolve type URLs at startup.
 func RegisterInterfaces(registry types.InterfaceRegistry) {
-	msgservice.RegisterMsgServiceDesc(registry, &v1beta1.Msg_ServiceDesc)
+	msgservice.RegisterMsgServiceDesc(registry, &v1beta1.Msg_serviceDesc)
 
 	registry.RegisterImplementations(
 		(*sdk.Msg)(nil),

@@ -17,7 +17,7 @@ func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 
 // RegisterInterfaces registers the inclusion routines proto interfaces.
 func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
-	msgservice.RegisterMsgServiceDesc(registry, &inclusionroutinespb.Msg_ServiceDesc)
+	msgservice.RegisterMsgServiceDesc(registry, &inclusionroutinespb.Msg_serviceDesc)
 
 	registry.RegisterImplementations((*sdk.Msg)(nil),
 		&inclusionroutinespb.MsgCreateIR{},
