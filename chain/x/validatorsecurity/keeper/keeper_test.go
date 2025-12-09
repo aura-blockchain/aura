@@ -39,7 +39,7 @@ func TestKeeperTestSuite(t *testing.T) {
 // MockValidator implements the Validator interface for testing
 type MockValidator struct {
 	operator sdk.ValAddress
-	tokens   math.Int
+	tokens   sdkmath.Int
 	status   int32
 }
 
@@ -47,7 +47,7 @@ func (m MockValidator) GetOperator() sdk.ValAddress { return m.operator }
 func (m MockValidator) GetConsPubKey() (interface{}, error) { return nil, nil }
 func (m MockValidator) GetConsAddr() (sdk.ConsAddress, error) { return nil, nil }
 func (m MockValidator) GetStatus() int32 { return m.status }
-func (m MockValidator) GetTokens() math.Int { return m.tokens }
+func (m MockValidator) GetTokens() sdkmath.Int { return m.tokens }
 
 // MockStakingKeeper implements a mock StakingKeeper for testing
 type MockStakingKeeper struct {
@@ -61,15 +61,15 @@ func NewMockStakingKeeper() *MockStakingKeeper {
 }
 
 func (m *MockStakingKeeper) Validator(ctx context.Context, addr sdk.ValAddress) (keeper.Validator, error) {
-	return MockValidator{operator: addr, tokens: math.NewInt(1000000), status: 3}, nil
+	return MockValidator{operator: addr, tokens: sdkmath.NewInt(1000000), status: 3}, nil
 }
 
 func (m *MockStakingKeeper) ValidatorByConsAddr(ctx context.Context, consAddr sdk.ConsAddress) (keeper.Validator, error) {
-	return MockValidator{tokens: math.NewInt(1000000), status: 3}, nil
+	return MockValidator{tokens: sdkmath.NewInt(1000000), status: 3}, nil
 }
 
-func (m *MockStakingKeeper) Slash(ctx context.Context, consAddr sdk.ConsAddress, infractionHeight int64, power int64, slashFactor math.LegacyDec) (math.Int, error) {
-	return math.NewInt(100), nil
+func (m *MockStakingKeeper) Slash(ctx context.Context, consAddr sdk.ConsAddress, infractionHeight int64, power int64, slashFactor sdkmath.LegacyDec) (sdkmath.Int, error) {
+	return sdkmath.NewInt(100), nil
 }
 
 func (m *MockStakingKeeper) Jail(ctx context.Context, consAddr sdk.ConsAddress) error {
@@ -86,8 +86,8 @@ func (m *MockStakingKeeper) GetAllValidators(ctx context.Context) ([]keeper.Vali
 	return []keeper.Validator{}, nil
 }
 
-func (m *MockStakingKeeper) PowerReduction(ctx context.Context) math.Int {
-	return math.NewInt(1000000)
+func (m *MockStakingKeeper) PowerReduction(ctx context.Context) sdkmath.Int {
+	return sdkmath.NewInt(1000000)
 }
 
 // MockSlashingKeeper implements a mock SlashingKeeper for testing
@@ -140,7 +140,7 @@ func (m *MockBankKeeper) GetBalance(ctx context.Context, addr sdk.AccAddress, de
 	if coins, ok := m.Balances[addr.String()]; ok {
 		return sdk.NewCoin(denom, coins.AmountOf(denom))
 	}
-	return sdk.NewCoin(denom, math.ZeroInt())
+	return sdk.NewCoin(denom, sdkmath.ZeroInt())
 }
 
 func (suite *KeeperTestSuite) SetupTest() {
