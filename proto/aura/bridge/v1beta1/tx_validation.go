@@ -176,11 +176,8 @@ func (m *MsgBurnTokens) ValidateBasic() error {
 		return err
 	}
 
-	// Validate amount (pointer type due to protoc-gen-go)
-	if m.Amount == nil {
-		return fmt.Errorf("amount cannot be nil")
-	}
-	if err := validation.ValidateCoin(*m.Amount, "amount"); err != nil {
+	// Validate amount (value type with gogoproto.nullable = false)
+	if err := validation.ValidateCoin(m.Amount, "amount"); err != nil {
 		return err
 	}
 
@@ -251,11 +248,8 @@ func (m *MsgCrossChainSwap) ValidateBasic() error {
 		return err
 	}
 
-	// Validate input coin (pointer type due to protoc-gen-go)
-	if m.InputCoin == nil {
-		return fmt.Errorf("input_coin cannot be nil")
-	}
-	if err := validation.ValidateCoin(*m.InputCoin, "input_coin"); err != nil {
+	// Validate input coin (value type with gogoproto.nullable = false)
+	if err := validation.ValidateCoin(m.InputCoin, "input_coin"); err != nil {
 		return err
 	}
 
@@ -274,8 +268,8 @@ func (m *MsgCrossChainSwap) ValidateBasic() error {
 		return fmt.Errorf("target_denom: %w", err)
 	}
 
-	// Validate minimum target amount (string type - customtype annotation ignored)
-	if err := parseAndValidatePositiveInt(m.MinTargetAmount, "min_target_amount"); err != nil {
+	// Validate minimum target amount (cosmossdk.io/math.Int value type)
+	if err := validation.ValidatePositiveInt(m.MinTargetAmount, "min_target_amount"); err != nil {
 		return err
 	}
 
