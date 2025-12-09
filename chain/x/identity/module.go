@@ -9,6 +9,7 @@ import (
 	"cosmossdk.io/core/appmodule"
 	"cosmossdk.io/core/store"
 	"cosmossdk.io/log"
+	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -177,14 +178,18 @@ func NewModule(cdc codec.Codec, storeService store.KVStoreService) *Module {
 }
 
 // ProvideModule provides the identity module to the app wiring system
+// NOTE: This function is currently not used. The keeper is created directly in app.go.
+// If using depinject/app wiring in the future, this would need to be updated to receive a StoreKey.
 func ProvideModule(
 	cdc codec.Codec,
 	storeService store.KVStoreService,
+	storeKey storetypes.StoreKey,
 	authority string,
 	logger log.Logger,
 ) (AppModule, *keeper.Keeper) {
 	k := keeper.NewKeeper(
 		storeService,
+		storeKey,
 		cdc,
 		authority,
 		logger,

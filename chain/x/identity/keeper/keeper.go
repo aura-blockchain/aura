@@ -15,6 +15,7 @@ import (
 // Keeper manages the identity module state
 type Keeper struct {
 	storeService store.KVStoreService
+	storeKey     storetypes.StoreKey
 	cdc          codec.BinaryCodec
 	authority    string
 	logger       log.Logger
@@ -23,12 +24,14 @@ type Keeper struct {
 // NewKeeper creates a new identity keeper
 func NewKeeper(
 	storeService store.KVStoreService,
+	storeKey storetypes.StoreKey,
 	cdc codec.BinaryCodec,
 	authority string,
 	logger log.Logger,
 ) *Keeper {
 	return &Keeper{
 		storeService: storeService,
+		storeKey:     storeKey,
 		cdc:          cdc,
 		authority:    authority,
 		logger:       logger,
