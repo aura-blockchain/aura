@@ -175,10 +175,10 @@ type SessionIDList struct {
 // DefaultParams returns default module parameters
 func DefaultParams() *Params {
 	return &Params{
-		Auth: &AuthParams{
+		Auth: AuthParams{
 			EnableRbac:                    true,
 			MaxRolesPerAccount:            10,
-			SessionTimeout:                nil, // Will be set by proto
+			SessionTimeout:                0, // Default timeout, can be configured
 			EnableAuditLogging:            true,
 			DefaultTimelockDelaySeconds:   3600,  // 1 hour
 			DefaultRequestsPerMinute:      60,
@@ -186,7 +186,7 @@ func DefaultParams() *Params {
 			DefaultRequestsPerDay:         86400,
 			MultisigProposalExpirySeconds: 604800, // 7 days
 		},
-		Change: &IdentityChangeParams{
+		Change: IdentityChangeParams{
 			MaxRequestsPerWalletPerMonth:     10,
 			MinConfidenceAfterChange:         50,
 			StalenessHeightThreshold:         100000,

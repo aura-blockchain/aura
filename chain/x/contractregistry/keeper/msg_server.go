@@ -60,7 +60,8 @@ func (ms msgServer) RegisterContract(goCtx context.Context, msg *pb.MsgRegisterC
 	ms.Keeper.AddCreatorContract(ctx, msg.Creator, msg.ContractAddress)
 
 	// Add to tag indices if metadata has tags
-	if msg.Metadata != nil && len(msg.Metadata.Tags) > 0 {
+	// Metadata is a value type, always present
+	if len(msg.Metadata.Tags) > 0 {
 		for _, tag := range msg.Metadata.Tags {
 			ms.Keeper.AddTagContract(ctx, tag, msg.ContractAddress)
 		}
@@ -111,7 +112,8 @@ func (ms msgServer) PauseContract(goCtx context.Context, msg *pb.MsgPauseContrac
 	}
 
 	// Check if pause is allowed by security policy
-	if info.SecurityPolicy != nil && !info.SecurityPolicy.AllowPause {
+	// SecurityPolicy is a value type, always present
+	if !info.SecurityPolicy.AllowPause {
 		return nil, types.ErrUnauthorized
 	}
 

@@ -4,61 +4,61 @@ import (
 	"fmt"
 	"time"
 
-	durationpb "google.golang.org/protobuf/types/known/durationpb"
+	"cosmossdk.io/math"
 )
 
 // DefaultParams returns default network security parameters
 func DefaultParams() *Params {
 	return &Params{
-		RateLimit: &RateLimitConfig{
+		RateLimit: RateLimitConfig{
 			MaxRequestsPerSecond:  100,
 			BurstSize:             200,
-			WindowDuration:        durationpb.New(60 * time.Second),
-			BanDuration:           durationpb.New(3600 * time.Second), // 1 hour
-			BandwidthLimitPerPeer: 1048576,                            // 1 MB/s
+			WindowDuration:        60 * time.Second,
+			BanDuration:           3600 * time.Second, // 1 hour
+			BandwidthLimitPerPeer: 1048576,            // 1 MB/s
 		},
-		Connection: &ConnectionConfig{
+		Connection: ConnectionConfig{
 			MaxInboundConnections:  50,
 			MaxOutboundConnections: 10,
 			MaxConnectionsPerIp:    5,
-			ConnectionTimeout:      durationpb.New(60 * time.Second),
+			ConnectionTimeout:      60 * time.Second,
 			TrustedPeersOnly:       false,
 			MinPeerDiversity:       3,
 		},
-		Mempool: &MempoolConfig{
+		Mempool: MempoolConfig{
 			MaxSize:            5000,
-			MaxBytes:           10485760, // 10 MB
-			MinPriorityFee:     "1000",
+			MaxBytes:           10485760,          // 10 MB
+			MinPriorityFee:     math.NewInt(1000), // 1000 as minimum fee
 			MaxTxsPerAccount:   100,
 			EvictionPolicy:     "oldest",
 			EnablePriorityFees: true,
 		},
-		Reputation: &ReputationConfig{
-			EnableTracking:      true,
-			InitialScore:        50,
-			MinScoreToConnect:   0,
-			DecayRate:           1,
-			MaxScore:            100,
-			MisbehaviorPenalty:  10,
-			GoodBehaviorReward:  5,
+		Reputation: ReputationConfig{
+			EnableTracking:     true,
+			InitialScore:       50,
+			MinScoreToConnect:  0,
+			DecayRate:          1,
+			MaxScore:           100,
+			MisbehaviorPenalty: 10,
+			GoodBehaviorReward: 5,
 		},
-		Gossip: &GossipConfig{
+		Gossip: GossipConfig{
 			VerifySignatures:       true,
 			MaxMessageSize:         1048576, // 1 MB
-			MessageTtl:             durationpb.New(300 * time.Second),
+			MessageTtl:             300 * time.Second,
 			EnableRedundancyFilter: true,
 			MaxFanout:              10,
 		},
-		ForkDetection: &ForkDetectionConfig{
+		ForkDetection: ForkDetectionConfig{
 			EnableDetection:      true,
 			HeightDiffThreshold:  100,
 			EnableAutoResolution: false,
 			ConfirmationDepth:    6,
 		},
-		PartitionDetection: &PartitionDetectionConfig{
+		PartitionDetection: PartitionDetectionConfig{
 			EnableDetection:    true,
 			MinConnectedPeers:  5,
-			CheckInterval:      durationpb.New(60 * time.Second),
+			CheckInterval:      60 * time.Second,
 			PartitionThreshold: 3,
 		},
 	}
@@ -82,8 +82,8 @@ func ValidateParams(params *Params) error {
 	if params.Connection.MaxInboundConnections == 0 {
 		return fmt.Errorf("max_inbound_connections must be greater than 0")
 	}
-	if params.Connection.ConnectionTimeout == nil {
-		return fmt.Errorf("connection_timeout cannot be nil")
+	if params.Connection.ConnectionTimeout == 0 {
+		return fmt.Errorf("connection_timeout must be greater than 0")
 	}
 
 	// Validate Mempool

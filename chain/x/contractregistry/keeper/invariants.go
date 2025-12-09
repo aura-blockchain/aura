@@ -75,11 +75,7 @@ func ContractMetadataConsistencyInvariant(k *Keeper) sdk.Invariant {
 				), true
 			}
 
-			// Skip if no metadata
-			if info.Metadata == nil {
-				continue
-			}
-
+			// Metadata is a value type (not nullable), always present
 			metadata := info.Metadata
 
 			// Check name is not empty
@@ -112,12 +108,12 @@ func ContractMetadataConsistencyInvariant(k *Keeper) sdk.Invariant {
 				}
 			}
 
-			// Check timestamps
-			if info.CreatedAt == nil {
+			// Check timestamps - CreatedAt is time.Time (not pointer), check if zero
+			if info.CreatedAt.IsZero() {
 				return sdk.FormatInvariant(
 					types.ModuleName,
 					"contract-metadata-consistency",
-					fmt.Sprintf("contract %s has nil created_at", info.Address),
+					fmt.Sprintf("contract %s has zero created_at timestamp", info.Address),
 				), true
 			}
 		}
@@ -195,22 +191,21 @@ func VersionConsistencyInvariant(k *Keeper) sdk.Invariant {
 				continue
 			}
 
-			// Check metadata if present
-			if info.Metadata != nil {
-				// Check version format (should be semver-like)
-				if len(info.Metadata.Version) > 100 {
-					return sdk.FormatInvariant(
-						types.ModuleName,
-						"version-consistency",
-						fmt.Sprintf("contract %s has overly long version string: %d chars",
-							info.Address, len(info.Metadata.Version)),
-					), true
-				}
+			// Check metadata - always present as value type
+			// Check version format (should be semver-like)
+			if len(info.Metadata.Version) > 100 {
+				return sdk.FormatInvariant(
+					types.ModuleName,
+					"version-consistency",
+					fmt.Sprintf("contract %s has overly long version string: %d chars",
+						info.Address, len(info.Metadata.Version)),
+				), true
 			}
 
 			// If updated, updated_at should be after created_at
-			if info.UpdatedAt != nil && info.CreatedAt != nil {
-				if info.UpdatedAt.AsTime().Before(info.CreatedAt.AsTime()) {
+			// Both are time.Time values (not pointers)
+			if !info.UpdatedAt.IsZero() && !info.CreatedAt.IsZero() {
+				if info.UpdatedAt.Before(info.CreatedAt) {
 					return sdk.FormatInvariant(
 						types.ModuleName,
 						"version-consistency",

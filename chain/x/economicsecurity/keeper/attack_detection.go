@@ -81,7 +81,8 @@ func (k *Keeper) detectPumpAndDump(ctx context.Context, params types.Params) (*t
 	cutoff := currentTime - 3600 // Last hour
 
 	err = k.IterateLargeTxRecords(ctx, func(record *types.LargeTxRecord) bool {
-		if record.Timestamp.Seconds >= cutoff {
+		// Timestamp is time.Time, use Unix() to get seconds
+		if record.Timestamp.Unix() >= cutoff {
 			recentLargeTxs++
 		}
 		return true
@@ -118,7 +119,8 @@ func (k *Keeper) detectFlashLoanAttack(ctx context.Context, params types.Params)
 	cutoff := currentTime - 60 // Last minute
 
 	err = k.IterateLargeTxRecords(ctx, func(record *types.LargeTxRecord) bool {
-		if record.Timestamp.Seconds >= cutoff {
+		// Timestamp is time.Time, use Unix() to get seconds
+		if record.Timestamp.Unix() >= cutoff {
 			addressTxCounts[record.Sender]++
 		}
 		return true
@@ -214,7 +216,8 @@ func (k *Keeper) detectWashTrading(ctx context.Context, params types.Params) (*t
 	cutoff := currentTime - 3600 // Last hour
 
 	err = k.IterateLargeTxRecords(ctx, func(record *types.LargeTxRecord) bool {
-		if record.Timestamp.Seconds >= cutoff {
+		// Timestamp is time.Time, use Unix() to get seconds
+		if record.Timestamp.Unix() >= cutoff {
 			// Create bidirectional key
 			pair := record.Sender + ":" + record.Recipient
 			reversePair := record.Recipient + ":" + record.Sender

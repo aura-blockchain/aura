@@ -125,10 +125,10 @@ func IsProposalApproved(proposal *authproto.MultisigProposal, wallet *authproto.
 
 // IsProposalExpired checks if a proposal has expired
 func IsProposalExpired(proposal *authproto.MultisigProposal) bool {
-	if proposal.ExpiresAt == nil {
+	if proposal.ExpiresAt.IsZero() {
 		return false
 	}
-	return time.Now().After(proposal.ExpiresAt.AsTime())
+	return time.Now().After(proposal.ExpiresAt)
 }
 
 // ValidateTimeLockedAction validates a time-locked action
@@ -153,11 +153,10 @@ func ValidateTimeLockedAction(action *authproto.TimeLockedAction) error {
 
 // IsActionReady checks if a time-locked action is ready for execution
 func IsActionReady(action *authproto.TimeLockedAction) bool {
-	if action.ExecutableAt == nil {
+	if action.ExecutableAt.IsZero() {
 		return false
 	}
-	execTime := action.ExecutableAt.AsTime()
-	return time.Now().After(execTime) || time.Now().Equal(execTime)
+	return time.Now().After(action.ExecutableAt) || time.Now().Equal(action.ExecutableAt)
 }
 
 // ValidateEmergencyAdmin validates an emergency admin
@@ -182,7 +181,7 @@ func IsEmergencyAdminActive(admin *authproto.EmergencyAdmin) bool {
 	if admin.ExpiresAt == nil {
 		return true
 	}
-	return time.Now().Before(admin.ExpiresAt.AsTime())
+	return time.Now().Before(*admin.ExpiresAt)
 }
 
 // ValidateSession validates a session
@@ -201,10 +200,10 @@ func IsSessionActive(session *authproto.Session) bool {
 	if !session.IsActive {
 		return false
 	}
-	if session.ExpiresAt == nil {
+	if session.ExpiresAt.IsZero() {
 		return false
 	}
-	return time.Now().Before(session.ExpiresAt.AsTime())
+	return time.Now().Before(session.ExpiresAt)
 }
 
 // ValidateRateLimitConfig validates a rate limit config
@@ -221,21 +220,21 @@ func IsRateLimited(config *authproto.RateLimitConfig) bool {
 	windowStart := config.WindowStart
 
 	// Check minute limit
-	if windowStart != nil && now.Sub(windowStart.AsTime()) < time.Minute {
+	if !windowStart.IsZero() && now.Sub(windowStart) < time.Minute {
 		if config.CurrentMinuteCount >= config.RequestsPerMinute {
 			return true
 		}
 	}
 
 	// Check hour limit
-	if windowStart != nil && now.Sub(windowStart.AsTime()) < time.Hour {
+	if !windowStart.IsZero() && now.Sub(windowStart) < time.Hour {
 		if config.CurrentHourCount >= config.RequestsPerHour {
 			return true
 		}
 	}
 
 	// Check day limit
-	if windowStart != nil && now.Sub(windowStart.AsTime()) < 24*time.Hour {
+	if !windowStart.IsZero() && now.Sub(windowStart) < 24*time.Hour {
 		if config.CurrentDayCount >= config.RequestsPerDay {
 			return true
 		}

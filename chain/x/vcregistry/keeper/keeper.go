@@ -12,7 +12,7 @@ import (
 	"github.com/aequitas/aura/chain/x/vcregistry/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
+	gogotypes "github.com/cosmos/gogoproto/types"
 )
 
 // ConfidenceScoreKeeper defines the interface for interacting with the confidencescore module
@@ -230,7 +230,7 @@ func (k *Keeper) RevokeVC(ctx context.Context, vcID string, reason types.Revocat
 	// Create revocation record
 	revRecord := types.RevocationRecord{
 		VcId:          vcID,
-		RevokedAt:     timestamppb.New(time.Unix(k.getCurrentTime(ctx), 0)),
+		RevokedAt:     &gogotypes.Timestamp{Seconds: k.getCurrentTime(ctx), Nanos: 0},
 		RevokedHeight: k.getCurrentHeight(ctx),
 		Reason:        reason,
 		Revoker:       revoker,
@@ -300,7 +300,7 @@ func (k *Keeper) updateRevocationMerkleRoot(ctx context.Context, vcID string, re
 
 	revocationList.TotalRevocations++
 	revocationList.LastUpdatedHeight = k.getCurrentHeight(ctx)
-	revocationList.LastUpdated = timestamppb.New(time.Unix(k.getCurrentTime(ctx), 0))
+	revocationList.LastUpdated = &gogotypes.Timestamp{Seconds: k.getCurrentTime(ctx), Nanos: 0}
 
 	k.store.setRevocationList(ctx, revocationList)
 
@@ -375,8 +375,8 @@ func (k *Keeper) RegisterDID(ctx context.Context, did string, controller string,
 		Controller:          controller,
 		VerificationMethods: verificationMethods,
 		CredentialIds:       []string{},
-		Created:             timestamppb.New(time.Unix(k.getCurrentTime(ctx), 0)),
-		Updated:             timestamppb.New(time.Unix(k.getCurrentTime(ctx), 0)),
+		Created:             &gogotypes.Timestamp{Seconds: k.getCurrentTime(ctx), Nanos: 0},
+		Updated:             &gogotypes.Timestamp{Seconds: k.getCurrentTime(ctx), Nanos: 0},
 		MetadataUri:         metadataURI,
 		ServiceEndpoints:    make(map[string]string),
 	}
@@ -404,7 +404,7 @@ func (k *Keeper) UpdateDIDDocument(ctx context.Context, did string, verification
 
 	doc.VerificationMethods = verificationMethods
 	doc.MetadataUri = metadataURI
-	doc.Updated = timestamppb.New(time.Unix(k.getCurrentTime(ctx), 0))
+	doc.Updated = &gogotypes.Timestamp{Seconds: k.getCurrentTime(ctx), Nanos: 0}
 	k.store.setDIDDocument(ctx, doc)
 	return nil
 }
@@ -430,7 +430,7 @@ func (k *Keeper) AddCredentialToDID(ctx context.Context, did string, vcID string
 	}
 
 	doc.CredentialIds = append(doc.CredentialIds, vcID)
-	doc.Updated = timestamppb.New(time.Unix(k.getCurrentTime(ctx), 0))
+	doc.Updated = &gogotypes.Timestamp{Seconds: k.getCurrentTime(ctx), Nanos: 0}
 	k.store.setDIDDocument(ctx, doc)
 	return nil
 }
@@ -451,7 +451,7 @@ func (k *Keeper) RemoveCredentialFromDID(ctx context.Context, did string, vcID s
 		}
 	}
 	doc.CredentialIds = filtered
-	doc.Updated = timestamppb.New(time.Unix(k.getCurrentTime(ctx), 0))
+	doc.Updated = &gogotypes.Timestamp{Seconds: k.getCurrentTime(ctx), Nanos: 0}
 	k.store.setDIDDocument(ctx, doc)
 	return nil
 }
@@ -497,7 +497,7 @@ func (k *Keeper) CreateAttributeVC(ctx context.Context, avc types.AttributeVC) e
 
 	// Set issued_at if missing
 	if avc.IssuedAt == nil {
-		avc.IssuedAt = timestamppb.New(time.Unix(k.getCurrentTime(ctx), 0))
+		avc.IssuedAt = &gogotypes.Timestamp{Seconds: k.getCurrentTime(ctx), Nanos: 0}
 	}
 
 	k.requireStore()
@@ -589,7 +589,7 @@ func (k *Keeper) SetDisclosurePolicy(ctx context.Context, policy types.Disclosur
 		}
 		seen[rule.AttributeType] = struct{}{}
 	}
-	policy.UpdatedAt = timestamppb.New(time.Unix(k.getCurrentTime(ctx), 0))
+	policy.UpdatedAt = &gogotypes.Timestamp{Seconds: k.getCurrentTime(ctx), Nanos: 0}
 
 	k.requireStore()
 
@@ -630,7 +630,7 @@ func (k *Keeper) CreateDisclosureRequest(ctx context.Context, holderAddress stri
 		return fmt.Errorf("expires_in_seconds too long")
 	}
 	if req.RequestedAt == nil {
-		req.RequestedAt = timestamppb.New(time.Unix(k.getCurrentTime(ctx), 0))
+		req.RequestedAt = &gogotypes.Timestamp{Seconds: k.getCurrentTime(ctx), Nanos: 0}
 	}
 	if req.RequestedAt.Seconds+int64(req.ExpiresInSeconds) <= k.getCurrentTime(ctx) {
 		return fmt.Errorf("disclosure request already expired")
@@ -701,7 +701,7 @@ func (k *Keeper) RespondToDisclosureRequest(ctx context.Context, resp types.Disc
 		return fmt.Errorf("disclosure response already recorded")
 	}
 
-	resp.RespondedAt = timestamppb.New(time.Unix(k.getCurrentTime(ctx), 0))
+	resp.RespondedAt = &gogotypes.Timestamp{Seconds: k.getCurrentTime(ctx), Nanos: 0}
 
 	k.store.setDisclosureResponse(ctx, resp)
 	// remove pending marker if present

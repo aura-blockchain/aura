@@ -42,13 +42,13 @@ func (k Keeper) AddCertificatePin(
 	pinID := fmt.Sprintf("pin_%s_%d", hostname, blockTime.Unix())
 
 	// Set default expiration if not provided
-	var expiresAtProto *timestamppb.Timestamp
+	var expiresAtTime *time.Time
 	if expiresAt == nil {
 		params, _ := k.GetParams(ctx)
 		defaultExpiry := blockTime.AddDate(0, 0, int(params.CertificatePinValidityDays))
-		expiresAtProto = timestamppb.New(defaultExpiry)
+		expiresAtTime = &defaultExpiry
 	} else {
-		expiresAtProto = timestamppb.New(*expiresAt)
+		expiresAtTime = expiresAt
 	}
 
 	pin := &cryptoproto.CertificatePin{
@@ -56,8 +56,8 @@ func (k Keeper) AddCertificatePin(
 		Hostname:          hostname,
 		CertificateHashes: certificateHashes,
 		PinType:           pinType,
-		CreatedAt:         timestamppb.New(blockTime),
-		ExpiresAt:         expiresAtProto,
+		CreatedAt:         blockTime,
+		ExpiresAt:         expiresAtTime,
 		Enabled:           true,
 	}
 
@@ -95,7 +95,7 @@ func (k Keeper) VerifyCertificatePin(
 
 	// Check expiration
 	blockTime := sdk.UnwrapSDKContext(ctx).BlockTime()
-	if pin.ExpiresAt != nil && pin.ExpiresAt.AsTime().Before(blockTime) {
+	if pin.ExpiresAt != nil && pin.ExpiresAt.Before(blockTime) {
 		return false, fmt.Errorf("certificate pin expired for %s", hostname)
 	}
 
@@ -117,9 +117,10 @@ func (k Keeper) VerifyCertificatePin(
 	}
 
 	// Check if hash matches any pinned hash
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	for _, pinnedHash := range pin.CertificateHashes {
 		if k.CompareHashes(certHash, pinnedHash) {
-			k.Logger(ctx).Info("certificate pin verified",
+			k.Logger(sdkCtx).Info("certificate pin verified",
 				"hostname", hostname,
 				"pin_type", pin.PinType.String(),
 			)
@@ -127,7 +128,7 @@ func (k Keeper) VerifyCertificatePin(
 		}
 	}
 
-	k.Logger(ctx).Warn("certificate pin verification failed",
+	k.Logger(sdkCtx).Warn("certificate pin verification failed",
 		"hostname", hostname,
 		"pin_type", pin.PinType.String(),
 	)
@@ -184,7 +185,7 @@ func (k Keeper) UpdateCertificatePin(
 
 	// Update expiration if provided
 	if expiresAt != nil {
-		pin.ExpiresAt = timestamppb.New(*expiresAt)
+		pin.ExpiresAt = expiresAt
 	}
 
 	// Store updated pin
@@ -290,7 +291,7 @@ func (k Keeper) CleanupExpiredPins(ctx context.Context) error {
 	expired := []string{}
 
 	_ = k.IterateCertificatePins(ctx, func(pin *cryptoproto.CertificatePin) bool {
-		if pin.ExpiresAt != nil && pin.ExpiresAt.AsTime().Before(blockTime) {
+		if pin.ExpiresAt != nil && pin.ExpiresAt.Before(blockTime) {
 			expired = append(expired, pin.Hostname)
 		}
 		return false

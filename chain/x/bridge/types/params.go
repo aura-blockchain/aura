@@ -82,27 +82,27 @@ func DefaultParams() Params {
 		BridgeEnabled:                true,
 		MinConfirmations:             DefaultMinConfirmations, // SECURITY: Require 3 validators minimum
 		BridgeFeeBasisPoints:         30,
-		MaxTransferAmount:            "1000000000",
+		MaxTransferAmount:            sdkmath.NewInt(1000000000).String(),
 		ValidatorThresholdPercentage: 67,
 		SupplyCaps:                   make(map[string]string), // Empty by default, set per token
-		DailyMintLimit:               "10000000000",           // 10 billion per day default
-		HourlyMintLimit:              "1000000000",            // 1 billion per hour default
+		DailyMintLimit:               sdkmath.NewInt(10000000000).String(), // 10 billion per day default
+		HourlyMintLimit:              sdkmath.NewInt(1000000000).String(),  // 1 billion per hour default
 
 		// Circuit breaker defaults
 		Paused:                  false,
 		PausedChains:            []string{},                               // No chains paused by default
 		AutoPauseEnabled:        false,                                    // Disabled by default, enable after testing
-		AutoPauseThreshold:      "5000000000",                             // 5 billion per hour triggers auto-pause
+		AutoPauseThreshold:      sdkmath.NewInt(5000000000).String(),      // 5 billion per hour triggers auto-pause
 		EmergencyPauseAddresses: []string{},                               // Must be set by governance
 		FraudProofWindow:        int64(DefaultFraudProofWindow.Seconds()), // 7 days in seconds (604800)
 
 		// Validator slashing defaults
 		// SECURITY: Severe punishments deter malicious behavior
-		SlashFraudSignature: "0.50",  // 50% of stake slashed for signing fraudulent transfers
-		SlashDoubleSigning:  "1.00",  // 100% of stake slashed (tombstoned) for double-signing
-		SlashOffline:        "0.01",  // 1% of stake slashed for being offline
-		MinSigningWindow:    10000,   // Track liveness over 10,000 blocks (~18 hours at 6s blocks)
-		MinSignedPerWindow:  "0.50",  // Must sign at least 50% of blocks in window
+		SlashFraudSignature: sdkmath.LegacyMustNewDecFromStr("0.50").String(),  // 50% of stake slashed for signing fraudulent transfers
+		SlashDoubleSigning:  sdkmath.LegacyMustNewDecFromStr("1.00").String(),  // 100% of stake slashed (tombstoned) for double-signing
+		SlashOffline:        sdkmath.LegacyMustNewDecFromStr("0.01").String(),  // 1% of stake slashed for being offline
+		MinSigningWindow:    10000,                                             // Track liveness over 10,000 blocks (~18 hours at 6s blocks)
+		MinSignedPerWindow:  sdkmath.LegacyMustNewDecFromStr("0.50").String(),  // Must sign at least 50% of blocks in window
 	}
 }
 
@@ -347,12 +347,18 @@ func (p Params) Validate() error {
 // DefaultGenesis returns the default genesis state for the bridge module
 func DefaultGenesis() *GenesisState {
 	params := DefaultParams()
+	// MaxTransferAmount needs to be converted to math.Int for BridgeParams
+	maxTransferAmt, ok := sdkmath.NewIntFromString(params.MaxTransferAmount)
+	if !ok {
+		// Should never happen with valid defaults
+		maxTransferAmt = sdkmath.NewInt(1000000000)
+	}
 	return &GenesisState{
-		Params: &BridgeParams{
+		Params: BridgeParams{
 			Enabled:                      params.BridgeEnabled,
 			MinConfirmations:             params.MinConfirmations,
 			BridgeFeeBasisPoints:         params.BridgeFeeBasisPoints,
-			MaxTransferAmount:            params.MaxTransferAmount,
+			MaxTransferAmount:            maxTransferAmt,
 			ValidatorThresholdPercentage: params.ValidatorThresholdPercentage,
 		},
 	}

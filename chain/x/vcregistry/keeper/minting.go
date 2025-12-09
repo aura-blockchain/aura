@@ -8,9 +8,9 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	gogotypes "github.com/cosmos/gogoproto/types"
 
 	"github.com/aequitas/aura/chain/x/vcregistry/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // ValidateMintEligibility checks if a user is eligible to mint a specific VC type
@@ -164,8 +164,8 @@ func (k *Keeper) MintVC(ctx context.Context, holderAddress, holderDID string, vc
 		HolderDid:          holderDID,
 		HolderAddress:      holderAddress,
 		Status:             types.VCStatus_VC_STATUS_ACTIVE,
-		IssuedAt:           timestamppb.New(unixToTime(currentTime)),
-		ExpiresAt:          expiresAt,
+		IssuedAt:           &gogotypes.Timestamp{Seconds: currentTime, Nanos: 0},
+		ExpiresAt:          expiresAt, // This is already *gogotypes.Timestamp
 		IssuedHeight:       currentHeight,
 		CredentialHash:     credentialHash,
 		VerifierPluginHash: []byte{}, // Can be set by caller
