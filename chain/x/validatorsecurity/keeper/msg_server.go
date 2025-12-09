@@ -113,11 +113,11 @@ func (ms msgServer) UpdateParams(goCtx context.Context, msg *v1beta1.MsgUpdatePa
 		return nil, fmt.Errorf("unauthorized authority: %s", msg.Authority)
 	}
 
-	if err := types.ValidateParams(msg.Params); err != nil {
+	if err := types.ValidateParams(&msg.Params); err != nil {
 		return nil, err
 	}
 
-	if err := ms.Keeper.SetParams(ctx, msg.Params); err != nil {
+	if err := ms.Keeper.SetParams(ctx, &msg.Params); err != nil {
 		return nil, err
 	}
 
