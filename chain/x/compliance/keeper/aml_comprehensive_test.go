@@ -70,7 +70,7 @@ func (suite *AMLComprehensiveTestSuite) TestAMLScreening_BoundaryRiskScores() {
 				Address:        address,
 				RiskLevel:      tc.riskLevel,
 				RiskFactors:    []string{"test-factor"},
-				LastAssessment: timestamppb.New(suite.SdkCtx.BlockTime()),
+				LastAssessment: suite.SdkCtx.BlockTime(),
 			}
 
 			suite.Keeper.SetAMLProfile(suite.SdkCtx, profile)
@@ -93,7 +93,7 @@ func (suite *AMLComprehensiveTestSuite) TestAMLScreening_RiskLevelTransitions() 
 		Address:        address,
 		RiskLevel:      types.AMLRiskLevel_AML_RISK_LOW,
 		RiskFactors:    []string{"low-volume"},
-		LastAssessment: timestamppb.New(suite.SdkCtx.BlockTime()),
+		LastAssessment: suite.SdkCtx.BlockTime(),
 	}
 	suite.Keeper.SetAMLProfile(suite.SdkCtx, profile)
 
@@ -143,7 +143,7 @@ func (suite *AMLComprehensiveTestSuite) TestAMLScreening_RiskFactors() {
 		Address:        address,
 		RiskLevel:      types.AMLRiskLevel_AML_RISK_HIGH,
 		RiskFactors:    []string{"high-volume", "suspicious-pattern", "cross-border"},
-		LastAssessment: timestamppb.New(suite.SdkCtx.BlockTime()),
+		LastAssessment: suite.SdkCtx.BlockTime(),
 	}
 
 	suite.Keeper.SetAMLProfile(suite.SdkCtx, profile)
@@ -166,7 +166,7 @@ func (suite *AMLComprehensiveTestSuite) TestAMLScreening_TransactionVolume() {
 		RiskLevel:         types.AMLRiskLevel_AML_RISK_LOW,
 		TotalTransactions: 100,
 		TotalVolume:       "1000000",
-		LastAssessment:    timestamppb.New(suite.SdkCtx.BlockTime()),
+		LastAssessment:    suite.SdkCtx.BlockTime(),
 	}
 
 	suite.Keeper.SetAMLProfile(suite.SdkCtx, profile)
@@ -187,7 +187,7 @@ func (suite *AMLComprehensiveTestSuite) TestAMLScreening_StaleAssessmentDetectio
 	profile := &types.AMLProfile{
 		Address:        address,
 		RiskLevel:      types.AMLRiskLevel_AML_RISK_LOW,
-		LastAssessment: timestamppb.New(oldTime),
+		LastAssessment: oldTime,
 	}
 	suite.Keeper.SetAMLProfile(suite.SdkCtx, profile)
 
@@ -196,7 +196,7 @@ func (suite *AMLComprehensiveTestSuite) TestAMLScreening_StaleAssessmentDetectio
 	suite.NotNil(retrieved)
 
 	// Check if assessment is stale (> 90 days old)
-	assessedAt := retrieved.LastAssessment.AsTime()
+	assessedAt := retrieved.LastAssessment
 	staleCutoff := suite.SdkCtx.BlockTime().Add(-90 * 24 * time.Hour)
 
 	isStale := assessedAt.Before(staleCutoff)
@@ -211,14 +211,14 @@ func (suite *AMLComprehensiveTestSuite) TestAMLScreening_MultipleProfileUpdates(
 	profile := &types.AMLProfile{
 		Address:        address,
 		RiskLevel:      types.AMLRiskLevel_AML_RISK_LOW,
-		LastAssessment: timestamppb.New(suite.SdkCtx.BlockTime()),
+		LastAssessment: suite.SdkCtx.BlockTime(),
 	}
 	suite.Keeper.SetAMLProfile(suite.SdkCtx, profile)
 
 	// Perform rapid updates
 	for i := 0; i < 10; i++ {
 		profile.TotalTransactions = uint64(10 + i)
-		profile.LastAssessment = timestamppb.New(suite.SdkCtx.BlockTime().Add(time.Duration(i) * time.Minute))
+		profile.LastAssessment = suite.SdkCtx.BlockTime().Add(time.Duration(i) * time.Minute)
 		suite.Keeper.SetAMLProfile(suite.SdkCtx, profile)
 	}
 

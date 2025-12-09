@@ -52,8 +52,8 @@ func TestTWAPOracle(t *testing.T) {
 		PoolId:   poolID,
 		DenomA:   "uaura",
 		DenomB:   "usdt",
-		ReserveA: "1000000",
-		ReserveB: "200000",
+		ReserveA: math.NewInt(1000000),
+		ReserveB: math.NewInt(200000),
 	}
 	keeper.SetPool(ctx, pool)
 
@@ -65,8 +65,8 @@ func TestTWAPOracle(t *testing.T) {
 	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(60 * time.Second))
 	ctx = ctx.WithBlockHeight(ctx.BlockHeight() + 10)
 
-	pool.ReserveA = "1100000"
-	pool.ReserveB = "220000"
+	pool.ReserveA = math.NewInt(1100000)
+	pool.ReserveB = math.NewInt(220000)
 	keeper.SetPool(ctx, pool)
 
 	// Record second observation
@@ -172,8 +172,8 @@ func TestMaxTradeSize(t *testing.T) {
 	// Create pool with 1M reserves
 	pool := &types.LiquidityPool{
 		PoolId:   poolID,
-		ReserveA: "1000000",
-		ReserveB: "200000",
+		ReserveA: math.NewInt(1000000),
+		ReserveB: math.NewInt(200000),
 	}
 	keeper.SetPool(ctx, pool)
 
@@ -392,8 +392,8 @@ func TestTWAPPruning(t *testing.T) {
 
 	pool := &types.LiquidityPool{
 		PoolId:   poolID,
-		ReserveA: "1000000",
-		ReserveB: "200000",
+		ReserveA: math.NewInt(1000000),
+		ReserveB: math.NewInt(200000),
 	}
 	keeper.SetPool(ctx, pool)
 

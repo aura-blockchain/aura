@@ -3,6 +3,7 @@ package keeper
 import (
 	"testing"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 
@@ -29,9 +30,9 @@ func TestInitGenesis(t *testing.T) {
 		k, ctx := setupTestKeeper(t)
 
 		genesis := &types.GenesisState{
-			Params: types.DefaultParams(),
-			Validators: []*types.ValidatorSecurityInfo{
-				&types.ValidatorSecurityInfo{
+			Params: *types.DefaultParams(),
+			Validators: []types.ValidatorSecurityInfo{
+				{
 					ValidatorAddress:    "validator1",
 					HotKey:              "hotkey1",
 					ColdKey:             "coldkey1",
@@ -58,10 +59,10 @@ func TestInitGenesis(t *testing.T) {
 					IndexOffset:         1000,
 				},
 			},
-			DoubleSignEvidences: make([]*types.DoubleSignEvidence, 0),
-			DowntimeInfractions: make([]*types.DowntimeInfraction, 0),
-			Alerts:              make([]*types.ValidatorAlert, 0),
-			SentryNodes:         make([]*types.SentryNodeInfo, 0),
+			DoubleSignEvidences: []types.DoubleSignEvidence{},
+			DowntimeInfractions: []types.DowntimeInfraction{},
+			Alerts:              []types.ValidatorAlert{},
+			SentryNodes:         []types.SentryNodeInfo{},
 		}
 
 		err := k.InitGenesis(ctx, genesis)
@@ -76,20 +77,20 @@ func TestInitGenesis(t *testing.T) {
 		k, ctx := setupTestKeeper(t)
 
 		genesis := &types.GenesisState{
-			Params:     types.DefaultParams(),
-			Validators: make([]*types.ValidatorSecurityInfo, 0),
-			DoubleSignEvidences: []*types.DoubleSignEvidence{
-				&types.DoubleSignEvidence{
+			Params:     *types.DefaultParams(),
+			Validators: []types.ValidatorSecurityInfo{},
+			DoubleSignEvidences: []types.DoubleSignEvidence{
+				{
 					ValidatorAddress: "validator1",
 					Height:           100,
 					VoteA:            []byte("vote_a"),
 					VoteB:            []byte("vote_b"),
-					SlashFraction:    "0.05",
+					SlashFraction:    sdkmath.LegacyMustNewDecFromStr("0.05"),
 				},
 			},
-			DowntimeInfractions: make([]*types.DowntimeInfraction, 0),
-			Alerts:              make([]*types.ValidatorAlert, 0),
-			SentryNodes:         make([]*types.SentryNodeInfo, 0),
+			DowntimeInfractions: []types.DowntimeInfraction{},
+			Alerts:              []types.ValidatorAlert{},
+			SentryNodes:         []types.SentryNodeInfo{},
 		}
 
 		err := k.InitGenesis(ctx, genesis)
@@ -104,25 +105,25 @@ func TestInitGenesis(t *testing.T) {
 		k, ctx := setupTestKeeper(t)
 
 		genesis := &types.GenesisState{
-			Params:              types.DefaultParams(),
-			Validators:          make([]*types.ValidatorSecurityInfo, 0),
-			DoubleSignEvidences: make([]*types.DoubleSignEvidence, 0),
-			DowntimeInfractions: []*types.DowntimeInfraction{
-				&types.DowntimeInfraction{
+			Params:              *types.DefaultParams(),
+			Validators:          []types.ValidatorSecurityInfo{},
+			DoubleSignEvidences: []types.DoubleSignEvidence{},
+			DowntimeInfractions: []types.DowntimeInfraction{
+				{
 					ValidatorAddress: "validator1",
 					MissedBlocks:     50,
 					WindowSize:       1000,
-					SlashFraction:    "0.0001",
+					SlashFraction:    sdkmath.LegacyMustNewDecFromStr("0.0001"),
 				},
 				{
 					ValidatorAddress: "validator2",
 					MissedBlocks:     75,
 					WindowSize:       1000,
-					SlashFraction:    "0.0001",
+					SlashFraction:    sdkmath.LegacyMustNewDecFromStr("0.0001"),
 				},
 			},
-			Alerts:      make([]*types.ValidatorAlert, 0),
-			SentryNodes: make([]*types.SentryNodeInfo, 0),
+			Alerts:      []types.ValidatorAlert{},
+			SentryNodes: []types.SentryNodeInfo{},
 		}
 
 		err := k.InitGenesis(ctx, genesis)
@@ -137,12 +138,12 @@ func TestInitGenesis(t *testing.T) {
 		k, ctx := setupTestKeeper(t)
 
 		genesis := &types.GenesisState{
-			Params:              types.DefaultParams(),
-			Validators:          make([]*types.ValidatorSecurityInfo, 0),
-			DoubleSignEvidences: make([]*types.DoubleSignEvidence, 0),
-			DowntimeInfractions: make([]*types.DowntimeInfraction, 0),
-			Alerts: []*types.ValidatorAlert{
-				&types.ValidatorAlert{
+			Params:              *types.DefaultParams(),
+			Validators:          []types.ValidatorSecurityInfo{},
+			DoubleSignEvidences: []types.DoubleSignEvidence{},
+			DowntimeInfractions: []types.DowntimeInfraction{},
+			Alerts: []types.ValidatorAlert{
+				{
 					Id:               "alert1",
 					ValidatorAddress: "validator1",
 					AlertType:        types.ValidatorAlert_DOWNTIME,
@@ -159,7 +160,7 @@ func TestInitGenesis(t *testing.T) {
 					Acknowledged:     true,
 				},
 			},
-			SentryNodes: make([]*types.SentryNodeInfo, 0),
+			SentryNodes: []types.SentryNodeInfo{},
 		}
 
 		err := k.InitGenesis(ctx, genesis)
@@ -174,13 +175,13 @@ func TestInitGenesis(t *testing.T) {
 		k, ctx := setupTestKeeper(t)
 
 		genesis := &types.GenesisState{
-			Params:              types.DefaultParams(),
-			Validators:          make([]*types.ValidatorSecurityInfo, 0),
-			DoubleSignEvidences: make([]*types.DoubleSignEvidence, 0),
-			DowntimeInfractions: make([]*types.DowntimeInfraction, 0),
-			Alerts:              make([]*types.ValidatorAlert, 0),
-			SentryNodes: []*types.SentryNodeInfo{
-				&types.SentryNodeInfo{
+			Params:              *types.DefaultParams(),
+			Validators:          []types.ValidatorSecurityInfo{},
+			DoubleSignEvidences: []types.DoubleSignEvidence{},
+			DowntimeInfractions: []types.DowntimeInfraction{},
+			Alerts:              []types.ValidatorAlert{},
+			SentryNodes: []types.SentryNodeInfo{
+				{
 					Address:          "sentry1",
 					ValidatorAddress: "validator1",
 					IpAddress:        "192.168.1.1",
@@ -209,14 +210,14 @@ func TestInitGenesis(t *testing.T) {
 		k, ctx := setupTestKeeper(t)
 
 		genesis := &types.GenesisState{
-			Params: &types.ValidatorSecurityParams{
+			Params: types.ValidatorSecurityParams{
 				SignedBlocksWindow: -100, // Invalid - negative value
 			},
-			Validators:          make([]*types.ValidatorSecurityInfo, 0),
-			DoubleSignEvidences: make([]*types.DoubleSignEvidence, 0),
-			DowntimeInfractions: make([]*types.DowntimeInfraction, 0),
-			Alerts:              make([]*types.ValidatorAlert, 0),
-			SentryNodes:         make([]*types.SentryNodeInfo, 0),
+			Validators:          []types.ValidatorSecurityInfo{},
+			DoubleSignEvidences: []types.DoubleSignEvidence{},
+			DowntimeInfractions: []types.DowntimeInfraction{},
+			Alerts:              []types.ValidatorAlert{},
+			SentryNodes:         []types.SentryNodeInfo{},
 		}
 
 		err := k.InitGenesis(ctx, genesis)
@@ -230,8 +231,8 @@ func TestInitGenesis(t *testing.T) {
 		params.EnableGeoDistribution = true
 
 		genesis := &types.GenesisState{
-			Params: params,
-			Validators: []*types.ValidatorSecurityInfo{
+			Params: *params,
+			Validators: []types.ValidatorSecurityInfo{
 				{
 					ValidatorAddress: "validator1",
 					Region:           "us-east",
@@ -247,10 +248,10 @@ func TestInitGenesis(t *testing.T) {
 					IsTombstoned:     false,
 				},
 			},
-			DoubleSignEvidences: make([]*types.DoubleSignEvidence, 0),
-			DowntimeInfractions: make([]*types.DowntimeInfraction, 0),
-			Alerts:              make([]*types.ValidatorAlert, 0),
-			SentryNodes:         make([]*types.SentryNodeInfo, 0),
+			DoubleSignEvidences: []types.DoubleSignEvidence{},
+			DowntimeInfractions: []types.DowntimeInfraction{},
+			Alerts:              []types.ValidatorAlert{},
+			SentryNodes:         []types.SentryNodeInfo{},
 		}
 
 		err := k.InitGenesis(ctx, genesis)

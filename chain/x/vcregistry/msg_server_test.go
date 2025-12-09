@@ -83,7 +83,7 @@ func TestMsgServerMintVCSyncsBlockMetadata(t *testing.T) {
 		Metadata:      map[string]string{"source": "test"},
 	})
 	require.NoError(t, err)
-	require.Equal(t, blockTime.Unix(), resp.IssuedAt.AsTime().Unix())
+	require.Equal(t, blockTime.Unix(), resp.IssuedAt.Seconds)
 
 	record, ok := k.GetVCRecord(sdkCtx, resp.VcId)
 	require.True(t, ok)
@@ -91,7 +91,7 @@ func TestMsgServerMintVCSyncsBlockMetadata(t *testing.T) {
 
 	doc, ok := k.GetDIDDocument(sdkCtx, holderDID)
 	require.True(t, ok)
-	require.Equal(t, blockTime.Unix(), doc.Updated.AsTime().Unix())
+	require.Equal(t, blockTime.Unix(), doc.Updated.Seconds)
 
 	// Advance a week and ensure cleanup removes the previous rate-limit counter.
 	future := blockTime.Add(8 * 24 * time.Hour)
@@ -147,7 +147,7 @@ func TestMsgServerDisclosureFlowUpdatesIndices(t *testing.T) {
 		Approved:  true,
 	})
 	require.NoError(t, err)
-	require.Equal(t, nextCtx.BlockTime().Unix(), resp.Response.RespondedAt.AsTime().Unix())
+	require.Equal(t, nextCtx.BlockTime().Unix(), resp.Response.RespondedAt.Seconds)
 	after := k.ExportGenesis(nextCtx)
 	if idx := after.PendingDisclosureIndex[holder]; idx != nil {
 		require.NotContains(t, idx.Ids, reqResp.RequestId)

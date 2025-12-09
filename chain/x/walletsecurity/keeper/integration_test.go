@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
+	gogotypes "github.com/cosmos/gogoproto/types"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/aequitas/aura/chain/x/walletsecurity/types"
 	wsproto "github.com/aequitas/aura/proto/aura/walletsecurity/v1beta1"

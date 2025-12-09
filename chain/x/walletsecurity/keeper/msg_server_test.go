@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/suite"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	wspb "github.com/aequitas/aura/proto/aura/walletsecurity/v1beta1"
 )

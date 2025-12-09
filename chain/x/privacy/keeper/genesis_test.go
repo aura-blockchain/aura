@@ -3,6 +3,7 @@ package keeper
 import (
 	"testing"
 
+	sdkmath "cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -38,7 +39,7 @@ func TestInitGenesis(t *testing.T) {
 		k, ctx := setupTestKeeperWithCtx(t)
 
 		genesis := &pb.GenesisState{
-			Params: &pb.Params{
+			Params: pb.Params{
 				EnableZkProofs:                 true,
 				EnableStealthAddresses:         true,
 				EnableRingSignatures:           true,
@@ -48,7 +49,7 @@ func TestInitGenesis(t *testing.T) {
 				MinRingSize:                    5,
 				MaxRingSize:                    11,
 				MinMixingParticipants:          3,
-				MixingFee:                      "100",
+				MixingFee:                      sdkmath.NewInt(100),
 				ZkProofVerificationCost:        50,
 			},
 			MixingPools:        []*pb.MixingPool{},
@@ -71,7 +72,7 @@ func TestInitGenesis(t *testing.T) {
 		k, ctx := setupTestKeeperWithCtx(t)
 
 		genesis := &pb.GenesisState{
-			Params: &pb.Params{
+			Params: pb.Params{
 				EnableZkProofs:                 true,
 				EnableStealthAddresses:         true,
 				EnableRingSignatures:           true,
@@ -81,7 +82,7 @@ func TestInitGenesis(t *testing.T) {
 				MinRingSize:                    3,
 				MaxRingSize:                    15,
 				MinMixingParticipants:          2,
-				MixingFee:                      "200",
+				MixingFee:                      sdkmath.NewInt(200),
 				ZkProofVerificationCost:        100,
 			},
 			MixingPools:        []*pb.MixingPool{},
@@ -102,7 +103,7 @@ func TestInitGenesis(t *testing.T) {
 		k, ctx := setupTestKeeperWithCtx(t)
 
 		genesis := &pb.GenesisState{
-			Params: &pb.Params{
+			Params: pb.Params{
 				EnableZkProofs:                 false,
 				EnableStealthAddresses:         false,
 				EnableRingSignatures:           false,
@@ -112,7 +113,7 @@ func TestInitGenesis(t *testing.T) {
 				MinRingSize:                    3,
 				MaxRingSize:                    7,
 				MinMixingParticipants:          2,
-				MixingFee:                      "50",
+				MixingFee:                      sdkmath.NewInt(50),
 				ZkProofVerificationCost:        25,
 			},
 			MixingPools:        []*pb.MixingPool{},
@@ -132,7 +133,7 @@ func TestInitGenesis(t *testing.T) {
 		k, ctx := setupTestKeeperWithCtx(t)
 
 		genesis := &pb.GenesisState{
-			Params: &pb.Params{
+			Params: pb.Params{
 				EnableZkProofs:                 true,
 				EnableStealthAddresses:         true,
 				EnableRingSignatures:           true,
@@ -142,7 +143,7 @@ func TestInitGenesis(t *testing.T) {
 				MinRingSize:                    10, // Invalid - greater than max
 				MaxRingSize:                    5,
 				MinMixingParticipants:          2,
-				MixingFee:                      "100",
+				MixingFee:                      sdkmath.NewInt(100),
 				ZkProofVerificationCost:        50,
 			},
 			MixingPools:        []*pb.MixingPool{},
@@ -170,7 +171,7 @@ func TestExportGenesis(t *testing.T) {
 		k, ctx := setupTestKeeperWithCtx(t)
 
 		originalGenesis := &pb.GenesisState{
-			Params: &pb.Params{
+			Params: pb.Params{
 				EnableZkProofs:                 true,
 				EnableStealthAddresses:         false,
 				EnableRingSignatures:           true,
@@ -180,7 +181,7 @@ func TestExportGenesis(t *testing.T) {
 				MinRingSize:                    7,
 				MaxRingSize:                    13,
 				MinMixingParticipants:          4,
-				MixingFee:                      "150",
+				MixingFee:                      sdkmath.NewInt(150),
 				ZkProofVerificationCost:        75,
 			},
 			MixingPools:        []*pb.MixingPool{},
@@ -205,7 +206,7 @@ func TestGenesisRoundTrip(t *testing.T) {
 		k, ctx := setupTestKeeperWithCtx(t)
 
 		originalGenesis := &pb.GenesisState{
-			Params: &pb.Params{
+			Params: pb.Params{
 				EnableZkProofs:                 true,
 				EnableStealthAddresses:         true,
 				EnableRingSignatures:           true,
@@ -215,7 +216,7 @@ func TestGenesisRoundTrip(t *testing.T) {
 				MinRingSize:                    5,
 				MaxRingSize:                    11,
 				MinMixingParticipants:          3,
-				MixingFee:                      "100",
+				MixingFee:                      sdkmath.NewInt(100),
 				ZkProofVerificationCost:        50,
 			},
 			MixingPools:        []*pb.MixingPool{},
