@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/log"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 
@@ -16,7 +17,7 @@ import (
 // TestCreateMultisigWallet_EdgeCase_ZeroThreshold verifies zero threshold is rejected
 func TestCreateMultisigWallet_EdgeCase_ZeroThreshold(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, "authority")
+	k := keeper.NewKeeper(keepertest.WrapStoreService(input.StoreKey), input.StoreKey, input.Cdc, "authority", log.NewNopLogger())
 
 	creator := keepertest.GenTestAddr().String()
 
@@ -24,7 +25,7 @@ func TestCreateMultisigWallet_EdgeCase_ZeroThreshold(t *testing.T) {
 		Creator:    creator,
 		Signers:    []string{creator, keepertest.GenTestAddr().String()},
 		Threshold:  0, // Invalid: zero threshold
-		WalletType: "standard",
+		WalletType: types.WalletType3Of5,
 	}
 
 	msgServer := keeper.NewMsgServerImpl(k)
@@ -36,7 +37,7 @@ func TestCreateMultisigWallet_EdgeCase_ZeroThreshold(t *testing.T) {
 // TestCreateMultisigWallet_EdgeCase_ThresholdExceedsSigners verifies threshold validation
 func TestCreateMultisigWallet_EdgeCase_ThresholdExceedsSigners(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, "authority")
+	k := keeper.NewKeeper(keepertest.WrapStoreService(input.StoreKey), input.StoreKey, input.Cdc, "authority", log.NewNopLogger())
 
 	creator := keepertest.GenTestAddr().String()
 
@@ -44,7 +45,7 @@ func TestCreateMultisigWallet_EdgeCase_ThresholdExceedsSigners(t *testing.T) {
 		Creator:    creator,
 		Signers:    []string{creator, keepertest.GenTestAddr().String()}, // 2 signers
 		Threshold:  3, // Invalid: threshold > signers
-		WalletType: "standard",
+		WalletType: types.WalletType3Of5,
 	}
 
 	msgServer := keeper.NewMsgServerImpl(k)
@@ -56,7 +57,7 @@ func TestCreateMultisigWallet_EdgeCase_ThresholdExceedsSigners(t *testing.T) {
 // TestCreateMultisigProposal_ErrorPath_WalletNotFound verifies proposal fails for non-existent wallet
 func TestCreateMultisigProposal_ErrorPath_WalletNotFound(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, "authority")
+	k := keeper.NewKeeper(keepertest.WrapStoreService(input.StoreKey), input.StoreKey, input.Cdc, "authority", log.NewNopLogger())
 
 	msg := &identitypb.MsgCreateMultisigProposal{
 		WalletId:    "nonexistent-wallet",
@@ -75,7 +76,7 @@ func TestCreateMultisigProposal_ErrorPath_WalletNotFound(t *testing.T) {
 // TestCreateMultisigProposal_ErrorPath_ProposerNotSigner verifies non-signers cannot propose
 func TestCreateMultisigProposal_ErrorPath_ProposerNotSigner(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, "authority")
+	k := keeper.NewKeeper(keepertest.WrapStoreService(input.StoreKey), input.StoreKey, input.Cdc, "authority", log.NewNopLogger())
 
 	creator := keepertest.GenTestAddr().String()
 	signer2 := keepertest.GenTestAddr().String()
@@ -88,7 +89,7 @@ func TestCreateMultisigProposal_ErrorPath_ProposerNotSigner(t *testing.T) {
 		Threshold:  2,
 		CreatedBy:  creator,
 		CreatedAt:  input.Ctx.BlockTime(),
-		WalletType: "standard",
+		WalletType: types.WalletType3Of5,
 	}
 	k.SetMultisigWallet(input.Ctx, wallet)
 
@@ -110,7 +111,7 @@ func TestCreateMultisigProposal_ErrorPath_ProposerNotSigner(t *testing.T) {
 // TestSignMultisigProposal_ErrorPath_ProposalNotFound verifies signing fails for non-existent proposal
 func TestSignMultisigProposal_ErrorPath_ProposalNotFound(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, "authority")
+	k := keeper.NewKeeper(keepertest.WrapStoreService(input.StoreKey), input.StoreKey, input.Cdc, "authority", log.NewNopLogger())
 
 	msg := &identitypb.MsgSignMultisigProposal{
 		ProposalId: "nonexistent-proposal",
@@ -126,7 +127,7 @@ func TestSignMultisigProposal_ErrorPath_ProposalNotFound(t *testing.T) {
 // TestSignMultisigProposal_ErrorPath_SignerNotWalletSigner verifies authorization
 func TestSignMultisigProposal_ErrorPath_SignerNotWalletSigner(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, "authority")
+	k := keeper.NewKeeper(keepertest.WrapStoreService(input.StoreKey), input.StoreKey, input.Cdc, "authority", log.NewNopLogger())
 
 	creator := keepertest.GenTestAddr().String()
 	signer2 := keepertest.GenTestAddr().String()
@@ -139,7 +140,7 @@ func TestSignMultisigProposal_ErrorPath_SignerNotWalletSigner(t *testing.T) {
 		Threshold:  2,
 		CreatedBy:  creator,
 		CreatedAt:  input.Ctx.BlockTime(),
-		WalletType: "standard",
+		WalletType: types.WalletType3Of5,
 	}
 	k.SetMultisigWallet(input.Ctx, wallet)
 
@@ -172,7 +173,7 @@ func TestSignMultisigProposal_ErrorPath_SignerNotWalletSigner(t *testing.T) {
 // TestSignMultisigProposal_EdgeCase_DuplicateSignature verifies duplicate signatures are rejected
 func TestSignMultisigProposal_EdgeCase_DuplicateSignature(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, "authority")
+	k := keeper.NewKeeper(keepertest.WrapStoreService(input.StoreKey), input.StoreKey, input.Cdc, "authority", log.NewNopLogger())
 
 	signer := keepertest.GenTestAddr().String()
 
@@ -183,7 +184,7 @@ func TestSignMultisigProposal_EdgeCase_DuplicateSignature(t *testing.T) {
 		Threshold:  1,
 		CreatedBy:  signer,
 		CreatedAt:  input.Ctx.BlockTime(),
-		WalletType: "standard",
+		WalletType: types.WalletType3Of5,
 	}
 	k.SetMultisigWallet(input.Ctx, wallet)
 
@@ -199,7 +200,7 @@ func TestSignMultisigProposal_EdgeCase_DuplicateSignature(t *testing.T) {
 		Signatures:  []string{signer}, // Already signed
 		Status:      types.ProposalStatusApproved,
 	}
-	k.SetMultisigProposal(input.Ctx, &proposal)
+	k.SetMultisigProposal(input.Ctx, proposal)
 
 	// Try to sign again
 	msg := &identitypb.MsgSignMultisigProposal{
@@ -216,7 +217,7 @@ func TestSignMultisigProposal_EdgeCase_DuplicateSignature(t *testing.T) {
 // TestExecuteMultisigProposal_ErrorPath_ProposalNotApproved verifies only approved proposals can execute
 func TestExecuteMultisigProposal_ErrorPath_ProposalNotApproved(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, "authority")
+	k := keeper.NewKeeper(keepertest.WrapStoreService(input.StoreKey), input.StoreKey, input.Cdc, "authority", log.NewNopLogger())
 
 	// Create pending proposal
 	proposal := &types.MultisigProposal{
@@ -246,7 +247,7 @@ func TestExecuteMultisigProposal_ErrorPath_ProposalNotApproved(t *testing.T) {
 // TestExecuteTimeLockedAction_ErrorPath_ActionNotFound verifies execution fails for non-existent action
 func TestExecuteTimeLockedAction_ErrorPath_ActionNotFound(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, "authority")
+	k := keeper.NewKeeper(keepertest.WrapStoreService(input.StoreKey), input.StoreKey, input.Cdc, "authority", log.NewNopLogger())
 
 	msg := &identitypb.MsgExecuteTimeLockedAction{
 		ActionId: "nonexistent-action",
@@ -262,7 +263,7 @@ func TestExecuteTimeLockedAction_ErrorPath_ActionNotFound(t *testing.T) {
 // TestExecuteTimeLockedAction_ErrorPath_DelayNotElapsed verifies early execution is prevented
 func TestExecuteTimeLockedAction_ErrorPath_DelayNotElapsed(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, "authority")
+	k := keeper.NewKeeper(keepertest.WrapStoreService(input.StoreKey), input.StoreKey, input.Cdc, "authority", log.NewNopLogger())
 
 	// Create action with future executable time
 	futureTime := input.Ctx.BlockTime().Add(24 * time.Hour)
@@ -292,7 +293,7 @@ func TestExecuteTimeLockedAction_ErrorPath_DelayNotElapsed(t *testing.T) {
 // TestCancelTimeLockedAction_ErrorPath_ActionNotPending verifies only pending actions can be cancelled
 func TestCancelTimeLockedAction_ErrorPath_ActionNotPending(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, "authority")
+	k := keeper.NewKeeper(keepertest.WrapStoreService(input.StoreKey), input.StoreKey, input.Cdc, "authority", log.NewNopLogger())
 
 	now := input.Ctx.BlockTime()
 	executedTime := now
@@ -309,7 +310,7 @@ func TestCancelTimeLockedAction_ErrorPath_ActionNotPending(t *testing.T) {
 		Status:       types.ActionStatusExecuted, // Already executed
 		DelaySeconds: 3600,
 	}
-	k.SetTimeLockedAction(input.Ctx, &action)
+	k.SetTimeLockedAction(input.Ctx, action)
 
 	msg := &identitypb.MsgCancelTimeLockedAction{
 		ActionId:  "action-002",
@@ -325,12 +326,12 @@ func TestCancelTimeLockedAction_ErrorPath_ActionNotPending(t *testing.T) {
 // TestCreateSession_EdgeCase_ExcessiveDuration verifies session duration limits
 func TestCreateSession_EdgeCase_ExcessiveDuration(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, "authority")
+	k := keeper.NewKeeper(keepertest.WrapStoreService(input.StoreKey), input.StoreKey, input.Cdc, "authority", log.NewNopLogger())
 
 	// Set params with reasonable session timeout
 	params := &types.Params{
-		Auth: &types.AuthConfig{
-			SessionTimeout: 3600 * time.Second, // 1 hour
+		Auth: types.AuthParams{
+			SessionTimeout: 3600, // 1 hour in seconds
 		},
 	}
 	k.SetParams(input.Ctx, params)
@@ -345,15 +346,15 @@ func TestCreateSession_EdgeCase_ExcessiveDuration(t *testing.T) {
 	require.NotEmpty(t, resp.SessionId)
 
 	// Verify session was created with correct timeout
-	session, found := k.GetSession(input.Ctx, resp.SessionId)
-	require.True(t, found)
+	session, err := k.GetSession(input.Ctx, resp.SessionId)
+	require.NoError(t, err)
 	require.NotNil(t, session)
 }
 
 // TestEndSession_ErrorPath_SessionNotFound verifies ending non-existent session fails
 func TestEndSession_ErrorPath_SessionNotFound(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, "authority")
+	k := keeper.NewKeeper(keepertest.WrapStoreService(input.StoreKey), input.StoreKey, input.Cdc, "authority", log.NewNopLogger())
 
 	msg := &identitypb.MsgEndSession{
 		Address:   keepertest.GenTestAddr().String(),
@@ -369,7 +370,7 @@ func TestEndSession_ErrorPath_SessionNotFound(t *testing.T) {
 // TestEraseIdentity_EdgeCase_EmptyDID verifies empty DID is rejected
 func TestEraseIdentity_EdgeCase_EmptyDID(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, "authority")
+	k := keeper.NewKeeper(keepertest.WrapStoreService(input.StoreKey), input.StoreKey, input.Cdc, "authority", log.NewNopLogger())
 
 	msg := &identitypb.MsgEraseIdentity{
 		Did:       "", // Empty DID
@@ -386,7 +387,7 @@ func TestEraseIdentity_EdgeCase_EmptyDID(t *testing.T) {
 // TestRotateDIDKey_EdgeCase_EmptyVerificationMethod verifies validation
 func TestRotateDIDKey_EdgeCase_EmptyVerificationMethod(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, "authority")
+	k := keeper.NewKeeper(keepertest.WrapStoreService(input.StoreKey), input.StoreKey, input.Cdc, "authority", log.NewNopLogger())
 
 	msg := &identitypb.MsgRotateDIDKey{
 		Did:                    "did:aura:test123",
@@ -405,15 +406,15 @@ func TestRotateDIDKey_EdgeCase_EmptyVerificationMethod(t *testing.T) {
 func TestUpdateParams_ErrorPath_UnauthorizedAuthority(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
 	authorityAddr := "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, authorityAddr)
+	k := keeper.NewKeeper(keepertest.WrapStoreService(input.StoreKey), input.StoreKey, input.Cdc, authorityAddr, log.NewNopLogger())
 
 	unauthorizedAddr := keepertest.GenTestAddr().String()
 
 	msg := &identitypb.MsgUpdateParams{
 		Authority: unauthorizedAddr, // Not the authority
-		Params: &identitypb.Params{
-			Auth:   &types.AuthConfig{},
-			Change: &types.ChangeConfig{},
+		Params: identitypb.Params{
+			Auth:   types.AuthParams{},
+			Change: types.IdentityChangeParams{},
 		},
 	}
 
@@ -427,7 +428,7 @@ func TestUpdateParams_ErrorPath_UnauthorizedAuthority(t *testing.T) {
 func TestSuspendIdentityChanges_ErrorPath_UnauthorizedAuthority(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
 	authorityAddr := "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, authorityAddr)
+	k := keeper.NewKeeper(keepertest.WrapStoreService(input.StoreKey), input.StoreKey, input.Cdc, authorityAddr, log.NewNopLogger())
 
 	unauthorizedAddr := keepertest.GenTestAddr().String()
 
@@ -445,7 +446,7 @@ func TestSuspendIdentityChanges_ErrorPath_UnauthorizedAuthority(t *testing.T) {
 // TestCreateRole_ErrorPath_EmptyRoleName verifies role name validation
 func TestCreateRole_ErrorPath_EmptyRoleName(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, "authority")
+	k := keeper.NewKeeper(keepertest.WrapStoreService(input.StoreKey), input.StoreKey, input.Cdc, "authority", log.NewNopLogger())
 
 	msg := &identitypb.MsgCreateRole{
 		Creator:     keepertest.GenTestAddr().String(),
@@ -463,7 +464,7 @@ func TestCreateRole_ErrorPath_EmptyRoleName(t *testing.T) {
 // TestAssignRole_ErrorPath_NegativeExpiry verifies expiry validation
 func TestAssignRole_ErrorPath_NegativeExpiry(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, "authority")
+	k := keeper.NewKeeper(keepertest.WrapStoreService(input.StoreKey), input.StoreKey, input.Cdc, "authority", log.NewNopLogger())
 
 	// Create role first
 	role := &types.Role{
@@ -475,12 +476,13 @@ func TestAssignRole_ErrorPath_NegativeExpiry(t *testing.T) {
 
 	// Try to assign with past expiry
 	pastTime := input.Ctx.BlockTime().Add(-24 * time.Hour)
+	pastTimePtr := &pastTime
 
 	msg := &identitypb.MsgAssignRole{
 		Assigner:  keepertest.GenTestAddr().String(),
 		Address:   keepertest.GenTestAddr().String(),
 		RoleName:  "test-role",
-		ExpiresAt: &pastTime, // Past time
+		ExpiresAt: pastTimePtr, // Past time
 	}
 
 	msgServer := keeper.NewMsgServerImpl(k)
@@ -494,7 +496,7 @@ func TestAssignRole_ErrorPath_NegativeExpiry(t *testing.T) {
 // TestRevokeRole_ErrorPath_RoleNotAssigned verifies revoking non-existent assignment fails
 func TestRevokeRole_ErrorPath_RoleNotAssigned(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, "authority")
+	k := keeper.NewKeeper(keepertest.WrapStoreService(input.StoreKey), input.StoreKey, input.Cdc, "authority", log.NewNopLogger())
 
 	msg := &identitypb.MsgRevokeRole{
 		Revoker:  keepertest.GenTestAddr().String(),
@@ -511,15 +513,16 @@ func TestRevokeRole_ErrorPath_RoleNotAssigned(t *testing.T) {
 // TestActivateEmergencyAdmin_EdgeCase_EmptyPrivileges verifies privilege validation
 func TestActivateEmergencyAdmin_EdgeCase_EmptyPrivileges(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, "authority")
+	k := keeper.NewKeeper(keepertest.WrapStoreService(input.StoreKey), input.StoreKey, input.Cdc, "authority", log.NewNopLogger())
 
 	futureTime := input.Ctx.BlockTime().Add(24 * time.Hour)
+	futureTimePtr := &futureTime
 
 	msg := &identitypb.MsgActivateEmergencyAdmin{
 		Activator:    keepertest.GenTestAddr().String(),
 		AdminAddress: keepertest.GenTestAddr().String(),
 		Privileges:   []string{}, // Empty privileges
-		ExpiresAt:    futureTime,
+		ExpiresAt:    futureTimePtr,
 	}
 
 	msgServer := keeper.NewMsgServerImpl(k)
@@ -532,7 +535,7 @@ func TestActivateEmergencyAdmin_EdgeCase_EmptyPrivileges(t *testing.T) {
 // TestDeactivateEmergencyAdmin_ErrorPath_AdminNotFound verifies deactivation of non-existent admin fails
 func TestDeactivateEmergencyAdmin_ErrorPath_AdminNotFound(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, "authority")
+	k := keeper.NewKeeper(keepertest.WrapStoreService(input.StoreKey), input.StoreKey, input.Cdc, "authority", log.NewNopLogger())
 
 	msg := &identitypb.MsgDeactivateEmergencyAdmin{
 		Deactivator:  keepertest.GenTestAddr().String(),
@@ -548,7 +551,7 @@ func TestDeactivateEmergencyAdmin_ErrorPath_AdminNotFound(t *testing.T) {
 // TestInvariant_SessionExpiry verifies session expiry enforcement
 func TestInvariant_SessionExpiry(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
-	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, "authority")
+	k := keeper.NewKeeper(keepertest.WrapStoreService(input.StoreKey), input.StoreKey, input.Cdc, "authority", log.NewNopLogger())
 
 	// Create session with short expiry
 	sessionID := "session-001"
@@ -566,8 +569,9 @@ func TestInvariant_SessionExpiry(t *testing.T) {
 	ctx := input.Ctx.WithBlockTime(input.Ctx.BlockTime().Add(2 * time.Hour))
 
 	// Check if session is still valid (should be expired)
-	retrievedSession, found := k.GetSession(ctx, sessionID)
-	require.True(t, found)
+	retrievedSession, err := k.GetSession(ctx, sessionID)
+	require.NoError(t, err)
+	require.NotNil(t, retrievedSession)
 
 	// In production, there should be a mechanism to check expiry
 	// This test verifies the session exists but may be expired

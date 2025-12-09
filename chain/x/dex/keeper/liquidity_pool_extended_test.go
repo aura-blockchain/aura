@@ -14,16 +14,16 @@ import (
 func TestGetQuote(t *testing.T) {
 	ctx, k := setupTest(t)
 
-	// Create a test pool with string fields as in proto
+	// Create a test pool with proper math.Int types for reserves
 	pool := &types.LiquidityPool{
 		PoolId:                "uaura-usdt",
 		DenomA:                "uaura",
 		DenomB:                "usdt",
-		ReserveA:              "1000000000", // 1000 AURA
-		ReserveB:              "500000000",  // 500 USDT
-		TotalLpTokens:         "707106781",
-		FeePercentage:         "0.003",  // 0.3%
-		ProtocolFeePercentage: "0.0005", // 0.05%
+		ReserveA:              sdkmath.NewInt(1000000000), // 1000 AURA
+		ReserveB:              sdkmath.NewInt(500000000),  // 500 USDT
+		TotalLpTokens:         sdkmath.NewInt(707106781),
+		FeePercentage:         sdkmath.LegacyMustNewDecFromStr("0.003"),  // 0.3%
+		ProtocolFeePercentage: sdkmath.LegacyMustNewDecFromStr("0.0005"), // 0.05%
 	}
 	k.SetPool(ctx, pool)
 
@@ -90,11 +90,11 @@ func TestRecordSwapStats(t *testing.T) {
 		PoolId:                "uaura-usdt",
 		DenomA:                "uaura",
 		DenomB:                "usdt",
-		ReserveA:              "1000000000",
-		ReserveB:              "500000000",
-		TotalLpTokens:         "707106781",
-		FeePercentage:         "0.003",
-		ProtocolFeePercentage: "0.0005",
+		ReserveA:              sdkmath.NewInt(1000000000),
+		ReserveB:              sdkmath.NewInt(500000000),
+		TotalLpTokens:         sdkmath.NewInt(707106781),
+		FeePercentage:         sdkmath.LegacyMustNewDecFromStr("0.003"),
+		ProtocolFeePercentage: sdkmath.LegacyMustNewDecFromStr("0.0005"),
 	}
 	k.SetPool(ctx, pool)
 
@@ -147,11 +147,11 @@ func TestGetQuoteEdgeCases(t *testing.T) {
 		PoolId:                "uaura-token",
 		DenomA:                "uaura",
 		DenomB:                "token",
-		ReserveA:              "1000", // Very low
-		ReserveB:              "1000",
-		TotalLpTokens:         "1000",
-		FeePercentage:         "0.003",
-		ProtocolFeePercentage: "0.0005",
+		ReserveA:              sdkmath.NewInt(1000), // Very low
+		ReserveB:              sdkmath.NewInt(1000),
+		TotalLpTokens:         sdkmath.NewInt(1000),
+		FeePercentage:         sdkmath.LegacyMustNewDecFromStr("0.003"),
+		ProtocolFeePercentage: sdkmath.LegacyMustNewDecFromStr("0.0005"),
 	}
 	k.SetPool(ctx, lowLiqPool)
 
@@ -160,11 +160,11 @@ func TestGetQuoteEdgeCases(t *testing.T) {
 		PoolId:                "uaura-stable",
 		DenomA:                "uaura",
 		DenomB:                "stable",
-		ReserveA:              "1000000000000", // 1M AURA
-		ReserveB:              "1000",          // 0.000001 stable
-		TotalLpTokens:         "31622776601",
-		FeePercentage:         "0.003",
-		ProtocolFeePercentage: "0.0005",
+		ReserveA:              sdkmath.NewInt(1000000000000), // 1M AURA
+		ReserveB:              sdkmath.NewInt(1000),          // 0.000001 stable
+		TotalLpTokens:         sdkmath.NewInt(31622776601),
+		FeePercentage:         sdkmath.LegacyMustNewDecFromStr("0.003"),
+		ProtocolFeePercentage: sdkmath.LegacyMustNewDecFromStr("0.0005"),
 	}
 	k.SetPool(ctx, imbalancedPool)
 
@@ -220,11 +220,11 @@ func TestRecordSwapStatsMultipleSwaps(t *testing.T) {
 		PoolId:                "uaura-usdt",
 		DenomA:                "uaura",
 		DenomB:                "usdt",
-		ReserveA:              "1000000000",
-		ReserveB:              "500000000",
-		TotalLpTokens:         "707106781",
-		FeePercentage:         "0.003",
-		ProtocolFeePercentage: "0.0005",
+		ReserveA:              sdkmath.NewInt(1000000000),
+		ReserveB:              sdkmath.NewInt(500000000),
+		TotalLpTokens:         sdkmath.NewInt(707106781),
+		FeePercentage:         sdkmath.LegacyMustNewDecFromStr("0.003"),
+		ProtocolFeePercentage: sdkmath.LegacyMustNewDecFromStr("0.0005"),
 	}
 	k.SetPool(ctx, pool)
 

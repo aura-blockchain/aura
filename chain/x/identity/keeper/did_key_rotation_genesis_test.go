@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/identity/types"
 )
@@ -15,27 +14,44 @@ import (
 func TestGenesisImportExport_DIDKeyRotations(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
 
-	// Create test identities
+	// Create test identities with unique addresses
 	did1 := "did:aura:test1"
 	did2 := "did:aura:test2"
-	owner := "aura1testowner"
+	owner1 := "aura1testowner1"
+	owner2 := "aura1testowner2"
 
-	for _, did := range []string{did1, did2} {
-		identity := &types.IdentityRecord{
-			Did:                 did,
-			Address:             owner,
-			Status:              types.IdentityStatusActive,
-			VerificationMethods: []string{"old-key"},
-			CreatedAt:           timestamppb.New(ctx.BlockTime()),
-			UpdatedAt:           timestamppb.New(ctx.BlockTime()),
-		}
-		err := keeper.SetIdentityRecord(ctx, identity)
-		require.NoError(t, err)
-
-		// Rotate keys
-		_, err = keeper.RotateDIDKey(ctx, did, owner, "new-key", "test rotation")
-		require.NoError(t, err)
+	// Create identity 1
+	now := ctx.BlockTime()
+	identity1 := &types.IdentityRecord{
+		Did:                 did1,
+		Address:             owner1,
+		Status:              types.IdentityStatusActive,
+		VerificationMethods: []string{"old-key"},
+		CreatedAt:           now,
+		UpdatedAt:           &now,
 	}
+	err := keeper.SetIdentityRecord(ctx, identity1)
+	require.NoError(t, err)
+
+	// Rotate keys for identity 1
+	_, err = keeper.RotateDIDKey(ctx, did1, owner1, "new-key", "test rotation")
+	require.NoError(t, err)
+
+	// Create identity 2
+	identity2 := &types.IdentityRecord{
+		Did:                 did2,
+		Address:             owner2,
+		Status:              types.IdentityStatusActive,
+		VerificationMethods: []string{"old-key"},
+		CreatedAt:           now,
+		UpdatedAt:           &now,
+	}
+	err = keeper.SetIdentityRecord(ctx, identity2)
+	require.NoError(t, err)
+
+	// Rotate keys for identity 2
+	_, err = keeper.RotateDIDKey(ctx, did2, owner2, "new-key", "test rotation")
+	require.NoError(t, err)
 
 	// Export genesis
 	exportedGenesis, err := keeper.ExportGenesis(ctx)
@@ -47,10 +63,11 @@ func TestGenesisImportExport_DIDKeyRotations(t *testing.T) {
 	require.Len(t, exportedGenesis.DidKeyHistories, 2, "Should have 2 key histories")
 
 	// Verify rotation details
+	initiators := map[string]bool{owner1: true, owner2: true}
 	for _, rotation := range exportedGenesis.DidKeyRotations {
 		require.Equal(t, "old-key", rotation.OldVerificationMethod)
 		require.Equal(t, "new-key", rotation.NewVerificationMethod)
-		require.Equal(t, owner, rotation.InitiatedBy)
+		require.True(t, initiators[rotation.InitiatedBy], "initiator should be one of the owners")
 		require.Equal(t, types.DIDKeyRotationStatusPending, rotation.Status)
 	}
 
@@ -58,7 +75,7 @@ func TestGenesisImportExport_DIDKeyRotations(t *testing.T) {
 	for _, history := range exportedGenesis.DidKeyHistories {
 		require.Len(t, history.Entries, 1, "Each history should have 1 entry")
 		require.Equal(t, "old-key", history.Entries[0].VerificationMethod)
-		require.Equal(t, owner, history.Entries[0].RotatedBy)
+		require.True(t, initiators[history.Entries[0].RotatedBy], "rotated by should be one of the owners")
 	}
 
 	// Create new keeper for import
@@ -100,13 +117,14 @@ func TestGenesisImportExport_CompletedRotations(t *testing.T) {
 	did := "did:aura:test123"
 	owner := "aura1testowner"
 
+	now := ctx.BlockTime()
 	identity := &types.IdentityRecord{
 		Did:                 did,
 		Address:             owner,
 		Status:              types.IdentityStatusActive,
 		VerificationMethods: []string{"old-key"},
-		CreatedAt:           timestamppb.New(ctx.BlockTime()),
-		UpdatedAt:           timestamppb.New(ctx.BlockTime()),
+		CreatedAt:           now,
+		UpdatedAt:           &now,
 	}
 	err := keeper.SetIdentityRecord(ctx, identity)
 	require.NoError(t, err)
@@ -116,7 +134,7 @@ func TestGenesisImportExport_CompletedRotations(t *testing.T) {
 	require.NoError(t, err)
 
 	// Advance time past grace period
-	newTime := rotation.GracePeriodEnd.AsTime().Add(1 * time.Hour)
+	newTime := rotation.GracePeriodEnd.Add(1 * time.Hour)
 	ctx = ctx.WithBlockTime(newTime)
 
 	// Complete rotation
@@ -156,13 +174,14 @@ func TestGenesisImportExport_MultipleRotations(t *testing.T) {
 	did := "did:aura:test123"
 	owner := "aura1testowner"
 
+	now := ctx.BlockTime()
 	identity := &types.IdentityRecord{
 		Did:                 did,
 		Address:             owner,
 		Status:              types.IdentityStatusActive,
 		VerificationMethods: []string{"key-1"},
-		CreatedAt:           timestamppb.New(ctx.BlockTime()),
-		UpdatedAt:           timestamppb.New(ctx.BlockTime()),
+		CreatedAt:           now,
+		UpdatedAt:           &now,
 	}
 	err := keeper.SetIdentityRecord(ctx, identity)
 	require.NoError(t, err)
@@ -175,7 +194,7 @@ func TestGenesisImportExport_MultipleRotations(t *testing.T) {
 		require.NoError(t, err)
 
 		// Advance time past grace period
-		ctx = ctx.WithBlockTime(rotation.GracePeriodEnd.AsTime().Add(1 * time.Hour))
+		ctx = ctx.WithBlockTime(rotation.GracePeriodEnd.Add(1 * time.Hour))
 
 		// Complete rotation
 		err = keeper.CompleteKeyRotation(ctx, did)

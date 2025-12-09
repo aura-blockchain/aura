@@ -6,7 +6,6 @@ import (
 	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 	"github.com/aequitas/aura/chain/x/bridge/types"
@@ -218,7 +217,7 @@ func TestDetectDoubleSigning_SameSignature(t *testing.T) {
 	// Create transfer with existing signature
 	transfer := &types.CrossChainTransfer{
 		TransferId: transferId,
-		ValidatorSignatures: []*types.ValidatorSignature{
+		ValidatorSignatures: []types.ValidatorSignature{
 			{
 				ValidatorAddress: validatorAddr,
 				Signature:        signature,
@@ -246,7 +245,7 @@ func TestDetectDoubleSigning_DifferentSignature(t *testing.T) {
 	// Create transfer with first signature
 	transfer := &types.CrossChainTransfer{
 		TransferId: transferId,
-		ValidatorSignatures: []*types.ValidatorSignature{
+		ValidatorSignatures: []types.ValidatorSignature{
 			{
 				ValidatorAddress: validatorAddr,
 				Signature:        signature1,
@@ -273,7 +272,7 @@ func TestDetectDoubleSigning_FirstSignature(t *testing.T) {
 	// Create transfer with NO signatures yet
 	transfer := &types.CrossChainTransfer{
 		TransferId:          transferId,
-		ValidatorSignatures: []*types.ValidatorSignature{},
+		ValidatorSignatures: []types.ValidatorSignature{},
 	}
 	keeper.SetTransfer(ctx, transfer)
 
@@ -304,7 +303,7 @@ func TestCheckAndSlashDoubleSigning_DetectsAndSlashes(t *testing.T) {
 	// Create transfer with first signature
 	transfer := &types.CrossChainTransfer{
 		TransferId: transferId,
-		ValidatorSignatures: []*types.ValidatorSignature{
+		ValidatorSignatures: []types.ValidatorSignature{
 			{
 				ValidatorAddress: validatorAddr,
 				Signature:        signature1,
@@ -566,7 +565,7 @@ func TestSlashValidatorsForFraudulentTransfer_Success(t *testing.T) {
 	transferID := "transfer-fraudulent"
 	transfer := &types.CrossChainTransfer{
 		TransferId: transferID,
-		ValidatorSignatures: []*types.ValidatorSignature{
+		ValidatorSignatures: []types.ValidatorSignature{
 			{
 				ValidatorAddress: validator1.Address,
 				Signature:        []byte("sig1"),
@@ -626,7 +625,7 @@ func TestSlashValidatorsForFraudulentTransfer_NoSignatures(t *testing.T) {
 	transferID := "transfer-no-sigs"
 	transfer := &types.CrossChainTransfer{
 		TransferId:          transferID,
-		ValidatorSignatures: []*types.ValidatorSignature{}, // Empty
+		ValidatorSignatures: []types.ValidatorSignature{}, // Empty
 	}
 	keeper.SetTransfer(ctx, transfer)
 
@@ -670,7 +669,7 @@ func TestSlashValidatorsForFraudulentTransfer_PartialFailure(t *testing.T) {
 	transferID := "transfer-partial"
 	transfer := &types.CrossChainTransfer{
 		TransferId: transferID,
-		ValidatorSignatures: []*types.ValidatorSignature{
+		ValidatorSignatures: []types.ValidatorSignature{
 			{
 				ValidatorAddress: validatorActive.Address,
 				Signature:        []byte("sig-active"),
@@ -713,9 +712,9 @@ func TestResolveFraudProof_SlashesValidators(t *testing.T) {
 		TransferId: transferID,
 		Status:     types.TransferStatus_PENDING,
 		Denom:      "aura",
-		Amount:     "1000",
-		Timestamp:  timestamppb.New(ctx.BlockTime()),
-		ValidatorSignatures: []*types.ValidatorSignature{
+		Amount:     sdkmath.NewInt(1000),
+		Timestamp:  ctx.BlockTime(),
+		ValidatorSignatures: []types.ValidatorSignature{
 			{
 				ValidatorAddress: validator.Address,
 				Signature:        []byte("fraud-sig"),
@@ -731,7 +730,7 @@ func TestResolveFraudProof_SlashesValidators(t *testing.T) {
 		ChallengedTransferId: transferID,
 		Challenger:           "aura1challenger",
 		Status:               types.FraudProofStatus_FRAUD_PROOF_INVESTIGATING,
-		SubmittedAt:          timestamppb.New(ctx.BlockTime()),
+		SubmittedAt:          ctx.BlockTime(),
 		Evidence:             []byte("fraud evidence"),
 	}
 	keeper.setFraudProof(ctx, fraudProof)

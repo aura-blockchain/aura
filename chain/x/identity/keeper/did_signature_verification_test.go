@@ -29,7 +29,16 @@ func TestVerifySignatureWithKey_Secp256k1(t *testing.T) {
 	verificationMethod := hex.EncodeToString(pubKey.Bytes())
 
 	// Create identity with verification method
-	err := k.CreateIdentity(ctx, did, owner, map[string]string{}, verificationMethod)
+	now := ctx.BlockTime()
+	identity := &types.IdentityRecord{
+		Did:                 did,
+		Address:             owner,
+		Status:              types.IdentityStatusActive,
+		VerificationMethods: []string{verificationMethod},
+		CreatedAt:           now,
+		UpdatedAt:           &now,
+	}
+	err := k.SetIdentityRecord(ctx, identity)
 	require.NoError(t, err)
 
 	// Test message
@@ -84,7 +93,16 @@ func TestVerifySignatureWithKey_Ed25519(t *testing.T) {
 	verificationMethod := hex.EncodeToString(pubKey.Bytes())
 
 	// Create identity with verification method
-	err := k.CreateIdentity(ctx, did, owner, map[string]string{}, verificationMethod)
+	now := ctx.BlockTime()
+	identity := &types.IdentityRecord{
+		Did:                 did,
+		Address:             owner,
+		Status:              types.IdentityStatusActive,
+		VerificationMethods: []string{verificationMethod},
+		CreatedAt:           now,
+		UpdatedAt:           &now,
+	}
+	err := k.SetIdentityRecord(ctx, identity)
 	require.NoError(t, err)
 
 	// Test message
@@ -121,11 +139,20 @@ func TestVerifySignatureWithKey_RevokedCredential(t *testing.T) {
 	verificationMethod := hex.EncodeToString(pubKey.Bytes())
 
 	// Create identity with verification method
-	err := k.CreateIdentity(ctx, did, owner, map[string]string{}, verificationMethod)
+	now := ctx.BlockTime()
+	identity := &types.IdentityRecord{
+		Did:                 did,
+		Address:             owner,
+		Status:              types.IdentityStatusActive,
+		VerificationMethods: []string{verificationMethod},
+		CreatedAt:           now,
+		UpdatedAt:           &now,
+	}
+	err := k.SetIdentityRecord(ctx, identity)
 	require.NoError(t, err)
 
 	// Revoke the credential
-	err = k.RevokeCredential(ctx, verificationMethod, "security_compromise", owner)
+	err = k.RevokeCredential(ctx, verificationMethod, did, owner, "security_compromise", map[string]string{})
 	require.NoError(t, err)
 
 	// Test message and signature
@@ -156,7 +183,16 @@ func TestVerifySignatureWithKey_InvalidKey(t *testing.T) {
 	verificationMethod := hex.EncodeToString(pubKey.Bytes())
 
 	// Create identity with verification method
-	err := k.CreateIdentity(ctx, did, owner, map[string]string{}, verificationMethod)
+	now := ctx.BlockTime()
+	identity := &types.IdentityRecord{
+		Did:                 did,
+		Address:             owner,
+		Status:              types.IdentityStatusActive,
+		VerificationMethods: []string{verificationMethod},
+		CreatedAt:           now,
+		UpdatedAt:           &now,
+	}
+	err := k.SetIdentityRecord(ctx, identity)
 	require.NoError(t, err)
 
 	// Test message and signature
@@ -272,7 +308,16 @@ func TestVerifySignatureWithKey_KeyRotation(t *testing.T) {
 	owner := sdk.AccAddress(oldPubKey.Address()).String()
 
 	// Create identity with old verification method
-	err := k.CreateIdentity(ctx, did, owner, map[string]string{}, oldVerificationMethod)
+	now := ctx.BlockTime()
+	identity := &types.IdentityRecord{
+		Did:                 did,
+		Address:             owner,
+		Status:              types.IdentityStatusActive,
+		VerificationMethods: []string{oldVerificationMethod},
+		CreatedAt:           now,
+		UpdatedAt:           &now,
+	}
+	err := k.SetIdentityRecord(ctx, identity)
 	require.NoError(t, err)
 
 	// Initiate key rotation

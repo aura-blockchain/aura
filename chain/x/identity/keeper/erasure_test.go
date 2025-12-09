@@ -15,7 +15,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/identity/types"
 )
@@ -59,8 +58,8 @@ func TestEraseIdentity_Success(t *testing.T) {
 		Did:              did,
 		Address:          address,
 		Status:           types.IdentityStatusActive,
-		CreatedAt:        timestamppb.New(now),
-		UpdatedAt:        timestamppb.New(now),
+		CreatedAt:        now,
+		UpdatedAt:        &now,
 		PiiCommitment:    commitment,
 		CommitmentSalt:   salt,
 		OffChainDataRef:  "ipfs://QmTest123",
@@ -113,8 +112,8 @@ func TestEraseIdentity_AlreadyErased(t *testing.T) {
 		Did:       did,
 		Address:   address,
 		Status:    types.IdentityStatusActive,
-		CreatedAt: timestamppb.New(now),
-		UpdatedAt: timestamppb.New(now),
+		CreatedAt: now,
+		UpdatedAt: &now,
 	}
 
 	err := keeper.SetIdentityRecord(ctx, record)
@@ -144,8 +143,8 @@ func TestEraseIdentity_Unauthorized(t *testing.T) {
 		Did:       did,
 		Address:   owner,
 		Status:    types.IdentityStatusActive,
-		CreatedAt: timestamppb.New(now),
-		UpdatedAt: timestamppb.New(now),
+		CreatedAt: now,
+		UpdatedAt: &now,
 	}
 
 	err := keeper.SetIdentityRecord(ctx, record)
@@ -170,11 +169,13 @@ func TestVerifyPIICommitment_Success(t *testing.T) {
 	salt := types.GenerateCommitmentSalt()
 	commitment := types.ComputePIICommitment(piiData, salt)
 
+	now := ctx.BlockTime()
 	record := &types.IdentityRecord{
 		Did:            did,
 		Address:        "aura1test",
 		Status:         types.IdentityStatusActive,
-		CreatedAt:      timestamppb.New(ctx.BlockTime()),
+		CreatedAt:      now,
+		UpdatedAt:      &now,
 		PiiCommitment:  commitment,
 		CommitmentSalt: salt,
 	}
@@ -206,11 +207,13 @@ func TestVerifyPIICommitment_WrongData(t *testing.T) {
 	salt := types.GenerateCommitmentSalt()
 	commitment := types.ComputePIICommitment(correctData, salt)
 
+	now := ctx.BlockTime()
 	record := &types.IdentityRecord{
 		Did:            did,
 		Address:        "aura1test",
 		Status:         types.IdentityStatusActive,
-		CreatedAt:      timestamppb.New(ctx.BlockTime()),
+		CreatedAt:      now,
+		UpdatedAt:      &now,
 		PiiCommitment:  commitment,
 		CommitmentSalt: salt,
 	}
@@ -238,11 +241,13 @@ func TestVerifyPIICommitment_ErasedIdentity(t *testing.T) {
 	salt := types.GenerateCommitmentSalt()
 	commitment := types.ComputePIICommitment(piiData, salt)
 
+	now := ctx.BlockTime()
 	record := &types.IdentityRecord{
 		Did:            did,
 		Address:        address,
 		Status:         types.IdentityStatusActive,
-		CreatedAt:      timestamppb.New(ctx.BlockTime()),
+		CreatedAt:      now,
+		UpdatedAt:      &now,
 		PiiCommitment:  commitment,
 		CommitmentSalt: salt,
 	}
@@ -275,11 +280,13 @@ func TestUpdatePIICommitment_Success(t *testing.T) {
 	oldSalt := types.GenerateCommitmentSalt()
 	oldCommitment := types.ComputePIICommitment(oldData, oldSalt)
 
+	now := ctx.BlockTime()
 	record := &types.IdentityRecord{
 		Did:            did,
 		Address:        address,
 		Status:         types.IdentityStatusActive,
-		CreatedAt:      timestamppb.New(ctx.BlockTime()),
+		CreatedAt:      now,
+		UpdatedAt:      &now,
 		PiiCommitment:  oldCommitment,
 		CommitmentSalt: oldSalt,
 	}
@@ -320,11 +327,13 @@ func TestUpdatePIICommitment_ErasedIdentity(t *testing.T) {
 	// Create and erase identity
 	did := "did:aura:test123"
 	address := "aura1test"
+	now := ctx.BlockTime()
 	record := &types.IdentityRecord{
 		Did:       did,
 		Address:   address,
 		Status:    types.IdentityStatusActive,
-		CreatedAt: timestamppb.New(ctx.BlockTime()),
+		CreatedAt: now,
+		UpdatedAt: &now,
 	}
 
 	err := keeper.SetIdentityRecord(ctx, record)
@@ -349,11 +358,13 @@ func TestUpdatePIICommitment_Unauthorized(t *testing.T) {
 	owner := "aura1owner"
 	attacker := "aura1attacker"
 
+	now := ctx.BlockTime()
 	record := &types.IdentityRecord{
 		Did:       did,
 		Address:   owner,
 		Status:    types.IdentityStatusActive,
-		CreatedAt: timestamppb.New(ctx.BlockTime()),
+		CreatedAt: now,
+		UpdatedAt: &now,
 	}
 
 	err := keeper.SetIdentityRecord(ctx, record)
@@ -380,11 +391,13 @@ func TestEraseIdentity_PreservesCommitment(t *testing.T) {
 	salt := types.GenerateCommitmentSalt()
 	commitment := types.ComputePIICommitment(piiData, salt)
 
+	now := ctx.BlockTime()
 	record := &types.IdentityRecord{
 		Did:              did,
 		Address:          address,
 		Status:           types.IdentityStatusActive,
-		CreatedAt:        timestamppb.New(ctx.BlockTime()),
+		CreatedAt:        now,
+		UpdatedAt:        &now,
 		PiiCommitment:    commitment,
 		CommitmentSalt:   salt,
 		OffChainDataRef:  "ipfs://QmTest",

@@ -32,6 +32,11 @@ func DefaultGenesisState() *identitypb.GenesisState {
 // ValidateGenesisState performs comprehensive validation of genesis data
 // to prevent data corruption and invalid state on chain initialization.
 func ValidateGenesisState(gs *identitypb.GenesisState) error {
+	// CRITICAL: Reject nil genesis state
+	if gs == nil {
+		return ErrInvalidInput.Wrap("genesis state cannot be nil")
+	}
+
 	// Note: Params.Auth and Params.Change are non-nullable in proto
 	// They will never be nil, just validate their contents
 
