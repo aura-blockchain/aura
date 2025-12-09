@@ -12,6 +12,7 @@ func RegisterInvariants(ir sdk.InvariantRegistry, k *Keeper) {
 	ir.RegisterRoute(types.ModuleName, "params-valid", ParamsInvariant(k))
 	ir.RegisterRoute(types.ModuleName, "vc-consistency", VCConsistencyInvariant(k))
 	ir.RegisterRoute(types.ModuleName, "revocation-consistency", RevocationConsistencyInvariant(k))
+	ir.RegisterRoute(types.ModuleName, "vc-subject-integrity", VCSubjectIntegrityInvariant(k))
 }
 
 // AllInvariants runs all invariants of the vcregistry module
@@ -21,6 +22,7 @@ func AllInvariants(k *Keeper) sdk.Invariant {
 			ParamsInvariant(k),
 			VCConsistencyInvariant(k),
 			RevocationConsistencyInvariant(k),
+			VCSubjectIntegrityInvariant(k),
 		}
 
 		for _, inv := range invariants {
@@ -162,6 +164,47 @@ func RevocationConsistencyInvariant(k *Keeper) sdk.Invariant {
 				"revocation-consistency",
 				"revocation list has entries but nil last_updated",
 			), true
+		}
+
+		return "", false
+	}
+}
+
+// VCSubjectIntegrityInvariant checks that all VCs reference existing DIDs
+//
+// CRITICAL SECURITY: This invariant ensures referential integrity between VCs and DIDs.
+// Without this check, orphaned VCs could exist after DID deletion, leading to:
+//   - Invalid credential references in the system
+//   - Inability to verify credentials (missing DID document)
+//   - Potential security vulnerabilities from dangling references
+//
+// The invariant validates that every VC's subject DID exists in the DID registry.
+// This prevents the scenario where a DID is deleted but VCs still reference it.
+//
+// Returns:
+//   - ("", false) if all VCs have valid subject DIDs
+//   - (error message, true) if any VC references a non-existent DID
+func VCSubjectIntegrityInvariant(k *Keeper) sdk.Invariant {
+	return func(ctx sdk.Context) (string, bool) {
+		if k.store == nil {
+			// Store not initialized, skip check
+			return "", false
+		}
+
+		// Iterate through all VCs and verify their holder DIDs exist
+		for _, vc := range k.store.iterateVCRecords(ctx) {
+			// Check if the holder DID exists in the registry
+			// VCs have a HolderDid field that should reference a valid DID
+			if vc.HolderDid != "" {
+				_, exists := k.GetDIDDocument(ctx, vc.HolderDid)
+				if !exists {
+					return sdk.FormatInvariant(
+						types.ModuleName,
+						"vc-subject-integrity",
+						fmt.Sprintf("VC %s references non-existent DID %s", vc.VcId, vc.HolderDid),
+					), true
+				}
+			}
 		}
 
 		return "", false

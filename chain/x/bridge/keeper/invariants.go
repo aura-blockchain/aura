@@ -17,6 +17,7 @@ func RegisterInvariants(ir sdk.InvariantRegistry, k Keeper) {
 	ir.RegisterRoute(types.ModuleName, "security-parameters", SecurityParametersInvariant(k))
 	ir.RegisterRoute(types.ModuleName, "transfer-limits", TransferLimitInvariant(k))
 	ir.RegisterRoute(types.ModuleName, "channel-state", ChannelStateInvariant(k))
+	ir.RegisterRoute(types.ModuleName, "transfer-chain-integrity", TransferChainIntegrityInvariant(k))
 }
 
 // AllInvariants runs all invariants of the bridge module
@@ -29,6 +30,7 @@ func AllInvariants(k Keeper) sdk.Invariant {
 			SecurityParametersInvariant(k),
 			TransferLimitInvariant(k),
 			ChannelStateInvariant(k),
+			TransferChainIntegrityInvariant(k),
 		}
 
 		for _, inv := range invariants {
@@ -443,6 +445,58 @@ func ChannelStateInvariant(k Keeper) sdk.Invariant {
 					"channel-state",
 					fmt.Sprintf("chain %s has excessive min confirmations: %d", config.ChainId, config.MinConfirmations),
 				), true
+			}
+		}
+
+		return "", false
+	}
+}
+
+// TransferChainIntegrityInvariant checks that all transfers reference existing chain configs
+//
+// CRITICAL SECURITY: This invariant ensures referential integrity between transfers and chain configs.
+// Without this check, orphaned transfers could exist after chain config deletion, leading to:
+//   - Transfers that cannot be completed (no chain config for validation)
+//   - Inability to verify transfer parameters (missing chain configuration)
+//   - Locked user funds in transfers to invalid chains
+//   - Bridge state inconsistency and potential fund loss
+//
+// The invariant validates that every transfer's source and target chains have valid configurations.
+// This prevents the scenario where a chain config is deleted but transfers still reference it.
+//
+// Returns:
+//   - ("", false) if all transfers reference valid chain configs
+//   - (error message, true) if any transfer references a non-existent chain config
+func TransferChainIntegrityInvariant(k Keeper) sdk.Invariant {
+	return func(ctx sdk.Context) (string, bool) {
+		// Get all transfers
+		transfers := k.getAllTransfers(ctx)
+
+		for _, transfer := range transfers {
+			// Check source chain config exists (if not "aura" which is local)
+			if transfer.SourceChain != "aura" {
+				_, exists := k.getChainConfig(ctx, transfer.SourceChain)
+				if !exists {
+					return sdk.FormatInvariant(
+						types.ModuleName,
+						"transfer-chain-integrity",
+						fmt.Sprintf("Transfer %s references non-existent source chain config %s",
+							transfer.TransferId, transfer.SourceChain),
+					), true
+				}
+			}
+
+			// Check target chain config exists (if not "aura" which is local)
+			if transfer.TargetChain != "aura" {
+				_, exists := k.getChainConfig(ctx, transfer.TargetChain)
+				if !exists {
+					return sdk.FormatInvariant(
+						types.ModuleName,
+						"transfer-chain-integrity",
+						fmt.Sprintf("Transfer %s references non-existent target chain config %s",
+							transfer.TransferId, transfer.TargetChain),
+					), true
+				}
 			}
 		}
 

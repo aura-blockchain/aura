@@ -1328,21 +1328,19 @@ func (a *App) ExportBridgeGenesis(ctx sdk.Context) bridgetypes.GenesisState {
 //  3. Periodically in production (configurable via governance)
 //  4. On-demand via CLI commands for debugging
 func (a *App) registerInvariants() {
-	// Bank module invariants (Cosmos SDK standard)
-	// Ensures total supply = sum of all account balances
-	a.Logger().Info("registered bank invariants", "checks", "total-supply")
-
-	// Staking module invariants (Cosmos SDK standard)
-	// Ensures bonded pool = sum of bonded tokens
-	if a.StakingKeeper != nil {
-		a.Logger().Info("registered staking invariants", "checks", "bonded-pool,validator-power")
-	}
+	// Register invariants through the module manager, which implements InvariantRegistry.
+	// Each module's RegisterInvariants function is called, which registers individual
+	// invariant routes that can be executed via the crisis module or CheckInvariants().
+	//
+	// The module manager acts as the central invariant registry, and modules register
+	// their invariants through their keeper's RegisterInvariants function.
 
 	// DEX module invariants (AURA custom)
 	// 1. Pool reserves match stored values
 	// 2. Constant product (k = x * y) holds for all pools
 	// 3. LP token supply matches pool shares
 	if a.dexKeeper != nil {
+		dexkeeper.RegisterInvariants(a.moduleManager, a.dexKeeper)
 		a.Logger().Info("registered dex invariants", "checks", "pool-reserves,constant-product,lp-tokens")
 	}
 
@@ -1351,32 +1349,8 @@ func (a *App) registerInvariants() {
 	// 2. Merkle roots are consistent with transfer records
 	// 3. Nonce sequence is monotonic and gap-free
 	if a.bridgeKeeper != nil {
+		bridgekeeper.RegisterInvariants(a.moduleManager, *a.bridgeKeeper)
 		a.Logger().Info("registered bridge invariants", "checks", "locked-tokens,merkle-consistency,nonce-sequence")
-	}
-
-	// ConfidenceScore module invariants (AURA custom)
-	// 1. Total scores match sum of user records
-	// 2. Score ranges are valid (0-100)
-	// 3. IR completion records are consistent
-	// Note: After KV store migration, these checks become critical
-	if a.csKeeper != nil {
-		a.Logger().Info("registered confidencescore invariants", "checks", "total-scores,score-ranges,ir-completions")
-	}
-
-	// VCRegistry module invariants (AURA custom)
-	// 1. VC records are consistent with user indices
-	// 2. Revocation records match VC states
-	// 3. No orphaned presentation records
-	if a.vcKeeper != nil {
-		a.Logger().Info("registered vcregistry invariants", "checks", "vc-consistency,revocation-consistency,presentation-consistency")
-	}
-
-	// Governance module invariants (individual)
-	// 1. Proposal deposits match stored amounts
-	// 2. Vote tallies are consistent with vote records
-	// 3. Proposal states are valid
-	if a.governanceKeeper != nil {
-		a.Logger().Info("registered governance invariants", "checks", "deposits,vote-tallies,proposal-states")
 	}
 
 	// EconomicSecurity module invariants (individual)
@@ -1384,16 +1358,17 @@ func (a *App) registerInvariants() {
 	// 2. Vesting schedules are valid
 	// 3. MEV tracking is accurate
 	if a.economicsecurityKeeper != nil {
+		economicsecuritykeeper.RegisterInvariants(a.moduleManager, a.economicsecurityKeeper)
 		a.Logger().Info("registered economicsecurity invariants", "checks", "fee-config,vesting,mev-tracking")
 	}
 
-	// Contract Registry invariants (AURA custom)
-	// 1. Contract records are consistent with deployment history
-	// 2. Verification statuses are up-to-date
-	// 3. No orphaned contract metadata
-	if a.contractRegistryKeeper != nil {
-		a.Logger().Info("registered contractregistry invariants", "checks", "contract-consistency,verification-status,metadata-consistency")
-	}
+	// NetworkSecurity module invariants (AURA custom)
+	// 1. Peer reputation scores are valid (0-100)
+	// 2. Rate limit configurations are consistent
+	// 3. Mempool security state is valid
+	// 4. Sybil detection integrity checks
+	networksecuritykeeper.RegisterInvariants(a.moduleManager, &a.networksecurityKeeper)
+	a.Logger().Info("registered networksecurity invariants", "checks", "peer-reputation,rate-limits,mempool-security,sybil-detection")
 
 	a.Logger().Info("all module invariants registered successfully")
 }
