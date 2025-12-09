@@ -1,460 +1,257 @@
 # Compliance Module
 
-The Compliance module provides comprehensive regulatory compliance features for the Aura blockchain, including KYC/AML, transaction monitoring, sanctions screening, GDPR compliance, and tax reporting.
+## Overview
+
+The Compliance module provides KYC/AML, sanctions screening, GDPR compliance, and tax reporting features. It implements privacy-preserving verification with on-chain commitments and off-chain PII storage, rate limiting for expensive operations, and comprehensive audit trails for regulatory requirements.
 
 ## Features
 
-### 1. KYC/AML Integration
+- **KYC Verification**: Multi-level identity verification (None, Basic, Intermediate, Advanced)
+- **AML Risk Profiling**: Transaction monitoring and risk assessment
+- **Sanctions Screening**: OFAC/EU/UN sanctions list checking with caching
+- **Transaction Monitoring**: Rule-based alerts for suspicious activity
+- **GDPR Compliance**: Data access, rectification, erasure, and portability
+- **Tax Reporting**: Automated tax document generation (1099, 8949, etc.)
+- **Privacy-Preserving**: PII stored off-chain, only SHA-256 commitments on-chain
+- **Rate Limiting**: DoS protection for expensive screening operations
+- **Audit Trail**: Complete history of KYC updates and data access requests
 
-- **Identity Verification**: Multi-level KYC verification (Basic, Intermediate, Advanced)
-- **AML Risk Profiling**: Risk-based approach to customer due diligence
-- **Enhanced Due Diligence**: Additional verification for high-risk customers
-- **PEP Screening**: Politically Exposed Person identification
-- **Source of Funds**: Documentation and verification
-- **Ongoing Monitoring**: Continuous risk assessment
+## State
 
-**Implementation Files:**
-- `keeper/kyc_aml.go` - Core KYC/AML functionality
-- Lines 1-400+ with comprehensive KYC submission, validation, and AML profiling
+### KYCRecord
+- **Address**: User blockchain address
+- **KYC Level**: None, Basic, Intermediate, Advanced
+- **Provider**: KYC service provider address
+- **Verified At**: Timestamp of verification
+- **Expires At**: Expiration date
+- **PII Commitment**: SHA-256 hash of off-chain PII data
+- **Jurisdiction**: ISO 3166-1 alpha-2 country code
+- **Version**: Auto-incremented on updates
 
-### 2. Transaction Monitoring
+### AMLProfile
+- **Risk Level**: Low, Medium, High, Severe
+- **Risk Factors**: Array of identified risk indicators
+- **Total Volume**: Cumulative transaction volume
+- **Suspicious Activities**: List of flagged transactions
+- **PEP Status**: Politically Exposed Person flag
 
-- **Real-time Monitoring**: Analyze all transactions against compliance rules
-- **Velocity Limits**: Detect unusual transaction frequency
-- **Structuring Detection**: Identify potential structuring behavior
-- **Large Transaction Alerts**: Flag transactions exceeding thresholds
-- **Pattern Recognition**: Detect suspicious patterns (round amounts, etc.)
-- **Smurfing Detection**: Identify coordinated multi-account activity
-- **Automated Escalation**: Auto-escalate critical alerts to SARs
+### SanctionsScreeningResult
+- **Status**: Clear, Match, Confirmed, Pending Review
+- **Matches**: Potential sanctions list hits
+- **Screened At**: Cache timestamp
+- **Requires Manual Review**: Flag for compliance team
 
-**Monitoring Rules:**
-- Velocity (24-hour volume limits)
-- Large transactions
-- Structuring (multiple txs below threshold)
-- Smurfing (coordinated accounts)
-- Round amounts
-- Rapid fund movement
-- High-risk jurisdictions
+### TransactionAlert
+- **Rule ID**: Monitoring rule that triggered
+- **Risk Level**: Low, Medium, High, Critical
+- **Reviewed**: Manual review completed flag
+- **Resolution**: escalate, dismiss, file_sar
 
-**Implementation Files:**
-- `keeper/transaction_monitoring.go` - Transaction monitoring engine
-- Lines 1-450+ with comprehensive rule checking and alerting
+## Messages
 
-### 3. Sanctions Screening
+### MsgSubmitKYC
+Submit KYC verification (provider only).
 
-- **OFAC SDN Screening**: Office of Foreign Assets Control Specially Designated Nationals
-- **Multi-List Support**: EU Sanctions, UN Sanctions, FSE, Non-SDN
-- **Automated Screening**: Real-time screening on transactions
-- **Cache Management**: Efficient screening with configurable caching
-- **Manual Review Workflow**: Process for reviewing potential matches
-- **Block Lists**: Prevent sanctioned addresses from transacting
-
-**Supported Lists:**
-- OFAC SDN (Specially Designated Nationals)
-- OFAC FSE (Foreign Sanctions Evaders)
-- OFAC Non-SDN Programs
-- EU Consolidated Sanctions List
-- UN Security Council Sanctions
-- UK HM Treasury Sanctions
-
-**Implementation Files:**
-- `keeper/sanctions.go` - Sanctions screening implementation
-- Lines 1-450+ with multi-list screening and matching
-
-### 4. GDPR Compliance
-
-- **Consent Management**: Record and track user consents
-- **Data Access Requests**: Right to access personal data
-- **Right to Erasure**: Right to be forgotten (with legal exceptions)
-- **Data Portability**: Export data in structured format
-- **Rectification**: Correct inaccurate data
-- **Data Retention**: Automated cleanup based on retention policies
-- **Processing Purposes**: Track lawful basis for processing
-
-**GDPR Rights Supported:**
-- Right to access
-- Right to rectification
-- Right to erasure
-- Right to restrict processing
-- Right to data portability
-- Right to object
-
-**Implementation Files:**
-- `keeper/gdpr.go` - GDPR compliance implementation
-- Lines 1-500+ with complete GDPR request handling
-
-### 5. Tax Reporting
-
-- **US Tax Forms**: 1099-MISC, 1099-K, Form 8949
-- **Capital Gains Calculation**: Long-term and short-term gains
-- **Income Classification**: Categorize taxable events
-- **Multi-Jurisdiction**: Support for US, EU, and other jurisdictions
-- **Automated Reporting**: Generate tax forms automatically
-- **CSV Export**: Export transaction data for tax preparation
-- **Tax Estimates**: Calculate estimated tax liability
-
-**Supported Forms:**
-- **1099-MISC**: Miscellaneous income (staking, airdrops, etc.)
-- **1099-K**: Payment card and third-party network transactions
-- **Form 8949**: Sales and dispositions of capital assets
-- **Schedule D**: Capital gains and losses summary
-
-**Implementation Files:**
-- `keeper/tax_reporting.go` - Tax reporting implementation
-- Lines 1-550+ with comprehensive tax form generation
-
-## Usage
-
-### Initialize Compliance Module
-
-```go
-import (
-    "github.com/aequitas/aura/chain/x/compliance"
-    "github.com/aequitas/aura/chain/x/compliance/keeper"
-    "github.com/aequitas/aura/chain/x/compliance/types"
-)
-
-// Create keeper with default params
-params := types.DefaultParams()
-keeper := keeper.NewKeeper(params)
-
-// Create module
-module := compliance.NewAppModule(keeper)
-```
-
-### Submit KYC Verification
-
-```go
-err := keeper.SubmitKYC(
-    "aura1address",
-    types.KYCLevelBasic,
-    "KYCProvider",
-    "VERIFICATION_ID",
-    []string{"passport", "utility_bill"},
-    "US",
-)
-```
-
-### Monitor Transaction
-
-```go
-alerts, err := keeper.MonitorTransaction(
-    "transaction_hash",
-    "from_address",
-    "to_address",
-    "amount",
-    timestamp,
-)
-
-// Process alerts
-for _, alert := range alerts {
-    if alert.RiskLevel == types.TxRiskCritical {
-        // Handle critical alert
-    }
+**Example**:
+```json
+{
+  "address": "aura1...",
+  "kyc_level": "KYC_LEVEL_INTERMEDIATE",
+  "provider": "aura1provider...",
+  "pii_commitment": "sha256_hash_of_pii_json",
+  "jurisdiction": "US"
 }
 ```
 
-### Screen for Sanctions
+### MsgReportSuspiciousActivity
+Report suspicious transaction (compliance officer).
 
-```go
-result, err := keeper.ScreenSanctions("address", false)
-
-if result.Status == types.SanctionsConfirmed {
-    // Block transaction
-    return fmt.Errorf("address is sanctioned")
-}
-
-if result.RequiresManualReview {
-    // Queue for manual review
-}
-```
-
-### Record GDPR Consent
-
-```go
-err := keeper.RecordGDPRConsent(
-    "address",
-    "data_processing",
-    true,  // consented
-    "1.0", // policy version
-    "ip_address",
-    "user_agent",
-)
-```
-
-### Generate Tax Report
-
-```go
-transactions := []*types.TaxTransaction{
-    {
-        TransactionHash: "tx1",
-        Timestamp:       time.Now(),
-        TransactionType: "trade",
-        Amount:          "1000",
-        CostBasis:       "800",
-        FairMarketValue: "1000",
-        GainLoss:        "200",
-        IsIncome:        false,
-    },
-}
-
-reportID, err := keeper.GenerateTaxReport(
-    "address",
-    "2024",
-    "US",
-    "1099-MISC",
-    transactions,
-)
-```
-
-## Configuration
-
-### Module Parameters
-
-```go
-type ComplianceParams struct {
-    // KYC/AML settings
-    KYCRequired      bool
-    MinimumKYCLevel  KYCLevel
-    KYCExpiryDays    uint64
-
-    // Transaction monitoring
-    TransactionMonitoringEnabled bool
-    VelocityLimit24h             string
-    SingleTransactionLimit       string
-    StructuringThresholdCount    uint32
-
-    // Sanctions screening
-    SanctionsScreeningEnabled bool
-    SanctionsList             []string
-    ScreeningCacheHours       uint64
-
-    // GDPR
-    GDPREnabled          bool
-    DataRetentionDays    uint64
-    ProcessingPurposes   []string
-
-    // Tax reporting
-    TaxReportingEnabled bool
-    TaxJurisdictions    []string
-    TaxYearEnd          string
+**Example**:
+```json
+{
+  "reporter": "aura1officer...",
+  "address": "aura1suspect...",
+  "transaction_hash": "tx_hash",
+  "activity_type": "structuring",
+  "description": "Multiple transactions just below reporting threshold",
+  "indicators": ["velocity", "round_amounts", "pattern_matching"]
 }
 ```
 
-### Default Configuration
-
-```go
-params := types.DefaultParams()
-// Returns:
-// - KYC expiry: 365 days
-// - Velocity limit: 1M units/24h
-// - Single tx limit: 100K units
-// - Structuring threshold: 5 transactions
-// - Sanctions lists: OFAC_SDN, EU_SANCTIONS, UN_SANCTIONS
-// - Data retention: 2555 days (~7 years)
-// - Tax jurisdictions: US, EU
-```
-
-## Integration with External Services
-
-### KYC Provider Integration
-
-```go
-type KYCProvider interface {
-    VerifyIdentity(address, documentType string, documents [][]byte) (*types.KYCRecord, error)
-    GetVerificationStatus(verificationID string) (*types.KYCRecord, error)
-    UpdateRiskScore(address string) (string, error)
+**Response**:
+```json
+{
+  "activity_id": "sar_abc123"
 }
-
-// Register provider
-keeper.RegisterKYCProvider("ProviderName", myKYCProvider)
 ```
 
-### Sanctions Provider Integration
+### MsgScreenSanctions
+Screen address against sanctions lists.
 
-```go
-type SanctionsProvider interface {
-    ScreenAddress(address string) (*types.SanctionsScreeningResult, error)
-    CheckLists(lists []string) ([]*types.SanctionsMatch, error)
+**Example**:
+```json
+{
+  "address": "aura1...",
+  "force_refresh": false
 }
-
-// Register provider
-keeper.RegisterSanctionsProvider("ProviderName", mySanctionsProvider)
 ```
 
-### Tax Report Generator Integration
-
-```go
-type TaxReportGenerator interface {
-    GenerateReport(address, taxYear, reportType string, transactions []*types.TaxTransaction) (*types.TaxReport, error)
-    ExportToFile(report *types.TaxReport, format string) (string, error)
+**Response**:
+```json
+{
+  "status": "SANCTIONS_CLEAR",
+  "requires_review": false
 }
-
-// Register generator
-keeper.RegisterTaxReportGenerator("US", myTaxGenerator)
 ```
 
-## API Reference
+### MsgRecordGDPRConsent
+Record user consent (GDPR Article 6).
 
-### KYC/AML Functions
+**Example**:
+```json
+{
+  "address": "aura1...",
+  "consent_type": "data_processing",
+  "consented": true,
+  "consent_version": "v1.2"
+}
+```
 
-- `SubmitKYC()` - Submit KYC verification record
-- `GetKYCRecord()` - Retrieve KYC record
-- `ValidateKYCLevel()` - Check KYC compliance
-- `UpdateAMLRiskScore()` - Update AML risk assessment
-- `GetAMLProfile()` - Retrieve AML profile
-- `ReportSuspiciousActivity()` - File SAR
-- `SetPEPStatus()` - Mark as Politically Exposed Person
-- `RequireEnhancedDueDiligence()` - Flag for EDD
+### MsgRequestGDPRData
+Request data access (GDPR Article 15).
 
-### Transaction Monitoring Functions
+**Example**:
+```json
+{
+  "address": "aura1...",
+  "request_type": "access"
+}
+```
 
-- `MonitorTransaction()` - Analyze transaction for alerts
-- `GetTransactionAlerts()` - Retrieve alerts for address
-- `ReviewAlert()` - Mark alert as reviewed
-- `AddMonitoringRule()` - Add custom rule
-- `UpdateMonitoringRule()` - Modify existing rule
-- `GetAlertStatistics()` - Get monitoring statistics
+**Response**:
+```json
+{
+  "request_id": "gdpr_req_abc"
+}
+```
 
-### Sanctions Screening Functions
+### MsgEraseGDPRData
+Request data erasure (GDPR Article 17).
 
-- `ScreenSanctions()` - Screen address against sanctions lists
-- `GetSanctionsResult()` - Retrieve screening result
-- `ReviewSanctionsMatch()` - Manual review of match
-- `BlockSanctionedAddress()` - Block confirmed sanctioned address
-- `ValidateSanctionsCompliance()` - Check sanctions compliance
-- `GetSanctionsStatistics()` - Get screening statistics
+**Example**:
+```json
+{
+  "address": "aura1...",
+  "erasure_reason": "User requested account deletion"
+}
+```
 
-### GDPR Functions
+**Response**:
+```json
+{
+  "success": true,
+  "erasure_event_id": "erasure_xyz"
+}
+```
 
-- `RecordGDPRConsent()` - Record user consent
-- `GetGDPRConsent()` - Retrieve consent record
-- `ValidateGDPRConsent()` - Validate required consents
-- `RequestGDPRData()` - Create data access request
-- `ProcessRightToErasure()` - Handle deletion request
-- `ProcessRectification()` - Handle correction request
-- `CleanupExpiredData()` - Remove old data
+### MsgGenerateTaxReport
+Generate tax reporting documents.
 
-### Tax Reporting Functions
+**Example**:
+```json
+{
+  "address": "aura1...",
+  "tax_year": "2025",
+  "jurisdiction": "US",
+  "report_type": "1099-MISC",
+  "file_path": "/tmp/tax_reports/"
+}
+```
 
-- `GenerateTaxReport()` - Generate tax report
-- `GetTaxReport()` - Retrieve tax report
-- `MarkTaxReportFiled()` - Mark report as filed
-- `Generate1099MISC()` - Generate 1099-MISC form
-- `Generate1099K()` - Generate 1099-K form
-- `Generate8949()` - Generate Form 8949
-- `CalculateCapitalGains()` - Calculate gains/losses
-- `EstimateTaxLiability()` - Estimate tax owed
-- `ExportTaxReportCSV()` - Export to CSV
+**Response**:
+```json
+{
+  "report_id": "tax_2025_abc",
+  "file_path": "/tmp/tax_reports/aura1..._2025_1099.pdf"
+}
+```
 
-## Legal Documentation
+## Queries
 
-The module includes comprehensive legal documentation:
-
-### Privacy Policy
-**File:** `docs/compliance/PRIVACY_POLICY.md`
-- Complete GDPR-compliant privacy policy
-- Data collection and usage disclosure
-- User rights under GDPR and CCPA
-- Data retention policies
-- International data transfers
-- Contact information for privacy inquiries
-
-### Terms of Service
-**File:** `docs/compliance/TERMS_OF_SERVICE.md`
-- Comprehensive user agreement
-- Prohibited activities
-- KYC/AML requirements
-- Transaction monitoring disclosure
-- Tax reporting obligations
-- Dispute resolution procedures
-- Securities law disclosures
-
-### Securities Law Analysis
-**File:** `docs/compliance/SECURITIES_LAW_ANALYSIS.md`
-- Howey Test analysis
-- Token classification assessment
-- Regulatory framework review
-- Compliance recommendations
-- Registration alternatives
-- International considerations
-- Risk mitigation strategies
-
-## Testing
-
-Comprehensive test suite included:
-
-**File:** `keeper/keeper_test.go`
-- KYC/AML testing
-- Transaction monitoring tests
-- Sanctions screening tests
-- GDPR compliance tests
-- Tax reporting tests
-- Statistics and cleanup tests
-
-Run tests:
+### QueryKYCRecord
 ```bash
-cd chain/x/compliance/keeper
-go test -v
+aurad query compliance kyc-record aura1...
 ```
 
-## Compliance Checklist
+### QueryKYCHistory
+```bash
+aurad query compliance kyc-history aura1...
+```
 
-### KYC/AML Compliance
-- ✅ Customer identification program
-- ✅ Risk-based customer due diligence
-- ✅ Enhanced due diligence for high-risk customers
-- ✅ PEP screening
-- ✅ Suspicious activity monitoring
-- ✅ SAR filing capability
-- ✅ Record retention (5+ years)
+### QueryAMLProfile
+```bash
+aurad query compliance aml-profile aura1...
+```
 
-### Sanctions Compliance
-- ✅ OFAC SDN screening
-- ✅ Multi-list sanctions screening
-- ✅ Real-time transaction screening
-- ✅ Manual review workflow
-- ✅ Blocking of sanctioned addresses
-- ✅ Audit trail maintenance
+### QuerySanctionsScreening
+```bash
+aurad query compliance sanctions-screening aura1... --force-refresh
+```
 
-### Data Privacy
-- ✅ GDPR compliance
-- ✅ CCPA compliance
-- ✅ Consent management
-- ✅ Data access requests
-- ✅ Right to erasure
-- ✅ Data portability
-- ✅ Privacy policy
+### QueryTransactionAlerts
+```bash
+aurad query compliance transaction-alerts aura1... --unreviewed-only
+```
 
-### Tax Compliance
-- ✅ 1099 form generation
-- ✅ Capital gains calculation
-- ✅ Income classification
-- ✅ Multi-jurisdiction support
-- ✅ Tax record retention
-- ✅ IRS reporting capability
+### QueryTaxReport
+```bash
+aurad query compliance tax-report aura1... --tax-year 2025 --jurisdiction US
+```
 
-## Regulatory References
+## Events
 
-- **FinCEN**: Bank Secrecy Act / Anti-Money Laundering
-- **OFAC**: Office of Foreign Assets Control
-- **SEC**: Securities and Exchange Commission
-- **IRS**: Internal Revenue Service
-- **GDPR**: General Data Protection Regulation (EU)
-- **CCPA**: California Consumer Privacy Act
+| Event Type | Attributes | Description |
+|------------|------------|-------------|
+| `kyc_submitted` | `address`, `kyc_level`, `provider` | KYC verification submitted |
+| `kyc_updated` | `address`, `old_level`, `new_level`, `version` | KYC level updated |
+| `suspicious_activity_reported` | `activity_id`, `address`, `activity_type` | SAR filed |
+| `sanctions_screening_completed` | `address`, `status`, `matches` | Sanctions check completed |
+| `transaction_alert_triggered` | `alert_id`, `address`, `rule_id`, `risk_level` | Monitoring alert |
+| `gdpr_consent_recorded` | `address`, `consent_type`, `consented` | Consent updated |
+| `gdpr_data_requested` | `request_id`, `address`, `request_type` | Data access request |
+| `gdpr_data_erased` | `erasure_event_id`, `address` | Data erasure executed |
+| `tax_report_generated` | `report_id`, `address`, `tax_year` | Tax report created |
 
-## Support and Contact
+## Errors
 
-For compliance-related questions:
-- Compliance documentation in `docs/compliance/`
-- Test examples in `keeper/keeper_test.go`
-- Integration examples in this README
+| Code | Name | Description |
+|------|------|-------------|
+| 1 | `ErrKYCNotFound` | KYC record not found |
+| 2 | `ErrUnauthorizedProvider` | Provider not approved |
+| 3 | `ErrBlockedJurisdiction` | Jurisdiction on OFAC sanctions list |
+| 4 | `ErrRateLimitExceeded` | Too many requests in time window |
+| 5 | `ErrSanctionsMatch` | Address matches sanctions list |
 
-## License
+## Integration Notes
 
-[License Information]
+### For Wallet Developers
 
-## Version
+1. **KYC Status Display**: Show verification level and expiration
+2. **Privacy Notice**: Display GDPR consent requirements
+3. **Sanctions Check**: Verify address clear before high-value transactions
+4. **Tax Export**: Provide tax document download functionality
+5. **Alert Notifications**: Display unresolved transaction alerts
 
-Current Version: 1.0.0
-Last Updated: [Date]
+### Security Considerations
+
+- **PII Handling**: Store PII off-chain, never in wallet or on-chain
+- **Rate Limits**: Implement client-side throttling for screening
+- **Jurisdiction Checks**: Block transactions from sanctioned countries
+- **Audit Logs**: Maintain complete audit trail of data access
+
+### Best Practices
+
+- **KYC Expiration**: Check expiration before high-value operations
+- **Screening Cache**: Use cached results within validity period
+- **GDPR Compliance**: Implement data portability and erasure workflows
+- **Tax Automation**: Generate reports annually for users
