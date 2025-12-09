@@ -2,8 +2,9 @@ package types
 
 import (
 	"testing"
+	"time"
 
-	"google.golang.org/protobuf/types/known/timestamppb"
+	"github.com/cosmos/gogoproto/types"
 )
 
 func TestArenaScoreToProto(t *testing.T) {
@@ -49,7 +50,7 @@ func TestAnchorInfoToProto(t *testing.T) {
 	}
 
 	// Test valid anchor info
-	now := timestamppb.Now()
+	now, _ := types.TimestampProto(time.Now())
 	proofHash := []byte("proof_hash")
 
 	info := &AnchorInfo{
@@ -81,7 +82,7 @@ func TestIRCompletionToProto(t *testing.T) {
 	}
 
 	// Test valid completion
-	now := timestamppb.Now()
+	now, _ := types.TimestampProto(time.Now())
 	completion := &IRCompletion{
 		IrId:             "IR-001",
 		BaseScore:        100,
@@ -132,7 +133,7 @@ func TestScoreChangeToProto(t *testing.T) {
 	}
 
 	// Test valid score change
-	now := timestamppb.Now()
+	now, _ := types.TimestampProto(time.Now())
 	change := &ScoreChange{
 		BlockHeight:   100,
 		ScoreDelta:    500,
@@ -173,7 +174,7 @@ func TestSlashRecordToProto(t *testing.T) {
 	}
 
 	// Test valid slash record
-	now := timestamppb.Now()
+	now, _ := types.TimestampProto(time.Now())
 	record := &SlashRecord{
 		WalletAddress:  "aura1test",
 		SlashAmount:    1000,

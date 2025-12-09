@@ -16,7 +16,9 @@ func TestKeeperBasics(t *testing.T) {
 	k, ctx := setupKeeper(t)
 
 	t.Run("Logger", func(t *testing.T) {
-		logger := k.Logger(ctx)
+		sdkCtx, ok := ctx.(sdk.Context)
+		require.True(t, ok, "context must be sdk.Context")
+		logger := k.Logger(sdkCtx)
 		require.NotNil(t, logger)
 	})
 

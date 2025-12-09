@@ -6,8 +6,8 @@ import (
 	sdkmath "cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	gogotypes "github.com/cosmos/gogoproto/types"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/durationpb"
 
 	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 	"github.com/aequitas/aura/chain/x/governance/types"
@@ -39,8 +39,8 @@ func TestInitGenesis(t *testing.T) {
 			genesis: types.GenesisState{
 				Params: &types.GovernanceParams{
 					MinDeposit:        "1000",
-					MaxDepositPeriod:  durationpb.New(172800000000000),  // 2 days in nanoseconds
-					VotingPeriod:      durationpb.New(604800000000000),  // 7 days in nanoseconds
+					MaxDepositPeriod:  gogotypes.DurationProto(172800000000000),  // 2 days in nanoseconds
+					VotingPeriod:      gogotypes.DurationProto(604800000000000),  // 7 days in nanoseconds
 					Quorum:            "0.334",
 					Threshold:         "0.5",
 					VetoThreshold:     "0.334",
@@ -94,8 +94,8 @@ func TestExportGenesis(t *testing.T) {
 	// Set custom params
 	params := &types.GovernanceParams{
 		MinDeposit:        "2000",
-		MaxDepositPeriod:  durationpb.New(259200000000000),  // 3 days
-		VotingPeriod:      durationpb.New(1209600000000000), // 14 days
+		MaxDepositPeriod:  gogotypes.DurationProto(259200000000000),  // 3 days
+		VotingPeriod:      gogotypes.DurationProto(1209600000000000), // 14 days
 		Quorum:            "0.4",
 		Threshold:         "0.6",
 		VetoThreshold:     "0.33",
@@ -120,8 +120,8 @@ func TestGenesisRoundTrip(t *testing.T) {
 	// Set custom params
 	params := &types.GovernanceParams{
 		MinDeposit:        "5000",
-		MaxDepositPeriod:  durationpb.New(345600000000000),  // 4 days
-		VotingPeriod:      durationpb.New(1814400000000000), // 21 days
+		MaxDepositPeriod:  gogotypes.DurationProto(345600000000000),  // 4 days
+		VotingPeriod:      gogotypes.DurationProto(1814400000000000), // 21 days
 		Quorum:            "0.35",
 		Threshold:         "0.55",
 		VetoThreshold:     "0.35",
@@ -181,8 +181,8 @@ func TestInitGenesis_WithCustomParams(t *testing.T) {
 	genesis := types.GenesisState{
 		Params: &types.GovernanceParams{
 			MinDeposit:        "10000",
-			MaxDepositPeriod:  durationpb.New(432000000000000),  // 5 days
-			VotingPeriod:      durationpb.New(2419200000000000), // 28 days
+			MaxDepositPeriod:  gogotypes.DurationProto(432000000000000),  // 5 days
+			VotingPeriod:      gogotypes.DurationProto(2419200000000000), // 28 days
 			Quorum:            "0.5",
 			Threshold:         "0.667",
 			VetoThreshold:     "0.4",
@@ -238,8 +238,8 @@ func TestGenesisRoundTrip_MultipleIterations(t *testing.T) {
 
 	initialParams := &types.GovernanceParams{
 		MinDeposit:        "3000",
-		MaxDepositPeriod:  durationpb.New(259200000000000),  // 3 days
-		VotingPeriod:      durationpb.New(1209600000000000), // 14 days
+		MaxDepositPeriod:  gogotypes.DurationProto(259200000000000),  // 3 days
+		VotingPeriod:      gogotypes.DurationProto(1209600000000000), // 14 days
 		Quorum:            "0.45",
 		Threshold:         "0.65",
 		VetoThreshold:     "0.38",
@@ -281,8 +281,8 @@ func TestGenesisRoundTrip_CompleteState(t *testing.T) {
 	// Set custom params
 	params := &types.GovernanceParams{
 		MinDeposit:        "5000auracoin",
-		MaxDepositPeriod:  durationpb.New(172800000000000),  // 2 days
-		VotingPeriod:      durationpb.New(604800000000000),  // 7 days
+		MaxDepositPeriod:  gogotypes.DurationProto(172800000000000),  // 2 days
+		VotingPeriod:      gogotypes.DurationProto(604800000000000),  // 7 days
 		Quorum:            "0.334",
 		Threshold:         "0.5",
 		VetoThreshold:     "0.334",

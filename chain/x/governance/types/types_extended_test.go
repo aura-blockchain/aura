@@ -4,10 +4,9 @@ import (
 	"testing"
 	"time"
 
+	gogotypes "github.com/cosmos/gogoproto/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // Test Default Parameters
@@ -19,22 +18,30 @@ func TestDefaultParamsExtended(t *testing.T) {
 	// Test deposit parameters
 	assert.Equal(t, "10000000stake", params.MinDeposit)
 	assert.NotNil(t, params.MaxDepositPeriod)
-	assert.Equal(t, 7*24*time.Hour, params.MaxDepositPeriod.AsDuration())
+	maxDepositDur, err := gogotypes.DurationFromProto(params.MaxDepositPeriod)
+	require.NoError(t, err)
+	assert.Equal(t, 7*24*time.Hour, maxDepositDur)
 
 	// Test voting parameters
 	assert.NotNil(t, params.VotingPeriod)
-	assert.Equal(t, 7*24*time.Hour, params.VotingPeriod.AsDuration())
+	votingDur, err := gogotypes.DurationFromProto(params.VotingPeriod)
+	require.NoError(t, err)
+	assert.Equal(t, 7*24*time.Hour, votingDur)
 	assert.Equal(t, "0.334", params.Quorum)
 	assert.Equal(t, "0.50", params.Threshold)
 	assert.Equal(t, "0.334", params.VetoThreshold)
 
 	// Test execution delay
 	assert.NotNil(t, params.ExecutionDelay)
-	assert.Equal(t, 48*time.Hour, params.ExecutionDelay.AsDuration())
+	execDelayDur, err := gogotypes.DurationFromProto(params.ExecutionDelay)
+	require.NoError(t, err)
+	assert.Equal(t, 48*time.Hour, execDelayDur)
 
 	// Test emergency parameters
 	assert.NotNil(t, params.EmergencyVotingPeriod)
-	assert.Equal(t, 24*time.Hour, params.EmergencyVotingPeriod.AsDuration())
+	emergencyDur, err := gogotypes.DurationFromProto(params.EmergencyVotingPeriod)
+	require.NoError(t, err)
+	assert.Equal(t, 24*time.Hour, emergencyDur)
 	assert.Equal(t, "0.50", params.EmergencyQuorum)
 	assert.Equal(t, "0.667", params.EmergencyThreshold)
 
@@ -45,7 +52,9 @@ func TestDefaultParamsExtended(t *testing.T) {
 	// Test token lock parameters
 	assert.False(t, params.RequireTokenLock)
 	assert.NotNil(t, params.TokenLockDuration)
-	assert.Equal(t, 7*24*time.Hour, params.TokenLockDuration.AsDuration())
+	tokenLockDur, err := gogotypes.DurationFromProto(params.TokenLockDuration)
+	require.NoError(t, err)
+	assert.Equal(t, 7*24*time.Hour, tokenLockDur)
 
 	// Test snapshot parameters
 	assert.False(t, params.SnapshotVotingEnabled)
@@ -54,7 +63,9 @@ func TestDefaultParamsExtended(t *testing.T) {
 	// Test secret ballot parameters
 	assert.False(t, params.SecretBallotEnabled)
 	assert.NotNil(t, params.RevealPeriod)
-	assert.Equal(t, 24*time.Hour, params.RevealPeriod.AsDuration())
+	revealDur, err := gogotypes.DurationFromProto(params.RevealPeriod)
+	require.NoError(t, err)
+	assert.Equal(t, 24*time.Hour, revealDur)
 }
 
 func TestCategoryParams(t *testing.T) {
@@ -82,7 +93,9 @@ func TestCategoryParams(t *testing.T) {
 			require.True(t, exists, "Category %s should exist", tt.name)
 			assert.Equal(t, tt.expectedQuorum, categoryParams.Quorum)
 			assert.Equal(t, tt.expectedThreshold, categoryParams.Threshold)
-			assert.Equal(t, tt.expectedDelay, categoryParams.ExecutionDelay.AsDuration())
+			execDelay, err := gogotypes.DurationFromProto(categoryParams.ExecutionDelay)
+			require.NoError(t, err)
+			assert.Equal(t, tt.expectedDelay, execDelay)
 		})
 	}
 }
@@ -91,6 +104,10 @@ func TestCategoryParams(t *testing.T) {
 
 func TestProposal(t *testing.T) {
 	now := time.Now()
+	submitTime, err := gogotypes.TimestampProto(now)
+	require.NoError(t, err)
+	depositEndTime, err := gogotypes.TimestampProto(now.Add(7 * 24 * time.Hour))
+	require.NoError(t, err)
 
 	proposal := &Proposal{
 		Id:              1,
@@ -99,8 +116,8 @@ func TestProposal(t *testing.T) {
 		Category:        CategoryText,
 		Proposer:        "aura1test",
 		Status:          StatusDepositPeriod,
-		SubmitTime:      timestamppb.New(now),
-		DepositEndTime:  timestamppb.New(now.Add(7 * 24 * time.Hour)),
+		SubmitTime:      submitTime,
+		DepositEndTime:  depositEndTime,
 		TotalDeposit:    "1000000",
 		VotingStartTime: nil,
 		VotingEndTime:   nil,
@@ -273,11 +290,14 @@ func TestTallyResultEmpty(t *testing.T) {
 
 func TestVoteDelegation(t *testing.T) {
 	now := time.Now()
+	delegationTime, err := gogotypes.TimestampProto(now)
+	require.NoError(t, err)
+
 	delegation := &VoteDelegation{
 		Delegator:      "aura1delegator",
 		Delegate:       "aura1delegate",
 		DelegatedPower: "5000000",
-		DelegationTime: timestamppb.New(now),
+		DelegationTime: delegationTime,
 		Categories:     []ProposalCategory{CategoryText, CategoryParameterChange},
 	}
 
@@ -302,11 +322,14 @@ func TestVoteDelegationAllCategories(t *testing.T) {
 
 func TestVetoRequest(t *testing.T) {
 	now := time.Now()
+	timestamp, err := gogotypes.TimestampProto(now)
+	require.NoError(t, err)
+
 	veto := &VetoRequest{
 		ProposalId: 1,
 		Vetoer:     "aura1vetoer",
 		Reason:     "Security concerns",
-		Timestamp:  timestamppb.New(now),
+		Timestamp:  timestamp,
 		Cosigners:  []string{"aura1vetoer", "aura1cosigner1", "aura1cosigner2"},
 	}
 
@@ -320,12 +343,17 @@ func TestVetoRequest(t *testing.T) {
 
 func TestTokenLock(t *testing.T) {
 	now := time.Now()
+	lockTime, err := gogotypes.TimestampProto(now)
+	require.NoError(t, err)
+	unlockTime, err := gogotypes.TimestampProto(now.Add(7 * 24 * time.Hour))
+	require.NoError(t, err)
+
 	lock := &TokenLock{
 		Owner:        "aura1owner",
 		ProposalId:   1,
 		LockedAmount: "1000000",
-		LockTime:     timestamppb.New(now),
-		UnlockTime:   timestamppb.New(now.Add(7 * 24 * time.Hour)),
+		LockTime:     lockTime,
+		UnlockTime:   unlockTime,
 	}
 
 	assert.Equal(t, "aura1owner", lock.Owner)
@@ -333,13 +361,20 @@ func TestTokenLock(t *testing.T) {
 	assert.Equal(t, "1000000", lock.LockedAmount)
 	assert.NotNil(t, lock.LockTime)
 	assert.NotNil(t, lock.UnlockTime)
-	assert.True(t, lock.UnlockTime.AsTime().After(lock.LockTime.AsTime()))
+	lockT, err := gogotypes.TimestampFromProto(lock.LockTime)
+	require.NoError(t, err)
+	unlockT, err := gogotypes.TimestampFromProto(lock.UnlockTime)
+	require.NoError(t, err)
+	assert.True(t, unlockT.After(lockT))
 }
 
 // Test SnapshotVote
 
 func TestSnapshotVote(t *testing.T) {
 	now := time.Now()
+	timestamp, err := gogotypes.TimestampProto(now)
+	require.NoError(t, err)
+
 	vote := &SnapshotVote{
 		ProposalId:            1,
 		Voter:                 "aura1voter",
@@ -347,7 +382,7 @@ func TestSnapshotVote(t *testing.T) {
 		VotingPowerAtSnapshot: "2000000",
 		SnapshotHeight:        1000,
 		Signature:             "signature_data",
-		Timestamp:             timestamppb.New(now),
+		Timestamp:             timestamp,
 	}
 
 	assert.Equal(t, uint64(1), vote.ProposalId)
@@ -363,19 +398,23 @@ func TestSnapshotVote(t *testing.T) {
 func TestCategoryParamsDefaults(t *testing.T) {
 	categoryParams := &CategoryParams{
 		MinDeposit:     "10000000",
-		VotingPeriod:   durationpb.New(7 * 24 * time.Hour),
+		VotingPeriod:   gogotypes.DurationProto(7 * 24 * time.Hour),
 		Quorum:         "0.334",
 		Threshold:      "0.50",
 		VetoThreshold:  "0.334",
-		ExecutionDelay: durationpb.New(48 * time.Hour),
+		ExecutionDelay: gogotypes.DurationProto(48 * time.Hour),
 	}
 
 	assert.Equal(t, "10000000", categoryParams.MinDeposit)
-	assert.Equal(t, 7*24*time.Hour, categoryParams.VotingPeriod.AsDuration())
+	votingDur, err := gogotypes.DurationFromProto(categoryParams.VotingPeriod)
+	require.NoError(t, err)
+	assert.Equal(t, 7*24*time.Hour, votingDur)
 	assert.Equal(t, "0.334", categoryParams.Quorum)
 	assert.Equal(t, "0.50", categoryParams.Threshold)
 	assert.Equal(t, "0.334", categoryParams.VetoThreshold)
-	assert.Equal(t, 48*time.Hour, categoryParams.ExecutionDelay.AsDuration())
+	execDelay, err := gogotypes.DurationFromProto(categoryParams.ExecutionDelay)
+	require.NoError(t, err)
+	assert.Equal(t, 48*time.Hour, execDelay)
 }
 
 // Test Error Values
@@ -541,11 +580,16 @@ func TestGovernanceParamsGetCategoryParams(t *testing.T) {
 
 func TestProposalTimeFields(t *testing.T) {
 	now := time.Now()
-	submitTime := timestamppb.New(now)
-	depositEndTime := timestamppb.New(now.Add(7 * 24 * time.Hour))
-	votingStartTime := timestamppb.New(now.Add(7 * 24 * time.Hour))
-	votingEndTime := timestamppb.New(now.Add(14 * 24 * time.Hour))
-	executionTime := timestamppb.New(now.Add(16 * 24 * time.Hour))
+	submitTime, err := gogotypes.TimestampProto(now)
+	require.NoError(t, err)
+	depositEndTime, err := gogotypes.TimestampProto(now.Add(7 * 24 * time.Hour))
+	require.NoError(t, err)
+	votingStartTime, err := gogotypes.TimestampProto(now.Add(7 * 24 * time.Hour))
+	require.NoError(t, err)
+	votingEndTime, err := gogotypes.TimestampProto(now.Add(14 * 24 * time.Hour))
+	require.NoError(t, err)
+	executionTime, err := gogotypes.TimestampProto(now.Add(16 * 24 * time.Hour))
+	require.NoError(t, err)
 
 	proposal := &Proposal{
 		Id:              1,
@@ -564,8 +608,17 @@ func TestProposalTimeFields(t *testing.T) {
 	assert.NotNil(t, proposal.VotingEndTime)
 	assert.NotNil(t, proposal.ExecutionTime)
 
-	assert.True(t, proposal.DepositEndTime.AsTime().After(proposal.SubmitTime.AsTime()))
-	assert.True(t, proposal.VotingEndTime.AsTime().After(proposal.VotingStartTime.AsTime()))
+	submitT, err := gogotypes.TimestampFromProto(proposal.SubmitTime)
+	require.NoError(t, err)
+	depositEndT, err := gogotypes.TimestampFromProto(proposal.DepositEndTime)
+	require.NoError(t, err)
+	votingStartT, err := gogotypes.TimestampFromProto(proposal.VotingStartTime)
+	require.NoError(t, err)
+	votingEndT, err := gogotypes.TimestampFromProto(proposal.VotingEndTime)
+	require.NoError(t, err)
+
+	assert.True(t, depositEndT.After(submitT))
+	assert.True(t, votingEndT.After(votingStartT))
 }
 
 func TestDurationFields(t *testing.T) {
@@ -573,7 +626,7 @@ func TestDurationFields(t *testing.T) {
 
 	durations := []struct {
 		name     string
-		duration *durationpb.Duration
+		duration *gogotypes.Duration
 		expected time.Duration
 	}{
 		{"MaxDepositPeriod", params.MaxDepositPeriod, 7 * 24 * time.Hour},
@@ -587,7 +640,9 @@ func TestDurationFields(t *testing.T) {
 	for _, d := range durations {
 		t.Run(d.name, func(t *testing.T) {
 			assert.NotNil(t, d.duration)
-			assert.Equal(t, d.expected, d.duration.AsDuration())
+			dur, err := gogotypes.DurationFromProto(d.duration)
+			require.NoError(t, err)
+			assert.Equal(t, d.expected, dur)
 		})
 	}
 }

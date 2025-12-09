@@ -18,14 +18,16 @@ func TestDefaultSecurityParams(t *testing.T) {
 		t.Errorf("expected MinBlockDelay to be 2, got %d", params.MinBlockDelay)
 	}
 
-	if params.MaxTradeSizePercent != math.LegacyNewDecWithPrec(20, 2).String() {
+	expectedMaxTradeSize := math.LegacyNewDecWithPrec(20, 2)
+	if !params.MaxTradeSizePercent.Equal(expectedMaxTradeSize) {
 		t.Errorf("expected MaxTradeSizePercent to be %s, got %s",
-			math.LegacyNewDecWithPrec(20, 2).String(), params.MaxTradeSizePercent)
+			expectedMaxTradeSize, params.MaxTradeSizePercent)
 	}
 
-	if params.MaxPriceImpactPercent != math.LegacyNewDecWithPrec(10, 0).String() {
+	expectedMaxPriceImpact := math.LegacyNewDecWithPrec(10, 0)
+	if !params.MaxPriceImpactPercent.Equal(expectedMaxPriceImpact) {
 		t.Errorf("expected MaxPriceImpactPercent to be %s, got %s",
-			math.LegacyNewDecWithPrec(10, 0).String(), params.MaxPriceImpactPercent)
+			expectedMaxPriceImpact, params.MaxPriceImpactPercent)
 	}
 
 	if params.LiquidityLockupSeconds != 86400 {
@@ -44,9 +46,10 @@ func TestDefaultSecurityParams(t *testing.T) {
 		t.Errorf("expected TwapWindowBlocks to be 100, got %d", params.TwapWindowBlocks)
 	}
 
-	if params.MinPoolCreationLiquidity != math.NewInt(1000_000000).String() {
+	expectedMinPoolLiq := math.NewInt(1000_000000)
+	if !params.MinPoolCreationLiquidity.Equal(expectedMinPoolLiq) {
 		t.Errorf("expected MinPoolCreationLiquidity to be %s, got %s",
-			math.NewInt(1000_000000).String(), params.MinPoolCreationLiquidity)
+			expectedMinPoolLiq, params.MinPoolCreationLiquidity)
 	}
 
 	if params.MinLiquidityBlocks != 5 {
@@ -57,14 +60,16 @@ func TestDefaultSecurityParams(t *testing.T) {
 		t.Errorf("expected WashTradeMinInterval to be 60, got %d", params.WashTradeMinInterval)
 	}
 
-	if params.MinTradeAmount != math.NewInt(1_000000).String() {
+	expectedMinTrade := math.NewInt(1_000000)
+	if !params.MinTradeAmount.Equal(expectedMinTrade) {
 		t.Errorf("expected MinTradeAmount to be %s, got %s",
-			math.NewInt(1_000000).String(), params.MinTradeAmount)
+			expectedMinTrade, params.MinTradeAmount)
 	}
 
-	if params.MaxOrderVariance != math.LegacyNewDecWithPrec(50, 2).String() {
+	expectedMaxVariance := math.LegacyNewDecWithPrec(50, 2)
+	if !params.MaxOrderVariance.Equal(expectedMaxVariance) {
 		t.Errorf("expected MaxOrderVariance to be %s, got %s",
-			math.LegacyNewDecWithPrec(50, 2).String(), params.MaxOrderVariance)
+			expectedMaxVariance, params.MaxOrderVariance)
 	}
 
 	if !params.CircuitBreakerEnabled {

@@ -3,12 +3,12 @@ package keeper_test
 import (
 	"testing"
 
-	"google.golang.org/protobuf/types/known/timestamppb"
+	"github.com/cosmos/gogoproto/types"
 
 	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 	"github.com/aequitas/aura/chain/x/dataregistry/keeper"
 	"github.com/aequitas/aura/chain/x/dataregistry/params"
-	"github.com/aequitas/aura/chain/x/dataregistry/types"
+	drtypes "github.com/aequitas/aura/chain/x/dataregistry/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -16,7 +16,7 @@ func TestQueryServerFunctionality(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
 
 	// Create params store
-	paramsStore := params.NewStore(types.DefaultParams())
+	paramsStore := params.NewStore(drtypes.DefaultParams())
 
 	// Create keeper
 	k := keeper.NewKeeper(
@@ -32,37 +32,39 @@ func TestQueryServerFunctionality(t *testing.T) {
 	require.NotNil(t, queryServer)
 
 	// Setup test data
-	item1 := types.DataItem{
+	createdAt1, _ := types.TimestampProto(input.Ctx.BlockTime())
+	item1 := drtypes.DataItem{
 		DataId:          "test-data-1",
 		OwnerAddress:    "aura1owner",
-		DataType:        types.DataItemType_DATA_ITEM_TYPE_PHOTO,
+		DataType:        drdrtypes.DataItemType_DATA_ITEM_TYPE_PHOTO,
 		ContentHash:     []byte("hash1"),
 		StorageLocation: "ipfs://test1",
-		Status:          types.DataItemStatus_DATA_ITEM_STATUS_PENDING_VERIFICATION,
+		Status:          drtypes.DataItemStatus_DATA_ITEM_STATUS_PENDING_VERIFICATION,
 		Title:           "Photo 1",
 		Tags:            []string{"test"},
-		CreatedAt:       timestamppb.New(input.Ctx.BlockTime()),
-		AccessPolicy:    &types.AccessPolicy{},
+		CreatedAt:       createdAt1,
+		AccessPolicy:    &drtypes.AccessPolicy{},
 	}
 
-	item2 := types.DataItem{
+	createdAt2, _ := types.TimestampProto(input.Ctx.BlockTime())
+	item2 := drtypes.DataItem{
 		DataId:          "test-data-2",
 		OwnerAddress:    "aura1owner",
-		DataType:        types.DataItemType_DATA_ITEM_TYPE_VIDEO,
+		DataType:        drtypes.DataItemType_DATA_ITEM_TYPE_VIDEO,
 		ContentHash:     []byte("hash2"),
 		StorageLocation: "ipfs://test2",
-		Status:          types.DataItemStatus_DATA_ITEM_STATUS_VERIFIED,
+		Status:          drdrtypes.DataItemStatus_DATA_ITEM_STATUS_VERIFIED,
 		Title:           "Video 1",
 		Tags:            []string{"test", "video"},
-		CreatedAt:       timestamppb.New(input.Ctx.BlockTime()),
-		AccessPolicy:    &types.AccessPolicy{},
+		CreatedAt:       createdAt2,
+		AccessPolicy:    &drtypes.AccessPolicy{},
 	}
 
 	require.NoError(t, k.SetDataItem(input.Ctx, item1))
 	require.NoError(t, k.SetDataItem(input.Ctx, item2))
 
 	t.Run("QueryDataItem", func(t *testing.T) {
-		req := &types.QueryDataItemRequest{
+		req := &drtypes.QueryDataItemRequest{
 			DataId:    "test-data-1",
 			Requester: "aura1owner", // Must match owner for PRIVATE access policy
 		}
@@ -77,7 +79,7 @@ func TestQueryServerFunctionality(t *testing.T) {
 	})
 
 	t.Run("QueryDataItem_NotFound", func(t *testing.T) {
-		req := &types.QueryDataItemRequest{
+		req := &drtypes.QueryDataItemRequest{
 			DataId:    "nonexistent",
 			Requester: "aura1owner",
 		}
@@ -90,7 +92,7 @@ func TestQueryServerFunctionality(t *testing.T) {
 	})
 
 	t.Run("QueryDataItem_AccessDenied", func(t *testing.T) {
-		req := &types.QueryDataItemRequest{
+		req := &drtypes.QueryDataItemRequest{
 			DataId:    "test-data-1",
 			Requester: "aura1other", // Different user, private access policy
 		}
@@ -104,7 +106,7 @@ func TestQueryServerFunctionality(t *testing.T) {
 	})
 
 	t.Run("QueryUserDataItems", func(t *testing.T) {
-		req := &types.QueryUserDataItemsRequest{
+		req := &drtypes.QueryUserDataItemsRequest{
 			OwnerAddress: "aura1owner",
 		}
 
@@ -115,29 +117,29 @@ func TestQueryServerFunctionality(t *testing.T) {
 	})
 
 	t.Run("QueryUserDataItems_WithTypeFilter", func(t *testing.T) {
-		req := &types.QueryUserDataItemsRequest{
+		req := &drtypes.QueryUserDataItemsRequest{
 			OwnerAddress: "aura1owner",
-			TypeFilter:   types.DataItemType_DATA_ITEM_TYPE_PHOTO,
+			TypeFilter:   drtypes.DataItemType_DATA_ITEM_TYPE_PHOTO,
 		}
 
 		resp, err := queryServer.UserDataItems(input.Ctx, req)
 		require.NoError(t, err)
 		require.NotNil(t, resp)
 		require.Len(t, resp.DataItems, 1)
-		require.Equal(t, types.DataItemType_DATA_ITEM_TYPE_PHOTO, resp.DataItems[0].DataType)
+		require.Equal(t, drtypes.DataItemType_DATA_ITEM_TYPE_PHOTO, resp.DataItems[0].DataType)
 	})
 
 	t.Run("QueryUserDataItems_WithStatusFilter", func(t *testing.T) {
-		req := &types.QueryUserDataItemsRequest{
+		req := &drtypes.QueryUserDataItemsRequest{
 			OwnerAddress: "aura1owner",
-			StatusFilter: types.DataItemStatus_DATA_ITEM_STATUS_VERIFIED,
+			StatusFilter: drtypes.DataItemStatus_DATA_ITEM_STATUS_VERIFIED,
 		}
 
 		resp, err := queryServer.UserDataItems(input.Ctx, req)
 		require.NoError(t, err)
 		require.NotNil(t, resp)
 		require.Len(t, resp.DataItems, 1)
-		require.Equal(t, types.DataItemStatus_DATA_ITEM_STATUS_VERIFIED, resp.DataItems[0].Status)
+		require.Equal(t, drtypes.DataItemStatus_DATA_ITEM_STATUS_VERIFIED, resp.DataItems[0].Status)
 	})
 
 	t.Run("QuerySearchDataItems", func(t *testing.T) {

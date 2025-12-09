@@ -50,18 +50,18 @@ func (suite *IntegrationTestSuite) TestFullWorkflow_RegisterExecuteDeprecate() {
 		Creator:         admin,
 		Admin:           admin,
 		Label:           "integration-test",
-		Metadata: &pb.ContractMetadata{
+		Metadata: pb.ContractMetadata{
 			Name:        "Integration Test Contract",
 			Description: "Full workflow test",
 			Version:     "1.0.0",
 			Tags:        []string{"test", "integration"},
 		},
-		SecurityPolicy: &pb.SecurityPolicy{
+		SecurityPolicy: pb.SecurityPolicy{
 			AllowPause:       true,
 			MaxGasPerTx:      1000000,
 			RateLimitPerUser: 100,
 		},
-		Compliance: &pb.ComplianceRequirements{},
+		Compliance: pb.ComplianceRequirements{},
 	}
 
 	resp, err := suite.msgServer.RegisterContract(sdk.WrapSDKContext(suite.ctx), registerMsg)
@@ -82,7 +82,7 @@ func (suite *IntegrationTestSuite) TestFullWorkflow_RegisterExecuteDeprecate() {
 	updateMsg := &pb.MsgUpdateContractMetadata{
 		Signer:          admin,
 		ContractAddress: contractAddr,
-		Metadata: &pb.ContractMetadata{
+		Metadata: pb.ContractMetadata{
 			Name:        "Updated Contract",
 			Description: "Updated description",
 			Version:     "1.1.0",
@@ -152,12 +152,12 @@ func (suite *IntegrationTestSuite) TestMultiContractScenario() {
 			Creator:         admin,
 			Admin:           admin,
 			Label:           "test",
-			Metadata: &pb.ContractMetadata{
+			Metadata: pb.ContractMetadata{
 				Name: "Contract " + string(rune('1'+i)),
 				Tags: []string{"multi-test"},
 			},
-			SecurityPolicy: &pb.SecurityPolicy{},
-			Compliance:     &pb.ComplianceRequirements{},
+			SecurityPolicy: pb.SecurityPolicy{},
+			Compliance: pb.ComplianceRequirements{},
 		}
 
 		resp, err := suite.msgServer.RegisterContract(sdk.WrapSDKContext(suite.ctx), msg)

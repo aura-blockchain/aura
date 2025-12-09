@@ -796,9 +796,10 @@ func TestValidateRateLimitConfig(t *testing.T) {
 
 func TestIsRateLimited(t *testing.T) {
 	now := time.Now()
-	minuteAgo := timestamppb.New(now.Add(-30 * time.Second))
-	hourAgo := timestamppb.New(now.Add(-30 * time.Minute))
-	dayAgo := timestamppb.New(now.Add(-12 * time.Hour))
+	minuteAgo := now.Add(-30 * time.Second)
+	hourAgo := now.Add(-30 * time.Minute)
+	dayAgo := now.Add(-12 * time.Hour)
+	zeroTime := time.Time{}
 
 	tests := []struct {
 		name     string
@@ -860,7 +861,7 @@ func TestIsRateLimited(t *testing.T) {
 		{
 			name: "not limited - no window start",
 			config: &authproto.RateLimitConfig{
-				WindowStart:        nil,
+				WindowStart:        zeroTime,
 				RequestsPerMinute:  60,
 				CurrentMinuteCount: 100,
 				RequestsPerHour:    3600,

@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"google.golang.org/protobuf/types/known/durationpb"
+	gogotypes "github.com/cosmos/gogoproto/types"
 )
 
 func TestDefaultParams(t *testing.T) {
@@ -56,8 +56,11 @@ func TestDefaultGovernanceParams(t *testing.T) {
 	if !ok {
 		t.Error("expected EMERGENCY category params to be set")
 	} else {
-		if emergencyParams.VotingPeriod.AsDuration() != 24*time.Hour {
-			t.Errorf("expected EMERGENCY VotingPeriod to be 24h, got %v", emergencyParams.VotingPeriod.AsDuration())
+		emergencyDur, err := gogotypes.DurationFromProto(emergencyParams.VotingPeriod)
+		if err != nil {
+			t.Errorf("failed to convert emergency voting period: %v", err)
+		} else if emergencyDur != 24*time.Hour {
+			t.Errorf("expected EMERGENCY VotingPeriod to be 24h, got %v", emergencyDur)
 		}
 		if emergencyParams.Quorum != "0.600" {
 			t.Errorf("expected EMERGENCY Quorum to be 0.600, got %s", emergencyParams.Quorum)
@@ -123,18 +126,27 @@ func TestTimeParameters(t *testing.T) {
 	params := DefaultGovernanceParams()
 
 	expectedVotingPeriod := 7 * 24 * time.Hour
-	if params.VotingPeriod.AsDuration() != expectedVotingPeriod {
-		t.Errorf("expected VotingPeriod to be %v, got %v", expectedVotingPeriod, params.VotingPeriod.AsDuration())
+	votingPeriod, err := gogotypes.DurationFromProto(params.VotingPeriod)
+	if err != nil {
+		t.Errorf("failed to convert voting period: %v", err)
+	} else if votingPeriod != expectedVotingPeriod {
+		t.Errorf("expected VotingPeriod to be %v, got %v", expectedVotingPeriod, votingPeriod)
 	}
 
 	expectedExecutionDelay := 48 * time.Hour
-	if params.ExecutionDelay.AsDuration() != expectedExecutionDelay {
-		t.Errorf("expected ExecutionDelay to be %v, got %v", expectedExecutionDelay, params.ExecutionDelay.AsDuration())
+	executionDelay, err := gogotypes.DurationFromProto(params.ExecutionDelay)
+	if err != nil {
+		t.Errorf("failed to convert execution delay: %v", err)
+	} else if executionDelay != expectedExecutionDelay {
+		t.Errorf("expected ExecutionDelay to be %v, got %v", expectedExecutionDelay, executionDelay)
 	}
 
 	expectedEmergencyVoting := 24 * time.Hour
-	if params.EmergencyVotingPeriod.AsDuration() != expectedEmergencyVoting {
-		t.Errorf("expected EmergencyVotingPeriod to be %v, got %v", expectedEmergencyVoting, params.EmergencyVotingPeriod.AsDuration())
+	emergencyVoting, err := gogotypes.DurationFromProto(params.EmergencyVotingPeriod)
+	if err != nil {
+		t.Errorf("failed to convert emergency voting period: %v", err)
+	} else if emergencyVoting != expectedEmergencyVoting {
+		t.Errorf("expected EmergencyVotingPeriod to be %v, got %v", expectedEmergencyVoting, emergencyVoting)
 	}
 }
 
@@ -149,9 +161,12 @@ func TestCategoryParamsCount(t *testing.T) {
 
 func TestDurationPbConversion(t *testing.T) {
 	duration := 7 * 24 * time.Hour
-	dpb := durationpb.New(duration)
+	dpb := gogotypes.DurationProto(duration)
 
-	if dpb.AsDuration() != duration {
-		t.Errorf("duration conversion failed: expected %v, got %v", duration, dpb.AsDuration())
+	converted, err := gogotypes.DurationFromProto(dpb)
+	if err != nil {
+		t.Errorf("duration conversion failed: %v", err)
+	} else if converted != duration {
+		t.Errorf("duration conversion failed: expected %v, got %v", duration, converted)
 	}
 }

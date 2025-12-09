@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/cryptography/keeper"
 	"github.com/aequitas/aura/chain/x/cryptography/types"
@@ -319,7 +318,7 @@ func TestMsgServer(t *testing.T) {
 		msg := &cryptoproto.MsgGenerateQuantumResistantKey{
 			Creator:   testCreatorAddr,
 			Algorithm: cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_DILITHIUM,
-			ExpiresAt: timestamppb.New(expiresAt),
+			ExpiresAt: &expiresAt,
 		}
 
 		resp, err := msgServer.GenerateQuantumResistantKey(ctx, msg)
@@ -348,7 +347,7 @@ func TestMsgServer(t *testing.T) {
 			Hostname:          "test.example.com",
 			CertificateHashes: [][]byte{hash},
 			PinType:           cryptoproto.CertificatePinType_CERTIFICATE_PIN_TYPE_SPKI,
-			ExpiresAt:         timestamppb.New(expiresAt),
+			ExpiresAt:         &expiresAt,
 		}
 
 		resp, err := msgServer.AddCertificatePin(ctx, msg)
@@ -402,7 +401,7 @@ func TestMsgServer(t *testing.T) {
 
 		msg := &cryptoproto.MsgUpdateParams{
 			Authority: "authority",
-			Params:    &newParams,
+			Params:    newParams,
 		}
 
 		resp, err := msgServer.UpdateParams(ctx, msg)
@@ -414,7 +413,7 @@ func TestMsgServer(t *testing.T) {
 		newParams := types.DefaultParams()
 		msg := &cryptoproto.MsgUpdateParams{
 			Authority: "wrong-authority",
-			Params:    &newParams,
+			Params:    newParams,
 		}
 
 		_, err := msgServer.UpdateParams(ctx, msg)

@@ -7,11 +7,10 @@ import (
 	"testing"
 	"time"
 
+	gogotypes "github.com/cosmos/gogoproto/types"
 	"github.com/aequitas/aura/chain/x/governance/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // TestKeeper is a simplified in-memory keeper for testing
@@ -100,17 +99,19 @@ func (k *TestKeeper) SubmitProposal(title, description string, category types.Pr
 	// Set voting times if in voting period
 	if status == types.StatusVotingPeriod {
 		now := time.Now()
-		proposal.VotingStartTime = timestamppb.New(now)
+		submitTime, _ := gogotypes.TimestampProto(now)
+		proposal.VotingStartTime = submitTime
 
-		votingPeriod := k.params.VotingPeriod.AsDuration()
+		votingPeriod, _ := gogotypes.DurationFromProto(k.params.VotingPeriod)
 		if isEmergency && k.params.EmergencyVotingPeriod != nil {
-			votingPeriod = k.params.EmergencyVotingPeriod.AsDuration()
+			votingPeriod, _ = gogotypes.DurationFromProto(k.params.EmergencyVotingPeriod)
 		} else if categoryParams != nil && categoryParams.VotingPeriod != nil {
-			votingPeriod = categoryParams.VotingPeriod.AsDuration()
+			votingPeriod, _ = gogotypes.DurationFromProto(categoryParams.VotingPeriod)
 		}
 
 		endTime := now.Add(votingPeriod)
-		proposal.VotingEndTime = timestamppb.New(endTime)
+		endTimeProto, _ := gogotypes.TimestampProto(endTime)
+		proposal.VotingEndTime = endTimeProto
 	}
 
 	k.proposals[proposalID] = proposal
@@ -168,9 +169,12 @@ func (k *TestKeeper) AddDeposit(proposalID uint64, depositor, amount string) err
 		if totalDeposit >= minDepositInt {
 			proposal.Status = types.StatusVotingPeriod
 			now := time.Now()
-			proposal.VotingStartTime = timestamppb.New(now)
-			endTime := now.Add(k.params.VotingPeriod.AsDuration())
-			proposal.VotingEndTime = timestamppb.New(endTime)
+			startTime, _ := gogotypes.TimestampProto(now)
+			proposal.VotingStartTime = startTime
+			votingPeriod, _ := gogotypes.DurationFromProto(k.params.VotingPeriod)
+			endTime := now.Add(votingPeriod)
+			endTimeProto, _ := gogotypes.TimestampProto(endTime)
+			proposal.VotingEndTime = endTimeProto
 		}
 	}
 
@@ -201,13 +205,16 @@ func (k *TestKeeper) CastVote(proposalID uint64, voter string, option types.Vote
 	// Lock tokens if required
 	if k.params.RequireTokenLock {
 		now := time.Now()
-		unlockTime := now.Add(k.params.TokenLockDuration.AsDuration())
+		lockDuration, _ := gogotypes.DurationFromProto(k.params.TokenLockDuration)
+		unlockTime := now.Add(lockDuration)
+		lockTime, _ := gogotypes.TimestampProto(now)
+		unlockTimeProto, _ := gogotypes.TimestampProto(unlockTime)
 		lock := &types.TokenLock{
 			Owner:        voter,
 			ProposalId:   proposalID,
 			LockedAmount: votingPower,
-			LockTime:     timestamppb.New(now),
-			UnlockTime:   timestamppb.New(unlockTime),
+			LockTime:     lockTime,
+			UnlockTime:   unlockTimeProto,
 		}
 		k.tokenLocks[voter] = append(k.tokenLocks[voter], lock)
 	}
@@ -248,11 +255,12 @@ func (k *TestKeeper) DelegateVote(delegator, delegate, votingPower string, categ
 	}
 
 	now := time.Now()
+	delegationTime, _ := gogotypes.TimestampProto(now)
 	delegation := &types.VoteDelegation{
 		Delegator:      delegator,
 		Delegate:       delegate,
 		DelegatedPower: votingPower,
-		DelegationTime: timestamppb.New(now),
+		DelegationTime: delegationTime,
 		Categories:     categories,
 	}
 
@@ -286,11 +294,12 @@ func (k *TestKeeper) SubmitVeto(proposalID uint64, vetoer, reason string) (bool,
 	}
 
 	now := time.Now()
+	timestamp, _ := gogotypes.TimestampProto(now)
 	veto := &types.VetoRequest{
 		ProposalId: proposalID,
 		Vetoer:     vetoer,
 		Reason:     reason,
-		Timestamp:  timestamppb.New(now),
+		Timestamp:  timestamp,
 		Cosigners:  []string{vetoer},
 	}
 	k.vetoRequests[proposalID] = veto
@@ -375,10 +384,12 @@ func (k *TestKeeper) TallyVotes(proposalID uint64) (*types.TallyResult, error) {
 		// Check if proposal needs execution delay
 		categoryParamsMap := k.params.GetCategoryParams()
 		categoryParams := categoryParamsMap[proposal.Category.String()]
-		if categoryParams != nil && categoryParams.ExecutionDelay != nil && categoryParams.ExecutionDelay.AsDuration() > 0 {
+		execDelay, _ := gogotypes.DurationFromProto(categoryParams.ExecutionDelay)
+		if categoryParams != nil && categoryParams.ExecutionDelay != nil && execDelay > 0 {
 			proposal.Status = types.StatusExecutionDelay
-			execTime := time.Now().Add(categoryParams.ExecutionDelay.AsDuration())
-			proposal.ExecutionTime = timestamppb.New(execTime)
+			execTime := time.Now().Add(execDelay)
+			execTimeProto, _ := gogotypes.TimestampProto(execTime)
+			proposal.ExecutionTime = execTimeProto
 		} else {
 			proposal.Status = types.StatusPassed
 		}
@@ -398,8 +409,11 @@ func (k *TestKeeper) ExecuteProposal(proposalID uint64, executor string) error {
 	}
 
 	if proposal.Status == types.StatusExecutionDelay {
-		if proposal.ExecutionTime != nil && time.Now().Before(proposal.ExecutionTime.AsTime()) {
-			return types.ErrExecutionDelayNotPassed
+		if proposal.ExecutionTime != nil {
+			execTime, _ := gogotypes.TimestampFromProto(proposal.ExecutionTime)
+			if time.Now().Before(execTime) {
+				return types.ErrExecutionDelayNotPassed
+			}
 		}
 		// Delay has passed, allow execution
 	} else if proposal.Status != types.StatusPassed {
@@ -417,13 +431,14 @@ func (k *TestKeeper) SubmitSnapshotVote(proposalID uint64, voter string, option 
 	}
 
 	now := time.Now()
+	timestamp, _ := gogotypes.TimestampProto(now)
 	vote := &types.SnapshotVote{
 		ProposalId:            proposalID,
 		Voter:                 voter,
 		Option:                option,
 		VotingPowerAtSnapshot: votingPower,
 		Signature:             signature,
-		Timestamp:             timestamppb.New(now),
+		Timestamp:             timestamp,
 	}
 
 	k.snapshotVotes[proposalID][voter] = vote
@@ -550,7 +565,8 @@ func TestProposalCategoryThresholds(t *testing.T) {
 
 			// Verify category-specific parameters exist
 			assert.NotEmpty(t, categoryParams.MinDeposit)
-			assert.Greater(t, categoryParams.VotingPeriod.AsDuration(), time.Duration(0))
+			votingPeriod, _ := gogotypes.DurationFromProto(categoryParams.VotingPeriod)
+			assert.Greater(t, votingPeriod, time.Duration(0))
 			assert.NotEmpty(t, categoryParams.Quorum)
 			assert.NotEmpty(t, categoryParams.Threshold)
 
@@ -716,7 +732,8 @@ func TestSecretBallotVoting(t *testing.T) {
 
 	// Mock end of voting period by modifying proposal
 	proposal, _ := k.GetProposal(proposalID)
-	proposal.VotingEndTime = timestamppb.New(time.Now().Add(-1 * time.Hour))
+	endTime, _ := gogotypes.TimestampProto(time.Now().Add(-1 * time.Hour))
+	proposal.VotingEndTime = endTime
 	k.proposals[proposalID] = proposal
 
 	// Reveal vote
@@ -842,7 +859,8 @@ func TestTimeLockExecution(t *testing.T) {
 	assert.Equal(t, types.ErrExecutionDelayNotPassed, err)
 
 	// Mock passage of time
-	proposal.ExecutionTime = timestamppb.New(time.Now().Add(-1 * time.Hour))
+	execTime, _ := gogotypes.TimestampProto(time.Now().Add(-1 * time.Hour))
+	proposal.ExecutionTime = execTime
 	proposal.Status = types.StatusPassed
 	k.proposals[proposalID] = proposal
 
@@ -945,7 +963,7 @@ func TestQuorumAndThreshold(t *testing.T) {
 func TestTokenLockDuringVoting(t *testing.T) {
 	params := types.DefaultParams()
 	params.RequireTokenLock = true
-	params.TokenLockDuration = durationpb.New(24 * time.Hour)
+	params.TokenLockDuration = gogotypes.DurationProto(24 * time.Hour)
 	k := NewTestKeeper(params)
 
 	// Create a proposal
@@ -974,7 +992,8 @@ func TestTokenLockDuringVoting(t *testing.T) {
 	assert.Equal(t, voter, lock.Owner)
 	assert.Equal(t, proposalID, lock.ProposalId)
 	assert.Equal(t, votingPower, lock.LockedAmount)
-	assert.True(t, lock.UnlockTime.AsTime().After(time.Now()))
+	unlockTime, _ := gogotypes.TimestampFromProto(lock.UnlockTime)
+	assert.True(t, unlockTime.After(time.Now()))
 }
 
 func TestSnapshotVoting(t *testing.T) {
@@ -1014,7 +1033,7 @@ func TestSnapshotVoting(t *testing.T) {
 
 func TestEmergencyFastTrack(t *testing.T) {
 	params := types.DefaultParams()
-	params.EmergencyVotingPeriod = durationpb.New(24 * time.Hour)
+	params.EmergencyVotingPeriod = gogotypes.DurationProto(24 * time.Hour)
 	params.EmergencyQuorum = "0.500"
 	params.EmergencyThreshold = "0.667"
 	k := NewTestKeeper(params)
@@ -1037,14 +1056,17 @@ func TestEmergencyFastTrack(t *testing.T) {
 	assert.True(t, proposal.IsEmergency)
 
 	// Verify shorter voting period
-	votingDuration := proposal.VotingEndTime.AsTime().Sub(proposal.VotingStartTime.AsTime())
+	votingStartTime, _ := gogotypes.TimestampFromProto(proposal.VotingStartTime)
+	votingEndTime, _ := gogotypes.TimestampFromProto(proposal.VotingEndTime)
+	votingDuration := votingEndTime.Sub(votingStartTime)
 	assert.Equal(t, 24*time.Hour, votingDuration)
 
 	// Verify no execution delay for emergency
 	categoryParamsMap := params.GetCategoryParams()
 	categoryParams := categoryParamsMap[types.CategoryEmergency.String()]
 	if categoryParams.ExecutionDelay != nil {
-		assert.Equal(t, time.Duration(0), categoryParams.ExecutionDelay.AsDuration())
+		execDelay, _ := gogotypes.DurationFromProto(categoryParams.ExecutionDelay)
+		assert.Equal(t, time.Duration(0), execDelay)
 	}
 }
 

@@ -7,8 +7,8 @@ import (
 	sdkmath "cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	gogotypes "github.com/cosmos/gogoproto/types"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 	"github.com/aequitas/aura/chain/x/governance/types"
@@ -75,8 +75,10 @@ func TestQuorum_InsufficientParticipation(t *testing.T) {
 	require.NoError(t, err)
 
 	proposal.Status = types.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD
-	proposal.VotingStartTime = timestamppb.New(ctx.BlockTime())
-	proposal.VotingEndTime = timestamppb.New(ctx.BlockTime().Add(48 * time.Hour))
+	votingStartTimeTmp, _ := gogotypes.TimestampProto(ctx.BlockTime())
+	proposal.VotingStartTime = votingStartTimeTmp
+	votingEndTimeTmp, _ := gogotypes.TimestampProto(ctx.BlockTime().Add(48 * time.Hour))
+	proposal.VotingEndTime = votingEndTimeTmp
 	proposal.TotalDeposit = "10000000000" // Sufficient deposit
 	require.NoError(t, k.SetProposal(ctx, proposal))
 
@@ -87,7 +89,7 @@ func TestQuorum_InsufficientParticipation(t *testing.T) {
 		Voter:       voter1.String(),
 		Option:      types.VoteOption_VOTE_OPTION_YES,
 		VotingPower: "100000", // Note: CalculateTally will recompute from stakingKeeper
-		Timestamp:   timestamppb.Now(),
+		Timestamp:   gogotypes.TimestampNow(),
 	}
 	require.NoError(t, k.SetVote(ctx, vote1))
 
@@ -96,7 +98,7 @@ func TestQuorum_InsufficientParticipation(t *testing.T) {
 		Voter:       voter2.String(),
 		Option:      types.VoteOption_VOTE_OPTION_YES,
 		VotingPower: "200000", // Note: CalculateTally will recompute from stakingKeeper
-		Timestamp:   timestamppb.Now(),
+		Timestamp:   gogotypes.TimestampNow(),
 	}
 	require.NoError(t, k.SetVote(ctx, vote2))
 
@@ -112,7 +114,8 @@ func TestQuorum_InsufficientParticipation(t *testing.T) {
 
 	// Move to finalization (voting period ended)
 	proposal, _ = k.GetProposal(ctx, proposalID)
-	ctx = ctx.WithBlockTime(proposal.VotingEndTime.AsTime().Add(1 * time.Second))
+	votingEndTimeConverted, _ := gogotypes.TimestampFromProto(proposal.VotingEndTime)
+	ctx = ctx.WithBlockTime(votingEndTimeConverted.Add(1 * time.Second))
 
 	// Advance proposal status to trigger finalization
 	err = k.AdvanceProposalStatus(ctx, proposalID)
@@ -155,8 +158,10 @@ func TestQuorum_ExactlyAtThreshold(t *testing.T) {
 	// Move to voting period
 	proposal, _ := k.GetProposal(ctx, proposalID)
 	proposal.Status = types.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD
-	proposal.VotingStartTime = timestamppb.New(ctx.BlockTime())
-	proposal.VotingEndTime = timestamppb.New(ctx.BlockTime().Add(48 * time.Hour))
+	votingStartTimeTmp, _ := gogotypes.TimestampProto(ctx.BlockTime())
+	proposal.VotingStartTime = votingStartTimeTmp
+	votingEndTimeTmp, _ := gogotypes.TimestampProto(ctx.BlockTime().Add(48 * time.Hour))
+	proposal.VotingEndTime = votingEndTimeTmp
 	proposal.TotalDeposit = "10000000000"
 	require.NoError(t, k.SetProposal(ctx, proposal))
 
@@ -166,7 +171,7 @@ func TestQuorum_ExactlyAtThreshold(t *testing.T) {
 		Voter:       voter1.String(),
 		Option:      types.VoteOption_VOTE_OPTION_YES,
 		VotingPower: "334000", // Exactly at quorum
-		Timestamp:   timestamppb.Now(),
+		Timestamp:   gogotypes.TimestampNow(),
 	}
 	require.NoError(t, k.SetVote(ctx, vote1))
 
@@ -176,7 +181,8 @@ func TestQuorum_ExactlyAtThreshold(t *testing.T) {
 
 	// Finalize proposal
 	proposal, _ = k.GetProposal(ctx, proposalID)
-	ctx = ctx.WithBlockTime(proposal.VotingEndTime.AsTime().Add(1 * time.Second))
+	votingEndTimeConverted, _ := gogotypes.TimestampFromProto(proposal.VotingEndTime)
+	ctx = ctx.WithBlockTime(votingEndTimeConverted.Add(1 * time.Second))
 	err = k.AdvanceProposalStatus(ctx, proposalID)
 	require.NoError(t, err)
 
@@ -201,8 +207,10 @@ func TestQuorum_OneBelowThreshold(t *testing.T) {
 	// Move to voting
 	proposal, _ := k.GetProposal(ctx, proposalID)
 	proposal.Status = types.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD
-	proposal.VotingStartTime = timestamppb.New(ctx.BlockTime())
-	proposal.VotingEndTime = timestamppb.New(ctx.BlockTime().Add(48 * time.Hour))
+	votingStartTimeTmp, _ := gogotypes.TimestampProto(ctx.BlockTime())
+	proposal.VotingStartTime = votingStartTimeTmp
+	votingEndTimeTmp, _ := gogotypes.TimestampProto(ctx.BlockTime().Add(48 * time.Hour))
+	proposal.VotingEndTime = votingEndTimeTmp
 	proposal.TotalDeposit = "10000000000"
 	require.NoError(t, k.SetProposal(ctx, proposal))
 
@@ -211,13 +219,14 @@ func TestQuorum_OneBelowThreshold(t *testing.T) {
 		Voter:       "voter1",
 		Option:      types.VoteOption_VOTE_OPTION_YES,
 		VotingPower: "333999", // One below quorum requirement
-		Timestamp:   timestamppb.Now(),
+		Timestamp:   gogotypes.TimestampNow(),
 	}
 	require.NoError(t, k.SetVote(ctx, vote))
 
 	// Finalize
 	proposal, _ = k.GetProposal(ctx, proposalID)
-	ctx = ctx.WithBlockTime(proposal.VotingEndTime.AsTime().Add(1 * time.Second))
+	votingEndTimeConverted, _ := gogotypes.TimestampFromProto(proposal.VotingEndTime)
+	ctx = ctx.WithBlockTime(votingEndTimeConverted.Add(1 * time.Second))
 	err = k.AdvanceProposalStatus(ctx, proposalID)
 	require.NoError(t, err)
 
@@ -249,8 +258,10 @@ func TestQuorum_WellAboveThreshold(t *testing.T) {
 	// Move to voting
 	proposal, _ := k.GetProposal(ctx, proposalID)
 	proposal.Status = types.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD
-	proposal.VotingStartTime = timestamppb.New(ctx.BlockTime())
-	proposal.VotingEndTime = timestamppb.New(ctx.BlockTime().Add(48 * time.Hour))
+	votingStartTimeTmp, _ := gogotypes.TimestampProto(ctx.BlockTime())
+	proposal.VotingStartTime = votingStartTimeTmp
+	votingEndTimeTmp, _ := gogotypes.TimestampProto(ctx.BlockTime().Add(48 * time.Hour))
+	proposal.VotingEndTime = votingEndTimeTmp
 	proposal.TotalDeposit = "10000000000"
 	require.NoError(t, k.SetProposal(ctx, proposal))
 
@@ -261,14 +272,14 @@ func TestQuorum_WellAboveThreshold(t *testing.T) {
 			Voter:       voter1.String(),
 			Option:      types.VoteOption_VOTE_OPTION_YES,
 			VotingPower: "300000",
-			Timestamp:   timestamppb.Now(),
+			Timestamp:   gogotypes.TimestampNow(),
 		},
 		{
 			ProposalId:  proposalID,
 			Voter:       voter2.String(),
 			Option:      types.VoteOption_VOTE_OPTION_YES,
 			VotingPower: "300000",
-			Timestamp:   timestamppb.Now(),
+			Timestamp:   gogotypes.TimestampNow(),
 		},
 	}
 
@@ -282,7 +293,8 @@ func TestQuorum_WellAboveThreshold(t *testing.T) {
 
 	// Finalize
 	proposal, _ = k.GetProposal(ctx, proposalID)
-	ctx = ctx.WithBlockTime(proposal.VotingEndTime.AsTime().Add(1 * time.Second))
+	votingEndTimeConverted, _ := gogotypes.TimestampFromProto(proposal.VotingEndTime)
+	ctx = ctx.WithBlockTime(votingEndTimeConverted.Add(1 * time.Second))
 	err = k.AdvanceProposalStatus(ctx, proposalID)
 	require.NoError(t, err)
 
@@ -311,8 +323,10 @@ func TestQuorum_QuorumMetButThresholdNotMet(t *testing.T) {
 	// Move to voting
 	proposal, _ := k.GetProposal(ctx, proposalID)
 	proposal.Status = types.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD
-	proposal.VotingStartTime = timestamppb.New(ctx.BlockTime())
-	proposal.VotingEndTime = timestamppb.New(ctx.BlockTime().Add(48 * time.Hour))
+	votingStartTimeTmp, _ := gogotypes.TimestampProto(ctx.BlockTime())
+	proposal.VotingStartTime = votingStartTimeTmp
+	votingEndTimeTmp, _ := gogotypes.TimestampProto(ctx.BlockTime().Add(48 * time.Hour))
+	proposal.VotingEndTime = votingEndTimeTmp
 	proposal.TotalDeposit = "10000000000"
 	require.NoError(t, k.SetProposal(ctx, proposal))
 
@@ -324,14 +338,14 @@ func TestQuorum_QuorumMetButThresholdNotMet(t *testing.T) {
 			Voter:       voter1.String(),
 			Option:      types.VoteOption_VOTE_OPTION_YES,
 			VotingPower: "180000", // 45% of 400k
-			Timestamp:   timestamppb.Now(),
+			Timestamp:   gogotypes.TimestampNow(),
 		},
 		{
 			ProposalId:  proposalID,
 			Voter:       voter2.String(),
 			Option:      types.VoteOption_VOTE_OPTION_NO,
 			VotingPower: "220000", // 55% of 400k
-			Timestamp:   timestamppb.Now(),
+			Timestamp:   gogotypes.TimestampNow(),
 		},
 	}
 
@@ -350,7 +364,8 @@ func TestQuorum_QuorumMetButThresholdNotMet(t *testing.T) {
 
 	// Finalize
 	proposal, _ = k.GetProposal(ctx, proposalID)
-	ctx = ctx.WithBlockTime(proposal.VotingEndTime.AsTime().Add(1 * time.Second))
+	votingEndTimeConverted, _ := gogotypes.TimestampFromProto(proposal.VotingEndTime)
+	ctx = ctx.WithBlockTime(votingEndTimeConverted.Add(1 * time.Second))
 	err = k.AdvanceProposalStatus(ctx, proposalID)
 	require.NoError(t, err)
 
@@ -387,8 +402,10 @@ func TestQuorum_WithAbstainVotes(t *testing.T) {
 	// Move to voting
 	proposal, _ := k.GetProposal(ctx, proposalID)
 	proposal.Status = types.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD
-	proposal.VotingStartTime = timestamppb.New(ctx.BlockTime())
-	proposal.VotingEndTime = timestamppb.New(ctx.BlockTime().Add(48 * time.Hour))
+	votingStartTimeTmp, _ := gogotypes.TimestampProto(ctx.BlockTime())
+	proposal.VotingStartTime = votingStartTimeTmp
+	votingEndTimeTmp, _ := gogotypes.TimestampProto(ctx.BlockTime().Add(48 * time.Hour))
+	proposal.VotingEndTime = votingEndTimeTmp
 	proposal.TotalDeposit = "10000000000"
 	require.NoError(t, k.SetProposal(ctx, proposal))
 
@@ -398,21 +415,21 @@ func TestQuorum_WithAbstainVotes(t *testing.T) {
 			Voter:       voter1.String(),
 			Option:      types.VoteOption_VOTE_OPTION_ABSTAIN,
 			VotingPower: "100000", // Actual power comes from staking keeper
-			Timestamp:   timestamppb.Now(),
+			Timestamp:   gogotypes.TimestampNow(),
 		},
 		{
 			ProposalId:  proposalID,
 			Voter:       voter2.String(),
 			Option:      types.VoteOption_VOTE_OPTION_YES,
 			VotingPower: "200000", // Actual power comes from staking keeper
-			Timestamp:   timestamppb.Now(),
+			Timestamp:   gogotypes.TimestampNow(),
 		},
 		{
 			ProposalId:  proposalID,
 			Voter:       voter3.String(),
 			Option:      types.VoteOption_VOTE_OPTION_NO,
 			VotingPower: "100000", // Actual power comes from staking keeper
-			Timestamp:   timestamppb.Now(),
+			Timestamp:   gogotypes.TimestampNow(),
 		},
 	}
 
@@ -422,7 +439,8 @@ func TestQuorum_WithAbstainVotes(t *testing.T) {
 
 	// Finalize
 	proposal, _ = k.GetProposal(ctx, proposalID)
-	ctx = ctx.WithBlockTime(proposal.VotingEndTime.AsTime().Add(1 * time.Second))
+	votingEndTimeConverted, _ := gogotypes.TimestampFromProto(proposal.VotingEndTime)
+	ctx = ctx.WithBlockTime(votingEndTimeConverted.Add(1 * time.Second))
 	err = k.AdvanceProposalStatus(ctx, proposalID)
 	require.NoError(t, err)
 
@@ -447,8 +465,10 @@ func TestQuorum_OnlyAbstainVotes(t *testing.T) {
 	// Move to voting
 	proposal, _ := k.GetProposal(ctx, proposalID)
 	proposal.Status = types.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD
-	proposal.VotingStartTime = timestamppb.New(ctx.BlockTime())
-	proposal.VotingEndTime = timestamppb.New(ctx.BlockTime().Add(48 * time.Hour))
+	votingStartTimeTmp, _ := gogotypes.TimestampProto(ctx.BlockTime())
+	proposal.VotingStartTime = votingStartTimeTmp
+	votingEndTimeTmp, _ := gogotypes.TimestampProto(ctx.BlockTime().Add(48 * time.Hour))
+	proposal.VotingEndTime = votingEndTimeTmp
 	proposal.TotalDeposit = "10000000000"
 	require.NoError(t, k.SetProposal(ctx, proposal))
 
@@ -458,13 +478,14 @@ func TestQuorum_OnlyAbstainVotes(t *testing.T) {
 		Voter:       "voter1",
 		Option:      types.VoteOption_VOTE_OPTION_ABSTAIN,
 		VotingPower: "400000",
-		Timestamp:   timestamppb.Now(),
+		Timestamp:   gogotypes.TimestampNow(),
 	}
 	require.NoError(t, k.SetVote(ctx, vote))
 
 	// Finalize
 	proposal, _ = k.GetProposal(ctx, proposalID)
-	ctx = ctx.WithBlockTime(proposal.VotingEndTime.AsTime().Add(1 * time.Second))
+	votingEndTimeConverted, _ := gogotypes.TimestampFromProto(proposal.VotingEndTime)
+	ctx = ctx.WithBlockTime(votingEndTimeConverted.Add(1 * time.Second))
 	err = k.AdvanceProposalStatus(ctx, proposalID)
 	require.NoError(t, err)
 
@@ -495,8 +516,10 @@ func TestQuorum_VetoOverridesQuorumAndThreshold(t *testing.T) {
 	// Move to voting
 	proposal, _ := k.GetProposal(ctx, proposalID)
 	proposal.Status = types.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD
-	proposal.VotingStartTime = timestamppb.New(ctx.BlockTime())
-	proposal.VotingEndTime = timestamppb.New(ctx.BlockTime().Add(48 * time.Hour))
+	votingStartTimeTmp, _ := gogotypes.TimestampProto(ctx.BlockTime())
+	proposal.VotingStartTime = votingStartTimeTmp
+	votingEndTimeTmp, _ := gogotypes.TimestampProto(ctx.BlockTime().Add(48 * time.Hour))
+	proposal.VotingEndTime = votingEndTimeTmp
 	proposal.TotalDeposit = "10000000000"
 	require.NoError(t, k.SetProposal(ctx, proposal))
 
@@ -509,14 +532,14 @@ func TestQuorum_VetoOverridesQuorumAndThreshold(t *testing.T) {
 			Voter:       voter1.String(),
 			Option:      types.VoteOption_VOTE_OPTION_YES,
 			VotingPower: "400000",
-			Timestamp:   timestamppb.Now(),
+			Timestamp:   gogotypes.TimestampNow(),
 		},
 		{
 			ProposalId:  proposalID,
 			Voter:       voter2.String(),
 			Option:      types.VoteOption_VOTE_OPTION_NO_WITH_VETO,
 			VotingPower: "350000",
-			Timestamp:   timestamppb.Now(),
+			Timestamp:   gogotypes.TimestampNow(),
 		},
 	}
 
@@ -526,7 +549,8 @@ func TestQuorum_VetoOverridesQuorumAndThreshold(t *testing.T) {
 
 	// Finalize
 	proposal, _ = k.GetProposal(ctx, proposalID)
-	ctx = ctx.WithBlockTime(proposal.VotingEndTime.AsTime().Add(1 * time.Second))
+	votingEndTimeConverted, _ := gogotypes.TimestampFromProto(proposal.VotingEndTime)
+	ctx = ctx.WithBlockTime(votingEndTimeConverted.Add(1 * time.Second))
 	err = k.AdvanceProposalStatus(ctx, proposalID)
 	require.NoError(t, err)
 

@@ -7,8 +7,8 @@ import (
 	sdkmath "cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	gogotypes "github.com/cosmos/gogoproto/types"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 	"github.com/aequitas/aura/chain/x/governance/types"
@@ -292,8 +292,10 @@ func createVotingProposal(t *testing.T, k *Keeper, ctx sdk.Context) uint64 {
 	require.NoError(t, err)
 
 	proposal.Status = types.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD
-	proposal.VotingStartTime = timestamppb.New(ctx.BlockTime())
-	proposal.VotingEndTime = timestamppb.New(ctx.BlockTime().Add(48 * time.Hour))
+	votingStartTimeTmp, _ := gogotypes.TimestampProto(ctx.BlockTime())
+	proposal.VotingStartTime = votingStartTimeTmp
+	votingEndTimeTmp, _ := gogotypes.TimestampProto(ctx.BlockTime().Add(48 * time.Hour))
+	proposal.VotingEndTime = votingEndTimeTmp
 	proposal.TotalDeposit = "10000000000"
 	require.NoError(t, k.SetProposal(ctx, proposal))
 
@@ -310,7 +312,7 @@ func castVote(t *testing.T, k *Keeper, ctx sdk.Context, proposalID uint64, voter
 		Voter:       voter,
 		Option:      option,
 		VotingPower: votingPower.String(), // Use actual calculated power
-		Timestamp:   timestamppb.Now(),
+		Timestamp:   gogotypes.TimestampNow(),
 	}
 	require.NoError(t, k.SetVote(ctx, vote))
 }
@@ -319,7 +321,8 @@ func finalizeProposal(t *testing.T, k *Keeper, ctx sdk.Context, proposalID uint6
 	proposal, err := k.GetProposal(ctx, proposalID)
 	require.NoError(t, err)
 
-	ctx = ctx.WithBlockTime(proposal.VotingEndTime.AsTime().Add(1 * time.Second))
+	votingEndTimeConverted, _ := gogotypes.TimestampFromProto(proposal.VotingEndTime)
+	ctx = ctx.WithBlockTime(votingEndTimeConverted.Add(1 * time.Second))
 	err = k.AdvanceProposalStatus(ctx, proposalID)
 	require.NoError(t, err)
 }

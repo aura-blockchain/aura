@@ -13,7 +13,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/testutil"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/suite"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type KeeperTestSuite struct {
@@ -59,20 +58,20 @@ func (suite *KeeperTestSuite) TestRegisterContract() {
 		Creator: creator,
 		Admin:   admin,
 		Label:   "test-contract",
-		CreatedAt: timestamppb.Now(),
-		UpdatedAt: timestamppb.Now(),
-		Metadata: &pb.ContractMetadata{
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Metadata: pb.ContractMetadata{
 			Name:        "Test Contract",
 			Description: "A test contract",
 			Version:     "1.0.0",
 			Tags:        []string{"test", "demo"},
 		},
-		SecurityPolicy: &pb.SecurityPolicy{
+		SecurityPolicy: pb.SecurityPolicy{
 			AllowPause:  true,
 			MaxGasPerTx: 1000000,
 			RateLimitPerUser: 100,
 		},
-		Compliance: &pb.ComplianceRequirements{
+		Compliance: pb.ComplianceRequirements{
 			EnforceKyc: false,
 		},
 		Status: pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
@@ -119,14 +118,14 @@ func (suite *KeeperTestSuite) TestRegisterContractAlreadyExists() {
 		Creator: creator,
 		Admin:   creator,
 		Label:   "test-contract",
-		CreatedAt: timestamppb.Now(),
-		UpdatedAt: timestamppb.Now(),
-		Metadata: &pb.ContractMetadata{
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Metadata: pb.ContractMetadata{
 			Name:        "Test Contract",
 			Description: "A test contract",
 		},
-		SecurityPolicy: &pb.SecurityPolicy{},
-		Compliance: &pb.ComplianceRequirements{},
+		SecurityPolicy: pb.SecurityPolicy{},
+		Compliance: pb.ComplianceRequirements{},
 		Status:         pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
 	}
 
@@ -150,15 +149,15 @@ func (suite *KeeperTestSuite) TestUpdateContractMetadata() {
 		Creator: "cosmos1creator",
 		Admin:   admin,
 		Label:   "test-contract",
-		CreatedAt: timestamppb.Now(),
-		UpdatedAt: timestamppb.Now(),
-		Metadata: &pb.ContractMetadata{
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Metadata: pb.ContractMetadata{
 			Name:        "Test Contract",
 			Description: "Original description",
 			Tags:        []string{"old"},
 		},
-		SecurityPolicy: &pb.SecurityPolicy{},
-		Compliance: &pb.ComplianceRequirements{},
+		SecurityPolicy: pb.SecurityPolicy{},
+		Compliance: pb.ComplianceRequirements{},
 		Status:         pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
 	}
 	suite.NoError(suite.keeper.RegisterContract(suite.ctx, info))
@@ -200,11 +199,11 @@ func (suite *KeeperTestSuite) TestUpdateContractMetadataUnauthorized() {
 		Creator:        "cosmos1creator",
 		Admin:          admin,
 		Label:          "test-contract",
-		CreatedAt: timestamppb.Now(),
-		UpdatedAt: timestamppb.Now(),
-		Metadata:       &pb.ContractMetadata{Name: "Test"},
-		SecurityPolicy: &pb.SecurityPolicy{},
-		Compliance: &pb.ComplianceRequirements{},
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Metadata: pb.ContractMetadata{Name: "Test"},
+		SecurityPolicy: pb.SecurityPolicy{},
+		Compliance: pb.ComplianceRequirements{},
 		Status:         pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
 	}
 	suite.NoError(suite.keeper.RegisterContract(suite.ctx, info))
@@ -226,13 +225,13 @@ func (suite *KeeperTestSuite) TestPauseUnpauseContract() {
 		Creator: admin,
 		Admin:   admin,
 		Label:   "test-contract",
-		CreatedAt: timestamppb.Now(),
-		UpdatedAt: timestamppb.Now(),
-		Metadata: &pb.ContractMetadata{Name: "Test"},
-		SecurityPolicy: &pb.SecurityPolicy{
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Metadata: pb.ContractMetadata{Name: "Test"},
+		SecurityPolicy: pb.SecurityPolicy{
 			AllowPause: true,
 		},
-		Compliance: &pb.ComplianceRequirements{},
+		Compliance: pb.ComplianceRequirements{},
 		Status:     pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
 	}
 	suite.NoError(suite.keeper.RegisterContract(suite.ctx, info))
@@ -268,11 +267,11 @@ func (suite *KeeperTestSuite) TestDeprecateContract() {
 		Creator:        admin,
 		Admin:          admin,
 		Label:          "test-contract",
-		CreatedAt: timestamppb.Now(),
-		UpdatedAt: timestamppb.Now(),
-		Metadata:       &pb.ContractMetadata{Name: "Test"},
-		SecurityPolicy: &pb.SecurityPolicy{},
-		Compliance: &pb.ComplianceRequirements{},
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Metadata: pb.ContractMetadata{Name: "Test"},
+		SecurityPolicy: pb.SecurityPolicy{},
+		Compliance: pb.ComplianceRequirements{},
 		Status:         pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
 	}
 	suite.NoError(suite.keeper.RegisterContract(suite.ctx, info))
@@ -320,11 +319,11 @@ func (suite *KeeperTestSuite) TestMetricsTracking() {
 		Creator:        "cosmos1creator",
 		Admin:          "cosmos1admin",
 		Label:          "test-contract",
-		CreatedAt: timestamppb.Now(),
-		UpdatedAt: timestamppb.Now(),
-		Metadata:       &pb.ContractMetadata{Name: "Test"},
-		SecurityPolicy: &pb.SecurityPolicy{},
-		Compliance: &pb.ComplianceRequirements{},
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Metadata: pb.ContractMetadata{Name: "Test"},
+		SecurityPolicy: pb.SecurityPolicy{},
+		Compliance: pb.ComplianceRequirements{},
 		Status:         pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
 	}
 	suite.NoError(suite.keeper.RegisterContract(suite.ctx, info))
@@ -370,17 +369,17 @@ func (suite *KeeperTestSuite) TestGenesisImportExport() {
 		Creator: creator,
 		Admin:   creator,
 		Label:   "test-contract",
-		CreatedAt: timestamppb.Now(),
-		UpdatedAt: timestamppb.Now(),
-		Metadata: &pb.ContractMetadata{
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Metadata: pb.ContractMetadata{
 			Name:        "Test Contract",
 			Description: "Genesis test",
 			Tags:        []string{"genesis"},
 		},
-		SecurityPolicy: &pb.SecurityPolicy{
+		SecurityPolicy: pb.SecurityPolicy{
 			MaxGasPerTx: 1000000,
 		},
-		Compliance: &pb.ComplianceRequirements{},
+		Compliance: pb.ComplianceRequirements{},
 		Status:     pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
 	}
 	suite.NoError(suite.keeper.RegisterContract(suite.ctx, info))
@@ -437,11 +436,11 @@ func (suite *KeeperTestSuite) TestMaxContractsPerCreator() {
 		Creator:        creator,
 		Admin:          creator,
 		Label:          "contract1",
-		CreatedAt: timestamppb.Now(),
-		UpdatedAt: timestamppb.Now(),
-		Metadata:       &pb.ContractMetadata{Name: "Contract 1"},
-		SecurityPolicy: &pb.SecurityPolicy{},
-		Compliance: &pb.ComplianceRequirements{},
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Metadata: pb.ContractMetadata{Name: "Contract 1"},
+		SecurityPolicy: pb.SecurityPolicy{},
+		Compliance: pb.ComplianceRequirements{},
 		Status:         pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
 	}
 	suite.NoError(suite.keeper.RegisterContract(suite.ctx, info1))
@@ -453,11 +452,11 @@ func (suite *KeeperTestSuite) TestMaxContractsPerCreator() {
 		Creator:        creator,
 		Admin:          creator,
 		Label:          "contract2",
-		CreatedAt: timestamppb.Now(),
-		UpdatedAt: timestamppb.Now(),
-		Metadata:       &pb.ContractMetadata{Name: "Contract 2"},
-		SecurityPolicy: &pb.SecurityPolicy{},
-		Compliance: &pb.ComplianceRequirements{},
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Metadata: pb.ContractMetadata{Name: "Contract 2"},
+		SecurityPolicy: pb.SecurityPolicy{},
+		Compliance: pb.ComplianceRequirements{},
 		Status:         pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
 	}
 	suite.NoError(suite.keeper.RegisterContract(suite.ctx, info2))
@@ -469,11 +468,11 @@ func (suite *KeeperTestSuite) TestMaxContractsPerCreator() {
 		Creator:        creator,
 		Admin:          creator,
 		Label:          "contract3",
-		CreatedAt: timestamppb.Now(),
-		UpdatedAt: timestamppb.Now(),
-		Metadata:       &pb.ContractMetadata{Name: "Contract 3"},
-		SecurityPolicy: &pb.SecurityPolicy{},
-		Compliance: &pb.ComplianceRequirements{},
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Metadata: pb.ContractMetadata{Name: "Contract 3"},
+		SecurityPolicy: pb.SecurityPolicy{},
+		Compliance: pb.ComplianceRequirements{},
 		Status:         pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
 	}
 	err := suite.keeper.RegisterContract(suite.ctx, info3)

@@ -119,7 +119,7 @@ func TestValidateGenesis(t *testing.T) {
 			genesis: &GenesisState{
 				Params: *DefaultParams(),
 				Contracts: []pb.ContractInfo{},
-				Metrics: []*pb.ContractMetrics{
+				Metrics: []pb.ContractMetrics{
 					{
 						ContractAddress: "cosmos1nonexistent",
 					},
@@ -204,7 +204,7 @@ func TestValidateParams(t *testing.T) {
 }
 
 func TestDefaultParams(t *testing.T) {
-	params := DefaultParams()
+	params := *DefaultParams()
 
 	require.True(t, params.OpenRegistration)
 	require.Equal(t, uint64(100), params.MaxContractsPerCreator)
@@ -216,12 +216,12 @@ func TestDefaultParams(t *testing.T) {
 	require.Equal(t, uint64(10000000), params.DefaultMaxGas)
 
 	// Should pass validation
-	require.NoError(t, ValidateParams(params))
+	require.NoError(t, ValidateParams(&params))
 }
 
 func TestNewGenesisState(t *testing.T) {
-	params := DefaultParams()
-	contracts := []*pb.ContractInfo{
+	params := *DefaultParams()
+	contracts := []pb.ContractInfo{
 		{
 			Address: "cosmos1contract",
 			CodeId:  1,
@@ -229,7 +229,7 @@ func TestNewGenesisState(t *testing.T) {
 			Status:  pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
 		},
 	}
-	metrics := []*pb.ContractMetrics{
+	metrics := []pb.ContractMetrics{
 		{
 			ContractAddress: "cosmos1contract",
 			TotalExecutions: 10,

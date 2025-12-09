@@ -2,21 +2,21 @@ package types
 
 import (
 	"testing"
+
+	"cosmossdk.io/math"
 )
 
 func TestDefaultParams(t *testing.T) {
 	params := DefaultParams()
 
-	if params == nil {
-		t.Fatal("DefaultParams should not return nil")
-	}
-
 	// Validate default values
-	if params.TradingFee != "0.003" {
+	expectedTradingFee := math.LegacyMustNewDecFromStr("0.003")
+	if !params.TradingFee.Equal(expectedTradingFee) {
 		t.Errorf("expected TradingFee to be 0.003, got %s", params.TradingFee)
 	}
 
-	if params.ProtocolFee != "0.0005" {
+	expectedProtocolFee := math.LegacyMustNewDecFromStr("0.0005")
+	if !params.ProtocolFee.Equal(expectedProtocolFee) {
 		t.Errorf("expected ProtocolFee to be 0.0005, got %s", params.ProtocolFee)
 	}
 
@@ -24,7 +24,8 @@ func TestDefaultParams(t *testing.T) {
 		t.Errorf("expected MaxSlippageBps to be 10000, got %d", params.MaxSlippageBps)
 	}
 
-	if params.MinSwapAmount != "1000000" {
+	expectedMinSwap := math.NewInt(1000000)
+	if !params.MinSwapAmount.Equal(expectedMinSwap) {
 		t.Errorf("expected MinSwapAmount to be 1000000, got %s", params.MinSwapAmount)
 	}
 
@@ -60,9 +61,10 @@ func TestDefaultGenesis(t *testing.T) {
 		t.Fatal("DefaultGenesis should not return nil")
 	}
 
-	// Validate default genesis state
-	if genesis.Params == nil {
-		t.Fatal("expected Params to be set")
+	// Validate default genesis state (Params is a value type, not pointer)
+	// Just check it's initialized with valid values
+	if genesis.Params.TradingFee.IsNil() {
+		t.Fatal("expected Params.TradingFee to be set")
 	}
 
 	if genesis.LiquidityPools == nil {

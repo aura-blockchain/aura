@@ -22,7 +22,7 @@ type QueryServerTestSuite struct {
 func (s *QueryServerTestSuite) SetupTest() {
 	s.ctx = testutil.SetupTestContext(s.T())
 	s.keeper = &keeper.Keeper{}
-	s.queryServer = keeper.NewQueryServerImpl(*s.keeper)
+	s.queryServer = keeper.NewQueryServerImpl(s.keeper)
 	s.fixtures = testutil.NewTestFixtures()
 }
 
