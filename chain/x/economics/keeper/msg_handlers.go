@@ -6,14 +6,13 @@ import (
 	"fmt"
 	"time"
 
-	sdkmath "cosmossdk.io/math"
 	errorsmod "cosmossdk.io/errors"
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/aequitas/aura/chain/x/economics/types"
 	economicspb "github.com/aequitas/aura/proto/aura/economics/v1beta1"
 )
-
 
 // ============================
 // VESTING OPERATIONS
@@ -54,16 +53,16 @@ func (k Keeper) CreateVestingSchedule(
 	// Create schedule
 	vestedCoin := sdk.NewCoin(totalAmount.Denom, sdkmath.ZeroInt())
 	schedule := &economicspb.VestingSchedule{
-		Id:              scheduleID,
-		Address:         beneficiaryAddress,
-		OriginalAmount:  totalAmount,
-		VestedAmount:    vestedCoin,
-		StartTime:       startTime,
-		EndTime:         endTime,
-		CliffDuration:   cliffDuration,
-		VestingType:     vestingType,
-		ScheduleType:    scheduleType,
-		Revoked:         false,
+		Id:             scheduleID,
+		Address:        beneficiaryAddress,
+		OriginalAmount: totalAmount,
+		VestedAmount:   vestedCoin,
+		StartTime:      startTime,
+		EndTime:        endTime,
+		CliffDuration:  cliffDuration,
+		VestingType:    vestingType,
+		ScheduleType:   scheduleType,
+		Revoked:        false,
 	}
 
 	// Store schedule
@@ -207,17 +206,17 @@ func (k Keeper) SubmitProposal(
 
 	// Create proposal
 	proposal := &economicspb.Proposal{
-		Id:              proposalID,
-		Title:           title,
-		Description:     description,
-		Category:        category,
-		Proposer:        proposer.String(),
-		Status:          economicspb.ProposalStatus_PROPOSAL_STATUS_DEPOSIT_PERIOD,
-		SubmitTime:      now,
-		DepositEndTime:  now.Add(depositPeriod),
-		TotalDeposit:    initialDeposit,
-		IsEmergency:     isEmergency,
-		ExecutionDelay:  &params.Governance.ExecutionDelay,
+		Id:             proposalID,
+		Title:          title,
+		Description:    description,
+		Category:       category,
+		Proposer:       proposer.String(),
+		Status:         economicspb.ProposalStatus_PROPOSAL_STATUS_DEPOSIT_PERIOD,
+		SubmitTime:     now,
+		DepositEndTime: now.Add(depositPeriod),
+		TotalDeposit:   initialDeposit,
+		IsEmergency:    isEmergency,
+		ExecutionDelay: &params.Governance.ExecutionDelay,
 	}
 
 	// Check if initial deposit meets minimum
@@ -519,8 +518,8 @@ func (k Keeper) RevealSecretVote(ctx context.Context, proposalID uint64, voter s
 
 	// Update the vote with the revealed option
 	vote.Option = option
-	vote.EncryptedVote = ""   // Clear encrypted data after reveal
-	vote.VoteCommitment = ""  // Clear commitment to mark as revealed
+	vote.EncryptedVote = ""  // Clear encrypted data after reveal
+	vote.VoteCommitment = "" // Clear commitment to mark as revealed
 
 	return k.SetVote(ctx, vote)
 }

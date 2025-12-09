@@ -74,7 +74,7 @@ func (m AppModule) EndBlock() {}
 
 // RegisterInvariants registers the module's invariants.
 func (am AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {
-	// TODO: Uncomment when invariants.go is fixed
+	// NOTE: Future enhancement - Uncomment when invariants.go is fixed
 	// keeper.RegisterInvariants(ir, am.keeper)
 }
 

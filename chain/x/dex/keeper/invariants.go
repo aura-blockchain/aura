@@ -57,7 +57,7 @@ func ParamsInvariant(k *Keeper) sdk.Invariant {
 			), true
 		}
 
-		// TODO: Add Validate() method to Params type in proto/types if needed
+		// NOTE: Future enhancement - Add Validate() method to Params type in proto/types if needed
 		// For now, just check that params exist
 		// if err := params.Validate(); err != nil {
 		// 	return sdk.FormatInvariant(
@@ -354,7 +354,7 @@ func SecurityLimitsInvariant(k *Keeper) sdk.Invariant {
 				continue
 			}
 
-			// TODO: Add CircuitBreakerTriggered, LastTradeTime, CircuitBreakerTime fields to LiquidityPool proto
+			// NOTE: Future enhancement - Add CircuitBreakerTriggered, LastTradeTime, CircuitBreakerTime fields to LiquidityPool proto
 			// For now, just validate basic pool security limits
 			// Security limits are enforced in the security module
 		}

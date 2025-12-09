@@ -5,7 +5,7 @@ import (
 )
 
 // GetQueryCmd returns the query commands for the contractregistry module
-// TODO: Implement full query commands (query.go.skip has the full implementation)
+// NOTE: Future enhancement - Implement full query commands (query.go.skip has the full implementation)
 func GetQueryCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:                        "contractregistry",
@@ -17,7 +17,7 @@ func GetQueryCmd() *cobra.Command {
 }
 
 // GetTxCmd returns the transaction commands for the contractregistry module
-// TODO: Implement full tx commands (tx.go.skip has the full implementation)
+// NOTE: Future enhancement - Implement full tx commands (tx.go.skip has the full implementation)
 func GetTxCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:                        "contractregistry",

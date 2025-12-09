@@ -1,56 +1,35 @@
 package types
 
-import "errors"
+import (
+	errorsmod "cosmossdk.io/errors"
+)
 
+// Data registry module error codes
 var (
-	// ErrInvalidDataID is returned when a data ID is invalid
-	ErrInvalidDataID = errors.New("invalid data ID")
+	// Data item errors (1-19)
+	ErrInvalidDataID         = errorsmod.Register(ModuleName, 1, "invalid data ID")
+	ErrDataItemNotFound      = errorsmod.Register(ModuleName, 2, "data item not found")
+	ErrDataItemAlreadyExists = errorsmod.Register(ModuleName, 3, "data item already exists")
+	ErrDataItemRevoked       = errorsmod.Register(ModuleName, 4, "data item is revoked")
+	ErrDataItemExpired       = errorsmod.Register(ModuleName, 5, "data item is expired")
 
-	// ErrDataItemNotFound is returned when a data item is not found
-	ErrDataItemNotFound = errors.New("data item not found")
+	// Ownership and access errors (20-29)
+	ErrInvalidOwner  = errorsmod.Register(ModuleName, 20, "invalid owner address")
+	ErrUnauthorized  = errorsmod.Register(ModuleName, 21, "unauthorized")
+	ErrAccessDenied  = errorsmod.Register(ModuleName, 22, "access denied")
 
-	// ErrInvalidOwner is returned when the owner address is invalid
-	ErrInvalidOwner = errors.New("invalid owner address")
+	// Data validation errors (30-49)
+	ErrInvalidDataType        = errorsmod.Register(ModuleName, 30, "invalid data type")
+	ErrInvalidContentHash     = errorsmod.Register(ModuleName, 31, "invalid content hash")
+	ErrInvalidStorageLocation = errorsmod.Register(ModuleName, 32, "invalid storage location")
+	ErrInvalidGeoLocation     = errorsmod.Register(ModuleName, 33, "invalid geo location")
+	ErrInvalidAccessPolicy    = errorsmod.Register(ModuleName, 34, "invalid access policy")
 
-	// ErrUnauthorized is returned when user is not authorized
-	ErrUnauthorized = errors.New("unauthorized")
+	// Verification errors (50-59)
+	ErrInvalidVerifier          = errorsmod.Register(ModuleName, 50, "invalid verifier")
+	ErrInvalidVerificationLevel = errorsmod.Register(ModuleName, 51, "invalid verification level")
 
-	// ErrAccessDenied is returned when access is denied
-	ErrAccessDenied = errors.New("access denied")
-
-	// ErrInvalidDataType is returned when data type is invalid
-	ErrInvalidDataType = errors.New("invalid data type")
-
-	// ErrInvalidContentHash is returned when content hash is invalid
-	ErrInvalidContentHash = errors.New("invalid content hash")
-
-	// ErrInvalidStorageLocation is returned when storage location is invalid
-	ErrInvalidStorageLocation = errors.New("invalid storage location")
-
-	// ErrDataItemAlreadyExists is returned when data item already exists
-	ErrDataItemAlreadyExists = errors.New("data item already exists")
-
-	// ErrDataItemRevoked is returned when data item is revoked
-	ErrDataItemRevoked = errors.New("data item is revoked")
-
-	// ErrDataItemExpired is returned when data item is expired
-	ErrDataItemExpired = errors.New("data item is expired")
-
-	// ErrInvalidVerifier is returned when verifier is invalid
-	ErrInvalidVerifier = errors.New("invalid verifier")
-
-	// ErrInvalidVerificationLevel is returned when verification level is invalid
-	ErrInvalidVerificationLevel = errors.New("invalid verification level")
-
-	// ErrMaxDataItemsExceeded is returned when max data items limit is exceeded
-	ErrMaxDataItemsExceeded = errors.New("maximum data items per user exceeded")
-
-	// ErrStorageSizeExceeded is returned when storage size limit is exceeded
-	ErrStorageSizeExceeded = errors.New("storage size limit exceeded")
-
-	// ErrInvalidGeoLocation is returned when geo location is invalid
-	ErrInvalidGeoLocation = errors.New("invalid geo location")
-
-	// ErrInvalidAccessPolicy is returned when access policy is invalid
-	ErrInvalidAccessPolicy = errors.New("invalid access policy")
+	// Limit errors (60-69)
+	ErrMaxDataItemsExceeded = errorsmod.Register(ModuleName, 60, "maximum data items per user exceeded")
+	ErrStorageSizeExceeded  = errorsmod.Register(ModuleName, 61, "storage size limit exceeded")
 )

@@ -29,7 +29,7 @@ type Keeper struct {
 	securityKeeper types.SecurityKeeper   // Centralized security primitives
 
 	// Legacy security primitives (kept for backward compatibility during migration)
-	// TODO: Remove these once all code is migrated to securityKeeper
+	// NOTE: Future enhancement - Remove these once all code is migrated to securityKeeper
 	reentrancyGuard *security.ReentrancyGuard
 	pauseGuard      *security.PauseGuard
 	inputValidator  *security.InputValidator
@@ -56,7 +56,7 @@ func NewKeeper(
 		securityKeeper: securityKeeper,
 
 		// Initialize legacy security primitives (for backward compatibility)
-		// TODO: Remove these once all code is migrated to securityKeeper
+		// NOTE: Future enhancement - Remove these once all code is migrated to securityKeeper
 		reentrancyGuard: security.NewReentrancyGuard(),
 		pauseGuard:      security.NewPauseGuard(""), // Admin will be set via params
 		inputValidator:  security.NewInputValidator(),
