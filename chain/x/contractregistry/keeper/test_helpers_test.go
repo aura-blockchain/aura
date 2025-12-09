@@ -165,18 +165,18 @@ func newTestContractInfo(address, creator, admin string) *pb.ContractInfo {
 		Creator: creator,
 		Admin:   admin,
 		Label:   "test-contract",
-		Metadata: &pb.ContractMetadata{
+		Metadata: pb.ContractMetadata{
 			Name:        "Test Contract",
 			Description: "A test contract",
 			Version:     "1.0.0",
 			Tags:        []string{"test"},
 		},
-		SecurityPolicy: &pb.SecurityPolicy{
+		SecurityPolicy: pb.SecurityPolicy{
 			AllowPause:       true,
 			MaxGasPerTx:      1000000,
 			RateLimitPerUser: 100,
 		},
-		Compliance: &pb.ComplianceRequirements{
+		Compliance: pb.ComplianceRequirements{
 			EnforceKyc: false,
 		},
 		Status: pb.ContractStatus_CONTRACT_STATUS_ACTIVE,

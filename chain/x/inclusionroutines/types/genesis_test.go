@@ -11,8 +11,18 @@ func TestDefaultGenesisState(t *testing.T) {
 		t.Fatal("DefaultGenesisState should not return nil")
 	}
 
-	if genesis.Params == nil {
-		t.Fatal("expected Params to be set")
+	// Params is a value type (not pointer), so check for non-zero values
+	if genesis.Params.MaxIrPerLocale == 0 {
+		t.Error("expected Params.MaxIrPerLocale to be set to non-zero value")
+	}
+	if genesis.Params.DefaultRateLimitHour == 0 {
+		t.Error("expected Params.DefaultRateLimitHour to be set to non-zero value")
+	}
+	if genesis.Params.SuspensionFee == "" {
+		t.Error("expected Params.SuspensionFee to be set")
+	}
+	if genesis.Params.MinGovernanceDeposit == "" {
+		t.Error("expected Params.MinGovernanceDeposit to be set")
 	}
 }
 

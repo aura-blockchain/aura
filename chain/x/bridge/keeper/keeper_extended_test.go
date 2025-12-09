@@ -588,22 +588,31 @@ func TestExportGenesis(t *testing.T) {
 	require.NoError(t, k.InitGenesis(input.Ctx, genesisState))
 
 	exported := k.ExportGenesis(input.Ctx)
-	require.True(t, reflect.DeepEqual(genesisState.Params, exported.Params))
+	require.Equal(t, genesisState.Params, exported.Params)
 	require.Len(t, exported.Transfers, len(genesisState.Transfers))
 	for i := range genesisState.Transfers {
-		require.True(t, reflect.DeepEqual(genesisState.Transfers[i], exported.Transfers[i]))
+		// Compare fields individually to avoid issues with timestamp timezones and protobuf internal fields
+		require.Equal(t, genesisState.Transfers[i].TransferId, exported.Transfers[i].TransferId)
+		require.Equal(t, genesisState.Transfers[i].SourceChain, exported.Transfers[i].SourceChain)
+		require.Equal(t, genesisState.Transfers[i].TargetChain, exported.Transfers[i].TargetChain)
+		require.Equal(t, genesisState.Transfers[i].Sender, exported.Transfers[i].Sender)
+		require.Equal(t, genesisState.Transfers[i].Recipient, exported.Transfers[i].Recipient)
+		require.True(t, genesisState.Transfers[i].Amount.Equal(exported.Transfers[i].Amount))
+		require.Equal(t, genesisState.Transfers[i].Denom, exported.Transfers[i].Denom)
+		require.Equal(t, genesisState.Transfers[i].Status, exported.Transfers[i].Status)
+		require.True(t, genesisState.Transfers[i].Timestamp.Unix() == exported.Transfers[i].Timestamp.Unix())
 	}
 	require.Len(t, exported.ChainConfigs, len(genesisState.ChainConfigs))
 	for i := range genesisState.ChainConfigs {
-		require.True(t, reflect.DeepEqual(genesisState.ChainConfigs[i], exported.ChainConfigs[i]))
+		require.Equal(t, genesisState.ChainConfigs[i], exported.ChainConfigs[i])
 	}
 	require.Len(t, exported.Validators, len(genesisState.Validators))
 	for i := range genesisState.Validators {
-		require.True(t, reflect.DeepEqual(genesisState.Validators[i], exported.Validators[i]))
+		require.Equal(t, genesisState.Validators[i], exported.Validators[i])
 	}
 	require.Len(t, exported.WrappedTokens, len(genesisState.WrappedTokens))
 	for i := range genesisState.WrappedTokens {
-		require.True(t, reflect.DeepEqual(genesisState.WrappedTokens[i], exported.WrappedTokens[i]))
+		require.Equal(t, genesisState.WrappedTokens[i], exported.WrappedTokens[i])
 	}
 	require.Len(t, exported.SharedIdentities, len(genesisState.SharedIdentities))
 	for i := range genesisState.SharedIdentities {
@@ -633,13 +642,16 @@ func testBridgeGenesisState() types.GenesisState {
 		Timestamp:   now,
 	}
 	chainCfg := types.ChainConfig{
-		ChainId:   "aura",
-		ChainName: "Aura",
-		Enabled:   true,
+		ChainId:          "aura",
+		ChainName:        "Aura",
+		AddressPrefix:    "aura",
+		MinConfirmations: 6,
+		Enabled:          true,
 	}
 	validator := types.BridgeValidator{
-		Address: "auravaloper1validator",
+		Address: sdk.AccAddress("validator1__________").String(),
 		Active:  true,
+		Power:   100,
 		Chains:  []string{"aura"},
 	}
 	wrapped := types.WrappedToken{
@@ -666,7 +678,7 @@ func testBridgeGenesisState() types.GenesisState {
 		InitiatedAt:     now,
 	}
 	relayerStats := types.RelayerStats{
-		RelayerAddress:        "aura1relayer",
+		RelayerAddress:        sdk.AccAddress("relayer1___________").String(),
 		TotalTransfersRelayed: 5,
 		SuccessfulTransfers:   5,
 		FailedTransfers:       0,

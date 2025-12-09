@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"context"
-	"reflect"
 	"testing"
 
 	"cosmossdk.io/log"

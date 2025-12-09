@@ -6,7 +6,6 @@ import (
 
 	authproto "github.com/aequitas/aura/proto/aura/auth/v1beta1"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestValidateRole(t *testing.T) {
@@ -379,8 +378,9 @@ func TestIsProposalApproved(t *testing.T) {
 }
 
 func TestIsProposalExpired(t *testing.T) {
-	pastTime := timestamppb.New(time.Now().Add(-time.Hour))
-	futureTime := timestamppb.New(time.Now().Add(time.Hour))
+	pastTime := time.Now().Add(-time.Hour)
+	futureTime := time.Now().Add(time.Hour)
+	zeroTime := time.Time{}
 
 	tests := []struct {
 		name     string
@@ -404,7 +404,7 @@ func TestIsProposalExpired(t *testing.T) {
 		{
 			name: "no expiration",
 			proposal: &authproto.MultisigProposal{
-				ExpiresAt: nil,
+				ExpiresAt: zeroTime,
 			},
 			expected: false,
 		},
@@ -506,9 +506,10 @@ func TestValidateTimeLockedAction(t *testing.T) {
 }
 
 func TestIsActionReady(t *testing.T) {
-	pastTime := timestamppb.New(time.Now().Add(-time.Hour))
-	futureTime := timestamppb.New(time.Now().Add(time.Hour))
-	nowTime := timestamppb.New(time.Now())
+	pastTime := time.Now().Add(-time.Hour)
+	futureTime := time.Now().Add(time.Hour)
+	nowTime := time.Now()
+	zeroTime := time.Time{}
 
 	tests := []struct {
 		name     string
@@ -539,7 +540,7 @@ func TestIsActionReady(t *testing.T) {
 		{
 			name: "not ready - no time set",
 			action: &authproto.TimeLockedAction{
-				ExecutableAt: nil,
+				ExecutableAt: zeroTime,
 			},
 			expected: false,
 		},
@@ -611,8 +612,8 @@ func TestValidateEmergencyAdmin(t *testing.T) {
 }
 
 func TestIsEmergencyAdminActive(t *testing.T) {
-	pastTime := timestamppb.New(time.Now().Add(-time.Hour))
-	futureTime := timestamppb.New(time.Now().Add(time.Hour))
+	pastTime := time.Now().Add(-time.Hour)
+	futureTime := time.Now().Add(time.Hour)
 
 	tests := []struct {
 		name     string
@@ -631,7 +632,7 @@ func TestIsEmergencyAdminActive(t *testing.T) {
 			name: "active - not expired",
 			admin: &authproto.EmergencyAdmin{
 				IsActive:  true,
-				ExpiresAt: futureTime,
+				ExpiresAt: &futureTime,
 			},
 			expected: true,
 		},
@@ -639,7 +640,7 @@ func TestIsEmergencyAdminActive(t *testing.T) {
 			name: "inactive - expired",
 			admin: &authproto.EmergencyAdmin{
 				IsActive:  true,
-				ExpiresAt: pastTime,
+				ExpiresAt: &pastTime,
 			},
 			expected: false,
 		},
@@ -647,7 +648,7 @@ func TestIsEmergencyAdminActive(t *testing.T) {
 			name: "inactive - marked inactive",
 			admin: &authproto.EmergencyAdmin{
 				IsActive:  false,
-				ExpiresAt: futureTime,
+				ExpiresAt: &futureTime,
 			},
 			expected: false,
 		},
@@ -707,8 +708,9 @@ func TestValidateSession(t *testing.T) {
 }
 
 func TestIsSessionActive(t *testing.T) {
-	pastTime := timestamppb.New(time.Now().Add(-time.Hour))
-	futureTime := timestamppb.New(time.Now().Add(time.Hour))
+	pastTime := time.Now().Add(-time.Hour)
+	futureTime := time.Now().Add(time.Hour)
+	zeroTime := time.Time{}
 
 	tests := []struct {
 		name     string
@@ -743,7 +745,7 @@ func TestIsSessionActive(t *testing.T) {
 			name: "inactive - no expiration",
 			session: &authproto.Session{
 				IsActive:  true,
-				ExpiresAt: nil,
+				ExpiresAt: zeroTime,
 			},
 			expected: false,
 		},

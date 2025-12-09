@@ -104,11 +104,13 @@ func TestQueryEmptyOrderbook(t *testing.T) {
 	// Verify best bid/ask are zero (not nil)
 	require.NotEmpty(t, resp.Orderbook.BestBid)
 	require.NotEmpty(t, resp.Orderbook.BestAsk)
-	require.Equal(t, "0.000000000000000000", resp.Orderbook.BestBid)
-	require.Equal(t, "0.000000000000000000", resp.Orderbook.BestAsk)
+	require.Equal(t, "0.000000000000000000", resp.Orderbook.BestBid.String())
+	require.Equal(t, "0.000000000000000000", resp.Orderbook.BestAsk.String())
 
-	// Spread should be empty or "0" when no orders exist
-	require.NotNil(t, resp.Orderbook.SpreadPercent)
+	// Spread may be nil or zero when no orders exist
+	if !resp.Orderbook.SpreadPercent.IsNil() {
+		require.Equal(t, "0.000000000000000000", resp.Orderbook.SpreadPercent.String())
+	}
 }
 
 // TestQueryAllPoolsPagination tests that AllPools query supports Cosmos SDK pagination
@@ -190,7 +192,10 @@ func TestQueryUserOrdersPagination(t *testing.T) {
 	mockBank.SetBalance(userAddr, "usdt", math.NewInt(10000))
 
 	// Create multiple orders for pagination testing
+	// Order IDs are unique per (user, block height), so advance height between creates
+	baseHeight := ctx.BlockHeight()
 	for i := 0; i < 5; i++ {
+		ctx = ctx.WithBlockHeight(baseHeight + int64(i))
 		_, err := k.CreateOrder(ctx, user, types.SwapOrderType_BUY, math.NewInt(100), "usdt", math.NewInt(200), 60)
 		require.NoError(t, err)
 	}

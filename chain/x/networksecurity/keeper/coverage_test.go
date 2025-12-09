@@ -68,10 +68,10 @@ func (suite *KeeperTestSuite) TestBanUnbanPeer() {
 	suite.Contains(bannedPeers, peerId)
 
 	// When ban is expired, IsBanned should return false and entry should be cleaned on check.
-	expired := timestamppb.New(suite.ctx.BlockTime().Add(-1 * time.Hour))
+	expired := suite.ctx.BlockTime().Add(-1 * time.Hour)
 	entry, found := suite.keeper.GetRateLimitEntry(suite.ctx, peerId)
 	suite.Require().True(found)
-	entry.BanExpiresAt = expired
+	entry.BanExpiresAt = &expired
 	entry.IsBanned = true
 	suite.Require().NoError(suite.keeper.SetRateLimitEntry(suite.ctx, entry))
 	suite.False(suite.keeper.IsBanned(suite.ctx, peerId))
