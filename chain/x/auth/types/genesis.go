@@ -12,17 +12,17 @@ type GenesisState = authproto.GenesisState
 // DefaultGenesis returns a conservative default genesis state.
 func DefaultGenesis() *GenesisState {
     return &GenesisState{
-        Params:               DefaultParams(),
-        Roles:                []*authproto.Role{},
-        RoleAssignments:      []*authproto.RoleAssignment{},
-        MultisigWallets:      []*authproto.MultisigWallet{},
-        MultisigProposals:    []*authproto.MultisigProposal{},
-        TimeLockedActions:    []*authproto.TimeLockedAction{},
-        EmergencyAdmins:      []*authproto.EmergencyAdmin{},
-        ValidatorKeyRotations: []*authproto.ValidatorKeyRotation{},
-        Sessions:             []*authproto.Session{},
-        RateLimitConfigs:     []*authproto.RateLimitConfig{},
-        AuditLogs:            []*authproto.AuditLog{},
+        Params:               *DefaultParams(),
+        Roles:                []authproto.Role{},
+        RoleAssignments:      []authproto.RoleAssignment{},
+        MultisigWallets:      []authproto.MultisigWallet{},
+        MultisigProposals:    []authproto.MultisigProposal{},
+        TimeLockedActions:    []authproto.TimeLockedAction{},
+        EmergencyAdmins:      []authproto.EmergencyAdmin{},
+        ValidatorKeyRotations: []authproto.ValidatorKeyRotation{},
+        Sessions:             []authproto.Session{},
+        RateLimitConfigs:     []authproto.RateLimitConfig{},
+        AuditLogs:            []authproto.AuditLog{},
     }
 }
 
@@ -30,9 +30,6 @@ func DefaultGenesis() *GenesisState {
 func ValidateGenesis(gen *GenesisState) error {
     if gen == nil {
         return fmt.Errorf("genesis state cannot be nil")
-    }
-    if gen.Params == nil {
-        return fmt.Errorf("params cannot be nil")
     }
 
     for _, role := range gen.Roles {

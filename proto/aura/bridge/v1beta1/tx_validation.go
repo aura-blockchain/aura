@@ -65,11 +65,8 @@ func (m *MsgLockTokens) ValidateBasic() error {
 		return err
 	}
 
-	// Validate amount (pointer type due to protoc-gen-go)
-	if m.Amount == nil {
-		return fmt.Errorf("amount cannot be nil")
-	}
-	if err := validation.ValidateCoin(*m.Amount, "amount"); err != nil {
+	// Validate amount (value type with gogoproto.nullable = false)
+	if err := validation.ValidateCoin(m.Amount, "amount"); err != nil {
 		return err
 	}
 
@@ -98,8 +95,8 @@ func (m *MsgMintTokens) ValidateBasic() error {
 		return fmt.Errorf("recipient: %w", err)
 	}
 
-	// Validate amount (string type - customtype annotation ignored by protoc-gen-go)
-	if err := parseAndValidatePositiveInt(m.Amount, "amount"); err != nil {
+	// Validate amount (cosmossdk.io/math.Int value type)
+	if err := validation.ValidatePositiveInt(m.Amount, "amount"); err != nil {
 		return err
 	}
 
@@ -133,8 +130,8 @@ func (m *MsgUnlockTokens) ValidateBasic() error {
 		return fmt.Errorf("burn_tx_hash: %w", err)
 	}
 
-	// Validate amount (string type - customtype annotation ignored by protoc-gen-go)
-	if err := parseAndValidatePositiveInt(m.Amount, "amount"); err != nil {
+	// Validate amount (cosmossdk.io/math.Int value type)
+	if err := validation.ValidatePositiveInt(m.Amount, "amount"); err != nil {
 		return err
 	}
 
