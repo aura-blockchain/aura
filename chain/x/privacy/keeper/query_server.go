@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -31,8 +32,14 @@ func (qs queryServer) Params(goCtx context.Context, req *privacypb.QueryParamsRe
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	params := qs.Keeper.GetParams(ctx)
 
+	// Convert MixingFee from string to math.Int
+	mixingFee, ok := sdkmath.NewIntFromString(params.MixingFee)
+	if !ok {
+		mixingFee = sdkmath.ZeroInt()
+	}
+
 	// Convert to proto params
-	protoParams := &privacypb.Params{
+	protoParams := privacypb.Params{
 		EnableZkProofs:                 params.EnableZkProofs,
 		EnableStealthAddresses:         params.EnableStealthAddresses,
 		EnableRingSignatures:           params.EnableRingSignatures,
@@ -42,7 +49,7 @@ func (qs queryServer) Params(goCtx context.Context, req *privacypb.QueryParamsRe
 		MinRingSize:                    params.MinRingSize,
 		MaxRingSize:                    params.MaxRingSize,
 		MinMixingParticipants:          params.MinMixingParticipants,
-		MixingFee:                      params.MixingFee,
+		MixingFee:                      mixingFee,
 		ZkProofVerificationCost:        params.ZkProofVerificationCost,
 	}
 

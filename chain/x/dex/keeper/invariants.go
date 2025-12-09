@@ -111,36 +111,33 @@ func PoolReservesConsistencyInvariant(k *Keeper) sdk.Invariant {
 			}
 
 			// Check reserves are positive
-			reserveA, ok := sdkmath.NewIntFromString(pool.ReserveA)
-			if !ok || reserveA.IsNegative() {
+			if pool.ReserveA.IsNegative() {
 				return sdk.FormatInvariant(
 					types.ModuleName,
 					"pool-reserves-consistency",
-					fmt.Sprintf("pool %s has invalid reserve A: %s", pool.PoolId, pool.ReserveA),
+					fmt.Sprintf("pool %s has invalid reserve A: %s", pool.PoolId, pool.ReserveA.String()),
 				), true
 			}
 
-			reserveB, ok := sdkmath.NewIntFromString(pool.ReserveB)
-			if !ok || reserveB.IsNegative() {
+			if pool.ReserveB.IsNegative() {
 				return sdk.FormatInvariant(
 					types.ModuleName,
 					"pool-reserves-consistency",
-					fmt.Sprintf("pool %s has invalid reserve B: %s", pool.PoolId, pool.ReserveB),
+					fmt.Sprintf("pool %s has invalid reserve B: %s", pool.PoolId, pool.ReserveB.String()),
 				), true
 			}
 
 			// Check liquidity shares are non-negative (using TotalLpTokens field)
-			totalShares, ok := sdkmath.NewIntFromString(pool.TotalLpTokens)
-			if !ok || totalShares.IsNegative() {
+			if pool.TotalLpTokens.IsNegative() {
 				return sdk.FormatInvariant(
 					types.ModuleName,
 					"pool-reserves-consistency",
-					fmt.Sprintf("pool %s has invalid total LP tokens: %s", pool.PoolId, pool.TotalLpTokens),
+					fmt.Sprintf("pool %s has invalid total LP tokens: %s", pool.PoolId, pool.TotalLpTokens.String()),
 				), true
 			}
 
 			// If pool has reserves, it should have shares
-			if (!reserveA.IsZero() || !reserveB.IsZero()) && totalShares.IsZero() {
+			if (!pool.ReserveA.IsZero() || !pool.ReserveB.IsZero()) && pool.TotalLpTokens.IsZero() {
 				return sdk.FormatInvariant(
 					types.ModuleName,
 					"pool-reserves-consistency",
@@ -193,22 +190,20 @@ func OrderValidityInvariant(k *Keeper) sdk.Invariant {
 				), true
 			}
 
-			// Check amounts are positive (fields are strings in proto)
-			auraAmt, ok := sdkmath.NewIntFromString(order.AuraAmount)
-			if !ok || !auraAmt.IsPositive() {
+			// Check amounts are positive
+			if !order.AuraAmount.IsPositive() {
 				return sdk.FormatInvariant(
 					types.ModuleName,
 					"order-validity",
-					fmt.Sprintf("order %s has invalid AURA amount: %s", order.OrderId, order.AuraAmount),
+					fmt.Sprintf("order %s has invalid AURA amount: %s", order.OrderId, order.AuraAmount.String()),
 				), true
 			}
 
-			otherAmt, ok := sdkmath.NewIntFromString(order.OtherAmount)
-			if !ok || !otherAmt.IsPositive() {
+			if !order.OtherAmount.IsPositive() {
 				return sdk.FormatInvariant(
 					types.ModuleName,
 					"order-validity",
-					fmt.Sprintf("order %s has invalid other amount: %s", order.OrderId, order.OtherAmount),
+					fmt.Sprintf("order %s has invalid other amount: %s", order.OrderId, order.OtherAmount.String()),
 				), true
 			}
 
@@ -222,11 +217,11 @@ func OrderValidityInvariant(k *Keeper) sdk.Invariant {
 			}
 
 			// Check timestamp exists
-			if order.Timestamp == nil {
+			if order.Timestamp.IsZero() {
 				return sdk.FormatInvariant(
 					types.ModuleName,
 					"order-validity",
-					fmt.Sprintf("order %s has nil timestamp", order.OrderId),
+					fmt.Sprintf("order %s has zero timestamp", order.OrderId),
 				), true
 			}
 		}
@@ -260,12 +255,11 @@ func LiquidityProviderConsistencyInvariant(k *Keeper) sdk.Invariant {
 				), true
 			}
 
-			totalPoolShares, ok := sdkmath.NewIntFromString(pool.TotalLpTokens)
-			if !ok || totalPoolShares.IsNegative() {
+			if pool.TotalLpTokens.IsNegative() {
 				return sdk.FormatInvariant(
 					types.ModuleName,
 					"liquidity-provider-consistency",
-					fmt.Sprintf("pool %s has invalid total LP tokens: %s", pool.PoolId, pool.TotalLpTokens),
+					fmt.Sprintf("pool %s has invalid total LP tokens: %s", pool.PoolId, pool.TotalLpTokens.String()),
 				), true
 			}
 
@@ -280,30 +274,28 @@ func LiquidityProviderConsistencyInvariant(k *Keeper) sdk.Invariant {
 					), true
 				}
 
-				lpTokens, ok := sdkmath.NewIntFromString(provider.LpTokens)
-				if !ok || lpTokens.IsNegative() {
+				if provider.LpTokens.IsNegative() {
 					return sdk.FormatInvariant(
 						types.ModuleName,
 						"liquidity-provider-consistency",
-						fmt.Sprintf("pool %s provider %s has invalid LP tokens: %s", pool.PoolId, provider.Address, provider.LpTokens),
+						fmt.Sprintf("pool %s provider %s has invalid LP tokens: %s", pool.PoolId, provider.Address, provider.LpTokens.String()),
 					), true
 				}
-				sum = sum.Add(lpTokens)
+				sum = sum.Add(provider.LpTokens)
 			}
 
 			// Account for permanently locked liquidity (burned on pool creation)
 			// The locked liquidity is included in TotalLpTokens but not assigned to any provider
 			lockedLiquidity := sdkmath.ZeroInt()
-			if pool.LockedLiquidity != "" {
-				lockedLiquidityParsed, ok := sdkmath.NewIntFromString(pool.LockedLiquidity)
-				if !ok || lockedLiquidityParsed.IsNegative() {
+			if !pool.LockedLiquidity.IsZero() {
+				if pool.LockedLiquidity.IsNegative() {
 					return sdk.FormatInvariant(
 						types.ModuleName,
 						"liquidity-provider-consistency",
-						fmt.Sprintf("pool %s has invalid locked liquidity: %s", pool.PoolId, pool.LockedLiquidity),
+						fmt.Sprintf("pool %s has invalid locked liquidity: %s", pool.PoolId, pool.LockedLiquidity.String()),
 					), true
 				}
-				lockedLiquidity = lockedLiquidityParsed
+				lockedLiquidity = pool.LockedLiquidity
 			}
 
 			// CRITICAL INVARIANT: TotalLpTokens = Sum(Provider LP Tokens) + LockedLiquidity
@@ -312,14 +304,14 @@ func LiquidityProviderConsistencyInvariant(k *Keeper) sdk.Invariant {
 			// - Accounting errors that allow draining pool reserves
 			// - Mismatch between total supply and distributed tokens
 			expectedTotal := sum.Add(lockedLiquidity)
-			if !totalPoolShares.IsZero() && !expectedTotal.Equal(totalPoolShares) {
+			if !pool.TotalLpTokens.IsZero() && !expectedTotal.Equal(pool.TotalLpTokens) {
 				return sdk.FormatInvariant(
 					types.ModuleName,
 					"liquidity-provider-consistency",
 					fmt.Sprintf("CRITICAL: pool %s LP token invariant violated - "+
 						"total LP tokens %s != provider sum %s + locked %s (expected %s)",
 						pool.PoolId,
-						totalPoolShares.String(),
+						pool.TotalLpTokens.String(),
 						sum.String(),
 						lockedLiquidity.String(),
 						expectedTotal.String()),
@@ -398,11 +390,11 @@ func HTLCValidityInvariant(k *Keeper) sdk.Invariant {
 			}
 
 			// Check timelock is set
-			if htlc.Timelock == nil {
+			if htlc.Timelock.IsZero() {
 				return sdk.FormatInvariant(
 					types.ModuleName,
 					"htlc-validity",
-					fmt.Sprintf("HTLC %s has nil timelock", htlcID),
+					fmt.Sprintf("HTLC %s has zero timelock", htlcID),
 				), true
 			}
 
@@ -424,12 +416,11 @@ func HTLCValidityInvariant(k *Keeper) sdk.Invariant {
 			}
 
 			// Check amount is positive
-			amount, ok := sdkmath.NewIntFromString(htlc.Amount)
-			if !ok || !amount.IsPositive() {
+			if !htlc.Amount.IsPositive() {
 				return sdk.FormatInvariant(
 					types.ModuleName,
 					"htlc-validity",
-					fmt.Sprintf("HTLC %s has invalid amount: %s", htlcID, htlc.Amount),
+					fmt.Sprintf("HTLC %s has invalid amount: %s", htlcID, htlc.Amount.String()),
 				), true
 			}
 		}

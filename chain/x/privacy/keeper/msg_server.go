@@ -335,7 +335,7 @@ func (ms msgServer) UpdateParams(goCtx context.Context, msg *privacypb.MsgUpdate
 		MinRingSize:                    msg.Params.MinRingSize,
 		MaxRingSize:                    msg.Params.MaxRingSize,
 		MinMixingParticipants:          msg.Params.MinMixingParticipants,
-		MixingFee:                      msg.Params.MixingFee,
+		MixingFee:                      msg.Params.MixingFee.String(),
 		ZkProofVerificationCost:        msg.Params.ZkProofVerificationCost,
 	}
 

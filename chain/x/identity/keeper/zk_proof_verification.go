@@ -546,30 +546,38 @@ func (k *Keeper) verifySimpleProof(vk *ZKVerificationKey, proof []byte, publicIn
 
 // parsePublicInputs parses public inputs from bytes into gnark witness format
 //
-// Public inputs are serialized as 32-byte field elements (big-endian).
-// This function deserializes them into the format expected by gnark verifiers.
+// Public inputs are serialized in gnark's binary witness format.
+// This function deserializes them into the witness.Witness interface expected by gnark verifiers.
+//
+// Gnark witness binary format:
+//   [uint32(nbPublic) | uint32(nbSecret) | uint32(nbElements) | field elements...]
 //
 // Parameters:
-//   - publicInputs: Raw bytes containing concatenated field elements
+//   - publicInputs: Raw bytes containing witness in gnark binary format
 //
 // Returns:
-//   - witness: gnark public witness ready for verification
+//   - witness.Witness: gnark public witness ready for verification
 //   - error: if deserialization fails
-func (k *Keeper) parsePublicInputs(publicInputs []byte) (witness interface{}, err error) {
-	// Public inputs are serialized as 32-byte big-endian field elements
-	if len(publicInputs)%32 != 0 {
-		return nil, fmt.Errorf("public inputs length %d is not a multiple of 32 bytes", len(publicInputs))
-	}
-
-	numInputs := len(publicInputs) / 32
-	if numInputs == 0 {
+func (k *Keeper) parsePublicInputs(publicInputs []byte) (witness.Witness, error) {
+	// Public inputs must be non-empty
+	if len(publicInputs) == 0 {
 		return nil, fmt.Errorf("no public inputs provided")
 	}
 
-	// For gnark, we need to provide the public witness as a byte slice
-	// The gnark verifier will handle the deserialization internally
-	// We just need to ensure proper formatting
-	return publicInputs, nil
+	// Create a new witness for BN254 curve
+	w, err := witness.New(ecc.BN254.ScalarField())
+	if err != nil {
+		return nil, fmt.Errorf("failed to create witness: %w", err)
+	}
+
+	// Deserialize the witness from binary format
+	// gnark witnesses are serialized using the ReadFrom/WriteTo interface
+	_, err = w.ReadFrom(bytes.NewReader(publicInputs))
+	if err != nil {
+		return nil, fmt.Errorf("failed to deserialize witness: %w", err)
+	}
+
+	return w, nil
 }
 
 // ============================================================================
