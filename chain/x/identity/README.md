@@ -1,297 +1,770 @@
 # Identity Module
 
-The Identity module consolidates authentication, authorization, and identity change management into a single, cohesive module. It merges functionality from the `auth` and `identitychange` modules.
-
 ## Overview
 
-This module provides:
+The Identity module provides comprehensive identity management, authentication, role-based access control (RBAC), multisig wallets, time-locked actions, emergency admin capabilities, and session management for the Aura blockchain. It implements decentralized identity (DID) management with support for identity change workflows, validator key rotation, and GDPR-compliant data erasure.
 
-1. **Role-Based Access Control (RBAC)**: Create roles with specific permissions and assign them to addresses
-2. **Session Management**: Create, track, and manage user sessions
-3. **Rate Limiting**: Configure rate limits per user
-4. **Multisig Wallets**: Support for multisignature wallets and proposals
-5. **Time-Locked Actions**: Actions that execute after a specified delay
-6. **Emergency Admin**: Temporary emergency administrator privileges
-7. **Validator Key Rotation**: Manage validator consensus key rotation
-8. **Identity Management**: Decentralized identity (DID) records
-9. **Identity Change Requests**: Workflow for identity changes with verification
-10. **Identity Recovery**: Social recovery for identity accounts
-11. **Identity Verification**: Multi-level identity verification
-12. **Cross-Chain Identity**: Link identities across different chains
-13. **Audit Logging**: Comprehensive audit trail of all operations
+## Features
 
-## Architecture
+- **Identity Change Management**: Controlled workflow for identity modifications with assistant proof verification
+- **Role-Based Access Control (RBAC)**: Flexible permission system with role assignments and expirations
+- **Multisig Wallets**: Multi-signature wallet management with proposal-based operations
+- **Time-Locked Actions**: Delayed execution of sensitive operations with cancellation capability
+- **Emergency Admin**: Temporary elevated privileges for emergency response
+- **Validator Key Rotation**: Secure validator consensus key rotation
+- **Session Management**: User session tracking with device fingerprinting
+- **DID Key Rotation**: Grace-period based key rotation for DIDs
+- **GDPR Compliance**: Right to erasure implementation
 
-### Module Structure
+## State
 
-```
-x/identity/
-├── types/
-│   ├── keys.go       - Store keys and prefixes
-│   ├── errors.go     - Error definitions
-│   ├── genesis.go    - Genesis state and parameters
-│   └── types.go      - Core type definitions
-├── keeper/
-│   ├── keeper.go     - Main keeper with genesis methods
-│   ├── auth.go       - Role and permission management
-│   ├── changes.go    - Identity change request functions
-│   └── sessions.go   - Session, multisig, and auxiliary functions
-├── module.go         - AppModule implementation
-└── README.md         - This file
-```
+### Identity Records
+- **IdentityRecord**: Core identity information with DID, controller address, status, and metadata
+- **ChangeRequest**: Pending identity change requests with verification requirements
+- **ChangeHistory**: Immutable audit trail of identity modifications
 
-### Key Store Prefixes
+### Roles and Permissions
+- **Role**: Named permission sets (e.g., "admin", "operator")
+- **RoleAssignment**: Role-to-address mappings with expiration timestamps
+- **Permissions**: Granular capabilities (manage_multisig, manage_timelock, manage_emergency, etc.)
 
-The module uses the following key prefixes for data storage:
+### Multisig Wallets
+- **MultisigWallet**: Wallet with multiple signers and threshold requirement
+- **MultisigProposal**: Proposals requiring threshold signatures before execution
+- **Wallet Types**: Individual, corporate, government, DAO
 
-- `0x00`: Module parameters
-- `0x01-0x08`: Auth-related data (roles, permissions, accounts, sessions, rate limits)
-- `0x09-0x0e`: Multisig, time-lock, emergency admin, validator rotation
-- `0x10-0x17`: Identity records, change requests, history, recovery, verification, delegation, federation, cross-chain
-- `0x20-0x21`: Counters for audit logs and change requests
-- `0x30`: Suspended flag
+### Time-Locked Actions
+- **TimeLockedAction**: Actions with mandatory delay period before execution
+- **Action Status**: Pending, executed, cancelled
 
-## Core Concepts
+### Emergency Admin
+- **EmergencyAdmin**: Temporary admin with specific privileges and expiration
+- **Privileges**: Array of elevated permissions
 
-### 1. Roles and Permissions
+### Sessions
+- **Session**: User authentication session with device fingerprint and IP metadata
+- **Session Expiration**: Configurable timeout period
 
-**Roles** are collections of permissions that can be assigned to addresses. The module includes default roles:
+### Validator Key Rotation
+- **ValidatorKeyRotation**: Consensus public key rotation with status tracking
 
-- **Admin**: Full administrative access to all module functions
-- **Moderator**: Can manage roles and sessions, verify identities
-- **Validator**: Can rotate validator keys
-- **User**: Basic user with no special permissions
+## Messages
 
-**Permissions** are granular capabilities such as:
-- `create_role`, `assign_role`, `revoke_role`
-- `manage_multisig`, `manage_timelock`, `manage_emergency`
-- `manage_identity`, `verify_identity`, `approve_change_request`
+### Identity Change Operations
 
-### 2. Identity Records
+#### MsgRequestIdentityChange
+Request an identity change with incident response validation.
 
-Identity records represent decentralized identities (DIDs) with:
-- DID identifier
-- Owner address
-- Metadata hash
-- Confidence score
-- Latest inclusion routine version
-- Status and change history
-
-### 3. Change Requests
-
-Identity changes follow a workflow:
-
-1. **Create Request**: User submits a change request
-2. **Pending Verification**: Awaiting verification by an authorized verifier
-3. **Ready to Apply**: Approved by verifier, ready for application
-4. **Applied**: Change has been applied to the identity record
-5. **Rejected**: Change was rejected
-
-### 4. Audit Logging
-
-All important operations are logged with:
-- Actor (who performed the action)
-- Action type
-- Resource affected
-- Result (success/failure)
-- Metadata
-- Timestamp
-- Error details (if applicable)
-
-## Parameters
-
-The module has extensive configuration parameters:
-
-### Auth Parameters
-- `max_roles_per_address`: Maximum roles assignable to one address (default: 10)
-- `max_permissions_per_role`: Maximum permissions per role (default: 50)
-- `default_role_expiry_seconds`: Default role assignment expiration (default: 1 year)
-
-### Session Parameters
-- `default_session_expiry_seconds`: Default session duration (default: 24 hours)
-- `max_sessions_per_user`: Maximum concurrent sessions (default: 10)
-- `session_inactivity_timeout_seconds`: Inactivity timeout (default: 1 hour)
-
-### Rate Limiting Parameters
-- `default_max_requests_per_minute`: Default minute rate limit (default: 60)
-- `default_max_requests_per_hour`: Default hour rate limit (default: 3600)
-- `default_max_requests_per_day`: Default day rate limit (default: 86400)
-
-### Multisig Parameters
-- `max_signers_per_wallet`: Maximum signers in a multisig wallet (default: 20)
-- `default_proposal_expiry_seconds`: Proposal expiration (default: 7 days)
-
-### Time-Lock Parameters
-- `min_time_lock_delay_seconds`: Minimum delay (default: 1 hour)
-- `max_time_lock_delay_seconds`: Maximum delay (default: 30 days)
-
-### Emergency Admin Parameters
-- `max_emergency_admin_expiry_seconds`: Maximum emergency admin duration (default: 24 hours)
-- `require_multi_sig_for_emergency`: Require multisig for emergency actions (default: true)
-
-### Identity Change Parameters
-- `max_change_requests_per_month`: Monthly request limit (default: 10)
-- `min_confidence_score_after_change`: Minimum score after change (default: 50)
-- `change_request_expiry_seconds`: Request expiration (default: 30 days)
-- `enable_identity_recovery`: Enable recovery features (default: true)
-- `enable_cross_chain_identity`: Enable cross-chain features (default: true)
-- `min_recovery_threshold`: Minimum recovery contacts (default: 2)
-
-### Audit Parameters
-- `max_audit_logs_retained`: Maximum audit logs stored (default: 100000)
-- `enable_audit_logging`: Enable audit logging (default: true)
-
-## Genesis State
-
-The genesis state includes:
-
-- Module parameters
-- Initial roles and role assignments
-- Audit logs
-- Sessions and rate limit configurations
-- Multisig wallets and proposals
-- Time-locked actions
-- Emergency admins
-- Validator key rotations
-- Identity records and change requests
-- Change history
-- Recovery, verification, delegation, federation, and cross-chain records
-- Suspended flag
-- Counter values
-
-## State Transitions
-
-### Role Assignment Flow
-1. Admin creates role with permissions
-2. Admin assigns role to address with optional expiry
-3. Address gains permissions from role
-4. Role can be revoked or expires automatically
-
-### Identity Change Flow
-1. User creates change request for DID
-2. Request enters pending verification state
-3. Verifier reviews and approves/rejects
-4. If approved, becomes ready to apply
-5. Admin applies change to identity record
-6. Change is recorded in history
-
-### Session Flow
-1. User creates session
-2. Session is active until expiry or revocation
-3. Session tracks last activity
-4. Expired sessions can be cleaned up
-
-## Security Features
-
-1. **Permission-Based Access**: All sensitive operations require specific permissions
-2. **Audit Trail**: Complete logging of all operations
-3. **Rate Limiting**: Prevent abuse through configurable rate limits
-4. **Time-Locked Actions**: Delay execution of critical operations
-5. **Multisig Support**: Require multiple signatures for important actions
-6. **Emergency Admin**: Temporary elevated privileges with expiration
-7. **Session Management**: Track and limit concurrent sessions
-8. **Change Request Limits**: Prevent spam through monthly limits
-
-## Integration
-
-### In App Initialization
-
-```go
-import (
-    identitykeeper "github.com/aequitas/aura/chain/x/identity/keeper"
-    identitymodule "github.com/aequitas/aura/chain/x/identity"
-    identitytypes "github.com/aequitas/aura/chain/x/identity/types"
-)
-
-// Create keeper
-identityKeeper := identitykeeper.NewKeeper(
-    storeService,
-    cdc,
-    authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-    logger,
-)
-
-// Create module
-identityModule := identitymodule.NewAppModule(cdc, identityKeeper)
+**Example**:
+```json
+{
+  "requester": "aura1...",
+  "target_did": "did:aura:...",
+  "metadata_hash": "sha256_hash_of_change_data",
+  "ir_id": "incident_response_id",
+  "proof_hash": "sha256_proof"
+}
 ```
 
-### CLI Usage Examples
+**Response**:
+```json
+{
+  "request_id": "req_123456"
+}
+```
 
+#### MsgSubmitAssistantProof
+AI assistant submits proof for identity verification.
+
+**Example**:
+```json
+{
+  "assistant": "aura1assistant...",
+  "request_id": "req_123456",
+  "proof_hash": "verification_proof_hash",
+  "confidence_delta": 50,
+  "success": true
+}
+```
+
+#### MsgApplyIdentityChange
+Apply an approved identity change.
+
+**Example**:
+```json
+{
+  "requester": "aura1...",
+  "request_id": "req_123456"
+}
+```
+
+#### MsgRejectIdentityChange
+Reject an identity change request.
+
+**Example**:
+```json
+{
+  "actor": "aura1admin...",
+  "request_id": "req_123456",
+  "reason": "Insufficient verification"
+}
+```
+
+#### MsgSuspendIdentityChanges
+Suspend all identity changes system-wide (authority only).
+
+**Example**:
+```json
+{
+  "authority": "aura1gov...",
+  "reason": "Security incident detected"
+}
+```
+
+### Role Management Operations
+
+#### MsgCreateRole
+Create a new role with permissions.
+
+**Example**:
+```json
+{
+  "creator": "aura1admin...",
+  "role_name": "operator",
+  "description": "System operator role",
+  "permissions": [
+    "manage_multisig",
+    "manage_timelock"
+  ]
+}
+```
+
+#### MsgAssignRole
+Assign a role to an address with optional expiration.
+
+**Example**:
+```json
+{
+  "assigner": "aura1admin...",
+  "address": "aura1user...",
+  "role_name": "operator",
+  "expires_at": "2025-12-31T23:59:59Z"
+}
+```
+
+#### MsgRevokeRole
+Revoke a role from an address.
+
+**Example**:
+```json
+{
+  "revoker": "aura1admin...",
+  "address": "aura1user...",
+  "role_name": "operator"
+}
+```
+
+### Multisig Operations
+
+#### MsgCreateMultisigWallet
+Create a new multisig wallet.
+
+**Example**:
+```json
+{
+  "creator": "aura1...",
+  "signers": [
+    "aura1signer1...",
+    "aura1signer2...",
+    "aura1signer3..."
+  ],
+  "threshold": 2,
+  "wallet_type": "WALLET_TYPE_INDIVIDUAL"
+}
+```
+
+**Response**:
+```json
+{
+  "wallet_id": "mswallet-aura1...-1702345678"
+}
+```
+
+#### MsgCreateMultisigProposal
+Create a proposal for multisig wallet action.
+
+**Example**:
+```json
+{
+  "proposer": "aura1signer1...",
+  "wallet_id": "mswallet-...",
+  "title": "Transfer funds to treasury",
+  "description": "Quarterly treasury allocation",
+  "payload": "base64_encoded_tx_data"
+}
+```
+
+**Response**:
+```json
+{
+  "proposal_id": "msprop-mswallet-...-1702345678"
+}
+```
+
+#### MsgSignMultisigProposal
+Sign a multisig proposal.
+
+**Example**:
+```json
+{
+  "signer": "aura1signer2...",
+  "proposal_id": "msprop-..."
+}
+```
+
+#### MsgExecuteMultisigProposal
+Execute an approved multisig proposal.
+
+**Example**:
+```json
+{
+  "executor": "aura1signer1...",
+  "proposal_id": "msprop-..."
+}
+```
+
+### Time-Locked Operations
+
+#### MsgProposeTimeLockedAction
+Propose an action with mandatory delay.
+
+**Example**:
+```json
+{
+  "proposer": "aura1admin...",
+  "action_type": "parameter_change",
+  "payload": "base64_encoded_action_data",
+  "delay_seconds": 172800
+}
+```
+
+**Response**:
+```json
+{
+  "action_id": "tlaction-...",
+  "executable_at": "2025-12-11T10:00:00Z"
+}
+```
+
+#### MsgExecuteTimeLockedAction
+Execute a time-locked action after delay expires.
+
+**Example**:
+```json
+{
+  "executor": "aura1admin...",
+  "action_id": "tlaction-..."
+}
+```
+
+#### MsgCancelTimeLockedAction
+Cancel a pending time-locked action.
+
+**Example**:
+```json
+{
+  "canceller": "aura1admin...",
+  "action_id": "tlaction-..."
+}
+```
+
+### Emergency Operations
+
+#### MsgActivateEmergencyAdmin
+Activate an emergency admin with temporary privileges.
+
+**Example**:
+```json
+{
+  "activator": "aura1gov...",
+  "admin_address": "aura1emergency...",
+  "privileges": [
+    "emergency_pause",
+    "emergency_upgrade"
+  ],
+  "expires_at": "2025-12-10T10:00:00Z"
+}
+```
+
+#### MsgDeactivateEmergencyAdmin
+Deactivate an emergency admin.
+
+**Example**:
+```json
+{
+  "deactivator": "aura1gov...",
+  "admin_address": "aura1emergency..."
+}
+```
+
+### Validator Operations
+
+#### MsgRotateValidatorKey
+Rotate validator consensus public key.
+
+**Example**:
+```json
+{
+  "validator_address": "auravaloper1...",
+  "new_consensus_pubkey": "auravalconspub1..."
+}
+```
+
+### Session Operations
+
+#### MsgCreateSession
+Create a new user session.
+
+**Example**:
+```json
+{
+  "address": "aura1...",
+  "device_fingerprint": "device_hash_123",
+  "ip_address": "192.168.1.1",
+  "metadata": {
+    "user_agent": "Mozilla/5.0...",
+    "platform": "Linux"
+  }
+}
+```
+
+**Response**:
+```json
+{
+  "session_id": "sess_abc123...",
+  "expires_at": "2025-12-09T11:00:00Z"
+}
+```
+
+#### MsgEndSession
+End an active session.
+
+**Example**:
+```json
+{
+  "address": "aura1...",
+  "session_id": "sess_abc123..."
+}
+```
+
+### GDPR Operations
+
+#### MsgEraseIdentity
+Request identity erasure (GDPR Right to Erasure).
+
+**Example**:
+```json
+{
+  "requester": "aura1...",
+  "did": "did:aura:...",
+  "reason": "User requested data deletion"
+}
+```
+
+**Response**:
+```json
+{
+  "erased_at": "2025-12-09T10:00:00Z"
+}
+```
+
+#### MsgRotateDIDKey
+Rotate DID verification key with grace period.
+
+**Example**:
+```json
+{
+  "initiator": "aura1...",
+  "did": "did:aura:...",
+  "new_verification_method": "new_pubkey_id",
+  "reason": "Key compromise suspected"
+}
+```
+
+**Response**:
+```json
+{
+  "rotation_time": "2025-12-09T10:00:00Z",
+  "grace_period_end": "2025-12-16T10:00:00Z"
+}
+```
+
+### Admin Operations
+
+#### MsgUpdateParams
+Update module parameters (authority only).
+
+**Example**:
+```json
+{
+  "authority": "aura1gov...",
+  "params": {
+    "auth": {
+      "session_timeout": "3600s",
+      "multisig_proposal_expiry_seconds": 604800,
+      "max_roles_per_address": 10
+    },
+    "change": {
+      "verification_threshold": 2,
+      "change_cooldown_seconds": 86400
+    }
+  }
+}
+```
+
+## Queries
+
+### QueryParams
+Get module parameters.
+
+**Request**:
 ```bash
-# Create a new role
-aurad tx identity create-role moderator "manage_session,verify_identity" "Moderator role" --from admin
-
-# Assign role to address
-aurad tx identity assign-role aura1... moderator --from admin
-
-# Create identity change request
-aurad tx identity create-change-request did:aura:123 ir-v1 hash123 --from user
-
-# Submit verification
-aurad tx identity submit-verification req-1 true --from verifier
-
-# Apply approved change
-aurad tx identity apply-change req-1 --from admin
-
-# Query identity record
-aurad query identity identity did:aura:123
-
-# Query change history
-aurad query identity change-history did:aura:123
-
-# Query module parameters
 aurad query identity params
 ```
 
-## Migration from Separate Modules
+**Response**:
+```json
+{
+  "params": {
+    "auth": {
+      "session_timeout": "3600s",
+      "multisig_proposal_expiry_seconds": 604800
+    },
+    "change": {
+      "verification_threshold": 2
+    }
+  }
+}
+```
 
-This module consolidates:
+### QueryIdentityRecord
+Query identity record by DID.
 
-- **auth module**: All role, permission, session, multisig, time-lock, emergency admin, and validator rotation functionality
-- **identitychange module**: All identity record, change request, and history management functionality
+**Request**:
+```bash
+aurad query identity identity-record did:aura:mainnet:abc123
+```
 
-When migrating:
-1. Export genesis state from both modules
-2. Combine into consolidated identity genesis state
-3. Initialize identity module with combined state
-4. Remove old auth and identitychange modules
+**Response**:
+```json
+{
+  "record": {
+    "did": "did:aura:mainnet:abc123",
+    "controller": "aura1...",
+    "status": "active",
+    "created_at": "2025-01-01T00:00:00Z",
+    "metadata": {}
+  }
+}
+```
 
-## Future Enhancements
+### QueryChangeRequest
+Query a change request by ID.
 
-Potential future additions:
-- Biometric authentication integration
-- Hardware security module (HSM) support
-- Zero-knowledge proof verification
-- Advanced delegation mechanisms
-- Identity federation with external systems
-- Enhanced cross-chain identity verification
-- Automated identity recovery workflows
-- Machine learning-based fraud detection
+**Request**:
+```bash
+aurad query identity change-request req_123456
+```
 
-## Testing
+**Response**:
+```json
+{
+  "request": {
+    "id": "req_123456",
+    "requester": "aura1...",
+    "target_did": "did:aura:...",
+    "status": "pending",
+    "verifications_received": 1,
+    "verifications_required": 2
+  }
+}
+```
 
-The module should include comprehensive tests for:
-- Role and permission management
-- Identity change workflows
-- Session lifecycle
-- Multisig operations
-- Time-locked actions
-- Genesis import/export
-- Parameter validation
-- Audit logging
-- Rate limiting
+### QueryRole
+Query role by name.
 
-## Contributing
+**Request**:
+```bash
+aurad query identity role operator
+```
 
-When contributing to this module:
-1. Follow Cosmos SDK v0.50+ patterns
-2. Ensure all state is stored in KVStore (no in-memory maps)
-3. Add comprehensive tests for new features
-4. Update documentation
-5. Include audit logging for sensitive operations
-6. Validate all inputs
-7. Follow error handling best practices
+**Response**:
+```json
+{
+  "role": {
+    "name": "operator",
+    "permissions": ["manage_multisig", "manage_timelock"],
+    "description": "System operator role"
+  }
+}
+```
 
-## License
+### QueryRoleAssignments
+Query role assignments for an address.
 
-Copyright (c) Aura Blockchain
+**Request**:
+```bash
+aurad query identity role-assignments aura1...
+```
+
+**Response**:
+```json
+{
+  "assignments": [
+    {
+      "address": "aura1...",
+      "role_name": "operator",
+      "assigned_at": "2025-01-01T00:00:00Z",
+      "expires_at": "2025-12-31T23:59:59Z"
+    }
+  ]
+}
+```
+
+### QueryHasPermission
+Check if address has specific permission.
+
+**Request**:
+```bash
+aurad query identity has-permission aura1... manage_multisig
+```
+
+**Response**:
+```json
+{
+  "has_permission": true
+}
+```
+
+### QueryMultisigWallet
+Query multisig wallet by ID.
+
+**Request**:
+```bash
+aurad query identity multisig-wallet mswallet-...
+```
+
+**Response**:
+```json
+{
+  "wallet": {
+    "id": "mswallet-...",
+    "signers": ["aura1signer1...", "aura1signer2...", "aura1signer3..."],
+    "threshold": 2,
+    "created_at": "2025-01-01T00:00:00Z",
+    "wallet_type": "WALLET_TYPE_INDIVIDUAL"
+  }
+}
+```
+
+### QueryMultisigProposal
+Query multisig proposal by ID.
+
+**Request**:
+```bash
+aurad query identity multisig-proposal msprop-...
+```
+
+**Response**:
+```json
+{
+  "proposal": {
+    "id": "msprop-...",
+    "wallet_id": "mswallet-...",
+    "title": "Transfer funds",
+    "status": "pending",
+    "signatures": ["aura1signer1..."],
+    "expires_at": "2025-12-16T00:00:00Z"
+  }
+}
+```
+
+### QueryTimeLockedAction
+Query time-locked action by ID.
+
+**Request**:
+```bash
+aurad query identity time-locked-action tlaction-...
+```
+
+**Response**:
+```json
+{
+  "action": {
+    "id": "tlaction-...",
+    "action_type": "parameter_change",
+    "proposer": "aura1admin...",
+    "proposed_at": "2025-12-09T10:00:00Z",
+    "executable_at": "2025-12-11T10:00:00Z",
+    "status": "pending"
+  }
+}
+```
+
+### QueryEmergencyAdmin
+Query emergency admin by address.
+
+**Request**:
+```bash
+aurad query identity emergency-admin aura1emergency...
+```
+
+**Response**:
+```json
+{
+  "admin": {
+    "address": "aura1emergency...",
+    "privileges": ["emergency_pause", "emergency_upgrade"],
+    "activated_at": "2025-12-09T10:00:00Z",
+    "expires_at": "2025-12-10T10:00:00Z",
+    "is_active": true
+  }
+}
+```
+
+## Events
+
+| Event Type | Attributes | Description |
+|------------|------------|-------------|
+| `identity_change_requested` | `request_id`, `requester`, `target_did` | Identity change request created |
+| `assistant_proof_submitted` | `request_id`, `assistant`, `success` | Assistant verification submitted |
+| `identity_change_applied` | `request_id`, `did` | Identity change successfully applied |
+| `identity_change_rejected` | `request_id`, `reason` | Identity change request rejected |
+| `identity_changes_suspended` | `authority`, `reason` | All identity changes suspended |
+| `role_created` | `role_name`, `creator` | New role created |
+| `role_assigned` | `address`, `role_name`, `expires_at` | Role assigned to address |
+| `role_revoked` | `address`, `role_name` | Role revoked from address |
+| `multisig_wallet_created` | `wallet_id`, `threshold`, `signers` | Multisig wallet created |
+| `multisig_proposal_created` | `proposal_id`, `wallet_id`, `proposer` | Multisig proposal created |
+| `multisig_proposal_signed` | `proposal_id`, `signer`, `signatures_count` | Proposal signed |
+| `multisig_proposal_executed` | `proposal_id`, `executor` | Proposal executed |
+| `time_locked_action_proposed` | `action_id`, `action_type`, `delay_seconds` | Time-locked action proposed |
+| `time_locked_action_executed` | `action_id`, `executor` | Time-locked action executed |
+| `time_locked_action_cancelled` | `action_id`, `canceller` | Time-locked action cancelled |
+| `emergency_admin_activated` | `admin_address`, `privileges`, `expires_at` | Emergency admin activated |
+| `emergency_admin_deactivated` | `admin_address` | Emergency admin deactivated |
+| `validator_key_rotated` | `validator_address`, `new_consensus_pubkey` | Validator key rotated |
+| `session_created` | `session_id`, `address`, `expires_at` | User session created |
+| `session_ended` | `session_id`, `address` | User session ended |
+| `identity_erased` | `did`, `requester`, `erased_at` | Identity data erased (GDPR) |
+| `did_key_rotated` | `did`, `rotation_time`, `grace_period_end` | DID key rotated |
+
+## Errors
+
+| Code | Name | Description |
+|------|------|-------------|
+| 1 | `ErrInvalidDID` | DID format is invalid |
+| 2 | `ErrIdentityNotFound` | Identity record not found |
+| 3 | `ErrUnauthorized` | Caller lacks required permission |
+| 4 | `ErrChangeRequestNotFound` | Change request ID not found |
+| 5 | `ErrInsufficientVerifications` | Not enough verifications for change |
+| 6 | `ErrIdentityChangesSuspended` | Identity changes globally suspended |
+| 7 | `ErrRoleNotFound` | Role name not found |
+| 8 | `ErrRoleAlreadyExists` | Role name already exists |
+| 9 | `ErrRoleAssignmentNotFound` | Role assignment not found |
+| 10 | `ErrInvalidPermission` | Permission name invalid |
+| 11 | `ErrMultisigWalletNotFound` | Multisig wallet not found |
+| 12 | `ErrMultisigProposalNotFound` | Multisig proposal not found |
+| 13 | `ErrNotWalletSigner` | Address not in wallet signers list |
+| 14 | `ErrProposalNotApproved` | Proposal threshold not met |
+| 15 | `ErrProposalExpired` | Proposal expired |
+| 16 | `ErrTimeLockedActionNotFound` | Time-locked action not found |
+| 17 | `ErrActionDelayNotElapsed` | Time-lock delay not elapsed yet |
+| 18 | `ErrActionNotPending` | Action not in pending status |
+| 19 | `ErrEmergencyAdminNotFound` | Emergency admin not found |
+| 20 | `ErrEmergencyAdminExpired` | Emergency admin expired |
+| 21 | `ErrSessionNotFound` | Session ID not found |
+| 22 | `ErrSessionExpired` | Session expired |
+| 23 | `ErrInvalidThreshold` | Multisig threshold invalid |
+| 24 | `ErrAlreadySigned` | Signer already signed proposal |
+| 25 | `ErrIdentityAlreadyExists` | Identity DID already exists |
+
+## CLI Examples
+
+### Create a multisig wallet
+```bash
+aurad tx identity create-multisig-wallet \
+  --signers aura1signer1,aura1signer2,aura1signer3 \
+  --threshold 2 \
+  --wallet-type individual \
+  --from mykey
+```
+
+### Create a multisig proposal
+```bash
+aurad tx identity create-multisig-proposal \
+  --wallet-id mswallet-... \
+  --title "Treasury allocation" \
+  --description "Q1 2025 allocation" \
+  --payload $(cat proposal.json | base64) \
+  --from signer1
+```
+
+### Sign a multisig proposal
+```bash
+aurad tx identity sign-multisig-proposal \
+  --proposal-id msprop-... \
+  --from signer2
+```
+
+### Propose a time-locked action
+```bash
+aurad tx identity propose-time-locked-action \
+  --action-type parameter_change \
+  --payload $(cat action.json | base64) \
+  --delay-seconds 172800 \
+  --from admin
+```
+
+### Create a session
+```bash
+aurad tx identity create-session \
+  --device-fingerprint device_hash_123 \
+  --ip-address 192.168.1.1 \
+  --from mykey
+```
+
+### Rotate DID key
+```bash
+aurad tx identity rotate-did-key \
+  --did did:aura:mainnet:abc123 \
+  --new-verification-method new_pubkey_id \
+  --reason "Scheduled rotation" \
+  --from mykey
+```
+
+## Integration Notes
+
+### For Wallet Developers
+
+1. **Session Management**: Always create a session when user logs in, check expiration before operations
+2. **Multisig Support**: Implement UI for proposal creation, signing, and execution workflows
+3. **Time-Locked Actions**: Display countdown timers for pending actions
+4. **Role Display**: Show user's roles and permissions in account view
+5. **DID Resolution**: Use QueryIdentityRecord to resolve DIDs to addresses
+
+### Security Considerations
+
+- **Multisig Threshold**: Ensure threshold ≤ number of signers
+- **Time-Lock Duration**: Use appropriate delays for sensitive operations (e.g., 48+ hours for parameter changes)
+- **Emergency Admin**: Limit activation to true emergencies, set short expiration times
+- **Session Timeout**: Default 1 hour, adjust based on risk profile
+- **Permission Checks**: Always verify permissions before allowing UI actions
+
+### Best Practices
+
+- **Role Management**: Use least-privilege principle, create specific roles for specific tasks
+- **Audit Trail**: All operations emit events for off-chain indexing and monitoring
+- **Proposal Expiration**: Set reasonable expiration times for multisig proposals (default 7 days)
+- **Key Rotation**: Implement grace periods for key rotation to allow dependent systems to update
+- **GDPR Compliance**: Implement erasure workflows, store PII off-chain

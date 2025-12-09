@@ -46,7 +46,7 @@ type Marshallable interface {
 //   if !found {
 //       return nil, types.ErrPoolNotFound
 //   }
-func GetObject[T any](ctx sdk.Context, store storetypes.KVStore, cdc codec.BinaryCodec, key []byte, obj T) (T, bool, error) {
+func GetObject[T codec.ProtoMarshaler](ctx sdk.Context, store storetypes.KVStore, cdc codec.BinaryCodec, key []byte, obj T) (T, bool, error) {
 	bz := store.Get(key)
 	if bz == nil {
 		var zero T
@@ -54,7 +54,7 @@ func GetObject[T any](ctx sdk.Context, store storetypes.KVStore, cdc codec.Binar
 	}
 
 	// obj must be a pointer for Unmarshal to work
-	if err := cdc.Unmarshal(bz, obj.(codec.ProtoMarshaler)); err != nil {
+	if err := cdc.Unmarshal(bz, obj); err != nil {
 		var zero T
 		return zero, false, fmt.Errorf("failed to unmarshal object: %w", err)
 	}
