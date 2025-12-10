@@ -122,7 +122,7 @@ func (suite *InvariantsTestSuite) TestRateLimitValidityInvariant_NilWindow() {
 
 	msg, broken := RateLimitValidityInvariant(&suite.Keeper)(ctx)
 	suite.True(broken, "zero time window should break invariant")
-	suite.Contains(msg, "nil window_start")
+	suite.Contains(msg, "zero window_start")
 }
 
 func (suite *InvariantsTestSuite) TestParamsInvariant_NilConnectionConfig() {

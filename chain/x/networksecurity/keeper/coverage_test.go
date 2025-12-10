@@ -3,8 +3,6 @@ package keeper_test
 import (
 	"time"
 
-	"google.golang.org/protobuf/types/known/timestamppb"
-
 	"github.com/aequitas/aura/chain/x/networksecurity/types"
 )
 

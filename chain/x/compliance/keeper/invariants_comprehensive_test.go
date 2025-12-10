@@ -28,12 +28,13 @@ func (suite *InvariantsComprehensiveTestSuite) TestKYCRecordConsistencyInvariant
 	suite.False(broken)
 	suite.Empty(msg)
 
+	expiresAt := time.Now().Add(48 * time.Hour)
 	record := &types.KYCRecord{
-		Address:        suite.addr("kyc"),
+		Address:       suite.addr("kyc"),
 		PiiCommitment: make([]byte, 32),
-		KycLevel:       types.KYCLevel_KYC_LEVEL_ADVANCED,
-		VerifiedAt:     timestamppb.Now(),
-		ExpiresAt:      timestamppb.New(time.Now().Add(48 * time.Hour)),
+		KycLevel:      types.KYCLevel_KYC_LEVEL_ADVANCED,
+		VerifiedAt:    time.Now(),
+		ExpiresAt:     &expiresAt,
 	}
 	suite.Require().NoError(suite.Keeper.SetKYCRecord(ctx, record))
 

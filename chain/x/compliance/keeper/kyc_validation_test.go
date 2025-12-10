@@ -36,8 +36,7 @@ func TestIsKYCExpired_NotExpired(t *testing.T) {
 		KycLevel:   types.KYCLevel_KYC_LEVEL_BASIC,
 		Provider:   "test_provider",
 		VerifiedAt: now,
-		expiresAt := expiresAt
-		ExpiresAt:  &expiresAt,
+		ExpiresAt:  expiresAt,
 	}
 
 	err := keeper.SetKYCRecord(ctx, record)
@@ -61,8 +60,7 @@ func TestIsKYCExpired_Expired(t *testing.T) {
 		KycLevel:   types.KYCLevel_KYC_LEVEL_BASIC,
 		Provider:   "test_provider",
 		VerifiedAt: now.Add(-365 * 24 * time.Hour),
-		expiresAt := expiresAt
-		ExpiresAt:  &expiresAt,
+		ExpiresAt:  expiresAt,
 	}
 
 	err := keeper.SetKYCRecord(ctx, record)
@@ -85,8 +83,7 @@ func TestIsKYCExpired_ExactlyAtExpiry(t *testing.T) {
 		KycLevel:   types.KYCLevel_KYC_LEVEL_BASIC,
 		Provider:   "test_provider",
 		VerifiedAt: now.Add(-365 * 24 * time.Hour),
-		expiresAt := now
-		ExpiresAt:  &expiresAt,
+		ExpiresAt:  now,
 	}
 
 	err := keeper.SetKYCRecord(ctx, record)
