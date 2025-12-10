@@ -89,11 +89,18 @@ func (qs queryServer) Codes(goCtx context.Context, req *types.QueryCodesRequest)
 
 		ctx.Logger().Info("Found code", "code_id", codeID, "creator", wasmCodeInfo.Creator)
 
-		// Convert wasmd CodeInfo to our CodeInfo type
+		// Convert wasmd types to our proto types
+		// Note: wasmd CodeInfo has fewer fields than our proto, so we set defaults
 		codeInfo := types.CodeInfo{
-			CodeId:   codeID,
+			CodeHash: wasmCodeInfo.CodeHash,
 			Creator:  wasmCodeInfo.Creator,
-			DataHash: wasmCodeInfo.CodeHash,
+			InstantiateConfig: types.AccessConfig{
+				Permission: types.AccessType(wasmCodeInfo.InstantiateConfig.Permission),
+				Addresses:  wasmCodeInfo.InstantiateConfig.Addresses,
+			},
+			CreatedAt: 0,      // wasmd doesn't track this in CodeInfo
+			Source:    "",     // wasmd doesn't track this in CodeInfo
+			Builder:   "",     // wasmd doesn't track this in CodeInfo
 		}
 		codeInfos = append(codeInfos, codeInfo)
 	}
