@@ -1251,13 +1251,13 @@ func TestCanProcessData_WithWithdrawnConsent(t *testing.T) {
 
 	// Set withdrawn consent
 	now := time.Now()
+	withdrawnAt := now
 	consent := &types.GDPRConsent{
-		Address:             address,
-		ConsentType:         purpose,
-		Consented:           false,
-		ConsentGivenAt: now,
-		withdrawnAt := now
-		ConsentWithdrawnAt:  &withdrawnAt,
+		Address:            address,
+		ConsentType:        purpose,
+		Consented:          false,
+		ConsentGivenAt:     now,
+		ConsentWithdrawnAt: &withdrawnAt,
 	}
 
 	err := keeper.SetGDPRConsent(ctx, consent)
@@ -1415,13 +1415,13 @@ func TestCanProcessData_MultipleConsents(t *testing.T) {
 	require.NoError(t, err)
 
 	// Set consent for marketing (withdrawn)
+	withdrawnAt2 := now
 	consent2 := &types.GDPRConsent{
 		Address:            address,
 		ConsentType:        "marketing",
 		Consented:          false,
-		ConsentGivenAt: now,
-		withdrawnAt := now
-		ConsentWithdrawnAt:  &withdrawnAt,
+		ConsentGivenAt:     now,
+		ConsentWithdrawnAt: &withdrawnAt2,
 	}
 	err = keeper.SetGDPRConsent(ctx, consent2)
 	require.NoError(t, err)

@@ -779,35 +779,35 @@ func TestMultipleVerificationKeys(t *testing.T) {
 
 	for _, pt := range proofTypes {
 		t.Run("verify_"+string(pt), func(t *testing.T) {
-			var proof []byte
-			var err error
-
 			switch pt {
 			case ZKProofTypeSimple:
+				// Simple proof can be generated and verified
 				salt := randomBytes(t, 32)
-				proof, err = k.GenerateSimpleProof(ctx, publicInputs, salt)
-				require.NoError(t, err)
-			default:
-				// For placeholder implementations, create a proof with correct commitment
-				vk, err := k.GetZKVerificationKey(ctx, pt)
+				proof, err := k.GenerateSimpleProof(ctx, publicInputs, salt)
 				require.NoError(t, err)
 
-				proof = make([]byte, 128)
-				hasher := sha256.New()
-				hasher.Write(publicInputs)
-				hasher.Write(vk.KeyData)
-				if pt == ZKProofTypePLONK {
-					hasher.Write([]byte("plonk"))
-				} else if pt == ZKProofTypeBulletProofs {
-					hasher.Write([]byte("bulletproof"))
-				}
-				commitment := hasher.Sum(nil)
-				copy(proof[96:], commitment)
+				verified, err := k.VerifyZKProof(ctx, pt, proof, publicInputs)
+				require.NoError(t, err)
+				require.True(t, verified, "Valid simple proof should verify")
+
+			case ZKProofTypeBulletProofs:
+				// BulletProofs are not yet implemented
+				// Attempting to verify should return an unsupported error
+				proof := randomBytes(t, 128)
+				_, err := k.VerifyZKProof(ctx, pt, proof, publicInputs)
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "not yet implemented")
+
+			case ZKProofTypeGroth16, ZKProofTypePLONK:
+				// Groth16 and PLONK require properly formatted proofs from gnark
+				// Random bytes will fail deserialization, which is expected
+				// We test that invalid proofs are properly rejected
+				proof := randomBytes(t, 128)
+				_, err := k.VerifyZKProof(ctx, pt, proof, publicInputs)
+				// Should error during deserialization of invalid proof
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "failed to deserialize")
 			}
-
-			verified, err := k.VerifyZKProof(ctx, pt, proof, publicInputs)
-			require.NoError(t, err)
-			require.True(t, verified, "Valid proof for "+string(pt)+" should verify")
 		})
 	}
 }
