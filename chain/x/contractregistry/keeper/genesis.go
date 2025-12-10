@@ -15,19 +15,74 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data *pb.GenesisState) error {
 		return types.ErrInvalidRequest
 	}
 
+	// Validate params
+	if err := types.ValidateParams(&data.Params); err != nil {
+		return err
+	}
+
 	// Set params (required)
 	if err := k.SetParams(ctx, &data.Params); err != nil {
 		return err
 	}
 
-	// Import contracts
+	// Validate and import contracts
 	for i := range data.Contracts {
+		// Validate contract before importing
+		if err := validateContractInfo(&data.Contracts[i]); err != nil {
+			return err
+		}
 		k.SetContractInfo(ctx, &data.Contracts[i])
 	}
 
-	// Import metrics
+	// Validate and import metrics
 	for i := range data.Metrics {
+		// Validate metrics before importing
+		if err := validateContractMetrics(&data.Metrics[i]); err != nil {
+			return err
+		}
 		k.SetContractMetrics(ctx, &data.Metrics[i])
+	}
+
+	return nil
+}
+
+// validateContractInfo validates a contract info structure
+func validateContractInfo(info *pb.ContractInfo) error {
+	if info == nil {
+		return types.ErrInvalidRequest
+	}
+
+	if info.Address == "" {
+		return types.ErrInvalidRequest
+	}
+
+	if info.Creator == "" {
+		return types.ErrInvalidRequest
+	}
+
+	if info.Name == "" {
+		return types.ErrInvalidRequest
+	}
+
+	if info.Version == "" {
+		return types.ErrInvalidRequest
+	}
+
+	if info.CreatedAt == nil {
+		return types.ErrInvalidRequest
+	}
+
+	return nil
+}
+
+// validateContractMetrics validates contract metrics structure
+func validateContractMetrics(metrics *pb.ContractMetrics) error {
+	if metrics == nil {
+		return types.ErrInvalidRequest
+	}
+
+	if metrics.ContractAddress == "" {
+		return types.ErrInvalidRequest
 	}
 
 	return nil
