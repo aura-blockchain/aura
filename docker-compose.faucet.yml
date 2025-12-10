@@ -1,0 +1,217 @@
+version: '3.8'
+
+# ============================================================================
+# AURA Testnet Faucet Service
+# ============================================================================
+# This docker-compose file deploys the faucet service integrated with
+# the multi-validator testnet (aura-local-4).
+#
+# Usage:
+#   1. Initialize and start the testnet first:
+#      ./scripts/testnet-init.sh
+#      docker-compose -f docker-compose.testnet.yml up -d
+#
+#   2. Create and fund the faucet wallet:
+#      ./scripts/faucet-setup.sh
+#
+#   3. Start the faucet service:
+#      docker-compose -f docker-compose.faucet.yml up -d
+#
+#   4. Access the faucet:
+#      Web UI: http://localhost:8081
+#      API: http://localhost:8081/api/v1
+#
+# ============================================================================
+
+services:
+  # ==========================================================================
+  # PostgreSQL Database for Faucet Request Tracking
+  # ==========================================================================
+  faucet-postgres:
+    image: postgres:15-alpine
+    container_name: aura-faucet-db
+    restart: unless-stopped
+    mem_limit: 512m
+    memswap_limit: 768m
+    environment:
+      POSTGRES_USER: faucet
+      POSTGRES_PASSWORD: ${FAUCET_DB_PASSWORD:-faucet_secure_password_change_me}
+      POSTGRES_DB: faucet
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=en_US.UTF-8"
+    volumes:
+      - faucet-postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"  # Use 5433 to avoid conflict with system postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U faucet"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - faucet-internal
+      - aura-testnet
+    labels:
+      - "aura.service=faucet"
+      - "aura.component=database"
+
+  # ==========================================================================
+  # Redis for Rate Limiting
+  # ==========================================================================
+  faucet-redis:
+    image: redis:7-alpine
+    container_name: aura-faucet-redis
+    restart: unless-stopped
+    mem_limit: 256m
+    memswap_limit: 384m
+    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
+    volumes:
+      - faucet-redis-data:/data
+    ports:
+      - "6380:6379"  # Use 6380 to avoid conflict with system redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - faucet-internal
+    labels:
+      - "aura.service=faucet"
+      - "aura.component=cache"
+
+  # ==========================================================================
+  # Faucet Backend API Service
+  # ==========================================================================
+  faucet-backend:
+    build:
+      context: ./faucet-service/backend
+      dockerfile: Dockerfile
+      args:
+        GO_VERSION: "1.23.1"
+    image: aura-faucet-backend:latest
+    container_name: aura-faucet-backend
+    restart: unless-stopped
+    mem_limit: 512m
+    memswap_limit: 768m
+    cpus: 1
+    environment:
+      # Server configuration
+      PORT: "8080"
+      ENVIRONMENT: "${FAUCET_ENVIRONMENT:-development}"
+      CORS_ORIGINS: "${FAUCET_CORS_ORIGINS:-*}"
+
+      # Blockchain configuration (connects to validator-1)
+      NODE_RPC: "http://aura-validator-1:26657"
+      CHAIN_ID: "aura-local-4"
+      FAUCET_MNEMONIC: "${FAUCET_MNEMONIC}"
+      FAUCET_ADDRESS: "${FAUCET_ADDRESS}"
+      DENOM: "uaura"
+      AMOUNT_PER_REQUEST: "${FAUCET_AMOUNT_PER_REQUEST:-100000000}"  # 100 AURA
+
+      # Database configuration
+      DATABASE_URL: "postgres://faucet:${FAUCET_DB_PASSWORD:-faucet_secure_password_change_me}@faucet-postgres:5432/faucet?sslmode=disable"
+
+      # Redis configuration
+      REDIS_URL: "redis://faucet-redis:6379/0"
+
+      # Rate limiting (more permissive for testnet)
+      RATE_LIMIT_PER_IP: "${FAUCET_RATE_LIMIT_IP:-20}"
+      RATE_LIMIT_PER_ADDRESS: "${FAUCET_RATE_LIMIT_ADDR:-3}"
+      RATE_LIMIT_WINDOW_HOURS: "${FAUCET_RATE_WINDOW:-24}"
+
+      # Captcha (optional for local testnet)
+      HCAPTCHA_SECRET: "${FAUCET_HCAPTCHA_SECRET:-}"
+
+      # Transaction settings
+      GAS_LIMIT: "200000"
+      GAS_PRICE: "0.025uaura"
+      TRANSACTION_MEMO: "AURA Local Testnet Faucet"
+
+      # Logging
+      LOG_LEVEL: "${FAUCET_LOG_LEVEL:-info}"
+    ports:
+      - "8081:8080"  # Use 8081 to avoid conflicts
+    depends_on:
+      faucet-postgres:
+        condition: service_healthy
+      faucet-redis:
+        condition: service_healthy
+    volumes:
+      - ./faucet-service/frontend:/app/frontend:ro
+    networks:
+      - faucet-internal
+      - aura-testnet  # Connect to testnet network to reach validator-1
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      - "aura.service=faucet"
+      - "aura.component=backend"
+      - "aura.network=testnet"
+
+  # ==========================================================================
+  # Nginx Reverse Proxy (Optional - for production deployment)
+  # ==========================================================================
+  faucet-nginx:
+    image: nginx:alpine
+    container_name: aura-faucet-nginx
+    restart: unless-stopped
+    mem_limit: 128m
+    memswap_limit: 192m
+    ports:
+      - "8082:80"
+      - "8443:443"
+    volumes:
+      - ./faucet-service/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./faucet-service/frontend:/usr/share/nginx/html/frontend:ro
+      - ./ssl:/etc/nginx/ssl:ro  # For SSL certificates
+    depends_on:
+      - faucet-backend
+    networks:
+      - faucet-internal
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    labels:
+      - "aura.service=faucet"
+      - "aura.component=proxy"
+    profiles:
+      - production  # Only start with --profile production
+
+# ============================================================================
+# Docker Volumes - Persistent Storage
+# ============================================================================
+volumes:
+  faucet-postgres-data:
+    driver: local
+    labels:
+      - "aura.service=faucet"
+      - "aura.component=database"
+  faucet-redis-data:
+    driver: local
+    labels:
+      - "aura.service=faucet"
+      - "aura.component=cache"
+
+# ============================================================================
+# Network Configuration
+# ============================================================================
+networks:
+  # Internal network for faucet services
+  faucet-internal:
+    driver: bridge
+    labels:
+      - "aura.service=faucet"
+      - "aura.internal=true"
+
+  # External network to connect to testnet validators
+  aura-testnet:
+    external: true
+    name: aura_aura-testnet
