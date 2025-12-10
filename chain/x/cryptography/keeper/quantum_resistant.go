@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"context"
-	"crypto/rand"
 	"fmt"
 	"time"
 
