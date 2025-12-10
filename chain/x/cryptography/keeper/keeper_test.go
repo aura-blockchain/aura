@@ -250,10 +250,12 @@ func TestQuantumResistantKeys(t *testing.T) {
 		t.Run("Generate "+algo.String(), func(t *testing.T) {
 			expiresAt := time.Now().Add(365 * 24 * time.Hour)
 
-			keyID, publicKey, err := k.GenerateQuantumResistantKey(
+			publicKey := GenerateDummyQuantumPublicKey(algo)
+			keyID, err := k.RegisterQuantumResistantKey(
 				ctx,
 				"creator",
 				algo,
+				publicKey,
 				&expiresAt,
 			)
 

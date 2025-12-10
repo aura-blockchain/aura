@@ -315,22 +315,25 @@ func TestMsgServer(t *testing.T) {
 
 	t.Run("GenerateQuantumResistantKey - success", func(t *testing.T) {
 		expiresAt := time.Now().Add(365 * 24 * time.Hour)
+		publicKey := GenerateDummyQuantumPublicKey(cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_DILITHIUM)
 		msg := &cryptoproto.MsgGenerateQuantumResistantKey{
 			Creator:   testCreatorAddr,
 			Algorithm: cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_DILITHIUM,
+			PublicKey: publicKey,
 			ExpiresAt: &expiresAt,
 		}
 
 		resp, err := msgServer.GenerateQuantumResistantKey(ctx, msg)
 		require.NoError(t, err)
 		require.NotEmpty(t, resp.KeyId)
-		require.NotEmpty(t, resp.PublicKey)
 	})
 
 	t.Run("GenerateQuantumResistantKey - nil expires_at", func(t *testing.T) {
+		publicKey := GenerateDummyQuantumPublicKey(cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_KYBER)
 		msg := &cryptoproto.MsgGenerateQuantumResistantKey{
 			Creator:   testCreatorAddr,
 			Algorithm: cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_KYBER,
+			PublicKey: publicKey,
 			ExpiresAt: nil,
 		}
 

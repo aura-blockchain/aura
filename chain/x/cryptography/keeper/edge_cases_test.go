@@ -95,7 +95,8 @@ func TestEdgeCases(t *testing.T) {
 	t.Run("GetQuantumResistantKey - not in cache, load from store", func(t *testing.T) {
 		k2, ctx2 := setupKeeper(t)
 
-		keyID, _, err := k2.GenerateQuantumResistantKey(ctx2, "creator", cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_DILITHIUM, nil)
+		publicKey := GenerateDummyQuantumPublicKey(cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_DILITHIUM)
+		keyID, err := k2.RegisterQuantumResistantKey(ctx2, "creator", cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_DILITHIUM, publicKey, nil)
 		require.NoError(t, err)
 
 		// Create new keeper and set the key
@@ -207,7 +208,8 @@ func TestEdgeCases(t *testing.T) {
 	})
 
 	t.Run("RotateQuantumResistantKey - non-existent key", func(t *testing.T) {
-		_, _, err := k.RotateQuantumResistantKey(ctx, "non-existent", nil)
+		publicKey := GenerateDummyQuantumPublicKey(cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_DILITHIUM)
+		_, err := k.RotateQuantumResistantKey(ctx, "non-existent", publicKey, nil)
 		require.Error(t, err)
 	})
 

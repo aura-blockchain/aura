@@ -107,9 +107,11 @@ func TestSignerVerification(t *testing.T) {
 
 		// Test GenerateQuantumResistantKey
 		expiresAtQ := time.Now().Add(365 * 24 * time.Hour)
+		publicKey := GenerateDummyQuantumPublicKey(cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_KYBER)
 		quantumMsg := &cryptoproto.MsgGenerateQuantumResistantKey{
 			Creator:   validUser,
 			Algorithm: cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_KYBER,
+			PublicKey: publicKey,
 			ExpiresAt: &expiresAtQ,
 		}
 		quantumResp, err := msgServer.GenerateQuantumResistantKey(ctx, quantumMsg)
@@ -385,16 +387,17 @@ func TestSecurityAcrossAllFunctions(t *testing.T) {
 
 	t.Run("GenerateQuantumResistantKey requires valid signer", func(t *testing.T) {
 		expiresAt := time.Now().Add(365 * 24 * time.Hour)
+		publicKey := GenerateDummyQuantumPublicKey(cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_KYBER)
 		msg := &cryptoproto.MsgGenerateQuantumResistantKey{
 			Creator:   validUser,
 			Algorithm: cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_KYBER,
+			PublicKey: publicKey,
 			ExpiresAt: &expiresAt,
 		}
 
 		resp, err := msgServer.GenerateQuantumResistantKey(ctx, msg)
 		require.NoError(t, err)
 		require.NotEmpty(t, resp.KeyId)
-		require.NotEmpty(t, resp.PublicKey)
 	})
 
 	t.Run("AddCertificatePin requires valid signer", func(t *testing.T) {

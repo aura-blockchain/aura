@@ -124,7 +124,8 @@ func TestQueryServer(t *testing.T) {
 	})
 
 	t.Run("QuantumResistantKey - success", func(t *testing.T) {
-		keyID, _, err := k.GenerateQuantumResistantKey(ctx, "creator", cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_DILITHIUM, nil)
+		publicKey := GenerateDummyQuantumPublicKey(cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_DILITHIUM)
+		keyID, err := k.RegisterQuantumResistantKey(ctx, "creator", cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_DILITHIUM, publicKey, nil)
 		require.NoError(t, err)
 
 		req := &cryptoproto.QueryQuantumResistantKeyRequest{
