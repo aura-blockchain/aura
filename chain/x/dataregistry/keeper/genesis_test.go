@@ -2,11 +2,13 @@ package keeper_test
 
 import (
 	"testing"
+	"time"
 
 	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 	"github.com/aequitas/aura/chain/x/dataregistry/keeper"
 	"github.com/aequitas/aura/chain/x/dataregistry/params"
 	"github.com/aequitas/aura/chain/x/dataregistry/types"
+	gogotypes "github.com/cosmos/gogoproto/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -27,6 +29,7 @@ func TestInitGenesis(t *testing.T) {
 
 	// Create genesis state with sample data
 	defaultParams := types.DefaultParams()
+	now, _ := gogotypes.TimestampProto(time.Now())
 	genesis := types.GenesisState{
 		Params: &defaultParams,
 		DataItems: []*types.DataItem{
@@ -37,6 +40,10 @@ func TestInitGenesis(t *testing.T) {
 				ContentHash:     []byte("hash1"),
 				StorageLocation: "ipfs://genesis1",
 				Status:          types.DataItemStatus_DATA_ITEM_STATUS_PENDING_VERIFICATION,
+				CreatedAt:       now,
+				AccessPolicy: &types.AccessPolicy{
+					Mode: types.AccessMode_ACCESS_MODE_PRIVATE,
+				},
 			},
 			{
 				DataId:          "genesis-data-2",
@@ -45,6 +52,10 @@ func TestInitGenesis(t *testing.T) {
 				ContentHash:     []byte("hash2"),
 				StorageLocation: "ipfs://genesis2",
 				Status:          types.DataItemStatus_DATA_ITEM_STATUS_VERIFIED,
+				CreatedAt:       now,
+				AccessPolicy: &types.AccessPolicy{
+					Mode: types.AccessMode_ACCESS_MODE_PRIVATE,
+				},
 			},
 		},
 		NextDataId: 100,
@@ -155,6 +166,7 @@ func TestGenesisRoundTrip(t *testing.T) {
 	// Create original genesis state
 	defaultParams := types.DefaultParams()
 	defaultParams.MaxStorageBytes = 5000000
+	now, _ := gogotypes.TimestampProto(time.Now())
 	original := types.GenesisState{
 		Params: &defaultParams,
 		DataItems: []*types.DataItem{
@@ -167,6 +179,10 @@ func TestGenesisRoundTrip(t *testing.T) {
 				Status:          types.DataItemStatus_DATA_ITEM_STATUS_PENDING_VERIFICATION,
 				Title:           "Test Photo",
 				Tags:            []string{"test", "roundtrip"},
+				CreatedAt:       now,
+				AccessPolicy: &types.AccessPolicy{
+					Mode: types.AccessMode_ACCESS_MODE_PRIVATE,
+				},
 			},
 		},
 		NextDataId: 999,
@@ -218,6 +234,7 @@ func TestInitGenesis_WithVerifications(t *testing.T) {
 
 	// Create genesis state with verified data
 	defaultParams := types.DefaultParams()
+	now, _ := gogotypes.TimestampProto(time.Now())
 	genesis := types.GenesisState{
 		Params: &defaultParams,
 		DataItems: []*types.DataItem{
@@ -228,16 +245,24 @@ func TestInitGenesis_WithVerifications(t *testing.T) {
 				ContentHash:     []byte("hash1"),
 				StorageLocation: "ipfs://verified1",
 				Status:          types.DataItemStatus_DATA_ITEM_STATUS_VERIFIED,
+				CreatedAt:       now,
+				AccessPolicy: &types.AccessPolicy{
+					Mode: types.AccessMode_ACCESS_MODE_PRIVATE,
+				},
 				Verifications: []*types.Verification{
 					{
 						VerifierAddress:    "aura1verifier1",
 						VerificationMethod: "manual",
 						ConfidenceScore:    95,
+						Level:              types.VerificationLevel_VERIFICATION_LEVEL_AUTHORITY_VERIFIED,
+						VerifiedAt:         now,
 					},
 					{
 						VerifierAddress:    "aura1verifier2",
 						VerificationMethod: "automated",
 						ConfidenceScore:    85,
+						Level:              types.VerificationLevel_VERIFICATION_LEVEL_AI_VERIFIED,
+						VerifiedAt:         now,
 					},
 				},
 			},
@@ -275,6 +300,7 @@ func TestInitGenesis_WithTypeSpecificData(t *testing.T) {
 
 	// Create genesis state with different data types
 	defaultParams := types.DefaultParams()
+	now, _ := gogotypes.TimestampProto(time.Now())
 	genesis := types.GenesisState{
 		Params: &defaultParams,
 		DataItems: []*types.DataItem{
@@ -285,6 +311,10 @@ func TestInitGenesis_WithTypeSpecificData(t *testing.T) {
 				ContentHash:     []byte("photo_hash"),
 				StorageLocation: "ipfs://photo",
 				Status:          types.DataItemStatus_DATA_ITEM_STATUS_PENDING_VERIFICATION,
+				CreatedAt:       now,
+				AccessPolicy: &types.AccessPolicy{
+					Mode: types.AccessMode_ACCESS_MODE_PRIVATE,
+				},
 			},
 			{
 				DataId:          "video-1",
@@ -293,6 +323,10 @@ func TestInitGenesis_WithTypeSpecificData(t *testing.T) {
 				ContentHash:     []byte("video_hash"),
 				StorageLocation: "ipfs://video",
 				Status:          types.DataItemStatus_DATA_ITEM_STATUS_PENDING_VERIFICATION,
+				CreatedAt:       now,
+				AccessPolicy: &types.AccessPolicy{
+					Mode: types.AccessMode_ACCESS_MODE_PRIVATE,
+				},
 			},
 			{
 				DataId:          "audio-1",
@@ -301,6 +335,10 @@ func TestInitGenesis_WithTypeSpecificData(t *testing.T) {
 				ContentHash:     []byte("audio_hash"),
 				StorageLocation: "ipfs://audio",
 				Status:          types.DataItemStatus_DATA_ITEM_STATUS_PENDING_VERIFICATION,
+				CreatedAt:       now,
+				AccessPolicy: &types.AccessPolicy{
+					Mode: types.AccessMode_ACCESS_MODE_PRIVATE,
+				},
 			},
 		},
 		NextDataId: 1,

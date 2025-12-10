@@ -6,7 +6,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/compliance/types"
 )
@@ -27,7 +26,7 @@ func TestKYCVersionTracking(t *testing.T) {
 		KycLevel:      types.KYCLevel_KYC_LEVEL_BASIC,
 		Provider:      provider,
 		VerifiedAt: ctx.BlockTime(),
-		ExpiresAt:     timestamppb.New(ctx.BlockTime().Add(365 * 24 * time.Hour)),
+		ExpiresAt:     ptrTime(ctx.BlockTime().Add(365 * 24 * time.Hour)),
 		PiiCommitment: make([]byte, 32),
 		Jurisdiction:  "US",
 	}
@@ -46,8 +45,8 @@ func TestKYCVersionTracking(t *testing.T) {
 		Address:       address,
 		KycLevel:      types.KYCLevel_KYC_LEVEL_INTERMEDIATE,
 		Provider:      provider,
-		VerifiedAt:    timestamppb.New(ctx.BlockTime().Add(time.Hour)),
-		ExpiresAt:     timestamppb.New(ctx.BlockTime().Add(366 * 24 * time.Hour)),
+		VerifiedAt: ctx.BlockTime().Add(time.Hour),
+		ExpiresAt:     ptrTime(ctx.BlockTime().Add(366 * 24 * time.Hour)),
 		PiiCommitment: make([]byte, 32),
 		Jurisdiction:  "US",
 	}
@@ -66,8 +65,8 @@ func TestKYCVersionTracking(t *testing.T) {
 		Address:       address,
 		KycLevel:      types.KYCLevel_KYC_LEVEL_ADVANCED,
 		Provider:      provider,
-		VerifiedAt: timestamppb.New(ctx.BlockTime().Add(2 * time.Hour)),
-		ExpiresAt:     timestamppb.New(ctx.BlockTime().Add(367 * 24 * time.Hour)),
+		VerifiedAt: ctx.BlockTime().Add(2 * time.Hour),
+		ExpiresAt:     ptrTime(ctx.BlockTime().Add(367 * 24 * time.Hour)),
 		PiiCommitment: make([]byte, 32),
 		Jurisdiction:  "US",
 	}
@@ -93,7 +92,7 @@ func TestKYCHistoryPreservation(t *testing.T) {
 		KycLevel:      types.KYCLevel_KYC_LEVEL_BASIC,
 		Provider:      provider,
 		VerifiedAt: ctx.BlockTime(),
-		ExpiresAt:     timestamppb.New(ctx.BlockTime().Add(365 * 24 * time.Hour)),
+		ExpiresAt:     ptrTime(ctx.BlockTime().Add(365 * 24 * time.Hour)),
 		PiiCommitment: []byte("commitment1"),
 		Jurisdiction:  "US",
 	}
@@ -111,8 +110,8 @@ func TestKYCHistoryPreservation(t *testing.T) {
 		Address:       address,
 		KycLevel:      types.KYCLevel_KYC_LEVEL_INTERMEDIATE,
 		Provider:      provider,
-		VerifiedAt: timestamppb.New(ctx.BlockTime().Add(time.Hour)),
-		ExpiresAt:     timestamppb.New(ctx.BlockTime().Add(366 * 24 * time.Hour)),
+		VerifiedAt: ctx.BlockTime().Add(time.Hour),
+		ExpiresAt:     ptrTime(ctx.BlockTime().Add(366 * 24 * time.Hour)),
 		PiiCommitment: []byte("commitment2"),
 		Jurisdiction:  "US",
 	}
@@ -133,8 +132,8 @@ func TestKYCHistoryPreservation(t *testing.T) {
 		Address:       address,
 		KycLevel:      types.KYCLevel_KYC_LEVEL_ADVANCED,
 		Provider:      provider,
-		VerifiedAt: timestamppb.New(ctx.BlockTime().Add(2 * time.Hour)),
-		ExpiresAt:     timestamppb.New(ctx.BlockTime().Add(367 * 24 * time.Hour)),
+		VerifiedAt: ctx.BlockTime().Add(2 * time.Hour),
+		ExpiresAt:     ptrTime(ctx.BlockTime().Add(367 * 24 * time.Hour)),
 		PiiCommitment: []byte("commitment3"),
 		Jurisdiction:  "US",
 	}
@@ -170,7 +169,7 @@ func TestKYCDuplicateDetection(t *testing.T) {
 		KycLevel:      types.KYCLevel_KYC_LEVEL_BASIC,
 		Provider:      provider,
 		VerifiedAt: ctx.BlockTime(),
-		ExpiresAt:     timestamppb.New(ctx.BlockTime().Add(365 * 24 * time.Hour)),
+		ExpiresAt:     ptrTime(ctx.BlockTime().Add(365 * 24 * time.Hour)),
 		PiiCommitment: []byte("commitment1"),
 		Jurisdiction:  "US",
 	}
@@ -183,8 +182,8 @@ func TestKYCDuplicateDetection(t *testing.T) {
 		Address:       address,
 		KycLevel:      types.KYCLevel_KYC_LEVEL_INTERMEDIATE,
 		Provider:      provider,
-		VerifiedAt: timestamppb.New(ctx.BlockTime().Add(time.Hour)),
-		ExpiresAt:     timestamppb.New(ctx.BlockTime().Add(366 * 24 * time.Hour)),
+		VerifiedAt: ctx.BlockTime().Add(time.Hour),
+		ExpiresAt:     ptrTime(ctx.BlockTime().Add(366 * 24 * time.Hour)),
 		PiiCommitment: []byte("commitment2"),
 		Jurisdiction:  "US",
 	}
@@ -221,7 +220,7 @@ func TestKYCHistoryMetadata(t *testing.T) {
 		KycLevel:      types.KYCLevel_KYC_LEVEL_BASIC,
 		Provider:      provider1,
 		VerifiedAt: ctx.BlockTime(),
-		ExpiresAt:     timestamppb.New(ctx.BlockTime().Add(365 * 24 * time.Hour)),
+		ExpiresAt:     ptrTime(ctx.BlockTime().Add(365 * 24 * time.Hour)),
 		PiiCommitment: make([]byte, 32),
 		Jurisdiction:  "US",
 	}
@@ -236,7 +235,7 @@ func TestKYCHistoryMetadata(t *testing.T) {
 		KycLevel:      types.KYCLevel_KYC_LEVEL_INTERMEDIATE,
 		Provider:      provider2,
 		VerifiedAt: ctx.BlockTime(),
-		ExpiresAt:     timestamppb.New(ctx.BlockTime().Add(365 * 24 * time.Hour)),
+		ExpiresAt:     ptrTime(ctx.BlockTime().Add(365 * 24 * time.Hour)),
 		PiiCommitment: make([]byte, 32),
 		Jurisdiction:  "US",
 	}
@@ -277,7 +276,7 @@ func TestKYCVersionEvents(t *testing.T) {
 		KycLevel:      types.KYCLevel_KYC_LEVEL_BASIC,
 		Provider:      provider,
 		VerifiedAt: ctx.BlockTime(),
-		ExpiresAt:     timestamppb.New(ctx.BlockTime().Add(365 * 24 * time.Hour)),
+		ExpiresAt:     ptrTime(ctx.BlockTime().Add(365 * 24 * time.Hour)),
 		PiiCommitment: make([]byte, 32),
 		Jurisdiction:  "US",
 	}
@@ -311,8 +310,8 @@ func TestKYCVersionEvents(t *testing.T) {
 		Address:       address,
 		KycLevel:      types.KYCLevel_KYC_LEVEL_INTERMEDIATE,
 		Provider:      provider,
-		VerifiedAt: timestamppb.New(ctx.BlockTime().Add(time.Hour)),
-		ExpiresAt:     timestamppb.New(ctx.BlockTime().Add(366 * 24 * time.Hour)),
+		VerifiedAt: ctx.BlockTime().Add(time.Hour),
+		ExpiresAt:     ptrTime(ctx.BlockTime().Add(366 * 24 * time.Hour)),
 		PiiCommitment: make([]byte, 32),
 		Jurisdiction:  "US",
 	}
@@ -366,8 +365,8 @@ func TestGetAllKYCHistory(t *testing.T) {
 			Address:       address1,
 			KycLevel:      types.KYCLevel_KYC_LEVEL_BASIC,
 			Provider:      provider,
-			VerifiedAt: timestamppb.New(ctx.BlockTime().Add(time.Duration(i) * time.Hour)),
-			ExpiresAt:     timestamppb.New(ctx.BlockTime().Add(365 * 24 * time.Hour)),
+			VerifiedAt: ctx.BlockTime().Add(time.Duration(i) * time.Hour),
+			ExpiresAt:     ptrTime(ctx.BlockTime().Add(365 * 24 * time.Hour)),
 			PiiCommitment: make([]byte, 32),
 			Jurisdiction:  "US",
 		}
@@ -381,8 +380,8 @@ func TestGetAllKYCHistory(t *testing.T) {
 			Address:       address2,
 			KycLevel:      types.KYCLevel_KYC_LEVEL_INTERMEDIATE,
 			Provider:      provider,
-			VerifiedAt: timestamppb.New(ctx.BlockTime().Add(time.Duration(i) * time.Hour)),
-			ExpiresAt:     timestamppb.New(ctx.BlockTime().Add(365 * 24 * time.Hour)),
+			VerifiedAt: ctx.BlockTime().Add(time.Duration(i) * time.Hour),
+			ExpiresAt:     ptrTime(ctx.BlockTime().Add(365 * 24 * time.Hour)),
 			PiiCommitment: make([]byte, 32),
 			Jurisdiction:  "GB",
 		}

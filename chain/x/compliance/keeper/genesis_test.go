@@ -7,7 +7,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/suite"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/compliance/types"
 	compliancepb "github.com/aequitas/aura/proto/aura/compliance/v1beta1"
@@ -65,11 +64,18 @@ func (suite *GenesisTestSuite) TestInitGenesis_DefaultAndCustom() {
 func (suite *GenesisTestSuite) TestInitGenesis_Invalid() {
 	ctx := suite.SdkCtx
 
+	// Nil genesis should error
 	suite.Error(suite.Keeper.InitGenesis(ctx, nil))
 
-	// Empty genesis state should error due to invalid params
-	emptyGenesis := &compliancepb.GenesisState{}
-	suite.Error(suite.Keeper.InitGenesis(ctx, emptyGenesis))
+	// Genesis with invalid params should error
+	// KycExpiryDays cannot be zero when KycRequired is true
+	invalidGenesis := &compliancepb.GenesisState{
+		Params: types.ComplianceParams{
+			KycRequired:   true, // KYC is required
+			KycExpiryDays: 0,    // invalid: zero when KYC is required
+		},
+	}
+	suite.Error(suite.Keeper.InitGenesis(ctx, invalidGenesis))
 }
 
 func (suite *GenesisTestSuite) TestDefaultGenesisValidation() {

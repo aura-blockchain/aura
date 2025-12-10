@@ -566,7 +566,7 @@ func (m *testSanctionsProviderWithMatches) ScreenAddress(address string) (*types
 				MatchScore: "95.0",
 			},
 		},
-		ScreenedAt:           nil, // Will be set by msg_server
+		ScreenedAt:           time.Time{}, // Will be set by msg_server
 		RequiresManualReview: true,
 	}, nil
 }

@@ -7,7 +7,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/compliance/types"
 )
@@ -26,7 +25,7 @@ func grantConsent(t *testing.T, keeper *Keeper, ctx sdk.Context, address string,
 		ConsentType:    purpose,
 		Consented:      true,
 		ConsentVersion: "v1",
-		ConsentGivenAt: timestamppb.Now(),
+		ConsentGivenAt: time.Now(),
 	}
 	err := keeper.SetGDPRConsent(ctx, consent)
 	require.NoError(t, err)
@@ -175,7 +174,7 @@ func (m *testSanctionsProvider) ScreenAddress(address string) (*types.SanctionsS
 		Address:              address,
 		Status:               types.SanctionsStatus_SANCTIONS_CLEAR,
 		Matches:              []*types.SanctionsMatch{},
-		ScreenedAt:           timestamppb.New(time.Now()),
+		ScreenedAt: time.Now(),
 		RequiresManualReview: false,
 	}, nil
 }

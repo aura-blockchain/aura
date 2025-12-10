@@ -7,7 +7,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/suite"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/compliance/types"
 )
@@ -54,12 +53,13 @@ func (suite *InvariantsTestSuite) TestKYCRecordConsistencyInvariant() {
 	piiCommitment := make([]byte, 32)
 	copy(piiCommitment, []byte("test_commitment_hash_32_bytes"))
 
+	expiresAt := time.Now().Add(time.Hour)
 	validRecord := &types.KYCRecord{
 		Address:       validAddr,
 		PiiCommitment: piiCommitment,
 		KycLevel:      types.KYCLevel_KYC_LEVEL_BASIC,
 		VerifiedAt:    time.Now(),
-		ExpiresAt:     time.Now().Add(time.Hour),
+		ExpiresAt:     &expiresAt,
 	}
 	suite.Require().NoError(suite.Keeper.SetKYCRecord(ctx, validRecord))
 
@@ -131,7 +131,7 @@ func (suite *InvariantsTestSuite) TestKYCRecordConsistencyInvariant() {
 
 	msg, broken = inv(ctx)
 	suite.True(broken)
-	suite.Contains(msg, "nil verified_at")
+	suite.Contains(msg, "verified_at")
 }
 
 func (suite *InvariantsTestSuite) TestParamsInvariant() {
@@ -199,23 +199,23 @@ func (suite *InvariantsTestSuite) TestSanctionsScreeningInvariant() {
 	ctx = suite.SdkCtx
 	inv = SanctionsScreeningInvariant(suite.Keeper)
 
-	// Test: nil screened_at fails
-	validAddr2 := suite.addr("sanctions-niltime")
-	nilTimeResult := &types.SanctionsScreeningResult{
+	// Test: zero screened_at fails
+	validAddr2 := suite.addr("sanctions-zerotime")
+	zeroTimeResult := &types.SanctionsScreeningResult{
 		Address:    validAddr2,
 		Status:     types.SanctionsStatus_SANCTIONS_CLEAR,
 		Matches:    []*types.SanctionsMatch{},
-		ScreenedAt: nil,
+		ScreenedAt: time.Time{}, // zero time
 	}
-	bz, err = suite.Keeper.cdc.Marshal(nilTimeResult)
+	bz, err = suite.Keeper.cdc.Marshal(zeroTimeResult)
 	suite.Require().NoError(err)
 	store = ctx.KVStore(suite.Keeper.storeKey)
 	key = append(SanctionsResultsKeyPrefix, []byte(validAddr2)...)
 	store.Set(key, bz)
 
 	msg, broken = inv(ctx)
-	suite.True(broken, "nil screened_at should break invariant")
-	suite.Contains(msg, "nil screened_at")
+	suite.True(broken, "zero screened_at should break invariant")
+	suite.Contains(msg, "screened_at")
 
 	// Clean up
 	suite.SetupTest()
@@ -309,20 +309,20 @@ func (suite *InvariantsTestSuite) TestGDPRDataIntegrityInvariant() {
 	ctx = suite.SdkCtx
 	inv = GDPRDataIntegrityInvariant(suite.Keeper)
 
-	// Test: nil requested_at fails
-	validAddr3 := suite.addr("gdpr-niltime")
-	nilTimeRequest := &types.GDPRDataRequest{
+	// Test: zero requested_at fails
+	validAddr3 := suite.addr("gdpr-zerotime")
+	zeroTimeRequest := &types.GDPRDataRequest{
 		Id:          "gdpr-req-004",
 		Address:     validAddr3,
 		RequestType: "access",
-		RequestedAt: nil,
+		RequestedAt: time.Time{}, // zero time
 		Status:      "pending",
 	}
-	suite.Require().NoError(suite.Keeper.SetGDPRRequest(ctx, nilTimeRequest))
+	suite.Require().NoError(suite.Keeper.SetGDPRRequest(ctx, zeroTimeRequest))
 
 	msg, broken = inv(ctx)
-	suite.True(broken, "nil requested_at should break invariant")
-	suite.Contains(msg, "nil requested_at")
+	suite.True(broken, "zero requested_at should break invariant")
+	suite.Contains(msg, "requested_at")
 
 	// Clean up
 	suite.SetupTest()

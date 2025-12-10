@@ -6,7 +6,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/compliance/types"
 )
@@ -17,6 +16,9 @@ import (
 
 func TestBeginBlocker_NoExpiredRecords(t *testing.T) {
 	keeper, ctx := setupKeeper(t)
+
+	// Set block height to 50 (BeginBlocker only runs every 50 blocks)
+	ctx = ctx.WithBlockHeight(50)
 
 	now := ctx.BlockTime()
 
@@ -52,6 +54,9 @@ func TestBeginBlocker_NoExpiredRecords(t *testing.T) {
 
 func TestBeginBlocker_SingleExpiredRecord(t *testing.T) {
 	keeper, ctx := setupKeeper(t)
+
+	// Set block height to 50 (BeginBlocker only runs every 50 blocks)
+	ctx = ctx.WithBlockHeight(50)
 
 	now := ctx.BlockTime()
 
@@ -110,6 +115,9 @@ func TestBeginBlocker_SingleExpiredRecord(t *testing.T) {
 
 func TestBeginBlocker_MultipleExpiredRecords(t *testing.T) {
 	keeper, ctx := setupKeeper(t)
+
+	// Set block height to 50 (BeginBlocker only runs every 50 blocks)
+	ctx = ctx.WithBlockHeight(50)
 
 	now := ctx.BlockTime()
 
@@ -177,6 +185,9 @@ func TestBeginBlocker_MultipleExpiredRecords(t *testing.T) {
 func TestBeginBlocker_JustExpired(t *testing.T) {
 	keeper, ctx := setupKeeper(t)
 
+	// Set block height to 50 (BeginBlocker only runs every 50 blocks)
+	ctx = ctx.WithBlockHeight(50)
+
 	now := ctx.BlockTime()
 
 	// Create KYC record that expires exactly 1 second before now
@@ -210,6 +221,9 @@ func TestBeginBlocker_JustExpired(t *testing.T) {
 func TestBeginBlocker_ExactlyAtExpiry(t *testing.T) {
 	keeper, ctx := setupKeeper(t)
 
+	// Set block height to 50 (BeginBlocker only runs every 50 blocks)
+	ctx = ctx.WithBlockHeight(50)
+
 	now := ctx.BlockTime()
 
 	// Create KYC record that expires exactly now (not yet expired)
@@ -242,6 +256,9 @@ func TestBeginBlocker_ExactlyAtExpiry(t *testing.T) {
 
 func TestBeginBlocker_MixedExpiryTimes(t *testing.T) {
 	keeper, ctx := setupKeeper(t)
+
+	// Set block height to 50 (BeginBlocker only runs every 50 blocks)
+	ctx = ctx.WithBlockHeight(50)
 
 	now := ctx.BlockTime()
 
@@ -317,6 +334,9 @@ func TestBeginBlocker_MixedExpiryTimes(t *testing.T) {
 func TestBeginBlocker_EmptyStore(t *testing.T) {
 	keeper, ctx := setupKeeper(t)
 
+	// Set block height to 50 (BeginBlocker only runs every 50 blocks)
+	ctx = ctx.WithBlockHeight(50)
+
 	// Run BeginBlocker on empty store - should not panic
 	require.NotPanics(t, func() {
 		keeper.BeginBlocker(ctx)
@@ -336,6 +356,9 @@ func TestBeginBlocker_EmptyStore(t *testing.T) {
 
 func TestBeginBlocker_EventAttributes(t *testing.T) {
 	keeper, ctx := setupKeeper(t)
+
+	// Set block height to 50 (BeginBlocker only runs every 50 blocks)
+	ctx = ctx.WithBlockHeight(50)
 
 	now := ctx.BlockTime()
 	verifiedAt := now.Add(-400 * 24 * time.Hour)

@@ -381,12 +381,19 @@ func TestUpdateInflationCheckTimestamp(t *testing.T) {
 	}
 	require.NoError(t, keeper.SetParams(params))
 
+	// Debug: Check context block time
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	t.Logf("BlockTime: %v, IsZero: %v", sdkCtx.BlockTime(), sdkCtx.BlockTime().IsZero())
+
 	// Update timestamp
 	err := keeper.UpdateInflationCheckTimestamp(ctx)
 	require.NoError(t, err)
 
 	// Verify timestamp was set
 	updatedParams := keeper.GetParams()
+	t.Logf("After update: LastInflationCheck = %v, IsZero = %v",
+		updatedParams.Tokenomics.LastInflationCheck,
+		updatedParams.Tokenomics.LastInflationCheck.IsZero())
 	require.False(t, updatedParams.Tokenomics.LastInflationCheck.IsZero())
 
 	// Verify it's recent (within last minute)

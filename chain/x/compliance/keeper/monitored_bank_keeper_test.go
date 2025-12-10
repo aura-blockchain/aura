@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"time"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -84,7 +85,7 @@ func TestMonitoredBankKeeper_SendCoins_Blocked_Sanctions(t *testing.T) {
 	err = complianceKeeper.SetSanctionsResult(complianceInput.Ctx, &types.SanctionsScreeningResult{
 		Address:    from.String(),
 		Status:     types.SanctionsStatus_SANCTIONS_CONFIRMED,
-		ScreenedAt: nil,
+		ScreenedAt: time.Time{},
 		Matches: []*types.SanctionsMatch{
 			{
 				ListName:    "OFAC SDN",

@@ -9,7 +9,6 @@ import (
 	"google.golang.org/grpc/status"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/compliance/types"
 )
@@ -30,7 +29,7 @@ func TestRateLimitEntry(t *testing.T) {
 		Address:     address,
 		Operation:   operation,
 		Count:       5,
-		WindowStart: timestamppb.New(ctx.BlockTime()),
+		WindowStart: ctx.BlockTime(),
 	}
 
 	err := k.SetRateLimitEntry(ctx, entry)
