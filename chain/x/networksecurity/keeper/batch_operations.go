@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	"sort"
 
 	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -95,6 +96,14 @@ func (k Keeper) ProcessSecurityAlertsBatched(ctx sdk.Context, limit int) int {
 
 	// Process fork alerts
 	forkAlerts := k.GetAllForkAlerts(ctx, false) // Only unresolved
+
+	// DETERMINISM: Sort alerts by alert ID to ensure consistent iteration order
+	// across all validators. This prevents consensus failure from different
+	// processing orders affecting state changes (e.g., auto-resolution).
+	sort.Slice(forkAlerts, func(i, j int) bool {
+		return forkAlerts[i].AlertId < forkAlerts[j].AlertId
+	})
+
 	processedCount := 0
 
 	// Skip to cursor position
@@ -102,6 +111,12 @@ func (k Keeper) ProcessSecurityAlertsBatched(ctx sdk.Context, limit int) int {
 	if startIdx >= len(forkAlerts) {
 		// Process partition alerts instead
 		partitionAlerts := k.GetAllPartitionAlerts(ctx, false)
+
+		// DETERMINISM: Sort partition alerts by alert ID to ensure consistent
+		// iteration order across all validators.
+		sort.Slice(partitionAlerts, func(i, j int) bool {
+			return partitionAlerts[i].AlertId < partitionAlerts[j].AlertId
+		})
 
 		partitionStartIdx := startIdx - len(forkAlerts)
 		if partitionStartIdx >= len(partitionAlerts) {
@@ -118,6 +133,10 @@ func (k Keeper) ProcessSecurityAlertsBatched(ctx sdk.Context, limit int) int {
 
 			// Check if partition has been resolved (peers reconnected)
 			currentPeers := k.GetAllPeers(ctx)
+
+			// DETERMINISM: While we only use the peer count here (not iteration),
+			// we note that GetAllPeers returns peers in store key order (by peer ID).
+			// If we iterated this list, it would need to be sorted by peer ID.
 			if uint32(len(currentPeers)) > alert.ExpectedPeers/2 {
 				// More than 50% of expected peers are back, consider resolved
 				if err := k.ResolvePartitionAlert(ctx, alert.AlertId); err != nil {
@@ -271,6 +290,16 @@ func (k Keeper) PruneLowReputationPeersBatched(ctx sdk.Context, limit int) int {
 
 	// Get all reputations
 	reputations := k.GetAllReputations(ctx)
+
+	// CRITICAL DETERMINISM: Sort reputations by peer ID before iteration.
+	// This function makes state-changing decisions (banning/disconnecting peers)
+	// based on which peers are processed first (up to the limit).
+	// Different iteration orders across validators will cause consensus failure,
+	// as different validators would ban different peers.
+	sort.Slice(reputations, func(i, j int) bool {
+		return reputations[i].PeerId < reputations[j].PeerId
+	})
+
 	prunedCount := 0
 
 	for _, rep := range reputations {
@@ -306,6 +335,12 @@ func (k Keeper) PruneLowReputationPeersBatched(ctx sdk.Context, limit int) int {
 // This is lightweight and doesn't need heavy batching, but we make it configurable
 func (k Keeper) UpdateKnownPeerListBatched(ctx sdk.Context) error {
 	peers := k.GetAllPeers(ctx)
+
+	// DETERMINISM: Sort peers by peer ID before building peer ID list.
+	// This ensures the peer list hash and order is consistent across validators.
+	sort.Slice(peers, func(i, j int) bool {
+		return peers[i].PeerId < peers[j].PeerId
+	})
 
 	var peerIDs []string
 	for _, peer := range peers {

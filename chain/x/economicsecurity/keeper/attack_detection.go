@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
+	"sort"
 	"time"
 
 	"github.com/aequitas/aura/chain/x/economicsecurity/types"
@@ -129,7 +130,15 @@ func (k *Keeper) detectFlashLoanAttack(ctx context.Context, params types.Params)
 	}
 
 	// Check for addresses with multiple large transactions in short time
-	for addr, count := range addressTxCounts {
+	// Sort addresses to ensure deterministic iteration order
+	addresses := make([]string, 0, len(addressTxCounts))
+	for addr := range addressTxCounts {
+		addresses = append(addresses, addr)
+	}
+	sort.Strings(addresses)
+
+	for _, addr := range addresses {
+		count := addressTxCounts[addr]
 		if count >= 3 {
 			return k.createAttackAlert(
 				ctx,
@@ -182,7 +191,15 @@ func (k *Keeper) detectSybilAttack(ctx context.Context, params types.Params) (*t
 	}
 
 	// Check for suspicious clustering
-	for rangeKey, count := range rangeCount {
+	// Sort range keys to ensure deterministic iteration order
+	rangeKeys := make([]string, 0, len(rangeCount))
+	for rangeKey := range rangeCount {
+		rangeKeys = append(rangeKeys, rangeKey)
+	}
+	sort.Strings(rangeKeys)
+
+	for _, rangeKey := range rangeKeys {
+		count := rangeCount[rangeKey]
 		// If >20% of addresses have similar balances, potential sybil attack
 		threshold := totalAddresses / 5
 		if count > threshold && count > 20 {
@@ -237,7 +254,15 @@ func (k *Keeper) detectWashTrading(ctx context.Context, params types.Params) (*t
 	}
 
 	// Check for circular patterns
-	for pair, count := range pairCounts {
+	// Sort pairs to ensure deterministic iteration order
+	pairs := make([]string, 0, len(pairCounts))
+	for pair := range pairCounts {
+		pairs = append(pairs, pair)
+	}
+	sort.Strings(pairs)
+
+	for _, pair := range pairs {
+		count := pairCounts[pair]
 		reversePair := reversePairMap[pair]
 		if pairCounts[reversePair] > 0 && count > 2 {
 			// Extract addresses
