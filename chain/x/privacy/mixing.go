@@ -1,5 +1,34 @@
 package privacy
 
+// This file implements OFF-CHAIN coin mixing and tumbler utilities.
+//
+// IMPORTANT: All mixing and shuffling functions are OFF-CHAIN utilities for external
+// mixing coordinators. They use crypto/rand and MUST NOT be called from consensus code.
+//
+// Coin mixing (tumbling) breaks transaction linkability by mixing coins from multiple
+// users through a coordination process:
+// - Users join mixing pools with fixed denominations
+// - Off-chain coordinator shuffles participants anonymously
+// - Outputs are distributed to unlinkable addresses
+// - On-chain transactions appear unrelated
+//
+// ON-CHAIN VS OFF-CHAIN SEPARATION:
+// - OFF-CHAIN: CreatePool(), ExecuteMixing(), shuffleParticipants(), ScheduleTumbling()
+//   These functions use crypto/rand for pool IDs, shuffling, and scheduling.
+//   They are utilities for building external mixing coordinator services.
+//   The actual mixing coordination happens OFF-CHAIN.
+//
+// - ON-CHAIN: MsgCreateMixingPool, MsgJoinMixingPool handlers
+//   Message handlers create pool records with deterministic IDs (creator + block height).
+//   No randomness is used during consensus - pools are just participant registries.
+//   Actual shuffling and distribution happens OFF-CHAIN.
+//
+// The blockchain only tracks pool membership. The mixing coordinator (external service)
+// performs the actual mixing off-chain, then submits distribution transactions separately.
+//
+// These utility functions are for building external mixing services, NOT for use in
+// consensus-critical message handlers.
+
 import (
 	"crypto/rand"
 	"crypto/sha256"
@@ -69,6 +98,7 @@ func (ms *MixingService) CreatePool(
 	minRounds, maxRounds int,
 	deadline time.Duration,
 	fee *big.Int,
+	now time.Time, // Accept time parameter for determinism
 ) (*MixingPool, error) {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
@@ -87,7 +117,7 @@ func (ms *MixingService) CreatePool(
 	}
 
 	// Generate pool ID
-	poolID, err := generatePoolID()
+	poolID, err := generatePoolID(now)
 	if err != nil {
 		return nil, err
 	}
@@ -99,11 +129,11 @@ func (ms *MixingService) CreatePool(
 		MaxParticipants: maxParticipants,
 		MinMixRounds:    minRounds,
 		MaxMixRounds:    maxRounds,
-		Deadline:        time.Now().Add(deadline),
+		Deadline:        now.Add(deadline),
 		Fee:             fee,
 		Status:          PoolStatusPending,
 		Participants:    make([]*MixingParticipant, 0),
-		CreatedAt:       time.Now(),
+		CreatedAt:       now,
 	}
 
 	ms.pools[poolID] = pool
@@ -117,6 +147,7 @@ func (ms *MixingService) JoinPool(
 	commitment []byte,
 	outputAddress []byte,
 	blindingFactor *big.Int,
+	now time.Time, // Accept time parameter for determinism
 ) error {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
@@ -134,7 +165,7 @@ func (ms *MixingService) JoinPool(
 		return errors.New("pool is full")
 	}
 
-	if time.Now().After(pool.Deadline) {
+	if now.After(pool.Deadline) {
 		pool.Status = PoolStatusCancelled
 		return errors.New("pool deadline has passed")
 	}
@@ -151,7 +182,7 @@ func (ms *MixingService) JoinPool(
 		Commitment:     commitment,
 		OutputAddress:  outputAddress,
 		BlindingFactor: blindingFactor,
-		JoinedAt:       time.Now(),
+		JoinedAt:       now,
 	}
 
 	pool.Participants = append(pool.Participants, participant)
@@ -165,7 +196,7 @@ func (ms *MixingService) JoinPool(
 }
 
 // ExecuteMixing executes the mixing process for a pool
-func (ms *MixingService) ExecuteMixing(poolID string) (*MixingResult, error) {
+func (ms *MixingService) ExecuteMixing(poolID string, now time.Time) (*MixingResult, error) {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 
@@ -205,7 +236,7 @@ func (ms *MixingService) ExecuteMixing(poolID string) (*MixingResult, error) {
 		PoolID:           poolID,
 		Outputs:          outputs,
 		TotalParticipants: len(pool.Participants),
-		ExecutedAt:       time.Now(),
+		ExecutedAt:       now,
 	}, nil
 }
 
@@ -239,14 +270,14 @@ type MixingResult struct {
 
 // Helper functions
 
-func generatePoolID() (string, error) {
+func generatePoolID(now time.Time) (string, error) {
 	randomBytes := make([]byte, 16)
 	if _, err := rand.Read(randomBytes); err != nil {
 		return "", err
 	}
 	hasher := sha256.New()
 	hasher.Write(randomBytes)
-	hasher.Write([]byte(time.Now().String()))
+	hasher.Write([]byte(now.String()))
 	return fmt.Sprintf("pool_%x", hasher.Sum(nil)[:16]), nil
 }
 
@@ -303,6 +334,7 @@ func (ts *TumblerService) ScheduleTumbling(
 	totalAmount *big.Int,
 	splits []*big.Int,
 	delays []time.Duration,
+	now time.Time, // Accept time parameter for determinism
 ) (*TumblerSchedule, error) {
 	ts.mu.Lock()
 	defer ts.mu.Unlock()
@@ -338,7 +370,7 @@ func (ts *TumblerService) ScheduleTumbling(
 		Splits:       splits,
 		Delays:       delays,
 		Status:       "SCHEDULED",
-		ScheduledAt:  time.Now(),
+		ScheduledAt:  now,
 	}
 
 	ts.schedules[scheduleID] = schedule

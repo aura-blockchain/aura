@@ -9,6 +9,18 @@ import (
 
 // GenerateCommitmentSalt generates a cryptographically secure random salt
 // for PII commitments. Returns 32 bytes of random data.
+//
+// CRITICAL: This function MUST NOT be called within blockchain transaction handlers
+// or any deterministic consensus code path. The crypto/rand source is non-deterministic
+// and will cause different validators to produce different state roots, breaking consensus.
+//
+// USAGE:
+//   - Client-side: Generate salt before submitting transaction, include in message
+//   - Off-chain tools: Safe to use for generating commitments
+//   - Tests: Safe to use for test data generation
+//   - NEVER: In keeper methods, message handlers, or any on-chain code
+//
+// For on-chain operations, the salt MUST be provided as a parameter from the client.
 func GenerateCommitmentSalt() []byte {
 	salt := make([]byte, 32)
 	if _, err := rand.Read(salt); err != nil {
@@ -20,6 +32,9 @@ func GenerateCommitmentSalt() []byte {
 }
 
 // ComputePIICommitment computes a cryptographic commitment to PII data
+//
+// DETERMINISM: This function is deterministic and safe for on-chain use.
+// However, the salt MUST be generated client-side before transaction submission.
 //
 // Security properties:
 //   - Hiding: Commitment reveals nothing about the data without the salt
@@ -34,16 +49,21 @@ func GenerateCommitmentSalt() []byte {
 //
 // Parameters:
 //   - piiData: Map of attribute name to value (e.g., {"name": "Alice", "email": "alice@example.com"})
-//   - salt: Random 32-byte salt (from GenerateCommitmentSalt)
+//   - salt: Random 32-byte salt (MUST be generated client-side using crypto/rand)
 //
 // Returns:
 //   - 32-byte SHA-256 hash as commitment
 //
-// Example:
+// Example (CLIENT-SIDE):
+//
+//	// Client generates salt before submitting transaction
+//	salt := make([]byte, 32)
+//	_, err := crypto/rand.Read(salt)
+//	if err != nil { panic(err) }
 //
 //	data := map[string]string{"name": "Alice", "email": "alice@example.com"}
-//	salt := GenerateCommitmentSalt()
 //	commitment := ComputePIICommitment(data, salt)
+//	// Include both salt and commitment in transaction message
 //	// Store commitment and salt on-chain, store data off-chain
 func ComputePIICommitment(piiData map[string]string, salt []byte) []byte {
 	// Sort keys for deterministic serialization

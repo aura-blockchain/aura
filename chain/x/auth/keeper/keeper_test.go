@@ -536,8 +536,8 @@ func TestAuditLogging(t *testing.T) {
 	k, ctx := setupKeeper(t)
 
 	// Generate some audit logs
-	k.LogAudit(ctx, "user1", "test_action", "resource1", "success", nil, "")
-	k.LogAudit(ctx, "user2", "test_action", "resource2", "failed", nil, "error")
+	k.LogAudit(ctx, "user1", "test_action", "resource1", "success", nil, "", ctx.BlockTime())
+	k.LogAudit(ctx, "user2", "test_action", "resource2", "failed", nil, "error", ctx.BlockTime())
 
 	// Get logs
 	logs := k.GetRecentAuditLogs(10)
@@ -562,9 +562,9 @@ func TestAuditLogSearch(t *testing.T) {
 	k, ctx := setupKeeper(t)
 
 	// Create logs
-	k.LogAudit(ctx, "alice", "login", "system", "success", nil, "")
-	k.LogAudit(ctx, "bob", "logout", "system", "success", nil, "")
-	k.LogAudit(ctx, "alice", "create_role", "role1", "success", nil, "")
+	k.LogAudit(ctx, "alice", "login", "system", "success", nil, "", ctx.BlockTime())
+	k.LogAudit(ctx, "bob", "logout", "system", "success", nil, "", ctx.BlockTime())
+	k.LogAudit(ctx, "alice", "create_role", "role1", "success", nil, "", ctx.BlockTime())
 
 	// Search for alice
 	logs := k.SearchAuditLogs(map[string]string{"actor": "alice"}, 10)
@@ -583,9 +583,9 @@ func TestAuditStatistics(t *testing.T) {
 	k, ctx := setupKeeper(t)
 
 	// Create some logs
-	k.LogAudit(ctx, "user1", "action1", "resource1", "success", nil, "")
-	k.LogAudit(ctx, "user1", "action2", "resource2", "success", nil, "")
-	k.LogAudit(ctx, "user2", "action1", "resource3", "failed", nil, "")
+	k.LogAudit(ctx, "user1", "action1", "resource1", "success", nil, "", ctx.BlockTime())
+	k.LogAudit(ctx, "user1", "action2", "resource2", "success", nil, "", ctx.BlockTime())
+	k.LogAudit(ctx, "user2", "action1", "resource3", "failed", nil, "", ctx.BlockTime())
 
 	// Get statistics using CountAuditLogs
 	totalLogs := k.CountAuditLogs()

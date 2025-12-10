@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 	"fmt"
+	"sort"
 
 	"github.com/aequitas/aura/chain/x/vcregistry/types"
 )
@@ -62,13 +63,18 @@ func (k *Keeper) InitGenesis(ctx context.Context, data types.GenesisState) error
 		k.store.setVCPolicy(ctx, *policy)
 	}
 
-	// Import mint counts for current day to KV store
+	// Import mint counts for current day to KV store (deterministic ordering)
 	dayTimestamp := k.getCurrentTime(ctx) / 86400
 	if data.UserMintCounts != nil {
-		for addr, count := range data.UserMintCounts {
-			if count == 0 {
-				continue
+		mintAddrs := make([]string, 0, len(data.UserMintCounts))
+		for addr := range data.UserMintCounts {
+			if data.UserMintCounts[addr] != 0 {
+				mintAddrs = append(mintAddrs, addr)
 			}
+		}
+		sort.Strings(mintAddrs)
+		for _, addr := range mintAddrs {
+			count := data.UserMintCounts[addr]
 			k.store.setMintCount(ctx, addr, dayTimestamp, count)
 		}
 	}
@@ -84,10 +90,16 @@ func (k *Keeper) InitGenesis(ctx context.Context, data types.GenesisState) error
 		k.store.appendUserPresentation(ctx, presentation.HolderAddress, presentation.PresentationId)
 	}
 
-	// Validate that built user presentation indexes match exported indexes
+	// Validate that built user presentation indexes match exported indexes (deterministic ordering)
 	// This ensures data integrity during genesis import
 	if data.UserPresentationIndex != nil {
-		for addr, exportedIDs := range data.UserPresentationIndex {
+		indexAddrs := make([]string, 0, len(data.UserPresentationIndex))
+		for addr := range data.UserPresentationIndex {
+			indexAddrs = append(indexAddrs, addr)
+		}
+		sort.Strings(indexAddrs)
+		for _, addr := range indexAddrs {
+			exportedIDs := data.UserPresentationIndex[addr]
 			if exportedIDs == nil || len(exportedIDs.Ids) == 0 {
 				continue
 			}
@@ -126,10 +138,16 @@ func (k *Keeper) InitGenesis(ctx context.Context, data types.GenesisState) error
 		k.store.appendUserAttributeVC(ctx, attrVC.HolderAddress, attrVC.AttributeVcId)
 	}
 
-	// Validate that built user attribute indexes match exported indexes
+	// Validate that built user attribute indexes match exported indexes (deterministic ordering)
 	// This ensures data integrity during genesis import
 	if data.UserAttributeIndex != nil {
-		for addr, exportedIDs := range data.UserAttributeIndex {
+		attrAddrs := make([]string, 0, len(data.UserAttributeIndex))
+		for addr := range data.UserAttributeIndex {
+			attrAddrs = append(attrAddrs, addr)
+		}
+		sort.Strings(attrAddrs)
+		for _, addr := range attrAddrs {
+			exportedIDs := data.UserAttributeIndex[addr]
 			if exportedIDs == nil || len(exportedIDs.Ids) == 0 {
 				continue
 			}
@@ -181,12 +199,18 @@ func (k *Keeper) InitGenesis(ctx context.Context, data types.GenesisState) error
 		k.store.setDisclosureResponse(ctx, *resp)
 	}
 
-	// Import pending disclosure index to KV store
+	// Import pending disclosure index to KV store (deterministic ordering)
 	// Note: Unlike presentation and attribute indexes, the pending disclosure index
 	// is NOT automatically built from disclosure requests, because not all requests
 	// are pending (some have responses). Therefore, we must import it explicitly.
 	if data.PendingDisclosureIndex != nil {
-		for holder, exportedIDs := range data.PendingDisclosureIndex {
+		pendingHolders := make([]string, 0, len(data.PendingDisclosureIndex))
+		for holder := range data.PendingDisclosureIndex {
+			pendingHolders = append(pendingHolders, holder)
+		}
+		sort.Strings(pendingHolders)
+		for _, holder := range pendingHolders {
+			exportedIDs := data.PendingDisclosureIndex[holder]
 			if exportedIDs == nil || len(exportedIDs.Ids) == 0 {
 				continue
 			}
@@ -254,10 +278,17 @@ func (k *Keeper) ExportGenesis(ctx context.Context) types.GenesisState {
 		vcPolicies = append(vcPolicies, &policyCopy)
 	}
 
-	// Export user mint counts from KV store (current day only)
+	// Export user mint counts from KV store (current day only, deterministic ordering)
 	userMintCounts := make(map[string]uint64)
 	dayTimestamp := k.getCurrentTime(ctx) / 86400
-	for addr, counts := range k.store.iterateMintCounts(ctx) {
+	mintCountData := k.store.iterateMintCounts(ctx)
+	mintCountAddrs := make([]string, 0, len(mintCountData))
+	for addr := range mintCountData {
+		mintCountAddrs = append(mintCountAddrs, addr)
+	}
+	sort.Strings(mintCountAddrs)
+	for _, addr := range mintCountAddrs {
+		counts := mintCountData[addr]
 		if count, ok := counts[dayTimestamp]; ok {
 			userMintCounts[addr] = count
 		}
@@ -318,9 +349,16 @@ func (k *Keeper) ExportGenesis(ctx context.Context) types.GenesisState {
 		disclosureResponses = append(disclosureResponses, &respCopy)
 	}
 
-	// Export pending disclosure index from KV store
+	// Export pending disclosure index from KV store (deterministic ordering)
 	pendingDisclosures := make(map[string]*types.RequestIds)
-	for holder, ids := range k.store.iteratePendingDisclosures(ctx) {
+	pendingData := k.store.iteratePendingDisclosures(ctx)
+	pendingHolders := make([]string, 0, len(pendingData))
+	for holder := range pendingData {
+		pendingHolders = append(pendingHolders, holder)
+	}
+	sort.Strings(pendingHolders)
+	for _, holder := range pendingHolders {
+		ids := pendingData[holder]
 		if len(ids) > 0 {
 			pendingDisclosures[holder] = &types.RequestIds{Ids: ids}
 		}

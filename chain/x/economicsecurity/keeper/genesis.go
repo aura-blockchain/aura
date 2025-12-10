@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 	"fmt"
+	"sort"
 
 	"github.com/aequitas/aura/chain/x/economicsecurity/types"
 )
@@ -99,25 +100,33 @@ func (k *Keeper) InitGenesis(ctx context.Context, genesis types.GenesisState) er
 		}
 	}
 
-	// Load last large transaction times by address
+	// Load last large transaction times by address (deterministic ordering)
 	// This is used for rate limiting whale transactions
-	for address, timestamp := range genesis.LastLargeTxTimes {
-		if address == "" {
-			continue
+	txTimeAddrs := make([]string, 0, len(genesis.LastLargeTxTimes))
+	for address := range genesis.LastLargeTxTimes {
+		if address != "" {
+			txTimeAddrs = append(txTimeAddrs, address)
 		}
-
+	}
+	sort.Strings(txTimeAddrs)
+	for _, address := range txTimeAddrs {
+		timestamp := genesis.LastLargeTxTimes[address]
 		if err := k.SetLastLargeTxTime(ctx, address, timestamp); err != nil {
 			return fmt.Errorf("failed to set last large tx time for %s: %w", address, err)
 		}
 	}
 
-	// Load user MEV balances
+	// Load user MEV balances (deterministic ordering)
 	// These represent accumulated MEV rewards awaiting distribution
-	for address, balanceStr := range genesis.UserMevBalances {
-		if address == "" || balanceStr == "" {
-			continue
+	mevAddrs := make([]string, 0, len(genesis.UserMevBalances))
+	for address := range genesis.UserMevBalances {
+		if address != "" && genesis.UserMevBalances[address] != "" {
+			mevAddrs = append(mevAddrs, address)
 		}
-
+	}
+	sort.Strings(mevAddrs)
+	for _, address := range mevAddrs {
+		balanceStr := genesis.UserMevBalances[address]
 		if err := k.SetUserMEVBalance(ctx, address, balanceStr); err != nil {
 			return fmt.Errorf("failed to set MEV balance for %s: %w", address, err)
 		}

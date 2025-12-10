@@ -199,7 +199,7 @@ func (k *Keeper) RequestChainPause(
 	}
 
 	// Create pause request ID
-	pauseRequestID := fmt.Sprintf("pause-%s-%d", requester, time.Now().Unix())
+	pauseRequestID := fmt.Sprintf("pause-%s-%d", requester, ctx.BlockTime().Unix())
 
 	// Record vote
 	k.pauseVotes[pauseRequestID] = []string{requester}

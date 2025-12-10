@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	storetypes "cosmossdk.io/store/types"
@@ -347,7 +346,7 @@ func (k *Keeper) GenerateRequestID(ctx sdk.Context, requester, targetDID string)
 		requester,
 		targetDID,
 		ctx.BlockHeight(),
-		time.Now().UnixNano())))
+		ctx.BlockTime().UnixNano())))
 	return hex.EncodeToString(h.Sum(nil))[:32]
 }
 

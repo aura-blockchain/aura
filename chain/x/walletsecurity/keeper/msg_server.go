@@ -63,7 +63,7 @@ func (ms msgServer) RegisterHardwareWallet(goCtx context.Context, msg *wspb.MsgR
 		DeviceId:        msg.DeviceId,
 		FirmwareVersion: msg.FirmwareVersion,
 		DerivationPath:  msg.DerivationPath,
-		RegisteredAt:    gogoTimestampNow(),
+		RegisteredAt:    blockTimeToGogoTimestamp(ctx),
 		SignatureCount:  0,
 	}
 
@@ -133,7 +133,7 @@ func (ms msgServer) CreateMultiSigWallet(goCtx context.Context, msg *wspb.MsgCre
 		Signers:       msg.Signers,
 		Threshold:     msg.Threshold,
 		TotalSigners:  int32(len(msg.Signers)),
-		CreatedAt:     gogoTimestampNow(),
+		CreatedAt:     blockTimeToGogoTimestamp(ctx),
 		Creator:       msg.Creator,
 		SignerWeights: msg.SignerWeights,
 		WeightThreshold: msg.WeightThreshold,
@@ -312,7 +312,7 @@ func (ms msgServer) ConfigureSocialRecovery(goCtx context.Context, msg *wspb.Msg
 		RecoveryThreshold: msg.RecoveryThreshold,
 		RecoveryDelay:     msg.RecoveryDelay,
 		Enabled:           true,
-		ConfiguredAt:      gogoTimestampNow(),
+		ConfiguredAt:      blockTimeToGogoTimestamp(ctx),
 		MaxGuardians:      int32(len(msg.Guardians)),
 	}
 
@@ -554,7 +554,7 @@ func (ms msgServer) ExecuteRecovery(goCtx context.Context, msg *wspb.MsgExecuteR
 	}
 
 	request.Status = wspb.RecoveryStatus_RECOVERY_STATUS_EXECUTED
-	request.ExecutedAt = gogoTimestampNow()
+	request.ExecutedAt = blockTimeToGogoTimestamp(ctx)
 
 	updatedRequestBytes, err := ms.Keeper.cdc.Marshal(&request)
 	if err != nil {
@@ -820,7 +820,7 @@ func (ms msgServer) EnrollBiometric(goCtx context.Context, msg *wspb.MsgEnrollBi
 		WalletId:       msg.WalletId,
 		Type:           msg.Type,
 		EnrollmentHash: enrollmentHashStr, // Store hash, not raw data
-		EnrolledAt:     gogoTimestampNow(),
+		EnrolledAt:     blockTimeToGogoTimestamp(ctx),
 		Enabled:        true,
 		FailedAttempts: 0,
 		LockedOut:      false,
@@ -1040,7 +1040,7 @@ func (ms msgServer) StoreInSecureEnclave(goCtx context.Context, msg *wspb.MsgSto
 		WalletId:               msg.WalletId,
 		EnclaveType:            msg.EnclaveType,
 		AttestationCertificate: msg.AttestationCertificate,
-		CreatedAt:              gogoTimestampNow(),
+		CreatedAt:              blockTimeToGogoTimestamp(ctx),
 	}
 
 	configBytes, err := ms.Keeper.cdc.Marshal(config)
@@ -1073,7 +1073,7 @@ func (ms msgServer) CreateEncryptedBackup(goCtx context.Context, msg *wspb.MsgCr
 		Salt:                   msg.Salt,
 		Iterations:             msg.Iterations,
 		Location:               msg.Location,
-		CreatedAt:              gogoTimestampNow(),
+		CreatedAt:              blockTimeToGogoTimestamp(ctx),
 	}
 
 	backupBytes, err := ms.Keeper.cdc.Marshal(backup)

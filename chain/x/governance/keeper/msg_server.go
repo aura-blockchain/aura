@@ -57,7 +57,8 @@ func (ms msgServer) SubmitProposal(goCtx context.Context, msg *govpb.MsgSubmitPr
 	ms.Keeper.SetNextProposalID(ctx, proposalID+1)
 
 	// Create proposal
-	now := time.Now()
+	// Use ctx.BlockTime() for determinism - NEVER use time.Now() in consensus code
+	now := ctx.BlockTime()
 	proposal := &types.Proposal{
 		Id:          proposalID,
 		Title:       msg.Title,
@@ -113,7 +114,8 @@ func (ms msgServer) SubmitProposal(goCtx context.Context, msg *govpb.MsgSubmitPr
 		}
 
 		// Store deposit record
-		depositNow := time.Now()
+		// Use ctx.BlockTime() for determinism - NEVER use time.Now() in consensus code
+		depositNow := ctx.BlockTime()
 		depositRecord := &types.Deposit{
 			ProposalId: proposalID,
 			Depositor:  msg.Proposer,
@@ -193,7 +195,8 @@ func (ms msgServer) Deposit(goCtx context.Context, msg *govpb.MsgDeposit) (*govp
 	}
 
 	// Store deposit record
-	depositNow := time.Now()
+	// Use ctx.BlockTime() for determinism - NEVER use time.Now() in consensus code
+	depositNow := ctx.BlockTime()
 	deposit := &types.Deposit{
 		ProposalId: msg.ProposalId,
 		Depositor:  msg.Depositor,
@@ -262,7 +265,8 @@ func (ms msgServer) Vote(goCtx context.Context, msg *govpb.MsgVote) (*govpb.MsgV
 	if err == nil && existingVote != nil {
 		// Vote already exists - allow update by overwriting
 		// This is standard governance behavior: users can change their vote during voting period
-		voteUpdateNow := time.Now()
+		// Use ctx.BlockTime() for determinism - NEVER use time.Now() in consensus code
+		voteUpdateNow := ctx.BlockTime()
 		existingVote.Option = msg.Option
 		existingVote.Timestamp = &gogotypes.Timestamp{Seconds: voteUpdateNow.Unix(), Nanos: int32(voteUpdateNow.Nanosecond())}
 		existingVote.VotingPower = votingPower.String()
@@ -292,7 +296,8 @@ func (ms msgServer) Vote(goCtx context.Context, msg *govpb.MsgVote) (*govpb.MsgV
 	}
 
 	// Create new vote with cached voting power
-	voteNow := time.Now()
+	// Use ctx.BlockTime() for determinism - NEVER use time.Now() in consensus code
+	voteNow := ctx.BlockTime()
 	vote := &types.Vote{
 		ProposalId:  msg.ProposalId,
 		Voter:       msg.Voter,
@@ -365,7 +370,8 @@ func (ms msgServer) VoteWeighted(goCtx context.Context, msg *govpb.MsgVoteWeight
 	existingVote, err := ms.Keeper.GetVote(ctx, msg.ProposalId, msg.Voter)
 	if err == nil && existingVote != nil {
 		// Vote already exists - allow update by overwriting
-		voteWeightedUpdateNow := time.Now()
+		// Use ctx.BlockTime() for determinism - NEVER use time.Now() in consensus code
+		voteWeightedUpdateNow := ctx.BlockTime()
 		existingVote.Option = msg.Options[0].Option
 		existingVote.Timestamp = &gogotypes.Timestamp{Seconds: voteWeightedUpdateNow.Unix(), Nanos: int32(voteWeightedUpdateNow.Nanosecond())}
 
@@ -387,7 +393,8 @@ func (ms msgServer) VoteWeighted(goCtx context.Context, msg *govpb.MsgVoteWeight
 	}
 
 	// Create new weighted vote (simplified: store first option only)
-	voteWeightedNow := time.Now()
+	// Use ctx.BlockTime() for determinism - NEVER use time.Now() in consensus code
+	voteWeightedNow := ctx.BlockTime()
 	vote := &types.Vote{
 		ProposalId: msg.ProposalId,
 		Voter:      msg.Voter,
@@ -529,7 +536,8 @@ func (ms msgServer) SubmitVeto(goCtx context.Context, msg *govpb.MsgSubmitVeto) 
 	}
 
 	// Store veto request
-	vetoNow := time.Now()
+	// Use ctx.BlockTime() for determinism - NEVER use time.Now() in consensus code
+	vetoNow := ctx.BlockTime()
 	veto := &types.VetoRequest{
 		ProposalId: msg.ProposalId,
 		Vetoer:     msg.Vetoer,
@@ -686,7 +694,8 @@ func (ms msgServer) SubmitSnapshotVote(goCtx context.Context, msg *govpb.MsgSubm
 	existingVote, err := ms.Keeper.GetSnapshotVote(ctx, msg.ProposalId, msg.Voter)
 	if err == nil && existingVote != nil {
 		// Snapshot vote already exists - allow update
-		snapshotUpdateNow := time.Now()
+		// Use ctx.BlockTime() for determinism - NEVER use time.Now() in consensus code
+		snapshotUpdateNow := ctx.BlockTime()
 		existingVote.Option = msg.Option
 		existingVote.Signature = msg.Signature
 		existingVote.Timestamp = &gogotypes.Timestamp{Seconds: snapshotUpdateNow.Unix(), Nanos: int32(snapshotUpdateNow.Nanosecond())}
@@ -709,7 +718,8 @@ func (ms msgServer) SubmitSnapshotVote(goCtx context.Context, msg *govpb.MsgSubm
 	}
 
 	// Create new snapshot vote
-	snapshotNow := time.Now()
+	// Use ctx.BlockTime() for determinism - NEVER use time.Now() in consensus code
+	snapshotNow := ctx.BlockTime()
 	snapshotVote := &types.SnapshotVote{
 		ProposalId: msg.ProposalId,
 		Voter:      msg.Voter,

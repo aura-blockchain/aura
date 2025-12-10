@@ -15,7 +15,20 @@ import (
 	cryptoproto "github.com/aequitas/aura/proto/aura/cryptography/v1beta1"
 )
 
-// CreateSaltedHash creates a cryptographic hash with salt
+// CreateSaltedHash creates a cryptographic hash with salt.
+//
+// WARNING: This function uses crypto/rand which is NON-DETERMINISTIC and will break
+// consensus if called from a message handler (MsgServer method).
+//
+// DO NOT call this from message handlers. Instead:
+// 1. For message handlers: Use HashWithCustomSalt() and require the client to provide
+//    the salt in the message (generated off-chain)
+// 2. For queries/client-side: This function is safe to use
+//
+// This function is intended for:
+// - Client-side utilities
+// - Query responses
+// - BeginBlocker/EndBlocker with extreme caution (consider if randomness is needed)
 func (k Keeper) CreateSaltedHash(
 	ctx context.Context,
 	data []byte,
@@ -28,6 +41,7 @@ func (k Keeper) CreateSaltedHash(
 	}
 
 	// Generate random salt
+	// WARNING: This is non-deterministic - see function documentation
 	salt := make([]byte, params.MinSaltLengthBytes)
 	_, err = rand.Read(salt)
 	if err != nil {
@@ -243,7 +257,17 @@ func (k Keeper) HashWithCustomSalt(
 	return k.computeSaltedHash(data, salt, algorithm, iterations)
 }
 
-// GenerateSalt generates a cryptographically secure salt
+// GenerateSalt generates a cryptographically secure salt.
+//
+// WARNING: This function uses crypto/rand which is NON-DETERMINISTIC and will break
+// consensus if called from a message handler (MsgServer method).
+//
+// DO NOT call this from message handlers. Instead, require the client to generate
+// salt off-chain and include it in the message.
+//
+// This function is intended for:
+// - Client-side utilities only
+// - NEVER for on-chain/consensus operations
 func (k Keeper) GenerateSalt(ctx context.Context, length int32) ([]byte, error) {
 	params, err := k.GetParams(ctx)
 	if err != nil {
@@ -254,6 +278,7 @@ func (k Keeper) GenerateSalt(ctx context.Context, length int32) ([]byte, error) 
 		return nil, types.ErrInvalidSaltLength
 	}
 
+	// WARNING: Non-deterministic - see function documentation
 	salt := make([]byte, length)
 	_, err = rand.Read(salt)
 	if err != nil {
@@ -263,7 +288,12 @@ func (k Keeper) GenerateSalt(ctx context.Context, length int32) ([]byte, error) 
 	return salt, nil
 }
 
-// BatchHashWithSalt creates multiple salted hashes efficiently
+// BatchHashWithSalt creates multiple salted hashes efficiently.
+//
+// WARNING: This function uses crypto/rand which is NON-DETERMINISTIC and will break
+// consensus if called from a message handler (MsgServer method).
+//
+// DO NOT call this from message handlers. This is for client-side batch operations only.
 func (k Keeper) BatchHashWithSalt(
 	ctx context.Context,
 	dataItems [][]byte,

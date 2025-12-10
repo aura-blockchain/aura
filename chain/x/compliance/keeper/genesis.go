@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	"sort"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -146,15 +147,20 @@ func (k *Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		kycRecords = []*types.KYCRecord{}
 	}
 
-	// Export KYC history - convert map to slice for proto
+	// Export KYC history - convert map to slice for proto (deterministic ordering)
 	kycHistoryMap, err := k.GetAllKYCHistory(ctx)
 	if err != nil {
 		k.logger(ctx).Error("failed to get KYC history", "error", err)
 		kycHistoryMap = make(map[string][]*types.KYCHistoryEntry)
 	}
 	var kycHistory []*types.KYCHistoryEntry
-	for _, entries := range kycHistoryMap {
-		kycHistory = append(kycHistory, entries...)
+	kycHistoryAddrs := make([]string, 0, len(kycHistoryMap))
+	for addr := range kycHistoryMap {
+		kycHistoryAddrs = append(kycHistoryAddrs, addr)
+	}
+	sort.Strings(kycHistoryAddrs)
+	for _, addr := range kycHistoryAddrs {
+		kycHistory = append(kycHistory, kycHistoryMap[addr]...)
 	}
 
 	// Export AML profiles
@@ -178,15 +184,20 @@ func (k *Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		monitoringRules = []*types.TransactionMonitoringRule{}
 	}
 
-	// Export transaction alerts - convert map to slice for proto
+	// Export transaction alerts - convert map to slice for proto (deterministic ordering)
 	transactionAlertsMap, err := k.GetAllTransactionAlerts(ctx)
 	if err != nil {
 		k.logger(ctx).Error("failed to get transaction alerts", "error", err)
 		transactionAlertsMap = make(map[string][]*types.TransactionAlert)
 	}
 	var transactionAlerts []*types.TransactionAlert
-	for _, alerts := range transactionAlertsMap {
-		transactionAlerts = append(transactionAlerts, alerts...)
+	alertAddrs := make([]string, 0, len(transactionAlertsMap))
+	for addr := range transactionAlertsMap {
+		alertAddrs = append(alertAddrs, addr)
+	}
+	sort.Strings(alertAddrs)
+	for _, addr := range alertAddrs {
+		transactionAlerts = append(transactionAlerts, transactionAlertsMap[addr]...)
 	}
 
 	// Export sanctions results
@@ -196,15 +207,20 @@ func (k *Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		sanctionsResults = []*types.SanctionsScreeningResult{}
 	}
 
-	// Export GDPR consents - convert map to slice for proto
+	// Export GDPR consents - convert map to slice for proto (deterministic ordering)
 	gdprConsentsMap, err := k.GetAllGDPRConsents(ctx)
 	if err != nil {
 		k.logger(ctx).Error("failed to get GDPR consents", "error", err)
 		gdprConsentsMap = make(map[string][]*types.GDPRConsent)
 	}
 	var gdprConsents []*types.GDPRConsent
-	for _, consents := range gdprConsentsMap {
-		gdprConsents = append(gdprConsents, consents...)
+	gdprConsentAddrs := make([]string, 0, len(gdprConsentsMap))
+	for addr := range gdprConsentsMap {
+		gdprConsentAddrs = append(gdprConsentAddrs, addr)
+	}
+	sort.Strings(gdprConsentAddrs)
+	for _, addr := range gdprConsentAddrs {
+		gdprConsents = append(gdprConsents, gdprConsentsMap[addr]...)
 	}
 
 	// Export GDPR requests
@@ -214,15 +230,20 @@ func (k *Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		gdprRequests = []*types.GDPRDataRequest{}
 	}
 
-	// Export tax reports - convert map to slice for proto
+	// Export tax reports - convert map to slice for proto (deterministic ordering)
 	taxReportsMap, err := k.GetAllTaxReports(ctx)
 	if err != nil {
 		k.logger(ctx).Error("failed to get tax reports", "error", err)
 		taxReportsMap = make(map[string][]*types.TaxReport)
 	}
 	var taxReports []*types.TaxReport
-	for _, reports := range taxReportsMap {
-		taxReports = append(taxReports, reports...)
+	taxReportAddrs := make([]string, 0, len(taxReportsMap))
+	for addr := range taxReportsMap {
+		taxReportAddrs = append(taxReportAddrs, addr)
+	}
+	sort.Strings(taxReportAddrs)
+	for _, addr := range taxReportAddrs {
+		taxReports = append(taxReports, taxReportsMap[addr]...)
 	}
 
 	return &types.GenesisState{

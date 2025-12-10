@@ -60,7 +60,7 @@ func (k *Keeper) StoreDataItem(ctx sdk.Context,
 		Description:       description,
 		Metadata:          metadata,
 		Tags:              tags,
-		CreatedAt:         timestampFromTime(time.Now()),
+		CreatedAt:         timestampFromTime(ctx.BlockTime()),
 		GeoLocation:       geoLocation,
 		Verifications:     []*types.Verification{},
 		AccessPolicy:      accessPolicy,
@@ -150,7 +150,7 @@ func (k *Keeper) StoreDataItemWithContent(sdkCtx sdk.Context,
 		Description:       description,
 		Metadata:          metadata,
 		Tags:              tags,
-		CreatedAt:         timestampFromTime(time.Now()),
+		CreatedAt:         timestampFromTime(sdkCtx.BlockTime()),
 		GeoLocation:       geoLocation,
 		Verifications:     []*types.Verification{},
 		AccessPolicy:      accessPolicy,
@@ -274,7 +274,7 @@ func (k *Keeper) VerifyDataItem(ctx sdk.Context,
 	verification := &types.Verification{
 		VerifierAddress:    verifierAddress,
 		Level:              level,
-		VerifiedAt:         timestampFromTime(time.Now()),
+		VerifiedAt:         timestampFromTime(ctx.BlockTime()),
 		VerificationMethod: verificationMethod,
 		ConfidenceScore:    confidenceScore,
 		Notes:              notes,
@@ -290,7 +290,7 @@ func (k *Keeper) VerifyDataItem(ctx sdk.Context,
 	}
 	if level >= types.VerificationLevel_VERIFICATION_LEVEL_PEER_VERIFIED {
 		item.Status = types.DataItemStatus_DATA_ITEM_STATUS_VERIFIED
-		item.VerifiedAt = timestampFromTime(time.Now())
+		item.VerifiedAt = timestampFromTime(ctx.BlockTime())
 		item.VerifiedBy = verifierAddress
 	}
 

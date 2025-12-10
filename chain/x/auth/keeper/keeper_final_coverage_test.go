@@ -20,7 +20,7 @@ func TestGetAuditLogs_NilTimestamp(t *testing.T) {
 	k, ctx := setupTestKeeper(t)
 
 	// Log with nil timestamp
-	k.LogAudit(ctx, "actor1", "action1", "resource1", "success", nil, "")
+	k.LogAudit(ctx, "actor1", "action1", "resource1", "success", nil, "", ctx.BlockTime())
 
 	// Get logs - should handle nil timestamp gracefully
 	logs := k.GetAuditLogs("", "", 0, 0, 10)
@@ -31,7 +31,7 @@ func TestGetAuditLogs_NilTimestamp(t *testing.T) {
 func TestGetAuditLogsByResource_NilTimestamp(t *testing.T) {
 	k, ctx := setupTestKeeper(t)
 
-	k.LogAudit(ctx, "actor1", "action1", "resource1", "success", nil, "")
+	k.LogAudit(ctx, "actor1", "action1", "resource1", "success", nil, "", ctx.BlockTime())
 
 	logs := k.GetAuditLogsByResource("resource1", 10)
 	require.NotNil(t, logs)
@@ -41,7 +41,7 @@ func TestGetAuditLogsByResource_NilTimestamp(t *testing.T) {
 func TestGetRecentAuditLogs_NilTimestamp(t *testing.T) {
 	k, ctx := setupTestKeeper(t)
 
-	k.LogAudit(ctx, "actor1", "action1", "resource1", "success", nil, "")
+	k.LogAudit(ctx, "actor1", "action1", "resource1", "success", nil, "", ctx.BlockTime())
 
 	logs := k.GetRecentAuditLogs(10)
 	require.NotNil(t, logs)
@@ -51,8 +51,8 @@ func TestGetRecentAuditLogs_NilTimestamp(t *testing.T) {
 func TestSearchAuditLogs_AllCriteria(t *testing.T) {
 	k, ctx := setupTestKeeper(t)
 
-	k.LogAudit(ctx, "alice", "create", "user_123", "success", map[string]string{"type": "user"}, "")
-	k.LogAudit(ctx, "bob", "delete", "user_456", "failed", map[string]string{"type": "user"}, "error")
+	k.LogAudit(ctx, "alice", "create", "user_123", "success", map[string]string{"type": "user"}, "", ctx.BlockTime())
+	k.LogAudit(ctx, "bob", "delete", "user_456", "failed", map[string]string{"type": "user"}, "error", ctx.BlockTime())
 
 	// Test resource criteria
 	criteria := map[string]string{
@@ -82,7 +82,7 @@ func TestSearchAuditLogs_AllCriteria(t *testing.T) {
 func TestSearchAuditLogs_NilTimestamp(t *testing.T) {
 	k, ctx := setupTestKeeper(t)
 
-	k.LogAudit(ctx, "actor1", "action1", "resource1", "success", nil, "")
+	k.LogAudit(ctx, "actor1", "action1", "resource1", "success", nil, "", ctx.BlockTime())
 
 	criteria := map[string]string{
 		"actor": "actor1",

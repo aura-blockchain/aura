@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"sort"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/aequitas/aura/chain/x/aura-bindings/types"
 )
@@ -15,21 +17,31 @@ func (k *Keeper) InitGenesis(ctx sdk.Context, data types.GenesisState) error {
 		return err
 	}
 
-	// Import query statistics
+	// Import query statistics (deterministic ordering)
 	if data.QueryStats != nil {
 		k.queryStats = make(map[string]uint64, len(data.QueryStats))
-		for queryType, count := range data.QueryStats {
-			k.queryStats[queryType] = count
+		queryTypes := make([]string, 0, len(data.QueryStats))
+		for queryType := range data.QueryStats {
+			queryTypes = append(queryTypes, queryType)
+		}
+		sort.Strings(queryTypes)
+		for _, queryType := range queryTypes {
+			k.queryStats[queryType] = data.QueryStats[queryType]
 		}
 	} else {
 		k.queryStats = make(map[string]uint64)
 	}
 
-	// Import message statistics
+	// Import message statistics (deterministic ordering)
 	if data.MessageStats != nil {
 		k.messageStats = make(map[string]uint64, len(data.MessageStats))
-		for msgType, count := range data.MessageStats {
-			k.messageStats[msgType] = count
+		msgTypes := make([]string, 0, len(data.MessageStats))
+		for msgType := range data.MessageStats {
+			msgTypes = append(msgTypes, msgType)
+		}
+		sort.Strings(msgTypes)
+		for _, msgType := range msgTypes {
+			k.messageStats[msgType] = data.MessageStats[msgType]
 		}
 	} else {
 		k.messageStats = make(map[string]uint64)
@@ -52,16 +64,26 @@ func (k *Keeper) ExportGenesis(ctx sdk.Context) types.GenesisState {
 	k.mu.RLock()
 	defer k.mu.RUnlock()
 
-	// Export query statistics
+	// Export query statistics (deterministic ordering)
 	queryStats := make(map[string]uint64, len(k.queryStats))
-	for queryType, count := range k.queryStats {
-		queryStats[queryType] = count
+	queryTypes := make([]string, 0, len(k.queryStats))
+	for queryType := range k.queryStats {
+		queryTypes = append(queryTypes, queryType)
+	}
+	sort.Strings(queryTypes)
+	for _, queryType := range queryTypes {
+		queryStats[queryType] = k.queryStats[queryType]
 	}
 
-	// Export message statistics
+	// Export message statistics (deterministic ordering)
 	messageStats := make(map[string]uint64, len(k.messageStats))
-	for msgType, count := range k.messageStats {
-		messageStats[msgType] = count
+	msgTypes := make([]string, 0, len(k.messageStats))
+	for msgType := range k.messageStats {
+		msgTypes = append(msgTypes, msgType)
+	}
+	sort.Strings(msgTypes)
+	for _, msgType := range msgTypes {
+		messageStats[msgType] = k.messageStats[msgType]
 	}
 
 	k.Logger(ctx).Info("exported aura-bindings genesis",

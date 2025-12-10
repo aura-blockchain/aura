@@ -65,11 +65,14 @@ func (m *MsgServer) CreateVestingSchedule(
 	}
 
 	// Convert gogoproto Timestamp to time.Time
+	// Use ctx.BlockTime() as fallback for determinism in consensus.
+	// NEVER use time.Now() - it causes non-determinism across validators.
+	ctx := sdk.UnwrapSDKContext(goCtx)
 	var startTime time.Time
 	if msg.StartTime != nil {
 		startTime = time.Unix(msg.StartTime.Seconds, int64(msg.StartTime.Nanos))
 	} else {
-		startTime = time.Now()
+		startTime = ctx.BlockTime()
 	}
 
 	// Create the vesting schedule via keeper
@@ -87,8 +90,7 @@ func (m *MsgServer) CreateVestingSchedule(
 		return nil, errorsmod.Wrap(err, "failed to create vesting schedule")
 	}
 
-	// Emit event
-	ctx := sdk.UnwrapSDKContext(goCtx)
+	// Emit event (ctx already unwrapped above for startTime fallback)
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			"vesting_schedule_created",

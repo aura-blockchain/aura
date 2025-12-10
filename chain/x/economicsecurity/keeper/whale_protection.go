@@ -4,7 +4,8 @@ import (
 	"context"
 	"fmt"
 	"math/big"
-	"time"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/aequitas/aura/chain/x/economicsecurity/types"
 )
@@ -134,6 +135,9 @@ func (k *Keeper) recordLargeTx(ctx context.Context, sender, recipient, amount st
 		senderPrefix = sender[:8]
 	}
 
+	// Get deterministic block time from SDK context for blockchain consensus
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
 	record := &types.LargeTxRecord{
 		TxHash:             fmt.Sprintf("tx_%d_%s", currentHeight, senderPrefix),
 		Sender:             sender,
@@ -141,7 +145,7 @@ func (k *Keeper) recordLargeTx(ctx context.Context, sender, recipient, amount st
 		Amount:             amount,
 		PercentageOfSupply: percentage.Uint64(),
 		BlockHeight:        currentHeight,
-		Timestamp:          time.Now(),
+		Timestamp:          sdkCtx.BlockTime(),
 		Flagged:            false,
 	}
 

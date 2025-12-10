@@ -139,17 +139,27 @@ message MsgRegisterSecureEnclaveResponse {
   string enclave_id = 1;
 }
 
-// MsgGenerateQuantumResistantKey generates a quantum-resistant key
+// MsgGenerateQuantumResistantKey registers a quantum-resistant public key.
+//
+// IMPORTANT: This message does NOT generate keys on-chain. The client MUST:
+// 1. Generate the quantum-resistant keypair OFF-CHAIN using appropriate libraries
+// 2. Submit only the PUBLIC key in this message
+// 3. Store the PRIVATE key securely client-side
+//
+// On-chain key generation would break consensus (crypto/rand is non-deterministic)
+// and compromise security (validators should never see private keys).
 message MsgGenerateQuantumResistantKey {
   string creator = 1;
   QuantumResistantAlgorithm algorithm = 2;
-  google.protobuf.Timestamp expires_at = 3 [(gogoproto.stdtime) = true];
+  // The public key generated off-chain by the client (REQUIRED)
+  bytes public_key = 3;
+  google.protobuf.Timestamp expires_at = 4 [(gogoproto.stdtime) = true];
 }
 
 // MsgGenerateQuantumResistantKeyResponse is the response for GenerateQuantumResistantKey
 message MsgGenerateQuantumResistantKeyResponse {
+  // The key ID assigned to this registered public key
   string key_id = 1;
-  bytes public_key = 2;
 }
 
 // MsgAddCertificatePin adds a certificate pin

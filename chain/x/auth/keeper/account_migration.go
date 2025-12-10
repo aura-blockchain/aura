@@ -60,8 +60,9 @@ func (k *Keeper) InitiateAccountMigration(ctx sdk.Context, oldAddr, newAddr, ini
 	}
 
 	// Create migration request
+	// Use ctx.BlockTime() for deterministic ID generation
 	migration := &AccountMigration{
-		ID:                types.GenerateID("migration", oldAddr, newAddr),
+		ID:                types.GenerateID("migration", ctx.BlockTime(), oldAddr, newAddr),
 		OldAddress:        oldAddr,
 		NewAddress:        newAddr,
 		Reason:            reason,
@@ -75,12 +76,12 @@ func (k *Keeper) InitiateAccountMigration(ctx sdk.Context, oldAddr, newAddr, ini
 	// Store migration
 	k.setAccountMigration(ctx, migration)
 
-	// Log audit
+	// Log audit (use ctx.BlockTime() for determinism)
 	k.LogAudit(ctx, initiator, "account_migration", "initiate", "success", map[string]string{
 		"old_address": oldAddr,
 		"new_address": newAddr,
 		"migration_id": migration.ID,
-	}, "")
+	}, "", ctx.BlockTime())
 
 	return migration, nil
 }
@@ -118,11 +119,11 @@ func (k *Keeper) ApproveAccountMigration(ctx sdk.Context, migrationID, approver 
 
 	k.setAccountMigration(ctx, migration)
 
-	// Log audit
+	// Log audit (use ctx.BlockTime() for determinism)
 	k.LogAudit(ctx, approver, "account_migration", "approve", "success", map[string]string{
 		"migration_id": migrationID,
 		"approvals": fmt.Sprintf("%d/%d", len(migration.ApprovedBy), migration.RequiredApprovals),
-	}, "")
+	}, "", ctx.BlockTime())
 
 	return nil
 }
@@ -162,12 +163,12 @@ func (k *Keeper) ExecuteAccountMigration(ctx sdk.Context, migrationID, executor 
 
 	k.setAccountMigration(ctx, migration)
 
-	// Log audit
+	// Log audit (use ctx.BlockTime() for determinism)
 	k.LogAudit(ctx, executor, "account_migration", "execute", "success", map[string]string{
 		"migration_id": migrationID,
 		"old_address": migration.OldAddress,
 		"new_address": migration.NewAddress,
-	}, "")
+	}, "", ctx.BlockTime())
 
 	return nil
 }
@@ -180,11 +181,12 @@ func (k *Keeper) migrateRoles(ctx sdk.Context, migration *AccountMigration) erro
 	}
 
 	for _, assignment := range assignments {
+		// Use ctx.BlockTime() for determinism - NEVER use time.Now() in consensus code
 		newAssignment := &authproto.RoleAssignment{
 			Address:    migration.NewAddress,
 			RoleName:   assignment.RoleName,
 			AssignedBy: "migration:" + migration.ID,
-			AssignedAt: time.Now(),
+			AssignedAt: ctx.BlockTime(),
 			ExpiresAt:  assignment.ExpiresAt,
 		}
 		if err := k.SetRoleAssignment(ctx, newAssignment); err != nil {

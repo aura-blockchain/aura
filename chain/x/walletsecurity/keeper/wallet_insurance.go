@@ -20,7 +20,7 @@ func (k Keeper) PurchaseInsurance(ctx context.Context, walletID string, coverage
 		CoverageAmount: coverageAmount.String(),
 		Premium:        premium.String(),
 		Active:         true,
-		PurchasedAt:    gogoTimestampNow(),
+		PurchasedAt:    blockTimeToGogoTimestamp(ctx),
 		ExpiresAt:      blockTimeWithOffsetToGogoTimestamp(ctx, 365 * 24 * time.Hour), // 1 year
 		ClaimsPaid:     "0",
 	}
@@ -67,7 +67,7 @@ func (k Keeper) FileClaim(ctx context.Context, policyID, reason string, claimAmo
 		Amount:     claimAmount.String(),
 		Reason:     reason,
 		Status:     "pending",
-		FiledAt:    gogoTimestampNow(),
+		FiledAt:    blockTimeToGogoTimestamp(ctx),
 		ApprovedAt: nil,
 	}
 
@@ -99,7 +99,7 @@ func (k Keeper) ProcessClaim(ctx context.Context, claimID string, approved bool)
 
 	if approved {
 		claim.Status = "approved"
-		claim.ApprovedAt = gogoTimestampNow()
+		claim.ApprovedAt = blockTimeToGogoTimestamp(ctx)
 
 		// Update policy claims paid
 		policyKey := []byte(fmt.Sprintf("insurance_%s", claim.PolicyId))

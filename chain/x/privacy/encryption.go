@@ -1,5 +1,33 @@
 package privacy
 
+// This file implements OFF-CHAIN memo encryption utilities for privacy-preserving messages.
+//
+// IMPORTANT: All encryption functions are OFF-CHAIN utilities that use crypto/rand
+// for nonces and ephemeral keys. NEVER call from consensus code.
+//
+// Encrypted memos allow attaching private messages to transactions:
+// - Sender encrypts memo off-chain using recipient's public key (ECIES-style)
+// - Encrypted memo is submitted with transaction as opaque bytes
+// - Only recipient with private key can decrypt
+// - Blockchain stores encrypted bytes without ever decrypting or re-encrypting
+//
+// Supported encryption algorithms:
+// - AES-256-GCM: Fast, widely supported, 128-bit security
+// - ChaCha20-Poly1305: Fast, constant-time, 256-bit security
+// - XChaCha20-Poly1305: Extended nonce for better collision resistance
+//
+// ON-CHAIN VS OFF-CHAIN SEPARATION:
+// - OFF-CHAIN: Encrypt(), encryptAESGCM(), encryptChaCha20Poly1305(), etc.
+//   These functions encrypt memos using cryptographic randomness (nonces, ephemeral keys).
+//   Used by wallet software before submitting transactions.
+//
+// - ON-CHAIN: Message handlers store encrypted memos as-is (opaque bytes).
+//   No encryption, decryption, or cryptographic operations during consensus.
+//   The blockchain is a transport layer for encrypted data.
+//
+// Encryption happens entirely off-chain. The blockchain only stores and retrieves
+// encrypted bytes without performing any cryptographic operations.
+
 import (
 	"crypto/aes"
 	"crypto/cipher"

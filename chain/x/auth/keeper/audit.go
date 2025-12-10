@@ -119,18 +119,22 @@ func (k *Keeper) GetRecentAuditLogs(limit uint64) []*authproto.AuditLog {
 	return all
 }
 
-// LogAudit creates a new audit log entry
-func (k *Keeper) LogAudit(ctx interface{}, actor, action, resource, status string, metadata map[string]string, errorMsg string) {
+// LogAudit creates a new audit log entry.
+// The blockTime parameter must be ctx.BlockTime() for determinism in consensus.
+// NEVER use time.Now() - it causes non-determinism across validators.
+// Note: The ctx parameter accepts interface{} for backwards compatibility, but
+// callers with access to sdk.Context should pass ctx.BlockTime() as blockTime.
+func (k *Keeper) LogAudit(ctx interface{}, actor, action, resource, status string, metadata map[string]string, errorMsg string, blockTime time.Time) {
 	k.mu.Lock()
 	defer k.mu.Unlock()
 
 	log := &authproto.AuditLog{
-		Id:           fmt.Sprintf("%s-%d", actor, time.Now().UnixNano()),
+		Id:           fmt.Sprintf("%s-%d", actor, blockTime.UnixNano()),
 		Actor:        actor,
 		Action:       action,
 		Resource:     resource,
 		Result:       status,
-		Timestamp:    time.Now(),
+		Timestamp:    blockTime,
 		Metadata:     metadata,
 		ErrorMessage: errorMsg,
 	}

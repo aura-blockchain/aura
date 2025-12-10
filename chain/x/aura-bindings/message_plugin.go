@@ -2,7 +2,6 @@ package aurabindings
 
 import (
 	"encoding/json"
-	"time"
 
 	"cosmossdk.io/errors"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
@@ -96,9 +95,9 @@ func (m MessageHandler) DispatchMsg(ctx sdk.Context, contractAddr sdk.AccAddress
 			// Generate a UUID for vc_id
 			vcID := uuid.New().String()
 
-			// Create timestamp for IssuedAt field
-			now := time.Now()
-			issuedAtTimestamp, err := gogotypes.TimestampProto(now)
+			// Create timestamp for IssuedAt field using blockchain time for determinism
+			blockTime := ctx.BlockTime()
+			issuedAtTimestamp, err := gogotypes.TimestampProto(blockTime)
 			if err != nil {
 				return nil, nil, errors.Wrap(err, "failed to create timestamp")
 			}

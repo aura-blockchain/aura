@@ -1,5 +1,28 @@
 package privacy
 
+// This file implements OFF-CHAIN confidential transaction construction utilities.
+//
+// IMPORTANT: All commitment and proof generation functions are OFF-CHAIN utilities
+// for wallet software. They use crypto/rand for blinding factors and MUST NOT be
+// called from consensus code.
+//
+// Confidential transactions hide transaction amounts using Pedersen commitments
+// and range proofs (Bulletproofs). This allows validators to verify transaction
+// validity without seeing actual amounts.
+//
+// ON-CHAIN VS OFF-CHAIN SEPARATION:
+// - OFF-CHAIN: CreateCommitment(), CreateRingCT(), GenerateBulletproof()
+//   These functions generate commitments and proofs with cryptographic randomness.
+//   They are used by wallet software to construct confidential transactions locally.
+//
+// - ON-CHAIN: VerifyCommitment(), VerifyRingCT(), VerifyBulletproof()
+//   These are deterministic verification functions that can be called during consensus.
+//   They verify pre-constructed commitments and proofs without using any randomness.
+//
+// The message handler (MsgSubmitPrivateTransaction) receives already-constructed
+// confidential transactions from users. No commitment or proof generation occurs
+// during consensus - only deterministic verification.
+
 import (
 	"crypto/elliptic"
 	"crypto/rand"

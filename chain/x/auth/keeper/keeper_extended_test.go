@@ -433,7 +433,7 @@ func TestGetAuditLogsByActor(t *testing.T) {
 
 	// Log multiple events
 	for i := 0; i < 5; i++ {
-		k.LogAudit(ctx, "actor1", "action"+string(rune('A'+i)), "resource1", "success", nil, "")
+		k.LogAudit(ctx, "actor1", "action"+string(rune('A'+i)), "resource1", "success", nil, "", ctx.BlockTime())
 	}
 
 	logs := k.GetAuditLogsByActor("actor1", 10)
@@ -443,9 +443,9 @@ func TestGetAuditLogsByActor(t *testing.T) {
 func TestGetAuditLogsByAction(t *testing.T) {
 	k, ctx := setupTestKeeper(t)
 
-	k.LogAudit(ctx, "actor1", "create", "resource1", "success", nil, "")
-	k.LogAudit(ctx, "actor2", "create", "resource2", "success", nil, "")
-	k.LogAudit(ctx, "actor3", "delete", "resource3", "success", nil, "")
+	k.LogAudit(ctx, "actor1", "create", "resource1", "success", nil, "", ctx.BlockTime())
+	k.LogAudit(ctx, "actor2", "create", "resource2", "success", nil, "", ctx.BlockTime())
+	k.LogAudit(ctx, "actor3", "delete", "resource3", "success", nil, "", ctx.BlockTime())
 
 	logs := k.GetAuditLogsByAction("create", 10)
 	require.GreaterOrEqual(t, len(logs), 2)
@@ -454,8 +454,8 @@ func TestGetAuditLogsByAction(t *testing.T) {
 func TestGetAuditLogsByResource(t *testing.T) {
 	k, ctx := setupTestKeeper(t)
 
-	k.LogAudit(ctx, "actor1", "read", "resource1", "success", nil, "")
-	k.LogAudit(ctx, "actor2", "update", "resource1", "success", nil, "")
+	k.LogAudit(ctx, "actor1", "read", "resource1", "success", nil, "", ctx.BlockTime())
+	k.LogAudit(ctx, "actor2", "update", "resource1", "success", nil, "", ctx.BlockTime())
 
 	logs := k.GetAuditLogsByResource("resource1", 10)
 	require.GreaterOrEqual(t, len(logs), 2)
@@ -465,7 +465,7 @@ func TestGetRecentAuditLogs(t *testing.T) {
 	k, ctx := setupTestKeeper(t)
 
 	for i := 0; i < 10; i++ {
-		k.LogAudit(ctx, "actor1", "action1", "resource1", "success", nil, "")
+		k.LogAudit(ctx, "actor1", "action1", "resource1", "success", nil, "", ctx.BlockTime())
 	}
 
 	logs := k.GetRecentAuditLogs(5)
@@ -478,7 +478,7 @@ func TestCountAuditLogs(t *testing.T) {
 	initialCount := k.CountAuditLogs()
 
 	for i := 0; i < 3; i++ {
-		k.LogAudit(ctx, "actor1", "action1", "resource1", "success", nil, "")
+		k.LogAudit(ctx, "actor1", "action1", "resource1", "success", nil, "", ctx.BlockTime())
 	}
 
 	newCount := k.CountAuditLogs()
@@ -489,7 +489,7 @@ func TestCountAuditLogsByActor(t *testing.T) {
 	k, ctx := setupTestKeeper(t)
 
 	for i := 0; i < 3; i++ {
-		k.LogAudit(ctx, "actor1", "action1", "resource1", "success", nil, "")
+		k.LogAudit(ctx, "actor1", "action1", "resource1", "success", nil, "", ctx.BlockTime())
 	}
 
 	count := k.CountAuditLogsByActor("actor1")
@@ -504,7 +504,7 @@ func TestAuditLogWithMetadata(t *testing.T) {
 		"method": "POST",
 	}
 
-	k.LogAudit(ctx, "actor1", "action1", "resource1", "success", metadata, "")
+	k.LogAudit(ctx, "actor1", "action1", "resource1", "success", metadata, "", ctx.BlockTime())
 
 	logs := k.GetAuditLogsByActor("actor1", 10)
 	require.GreaterOrEqual(t, len(logs), 1)
@@ -516,7 +516,7 @@ func TestAuditLogWithMetadata(t *testing.T) {
 func TestAuditLogWithError(t *testing.T) {
 	k, ctx := setupTestKeeper(t)
 
-	k.LogAudit(ctx, "actor1", "action1", "resource1", "failure", nil, "Permission denied")
+	k.LogAudit(ctx, "actor1", "action1", "resource1", "failure", nil, "Permission denied", ctx.BlockTime())
 
 	logs := k.GetAuditLogsByActor("actor1", 10)
 	require.GreaterOrEqual(t, len(logs), 1)
@@ -525,8 +525,8 @@ func TestAuditLogWithError(t *testing.T) {
 func TestSearchAuditLogs(t *testing.T) {
 	k, ctx := setupTestKeeper(t)
 
-	k.LogAudit(ctx, "actor1", "create", "user_123", "success", map[string]string{"type": "user"}, "")
-	k.LogAudit(ctx, "actor2", "delete", "user_456", "success", map[string]string{"type": "user"}, "")
+	k.LogAudit(ctx, "actor1", "create", "user_123", "success", map[string]string{"type": "user"}, "", ctx.BlockTime())
+	k.LogAudit(ctx, "actor2", "delete", "user_456", "success", map[string]string{"type": "user"}, "", ctx.BlockTime())
 
 	criteria := map[string]string{
 		"action": "create",
@@ -540,7 +540,7 @@ func TestGetAuditLogsByTimeRange(t *testing.T) {
 	k, ctx := setupTestKeeper(t)
 
 	now := time.Now().Unix()
-	k.LogAudit(ctx, "actor1", "action1", "resource1", "success", nil, "")
+	k.LogAudit(ctx, "actor1", "action1", "resource1", "success", nil, "", ctx.BlockTime())
 
 	logs := k.GetAuditLogsByTimeRange(now-3600, now+3600, 10)
 	require.GreaterOrEqual(t, len(logs), 1)

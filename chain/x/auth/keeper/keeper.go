@@ -883,8 +883,9 @@ func (k *Keeper) HasPermission(ctx sdk.Context, address, permission string) bool
 	}
 
 	// Check emergency admin privileges
+	// Use ctx.BlockTime() for determinism - NEVER use time.Now() in consensus code
 	admin, err := k.GetEmergencyAdmin(ctx, address)
-	if err == nil && types.IsEmergencyAdminActive(admin) {
+	if err == nil && types.IsEmergencyAdminActive(admin, ctx.BlockTime()) {
 		for _, priv := range admin.Privileges {
 			if priv == permission || priv == types.PermissionAdmin {
 				return true
@@ -904,7 +905,8 @@ func (k *Keeper) GetRoleAssignments(address string) []*authproto.RoleAssignment 
 // RequirePermission checks permission and returns error if not authorized
 func (k *Keeper) RequirePermission(ctx sdk.Context, address, permission string) error {
 	if !k.HasPermission(ctx, address, permission) {
-		k.LogAudit(ctx, address, "permission_check", permission, "denied", nil, "insufficient permissions")
+		// Use ctx.BlockTime() for determinism - NEVER use time.Now() in consensus code
+		k.LogAudit(ctx, address, "permission_check", permission, "denied", nil, "insufficient permissions", ctx.BlockTime())
 		return fmt.Errorf("%w: %s does not have permission %s", types.ErrInsufficientPermissions, address, permission)
 	}
 	return nil
@@ -943,8 +945,10 @@ func (k *Keeper) CleanupExpiredProposals(ctx sdk.Context) int {
 	}
 
 	count := 0
+	// Use ctx.BlockTime() for determinism - NEVER use time.Now() in consensus code
+	blockTime := ctx.BlockTime()
 	for _, proposal := range proposals {
-		if types.IsProposalExpired(&proposal) &&
+		if types.IsProposalExpired(&proposal, blockTime) &&
 			proposal.Status != authproto.ProposalStatus_PROPOSAL_STATUS_EXECUTED {
 			proposal.Status = authproto.ProposalStatus_PROPOSAL_STATUS_EXPIRED
 			if err := k.SetMultisigProposal(ctx, &proposal); err == nil {

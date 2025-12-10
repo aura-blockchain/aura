@@ -58,7 +58,7 @@ func (k *Keeper) GetCredentialRevocation(ctx sdk.Context, credentialID string) (
 func (k *Keeper) RevokeCredential(ctx sdk.Context, credentialID, did, revoker, reason string, metadata map[string]string) error {
 	// Get metrics instance
 	metrics := GetIdentityMetrics()
-	startTime := time.Now()
+	startTime := ctx.BlockTime()
 
 	// Validate inputs
 	if credentialID == "" {
@@ -136,7 +136,7 @@ func (k *Keeper) RevokeCredential(ctx sdk.Context, credentialID, did, revoker, r
 
 	// Record metrics
 	metrics.CredentialsRevoked.WithLabelValues(reason).Inc()
-	metrics.CredRevocationTime.Observe(time.Since(startTime).Seconds())
+	metrics.CredRevocationTime.Observe(ctx.BlockTime().Sub(startTime).Seconds())
 	// Update revocation list size
 	revocations, _ := k.GetAllCredentialRevocations(ctx)
 	metrics.RevocationListSize.Set(float64(len(revocations)))

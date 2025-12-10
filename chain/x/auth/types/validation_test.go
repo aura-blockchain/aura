@@ -378,8 +378,9 @@ func TestIsProposalApproved(t *testing.T) {
 }
 
 func TestIsProposalExpired(t *testing.T) {
-	pastTime := time.Now().Add(-time.Hour)
-	futureTime := time.Now().Add(time.Hour)
+	now := time.Now()
+	pastTime := now.Add(-time.Hour)
+	futureTime := now.Add(time.Hour)
 	zeroTime := time.Time{}
 
 	tests := []struct {
@@ -412,7 +413,7 @@ func TestIsProposalExpired(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := IsProposalExpired(tt.proposal)
+			result := IsProposalExpired(tt.proposal, now)
 			require.Equal(t, tt.expected, result)
 		})
 	}
@@ -506,9 +507,9 @@ func TestValidateTimeLockedAction(t *testing.T) {
 }
 
 func TestIsActionReady(t *testing.T) {
-	pastTime := time.Now().Add(-time.Hour)
-	futureTime := time.Now().Add(time.Hour)
-	nowTime := time.Now()
+	now := time.Now()
+	pastTime := now.Add(-time.Hour)
+	futureTime := now.Add(time.Hour)
 	zeroTime := time.Time{}
 
 	tests := []struct {
@@ -526,7 +527,7 @@ func TestIsActionReady(t *testing.T) {
 		{
 			name: "ready - exact time",
 			action: &authproto.TimeLockedAction{
-				ExecutableAt: nowTime,
+				ExecutableAt: now,
 			},
 			expected: true,
 		},
@@ -548,7 +549,7 @@ func TestIsActionReady(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := IsActionReady(tt.action)
+			result := IsActionReady(tt.action, now)
 			require.Equal(t, tt.expected, result)
 		})
 	}
@@ -612,8 +613,9 @@ func TestValidateEmergencyAdmin(t *testing.T) {
 }
 
 func TestIsEmergencyAdminActive(t *testing.T) {
-	pastTime := time.Now().Add(-time.Hour)
-	futureTime := time.Now().Add(time.Hour)
+	now := time.Now()
+	pastTime := now.Add(-time.Hour)
+	futureTime := now.Add(time.Hour)
 
 	tests := []struct {
 		name     string
@@ -656,7 +658,7 @@ func TestIsEmergencyAdminActive(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := IsEmergencyAdminActive(tt.admin)
+			result := IsEmergencyAdminActive(tt.admin, now)
 			require.Equal(t, tt.expected, result)
 		})
 	}
@@ -708,8 +710,9 @@ func TestValidateSession(t *testing.T) {
 }
 
 func TestIsSessionActive(t *testing.T) {
-	pastTime := time.Now().Add(-time.Hour)
-	futureTime := time.Now().Add(time.Hour)
+	now := time.Now()
+	pastTime := now.Add(-time.Hour)
+	futureTime := now.Add(time.Hour)
 	zeroTime := time.Time{}
 
 	tests := []struct {
@@ -753,7 +756,7 @@ func TestIsSessionActive(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := IsSessionActive(tt.session)
+			result := IsSessionActive(tt.session, now)
 			require.Equal(t, tt.expected, result)
 		})
 	}
@@ -875,7 +878,7 @@ func TestIsRateLimited(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := IsRateLimited(tt.config)
+			result := IsRateLimited(tt.config, now)
 			require.Equal(t, tt.expected, result)
 		})
 	}
@@ -894,6 +897,8 @@ func TestDefaultParams(t *testing.T) {
 }
 
 func TestGenerateID(t *testing.T) {
+	now := time.Now()
+
 	tests := []struct {
 		name       string
 		prefix     string
@@ -918,7 +923,7 @@ func TestGenerateID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			id := GenerateID(tt.prefix, tt.components...)
+			id := GenerateID(tt.prefix, now, tt.components...)
 			require.NotEmpty(t, id)
 			require.Contains(t, id, tt.prefix+"-")
 			require.Greater(t, len(id), len(tt.prefix)+1)
@@ -926,8 +931,8 @@ func TestGenerateID(t *testing.T) {
 	}
 
 	// Test uniqueness
-	id1 := GenerateID("test", "component")
+	id1 := GenerateID("test", now, "component")
 	time.Sleep(1 * time.Millisecond)
-	id2 := GenerateID("test", "component")
+	id2 := GenerateID("test", now.Add(1*time.Millisecond), "component")
 	require.NotEqual(t, id1, id2, "Generated IDs should be unique")
 }
