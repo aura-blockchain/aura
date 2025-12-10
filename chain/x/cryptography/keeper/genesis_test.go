@@ -173,7 +173,8 @@ func TestGenesis(t *testing.T) {
 		_, err = k.RegisterSecureEnclave(ctx, "creator", cryptoproto.SecureEnclaveType_SECURE_ENCLAVE_TYPE_SGX, attestation, nil)
 		require.NoError(t, err)
 
-		_, _, err = k.GenerateQuantumResistantKey(ctx, "creator", cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_KYBER, nil)
+		publicKey := GenerateDummyQuantumPublicKey(cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_KYBER)
+		_, err = k.RegisterQuantumResistantKey(ctx, "creator", cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_KYBER, publicKey, nil)
 		require.NoError(t, err)
 
 		hash := make([]byte, 32)

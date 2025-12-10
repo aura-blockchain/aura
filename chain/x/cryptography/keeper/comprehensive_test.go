@@ -657,13 +657,13 @@ func TestThresholdSignaturesComprehensive(t *testing.T) {
 func TestQuantumResistantKeysComprehensive(t *testing.T) {
 	k, ctx := setupKeeper(t)
 
-	t.Run("GenerateQuantumResistantKey - unspecified algorithm", func(t *testing.T) {
-		_, _, err := k.GenerateQuantumResistantKey(ctx, "creator", cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_UNSPECIFIED, nil)
+	t.Run("RegisterQuantumResistantKey - unspecified algorithm", func(t *testing.T) {
+		_, err := k.RegisterQuantumResistantKey(ctx, "creator", cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_UNSPECIFIED, []byte{}, nil)
 		require.Error(t, err)
 		require.ErrorIs(t, err, types.ErrInvalidQuantumAlgorithm)
 	})
 
-	t.Run("GenerateQuantumResistantKey - all algorithms with expiration", func(t *testing.T) {
+	t.Run("RegisterQuantumResistantKey - all algorithms with expiration", func(t *testing.T) {
 		algorithms := []cryptoproto.QuantumResistantAlgorithm{
 			cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_DILITHIUM,
 			cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_KYBER,
@@ -674,10 +674,10 @@ func TestQuantumResistantKeysComprehensive(t *testing.T) {
 
 		expiresAt := time.Now().Add(365 * 24 * time.Hour)
 		for _, algo := range algorithms {
-			keyID, publicKey, err := k.GenerateQuantumResistantKey(ctx, "creator", algo, &expiresAt)
+			publicKey := GenerateDummyQuantumPublicKey(algo)
+			keyID, err := k.RegisterQuantumResistantKey(ctx, "creator", algo, publicKey, &expiresAt)
 			require.NoError(t, err)
 			require.NotEmpty(t, keyID)
-			require.NotEmpty(t, publicKey)
 
 			// Validate the key
 			err = k.ValidateQuantumResistantKey(ctx, keyID)
@@ -696,7 +696,8 @@ func TestQuantumResistantKeysComprehensive(t *testing.T) {
 
 	t.Run("ValidateQuantumResistantKey - expired", func(t *testing.T) {
 		pastTime := time.Now().Add(-24 * time.Hour)
-		keyID, _, err := k.GenerateQuantumResistantKey(ctx, "creator", cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_FALCON, &pastTime)
+		publicKey := GenerateDummyQuantumPublicKey(cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_FALCON)
+		keyID, err := k.RegisterQuantumResistantKey(ctx, "creator", cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_FALCON, publicKey, &pastTime)
 		require.NoError(t, err)
 
 		err = k.ValidateQuantumResistantKey(ctx, keyID)
@@ -706,21 +707,28 @@ func TestQuantumResistantKeysComprehensive(t *testing.T) {
 
 	t.Run("RotateQuantumResistantKey", func(t *testing.T) {
 		expiresAt := time.Now().Add(365 * 24 * time.Hour)
-		keyID, publicKey1, err := k.GenerateQuantumResistantKey(ctx, "creator", cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_KYBER, &expiresAt)
+		publicKey1 := GenerateDummyQuantumPublicKey(cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_KYBER)
+		keyID, err := k.RegisterQuantumResistantKey(ctx, "creator", cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_KYBER, publicKey1, &expiresAt)
 		require.NoError(t, err)
 
 		newExpiresAt := time.Now().Add(730 * 24 * time.Hour)
-		newKeyID, newPublicKey, err := k.RotateQuantumResistantKey(ctx, keyID, &newExpiresAt)
+		// Generate a different public key for rotation
+		newPublicKey := GenerateDummyQuantumPublicKey(cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_KYBER)
+		newPublicKey[0] = 0xFF // Make it different
+		newKeyID, err := k.RotateQuantumResistantKey(ctx, keyID, newPublicKey, &newExpiresAt)
 		require.NoError(t, err)
 		require.NotEmpty(t, newKeyID)
-		require.NotEmpty(t, newPublicKey)
-		// Key IDs will be different due to different timestamps
-		// Public keys will be different as they're randomly generated
-		require.NotEqual(t, publicKey1, newPublicKey)
+		// Verify the new key exists
+		newKey, err := k.GetQuantumResistantKey(ctx, newKeyID)
+		require.NoError(t, err)
+		require.Equal(t, newKeyID, newKey.KeyId)
+		// Verify the new public key was stored
+		require.Equal(t, newPublicKey, newKey.PublicKey)
 	})
 
 	t.Run("DeleteQuantumResistantKey", func(t *testing.T) {
-		keyID, _, err := k.GenerateQuantumResistantKey(ctx, "creator", cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_SPHINCS_PLUS, nil)
+		publicKey := GenerateDummyQuantumPublicKey(cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_SPHINCS_PLUS)
+		keyID, err := k.RegisterQuantumResistantKey(ctx, "creator", cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_SPHINCS_PLUS, publicKey, nil)
 		require.NoError(t, err)
 
 		err = k.DeleteQuantumResistantKey(ctx, keyID)

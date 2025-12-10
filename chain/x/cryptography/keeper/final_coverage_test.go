@@ -25,7 +25,8 @@ func TestFinalCoverage(t *testing.T) {
 		}
 
 		for _, algo := range algorithms {
-			keyID, publicKey, err := k.GenerateQuantumResistantKey(ctx, "creator", algo, nil)
+			publicKey := GenerateDummyQuantumPublicKey(algo)
+			keyID, err := k.RegisterQuantumResistantKey(ctx, "creator", algo, publicKey, nil)
 			require.NoError(t, err)
 			require.NotEmpty(t, keyID)
 			require.NotEmpty(t, publicKey)
@@ -147,7 +148,8 @@ func TestFinalCoverage(t *testing.T) {
 	})
 
 	t.Run("GetQuantumResistantKey - from store after cache miss", func(t *testing.T) {
-		keyID, _, err := k.GenerateQuantumResistantKey(ctx, "creator", cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_DILITHIUM, nil)
+		publicKey := GenerateDummyQuantumPublicKey(cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_DILITHIUM)
+		keyID, err := k.RegisterQuantumResistantKey(ctx, "creator", cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_DILITHIUM, publicKey, nil)
 		require.NoError(t, err)
 
 		// Retrieve it
@@ -166,7 +168,8 @@ func TestFinalCoverage(t *testing.T) {
 		}
 
 		for _, algo := range algorithms {
-			keyID, _, err := k.GenerateQuantumResistantKey(ctx, "creator", algo, nil)
+			publicKey := GenerateDummyQuantumPublicKey(algo)
+			keyID, err := k.RegisterQuantumResistantKey(ctx, "creator", algo, publicKey, nil)
 			require.NoError(t, err)
 
 			err = k.ValidateQuantumResistantKey(ctx, keyID)
@@ -184,10 +187,12 @@ func TestFinalCoverage(t *testing.T) {
 		}
 
 		for _, algo := range algorithms {
-			keyID, _, err := k.GenerateQuantumResistantKey(ctx, "creator", algo, nil)
+			publicKey := GenerateDummyQuantumPublicKey(algo)
+			keyID, err := k.RegisterQuantumResistantKey(ctx, "creator", algo, publicKey, nil)
 			require.NoError(t, err)
 
-			newKeyID, newPublicKey, err := k.RotateQuantumResistantKey(ctx, keyID, nil)
+			newPublicKey := GenerateDummyQuantumPublicKey(algo)
+			newKeyID, err := k.RotateQuantumResistantKey(ctx, keyID, newPublicKey, nil)
 			require.NoError(t, err)
 			require.NotEmpty(t, newKeyID)
 			require.NotEmpty(t, newPublicKey)
