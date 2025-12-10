@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"context"
-	"math"
 	"math/big"
 
 	"github.com/aequitas/aura/chain/x/economicsecurity/types"
@@ -15,6 +14,8 @@ import (
 // PredictGasPrice predicts future gas price based on historical data
 // Uses simple linear regression to extrapolate from recent utilization trends
 // Returns predicted price, confidence level (0-10000 basis points), and any error
+//
+// All calculations use deterministic integer arithmetic to ensure consensus safety.
 func (k *Keeper) PredictGasPrice(ctx context.Context, blocksAhead uint64) (string, uint64, error) {
 	params := k.GetParams()
 
@@ -28,38 +29,49 @@ func (k *Keeper) PredictGasPrice(ctx context.Context, blocksAhead uint64) (strin
 		return params.DynamicFees.BaseFee, 0, nil
 	}
 
-	// Calculate trend using simple linear regression
-	n := len(utilizationData)
-	sumX := float64(0)
-	sumY := float64(0)
-	sumXY := float64(0)
-	sumX2 := float64(0)
+	// Calculate trend using simple linear regression with integer arithmetic
+	// All intermediate values are scaled by PRECISION to maintain accuracy
+	const PRECISION = int64(1000000) // Scale factor for fixed-point arithmetic
+
+	n := int64(len(utilizationData))
+	sumX := int64(0)
+	sumY := int64(0)
+	sumXY := int64(0)
+	sumX2 := int64(0)
 
 	for i, util := range utilizationData {
-		x := float64(i)
-		y := float64(util)
+		x := int64(i)
+		y := int64(util)
 		sumX += x
 		sumY += y
 		sumXY += x * y
 		sumX2 += x * x
 	}
 
-	// Calculate slope (trend) and intercept
+	// Calculate slope (trend) and intercept using integer arithmetic
 	// slope = (n*sumXY - sumX*sumY) / (n*sumX2 - sumX^2)
 	// intercept = (sumY - slope*sumX) / n
-	denominator := float64(n)*sumX2 - sumX*sumX
+	// Scale numerator by PRECISION before division to maintain accuracy
+	denominator := n*sumX2 - sumX*sumX
 	if denominator == 0 {
 		// No variance in data, use current price
 		return k.calculateCurrentGasPrice(params), 5000, nil
 	}
 
-	slope := (float64(n)*sumXY - sumX*sumY) / denominator
-	intercept := (sumY - slope*sumX) / float64(n)
+	// slope = ((n*sumXY - sumX*sumY) * PRECISION) / denominator
+	slopeNumerator := (n*sumXY - sumX*sumY) * PRECISION
+	slope := slopeNumerator / denominator
+
+	// intercept = ((sumY * PRECISION) / n) - (slope * sumX) / n
+	intercept := (sumY*PRECISION)/n - (slope*sumX)/n
 
 	// Predict utilization for blocksAhead
-	predictedUtilization := intercept + slope*float64(n+int(blocksAhead))
+	// predictedUtilization = intercept + slope * (n + blocksAhead)
+	futureX := n + int64(blocksAhead)
+	predictedUtilizationScaled := intercept + (slope*futureX)/PRECISION
 
 	// Clamp to valid range [0, 10000]
+	predictedUtilization := predictedUtilizationScaled
 	if predictedUtilization < 0 {
 		predictedUtilization = 0
 	}
@@ -68,26 +80,32 @@ func (k *Keeper) PredictGasPrice(ctx context.Context, blocksAhead uint64) (strin
 	}
 
 	// Calculate predicted multiplier based on target utilization
-	targetUtilization := float64(params.DynamicFees.TargetUtilization)
+	targetUtilization := int64(params.DynamicFees.TargetUtilization)
 	deviation := predictedUtilization - targetUtilization
 
-	predictedMultiplier := float64(params.DynamicFees.CurrentMultiplier)
+	predictedMultiplier := int64(params.DynamicFees.CurrentMultiplier)
 	if deviation > 0 {
 		// Higher utilization -> higher fees
-		adjustment := (deviation / float64(types.BasisPoints)) * float64(params.DynamicFees.AdjustmentSpeed)
+		// adjustment = (deviation * adjustmentSpeed) / BasisPoints
+		adjustment := (deviation * int64(params.DynamicFees.AdjustmentSpeed)) / int64(types.BasisPoints)
 		predictedMultiplier += adjustment
 	} else {
 		// Lower utilization -> lower fees
-		adjustment := (math.Abs(deviation) / float64(types.BasisPoints)) * float64(params.DynamicFees.AdjustmentSpeed)
+		// Use absolute value without float math
+		absDeviation := -deviation
+		if absDeviation < 0 {
+			absDeviation = deviation
+		}
+		adjustment := (absDeviation * int64(params.DynamicFees.AdjustmentSpeed)) / int64(types.BasisPoints)
 		predictedMultiplier -= adjustment
 	}
 
 	// Clamp to min/max
-	if predictedMultiplier < float64(params.DynamicFees.MinMultiplier) {
-		predictedMultiplier = float64(params.DynamicFees.MinMultiplier)
+	if predictedMultiplier < int64(params.DynamicFees.MinMultiplier) {
+		predictedMultiplier = int64(params.DynamicFees.MinMultiplier)
 	}
-	if predictedMultiplier > float64(params.DynamicFees.MaxMultiplier) {
-		predictedMultiplier = float64(params.DynamicFees.MaxMultiplier)
+	if predictedMultiplier > int64(params.DynamicFees.MaxMultiplier) {
+		predictedMultiplier = int64(params.DynamicFees.MaxMultiplier)
 	}
 
 	// Calculate predicted gas price
@@ -96,7 +114,7 @@ func (k *Keeper) PredictGasPrice(ctx context.Context, blocksAhead uint64) (strin
 		return params.DynamicFees.BaseFee, 0, types.ErrInvalidAmount
 	}
 
-	predictedFee := new(big.Int).Mul(baseFee, big.NewInt(int64(predictedMultiplier)))
+	predictedFee := new(big.Int).Mul(baseFee, big.NewInt(predictedMultiplier))
 	predictedFee.Div(predictedFee, big.NewInt(types.BasisPoints))
 
 	confidence := k.calculatePredictionConfidence(utilizationData)
@@ -119,36 +137,45 @@ func (k *Keeper) calculateCurrentGasPrice(params types.Params) string {
 
 // calculatePredictionConfidence calculates confidence level (0-10000 basis points)
 // Lower variance in historical data = higher confidence
+//
+// Uses deterministic integer arithmetic with Newton-Raphson square root approximation.
 func (k *Keeper) calculatePredictionConfidence(data []uint64) uint64 {
 	if len(data) < 2 {
 		return 0 // No confidence with insufficient data
 	}
 
-	// Calculate mean
-	mean := float64(0)
+	// Calculate mean using integer arithmetic
+	sum := int64(0)
 	for _, val := range data {
-		mean += float64(val)
+		sum += int64(val)
 	}
-	mean /= float64(len(data))
+	mean := sum / int64(len(data))
 
-	// Calculate variance
-	variance := float64(0)
+	// Calculate variance using integer arithmetic
+	// Scale by PRECISION for accuracy
+	const PRECISION = int64(1000000)
+	varianceSum := int64(0)
 	for _, val := range data {
-		diff := float64(val) - mean
-		variance += diff * diff
+		diff := int64(val) - mean
+		varianceSum += diff * diff
 	}
-	variance /= float64(len(data))
+	variance := varianceSum / int64(len(data))
 
-	// Calculate standard deviation
-	stdDev := math.Sqrt(variance)
+	// Calculate standard deviation using integer square root
+	stdDev := intSqrt(variance)
 
 	// Lower variance = higher confidence
 	// Normalize to 0-10000 basis points
 	// Assume maximum expected standard deviation is 5000 (half the range)
-	maxStdDev := float64(5000)
+	maxStdDev := int64(5000)
 
 	// Confidence decreases linearly with standard deviation
-	confidence := 10000 - uint64((stdDev/maxStdDev)*10000)
+	// confidence = 10000 - (stdDev * 10000) / maxStdDev
+	confidenceReduction := (stdDev * 10000) / maxStdDev
+	if confidenceReduction > 10000 {
+		confidenceReduction = 10000
+	}
+	confidence := uint64(10000 - confidenceReduction)
 
 	// Ensure confidence is in valid range
 	if confidence > 10000 {
@@ -166,6 +193,27 @@ func (k *Keeper) calculatePredictionConfidence(data []uint64) uint64 {
 	}
 
 	return confidence
+}
+
+// intSqrt computes integer square root using Newton-Raphson method
+// This is deterministic and consensus-safe, unlike math.Sqrt which uses float64
+func intSqrt(n int64) int64 {
+	if n <= 0 {
+		return 0
+	}
+	if n == 1 {
+		return 1
+	}
+
+	// Newton-Raphson: x_{n+1} = (x_n + n/x_n) / 2
+	x := n
+	for {
+		x1 := (x + n/x) / 2
+		if x1 >= x {
+			return x
+		}
+		x = x1
+	}
 }
 
 // GetGasPredictionStatistics returns gas prediction statistics for different time horizons

@@ -2,9 +2,9 @@ package keeper
 
 import (
 	"fmt"
-	"math"
 	"math/big"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/aequitas/aura/chain/x/governance/types"
@@ -97,10 +97,50 @@ func (k *Keeper) CastQuadraticVote(
 }
 
 // calculateQuadraticVotingPower calculates voting power from credits (square root)
+// Uses integer-based Newton-Raphson method for deterministic cross-platform results
 func (k *Keeper) calculateQuadraticVotingPower(credits uint64) uint64 {
 	// Voting power = sqrt(credits) * 10000 (to preserve precision)
-	sqrtCredits := math.Sqrt(float64(credits))
-	return uint64(sqrtCredits * 10000)
+	// Use integer square root for determinism (Newton-Raphson method)
+	if credits == 0 {
+		return 0
+	}
+
+	// Calculate integer square root using sdkmath.Int for determinism
+	creditsBig := sdkmath.NewIntFromUint64(credits)
+	sqrtCredits := intSqrt(creditsBig)
+
+	// Multiply by 10000 for precision
+	return sqrtCredits.Uint64() * 10000
+}
+
+// intSqrt computes integer square root using Newton-Raphson method
+// This is deterministic across all platforms (no floating point)
+func intSqrt(n sdkmath.Int) sdkmath.Int {
+	if n.IsZero() || n.IsNegative() {
+		return sdkmath.ZeroInt()
+	}
+
+	// Initial guess: n / 2 + 1
+	x := n.QuoRaw(2).AddRaw(1)
+	one := sdkmath.OneInt()
+
+	// Newton-Raphson iteration: x = (x + n/x) / 2
+	for {
+		// x1 = (x + n/x) / 2
+		x1 := x.Add(n.Quo(x)).QuoRaw(2)
+
+		// If x1 >= x, we've converged
+		if x1.GTE(x) {
+			break
+		}
+		x = x1
+	}
+
+	// Verify: if x*x > n, return x-1
+	if x.Mul(x).GT(n) {
+		return x.Sub(one)
+	}
+	return x
 }
 
 // GetVoteCredits returns available vote credits for a voter

@@ -4,13 +4,34 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math"
 	"sort"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/aequitas/aura/chain/x/monitoring/types"
 )
+
+// intSqrt computes the integer square root using Newton-Raphson method.
+// This is deterministic unlike math.Sqrt which uses floating-point arithmetic.
+func intSqrt(n uint64) uint64 {
+	if n == 0 {
+		return 0
+	}
+	if n == 1 {
+		return 1
+	}
+
+	// Initial guess
+	x := n
+	for {
+		// Newton-Raphson iteration: x_next = (x + n/x) / 2
+		x1 := (x + n/x) / 2
+		if x1 >= x {
+			return x
+		}
+		x = x1
+	}
+}
 
 // GetGasPriceTracking retrieves gas price tracking data from the KV store
 func (k Keeper) GetGasPriceTracking(ctx context.Context) (*types.GasPriceTracking, error) {
@@ -88,7 +109,8 @@ func (k Keeper) TrackGasPrice(ctx context.Context, price uint64) error {
 	if k.metrics != nil {
 		k.metrics.CurrentGasPrice.Set(float64(price))
 		k.metrics.AverageGasPrice.Set(float64(tracking.AveragePrice))
-		k.metrics.GasPriceVolatility.Set(tracking.VolatilityScore)
+		// Convert basis points to decimal (10000 basis points = 1.0)
+		k.metrics.GasPriceVolatility.Set(float64(tracking.VolatilityScore) / 10000.0)
 	}
 
 	// Check for price spikes
@@ -151,24 +173,47 @@ func (k Keeper) calculateGasPriceStats(tracking *types.GasPriceTracking) {
 	tracking.MinPrice = minPrice
 	tracking.MaxPrice = maxPrice
 
-	// Volatility (coefficient of variation)
-	var variance float64
-	for _, point := range tracking.PriceHistory {
-		diff := float64(point.Price) - float64(avgPrice)
-		variance += diff * diff
-	}
-	variance /= float64(len(tracking.PriceHistory))
-	stdDev := math.Sqrt(variance)
+	// Volatility (coefficient of variation) - deterministic integer arithmetic
+	// Calculate variance using integers (scaled to avoid precision loss)
+	if avgPrice > 0 && len(tracking.PriceHistory) > 0 {
+		// Calculate sum of squared differences
+		var sumSquaredDiff uint64
+		for _, point := range tracking.PriceHistory {
+			var diff uint64
+			if point.Price > avgPrice {
+				diff = point.Price - avgPrice
+			} else {
+				diff = avgPrice - point.Price
+			}
+			// Check for overflow before squaring
+			if diff > 0 && diff <= (1<<32)-1 {
+				sumSquaredDiff += diff * diff
+			}
+		}
 
-	if avgPrice > 0 {
-		tracking.VolatilityScore = stdDev / float64(avgPrice)
+		// Variance = sumSquaredDiff / n
+		variance := sumSquaredDiff / uint64(len(tracking.PriceHistory))
+
+		// Standard deviation using integer square root
+		stdDev := intSqrt(variance)
+
+		// Coefficient of variation in basis points: (stdDev / avgPrice) * 10000
+		// To avoid overflow, we calculate: (stdDev * 10000) / avgPrice
+		if stdDev <= (1<<52) { // Check for overflow in multiplication
+			tracking.VolatilityScore = (stdDev * 10000) / avgPrice
+		} else {
+			// If stdDev is too large, scale down first
+			tracking.VolatilityScore = (stdDev / avgPrice) * 10000
+		}
+	} else {
+		tracking.VolatilityScore = 0
 	}
 
 	// Trend direction
 	tracking.TrendDirection = k.calculateGasPriceTrend(tracking.PriceHistory)
 }
 
-// calculateGasPriceTrend calculates the price trend direction
+// calculateGasPriceTrend calculates the price trend direction using deterministic integer arithmetic
 func (k Keeper) calculateGasPriceTrend(history []types.GasPricePoint) string {
 	historyLen := len(history)
 	if historyLen < 10 {
@@ -199,14 +244,34 @@ func (k Keeper) calculateGasPriceTrend(history []types.GasPricePoint) string {
 		return "stable"
 	}
 
-	recentAvg := float64(recentSum) / float64(recentCount)
-	olderAvg := float64(olderSum) / float64(olderCount)
+	// Use integer arithmetic: calculate averages as integers
+	recentAvg := recentSum / uint64(recentCount)
+	olderAvg := olderSum / uint64(olderCount)
 
-	changePercent := (recentAvg - olderAvg) / olderAvg
+	if olderAvg == 0 {
+		return "stable"
+	}
 
-	if changePercent > 0.1 {
+	// Calculate change percentage in basis points (10000 = 100%)
+	// changePercent = ((recentAvg - olderAvg) / olderAvg) * 10000
+	var changeInBasisPoints int64
+	if recentAvg > olderAvg {
+		// Increasing: positive change
+		diff := recentAvg - olderAvg
+		changeInBasisPoints = int64((diff * 10000) / olderAvg)
+	} else if recentAvg < olderAvg {
+		// Decreasing: negative change
+		diff := olderAvg - recentAvg
+		changeInBasisPoints = -int64((diff * 10000) / olderAvg)
+	} else {
+		// No change
+		return "stable"
+	}
+
+	// 1000 basis points = 10% threshold
+	if changeInBasisPoints > 1000 {
 		return "increasing"
-	} else if changePercent < -0.1 {
+	} else if changeInBasisPoints < -1000 {
 		return "decreasing"
 	}
 	return "stable"

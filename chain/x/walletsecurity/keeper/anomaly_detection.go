@@ -3,7 +3,6 @@ package keeper
 import (
 	"context"
 	"fmt"
-	stdmath "math"
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -12,20 +11,34 @@ import (
 	wsproto "github.com/aequitas/aura/proto/aura/walletsecurity/v1beta1"
 )
 
-// AnomalyScore represents an anomaly detection score
+// Basis points constants (0-10000 representing 0.00%-100.00%)
+const (
+	BasisPointsMax         uint64 = 10000 // 100.00%
+	AnomalyThresholdBPS    uint64 = 7000  // 70.00%
+	AmountWeightBPS        uint64 = 3000  // 30.00%
+	RecipientWeightBPS     uint64 = 3000  // 30.00%
+	FrequencyWeightBPS     uint64 = 2000  // 20.00%
+	TimeWeightBPS          uint64 = 2000  // 20.00%
+	NewRecipientScoreBPS   uint64 = 5000  // 50.00%
+	UnusualTimeScoreBPS    uint64 = 6000  // 60.00%
+	HighFrequencyScoreBPS  uint64 = 8000  // 80.00%
+	HighFrequencyThreshold int64  = 10
+)
+
+// AnomalyScore represents an anomaly detection score using basis points (0-10000)
 type AnomalyScore struct {
-	Score      float64
-	Threshold  float64
+	Score      uint64            // Basis points (0-10000)
+	Threshold  uint64            // Basis points (0-10000)
 	IsAnomaly  bool
-	Factors    map[string]float64
+	Factors    map[string]uint64 // Each factor in basis points
 	Timestamp  sdk.Context
 }
 
 // DetectTransactionAnomaly detects anomalies in transaction patterns
 func (k Keeper) DetectTransactionAnomaly(ctx context.Context, walletID, recipient string, amount math.Int) (*AnomalyScore, error) {
 	score := &AnomalyScore{
-		Threshold: 0.7,
-		Factors:   make(map[string]float64),
+		Threshold: AnomalyThresholdBPS,
+		Factors:   make(map[string]uint64),
 	}
 
 	// Factor 1: Unusual amount
@@ -44,8 +57,12 @@ func (k Keeper) DetectTransactionAnomaly(ctx context.Context, walletID, recipien
 	timeScore := k.checkUnusualTime(ctx, walletID)
 	score.Factors["time"] = timeScore
 
-	// Calculate overall score (weighted average)
-	score.Score = (amountScore*0.3 + recipientScore*0.3 + frequencyScore*0.2 + timeScore*0.2)
+	// Calculate overall score (weighted average using basis points)
+	// All weights sum to 10000 (100%)
+	score.Score = (amountScore*AmountWeightBPS +
+		recipientScore*RecipientWeightBPS +
+		frequencyScore*FrequencyWeightBPS +
+		timeScore*TimeWeightBPS) / BasisPointsMax
 	score.IsAnomaly = score.Score > score.Threshold
 
 	// Store anomaly detection result
@@ -56,41 +73,58 @@ func (k Keeper) DetectTransactionAnomaly(ctx context.Context, walletID, recipien
 	return score, nil
 }
 
-func (k Keeper) checkUnusualAmount(ctx context.Context, walletID string, amount math.Int) float64 {
+func (k Keeper) checkUnusualAmount(ctx context.Context, walletID string, amount math.Int) uint64 {
 	// Get historical transaction amounts for this wallet
 	avg, stdDev := k.getAmountStatistics(ctx, walletID)
 
 	if stdDev.IsZero() {
-		return 0.0 // No historical data
+		return 0 // No historical data
 	}
 
-	// Calculate z-score
+	// Calculate z-score using deterministic integer arithmetic
+	// z-score = |amount - avg| / stdDev
 	diff := amount.Sub(avg)
-	zScore := stdmath.Abs(float64(diff.Int64()) / float64(stdDev.Int64()))
 
-	// Normalize to 0-1 range
-	anomalyScore := stdmath.Min(zScore/3.0, 1.0)
+	// Get absolute value of diff
+	absDiff := diff
+	if diff.IsNegative() {
+		absDiff = diff.Neg()
+	}
 
-	return anomalyScore
+	// Calculate z-score scaled by 10000 to avoid decimals
+	// zScore = (absDiff * 10000) / stdDev
+	zScoreScaled := absDiff.Mul(math.NewInt(10000)).Quo(stdDev)
+
+	// Normalize to 0-10000 basis points range
+	// Original formula: min(zScore/3.0, 1.0)
+	// Convert to basis points: min((zScoreScaled * 10000) / 30000, 10000)
+	anomalyScoreBPS := zScoreScaled.Mul(math.NewInt(10000)).Quo(math.NewInt(30000))
+
+	// Cap at BasisPointsMax (10000)
+	if anomalyScoreBPS.GT(math.NewInt(int64(BasisPointsMax))) {
+		return BasisPointsMax
+	}
+
+	return anomalyScoreBPS.Uint64()
 }
 
-func (k Keeper) checkNewRecipient(ctx context.Context, walletID, recipient string) float64 {
+func (k Keeper) checkNewRecipient(ctx context.Context, walletID, recipient string) uint64 {
 	// Check if recipient has been used before
 	kvStore := k.getStore(ctx)
 	recipientKey := []byte(fmt.Sprintf("recipient_history_%s_%s", walletID, recipient))
 
 	has, err := kvStore.Has(recipientKey)
 	if err == nil && has {
-		return 0.0 // Known recipient
+		return 0 // Known recipient
 	}
 
 	// Mark recipient as seen
 	kvStore.Set(recipientKey, []byte(determinism.GetBlockTime(ctx).String()))
 
-	return 0.5 // New recipient is moderately suspicious
+	return NewRecipientScoreBPS // New recipient is moderately suspicious (50.00%)
 }
 
-func (k Keeper) checkTransactionFrequency(ctx context.Context, walletID string) float64 {
+func (k Keeper) checkTransactionFrequency(ctx context.Context, walletID string) uint64 {
 	kvStore := k.getStore(ctx)
 
 	// Get transaction count in last hour
@@ -105,23 +139,26 @@ func (k Keeper) checkTransactionFrequency(ctx context.Context, walletID string) 
 	count++
 	kvStore.Set(countKey, sdk.Uint64ToBigEndian(uint64(count)))
 
-	// If more than 10 transactions in an hour, flag as anomalous
-	if count > 10 {
-		return 0.8
+	// If more than threshold transactions in an hour, flag as highly anomalous
+	if count > HighFrequencyThreshold {
+		return HighFrequencyScoreBPS // 80.00%
 	}
 
-	return float64(count) / 10.0
+	// Linear scale: (count / threshold) * BasisPointsMax
+	// Returns basis points proportional to transaction count
+	score := (uint64(count) * BasisPointsMax) / uint64(HighFrequencyThreshold)
+	return score
 }
 
-func (k Keeper) checkUnusualTime(ctx context.Context, walletID string) float64 {
+func (k Keeper) checkUnusualTime(ctx context.Context, walletID string) uint64 {
 	// Check if transaction is at unusual time (e.g., 2-6 AM)
 	hour := determinism.GetBlockTime(ctx).Hour()
 
 	if hour >= 2 && hour <= 6 {
-		return 0.6 // Moderately suspicious
+		return UnusualTimeScoreBPS // Moderately suspicious (60.00%)
 	}
 
-	return 0.0
+	return 0
 }
 
 func (k Keeper) getAmountStatistics(ctx context.Context, walletID string) (math.Int, math.Int) {
@@ -131,10 +168,16 @@ func (k Keeper) getAmountStatistics(ctx context.Context, walletID string) (math.
 }
 
 func (k Keeper) recordAnomaly(ctx context.Context, walletID string, score *AnomalyScore) {
+	// Convert basis points to float64 for proto storage (legacy compatibility)
+	// Note: This conversion is safe as it happens AFTER all consensus-critical
+	// calculations are complete using deterministic uint64 basis points
+	scoreFloat := float64(score.Score) / float64(BasisPointsMax)
+	thresholdFloat := float64(score.Threshold) / float64(BasisPointsMax)
+
 	anomaly := &wsproto.AnomalyDetection{
 		WalletId:   walletID,
-		Score:      score.Score,
-		Threshold:  score.Threshold,
+		Score:      scoreFloat,
+		Threshold:  thresholdFloat,
 		DetectedAt: blockTimeToGogoTimestamp(ctx),
 		Resolved:   false,
 	}
