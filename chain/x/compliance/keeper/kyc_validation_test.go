@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/compliance/types"
 )
@@ -36,7 +35,7 @@ func TestIsKYCExpired_NotExpired(t *testing.T) {
 		KycLevel:   types.KYCLevel_KYC_LEVEL_BASIC,
 		Provider:   "test_provider",
 		VerifiedAt: now,
-		ExpiresAt:  expiresAt,
+		ExpiresAt:  &expiresAt,
 	}
 
 	err := keeper.SetKYCRecord(ctx, record)
@@ -60,7 +59,7 @@ func TestIsKYCExpired_Expired(t *testing.T) {
 		KycLevel:   types.KYCLevel_KYC_LEVEL_BASIC,
 		Provider:   "test_provider",
 		VerifiedAt: now.Add(-365 * 24 * time.Hour),
-		ExpiresAt:  expiresAt,
+		ExpiresAt:  &expiresAt,
 	}
 
 	err := keeper.SetKYCRecord(ctx, record)
@@ -78,12 +77,13 @@ func TestIsKYCExpired_ExactlyAtExpiry(t *testing.T) {
 	// Create KYC record that expires exactly now
 	now := ctx.BlockTime()
 
+	expiresAtNow := now
 	record := &types.KYCRecord{
 		Address:    "aura1test",
 		KycLevel:   types.KYCLevel_KYC_LEVEL_BASIC,
 		Provider:   "test_provider",
 		VerifiedAt: now.Add(-365 * 24 * time.Hour),
-		ExpiresAt:  now,
+		ExpiresAt:  &expiresAtNow,
 	}
 
 	err := keeper.SetKYCRecord(ctx, record)
@@ -117,7 +117,7 @@ func TestValidateKYCStatus_Success(t *testing.T) {
 		KycLevel:   types.KYCLevel_KYC_LEVEL_BASIC,
 		Provider:   "test_provider",
 		VerifiedAt: now,
-		ExpiresAt:  timestamppb.New(now.Add(365 * 24 * time.Hour)),
+		ExpiresAt:  ptrTime(now.Add(365 * 24 * time.Hour)),
 	}
 
 	err = keeper.SetKYCRecord(ctx, record)
@@ -157,7 +157,7 @@ func TestValidateKYCStatus_Expired(t *testing.T) {
 		KycLevel:   types.KYCLevel_KYC_LEVEL_BASIC,
 		Provider:   "test_provider",
 		VerifiedAt: now.Add(-400 * 24 * time.Hour),
-		ExpiresAt:  timestamppb.New(now.Add(-30 * 24 * time.Hour)), // Expired 30 days ago
+		ExpiresAt:  ptrTime(now.Add(-30 * 24 * time.Hour)), // Expired 30 days ago
 	}
 
 	err = keeper.SetKYCRecord(ctx, record)
@@ -189,7 +189,7 @@ func TestValidateKYCStatus_InsufficientLevel(t *testing.T) {
 		KycLevel:   types.KYCLevel_KYC_LEVEL_BASIC, // Only BASIC
 		Provider:   "test_provider",
 		VerifiedAt: now,
-		ExpiresAt:  timestamppb.New(now.Add(365 * 24 * time.Hour)),
+		ExpiresAt:  ptrTime(now.Add(365 * 24 * time.Hour)),
 	}
 
 	err = keeper.SetKYCRecord(ctx, record)
@@ -221,7 +221,7 @@ func TestValidateKYCStatus_AllChecksPass(t *testing.T) {
 		KycLevel:   types.KYCLevel_KYC_LEVEL_ADVANCED, // Higher than minimum
 		Provider:   "test_provider",
 		VerifiedAt: now,
-		ExpiresAt:  timestamppb.New(now.Add(365 * 24 * time.Hour)),
+		ExpiresAt:  ptrTime(now.Add(365 * 24 * time.Hour)),
 	}
 
 	err = keeper.SetKYCRecord(ctx, record)
@@ -255,7 +255,7 @@ func TestValidateKYCForOperation_Success(t *testing.T) {
 		KycLevel:   types.KYCLevel_KYC_LEVEL_BASIC,
 		Provider:   "test_provider",
 		VerifiedAt: now,
-		ExpiresAt:  timestamppb.New(now.Add(365 * 24 * time.Hour)),
+		ExpiresAt:  ptrTime(now.Add(365 * 24 * time.Hour)),
 	}
 
 	err = keeper.SetKYCRecord(ctx, record)
@@ -307,7 +307,7 @@ func TestIterateKYCRecords_MultipleRecords(t *testing.T) {
 			KycLevel:   types.KYCLevel_KYC_LEVEL_BASIC,
 			Provider:   "test_provider",
 			VerifiedAt: now,
-			ExpiresAt:  timestamppb.New(now.Add(365 * 24 * time.Hour)),
+			ExpiresAt:  ptrTime(now.Add(365 * 24 * time.Hour)),
 		}
 		err := keeper.SetKYCRecord(ctx, record)
 		require.NoError(t, err)
@@ -335,7 +335,7 @@ func TestIterateKYCRecords_StopEarly(t *testing.T) {
 			KycLevel:   types.KYCLevel_KYC_LEVEL_BASIC,
 			Provider:   "test_provider",
 			VerifiedAt: now,
-			ExpiresAt:  timestamppb.New(now.Add(365 * 24 * time.Hour)),
+			ExpiresAt:  ptrTime(now.Add(365 * 24 * time.Hour)),
 		}
 		err := keeper.SetKYCRecord(ctx, record)
 		require.NoError(t, err)
@@ -365,7 +365,7 @@ func TestGetExpiringKYCRecords_None(t *testing.T) {
 		KycLevel:   types.KYCLevel_KYC_LEVEL_BASIC,
 		Provider:   "test_provider",
 		VerifiedAt: now,
-		ExpiresAt:  timestamppb.New(now.Add(365 * 24 * time.Hour)), // 1 year away
+		ExpiresAt:  ptrTime(now.Add(365 * 24 * time.Hour)), // 1 year away
 	}
 	err := keeper.SetKYCRecord(ctx, record)
 	require.NoError(t, err)
@@ -387,7 +387,7 @@ func TestGetExpiringKYCRecords_SomeExpiring(t *testing.T) {
 		KycLevel:   types.KYCLevel_KYC_LEVEL_BASIC,
 		Provider:   "test_provider",
 		VerifiedAt: now,
-		ExpiresAt:  timestamppb.New(now.Add(15 * 24 * time.Hour)),
+		ExpiresAt:  ptrTime(now.Add(15 * 24 * time.Hour)),
 	}
 	err := keeper.SetKYCRecord(ctx, record1)
 	require.NoError(t, err)
@@ -398,7 +398,7 @@ func TestGetExpiringKYCRecords_SomeExpiring(t *testing.T) {
 		KycLevel:   types.KYCLevel_KYC_LEVEL_BASIC,
 		Provider:   "test_provider",
 		VerifiedAt: now,
-		ExpiresAt:  timestamppb.New(now.Add(100 * 24 * time.Hour)),
+		ExpiresAt:  ptrTime(now.Add(100 * 24 * time.Hour)),
 	}
 	err = keeper.SetKYCRecord(ctx, record2)
 	require.NoError(t, err)
@@ -409,7 +409,7 @@ func TestGetExpiringKYCRecords_SomeExpiring(t *testing.T) {
 		KycLevel:   types.KYCLevel_KYC_LEVEL_BASIC,
 		Provider:   "test_provider",
 		VerifiedAt: now.Add(-400 * 24 * time.Hour),
-		ExpiresAt:  timestamppb.New(now.Add(-10 * 24 * time.Hour)),
+		ExpiresAt:  ptrTime(now.Add(-10 * 24 * time.Hour)),
 	}
 	err = keeper.SetKYCRecord(ctx, record3)
 	require.NoError(t, err)
@@ -435,7 +435,7 @@ func TestGetExpiredKYCRecords_None(t *testing.T) {
 		KycLevel:   types.KYCLevel_KYC_LEVEL_BASIC,
 		Provider:   "test_provider",
 		VerifiedAt: now,
-		ExpiresAt:  timestamppb.New(now.Add(365 * 24 * time.Hour)),
+		ExpiresAt:  ptrTime(now.Add(365 * 24 * time.Hour)),
 	}
 	err := keeper.SetKYCRecord(ctx, record)
 	require.NoError(t, err)
@@ -457,7 +457,7 @@ func TestGetExpiredKYCRecords_SomeExpired(t *testing.T) {
 		KycLevel:   types.KYCLevel_KYC_LEVEL_BASIC,
 		Provider:   "test_provider",
 		VerifiedAt: now.Add(-400 * 24 * time.Hour),
-		ExpiresAt:  timestamppb.New(now.Add(-30 * 24 * time.Hour)),
+		ExpiresAt:  ptrTime(now.Add(-30 * 24 * time.Hour)),
 	}
 	err := keeper.SetKYCRecord(ctx, record1)
 	require.NoError(t, err)
@@ -468,7 +468,7 @@ func TestGetExpiredKYCRecords_SomeExpired(t *testing.T) {
 		KycLevel:   types.KYCLevel_KYC_LEVEL_BASIC,
 		Provider:   "test_provider",
 		VerifiedAt: now,
-		ExpiresAt:  timestamppb.New(now.Add(365 * 24 * time.Hour)),
+		ExpiresAt:  ptrTime(now.Add(365 * 24 * time.Hour)),
 	}
 	err = keeper.SetKYCRecord(ctx, record2)
 	require.NoError(t, err)
@@ -493,7 +493,7 @@ func TestGetExpiredKYCRecords_MultipleExpired(t *testing.T) {
 			KycLevel:   types.KYCLevel_KYC_LEVEL_BASIC,
 			Provider:   "test_provider",
 			VerifiedAt: now.Add(-400 * 24 * time.Hour),
-			ExpiresAt:  timestamppb.New(now.Add(-30 * 24 * time.Hour)),
+			ExpiresAt:  ptrTime(now.Add(-30 * 24 * time.Hour)),
 		}
 		err := keeper.SetKYCRecord(ctx, record)
 		require.NoError(t, err)
@@ -505,7 +505,7 @@ func TestGetExpiredKYCRecords_MultipleExpired(t *testing.T) {
 		KycLevel:   types.KYCLevel_KYC_LEVEL_BASIC,
 		Provider:   "test_provider",
 		VerifiedAt: now,
-		ExpiresAt:  timestamppb.New(now.Add(365 * 24 * time.Hour)),
+		ExpiresAt:  ptrTime(now.Add(365 * 24 * time.Hour)),
 	}
 	err := keeper.SetKYCRecord(ctx, validRecord)
 	require.NoError(t, err)

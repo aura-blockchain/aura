@@ -4,10 +4,10 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"testing"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/compliance/types"
 )
@@ -67,7 +67,7 @@ func TestSubmitKYC_WithPIICommitment(t *testing.T) {
 		ConsentType:    "kyc_processing",
 		Consented:      true,
 		ConsentVersion: "v1",
-		ConsentGivenAt: timestamppb.Now(),
+		ConsentGivenAt: time.Now(),
 	}
 	err = keeper.SetGDPRConsent(ctx, consent)
 	require.NoError(t, err)
@@ -180,7 +180,7 @@ func TestPIICommitmentVerification(t *testing.T) {
 		ConsentType:    "kyc_processing",
 		Consented:      true,
 		ConsentVersion: "v1",
-		ConsentGivenAt: timestamppb.Now(),
+		ConsentGivenAt: time.Now(),
 	}
 	err = keeper.SetGDPRConsent(ctx, consent)
 	require.NoError(t, err)
@@ -246,7 +246,7 @@ func TestEraseGDPRData(t *testing.T) {
 		ConsentType:    "kyc_processing",
 		Consented:      true,
 		ConsentVersion: "v1",
-		ConsentGivenAt: timestamppb.Now(),
+		ConsentGivenAt: time.Now(),
 	}
 	err = keeper.SetGDPRConsent(ctx, consent)
 	require.NoError(t, err)

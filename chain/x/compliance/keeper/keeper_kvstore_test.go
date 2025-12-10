@@ -6,11 +6,15 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 	"github.com/aequitas/aura/chain/x/compliance/types"
 )
+
+// ptrTime returns a pointer to a time.Time value
+func ptrTime(t time.Time) *time.Time {
+	return &t
+}
 
 func setupTestKeeper(t *testing.T) (*Keeper, sdk.Context) {
 	// Configure SDK with Aura-specific prefixes (safe to call multiple times)
@@ -34,7 +38,7 @@ func TestSetGetKYCRecord(t *testing.T) {
 		KycLevel:             types.KYCLevel_KYC_LEVEL_BASIC,
 		Provider:             "provider1",
 		VerifiedAt: now,
-		ExpiresAt:            timestamppb.New(now.Add(365 * 24 * time.Hour)),
+		ExpiresAt:            ptrTime(now.Add(365 * 24 * time.Hour)),
 		PiiCommitment: make([]byte, 32),
 		EnhancedDueDiligence: false,
 	}
@@ -72,7 +76,7 @@ func TestGetAllKYCRecords(t *testing.T) {
 			KycLevel:       types.KYCLevel_KYC_LEVEL_BASIC,
 			Provider:       "provider1",
 			VerifiedAt: now,
-			ExpiresAt:      timestamppb.New(now.Add(365 * 24 * time.Hour)),
+			ExpiresAt:      ptrTime(now.Add(365 * 24 * time.Hour)),
 			PiiCommitment: make([]byte, 32),
 		},
 		{
@@ -80,7 +84,7 @@ func TestGetAllKYCRecords(t *testing.T) {
 			KycLevel:       types.KYCLevel_KYC_LEVEL_ADVANCED,
 			Provider:       "provider2",
 			VerifiedAt: now,
-			ExpiresAt:      timestamppb.New(now.Add(365 * 24 * time.Hour)),
+			ExpiresAt:      ptrTime(now.Add(365 * 24 * time.Hour)),
 			PiiCommitment: make([]byte, 32),
 		},
 	}
@@ -197,8 +201,8 @@ func TestSetGetSuspiciousActivity(t *testing.T) {
 		ActivityType:    "structuring",
 		Description:     "Multiple small transactions",
 		Amount:          "50000",
-		DetectedAt:      timestamppb.New(now),
-		ReportedAt:      timestamppb.New(now.Add(1 * time.Hour)),
+		DetectedAt:      now,
+		ReportedAt:      ptrTime(now.Add(1 * time.Hour)),
 		FiledSar:        true,
 		SarReference:    "SAR-2024-001",
 		Indicators:      []string{"velocity", "structuring"},
@@ -234,14 +238,14 @@ func TestGetAllSuspiciousActivities(t *testing.T) {
 			Address:         "cosmos1addr1",
 			TransactionHash: "hash1",
 			ActivityType:    "structuring",
-			DetectedAt:      timestamppb.New(now),
+			DetectedAt:      now,
 		},
 		{
 			Id:              "sa2",
 			Address:         "cosmos1addr2",
 			TransactionHash: "hash2",
 			ActivityType:    "smurfing",
-			DetectedAt:      timestamppb.New(now),
+			DetectedAt:      now,
 		},
 	}
 
@@ -282,8 +286,8 @@ func TestSetGetMonitoringRule(t *testing.T) {
 		},
 		RiskLevel: types.TransactionRiskLevel_TX_RISK_HIGH,
 		Enabled:   true,
-		CreatedAt: timestamppb.New(now),
-		UpdatedAt: timestamppb.New(now),
+		CreatedAt: now,
+		UpdatedAt: ptrTime(now),
 	}
 
 	err := keeper.SetMonitoringRule(ctx, rule)
@@ -316,14 +320,14 @@ func TestGetAllMonitoringRules(t *testing.T) {
 			Name:      "Velocity Rule",
 			RuleType:  "velocity",
 			Enabled:   true,
-			CreatedAt: timestamppb.New(now),
+			CreatedAt: now,
 		},
 		{
 			Id:        "rule2",
 			Name:      "Structuring Rule",
 			RuleType:  "structuring",
 			Enabled:   true,
-			CreatedAt: timestamppb.New(now),
+			CreatedAt: now,
 		},
 	}
 
@@ -360,7 +364,7 @@ func TestAddGetTransactionAlerts(t *testing.T) {
 		RuleId:          "rule1",
 		RiskLevel:       types.TransactionRiskLevel_TX_RISK_HIGH,
 		Description:     "Velocity limit exceeded",
-		TriggeredAt:     timestamppb.New(now),
+		TriggeredAt:     now,
 		Reviewed:        false,
 	}
 
@@ -394,7 +398,7 @@ func TestSetGetSanctionsResult(t *testing.T) {
 		Address:              "cosmos1test",
 		Status:               types.SanctionsStatus_SANCTIONS_CLEAR,
 		Matches:              []*types.SanctionsMatch{},
-		ScreenedAt:           timestamppb.New(now),
+		ScreenedAt:           now,
 		ScreeningProvider:    "provider1",
 		RequiresManualReview: false,
 	}
@@ -427,7 +431,7 @@ func TestSetGetSanctionsResult_WithMatches(t *testing.T) {
 				Program:     "NARCOTICS",
 			},
 		},
-		ScreenedAt:           timestamppb.New(now),
+		ScreenedAt:           now,
 		ScreeningProvider:    "provider1",
 		RequiresManualReview: true,
 	}
@@ -458,13 +462,13 @@ func TestGetAllSanctionsResults(t *testing.T) {
 		{
 			Address:           "cosmos1addr1",
 			Status:            types.SanctionsStatus_SANCTIONS_CLEAR,
-			ScreenedAt:        timestamppb.New(now),
+			ScreenedAt:           now,
 			ScreeningProvider: "provider1",
 		},
 		{
 			Address:           "cosmos1addr2",
 			Status:            types.SanctionsStatus_SANCTIONS_MATCH,
-			ScreenedAt:        timestamppb.New(now),
+			ScreenedAt:           now,
 			ScreeningProvider: "provider1",
 		},
 	}
@@ -533,7 +537,7 @@ func TestSetGetGDPRRequest(t *testing.T) {
 		Id:          "req1",
 		Address:     "cosmos1test",
 		RequestType: "access",
-		RequestedAt: timestamppb.New(now),
+		RequestedAt: now,
 		Status:      "pending",
 		Notes:       "User requested data access",
 	}
@@ -567,14 +571,14 @@ func TestGetAllGDPRRequests(t *testing.T) {
 			Id:          "req1",
 			Address:     "cosmos1addr1",
 			RequestType: "access",
-			RequestedAt: timestamppb.New(now),
+			RequestedAt: now,
 			Status:      "pending",
 		},
 		{
 			Id:          "req2",
 			Address:     "cosmos1addr2",
 			RequestType: "erasure",
-			RequestedAt: timestamppb.New(now),
+			RequestedAt: now,
 			Status:      "completed",
 		},
 	}
@@ -613,7 +617,7 @@ func TestSetGetTaxReport(t *testing.T) {
 		TotalIncome:        "50000",
 		TotalCapitalGains:  "10000",
 		TotalCapitalLosses: "2000",
-		GeneratedAt:        timestamppb.New(now),
+		GeneratedAt:        now,
 		Filed:              false,
 	}
 
@@ -994,7 +998,7 @@ func TestSetTaxReport_WithExistingReport(t *testing.T) {
 		Id:          "report1",
 		Address:     "cosmos1test",
 		TaxYear:     "2023",
-		GeneratedAt: timestamppb.New(now),
+		GeneratedAt:        now,
 	}
 
 	err := keeper.SetTaxReport(ctx, report1)
@@ -1005,7 +1009,7 @@ func TestSetTaxReport_WithExistingReport(t *testing.T) {
 		Id:          "report2",
 		Address:     "cosmos1test",
 		TaxYear:     "2024",
-		GeneratedAt: timestamppb.New(now),
+		GeneratedAt:        now,
 	}
 
 	err = keeper.SetTaxReport(ctx, report2)
@@ -1074,7 +1078,7 @@ func TestSetSanctionsResult_MarshalError(t *testing.T) {
 	result := &types.SanctionsScreeningResult{
 		Address:    "cosmos1test",
 		Status:     types.SanctionsStatus_SANCTIONS_CLEAR,
-		ScreenedAt: timestamppb.Now(),
+		ScreenedAt: time.Now(),
 	}
 
 	err := keeper.SetSanctionsResult(ctx, result)
@@ -1110,7 +1114,7 @@ func TestAddTransactionAlert_WithMultipleAlerts(t *testing.T) {
 	alert1 := &types.TransactionAlert{
 		Id:          "alert1",
 		Address:     "cosmos1test",
-		TriggeredAt: timestamppb.New(now),
+		TriggeredAt:     now,
 	}
 
 	err := keeper.AddTransactionAlert(ctx, "cosmos1test", alert1)
@@ -1120,7 +1124,7 @@ func TestAddTransactionAlert_WithMultipleAlerts(t *testing.T) {
 	alert2 := &types.TransactionAlert{
 		Id:          "alert2",
 		Address:     "cosmos1test",
-		TriggeredAt: timestamppb.New(now),
+		TriggeredAt:     now,
 	}
 
 	err = keeper.AddTransactionAlert(ctx, "cosmos1test", alert2)
@@ -1371,7 +1375,7 @@ func TestConsentWithdrawalEnforcement_CompleteFlow(t *testing.T) {
 
 	// Step 2: Withdraw consent
 	consent.Consented = false
-	consent.ConsentWithdrawnAt = timestamppb.New(now)
+	consent.ConsentWithdrawnAt = ptrTime(now)
 	err = keeper.SetGDPRConsent(ctx, consent)
 	require.NoError(t, err)
 

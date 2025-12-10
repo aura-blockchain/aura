@@ -6,7 +6,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/compliance/types"
 )
@@ -42,7 +41,7 @@ func TestQueryTaxReportReturnsMatch(t *testing.T) {
 		Address:      "aura1taxquery",
 		TaxYear:      "2024",
 		Jurisdiction: "US",
-		GeneratedAt:  timestamppb.New(time.Now()),
+		GeneratedAt: time.Now(),
 	}
 	require.NoError(t, keeper.SetTaxReport(ctx, report))
 	server := NewQueryServer(keeper)

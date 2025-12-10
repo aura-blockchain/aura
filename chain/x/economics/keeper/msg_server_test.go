@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"crypto/sha256"
+	"fmt"
 	"testing"
 	"time"
 
@@ -542,7 +544,23 @@ func (suite *MsgServerTestSuite) TestMsgDeposit() {
 }
 
 func (suite *MsgServerTestSuite) TestMsgVote() {
-	// First create and deposit enough to activate voting
+	goCtx := sdk.WrapSDKContext(suite.ctx)
+
+	// First lock tokens for each voter to give them voting power
+	for i := 1; i <= 4; i++ {
+		lockMsg := &economicspb.MsgLockVotingTokens{
+			Owner: suite.testAddrs[i].String(),
+			Amount: sdk.Coin{
+				Denom:  "uaura",
+				Amount: sdkmath.NewInt(1000000),
+			},
+			LockDuration: 365 * 24 * 3600, // 1 year
+		}
+		_, err := suite.msgServer.LockVotingTokens(goCtx, lockMsg)
+		suite.Require().NoError(err)
+	}
+
+	// Create and deposit enough to activate voting
 	submitMsg := &economicspb.MsgSubmitProposal{
 		Title:          "Test Proposal for Voting",
 		Description:    "Test proposal description",
@@ -551,7 +569,6 @@ func (suite *MsgServerTestSuite) TestMsgVote() {
 		InitialDeposit: sdk.Coins{sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(10000000)}}, // Large deposit to activate voting
 	}
 
-	goCtx := sdk.WrapSDKContext(suite.ctx)
 	submitResp, err := suite.msgServer.SubmitProposal(goCtx, submitMsg)
 	suite.Require().NoError(err)
 	proposalID := submitResp.ProposalId
@@ -643,6 +660,20 @@ func (suite *MsgServerTestSuite) TestMsgVote() {
 }
 
 func (suite *MsgServerTestSuite) TestMsgVoteWeighted() {
+	goCtx := sdk.WrapSDKContext(suite.ctx)
+
+	// First lock tokens for the voter to give them voting power
+	lockMsg := &economicspb.MsgLockVotingTokens{
+		Owner: suite.testAddrs[1].String(),
+		Amount: sdk.Coin{
+			Denom:  "uaura",
+			Amount: sdkmath.NewInt(1000000),
+		},
+		LockDuration: 365 * 24 * 3600, // 1 year
+	}
+	_, err := suite.msgServer.LockVotingTokens(goCtx, lockMsg)
+	suite.Require().NoError(err)
+
 	// Create proposal
 	submitMsg := &economicspb.MsgSubmitProposal{
 		Title:          "Test Proposal for Weighted Voting",
@@ -652,7 +683,6 @@ func (suite *MsgServerTestSuite) TestMsgVoteWeighted() {
 		InitialDeposit: sdk.Coins{sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(10000000)}},
 	}
 
-	goCtx := sdk.WrapSDKContext(suite.ctx)
 	submitResp, err := suite.msgServer.SubmitProposal(goCtx, submitMsg)
 	suite.Require().NoError(err)
 	proposalID := submitResp.ProposalId
@@ -727,6 +757,20 @@ func (suite *MsgServerTestSuite) TestMsgVoteWeighted() {
 }
 
 func (suite *MsgServerTestSuite) TestMsgDelegateVote() {
+	goCtx := sdk.WrapSDKContext(suite.ctx)
+
+	// First lock tokens for the delegator to give them voting power
+	lockMsg := &economicspb.MsgLockVotingTokens{
+		Owner: suite.testAddrs[0].String(),
+		Amount: sdk.Coin{
+			Denom:  "uaura",
+			Amount: sdkmath.NewInt(1000000),
+		},
+		LockDuration: 365 * 24 * 3600, // 1 year
+	}
+	_, err := suite.msgServer.LockVotingTokens(goCtx, lockMsg)
+	suite.Require().NoError(err)
+
 	tests := []struct {
 		name      string
 		msg       *economicspb.MsgDelegateVote
@@ -806,15 +850,28 @@ func (suite *MsgServerTestSuite) TestMsgDelegateVote() {
 }
 
 func (suite *MsgServerTestSuite) TestMsgUndelegateVote() {
-	// First create a delegation
+	goCtx := sdk.WrapSDKContext(suite.ctx)
+
+	// First lock tokens for the delegator to give them voting power
+	lockMsg := &economicspb.MsgLockVotingTokens{
+		Owner: suite.testAddrs[0].String(),
+		Amount: sdk.Coin{
+			Denom:  "uaura",
+			Amount: sdkmath.NewInt(1000000),
+		},
+		LockDuration: 365 * 24 * 3600, // 1 year
+	}
+	_, err := suite.msgServer.LockVotingTokens(goCtx, lockMsg)
+	suite.Require().NoError(err)
+
+	// Create a delegation
 	delegateMsg := &economicspb.MsgDelegateVote{
 		Delegator:  suite.testAddrs[0].String(),
 		Delegate:   suite.testAddrs[1].String(),
 		Categories: []economicspb.ProposalCategory{},
 	}
 
-	goCtx := sdk.WrapSDKContext(suite.ctx)
-	_, err := suite.msgServer.DelegateVote(goCtx, delegateMsg)
+	_, err = suite.msgServer.DelegateVote(goCtx, delegateMsg)
 	suite.Require().NoError(err)
 
 	tests := []struct {
@@ -941,6 +998,20 @@ func (suite *MsgServerTestSuite) TestMsgExecuteProposal() {
 }
 
 func (suite *MsgServerTestSuite) TestMsgRevealSecretVote() {
+	goCtx := sdk.WrapSDKContext(suite.ctx)
+
+	// First lock tokens for the voter to give them voting power
+	lockMsg := &economicspb.MsgLockVotingTokens{
+		Owner: suite.testAddrs[1].String(),
+		Amount: sdk.Coin{
+			Denom:  "uaura",
+			Amount: sdkmath.NewInt(1000000),
+		},
+		LockDuration: 365 * 24 * 3600, // 1 year
+	}
+	_, err := suite.msgServer.LockVotingTokens(goCtx, lockMsg)
+	suite.Require().NoError(err)
+
 	// Create proposal with secret ballot enabled
 	submitMsg := &economicspb.MsgSubmitProposal{
 		Title:          "Test Proposal for Secret Voting",
@@ -950,18 +1021,23 @@ func (suite *MsgServerTestSuite) TestMsgRevealSecretVote() {
 		InitialDeposit: sdk.Coins{sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(10000000)}},
 	}
 
-	goCtx := sdk.WrapSDKContext(suite.ctx)
 	submitResp, err := suite.msgServer.SubmitProposal(goCtx, submitMsg)
 	suite.Require().NoError(err)
 	proposalID := submitResp.ProposalId
 
 	// Cast a secret vote
+	// Generate a proper commitment: SHA256 hash of "{option}:{revealKey}"
+	revealKey := "reveal_key_123"
+	voteOption := economicspb.VoteOption_VOTE_OPTION_YES
+	commitmentData := fmt.Sprintf("%d:%s", voteOption, revealKey)
+	commitment := fmt.Sprintf("%x", sha256.Sum256([]byte(commitmentData)))
+
 	voteMsg := &economicspb.MsgVote{
 		ProposalId:     proposalID,
 		Voter:          suite.testAddrs[1].String(),
-		Option:         economicspb.VoteOption_VOTE_OPTION_YES,
+		Option:         voteOption,
 		IsSecret:       true,
-		VoteCommitment: "commitment_hash_abc123",
+		VoteCommitment: commitment,
 	}
 	_, err = suite.msgServer.Vote(goCtx, voteMsg)
 	suite.Require().NoError(err)
@@ -1626,6 +1702,18 @@ func (suite *MsgServerTestSuite) TestEdgeCases() {
 	})
 
 	suite.Run("concurrent vote delegation", func() {
+		// First lock tokens for the delegator to give them voting power
+		lockMsg := &economicspb.MsgLockVotingTokens{
+			Owner: suite.testAddrs[0].String(),
+			Amount: sdk.Coin{
+				Denom:  "uaura",
+				Amount: sdkmath.NewInt(1000000),
+			},
+			LockDuration: 365 * 24 * 3600, // 1 year
+		}
+		_, err := suite.msgServer.LockVotingTokens(goCtx, lockMsg)
+		suite.Require().NoError(err)
+
 		// Test delegating to multiple delegates
 		msg1 := &economicspb.MsgDelegateVote{
 			Delegator:  suite.testAddrs[0].String(),
@@ -1639,7 +1727,7 @@ func (suite *MsgServerTestSuite) TestEdgeCases() {
 			Categories: []economicspb.ProposalCategory{economicspb.ProposalCategory_PROPOSAL_CATEGORY_PARAMETER_CHANGE},
 		}
 
-		_, err := suite.msgServer.DelegateVote(goCtx, msg1)
+		_, err = suite.msgServer.DelegateVote(goCtx, msg1)
 		suite.Require().NoError(err)
 
 		_, err = suite.msgServer.DelegateVote(goCtx, msg2)

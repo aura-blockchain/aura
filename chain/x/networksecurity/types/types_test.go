@@ -86,7 +86,7 @@ func TestValidateParams_Connection(t *testing.T) {
 			mutate: func(p *Params) {
 				p.Connection.ConnectionTimeout = 0
 			},
-			wantError: "connection_timeout cannot be nil",
+			wantError: "connection_timeout must be greater than 0",
 		},
 	}
 
@@ -255,7 +255,7 @@ func TestDefaultParams_Values(t *testing.T) {
 	// Mempool
 	require.Equal(t, uint64(5000), params.Mempool.MaxSize)
 	require.Equal(t, uint64(10485760), params.Mempool.MaxBytes)
-	require.Equal(t, "1000", params.Mempool.MinPriorityFee)
+	require.Equal(t, math.NewInt(1000), params.Mempool.MinPriorityFee)
 	require.Equal(t, uint32(100), params.Mempool.MaxTxsPerAccount)
 	require.Equal(t, "oldest", params.Mempool.EvictionPolicy)
 	require.True(t, params.Mempool.EnablePriorityFees)

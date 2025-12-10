@@ -6,7 +6,6 @@ import (
 
 	"cosmossdk.io/math"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -145,7 +144,7 @@ func TestMonitorTransaction_SanctionedAddress(t *testing.T) {
 	err = k.SetSanctionsResult(ctx, &types.SanctionsScreeningResult{
 		Address:    from.String(),
 		Status:     types.SanctionsStatus_SANCTIONS_CONFIRMED,
-		ScreenedAt: timestamppb.New(now),
+		ScreenedAt: now,
 		Matches: []*types.SanctionsMatch{
 			{
 				ListName:    "OFAC SDN",
@@ -183,7 +182,7 @@ func TestShouldBlockTransaction_CriticalRisk(t *testing.T) {
 			Id:          "test_alert_1",
 			RiskLevel:   types.TransactionRiskLevel_TX_RISK_CRITICAL,
 			Description: "Critical risk detected",
-			TriggeredAt: timestamppb.New(now),
+			TriggeredAt: now,
 		},
 	}
 
@@ -202,13 +201,13 @@ func TestShouldBlockTransaction_MultipleHighRisk(t *testing.T) {
 			Id:          "test_alert_1",
 			RiskLevel:   types.TransactionRiskLevel_TX_RISK_HIGH,
 			Description: "High risk factor 1",
-			TriggeredAt: timestamppb.New(now),
+			TriggeredAt: now,
 		},
 		{
 			Id:          "test_alert_2",
 			RiskLevel:   types.TransactionRiskLevel_TX_RISK_HIGH,
 			Description: "High risk factor 2",
-			TriggeredAt: timestamppb.New(now),
+			TriggeredAt: now,
 		},
 	}
 
@@ -227,7 +226,7 @@ func TestShouldBlockTransaction_SingleHighRisk(t *testing.T) {
 			Id:          "test_alert_1",
 			RiskLevel:   types.TransactionRiskLevel_TX_RISK_HIGH,
 			Description: "High risk factor",
-			TriggeredAt: timestamppb.New(now),
+			TriggeredAt: now,
 		},
 	}
 
@@ -246,7 +245,7 @@ func TestShouldBlockTransaction_MediumRisk(t *testing.T) {
 			Id:          "test_alert_1",
 			RiskLevel:   types.TransactionRiskLevel_TX_RISK_MEDIUM,
 			Description: "Medium risk factor",
-			TriggeredAt: timestamppb.New(now),
+			TriggeredAt: now,
 		},
 	}
 
@@ -334,7 +333,7 @@ func TestIsAddressSanctioned_Confirmed(t *testing.T) {
 	err := k.SetSanctionsResult(ctx, &types.SanctionsScreeningResult{
 		Address:    addr,
 		Status:     types.SanctionsStatus_SANCTIONS_CONFIRMED,
-		ScreenedAt: timestamppb.New(now),
+		ScreenedAt: now,
 	})
 	require.NoError(t, err)
 
@@ -352,7 +351,7 @@ func TestIsAddressSanctioned_Match(t *testing.T) {
 	err := k.SetSanctionsResult(ctx, &types.SanctionsScreeningResult{
 		Address:    addr,
 		Status:     types.SanctionsStatus_SANCTIONS_MATCH,
-		ScreenedAt: timestamppb.New(now),
+		ScreenedAt: now,
 	})
 	require.NoError(t, err)
 
@@ -370,7 +369,7 @@ func TestIsAddressSanctioned_Clear(t *testing.T) {
 	err := k.SetSanctionsResult(ctx, &types.SanctionsScreeningResult{
 		Address:    addr,
 		Status:     types.SanctionsStatus_SANCTIONS_CLEAR,
-		ScreenedAt: timestamppb.New(now),
+		ScreenedAt: now,
 	})
 	require.NoError(t, err)
 
@@ -541,7 +540,7 @@ func testEvaluateRule(k *Keeper, ctx sdk.Context, rule *types.TransactionMonitor
 					RuleId:      rule.Id,
 					RiskLevel:   rule.RiskLevel,
 					Description: "Large transaction detected",
-					TriggeredAt: timestamppb.New(txCtx.Timestamp),
+					TriggeredAt: txCtx.Timestamp,
 				}, nil
 			}
 		}

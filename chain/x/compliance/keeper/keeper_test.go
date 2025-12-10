@@ -6,7 +6,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 	"github.com/aequitas/aura/chain/x/compliance/types"
@@ -182,7 +181,7 @@ func TestKeeper_FullKYCWorkflow(t *testing.T) {
 		KycLevel:             types.KYCLevel_KYC_LEVEL_BASIC,
 		Provider:             "provider1",
 		VerifiedAt: now,
-		ExpiresAt:            timestamppb.New(now.Add(365 * 24 * time.Hour)),
+		ExpiresAt:            ptrTime(now.Add(365 * 24 * time.Hour)),
 		PiiCommitment: make([]byte, 32),
 		EnhancedDueDiligence: false,
 	}
@@ -234,7 +233,7 @@ func TestKeeper_FullAMLWorkflow(t *testing.T) {
 		ActivityType:    "structuring",
 		Description:     "Multiple small transactions",
 		Amount:          "50000",
-		DetectedAt:      timestamppb.New(now),
+		DetectedAt: now,
 		FiledSar:        false,
 	}
 
@@ -265,7 +264,7 @@ func TestKeeper_SanctionsWorkflow(t *testing.T) {
 		Address:              address,
 		Status:               types.SanctionsStatus_SANCTIONS_CLEAR,
 		Matches:              []*types.SanctionsMatch{},
-		ScreenedAt:           timestamppb.New(now),
+		ScreenedAt: now,
 		ScreeningProvider:    "provider1",
 		RequiresManualReview: false,
 	}
@@ -302,7 +301,7 @@ func TestKeeper_GDPRWorkflow(t *testing.T) {
 		Id:          "req1",
 		Address:     address,
 		RequestType: "access",
-		RequestedAt: timestamppb.New(now),
+		RequestedAt: now,
 		Status:      "pending",
 	}
 
@@ -328,7 +327,7 @@ func (m *mockKYCProvider) VerifyIdentity(address, documentType string, documents
 		Address:        address,
 		KycLevel:       types.KYCLevel_KYC_LEVEL_BASIC,
 		Provider:       "mock",
-		VerifiedAt:     timestamppb.Now(),
+		VerifiedAt:     time.Now(),
 		PiiCommitment: make([]byte, 32),
 	}, nil
 }
@@ -350,7 +349,7 @@ func (m *mockSanctionsProvider) ScreenAddress(address string) (*types.SanctionsS
 	return &types.SanctionsScreeningResult{
 		Address:           address,
 		Status:            types.SanctionsStatus_SANCTIONS_CLEAR,
-		ScreenedAt:        timestamppb.Now(),
+		ScreenedAt:        time.Now(),
 		ScreeningProvider: "mock",
 	}, nil
 }
@@ -368,7 +367,7 @@ func (m *mockTaxReportGenerator) GenerateReport(address, taxYear, reportType str
 		TaxYear:      taxYear,
 		ReportType:   reportType,
 		Transactions: transactions,
-		GeneratedAt:  timestamppb.Now(),
+		GeneratedAt:  time.Now(),
 	}, nil
 }
 
@@ -407,7 +406,7 @@ func TestKeeper_ConcurrentAccess(t *testing.T) {
 	err = keeper.SetSanctionsResult(ctx, &types.SanctionsScreeningResult{
 		Address:    "addr1",
 		Status:     types.SanctionsStatus_SANCTIONS_CLEAR,
-		ScreenedAt: timestamppb.Now(),
+		ScreenedAt: time.Now(),
 	})
 	require.NoError(t, err)
 

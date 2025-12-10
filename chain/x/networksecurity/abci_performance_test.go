@@ -16,6 +16,10 @@ import (
 func TestBeginBlockerPerformance(t *testing.T) {
 	k, ctx := keeper.NetworkSecurityKeeper(t)
 
+	// Set block time to a valid timestamp to avoid protobuf timestamp errors
+	ctx = ctx.WithBlockTime(time.Now())
+	ctx = ctx.WithBlockHeight(100)
+
 	// Set up params
 	params := types.DefaultParams()
 	params.Reputation.EnableTracking = true
@@ -108,6 +112,10 @@ func TestBeginBlockerPerformance(t *testing.T) {
 func TestBeginBlockerMultipleBlocks(t *testing.T) {
 	k, ctx := keeper.NetworkSecurityKeeper(t)
 
+	// Set block time to a valid timestamp to avoid protobuf timestamp errors
+	ctx = ctx.WithBlockTime(time.Now())
+	ctx = ctx.WithBlockHeight(100)
+
 	params := types.DefaultParams()
 	params.Reputation.EnableTracking = true
 	k.SetParams(ctx, *params)
@@ -152,6 +160,10 @@ func TestBeginBlockerMultipleBlocks(t *testing.T) {
 // TestBeginBlockerReputationRefresh verifies reputation refresh happens at correct interval
 func TestBeginBlockerReputationRefresh(t *testing.T) {
 	k, ctx := keeper.NetworkSecurityKeeper(t)
+
+	// Set block time to a valid timestamp to avoid protobuf timestamp errors
+	ctx = ctx.WithBlockTime(time.Now())
+	ctx = ctx.WithBlockHeight(1)
 
 	params := types.DefaultParams()
 	params.Reputation.EnableTracking = true
@@ -205,6 +217,10 @@ func TestBeginBlockerReputationRefresh(t *testing.T) {
 func TestBeginBlockerCleanupOperations(t *testing.T) {
 	k, ctx := keeper.NetworkSecurityKeeper(t)
 
+	// Set block time to a valid timestamp to avoid protobuf timestamp errors
+	ctx = ctx.WithBlockTime(time.Now())
+	ctx = ctx.WithBlockHeight(1)
+
 	params := types.DefaultParams()
 	k.SetParams(ctx, *params)
 
@@ -232,6 +248,10 @@ func TestBeginBlockerCleanupOperations(t *testing.T) {
 func TestBeginBlockerEmptyState(t *testing.T) {
 	k, ctx := keeper.NetworkSecurityKeeper(t)
 
+	// Set block time to a valid timestamp to avoid protobuf timestamp errors
+	ctx = ctx.WithBlockTime(time.Now())
+	ctx = ctx.WithBlockHeight(1)
+
 	params := types.DefaultParams()
 	k.SetParams(ctx, *params)
 
@@ -244,6 +264,10 @@ func TestBeginBlockerEmptyState(t *testing.T) {
 // TestBeginBlockerConsistency verifies BeginBlocker maintains state consistency
 func TestBeginBlockerConsistency(t *testing.T) {
 	k, ctx := keeper.NetworkSecurityKeeper(t)
+
+	// Set block time to a valid timestamp to avoid protobuf timestamp errors
+	ctx = ctx.WithBlockTime(time.Now())
+	ctx = ctx.WithBlockHeight(1)
 
 	params := types.DefaultParams()
 	params.Reputation.EnableTracking = true

@@ -5,7 +5,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 	"github.com/aequitas/aura/chain/x/compliance/types"

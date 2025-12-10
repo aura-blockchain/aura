@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/compliance/types"
 )
@@ -30,7 +29,7 @@ func TestSanctionsCacheExpiryLogic(t *testing.T) {
 		Address:              address,
 		Status:               types.SanctionsStatus_SANCTIONS_CLEAR,
 		Matches:              []*types.SanctionsMatch{},
-		ScreenedAt:           timestamppb.New(initialTime),
+		ScreenedAt: initialTime,
 		ScreeningProvider:    "test_provider",
 		RequiresManualReview: false,
 	}
@@ -45,7 +44,7 @@ func TestSanctionsCacheExpiryLogic(t *testing.T) {
 
 	// Verify cache validity check
 	params = keeper.GetParams(ctx)
-	cacheAge := ctx.BlockTime().Sub(cached.ScreenedAt.AsTime())
+	cacheAge := ctx.BlockTime().Sub(cached.ScreenedAt)
 	maxCacheAge := time.Duration(params.ScreeningCacheHours) * time.Hour
 	require.True(t, cacheAge <= maxCacheAge, "cache should be valid within expiry window")
 
@@ -57,7 +56,7 @@ func TestSanctionsCacheExpiryLogic(t *testing.T) {
 
 	// Verify cache would be considered expired
 	params = keeper.GetParams(ctx)
-	cacheAge = ctx.BlockTime().Sub(cached.ScreenedAt.AsTime())
+	cacheAge = ctx.BlockTime().Sub(cached.ScreenedAt)
 	maxCacheAge = time.Duration(params.ScreeningCacheHours) * time.Hour
 	require.True(t, cacheAge > maxCacheAge, "cache should be expired after expiry window")
 }
@@ -79,7 +78,7 @@ func TestSanctionsCacheExpiryBoundary(t *testing.T) {
 		Address:           address,
 		Status:            types.SanctionsStatus_SANCTIONS_CLEAR,
 		Matches:           []*types.SanctionsMatch{},
-		ScreenedAt:        timestamppb.New(initialTime),
+		ScreenedAt: initialTime,
 		ScreeningProvider: "test_provider",
 	}
 	err = keeper.SetSanctionsResult(ctx, result)
@@ -91,7 +90,7 @@ func TestSanctionsCacheExpiryBoundary(t *testing.T) {
 	require.NoError(t, err)
 
 	params = keeper.GetParams(ctx59m59s)
-	cacheAge := ctx59m59s.BlockTime().Sub(cached.ScreenedAt.AsTime())
+	cacheAge := ctx59m59s.BlockTime().Sub(cached.ScreenedAt)
 	maxCacheAge := time.Duration(params.ScreeningCacheHours) * time.Hour
 	require.True(t, cacheAge <= maxCacheAge, "cache should be valid at 59m59s")
 
@@ -101,7 +100,7 @@ func TestSanctionsCacheExpiryBoundary(t *testing.T) {
 	require.NoError(t, err)
 
 	params = keeper.GetParams(ctx1h1s)
-	cacheAge = ctx1h1s.BlockTime().Sub(cached.ScreenedAt.AsTime())
+	cacheAge = ctx1h1s.BlockTime().Sub(cached.ScreenedAt)
 	maxCacheAge = time.Duration(params.ScreeningCacheHours) * time.Hour
 	require.True(t, cacheAge > maxCacheAge, "cache should be expired at 1h1s")
 }
@@ -123,7 +122,7 @@ func TestSanctionsCacheExpiryZeroDisablesExpiry(t *testing.T) {
 		Address:           address,
 		Status:            types.SanctionsStatus_SANCTIONS_CLEAR,
 		Matches:           []*types.SanctionsMatch{},
-		ScreenedAt:        timestamppb.New(initialTime),
+		ScreenedAt: initialTime,
 		ScreeningProvider: "test_provider",
 	}
 	err = keeper.SetSanctionsResult(ctx, result)
@@ -160,7 +159,7 @@ func TestSanctionsCacheExpiryMultipleAddresses(t *testing.T) {
 		Address:           address1,
 		Status:            types.SanctionsStatus_SANCTIONS_CLEAR,
 		Matches:           []*types.SanctionsMatch{},
-		ScreenedAt:        timestamppb.New(initialTime),
+		ScreenedAt: initialTime,
 		ScreeningProvider: "test_provider",
 	}
 	err = keeper.SetSanctionsResult(ctx, result1)
@@ -172,7 +171,7 @@ func TestSanctionsCacheExpiryMultipleAddresses(t *testing.T) {
 		Address:           address2,
 		Status:            types.SanctionsStatus_SANCTIONS_CLEAR,
 		Matches:           []*types.SanctionsMatch{},
-		ScreenedAt:        timestamppb.New(time2),
+		ScreenedAt: time2,
 		ScreeningProvider: "test_provider",
 	}
 	ctx2 := ctx.WithBlockTime(time2)
@@ -190,13 +189,13 @@ func TestSanctionsCacheExpiryMultipleAddresses(t *testing.T) {
 	// Verify address1 is expired
 	cached1, err := keeper.GetSanctionsResult(ctxCheck, address1)
 	require.NoError(t, err)
-	age1 := checkTime.Sub(cached1.ScreenedAt.AsTime())
+	age1 := checkTime.Sub(cached1.ScreenedAt)
 	require.True(t, age1 > maxAge, "address1 cache should be expired")
 
 	// Verify address2 is still valid
 	cached2, err := keeper.GetSanctionsResult(ctxCheck, address2)
 	require.NoError(t, err)
-	age2 := checkTime.Sub(cached2.ScreenedAt.AsTime())
+	age2 := checkTime.Sub(cached2.ScreenedAt)
 	require.True(t, age2 <= maxAge, "address2 cache should be valid")
 }
 
@@ -220,7 +219,7 @@ func TestSanctionsCacheExpiryOFACCompliance(t *testing.T) {
 		Address:              address,
 		Status:               types.SanctionsStatus_SANCTIONS_CLEAR,
 		Matches:              []*types.SanctionsMatch{},
-		ScreenedAt:           timestamppb.New(day1Time),
+		ScreenedAt: day1Time,
 		ScreeningProvider:    "ofac_provider",
 		RequiresManualReview: false,
 	}
@@ -235,7 +234,7 @@ func TestSanctionsCacheExpiryOFACCompliance(t *testing.T) {
 
 	// Cache age check shows valid
 	params = keeper.GetParams(ctx30min)
-	cacheAge := ctx30min.BlockTime().Sub(cached.ScreenedAt.AsTime())
+	cacheAge := ctx30min.BlockTime().Sub(cached.ScreenedAt)
 	maxAge := time.Duration(params.ScreeningCacheHours) * time.Hour
 	require.True(t, cacheAge <= maxAge, "cache should be valid within window")
 
@@ -247,7 +246,7 @@ func TestSanctionsCacheExpiryOFACCompliance(t *testing.T) {
 
 	// Cache age check shows expired - fresh screening required
 	params = keeper.GetParams(ctx2h)
-	cacheAge = ctx2h.BlockTime().Sub(cached.ScreenedAt.AsTime())
+	cacheAge = ctx2h.BlockTime().Sub(cached.ScreenedAt)
 	maxAge = time.Duration(params.ScreeningCacheHours) * time.Hour
 	require.True(t, cacheAge > maxAge, "cache must be expired to trigger fresh screening")
 
@@ -275,7 +274,7 @@ func TestSanctionsCacheExpiryManualExpiredEntry(t *testing.T) {
 		Address:              address,
 		Status:               types.SanctionsStatus_SANCTIONS_CLEAR,
 		Matches:              []*types.SanctionsMatch{},
-		ScreenedAt:           timestamppb.New(expiredTime),
+		ScreenedAt: expiredTime,
 		ScreeningProvider:    "test_provider",
 		RequiresManualReview: false,
 	}
@@ -288,10 +287,10 @@ func TestSanctionsCacheExpiryManualExpiredEntry(t *testing.T) {
 	require.NotNil(t, cached)
 
 	params = keeper.GetParams(ctx)
-	cacheAge := currentTime.Sub(cached.ScreenedAt.AsTime())
+	cacheAge := currentTime.Sub(cached.ScreenedAt)
 	maxAge := time.Duration(params.ScreeningCacheHours) * time.Hour
 	require.True(t, cacheAge > maxAge, "manually set expired entry should be detected as expired")
-	require.Equal(t, expiredTime, cached.ScreenedAt.AsTime())
+	require.Equal(t, expiredTime, cached.ScreenedAt)
 }
 
 // TestSanctionsCacheExpiry_VariousDurations tests cache expiry with different time windows.
@@ -358,7 +357,7 @@ func TestSanctionsCacheExpiry_VariousDurations(t *testing.T) {
 				Address:           address,
 				Status:            types.SanctionsStatus_SANCTIONS_CLEAR,
 				Matches:           []*types.SanctionsMatch{},
-				ScreenedAt:        timestamppb.New(screenedAt),
+				ScreenedAt: screenedAt,
 				ScreeningProvider: "test_provider",
 			}
 			err = keeper.SetSanctionsResult(ctx, result)
@@ -369,7 +368,7 @@ func TestSanctionsCacheExpiry_VariousDurations(t *testing.T) {
 			require.NoError(t, err)
 
 			params = keeper.GetParams(ctx)
-			cacheAge := ctx.BlockTime().Sub(cached.ScreenedAt.AsTime())
+			cacheAge := ctx.BlockTime().Sub(cached.ScreenedAt)
 			maxAge := time.Duration(params.ScreeningCacheHours) * time.Hour
 
 			if tc.shouldExpire {

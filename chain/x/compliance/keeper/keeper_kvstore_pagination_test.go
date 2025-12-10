@@ -9,7 +9,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aequitas/aura/chain/x/compliance/types"
 )
@@ -26,7 +25,7 @@ func TestGetAllKYCRecordsPaginated(t *testing.T) {
 			KycLevel:   types.KYCLevel_KYC_LEVEL_BASIC,
 			Provider:   "test-provider",
 			VerifiedAt: time.Now(),
-			ExpiresAt:  timestamppb.New(time.Now().Add(365 * 24 * time.Hour)),
+			ExpiresAt:  ptrTime(time.Now().Add(365 * 24 * time.Hour)),
 		}
 		err := keeper.SetKYCRecord(ctx, record)
 		require.NoError(t, err)
@@ -135,7 +134,7 @@ func TestGetAllSanctionsResultsPaginated(t *testing.T) {
 		result := &types.SanctionsScreeningResult{
 			Address:           fmt.Sprintf("address%d", i),
 			Status:            types.SanctionsStatus_SANCTIONS_CLEAR,
-			ScreenedAt:        timestamppb.New(time.Now()),
+			ScreenedAt:        time.Now(),
 			ScreeningProvider: "test-provider",
 		}
 		err := keeper.SetSanctionsResult(ctx, result)
@@ -201,7 +200,7 @@ func TestGetAllTransactionAlertsPaginated(t *testing.T) {
 			Address:         address,
 			RuleId:          "test-rule",
 			RiskLevel:       types.TransactionRiskLevel_TX_RISK_MEDIUM,
-			TriggeredAt:     timestamppb.New(time.Now()),
+			TriggeredAt:     time.Now(),
 		}
 		err := keeper.AddTransactionAlert(ctx, address, alert)
 		require.NoError(t, err)
@@ -231,7 +230,7 @@ func TestGetAllTaxReportsPaginated(t *testing.T) {
 			TaxYear:      "2024",
 			Jurisdiction: "US",
 			ReportType:   "1099-K",
-			GeneratedAt:  timestamppb.New(time.Now()),
+			GeneratedAt:  time.Now(),
 		}
 		err := keeper.SetTaxReport(ctx, report)
 		require.NoError(t, err)
@@ -259,7 +258,7 @@ func TestGetAllGDPRRequestsPaginated(t *testing.T) {
 			Id:          fmt.Sprintf("request-%d", i),
 			Address:     fmt.Sprintf("address%d", i),
 			RequestType: "access",
-			RequestedAt: timestamppb.New(time.Now()),
+			RequestedAt: time.Now(),
 			Status:      "pending",
 		}
 		err := keeper.SetGDPRRequest(ctx, request)
@@ -305,7 +304,7 @@ func TestPaginationLargeDataset(t *testing.T) {
 			KycLevel:   types.KYCLevel_KYC_LEVEL_BASIC,
 			Provider:   "test-provider",
 			VerifiedAt: time.Now(),
-			ExpiresAt:  timestamppb.New(time.Now().Add(365 * 24 * time.Hour)),
+			ExpiresAt:  ptrTime(time.Now().Add(365 * 24 * time.Hour)),
 		}
 		err := keeper.SetKYCRecord(ctx, record)
 		require.NoError(t, err)
@@ -373,7 +372,7 @@ func TestPaginationDefaultLimit(t *testing.T) {
 			KycLevel:   types.KYCLevel_KYC_LEVEL_BASIC,
 			Provider:   "test-provider",
 			VerifiedAt: time.Now(),
-			ExpiresAt:  timestamppb.New(time.Now().Add(365 * 24 * time.Hour)),
+			ExpiresAt:  ptrTime(time.Now().Add(365 * 24 * time.Hour)),
 		}
 		err := keeper.SetKYCRecord(ctx, record)
 		require.NoError(t, err)
