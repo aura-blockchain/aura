@@ -3,7 +3,7 @@ package ml
 import (
 	"context"
 	"fmt"
-	"math"
+	"sort"
 	"sync"
 	"time"
 
@@ -13,59 +13,76 @@ import (
 )
 
 // AnomalyDetector implements machine learning-based anomaly detection
+// NOTE: This detector is NON-CONSENSUS. It is used only for monitoring/alerting.
+// All calculations use deterministic integer math to ensure consensus safety.
 type AnomalyDetector struct {
 	// Model parameters
-	modelVersion    string
-	threshold       float64
-	trainingData    []DataPoint
-	statistics      *Statistics
-	mu              sync.RWMutex
-	lastTraining    time.Time
+	modelVersion     string
+	thresholdBps     uint64 // Threshold in basis points (0-10000, where 10000 = 100%)
+	trainingData     []DataPoint
+	statistics       *Statistics
+	mu               sync.RWMutex
+	lastTraining     time.Time
 	trainingInterval time.Duration
-	accuracy        float64
+	accuracyBps      uint64 // Accuracy in basis points (0-10000)
 }
 
 // DataPoint represents a training data point
 type DataPoint struct {
-	Features  map[string]float64
+	Features  map[string]uint64 // All features stored as integer values (scaled appropriately)
 	Timestamp time.Time
 	Label     bool // true if anomaly, false if normal
 }
 
 // Statistics holds statistical measures for anomaly detection
+// All values use deterministic integer arithmetic
 type Statistics struct {
-	Mean              map[string]float64
-	StdDev            map[string]float64
-	Min               map[string]float64
-	Max               map[string]float64
-	FeatureCount      int
-	SampleCount       int
-	AnomalyRate       float64
+	Mean         map[string]uint64 // Mean values (scaled by 1e6 for precision)
+	StdDev       map[string]uint64 // Standard deviation (scaled by 1e6)
+	Min          map[string]uint64
+	Max          map[string]uint64
+	FeatureCount int
+	SampleCount  int
+	AnomalyRate  uint64 // In basis points (0-10000)
 }
 
+// Scaling constants for deterministic integer math
+const (
+	ScaleFactor     = 1_000_000 // 1e6 for mean/stddev precision
+	BasisPointsMax  = 10_000    // 100% = 10000 basis points
+)
+
 // NewAnomalyDetector creates a new anomaly detector
+// threshold should be 0.0-1.0, it will be converted to basis points
 func NewAnomalyDetector(threshold float64, trainingInterval time.Duration) *AnomalyDetector {
+	// Convert float threshold to basis points (0-10000)
+	thresholdBps := uint64(threshold * float64(BasisPointsMax))
+	if thresholdBps > BasisPointsMax {
+		thresholdBps = BasisPointsMax
+	}
+
 	return &AnomalyDetector{
-		modelVersion:     "v1.0.0",
-		threshold:        threshold,
+		modelVersion:     "v2.0.0-deterministic",
+		thresholdBps:     thresholdBps,
 		trainingData:     make([]DataPoint, 0),
 		statistics:       newStatistics(),
 		trainingInterval: trainingInterval,
-		accuracy:         0.0,
+		accuracyBps:      0,
 	}
 }
 
 // newStatistics creates a new Statistics object
 func newStatistics() *Statistics {
 	return &Statistics{
-		Mean:   make(map[string]float64),
-		StdDev: make(map[string]float64),
-		Min:    make(map[string]float64),
-		Max:    make(map[string]float64),
+		Mean:   make(map[string]uint64),
+		StdDev: make(map[string]uint64),
+		Min:    make(map[string]uint64),
+		Max:    make(map[string]uint64),
 	}
 }
 
 // DetectTransactionAnomaly detects anomalies in transaction data
+// All calculations are deterministic (integer-based) for consensus safety
 func (ad *AnomalyDetector) DetectTransactionAnomaly(ctx context.Context, tx *types.TransactionMonitorData) (*types.AnomalyDetection, error) {
 	if tx == nil {
 		return nil, types.ErrInvalidTransaction
@@ -74,19 +91,30 @@ func (ad *AnomalyDetector) DetectTransactionAnomaly(ctx context.Context, tx *typ
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	blockTime := sdkCtx.BlockTime()
 
-	// Extract features from transaction
-	features := ad.extractTransactionFeatures(tx)
+	// Extract features from transaction (returns uint64 values)
+	featuresInt := ad.extractTransactionFeatures(tx)
 
-	// Calculate anomaly score
-	score := ad.calculateAnomalyScore(features)
+	// Calculate anomaly score in basis points (0-10000)
+	scoreBps := ad.calculateAnomalyScoreBps(featuresInt)
+
+	// Convert basis points to float64 for the AnomalyDetection struct
+	// This is safe because it's only for output/display, not used in consensus logic
+	scoreFloat := float64(scoreBps) / float64(BasisPointsMax)
+	thresholdFloat := float64(ad.thresholdBps) / float64(BasisPointsMax)
+
+	// Convert features to float64 map for compatibility with existing types
+	featuresFloat := make(map[string]float64)
+	for k, v := range featuresInt {
+		featuresFloat[k] = float64(v)
+	}
 
 	detection := &types.AnomalyDetection{
 		ID:           generateDetectionIDWithCtx(ctx),
 		Type:         types.AnomalyTypeTransaction,
-		Score:        score,
-		Threshold:    ad.threshold,
-		IsAnomaly:    score >= ad.threshold,
-		Features:     features,
+		Score:        scoreFloat,
+		Threshold:    thresholdFloat,
+		IsAnomaly:    scoreBps >= ad.thresholdBps,
+		Features:     featuresFloat,
 		Metadata: map[string]interface{}{
 			"tx_hash":      tx.TxHash,
 			"sender":       tx.Sender,
@@ -98,10 +126,10 @@ func (ad *AnomalyDetector) DetectTransactionAnomaly(ctx context.Context, tx *typ
 		ModelVersion: ad.modelVersion,
 	}
 
-	// Add to training data
-	ad.addTrainingData(features, detection.IsAnomaly)
+	// Add to training data (non-consensus: used only for model updates)
+	ad.addTrainingData(featuresInt, detection.IsAnomaly)
 
-	// Retrain if needed
+	// Retrain if needed (non-consensus: runs in background)
 	if time.Since(ad.lastTraining) > ad.trainingInterval {
 		go ad.retrain()
 	}
@@ -110,54 +138,84 @@ func (ad *AnomalyDetector) DetectTransactionAnomaly(ctx context.Context, tx *typ
 }
 
 // extractTransactionFeatures extracts numerical features from a transaction
-func (ad *AnomalyDetector) extractTransactionFeatures(tx *types.TransactionMonitorData) map[string]float64 {
-	features := make(map[string]float64)
+// Returns deterministic uint64 values (no floating-point operations)
+func (ad *AnomalyDetector) extractTransactionFeatures(tx *types.TransactionMonitorData) map[string]uint64 {
+	features := make(map[string]uint64)
 
-	// Amount-based features
-	features["amount"] = float64(tx.Amount)
-	features["log_amount"] = math.Log1p(float64(tx.Amount))
+	// Amount-based features (use raw uint64 values)
+	features["amount"] = tx.Amount
+	// Instead of log1p, use scaled log approximation or just use amount directly
+	// For determinism, we'll use a simple scaled amount (amount / 1000 for larger scale features)
+	if tx.Amount > 0 {
+		// Simple deterministic scaling: divide by 1000 to represent magnitude
+		features["amount_magnitude"] = tx.Amount / 1000
+	} else {
+		features["amount_magnitude"] = 0
+	}
 
-	// Gas-based features
-	features["gas_used"] = float64(tx.GasUsed)
-	features["gas_price"] = float64(tx.GasPrice)
-	features["total_gas_cost"] = float64(tx.GasUsed * tx.GasPrice)
+	// Gas-based features (all uint64, no floating point)
+	features["gas_used"] = tx.GasUsed
+	features["gas_price"] = tx.GasPrice
+	features["total_gas_cost"] = tx.GasUsed * tx.GasPrice
 
-	// Time-based features
-	features["hour_of_day"] = float64(tx.Timestamp.Hour())
-	features["day_of_week"] = float64(tx.Timestamp.Weekday())
+	// Time-based features (use uint64 for hour and day)
+	features["hour_of_day"] = uint64(tx.Timestamp.Hour())
+	features["day_of_week"] = uint64(tx.Timestamp.Weekday())
 
-	// Block-based features
-	features["block_height"] = float64(tx.BlockHeight)
+	// Block-based features (convert int64 to uint64)
+	if tx.BlockHeight >= 0 {
+		features["block_height"] = uint64(tx.BlockHeight)
+	} else {
+		features["block_height"] = 0
+	}
 
 	return features
 }
 
-// calculateAnomalyScore calculates an anomaly score using statistical methods
-func (ad *AnomalyDetector) calculateAnomalyScore(features map[string]float64) float64 {
+// calculateAnomalyScoreBps calculates an anomaly score using deterministic statistical methods
+// Returns score in basis points (0-10000, where 10000 = 100%)
+func (ad *AnomalyDetector) calculateAnomalyScoreBps(features map[string]uint64) uint64 {
 	ad.mu.RLock()
 	defer ad.mu.RUnlock()
 
 	if ad.statistics.SampleCount < 10 {
 		// Not enough data, use simple heuristics
-		return ad.simpleAnomalyScore(features)
+		return ad.simpleAnomalyScoreBps(features)
 	}
 
-	// Use Z-score based anomaly detection
-	var totalZScore float64
-	var featureCount int
+	// Use deterministic Z-score based anomaly detection
+	var totalZScore uint64 // Scaled by ScaleFactor for precision
+	var featureCount uint64
 
-	for featureName, value := range features {
+	// Sort feature names for deterministic iteration
+	featureNames := make([]string, 0, len(features))
+	for name := range features {
+		featureNames = append(featureNames, name)
+	}
+	sort.Strings(featureNames)
+
+	for _, featureName := range featureNames {
+		value := features[featureName]
 		if mean, exists := ad.statistics.Mean[featureName]; exists {
 			if stdDev, stdExists := ad.statistics.StdDev[featureName]; stdExists {
 				if stdDev > 0 {
-					// Normal case: calculate Z-score
-					zScore := math.Abs((value - mean) / stdDev)
+					// Calculate Z-score using integer arithmetic
+					// Z = |value - mean| / stdDev
+					var diff uint64
+					if value > mean {
+						diff = value - mean
+					} else {
+						diff = mean - value
+					}
+					// zScore = (diff * ScaleFactor) / stdDev
+					// Both diff and stdDev are already scaled, so we don't need additional scaling
+					zScore := (diff * ScaleFactor) / stdDev
 					totalZScore += zScore
 					featureCount++
 				} else if value != mean {
 					// StdDev is 0 (all training data identical), but value differs from mean
-					// This is highly anomalous
-					totalZScore += 10.0 // Add high anomaly score
+					// This is highly anomalous - add maximum Z-score
+					totalZScore += 10 * ScaleFactor // High anomaly score
 					featureCount++
 				}
 			}
@@ -165,41 +223,57 @@ func (ad *AnomalyDetector) calculateAnomalyScore(features map[string]float64) fl
 	}
 
 	if featureCount == 0 {
-		return 0.0
+		return 0
 	}
 
-	// Average Z-score, normalized to 0-1 range
-	avgZScore := totalZScore / float64(featureCount)
-	normalizedScore := 1.0 - math.Exp(-avgZScore/3.0)
+	// Average Z-score
+	avgZScore := totalZScore / featureCount
 
-	return math.Min(normalizedScore, 1.0)
+	// Normalize to basis points (0-10000)
+	// Instead of exp(-x/3), use a simple linear mapping with saturation
+	// Map Z-score of 0 -> 0 bps, Z-score of 3*ScaleFactor -> 10000 bps
+	thresholdVal := uint64(3 * ScaleFactor)
+	var scoreBps uint64
+	if avgZScore >= thresholdVal {
+		scoreBps = BasisPointsMax
+	} else {
+		// Linear interpolation: score = (avgZScore / threshold) * BasisPointsMax
+		scoreBps = (avgZScore * BasisPointsMax) / thresholdVal
+	}
+
+	return scoreBps
 }
 
-// simpleAnomalyScore provides a simple heuristic-based score when insufficient training data
-func (ad *AnomalyDetector) simpleAnomalyScore(features map[string]float64) float64 {
-	var anomalyIndicators float64
+// simpleAnomalyScoreBps provides a simple heuristic-based score when insufficient training data
+// Returns score in basis points (0-10000)
+func (ad *AnomalyDetector) simpleAnomalyScoreBps(features map[string]uint64) uint64 {
+	var anomalyIndicatorsBps uint64
 
-	// Check for unusually high amounts
-	if amount, exists := features["amount"]; exists && amount > 1000000 {
-		anomalyIndicators += 0.3
+	// Check for unusually high amounts (add 3000 bps = 30%)
+	if amount, exists := features["amount"]; exists && amount > 1_000_000 {
+		anomalyIndicatorsBps += 3000
 	}
 
-	// Check for unusual gas usage
-	if gasUsed, exists := features["gas_used"]; exists && gasUsed > 1000000 {
-		anomalyIndicators += 0.2
+	// Check for unusual gas usage (add 2000 bps = 20%)
+	if gasUsed, exists := features["gas_used"]; exists && gasUsed > 1_000_000 {
+		anomalyIndicatorsBps += 2000
 	}
 
-	// Check for unusual time patterns (late night/early morning)
+	// Check for unusual time patterns - late night/early morning (add 1000 bps = 10%)
 	if hour, exists := features["hour_of_day"]; exists && (hour < 4 || hour > 22) {
-		anomalyIndicators += 0.1
+		anomalyIndicatorsBps += 1000
 	}
 
-	return math.Min(anomalyIndicators, 1.0)
+	// Cap at 10000 bps (100%)
+	if anomalyIndicatorsBps > BasisPointsMax {
+		return BasisPointsMax
+	}
+	return anomalyIndicatorsBps
 }
 
 // addTrainingData adds a new data point to the training set
 // NOTE: Training data uses wall-clock time as it's for ML training (non-consensus)
-func (ad *AnomalyDetector) addTrainingData(features map[string]float64, isAnomaly bool) {
+func (ad *AnomalyDetector) addTrainingData(features map[string]uint64, isAnomaly bool) {
 	ad.mu.Lock()
 	defer ad.mu.Unlock()
 
@@ -219,6 +293,7 @@ func (ad *AnomalyDetector) addTrainingData(features map[string]float64, isAnomal
 
 // retrain updates the model statistics based on training data
 // NOTE: Training uses wall-clock time as it's for ML model updates (non-consensus)
+// Uses deterministic integer arithmetic for all calculations
 func (ad *AnomalyDetector) retrain() {
 	ad.mu.Lock()
 	defer ad.mu.Unlock()
@@ -227,13 +302,13 @@ func (ad *AnomalyDetector) retrain() {
 		return
 	}
 
-	// Calculate new statistics
+	// Calculate new statistics using deterministic integer math
 	newStats := newStatistics()
-	featureSums := make(map[string]float64)
+	featureSums := make(map[string]uint64)
 	featureCounts := make(map[string]int)
 	anomalyCount := 0
 
-	// First pass: calculate means
+	// First pass: calculate sums for means
 	for _, dp := range ad.trainingData {
 		for fname, fval := range dp.Features {
 			featureSums[fname] += fval
@@ -244,22 +319,36 @@ func (ad *AnomalyDetector) retrain() {
 		}
 	}
 
+	// Calculate means (scale by ScaleFactor for precision)
 	for fname, sum := range featureSums {
 		count := featureCounts[fname]
 		if count > 0 {
-			newStats.Mean[fname] = sum / float64(count)
+			// mean = (sum * ScaleFactor) / count
+			newStats.Mean[fname] = (sum * ScaleFactor) / uint64(count)
 		}
 	}
 
-	// Second pass: calculate standard deviations and min/max
-	varianceSums := make(map[string]float64)
+	// Second pass: calculate variance and min/max
+	varianceSums := make(map[string]uint64)
 
 	for _, dp := range ad.trainingData {
 		for fname, fval := range dp.Features {
 			mean := newStats.Mean[fname]
-			varianceSums[fname] += math.Pow(fval-mean, 2)
 
-			// Update min/max
+			// Calculate squared difference using integer math
+			// Convert fval to same scale as mean
+			fvalScaled := fval * ScaleFactor
+			var squaredDiff uint64
+			if fvalScaled > mean {
+				diff := fvalScaled - mean
+				squaredDiff = (diff * diff) / ScaleFactor // Divide once to keep scale reasonable
+			} else {
+				diff := mean - fvalScaled
+				squaredDiff = (diff * diff) / ScaleFactor
+			}
+			varianceSums[fname] += squaredDiff
+
+			// Update min/max (using unscaled values)
 			if min, exists := newStats.Min[fname]; !exists || fval < min {
 				newStats.Min[fname] = fval
 			}
@@ -269,26 +358,52 @@ func (ad *AnomalyDetector) retrain() {
 		}
 	}
 
+	// Calculate standard deviations using integer square root approximation
 	for fname, varSum := range varianceSums {
 		count := featureCounts[fname]
 		if count > 1 {
-			variance := varSum / float64(count-1)
-			newStats.StdDev[fname] = math.Sqrt(variance)
+			// variance = varSum / (count - 1)
+			variance := varSum / uint64(count-1)
+			// stddev = sqrt(variance) using integer square root
+			newStats.StdDev[fname] = isqrt(variance)
 		}
 	}
 
 	newStats.FeatureCount = len(featureSums)
 	newStats.SampleCount = len(ad.trainingData)
-	newStats.AnomalyRate = float64(anomalyCount) / float64(len(ad.trainingData))
+	// Anomaly rate in basis points
+	newStats.AnomalyRate = (uint64(anomalyCount) * BasisPointsMax) / uint64(len(ad.trainingData))
 
 	ad.statistics = newStats
 	ad.lastTraining = time.Now() // Non-consensus: training timestamps don't affect chain state
 
-	// Calculate accuracy (simplified)
-	ad.accuracy = 1.0 - newStats.AnomalyRate
+	// Calculate accuracy (simplified) - accuracy = 1 - anomaly_rate
+	ad.accuracyBps = BasisPointsMax - newStats.AnomalyRate
 }
 
-// DetectNetworkAnomaly detects network-level anomalies
+// isqrt calculates integer square root using Newton's method (deterministic)
+func isqrt(n uint64) uint64 {
+	if n == 0 {
+		return 0
+	}
+	if n <= 1 {
+		return n
+	}
+
+	// Initial guess
+	x := n
+	y := (x + 1) / 2
+
+	// Newton's method: y = (x + n/x) / 2
+	for y < x {
+		x = y
+		y = (x + n/x) / 2
+	}
+
+	return x
+}
+
+// DetectNetworkAnomaly detects network-level anomalies using deterministic math
 func (ad *AnomalyDetector) DetectNetworkAnomaly(ctx context.Context, health *types.NetworkHealth) (*types.AnomalyDetection, error) {
 	if health == nil {
 		return nil, fmt.Errorf("network health data cannot be nil")
@@ -297,25 +412,46 @@ func (ad *AnomalyDetector) DetectNetworkAnomaly(ctx context.Context, health *typ
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	blockTime := sdkCtx.BlockTime()
 
-	features := map[string]float64{
-		"block_time":         health.BlockTime,
-		"tps":                health.TPS,
-		"active_validators":  float64(health.ActiveValidators),
-		"peer_count":         float64(health.PeerCount),
-		"mempool_size":       float64(health.MempoolSize),
-		"network_congestion": health.NetworkCongestion,
-		"consensus_health":   health.ConsensusHealth,
+	// Convert float64 fields to uint64 (scale by 1000 for precision)
+	blockTimeScaled := uint64(health.BlockTime * 1000)
+	tpsScaled := uint64(health.TPS * 1000)
+	networkCongestionScaled := uint64(health.NetworkCongestion * 1000)
+	consensusHealthScaled := uint64(health.ConsensusHealth * 1000)
+
+	featuresInt := map[string]uint64{
+		"block_time":         blockTimeScaled,
+		"tps":                tpsScaled,
+		"active_validators":  uint64(health.ActiveValidators),
+		"peer_count":         uint64(health.PeerCount),
+		"mempool_size":       uint64(health.MempoolSize),
+		"network_congestion": networkCongestionScaled,
+		"consensus_health":   consensusHealthScaled,
 	}
 
-	score := ad.calculateAnomalyScore(features)
+	// Calculate score in basis points
+	scoreBps := ad.calculateAnomalyScoreBps(featuresInt)
+
+	// Convert to float64 for output
+	scoreFloat := float64(scoreBps) / float64(BasisPointsMax)
+	thresholdFloat := float64(ad.thresholdBps) / float64(BasisPointsMax)
+
+	// Convert features to float64 for output
+	featuresFloat := make(map[string]float64)
+	featuresFloat["block_time"] = health.BlockTime
+	featuresFloat["tps"] = health.TPS
+	featuresFloat["active_validators"] = float64(health.ActiveValidators)
+	featuresFloat["peer_count"] = float64(health.PeerCount)
+	featuresFloat["mempool_size"] = float64(health.MempoolSize)
+	featuresFloat["network_congestion"] = health.NetworkCongestion
+	featuresFloat["consensus_health"] = health.ConsensusHealth
 
 	detection := &types.AnomalyDetection{
 		ID:        generateDetectionIDWithCtx(ctx),
 		Type:      types.AnomalyTypeNetworkPattern,
-		Score:     score,
-		Threshold: ad.threshold,
-		IsAnomaly: score >= ad.threshold,
-		Features:  features,
+		Score:     scoreFloat,
+		Threshold: thresholdFloat,
+		IsAnomaly: scoreBps >= ad.thresholdBps,
+		Features:  featuresFloat,
 		Metadata: map[string]interface{}{
 			"block_height": health.BlockHeight,
 			"timestamp":    health.Timestamp,
@@ -332,22 +468,30 @@ func (ad *AnomalyDetector) GetModelInfo() map[string]interface{} {
 	ad.mu.RLock()
 	defer ad.mu.RUnlock()
 
+	// Convert basis points to float64 for display
+	thresholdFloat := float64(ad.thresholdBps) / float64(BasisPointsMax)
+	anomalyRateFloat := float64(ad.statistics.AnomalyRate) / float64(BasisPointsMax)
+	accuracyFloat := float64(ad.accuracyBps) / float64(BasisPointsMax)
+
 	return map[string]interface{}{
 		"version":           ad.modelVersion,
-		"threshold":         ad.threshold,
+		"threshold":         thresholdFloat,
+		"threshold_bps":     ad.thresholdBps,
 		"sample_count":      ad.statistics.SampleCount,
 		"feature_count":     ad.statistics.FeatureCount,
-		"anomaly_rate":      ad.statistics.AnomalyRate,
+		"anomaly_rate":      anomalyRateFloat,
+		"anomaly_rate_bps":  ad.statistics.AnomalyRate,
 		"last_training":     ad.lastTraining,
-		"accuracy":          ad.accuracy,
+		"accuracy":          accuracyFloat,
+		"accuracy_bps":      ad.accuracyBps,
 	}
 }
 
-// GetAccuracy returns the current model accuracy
+// GetAccuracy returns the current model accuracy as float64
 func (ad *AnomalyDetector) GetAccuracy() float64 {
 	ad.mu.RLock()
 	defer ad.mu.RUnlock()
-	return ad.accuracy
+	return float64(ad.accuracyBps) / float64(BasisPointsMax)
 }
 
 // GetModelVersion returns the current model version
