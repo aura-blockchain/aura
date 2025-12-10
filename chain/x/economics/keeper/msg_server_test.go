@@ -61,8 +61,8 @@ func (suite *MsgServerTestSuite) SetupTest() {
 	registry := codectypes.NewInterfaceRegistry()
 	cdc := codec.NewProtoCodec(registry)
 
-	// Create keeper with cosmos prefix (default SDK config)
-	suite.authority = "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
+	// Create keeper with aura prefix
+	suite.authority = "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr"
 	suite.keeper = NewKeeper(cdc, storeService, suite.authority)
 
 	// Initialize default params
