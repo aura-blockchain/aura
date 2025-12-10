@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"context"
 	"encoding/binary"
 	"fmt"
 	"sync"

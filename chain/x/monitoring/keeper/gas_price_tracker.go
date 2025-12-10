@@ -21,11 +21,16 @@ func intSqrt(n uint64) uint64 {
 		return 1
 	}
 
-	// Initial guess
-	x := n
+	// Initial guess: start with n/2 for better convergence with large numbers
+	x := n / 2
+	if x == 0 {
+		x = 1
+	}
+
 	for {
 		// Newton-Raphson iteration: x_next = (x + n/x) / 2
 		x1 := (x + n/x) / 2
+		// Converged when x1 >= x (monotonically decreasing)
 		if x1 >= x {
 			return x
 		}
