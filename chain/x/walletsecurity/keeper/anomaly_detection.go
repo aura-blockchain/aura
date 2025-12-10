@@ -135,7 +135,7 @@ func (k Keeper) recordAnomaly(ctx context.Context, walletID string, score *Anoma
 		WalletId:   walletID,
 		Score:      score.Score,
 		Threshold:  score.Threshold,
-		DetectedAt: gogoTimestampNow(),
+		DetectedAt: blockTimeToGogoTimestamp(ctx),
 		Resolved:   false,
 	}
 

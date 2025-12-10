@@ -8,6 +8,8 @@ import (
 	"time"
 
 	sdkmath "cosmossdk.io/math"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	"github.com/aequitas/aura/chain/x/economics/types"
 	economicspb "github.com/aequitas/aura/proto/aura/economics/v1beta1"
 )
@@ -224,7 +226,8 @@ func (k Keeper) ReleaseVestedTokensInternal(ctx context.Context, scheduleID stri
 		return "0", err
 	}
 
-	currentTime := time.Now()
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	currentTime := sdkCtx.BlockTime()
 
 	vestedAmount, err := k.CalculateVestedAmount(schedule, currentTime)
 	if err != nil {

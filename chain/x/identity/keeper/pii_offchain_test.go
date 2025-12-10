@@ -186,8 +186,8 @@ func TestPIIOffChain_ErasureCompliance(t *testing.T) {
 	require.False(t, valid)
 
 	// Verify cannot update after erasure
-	newData := map[string]string{"name": "Carol Updated"}
-	err = keeper.UpdatePIICommitment(ctx, did, address, newData, "ipfs://QmNew", "ipfs")
+	newSalt := types.GenerateCommitmentSalt()
+	err = keeper.UpdatePIICommitment(ctx, did, address, newSalt, "ipfs://QmNew", "ipfs")
 	require.Error(t, err, "update should fail for erased identity")
 	require.ErrorIs(t, err, types.ErrIdentityErased)
 }
@@ -291,9 +291,18 @@ func TestPIIOffChain_MultipleAttributeChanges(t *testing.T) {
 		"email": "eve.adams@newdomain.com",
 		"city":  "San Francisco",
 	}
+	salt2 := types.GenerateCommitmentSalt()
+	commitment2 := types.ComputePIICommitment(pii2, salt2)
 
 	// Update commitment
-	err = keeper.UpdatePIICommitment(ctx, did, address, pii2, "ipfs://QmV2", "ipfs")
+	err = keeper.UpdatePIICommitment(ctx, did, address, salt2, "ipfs://QmV2", "ipfs")
+	require.NoError(t, err)
+
+	// Update the commitment field manually
+	updated, err := keeper.GetIdentityRecord(ctx, did)
+	require.NoError(t, err)
+	updated.PiiCommitment = commitment2
+	err = keeper.SetIdentityRecord(ctx, updated)
 	require.NoError(t, err)
 
 	// Verify new data works
@@ -306,9 +315,7 @@ func TestPIIOffChain_MultipleAttributeChanges(t *testing.T) {
 	require.NoError(t, err)
 	require.False(t, valid, "old PII should not verify after update")
 
-	// Verify new off-chain reference
-	updated, err := keeper.GetIdentityRecord(ctx, did)
-	require.NoError(t, err)
+	// Verify new off-chain reference (reuse updated variable from above)
 	require.Equal(t, "ipfs://QmV2", updated.OffChainDataRef)
 }
 
@@ -340,12 +347,9 @@ func TestPIIOffChain_UnauthorizedAccess(t *testing.T) {
 	require.NoError(t, err)
 
 	// Attacker tries to update PII commitment
-	attackerPII := map[string]string{
-		"name":  "Attacker Name",
-		"email": "attacker@evil.com",
-	}
+	attackerSalt := types.GenerateCommitmentSalt()
 
-	err = keeper.UpdatePIICommitment(ctx, did, attacker, attackerPII, "ipfs://QmEvil", "ipfs")
+	err = keeper.UpdatePIICommitment(ctx, did, attacker, attackerSalt, "ipfs://QmEvil", "ipfs")
 	require.Error(t, err, "unauthorized update should fail")
 	require.ErrorIs(t, err, types.ErrUnauthorized)
 

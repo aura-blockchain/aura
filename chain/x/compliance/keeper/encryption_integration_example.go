@@ -59,7 +59,7 @@ func (k *Keeper) SubmitKYCWithCommitmentExample(
 		Provider:             provider,
 		PiiCommitment:        commitment, // Only 32-byte hash stored
 		VerifiedAt:           timestamppb.Now(),
-		ExpiresAt:            timestamppb.New(time.Now().Add(365 * 24 * time.Hour)),
+		ExpiresAt:            timestamppb.New(ctx.BlockTime().Add(365 * 24 * time.Hour)),
 		EnhancedDueDiligence: kycLevel >= types.KYCLevel_KYC_LEVEL_ADVANCED,
 	}
 
@@ -292,7 +292,7 @@ func (k *Keeper) EraseGDPRDataImplementationExample(
 			sdk.NewAttribute("erasure_event_id", erasureEventID),
 			sdk.NewAttribute("reason", erasureReason),
 			sdk.NewAttribute("block_height", fmt.Sprintf("%d", ctx.BlockHeight())),
-			sdk.NewAttribute("timestamp", time.Now().UTC().Format(time.RFC3339)),
+			sdk.NewAttribute("timestamp", ctx.BlockTime().UTC().Format(time.RFC3339)),
 		),
 	)
 

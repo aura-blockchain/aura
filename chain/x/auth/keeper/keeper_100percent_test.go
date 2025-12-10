@@ -19,7 +19,7 @@ func TestGetAuditLogs_WithTimeFilters(t *testing.T) {
 	k, ctx := setupTestKeeper(t)
 
 	now := time.Now()
-	k.LogAudit(ctx, "actor1", "action1", "resource1", "success", nil, "")
+	k.LogAudit(ctx, "actor1", "action1", "resource1", "success", nil, "", ctx.BlockTime())
 
 	// Test with start time
 	logs := k.GetAuditLogs("actor1", "", now.Unix()-3600, 0, 10)
@@ -42,7 +42,7 @@ func TestGetAuditLogs_WithTimeFilters(t *testing.T) {
 func TestSearchAuditLogs_UnknownCriteria(t *testing.T) {
 	k, ctx := setupTestKeeper(t)
 
-	k.LogAudit(ctx, "actor1", "action1", "resource1", "success", nil, "")
+	k.LogAudit(ctx, "actor1", "action1", "resource1", "success", nil, "", ctx.BlockTime())
 
 	// Test with unknown key - should not match
 	criteria := map[string]string{

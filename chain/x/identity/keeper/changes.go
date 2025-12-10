@@ -148,7 +148,17 @@ func (k *Keeper) VerifyPIICommitment(ctx sdk.Context, did string, piiData map[st
 
 // UpdatePIICommitment updates the PII commitment for an identity
 // This should be called when PII changes in off-chain storage
-func (k *Keeper) UpdatePIICommitment(ctx sdk.Context, did, updater string, piiData map[string]string, offChainRef, offChainType string) error {
+//
+// IMPORTANT: The salt parameter MUST be generated client-side using crypto/rand
+// before submitting the transaction. Never generate salt on-chain as crypto/rand
+// is non-deterministic and will break consensus.
+//
+// Client-side salt generation example:
+//   salt := make([]byte, 32)
+//   _, err := crypto/rand.Read(salt)
+//   commitment := types.ComputePIICommitment(piiData, salt)
+//   // Include both salt and commitment in transaction message
+func (k *Keeper) UpdatePIICommitment(ctx sdk.Context, did, updater string, salt []byte, offChainRef, offChainType string) error {
 	record, err := k.GetIdentityRecord(ctx, did)
 	if err != nil {
 		return err
@@ -165,14 +175,13 @@ func (k *Keeper) UpdatePIICommitment(ctx sdk.Context, did, updater string, piiDa
 		return types.ErrIdentityErased.Wrapf("cannot update erased identity %s", did)
 	}
 
-	// Generate new salt
-	salt := types.GenerateCommitmentSalt()
+	// Validate salt size (must be 32 bytes)
+	if len(salt) != 32 {
+		return types.ErrInvalidCommitment.Wrapf("salt must be exactly 32 bytes, got %d", len(salt))
+	}
 
-	// Compute new commitment
-	commitment := types.ComputePIICommitment(piiData, salt)
-
-	// Update record
-	record.PiiCommitment = commitment
+	// Update record with client-provided salt
+	// Note: Client should compute commitment off-chain and verify on-chain
 	record.CommitmentSalt = salt
 	record.OffChainDataRef = offChainRef
 	record.OffChainDataType = offChainType

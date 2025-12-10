@@ -1,6 +1,11 @@
 package privacy
 
-// This file implements Privacy View Keys for the AURA blockchain.
+// This file implements OFF-CHAIN view key utilities for wallet software.
+//
+// IMPORTANT: All key generation functions in this file are OFF-CHAIN utilities
+// and MUST NOT be called from consensus-critical code (message handlers,
+// BeginBlocker, EndBlocker). These functions use crypto/rand which is
+// non-deterministic and would break consensus if used on-chain.
 //
 // View keys allow selective disclosure of transaction information without
 // compromising spending authority. This is a critical privacy feature
@@ -12,6 +17,18 @@ package privacy
 //
 // This implementation follows the dual-key model used in privacy-focused
 // blockchains like Monero and Zcash, adapted for the AURA ecosystem.
+//
+// ON-CHAIN VS OFF-CHAIN SEPARATION:
+// - OFF-CHAIN: GenerateViewKey(), DelegateViewKey(), BatchGenerateViewKeys()
+//   These functions generate new cryptographic keys using crypto/rand.
+//   They are utilities for wallet software to create view keys locally.
+//
+// - ON-CHAIN: MsgRegisterViewKey handler stores only PUBLIC view keys.
+//   No private keys are ever transmitted to or stored on the blockchain.
+//   No key generation occurs during consensus.
+//
+// The message handler (msg_server.go) only stores public view keys that were
+// generated OFF-CHAIN by wallet software. Private view keys remain with the user.
 
 import (
 	"crypto/ecdsa"
@@ -90,6 +107,7 @@ func (vkm *ViewKeyManager) GenerateViewKey(
 	ownerAddress []byte,
 	permissions []string,
 	expiresAt *time.Time,
+	now time.Time, // Accept time parameter for determinism
 ) (*ViewKey, error) {
 	vkm.mu.Lock()
 	defer vkm.mu.Unlock()
@@ -123,7 +141,7 @@ func (vkm *ViewKeyManager) GenerateViewKey(
 		Type:         keyType,
 		OwnerAddress: ownerAddress,
 		Permissions:  permissions,
-		CreatedAt:    time.Now(),
+		CreatedAt:    now,
 		ExpiresAt:    expiresAt,
 		Revoked:      false,
 		Metadata:     make(map[string]string),
@@ -141,7 +159,7 @@ func (vkm *ViewKeyManager) GenerateViewKey(
 }
 
 // GetViewKey retrieves a view key by its public key
-func (vkm *ViewKeyManager) GetViewKey(publicKey []byte) (*ViewKey, error) {
+func (vkm *ViewKeyManager) GetViewKey(publicKey []byte, now time.Time) (*ViewKey, error) {
 	vkm.mu.RLock()
 	defer vkm.mu.RUnlock()
 
@@ -157,7 +175,7 @@ func (vkm *ViewKeyManager) GetViewKey(publicKey []byte) (*ViewKey, error) {
 	}
 
 	// Check if expired
-	if viewKey.ExpiresAt != nil && time.Now().After(*viewKey.ExpiresAt) {
+	if viewKey.ExpiresAt != nil && now.After(*viewKey.ExpiresAt) {
 		return nil, errors.New("view key has expired")
 	}
 
@@ -165,7 +183,7 @@ func (vkm *ViewKeyManager) GetViewKey(publicKey []byte) (*ViewKey, error) {
 }
 
 // RevokeViewKey revokes a view key
-func (vkm *ViewKeyManager) RevokeViewKey(publicKey []byte) error {
+func (vkm *ViewKeyManager) RevokeViewKey(publicKey []byte, now time.Time) error {
 	vkm.mu.Lock()
 	defer vkm.mu.Unlock()
 
@@ -179,7 +197,6 @@ func (vkm *ViewKeyManager) RevokeViewKey(publicKey []byte) error {
 		return errors.New("view key is already revoked")
 	}
 
-	now := time.Now()
 	viewKey.Revoked = true
 	viewKey.RevokedAt = &now
 
@@ -200,7 +217,7 @@ func (vkm *ViewKeyManager) RevokeViewKey(publicKey []byte) error {
 }
 
 // VerifyPermission checks if a view key has a specific permission
-func (vkm *ViewKeyManager) VerifyPermission(publicKey []byte, permission string) (bool, error) {
+func (vkm *ViewKeyManager) VerifyPermission(publicKey []byte, permission string, now time.Time) (bool, error) {
 	vkm.mu.RLock()
 	defer vkm.mu.RUnlock()
 
@@ -216,7 +233,7 @@ func (vkm *ViewKeyManager) VerifyPermission(publicKey []byte, permission string)
 	}
 
 	// Check if expired
-	if viewKey.ExpiresAt != nil && time.Now().After(*viewKey.ExpiresAt) {
+	if viewKey.ExpiresAt != nil && now.After(*viewKey.ExpiresAt) {
 		return false, errors.New("view key has expired")
 	}
 
@@ -231,14 +248,13 @@ func (vkm *ViewKeyManager) VerifyPermission(publicKey []byte, permission string)
 }
 
 // ListActiveViewKeys returns all active (non-revoked, non-expired) view keys for an address
-func (vkm *ViewKeyManager) ListActiveViewKeys(ownerAddress []byte) []*ViewKey {
+func (vkm *ViewKeyManager) ListActiveViewKeys(ownerAddress []byte, now time.Time) []*ViewKey {
 	vkm.mu.RLock()
 	defer vkm.mu.RUnlock()
 
 	ownerHex := hex.EncodeToString(ownerAddress)
 	ownerKeys := vkm.byOwner[ownerHex]
 
-	now := time.Now()
 	activeKeys := make([]*ViewKey, 0)
 	for _, key := range ownerKeys {
 		if !key.Revoked && (key.ExpiresAt == nil || now.Before(*key.ExpiresAt)) {
@@ -299,7 +315,7 @@ func (vkm *ViewKeyManager) SetMetadata(publicKey []byte, key, value string) erro
 }
 
 // ExtendExpiry extends the expiry time for a view key
-func (vkm *ViewKeyManager) ExtendExpiry(publicKey []byte, newExpiryTime time.Time) error {
+func (vkm *ViewKeyManager) ExtendExpiry(publicKey []byte, newExpiryTime time.Time, now time.Time) error {
 	vkm.mu.Lock()
 	defer vkm.mu.Unlock()
 
@@ -313,7 +329,7 @@ func (vkm *ViewKeyManager) ExtendExpiry(publicKey []byte, newExpiryTime time.Tim
 		return errors.New("cannot extend expiry for revoked view key")
 	}
 
-	if viewKey.ExpiresAt != nil && time.Now().After(*viewKey.ExpiresAt) {
+	if viewKey.ExpiresAt != nil && now.After(*viewKey.ExpiresAt) {
 		return errors.New("view key has already expired")
 	}
 
@@ -355,8 +371,8 @@ func (vkm *ViewKeyManager) DeriveSharedSecret(publicKey []byte, txPublicKey []by
 }
 
 // CanViewTransaction checks if a view key can view a specific transaction type
-func (vkm *ViewKeyManager) CanViewTransaction(publicKey []byte, isIncoming bool) (bool, error) {
-	viewKey, err := vkm.GetViewKey(publicKey)
+func (vkm *ViewKeyManager) CanViewTransaction(publicKey []byte, isIncoming bool, now time.Time) (bool, error) {
+	viewKey, err := vkm.GetViewKey(publicKey, now)
 	if err != nil {
 		return false, err
 	}
@@ -376,14 +392,13 @@ func (vkm *ViewKeyManager) CanViewTransaction(publicKey []byte, isIncoming bool)
 }
 
 // GetViewKeyStats returns statistics about view keys for an address
-func (vkm *ViewKeyManager) GetViewKeyStats(ownerAddress []byte) map[string]interface{} {
+func (vkm *ViewKeyManager) GetViewKeyStats(ownerAddress []byte, now time.Time) map[string]interface{} {
 	vkm.mu.RLock()
 	defer vkm.mu.RUnlock()
 
 	ownerHex := hex.EncodeToString(ownerAddress)
 	ownerKeys := vkm.byOwner[ownerHex]
 
-	now := time.Now()
 	stats := map[string]interface{}{
 		"total_keys":   len(ownerKeys),
 		"active_keys":  0,
@@ -417,14 +432,13 @@ type ViewKeyProof struct {
 }
 
 // GenerateOwnershipProof generates a proof that the view key belongs to an address
-func (vkm *ViewKeyManager) GenerateOwnershipProof(publicKey []byte) (*ViewKeyProof, error) {
-	viewKey, err := vkm.GetViewKey(publicKey)
+func (vkm *ViewKeyManager) GenerateOwnershipProof(publicKey []byte, now time.Time) (*ViewKeyProof, error) {
+	viewKey, err := vkm.GetViewKey(publicKey, now)
 	if err != nil {
 		return nil, err
 	}
 
 	// Create message to sign
-	now := time.Now()
 	message := make([]byte, 0)
 	message = append(message, viewKey.PublicKey...)
 	message = append(message, viewKey.OwnerAddress...)
@@ -509,6 +523,7 @@ func (vkm *ViewKeyManager) DelegateViewKey(
 	delegateTo []byte,
 	permissions []string,
 	expiresAt *time.Time,
+	now time.Time, // Accept time parameter for determinism
 ) (*ViewKeyDelegation, error) {
 	vkm.mu.Lock()
 	defer vkm.mu.Unlock()
@@ -562,7 +577,7 @@ func (vkm *ViewKeyManager) DelegateViewKey(
 		Type:         originalKey.Type,
 		OwnerAddress: delegateTo,
 		Permissions:  permissions,
-		CreatedAt:    time.Now(),
+		CreatedAt:    now,
 		ExpiresAt:    expiresAt,
 		Revoked:      false,
 		Metadata: map[string]string{
@@ -581,7 +596,7 @@ func (vkm *ViewKeyManager) DelegateViewKey(
 		DelegatedKey:    delegatedPubKey,
 		DelegatedTo:     delegateTo,
 		Permissions:     permissions,
-		CreatedAt:       time.Now(),
+		CreatedAt:       now,
 		ExpiresAt:       expiresAt,
 		DelegationProof: delegationProof,
 	}, nil
@@ -591,6 +606,7 @@ func (vkm *ViewKeyManager) DelegateViewKey(
 func (vkm *ViewKeyManager) BatchGenerateViewKeys(
 	ownerAddress []byte,
 	keyTypes []ViewKeyType,
+	now time.Time, // Accept time parameter for determinism
 ) ([]*ViewKey, error) {
 	if len(keyTypes) == 0 {
 		return nil, errors.New("no key types specified")
@@ -598,7 +614,7 @@ func (vkm *ViewKeyManager) BatchGenerateViewKeys(
 
 	viewKeys := make([]*ViewKey, 0, len(keyTypes))
 	for _, keyType := range keyTypes {
-		viewKey, err := vkm.GenerateViewKey(keyType, ownerAddress, nil, nil)
+		viewKey, err := vkm.GenerateViewKey(keyType, ownerAddress, nil, nil, now)
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate %s view key: %w", keyType, err)
 		}
@@ -609,11 +625,10 @@ func (vkm *ViewKeyManager) BatchGenerateViewKeys(
 }
 
 // CleanupExpiredKeys removes expired view keys from the manager
-func (vkm *ViewKeyManager) CleanupExpiredKeys() int {
+func (vkm *ViewKeyManager) CleanupExpiredKeys(now time.Time) int {
 	vkm.mu.Lock()
 	defer vkm.mu.Unlock()
 
-	now := time.Now()
 	removed := 0
 
 	for pubKeyHex, viewKey := range vkm.viewKeys {
@@ -637,8 +652,8 @@ func (vkm *ViewKeyManager) CleanupExpiredKeys() int {
 }
 
 // ExportViewKey exports a view key in a serialized format
-func (vkm *ViewKeyManager) ExportViewKey(publicKey []byte, includePrivate bool) (map[string]interface{}, error) {
-	viewKey, err := vkm.GetViewKey(publicKey)
+func (vkm *ViewKeyManager) ExportViewKey(publicKey []byte, includePrivate bool, now time.Time) (map[string]interface{}, error) {
+	viewKey, err := vkm.GetViewKey(publicKey, now)
 	if err != nil {
 		return nil, err
 	}

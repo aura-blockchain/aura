@@ -16,7 +16,17 @@ import (
 	cryptoproto "github.com/aequitas/aura/proto/aura/cryptography/v1beta1"
 )
 
-// CreateKeyStretchingConfig creates a key stretching configuration
+// CreateKeyStretchingConfig creates a key stretching configuration.
+//
+// WARNING: This function uses crypto/rand which is NON-DETERMINISTIC and will break
+// consensus if called from a message handler (MsgServer method).
+//
+// DO NOT call this from message handlers. Instead:
+// 1. For message handlers: Require the client to provide the salt in the message
+//    (generated off-chain)
+// 2. For queries/client-side: This function is safe to use
+//
+// This function is intended for client-side utilities only.
 func (k Keeper) CreateKeyStretchingConfig(
 	ctx context.Context,
 	algorithm cryptoproto.KeyStretchingAlgorithm,
@@ -36,6 +46,7 @@ func (k Keeper) CreateKeyStretchingConfig(
 	}
 
 	// Generate random salt
+	// WARNING: Non-deterministic - see function documentation
 	salt := make([]byte, params.MinSaltLengthBytes)
 	_, err = rand.Read(salt)
 	if err != nil {
@@ -263,7 +274,12 @@ func (k Keeper) validateKeyStretchingParams(
 	return nil
 }
 
-// GetRecommendedStretchingConfig returns recommended key stretching configuration
+// GetRecommendedStretchingConfig returns recommended key stretching configuration.
+//
+// WARNING: This function uses crypto/rand which is NON-DETERMINISTIC and will break
+// consensus if called from a message handler (MsgServer method).
+//
+// DO NOT call this from message handlers. This is for client-side utilities only.
 func (k Keeper) GetRecommendedStretchingConfig(
 	ctx context.Context,
 	algorithm cryptoproto.KeyStretchingAlgorithm,
@@ -273,6 +289,7 @@ func (k Keeper) GetRecommendedStretchingConfig(
 		return nil, err
 	}
 
+	// WARNING: Non-deterministic - see function documentation
 	salt := make([]byte, params.MinSaltLengthBytes)
 	_, err = rand.Read(salt)
 	if err != nil {

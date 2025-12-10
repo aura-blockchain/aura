@@ -1,5 +1,31 @@
 package privacy
 
+// This file implements OFF-CHAIN zero-knowledge proof generation utilities.
+//
+// IMPORTANT: All proof generation functions (GenerateProof, generateGroth16Proof, etc.)
+// are OFF-CHAIN utilities that use crypto/rand. NEVER call from consensus code.
+//
+// Zero-knowledge proofs allow proving knowledge of a secret without revealing it.
+// The privacy module supports multiple proof systems:
+//
+// - Groth16: Efficient SNARKs with constant-size proofs (requires trusted setup)
+// - PLONK: Universal SNARKs with no per-circuit trusted setup
+// - Bulletproofs: Short range proofs with no trusted setup
+// - STARKs: Quantum-resistant, transparent (no trusted setup)
+//
+// ON-CHAIN VS OFF-CHAIN SEPARATION:
+// - OFF-CHAIN: GenerateProof() and all generate*Proof() functions
+//   These functions create zero-knowledge proofs using cryptographic randomness.
+//   ZK proofs require randomness for the zero-knowledge property.
+//   Used by wallet software to prove statements locally.
+//
+// - ON-CHAIN: VerifyProof() and all verify*Proof() functions
+//   These are deterministic verification functions that can be called during consensus.
+//   They verify proofs without using any randomness.
+//
+// Message handlers only verify pre-generated proofs submitted by users.
+// No proof generation occurs during consensus.
+
 import (
 	"crypto/elliptic"
 	"crypto/rand"

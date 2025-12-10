@@ -22,6 +22,13 @@ func timestampToGogo(ts *timestamppb.Timestamp) *gogotypes.Timestamp {
 }
 
 // gogoTimestampNow returns the current time as a gogoproto Timestamp
+//
+// DEPRECATED: DO NOT USE IN PRODUCTION KEEPER CODE
+// This function uses time.Now() which causes non-determinism in blockchain state.
+// Each validator would get different wall-clock times, breaking consensus.
+//
+// For production keeper methods, use blockTimeToGogoTimestamp(ctx) instead.
+// This function should ONLY be used in test code where determinism is not required.
 func gogoTimestampNow() *gogotypes.Timestamp {
 	now := time.Now()
 	return &gogotypes.Timestamp{

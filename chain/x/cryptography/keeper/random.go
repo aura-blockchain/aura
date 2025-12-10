@@ -186,13 +186,16 @@ func (k Keeper) updateRandomSourceStatus(
 }
 
 // CheckEntropyHealth checks the health of all random sources
+// Uses ctx.BlockTime() for deterministic time comparison across all validators.
 func (k Keeper) CheckEntropyHealth(ctx context.Context) error {
 	params, _ := k.GetParams(ctx)
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	blockTime := sdkCtx.BlockTime()
 
 	return k.IterateRandomSources(ctx, func(source *cryptoproto.CryptoRandomSource) bool {
 		// Check if source needs reseeding (older than 24 hours)
-		if time.Since(source.LastSeeded) > 24*time.Hour {
+		// Use block time for deterministic comparison
+		if blockTime.Sub(source.LastSeeded) > 24*time.Hour {
 			k.Logger(sdkCtx).Warn("random source needs reseeding",
 				"source_id", source.SourceId,
 				"last_seeded", source.LastSeeded,

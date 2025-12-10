@@ -128,7 +128,9 @@ func TestExecutionContext(t *testing.T) {
 
 // TestRateLimitTracker tests rate limiting functionality
 func TestRateLimitTracker(t *testing.T) {
-	tracker := types.NewRateLimitTracker("contract1", types.RateLimitWindow)
+	// Use a fixed test time for determinism
+	testTime := time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC)
+	tracker := types.NewRateLimitTracker("contract1", types.RateLimitWindow, testTime)
 
 	require.NotNil(t, tracker)
 	require.Equal(t, "contract1", tracker.ContractAddr)
@@ -136,21 +138,21 @@ func TestRateLimitTracker(t *testing.T) {
 
 	// Test execution rate limiting
 	for i := uint64(0); i < tracker.Limits.MaxExecutionsPerWindow; i++ {
-		err := tracker.CheckAndIncrementExecution()
+		err := tracker.CheckAndIncrementExecution(testTime)
 		require.NoError(t, err, "Should allow executions up to limit")
 	}
 
-	err := tracker.CheckAndIncrementExecution()
+	err := tracker.CheckAndIncrementExecution(testTime)
 	require.Error(t, err, "Should reject when limit exceeded")
 	require.Contains(t, err.Error(), "rate limit exceeded")
 
 	// Test query rate limiting (higher limit)
 	for i := uint64(0); i < tracker.Limits.MaxQueriesPerWindow; i++ {
-		err := tracker.CheckAndIncrementQuery()
+		err := tracker.CheckAndIncrementQuery(testTime)
 		require.NoError(t, err, "Should allow queries up to limit")
 	}
 
-	err = tracker.CheckAndIncrementQuery()
+	err = tracker.CheckAndIncrementQuery(testTime)
 	require.Error(t, err, "Should reject queries when limit exceeded")
 }
 

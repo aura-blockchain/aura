@@ -18,13 +18,16 @@ type ExecutionContext struct {
 }
 
 // NewExecutionContext creates a new execution context
+// Note: ExecutionTime is set to zero value. The caller should set it using ctx.BlockTime()
+// if the execution time needs to be tracked. This is stored in transient store so it doesn't
+// affect consensus, but we avoid time.Now() for consistency.
 func NewExecutionContext(maxCallDepth uint32) *ExecutionContext {
 	return &ExecutionContext{
 		CallStack:     make([]string, 0, maxCallDepth),
 		CallDepth:     0,
 		MaxCallDepth:  maxCallDepth,
 		GasConsumed:   make(map[string]uint64),
-		ExecutionTime: time.Now(),
+		ExecutionTime: time.Time{}, // Zero value - can be set by caller with ctx.BlockTime()
 	}
 }
 
@@ -182,10 +185,11 @@ func DefaultRateLimits() RateLimitSettings {
 }
 
 // NewRateLimitTracker creates a new rate limit tracker
-func NewRateLimitTracker(contractAddr string, windowDuration time.Duration) *RateLimitTracker {
+// The currentTime parameter should be ctx.BlockTime() for deterministic behavior.
+func NewRateLimitTracker(contractAddr string, windowDuration time.Duration, currentTime time.Time) *RateLimitTracker {
 	return &RateLimitTracker{
 		ContractAddr:   contractAddr,
-		LastReset:      time.Now(),
+		LastReset:      currentTime,
 		ExecutionCount: 0,
 		QueryCount:     0,
 		CustomMsgCount: 0,
@@ -195,8 +199,9 @@ func NewRateLimitTracker(contractAddr string, windowDuration time.Duration) *Rat
 }
 
 // CheckAndIncrementExecution checks if execution is allowed and increments counter
-func (rlt *RateLimitTracker) CheckAndIncrementExecution() error {
-	rlt.resetIfNeeded()
+// The currentTime parameter should be ctx.BlockTime() for deterministic behavior.
+func (rlt *RateLimitTracker) CheckAndIncrementExecution(currentTime time.Time) error {
+	rlt.resetIfNeeded(currentTime)
 	if rlt.ExecutionCount >= rlt.Limits.MaxExecutionsPerWindow {
 		return ErrSecurityViolation.Wrapf("execution rate limit exceeded: %d/%d",
 			rlt.ExecutionCount, rlt.Limits.MaxExecutionsPerWindow)
@@ -206,8 +211,9 @@ func (rlt *RateLimitTracker) CheckAndIncrementExecution() error {
 }
 
 // CheckAndIncrementQuery checks if query is allowed and increments counter
-func (rlt *RateLimitTracker) CheckAndIncrementQuery() error {
-	rlt.resetIfNeeded()
+// The currentTime parameter should be ctx.BlockTime() for deterministic behavior.
+func (rlt *RateLimitTracker) CheckAndIncrementQuery(currentTime time.Time) error {
+	rlt.resetIfNeeded(currentTime)
 	if rlt.QueryCount >= rlt.Limits.MaxQueriesPerWindow {
 		return ErrSecurityViolation.Wrapf("query rate limit exceeded: %d/%d",
 			rlt.QueryCount, rlt.Limits.MaxQueriesPerWindow)
@@ -217,8 +223,9 @@ func (rlt *RateLimitTracker) CheckAndIncrementQuery() error {
 }
 
 // CheckAndIncrementCustomMsg checks if custom message is allowed and increments counter
-func (rlt *RateLimitTracker) CheckAndIncrementCustomMsg() error {
-	rlt.resetIfNeeded()
+// The currentTime parameter should be ctx.BlockTime() for deterministic behavior.
+func (rlt *RateLimitTracker) CheckAndIncrementCustomMsg(currentTime time.Time) error {
+	rlt.resetIfNeeded(currentTime)
 	if rlt.CustomMsgCount >= rlt.Limits.MaxCustomMsgsPerWindow {
 		return ErrSecurityViolation.Wrapf("custom message rate limit exceeded: %d/%d",
 			rlt.CustomMsgCount, rlt.Limits.MaxCustomMsgsPerWindow)
@@ -228,12 +235,13 @@ func (rlt *RateLimitTracker) CheckAndIncrementCustomMsg() error {
 }
 
 // resetIfNeeded resets counters if window has expired
-func (rlt *RateLimitTracker) resetIfNeeded() {
-	if time.Since(rlt.LastReset) >= rlt.WindowDuration {
+// The currentTime parameter should be ctx.BlockTime() for deterministic behavior.
+func (rlt *RateLimitTracker) resetIfNeeded(currentTime time.Time) {
+	if currentTime.Sub(rlt.LastReset) >= rlt.WindowDuration {
 		rlt.ExecutionCount = 0
 		rlt.QueryCount = 0
 		rlt.CustomMsgCount = 0
-		rlt.LastReset = time.Now()
+		rlt.LastReset = currentTime
 	}
 }
 

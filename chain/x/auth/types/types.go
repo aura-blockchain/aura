@@ -31,14 +31,16 @@ const (
 	RoleUser      = "user"
 )
 
-// GenerateID generates a unique ID from components
-func GenerateID(prefix string, components ...string) string {
+// GenerateID generates a unique ID from components.
+// The blockTime parameter must be ctx.BlockTime() for determinism in consensus.
+// NEVER use time.Now() - it causes non-determinism across validators.
+func GenerateID(prefix string, blockTime time.Time, components ...string) string {
 	h := sha256.New()
 	h.Write([]byte(prefix))
 	for _, c := range components {
 		h.Write([]byte(c))
 	}
-	h.Write([]byte(time.Now().String()))
+	h.Write([]byte(blockTime.String()))
 	return prefix + "-" + hex.EncodeToString(h.Sum(nil))[:16]
 }
 
@@ -123,12 +125,14 @@ func IsProposalApproved(proposal *authproto.MultisigProposal, wallet *authproto.
 	return uint32(len(proposal.Signatures)) >= wallet.Threshold
 }
 
-// IsProposalExpired checks if a proposal has expired
-func IsProposalExpired(proposal *authproto.MultisigProposal) bool {
+// IsProposalExpired checks if a proposal has expired.
+// The blockTime parameter must be ctx.BlockTime() for determinism in consensus.
+// NEVER use time.Now() - it causes non-determinism across validators.
+func IsProposalExpired(proposal *authproto.MultisigProposal, blockTime time.Time) bool {
 	if proposal.ExpiresAt.IsZero() {
 		return false
 	}
-	return time.Now().After(proposal.ExpiresAt)
+	return blockTime.After(proposal.ExpiresAt)
 }
 
 // ValidateTimeLockedAction validates a time-locked action
@@ -151,12 +155,14 @@ func ValidateTimeLockedAction(action *authproto.TimeLockedAction) error {
 	return nil
 }
 
-// IsActionReady checks if a time-locked action is ready for execution
-func IsActionReady(action *authproto.TimeLockedAction) bool {
+// IsActionReady checks if a time-locked action is ready for execution.
+// The blockTime parameter must be ctx.BlockTime() for determinism in consensus.
+// NEVER use time.Now() - it causes non-determinism across validators.
+func IsActionReady(action *authproto.TimeLockedAction, blockTime time.Time) bool {
 	if action.ExecutableAt.IsZero() {
 		return false
 	}
-	return time.Now().After(action.ExecutableAt) || time.Now().Equal(action.ExecutableAt)
+	return blockTime.After(action.ExecutableAt) || blockTime.Equal(action.ExecutableAt)
 }
 
 // ValidateEmergencyAdmin validates an emergency admin
@@ -173,15 +179,17 @@ func ValidateEmergencyAdmin(admin *authproto.EmergencyAdmin) error {
 	return nil
 }
 
-// IsEmergencyAdminActive checks if an emergency admin is currently active
-func IsEmergencyAdminActive(admin *authproto.EmergencyAdmin) bool {
+// IsEmergencyAdminActive checks if an emergency admin is currently active.
+// The blockTime parameter must be ctx.BlockTime() for determinism in consensus.
+// NEVER use time.Now() - it causes non-determinism across validators.
+func IsEmergencyAdminActive(admin *authproto.EmergencyAdmin, blockTime time.Time) bool {
 	if !admin.IsActive {
 		return false
 	}
 	if admin.ExpiresAt == nil {
 		return true
 	}
-	return time.Now().Before(*admin.ExpiresAt)
+	return blockTime.Before(*admin.ExpiresAt)
 }
 
 // ValidateSession validates a session
@@ -195,15 +203,17 @@ func ValidateSession(session *authproto.Session) error {
 	return nil
 }
 
-// IsSessionActive checks if a session is currently active
-func IsSessionActive(session *authproto.Session) bool {
+// IsSessionActive checks if a session is currently active.
+// The blockTime parameter must be ctx.BlockTime() for determinism in consensus.
+// NEVER use time.Now() - it causes non-determinism across validators.
+func IsSessionActive(session *authproto.Session, blockTime time.Time) bool {
 	if !session.IsActive {
 		return false
 	}
 	if session.ExpiresAt.IsZero() {
 		return false
 	}
-	return time.Now().Before(session.ExpiresAt)
+	return blockTime.Before(session.ExpiresAt)
 }
 
 // ValidateRateLimitConfig validates a rate limit config
@@ -214,27 +224,28 @@ func ValidateRateLimitConfig(config *authproto.RateLimitConfig) error {
 	return nil
 }
 
-// IsRateLimited checks if a user has exceeded their rate limit
-func IsRateLimited(config *authproto.RateLimitConfig) bool {
-	now := time.Now()
+// IsRateLimited checks if a user has exceeded their rate limit.
+// The blockTime parameter must be ctx.BlockTime() for determinism in consensus.
+// NEVER use time.Now() - it causes non-determinism across validators.
+func IsRateLimited(config *authproto.RateLimitConfig, blockTime time.Time) bool {
 	windowStart := config.WindowStart
 
 	// Check minute limit
-	if !windowStart.IsZero() && now.Sub(windowStart) < time.Minute {
+	if !windowStart.IsZero() && blockTime.Sub(windowStart) < time.Minute {
 		if config.CurrentMinuteCount >= config.RequestsPerMinute {
 			return true
 		}
 	}
 
 	// Check hour limit
-	if !windowStart.IsZero() && now.Sub(windowStart) < time.Hour {
+	if !windowStart.IsZero() && blockTime.Sub(windowStart) < time.Hour {
 		if config.CurrentHourCount >= config.RequestsPerHour {
 			return true
 		}
 	}
 
 	// Check day limit
-	if !windowStart.IsZero() && now.Sub(windowStart) < 24*time.Hour {
+	if !windowStart.IsZero() && blockTime.Sub(windowStart) < 24*time.Hour {
 		if config.CurrentDayCount >= config.RequestsPerDay {
 			return true
 		}

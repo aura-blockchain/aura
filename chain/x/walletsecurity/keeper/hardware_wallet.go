@@ -45,7 +45,7 @@ func (k Keeper) RegisterHardwareWallet(
 	}
 
 	// Create hardware wallet configuration
-	now := gogoTimestampNow()
+	now := blockTimeToGogoTimestamp(ctx)
 	config := &wsproto.HardwareWalletConfig{
 		WalletId:           walletID,
 		Address:            address,
@@ -92,7 +92,7 @@ func (k Keeper) UpdateHardwareWalletUsage(ctx context.Context, walletID string) 
 		return fmt.Errorf("failed to unmarshal hardware wallet config: %w", err)
 	}
 
-	config.LastUsedAt = gogoTimestampNow()
+	config.LastUsedAt = blockTimeToGogoTimestamp(ctx)
 	config.SignatureCount++
 
 	updatedBytes := k.cdc.MustMarshal(&config)

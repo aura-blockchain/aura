@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
+	"sort"
 
 	economicspb "github.com/aequitas/aura/proto/aura/economics/v1beta1"
 
@@ -140,15 +141,27 @@ func (k Keeper) InitGenesis(ctx context.Context, gs *economicspb.GenesisState) e
 		}
 	}
 
-	// Initialize user MEV balances
-	for addr, balance := range gs.UserMevBalances {
+	// Initialize user MEV balances (deterministic ordering)
+	mevAddrs := make([]string, 0, len(gs.UserMevBalances))
+	for addr := range gs.UserMevBalances {
+		mevAddrs = append(mevAddrs, addr)
+	}
+	sort.Strings(mevAddrs)
+	for _, addr := range mevAddrs {
+		balance := gs.UserMevBalances[addr]
 		if err := k.SetUserMEVBalance(ctx, addr, balance); err != nil {
 			return fmt.Errorf("failed to set MEV balance for %s: %w", addr, err)
 		}
 	}
 
-	// Initialize last large tx times
-	for addr, timestamp := range gs.LastLargeTxTimes {
+	// Initialize last large tx times (deterministic ordering)
+	txTimeAddrs := make([]string, 0, len(gs.LastLargeTxTimes))
+	for addr := range gs.LastLargeTxTimes {
+		txTimeAddrs = append(txTimeAddrs, addr)
+	}
+	sort.Strings(txTimeAddrs)
+	for _, addr := range txTimeAddrs {
+		timestamp := gs.LastLargeTxTimes[addr]
 		if err := k.SetLastLargeTxTime(ctx, addr, timestamp); err != nil {
 			return fmt.Errorf("failed to set last large tx time for %s: %w", addr, err)
 		}

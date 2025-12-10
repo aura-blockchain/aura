@@ -282,15 +282,20 @@ func (ms msgServer) GenerateQuantumResistantKey(goCtx context.Context, msg *cryp
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	// Validate that public key is provided (MUST be generated client-side)
+	if len(msg.PublicKey) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "public_key is required (must be generated off-chain)")
+	}
+
+	// Register the quantum-resistant public key that was generated off-chain
 	// msg.ExpiresAt is already *time.Time, no conversion needed
-	keyID, publicKey, err := ms.Keeper.GenerateQuantumResistantKey(ctx, msg.Creator, msg.Algorithm, msg.ExpiresAt)
+	keyID, err := ms.Keeper.RegisterQuantumResistantKey(ctx, msg.Creator, msg.Algorithm, msg.PublicKey, msg.ExpiresAt)
 	if err != nil {
 		return nil, err
 	}
 
 	return &cryptoproto.MsgGenerateQuantumResistantKeyResponse{
-		KeyId:     keyID,
-		PublicKey: publicKey,
+		KeyId: keyID,
 	}, nil
 }
 

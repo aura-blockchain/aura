@@ -855,12 +855,22 @@ func (k Keeper) DeleteHDKeyDerivation(ctx context.Context, masterKeyID string) e
 // Utility Functions
 // ============================================================================
 
-// GenerateSecureRandomBytes generates cryptographically secure random bytes
+// GenerateSecureRandomBytes generates cryptographically secure random bytes.
+//
+// WARNING: This function uses crypto/rand which is NON-DETERMINISTIC and will break
+// consensus if called from a message handler (MsgServer method).
+//
+// DO NOT call this from message handlers. This is for client-side utilities only.
+//
+// For on-chain operations that need randomness:
+// - Require the client to provide randomness in the message (generated off-chain)
+// - Use deterministic sources like block hash, tx hash, or VRF if available
 func (k Keeper) GenerateSecureRandomBytes(length int) ([]byte, error) {
 	if length < 1 {
 		return nil, types.ErrInsufficientEntropy
 	}
 
+	// WARNING: Non-deterministic - see function documentation
 	randomBytes := make([]byte, length)
 	_, err := rand.Read(randomBytes)
 	if err != nil {

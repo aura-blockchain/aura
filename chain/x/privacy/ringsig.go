@@ -1,5 +1,29 @@
 package privacy
 
+// This file implements OFF-CHAIN ring signature utilities for privacy-preserving signing.
+//
+// IMPORTANT: All signature generation functions are OFF-CHAIN utilities that use
+// crypto/rand for cryptographic randomness. NEVER call from consensus code.
+//
+// Ring signatures allow a signer to prove membership in a group (ring) without
+// revealing which member actually signed. This provides anonymity within the ring.
+//
+// MLSAG (Multilayered Linkable Spontaneous Anonymous Group) signatures extend
+// ring signatures to multiple keys per participant, as used in Monero.
+//
+// ON-CHAIN VS OFF-CHAIN SEPARATION:
+// - OFF-CHAIN: Sign(), SignMLSAG()
+//   These functions generate ring signatures using cryptographic randomness.
+//   They require random values for the zero-knowledge property.
+//   Used by wallet software to sign transactions locally.
+//
+// - ON-CHAIN: Verify(), VerifyMLSAG()
+//   These are deterministic verification functions that can be called during consensus.
+//   They verify ring signatures without using any randomness.
+//
+// Message handlers only verify pre-constructed ring signatures. No signature
+// generation occurs during consensus.
+
 import (
 	"crypto/elliptic"
 	"crypto/rand"

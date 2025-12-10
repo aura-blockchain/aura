@@ -362,16 +362,17 @@ func (k Keeper) findSharedIdentityByLinkedAddress(ctx sdk.Context, chainName str
 //   - false if signature is invalid or address format is wrong
 func (k Keeper) verifyPawAddressOwnership(ctx sdk.Context, auraAddress string, pawAddress string, signature []byte) bool {
 	// TELEMETRY: Track signature verification start time
-	startTime := time.Now()
+	// Use ctx.BlockTime() instead of time.Now() for blockchain determinism
+	startTime := ctx.BlockTime()
 	defer func() {
-		duration := time.Since(startTime)
+		duration := ctx.BlockTime().Sub(startTime)
 		// Record will happen in specific failure/success paths below
 		_ = duration
 	}()
 
 	if len(signature) == 0 || pawAddress == "" || auraAddress == "" {
 		k.recordSignatureMismatch("paw", "link_address", "empty_input")
-		k.recordSignatureVerification("paw", "link_address", false, time.Since(startTime))
+		k.recordSignatureVerification("paw", "link_address", false, ctx.BlockTime().Sub(startTime))
 		return false
 	}
 
@@ -383,7 +384,7 @@ func (k Keeper) verifyPawAddressOwnership(ctx sdk.Context, auraAddress string, p
 			"actual", len(signature),
 			"paw_address", pawAddress)
 		k.recordSignatureMismatch("paw", "link_address", "invalid_signature_length")
-		k.recordSignatureVerification("paw", "link_address", false, time.Since(startTime))
+		k.recordSignatureVerification("paw", "link_address", false, ctx.BlockTime().Sub(startTime))
 		return false
 	}
 
@@ -407,7 +408,7 @@ func (k Keeper) verifyPawAddressOwnership(ctx sdk.Context, auraAddress string, p
 			"paw_address", pawAddress)
 		k.recordInvalidRecoveryID("paw")
 		k.recordSignatureMismatch("paw", "link_address", "invalid_recovery_id")
-		k.recordSignatureVerification("paw", "link_address", false, time.Since(startTime))
+		k.recordSignatureVerification("paw", "link_address", false, ctx.BlockTime().Sub(startTime))
 		return false
 	}
 
@@ -423,7 +424,7 @@ func (k Keeper) verifyPawAddressOwnership(ctx sdk.Context, auraAddress string, p
 			"aura_address", auraAddress,
 			"signature_hash", hex.EncodeToString(signatureHash[:]))
 		k.recordSignatureMismatch("paw", "link_address", "signature_replay")
-		k.recordSignatureVerification("paw", "link_address", false, time.Since(startTime))
+		k.recordSignatureVerification("paw", "link_address", false, ctx.BlockTime().Sub(startTime))
 		return false
 	}
 
@@ -435,7 +436,7 @@ func (k Keeper) verifyPawAddressOwnership(ctx sdk.Context, auraAddress string, p
 			"aura_address", auraAddress,
 			"error", err.Error())
 		k.recordSignatureMismatch("paw", "link_address", "rate_limit_exceeded")
-		k.recordSignatureVerification("paw", "link_address", false, time.Since(startTime))
+		k.recordSignatureVerification("paw", "link_address", false, ctx.BlockTime().Sub(startTime))
 		return false
 	}
 
@@ -450,7 +451,7 @@ func (k Keeper) verifyPawAddressOwnership(ctx sdk.Context, auraAddress string, p
 			"error", err.Error())
 		k.recordPubKeyRecoveryFailure("paw", fmt.Sprintf("%d", recoveryID))
 		k.recordSignatureMismatch("paw", "link_address", "pubkey_recovery_failed")
-		k.recordSignatureVerification("paw", "link_address", false, time.Since(startTime))
+		k.recordSignatureVerification("paw", "link_address", false, ctx.BlockTime().Sub(startTime))
 		return false
 	}
 
@@ -464,7 +465,7 @@ func (k Keeper) verifyPawAddressOwnership(ctx sdk.Context, auraAddress string, p
 			"derived", derivedAddress,
 			"recovery_id", recoveryID)
 		k.recordSignatureMismatch("paw", "link_address", "address_mismatch")
-		k.recordSignatureVerification("paw", "link_address", false, time.Since(startTime))
+		k.recordSignatureVerification("paw", "link_address", false, ctx.BlockTime().Sub(startTime))
 		return false
 	}
 
@@ -478,7 +479,7 @@ func (k Keeper) verifyPawAddressOwnership(ctx sdk.Context, auraAddress string, p
 			"paw_address", pawAddress,
 			"aura_address", auraAddress)
 		k.recordSignatureMismatch("paw", "link_address", "ecdsa_verification_failed")
-		k.recordSignatureVerification("paw", "link_address", false, time.Since(startTime))
+		k.recordSignatureVerification("paw", "link_address", false, ctx.BlockTime().Sub(startTime))
 		return false
 	}
 
@@ -490,7 +491,7 @@ func (k Keeper) verifyPawAddressOwnership(ctx sdk.Context, auraAddress string, p
 	k.markSignatureUsed(ctx, signatureHash[:], ctx.BlockHeight())
 
 	// TELEMETRY: Record successful verification
-	k.recordSignatureVerification("paw", "link_address", true, time.Since(startTime))
+	k.recordSignatureVerification("paw", "link_address", true, ctx.BlockTime().Sub(startTime))
 
 	return true
 }
@@ -522,11 +523,12 @@ func (k Keeper) verifyPawAddressOwnership(ctx sdk.Context, auraAddress string, p
 //   - false if signature is invalid or address format is wrong
 func (k Keeper) verifyXaiAddressOwnership(ctx sdk.Context, auraAddress string, xaiAddress string, signature []byte) bool {
 	// TELEMETRY: Track signature verification start time
-	startTime := time.Now()
+	// Use ctx.BlockTime() instead of time.Now() for blockchain determinism
+	startTime := ctx.BlockTime()
 
 	if len(signature) == 0 || xaiAddress == "" || auraAddress == "" {
 		k.recordSignatureMismatch("xai", "link_address", "empty_input")
-		k.recordSignatureVerification("xai", "link_address", false, time.Since(startTime))
+		k.recordSignatureVerification("xai", "link_address", false, ctx.BlockTime().Sub(startTime))
 		return false
 	}
 
@@ -538,7 +540,7 @@ func (k Keeper) verifyXaiAddressOwnership(ctx sdk.Context, auraAddress string, x
 			"actual", len(signature),
 			"xai_address", xaiAddress)
 		k.recordSignatureMismatch("xai", "link_address", "invalid_signature_length")
-		k.recordSignatureVerification("xai", "link_address", false, time.Since(startTime))
+		k.recordSignatureVerification("xai", "link_address", false, ctx.BlockTime().Sub(startTime))
 		return false
 	}
 
@@ -562,7 +564,7 @@ func (k Keeper) verifyXaiAddressOwnership(ctx sdk.Context, auraAddress string, x
 			"xai_address", xaiAddress)
 		k.recordInvalidRecoveryID("xai")
 		k.recordSignatureMismatch("xai", "link_address", "invalid_recovery_id")
-		k.recordSignatureVerification("xai", "link_address", false, time.Since(startTime))
+		k.recordSignatureVerification("xai", "link_address", false, ctx.BlockTime().Sub(startTime))
 		return false
 	}
 
@@ -578,7 +580,7 @@ func (k Keeper) verifyXaiAddressOwnership(ctx sdk.Context, auraAddress string, x
 			"aura_address", auraAddress,
 			"signature_hash", hex.EncodeToString(signatureHash[:]))
 		k.recordSignatureMismatch("xai", "link_address", "signature_replay")
-		k.recordSignatureVerification("xai", "link_address", false, time.Since(startTime))
+		k.recordSignatureVerification("xai", "link_address", false, ctx.BlockTime().Sub(startTime))
 		return false
 	}
 
@@ -590,7 +592,7 @@ func (k Keeper) verifyXaiAddressOwnership(ctx sdk.Context, auraAddress string, x
 			"aura_address", auraAddress,
 			"error", err.Error())
 		k.recordSignatureMismatch("xai", "link_address", "rate_limit_exceeded")
-		k.recordSignatureVerification("xai", "link_address", false, time.Since(startTime))
+		k.recordSignatureVerification("xai", "link_address", false, ctx.BlockTime().Sub(startTime))
 		return false
 	}
 
@@ -605,7 +607,7 @@ func (k Keeper) verifyXaiAddressOwnership(ctx sdk.Context, auraAddress string, x
 			"error", err.Error())
 		k.recordPubKeyRecoveryFailure("xai", fmt.Sprintf("%d", recoveryID))
 		k.recordSignatureMismatch("xai", "link_address", "pubkey_recovery_failed")
-		k.recordSignatureVerification("xai", "link_address", false, time.Since(startTime))
+		k.recordSignatureVerification("xai", "link_address", false, ctx.BlockTime().Sub(startTime))
 		return false
 	}
 
@@ -619,7 +621,7 @@ func (k Keeper) verifyXaiAddressOwnership(ctx sdk.Context, auraAddress string, x
 			"derived", derivedAddress,
 			"recovery_id", recoveryID)
 		k.recordSignatureMismatch("xai", "link_address", "address_mismatch")
-		k.recordSignatureVerification("xai", "link_address", false, time.Since(startTime))
+		k.recordSignatureVerification("xai", "link_address", false, ctx.BlockTime().Sub(startTime))
 		return false
 	}
 
@@ -633,7 +635,7 @@ func (k Keeper) verifyXaiAddressOwnership(ctx sdk.Context, auraAddress string, x
 			"xai_address", xaiAddress,
 			"aura_address", auraAddress)
 		k.recordSignatureMismatch("xai", "link_address", "ecdsa_verification_failed")
-		k.recordSignatureVerification("xai", "link_address", false, time.Since(startTime))
+		k.recordSignatureVerification("xai", "link_address", false, ctx.BlockTime().Sub(startTime))
 		return false
 	}
 
@@ -645,7 +647,7 @@ func (k Keeper) verifyXaiAddressOwnership(ctx sdk.Context, auraAddress string, x
 	k.markSignatureUsed(ctx, signatureHash[:], ctx.BlockHeight())
 
 	// TELEMETRY: Record successful verification
-	k.recordSignatureVerification("xai", "link_address", true, time.Since(startTime))
+	k.recordSignatureVerification("xai", "link_address", true, ctx.BlockTime().Sub(startTime))
 
 	return true
 }

@@ -185,14 +185,14 @@ type ProvenanceRecord struct {
 }
 
 // RecordProvenance records a provenance event
-func (k *Keeper) RecordProvenance(dataID string, action string, actor string, details map[string]string) error {
+func (k *Keeper) RecordProvenance(ctx sdk.Context, dataID string, action string, actor string, details map[string]string) error {
 	record := &ProvenanceRecord{
-		RecordID:    fmt.Sprintf("%s-%s-%d", dataID, action, uint64(0)),
+		RecordID:    fmt.Sprintf("%s-%s-%d", dataID, action, ctx.BlockHeight()),
 		DataID:      dataID,
 		Action:      action,
 		Actor:       actor,
-		Timestamp:   time.Unix(time.Now().Unix(), 0),
-		BlockHeight: uint64(0),
+		Timestamp:   ctx.BlockTime(),
+		BlockHeight: uint64(ctx.BlockHeight()),
 		Details:     details,
 	}
 
@@ -224,7 +224,7 @@ func (k *Keeper) SetRetentionPolicy(ctx sdk.Context, dataID string, retentionDay
 		return nil, types.ErrDataItemNotFound
 	}
 
-	expiresAt := time.Unix(time.Now().Unix(), 0).AddDate(0, 0, int(retentionDays))
+	expiresAt := ctx.BlockTime().AddDate(0, 0, int(retentionDays))
 
 	policy := &RetentionPolicy{
 		PolicyID:      fmt.Sprintf("retention-%s", dataID),
@@ -246,7 +246,7 @@ func (k *Keeper) SetRetentionPolicy(ctx sdk.Context, dataID string, retentionDay
 // ProcessExpiredData processes data items that have expired retention
 func (k *Keeper) ProcessExpiredData(ctx sdk.Context, ) (deleted int, notified int, error error) {
 	policies := k.getAllRetentionPolicies()
-	now := time.Unix(time.Now().Unix(), 0)
+	now := ctx.BlockTime()
 
 	for _, policy := range policies {
 		if now.After(policy.ExpiresAt) && policy.AutoDelete {
@@ -298,7 +298,7 @@ func (k *Keeper) CalculateQualityScore(ctx sdk.Context, dataID string) (*Quality
 		AccuracyScore:    accuracy,
 		TimelinessScore:  timeliness,
 		ConsistencyScore: consistency,
-		CalculatedAt:     time.Unix(time.Now().Unix(), 0),
+		CalculatedAt:     ctx.BlockTime(),
 	}
 
 	k.storeQualityScore(score)
@@ -370,7 +370,7 @@ func (k *Keeper) MintVerificationReward(ctx sdk.Context, verifier string, dataID
 	}
 
 	// Record provenance
-	k.RecordProvenance(dataID, "verification_rewarded", verifier, map[string]string{
+	k.RecordProvenance(ctx, dataID, "verification_rewarded", verifier, map[string]string{
 		"reward_amount": rewardAmount.String(),
 	})
 

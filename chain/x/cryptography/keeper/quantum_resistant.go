@@ -12,44 +12,42 @@ import (
 	cryptoproto "github.com/aequitas/aura/proto/aura/cryptography/v1beta1"
 )
 
-// GenerateQuantumResistantKey generates a quantum-resistant cryptographic key pair
-func (k Keeper) GenerateQuantumResistantKey(
+// RegisterQuantumResistantKey registers a quantum-resistant public key that was generated off-chain.
+//
+// IMPORTANT: This function does NOT generate keys on-chain. Key generation MUST happen
+// client-side to ensure:
+// 1. Deterministic blockchain execution (crypto/rand breaks consensus)
+// 2. Private key security (never expose private keys to validators)
+// 3. Client control over entropy sources
+//
+// The client should:
+// 1. Generate the quantum-resistant keypair off-chain using appropriate libraries
+// 2. Submit only the PUBLIC key via MsgGenerateQuantumResistantKey
+// 3. Store the PRIVATE key securely client-side
+//
+// This function validates and stores the public key on-chain for verification purposes.
+func (k Keeper) RegisterQuantumResistantKey(
 	ctx context.Context,
 	creator string,
 	algorithm cryptoproto.QuantumResistantAlgorithm,
+	publicKey []byte,
 	expiresAt *time.Time,
-) (string, []byte, error) {
+) (string, error) {
 	if algorithm == cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_UNSPECIFIED {
-		return "", nil, types.ErrInvalidQuantumAlgorithm
+		return "", types.ErrInvalidQuantumAlgorithm
 	}
 
-	// Generate key pair based on algorithm
-	var publicKey []byte
-	var keyMetadata []byte
-	var err error
-
-	switch algorithm {
-	case cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_DILITHIUM:
-		publicKey, keyMetadata, err = k.generateDilithiumKey()
-	case cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_KYBER:
-		publicKey, keyMetadata, err = k.generateKyberKey()
-	case cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_FALCON:
-		publicKey, keyMetadata, err = k.generateFalconKey()
-	case cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_SPHINCS_PLUS:
-		publicKey, keyMetadata, err = k.generateSPHINCSPlusKey()
-	case cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_NTRU:
-		publicKey, keyMetadata, err = k.generateNTRUKey()
-	default:
-		return "", nil, types.ErrInvalidQuantumAlgorithm
+	// Validate public key based on algorithm
+	if err := k.validateQuantumPublicKey(algorithm, publicKey); err != nil {
+		return "", err
 	}
 
-	if err != nil {
-		return "", nil, err
-	}
-
-	// Generate key ID
+	// Generate key ID using deterministic block time
 	blockTime := sdk.UnwrapSDKContext(ctx).BlockTime()
 	keyID := fmt.Sprintf("qr_%s_%d", algorithm.String(), blockTime.Unix())
+
+	// Create metadata based on algorithm
+	keyMetadata := k.getQuantumKeyMetadata(algorithm)
 
 	qrKey := &cryptoproto.QuantumResistantKey{
 		KeyId:       keyID,
@@ -62,88 +60,76 @@ func (k Keeper) GenerateQuantumResistantKey(
 
 	// Store in KV store
 	if err := k.SetQuantumResistantKey(ctx, qrKey); err != nil {
-		return "", nil, err
+		return "", err
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	k.Logger(sdkCtx).Info("generated quantum-resistant key",
+	k.Logger(sdkCtx).Info("registered quantum-resistant key",
 		"key_id", keyID,
 		"algorithm", algorithm.String(),
+		"creator", creator,
 	)
 
-	return keyID, publicKey, nil
+	return keyID, nil
 }
 
-// Note: GetQuantumResistantKey is now implemented in keeper.go using KV store
+// validateQuantumPublicKey validates the public key format for the given algorithm
+func (k Keeper) validateQuantumPublicKey(algorithm cryptoproto.QuantumResistantAlgorithm, publicKey []byte) error {
+	var expectedMinLength, expectedMaxLength int
 
-// generateDilithiumKey generates a CRYSTALS-Dilithium key pair (NIST PQC standard)
-func (k Keeper) generateDilithiumKey() ([]byte, []byte, error) {
-	// CRYSTALS-Dilithium2 public key is 1312 bytes
-	// In a real implementation, use the official Dilithium library
-	publicKey := make([]byte, 1312)
-	_, err := rand.Read(publicKey)
-	if err != nil {
-		return nil, nil, err
+	switch algorithm {
+	case cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_DILITHIUM:
+		// CRYSTALS-Dilithium2 public key is 1312 bytes
+		expectedMinLength = 1312
+		expectedMaxLength = 1312
+	case cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_KYBER:
+		// CRYSTALS-Kyber512 public key is 800 bytes
+		expectedMinLength = 800
+		expectedMaxLength = 800
+	case cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_FALCON:
+		// Falcon-512 public key is 897 bytes
+		expectedMinLength = 897
+		expectedMaxLength = 897
+	case cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_SPHINCS_PLUS:
+		// SPHINCS+-128s public key is 32 bytes
+		expectedMinLength = 32
+		expectedMaxLength = 32
+	case cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_NTRU:
+		// NTRU-HPS-2048-509 public key is 1230 bytes
+		expectedMinLength = 1230
+		expectedMaxLength = 1230
+	default:
+		return types.ErrInvalidQuantumAlgorithm
 	}
 
-	metadata := []byte("dilithium2")
-	return publicKey, metadata, nil
+	if len(publicKey) < expectedMinLength {
+		return fmt.Errorf("public key too short for %s: got %d bytes, expected %d",
+			algorithm.String(), len(publicKey), expectedMinLength)
+	}
+	if len(publicKey) > expectedMaxLength {
+		return fmt.Errorf("public key too long for %s: got %d bytes, expected %d",
+			algorithm.String(), len(publicKey), expectedMaxLength)
+	}
+
+	return nil
 }
 
-// generateKyberKey generates a CRYSTALS-Kyber key pair (NIST PQC standard for KEM)
-func (k Keeper) generateKyberKey() ([]byte, []byte, error) {
-	// CRYSTALS-Kyber512 public key is 800 bytes
-	// In a real implementation, use the official Kyber library
-	publicKey := make([]byte, 800)
-	_, err := rand.Read(publicKey)
-	if err != nil {
-		return nil, nil, err
+// getQuantumKeyMetadata returns the metadata descriptor for a quantum algorithm
+func (k Keeper) getQuantumKeyMetadata(algorithm cryptoproto.QuantumResistantAlgorithm) []byte {
+	switch algorithm {
+	case cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_DILITHIUM:
+		return []byte("dilithium2")
+	case cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_KYBER:
+		return []byte("kyber512")
+	case cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_FALCON:
+		return []byte("falcon512")
+	case cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_SPHINCS_PLUS:
+		return []byte("sphincs-sha256-128s-simple")
+	case cryptoproto.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_NTRU:
+		return []byte("ntru-hps-2048-509")
+	default:
+		return []byte("unknown")
 	}
-
-	metadata := []byte("kyber512")
-	return publicKey, metadata, nil
-}
-
-// generateFalconKey generates a Falcon key pair (NIST PQC standard)
-func (k Keeper) generateFalconKey() ([]byte, []byte, error) {
-	// Falcon-512 public key is 897 bytes
-	// In a real implementation, use the official Falcon library
-	publicKey := make([]byte, 897)
-	_, err := rand.Read(publicKey)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	metadata := []byte("falcon512")
-	return publicKey, metadata, nil
-}
-
-// generateSPHINCSPlusKey generates a SPHINCS+ key pair (NIST PQC standard)
-func (k Keeper) generateSPHINCSPlusKey() ([]byte, []byte, error) {
-	// SPHINCS+-128s public key is 32 bytes
-	// In a real implementation, use the official SPHINCS+ library
-	publicKey := make([]byte, 32)
-	_, err := rand.Read(publicKey)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	metadata := []byte("sphincs-sha256-128s-simple")
-	return publicKey, metadata, nil
-}
-
-// generateNTRUKey generates an NTRU key pair
-func (k Keeper) generateNTRUKey() ([]byte, []byte, error) {
-	// NTRU public key size varies, typically around 1230 bytes for NTRU-HPS-2048-509
-	// In a real implementation, use an NTRU library
-	publicKey := make([]byte, 1230)
-	_, err := rand.Read(publicKey)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	metadata := []byte("ntru-hps-2048-509")
-	return publicKey, metadata, nil
 }
 
 // ValidateQuantumResistantKey validates a quantum-resistant key
@@ -181,26 +167,41 @@ func (k Keeper) ValidateQuantumResistantKey(ctx context.Context, keyID string) e
 	return nil
 }
 
-// RotateQuantumResistantKey rotates a quantum-resistant key
+// RotateQuantumResistantKey rotates a quantum-resistant key with a new public key.
+//
+// IMPORTANT: The new public key MUST be generated off-chain by the client.
+// This function does NOT generate keys - it registers the client-provided public key.
+//
+// Parameters:
+//   - keyID: The ID of the key being rotated
+//   - newPublicKey: The new public key (generated client-side)
+//   - newExpiresAt: Optional expiration time for the new key
+//
+// The client should:
+// 1. Generate a new quantum-resistant keypair off-chain using the same algorithm
+// 2. Call this function with the new PUBLIC key
+// 3. Store the new PRIVATE key securely client-side
 func (k Keeper) RotateQuantumResistantKey(
 	ctx context.Context,
 	keyID string,
+	newPublicKey []byte,
 	newExpiresAt *time.Time,
-) (string, []byte, error) {
+) (string, error) {
 	oldKey, err := k.GetQuantumResistantKey(ctx, keyID)
 	if err != nil {
-		return "", nil, err
+		return "", err
 	}
 
-	// Generate new key with same algorithm
-	newKeyID, newPublicKey, err := k.GenerateQuantumResistantKey(
+	// Register the new key with the same algorithm
+	newKeyID, err := k.RegisterQuantumResistantKey(
 		ctx,
 		"system",
 		oldKey.Algorithm,
+		newPublicKey,
 		newExpiresAt,
 	)
 	if err != nil {
-		return "", nil, err
+		return "", err
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -210,7 +211,7 @@ func (k Keeper) RotateQuantumResistantKey(
 		"algorithm", oldKey.Algorithm.String(),
 	)
 
-	return newKeyID, newPublicKey, nil
+	return newKeyID, nil
 }
 
 // Note: SetQuantumResistantKey is now implemented in keeper.go using KV store

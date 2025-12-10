@@ -18,8 +18,8 @@ func (k Keeper) RegisterDevice(ctx context.Context, walletID, deviceID, deviceNa
 		Fingerprint:   fingerprint,
 		FingerprintHash: k.hashFingerprint(fingerprint),
 		Trusted:       true,
-		RegisteredAt:  gogoTimestampNow(),
-		LastSeenAt:    gogoTimestampNow(),
+		RegisteredAt:  blockTimeToGogoTimestamp(ctx),
+		LastSeenAt:    blockTimeToGogoTimestamp(ctx),
 	}
 
 	deviceBytes, err := k.cdc.Marshal(device)
@@ -60,7 +60,7 @@ func (k Keeper) VerifyDevice(ctx context.Context, walletID, deviceID string, fin
 	}
 
 	// Update last seen
-	device.LastSeenAt = gogoTimestampNow()
+	device.LastSeenAt = blockTimeToGogoTimestamp(ctx)
 	updatedBytes, _ := k.cdc.Marshal(&device)
 	store.Set(key, updatedBytes)
 
@@ -83,7 +83,7 @@ func (k Keeper) RevokeDevice(ctx context.Context, walletID, deviceID string) err
 	}
 
 	device.Trusted = false
-	device.RevokedAt = gogoTimestampNow()
+	device.RevokedAt = blockTimeToGogoTimestamp(ctx)
 
 	updatedBytes, err := k.cdc.Marshal(&device)
 	if err != nil {

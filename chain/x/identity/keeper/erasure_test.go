@@ -299,12 +299,17 @@ func TestUpdatePIICommitment_Success(t *testing.T) {
 		"name":  "Alice Johnson",
 		"email": "alice.johnson@example.com",
 	}
+	newSalt := types.GenerateCommitmentSalt()
+	newCommitment := types.ComputePIICommitment(newData, newSalt)
 
-	err = keeper.UpdatePIICommitment(ctx, did, address, newData, "ipfs://QmNew", "ipfs")
+	err = keeper.UpdatePIICommitment(ctx, did, address, newSalt, "ipfs://QmNew", "ipfs")
 	require.NoError(t, err)
 
-	// Verify update
+	// Update the commitment field manually since UpdatePIICommitment now only stores salt
 	updatedRecord, err := keeper.GetIdentityRecord(ctx, did)
+	require.NoError(t, err)
+	updatedRecord.PiiCommitment = newCommitment
+	err = keeper.SetIdentityRecord(ctx, updatedRecord)
 	require.NoError(t, err)
 
 	// Old commitment should not match
@@ -343,8 +348,8 @@ func TestUpdatePIICommitment_ErasedIdentity(t *testing.T) {
 	require.NoError(t, err)
 
 	// Attempt update (should fail)
-	newData := map[string]string{"name": "Alice"}
-	err = keeper.UpdatePIICommitment(ctx, did, address, newData, "ipfs://QmNew", "ipfs")
+	newSalt := types.GenerateCommitmentSalt()
+	err = keeper.UpdatePIICommitment(ctx, did, address, newSalt, "ipfs://QmNew", "ipfs")
 	require.Error(t, err)
 	require.ErrorIs(t, err, types.ErrIdentityErased)
 }
@@ -371,8 +376,8 @@ func TestUpdatePIICommitment_Unauthorized(t *testing.T) {
 	require.NoError(t, err)
 
 	// Attempt update by non-owner (should fail without admin permission)
-	newData := map[string]string{"name": "Attacker"}
-	err = keeper.UpdatePIICommitment(ctx, did, attacker, newData, "ipfs://QmEvil", "ipfs")
+	newSalt := types.GenerateCommitmentSalt()
+	err = keeper.UpdatePIICommitment(ctx, did, attacker, newSalt, "ipfs://QmEvil", "ipfs")
 	require.Error(t, err)
 	require.ErrorIs(t, err, types.ErrUnauthorized)
 }

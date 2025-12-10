@@ -199,9 +199,10 @@ func TestMixingService_CreateAndJoinPool(t *testing.T) {
 
 	denomination := big.NewInt(1000)
 	fee := big.NewInt(10)
+	now := time.Now()
 
 	// Create pool
-	pool, err := ms.CreatePool(denomination, 3, 10, 2, 5, 1*time.Hour, fee)
+	pool, err := ms.CreatePool(denomination, 3, 10, 2, 5, 1*time.Hour, fee, now)
 	require.NoError(t, err)
 	assert.NotNil(t, pool)
 	assert.Equal(t, PoolStatusPending, pool.Status)
@@ -214,7 +215,7 @@ func TestMixingService_CreateAndJoinPool(t *testing.T) {
 	outputAddr := []byte("output_address")
 	blindingFactor := big.NewInt(54321)
 
-	err = ms.JoinPool(pool.ID, "participant1", commitment, outputAddr, blindingFactor)
+	err = ms.JoinPool(pool.ID, "participant1", commitment, outputAddr, blindingFactor, now)
 	require.NoError(t, err)
 
 	// Check pool status
@@ -228,9 +229,10 @@ func TestMixingService_ExecuteMixing(t *testing.T) {
 
 	denomination := big.NewInt(1000)
 	fee := big.NewInt(10)
+	now := time.Now()
 
 	// Create pool
-	pool, err := ms.CreatePool(denomination, 2, 5, 1, 3, 1*time.Hour, fee)
+	pool, err := ms.CreatePool(denomination, 2, 5, 1, 3, 1*time.Hour, fee, now)
 	require.NoError(t, err)
 
 	// Add participants
@@ -248,12 +250,13 @@ func TestMixingService_ExecuteMixing(t *testing.T) {
 			commitment,
 			outputAddr,
 			blindingFactor,
+			now,
 		)
 		require.NoError(t, err)
 	}
 
 	// Execute mixing
-	result, err := ms.ExecuteMixing(pool.ID)
+	result, err := ms.ExecuteMixing(pool.ID, now)
 	require.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, 3, len(result.Outputs))
@@ -313,7 +316,8 @@ func TestViewKeyManager_GenerateAndRetrieve(t *testing.T) {
 
 	address := []byte("test_address")
 	permissions := []string{"view_incoming", "view_balance"}
-	expiresAt := time.Now().Add(24 * time.Hour)
+	now := time.Now()
+	expiresAt := now.Add(24 * time.Hour)
 
 	// Generate view key
 	viewKey, err := vkm.GenerateViewKey(
@@ -321,12 +325,13 @@ func TestViewKeyManager_GenerateAndRetrieve(t *testing.T) {
 		address,
 		permissions,
 		&expiresAt,
+		now,
 	)
 	require.NoError(t, err)
 	assert.NotNil(t, viewKey)
 
 	// Retrieve view key
-	retrieved, err := vkm.GetViewKey(viewKey.PublicKey)
+	retrieved, err := vkm.GetViewKey(viewKey.PublicKey, now)
 	require.NoError(t, err)
 	assert.Equal(t, viewKey.Type, retrieved.Type)
 	assert.Equal(t, viewKey.Permissions, retrieved.Permissions)
@@ -337,6 +342,7 @@ func TestViewKeyManager_RevokeKey(t *testing.T) {
 
 	address := []byte("test_address")
 	permissions := []string{"view_all"}
+	now := time.Now()
 
 	// Generate view key
 	viewKey, err := vkm.GenerateViewKey(
@@ -344,15 +350,16 @@ func TestViewKeyManager_RevokeKey(t *testing.T) {
 		address,
 		permissions,
 		nil,
+		now,
 	)
 	require.NoError(t, err)
 
 	// Revoke view key
-	err = vkm.RevokeViewKey(viewKey.PublicKey)
+	err = vkm.RevokeViewKey(viewKey.PublicKey, now)
 	require.NoError(t, err)
 
 	// Try to retrieve revoked key
-	_, err = vkm.GetViewKey(viewKey.PublicKey)
+	_, err = vkm.GetViewKey(viewKey.PublicKey, now)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "not found")
 }
@@ -362,6 +369,7 @@ func TestViewKeyManager_VerifyPermission(t *testing.T) {
 
 	address := []byte("test_address")
 	permissions := []string{"view_incoming", "view_outgoing"}
+	now := time.Now()
 
 	// Generate view key
 	viewKey, err := vkm.GenerateViewKey(
@@ -369,16 +377,17 @@ func TestViewKeyManager_VerifyPermission(t *testing.T) {
 		address,
 		permissions,
 		nil,
+		now,
 	)
 	require.NoError(t, err)
 
 	// Verify existing permission
-	hasPermission, err := vkm.VerifyPermission(viewKey.PublicKey, "view_incoming")
+	hasPermission, err := vkm.VerifyPermission(viewKey.PublicKey, "view_incoming", now)
 	require.NoError(t, err)
 	assert.True(t, hasPermission)
 
 	// Verify non-existing permission
-	hasPermission, err = vkm.VerifyPermission(viewKey.PublicKey, "admin")
+	hasPermission, err = vkm.VerifyPermission(viewKey.PublicKey, "admin", now)
 	require.NoError(t, err)
 	assert.False(t, hasPermission)
 }
@@ -388,7 +397,8 @@ func TestViewKeyManager_ExpiredKey(t *testing.T) {
 
 	address := []byte("test_address")
 	permissions := []string{"view_balance"}
-	expiresAt := time.Now().Add(-1 * time.Hour) // Already expired
+	now := time.Now()
+	expiresAt := now.Add(-1 * time.Hour) // Already expired
 
 	// Generate expired view key
 	viewKey, err := vkm.GenerateViewKey(
@@ -396,11 +406,12 @@ func TestViewKeyManager_ExpiredKey(t *testing.T) {
 		address,
 		permissions,
 		&expiresAt,
+		now,
 	)
 	require.NoError(t, err)
 
 	// Try to retrieve expired key
-	_, err = vkm.GetViewKey(viewKey.PublicKey)
+	_, err = vkm.GetViewKey(viewKey.PublicKey, now)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "expired")
 }
@@ -410,6 +421,7 @@ func TestViewKeyManager_ListActiveKeys(t *testing.T) {
 
 	address := []byte("test_address")
 	permissions := []string{"view_all"}
+	now := time.Now()
 
 	// Generate multiple view keys
 	for i := 0; i < 3; i++ {
@@ -418,12 +430,13 @@ func TestViewKeyManager_ListActiveKeys(t *testing.T) {
 			address,
 			permissions,
 			nil,
+			now,
 		)
 		require.NoError(t, err)
 	}
 
 	// List active keys
-	activeKeys := vkm.ListActiveViewKeys(address)
+	activeKeys := vkm.ListActiveViewKeys(address, now)
 	assert.Equal(t, 3, len(activeKeys))
 }
 
@@ -437,6 +450,7 @@ func TestTumblerService_ScheduleTumbling(t *testing.T) {
 	totalAmount := big.NewInt(3000)
 	splits := []*big.Int{big.NewInt(1000), big.NewInt(1000), big.NewInt(1000)}
 	delays := []time.Duration{1 * time.Second, 2 * time.Second, 3 * time.Second}
+	now := time.Now()
 
 	// Schedule tumbling
 	schedule, err := ts.ScheduleTumbling(
@@ -445,6 +459,7 @@ func TestTumblerService_ScheduleTumbling(t *testing.T) {
 		totalAmount,
 		splits,
 		delays,
+		now,
 	)
 	require.NoError(t, err)
 	assert.NotNil(t, schedule)
@@ -467,6 +482,7 @@ func TestTumblerService_InvalidSplits(t *testing.T) {
 		totalAmount,
 		splits,
 		delays,
+		time.Now(),
 	)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "do not sum to total")
