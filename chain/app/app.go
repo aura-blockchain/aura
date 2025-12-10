@@ -1217,8 +1217,14 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 
 // ensureStoreInitMarkers writes a deterministic marker into each KV store so
 // every mounted store has an on-disk version from the first commit.
+//
+// CRITICAL: The marker key must NOT collide with any module's key space.
+// The upgrade module uses 0x01 as DoneByte prefix, so we use a longer key
+// with a safe prefix (0xFF) that no standard module uses.
 func ensureStoreInitMarkers(ctx sdk.Context, keys []storetypes.StoreKey) {
-	marker := []byte{0x01}
+	// Use 0xFF prefix to avoid collision with module keys (most modules use 0x00-0x7F range)
+	// Add "INIT" suffix for clarity when debugging
+	marker := []byte{0xFF, 'I', 'N', 'I', 'T'}
 	for _, key := range keys {
 		if key == nil {
 			continue
