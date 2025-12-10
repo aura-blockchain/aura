@@ -64,7 +64,7 @@ func (c *Client) LockTokens(ctx context.Context, params *LockTokensParams) (*typ
 		Sender:      params.Sender,
 		TargetChain: params.TargetChain,
 		Recipient:   params.Recipient,
-		Amount:      &params.Amount,
+		Amount:      params.Amount,
 	}
 
 	addr, err := sdk.AccAddressFromBech32(params.Sender)
@@ -119,7 +119,7 @@ func (c *Client) MintTokens(ctx context.Context, params *MintTokensParams) (*typ
 		SourceChain:        params.SourceChain,
 		SourceTxHash:       params.SourceTxHash,
 		Recipient:          params.Recipient,
-		Amount:             params.Amount.String(),
+		Amount:             params.Amount,
 		Denom:              params.Denom,
 		ValidatorSignature: params.ValidatorSignature,
 	}
@@ -165,7 +165,7 @@ func (c *Client) UnlockTokens(ctx context.Context, params *UnlockTokensParams) (
 		Sender:              params.Sender,
 		SourceChain:         params.SourceChain,
 		BurnTxHash:          params.BurnTxHash,
-		Amount:              params.Amount.String(),
+		Amount:              params.Amount,
 		Denom:               params.Denom,
 		ValidatorSignatures: params.ValidatorSignatures,
 	}
@@ -209,7 +209,7 @@ func (c *Client) BurnTokens(ctx context.Context, params *BurnTokensParams) (*typ
 		Sender:      params.Sender,
 		TargetChain: params.TargetChain,
 		Recipient:   params.Recipient,
-		Amount:      &params.Amount,
+		Amount:      params.Amount,
 	}
 
 	addr, err := sdk.AccAddressFromBech32(params.Sender)
@@ -300,10 +300,10 @@ func (c *Client) CrossChainSwap(ctx context.Context, params *CrossChainSwapParam
 	msg := &bridgepb.MsgCrossChainSwap{
 		Sender:          params.Sender,
 		SourceChain:     params.SourceChain,
-		InputCoin:       &params.InputCoin,
+		InputCoin:       params.InputCoin,
 		TargetChain:     params.TargetChain,
 		TargetDenom:     params.TargetDenom,
-		MinTargetAmount: params.MinTargetAmount.String(),
+		MinTargetAmount: params.MinTargetAmount,
 		Recipient:       params.Recipient,
 		MaxSlippageBps:  params.MaxSlippageBPS,
 	}
@@ -383,7 +383,7 @@ func (c *Client) GetBridgeTransfer(ctx context.Context, id string) (*bridgepb.Cr
 		return nil, fmt.Errorf("failed to get bridge transfer: %w", err)
 	}
 
-	return resp.Transfer, nil
+	return &resp.Transfer, nil
 }
 
 // GetBridgeTransfers gets all bridge transfers for an address
@@ -401,7 +401,12 @@ func (c *Client) GetBridgeTransfers(ctx context.Context, address string) ([]*bri
 		return nil, fmt.Errorf("failed to get bridge transfers: %w", err)
 	}
 
-	return resp.Transfers, nil
+	// Convert value slice to pointer slice
+	transfers := make([]*bridgepb.CrossChainTransfer, len(resp.Transfers))
+	for i := range resp.Transfers {
+		transfers[i] = &resp.Transfers[i]
+	}
+	return transfers, nil
 }
 
 // GetBridgeParams gets the bridge module parameters
@@ -416,7 +421,7 @@ func (c *Client) GetBridgeParams(ctx context.Context) (*bridgepb.ChainConfig, er
 		return nil, fmt.Errorf("failed to get bridge params: %w", err)
 	}
 
-	return resp.Config, nil
+	return &resp.Config, nil
 }
 
 // GetBridgeStats gets bridge statistics
@@ -446,5 +451,5 @@ func (c *Client) GetLinkedAddresses(ctx context.Context, address string) (*bridg
 		return nil, fmt.Errorf("failed to get linked addresses: %w", err)
 	}
 
-	return resp.Identity, nil
+	return &resp.Identity, nil
 }

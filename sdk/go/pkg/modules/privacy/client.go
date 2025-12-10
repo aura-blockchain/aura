@@ -37,5 +37,5 @@ func (c *Client) GetParams(ctx context.Context) (*privacypb.Params, error) {
 		return nil, fmt.Errorf("failed to get params: %w", err)
 	}
 
-	return resp.Params, nil
+	return &resp.Params, nil
 }

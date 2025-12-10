@@ -37,5 +37,5 @@ func (c *Client) GetParams(ctx context.Context) (*validatorsecuritypb.ValidatorS
 		return nil, fmt.Errorf("failed to get params: %w", err)
 	}
 
-	return resp.Params, nil
+	return &resp.Params, nil
 }
