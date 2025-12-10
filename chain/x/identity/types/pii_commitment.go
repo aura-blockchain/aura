@@ -129,13 +129,21 @@ Security Model:
 - Erasable: Off-chain data can be deleted for GDPR compliance
 - Auditable: Commitment remains for audit trail after erasure
 
+CRITICAL - Blockchain Determinism:
+- Salt MUST be generated CLIENT-SIDE using crypto/rand
+- Salt is included in the transaction message
+- NEVER generate salt on-chain (breaks consensus)
+- On-chain code only validates and stores the salt
+- All validators must see the same salt value
+
 Data Flow:
-1. User Registration:
+1. User Registration (CLIENT-SIDE):
    - User provides PII (name, email, etc.)
-   - System generates random salt
-   - Computes commitment = SHA-256(sorted_pii_attributes || salt)
-   - Stores PII in off-chain storage (IPFS, secure database, etc.)
-   - Stores commitment + salt + off-chain-reference on blockchain
+   - CLIENT generates random salt using crypto/rand
+   - CLIENT computes commitment = SHA-256(sorted_pii_attributes || salt)
+   - CLIENT stores PII in off-chain storage (IPFS, secure database, etc.)
+   - CLIENT submits transaction with commitment + salt + off-chain-reference
+   - BLOCKCHAIN validates and stores commitment + salt + metadata
 
 2. PII Verification:
    - User provides PII data for verification

@@ -66,7 +66,12 @@ func (k Keeper) InitializeRandomSource(
 
 // Note: GetRandomSource is now implemented in keeper.go using KV store
 
-// GenerateRandomBytesFromSource generates random bytes from a specific source
+// GenerateRandomBytesFromSource generates random bytes from a registered random source.
+//
+// WARNING: This function uses crypto/rand which is NON-DETERMINISTIC and will break
+// consensus if called from a message handler (MsgServer method).
+//
+// DO NOT call this from message handlers. This is for client-side utilities only.
 func (k Keeper) GenerateRandomBytesFromSource(
 	ctx context.Context,
 	sourceID string,
@@ -82,6 +87,7 @@ func (k Keeper) GenerateRandomBytesFromSource(
 	}
 
 	// Generate random bytes using the system's crypto/rand
+	// WARNING: Non-deterministic - see function documentation
 	randomBytes := make([]byte, length)
 	_, err = rand.Read(randomBytes)
 	if err != nil {

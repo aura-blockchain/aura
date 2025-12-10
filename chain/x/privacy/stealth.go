@@ -1,5 +1,42 @@
 package privacy
 
+// This file implements OFF-CHAIN stealth address utilities for privacy-preserving payments.
+//
+// IMPORTANT: All key and address generation functions are OFF-CHAIN utilities that use
+// crypto/rand. NEVER call from consensus code.
+//
+// Stealth addresses provide payment privacy by generating unique one-time addresses
+// for each transaction. Based on the CryptoNote/Monero protocol:
+//
+// - Recipient publishes permanent view and spend public keys
+// - Sender generates ephemeral key to derive one-time address for recipient
+// - Only recipient can detect payments (using view key)
+// - Only recipient can spend received funds (using spend key)
+// - Each payment uses a unique one-time address unlinkable to recipient's identity
+//
+// Key types:
+// - Spend key: Controls spending of received funds (secret)
+// - View key: Allows scanning blockchain for incoming payments (can be shared)
+//
+// Supported curves:
+// - P-256 (NIST secp256r1): Compatible with ECDSA infrastructure
+// - Curve25519: More efficient, EdDSA-compatible, constant-time operations
+//
+// ON-CHAIN VS OFF-CHAIN SEPARATION:
+// - OFF-CHAIN: GenerateStealthKeys(), GenerateStealthAddress(), GenerateKeys(),
+//   CreateOneTimeAddress(), DerivePrivateKey()
+//   These functions generate cryptographic keys and addresses using crypto/rand.
+//   Used by wallet software for local key management and address derivation.
+//
+// - ON-CHAIN: ScanForStealthPayments(), ScanTransaction()
+//   These are deterministic scanning functions that can be used off-chain or in queries.
+//   They don't use randomness - just derive and compare addresses.
+//   Message handlers store one-time addresses as regular addresses without special handling.
+//
+// All key generation and address derivation happens OFF-CHAIN in wallet software.
+// The blockchain only sees one-time addresses that appear as random, unlinkable addresses.
+// Scanning for incoming payments is done OFF-CHAIN by wallet software.
+
 import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
