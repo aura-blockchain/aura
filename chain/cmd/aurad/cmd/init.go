@@ -16,6 +16,7 @@ import (
 	"time"
 
 	sdkmath "cosmossdk.io/math"
+	"github.com/cometbft/cometbft/p2p"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cosmosed25519 "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
@@ -155,6 +156,12 @@ func initNode(cmd *cobra.Command, args []string) error {
 	keyInfo, err := createPrivateValidatorWithMnemonic(homeDir, recover, skipConfirmation)
 	if err != nil {
 		return fmt.Errorf("failed to create private validator: %w", err)
+	}
+
+	// Generate node key for P2P networking (required for peer discovery)
+	nodeKeyFile := filepath.Join(homeDir, "config", "node_key.json")
+	if _, err := p2p.LoadOrGenNodeKey(nodeKeyFile); err != nil {
+		return fmt.Errorf("failed to generate node key: %w", err)
 	}
 
 	// Create config files (genesis will include validator with proper addresses)
@@ -801,6 +808,12 @@ max_num_outbound_peers = 10
 
 # Set true to enable the peer-exchange reactor
 pex = true
+
+# Toggle to disable guard against peers connecting from the same ip
+allow_duplicate_ip = true
+
+# Set false to allow non-routable addresses (for local testing)
+addr_book_strict = false
 
 #######################################################################
 ###                       Consensus Configuration                   ###
