@@ -3,16 +3,7 @@ package keeper
 import (
 	"sort"
 	"testing"
-	"time"
 
-	"cosmossdk.io/log"
-	"cosmossdk.io/store"
-	storetypes "cosmossdk.io/store/types"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	dbm "github.com/cosmos/cosmos-db"
-	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 
@@ -22,28 +13,11 @@ import (
 // TestDeterministicReputationIteration verifies that PruneLowReputationPeersBatched
 // produces consistent results regardless of internal iteration order
 func TestDeterministicReputationIteration(t *testing.T) {
-	// Create keeper with in-memory store
-	storeKey := storetypes.NewKVStoreKey(types.StoreKey)
-	db := dbm.NewMemDB()
-	stateStore := store.NewCommitMultiStore(db, log.NewNopLogger(), nil)
-	stateStore.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, db)
-	require.NoError(t, stateStore.LoadLatestVersion())
-
-	registry := codectypes.NewInterfaceRegistry()
-	cdc := codec.NewProtoCodec(registry)
-
-	keeper := NewKeeper(
-		cdc,
-		runtime.NewKVStoreService(storeKey),
-		"authority",
-		log.NewNopLogger(),
-	)
-
-	ctx := sdk.NewContext(stateStore, cmtproto.Header{Time: time.Now()}, false, log.NewNopLogger())
+	k, ctx := NewTestKeeperWithContext(t)
 
 	// Set params
 	params := types.DefaultParams()
-	require.NoError(t, keeper.SetParams(ctx, *params))
+	require.NoError(t, k.SetParams(ctx, *params))
 
 	// Create test reputations with zero score and high misbehavior
 	// Use peer IDs that would sort differently than insertion order
