@@ -75,7 +75,7 @@ func (suite *InvariantsTestSuite) TestRoleConsistencyInvariant() {
 
 	msg, broken = inv(ctx)
 	suite.True(broken, "role with nil created_at should break invariant")
-	suite.Contains(msg, "nil created_at")
+	suite.Contains(msg, "zero created_at")
 
 	// Clean up
 	suite.deleteRole(ctx, "nil-created")
@@ -92,7 +92,7 @@ func (suite *InvariantsTestSuite) TestRoleConsistencyInvariant() {
 
 	msg, broken = inv(ctx)
 	suite.True(broken, "role with nil updated_at should break invariant")
-	suite.Contains(msg, "nil updated_at")
+	suite.Contains(msg, "zero updated_at")
 }
 
 func (suite *InvariantsTestSuite) TestRoleAssignmentConsistencyInvariant() {
@@ -170,7 +170,7 @@ func (suite *InvariantsTestSuite) TestRoleAssignmentConsistencyInvariant() {
 
 	msg, broken = inv(ctx)
 	suite.True(broken, "assignment with nil timestamp should break invariant")
-	suite.Contains(msg, "nil assigned_at")
+	suite.Contains(msg, "zero assigned_at")
 }
 
 func (suite *InvariantsTestSuite) TestMultisigQuorumInvariant() {
