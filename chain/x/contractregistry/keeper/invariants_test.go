@@ -294,7 +294,7 @@ func (suite *InvariantsTestSuite) TestContractMetadataConsistencyInvariant_NilCr
 	inv := keeper.ContractMetadataConsistencyInvariant(suite.keeper)
 	msg, broken := inv(ctx)
 	suite.True(broken, "contract metadata invariant should fail with nil created_at")
-	suite.Contains(msg, "nil created_at")
+	suite.Contains(msg, "zero created_at")
 }
 
 // CodeHashValidityInvariant tests removed - CodeHash is not part of the current schema.
