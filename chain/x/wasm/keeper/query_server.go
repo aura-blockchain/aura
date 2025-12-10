@@ -58,10 +58,51 @@ func (qs queryServer) Codes(goCtx context.Context, req *types.QueryCodesRequest)
 		return nil, types.ErrUnauthorized.Wrap("empty request")
 	}
 
-	// Note: In production, this would query wasmd keeper with pagination
-	// For now, return stub response
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	ctx.Logger().Info("Codes query called")
+
+	// If wasmd keeper is not available, return empty response
+	if qs.Keeper.wasmKeeper == nil {
+		ctx.Logger().Warn("wasmd keeper is nil")
+		return &types.QueryCodesResponse{
+			CodeInfos:  []types.CodeInfo{},
+			Pagination: &query.PageResponse{},
+		}, nil
+	}
+
+	ctx.Logger().Info("wasmd keeper is available")
+
+	// Initialize with empty slice (not nil) to ensure proper JSON marshaling
+	codeInfos := make([]types.CodeInfo, 0)
+
+	// Iterate through all code IDs by trying sequential IDs
+	// wasmd stores codes with sequential IDs starting from 1
+	maxCodeID := uint64(100) // Reasonable upper limit for initial implementation
+
+	for codeID := uint64(1); codeID <= maxCodeID; codeID++ {
+		wasmCodeInfo := qs.Keeper.wasmKeeper.GetCodeInfo(ctx, codeID)
+		ctx.Logger().Info("GetCodeInfo result", "code_id", codeID, "found", wasmCodeInfo != nil)
+		if wasmCodeInfo == nil {
+			// No more codes found, but continue searching for gaps
+			continue
+		}
+
+		ctx.Logger().Info("Found code", "code_id", codeID, "creator", wasmCodeInfo.Creator)
+
+		// Convert wasmd CodeInfo to our CodeInfo type
+		codeInfo := types.CodeInfo{
+			CodeId:   codeID,
+			Creator:  wasmCodeInfo.Creator,
+			DataHash: wasmCodeInfo.CodeHash,
+		}
+		codeInfos = append(codeInfos, codeInfo)
+	}
+
+	ctx.Logger().Info("query codes result", "count", len(codeInfos))
+
+	// Apply pagination manually (simplified - in production use proper pagination)
 	return &types.QueryCodesResponse{
-		CodeInfos:  []types.CodeInfo{},
+		CodeInfos:  codeInfos,
 		Pagination: &query.PageResponse{},
 	}, nil
 }
