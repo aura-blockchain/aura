@@ -1,0 +1,64 @@
+version: '3.8'
+
+# ============================================================================
+# AURA BLOCK EXPLORER - Testnet Deployment
+# ============================================================================
+#
+# This explorer connects to the running Aura testnet (aura-local-4)
+# and provides a web interface for browsing blocks, transactions, and validators.
+#
+# Prerequisites:
+#   - Aura testnet must be running (docker-compose.testnet.yml)
+#   - Validators accessible on aura-testnet network
+#
+# Quick Start:
+#   docker-compose -f docker-compose.explorer.yml up -d
+#
+# Access:
+#   - Explorer UI: http://localhost:8088
+#   - Chain: aura-local-4
+#   - Connected to: validator-1 (172.26.0.10)
+#
+# ============================================================================
+
+services:
+  # ==========================================================================
+  # Ping.pub Explorer Frontend
+  # ==========================================================================
+  explorer:
+    build:
+      context: ./explorer
+      dockerfile: Dockerfile
+    container_name: aura-block-explorer
+    restart: unless-stopped
+    mem_limit: 512m
+    memswap_limit: 768m
+    cpus: 1
+    ports:
+      - "8088:80"
+    environment:
+      - NODE_ENV=production
+      # Connect to validator-1 RPC and API endpoints
+      - RPC_ENDPOINT=http://172.26.0.10:26657
+      - API_ENDPOINT=http://172.26.0.10:1317
+      - CHAIN_ID=aura-local-4
+    networks:
+      - aura-testnet
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      - "aura.service=block-explorer"
+      - "aura.network=testnet"
+      - "aura.version=1.0.0"
+
+# ============================================================================
+# Network Configuration
+# ============================================================================
+networks:
+  aura-testnet:
+    external: true
+    name: aura_aura-testnet
