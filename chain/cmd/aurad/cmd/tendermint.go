@@ -2,14 +2,15 @@ package cmd
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/privval"
 
+	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/server"
 )
 
 // TendermintCmd returns the CometBFT/Tendermint operations command
@@ -48,12 +49,15 @@ func showNodeIDCmd() *cobra.Command {
 		Short: "Show this node's ID",
 		Long:  "Display the node ID derived from node_key.json in the config directory.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			serverCtx := server.GetServerContextFromCmd(cmd)
-			cfg := serverCtx.Config
+			clientCtx := client.GetClientContextFromCmd(cmd)
+			homeDir := clientCtx.HomeDir
 
-			nodeKey, err := p2p.LoadNodeKey(cfg.NodeKeyFile())
+			// Construct the path to node_key.json
+			nodeKeyFile := filepath.Join(homeDir, "config", "node_key.json")
+
+			nodeKey, err := p2p.LoadNodeKey(nodeKeyFile)
 			if err != nil {
-				return fmt.Errorf("failed to load node key: %w", err)
+				return fmt.Errorf("failed to load node key from %s: %w", nodeKeyFile, err)
 			}
 
 			fmt.Println(nodeKey.ID())
@@ -71,10 +75,10 @@ func showValidatorCmd() *cobra.Command {
 		Short: "Show this node's validator public key",
 		Long:  "Display the validator consensus public key from priv_validator_key.json.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			serverCtx := server.GetServerContextFromCmd(cmd)
-			cfg := serverCtx.Config
+			clientCtx := client.GetClientContextFromCmd(cmd)
+			homeDir := clientCtx.HomeDir
 
-			pvKeyFile := cfg.PrivValidatorKeyFile()
+			pvKeyFile := filepath.Join(homeDir, "config", "priv_validator_key.json")
 			privValidator := privval.LoadFilePV(pvKeyFile, "")
 
 			valPubKey, err := privValidator.GetPubKey()
@@ -100,10 +104,10 @@ func showAddressCmd() *cobra.Command {
 		Short: "Show this node's validator consensus address",
 		Long:  "Display the validator consensus address derived from the validator public key.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			serverCtx := server.GetServerContextFromCmd(cmd)
-			cfg := serverCtx.Config
+			clientCtx := client.GetClientContextFromCmd(cmd)
+			homeDir := clientCtx.HomeDir
 
-			pvKeyFile := cfg.PrivValidatorKeyFile()
+			pvKeyFile := filepath.Join(homeDir, "config", "priv_validator_key.json")
 			privValidator := privval.LoadFilePV(pvKeyFile, "")
 
 			valPubKey, err := privValidator.GetPubKey()
