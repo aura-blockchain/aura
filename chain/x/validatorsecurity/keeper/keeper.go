@@ -251,7 +251,9 @@ func (k Keeper) HasValidatorSecurityInfo(ctx context.Context, validatorAddr stri
 	return store.Has(key)
 }
 
-// GetAllValidators returns all validator security info
+// GetAllValidators returns all validator security info in deterministic order.
+// Results are ordered lexicographically by validator address to ensure
+// consensus determinism across all nodes.
 func (k Keeper) GetAllValidators(ctx context.Context) []types.ValidatorSecurityInfo {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	store := k.getStore(ctx)
@@ -268,6 +270,9 @@ func (k Keeper) GetAllValidators(ctx context.Context) []types.ValidatorSecurityI
 		validators = append(validators, info)
 	}
 
+	// KVStorePrefixIterator already returns keys in lexicographic order,
+	// which provides deterministic ordering by validator address.
+	// No additional sorting needed as the iteration order IS the sorted order.
 	return validators
 }
 

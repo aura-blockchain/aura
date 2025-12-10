@@ -23,37 +23,36 @@ type RateLimiter struct {
 	windowStart      time.Time     // Current window start
 }
 
-// NewRateLimiter creates a new rate limiter
-func NewRateLimiter(maxRate, burstSize uint64, windowDuration time.Duration) *RateLimiter {
-	now := time.Now()
+// NewRateLimiter creates a new rate limiter.
+// currentTime must be ctx.BlockTime() from Cosmos SDK context for deterministic consensus.
+func NewRateLimiter(maxRate, burstSize uint64, windowDuration time.Duration, currentTime time.Time) *RateLimiter {
 	return &RateLimiter{
 		maxRate:        maxRate,
 		burstSize:      burstSize,
 		tokens:         burstSize,
-		lastRefill:     now,
+		lastRefill:     currentTime,
 		windowDuration: windowDuration,
-		windowStart:    now,
+		windowStart:    currentTime,
 	}
 }
 
-// Allow checks if a request should be allowed
-func (rl *RateLimiter) Allow() bool {
+// Allow checks if a request should be allowed.
+// currentTime must be ctx.BlockTime() from Cosmos SDK context for deterministic consensus.
+func (rl *RateLimiter) Allow(currentTime time.Time) bool {
 	rl.mu.Lock()
 	defer rl.mu.Unlock()
 
-	now := time.Now()
-
 	// Refill tokens based on elapsed time
-	elapsed := now.Sub(rl.lastRefill)
+	elapsed := currentTime.Sub(rl.lastRefill)
 	tokensToAdd := uint64(elapsed.Seconds() * float64(rl.maxRate))
 	if tokensToAdd > 0 {
 		rl.tokens = min(rl.tokens+tokensToAdd, rl.burstSize)
-		rl.lastRefill = now
+		rl.lastRefill = currentTime
 	}
 
 	// Check window-based rate limiting
-	if now.Sub(rl.windowStart) > rl.windowDuration {
-		rl.windowStart = now
+	if currentTime.Sub(rl.windowStart) > rl.windowDuration {
+		rl.windowStart = currentTime
 		rl.requestsInWindow = 0
 	}
 
@@ -67,15 +66,15 @@ func (rl *RateLimiter) Allow() bool {
 	return false
 }
 
-// Reset resets the rate limiter
-func (rl *RateLimiter) Reset() {
+// Reset resets the rate limiter.
+// currentTime must be ctx.BlockTime() from Cosmos SDK context for deterministic consensus.
+func (rl *RateLimiter) Reset(currentTime time.Time) {
 	rl.mu.Lock()
 	defer rl.mu.Unlock()
 
-	now := time.Now()
 	rl.tokens = rl.burstSize
-	rl.lastRefill = now
-	rl.windowStart = now
+	rl.lastRefill = currentTime
+	rl.windowStart = currentTime
 	rl.requestsInWindow = 0
 }
 
@@ -90,6 +89,7 @@ func (k Keeper) GetRateLimiter(ctx sdk.Context, peerID string) *RateLimiter {
 		params.RateLimit.MaxRequestsPerSecond,
 		params.RateLimit.BurstSize,
 		params.RateLimit.WindowDuration,
+		ctx.BlockTime(),
 	)
 	k.rateLimiters[peerID] = limiter
 	return limiter
@@ -106,7 +106,7 @@ func (k Keeper) CheckRateLimit(ctx sdk.Context, peerID string) error {
 	limiter := k.GetRateLimiter(ctx, peerID)
 
 	// Check if request is allowed
-	if !limiter.Allow() {
+	if !limiter.Allow(ctx.BlockTime()) {
 		// Rate limit exceeded, increment violation count
 		params, _ := k.GetParams(ctx)
 
@@ -159,40 +159,41 @@ type BandwidthTracker struct {
 	limit       uint64 // Bytes per second
 }
 
-// NewBandwidthTracker creates a new bandwidth tracker
-func NewBandwidthTracker(limit uint64, windowSize time.Duration) *BandwidthTracker {
+// NewBandwidthTracker creates a new bandwidth tracker.
+// currentTime must be ctx.BlockTime() from Cosmos SDK context for deterministic consensus.
+func NewBandwidthTracker(limit uint64, windowSize time.Duration, currentTime time.Time) *BandwidthTracker {
 	return &BandwidthTracker{
-		windowStart: time.Now(),
+		windowStart: currentTime,
 		windowSize:  windowSize,
 		limit:       limit,
 	}
 }
 
-// RecordSent records bytes sent
-func (bt *BandwidthTracker) RecordSent(bytes uint64) {
+// RecordSent records bytes sent.
+// currentTime must be ctx.BlockTime() from Cosmos SDK context for deterministic consensus.
+func (bt *BandwidthTracker) RecordSent(bytes uint64, currentTime time.Time) {
 	bt.mu.Lock()
 	defer bt.mu.Unlock()
 
-	now := time.Now()
-	if now.Sub(bt.windowStart) > bt.windowSize {
+	if currentTime.Sub(bt.windowStart) > bt.windowSize {
 		bt.bytesSent = 0
 		bt.bytesRecv = 0
-		bt.windowStart = now
+		bt.windowStart = currentTime
 	}
 
 	bt.bytesSent += bytes
 }
 
-// RecordReceived records bytes received
-func (bt *BandwidthTracker) RecordReceived(bytes uint64) {
+// RecordReceived records bytes received.
+// currentTime must be ctx.BlockTime() from Cosmos SDK context for deterministic consensus.
+func (bt *BandwidthTracker) RecordReceived(bytes uint64, currentTime time.Time) {
 	bt.mu.Lock()
 	defer bt.mu.Unlock()
 
-	now := time.Now()
-	if now.Sub(bt.windowStart) > bt.windowSize {
+	if currentTime.Sub(bt.windowStart) > bt.windowSize {
 		bt.bytesSent = 0
 		bt.bytesRecv = 0
-		bt.windowStart = now
+		bt.windowStart = currentTime
 	}
 
 	bt.bytesRecv += bytes
@@ -225,6 +226,7 @@ func (k Keeper) GetBandwidthTracker(ctx sdk.Context, peerID string) *BandwidthTr
 	tracker := NewBandwidthTracker(
 		params.RateLimit.BandwidthLimitPerPeer,
 		params.RateLimit.WindowDuration,
+		ctx.BlockTime(),
 	)
 	k.bandwidthTrackers[peerID] = tracker
 	return tracker
@@ -235,9 +237,9 @@ func (k Keeper) CheckBandwidthLimit(ctx sdk.Context, peerID string, bytes uint64
 	tracker := k.GetBandwidthTracker(ctx, peerID)
 
 	if isSending {
-		tracker.RecordSent(bytes)
+		tracker.RecordSent(bytes, ctx.BlockTime())
 	} else {
-		tracker.RecordReceived(bytes)
+		tracker.RecordReceived(bytes, ctx.BlockTime())
 	}
 
 	if !tracker.CheckLimit() {

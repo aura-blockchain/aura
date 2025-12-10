@@ -205,7 +205,9 @@ func (k Keeper) TombstoneValidator(ctx context.Context, validatorAddr string) er
 	return nil
 }
 
-// GetJailedValidators returns all jailed validators
+// GetJailedValidators returns all jailed validators in deterministic order.
+// Results are ordered lexicographically by validator address to ensure
+// consensus determinism across all nodes.
 func (k Keeper) GetJailedValidators(ctx context.Context) []types.ValidatorSecurityInfo {
 	store := k.getStore(ctx)
 	iterator := storetypes.KVStorePrefixIterator(store, types.JailedValidatorsKey)
@@ -222,10 +224,15 @@ func (k Keeper) GetJailedValidators(ctx context.Context) []types.ValidatorSecuri
 		}
 	}
 
+	// KVStorePrefixIterator already returns keys in lexicographic order,
+	// which provides deterministic ordering by validator address.
+	// No additional sorting needed as the iteration order IS the sorted order.
 	return validators
 }
 
-// GetTombstonedValidators returns all tombstoned validators
+// GetTombstonedValidators returns all tombstoned validators in deterministic order.
+// Results are ordered lexicographically by validator address to ensure
+// consensus determinism across all nodes.
 func (k Keeper) GetTombstonedValidators(ctx context.Context) []types.ValidatorSecurityInfo {
 	store := k.getStore(ctx)
 	iterator := storetypes.KVStorePrefixIterator(store, types.TombstonedValidatorsKey)
@@ -242,6 +249,9 @@ func (k Keeper) GetTombstonedValidators(ctx context.Context) []types.ValidatorSe
 		}
 	}
 
+	// KVStorePrefixIterator already returns keys in lexicographic order,
+	// which provides deterministic ordering by validator address.
+	// No additional sorting needed as the iteration order IS the sorted order.
 	return validators
 }
 

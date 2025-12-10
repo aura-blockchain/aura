@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"fmt"
+	"sort"
 )
 
 // GenerateRevocationMerkleProof generates a Merkle proof for a revoked VC
@@ -88,9 +89,18 @@ func (k *Keeper) BuildMerkleTree(ctx context.Context) ([]byte, error) {
 		return []byte{}, nil
 	}
 
-	// Build leaves
-	leaves := make([][]byte, 0, len(allRevocations))
+	// Extract vcIDs and sort them for deterministic ordering
+	// CRITICAL: Map iteration is non-deterministic in Go
+	// Must sort to ensure all validators compute the same Merkle root
+	vcIDs := make([]string, 0, len(allRevocations))
 	for vcID := range allRevocations {
+		vcIDs = append(vcIDs, vcID)
+	}
+	sort.Strings(vcIDs)
+
+	// Build leaves in sorted order
+	leaves := make([][]byte, 0, len(vcIDs))
+	for _, vcID := range vcIDs {
 		h := sha256.New()
 		h.Write([]byte(vcID))
 		leaves = append(leaves, h.Sum(nil))

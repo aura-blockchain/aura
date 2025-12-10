@@ -201,7 +201,7 @@ func (suite *KeeperTestSuite) TestRateLimiting() {
 
 	// Exhaust rate limit
 	for i := 0; i < 200; i++ {
-		limiter.Allow()
+		limiter.Allow(suite.ctx.BlockTime())
 	}
 
 	// Should fail now
