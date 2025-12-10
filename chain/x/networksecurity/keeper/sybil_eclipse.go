@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net"
+	"sort"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -74,7 +75,14 @@ func (sd *SybilDetector) AnalyzePeerDistribution(peers []types.PeerInfo) (isSybi
 	}
 
 	// 2. Too many peers from same subnet (>30% from single /24 subnet)
-	for subnet, count := range sd.subnetCounts {
+	// Sort subnets for deterministic iteration order
+	subnets := make([]string, 0, len(sd.subnetCounts))
+	for subnet := range sd.subnetCounts {
+		subnets = append(subnets, subnet)
+	}
+	sort.Strings(subnets)
+	for _, subnet := range subnets {
+		count := sd.subnetCounts[subnet]
 		percentage := float64(count) / float64(totalPeers) * 100
 		if percentage > 30.0 {
 			return true, fmt.Sprintf("suspicious peer concentration: %.1f%% from subnet %s", percentage, subnet)
@@ -82,7 +90,14 @@ func (sd *SybilDetector) AnalyzePeerDistribution(peers []types.PeerInfo) (isSybi
 	}
 
 	// 3. Too many peers from same ASN (>40% from single ASN)
-	for asn, count := range sd.asnCounts {
+	// Sort ASNs for deterministic iteration order
+	asns := make([]uint32, 0, len(sd.asnCounts))
+	for asn := range sd.asnCounts {
+		asns = append(asns, asn)
+	}
+	sort.Slice(asns, func(i, j int) bool { return asns[i] < asns[j] })
+	for _, asn := range asns {
+		count := sd.asnCounts[asn]
 		percentage := float64(count) / float64(totalPeers) * 100
 		if percentage > 40.0 {
 			return true, fmt.Sprintf("suspicious peer concentration: %.1f%% from ASN %d", percentage, asn)
@@ -90,7 +105,14 @@ func (sd *SybilDetector) AnalyzePeerDistribution(peers []types.PeerInfo) (isSybi
 	}
 
 	// 4. Too many peers from same region (>50% from single region)
-	for region, count := range sd.regionCounts {
+	// Sort regions for deterministic iteration order
+	regions := make([]string, 0, len(sd.regionCounts))
+	for region := range sd.regionCounts {
+		regions = append(regions, region)
+	}
+	sort.Strings(regions)
+	for _, region := range regions {
+		count := sd.regionCounts[region]
 		percentage := float64(count) / float64(totalPeers) * 100
 		if percentage > 50.0 {
 			return true, fmt.Sprintf("suspicious peer concentration: %.1f%% from region %s", percentage, region)
@@ -179,7 +201,14 @@ func (ed *EclipseDetector) DetectEclipse(peers []types.PeerInfo, trustedPeers []
 
 	// 3. Check for concentration from single ASN
 	totalPeers := len(peers)
-	for asn, count := range asnCounts {
+	// Sort ASNs for deterministic iteration order
+	asns := make([]uint32, 0, len(asnCounts))
+	for asn := range asnCounts {
+		asns = append(asns, asn)
+	}
+	sort.Slice(asns, func(i, j int) bool { return asns[i] < asns[j] })
+	for _, asn := range asns {
+		count := asnCounts[asn]
 		concentration := float64(count) / float64(totalPeers) * 100
 		if concentration > ed.maxConcentration {
 			return true, fmt.Sprintf("excessive concentration from ASN %d: %.1f%%", asn, concentration)
@@ -197,7 +226,14 @@ func (ed *EclipseDetector) DetectEclipse(peers []types.PeerInfo, trustedPeers []
 
 	// Only check subnet concentration if we have valid IP data
 	if len(ipCounts) > 0 {
-		for subnet, count := range ipCounts {
+		// Sort subnets for deterministic iteration order
+		subnets := make([]string, 0, len(ipCounts))
+		for subnet := range ipCounts {
+			subnets = append(subnets, subnet)
+		}
+		sort.Strings(subnets)
+		for _, subnet := range subnets {
+			count := ipCounts[subnet]
 			concentration := float64(count) / float64(totalPeers) * 100
 			if concentration > 30.0 { // Max 30% from single /24 subnet
 				return true, fmt.Sprintf("excessive concentration from subnet %s: %.1f%%", subnet, concentration)
