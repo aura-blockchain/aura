@@ -79,12 +79,8 @@ func (suite *IntegrationTestSuite) SetupTest() {
 	// Wire contract registry
 	suite.wasmKeeper.SetContractRegistry(suite.registryKeeper)
 
-	// Reset global state
-	circuitBreaker.mu.Lock()
-	circuitBreaker.state = "closed"
-	circuitBreaker.failureCount = 0
-	circuitBreaker.consecutiveSuccess = 0
-	circuitBreaker.mu.Unlock()
+	// Reset circuit breaker (now uses KV store)
+	suite.wasmKeeper.ResetCircuitBreaker(suite.ctx)
 
 	valCache.mu.Lock()
 	valCache.entries = make(map[string]*validationCacheEntry)
@@ -392,9 +388,13 @@ func (suite *IntegrationTestSuite) TestCircuitBreaker_GracefulDegradation() {
 	require.NoError(suite.T(), err)
 
 	// Open circuit breaker (simulating registry failure)
-	circuitBreaker.mu.Lock()
-	circuitBreaker.state = "open"
-	circuitBreaker.mu.Unlock()
+	data := circuitBreakerData{
+		FailureCount:      circuitBreakerThreshold,
+		LastFailure:       suite.ctx.BlockTime(),
+		State:             circuitBreakerStateOpen,
+		ConsecutiveSuccess: 0,
+	}
+	suite.wasmKeeper.setCircuitBreakerState(suite.ctx, data)
 
 	// Execution should still work (permissive mode)
 	err = suite.wasmKeeper.BeforeExecuteHook(suite.ctx, contractAddr, sender)
@@ -404,7 +404,7 @@ func (suite *IntegrationTestSuite) TestCircuitBreaker_GracefulDegradation() {
 
 	// Reset circuit breaker
 	suite.wasmKeeper.ResetCircuitBreaker(suite.ctx)
-	require.Equal(suite.T(), "closed", circuitBreaker.getState())
+	require.Equal(suite.T(), circuitBreakerStateClosed, suite.wasmKeeper.getCircuitBreakerStateString(suite.ctx))
 }
 
 // ============================================================================

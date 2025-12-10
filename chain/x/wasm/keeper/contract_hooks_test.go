@@ -458,9 +458,13 @@ func (suite *ContractHooksTestSuite) TestBeforeExecuteHook_NoRegistry() {
 
 func (suite *ContractHooksTestSuite) TestBeforeExecuteHook_CircuitBreakerOpen() {
 	// Open circuit breaker
-	circuitBreaker.mu.Lock()
-	circuitBreaker.state = "open"
-	circuitBreaker.mu.Unlock()
+	data := circuitBreakerData{
+		FailureCount:      circuitBreakerThreshold,
+		LastFailure:       suite.ctx.BlockTime(),
+		State:             circuitBreakerStateOpen,
+		ConsecutiveSuccess: 0,
+	}
+	suite.wasmKeeper.setCircuitBreakerState(suite.ctx, data)
 
 	err := suite.wasmKeeper.BeforeExecuteHook(
 		suite.ctx,
@@ -611,28 +615,29 @@ func (suite *ContractHooksTestSuite) TestCircuitBreaker_StateTransitions() {
 	ctx := suite.ctx
 
 	// Start in closed state
-	require.Equal(suite.T(), "closed", circuitBreaker.getState())
+	require.Equal(suite.T(), circuitBreakerStateClosed, suite.wasmKeeper.getCircuitBreakerStateString(ctx))
 
 	// Record failures to open circuit
 	for i := 0; i < circuitBreakerThreshold; i++ {
-		circuitBreaker.recordFailure(ctx)
+		suite.wasmKeeper.recordCircuitBreakerFailure(ctx)
 	}
-	require.Equal(suite.T(), "open", circuitBreaker.getState())
+	require.Equal(suite.T(), circuitBreakerStateOpen, suite.wasmKeeper.getCircuitBreakerStateString(ctx))
 
-	// Wait for timeout and attempt half-open
-	circuitBreaker.mu.Lock()
-	circuitBreaker.lastFailure = time.Now().Add(-time.Duration(circuitBreakerTimeout+1) * time.Second)
-	circuitBreaker.mu.Unlock()
+	// Wait for timeout by setting last failure time in the past
+	data := suite.wasmKeeper.getCircuitBreakerState(ctx)
+	data.LastFailure = ctx.BlockTime().Add(-time.Duration(circuitBreakerTimeout+1) * time.Second)
+	suite.wasmKeeper.setCircuitBreakerState(ctx, data)
 
 	// Should not skip (transitions to half-open)
-	shouldSkip := circuitBreaker.shouldSkip(ctx)
+	shouldSkip := suite.wasmKeeper.shouldSkipCircuitBreaker(ctx)
 	require.False(suite.T(), shouldSkip)
+	require.Equal(suite.T(), circuitBreakerStateHalfOpen, suite.wasmKeeper.getCircuitBreakerStateString(ctx))
 
 	// Record successes to close circuit
 	for i := 0; i < circuitBreakerSuccessThreshold; i++ {
-		circuitBreaker.recordSuccess()
+		suite.wasmKeeper.recordCircuitBreakerSuccess(ctx)
 	}
-	require.Equal(suite.T(), "closed", circuitBreaker.getState())
+	require.Equal(suite.T(), circuitBreakerStateClosed, suite.wasmKeeper.getCircuitBreakerStateString(ctx))
 }
 
 func (suite *ContractHooksTestSuite) TestCircuitBreaker_ResetManually() {
@@ -640,13 +645,13 @@ func (suite *ContractHooksTestSuite) TestCircuitBreaker_ResetManually() {
 
 	// Open circuit breaker
 	for i := 0; i < circuitBreakerThreshold; i++ {
-		circuitBreaker.recordFailure(ctx)
+		suite.wasmKeeper.recordCircuitBreakerFailure(ctx)
 	}
-	require.Equal(suite.T(), "open", circuitBreaker.getState())
+	require.Equal(suite.T(), circuitBreakerStateOpen, suite.wasmKeeper.getCircuitBreakerStateString(ctx))
 
 	// Reset manually
 	suite.wasmKeeper.ResetCircuitBreaker(ctx)
-	require.Equal(suite.T(), "closed", circuitBreaker.getState())
+	require.Equal(suite.T(), circuitBreakerStateClosed, suite.wasmKeeper.getCircuitBreakerStateString(ctx))
 }
 
 // ============================================================================
