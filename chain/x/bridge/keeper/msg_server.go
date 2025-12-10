@@ -756,7 +756,22 @@ func (ms msgServer) LinkAddress(goCtx context.Context, msg *bridgepb.MsgLinkAddr
 	}
 
 	// All security checks passed - create or update the shared identity
-	linked := map[string]string{"aura": msg.AuraAddress}
+	// Get existing identity to merge with (if any)
+	existingIdentity, found := ms.Keeper.GetSharedIdentity(ctx, msg.AuraAddress)
+
+	// Start with existing linked addresses, or create new map
+	linked := make(map[string]string)
+	if found && existingIdentity.LinkedAddresses != nil {
+		// Copy existing links
+		for chain, addr := range existingIdentity.LinkedAddresses {
+			linked[chain] = addr
+		}
+	}
+
+	// Always include aura address
+	linked["aura"] = msg.AuraAddress
+
+	// Update with new addresses (if provided)
 	if msg.PawAddress != "" {
 		linked["paw"] = msg.PawAddress
 	}
@@ -764,11 +779,15 @@ func (ms msgServer) LinkAddress(goCtx context.Context, msg *bridgepb.MsgLinkAddr
 		linked["xai"] = msg.XaiAddress
 	}
 
+	// Merge verification status (preserve existing verifications)
+	verifiedPaw := (found && existingIdentity.VerifiedPaw) || (msg.PawAddress != "" && len(msg.PawSignature) > 0)
+	verifiedXai := (found && existingIdentity.VerifiedXai) || (msg.XaiAddress != "" && len(msg.XaiSignature) > 0)
+
 	identity := &bridgepb.SharedIdentity{
 		Address:         msg.AuraAddress,
 		VerifiedAura:    true, // Always true since signer verification passed
-		VerifiedPaw:     msg.PawAddress != "" && len(msg.PawSignature) > 0,
-		VerifiedXai:     msg.XaiAddress != "" && len(msg.XaiSignature) > 0,
+		VerifiedPaw:     verifiedPaw,
+		VerifiedXai:     verifiedXai,
 		LinkedAddresses: linked,
 		VerifiedAt:      ctx.BlockTime(),
 	}
