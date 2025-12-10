@@ -2,6 +2,7 @@ package types
 
 import (
 	"fmt"
+	"sort"
 
 	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -277,7 +278,14 @@ func ValidateGenesis(g *GenesisState) error {
 	}
 
 	// Validate category-specific parameters
-	for category, params := range g.Params.CategoryParams {
+	// CONSENSUS-CRITICAL: Sort category names for deterministic iteration order
+	categoryNames := make([]string, 0, len(g.Params.CategoryParams))
+	for category := range g.Params.CategoryParams {
+		categoryNames = append(categoryNames, category)
+	}
+	sort.Strings(categoryNames)
+	for _, category := range categoryNames {
+		params := g.Params.CategoryParams[category]
 		if err := validateCategoryParams(category, params); err != nil {
 			return err
 		}

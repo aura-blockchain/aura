@@ -246,11 +246,18 @@ func (k *Keeper) ExportGenesis(ctx context.Context) types.GenesisState {
 		vcRecords = append(vcRecords, &recCopy)
 	}
 
-	// Export revocation records from KV store
+	// Export revocation records from KV store (deterministic ordering)
+	// iterateRevocationRecords returns a map, so we must sort keys before iterating
 	revocationRecords := make([]*types.RevocationRecord, 0)
-	for _, rec := range k.store.iterateRevocationRecords(ctx) {
-		recCopy := rec
-		revocationRecords = append(revocationRecords, &recCopy)
+	revocationData := k.store.iterateRevocationRecords(ctx)
+	revocationVCIDs := make([]string, 0, len(revocationData))
+	for vcID := range revocationData {
+		revocationVCIDs = append(revocationVCIDs, vcID)
+	}
+	sort.Strings(revocationVCIDs)
+	for _, vcID := range revocationVCIDs {
+		rec := revocationData[vcID]
+		revocationRecords = append(revocationRecords, &rec)
 	}
 
 	// Export revocation list from KV store

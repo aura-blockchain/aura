@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"sort"
 
 	storetypes "cosmossdk.io/store/types"
 	"github.com/aequitas/aura/chain/x/vcregistry/params"
@@ -321,8 +322,16 @@ func (k *Keeper) emitMerkleRootUpdatedEvent(ctx context.Context, oldRoot, newRoo
 		fmt.Sprintf("%d", revocationList.TotalRevocations),
 		fmt.Sprintf("%d", sdkCtx.BlockHeight()),
 	)
+	// Sort keys for deterministic iteration order (consensus-critical)
+	keys := make([]string, 0, len(attrs))
+	for key := range attrs {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
 	eventAttrs := make([]sdk.Attribute, 0, len(attrs))
-	for key, value := range attrs {
+	for _, key := range keys {
+		value := attrs[key]
 		if value == "" {
 			continue
 		}
@@ -786,20 +795,18 @@ func (k *Keeper) IncrementMintCount(ctx context.Context, holderAddress string) {
 	k.store.setMintCount(sdkCtx, holderAddress, dayTimestamp, count+1)
 }
 
-// CleanupOldMintCounts removes old mint count entries (older than 7 days)
+// CleanupOldMintCounts removes old mint count entries (older than 7 days).
+// This function is consensus-safe: it uses deterministic iteration order
+// to ensure all validators produce the same state changes.
 func (k *Keeper) CleanupOldMintCounts(ctx context.Context) {
 	k.requireStore()
 
-	cutoff := (k.getCurrentTime(ctx) / 86400) - 7
+	cutoffDay := (k.getCurrentTime(ctx) / 86400) - 7
 	sdkCtx := k.sdkContext(ctx)
 
-	for addr, counts := range k.store.iterateMintCounts(sdkCtx) {
-		for day := range counts {
-			if day < cutoff {
-				k.store.deleteMintCount(sdkCtx, addr, day)
-			}
-		}
-	}
+	// Use the deterministic cleanup method that iterates the KVStore
+	// in lexicographic order (deterministic across all validators)
+	k.store.cleanupOldMintCountsDeterministic(sdkCtx, cutoffDay)
 }
 
 // ============================
