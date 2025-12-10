@@ -84,7 +84,7 @@ func (suite *KeeperTestSuite) TestPeerInfo() {
 		PeerId:          "peer1",
 		IpAddress:       "192.168.1.1",
 		ConnectionType:  "inbound",
-		ConnectedAt:     timestamppb.New(suite.ctx.BlockTime()),
+		ConnectedAt:     suite.ctx.BlockTime(),
 		ReputationScore: 100,
 		IsTrusted:       false,
 		Asn:             12345,
@@ -112,7 +112,7 @@ func (suite *KeeperTestSuite) TestTrustedPeers() {
 		Address:     "192.168.1.100",
 		PublicKey:   []byte("publickey"),
 		Description: "Test trusted peer",
-		AddedAt:     timestamppb.New(suite.ctx.BlockTime()),
+		AddedAt:     suite.ctx.BlockTime(),
 	}
 
 	// Add trusted peer
@@ -216,7 +216,7 @@ func (suite *KeeperTestSuite) TestConnectionManagement() {
 		PeerId:          "peer1",
 		IpAddress:       "192.168.1.1",
 		ConnectionType:  "inbound",
-		ConnectedAt:     timestamppb.New(suite.ctx.BlockTime()),
+		ConnectedAt:     suite.ctx.BlockTime(),
 		ReputationScore: 100,
 		Asn:             12345,
 	}
