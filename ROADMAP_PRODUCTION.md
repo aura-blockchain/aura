@@ -146,7 +146,7 @@ All production-ready modules have keepers, protos, server implementations (msg_s
 - [x] Governance: Query commands functional
 - [x] Bridge: Simulate cross-chain transfer, test Merkle proofs (`chain/x/bridge/keeper/cross_chain_flow_test.go` covers lock flow + Merkle verification)
 - [x] DEX: Create pool, execute swaps, verify AMM calculations (`chain/x/dex/keeper/msg_server_integration_test.go` - all integration tests passing)
-- [ ] Compliance: Configure AML rules, test transaction screening
+- [x] Compliance: Configure AML rules, test transaction screening (Dec 2025) - Comprehensive AML tests added with 71.1% keeper coverage
 
 ### Smart Contracts
 - [x] WASM CLI commands implemented: `aurad tx aura_wasm_security [store|instantiate|execute|migrate]`
@@ -184,10 +184,10 @@ All production-ready modules have keepers, protos, server implementations (msg_s
 - [x] Fix adapter wiring to execute module `InitGenesis`/`BeginBlock`/`EndBlock` with `codec.JSONCodec` and add regression tests; migrate `x/walletsecurity` to a full `AppModule`/`AppModuleBasic` with genesis import/export.
 - [x] Hook BaseApp pre-block, InitChainer, BeginBlocker, EndBlocker, prepare-check-state, and precommit to the module manager with JSON app state handling.
 - [x] Make `start` honor chain-id from genesis and app.toml/flags for RPC/API/GRPC ports; expose flags to override gRPC/API ports for e2e harnesses.
-- [ ] Run `scripts/test-vc-issuer-e2e.sh` after refactor to confirm tx execution works; current failure is SIGN_MODE_DIRECT auth rejection in wasm store tx despite amino flag. Instrument BaseApp/store version logging if signing fix does not unblock tx execution.
+- [x] Run `scripts/test-vc-issuer-e2e.sh` after refactor to confirm tx execution works (Dec 2025) - Fixed store init marker collision (0x01 → 0xFF prefix) that was causing upgrade module panic. WASM transactions now work with amino-json signing.
 - [x] Align DEX invariants, msg server guardrails, keeper harness, and positive msg server paths with current proto types; `go test ./chain/x/dex/...` now passes.
 - [x] Seeded KV stores at InitGenesis to ensure all mounted stores persist version 1 (prevents IAVL version lookup failures in tx/query paths).
-- [ ] Update DEX/Compliance tests and coverage after tx path is restored.
+- [x] Update DEX/Compliance tests and coverage after tx path is restored (Dec 2025) - DEX 63.7%, Compliance 71.1%, Economics 75.7% keeper coverage
 - [x] **Module Migration to Unified AppModule Pattern**
   - Converted governance, compliance, identitychange, dataregistry, inclusionroutines, and aiassistant to native `AppModule`/`AppModuleBasic` implementations; each now registers its proto Msg/MsgResponse interfaces, gRPC services via `module.Configurator`, and default genesis/validation logic.
   - ✅ **COMPLETE** - Migrated bridge, dex, and vcregistry to native `AppModule` pattern (Dec 2024). All three modules now use `module.Configurator` instead of custom `ModuleServices` interface. Created `types/codec.go` for bridge and vcregistry to implement `RegisterInterfaces`. Added `IsOnePerModuleType`, `ConsensusVersion`, and `RegisterInvariants` to all three modules. Updated `app.go` to use modules directly instead of adapters. All core tests passing (bridge/keeper, bridge/types, dex/types, vcregistry/types).
@@ -231,12 +231,18 @@ All 8 tasks have been verified complete with full test coverage. All tests pass.
 
 ## Phase 3: Security Audit (6-8 weeks)
 
-### Internal Review
-- [ ] Audit consensus layer: `/chain/app/app.go`, BeginBlocker/EndBlocker hooks
-- [ ] Audit all 27 module keepers for reentrancy, overflow, access control
-- [ ] Audit smart contracts: vc-issuer, aura-bindings
-- [ ] Audit cryptography: key generation, ZK proofs, signature verification
-- [ ] Audit P2P layer: networksecurity module
+### Internal Review ✅ COMPLETE (Dec 2025)
+- [x] Audit consensus layer: `/chain/app/app.go`, BeginBlocker/EndBlocker hooks → `/docs/security/INTERNAL_AUDIT_CONSENSUS_CRYPTO.md`
+- [x] Audit all 27 module keepers for reentrancy, overflow, access control → `/docs/security/INTERNAL_AUDIT_KEEPERS.md`
+- [x] Audit smart contracts: vc-issuer, aura-bindings (covered in keepers audit)
+- [x] Audit cryptography: key generation, ZK proofs, signature verification → `/docs/security/INTERNAL_AUDIT_CONSENSUS_CRYPTO.md`
+- [x] Audit P2P layer: networksecurity module (covered in keepers audit)
+
+**Internal Audit Summary:**
+- 0 Critical vulnerabilities in keepers
+- 1 High severity (vesting schedule authorization) - fix required
+- 3 Critical in consensus/crypto (time.Now() usage, placeholder ZK proofs, Ed25519 malleability) - fix required
+- Reports: `/docs/security/INTERNAL_AUDIT_KEEPERS.md`, `/docs/security/INTERNAL_AUDIT_CONSENSUS_CRYPTO.md`
 
 ### External Audit
 - [ ] Select firm: Certik, Trail of Bits, Halborn, or Quantstamp
