@@ -1,0 +1,23 @@
+[{
+  "timestamp": "2025-12-10T01:36:09Z",
+  "chain_id": "aura-local-4",
+  "node": "http://localhost:27657",
+  "deployer": "aura16lhgey7k6fd563ysczdvs3pq86rgyu08gl8wac",
+  "contracts": [
+    {
+      "name": "vc-issuer",
+      "code_id": "6",
+      "address": "aura153r9tg33had5c5s54sqzn879xww2q2egektyqnpj6nwxt8wls70qgxvq7r"
+    },
+    {
+      "name": "schema",
+      "code_id": "7",
+      "address": "aura1f6jlx7d9y408tlzue7r2qcf79plp549n30yzqjajjud8vm7m4vdsmqktx7"
+    },
+    {
+      "name": "binding-tester",
+      "code_id": "8",
+      "address": "aura124tapgv8wsn5t3rv2cvywh4ckkmj6mc6fkya005qjmshnzewwm9q8k7mgq"
+    }
+  ]
+}]
