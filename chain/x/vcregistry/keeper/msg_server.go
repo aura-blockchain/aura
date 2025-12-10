@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -736,8 +737,16 @@ func (m *MsgServer) UpdateDIDDocument(
 func (m *MsgServer) emitEvent(ctx context.Context, eventType string, attrs map[string]string) {
 	sdkCtx := m.keeper.sdkContext(ctx)
 
+	// Sort keys for deterministic iteration order (consensus-critical)
+	keys := make([]string, 0, len(attrs))
+	for key := range attrs {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
 	eventAttrs := make([]sdk.Attribute, 0, len(attrs))
-	for key, value := range attrs {
+	for _, key := range keys {
+		value := attrs[key]
 		if value == "" {
 			continue
 		}

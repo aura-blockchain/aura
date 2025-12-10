@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	"sort"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -104,7 +105,9 @@ func (k *Keeper) validateSequentially(ctx sdk.Context, transactions []types.Tran
 	return results, nil
 }
 
-// OptimizeTransactionOrder optimizes the order of transactions for better execution
+// OptimizeTransactionOrder optimizes the order of transactions for better execution.
+// CONSENSUS-CRITICAL: This function uses deterministic iteration order to ensure
+// all validators produce the same transaction ordering.
 func (k *Keeper) OptimizeTransactionOrder(ctx sdk.Context, transactions []types.Transaction) []types.Transaction {
 	// Sort by nonce for same sender
 	optimized := make([]types.Transaction, len(transactions))
@@ -116,9 +119,19 @@ func (k *Keeper) OptimizeTransactionOrder(ctx sdk.Context, transactions []types.
 		senderGroups[tx.Sender] = append(senderGroups[tx.Sender], tx)
 	}
 
-	// Sort each sender's transactions by nonce
+	// CONSENSUS-CRITICAL: Sort sender addresses for deterministic iteration order
+	// Without sorting, map iteration order is random and can cause different nodes
+	// to produce different transaction orderings, breaking consensus.
+	sortedSenders := make([]string, 0, len(senderGroups))
+	for sender := range senderGroups {
+		sortedSenders = append(sortedSenders, sender)
+	}
+	sort.Strings(sortedSenders)
+
+	// Sort each sender's transactions by nonce, in deterministic sender order
 	result := []types.Transaction{}
-	for _, txs := range senderGroups {
+	for _, sender := range sortedSenders {
+		txs := senderGroups[sender]
 		// Simple bubble sort by nonce
 		for i := 0; i < len(txs); i++ {
 			for j := i + 1; j < len(txs); j++ {

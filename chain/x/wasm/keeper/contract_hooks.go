@@ -696,34 +696,29 @@ func (k Keeper) flushMetricsBuffer(ctx sdk.Context) {
 	}
 }
 
-// updateMetricsSafe safely updates metrics with timeout protection
+// updateMetricsSafe safely updates metrics synchronously
+// CONSENSUS-CRITICAL: This function must be synchronous and deterministic.
+// Previous implementation used goroutines with wall-clock timeouts which caused
+// different validators to produce different state (some timing out, others not).
 func (k Keeper) updateMetricsSafe(ctx sdk.Context, update metricsUpdate) error {
-	// Create a channel for the result
-	done := make(chan error, 1)
-
-	go func() {
-		defer func() {
-			if r := recover(); r != nil {
-				done <- fmt.Errorf("panic: %v", r)
-			}
-		}()
-
-		k.contractRegistry.UpdateMetricsOnExecution(
-			ctx,
-			update.contractAddr,
-			update.gasUsed,
-			update.success,
-		)
-		done <- nil
+	// Wrap in recover to prevent panic from breaking consensus
+	defer func() {
+		if r := recover(); r != nil {
+			k.Logger(ctx).Error("panic during metrics update",
+				"contract", update.contractAddr,
+				"panic", r)
+		}
 	}()
 
-	// Wait with timeout
-	select {
-	case err := <-done:
-		return err
-	case <-time.After(500 * time.Millisecond):
-		return fmt.Errorf("metrics update timeout")
-	}
+	// Synchronous update - no goroutines, no timeouts
+	// All validators will either succeed or fail together
+	k.contractRegistry.UpdateMetricsOnExecution(
+		ctx,
+		update.contractAddr,
+		update.gasUsed,
+		update.success,
+	)
+	return nil
 }
 
 // checkRegistrationRateLimit checks if creator is rate-limited for registration

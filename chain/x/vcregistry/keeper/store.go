@@ -540,6 +540,8 @@ func (s Store) deleteMintCount(ctx context.Context, address string, dayTimestamp
 }
 
 // iterateMintCounts returns map[address]map[day]count
+// NOTE: This function returns a Go map which has non-deterministic iteration order.
+// Do NOT use this for consensus-critical operations. Use cleanupOldMintCountsDeterministic instead.
 func (s Store) iterateMintCounts(ctx context.Context) map[string]map[int64]uint64 {
 	res := make(map[string]map[int64]uint64)
 	it := storetypes.KVStorePrefixIterator(s.kv(ctx), types.UserMintCountKeyPrefix)
@@ -556,6 +558,36 @@ func (s Store) iterateMintCounts(ctx context.Context) map[string]map[int64]uint6
 		res[addr][day] = count
 	}
 	return res
+}
+
+// cleanupOldMintCountsDeterministic removes mint count entries older than the cutoff day.
+// This function is consensus-safe: it uses the KVStore iterator which returns keys in
+// deterministic lexicographic order, and collects keys to delete before modifying state
+// (required because modifying during iteration is undefined behavior).
+func (s Store) cleanupOldMintCountsDeterministic(ctx context.Context, cutoffDay int64) {
+	// First pass: collect keys to delete in deterministic order
+	keysToDelete := make([][]byte, 0)
+	it := storetypes.KVStorePrefixIterator(s.kv(ctx), types.UserMintCountKeyPrefix)
+	defer it.Close()
+
+	for ; it.Valid(); it.Next() {
+		_, day, ok := parseMintKey(it.Key())
+		if !ok {
+			continue
+		}
+		if day < cutoffDay {
+			// Make a copy of the key since iterator keys are reused
+			keyCopy := make([]byte, len(it.Key()))
+			copy(keyCopy, it.Key())
+			keysToDelete = append(keysToDelete, keyCopy)
+		}
+	}
+
+	// Second pass: delete in the same deterministic order we collected
+	store := s.kv(ctx)
+	for _, key := range keysToDelete {
+		store.Delete(key)
+	}
 }
 
 // Metadata storage for generic key-value pairs

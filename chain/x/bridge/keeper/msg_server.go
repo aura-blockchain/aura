@@ -4,6 +4,7 @@ import (
 	context "context"
 	"crypto/sha256"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -88,6 +89,15 @@ func (ms msgServer) verifyRawValidatorSignatures(
 			"no active validators available")
 	}
 
+	// CONSENSUS-CRITICAL: Sort validator addresses for deterministic iteration order
+	// Without sorting, map iteration order is random and can cause different nodes
+	// to validate different signature combinations, breaking consensus.
+	sortedValidatorAddrs := make([]string, 0, len(activeValidatorMap))
+	for addr := range activeValidatorMap {
+		sortedValidatorAddrs = append(sortedValidatorAddrs, addr)
+	}
+	sort.Strings(sortedValidatorAddrs)
+
 	// Track which validators have been matched (prevent counting same validator twice)
 	usedValidators := make(map[string]bool)
 
@@ -97,7 +107,9 @@ func (ms msgServer) verifyRawValidatorSignatures(
 		}
 
 		// Try to match this signature against ACTIVE validators only
-		for addr, validator := range activeValidatorMap {
+		// Iterate in deterministic order to ensure consensus
+		for _, addr := range sortedValidatorAddrs {
+			validator := activeValidatorMap[addr]
 			// Skip if validator already matched (prevent duplicate counting)
 			if usedValidators[addr] {
 				continue

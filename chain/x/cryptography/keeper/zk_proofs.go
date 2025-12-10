@@ -121,6 +121,8 @@ func (k Keeper) SubmitZKProof(ctx sdk.Context, submitter string, proofID string,
 	}
 
 	// Create verification record
+	// CONSENSUS-CRITICAL: Do NOT use ProposerAddress in state as it varies per validator
+	// and would cause consensus failures. Use block height instead for traceability.
 	verificationRecord := &cryptoproto.ZKProofVerification{
 		VerificationId: verificationID,
 		ProofId:        proofID,
@@ -129,7 +131,7 @@ func (k Keeper) SubmitZKProof(ctx sdk.Context, submitter string, proofID string,
 		PublicInputs:   publicInputs,
 		Verified:       verified,
 		VerifiedAt:     sdkCtx.BlockTime(),
-		VerifierNode:   string(sdkCtx.BlockHeader().ProposerAddress),
+		VerifierNode:   fmt.Sprintf("block-%d", sdkCtx.BlockHeight()),
 		ErrorMessage:   errorMessage,
 	}
 

@@ -238,9 +238,67 @@ else
 fi
 
 # ============================================================================
+# Step 5.5: Create gentx for all validators
+# ============================================================================
+echo ""
+echo -e "${YELLOW}[5.5/10]${NC} Creating gentx for all validators..."
+
+# Each validator creates their gentx
+for i in $(seq 0 $((NUM_VALIDATORS - 1))); do
+    MONIKER="${VALIDATOR_MONIKERS[$i]}"
+    NODE_HOME="${TESTNET_DIR}/${MONIKER}"
+    VALIDATOR_ADDR="${VALIDATOR_ADDRESSES[$i]}"
+
+    echo -e "  ${BLUE}Creating gentx for ${MONIKER}...${NC}"
+
+    # Copy the genesis to this validator's home (needed for gentx)
+    if [ $i -gt 0 ]; then
+        cp "${GENESIS_HOME}/config/genesis.json" "${NODE_HOME}/config/genesis.json"
+    fi
+
+    # Create gentx - this registers the validator with staking power
+    "${BINARY_PATH}" genesis gentx "${MONIKER}" "${STAKING_AMOUNT}" \
+        --chain-id "${CHAIN_ID}" \
+        --keyring-backend test \
+        --home "${NODE_HOME}" \
+        --moniker "${MONIKER}" \
+        --commission-rate "0.10" \
+        --commission-max-rate "0.20" \
+        --commission-max-change-rate "0.01" > /dev/null 2>&1
+
+    echo -e "  ${GREEN}✓ ${MONIKER} gentx created${NC}"
+done
+
+# ============================================================================
+# Step 5.6: Collect all gentxs into genesis
+# ============================================================================
+echo ""
+echo -e "${YELLOW}[5.6/10]${NC} Collecting all gentxs into genesis..."
+
+# Copy all gentxs to validator-1's gentx directory
+mkdir -p "${GENESIS_HOME}/config/gentx"
+for i in $(seq 1 $((NUM_VALIDATORS - 1))); do
+    MONIKER="${VALIDATOR_MONIKERS[$i]}"
+    NODE_HOME="${TESTNET_DIR}/${MONIKER}"
+
+    # Copy gentx files from each validator to validator-1
+    cp "${NODE_HOME}/config/gentx/"*.json "${GENESIS_HOME}/config/gentx/" 2>/dev/null || true
+done
+
+# Collect all gentxs
+"${BINARY_PATH}" genesis collect-gentxs \
+    --home "${GENESIS_HOME}" > /dev/null 2>&1
+
+echo -e "${GREEN}✓ All gentxs collected${NC}"
+
+# Verify validators are in genesis
+VALIDATOR_COUNT=$(jq '.validators | length' "${GENESIS_FILE}")
+echo -e "${GREEN}✓ Genesis now contains ${VALIDATOR_COUNT} validators${NC}"
+
+# ============================================================================
 # Step 6: Distribute genesis and configure peers
 # ============================================================================
-echo -e "${YELLOW}[6/9]${NC} Distributing genesis and configuring peers..."
+echo -e "${YELLOW}[6/10]${NC} Distributing genesis and configuring peers..."
 
 # Distribute final genesis to all validators
 FINAL_GENESIS="${GENESIS_HOME}/config/genesis.json"

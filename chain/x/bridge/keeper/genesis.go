@@ -3,6 +3,7 @@ package keeper
 import (
 	"encoding/binary"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -136,11 +137,13 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) types.GenesisState {
 	chainConfigs := k.getAllChainConfigs(ctx)
 
 	// Export processed source hashes for replay attack prevention
+	// CONSENSUS-CRITICAL: Sort keys for deterministic iteration order
 	processedHashes := k.GetAllProcessedSourceHashes(ctx)
 	processedHashList := make([]string, 0, len(processedHashes))
 	for compositeKey := range processedHashes {
 		processedHashList = append(processedHashList, compositeKey)
 	}
+	sort.Strings(processedHashList)
 
 	// Get all transfers and convert to non-pointer slice
 	transfersPtrs := k.getAllTransfers(ctx)
