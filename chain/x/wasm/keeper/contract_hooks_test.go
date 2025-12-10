@@ -89,12 +89,8 @@ func (suite *ContractHooksTestSuite) SetupTest() {
 	suite.admin = sdk.AccAddress([]byte("admin_test"))
 	suite.sender = sdk.AccAddress([]byte("sender_test"))
 
-	// Reset circuit breaker
-	circuitBreaker.mu.Lock()
-	circuitBreaker.state = "closed"
-	circuitBreaker.failureCount = 0
-	circuitBreaker.consecutiveSuccess = 0
-	circuitBreaker.mu.Unlock()
+	// Reset circuit breaker (now uses KV store)
+	suite.wasmKeeper.ResetCircuitBreaker(suite.ctx)
 
 	// Clear validation cache
 	valCache.mu.Lock()
@@ -255,10 +251,13 @@ func (suite *ContractHooksTestSuite) TestAfterInstantiateHook_NoRegistry() {
 
 func (suite *ContractHooksTestSuite) TestAfterInstantiateHook_CircuitBreakerOpen() {
 	// Open circuit breaker with recent failure time (so timeout hasn't elapsed)
-	circuitBreaker.mu.Lock()
-	circuitBreaker.state = "open"
-	circuitBreaker.lastFailure = time.Now() // Recent failure keeps circuit open
-	circuitBreaker.mu.Unlock()
+	data := circuitBreakerData{
+		FailureCount:      circuitBreakerThreshold,
+		LastFailure:       suite.ctx.BlockTime(), // Recent failure keeps circuit open
+		State:             circuitBreakerStateOpen,
+		ConsecutiveSuccess: 0,
+	}
+	suite.wasmKeeper.setCircuitBreakerState(suite.ctx, data)
 
 	err := suite.wasmKeeper.AfterInstantiateHook(
 		suite.ctx,
