@@ -298,6 +298,11 @@ func TestCancelTimeLockedAction_ErrorPath_ActionNotPending(t *testing.T) {
 	now := input.Ctx.BlockTime()
 	executedTime := now
 
+	// Create canceller address and grant permission
+	canceller := keepertest.GenTestAddr().String()
+	err := k.GrantPermission(input.Ctx, canceller, types.PermissionManageTimeLock)
+	require.NoError(t, err)
+
 	// Create executed action
 	action := &types.TimeLockedAction{
 		Id:           "action-002",
@@ -314,11 +319,11 @@ func TestCancelTimeLockedAction_ErrorPath_ActionNotPending(t *testing.T) {
 
 	msg := &identitypb.MsgCancelTimeLockedAction{
 		ActionId:  "action-002",
-		Canceller: keepertest.GenTestAddr().String(),
+		Canceller: canceller,
 	}
 
 	msgServer := keeper.NewMsgServerImpl(k)
-	_, err := msgServer.CancelTimeLockedAction(sdk.WrapSDKContext(input.Ctx), msg)
+	_, err = msgServer.CancelTimeLockedAction(sdk.WrapSDKContext(input.Ctx), msg)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "only pending actions can be cancelled")
 }
@@ -537,13 +542,18 @@ func TestDeactivateEmergencyAdmin_ErrorPath_AdminNotFound(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
 	k := keeper.NewKeeper(keepertest.WrapStoreService(input.StoreKey), input.StoreKey, input.Cdc, "authority", log.NewNopLogger())
 
+	// Create deactivator address and grant permission
+	deactivator := keepertest.GenTestAddr().String()
+	err := k.GrantPermission(input.Ctx, deactivator, types.PermissionManageEmergency)
+	require.NoError(t, err)
+
 	msg := &identitypb.MsgDeactivateEmergencyAdmin{
-		Deactivator:  keepertest.GenTestAddr().String(),
+		Deactivator:  deactivator,
 		AdminAddress: keepertest.GenTestAddr().String(), // Not activated
 	}
 
 	msgServer := keeper.NewMsgServerImpl(k)
-	_, err := msgServer.DeactivateEmergencyAdmin(sdk.WrapSDKContext(input.Ctx), msg)
+	_, err = msgServer.DeactivateEmergencyAdmin(sdk.WrapSDKContext(input.Ctx), msg)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "emergency admin not found")
 }

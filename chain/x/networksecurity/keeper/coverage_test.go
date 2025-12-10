@@ -160,7 +160,7 @@ func (suite *KeeperTestSuite) TestForkAlert() {
 	alert := types.ForkAlert{
 		AlertId:     "fork1",
 		BlockHeight: suite.ctx.BlockHeight(),
-		DetectedAt:  timestamppb.New(suite.ctx.BlockTime()),
+		DetectedAt:  suite.ctx.BlockTime(),
 	}
 
 	// Set fork alert
@@ -180,7 +180,7 @@ func (suite *KeeperTestSuite) TestPartitionAlert() {
 	alert := types.PartitionAlert{
 		AlertId:        "partition1",
 		ConnectedPeers: 5,
-		DetectedAt:     timestamppb.New(suite.ctx.BlockTime()),
+		DetectedAt:     suite.ctx.BlockTime(),
 	}
 
 	// Set partition alert
