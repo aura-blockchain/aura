@@ -3,6 +3,7 @@ package keeper
 import (
 	"sync"
 	"testing"
+	"time"
 
 	"cosmossdk.io/log"
 	"cosmossdk.io/store"
@@ -94,7 +95,12 @@ func buildKeeperWithParams(
 		authority,
 	)
 
-	ctx := sdk.NewContext(stateStore, cmtproto.Header{}, false, logger)
+	// Create context with proper block time for timestamp-dependent tests
+	header := cmtproto.Header{
+		Height: 1,
+		Time:   time.Now(),
+	}
+	ctx := sdk.NewContext(stateStore, header, false, logger)
 	return k, ctx
 }
 
