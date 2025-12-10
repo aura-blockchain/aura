@@ -82,6 +82,17 @@ go test ./x/identity/...
 
 **Pre-commit hooks are configured.** Run `pre-commit install` to enable them.
 
+## CRITICAL: Gogoproto Types
+
+**BEFORE writing ANY test code, read `chain/docs/GOGOPROTO_TYPES.md`.**
+
+This project uses gogoproto annotations that transform proto types. Using wrong types causes build failures:
+- `timestamppb.New()` → use `time.Now()` instead
+- `"1000"` strings → use `sdkmath.NewInt(1000)` instead
+- `&Type{}` pointers → use `Type{}` values when `nullable=false`
+
+Use helpers from `chain/testutil/proto_helpers.go` for test data.
+
 ## Protobuf Generation
 
 When modifying `.proto` files:
