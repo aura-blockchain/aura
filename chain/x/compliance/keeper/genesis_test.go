@@ -32,22 +32,23 @@ func (suite *GenesisTestSuite) TestInitGenesis_DefaultAndCustom() {
 	params := types.DefaultParams()
 	piiCommitment := make([]byte, 32)
 	copy(piiCommitment, []byte("test_commitment_hash_32_bytes"))
+	expiresAt := time.Now().Add(24 * time.Hour)
 	genesis := &compliancepb.GenesisState{
-		Params: &params,
+		Params: params,
 		KycRecords: []*compliancepb.KYCRecord{
 			{
 				Address:       addr,
 				KycLevel:      compliancepb.KYCLevel_KYC_LEVEL_BASIC,
 				PiiCommitment: piiCommitment,
-				VerifiedAt:    timestamppb.Now(),
-				ExpiresAt:     timestamppb.New(time.Now().Add(24 * time.Hour)),
+				VerifiedAt:    time.Now(),
+				ExpiresAt:     &expiresAt,
 			},
 		},
 		AmlProfiles: []*compliancepb.AMLProfile{
 			{
 				Address:        addr,
 				RiskLevel:      compliancepb.AMLRiskLevel_AML_RISK_LOW,
-				LastAssessment: timestamppb.Now(),
+				LastAssessment: time.Now(),
 				TotalVolume:    "0",
 			},
 		},
@@ -66,8 +67,9 @@ func (suite *GenesisTestSuite) TestInitGenesis_Invalid() {
 
 	suite.Error(suite.Keeper.InitGenesis(ctx, nil))
 
-	// Nil params should error
-	suite.Error(suite.Keeper.InitGenesis(ctx, &compliancepb.GenesisState{Params: nil}))
+	// Empty genesis state should error due to invalid params
+	emptyGenesis := &compliancepb.GenesisState{}
+	suite.Error(suite.Keeper.InitGenesis(ctx, emptyGenesis))
 }
 
 func (suite *GenesisTestSuite) TestDefaultGenesisValidation() {

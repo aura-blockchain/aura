@@ -58,8 +58,8 @@ func (suite *InvariantsTestSuite) TestKYCRecordConsistencyInvariant() {
 		Address:       validAddr,
 		PiiCommitment: piiCommitment,
 		KycLevel:      types.KYCLevel_KYC_LEVEL_BASIC,
-		VerifiedAt:    timestamppb.Now(),
-		ExpiresAt:     timestamppb.New(time.Now().Add(time.Hour)),
+		VerifiedAt:    time.Now(),
+		ExpiresAt:     time.Now().Add(time.Hour),
 	}
 	suite.Require().NoError(suite.Keeper.SetKYCRecord(ctx, validRecord))
 
@@ -72,7 +72,7 @@ func (suite *InvariantsTestSuite) TestKYCRecordConsistencyInvariant() {
 		Address:       "invalid-address",
 		PiiCommitment: piiCommitment,
 		KycLevel:      types.KYCLevel_KYC_LEVEL_BASIC,
-		VerifiedAt:    timestamppb.Now(),
+		VerifiedAt:    time.Now(),
 	}
 	suite.Require().NoError(suite.Keeper.SetKYCRecord(ctx, invalidRecord))
 
@@ -90,7 +90,7 @@ func (suite *InvariantsTestSuite) TestKYCRecordConsistencyInvariant() {
 		Address:       validAddr,
 		PiiCommitment: []byte("short"),
 		KycLevel:      types.KYCLevel_KYC_LEVEL_BASIC,
-		VerifiedAt:    timestamppb.Now(),
+		VerifiedAt:    time.Now(),
 	}
 	suite.Require().NoError(suite.Keeper.SetKYCRecord(ctx, emptyCommitment))
 
@@ -108,7 +108,7 @@ func (suite *InvariantsTestSuite) TestKYCRecordConsistencyInvariant() {
 		Address:       validAddr,
 		PiiCommitment: piiCommitment,
 		KycLevel:      types.KYCLevel(99),
-		VerifiedAt:    timestamppb.Now(),
+		VerifiedAt:    time.Now(),
 	}
 	suite.Require().NoError(suite.Keeper.SetKYCRecord(ctx, badLevel))
 
@@ -159,7 +159,7 @@ func (suite *InvariantsTestSuite) TestSanctionsScreeningInvariant() {
 		Address:    validAddr,
 		Status:     types.SanctionsStatus_SANCTIONS_CLEAR,
 		Matches:    []*types.SanctionsMatch{},
-		ScreenedAt: timestamppb.Now(),
+		ScreenedAt: time.Now(),
 	}
 
 	// Write directly to store since there's no public setter
@@ -182,7 +182,7 @@ func (suite *InvariantsTestSuite) TestSanctionsScreeningInvariant() {
 		Address:    "invalid-address",
 		Status:     types.SanctionsStatus_SANCTIONS_CLEAR,
 		Matches:    []*types.SanctionsMatch{},
-		ScreenedAt: timestamppb.Now(),
+		ScreenedAt: time.Now(),
 	}
 	bz, err = suite.Keeper.cdc.Marshal(invalidResult)
 	suite.Require().NoError(err)
@@ -228,7 +228,7 @@ func (suite *InvariantsTestSuite) TestSanctionsScreeningInvariant() {
 		Address:    validAddr3,
 		Status:     types.SanctionsStatus_SANCTIONS_MATCH,
 		Matches:    []*types.SanctionsMatch{},
-		ScreenedAt: timestamppb.Now(),
+		ScreenedAt: time.Now(),
 	}
 	bz, err = suite.Keeper.cdc.Marshal(matchNoMatches)
 	suite.Require().NoError(err)
@@ -256,7 +256,7 @@ func (suite *InvariantsTestSuite) TestGDPRDataIntegrityInvariant() {
 		Id:          "gdpr-req-001",
 		Address:     validAddr,
 		RequestType: "access",
-		RequestedAt: timestamppb.Now(),
+		RequestedAt: time.Now(),
 		CompletedAt: nil,
 		Status:      "pending",
 	}
@@ -275,7 +275,7 @@ func (suite *InvariantsTestSuite) TestGDPRDataIntegrityInvariant() {
 		Id:          "gdpr-req-002",
 		Address:     "invalid-address",
 		RequestType: "access",
-		RequestedAt: timestamppb.Now(),
+		RequestedAt: time.Now(),
 		Status:      "pending",
 	}
 	suite.Require().NoError(suite.Keeper.SetGDPRRequest(ctx, invalidRequest))
@@ -295,7 +295,7 @@ func (suite *InvariantsTestSuite) TestGDPRDataIntegrityInvariant() {
 		Id:          "gdpr-req-003",
 		Address:     validAddr2,
 		RequestType: "invalid-type",
-		RequestedAt: timestamppb.Now(),
+		RequestedAt: time.Now(),
 		Status:      "pending",
 	}
 	suite.Require().NoError(suite.Keeper.SetGDPRRequest(ctx, invalidTypeRequest))
@@ -335,7 +335,7 @@ func (suite *InvariantsTestSuite) TestGDPRDataIntegrityInvariant() {
 		Id:          "gdpr-req-005",
 		Address:     validAddr4,
 		RequestType: "access",
-		RequestedAt: timestamppb.Now(),
+		RequestedAt: time.Now(),
 		CompletedAt: nil,
 		Status:      "completed",
 	}
@@ -364,7 +364,7 @@ func (suite *InvariantsTestSuite) TestTaxRecordConsistencyInvariant() {
 		Jurisdiction: "US",
 		ReportType:   "1099-MISC",
 		TotalIncome:  "1000.00",
-		GeneratedAt:  timestamppb.Now(),
+		GeneratedAt:  time.Now(),
 	}
 	suite.Require().NoError(suite.Keeper.SetTaxReport(ctx, validReport))
 
@@ -384,7 +384,7 @@ func (suite *InvariantsTestSuite) TestTaxRecordConsistencyInvariant() {
 		Jurisdiction: "US",
 		ReportType:   "1099-MISC",
 		TotalIncome:  "1000.00",
-		GeneratedAt:  timestamppb.Now(),
+		GeneratedAt:  time.Now(),
 	}
 	suite.Require().NoError(suite.Keeper.SetTaxReport(ctx, invalidReport))
 
@@ -406,7 +406,7 @@ func (suite *InvariantsTestSuite) TestTaxRecordConsistencyInvariant() {
 		Jurisdiction: "US",
 		ReportType:   "1099-MISC",
 		TotalIncome:  "1000.00",
-		GeneratedAt:  timestamppb.Now(),
+		GeneratedAt:  time.Now(),
 	}
 	suite.Require().NoError(suite.Keeper.SetTaxReport(ctx, invalidYearReport))
 
@@ -428,7 +428,7 @@ func (suite *InvariantsTestSuite) TestTaxRecordConsistencyInvariant() {
 		Jurisdiction: "",
 		ReportType:   "1099-MISC",
 		TotalIncome:  "1000.00",
-		GeneratedAt:  timestamppb.Now(),
+		GeneratedAt:  time.Now(),
 	}
 	suite.Require().NoError(suite.Keeper.SetTaxReport(ctx, emptyJurisdiction))
 

@@ -295,12 +295,23 @@ func TestCancelTimeLockedAction_ErrorPath_ActionNotPending(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
 	k := keeper.NewKeeper(keepertest.WrapStoreService(input.StoreKey), input.StoreKey, input.Cdc, "authority", log.NewNopLogger())
 
+	// Initialize default roles
+	err := k.InitGenesis(input.Ctx, types.DefaultGenesisState())
+	require.NoError(t, err)
+
 	now := input.Ctx.BlockTime()
 	executedTime := now
 
-	// Create canceller address and grant permission
+	// Create canceller address and assign admin role for permissions
 	canceller := keepertest.GenTestAddr().String()
-	err := k.GrantPermission(input.Ctx, canceller, types.PermissionManageTimeLock)
+	assignment := &types.RoleAssignment{
+		Address:    canceller,
+		RoleName:   types.RoleAdmin,
+		AssignedBy: "system",
+		AssignedAt: now,
+		ExpiresAt:  nil,
+	}
+	err = k.SetRoleAssignment(input.Ctx, assignment)
 	require.NoError(t, err)
 
 	// Create executed action
@@ -542,9 +553,22 @@ func TestDeactivateEmergencyAdmin_ErrorPath_AdminNotFound(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
 	k := keeper.NewKeeper(keepertest.WrapStoreService(input.StoreKey), input.StoreKey, input.Cdc, "authority", log.NewNopLogger())
 
-	// Create deactivator address and grant permission
+	// Initialize default roles
+	err := k.InitGenesis(input.Ctx, types.DefaultGenesisState())
+	require.NoError(t, err)
+
+	now := input.Ctx.BlockTime()
+
+	// Create deactivator address and assign admin role for permissions
 	deactivator := keepertest.GenTestAddr().String()
-	err := k.GrantPermission(input.Ctx, deactivator, types.PermissionManageEmergency)
+	assignment := &types.RoleAssignment{
+		Address:    deactivator,
+		RoleName:   types.RoleAdmin,
+		AssignedBy: "system",
+		AssignedAt: now,
+		ExpiresAt:  nil,
+	}
+	err = k.SetRoleAssignment(input.Ctx, assignment)
 	require.NoError(t, err)
 
 	msg := &identitypb.MsgDeactivateEmergencyAdmin{
