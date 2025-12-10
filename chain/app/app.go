@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"sort"
 	"sync"
 
 	tmlog "cosmossdk.io/log"
@@ -1563,7 +1564,15 @@ func ensureSDKConfig() {
 // blockedModuleAddresses returns the bank blocklist for module accounts.
 func blockedModuleAddresses(perms map[string][]string) map[string]bool {
 	blocked := make(map[string]bool)
+
+	// Sort keys for deterministic iteration
+	names := make([]string, 0, len(perms))
 	for name := range perms {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+
+	for _, name := range names {
 		addr := authtypes.NewModuleAddress(name).String()
 		blocked[addr] = !allowedReceivingModules[name]
 	}
