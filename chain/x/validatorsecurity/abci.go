@@ -29,15 +29,12 @@ func EndBlocker(ctx context.Context, k keeper.Keeper) error {
 		k.MonitorAllValidators(ctx)
 	}
 
-	// Auto-unjail validators whose jail period has expired.
-	// GetJailedValidators returns validators in deterministic order
-	// (lexicographically by validator address) to ensure consensus
-	// determinism across all nodes.
+	// Auto-unjail validators whose jail period has expired
 	jailedValidators := k.GetJailedValidators(ctx)
 	for _, val := range jailedValidators {
 		if val.JailedUntil != nil && sdkCtx.BlockTime().After(*val.JailedUntil) {
 			// Don't auto-unjail, just log that they can unjail themselves
-			sdkCtx.Logger().Info("validator can now unjail",
+			k.Logger(sdkCtx).Info("validator can now unjail",
 				"validator", val.ValidatorAddress,
 				"jailed_until", *val.JailedUntil,
 			)

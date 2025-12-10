@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"encoding/binary"
 	"fmt"
 	"sync"
 	"time"
@@ -14,90 +15,169 @@ import (
 )
 
 // ============================================================================
-// CIRCUIT BREAKER PATTERN
+// CIRCUIT BREAKER PATTERN (KV Store-based for Consensus)
 // ============================================================================
 
-// circuitBreakerState tracks the health of the contract registry integration
-type circuitBreakerState struct {
-	mu                sync.RWMutex
-	failureCount      int
-	lastFailure       time.Time
-	state             string // "closed", "open", "half-open"
-	consecutiveSuccess int
-}
-
+// Circuit breaker KV store keys
 var (
-	circuitBreaker = &circuitBreakerState{
-		state: "closed",
-	}
+	circuitBreakerFailureCountKey      = []byte("circuit_breaker_failure_count")
+	circuitBreakerLastFailureKey       = []byte("circuit_breaker_last_failure")
+	circuitBreakerStateKey             = []byte("circuit_breaker_state")
+	circuitBreakerConsecutiveSuccessKey = []byte("circuit_breaker_consecutive_success")
 )
 
 const (
-	circuitBreakerThreshold     = 5     // failures before opening
-	circuitBreakerTimeout       = 60    // seconds before attempting half-open
+	circuitBreakerThreshold        = 5  // failures before opening
+	circuitBreakerTimeout          = 60 // seconds before attempting half-open
 	circuitBreakerSuccessThreshold = 3  // successes before closing from half-open
 )
 
-// checkCircuitBreaker returns true if we should skip registry calls
-func (cb *circuitBreakerState) shouldSkip(ctx context.Context) bool {
-	cb.mu.Lock()
-	defer cb.mu.Unlock()
+// Circuit breaker states
+const (
+	circuitBreakerStateClosed   = "closed"
+	circuitBreakerStateOpen     = "open"
+	circuitBreakerStateHalfOpen = "half-open"
+)
 
-	if cb.state == "closed" {
+// circuitBreakerData represents the circuit breaker state (stored in KV store)
+type circuitBreakerData struct {
+	FailureCount      int
+	LastFailure       time.Time
+	State             string
+	ConsecutiveSuccess int
+}
+
+// getCircuitBreakerState reads circuit breaker state from KV store
+func (k Keeper) getCircuitBreakerState(ctx sdk.Context) circuitBreakerData {
+	store := ctx.KVStore(k.storeKey)
+
+	// Read failure count
+	failureCount := 0
+	if bz := store.Get(circuitBreakerFailureCountKey); bz != nil {
+		failureCount = int(binary.BigEndian.Uint64(bz))
+	}
+
+	// Read last failure time
+	lastFailure := time.Time{}
+	if bz := store.Get(circuitBreakerLastFailureKey); bz != nil {
+		if err := lastFailure.UnmarshalBinary(bz); err != nil {
+			k.Logger(ctx).Error("failed to unmarshal last failure time", "error", err)
+		}
+	}
+
+	// Read state
+	state := circuitBreakerStateClosed
+	if bz := store.Get(circuitBreakerStateKey); bz != nil {
+		state = string(bz)
+	}
+
+	// Read consecutive success count
+	consecutiveSuccess := 0
+	if bz := store.Get(circuitBreakerConsecutiveSuccessKey); bz != nil {
+		consecutiveSuccess = int(binary.BigEndian.Uint64(bz))
+	}
+
+	return circuitBreakerData{
+		FailureCount:      failureCount,
+		LastFailure:       lastFailure,
+		State:             state,
+		ConsecutiveSuccess: consecutiveSuccess,
+	}
+}
+
+// setCircuitBreakerState writes circuit breaker state to KV store
+func (k Keeper) setCircuitBreakerState(ctx sdk.Context, data circuitBreakerData) {
+	store := ctx.KVStore(k.storeKey)
+
+	// Write failure count
+	failureCountBz := make([]byte, 8)
+	binary.BigEndian.PutUint64(failureCountBz, uint64(data.FailureCount))
+	store.Set(circuitBreakerFailureCountKey, failureCountBz)
+
+	// Write last failure time
+	if !data.LastFailure.IsZero() {
+		lastFailureBz, err := data.LastFailure.MarshalBinary()
+		if err != nil {
+			k.Logger(ctx).Error("failed to marshal last failure time", "error", err)
+		} else {
+			store.Set(circuitBreakerLastFailureKey, lastFailureBz)
+		}
+	}
+
+	// Write state
+	store.Set(circuitBreakerStateKey, []byte(data.State))
+
+	// Write consecutive success count
+	consecutiveSuccessBz := make([]byte, 8)
+	binary.BigEndian.PutUint64(consecutiveSuccessBz, uint64(data.ConsecutiveSuccess))
+	store.Set(circuitBreakerConsecutiveSuccessKey, consecutiveSuccessBz)
+}
+
+// shouldSkipCircuitBreaker returns true if we should skip registry calls
+// Now deterministic: reads from KV store and uses block time
+func (k Keeper) shouldSkipCircuitBreaker(ctx sdk.Context) bool {
+	data := k.getCircuitBreakerState(ctx)
+
+	// If closed, never skip
+	if data.State == circuitBreakerStateClosed {
 		return false
 	}
 
-	if cb.state == "open" {
-		// Check if timeout elapsed using deterministic block time
-		elapsed := determinism.TimeSince(ctx, cb.lastFailure)
-		if elapsed > time.Duration(circuitBreakerTimeout)*time.Second {
-			// Transition to half-open
-			cb.state = "half-open"
-			cb.consecutiveSuccess = 0
-			return false
+	// If open, check if timeout has elapsed (use block time for determinism)
+	if data.State == circuitBreakerStateOpen {
+		if !data.LastFailure.IsZero() {
+			elapsed := ctx.BlockTime().Sub(data.LastFailure)
+			if elapsed.Seconds() >= circuitBreakerTimeout {
+				// Transition to half-open
+				data.State = circuitBreakerStateHalfOpen
+				data.ConsecutiveSuccess = 0
+				k.setCircuitBreakerState(ctx, data)
+				return false // Try again in half-open state
+			}
 		}
-		return true
+		return true // Still open, skip
 	}
 
-	// half-open state
+	// Half-open: don't skip (allow attempts)
 	return false
 }
 
-// recordSuccess records a successful registry call
-func (cb *circuitBreakerState) recordSuccess() {
-	cb.mu.Lock()
-	defer cb.mu.Unlock()
+// recordCircuitBreakerSuccess records a successful registry call
+func (k Keeper) recordCircuitBreakerSuccess(ctx sdk.Context) {
+	data := k.getCircuitBreakerState(ctx)
 
-	cb.consecutiveSuccess++
-	cb.failureCount = 0
+	data.ConsecutiveSuccess++
+	data.FailureCount = 0
 
-	if cb.state == "half-open" && cb.consecutiveSuccess >= circuitBreakerSuccessThreshold {
-		cb.state = "closed"
-		cb.consecutiveSuccess = 0
+	if data.State == circuitBreakerStateHalfOpen && data.ConsecutiveSuccess >= circuitBreakerSuccessThreshold {
+		data.State = circuitBreakerStateClosed
+		data.ConsecutiveSuccess = 0
 	}
+
+	k.setCircuitBreakerState(ctx, data)
 }
 
-// recordFailure records a failed registry call
-func (cb *circuitBreakerState) recordFailure(ctx context.Context) {
-	cb.mu.Lock()
-	defer cb.mu.Unlock()
+// recordCircuitBreakerFailure records a failed registry call
+func (k Keeper) recordCircuitBreakerFailure(ctx sdk.Context) {
+	data := k.getCircuitBreakerState(ctx)
 
-	cb.failureCount++
-	cb.lastFailure = determinism.GetBlockTime(ctx)
-	cb.consecutiveSuccess = 0
+	data.FailureCount++
+	data.LastFailure = ctx.BlockTime() // Use block time for determinism
+	data.ConsecutiveSuccess = 0
 
-	if cb.state == "half-open" {
-		cb.state = "open"
-	} else if cb.failureCount >= circuitBreakerThreshold {
-		cb.state = "open"
+	if data.State == circuitBreakerStateHalfOpen {
+		data.State = circuitBreakerStateOpen
+	} else if data.FailureCount >= circuitBreakerThreshold {
+		data.State = circuitBreakerStateOpen
 	}
+
+	k.setCircuitBreakerState(ctx, data)
 }
 
-// getState returns the current circuit breaker state
-func (cb *circuitBreakerState) getState() string {
-	cb.mu.RLock()
-	defer cb.mu.RUnlock()
-	return cb.state
+// getCircuitBreakerStateString returns the current circuit breaker state as a string
+func (k Keeper) getCircuitBreakerStateString(ctx sdk.Context) string {
+	data := k.getCircuitBreakerState(ctx)
+	return data.State
 }
 
 // ============================================================================
@@ -132,6 +212,7 @@ func getCacheKey(contractAddr, sender string, blockHeight int64) string {
 }
 
 // get retrieves a cached validation result
+// FIXED: Use block height only for cache validity (not wall-clock time)
 func (vc *validationCache) get(key string, blockHeight int64) (*validationCacheEntry, bool) {
 	vc.mu.RLock()
 	defer vc.mu.RUnlock()
@@ -141,8 +222,9 @@ func (vc *validationCache) get(key string, blockHeight int64) (*validationCacheE
 		return nil, false
 	}
 
-	// Invalidate if from a different block or too old
-	if entry.blockHeight != blockHeight || time.Since(entry.timestamp) > validationCacheDuration {
+	// Invalidate if from a different block only (removed non-deterministic time.Since check)
+	// Cache is valid for same block height only - deterministic across validators
+	if entry.blockHeight != blockHeight {
 		return nil, false
 	}
 
@@ -244,14 +326,14 @@ func (k Keeper) BeforeInstantiateHook(
 		return nil
 	}
 
-	if circuitBreaker.shouldSkip(ctx) {
+	if k.shouldSkipCircuitBreaker(ctx) {
 		k.Logger(ctx).Warn("circuit breaker open, skipping registry auto-registration",
-			"state", circuitBreaker.getState())
+			"state", k.getCircuitBreakerStateString(ctx))
 		// Emit alert event
 		ctx.EventManager().EmitEvent(
 			sdk.NewEvent(
 				"contract_registry_degraded",
-				sdk.NewAttribute("circuit_breaker_state", circuitBreaker.getState()),
+				sdk.NewAttribute("circuit_breaker_state", k.getCircuitBreakerStateString(ctx)),
 				sdk.NewAttribute("operation", "auto_register"),
 			),
 		)
@@ -277,13 +359,13 @@ func (k Keeper) BeforeInstantiateHook(
 				"creator", creator.String(),
 				"current", count,
 				"max", params.MaxContractsPerCreator)
-			circuitBreaker.recordFailure(ctx)
+			k.recordCircuitBreakerFailure(ctx)
 			return types.ErrUnauthorized.Wrapf("creator contract limit exceeded: %d >= %d", count, params.MaxContractsPerCreator)
 		}
 	}
 
 	// Record success
-	circuitBreaker.recordSuccess()
+	k.recordCircuitBreakerSuccess(ctx)
 
 	// Log metrics
 	elapsed := time.Since(startTime)
@@ -310,10 +392,10 @@ func (k Keeper) AfterInstantiateHook(
 		return nil
 	}
 
-	if circuitBreaker.shouldSkip(ctx) {
+	if k.shouldSkipCircuitBreaker(ctx) {
 		k.Logger(ctx).Warn("circuit breaker open, skipping contract registration",
 			"contract", contractAddr.String(),
-			"state", circuitBreaker.getState())
+			"state", k.getCircuitBreakerStateString(ctx))
 		return nil // Graceful degradation
 	}
 
@@ -362,7 +444,7 @@ func (k Keeper) AfterInstantiateHook(
 
 	if err != nil {
 		// Record failure
-		circuitBreaker.recordFailure(ctx)
+		k.recordCircuitBreakerFailure(ctx)
 
 		// Log error but don't fail instantiation
 		k.Logger(ctx).Error("failed to auto-register contract",
@@ -384,7 +466,7 @@ func (k Keeper) AfterInstantiateHook(
 	}
 
 	// Record success
-	circuitBreaker.recordSuccess()
+	k.recordCircuitBreakerSuccess(ctx)
 
 	// Update stats
 	k.incrementSecurityStat(ctx, "instantiated")
@@ -424,16 +506,16 @@ func (k Keeper) BeforeExecuteHook(
 	}
 
 	// Skip if circuit breaker is open (permissive mode)
-	if circuitBreaker.shouldSkip(ctx) {
+	if k.shouldSkipCircuitBreaker(ctx) {
 		k.Logger(ctx).Warn("circuit breaker open, permissive mode enabled",
 			"contract", contractAddr.String(),
-			"state", circuitBreaker.getState())
+			"state", k.getCircuitBreakerStateString(ctx))
 
 		// Emit alert
 		ctx.EventManager().EmitEvent(
 			sdk.NewEvent(
 				"contract_registry_degraded",
-				sdk.NewAttribute("circuit_breaker_state", circuitBreaker.getState()),
+				sdk.NewAttribute("circuit_breaker_state", k.getCircuitBreakerStateString(ctx)),
 				sdk.NewAttribute("operation", "validate_execution"),
 				sdk.NewAttribute("mode", "permissive"),
 			),
@@ -500,7 +582,7 @@ func (k Keeper) BeforeExecuteHook(
 	k.contractRegistry.IncrementRateLimit(ctx, contractAddr.String(), sender.String())
 
 	// Record success
-	circuitBreaker.recordSuccess()
+	k.recordCircuitBreakerSuccess(ctx)
 
 	// Log metrics
 	elapsed := time.Since(startTime)
@@ -534,7 +616,7 @@ func (k Keeper) AfterExecuteHook(
 	}
 
 	// Skip if circuit breaker is open
-	if circuitBreaker.shouldSkip(ctx) {
+	if k.shouldSkipCircuitBreaker(ctx) {
 		return
 	}
 
@@ -670,19 +752,18 @@ func (k Keeper) checkRegistrationRateLimit(ctx sdk.Context, creator string) erro
 }
 
 // GetCircuitBreakerStatus returns the current circuit breaker status (for monitoring)
-func (k Keeper) GetCircuitBreakerStatus() string {
-	return circuitBreaker.getState()
+func (k Keeper) GetCircuitBreakerStatus(ctx sdk.Context) string {
+	return k.getCircuitBreakerStateString(ctx)
 }
 
 // ResetCircuitBreaker manually resets the circuit breaker (governance/emergency)
-func (k Keeper) ResetCircuitBreaker(ctx context.Context) {
-	circuitBreaker.mu.Lock()
-	defer circuitBreaker.mu.Unlock()
-
-	circuitBreaker.state = "closed"
-	circuitBreaker.failureCount = 0
-	circuitBreaker.consecutiveSuccess = 0
-
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	k.Logger(sdkCtx).Info("circuit breaker manually reset")
+func (k Keeper) ResetCircuitBreaker(ctx sdk.Context) {
+	data := circuitBreakerData{
+		FailureCount:      0,
+		LastFailure:       time.Time{},
+		State:             circuitBreakerStateClosed,
+		ConsecutiveSuccess: 0,
+	}
+	k.setCircuitBreakerState(ctx, data)
+	k.Logger(ctx).Info("circuit breaker manually reset")
 }

@@ -125,7 +125,7 @@ type GasPriceTracking struct {
 	MaxPrice        uint64             `json:"max_price"`
 	PriceHistory    []GasPricePoint    `json:"price_history"`
 	TrendDirection  string             `json:"trend_direction"` // increasing, decreasing, stable
-	VolatilityScore float64            `json:"volatility_score"`
+	VolatilityScore uint64             `json:"volatility_score"` // Coefficient of variation in basis points (10000 = 100%)
 }
 
 // GasPricePoint represents a single gas price data point
