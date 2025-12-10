@@ -100,7 +100,8 @@ func (k Keeper) GetSentryNodeInfo(ctx context.Context, sentryAddr string) (types
 	return node, nil
 }
 
-// GetValidatorSentryNodes retrieves all sentry nodes for a validator
+// GetValidatorSentryNodes retrieves all sentry nodes for a validator in deterministic order.
+// Results are ordered lexicographically by sentry node address to ensure consensus determinism.
 func (k Keeper) GetValidatorSentryNodes(ctx context.Context, validatorAddr string) []types.SentryNodeInfo {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	store := k.getStore(ctx)
@@ -119,6 +120,7 @@ func (k Keeper) GetValidatorSentryNodes(ctx context.Context, validatorAddr strin
 		}
 	}
 
+	// KVStorePrefixIterator returns keys in lexicographic order.
 	return nodes
 }
 
