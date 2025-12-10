@@ -241,7 +241,8 @@ func (k Keeper) GetValidatorAlerts(ctx context.Context, validatorAddr string) []
 	return alerts
 }
 
-// GetAllAlerts returns all alerts
+// GetAllAlerts returns all alerts in deterministic order.
+// Results are ordered lexicographically by alert ID to ensure consensus determinism.
 func (k Keeper) GetAllAlerts(ctx context.Context) []types.ValidatorAlert {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	store := k.getStore(ctx)
@@ -258,6 +259,7 @@ func (k Keeper) GetAllAlerts(ctx context.Context) []types.ValidatorAlert {
 		alerts = append(alerts, alert)
 	}
 
+	// KVStorePrefixIterator returns keys in lexicographic order (by alert ID).
 	return alerts
 }
 

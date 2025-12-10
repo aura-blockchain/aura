@@ -120,7 +120,8 @@ func (k Keeper) ExportGenesis(ctx context.Context) *types.GenesisState {
 	}
 }
 
-// GetAllDoubleSignEvidences retrieves all double sign evidences
+// GetAllDoubleSignEvidences retrieves all double sign evidences in deterministic order.
+// Results are ordered lexicographically by validator address to ensure consensus determinism.
 func (k Keeper) GetAllDoubleSignEvidences(ctx context.Context) []types.DoubleSignEvidence {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	store := k.getStore(ctx)
@@ -137,6 +138,7 @@ func (k Keeper) GetAllDoubleSignEvidences(ctx context.Context) []types.DoubleSig
 		evidences = append(evidences, evidence)
 	}
 
+	// KVStorePrefixIterator returns keys in lexicographic order.
 	return evidences
 }
 
@@ -166,7 +168,8 @@ func (k Keeper) GetDoubleSignEvidence(ctx context.Context, validatorAddr string)
 	return &evidence, nil
 }
 
-// GetAllDowntimeInfractions retrieves all downtime infractions
+// GetAllDowntimeInfractions retrieves all downtime infractions in deterministic order.
+// Results are ordered lexicographically by validator address to ensure consensus determinism.
 func (k Keeper) GetAllDowntimeInfractions(ctx context.Context) []types.DowntimeInfraction {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	store := k.getStore(ctx)
@@ -183,6 +186,7 @@ func (k Keeper) GetAllDowntimeInfractions(ctx context.Context) []types.DowntimeI
 		infractions = append(infractions, infraction)
 	}
 
+	// KVStorePrefixIterator returns keys in lexicographic order.
 	return infractions
 }
 
