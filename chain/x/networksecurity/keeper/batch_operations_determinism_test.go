@@ -30,24 +30,24 @@ func TestDeterministicReputationIteration(t *testing.T) {
 			MisbehaviorCount: 15, // Above threshold of 10
 			LastUpdatedHeight: ctx.BlockHeight(),
 		}
-		require.NoError(t, keeper.SetReputation(ctx, rep))
+		require.NoError(t, k.SetReputation(ctx, rep))
 
 		// Also create rate limit entry to avoid errors in BanPeer
 		rateLimitEntry := types.RateLimitEntry{
 			PeerId: peerID,
 		}
-		require.NoError(t, keeper.SetRateLimitEntry(ctx, rateLimitEntry))
+		require.NoError(t, k.SetRateLimitEntry(ctx, rateLimitEntry))
 	}
 
 	// Run pruning with a limit of 3
 	limit := 3
-	prunedCount := keeper.PruneLowReputationPeersBatched(ctx, limit)
+	prunedCount := k.PruneLowReputationPeersBatched(ctx, limit)
 	require.Equal(t, limit, prunedCount, "should prune exactly 'limit' peers")
 
 	// Get all rate limit entries to see which were banned
 	var bannedPeers []string
 	for _, peerID := range testPeers {
-		entry, found := keeper.GetRateLimitEntry(ctx, peerID)
+		entry, found := k.GetRateLimitEntry(ctx, peerID)
 		if found && entry.IsBanned {
 			bannedPeers = append(bannedPeers, peerID)
 		}
@@ -71,29 +71,12 @@ func TestDeterministicReputationIteration(t *testing.T) {
 // TestDeterministicAlertIteration verifies that ProcessSecurityAlertsBatched
 // processes alerts in a consistent order
 func TestDeterministicAlertIteration(t *testing.T) {
-	// Create keeper with in-memory store
-	storeKey := storetypes.NewKVStoreKey(types.StoreKey)
-	db := dbm.NewMemDB()
-	stateStore := store.NewCommitMultiStore(db, log.NewNopLogger(), nil)
-	stateStore.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, db)
-	require.NoError(t, stateStore.LoadLatestVersion())
-
-	registry := codectypes.NewInterfaceRegistry()
-	cdc := codec.NewProtoCodec(registry)
-
-	keeper := NewKeeper(
-		cdc,
-		runtime.NewKVStoreService(storeKey),
-		"authority",
-		log.NewNopLogger(),
-	)
-
-	ctx := sdk.NewContext(stateStore, cmtproto.Header{Time: time.Now()}, false, log.NewNopLogger())
+	k, ctx := NewTestKeeperWithContext(t)
 
 	// Set params with auto-resolution disabled to prevent resolution during test
 	params := types.DefaultParams()
 	params.ForkDetection.EnableAutoResolution = false
-	require.NoError(t, keeper.SetParams(ctx, *params))
+	require.NoError(t, k.SetParams(ctx, *params))
 
 	// Create fork alerts with IDs that would sort differently than insertion order
 	testAlertIDs := []string{"alert-z", "alert-a", "alert-m", "alert-c", "alert-b"}
@@ -107,21 +90,21 @@ func TestDeterministicAlertIteration(t *testing.T) {
 			ChainAHash:  []byte("hash-a-" + alertID),
 			ChainBHash:  []byte("hash-b-" + alertID),
 		}
-		require.NoError(t, keeper.SetForkAlert(ctx, alert))
+		require.NoError(t, k.SetForkAlert(ctx, alert))
 	}
 
 	// Process alerts with limit of 3
 	limit := 3
-	processedCount := keeper.ProcessSecurityAlertsBatched(ctx, limit)
+	processedCount := k.ProcessSecurityAlertsBatched(ctx, limit)
 	require.Equal(t, limit, processedCount, "should process exactly 'limit' alerts")
 
 	// The function doesn't directly mark alerts, but the cursor should advance
-	cursor, err := keeper.GetBatchCursor(ctx, types.SecurityAlertCursorKey)
+	cursor, err := k.GetBatchCursor(ctx, types.SecurityAlertCursorKey)
 	require.NoError(t, err)
 	require.Equal(t, uint64(limit), cursor, "cursor should advance by limit")
 
 	// Verify alerts are sorted by calling GetAllForkAlerts and checking order
-	alerts := keeper.GetAllForkAlerts(ctx, false)
+	alerts := k.GetAllForkAlerts(ctx, false)
 	require.Equal(t, len(testAlertIDs), len(alerts), "should have all test alerts")
 
 	// Extract alert IDs
@@ -140,24 +123,7 @@ func TestDeterministicAlertIteration(t *testing.T) {
 // TestDeterministicPeerListHash verifies that UpdateKnownPeerListBatched
 // produces consistent peer list hashes regardless of iteration order
 func TestDeterministicPeerListHash(t *testing.T) {
-	// Create keeper with in-memory store
-	storeKey := storetypes.NewKVStoreKey(types.StoreKey)
-	db := dbm.NewMemDB()
-	stateStore := store.NewCommitMultiStore(db, log.NewNopLogger(), nil)
-	stateStore.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, db)
-	require.NoError(t, stateStore.LoadLatestVersion())
-
-	registry := codectypes.NewInterfaceRegistry()
-	cdc := codec.NewProtoCodec(registry)
-
-	keeper := NewKeeper(
-		cdc,
-		runtime.NewKVStoreService(storeKey),
-		"authority",
-		log.NewNopLogger(),
-	)
-
-	ctx := sdk.NewContext(stateStore, cmtproto.Header{Time: time.Now()}, false, log.NewNopLogger())
+	k, ctx := NewTestKeeperWithContext(t)
 
 	// Create peers with IDs that would sort differently than insertion order
 	testPeerIDs := []string{"peer-z", "peer-a", "peer-m", "peer-c", "peer-b"}
@@ -167,17 +133,17 @@ func TestDeterministicPeerListHash(t *testing.T) {
 			PeerId:         peerID,
 			IpAddress:      "127.0.0.1",
 			ConnectionType: "inbound",
-			ConnectedAt:    time.Now(),
+			ConnectedAt:    ctx.BlockTime(),
 			ReputationScore: 100,
 		}
-		require.NoError(t, keeper.SetPeerInfo(ctx, peer))
+		require.NoError(t, k.SetPeerInfo(ctx, peer))
 	}
 
 	// Update known peer list
-	require.NoError(t, keeper.UpdateKnownPeerListBatched(ctx))
+	require.NoError(t, k.UpdateKnownPeerListBatched(ctx))
 
 	// Get the stored peer count and hash
-	store := keeper.KVStoreService().OpenKVStore(ctx)
+	store := k.KVStoreService().OpenKVStore(ctx)
 	countBytes, err := store.Get([]byte("known_peer_count"))
 	require.NoError(t, err)
 	require.NotNil(t, countBytes)
@@ -190,7 +156,7 @@ func TestDeterministicPeerListHash(t *testing.T) {
 	require.NotNil(t, hashBytes)
 
 	// Run update again - hash should be the same (deterministic)
-	require.NoError(t, keeper.UpdateKnownPeerListBatched(ctx))
+	require.NoError(t, k.UpdateKnownPeerListBatched(ctx))
 
 	hashBytes2, err := store.Get([]byte("known_peer_hash"))
 	require.NoError(t, err)
