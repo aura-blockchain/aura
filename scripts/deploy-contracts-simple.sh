@@ -46,7 +46,7 @@ echo "  TX submitted: $STORE_HASH"
 sleep 6
 
 # Get code ID
-CODE_ID=$(curl -s "${NODE}/tx?hash=0x${STORE_HASH}" | jq -r '.result.tx_result.events[] | select(.type=="store_code") | .attributes[] | select(.key=="code_id") | .value')
+CODE_ID=$(curl -s "${NODE}/tx?hash=0x${STORE_HASH}" | jq -r '.result.tx_result.events[] | select(.type=="store_code") | .attributes[] | select(.key=="code_id") | .value' | head -1 | tr -d '\n\r ')
 echo -e "  ${GREEN}Code stored: ID=$CODE_ID${NC}"
 
 # Instantiate
@@ -61,7 +61,7 @@ echo "  TX submitted: $INST_HASH"
 sleep 6
 
 # Get contract address
-CONTRACT=$(curl -s "${NODE}/tx?hash=0x${INST_HASH}" | jq -r '.result.tx_result.events[] | select(.type=="instantiate") | .attributes[] | select(.key=="_contract_address") | .value')
+CONTRACT=$(curl -s "${NODE}/tx?hash=0x${INST_HASH}" | jq -r '.result.tx_result.events[] | select(.type=="instantiate") | .attributes[] | select(.key=="_contract_address") | .value' | head -1 | tr -d '\n\r ')
 echo -e "  ${GREEN}Contract deployed: $CONTRACT${NC}"
 DEPLOYMENTS+=("vc-issuer|$CODE_ID|$CONTRACT")
 echo ""
@@ -81,7 +81,7 @@ echo "  TX submitted: $STORE_HASH"
 sleep 6
 
 # Get code ID
-CODE_ID=$(curl -s "${NODE}/tx?hash=0x${STORE_HASH}" | jq -r '.result.tx_result.events[] | select(.type=="store_code") | .attributes[] | select(.key=="code_id") | .value')
+CODE_ID=$(curl -s "${NODE}/tx?hash=0x${STORE_HASH}" | jq -r '.result.tx_result.events[] | select(.type=="store_code") | .attributes[] | select(.key=="code_id") | .value' | head -1 | tr -d '\n\r ')
 echo -e "  ${GREEN}Code stored: ID=$CODE_ID${NC}"
 
 # Instantiate
@@ -96,7 +96,7 @@ echo "  TX submitted: $INST_HASH"
 sleep 6
 
 # Get contract address
-CONTRACT=$(curl -s "${NODE}/tx?hash=0x${INST_HASH}" | jq -r '.result.tx_result.events[] | select(.type=="instantiate") | .attributes[] | select(.key=="_contract_address") | .value')
+CONTRACT=$(curl -s "${NODE}/tx?hash=0x${INST_HASH}" | jq -r '.result.tx_result.events[] | select(.type=="instantiate") | .attributes[] | select(.key=="_contract_address") | .value' | head -1 | tr -d '\n\r ')
 echo -e "  ${GREEN}Contract deployed: $CONTRACT${NC}"
 DEPLOYMENTS+=("schema|$CODE_ID|$CONTRACT")
 echo ""
@@ -116,7 +116,7 @@ echo "  TX submitted: $STORE_HASH"
 sleep 6
 
 # Get code ID
-CODE_ID=$(curl -s "${NODE}/tx?hash=0x${STORE_HASH}" | jq -r '.result.tx_result.events[] | select(.type=="store_code") | .attributes[] | select(.key=="code_id") | .value')
+CODE_ID=$(curl -s "${NODE}/tx?hash=0x${STORE_HASH}" | jq -r '.result.tx_result.events[] | select(.type=="store_code") | .attributes[] | select(.key=="code_id") | .value' | head -1 | tr -d '\n\r ')
 echo -e "  ${GREEN}Code stored: ID=$CODE_ID${NC}"
 
 # Instantiate
@@ -131,7 +131,7 @@ echo "  TX submitted: $INST_HASH"
 sleep 6
 
 # Get contract address
-CONTRACT=$(curl -s "${NODE}/tx?hash=0x${INST_HASH}" | jq -r '.result.tx_result.events[] | select(.type=="instantiate") | .attributes[] | select(.key=="_contract_address") | .value')
+CONTRACT=$(curl -s "${NODE}/tx?hash=0x${INST_HASH}" | jq -r '.result.tx_result.events[] | select(.type=="instantiate") | .attributes[] | select(.key=="_contract_address") | .value' | head -1 | tr -d '\n\r ')
 echo -e "  ${GREEN}Contract deployed: $CONTRACT${NC}"
 DEPLOYMENTS+=("binding-tester|$CODE_ID|$CONTRACT")
 echo ""
