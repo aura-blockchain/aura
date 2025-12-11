@@ -31,7 +31,7 @@ NC='\033[0m' # No Color
 CHAIN_ID="aura-local-4"
 DENOM="uaura"
 STAKING_AMOUNT="900000000000${DENOM}"  # 900,000 AURA per validator
-NUM_VALIDATORS=4
+NUM_VALIDATORS=${NUM_VALIDATORS:-4}
 BINARY="aurad"
 VALIDATOR_MONIKERS=("validator-1" "validator-2" "validator-3" "validator-4")
 

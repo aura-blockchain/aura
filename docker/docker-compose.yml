@@ -1,0 +1,79 @@
+version: "3.8"
+
+networks:
+  aura-testnet:
+    external: true
+
+volumes:
+  aura-prometheus-data:
+  aura-grafana-data:
+  aura-node1-data:
+  aura-node2-data:
+  aura-node3-data:
+  aura-node4-data:
+
+services:
+  # Monitoring Stack
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: aura-prometheus
+    restart: unless-stopped
+    ports:
+      - "10090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - aura-prometheus-data:/prometheus
+    networks:
+      - aura-testnet
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: aura-grafana
+    restart: unless-stopped
+    ports:
+      - "10030:3000"
+    volumes:
+      - aura-grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=aura-admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    networks:
+      - aura-testnet
+    depends_on:
+      - prometheus
+
+  # Placeholder for blockchain nodes - customize per chain type
+  # node1:
+  #   image: your-aura-node-image
+  #   container_name: aura-node1
+  #   ports:
+  #     - "10001:8545"  # RPC
+  #     - "10002:30303" # P2P
+  #     - "10003:8546"  # WS
+  #   volumes:
+  #     - aura-node1-data:/data
+  #   networks:
+  #     - aura-testnet
+
+  # Flask API Server
+  flask-api:
+    build:
+      context: ../flask-app
+      dockerfile: Dockerfile
+    container_name: aura-flask-api
+    restart: unless-stopped
+    ports:
+      - "10050:5000"
+    environment:
+      - FLASK_ENV=development
+      - NODE_RPC_URL=http://aura-node1:8545
+    volumes:
+      - ../flask-app:/app
+    networks:
+      - aura-testnet
+    depends_on:
+      - prometheus
