@@ -63,7 +63,8 @@ All production-ready modules have keepers, protos, server implementations (msg_s
 | Production genesis file | ✅ Done | `/networks/mainnet/genesis.json` |
 | Test compilation errors | ✅ Fixed | All 108/162 packages passing |
 | External security audit | 🔴 Critical | Not started |
-| Active testnet | ✅ Running | `aura-local-4` producing blocks (1000+) |
+| **Multi-node consensus** | 🔴 **CRITICAL** | **Validators diverge at block 2 - non-determinism bug** |
+| Active testnet | ⚠️ Partial | Single-node works, multi-node fails consensus |
 | IBC channels | 🔴 Critical | Not established |
 | Block explorer | ✅ Deployed | http://localhost:8088 (Ping.pub) |
 | Faucet service | ✅ Configured | `docker-compose.faucet.yml` ready |
@@ -174,6 +175,14 @@ All production-ready modules have keepers, protos, server implementations (msg_s
 - [x] Deploy public RPC/API endpoints (Dec 2025) → `/docker-compose.proxy.yml`, `/nginx/testnet-proxy.conf`
 - [x] Deploy block explorer (Dec 2025) → `/docker-compose.explorer.yml` (Ping.pub at localhost:8088)
 - [x] Configure faucet service (Dec 2025) → `/docker-compose.faucet.yml`, `/scripts/faucet-setup.sh`
+- [x] **NEW MACHINE: Multi-node consensus testing (Dec 11, 2025)**
+  - ✅ Built Docker image (213MB) with proto files generated
+  - ✅ Initialized 2-validator testnet for incremental testing
+  - ❌ **CONSENSUS FAILURE IDENTIFIED:** Validators computing different AppHashes at block 2
+  - **Error:** `wrong Block.Header.AppHash. Expected 006C3EA..., got F926DCC...`
+  - **Cause:** Non-deterministic behavior in BeginBlock/EndBlock or InitGenesis
+  - **Status:** Single-node works perfectly, multi-node fails immediately at height 2
+  - **Next:** Debug non-determinism in module BeginBlocker/EndBlocker logic
 
 ### Monitoring
 - [x] Deploy: `docker-compose -f docker-compose.monitoring.yml up -d` (config ready)
