@@ -178,11 +178,16 @@ All production-ready modules have keepers, protos, server implementations (msg_s
 - [x] **NEW MACHINE: Multi-node consensus testing (Dec 11, 2025)**
   - ✅ Built Docker image (213MB) with proto files generated
   - ✅ Initialized 2-validator testnet for incremental testing
-  - ❌ **CONSENSUS FAILURE IDENTIFIED:** Validators computing different AppHashes at block 2
-  - **Error:** `wrong Block.Header.AppHash. Expected 006C3EA..., got F926DCC...`
-  - **Cause:** Non-deterministic behavior in BeginBlock/EndBlock or InitGenesis
-  - **Status:** Single-node works perfectly, multi-node fails immediately at height 2
-  - **Next:** Debug non-determinism in module BeginBlocker/EndBlocker logic
+  - ✅ **CONSENSUS BUG FOUND AND FIXED:** Float64 fields in prevalidation module params
+  - **Root Cause:** Three `double` (float64) fields in `proto/aura/prevalidation/v1beta1/prevalidation.proto`
+    - `control_group_percentage` (line 345)
+    - `energy_cost_per_validation_kwh` (line 351)
+    - `energy_cost_per_execution_kwh` (line 354)
+  - **Why it failed:** Floating-point types have non-deterministic serialization across different systems/architectures
+  - **Symptoms:** Validators computed different AppHashes at block 2: `F926DCC...` vs `006C3EA...`
+  - **Fix:** Replaced `double` with `string` + `gogoproto.customtype = "cosmossdk.io/math.LegacyDec"`
+  - **Commit:** 720e118 - "fix(consensus): Replace float64 with sdk.Dec in prevalidation params"
+  - **Status:** Code fixed and committed. Need to rebuild Docker image and retest with 2-validator testnet.
 
 ### Monitoring
 - [x] Deploy: `docker-compose -f docker-compose.monitoring.yml up -d` (config ready)
