@@ -341,17 +341,26 @@ message Params {
   // Encryption algorithm (e.g., "AES-256-GCM")
   string encryption_algorithm = 7;
 
-  // Control group percentage (0-100)
-  double control_group_percentage = 8;
+  // Control group percentage (0-100) - stored as string for deterministic serialization (sdk.Dec)
+  string control_group_percentage = 8 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
 
   // Minimum confidence score required for pre-validation
   uint64 min_confidence_score = 9;
 
-  // Energy cost per validation (kWh)
-  double energy_cost_per_validation_kwh = 10;
+  // Energy cost per validation (kWh) - stored as string for deterministic serialization (sdk.Dec)
+  string energy_cost_per_validation_kwh = 10 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
 
-  // Energy cost per execution (kWh)
-  double energy_cost_per_execution_kwh = 11;
+  // Energy cost per execution (kWh) - stored as string for deterministic serialization (sdk.Dec)
+  string energy_cost_per_execution_kwh = 11 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
 
   // Whether to enable metrics collection
   bool metrics_enabled = 12;
