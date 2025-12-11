@@ -2,6 +2,8 @@ package types
 
 import (
 	"time"
+
+	"cosmossdk.io/math"
 )
 
 // Helper functions for SchedulerConfig
@@ -51,7 +53,7 @@ func ShouldScaleUp(a *AutoScalingConfig, metrics *TypeMetrics) bool {
 	if !a.Enabled {
 		return false
 	}
-	return metrics.CacheHitRate > a.TargetCacheHitRate
+	return metrics.CacheHitRate.GT(a.TargetCacheHitRate)
 }
 
 // ShouldScaleDown determines if we should scale down based on metrics
@@ -59,20 +61,34 @@ func ShouldScaleDown(a *AutoScalingConfig, metrics *TypeMetrics) bool {
 	if !a.Enabled {
 		return false
 	}
-	return metrics.CacheHitRate < a.MinCacheHitRate
+	return metrics.CacheHitRate.LT(a.MinCacheHitRate)
 }
 
 // CalculateNewAmount calculates the new amount after scaling
 func CalculateNewAmount(a *AutoScalingConfig, currentAmount uint64, scaleUp bool, txType TransactionType) uint64 {
 	var newAmount uint64
 	if scaleUp {
-		newAmount = uint64(float64(currentAmount) * a.ScaleUpFactor)
+		currentDec := math.LegacyNewDec(int64(currentAmount))
+		scaledDec := currentDec.Mul(a.ScaleUpFactor)
+		scaledInt64 := scaledDec.TruncateInt64() // Convert to int64, truncate decimal
+		if scaledInt64 < 0 {
+			newAmount = 0
+		} else {
+			newAmount = uint64(scaledInt64)
+		}
 		maxAmount := GetMaxAmount(a, txType)
 		if newAmount > maxAmount {
 			newAmount = maxAmount
 		}
 	} else {
-		newAmount = uint64(float64(currentAmount) * a.ScaleDownFactor)
+		currentDec := math.LegacyNewDec(int64(currentAmount))
+		scaledDec := currentDec.Mul(a.ScaleDownFactor)
+		scaledInt64 := scaledDec.TruncateInt64()
+		if scaledInt64 < 0 {
+			newAmount = 0
+		} else {
+			newAmount = uint64(scaledInt64)
+		}
 		initialAmount := GetInitialAmount(a, txType)
 		if newAmount < initialAmount {
 			newAmount = initialAmount
@@ -119,7 +135,9 @@ func MarkExpired(p *PreValidatedTransaction) {
 func UpdateCacheHitRate(m *PreValidationMetrics) {
 	total := m.TotalCacheHits + m.TotalCacheMisses
 	if total > 0 {
-		m.OverallCacheHitRate = float64(m.TotalCacheHits) / float64(total)
+		hits := math.LegacyNewDec(int64(m.TotalCacheHits))
+		totalDec := math.LegacyNewDec(int64(total))
+		m.OverallCacheHitRate = hits.Quo(totalDec)
 	}
 }
 
@@ -142,15 +160,20 @@ func RecordCacheHit(m *PreValidationMetrics, txType TransactionType, timeSavedMs
 	typeMetrics.CacheHits++
 	typeMetrics.TotalExecuted++
 
-	// Update average time savings
-	totalSavings := typeMetrics.AvgTimeSavingsMs * float64(typeMetrics.CacheHits-1)
-	totalSavings += float64(timeSavedMs)
-	typeMetrics.AvgTimeSavingsMs = totalSavings / float64(typeMetrics.CacheHits)
+	// Update average time savings using running average formula
+	prevCount := math.LegacyNewDec(int64(typeMetrics.CacheHits - 1))
+	totalSavings := typeMetrics.AvgTimeSavingsMs.Mul(prevCount)
+	timeSavedDec := math.LegacyNewDec(int64(timeSavedMs))
+	totalSavings = totalSavings.Add(timeSavedDec)
+	cacheHitsDec := math.LegacyNewDec(int64(typeMetrics.CacheHits))
+	typeMetrics.AvgTimeSavingsMs = totalSavings.Quo(cacheHitsDec)
 
 	// Update cache hit rate for this type
 	totalTypeRequests := typeMetrics.CacheHits + typeMetrics.CacheMisses
 	if totalTypeRequests > 0 {
-		typeMetrics.CacheHitRate = float64(typeMetrics.CacheHits) / float64(totalTypeRequests)
+		hits := math.LegacyNewDec(int64(typeMetrics.CacheHits))
+		totalDec := math.LegacyNewDec(int64(totalTypeRequests))
+		typeMetrics.CacheHitRate = hits.Quo(totalDec)
 	}
 }
 
@@ -175,7 +198,9 @@ func RecordCacheMiss(m *PreValidationMetrics, txType TransactionType) {
 	// Update cache hit rate for this type
 	totalTypeRequests := typeMetrics.CacheHits + typeMetrics.CacheMisses
 	if totalTypeRequests > 0 {
-		typeMetrics.CacheHitRate = float64(typeMetrics.CacheHits) / float64(totalTypeRequests)
+		hits := math.LegacyNewDec(int64(typeMetrics.CacheHits))
+		totalDec := math.LegacyNewDec(int64(totalTypeRequests))
+		typeMetrics.CacheHitRate = hits.Quo(totalDec)
 	}
 }
 

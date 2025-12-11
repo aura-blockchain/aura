@@ -145,11 +145,17 @@ message TemplateStats {
   // Total pre-validations expired
   uint64 total_expired = 3;
 
-  // Cache hit rate (percentage)
-  double cache_hit_rate = 4;
+  // Cache hit rate (percentage) - stored as string for deterministic serialization (sdk.Dec)
+  string cache_hit_rate = 4 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
 
-  // Average execution time savings (milliseconds)
-  double avg_time_savings_ms = 5;
+  // Average execution time savings (milliseconds) - stored as string for deterministic serialization (sdk.Dec)
+  string avg_time_savings_ms = 5 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
 
   // Last used timestamp
   google.protobuf.Timestamp last_used = 6 [(gogoproto.stdtime) = true];
@@ -193,17 +199,26 @@ message PreValidationMetrics {
   // Total cache misses
   uint64 total_cache_misses = 5;
 
-  // Overall cache hit rate
-  double overall_cache_hit_rate = 6;
+  // Overall cache hit rate - stored as string for deterministic serialization (sdk.Dec)
+  string overall_cache_hit_rate = 6 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
 
-  // Average time savings per transaction (milliseconds)
-  double avg_time_savings_ms = 7;
+  // Average time savings per transaction (milliseconds) - stored as string for deterministic serialization (sdk.Dec)
+  string avg_time_savings_ms = 7 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
 
   // Total time saved (milliseconds)
   uint64 total_time_saved_ms = 8;
 
-  // Total energy saved (estimated kWh)
-  double total_energy_saved_kwh = 9;
+  // Total energy saved (estimated kWh) - stored as string for deterministic serialization (sdk.Dec)
+  string total_energy_saved_kwh = 9 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
 
   // Metrics by transaction type
   map<string, TypeMetrics> metrics_by_type = 10;
@@ -226,10 +241,26 @@ message TypeMetrics {
   uint64 total_expired = 4;
   uint64 cache_hits = 5;
   uint64 cache_misses = 6;
-  double cache_hit_rate = 7;
-  double avg_time_savings_ms = 8;
-  double avg_execution_time_ms = 9;
-  double avg_validation_time_ms = 10;
+  // Cache hit rate - stored as string for deterministic serialization (sdk.Dec)
+  string cache_hit_rate = 7 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
+  // Average time savings (milliseconds) - stored as string for deterministic serialization (sdk.Dec)
+  string avg_time_savings_ms = 8 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
+  // Average execution time (milliseconds) - stored as string for deterministic serialization (sdk.Dec)
+  string avg_execution_time_ms = 9 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
+  // Average validation time (milliseconds) - stored as string for deterministic serialization (sdk.Dec)
+  string avg_validation_time_ms = 10 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
 }
 
 // HourlyMetrics tracks metrics for a specific hour
@@ -239,32 +270,58 @@ message HourlyMetrics {
   uint64 transactions_executed = 3;
   uint64 cache_hits = 4;
   uint64 cache_misses = 5;
-  double avg_time_savings_ms = 6;
-  double energy_saved_kwh = 7;
+  // Average time savings (milliseconds) - stored as string for deterministic serialization (sdk.Dec)
+  string avg_time_savings_ms = 6 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
+  // Energy saved (kWh) - stored as string for deterministic serialization (sdk.Dec)
+  string energy_saved_kwh = 7 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
 }
 
 // ControlGroupMetrics tracks metrics for non-pre-validated transactions
 message ControlGroupMetrics {
-  // Percentage of transactions in control group
-  double control_group_percentage = 1;
+  // Percentage of transactions in control group - stored as string for deterministic serialization (sdk.Dec)
+  string control_group_percentage = 1 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
 
   // Total transactions in control group
   uint64 total_transactions = 2;
 
-  // Average execution time (milliseconds)
-  double avg_execution_time_ms = 3;
+  // Average execution time (milliseconds) - stored as string for deterministic serialization (sdk.Dec)
+  string avg_execution_time_ms = 3 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
 
-  // Standard deviation of execution time
-  double execution_time_std_dev_ms = 4;
+  // Standard deviation of execution time - stored as string for deterministic serialization (sdk.Dec)
+  string execution_time_std_dev_ms = 4 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
 
-  // Median execution time
-  double median_execution_time_ms = 5;
+  // Median execution time - stored as string for deterministic serialization (sdk.Dec)
+  string median_execution_time_ms = 5 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
 
-  // 95th percentile execution time
-  double p95_execution_time_ms = 6;
+  // 95th percentile execution time - stored as string for deterministic serialization (sdk.Dec)
+  string p95_execution_time_ms = 6 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
 
-  // 99th percentile execution time
-  double p99_execution_time_ms = 7;
+  // 99th percentile execution time - stored as string for deterministic serialization (sdk.Dec)
+  string p99_execution_time_ms = 7 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
 }
 
 // SchedulerConfig defines when pre-validation runs
@@ -296,20 +353,32 @@ message AutoScalingConfig {
   // Initial amounts per transaction type
   map<string, uint64> initial_amounts = 2;
 
-  // Target cache hit rate (percentage)
-  double target_cache_hit_rate = 3;
+  // Target cache hit rate (percentage) - stored as string for deterministic serialization (sdk.Dec)
+  string target_cache_hit_rate = 3 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
 
-  // Minimum cache hit rate before scaling down
-  double min_cache_hit_rate = 4;
+  // Minimum cache hit rate before scaling down - stored as string for deterministic serialization (sdk.Dec)
+  string min_cache_hit_rate = 4 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
 
   // Maximum pre-validations per type
   map<string, uint64> max_amounts = 5;
 
-  // Scaling factor (multiply by this when scaling up)
-  double scale_up_factor = 6;
+  // Scaling factor (multiply by this when scaling up) - stored as string for deterministic serialization (sdk.Dec)
+  string scale_up_factor = 6 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
 
-  // Scaling factor (multiply by this when scaling down)
-  double scale_down_factor = 7;
+  // Scaling factor (multiply by this when scaling down) - stored as string for deterministic serialization (sdk.Dec)
+  string scale_down_factor = 7 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
 
   // Cooldown period between scaling events (minutes)
   uint32 cooldown_minutes = 8;
@@ -441,7 +510,11 @@ message EventAutoScaling {
   TransactionType tx_type = 1;
   uint64 previous_amount = 2;
   uint64 new_amount = 3;
-  double cache_hit_rate = 4;
+  // Cache hit rate - stored as string for deterministic serialization (sdk.Dec)
+  string cache_hit_rate = 4 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
   string reason = 5;
   google.protobuf.Timestamp timestamp = 6 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
 }

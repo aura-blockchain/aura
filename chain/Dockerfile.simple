@@ -1,0 +1,20 @@
+FROM debian:12-slim
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates tzdata && \
+    rm -rf /var/lib/apt/lists/* && \
+    groupadd -g 1000 aura && \
+    useradd -m -u 1000 -g aura aura && \
+    mkdir -p /home/aura/.aura/config /home/aura/.aura/data && \
+    chown -R aura:aura /home/aura
+
+COPY chain/aurad /usr/local/bin/aurad
+COPY third_party/wasmvm/internal/api/libwasmvm.x86_64.so /usr/lib/
+RUN ldconfig && chmod +x /usr/local/bin/aurad
+
+USER aura
+WORKDIR /home/aura
+
+EXPOSE 1317 9090 26656 26657 26660
+
+CMD ["aurad", "start"]
