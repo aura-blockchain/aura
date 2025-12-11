@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"cosmossdk.io/log"
+	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/codec"
 	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -417,10 +418,10 @@ func (k *Keeper) GetMetrics(ctx sdk.Context) *pb.PreValidationMetrics {
 		TotalExpired:          0,
 		TotalCacheHits:        0,
 		TotalCacheMisses:      0,
-		OverallCacheHitRate:   0.0,
-		AvgTimeSavingsMs:      0.0,
+		OverallCacheHitRate:   math.LegacyNewDec(0),
+		AvgTimeSavingsMs:      math.LegacyNewDec(0),
 		TotalTimeSavedMs:      0,
-		TotalEnergySavedKwh:   0.0,
+		TotalEnergySavedKwh:   math.LegacyNewDec(0),
 		MetricsByType:         make(map[string]*pb.TypeMetrics),
 		CurrentHour:           nil,
 		Last_24Hours:          []*pb.HourlyMetrics{},
@@ -439,9 +440,9 @@ func (k *Keeper) GetTypeMetrics(ctx sdk.Context, txType pb.TransactionType) *pb.
 		TotalExpired:          0,
 		CacheHits:             0,
 		CacheMisses:           0,
-		CacheHitRate:          0.0,
-		AvgTimeSavingsMs:      0.0,
-		AvgExecutionTimeMs:    0.0,
-		AvgValidationTimeMs:   0.0,
+		CacheHitRate:          math.LegacyNewDec(0),
+		AvgTimeSavingsMs:      math.LegacyNewDec(0),
+		AvgExecutionTimeMs:    math.LegacyNewDec(0),
+		AvgValidationTimeMs:   math.LegacyNewDec(0),
 	}
 }

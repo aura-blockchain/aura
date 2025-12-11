@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/math"
 	"github.com/stretchr/testify/require"
 )
 
@@ -17,7 +18,7 @@ func TestDefaultParams(t *testing.T) {
 	require.Equal(t, uint64(10000), params.MaxCacheSize)
 	require.Equal(t, uint32(24), params.ExpiryHours)
 	require.Equal(t, "AES-256-GCM", params.EncryptionAlgorithm)
-	require.Equal(t, float64(10.0), params.ControlGroupPercentage)
+	require.True(t, params.ControlGroupPercentage.Equal(math.LegacyNewDec(10)))
 	require.Equal(t, uint64(50), params.MinConfidenceScore)
 	require.True(t, params.MetricsEnabled)
 	require.False(t, params.DetailedLogging)
@@ -43,14 +44,14 @@ func TestValidateParams_NilParams(t *testing.T) {
 func TestValidateParams_ControlGroupPercentage(t *testing.T) {
 	tests := []struct {
 		name       string
-		percentage float64
+		percentage math.LegacyDec
 		wantError  bool
 	}{
-		{"valid 0.0", 0.0, false},
-		{"valid 50.0", 50.0, false},
-		{"valid 100.0", 100.0, false},
-		{"invalid negative", -1.0, true},
-		{"invalid above 100", 100.1, true},
+		{"valid 0.0", math.LegacyNewDec(0), false},
+		{"valid 50.0", math.LegacyNewDec(50), false},
+		{"valid 100.0", math.LegacyNewDec(100), false},
+		{"invalid negative", math.LegacyNewDec(-1), true},
+		{"invalid above 100", math.LegacyMustNewDecFromStr("100.1"), true},
 	}
 
 	for _, tt := range tests {
@@ -220,7 +221,7 @@ func TestGetMaxAmount(t *testing.T) {
 func TestShouldScaleUp(t *testing.T) {
 	config := &AutoScalingConfig{
 		Enabled:            true,
-		TargetCacheHitRate: 0.8,
+		TargetCacheHitRate: math.LegacyMustNewDecFromStr("0.8"),
 	}
 
 	tests := []struct {
@@ -231,21 +232,21 @@ func TestShouldScaleUp(t *testing.T) {
 		{
 			name: "high cache hit rate",
 			metrics: &TypeMetrics{
-				CacheHitRate: 0.85,
+				CacheHitRate: math.LegacyMustNewDecFromStr("0.85"),
 			},
 			expected: true,
 		},
 		{
 			name: "low cache hit rate",
 			metrics: &TypeMetrics{
-				CacheHitRate: 0.7,
+				CacheHitRate: math.LegacyMustNewDecFromStr("0.7"),
 			},
 			expected: false,
 		},
 		{
 			name: "exact target rate",
 			metrics: &TypeMetrics{
-				CacheHitRate: 0.8,
+				CacheHitRate: math.LegacyMustNewDecFromStr("0.8"),
 			},
 			expected: false,
 		},
@@ -262,7 +263,7 @@ func TestShouldScaleUp(t *testing.T) {
 func TestShouldScaleDown(t *testing.T) {
 	config := &AutoScalingConfig{
 		Enabled:         true,
-		MinCacheHitRate: 0.5,
+		MinCacheHitRate: math.LegacyMustNewDecFromStr("0.5"),
 	}
 
 	tests := []struct {
@@ -273,21 +274,21 @@ func TestShouldScaleDown(t *testing.T) {
 		{
 			name: "low cache hit rate",
 			metrics: &TypeMetrics{
-				CacheHitRate: 0.4,
+				CacheHitRate: math.LegacyMustNewDecFromStr("0.4"),
 			},
 			expected: true,
 		},
 		{
 			name: "high cache hit rate",
 			metrics: &TypeMetrics{
-				CacheHitRate: 0.6,
+				CacheHitRate: math.LegacyMustNewDecFromStr("0.6"),
 			},
 			expected: false,
 		},
 		{
 			name: "exact min rate",
 			metrics: &TypeMetrics{
-				CacheHitRate: 0.5,
+				CacheHitRate: math.LegacyMustNewDecFromStr("0.5"),
 			},
 			expected: false,
 		},
@@ -303,8 +304,8 @@ func TestShouldScaleDown(t *testing.T) {
 
 func TestCalculateNewAmount(t *testing.T) {
 	config := &AutoScalingConfig{
-		ScaleUpFactor:   1.5,
-		ScaleDownFactor: 0.7,
+		ScaleUpFactor:   math.LegacyMustNewDecFromStr("1.5"),
+		ScaleDownFactor: math.LegacyMustNewDecFromStr("0.7"),
 		InitialAmounts: map[string]uint64{
 			"TX_TYPE_IR_COMPLETION": 10,
 		},
@@ -467,12 +468,12 @@ func TestUpdateCacheHitRate(t *testing.T) {
 		name         string
 		cacheHits    uint64
 		cacheMisses  uint64
-		expectedRate float64
+		expectedRate math.LegacyDec
 	}{
-		{"perfect hit rate", 100, 0, 1.0},
-		{"50% hit rate", 50, 50, 0.5},
-		{"no hits", 0, 100, 0.0},
-		{"zero total", 0, 0, 0.0},
+		{"perfect hit rate", 100, 0, math.LegacyNewDec(1)},
+		{"50% hit rate", 50, 50, math.LegacyMustNewDecFromStr("0.5")},
+		{"no hits", 0, 100, math.LegacyNewDec(0)},
+		{"zero total", 0, 0, math.LegacyNewDec(0)}, // No update when total is 0
 	}
 
 	for _, tt := range tests {
@@ -484,7 +485,12 @@ func TestUpdateCacheHitRate(t *testing.T) {
 
 			UpdateCacheHitRate(metrics)
 
-			require.Equal(t, tt.expectedRate, metrics.OverallCacheHitRate)
+			if tt.name == "zero total" {
+				// When total is 0, the rate should remain at zero (not updated)
+				require.True(t, metrics.OverallCacheHitRate.IsZero())
+			} else {
+				require.True(t, metrics.OverallCacheHitRate.Equal(tt.expectedRate))
+			}
 		})
 	}
 }
@@ -495,14 +501,14 @@ func TestRecordCacheHit(t *testing.T) {
 	RecordCacheHit(metrics, TransactionType_TX_TYPE_IR_COMPLETION, 100)
 
 	require.Equal(t, uint64(1), metrics.TotalCacheHits)
-	require.Equal(t, 1.0, metrics.OverallCacheHitRate)
+	require.True(t, metrics.OverallCacheHitRate.Equal(math.LegacyNewDec(1)))
 
 	// Check type-specific metrics
 	typeMetrics := GetTypeMetrics(metrics, TransactionType_TX_TYPE_IR_COMPLETION)
 	require.NotNil(t, typeMetrics)
 	require.Equal(t, uint64(1), typeMetrics.CacheHits)
 	require.Equal(t, uint64(1), typeMetrics.TotalExecuted)
-	require.Equal(t, float64(100), typeMetrics.AvgTimeSavingsMs)
+	require.True(t, typeMetrics.AvgTimeSavingsMs.Equal(math.LegacyNewDec(100)))
 
 	// Record another hit
 	RecordCacheHit(metrics, TransactionType_TX_TYPE_IR_COMPLETION, 200)
@@ -510,7 +516,7 @@ func TestRecordCacheHit(t *testing.T) {
 	require.Equal(t, uint64(2), metrics.TotalCacheHits)
 	typeMetrics = GetTypeMetrics(metrics, TransactionType_TX_TYPE_IR_COMPLETION)
 	require.Equal(t, uint64(2), typeMetrics.CacheHits)
-	require.Equal(t, float64(150), typeMetrics.AvgTimeSavingsMs) // (100 + 200) / 2
+	require.True(t, typeMetrics.AvgTimeSavingsMs.Equal(math.LegacyNewDec(150))) // (100 + 200) / 2
 }
 
 func TestRecordCacheMiss(t *testing.T) {
@@ -519,13 +525,13 @@ func TestRecordCacheMiss(t *testing.T) {
 	RecordCacheMiss(metrics, TransactionType_TX_TYPE_DEX_SWAP)
 
 	require.Equal(t, uint64(1), metrics.TotalCacheMisses)
-	require.Equal(t, 0.0, metrics.OverallCacheHitRate)
+	require.True(t, metrics.OverallCacheHitRate.Equal(math.LegacyNewDec(0)))
 
 	// Check type-specific metrics
 	typeMetrics := GetTypeMetrics(metrics, TransactionType_TX_TYPE_DEX_SWAP)
 	require.NotNil(t, typeMetrics)
 	require.Equal(t, uint64(1), typeMetrics.CacheMisses)
-	require.Equal(t, 0.0, typeMetrics.CacheHitRate)
+	require.True(t, typeMetrics.CacheHitRate.Equal(math.LegacyNewDec(0)))
 }
 
 func TestGetTypeMetrics_NonExistent(t *testing.T) {
