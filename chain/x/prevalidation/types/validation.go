@@ -2,6 +2,8 @@ package types
 
 import (
 	"fmt"
+
+	"cosmossdk.io/math"
 )
 
 // DefaultParams returns default prevalidation parameters
@@ -14,10 +16,10 @@ func DefaultParams() *Params {
 		MaxCacheSize:                 10000,
 		ExpiryHours:                  24,
 		EncryptionAlgorithm:          "AES-256-GCM",
-		ControlGroupPercentage:       10.0,
+		ControlGroupPercentage:       math.LegacyNewDec(10),                    // 10.0 as deterministic decimal
 		MinConfidenceScore:           50,
-		EnergyCostPerValidationKwh:   0.001,
-		EnergyCostPerExecutionKwh:    0.005,
+		EnergyCostPerValidationKwh:   math.LegacyNewDecWithPrec(1, 3),         // 0.001 as deterministic decimal
+		EnergyCostPerExecutionKwh:    math.LegacyNewDecWithPrec(5, 3),         // 0.005 as deterministic decimal
 		MetricsEnabled:               true,
 		DetailedLogging:              false,
 		MaxValidationAttempts:        3,
@@ -42,7 +44,7 @@ func ValidateParams(params *Params) error {
 	}
 
 	// Validate control group percentage
-	if params.ControlGroupPercentage < 0.0 || params.ControlGroupPercentage > 100.0 {
+	if params.ControlGroupPercentage.IsNegative() || params.ControlGroupPercentage.GT(math.LegacyNewDec(100)) {
 		return fmt.Errorf("control_group_percentage must be between 0.0 and 100.0")
 	}
 
