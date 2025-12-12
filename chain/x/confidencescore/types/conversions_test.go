@@ -93,9 +93,9 @@ func TestIRCompletionToProto(t *testing.T) {
 		ProofHash:        []byte("proof"),
 		VerifierHash:     []byte("verifier"),
 		TxHash:           "tx123",
-		VelocityBonus:    1.5,
-		ArenaBonus:       1.2,
-		JackpotBonus:     1.0,
+		VelocityBonusBps: 15000, // 1.5x in basis points
+		ArenaBonusBps:    12000, // 1.2x in basis points
+		JackpotBonusBps:  10000, // 1.0x in basis points
 		Status:           IRCompletionStatusVerified,
 		Arena:            "Biometric",
 	}
@@ -117,8 +117,8 @@ func TestIRCompletionToProto(t *testing.T) {
 		t.Errorf("expected final score %d, got %d", completion.FinalScore, proto.FinalScore)
 	}
 
-	if proto.VelocityBonus != completion.VelocityBonus {
-		t.Errorf("expected velocity bonus %f, got %f", completion.VelocityBonus, proto.VelocityBonus)
+	if proto.VelocityBonusBps != completion.VelocityBonusBps {
+		t.Errorf("expected velocity bonus %d, got %d", completion.VelocityBonusBps, proto.VelocityBonusBps)
 	}
 
 	if proto.Arena != completion.Arena {
@@ -236,7 +236,7 @@ func TestParamsToProto(t *testing.T) {
 		t.Error("velocity bonus days length mismatch")
 	}
 
-	if len(proto.ArenaMultipliers) != len(params.ArenaMultipliers) {
+	if len(proto.ArenaMultipliersBps) != len(params.ArenaMultipliersBps) {
 		t.Error("arena multipliers length mismatch")
 	}
 

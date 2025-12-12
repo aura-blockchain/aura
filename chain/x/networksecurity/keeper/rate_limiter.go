@@ -38,13 +38,16 @@ func NewRateLimiter(maxRate, burstSize uint64, windowDuration time.Duration, cur
 
 // Allow checks if a request should be allowed.
 // currentTime must be ctx.BlockTime() from Cosmos SDK context for deterministic consensus.
+// Uses integer math for deterministic consensus.
 func (rl *RateLimiter) Allow(currentTime time.Time) bool {
 	rl.mu.Lock()
 	defer rl.mu.Unlock()
 
-	// Refill tokens based on elapsed time
+	// Refill tokens based on elapsed time using integer math
 	elapsed := currentTime.Sub(rl.lastRefill)
-	tokensToAdd := uint64(elapsed.Seconds() * float64(rl.maxRate))
+	// Convert to seconds using integer division (nanoseconds / 1e9)
+	elapsedSeconds := uint64(elapsed.Nanoseconds() / 1e9)
+	tokensToAdd := elapsedSeconds * rl.maxRate
 	if tokensToAdd > 0 {
 		rl.tokens = min(rl.tokens+tokensToAdd, rl.burstSize)
 		rl.lastRefill = currentTime
@@ -57,7 +60,9 @@ func (rl *RateLimiter) Allow(currentTime time.Time) bool {
 	}
 
 	// Check both token bucket and window limit
-	if rl.tokens > 0 && rl.requestsInWindow < rl.maxRate*uint64(rl.windowDuration.Seconds()) {
+	// windowDurationSeconds = windowDuration in nanoseconds / 1e9
+	windowDurationSeconds := uint64(rl.windowDuration.Nanoseconds() / 1e9)
+	if rl.tokens > 0 && rl.requestsInWindow < rl.maxRate*windowDurationSeconds {
 		rl.tokens--
 		rl.requestsInWindow++
 		return true

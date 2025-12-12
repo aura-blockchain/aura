@@ -395,6 +395,7 @@ func (k Keeper) AddUserVoteLock(ctx context.Context, userAddress, lockID string)
 }
 
 // CalculateVotingPower calculates voting power based on locked tokens
+// Uses integer math (basis points) for deterministic consensus
 func (k Keeper) CalculateVotingPowerFromDuration(amount string, lockDuration int64) string {
 	// Parse amount
 	amountBig := new(big.Int)
@@ -402,22 +403,24 @@ func (k Keeper) CalculateVotingPowerFromDuration(amount string, lockDuration int
 
 	// Simple formula: voting power = amount * (1 + lockDuration / maxDuration)
 	// This incentivizes longer locks
+	// Using basis points (10000 = 1.0) for deterministic integer math
+	const basisPointsBase int64 = 10000
 	maxDuration := int64(31536000) // 1 year in seconds
 
-	multiplier := big.NewFloat(1.0)
+	// Calculate multiplier in basis points: 10000 + (lockDuration * 10000 / maxDuration)
+	multiplierBps := basisPointsBase
 	if lockDuration > 0 {
-		durationBonus := float64(lockDuration) / float64(maxDuration)
-		if durationBonus > 1.0 {
-			durationBonus = 1.0 // Cap at 2x
+		durationBonusBps := (lockDuration * basisPointsBase) / maxDuration
+		if durationBonusBps > basisPointsBase {
+			durationBonusBps = basisPointsBase // Cap at 2x (10000 + 10000 = 20000 bps)
 		}
-		multiplier.Add(multiplier, big.NewFloat(durationBonus))
+		multiplierBps += durationBonusBps
 	}
 
-	// Calculate voting power
-	amountFloat := new(big.Float).SetInt(amountBig)
-	votingPower := new(big.Float).Mul(amountFloat, multiplier)
+	// Calculate voting power using integer math
+	// votingPower = amount * multiplierBps / basisPointsBase
+	votingPower := new(big.Int).Mul(amountBig, big.NewInt(multiplierBps))
+	votingPower.Div(votingPower, big.NewInt(basisPointsBase))
 
-	// Convert to integer
-	result, _ := votingPower.Int(nil)
-	return result.String()
+	return votingPower.String()
 }

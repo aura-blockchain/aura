@@ -93,9 +93,12 @@ message IRCompletion {
   bytes proof_hash = 7;                  // SHA256 of proof data
   bytes verifier_hash = 8;               // SHA256 of verifier plug-in
   string tx_hash = 9;                    // Transaction hash
-  float velocity_bonus = 10;             // Velocity multiplier applied (1.0-1.25)
-  float arena_bonus = 11;                // Arena multiplier applied (1.0-1.5)
-  float jackpot_bonus = 12;              // Jackpot multiplier applied (1.0, 5.0, 25.0)
+  // Velocity multiplier applied in basis points (10000 = 1.0x, 12500 = 1.25x)
+  uint64 velocity_bonus_bps = 10;
+  // Arena multiplier applied in basis points (10000 = 1.0x, 15000 = 1.5x)
+  uint64 arena_bonus_bps = 11;
+  // Jackpot multiplier applied in basis points (10000 = 1.0x, 50000 = 5.0x, 250000 = 25.0x)
+  uint64 jackpot_bonus_bps = 12;
   IRCompletionStatus status = 13;        // Completion status
   string arena = 14;                     // Arena type
 }
@@ -160,10 +163,14 @@ message Params {
 
   // Velocity bonuses (time-based completion bonuses)
   repeated uint64 velocity_bonus_days = 4; // [7, 30] - days thresholds
-  repeated float velocity_bonus_multipliers = 5; // [1.25, 1.10] - corresponding multipliers
+  // Velocity bonus multipliers in basis points (10000 = 1.0x, 12500 = 1.25x, 11000 = 1.1x)
+  // Using uint64 basis points for deterministic consensus instead of float
+  repeated uint64 velocity_bonus_multipliers_bps = 5; // [12500, 11000] - corresponding multipliers in basis points
 
-  // Arena multipliers
-  map<uint64, float> arena_multipliers = 6; // threshold -> multiplier (3000->1.1, 4000->1.2, 5000->1.5)
+  // Arena multipliers in basis points (10000 = 1.0x)
+  // Using map<uint64, uint64> for deterministic consensus instead of map<uint64, float>
+  // Keys: CS threshold, Values: multiplier in basis points
+  map<uint64, uint64> arena_multipliers_bps = 6; // threshold -> multiplier (3000->11000, 4000->12000, 5000->15000)
 
   // Slashing parameters
   uint64 slash_percentage = 7;           // Default: 50% max slash
@@ -175,7 +182,9 @@ message Params {
 
   // Jackpot probabilities
   repeated uint64 jackpot_odds = 11;     // [100, 1000] - odds for jackpot (1 in N)
-  repeated float jackpot_multipliers = 12; // [5.0, 25.0] - corresponding multipliers
+  // Jackpot multipliers in basis points (10000 = 1.0x, 50000 = 5.0x, 250000 = 25.0x)
+  // Using uint64 basis points for deterministic consensus instead of float
+  repeated uint64 jackpot_multipliers_bps = 12; // [50000, 250000] - corresponding multipliers in basis points
 
   // Staleness (future)
   bool staleness_enabled = 13;           // Default: false
@@ -205,9 +214,10 @@ message MsgRecordIRCompletionResponse {
   uint64 score_earned = 1;
   uint64 new_total_score = 2;
   bool verification_achieved = 3;        // True if crossed 10,000
-  float velocity_multiplier = 4;
-  float arena_multiplier = 5;
-  float jackpot_multiplier = 6;
+  // Multipliers in basis points (10000 = 1.0x)
+  uint64 velocity_multiplier_bps = 4;
+  uint64 arena_multiplier_bps = 5;
+  uint64 jackpot_multiplier_bps = 6;
 }
 
 // MsgRecalculateScore recalculates a user's total score (admin only)
@@ -445,9 +455,10 @@ message EventIRCompleted {
   string assistant_address = 5;
   string arena = 6;
   uint64 block_height = 7;
-  float velocity_multiplier = 8;
-  float arena_multiplier = 9;
-  float jackpot_multiplier = 10;
+  // Multipliers in basis points (10000 = 1.0x)
+  uint64 velocity_multiplier_bps = 8;
+  uint64 arena_multiplier_bps = 9;
+  uint64 jackpot_multiplier_bps = 10;
 }
 
 // EventVerificationAchieved is emitted when a user achieves verified status
@@ -482,7 +493,8 @@ message EventScoreSlashed {
 message EventJackpotTriggered {
   string wallet_address = 1;
   string ir_id = 2;
-  float multiplier = 3;                  // 5.0 or 25.0
+  // Multiplier in basis points (50000 = 5.0x, 250000 = 25.0x)
+  uint64 multiplier_bps = 3;
   uint64 bonus_score = 4;
 }
 

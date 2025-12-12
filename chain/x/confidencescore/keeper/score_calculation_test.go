@@ -26,16 +26,17 @@ func TestCalculateScoreEarned(t *testing.T) {
 		t.Error("expected non-zero score")
 	}
 
-	if velocity < 1.0 {
-		t.Errorf("expected velocity >= 1.0, got %f", velocity)
+	// All multipliers are in basis points (10000 = 1.0x)
+	if velocity < BasisPointsBase {
+		t.Errorf("expected velocity >= %d (1.0x), got %d", BasisPointsBase, velocity)
 	}
 
-	if arena < 1.0 {
-		t.Errorf("expected arena >= 1.0, got %f", arena)
+	if arena < BasisPointsBase {
+		t.Errorf("expected arena >= %d (1.0x), got %d", BasisPointsBase, arena)
 	}
 
-	if jackpot < 1.0 {
-		t.Errorf("expected jackpot >= 1.0, got %f", jackpot)
+	if jackpot < BasisPointsBase {
+		t.Errorf("expected jackpot >= %d (1.0x), got %d", BasisPointsBase, jackpot)
 	}
 }
 
@@ -63,16 +64,16 @@ func TestCalculateArenaMultiplier(t *testing.T) {
 	walletAddr := "aura1test"
 	arena := "Biometric"
 
-	// No record - should return 1.0
+	// No record - should return 10000 (1.0x in basis points)
 	multiplier := k.CalculateArenaMultiplier(ctx, walletAddr, arena)
-	if multiplier != 1.0 {
-		t.Errorf("expected 1.0 for no record, got %f", multiplier)
+	if multiplier != BasisPointsBase {
+		t.Errorf("expected %d (1.0x) for no record, got %d", BasisPointsBase, multiplier)
 	}
 
-	// Empty arena - should return 1.0
+	// Empty arena - should return 10000 (1.0x)
 	multiplier = k.CalculateArenaMultiplier(ctx, walletAddr, "")
-	if multiplier != 1.0 {
-		t.Errorf("expected 1.0 for empty arena, got %f", multiplier)
+	if multiplier != BasisPointsBase {
+		t.Errorf("expected %d (1.0x) for empty arena, got %d", BasisPointsBase, multiplier)
 	}
 
 	// Create record with arena score below threshold
@@ -89,8 +90,8 @@ func TestCalculateArenaMultiplier(t *testing.T) {
 	k.SetUserRecord(ctx, record)
 
 	multiplier = k.CalculateArenaMultiplier(ctx, walletAddr, arena)
-	if multiplier != 1.0 {
-		t.Errorf("expected 1.0 for score below threshold, got %f", multiplier)
+	if multiplier != BasisPointsBase {
+		t.Errorf("expected %d (1.0x) for score below threshold, got %d", BasisPointsBase, multiplier)
 	}
 
 	// Arena score at 3000 threshold
@@ -98,8 +99,8 @@ func TestCalculateArenaMultiplier(t *testing.T) {
 	k.SetUserRecord(ctx, record)
 
 	multiplier = k.CalculateArenaMultiplier(ctx, walletAddr, arena)
-	if multiplier != 1.1 {
-		t.Errorf("expected 1.1 for 3000 score, got %f", multiplier)
+	if multiplier != 11000 { // 1.1x = 11000 basis points
+		t.Errorf("expected 11000 (1.1x) for 3000 score, got %d", multiplier)
 	}
 
 	// Arena score at 4000 threshold
@@ -107,8 +108,8 @@ func TestCalculateArenaMultiplier(t *testing.T) {
 	k.SetUserRecord(ctx, record)
 
 	multiplier = k.CalculateArenaMultiplier(ctx, walletAddr, arena)
-	if multiplier != 1.2 {
-		t.Errorf("expected 1.2 for 4000 score, got %f", multiplier)
+	if multiplier != 12000 { // 1.2x = 12000 basis points
+		t.Errorf("expected 12000 (1.2x) for 4000 score, got %d", multiplier)
 	}
 
 	// Arena score at 5000 threshold (focus unlocked)
@@ -116,8 +117,8 @@ func TestCalculateArenaMultiplier(t *testing.T) {
 	k.SetUserRecord(ctx, record)
 
 	multiplier = k.CalculateArenaMultiplier(ctx, walletAddr, arena)
-	if multiplier != 1.5 {
-		t.Errorf("expected 1.5 for 5000 score, got %f", multiplier)
+	if multiplier != 15000 { // 1.5x = 15000 basis points
+		t.Errorf("expected 15000 (1.5x) for 5000 score, got %d", multiplier)
 	}
 }
 

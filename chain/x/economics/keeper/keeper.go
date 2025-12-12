@@ -8,6 +8,7 @@ import (
 	sdkmath "cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/gogoproto/proto"
 
 	"github.com/aequitas/aura/chain/x/economics/types"
 	economicspb "github.com/aequitas/aura/proto/aura/economics/v1beta1"
@@ -67,11 +68,13 @@ func (k Keeper) SetParams(ctx context.Context, params *economicspb.Params) error
 	}
 
 	store := k.storeService.OpenKVStore(ctx)
-	bz, err := k.cdc.Marshal(params)
-	if err != nil {
+	// Marshal deterministically to avoid map iteration nondeterminism impacting AppHash
+	buf := proto.NewBuffer(nil)
+	buf.SetDeterministic(true)
+	if err := buf.Marshal(params); err != nil {
 		return err
 	}
-	return store.Set(types.ParamsKey, bz)
+	return store.Set(types.ParamsKey, buf.Bytes())
 }
 
 // ============================

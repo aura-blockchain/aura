@@ -6,6 +6,9 @@ import (
 	confidencescorepb "github.com/aequitas/aura/proto/aura/confidencescore/v1beta1"
 )
 
+// BasisPointsBase is the base for multiplier calculations (10000 = 1.0x)
+const BasisPointsBase uint64 = 10000
+
 // DefaultParams returns default confidence score parameters
 func DefaultParams() Params {
 	return Params{
@@ -15,14 +18,16 @@ func DefaultParams() Params {
 		ArenaFocusThreshold:    5000,  // Default: 5,000 CS for arena focus credentials
 
 		// Velocity bonuses (time-based completion bonuses)
-		VelocityBonusDays:        []uint64{7, 30},       // Complete in 7 days or 30 days
-		VelocityBonusMultipliers: []float32{1.25, 1.10}, // Get 1.25x or 1.10x bonus
+		// Multipliers in basis points: 10000 = 1.0x, 12500 = 1.25x, 11000 = 1.1x
+		VelocityBonusDays:           []uint64{7, 30},        // Complete in 7 days or 30 days
+		VelocityBonusMultipliersBps: []uint64{12500, 11000}, // Get 1.25x or 1.10x bonus (in basis points)
 
-		// Arena multipliers (threshold -> multiplier)
-		ArenaMultipliers: map[uint64]float32{
-			3000: 1.1, // 3000+ CS in arena = 1.1x multiplier
-			4000: 1.2, // 4000+ CS in arena = 1.2x multiplier
-			5000: 1.5, // 5000+ CS in arena = 1.5x multiplier (arena focus unlocked)
+		// Arena multipliers (threshold -> multiplier in basis points)
+		// 10000 = 1.0x, 11000 = 1.1x, 12000 = 1.2x, 15000 = 1.5x
+		ArenaMultipliersBps: map[uint64]uint64{
+			3000: 11000, // 3000+ CS in arena = 1.1x multiplier
+			4000: 12000, // 4000+ CS in arena = 1.2x multiplier
+			5000: 15000, // 5000+ CS in arena = 1.5x multiplier (arena focus unlocked)
 		},
 
 		// Slashing parameters
@@ -34,8 +39,9 @@ func DefaultParams() Params {
 		MaxIrsPerHour: 3,  // Max 3 IR completions per hour
 
 		// Jackpot probabilities
-		JackpotOdds:        []uint64{100, 1000},  // 1 in 100, or 1 in 1000
-		JackpotMultipliers: []float32{5.0, 25.0}, // Get 5x or 25x score bonus
+		// Multipliers in basis points: 50000 = 5.0x, 250000 = 25.0x
+		JackpotOdds:           []uint64{100, 1000},     // 1 in 100, or 1 in 1000
+		JackpotMultipliersBps: []uint64{50000, 250000}, // Get 5x or 25x score bonus (in basis points)
 
 		// Staleness (future feature - disabled by default)
 		StalenessEnabled:       false, // Score staleness not enabled
@@ -66,22 +72,22 @@ func ValidateParams(p *Params) error {
 	}
 
 	// Validate velocity bonus configuration
-	if len(p.VelocityBonusDays) != len(p.VelocityBonusMultipliers) {
-		return fmt.Errorf("velocity_bonus_days and velocity_bonus_multipliers must have same length")
+	if len(p.VelocityBonusDays) != len(p.VelocityBonusMultipliersBps) {
+		return fmt.Errorf("velocity_bonus_days and velocity_bonus_multipliers_bps must have same length")
 	}
-	for i, mult := range p.VelocityBonusMultipliers {
-		if mult < 1.0 {
-			return fmt.Errorf("velocity_bonus_multipliers[%d] must be >= 1.0, got %f", i, mult)
+	for i, mult := range p.VelocityBonusMultipliersBps {
+		if mult < BasisPointsBase {
+			return fmt.Errorf("velocity_bonus_multipliers_bps[%d] must be >= %d (1.0x), got %d", i, BasisPointsBase, mult)
 		}
 	}
 
 	// Validate arena multipliers
-	for threshold, mult := range p.ArenaMultipliers {
+	for threshold, mult := range p.ArenaMultipliersBps {
 		if threshold == 0 {
-			return fmt.Errorf("arena_multipliers threshold must be positive")
+			return fmt.Errorf("arena_multipliers_bps threshold must be positive")
 		}
-		if mult < 1.0 {
-			return fmt.Errorf("arena_multipliers[%d] must be >= 1.0, got %f", threshold, mult)
+		if mult < BasisPointsBase {
+			return fmt.Errorf("arena_multipliers_bps[%d] must be >= %d (1.0x), got %d", threshold, BasisPointsBase, mult)
 		}
 	}
 
@@ -103,12 +109,12 @@ func ValidateParams(p *Params) error {
 	}
 
 	// Validate jackpot configuration
-	if len(p.JackpotOdds) != len(p.JackpotMultipliers) {
-		return fmt.Errorf("jackpot_odds and jackpot_multipliers must have same length")
+	if len(p.JackpotOdds) != len(p.JackpotMultipliersBps) {
+		return fmt.Errorf("jackpot_odds and jackpot_multipliers_bps must have same length")
 	}
-	for i, mult := range p.JackpotMultipliers {
-		if mult < 1.0 {
-			return fmt.Errorf("jackpot_multipliers[%d] must be >= 1.0, got %f", i, mult)
+	for i, mult := range p.JackpotMultipliersBps {
+		if mult < BasisPointsBase {
+			return fmt.Errorf("jackpot_multipliers_bps[%d] must be >= %d (1.0x), got %d", i, BasisPointsBase, mult)
 		}
 	}
 
@@ -119,7 +125,6 @@ func ValidateParams(p *Params) error {
 
 	return nil
 }
-
 
 // Constant aliases for ChangeReason enum (defined here as they're module-specific)
 const (
@@ -169,9 +174,9 @@ func IRCompletionToProto(completion *IRCompletion) *confidencescorepb.IRCompleti
 		ProofHash:        completion.ProofHash,
 		VerifierHash:     completion.VerifierHash,
 		TxHash:           completion.TxHash,
-		VelocityBonus:    completion.VelocityBonus,
-		ArenaBonus:       completion.ArenaBonus,
-		JackpotBonus:     completion.JackpotBonus,
+		VelocityBonusBps: completion.VelocityBonusBps,
+		ArenaBonusBps:    completion.ArenaBonusBps,
+		JackpotBonusBps:  completion.JackpotBonusBps,
 		Status:           confidencescorepb.IRCompletionStatus(completion.Status),
 		Arena:            completion.Arena,
 	}
@@ -215,22 +220,22 @@ func SlashRecordToProto(record *SlashRecord) *confidencescorepb.SlashRecord {
 
 func ParamsToProto(params Params) *confidencescorepb.Params {
 	return &confidencescorepb.Params{
-		VerificationThreshold:    params.VerificationThreshold,
-		HighAssuranceThreshold:   params.HighAssuranceThreshold,
-		ArenaFocusThreshold:      params.ArenaFocusThreshold,
-		VelocityBonusDays:        params.VelocityBonusDays,
-		VelocityBonusMultipliers: params.VelocityBonusMultipliers,
-		ArenaMultipliers:         params.ArenaMultipliers,
-		SlashPercentage:          params.SlashPercentage,
-		AppealDeposit:            params.AppealDeposit,
-		MaxIrsPerDay:             params.MaxIrsPerDay,
-		MaxIrsPerHour:            params.MaxIrsPerHour,
-		JackpotOdds:              params.JackpotOdds,
-		JackpotMultipliers:       params.JackpotMultipliers,
-		StalenessEnabled:         params.StalenessEnabled,
-		DegradationRatePerYear:   params.DegradationRatePerYear,
-		PoiRewardsEnabled:        params.PoiRewardsEnabled,
-		UserRewardSplitPercent:   params.UserRewardSplitPercent,
-		VelocityBonusEnabled:     params.VelocityBonusEnabled,
+		VerificationThreshold:       params.VerificationThreshold,
+		HighAssuranceThreshold:      params.HighAssuranceThreshold,
+		ArenaFocusThreshold:         params.ArenaFocusThreshold,
+		VelocityBonusDays:           params.VelocityBonusDays,
+		VelocityBonusMultipliersBps: params.VelocityBonusMultipliersBps,
+		ArenaMultipliersBps:         params.ArenaMultipliersBps,
+		SlashPercentage:             params.SlashPercentage,
+		AppealDeposit:               params.AppealDeposit,
+		MaxIrsPerDay:                params.MaxIrsPerDay,
+		MaxIrsPerHour:               params.MaxIrsPerHour,
+		JackpotOdds:                 params.JackpotOdds,
+		JackpotMultipliersBps:       params.JackpotMultipliersBps,
+		StalenessEnabled:            params.StalenessEnabled,
+		DegradationRatePerYear:      params.DegradationRatePerYear,
+		PoiRewardsEnabled:           params.PoiRewardsEnabled,
+		UserRewardSplitPercent:      params.UserRewardSplitPercent,
+		VelocityBonusEnabled:        params.VelocityBonusEnabled,
 	}
 }
