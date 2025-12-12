@@ -24,6 +24,16 @@ Notes:
 - First run builds the `aurad` image (Debian-based) and can take several minutes on slow networks while downloading Go modules.
 - If the build is interrupted, simply rerun the command; it will reuse completed layers.
 
+## Determinism check (auth/governance canonicalization)
+Auth account ordering and governance param encoding are canonicalized in the app, but verify AppHashes across validators after startup:
+```bash
+# Expect identical hashes from all four validators after height > 10
+for v in 1 2 3 4; do
+  docker compose -f docker-compose.testnet.yml exec validator-$v aurad status | jq -r '.SyncInfo.latest_app_hash'
+done
+```
+If hashes differ, capture per-validator `aurad status` and `logs -f validator-N` and re-run `./scripts/testnet-init.sh` to regenerate a clean genesis.
+
 ## Inspect / interact
 - Logs: `docker compose -f docker-compose.testnet.yml logs -f validator-1`
 - RPC: `http://localhost:27657`
