@@ -134,11 +134,13 @@ func MarkExpired(p *PreValidatedTransaction) {
 // UpdateCacheHitRate updates the cache hit rate
 func UpdateCacheHitRate(m *PreValidationMetrics) {
 	total := m.TotalCacheHits + m.TotalCacheMisses
-	if total > 0 {
-		hits := math.LegacyNewDec(int64(m.TotalCacheHits))
-		totalDec := math.LegacyNewDec(int64(total))
-		m.OverallCacheHitRate = hits.Quo(totalDec)
+	if total == 0 {
+		m.OverallCacheHitRate = math.LegacyNewDec(0)
+		return
 	}
+	hits := math.LegacyNewDec(int64(m.TotalCacheHits))
+	totalDec := math.LegacyNewDec(int64(total))
+	m.OverallCacheHitRate = hits.Quo(totalDec)
 }
 
 // RecordCacheHit records a cache hit
@@ -153,10 +155,20 @@ func RecordCacheHit(m *PreValidationMetrics, txType TransactionType, timeSavedMs
 
 	key := txType.String()
 	if _, ok := m.MetricsByType[key]; !ok {
-		m.MetricsByType[key] = &TypeMetrics{TxType: txType}
+		m.MetricsByType[key] = &TypeMetrics{
+			TxType:           txType,
+			AvgTimeSavingsMs: math.LegacyNewDec(0),
+			CacheHitRate:     math.LegacyNewDec(0),
+		}
 	}
 
 	typeMetrics := m.MetricsByType[key]
+	if typeMetrics.AvgTimeSavingsMs.IsNil() {
+		typeMetrics.AvgTimeSavingsMs = math.LegacyNewDec(0)
+	}
+	if typeMetrics.CacheHitRate.IsNil() {
+		typeMetrics.CacheHitRate = math.LegacyNewDec(0)
+	}
 	typeMetrics.CacheHits++
 	typeMetrics.TotalExecuted++
 

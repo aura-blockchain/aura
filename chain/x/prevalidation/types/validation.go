@@ -9,21 +9,21 @@ import (
 // DefaultParams returns default prevalidation parameters
 func DefaultParams() *Params {
 	return &Params{
-		Enabled:                      true,
-		SchedulerConfig:              &SchedulerConfig{},
-		AutoScalingConfig:            &AutoScalingConfig{},
-		CacheStrategy:                CacheStrategy_CACHE_STRATEGY_LRU,
-		MaxCacheSize:                 10000,
-		ExpiryHours:                  24,
-		EncryptionAlgorithm:          "AES-256-GCM",
-		ControlGroupPercentage:       math.LegacyNewDec(10),                    // 10.0 as deterministic decimal
-		MinConfidenceScore:           50,
-		EnergyCostPerValidationKwh:   math.LegacyNewDecWithPrec(1, 3),         // 0.001 as deterministic decimal
-		EnergyCostPerExecutionKwh:    math.LegacyNewDecWithPrec(5, 3),         // 0.005 as deterministic decimal
-		MetricsEnabled:               true,
-		DetailedLogging:              false,
-		MaxValidationAttempts:        3,
-		RetryDelaySeconds:            5,
+		Enabled:                    true,
+		SchedulerConfig:            &SchedulerConfig{},
+		AutoScalingConfig:          &AutoScalingConfig{},
+		CacheStrategy:              CacheStrategy_CACHE_STRATEGY_LRU,
+		MaxCacheSize:               10000,
+		ExpiryHours:                24,
+		EncryptionAlgorithm:        "AES-256-GCM",
+		ControlGroupPercentage:     math.LegacyNewDec(10), // 10.0 as deterministic decimal
+		MinConfidenceScore:         50,
+		EnergyCostPerValidationKwh: math.LegacyNewDecWithPrec(1, 3), // 0.001 as deterministic decimal
+		EnergyCostPerExecutionKwh:  math.LegacyNewDecWithPrec(5, 3), // 0.005 as deterministic decimal
+		MetricsEnabled:             true,
+		DetailedLogging:            false,
+		MaxValidationAttempts:      3,
+		RetryDelaySeconds:          5,
 	}
 }
 
@@ -31,6 +31,17 @@ func DefaultParams() *Params {
 func ValidateParams(params *Params) error {
 	if params == nil {
 		return fmt.Errorf("params cannot be nil")
+	}
+
+	// Normalize decimal fields to avoid nil deref
+	if params.ControlGroupPercentage.IsNil() {
+		params.ControlGroupPercentage = math.LegacyNewDec(0)
+	}
+	if params.EnergyCostPerValidationKwh.IsNil() {
+		params.EnergyCostPerValidationKwh = math.LegacyNewDec(0)
+	}
+	if params.EnergyCostPerExecutionKwh.IsNil() {
+		params.EnergyCostPerExecutionKwh = math.LegacyNewDec(0)
 	}
 
 	// Validate scheduler config
@@ -60,4 +71,3 @@ func ValidateParams(params *Params) error {
 
 	return nil
 }
-

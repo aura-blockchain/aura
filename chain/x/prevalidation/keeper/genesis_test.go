@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"cosmossdk.io/log"
+	sdkmath "cosmossdk.io/math"
 	"cosmossdk.io/store"
 	"cosmossdk.io/store/metrics"
 	storetypes "cosmossdk.io/store/types"
@@ -253,7 +254,7 @@ func TestGenesisRoundTrip(t *testing.T) {
 				MaxCacheSize:           1000,
 				ExpiryHours:            24,
 				EncryptionAlgorithm:    "AES-256-GCM",
-				ControlGroupPercentage: 10.0,
+				ControlGroupPercentage: sdkmath.LegacyNewDec(10),
 				MinConfidenceScore:     80,
 			},
 			PreValidatedTransactions: []*pb.PreValidatedTransaction{

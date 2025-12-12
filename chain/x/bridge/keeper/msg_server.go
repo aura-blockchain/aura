@@ -38,10 +38,10 @@ func normalizeChain(chain string) string {
 
 // verifyRawValidatorSignatures verifies raw byte signatures from multiple validators
 // against the ACTIVE validator set. This function implements critical security checks:
-//   1. Verifies cryptographic signatures
-//   2. Checks validator authorization (active status)
-//   3. Prevents signature reuse (each validator counted once)
-//   4. Ensures minimum threshold of unique active validators
+//  1. Verifies cryptographic signatures
+//  2. Checks validator authorization (active status)
+//  3. Prevents signature reuse (each validator counted once)
+//  4. Ensures minimum threshold of unique active validators
 //
 // Security considerations:
 //   - Only ACTIVE validators are allowed (inactive/slashed/jailed are rejected)
@@ -226,6 +226,22 @@ func (ms msgServer) MintTokens(goCtx context.Context, msg *bridgepb.MsgMintToken
 	if msg.Validator == "" {
 		return nil, status.Error(codes.InvalidArgument, "validator required")
 	}
+	normalizedChain := normalizeChain(msg.SourceChain)
+	if normalizedChain == "" {
+		return nil, status.Error(codes.InvalidArgument, "source_chain required")
+	}
+	if strings.TrimSpace(msg.SourceTxHash) == "" {
+		return nil, status.Error(codes.InvalidArgument, "source_tx_hash required")
+	}
+	if strings.TrimSpace(msg.Recipient) == "" {
+		return nil, status.Error(codes.InvalidArgument, "recipient required")
+	}
+	if _, err := sdk.AccAddressFromBech32(msg.Recipient); err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid recipient")
+	}
+	if err := sdk.ValidateDenom(msg.Denom); err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid denom")
+	}
 	// msg.Amount is already math.Int, use directly
 	amount := msg.Amount
 	if !amount.IsPositive() {
@@ -234,8 +250,7 @@ func (ms msgServer) MintTokens(goCtx context.Context, msg *bridgepb.MsgMintToken
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	// CRITICAL SECURITY: Check if bridge is paused for source chain
-	sourceChain := normalizeChain(msg.SourceChain)
-	if err := ms.Keeper.RequireNotPaused(ctx, sourceChain); err != nil {
+	if err := ms.Keeper.RequireNotPaused(ctx, normalizedChain); err != nil {
 		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}
 
@@ -291,7 +306,7 @@ func (ms msgServer) MintTokens(goCtx context.Context, msg *bridgepb.MsgMintToken
 		// CRITICAL SECURITY: Record minted amount for hourly tracking (auto-pause detection)
 		ms.Keeper.RecordMintedAmount(ctx, msg.Denom, amount)
 	}
-	wrappedDenom := fmt.Sprintf("%s.%s", sourceChain, msg.Denom)
+	wrappedDenom := fmt.Sprintf("%s.%s", normalizedChain, msg.Denom)
 	token, _ := ms.Keeper.getWrappedToken(ctx, wrappedDenom)
 	if token == nil {
 		token = &bridgepb.WrappedToken{
@@ -590,7 +605,7 @@ func (ms msgServer) UnlockTokens(goCtx context.Context, msg *bridgepb.MsgUnlockT
 	pendingTransfer := &types.PendingTransfer{
 		TransferId:   transferID,
 		Recipient:    msg.Sender,
-		Amount:      amount, // Store as string for protobuf compatibility
+		Amount:       amount, // Store as string for protobuf compatibility
 		Denom:        msg.Denom,
 		SourceChain:  sourceChain,
 		SourceTxHash: msg.BurnTxHash,
@@ -685,9 +700,9 @@ func (ms msgServer) BurnTokens(goCtx context.Context, msg *bridgepb.MsgBurnToken
 // LinkAddress links Aura/PAW/XAI addresses for shared identity.
 //
 // SECURITY CRITICAL: This function implements cross-chain identity linking with strict access controls:
-//   1. Signer verification: Only the Aura address owner can link addresses
-//   2. Cross-chain ownership proof: Cryptographic signatures required from PAW/XAI addresses
-//   3. Conflict prevention: Prevents overwriting existing links without proper authorization
+//  1. Signer verification: Only the Aura address owner can link addresses
+//  2. Cross-chain ownership proof: Cryptographic signatures required from PAW/XAI addresses
+//  3. Conflict prevention: Prevents overwriting existing links without proper authorization
 //
 // Attack vectors prevented:
 //   - Identity theft: Can't link someone else's addresses without their private keys
@@ -1003,7 +1018,7 @@ func (ms msgServer) FinalizeTransfer(goCtx context.Context, msg *bridgepb.MsgFin
 
 	return &bridgepb.MsgFinalizeTransferResponse{
 		Success:   true,
-		Amount:      amount,
+		Amount:    amount,
 		Recipient: pendingTransfer.Recipient,
 	}, nil
 }
