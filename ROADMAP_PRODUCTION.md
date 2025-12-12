@@ -63,8 +63,8 @@ All production-ready modules have keepers, protos, server implementations (msg_s
 | Production genesis file | ✅ Done | `/networks/mainnet/genesis.json` |
 | Test compilation errors | ✅ Fixed | All 108/162 packages passing |
 | External security audit | 🔴 Critical | Not started |
-| **Multi-node consensus** | 🔴 **CRITICAL** | **Validators diverge at block 2 - non-determinism bug** |
-| Active testnet | ⚠️ Partial | Single-node works, multi-node fails consensus |
+| **Multi-node consensus** | ✅ **Fixed** | **Auth genesis canonicalization + deterministic governance params; 4-node docker-compose sustained without divergence (Dec 2025)** |
+| Active testnet | ✅ Stable | Single-node and 4-node docker-compose healthy after determinism fixes |
 | IBC channels | 🔴 Critical | Not established |
 | Block explorer | ✅ Deployed | http://localhost:8088 (Ping.pub) |
 | Faucet service | ✅ Configured | `docker-compose.faucet.yml` ready |
@@ -168,13 +168,13 @@ All production-ready modules have keepers, protos, server implementations (msg_s
 - [x] Create testnet documentation → `/TESTNET_SETUP.md`, `/TESTNET_QUICKSTART.md`
 - [x] Document Docker runbook for local testnet → `/docs/runbooks/LOCAL_TESTNET_DOCKER.md`
 - [x] Run initialization and start testnet (Dec 2025) - 4-validator testnet producing blocks (height 1000+)
-- [x] Fix consensus determinism bugs (Dec 2025) - Fixed floating-point, global state, and time.Now() issues
 - [x] Create multi-node testing procedures → `/docs/MULTI_NODE_TESTING_PROCEDURES.md`
 - [x] Test Byzantine fault tolerance (Dec 2025) - Tested validator-4 stop/restart, chain continued
 - [x] Test state synchronization (Dec 2025) - Identified voting power imbalance, documented in test report
 - [x] Deploy public RPC/API endpoints (Dec 2025) → `/docker-compose.proxy.yml`, `/nginx/testnet-proxy.conf`
 - [x] Deploy block explorer (Dec 2025) → `/docker-compose.explorer.yml` (Ping.pub at localhost:8088)
 - [x] Configure faucet service (Dec 2025) → `/docker-compose.faucet.yml`, `/scripts/faucet-setup.sh`
+- [x] Fix consensus determinism bugs (Dec 2025) - Fixed floating-point, global state, time.Now() usage, and added auth genesis canonicalization + deterministic governance param encoding for AppHash stability
 - [x] **NEW MACHINE: Multi-node consensus testing (Dec 11, 2025)**
   - ✅ Built Docker image (213MB) with proto files generated
   - ✅ Initialized 2-validator testnet for incremental testing
@@ -187,7 +187,8 @@ All production-ready modules have keepers, protos, server implementations (msg_s
   - **Symptoms:** Validators computed different AppHashes at block 2: `F926DCC...` vs `006C3EA...`
   - **Fix:** Replaced `double` with `string` + `gogoproto.customtype = "cosmossdk.io/math.LegacyDec"`
   - **Commit:** 720e118 - "fix(consensus): Replace float64 with sdk.Dec in prevalidation params"
-  - **Status:** Code fixed and committed. Need to rebuild Docker image and retest with 2-validator testnet.
+  - **Status:** Code fixed and committed. Retested with deterministic auth/governance changes; docker-compose 4-validator run sustained without AppHash divergence.
+- [x] Deterministic genesis regression (Dec 2025) - Canonicalize auth account ordering/account numbers in `chain/app/app.go` and store governance params with deterministic protobuf marshal in `chain/x/governance/keeper/keeper.go`; repeated 4-validator docker-compose runs now produce matching AppHashes through extended block production and restarts.
 
 ### Monitoring
 - [x] Deploy: `docker-compose -f docker-compose.monitoring.yml up -d` (config ready)
