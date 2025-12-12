@@ -86,18 +86,21 @@ func (k *Keeper) LockVotingTokens(ctx context.Context, owner, amount string, loc
 	// Generate lock ID
 	lockID := generateLockID(owner, amount, lockDuration, currentTime)
 
-	// Calculate voting power multiplier based on lock duration
+	// Calculate voting power multiplier based on lock duration using integer math
 	// multiplier = 1 + (duration / 1 year) * multiplier_per_year
+	// Using basis points (10000 = 1.0) for deterministic consensus
 	oneYear := uint64(31536000) // seconds in a year
-	yearsLocked := float64(lockDuration) / float64(oneYear)
 	multiplierBasisPoints := params.Governance.LockMultiplierPerYear
 
-	totalMultiplier := 1.0 + (yearsLocked * float64(multiplierBasisPoints) / float64(types.BasisPoints))
+	// Calculate time-based bonus in basis points
+	// bonusBps = (lockDuration * multiplierBasisPoints) / oneYear
+	bonusBps := (lockDuration * multiplierBasisPoints) / oneYear
+	// totalMultiplierBps = 10000 (1.0) + bonusBps
+	totalMultiplierBps := types.BasisPoints + bonusBps
 
-	votingPower := new(big.Float).SetInt(lockAmt)
-	votingPower.Mul(votingPower, big.NewFloat(totalMultiplier))
-
-	votingPowerInt, _ := votingPower.Int(nil)
+	// votingPower = lockAmt * totalMultiplierBps / 10000
+	votingPowerInt := new(big.Int).Mul(lockAmt, big.NewInt(int64(totalMultiplierBps)))
+	votingPowerInt.Div(votingPowerInt, big.NewInt(int64(types.BasisPoints)))
 
 	lock := &types.VoteLock{
 		LockId:      lockID,
@@ -260,19 +263,39 @@ func generateLockID(owner, amount string, duration uint64, currentTime int64) st
 	return "vl:" + hex.EncodeToString(h.Sum(nil))[:32]
 }
 
-// sqrt calculates integer square root using Newton's method
+// sqrt calculates integer square root using Newton's method (deterministic integer math)
 func sqrt(n *big.Int) *big.Int {
 	if n.Cmp(big.NewInt(0)) == 0 {
 		return big.NewInt(0)
 	}
+	if n.Cmp(big.NewInt(1)) == 0 {
+		return big.NewInt(1)
+	}
 
-	// Convert to float for sqrt calculation
-	nFloat := new(big.Float).SetInt(n)
-	sqrtFloat := new(big.Float).Sqrt(nFloat)
+	// Newton's method for integer square root
+	// x_{n+1} = (x_n + n/x_n) / 2
+	x := new(big.Int).Set(n)
+	x.Div(x, big.NewInt(2)) // Start with n/2
 
-	// Convert back to int
-	result, _ := sqrtFloat.Int(nil)
-	return result
+	one := big.NewInt(1)
+	for {
+		// x1 = (x + n/x) / 2
+		x1 := new(big.Int).Div(n, x)
+		x1.Add(x1, x)
+		x1.Div(x1, big.NewInt(2))
+
+		// Check for convergence
+		diff := new(big.Int).Sub(x, x1)
+		diff.Abs(diff)
+		if diff.Cmp(one) <= 0 {
+			// Return the smaller of x and x1 to ensure floor(sqrt(n))
+			if x.Cmp(x1) < 0 {
+				return x
+			}
+			return x1
+		}
+		x.Set(x1)
+	}
 }
 
 // GetTotalLockedGovernance returns total amount locked for governance
@@ -310,6 +333,7 @@ func (k *Keeper) GetTotalLockedGovernance(ctx context.Context) (string, error) {
 
 // CalculateTimeWeightedVotingPower calculates voting power with time weighting
 // Longer locks get more voting power per token
+// Uses integer math for deterministic consensus
 func (k *Keeper) CalculateTimeWeightedVotingPower(
 	ctx context.Context,
 	amount string,
@@ -322,22 +346,20 @@ func (k *Keeper) CalculateTimeWeightedVotingPower(
 		return "0", types.ErrInvalidAmount
 	}
 
-	// Base voting power equals amount
-	votingPower := new(big.Float).SetInt(amt)
-
-	// Calculate time weight multiplier
+	// Calculate time weight multiplier using integer math
+	// multiplier = 1 + (duration / 1 year) * multiplier_per_year
+	// Using basis points (10000 = 1.0) for deterministic consensus
 	oneYear := uint64(31536000) // seconds in a year
-	yearsLocked := float64(lockDuration) / float64(oneYear)
 	multiplierBasisPoints := params.Governance.LockMultiplierPerYear
 
-	// multiplier = 1 + (years * multiplier_per_year)
-	multiplier := 1.0 + (yearsLocked * float64(multiplierBasisPoints) / float64(types.BasisPoints))
+	// bonusBps = (lockDuration * multiplierBasisPoints) / oneYear
+	bonusBps := (lockDuration * multiplierBasisPoints) / oneYear
+	// totalMultiplierBps = 10000 (1.0) + bonusBps
+	totalMultiplierBps := types.BasisPoints + bonusBps
 
-	// Apply multiplier
-	votingPower.Mul(votingPower, big.NewFloat(multiplier))
-
-	// Convert to int
-	result, _ := votingPower.Int(nil)
+	// votingPower = amt * totalMultiplierBps / 10000
+	result := new(big.Int).Mul(amt, big.NewInt(int64(totalMultiplierBps)))
+	result.Div(result, big.NewInt(int64(types.BasisPoints)))
 
 	return result.String(), nil
 }

@@ -71,9 +71,16 @@ func (k *Keeper) RecordIRCompletion(
 	}
 
 	// 10. Create completion record
+	// Calculate base score by reversing the multipliers
+	// baseScore = finalScore * 10000^3 / (velocity * arena * jackpot)
+	// To avoid overflow and match the forward calculation:
+	baseScore := scoreEarned * BasisPointsBase / velocityBonus
+	baseScore = baseScore * BasisPointsBase / arenaBonus
+	baseScore = baseScore * BasisPointsBase / jackpotBonus
+
 	completion := &types.IRCompletion{
 		IrId:             irID,
-		BaseScore:        scoreEarned / uint64(velocityBonus*arenaBonus*jackpotBonus), // Reverse calculate base
+		BaseScore:        baseScore,
 		FinalScore:       scoreEarned,
 		CompletedAt:      timestampFromTime(ctx.BlockTime()),
 		CompletedHeight:  uint64(ctx.BlockHeight()),
@@ -81,9 +88,9 @@ func (k *Keeper) RecordIRCompletion(
 		ProofHash:        proofHash,
 		VerifierHash:     verifierHash,
 		TxHash:           fmt.Sprintf("tx-%d", ctx.BlockHeight()),
-		VelocityBonus:    velocityBonus,
-		ArenaBonus:       arenaBonus,
-		JackpotBonus:     jackpotBonus,
+		VelocityBonusBps: velocityBonus,
+		ArenaBonusBps:    arenaBonus,
+		JackpotBonusBps:  jackpotBonus,
 		Status:           types.IRCompletionStatusVerified,
 		Arena:            arena,
 	}
@@ -320,41 +327,47 @@ func (k *Keeper) getRateLimitKey(ctx sdk.Context, walletAddr, window string) str
 	}
 }
 
-// CalculateVelocityBonus calculates time-based completion bonus
-func (k *Keeper) CalculateVelocityBonus(ctx sdk.Context, walletAddr string) float32 {
+// BasisPointsBase is the base for multiplier calculations (10000 = 1.0x)
+const BasisPointsBase uint64 = 10000
+
+// CalculateVelocityBonus calculates time-based completion bonus in basis points
+// Returns: multiplier in basis points (10000 = 1.0x, 12500 = 1.25x, etc.)
+func (k *Keeper) CalculateVelocityBonus(ctx sdk.Context, walletAddr string) uint64 {
 	record, ok := k.GetUserRecord(ctx, walletAddr)
 	if !ok || !record.HasAnchor {
-		return 1.0
+		return BasisPointsBase // 1.0x
 	}
 
 	// Don't apply velocity bonus if already verified
 	params := k.GetParams()
 	if record.TotalScore >= params.VerificationThreshold {
-		return 1.0
+		return BasisPointsBase // 1.0x
 	}
 
 	anchorTime := record.AnchorInfo.CompletedAt
 	currentTime := ctx.BlockTime()
 
-	// Calculate days elapsed since anchor completion
-	var daysElapsed float64
+	// Calculate days elapsed since anchor completion using integer math
+	var daysElapsed uint64
 	if anchorTime != nil {
 		anchorTimeGo := time.Unix(anchorTime.Seconds, int64(anchorTime.Nanos))
-		daysElapsed = currentTime.Sub(anchorTimeGo).Hours() / 24.0
+		hoursElapsed := uint64(currentTime.Sub(anchorTimeGo).Hours())
+		daysElapsed = hoursElapsed / 24
 	}
 
 	// Apply velocity bonuses based on time tiers
 	for i, dayThreshold := range params.VelocityBonusDays {
-		if daysElapsed <= float64(dayThreshold) {
-			return params.VelocityBonusMultipliers[i]
+		if daysElapsed <= dayThreshold {
+			return params.VelocityBonusMultipliersBps[i]
 		}
 	}
 
-	return 1.0 // No bonus after all tiers
+	return BasisPointsBase // 1.0x - No bonus after all tiers
 }
 
-// CheckJackpotWin checks for probabilistic jackpot bonus
-func (k *Keeper) CheckJackpotWin(ctx sdk.Context, walletAddr, irID string) float32 {
+// CheckJackpotWin checks for probabilistic jackpot bonus in basis points
+// Returns: multiplier in basis points (10000 = 1.0x, 50000 = 5.0x, etc.)
+func (k *Keeper) CheckJackpotWin(ctx sdk.Context, walletAddr, irID string) uint64 {
 	params := k.GetParams()
 
 	// Generate deterministic but unpredictable seed
@@ -365,16 +378,16 @@ func (k *Keeper) CheckJackpotWin(ctx sdk.Context, walletAddr, irID string) float
 	// Check jackpot odds (highest multiplier first)
 	for i := len(params.JackpotOdds) - 1; i >= 0; i-- {
 		odds := params.JackpotOdds[i]
-		multiplier := params.JackpotMultipliers[i]
+		multiplierBps := params.JackpotMultipliersBps[i]
 
 		// Use different modulo values for different tiers to avoid overlap
 		checkValue := seedInt % (odds * uint64(i+1))
 		if checkValue == uint64(77*(i+1)) {
-			return multiplier
+			return multiplierBps
 		}
 	}
 
-	return 1.0
+	return BasisPointsBase // 1.0x
 }
 
 // CleanupExpiredRateLimits removes old rate limit entries

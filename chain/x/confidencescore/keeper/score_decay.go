@@ -70,9 +70,11 @@ func (k *Keeper) ApplyScoreDecay(ctx sdk.Context, walletAddr string) (uint64, ui
 	// Check inactivity period
 	if record.LastUpdated != nil {
 		lastActivity := time.Unix(record.LastUpdated.Seconds, int64(record.LastUpdated.Nanos))
-		daysSinceActivity := ctx.BlockTime().Sub(lastActivity).Hours() / 24
+		// Use integer math for determinism: calculate days from seconds
+		secondsSinceActivity := ctx.BlockTime().Sub(lastActivity).Nanoseconds() / 1e9
+		daysSinceActivity := secondsSinceActivity / 86400 // 86400 seconds per day
 
-		if daysSinceActivity < float64(config.InactivityDays) {
+		if uint64(daysSinceActivity) < config.InactivityDays {
 			return oldScore, oldScore, 0, nil // No decay - user is active
 		}
 	}
@@ -195,9 +197,11 @@ func (k *Keeper) ShouldApplyDecay(ctx sdk.Context, walletAddr string) (bool, str
 
 	if record.LastUpdated != nil {
 		lastActivity := time.Unix(record.LastUpdated.Seconds, int64(record.LastUpdated.Nanos))
-		daysSinceActivity := ctx.BlockTime().Sub(lastActivity).Hours() / 24
+		// Use integer math for determinism: calculate days from seconds
+		secondsSinceActivity := ctx.BlockTime().Sub(lastActivity).Nanoseconds() / 1e9
+		daysSinceActivity := secondsSinceActivity / 86400 // 86400 seconds per day
 
-		if daysSinceActivity < float64(config.InactivityDays) {
+		if uint64(daysSinceActivity) < config.InactivityDays {
 			return false, "user is active"
 		}
 	}

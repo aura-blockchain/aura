@@ -9,6 +9,7 @@ import (
 	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/gogoproto/proto"
 
 	"github.com/aequitas/aura/chain/x/governance/types"
 )
@@ -21,16 +22,16 @@ type StakingKeeper interface {
 
 // Key prefixes for KVStore
 var (
-	ProposalsKeyPrefix       = []byte{0x01}
-	VotesKeyPrefix           = []byte{0x02}
-	DepositsKeyPrefix        = []byte{0x03}
-	DelegationsKeyPrefix     = []byte{0x04}
-	TokenLocksKeyPrefix      = []byte{0x05}
-	VetoRequestsKeyPrefix    = []byte{0x06}
-	SnapshotVotesKeyPrefix   = []byte{0x07}
-	VoteCommitmentsKeyPrefix = []byte{0x08}
-	ParamsKeyPrefix          = []byte{0x09}
-	NextProposalIDKeyPrefix  = []byte{0x0A}
+	ProposalsKeyPrefix        = []byte{0x01}
+	VotesKeyPrefix            = []byte{0x02}
+	DepositsKeyPrefix         = []byte{0x03}
+	DelegationsKeyPrefix      = []byte{0x04}
+	TokenLocksKeyPrefix       = []byte{0x05}
+	VetoRequestsKeyPrefix     = []byte{0x06}
+	SnapshotVotesKeyPrefix    = []byte{0x07}
+	VoteCommitmentsKeyPrefix  = []byte{0x08}
+	ParamsKeyPrefix           = []byte{0x09}
+	NextProposalIDKeyPrefix   = []byte{0x0A}
 	VotingPowerSnapshotPrefix = []byte{0x0B}
 
 	// KeySeparator is used to separate key components to prevent collisions
@@ -89,8 +90,14 @@ func (k *Keeper) GetParams(ctx sdk.Context) *types.GovernanceParams {
 // SetParams sets the governance parameters
 func (k *Keeper) SetParams(ctx sdk.Context, params *types.GovernanceParams) {
 	store := ctx.KVStore(k.storeKey)
-	bz := k.cdc.MustMarshal(params)
-	store.Set(ParamsKeyPrefix, bz)
+	// Governance params include map fields (CategoryParams). Use deterministic marshal to avoid
+	// map iteration order affecting consensus state.
+	buf := proto.NewBuffer(nil)
+	buf.SetDeterministic(true)
+	if err := buf.Marshal(params); err != nil {
+		panic(err)
+	}
+	store.Set(ParamsKeyPrefix, buf.Bytes())
 }
 
 // ============================================================================

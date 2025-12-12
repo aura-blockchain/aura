@@ -8,13 +8,15 @@ import (
 )
 
 // CalculateScoreEarned calculates the final score for an IR completion with all multipliers
-func (k *Keeper) CalculateScoreEarned(ctx sdk.Context, walletAddr, irID string) (uint64, float32, float32, float32, error) {
+// Returns: finalScore, velocityBonusBps, arenaBonusBps, jackpotBonusBps, error
+// All bonus values are in basis points where 10000 = 1.0x, 12500 = 1.25x, etc.
+func (k *Keeper) CalculateScoreEarned(ctx sdk.Context, walletAddr, irID string) (uint64, uint64, uint64, uint64, error) {
 	// Get base score from IR registry
 	var baseScore uint64
 	if k.irRegistry != nil {
 		score, err := k.irRegistry.GetIRScore(irID)
 		if err != nil {
-			return 0, 1.0, 1.0, 1.0, err
+			return 0, BasisPointsBase, BasisPointsBase, BasisPointsBase, err
 		}
 		baseScore = score
 	} else {
@@ -28,31 +30,36 @@ func (k *Keeper) CalculateScoreEarned(ctx sdk.Context, walletAddr, irID string) 
 		arena, _ = k.irRegistry.GetIRArena(irID)
 	}
 
-	// Calculate multipliers
-	velocityBonus := k.CalculateVelocityBonus(ctx, walletAddr)
-	arenaBonus := k.CalculateArenaMultiplier(ctx, walletAddr, arena)
-	jackpotBonus := k.CheckJackpotWin(ctx, walletAddr, irID)
+	// Calculate multipliers in basis points (10000 = 1.0x)
+	velocityBonusBps := k.CalculateVelocityBonus(ctx, walletAddr)
+	arenaBonusBps := k.CalculateArenaMultiplier(ctx, walletAddr, arena)
+	jackpotBonusBps := k.CheckJackpotWin(ctx, walletAddr, irID)
 
-	// Calculate final score
-	finalScore := float32(baseScore) * velocityBonus * arenaBonus * jackpotBonus
+	// Calculate final score using integer math to ensure determinism
+	// Apply multipliers one at a time to avoid overflow
+	// finalScore = baseScore * (velocity / 10000) * (arena / 10000) * (jackpot / 10000)
+	finalScore := baseScore * velocityBonusBps / BasisPointsBase
+	finalScore = finalScore * arenaBonusBps / BasisPointsBase
+	finalScore = finalScore * jackpotBonusBps / BasisPointsBase
 
-	return uint64(finalScore), velocityBonus, arenaBonus, jackpotBonus, nil
+	return finalScore, velocityBonusBps, arenaBonusBps, jackpotBonusBps, nil
 }
 
-// CalculateArenaMultiplier calculates the arena focus multiplier
-func (k *Keeper) CalculateArenaMultiplier(ctx sdk.Context, walletAddr, arena string) float32 {
+// CalculateArenaMultiplier calculates the arena focus multiplier in basis points
+// Returns: multiplier in basis points (10000 = 1.0x, 15000 = 1.5x, etc.)
+func (k *Keeper) CalculateArenaMultiplier(ctx sdk.Context, walletAddr, arena string) uint64 {
 	if arena == "" {
-		return 1.0
+		return BasisPointsBase // 1.0x
 	}
 
 	record, ok := k.GetUserRecord(ctx, walletAddr)
 	if !ok {
-		return 1.0
+		return BasisPointsBase // 1.0x
 	}
 
 	arenaScore, ok := record.ArenaScores[arena]
 	if !ok {
-		return 1.0
+		return BasisPointsBase // 1.0x
 	}
 
 	params := k.GetParams()
@@ -60,7 +67,7 @@ func (k *Keeper) CalculateArenaMultiplier(ctx sdk.Context, walletAddr, arena str
 	// Apply graduated multipliers based on arena score thresholds
 	// Thresholds are stored in descending order, so check from highest to lowest
 	var thresholds []uint64
-	for threshold := range params.ArenaMultipliers {
+	for threshold := range params.ArenaMultipliersBps {
 		thresholds = append(thresholds, threshold)
 	}
 
@@ -76,11 +83,11 @@ func (k *Keeper) CalculateArenaMultiplier(ctx sdk.Context, walletAddr, arena str
 	// Find applicable multiplier (highest threshold that user has reached)
 	for _, threshold := range thresholds {
 		if arenaScore.TotalScore >= threshold {
-			return params.ArenaMultipliers[threshold]
+			return params.ArenaMultipliersBps[threshold]
 		}
 	}
 
-	return 1.0
+	return BasisPointsBase // 1.0x
 }
 
 // CalculateTotalScore recalculates a user's total score from completions

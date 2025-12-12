@@ -445,10 +445,10 @@ func TestCalculateVelocityBonus(t *testing.T) {
 
 	walletAddr := "aura1test"
 
-	// No anchor - should return 1.0
+	// No anchor - should return 10000 (1.0x in basis points)
 	bonus := k.CalculateVelocityBonus(ctx, walletAddr)
-	if bonus != 1.0 {
-		t.Errorf("expected 1.0 for no anchor, got %f", bonus)
+	if bonus != BasisPointsBase {
+		t.Errorf("expected %d (1.0x) for no anchor, got %d", BasisPointsBase, bonus)
 	}
 
 	// Create record with anchor completed 5 days ago
@@ -465,16 +465,16 @@ func TestCalculateVelocityBonus(t *testing.T) {
 	k.SetUserRecord(ctx, record)
 
 	bonus = k.CalculateVelocityBonus(ctx, walletAddr)
-	if bonus != 1.25 { // Within 7 days
-		t.Errorf("expected 1.25 for 5 days, got %f", bonus)
+	if bonus != 12500 { // Within 7 days, expect 1.25x = 12500 basis points
+		t.Errorf("expected 12500 (1.25x) for 5 days, got %d", bonus)
 	}
 
-	// Already verified - should return 1.0
+	// Already verified - should return 10000 (1.0x)
 	record.TotalScore = 10000
 	k.SetUserRecord(ctx, record)
 	bonus = k.CalculateVelocityBonus(ctx, walletAddr)
-	if bonus != 1.0 {
-		t.Errorf("expected 1.0 for verified user, got %f", bonus)
+	if bonus != BasisPointsBase {
+		t.Errorf("expected %d (1.0x) for verified user, got %d", BasisPointsBase, bonus)
 	}
 }
 
@@ -488,9 +488,9 @@ func TestCheckJackpotWin(t *testing.T) {
 	// Test jackpot calculation (deterministic based on seed)
 	multiplier := k.CheckJackpotWin(ctx, walletAddr, irID)
 
-	// Should be >= 1.0
-	if multiplier < 1.0 {
-		t.Errorf("expected multiplier >= 1.0, got %f", multiplier)
+	// Should be >= 10000 (1.0x in basis points)
+	if multiplier < BasisPointsBase {
+		t.Errorf("expected multiplier >= %d (1.0x), got %d", BasisPointsBase, multiplier)
 	}
 
 	// Same inputs should give same result

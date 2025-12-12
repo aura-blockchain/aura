@@ -1,6 +1,7 @@
 package app
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"path/filepath"
@@ -12,6 +13,9 @@ import (
 	pruningtypes "cosmossdk.io/store/pruning/types"
 	storetypes "cosmossdk.io/store/types"
 	txsigning "cosmossdk.io/x/tx/signing"
+	upgrademodule "cosmossdk.io/x/upgrade"
+	upgradekeeper "cosmossdk.io/x/upgrade/keeper"
+	upgradetypes "cosmossdk.io/x/upgrade/types"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -50,9 +54,6 @@ import (
 	stakingmodule "github.com/cosmos/cosmos-sdk/x/staking"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	upgrademodule "cosmossdk.io/x/upgrade"
-	upgradekeeper "cosmossdk.io/x/upgrade/keeper"
-	upgradetypes "cosmossdk.io/x/upgrade/types"
 	"github.com/cosmos/gogoproto/proto"
 	"google.golang.org/grpc"
 
@@ -141,7 +142,6 @@ import (
 	"github.com/aequitas/aura/chain/x/governance"
 	governancekeeper "github.com/aequitas/aura/chain/x/governance/keeper"
 	governancetypes "github.com/aequitas/aura/chain/x/governance/types"
-
 )
 
 const (
@@ -421,7 +421,7 @@ type App struct {
 	aurabindingsKeeper     *aurabindingskeeper.Keeper
 
 	storeKeys *storeKeys
-	memKeys struct {
+	memKeys   struct {
 		vc           *storetypes.MemoryStoreKey
 		security     *storetypes.MemoryStoreKey
 		aurabindings *storetypes.MemoryStoreKey
@@ -600,7 +600,7 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 		runtime.NewKVStoreService(keys.upgrade),
 		encoding.Codec,
 		filepath.Join("/tmp", "aura-upgrades"), // Upgrade info directory
-		base,                                    // BaseApp for halting
+		base,                                   // BaseApp for halting
 		authorityAddr,
 	)
 
@@ -857,16 +857,16 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 		nil, // PortKeeper - to be added in Phase 3
 		nil, // ScopedWasmKeeper - to be added in Phase 3
 		nil, // TransferKeeper - to be added in Phase 3
-	base.MsgServiceRouter(),
-	base.GRPCQueryRouter(),
-	filepath.Join("/tmp", "wasm"), // Wasm cache directory
-	wasmConfig,
-	"iterator", // Available capabilities - "iterator"
-	authorityAddr,
-	// Note: QueryPlugin wiring deferred - requires forward reference
-	wasmkeeper.WithQueryPlugins(aurabindings.NewQueryPlugin(vcKeeper, nil)),
-	wasmkeeper.WithMessageHandler(aurabindings.NewMessageHandler(vcKeeper)),
-)
+		base.MsgServiceRouter(),
+		base.GRPCQueryRouter(),
+		filepath.Join("/tmp", "wasm"), // Wasm cache directory
+		wasmConfig,
+		"iterator", // Available capabilities - "iterator"
+		authorityAddr,
+		// Note: QueryPlugin wiring deferred - requires forward reference
+		wasmkeeper.WithQueryPlugins(aurabindings.NewQueryPlugin(vcKeeper, nil)),
+		wasmkeeper.WithMessageHandler(aurabindings.NewMessageHandler(vcKeeper)),
+	)
 
 	// Create WASM security keeper wrapping the base wasmd keeper
 	// This provides additional security controls and integrates with contract registry
@@ -1142,6 +1142,10 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 		if err := json.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
 			return nil, err
 		}
+		// Normalize auth genesis to ensure deterministic account ordering/account numbers.
+		if err := canonicalizeAuthGenesis(encoding.Codec, genesisState); err != nil {
+			return nil, err
+		}
 		res, err := moduleManager.InitGenesis(ctx, encoding.Codec, genesisState)
 		if err != nil {
 			return nil, err
@@ -1238,6 +1242,50 @@ func ensureStoreInitMarkers(ctx sdk.Context, keys []storetypes.StoreKey) {
 			store.Set(marker, marker)
 		}
 	}
+}
+
+// canonicalizeAuthGenesis enforces a deterministic ordering of auth accounts and
+// assigns stable account numbers so the acc store root is identical across nodes.
+func canonicalizeAuthGenesis(cdc codec.JSONCodec, genesis map[string]json.RawMessage) error {
+	raw := genesis[authtypes.ModuleName]
+	if len(raw) == 0 {
+		return nil
+	}
+
+	var authGen authtypes.GenesisState
+	if err := cdc.UnmarshalJSON(raw, &authGen); err != nil {
+		return fmt.Errorf("failed to unmarshal auth genesis: %w", err)
+	}
+
+	accounts, err := authtypes.UnpackAccounts(authGen.Accounts)
+	if err != nil {
+		return fmt.Errorf("failed to unpack auth accounts: %w", err)
+	}
+
+	// Sort accounts by address bytes for deterministic insertion order.
+	sort.Slice(accounts, func(i, j int) bool {
+		return bytes.Compare(accounts[i].GetAddress().Bytes(), accounts[j].GetAddress().Bytes()) < 0
+	})
+
+	// Assign deterministic, sequential account numbers to avoid randomness from equal numbers.
+	for idx, acc := range accounts {
+		if err := acc.SetAccountNumber(uint64(idx)); err != nil {
+			return fmt.Errorf("failed to set account number for %s: %w", acc.GetAddress().String(), err)
+		}
+	}
+
+	packed, err := authtypes.PackAccounts(accounts)
+	if err != nil {
+		return fmt.Errorf("failed to re-pack auth accounts: %w", err)
+	}
+	authGen.Accounts = packed
+
+	updatedRaw, err := cdc.MarshalJSON(&authGen)
+	if err != nil {
+		return fmt.Errorf("failed to marshal canonical auth genesis: %w", err)
+	}
+	genesis[authtypes.ModuleName] = updatedRaw
+	return nil
 }
 
 func (app *App) allStoreKeys() []storetypes.StoreKey {
