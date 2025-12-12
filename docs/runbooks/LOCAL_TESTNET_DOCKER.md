@@ -14,6 +14,11 @@ Run from repo root:
 
 # 2) Seed docker volumes with the generated configs
 cd testnet-data && ./populate-volumes.sh && cd ..
+
+# If you see config permission errors on startup, fix volume ownership (aurad runs as uid 1000):
+for v in 1 2 3 4; do
+  docker run --rm -v aura_validator-${v}-data:/home/aura/.aura alpine sh -c "chown -R 1000:1000 /home/aura/.aura"
+done
 ```
 
 ## Start the cluster

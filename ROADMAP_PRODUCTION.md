@@ -189,6 +189,7 @@ All production-ready modules have keepers, protos, server implementations (msg_s
   - **Commit:** 720e118 - "fix(consensus): Replace float64 with sdk.Dec in prevalidation params"
   - **Status:** Code fixed and committed. Retested with deterministic auth/governance changes; docker-compose 4-validator run sustained without AppHash divergence.
 - [x] Deterministic genesis regression (Dec 2025) - Canonicalize auth account ordering/account numbers in `chain/app/app.go` and store governance params with deterministic protobuf marshal in `chain/x/governance/keeper/keeper.go`; repeated 4-validator docker-compose runs now produce matching AppHashes through extended block production and restarts.
+- [x] Dec 12, 2025 validation: Rebuilt `aurad:latest`, ran `scripts/testnet-init.sh` + `populate-volumes.sh`, corrected volume ownership, and observed 4 validators matching AppHash (`F0902BA6F5B4498A462A1DE108038E6D4D81093742875F2F4FBB0ACDEECFCC12`) at height 44 with no divergence.
 
 ### Monitoring
 - [x] Deploy: `docker-compose -f docker-compose.monitoring.yml up -d` (config ready)
