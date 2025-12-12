@@ -1,0 +1,75 @@
+[global]
+log_level = 'info'
+
+[mode]
+[mode.clients]
+enabled = true
+refresh = true
+misbehaviour = true
+[mode.connections]
+enabled = true
+[mode.channels]
+enabled = true
+[mode.packets]
+enabled = true
+clear_interval = 50
+clear_on_start = true
+tx_confirmation = true
+
+[rest]
+enabled = true
+host = '127.0.0.1'
+port = 3000
+
+[telemetry]
+enabled = false
+host = '127.0.0.1'
+port = 3001
+
+[[chains]]
+id = 'aura-local-4'
+type = 'CosmosSdk'
+rpc_addr = 'http://localhost:27657'
+grpc_addr = 'http://localhost:10090'
+event_source = { mode = 'push', url = 'ws://localhost:27657/websocket', batch_delay = '200ms' }
+rpc_timeout = '10s'
+trusted_node = false
+account_prefix = 'aura'
+key_name = 'relayer-aura'
+store_prefix = 'ibc'
+default_gas = 300000
+max_gas = 800000
+gas_multiplier = 1.2
+max_msg_num = 15
+max_tx_size = 180000
+clock_drift = '10s'
+max_block_time = '10s'
+trusting_period = '14days'
+trust_threshold = { numerator = '1', denominator = '3' }
+gas_price = { price = 0.025, denom = 'uaura' }
+packet_filter = { policy = 'allow', list = [ ['transfer', '*'] ] }
+address_type = { derivation = 'cosmos' }
+
+[[chains]]
+id = 'theta-testnet-001'
+type = 'CosmosSdk'
+rpc_addr = 'https://rpc.sentry-01.theta-testnet.polypore.xyz:26657'
+grpc_addr = 'https://grpc.sentry-01.theta-testnet.polypore.xyz:9090'
+event_source = { mode = 'push', url = 'wss://rpc.sentry-01.theta-testnet.polypore.xyz/websocket', batch_delay = '200ms' }
+rpc_timeout = '10s'
+trusted_node = false
+account_prefix = 'cosmos'
+key_name = 'relayer-gaia'
+store_prefix = 'ibc'
+default_gas = 300000
+max_gas = 800000
+gas_multiplier = 1.2
+max_msg_num = 15
+max_tx_size = 180000
+clock_drift = '10s'
+max_block_time = '10s'
+trusting_period = '14days'
+trust_threshold = { numerator = '1', denominator = '3' }
+gas_price = { price = 0.025, denom = 'uatom' }
+packet_filter = { policy = 'allow', list = [ ['transfer', '*'] ] }
+address_type = { derivation = 'cosmos' }

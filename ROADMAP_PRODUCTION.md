@@ -243,7 +243,13 @@ All 8 tasks have been verified complete with full test coverage. All tests pass.
 
 ### IBC Integration
 - [x] Document Hermes setup → `docs/testnet/HERMES_SETUP.md` (config template, client/connection/channel commands)
-- [ ] Deploy Hermes relayer **[BLOCKED: need counterparty RPC/GRPC endpoints + funded relayer keys]**
+- [ ] Hermes plan (detailed steps)
+  - [ ] Configure relayer: publish `config/hermes/config.toml` with Aura local + theta-testnet endpoints (rpc/grpc/ws), key names, gas, packet filters
+  - [ ] Generate/import relayer keys for both chains (`relayer-aura`, `relayer-gaia`) and fund from validator/faucet
+  - [ ] Create IBC clients for both chains via Hermes
+  - [ ] Create connection and ICS20 transfer channel
+  - [ ] Execute test IBC transfer (uaura → gaia uatom) and verify balances/logs
+- [ ] Deploy Hermes relayer
 - [ ] Establish channel to Cosmos Hub testnet
 - [ ] Test cross-chain token transfers
 
