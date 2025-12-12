@@ -348,6 +348,7 @@ All 8 tasks have been verified complete with full test coverage. All tests pass.
 - [x] Fix x/prevalidation test compilation: Convert *Params to Params value types in genesis_test.go
 - [x] Fix x/security test compilation: Convert string literals to math.Int constructors in privacy_test.go
 - [x] Fix x/validatorsecurity test compilation: Fix LegacyDec, Int, Duration type mismatches in types_test.go, validation_test.go
+- [x] Bridge/prevalidation determinism (Dec 2025): Enforce non-empty chain/recipient/denom in bridge MintTokens handler; normalize prevalidation decimals to avoid nil deref in validation/metrics tests.
 - [x] Verify all tests pass after fixes: `go test ./x/...` - 108/162 packages passing
 
 ### Quality Enhancements (This Month)
