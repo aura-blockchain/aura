@@ -242,6 +242,7 @@ All 8 tasks have been verified complete with full test coverage. All tests pass.
 - [ ] Customize explorer for AURA modules (VC Registry, Inclusion Routines, AI Assistant)
 
 ### IBC Integration
+- [x] Document Hermes setup → `docs/testnet/HERMES_SETUP.md` (config template, client/connection/channel commands)
 - [ ] Deploy Hermes relayer
 - [ ] Establish channel to Cosmos Hub testnet
 - [ ] Test cross-chain token transfers
