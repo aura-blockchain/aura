@@ -1,7 +1,7 @@
 =================================================================
 Phase 7.1: Database Corruption Test Results
 =================================================================
-Timestamp: Sat Dec 13 02:42:47 PM UTC 2025
+Timestamp: Sat Dec 13 03:16:33 PM UTC 2025
 Test Directory: /home/hudson/.aura-corruption-test
 
 
@@ -16,7 +16,7 @@ Initializing test node
     "original_path": "~/.aura-corruption-test",
     "resolved_path": "~/.aura-corruption-test"
   },
-  "timestamp": "2025-12-13T14:42:47Z",
+  "timestamp": "2025-12-13T15:16:46Z",
   "type": "path_validated"
 }
 [SECURITY] {
@@ -24,7 +24,7 @@ Initializing test node
     "original_path": "~/.aura-corruption-test",
     "resolved_path": "~/.aura-corruption-test"
   },
-  "timestamp": "2025-12-13T14:42:47Z",
+  "timestamp": "2025-12-13T15:16:46Z",
   "type": "path_validated"
 }
 Initializing Aura node...
@@ -49,30 +49,30 @@ Created directory: /home/hudson/.aura-corruption-test/logs (permissions: 700)
 ║   - Enter on websites                                                ║
 ╚══════════════════════════════════════════════════════════════════════╝
 
-   1. rival
-   2. brave
-   3. grape
-   4. mixture
-   5. private
-   6. wrap
-   7. beyond
-   8. army
-   9. insect
-  10. upper
-  11. orient
-  12. soldier
-  13. desert
-  14. fit
-  15. spawn
-  16. power
-  17. cannon
-  18. rail
-  19. super
-  20. crime
-  21. puzzle
-  22. trigger
-  23. payment
-  24. village
+   1. renew
+   2. february
+   3. before
+   4. belt
+   5. car
+   6. program
+   7. whale
+   8. harvest
+   9. art
+  10. orphan
+  11. bachelor
+  12. bullet
+  13. amount
+  14. beach
+  15. embrace
+  16. choice
+  17. notice
+  18. upgrade
+  19. such
+  20. seven
+  21. blanket
+  22. cancel
+  23. flag
+  24. response
 
 Press Enter after you have safely recorded your mnemonic...
 Created private validator key: /home/hudson/.aura-corruption-test/config/priv_validator_key.json
@@ -85,19 +85,19 @@ Node initialized successfully!
 Configuration files created in: /home/hudson/.aura-corruption-test
 
 Validator Addresses:
-  Account:   aura1w9a8vx622x5gaer5yus692ls2ptjdxl9pvdult
-  Operator:  auravaloper1w9a8vx622x5gaer5yus692ls2ptjdxl967u584
-  Consensus: auravalcons1w9a8vx622x5gaer5yus692ls2ptjdxl9wd0gt5
+  Account:   aura15nn9smaz52y06wk9dvfay269r8wsmtcm3c9kag
+  Operator:  auravaloper15nn9smaz52y06wk9dvfay269r8wsmtcm22579k
+  Consensus: auravalcons15nn9smaz52y06wk9dvfay269r8wsmtcm7e8zfh
 
 To start the node, run:
   aurad start
 ✅ Node initialized successfully
-Test address: aura1st3vk9qyqjyzvc8s3rzhcpk4uqw3k24p72ruzt
-Genesis transaction written to "/home/hudson/.aura-corruption-test/config/gentx/gentx-82ce1b2c43cfa0bf6a97564e427b3bdd76fe8a39.json"
+Test address: aura1kp534wshg6j62fcy4c7yccr5ukemqh83dwsps0
+Genesis transaction written to "/home/hudson/.aura-corruption-test/config/gentx/gentx-a7bbc405c7f5d22cefb3d029d910f74d7cc78f0d.json"
 {
  "moniker": "bcpc",
  "chain_id": "aura-corruption-test",
- "node_id": "82ce1b2c43cfa0bf6a97564e427b3bdd76fe8a39",
+ "node_id": "a7bbc405c7f5d22cefb3d029d910f74d7cc78f0d",
  "gentxs_dir": "/home/hudson/.aura-corruption-test/config/gentx",
  "app_message": {
   "aura_wasm_security": {
@@ -131,14 +131,14 @@ Genesis transaction written to "/home/hudson/.aura-corruption-test/config/gentx/
    "accounts": [
     {
      "@type": "/cosmos.auth.v1beta1.BaseAccount",
-     "address": "aura1w9a8vx622x5gaer5yus692ls2ptjdxl9pvdult",
+     "address": "aura15nn9smaz52y06wk9dvfay269r8wsmtcm3c9kag",
      "pub_key": null,
      "account_number": "0",
      "sequence": "0"
     },
     {
      "@type": "/cosmos.auth.v1beta1.BaseAccount",
-     "address": "aura1st3vk9qyqjyzvc8s3rzhcpk4uqw3k24p72ruzt",
+     "address": "aura1kp534wshg6j62fcy4c7yccr5ukemqh83dwsps0",
      "pub_key": null,
      "account_number": "1",
      "sequence": "0"
@@ -152,7 +152,7 @@ Genesis transaction written to "/home/hudson/.aura-corruption-test/config/gentx/
    },
    "balances": [
     {
-     "address": "aura1w9a8vx622x5gaer5yus692ls2ptjdxl9pvdult",
+     "address": "aura15nn9smaz52y06wk9dvfay269r8wsmtcm3c9kag",
      "coins": [
       {
        "denom": "stake",
@@ -165,7 +165,7 @@ Genesis transaction written to "/home/hudson/.aura-corruption-test/config/gentx/
      ]
     },
     {
-     "address": "aura1st3vk9qyqjyzvc8s3rzhcpk4uqw3k24p72ruzt",
+     "address": "aura1kp534wshg6j62fcy4c7yccr5ukemqh83dwsps0",
      "coins": [
       {
        "denom": "stake",
@@ -591,10 +591,10 @@ Genesis transaction written to "/home/hudson/.aura-corruption-test/config/gentx/
         },
         "min_self_delegation": "1",
         "delegator_address": "",
-        "validator_address": "auravaloper1st3vk9qyqjyzvc8s3rzhcpk4uqw3k24p9cj564",
+        "validator_address": "auravaloper1kp534wshg6j62fcy4c7yccr5ukemqh83kupfg3",
         "pubkey": {
          "@type": "/cosmos.crypto.ed25519.PubKey",
-         "key": "KdoXPaidipCBBHBiCwJsOIq9wc6+5XtfLEy/XIpn/QU="
+         "key": "WGbZw/Bn3PAL0God6mShCcjOejV9dBqSQ/Jup37D2+Q="
         },
         "value": {
          "denom": "stake",
@@ -602,7 +602,7 @@ Genesis transaction written to "/home/hudson/.aura-corruption-test/config/gentx/
         }
        }
       ],
-      "memo": "82ce1b2c43cfa0bf6a97564e427b3bdd76fe8a39@192.168.100.2:26656",
+      "memo": "a7bbc405c7f5d22cefb3d029d910f74d7cc78f0d@192.168.100.2:26656",
       "timeout_height": "0",
       "unordered": false,
       "timeout_timestamp": null,
@@ -614,7 +614,7 @@ Genesis transaction written to "/home/hudson/.aura-corruption-test/config/gentx/
        {
         "public_key": {
          "@type": "/cosmos.crypto.secp256k1.PubKey",
-         "key": "AyGy5JJidMxzoz5vpzQnAogEoMOPcjlCseg2cQnjv1xe"
+         "key": "A0DUKweOwLxSdonMSjMnUoNDces6PfRHfTUkLBPld9yN"
         },
         "mode_info": {
          "single": {
@@ -633,7 +633,7 @@ Genesis transaction written to "/home/hudson/.aura-corruption-test/config/gentx/
       "tip": null
      },
      "signatures": [
-      "cv7CeO8MpWDDkuddQirLe/H+1tB1lJAOrCvLikxsAd5b1wz4aaUSWrpCLYv0sBMqhrodH2TqL05dNjNvETWtcQ=="
+      "Vz+HMZEE6dft+AdD/8iWUJ/N2DqRrEGHYBpHyCh9khZQ1Yy+yPsEiVgc8AhrstkbHMzmZREE58vk9afmMF6cHQ=="
      ]
     }
    ]
@@ -1228,16 +1228,16 @@ Genesis transaction written to "/home/hudson/.aura-corruption-test/config/gentx/
    "last_total_power": "900000",
    "last_validator_powers": [
     {
-     "address": "auravaloper1w9a8vx622x5gaer5yus692ls2ptjdxl967u584",
+     "address": "auravaloper15nn9smaz52y06wk9dvfay269r8wsmtcm22579k",
      "power": "900000"
     }
    ],
    "validators": [
     {
-     "operator_address": "auravaloper1w9a8vx622x5gaer5yus692ls2ptjdxl967u584",
+     "operator_address": "auravaloper15nn9smaz52y06wk9dvfay269r8wsmtcm22579k",
      "consensus_pubkey": {
       "@type": "/cosmos.crypto.ed25519.PubKey",
-      "key": "KdoXPaidipCBBHBiCwJsOIq9wc6+5XtfLEy/XIpn/QU="
+      "key": "WGbZw/Bn3PAL0God6mShCcjOejV9dBqSQ/Jup37D2+Q="
      },
      "jailed": false,
      "status": "BOND_STATUS_BONDED",
@@ -1267,8 +1267,8 @@ Genesis transaction written to "/home/hudson/.aura-corruption-test/config/gentx/
    ],
    "delegations": [
     {
-     "delegator_address": "aura1w9a8vx622x5gaer5yus692ls2ptjdxl9pvdult",
-     "validator_address": "auravaloper1w9a8vx622x5gaer5yus692ls2ptjdxl967u584",
+     "delegator_address": "aura15nn9smaz52y06wk9dvfay269r8wsmtcm3c9kag",
+     "validator_address": "auravaloper15nn9smaz52y06wk9dvfay269r8wsmtcm22579k",
      "shares": "90000000000.000000000000000000"
     }
    ],
@@ -1385,11 +1385,15 @@ Genesis transaction written to "/home/hudson/.aura-corruption-test/config/gentx/
   }
  }
 }
+Configuring ports to avoid conflicts...
+Configured ports - RPC: 36657, P2P: 36656
 
 Starting node to generate initial state
 -----------------------------------------------------------------
-Node PID: 958132
-✅ Node is producing blocks (height: 9)
+Starting node with home: /home/hudson/.aura-corruption-test
+Binary: /home/hudson/blockchain-projects/aura/chain/aurad
+Node PID: 1129569
+✅ Node is producing blocks (height: 5)
 
 Stopping node for corruption test
 -----------------------------------------------------------------
@@ -1399,46 +1403,46 @@ Test 1: Application DB Corruption
 -----------------------------------------------------------------
 Application DB directory found: /home/hudson/.aura-corruption-test/data/application.db
 Corrupting file: /home/hudson/.aura-corruption-test/data/application.db/000002.log
-DB file size: 74262 bytes, corrupting at offset: 37131
+DB file size: 48785 bytes, corrupting at offset: 24392
 1+0 records in
 1+0 records out
-1024 bytes (1.0 kB, 1.0 KiB) copied, 5.1087e-05 s, 20.0 MB/s
+1024 bytes (1.0 kB, 1.0 KiB) copied, 2.9496e-05 s, 34.7 MB/s
 ✅ Database corrupted
 Attempting to restart with corrupted application.db...
 ⚠️  Node unexpectedly running with corrupted DB
 ✅ Node logged errors about corruption
-I[2025-12-13|14:43:06.183] service stop                                 module=txindex msg="Stopping IndexerService service" impl=IndexerService
-I[2025-12-13|14:43:06.183] service stop                                 module=p2p msg="Stopping P2P Switch service" impl="P2P Switch"
-I[2025-12-13|14:43:06.183] service stop                                 module=evidence msg="Stopping Evidence service" impl=Evidence
-I[2025-12-13|14:43:06.183] service stop                                 module=statesync msg="Stopping StateSync service" impl=StateSync
-I[2025-12-13|14:43:06.183] service stop                                 module=pex msg="Stopping PEX service" impl=PEX
-I[2025-12-13|14:43:06.183] service stop                                 module=p2p book=/home/hudson/.aura-corruption-test/config/addrbook.json msg="Stopping AddrBook service" impl=AddrBook
-I[2025-12-13|14:43:06.183] service stop                                 module=mempool msg="Stopping Mempool service" impl=Mempool
-I[2025-12-13|14:43:06.183] service stop                                 module=blocksync msg="Stopping Reactor service" impl=Reactor
-I[2025-12-13|14:43:06.183] service stop                                 module=consensus msg="Stopping Consensus service" impl=ConsensusReactor
-I[2025-12-13|14:43:06.183] Saving AddrBook to file                      module=p2p book=/home/hudson/.aura-corruption-test/config/addrbook.json size=0
-I[2025-12-13|14:43:06.183] service stop                                 module=consensus msg="Stopping State service" impl=ConsensusState
-I[2025-12-13|14:43:06.183] service stop                                 module=consensus msg="Stopping TimeoutTicker service" impl=TimeoutTicker
-E[2025-12-13|14:43:06.183] Stopped accept routine, as transport is closed module=p2p numPeers=0
-I[2025-12-13|14:43:06.183] Closing rpc listener                         listener="&{Listener:0xc002b52fc0 sem:0xc001bdecb0 closeOnce:{_:{} done:{_:{} v:0} m:{_:{} mu:{state:0 sema:0}}} done:0xc001bded20}"
-I[2025-12-13|14:43:06.183] RPC HTTP server stopped                      module=rpc-server err="accept tcp 127.0.0.1:26657: use of closed network connection"
-E[2025-12-13|14:43:06.183] Error serving server                         err="accept tcp 127.0.0.1:26657: use of closed network connection"
-I[2025-12-13|14:43:06.183] Closing blockstore                           
-I[2025-12-13|14:43:06.183] Closing statestore                           
-I[2025-12-13|14:43:06.183] Closing evidencestore                        
-[90m2:43PM[0m [32mINF[0m [1mshutdown completed successfully[0m
+I[2025-12-13|15:17:01.701] service stop                                 module=txindex msg="Stopping IndexerService service" impl=IndexerService
+I[2025-12-13|15:17:01.701] service stop                                 module=p2p msg="Stopping P2P Switch service" impl="P2P Switch"
+I[2025-12-13|15:17:01.701] service stop                                 module=blocksync msg="Stopping Reactor service" impl=Reactor
+I[2025-12-13|15:17:01.701] service stop                                 module=consensus msg="Stopping Consensus service" impl=ConsensusReactor
+I[2025-12-13|15:17:01.701] service stop                                 module=consensus msg="Stopping State service" impl=ConsensusState
+I[2025-12-13|15:17:01.701] service stop                                 module=consensus msg="Stopping TimeoutTicker service" impl=TimeoutTicker
+I[2025-12-13|15:17:01.701] service stop                                 module=evidence msg="Stopping Evidence service" impl=Evidence
+I[2025-12-13|15:17:01.701] service stop                                 module=statesync msg="Stopping StateSync service" impl=StateSync
+I[2025-12-13|15:17:01.701] service stop                                 module=pex msg="Stopping PEX service" impl=PEX
+I[2025-12-13|15:17:01.701] service stop                                 module=p2p book=/home/hudson/.aura-corruption-test/config/addrbook.json msg="Stopping AddrBook service" impl=AddrBook
+I[2025-12-13|15:17:01.701] service stop                                 module=mempool msg="Stopping Mempool service" impl=Mempool
+E[2025-12-13|15:17:01.701] Stopped accept routine, as transport is closed module=p2p numPeers=0
+I[2025-12-13|15:17:01.701] Closing rpc listener                         listener="&{Listener:0xc002f27880 sem:0xc00272f490 closeOnce:{_:{} done:{_:{} v:0} m:{_:{} mu:{state:0 sema:0}}} done:0xc00272f500}"
+I[2025-12-13|15:17:01.701] Saving AddrBook to file                      module=p2p book=/home/hudson/.aura-corruption-test/config/addrbook.json size=0
+I[2025-12-13|15:17:01.701] RPC HTTP server stopped                      module=rpc-server err="accept tcp 127.0.0.1:36657: use of closed network connection"
+E[2025-12-13|15:17:01.701] Error serving server                         err="accept tcp 127.0.0.1:36657: use of closed network connection"
+I[2025-12-13|15:17:01.701] Closing blockstore                           
+I[2025-12-13|15:17:01.701] Closing statestore                           
+I[2025-12-13|15:17:01.701] Closing evidencestore                        
+[90m3:17PM[0m [32mINF[0m [1mshutdown completed successfully[0m
 Restoring application.db from backup...
 Verifying node can restart with restored DB...
-✅ Node successfully restarted with restored DB (height: 17)
+✅ Node successfully restarted with restored DB (height: 11)
 
 Test 2: State/Blockstore DB Corruption
 -----------------------------------------------------------------
 State DB directory found: /home/hudson/.aura-corruption-test/data/state.db
-Corrupting file: /home/hudson/.aura-corruption-test/data/state.db/000006.log
-DB file size: 17037 bytes, corrupting at offset: 5679
+Corrupting file: /home/hudson/.aura-corruption-test/data/state.db/000002.ldb
+DB file size: 14686 bytes, corrupting at offset: 4895
 1+0 records in
 1+0 records out
-1024 bytes (1.0 kB, 1.0 KiB) copied, 3.713e-05 s, 27.6 MB/s
+1024 bytes (1.0 kB, 1.0 KiB) copied, 3.5097e-05 s, 29.2 MB/s
 ✅ State database corrupted
 Attempting to restart with corrupted state.db...
 ✅ Node failed to start with corrupted state DB (expected)
@@ -1448,40 +1452,40 @@ Error excerpt:
     "resolved_path": "~/.aura-corruption-test"
     "original_path": "~/.aura-corruption-test",
     "resolved_path": "~/.aura-corruption-test"
-[90m2:43PM[0m [32mINF[0m [1mloaded chain-id[0m [36mchain_id=[0maura-corruption-test
-[90m2:43PM[0m [33mWRN[0m [1merror creating merged proto registry[0m [36merror=[0m[31m[1m"proto:\u00a0could not resolve import \"core/crypto/pb/crypto.proto\": not found"[0m[0m
-panic: StoreBlockHeight (17) > StateBlockHeight + 1 (13)
+[90m3:17PM[0m [32mINF[0m [1mloaded chain-id[0m [36mchain_id=[0maura-corruption-test
+[90m3:17PM[0m [33mWRN[0m [1merror creating merged proto registry[0m [36merror=[0m[31m[1m"proto:\u00a0could not resolve import \"core/crypto/pb/crypto.proto\": not found"[0m[0m
+panic: leveldb/table: corruption on data-block (pos=0): checksum mismatch, want=0x5494f289 got=0x1fb03319 [file=000002.ldb]
 Restoring state.db from backup...
 Verifying node can restart with restored DB...
-✅ Node successfully restarted with restored DB (height: 23)
+✅ Node successfully restarted with restored DB (height: 16)
 
 Test 3: Recovery via unsafe-reset-all
 -----------------------------------------------------------------
 Creating fresh state for reset test...
-Current height before reset: 27
+Current height before reset: 20
 Executing unsafe-reset-all...
 Unsafe reset ALL functionality requires server integration
 DANGER: Can lead to double-signing on active validators
 ✅ unsafe-reset-all executed successfully
 ✅ Database cleared/reset
 Attempting to restart after unsafe-reset-all...
-✅ Node restarted successfully after reset (height: 33)
+✅ Node restarted successfully after reset (height: 25)
 
 Test 7.1 Summary
 -----------------------------------------------------------------
 ✅ Binary built successfully
 ✅ Node initialized successfully
-✅ Node is producing blocks (height: 9)
+✅ Node is producing blocks (height: 5)
 ✅ Node stopped
 ✅ Database corrupted
 ⚠️  Node unexpectedly running with corrupted DB
 ✅ Node logged errors about corruption
-✅ Node successfully restarted with restored DB (height: 17)
+✅ Node successfully restarted with restored DB (height: 11)
 ✅ State database corrupted
 ✅ Node failed to start with corrupted state DB (expected)
 ✅ Clear corruption error message found
-✅ Node successfully restarted with restored DB (height: 23)
+✅ Node successfully restarted with restored DB (height: 16)
 ✅ unsafe-reset-all executed successfully
 ✅ Database cleared/reset
-✅ Node restarted successfully after reset (height: 33)
-Test execution completed at: Sat Dec 13 02:43:43 PM UTC 2025
+✅ Node restarted successfully after reset (height: 25)
+Test execution completed at: Sat Dec 13 03:17:39 PM UTC 2025

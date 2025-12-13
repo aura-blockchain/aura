@@ -52,7 +52,7 @@ log_section() {
 get_height() {
     local log_file="${1:-$TEST_DIR/node.log}"
     # Try status command first
-    local height=$($BINARY status --node tcp://localhost:36657 --home "$TEST_DIR" 2>/dev/null | jq -r '.sync_info.latest_block_height' 2>/dev/null || echo "0")
+    local height=$($BINARY status --node tcp://localhost:36657 --home "$TEST_DIR" 2>/dev/null | jq -r '.SyncInfo.latest_block_height // .sync_info.latest_block_height // "0"' 2>/dev/null || echo "0")
 
     # Fallback to log parsing if status fails
     if [ "$height" = "0" ] || [ "$height" = "null" ] || [ -z "$height" ]; then
@@ -60,6 +60,25 @@ get_height() {
     fi
 
     echo "$height"
+}
+
+# Function to wait for RPC to be ready
+wait_for_rpc() {
+    local max_attempts=30
+    local attempt=0
+
+    echo "Waiting for RPC endpoint to be ready..."
+    while [ $attempt -lt $max_attempts ]; do
+        if curl -s http://localhost:36657/status > /dev/null 2>&1; then
+            echo "RPC endpoint is ready"
+            return 0
+        fi
+        attempt=$((attempt + 1))
+        sleep 1
+    done
+
+    echo "RPC endpoint failed to become ready after $max_attempts seconds"
+    return 1
 }
 
 # Function to cleanup
@@ -103,14 +122,6 @@ else
     exit 1
 fi
 
-# Configure unique ports to avoid conflicts
-sed -i 's/laddr = "tcp:\/\/127.0.0.1:26657"/laddr = "tcp:\/\/127.0.0.1:36657"/' "$TEST_DIR/config/config.toml"
-sed -i 's/laddr = "tcp:\/\/0.0.0.0:26656"/laddr = "tcp:\/\/0.0.0.0:36656"/' "$TEST_DIR/config/config.toml"
-sed -i 's/address = "localhost:9090"/address = "localhost:9190"/' "$TEST_DIR/config/app.toml"
-sed -i 's/address = "localhost:9091"/address = "localhost:9191"/' "$TEST_DIR/config/app.toml"
-sed -i 's/address = "tcp:\/\/localhost:1317"/address = "tcp:\/\/localhost:1417"/' "$TEST_DIR/config/app.toml"
-sed -i 's/prometheus_listen_addr = ":26660"/prometheus_listen_addr = ":36660"/' "$TEST_DIR/config/config.toml"
-
 # Add genesis account and create validator
 TEST_ADDR=$($BINARY keys add test-validator --keyring-backend test --home "$TEST_DIR" 2>&1 | grep -oP 'aura[a-z0-9]{39}' | head -1)
 log_result "Test address: $TEST_ADDR"
@@ -119,14 +130,40 @@ $BINARY genesis add-genesis-account "$TEST_ADDR" 1000000000stake --home "$TEST_D
 $BINARY genesis gentx test-validator 500000000stake --chain-id "$CHAIN_ID" --home "$TEST_DIR" --keyring-backend test &>> "$RESULTS_FILE"
 $BINARY genesis collect-gentxs --home "$TEST_DIR" &>> "$RESULTS_FILE"
 
+# Configure unique ports to avoid conflicts (AFTER genesis setup to prevent overwrites)
+log_result "Configuring ports to avoid conflicts..."
+sed -i 's#laddr = "tcp://127.0.0.1:26657"#laddr = "tcp://127.0.0.1:36657"#' "$TEST_DIR/config/config.toml"
+sed -i 's#laddr = "tcp://0.0.0.0:26656"#laddr = "tcp://0.0.0.0:36656"#' "$TEST_DIR/config/config.toml"
+sed -i 's/address = "localhost:9090"/address = "localhost:9190"/' "$TEST_DIR/config/app.toml"
+sed -i 's/address = "localhost:9091"/address = "localhost:9191"/' "$TEST_DIR/config/app.toml"
+sed -i 's#address = "tcp://localhost:1317"#address = "tcp://localhost:1417"#' "$TEST_DIR/config/app.toml"
+sed -i 's/prometheus_listen_addr = ":26660"/prometheus_listen_addr = ":36660"/' "$TEST_DIR/config/config.toml"
+
+# Verify port configuration
+RPC_PORT=$(grep -oP 'laddr = "tcp://127\.0\.0\.1:\K[0-9]+' "$TEST_DIR/config/config.toml" | head -1)
+P2P_PORT=$(grep -oP 'laddr = "tcp://0\.0\.0\.0:\K[0-9]+' "$TEST_DIR/config/config.toml" | head -1)
+log_result "Configured ports - RPC: $RPC_PORT, P2P: $P2P_PORT"
+
 # Start node and let it run for a bit to create some state
 log_section "Starting node to generate initial state"
+log_result "Starting node with home: $TEST_DIR"
+log_result "Binary: $BINARY"
+
+# Start node (ports configured in config files)
 $BINARY start --home "$TEST_DIR" &> "$TEST_DIR/node.log" &
 NODE_PID=$!
 log_result "Node PID: $NODE_PID"
 
+# Wait for RPC to be ready
+if ! wait_for_rpc; then
+    log_result "❌ RPC endpoint failed to start"
+    kill $NODE_PID 2>/dev/null || true
+    tail -50 "$TEST_DIR/node.log" >> "$RESULTS_FILE"
+    exit 1
+fi
+
 echo "Waiting for node to produce blocks..."
-sleep 10
+sleep 5
 
 # Check if blocks are being produced
 LATEST_HEIGHT=$(get_height "$TEST_DIR/node.log")
@@ -135,19 +172,20 @@ if [ "$LATEST_HEIGHT" -gt 0 ]; then
     log_result "✅ Node is producing blocks (height: $LATEST_HEIGHT)"
 else
     log_result "❌ Node failed to produce blocks"
-    kill $NODE_PID || true
+    tail -50 "$TEST_DIR/node.log" >> "$RESULTS_FILE"
+    kill $NODE_PID 2>/dev/null || true
     exit 1
 fi
 
 # Stop the node
 log_section "Stopping node for corruption test"
-kill $NODE_PID
+kill $NODE_PID 2>/dev/null || true
 sleep 3
 
 # Verify node is stopped
 if ps -p $NODE_PID > /dev/null 2>&1; then
     log_result "⚠️  Node still running, forcing kill"
-    kill -9 $NODE_PID || true
+    kill -9 $NODE_PID 2>/dev/null || true
     sleep 2
 fi
 log_result "✅ Node stopped"
@@ -200,7 +238,7 @@ if [ -n "$APP_DB_DIR" ]; then
     # Check if node is still running (it shouldn't be)
     if ps -p $CORRUPT_PID > /dev/null 2>&1; then
         log_result "⚠️  Node unexpectedly running with corrupted DB"
-        kill $CORRUPT_PID || true
+        kill $CORRUPT_PID 2>/dev/null || true
 
         # Check log for error messages
         if grep -i "error\|corrupt\|panic" "$TEST_DIR/corrupt_app_db.log" > /dev/null; then
@@ -240,7 +278,7 @@ if [ -n "$APP_DB_DIR" ]; then
         sleep 2  # Give it a moment to start producing blocks
         NEW_HEIGHT=$(get_height "$TEST_DIR/restored_app_db.log")
         log_result "✅ Node successfully restarted with restored DB (height: $NEW_HEIGHT)"
-        kill $RESTORE_PID || true
+        kill $RESTORE_PID 2>/dev/null || true
     else
         log_result "❌ Node failed to restart even with restored DB"
     fi
@@ -298,7 +336,7 @@ if [ -n "$STATE_DB_DIR" ]; then
     # Check if node is still running
     if ps -p $CORRUPT_PID > /dev/null 2>&1; then
         log_result "⚠️  Node unexpectedly running with corrupted state DB"
-        kill $CORRUPT_PID || true
+        kill $CORRUPT_PID 2>/dev/null || true
 
         # Check log for error messages
         if grep -i "error\|corrupt\|panic" "$TEST_DIR/corrupt_state_db.log" > /dev/null; then
@@ -336,7 +374,7 @@ if [ -n "$STATE_DB_DIR" ]; then
         sleep 2  # Give it a moment to start producing blocks
         NEW_HEIGHT=$(get_height "$TEST_DIR/restored_state_db.log")
         log_result "✅ Node successfully restarted with restored DB (height: $NEW_HEIGHT)"
-        kill $RESTORE_PID || true
+        kill $RESTORE_PID 2>/dev/null || true
     else
         log_result "❌ Node failed to restart even with restored DB"
     fi
@@ -358,7 +396,7 @@ sleep 5
 LATEST_HEIGHT=$(get_height "$TEST_DIR/pre_reset.log")
 log_result "Current height before reset: $LATEST_HEIGHT"
 
-kill $PRE_RESET_PID
+kill $PRE_RESET_PID 2>/dev/null || true
 sleep 2
 
 # Perform unsafe-reset-all
@@ -389,7 +427,7 @@ if $BINARY comet unsafe-reset-all --home "$TEST_DIR" &>> "$RESULTS_FILE"; then
             log_result "✅ Height reset confirmed (was $LATEST_HEIGHT, now $NEW_HEIGHT)"
         fi
 
-        kill $POST_RESET_PID
+        kill $POST_RESET_PID 2>/dev/null || true
     else
         log_result "❌ Node failed to restart after unsafe-reset-all"
     fi
