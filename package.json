@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "prepare": "husky install",
-    "php-checks": "php tools/bin/composer.phar run test && php tools/bin/composer.phar run phpcs"
+    "php-checks": "composer run test && composer run phpcs"
   },
   "devDependencies": {
     "husky": "^8.0.0"
