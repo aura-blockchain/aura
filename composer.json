@@ -21,8 +21,8 @@
     ],
     "phpunit": "vendor/bin/phpunit --configuration phpunit.xml.dist",
     "phpstan": "vendor/bin/phpstan analyse --configuration phpstan.neon",
-    "phpcs": "vendor/bin/phpcs --standard=phpcs.xml.dist chain ai-assistant wallet verifier-portal",
-    "phpcbf": "vendor/bin/phpcbf --standard=phpcs.xml.dist chain ai-assistant wallet verifier-portal"
+    "phpcs": "vendor/bin/phpcs --standard=phpcs.xml.dist --extensions=php chain ai-assistant wallet verifier-portal",
+    "phpcbf": "vendor/bin/phpcbf --standard=phpcs.xml.dist --extensions=php chain ai-assistant wallet verifier-portal"
   },
   "config": {
     "vendor-dir": "vendor"
