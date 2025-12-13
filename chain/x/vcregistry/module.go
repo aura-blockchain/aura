@@ -95,16 +95,15 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 	} else if err := cdc.UnmarshalJSON(data, &gen); err != nil {
 		panic(fmt.Errorf("failed to unmarshal vcregistry genesis: %w", err))
 	}
-	// Convert sdk.Context to context.Context for keeper
-	if err := am.keeper.InitGenesis(sdk.WrapSDKContext(ctx), gen); err != nil {
+	// Pass the full SDK context so keeper routines have store access
+	if err := am.keeper.InitGenesis(ctx, gen); err != nil {
 		panic(fmt.Errorf("vcregistry InitGenesis: %w", err))
 	}
 }
 
 // ExportGenesis exports module state for genesis
 func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
-	// Convert sdk.Context to context.Context for keeper
-	gen := am.keeper.ExportGenesis(sdk.WrapSDKContext(ctx))
+	gen := am.keeper.ExportGenesis(ctx)
 	// MustMarshalJSON expects proto.Message which requires pointer receiver
 	return cdc.MustMarshalJSON(&gen)
 }
@@ -115,7 +114,7 @@ func (AppModule) ConsensusVersion() uint64 { return 1 }
 // BeginBlock executes all ABCI BeginBlock logic
 func (m AppModule) BeginBlock(ctx sdk.Context) {
 	// Periodically cleanup expired mint rate limit counters
-	m.keeper.CleanupOldMintCounts(sdk.WrapSDKContext(ctx))
+	m.keeper.CleanupOldMintCounts(ctx)
 }
 
 // EndBlock executes all ABCI EndBlock logic

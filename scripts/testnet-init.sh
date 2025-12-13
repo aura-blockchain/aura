@@ -113,6 +113,7 @@ echo -e "${YELLOW}[4/8]${NC} Creating validator keys and accounts..."
 
 # We'll collect all validator addresses and node IDs
 declare -a VALIDATOR_ADDRESSES
+declare -a VALIDATOR_OPERATOR_ADDRESSES
 declare -a NODE_IDS
 
 for i in $(seq 0 $((NUM_VALIDATORS - 1))); do
@@ -134,6 +135,13 @@ for i in $(seq 0 $((NUM_VALIDATORS - 1))); do
         --address 2>/dev/null)
 
     VALIDATOR_ADDRESSES[$i]="${VALIDATOR_ADDR}"
+
+    # Operator (valoper) address
+    VALIDATOR_OPERATOR_ADDRESSES[$i]=$(printf '%s\n' "${KEY_PASSWORD}" | "${BINARY_PATH}" keys show "${MONIKER}" \
+        --keyring-backend test \
+        --home "${NODE_HOME}" \
+        --bech val \
+        --address 2>/dev/null)
 
     # Get node ID for persistent_peers
     NODE_KEY_GEN=$(mktemp "${REPO_ROOT}/chain/tmp.nodekey.XXXX.go")
@@ -257,6 +265,19 @@ else
     echo -e "  ${YELLOW}⚠ jq not found, using default genesis parameters${NC}"
 fi
 
+# Remove any default validator scaffold from init
+jq '
+  .app_state.staking.params.bond_denom = "uaura" |
+  .app_state.staking.validators = [] |
+  .app_state.staking.last_validator_powers = [] |
+  .app_state.staking.last_total_power = "0" |
+  .app_state.staking.delegations = [] |
+  .app_state.staking.unbonding_delegations = [] |
+  .app_state.staking.redelegations = [] |
+  .app_state.bank.supply = (.app_state.bank.supply // [] | map(select(.denom != "stake"))) |
+  .app_state.bank.balances = [.app_state.bank.balances[] | .coins = [.coins[] | select(.denom != "stake")]]
+' "${GENESIS_FILE}" > tmp.json && mv tmp.json "${GENESIS_FILE}"
+
 # ============================================================================
 # Step 5.5: Create gentx for all validators
 # ============================================================================
@@ -280,11 +301,19 @@ for i in $(seq 0 $((NUM_VALIDATORS - 1))); do
     printf '%s\n' "${KEY_PASSWORD}" | "${BINARY_PATH}" genesis gentx "${MONIKER}" "${STAKING_AMOUNT}" \
         --chain-id "${CHAIN_ID}" \
         --keyring-backend test \
+        --keyring-dir "${NODE_HOME}" \
+        --from "${MONIKER}" \
         --home "${NODE_HOME}" \
         --moniker "${MONIKER}" \
         --commission-rate "0.10" \
         --commission-max-rate "0.20" \
         --commission-max-change-rate "0.01" > /dev/null 2>&1
+
+    # Work around gentx bug where delegator_address may be blank
+    GENTX_FILE=$(ls "${NODE_HOME}/config/gentx/"*.json | head -n 1)
+    if [ -n "${GENTX_FILE}" ]; then
+        jq --arg addr "${VALIDATOR_ADDR}" '(.body.messages[] | select(.delegator_address == "")) .delegator_address = $addr' "${GENTX_FILE}" > "${GENTX_FILE}.tmp" && mv "${GENTX_FILE}.tmp" "${GENTX_FILE}"
+    fi
 
     echo -e "  ${GREEN}✓ ${MONIKER} gentx created${NC}"
 done
@@ -311,9 +340,81 @@ done
 
 echo -e "${GREEN}✓ All gentxs collected${NC}"
 
-# Verify validators are in genesis
-VALIDATOR_COUNT=$(jq '.app_state.staking.validators | length' "${GENESIS_FILE}")
-echo -e "${GREEN}✓ Genesis now contains ${VALIDATOR_COUNT} validators${NC}"
+# CRITICAL FIX: Change bond_denom to uaura (gentx use uaura, not stake)
+jq '.app_state.staking.params.bond_denom = "uaura"' "${GENESIS_FILE}" > tmp.json && mv tmp.json "${GENESIS_FILE}"
+echo -e "${GREEN}✓ Set bond denomination to uaura${NC}"
+
+# Remove any "stake" denom that may have been added
+if command -v jq &> /dev/null; then
+    jq '.app_state.bank.balances = [.app_state.bank.balances[] | .coins = [.coins[] | select(.denom != "stake")]]' "${GENESIS_FILE}" > tmp.json && mv tmp.json "${GENESIS_FILE}"
+    jq '.app_state.bank.supply = (.app_state.bank.supply // [] | map(select(.denom != "stake")))' "${GENESIS_FILE}" > tmp.json && mv tmp.json "${GENESIS_FILE}"
+    echo -e "${GREEN}✓ Removed stake denomination from balances${NC}"
+fi
+
+# Verify validators are in gentx
+VALIDATOR_COUNT=$(jq '.app_state.genutil.gen_txs | length' "${GENESIS_FILE}")
+echo -e "${GREEN}✓ Genesis contains ${VALIDATOR_COUNT} validators in gentx${NC}"
+
+# Rebuild staking state directly from gentx files to guarantee validators exist at genesis
+GENESIS_TIME=$(jq -r '.genesis_time' "${GENESIS_FILE}")
+VALIDATORS_JSON="[]"
+POWERS_JSON="[]"
+DELEGATIONS_JSON="[]"
+TOTAL_POWER=0
+for gentx in "${GENESIS_HOME}"/config/gentx/*.json; do
+    [ -f "${gentx}" ] || continue
+    VALOPER=$(jq -r '.body.messages[0].validator_address' "${gentx}")
+    DELEGATOR=$(jq -r '.body.messages[0].delegator_address' "${gentx}")
+    PUBKEY=$(jq -r '.body.messages[0].pubkey.key' "${gentx}")
+    MONIKER=$(jq -r '.body.messages[0].description.moniker' "${gentx}")
+    RATE=$(jq -r '.body.messages[0].commission.rate' "${gentx}")
+    MAX_RATE=$(jq -r '.body.messages[0].commission.max_rate' "${gentx}")
+    MAX_CHANGE=$(jq -r '.body.messages[0].commission.max_change_rate' "${gentx}")
+    AMOUNT=$(jq -r '.body.messages[0].value.amount' "${gentx}")
+
+    # Convert staking tokens to power (PowerReduction defaults to 1e6)
+    POWER=$((AMOUNT / 1000000))
+    TOTAL_POWER=$((TOTAL_POWER + POWER))
+
+    VALIDATORS_JSON=$(jq --arg valoper "${VALOPER}" \
+                           --arg pub "${PUBKEY}" \
+                           --arg mon "${MONIKER}" \
+                           --arg rate "${RATE}" \
+                           --arg max_rate "${MAX_RATE}" \
+                           --arg max_change "${MAX_CHANGE}" \
+                           --arg amount "${AMOUNT}" \
+                           --arg update_time "${GENESIS_TIME}" \
+        '. += [{
+            operator_address: $valoper,
+            consensus_pubkey: {"@type": "/cosmos.crypto.ed25519.PubKey", key: $pub},
+            jailed: false,
+            status: "BOND_STATUS_BONDED",
+            tokens: $amount,
+            delegator_shares: ($amount + ".000000000000000000"),
+            description: {moniker: $mon, identity: "", website: "", security_contact: "", details: ""},
+            unbonding_height: "0",
+            unbonding_time: "1970-01-01T00:00:00Z",
+            commission: {commission_rates: {rate: $rate, max_rate: $max_rate, max_change_rate: $max_change}, update_time: $update_time},
+            min_self_delegation: "1",
+            unbonding_on_hold_ref_count: "0",
+            unbonding_ids: []
+        }]' <<< "${VALIDATORS_JSON}")
+
+    POWERS_JSON=$(jq --arg valoper "${VALOPER}" --arg power "${POWER}" '. += [{address: $valoper, power: $power}]' <<< "${POWERS_JSON}")
+    DELEGATIONS_JSON=$(jq --arg del "${DELEGATOR}" --arg valoper "${VALOPER}" --arg amount "${AMOUNT}" '. += [{delegator_address: $del, validator_address: $valoper, shares: ($amount + ".000000000000000000")}]' <<< "${DELEGATIONS_JSON}")
+done
+
+jq --argjson validators "${VALIDATORS_JSON}" \
+   --argjson powers "${POWERS_JSON}" \
+   --argjson delegations "${DELEGATIONS_JSON}" \
+   --arg total_power "$(printf "%d" "${TOTAL_POWER}")" '
+  .app_state.staking.validators = $validators |
+  .app_state.staking.last_validator_powers = $powers |
+  .app_state.staking.last_total_power = ($total_power | tostring) |
+  .app_state.staking.delegations = $delegations |
+  .app_state.staking.unbonding_delegations = [] |
+  .app_state.staking.redelegations = []
+' "${GENESIS_FILE}" > tmp.json && mv tmp.json "${GENESIS_FILE}"
 
 # ============================================================================
 # Step 6: Distribute genesis and configure peers
@@ -398,7 +499,8 @@ for VALIDATOR in "${VALIDATORS[@]}"; do
         -v "${TESTNET_DIR}/${VALIDATOR}:/source:ro" \
         alpine sh -c "cp -r /source/config /home/aura/.aura/ && \
                       cp -r /source/data /home/aura/.aura/ && \
-                      cp -r /source/keyring-test /home/aura/.aura/ 2>/dev/null || true"
+                      cp -r /source/keyring-test /home/aura/.aura/ 2>/dev/null || true && \
+                      chown -R 1000:1000 /home/aura/.aura"
 
     echo "  ✓ ${VALIDATOR} volume populated"
 done
