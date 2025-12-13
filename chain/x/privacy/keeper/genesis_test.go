@@ -1,5 +1,7 @@
 package keeper
 
+//lint:file-ignore U1000 -- helper scaffolding retained for future genesis edge-case tests
+
 import (
 	"testing"
 

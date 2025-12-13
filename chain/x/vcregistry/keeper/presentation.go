@@ -446,6 +446,7 @@ func (k *Keeper) extractDiscloseableAttributes(
 }
 
 // storePresentationTemp stores a presentation temporarily for verification
+//nolint:unused // placeholder for future stateful verification
 func (k *Keeper) storePresentationTemp(presentation *vcregistrypb.VCPresentation, expiresAt int64) {
 	// In a real implementation, this would store in the KV store
 	// For now, we don't need to store it since verification is stateless

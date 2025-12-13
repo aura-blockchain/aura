@@ -50,9 +50,9 @@ services:
       CORS_ORIGINS: "*"
 
       # Blockchain configuration
-      NODE_RPC: "${NODE_RPC:-http://aura-validator-1:26657}"
-      NODE_API: "${NODE_API:-http://aura-validator-1:1317}"
-      NODE_GRPC: "${NODE_GRPC:-aura-validator-1:9090}"
+      NODE_RPC: "${NODE_RPC:-http://aura-observer-1:26657}"
+      NODE_API: "${NODE_API:-http://aura-observer-1:1317}"
+      NODE_GRPC: "${NODE_GRPC:-aura-observer-1:9090}"
       CHAIN_ID: "${CHAIN_ID:-aura-testnet-1}"
       FAUCET_MNEMONIC: "${FAUCET_MNEMONIC}"
       FAUCET_ADDRESS: "${FAUCET_ADDRESS}"

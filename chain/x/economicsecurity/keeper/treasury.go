@@ -253,14 +253,16 @@ func (k *Keeper) GetTreasuryStatistics(ctx context.Context) (
 	pendingCount := uint64(0)
 	executedCount := uint64(0)
 
-	k.IteratePendingTreasuryTxs(ctx, func(tx *types.PendingTreasuryTx) bool {
+	if err := k.IteratePendingTreasuryTxs(ctx, func(tx *types.PendingTreasuryTx) bool {
 		if tx.Executed {
 			executedCount++
 		} else if !tx.Rejected {
 			pendingCount++
 		}
 		return true
-	})
+	}); err != nil {
+		return false, "", 0, 0, 0, 0
+	}
 
 	return true,
 		params.TreasuryMultisig.TreasuryAddress,

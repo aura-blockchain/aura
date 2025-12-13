@@ -188,23 +188,21 @@ func (p *PrefetchCache) Prefetch(keys [][]byte) {
 	defer p.mu.Unlock()
 
 	for _, key := range keys {
-		keyStr := string(key)
-		if !p.prefetched[keyStr] {
-			value := p.store.Get(key)
-			if value != nil {
-				p.cache[keyStr] = value
-			}
-			p.prefetched[keyStr] = true
+		if p.prefetched[string(key)] {
+			continue
 		}
+		value := p.store.Get(key)
+		if value != nil {
+			p.cache[string(key)] = value
+		}
+		p.prefetched[string(key)] = true
 	}
 }
 
 // Get retrieves a value, using cache if available
 func (p *PrefetchCache) Get(key []byte) []byte {
-	keyStr := string(key)
-
 	p.mu.RLock()
-	if value, ok := p.cache[keyStr]; ok {
+	if value, ok := p.cache[string(key)]; ok {
 		p.mu.RUnlock()
 		return value
 	}

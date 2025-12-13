@@ -8,7 +8,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-// RegisterInvariants registers all compliance module invariants
+// RegisterInvariants registers all compliance module invariants.
+// nolint:staticcheck // Uses deprecated SDK invariant interfaces required by module wiring.
 func RegisterInvariants(ir sdk.InvariantRegistry, k *Keeper) {
 	ir.RegisterRoute(types.ModuleName, "params-valid", ParamsInvariant(k))
 	ir.RegisterRoute(types.ModuleName, "kyc-record-consistency", KYCRecordConsistencyInvariant(k))
@@ -18,6 +19,7 @@ func RegisterInvariants(ir sdk.InvariantRegistry, k *Keeper) {
 }
 
 // AllInvariants runs all invariants of the compliance module
+// nolint:staticcheck // Uses deprecated SDK invariant interfaces required by module wiring.
 func AllInvariants(k *Keeper) sdk.Invariant {
 	return func(ctx sdk.Context) (string, bool) {
 		invariants := []sdk.Invariant{
@@ -225,7 +227,7 @@ func GDPRDataIntegrityInvariant(k *Keeper) sdk.Invariant {
 				return sdk.FormatInvariant(
 					types.ModuleName,
 					"gdpr-data-integrity",
-					fmt.Sprintf("GDPR request has zero requested_at"),
+					"GDPR request has zero requested_at",
 				), true
 			}
 
@@ -234,7 +236,7 @@ func GDPRDataIntegrityInvariant(k *Keeper) sdk.Invariant {
 				return sdk.FormatInvariant(
 					types.ModuleName,
 					"gdpr-data-integrity",
-					fmt.Sprintf("GDPR request marked completed but has nil completed_at"),
+					"GDPR request marked completed but has nil completed_at",
 				), true
 			}
 		}

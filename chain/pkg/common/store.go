@@ -1,3 +1,4 @@
+//lint:file-ignore SA1019 -- generic helpers intentionally use codec.ProtoMarshaler until SDK codecs are upgraded
 package common
 
 import (

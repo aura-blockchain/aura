@@ -778,7 +778,7 @@ func TestResetRateLimitWindow(t *testing.T) {
 	require.NoError(t, err)
 
 	// Reset window
-	k.ResetRateLimitWindow(ctx, "user1")
+	require.NoError(t, k.ResetRateLimitWindow(ctx, "user1"))
 
 	// Verify counters reset
 	updated, err := k.GetRateLimitConfig(ctx, "user1")
@@ -791,7 +791,7 @@ func TestResetRateLimitWindow_NotFound(t *testing.T) {
 	k, ctx := setupTestKeeper(t)
 
 	// Should not panic
-	k.ResetRateLimitWindow(ctx, "nonexistent")
+	require.Error(t, k.ResetRateLimitWindow(ctx, "nonexistent"))
 }
 
 func TestResetRateLimitWindow_NilWindowStart(t *testing.T) {
@@ -809,7 +809,7 @@ func TestResetRateLimitWindow_NilWindowStart(t *testing.T) {
 	require.NoError(t, err)
 
 	// Should not panic
-	k.ResetRateLimitWindow(ctx, "user1")
+	require.NoError(t, k.ResetRateLimitWindow(ctx, "user1"))
 }
 
 // ============================================================================

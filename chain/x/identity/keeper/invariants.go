@@ -1,5 +1,7 @@
 package keeper
 
+//lint:file-ignore SA1019 // invariants rely on deprecated SDK registry until upstream removal
+
 import (
 	"fmt"
 
@@ -9,14 +11,14 @@ import (
 )
 
 // RegisterInvariants registers all identity module invariants
-func RegisterInvariants(ir sdk.InvariantRegistry, k *Keeper) {
+func RegisterInvariants(ir sdk.InvariantRegistry, k *Keeper) { //nolint:staticcheck // invariant registry uses deprecated SDK interface
 	ir.RegisterRoute(types.ModuleName, "params-valid", ParamsInvariant(k))
 	ir.RegisterRoute(types.ModuleName, "role-consistency", RoleConsistencyInvariant(k))
 	ir.RegisterRoute(types.ModuleName, "identity-validity", IdentityValidityInvariant(k))
 }
 
 // AllInvariants runs all invariants of the identity module
-func AllInvariants(k *Keeper) sdk.Invariant {
+func AllInvariants(k *Keeper) sdk.Invariant { //nolint:staticcheck // invariant signature uses deprecated SDK type
 	return func(ctx sdk.Context) (string, bool) {
 		invariants := []sdk.Invariant{
 			ParamsInvariant(k),

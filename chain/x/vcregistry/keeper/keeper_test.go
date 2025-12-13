@@ -1,5 +1,7 @@
 package keeper
 
+//lint:file-ignore U1000 -- mock helpers retained for extended keeper test scenarios
+
 import (
 	"testing"
 	"time"
@@ -8,6 +10,7 @@ import (
 	"github.com/aequitas/aura/chain/x/vcregistry/types"
 	vcregistrypb "github.com/aequitas/aura/proto/aura/vcregistry/v1beta1"
 	gogotypes "github.com/cosmos/gogoproto/types"
+	"github.com/stretchr/testify/require"
 )
 
 // ============================
@@ -347,7 +350,9 @@ func TestCheckVCStatus(t *testing.T) {
 					ExpiresAt:       tt.vcRecord.ExpiresAt,
 					IssuedHeight:    tt.vcRecord.IssuedHeight,
 				}
-				keeper.SetVCRecord(ctx, typesRecord)
+				if err := keeper.SetVCRecord(ctx, typesRecord); err != nil {
+					t.Fatalf("failed to seed VC record: %v", err)
+				}
 			}
 
 			status, valid, err := keeper.CheckVCStatus(ctx, tt.vcID)
@@ -446,7 +451,9 @@ func TestRevokeVC(t *testing.T) {
 					ExpiresAt:       tt.vcRecord.ExpiresAt,
 					IssuedHeight:    tt.vcRecord.IssuedHeight,
 				}
-				keeper.SetVCRecord(ctx, typesRecord)
+				if err := keeper.SetVCRecord(ctx, typesRecord); err != nil {
+					t.Fatalf("failed to seed VC record: %v", err)
+				}
 			}
 
 			err := keeper.RevokeVC(ctx, tt.vcID, tt.reason, tt.revoker, tt.evidence)
@@ -554,7 +561,7 @@ func TestDIDManagement(t *testing.T) {
 
 				// If testing duplicate, first registration should succeed
 				if tt.name == "duplicate DID" {
-					keeper.RegisterDID(ctx, tt.did, tt.controller, tt.methods, tt.metadataURI)
+					require.NoError(t, keeper.RegisterDID(ctx, tt.did, tt.controller, tt.methods, tt.metadataURI))
 				}
 
 				err := keeper.RegisterDID(ctx, tt.did, tt.controller, tt.methods, tt.metadataURI)
@@ -595,7 +602,7 @@ func TestDIDManagement(t *testing.T) {
 		controller := "aura1gettest"
 
 		// Register DID
-		keeper.RegisterDID(ctx, did, controller, []*vcregistrypb.VerificationMethod{}, "")
+	require.NoError(t, keeper.RegisterDID(ctx, did, controller, []*vcregistrypb.VerificationMethod{}, ""))
 
 		// Retrieve DID
 		doc, ok := keeper.GetDIDDocument(ctx, did)
@@ -627,7 +634,7 @@ func TestDIDManagement(t *testing.T) {
 		controller := "aura1updatetest"
 
 		// Register DID
-		keeper.RegisterDID(ctx, did, controller, []*vcregistrypb.VerificationMethod{}, "old_metadata")
+	require.NoError(t, keeper.RegisterDID(ctx, did, controller, []*vcregistrypb.VerificationMethod{}, "old_metadata"))
 
 		// Update DID
 		newMethods := []*vcregistrypb.VerificationMethod{
@@ -672,7 +679,7 @@ func TestDIDManagement(t *testing.T) {
 		// Register multiple DIDs for same controller
 		dids := []string{"did:aura:multi1", "did:aura:multi2", "did:aura:multi3"}
 		for _, did := range dids {
-			keeper.RegisterDID(ctx, did, controller, []*vcregistrypb.VerificationMethod{}, "")
+			require.NoError(t, keeper.RegisterDID(ctx, did, controller, []*vcregistrypb.VerificationMethod{}, ""))
 		}
 
 		// Retrieve DIDs by address
@@ -697,7 +704,7 @@ func TestDIDManagement(t *testing.T) {
 		controller := "aura1credtest"
 
 		// Register DID
-		keeper.RegisterDID(ctx, did, controller, []*vcregistrypb.VerificationMethod{}, "")
+		require.NoError(t, keeper.RegisterDID(ctx, did, controller, []*vcregistrypb.VerificationMethod{}, ""))
 
 		// Add credentials
 		vcID1 := "vc:cred1"
@@ -739,11 +746,11 @@ func TestDIDManagement(t *testing.T) {
 		controller := "aura1removaltest"
 
 		// Register DID and add credentials
-		keeper.RegisterDID(ctx, did, controller, []*vcregistrypb.VerificationMethod{}, "")
+		require.NoError(t, keeper.RegisterDID(ctx, did, controller, []*vcregistrypb.VerificationMethod{}, ""))
 		vcID1 := "vc:remove1"
 		vcID2 := "vc:remove2"
-		keeper.AddCredentialToDID(ctx, did, vcID1)
-		keeper.AddCredentialToDID(ctx, did, vcID2)
+		require.NoError(t, keeper.AddCredentialToDID(ctx, did, vcID1))
+		require.NoError(t, keeper.AddCredentialToDID(ctx, did, vcID2))
 
 		// Remove one credential
 		err := keeper.RemoveCredentialFromDID(ctx, did, vcID1)
@@ -870,7 +877,7 @@ func TestVCPolicyManagement(t *testing.T) {
 		}
 
 		for _, policy := range policies {
-			keeper.SetVCPolicy(ctx, *policy)
+			require.NoError(t, keeper.SetVCPolicy(ctx, *policy))
 		}
 
 		// Test listing all policies
@@ -907,7 +914,7 @@ func TestRateLimiting(t *testing.T) {
 		params := types.DefaultParams()
 		params.RateLimitingEnabled = true
 		params.MaxMintPerDay = 5
-		keeper.SetParams(*params)
+		require.NoError(t, keeper.SetParams(*params))
 
 		holderAddr := "aura1ratelimituser"
 
@@ -930,7 +937,7 @@ func TestRateLimiting(t *testing.T) {
 
 		// Test: with rate limiting disabled
 		params.RateLimitingEnabled = false
-		keeper.SetParams(*params)
+		require.NoError(t, keeper.SetParams(*params))
 
 		err = keeper.CheckMintRateLimit(ctx, holderAddr)
 		if err != nil {
@@ -960,7 +967,7 @@ func TestRateLimiting(t *testing.T) {
 		params := types.DefaultParams()
 		params.RateLimitingEnabled = true
 		params.MaxMintPerDay = 2
-		keeper.SetParams(*params)
+		require.NoError(t, keeper.SetParams(*params))
 
 		// Should now fail (count=3, limit=2)
 		err = keeper.CheckMintRateLimit(ctx, holderAddr)
@@ -1039,7 +1046,7 @@ func TestGetStats(t *testing.T) {
 	}
 
 	// Convert vcregistrypb.VCRecord to types.VCRecord
-	keeper.SetVCRecord(ctx, types.VCRecord{
+	require.NoError(t, keeper.SetVCRecord(ctx, types.VCRecord{
 		VcId:            activeVC.VcId,
 		VcType:          activeVC.VcType,
 		VcTypeCustom:    activeVC.VcTypeCustom,
@@ -1049,8 +1056,8 @@ func TestGetStats(t *testing.T) {
 		Status:          activeVC.Status,
 		IssuedAt:        activeVC.IssuedAt,
 		IssuedHeight:    activeVC.IssuedHeight,
-	})
-	keeper.SetVCRecord(ctx, types.VCRecord{
+	}))
+	require.NoError(t, keeper.SetVCRecord(ctx, types.VCRecord{
 		VcId:            revokedVC.VcId,
 		VcType:          revokedVC.VcType,
 		VcTypeCustom:    revokedVC.VcTypeCustom,
@@ -1060,8 +1067,8 @@ func TestGetStats(t *testing.T) {
 		Status:          revokedVC.Status,
 		IssuedAt:        revokedVC.IssuedAt,
 		IssuedHeight:    revokedVC.IssuedHeight,
-	})
-	keeper.SetVCRecord(ctx, types.VCRecord{
+	}))
+	require.NoError(t, keeper.SetVCRecord(ctx, types.VCRecord{
 		VcId:            expiredVC.VcId,
 		VcType:          expiredVC.VcType,
 		VcTypeCustom:    expiredVC.VcTypeCustom,
@@ -1071,15 +1078,15 @@ func TestGetStats(t *testing.T) {
 		Status:          expiredVC.Status,
 		IssuedAt:        expiredVC.IssuedAt,
 		IssuedHeight:    expiredVC.IssuedHeight,
-	})
+	}))
 
 	// Add DIDs and policies
-	keeper.RegisterDID(ctx, "did:aura:stats", holderAddr, []*vcregistrypb.VerificationMethod{}, "")
-	keeper.SetVCPolicy(ctx, vcregistrypb.VCPolicy{
+	require.NoError(t, keeper.RegisterDID(ctx, "did:aura:stats", holderAddr, []*vcregistrypb.VerificationMethod{}, ""))
+	require.NoError(t, keeper.SetVCPolicy(ctx, vcregistrypb.VCPolicy{
 		VcTypeName: "TestVC",
 		Status:     vcregistrypb.VCPolicyStatus_VC_POLICY_STATUS_ACTIVE,
 		CreatedAt:  &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: int32(time.Now().Nanosecond())},
-	})
+	}))
 
 	// Get stats
 	stats := keeper.GetStats(ctx)
@@ -1151,7 +1158,7 @@ func TestInitExportGenesis(t *testing.T) {
 	}
 
 	// Convert vcregistrypb.VCRecord to types.VCRecord
-	keeper.SetVCRecord(ctx, types.VCRecord{
+	require.NoError(t, keeper.SetVCRecord(ctx, types.VCRecord{
 		VcId:            vcRecord.VcId,
 		VcType:          vcRecord.VcType,
 		VcTypeCustom:    vcRecord.VcTypeCustom,
@@ -1161,9 +1168,9 @@ func TestInitExportGenesis(t *testing.T) {
 		Status:          vcRecord.Status,
 		IssuedAt:        vcRecord.IssuedAt,
 		IssuedHeight:    vcRecord.IssuedHeight,
-	})
-	keeper.RegisterDID(ctx, didDoc.Did, didDoc.Controller, []*vcregistrypb.VerificationMethod{}, "")
-	keeper.SetVCPolicy(ctx, *policy)
+	}))
+	require.NoError(t, keeper.RegisterDID(ctx, didDoc.Did, didDoc.Controller, []*vcregistrypb.VerificationMethod{}, ""))
+	require.NoError(t, keeper.SetVCPolicy(ctx, *policy))
 
 	// Export genesis
 	genesis := keeper.ExportGenesis(ctx)

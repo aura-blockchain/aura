@@ -52,9 +52,9 @@ func Load() (*Config, error) {
 		Environment: getEnv("ENVIRONMENT", "development"),
 		CORSOrigins: strings.Split(getEnv("CORS_ORIGINS", "*"), ","),
 
-		NodeRPC:          getEnv("NODE_RPC", "http://aura-validator-1:26657"),
-		NodeAPI:          getEnv("NODE_API", "http://aura-validator-1:1317"),
-		NodeGRPC:         getEnv("NODE_GRPC", "aura-validator-1:9090"),
+		NodeRPC:          getEnv("NODE_RPC", "http://aura-observer-1:26657"),
+		NodeAPI:          getEnv("NODE_API", "http://aura-observer-1:1317"),
+		NodeGRPC:         getEnv("NODE_GRPC", "aura-observer-1:9090"),
 		ChainID:          getEnv("CHAIN_ID", "aura-testnet-1"),
 		FaucetMnemonic:   getEnv("FAUCET_MNEMONIC", ""),
 		FaucetAddress:    getEnv("FAUCET_ADDRESS", ""),

@@ -265,7 +265,7 @@ func (suite *KeeperTestSuite) TestPartitionDetection() {
 			PeerId:    fmt.Sprintf("peer%d", i),
 			IpAddress: fmt.Sprintf("192.168.1.%d", i),
 		}
-		suite.keeper.SetPeerInfo(suite.ctx, peerInfo)
+		require.NoError(suite.T(), suite.keeper.SetPeerInfo(suite.ctx, peerInfo))
 	}
 
 	// Should detect partition
@@ -286,7 +286,7 @@ func (suite *KeeperTestSuite) TestSybilDetection() {
 			IpAddress: fmt.Sprintf("192.168.1.%d", i), // All in same /24
 			Asn:       12345,                          // Same ASN
 		}
-		suite.keeper.SetPeerInfo(suite.ctx, peerInfo)
+		require.NoError(suite.T(), suite.keeper.SetPeerInfo(suite.ctx, peerInfo))
 	}
 
 	// Should detect Sybil attack
@@ -305,7 +305,7 @@ func (suite *KeeperTestSuite) TestMempoolValidation() {
 
 	// Add many transactions from same sender
 	for i := 0; i < 150; i++ {
-		suite.keeper.SetAccountMempoolTxCount(suite.ctx, sender, uint32(i+1))
+		require.NoError(suite.T(), suite.keeper.SetAccountMempoolTxCount(suite.ctx, sender, uint32(i+1)))
 	}
 
 	// Should fail anti-spam check

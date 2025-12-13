@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/aequitas/aura/chain/x/common/determinism"
-	contractregistrykeeper "github.com/aequitas/aura/chain/x/contractregistry/keeper"
 	pb "github.com/aequitas/aura/proto/aura/contractregistry/v1beta1"
 	"github.com/aequitas/aura/chain/x/wasm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -201,10 +200,6 @@ var (
 	}
 )
 
-const (
-	validationCacheDuration = 5 * time.Second // cache for same block
-)
-
 // getCacheKey generates a cache key for validation
 func getCacheKey(contractAddr, sender string, blockHeight int64) string {
 	return fmt.Sprintf("%s:%s:%d", contractAddr, sender, blockHeight)
@@ -304,11 +299,6 @@ func (mb *metricsBuffer) flush() []metricsUpdate {
 // ============================================================================
 // HOOK METHODS
 // ============================================================================
-
-// setContractRegistryInternal sets the contract registry keeper (internal only)
-func (k *Keeper) setContractRegistryInternal(registry *contractregistrykeeper.Keeper) {
-	k.contractRegistry = registry
-}
 
 // BeforeInstantiateHook is called before instantiating a contract
 // Auto-registers the contract in the registry with default settings

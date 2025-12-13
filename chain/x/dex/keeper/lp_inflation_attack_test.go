@@ -225,7 +225,7 @@ func (suite *LPInflationAttackTestSuite) TestDustAttack_Prevention() {
 	inflatedReserve := largeAmount.Mul(math.NewInt(1000)) // 1000x inflation
 	pool.ReserveA = inflatedReserve
 	pool.ReserveB = inflatedReserve
-	suite.Keeper.SetPool(ctx, pool)
+	suite.Require().NoError(suite.Keeper.SetPool(ctx, pool))
 
 	// Victim attempts to add liquidity with small amount
 	victimAddr := keepertest.GenTestAddrs(2)[1]
@@ -342,7 +342,7 @@ func (suite *LPInflationAttackTestSuite) TestDonationAttack_LPInvariantProtectio
 	pool.ReserveA = newReserveA
 	pool.ReserveB = newReserveB
 	// NOTE: TotalLpTokens and LockedLiquidity remain unchanged - this is the attack!
-	suite.Keeper.SetPool(ctx, pool)
+	suite.Require().NoError(suite.Keeper.SetPool(ctx, pool))
 
 	// Verify LP token invariant still holds (donations don't affect it)
 	// Invariant: TotalLP = sum(provider LP) + LockedLP
@@ -736,7 +736,7 @@ func (suite *LPInflationAttackTestSuite) TestGenesisExportImport_LockedLiquidity
 
 	// Simulate genesis import by storing the pool in a new context
 	// (In real genesis import, this would be a fresh chain state)
-	suite.Keeper.SetPool(ctx, exportedPool)
+	suite.Require().NoError(suite.Keeper.SetPool(ctx, exportedPool))
 
 	// Verify locked liquidity persisted
 	importedPool := suite.Keeper.GetPool(ctx, "uaura-usdc")

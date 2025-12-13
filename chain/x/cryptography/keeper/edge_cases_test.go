@@ -53,14 +53,14 @@ func TestEdgeCases(t *testing.T) {
 		require.NoError(t, err)
 		source2, _ := k.GetRandomSource(ctx, sourceID2)
 		source2.Status = cryptoproto.RandomSourceStatus_RANDOM_SOURCE_STATUS_FAILED
-		k.SetRandomSource(ctx, source2)
+		require.NoError(t, k.SetRandomSource(ctx, source2))
 
 		// Low entropy source
 		sourceID3, err := k.InitializeRandomSource(ctx, cryptoproto.RandomSourceType_RANDOM_SOURCE_TYPE_QUANTUM, entropy)
 		require.NoError(t, err)
 		source3, _ := k.GetRandomSource(ctx, sourceID3)
 		source3.Status = cryptoproto.RandomSourceStatus_RANDOM_SOURCE_STATUS_LOW_ENTROPY
-		k.SetRandomSource(ctx, source3)
+		require.NoError(t, k.SetRandomSource(ctx, source3))
 
 		// Get statistics
 		stats := k.GetEntropyStatistics(ctx)

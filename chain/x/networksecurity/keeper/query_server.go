@@ -4,6 +4,8 @@ import (
 	"context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/aequitas/aura/chain/x/networksecurity/types"
 )
@@ -47,7 +49,7 @@ func (qs queryServer) PeerInfo(goCtx context.Context, req *types.QueryPeerInfoRe
 // AllPeers queries information about all connected peers
 func (qs queryServer) AllPeers(goCtx context.Context, req *types.QueryAllPeersRequest) (*types.QueryAllPeersResponse, error) {
 	if req == nil {
-		req = &types.QueryAllPeersRequest{}
+		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
@@ -57,9 +59,7 @@ func (qs queryServer) AllPeers(goCtx context.Context, req *types.QueryAllPeersRe
 
 	// Convert to value types for the response
 	peers := make([]types.PeerInfo, len(allPeers))
-	for i := range allPeers {
-		peers[i] = allPeers[i]
-	}
+	copy(peers, allPeers)
 
 	return &types.QueryAllPeersResponse{
 		Peers: peers,

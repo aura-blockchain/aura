@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	gogotypes "github.com/cosmos/gogoproto/types"
@@ -232,12 +231,4 @@ func (k *Keeper) generateCredentialHash(vcID, holderAddress, holderDID string, v
 	// Using vcID again for deterministic hashing - actual time is in VC record
 	h.Write([]byte(vcID))
 	return h.Sum(nil)
-}
-
-// unixToTime converts unix timestamp to time.Time
-func unixToTime(unix int64) time.Time {
-	if unix == 0 {
-		return time.Time{}
-	}
-	return time.Unix(unix, 0)
 }

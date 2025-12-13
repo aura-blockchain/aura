@@ -91,7 +91,7 @@ func (suite *MsgServerTestSuite) TestUnauthorized() {
 		ExpiresAt:    suite.SdkCtx.BlockTime().Add(time.Hour),
 		PricePerAura: sdkmath.LegacyMustNewDecFromStr("2"),
 	}
-	suite.Keeper.SetOrder(suite.SdkCtx, order)
+	suite.Require().NoError(suite.Keeper.SetOrder(suite.SdkCtx, order))
 
 	_, err := suite.msgServer.CancelOrder(ctx, &dexpb.MsgCancelOrder{
 		Creator: other,

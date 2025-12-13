@@ -154,11 +154,7 @@ func (am AppModule) BeginBlock(ctx context.Context) error {
 
 	// Check inflation periodically
 	if params.Tokenomics.InflationCheckInterval > 0 && height%params.Tokenomics.InflationCheckInterval == 0 {
-		// Would implement inflation monitoring here
-		// currentInflation := calculateInflation()
-		// if abs(currentInflation - targetInflation) > threshold {
-		//     createInflationAlert()
-		// }
+		sdkCtx.Logger().Info("inflation check placeholder executed", "height", height, "interval", params.Tokenomics.InflationCheckInterval)
 	}
 
 	// Process vesting schedules that need release

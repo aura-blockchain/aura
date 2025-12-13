@@ -12,6 +12,7 @@ import (
 
 // timestampToGogo converts a google protobuf Timestamp to gogoproto Timestamp
 func timestampToGogo(ts *timestamppb.Timestamp) *gogotypes.Timestamp {
+	//nolint:unused // kept for future proto compatibility helpers
 	if ts == nil {
 		return nil
 	}

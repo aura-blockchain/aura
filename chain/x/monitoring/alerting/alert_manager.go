@@ -1,12 +1,9 @@
 package alerting
 
 import (
-	"context"
 	"fmt"
 	"sync"
 	"time"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/aequitas/aura/chain/x/monitoring/types"
 )
@@ -251,13 +248,4 @@ func generateAlertID() string {
 	defer alertIDMutex.Unlock()
 	alertIDCounter++
 	return fmt.Sprintf("alert-%d-%d", time.Now().UnixNano(), alertIDCounter)
-}
-
-// generateAlertIDWithCtx generates a unique alert ID using block time (consensus-safe)
-func generateAlertIDWithCtx(ctx context.Context) string {
-	alertIDMutex.Lock()
-	defer alertIDMutex.Unlock()
-	alertIDCounter++
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	return fmt.Sprintf("alert-%d-%d", sdkCtx.BlockTime().UnixNano(), alertIDCounter)
 }

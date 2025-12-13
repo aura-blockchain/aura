@@ -160,12 +160,14 @@ func (k *Keeper) calculateDelegatedPower(ctx sdk.Context, delegate string) strin
 
 	totalDelegated := big.NewInt(0)
 
-	// In production, would have reverse index: delegate -> delegators
-	// For now, simplified
-	allProposals := k.GetAllProposals(ctx)
-	if len(allProposals) > 0 {
-		// Use first proposal to iterate votes
-		// This is simplified - production would have better indexing
+	// In production, would have reverse index: delegate -> delegators. For now, iterate all delegations.
+	for _, delegation := range k.GetAllVoteDelegations(ctx) {
+		if delegation == nil || delegation.Delegate != delegate {
+			continue
+		}
+		if delegatedPower, ok := new(big.Int).SetString(delegation.DelegatedPower, 10); ok {
+			totalDelegated.Add(totalDelegated, delegatedPower)
+		}
 	}
 
 	return totalDelegated.String()

@@ -46,12 +46,52 @@ func ValidateParams(params *Params) error {
 
 	// Validate scheduler config
 	if params.SchedulerConfig != nil {
-		// Add scheduler validation if needed
+		if params.SchedulerConfig.Enabled {
+			if params.SchedulerConfig.RunIntervalMinutes == 0 {
+				return fmt.Errorf("run_interval_minutes must be greater than 0 when scheduler is enabled")
+			}
+			if params.SchedulerConfig.Timezone == "" {
+				return fmt.Errorf("timezone must be provided when scheduler is enabled")
+			}
+			if params.SchedulerConfig.MaxPerRun == 0 {
+				return fmt.Errorf("max_per_run must be greater than 0 when scheduler is enabled")
+			}
+		}
 	}
 
 	// Validate auto-scaling config
 	if params.AutoScalingConfig != nil {
-		// Add auto-scaling validation if needed
+		if params.AutoScalingConfig.TargetCacheHitRate.IsNil() {
+			params.AutoScalingConfig.TargetCacheHitRate = math.LegacyNewDec(0)
+		}
+		if params.AutoScalingConfig.MinCacheHitRate.IsNil() {
+			params.AutoScalingConfig.MinCacheHitRate = math.LegacyNewDec(0)
+		}
+		if params.AutoScalingConfig.ScaleUpFactor.IsNil() {
+			params.AutoScalingConfig.ScaleUpFactor = math.LegacyNewDec(0)
+		}
+		if params.AutoScalingConfig.ScaleDownFactor.IsNil() {
+			params.AutoScalingConfig.ScaleDownFactor = math.LegacyNewDec(0)
+		}
+
+		if params.AutoScalingConfig.Enabled {
+			if params.AutoScalingConfig.CooldownMinutes == 0 {
+				return fmt.Errorf("cooldown_minutes must be greater than 0 when auto-scaling is enabled")
+			}
+			if params.AutoScalingConfig.EvaluationPeriodHours == 0 {
+				return fmt.Errorf("evaluation_period_hours must be greater than 0 when auto-scaling is enabled")
+			}
+		}
+
+		if params.AutoScalingConfig.MinCacheHitRate.IsNegative() || params.AutoScalingConfig.MinCacheHitRate.GT(math.LegacyNewDec(100)) {
+			return fmt.Errorf("min_cache_hit_rate must be between 0.0 and 100.0")
+		}
+		if params.AutoScalingConfig.TargetCacheHitRate.IsNegative() || params.AutoScalingConfig.TargetCacheHitRate.GT(math.LegacyNewDec(100)) {
+			return fmt.Errorf("target_cache_hit_rate must be between 0.0 and 100.0")
+		}
+		if params.AutoScalingConfig.ScaleUpFactor.IsNegative() || params.AutoScalingConfig.ScaleDownFactor.IsNegative() {
+			return fmt.Errorf("scale factors cannot be negative")
+		}
 	}
 
 	// Validate control group percentage

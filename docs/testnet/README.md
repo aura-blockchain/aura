@@ -7,6 +7,7 @@ This folder consolidates the documentation needed to stand up and operate the Au
 - Run `./scripts/testnet-init.sh` followed by `cd testnet-data && ./populate-volumes.sh && cd ..` to bootstrap four validators; the full sequence, networking notes, and monitoring pointers live in [`TESTNET_SETUP.md`](../TESTNET_SETUP.md).  
 - Use `docker-compose -f docker-compose.testnet.yml up -d` to start validators + monitoring, and `./scripts/testnet-manage.sh help` for the available lifecycle commands (`start`, `status`, `logs`, `health`, `bft-test`, `clean`, etc.).
 - Verify RPC/API/GRPC endpoints at the ports described in `TESTNET_QUICKSTART.md` and `TESTNET_SETUP.md:30-120`; ensure gRPC is bound to `0.0.0.0:9090` (handled by `scripts/testnet-init.sh` for new volumes) so faucet/relayer/observer services can reach it.
+- Bring up the dedicated observer stack via `docker compose -f docker-compose.observer.yml up -d` (static IP `172.26.0.50`, host ports `28657/2318/12090`) and front it with `docker compose -f docker-compose.proxy.yml up -d` to expose hardened endpoints at `http://localhost:8080/rpc` + `grpc localhost:12091` for wallets, faucet, explorer, and Hermes.
 - Test Byzantine fault tolerance by running `./scripts/testnet-manage.sh bft-test` or manually stopping one validator and watching `curl http://localhost:26657/status`; the scripted flow is documented at `TESTNET_SETUP.md:178-208`.
 - Validate state sync by cycling validator‑3 via `docker-compose -f docker-compose.testnet.yml stop validator-3`, waiting 30+ seconds, restarting it, and tailing `docker-compose -f docker-compose.testnet.yml logs -f validator-3` (`TESTNET_SETUP.md:194-208`).
 - Exercise module transactions and queries (DEX pools, compliance screening, VC Registry) using the CLI and REST endpoints described in `TESTNET_SETUP.md:210-260`.
@@ -18,6 +19,7 @@ This folder consolidates the documentation needed to stand up and operate the Au
 - Front API/RPC endpoints with locally managed Nginx or HAProxy; only leverage Cloudflare tunnels if there is no other option to expose an endpoint.
 - Deploy the faucet (`faucet-service/`) and block explorer (`explorer/`) containers with env vars pointing to the observer RPC/API endpoints on your lab network.
 - Maintain `docs/testnet/INVENTORY.md`, `docs/testnet/STATUS_LOG.md`, and the validation checklist in `docs/testnet/LOCAL_VALIDATION_MATRIX.md` manually — no Terraform. Record rack assignments, WireGuard keys, test status, and every operational change so handoffs stay clear.
+- Use `scripts/hermes-bootstrap.sh` once the observer/sentry stacks are running to create Hermes clients/connections/channels against the hardened proxy endpoints (`http://localhost:8080/rpc`, `grpc localhost:12091`).
 
 ## Genesis Coordination
 

@@ -125,7 +125,7 @@ func (AppModule) ConsensusVersion() uint64 { return 1 }
 //
 // These invariants run during crisis module checks and help detect invalid state
 // that could indicate data corruption or security issues.
-func (am AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {
+func (am AppModule) RegisterInvariants(ir sdk.InvariantRegistry) { //nolint:staticcheck // legacy invariant registry until crisis removal
 	keeper.RegisterInvariants(ir, am.keeper)
 }
 

@@ -710,7 +710,9 @@ func generateRandomKey(t *testing.T) []byte {
 // Benchmark tests
 func BenchmarkEncrypt(b *testing.B) {
 	masterKey := make([]byte, 32)
-	rand.Read(masterKey)
+	if _, err := rand.Read(masterKey); err != nil {
+		b.Fatalf("failed to generate master key: %v", err)
+	}
 	service, _ := NewEncryptionService(masterKey)
 
 	plaintext := []byte("benchmark data for encryption")
@@ -724,7 +726,9 @@ func BenchmarkEncrypt(b *testing.B) {
 
 func BenchmarkDecrypt(b *testing.B) {
 	masterKey := make([]byte, 32)
-	rand.Read(masterKey)
+	if _, err := rand.Read(masterKey); err != nil {
+		b.Fatalf("failed to generate master key: %v", err)
+	}
 	service, _ := NewEncryptionService(masterKey)
 
 	plaintext := []byte("benchmark data for decryption")
@@ -739,7 +743,9 @@ func BenchmarkDecrypt(b *testing.B) {
 
 func BenchmarkEncryptJSON(b *testing.B) {
 	masterKey := make([]byte, 32)
-	rand.Read(masterKey)
+	if _, err := rand.Read(masterKey); err != nil {
+		b.Fatalf("failed to generate master key: %v", err)
+	}
 	service, _ := NewEncryptionService(masterKey)
 
 	data := map[string]string{

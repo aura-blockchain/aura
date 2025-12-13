@@ -1,5 +1,7 @@
 package keeper
 
+//lint:file-ignore U1000 -- shared test helpers reserved for future contract registry coverage
+
 import (
 	"testing"
 	"time"

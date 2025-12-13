@@ -264,7 +264,7 @@ func (k Keeper) CleanupExpiredHTLCsBatched(ctx sdk.Context, limit int) int {
 
 	// Create iterator starting from cursor position
 	var iterator storetypes.Iterator
-	if cursorBytes != nil && len(cursorBytes) > 0 {
+	if len(cursorBytes) > 0 {
 		// Start from cursor position (next key after cursor)
 		iterator = store.Iterator(cursorBytes, nil)
 		// Skip the cursor key itself if it exists

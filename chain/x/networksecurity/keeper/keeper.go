@@ -209,7 +209,9 @@ func (k Keeper) IsBanned(ctx sdk.Context, peerID string) bool {
 	if rateLimitEntry.IsBanned {
 		if rateLimitEntry.BanExpiresAt != nil && ctx.BlockTime().After(*rateLimitEntry.BanExpiresAt) {
 			// Ban expired, remove it
-			k.UnbanPeer(ctx, peerID)
+			if err := k.UnbanPeer(ctx, peerID); err != nil {
+				k.logger.Error("failed to unban peer during IsBanned", "peer", peerID, "err", err)
+			}
 			return false
 		}
 		return true
@@ -230,7 +232,9 @@ func (k Keeper) BanPeer(ctx sdk.Context, peerID string, duration int64, reason s
 	rateLimitEntry.IsBanned = true
 	rateLimitEntry.BanExpiresAt = &banTime
 
-	k.SetRateLimitEntry(ctx, rateLimitEntry)
+	if err := k.SetRateLimitEntry(ctx, rateLimitEntry); err != nil {
+		return err
+	}
 
 	// Log the ban
 	k.logger.Info(fmt.Sprintf("Peer %s banned for %d seconds. Reason: %s", peerID, duration, reason))
@@ -247,7 +251,9 @@ func (k Keeper) UnbanPeer(ctx sdk.Context, peerID string) error {
 
 	rateLimitEntry.IsBanned = false
 	rateLimitEntry.BanExpiresAt = nil
-	k.SetRateLimitEntry(ctx, rateLimitEntry)
+	if err := k.SetRateLimitEntry(ctx, rateLimitEntry); err != nil {
+		return err
+	}
 
 	k.logger.Info(fmt.Sprintf("Peer %s unbanned", peerID))
 	return nil

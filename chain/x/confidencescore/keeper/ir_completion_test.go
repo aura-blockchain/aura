@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/aequitas/aura/chain/x/confidencescore/types"
+	"github.com/stretchr/testify/require"
 )
 
 // Mock IR Registry for testing
@@ -272,11 +273,12 @@ func TestRecordIRCompletion_PrerequisitesMissing(t *testing.T) {
 	verifierHash := sha256.Sum256([]byte("verifier"))
 
 	// Complete IR-000 (anchor)
-	k.RecordIRCompletion(ctx, walletAddr, "IR-000", "assistant1", proofHash[:], verifierHash[:], time.Now().Unix())
+	_, err := k.RecordIRCompletion(ctx, walletAddr, "IR-000", "assistant1", proofHash[:], verifierHash[:], time.Now().Unix())
+	require.NoError(t, err)
 
 	// Try to complete IR-002 without IR-001
 	proofHash2 := sha256.Sum256([]byte("proof2"))
-	_, err := k.RecordIRCompletion(ctx, walletAddr, "IR-002", "assistant1", proofHash2[:], verifierHash[:], time.Now().Unix())
+	_, err = k.RecordIRCompletion(ctx, walletAddr, "IR-002", "assistant1", proofHash2[:], verifierHash[:], time.Now().Unix())
 
 	if err == nil || err.Error() != "required prerequisite ir not completed: IR-001" {
 		t.Errorf("expected prerequisite error, got %v", err)
@@ -295,7 +297,8 @@ func TestRecordIRCompletion_RateLimitExceeded(t *testing.T) {
 	// Complete anchor first
 	proofHash := sha256.Sum256([]byte("proof0"))
 	verifierHash := sha256.Sum256([]byte("verifier"))
-	k.RecordIRCompletion(ctx, walletAddr, "IR-000", "assistant1", proofHash[:], verifierHash[:], time.Now().Unix())
+	_, err := k.RecordIRCompletion(ctx, walletAddr, "IR-000", "assistant1", proofHash[:], verifierHash[:], time.Now().Unix())
+	require.NoError(t, err)
 
 	// Set up other active IRs
 	for i := 1; i <= 10; i++ {
@@ -337,10 +340,11 @@ func TestRecordIRCompletion_ReplayDetection(t *testing.T) {
 	verifierHash := sha256.Sum256([]byte("verifier"))
 
 	// Complete IR-000 with proof hash
-	k.RecordIRCompletion(ctx, walletAddr, "IR-000", "assistant1", proofHash[:], verifierHash[:], time.Now().Unix())
+	_, err := k.RecordIRCompletion(ctx, walletAddr, "IR-000", "assistant1", proofHash[:], verifierHash[:], time.Now().Unix())
+	require.NoError(t, err)
 
 	// Try to use same proof hash for different IR
-	_, err := k.RecordIRCompletion(ctx, walletAddr, "IR-001", "assistant1", proofHash[:], verifierHash[:], time.Now().Unix())
+	_, err = k.RecordIRCompletion(ctx, walletAddr, "IR-001", "assistant1", proofHash[:], verifierHash[:], time.Now().Unix())
 
 	if err != types.ErrReplayDetected {
 		t.Errorf("expected ErrReplayDetected, got %v", err)
@@ -420,7 +424,7 @@ func TestValidateAnchor(t *testing.T) {
 		HasAnchor:     true,
 		AnchorInfo:    nil,
 	}
-	k.SetUserRecord(ctx, record)
+	require.NoError(t, k.SetUserRecord(ctx, record))
 
 	err = k.ValidateAnchor(ctx, walletAddr)
 	if err != types.ErrInvalidAnchor {
@@ -431,7 +435,7 @@ func TestValidateAnchor(t *testing.T) {
 	record.AnchorInfo = &types.AnchorInfo{
 		Completed: true,
 	}
-	k.SetUserRecord(ctx, record)
+	require.NoError(t, k.SetUserRecord(ctx, record))
 
 	err = k.ValidateAnchor(ctx, walletAddr)
 	if err != nil {
@@ -462,7 +466,7 @@ func TestCalculateVelocityBonus(t *testing.T) {
 			CompletedAt: timestampFromTime(time.Unix(anchorTime, 0)),
 		},
 	}
-	k.SetUserRecord(ctx, record)
+	require.NoError(t, k.SetUserRecord(ctx, record))
 
 	bonus = k.CalculateVelocityBonus(ctx, walletAddr)
 	if bonus != 12500 { // Within 7 days, expect 1.25x = 12500 basis points

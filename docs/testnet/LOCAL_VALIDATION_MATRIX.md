@@ -12,13 +12,13 @@ All functionality must be verified locally (homelab/colo hardware, Docker/K8s) b
 | Component | Validation Steps (Local) | Status | Owner | Notes |
 |-----------|--------------------------|--------|-------|-------|
 | Validators (4x) | Use `scripts/testnet-init.sh` to seed volumes, start via `docker compose -f docker-compose.testnet.yml up -d validator-{1..4}`, confirm block production `curl localhost:26657/status` on each host. | ✅ | | Running via docker compose with height >7 verified (2025-01-18) |
-| Sentries (2x) | Bring up sentry stack on separate hosts, ensure persistent peers configured in `config.toml`, verify inbound/outbound peers via `aurad status`. | ❌ | | |
-| Observer RPC/API nodes | Deploy observer compose stack with Nginx proxy, confirm REST/gRPC endpoints locally and via LAN clients. | ❌ | | |
+| Sentries (2x) | Bring up sentry stack on separate hosts, ensure persistent peers configured in `config.toml`, verify inbound/outbound peers via `aurad status`. | ✅ | | Running via compose; `curl http://localhost:28659/net_info` + `28663` show 4 peers each, `catching_up=false` |
+| Observer RPC/API nodes | Deploy observer compose stack with Nginx proxy, confirm REST/gRPC endpoints locally and via LAN clients. | ✅ | | `docker compose -f docker-compose.observer.yml up -d` + `docker compose -f docker-compose.proxy.yml up -d` — RPC served at `http://localhost:8080/rpc`, REST stub `/api`, gRPC `localhost:12091` |
 | WireGuard/VLAN networking | Run `wg show` across racks, verify restricted P2P ports (26656) and management access. | ❌ | | |
 | Monitoring (Prometheus/Grafana/Alertmanager) | `docker compose -f docker-compose.testnet.yml` brings up Prometheus/Grafana; import dashboards via `scripts/import_grafana_dashboards.sh`, verify scrape targets and dashboard availability. | ✅ | | Prometheus ready + Grafana dashboards imported; `testnet-monitor.sh quick/performance` run (2025-01-18) |
 | Explorer + Indexer | Follow `explorer/DEPLOYMENT_GUIDE.md` locally, point to observer RPC, validate search/blocks/tx views. | ✅ | | Ping.pub React/Vite frontend built + `docker compose -f docker-compose.explorer.yml up -d`; `http://localhost:8088` confirmed pulling data from validator-1 |
 | Faucet | Deploy via `faucet-service/docker-compose.yml`, use local RPC, confirm rate limiting + hCaptcha (dev bypass), send test tx. | ✅ | | Verified end-to-end: funded faucet wallet, gRPC balance checks, RPC broadcast via validator-1. Sample tx: `A6FE8C6599FFCFCFFA0FEFE5A196AD4E7580B4856CE7D7BA73BD200F7B9E724B` (height 2837) |
-| Hermes Relayer | Configure `config/hermes/config.toml` for local endpoints, run `scripts/hermes-bootstrap.sh`, ensure client/connection/channel created. | ❌ | | |
+| Hermes Relayer | Configure `config/hermes/config.toml` for local endpoints, run `scripts/hermes-bootstrap.sh`, ensure client/connection/channel created. | ❌ | | Counterparty chain + relayer keys funded (tx `947F37E...` / `A4C93E...`); bootstrap now blocked because gRPC lacks `cosmos.tx.v1beta1.Service/Simulate`, so Hermes cannot estimate gas |
 | Wallets (desktop/mobile/web/extension) | Connect to local RPC endpoints, perform send/receive, staking, gov vote flows per `wallet/README.md`. | ❌ | | |
 | Analytics Dashboards | Serve dashboards via local HTTP/Nginx, validate data sources (REST/RPC) and confirm charts load. | ❌ | | |
 

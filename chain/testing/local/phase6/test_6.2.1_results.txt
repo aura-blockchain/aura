@@ -1,0 +1,54 @@
+Test Start: Sat Dec 13 02:37:30 PM UTC 2025
+
+Starting Bitcoin daemon in regtest mode...
+✓ Bitcoin daemon started successfully
+
+Waiting for Bitcoin daemon to be ready...
+✓ Bitcoin daemon is ready (1s)
+
+=== Blockchain Information ===
+Current block height: 214
+
+=== Wallet Setup ===
+✓ Created new wallet: testwallet
+
+=== Address Generation ===
+Generated address: bcrt1q5dxzjlsuxpv476d2hun9p65uk8rdxlp3hrj53x
+
+=== Mining Blocks ===
+Mining 101 blocks to address (needed for coinbase maturity)...
+✓ Mined 103 blocks
+
+Wallet balance: 25.00000000 BTC
+✓ Wallet successfully funded
+
+New block height: 315
+Blocks mined: 101
+
+=== Second Address for Testing ===
+Generated second address: bcrt1q8xsjtdnnqkzc3sasy54xljl6f65qyl256gtkut
+
+=== Test Transaction ===
+Sending 10.0 BTC to second address...
+Transaction ID: 05abd7ac13bba3fd9bc76663fd431fc84d6ff9ac4e8672bc671bb3eb7c6a17f5
+
+Mining 1 block to confirm transaction...
+✓ Transaction confirmed
+
+Transaction confirmations: 1
+✓ Transaction successfully confirmed
+
+Final wallet balance: 49.99999859 BTC
+
+=== Bitcoin RPC Connection Info ===
+RPC URL: http://127.0.0.1:18443
+RPC User: btcuser
+RPC Password: btcpass123
+Wallet: testwallet
+Test Address 1: bcrt1q5dxzjlsuxpv476d2hun9p65uk8rdxlp3hrj53x
+Test Address 2: bcrt1q8xsjtdnnqkzc3sasy54xljl6f65qyl256gtkut
+
+Test End: Sat Dec 13 02:37:35 PM UTC 2025
+
+=== OVERALL RESULT: PASS ===
+

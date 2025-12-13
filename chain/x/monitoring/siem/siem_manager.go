@@ -256,11 +256,6 @@ func (sm *SIEMManager) AnalyzeThreatTrends(duration time.Duration) map[string]in
 	}
 }
 
-// generateEventID generates a unique event ID (non-consensus path)
-func generateEventID() string {
-	return fmt.Sprintf("siem-event-%d", time.Now().UnixNano())
-}
-
 // generateEventIDWithCtx generates a unique event ID using block time (consensus-safe)
 func generateEventIDWithCtx(ctx context.Context) string {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)

@@ -119,7 +119,10 @@ func (k Keeper) storePrivacyMetrics(ctx context.Context, metrics *PrivacyMetrics
 
 // GetPrivacyMetrics retrieves current privacy metrics
 func (k Keeper) GetPrivacyMetrics(ctx context.Context) *PrivacyMetrics {
-	k.TrackPrivacyMetrics(ctx)
+	if err := k.TrackPrivacyMetrics(ctx); err != nil {
+		// If tracking fails, return zeroed metrics to avoid panics for callers.
+		return &PrivacyMetrics{}
+	}
 
 	metrics := &PrivacyMetrics{
 		TotalShieldedTxs:    k.countShieldedTransactions(ctx),

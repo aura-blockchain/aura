@@ -91,7 +91,9 @@ func (k Keeper) GenerateRandomBytesFromSource(
 	randomBytes := make([]byte, length)
 	_, err = rand.Read(randomBytes)
 	if err != nil {
-		k.updateRandomSourceStatus(ctx, sourceID, cryptoproto.RandomSourceStatus_RANDOM_SOURCE_STATUS_FAILED)
+		if statusErr := k.updateRandomSourceStatus(ctx, sourceID, cryptoproto.RandomSourceStatus_RANDOM_SOURCE_STATUS_FAILED); statusErr != nil {
+			return nil, fmt.Errorf("failed to update random source status after entropy failure: %w", statusErr)
+		}
 		return nil, types.ErrRandomSourceFailed
 	}
 

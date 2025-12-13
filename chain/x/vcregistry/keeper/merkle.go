@@ -3,7 +3,6 @@ package keeper
 import (
 	"context"
 	"crypto/sha256"
-	"encoding/binary"
 	"fmt"
 	"sort"
 )
@@ -185,19 +184,4 @@ func (k *Keeper) BatchVerifyRevocations(ctx context.Context, vcIDs []string, pro
 	}
 
 	return results, nil
-}
-
-// hashPair hashes two byte slices together
-func hashPair(left, right []byte) []byte {
-	h := sha256.New()
-	h.Write(left)
-	h.Write(right)
-	return h.Sum(nil)
-}
-
-// uint64ToBytes converts uint64 to bytes
-func uint64ToBytes(n uint64) []byte {
-	buf := make([]byte, 8)
-	binary.BigEndian.PutUint64(buf, n)
-	return buf
 }

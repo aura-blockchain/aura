@@ -159,14 +159,16 @@ func (k *Keeper) RecordIRCompletion(
 	k.incrementRateLimit(ctx, walletAddr)
 
 	// 15. Add to score history
-	k.AddScoreChange(ctx, walletAddr, types.ScoreChange{
+	if err := k.AddScoreChange(ctx, walletAddr, types.ScoreChange{
 		ScoreDelta:    int64(scoreEarned),
 		NewTotal:      record.TotalScore,
 		Reason:        types.ChangeReasonIRCompletion,
 		RelatedIrId:   irID,
 		TxHash:        completion.TxHash,
 		PreviousScore: previousScore,
-	})
+	}); err != nil {
+		return 0, err
+	}
 
 	return scoreEarned, nil
 }
@@ -267,7 +269,9 @@ func (k *Keeper) CheckReplay(ctx sdk.Context, walletAddr string, proofHash []byt
 func (k *Keeper) recordProofHash(ctx sdk.Context, walletAddr string, proofHash []byte) {
 	store := k.storeService.OpenKVStore(ctx)
 	key := types.ProofHashStoreKey(walletAddr, proofHash)
-	store.Set([]byte(key), []byte{1})
+	if err := store.Set([]byte(key), []byte{1}); err != nil {
+		k.logger.Error("failed to store proof hash", "wallet", walletAddr, "err", err)
+	}
 }
 
 // incrementRateLimit increments rate limit counters
@@ -287,7 +291,9 @@ func (k *Keeper) incrementRateLimit(ctx sdk.Context, walletAddr string) {
 	hourCount++
 	hourCountBz := make([]byte, 4)
 	binary.BigEndian.PutUint32(hourCountBz, uint32(hourCount))
-	store.Set([]byte(hourStoreKey), hourCountBz)
+	if err := store.Set([]byte(hourStoreKey), hourCountBz); err != nil {
+		k.logger.Error("failed to persist hourly rate limit", "wallet", walletAddr, "err", err)
+	}
 
 	// Increment day counter
 	dayStoreKey := types.RateLimitStoreKey(walletAddr, dayKey)
@@ -299,7 +305,9 @@ func (k *Keeper) incrementRateLimit(ctx sdk.Context, walletAddr string) {
 	dayCount++
 	dayCountBz := make([]byte, 4)
 	binary.BigEndian.PutUint32(dayCountBz, uint32(dayCount))
-	store.Set([]byte(dayStoreKey), dayCountBz)
+	if err := store.Set([]byte(dayStoreKey), dayCountBz); err != nil {
+		k.logger.Error("failed to persist daily rate limit", "wallet", walletAddr, "err", err)
+	}
 }
 
 // getRateLimitCount gets the current rate limit count
@@ -414,7 +422,9 @@ func (k *Keeper) CleanupExpiredRateLimits(ctx sdk.Context) {
 	}
 
 	for _, key := range keysToDelete {
-		store.Delete([]byte(key))
+		if err := store.Delete([]byte(key)); err != nil {
+			k.logger.Error("failed to cleanup rate limit key", "key", key, "err", err)
+		}
 	}
 }
 

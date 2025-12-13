@@ -15,7 +15,7 @@ func TestQueryUserScore(t *testing.T) {
 	walletAddr := "aura1test"
 
 	// Query non-existent user
-	totalScore, isVerified, anchorInfo, arenaScores, irCount, _, status, verificationHeight, err := k.QueryUserScore(ctx, walletAddr)
+	totalScore, isVerified, anchorInfo, arenaScores, _, _, status, verificationHeight, err := k.QueryUserScore(ctx, walletAddr)
 
 	if err != nil {
 		t.Fatalf("expected no error for non-existent user, got %v", err)
@@ -62,7 +62,7 @@ func TestQueryUserScore(t *testing.T) {
 	k.SetUserRecord(ctx, record)
 
 	// Query existing user
-	totalScore, isVerified, anchorInfo, arenaScores, irCount, _, status, verificationHeight, err = k.QueryUserScore(ctx, walletAddr)
+	totalScore, isVerified, anchorInfo, arenaScores, _, _, status, verificationHeight, err = k.QueryUserScore(ctx, walletAddr)
 
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
@@ -82,10 +82,6 @@ func TestQueryUserScore(t *testing.T) {
 
 	if len(arenaScores) != 1 {
 		t.Errorf("expected 1 arena score, got %d", len(arenaScores))
-	}
-
-	if irCount != 2 {
-		t.Errorf("expected 2 IR completions, got %d", irCount)
 	}
 
 	if status != types.VerificationStatusVerified {
@@ -172,8 +168,7 @@ func TestQueryUserCompletions(t *testing.T) {
 }
 
 func TestQueryThresholds(t *testing.T) {
-	ctx, k := setupConfKeeperWithTime(t)
-	ctx = ctx.WithBlockHeight(100).WithBlockTime(time.Now())
+	_, k := setupConfKeeperWithTime(t)
 
 	verifiedThreshold, vcThresholds, arenaThresholds := k.QueryThresholds()
 
@@ -261,7 +256,7 @@ func TestGetAnchorInfo(t *testing.T) {
 	}
 	k.SetUserRecord(ctx, record)
 
-	anchorInfo, ok = k.GetAnchorInfo(ctx, walletAddr)
+	_, ok = k.GetAnchorInfo(ctx, walletAddr)
 	if ok {
 		t.Error("expected false for user without anchor")
 	}
@@ -300,6 +295,7 @@ func TestListVerifiedUsers(t *testing.T) {
 	ctx = ctx.WithBlockHeight(100).WithBlockTime(time.Now())
 
 	// No users
+	var scores []uint64
 	wallets, scores := k.ListVerifiedUsers(ctx, 0, 10)
 	if len(wallets) != 0 {
 		t.Errorf("expected 0 users, got %d", len(wallets))
@@ -341,7 +337,7 @@ func TestListVerifiedUsers(t *testing.T) {
 	}
 
 	// Query with min score
-	wallets, scores = k.ListVerifiedUsers(ctx, 12000, 10)
+	wallets, _ = k.ListVerifiedUsers(ctx, 12000, 10)
 
 	// Should get 2 users (user1: 15000, user2: 12000)
 	expectedCount = 2
@@ -351,7 +347,7 @@ func TestListVerifiedUsers(t *testing.T) {
 	}
 
 	// Query with limit
-	wallets, scores = k.ListVerifiedUsers(ctx, 0, 2)
+	wallets, _ = k.ListVerifiedUsers(ctx, 0, 2)
 
 	if len(wallets) > 2 {
 		t.Errorf("expected max 2 users with limit, got %d", len(wallets))

@@ -961,17 +961,17 @@ func (k *Keeper) CleanupExpiredProposals(ctx sdk.Context) int {
 }
 
 // ResetRateLimitWindow resets rate limit counters if window has passed
-func (k *Keeper) ResetRateLimitWindow(ctx sdk.Context, userAddress string) {
+func (k *Keeper) ResetRateLimitWindow(ctx sdk.Context, userAddress string) error {
 	config, err := k.GetRateLimitConfig(ctx, userAddress)
 	if err != nil {
-		return
+		return err
 	}
 
 	now := ctx.BlockTime()
 	windowStart := config.WindowStart
 
 	if windowStart.IsZero() {
-		return
+		return nil
 	}
 
 	// Reset minute counter
@@ -990,7 +990,10 @@ func (k *Keeper) ResetRateLimitWindow(ctx sdk.Context, userAddress string) {
 		config.WindowStart = now
 	}
 
-	k.SetRateLimitConfig(ctx, config)
+	if err := k.SetRateLimitConfig(ctx, config); err != nil {
+		return fmt.Errorf("failed to persist rate limit config: %w", err)
+	}
+	return nil
 }
 
 // CheckRateLimit checks if a user has exceeded their rate limit and increments counters.

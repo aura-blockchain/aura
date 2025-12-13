@@ -3,7 +3,6 @@ package security
 import (
 	"fmt"
 	"regexp"
-	"strconv"
 	"strings"
 )
 
@@ -239,12 +238,12 @@ func (cv *ConfigValidator) isValidKeyFormat(key string) bool {
 func (cv *ConfigValidator) containsTOMLInjection(value string) bool {
 	// Check for patterns that could inject new TOML keys
 	injectionPatterns := []string{
-		"\n[",     // New section
-		"\n[[",    // New array section
-		"]\n",     // Close section prematurely
-		"]]\n",    // Close array section
+		"\n[",      // New section
+		"\n[[",     // New array section
+		"]\n",      // Close section prematurely
+		"]]\n",     // Close array section
 		"\"\"\"\n", // Multiline string break
-		"'''\n",   // Alternative multiline string
+		"'''\n",    // Alternative multiline string
 	}
 
 	for _, pattern := range injectionPatterns {
@@ -295,9 +294,9 @@ func (cv *ConfigValidator) validateNetworkAddress(value string) error {
 
 	// Validate host:port format
 	patterns := []string{
-		`^([0-9]{1,3}\.){3}[0-9]{1,3}:[0-9]{1,5}$`,          // IPv4:port
-		`^[a-zA-Z0-9][a-zA-Z0-9.-]*:[0-9]{1,5}$`,            // hostname:port
-		`^\[[0-9a-fA-F:]+\]:[0-9]{1,5}$`,                    // [IPv6]:port
+		`^([0-9]{1,3}\.){3}[0-9]{1,3}:[0-9]{1,5}$`,         // IPv4:port
+		`^[a-zA-Z0-9][a-zA-Z0-9.-]*:[0-9]{1,5}$`,           // hostname:port
+		`^\[[0-9a-fA-F:]+\]:[0-9]{1,5}$`,                   // [IPv6]:port
 		`^(0\.0\.0\.0|localhost|127\.0\.0\.1):[0-9]{1,5}$`, // Local addresses
 	}
 
@@ -379,22 +378,6 @@ func (cv *ConfigValidator) validateDuration(value string) error {
 	durationPattern := regexp.MustCompile(`^[0-9]+(\.[0-9]+)?(ns|us|ms|s|m|h)$`)
 	if !durationPattern.MatchString(value) {
 		return fmt.Errorf("invalid duration format, examples: 1s, 500ms, 1m")
-	}
-	return nil
-}
-
-func (cv *ConfigValidator) validateInteger(value string) error {
-	_, err := strconv.Atoi(value)
-	if err != nil {
-		return fmt.Errorf("value must be an integer")
-	}
-	return nil
-}
-
-func (cv *ConfigValidator) validateFloat(value string) error {
-	_, err := strconv.ParseFloat(value, 64)
-	if err != nil {
-		return fmt.Errorf("value must be a number")
 	}
 	return nil
 }

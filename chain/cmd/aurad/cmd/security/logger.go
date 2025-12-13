@@ -105,7 +105,9 @@ func (sl *SecurityLogger) log(level, msg string, args ...interface{}) {
 		return
 	}
 
-	sl.logFile.Write(append(jsonData, '\n'))
+	if _, err := sl.logFile.Write(append(jsonData, '\n')); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to write security log: %v\n", err)
+	}
 }
 
 // Close closes the security logger

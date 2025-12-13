@@ -1,5 +1,7 @@
 package keeper
 
+//lint:file-ignore SA1019 -- invariants rely on Cosmos SDK legacy registry until replacement available
+
 import (
 	"fmt"
 
@@ -223,12 +225,6 @@ func CodeSizeLimitsInvariant(k Keeper) sdk.Invariant {
 				"code-size-limits",
 				fmt.Sprintf("max_wasm_code_size %d exceeds reasonable limit %d", maxSize, maxReasonableSize),
 			), true
-		}
-
-		// If wasmd keeper is available, validate actual stored code
-		if k.wasmKeeper != nil {
-			// Note: In production, we would iterate over all code IDs and validate
-			// For now, we validate the parameter is set correctly
 		}
 
 		return "", false

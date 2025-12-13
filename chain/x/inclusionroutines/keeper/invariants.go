@@ -1,5 +1,7 @@
 package keeper
 
+//lint:file-ignore SA1019 -- use invariant registry until Cosmos SDK removes the legacy APIs
+
 import (
 	"fmt"
 

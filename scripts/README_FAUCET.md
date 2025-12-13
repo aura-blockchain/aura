@@ -163,7 +163,7 @@ chmod 600 ../.env.faucet
 The faucet connects to the testnet via:
 
 1. **Docker Network**: `aura_aura-testnet` (external network)
-2. **RPC Endpoint**: `http://aura-validator-1:26657`
+2. **RPC Endpoint**: `http://aura-observer-1:26657`
 3. **Chain ID**: `aura-local-4`
 4. **Denom**: `uaura`
 

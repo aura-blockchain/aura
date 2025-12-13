@@ -34,7 +34,7 @@ func newGasContext(t *testing.T) (sdk.Context, storetypes.StoreKey) {
 func TestMeteredStoreChargesGas(t *testing.T) {
 	ctx, storeKey := newGasContext(t)
 	store := ctx.KVStore(storeKey)
-	ms := NewMeteredStore(sdk.WrapSDKContext(ctx), store, DefaultGasConfig())
+	ms := NewMeteredStore(ctx.Context(), store, DefaultGasConfig())
 	gm := ctx.GasMeter()
 
 	before := gm.GasConsumed()
@@ -65,7 +65,7 @@ func TestMeteredIteratorHonorsLimit(t *testing.T) {
 
 	config := DefaultGasConfig()
 	config.MaxIterationResults = 2
-	ms := NewMeteredStore(sdk.WrapSDKContext(ctx), store, config)
+	ms := NewMeteredStore(ctx.Context(), store, config)
 
 	iter := ms.Iterator([]byte("a"), []byte("b"))
 	defer iter.Close()
@@ -85,7 +85,7 @@ func TestIterateWithLimit(t *testing.T) {
 	store.Set([]byte("k2"), []byte("v2"))
 	store.Set([]byte("k3"), []byte("v3"))
 
-	err := IterateWithLimit(sdk.WrapSDKContext(ctx), store, []byte("k"), 2, DefaultGasConfig(), func(key, value []byte) error {
+	err := IterateWithLimit(ctx.Context(), store, []byte("k"), 2, DefaultGasConfig(), func(key, value []byte) error {
 		return nil
 	})
 	require.Error(t, err, "expected limit error when more than 2 items exist")
@@ -97,18 +97,18 @@ func TestConsumeGasHelpers(t *testing.T) {
 	gm := ctx.GasMeter()
 
 	start := gm.GasConsumed()
-	ConsumeGasForCrypto(sdk.WrapSDKContext(ctx), "hash", config)
+	ConsumeGasForCrypto(ctx.Context(), "hash", config)
 	require.Greater(t, gm.GasConsumed(), start)
 
 	current := gm.GasConsumed()
-	ConsumeGasForCrypto(sdk.WrapSDKContext(ctx), "unknown-op", config)
+	ConsumeGasForCrypto(ctx.Context(), "unknown-op", config)
 	require.Greater(t, gm.GasConsumed(), current)
 
 	current = gm.GasConsumed()
-	ConsumeGasForValidation(sdk.WrapSDKContext(ctx), "signature", config)
+	ConsumeGasForValidation(ctx.Context(), "signature", config)
 	require.Greater(t, gm.GasConsumed(), current)
 
 	current = gm.GasConsumed()
-	ConsumeGasForValidation(sdk.WrapSDKContext(ctx), "custom", config)
+	ConsumeGasForValidation(ctx.Context(), "custom", config)
 	require.Greater(t, gm.GasConsumed(), current)
 }

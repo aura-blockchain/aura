@@ -100,7 +100,7 @@ docker network ls | grep aura-testnet
 **Can't connect to validator?**
 ```bash
 # Test from faucet container
-docker exec aura-faucet-backend wget -qO- http://aura-validator-1:26657/status
+docker exec aura-faucet-backend wget -qO- http://aura-observer-1:26657/status
 ```
 
 **Transactions failing?**

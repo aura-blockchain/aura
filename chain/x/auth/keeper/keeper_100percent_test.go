@@ -354,7 +354,7 @@ func TestResetRateLimitWindow_MinuteOnly(t *testing.T) {
 	require.NoError(t, err)
 
 	// Reset window
-	k.ResetRateLimitWindow(ctx, "user1")
+	require.NoError(t, k.ResetRateLimitWindow(ctx, "user1"))
 
 	// Verify minute counter reset, hour and day unchanged
 	updated, err := k.GetRateLimitConfig(ctx, "user1")
@@ -383,7 +383,7 @@ func TestResetRateLimitWindow_HourReset(t *testing.T) {
 	require.NoError(t, err)
 
 	// Reset window
-	k.ResetRateLimitWindow(ctx, "user1")
+	require.NoError(t, k.ResetRateLimitWindow(ctx, "user1"))
 
 	// Verify minute and hour counters reset
 	updated, err := k.GetRateLimitConfig(ctx, "user1")

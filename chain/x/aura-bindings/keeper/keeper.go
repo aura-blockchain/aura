@@ -8,8 +8,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	vckeeper "github.com/aequitas/aura/chain/x/vcregistry/keeper"
 	"github.com/aequitas/aura/chain/x/aura-bindings/types"
+	vckeeper "github.com/aequitas/aura/chain/x/vcregistry/keeper"
 )
 
 // Keeper manages the aura-bindings module state and provides CosmWasm binding functionality
@@ -50,12 +50,12 @@ func NewKeeper(
 }
 
 // Logger returns a module-specific logger
-func (k Keeper) Logger(ctx sdk.Context) log.Logger {
+func (k *Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", "x/"+types.ModuleName)
 }
 
 // GetStore returns the module KVStore
-func (k Keeper) GetStore(ctx sdk.Context) storetypes.KVStore {
+func (k *Keeper) GetStore(ctx sdk.Context) storetypes.KVStore {
 	return ctx.KVStore(k.storeKey)
 }
 
@@ -131,6 +131,6 @@ func (k *Keeper) GetMessageStats() map[string]uint64 {
 }
 
 // VCKeeper returns the VC registry keeper
-func (k Keeper) VCKeeper() *vckeeper.Keeper {
+func (k *Keeper) VCKeeper() *vckeeper.Keeper {
 	return k.vcKeeper
 }

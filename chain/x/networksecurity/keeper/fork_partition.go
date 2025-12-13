@@ -63,18 +63,24 @@ func (k Keeper) DetectFork(ctx sdk.Context, height int64, blockHash []byte) erro
 				Resolved:    false,
 			}
 
-			k.SetForkAlert(ctx, alert)
+			if err := k.SetForkAlert(ctx, alert); err != nil {
+				return fmt.Errorf("failed to record fork alert: %w", err)
+			}
 
 			// If auto-resolution is enabled, attempt to resolve
 			if params.ForkDetection.EnableAutoResolution {
-				k.ResolveFork(ctx, alert.AlertId)
+				if err := k.ResolveFork(ctx, alert.AlertId); err != nil {
+					k.logger.Error("auto-resolve fork failure", "alert_id", alert.AlertId, "error", err)
+				}
 			}
 
 			return types.ErrForkDetected
 		}
 	} else {
 		// First time seeing this height, store the hash
-		store.Set(key, []byte(hashStr))
+		if err := store.Set(key, []byte(hashStr)); err != nil {
+			return fmt.Errorf("failed to store block hash: %w", err)
+		}
 	}
 
 	return nil
@@ -104,7 +110,9 @@ func (k Keeper) ResolveFork(ctx sdk.Context, alertID string) error {
 	alert.Resolved = true
 	alert.ResolutionDetails = fmt.Sprintf("Auto-resolved after %d confirmations", params.ForkDetection.ConfirmationDepth)
 
-	k.SetForkAlert(ctx, alert)
+	if err := k.SetForkAlert(ctx, alert); err != nil {
+		return fmt.Errorf("failed to update fork alert: %w", err)
+	}
 
 	k.logger.Info(fmt.Sprintf("Fork alert %s resolved", alertID))
 
@@ -154,7 +162,9 @@ func (k Keeper) ValidateSyncData(ctx sdk.Context, peerID string, blockHeight int
 	if k.IsSuspiciousSyncPeer(ctx, peerID) {
 		k.logger.Warn(fmt.Sprintf("Peer %s showing suspicious sync behavior", peerID))
 		banDuration := params.RateLimit.BanDuration
-		k.BanPeer(ctx, peerID, int64(banDuration.Seconds())*2, "suspicious sync behavior")
+		if err := k.BanPeer(ctx, peerID, int64(banDuration.Seconds())*2, "suspicious sync behavior"); err != nil {
+			k.logger.Error("failed to ban suspicious peer", "peer_id", peerID, "error", err)
+		}
 		return types.ErrSyncAttack
 	}
 
@@ -184,12 +194,16 @@ func (k Keeper) RecordInvalidBlock(ctx sdk.Context, peerID string) {
 	reputation, found := k.GetReputation(ctx, peerID)
 	if found {
 		reputation.MisbehaviorCount++
-		k.SetReputation(ctx, reputation)
+		if err := k.SetReputation(ctx, reputation); err != nil {
+			k.logger.Error("failed to update reputation after invalid block", "peer_id", peerID, "error", err)
+		}
 
 		// If too many invalid blocks, ban the peer
 		if reputation.MisbehaviorCount > 5 {
 			banDuration := params.RateLimit.BanDuration
-			k.BanPeer(ctx, peerID, int64(banDuration.Seconds())*3, "repeated invalid blocks")
+			if err := k.BanPeer(ctx, peerID, int64(banDuration.Seconds())*3, "repeated invalid blocks"); err != nil {
+				k.logger.Error("failed to ban peer after repeated invalid blocks", "peer_id", peerID, "error", err)
+			}
 		}
 	}
 }
@@ -269,7 +283,9 @@ func (k Keeper) DetectPartition(ctx sdk.Context) error {
 					Resolved:       false,
 				}
 
-				k.SetPartitionAlert(ctx, alert)
+				if err := k.SetPartitionAlert(ctx, alert); err != nil {
+					return fmt.Errorf("failed to record partition alert: %w", err)
+				}
 
 				return types.ErrPartitionDetected
 			}
@@ -309,7 +325,9 @@ func (k Keeper) UpdateExpectedPeerCount(ctx sdk.Context, currentCount uint32) {
 
 	store := k.storeService.OpenKVStore(ctx)
 	bz := sdk.Uint64ToBigEndian(uint64(expectedCount))
-	store.Set([]byte("expected_peer_count"), bz)
+	if err := store.Set([]byte("expected_peer_count"), bz); err != nil {
+		k.logger.Error("failed to persist expected peer count", "err", err)
+	}
 }
 
 // GetMissingPeerIDs identifies peers that were connected but are now missing
@@ -354,8 +372,14 @@ func (k Keeper) UpdateKnownPeerList(ctx sdk.Context) {
 	}
 
 	store := k.storeService.OpenKVStore(ctx)
-	bz, _ := json.Marshal(peerIDs)
-	store.Set([]byte("known_peer_list"), bz)
+	bz, err := json.Marshal(peerIDs)
+	if err != nil {
+		k.logger.Error("failed to marshal known peers", "error", err)
+		return
+	}
+	if err := store.Set([]byte("known_peer_list"), bz); err != nil {
+		k.logger.Error("failed to persist known peers", "error", err)
+	}
 }
 
 // ResolvePartitionAlert resolves a partition alert
@@ -370,7 +394,9 @@ func (k Keeper) ResolvePartitionAlert(ctx sdk.Context, alertID string) error {
 	}
 
 	alert.Resolved = true
-	k.SetPartitionAlert(ctx, alert)
+	if err := k.SetPartitionAlert(ctx, alert); err != nil {
+		return fmt.Errorf("failed to update partition alert: %w", err)
+	}
 
 	k.logger.Info(fmt.Sprintf("Partition alert %s resolved", alertID))
 
@@ -422,7 +448,9 @@ func (k Keeper) CleanupResolvedAlerts(ctx sdk.Context) {
 	for _, alert := range forkAlerts {
 		if alert.Resolved && ctx.BlockHeight()-alert.BlockHeight > 1000 {
 			store := k.storeService.OpenKVStore(ctx)
-			store.Delete(types.GetForkAlertKey(alert.AlertId))
+			if err := store.Delete(types.GetForkAlertKey(alert.AlertId)); err != nil {
+				k.logger.Error("failed to cleanup fork alert", "alert_id", alert.AlertId, "error", err)
+			}
 		}
 	}
 
@@ -431,7 +459,9 @@ func (k Keeper) CleanupResolvedAlerts(ctx sdk.Context) {
 	for _, alert := range partitionAlerts {
 		if alert.Resolved && !alert.DetectedAt.IsZero() && ctx.BlockTime().Sub(alert.DetectedAt) > time.Hour {
 			store := k.storeService.OpenKVStore(ctx)
-			store.Delete(types.GetPartitionAlertKey(alert.AlertId))
+			if err := store.Delete(types.GetPartitionAlertKey(alert.AlertId)); err != nil {
+				k.logger.Error("failed to cleanup partition alert", "alert_id", alert.AlertId, "error", err)
+			}
 		}
 	}
 }

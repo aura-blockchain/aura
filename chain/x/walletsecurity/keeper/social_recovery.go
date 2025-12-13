@@ -254,7 +254,9 @@ func (k Keeper) ApproveRecovery(
 	request.ApprovalsCount++
 
 	// Update guardian recovery count
-	k.incrementGuardianRecoveryCount(ctx, request.WalletId, guardianAddress)
+	if err := k.incrementGuardianRecoveryCount(ctx, request.WalletId, guardianAddress); err != nil {
+		return false, err
+	}
 
 	// Check if threshold is met
 	readyToExecute := request.ApprovalsCount >= config.RecoveryThreshold

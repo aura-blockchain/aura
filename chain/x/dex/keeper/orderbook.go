@@ -191,7 +191,9 @@ func (k Keeper) MatchOrder(
 	// Check expiration
 	if ctx.BlockTime().After(order.ExpiresAt) {
 		// Order expired, cancel it
-		k.CancelOrder(ctx, orderID, "expired")
+		if err := k.CancelOrder(ctx, orderID, "expired"); err != nil {
+			return fmt.Errorf("failed to cancel expired order: %w", err)
+		}
 		return fmt.Errorf("order has expired")
 	}
 
@@ -272,8 +274,12 @@ func (k Keeper) MatchOrder(
 	// Execute swap (transfers funds between parties)
 	if err := k.ExecuteSwap(ctx, order); err != nil {
 		// Swap failed, unlock funds and revert
-		k.UnlockFundsForOrder(ctx, order.UserAddress, order)
-		k.UnlockFundsForOrder(ctx, matcher, order)
+		if err := k.UnlockFundsForOrder(ctx, order.UserAddress, order); err != nil {
+			return fmt.Errorf("failed to unlock order funds: %w", err)
+		}
+		if err := k.UnlockFundsForOrder(ctx, matcher, order); err != nil {
+			return fmt.Errorf("failed to unlock matcher funds: %w", err)
+		}
 		k.AddToOrderbook(ctx, order)
 		order.Status = types.SwapOrderStatus_PENDING
 		order.MatcherAddress = ""
@@ -680,7 +686,9 @@ func (k Keeper) CleanupExpiredOrders(ctx sdk.Context) {
 
 	for _, order := range orders {
 		if ctx.BlockTime().After(order.ExpiresAt) {
-			k.CancelOrder(ctx, order.OrderId, "expired")
+			if err := k.CancelOrder(ctx, order.OrderId, "expired"); err != nil {
+				ctx.Logger().Error("failed to cancel expired order", "order_id", order.OrderId, "err", err)
+			}
 		}
 	}
 }
@@ -704,10 +712,7 @@ func (k Keeper) CleanupExpiredOrdersBatched(ctx sdk.Context, limit int) int {
 	// Get cursor (last processed order ID)
 	cursorKey := types.OrderCleanupCursorKey()
 	cursorBytes := store.Get(cursorKey)
-	var cursor []byte
-	if cursorBytes != nil {
-		cursor = cursorBytes
-	}
+	cursor := cursorBytes
 
 	// Get all pending orders starting from cursor
 	orders := k.GetOrdersByStatus(ctx, types.SwapOrderStatus_PENDING)

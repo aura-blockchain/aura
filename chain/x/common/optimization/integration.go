@@ -269,7 +269,9 @@ func (os *OptimizedStorage) Get(key []byte) []byte {
 
 	value := os.store.Get(key)
 	if value != nil {
-		os.cache.Set(cacheKey, value, 5*time.Minute)
+		if err := os.cache.Set(cacheKey, value, 5*time.Minute); err != nil {
+			fmt.Printf("cache set failed: %v\n", err)
+		}
 	}
 
 	return value
@@ -280,7 +282,9 @@ func (os *OptimizedStorage) Set(key []byte, value []byte) {
 	os.store.Set(key, value)
 
 	if os.enableCache {
-		os.cache.Set(string(key), value, 5*time.Minute)
+		if err := os.cache.Set(string(key), value, 5*time.Minute); err != nil {
+			fmt.Printf("cache set failed: %v\n", err)
+		}
 	}
 }
 
@@ -318,7 +322,6 @@ type MetricsCollector struct {
 	cacheHits     uint64
 	cacheMisses   uint64
 	batchWrites   uint64
-	indexLookups  uint64
 	queryTime     time.Duration
 	queryCount    uint64
 }

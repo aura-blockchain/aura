@@ -7,6 +7,7 @@ import (
 )
 
 func (suite *KeeperTestSuite) TestGetAllPeers() {
+	assertions := suite.Require()
 	// Add multiple peers
 	for i := 0; i < 5; i++ {
 		peerInfo := types.PeerInfo{
@@ -14,7 +15,7 @@ func (suite *KeeperTestSuite) TestGetAllPeers() {
 			IpAddress:       "192.168.1.1",
 			ReputationScore: 100,
 		}
-		suite.keeper.SetPeerInfo(suite.ctx, peerInfo)
+		assertions.NoError(suite.keeper.SetPeerInfo(suite.ctx, peerInfo))
 	}
 
 	peers := suite.keeper.GetAllPeers(suite.ctx)
@@ -22,13 +23,14 @@ func (suite *KeeperTestSuite) TestGetAllPeers() {
 }
 
 func (suite *KeeperTestSuite) TestTrustedPeersExtended() {
+	assertions := suite.Require()
 	trusted := types.TrustedPeer{
 		PeerId:  "trusted1",
 		Address: "192.168.1.100",
 	}
 
 	// Set trusted peer
-	suite.keeper.SetTrustedPeer(suite.ctx, trusted)
+	assertions.NoError(suite.keeper.SetTrustedPeer(suite.ctx, trusted))
 
 	// Check if trusted
 	isTrusted := suite.keeper.IsTrustedPeer(suite.ctx, "trusted1")
@@ -44,7 +46,7 @@ func (suite *KeeperTestSuite) TestTrustedPeersExtended() {
 	suite.Require().GreaterOrEqual(len(allTrusted), 1)
 
 	// Remove trusted peer
-	suite.keeper.RemoveTrustedPeer(suite.ctx, "trusted1")
+	assertions.NoError(suite.keeper.RemoveTrustedPeer(suite.ctx, "trusted1"))
 
 	// Verify removed
 	isTrusted = suite.keeper.IsTrustedPeer(suite.ctx, "trusted1")
@@ -55,7 +57,7 @@ func (suite *KeeperTestSuite) TestBanUnbanPeer() {
 	peerId := "peer_to_ban"
 
 	// Ban peer (ensure duration > 0 so ban is active)
-	suite.keeper.BanPeer(suite.ctx, peerId, 3600, "misbehavior")
+	suite.Require().NoError(suite.keeper.BanPeer(suite.ctx, peerId, 3600, "misbehavior"))
 
 	// Check if banned
 	isBanned := suite.keeper.IsBanned(suite.ctx, peerId)
@@ -77,7 +79,7 @@ func (suite *KeeperTestSuite) TestBanUnbanPeer() {
 	suite.False(entryAfter.IsBanned)
 
 	// Unban peer
-	suite.keeper.UnbanPeer(suite.ctx, peerId)
+	suite.Require().NoError(suite.keeper.UnbanPeer(suite.ctx, peerId))
 
 	// Verify unbanned
 	isBanned = suite.keeper.IsBanned(suite.ctx, peerId)
@@ -92,7 +94,7 @@ func (suite *KeeperTestSuite) TestBanPersistsAcrossBlocksUntilExpiry() {
 	peerID := "peer_persist"
 	// duration is in nanoseconds inside BanPeer, so provide explicit nanoseconds to avoid premature expiry
 	duration := int64((24 * time.Hour).Nanoseconds())
-	suite.keeper.BanPeer(suite.ctx, peerID, duration, "test")
+	suite.Require().NoError(suite.keeper.BanPeer(suite.ctx, peerID, duration, "test"))
 	suite.True(suite.keeper.IsBanned(suite.ctx, peerID))
 
 	// Advance block time but still within ban window
@@ -109,7 +111,7 @@ func (suite *KeeperTestSuite) TestReputationExtended() {
 		Score:             50,
 		LastUpdatedHeight: suite.ctx.BlockHeight(),
 	}
-	suite.keeper.SetReputation(suite.ctx, rep)
+	suite.Require().NoError(suite.keeper.SetReputation(suite.ctx, rep))
 
 	// Get reputation
 	retrieved, found := suite.keeper.GetReputation(suite.ctx, peerId)
@@ -130,7 +132,7 @@ func (suite *KeeperTestSuite) TestRateLimit() {
 		RequestCount: 10,
 		WindowStart:  suite.ctx.BlockTime(),
 	}
-	suite.keeper.SetRateLimitEntry(suite.ctx, entry)
+	suite.Require().NoError(suite.keeper.SetRateLimitEntry(suite.ctx, entry))
 
 	// Get rate limit entry
 	retrieved, found := suite.keeper.GetRateLimitEntry(suite.ctx, peerId)
@@ -146,7 +148,7 @@ func (suite *KeeperTestSuite) TestMempoolStats() {
 	}
 
 	// Set mempool stats
-	suite.keeper.SetMempoolStats(suite.ctx, stats)
+	suite.Require().NoError(suite.keeper.SetMempoolStats(suite.ctx, stats))
 
 	// Get mempool stats
 	retrieved := suite.keeper.GetMempoolStats(suite.ctx)
@@ -162,7 +164,7 @@ func (suite *KeeperTestSuite) TestForkAlert() {
 	}
 
 	// Set fork alert
-	suite.keeper.SetForkAlert(suite.ctx, alert)
+	suite.Require().NoError(suite.keeper.SetForkAlert(suite.ctx, alert))
 
 	// Get fork alert
 	retrieved, found := suite.keeper.GetForkAlert(suite.ctx, "fork1")
@@ -182,7 +184,7 @@ func (suite *KeeperTestSuite) TestPartitionAlert() {
 	}
 
 	// Set partition alert
-	suite.keeper.SetPartitionAlert(suite.ctx, alert)
+	suite.Require().NoError(suite.keeper.SetPartitionAlert(suite.ctx, alert))
 
 	// Get partition alert
 	retrieved, found := suite.keeper.GetPartitionAlert(suite.ctx, "partition1")
@@ -198,25 +200,25 @@ func (suite *KeeperTestSuite) TestConnectionCount() {
 	peerId := "peer_conn"
 
 	// Set connection count
-	suite.keeper.SetConnectionCount(suite.ctx, peerId, 5)
+	suite.Require().NoError(suite.keeper.SetConnectionCount(suite.ctx, peerId, 5))
 
 	// Get connection count
 	count := suite.keeper.GetConnectionCount(suite.ctx, peerId)
 	suite.Require().Equal(uint32(5), count)
 
 	// Increment connection count
-	suite.keeper.IncrementConnectionCount(suite.ctx, peerId)
+	suite.Require().NoError(suite.keeper.IncrementConnectionCount(suite.ctx, peerId))
 	count = suite.keeper.GetConnectionCount(suite.ctx, peerId)
 	suite.Require().Equal(uint32(6), count)
 
 	// Decrement connection count
-	suite.keeper.DecrementConnectionCount(suite.ctx, peerId)
+	suite.Require().NoError(suite.keeper.DecrementConnectionCount(suite.ctx, peerId))
 	count = suite.keeper.GetConnectionCount(suite.ctx, peerId)
 	suite.Require().Equal(uint32(5), count)
 
 	// Stress increments should not overflow and stay monotonic
 	for i := 0; i < 1000; i++ {
-		suite.keeper.IncrementConnectionCount(suite.ctx, peerId)
+		suite.Require().NoError(suite.keeper.IncrementConnectionCount(suite.ctx, peerId))
 	}
 	count = suite.keeper.GetConnectionCount(suite.ctx, peerId)
 	suite.Require().GreaterOrEqual(count, uint32(1005))
@@ -281,7 +283,7 @@ func (suite *KeeperTestSuite) TestDecrementConnectionCountZero() {
 	peerId := "peer_zero"
 
 	// Decrement when count is already 0
-	suite.keeper.DecrementConnectionCount(suite.ctx, peerId)
+	suite.Require().NoError(suite.keeper.DecrementConnectionCount(suite.ctx, peerId))
 
 	// Should stay at 0
 	count := suite.keeper.GetConnectionCount(suite.ctx, peerId)
@@ -309,10 +311,15 @@ func (suite *KeeperTestSuite) TestCheckGossipMessage() {
 
 func (suite *KeeperTestSuite) TestGetMessageCacheStats() {
 	// Record some messages including a duplicate to exercise counters.
-	suite.keeper.CheckGossipMessage(suite.ctx, []byte("msg1"))
-	suite.keeper.CheckGossipMessage(suite.ctx, []byte("msg2"))
-	suite.keeper.CheckGossipMessage(suite.ctx, []byte("msg3"))
-	suite.keeper.CheckGossipMessage(suite.ctx, []byte("msg2"))
+	_, _, err := suite.keeper.CheckGossipMessage(suite.ctx, []byte("msg1"))
+	suite.Require().NoError(err)
+	isNew, _, err := suite.keeper.CheckGossipMessage(suite.ctx, []byte("msg2"))
+	suite.Require().ErrorIs(err, types.ErrDuplicateMessage)
+	suite.Require().False(isNew)
+	_, _, err = suite.keeper.CheckGossipMessage(suite.ctx, []byte("msg3"))
+	suite.Require().NoError(err)
+	_, _, err = suite.keeper.CheckGossipMessage(suite.ctx, []byte("msg2"))
+	suite.Require().NoError(err)
 
 	stats := suite.keeper.GetMessageCacheStats()
 	suite.Require().Equal(3, stats.Size)

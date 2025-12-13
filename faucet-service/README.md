@@ -59,9 +59,9 @@ cp .env.example .env
 
 Required configuration:
 ```env
-NODE_RPC=http://aura-validator-1:26657
-NODE_API=http://aura-validator-1:1317
-NODE_GRPC=aura-validator-1:9090
+NODE_RPC=http://aura-observer-1:26657
+NODE_API=http://aura-observer-1:1317
+NODE_GRPC=aura-observer-1:9090
 CHAIN_ID=aura-testnet-1
 FAUCET_MNEMONIC=your-mnemonic-phrase-here
 FAUCET_ADDRESS=aura1...
@@ -114,9 +114,9 @@ go run main.go
 | `PORT` | Server port | `8080` | No |
 | `ENVIRONMENT` | Environment (development/production) | `development` | No |
 | `CORS_ORIGINS` | Allowed CORS origins | `*` | No |
-| `NODE_RPC` | Tendermint RPC endpoint (used for tx broadcast) | `http://aura-validator-1:26657` | Yes |
-| `NODE_API` | Optional REST endpoint (not required; balance uses gRPC) | `http://aura-validator-1:1317` | No |
-| `NODE_GRPC` | gRPC endpoint used for account queries/balance checks | `aura-validator-1:9090` | Yes |
+| `NODE_RPC` | Tendermint RPC endpoint (used for tx broadcast) | `http://aura-observer-1:26657` | Yes |
+| `NODE_API` | Optional REST endpoint (not required; balance uses gRPC) | `http://aura-observer-1:1317` | No |
+| `NODE_GRPC` | gRPC endpoint used for account queries/balance checks | `aura-observer-1:9090` | Yes |
 | `CHAIN_ID` | Chain ID | `aura-testnet-1` | Yes |
 | `FAUCET_MNEMONIC` | Faucet wallet mnemonic | - | Yes |
 | `FAUCET_ADDRESS` | Faucet wallet address | - | Yes |

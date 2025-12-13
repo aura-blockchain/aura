@@ -125,9 +125,6 @@ func ValidatorPowerInvariant(validators []TestValidator) InvariantFunc {
 			if val.Tokens.IsNegative() {
 				return fmt.Sprintf("validator %s has negative tokens: %s", val.Address, val.Tokens), true
 			}
-			if val.Jailed && val.Tokens.IsPositive() {
-				// Note: jailed validators can still have tokens, this is just a warning
-			}
 		}
 		return "", false
 	}

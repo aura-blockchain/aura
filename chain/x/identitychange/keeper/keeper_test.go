@@ -6,6 +6,7 @@ import (
 	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 	"github.com/aequitas/aura/chain/x/identitychange/keeper"
 	"github.com/aequitas/aura/chain/x/identitychange/types"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCreateRequestRateLimit(t *testing.T) {
@@ -21,7 +22,7 @@ func TestCreateRequestRateLimit(t *testing.T) {
 	// Set custom params with rate limit of 1
 	customParams := types.DefaultParams()
 	customParams.MaxRequestsPerWalletPerMonth = 1
-	k.SetParams(customParams)
+	require.NoError(t, k.SetParams(customParams))
 
 	// Create first request - should succeed
 	req := types.IdentityChangeRequest{
@@ -67,7 +68,7 @@ func TestApplyChangeEnforcesMinConfidence(t *testing.T) {
 	// Set custom params with min confidence of 100
 	customParams := types.DefaultParams()
 	customParams.MinConfidenceAfterChange = 100
-	k.SetParams(customParams)
+	require.NoError(t, k.SetParams(customParams))
 
 	// Create and prepare request
 	req := types.IdentityChangeRequest{

@@ -271,7 +271,7 @@ func TestGetCurrentMinimumLiquidity_TierLogic(t *testing.T) {
 				mockBank.SetBalance(creatorAddr, "uaura", sdkmath.NewInt(reserveAura))
 				mockBank.SetBalance(creatorAddr, "usdt", sdkmath.NewInt(reserveUSDT))
 
-				pool, _, err = k.CreatePool(ctx, creator, "uaura", "usdt",
+				_, _, err = k.CreatePool(ctx, creator, "uaura", "usdt",
 					sdk.NewCoin("uaura", sdkmath.NewInt(reserveAura)),
 					sdk.NewCoin("usdt", sdkmath.NewInt(reserveUSDT)))
 				require.NoError(t, err)
@@ -279,7 +279,7 @@ func TestGetCurrentMinimumLiquidity_TierLogic(t *testing.T) {
 				// Update existing pool reserves to change price
 				pool.ReserveA = sdkmath.NewInt(reserveAura)
 				pool.ReserveB = sdkmath.NewInt(reserveUSDT)
-				k.SetPool(ctx, pool)
+				require.NoError(t, k.SetPool(ctx, pool))
 			}
 
 			// Record TWAP observations so GetAuraPrice uses TWAP instead of fallback

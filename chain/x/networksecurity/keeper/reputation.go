@@ -35,7 +35,9 @@ func (k Keeper) UpdateReputation(ctx sdk.Context, peerID string, score int64, re
 
 	reputation.LastUpdatedHeight = ctx.BlockHeight()
 
-	k.SetReputation(ctx, reputation)
+	if err := k.SetReputation(ctx, reputation); err != nil {
+		return err
+	}
 
 	k.logger.Info(fmt.Sprintf("Updated reputation for peer %s to %d. Reason: %s", peerID, score, reason))
 
@@ -63,7 +65,9 @@ func (k Keeper) PenalizeReputation(ctx sdk.Context, peerID string, penalty int64
 	}
 
 	reputation.LastUpdatedHeight = ctx.BlockHeight()
-	k.SetReputation(ctx, reputation)
+	if err := k.SetReputation(ctx, reputation); err != nil {
+		return
+	}
 
 	k.logger.Warn(fmt.Sprintf("Penalized peer %s: %d -> %d (penalty: %d, misbehavior count: %d)",
 		peerID, oldScore, reputation.Score, penalty, reputation.MisbehaviorCount))
@@ -90,7 +94,9 @@ func (k Keeper) RewardReputation(ctx sdk.Context, peerID string, reward int64) {
 	}
 
 	reputation.LastUpdatedHeight = ctx.BlockHeight()
-	k.SetReputation(ctx, reputation)
+	if err := k.SetReputation(ctx, reputation); err != nil {
+		return
+	}
 
 	k.logger.Debug(fmt.Sprintf("Rewarded peer %s: %d -> %d (reward: %d)",
 		peerID, oldScore, reputation.Score, reward))
@@ -116,7 +122,9 @@ func (k Keeper) DecayReputations(ctx sdk.Context) {
 			}
 
 			reputation.LastUpdatedHeight = ctx.BlockHeight()
-			k.SetReputation(ctx, reputation)
+			if err := k.SetReputation(ctx, reputation); err != nil {
+				k.logger.Error("failed to apply reputation decay", "peer", reputation.PeerId, "err", err)
+			}
 		}
 	}
 }
@@ -137,7 +145,9 @@ func (k Keeper) UpdatePeerUptime(ctx sdk.Context, peerID string) {
 	reputation, found := k.GetReputation(ctx, peerID)
 	if found {
 		reputation.Uptime = int64(uptime)
-		k.SetReputation(ctx, reputation)
+		if err := k.SetReputation(ctx, reputation); err != nil {
+			k.logger.Error("failed to update reputation uptime", "peer", peerID, "err", err)
+		}
 	}
 }
 
@@ -244,10 +254,14 @@ func (k Keeper) PruneLowReputationPeers(ctx sdk.Context) {
 
 			// Ban the peer
 			banDuration := int64(params.RateLimit.BanDuration.Seconds() * 2)
-			k.BanPeer(ctx, rep.PeerId, banDuration, "low reputation with high misbehavior")
+			if err := k.BanPeer(ctx, rep.PeerId, banDuration, "low reputation with high misbehavior"); err != nil {
+				k.logger.Error("failed to ban low reputation peer", "peer", rep.PeerId, "err", err)
+			}
 
 			// Disconnect
-			k.DisconnectPeer(ctx, rep.PeerId)
+			if err := k.DisconnectPeer(ctx, rep.PeerId); err != nil {
+				k.logger.Error("failed to disconnect low reputation peer", "peer", rep.PeerId, "err", err)
+			}
 		}
 	}
 }
@@ -315,5 +329,7 @@ func (k Keeper) TrackPeerBehavior(ctx sdk.Context, peerID string, behaviorType s
 	}
 
 	reputation.LastUpdatedHeight = ctx.BlockHeight()
-	k.SetReputation(ctx, reputation)
+	if err := k.SetReputation(ctx, reputation); err != nil {
+		k.logger.Error("failed to persist reputation update", "peer", peerID, "err", err)
+	}
 }

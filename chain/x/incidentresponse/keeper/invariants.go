@@ -1,5 +1,7 @@
 package keeper
 
+//lint:file-ignore SA1019 // invariants rely on deprecated SDK registry until upstream removal
+
 import (
 	"fmt"
 
@@ -9,7 +11,7 @@ import (
 )
 
 // RegisterInvariants registers all incidentresponse module invariants
-func RegisterInvariants(ir sdk.InvariantRegistry, k *Keeper) {
+func RegisterInvariants(ir sdk.InvariantRegistry, k *Keeper) { //nolint:staticcheck // invariant registry uses deprecated SDK interface
 	ir.RegisterRoute(types.ModuleName, "params-valid", ParamsInvariant(k))
 	ir.RegisterRoute(types.ModuleName, "incident-validity", IncidentValidityInvariant(k))
 	ir.RegisterRoute(types.ModuleName, "pause-state-consistency", PauseStateConsistencyInvariant(k))
@@ -17,7 +19,7 @@ func RegisterInvariants(ir sdk.InvariantRegistry, k *Keeper) {
 }
 
 // AllInvariants runs all invariants of the incidentresponse module
-func AllInvariants(k *Keeper) sdk.Invariant {
+func AllInvariants(k *Keeper) sdk.Invariant { //nolint:staticcheck // invariant signature uses deprecated SDK type
 	return func(ctx sdk.Context) (string, bool) {
 		invariants := []sdk.Invariant{
 			ParamsInvariant(k),

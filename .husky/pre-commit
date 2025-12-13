@@ -1,5 +1,10 @@
 #!/bin/sh
 . "$(dirname -- "$0")/_/husky.sh"
 
+if ! command -v composer >/dev/null 2>&1; then
+  echo "Composer is not installed. Skipping PHP checks. Install Composer and run 'composer install' to enable these hooks."
+  exit 0
+fi
+
 echo "Running Composer PHP checks before commit..."
 npm run php-checks

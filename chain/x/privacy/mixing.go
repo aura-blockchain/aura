@@ -233,10 +233,10 @@ func (ms *MixingService) ExecuteMixing(poolID string, now time.Time) (*MixingRes
 	pool.Status = PoolStatusCompleted
 
 	return &MixingResult{
-		PoolID:           poolID,
-		Outputs:          outputs,
+		PoolID:            poolID,
+		Outputs:           outputs,
 		TotalParticipants: len(pool.Participants),
-		ExecutedAt:       now,
+		ExecutedAt:        now,
 	}, nil
 }
 
@@ -286,7 +286,10 @@ func shuffleParticipants(participants []*MixingParticipant) {
 	for i := n - 1; i > 0; i-- {
 		// Generate random index
 		jBytes := make([]byte, 8)
-		rand.Read(jBytes)
+		if _, err := rand.Read(jBytes); err != nil {
+			// If randomness fails, keep participant in place to avoid panics
+			continue
+		}
 		j := int(new(big.Int).SetBytes(jBytes).Int64()) % (i + 1)
 		if j < 0 {
 			j = -j
@@ -316,15 +319,15 @@ func NewTumblerService(minMixRounds int) *TumblerService {
 
 // TumblerSchedule represents a tumbling schedule
 type TumblerSchedule struct {
-	ID            string
-	InputAddress  string
-	OutputAddrs   []string
-	TotalAmount   *big.Int
-	Splits        []*big.Int
-	Delays        []time.Duration
-	Status        string
-	ScheduledAt   time.Time
-	CompletedAt   *time.Time
+	ID           string
+	InputAddress string
+	OutputAddrs  []string
+	TotalAmount  *big.Int
+	Splits       []*big.Int
+	Delays       []time.Duration
+	Status       string
+	ScheduledAt  time.Time
+	CompletedAt  *time.Time
 }
 
 // ScheduleTumbling schedules a tumbling operation

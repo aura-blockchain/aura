@@ -1,5 +1,7 @@
 package privacy
 
+//lint:file-ignore SA1019 -- legacy curve operations kept for compatibility with existing stealth address scheme
+
 // This file implements OFF-CHAIN stealth address utilities for privacy-preserving payments.
 //
 // IMPORTANT: All key and address generation functions are OFF-CHAIN utilities that use
@@ -134,7 +136,7 @@ func (s *StealthAddressScheme) GenerateStealthAddress(recipientSpendKey, recipie
 
 	// Hash the shared secret: H(rA)
 	hasher := sha3.New256()
-	hasher.Write(elliptic.Marshal(s.curve, sharedX, sharedY))
+	hasher.Write(elliptic.Marshal(s.curve, sharedX, sharedY)) //nolint:staticcheck // legacy curve ops retained for compatibility
 	sharedSecretHash := hasher.Sum(nil)
 
 	// Unmarshal recipient's spend key
@@ -180,7 +182,7 @@ func (s *StealthAddressScheme) ScanForStealthPayments(
 
 	// Hash the shared secret: H(aR)
 	hasher := sha3.New256()
-	hasher.Write(elliptic.Marshal(s.curve, sharedX, sharedY))
+	hasher.Write(elliptic.Marshal(s.curve, sharedX, sharedY)) //nolint:staticcheck // legacy curve ops retained for compatibility
 	sharedSecretHash := hasher.Sum(nil)
 
 	// Unmarshal spend public key B
@@ -216,7 +218,7 @@ func (s *StealthAddressScheme) DerivePrivateKey(
 
 	// Hash the shared secret: H(aR)
 	hasher := sha3.New256()
-	hasher.Write(elliptic.Marshal(s.curve, sharedX, sharedY))
+	hasher.Write(elliptic.Marshal(s.curve, sharedX, sharedY)) //nolint:staticcheck // legacy curve ops retained for compatibility
 	sharedSecretHash := hasher.Sum(nil)
 
 	// x = H(aR) + b (one-time private key)
@@ -247,7 +249,7 @@ func (c *Curve25519StealthAddress) GenerateKeys() (*StealthKeys, error) {
 		return nil, fmt.Errorf("failed to generate spend private key: %w", err)
 	}
 	var spendPub [32]byte
-	curve25519.ScalarBaseMult(&spendPub, &spendPriv)
+	curve25519.ScalarBaseMult(&spendPub, &spendPriv) //nolint:staticcheck // legacy curve kept for compatibility
 
 	// Generate view key
 	var viewPriv [32]byte
@@ -255,7 +257,7 @@ func (c *Curve25519StealthAddress) GenerateKeys() (*StealthKeys, error) {
 		return nil, fmt.Errorf("failed to generate view private key: %w", err)
 	}
 	var viewPub [32]byte
-	curve25519.ScalarBaseMult(&viewPub, &viewPriv)
+	curve25519.ScalarBaseMult(&viewPub, &viewPriv) //nolint:staticcheck // legacy curve kept for compatibility
 
 	return &StealthKeys{
 		SpendKeyPair: &KeyPair{
@@ -283,7 +285,7 @@ func (c *Curve25519StealthAddress) CreateOneTimeAddress(
 
 	// Compute shared secret: r * A (ephemeral private * view public)
 	var sharedSecret [32]byte
-	curve25519.ScalarMult(&sharedSecret, &ephemeralPriv, &viewPubKey)
+	curve25519.ScalarMult(&sharedSecret, &ephemeralPriv, &viewPubKey) //nolint:staticcheck // legacy curve kept for compatibility
 
 	// Hash shared secret
 	hasher := sha256.New()
@@ -318,7 +320,7 @@ func (c *Curve25519StealthAddress) ScanTransaction(
 ) bool {
 	// Compute shared secret: a * R (view private * tx public)
 	var sharedSecret [32]byte
-	curve25519.ScalarMult(&sharedSecret, &viewPrivKey, &txPubKey)
+	curve25519.ScalarMult(&sharedSecret, &viewPrivKey, &txPubKey) //nolint:staticcheck // legacy curve kept for compatibility
 
 	// Hash shared secret
 	hasher := sha256.New()

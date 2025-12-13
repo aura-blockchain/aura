@@ -230,7 +230,9 @@ func BenchmarkVCIssuance(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		// Simulate VC issuance
-		issueVC(ctx.SdkCtx)
+		if err := issueVC(ctx.SdkCtx); err != nil {
+			b.Fatalf("issueVC failed: %v", err)
+		}
 	}
 }
 
@@ -253,7 +255,9 @@ func BenchmarkDataRegistryStore(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		// Simulate data storage
-		storeData(ctx.SdkCtx, data)
+		if err := storeData(ctx.SdkCtx, data); err != nil {
+			b.Fatalf("storeData failed: %v", err)
+		}
 	}
 }
 
@@ -275,7 +279,9 @@ func BenchmarkDEXSwap(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		// Simulate DEX swap
-		executeSwap(ctx.SdkCtx)
+		if err := executeSwap(ctx.SdkCtx); err != nil {
+			b.Fatalf("executeSwap failed: %v", err)
+		}
 	}
 }
 
@@ -286,7 +292,9 @@ func BenchmarkDEXAddLiquidity(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		// Simulate adding liquidity
-		addLiquidity(ctx.SdkCtx)
+		if err := addLiquidity(ctx.SdkCtx); err != nil {
+			b.Fatalf("addLiquidity failed: %v", err)
+		}
 	}
 }
 
@@ -297,7 +305,9 @@ func BenchmarkBridgeTransfer(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		// Simulate bridge transfer
-		executeBridgeTransfer(ctx.SdkCtx)
+		if err := executeBridgeTransfer(ctx.SdkCtx); err != nil {
+			b.Fatalf("executeBridgeTransfer failed: %v", err)
+		}
 	}
 }
 
@@ -319,7 +329,9 @@ func BenchmarkInclusionRoutine(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		// Simulate inclusion routine processing
-		processInclusionRoutine(ctx.SdkCtx)
+		if err := processInclusionRoutine(ctx.SdkCtx); err != nil {
+			b.Fatalf("processInclusionRoutine failed: %v", err)
+		}
 	}
 }
 

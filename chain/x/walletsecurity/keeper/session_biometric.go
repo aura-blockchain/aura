@@ -124,7 +124,9 @@ func (k Keeper) AuthenticateBiometric(ctx context.Context, walletID string, biom
 	if err != nil {
 		return false, err
 	}
-	k.SetBiometricAuth(ctx, walletID, authBytes)
+	if err := k.SetBiometricAuth(ctx, walletID, authBytes); err != nil {
+		return false, err
+	}
 	return authenticated, nil
 }
 

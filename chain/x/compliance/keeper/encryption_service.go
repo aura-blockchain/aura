@@ -103,7 +103,7 @@ func NewEncryptionServiceFromEnv(envVar string) (*EncryptionService, error) {
 
 	// Note: In production, use a secure key management system
 	// This is a placeholder for the actual implementation
-	return nil, fmt.Errorf("environment-based key loading not yet implemented - use NewEncryptionService with explicit key")
+	return nil, fmt.Errorf("environment-based key loading not yet implemented; expected %s", envVar)
 }
 
 // deriveRecordKey derives a unique encryption key for a specific record.

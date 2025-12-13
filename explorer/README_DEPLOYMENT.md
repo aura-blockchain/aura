@@ -56,8 +56,8 @@ ping-pub-explorer/chains/testnet/aura.json
 
 Current settings:
 - **Chain ID:** aura-local-4
-- **RPC:** http://172.26.0.10:26657 (validator-1)
-- **API:** http://172.26.0.10:1317 (validator-1)
+- **RPC:** http://172.26.0.50:26657 (observer-1)
+- **API:** http://172.26.0.50:1317 (observer-1)
 
 ### Docker Compose
 ```
@@ -122,12 +122,12 @@ docker compose -f ../docker-compose.explorer.yml up -d --build
 
 **Test connectivity:**
 ```bash
-docker exec aura-block-explorer wget -qO- http://172.26.0.10:26657/status
+docker exec aura-block-explorer wget -qO- http://172.26.0.50:26657/status
 ```
 
 **Check validators:**
 ```bash
-docker logs aura-validator-1 --tail 20
+docker logs aura-observer-1 --tail 20
 ```
 
 ---

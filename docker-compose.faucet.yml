@@ -102,8 +102,10 @@ services:
       ENVIRONMENT: "${FAUCET_ENVIRONMENT:-development}"
       CORS_ORIGINS: "${FAUCET_CORS_ORIGINS:-*}"
 
-      # Blockchain configuration (connects to validator-1)
-      NODE_RPC: "http://aura-validator-1:26657"
+      # Blockchain configuration (connects to observer node)
+      NODE_RPC: "http://aura-observer-1:26657"
+      NODE_API: "http://aura-observer-1:1317"
+      NODE_GRPC: "aura-observer-1:9090"
       CHAIN_ID: "aura-local-4"
       FAUCET_MNEMONIC: "${FAUCET_MNEMONIC}"
       FAUCET_ADDRESS: "${FAUCET_ADDRESS}"
@@ -142,7 +144,7 @@ services:
       - ./faucet-service/frontend:/app/frontend:ro
     networks:
       - faucet-internal
-      - aura-testnet  # Connect to testnet network to reach validator-1
+      - aura-testnet  # Connect to testnet network to reach observer-1
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/api/v1/health"]
       interval: 30s

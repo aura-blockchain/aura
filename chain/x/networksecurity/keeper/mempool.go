@@ -112,12 +112,16 @@ func (k Keeper) AddToMempool(ctx sdk.Context, tx sdk.Tx, txBytes []byte, sender 
 		stats.AvgPriorityFee = totalFee.Quo(math.NewInt(int64(stats.TxCount)))
 	}
 
-	k.SetMempoolStats(ctx, stats)
+	if err := k.SetMempoolStats(ctx, stats); err != nil {
+		return err
+	}
 
 	// Increment account tx count
 	if sender != "" {
 		count := k.GetAccountMempoolTxCount(ctx, sender)
-		k.SetAccountMempoolTxCount(ctx, sender, count+1)
+		if err := k.SetAccountMempoolTxCount(ctx, sender, count+1); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -135,13 +139,17 @@ func (k Keeper) RemoveFromMempool(ctx sdk.Context, txBytes []byte, sender string
 		stats.SizeBytes -= uint64(len(txBytes))
 	}
 
-	k.SetMempoolStats(ctx, stats)
+	if err := k.SetMempoolStats(ctx, stats); err != nil {
+		return err
+	}
 
 	// Decrement account tx count
 	if sender != "" {
 		count := k.GetAccountMempoolTxCount(ctx, sender)
 		if count > 0 {
-			k.SetAccountMempoolTxCount(ctx, sender, count-1)
+			if err := k.SetAccountMempoolTxCount(ctx, sender, count-1); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -152,7 +160,9 @@ func (k Keeper) RemoveFromMempool(ctx sdk.Context, txBytes []byte, sender string
 func (k Keeper) EvictLowestPriorityTx(ctx sdk.Context) {
 	stats := k.GetMempoolStats(ctx)
 	stats.EvictedCount++
-	k.SetMempoolStats(ctx, stats)
+	if err := k.SetMempoolStats(ctx, stats); err != nil {
+		k.logger.Error("failed to persist mempool stats on eviction", "err", err)
+	}
 
 	// Actual eviction would be handled by the mempool implementation
 	// This just updates our statistics
@@ -163,7 +173,9 @@ func (k Keeper) EvictLowestPriorityTx(ctx sdk.Context) {
 func (k Keeper) RejectTransaction(ctx sdk.Context, reason string) {
 	stats := k.GetMempoolStats(ctx)
 	stats.RejectedCount++
-	k.SetMempoolStats(ctx, stats)
+	if err := k.SetMempoolStats(ctx, stats); err != nil {
+		k.logger.Error("failed to persist mempool stats on rejection", "err", err)
+	}
 
 	k.logger.Debug(fmt.Sprintf("Rejected transaction: %s", reason))
 }
@@ -312,14 +324,18 @@ func (k Keeper) CleanupMempool(ctx sdk.Context) {
 		}
 
 		stats.TxCount--
-		k.SetMempoolStats(ctx, stats)
+		if err := k.SetMempoolStats(ctx, stats); err != nil {
+			k.logger.Error("failed to update mempool stats during cleanup", "err", err)
+		}
 	}
 
 	// Reset statistics periodically
 	if ctx.BlockHeight()%1000 == 0 {
 		stats.EvictedCount = 0
 		stats.RejectedCount = 0
-		k.SetMempoolStats(ctx, stats)
+		if err := k.SetMempoolStats(ctx, stats); err != nil {
+			k.logger.Error("failed to reset mempool stats", "err", err)
+		}
 	}
 }
 
@@ -327,7 +343,9 @@ func (k Keeper) CleanupMempool(ctx sdk.Context) {
 func (k Keeper) EvictOldestTx(ctx sdk.Context) {
 	stats := k.GetMempoolStats(ctx)
 	stats.EvictedCount++
-	k.SetMempoolStats(ctx, stats)
+	if err := k.SetMempoolStats(ctx, stats); err != nil {
+		k.logger.Error("failed to persist mempool stats on oldest eviction", "err", err)
+	}
 	k.logger.Debug("Evicting oldest transaction from mempool")
 }
 
@@ -335,6 +353,8 @@ func (k Keeper) EvictOldestTx(ctx sdk.Context) {
 func (k Keeper) EvictRandomTx(ctx sdk.Context) {
 	stats := k.GetMempoolStats(ctx)
 	stats.EvictedCount++
-	k.SetMempoolStats(ctx, stats)
+	if err := k.SetMempoolStats(ctx, stats); err != nil {
+		k.logger.Error("failed to persist mempool stats on random eviction", "err", err)
+	}
 	k.logger.Debug("Evicting random transaction from mempool")
 }

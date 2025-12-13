@@ -130,13 +130,17 @@ func (k Keeper) CheckRateLimit(ctx sdk.Context, peerID string) error {
 		if entry.RequestCount > params.RateLimit.MaxRequestsPerSecond*10 {
 			// Too many violations, ban the peer
 			banDurationSecs := int64(params.RateLimit.BanDuration.Seconds())
-			k.BanPeer(ctx, peerID, banDurationSecs, "rate limit violations")
+			if err := k.BanPeer(ctx, peerID, banDurationSecs, "rate limit violations"); err != nil {
+				return err
+			}
 
 			// Penalize reputation
 			k.PenalizeReputation(ctx, peerID, params.Reputation.MisbehaviorPenalty)
 		}
 
-		k.SetRateLimitEntry(ctx, entry)
+		if err := k.SetRateLimitEntry(ctx, entry); err != nil {
+			return err
+		}
 		return types.ErrRateLimitExceeded
 	}
 
@@ -149,7 +153,9 @@ func (k Keeper) CheckRateLimit(ctx sdk.Context, peerID string) error {
 		}
 	}
 	entry.RequestCount++
-	k.SetRateLimitEntry(ctx, entry)
+	if err := k.SetRateLimitEntry(ctx, entry); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -265,7 +271,9 @@ func (k Keeper) CheckBandwidthLimit(ctx sdk.Context, peerID string, bytes uint64
 		sent, recv := tracker.GetStats()
 		entry.BytesSent = sent
 		entry.BytesReceived = recv
-		k.SetRateLimitEntry(ctx, entry)
+		if err := k.SetRateLimitEntry(ctx, entry); err != nil {
+			return err
+		}
 
 		return types.ErrBandwidthLimitExceeded
 	}
@@ -302,14 +310,18 @@ func (k Keeper) CleanupExpiredRateLimits(ctx sdk.Context) {
 		// Check if ban has expired
 		if entry.IsBanned && entry.BanExpiresAt != nil {
 			if ctx.BlockTime().After(*entry.BanExpiresAt) {
-				k.UnbanPeer(ctx, entry.PeerId)
+				if err := k.UnbanPeer(ctx, entry.PeerId); err != nil {
+					k.logger.Error("failed to unban peer during cleanup", "peer", entry.PeerId, "err", err)
+				}
 			}
 		}
 	}
 
 	// Delete expired entries
 	for _, peerID := range toDelete {
-		store.Delete(types.GetRateLimitKey(peerID))
+		if err := store.Delete(types.GetRateLimitKey(peerID)); err != nil {
+			k.logger.Error("failed to delete expired rate limit entry", "peer", peerID, "err", err)
+		}
 		delete(k.rateLimiters, peerID)
 		delete(k.bandwidthTrackers, peerID)
 	}

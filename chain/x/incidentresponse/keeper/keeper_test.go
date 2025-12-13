@@ -178,14 +178,14 @@ func TestResumeChain(t *testing.T) {
 	_, ctx := setupTestKeeper(t)
 
 	// Pause chain
-	k.RequestChainPause(
+	require.NoError(t, k.RequestChainPause(
 		ctx,
 		"admin1",
 		types.PauseLevelFull,
 		"Test pause",
 		"",
 		1*time.Hour,
-	)
+	))
 	require.True(t, k.IsChainPaused())
 
 	// Resume chain
@@ -230,13 +230,13 @@ func TestHotWalletDailyLimit(t *testing.T) {
 	_, ctx := setupTestKeeper(t)
 
 	// Set wallet limits
-	k.SetWalletLimits(
+	require.NoError(t, k.SetWalletLimits(
 		ctx,
 		"wallet1",
 		"1000000",
 		"100000",
 		"200000", // daily limit
-	)
+	))
 
 	// First transaction
 	err := k.CheckWalletLimit(ctx, "wallet1", "100000", "500000")
@@ -281,7 +281,7 @@ func TestPostMortem(t *testing.T) {
 	k, ctx := setupTestKeeper(t)
 
 	// Create incident
-	incidentID, _ := k.ReportIncident(
+	incidentID, err := k.ReportIncident(
 		ctx,
 		"Service outage",
 		"API server down",
@@ -289,9 +289,10 @@ func TestPostMortem(t *testing.T) {
 		"ops-team",
 		[]string{"api-server"},
 	)
+	require.NoError(t, err)
 
 	// Update to resolved
-	k.UpdateIncidentStatus(ctx, incidentID, types.StatusResolved, "ops-team", "Service restored")
+	require.NoError(t, k.UpdateIncidentStatus(ctx, incidentID, types.StatusResolved, "ops-team", "Service restored"))
 
 	// Create post-mortem
 	actionItems := []types.ActionItem{
@@ -305,7 +306,7 @@ func TestPostMortem(t *testing.T) {
 		},
 	}
 
-	err := k.CreatePostMortem(
+	err = k.CreatePostMortem(
 		ctx,
 		incidentID,
 		"tech-lead",
@@ -330,7 +331,7 @@ func TestCloseIncident(t *testing.T) {
 	k, ctx := setupTestKeeper(t)
 
 	// Create incident
-	incidentID, _ := k.ReportIncident(
+	incidentID, err := k.ReportIncident(
 		ctx,
 		"Test incident",
 		"Test description",
@@ -338,14 +339,15 @@ func TestCloseIncident(t *testing.T) {
 		"admin",
 		[]string{"system"},
 	)
+	require.NoError(t, err)
 
 	// Try to close without post-mortem
-	err := k.CloseIncident(ctx, incidentID, "admin")
+	err = k.CloseIncident(ctx, incidentID, "admin")
 	require.Error(t, err)
 	require.Equal(t, types.ErrPostMortemNotCompleted, err)
 
 	// Create post-mortem
-	k.CreatePostMortem(
+	require.NoError(t, k.CreatePostMortem(
 		ctx,
 		incidentID,
 		"admin",
@@ -355,7 +357,7 @@ func TestCloseIncident(t *testing.T) {
 		"Resolution",
 		[]string{"Lesson 1"},
 		[]types.ActionItem{},
-	)
+	))
 
 	// Now close incident
 	err = k.CloseIncident(ctx, incidentID, "admin")
@@ -406,7 +408,8 @@ func TestInsuranceClaim(t *testing.T) {
 	require.NotEmpty(t, claimID)
 
 	// Verify incident timeline updated
-	incident, _ := k.GetIncident(ctx, incidentID)
+	incident, err := k.GetIncident(ctx, incidentID)
+	require.NoError(t, err)
 	hasClaimEntry := false
 	for _, entry := range incident.Timeline {
 		if entry.Action == "insurance_claim_submitted" {
@@ -421,9 +424,12 @@ func TestGetAllIncidents(t *testing.T) {
 	k, ctx := setupTestKeeper(t)
 
 	// Create multiple incidents
-	k.ReportIncident(ctx, "Incident 1", "Desc 1", types.SeverityLow, "admin", []string{})
-	k.ReportIncident(ctx, "Incident 2", "Desc 2", types.SeverityMedium, "admin", []string{})
-	k.ReportIncident(ctx, "Incident 3", "Desc 3", types.SeverityHigh, "admin", []string{})
+	_, err := k.ReportIncident(ctx, "Incident 1", "Desc 1", types.SeverityLow, "admin", []string{})
+	require.NoError(t, err)
+	_, err = k.ReportIncident(ctx, "Incident 2", "Desc 2", types.SeverityMedium, "admin", []string{})
+	require.NoError(t, err)
+	_, err = k.ReportIncident(ctx, "Incident 3", "Desc 3", types.SeverityHigh, "admin", []string{})
+	require.NoError(t, err)
 
 	incidents := k.GetAllIncidents(ctx)
 	require.Len(t, incidents, 3)

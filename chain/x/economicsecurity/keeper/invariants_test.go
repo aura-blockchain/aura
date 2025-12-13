@@ -1,5 +1,7 @@
 package keeper
 
+//lint:file-ignore SA1019 -- tests rely on SDK invariant interfaces until crisis module is removed upstream
+
 import (
 	"testing"
 	"time"

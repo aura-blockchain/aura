@@ -27,7 +27,7 @@ func IsValidCID(cid string) bool {
 	}
 
 	// Check for CIDv0 (starts with Qm) - relaxed for mock CIDs
-	if strings.HasPrefix(cid, "Qm") && len(cid) >= 46 {
+	if cidv0Pattern.MatchString(cid) {
 		return true
 	}
 

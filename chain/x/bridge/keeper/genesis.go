@@ -96,7 +96,9 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data types.GenesisState) error {
 	}
 
 	for _, cfg := range data.ChainConfigs {
-		k.setChainConfig(ctx, cfg)
+		if err := k.setChainConfig(ctx, cfg); err != nil {
+			return err
+		}
 	}
 
 	for i := range data.Validators {

@@ -573,4 +573,5 @@ func (q *QueryServer) Params(
 }
 
 // mustEmbedUnimplementedQueryServer implements the proto interface requirement
+//nolint:unused // kept to satisfy generated gRPC interface
 func (*QueryServer) mustEmbedUnimplementedQueryServer() {}

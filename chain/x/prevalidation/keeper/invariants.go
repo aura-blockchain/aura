@@ -1,5 +1,7 @@
 package keeper
 
+//lint:file-ignore SA1019 -- invariants rely on deprecated SDK registry until upstream removal
+
 import (
 	"fmt"
 
@@ -55,10 +57,12 @@ func ParamsInvariant(k *Keeper) sdk.Invariant {
 			), true
 		}
 
-		// Validate scheduler configuration if present
-		if params.SchedulerConfig != nil && params.SchedulerConfig.Enabled {
-			// Basic validation on scheduler being enabled
-			// Additional field validation can be added when fields are defined in proto
+		if err := types.ValidateParams(params); err != nil {
+			return sdk.FormatInvariant(
+				types.ModuleName,
+				"params-valid",
+				fmt.Sprintf("invalid params: %s", err.Error()),
+			), true
 		}
 
 		// Additional validation can be added here for specific param fields

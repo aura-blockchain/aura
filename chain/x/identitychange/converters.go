@@ -6,6 +6,7 @@ import (
 	query "github.com/cosmos/cosmos-sdk/types/query"
 )
 
+// nolint:unused // Retained for potential reuse in handlers and tests.
 func requestFromProto(msg *identitychangepb.MsgRequestIdentityChange) types.IdentityChangeRequest {
 	if msg == nil {
 		return types.IdentityChangeRequest{}
@@ -19,6 +20,7 @@ func requestFromProto(msg *identitychangepb.MsgRequestIdentityChange) types.Iden
 	}
 }
 
+// nolint:unused // Retained for potential reuse in handlers and tests.
 func requestToProto(req types.IdentityChangeRequest) *identitychangepb.IdentityChangeRequest {
 	return &identitychangepb.IdentityChangeRequest{
 		RequestId:       req.RequestId,
@@ -35,6 +37,7 @@ func requestToProto(req types.IdentityChangeRequest) *identitychangepb.IdentityC
 	}
 }
 
+// nolint:unused // Retained for potential reuse in handlers and tests.
 func recordToProto(record types.IdentityRecord) *identitychangepb.IdentityRecord {
 	return &identitychangepb.IdentityRecord{
 		Did:               record.Did,
@@ -47,6 +50,7 @@ func recordToProto(record types.IdentityRecord) *identitychangepb.IdentityRecord
 	}
 }
 
+// nolint:unused // Retained for potential reuse in handlers and tests.
 func historyToProto(history types.IdentityChangeHistory) *identitychangepb.IdentityChangeHistory {
 	return &identitychangepb.IdentityChangeHistory{
 		RequestId:           history.RequestId,
@@ -58,6 +62,7 @@ func historyToProto(history types.IdentityChangeHistory) *identitychangepb.Ident
 	}
 }
 
+// nolint:unused // Retained for potential reuse in handlers and tests.
 func historySliceToProto(entries []types.IdentityChangeHistory) []*identitychangepb.IdentityChangeHistory {
 	result := make([]*identitychangepb.IdentityChangeHistory, 0, len(entries))
 	for _, entry := range entries {
@@ -67,6 +72,7 @@ func historySliceToProto(entries []types.IdentityChangeHistory) []*identitychang
 	return result
 }
 
+// nolint:unused // Retained for potential reuse in handlers and tests.
 func toProtoStatus(status types.IdentityChangeStatus) identitychangepb.IdentityChangeStatus {
 	converted := identitychangepb.IdentityChangeStatus(status)
 	if converted < identitychangepb.IdentityChangeStatus_IDENTITY_CHANGE_STATUS_UNSPECIFIED || converted > identitychangepb.IdentityChangeStatus_IDENTITY_CHANGE_STATUS_SUSPENDED {
@@ -75,6 +81,7 @@ func toProtoStatus(status types.IdentityChangeStatus) identitychangepb.IdentityC
 	return converted
 }
 
+// nolint:unused // Retained for potential reuse in handlers and tests.
 func paginateHistory(entries []types.IdentityChangeHistory, page *query.PageRequest) ([]types.IdentityChangeHistory, *query.PageResponse) {
 	offset := 0
 	limit := len(entries)

@@ -224,8 +224,12 @@ func (k Keeper) generatePlaceholderThresholdPublicKey(schemeID string, threshold
 	// Create deterministic but unique key based on scheme parameters
 	h := sha256.New()
 	h.Write([]byte(schemeID))
-	binary.Write(h, binary.BigEndian, threshold)
-	binary.Write(h, binary.BigEndian, totalParticipants)
+	var thresholdBuf [4]byte
+	var participantsBuf [4]byte
+	binary.BigEndian.PutUint32(thresholdBuf[:], threshold)
+	binary.BigEndian.PutUint32(participantsBuf[:], totalParticipants)
+	h.Write(thresholdBuf[:])
+	h.Write(participantsBuf[:])
 	return h.Sum(nil)
 }
 

@@ -204,7 +204,9 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 	}
 
 	// Initialize module state
-	am.keeper.InitGenesis(ctx, &genesisState)
+	if err := am.keeper.InitGenesis(ctx, &genesisState); err != nil {
+		panic(fmt.Sprintf("failed to initialize %s module: %v", types.ModuleName, err))
+	}
 
 	am.keeper.Logger(ctx).Info(
 		"security module genesis initialized",

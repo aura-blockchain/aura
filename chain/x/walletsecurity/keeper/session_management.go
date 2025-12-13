@@ -73,7 +73,9 @@ func (k Keeper) ValidateSession(ctx context.Context, sessionID string) (bool, er
 
 	// Check expiration
 	if session.ExpiresAt != nil && blockTime.After(gogoTimestampToTime(session.ExpiresAt)) {
-		k.TerminateSession(ctx, sessionID)
+		if err := k.TerminateSession(ctx, sessionID); err != nil {
+			return false, err
+		}
 		return false, types.ErrSessionExpired
 	}
 
@@ -82,7 +84,9 @@ func (k Keeper) ValidateSession(ctx context.Context, sessionID string) (bool, er
 		inactiveDuration := blockTime.Sub(gogoTimestampToTime(session.LastActivity))
 		thresholdDuration := time.Duration(session.InactivityThresholdSeconds) * time.Second
 		if inactiveDuration > thresholdDuration {
-			k.LockSessionDueToInactivity(ctx, sessionID)
+			if err := k.LockSessionDueToInactivity(ctx, sessionID); err != nil {
+				return false, err
+			}
 			return false, types.ErrSessionInactive
 		}
 	}
@@ -179,7 +183,9 @@ func (k Keeper) UnlockSessionAfterAuth(ctx context.Context, sessionID string, au
 func (k Keeper) TerminateSession(ctx context.Context, sessionID string) error {
 	kvStore := k.getStore(ctx)
 	key := types.GetSessionConfigKey(sessionID)
-	kvStore.Delete(key)
+	if err := kvStore.Delete(key); err != nil {
+		return err
+	}
 
 	// Emit event
 	sdkCtx := sdk.UnwrapSDKContext(ctx)

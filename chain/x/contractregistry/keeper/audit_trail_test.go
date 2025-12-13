@@ -3,6 +3,8 @@ package keeper
 import (
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestRecordAuditEvent(t *testing.T) {
@@ -275,10 +277,10 @@ func TestAuditStatistics(t *testing.T) {
 
 	// Create events
 	for i := 0; i < 10; i++ {
-		k.RecordAuditEvent(ctx, "contract1", "DEPLOY", "actor1", nil)
+		require.NoError(t, k.RecordAuditEvent(ctx, "contract1", "DEPLOY", "actor1", nil))
 	}
 	for i := 0; i < 5; i++ {
-		k.RecordAuditEvent(ctx, "contract1", "UPGRADE", "actor1", nil)
+		require.NoError(t, k.RecordAuditEvent(ctx, "contract1", "UPGRADE", "actor1", nil))
 	}
 
 	stats := k.GetAuditStatistics(ctx, "contract1")
@@ -384,7 +386,7 @@ func TestAuditEventExport(t *testing.T) {
 
 	// Create events
 	for i := 0; i < 5; i++ {
-		k.RecordAuditEvent(ctx, "contract1", "EVENT", "actor1", nil)
+		require.NoError(t, k.RecordAuditEvent(ctx, "contract1", "EVENT", "actor1", nil))
 	}
 
 	// Export audit trail

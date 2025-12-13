@@ -35,7 +35,6 @@ import (
 	contractregistrytypes "github.com/aequitas/aura/chain/x/contractregistry/types"
 	contractregistrypb "github.com/aequitas/aura/proto/aura/contractregistry/v1beta1"
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	cmtcfg "github.com/cometbft/cometbft/config"
 	cmtlog "github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/node"
@@ -45,6 +44,7 @@ import (
 	cmttypes "github.com/cometbft/cometbft/types"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
+	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
@@ -56,6 +56,7 @@ import (
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 const (
@@ -306,8 +307,7 @@ func startInProcess(cmd *cobra.Command, auraApp *app.App, logger log.Logger) err
 	}
 
 	// Create CometBFT logger
-	cmtLogger := cmtlog.NewTMLogger(cmtlog.NewSyncWriter(os.Stdout))
-	cmtLogger, err = createCometLogger(cmtConfig.LogLevel)
+	cmtLogger, err := createCometLogger(cmtConfig.LogLevel)
 	if err != nil {
 		return fmt.Errorf("failed to create CometBFT logger: %w", err)
 	}
@@ -353,6 +353,10 @@ func startInProcess(cmd *cobra.Command, auraApp *app.App, logger log.Logger) err
 	// Load latest version to initialize stores - REQUIRED before ABCI handshake
 	if err := auraApp.LoadLatestVersion(); err != nil {
 		return fmt.Errorf("failed to load latest app version: %w", err)
+	}
+
+	if err := registerAppServices(cmd, auraApp); err != nil {
+		return err
 	}
 
 	// Load node key
@@ -473,6 +477,14 @@ func startStandAlone(cmd *cobra.Command, auraApp *app.App, logger log.Logger) er
 	// Recreate app with proper database
 	auraApp = createAppWithDB(logger, db, nil)
 
+	if err := auraApp.LoadLatestVersion(); err != nil {
+		return fmt.Errorf("failed to load latest app version: %w", err)
+	}
+
+	if err := registerAppServices(cmd, auraApp); err != nil {
+		return err
+	}
+
 	// Create server manager
 	serverMgr := security.NewServerManager(secLogger)
 
@@ -507,6 +519,20 @@ func startStandAlone(cmd *cobra.Command, auraApp *app.App, logger log.Logger) er
 		ctx = context.Background()
 	}
 	return waitForShutdown(ctx, nil, grpcSrv, apiSrv, serverMgr, logger)
+}
+
+func registerAppServices(cmd *cobra.Command, auraApp *app.App) error {
+	if auraApp == nil {
+		return fmt.Errorf("app instance is nil: cannot register services")
+	}
+
+	clientCtx := client.GetClientContextFromCmd(cmd)
+	if clientCtx.Codec == nil {
+		return fmt.Errorf("client context is not initialized")
+	}
+
+	auraApp.RegisterTxService(clientCtx)
+	return nil
 }
 
 // startGRPCServer starts the gRPC server

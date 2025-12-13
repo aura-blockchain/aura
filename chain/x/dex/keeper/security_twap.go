@@ -386,7 +386,7 @@ func (k Keeper) RecordAllPoolPricesBatched(ctx sdk.Context, limit int) int {
 	cursorBytes := store.Get(cursorKey)
 
 	startIdx := 0
-	if cursorBytes != nil && len(cursorBytes) >= 8 {
+	if len(cursorBytes) >= 8 {
 		// Decode cursor as uint64
 		startIdx = int(sdk.BigEndianToUint64(cursorBytes))
 	}

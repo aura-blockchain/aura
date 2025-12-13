@@ -241,8 +241,6 @@ func TestScoreHistoryMultipleChangesPerAddress(t *testing.T) {
 		types.ChangeReasonAppealReversal,
 	}
 
-	expectedChanges := []types.ScoreChange{}
-
 	for i := uint64(1); i <= 20; i++ {
 		// Advance block height and time for each change
 		ctx = ctx.WithBlockHeight(int64(100 + i)).WithBlockTime(baseTime.Add(time.Duration(i) * time.Second))
@@ -255,8 +253,6 @@ func TestScoreHistoryMultipleChangesPerAddress(t *testing.T) {
 			TxHash:        fmt.Sprintf("tx-multi-%d", i),
 			PreviousScore: (i - 1) * 300,
 		}
-
-		expectedChanges = append(expectedChanges, change)
 
 		if err := k.AddScoreChange(ctx, walletAddr, change); err != nil {
 			t.Fatalf("failed to add score change %d: %v", i, err)

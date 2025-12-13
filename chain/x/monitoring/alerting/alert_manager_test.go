@@ -73,14 +73,15 @@ func TestAlertCooldown(t *testing.T) {
 func TestAcknowledgeAlert(t *testing.T) {
 	am := NewAlertManager(5 * time.Minute)
 
-	alert, _ := am.CreateAlert(
+	alert, err := am.CreateAlert(
 		types.AlertTypeAnomaly,
 		types.SeverityMedium,
 		"Test alert",
 		nil,
 	)
+	require.NoError(t, err)
 
-	err := am.AcknowledgeAlert(alert.ID, "operator@aura.network")
+	err = am.AcknowledgeAlert(alert.ID, "operator@aura.network")
 	require.NoError(t, err)
 
 	retrievedAlert, _ := am.GetAlert(alert.ID)
@@ -92,15 +93,16 @@ func TestAcknowledgeAlert(t *testing.T) {
 func TestResolveAlert(t *testing.T) {
 	am := NewAlertManager(5 * time.Minute)
 
-	alert, _ := am.CreateAlert(
+	alert, err := am.CreateAlert(
 		types.AlertTypeValidatorDown,
 		types.SeverityHigh,
 		"Test alert",
 		nil,
 	)
+	require.NoError(t, err)
 
 	// Resolve alert
-	err := am.ResolveAlert(alert.ID)
+	err = am.ResolveAlert(alert.ID)
 	require.NoError(t, err)
 
 	retrievedAlert, _ := am.GetAlert(alert.ID)
@@ -112,12 +114,15 @@ func TestGetActiveAlerts(t *testing.T) {
 	am := NewAlertManager(5 * time.Minute)
 
 	// Create some alerts
-	am.CreateAlert(types.AlertTypeAnomaly, types.SeverityLow, "Alert 1", nil)
-	am.CreateAlert(types.AlertTypeSecurityThreat, types.SeverityHigh, "Alert 2", nil)
-	alert3, _ := am.CreateAlert(types.AlertTypeNetworkCongestion, types.SeverityMedium, "Alert 3", nil)
+	_, err := am.CreateAlert(types.AlertTypeAnomaly, types.SeverityLow, "Alert 1", nil)
+	require.NoError(t, err)
+	_, err = am.CreateAlert(types.AlertTypeSecurityThreat, types.SeverityHigh, "Alert 2", nil)
+	require.NoError(t, err)
+	alert3, err := am.CreateAlert(types.AlertTypeNetworkCongestion, types.SeverityMedium, "Alert 3", nil)
+	require.NoError(t, err)
 
 	// Resolve one
-	am.ResolveAlert(alert3.ID)
+	require.NoError(t, am.ResolveAlert(alert3.ID))
 
 	// Get active alerts
 	active := am.GetActiveAlerts()
@@ -127,9 +132,12 @@ func TestGetActiveAlerts(t *testing.T) {
 func TestGetAlertsBySeverity(t *testing.T) {
 	am := NewAlertManager(5 * time.Minute)
 
-	am.CreateAlert(types.AlertTypeAnomaly, types.SeverityLow, "Alert 1", nil)
-	am.CreateAlert(types.AlertTypeSecurityThreat, types.SeverityHigh, "Alert 2", nil)
-	am.CreateAlert(types.AlertTypeNetworkCongestion, types.SeverityHigh, "Alert 3", nil)
+	_, err := am.CreateAlert(types.AlertTypeAnomaly, types.SeverityLow, "Alert 1", nil)
+	require.NoError(t, err)
+	_, err = am.CreateAlert(types.AlertTypeSecurityThreat, types.SeverityHigh, "Alert 2", nil)
+	require.NoError(t, err)
+	_, err = am.CreateAlert(types.AlertTypeNetworkCongestion, types.SeverityHigh, "Alert 3", nil)
+	require.NoError(t, err)
 
 	highSeverity := am.GetAlertsBySeverity(types.SeverityHigh)
 	assert.Equal(t, 2, len(highSeverity))
@@ -141,9 +149,12 @@ func TestGetAlertsBySeverity(t *testing.T) {
 func TestGetAlertsByType(t *testing.T) {
 	am := NewAlertManager(5 * time.Minute)
 
-	am.CreateAlert(types.AlertTypeAnomaly, types.SeverityLow, "Alert 1", nil)
-	am.CreateAlert(types.AlertTypeAnomaly, types.SeverityHigh, "Alert 2", nil)
-	am.CreateAlert(types.AlertTypeSecurityThreat, types.SeverityMedium, "Alert 3", nil)
+	_, err := am.CreateAlert(types.AlertTypeAnomaly, types.SeverityLow, "Alert 1", nil)
+	require.NoError(t, err)
+	_, err = am.CreateAlert(types.AlertTypeAnomaly, types.SeverityHigh, "Alert 2", nil)
+	require.NoError(t, err)
+	_, err = am.CreateAlert(types.AlertTypeSecurityThreat, types.SeverityMedium, "Alert 3", nil)
+	require.NoError(t, err)
 
 	anomalyAlerts := am.GetAlertsByType(types.AlertTypeAnomaly)
 	assert.Equal(t, 2, len(anomalyAlerts))
@@ -152,12 +163,14 @@ func TestGetAlertsByType(t *testing.T) {
 func TestCleanupResolvedAlerts(t *testing.T) {
 	am := NewAlertManager(5 * time.Minute)
 
-	alert1, _ := am.CreateAlert(types.AlertTypeAnomaly, types.SeverityLow, "Alert 1", nil)
-	alert2, _ := am.CreateAlert(types.AlertTypeSecurityThreat, types.SeverityHigh, "Alert 2", nil)
+	alert1, err := am.CreateAlert(types.AlertTypeAnomaly, types.SeverityLow, "Alert 1", nil)
+	require.NoError(t, err)
+	alert2, err := am.CreateAlert(types.AlertTypeSecurityThreat, types.SeverityHigh, "Alert 2", nil)
+	require.NoError(t, err)
 
 	// Resolve alerts
-	am.ResolveAlert(alert1.ID)
-	am.ResolveAlert(alert2.ID)
+	require.NoError(t, am.ResolveAlert(alert1.ID))
+	require.NoError(t, am.ResolveAlert(alert2.ID))
 
 	// Initial count
 	assert.Equal(t, 2, len(am.GetAlertsByType(types.AlertTypeAnomaly))+
@@ -172,12 +185,15 @@ func TestCleanupResolvedAlerts(t *testing.T) {
 func TestGetAlertStats(t *testing.T) {
 	am := NewAlertManager(5 * time.Minute)
 
-	am.CreateAlert(types.AlertTypeAnomaly, types.SeverityLow, "Alert 1", nil)
-	alert2, _ := am.CreateAlert(types.AlertTypeSecurityThreat, types.SeverityHigh, "Alert 2", nil)
-	alert3, _ := am.CreateAlert(types.AlertTypeNetworkCongestion, types.SeverityMedium, "Alert 3", nil)
+	_, err := am.CreateAlert(types.AlertTypeAnomaly, types.SeverityLow, "Alert 1", nil)
+	require.NoError(t, err)
+	alert2, err := am.CreateAlert(types.AlertTypeSecurityThreat, types.SeverityHigh, "Alert 2", nil)
+	require.NoError(t, err)
+	alert3, err := am.CreateAlert(types.AlertTypeNetworkCongestion, types.SeverityMedium, "Alert 3", nil)
+	require.NoError(t, err)
 
-	am.AcknowledgeAlert(alert2.ID, "operator")
-	am.ResolveAlert(alert3.ID)
+	require.NoError(t, am.AcknowledgeAlert(alert2.ID, "operator"))
+	require.NoError(t, am.ResolveAlert(alert3.ID))
 
 	stats := am.GetAlertStats()
 	assert.Equal(t, 3, stats["total"])

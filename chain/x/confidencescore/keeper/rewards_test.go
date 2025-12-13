@@ -4,11 +4,11 @@ import (
 	"testing"
 
 	"cosmossdk.io/math"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCalculatePoIReward(t *testing.T) {
-	ctx, k := setupConfKeeperWithTime(t)
-	ctx = ctx.WithBlockHeight(100)
+	_, k := setupConfKeeperWithTime(t)
 
 	tests := []struct {
 		name           string
@@ -58,8 +58,7 @@ func TestCalculatePoIReward(t *testing.T) {
 }
 
 func TestCalculatePoIReward_Tier4(t *testing.T) {
-	ctx, k := setupConfKeeperWithTime(t)
-	ctx = ctx.WithBlockHeight(100)
+	_, k := setupConfKeeperWithTime(t)
 
 	// Tier 4: Price >= $0.50, reward = $50 / price
 	tests := []struct {
@@ -102,8 +101,7 @@ func TestCalculatePoIReward_Tier4(t *testing.T) {
 }
 
 func TestSplitPoIReward(t *testing.T) {
-	ctx, k := setupConfKeeperWithTime(t)
-	ctx = ctx.WithBlockHeight(100)
+	_, k := setupConfKeeperWithTime(t)
 
 	tests := []struct {
 		name         string
@@ -172,8 +170,7 @@ func TestSplitPoIReward(t *testing.T) {
 }
 
 func TestCalculateVBTBoost(t *testing.T) {
-	ctx, k := setupConfKeeperWithTime(t)
-	ctx = ctx.WithBlockHeight(100)
+	_, k := setupConfKeeperWithTime(t)
 
 	tests := []struct {
 		name               string
@@ -225,13 +222,12 @@ func TestCalculateVBTBoost(t *testing.T) {
 }
 
 func TestCalculateVBTBoost_Disabled(t *testing.T) {
-	ctx, k := setupConfKeeperWithTime(t)
-	ctx = ctx.WithBlockHeight(100)
+	_, k := setupConfKeeperWithTime(t)
 
 	// Get params and disable velocity bonus
 	params := k.GetParams()
 	params.VelocityBonusEnabled = false
-	k.SetParams(params)
+	require.NoError(t, k.SetParams(params))
 
 	multiplier := k.CalculateVBTBoost(1800, "IR-001")
 
@@ -241,8 +237,7 @@ func TestCalculateVBTBoost_Disabled(t *testing.T) {
 }
 
 func TestApplyVBTBoost(t *testing.T) {
-	ctx, k := setupConfKeeperWithTime(t)
-	ctx = ctx.WithBlockHeight(100)
+	_, k := setupConfKeeperWithTime(t)
 
 	tests := []struct {
 		name           string
@@ -289,8 +284,7 @@ func TestApplyVBTBoost(t *testing.T) {
 }
 
 func TestGetCurrentRewardAmount(t *testing.T) {
-	ctx, k := setupConfKeeperWithTime(t)
-	ctx = ctx.WithBlockHeight(100)
+	_, k := setupConfKeeperWithTime(t)
 
 	auraPrice := math.LegacyNewDecWithPrec(15, 2) // $0.15
 	reward := k.GetCurrentRewardAmount(auraPrice)
@@ -302,8 +296,7 @@ func TestGetCurrentRewardAmount(t *testing.T) {
 }
 
 func TestGetRewardTierInfo(t *testing.T) {
-	ctx, k := setupConfKeeperWithTime(t)
-	ctx = ctx.WithBlockHeight(100)
+	_, k := setupConfKeeperWithTime(t)
 
 	tests := []struct {
 		name           string

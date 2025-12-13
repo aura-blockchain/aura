@@ -4,7 +4,6 @@ import (
 	"testing"
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 
 	"github.com/aequitas/aura/chain/x/auth/types"
@@ -188,7 +187,7 @@ func TestResetRateLimitWindow_DayReset(t *testing.T) {
 	require.NoError(t, err)
 
 	// Reset window
-	k.ResetRateLimitWindow(ctx, "user1")
+	require.NoError(t, k.ResetRateLimitWindow(ctx, "user1"))
 
 	// Verify all counters reset including day
 	updated, err := k.GetRateLimitConfig(ctx, "user1")
@@ -206,7 +205,7 @@ func TestCreateRole_AuditLog(t *testing.T) {
 	_, err := k.AssignRole(ctx, "system", "admin1", types.RoleAdmin, 0)
 	require.NoError(t, err)
 
-	_, err = k.CreateRole(sdk.WrapSDKContext(ctx), "admin1", "new_role", []string{"perm1"}, "Test")
+	_, err = k.CreateRole(ctx.Context(), "admin1", "new_role", []string{"perm1"}, "Test")
 	require.NoError(t, err)
 
 	// Verify audit log created
@@ -221,7 +220,7 @@ func TestAssignRole_AuditLog(t *testing.T) {
 	_, err := k.AssignRole(ctx, "system", "admin1", types.RoleAdmin, 0)
 	require.NoError(t, err)
 
-	_, err = k.AssignRole(sdk.WrapSDKContext(ctx), "admin1", "user1", types.RoleUser, 0)
+	_, err = k.AssignRole(ctx.Context(), "admin1", "user1", types.RoleUser, 0)
 	require.NoError(t, err)
 
 	// Verify audit log created
@@ -236,10 +235,10 @@ func TestRevokeRole_AuditLog(t *testing.T) {
 	_, err := k.AssignRole(ctx, "system", "admin1", types.RoleAdmin, 0)
 	require.NoError(t, err)
 
-	_, err = k.AssignRole(sdk.WrapSDKContext(ctx), "admin1", "user1", types.RoleUser, 0)
+	_, err = k.AssignRole(ctx.Context(), "admin1", "user1", types.RoleUser, 0)
 	require.NoError(t, err)
 
-	err = k.RevokeRole(sdk.WrapSDKContext(ctx), "admin1", "user1", types.RoleUser)
+	err = k.RevokeRole(ctx.Context(), "admin1", "user1", types.RoleUser)
 	require.NoError(t, err)
 
 	// Verify audit log created
@@ -254,7 +253,7 @@ func TestCreateMultisigWallet_AuditLog(t *testing.T) {
 	_, err := k.AssignRole(ctx, "system", "admin1", types.RoleAdmin, 0)
 	require.NoError(t, err)
 
-	_, err = k.CreateMultisigWallet(sdk.WrapSDKContext(ctx), "admin1", []string{"s1", "s2"}, 2, "custom")
+	_, err = k.CreateMultisigWallet(ctx.Context(), "admin1", []string{"s1", "s2"}, 2, "custom")
 	require.NoError(t, err)
 
 	// Verify audit log created
@@ -269,10 +268,10 @@ func TestCreateMultisigProposal_AuditLog(t *testing.T) {
 	_, err := k.AssignRole(ctx, "system", "admin1", types.RoleAdmin, 0)
 	require.NoError(t, err)
 
-	wallet, err := k.CreateMultisigWallet(sdk.WrapSDKContext(ctx), "admin1", []string{"s1", "s2"}, 2, "custom")
+	wallet, err := k.CreateMultisigWallet(ctx.Context(), "admin1", []string{"s1", "s2"}, 2, "custom")
 	require.NoError(t, err)
 
-	_, err = k.CreateMultisigProposal(sdk.WrapSDKContext(ctx), "s1", wallet.Id, "Title", "Desc", []byte("data"), 3600)
+	_, err = k.CreateMultisigProposal(ctx.Context(), "s1", wallet.Id, "Title", "Desc", []byte("data"), 3600)
 	require.NoError(t, err)
 
 	// Verify audit log created
@@ -287,13 +286,13 @@ func TestSignMultisigProposal_AuditLog(t *testing.T) {
 	_, err := k.AssignRole(ctx, "system", "admin1", types.RoleAdmin, 0)
 	require.NoError(t, err)
 
-	wallet, err := k.CreateMultisigWallet(sdk.WrapSDKContext(ctx), "admin1", []string{"s1", "s2"}, 2, "custom")
+	wallet, err := k.CreateMultisigWallet(ctx.Context(), "admin1", []string{"s1", "s2"}, 2, "custom")
 	require.NoError(t, err)
 
-	proposal, err := k.CreateMultisigProposal(sdk.WrapSDKContext(ctx), "s1", wallet.Id, "Title", "Desc", []byte("data"), 3600)
+	proposal, err := k.CreateMultisigProposal(ctx.Context(), "s1", wallet.Id, "Title", "Desc", []byte("data"), 3600)
 	require.NoError(t, err)
 
-	_, err = k.SignMultisigProposal(sdk.WrapSDKContext(ctx), "s2", proposal.Id)
+	_, err = k.SignMultisigProposal(ctx.Context(), "s2", proposal.Id)
 	require.NoError(t, err)
 
 	// Verify audit log created
@@ -308,16 +307,16 @@ func TestExecuteMultisigProposal_AuditLog(t *testing.T) {
 	_, err := k.AssignRole(ctx, "system", "admin1", types.RoleAdmin, 0)
 	require.NoError(t, err)
 
-	wallet, err := k.CreateMultisigWallet(sdk.WrapSDKContext(ctx), "admin1", []string{"s1", "s2"}, 2, "custom")
+	wallet, err := k.CreateMultisigWallet(ctx.Context(), "admin1", []string{"s1", "s2"}, 2, "custom")
 	require.NoError(t, err)
 
-	proposal, err := k.CreateMultisigProposal(sdk.WrapSDKContext(ctx), "s1", wallet.Id, "Title", "Desc", []byte("data"), 3600)
+	proposal, err := k.CreateMultisigProposal(ctx.Context(), "s1", wallet.Id, "Title", "Desc", []byte("data"), 3600)
 	require.NoError(t, err)
 
-	_, err = k.SignMultisigProposal(sdk.WrapSDKContext(ctx), "s2", proposal.Id)
+	_, err = k.SignMultisigProposal(ctx.Context(), "s2", proposal.Id)
 	require.NoError(t, err)
 
-	err = k.ExecuteMultisigProposal(sdk.WrapSDKContext(ctx), "s1", proposal.Id)
+	err = k.ExecuteMultisigProposal(ctx.Context(), "s1", proposal.Id)
 	require.NoError(t, err)
 
 	// Verify audit log created
@@ -332,7 +331,7 @@ func TestProposeTimeLockedAction_AuditLog(t *testing.T) {
 	_, err := k.AssignRole(ctx, "system", "admin1", types.RoleAdmin, 0)
 	require.NoError(t, err)
 
-	_, err = k.ProposeTimeLockedAction(sdk.WrapSDKContext(ctx), "admin1", "action", []byte("data"), 3600)
+	_, err = k.ProposeTimeLockedAction(ctx.Context(), "admin1", "action", []byte("data"), 3600)
 	require.NoError(t, err)
 
 	// Verify audit log created
@@ -347,14 +346,14 @@ func TestExecuteTimeLockedAction_AuditLog(t *testing.T) {
 	_, err := k.AssignRole(ctx, "system", "admin1", types.RoleAdmin, 0)
 	require.NoError(t, err)
 
-	action, err := k.ProposeTimeLockedAction(sdk.WrapSDKContext(ctx), "admin1", "action", []byte("data"), 1)
+	action, err := k.ProposeTimeLockedAction(ctx.Context(), "admin1", "action", []byte("data"), 1)
 	require.NoError(t, err)
 
 	// Advance blockchain time past delay
 	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(2 * time.Second))
 	ctx = ctx.WithBlockHeight(ctx.BlockHeight() + 1)
 
-	err = k.ExecuteTimeLockedAction(sdk.WrapSDKContext(ctx), "admin1", action.Id)
+	err = k.ExecuteTimeLockedAction(ctx.Context(), "admin1", action.Id)
 	require.NoError(t, err)
 
 	// Verify audit log created
@@ -369,10 +368,10 @@ func TestCancelTimeLockedAction_AuditLog(t *testing.T) {
 	_, err := k.AssignRole(ctx, "system", "admin1", types.RoleAdmin, 0)
 	require.NoError(t, err)
 
-	action, err := k.ProposeTimeLockedAction(sdk.WrapSDKContext(ctx), "admin1", "action", []byte("data"), 3600)
+	action, err := k.ProposeTimeLockedAction(ctx.Context(), "admin1", "action", []byte("data"), 3600)
 	require.NoError(t, err)
 
-	err = k.CancelTimeLockedAction(sdk.WrapSDKContext(ctx), "admin1", action.Id)
+	err = k.CancelTimeLockedAction(ctx.Context(), "admin1", action.Id)
 	require.NoError(t, err)
 
 	// Verify audit log created
@@ -387,7 +386,7 @@ func TestActivateEmergencyAdmin_AuditLog(t *testing.T) {
 	_, err := k.AssignRole(ctx, "system", "admin1", types.RoleAdmin, 0)
 	require.NoError(t, err)
 
-	_, err = k.ActivateEmergencyAdmin(sdk.WrapSDKContext(ctx), "admin1", "emergency1", []string{types.PermissionAdmin}, 3600)
+	_, err = k.ActivateEmergencyAdmin(ctx.Context(), "admin1", "emergency1", []string{types.PermissionAdmin}, 3600)
 	require.NoError(t, err)
 
 	// Verify audit log created
@@ -402,10 +401,10 @@ func TestDeactivateEmergencyAdmin_AuditLog(t *testing.T) {
 	_, err := k.AssignRole(ctx, "system", "admin1", types.RoleAdmin, 0)
 	require.NoError(t, err)
 
-	_, err = k.ActivateEmergencyAdmin(sdk.WrapSDKContext(ctx), "admin1", "emergency1", []string{types.PermissionAdmin}, 3600)
+	_, err = k.ActivateEmergencyAdmin(ctx.Context(), "admin1", "emergency1", []string{types.PermissionAdmin}, 3600)
 	require.NoError(t, err)
 
-	err = k.DeactivateEmergencyAdmin(sdk.WrapSDKContext(ctx), "admin1", "emergency1")
+	err = k.DeactivateEmergencyAdmin(ctx.Context(), "admin1", "emergency1")
 	require.NoError(t, err)
 
 	// Verify audit log created
@@ -420,7 +419,7 @@ func TestRotateValidatorKey_AuditLog(t *testing.T) {
 	_, err := k.AssignRole(ctx, "system", "validator1", types.RoleValidator, 0)
 	require.NoError(t, err)
 
-	_, err = k.RotateValidatorKey(sdk.WrapSDKContext(ctx), "validator1", []byte("key"))
+	_, err = k.RotateValidatorKey(ctx.Context(), "validator1", []byte("key"))
 	require.NoError(t, err)
 
 	// Verify audit log created
@@ -435,7 +434,7 @@ func TestInitiateValidatorKeyRotation_AuditLog(t *testing.T) {
 	_, err := k.AssignRole(ctx, "system", "admin1", types.RoleAdmin, 0)
 	require.NoError(t, err)
 
-	_, err = k.InitiateValidatorKeyRotation(sdk.WrapSDKContext(ctx), "admin1", "validator1", []byte("key"))
+	_, err = k.InitiateValidatorKeyRotation(ctx.Context(), "admin1", "validator1", []byte("key"))
 	require.NoError(t, err)
 
 	// Verify audit log created
@@ -450,10 +449,10 @@ func TestCompleteValidatorKeyRotation_AuditLog(t *testing.T) {
 	_, err := k.AssignRole(ctx, "system", "admin1", types.RoleAdmin, 0)
 	require.NoError(t, err)
 
-	_, err = k.InitiateValidatorKeyRotation(sdk.WrapSDKContext(ctx), "admin1", "validator1", []byte("key"))
+	_, err = k.InitiateValidatorKeyRotation(ctx.Context(), "admin1", "validator1", []byte("key"))
 	require.NoError(t, err)
 
-	err = k.CompleteValidatorKeyRotation(sdk.WrapSDKContext(ctx), "admin1", "validator1")
+	err = k.CompleteValidatorKeyRotation(ctx.Context(), "admin1", "validator1")
 	require.NoError(t, err)
 
 	// Verify audit log created
@@ -465,7 +464,7 @@ func TestCompleteValidatorKeyRotation_AuditLog(t *testing.T) {
 func TestCreateSession_AuditLog(t *testing.T) {
 	k, ctx := setupTestKeeper(t)
 
-	_, err := k.CreateSession(sdk.WrapSDKContext(ctx), "user1", 3600)
+	_, err := k.CreateSession(ctx.Context(), "user1", 3600)
 	require.NoError(t, err)
 
 	// Verify audit log created
@@ -477,10 +476,10 @@ func TestCreateSession_AuditLog(t *testing.T) {
 func TestInvalidateSession_AuditLog(t *testing.T) {
 	k, ctx := setupTestKeeper(t)
 
-	session, err := k.CreateSession(sdk.WrapSDKContext(ctx), "user1", 3600)
+	session, err := k.CreateSession(ctx.Context(), "user1", 3600)
 	require.NoError(t, err)
 
-	err = k.InvalidateSession(sdk.WrapSDKContext(ctx), "user1", session.SessionId)
+	err = k.InvalidateSession(ctx.Context(), "user1", session.SessionId)
 	require.NoError(t, err)
 
 	// Verify audit log created

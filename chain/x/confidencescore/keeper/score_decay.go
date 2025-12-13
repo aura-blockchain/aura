@@ -81,14 +81,12 @@ func (k *Keeper) ApplyScoreDecay(ctx sdk.Context, walletAddr string) (uint64, ui
 
 	// Calculate decay amount
 	decayAmount := (oldScore * config.DecayRatePercent) / 100
+	if decayAmount > oldScore {
+		decayAmount = oldScore
+	}
 
 	// Apply decay
-	newScore := oldScore
-	if oldScore > decayAmount {
-		newScore = oldScore - decayAmount
-	} else {
-		newScore = 0
-	}
+	newScore := oldScore - decayAmount
 
 	// Enforce minimum
 	if newScore < config.MinimumScore {
@@ -113,14 +111,16 @@ func (k *Keeper) ApplyScoreDecay(ctx sdk.Context, walletAddr string) (uint64, ui
 	}
 
 	// Record decay in history
-	k.AddScoreChange(ctx, walletAddr, types.ScoreChange{
+	if err := k.AddScoreChange(ctx, walletAddr, types.ScoreChange{
 		ScoreDelta:    -int64(actualDecay),
 		NewTotal:      newScore,
 		Reason:        types.ChangeReasonGovernanceAdjustment, // Use governance for decay
 		RelatedIrId:   "score_decay",
 		TxHash:        fmt.Sprintf("decay-%s-%d", walletAddr, ctx.BlockHeight()),
 		PreviousScore: oldScore,
-	})
+	}); err != nil {
+		return 0, 0, 0, err
+	}
 
 	return oldScore, newScore, actualDecay, nil
 }
@@ -229,11 +229,10 @@ func (k *Keeper) GetDecayPreview(ctx sdk.Context, walletAddr string) (currentSco
 
 	// Calculate decay
 	decayAmount = (currentScore * config.DecayRatePercent) / 100
-	if currentScore > decayAmount {
-		projectedScore = currentScore - decayAmount
-	} else {
-		projectedScore = 0
+	if decayAmount > currentScore {
+		decayAmount = currentScore
 	}
+	projectedScore = currentScore - decayAmount
 
 	if projectedScore < config.MinimumScore {
 		projectedScore = config.MinimumScore

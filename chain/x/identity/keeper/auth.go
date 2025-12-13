@@ -435,7 +435,9 @@ func (k *Keeper) LogAudit(ctx sdk.Context, actor, action, target, result string,
 	}
 
 	// Increment counter
-	store.Set(types.AuditLogCounterPrefix, sdk.Uint64ToBigEndian(logID+1))
+	if err := store.Set(types.AuditLogCounterPrefix, sdk.Uint64ToBigEndian(logID+1)); err != nil {
+		k.logger.Error("failed to update audit log counter", "error", err)
+	}
 }
 
 // SetAuditLog stores an audit log
@@ -448,7 +450,9 @@ func (k *Keeper) SetAuditLog(ctx sdk.Context, log *types.AuditLog) error {
 
 	// Convert string ID to uint64 for key generation
 	var logID uint64
-	fmt.Sscanf(log.Id, "%d", &logID)
+	if _, err := fmt.Sscanf(log.Id, "%d", &logID); err != nil {
+		return fmt.Errorf("invalid audit log id %s: %w", log.Id, err)
+	}
 	key := types.GetAuditLogKey(logID)
 	return store.Set(key, bz)
 }
@@ -491,7 +495,9 @@ func (k *Keeper) cleanupOldAuditLogs(ctx sdk.Context, maxRetained uint64) {
 	if uint64(len(keys)) > maxRetained {
 		toDelete := uint64(len(keys)) - maxRetained
 		for i := uint64(0); i < toDelete; i++ {
-			store.Delete(keys[i])
+			if err := store.Delete(keys[i]); err != nil {
+				k.logger.Error("failed to delete old audit log", "error", err)
+			}
 		}
 	}
 }

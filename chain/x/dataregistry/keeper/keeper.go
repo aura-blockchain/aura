@@ -138,7 +138,9 @@ func (k *Keeper) SetNextDataID(ctx sdk.Context, id uint64) error {
 // GenerateDataID generates a unique data ID using counter
 func (k *Keeper) GenerateDataID(ctx sdk.Context, ownerAddress string, dataType types.DataItemType) string {
 	nextID := k.GetNextDataID(ctx)
-	k.SetNextDataID(ctx, nextID+1)
+	if err := k.SetNextDataID(ctx, nextID+1); err != nil {
+		panic(fmt.Sprintf("failed to update data ID counter: %v", err))
+	}
 
 	return fmt.Sprintf("data:%s:%d:%d", ownerAddress, dataType, nextID)
 }

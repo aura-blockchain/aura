@@ -1,5 +1,7 @@
 package keeper
 
+//lint:file-ignore U1000 -- telemetry hooks are defined for future instrumentation but not yet wired
+
 import (
 	"time"
 

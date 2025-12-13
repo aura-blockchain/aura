@@ -535,15 +535,6 @@ func TestMultipleEvents_InSingleTransaction(t *testing.T) {
 	require.True(t, sanctionsFound, "sanctions_screening event not found")
 }
 
-// Helper function to convert event attributes to a map
-func attributesToMap(attrs []sdk.Attribute) map[string]string {
-	result := make(map[string]string)
-	for _, attr := range attrs {
-		result[attr.Key] = attr.Value
-	}
-	return result
-}
-
 // Helper function to convert ABCI event attributes to a map
 func abciAttributesToMap(event sdk.Event) map[string]string {
 	result := make(map[string]string)

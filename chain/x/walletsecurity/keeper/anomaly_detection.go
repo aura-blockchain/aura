@@ -27,11 +27,11 @@ const (
 
 // AnomalyScore represents an anomaly detection score using basis points (0-10000)
 type AnomalyScore struct {
-	Score      uint64            // Basis points (0-10000)
-	Threshold  uint64            // Basis points (0-10000)
-	IsAnomaly  bool
-	Factors    map[string]uint64 // Each factor in basis points
-	Timestamp  sdk.Context
+	Score     uint64 // Basis points (0-10000)
+	Threshold uint64 // Basis points (0-10000)
+	IsAnomaly bool
+	Factors   map[string]uint64 // Each factor in basis points
+	Timestamp sdk.Context
 }
 
 // DetectTransactionAnomaly detects anomalies in transaction patterns
@@ -46,11 +46,17 @@ func (k Keeper) DetectTransactionAnomaly(ctx context.Context, walletID, recipien
 	score.Factors["amount"] = amountScore
 
 	// Factor 2: New recipient
-	recipientScore := k.checkNewRecipient(ctx, walletID, recipient)
+	recipientScore, err := k.checkNewRecipient(ctx, walletID, recipient)
+	if err != nil {
+		return nil, fmt.Errorf("failed to evaluate new recipient: %w", err)
+	}
 	score.Factors["recipient"] = recipientScore
 
 	// Factor 3: Transaction frequency
-	frequencyScore := k.checkTransactionFrequency(ctx, walletID)
+	frequencyScore, err := k.checkTransactionFrequency(ctx, walletID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to evaluate frequency: %w", err)
+	}
 	score.Factors["frequency"] = frequencyScore
 
 	// Factor 4: Time-based anomalies
@@ -67,7 +73,9 @@ func (k Keeper) DetectTransactionAnomaly(ctx context.Context, walletID, recipien
 
 	// Store anomaly detection result
 	if score.IsAnomaly {
-		k.recordAnomaly(ctx, walletID, score)
+		if err := k.recordAnomaly(ctx, walletID, score); err != nil {
+			return nil, fmt.Errorf("failed to persist anomaly: %w", err)
+		}
 	}
 
 	return score, nil
@@ -108,28 +116,36 @@ func (k Keeper) checkUnusualAmount(ctx context.Context, walletID string, amount 
 	return anomalyScoreBPS.Uint64()
 }
 
-func (k Keeper) checkNewRecipient(ctx context.Context, walletID, recipient string) uint64 {
+func (k Keeper) checkNewRecipient(ctx context.Context, walletID, recipient string) (uint64, error) {
 	// Check if recipient has been used before
 	kvStore := k.getStore(ctx)
 	recipientKey := []byte(fmt.Sprintf("recipient_history_%s_%s", walletID, recipient))
 
 	has, err := kvStore.Has(recipientKey)
-	if err == nil && has {
-		return 0 // Known recipient
+	if err != nil {
+		return 0, err
+	}
+	if has {
+		return 0, nil // Known recipient
 	}
 
 	// Mark recipient as seen
-	kvStore.Set(recipientKey, []byte(determinism.GetBlockTime(ctx).String()))
+	if err := kvStore.Set(recipientKey, []byte(determinism.GetBlockTime(ctx).String())); err != nil {
+		return 0, err
+	}
 
-	return NewRecipientScoreBPS // New recipient is moderately suspicious (50.00%)
+	return NewRecipientScoreBPS, nil // New recipient is moderately suspicious (50.00%)
 }
 
-func (k Keeper) checkTransactionFrequency(ctx context.Context, walletID string) uint64 {
+func (k Keeper) checkTransactionFrequency(ctx context.Context, walletID string) (uint64, error) {
 	kvStore := k.getStore(ctx)
 
 	// Get transaction count in last hour
 	countKey := []byte(fmt.Sprintf("tx_count_1h_%s", walletID))
-	countBytes, _ := kvStore.Get(countKey)
+	countBytes, err := kvStore.Get(countKey)
+	if err != nil {
+		return 0, err
+	}
 
 	var count int64
 	if countBytes != nil {
@@ -137,17 +153,19 @@ func (k Keeper) checkTransactionFrequency(ctx context.Context, walletID string) 
 	}
 
 	count++
-	kvStore.Set(countKey, sdk.Uint64ToBigEndian(uint64(count)))
+	if err := kvStore.Set(countKey, sdk.Uint64ToBigEndian(uint64(count))); err != nil {
+		return 0, err
+	}
 
 	// If more than threshold transactions in an hour, flag as highly anomalous
 	if count > HighFrequencyThreshold {
-		return HighFrequencyScoreBPS // 80.00%
+		return HighFrequencyScoreBPS, nil // 80.00%
 	}
 
 	// Linear scale: (count / threshold) * BasisPointsMax
 	// Returns basis points proportional to transaction count
 	score := (uint64(count) * BasisPointsMax) / uint64(HighFrequencyThreshold)
-	return score
+	return score, nil
 }
 
 func (k Keeper) checkUnusualTime(ctx context.Context, walletID string) uint64 {
@@ -167,7 +185,7 @@ func (k Keeper) getAmountStatistics(ctx context.Context, walletID string) (math.
 	return math.NewInt(1000), math.NewInt(500)
 }
 
-func (k Keeper) recordAnomaly(ctx context.Context, walletID string, score *AnomalyScore) {
+func (k Keeper) recordAnomaly(ctx context.Context, walletID string, score *AnomalyScore) error {
 	// Convert basis points to float64 for proto storage (legacy compatibility)
 	// Note: This conversion is safe as it happens AFTER all consensus-critical
 	// calculations are complete using deterministic uint64 basis points
@@ -182,11 +200,17 @@ func (k Keeper) recordAnomaly(ctx context.Context, walletID string, score *Anoma
 		Resolved:   false,
 	}
 
-	anomalyBytes, _ := k.cdc.Marshal(anomaly)
+	anomalyBytes, err := k.cdc.Marshal(anomaly)
+	if err != nil {
+		return fmt.Errorf("failed to marshal anomaly: %w", err)
+	}
 
 	kvStore := k.getStore(ctx)
 	key := []byte(fmt.Sprintf("anomaly_%s_%d", walletID, determinism.GetBlockTime(ctx).UnixNano()))
-	kvStore.Set(key, anomalyBytes)
+	if err := kvStore.Set(key, anomalyBytes); err != nil {
+		return err
+	}
+	return nil
 }
 
 // GetAnomalies retrieves detected anomalies for a wallet

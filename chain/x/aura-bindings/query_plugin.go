@@ -94,7 +94,7 @@ func CustomQuerier(
 
 				// SECURITY: Log query for audit trail
 				if wasmKeeper != nil {
-					// Would log security event if we had contract context
+					ctx.Logger().Debug("aura-bindings: wasm query audit logging not implemented without contract context")
 				}
 
 				return json.Marshal(vc)

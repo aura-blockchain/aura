@@ -1,15 +1,15 @@
 package keeper
 
 import (
-	"time"
 	"errors"
 	"fmt"
 	"testing"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	gogotypes "github.com/cosmos/gogoproto/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	gogotypes "github.com/cosmos/gogoproto/types"
 
 	"github.com/aequitas/aura/chain/x/vcregistry/types"
 	vcregistrypb "github.com/aequitas/aura/proto/aura/vcregistry/v1beta1"
@@ -114,7 +114,9 @@ func setupTestPolicyWithCtx(keeper *Keeper, ctx sdk.Context, policyName string, 
 		ExpiryDurationDays: 365,
 		CreatedAt:          &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: int32(time.Now().Nanosecond())},
 	}
-	keeper.SetVCPolicy(ctx, *policy)
+	if err := keeper.SetVCPolicy(ctx, *policy); err != nil {
+		panic(err)
+	}
 	return policy
 }
 
@@ -287,7 +289,7 @@ func TestValidateMintEligibility_SingletonViolation(t *testing.T) {
 	// Setup policy with singleton constraint
 	policy := setupTestPolicyWithCtx(keeper, ctx, fmt.Sprintf("%d", vcType), vcregistrypb.VCPolicyStatus_VC_POLICY_STATUS_ACTIVE)
 	policy.Singleton = true
-	keeper.SetVCPolicy(ctx, *policy)
+	require.NoError(t, keeper.SetVCPolicy(ctx, *policy))
 
 	// Add existing active VC of same type for user
 	existingVC := &vcregistrypb.VCRecord{
@@ -296,7 +298,7 @@ func TestValidateMintEligibility_SingletonViolation(t *testing.T) {
 		HolderAddress: userAddr,
 		Status:        vcregistrypb.VCStatus_VC_STATUS_ACTIVE,
 	}
-	keeper.SetVCRecord(ctx, *existingVC)
+	require.NoError(t, keeper.SetVCRecord(ctx, *existingVC))
 
 	// Test
 	eligible, missing, err := keeper.ValidateMintEligibility(ctx, userAddr, vcType)
@@ -375,7 +377,7 @@ func TestMintVC_Success(t *testing.T) {
 	setupTestPolicyWithCtx(keeper, ctx, fmt.Sprintf("%d", vcType), vcregistrypb.VCPolicyStatus_VC_POLICY_STATUS_ACTIVE)
 
 	// Register DID
-	keeper.RegisterDID(ctx, userDID, userAddr, []*vcregistrypb.VerificationMethod{}, "")
+	require.NoError(t, keeper.RegisterDID(ctx, userDID, userAddr, []*vcregistrypb.VerificationMethod{}, ""))
 
 	// Test
 	metadata := map[string]string{
@@ -413,7 +415,7 @@ func TestMintVC_NotEligible(t *testing.T) {
 	mockCS.SetArenaScore(userAddr, "degen_games", 75)
 
 	setupTestPolicyWithCtx(keeper, ctx, fmt.Sprintf("%d", vcType), vcregistrypb.VCPolicyStatus_VC_POLICY_STATUS_ACTIVE)
-	keeper.RegisterDID(ctx, userDID, userAddr, []*vcregistrypb.VerificationMethod{}, "")
+	require.NoError(t, keeper.RegisterDID(ctx, userDID, userAddr, []*vcregistrypb.VerificationMethod{}, ""))
 
 	// Test
 	vcID, err := keeper.MintVC(ctx, userAddr, userDID, vcType, "", map[string]string{})
@@ -440,7 +442,7 @@ func TestMintVC_PolicyNotFound(t *testing.T) {
 	mockCS.SetArenaScore(userAddr, "degen_games", 75)
 
 	// Don't setup policy
-	keeper.RegisterDID(ctx, userDID, userAddr, []*vcregistrypb.VerificationMethod{}, "")
+	require.NoError(t, keeper.RegisterDID(ctx, userDID, userAddr, []*vcregistrypb.VerificationMethod{}, ""))
 
 	// Test
 	vcID, err := keeper.MintVC(ctx, userAddr, userDID, vcType, "", map[string]string{})
@@ -467,7 +469,7 @@ func TestMintVC_PolicyInactive(t *testing.T) {
 
 	// Setup policy with DEPRECATED status
 	setupTestPolicyWithCtx(keeper, ctx, fmt.Sprintf("%d", vcType), vcregistrypb.VCPolicyStatus_VC_POLICY_STATUS_DEPRECATED)
-	keeper.RegisterDID(ctx, userDID, userAddr, []*vcregistrypb.VerificationMethod{}, "")
+	require.NoError(t, keeper.RegisterDID(ctx, userDID, userAddr, []*vcregistrypb.VerificationMethod{}, ""))
 
 	// Test
 	vcID, err := keeper.MintVC(ctx, userAddr, userDID, vcType, "", map[string]string{})
@@ -575,7 +577,7 @@ func TestMintVC_InvalidVCType(t *testing.T) {
 	userDID := "did:aura:user123"
 
 	mockCS.SetUserScore(userAddr, 150)
-	keeper.RegisterDID(ctx, userDID, userAddr, []*vcregistrypb.VerificationMethod{}, "")
+	require.NoError(t, keeper.RegisterDID(ctx, userDID, userAddr, []*vcregistrypb.VerificationMethod{}, ""))
 
 	// Test
 	vcID, err := keeper.MintVC(ctx, userAddr, userDID, vcregistrypb.VCType_VC_TYPE_UNSPECIFIED, "", map[string]string{})

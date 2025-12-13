@@ -3,6 +3,7 @@ package economicsecurity
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"cosmossdk.io/core/appmodule"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -121,8 +122,12 @@ func (am AppModule) BeginBlock(ctx context.Context) error {
 	blockTime := sdkCtx.BlockTime().Unix()
 
 	// Set deterministic block state
-	am.keeper.SetCurrentHeight(sdkCtx, height)
-	am.keeper.SetCurrentTime(sdkCtx, blockTime)
+	if err := am.keeper.SetCurrentHeight(sdkCtx, height); err != nil {
+		return fmt.Errorf("failed to record block height: %w", err)
+	}
+	if err := am.keeper.SetCurrentTime(sdkCtx, blockTime); err != nil {
+		return fmt.Errorf("failed to record block time: %w", err)
+	}
 
 	// Check inflation periodically - commented out as method not available
 	// params := am.keeper.GetParams()

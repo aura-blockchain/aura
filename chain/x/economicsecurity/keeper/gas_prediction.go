@@ -152,8 +152,6 @@ func (k *Keeper) calculatePredictionConfidence(data []uint64) uint64 {
 	mean := sum / int64(len(data))
 
 	// Calculate variance using integer arithmetic
-	// Scale by PRECISION for accuracy
-	const PRECISION = int64(1000000)
 	varianceSum := int64(0)
 	for _, val := range data {
 		diff := int64(val) - mean
@@ -297,7 +295,7 @@ func (k *Keeper) EstimateTransactionCost(ctx context.Context, estimatedGasUsage 
 
 	// If confidence is low, add safety margin
 	safetyMultiplier := uint64(10000) // 100% (in basis points)
-	if confidence < 5000 { // Less than 50% confidence
+	if confidence < 5000 {            // Less than 50% confidence
 		safetyMultiplier = 11000 // Add 10% safety margin
 	}
 

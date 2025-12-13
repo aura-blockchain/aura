@@ -122,11 +122,9 @@ func (k *Keeper) GetKYCRecordEncrypted(ctx sdk.Context, address string) (*types.
 		encryptionContext := fmt.Sprintf("kyc:%s", address)
 
 		// Attempt to decrypt (will fail if it's just a hash, which is expected)
-		_, err := encService.Decrypt(record.PiiCommitment, encryptionContext)
-		if err == nil {
-			// Successfully decrypted - this is encrypted data
-			// For now, we just mark that encryption is working
-			// In production, you would decrypt actual document data here
+		if _, err := encService.Decrypt(record.PiiCommitment, encryptionContext); err == nil {
+			// Successfully decrypted - treat as encrypted payload; return early to avoid double processing
+			return record, nil
 		}
 		// If decryption fails, it's likely a hash (legacy), which is fine
 	}
@@ -488,8 +486,8 @@ func (k *Keeper) GetGDPRConsentsEncrypted(ctx sdk.Context, address string) ([]*t
 			// Try to decrypt audit data
 			var auditData map[string]interface{}
 			if err := encService.DecryptJSON(consent.AuditCommitment, encryptionContext, &auditData); err == nil {
-				// Successfully decrypted - restore fields if needed
-				// (In this case, timestamps are already in the main record)
+				// Successfully decrypted - nothing else to restore currently
+				continue
 			}
 			// If decryption fails, it's likely a hash (legacy), which is fine
 		}

@@ -307,7 +307,7 @@ func (me *MemoEncryptor) decryptXChaCha20Poly1305(encryptedMemo *EncryptedMemo, 
 // deriveSharedSecret derives a shared secret using ECDH
 func (me *MemoEncryptor) deriveSharedSecret(recipientPubKey []byte) ([]byte, []byte, error) {
 	// Generate ephemeral key pair
-	ephemeralPriv, ephemeralX, ephemeralY, err := elliptic.GenerateKey(me.curve, rand.Reader)
+	ephemeralPriv, ephemeralX, ephemeralY, err := elliptic.GenerateKey(me.curve, rand.Reader) //nolint:staticcheck // legacy curve use retained for backward compatibility
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to generate ephemeral key: %w", err)
 	}

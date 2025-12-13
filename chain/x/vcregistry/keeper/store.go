@@ -465,19 +465,6 @@ func (s Store) getDIDDocument(ctx context.Context, did string) (types.DIDDocumen
 	return doc, true
 }
 
-// Params
-func (s Store) setParams(ctx context.Context, params types.Params) {
-	s.setBinary(ctx, types.ParamsKey, &params)
-}
-
-func (s Store) getParams(ctx context.Context) (types.Params, bool) {
-	var params types.Params
-	if !s.getBinary(ctx, types.ParamsKey, &params) {
-		return types.Params{}, false
-	}
-	return params, true
-}
-
 // DID address index (controller -> DIDs)
 func (s Store) appendAddressDID(ctx context.Context, addr, did string) {
 	key := types.AddressToDIDIndexKey(addr)
@@ -532,11 +519,6 @@ func (s Store) getMintCount(ctx context.Context, address string, dayTimestamp in
 		return 0, false
 	}
 	return binary.BigEndian.Uint64(bz), true
-}
-
-func (s Store) deleteMintCount(ctx context.Context, address string, dayTimestamp int64) {
-	key := types.UserMintCountKey(address, dayTimestamp)
-	s.kv(ctx).Delete(key)
 }
 
 // iterateMintCounts returns map[address]map[day]count

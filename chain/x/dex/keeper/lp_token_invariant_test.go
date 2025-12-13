@@ -415,7 +415,7 @@ func (suite *LPTokenInvariantTestSuite) TestInvariant_DetectsManualCorruption() 
 
 	// Manually corrupt the pool state (simulating a bug)
 	pool.Providers[0].LpTokens = sdkmath.NewInt(999999999) // Way more than total
-	suite.Keeper.SetPool(ctx, pool)
+	suite.Require().NoError(suite.Keeper.SetPool(ctx, pool))
 
 	// Verify the invariant now fails
 	err = suite.Keeper.validateLPTokenInvariant(pool)
@@ -543,7 +543,7 @@ func (suite *LPTokenInvariantTestSuite) TestModuleLevelInvariant_DetectsViolatio
 
 	// Manually corrupt the pool (simulate accounting error)
 	pool.TotalLpTokens = sdkmath.NewInt(999999999) // Inflate total
-	suite.Keeper.SetPool(ctx, pool)
+	suite.Require().NoError(suite.Keeper.SetPool(ctx, pool))
 
 	// Run the module-level invariant
 	invariantFn := LiquidityProviderConsistencyInvariant(suite.Keeper)
@@ -575,7 +575,7 @@ func (suite *LPTokenInvariantTestSuite) TestModuleLevelInvariant_WithLockedLiqui
 			},
 		},
 	}
-	suite.Keeper.SetPool(ctx, pool)
+	suite.Require().NoError(suite.Keeper.SetPool(ctx, pool))
 
 	// Run the module-level invariant
 	invariantFn := LiquidityProviderConsistencyInvariant(suite.Keeper)
@@ -605,7 +605,7 @@ func (suite *LPTokenInvariantTestSuite) TestModuleLevelInvariant_MissingLockedLi
 			},
 		},
 	}
-	suite.Keeper.SetPool(ctx, pool)
+	suite.Require().NoError(suite.Keeper.SetPool(ctx, pool))
 
 	// Run the module-level invariant
 	invariantFn := LiquidityProviderConsistencyInvariant(suite.Keeper)
@@ -638,7 +638,7 @@ func (suite *LPTokenInvariantTestSuite) TestModuleLevelInvariant_InvalidLockedLi
 			},
 		},
 	}
-	suite.Keeper.SetPool(ctx, pool)
+	suite.Require().NoError(suite.Keeper.SetPool(ctx, pool))
 
 	// Run the module-level invariant
 	invariantFn := LiquidityProviderConsistencyInvariant(suite.Keeper)
@@ -668,7 +668,7 @@ func (suite *LPTokenInvariantTestSuite) TestModuleLevelInvariant_EmptyLockedLiqu
 			},
 		},
 	}
-	suite.Keeper.SetPool(ctx, pool)
+	suite.Require().NoError(suite.Keeper.SetPool(ctx, pool))
 
 	// Run the module-level invariant
 	invariantFn := LiquidityProviderConsistencyInvariant(suite.Keeper)

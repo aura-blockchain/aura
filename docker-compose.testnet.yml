@@ -278,6 +278,73 @@ services:
       - "aura.role=monitoring"
       - "aura.network=testnet"
 
+  # ==========================================================================
+  # Sentry Nodes (non-validator full nodes)
+  # ==========================================================================
+  sentry-1:
+    image: aurad:latest
+    container_name: aura-sentry-1
+    hostname: sentry-1
+    restart: unless-stopped
+    mem_limit: 6g
+    memswap_limit: 8g
+    ports:
+      - "28658:26656"  # P2P
+      - "28659:26657"  # RPC
+      - "2320:1317"    # REST
+      - "11091:9090"   # gRPC
+      - "28661:26660"  # Metrics
+    volumes:
+      - ./testnet-data/sentry-1:/home/aura/.aura
+      - ./scripts:/scripts:ro
+    environment:
+      - CHAIN_ID=aura-local-4
+      - MONIKER=sentry-1
+      - LOG_LEVEL=info
+      - MINIMUM_GAS_PRICES=0.025uaura
+      - ENABLE_UNSAFE_CORS=true
+      - GODEBUG=randseed=1
+    networks:
+      aura-testnet:
+        ipv4_address: 172.26.0.20
+    depends_on:
+      - validator-1
+    labels:
+      - "aura.role=sentry"
+      - "aura.network=testnet"
+
+  sentry-2:
+    image: aurad:latest
+    container_name: aura-sentry-2
+    hostname: sentry-2
+    restart: unless-stopped
+    mem_limit: 6g
+    memswap_limit: 8g
+    ports:
+      - "28662:26656"
+      - "28663:26657"
+      - "2321:1317"
+      - "11092:9090"
+      - "28664:26660"
+    volumes:
+      - ./testnet-data/sentry-2:/home/aura/.aura
+      - ./scripts:/scripts:ro
+    environment:
+      - CHAIN_ID=aura-local-4
+      - MONIKER=sentry-2
+      - LOG_LEVEL=info
+      - MINIMUM_GAS_PRICES=0.025uaura
+      - ENABLE_UNSAFE_CORS=true
+      - GODEBUG=randseed=1
+    networks:
+      aura-testnet:
+        ipv4_address: 172.26.0.21
+    depends_on:
+      - validator-1
+    labels:
+      - "aura.role=sentry"
+      - "aura.network=testnet"
+
 # ============================================================================
 # Docker Volumes - Persistent Storage for Each Validator
 # ============================================================================

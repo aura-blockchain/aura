@@ -30,7 +30,7 @@ func (suite *InvariantsTestSuite) SetupTest() {
 
 	// Set default params
 	params := types.DefaultParams()
-	suite.Keeper.SetParams(params)
+	suite.Require().NoError(suite.Keeper.SetParams(params))
 }
 
 func TestInvariantsTestSuite(t *testing.T) {

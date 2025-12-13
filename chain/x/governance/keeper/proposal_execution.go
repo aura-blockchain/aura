@@ -71,15 +71,12 @@ func (k *Keeper) executeProposalAutomatically(ctx sdk.Context, proposal *types.P
 	startGas := ctx.GasMeter().GasConsumed()
 
 	// Execute the proposal (simplified)
-	var executionResult *types.ExecutionResult
-	var err error
-
-	// Simplified execution - just mark as executed
-	executionResult = &types.ExecutionResult{
+	executionResult := &types.ExecutionResult{
 		Success: true,
 		Message: "Proposal executed automatically",
 		Data:    nil,
 	}
+	var err error
 
 	endGas := ctx.GasMeter().GasConsumed()
 	gasUsed := endGas - startGas
@@ -108,9 +105,7 @@ func (k *Keeper) executeProposalAutomatically(ctx sdk.Context, proposal *types.P
 		execution.ErrorMessage = err.Error()
 	}
 
-	if executionResult != nil {
-		execution.ResultData = executionResult.Message
-	}
+	execution.ResultData = executionResult.Message
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(

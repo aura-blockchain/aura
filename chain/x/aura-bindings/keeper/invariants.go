@@ -1,5 +1,7 @@
 package keeper
 
+//lint:file-ignore SA1019 -- use invariant registry until Cosmos SDK removes the legacy APIs
+
 import (
 	"fmt"
 
@@ -8,7 +10,8 @@ import (
 )
 
 // RegisterInvariants registers all module invariants
-func RegisterInvariants(ir sdk.InvariantRegistry, k Keeper) {
+//nolint:staticcheck // invariant registry uses deprecated SDK interfaces until crisis removal
+func RegisterInvariants(ir sdk.InvariantRegistry, k *Keeper) {
 	ir.RegisterRoute(types.ModuleName, "query-stats-non-negative",
 		QueryStatsNonNegativeInvariant(k))
 	ir.RegisterRoute(types.ModuleName, "message-stats-non-negative",
@@ -20,7 +23,7 @@ func RegisterInvariants(ir sdk.InvariantRegistry, k Keeper) {
 }
 
 // QueryStatsNonNegativeInvariant checks that all query statistics are non-negative
-func QueryStatsNonNegativeInvariant(k Keeper) sdk.Invariant {
+func QueryStatsNonNegativeInvariant(k *Keeper) sdk.Invariant { //nolint:staticcheck // invariant signature relies on deprecated type
 	return func(ctx sdk.Context) (string, bool) {
 		k.mu.RLock()
 		defer k.mu.RUnlock()
@@ -39,6 +42,7 @@ func QueryStatsNonNegativeInvariant(k Keeper) sdk.Invariant {
 		}
 
 		broken := count > 0
+		//nolint:staticcheck // FormatInvariant is deprecated but still required until crisis removal
 		return sdk.FormatInvariant(
 			types.ModuleName, "query-stats-non-negative",
 			fmt.Sprintf("%d invalid query stats found\n%s", count, msg),
@@ -47,7 +51,7 @@ func QueryStatsNonNegativeInvariant(k Keeper) sdk.Invariant {
 }
 
 // MessageStatsNonNegativeInvariant checks that all message statistics are non-negative
-func MessageStatsNonNegativeInvariant(k Keeper) sdk.Invariant {
+func MessageStatsNonNegativeInvariant(k *Keeper) sdk.Invariant { //nolint:staticcheck // invariant signature relies on deprecated type
 	return func(ctx sdk.Context) (string, bool) {
 		k.mu.RLock()
 		defer k.mu.RUnlock()
@@ -66,6 +70,7 @@ func MessageStatsNonNegativeInvariant(k Keeper) sdk.Invariant {
 		}
 
 		broken := count > 0
+		//nolint:staticcheck // FormatInvariant is deprecated but still required until crisis removal
 		return sdk.FormatInvariant(
 			types.ModuleName, "message-stats-non-negative",
 			fmt.Sprintf("%d invalid message stats found\n%s", count, msg),
@@ -74,7 +79,7 @@ func MessageStatsNonNegativeInvariant(k Keeper) sdk.Invariant {
 }
 
 // RateLimitsValidInvariant checks that rate limits are within valid bounds
-func RateLimitsValidInvariant(k Keeper) sdk.Invariant {
+func RateLimitsValidInvariant(k *Keeper) sdk.Invariant { //nolint:staticcheck // invariant signature relies on deprecated type
 	return func(ctx sdk.Context) (string, bool) {
 		k.mu.RLock()
 		defer k.mu.RUnlock()
@@ -103,6 +108,7 @@ func RateLimitsValidInvariant(k Keeper) sdk.Invariant {
 		}
 
 		broken := count > 0
+		//nolint:staticcheck // FormatInvariant is deprecated but still required until crisis removal
 		return sdk.FormatInvariant(
 			types.ModuleName, "rate-limits-valid",
 			fmt.Sprintf("%d invalid rate limits found\n%s", count, msg),
@@ -111,7 +117,7 @@ func RateLimitsValidInvariant(k Keeper) sdk.Invariant {
 }
 
 // StateConsistencyInvariant checks overall state consistency
-func StateConsistencyInvariant(k Keeper) sdk.Invariant {
+func StateConsistencyInvariant(k *Keeper) sdk.Invariant { //nolint:staticcheck // invariant signature relies on deprecated type
 	return func(ctx sdk.Context) (string, bool) {
 		k.mu.RLock()
 		defer k.mu.RUnlock()
@@ -151,6 +157,7 @@ func StateConsistencyInvariant(k Keeper) sdk.Invariant {
 		}
 
 		broken := count > 0
+		//nolint:staticcheck // FormatInvariant is deprecated but still required until crisis removal
 		return sdk.FormatInvariant(
 			types.ModuleName, "state-consistency",
 			fmt.Sprintf("%d state consistency issues found\n%s", count, msg),
@@ -159,7 +166,7 @@ func StateConsistencyInvariant(k Keeper) sdk.Invariant {
 }
 
 // AllInvariants runs all invariants of the module
-func AllInvariants(k Keeper) sdk.Invariant {
+func AllInvariants(k *Keeper) sdk.Invariant {
 	return func(ctx sdk.Context) (string, bool) {
 		res, stop := QueryStatsNonNegativeInvariant(k)(ctx)
 		if stop {

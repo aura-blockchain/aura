@@ -1,13 +1,13 @@
 package keeper
 
 import (
-	"time"
 	"fmt"
 	"testing"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/stretchr/testify/suite"
 	gogotypes "github.com/cosmos/gogoproto/types"
+	"github.com/stretchr/testify/suite"
 
 	"github.com/aequitas/aura/chain/x/vcregistry/types"
 	vcregistrypb "github.com/aequitas/aura/proto/aura/vcregistry/v1beta1"
@@ -51,7 +51,7 @@ func (suite *MsgServerComprehensiveTestSuite) setupDefaultPolicies() {
 		ExpiryDurationDays: 365,
 		CreatedAt:          &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: int32(time.Now().Nanosecond())},
 	}
-	suite.Keeper.SetVCPolicy(suite.SdkCtx, policy)
+	suite.Require().NoError(suite.Keeper.SetVCPolicy(suite.SdkCtx, policy))
 }
 
 // ============================

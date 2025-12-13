@@ -13,6 +13,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/stretchr/testify/require"
 
 	"github.com/aequitas/aura/chain/x/auth/types"
 	authproto "github.com/aequitas/aura/proto/aura/auth/v1beta1"
@@ -487,7 +488,7 @@ func TestRateLimit(t *testing.T) {
 		t.Fatalf("Failed to get params: %v", err)
 	}
 	params.DefaultRequestsPerMinute = 3
-	k.SetParams(ctx, params)
+	require.NoError(t, k.SetParams(ctx, params))
 
 	// First 3 requests should succeed
 	for i := 0; i < 3; i++ {

@@ -290,6 +290,7 @@ func TestDefaultsAreProductionReady(t *testing.T) {
 
 	// Tokenomics should be sustainable
 	require.True(t, params.Tokenomics.MaxInflationRate < 2000, "inflation should be reasonable (< 20%)")
-	require.True(t, params.Tokenomics.MinInflationRate >= 0, "deflation risk should be controlled")
+	require.True(t, params.Tokenomics.MinInflationRate <= params.Tokenomics.TargetInflationRate,
+		"min inflation should not exceed target rate")
 	require.True(t, params.Tokenomics.MaxSupply.IsPositive(), "should have a max supply cap")
 }

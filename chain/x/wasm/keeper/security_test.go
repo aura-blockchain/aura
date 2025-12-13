@@ -111,9 +111,9 @@ func TestExecutionContext(t *testing.T) {
 	require.Equal(t, uint32(2), execCtx.CallDepth)
 
 	// Test max depth
-	execCtx.PushContract("contract3")
-	execCtx.PushContract("contract4")
-	execCtx.PushContract("contract5")
+	require.NoError(t, execCtx.PushContract("contract3"))
+	require.NoError(t, execCtx.PushContract("contract4"))
+	require.NoError(t, execCtx.PushContract("contract5"))
 	err = execCtx.PushContract("contract6")
 	require.Error(t, err, "Should reject when max depth exceeded")
 

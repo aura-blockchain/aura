@@ -10,7 +10,7 @@ A production-ready faucet service has been deployed for the AURA blockchain test
 **File**: `docker-compose.faucet.yml`
 - Defines faucet service stack (backend, PostgreSQL, Redis, nginx)
 - Integrates with `aura_aura-testnet` Docker network
-- Connects to validator-1 at `http://aura-validator-1:26657`
+- Connects to the dedicated observer node at `http://aura-observer-1:26657`
 - Exposes faucet on port 8081
 
 ### 2. Setup Script
@@ -286,7 +286,7 @@ docker-compose -f docker-compose.faucet.yml down
 4. Check logs: `docker-compose -f docker-compose.faucet.yml logs`
 
 ### Cannot Connect to Validator
-1. Test RPC: `docker exec aura-faucet-backend wget -qO- http://aura-validator-1:26657/status`
+1. Test RPC: `docker exec aura-faucet-backend wget -qO- http://aura-observer-1:26657/status`
 2. Check network: `docker inspect aura-faucet-backend | grep aura-testnet`
 3. Verify validator is healthy: `docker-compose -f docker-compose.testnet.yml ps`
 

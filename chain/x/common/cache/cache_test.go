@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestCacheBasicOperations(t *testing.T) {
@@ -36,7 +38,7 @@ func TestCacheExpiration(t *testing.T) {
 	key := "expiring-key"
 	value := "expiring-value"
 
-	c.Set(key, value, 100*time.Millisecond)
+	require.NoError(t, c.Set(key, value, 100*time.Millisecond))
 
 	// Should be present immediately
 	if _, found := c.Get(key); !found {
@@ -56,7 +58,7 @@ func TestCacheMetrics(t *testing.T) {
 	c := NewCache(DefaultCacheConfig())
 
 	// Generate some hits and misses
-	c.Set("key1", "value1", time.Minute)
+	require.NoError(t, c.Set("key1", "value1", time.Minute))
 	c.Get("key1") // hit
 	c.Get("key2") // miss
 
@@ -136,7 +138,7 @@ func TestCacheWarm(t *testing.T) {
 
 func BenchmarkCacheGet(b *testing.B) {
 	c := NewCache(DefaultCacheConfig())
-	c.Set("benchmark-key", "benchmark-value", time.Hour)
+	require.NoError(b, c.Set("benchmark-key", "benchmark-value", time.Hour))
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -149,6 +151,6 @@ func BenchmarkCacheSet(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		c.Set("benchmark-key", "benchmark-value", time.Hour)
+		require.NoError(b, c.Set("benchmark-key", "benchmark-value", time.Hour))
 	}
 }

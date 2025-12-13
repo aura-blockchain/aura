@@ -535,13 +535,6 @@ func (ms msgServer) UpdateParams(goCtx context.Context, msg *types.MsgUpdatePara
 	return &types.MsgUpdateParamsResponse{}, nil
 }
 
-// isReentrancyAttempt checks if a contract is currently executing
-func (k Keeper) isReentrancyAttempt(ctx sdk.Context, contractAddr string) bool {
-	store := ctx.KVStore(k.storeKey)
-	key := types.GetContractExecutingKey(contractAddr)
-	return store.Has(key)
-}
-
 // SetExecuting marks a contract as executing or not (exported for testing)
 func (k Keeper) SetExecuting(ctx sdk.Context, contractAddr string, executing bool) {
 	store := ctx.KVStore(k.storeKey)
@@ -551,9 +544,4 @@ func (k Keeper) SetExecuting(ctx sdk.Context, contractAddr string, executing boo
 	} else {
 		store.Delete(key)
 	}
-}
-
-// setExecuting is an internal alias for SetExecuting
-func (k Keeper) setExecuting(ctx sdk.Context, contractAddr string, executing bool) {
-	k.SetExecuting(ctx, contractAddr, executing)
 }

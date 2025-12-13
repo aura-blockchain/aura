@@ -1,5 +1,7 @@
 package keeper
 
+//lint:file-ignore SA1019 -- invariants use deprecated registry interfaces until Cosmos SDK removal
+
 import (
 	"fmt"
 

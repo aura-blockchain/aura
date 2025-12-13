@@ -1,7 +1,5 @@
 package types
 
-import "fmt"
-
 // Event types for the networksecurity module
 const (
 	EventTypePeerBanned        = "peer_banned"
@@ -22,5 +20,3 @@ const (
 	AttributeKeyBlockHeight   = "block_height"
 	AttributeKeyBlockTime     = "block_time"
 )
-
-func formatInt64(i int64) string { return fmt.Sprintf("%d", i) }

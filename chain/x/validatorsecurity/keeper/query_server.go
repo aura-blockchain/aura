@@ -46,33 +46,24 @@ func (qs queryServer) ValidatorSecurityInfo(ctx context.Context, req *v1beta1.Qu
 	}, nil
 }
 
-func (qs queryServer) AllValidators(ctx context.Context, req *v1beta1.QueryAllValidatorsRequest) (*v1beta1.QueryAllValidatorsResponse, error) {
-	if req == nil {
-		req = &v1beta1.QueryAllValidatorsRequest{}
-	}
+func (qs queryServer) AllValidators(ctx context.Context, _ *v1beta1.QueryAllValidatorsRequest) (*v1beta1.QueryAllValidatorsResponse, error) {
 	validators := qs.GetAllValidators(ctx)
 	return &v1beta1.QueryAllValidatorsResponse{Validators: validators}, nil
 }
 
-func (qs queryServer) JailedValidators(ctx context.Context, req *v1beta1.QueryJailedValidatorsRequest) (*v1beta1.QueryJailedValidatorsResponse, error) {
-	if req == nil {
-		req = &v1beta1.QueryJailedValidatorsRequest{}
-	}
+func (qs queryServer) JailedValidators(ctx context.Context, _ *v1beta1.QueryJailedValidatorsRequest) (*v1beta1.QueryJailedValidatorsResponse, error) {
 	jailed := qs.GetJailedValidators(ctx)
 	return &v1beta1.QueryJailedValidatorsResponse{Validators: jailed}, nil
 }
 
-func (qs queryServer) TombstonedValidators(ctx context.Context, req *v1beta1.QueryTombstonedValidatorsRequest) (*v1beta1.QueryTombstonedValidatorsResponse, error) {
-	if req == nil {
-		req = &v1beta1.QueryTombstonedValidatorsRequest{}
-	}
+func (qs queryServer) TombstonedValidators(ctx context.Context, _ *v1beta1.QueryTombstonedValidatorsRequest) (*v1beta1.QueryTombstonedValidatorsResponse, error) {
 	tombstoned := qs.GetTombstonedValidators(ctx)
 	return &v1beta1.QueryTombstonedValidatorsResponse{Validators: tombstoned}, nil
 }
 
 func (qs queryServer) DoubleSignEvidences(ctx context.Context, req *v1beta1.QueryDoubleSignEvidencesRequest) (*v1beta1.QueryDoubleSignEvidencesResponse, error) {
 	if req == nil {
-		req = &v1beta1.QueryDoubleSignEvidencesRequest{}
+		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
 	evidences := qs.GetAllDoubleSignEvidences(ctx)
 	return &v1beta1.QueryDoubleSignEvidencesResponse{Evidences: evidences}, nil

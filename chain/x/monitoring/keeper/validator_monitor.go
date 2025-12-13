@@ -86,7 +86,7 @@ func (k Keeper) UpdateValidatorUptime(ctx context.Context, validatorAddr, monike
 			// Create alert
 			if params.EnableAlerts {
 				if err := k.createValidatorDownAlert(ctx, uptime); err != nil {
-					// Log error but don't fail the update
+					sdkCtx.Logger().Error("failed to create validator down alert", "validator", validatorAddr, "err", err)
 				}
 			}
 		}

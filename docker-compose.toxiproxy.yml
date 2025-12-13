@@ -1,0 +1,58 @@
+version: '3.8'
+
+# Toxiproxy configuration for Aura blockchain chaos testing
+#
+# This setup provides a proxy layer between nodes to simulate various network conditions:
+# - Latency injection
+# - Bandwidth throttling
+# - Packet loss
+# - Connection timeouts
+# - Slow close
+#
+# Usage:
+#   1. Start toxiproxy: docker-compose -f docker-compose.toxiproxy.yml up -d
+#   2. Create proxies: toxiproxy-cli create aura-node-1 -l 0.0.0.0:10101 -u node-1:26657
+#   3. Add toxics: toxiproxy-cli toxic add aura-node-1 -t latency -a latency=1000
+#   4. List toxics: toxiproxy-cli inspect aura-node-1
+#   5. Remove toxic: toxiproxy-cli toxic remove aura-node-1 -n latency_downstream
+#
+# See scripts/chaos-scenarios.sh for predefined scenarios
+
+services:
+  toxiproxy:
+    image: ghcr.io/shopify/toxiproxy:2.10.0
+    container_name: aura-toxiproxy
+    ports:
+      # Toxiproxy API
+      - "10800:8474"
+      # Proxy ports for node RPC endpoints (10101-10110)
+      - "10101:10101"
+      - "10102:10102"
+      - "10103:10103"
+      - "10104:10104"
+      - "10105:10105"
+      # Proxy ports for node gRPC endpoints (10111-10120)
+      - "10111:10111"
+      - "10112:10112"
+      - "10113:10113"
+      - "10114:10114"
+      - "10115:10115"
+      # Proxy ports for REST endpoints (10121-10130)
+      - "10121:10121"
+      - "10122:10122"
+      - "10123:10123"
+      - "10124:10124"
+      - "10125:10125"
+    networks:
+      - aura-testnet
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:8474/version"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+networks:
+  aura-testnet:
+    external: true
+    name: aura_aura-testnet

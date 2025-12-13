@@ -8,12 +8,12 @@ import (
 )
 
 type msgServer struct {
-	Keeper
+	Keeper *Keeper
 }
 
 // NewMsgServerImpl returns an implementation of the MsgServer interface
 // for the provided Keeper.
-func NewMsgServerImpl(keeper Keeper) types.MsgServer {
+func NewMsgServerImpl(keeper *Keeper) types.MsgServer {
 	return &msgServer{Keeper: keeper}
 }
 
@@ -33,7 +33,7 @@ var _ types.MsgServer = msgServer{}
 func (ms msgServer) EmptyMethod(goCtx context.Context, req *types.EmptyRequest) (*types.EmptyResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	ms.Logger(ctx).Debug("empty method called")
+	ms.Keeper.Logger(ctx).Debug("empty method called")
 
 	return &types.EmptyResponse{}, nil
 }

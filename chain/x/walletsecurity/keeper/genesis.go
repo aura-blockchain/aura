@@ -24,7 +24,9 @@ func (k Keeper) InitGenesis(ctx context.Context, data *pb.GenesisState) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal params: %w", err)
 	}
-	store.Set(types.ParamsKey, paramsBytes)
+	if err := store.Set(types.ParamsKey, paramsBytes); err != nil {
+		return fmt.Errorf("failed to store params: %w", err)
+	}
 
 	// Import hardware wallet configs
 	for _, hw := range data.HardwareWallets {
@@ -36,7 +38,9 @@ func (k Keeper) InitGenesis(ctx context.Context, data *pb.GenesisState) error {
 			return fmt.Errorf("failed to marshal hardware wallet: %w", err)
 		}
 		key := types.GetHardwareWalletKey(hw.WalletId)
-		store.Set(key, hwBytes)
+		if err := store.Set(key, hwBytes); err != nil {
+			return fmt.Errorf("failed to store hardware wallet: %w", err)
+		}
 	}
 
 	// Import multi-sig wallets
@@ -49,7 +53,9 @@ func (k Keeper) InitGenesis(ctx context.Context, data *pb.GenesisState) error {
 			return fmt.Errorf("failed to marshal multisig wallet: %w", err)
 		}
 		key := types.GetMultiSigWalletKey(ms.WalletId)
-		store.Set(key, msBytes)
+		if err := store.Set(key, msBytes); err != nil {
+			return fmt.Errorf("failed to store multisig wallet: %w", err)
+		}
 	}
 
 	// Import pending multi-sig transactions
@@ -62,7 +68,9 @@ func (k Keeper) InitGenesis(ctx context.Context, data *pb.GenesisState) error {
 			return fmt.Errorf("failed to marshal pending tx: %w", err)
 		}
 		key := types.GetPendingMultiSigTxKey(tx.TxId)
-		store.Set(key, txBytes)
+		if err := store.Set(key, txBytes); err != nil {
+			return fmt.Errorf("failed to store pending tx: %w", err)
+		}
 	}
 
 	// Import social recovery configs
@@ -75,7 +83,9 @@ func (k Keeper) InitGenesis(ctx context.Context, data *pb.GenesisState) error {
 			return fmt.Errorf("failed to marshal social recovery: %w", err)
 		}
 		key := types.GetSocialRecoveryKey(sr.WalletId)
-		store.Set(key, srBytes)
+		if err := store.Set(key, srBytes); err != nil {
+			return fmt.Errorf("failed to store social recovery: %w", err)
+		}
 	}
 
 	// Import recovery requests
@@ -88,7 +98,9 @@ func (k Keeper) InitGenesis(ctx context.Context, data *pb.GenesisState) error {
 			return fmt.Errorf("failed to marshal recovery request: %w", err)
 		}
 		key := types.GetRecoveryRequestKey(req.RequestId)
-		store.Set(key, reqBytes)
+		if err := store.Set(key, reqBytes); err != nil {
+			return fmt.Errorf("failed to store recovery request: %w", err)
+		}
 	}
 
 	// Import domain verifications
@@ -101,7 +113,9 @@ func (k Keeper) InitGenesis(ctx context.Context, data *pb.GenesisState) error {
 			return fmt.Errorf("failed to marshal domain verification: %w", err)
 		}
 		key := types.GetDomainVerificationKey(dv.Domain)
-		store.Set(key, dvBytes)
+		if err := store.Set(key, dvBytes); err != nil {
+			return fmt.Errorf("failed to store domain verification: %w", err)
+		}
 	}
 
 	// Import spending limits
@@ -114,7 +128,9 @@ func (k Keeper) InitGenesis(ctx context.Context, data *pb.GenesisState) error {
 			return fmt.Errorf("failed to marshal spending limit: %w", err)
 		}
 		key := types.GetSpendingLimitKey(sl.WalletId, sl.Denom)
-		store.Set(key, slBytes)
+		if err := store.Set(key, slBytes); err != nil {
+			return fmt.Errorf("failed to store spending limit: %w", err)
+		}
 	}
 
 	// Import session configs
@@ -127,7 +143,9 @@ func (k Keeper) InitGenesis(ctx context.Context, data *pb.GenesisState) error {
 			return fmt.Errorf("failed to marshal session config: %w", err)
 		}
 		key := types.GetSessionKey(sc.SessionId)
-		store.Set(key, scBytes)
+		if err := store.Set(key, scBytes); err != nil {
+			return fmt.Errorf("failed to store session config: %w", err)
+		}
 	}
 
 	// Import biometric auth configs
@@ -140,7 +158,9 @@ func (k Keeper) InitGenesis(ctx context.Context, data *pb.GenesisState) error {
 			return fmt.Errorf("failed to marshal biometric auth: %w", err)
 		}
 		key := types.GetBiometricAuthKey(ba.WalletId)
-		store.Set(key, baBytes)
+		if err := store.Set(key, baBytes); err != nil {
+			return fmt.Errorf("failed to store biometric auth: %w", err)
+		}
 	}
 
 	// Import secure enclave configs
@@ -153,7 +173,9 @@ func (k Keeper) InitGenesis(ctx context.Context, data *pb.GenesisState) error {
 			return fmt.Errorf("failed to marshal enclave config: %w", err)
 		}
 		key := types.GetSecureEnclaveKey(ec.WalletId)
-		store.Set(key, ecBytes)
+		if err := store.Set(key, ecBytes); err != nil {
+			return fmt.Errorf("failed to store enclave config: %w", err)
+		}
 	}
 
 	// Import encrypted backups
@@ -166,7 +188,9 @@ func (k Keeper) InitGenesis(ctx context.Context, data *pb.GenesisState) error {
 			return fmt.Errorf("failed to marshal encrypted backup: %w", err)
 		}
 		key := types.GetEncryptedBackupKey(eb.BackupId)
-		store.Set(key, ebBytes)
+		if err := store.Set(key, ebBytes); err != nil {
+			return fmt.Errorf("failed to store encrypted backup: %w", err)
+		}
 	}
 
 	// Import dust filters
@@ -179,7 +203,9 @@ func (k Keeper) InitGenesis(ctx context.Context, data *pb.GenesisState) error {
 			return fmt.Errorf("failed to marshal dust filter: %w", err)
 		}
 		key := types.GetDustFilterKey(df.WalletId)
-		store.Set(key, dfBytes)
+		if err := store.Set(key, dfBytes); err != nil {
+			return fmt.Errorf("failed to store dust filter: %w", err)
+		}
 	}
 
 	// Import dust transactions
@@ -192,7 +218,9 @@ func (k Keeper) InitGenesis(ctx context.Context, data *pb.GenesisState) error {
 			return fmt.Errorf("failed to marshal dust transaction: %w", err)
 		}
 		key := types.GetDustTransactionKey(dt.TxHash)
-		store.Set(key, dtBytes)
+		if err := store.Set(key, dtBytes); err != nil {
+			return fmt.Errorf("failed to store dust tx: %w", err)
+		}
 	}
 
 	// Import security metrics
@@ -205,7 +233,9 @@ func (k Keeper) InitGenesis(ctx context.Context, data *pb.GenesisState) error {
 			return fmt.Errorf("failed to marshal security metrics: %w", err)
 		}
 		key := types.GetSecurityMetricsKey(sm.WalletId)
-		store.Set(key, smBytes)
+		if err := store.Set(key, smBytes); err != nil {
+			return fmt.Errorf("failed to store security metrics: %w", err)
+		}
 	}
 
 	k.logger.Info("Wallet security genesis imported",

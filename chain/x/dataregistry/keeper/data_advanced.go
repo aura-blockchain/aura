@@ -237,7 +237,9 @@ func (k *Keeper) SetRetentionPolicy(ctx sdk.Context, dataID string, retentionDay
 
 	// Update item
 	item.Metadata["retention_policy"] = policy.PolicyID
-	k.SetDataItem(ctx, item)
+	if err := k.SetDataItem(ctx, item); err != nil {
+		return nil, fmt.Errorf("failed to set data item: %w", err)
+	}
 
 	k.storeRetentionPolicy(policy)
 	return policy, nil
@@ -370,9 +372,11 @@ func (k *Keeper) MintVerificationReward(ctx sdk.Context, verifier string, dataID
 	}
 
 	// Record provenance
-	k.RecordProvenance(ctx, dataID, "verification_rewarded", verifier, map[string]string{
+	if err := k.RecordProvenance(ctx, dataID, "verification_rewarded", verifier, map[string]string{
 		"reward_amount": rewardAmount.String(),
-	})
+	}); err != nil {
+		return fmt.Errorf("failed to record verification provenance: %w", err)
+	}
 
 	// Emit event
 	ctx.EventManager().EmitEvent(

@@ -1,5 +1,7 @@
 package inclusionroutines
 
+//lint:file-ignore SA1019 -- module still registers legacy invariants until SDK migration
+
 import (
 	"bytes"
 	"context"

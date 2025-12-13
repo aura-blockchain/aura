@@ -13,21 +13,21 @@ import (
 // RandomString generates a random string of specified length
 func RandomString(length int) string {
 	bytes := make([]byte, length)
-	rand.Read(bytes)
+	fillRandom(bytes)
 	return hex.EncodeToString(bytes)[:length]
 }
 
 // RandomBytes generates random bytes of specified length
 func RandomBytes(length int) []byte {
 	bytes := make([]byte, length)
-	rand.Read(bytes)
+	fillRandom(bytes)
 	return bytes
 }
 
 // RandomInt generates a random integer between min and max
 func RandomInt(min, max int64) int64 {
 	bytes := make([]byte, 8)
-	rand.Read(bytes)
+	fillRandom(bytes)
 	val := int64(0)
 	for _, b := range bytes {
 		val = val*256 + int64(b)
@@ -76,6 +76,12 @@ func RandomIPFSHash() string {
 // RandomProof generates random proof bytes
 func RandomProof() []byte {
 	return RandomBytes(256)
+}
+
+func fillRandom(b []byte) {
+	if _, err := rand.Read(b); err != nil {
+		panic(fmt.Sprintf("crypto/rand failed: %v", err))
+	}
 }
 
 // RandomTimestamp generates a random timestamp
@@ -149,13 +155,13 @@ func (g *TestDataGenerator) GenerateInclusionRoutine() map[string]interface{} {
 // GenerateDEXOrder generates test DEX order data
 func (g *TestDataGenerator) GenerateDEXOrder() map[string]interface{} {
 	return map[string]interface{}{
-		"order_id":     RandomString(32),
-		"trader":       RandomAddress().String(),
-		"token_in":     "aura",
-		"token_out":    "atom",
-		"amount_in":    RandomInt(100, 10000),
+		"order_id":       RandomString(32),
+		"trader":         RandomAddress().String(),
+		"token_in":       "aura",
+		"token_out":      "atom",
+		"amount_in":      RandomInt(100, 10000),
 		"min_amount_out": RandomInt(50, 5000),
-		"timestamp":    time.Now().Unix(),
+		"timestamp":      time.Now().Unix(),
 	}
 }
 

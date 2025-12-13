@@ -3,11 +3,11 @@ package keeper_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	sdkmath "cosmossdk.io/math"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/codec"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	"github.com/stretchr/testify/require"
 
 	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 	"github.com/aequitas/aura/chain/x/bridge/keeper"
@@ -50,7 +50,7 @@ func TestCircuitBreaker_GlobalPauseBlocksAllOperations(t *testing.T) {
 	// Set global pause
 	params := k.GetParams(ctx)
 	params.Paused = true
-	k.SetParams(ctx, params)
+	require.NoError(t, k.SetParams(ctx, params))
 
 	// Test 1: LockTokens should be blocked
 	amount := sdk.NewCoin("uaura", sdkmath.NewInt(1000000))
@@ -99,7 +99,7 @@ func TestCircuitBreaker_PerChainPauseSelectivelyBlocks(t *testing.T) {
 	// Pause only "paw" chain
 	params := k.GetParams(ctx)
 	params.PausedChains = []string{"paw"}
-	k.SetParams(ctx, params)
+	require.NoError(t, k.SetParams(ctx, params))
 
 	// PAW operations should be blocked
 	err := k.RequireNotPaused(ctx, "paw")
@@ -126,7 +126,7 @@ func TestCircuitBreaker_AutoPauseTriggersOnThresholdExceeded(t *testing.T) {
 	params.AutoPauseEnabled = true
 	params.AutoPauseThreshold = "5000000000"
 	params.Paused = false // Start unpaused
-	k.SetParams(ctx, params)
+	require.NoError(t, k.SetParams(ctx, params))
 
 	// Verify bridge is initially operational
 	err := k.RequireNotPaused(ctx, "paw")
@@ -186,7 +186,7 @@ func TestCircuitBreaker_AutoPauseDoesNotTriggerBelowThreshold(t *testing.T) {
 	params.AutoPauseEnabled = true
 	params.AutoPauseThreshold = "5000000000"
 	params.Paused = false
-	k.SetParams(ctx, params)
+	require.NoError(t, k.SetParams(ctx, params))
 
 	// Record 3 billion minted
 	k.RecordMintedAmount(ctx, "test-denom", sdkmath.NewInt(3_000_000_000))
@@ -216,7 +216,7 @@ func TestCircuitBreaker_AutoPauseDisabledDoesNotTrigger(t *testing.T) {
 	params.AutoPauseEnabled = false
 	params.AutoPauseThreshold = "5000000000"
 	params.Paused = false
-	k.SetParams(ctx, params)
+	require.NoError(t, k.SetParams(ctx, params))
 
 	// Record massive amount minted (well above threshold)
 	k.RecordMintedAmount(ctx, "test-denom", sdkmath.NewInt(10_000_000_000))
@@ -240,7 +240,7 @@ func TestCircuitBreaker_UnpauseRestoresFunctionality(t *testing.T) {
 	// Start with bridge paused
 	params := k.GetParams(ctx)
 	params.Paused = true
-	k.SetParams(ctx, params)
+	require.NoError(t, k.SetParams(ctx, params))
 
 	// Verify operations are blocked
 	err := k.RequireNotPaused(ctx, "paw")
@@ -249,7 +249,7 @@ func TestCircuitBreaker_UnpauseRestoresFunctionality(t *testing.T) {
 
 	// Unpause the bridge
 	params.Paused = false
-	k.SetParams(ctx, params)
+	require.NoError(t, k.SetParams(ctx, params))
 
 	// Verify operations are now allowed
 	err = k.RequireNotPaused(ctx, "paw")
@@ -265,7 +265,7 @@ func TestCircuitBreaker_PerChainUnpauseRestoresFunctionality(t *testing.T) {
 	// Pause "paw" chain
 	params := k.GetParams(ctx)
 	params.PausedChains = []string{"paw", "xai"}
-	k.SetParams(ctx, params)
+	require.NoError(t, k.SetParams(ctx, params))
 
 	// Verify PAW is blocked
 	err := k.RequireNotPaused(ctx, "paw")
@@ -277,7 +277,7 @@ func TestCircuitBreaker_PerChainUnpauseRestoresFunctionality(t *testing.T) {
 
 	// Unpause only PAW (remove from list)
 	params.PausedChains = []string{"xai"}
-	k.SetParams(ctx, params)
+	require.NoError(t, k.SetParams(ctx, params))
 
 	// Verify PAW is now allowed
 	err = k.RequireNotPaused(ctx, "paw")
@@ -303,7 +303,7 @@ func TestCircuitBreaker_EmergencyPauseAuthorization(t *testing.T) {
 	// Set authorized guardians
 	params := k.GetParams(ctx)
 	params.EmergencyPauseAddresses = []string{guardian1, guardian2}
-	k.SetParams(ctx, params)
+	require.NoError(t, k.SetParams(ctx, params))
 
 	// Guardian 1 should be authorized
 	require.True(t, k.IsEmergencyPauseAuthorized(ctx, guardian1))
@@ -357,7 +357,7 @@ func TestCircuitBreaker_MintTokensAutopauses(t *testing.T) {
 	params.AutoPauseThreshold = "1000000" // 1 million threshold
 	params.Paused = false
 	params.BridgeEnabled = true
-	k.SetParams(ctx, params)
+	require.NoError(t, k.SetParams(ctx, params))
 
 	// First mint attempt (should trigger auto-pause check and trigger)
 	mintMsg := &types.MsgMintTokens{
@@ -393,7 +393,7 @@ func TestCircuitBreaker_MultipleOperationsAfterPause(t *testing.T) {
 	params := k.GetParams(ctx)
 	params.BridgeEnabled = true
 	params.Paused = true // Start paused
-	k.SetParams(ctx, params)
+	require.NoError(t, k.SetParams(ctx, params))
 
 	// Try LockTokens multiple times - all should fail
 	for i := 0; i < 3; i++ {
@@ -450,7 +450,7 @@ func TestCircuitBreaker_ZeroAmountMintDoesNotTriggerAutoPause(t *testing.T) {
 	params.AutoPauseEnabled = true
 	params.AutoPauseThreshold = "1" // Even 1 unit would trigger
 	params.Paused = false
-	k.SetParams(ctx, params)
+	require.NoError(t, k.SetParams(ctx, params))
 
 	// Record zero mint (should be ignored)
 	k.RecordMintedAmount(ctx, "test-denom", sdkmath.ZeroInt())
@@ -479,7 +479,7 @@ func TestCircuitBreaker_InvalidThresholdDoesNotTrigger(t *testing.T) {
 	params.AutoPauseEnabled = true
 	params.AutoPauseThreshold = "not-a-number"
 	params.Paused = false
-	k.SetParams(ctx, params)
+	require.NoError(t, k.SetParams(ctx, params))
 
 	// Try to trigger with large amount
 	amount := sdkmath.NewInt(10_000_000_000)
@@ -502,7 +502,7 @@ func TestCircuitBreaker_NegativeThresholdDoesNotTrigger(t *testing.T) {
 	params.AutoPauseEnabled = true
 	params.AutoPauseThreshold = "-1000000"
 	params.Paused = false
-	k.SetParams(ctx, params)
+	require.NoError(t, k.SetParams(ctx, params))
 
 	// Try to trigger with any amount
 	amount := sdkmath.NewInt(1_000_000)
@@ -527,7 +527,7 @@ func TestCircuitBreaker_IntegrationWithLockTokens(t *testing.T) {
 	// Test with bridge operational
 	params := k.GetParams(ctx)
 	params.Paused = false
-	k.SetParams(ctx, params)
+	require.NoError(t, k.SetParams(ctx, params))
 
 	amount := sdk.NewCoin("uaura", sdkmath.NewInt(1000))
 	msg := &types.MsgLockTokens{
@@ -544,7 +544,7 @@ func TestCircuitBreaker_IntegrationWithLockTokens(t *testing.T) {
 
 	// Now pause the bridge
 	params.Paused = true
-	k.SetParams(ctx, params)
+	require.NoError(t, k.SetParams(ctx, params))
 
 	// Same message should now fail
 	_, err = ms.LockTokens(sdk.WrapSDKContext(ctx), msg)
@@ -576,7 +576,7 @@ func TestCircuitBreaker_IntegrationWithMintTokens(t *testing.T) {
 	// Now pause the bridge
 	params := k.GetParams(ctx)
 	params.Paused = true
-	k.SetParams(ctx, params)
+	require.NoError(t, k.SetParams(ctx, params))
 
 	// New mint with different hash should fail when paused
 	msg2 := &types.MsgMintTokens{
@@ -602,7 +602,7 @@ func TestCircuitBreaker_IntegrationWithUnlockTokens(t *testing.T) {
 	// Pause the bridge
 	params := k.GetParams(ctx)
 	params.Paused = true
-	k.SetParams(ctx, params)
+	require.NoError(t, k.SetParams(ctx, params))
 
 	msg := &types.MsgUnlockTokens{
 		Sender:      keepertest.GenTestAddr().String(),
@@ -619,7 +619,7 @@ func TestCircuitBreaker_IntegrationWithUnlockTokens(t *testing.T) {
 
 	// Unpause the bridge
 	params.Paused = false
-	k.SetParams(ctx, params)
+	require.NoError(t, k.SetParams(ctx, params))
 
 	// Still might fail for other reasons (e.g., no transfer record), but should NOT fail for pause
 	_, err = ms.UnlockTokens(sdk.WrapSDKContext(ctx), msg)

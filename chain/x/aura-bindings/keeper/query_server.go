@@ -8,12 +8,12 @@ import (
 )
 
 type queryServer struct {
-	Keeper
+	Keeper *Keeper
 }
 
 // NewQueryServerImpl returns an implementation of the QueryServer interface
 // for the provided Keeper.
-func NewQueryServerImpl(keeper Keeper) types.QueryServer {
+func NewQueryServerImpl(keeper *Keeper) types.QueryServer {
 	return &queryServer{Keeper: keeper}
 }
 
@@ -26,9 +26,9 @@ func (qs queryServer) QueryStats(goCtx context.Context, req *types.QueryStatsReq
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	qs.Logger(ctx).Debug("querying stats")
+	qs.Keeper.Logger(ctx).Debug("querying stats")
 
-	stats := qs.GetQueryStats()
+	stats := qs.Keeper.GetQueryStats()
 
 	return &types.QueryStatsResponse{
 		QueryStats: stats,
@@ -42,9 +42,9 @@ func (qs queryServer) MessageStats(goCtx context.Context, req *types.MessageStat
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	qs.Logger(ctx).Debug("querying message stats")
+	qs.Keeper.Logger(ctx).Debug("querying message stats")
 
-	stats := qs.GetMessageStats()
+	stats := qs.Keeper.GetMessageStats()
 
 	return &types.MessageStatsResponse{
 		MessageStats: stats,
@@ -58,10 +58,10 @@ func (qs queryServer) AllStats(goCtx context.Context, req *types.AllStatsRequest
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	qs.Logger(ctx).Debug("querying all stats")
+	qs.Keeper.Logger(ctx).Debug("querying all stats")
 
-	queryStats := qs.GetQueryStats()
-	messageStats := qs.GetMessageStats()
+	queryStats := qs.Keeper.GetQueryStats()
+	messageStats := qs.Keeper.GetMessageStats()
 
 	return &types.AllStatsResponse{
 		QueryStats:   queryStats,

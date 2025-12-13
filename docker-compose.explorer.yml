@@ -17,7 +17,7 @@ version: '3.8'
 # Access:
 #   - Explorer UI: http://localhost:8088
 #   - Chain: aura-local-4
-#   - Connected to: validator-1 (172.26.0.10)
+#   - Connected to: observer-1 (172.26.0.50)
 #
 # ============================================================================
 
@@ -38,9 +38,9 @@ services:
       - "8088:80"
     environment:
       - NODE_ENV=production
-      # Connect to validator-1 RPC and API endpoints
-      - RPC_ENDPOINT=http://172.26.0.10:26657
-      - API_ENDPOINT=http://172.26.0.10:1317
+      # Connect to observer RPC/API endpoints (isolated from validators)
+      - RPC_ENDPOINT=http://aura-observer-1:26657
+      - API_ENDPOINT=http://aura-observer-1:1317
       - CHAIN_ID=aura-local-4
     networks:
       - aura-testnet

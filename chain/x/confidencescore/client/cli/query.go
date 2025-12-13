@@ -2,9 +2,6 @@ package cli
 
 import (
 	"context"
-	"fmt"
-	"strconv"
-	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -483,33 +480,4 @@ This returns:
 	flags.AddQueryFlagsToCmd(cmd)
 
 	return cmd
-}
-
-// Additional helper function to format arena breakdown for display
-func formatArenaBreakdown(arenaScores map[string]*v1beta1.ArenaScore) string {
-	if len(arenaScores) == 0 {
-		return "No arena scores recorded"
-	}
-
-	var sb strings.Builder
-	sb.WriteString("\nArena Score Breakdown:\n")
-	sb.WriteString("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
-	sb.WriteString(fmt.Sprintf("%-20s %-12s %-10s %-15s\n", "Arena", "Score", "IR Count", "Focus Bonus"))
-	sb.WriteString("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
-
-	for arenaType, score := range arenaScores {
-		focusStatus := "Inactive"
-		if score.FocusBonusActive {
-			focusStatus = "ACTIVE ✓"
-		}
-		sb.WriteString(fmt.Sprintf("%-20s %-12s %-10d %-15s\n",
-			arenaType,
-			strconv.FormatUint(score.TotalScore, 10),
-			score.IrCount,
-			focusStatus,
-		))
-	}
-	sb.WriteString("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
-
-	return sb.String()
 }

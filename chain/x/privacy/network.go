@@ -447,10 +447,14 @@ func (npm *NetworkPrivacyManager) RotateCircuits() error {
 		if now.Sub(circuit.CreatedAt) > circuit.ExpiresAt {
 			// Destroy old circuit
 			if circuit.TorCircuit != nil {
-				npm.torClient.DestroyCircuit(circuit.TorCircuit.ID)
+				if err := npm.torClient.DestroyCircuit(circuit.TorCircuit.ID); err != nil {
+					return err
+				}
 			}
 			if circuit.I2PTunnel != nil {
-				npm.i2pClient.DestroyTunnel(circuit.I2PTunnel.ID)
+				if err := npm.i2pClient.DestroyTunnel(circuit.I2PTunnel.ID); err != nil {
+					return err
+				}
 			}
 
 			// Create new circuit

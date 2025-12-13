@@ -306,7 +306,9 @@ func (k *Keeper) CreateChangeRequest(ctx sdk.Context, requester, targetDID, irID
 	}
 
 	// Increment counter
-	store.Set(types.ChangeRequestCounterPrefix, sdk.Uint64ToBigEndian(requestID+1))
+	if err := store.Set(types.ChangeRequestCounterPrefix, sdk.Uint64ToBigEndian(requestID+1)); err != nil {
+		k.logger.Error("failed to update change request counter", "error", err)
+	}
 
 	// Log audit trail
 	k.LogAudit(ctx, requester, "create_change_request", targetDID, "success", map[string]string{

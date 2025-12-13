@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/aequitas/aura/chain/x/confidencescore/types"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewKeeper(t *testing.T) {
@@ -57,7 +58,7 @@ func TestKeeper_IsVerified(t *testing.T) {
 		TotalScore:    9000,
 		Status:        types.VerificationStatus_VERIFICATION_STATUS_UNVERIFIED,
 	}
-	keeper.SetUserRecord(ctx, record)
+	require.NoError(t, keeper.SetUserRecord(ctx, record))
 
 	if keeper.IsVerified(ctx, walletAddr) {
 		t.Error("expected user to not be verified")
@@ -66,7 +67,7 @@ func TestKeeper_IsVerified(t *testing.T) {
 	// User with score at threshold
 	record.TotalScore = 10000
 	record.Status = types.VerificationStatus_VERIFICATION_STATUS_VERIFIED
-	keeper.SetUserRecord(ctx, record)
+	require.NoError(t, keeper.SetUserRecord(ctx, record))
 
 	if !keeper.IsVerified(ctx, walletAddr) {
 		t.Error("expected user to be verified")
@@ -89,7 +90,7 @@ func TestKeeper_HasCompletedIR(t *testing.T) {
 		IrId:       irID,
 		FinalScore: 500,
 	}
-	keeper.SetIRCompletion(ctx, walletAddr, completion)
+	require.NoError(t, keeper.SetIRCompletion(ctx, walletAddr, completion))
 
 	if !keeper.HasCompletedIR(ctx, walletAddr, irID) {
 		t.Error("expected IR to be completed")
@@ -140,7 +141,7 @@ func TestKeeper_GetArenaScore(t *testing.T) {
 			},
 		},
 	}
-	keeper.SetUserRecord(ctx, record)
+	require.NoError(t, keeper.SetUserRecord(ctx, record))
 
 	score, err := keeper.GetArenaScore(ctx, walletAddr, arena)
 	if err != nil {

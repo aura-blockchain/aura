@@ -3,13 +3,15 @@ package keeper
 import (
 	"fmt"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkmath "cosmossdk.io/math"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/aequitas/aura/chain/x/economicsecurity/types"
 )
 
-// RegisterInvariants registers all economicsecurity module invariants
+// RegisterInvariants registers all economicsecurity module invariants.
+//
+//nolint:staticcheck // Deprecated invariant interfaces remain until crisis module removal.
 func RegisterInvariants(ir sdk.InvariantRegistry, k *Keeper) {
 	ir.RegisterRoute(types.ModuleName, "params-valid", ParamsInvariant(k))
 	ir.RegisterRoute(types.ModuleName, "vesting-schedules-valid", VestingSchedulesInvariant(k))
@@ -20,7 +22,9 @@ func RegisterInvariants(ir sdk.InvariantRegistry, k *Keeper) {
 	ir.RegisterRoute(types.ModuleName, "mev-balances-valid", MEVBalancesInvariant(k))
 }
 
-// AllInvariants runs all invariants of the economicsecurity module
+// AllInvariants runs all invariants of the economicsecurity module.
+//
+//nolint:staticcheck // Deprecated invariant interfaces remain until crisis module removal.
 func AllInvariants(k *Keeper) sdk.Invariant {
 	return func(ctx sdk.Context) (string, bool) {
 		invariants := []sdk.Invariant{
@@ -44,7 +48,9 @@ func AllInvariants(k *Keeper) sdk.Invariant {
 	}
 }
 
-// ParamsInvariant checks that module parameters are valid and consistent
+// ParamsInvariant checks that module parameters are valid and consistent.
+//
+//nolint:staticcheck // Deprecated invariant interfaces remain until crisis module removal.
 func ParamsInvariant(k *Keeper) sdk.Invariant {
 	return func(ctx sdk.Context) (string, bool) {
 		params := k.GetParams()
@@ -140,7 +146,9 @@ func ParamsInvariant(k *Keeper) sdk.Invariant {
 	}
 }
 
-// VestingSchedulesInvariant checks all vesting schedules are valid and consistent
+// VestingSchedulesInvariant checks all vesting schedules are valid and consistent.
+//
+//nolint:staticcheck // Deprecated invariant interfaces remain until crisis module removal.
 func VestingSchedulesInvariant(k *Keeper) sdk.Invariant {
 	return func(ctx sdk.Context) (string, bool) {
 		// Use keeper's iterator to check all vesting schedules
@@ -219,7 +227,9 @@ func VestingSchedulesInvariant(k *Keeper) sdk.Invariant {
 	}
 }
 
-// VoteLocksInvariant checks all vote locks are valid and consistent
+// VoteLocksInvariant checks all vote locks are valid and consistent.
+//
+//nolint:staticcheck // Deprecated invariant interfaces remain until crisis module removal.
 func VoteLocksInvariant(k *Keeper) sdk.Invariant {
 	return func(ctx sdk.Context) (string, bool) {
 		lockIDs := make(map[string]bool)
@@ -306,7 +316,9 @@ func VoteLocksInvariant(k *Keeper) sdk.Invariant {
 	}
 }
 
-// PendingTreasuryTxsInvariant checks all pending treasury transactions are valid
+// PendingTreasuryTxsInvariant checks all pending treasury transactions are valid.
+//
+//nolint:staticcheck // Deprecated invariant interfaces remain until crisis module removal.
 func PendingTreasuryTxsInvariant(k *Keeper) sdk.Invariant {
 	return func(ctx sdk.Context) (string, bool) {
 		txIDs := make(map[string]bool)
@@ -385,7 +397,9 @@ func PendingTreasuryTxsInvariant(k *Keeper) sdk.Invariant {
 	}
 }
 
-// InflationAlertsInvariant checks all inflation alerts are valid
+// InflationAlertsInvariant checks all inflation alerts are valid.
+//
+//nolint:staticcheck // Deprecated invariant interfaces remain until crisis module removal.
 func InflationAlertsInvariant(k *Keeper) sdk.Invariant {
 	return func(ctx sdk.Context) (string, bool) {
 		alertIDs := make(map[string]bool)
@@ -459,7 +473,9 @@ func InflationAlertsInvariant(k *Keeper) sdk.Invariant {
 	}
 }
 
-// WhaleLimitsInvariant checks whale protection limits are properly enforced
+// WhaleLimitsInvariant checks whale protection limits are properly enforced.
+//
+//nolint:staticcheck // Deprecated invariant interfaces remain until crisis module removal.
 func WhaleLimitsInvariant(k *Keeper) sdk.Invariant {
 	return func(ctx sdk.Context) (string, bool) {
 		invalidRecord := ""
@@ -505,12 +521,6 @@ func WhaleLimitsInvariant(k *Keeper) sdk.Invariant {
 				return true
 			}
 
-			// Validate block height is positive if tx was included
-			if record.BlockHeight == 0 {
-				// This might be a pending tx, which is fine
-				// But we log it for awareness
-			}
-
 			return false // continue
 		})
 
@@ -534,7 +544,9 @@ func WhaleLimitsInvariant(k *Keeper) sdk.Invariant {
 	}
 }
 
-// MEVBalancesInvariant checks MEV balances are valid and consistent
+// MEVBalancesInvariant checks MEV balances are valid and consistent.
+//
+//nolint:staticcheck // Deprecated invariant interfaces remain until crisis module removal.
 func MEVBalancesInvariant(k *Keeper) sdk.Invariant {
 	return func(ctx sdk.Context) (string, bool) {
 		totalMEV := sdkmath.ZeroInt()

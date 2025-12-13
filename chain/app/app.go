@@ -55,6 +55,9 @@ import (
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/gogoproto/proto"
+	ibcclienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	ibcconnectiontypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
+	ibcchanneltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 	"google.golang.org/grpc"
 
 	// AURA Core Modules (kept as-is)
@@ -908,7 +911,7 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 	// WASM security module - wraps wasmd with AURA security controls
 	wasmSecurityModule := wasm.NewAppModule(encoding.Codec, wasmSecurityKeeperInstance)
 	prevalidationModule := prevalidation.NewAppModule(encoding.Codec, prevalidationKeeper)
-	aurabindingsModule := aurabindings.NewAppModule(encoding.Codec, *aurabindingsKeeper)
+	aurabindingsModule := aurabindings.NewAppModule(encoding.Codec, aurabindingsKeeper)
 
 	// Initialize Prometheus metrics for all modules (must be done before serving /metrics)
 	// These use promauto which registers with the default Prometheus registry
@@ -1393,6 +1396,12 @@ func (a *App) RegisterGRPCServices() {
 	wasmSecurityTypes.RegisterQueryServer(a.GRPCQueryRouter(), wasmSecurityKeeper.NewQueryServerImpl(a.wasmSecurityKeeper))
 }
 
+// RegisterTxService wires the Cosmos SDK Tx gRPC service so external clients
+// (wallets, relayers, etc.) can simulate and broadcast transactions.
+func (a *App) RegisterTxService(clientCtx client.Context) {
+	tx.RegisterTxService(a.GRPCQueryRouter(), clientCtx, a.BaseApp.Simulate, a.encoding.InterfaceRegistry)
+}
+
 // GRPCServer exposes the app's gRPC server instance.
 func (a *App) GRPCServer() *grpc.Server {
 	return a.grpcServer
@@ -1564,6 +1573,11 @@ func MakeEncodingConfig() EncodingConfig {
 	distrtypes.RegisterInterfaces(interfaceRegistry)
 	upgradetypes.RegisterInterfaces(interfaceRegistry)
 	wasmtypes.RegisterInterfaces(interfaceRegistry)
+	// Hermes requires these core IBC interfaces to be in the registry so it can decode
+	// MsgCreateClient and related handshake msgs before the modules are fully enabled.
+	ibcclienttypes.RegisterInterfaces(interfaceRegistry)
+	ibcconnectiontypes.RegisterInterfaces(interfaceRegistry)
+	ibcchanneltypes.RegisterInterfaces(interfaceRegistry)
 
 	// Register interfaces for all modules tracked by ModuleBasics so
 	// consensus and custom message/service types are discoverable.

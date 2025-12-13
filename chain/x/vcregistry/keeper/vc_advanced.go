@@ -58,8 +58,6 @@ func (k *Keeper) RegisterVCSchema(ctx context.Context, schema VCSchema) error {
 // ValidateVCAgainstSchema validates VC data against its schema
 func (k *Keeper) ValidateVCAgainstSchema(ctx context.Context, vcType string, vcData map[string]interface{}) error {
 	k.requireStore()
-	
-	
 
 	// Get schema
 	schemaKey := fmt.Sprintf("schema:%s:1.0", vcType)
@@ -128,16 +126,16 @@ func (k *Keeper) validateFieldType(value interface{}, expectedType string) bool 
 
 // VCTemplate defines a reusable template for creating VCs
 type VCTemplate struct {
-	TemplateID       string                 `json:"template_id"`
-	Name             string                 `json:"name"`
-	VCType           types.VCType           `json:"vc_type"`
-	Description      string                 `json:"description"`
-	DefaultMetadata  map[string]string      `json:"default_metadata"`
-	DefaultExpiryDays uint64                `json:"default_expiry_days"`
-	FieldDefaults    map[string]interface{} `json:"field_defaults"`
-	Creator          string                 `json:"creator"`
-	CreatedAt        int64                  `json:"created_at"`
-	IsActive         bool                   `json:"is_active"`
+	TemplateID        string                 `json:"template_id"`
+	Name              string                 `json:"name"`
+	VCType            types.VCType           `json:"vc_type"`
+	Description       string                 `json:"description"`
+	DefaultMetadata   map[string]string      `json:"default_metadata"`
+	DefaultExpiryDays uint64                 `json:"default_expiry_days"`
+	FieldDefaults     map[string]interface{} `json:"field_defaults"`
+	Creator           string                 `json:"creator"`
+	CreatedAt         int64                  `json:"created_at"`
+	IsActive          bool                   `json:"is_active"`
 }
 
 // CreateVCTemplate creates a new VC template
@@ -177,8 +175,6 @@ func (k *Keeper) CreateVCTemplate(ctx context.Context, template VCTemplate) erro
 // GetVCTemplate retrieves a VC template
 func (k *Keeper) GetVCTemplate(ctx context.Context, templateID string) (*VCTemplate, error) {
 	k.requireStore()
-	
-	
 
 	templateKey := fmt.Sprintf("template:%s", templateID)
 	templateJSON, ok := k.store.getMetadata(ctx, templateKey)
@@ -253,8 +249,6 @@ func (k *Keeper) TransferVC(ctx context.Context, vcID string, fromAddress string
 	}
 
 	k.requireStore()
-	
-	
 
 	// Get VC record
 	vcRecord, ok := k.store.getVCRecord(ctx, vcID)
@@ -296,8 +290,12 @@ func (k *Keeper) TransferVC(ctx context.Context, vcID string, fromAddress string
 	k.store.appendUserVC(ctx, toAddress, vcID)
 
 	// Update DID documents
-	k.RemoveCredentialFromDID(ctx, oldDID, vcID)
-	k.AddCredentialToDID(ctx, toDID, vcID)
+	if err := k.RemoveCredentialFromDID(ctx, oldDID, vcID); err != nil {
+		return err
+	}
+	if err := k.AddCredentialToDID(ctx, toDID, vcID); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -337,7 +335,9 @@ func (k *Keeper) getTransferCount(vc types.VCRecord) int {
 	}
 	if countStr, ok := vc.Metadata["transfer_count"]; ok {
 		var count int
-		fmt.Sscanf(countStr, "%d", &count)
+		if _, err := fmt.Sscanf(countStr, "%d", &count); err != nil {
+			return 0
+		}
 		return count
 	}
 	return 0
@@ -363,8 +363,6 @@ type VCSearchCriteria struct {
 // SearchVCs searches for VCs matching criteria
 func (k *Keeper) SearchVCs(ctx context.Context, criteria VCSearchCriteria) ([]types.VCRecord, int) {
 	k.requireStore()
-	
-	
 
 	var results []types.VCRecord
 	totalMatches := 0
@@ -375,9 +373,7 @@ func (k *Keeper) SearchVCs(ctx context.Context, criteria VCSearchCriteria) ([]ty
 		searchSet = k.ListUserVCs(ctx, criteria.HolderAddress, types.VCStatus_VC_STATUS_UNSPECIFIED, types.VCType_VC_TYPE_UNSPECIFIED)
 	} else {
 		// Search all VCs
-		for _, vc := range k.store.iterateVCRecords(ctx) {
-			searchSet = append(searchSet, vc)
-		}
+	searchSet = append(searchSet, k.store.iterateVCRecords(ctx)...)
 	}
 
 	// Apply filters
@@ -472,26 +468,24 @@ type VCAnalytics struct {
 
 // HolderStats provides stats about a VC holder
 type HolderStats struct {
-	Address       string
-	TotalVCs      int
-	ActiveVCs     int
+	Address         string
+	TotalVCs        int
+	ActiveVCs       int
 	HighestCSAtMint uint64
 }
 
 // RevocationStats provides stats about revocations
 type RevocationStats struct {
-	VcID       string
-	VcType     string
-	RevokedAt  int64
-	Reason     string
+	VcID           string
+	VcType         string
+	RevokedAt      int64
+	Reason         string
 	RevokerAddress string
 }
 
 // GetVCAnalytics returns comprehensive analytics
 func (k *Keeper) GetVCAnalytics(ctx context.Context, lookbackDays int) VCAnalytics {
 	k.requireStore()
-	
-	
 
 	analytics := VCAnalytics{
 		VCsByType: make(map[string]uint64),
@@ -645,8 +639,6 @@ func (k *Keeper) RenewVC(ctx context.Context, vcID string, holderAddress string,
 	}
 
 	k.requireStore()
-	
-	
 
 	vcRecord, ok := k.store.getVCRecord(ctx, vcID)
 	if !ok {
@@ -694,7 +686,9 @@ func (k *Keeper) getRenewalCount(vc types.VCRecord) int {
 	}
 	if countStr, ok := vc.Metadata["renewal_count"]; ok {
 		var count int
-		fmt.Sscanf(countStr, "%d", &count)
+		if _, err := fmt.Sscanf(countStr, "%d", &count); err != nil {
+			return 0
+		}
 		return count
 	}
 	return 0
@@ -703,8 +697,6 @@ func (k *Keeper) getRenewalCount(vc types.VCRecord) int {
 // BatchUpdateVCStatus updates status for multiple VCs
 func (k *Keeper) BatchUpdateVCStatus(ctx context.Context, vcIDs []string, newStatus types.VCStatus, reason string) error {
 	k.requireStore()
-	
-	
 
 	for _, vcID := range vcIDs {
 		vcRecord, ok := k.store.getVCRecord(ctx, vcID)
@@ -728,8 +720,6 @@ func (k *Keeper) BatchUpdateVCStatus(ctx context.Context, vcIDs []string, newSta
 // CleanupExpiredVCs marks expired VCs as expired
 func (k *Keeper) CleanupExpiredVCs(ctx context.Context) (int, error) {
 	k.requireStore()
-	
-	
 
 	count := 0
 	for _, vc := range k.store.iterateVCRecords(ctx) {
@@ -765,9 +755,9 @@ func (k *Keeper) GenerateSelectiveDisclosureProof(ctx context.Context, vcID stri
 
 	// Create proof structure
 	proof := map[string]interface{}{
-		"vc_id":           vcID,
+		"vc_id":            vcID,
 		"disclosed_fields": disclosedFields,
-		"timestamp":       k.getCurrentTime(ctx),
+		"timestamp":        k.getCurrentTime(ctx),
 	}
 
 	// Hash the proof
@@ -807,10 +797,10 @@ func (k *Keeper) InitiateVCExchange(ctx context.Context, holderAddress string, v
 
 	// Store exchange request
 	exchange := map[string]interface{}{
-		"exchange_id":       exchangeID,
-		"holder_address":    holderAddress,
-		"verifier_address":  verifierAddress,
-		"requested_types":   requestedTypes,
+		"exchange_id":      exchangeID,
+		"holder_address":   holderAddress,
+		"verifier_address": verifierAddress,
+		"requested_types":  requestedTypes,
 		"status":           "pending",
 		"created_at":       k.getCurrentTime(ctx),
 		"expires_at":       k.getCurrentTime(ctx) + 3600, // 1 hour
@@ -832,6 +822,7 @@ func (k *Keeper) generateExchangeID(ctx context.Context, holder, verifier string
 }
 
 // Helper: Get VC metadata value
+//nolint:unused // reserved for advanced metadata lookups
 func (k *Keeper) getVCMetadata(vc types.VCRecord, key string) string {
 	if vc.Metadata == nil {
 		return ""
@@ -840,6 +831,7 @@ func (k *Keeper) getVCMetadata(vc types.VCRecord, key string) string {
 }
 
 // Helper: Set VC metadata value
+//nolint:unused // reserved for advanced metadata updates
 func (k *Keeper) setVCMetadata(ctx context.Context, vcID string, key string, value string) error {
 	vc, ok := k.GetVCRecord(ctx, vcID)
 	if !ok {
@@ -857,8 +849,6 @@ func (k *Keeper) setVCMetadata(ctx context.Context, vcID string, key string, val
 // GetVCsByIssuer returns all VCs issued by a specific assistant
 func (k *Keeper) GetVCsByIssuer(ctx context.Context, issuerAssistant string) []types.VCRecord {
 	k.requireStore()
-	
-	
 
 	var results []types.VCRecord
 	for _, vcRecord := range k.store.iterateVCRecords(ctx) {
@@ -872,8 +862,6 @@ func (k *Keeper) GetVCsByIssuer(ctx context.Context, issuerAssistant string) []t
 // GetVCsByDID returns all VCs for a specific DID
 func (k *Keeper) GetVCsByDID(ctx context.Context, did string) []types.VCRecord {
 	k.requireStore()
-	
-	
 
 	var results []types.VCRecord
 	for _, vcRecord := range k.store.iterateVCRecords(ctx) {

@@ -267,8 +267,22 @@ func (wsd WasmSecurityDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate
 			// Validate migration is allowed
 			params := wsd.wasmKeeper.GetParams(ctx)
 			if params.RequireAdminForMigrate {
-				// Additional validation for admin requirement would go here
-				// This is a security feature to ensure only admins can migrate
+				contractAddr, err := sdk.AccAddressFromBech32(m.Contract)
+				if err != nil {
+					return ctx, types.ErrInvalidContractAddress.Wrap(err.Error())
+				}
+				senderAddr, err := sdk.AccAddressFromBech32(m.Sender)
+				if err != nil {
+					return ctx, types.ErrInvalidAdmin.Wrap(err.Error())
+				}
+
+				isAdmin, err := wsd.wasmKeeper.IsContractAdmin(ctx, contractAddr, senderAddr)
+				if err != nil {
+					return ctx, err
+				}
+				if !isAdmin {
+					return ctx, types.ErrMigrationNotAllowed.Wrap("sender must be contract admin to migrate")
+				}
 			}
 		}
 	}

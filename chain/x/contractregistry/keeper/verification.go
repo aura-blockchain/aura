@@ -605,7 +605,7 @@ func (k Keeper) GetVerificationResult(ctx sdk.Context, contractAddr string) (*Ve
 	key := types.VerificationResultKey(contractAddr)
 
 	bz := store.Get(key)
-	if bz == nil || len(bz) < 18 { // Minimum: status(1) + level(1) + timestamp(8) + expiration(8)
+	if len(bz) < 18 { // Minimum: status(1) + level(1) + timestamp(8) + expiration(8)
 		return nil, false
 	}
 

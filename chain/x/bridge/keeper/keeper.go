@@ -1352,8 +1352,7 @@ func (k Keeper) AddSupportedChain(ctx sdk.Context, chainConfig types.ChainConfig
 	if chainConfig.ChainId == "" {
 		return types.ErrInvalidParam
 	}
-	k.setChainConfig(ctx, chainConfig)
-	return nil
+	return k.setChainConfig(ctx, chainConfig)
 }
 
 // GetSupportedChain retrieves a supported chain configuration
@@ -1373,8 +1372,7 @@ func (k Keeper) DisableChain(ctx sdk.Context, chainID string) error {
 		return types.ErrChainNotFound
 	}
 	config.Enabled = false
-	k.setChainConfig(ctx, config)
-	return nil
+	return k.setChainConfig(ctx, config)
 }
 
 // CalculateBridgeFee calculates the bridge fee for a transfer

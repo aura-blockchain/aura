@@ -1,5 +1,7 @@
 package keeper
 
+//lint:file-ignore U1000 // telemetry metrics reserved for observability wiring; may be unused in tests
+
 import (
 	"time"
 

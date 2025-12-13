@@ -343,7 +343,9 @@ func (k Keeper) storeSessionKey(ctx sdk.Context, peerID string, sessionKey []byt
 	// In production, these should have TTL/expiration managed by cleanup routines
 	store := k.storeService.OpenKVStore(ctx)
 	key := []byte(fmt.Sprintf("session_key/%s", peerID))
-	store.Set(key, sessionKey)
+	if err := store.Set(key, sessionKey); err != nil {
+		k.logger.Error("failed to store session key", "peer", peerID, "err", err)
+	}
 
 	k.logger.Debug(fmt.Sprintf("Session key stored for peer %s", peerID))
 }
@@ -373,7 +375,9 @@ func (k Keeper) RecordValidMessage(ctx sdk.Context, peerID string) {
 	}
 
 	reputation.LastUpdatedHeight = ctx.BlockHeight()
-	k.SetReputation(ctx, reputation)
+	if err := k.SetReputation(ctx, reputation); err != nil {
+		k.logger.Error("failed to set reputation after valid message", "peer", peerID, "err", err)
+	}
 }
 
 // RecordInvalidMessage records an invalid message from a peer
@@ -396,7 +400,9 @@ func (k Keeper) RecordInvalidMessage(ctx sdk.Context, peerID string) {
 	k.PenalizeReputation(ctx, peerID, params.Reputation.MisbehaviorPenalty)
 
 	reputation.LastUpdatedHeight = ctx.BlockHeight()
-	k.SetReputation(ctx, reputation)
+	if err := k.SetReputation(ctx, reputation); err != nil {
+		k.logger.Error("failed to set reputation after invalid message", "peer", peerID, "err", err)
+	}
 }
 
 // PropagateMessage determines if a message should be propagated

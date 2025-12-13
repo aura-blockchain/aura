@@ -25,7 +25,7 @@ func TestGetQuote(t *testing.T) {
 		FeePercentage:         sdkmath.LegacyMustNewDecFromStr("0.003"),  // 0.3%
 		ProtocolFeePercentage: sdkmath.LegacyMustNewDecFromStr("0.0005"), // 0.05%
 	}
-	k.SetPool(ctx, pool)
+	require.NoError(t, k.SetPool(ctx, pool))
 
 	tests := []struct {
 		name          string
@@ -96,7 +96,7 @@ func TestRecordSwapStats(t *testing.T) {
 		FeePercentage:         sdkmath.LegacyMustNewDecFromStr("0.003"),
 		ProtocolFeePercentage: sdkmath.LegacyMustNewDecFromStr("0.0005"),
 	}
-	k.SetPool(ctx, pool)
+	require.NoError(t, k.SetPool(ctx, pool))
 
 	tests := []struct {
 		name      string
@@ -153,7 +153,7 @@ func TestGetQuoteEdgeCases(t *testing.T) {
 		FeePercentage:         sdkmath.LegacyMustNewDecFromStr("0.003"),
 		ProtocolFeePercentage: sdkmath.LegacyMustNewDecFromStr("0.0005"),
 	}
-	k.SetPool(ctx, lowLiqPool)
+	require.NoError(t, k.SetPool(ctx, lowLiqPool))
 
 	// Create a pool with imbalanced reserves
 	imbalancedPool := &types.LiquidityPool{
@@ -166,7 +166,7 @@ func TestGetQuoteEdgeCases(t *testing.T) {
 		FeePercentage:         sdkmath.LegacyMustNewDecFromStr("0.003"),
 		ProtocolFeePercentage: sdkmath.LegacyMustNewDecFromStr("0.0005"),
 	}
-	k.SetPool(ctx, imbalancedPool)
+	require.NoError(t, k.SetPool(ctx, imbalancedPool))
 
 	tests := []struct {
 		name          string
@@ -226,7 +226,7 @@ func TestRecordSwapStatsMultipleSwaps(t *testing.T) {
 		FeePercentage:         sdkmath.LegacyMustNewDecFromStr("0.003"),
 		ProtocolFeePercentage: sdkmath.LegacyMustNewDecFromStr("0.0005"),
 	}
-	k.SetPool(ctx, pool)
+	require.NoError(t, k.SetPool(ctx, pool))
 
 	// Record multiple swaps
 	for i := 0; i < 5; i++ {

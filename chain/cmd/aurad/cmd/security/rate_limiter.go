@@ -1,6 +1,7 @@
 package security
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/http"
@@ -88,7 +89,7 @@ func (rl *RateLimiter) Allow(ip string) bool {
 // Wait waits until the request is allowed or context is cancelled
 func (rl *RateLimiter) Wait(ip string) error {
 	limiter := rl.getLimiter(ip)
-	return limiter.Wait(nil)
+	return limiter.Wait(context.TODO())
 }
 
 // cleanupRoutine periodically removes old limiters

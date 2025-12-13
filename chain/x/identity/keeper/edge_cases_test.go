@@ -44,7 +44,7 @@ func TestCreateMultisigWallet_EdgeCase_ThresholdExceedsSigners(t *testing.T) {
 	msg := &identitypb.MsgCreateMultisigWallet{
 		Creator:    creator,
 		Signers:    []string{creator, keepertest.GenTestAddr().String()}, // 2 signers
-		Threshold:  3, // Invalid: threshold > signers
+		Threshold:  3,                                                    // Invalid: threshold > signers
 		WalletType: types.WalletType3Of5,
 	}
 
@@ -91,7 +91,7 @@ func TestCreateMultisigProposal_ErrorPath_ProposerNotSigner(t *testing.T) {
 		CreatedAt:  input.Ctx.BlockTime(),
 		WalletType: types.WalletType3Of5,
 	}
-	k.SetMultisigWallet(input.Ctx, wallet)
+	require.NoError(t, k.SetMultisigWallet(input.Ctx, wallet))
 
 	// Try to create proposal from non-signer
 	msg := &identitypb.MsgCreateMultisigProposal{
@@ -142,7 +142,7 @@ func TestSignMultisigProposal_ErrorPath_SignerNotWalletSigner(t *testing.T) {
 		CreatedAt:  input.Ctx.BlockTime(),
 		WalletType: types.WalletType3Of5,
 	}
-	k.SetMultisigWallet(input.Ctx, wallet)
+	require.NoError(t, k.SetMultisigWallet(input.Ctx, wallet))
 
 	// Create proposal
 	proposal := &types.MultisigProposal{
@@ -156,7 +156,7 @@ func TestSignMultisigProposal_ErrorPath_SignerNotWalletSigner(t *testing.T) {
 		Signatures:  []string{},
 		Status:      types.ProposalStatusPending,
 	}
-	k.SetMultisigProposal(input.Ctx, proposal)
+	require.NoError(t, k.SetMultisigProposal(input.Ctx, proposal))
 
 	// Try to sign from non-signer
 	msg := &identitypb.MsgSignMultisigProposal{
@@ -186,7 +186,7 @@ func TestSignMultisigProposal_EdgeCase_DuplicateSignature(t *testing.T) {
 		CreatedAt:  input.Ctx.BlockTime(),
 		WalletType: types.WalletType3Of5,
 	}
-	k.SetMultisigWallet(input.Ctx, wallet)
+	require.NoError(t, k.SetMultisigWallet(input.Ctx, wallet))
 
 	// Create proposal
 	proposal := &types.MultisigProposal{
@@ -200,7 +200,7 @@ func TestSignMultisigProposal_EdgeCase_DuplicateSignature(t *testing.T) {
 		Signatures:  []string{signer}, // Already signed
 		Status:      types.ProposalStatusApproved,
 	}
-	k.SetMultisigProposal(input.Ctx, proposal)
+	require.NoError(t, k.SetMultisigProposal(input.Ctx, proposal))
 
 	// Try to sign again
 	msg := &identitypb.MsgSignMultisigProposal{
@@ -231,7 +231,7 @@ func TestExecuteMultisigProposal_ErrorPath_ProposalNotApproved(t *testing.T) {
 		Signatures:  []string{},
 		Status:      types.ProposalStatusPending, // Not approved
 	}
-	k.SetMultisigProposal(input.Ctx, proposal)
+	require.NoError(t, k.SetMultisigProposal(input.Ctx, proposal))
 
 	msg := &identitypb.MsgExecuteMultisigProposal{
 		ProposalId: "proposal-003",
@@ -277,7 +277,7 @@ func TestExecuteTimeLockedAction_ErrorPath_DelayNotElapsed(t *testing.T) {
 		Status:       types.ActionStatusPending,
 		DelaySeconds: 86400,
 	}
-	k.SetTimeLockedAction(input.Ctx, action)
+	require.NoError(t, k.SetTimeLockedAction(input.Ctx, action))
 
 	msg := &identitypb.MsgExecuteTimeLockedAction{
 		ActionId: "action-001",
@@ -326,7 +326,7 @@ func TestCancelTimeLockedAction_ErrorPath_ActionNotPending(t *testing.T) {
 		Status:       types.ActionStatusExecuted, // Already executed
 		DelaySeconds: 3600,
 	}
-	k.SetTimeLockedAction(input.Ctx, action)
+	require.NoError(t, k.SetTimeLockedAction(input.Ctx, action))
 
 	msg := &identitypb.MsgCancelTimeLockedAction{
 		ActionId:  "action-002",
@@ -350,7 +350,7 @@ func TestCreateSession_EdgeCase_ExcessiveDuration(t *testing.T) {
 			SessionTimeout: 3600, // 1 hour in seconds
 		},
 	}
-	k.SetParams(input.Ctx, params)
+	require.NoError(t, k.SetParams(input.Ctx, params))
 
 	msg := &identitypb.MsgCreateSession{
 		Address: keepertest.GenTestAddr().String(),
@@ -406,10 +406,10 @@ func TestRotateDIDKey_EdgeCase_EmptyVerificationMethod(t *testing.T) {
 	k := keeper.NewKeeper(keepertest.WrapStoreService(input.StoreKey), input.StoreKey, input.Cdc, "authority", log.NewNopLogger())
 
 	msg := &identitypb.MsgRotateDIDKey{
-		Did:                    "did:aura:test123",
-		Initiator:              keepertest.GenTestAddr().String(),
-		NewVerificationMethod:  "", // Empty verification method
-		Reason:                 "key rotation",
+		Did:                   "did:aura:test123",
+		Initiator:             keepertest.GenTestAddr().String(),
+		NewVerificationMethod: "", // Empty verification method
+		Reason:                "key rotation",
 	}
 
 	msgServer := keeper.NewMsgServerImpl(k)
@@ -488,7 +488,7 @@ func TestAssignRole_ErrorPath_NegativeExpiry(t *testing.T) {
 		Permissions: []string{"read"},
 		Description: "Test",
 	}
-	k.SetRole(input.Ctx, role)
+	require.NoError(t, k.SetRole(input.Ctx, role))
 
 	// Try to assign with past expiry
 	pastTime := input.Ctx.BlockTime().Add(-24 * time.Hour)
@@ -597,7 +597,7 @@ func TestInvariant_SessionExpiry(t *testing.T) {
 		ExpiresAt: input.Ctx.BlockTime().Add(1 * time.Hour),
 		IsActive:  true,
 	}
-	k.SetSession(input.Ctx, session)
+	require.NoError(t, k.SetSession(input.Ctx, session))
 
 	// Advance time past expiry
 	ctx := input.Ctx.WithBlockTime(input.Ctx.BlockTime().Add(2 * time.Hour))

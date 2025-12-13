@@ -424,7 +424,7 @@ func TestCertificatePinning(t *testing.T) {
 
 	t.Run("Update certificate pin", func(t *testing.T) {
 		hash := make([]byte, 32)
-		k.AddCertificatePin(
+		_, err := k.AddCertificatePin(
 			ctx,
 			"creator",
 			"test.com",
@@ -432,13 +432,14 @@ func TestCertificatePinning(t *testing.T) {
 			cryptoproto.CertificatePinType_CERTIFICATE_PIN_TYPE_SPKI,
 			nil,
 		)
+		require.NoError(t, err)
 
 		newHash := make([]byte, 32)
 		for i := range newHash {
 			newHash[i] = byte(i + 10)
 		}
 
-		err := k.UpdateCertificatePin(ctx, "test.com", [][]byte{newHash}, nil)
+		err = k.UpdateCertificatePin(ctx, "test.com", [][]byte{newHash}, nil)
 		require.NoError(t, err)
 	})
 }

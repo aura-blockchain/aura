@@ -336,9 +336,9 @@ func (s *TxTestSuite) TestUpdateIR_FlagCombinations() {
 	require := s.Require()
 
 	// Set various flags
-	cmd.Flags().Set("name", "Updated Name")
-	cmd.Flags().Set("score", "150")
-	cmd.Flags().Set("poi-reward", "75")
+	require.NoError(cmd.Flags().Set("name", "Updated Name"))
+	require.NoError(cmd.Flags().Set("score", "150"))
+	require.NoError(cmd.Flags().Set("poi-reward", "75"))
 
 	name, _ := cmd.Flags().GetString("name")
 	require.Equal("Updated Name", name)

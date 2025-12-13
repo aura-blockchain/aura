@@ -3,7 +3,6 @@ package keeper
 import (
 	"testing"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -26,7 +25,7 @@ func (suite *MsgServerTestSuite) TestMsgServerImplementation() {
 }
 
 func (suite *MsgServerTestSuite) TestNilRequest() {
-	ctx := sdk.WrapSDKContext(suite.SdkCtx)
+	ctx := suite.SdkCtx.Context()
 	
 	// All msg handlers should handle nil requests gracefully
 	// This test should be customized per module based on available messages
@@ -34,7 +33,7 @@ func (suite *MsgServerTestSuite) TestNilRequest() {
 }
 
 func (suite *MsgServerTestSuite) TestInvalidSigner() {
-	ctx := sdk.WrapSDKContext(suite.SdkCtx)
+	ctx := suite.SdkCtx.Context()
 	
 	// Test that messages reject empty or invalid signers
 	// This test should be customized per module based on available messages
@@ -42,7 +41,7 @@ func (suite *MsgServerTestSuite) TestInvalidSigner() {
 }
 
 func (suite *MsgServerTestSuite) TestValidMessage() {
-	ctx := sdk.WrapSDKContext(suite.SdkCtx)
+	ctx := suite.SdkCtx.Context()
 	
 	// Test valid message execution
 	// This test should be customized per module based on available messages
@@ -50,7 +49,7 @@ func (suite *MsgServerTestSuite) TestValidMessage() {
 }
 
 func (suite *MsgServerTestSuite) TestUnauthorized() {
-	ctx := sdk.WrapSDKContext(suite.SdkCtx)
+	ctx := suite.SdkCtx.Context()
 	
 	// Test unauthorized access attempts
 	// This test should be customized per module based on available messages
@@ -58,7 +57,7 @@ func (suite *MsgServerTestSuite) TestUnauthorized() {
 }
 
 func (suite *MsgServerTestSuite) TestEventEmission() {
-	ctx := sdk.WrapSDKContext(suite.SdkCtx)
+	ctx := suite.SdkCtx.Context()
 	
 	// Test that events are emitted correctly
 	// This test should be customized per module based on available messages

@@ -11,7 +11,6 @@ import (
 	"github.com/aequitas/aura/chain/x/common/determinism"
 	"github.com/aequitas/aura/chain/x/incidentresponse/types"
 	"github.com/cosmos/cosmos-sdk/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // Keeper manages incident response functionality
@@ -38,12 +37,6 @@ func (k *KeeperKV) requireStore() {
 	if k.store == nil {
 		panic("incidentresponse keeper: KV store not initialized")
 	}
-}
-
-// sdkContext unwraps an SDK context
-func (k *KeeperKV) sdkContext(ctx context.Context) sdk.Context {
-	k.requireStore()
-	return sdk.UnwrapSDKContext(ctx)
 }
 
 // ========================================
@@ -326,7 +319,9 @@ func (k *KeeperKV) executeChainPause(
 				Description: fmt.Sprintf("Chain paused at level %s", pauseLevel),
 				Actor:       pausedBy,
 			})
-			k.store.SetIncident(ctx, incident)
+			if err := k.store.SetIncident(ctx, incident); err != nil {
+				return fmt.Errorf("failed to update incident %s: %w", incidentID, err)
+			}
 		}
 	}
 
@@ -381,7 +376,9 @@ func (k *KeeperKV) ResumeChain(ctx context.Context, resumedBy string, reason str
 				Description: reason,
 				Actor:       resumedBy,
 			})
-			k.store.SetIncident(ctx, incident)
+			if err := k.store.SetIncident(ctx, incident); err != nil {
+				return fmt.Errorf("failed to update incident %s: %w", pauseState.IncidentID, err)
+			}
 		}
 	}
 
@@ -492,7 +489,9 @@ func (k *KeeperKV) CheckWalletLimit(ctx context.Context, address string, amount 
 
 	// Update transferred amount
 	limits.TodayTransferred = strconv.FormatInt(todayTransferred+transferAmt, 10)
-	k.store.SetWalletLimit(ctx, limits)
+	if err := k.store.SetWalletLimit(ctx, limits); err != nil {
+		return fmt.Errorf("failed to update wallet limits for %s: %w", address, err)
+	}
 
 	return nil
 }
@@ -678,7 +677,9 @@ func (k *KeeperKV) CheckValidatorHealth(ctx context.Context) error {
 
 	// Update last health check time
 	params.BackupValidators.LastHealthCheck = determinism.GetBlockTime(ctx)
-	k.store.SetParams(ctx, params)
+	if err := k.store.SetParams(ctx, params); err != nil {
+		return fmt.Errorf("failed to update backup validator params: %w", err)
+	}
 
 	// In production, this would:
 	// 1. Check validator uptime
@@ -790,7 +791,9 @@ func (k *KeeperKV) TriggerInsuranceClaim(
 		Actor:       "system",
 	})
 
-	k.store.SetIncident(ctx, incident)
+	if err := k.store.SetIncident(ctx, incident); err != nil {
+		return "", fmt.Errorf("failed to persist insurance claim timeline for %s: %w", incidentID, err)
+	}
 
 	return claimID, nil
 }

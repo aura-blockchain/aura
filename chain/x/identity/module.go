@@ -1,5 +1,7 @@
 package identity
 
+//lint:file-ignore SA1019 // module still registers legacy invariants until SDK migration
+
 import (
 	"bytes"
 	"context"
@@ -133,8 +135,8 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 }
 
 // RegisterInvariants registers the identity module invariants.
-func (am AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {
-	// Register invariants here
+func (am AppModule) RegisterInvariants(ir sdk.InvariantRegistry) { //nolint:staticcheck // deprecated invariant registry used until SDK migration
+	keeper.RegisterInvariants(ir, am.keeper)
 }
 
 // InitGenesis performs genesis initialization for the identity module.

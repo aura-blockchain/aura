@@ -510,7 +510,7 @@ cat faucet-backup-20251210-120000.sql | docker exec -i aura-faucet-db psql -U fa
 
 3. Test RPC connection from faucet container:
    ```bash
-   docker exec aura-faucet-backend wget -qO- http://aura-validator-1:26657/status
+   docker exec aura-faucet-backend wget -qO- http://aura-observer-1:26657/status
    ```
 
 ### Transactions Failing
@@ -660,7 +660,7 @@ Consider adding:
 | Nginx (optional) | 8082 | http://localhost:8082 | Reverse proxy |
 | PostgreSQL | 5433 | localhost:5433 | Database (internal) |
 | Redis | 6380 | localhost:6380 | Cache (internal) |
-| Validator RPC | 27657 | http://localhost:27657 | Testnet node RPC |
+| Observer RPC | 8080 (proxy) / 28657 (direct) | http://localhost:8080/rpc | Hardened RPC endpoint served by `aura-observer-1` + nginx proxy |
 
 ## Support
 

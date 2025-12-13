@@ -245,12 +245,12 @@ func ValidatorSetInvariant(k Keeper) sdk.Invariant {
 				), true
 			}
 
-			// Check power is non-negative
-			if validator.Power < 0 {
+			// Check power is non-zero
+			if validator.Power == 0 {
 				return sdk.FormatInvariant(
 					types.ModuleName,
 					"validator-set-validity",
-					fmt.Sprintf("validator %s has negative power: %d",
+					fmt.Sprintf("validator %s has zero power: %d",
 						validator.Address, validator.Power),
 				), true
 			}

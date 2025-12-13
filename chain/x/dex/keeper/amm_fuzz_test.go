@@ -53,7 +53,7 @@ func FuzzGetQuote_ConstantProductBounds(f *testing.F) {
 			TotalLpTokens:         sdkmath.NewIntFromUint64(reserveA + reserveB),
 			Providers:             []types.LiquidityProvider{},
 		}
-		k.SetPool(ctx, pool)
+		require.NoError(t, k.SetPool(ctx, pool))
 
 		amountIn := sdkmath.NewIntFromUint64(in)
 		out, price, impact, fee, err := k.GetQuote(ctx, pool.PoolId, pool.DenomA, amountIn)
@@ -73,7 +73,7 @@ func FuzzGetQuote_ConstantProductBounds(f *testing.F) {
 		// Compare against a zero-fee quote to ensure fees never increase output.
 		pool.FeePercentage = sdkmath.LegacyZeroDec()
 		pool.ProtocolFeePercentage = sdkmath.LegacyZeroDec()
-		k.SetPool(ctx, pool)
+		require.NoError(t, k.SetPool(ctx, pool))
 		noFeeOut, _, _, _, err := k.GetQuote(ctx, pool.PoolId, pool.DenomA, amountIn)
 		if err == nil {
 			require.True(t, noFeeOut.GTE(out))

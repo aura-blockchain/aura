@@ -1,5 +1,7 @@
 package keeper
 
+//lint:file-ignore SA1019 // invariants rely on deprecated SDK registry until upstream removal
+
 import (
 	"fmt"
 

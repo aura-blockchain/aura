@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
 
 	sdkmath "cosmossdk.io/math"
@@ -201,7 +202,7 @@ func (k *Keeper) DeleteProposal(ctx sdk.Context, proposalID uint64) {
 // SetVote stores a vote in the KVStore
 func (k *Keeper) SetVote(ctx sdk.Context, vote *types.Vote) error {
 	store := ctx.KVStore(k.storeKey)
-	bz, err := k.marshalVote(vote)
+	bz, err := json.Marshal(vote)
 	if err != nil {
 		return err
 	}
@@ -236,7 +237,11 @@ func (k *Keeper) GetVote(ctx sdk.Context, proposalID uint64, voter string) (*typ
 		return nil, types.ErrInvalidVote
 	}
 
-	return k.unmarshalVote(bz)
+	var vote types.Vote
+	if err := json.Unmarshal(bz, &vote); err != nil {
+		return nil, err
+	}
+	return &vote, nil
 }
 
 // GetVotes retrieves all votes for a proposal
@@ -253,11 +258,11 @@ func (k *Keeper) GetVotes(ctx sdk.Context, proposalID uint64) []*types.Vote {
 
 	var votes []*types.Vote
 	for ; iterator.Valid(); iterator.Next() {
-		vote, err := k.unmarshalVote(iterator.Value())
-		if err != nil {
+		var vote types.Vote
+		if err := json.Unmarshal(iterator.Value(), &vote); err != nil {
 			continue
 		}
-		votes = append(votes, vote)
+		votes = append(votes, &vote)
 	}
 	return votes
 }
@@ -930,12 +935,12 @@ func (k *Keeper) GetAllVotes(ctx sdk.Context) []*types.Vote {
 
 	var votes []*types.Vote
 	for ; iterator.Valid(); iterator.Next() {
-		vote, err := k.unmarshalVote(iterator.Value())
-		if err != nil {
+		var vote types.Vote
+		if err := json.Unmarshal(iterator.Value(), &vote); err != nil {
 			ctx.Logger().Error("failed to unmarshal vote", "error", err)
 			continue
 		}
-		votes = append(votes, vote)
+		votes = append(votes, &vote)
 	}
 	return votes
 }

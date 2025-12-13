@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 
@@ -16,12 +15,9 @@ import (
 )
 
 type Keeper struct {
-	cdc          codec.BinaryCodec
-	storeKey     storetypes.StoreKey
-	storeService interface{
-		OpenKVStore(context.Context) interface{ Get([]byte) ([]byte, error); Set([]byte, []byte) error }
-	}
-	logger log.Logger
+	cdc      codec.BinaryCodec
+	storeKey storetypes.StoreKey
+	logger   log.Logger
 }
 
 // SetLogger sets the keeper logger
@@ -139,11 +135,7 @@ func (k *Keeper) ValidateSignature(ctx sdk.Context, signer string, message []byt
 
 	// Reject signatures that explicitly contain "invalid_signature"
 	signatureStr := string(signature)
-	if signatureStr == "invalid_signature" {
-		return false
-	}
-
-	return true
+	return signatureStr != "invalid_signature"
 }
 
 // EstimateGas estimates the gas cost for a transaction

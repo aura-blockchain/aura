@@ -67,17 +67,23 @@ func (k *TestKeeper) SubmitProposal(title, description string, category types.Pr
 
 	// Parse deposit amounts for numeric comparison
 	var initialDepositInt int64
-	fmt.Sscanf(initialDeposit, "%d", &initialDepositInt)
+	if _, err := fmt.Sscanf(initialDeposit, "%d", &initialDepositInt); err != nil {
+		return 0, fmt.Errorf("invalid initial deposit: %w", err)
+	}
 
 	if categoryParams != nil {
 		var minDepositInt int64
-		fmt.Sscanf(categoryParams.MinDeposit, "%d", &minDepositInt)
+		if _, err := fmt.Sscanf(categoryParams.MinDeposit, "%d", &minDepositInt); err != nil {
+			return 0, fmt.Errorf("invalid category min deposit: %w", err)
+		}
 		if initialDepositInt >= minDepositInt {
 			status = types.StatusVotingPeriod
 		}
 	} else {
 		var minDepositInt int64
-		fmt.Sscanf(k.params.MinDeposit, "%d", &minDepositInt)
+		if _, err := fmt.Sscanf(k.params.MinDeposit, "%d", &minDepositInt); err != nil {
+			return 0, fmt.Errorf("invalid params min deposit: %w", err)
+		}
 		if initialDepositInt >= minDepositInt {
 			status = types.StatusVotingPeriod
 		}
@@ -152,12 +158,16 @@ func (k *TestKeeper) AddDeposit(proposalID uint64, depositor, amount string) err
 	// Parse initial deposit from proposal
 	if proposal.TotalDeposit != "" {
 		var initialDeposit int64
-		fmt.Sscanf(proposal.TotalDeposit, "%d", &initialDeposit)
+		if _, err := fmt.Sscanf(proposal.TotalDeposit, "%d", &initialDeposit); err != nil {
+			return fmt.Errorf("invalid initial deposit: %w", err)
+		}
 		totalDeposit = initialDeposit
 	}
 	// Add new deposit
 	var newDeposit int64
-	fmt.Sscanf(amount, "%d", &newDeposit)
+	if _, err := fmt.Sscanf(amount, "%d", &newDeposit); err != nil {
+		return fmt.Errorf("invalid new deposit: %w", err)
+	}
 	totalDeposit += newDeposit
 
 	proposal.TotalDeposit = fmt.Sprintf("%d", totalDeposit)
@@ -165,7 +175,9 @@ func (k *TestKeeper) AddDeposit(proposalID uint64, depositor, amount string) err
 	// Check if we should transition to voting period
 	if proposal.Status == types.StatusDepositPeriod {
 		var minDepositInt int64
-		fmt.Sscanf(k.params.MinDeposit, "%d", &minDepositInt)
+		if _, err := fmt.Sscanf(k.params.MinDeposit, "%d", &minDepositInt); err != nil {
+			return fmt.Errorf("invalid min deposit: %w", err)
+		}
 		if totalDeposit >= minDepositInt {
 			proposal.Status = types.StatusVotingPeriod
 			now := time.Now()
@@ -384,12 +396,15 @@ func (k *TestKeeper) TallyVotes(proposalID uint64) (*types.TallyResult, error) {
 		// Check if proposal needs execution delay
 		categoryParamsMap := k.params.GetCategoryParams()
 		categoryParams := categoryParamsMap[proposal.Category.String()]
-		execDelay, _ := gogotypes.DurationFromProto(categoryParams.ExecutionDelay)
-		if categoryParams != nil && categoryParams.ExecutionDelay != nil && execDelay > 0 {
-			proposal.Status = types.StatusExecutionDelay
-			execTime := time.Now().Add(execDelay)
-			execTimeProto, _ := gogotypes.TimestampProto(execTime)
-			proposal.ExecutionTime = execTimeProto
+		if categoryParams != nil && categoryParams.ExecutionDelay != nil {
+			if execDelay, err := gogotypes.DurationFromProto(categoryParams.ExecutionDelay); err == nil && execDelay > 0 {
+				proposal.Status = types.StatusExecutionDelay
+				execTime := time.Now().Add(execDelay)
+				execTimeProto, _ := gogotypes.TimestampProto(execTime)
+				proposal.ExecutionTime = execTimeProto
+			} else {
+				proposal.Status = types.StatusPassed
+			}
 		} else {
 			proposal.Status = types.StatusPassed
 		}

@@ -11,15 +11,15 @@ import (
 // RegisterDevice registers a new device for a wallet
 func (k Keeper) RegisterDevice(ctx context.Context, walletID, deviceID, deviceName, deviceType string, fingerprint []byte) (*wsproto.DeviceFingerprint, error) {
 	device := &wsproto.DeviceFingerprint{
-		DeviceId:      deviceID,
-		WalletId:      walletID,
-		DeviceName:    deviceName,
-		DeviceType:    deviceType,
-		Fingerprint:   fingerprint,
+		DeviceId:        deviceID,
+		WalletId:        walletID,
+		DeviceName:      deviceName,
+		DeviceType:      deviceType,
+		Fingerprint:     fingerprint,
 		FingerprintHash: k.hashFingerprint(fingerprint),
-		Trusted:       true,
-		RegisteredAt:  blockTimeToGogoTimestamp(ctx),
-		LastSeenAt:    blockTimeToGogoTimestamp(ctx),
+		Trusted:         true,
+		RegisteredAt:    blockTimeToGogoTimestamp(ctx),
+		LastSeenAt:      blockTimeToGogoTimestamp(ctx),
 	}
 
 	deviceBytes, err := k.cdc.Marshal(device)
@@ -29,7 +29,9 @@ func (k Keeper) RegisterDevice(ctx context.Context, walletID, deviceID, deviceNa
 
 	store := k.getStore(ctx)
 	key := []byte(fmt.Sprintf("device_%s_%s", walletID, deviceID))
-	store.Set(key, deviceBytes)
+	if err := store.Set(key, deviceBytes); err != nil {
+		return nil, err
+	}
 
 	return device, nil
 }
@@ -39,7 +41,10 @@ func (k Keeper) VerifyDevice(ctx context.Context, walletID, deviceID string, fin
 	store := k.getStore(ctx)
 	key := []byte(fmt.Sprintf("device_%s_%s", walletID, deviceID))
 
-	deviceBytes, _ := store.Get(key)
+	deviceBytes, err := store.Get(key)
+	if err != nil {
+		return false, err
+	}
 	if deviceBytes == nil {
 		return false, fmt.Errorf("device not registered")
 	}
@@ -61,8 +66,13 @@ func (k Keeper) VerifyDevice(ctx context.Context, walletID, deviceID string, fin
 
 	// Update last seen
 	device.LastSeenAt = blockTimeToGogoTimestamp(ctx)
-	updatedBytes, _ := k.cdc.Marshal(&device)
-	store.Set(key, updatedBytes)
+	updatedBytes, err := k.cdc.Marshal(&device)
+	if err != nil {
+		return false, err
+	}
+	if err := store.Set(key, updatedBytes); err != nil {
+		return false, err
+	}
 
 	return true, nil
 }
@@ -72,7 +82,10 @@ func (k Keeper) RevokeDevice(ctx context.Context, walletID, deviceID string) err
 	store := k.getStore(ctx)
 	key := []byte(fmt.Sprintf("device_%s_%s", walletID, deviceID))
 
-	deviceBytes, _ := store.Get(key)
+	deviceBytes, err := store.Get(key)
+	if err != nil {
+		return err
+	}
 	if deviceBytes == nil {
 		return fmt.Errorf("device not found")
 	}
@@ -90,8 +103,7 @@ func (k Keeper) RevokeDevice(ctx context.Context, walletID, deviceID string) err
 		return err
 	}
 
-	store.Set(key, updatedBytes)
-	return nil
+	return store.Set(key, updatedBytes)
 }
 
 func (k Keeper) hashFingerprint(fingerprint []byte) []byte {

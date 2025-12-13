@@ -76,7 +76,7 @@ func TestDeleteIR(t *testing.T) {
 		Status:      types.IRStatus(inclusionroutinespb.IRStatus_IR_STATUS_ACTIVE),
 	}
 
-	keeper.CreateIR(ctx, ir)
+	require.NoError(t, keeper.CreateIR(ctx, ir))
 
 	err := keeper.DeleteIR(ctx, "IR-002")
 	if err != nil {
@@ -114,8 +114,8 @@ func TestSetPrerequisites(t *testing.T) {
 		Version:     "1.0",
 	}
 
-	keeper.CreateIR(ctx, ir1)
-	keeper.CreateIR(ctx, ir2)
+	require.NoError(t, keeper.CreateIR(ctx, ir1))
+	require.NoError(t, keeper.CreateIR(ctx, ir2))
 
 	// Set prerequisite
 	err := keeper.SetPrerequisites(ctx, "IR-101", []string{"IR-100"})
@@ -168,15 +168,15 @@ func TestCircularDependency(t *testing.T) {
 		Version:     "1.0",
 	}
 
-	keeper.CreateIR(ctx, ir1)
-	keeper.CreateIR(ctx, ir2)
-	keeper.CreateIR(ctx, ir3)
+	require.NoError(t, keeper.CreateIR(ctx, ir1))
+	require.NoError(t, keeper.CreateIR(ctx, ir2))
+	require.NoError(t, keeper.CreateIR(ctx, ir3))
 
 	// IR-201 requires IR-200
-	keeper.SetPrerequisites(ctx, "IR-201", []string{"IR-200"})
+	require.NoError(t, keeper.SetPrerequisites(ctx, "IR-201", []string{"IR-200"}))
 
 	// IR-202 requires IR-201
-	keeper.SetPrerequisites(ctx, "IR-202", []string{"IR-201"})
+	require.NoError(t, keeper.SetPrerequisites(ctx, "IR-202", []string{"IR-201"}))
 
 	// Try to make IR-200 require IR-202 (creates cycle)
 	err := keeper.SetPrerequisites(ctx, "IR-200", []string{"IR-202"})
@@ -199,7 +199,7 @@ func TestRateLimit(t *testing.T) {
 		Version:     "1.0",
 	}
 
-	keeper.CreateIR(ctx, ir)
+	require.NoError(t, keeper.CreateIR(ctx, ir))
 
 	// Set rate limit
 	limit := types.IRRateLimit{
@@ -260,9 +260,9 @@ func TestValidatePrerequisites(t *testing.T) {
 		Version:     "1.0",
 	}
 
-	keeper.CreateIR(ctx, ir1)
-	keeper.CreateIR(ctx, ir2)
-	keeper.SetPrerequisites(ctx, "IR-401", []string{"IR-400"})
+	require.NoError(t, keeper.CreateIR(ctx, ir1))
+	require.NoError(t, keeper.CreateIR(ctx, ir2))
+	require.NoError(t, keeper.SetPrerequisites(ctx, "IR-401", []string{"IR-400"}))
 
 	// Test with prerequisites met
 	completed := []string{"IR-400"}

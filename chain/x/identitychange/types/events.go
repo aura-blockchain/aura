@@ -1,7 +1,5 @@
 package types
 
-import "fmt"
-
 // Event types for the identitychange module
 const (
 	EventTypeIdentityChangeRequested = "identity_change_requested"
@@ -24,5 +22,3 @@ const (
 	AttributeKeyBlockHeight  = "block_height"
 	AttributeKeyBlockTime    = "block_time"
 )
-
-func formatInt64(i int64) string { return fmt.Sprintf("%d", i) }

@@ -135,7 +135,7 @@ func TestRecordAllPoolPrices_WithValidation(t *testing.T) {
 		ReserveB:     sdkmath.NewInt(200_000),
 		TotalLpTokens: sdkmath.NewInt(1000),
 	}
-	k.SetPool(ctx, pool)
+	require.NoError(t, k.SetPool(ctx, pool))
 
 	// Record prices (first time, no validation)
 	k.RecordAllPoolPrices(ctx)
@@ -160,7 +160,7 @@ func TestRecordAllPoolPrices_RejectsManipulation(t *testing.T) {
 		ReserveB:     sdkmath.NewInt(200_000),
 		TotalLpTokens: sdkmath.NewInt(1000),
 	}
-	k.SetPool(ctx, pool)
+	require.NoError(t, k.SetPool(ctx, pool))
 
 	// Record first observation
 	k.RecordAllPoolPrices(ctx)
@@ -169,7 +169,7 @@ func TestRecordAllPoolPrices_RejectsManipulation(t *testing.T) {
 
 	// Simulate flash loan attack: double the price
 	pool.ReserveB = sdkmath.NewInt(400_000) // Price = 0.40 (+100%)
-	k.SetPool(ctx, pool)
+	require.NoError(t, k.SetPool(ctx, pool))
 
 	// Advance block
 	ctx = ctx.WithBlockHeight(ctx.BlockHeight() + 1)
@@ -195,7 +195,7 @@ func TestRecordAllPoolPrices_SkipsEmptyPools(t *testing.T) {
 		ReserveB:     sdkmath.ZeroInt(),
 		TotalLpTokens: sdkmath.ZeroInt(),
 	}
-	k.SetPool(ctx, emptyPool)
+	require.NoError(t, k.SetPool(ctx, emptyPool))
 
 	// Record prices
 	k.RecordAllPoolPrices(ctx)
@@ -221,7 +221,7 @@ func TestGetAuraPrice_UsesTWAP(t *testing.T) {
 		ReserveB:     sdkmath.NewInt(200_000),
 		TotalLpTokens: sdkmath.NewInt(1000),
 	}
-	k.SetPool(ctx, pool)
+	require.NoError(t, k.SetPool(ctx, pool))
 
 	// Record 150+ observations for TWAP to be used (well above minimum of 100)
 	baseTime := ctx.BlockTime()
@@ -257,7 +257,7 @@ func TestGetAuraPrice_FallbackToSpot(t *testing.T) {
 		ReserveB:     sdkmath.NewInt(200_000),
 		TotalLpTokens: sdkmath.NewInt(1000),
 	}
-	k.SetPool(ctx, pool)
+	require.NoError(t, k.SetPool(ctx, pool))
 
 	// Record only a few observations (not enough for TWAP)
 	baseTime := ctx.BlockTime()
@@ -304,7 +304,7 @@ func TestPriceManipulationProtection_EndToEnd(t *testing.T) {
 		ReserveB:     sdkmath.NewInt(200_000),
 		TotalLpTokens: sdkmath.NewInt(1000),
 	}
-	k.SetPool(ctx, pool)
+	require.NoError(t, k.SetPool(ctx, pool))
 
 	// Record initial price through EndBlocker
 	k.RecordAllPoolPrices(ctx)
@@ -316,7 +316,7 @@ func TestPriceManipulationProtection_EndToEnd(t *testing.T) {
 
 	// Simulate flash loan attack: double the price
 	pool.ReserveB = sdkmath.NewInt(400_000)
-	k.SetPool(ctx, pool)
+	require.NoError(t, k.SetPool(ctx, pool))
 
 	// Advance block
 	ctx = ctx.WithBlockHeight(ctx.BlockHeight() + 1)

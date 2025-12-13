@@ -56,7 +56,7 @@ func TestTWAPOracle(t *testing.T) {
 		ReserveA: math.NewInt(1000000),
 		ReserveB: math.NewInt(200000),
 	}
-	keeper.SetPool(ctx, pool)
+	require.NoError(t, keeper.SetPool(ctx, pool))
 
 	// Record first observation
 	err := keeper.RecordTWAPObservation(ctx, poolID)
@@ -68,7 +68,7 @@ func TestTWAPOracle(t *testing.T) {
 
 	pool.ReserveA = math.NewInt(1100000)
 	pool.ReserveB = math.NewInt(220000)
-	keeper.SetPool(ctx, pool)
+	require.NoError(t, keeper.SetPool(ctx, pool))
 
 	// Record second observation
 	err = keeper.RecordTWAPObservation(ctx, poolID)
@@ -176,7 +176,7 @@ func TestMaxTradeSize(t *testing.T) {
 		ReserveA: math.NewInt(1000000),
 		ReserveB: math.NewInt(200000),
 	}
-	keeper.SetPool(ctx, pool)
+	require.NoError(t, keeper.SetPool(ctx, pool))
 
 	// 10% of pool should succeed (max is 20%)
 	tradeSize := math.NewInt(100000)
@@ -396,11 +396,11 @@ func TestTWAPPruning(t *testing.T) {
 		ReserveA: math.NewInt(1000000),
 		ReserveB: math.NewInt(200000),
 	}
-	keeper.SetPool(ctx, pool)
+	require.NoError(t, keeper.SetPool(ctx, pool))
 
 	// Record many observations
 	for i := 0; i < 150; i++ {
-		keeper.RecordTWAPObservation(ctx, poolID)
+		require.NoError(t, keeper.RecordTWAPObservation(ctx, poolID))
 		ctx = ctx.WithBlockHeight(ctx.BlockHeight() + 1)
 		ctx = ctx.WithBlockTime(ctx.BlockTime().Add(10 * time.Second))
 	}

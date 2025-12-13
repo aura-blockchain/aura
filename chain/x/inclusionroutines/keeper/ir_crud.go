@@ -85,8 +85,12 @@ func (k *Keeper) DeleteIR(ctx sdk.Context, id string) error {
 	}
 
 	// Delete related data
-	store.Delete([]byte(types.PrerequisiteStoreKey(id)))
-	store.Delete([]byte(types.RateLimitStoreKey(id)))
+	if err := store.Delete([]byte(types.PrerequisiteStoreKey(id))); err != nil {
+		return fmt.Errorf("failed to delete prerequisites: %w", err)
+	}
+	if err := store.Delete([]byte(types.RateLimitStoreKey(id))); err != nil {
+		return fmt.Errorf("failed to delete rate limit: %w", err)
+	}
 
 	return nil
 }

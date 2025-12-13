@@ -376,14 +376,16 @@ func BenchmarkWasmFullLifecycle(b *testing.B) {
 
 		// 3. Execute contract
 		executeMsg := json.RawMessage(`{"get_config":{}}`)
-		_, err = keeper.ExecuteContract(
+		if _, execErr := keeper.ExecuteContract(
 			ctx,
 			contractAddr,
 			sender,
 			executeMsg,
 			sdk.NewCoins(),
-		)
-		// Error is acceptable for this benchmark (measuring overhead)
+		); execErr != nil {
+			// Error is acceptable for this benchmark (measuring overhead)
+			b.Logf("execute error ignored in benchmark: %v", execErr)
+		}
 
 		gasAfterExecute := ctx.GasMeter().GasConsumed()
 

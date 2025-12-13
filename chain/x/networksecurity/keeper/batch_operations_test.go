@@ -23,7 +23,7 @@ func TestUpdateThreatMetricsBatched(t *testing.T) {
 
 	// Create test rate limit entries
 	params := types.DefaultParams()
-	k.SetParams(ctx, *params)
+	require.NoError(t, k.SetParams(ctx, *params))
 
 	entries := []types.RateLimitEntry{
 		{
@@ -54,7 +54,7 @@ func TestUpdateThreatMetricsBatched(t *testing.T) {
 	}
 
 	for _, entry := range entries {
-		k.SetRateLimitEntry(ctx, entry)
+		require.NoError(t, k.SetRateLimitEntry(ctx, entry))
 	}
 
 	// Process first batch (limit 2)
@@ -91,7 +91,7 @@ func TestProcessSecurityAlertsBatched(t *testing.T) {
 
 	params := types.DefaultParams()
 	params.ForkDetection.EnableAutoResolution = true
-	k.SetParams(ctx, *params)
+	require.NoError(t, k.SetParams(ctx, *params))
 
 	// Create test fork alerts
 	for i := 0; i < 5; i++ {
@@ -103,7 +103,7 @@ func TestProcessSecurityAlertsBatched(t *testing.T) {
 			DetectedAt:  ctx.BlockTime(),
 			Resolved:    false,
 		}
-		k.SetForkAlert(ctx, alert)
+		require.NoError(t, k.SetForkAlert(ctx, alert))
 	}
 
 	// Create test partition alerts
@@ -116,7 +116,7 @@ func TestProcessSecurityAlertsBatched(t *testing.T) {
 			DetectedAt:     ctx.BlockTime(),
 			Resolved:       false,
 		}
-		k.SetPartitionAlert(ctx, alert)
+		require.NoError(t, k.SetPartitionAlert(ctx, alert))
 	}
 
 	// Process first batch (limit 3)
@@ -139,7 +139,7 @@ func TestRefreshReputationScoresBatched(t *testing.T) {
 	params := types.DefaultParams()
 	params.Reputation.EnableTracking = true
 	params.Reputation.DecayRate = 5
-	k.SetParams(ctx, *params)
+	require.NoError(t, k.SetParams(ctx, *params))
 
 	// Create test reputations with old timestamps
 	oldHeight := ctx.BlockHeight() - REPUTATION_REFRESH_INTERVAL - 10
@@ -168,7 +168,7 @@ func TestRefreshReputationScoresBatched(t *testing.T) {
 	}
 
 	for _, rep := range reputations {
-		k.SetReputation(ctx, rep)
+		require.NoError(t, k.SetReputation(ctx, rep))
 	}
 
 	// Process first batch (limit 2)
@@ -204,7 +204,7 @@ func TestRefreshReputationScoresBatchedWithUptime(t *testing.T) {
 
 	params := types.DefaultParams()
 	params.Reputation.EnableTracking = true
-	k.SetParams(ctx, *params)
+	require.NoError(t, k.SetParams(ctx, *params))
 
 	// Create peer info with connection time
 	peerInfo := types.PeerInfo{
@@ -212,7 +212,7 @@ func TestRefreshReputationScoresBatchedWithUptime(t *testing.T) {
 		IpAddress:   "192.168.1.1",
 		ConnectedAt: ctx.BlockTime().Add(-1 * time.Hour),
 	}
-	k.SetPeerInfo(ctx, peerInfo)
+	require.NoError(t, k.SetPeerInfo(ctx, peerInfo))
 
 	// Create reputation
 	rep := types.NodeReputation{
@@ -221,7 +221,7 @@ func TestRefreshReputationScoresBatchedWithUptime(t *testing.T) {
 		Uptime:            0,
 		LastUpdatedHeight: ctx.BlockHeight() - REPUTATION_REFRESH_INTERVAL - 1,
 	}
-	k.SetReputation(ctx, rep)
+	require.NoError(t, k.SetReputation(ctx, rep))
 
 	// Process batch
 	processed := k.RefreshReputationScoresBatched(ctx, 10)
@@ -239,7 +239,7 @@ func TestPruneLowReputationPeersBatched(t *testing.T) {
 	k, ctx := setupKeeper(t)
 
 	params := types.DefaultParams()
-	k.SetParams(ctx, *params)
+	require.NoError(t, k.SetParams(ctx, *params))
 
 	// Create peers with low reputation and high misbehavior
 	for i := 0; i < 5; i++ {
@@ -251,7 +251,7 @@ func TestPruneLowReputationPeersBatched(t *testing.T) {
 			IpAddress:   generateTestIP(i),
 			ConnectedAt: ctx.BlockTime(),
 		}
-		k.SetPeerInfo(ctx, peerInfo)
+		require.NoError(t, k.SetPeerInfo(ctx, peerInfo))
 
 		// Create reputation
 		rep := types.NodeReputation{
@@ -260,7 +260,7 @@ func TestPruneLowReputationPeersBatched(t *testing.T) {
 			MisbehaviorCount:  15,
 			LastUpdatedHeight: ctx.BlockHeight(),
 		}
-		k.SetReputation(ctx, rep)
+		require.NoError(t, k.SetReputation(ctx, rep))
 	}
 
 	// Prune first batch (limit 2)
@@ -288,7 +288,7 @@ func TestUpdateKnownPeerListBatched(t *testing.T) {
 			IpAddress:   generateTestIP(i),
 			ConnectedAt: ctx.BlockTime(),
 		}
-		k.SetPeerInfo(ctx, peerInfo)
+		require.NoError(t, k.SetPeerInfo(ctx, peerInfo))
 	}
 
 	// Update known peer list
@@ -313,7 +313,7 @@ func TestBatchOperationsUnderLoad(t *testing.T) {
 
 	params := types.DefaultParams()
 	params.Reputation.EnableTracking = true
-	k.SetParams(ctx, *params)
+	require.NoError(t, k.SetParams(ctx, *params))
 
 	// Create many entries to simulate high load
 	numEntries := 1000
@@ -325,7 +325,7 @@ func TestBatchOperationsUnderLoad(t *testing.T) {
 			RequestCount: uint64(i),
 			WindowStart:  ctx.BlockTime().Add(-2 * params.RateLimit.WindowDuration),
 		}
-		k.SetRateLimitEntry(ctx, entry)
+		require.NoError(t, k.SetRateLimitEntry(ctx, entry))
 	}
 
 	// Create reputations
@@ -335,7 +335,7 @@ func TestBatchOperationsUnderLoad(t *testing.T) {
 			Score:             100,
 			LastUpdatedHeight: ctx.BlockHeight() - REPUTATION_REFRESH_INTERVAL - 1,
 		}
-		k.SetReputation(ctx, rep)
+		require.NoError(t, k.SetReputation(ctx, rep))
 	}
 
 	// Process multiple batches to ensure progress
@@ -370,7 +370,7 @@ func TestBatchOperationsEmptyState(t *testing.T) {
 	k, ctx := setupKeeper(t)
 
 	params := types.DefaultParams()
-	k.SetParams(ctx, *params)
+	require.NoError(t, k.SetParams(ctx, *params))
 
 	// Test with no data
 	processed := k.UpdateThreatMetricsBatched(ctx, 10)

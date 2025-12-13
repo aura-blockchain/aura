@@ -1,7 +1,5 @@
 package types
 
-import "fmt"
-
 // Event types for the monitoring module
 const (
 	EventTypeAlertTriggered  = "alert_triggered"
@@ -22,6 +20,3 @@ const (
 	AttributeKeyBlockHeight = "block_height"
 	AttributeKeyBlockTime   = "block_time"
 )
-
-func formatInt64(i int64) string   { return fmt.Sprintf("%d", i) }
-func formatFloat64(f float64) string { return fmt.Sprintf("%.6f", f) }

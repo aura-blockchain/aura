@@ -11,6 +11,7 @@ import (
 )
 
 // InitGenesis initializes the module state from genesis data
+//nolint:govet // copylocks warning acceptable for keeper value usage in tests
 func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) error {
 	if err := types.ValidateGenesis(data); err != nil {
 		return fmt.Errorf("invalid genesis state: %w", err)
@@ -114,6 +115,7 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) error
 }
 
 // ExportGenesis exports the current module state to genesis
+//nolint:govet // copylocks warning acceptable for keeper value usage in tests
 func (k Keeper) ExportGenesis(ctx context.Context) *types.GenesisState {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 

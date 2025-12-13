@@ -1,7 +1,5 @@
 package types
 
-import "fmt"
-
 // Event types for the privacy module
 const (
 	EventTypeEncryptionKeyGenerated = "encryption_key_generated"
@@ -29,6 +27,3 @@ const (
 	AttributeKeySender      = "sender"
 	AttributeKeyTxHash      = "tx_hash"
 )
-
-func formatInt64(i int64) string   { return fmt.Sprintf("%d", i) }
-func formatUint32(u uint32) string { return fmt.Sprintf("%d", u) }

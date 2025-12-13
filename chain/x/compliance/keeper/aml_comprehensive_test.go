@@ -72,7 +72,7 @@ func (suite *AMLComprehensiveTestSuite) TestAMLScreening_BoundaryRiskScores() {
 				LastAssessment: suite.SdkCtx.BlockTime(),
 			}
 
-			suite.Keeper.SetAMLProfile(suite.SdkCtx, profile)
+			suite.Require().NoError(suite.Keeper.SetAMLProfile(suite.SdkCtx, profile))
 
 			// Retrieve and verify
 			retrieved, err := suite.Keeper.GetAMLProfile(suite.SdkCtx, address)
@@ -94,12 +94,12 @@ func (suite *AMLComprehensiveTestSuite) TestAMLScreening_RiskLevelTransitions() 
 		RiskFactors:    []string{"low-volume"},
 		LastAssessment: suite.SdkCtx.BlockTime(),
 	}
-	suite.Keeper.SetAMLProfile(suite.SdkCtx, profile)
+	suite.Require().NoError(suite.Keeper.SetAMLProfile(suite.SdkCtx, profile))
 
 	// Test transition: LOW -> MEDIUM
 	profile.RiskLevel = types.AMLRiskLevel_AML_RISK_MEDIUM
 	profile.RiskFactors = []string{"increased-volume"}
-	suite.Keeper.SetAMLProfile(suite.SdkCtx, profile)
+	suite.Require().NoError(suite.Keeper.SetAMLProfile(suite.SdkCtx, profile))
 
 	retrieved, err := suite.Keeper.GetAMLProfile(suite.SdkCtx, address)
 	suite.NoError(err)
@@ -108,7 +108,7 @@ func (suite *AMLComprehensiveTestSuite) TestAMLScreening_RiskLevelTransitions() 
 	// Test transition: MEDIUM -> HIGH
 	profile.RiskLevel = types.AMLRiskLevel_AML_RISK_HIGH
 	profile.RiskFactors = []string{"suspicious-pattern"}
-	suite.Keeper.SetAMLProfile(suite.SdkCtx, profile)
+	suite.Require().NoError(suite.Keeper.SetAMLProfile(suite.SdkCtx, profile))
 
 	retrieved, err = suite.Keeper.GetAMLProfile(suite.SdkCtx, address)
 	suite.NoError(err)
@@ -117,7 +117,7 @@ func (suite *AMLComprehensiveTestSuite) TestAMLScreening_RiskLevelTransitions() 
 	// Test transition: HIGH -> SEVERE
 	profile.RiskLevel = types.AMLRiskLevel_AML_RISK_SEVERE
 	profile.RiskFactors = []string{"confirmed-suspicious-activity"}
-	suite.Keeper.SetAMLProfile(suite.SdkCtx, profile)
+	suite.Require().NoError(suite.Keeper.SetAMLProfile(suite.SdkCtx, profile))
 
 	retrieved, err = suite.Keeper.GetAMLProfile(suite.SdkCtx, address)
 	suite.NoError(err)
@@ -126,7 +126,7 @@ func (suite *AMLComprehensiveTestSuite) TestAMLScreening_RiskLevelTransitions() 
 	// Test transition: SEVERE -> LOW (after review clears concerns)
 	profile.RiskLevel = types.AMLRiskLevel_AML_RISK_LOW
 	profile.RiskFactors = []string{"cleared-after-review"}
-	suite.Keeper.SetAMLProfile(suite.SdkCtx, profile)
+	suite.Require().NoError(suite.Keeper.SetAMLProfile(suite.SdkCtx, profile))
 
 	retrieved, err = suite.Keeper.GetAMLProfile(suite.SdkCtx, address)
 	suite.NoError(err)
@@ -145,7 +145,7 @@ func (suite *AMLComprehensiveTestSuite) TestAMLScreening_RiskFactors() {
 		LastAssessment: suite.SdkCtx.BlockTime(),
 	}
 
-	suite.Keeper.SetAMLProfile(suite.SdkCtx, profile)
+	suite.Require().NoError(suite.Keeper.SetAMLProfile(suite.SdkCtx, profile))
 
 	retrieved, err := suite.Keeper.GetAMLProfile(suite.SdkCtx, address)
 	suite.NoError(err)
@@ -168,7 +168,7 @@ func (suite *AMLComprehensiveTestSuite) TestAMLScreening_TransactionVolume() {
 		LastAssessment:    suite.SdkCtx.BlockTime(),
 	}
 
-	suite.Keeper.SetAMLProfile(suite.SdkCtx, profile)
+	suite.Require().NoError(suite.Keeper.SetAMLProfile(suite.SdkCtx, profile))
 
 	retrieved, err := suite.Keeper.GetAMLProfile(suite.SdkCtx, address)
 	suite.NoError(err)
@@ -188,7 +188,7 @@ func (suite *AMLComprehensiveTestSuite) TestAMLScreening_StaleAssessmentDetectio
 		RiskLevel:      types.AMLRiskLevel_AML_RISK_LOW,
 		LastAssessment: oldTime,
 	}
-	suite.Keeper.SetAMLProfile(suite.SdkCtx, profile)
+	suite.Require().NoError(suite.Keeper.SetAMLProfile(suite.SdkCtx, profile))
 
 	retrieved, err := suite.Keeper.GetAMLProfile(suite.SdkCtx, address)
 	suite.NoError(err)
@@ -212,14 +212,14 @@ func (suite *AMLComprehensiveTestSuite) TestAMLScreening_MultipleProfileUpdates(
 		RiskLevel:      types.AMLRiskLevel_AML_RISK_LOW,
 		LastAssessment: suite.SdkCtx.BlockTime(),
 	}
-	suite.Keeper.SetAMLProfile(suite.SdkCtx, profile)
+	suite.Require().NoError(suite.Keeper.SetAMLProfile(suite.SdkCtx, profile))
 
-	// Perform rapid updates
-	for i := 0; i < 10; i++ {
-		profile.TotalTransactions = uint64(10 + i)
-		profile.LastAssessment = suite.SdkCtx.BlockTime().Add(time.Duration(i) * time.Minute)
-		suite.Keeper.SetAMLProfile(suite.SdkCtx, profile)
-	}
+		// Perform rapid updates
+		for i := 0; i < 10; i++ {
+			profile.TotalTransactions = uint64(10 + i)
+			profile.LastAssessment = suite.SdkCtx.BlockTime().Add(time.Duration(i) * time.Minute)
+			suite.Require().NoError(suite.Keeper.SetAMLProfile(suite.SdkCtx, profile))
+		}
 
 	// Verify final state
 	retrieved, err := suite.Keeper.GetAMLProfile(suite.SdkCtx, address)
@@ -242,4 +242,3 @@ func (suite *AMLComprehensiveTestSuite) TestAMLScreening_UnknownAddress() {
 	// Application logic should treat unknown addresses appropriately
 	// (e.g., require screening before allowing transactions)
 }
-

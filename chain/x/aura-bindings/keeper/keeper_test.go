@@ -27,7 +27,7 @@ type KeeperTestSuite struct {
 	suite.Suite
 
 	ctx    sdk.Context
-	keeper keeper.Keeper
+	keeper *keeper.Keeper
 }
 
 func TestKeeperTestSuite(t *testing.T) {
@@ -54,7 +54,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 	vcParamsStore := vcparams.NewStore(*vctypes.DefaultParams())
 	vcKeeper := vckeeper.NewKeeperBuilder(vcParamsStore, "authority").WithStore(vcStoreKey, cdc).Build()
 
-	suite.keeper = *keeper.NewKeeper(
+	suite.keeper = keeper.NewKeeper(
 		cdc,
 		abStoreKey,
 		vcKeeper,

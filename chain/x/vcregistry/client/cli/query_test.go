@@ -302,10 +302,7 @@ func (s *QueryTestSuite) TestBatchVCStatus_IDParsing() {
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
 			// Simulate the parsing logic from the command
-			vcIDs := make([]string, 0)
-			for _, id := range splitAndTrim(tc.input, ",") {
-				vcIDs = append(vcIDs, id)
-			}
+			vcIDs := append([]string{}, splitAndTrim(tc.input, ",")...)
 			require.Equal(tc.expectedCount, len(vcIDs))
 		})
 	}
@@ -317,13 +314,15 @@ func (s *QueryTestSuite) TestUserVCs_FilterCombinations() {
 	require := s.Require()
 
 	// Set status filter
-	cmd.Flags().Set("status", "VC_STATUS_ACTIVE")
-	status, _ := cmd.Flags().GetString("status")
+	require.NoError(cmd.Flags().Set("status", "VC_STATUS_ACTIVE"))
+	status, err := cmd.Flags().GetString("status")
+	require.NoError(err)
 	require.Equal("VC_STATUS_ACTIVE", status)
 
 	// Set type filter
-	cmd.Flags().Set("type", "VC_TYPE_VERIFIED_HUMAN")
-	vcType, _ := cmd.Flags().GetString("type")
+	require.NoError(cmd.Flags().Set("type", "VC_TYPE_VERIFIED_HUMAN"))
+	vcType, err := cmd.Flags().GetString("type")
+	require.NoError(err)
 	require.Equal("VC_TYPE_VERIFIED_HUMAN", vcType)
 }
 
@@ -384,12 +383,16 @@ func trim(s string) string {
 // Benchmark tests
 func BenchmarkParseVCStatus(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		parseVCStatus("VC_STATUS_ACTIVE")
+		if _, err := parseVCStatus("VC_STATUS_ACTIVE"); err != nil {
+			b.Fatalf("unexpected error: %v", err)
+		}
 	}
 }
 
 func BenchmarkParseVCPolicyStatus(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		parseVCPolicyStatus("VC_POLICY_STATUS_ACTIVE")
+		if _, err := parseVCPolicyStatus("VC_POLICY_STATUS_ACTIVE"); err != nil {
+			b.Fatalf("unexpected error: %v", err)
+		}
 	}
 }

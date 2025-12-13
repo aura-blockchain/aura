@@ -267,7 +267,9 @@ func (k *Keeper) detectWashTrading(ctx context.Context, params types.Params) (*t
 		if pairCounts[reversePair] > 0 && count > 2 {
 			// Extract addresses
 			var sender, recipient string
-			fmt.Sscanf(pair, "%s:%s", &sender, &recipient)
+			if _, err := fmt.Sscanf(pair, "%s:%s", &sender, &recipient); err != nil {
+				return nil, fmt.Errorf("failed to parse pair %s: %w", pair, err)
+			}
 
 			return k.createAttackAlert(
 				ctx,

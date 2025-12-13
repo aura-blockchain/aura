@@ -1,5 +1,7 @@
 package monitoring
 
+//lint:file-ignore SA1019 -- monitoring module still registers legacy invariants until SDK migration
+
 import (
 	"bytes"
 	"encoding/json"

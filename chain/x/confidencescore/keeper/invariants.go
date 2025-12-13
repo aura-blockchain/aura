@@ -128,22 +128,22 @@ func ScoreRangeInvariant(k *Keeper) sdk.Invariant {
 			}
 
 			// Check total score is positive
-			if record.TotalScore < 0 {
+			if record.TotalScore == 0 {
 				return sdk.FormatInvariant(
 					types.ModuleName,
 					"score-range",
-					fmt.Sprintf("user %s has negative score: %d", record.WalletAddress, record.TotalScore),
+					fmt.Sprintf("user %s has zero score recorded", record.WalletAddress),
 				), true
 			}
 
 			// Check arena scores are positive
 			for arena, arenaScore := range record.ArenaScores {
-				if arenaScore.TotalScore < 0 {
+				if arenaScore.TotalScore == 0 {
 					return sdk.FormatInvariant(
 						types.ModuleName,
 						"score-range",
-						fmt.Sprintf("user %s has negative arena score in %s: %d",
-							record.WalletAddress, arena, arenaScore.TotalScore),
+						fmt.Sprintf("user %s has zero arena score in %s",
+							record.WalletAddress, arena),
 					), true
 				}
 			}

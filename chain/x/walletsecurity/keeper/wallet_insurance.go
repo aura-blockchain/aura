@@ -32,7 +32,9 @@ func (k Keeper) PurchaseInsurance(ctx context.Context, walletID string, coverage
 
 	kvStore := k.getStore(ctx)
 	key := []byte(fmt.Sprintf("insurance_%s", policyID))
-	kvStore.Set(key, policyBytes)
+	if err := kvStore.Set(key, policyBytes); err != nil {
+		return nil, err
+	}
 
 	return policy, nil
 }
@@ -77,7 +79,9 @@ func (k Keeper) FileClaim(ctx context.Context, policyID, reason string, claimAmo
 	}
 
 	claimKey := []byte(fmt.Sprintf("claim_%s", claimID))
-	kvStore.Set(claimKey, claimBytes)
+	if err := kvStore.Set(claimKey, claimBytes); err != nil {
+		return "", err
+	}
 
 	return claimID, nil
 }
@@ -113,7 +117,9 @@ func (k Keeper) ProcessClaim(ctx context.Context, claimID string, approved bool)
 			policy.ClaimsPaid = newPaid.String()
 
 			updatedPolicyBytes, _ := k.cdc.Marshal(&policy)
-			kvStore.Set(policyKey, updatedPolicyBytes)
+			if err := kvStore.Set(policyKey, updatedPolicyBytes); err != nil {
+				return err
+			}
 		}
 	} else {
 		claim.Status = "denied"
@@ -124,6 +130,5 @@ func (k Keeper) ProcessClaim(ctx context.Context, claimID string, approved bool)
 		return err
 	}
 
-	kvStore.Set(key, updatedBytes)
-	return nil
+	return kvStore.Set(key, updatedBytes)
 }

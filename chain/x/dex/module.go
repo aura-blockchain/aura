@@ -169,7 +169,7 @@ func (m AppModule) EndBlock(ctx sdk.Context) {
 }
 
 // RegisterInvariants registers dex invariants
-func (am AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {
+func (am AppModule) RegisterInvariants(ir sdk.InvariantRegistry) { //nolint:staticcheck // legacy invariant registry until crisis removal
 	keeper.RegisterInvariants(ir, am.keeper)
 }
 

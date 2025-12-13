@@ -295,7 +295,7 @@ func (k Keeper) CalculateFeeBoost(ctx sdk.Context, address string) sdkmath.Legac
 
 	if k.IsUserVerified(ctx, address) {
 		// Validate boost percentage is reasonable (0-100%)
-		if params.IrBoostPercent < 0 || params.IrBoostPercent > 100 {
+		if params.IrBoostPercent > 100 {
 			ctx.Logger().Error("invalid IR boost percentage, using 0",
 				"boost_percent", params.IrBoostPercent)
 			return sdkmath.LegacyZeroDec()
@@ -567,7 +567,8 @@ func (k Keeper) getPoolReserves(pool *types.LiquidityPool) (sdkmath.Int, sdkmath
 	return reserveA, reserveB, nil
 }
 
-// parseLPTokens parses LP token string to math.Int
+// parseLPTokens parses LP token string to math.Int.
+// nolint:unused // retained for potential CLI/admin usage.
 func (k Keeper) parseLPTokens(lpTokensStr string) (sdkmath.Int, error) {
 	lpTokens, ok := sdkmath.NewIntFromString(lpTokensStr)
 	if !ok {
@@ -576,7 +577,8 @@ func (k Keeper) parseLPTokens(lpTokensStr string) (sdkmath.Int, error) {
 	return lpTokens, nil
 }
 
-// parseFeePercentage parses fee percentage string to LegacyDec
+// parseFeePercentage parses fee percentage string to LegacyDec.
+// nolint:unused // retained for potential CLI/admin usage.
 func (k Keeper) parseFeePercentage(feeStr string) (sdkmath.LegacyDec, error) {
 	fee, err := sdkmath.LegacyNewDecFromStr(feeStr)
 	if err != nil {

@@ -56,10 +56,8 @@ func (k Keeper) RecordAuditEvent(ctx sdk.Context, contractID, eventType, actor s
 
 	// Create a copy of metadata to ensure immutability
 	metadataCopy := make(map[string]string)
-	if metadata != nil {
-		for k, v := range metadata {
-			metadataCopy[k] = v
-		}
+	for k, v := range metadata {
+		metadataCopy[k] = v
 	}
 
 	// Create audit entry
@@ -238,7 +236,7 @@ func (k Keeper) GetAuditEventsByType(ctx sdk.Context, eventType string, limit ui
 // SearchAuditEvents searches for audit events matching the given criteria
 // Supported criteria keys: "contract_id", "actor", "event_type"
 func (k Keeper) SearchAuditEvents(ctx sdk.Context, criteria map[string]string, limit uint64) []*types.AuditEntry {
-	if criteria == nil || len(criteria) == 0 {
+	if len(criteria) == 0 {
 		return []*types.AuditEntry{}
 	}
 

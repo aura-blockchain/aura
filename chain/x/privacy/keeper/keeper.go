@@ -346,7 +346,7 @@ func (k Keeper) VerifyZKProof(ctx context.Context, proofID string) bool {
 	proof := store.Get(key)
 
 	// Simplified verification - check if proof contains "valid"
-	return proof != nil && len(proof) > 0 && string(proof) != "invalid_proof"
+	return len(proof) > 0 && string(proof) != "invalid_proof"
 }
 
 // Shielded transfer management

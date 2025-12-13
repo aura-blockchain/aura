@@ -175,14 +175,14 @@ func (suite *InvariantsTestSuite) TestUploadAuthEnforcementInvariant() {
 	suite.Empty(msg)
 
 	// Test: AccessTypeNobody but with authorized uploader (invalid)
-	suite.keeper.AuthorizeUploader(ctx, testAddr)
+	suite.Require().NoError(suite.keeper.AuthorizeUploader(ctx, testAddr))
 
 	msg, broken = inv(ctx)
 	suite.True(broken, "should fail when authorized uploaders exist with NOBODY access")
 	suite.Contains(msg, "authorized uploaders exist")
 
 	// Clean up
-	suite.keeper.RevokeUploader(ctx, testAddr)
+	suite.Require().NoError(suite.keeper.RevokeUploader(ctx, testAddr))
 
 	// Test: AccessTypeOnlyAddress with valid address
 	params.CodeUploadAccess = types.AccessConfig{
@@ -308,7 +308,7 @@ func (suite *InvariantsTestSuite) TestAdminEnforcementInvariant() {
 	suite.Empty(msg)
 
 	// Clean up valid admin entry
-	suite.keeper.DeleteContractAdmin(ctx, contractAddr)
+	suite.Require().NoError(suite.keeper.DeleteContractAdmin(ctx, contractAddr))
 
 	// Test: Invalid contract address in admin storage
 	store := ctx.KVStore(suite.keeper.GetStoreKey())
@@ -349,7 +349,7 @@ func (suite *InvariantsTestSuite) TestCodeSizeLimitViolations() {
 	testAddr := sdk.AccAddress("test_uploader______").String()
 
 	// Authorize the uploader first
-	suite.keeper.AuthorizeUploader(ctx, testAddr)
+	suite.Require().NoError(suite.keeper.AuthorizeUploader(ctx, testAddr))
 
 	// Test: Code upload respects size limits
 	params := types.DefaultParams()
@@ -395,7 +395,7 @@ func (suite *InvariantsTestSuite) TestUploadAuthorizationEnforcement() {
 
 	// Test: Authorized uploader can upload
 	// Must explicitly authorize the address via AuthorizeUploader
-	suite.keeper.AuthorizeUploader(ctx, authorizedAddr)
+	suite.Require().NoError(suite.keeper.AuthorizeUploader(ctx, authorizedAddr))
 	err = suite.keeper.ValidateContractUpload(ctx, authorizedAddr, code)
 	suite.NoError(err, "should accept authorized uploader")
 }

@@ -55,8 +55,7 @@ func (k Keeper) getStore(ctx context.Context) store.KVStore {
 func (k Keeper) SetHardwareWallet(ctx context.Context, walletID string, config []byte) error {
 	store := k.getStore(ctx)
 	key := types.GetHardwareWalletKey(walletID)
-	store.Set(key, config)
-	return nil
+	return store.Set(key, config)
 }
 
 // GetHardwareWallet retrieves a hardware wallet configuration
@@ -74,8 +73,7 @@ func (k Keeper) GetHardwareWallet(ctx context.Context, walletID string) ([]byte,
 func (k Keeper) SetMultiSigWallet(ctx context.Context, walletID string, wallet []byte) error {
 	store := k.getStore(ctx)
 	key := types.GetMultiSigWalletKey(walletID)
-	store.Set(key, wallet)
-	return nil
+	return store.Set(key, wallet)
 }
 
 // GetMultiSigWallet retrieves a multi-sig wallet configuration
@@ -93,8 +91,7 @@ func (k Keeper) GetMultiSigWallet(ctx context.Context, walletID string) ([]byte,
 func (k Keeper) SetPendingMultiSigTx(ctx context.Context, txID string, tx []byte) error {
 	store := k.getStore(ctx)
 	key := types.GetPendingMultiSigTxKey(txID)
-	store.Set(key, tx)
-	return nil
+	return store.Set(key, tx)
 }
 
 // GetPendingMultiSigTx retrieves a pending multi-sig transaction
@@ -112,16 +109,14 @@ func (k Keeper) GetPendingMultiSigTx(ctx context.Context, txID string) ([]byte, 
 func (k Keeper) DeletePendingMultiSigTx(ctx context.Context, txID string) error {
 	store := k.getStore(ctx)
 	key := types.GetPendingMultiSigTxKey(txID)
-	store.Delete(key)
-	return nil
+	return store.Delete(key)
 }
 
 // SetSocialRecoveryConfig stores social recovery configuration
 func (k Keeper) SetSocialRecoveryConfig(ctx context.Context, walletID string, config []byte) error {
 	store := k.getStore(ctx)
 	key := types.GetSocialRecoveryKey(walletID)
-	store.Set(key, config)
-	return nil
+	return store.Set(key, config)
 }
 
 // GetSocialRecoveryConfig retrieves social recovery configuration
@@ -139,8 +134,7 @@ func (k Keeper) GetSocialRecoveryConfig(ctx context.Context, walletID string) ([
 func (k Keeper) SetRecoveryRequest(ctx context.Context, requestID string, request []byte) error {
 	store := k.getStore(ctx)
 	key := types.GetRecoveryRequestKey(requestID)
-	store.Set(key, request)
-	return nil
+	return store.Set(key, request)
 }
 
 // GetRecoveryRequest retrieves a recovery request
@@ -158,8 +152,7 @@ func (k Keeper) GetRecoveryRequest(ctx context.Context, requestID string) ([]byt
 func (k Keeper) storeSpendingLimit(ctx context.Context, walletID, denom string, limit []byte) error {
 	store := k.getStore(ctx)
 	key := types.GetSpendingLimitKey(walletID, denom)
-	store.Set(key, limit)
-	return nil
+	return store.Set(key, limit)
 }
 
 // GetSpendingLimit retrieves spending limit configuration
@@ -177,8 +170,7 @@ func (k Keeper) GetSpendingLimit(ctx context.Context, walletID, denom string) ([
 func (k Keeper) SetSessionConfig(ctx context.Context, sessionID string, config []byte) error {
 	store := k.getStore(ctx)
 	key := types.GetSessionConfigKey(sessionID)
-	store.Set(key, config)
-	return nil
+	return store.Set(key, config)
 }
 
 // GetSessionConfig retrieves session configuration
@@ -196,8 +188,7 @@ func (k Keeper) GetSessionConfig(ctx context.Context, sessionID string) ([]byte,
 func (k Keeper) SetBiometricAuth(ctx context.Context, walletID string, auth []byte) error {
 	store := k.getStore(ctx)
 	key := types.GetBiometricAuthKey(walletID)
-	store.Set(key, auth)
-	return nil
+	return store.Set(key, auth)
 }
 
 // GetBiometricAuth retrieves biometric authentication configuration
@@ -215,8 +206,7 @@ func (k Keeper) GetBiometricAuth(ctx context.Context, walletID string) ([]byte, 
 func (k Keeper) SetSecureEnclaveConfig(ctx context.Context, walletID string, config []byte) error {
 	store := k.getStore(ctx)
 	key := types.GetSecureEnclaveKey(walletID)
-	store.Set(key, config)
-	return nil
+	return store.Set(key, config)
 }
 
 // GetSecureEnclaveConfig retrieves secure enclave configuration
@@ -234,8 +224,7 @@ func (k Keeper) GetSecureEnclaveConfig(ctx context.Context, walletID string) ([]
 func (k Keeper) SetEncryptedBackup(ctx context.Context, backupID string, backup []byte) error {
 	store := k.getStore(ctx)
 	key := types.GetEncryptedBackupKey(backupID)
-	store.Set(key, backup)
-	return nil
+	return store.Set(key, backup)
 }
 
 // GetEncryptedBackup retrieves encrypted backup
@@ -253,8 +242,7 @@ func (k Keeper) GetEncryptedBackup(ctx context.Context, backupID string) ([]byte
 func (k Keeper) SetDustFilter(ctx context.Context, walletID string, filter []byte) error {
 	store := k.getStore(ctx)
 	key := types.GetDustFilterKey(walletID)
-	store.Set(key, filter)
-	return nil
+	return store.Set(key, filter)
 }
 
 // GetDustFilter retrieves dust filter configuration
@@ -272,8 +260,7 @@ func (k Keeper) GetDustFilter(ctx context.Context, walletID string) ([]byte, err
 func (k Keeper) SetDomainVerification(ctx context.Context, domain string, verification []byte) error {
 	store := k.getStore(ctx)
 	key := types.GetDomainVerificationKey(domain)
-	store.Set(key, verification)
-	return nil
+	return store.Set(key, verification)
 }
 
 // GetDomainVerification retrieves domain verification
@@ -291,8 +278,7 @@ func (k Keeper) GetDomainVerification(ctx context.Context, domain string) ([]byt
 func (k Keeper) SetSecurityMetrics(ctx context.Context, walletID string, metrics []byte) error {
 	store := k.getStore(ctx)
 	key := types.GetSecurityMetricsKey(walletID)
-	store.Set(key, metrics)
-	return nil
+	return store.Set(key, metrics)
 }
 
 // GetSecurityMetrics retrieves security metrics
@@ -311,8 +297,7 @@ func (k Keeper) GetSecurityMetrics(ctx context.Context, walletID string) ([]byte
 func (k Keeper) SetDustTransaction(ctx context.Context, txHash string, tx []byte) error {
 	store := k.getStore(ctx)
 	key := types.GetDustTransactionKey(txHash)
-	store.Set(key, tx)
-	return nil
+	return store.Set(key, tx)
 }
 
 // GetDustTransaction retrieves a dust transaction record
@@ -428,7 +413,9 @@ func (k Keeper) LockWallet(ctx context.Context, addr string, reason string) erro
 	// Store lock state in KV store
 	store := k.getStore(ctx)
 	key := append([]byte("locked_wallet_"), []byte(addr)...)
-	store.Set(key, []byte(reason))
+	if err := store.Set(key, []byte(reason)); err != nil {
+		return err
+	}
 	k.logger.Info(fmt.Sprintf("Wallet %s locked. Reason: %s", addr, reason))
 	return nil
 }
@@ -438,7 +425,9 @@ func (k Keeper) UnlockWallet(ctx context.Context, addr string) error {
 	// Unlock wallet functionality
 	store := k.getStore(ctx)
 	key := append([]byte("locked_wallet_"), []byte(addr)...)
-	store.Delete(key)
+	if err := store.Delete(key); err != nil {
+		return err
+	}
 	k.logger.Info(fmt.Sprintf("Wallet %s unlocked", addr))
 	return nil
 }
@@ -465,7 +454,7 @@ func (k Keeper) VerifyDomain(ctx context.Context, domain string, certificateHash
 		CertificateHash: certificateHash,
 		Verifier:        verifier,
 		VerifiedAt:      blockTimeToGogoTimestamp(ctx),
-		ExpiresAt:       blockTimeWithOffsetToGogoTimestamp(ctx, 365 * 24 * time.Hour),
+		ExpiresAt:       blockTimeWithOffsetToGogoTimestamp(ctx, 365*24*time.Hour),
 	}
 
 	// Store verification
@@ -493,9 +482,9 @@ func (k Keeper) SetSpendingLimit(ctx context.Context, walletID string, denom str
 		CurrentWeeklySpent:  "0",
 		CurrentMonthlySpent: "0",
 		Enabled:             true,
-		DailyResetAt:        blockTimeWithOffsetToGogoTimestamp(ctx, 24 * time.Hour),
-		WeeklyResetAt:       blockTimeWithOffsetToGogoTimestamp(ctx, 7 * 24 * time.Hour),
-		MonthlyResetAt:      blockTimeWithOffsetToGogoTimestamp(ctx, 30 * 24 * time.Hour),
+		DailyResetAt:        blockTimeWithOffsetToGogoTimestamp(ctx, 24*time.Hour),
+		WeeklyResetAt:       blockTimeWithOffsetToGogoTimestamp(ctx, 7*24*time.Hour),
+		MonthlyResetAt:      blockTimeWithOffsetToGogoTimestamp(ctx, 30*24*time.Hour),
 	}
 
 	// Marshal and store
@@ -704,41 +693,41 @@ func (k Keeper) MarkBiometricProofUsed(ctx context.Context, walletID string, pro
 	timestamp := determinism.GetBlockTime(ctx).Unix()
 	value := []byte(fmt.Sprintf("%d", timestamp))
 
-	store.Set(key, value)
-	return nil
+	return store.Set(key, value)
 }
 
 // verifyBiometricTemplate verifies a biometric proof against the stored enrollment hash
 //
 // DEPRECATION WARNING:
-//   This implementation is DEPRECATED and will be removed in a future version.
-//   True biometric authentication is fundamentally incompatible with blockchain consensus.
+//
+//	This implementation is DEPRECATED and will be removed in a future version.
+//	True biometric authentication is fundamentally incompatible with blockchain consensus.
 //
 // Why Biometric Authentication Cannot Work on Blockchain:
 //
 // 1. DETERMINISM REQUIREMENT:
-//    - Blockchain consensus requires deterministic execution across all validators
-//    - Biometric matching is inherently non-deterministic and uses fuzzy algorithms
-//    - Different validators would produce different match scores for the same biometric
-//    - This breaks blockchain consensus and leads to chain halts
+//   - Blockchain consensus requires deterministic execution across all validators
+//   - Biometric matching is inherently non-deterministic and uses fuzzy algorithms
+//   - Different validators would produce different match scores for the same biometric
+//   - This breaks blockchain consensus and leads to chain halts
 //
 // 2. LIVENESS DETECTION IMPOSSIBILITY:
-//    - True biometric systems require liveness detection (detect photos, masks, etc.)
-//    - Liveness detection requires real-time hardware interaction (camera, sensor)
-//    - Blockchain cannot access client-side hardware during consensus
-//    - Without liveness, the system is vulnerable to replay attacks with stolen biometric data
+//   - True biometric systems require liveness detection (detect photos, masks, etc.)
+//   - Liveness detection requires real-time hardware interaction (camera, sensor)
+//   - Blockchain cannot access client-side hardware during consensus
+//   - Without liveness, the system is vulnerable to replay attacks with stolen biometric data
 //
 // 3. PRIVACY CONCERNS:
-//    - Storing biometric hashes on-chain creates permanent privacy risks
-//    - Biometric data cannot be changed if compromised (unlike passwords)
-//    - Public blockchain = permanent public record of biometric identifiers
-//    - GDPR/privacy laws prohibit permanent storage of biometric identifiers
+//   - Storing biometric hashes on-chain creates permanent privacy risks
+//   - Biometric data cannot be changed if compromised (unlike passwords)
+//   - Public blockchain = permanent public record of biometric identifiers
+//   - GDPR/privacy laws prohibit permanent storage of biometric identifiers
 //
 // 4. SECURITY MODEL MISMATCH:
-//    - Biometric authentication assumes: "something you are" + local hardware verification
-//    - Blockchain authentication assumes: "something you have" (private key)
-//    - The current implementation is just "pre-shared secret authentication"
-//    - It provides no additional security beyond knowing the enrollment secret
+//   - Biometric authentication assumes: "something you are" + local hardware verification
+//   - Blockchain authentication assumes: "something you have" (private key)
+//   - The current implementation is just "pre-shared secret authentication"
+//   - It provides no additional security beyond knowing the enrollment secret
 //
 // CURRENT IMPLEMENTATION (Simplified):
 //   - This implementation uses exact hash matching as a placeholder
@@ -747,18 +736,19 @@ func (k Keeper) MarkBiometricProofUsed(ctx context.Context, walletID string, pro
 //   - It is essentially a pre-shared secret that cannot be updated
 //
 // RECOMMENDED ALTERNATIVES:
-//   1. Hardware Wallet Integration (Ledger, Trezor) - Use RegisterHardwareWallet
-//   2. Multi-Signature Wallets - Use CreateMultiSigWallet
-//   3. Social Recovery - Use ConfigureSocialRecovery
-//   4. Time-locked Transactions - Use MultiSigWallet with time_lock
-//   5. Off-chain Biometric + On-chain Signature - Use standard Cosmos SDK auth
+//  1. Hardware Wallet Integration (Ledger, Trezor) - Use RegisterHardwareWallet
+//  2. Multi-Signature Wallets - Use CreateMultiSigWallet
+//  3. Social Recovery - Use ConfigureSocialRecovery
+//  4. Time-locked Transactions - Use MultiSigWallet with time_lock
+//  5. Off-chain Biometric + On-chain Signature - Use standard Cosmos SDK auth
 //
 // MIGRATION PATH:
-//   Users relying on biometric authentication should:
-//   1. Enable hardware wallet integration for "something you have"
-//   2. Enable multi-sig for enhanced security
-//   3. Configure social recovery for account recovery
-//   4. Use client-side biometric authentication before signing (off-chain)
+//
+//	Users relying on biometric authentication should:
+//	1. Enable hardware wallet integration for "something you have"
+//	2. Enable multi-sig for enhanced security
+//	3. Configure social recovery for account recovery
+//	4. Use client-side biometric authentication before signing (off-chain)
 //
 // Parameters:
 //   - enrollmentHash: The hash stored during biometric enrollment

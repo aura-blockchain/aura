@@ -1,0 +1,514 @@
+=== Phase 4.1: Smart Contract Security Analysis ===
+Started at: Sat Dec 13 02:32:19 PM UTC 2025
+
+Step 1: Running cargo audit on all contracts...
+=================================================
+[1;33mcargo-audit not installed. Installing...[0m
+
+Auditing: binding-tester
+---
+[0m[0m[1m[32m    Fetching[0m advisory database from `https://github.com/RustSec/advisory-db.git`
+[0m[0m[1m[32m      Loaded[0m 884 security advisories (from /home/hudson/.cargo/advisory-db)
+[0m[0m[1m[32m    Updating[0m crates.io index
+[0m[0m[1m[32m    Scanning[0m Cargo.lock for vulnerabilities (76 crate dependencies)
+[0m[0m[1m[31mCrate:    [0m curve25519-dalek
+[0m[0m[1m[31mVersion:  [0m 3.2.0
+[0m[0m[1m[31mTitle:    [0m Timing variability in `curve25519-dalek`'s `Scalar29::sub`/`Scalar52::sub`
+[0m[0m[1m[31mDate:     [0m 2024-06-18
+[0m[0m[1m[31mID:       [0m RUSTSEC-2024-0344
+[0m[0m[1m[31mURL:      [0m https://rustsec.org/advisories/RUSTSEC-2024-0344
+[0m[0m[1m[31mSolution: [0m Upgrade to >=4.1.3
+[0m[0m[1m[31mDependency tree:
+[0mcurve25519-dalek 3.2.0
+└── ed25519-zebra 3.1.0
+    └── cosmwasm-crypto 1.5.11
+        └── cosmwasm-std 1.5.11
+            ├── cosmwasm-storage 1.5.2
+            │   └── binding-tester 0.1.0
+            ├── binding-tester 0.1.0
+            └── aura-bindings 0.1.0
+                └── binding-tester 0.1.0
+
+[0m[0m[1m[33mCrate:    [0m derivative
+[0m[0m[1m[33mVersion:  [0m 2.2.0
+[0m[0m[1m[33mWarning:  [0m unmaintained
+[0m[0m[1m[33mTitle:    [0m `derivative` is unmaintained; consider using an alternative
+[0m[0m[1m[33mDate:     [0m 2024-06-26
+[0m[0m[1m[33mID:       [0m RUSTSEC-2024-0388
+[0m[0m[1m[33mURL:      [0m https://rustsec.org/advisories/RUSTSEC-2024-0388
+[0m[0m[1m[33mDependency tree:
+[0mderivative 2.2.0
+└── cosmwasm-std 1.5.11
+    ├── cosmwasm-storage 1.5.2
+    │   └── binding-tester 0.1.0
+    ├── binding-tester 0.1.0
+    └── aura-bindings 0.1.0
+        └── binding-tester 0.1.0
+
+[0m[0m[1m[31merror:[0m 1 vulnerability found!
+[0m[0m[1m[33mwarning:[0m 1 allowed warning found
+[0;32m✓ No vulnerabilities found in binding-tester[0m
+
+Auditing: vc-issuer
+---
+    Updating crates.io index
+     Locking 0 packages to latest compatible versions
+note: pass `--verbose` to see 10 unchanged dependencies behind latest
+[0m[0m[1m[32m    Fetching[0m advisory database from `https://github.com/RustSec/advisory-db.git`
+[0m[0m[1m[32m      Loaded[0m 884 security advisories (from /home/hudson/.cargo/advisory-db)
+[0m[0m[1m[32m    Updating[0m crates.io index
+[0m[0m[1m[31merror:[0m not found: Couldn't load Cargo.lock
+Caused by:
+  -> I/O operation failed: I/O operation failed: entity not found
+  -> I/O operation failed: entity not found
+[0;32m✓ No vulnerabilities found in vc-issuer[0m
+
+Auditing: contracts
+---
+[0m[0m[1m[32m    Fetching[0m advisory database from `https://github.com/RustSec/advisory-db.git`
+[0m[0m[1m[32m      Loaded[0m 884 security advisories (from /home/hudson/.cargo/advisory-db)
+[0m[0m[1m[32m    Updating[0m crates.io index
+[0m[0m[1m[32m    Scanning[0m Cargo.lock for vulnerabilities (88 crate dependencies)
+[0m[0m[1m[31mCrate:    [0m curve25519-dalek
+[0m[0m[1m[31mVersion:  [0m 3.2.0
+[0m[0m[1m[31mTitle:    [0m Timing variability in `curve25519-dalek`'s `Scalar29::sub`/`Scalar52::sub`
+[0m[0m[1m[31mDate:     [0m 2024-06-18
+[0m[0m[1m[31mID:       [0m RUSTSEC-2024-0344
+[0m[0m[1m[31mURL:      [0m https://rustsec.org/advisories/RUSTSEC-2024-0344
+[0m[0m[1m[31mSolution: [0m Upgrade to >=4.1.3
+[0m[0m[1m[31mDependency tree:
+[0mcurve25519-dalek 3.2.0
+└── ed25519-zebra 3.1.0
+    └── cosmwasm-crypto 1.5.11
+        └── cosmwasm-std 1.5.11
+            ├── vc-issuer 0.1.0
+            ├── cw2 1.1.2
+            │   └── cw-utils 1.0.3
+            │       └── cw-multi-test 0.18.1
+            │           └── vc-issuer 0.1.0
+            ├── cw-utils 1.0.3
+            ├── cw-storage-plus 1.2.0
+            │   ├── vc-issuer 0.1.0
+            │   ├── cw2 1.1.2
+            │   └── cw-multi-test 0.18.1
+            ├── cw-multi-test 0.18.1
+            ├── cosmwasm-storage 1.5.2
+            │   ├── vc-issuer 0.1.0
+            │   └── binding-tester 0.1.0
+            ├── binding-tester 0.1.0
+            └── aura-bindings 0.1.0
+                ├── vc-issuer 0.1.0
+                └── binding-tester 0.1.0
+
+[0m[0m[1m[33mCrate:    [0m derivative
+[0m[0m[1m[33mVersion:  [0m 2.2.0
+[0m[0m[1m[33mWarning:  [0m unmaintained
+[0m[0m[1m[33mTitle:    [0m `derivative` is unmaintained; consider using an alternative
+[0m[0m[1m[33mDate:     [0m 2024-06-26
+[0m[0m[1m[33mID:       [0m RUSTSEC-2024-0388
+[0m[0m[1m[33mURL:      [0m https://rustsec.org/advisories/RUSTSEC-2024-0388
+[0m[0m[1m[33mDependency tree:
+[0mderivative 2.2.0
+├── cw-multi-test 0.18.1
+│   └── vc-issuer 0.1.0
+└── cosmwasm-std 1.5.11
+    ├── vc-issuer 0.1.0
+    ├── cw2 1.1.2
+    │   └── cw-utils 1.0.3
+    │       └── cw-multi-test 0.18.1
+    ├── cw-utils 1.0.3
+    ├── cw-storage-plus 1.2.0
+    │   ├── vc-issuer 0.1.0
+    │   ├── cw2 1.1.2
+    │   └── cw-multi-test 0.18.1
+    ├── cw-multi-test 0.18.1
+    ├── cosmwasm-storage 1.5.2
+    │   ├── vc-issuer 0.1.0
+    │   └── binding-tester 0.1.0
+    ├── binding-tester 0.1.0
+    └── aura-bindings 0.1.0
+        ├── vc-issuer 0.1.0
+        └── binding-tester 0.1.0
+
+[0m[0m[1m[31merror:[0m 1 vulnerability found!
+[0m[0m[1m[33mwarning:[0m 1 allowed warning found
+[0;32m✓ No vulnerabilities found in contracts[0m
+
+Step 2: Manual Security Review - Common Vulnerabilities
+=========================================================
+
+2.1: Checking for potential reentrancy vulnerabilities...
+---
+[0;32m✓ No obvious reentrancy patterns detected[0m
+
+2.2: Checking for unchecked arithmetic operations...
+---
+[1;33mFound potential unchecked arithmetic - review for overflow safety:[0m
+contracts/vc-issuer/src/contract.rs:    let day = timestamp / SECONDS_PER_DAY;
+contracts/vc-issuer/src/contract.rs:    MINT_COUNTERS.save(storage, (issuer, day), &(count + 1))?;
+contracts/vc-issuer/src/contract.rs:        let large_policy_id = "a".repeat(MAX_POLICY_ID_LEN + 1);
+contracts/vc-issuer/src/contract.rs:        let large_metadata = "m".repeat(MAX_METADATA_LEN + 1);
+contracts/vc-issuer/src/contract.rs:        let large_vc_type = "t".repeat(MAX_VC_TYPE_LEN + 1);
+contracts/vc-issuer/src/contract.rs:        let large_credential = "c".repeat(MAX_CREDENTIAL_LEN + 1);
+contracts/vc-issuer/src/contract.rs:        let large_reason = "r".repeat(MAX_REASON_LEN + 1);
+
+2.3: Checking for access control patterns...
+---
+[1;33mFound execute functions - verify authorization checks:[0m
+Total execute functions found: 2
+Manual review recommended for each
+
+2.4: Checking for unsafe unwrap() usage...
+---
+[1;33mFound 45 unwrap() calls - should use proper error handling:[0m
+contracts/vc-issuer/src/bin/schema.rs:    create_dir_all(&out_dir).unwrap();
+contracts/vc-issuer/src/bin/schema.rs:    remove_schemas(&out_dir).unwrap();
+contracts/vc-issuer/src/contract.rs:        .unwrap();
+contracts/vc-issuer/src/contract.rs:        .unwrap();
+contracts/vc-issuer/src/contract.rs:                &deps.api.addr_validate("issuer").unwrap(),
+contracts/vc-issuer/src/contract.rs:            .unwrap();
+contracts/vc-issuer/src/contract.rs:        .unwrap();
+contracts/vc-issuer/src/contract.rs:            .unwrap()
+contracts/vc-issuer/src/contract.rs:                &deps.api.addr_validate("issuer").unwrap(),
+contracts/vc-issuer/src/contract.rs:            .unwrap()
+
+2.5: Checking for input validation patterns...
+---
+Validation patterns found: 11
+Ensure! macros found: 0
+[0;32m✓ Input validation patterns present[0m
+
+2.6: Checking for storage key collision risks...
+---
+[0;32m✓ No hardcoded storage keys found (likely using Item/Map)[0m
+
+2.7: Checking error handling patterns...
+---
+Error type usages: 39
+Error propagation (?) operators: 42
+[0;32m✓ Comprehensive error handling present[0m
+
+2.8: Checking for timestamp manipulation risks...
+---
+[1;33mFound 6 timestamp usages - verify not used for critical logic:[0m
+contracts/vc-issuer/src/contract.rs:        registered_at: env.block.time.seconds(),
+contracts/vc-issuer/src/contract.rs:        env.block.time.seconds(),
+contracts/vc-issuer/src/contract.rs:        created_at: env.block.time.seconds(),
+contracts/vc-issuer/src/contract.rs:        env.block.time.seconds(),
+contracts/vc-issuer/src/contract.rs:        issued_at: env.block.time.seconds(),
+
+2.9: Checking for migration implementations...
+---
+[1;33m⚠ No migration functions found - upgrades may be difficult[0m
+
+2.10: Checking for front-running risks (DEX/auction patterns)...
+---
+[0;32m✓ No obvious front-running patterns detected[0m
+
+Step 3: Building all contracts...
+===================================
+ Downloading crates ...
+  Downloaded ahash v0.7.8
+  Downloaded dyn-clone v1.0.20
+  Downloaded cosmwasm-derive v1.5.11
+  Downloaded opaque-debug v0.3.1
+  Downloaded digest v0.9.0
+  Downloaded thiserror-impl v1.0.69
+  Downloaded spki v0.7.3
+  Downloaded signature v2.2.0
+  Downloaded rfc6979 v0.4.0
+  Downloaded base64ct v1.8.0
+  Downloaded serde-json-wasm v0.5.2
+  Downloaded thiserror v1.0.69
+  Downloaded serde_derive_internals v0.29.1
+  Downloaded hashbrown v0.12.3
+  Downloaded der v0.7.10
+  Downloaded crypto-bigint v0.5.5
+  Downloaded curve25519-dalek v3.2.0
+  Downloaded base64 v0.21.7
+  Downloaded schemars v0.8.22
+  Downloaded cosmwasm-crypto v1.5.11
+  Downloaded k256 v0.13.4
+  Downloaded cosmwasm-schema-derive v1.5.11
+  Downloaded cosmwasm-schema v1.5.11
+  Downloaded elliptic-curve v0.13.8
+  Downloaded hmac v0.12.1
+  Downloaded bnum v0.10.0
+  Downloaded derivative v2.2.0
+  Downloaded cosmwasm-storage v1.5.2
+  Downloaded cosmwasm-std v1.5.11
+  Downloaded const-oid v0.9.6
+  Downloaded pkcs8 v0.10.2
+  Downloaded ed25519-zebra v3.1.0
+  Downloaded ecdsa v0.16.9
+  Downloaded bech32 v0.9.1
+  Downloaded rand_core v0.5.1
+  Downloaded forward_ref v1.0.0
+  Downloaded ff v0.13.1
+  Downloaded sha2 v0.9.9
+  Downloaded sec1 v0.7.3
+  Downloaded group v0.13.0
+  Downloaded base16ct v0.2.0
+  Downloaded schemars_derive v0.8.22
+  Downloaded hex v0.4.3
+  Downloaded block-buffer v0.9.0
+  Downloaded cw-storage-plus v1.2.0
+   Compiling version_check v0.9.5
+   Compiling zeroize v1.8.2
+   Compiling typenum v1.19.0
+   Compiling proc-macro2 v1.0.103
+   Compiling unicode-ident v1.0.22
+   Compiling quote v1.0.42
+   Compiling cfg-if v1.0.4
+   Compiling libc v0.2.177
+   Compiling subtle v2.6.1
+   Compiling const-oid v0.9.6
+   Compiling serde_core v1.0.228
+   Compiling serde v1.0.228
+   Compiling syn v1.0.109
+   Compiling base16ct v0.2.0
+   Compiling once_cell v1.21.3
+   Compiling cpufeatures v0.2.17
+   Compiling thiserror v1.0.69
+   Compiling serde_json v1.0.145
+   Compiling itoa v1.0.15
+   Compiling byteorder v1.5.0
+   Compiling opaque-debug v0.3.1
+   Compiling ryu v1.0.20
+   Compiling schemars v0.8.22
+   Compiling memchr v2.7.6
+   Compiling rand_core v0.5.1
+   Compiling generic-array v0.14.7
+   Compiling ahash v0.7.8
+   Compiling dyn-clone v1.0.20
+   Compiling der v0.7.10
+   Compiling hex v0.4.3
+   Compiling base64 v0.21.7
+   Compiling bnum v0.10.0
+   Compiling forward_ref v1.0.0
+   Compiling bech32 v0.9.1
+   Compiling static_assertions v1.1.0
+   Compiling getrandom v0.2.16
+   Compiling spki v0.7.3
+   Compiling rand_core v0.6.4
+   Compiling ff v0.13.1
+   Compiling syn v2.0.111
+   Compiling group v0.13.0
+   Compiling pkcs8 v0.10.2
+   Compiling hashbrown v0.12.3
+   Compiling block-buffer v0.10.4
+   Compiling crypto-common v0.1.7
+   Compiling crypto-bigint v0.5.5
+   Compiling digest v0.9.0
+   Compiling sec1 v0.7.3
+   Compiling block-buffer v0.9.0
+   Compiling curve25519-dalek v3.2.0
+   Compiling sha2 v0.9.9
+   Compiling digest v0.10.7
+   Compiling hmac v0.12.1
+   Compiling signature v2.2.0
+   Compiling sha2 v0.10.9
+   Compiling rfc6979 v0.4.0
+   Compiling serde_derive_internals v0.29.1
+   Compiling serde_derive v1.0.228
+   Compiling thiserror-impl v1.0.69
+   Compiling elliptic-curve v0.13.8
+   Compiling schemars_derive v0.8.22
+   Compiling ecdsa v0.16.9
+   Compiling k256 v0.13.4
+   Compiling cosmwasm-derive v1.5.11
+   Compiling derivative v2.2.0
+   Compiling cosmwasm-schema-derive v1.5.11
+   Compiling ed25519-zebra v3.1.0
+   Compiling serde-json-wasm v0.5.2
+   Compiling cosmwasm-crypto v1.5.11
+   Compiling cosmwasm-std v1.5.11
+   Compiling cosmwasm-schema v1.5.11
+   Compiling aura-bindings v0.1.0 (/home/hudson/blockchain-projects/aura/contracts/packages/aura-bindings)
+   Compiling cosmwasm-storage v1.5.2
+   Compiling cw-storage-plus v1.2.0
+   Compiling vc-issuer v0.1.0 (/home/hudson/blockchain-projects/aura/contracts/vc-issuer)
+   Compiling binding-tester v0.1.0 (/home/hudson/blockchain-projects/aura/contracts/binding-tester)
+    Finished `release` profile [optimized] target(s) in 43.74s
+[0;32m✓ All contracts built successfully[0m
+
+Step 4: Running contract tests...
+===================================
+ Downloading crates ...
+  Downloaded prost-derive v0.12.6
+  Downloaded prost v0.12.6
+  Downloaded bytes v1.11.0
+  Downloaded itertools v0.12.1
+  Downloaded cw2 v1.1.2
+  Downloaded cw-utils v1.0.3
+  Downloaded cw-multi-test v0.18.1
+   Compiling version_check v0.9.5
+   Compiling zeroize v1.8.2
+   Compiling proc-macro2 v1.0.103
+   Compiling typenum v1.19.0
+   Compiling quote v1.0.42
+   Compiling unicode-ident v1.0.22
+   Compiling cfg-if v1.0.4
+   Compiling subtle v2.6.1
+   Compiling libc v0.2.177
+   Compiling const-oid v0.9.6
+   Compiling serde_core v1.0.228
+   Compiling serde v1.0.228
+   Compiling syn v1.0.109
+   Compiling base16ct v0.2.0
+   Compiling once_cell v1.21.3
+   Compiling cpufeatures v0.2.17
+   Compiling serde_json v1.0.145
+   Compiling thiserror v1.0.69
+   Compiling byteorder v1.5.0
+   Compiling der v0.7.10
+   Compiling itoa v1.0.15
+   Compiling memchr v2.7.6
+   Compiling schemars v0.8.22
+   Compiling rand_core v0.5.1
+   Compiling opaque-debug v0.3.1
+   Compiling ryu v1.0.20
+   Compiling hex v0.4.3
+   Compiling dyn-clone v1.0.20
+   Compiling static_assertions v1.1.0
+   Compiling generic-array v0.14.7
+   Compiling ahash v0.7.8
+   Compiling base64 v0.21.7
+   Compiling bech32 v0.9.1
+   Compiling bnum v0.10.0
+   Compiling forward_ref v1.0.0
+   Compiling anyhow v1.0.100
+   Compiling either v1.15.0
+   Compiling semver v1.0.27
+   Compiling bytes v1.11.0
+   Compiling itertools v0.12.1
+   Compiling syn v2.0.111
+   Compiling getrandom v0.2.16
+   Compiling spki v0.7.3
+   Compiling rand_core v0.6.4
+   Compiling pkcs8 v0.10.2
+   Compiling ff v0.13.1
+   Compiling crypto-common v0.1.7
+   Compiling block-buffer v0.10.4
+   Compiling crypto-bigint v0.5.5
+   Compiling digest v0.9.0
+   Compiling sec1 v0.7.3
+   Compiling block-buffer v0.9.0
+   Compiling hashbrown v0.12.3
+   Compiling group v0.13.0
+   Compiling curve25519-dalek v3.2.0
+   Compiling digest v0.10.7
+   Compiling sha2 v0.9.9
+   Compiling hmac v0.12.1
+   Compiling signature v2.2.0
+   Compiling sha2 v0.10.9
+   Compiling rfc6979 v0.4.0
+   Compiling elliptic-curve v0.13.8
+   Compiling serde_derive_internals v0.29.1
+   Compiling ecdsa v0.16.9
+   Compiling serde_derive v1.0.228
+   Compiling thiserror-impl v1.0.69
+   Compiling prost-derive v0.12.6
+   Compiling k256 v0.13.4
+   Compiling schemars_derive v0.8.22
+   Compiling prost v0.12.6
+   Compiling cosmwasm-derive v1.5.11
+   Compiling derivative v2.2.0
+   Compiling cosmwasm-schema-derive v1.5.11
+   Compiling ed25519-zebra v3.1.0
+   Compiling serde-json-wasm v0.5.2
+   Compiling cosmwasm-crypto v1.5.11
+   Compiling cosmwasm-std v1.5.11
+   Compiling cosmwasm-schema v1.5.11
+   Compiling aura-bindings v0.1.0 (/home/hudson/blockchain-projects/aura/contracts/packages/aura-bindings)
+   Compiling cw-storage-plus v1.2.0
+   Compiling cosmwasm-storage v1.5.2
+   Compiling cw2 v1.1.2
+   Compiling cw-utils v1.0.3
+   Compiling vc-issuer v0.1.0 (/home/hudson/blockchain-projects/aura/contracts/vc-issuer)
+   Compiling binding-tester v0.1.0 (/home/hudson/blockchain-projects/aura/contracts/binding-tester)
+   Compiling cw-multi-test v0.18.1
+warning: use of deprecated function `cosmwasm_std::from_binary`: use from_json instead
+   --> vc-issuer/src/contract.rs:499:65
+    |
+499 |         let query_resp: PendingRequestsResponse = cosmwasm_std::from_binary(
+    |                                                                 ^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+
+warning: `vc-issuer` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 19.76s
+     Running unittests src/lib.rs (target/debug/deps/aura_bindings-730ee54c2fdc6b30)
+
+running 2 tests
+test tests::vc_registry_query_serializes_as_expected ... ok
+test tests::vc_registry_message_serializes_as_expected ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/binding_tester-13cfa67f42a0af54)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/vc_issuer-a761fb864798c216)
+
+running 13 tests
+test contract::tests::register_enforces_admin ... ok
+test contract::tests::test_register_issuer_policy_id_too_large ... ok
+test contract::tests::test_fulfill_request_credential_too_large ... ok
+test contract::tests::test_register_issuer_policy_id_at_max_allowed ... ok
+test contract::tests::request_records_pending ... ok
+test contract::tests::test_fulfill_request_credential_at_max_allowed ... ok
+test contract::tests::fulfill_respects_daily_limit ... ok
+test contract::tests::test_request_vc_type_at_max_allowed ... ok
+test contract::tests::test_request_vc_metadata_too_large ... ok
+test contract::tests::test_request_vc_type_too_large ... ok
+test contract::tests::test_request_vc_metadata_at_max_allowed ... ok
+test contract::tests::test_revoke_vc_reason_too_large ... ok
+test contract::tests::test_revoke_vc_reason_at_max_allowed ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/bin/schema.rs (target/debug/deps/schema-4b4b398b270bfe6e)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests aura_bindings
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests binding_tester
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests vc_issuer
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+[0;32m✓ All contract tests passed[0m
+
+========================================
+PHASE 4.1 SECURITY ANALYSIS SUMMARY
+========================================
+Completed at: Sat Dec 13 02:36:52 PM UTC 2025
+
+Issues found by severity:
+  Critical: 0
+  High:     0
+  Medium:   2
+  Low:      3
+
+[1;33m⚠ Security review complete with 5 minor findings[0m
+Review findings and address before production deployment
+
+Detailed results saved to: /home/hudson/blockchain-projects/aura/chain/testing/local/phase4/test_4.1_results.txt

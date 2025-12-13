@@ -23,9 +23,9 @@ func setupTestRouter(t *testing.T) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 
 	cfg := &config.Config{
-		NodeRPC:             "http://aura-validator-1:26657",
-		NodeAPI:             "http://aura-validator-1:1317",
-		NodeGRPC:            "aura-validator-1:9090",
+		NodeRPC:             "http://aura-observer-1:26657",
+		NodeAPI:             "http://aura-observer-1:1317",
+		NodeGRPC:            "aura-observer-1:9090",
 		ChainID:             "aura-testnet-1",
 		FaucetMnemonic:      "alcohol woman abuse can during mafia husband alcohol ahead begin narrow brave",
 		AmountPerRequest:    100000000,

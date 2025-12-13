@@ -501,11 +501,6 @@ func (ad *AnomalyDetector) GetModelVersion() string {
 	return ad.modelVersion
 }
 
-// generateDetectionID generates a unique detection ID (non-consensus path)
-func generateDetectionID() string {
-	return fmt.Sprintf("detection-%d", time.Now().UnixNano())
-}
-
 // generateDetectionIDWithCtx generates a unique detection ID using block time (consensus-safe)
 func generateDetectionIDWithCtx(ctx context.Context) string {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)

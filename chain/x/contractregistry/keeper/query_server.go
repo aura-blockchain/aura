@@ -75,14 +75,10 @@ func (qs queryServer) ContractsByCreator(goCtx context.Context, req *pb.QueryCon
 		}
 
 		if start < len(creatorContracts) {
-			for i := start; i < end; i++ {
-				contracts = append(contracts, creatorContracts[i])
-			}
+			contracts = append(contracts, creatorContracts[start:end]...)
 		}
 	} else {
-		for i := range creatorContracts {
-			contracts = append(contracts, creatorContracts[i])
-		}
+		contracts = append(contracts, creatorContracts...)
 	}
 
 	return &pb.QueryContractsByCreatorResponse{
@@ -129,14 +125,10 @@ func (qs queryServer) ContractsByTag(goCtx context.Context, req *pb.QueryContrac
 		}
 
 		if start < len(tagContracts) {
-			for i := start; i < end; i++ {
-				contracts = append(contracts, tagContracts[i])
-			}
+			contracts = append(contracts, tagContracts[start:end]...)
 		}
 	} else {
-		for i := range tagContracts {
-			contracts = append(contracts, tagContracts[i])
-		}
+		contracts = append(contracts, tagContracts...)
 	}
 
 	return &pb.QueryContractsByTagResponse{

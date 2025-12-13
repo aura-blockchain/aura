@@ -37,7 +37,7 @@ Aequitas is a Layer-1 blockchain built on the Cosmos SDK that serves as a decent
 git clone https://github.com/decristofaroj/aura.git
 cd aura
 
-# Install PHP dependencies
+# Install PHP dependencies (required before git hooks)
 composer install
 
 # Install Node dependencies
@@ -48,6 +48,8 @@ pip install -r requirements.txt
 
 # Verify setup
 composer run test
+
+> **Note:** Run `composer install` once before making commits so the Husky pre-commit hook can execute the PHP checks. If Composer is missing, the hook will skip those checks until Composer is installed.
 ```
 
 ### Start a Local Validator Node

@@ -32,7 +32,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 
 	// Set default params
 	params := types.DefaultParams()
-	suite.Keeper.SetParams(params)
+	suite.Require().NoError(suite.Keeper.SetParams(params))
 }
 
 // TestKeeperTestSuite runs the test suite

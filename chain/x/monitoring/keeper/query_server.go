@@ -23,11 +23,7 @@ func NewQueryServer(k *Keeper) monitoringpb.QueryServer {
 var _ monitoringpb.QueryServer = &QueryServer{}
 
 // GetNetworkHealth returns network health information
-func (qs *QueryServer) GetNetworkHealth(ctx context.Context, req *monitoringpb.QueryNetworkHealthRequest) (*monitoringpb.QueryNetworkHealthResponse, error) {
-	if req == nil {
-		req = &monitoringpb.QueryNetworkHealthRequest{}
-	}
-
+func (qs *QueryServer) GetNetworkHealth(ctx context.Context, _ *monitoringpb.QueryNetworkHealthRequest) (*monitoringpb.QueryNetworkHealthResponse, error) {
 	health, err := qs.keeper.GetNetworkHealth(ctx)
 	if err != nil {
 		return nil, err
@@ -112,11 +108,7 @@ func (qs *QueryServer) GetAlerts(ctx context.Context, req *monitoringpb.QueryAle
 }
 
 // GetGasPriceTracking returns gas price tracking data
-func (qs *QueryServer) GetGasPriceTracking(ctx context.Context, req *monitoringpb.QueryGasPriceRequest) (*monitoringpb.QueryGasPriceResponse, error) {
-	if req == nil {
-		req = &monitoringpb.QueryGasPriceRequest{}
-	}
-
+func (qs *QueryServer) GetGasPriceTracking(ctx context.Context, _ *monitoringpb.QueryGasPriceRequest) (*monitoringpb.QueryGasPriceResponse, error) {
 	tracking, err := qs.keeper.GetGasPriceTracking(ctx)
 	if err != nil {
 		return nil, err
@@ -128,11 +120,7 @@ func (qs *QueryServer) GetGasPriceTracking(ctx context.Context, req *monitoringp
 }
 
 // GetTVLMonitoring returns TVL monitoring data
-func (qs *QueryServer) GetTVLMonitoring(ctx context.Context, req *monitoringpb.QueryTVLRequest) (*monitoringpb.QueryTVLResponse, error) {
-	if req == nil {
-		req = &monitoringpb.QueryTVLRequest{}
-	}
-
+func (qs *QueryServer) GetTVLMonitoring(ctx context.Context, _ *monitoringpb.QueryTVLRequest) (*monitoringpb.QueryTVLResponse, error) {
 	tvl, err := qs.keeper.GetTVLMonitoring(ctx)
 	if err != nil {
 		return nil, err

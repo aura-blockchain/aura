@@ -146,7 +146,9 @@ func (k *Keeper) ValidateTransactionInclusion(ctx sdk.Context) error {
 		if censored {
 			// Promote transaction
 			txHash := k.GetTransactionHash(tx)
-			k.PromoteTransaction(ctx, txHash)
+			if err := k.PromoteTransaction(ctx, txHash); err != nil {
+				return fmt.Errorf("failed to promote transaction %s: %w", txHash, err)
+			}
 		}
 	}
 

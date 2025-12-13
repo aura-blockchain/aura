@@ -249,8 +249,13 @@ func (k Keeper) Migrate(ctx sdk.Context, contractAddr, caller sdk.AccAddress, ne
 	// Check migration requirements
 	params := k.GetParams(ctx)
 	if params.RequireAdminForMigrate {
-		// In a full implementation, would check if caller is admin of contract
-		// For now, just note the requirement is enabled
+		info := k.wasmKeeper.GetContractInfo(ctx, contractAddr)
+		if info == nil {
+			return nil, fmt.Errorf("contract %s not found", contractAddr.String())
+		}
+		if info.Admin != caller.String() {
+			return nil, fmt.Errorf("caller %s is not admin for contract %s", caller.String(), contractAddr.String())
+		}
 	}
 
 	if k.wasmKeeper == nil {

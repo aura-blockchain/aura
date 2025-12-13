@@ -381,6 +381,6 @@ func TestKeeperPanicsWithoutStore(t *testing.T) {
 
 	// Should panic when trying to use keeper without store
 	require.Panics(t, func() {
-		keeper.GetIncident(ctx, "test")
+		_, _ = keeper.GetIncident(ctx, "test")
 	})
 }

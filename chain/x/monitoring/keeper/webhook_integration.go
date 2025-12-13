@@ -154,8 +154,13 @@ func (k Keeper) TriggerWebhook(ctx context.Context, webhookID string, event *Web
 		return fmt.Errorf("webhook is disabled")
 	}
 
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	// Send webhook asynchronously (non-consensus operation)
-	go k.sendWebhook(config, event)
+	go func() {
+		if err := k.sendWebhook(config, event); err != nil {
+			sdkCtx.Logger().Error("webhook send failed", "webhook_id", webhookID, "error", err)
+		}
+	}()
 
 	return nil
 }
@@ -247,7 +252,11 @@ func (k Keeper) NotifyWebhooks(ctx context.Context, eventType string, data map[s
 
 		// Check if webhook is interested in this event
 		if config.Enabled && k.webhookInterestedInEvent(&config, eventType) {
-			go k.sendWebhook(&config, event)
+			go func(cfg WebhookConfig) {
+				if err := k.sendWebhook(&cfg, event); err != nil {
+					sdkCtx.Logger().Error("webhook broadcast failed", "webhook_id", cfg.ID, "error", err)
+				}
+			}(config)
 		}
 	}
 

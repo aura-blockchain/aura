@@ -418,12 +418,16 @@ func (s *TxTestSuite) TestMintVC_MetadataParsing() {
 // Benchmark tests
 func BenchmarkParseVCType(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		parseVCType("VC_TYPE_VERIFIED_HUMAN")
+		if _, err := parseVCType("VC_TYPE_VERIFIED_HUMAN"); err != nil {
+			b.Fatalf("unexpected error: %v", err)
+		}
 	}
 }
 
 func BenchmarkParseRevocationReason(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		parseRevocationReason("REVOCATION_REASON_FRAUD_DETECTED")
+		if _, err := parseRevocationReason("REVOCATION_REASON_FRAUD_DETECTED"); err != nil {
+			b.Fatalf("unexpected error: %v", err)
+		}
 	}
 }

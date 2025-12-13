@@ -16,12 +16,12 @@ version: '3.8'
 #   1. Start the proxy:
 #      docker-compose -f docker-compose.proxy.yml up -d
 #
-#   2. Access endpoints:
-#      - RPC:     http://localhost/rpc
-#      - API:     http://localhost/api
-#      - gRPC:    localhost:9090 (with gRPC client)
-#      - Swagger: http://localhost/api/swagger/
-#      - Health:  http://localhost/health
+    #   2. Access endpoints:
+    #      - RPC:     http://localhost:8080/rpc
+    #      - API:     http://localhost:8080/api
+    #      - gRPC:    localhost:12091 (with gRPC client)
+    #      - Swagger: http://localhost:8080/api/swagger/
+    #      - Health:  http://localhost:8080/health
 #
 #   3. Test RPC endpoint:
 #      curl http://localhost/rpc/status | jq
@@ -58,8 +58,8 @@ services:
 
     # Port mappings
     ports:
-      - "80:80"       # HTTP (RPC/API endpoints)
-      - "9090:9090"   # gRPC (native gRPC clients)
+      - "8080:80"       # HTTP (RPC/API endpoints) - host 80 reserved by apache
+      - "12091:9090"    # gRPC (native gRPC clients) - host 9090 reserved by prometheus
 
     # Configuration and logs
     volumes:
