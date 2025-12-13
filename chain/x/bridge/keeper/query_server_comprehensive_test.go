@@ -81,7 +81,7 @@ func (suite *QueryServerComprehensiveTestSuite) TestQueryTransferValid() {
 		Status:      types.TransferStatus_PENDING,
 		Timestamp:   time.Now(),
 	}
-	suite.Keeper.setTransfer(suite.SdkCtx, transfer)
+	suite.Require().NoError(suite.Keeper.setTransfer(suite.SdkCtx, transfer))
 
 	req := &bridgepb.QueryTransferRequest{
 		TransferId: "test-transfer-1",
@@ -128,7 +128,7 @@ func (suite *QueryServerComprehensiveTestSuite) TestQueryTransfersMultiple() {
 			Status:      types.TransferStatus_PENDING,
 			Timestamp:   time.Now(),
 		}
-		suite.Keeper.setTransfer(suite.SdkCtx, transfer)
+		suite.Require().NoError(suite.Keeper.setTransfer(suite.SdkCtx, transfer))
 	}
 
 	req := &bridgepb.QueryAllTransfersRequest{}

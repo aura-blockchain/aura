@@ -59,7 +59,9 @@ func TestQueryUserScore(t *testing.T) {
 		},
 		VerificationAchievedHeight: 50,
 	}
-	k.SetUserRecord(ctx, record)
+	if err := k.SetUserRecord(ctx, record); err != nil {
+		t.Fatalf("failed to set user record: %v", err)
+	}
 
 	// Query existing user
 	totalScore, isVerified, anchorInfo, arenaScores, _, _, status, verificationHeight, err = k.QueryUserScore(ctx, walletAddr)
@@ -120,7 +122,9 @@ func TestQueryUserCompletions(t *testing.T) {
 			{IrId: "IR-004", Arena: "GeoLocation", FinalScore: 600},
 		},
 	}
-	k.SetUserRecord(ctx, record)
+	if err := k.SetUserRecord(ctx, record); err != nil {
+		t.Fatalf("failed to set user record: %v", err)
+	}
 
 	// Query all completions
 	completions, total = k.QueryUserCompletions(ctx, walletAddr, "", 0, 10)

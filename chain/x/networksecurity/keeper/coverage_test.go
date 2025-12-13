@@ -314,12 +314,14 @@ func (suite *KeeperTestSuite) TestGetMessageCacheStats() {
 	_, _, err := suite.keeper.CheckGossipMessage(suite.ctx, []byte("msg1"))
 	suite.Require().NoError(err)
 	isNew, _, err := suite.keeper.CheckGossipMessage(suite.ctx, []byte("msg2"))
-	suite.Require().ErrorIs(err, types.ErrDuplicateMessage)
-	suite.Require().False(isNew)
+	suite.Require().NoError(err)
+	suite.Require().True(isNew)
 	_, _, err = suite.keeper.CheckGossipMessage(suite.ctx, []byte("msg3"))
 	suite.Require().NoError(err)
-	_, _, err = suite.keeper.CheckGossipMessage(suite.ctx, []byte("msg2"))
-	suite.Require().NoError(err)
+	// msg2 again - should be duplicate
+	isNew2, _, err := suite.keeper.CheckGossipMessage(suite.ctx, []byte("msg2"))
+	suite.Require().ErrorIs(err, types.ErrDuplicateMessage)
+	suite.Require().False(isNew2)
 
 	stats := suite.keeper.GetMessageCacheStats()
 	suite.Require().Equal(3, stats.Size)

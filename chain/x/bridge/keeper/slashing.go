@@ -289,7 +289,9 @@ func (k Keeper) jailValidator(ctx sdk.Context, validatorAddress string) error {
 	}
 
 	validator.Active = false
-	k.setValidator(ctx, validator)
+	if err := k.setValidator(ctx, validator); err != nil {
+		return fmt.Errorf("failed to mark validator as inactive: %w", err)
+	}
 
 	// If staking keeper is available, also jail in staking module
 	if k.stakingKeeper != nil {

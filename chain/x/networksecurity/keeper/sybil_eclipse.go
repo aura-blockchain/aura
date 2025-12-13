@@ -365,15 +365,21 @@ func (k Keeper) AcceptConnection(ctx sdk.Context, peerInfo types.PeerInfo) error
 			Score:             params.Reputation.InitialScore,
 			LastUpdatedHeight: ctx.BlockHeight(),
 		}
-		k.SetReputation(ctx, reputation)
+		if err := k.SetReputation(ctx, reputation); err != nil {
+			return fmt.Errorf("failed to initialize reputation: %w", err)
+		}
 	}
 
 	// Store peer info
 	peerInfo.ConnectedAt = ctx.BlockTime()
-	k.SetPeerInfo(ctx, peerInfo)
+	if err := k.SetPeerInfo(ctx, peerInfo); err != nil {
+		return fmt.Errorf("failed to store peer info: %w", err)
+	}
 
 	// Increment connection count for IP
-	k.IncrementConnectionCount(ctx, peerInfo.IpAddress)
+	if err := k.IncrementConnectionCount(ctx, peerInfo.IpAddress); err != nil {
+		return fmt.Errorf("failed to increment connection count: %w", err)
+	}
 
 	k.logger.Info(fmt.Sprintf("Accepted connection from peer %s (%s)", peerInfo.PeerId, peerInfo.IpAddress))
 
@@ -388,7 +394,9 @@ func (k Keeper) DisconnectPeer(ctx sdk.Context, peerID string) error {
 	}
 
 	// Decrement connection count
-	k.DecrementConnectionCount(ctx, peerInfo.IpAddress)
+	if err := k.DecrementConnectionCount(ctx, peerInfo.IpAddress); err != nil {
+		return fmt.Errorf("failed to decrement connection count: %w", err)
+	}
 
 	// Remove peer info
 	store := k.storeService.OpenKVStore(ctx)

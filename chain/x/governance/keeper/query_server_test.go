@@ -33,14 +33,14 @@ func TestQueryProposalsPagination(t *testing.T) {
 	}
 
 	// Test 1: Query without pagination (should get default limit)
-	resp1, err := queryServer.Proposals(sdk.WrapSDKContext(ctx), &govpb.QueryProposalsRequest{})
+	resp1, err := queryServer.Proposals(ctx, &govpb.QueryProposalsRequest{})
 	require.NoError(t, err)
 	require.NotNil(t, resp1)
 	require.Len(t, resp1.Proposals, 5)
 	require.NotNil(t, resp1.Pagination)
 
 	// Test 2: Query with limit=3
-	resp2, err := queryServer.Proposals(sdk.WrapSDKContext(ctx), &govpb.QueryProposalsRequest{
+	resp2, err := queryServer.Proposals(ctx, &govpb.QueryProposalsRequest{
 		Pagination: &query.PageRequest{
 			Limit: 3,
 		},

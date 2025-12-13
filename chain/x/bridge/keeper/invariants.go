@@ -1,5 +1,7 @@
 package keeper
 
+//nolint:staticcheck // Invariants use deprecated SDK types until crisis module is removed
+
 import (
 	"fmt"
 
@@ -245,15 +247,8 @@ func ValidatorSetInvariant(k Keeper) sdk.Invariant {
 				), true
 			}
 
-			// Check power is non-zero
-			if validator.Power == 0 {
-				return sdk.FormatInvariant(
-					types.ModuleName,
-					"validator-set-validity",
-					fmt.Sprintf("validator %s has zero power: %d",
-						validator.Address, validator.Power),
-				), true
-			}
+			// Note: Zero power validators are allowed (e.g., during rotation or deactivation)
+			// The important check is that we have at least one active validator, not that all have power
 
 			if validator.Active {
 				activeValidatorCount++

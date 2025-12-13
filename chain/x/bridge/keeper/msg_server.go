@@ -209,7 +209,9 @@ func (ms msgServer) LockTokens(goCtx context.Context, msg *bridgepb.MsgLockToken
 		Timestamp:             ctx.BlockTime(),
 		RequiredConfirmations: params.MinConfirmations,
 	}
-	ms.Keeper.setTransfer(ctx, transfer)
+	if err := ms.Keeper.setTransfer(ctx, transfer); err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to store transfer: %v", err))
+	}
 	log.TxSuccess(ctx, "MsgLockTokens", "sender", msg.Sender, "transfer_id", transferID, "target_chain", chainID, "amount", amnt.String())
 	log.StateChange(ctx, "cross_chain_transfer", "created", transferID)
 	return &bridgepb.MsgLockTokensResponse{
@@ -277,7 +279,9 @@ func (ms msgServer) MintTokens(goCtx context.Context, msg *bridgepb.MsgMintToken
 			Status:      bridgepb.TransferStatus_CONFIRMED,
 			Timestamp:   ctx.BlockTime(),
 		}
-		ms.Keeper.setTransfer(ctx, transfer)
+		if err := ms.Keeper.setTransfer(ctx, transfer); err != nil {
+			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to store transfer: %v", err))
+		}
 		ms.Keeper.indexTransferHash(ctx, msg.SourceTxHash, transferID)
 	}
 	if err := ms.Keeper.SubmitAttestation(ctx, transferID, msg.Validator, true); err != nil && err != types.ErrDuplicateAttestation {
@@ -301,7 +305,9 @@ func (ms msgServer) MintTokens(goCtx context.Context, msg *bridgepb.MsgMintToken
 		transfer.Status = bridgepb.TransferStatus_COMPLETED
 		transfer.TargetTxHash = msg.SourceTxHash
 		transfer.Timestamp = ctx.BlockTime()
-		ms.Keeper.setTransfer(ctx, transfer)
+		if err := ms.Keeper.setTransfer(ctx, transfer); err != nil {
+			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to update transfer status: %v", err))
+		}
 
 		// CRITICAL SECURITY: Record minted amount for hourly tracking (auto-pause detection)
 		ms.Keeper.RecordMintedAmount(ctx, msg.Denom, amount)
@@ -319,7 +325,9 @@ func (ms msgServer) MintTokens(goCtx context.Context, msg *bridgepb.MsgMintToken
 		// token.TotalSupply is already math.Int, use directly
 		token.TotalSupply = token.TotalSupply.Add(amount)
 	}
-	ms.Keeper.setWrappedToken(ctx, token)
+	if err := ms.Keeper.setWrappedToken(ctx, token); err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to update wrapped token: %v", err))
+	}
 	return &bridgepb.MsgMintTokensResponse{Success: true, WrappedDenom: wrappedDenom}, nil
 }
 
@@ -615,13 +623,17 @@ func (ms msgServer) UnlockTokens(goCtx context.Context, msg *bridgepb.MsgUnlockT
 		FraudProofId: "",
 	}
 
-	ms.Keeper.setPendingTransfer(ctx, pendingTransfer)
+	if err := ms.Keeper.setPendingTransfer(ctx, pendingTransfer); err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to store pending transfer: %v", err))
+	}
 
 	// Update transfer status to RELAYED (awaiting finalization)
 	transfer.Status = bridgepb.TransferStatus_RELAYED
 	transfer.TargetTxHash = msg.BurnTxHash
 	transfer.Timestamp = ctx.BlockTime()
-	ms.Keeper.setTransfer(ctx, transfer)
+	if err := ms.Keeper.setTransfer(ctx, transfer); err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to update transfer status: %v", err))
+	}
 
 	// Emit event for pending transfer creation
 	ctx.EventManager().EmitEvent(
@@ -692,7 +704,9 @@ func (ms msgServer) BurnTokens(goCtx context.Context, msg *bridgepb.MsgBurnToken
 		Status:      bridgepb.TransferStatus_CONFIRMED,
 		Timestamp:   ctx.BlockTime(),
 	}
-	ms.Keeper.setTransfer(ctx, transfer)
+	if err := ms.Keeper.setTransfer(ctx, transfer); err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to store transfer: %v", err))
+	}
 	ms.Keeper.indexTransferHash(ctx, transferID, transferID)
 	return &bridgepb.MsgBurnTokensResponse{TransferId: transferID, EstimatedCompletion: 600}, nil
 }
@@ -824,7 +838,9 @@ func (ms msgServer) LinkAddress(goCtx context.Context, msg *bridgepb.MsgLinkAddr
 		identity.ReputationScore = identity.AuraIrScore * 10
 	}
 
-	ms.Keeper.setSharedIdentity(ctx, identity)
+	if err := ms.Keeper.setSharedIdentity(ctx, identity); err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to store shared identity: %v", err))
+	}
 
 	// Emit event for audit trail
 	ctx.EventManager().EmitEvent(
@@ -861,7 +877,9 @@ func (ms msgServer) CrossChainSwap(goCtx context.Context, msg *bridgepb.MsgCross
 		Status:      "pending",
 		InitiatedAt: ctx.BlockTime(),
 	}
-	ms.Keeper.setSwap(ctx, swap)
+	if err := ms.Keeper.setSwap(ctx, swap); err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to store swap: %v", err))
+	}
 	route := []string{normalizeChain(msg.SourceChain), normalizeChain(msg.TargetChain)}
 	if msg.SourceChain == msg.TargetChain {
 		route = []string{normalizeChain(msg.SourceChain)}
@@ -898,7 +916,9 @@ func (ms msgServer) RelayTransfer(goCtx context.Context, msg *bridgepb.MsgRelayT
 	}
 	transfer.TargetTxHash = msg.TargetTxHash
 	transfer.Timestamp = ctx.BlockTime()
-	ms.Keeper.setTransfer(ctx, transfer)
+	if err := ms.Keeper.setTransfer(ctx, transfer); err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to update transfer: %v", err))
+	}
 	// transfer.Amount is already math.Int, use directly
 	ms.Keeper.recordRelayerStats(ctx, msg.Relayer, true, transfer.Amount)
 	return &bridgepb.MsgRelayTransferResponse{Success: true}, nil
@@ -985,7 +1005,9 @@ func (ms msgServer) FinalizeTransfer(goCtx context.Context, msg *bridgepb.MsgFin
 	if found {
 		transfer.Status = bridgepb.TransferStatus_COMPLETED
 		transfer.Timestamp = currentTime
-		ms.Keeper.setTransfer(ctx, transfer)
+		if err := ms.Keeper.setTransfer(ctx, transfer); err != nil {
+			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to update transfer status: %v", err))
+		}
 	}
 
 	// 3. Interactions (token transfers) - unlock tokens from module to recipient
@@ -1118,13 +1140,17 @@ func (ms msgServer) SubmitFraudProof(goCtx context.Context, msg *bridgepb.MsgSub
 	}
 
 	// Store fraud proof
-	ms.Keeper.setFraudProof(ctx, fraudProof)
+	if err := ms.Keeper.setFraudProof(ctx, fraudProof); err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to store fraud proof: %v", err))
+	}
 
 	// CRITICAL SECURITY: Mark pending transfer as challenged
 	// This prevents finalization while fraud proof is investigated
 	pendingTransfer.Challenged = true
 	pendingTransfer.FraudProofId = fraudProofID
-	ms.Keeper.SetPendingTransfer(ctx, pendingTransfer)
+	if err := ms.Keeper.SetPendingTransfer(ctx, pendingTransfer); err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to update pending transfer: %v", err))
+	}
 
 	// Emit event for fraud proof submission
 	ctx.EventManager().EmitEvent(

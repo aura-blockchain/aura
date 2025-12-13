@@ -47,6 +47,8 @@ type Marshallable interface {
 //   if !found {
 //       return nil, types.ErrPoolNotFound
 //   }
+//
+//nolint:staticcheck // ProtoMarshaler is deprecated but required for generic type constraints
 func GetObject[T codec.ProtoMarshaler](ctx sdk.Context, store storetypes.KVStore, cdc codec.BinaryCodec, key []byte, obj T) (T, bool, error) {
 	bz := store.Get(key)
 	if bz == nil {
@@ -88,6 +90,8 @@ func GetObject[T codec.ProtoMarshaler](ctx sdk.Context, store storetypes.KVStore
 //   if err := common.SetObject(ctx, store, k.cdc, poolKey, pool); err != nil {
 //       return err
 //   }
+//
+//nolint:staticcheck // ProtoMarshaler is deprecated but required for generic type constraints
 func SetObject[T codec.ProtoMarshaler](ctx sdk.Context, store storetypes.KVStore, cdc codec.BinaryCodec, key []byte, obj T) error {
 	bz, err := cdc.Marshal(obj)
 	if err != nil {
@@ -158,6 +162,8 @@ func HasObject(store storetypes.KVStore, key []byte) bool {
 //       // Process pool
 //       return nil
 //   })
+//
+//nolint:staticcheck // ProtoMarshaler is deprecated but required for generic type constraints
 func IterateObjects[T codec.ProtoMarshaler](
 	ctx sdk.Context,
 	store storetypes.KVStore,

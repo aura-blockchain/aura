@@ -123,7 +123,9 @@ func (k *Keeper) VerifyScoreProof(ctx sdk.Context, proof *ScoreProof) (bool, err
 func (k *Keeper) storeVerificationProofHash(ctx sdk.Context, walletAddr string, proofHash string) {
 	store := k.storeService.OpenKVStore(ctx)
 	key := types.VerificationProofHashStoreKey(walletAddr, proofHash)
-	store.Set([]byte(key), []byte{1})
+	if err := store.Set([]byte(key), []byte{1}); err != nil {
+		ctx.Logger().Error("failed to store verification proof hash", "wallet", walletAddr, "error", err)
+	}
 }
 
 // hasVerificationProofHash checks if a proof hash exists for a user

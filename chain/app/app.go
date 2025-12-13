@@ -55,7 +55,7 @@ import (
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/gogoproto/proto"
-	ibcclienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	ibcclienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types" //nolint:staticcheck // Required for IBC client registration
 	ibcconnectiontypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
 	ibcchanneltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 	"google.golang.org/grpc"
@@ -529,7 +529,7 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 		aurabindingstypes.MemStoreKey:      aurabindingsMemKey,
 	})
 
-	paramsKeeper := paramskeeper.NewKeeper(encoding.Codec, codec.NewLegacyAmino(), keys.params, paramsTKey)
+	paramsKeeper := paramskeeper.NewKeeper(encoding.Codec, codec.NewLegacyAmino(), keys.params, paramsTKey) //nolint:staticcheck // Params keeper deprecated but still required for bridge subspace
 	bridgeSubspace := paramsKeeper.Subspace(bridgetypes.ModuleName)
 
 	accountCodec := address.NewBech32Codec(bech32MainPrefix)
@@ -926,7 +926,7 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 		stakingmodule.NewAppModule(encoding.Codec, stakingKeeper, accountKeeper, bankKeeper, nil),
 		slashingmodule.NewAppModule(encoding.Codec, slashingKeeper, accountKeeper, bankKeeper, stakingKeeper, nil, encoding.InterfaceRegistry),
 		distribution.NewAppModule(encoding.Codec, distributionKeeper, accountKeeper, bankKeeper, stakingKeeper, nil),
-		params.NewAppModule(paramsKeeper),
+		params.NewAppModule(paramsKeeper), //nolint:staticcheck // Params module deprecated but still needed for migration
 		consensus.NewAppModule(encoding.Codec, consensusKeeper),
 		upgrademodule.NewAppModule(upgradeKeeper, accountCodec),
 		genutilmodule.NewAppModule(accountKeeper, stakingKeeper, base, encoding.TxConfig),

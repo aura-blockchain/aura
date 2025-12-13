@@ -298,14 +298,17 @@ func (k *Keeper) RestoreDecayedScore(ctx sdk.Context, walletAddr string, amount 
 		return err
 	}
 
-	k.AddScoreChange(ctx, walletAddr, types.ScoreChange{
+	if err := k.AddScoreChange(ctx, walletAddr, types.ScoreChange{
 		ScoreDelta:    int64(amount),
 		NewTotal:      record.TotalScore,
 		Reason:        types.ChangeReasonGovernanceAdjustment,
 		RelatedIrId:   "decay_restoration",
 		TxHash:        fmt.Sprintf("restore-%s-%d", walletAddr, ctx.BlockHeight()),
 		PreviousScore: previousScore,
-	})
+	}); err != nil {
+		// Log error but don't fail the entire operation since the main state was already updated
+		ctx.Logger().Error("failed to record score change", "error", err)
+	}
 
 	return nil
 }

@@ -58,6 +58,8 @@ func (m *MockAccountKeeper) GetModuleAddress(moduleName string) sdk.AccAddress {
 }
 
 // GetModuleAccount returns a module account
+//
+//nolint:staticcheck // ModuleAccountI is deprecated but still used in SDK v0.50
 func (m *MockAccountKeeper) GetModuleAccount(ctx sdk.Context, moduleName string) authtypes.ModuleAccountI {
 	addr := m.GetModuleAddress(moduleName)
 	if acc, ok := m.Accounts[addr.String()]; ok {
@@ -74,6 +76,8 @@ func (m *MockAccountKeeper) GetModuleAccount(ctx sdk.Context, moduleName string)
 }
 
 // SetModuleAccount sets a module account
+//
+//nolint:staticcheck // ModuleAccountI is deprecated but still used in SDK v0.50
 func (m *MockAccountKeeper) SetModuleAccount(ctx sdk.Context, macc authtypes.ModuleAccountI) {
 	m.Accounts[macc.GetAddress().String()] = macc
 	m.ModuleAccounts[macc.GetName()] = true

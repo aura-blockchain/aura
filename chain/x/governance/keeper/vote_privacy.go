@@ -108,7 +108,9 @@ func (k *Keeper) RevealVote(
 
 	// Mark commitment as revealed
 	commitment.Revealed = true
-	k.setVoteCommitment(ctx, commitment)
+	if err := k.setVoteCommitment(ctx, commitment); err != nil {
+		return fmt.Errorf("failed to update vote commitment: %w", err)
+	}
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(

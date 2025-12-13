@@ -1,8 +1,6 @@
 package keeper_test
 
 import (
-	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	"github.com/aequitas/aura/chain/x/aura-bindings/keeper"
 	"github.com/aequitas/aura/chain/x/aura-bindings/types"
 )
@@ -17,11 +15,10 @@ func (suite *KeeperTestSuite) TestEmptyMethod() {
 	msgServer := keeper.NewMsgServerImpl(suite.keeper)
 	require := suite.Require()
 
-	// Use the SDK context from the test suite, wrapped for gRPC compatibility
-	ctx := sdk.WrapSDKContext(suite.ctx)
+	// Use the SDK context from the test suite (now implements context.Context directly)
 	req := &types.EmptyRequest{}
 
-	resp, err := msgServer.EmptyMethod(ctx, req)
+	resp, err := msgServer.EmptyMethod(suite.ctx, req)
 	require.NoError(err)
 	require.NotNil(resp)
 }

@@ -39,10 +39,9 @@ func newDeterminismContext(t *testing.T, height int64, blockTime time.Time) sdk.
 func TestDeterministicRNGConsistency(t *testing.T) {
 	blockTime := time.Unix(1_700_000_000, 0).UTC()
 	ctx := newDeterminismContext(t, 42, blockTime)
-	wrapped := ctx.Context()
 
-	rng1 := NewDeterministicRNG(wrapped, []byte("entropy"))
-	rng2 := NewDeterministicRNG(wrapped, []byte("entropy"))
+	rng1 := NewDeterministicRNG(ctx, []byte("entropy"))
+	rng2 := NewDeterministicRNG(ctx, []byte("entropy"))
 
 	require.Equal(t, rng1.Bytes(32), rng2.Bytes(32), "same ctx + entropy must produce identical bytes")
 	require.Equal(t, rng1.Uint64(), rng2.Uint64())
@@ -50,12 +49,12 @@ func TestDeterministicRNGConsistency(t *testing.T) {
 
 	// Changing block height should change the seed.
 	ctx2 := newDeterminismContext(t, 43, blockTime)
-	rngDifferent := NewDeterministicRNG(ctx2.Context(), []byte("entropy"))
+	rngDifferent := NewDeterministicRNG(ctx2, []byte("entropy"))
 	require.NotEqual(t, rng1.Bytes(16), rngDifferent.Bytes(16))
 }
 
 func TestDeterministicRNGIntnBounds(t *testing.T) {
-	ctx := newDeterminismContext(t, 99, time.Unix(1_700_000_100, 0).UTC()).Context()
+	ctx := newDeterminismContext(t, 99, time.Unix(1_700_000_100, 0).UTC())
 	rng := NewDeterministicRNG(ctx)
 
 	for i := 0; i < 100; i++ {

@@ -1,5 +1,7 @@
 package keeper_test
 
+//nolint:staticcheck // Invariants use deprecated SDK types until crisis module is removed
+
 import (
 	"strings"
 

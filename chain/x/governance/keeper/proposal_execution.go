@@ -90,7 +90,9 @@ func (k *Keeper) executeProposalAutomatically(ctx sdk.Context, proposal *types.P
 		proposal.Status = types.StatusExecuted
 	}
 
-	k.SetProposal(ctx, proposal)
+	if setErr := k.SetProposal(ctx, proposal); setErr != nil {
+		ctx.Logger().Error("failed to update proposal status", "proposal_id", proposal.Id, "error", setErr)
+	}
 
 	execution := &types.ProposalExecution{
 		ProposalId:    proposal.Id,

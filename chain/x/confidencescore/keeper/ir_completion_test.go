@@ -475,7 +475,9 @@ func TestCalculateVelocityBonus(t *testing.T) {
 
 	// Already verified - should return 10000 (1.0x)
 	record.TotalScore = 10000
-	k.SetUserRecord(ctx, record)
+	if err := k.SetUserRecord(ctx, record); err != nil {
+		t.Fatalf("failed to set user record: %v", err)
+	}
 	bonus = k.CalculateVelocityBonus(ctx, walletAddr)
 	if bonus != BasisPointsBase {
 		t.Errorf("expected %d (1.0x) for verified user, got %d", BasisPointsBase, bonus)

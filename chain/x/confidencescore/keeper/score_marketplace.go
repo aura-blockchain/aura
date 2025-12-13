@@ -291,7 +291,10 @@ func (k *Keeper) PlaceBid(
 		previousBidderAddr, err := sdk.AccAddressFromBech32(listing.HighestBidder)
 		if err == nil {
 			previousBidCoins := sdk.NewCoins(sdk.NewCoin("uaura", listing.CurrentBid))
-			bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, previousBidderAddr, previousBidCoins)
+			if err := bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, previousBidderAddr, previousBidCoins); err != nil {
+				// Log error but continue - this shouldn't block the new bid
+				ctx.Logger().Error("failed to return previous bidder's funds", "error", err)
+			}
 		}
 	}
 
@@ -400,7 +403,9 @@ func (k *Keeper) storeListing(ctx sdk.Context, listing *ScoreListing) {
 	store := k.storeService.OpenKVStore(ctx)
 	key := types.MarketplaceListingStoreKey(listing.ListingID)
 	// In production, properly marshal to protobuf
-	store.Set([]byte(key), []byte(listing.Seller))
+	if err := store.Set([]byte(key), []byte(listing.Seller)); err != nil {
+		ctx.Logger().Error("failed to store listing", "listing_id", listing.ListingID, "error", err)
+	}
 }
 
 func (k *Keeper) getListing(ctx sdk.Context, listingID string) (*ScoreListing, bool) {
@@ -418,5 +423,7 @@ func (k *Keeper) storePurchase(ctx sdk.Context, purchase *ScorePurchase) {
 	store := k.storeService.OpenKVStore(ctx)
 	key := types.MarketplacePurchaseStoreKey(purchase.PurchaseID)
 	// In production, properly marshal to protobuf
-	store.Set([]byte(key), []byte(purchase.Buyer))
+	if err := store.Set([]byte(key), []byte(purchase.Buyer)); err != nil {
+		ctx.Logger().Error("failed to store purchase", "purchase_id", purchase.PurchaseID, "error", err)
+	}
 }

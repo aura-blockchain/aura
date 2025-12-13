@@ -532,7 +532,7 @@ func TestEmptyBlockCommit(t *testing.T) {
 	require.NotEmpty(t, firstCommit.Hash)
 
 	// Commit empty block (no state changes)
-	ctx = ctx.WithBlockHeight(2)
+	ctx = ctx.WithBlockHeight(2) //nolint:staticcheck // Reassignment is intentional for testing block height changes
 	emptyCommit := cms.Commit()
 	require.NotEmpty(t, emptyCommit.Hash)
 

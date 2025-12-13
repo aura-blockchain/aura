@@ -19,7 +19,7 @@ import (
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	secp256k1Curve "github.com/decred/dcrd/dcrec/secp256k1/v4"
 	"github.com/decred/dcrd/dcrec/secp256k1/v4/ecdsa"
-	"golang.org/x/crypto/ripemd160"
+	"golang.org/x/crypto/ripemd160" //nolint:staticcheck // Required for Bitcoin address compatibility
 
 	"github.com/aequitas/aura/chain/x/bridge/types"
 )
@@ -776,7 +776,9 @@ func (k Keeper) markTransferFraudulent(ctx sdk.Context, transferID string) (*typ
 	}
 	transfer.Status = types.TransferStatus_FAILED
 	transfer.Timestamp = ctx.BlockTime()
-	k.setTransfer(ctx, transfer)
+	if err := k.setTransfer(ctx, transfer); err != nil {
+		return nil, fmt.Errorf("failed to mark transfer as fraudulent: %w", err)
+	}
 	return transfer, nil
 }
 
@@ -964,7 +966,9 @@ func (k Keeper) SubmitAttestation(ctx sdk.Context, transferID string, validator 
 			ValidatorAddress: validator,
 		})
 	}
-	k.setTransfer(ctx, transfer)
+	if err := k.setTransfer(ctx, transfer); err != nil {
+		return fmt.Errorf("failed to update transfer with attestation: %w", err)
+	}
 	return nil
 }
 
@@ -1259,7 +1263,9 @@ func (k Keeper) SubmitFraudProof(ctx sdk.Context, transferID string, submitter s
 		SubmittedAt:          ctx.BlockTime(),
 		RewardAmount:         math.ZeroInt(),
 	}
-	k.setFraudProof(ctx, fraudProof)
+	if err := k.setFraudProof(ctx, fraudProof); err != nil {
+		return fmt.Errorf("failed to set fraud proof: %w", err)
+	}
 
 	// CRITICAL SECURITY: Mark pending transfer as challenged
 	// This prevents finalization until the fraud proof is resolved
@@ -1290,7 +1296,9 @@ func (k Keeper) ResolveFraudProof(ctx sdk.Context, transferID string, valid bool
 	}
 	if !k.IsInFraudProofWindow(ctx, transferID) {
 		proof.Status = types.FraudProofStatus_FRAUD_PROOF_EXPIRED
-		k.setFraudProof(ctx, proof)
+		if err := k.setFraudProof(ctx, proof); err != nil {
+			return types.FraudProof{}, fmt.Errorf("failed to mark fraud proof as expired: %w", err)
+		}
 		return types.FraudProof{}, types.ErrFraudProofExpired
 	}
 	resolvedAt := ctx.BlockTime()
@@ -1321,7 +1329,9 @@ func (k Keeper) ResolveFraudProof(ctx sdk.Context, transferID string, valid bool
 		proof.Status = types.FraudProofStatus_FRAUD_PROOF_INVALID
 	}
 	proof.RewardAmount = reward
-	k.setFraudProof(ctx, proof)
+	if err := k.setFraudProof(ctx, proof); err != nil {
+		return types.FraudProof{}, fmt.Errorf("failed to save resolved fraud proof: %w", err)
+	}
 	return *proof, nil
 }
 
@@ -1567,8 +1577,8 @@ func (k Keeper) SetProcessedSourceHash(ctx sdk.Context, compositeKey string) {
 // Public exported methods for external access
 
 // SetValidator is a public method to set a bridge validator
-func (k Keeper) SetValidator(ctx sdk.Context, validator *types.BridgeValidator) {
-	k.setValidator(ctx, validator)
+func (k Keeper) SetValidator(ctx sdk.Context, validator *types.BridgeValidator) error {
+	return k.setValidator(ctx, validator)
 }
 
 // GetActiveValidatorSet is a public exported method for getting active validators (for tests)
@@ -2312,8 +2322,8 @@ func (k Keeper) setPendingTransfer(ctx sdk.Context, pendingTransfer *types.Pendi
 }
 
 // SetPendingTransfer is a public exported method for setting pending transfers (for tests).
-func (k Keeper) SetPendingTransfer(ctx sdk.Context, pendingTransfer *types.PendingTransfer) {
-	k.setPendingTransfer(ctx, pendingTransfer)
+func (k Keeper) SetPendingTransfer(ctx sdk.Context, pendingTransfer *types.PendingTransfer) error {
+	return k.setPendingTransfer(ctx, pendingTransfer)
 }
 
 // GetPendingTransfer retrieves a pending transfer by ID.
@@ -2434,7 +2444,9 @@ func (k Keeper) MarkPendingTransferChallenged(ctx sdk.Context, transferID string
 
 	pending.Challenged = true
 	pending.FraudProofId = fraudProofID
-	k.setPendingTransfer(ctx, pending)
+	if err := k.setPendingTransfer(ctx, pending); err != nil {
+		return fmt.Errorf("failed to mark pending transfer as challenged: %w", err)
+	}
 
 	// Emit event for audit trail
 	ctx.EventManager().EmitEvent(

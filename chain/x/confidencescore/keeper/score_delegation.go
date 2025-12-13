@@ -405,7 +405,9 @@ func (k *Keeper) storeDelegation(ctx sdk.Context, delegation *ScoreDelegation) e
 	} else if delegation.EndHeight > 0 && !delegation.Active {
 		// Remove expiration index if delegation became inactive
 		expirationKey := types.ExpirationIndexKey(delegation.EndHeight, delegation.DelegationID)
-		store.Delete([]byte(expirationKey))
+		if err := store.Delete([]byte(expirationKey)); err != nil {
+			return fmt.Errorf("failed to delete expiration index: %w", err)
+		}
 	}
 
 	return nil

@@ -48,7 +48,7 @@ func (suite *MsgServerIntegrationSuite) TestCreatePoolHappyPath() {
 	))
 
 	resp, err := suite.msgServer.CreatePool(
-		suite.ctx.Context(),
+		suite.ctx,
 		&dexpb.MsgCreatePool{
 			Creator: creator,
 			DenomA:  "uaura",
@@ -79,7 +79,7 @@ func (suite *MsgServerIntegrationSuite) TestAddLiquidityHappyPath() {
 	))
 
 	resp, err := suite.msgServer.AddLiquidity(
-		suite.ctx.Context(),
+		suite.ctx,
 		&dexpb.MsgAddLiquidity{
 			Provider: creator,
 			PoolId:   poolID,
@@ -108,7 +108,7 @@ func (suite *MsgServerIntegrationSuite) TestSwapExactInHappyPath() {
 	))
 
 	_, err := suite.msgServer.AddLiquidity(
-		suite.ctx.Context(),
+		suite.ctx,
 		&dexpb.MsgAddLiquidity{
 			Provider: creator,
 			PoolId:   poolID,
@@ -123,7 +123,7 @@ func (suite *MsgServerIntegrationSuite) TestSwapExactInHappyPath() {
 	suite.fund(swapper, sdk.NewCoins(sdk.NewInt64Coin("uaura", 20_000_000)))
 
 	swapResp, err := suite.msgServer.SwapExactIn(
-		suite.ctx.Context(),
+		suite.ctx,
 		&dexpb.MsgSwapExactIn{
 			Sender:         swapper,
 			PoolId:         poolID,
@@ -145,7 +145,7 @@ func (suite *MsgServerIntegrationSuite) createPool(creator string) string {
 	))
 
 	resp, err := suite.msgServer.CreatePool(
-		suite.ctx.Context(),
+		suite.ctx,
 		&dexpb.MsgCreatePool{
 			Creator: creator,
 			DenomA:  "uaura",

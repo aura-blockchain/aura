@@ -13,7 +13,7 @@ import (
 	"github.com/decred/dcrd/dcrec/secp256k1/v4"
 	secp256k1ecdsa "github.com/decred/dcrd/dcrec/secp256k1/v4/ecdsa"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/crypto/ripemd160"
+	"golang.org/x/crypto/ripemd160" //nolint:staticcheck // Required for Bitcoin address compatibility
 )
 
 // setupKeeperForSignatureTests creates a keeper for signature verification tests

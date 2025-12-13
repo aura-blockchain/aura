@@ -51,7 +51,7 @@ func NetworkSecurityKeeper(t *testing.T) (keeper.Keeper, sdk.Context) {
 
 	// Initialize params
 	params := types.DefaultParams()
-	k.SetParams(ctx, *params)
+	require.NoError(t, k.SetParams(ctx, *params))
 
 	return k, ctx
 }

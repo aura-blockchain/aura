@@ -253,6 +253,8 @@ func resolveBoolFlag(cmd *cobra.Command, flagName string, configValue bool, conf
 }
 
 // startInProcess starts the node with CometBFT in the same process
+//
+//nolint:staticcheck // auraApp parameter is intentionally overwritten after database initialization
 func startInProcess(cmd *cobra.Command, auraApp *app.App, logger log.Logger) error {
 	homeDir := GetHomeDir()
 	ctx := cmd.Context()
@@ -456,6 +458,8 @@ func startInProcess(cmd *cobra.Command, auraApp *app.App, logger log.Logger) err
 }
 
 // startStandAlone starts the application without CometBFT (for testing/development)
+//
+//nolint:staticcheck // auraApp parameter is intentionally overwritten after database initialization
 func startStandAlone(cmd *cobra.Command, auraApp *app.App, logger log.Logger) error {
 	homeDir := GetHomeDir()
 	secLogger := GetSecurityLogger()

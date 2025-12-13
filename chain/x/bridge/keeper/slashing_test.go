@@ -733,7 +733,7 @@ func TestResolveFraudProof_SlashesValidators(t *testing.T) {
 		SubmittedAt:          ctx.BlockTime(),
 		Evidence:             []byte("fraud evidence"),
 	}
-	keeper.setFraudProof(ctx, fraudProof)
+	require.NoError(t, keeper.setFraudProof(ctx, fraudProof))
 
 	// Resolve fraud proof as VALID (fraud was proven)
 	resolved, err := keeper.ResolveFraudProof(ctx, transferID, true)

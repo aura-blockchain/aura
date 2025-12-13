@@ -86,14 +86,17 @@ func (k *Keeper) SlashScore(
 	}
 
 	// Add to score history
-	k.AddScoreChange(ctx, walletAddr, types.ScoreChange{
+	if err := k.AddScoreChange(ctx, walletAddr, types.ScoreChange{
 		ScoreDelta:    -int64(slashAmount),
 		NewTotal:      newScore,
 		Reason:        types.ChangeReasonFraudSlash,
 		RelatedIrId:   irID,
 		TxHash:        slashTxHash,
 		PreviousScore: previousScore,
-	})
+	}); err != nil {
+		// Log error but don't fail - the slash itself was successful
+		ctx.Logger().Error("failed to record score change for slash", "error", err)
+	}
 
 	return previousScore, newScore, verificationRevoked, slashTxHash, nil
 }
@@ -205,14 +208,17 @@ func (k *Keeper) ResolveAppeal(
 		}
 
 		// Add to score history
-		k.AddScoreChange(ctx, walletAddr, types.ScoreChange{
+		if err := k.AddScoreChange(ctx, walletAddr, types.ScoreChange{
 			ScoreDelta:    int64(slashRecord.SlashAmount),
 			NewTotal:      record.TotalScore,
 			Reason:        types.ChangeReasonAppealReversal,
 			RelatedIrId:   slashRecord.RelatedIrId,
 			TxHash:        fmt.Sprintf("appeal-resolved-%d", ctx.BlockHeight()),
 			PreviousScore: previousScore,
-		})
+		}); err != nil {
+			// Log error but don't fail - the score restoration was successful
+			ctx.Logger().Error("failed to record score change for appeal", "error", err)
+		}
 
 		depositReturned = true
 	}

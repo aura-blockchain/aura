@@ -84,7 +84,10 @@ func (k Keeper) CheckAndTriggerAutoPause(ctx sdk.Context, denom string, amount s
 	if totalAfterMint.GT(threshold) {
 		// TRIGGER AUTO-PAUSE
 		params.Paused = true
-		k.SetParams(ctx, params)
+		if err := k.SetParams(ctx, params); err != nil {
+			ctx.Logger().Error("failed to auto-pause bridge", "error", err)
+			// Continue execution - this is a safety feature but shouldn't block the mint
+		}
 
 		// Emit critical event for monitoring
 		ctx.EventManager().EmitEvent(

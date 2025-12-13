@@ -364,7 +364,7 @@ func (vkm *ViewKeyManager) DeriveSharedSecret(publicKey []byte, txPublicKey []by
 
 	// Hash the shared secret for use as decryption key
 	hasher := sha256.New()
-	hasher.Write(elliptic.Marshal(vkm.curve, sharedX, sharedY))
+	hasher.Write(elliptic.Marshal(vkm.curve, sharedX, sharedY)) //nolint:staticcheck // Required for ECDH compatibility
 	hasher.Write([]byte("view_key_shared_secret"))
 
 	return hasher.Sum(nil), nil

@@ -39,7 +39,7 @@ func TestBeginBlockerPerformance(t *testing.T) {
 			Asn:         uint32(1000 + (i % 50)), // 50 different ASNs
 			Region:      generateRegion(i),
 		}
-		k.SetPeerInfo(ctx, peerInfo)
+		require.NoError(t, k.SetPeerInfo(ctx, peerInfo))
 
 		// Create reputation
 		rep := types.NodeReputation{
@@ -47,7 +47,7 @@ func TestBeginBlockerPerformance(t *testing.T) {
 			Score:             int64(50 + (i % 50)),
 			LastUpdatedHeight: ctx.BlockHeight() - networksecuritykeeper.REPUTATION_REFRESH_INTERVAL - 1,
 		}
-		k.SetReputation(ctx, rep)
+		require.NoError(t, k.SetReputation(ctx, rep))
 	}
 
 	// Create rate limit entries with expired windows
@@ -57,7 +57,7 @@ func TestBeginBlockerPerformance(t *testing.T) {
 			RequestCount: uint64(100 + i),
 			WindowStart:  ctx.BlockTime().Add(-2 * params.RateLimit.WindowDuration),
 		}
-		k.SetRateLimitEntry(ctx, entry)
+		require.NoError(t, k.SetRateLimitEntry(ctx, entry))
 	}
 
 	// Create fork alerts
@@ -70,7 +70,7 @@ func TestBeginBlockerPerformance(t *testing.T) {
 			DetectedAt:  ctx.BlockTime(),
 			Resolved:    false,
 		}
-		k.SetForkAlert(ctx, alert)
+		require.NoError(t, k.SetForkAlert(ctx, alert))
 	}
 
 	// Create partition alerts
@@ -129,7 +129,7 @@ func TestBeginBlockerMultipleBlocks(t *testing.T) {
 			RequestCount: uint64(100 + i),
 			WindowStart:  ctx.BlockTime().Add(-2 * params.RateLimit.WindowDuration),
 		}
-		k.SetRateLimitEntry(ctx, entry)
+		require.NoError(t, k.SetRateLimitEntry(ctx, entry))
 	}
 
 	// Run BeginBlocker multiple times to process all entries
@@ -176,7 +176,7 @@ func TestBeginBlockerReputationRefresh(t *testing.T) {
 		Score:             100,
 		LastUpdatedHeight: ctx.BlockHeight() - networksecuritykeeper.REPUTATION_REFRESH_INTERVAL - 1,
 	}
-	k.SetReputation(ctx, rep)
+	require.NoError(t, k.SetReputation(ctx, rep))
 
 	// Run BeginBlocker on non-refresh block
 	ctx = ctx.WithBlockHeight(50)
@@ -283,7 +283,7 @@ func TestBeginBlockerConsistency(t *testing.T) {
 			Score:             100,
 			LastUpdatedHeight: ctx.BlockHeight(),
 		}
-		k.SetReputation(ctx, rep)
+		require.NoError(t, k.SetReputation(ctx, rep))
 	}
 
 	initialReputations := k.GetAllReputations(ctx)

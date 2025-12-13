@@ -166,6 +166,10 @@ func TestWasmSecurityDecorator(t *testing.T) {
 		err := k.SetParams(ctx, params)
 		require.NoError(t, err)
 
+		// Set sender as contract admin
+		err = k.SetContractAdmin(ctx, contractAddr, sender)
+		require.NoError(t, err)
+
 		msg := &types.MsgMigrateContract{
 			Sender:   sender.String(),
 			Contract: contractAddr.String(),

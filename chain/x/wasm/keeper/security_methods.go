@@ -246,6 +246,11 @@ func (k Keeper) ExecuteContract(ctx sdk.Context, contractAddr, sender sdk.AccAdd
 
 // Migrate migrates a contract to new code
 func (k Keeper) Migrate(ctx sdk.Context, contractAddr, caller sdk.AccAddress, newCodeID uint64, msg []byte) ([]byte, error) {
+	// Check if wasm keeper is configured
+	if k.wasmKeeper == nil {
+		return nil, fmt.Errorf("wasm keeper not configured")
+	}
+
 	// Check migration requirements
 	params := k.GetParams(ctx)
 	if params.RequireAdminForMigrate {
@@ -256,10 +261,6 @@ func (k Keeper) Migrate(ctx sdk.Context, contractAddr, caller sdk.AccAddress, ne
 		if info.Admin != caller.String() {
 			return nil, fmt.Errorf("caller %s is not admin for contract %s", caller.String(), contractAddr.String())
 		}
-	}
-
-	if k.wasmKeeper == nil {
-		return nil, fmt.Errorf("wasm keeper not configured")
 	}
 
 	ops := wasmkeeper.NewDefaultPermissionKeeper(k.wasmKeeper)
