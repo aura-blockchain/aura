@@ -10,6 +10,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module/testutil"
+	"github.com/cosmos/cosmos-sdk/x/bank"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -34,7 +35,8 @@ type EncodingPrimitivesTestSuite struct {
 
 func (s *EncodingPrimitivesTestSuite) SetupSuite() {
 	// Initialize encoding configuration using testutil from cosmos
-	encCfg := testutil.MakeTestEncodingConfig()
+	// Register bank module to enable MsgSend encoding/decoding
+	encCfg := testutil.MakeTestEncodingConfig(bank.AppModuleBasic{})
 	s.cdc = encCfg.Codec
 	s.txConfig = encCfg.TxConfig
 }
@@ -249,10 +251,15 @@ func (s *EncodingPrimitivesTestSuite) TestAnyEncoding() {
 	err = s.cdc.Unmarshal(anyBytes, &decodedAny)
 	require.NoError(s.T(), err, "Any Unmarshal should not error")
 
-	// Unpack from Any
-	var decodedMsg banktypes.MsgSend
-	err = s.cdc.UnpackAny(&decodedAny, &decodedMsg)
+	// Unpack from Any using interface registry
+	var unpackedMsg sdk.Msg
+	err = s.cdc.InterfaceRegistry().UnpackAny(&decodedAny, &unpackedMsg)
 	require.NoError(s.T(), err, "UnpackAny should not error")
+	require.NotNil(s.T(), unpackedMsg, "unpacked message should not be nil")
+
+	// Type assert to MsgSend
+	decodedMsg, ok := unpackedMsg.(*banktypes.MsgSend)
+	require.True(s.T(), ok, "unpacked message should be MsgSend")
 	require.Equal(s.T(), msg.FromAddress, decodedMsg.FromAddress)
 }
 
