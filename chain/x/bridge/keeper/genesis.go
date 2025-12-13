@@ -74,7 +74,9 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data types.GenesisState) error {
 			}
 		}
 
-		k.setTransfer(ctx, transfer)
+		if err := k.setTransfer(ctx, transfer); err != nil {
+			return fmt.Errorf("failed to set transfer %s: %w", transfer.TransferId, err)
+		}
 	}
 
 	// CRITICAL FIX: Restore counter to MAX + 1 (not MAX) to prevent ID collision
@@ -102,23 +104,33 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data types.GenesisState) error {
 	}
 
 	for i := range data.Validators {
-		k.setValidator(ctx, &data.Validators[i])
+		if err := k.setValidator(ctx, &data.Validators[i]); err != nil {
+			return fmt.Errorf("failed to set validator %s: %w", data.Validators[i].Address, err)
+		}
 	}
 
 	for i := range data.WrappedTokens {
-		k.setWrappedToken(ctx, &data.WrappedTokens[i])
+		if err := k.setWrappedToken(ctx, &data.WrappedTokens[i]); err != nil {
+			return fmt.Errorf("failed to set wrapped token %s: %w", data.WrappedTokens[i].WrappedDenom, err)
+		}
 	}
 
 	for i := range data.SharedIdentities {
-		k.setSharedIdentity(ctx, &data.SharedIdentities[i])
+		if err := k.setSharedIdentity(ctx, &data.SharedIdentities[i]); err != nil {
+			return fmt.Errorf("failed to set shared identity %s: %w", data.SharedIdentities[i].Address, err)
+		}
 	}
 
 	for i := range data.CrossChainSwaps {
-		k.setSwap(ctx, &data.CrossChainSwaps[i])
+		if err := k.setSwap(ctx, &data.CrossChainSwaps[i]); err != nil {
+			return fmt.Errorf("failed to set cross-chain swap %s: %w", data.CrossChainSwaps[i].SwapId, err)
+		}
 	}
 
 	for i := range data.RelayerStats {
-		k.setRelayerStats(ctx, &data.RelayerStats[i])
+		if err := k.setRelayerStats(ctx, &data.RelayerStats[i]); err != nil {
+			return fmt.Errorf("failed to set relayer stats %s: %w", data.RelayerStats[i].RelayerAddress, err)
+		}
 	}
 
 	// Import processed source hashes for replay attack prevention
