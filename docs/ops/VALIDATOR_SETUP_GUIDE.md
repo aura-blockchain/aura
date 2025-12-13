@@ -174,8 +174,7 @@ For enterprise validators, use HSM to protect validator keys:
 **Supported HSMs:**
 - YubiHSM 2
 - Ledger Nano
-- AWS CloudHSM
-- Tendermint KMS with HSM backend
+- Nitrokey HSM / SoftHSM via Tendermint KMS
 
 **Setup with Tendermint KMS:**
 
@@ -341,6 +340,7 @@ persistent_peers = "validator@10.0.1.1:26656,sentry1@10.0.2.1:26656,sentry2@10.0
 ```bash
 # On validator node, configure to ONLY connect to sentries
 # Edit ~/.aura/config/config.toml
+# Ensure app.toml binds RPC/REST/gRPC to the appropriate interfaces; for local testnets expose gRPC on 0.0.0.0:9090 so faucet/relayers can reach it.
 
 [p2p]
 # Listen on private interface

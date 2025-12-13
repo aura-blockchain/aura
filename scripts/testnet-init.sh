@@ -39,6 +39,7 @@ VALIDATOR_MONIKERS=("validator-1" "validator-2" "validator-3" "validator-4")
 # Use 'test' backend for local testnet (unencrypted, easy for development)
 # For production/mainnet, use 'os' or 'file' backend
 KEYRING_BACKEND="${AURA_KEYRING_BACKEND:-test}"
+KEY_PASSWORD="${AURA_KEY_PASSWORD:-password123}"
 
 # Setup keyring backend
 setup_keyring_backend "$KEYRING_BACKEND"
@@ -121,13 +122,13 @@ for i in $(seq 0 $((NUM_VALIDATORS - 1))); do
     echo -e "  ${BLUE}Creating key for ${MONIKER}...${NC}"
 
     # Create validator key
-    echo "password123" | "${BINARY_PATH}" keys add "${MONIKER}" \
+    printf '%s\n' "${KEY_PASSWORD}" | "${BINARY_PATH}" keys add "${MONIKER}" \
         --keyring-backend test \
         --home "${NODE_HOME}" \
         --output json > "${NODE_HOME}/key.json" 2>&1
 
     # Extract validator address
-    VALIDATOR_ADDR=$(echo "password123" | "${BINARY_PATH}" keys show "${MONIKER}" \
+    VALIDATOR_ADDR=$(printf '%s\n' "${KEY_PASSWORD}" | "${BINARY_PATH}" keys show "${MONIKER}" \
         --keyring-backend test \
         --home "${NODE_HOME}" \
         --address 2>/dev/null)
@@ -232,6 +233,25 @@ if command -v jq &> /dev/null; then
     # Crisis module constant fee
     jq '.app_state.crisis.constant_fee.denom = "uaura"' "${GENESIS_FILE}" > tmp.json && mv tmp.json "${GENESIS_FILE}"
 
+    # Security module parameters (must be positive)
+    jq '.app_state.security.params.network.rate_limit.max_requests_per_second = "200"' "${GENESIS_FILE}" > tmp.json && mv tmp.json "${GENESIS_FILE}"
+    jq '.app_state.security.params.network.rate_limit.burst_size = "400"' "${GENESIS_FILE}" > tmp.json && mv tmp.json "${GENESIS_FILE}"
+    jq '.app_state.security.params.network.rate_limit.window_duration = "10s"' "${GENESIS_FILE}" > tmp.json && mv tmp.json "${GENESIS_FILE}"
+    jq '.app_state.security.params.network.rate_limit.ban_duration = "60s"' "${GENESIS_FILE}" > tmp.json && mv tmp.json "${GENESIS_FILE}"
+    jq '.app_state.security.params.network.connection.max_inbound_connections = 100' "${GENESIS_FILE}" > tmp.json && mv tmp.json "${GENESIS_FILE}"
+    jq '.app_state.security.params.network.connection.max_outbound_connections = 100' "${GENESIS_FILE}" > tmp.json && mv tmp.json "${GENESIS_FILE}"
+    jq '.app_state.security.params.network.connection.max_connections_per_ip = 20' "${GENESIS_FILE}" > tmp.json && mv tmp.json "${GENESIS_FILE}"
+    jq '.app_state.security.params.network.connection.connection_timeout = "5s"' "${GENESIS_FILE}" > tmp.json && mv tmp.json "${GENESIS_FILE}"
+    jq '.app_state.security.params.network.mempool.max_size = "5000"' "${GENESIS_FILE}" > tmp.json && mv tmp.json "${GENESIS_FILE}"
+    jq '.app_state.security.params.network.mempool.max_bytes = "200000000"' "${GENESIS_FILE}" > tmp.json && mv tmp.json "${GENESIS_FILE}"
+    jq '.app_state.security.params.network.mempool.min_priority_fee = "0"' "${GENESIS_FILE}" > tmp.json && mv tmp.json "${GENESIS_FILE}"
+    jq '.app_state.security.params.validator.signed_blocks_window = "1000"' "${GENESIS_FILE}" > tmp.json && mv tmp.json "${GENESIS_FILE}"
+    jq '.app_state.security.params.crypto.min_threshold_participants = 2' "${GENESIS_FILE}" > tmp.json && mv tmp.json "${GENESIS_FILE}"
+    jq '.app_state.security.params.privacy.min_ring_size = 3' "${GENESIS_FILE}" > tmp.json && mv tmp.json "${GENESIS_FILE}"
+    jq '.app_state.security.params.privacy.max_ring_size = 16' "${GENESIS_FILE}" > tmp.json && mv tmp.json "${GENESIS_FILE}"
+    jq '.app_state.security.params.privacy.min_mixing_participants = 3' "${GENESIS_FILE}" > tmp.json && mv tmp.json "${GENESIS_FILE}"
+    jq '.app_state.security.params.privacy.mixing_fee = "1000"' "${GENESIS_FILE}" > tmp.json && mv tmp.json "${GENESIS_FILE}"
+
     echo -e "  ${GREEN}✓ Genesis parameters configured${NC}"
 else
     echo -e "  ${YELLOW}⚠ jq not found, using default genesis parameters${NC}"
@@ -257,7 +277,7 @@ for i in $(seq 0 $((NUM_VALIDATORS - 1))); do
     fi
 
     # Create gentx - this registers the validator with staking power
-    "${BINARY_PATH}" genesis gentx "${MONIKER}" "${STAKING_AMOUNT}" \
+    printf '%s\n' "${KEY_PASSWORD}" | "${BINARY_PATH}" genesis gentx "${MONIKER}" "${STAKING_AMOUNT}" \
         --chain-id "${CHAIN_ID}" \
         --keyring-backend test \
         --home "${NODE_HOME}" \
@@ -292,7 +312,7 @@ done
 echo -e "${GREEN}✓ All gentxs collected${NC}"
 
 # Verify validators are in genesis
-VALIDATOR_COUNT=$(jq '.validators | length' "${GENESIS_FILE}")
+VALIDATOR_COUNT=$(jq '.app_state.staking.validators | length' "${GENESIS_FILE}")
 echo -e "${GREEN}✓ Genesis now contains ${VALIDATOR_COUNT} validators${NC}"
 
 # ============================================================================
@@ -316,6 +336,7 @@ for i in $(seq 0 $((NUM_VALIDATORS - 1))); do
     MONIKER="${VALIDATOR_MONIKERS[$i]}"
     NODE_HOME="${TESTNET_DIR}/${MONIKER}"
     CONFIG_FILE="${NODE_HOME}/config/config.toml"
+    APP_FILE="${NODE_HOME}/config/app.toml"
 
     # Build persistent_peers string (exclude self)
     PEERS=""
@@ -334,12 +355,18 @@ for i in $(seq 0 $((NUM_VALIDATORS - 1))); do
     sed -i.bak "s/^persistent_peers = .*/persistent_peers = \"${PEERS}\"/" "${CONFIG_FILE}"
     sed -i.bak 's/^cors_allowed_origins = \[\]/cors_allowed_origins = ["*"]/' "${CONFIG_FILE}"
     sed -i.bak 's/^allow_duplicate_ip = false/allow_duplicate_ip = true/' "${CONFIG_FILE}"
+    sed -i.bak 's#laddr = "tcp://127.0.0.1:26657"#laddr = "tcp://0.0.0.0:26657"#' "${CONFIG_FILE}"
 
     # Enable prometheus metrics
     sed -i.bak 's/^prometheus = false/prometheus = true/' "${CONFIG_FILE}"
 
     # Faster block times for testing
     sed -i.bak 's/^timeout_commit = .*/timeout_commit = "3s"/' "${CONFIG_FILE}"
+
+    # App-level endpoints (REST/gRPC)
+    sed -i.bak 's#address = "tcp://127.0.0.1:1317"#address = "tcp://0.0.0.0:1317"#' "${APP_FILE}"
+    sed -i.bak 's#address = "localhost:9090"#address = "0.0.0.0:9090"#' "${APP_FILE}" >/dev/null 2>&1 || true
+    sed -i.bak 's#address = "0.0.0.0:9091"#address = "0.0.0.0:9091"#' "${APP_FILE}" >/dev/null 2>&1 || true
 
     echo -e "  ${GREEN}✓ ${MONIKER} configured with peers${NC}"
 done

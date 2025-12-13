@@ -59,9 +59,12 @@ func main() {
 	}
 
 	log.WithFields(log.Fields{
-		"port":              cfg.Port,
-		"chain_id":          cfg.ChainID,
+		"port":               cfg.Port,
+		"chain_id":           cfg.ChainID,
 		"amount_per_request": cfg.AmountPerRequest,
+		"node_rpc":           cfg.NodeRPC,
+		"node_api":           cfg.NodeAPI,
+		"node_grpc":          cfg.NodeGRPC,
 	}).Info("Configuration loaded")
 
 	// Initialize database

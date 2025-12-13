@@ -19,11 +19,15 @@ cp .env.example .env
 
 Edit `.env` and set these required values:
 ```env
-NODE_RPC=http://your-aura-node:26657
+NODE_RPC=http://aura-validator-1:26657
+NODE_API=http://aura-validator-1:1317
+NODE_GRPC=aura-validator-1:9090
 CHAIN_ID=aura-testnet-1
 FAUCET_MNEMONIC=your-mnemonic-phrase-here
 FAUCET_ADDRESS=aura1...
 ```
+
+Ensure the validator gRPC endpoint is reachable by the faucet (set `grpc.address = "0.0.0.0:9090"` in `app.toml`).
 
 ### 2. Start Services
 
@@ -81,6 +85,8 @@ Edit `.env` with production values:
 ```env
 ENVIRONMENT=production
 NODE_RPC=https://rpc.aura-testnet.com
+NODE_API=https://api.aura-testnet.com
+NODE_GRPC=grpc.aura-testnet.com:443
 CHAIN_ID=aura-testnet-1
 FAUCET_MNEMONIC=use-secrets-manager
 FAUCET_ADDRESS=aura1...

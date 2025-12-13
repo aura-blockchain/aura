@@ -1,5 +1,6 @@
 # Build stage
-FROM golang:1.23.1-alpine AS builder
+ARG GO_VERSION=1.25.1
+FROM golang:${GO_VERSION}-alpine AS builder
 
 # Install build dependencies
 RUN apk add --no-cache git make gcc musl-dev
@@ -7,8 +8,9 @@ RUN apk add --no-cache git make gcc musl-dev
 # Set working directory
 WORKDIR /app
 
-# Copy go mod files
+# Copy module files and local replacements
 COPY go.mod go.sum ./
+COPY third_party ./third_party
 
 # Download dependencies
 RUN go mod download

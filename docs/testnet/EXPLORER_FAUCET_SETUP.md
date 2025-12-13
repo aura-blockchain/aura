@@ -15,6 +15,7 @@ A complete testnet requires:
 - Docker and Docker Compose (for containerized deployment)
 - Node.js 18+ (for some explorer options)
 - Domain names configured (for cloud deployment)
+- AURA node endpoints reachable from explorer/faucet containers: RPC (`tcp://0.0.0.0:26657`) and gRPC (`0.0.0.0:9090`); expose gRPC beyond localhost via `app.toml` for signing/broadcast
 
 ---
 
@@ -923,7 +924,7 @@ docker-compose -f docker-compose-services.yml ps
    - Add CAPTCHA to faucet frontend
 
 4. **Faucet Security:**
-   - Store mnemonic in encrypted vault (Vault, AWS Secrets Manager)
+   - Store mnemonic in encrypted vault (Vault or self-hosted secrets manager)
    - Implement IP-based and address-based rate limiting
    - Monitor for abuse patterns
    - Set daily distribution limits

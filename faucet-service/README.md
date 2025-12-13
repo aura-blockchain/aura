@@ -59,12 +59,16 @@ cp .env.example .env
 
 Required configuration:
 ```env
-NODE_RPC=http://your-aura-node:26657
+NODE_RPC=http://aura-validator-1:26657
+NODE_API=http://aura-validator-1:1317
+NODE_GRPC=aura-validator-1:9090
 CHAIN_ID=aura-testnet-1
 FAUCET_MNEMONIC=your-mnemonic-phrase-here
 FAUCET_ADDRESS=aura1...
 HCAPTCHA_SECRET=your-hcaptcha-secret
 ```
+
+Make sure the validator gRPC endpoint is reachable from the faucet container (set `grpc.address = "0.0.0.0:9090"` in `app.toml`).
 
 3. Start the services:
 ```bash
@@ -110,7 +114,9 @@ go run main.go
 | `PORT` | Server port | `8080` | No |
 | `ENVIRONMENT` | Environment (development/production) | `development` | No |
 | `CORS_ORIGINS` | Allowed CORS origins | `*` | No |
-| `NODE_RPC` | AURA node RPC endpoint | `http://localhost:26657` | Yes |
+| `NODE_RPC` | Tendermint RPC endpoint (used for tx broadcast) | `http://aura-validator-1:26657` | Yes |
+| `NODE_API` | Optional REST endpoint (not required; balance uses gRPC) | `http://aura-validator-1:1317` | No |
+| `NODE_GRPC` | gRPC endpoint used for account queries/balance checks | `aura-validator-1:9090` | Yes |
 | `CHAIN_ID` | Chain ID | `aura-testnet-1` | Yes |
 | `FAUCET_MNEMONIC` | Faucet wallet mnemonic | - | Yes |
 | `FAUCET_ADDRESS` | Faucet wallet address | - | Yes |
@@ -281,6 +287,8 @@ aurad start
 2. Update faucet configuration:
 ```env
 NODE_RPC=http://localhost:26657
+NODE_API=http://localhost:1317
+NODE_GRPC=localhost:9090
 CHAIN_ID=aura-testnet-1
 ```
 
@@ -392,7 +400,7 @@ Structured JSON logging with different log levels:
 
 3. **Transactions failing**
    - Check faucet account balance
-   - Verify NODE_RPC endpoint is accessible
+   - Verify NODE_RPC/NODE_API/NODE_GRPC endpoints are accessible
    - Check faucet mnemonic/address configuration
    - Ensure node is synced and not catching up
 

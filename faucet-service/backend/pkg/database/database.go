@@ -16,26 +16,26 @@ type DB struct {
 
 // FaucetRequest represents a faucet request record
 type FaucetRequest struct {
-	ID          int64     `json:"id"`
-	Recipient   string    `json:"recipient"`
-	Amount      int64     `json:"amount"`
-	TxHash      string    `json:"tx_hash"`
-	IPAddress   string    `json:"ip_address"`
-	Status      string    `json:"status"` // pending, success, failed
-	Error       string    `json:"error,omitempty"`
-	CreatedAt   time.Time `json:"created_at"`
+	ID          int64      `json:"id"`
+	Recipient   string     `json:"recipient"`
+	Amount      int64      `json:"amount"`
+	TxHash      string     `json:"tx_hash"`
+	IPAddress   string     `json:"ip_address"`
+	Status      string     `json:"status"` // pending, success, failed
+	Error       string     `json:"error,omitempty"`
+	CreatedAt   time.Time  `json:"created_at"`
 	CompletedAt *time.Time `json:"completed_at,omitempty"`
 }
 
 // Statistics holds faucet statistics
 type Statistics struct {
-	TotalRequests     int64   `json:"total_requests"`
-	SuccessfulRequests int64   `json:"successful_requests"`
-	FailedRequests    int64   `json:"failed_requests"`
-	TotalDistributed  int64   `json:"total_distributed"`
-	UniqueRecipients  int64   `json:"unique_recipients"`
-	RequestsLast24h   int64   `json:"requests_last_24h"`
-	RequestsLastHour  int64   `json:"requests_last_hour"`
+	TotalRequests      int64 `json:"total_requests"`
+	SuccessfulRequests int64 `json:"successful_requests"`
+	FailedRequests     int64 `json:"failed_requests"`
+	TotalDistributed   int64 `json:"total_distributed"`
+	UniqueRecipients   int64 `json:"unique_recipients"`
+	RequestsLast24h    int64 `json:"requests_last_24h"`
+	RequestsLastHour   int64 `json:"requests_last_hour"`
 }
 
 // NewPostgresDB creates a new PostgreSQL database connection
@@ -155,7 +155,7 @@ func (db *DB) UpdateRequestFailed(id int64, errorMsg string) error {
 // GetRecentRequests gets recent successful requests
 func (db *DB) GetRecentRequests(limit int) ([]*FaucetRequest, error) {
 	query := `
-		SELECT id, recipient, amount, tx_hash, ip_address, status, created_at, completed_at
+		SELECT id, recipient, amount, COALESCE(tx_hash, '') as tx_hash, ip_address, status, created_at, completed_at
 		FROM faucet_requests
 		WHERE status = 'success'
 		ORDER BY created_at DESC
@@ -193,7 +193,7 @@ func (db *DB) GetRecentRequests(limit int) ([]*FaucetRequest, error) {
 // GetRequestsByAddress gets requests for a specific address within a time window
 func (db *DB) GetRequestsByAddress(address string, since time.Time) ([]*FaucetRequest, error) {
 	query := `
-		SELECT id, recipient, amount, tx_hash, ip_address, status, created_at, completed_at
+		SELECT id, recipient, amount, COALESCE(tx_hash, '') as tx_hash, ip_address, status, created_at, completed_at
 		FROM faucet_requests
 		WHERE recipient = $1 AND created_at >= $2
 		ORDER BY created_at DESC
@@ -230,7 +230,7 @@ func (db *DB) GetRequestsByAddress(address string, since time.Time) ([]*FaucetRe
 // GetRequestsByIP gets requests from a specific IP within a time window
 func (db *DB) GetRequestsByIP(ipAddress string, since time.Time) ([]*FaucetRequest, error) {
 	query := `
-		SELECT id, recipient, amount, tx_hash, ip_address, status, created_at, completed_at
+		SELECT id, recipient, amount, COALESCE(tx_hash, '') as tx_hash, ip_address, status, created_at, completed_at
 		FROM faucet_requests
 		WHERE ip_address = $1 AND created_at >= $2
 		ORDER BY created_at DESC

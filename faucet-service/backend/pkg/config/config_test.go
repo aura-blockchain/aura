@@ -12,12 +12,16 @@ import (
 func TestLoad(t *testing.T) {
 	// Set test environment variables
 	os.Setenv("NODE_RPC", "http://test-node:26657")
+	os.Setenv("NODE_API", "http://test-node:1317")
+	os.Setenv("NODE_GRPC", "test-node:9090")
 	os.Setenv("CHAIN_ID", "test-chain")
 	os.Setenv("FAUCET_MNEMONIC", "test mnemonic")
 	os.Setenv("DATABASE_URL", "postgres://test")
 	os.Setenv("REDIS_URL", "redis://test")
 	defer func() {
 		os.Unsetenv("NODE_RPC")
+		os.Unsetenv("NODE_API")
+		os.Unsetenv("NODE_GRPC")
 		os.Unsetenv("CHAIN_ID")
 		os.Unsetenv("FAUCET_MNEMONIC")
 		os.Unsetenv("DATABASE_URL")
@@ -28,6 +32,8 @@ func TestLoad(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, cfg)
 	assert.Equal(t, "http://test-node:26657", cfg.NodeRPC)
+	assert.Equal(t, "http://test-node:1317", cfg.NodeAPI)
+	assert.Equal(t, "test-node:9090", cfg.NodeGRPC)
 	assert.Equal(t, "test-chain", cfg.ChainID)
 	assert.Equal(t, "test mnemonic", cfg.FaucetMnemonic)
 }
@@ -50,23 +56,40 @@ func TestValidate(t *testing.T) {
 		{
 			name: "valid config",
 			config: &Config{
-				NodeRPC:         "http://localhost:26657",
-				ChainID:         "test-chain",
-				FaucetMnemonic:  "test mnemonic",
-				DatabaseURL:     "postgres://test",
-				RedisURL:        "redis://test",
+				NodeRPC:          "http://localhost:26657",
+				NodeAPI:          "http://localhost:1317",
+				NodeGRPC:         "localhost:9090",
+				ChainID:          "test-chain",
+				FaucetMnemonic:   "test mnemonic",
+				DatabaseURL:      "postgres://test",
+				RedisURL:         "redis://test",
 				AmountPerRequest: 100,
-				Environment:     "development",
+				Environment:      "development",
 			},
 			wantErr: false,
 		},
 		{
 			name: "missing NodeRPC",
 			config: &Config{
-				ChainID:         "test-chain",
-				FaucetMnemonic:  "test mnemonic",
-				DatabaseURL:     "postgres://test",
-				RedisURL:        "redis://test",
+				NodeAPI:          "http://localhost:1317",
+				NodeGRPC:         "localhost:9090",
+				ChainID:          "test-chain",
+				FaucetMnemonic:   "test mnemonic",
+				DatabaseURL:      "postgres://test",
+				RedisURL:         "redis://test",
+				AmountPerRequest: 100,
+			},
+			wantErr: true,
+		},
+		{
+			name: "missing NodeGRPC",
+			config: &Config{
+				NodeRPC:          "http://localhost:26657",
+				NodeAPI:          "http://localhost:1317",
+				ChainID:          "test-chain",
+				FaucetMnemonic:   "test mnemonic",
+				DatabaseURL:      "postgres://test",
+				RedisURL:         "redis://test",
 				AmountPerRequest: 100,
 			},
 			wantErr: true,
@@ -74,21 +97,12 @@ func TestValidate(t *testing.T) {
 		{
 			name: "missing ChainID",
 			config: &Config{
-				NodeRPC:         "http://localhost:26657",
-				FaucetMnemonic:  "test mnemonic",
-				DatabaseURL:     "postgres://test",
-				RedisURL:        "redis://test",
-				AmountPerRequest: 100,
-			},
-			wantErr: true,
-		},
-		{
-			name: "missing faucet credentials",
-			config: &Config{
-				NodeRPC:         "http://localhost:26657",
-				ChainID:         "test-chain",
-				DatabaseURL:     "postgres://test",
-				RedisURL:        "redis://test",
+				NodeRPC:          "http://localhost:26657",
+				NodeAPI:          "http://localhost:1317",
+				NodeGRPC:         "localhost:9090",
+				FaucetMnemonic:   "test mnemonic",
+				DatabaseURL:      "postgres://test",
+				RedisURL:         "redis://test",
 				AmountPerRequest: 100,
 			},
 			wantErr: true,
@@ -96,11 +110,13 @@ func TestValidate(t *testing.T) {
 		{
 			name: "invalid amount",
 			config: &Config{
-				NodeRPC:         "http://localhost:26657",
-				ChainID:         "test-chain",
-				FaucetMnemonic:  "test mnemonic",
-				DatabaseURL:     "postgres://test",
-				RedisURL:        "redis://test",
+				NodeRPC:          "http://localhost:26657",
+				NodeAPI:          "http://localhost:1317",
+				NodeGRPC:         "localhost:9090",
+				ChainID:          "test-chain",
+				FaucetMnemonic:   "test mnemonic",
+				DatabaseURL:      "postgres://test",
+				RedisURL:         "redis://test",
 				AmountPerRequest: 0,
 			},
 			wantErr: true,
@@ -108,13 +124,15 @@ func TestValidate(t *testing.T) {
 		{
 			name: "production without captcha",
 			config: &Config{
-				NodeRPC:         "http://localhost:26657",
-				ChainID:         "test-chain",
-				FaucetMnemonic:  "test mnemonic",
-				DatabaseURL:     "postgres://test",
-				RedisURL:        "redis://test",
+				NodeRPC:          "http://localhost:26657",
+				NodeAPI:          "http://localhost:1317",
+				NodeGRPC:         "localhost:9090",
+				ChainID:          "test-chain",
+				FaucetMnemonic:   "test mnemonic",
+				DatabaseURL:      "postgres://test",
+				RedisURL:         "redis://test",
 				AmountPerRequest: 100,
-				Environment:     "production",
+				Environment:      "production",
 			},
 			wantErr: true,
 		},

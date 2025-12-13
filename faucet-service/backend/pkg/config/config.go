@@ -16,11 +16,13 @@ type Config struct {
 	CORSOrigins []string
 
 	// Blockchain configuration
-	NodeRPC         string
-	ChainID         string
-	FaucetMnemonic  string
-	FaucetAddress   string
-	Denom           string
+	NodeRPC          string
+	NodeAPI          string
+	NodeGRPC         string
+	ChainID          string
+	FaucetMnemonic   string
+	FaucetAddress    string
+	Denom            string
 	AmountPerRequest int64
 
 	// Database configuration
@@ -38,8 +40,8 @@ type Config struct {
 	HCaptchaSecret string
 
 	// Transaction configuration
-	GasLimit       uint64
-	GasPrice       string
+	GasLimit        uint64
+	GasPrice        string
 	TransactionMemo string
 }
 
@@ -50,11 +52,13 @@ func Load() (*Config, error) {
 		Environment: getEnv("ENVIRONMENT", "development"),
 		CORSOrigins: strings.Split(getEnv("CORS_ORIGINS", "*"), ","),
 
-		NodeRPC:         getEnv("NODE_RPC", "http://localhost:26657"),
-		ChainID:         getEnv("CHAIN_ID", "aura-testnet-1"),
-		FaucetMnemonic:  getEnv("FAUCET_MNEMONIC", ""),
-		FaucetAddress:   getEnv("FAUCET_ADDRESS", ""),
-		Denom:           getEnv("DENOM", "uaura"),
+		NodeRPC:          getEnv("NODE_RPC", "http://aura-validator-1:26657"),
+		NodeAPI:          getEnv("NODE_API", "http://aura-validator-1:1317"),
+		NodeGRPC:         getEnv("NODE_GRPC", "aura-validator-1:9090"),
+		ChainID:          getEnv("CHAIN_ID", "aura-testnet-1"),
+		FaucetMnemonic:   getEnv("FAUCET_MNEMONIC", ""),
+		FaucetAddress:    getEnv("FAUCET_ADDRESS", ""),
+		Denom:            getEnv("DENOM", "uaura"),
 		AmountPerRequest: getEnvAsInt64("AMOUNT_PER_REQUEST", 100000000), // 100 AURA
 
 		DatabaseURL: getEnv("DATABASE_URL", "postgres://faucet:faucet@localhost:5432/faucet?sslmode=disable"),
@@ -66,8 +70,8 @@ func Load() (*Config, error) {
 
 		HCaptchaSecret: getEnv("HCAPTCHA_SECRET", ""),
 
-		GasLimit:       uint64(getEnvAsInt("GAS_LIMIT", 200000)),
-		GasPrice:       getEnv("GAS_PRICE", "0.025uaura"),
+		GasLimit:        uint64(getEnvAsInt("GAS_LIMIT", 200000)),
+		GasPrice:        getEnv("GAS_PRICE", "0.025uaura"),
 		TransactionMemo: getEnv("TRANSACTION_MEMO", "AURA Testnet Faucet"),
 	}
 
@@ -80,12 +84,16 @@ func (c *Config) Validate() error {
 		return errors.New("NODE_RPC is required")
 	}
 
+	if c.NodeGRPC == "" {
+		return errors.New("NODE_GRPC is required")
+	}
+
 	if c.ChainID == "" {
 		return errors.New("CHAIN_ID is required")
 	}
 
-	if c.FaucetMnemonic == "" && c.FaucetAddress == "" {
-		return errors.New("either FAUCET_MNEMONIC or FAUCET_ADDRESS is required")
+	if c.FaucetMnemonic == "" {
+		return errors.New("FAUCET_MNEMONIC is required for transaction signing")
 	}
 
 	if c.DatabaseURL == "" {

@@ -6,17 +6,18 @@ This folder consolidates the documentation needed to stand up and operate the Au
 
 - Run `./scripts/testnet-init.sh` followed by `cd testnet-data && ./populate-volumes.sh && cd ..` to bootstrap four validators; the full sequence, networking notes, and monitoring pointers live in [`TESTNET_SETUP.md`](../TESTNET_SETUP.md).  
 - Use `docker-compose -f docker-compose.testnet.yml up -d` to start validators + monitoring, and `./scripts/testnet-manage.sh help` for the available lifecycle commands (`start`, `status`, `logs`, `health`, `bft-test`, `clean`, etc.).
-- Verify RPC/API/GRPC endpoints at the ports described in `TESTNET_QUICKSTART.md` and `TESTNET_SETUP.md:30-120`.
+- Verify RPC/API/GRPC endpoints at the ports described in `TESTNET_QUICKSTART.md` and `TESTNET_SETUP.md:30-120`; ensure gRPC is bound to `0.0.0.0:9090` (handled by `scripts/testnet-init.sh` for new volumes) so faucet/relayer/observer services can reach it.
 - Test Byzantine fault tolerance by running `./scripts/testnet-manage.sh bft-test` or manually stopping one validator and watching `curl http://localhost:26657/status`; the scripted flow is documented at `TESTNET_SETUP.md:178-208`.
 - Validate state sync by cycling validator‑3 via `docker-compose -f docker-compose.testnet.yml stop validator-3`, waiting 30+ seconds, restarting it, and tailing `docker-compose -f docker-compose.testnet.yml logs -f validator-3` (`TESTNET_SETUP.md:194-208`).
 - Exercise module transactions and queries (DEX pools, compliance screening, VC Registry) using the CLI and REST endpoints described in `TESTNET_SETUP.md:210-260`.
 
-## Cloud Testnet (Phase 2)
+## Local Multi-Region Testnet (Phase 2)
 
-- Apply the Kubernetes manifests under `k8s/base/` via `kubectl apply -k k8s/overlays/staging/` after populating the overlay (see `k8s/overlays/staging/kustomization.yaml`). The overlay now targets the `aura-testnet` namespace, uses `aequitas/aura:testnet`, and exposes `api.testnet.aura.network`, `rpc.testnet.aura.network`, and `grpc.testnet.aura.network` through the patched ingress.
-- Populate the `config` `ConfigMap` and TLS secrets (`aura-testnet-tls`) with the production-like `genesis.json`, `config.toml`, and `app.toml` files; the init container copies those into each node before starting.
-- Front the API/RPC endpoints with Cloudflare (rate-limit annotations in `k8s/base/ingress.yaml` already codify the behavior) and publish the DNS records once the stage cluster is reachable.
-- Deploy the faucet (`faucet-service/`) and block explorer (`explorer/`) services with the RPC endpoints configured via `NODE_RPC_URL`/`NODE_API_URL`/`CHAIN_ID` so they can be reached at `faucet.testnet.aura.network` and `explorer.testnet.aura.network`.
+- Apply the Kubernetes manifests under `k8s/base/` via `kubectl apply -k k8s/overlays/staging/` when running a local cluster (kind/minikube/proxmox). The overlay targets the `aura-testnet` namespace, uses `aequitas/aura:testnet`, and exposes `api.testnet.aura.network`, `rpc.testnet.aura.network`, and `grpc.testnet.aura.network` through the patched ingress.
+- When Kubernetes isn’t available, rely on `docker-compose.testnet.yml` plus the supporting compose files (`*.monitoring.yml`, `*.explorer.yml`, `*.faucet.yml`) across your racks/VMs. Seed volumes with `scripts/testnet-init.sh` and manage lifecycle via `scripts/testnet-manage.sh`.
+- Front API/RPC endpoints with locally managed Nginx or HAProxy; only leverage Cloudflare tunnels if there is no other option to expose an endpoint.
+- Deploy the faucet (`faucet-service/`) and block explorer (`explorer/`) containers with env vars pointing to the observer RPC/API endpoints on your lab network.
+- Maintain `docs/testnet/INVENTORY.md`, `docs/testnet/STATUS_LOG.md`, and the validation checklist in `docs/testnet/LOCAL_VALIDATION_MATRIX.md` manually — no Terraform. Record rack assignments, WireGuard keys, test status, and every operational change so handoffs stay clear.
 
 ## Genesis Coordination
 

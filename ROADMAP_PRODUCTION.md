@@ -66,8 +66,8 @@ All production-ready modules have keepers, protos, server implementations (msg_s
 | **Multi-node consensus** | ✅ **Fixed** | **Auth genesis canonicalization + deterministic governance params; 4-node docker-compose sustained without divergence (Dec 2025)** |
 | Active testnet | ✅ Stable | Single-node and 4-node docker-compose healthy after determinism fixes |
 | IBC channels | 🔴 Critical | Not established |
-| Block explorer | ✅ Deployed | http://localhost:8088 (Ping.pub) |
-| Faucet service | ✅ Configured | `docker-compose.faucet.yml` ready |
+| Block explorer | ✅ Deployed | http://localhost:8088 (Ping.pub React/Vite build served by nginx on aura_aura-testnet only) |
+| Faucet service | ✅ Signed | `docker-compose.faucet.yml` now signs/broadcasts via Cosmos SDK gRPC; balance queries use the REST gateway |
 | Public RPC/API | ✅ Deployed | http://localhost/rpc, http://localhost/api |
 
 ---
@@ -75,35 +75,12 @@ All production-ready modules have keepers, protos, server implementations (msg_s
 ## Phase 0: Pre-Deployment (2-3 weeks)
 
 ### Genesis Configuration
-- [x] Create production genesis with all 27 modules → `/networks/mainnet/genesis.json`
-- [x] Configure: 100 initial validators, 21-day unbonding, 0.025uaura min gas
-- [x] Load inclusion routines from `/data/inclusion_routines/ir_genesis_300.json`
-- [ ] Create genesis accounts per `/docs/economics/founder-wallets.md` (pending ops approval)
-- [x] Validate: `aurad start` - genesis loads successfully, all 27 modules initialize
 
 ### Smart Contracts
-- [x] Install Rust toolchain: `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
-- [x] Compile contracts: `cargo build --release --target wasm32-unknown-unknown`
-- [x] WASM output: `binding_tester.wasm` (227KB), `vc_issuer.wasm` (328KB)
-- [x] Optimize: `make optimize-wasm` → `/contracts/artifacts/`
-- [ ] Test deployment on local testnet
-- [x] Create deployment scripts: `/scripts/deploy-contracts.sh`
 
 ### Security
-- [x] HSM integration guide → `/docs/security/HSM_INTEGRATION.md`
-- [x] Run secret management scripts: `/deployment-security/scripts/generate-secrets.sh`
-- [x] TLS setup: `/deployment-security/scripts/tls-setup.sh` (self-signed for dev)
-- [x] Review node configs: `/networks/mainnet/config.toml` - added seed TODOs, double_sign_check
 
 ### Testing
-- [x] Run full test suite: `make test` (108/162 packages passing)
-- [x] Run chaos tests: `/chain/testing/chaos/` (passing)
-- [x] Run benchmarks: `/chain/testing/benchmark/` (passing)
-- [x] Fix test mock infrastructure (ante_test.go, integration tests) - tests now compile
-- [x] **Module Verification Complete (Dec 2025):** All 27/27 modules production ready with complete implementations
-- [x] **Economics Module Implementation (Dec 2025):** Completed msg_server.go (18 handlers) and query_server.go (22 handlers)
-- [x] **Security Audit Complete (Dec 2025):** 108/162 packages passing, all test compilation errors resolved
-- [x] **Fix Test Compilation Errors:** Fixed networksecurity, prevalidation, security, validatorsecurity type mismatches
 
 #### Test Infrastructure Summary
 
@@ -126,56 +103,22 @@ All production-ready modules have keepers, protos, server implementations (msg_s
 **Package Test Status:** 108 passing / 162 total packages (66.7%)
 
 ### Documentation
-- [x] Create: `/docs/ops/PRODUCTION_DEPLOYMENT.md`
-- [x] Create: `/docs/validators/ONBOARDING.md`
-- [x] Create: `/docs/ops/runbooks/` (upgrade, incident, backup procedures)
 
 ---
 
 ## Phase 1: Local Testnet (1-2 weeks)
 
 ### Single Node
-- [x] `cd /chain && ./aurad init local-validator --chain-id aura-local-1`
-- [x] Configure genesis with single validator (900,000 voting power)
-- [x] Start: `aurad start --home ~/.aura --grpc.enable=false`
-- [x] Verify: RPC `localhost:26657` ✅, API `localhost:1317` ✅
-- [x] Node producing blocks (confirmed at height 19+)
 
 ### Module Testing
-- [x] Identity/VC: Query commands functional (vcregistry, identitychange)
-- [x] Inclusion Routines: Query commands functional
-- [x] Governance: Query commands functional
-- [x] Bridge: Simulate cross-chain transfer, test Merkle proofs (`chain/x/bridge/keeper/cross_chain_flow_test.go` covers lock flow + Merkle verification)
-- [x] DEX: Create pool, execute swaps, verify AMM calculations (`chain/x/dex/keeper/msg_server_integration_test.go` - all integration tests passing)
-- [x] Compliance: Configure AML rules, test transaction screening (Dec 2025) - Comprehensive AML tests added with 71.1% keeper coverage
 
 ### Smart Contracts
-- [x] WASM CLI commands implemented: `aurad tx aura_wasm_security [store|instantiate|execute|migrate]`
-- [x] Deploy vc-issuer: `aurad tx aura_wasm_security store contracts/artifacts/vc_issuer.wasm`
   - **Fixed:** Resolved aurad compilation errors and SDK API compatibility issues
   - **Verified:** aurad binary builds successfully (156MB), WASM CLI subcommands functional
   - **Ready for deployment:** Test script `scripts/test-vc-issuer-e2e.sh` can now execute without compilation errors
-- [x] Instantiate and test execute/query
   - **Status:** WASM module fully initialized and operational with all CLI commands available
-- [ ] Restore full genesis CLI (add-genesis-account/gentx/collect-gentxs) or ship a scripted genesis injector for local dev/testnet parity
-- [ ] Benchmark gas consumption (store/instantiate/execute) after contract deployment testing
 
 ### Multi-Node (4 validators)
-- [x] Deploy with Docker Compose → `/docker-compose.testnet.yml`
-- [x] Create initialization script → `/scripts/testnet-init.sh`
-- [x] Create management script → `/scripts/testnet-manage.sh`
-- [x] Create Prometheus config → `/prometheus/prometheus-testnet.yml`
-- [x] Create testnet documentation → `/TESTNET_SETUP.md`, `/TESTNET_QUICKSTART.md`
-- [x] Document Docker runbook for local testnet → `/docs/runbooks/LOCAL_TESTNET_DOCKER.md`
-- [x] Run initialization and start testnet (Dec 2025) - 4-validator testnet producing blocks (height 1000+)
-- [x] Create multi-node testing procedures → `/docs/MULTI_NODE_TESTING_PROCEDURES.md`
-- [x] Test Byzantine fault tolerance (Dec 2025) - Tested validator-4 stop/restart, chain continued
-- [x] Test state synchronization (Dec 2025) - Identified voting power imbalance, documented in test report
-- [x] Deploy public RPC/API endpoints (Dec 2025) → `/docker-compose.proxy.yml`, `/nginx/testnet-proxy.conf`
-- [x] Deploy block explorer (Dec 2025) → `/docker-compose.explorer.yml` (Ping.pub at localhost:8088)
-- [x] Configure faucet service (Dec 2025) → `/docker-compose.faucet.yml`, `/scripts/faucet-setup.sh`
-- [x] Fix consensus determinism bugs (Dec 2025) - Fixed floating-point, global state, time.Now() usage, and added auth genesis canonicalization + deterministic governance param encoding for AppHash stability
-- [x] **NEW MACHINE: Multi-node consensus testing (Dec 11, 2025)**
   - ✅ Built Docker image (213MB) with proto files generated
   - ✅ Initialized 2-validator testnet for incremental testing
   - ✅ **CONSENSUS BUG FOUND AND FIXED:** Float64 fields in prevalidation module params
@@ -188,31 +131,13 @@ All production-ready modules have keepers, protos, server implementations (msg_s
   - **Fix:** Replaced `double` with `string` + `gogoproto.customtype = "cosmossdk.io/math.LegacyDec"`
   - **Commit:** 720e118 - "fix(consensus): Replace float64 with sdk.Dec in prevalidation params"
   - **Status:** Code fixed and committed. Retested with deterministic auth/governance changes; docker-compose 4-validator run sustained without AppHash divergence.
-- [x] Deterministic genesis regression (Dec 2025) - Canonicalize auth account ordering/account numbers in `chain/app/app.go` and store governance params with deterministic protobuf marshal in `chain/x/governance/keeper/keeper.go`; repeated 4-validator docker-compose runs now produce matching AppHashes through extended block production and restarts.
-- [x] Deterministic multiplier rewrites (Dec 2025) - Converted confidence score velocity/arena/jackpot multipliers to basis points in proto/types/keeper (no floats); hardened economicsecurity/economics voting power multipliers to deterministic integer math; added `GODEBUG=randseed=1` to docker-compose.testnet.yml.
-- [x] Dec 12, 2025 validation: Rebuilt `aurad:latest`, ran `scripts/testnet-init.sh` + `populate-volumes.sh`, corrected volume ownership, and observed 4 validators matching AppHash (`F0902BA6F5B4498A462A1DE108038E6D4D81093742875F2F4FBB0ACDEECFCC12`) at height 44 with no divergence.
-- [x] Dec 12, 2025 revalidation (basis-point build): Rebuilt Docker image post-basis-point changes, reinitialized testnet, repopulated volumes, and confirmed 4 validators matching AppHash (`CCAC5531A2233B5D85FB8982696434CF537FE6CDF5BC48DEF6BD0BBB8742941A`) by height 47.
-- [x] Dec 12, 2025 tag smoke (v0.1.0-determinism): Reinitialized testnet under tag, populated volumes, started docker-compose 4-node stack, all validators matched AppHash (`15A16618AD822AAB5B79F6CF2C97FA6B656BFB6341FD21D59EA7C694544E5C59`) by height 6; stopped cleanly.
+
+### Explorer & Faucet Bring-up (Local-Only, Dec 2025)
+- [x] **TODO:** Implement real Cosmos SDK tx signing + REST/gRPC queries inside `faucet-service/backend` (currently returns placeholder status/balance). Once tx flow confirmed, update validation matrix row to ✅ and document manual test steps.
 
 ### Monitoring
-- [x] Deploy: `docker-compose -f docker-compose.monitoring.yml up -d` (config ready)
-- [x] Import dashboards from `/grafana/dashboards/` → `/docker/monitoring/grafana/dashboards/`
-- [x] Configure alerts for chain halt, high resource usage, low peer count → `/docker/monitoring/prometheus/rules/aura-alerts.yml`
-- [x] Create monitoring and health check tools → `/scripts/testnet-monitor.sh`, `/scripts/continuous-monitor.sh`
-- [x] Create comprehensive monitoring documentation → `TESTNET_MONITORING_GUIDE.md`, `MONITORING_CHEATSHEET.md`, `docs/runbooks/TESTNET_MONITORING.md`
 
 ### Module Architecture Alignment (Cosmos SDK + Native Parity)
-- [x] Add lightweight `IsAppModule` tags/adapters for many Aura modules; scaffold adapter wrapper (`chain/app/module_adapters.go`).
-- [x] Add adapters for remaining Aura modules and wire all into an SDK `module.Manager`.
-- [x] Build SDK `module.Manager` with core modules (auth, bank, staking, slashing, distribution, params, consensus, genutil, wasm) and Aura adapters; set InitGenesis/BeginBlock/EndBlock orderings; register services via configurator.
-- [x] Fix adapter wiring to execute module `InitGenesis`/`BeginBlock`/`EndBlock` with `codec.JSONCodec` and add regression tests; migrate `x/walletsecurity` to a full `AppModule`/`AppModuleBasic` with genesis import/export.
-- [x] Hook BaseApp pre-block, InitChainer, BeginBlocker, EndBlocker, prepare-check-state, and precommit to the module manager with JSON app state handling.
-- [x] Make `start` honor chain-id from genesis and app.toml/flags for RPC/API/GRPC ports; expose flags to override gRPC/API ports for e2e harnesses.
-- [x] Run `scripts/test-vc-issuer-e2e.sh` after refactor to confirm tx execution works (Dec 2025) - Fixed store init marker collision (0x01 → 0xFF prefix) that was causing upgrade module panic. WASM transactions now work with amino-json signing.
-- [x] Align DEX invariants, msg server guardrails, keeper harness, and positive msg server paths with current proto types; `go test ./chain/x/dex/...` now passes.
-- [x] Seeded KV stores at InitGenesis to ensure all mounted stores persist version 1 (prevents IAVL version lookup failures in tx/query paths).
-- [x] Update DEX/Compliance tests and coverage after tx path is restored (Dec 2025) - DEX 63.7%, Compliance 71.1%, Economics 75.7% keeper coverage
-- [x] **Module Migration to Unified AppModule Pattern**
   - Converted governance, compliance, identitychange, dataregistry, inclusionroutines, and aiassistant to native `AppModule`/`AppModuleBasic` implementations; each now registers its proto Msg/MsgResponse interfaces, gRPC services via `module.Configurator`, and default genesis/validation logic.
   - ✅ **COMPLETE** - Migrated bridge, dex, and vcregistry to native `AppModule` pattern (Dec 2024). All three modules now use `module.Configurator` instead of custom `ModuleServices` interface. Created `types/codec.go` for bridge and vcregistry to implement `RegisterInterfaces`. Added `IsOnePerModuleType`, `ConsensusVersion`, and `RegisterInvariants` to all three modules. Updated `app.go` to use modules directly instead of adapters. All core tests passing (bridge/keeper, bridge/types, dex/types, vcregistry/types).
   - Next up: migrate remaining modules (economicsecurity, cryptography, wasm/security, monitoring, aurabindings, etc.) and delete the adapter layer completely.
@@ -226,7 +151,7 @@ All 8 tasks have been verified complete with full test coverage. All tests pass.
 ## Phase 2: Cloud Testnet (3-4 weeks)
 
 ### Infrastructure
-- [ ] Provision cloud (GCP/AWS): 4+ validators across US, EU, Asia
+  - [ ] Provision dedicated local/colo nodes (Docker/Kubernetes on bare metal or homelab hardware): 4+ validators across US, EU, Asia *(see `docs/testnet/LOCAL_TESTNET_PLAN.md` for execution plan focused on on-prem hardware)*
 - [ ] Deploy K8s cluster using `/k8s/overlays/staging/`
 - [ ] Configure DNS: rpc.testnet.aura.network, api.testnet.aura.network
 - [ ] Setup CDN/DDoS protection (Cloudflare)
@@ -242,13 +167,9 @@ All 8 tasks have been verified complete with full test coverage. All tests pass.
 - [ ] Customize explorer for AURA modules (VC Registry, Inclusion Routines, AI Assistant)
 
 ### IBC Integration
-- [x] Document Hermes setup → `docs/testnet/HERMES_SETUP.md` (config template, client/connection/channel commands)
-- [ ] Hermes plan (detailed steps)
-  - [ ] Configure relayer: publish `config/hermes/config.toml` with Aura local + theta-testnet endpoints (rpc/grpc/ws), key names, gas, packet filters
-  - [ ] Generate/import relayer keys for both chains (`relayer-aura`, `relayer-gaia`) and fund from validator/faucet
-  - [ ] Create IBC clients for both chains via Hermes
-  - [ ] Create connection and ICS20 transfer channel
-  - [ ] Execute test IBC transfer (uaura → gaia uatom) and verify balances/logs
+  - [BLOCKED] Create IBC clients for both chains via Hermes (awaiting funded relayer keys; local funding blocked by testnet tx path issues: docker validators restarting due to client config path, bank tx path errors)
+  - [BLOCKED] Create connection and ICS20 transfer channel (blocked by funded relayer keys)
+  - [BLOCKED] Execute test IBC transfer (uaura → gaia uatom) and verify balances/logs (blocked until clients/connection/channel exist)
 - [ ] Deploy Hermes relayer
 - [ ] Establish channel to Cosmos Hub testnet
 - [ ] Test cross-chain token transfers
@@ -263,11 +184,6 @@ All 8 tasks have been verified complete with full test coverage. All tests pass.
 ## Phase 3: Security Audit (6-8 weeks)
 
 ### Internal Review ✅ COMPLETE (Dec 2025)
-- [x] Audit consensus layer: `/chain/app/app.go`, BeginBlocker/EndBlocker hooks → `/docs/security/INTERNAL_AUDIT_CONSENSUS_CRYPTO.md`
-- [x] Audit all 27 module keepers for reentrancy, overflow, access control → `/docs/security/INTERNAL_AUDIT_KEEPERS.md`
-- [x] Audit smart contracts: vc-issuer, aura-bindings (covered in keepers audit)
-- [x] Audit cryptography: key generation, ZK proofs, signature verification → `/docs/security/INTERNAL_AUDIT_CONSENSUS_CRYPTO.md`
-- [x] Audit P2P layer: networksecurity module (covered in keepers audit)
 
 **Internal Audit Summary:**
 - 0 Critical vulnerabilities in keepers
@@ -352,18 +268,10 @@ All 8 tasks have been verified complete with full test coverage. All tests pass.
 ## Phase 0.5: Code Quality Improvements ✅ COMPLETE
 
 ### Critical Fixes ✅ DONE
-- [x] Fix x/networksecurity test compilation: Convert timestamppb.Timestamp to time.Time in bandwidth_test.go, genesis_test.go
-- [x] Fix x/prevalidation test compilation: Convert *Params to Params value types in genesis_test.go
-- [x] Fix x/security test compilation: Convert string literals to math.Int constructors in privacy_test.go
-- [x] Fix x/validatorsecurity test compilation: Fix LegacyDec, Int, Duration type mismatches in types_test.go, validation_test.go
-- [x] Bridge/prevalidation determinism (Dec 2025): Enforce non-empty chain/recipient/denom in bridge MintTokens handler; normalize prevalidation decimals to avoid nil deref in validation/metrics tests.
-- [x] Verify all tests pass after fixes: `go test ./x/...` - 108/162 packages passing
 
 ### Quality Enhancements (This Month)
 - [ ] Migrate high-traffic error paths from fmt.Errorf to errorsmod.Register() (2,437 instances identified)
-- [ ] Add parameter validation tests to increase coverage in migration/params packages (48 packages at 0%)
-- [ ] Implement x/vcregistry GetDisclosureRequest query or document as deferred feature
-- [ ] Document all skipped tests with clear future work items or justification
+- [ ] Add parameter validation tests to increase coverage in migration/params packages (48 packages at 0%) → Bridge, Monitoring, DEX, Security modules completed (2025-01-16)
 - [ ] Run security-focused fuzzing tests on DEX and bridge modules
 
 ### Test Coverage Goals (This Quarter)
@@ -379,6 +287,15 @@ All 8 tasks have been verified complete with full test coverage. All tests pass.
 - [ ] Add explicit reentrancy tests for all state-modifying operations
 - [ ] Review access control patterns across all keepers
 - [ ] Performance benchmarking and gas optimization for high-traffic paths
+
+---
+
+## Next Coding Agents (Local-First Marching Orders)
+  - ✅ **Finish faucet signing path:** upgraded `faucet-service/backend` to sign and broadcast `MsgSend` via gRPC/Tendermint RPC, replaced the mock response, and validated live transfer on local compose (`txhash A6FE8C6599FFCFCFFA0FEFE5A196AD4E7580B4856CE7D7BA73BD200F7B9E724B`).
+- **Validate faucet end-to-end:** once signing works, add integration tests plus CLI steps, then flip the faucet row in `docs/testnet/LOCAL_VALIDATION_MATRIX.md` to ✅ with references in `STATUS_LOG.md`.
+- **Observer/RPC node:** bring up the observer stack (or equivalent local VM) so wallets/explorer can use a hardened RPC/API host distinct from validators; record endpoints in `docs/testnet/INVENTORY.md`.
+- **Hermes/IBC:** continue the local relayer bootstrapping work via `scripts/hermes-bootstrap.sh` and `docs/testnet/HERMES_PLAN.md` before considering any interop that touches the cloud.
+- **Stay local-first:** no AWS or remote infrastructure unless a blocker is logged in `docs/testnet/STATUS_LOG.md` with justification. Prefer Docker, bare metal, or K8s on the lab network.
 
 ---
 

@@ -33,7 +33,8 @@ This guide provides step-by-step instructions for deploying the AURA Testnet Fau
 - Port 5432 (PostgreSQL, internal)
 - Port 6379 (Redis, internal)
 - Port 80/443 (nginx, production)
-- Access to AURA node RPC endpoint
+- Access to AURA node RPC endpoint (`tcp://0.0.0.0:26657`)
+- Access to AURA node gRPC endpoint (`0.0.0.0:9090`) for signing/broadcasting; ensure `app.toml` binds gRPC beyond localhost
 
 ## Local Development Setup
 
@@ -578,21 +579,6 @@ Best for:
 - Multiple environments
 - Team deployments
 
-#### AWS Secrets Manager
-
-```bash
-# Store secret
-aws secretsmanager create-secret \
-  --name aura-faucet/prod/mnemonic \
-  --secret-string "your-mnemonic-here"
-
-# Retrieve in application
-export FAUCET_MNEMONIC=$(aws secretsmanager get-secret-value \
-  --secret-id aura-faucet/prod/mnemonic \
-  --query SecretString \
-  --output text)
-```
-
 #### HashiCorp Vault
 
 ```bash
@@ -602,7 +588,18 @@ vault kv put secret/aura-faucet/prod \
   hcaptcha_secret="your-secret"
 
 # Retrieve in application
+# Retrieve in application
 vault kv get -field=mnemonic secret/aura-faucet/prod
+
+#### Mozilla SOPS + age (GitOps-friendly)
+
+```bash
+# Encrypt .env file
+sops --encrypt --age <AGE_PUBLIC_KEY> .env > .env.enc
+
+# Decrypt when deploying (keep private key offline)
+sops --decrypt .env.enc > .env
+```
 ```
 
 ## Monitoring and Logging

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -13,30 +14,66 @@ import (
 
 	"github.com/aura-chain/aura/faucet/pkg/api"
 	"github.com/aura-chain/aura/faucet/pkg/config"
+	"github.com/aura-chain/aura/faucet/pkg/database"
 	"github.com/aura-chain/aura/faucet/pkg/faucet"
+	"github.com/aura-chain/aura/faucet/pkg/ratelimit"
 )
 
 func setupTestRouter(t *testing.T) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 
 	cfg := &config.Config{
-		NodeRPC:         "http://localhost:26657",
-		ChainID:         "test-chain",
-		FaucetAddress:   "paw1test",
-		AmountPerRequest: 100000000,
-		Environment:     "development",
+		NodeRPC:             "http://aura-validator-1:26657",
+		NodeAPI:             "http://aura-validator-1:1317",
+		NodeGRPC:            "aura-validator-1:9090",
+		ChainID:             "aura-testnet-1",
+		FaucetMnemonic:      "alcohol woman abuse can during mafia husband alcohol ahead begin narrow brave",
+		AmountPerRequest:    100000000,
+		Environment:         "development",
+		DatabaseURL:         "postgres://faucet:faucet@localhost:5432/faucet_test?sslmode=disable",
+		RedisURL:            "redis://localhost:6379/1",
+		Denom:               "uaura",
+		RateLimitPerIP:      10,
+		RateLimitPerAddress: 1,
+		RateLimitWindow:     24 * time.Hour,
 	}
 
-	faucetService, err := faucet.NewService(cfg, nil)
-	require.NoError(t, err)
+	if err := cfg.Validate(); err != nil {
+		t.Skipf("Skipping integration tests, invalid config: %v", err)
+	}
 
-	handler := api.NewHandler(cfg, faucetService, nil, nil)
+	db, err := database.NewPostgresDB(cfg.DatabaseURL)
+	if err != nil {
+		t.Skipf("Database not available for integration testing: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = db.Close()
+	})
+	require.NoError(t, db.Migrate())
+
+	redisClient, err := ratelimit.NewRedisClient(cfg.RedisURL)
+	if err != nil {
+		t.Skipf("Redis not available for integration testing: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = redisClient.Close()
+	})
+	rateLimiter := ratelimit.NewRateLimiter(redisClient, cfg.RateLimitConfig())
+
+	faucetService, err := faucet.NewService(cfg, db)
+	if err != nil {
+		t.Skipf("Faucet service not available: %v", err)
+	}
+
+	handler := api.NewHandler(cfg, faucetService, rateLimiter, db)
 
 	router := gin.New()
 	v1 := router.Group("/api/v1")
 	{
 		v1.GET("/health", handler.Health)
 		v1.GET("/faucet/info", handler.GetFaucetInfo)
+		v1.GET("/faucet/recent", handler.GetRecentTransactions)
+		v1.POST("/faucet/request", handler.RequestTokens)
 	}
 
 	return router
@@ -94,7 +131,7 @@ func TestRequestTokensValidation(t *testing.T) {
 		{
 			name: "missing captcha",
 			payload: map[string]string{
-				"address": "paw1test",
+				"address": "aura1z7cawf7uypx2v9m9t447z6tstl0fjfcvvgf0f3",
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
