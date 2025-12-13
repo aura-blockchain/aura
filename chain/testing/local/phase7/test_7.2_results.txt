@@ -1,0 +1,120 @@
+=================================================================
+Phase 7.2: Resource Constraint Test Results
+=================================================================
+Timestamp: Sat Dec 13 02:45:42 PM UTC 2025
+Container: aura-resource-test
+
+
+Checking prerequisites
+-----------------------------------------------------------------
+✅ Docker is running
+
+Building aurad binary
+-----------------------------------------------------------------
+✅ Binary built successfully
+
+Building Docker image
+-----------------------------------------------------------------
+Building Docker image...
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile.resource-test
+#1 transferring dockerfile: 201B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/alpine:latest
+#2 DONE 0.0s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [1/3] FROM docker.io/library/alpine:latest
+#4 CACHED
+
+#5 [internal] load build context
+#5 transferring context: 177.65MB 0.8s done
+#5 DONE 0.9s
+
+#6 [2/3] RUN apk add --no-cache ca-certificates jq bash curl bc
+#6 1.548 ( 1/18) Installing ncurses-terminfo-base (6.5_p20251123-r0)
+#6 1.573 ( 2/18) Installing libncursesw (6.5_p20251123-r0)
+#6 1.609 ( 3/18) Installing readline (8.3.1-r0)
+#6 1.639 ( 4/18) Installing bash (5.3.3-r1)
+#6 1.686   Executing bash-5.3.3-r1.post-install
+#6 1.691 ( 5/18) Installing bc (1.08.2-r0)
+#6 1.715 ( 6/18) Installing ca-certificates (20251003-r0)
+#6 1.765 ( 7/18) Installing brotli-libs (1.2.0-r0)
+#6 1.802 ( 8/18) Installing c-ares (1.34.6-r0)
+#6 1.829 ( 9/18) Installing libunistring (1.4.1-r0)
+#6 1.887 (10/18) Installing libidn2 (2.3.8-r0)
+#6 1.916 (11/18) Installing nghttp2-libs (1.68.0-r0)
+#6 1.939 (12/18) Installing nghttp3 (1.13.1-r0)
+#6 1.965 (13/18) Installing libpsl (0.21.5-r3)
+#6 1.985 (14/18) Installing zstd-libs (1.5.7-r2)
+#6 2.026 (15/18) Installing libcurl (8.17.0-r1)
+#6 2.079 (16/18) Installing curl (8.17.0-r1)
+#6 2.107 (17/18) Installing oniguruma (6.9.10-r0)
+#6 2.139 (18/18) Installing jq (1.8.1-r0)
+#6 2.166 Executing busybox-1.37.0-r29.trigger
+#6 2.175 Executing ca-certificates-20251003-r0.trigger
+#6 2.222 OK: 16 MiB in 34 packages
+#6 DONE 2.4s
+
+#7 [3/3] COPY aurad /usr/local/bin/
+#7 DONE 0.3s
+
+#8 exporting to image
+#8 exporting layers
+#8 exporting layers 0.2s done
+#8 writing image sha256:be3fd1ca2f0611c674ead6e889bb5ac0ea312e3d90acebed6cdca03a56a086a6 done
+#8 naming to docker.io/library/aura-resource-test:latest done
+#8 DONE 0.3s
+✅ Docker image built successfully
+
+Test 1: Baseline Performance (No Constraints)
+-----------------------------------------------------------------
+Starting container with no resource limits...
+e3cf57b9e442cea34ec7eee7ab28d58bf7ec1c84dbd8f777a68873990d781156
+❌ Baseline container failed to start
+aura-resource-test-baseline
+aura-resource-test-baseline
+
+Test 2: Constrained Resources (512MB RAM, 0.5 CPU)
+-----------------------------------------------------------------
+Starting container with resource limits...
+219b8b5dbd5b94174af7a6aa7e42b5b876111ccbb0150ebab82b864c07927a30
+Monitoring constrained node for 60 seconds...
+❌ Container stopped unexpectedly at 5s
+sh: aurad: not found
+❌ Container did not survive resource constraints
+Last logs:
+sh: aurad: not found
+
+Test 3: Extreme Constraints (256MB RAM, 0.25 CPU)
+-----------------------------------------------------------------
+Starting container with extreme resource limits...
+59280ed365988e65e0825d0cf3eed2771e0233ecdde2c5f317a21519f00ba4fe
+Monitoring extreme constraints for 30 seconds...
+❌ Container stopped at 5s under extreme constraints
+sh: aurad: not found
+⚠️  Container could not run with 256MB RAM / 0.25 CPU
+This defines the minimum system requirements
+
+Test 7.2 Summary
+-----------------------------------------------------------------
+
+Minimum System Requirements Assessment:
+- Recommended: ≥ 512MB RAM, ≥ 0.5 CPU cores
+- Minimum (if blocks produced under extreme test): 256MB RAM, 0.25 CPU cores
+- Optimal: ≥ 2GB RAM, ≥ 2 CPU cores for production use
+
+✅ Docker is running
+✅ Binary built successfully
+✅ Docker image built successfully
+❌ Baseline container failed to start
+❌ Container stopped unexpectedly at 5s
+❌ Container did not survive resource constraints
+❌ Container stopped at 5s under extreme constraints
+⚠️  Container could not run with 256MB RAM / 0.25 CPU
+Test execution completed at: Sat Dec 13 02:46:50 PM UTC 2025

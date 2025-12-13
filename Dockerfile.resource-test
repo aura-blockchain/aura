@@ -1,0 +1,18 @@
+FROM golang:1.24-alpine AS builder
+
+WORKDIR /app
+COPY chain/ /app/
+
+RUN apk add --no-cache git make gcc musl-dev linux-headers
+
+RUN cd /app && go build -o aurad ./cmd/aurad
+
+FROM alpine:latest
+
+RUN apk add --no-cache ca-certificates jq bash curl
+
+COPY --from=builder /app/aurad /usr/local/bin/
+
+EXPOSE 26656 26657 9090 1317
+
+CMD ["aurad"]

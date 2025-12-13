@@ -1,0 +1,9 @@
+FROM alpine:latest
+
+RUN apk add --no-cache ca-certificates jq bash curl bc
+
+COPY aurad /usr/local/bin/
+
+EXPOSE 26656 26657 9090 1317
+
+CMD ["aurad"]
