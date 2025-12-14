@@ -392,6 +392,12 @@ message QueryAllGDPRRequestsResponse {
   cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
+message QueryParamsRequest {}
+
+message QueryParamsResponse {
+  ComplianceParams params = 1 [(gogoproto.nullable) = false];
+}
+
 // Transaction messages
 // MsgSubmitKYC submits KYC verification with PII commitment (GDPR-compliant)
 // PII data (verification_id, documents, risk_score) must be
@@ -511,6 +517,9 @@ service Query {
   rpc AllGDPRConsents(QueryAllGDPRConsentsRequest) returns (QueryAllGDPRConsentsResponse);
   rpc AllTaxReports(QueryAllTaxReportsRequest) returns (QueryAllTaxReportsResponse);
   rpc AllGDPRRequests(QueryAllGDPRRequestsRequest) returns (QueryAllGDPRRequestsResponse);
+
+  // Params queries the module parameters
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse);
 }
 
 // Msg service exposes state-changing compliance operations

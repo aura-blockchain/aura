@@ -26,7 +26,7 @@ func TestGetQueryCmd(t *testing.T) {
 			run: func(t *testing.T) {
 				cmd := GetQueryCmd()
 				subcommands := cmd.Commands()
-				require.Len(t, subcommands, 5)
+				require.Len(t, subcommands, 6)
 
 				// Verify each subcommand exists
 				cmdNames := make(map[string]bool)
@@ -34,6 +34,7 @@ func TestGetQueryCmd(t *testing.T) {
 					cmdNames[subcmd.Use] = true
 				}
 
+				require.True(t, cmdNames["params"])
 				require.True(t, cmdNames["kyc-record [address]"])
 				require.True(t, cmdNames["aml-profile [address]"])
 				require.True(t, cmdNames["sanctions [address]"])
@@ -46,6 +47,43 @@ func TestGetQueryCmd(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.run(t)
+		})
+	}
+}
+
+func TestCmdQueryParams(t *testing.T) {
+	tests := []struct {
+		name    string
+		args    []string
+		wantErr bool
+	}{
+		{
+			name:    "no args",
+			args:    []string{},
+			wantErr: false,
+		},
+		{
+			name:    "with extra args - should fail",
+			args:    []string{"extra"},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cmd := CmdQueryParams()
+			require.NotNil(t, cmd)
+			require.Equal(t, "params", cmd.Use)
+			require.Equal(t, "Query the Compliance module parameters", cmd.Short)
+			require.Contains(t, cmd.Long, "Query all parameters for the Compliance module")
+
+			cmd.SetArgs(tt.args)
+			err := cmd.Args(cmd, tt.args)
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
 		})
 	}
 }

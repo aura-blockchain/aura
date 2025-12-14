@@ -173,3 +173,14 @@ func (q *queryServer) TaxReport(goCtx context.Context, req *types.QueryTaxReport
 	}
 	return nil, status.Error(codes.NotFound, "tax report not found")
 }
+
+func (q *queryServer) Params(goCtx context.Context, req *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
+	if req == nil {
+		req = &types.QueryParamsRequest{}
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	params := q.Keeper.GetParams(ctx)
+
+	return &types.QueryParamsResponse{Params: params}, nil
+}

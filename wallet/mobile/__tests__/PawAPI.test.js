@@ -19,6 +19,8 @@ describe('PawAPI Service', () => {
       },
     };
     axios.create.mockReturnValue(mockAxiosInstance);
+    // Reinitialize the client with the mocked axios
+    PawAPI.initializeClient();
   });
 
   afterEach(() => {

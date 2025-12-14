@@ -41,6 +41,8 @@ type (
 	QueryTransactionAlertsResponse  = pb.QueryTransactionAlertsResponse
 	QueryTaxReportRequest           = pb.QueryTaxReportRequest
 	QueryTaxReportResponse          = pb.QueryTaxReportResponse
+	QueryParamsRequest              = pb.QueryParamsRequest
+	QueryParamsResponse             = pb.QueryParamsResponse
 
 	// Paginated query types
 	QueryAllKYCRecordsRequest           = pb.QueryAllKYCRecordsRequest

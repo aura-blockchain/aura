@@ -9,6 +9,13 @@ import axios from 'axios';
 class PawAPIService {
   constructor() {
     this.baseURL = 'http://localhost:1317'; // Default to local testnet
+    this.initializeClient();
+  }
+
+  /**
+   * Initialize or reinitialize the axios client
+   */
+  initializeClient() {
     this.client = axios.create({
       baseURL: this.baseURL,
       timeout: 10000,
@@ -24,7 +31,9 @@ class PawAPIService {
    */
   setBaseURL(url) {
     this.baseURL = url;
-    this.client.defaults.baseURL = url;
+    if (this.client && this.client.defaults) {
+      this.client.defaults.baseURL = url;
+    }
   }
 
   /**
@@ -373,4 +382,7 @@ class PawAPIService {
 
 // Export singleton instance
 const PawAPI = new PawAPIService();
+
+// Export class for testing
+export { PawAPIService };
 export default PawAPI;

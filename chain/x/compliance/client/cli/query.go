@@ -20,6 +20,7 @@ func GetQueryCmd() *cobra.Command {
 	}
 
 	cmd.AddCommand(
+		CmdQueryParams(),
 		CmdQueryKYCRecord(),
 		CmdQueryAMLProfile(),
 		CmdQuerySanctionsScreening(),
@@ -27,6 +28,49 @@ func GetQueryCmd() *cobra.Command {
 		CmdQueryTaxReport(),
 	)
 
+	return cmd
+}
+
+// CmdQueryParams queries the module parameters
+func CmdQueryParams() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "params",
+		Short: "Query the Compliance module parameters",
+		Long: `Query all parameters for the Compliance module.
+
+Examples:
+  aurad query compliance params
+
+Returns:
+  - KYC verification timeout
+  - AML screening configuration
+  - Sanctions screening settings
+  - Transaction monitoring thresholds
+  - GDPR data retention policies
+  - Tax reporting requirements
+  - Rate limiting parameters
+`,
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			queryClient := v1beta1.NewQueryClient(clientCtx)
+
+			req := &v1beta1.QueryParamsRequest{}
+
+			res, err := queryClient.Params(cmd.Context(), req)
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
 	return cmd
 }
 

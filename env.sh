@@ -25,3 +25,12 @@ alias proj="cd $PROJECT_ROOT"
 alias dc="docker compose -f $PROJECT_ROOT/docker/docker-compose.yml"
 
 # Silent environment setup - no output
+
+# Testnet management functions
+testnet-shutdown() {
+    /home/hudson/blockchain-projects/scripts/testnet-shutdown.sh aura
+}
+
+testnet-status() {
+    docker ps --filter "name=aura" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+}

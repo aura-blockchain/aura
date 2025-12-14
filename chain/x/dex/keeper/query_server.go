@@ -370,6 +370,17 @@ func (qs queryServer) HTLC(ctx context.Context, req *dexpb.QueryHTLCRequest) (*d
 	return &dexpb.QueryHTLCResponse{Htlc: *htlc}, nil
 }
 
+func (qs queryServer) Params(ctx context.Context, req *dexpb.QueryParamsRequest) (*dexpb.QueryParamsResponse, error) {
+	if req == nil {
+		req = &dexpb.QueryParamsRequest{}
+	}
+
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	params := qs.keeper.GetParams(sdkCtx)
+
+	return &dexpb.QueryParamsResponse{Params: *params}, nil
+}
+
 func parsePair(pair string) (string, string) {
 	pair = strings.ReplaceAll(pair, "/", "-")
 	parts := strings.Split(pair, "-")

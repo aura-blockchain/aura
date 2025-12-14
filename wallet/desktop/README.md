@@ -76,6 +76,27 @@ npm run build:linux
 
 Built applications will be in the `dist/` directory.
 
+### Linux .deb Package Installation
+
+For Debian/Ubuntu users, you can install the `.deb` package:
+
+```bash
+# Build the package
+npm run build:linux
+
+# Verify the package
+./verify-deb.sh
+
+# Install
+sudo dpkg -i dist/aura-desktop-wallet_1.0.0_amd64.deb
+sudo apt-get install -f  # Install dependencies if needed
+
+# Launch
+aura-wallet
+```
+
+See [QUICK_START.md](./QUICK_START.md) for quick reference and [DEB_PACKAGING.md](./DEB_PACKAGING.md) for complete documentation.
+
 ## Usage
 
 ### First Launch
@@ -275,7 +296,7 @@ The build system uses `electron-builder` to create installers:
 
 **Linux**:
 - AppImage (universal)
-- DEB package (Debian/Ubuntu)
+- DEB package (Debian/Ubuntu) - See [DEB_PACKAGING.md](./DEB_PACKAGING.md)
 - RPM package (Fedora/RHEL)
 
 ### Code Signing
@@ -462,4 +483,10 @@ MIT License - see [LICENSE](../../LICENSE) for details
 **Made with ❤️ by the Aura Blockchain Team**
 
 **Version**: 1.0.0
-**Last Updated**: 2025-11-19
+**Last Updated**: 2025-12-14
+
+## Additional Documentation
+
+- [DEB_PACKAGING.md](./DEB_PACKAGING.md) - Complete guide for Debian/Ubuntu package
+- [PACKAGING_SUMMARY.md](./PACKAGING_SUMMARY.md) - Implementation details
+- [QUICK_START.md](./QUICK_START.md) - Quick reference guide

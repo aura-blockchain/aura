@@ -42,6 +42,7 @@ func GetQueryCmd() *cobra.Command {
 
 		// System queries
 		CmdQuerySupportedCoins(),
+		CmdQueryParams(),
 
 		// HTLC queries
 		CmdQueryHTLC(),
@@ -573,6 +574,53 @@ Use this to:
 			}
 
 			res, err := queryClient.HTLC(cmd.Context(), req)
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+	return cmd
+}
+
+// ============================================================================
+// Module Parameter Query Commands
+// ============================================================================
+
+// CmdQueryParams queries the module parameters
+func CmdQueryParams() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "params",
+		Short: "Query the DEX module parameters",
+		Long: `Query all parameters for the DEX module.
+
+Examples:
+  aurad query dex params
+
+Returns:
+  - Trading fee percentage
+  - Protocol fee percentage
+  - Minimum liquidity tiers
+  - Maximum slippage allowed
+  - IR boost settings
+  - Commit-reveal parameters
+  - Batch execution settings
+`,
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			queryClient := dexv1beta1.NewQueryClient(clientCtx)
+
+			req := &types.QueryParamsRequest{}
+
+			res, err := queryClient.Params(cmd.Context(), req)
 			if err != nil {
 				return err
 			}

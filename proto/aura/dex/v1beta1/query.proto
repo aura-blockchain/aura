@@ -6,6 +6,7 @@ import "google/api/annotations.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
 import "aura/dex/v1beta1/liquidity_pool.proto";
 import "aura/dex/v1beta1/swap.proto";
+import "aura/dex/v1beta1/params.proto";
 
 option go_package = "github.com/aequitas/aura/proto/aura/dex/v1beta1";
 
@@ -64,6 +65,11 @@ service Query {
   // HTLC queries Hash Time-Locked Contract
   rpc HTLC(QueryHTLCRequest) returns (QueryHTLCResponse) {
     option (google.api.http).get = "/aura/dex/v1beta1/htlc/{htlc_id}";
+  }
+
+  // Params queries the module parameters
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/aura/dex/v1beta1/params";
   }
 }
 
@@ -224,4 +230,11 @@ message QueryHTLCRequest {
 
 message QueryHTLCResponse {
   HTLCData htlc = 1 [(gogoproto.nullable) = false];
+}
+
+// Params queries
+message QueryParamsRequest {}
+
+message QueryParamsResponse {
+  Params params = 1 [(gogoproto.nullable) = false];
 }

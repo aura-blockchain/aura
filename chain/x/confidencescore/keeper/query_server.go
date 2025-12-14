@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"context"
+
 	confidencescorepb "github.com/aequitas/aura/proto/aura/confidencescore/v1beta1"
 )
 
@@ -16,3 +18,14 @@ func NewQueryServer(k *Keeper) confidencescorepb.QueryServer {
 }
 
 var _ confidencescorepb.QueryServer = &QueryServer{}
+
+// Params returns the module parameters
+func (q *QueryServer) Params(goCtx context.Context, req *confidencescorepb.QueryParamsRequest) (*confidencescorepb.QueryParamsResponse, error) {
+	if req == nil {
+		req = &confidencescorepb.QueryParamsRequest{}
+	}
+
+	params := q.keeper.GetParams()
+
+	return &confidencescorepb.QueryParamsResponse{Params: &params}, nil
+}
