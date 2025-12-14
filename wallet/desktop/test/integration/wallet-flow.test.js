@@ -14,6 +14,15 @@ describe('Wallet Integration Tests', () => {
     keystoreService = new KeystoreService();
     apiService = new ApiService();
     localStorage.clear();
+    jest.clearAllMocks();
+
+    // Reset electron store mock
+    window.electron.store.get.mockImplementation((key) => {
+      if (key === 'apiEndpoint') {
+        return Promise.resolve('http://localhost:1317');
+      }
+      return Promise.resolve(null);
+    });
   });
 
   describe('Complete Wallet Lifecycle', () => {

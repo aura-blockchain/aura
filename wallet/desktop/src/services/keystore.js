@@ -252,13 +252,31 @@ export class KeystoreService {
    * NOTE: This is a basic implementation. For production, use a proper encryption library.
    */
   xorEncrypt(text, key) {
+    // Check if text is base64 encoded (for decryption)
+    let inputText = text;
+    let isBase64 = false;
+
+    try {
+      const decoded = Buffer.from(text, 'base64').toString('utf8');
+      // If successful decode and result is different, it was base64
+      if (decoded !== text && decoded.length > 0) {
+        inputText = decoded;
+        isBase64 = true;
+      }
+    } catch (e) {
+      // Not base64, use as-is
+    }
+
     let result = '';
-    for (let i = 0; i < text.length; i++) {
+    for (let i = 0; i < inputText.length; i++) {
       result += String.fromCharCode(
-        text.charCodeAt(i) ^ key.charCodeAt(i % key.length)
+        inputText.charCodeAt(i) ^ key.charCodeAt(i % key.length)
       );
     }
-    return Buffer.from(result).toString('base64');
+
+    // If input was not base64, we're encrypting - return base64
+    // If input was base64, we're decrypting - return plaintext
+    return isBase64 ? result : Buffer.from(result, 'binary').toString('base64');
   }
 
   /**

@@ -13,7 +13,29 @@ import History from '../src/components/History';
 import AddressBook from '../src/components/AddressBook';
 import Settings from '../src/components/Settings';
 
+// Mock ApiService
+jest.mock('../src/services/api', () => ({
+  ApiService: jest.fn().mockImplementation(() => ({
+    getApiEndpoint: jest.fn(() => Promise.resolve('http://localhost:1317')),
+    getEndpoint: jest.fn(() => Promise.resolve('http://localhost:1317')),
+    getBalance: jest.fn(() => Promise.resolve({ balances: [] })),
+    getTransactions: jest.fn(() => Promise.resolve([]))
+  }))
+}));
+
 describe('Component Tests', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+
+    // Reset electron store mock
+    window.electron.store.get.mockImplementation((key) => {
+      if (key === 'apiEndpoint') {
+        return Promise.resolve('http://localhost:1317');
+      }
+      return Promise.resolve(null);
+    });
+  });
+
   describe('Wallet Component', () => {
     test('should render wallet balance', () => {
       const mockWalletData = {

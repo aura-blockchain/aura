@@ -9,7 +9,9 @@ describe('KeystoreService', () => {
 
   beforeEach(() => {
     keystoreService = new KeystoreService();
+    // Clear the localStorage mock's internal store
     localStorage.clear();
+    // Clear all mock call history
     jest.clearAllMocks();
   });
 

@@ -11,8 +11,17 @@ describe('ApiService', () => {
   let apiService;
 
   beforeEach(() => {
-    apiService = new ApiService();
     jest.clearAllMocks();
+
+    // Reset electron store mock
+    window.electron.store.get.mockImplementation((key) => {
+      if (key === 'apiEndpoint') {
+        return Promise.resolve('http://localhost:1317');
+      }
+      return Promise.resolve(null);
+    });
+
+    apiService = new ApiService();
   });
 
   describe('Balance', () => {

@@ -24,7 +24,4 @@ alias logs="cd $LOG_DIR"
 alias proj="cd $PROJECT_ROOT"
 alias dc="docker compose -f $PROJECT_ROOT/docker/docker-compose.yml"
 
-echo "Environment set for aura"
-echo "  Go: $(go version 2>/dev/null || echo not found)"
-echo "  GOCACHE: $GOCACHE"
-echo "  LOG_DIR: $LOG_DIR"
+# Silent environment setup - no output

@@ -1,4 +1,4 @@
-#\!/bin/bash
+#!/bin/bash
 # Aura Testnet Service Script
 # Manages the local Aura testnet for development
 

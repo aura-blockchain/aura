@@ -108,8 +108,39 @@
         "deb",
         "rpm"
       ],
-      "icon": "build/icon.png",
-      "category": "Finance"
+      "icon": "build/icons",
+      "category": "Finance",
+      "maintainer": "Aura Blockchain Team <support@aura.network>",
+      "vendor": "Aura Blockchain",
+      "synopsis": "Secure desktop wallet for Aura blockchain",
+      "description": "Aura Wallet is a secure, user-friendly desktop application for managing Aura blockchain assets. Features include secure key storage, transaction signing, staking, and governance participation.",
+      "desktop": {
+        "Name": "Aura Wallet",
+        "Comment": "Secure desktop wallet for Aura blockchain",
+        "GenericName": "Cryptocurrency Wallet",
+        "Keywords": "blockchain;wallet;cryptocurrency;aura;cosmos;",
+        "Categories": "Finance;Network;",
+        "StartupWMClass": "Aura Wallet"
+      }
+    },
+    "deb": {
+      "packageCategory": "net",
+      "priority": "optional",
+      "depends": [
+        "libgtk-3-0",
+        "libnotify4",
+        "libnss3",
+        "libxss1",
+        "libxtst6",
+        "xdg-utils",
+        "libatspi2.0-0",
+        "libdrm2",
+        "libgbm1",
+        "libxcb-dri3-0"
+      ],
+      "compression": "xz",
+      "afterInstall": "build/deb-postinstall.sh",
+      "afterRemove": "build/deb-postremove.sh"
     },
     "nsis": {
       "oneClick": false,

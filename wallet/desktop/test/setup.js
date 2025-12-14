@@ -9,31 +9,53 @@ global.TextDecoder = TextDecoder;
 global.window = global.window || {};
 global.window.electron = {
   store: {
-    get: jest.fn(),
-    set: jest.fn(),
-    delete: jest.fn(),
-    clear: jest.fn()
+    get: jest.fn((key) => {
+      // Return null by default, tests can override
+      if (key === 'apiEndpoint') {
+        return Promise.resolve('http://localhost:1317');
+      }
+      return Promise.resolve(null);
+    }),
+    set: jest.fn(() => Promise.resolve()),
+    delete: jest.fn(() => Promise.resolve()),
+    clear: jest.fn(() => Promise.resolve())
   },
   dialog: {
-    showOpenDialog: jest.fn(),
-    showSaveDialog: jest.fn(),
-    showMessageBox: jest.fn()
+    showOpenDialog: jest.fn(() => Promise.resolve({ canceled: false, filePaths: [] })),
+    showSaveDialog: jest.fn(() => Promise.resolve({ canceled: false, filePath: '' })),
+    showMessageBox: jest.fn(() => Promise.resolve({ response: 0 }))
   },
   app: {
     getVersion: jest.fn(() => Promise.resolve('1.0.0')),
-    getPath: jest.fn()
+    getPath: jest.fn((name) => Promise.resolve(`/tmp/test-${name}`))
   },
   onMenuAction: jest.fn(),
   removeMenuActionListener: jest.fn()
 };
 
-// Mock localStorage
-const localStorageMock = {
-  getItem: jest.fn(),
-  setItem: jest.fn(),
-  removeItem: jest.fn(),
-  clear: jest.fn()
-};
+// Mock localStorage with jest.fn() methods
+const localStorageMock = (() => {
+  let store = {};
+  return {
+    getItem: jest.fn((key) => store[key] || null),
+    setItem: jest.fn((key, value) => {
+      store[key] = value.toString();
+    }),
+    removeItem: jest.fn((key) => {
+      delete store[key];
+    }),
+    clear: jest.fn(() => {
+      store = {};
+    }),
+    get length() {
+      return Object.keys(store).length;
+    },
+    key: jest.fn((index) => {
+      const keys = Object.keys(store);
+      return keys[index] || null;
+    })
+  };
+})();
 global.localStorage = localStorageMock;
 
 // Mock navigator.clipboard
