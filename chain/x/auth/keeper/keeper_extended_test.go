@@ -436,7 +436,7 @@ func TestGetAuditLogsByActor(t *testing.T) {
 		k.LogAudit(ctx, "actor1", "action"+string(rune('A'+i)), "resource1", "success", nil, "")
 	}
 
-	logs := k.GetAuditLogsByActor("actor1", 10)
+	logs := k.GetAuditLogsByActor(ctx, "actor1", 10)
 	require.GreaterOrEqual(t, len(logs), 5)
 }
 
@@ -447,7 +447,7 @@ func TestGetAuditLogsByAction(t *testing.T) {
 	k.LogAudit(ctx, "actor2", "create", "resource2", "success", nil, "")
 	k.LogAudit(ctx, "actor3", "delete", "resource3", "success", nil, "")
 
-	logs := k.GetAuditLogsByAction("create", 10)
+	logs := k.GetAuditLogsByAction(ctx, "create", 10)
 	require.GreaterOrEqual(t, len(logs), 2)
 }
 
@@ -457,7 +457,7 @@ func TestGetAuditLogsByResource(t *testing.T) {
 	k.LogAudit(ctx, "actor1", "read", "resource1", "success", nil, "")
 	k.LogAudit(ctx, "actor2", "update", "resource1", "success", nil, "")
 
-	logs := k.GetAuditLogsByResource("resource1", 10)
+	logs := k.GetAuditLogsByResource(ctx, "resource1", 10)
 	require.GreaterOrEqual(t, len(logs), 2)
 }
 
@@ -468,20 +468,20 @@ func TestGetRecentAuditLogs(t *testing.T) {
 		k.LogAudit(ctx, "actor1", "action1", "resource1", "success", nil, "")
 	}
 
-	logs := k.GetRecentAuditLogs(5)
+	logs := k.GetRecentAuditLogs(ctx, 5)
 	require.Len(t, logs, 5)
 }
 
 func TestCountAuditLogs(t *testing.T) {
 	k, ctx := setupTestKeeper(t)
 
-	initialCount := k.CountAuditLogs()
+	initialCount := k.CountAuditLogs(ctx)
 
 	for i := 0; i < 3; i++ {
 		k.LogAudit(ctx, "actor1", "action1", "resource1", "success", nil, "")
 	}
 
-	newCount := k.CountAuditLogs()
+	newCount := k.CountAuditLogs(ctx)
 	require.Equal(t, initialCount+3, newCount)
 }
 
@@ -492,7 +492,7 @@ func TestCountAuditLogsByActor(t *testing.T) {
 		k.LogAudit(ctx, "actor1", "action1", "resource1", "success", nil, "")
 	}
 
-	count := k.CountAuditLogsByActor("actor1")
+	count := k.CountAuditLogsByActor(ctx, "actor1")
 	require.GreaterOrEqual(t, count, uint64(3))
 }
 
@@ -506,7 +506,7 @@ func TestAuditLogWithMetadata(t *testing.T) {
 
 	k.LogAudit(ctx, "actor1", "action1", "resource1", "success", metadata, "")
 
-	logs := k.GetAuditLogsByActor("actor1", 10)
+	logs := k.GetAuditLogsByActor(ctx, "actor1", 10)
 	require.GreaterOrEqual(t, len(logs), 1)
 	if len(logs) > 0 {
 		require.NotNil(t, logs[0].Metadata)
@@ -518,7 +518,7 @@ func TestAuditLogWithError(t *testing.T) {
 
 	k.LogAudit(ctx, "actor1", "action1", "resource1", "failure", nil, "Permission denied")
 
-	logs := k.GetAuditLogsByActor("actor1", 10)
+	logs := k.GetAuditLogsByActor(ctx, "actor1", 10)
 	require.GreaterOrEqual(t, len(logs), 1)
 }
 
@@ -532,7 +532,7 @@ func TestSearchAuditLogs(t *testing.T) {
 		"action": "create",
 	}
 
-	logs := k.SearchAuditLogs(criteria, 10)
+	logs := k.SearchAuditLogs(ctx, criteria, 10)
 	require.GreaterOrEqual(t, len(logs), 1)
 }
 
@@ -542,7 +542,7 @@ func TestGetAuditLogsByTimeRange(t *testing.T) {
 	now := time.Now().Unix()
 	k.LogAudit(ctx, "actor1", "action1", "resource1", "success", nil, "")
 
-	logs := k.GetAuditLogsByTimeRange(now-3600, now+3600, 10)
+	logs := k.GetAuditLogsByTimeRange(ctx, now-3600, now+3600, 10)
 	require.GreaterOrEqual(t, len(logs), 1)
 }
 

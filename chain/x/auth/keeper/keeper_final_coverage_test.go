@@ -22,7 +22,7 @@ func TestGetAuditLogs_NilTimestamp(t *testing.T) {
 	k.LogAudit(ctx, "actor1", "action1", "resource1", "success", nil, "")
 
 	// Get logs - should handle nil timestamp gracefully
-	logs := k.GetAuditLogs("", "", 0, 0, 10)
+	logs := k.GetAuditLogs(ctx, "", "", 0, 0, 10)
 	require.NotNil(t, logs)
 }
 
@@ -32,7 +32,7 @@ func TestGetAuditLogsByResource_NilTimestamp(t *testing.T) {
 
 	k.LogAudit(ctx, "actor1", "action1", "resource1", "success", nil, "")
 
-	logs := k.GetAuditLogsByResource("resource1", 10)
+	logs := k.GetAuditLogsByResource(ctx, "resource1", 10)
 	require.NotNil(t, logs)
 }
 
@@ -42,7 +42,7 @@ func TestGetRecentAuditLogs_NilTimestamp(t *testing.T) {
 
 	k.LogAudit(ctx, "actor1", "action1", "resource1", "success", nil, "")
 
-	logs := k.GetRecentAuditLogs(10)
+	logs := k.GetRecentAuditLogs(ctx, 10)
 	require.NotNil(t, logs)
 }
 
@@ -57,14 +57,14 @@ func TestSearchAuditLogs_AllCriteria(t *testing.T) {
 	criteria := map[string]string{
 		"resource": "user",
 	}
-	logs := k.SearchAuditLogs(criteria, 10)
+	logs := k.SearchAuditLogs(ctx, criteria, 10)
 	require.NotNil(t, logs)
 
 	// Test status criteria
 	criteria = map[string]string{
 		"status": "failed",
 	}
-	logs = k.SearchAuditLogs(criteria, 10)
+	logs = k.SearchAuditLogs(ctx, criteria, 10)
 	require.GreaterOrEqual(t, len(logs), 1)
 
 	// Test multiple criteria
@@ -73,7 +73,7 @@ func TestSearchAuditLogs_AllCriteria(t *testing.T) {
 		"action": "create",
 		"status": "success",
 	}
-	logs = k.SearchAuditLogs(criteria, 10)
+	logs = k.SearchAuditLogs(ctx, criteria, 10)
 	require.GreaterOrEqual(t, len(logs), 1)
 }
 
@@ -86,7 +86,7 @@ func TestSearchAuditLogs_NilTimestamp(t *testing.T) {
 	criteria := map[string]string{
 		"actor": "actor1",
 	}
-	logs := k.SearchAuditLogs(criteria, 10)
+	logs := k.SearchAuditLogs(ctx, criteria, 10)
 	require.NotNil(t, logs)
 }
 
@@ -94,7 +94,7 @@ func TestSearchAuditLogs_NilTimestamp(t *testing.T) {
 func TestCountAuditLogsByActor_NotFound(t *testing.T) {
 	k, _ := setupTestKeeper(t)
 
-	count := k.CountAuditLogsByActor("nonexistent")
+	count := k.CountAuditLogsByActor(ctx, "nonexistent")
 	require.Equal(t, uint64(0), count)
 }
 
@@ -209,7 +209,7 @@ func TestCreateRole_AuditLog(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify audit log created
-	logs := k.GetAuditLogsByActor("admin1", 10)
+	logs := k.GetAuditLogsByActor(ctx, "admin1", 10)
 	require.GreaterOrEqual(t, len(logs), 1)
 }
 
@@ -224,7 +224,7 @@ func TestAssignRole_AuditLog(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify audit log created
-	logs := k.GetAuditLogsByActor("admin1", 10)
+	logs := k.GetAuditLogsByActor(ctx, "admin1", 10)
 	require.GreaterOrEqual(t, len(logs), 1)
 }
 
@@ -242,7 +242,7 @@ func TestRevokeRole_AuditLog(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify audit log created
-	logs := k.GetAuditLogsByAction("revoke_role", 10)
+	logs := k.GetAuditLogsByAction(ctx, "revoke_role", 10)
 	require.GreaterOrEqual(t, len(logs), 1)
 }
 
@@ -257,7 +257,7 @@ func TestCreateMultisigWallet_AuditLog(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify audit log created
-	logs := k.GetAuditLogsByAction("create_multisig_wallet", 10)
+	logs := k.GetAuditLogsByAction(ctx, "create_multisig_wallet", 10)
 	require.GreaterOrEqual(t, len(logs), 1)
 }
 
@@ -275,7 +275,7 @@ func TestCreateMultisigProposal_AuditLog(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify audit log created
-	logs := k.GetAuditLogsByAction("create_multisig_proposal", 10)
+	logs := k.GetAuditLogsByAction(ctx, "create_multisig_proposal", 10)
 	require.GreaterOrEqual(t, len(logs), 1)
 }
 
@@ -296,7 +296,7 @@ func TestSignMultisigProposal_AuditLog(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify audit log created
-	logs := k.GetAuditLogsByAction("sign_multisig_proposal", 10)
+	logs := k.GetAuditLogsByAction(ctx, "sign_multisig_proposal", 10)
 	require.GreaterOrEqual(t, len(logs), 1)
 }
 
@@ -320,7 +320,7 @@ func TestExecuteMultisigProposal_AuditLog(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify audit log created
-	logs := k.GetAuditLogsByAction("execute_multisig_proposal", 10)
+	logs := k.GetAuditLogsByAction(ctx, "execute_multisig_proposal", 10)
 	require.GreaterOrEqual(t, len(logs), 1)
 }
 
@@ -335,7 +335,7 @@ func TestProposeTimeLockedAction_AuditLog(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify audit log created
-	logs := k.GetAuditLogsByAction("propose_timelock_action", 10)
+	logs := k.GetAuditLogsByAction(ctx, "propose_timelock_action", 10)
 	require.GreaterOrEqual(t, len(logs), 1)
 }
 
@@ -357,7 +357,7 @@ func TestExecuteTimeLockedAction_AuditLog(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify audit log created
-	logs := k.GetAuditLogsByAction("execute_timelock_action", 10)
+	logs := k.GetAuditLogsByAction(ctx, "execute_timelock_action", 10)
 	require.GreaterOrEqual(t, len(logs), 1)
 }
 
@@ -375,7 +375,7 @@ func TestCancelTimeLockedAction_AuditLog(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify audit log created
-	logs := k.GetAuditLogsByAction("cancel_timelock_action", 10)
+	logs := k.GetAuditLogsByAction(ctx, "cancel_timelock_action", 10)
 	require.GreaterOrEqual(t, len(logs), 1)
 }
 
@@ -390,7 +390,7 @@ func TestActivateEmergencyAdmin_AuditLog(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify audit log created
-	logs := k.GetAuditLogsByAction("activate_emergency_admin", 10)
+	logs := k.GetAuditLogsByAction(ctx, "activate_emergency_admin", 10)
 	require.GreaterOrEqual(t, len(logs), 1)
 }
 
@@ -408,7 +408,7 @@ func TestDeactivateEmergencyAdmin_AuditLog(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify audit log created
-	logs := k.GetAuditLogsByAction("deactivate_emergency_admin", 10)
+	logs := k.GetAuditLogsByAction(ctx, "deactivate_emergency_admin", 10)
 	require.GreaterOrEqual(t, len(logs), 1)
 }
 
@@ -423,7 +423,7 @@ func TestRotateValidatorKey_AuditLog(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify audit log created
-	logs := k.GetAuditLogsByAction("rotate_validator_key", 10)
+	logs := k.GetAuditLogsByAction(ctx, "rotate_validator_key", 10)
 	require.GreaterOrEqual(t, len(logs), 1)
 }
 
@@ -438,7 +438,7 @@ func TestInitiateValidatorKeyRotation_AuditLog(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify audit log created
-	logs := k.GetAuditLogsByAction("initiate_validator_key_rotation", 10)
+	logs := k.GetAuditLogsByAction(ctx, "initiate_validator_key_rotation", 10)
 	require.GreaterOrEqual(t, len(logs), 1)
 }
 
@@ -456,7 +456,7 @@ func TestCompleteValidatorKeyRotation_AuditLog(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify audit log created
-	logs := k.GetAuditLogsByAction("complete_validator_key_rotation", 10)
+	logs := k.GetAuditLogsByAction(ctx, "complete_validator_key_rotation", 10)
 	require.GreaterOrEqual(t, len(logs), 1)
 }
 
@@ -468,7 +468,7 @@ func TestCreateSession_AuditLog(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify audit log created
-	logs := k.GetAuditLogsByAction("create_session", 10)
+	logs := k.GetAuditLogsByAction(ctx, "create_session", 10)
 	require.GreaterOrEqual(t, len(logs), 1)
 }
 
@@ -483,7 +483,7 @@ func TestInvalidateSession_AuditLog(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify audit log created
-	logs := k.GetAuditLogsByAction("invalidate_session", 10)
+	logs := k.GetAuditLogsByAction(ctx, "invalidate_session", 10)
 	require.GreaterOrEqual(t, len(logs), 1)
 }
 

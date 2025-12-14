@@ -541,19 +541,19 @@ func TestAuditLogging(t *testing.T) {
 	k.LogAudit(ctx, "user2", "test_action", "resource2", "failed", nil, "error")
 
 	// Get logs
-	logs := k.GetRecentAuditLogs(10)
+	logs := k.GetRecentAuditLogs(ctx, 10)
 	if len(logs) < 2 {
 		t.Errorf("Expected at least 2 logs, got %d", len(logs))
 	}
 
 	// Get by actor
-	logs = k.GetAuditLogsByActor("user1", 10)
+	logs = k.GetAuditLogsByActor(ctx, "user1", 10)
 	if len(logs) == 0 {
 		t.Error("Expected logs for user1")
 	}
 
 	// Search for failed actions using SearchAuditLogs
-	logs = k.SearchAuditLogs(map[string]string{"status": "failed"}, 10)
+	logs = k.SearchAuditLogs(ctx, map[string]string{"status": "failed"}, 10)
 	if len(logs) == 0 {
 		t.Error("Expected failed action logs")
 	}
@@ -568,13 +568,13 @@ func TestAuditLogSearch(t *testing.T) {
 	k.LogAudit(ctx, "alice", "create_role", "role1", "success", nil, "")
 
 	// Search for alice
-	logs := k.SearchAuditLogs(map[string]string{"actor": "alice"}, 10)
+	logs := k.SearchAuditLogs(ctx, map[string]string{"actor": "alice"}, 10)
 	if len(logs) != 2 {
 		t.Errorf("Expected 2 logs for alice, got %d", len(logs))
 	}
 
 	// Search for login
-	logs = k.SearchAuditLogs(map[string]string{"action": "login"}, 10)
+	logs = k.SearchAuditLogs(ctx, map[string]string{"action": "login"}, 10)
 	if len(logs) != 1 {
 		t.Errorf("Expected 1 login log, got %d", len(logs))
 	}
@@ -589,7 +589,7 @@ func TestAuditStatistics(t *testing.T) {
 	k.LogAudit(ctx, "user2", "action1", "resource3", "failed", nil, "")
 
 	// Get statistics using CountAuditLogs
-	totalLogs := k.CountAuditLogs()
+	totalLogs := k.CountAuditLogs(ctx)
 	if totalLogs < 3 {
 		t.Errorf("Expected at least 3 logs, got %d", totalLogs)
 	}

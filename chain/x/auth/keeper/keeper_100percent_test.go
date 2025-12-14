@@ -22,19 +22,19 @@ func TestGetAuditLogs_WithTimeFilters(t *testing.T) {
 	k.LogAudit(ctx, "actor1", "action1", "resource1", "success", nil, "")
 
 	// Test with start time
-	logs := k.GetAuditLogs("actor1", "", now.Unix()-3600, 0, 10)
+	logs := k.GetAuditLogs(ctx, "actor1", "", now.Unix()-3600, 0, 10)
 	require.NotNil(t, logs)
 
 	// Test with end time
-	logs = k.GetAuditLogs("actor1", "", 0, now.Unix()+3600, 10)
+	logs = k.GetAuditLogs(ctx, "actor1", "", 0, now.Unix()+3600, 10)
 	require.NotNil(t, logs)
 
 	// Test with both start and end time
-	logs = k.GetAuditLogs("actor1", "", now.Unix()-3600, now.Unix()+3600, 10)
+	logs = k.GetAuditLogs(ctx, "actor1", "", now.Unix()-3600, now.Unix()+3600, 10)
 	require.NotNil(t, logs)
 
 	// Test with nil timestamp in logs (edge case)
-	logs = k.GetAuditLogs("", "", now.Unix()-3600, now.Unix()+3600, 10)
+	logs = k.GetAuditLogs(ctx, "", "", now.Unix()-3600, now.Unix()+3600, 10)
 	require.NotNil(t, logs)
 }
 
@@ -48,7 +48,7 @@ func TestSearchAuditLogs_UnknownCriteria(t *testing.T) {
 	criteria := map[string]string{
 		"unknown_key": "value",
 	}
-	logs := k.SearchAuditLogs(criteria, 10)
+	logs := k.SearchAuditLogs(ctx, criteria, 10)
 	require.NotNil(t, logs)
 }
 

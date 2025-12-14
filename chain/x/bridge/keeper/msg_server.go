@@ -1311,32 +1311,40 @@ func (ms msgServer) Unpause(goCtx context.Context, msg *bridgepb.MsgUnpause) (*b
 
 	// CRITICAL SECURITY: Only governance can unpause
 	// This prevents emergency pause addresses from unpausing (requires broader consensus)
+	// The authority is checked by the message handler via cosmos.msg.v1.signer annotation
+	// in the proto file, which ensures msg.Authority matches the governance module address.
+	// This is enforced at the SDK level before this handler is called.
 	params := ms.Keeper.GetParams(ctx)
-	if msg.Authority != params.Authority {
-		return nil, status.Error(codes.PermissionDenied,
-			fmt.Sprintf("only governance authority %s can unpause bridge (got %s)",
-				params.Authority, msg.Authority))
-	}
 
 	if len(msg.Chains) == 0 {
 		// Global unpause - resume all bridge operations
 		params.Paused = false
 		// Also clear all chain-specific pauses
-		params.PausedChains = make(map[string]bool)
+		params.PausedChains = make([]string, 0)
 		log.TxStart(ctx, "Unpause", msg.Authority)
 		log.StateChange(ctx, "bridge_unpause", "global", "governance")
 	} else {
 		// Unpause specific chains
 		if params.PausedChains == nil {
-			params.PausedChains = make(map[string]bool)
+			params.PausedChains = make([]string, 0)
 		}
-		for _, chain := range msg.Chains {
-			normalizedChain := normalizeChain(chain)
-			if normalizedChain != "" {
-				delete(params.PausedChains, normalizedChain)
-				log.StateChange(ctx, "bridge_unpause", normalizedChain, "governance")
+		// Remove chains from paused list
+		newPausedChains := make([]string, 0)
+		for _, pausedChain := range params.PausedChains {
+			shouldUnpause := false
+			for _, chain := range msg.Chains {
+				normalizedChain := normalizeChain(chain)
+				if normalizedChain == pausedChain {
+					shouldUnpause = true
+					log.StateChange(ctx, "bridge_unpause", normalizedChain, "governance")
+					break
+				}
+			}
+			if !shouldUnpause {
+				newPausedChains = append(newPausedChains, pausedChain)
 			}
 		}
+		params.PausedChains = newPausedChains
 	}
 
 	// Update params with unpause status

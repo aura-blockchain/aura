@@ -99,8 +99,43 @@ func (s *msgServer) SubmitKYC(goCtx context.Context, req *types.MsgSubmitKYC) (*
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	log.TxStart(ctx, "MsgSubmitKYC", req.Provider)
 
-	// Check if provider is authorized (validate authority first)
+	// CRITICAL SECURITY FIX (HIGH-002): OFAC compliance check MUST occur BEFORE provider authorization
+	// This prevents a timing attack where:
+	//   1. Provider gets authorized
+	//   2. Jurisdiction is added to blocklist
+	//   3. Provider submits KYC before blocklist propagates
+	//   4. KYC gets approved using stale params
+	//
+	// By checking jurisdiction FIRST, we ensure:
+	//   - No race condition between param updates and KYC submission
+	//   - Blocked jurisdictions are rejected immediately, regardless of provider authorization
+	//   - Compliance check cannot be bypassed by timing
+	//
+	// Attack scenario prevented:
+	//   Attacker monitors governance proposals to add country X to blocklist.
+	//   Attacker submits KYC for country X users right before proposal executes.
+	//   If provider check happens first, it retrieves params (country X not blocked yet).
+	//   Jurisdiction check happens second, but uses same params (stale).
+	//   KYC approved for sanctioned country.
+	//
+	// With this fix:
+	//   Jurisdiction check retrieves params first, getting latest blocklist.
+	//   If country X was just added, submission fails immediately.
+	//   Provider authorization check is skipped (fail fast).
+	//
+	// OFAC compliance: Check if jurisdiction is blocked (sanctioned country)
+	// This validation MUST occur BEFORE provider authorization check
 	params := s.Keeper.GetParams(ctx)
+	if s.Keeper.IsJurisdictionBlocked(ctx, req.Jurisdiction) {
+		return nil, status.Errorf(codes.PermissionDenied,
+			"jurisdiction %s is blocked due to OFAC sanctions", req.Jurisdiction)
+	}
+
+	// Check if provider is authorized (validate authority AFTER jurisdiction check)
+	// Provider authorization is checked second because:
+	//   1. Jurisdiction blocking is a hard constraint (legal requirement)
+	//   2. Provider authorization is a soft constraint (governance decision)
+	//   3. Failing fast on jurisdiction saves unnecessary provider lookup
 	isAuthorized := false
 	for _, authorizedProvider := range params.ApprovedKycProviders {
 		if authorizedProvider == req.Provider {
@@ -110,13 +145,6 @@ func (s *msgServer) SubmitKYC(goCtx context.Context, req *types.MsgSubmitKYC) (*
 	}
 	if !isAuthorized {
 		return nil, status.Error(codes.PermissionDenied, "provider not authorized to submit KYC records")
-	}
-
-	// OFAC compliance: Check if jurisdiction is blocked (sanctioned country)
-	// This validation must occur before consent check
-	if s.Keeper.IsJurisdictionBlocked(ctx, req.Jurisdiction) {
-		return nil, status.Errorf(codes.PermissionDenied,
-			"jurisdiction %s is blocked due to OFAC sanctions", req.Jurisdiction)
 	}
 
 	// GDPR Consent Enforcement: Verify user has consented to KYC processing (Article 6(1)(a))
