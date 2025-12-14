@@ -10,9 +10,22 @@ import (
 	stakingcli "github.com/cosmos/cosmos-sdk/x/staking/client/cli"
 
 	"github.com/aequitas/aura/chain/app"
+	bridgecli "github.com/aequitas/aura/chain/x/bridge/client/cli"
 	compliancecli "github.com/aequitas/aura/chain/x/compliance/client/cli"
 	confidencescorecli "github.com/aequitas/aura/chain/x/confidencescore/client/cli"
+	cryptographycli "github.com/aequitas/aura/chain/x/cryptography/client/cli"
+	dataregistrycli "github.com/aequitas/aura/chain/x/dataregistry/client/cli"
 	dexcli "github.com/aequitas/aura/chain/x/dex/client/cli"
+	economicsecuritycli "github.com/aequitas/aura/chain/x/economicsecurity/client/cli"
+	governancecli "github.com/aequitas/aura/chain/x/governance/client/cli"
+	identitychangecli "github.com/aequitas/aura/chain/x/identitychange/client/cli"
+	monitoringcli "github.com/aequitas/aura/chain/x/monitoring/client/cli"
+	networksecuritycli "github.com/aequitas/aura/chain/x/networksecurity/client/cli"
+	prevalidationcli "github.com/aequitas/aura/chain/x/prevalidation/client/cli"
+	privacycli "github.com/aequitas/aura/chain/x/privacy/client/cli"
+	validatorsecuritycli "github.com/aequitas/aura/chain/x/validatorsecurity/client/cli"
+	vcregistrycli "github.com/aequitas/aura/chain/x/vcregistry/client/cli"
+	walletsecuritycli "github.com/aequitas/aura/chain/x/walletsecurity/client/cli"
 	wasmcli "github.com/aequitas/aura/chain/x/wasm/client/cli"
 )
 
@@ -50,18 +63,24 @@ func TxCmd() *cobra.Command {
 
 	// Aura module tx commands (retain full coverage for custom modules).
 	cmd.AddCommand(
-		confidencescorecli.GetTxCmd(),
+		bridgecli.GetTxCmd(),
 		compliancecli.GetTxCmd(),
+		confidencescorecli.GetTxCmd(),
+		cryptographycli.GetTxCmd(),
+		dataregistrycli.GetTxCmd(),
 		dexcli.GetTxCmd(),
+		economicsecuritycli.GetTxCmd(),
+		governancecli.GetTxCmd(),
+		identitychangecli.GetTxCmd(),
+		monitoringcli.GetTxCmd(),
+		networksecuritycli.GetTxCmd(),
+		prevalidationcli.GetTxCmd(),
+		privacycli.GetTxCmd(),
+		validatorsecuritycli.GetTxCmd(),
+		vcregistrycli.GetTxCmd(),
+		walletsecuritycli.GetTxCmd(),
 		wasmcli.GetTxCmd(),
 	)
-
-	// Note: Additional module tx commands can be added here as modules are completed:
-	// - monitoring module txs (x/monitoring/client/cli)
-	// - security module txs (x/networksecurity/client/cli)
-	// - identity module txs (x/identity/client/cli)
-	// - vcregistry txs (x/vcregistry/client/cli)
-	// etc.
 
 	return cmd
 }

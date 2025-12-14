@@ -5,4 +5,7 @@ parameters:
     - ai-assistant
     - wallet
     - verifier-portal
+  excludePaths:
+    - wallet/desktop/node_modules
+    - wallet/mobile/node_modules
   inferPrivatePropertyTypeFromConstructor: true

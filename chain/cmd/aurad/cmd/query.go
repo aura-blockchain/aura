@@ -9,9 +9,22 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	bridgecli "github.com/aequitas/aura/chain/x/bridge/client/cli"
 	compliancecli "github.com/aequitas/aura/chain/x/compliance/client/cli"
 	confidencescorecli "github.com/aequitas/aura/chain/x/confidencescore/client/cli"
+	cryptographycli "github.com/aequitas/aura/chain/x/cryptography/client/cli"
+	dataregistrycli "github.com/aequitas/aura/chain/x/dataregistry/client/cli"
 	dexcli "github.com/aequitas/aura/chain/x/dex/client/cli"
+	economicsecuritycli "github.com/aequitas/aura/chain/x/economicsecurity/client/cli"
+	governancecli "github.com/aequitas/aura/chain/x/governance/client/cli"
+	identitychangecli "github.com/aequitas/aura/chain/x/identitychange/client/cli"
+	monitoringcli "github.com/aequitas/aura/chain/x/monitoring/client/cli"
+	networksecuritycli "github.com/aequitas/aura/chain/x/networksecurity/client/cli"
+	prevalidationcli "github.com/aequitas/aura/chain/x/prevalidation/client/cli"
+	privacycli "github.com/aequitas/aura/chain/x/privacy/client/cli"
+	validatorsecuritycli "github.com/aequitas/aura/chain/x/validatorsecurity/client/cli"
+	vcregistrycli "github.com/aequitas/aura/chain/x/vcregistry/client/cli"
+	walletsecuritycli "github.com/aequitas/aura/chain/x/walletsecurity/client/cli"
 	wasmcli "github.com/aequitas/aura/chain/x/wasm/client/cli"
 )
 
@@ -36,18 +49,24 @@ func QueryCmd() *cobra.Command {
 
 	// Add module query commands
 	cmd.AddCommand(
-		confidencescorecli.GetQueryCmd(),
+		bridgecli.GetQueryCmd(),
 		compliancecli.GetQueryCmd(),
+		confidencescorecli.GetQueryCmd(),
+		cryptographycli.GetQueryCmd(),
+		dataregistrycli.GetQueryCmd(),
 		dexcli.GetQueryCmd(),
+		economicsecuritycli.GetQueryCmd(),
+		governancecli.GetQueryCmd(),
+		identitychangecli.GetQueryCmd(),
+		monitoringcli.GetQueryCmd(),
+		networksecuritycli.GetQueryCmd(),
+		prevalidationcli.GetQueryCmd(),
+		privacycli.GetQueryCmd(),
+		validatorsecuritycli.GetQueryCmd(),
+		vcregistrycli.GetQueryCmd(),
+		walletsecuritycli.GetQueryCmd(),
 		wasmcli.GetQueryCmd(),
 	)
-
-	// Note: Additional module query commands can be added here as modules are completed:
-	// - monitoring module queries (x/monitoring/client/cli)
-	// - security module queries (x/networksecurity/client/cli)
-	// - identity module queries (x/identity/client/cli)
-	// - vcregistry queries (x/vcregistry/client/cli)
-	// etc.
 
 	return cmd
 }
