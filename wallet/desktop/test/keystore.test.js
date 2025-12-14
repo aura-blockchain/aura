@@ -7,10 +7,12 @@ import { KeystoreService } from '../src/services/keystore';
 describe('KeystoreService', () => {
   let keystoreService;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     keystoreService = new KeystoreService();
     // Clear the localStorage mock's internal store
     localStorage.clear();
+    // Clear electron store
+    await window.electron.store.clear();
     // Clear all mock call history
     jest.clearAllMocks();
   });
@@ -79,7 +81,10 @@ describe('KeystoreService', () => {
 
       await keystoreService.createWallet(mnemonic, password);
 
-      expect(localStorage.setItem).toHaveBeenCalled();
+      // Verify wallet is in electron store
+      const stored = await window.electron.store.get('aura-wallet');
+      expect(stored).toBeDefined();
+      expect(stored).not.toBeNull();
     });
   });
 
@@ -96,15 +101,7 @@ describe('KeystoreService', () => {
 
       const created = await keystoreService.createWallet(mnemonic, password);
 
-      // Mock localStorage.getItem
-      localStorage.getItem.mockReturnValue(JSON.stringify({
-        address: created.address,
-        publicKey: created.publicKey,
-        createdAt: created.createdAt,
-        encryptedMnemonic: 'encrypted',
-        passwordHash: 'hash'
-      }));
-
+      // The wallet should now be in localStorage from createWallet call
       const retrieved = await keystoreService.getWallet();
 
       expect(retrieved).toBeDefined();
@@ -126,12 +123,12 @@ describe('KeystoreService', () => {
     });
 
     test('should reject incorrect password', async () => {
-      localStorage.getItem.mockReturnValue(JSON.stringify({
-        address: 'aura1test',
-        passwordHash: 'wrong-hash',
-        encryptedMnemonic: 'encrypted'
-      }));
+      // Create a wallet first
+      const mnemonic = await keystoreService.generateMnemonic();
+      const correctPassword = 'correct-password';
+      await keystoreService.createWallet(mnemonic, correctPassword);
 
+      // Try to unlock with wrong password
       await expect(
         keystoreService.unlockWallet('wrong-password')
       ).rejects.toThrow();
@@ -189,17 +186,27 @@ describe('KeystoreService', () => {
       const mnemonic = await keystoreService.generateMnemonic();
       await keystoreService.createWallet(mnemonic, 'password');
 
+      // Verify wallet exists
+      let stored = await window.electron.store.get('aura-wallet');
+      expect(stored).not.toBeNull();
+
       await keystoreService.clearWallet();
 
-      expect(localStorage.removeItem).toHaveBeenCalled();
+      // Verify wallet is removed
+      stored = await window.electron.store.get('aura-wallet');
+      expect(stored).toBeNull();
     });
 
     test('should check if wallet exists', async () => {
+      // Initially no wallet
       let exists = await keystoreService.hasWallet();
       expect(exists).toBe(false);
 
-      localStorage.getItem.mockReturnValue(JSON.stringify({ address: 'aura1test' }));
+      // Create a wallet
+      const mnemonic = await keystoreService.generateMnemonic();
+      await keystoreService.createWallet(mnemonic, 'password');
 
+      // Now wallet should exist
       exists = await keystoreService.hasWallet();
       expect(exists).toBe(true);
     });

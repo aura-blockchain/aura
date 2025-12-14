@@ -10,19 +10,12 @@ describe('Wallet Integration Tests', () => {
   let keystoreService;
   let apiService;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     keystoreService = new KeystoreService();
     apiService = new ApiService();
     localStorage.clear();
+    await window.electron.store.clear();
     jest.clearAllMocks();
-
-    // Reset electron store mock
-    window.electron.store.get.mockImplementation((key) => {
-      if (key === 'apiEndpoint') {
-        return Promise.resolve('http://localhost:1317');
-      }
-      return Promise.resolve(null);
-    });
   });
 
   describe('Complete Wallet Lifecycle', () => {
@@ -38,15 +31,7 @@ describe('Wallet Integration Tests', () => {
       expect(wallet.address).toBeDefined();
       expect(wallet.address).toMatch(/^aura1/);
 
-      // Retrieve wallet
-      localStorage.getItem.mockReturnValue(JSON.stringify({
-        address: wallet.address,
-        publicKey: wallet.publicKey,
-        createdAt: wallet.createdAt,
-        encryptedMnemonic: 'encrypted',
-        passwordHash: await keystoreService.hashPassword(password)
-      }));
-
+      // Retrieve wallet (already stored by createWallet)
       const retrieved = await keystoreService.getWallet();
       expect(retrieved.address).toBe(wallet.address);
     });

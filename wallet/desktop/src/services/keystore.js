@@ -211,7 +211,8 @@ export class KeystoreService {
       // In production, use a proper encryption library like crypto-js
       const key = await this.hashPassword(password);
       const encrypted = this.xorEncrypt(data, key);
-      return encrypted;
+      // Convert to base64 for storage
+      return Buffer.from(encrypted, 'binary').toString('base64');
     } catch (error) {
       console.error('Encryption failed:', error);
       throw new Error('Failed to encrypt data');
@@ -224,7 +225,9 @@ export class KeystoreService {
   async decryptData(encryptedData, password) {
     try {
       const key = await this.hashPassword(password);
-      const decrypted = this.xorEncrypt(encryptedData, key);
+      // Decode from base64 first
+      const decoded = Buffer.from(encryptedData, 'base64').toString('binary');
+      const decrypted = this.xorEncrypt(decoded, key);
       return decrypted;
     } catch (error) {
       console.error('Decryption failed:', error);
@@ -252,31 +255,13 @@ export class KeystoreService {
    * NOTE: This is a basic implementation. For production, use a proper encryption library.
    */
   xorEncrypt(text, key) {
-    // Check if text is base64 encoded (for decryption)
-    let inputText = text;
-    let isBase64 = false;
-
-    try {
-      const decoded = Buffer.from(text, 'base64').toString('utf8');
-      // If successful decode and result is different, it was base64
-      if (decoded !== text && decoded.length > 0) {
-        inputText = decoded;
-        isBase64 = true;
-      }
-    } catch (e) {
-      // Not base64, use as-is
-    }
-
     let result = '';
-    for (let i = 0; i < inputText.length; i++) {
+    for (let i = 0; i < text.length; i++) {
       result += String.fromCharCode(
-        inputText.charCodeAt(i) ^ key.charCodeAt(i % key.length)
+        text.charCodeAt(i) ^ key.charCodeAt(i % key.length)
       );
     }
-
-    // If input was not base64, we're encrypting - return base64
-    // If input was base64, we're decrypting - return plaintext
-    return isBase64 ? result : Buffer.from(result, 'binary').toString('base64');
+    return result;
   }
 
   /**

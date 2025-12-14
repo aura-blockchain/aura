@@ -10,17 +10,9 @@ jest.mock('axios');
 describe('ApiService', () => {
   let apiService;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.clearAllMocks();
-
-    // Reset electron store mock
-    window.electron.store.get.mockImplementation((key) => {
-      if (key === 'apiEndpoint') {
-        return Promise.resolve('http://localhost:1317');
-      }
-      return Promise.resolve(null);
-    });
-
+    await window.electron.store.clear();
     apiService = new ApiService();
   });
 

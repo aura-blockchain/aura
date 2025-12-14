@@ -5,20 +5,32 @@ import { TextEncoder, TextDecoder } from 'util';
 global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder;
 
+// Mock electron store with actual storage
+const electronStoreData = {};
+
 // Mock electron APIs
 global.window = global.window || {};
 global.window.electron = {
   store: {
     get: jest.fn((key) => {
-      // Return null by default, tests can override
-      if (key === 'apiEndpoint') {
+      // Return stored value or default
+      if (key === 'apiEndpoint' && !electronStoreData[key]) {
         return Promise.resolve('http://localhost:1317');
       }
-      return Promise.resolve(null);
+      return Promise.resolve(electronStoreData[key] || null);
     }),
-    set: jest.fn(() => Promise.resolve()),
-    delete: jest.fn(() => Promise.resolve()),
-    clear: jest.fn(() => Promise.resolve())
+    set: jest.fn((key, value) => {
+      electronStoreData[key] = value;
+      return Promise.resolve();
+    }),
+    delete: jest.fn((key) => {
+      delete electronStoreData[key];
+      return Promise.resolve();
+    }),
+    clear: jest.fn(() => {
+      Object.keys(electronStoreData).forEach(key => delete electronStoreData[key]);
+      return Promise.resolve();
+    })
   },
   dialog: {
     showOpenDialog: jest.fn(() => Promise.resolve({ canceled: false, filePaths: [] })),
@@ -34,29 +46,38 @@ global.window.electron = {
 };
 
 // Mock localStorage with jest.fn() methods
-const localStorageMock = (() => {
-  let store = {};
-  return {
-    getItem: jest.fn((key) => store[key] || null),
-    setItem: jest.fn((key, value) => {
-      store[key] = value.toString();
-    }),
-    removeItem: jest.fn((key) => {
-      delete store[key];
-    }),
-    clear: jest.fn(() => {
-      store = {};
-    }),
-    get length() {
-      return Object.keys(store).length;
-    },
-    key: jest.fn((index) => {
-      const keys = Object.keys(store);
-      return keys[index] || null;
-    })
-  };
-})();
-global.localStorage = localStorageMock;
+class LocalStorageMock {
+  constructor() {
+    this.store = {};
+  }
+
+  getItem(key) {
+    return this.store[key] || null;
+  }
+
+  setItem(key, value) {
+    this.store[key] = value.toString();
+  }
+
+  removeItem(key) {
+    delete this.store[key];
+  }
+
+  clear() {
+    this.store = {};
+  }
+
+  get length() {
+    return Object.keys(this.store).length;
+  }
+
+  key(index) {
+    const keys = Object.keys(this.store);
+    return keys[index] || null;
+  }
+}
+
+global.localStorage = new LocalStorageMock();
 
 // Mock navigator.clipboard
 Object.defineProperty(navigator, 'clipboard', {
