@@ -7,7 +7,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	authcli "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	bankcli "github.com/cosmos/cosmos-sdk/x/bank/client/cli"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	bridgecli "github.com/aequitas/aura/chain/x/bridge/client/cli"
@@ -50,7 +49,7 @@ func QueryCmd() *cobra.Command {
 
 	// Add module query commands
 	cmd.AddCommand(
-		bankcli.GetQueryCmd(),
+		GetBankQueryCmd(),
 		bridgecli.GetQueryCmd(),
 		compliancecli.GetQueryCmd(),
 		confidencescorecli.GetQueryCmd(),
