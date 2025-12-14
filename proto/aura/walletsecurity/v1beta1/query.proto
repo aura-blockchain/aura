@@ -2,6 +2,7 @@ syntax = "proto3";
 package aura.walletsecurity.v1beta1;
 
 import "aura/walletsecurity/v1beta1/wallet_security.proto";
+import "aura/walletsecurity/v1beta1/genesis.proto";
 
 option go_package = "github.com/aequitas/aura/proto/aura/walletsecurity/v1beta1";
 
@@ -36,6 +37,9 @@ service Query {
 
   // GetDustFilter retrieves dust filter configuration
   rpc GetDustFilter(QueryGetDustFilterRequest) returns (QueryGetDustFilterResponse);
+
+  // Params queries the module parameters
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse);
 }
 
 message QueryGetHardwareWalletRequest {
@@ -117,4 +121,10 @@ message QueryGetDustFilterRequest {
 
 message QueryGetDustFilterResponse {
   DustAttackFilter filter = 1;
+}
+
+message QueryParamsRequest {}
+
+message QueryParamsResponse {
+  WalletSecurityParams params = 1;
 }

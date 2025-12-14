@@ -4,6 +4,7 @@ package aura.bridge.v1beta1;
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "aura/bridge/v1beta1/bridge.proto";
+import "aura/bridge/v1beta1/genesis.proto";
 
 option go_package = "github.com/aequitas/aura/proto/aura/bridge/v1beta1";
 
@@ -67,6 +68,11 @@ service Query {
   // RelayerStats queries relayer performance stats
   rpc RelayerStats(QueryRelayerStatsRequest) returns (QueryRelayerStatsResponse) {
     option (google.api.http).get = "/aura/bridge/v1beta1/relayers/{relayer_address}";
+  }
+
+  // Params queries the module parameters
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/aura/bridge/v1beta1/params";
   }
 }
 
@@ -186,4 +192,11 @@ message QueryRelayerStatsRequest {
 
 message QueryRelayerStatsResponse {
   RelayerStats stats = 1 [(gogoproto.nullable) = false];
+}
+
+// Params queries
+message QueryParamsRequest {}
+
+message QueryParamsResponse {
+  BridgeParams params = 1 [(gogoproto.nullable) = false];
 }

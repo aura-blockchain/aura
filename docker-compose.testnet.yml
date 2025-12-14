@@ -232,6 +232,7 @@ services:
       - "9094:9090"
     volumes:
       - ./prometheus/prometheus-testnet.yml:/etc/prometheus/prometheus.yml:ro
+      - /home/hudson/blockchain-projects/aura/docker/monitoring/prometheus/rules:/etc/prometheus/rules:ro
       - prometheus-testnet-data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'

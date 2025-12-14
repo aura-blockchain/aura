@@ -369,3 +369,29 @@ func (qs queryServer) countRelayers(ctx sdk.Context) uint64 {
 	}
 	return count
 }
+
+// Params queries the module parameters
+func (qs queryServer) Params(goCtx context.Context, req *bridgeproto.QueryParamsRequest) (*bridgeproto.QueryParamsResponse, error) {
+	if req == nil {
+		req = &bridgeproto.QueryParamsRequest{}
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	params := qs.Keeper.GetParams(ctx)
+
+	// Convert old Params struct to BridgeParams proto message
+	maxTransferAmt, ok := sdkmath.NewIntFromString(params.MaxTransferAmount)
+	if !ok {
+		maxTransferAmt = sdkmath.NewInt(1000000000) // Default fallback
+	}
+
+	bridgeParams := bridgeproto.BridgeParams{
+		MinConfirmations:             params.MinConfirmations,
+		BridgeFeeBasisPoints:         params.BridgeFeeBasisPoints,
+		MaxTransferAmount:            maxTransferAmt,
+		Enabled:                      params.BridgeEnabled,
+		ValidatorThresholdPercentage: params.ValidatorThresholdPercentage,
+	}
+
+	return &bridgeproto.QueryParamsResponse{Params: bridgeParams}, nil
+}

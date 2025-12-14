@@ -277,3 +277,19 @@ func (qs queryServer) GetDustFilter(goCtx context.Context, req *wspb.QueryGetDus
 
 	return &wspb.QueryGetDustFilterResponse{Filter: &filter}, nil
 }
+
+// Params queries the module parameters
+func (qs queryServer) Params(goCtx context.Context, req *wspb.QueryParamsRequest) (*wspb.QueryParamsResponse, error) {
+	if req == nil {
+		req = &wspb.QueryParamsRequest{}
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	params, err := qs.Keeper.GetParams(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &wspb.QueryParamsResponse{Params: &params}, nil
+}

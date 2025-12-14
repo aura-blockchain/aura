@@ -35,6 +35,7 @@ func GetQueryCmd() *cobra.Command {
 		CmdQueryBridgeStats(),
 		CmdQueryValidators(),
 		CmdQueryRelayerStats(),
+		CmdQueryParams(),
 	)
 
 	return cmd
@@ -595,4 +596,45 @@ func FormatChainList(chains []string) string {
 		return "none"
 	}
 	return strings.Join(chains, ", ")
+}
+
+// CmdQueryParams queries the bridge module parameters
+func CmdQueryParams() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "params",
+		Short: "Query the bridge module parameters",
+		Long: `Query all parameters for the bridge module.
+
+Examples:
+  aurad query bridge params
+
+Returns:
+  - Minimum confirmations for cross-chain transfers
+  - Bridge fee percentage (basis points)
+  - Maximum transfer amount per transaction
+  - Bridge enabled status
+  - Validator threshold percentage for confirmations
+`,
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			queryClient := bridgev1beta1.NewQueryClient(clientCtx)
+
+			req := &bridgev1beta1.QueryParamsRequest{}
+
+			res, err := queryClient.Params(cmd.Context(), req)
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+	return cmd
 }

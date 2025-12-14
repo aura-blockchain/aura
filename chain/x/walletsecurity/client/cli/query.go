@@ -32,6 +32,7 @@ func GetQueryCmd() *cobra.Command {
 		CmdQuerySecurityMetrics(),
 		CmdQueryDomainVerification(),
 		CmdQueryDustFilter(),
+		CmdQueryParams(),
 	)
 
 	return cmd
@@ -414,6 +415,47 @@ Examples:
 			res, err := queryClient.GetDustFilter(context.Background(), &v1beta1.QueryGetDustFilterRequest{
 				WalletId: args[0],
 			})
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+	return cmd
+}
+
+// CmdQueryParams queries the walletsecurity module parameters
+func CmdQueryParams() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "params",
+		Short: "Query the wallet security module parameters",
+		Long: `Query all parameters for the wallet security module.
+
+Examples:
+  aurad query walletsecurity params
+
+Returns:
+  - Hardware wallet requirements
+  - Multi-signature configuration settings
+  - Social recovery parameters
+  - Spending limit defaults
+  - Session timeout settings
+  - Domain verification requirements
+  - Dust filter thresholds
+`,
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			queryClient := v1beta1.NewQueryClient(clientCtx)
+
+			res, err := queryClient.Params(context.Background(), &v1beta1.QueryParamsRequest{})
 			if err != nil {
 				return err
 			}

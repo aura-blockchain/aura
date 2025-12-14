@@ -51,6 +51,38 @@ func (k Keeper) getStore(ctx context.Context) store.KVStore {
 	return k.storeService.OpenKVStore(ctx)
 }
 
+// GetParams returns the module parameters
+func (k Keeper) GetParams(ctx context.Context) (wsproto.WalletSecurityParams, error) {
+	store := k.getStore(ctx)
+	var params wsproto.WalletSecurityParams
+
+	paramsBytes, err := store.Get(types.ParamsKey)
+	if err != nil {
+		return params, err
+	}
+
+	if paramsBytes == nil {
+		// Return default params if not set
+		return wsproto.WalletSecurityParams{}, nil
+	}
+
+	if err := k.cdc.Unmarshal(paramsBytes, &params); err != nil {
+		return params, err
+	}
+
+	return params, nil
+}
+
+// SetParams sets the module parameters
+func (k Keeper) SetParams(ctx context.Context, params wsproto.WalletSecurityParams) error {
+	store := k.getStore(ctx)
+	paramsBytes, err := k.cdc.Marshal(&params)
+	if err != nil {
+		return err
+	}
+	return store.Set(types.ParamsKey, paramsBytes)
+}
+
 // SetHardwareWallet stores a hardware wallet configuration
 func (k Keeper) SetHardwareWallet(ctx context.Context, walletID string, config []byte) error {
 	store := k.getStore(ctx)

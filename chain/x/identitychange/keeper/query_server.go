@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"context"
+
 	identitychangepb "github.com/aequitas/aura/proto/aura/identitychange/v1beta1"
 )
 
@@ -16,3 +18,14 @@ func NewQueryServer(k *Keeper) identitychangepb.QueryServer {
 }
 
 var _ identitychangepb.QueryServer = &QueryServer{}
+
+// Params queries the module parameters
+func (qs *QueryServer) Params(ctx context.Context, req *identitychangepb.QueryParamsRequest) (*identitychangepb.QueryParamsResponse, error) {
+	if req == nil {
+		req = &identitychangepb.QueryParamsRequest{}
+	}
+
+	params := qs.keeper.GetParams()
+
+	return &identitychangepb.QueryParamsResponse{Params: &params}, nil
+}

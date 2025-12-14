@@ -142,8 +142,15 @@ message QueryIdentityChangeHistoryResponse {
   cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
+message QueryParamsRequest {}
+
+message QueryParamsResponse {
+  Params params = 1;
+}
+
 service Query {
   rpc IdentityRecord(QueryIdentityRecordRequest) returns (QueryIdentityRecordResponse);
   rpc IdentityChangeRequest(QueryIdentityChangeRequestRequest) returns (QueryIdentityChangeRequestResponse);
   rpc IdentityChangeHistory(QueryIdentityChangeHistoryRequest) returns (QueryIdentityChangeHistoryResponse);
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse);
 }

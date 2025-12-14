@@ -23,6 +23,7 @@ func GetQueryCmd() *cobra.Command {
 		CmdQueryIdentityRecord(),
 		CmdQueryIdentityChangeRequest(),
 		CmdQueryIdentityChangeHistory(),
+		CmdQueryParams(),
 	)
 
 	return cmd
@@ -169,5 +170,46 @@ Supports pagination flags.
 
 	flags.AddQueryFlagsToCmd(cmd)
 	flags.AddPaginationFlagsToCmd(cmd, "identity change history")
+	return cmd
+}
+
+// CmdQueryParams queries the identitychange module parameters
+func CmdQueryParams() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "params",
+		Short: "Query the identitychange module parameters",
+		Long: `Query all parameters for the identitychange module.
+
+Examples:
+  aurad query identitychange params
+
+Returns:
+  - Maximum identity change requests per wallet per month
+  - Minimum confidence score after change
+  - Staleness height threshold
+  - Assistant slash on false positive flag
+  - Staleness investigator chain
+`,
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			queryClient := identitychangev1beta1.NewQueryClient(clientCtx)
+
+			req := &identitychangev1beta1.QueryParamsRequest{}
+
+			res, err := queryClient.Params(cmd.Context(), req)
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
 	return cmd
 }
