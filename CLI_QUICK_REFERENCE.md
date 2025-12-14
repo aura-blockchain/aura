@@ -1,6 +1,12 @@
 # Aura CLI Quick Reference
 
-Quick reference for the most commonly used Aura blockchain commands.
+**Last Updated**: 2025-12-14
+**Verification Status**: 23/34 commands tested and working (67.6%)
+**Testnet**: aura-testnet-1 @ tcp://localhost:10501
+
+Quick reference for Aura blockchain commands with verification status from comprehensive testing.
+
+> **Note**: See `CLI_COMMANDS_VERIFICATION_REPORT.md` for detailed test results and known issues.
 
 ---
 
@@ -538,3 +544,50 @@ aurad query compliance --help
 # Global help
 aurad --help
 ```
+
+---
+
+## Verification Status (2025-12-14)
+
+### Modules with 100% Working Queries ✅
+
+1. **Bank** (3/3) - balances, total supply, denom metadata
+2. **Governance** (2/2) - params, proposals
+3. **Privacy** (1/1) - params
+4. **Cryptography** (1/1) - params
+5. **Economic Security** (1/1) - params
+6. **Monitoring** (1/1) - params
+7. **Network Security** (1/1) - params
+8. **Validator Security** (1/1) - params
+9. **VC Registry** (1/1) - params
+10. **Aura WASM Security** (1/1) - params
+11. **Account** (1/1) - account info
+
+### Modules with Partial Functionality ⚠️
+
+- **DEX** (4/5 - 80%) - orderbook command needs correct format: "AURA/USDT"
+- **Compliance** (4/5 - 80%) - kyc-record fails when no data exists (expected)
+- **ConfidenceScore** (1/5 - 20%) - only params working, gRPC handlers not implemented
+
+### Modules Requiring Implementation ❌
+
+- **Bridge** - params command not registered (use stats instead)
+- **Data Registry** - query path unknown
+- **Identity Change** - params command not registered
+- **Wallet Security** - params command not registered
+- **Prevalidation** - intentionally not implemented (use export)
+
+### Overall Statistics
+
+- **Total Commands Tested**: 34
+- **Working**: 23 (67.6%)
+- **Failed**: 11 (32.4%)
+- **Target After Fixes**: 32/34 (94.1%)
+
+Run comprehensive tests:
+```bash
+cd /home/hudson/blockchain-projects/aura
+./test_all_cli_correct.sh
+```
+
+See full report: `CLI_COMMANDS_VERIFICATION_REPORT.md`

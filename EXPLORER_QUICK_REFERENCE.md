@@ -251,7 +251,7 @@ docker ps | grep aura-block-explorer
 curl -I http://localhost:8088/
 
 # 3. Check health
-curl http://localhost:8088/health
+curl http://localhost:8088/api/health
 
 # 4. View recent logs
 docker logs aura-block-explorer --tail 20
@@ -259,6 +259,35 @@ docker logs aura-block-explorer --tail 20
 # 5. Open in browser
 xdg-open http://localhost:8088  # Linux
 # or just visit http://localhost:8088
+```
+
+### Common RPC Queries
+```bash
+# Get current chain status
+curl -s http://localhost:8088/rpc/status | jq -r '.result | {
+  chain: .node_info.network,
+  height: .sync_info.latest_block_height,
+  time: .sync_info.latest_block_time
+}'
+
+# Get specific block
+curl -s "http://localhost:8088/rpc/block?height=100" | jq .
+
+# Get recent blocks
+curl -s "http://localhost:8088/rpc/blockchain?minHeight=100&maxHeight=110" | jq .
+
+# Search transactions
+curl -s "http://localhost:8088/rpc/tx_search?query=\"tx.height>1\"&per_page=5" | jq .
+
+# Get transaction by hash
+curl -s "http://localhost:8088/rpc/tx?hash=0xHASH" | jq .
+
+# List validators
+curl -s "http://localhost:8088/rpc/validators" | jq -r '.result.validators[] |
+  "Address: \(.address), Power: \(.voting_power)"'
+
+# Network info
+curl -s "http://localhost:8088/rpc/net_info" | jq '.result.peers | length'
 ```
 
 ### Test RPC Connectivity
