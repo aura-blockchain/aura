@@ -84,6 +84,8 @@ type (
 	QuerySpotPriceResponse      = pb.QuerySpotPriceResponse
 	QueryHTLCRequest            = pb.QueryHTLCRequest
 	QueryHTLCResponse           = pb.QueryHTLCResponse
+	QueryParamsRequest          = pb.QueryParamsRequest
+	QueryParamsResponse         = pb.QueryParamsResponse
 )
 
 // Re-export enum values for SwapOrderType
