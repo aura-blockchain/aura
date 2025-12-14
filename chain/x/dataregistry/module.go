@@ -2,12 +2,12 @@ package dataregistry
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 
@@ -15,12 +15,6 @@ import (
 	"github.com/aequitas/aura/chain/x/dataregistry/types"
 	pb "github.com/aequitas/aura/proto/aura/dataregistry/v1beta1"
 )
-
-// ModuleServices defines the interface for registering module services
-type ModuleServices interface {
-	RegisterMsgServer(pb.MsgServer)
-	RegisterQueryServer(pb.QueryServer)
-}
 
 // AppModuleBasic defines the basic application module
 type AppModuleBasic struct{}
@@ -33,9 +27,6 @@ func (AppModuleBasic) RegisterLegacyAminoCodec(_ *codec.LegacyAmino) {}
 
 // RegisterGRPCGatewayRoutes is a no-op placeholder to satisfy the AppModuleBasic interface.
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(client.Context, *runtime.ServeMux) {}
-
-// RegisterServices registers module services (no-op for basic)
-func (AppModuleBasic) RegisterServices(ModuleServices) {}
 
 // RegisterInterfaces wires the data registry msg service into the interface registry.
 func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
@@ -88,12 +79,9 @@ func (AppModule) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 }
 
 // RegisterServices registers the module's message and query servers
-func (m AppModule) RegisterServices(config ModuleServices) {
-	if config == nil {
-		panic(fmt.Sprintf("%s: nil module services", types.ModuleName))
-	}
-	config.RegisterMsgServer(keeper.NewMsgServer(m.keeper))
-	config.RegisterQueryServer(keeper.NewQueryServer(m.keeper))
+func (m AppModule) RegisterServices(cfg module.Configurator) {
+	pb.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServer(m.keeper))
+	pb.RegisterQueryServer(cfg.QueryServer(), keeper.NewQueryServer(m.keeper))
 }
 
 // BeginBlock executes all ABCI BeginBlock logic
