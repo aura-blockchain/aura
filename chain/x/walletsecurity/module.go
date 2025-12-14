@@ -123,7 +123,7 @@ func (AppModule) Name() string {
 // RegisterServices registers module services.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
 	wsproto.RegisterMsgServer(cfg.MsgServer(), NewMsgServerImpl(am.keeper))
-	wsproto.RegisterQueryServer(cfg.QueryServer(), NewQueryServerImpl(am.keeper))
+	wsproto.RegisterQueryServer(cfg.QueryServer(), keeper.NewQueryServerImpl(&am.keeper))
 }
 
 // InitGenesis initializes the module state from genesis data.
