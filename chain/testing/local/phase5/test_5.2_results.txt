@@ -1,0 +1,6 @@
+=== Phase 5.2: State Pruning Verification ===
+Start time: Sun Dec 14 11:48:20 AM UTC 2025
+
+[0;32m[TEST][0m Checking testnet status
+[0;32m[SUCCESS][0m Testnet is running
+[0;32m[TEST][0m Test 1: Checking pruning configuration on validator-1

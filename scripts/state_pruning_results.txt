@@ -1,0 +1,112 @@
+=== State Pruning Verification ===
+Start time: Sun Dec 14 11:51:46 AM UTC 2025
+
+[0;32m[TEST][0m Checking testnet status
+[0;32m[SUCCESS][0m Testnet is running
+[0;32m[TEST][0m Test 1: Checking pruning configuration on validator-1
+[1;33m[RESULT][0m Pruning mode: nothing
+[1;33m[RESULT][0m Keep recent: N/A
+[1;33m[RESULT][0m Pruning interval: N/A
+[0;32m[TEST][0m Test 2: Creating test node with aggressive pruning settings
+aura-pruning-test
+aura-pruning-test
+aura-pruning-test-data
+7e72551bbc0e97b709e00005276aa5cebb6de017b99c416c64a49540c23a9add
+[0;32m[SUCCESS][0m Test node container created
+[0;32m[TEST][0m Initializing test node
+[SECURITY] {
+  "data": {
+    "original_path": "~/.aura",
+    "resolved_path": "~/.aura"
+  },
+  "timestamp": "2025-12-14T11:51:47Z",
+  "type": "path_validated"
+}
+[SECURITY] {
+  "data": {
+    "original_path": "~/.aura",
+    "resolved_path": "~/.aura"
+  },
+  "timestamp": "2025-12-14T11:51:47Z",
+  "type": "path_validated"
+}
+Initializing Aura node...
+Chain ID: aura-testnet-1
+Moniker: pruning-test
+Home: /home/aura/.aura
+Created directory: /home/aura/.aura/config (permissions: 750)
+Created directory: /home/aura/.aura/config/tls (permissions: 700)
+Created directory: /home/aura/.aura/data (permissions: 700)
+Created directory: /home/aura/.aura/keys (permissions: 700)
+Created directory: /home/aura/.aura/logs (permissions: 700)
+
+╔══════════════════════════════════════════════════════════════════════╗
+║                    IMPORTANT - SAVE YOUR MNEMONIC                    ║
+╠══════════════════════════════════════════════════════════════════════╣
+║ Write down these 24 words in order and store them securely.          ║
+║ This is the ONLY way to recover your validator key.                  ║
+║                                                                      ║
+║ DO NOT:                                                              ║
+║   - Store digitally (screenshots, files, emails)                     ║
+║   - Share with anyone                                                ║
+║   - Enter on websites                                                ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+   1. fetch
+   2. coconut
+   3. bind
+   4. habit
+   5. female
+   6. sea
+   7. news
+   8. unveil
+   9. immune
+  10. once
+  11. hat
+  12. ball
+  13. earn
+  14. little
+  15. verb
+  16. oak
+  17. rabbit
+  18. decade
+  19. donor
+  20. make
+  21. educate
+  22. avoid
+  23. panther
+  24. dumb
+
+Press Enter after you have safely recorded your mnemonic...
+Created private validator key: /home/aura/.aura/config/priv_validator_key.json
+Created private validator state: /home/aura/.aura/data/priv_validator_state.json
+Created config file: /home/aura/.aura/config/config.toml (permissions: 640)
+Created config file: /home/aura/.aura/config/app.toml (permissions: 640)
+Created config file: /home/aura/.aura/config/genesis.json (permissions: 640)
+
+Node initialized successfully!
+Configuration files created in: /home/aura/.aura
+
+Validator Addresses:
+  Account:   aura18tj7h8l89ptr3a94tq2mlq4evcgwyjasasgk9k
+  Operator:  auravaloper18tj7h8l89ptr3a94tq2mlq4evcgwyjasxze7ag
+  Consensus: auravalcons18tj7h8l89ptr3a94tq2mlq4evcgwyjasj32z3f
+
+To start the node, run:
+  aurad start
+[0;32m[TEST][0m Configuring aggressive pruning: keep-recent=10, interval=10
+pruning = "nothing"
+
+# These are only applied if pruning = "custom"
+pruning-keep-recent = 0
+pruning-interval = 0
+
+--
+pruning = "custom"
+pruning-keep-recent = "10"
+pruning-keep-every = "0"
+pruning-interval = "10"
+[0;32m[TEST][0m Starting test node
+[0;32m[TEST][0m Waiting for node to sync (30 seconds)
+[0;32m[TEST][0m Test 3: Checking sync status
+jq: parse error: Invalid numeric literal at line 1, column 9
