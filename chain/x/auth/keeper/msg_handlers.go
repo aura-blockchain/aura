@@ -38,7 +38,7 @@ func (k *Keeper) CreateRole(ctx context.Context, creator string, name string, pe
 		return nil, err
 	}
 
-	k.LogAudit(ctx, creator, "create_role", name, "success", nil, "", sdkCtx.BlockTime())
+	k.LogAudit(sdkCtx, creator, "create_role", name, "success", nil, "")
 	return role, nil
 }
 
@@ -78,7 +78,7 @@ func (k *Keeper) AssignRole(ctx context.Context, assigner string, address string
 		return nil, err
 	}
 
-	k.LogAudit(ctx, assigner, "assign_role", fmt.Sprintf("%s->%s", address, roleName), "success", nil, "", sdkCtx.BlockTime())
+	k.LogAudit(sdkCtx, assigner, "assign_role", fmt.Sprintf("%s->%s", address, roleName), "success", nil, "")
 	return assignment, nil
 }
 
@@ -95,7 +95,7 @@ func (k *Keeper) RevokeRole(ctx context.Context, revoker string, address string,
 		return err
 	}
 
-	k.LogAudit(ctx, revoker, "revoke_role", fmt.Sprintf("%s->%s", address, roleName), "success", nil, "", sdkCtx.BlockTime())
+	k.LogAudit(sdkCtx, revoker, "revoke_role", fmt.Sprintf("%s->%s", address, roleName), "success", nil, "")
 	return nil
 }
 
@@ -130,7 +130,7 @@ func (k *Keeper) CreateMultisigWallet(ctx context.Context, creator string, signe
 		return nil, err
 	}
 
-	k.LogAudit(ctx, creator, "create_multisig_wallet", walletID, "success", nil, "", sdkCtx.BlockTime())
+	k.LogAudit(sdkCtx, creator, "create_multisig_wallet", walletID, "success", nil, "")
 	return wallet, nil
 }
 
@@ -179,7 +179,7 @@ func (k *Keeper) CreateMultisigProposal(ctx context.Context, proposer string, wa
 		return nil, err
 	}
 
-	k.LogAudit(ctx, proposer, "create_multisig_proposal", proposalID, "success", nil, "", sdkCtx.BlockTime())
+	k.LogAudit(sdkCtx, proposer, "create_multisig_proposal", proposalID, "success", nil, "")
 	return proposal, nil
 }
 
@@ -230,7 +230,7 @@ func (k *Keeper) SignMultisigProposal(ctx context.Context, signer string, propos
 		return nil, err
 	}
 
-	k.LogAudit(ctx, signer, "sign_multisig_proposal", proposalID, "success", nil, "", sdkCtx.BlockTime())
+	k.LogAudit(sdkCtx, signer, "sign_multisig_proposal", proposalID, "success", nil, "")
 	return proposal, nil
 }
 
@@ -258,7 +258,7 @@ func (k *Keeper) ExecuteMultisigProposal(ctx context.Context, executor string, p
 		return err
 	}
 
-	k.LogAudit(ctx, executor, "execute_multisig_proposal", proposalID, "success", nil, "", sdkCtx.BlockTime())
+	k.LogAudit(sdkCtx, executor, "execute_multisig_proposal", proposalID, "success", nil, "")
 	return nil
 }
 
@@ -292,7 +292,7 @@ func (k *Keeper) ProposeTimeLockedAction(ctx context.Context, proposer string, a
 		return nil, err
 	}
 
-	k.LogAudit(ctx, proposer, "propose_timelock_action", actionID, "success", nil, "", sdkCtx.BlockTime())
+	k.LogAudit(sdkCtx, proposer, "propose_timelock_action", actionID, "success", nil, "")
 	return action, nil
 }
 
@@ -325,7 +325,7 @@ func (k *Keeper) ExecuteTimeLockedAction(ctx context.Context, executor string, a
 		return err
 	}
 
-	k.LogAudit(ctx, executor, "execute_timelock_action", actionID, "success", nil, "", sdkCtx.BlockTime())
+	k.LogAudit(sdkCtx, executor, "execute_timelock_action", actionID, "success", nil, "")
 	return nil
 }
 
@@ -351,7 +351,7 @@ func (k *Keeper) CancelTimeLockedAction(ctx context.Context, canceller string, a
 		return err
 	}
 
-	k.LogAudit(ctx, canceller, "cancel_timelock_action", actionID, "success", nil, "", sdkCtx.BlockTime())
+	k.LogAudit(sdkCtx, canceller, "cancel_timelock_action", actionID, "success", nil, "")
 	return nil
 }
 
@@ -380,7 +380,7 @@ func (k *Keeper) ActivateEmergencyAdmin(ctx context.Context, activator string, a
 		return nil, err
 	}
 
-	k.LogAudit(ctx, activator, "activate_emergency_admin", adminAddress, "success", nil, "", sdkCtx.BlockTime())
+	k.LogAudit(sdkCtx, activator, "activate_emergency_admin", adminAddress, "success", nil, "")
 	return admin, nil
 }
 
@@ -405,7 +405,7 @@ func (k *Keeper) DeactivateEmergencyAdmin(ctx context.Context, deactivator strin
 		return err
 	}
 
-	k.LogAudit(ctx, deactivator, "deactivate_emergency_admin", adminAddress, "success", nil, "", sdkCtx.BlockTime())
+	k.LogAudit(sdkCtx, deactivator, "deactivate_emergency_admin", adminAddress, "success", nil, "")
 	return nil
 }
 
@@ -432,7 +432,7 @@ func (k *Keeper) RotateValidatorKey(ctx context.Context, validator string, newPu
 		return nil, err
 	}
 
-	k.LogAudit(ctx, validator, "rotate_validator_key", validator, "success", nil, "", sdkCtx.BlockTime())
+	k.LogAudit(sdkCtx, validator, "rotate_validator_key", validator, "success", nil, "")
 	return rotation, nil
 }
 
@@ -458,7 +458,7 @@ func (k *Keeper) CreateSession(ctx context.Context, userAddress string, expiresI
 		return nil, err
 	}
 
-	k.LogAudit(ctx, userAddress, "create_session", sessionID, "success", nil, "", sdkCtx.BlockTime())
+	k.LogAudit(sdkCtx, userAddress, "create_session", sessionID, "success", nil, "")
 	return session, nil
 }
 
@@ -470,7 +470,7 @@ func (k *Keeper) InvalidateSession(ctx context.Context, userAddress string, sess
 		return err
 	}
 
-	k.LogAudit(ctx, userAddress, "invalidate_session", sessionID, "success", nil, "", sdkCtx.BlockTime())
+	k.LogAudit(sdkCtx, userAddress, "invalidate_session", sessionID, "success", nil, "")
 	return nil
 }
 
@@ -497,7 +497,7 @@ func (k *Keeper) InitiateValidatorKeyRotation(ctx context.Context, initiator str
 		return nil, err
 	}
 
-	k.LogAudit(ctx, initiator, "initiate_validator_key_rotation", validatorAddress, "success", nil, "", sdkCtx.BlockTime())
+	k.LogAudit(sdkCtx, initiator, "initiate_validator_key_rotation", validatorAddress, "success", nil, "")
 	return rotation, nil
 }
 
@@ -524,7 +524,7 @@ func (k *Keeper) CompleteValidatorKeyRotation(ctx context.Context, completer str
 		return err
 	}
 
-	k.LogAudit(ctx, completer, "complete_validator_key_rotation", validatorAddress, "success", nil, "", sdkCtx.BlockTime())
+	k.LogAudit(sdkCtx, completer, "complete_validator_key_rotation", validatorAddress, "success", nil, "")
 	return nil
 }
 

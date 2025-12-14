@@ -1,20 +1,49 @@
 {
   "manifest_version": 3,
   "name": "Aura Network Wallet",
-  "description": "Manage AURA tokens, swap via the DEX, and access DeFi features from your browser",
+  "description": "Complete wallet for Aura blockchain: send, stake, vote, and trade AURA tokens",
   "version": "1.0.0",
+  "author": "Aura Team",
   "action": {
     "default_title": "Aura Wallet",
-    "default_popup": "popup.html"
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
   },
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "type": "module"
   },
-  "host_permissions": [
-    "http://localhost:1317/*",
-    "http://127.0.0.1:1317/*",
-    "http://localhost:26657/*",
-    "http://127.0.0.1:26657/*"
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "permissions": [
+    "storage",
+    "alarms",
+    "unlimitedStorage"
   ],
-  "permissions": ["storage", "alarms"]
+  "optional_permissions": [
+    "usb"
+  ],
+  "host_permissions": [
+    "http://localhost:*/*",
+    "http://127.0.0.1:*/*",
+    "https://*.aura.network/*"
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' http://localhost:* http://127.0.0.1:* https://*.aura.network;"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["icons/*"],
+      "matches": ["<all_urls>"]
+    }
+  ]
 }

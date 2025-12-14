@@ -3,11 +3,17 @@ package aura.governance.v1beta1;
 
 import "aura/governance/v1beta1/governance.proto";
 import "google/protobuf/duration.proto";
+import "cosmos/msg/v1/msg.proto";
+import "cosmos_proto/cosmos.proto";
+import "amino/amino.proto";
+import "gogoproto/gogo.proto";
 
 option go_package = "github.com/aequitas/aura/proto/aura/governance/v1beta1";
 
 // Msg defines the governance Msg service
 service Msg {
+  option (cosmos.msg.v1.service) = true;
+
   // SubmitProposal submits a new governance proposal
   rpc SubmitProposal(MsgSubmitProposal) returns (MsgSubmitProposalResponse);
 
@@ -44,10 +50,13 @@ service Msg {
 
 // MsgSubmitProposal defines a message to submit a proposal
 message MsgSubmitProposal {
+  option (cosmos.msg.v1.signer) = "proposer";
+  option (amino.name) = "aura/governance/MsgSubmitProposal";
+
   string title = 1;
   string description = 2;
   ProposalCategory category = 3;
-  string proposer = 4;
+  string proposer = 4 [(cosmos_proto.scalar) = "cosmos.AddressString"];
   string initial_deposit = 5;
   bool is_emergency = 6;
 }
@@ -58,8 +67,11 @@ message MsgSubmitProposalResponse {
 
 // MsgDeposit defines a message to add a deposit to a proposal
 message MsgDeposit {
+  option (cosmos.msg.v1.signer) = "depositor";
+  option (amino.name) = "aura/governance/MsgDeposit";
+
   uint64 proposal_id = 1;
-  string depositor = 2;
+  string depositor = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
   string amount = 3;
 }
 
@@ -67,8 +79,11 @@ message MsgDepositResponse {}
 
 // MsgVote defines a message to cast a vote
 message MsgVote {
+  option (cosmos.msg.v1.signer) = "voter";
+  option (amino.name) = "aura/governance/MsgVote";
+
   uint64 proposal_id = 1;
-  string voter = 2;
+  string voter = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
   VoteOption option = 3;
   bool is_secret = 4;
   string vote_commitment = 5;  // For secret ballots
@@ -84,8 +99,11 @@ message WeightedVoteOption {
 
 // MsgVoteWeighted defines a message to cast a weighted vote
 message MsgVoteWeighted {
+  option (cosmos.msg.v1.signer) = "voter";
+  option (amino.name) = "aura/governance/MsgVoteWeighted";
+
   uint64 proposal_id = 1;
-  string voter = 2;
+  string voter = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
   repeated WeightedVoteOption options = 3;
 }
 
@@ -93,8 +111,11 @@ message MsgVoteWeightedResponse {}
 
 // MsgDelegateVote defines a message to delegate voting power
 message MsgDelegateVote {
-  string delegator = 1;
-  string delegate = 2;
+  option (cosmos.msg.v1.signer) = "delegator";
+  option (amino.name) = "aura/governance/MsgDelegateVote";
+
+  string delegator = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string delegate = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
   repeated ProposalCategory categories = 3;  // Empty means all categories
 }
 
@@ -102,8 +123,11 @@ message MsgDelegateVoteResponse {}
 
 // MsgUndelegateVote defines a message to remove vote delegation
 message MsgUndelegateVote {
-  string delegator = 1;
-  string delegate = 2;
+  option (cosmos.msg.v1.signer) = "delegator";
+  option (amino.name) = "aura/governance/MsgUndelegateVote";
+
+  string delegator = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string delegate = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
   repeated ProposalCategory categories = 3;  // Empty means all categories
 }
 
@@ -111,8 +135,11 @@ message MsgUndelegateVoteResponse {}
 
 // MsgSubmitVeto defines a message to submit a veto request
 message MsgSubmitVeto {
+  option (cosmos.msg.v1.signer) = "vetoer";
+  option (amino.name) = "aura/governance/MsgSubmitVeto";
+
   uint64 proposal_id = 1;
-  string vetoer = 2;
+  string vetoer = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
   string reason = 3;
 }
 
@@ -122,8 +149,11 @@ message MsgSubmitVetoResponse {
 
 // MsgCosignVeto defines a message to cosign a veto request
 message MsgCosignVeto {
+  option (cosmos.msg.v1.signer) = "cosigner";
+  option (amino.name) = "aura/governance/MsgCosignVeto";
+
   uint64 proposal_id = 1;
-  string cosigner = 2;
+  string cosigner = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 }
 
 message MsgCosignVetoResponse {
@@ -132,16 +162,22 @@ message MsgCosignVetoResponse {
 
 // MsgExecuteProposal defines a message to execute a passed proposal
 message MsgExecuteProposal {
+  option (cosmos.msg.v1.signer) = "executor";
+  option (amino.name) = "aura/governance/MsgExecuteProposal";
+
   uint64 proposal_id = 1;
-  string executor = 2;
+  string executor = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 }
 
 message MsgExecuteProposalResponse {}
 
 // MsgSubmitSnapshotVote defines a message to submit a snapshot vote
 message MsgSubmitSnapshotVote {
+  option (cosmos.msg.v1.signer) = "voter";
+  option (amino.name) = "aura/governance/MsgSubmitSnapshotVote";
+
   uint64 proposal_id = 1;
-  string voter = 2;
+  string voter = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
   VoteOption option = 3;
   string signature = 4;
 }
@@ -150,8 +186,11 @@ message MsgSubmitSnapshotVoteResponse {}
 
 // MsgRevealSecretVote defines a message to reveal a secret ballot vote
 message MsgRevealSecretVote {
+  option (cosmos.msg.v1.signer) = "voter";
+  option (amino.name) = "aura/governance/MsgRevealSecretVote";
+
   uint64 proposal_id = 1;
-  string voter = 2;
+  string voter = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
   VoteOption option = 3;
   string reveal_key = 4;
 }

@@ -1169,3 +1169,206 @@ func (ms msgServer) SubmitFraudProof(goCtx context.Context, msg *bridgepb.MsgSub
 		FraudProofId: fraudProofID,
 	}, nil
 }
+
+// EmergencyPause pauses bridge operations for authorized emergency guardians.
+//
+// SECURITY CRITICAL: This function allows pre-authorized addresses to immediately
+// pause bridge operations in case of an active exploit or security incident.
+//
+// Security checks:
+//   - Signer must be in EmergencyPauseAddresses parameter list (ACL check)
+//   - Can pause globally or specific chains
+//   - Reason required for audit trail
+//   - Emits events for monitoring
+//
+// Attack vectors prevented:
+//   - Unauthorized pause: Only authorized guardians can pause
+//   - Missing audit trail: Reason required and logged
+//   - Delayed response: Immediate pause without governance delay
+//
+// Parameters:
+//   - msg: Contains signer, reason, and optional chains to pause
+//
+// Returns:
+//   - Response with success status
+//   - Error if: signer not authorized, invalid parameters
+func (ms msgServer) EmergencyPause(goCtx context.Context, msg *bridgepb.MsgEmergencyPause) (*bridgepb.MsgEmergencyPauseResponse, error) {
+	if msg == nil {
+		return nil, status.Error(codes.InvalidArgument, "request cannot be nil")
+	}
+	if msg.Signer == "" {
+		return nil, status.Error(codes.InvalidArgument, "signer required")
+	}
+	if msg.Reason == "" {
+		return nil, status.Error(codes.InvalidArgument, "reason required for emergency pause")
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// CRITICAL SECURITY: Check if signer is authorized to trigger emergency pause
+	// This is the ACL check required by HIGH-001 security finding
+	if !ms.Keeper.IsEmergencyPauseAuthorized(ctx, msg.Signer) {
+		return nil, status.Error(codes.PermissionDenied,
+			fmt.Sprintf("address %s is not authorized to trigger emergency pause", msg.Signer))
+	}
+
+	// Get current params
+	params := ms.Keeper.GetParams(ctx)
+
+	if len(msg.Chains) == 0 {
+		// Global pause - pause all bridge operations
+		params.Paused = true
+		log.TxStart(ctx, "EmergencyPause", msg.Signer)
+		log.StateChange(ctx, "bridge_pause", "global", "emergency")
+	} else {
+		// Pause specific chains
+		if params.PausedChains == nil {
+			params.PausedChains = make([]string, 0)
+		}
+		for _, chain := range msg.Chains {
+			normalizedChain := normalizeChain(chain)
+			if normalizedChain != "" {
+				// Check if chain is not already in the list
+				alreadyPaused := false
+				for _, pausedChain := range params.PausedChains {
+					if pausedChain == normalizedChain {
+						alreadyPaused = true
+						break
+					}
+				}
+				if !alreadyPaused {
+					params.PausedChains = append(params.PausedChains, normalizedChain)
+					log.StateChange(ctx, "bridge_pause", normalizedChain, "emergency")
+				}
+			}
+		}
+	}
+
+	// Update params with pause status
+	if err := ms.Keeper.SetParams(ctx, params); err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to update params: %v", err))
+	}
+
+	// Emit detailed event for monitoring and audit trail
+	eventAttrs := []sdk.Attribute{
+		sdk.NewAttribute("signer", msg.Signer),
+		sdk.NewAttribute("reason", msg.Reason),
+		sdk.NewAttribute("timestamp", ctx.BlockTime().Format(time.RFC3339)),
+	}
+
+	if len(msg.Chains) == 0 {
+		eventAttrs = append(eventAttrs, sdk.NewAttribute("scope", "global"))
+	} else {
+		eventAttrs = append(eventAttrs, sdk.NewAttribute("scope", "chains"))
+		eventAttrs = append(eventAttrs, sdk.NewAttribute("chains", strings.Join(msg.Chains, ",")))
+	}
+
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			"emergency_pause_triggered",
+			eventAttrs...,
+		),
+	)
+
+	if len(msg.Chains) == 0 {
+		log.TxSuccess(ctx, "EmergencyPause", "signer", msg.Signer, "scope", "global", "reason", msg.Reason)
+	} else {
+		log.TxSuccess(ctx, "EmergencyPause", "signer", msg.Signer, "chains", strings.Join(msg.Chains, ","), "reason", msg.Reason)
+	}
+
+	return &bridgepb.MsgEmergencyPauseResponse{Success: true}, nil
+}
+
+// Unpause unpauses bridge operations (governance only).
+//
+// SECURITY CRITICAL: This function allows governance to resume bridge operations
+// after an emergency pause or investigation.
+//
+// Security checks:
+//   - Authority must be governance address (not emergency guardians)
+//   - Can unpause globally or specific chains
+//   - Emits events for monitoring
+//
+// Attack vectors prevented:
+//   - Unauthorized unpause: Only governance can unpause
+//   - Premature resumption: Requires governance consensus
+//
+// Parameters:
+//   - msg: Contains authority address and optional chains to unpause
+//
+// Returns:
+//   - Response with success status
+//   - Error if: authority not governance, invalid parameters
+func (ms msgServer) Unpause(goCtx context.Context, msg *bridgepb.MsgUnpause) (*bridgepb.MsgUnpauseResponse, error) {
+	if msg == nil {
+		return nil, status.Error(codes.InvalidArgument, "request cannot be nil")
+	}
+	if msg.Authority == "" {
+		return nil, status.Error(codes.InvalidArgument, "authority required")
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// CRITICAL SECURITY: Only governance can unpause
+	// This prevents emergency pause addresses from unpausing (requires broader consensus)
+	params := ms.Keeper.GetParams(ctx)
+	if msg.Authority != params.Authority {
+		return nil, status.Error(codes.PermissionDenied,
+			fmt.Sprintf("only governance authority %s can unpause bridge (got %s)",
+				params.Authority, msg.Authority))
+	}
+
+	if len(msg.Chains) == 0 {
+		// Global unpause - resume all bridge operations
+		params.Paused = false
+		// Also clear all chain-specific pauses
+		params.PausedChains = make(map[string]bool)
+		log.TxStart(ctx, "Unpause", msg.Authority)
+		log.StateChange(ctx, "bridge_unpause", "global", "governance")
+	} else {
+		// Unpause specific chains
+		if params.PausedChains == nil {
+			params.PausedChains = make(map[string]bool)
+		}
+		for _, chain := range msg.Chains {
+			normalizedChain := normalizeChain(chain)
+			if normalizedChain != "" {
+				delete(params.PausedChains, normalizedChain)
+				log.StateChange(ctx, "bridge_unpause", normalizedChain, "governance")
+			}
+		}
+	}
+
+	// Update params with unpause status
+	if err := ms.Keeper.SetParams(ctx, params); err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to update params: %v", err))
+	}
+
+	// Emit detailed event for monitoring and audit trail
+	eventAttrs := []sdk.Attribute{
+		sdk.NewAttribute("authority", msg.Authority),
+		sdk.NewAttribute("timestamp", ctx.BlockTime().Format(time.RFC3339)),
+	}
+
+	if len(msg.Chains) == 0 {
+		eventAttrs = append(eventAttrs, sdk.NewAttribute("scope", "global"))
+	} else {
+		eventAttrs = append(eventAttrs, sdk.NewAttribute("scope", "chains"))
+		eventAttrs = append(eventAttrs, sdk.NewAttribute("chains", strings.Join(msg.Chains, ",")))
+	}
+
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			"bridge_unpaused",
+			eventAttrs...,
+		),
+	)
+
+	if len(msg.Chains) == 0 {
+		log.TxSuccess(ctx, "Unpause", "authority", msg.Authority, "scope", "global")
+	} else {
+		log.TxSuccess(ctx, "Unpause", "authority", msg.Authority, "chains", strings.Join(msg.Chains, ","))
+	}
+
+	return &bridgepb.MsgUnpauseResponse{Success: true}, nil
+}

@@ -8,4 +8,5 @@ parameters:
   excludePaths:
     - wallet/desktop/node_modules
     - wallet/mobile/node_modules
+    - wallet/browser-extension/node_modules
   inferPrivatePropertyTypeFromConstructor: true

@@ -1,277 +1,253 @@
 groups:
-  - name: aura_blockchain_alerts
-    interval: 30s
+  - name: aura-blockchain
     rules:
-      # Node health alerts
-      - alert: NodeDown
-        expr: up{job="aura-nodes"} == 0
-        for: 5m
+      # Chain halt detection
+      - alert: ChainHalted
+        expr: increase(cometbft_consensus_height[5m]) == 0
+        for: 2m
         labels:
           severity: critical
-          component: node
         annotations:
-          summary: "AURA node is down"
-          description: "Node {{ $labels.instance }} has been down for more than 5 minutes"
+          summary: "AURA blockchain has halted"
+          description: "No new blocks have been produced in the last 5 minutes"
 
-      - alert: NodeNotSyncing
-        expr: tendermint_consensus_latest_block_height{job="aura-nodes"} == 0
-        for: 10m
-        labels:
-          severity: critical
-          component: consensus
-        annotations:
-          summary: "Node is not syncing blocks"
-          description: "Node {{ $labels.instance }} has not synced any blocks in 10 minutes"
-
-      - alert: NodeBehind
-        expr: |
-          (tendermint_consensus_latest_block_height{job="aura-nodes"}
-          - ignoring(instance) group_left()
-          max(tendermint_consensus_latest_block_height{job="aura-nodes"})) < -100
-        for: 15m
-        labels:
-          severity: warning
-          component: consensus
-        annotations:
-          summary: "Node is behind in block sync"
-          description: "Node {{ $labels.instance }} is more than 100 blocks behind the network"
-
-      # Performance alerts
-      - alert: HighCPUUsage
-        expr: rate(process_cpu_seconds_total{job="aura-nodes"}[5m]) > 0.8
-        for: 10m
-        labels:
-          severity: warning
-          component: performance
-        annotations:
-          summary: "High CPU usage detected"
-          description: "Node {{ $labels.instance }} CPU usage is above 80% for 10 minutes"
-
-      - alert: HighMemoryUsage
-        expr: |
-          (process_resident_memory_bytes{job="aura-nodes"}
-          / node_memory_MemTotal_bytes) > 0.85
-        for: 10m
-        labels:
-          severity: warning
-          component: performance
-        annotations:
-          summary: "High memory usage detected"
-          description: "Node {{ $labels.instance }} memory usage is above 85%"
-
-      - alert: DiskSpaceLow
-        expr: |
-          (node_filesystem_avail_bytes{job="node-exporter",mountpoint="/"}
-          / node_filesystem_size_bytes{job="node-exporter",mountpoint="/"}) < 0.15
-        for: 30m
-        labels:
-          severity: warning
-          component: storage
-        annotations:
-          summary: "Low disk space"
-          description: "Node {{ $labels.instance }} has less than 15% disk space available"
-
-      - alert: DiskSpaceCritical
-        expr: |
-          (node_filesystem_avail_bytes{job="node-exporter",mountpoint="/"}
-          / node_filesystem_size_bytes{job="node-exporter",mountpoint="/"}) < 0.05
-        for: 10m
-        labels:
-          severity: critical
-          component: storage
-        annotations:
-          summary: "Critical disk space"
-          description: "Node {{ $labels.instance }} has less than 5% disk space available"
-
-      # Consensus alerts
-      - alert: MissedBlocks
-        expr: increase(tendermint_consensus_validators_missed_blocks_total[1h]) > 10
+      # Block time too high
+      - alert: SlowBlockTime
+        expr: cometbft_consensus_block_interval_seconds > 10
         for: 5m
         labels:
           severity: warning
-          component: validator
         annotations:
-          summary: "Validator missing blocks"
-          description: "Validator {{ $labels.validator }} has missed more than 10 blocks in the last hour"
+          summary: "Block time is too high"
+          description: "Block time is {{ $value }}s (threshold: 10s)"
 
-      - alert: ValidatorJailed
-        expr: tendermint_consensus_validator_jailed == 1
-        for: 1m
-        labels:
-          severity: critical
-          component: validator
-        annotations:
-          summary: "Validator is jailed"
-          description: "Validator {{ $labels.validator }} has been jailed"
-
-      - alert: LowValidatorPower
-        expr: |
-          tendermint_consensus_validator_power
-          < 0.01 * sum(tendermint_consensus_validator_power)
-        for: 1h
-        labels:
-          severity: warning
-          component: validator
-        annotations:
-          summary: "Validator power is low"
-          description: "Validator {{ $labels.validator }} has less than 1% of total voting power"
-
-      # Network alerts
+      # Low peer count
       - alert: LowPeerCount
-        expr: tendermint_p2p_peers < 5
-        for: 15m
+        expr: cometbft_p2p_peers < 3
+        for: 5m
         labels:
           severity: warning
-          component: network
         annotations:
           summary: "Low peer count"
-          description: "Node {{ $labels.instance }} has fewer than 5 peers"
+          description: "Node has only {{ $value }} peers (minimum: 3)"
 
-      - alert: NoPeers
-        expr: tendermint_p2p_peers == 0
+      # Validator not signing
+      - alert: ValidatorNotSigning
+        expr: cometbft_consensus_validator_power == 0
         for: 5m
         labels:
           severity: critical
-          component: network
         annotations:
-          summary: "No peers connected"
-          description: "Node {{ $labels.instance }} has no peers connected"
+          summary: "Validator is not signing blocks"
+          description: "Validator voting power is 0"
 
-      - alert: HighNetworkLatency
-        expr: |
-          histogram_quantile(0.95,
-          rate(tendermint_p2p_message_receive_bytes_total[5m])) > 1000000
-        for: 10m
-        labels:
-          severity: warning
-          component: network
-        annotations:
-          summary: "High network latency"
-          description: "Node {{ $labels.instance }} experiencing high network latency"
-
-      # Transaction pool alerts
-      - alert: MempoolFull
-        expr: tendermint_mempool_size >= tendermint_mempool_config_size
-        for: 30m
-        labels:
-          severity: warning
-          component: mempool
-        annotations:
-          summary: "Mempool is full"
-          description: "Node {{ $labels.instance }} mempool is at capacity"
-
-      - alert: HighMempoolSize
-        expr: tendermint_mempool_size > (0.8 * tendermint_mempool_config_size)
-        for: 1h
-        labels:
-          severity: warning
-          component: mempool
-        annotations:
-          summary: "Mempool size is high"
-          description: "Node {{ $labels.instance }} mempool is over 80% full"
-
-      # Module-specific alerts
-      - alert: BridgeTransferStuck
-        expr: |
-          aura_bridge_pending_transfers > 100
-        for: 1h
-        labels:
-          severity: warning
-          component: bridge
-        annotations:
-          summary: "Bridge transfers stuck"
-          description: "More than 100 bridge transfers are pending for over 1 hour"
-
-      - alert: HighFraudProofRate
-        expr: |
-          rate(aura_bridge_fraud_proofs_total[1h]) > 0.01
-        for: 30m
-        labels:
-          severity: critical
-          component: bridge
-        annotations:
-          summary: "High fraud proof submission rate"
-          description: "Fraud proof submission rate is abnormally high"
-
-      - alert: ComplianceChecksFailing
-        expr: |
-          rate(aura_compliance_checks_failed_total[5m]) > 0.1
-        for: 15m
-        labels:
-          severity: warning
-          component: compliance
-        annotations:
-          summary: "Compliance checks failing"
-          description: "More than 10% of compliance checks are failing"
-
-      - alert: ConfidenceScoreAnomaly
-        expr: |
-          aura_confidence_score_average < 50
-        for: 30m
-        labels:
-          severity: warning
-          component: confidence_score
-        annotations:
-          summary: "Low average confidence score"
-          description: "Average confidence score has dropped below 50"
-
-      # Security alerts
-      - alert: UnauthorizedAccess
-        expr: |
-          rate(aura_auth_unauthorized_attempts_total[5m]) > 10
-        for: 5m
-        labels:
-          severity: critical
-          component: security
-        annotations:
-          summary: "High unauthorized access attempts"
-          description: "More than 10 unauthorized access attempts per minute detected"
-
-      - alert: SuspiciousTransactionPattern
-        expr: |
-          rate(aura_monitoring_suspicious_transactions_total[10m]) > 5
-        for: 10m
-        labels:
-          severity: warning
-          component: security
-        annotations:
-          summary: "Suspicious transaction pattern detected"
-          description: "Unusual transaction pattern detected on the network"
-
-  - name: aura_performance_alerts
-    interval: 1m
+  - name: system-resources
     rules:
-      - alert: SlowBlockTime
-        expr: |
-          rate(tendermint_consensus_block_interval_seconds_sum[5m])
-          / rate(tendermint_consensus_block_interval_seconds_count[5m]) > 7
+      # High CPU usage
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
         for: 10m
         labels:
           severity: warning
-          component: performance
         annotations:
-          summary: "Slow block production"
-          description: "Average block time is above 7 seconds"
+          summary: "High CPU usage detected"
+          description: "CPU usage is {{ $value }}% (threshold: 80%)"
 
-      - alert: HighTransactionLatency
-        expr: |
-          histogram_quantile(0.95,
-          rate(cosmos_tx_processing_duration_seconds_bucket[5m])) > 5
+      # High memory usage
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
         for: 10m
         labels:
           severity: warning
-          component: performance
         annotations:
-          summary: "High transaction latency"
-          description: "95th percentile transaction latency is above 5 seconds"
+          summary: "High memory usage detected"
+          description: "Memory usage is {{ $value }}% (threshold: 85%)"
 
-      - alert: GRPCRequestsHigh
-        expr: |
-          rate(grpc_server_handled_total[5m]) > 1000
-        for: 15m
+      # Disk space running low
+      - alert: LowDiskSpace
+        expr: (1 - (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"})) * 100 > 80
+        for: 5m
         labels:
           severity: warning
-          component: api
         annotations:
-          summary: "High gRPC request rate"
-          description: "gRPC request rate is above 1000 req/s"
+          summary: "Low disk space"
+          description: "Disk usage is {{ $value }}% (threshold: 80%)"
+
+  - name: wasm-module
+    rules:
+      # WASM transaction failure rate
+      - alert: WASMTransactionFailureRate
+        expr: (rate(aura_wasm_tx_failures_total[5m]) / clamp_min(rate(aura_wasm_tx_total[5m]), 0.0001)) > 0.01
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "WASM transaction failure rate exceeds 1%"
+          description: "WASM tx failure rate is {{ $value | humanizePercentage }} (threshold: 1%). Contract: {{ $labels.contract_address }}, Error: {{ $labels.error_type }}"
+          runbook_url: "https://github.com/decristofaroj/aura/blob/main/docs/monitoring/wasm-bridge-security-monitoring.md#wasmtransactionfailurerate"
+
+      # WASM signature mismatch
+      - alert: WASMSignatureMismatch
+        expr: rate(aura_bridge_signature_mismatches_total[5m]) > 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "WASM signature verification mismatches detected"
+          description: "Signature mismatch rate: {{ $value | humanize }}/sec. Chain: {{ $labels.chain }}, Type: {{ $labels.signature_type }}, Reason: {{ $labels.error_reason }}"
+          runbook_url: "https://github.com/decristofaroj/aura/blob/main/docs/monitoring/wasm-bridge-security-monitoring.md#signaturemismatchratehigh"
+
+      # WASM contract deployment failure
+      - alert: WASMContractDeploymentFailure
+        expr: increase(aura_wasm_instantiation_failures_total[10m]) > 3
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "WASM contract deployment failures detected"
+          description: "{{ $value }} contract instantiation failures in last 10 minutes. Code ID: {{ $labels.code_id }}, Error: {{ $labels.error_type }}"
+          runbook_url: "https://github.com/decristofaroj/aura/blob/main/docs/monitoring/wasm-bridge-security-monitoring.md#wasminstantiationfailures"
+
+      # WASM execution timeout
+      - alert: WASMExecutionTimeout
+        expr: histogram_quantile(0.95, rate(aura_wasm_execution_duration_seconds_bucket[5m])) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "WASM contract execution is timing out"
+          description: "95th percentile execution time is {{ $value }}s (threshold: 5s). Contract: {{ $labels.contract_address }}. Consider optimizing contract code or increasing gas limits."
+          runbook_url: "https://github.com/decristofaroj/aura/blob/main/docs/monitoring/wasm-bridge-security-monitoring.md#wasm-execution-performance"
+
+      # WASM gas exhaustion
+      - alert: WASMGasExhaustion
+        expr: rate(aura_wasm_tx_failures_total{error_type="out_of_gas"}[5m]) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High rate of WASM gas exhaustion errors"
+          description: "Out-of-gas errors: {{ $value | humanize }}/sec. Contract: {{ $labels.contract_address }}. Users may need higher gas limits or contract code needs optimization."
+          runbook_url: "https://github.com/decristofaroj/aura/blob/main/docs/monitoring/wasm-bridge-security-monitoring.md#wasmoutofgasspike"
+
+  - name: consensus-health
+    rules:
+      # Consensus stuck - no height increase
+      - alert: ConsensusStuck
+        expr: rate(cometbft_consensus_height[5m]) == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Consensus is stuck - no new blocks"
+          description: "Validator {{ $labels.validator }} has not increased height in the last 5 minutes. Current height: {{ $value }}"
+
+      # High consensus rounds - indicates voting issues
+      - alert: HighConsensusRounds
+        expr: cometbft_consensus_round > 5
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High consensus rounds detected"
+          description: "Validator {{ $labels.validator }} is in round {{ $value }} for current height. This indicates voting issues or network problems."
+
+      # Consensus round stuck
+      - alert: ConsensusRoundStuck
+        expr: changes(cometbft_consensus_round[5m]) == 0 and cometbft_consensus_round > 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Consensus round is stuck"
+          description: "Validator {{ $labels.validator }} has been in the same round for 5 minutes. Round: {{ $value }}"
+
+      # Low prevote participation
+      - alert: LowPrevoteParticipation
+        expr: (cometbft_consensus_prevotes_voting_power / 3600000) < 0.67
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low prevote participation in consensus"
+          description: "Validator {{ $labels.validator }} round {{ $labels.round }} has only {{ $value | humanizePercentage }} prevote voting power (threshold: 67%)"
+
+      # Low precommit participation
+      - alert: LowPrecommitParticipation
+        expr: (cometbft_consensus_precommits_voting_power / 3600000) < 0.67
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Low precommit participation in consensus"
+          description: "Validator {{ $labels.validator }} round {{ $labels.round }} has only {{ $value | humanizePercentage }} precommit voting power (threshold: 67%)"
+
+      # No block proposal received
+      - alert: NoBlockProposal
+        expr: cometbft_consensus_has_proposal == 0 and cometbft_consensus_step >= 2
+        for: 30s
+        labels:
+          severity: warning
+        annotations:
+          summary: "No block proposal received"
+          description: "Validator {{ $labels.validator }} has not received a block proposal despite being in step {{ $value }}"
+
+      # Low block production rate
+      - alert: LowBlockProductionRate
+        expr: cometbft_consensus_height_rate < 0.5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low block production rate"
+          description: "Validator {{ $labels.validator }} is producing blocks at {{ $value }} blocks/minute (expected: ~6 blocks/minute for 10s block time)"
+
+      # Validator participation drop
+      - alert: ValidatorParticipationDrop
+        expr: cometbft_consensus_validator_participation < 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Validator participation has dropped"
+          description: "Validator {{ $labels.validator_address }} on node {{ $labels.validator }} has {{ $value | humanizePercentage }} participation (threshold: 90%)"
+
+      # Frequent consensus timeouts
+      - alert: FrequentConsensusTimeouts
+        expr: rate(cometbft_consensus_timeouts_total[5m]) > 0.1
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Frequent consensus timeouts"
+          description: "Validator {{ $labels.validator }} is experiencing {{ $value | humanize }}/sec {{ $labels.timeout_type }} timeouts"
+
+      # Long consensus rounds
+      - alert: LongConsensusRounds
+        expr: histogram_quantile(0.95, rate(cometbft_consensus_round_duration_seconds_bucket[5m])) > 30
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Consensus rounds taking too long"
+          description: "Validator {{ $labels.validator }} has 95th percentile round duration of {{ $value }}s (threshold: 30s)"
+
+      # Missing prevotes from majority
+      - alert: MissingPrevotesFromMajority
+        expr: cometbft_consensus_prevotes_received < 3 and cometbft_consensus_step >= 3
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Not receiving prevotes from majority of validators"
+          description: "Validator {{ $labels.validator }} has only received {{ $value }} prevotes in round {{ $labels.round }} (need at least 3 for 4-validator testnet)"
+
+      # Missing precommits from majority
+      - alert: MissingPrecommitsFromMajority
+        expr: cometbft_consensus_precommits_received < 3 and cometbft_consensus_step >= 5
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Not receiving precommits from majority of validators"
+          description: "Validator {{ $labels.validator }} has only received {{ $value }} precommits in round {{ $labels.round }} (need at least 3 for 4-validator testnet)"

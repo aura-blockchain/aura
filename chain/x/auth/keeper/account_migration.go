@@ -76,12 +76,12 @@ func (k *Keeper) InitiateAccountMigration(ctx sdk.Context, oldAddr, newAddr, ini
 	// Store migration
 	k.setAccountMigration(ctx, migration)
 
-	// Log audit (use ctx.BlockTime() for determinism)
+	// Log audit (uses ctx.BlockTime() internally for determinism)
 	k.LogAudit(ctx, initiator, "account_migration", "initiate", "success", map[string]string{
 		"old_address": oldAddr,
 		"new_address": newAddr,
 		"migration_id": migration.ID,
-	}, "", ctx.BlockTime())
+	}, "")
 
 	return migration, nil
 }
@@ -119,11 +119,11 @@ func (k *Keeper) ApproveAccountMigration(ctx sdk.Context, migrationID, approver 
 
 	k.setAccountMigration(ctx, migration)
 
-	// Log audit (use ctx.BlockTime() for determinism)
+	// Log audit (uses ctx.BlockTime() internally for determinism)
 	k.LogAudit(ctx, approver, "account_migration", "approve", "success", map[string]string{
 		"migration_id": migrationID,
 		"approvals": fmt.Sprintf("%d/%d", len(migration.ApprovedBy), migration.RequiredApprovals),
-	}, "", ctx.BlockTime())
+	}, "")
 
 	return nil
 }
@@ -163,12 +163,12 @@ func (k *Keeper) ExecuteAccountMigration(ctx sdk.Context, migrationID, executor 
 
 	k.setAccountMigration(ctx, migration)
 
-	// Log audit (use ctx.BlockTime() for determinism)
+	// Log audit (uses ctx.BlockTime() internally for determinism)
 	k.LogAudit(ctx, executor, "account_migration", "execute", "success", map[string]string{
 		"migration_id": migrationID,
 		"old_address": migration.OldAddress,
 		"new_address": migration.NewAddress,
-	}, "", ctx.BlockTime())
+	}, "")
 
 	return nil
 }

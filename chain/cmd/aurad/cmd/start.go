@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -414,6 +415,20 @@ func startInProcess(cmd *cobra.Command, auraApp *app.App, logger log.Logger) err
 			logger.Error("metrics server failed", "error", err)
 		}
 	}()
+
+	// Start consensus metrics collector
+	rpcAddr := cmtConfig.RPC.ListenAddress
+	if strings.HasPrefix(rpcAddr, "tcp://") {
+		rpcAddr = "http://" + strings.TrimPrefix(rpcAddr, "tcp://")
+	}
+	consensusCollector := NewConsensusMetricsCollector(
+		rpcAddr,
+		cmtConfig.BaseConfig.Moniker,
+		cmtLogger,
+	)
+	consensusCtx, consensusCancel := context.WithCancel(context.Background())
+	defer consensusCancel()
+	go consensusCollector.Start(consensusCtx, 5*time.Second)
 
 	// Create server manager for graceful shutdown
 	serverMgr := security.NewServerManager(secLogger)

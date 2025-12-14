@@ -402,11 +402,12 @@ func (qs queryServer) GetAuditLogs(goCtx context.Context, req *authproto.QueryGe
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	// Note: sdk.Context is not needed for GetAuditLogs since it uses in-memory storage
-	// Get audit logs based on filters
-	// The keeper's GetAuditLogs signature is: (actor, action string, startTime, endTime int64, limit uint64)
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// Get audit logs from KVStore based on filters
+	// The keeper's GetAuditLogs signature is: (ctx sdk.Context, actor, action string, startTime, endTime int64, limit uint64)
 	// The proto field is 'actor' not 'address'
-	logs := qs.Keeper.GetAuditLogs(req.Actor, req.Action, req.StartTime, req.EndTime, req.Limit)
+	logs := qs.Keeper.GetAuditLogs(ctx, req.Actor, req.Action, req.StartTime, req.EndTime, req.Limit)
 
 	return &authproto.QueryGetAuditLogsResponse{Logs: logs}, nil
 }

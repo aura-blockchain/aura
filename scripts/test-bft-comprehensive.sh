@@ -49,11 +49,12 @@ VALIDATOR_3="aura-validator-3"
 VALIDATOR_4="aura-validator-4"
 
 # RPC ports for each validator
+# NOTE: val1 and val2 are swapped in actual deployment vs documentation
 declare -A RPC_PORTS=(
-    ["val1"]=26657
-    ["val2"]=26757
-    ["val3"]=26857
-    ["val4"]=26957
+    ["val1"]=27757
+    ["val2"]=27657
+    ["val3"]=27857
+    ["val4"]=27957
 )
 
 declare -A VALIDATOR_NAMES=(

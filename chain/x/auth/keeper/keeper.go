@@ -3,7 +3,6 @@ package keeper
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
 
 	storetypes "cosmossdk.io/store/types"
@@ -33,18 +32,15 @@ var (
 
 // Keeper manages authentication and authorization state
 type Keeper struct {
-	mu        sync.RWMutex
-	auditLogs map[string][]*authproto.AuditLog
-	storeKey  storetypes.StoreKey
-	cdc       codec.BinaryCodec
+	storeKey storetypes.StoreKey
+	cdc      codec.BinaryCodec
 }
 
 // NewKeeper creates a new auth keeper
 func NewKeeper(cdc codec.BinaryCodec, storeKey storetypes.StoreKey) *Keeper {
 	return &Keeper{
-		auditLogs: make(map[string][]*authproto.AuditLog),
-		cdc:       cdc,
-		storeKey:  storeKey,
+		cdc:      cdc,
+		storeKey: storeKey,
 	}
 }
 
@@ -806,6 +802,48 @@ func (k *Keeper) getNextAuditLogID(ctx sdk.Context) uint64 {
 	return counter
 }
 
+// SetAuditLog stores an audit log entry in the KVStore
+func (k *Keeper) SetAuditLog(ctx sdk.Context, log *authproto.AuditLog) error {
+	store := ctx.KVStore(k.storeKey)
+
+	// Generate unique ID if not set
+	if log.Id == "" {
+		logID := k.getNextAuditLogID(ctx)
+		log.Id = fmt.Sprintf("%d", logID)
+	}
+
+	bz, err := k.cdc.Marshal(log)
+	if err != nil {
+		return err
+	}
+
+	key := append(AuditLogsKeyPrefix, []byte(log.Id)...)
+	store.Set(key, bz)
+
+	// Cleanup old logs periodically (every 100 new logs)
+	if logID := k.getNextAuditLogID(ctx); logID%100 == 0 {
+		k.cleanupOldAuditLogs(ctx)
+	}
+
+	return nil
+}
+
+// GetAuditLog retrieves a single audit log by ID
+func (k *Keeper) GetAuditLog(ctx sdk.Context, logID string) (*authproto.AuditLog, error) {
+	store := ctx.KVStore(k.storeKey)
+	key := append(AuditLogsKeyPrefix, []byte(logID)...)
+	bz := store.Get(key)
+	if bz == nil {
+		return nil, fmt.Errorf("audit log not found: %s", logID)
+	}
+
+	var log authproto.AuditLog
+	if err := k.cdc.Unmarshal(bz, &log); err != nil {
+		return nil, err
+	}
+	return &log, nil
+}
+
 // cleanupOldAuditLogs keeps only the last 10000 audit logs
 func (k *Keeper) cleanupOldAuditLogs(ctx sdk.Context) {
 	store := ctx.KVStore(k.storeKey)
@@ -906,7 +944,7 @@ func (k *Keeper) GetRoleAssignments(address string) []*authproto.RoleAssignment 
 func (k *Keeper) RequirePermission(ctx sdk.Context, address, permission string) error {
 	if !k.HasPermission(ctx, address, permission) {
 		// Use ctx.BlockTime() for determinism - NEVER use time.Now() in consensus code
-		k.LogAudit(ctx, address, "permission_check", permission, "denied", nil, "insufficient permissions", ctx.BlockTime())
+		k.LogAudit(ctx, address, "permission_check", permission, "denied", nil, "insufficient permissions")
 		return fmt.Errorf("%w: %s does not have permission %s", types.ErrInsufficientPermissions, address, permission)
 	}
 	return nil

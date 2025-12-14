@@ -19,3 +19,4 @@ Common mistakes:
 - `&Type{}` pointers → use `Type{}` when `nullable=false`
 
 Use helpers from `chain/testutil/proto_helpers.go`.
+- NO LONG SUMMARIES FOR ANY WORK. KEEP ALL SUMMARIES UNDER 50 LINES. NO EXHAUSTIVE SUMMARIES. BE BRIEF AND TO THE POINT!!!!

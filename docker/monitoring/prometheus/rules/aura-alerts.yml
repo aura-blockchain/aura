@@ -129,3 +129,125 @@ groups:
           summary: "High rate of WASM gas exhaustion errors"
           description: "Out-of-gas errors: {{ $value | humanize }}/sec. Contract: {{ $labels.contract_address }}. Users may need higher gas limits or contract code needs optimization."
           runbook_url: "https://github.com/decristofaroj/aura/blob/main/docs/monitoring/wasm-bridge-security-monitoring.md#wasmoutofgasspike"
+
+  - name: consensus-health
+    rules:
+      # Consensus stuck - no height increase
+      - alert: ConsensusStuck
+        expr: rate(cometbft_consensus_height[5m]) == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Consensus is stuck - no new blocks"
+          description: "Validator {{ $labels.validator }} has not increased height in the last 5 minutes. Current height: {{ $value }}"
+
+      # High consensus rounds - indicates voting issues
+      - alert: HighConsensusRounds
+        expr: cometbft_consensus_round > 5
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High consensus rounds detected"
+          description: "Validator {{ $labels.validator }} is in round {{ $value }} for current height. This indicates voting issues or network problems."
+
+      # Consensus round stuck
+      - alert: ConsensusRoundStuck
+        expr: changes(cometbft_consensus_round[5m]) == 0 and cometbft_consensus_round > 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Consensus round is stuck"
+          description: "Validator {{ $labels.validator }} has been in the same round for 5 minutes. Round: {{ $value }}"
+
+      # Low prevote participation
+      - alert: LowPrevoteParticipation
+        expr: (cometbft_consensus_prevotes_voting_power / 3600000) < 0.67
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low prevote participation in consensus"
+          description: "Validator {{ $labels.validator }} round {{ $labels.round }} has only {{ $value | humanizePercentage }} prevote voting power (threshold: 67%)"
+
+      # Low precommit participation
+      - alert: LowPrecommitParticipation
+        expr: (cometbft_consensus_precommits_voting_power / 3600000) < 0.67
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Low precommit participation in consensus"
+          description: "Validator {{ $labels.validator }} round {{ $labels.round }} has only {{ $value | humanizePercentage }} precommit voting power (threshold: 67%)"
+
+      # No block proposal received
+      - alert: NoBlockProposal
+        expr: cometbft_consensus_has_proposal == 0 and cometbft_consensus_step >= 2
+        for: 30s
+        labels:
+          severity: warning
+        annotations:
+          summary: "No block proposal received"
+          description: "Validator {{ $labels.validator }} has not received a block proposal despite being in step {{ $value }}"
+
+      # Low block production rate
+      - alert: LowBlockProductionRate
+        expr: cometbft_consensus_height_rate < 0.5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low block production rate"
+          description: "Validator {{ $labels.validator }} is producing blocks at {{ $value }} blocks/minute (expected: ~6 blocks/minute for 10s block time)"
+
+      # Validator participation drop
+      - alert: ValidatorParticipationDrop
+        expr: cometbft_consensus_validator_participation < 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Validator participation has dropped"
+          description: "Validator {{ $labels.validator_address }} on node {{ $labels.validator }} has {{ $value | humanizePercentage }} participation (threshold: 90%)"
+
+      # Frequent consensus timeouts
+      - alert: FrequentConsensusTimeouts
+        expr: rate(cometbft_consensus_timeouts_total[5m]) > 0.1
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Frequent consensus timeouts"
+          description: "Validator {{ $labels.validator }} is experiencing {{ $value | humanize }}/sec {{ $labels.timeout_type }} timeouts"
+
+      # Long consensus rounds
+      - alert: LongConsensusRounds
+        expr: histogram_quantile(0.95, rate(cometbft_consensus_round_duration_seconds_bucket[5m])) > 30
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Consensus rounds taking too long"
+          description: "Validator {{ $labels.validator }} has 95th percentile round duration of {{ $value }}s (threshold: 30s)"
+
+      # Missing prevotes from majority
+      - alert: MissingPrevotesFromMajority
+        expr: cometbft_consensus_prevotes_received < 3 and cometbft_consensus_step >= 3
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Not receiving prevotes from majority of validators"
+          description: "Validator {{ $labels.validator }} has only received {{ $value }} prevotes in round {{ $labels.round }} (need at least 3 for 4-validator testnet)"
+
+      # Missing precommits from majority
+      - alert: MissingPrecommitsFromMajority
+        expr: cometbft_consensus_precommits_received < 3 and cometbft_consensus_step >= 5
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Not receiving precommits from majority of validators"
+          description: "Validator {{ $labels.validator }} has only received {{ $value }} precommits in round {{ $labels.round }} (need at least 3 for 4-validator testnet)"

@@ -19,7 +19,7 @@
 - ⚠️ Wallet implementations (testing incomplete)
 - ⚠️ Module security boundary audit (CRITICAL)
 - ⚠️ Real-world scenario testing
-- ⚠️ BFT consensus testing (need 4 validators)
+- ✅ BFT consensus testing (4 validators verified - see BFT_TESTNET_CONFIG.md)
 
 ---
 
@@ -405,7 +405,7 @@ No web wallet implementation found in `/home/hudson/blockchain-projects/aura/wal
    - Reconfigure genesis with 4 validators @ 25% power each
    - Test Byzantine fault tolerance
    - Verify consensus under adverse conditions
-   - **STATUS:** CURRENTLY 1 VALIDATOR ONLY
+   - **STATUS:** ✅ COMPLETE (see BFT_TESTNET_CONFIG.md)
 
 ### Priority 2: Important
 

@@ -170,4 +170,207 @@ describe('ApiService', () => {
       expect(prices).toEqual([]);
     });
   });
+
+  describe('Staking Operations', () => {
+    describe('getDelegations', () => {
+      test('should fetch delegations for an address', async () => {
+        const mockDelegations = {
+          delegation_responses: [
+            {
+              delegation: {
+                delegator_address: 'aura1test',
+                validator_address: 'auravaloper1test',
+                shares: '1000000'
+              },
+              balance: { denom: 'uaura', amount: '1000000' }
+            }
+          ]
+        };
+
+        axios.get.mockResolvedValue({ data: mockDelegations });
+
+        const delegations = await apiService.getDelegations('aura1test');
+
+        expect(axios.get).toHaveBeenCalledWith(
+          expect.stringContaining('/cosmos/staking/v1beta1/delegations/aura1test')
+        );
+        expect(delegations).toEqual(mockDelegations.delegation_responses);
+      });
+
+      test('should handle delegation fetch error', async () => {
+        axios.get.mockRejectedValue(new Error('Network error'));
+
+        await expect(
+          apiService.getDelegations('aura1test')
+        ).rejects.toThrow();
+      });
+    });
+
+    describe('getRewards', () => {
+      test('should fetch delegation rewards', async () => {
+        const mockRewards = {
+          rewards: [
+            {
+              validator_address: 'auravaloper1test',
+              reward: [{ denom: 'uaura', amount: '5000' }]
+            }
+          ],
+          total: [{ denom: 'uaura', amount: '5000' }]
+        };
+
+        axios.get.mockResolvedValue({ data: mockRewards });
+
+        const rewards = await apiService.getRewards('aura1test');
+
+        expect(axios.get).toHaveBeenCalledWith(
+          expect.stringContaining('/cosmos/distribution/v1beta1/delegators/aura1test/rewards')
+        );
+        expect(rewards).toEqual(mockRewards);
+      });
+
+      test('should handle rewards fetch error', async () => {
+        axios.get.mockRejectedValue(new Error('Network error'));
+
+        await expect(
+          apiService.getRewards('aura1test')
+        ).rejects.toThrow();
+      });
+    });
+
+    describe('getUnbondingDelegations', () => {
+      test('should fetch unbonding delegations', async () => {
+        const mockUnbonding = {
+          unbonding_responses: [
+            {
+              delegator_address: 'aura1test',
+              validator_address: 'auravaloper1test',
+              entries: [
+                {
+                  creation_height: '1000',
+                  completion_time: '2024-12-31T00:00:00Z',
+                  initial_balance: '1000000',
+                  balance: '1000000'
+                }
+              ]
+            }
+          ]
+        };
+
+        axios.get.mockResolvedValue({ data: mockUnbonding });
+
+        const unbonding = await apiService.getUnbondingDelegations('aura1test');
+
+        expect(axios.get).toHaveBeenCalledWith(
+          expect.stringContaining('/cosmos/staking/v1beta1/delegators/aura1test/unbonding_delegations')
+        );
+        expect(unbonding).toEqual(mockUnbonding.unbonding_responses);
+      });
+
+      test('should handle unbonding fetch error', async () => {
+        axios.get.mockRejectedValue(new Error('Network error'));
+
+        await expect(
+          apiService.getUnbondingDelegations('aura1test')
+        ).rejects.toThrow();
+      });
+    });
+  });
+
+  describe('Governance Operations', () => {
+    describe('getProposals', () => {
+      test('should fetch all proposals', async () => {
+        const mockProposals = {
+          proposals: [
+            {
+              proposal_id: '1',
+              content: {
+                type: '/cosmos.gov.v1beta1.TextProposal',
+                value: {
+                  title: 'Test Proposal',
+                  description: 'Test description'
+                }
+              },
+              status: 'PROPOSAL_STATUS_VOTING_PERIOD'
+            }
+          ]
+        };
+
+        axios.get.mockResolvedValue({ data: mockProposals });
+
+        const proposals = await apiService.getProposals();
+
+        expect(axios.get).toHaveBeenCalledWith(
+          expect.stringContaining('/cosmos/gov/v1beta1/proposals'),
+          expect.objectContaining({ params: {} })
+        );
+        expect(proposals).toEqual(mockProposals.proposals);
+      });
+
+      test('should fetch proposals with status filter', async () => {
+        const mockProposals = {
+          proposals: [
+            {
+              proposal_id: '1',
+              status: 'PROPOSAL_STATUS_VOTING_PERIOD'
+            }
+          ]
+        };
+
+        axios.get.mockResolvedValue({ data: mockProposals });
+
+        const proposals = await apiService.getProposals('PROPOSAL_STATUS_VOTING_PERIOD');
+
+        expect(axios.get).toHaveBeenCalledWith(
+          expect.stringContaining('/cosmos/gov/v1beta1/proposals'),
+          expect.objectContaining({
+            params: { proposal_status: 'PROPOSAL_STATUS_VOTING_PERIOD' }
+          })
+        );
+        expect(proposals).toEqual(mockProposals.proposals);
+      });
+
+      test('should handle proposals fetch error', async () => {
+        axios.get.mockRejectedValue(new Error('Network error'));
+
+        await expect(
+          apiService.getProposals()
+        ).rejects.toThrow();
+      });
+    });
+
+    describe('getProposal', () => {
+      test('should fetch specific proposal', async () => {
+        const mockProposal = {
+          proposal: {
+            proposal_id: '1',
+            content: {
+              type: '/cosmos.gov.v1beta1.TextProposal',
+              value: {
+                title: 'Test Proposal',
+                description: 'Test description'
+              }
+            },
+            status: 'PROPOSAL_STATUS_VOTING_PERIOD'
+          }
+        };
+
+        axios.get.mockResolvedValue({ data: mockProposal });
+
+        const proposal = await apiService.getProposal('1');
+
+        expect(axios.get).toHaveBeenCalledWith(
+          expect.stringContaining('/cosmos/gov/v1beta1/proposals/1')
+        );
+        expect(proposal).toEqual(mockProposal.proposal);
+      });
+
+      test('should handle proposal fetch error', async () => {
+        axios.get.mockRejectedValue(new Error('Not found'));
+
+        await expect(
+          apiService.getProposal('999')
+        ).rejects.toThrow();
+      });
+    });
+  });
 });
