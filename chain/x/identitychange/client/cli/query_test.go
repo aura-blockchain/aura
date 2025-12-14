@@ -14,7 +14,7 @@ func TestGetQueryCmd(t *testing.T) {
 	require.Contains(t, cmd.Short, "identitychange")
 
 	subcommands := cmd.Commands()
-	require.Len(t, subcommands, 3)
+	require.Len(t, subcommands, 4) // record, request, history, params
 }
 
 func TestCmdQueryIdentityRecord(t *testing.T) {
@@ -130,6 +130,7 @@ func TestAllQueryCommandsHaveHelp(t *testing.T) {
 		{"record", CmdQueryIdentityRecord()},
 		{"request", CmdQueryIdentityChangeRequest()},
 		{"history", CmdQueryIdentityChangeHistory()},
+		{"params", CmdQueryParams()},
 	}
 
 	for _, tc := range commands {
