@@ -1,0 +1,256 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: aura-validator
+  namespace: aura
+  labels:
+    app: aura
+    component: validator
+spec:
+  serviceName: aura-validator-headless
+  replicas: 3
+  selector:
+    matchLabels:
+      app: aura
+      component: validator
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+  template:
+    metadata:
+      labels:
+        app: aura
+        component: validator
+      annotations:
+        linkerd.io/inject: "disabled"
+        config.linkerd.io/skip-outbound-ports: "26657,1317,9090"
+        config.linkerd.io/skip-inbound-ports: "26657,1317,9090"
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "26660"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: aura-validator
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values: [aura]
+                    - key: component
+                      operator: In
+                      values: [validator]
+                topologyKey: kubernetes.io/hostname
+
+      initContainers:
+        - name: init-config
+          image: busybox:1.35
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          command:
+            - sh
+            - -c
+            - |
+              set -euo pipefail
+              mkdir -p /home/aura/.aura/config /home/aura/.aura/data /secrets
+              KEY_SUFFIX="${POD_NAME}"
+              cp "/vault-keys/priv_validator_key-${KEY_SUFFIX}.json" /secrets/priv_validator_key.json
+              cp "/vault-keys/node_key-${KEY_SUFFIX}.json" /secrets/node_key.json
+              cp /vault-keys/jwt-secret.txt /secrets/jwt_secret
+              cp /secrets/priv_validator_key.json /home/aura/.aura/config/priv_validator_key.json
+              cp /secrets/node_key.json /home/aura/.aura/config/node_key.json
+              chmod 400 /secrets/priv_validator_key.json /secrets/node_key.json /secrets/jwt_secret /home/aura/.aura/config/priv_validator_key.json /home/aura/.aura/config/node_key.json
+              if [ -f /genesis/genesis.json ]; then
+                cp /genesis/genesis.json /home/aura/.aura/config/genesis.json
+              fi
+              # Force IPv4 binds for RPC/REST/gRPC
+              if [ -f /home/aura/.aura/config/config.toml ]; then
+                sed -i 's#^laddr = \"tcp://0.0.0.0:26657\"#laddr = \"tcp://0.0.0.0:26657\"#' /home/aura/.aura/config/config.toml
+              fi
+              if [ -f /home/aura/.aura/config/app.toml ]; then
+                sed -i 's#^address = \"tcp://0.0.0.0:1317\"#address = \"tcp://0.0.0.0:1317\"#' /home/aura/.aura/config/app.toml
+                sed -i 's#^address = \"0.0.0.0:9090\"#address = \"0.0.0.0:9090\"#' /home/aura/.aura/config/app.toml
+              fi
+              echo "Init complete"
+          volumeMounts:
+            - name: aura-data
+              mountPath: /home/aura/.aura
+            - name: config
+              mountPath: /config
+            - name: genesis
+              mountPath: /genesis
+            - name: validator-keys
+              mountPath: /secrets
+            - name: validator-keys-src
+              mountPath: /vault-keys
+              readOnly: true
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+
+      containers:
+        - name: aura
+          image: aequitas/aura:local
+          imagePullPolicy: IfNotPresent
+          command: ["aurad", "start"]
+          ports:
+            - name: p2p
+              containerPort: 26656
+              protocol: TCP
+            - name: rpc
+              containerPort: 26657
+              protocol: TCP
+            - name: api
+              containerPort: 1317
+              protocol: TCP
+            - name: grpc
+              containerPort: 9090
+              protocol: TCP
+            - name: metrics
+              containerPort: 26660
+              protocol: TCP
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: MINIMUM_GAS_PRICES
+              value: "0.025uaura"
+            - name: AURA_HOME
+              value: "/home/aura/.aura"
+          resources:
+            requests:
+              cpu: 1000m
+              memory: 2Gi
+            limits:
+              cpu: 2000m
+              memory: 4Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 1000
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: aura-data
+              mountPath: /home/aura/.aura
+            - name: config
+              mountPath: /home/aura/.aura/config/config.toml
+              subPath: config.toml
+            - name: config
+              mountPath: /home/aura/.aura/config/app.toml
+              subPath: app.toml
+            - name: validator-keys
+              mountPath: /secrets
+              readOnly: true
+          startupProbe:
+            httpGet:
+              path: /health
+              port: rpc
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            tcpSocket:
+              port: rpc
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+        - name: rpc-probe
+          image: curlimages/curl:8.11.1
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -c
+            - |
+              while true; do
+                echo "== probe $(date -u +%H:%M:%S) ==";
+                curl -sS --max-time 3 http://127.0.0.1:26657/status | head -5 || echo "rpc probe failed";
+                curl -sS --max-time 3 http://127.0.0.1:1317/health | head -5 || echo "api probe failed";
+                sleep 30;
+              done
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+
+          livenessProbe:
+            tcpSocket:
+              port: rpc
+            initialDelaySeconds: 180
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 5
+
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - sh
+                  - -c
+                  - "sleep 5; kill -SIGTERM 1"
+
+      volumes:
+        - name: config
+          configMap:
+            name: aura-config
+        - name: validator-keys
+          emptyDir: {}
+        - name: validator-keys-src
+          secret:
+            secretName: aura-secrets-from-vault
+            defaultMode: 0400
+        - name: genesis
+          configMap:
+            name: aura-genesis
+
+      terminationGracePeriodSeconds: 120
+      dnsPolicy: ClusterFirst
+
+  volumeClaimTemplates:
+    - metadata:
+        name: aura-data
+        labels:
+          app: aura
+      spec:
+        accessModes: [ReadWriteOnce]
+        storageClassName: fast-ssd
+        resources:
+          requests:
+            storage: 200Gi
