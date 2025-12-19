@@ -9,6 +9,9 @@ metadata:
 spec:
   serviceName: aura-validator-headless
   replicas: 3
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Retain
+    whenScaled: Retain
   selector:
     matchLabels:
       app: aura
@@ -195,13 +198,6 @@ spec:
                 curl -sS --max-time 3 http://127.0.0.1:1317/health | head -5 || echo "api probe failed";
                 sleep 30;
               done
-          securityContext:
-            allowPrivilegeEscalation: false
-            runAsNonRoot: true
-            runAsUser: 1000
-            runAsGroup: 1000
-            capabilities:
-              drop: [ALL]
           resources:
             requests:
               cpu: 100m
@@ -209,6 +205,13 @@ spec:
             limits:
               cpu: 200m
               memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+            runAsGroup: 1000
+            runAsNonRoot: true
+            runAsUser: 1000
 
           livenessProbe:
             tcpSocket:
@@ -244,13 +247,17 @@ spec:
       dnsPolicy: ClusterFirst
 
   volumeClaimTemplates:
-    - metadata:
+    - apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
         name: aura-data
         labels:
           app: aura
       spec:
-        accessModes: [ReadWriteOnce]
+        accessModes:
+          - ReadWriteOnce
         storageClassName: fast-ssd
         resources:
           requests:
             storage: 200Gi
+        volumeMode: Filesystem
