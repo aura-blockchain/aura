@@ -4,12 +4,18 @@
  */
 
 import { vi } from 'vitest';
+import { webcrypto as nodeWebcrypto } from 'node:crypto';
 
-// Mock Web Crypto API
-if (!global.crypto) {
+// Prefer the real WebCrypto implementation when running under Node/Vitest.
+const resolvedCrypto = global.crypto || nodeWebcrypto;
+
+if (!global.crypto && resolvedCrypto) {
+  global.crypto = resolvedCrypto;
+} else if (!resolvedCrypto) {
+  // Minimal fallback mock (should not run in CI; kept for safety).
   global.crypto = {
     getRandomValues: (arr) => {
-      for (let i = 0; i < arr.length; i++) {
+      for (let i = 0; i < arr.length; i += 1) {
         arr[i] = Math.floor(Math.random() * 256);
       }
       return arr;
@@ -27,6 +33,14 @@ if (!global.crypto) {
       digest: vi.fn(),
     },
   };
+}
+
+if (nodeWebcrypto?.subtle && !global.crypto.subtle) {
+  global.crypto.subtle = nodeWebcrypto.subtle;
+}
+
+if (nodeWebcrypto?.getRandomValues && !global.crypto.getRandomValues) {
+  global.crypto.getRandomValues = nodeWebcrypto.getRandomValues.bind(nodeWebcrypto);
 }
 
 // Mock TextEncoder/TextDecoder

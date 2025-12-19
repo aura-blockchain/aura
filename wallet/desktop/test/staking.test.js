@@ -541,4 +541,65 @@ describe('ApiService - Staking Transactions', () => {
       expect(mockClient.signAndBroadcast).toHaveBeenCalledTimes(2);
     });
   });
+
+  describe('deposit', () => {
+    test('should successfully deposit to proposal', async () => {
+      const mockResult = {
+        code: 0,
+        transactionHash: 'DEPOSIT001',
+        height: 1010
+      };
+
+      mockClient.signAndBroadcast.mockResolvedValue(mockResult);
+
+      const result = await apiService.deposit(
+        'aura1depositor',
+        7,
+        2500000,
+        'uaura',
+        'funding proposal',
+        'test mnemonic words'
+      );
+
+      expect(mockClient.signAndBroadcast).toHaveBeenCalledWith(
+        'aura1depositor',
+        [
+          expect.objectContaining({
+            typeUrl: '/cosmos.gov.v1beta1.MsgDeposit',
+            value: expect.objectContaining({
+              proposalId: BigInt(7),
+              depositor: 'aura1depositor',
+              amount: [{ denom: 'uaura', amount: '2500000' }]
+            })
+          })
+        ],
+        expect.objectContaining({
+          amount: expect.arrayContaining([
+            expect.objectContaining({ denom: 'uaura', amount: '5000' })
+          ]),
+          gas: '200000'
+        }),
+        'funding proposal'
+      );
+      expect(result).toEqual(mockResult);
+    });
+
+    test('should validate deposit inputs', async () => {
+      await expect(
+        apiService.deposit('', 1, 10, 'uaura', '', 'mnemonic words')
+      ).rejects.toThrow('Invalid depositor address');
+
+      await expect(
+        apiService.deposit('aura1depositor', 0, 10, 'uaura', '', 'mnemonic')
+      ).rejects.toThrow('Invalid proposal id');
+
+      await expect(
+        apiService.deposit('aura1depositor', 1, 0, 'uaura', '', 'mnemonic')
+      ).rejects.toThrow('Deposit amount must be greater than zero');
+
+      await expect(
+        apiService.deposit('aura1depositor', 1, 10, 'uaura', '', '')
+      ).rejects.toThrow('Missing signing key');
+    });
+  });
 });

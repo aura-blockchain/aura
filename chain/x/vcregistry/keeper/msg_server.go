@@ -7,8 +7,11 @@ import (
 	"strings"
 	"time"
 
+	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	gogotypes "github.com/cosmos/gogoproto/types"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/aequitas/aura/chain/x/vcregistry/types"
 	vcregistrypb "github.com/aequitas/aura/proto/aura/vcregistry/v1beta1"
@@ -65,11 +68,7 @@ func (m *MsgServer) CreatePresentation(
 	}
 
 	if !signers[0].Equals(creatorAddr) {
-		return nil, types.ErrUnauthorized.Wrapf(
-			"signer (%s) does not match creator (%s)",
-			signers[0].String(),
-			msg.Creator,
-		)
+		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("signer %s does not match creator %s", signers[0].String(), msg.Creator))
 	}
 
 	// Set default expiration if not provided
@@ -87,7 +86,7 @@ func (m *MsgServer) CreatePresentation(
 		expiresInSeconds,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create presentation: %w", err)
+		return nil, mapVCAuthorizationError(err)
 	}
 
 	// Emit event
@@ -152,11 +151,7 @@ func (m *MsgServer) MintVC(
 	}
 
 	if !signers[0].Equals(holderAddr) {
-		return nil, types.ErrUnauthorized.Wrapf(
-			"signer (%s) does not match holder address (%s)",
-			signers[0].String(),
-			msg.HolderAddress,
-		)
+		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("signer %s does not match holder address %s", signers[0].String(), msg.HolderAddress))
 	}
 
 	// Mint the VC (cast vcregistrypb.VCType to types.VCType)
@@ -169,7 +164,7 @@ func (m *MsgServer) MintVC(
 		msg.Metadata,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to mint VC: %w", err)
+		return nil, mapVCAuthorizationError(err)
 	}
 
 	// Get the created VC to return details
@@ -226,11 +221,11 @@ func (m *MsgServer) RevokeVC(
 	}
 
 	if !signers[0].Equals(holderAddr) {
-		return nil, types.ErrUnauthorized.Wrapf(
+		return nil, mapVCAuthorizationError(types.ErrUnauthorized.Wrapf(
 			"signer (%s) does not match holder address (%s)",
 			signers[0].String(),
 			msg.HolderAddress,
-		)
+		))
 	}
 
 	// Verify the signer owns the VC
@@ -251,7 +246,7 @@ func (m *MsgServer) RevokeVC(
 		msg.ReasonText,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to revoke VC: %w", err)
+		return nil, mapVCAuthorizationError(err)
 	}
 
 	// Get revocation record for response
@@ -271,7 +266,7 @@ func (m *MsgServer) AdminRevokeVC(
 ) (*vcregistrypb.MsgAdminRevokeVCResponse, error) {
 	// Validate inputs
 	if msg.Authority == "" {
-		return nil, types.ErrUnauthorized
+		return nil, mapVCAuthorizationError(types.ErrUnauthorized)
 	}
 	if msg.VcId == "" {
 		return nil, types.ErrInvalidVCID
@@ -291,7 +286,7 @@ func (m *MsgServer) AdminRevokeVC(
 		msg.Evidence,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to admin revoke VC: %w", err)
+		return nil, mapVCAuthorizationError(err)
 	}
 
 	// Get revocation record
@@ -312,7 +307,7 @@ func (m *MsgServer) SuspendVC(
 ) (*vcregistrypb.MsgSuspendVCResponse, error) {
 	// Validate inputs
 	if msg.Authority == "" {
-		return nil, types.ErrUnauthorized
+		return nil, mapVCAuthorizationError(types.ErrUnauthorized)
 	}
 	if msg.VcId == "" {
 		return nil, types.ErrInvalidVCID
@@ -320,7 +315,7 @@ func (m *MsgServer) SuspendVC(
 
 	// Verify authority is governance
 	if msg.Authority != m.keeper.GetAuthority() {
-		return nil, fmt.Errorf("invalid authority; expected %s, got %s", m.keeper.GetAuthority(), msg.Authority)
+		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("invalid authority; expected %s, got %s", m.keeper.GetAuthority(), msg.Authority))
 	}
 
 	// Get VC record
@@ -373,7 +368,7 @@ func (m *MsgServer) ReactivateVC(
 ) (*vcregistrypb.MsgReactivateVCResponse, error) {
 	// Validate inputs
 	if msg.Authority == "" {
-		return nil, types.ErrUnauthorized
+		return nil, mapVCAuthorizationError(types.ErrUnauthorized)
 	}
 	if msg.VcId == "" {
 		return nil, types.ErrInvalidVCID
@@ -421,7 +416,7 @@ func (m *MsgServer) CreateVCPolicy(
 ) (*vcregistrypb.MsgCreateVCPolicyResponse, error) {
 	// Validate inputs
 	if msg.Authority == "" {
-		return nil, types.ErrUnauthorized
+		return nil, mapVCAuthorizationError(types.ErrUnauthorized)
 	}
 	if msg.VcTypeName == "" {
 		return nil, types.ErrInvalidVCType
@@ -491,7 +486,7 @@ func (m *MsgServer) UpdateVCPolicy(
 ) (*vcregistrypb.MsgUpdateVCPolicyResponse, error) {
 	// Validate inputs
 	if msg.Authority == "" {
-		return nil, types.ErrUnauthorized
+		return nil, mapVCAuthorizationError(types.ErrUnauthorized)
 	}
 	if msg.VcTypeName == "" {
 		return nil, types.ErrInvalidVCType
@@ -555,7 +550,7 @@ func (m *MsgServer) DeprecateVCPolicy(
 ) (*vcregistrypb.MsgDeprecateVCPolicyResponse, error) {
 	// Validate inputs
 	if msg.Authority == "" {
-		return nil, types.ErrUnauthorized
+		return nil, mapVCAuthorizationError(types.ErrUnauthorized)
 	}
 	if msg.VcTypeName == "" {
 		return nil, types.ErrInvalidVCType
@@ -624,11 +619,11 @@ func (m *MsgServer) RegisterDID(
 	}
 
 	if !signers[0].Equals(controllerAddr) {
-		return nil, types.ErrUnauthorized.Wrapf(
+		return nil, mapVCAuthorizationError(types.ErrUnauthorized.Wrapf(
 			"signer (%s) does not match controller (%s)",
 			signers[0].String(),
 			msg.Controller,
-		)
+		))
 	}
 
 	// Register the DID (convert verification methods from protobuf to types)
@@ -687,11 +682,11 @@ func (m *MsgServer) UpdateDIDDocument(
 	}
 
 	if !signers[0].Equals(controllerAddr) {
-		return nil, types.ErrUnauthorized.Wrapf(
+		return nil, mapVCAuthorizationError(types.ErrUnauthorized.Wrapf(
 			"signer (%s) does not match controller (%s)",
 			signers[0].String(),
 			msg.Controller,
-		)
+		))
 	}
 
 	// Get existing DID to verify controller
@@ -782,6 +777,18 @@ func (m *MsgServer) emitVCRevokedEvent(ctx context.Context, vcID, vcType, reason
 	}
 }
 
+func mapVCAuthorizationError(err error) error {
+	if err == nil {
+		return nil
+	}
+
+	if errorsmod.IsOf(err, types.ErrUnauthorized) {
+		return status.Error(codes.PermissionDenied, err.Error())
+	}
+
+	return err
+}
+
 // ============================
 // ATTRIBUTE VC MESSAGES
 // ============================
@@ -814,11 +821,11 @@ func (m *MsgServer) CreateAttributeVC(
 	}
 
 	if !signers[0].Equals(creatorAddr) {
-		return nil, types.ErrUnauthorized.Wrapf(
+		return nil, mapVCAuthorizationError(types.ErrUnauthorized.Wrapf(
 			"signer (%s) does not match creator (%s)",
 			signers[0].String(),
 			msg.Creator,
-		)
+		))
 	}
 
 	// Generate attribute VC ID
@@ -890,11 +897,11 @@ func (m *MsgServer) RevokeAttributeVC(
 	}
 
 	if !signers[0].Equals(creatorAddr) {
-		return nil, types.ErrUnauthorized.Wrapf(
+		return nil, mapVCAuthorizationError(types.ErrUnauthorized.Wrapf(
 			"signer (%s) does not match creator (%s)",
 			signers[0].String(),
 			msg.Creator,
-		)
+		))
 	}
 
 	// Verify the signer owns the attribute VC
@@ -950,11 +957,11 @@ func (m *MsgServer) UpdateDisclosurePolicy(
 	}
 
 	if !signers[0].Equals(creatorAddr) {
-		return nil, types.ErrUnauthorized.Wrapf(
+		return nil, mapVCAuthorizationError(types.ErrUnauthorized.Wrapf(
 			"signer (%s) does not match creator (%s)",
 			signers[0].String(),
 			msg.Creator,
-		)
+		))
 	}
 
 	// Create policy
@@ -1030,12 +1037,12 @@ func (m *MsgServer) CreateDisclosureRequest(
 	expiresAt := timestampFromTime(sdkCtx.BlockTime().Add(time.Duration(msg.ExpiresInSeconds) * time.Second))
 
 	m.emitEvent(ctx, "disclosure_request_created", map[string]string{
-		"request_id":      requestID,
-		"holder_address":  msg.HolderAddress,
-		"verifier":        msg.Verifier,
+		"request_id":       requestID,
+		"holder_address":   msg.HolderAddress,
+		"verifier":         msg.Verifier,
 		"attributes_count": fmt.Sprintf("%d", len(msg.RequestedAttributes)),
-		"requested_at":    formatTimestamp(req.RequestedAt),
-		"block_height":    fmt.Sprintf("%d", sdkCtx.BlockHeight()),
+		"requested_at":     formatTimestamp(req.RequestedAt),
+		"block_height":     fmt.Sprintf("%d", sdkCtx.BlockHeight()),
 	})
 
 	return &vcregistrypb.MsgCreateDisclosureRequestResponse{
@@ -1069,11 +1076,11 @@ func (m *MsgServer) RespondToDisclosureRequest(
 	}
 
 	if !signers[0].Equals(creatorAddr) {
-		return nil, types.ErrUnauthorized.Wrapf(
+		return nil, mapVCAuthorizationError(types.ErrUnauthorized.Wrapf(
 			"signer (%s) does not match creator (%s)",
 			signers[0].String(),
 			msg.Creator,
-		)
+		))
 	}
 
 	// Convert AttributeType list to AttributeDisclosure list

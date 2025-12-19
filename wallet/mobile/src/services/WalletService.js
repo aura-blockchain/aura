@@ -8,6 +8,7 @@ import {generateWallet, importWalletFromMnemonic, validateMnemonic} from '../uti
 import KeyStore from './KeyStore';
 import BiometricAuth from './BiometricAuth';
 import PawAPI from './PawAPI';
+const {COIN} = require('../../../config/chain');
 
 class WalletServiceClass {
   /**
@@ -124,17 +125,17 @@ class WalletServiceClass {
       const balanceData = await PawAPI.getBalance(address);
       const balances = balanceData.balances || [];
 
-      // Find uaura balance (micro-aura)
-      const auraBalance = balances.find(b => b.denom === 'uaura');
+      // Find base denom balance
+      const auraBalance = balances.find(b => b.denom === COIN.base);
       const amount = auraBalance ? parseInt(auraBalance.amount, 10) : 0;
+      const factor = 10 ** (COIN.exponent || 6);
+      const formatted = (amount / factor).toFixed(COIN.exponent || 6);
 
-      // Convert micro-aura to aura (1 aura = 1,000,000 uaura)
-      const formatted = (amount / 1000000).toFixed(6);
-
+      const denomDisplay = COIN.display || COIN.symbol || 'Aura';
       return {
         amount,
         formatted,
-        denom: 'Aura',
+        denom: denomDisplay.charAt(0).toUpperCase() + denomDisplay.slice(1),
       };
     } catch (error) {
       console.error('Error getting balance:', error);

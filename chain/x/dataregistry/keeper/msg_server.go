@@ -6,6 +6,8 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/aequitas/aura/chain/x/dataregistry/types"
 	pb "github.com/aequitas/aura/proto/aura/dataregistry/v1beta1"
@@ -157,7 +159,7 @@ func (s *msgServer) DeleteDataItem(ctx context.Context, msg *pb.MsgDeleteDataIte
 	}
 
 	if item.OwnerAddress != msg.Creator {
-		return nil, types.ErrUnauthorized
+		return nil, status.Error(codes.PermissionDenied, types.ErrUnauthorized.Error())
 	}
 
 	// Delete the data item
@@ -467,4 +469,3 @@ func sdkContextFromCtx(ctx context.Context) (sdk.Context, bool) {
 	sdkCtx = sdk.UnwrapSDKContext(ctx)
 	return sdkCtx, ok
 }
-

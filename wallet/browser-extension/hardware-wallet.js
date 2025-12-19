@@ -1,315 +1,326 @@
 /**
  * Hardware Wallet Support for Aura Browser Extension
- * Supports Ledger and Trezor devices
+ * Supports Ledger (WebHID) and placeholder hooks for Trezor/Keystone.
  */
+const DEFAULT_PATH = "m/44'/118'/0'/0/0";
 
 class HardwareWalletManager {
   constructor() {
-    this.supportedDevices = {
-      ledger: {
-        name: 'Ledger',
-        productId: 0x0001,
-        vendorId: 0x2c97
-      },
-      trezor: {
-        name: 'Trezor',
-        productId: 0x0001,
-        vendorId: 0x534c
-      }
-    };
     this.connectedDevice = null;
-    this.transport = null;
+    this.ledgerTransport = null;
+    this.ledgerApp = null;
+    this.trezor = null;
+    this.TrezorConnect = null;
+    this.trezorManifestSet = false;
+    this.chainConfig = null;
+    this.keystoneSdk = null;
+  }
+
+  async loadChainConfig() {
+    if (this.chainConfig) return this.chainConfig;
+    const mod = await import('../config/chain.js');
+    const cfg = mod.CHAIN_CONFIG || mod.default?.CHAIN_CONFIG || mod;
+    this.chainConfig = cfg;
+    return cfg;
+  }
+
+  async loadLedgerDeps() {
+    if (this.LedgerTransport && this.LedgerCosmosApp) {
+      return;
+    }
+    const [{ default: TransportWebHID }, { default: LedgerCosmosApp }] = await Promise.all([
+      import('@ledgerhq/hw-transport-webhid'),
+      import('@ledgerhq/hw-app-cosmos')
+    ]);
+    this.LedgerTransport = TransportWebHID;
+    this.LedgerCosmosApp = LedgerCosmosApp;
+  }
+
+  async loadTrezorDeps() {
+    if (this.TrezorConnect) {
+      return;
+    }
+    const { default: TrezorConnect } = await import('trezor-connect');
+    this.TrezorConnect = TrezorConnect;
+    if (TrezorConnect?.manifest && !this.trezorManifestSet) {
+      const cfg = await this.loadChainConfig();
+      TrezorConnect.manifest({
+        email: 'dev@aura.network',
+        appUrl: cfg?.explorerUrl || 'https://aura.network',
+      });
+      this.trezorManifestSet = true;
+    }
+  }
+
+  async loadKeystoneDeps() {
+    if (this.keystoneSdk) {
+      return;
+    }
+    const { default: KeystoneSDK } = await import('@keystonehq/keystone-sdk');
+    this.keystoneSdk = new KeystoneSDK({
+      origin: 'aura-browser-extension',
+    });
+  }
+
+  pathToArray(path = DEFAULT_PATH) {
+    return path
+      .split('/')
+      .filter(Boolean)
+      .filter(part => part !== 'm')
+      .map(part => {
+        const hardened = part.endsWith("'");
+        const clean = hardened ? part.slice(0, -1) : part;
+        const num = parseInt(clean, 10);
+        return hardened ? ((0x80000000 | num) >>> 0) : num;
+      });
   }
 
   async detectDevices() {
-    if (!navigator.usb) {
-      throw new Error('WebUSB not supported in this browser');
-    }
-
+    await this.loadLedgerDeps();
+    const devices = [];
     try {
-      const devices = await navigator.usb.getDevices();
-      const supported = devices.filter(device =>
-        Object.values(this.supportedDevices).some(hw =>
-          hw.vendorId === device.vendorId
-        )
+      const ledgerDevices = await this.LedgerTransport.list();
+      devices.push(
+        ...ledgerDevices.map(device => ({
+          device,
+          type: 'ledger',
+          connected: true
+        }))
       );
-
-      return supported.map(device => ({
-        device,
-        type: this.getDeviceType(device),
-        connected: true
-      }));
     } catch (err) {
-      console.error('Failed to detect devices:', err);
-      throw new Error('Failed to detect hardware wallets');
+      console.error('Failed to detect Ledger devices:', err);
     }
+    // Trezor detection will be handled via connect request; Trezor Connect does not expose a list() API.
+    return devices;
   }
 
-  getDeviceType(device) {
-    for (const [type, hw] of Object.entries(this.supportedDevices)) {
-      if (hw.vendorId === device.vendorId) {
-        return type;
-      }
+  async requestDevice(type = 'ledger') {
+    if (type === 'trezor') {
+      return this.connectTrezor();
     }
-    return 'unknown';
-  }
-
-  async requestDevice(type = null) {
-    if (!navigator.usb) {
-      throw new Error('WebUSB not supported');
+    if (type === 'keystone') {
+      return this.connectKeystone();
     }
-
+    await this.loadLedgerDeps();
     try {
-      const filters = type
-        ? [{ vendorId: this.supportedDevices[type].vendorId }]
-        : Object.values(this.supportedDevices).map(hw => ({
-            vendorId: hw.vendorId
-          }));
-
-      const device = await navigator.usb.requestDevice({ filters });
-      return device;
-    } catch (err) {
-      console.error('Failed to request device:', err);
-      throw new Error('User cancelled or device not found');
-    }
-  }
-
-  async connect(device) {
-    try {
-      await device.open();
-
-      if (device.configuration === null) {
-        await device.selectConfiguration(1);
-      }
-
-      await device.claimInterface(0);
-
-      this.connectedDevice = {
-        device,
-        type: this.getDeviceType(device)
-      };
-
+      const transport = await this.LedgerTransport.create();
+      this.ledgerTransport = transport;
+      this.ledgerApp = new this.LedgerCosmosApp(transport);
+      this.connectedDevice = { type: 'ledger', device: transport.device };
       return this.connectedDevice;
     } catch (err) {
-      console.error('Failed to connect to device:', err);
-      throw new Error('Failed to connect to hardware wallet');
+      console.error('Failed to request Ledger device:', err);
+      throw new Error('User cancelled or device not available');
     }
+  }
+
+  async connect(type = 'ledger') {
+    if (this.connectedDevice) {
+      if (this.connectedDevice.type === type) {
+        return this.connectedDevice;
+      }
+      await this.disconnect();
+    }
+    return this.requestDevice(type);
+  }
+
+  async connectTrezor() {
+    await this.loadTrezorDeps();
+    const cfg = await this.loadChainConfig();
+    const hrp = cfg?.bech32Prefix || 'cosmos';
+    const resp = this.TrezorConnect.cosmosGetAddress
+      ? await this.TrezorConnect.cosmosGetAddress({
+        path: this.pathToArray(DEFAULT_PATH),
+        showOnTrezor: false,
+        hrp,
+      })
+      : await this.TrezorConnect.getAddress({
+        path: DEFAULT_PATH,
+        coin: 'Cosmos',
+        showOnTrezor: false,
+      });
+    if (!resp?.success) {
+      throw new Error(resp?.payload?.error || 'Unable to reach Trezor');
+    }
+    this.connectedDevice = { type: 'trezor', device: { productName: 'Trezor' } };
+    return this.connectedDevice;
+  }
+
+  async connectKeystone() {
+    await this.loadKeystoneDeps();
+    this.connectedDevice = { type: 'keystone', device: { productName: 'Keystone' } };
+    return this.connectedDevice;
   }
 
   async disconnect() {
-    if (this.connectedDevice) {
-      try {
-        await this.connectedDevice.device.close();
-        this.connectedDevice = null;
-      } catch (err) {
-        console.error('Error disconnecting:', err);
+    try {
+      if (this.ledgerTransport) {
+        await this.ledgerTransport.close();
       }
+      if (this.trezor) {
+        this.trezor = null;
+      }
+    } catch (err) {
+      console.error('Error closing transport:', err);
+    } finally {
+      this.ledgerTransport = null;
+      this.ledgerApp = null;
+      this.connectedDevice = null;
     }
   }
 
-  async getAddress(path = "m/44'/118'/0'/0/0") {
+  async getAddress(path = DEFAULT_PATH, confirm = true) {
     if (!this.connectedDevice) {
       throw new Error('No device connected');
     }
-
-    const type = this.connectedDevice.type;
-
-    switch (type) {
-      case 'ledger':
-        return await this.getLedgerAddress(path);
-      case 'trezor':
-        return await this.getTrezorAddress(path);
-      default:
-        throw new Error('Unsupported device type');
+    if (this.connectedDevice.type === 'ledger') {
+      return this.getLedgerAddress(path, confirm);
     }
+    if (this.connectedDevice.type === 'trezor') {
+      return this.getTrezorAddress(path);
+    }
+    if (this.connectedDevice.type === 'keystone') {
+      return this.getKeystoneAddress(path);
+    }
+    throw new Error('Unsupported device type');
   }
 
-  async getLedgerAddress(path) {
+  async getLedgerAddress(path = DEFAULT_PATH, confirm = true) {
     try {
-      // Implement Ledger-specific address derivation
-      // This is a simplified version
-      const pathBuffer = this.serializePath(path);
-      const command = this.buildAPDU(0xe0, 0x02, 0x00, 0x00, pathBuffer);
-
-      const response = await this.sendCommand(command);
-
-      if (response.statusCode !== 0x9000) {
-        throw new Error('Ledger returned error');
+      await this.loadLedgerDeps();
+      if (!this.ledgerApp) {
+        await this.connect();
       }
-
-      return this.parseAddressResponse(response.data);
-    } catch (err) {
-      console.error('Failed to get Ledger address:', err);
-      throw new Error('Failed to retrieve address from Ledger');
-    }
-  }
-
-  async getTrezorAddress(path) {
-    try {
-      // Implement Trezor-specific address derivation
-      // This would use the Trezor Connect library
-      throw new Error('Trezor support not yet implemented');
-    } catch (err) {
-      console.error('Failed to get Trezor address:', err);
-      throw err;
-    }
-  }
-
-  async signTransaction(tx, path = "m/44'/118'/0'/0/0") {
-    if (!this.connectedDevice) {
-      throw new Error('No device connected');
-    }
-
-    const type = this.connectedDevice.type;
-
-    switch (type) {
-      case 'ledger':
-        return await this.signWithLedger(tx, path);
-      case 'trezor':
-        return await this.signWithTrezor(tx, path);
-      default:
-        throw new Error('Unsupported device type');
-    }
-  }
-
-  async signWithLedger(tx, path) {
-    try {
-      const pathBuffer = this.serializePath(path);
-      const txBuffer = this.serializeTransaction(tx);
-
-      // Send transaction in chunks if needed
-      const chunks = this.chunkBuffer(txBuffer, 255);
-      let response;
-
-      for (let i = 0; i < chunks.length; i++) {
-        const isLast = i === chunks.length - 1;
-        const p1 = i === 0 ? 0x00 : 0x01;
-        const p2 = isLast ? 0x00 : 0x01;
-
-        const data = i === 0
-          ? Buffer.concat([pathBuffer, chunks[i]])
-          : chunks[i];
-
-        const command = this.buildAPDU(0xe0, 0x04, p1, p2, data);
-        response = await this.sendCommand(command);
-
-        if (response.statusCode !== 0x9000 && !isLast) {
-          throw new Error('Ledger signing failed');
-        }
-      }
-
-      if (response.statusCode !== 0x9000) {
-        throw new Error('Transaction rejected by user');
-      }
-
-      return this.parseSignatureResponse(response.data);
-    } catch (err) {
-      console.error('Failed to sign with Ledger:', err);
-      throw new Error('Failed to sign transaction');
-    }
-  }
-
-  async signWithTrezor(tx, path) {
-    throw new Error('Trezor support not yet implemented');
-  }
-
-  serializePath(path) {
-    const parts = path.split('/').slice(1);
-    const buffer = Buffer.alloc(1 + parts.length * 4);
-
-    buffer.writeUInt8(parts.length, 0);
-
-    for (let i = 0; i < parts.length; i++) {
-      let value = parseInt(parts[i].replace("'", ''));
-      if (parts[i].includes("'")) {
-        value += 0x80000000;
-      }
-      buffer.writeUInt32BE(value, 1 + i * 4);
-    }
-
-    return buffer;
-  }
-
-  serializeTransaction(tx) {
-    return Buffer.from(JSON.stringify(tx), 'utf8');
-  }
-
-  chunkBuffer(buffer, size) {
-    const chunks = [];
-    for (let i = 0; i < buffer.length; i += size) {
-      chunks.push(buffer.slice(i, i + size));
-    }
-    return chunks;
-  }
-
-  buildAPDU(cla, ins, p1, p2, data) {
-    const header = Buffer.from([cla, ins, p1, p2, data.length]);
-    return Buffer.concat([header, data]);
-  }
-
-  async sendCommand(command) {
-    const device = this.connectedDevice.device;
-
-    try {
-      // Send command
-      await device.transferOut(1, command);
-
-      // Receive response
-      const result = await device.transferIn(1, 256);
-
-      if (result.status !== 'ok') {
-        throw new Error('Transfer failed');
-      }
-
-      const data = Buffer.from(result.data.buffer);
-      const statusCode = data.readUInt16BE(data.length - 2);
-
+      const cfg = await this.loadChainConfig();
+      const hrp = cfg?.bech32Prefix || 'cosmos';
+      const resp = await this.ledgerApp.getAddress(path, hrp, confirm);
       return {
-        data: data.slice(0, data.length - 2),
-        statusCode
+        address: resp.bech32_address,
+        publicKey: Buffer.from(resp.publicKey).toString('hex')
       };
     } catch (err) {
-      console.error('Command failed:', err);
-      throw new Error('Failed to communicate with device');
+      console.error('Failed to get Ledger address:', err);
+      throw new Error(err.message || 'Failed to retrieve address from Ledger');
     }
   }
 
-  parseAddressResponse(data) {
-    // Parse Ledger address response
-    const publicKeyLength = data[0];
-    const publicKey = data.slice(1, 1 + publicKeyLength);
-    const addressLength = data[1 + publicKeyLength];
-    const address = data.slice(2 + publicKeyLength, 2 + publicKeyLength + addressLength).toString();
-
-    return {
-      address,
-      publicKey: publicKey.toString('hex')
-    };
-  }
-
-  parseSignatureResponse(data) {
-    // Parse Ledger signature response
-    return {
-      signature: data.toString('hex')
-    };
-  }
-
-  async verifyAddress(address, path) {
-    // Display address on device for verification
+  async signTransaction(txBytes, path = DEFAULT_PATH) {
     if (!this.connectedDevice) {
       throw new Error('No device connected');
     }
-
-    const pathBuffer = this.serializePath(path);
-    const command = this.buildAPDU(0xe0, 0x02, 0x01, 0x00, pathBuffer);
-
-    const response = await this.sendCommand(command);
-
-    if (response.statusCode !== 0x9000) {
-      throw new Error('Address verification failed');
+    if (this.connectedDevice.type === 'ledger') {
+      return this.signWithLedger(txBytes, path);
     }
+    if (this.connectedDevice.type === 'trezor') {
+      return this.signWithTrezor(txBytes, path);
+    }
+    if (this.connectedDevice.type === 'keystone') {
+      return this.signWithKeystone(txBytes, path);
+    }
+    throw new Error('Unsupported device type');
+  }
 
-    return true;
+  async signWithLedger(txBytes, path = DEFAULT_PATH) {
+    try {
+      await this.loadLedgerDeps();
+      if (!this.ledgerApp) {
+        await this.connect();
+      }
+      const bytes = Buffer.isBuffer(txBytes) ? txBytes : Buffer.from(txBytes);
+      const { signature } = await this.ledgerApp.sign(path, bytes);
+      return {
+        signature: Buffer.from(signature).toString('hex')
+      };
+    } catch (err) {
+      console.error('Failed to sign with Ledger:', err);
+      throw new Error(err.message || 'Failed to sign transaction');
+    }
+  }
+
+  // Placeholder for future Trezor integration
+  async signWithTrezor(txBytes, path = DEFAULT_PATH) {
+    await this.loadTrezorDeps();
+    if (!this.connectedDevice) {
+      await this.connect('trezor');
+    }
+    const trezorPath = this.pathToArray(path);
+    const bytes = Buffer.isBuffer(txBytes) ? txBytes : Buffer.from(txBytes);
+    const hex = Buffer.from(bytes).toString('hex');
+    const resp = this.TrezorConnect.cosmosSignTx
+      ? await this.TrezorConnect.cosmosSignTx({ path: trezorPath, rawTx: hex })
+      : await this.TrezorConnect.signTransaction({ path: trezorPath, rawTxHex: hex });
+    if (!resp?.success) {
+      throw new Error(resp?.payload?.error || 'Trezor signing failed');
+    }
+    const payload = resp.payload || resp;
+    const signatureHex = payload.signatureHex || payload.signature || payload.sig || payload.signedTransaction;
+    return { signature: signatureHex || '' };
+  }
+
+  async signWithKeystone(txBytes, path = DEFAULT_PATH) {
+    await this.loadKeystoneDeps();
+    const cfg = await this.loadChainConfig();
+    const hrp = cfg?.bech32Prefix || 'cosmos';
+    const data = Buffer.isBuffer(txBytes) ? txBytes : Buffer.from(txBytes);
+    const result = await this.keystoneSdk.sign({
+      requestId: Date.now().toString(),
+      signData: data.toString('hex'),
+      xfp: '',
+      derivationPath: path,
+      address: '',
+      hrp,
+      isTestNet: false,
+    });
+    return { signature: result?.signature || '' };
+  }
+
+  async getTrezorAddress(path = DEFAULT_PATH) {
+    await this.loadTrezorDeps();
+    if (!this.connectedDevice) {
+      await this.connect('trezor');
+    }
+    const trezorPath = this.pathToArray(path);
+    const cfg = await this.loadChainConfig();
+    const hrp = cfg?.bech32Prefix || 'cosmos';
+    const resp = this.TrezorConnect.cosmosGetAddress
+      ? await this.TrezorConnect.cosmosGetAddress({ path: trezorPath, showOnTrezor: true, hrp })
+      : await this.TrezorConnect.getAddress({ path, coin: 'Cosmos', showOnTrezor: true });
+    if (!resp?.success) {
+      throw new Error(resp?.payload?.error || 'Trezor address retrieval failed');
+    }
+    const payload = resp.payload || resp;
+    const address = payload.address || payload.bech32_address || payload.bech32;
+    const publicKey = payload.publicKey || payload.public_key || payload.public_key_hex;
+    return {
+      address,
+      publicKey: typeof publicKey === 'string' ? publicKey : Buffer.from(publicKey || []).toString('hex'),
+    };
+  }
+
+  async getKeystoneAddress(path = DEFAULT_PATH) {
+    await this.loadKeystoneDeps();
+    const cfg = await this.loadChainConfig();
+    const hrp = cfg?.bech32Prefix || 'cosmos';
+    const qrCode = this.keystoneSdk.getConnectedWalletAddress({
+      derivationPath: path,
+      xfp: '',
+      hrp,
+      isTestNet: false,
+    });
+    this.connectedDevice = { type: 'keystone', device: { productName: 'Keystone' } };
+    return {
+      address: qrCode?.address || '',
+      publicKey: qrCode?.publicKey || '',
+    };
+  }
+
+  async verifyAddress(path = DEFAULT_PATH) {
+    const addr = this.connectedDevice?.type === 'trezor'
+      ? await this.getTrezorAddress(path)
+      : this.connectedDevice?.type === 'keystone'
+        ? await this.getKeystoneAddress(path)
+        : await this.getLedgerAddress(path, true);
+    return Boolean(addr?.address);
   }
 
   isConnected() {
@@ -320,12 +331,11 @@ class HardwareWalletManager {
     if (!this.connectedDevice) {
       return null;
     }
-
     return {
       type: this.connectedDevice.type,
-      name: this.supportedDevices[this.connectedDevice.type].name,
-      manufacturer: this.connectedDevice.device.manufacturerName,
-      product: this.connectedDevice.device.productName
+      name: this.connectedDevice.type === 'ledger' ? 'Ledger' : this.connectedDevice.type === 'trezor' ? 'Trezor' : 'Keystone',
+      manufacturer: this.connectedDevice.device?.manufacturerName,
+      product: this.connectedDevice.device?.productName
     };
   }
 }
@@ -333,4 +343,6 @@ class HardwareWalletManager {
 // Export for use in extension
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = HardwareWalletManager;
+  module.exports.default = HardwareWalletManager;
+  module.exports.HardwareWalletManager = HardwareWalletManager;
 }

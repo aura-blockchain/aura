@@ -6,12 +6,16 @@ import (
 	"time"
 
 	errorsmod "cosmossdk.io/errors"
+	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	gogotypes "github.com/cosmos/gogoproto/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	gogotypes "github.com/cosmos/gogoproto/types"
+	metrics "github.com/hashicorp/go-metrics"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
-	economicsecuritypb "github.com/aequitas/aura/proto/aura/economicsecurity/v1beta1"
 	"github.com/aequitas/aura/chain/x/economicsecurity/types"
+	economicsecuritypb "github.com/aequitas/aura/proto/aura/economicsecurity/v1beta1"
 )
 
 // MsgServer implements the economicsecurity Msg service
@@ -169,9 +173,15 @@ func (m *MsgServer) RevokeVestingSchedule(
 	// Check if revoker has authority
 	authority := m.keeper.GetAuthority()
 	if msg.Revoker != authority {
-		return nil, errorsmod.Wrapf(types.ErrUnauthorized,
-			"only module authority can revoke vesting schedules: expected %s, got %s",
-			authority, msg.Revoker)
+		return nil, status.Error(
+			codes.PermissionDenied,
+			errorsmod.Wrapf(
+				types.ErrUnauthorized,
+				"only module authority can revoke vesting schedules: expected %s, got %s",
+				authority,
+				msg.Revoker,
+			).Error(),
+		)
 	}
 
 	// Validate schedule ID
@@ -504,11 +514,19 @@ func (m *MsgServer) UpdateParams(
 	// Verify authority (must be governance module)
 	authority := m.keeper.GetAuthority()
 	if msg.Authority != authority {
-		return nil, errorsmod.Wrapf(
-			govtypes.ErrInvalidSigner,
-			"invalid authority; expected %s, got %s",
-			authority,
-			msg.Authority,
+		telemetry.IncrCounterWithLabels(
+			[]string{"economicsecurity", "auth_denied"},
+			1,
+			[]metrics.Label{{Name: "action", Value: "update_params"}},
+		)
+		return nil, status.Error(
+			codes.PermissionDenied,
+			errorsmod.Wrapf(
+				govtypes.ErrInvalidSigner,
+				"invalid authority; expected %s, got %s",
+				authority,
+				msg.Authority,
+			).Error(),
 		)
 	}
 
@@ -555,11 +573,19 @@ func (m *MsgServer) AdjustInflationRate(
 	// Verify authority (must be governance module)
 	authority := m.keeper.GetAuthority()
 	if msg.Authority != authority {
-		return nil, errorsmod.Wrapf(
-			govtypes.ErrInvalidSigner,
-			"invalid authority; expected %s, got %s",
-			authority,
-			msg.Authority,
+		telemetry.IncrCounterWithLabels(
+			[]string{"economicsecurity", "auth_denied"},
+			1,
+			[]metrics.Label{{Name: "action", Value: "adjust_inflation"}},
+		)
+		return nil, status.Error(
+			codes.PermissionDenied,
+			errorsmod.Wrapf(
+				govtypes.ErrInvalidSigner,
+				"invalid authority; expected %s, got %s",
+				authority,
+				msg.Authority,
+			).Error(),
 		)
 	}
 

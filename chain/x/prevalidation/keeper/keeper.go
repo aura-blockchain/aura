@@ -6,8 +6,8 @@ import (
 
 	"cosmossdk.io/log"
 	"cosmossdk.io/math"
-	"github.com/cosmos/cosmos-sdk/codec"
 	storetypes "cosmossdk.io/store/types"
+	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/aequitas/aura/chain/x/prevalidation/types"
@@ -15,9 +15,10 @@ import (
 )
 
 type Keeper struct {
-	cdc      codec.BinaryCodec
-	storeKey storetypes.StoreKey
-	logger   log.Logger
+	cdc              codec.BinaryCodec
+	storeKey         storetypes.StoreKey
+	logger           log.Logger
+	complianceKeeper types.ComplianceKeeper
 }
 
 // SetLogger sets the keeper logger
@@ -31,6 +32,11 @@ func NewKeeper(cdc codec.BinaryCodec, storeKey storetypes.StoreKey) *Keeper {
 		cdc:      cdc,
 		storeKey: storeKey,
 	}
+}
+
+// SetComplianceKeeper injects the compliance keeper for sanctions checks.
+func (k *Keeper) SetComplianceKeeper(keeper types.ComplianceKeeper) {
+	k.complianceKeeper = keeper
 }
 
 // GetParams returns the current parameters
@@ -63,6 +69,11 @@ func (k *Keeper) ValidateTransaction(ctx sdk.Context, tx types.Transaction) (boo
 	// Validate sender address
 	if tx.Sender == "" {
 		return false, fmt.Errorf("sender address cannot be empty")
+	}
+	if k.complianceKeeper != nil {
+		if k.complianceKeeper.IsAddressSanctioned(ctx, tx.Sender) {
+			return false, types.ErrSanctionedSender
+		}
 	}
 
 	// Validate recipient address
@@ -405,19 +416,19 @@ func (k *Keeper) GetMetrics(ctx sdk.Context) *pb.PreValidationMetrics {
 	// In production, retrieve actual metrics from state
 	// For now, return empty metrics
 	return &pb.PreValidationMetrics{
-		TotalPreValidations:   0,
-		TotalExecuted:         0,
-		TotalExpired:          0,
-		TotalCacheHits:        0,
-		TotalCacheMisses:      0,
-		OverallCacheHitRate:   math.LegacyNewDec(0),
-		AvgTimeSavingsMs:      math.LegacyNewDec(0),
-		TotalTimeSavedMs:      0,
-		TotalEnergySavedKwh:   math.LegacyNewDec(0),
-		MetricsByType:         make(map[string]*pb.TypeMetrics),
-		CurrentHour:           nil,
-		Last_24Hours:          []*pb.HourlyMetrics{},
-		ControlGroup:          nil,
+		TotalPreValidations: 0,
+		TotalExecuted:       0,
+		TotalExpired:        0,
+		TotalCacheHits:      0,
+		TotalCacheMisses:    0,
+		OverallCacheHitRate: math.LegacyNewDec(0),
+		AvgTimeSavingsMs:    math.LegacyNewDec(0),
+		TotalTimeSavedMs:    0,
+		TotalEnergySavedKwh: math.LegacyNewDec(0),
+		MetricsByType:       make(map[string]*pb.TypeMetrics),
+		CurrentHour:         nil,
+		Last_24Hours:        []*pb.HourlyMetrics{},
+		ControlGroup:        nil,
 	}
 }
 
@@ -426,15 +437,15 @@ func (k *Keeper) GetTypeMetrics(ctx sdk.Context, txType pb.TransactionType) *pb.
 	// In production, retrieve actual metrics from state
 	// For now, return empty metrics
 	return &pb.TypeMetrics{
-		TxType:                txType,
-		TotalPreValidated:     0,
-		TotalExecuted:         0,
-		TotalExpired:          0,
-		CacheHits:             0,
-		CacheMisses:           0,
-		CacheHitRate:          math.LegacyNewDec(0),
-		AvgTimeSavingsMs:      math.LegacyNewDec(0),
-		AvgExecutionTimeMs:    math.LegacyNewDec(0),
-		AvgValidationTimeMs:   math.LegacyNewDec(0),
+		TxType:              txType,
+		TotalPreValidated:   0,
+		TotalExecuted:       0,
+		TotalExpired:        0,
+		CacheHits:           0,
+		CacheMisses:         0,
+		CacheHitRate:        math.LegacyNewDec(0),
+		AvgTimeSavingsMs:    math.LegacyNewDec(0),
+		AvgExecutionTimeMs:  math.LegacyNewDec(0),
+		AvgValidationTimeMs: math.LegacyNewDec(0),
 	}
 }

@@ -10,6 +10,7 @@ import (
 	stakingcli "github.com/cosmos/cosmos-sdk/x/staking/client/cli"
 
 	"github.com/aequitas/aura/chain/app"
+	aiassistantcli "github.com/aequitas/aura/chain/x/aiassistant/client/cli"
 	bridgecli "github.com/aequitas/aura/chain/x/bridge/client/cli"
 	compliancecli "github.com/aequitas/aura/chain/x/compliance/client/cli"
 	confidencescorecli "github.com/aequitas/aura/chain/x/confidencescore/client/cli"
@@ -71,6 +72,7 @@ func TxCmd() *cobra.Command {
 		dexcli.GetTxCmd(),
 		economicsecuritycli.GetTxCmd(),
 		governancecli.GetTxCmd(),
+		aiassistantcli.NewTxCmd(),
 		identitychangecli.GetTxCmd(),
 		monitoringcli.GetTxCmd(),
 		networksecuritycli.GetTxCmd(),

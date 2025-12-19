@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"math"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -159,7 +160,11 @@ func (m AppModule) EndBlock(ctx sdk.Context) {
 	params := m.keeper.GetParams(ctx)
 	if params.BatchExecutionEnabled {
 		// Execute batch every N blocks
-		if ctx.BlockHeight()%int64(params.BatchExecutionInterval) == 0 {
+		interval := int64(params.BatchExecutionInterval)
+		if params.BatchExecutionInterval > math.MaxInt64 {
+			interval = math.MaxInt64
+		}
+		if interval > 0 && ctx.BlockHeight()%interval == 0 {
 			if err := m.keeper.ExecuteBatch(ctx); err != nil {
 				// Log error but don't panic (batch execution is non-critical)
 				ctx.Logger().Error("failed to execute batch", "error", err)

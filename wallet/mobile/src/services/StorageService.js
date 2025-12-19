@@ -5,6 +5,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+const {CHAIN_CONFIG, REST_ENDPOINTS} = require('../../../config/chain');
 
 const STORAGE_PREFIX = '@Aura:';
 
@@ -80,9 +81,9 @@ class StorageServiceClass {
    */
   async getNetwork() {
     return await this.getItem(`${STORAGE_PREFIX}network`, {
-      name: 'mainnet',
-      rpcUrl: 'http://localhost:1317',
-      chainId: 'aura-1',
+      name: CHAIN_CONFIG.chainName || 'Aura',
+      rpcUrl: REST_ENDPOINTS[0]?.address || 'http://localhost:1317',
+      chainId: CHAIN_CONFIG.chainId || 'aura-testnet-1',
     });
   }
 

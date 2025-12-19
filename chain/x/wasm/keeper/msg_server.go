@@ -8,6 +8,8 @@ import (
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	"github.com/aequitas/aura/chain/x/wasm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 var _ types.MsgServer = msgServer{}
@@ -29,7 +31,7 @@ func (ms msgServer) StoreCode(goCtx context.Context, msg *types.MsgStoreCode) (*
 
 	sender, err := sdk.AccAddressFromBech32(msg.Sender)
 	if err != nil {
-		return nil, types.ErrUnauthorized.Wrapf("invalid sender address: %s", err)
+		return nil, status.Error(codes.PermissionDenied, types.ErrUnauthorized.Wrapf("invalid sender address: %s", err).Error())
 	}
 
 	// Validate upload authorization and contract code
@@ -63,7 +65,7 @@ func (ms msgServer) InstantiateContract(goCtx context.Context, msg *types.MsgIns
 
 	creator, err := sdk.AccAddressFromBech32(msg.Sender)
 	if err != nil {
-		return nil, types.ErrUnauthorized.Wrapf("invalid sender address: %s", err)
+		return nil, status.Error(codes.PermissionDenied, types.ErrUnauthorized.Wrapf("invalid sender address: %s", err).Error())
 	}
 
 	var admin sdk.AccAddress
@@ -129,7 +131,7 @@ func (ms msgServer) ExecuteContract(goCtx context.Context, msg *types.MsgExecute
 
 	sender, err := sdk.AccAddressFromBech32(msg.Sender)
 	if err != nil {
-		return nil, types.ErrUnauthorized.Wrapf("invalid sender address: %s", err)
+		return nil, status.Error(codes.PermissionDenied, types.ErrUnauthorized.Wrapf("invalid sender address: %s", err).Error())
 	}
 
 	contractAddr, err := sdk.AccAddressFromBech32(msg.Contract)
@@ -231,7 +233,7 @@ func (ms msgServer) MigrateContract(goCtx context.Context, msg *types.MsgMigrate
 
 	caller, err := sdk.AccAddressFromBech32(msg.Sender)
 	if err != nil {
-		return nil, types.ErrUnauthorized.Wrapf("invalid sender address: %s", err)
+		return nil, status.Error(codes.PermissionDenied, types.ErrUnauthorized.Wrapf("invalid sender address: %s", err).Error())
 	}
 
 	contractAddr, err := sdk.AccAddressFromBech32(msg.Contract)
@@ -245,7 +247,7 @@ func (ms msgServer) MigrateContract(goCtx context.Context, msg *types.MsgMigrate
 		return nil, types.ErrSecurityViolation.Wrapf("failed to verify admin: %s", err)
 	}
 	if !isAdmin {
-		return nil, types.ErrUnauthorized.Wrapf("sender %s is not the contract admin", caller.String())
+		return nil, status.Error(codes.PermissionDenied, types.ErrUnauthorized.Wrapf("sender %s is not the contract admin", caller.String()).Error())
 	}
 
 	// Migrate contract
@@ -275,7 +277,7 @@ func (ms msgServer) UpdateAdmin(goCtx context.Context, msg *types.MsgUpdateAdmin
 
 	sender, err := sdk.AccAddressFromBech32(msg.Sender)
 	if err != nil {
-		return nil, types.ErrUnauthorized.Wrapf("invalid sender address: %s", err)
+		return nil, status.Error(codes.PermissionDenied, types.ErrUnauthorized.Wrapf("invalid sender address: %s", err).Error())
 	}
 
 	contractAddr, err := sdk.AccAddressFromBech32(msg.Contract)
@@ -297,13 +299,13 @@ func (ms msgServer) UpdateAdmin(goCtx context.Context, msg *types.MsgUpdateAdmin
 	// If no admin is set in AURA storage, this is an unauthorized operation
 	// (contracts must be instantiated through AURA's InstantiateContract which sets admin)
 	if currentAdmin.Empty() {
-		return nil, types.ErrUnauthorized.Wrap("contract has no admin set")
+		return nil, status.Error(codes.PermissionDenied, types.ErrUnauthorized.Wrap("contract has no admin set").Error())
 	}
 
 	// Verify sender is the current admin
 	if !currentAdmin.Equals(sender) {
-		return nil, types.ErrUnauthorized.Wrapf("sender %s is not the contract admin %s",
-			sender.String(), currentAdmin.String())
+		return nil, status.Error(codes.PermissionDenied, types.ErrUnauthorized.Wrapf("sender %s is not the contract admin %s",
+			sender.String(), currentAdmin.String()).Error())
 	}
 
 	// Update admin in AURA storage
@@ -341,7 +343,7 @@ func (ms msgServer) ClearAdmin(goCtx context.Context, msg *types.MsgClearAdmin) 
 
 	sender, err := sdk.AccAddressFromBech32(msg.Sender)
 	if err != nil {
-		return nil, types.ErrUnauthorized.Wrapf("invalid sender address: %s", err)
+		return nil, status.Error(codes.PermissionDenied, types.ErrUnauthorized.Wrapf("invalid sender address: %s", err).Error())
 	}
 
 	contractAddr, err := sdk.AccAddressFromBech32(msg.Contract)
@@ -357,13 +359,13 @@ func (ms msgServer) ClearAdmin(goCtx context.Context, msg *types.MsgClearAdmin) 
 
 	// If no admin is set, this is an error
 	if currentAdmin.Empty() {
-		return nil, types.ErrUnauthorized.Wrap("contract has no admin to clear")
+		return nil, status.Error(codes.PermissionDenied, types.ErrUnauthorized.Wrap("contract has no admin to clear").Error())
 	}
 
 	// Verify sender is the current admin
 	if !currentAdmin.Equals(sender) {
-		return nil, types.ErrUnauthorized.Wrapf("sender %s is not the contract admin %s",
-			sender.String(), currentAdmin.String())
+		return nil, status.Error(codes.PermissionDenied, types.ErrUnauthorized.Wrapf("sender %s is not the contract admin %s",
+			sender.String(), currentAdmin.String()).Error())
 	}
 
 	// Clear admin in AURA storage

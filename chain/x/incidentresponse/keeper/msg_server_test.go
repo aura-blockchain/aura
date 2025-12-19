@@ -1,11 +1,15 @@
 package keeper
 
 import (
+	"strings"
 	"testing"
 	"time"
 
-	"github.com/aequitas/aura/chain/x/incidentresponse/types"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
+	"github.com/aequitas/aura/chain/x/incidentresponse/types"
 )
 
 func TestMsgServer_ReportIncident(t *testing.T) {
@@ -33,7 +37,7 @@ func TestMsgServer_ReportIncident(t *testing.T) {
 			name:    "nil message",
 			msg:     nil,
 			wantErr: true,
-			errMsg:  "empty request",
+			errMsg:  "invalidargument",
 		},
 		{
 			name: "empty title",
@@ -55,7 +59,7 @@ func TestMsgServer_ReportIncident(t *testing.T) {
 			if tt.wantErr {
 				require.Error(t, err)
 				if tt.errMsg != "" {
-					require.Contains(t, err.Error(), tt.errMsg)
+					require.Contains(t, strings.ToLower(err.Error()), tt.errMsg)
 				}
 			} else {
 				require.NoError(t, err)
@@ -178,7 +182,7 @@ func TestMsgServer_RequestChainPause(t *testing.T) {
 				DurationSeconds: 3600,
 			},
 			wantErr: true,
-			errMsg:  "unauthorized",
+			errMsg:  "permissiondenied",
 		},
 	}
 
@@ -201,9 +205,14 @@ func TestMsgServer_RequestChainPause(t *testing.T) {
 
 			if tt.wantErr {
 				require.Error(t, err)
-				if tt.errMsg != "" {
-					require.Contains(t, err.Error(), tt.errMsg)
+				st, ok := status.FromError(err)
+				require.True(t, ok)
+				if tt.errMsg == "permissiondenied" {
+					require.Equal(t, codes.PermissionDenied, st.Code())
+				} else {
+					require.Equal(t, codes.InvalidArgument, st.Code())
 				}
+				require.Contains(t, strings.ToLower(err.Error()), tt.errMsg)
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, resp)
@@ -217,22 +226,15 @@ func TestMsgServer_RequestChainPause(t *testing.T) {
 	}
 }
 
+func TestMapUnauthorizedPause(t *testing.T) {
+	err := mapUnauthorizedPause(types.ErrUnauthorizedPause)
+	require.Error(t, err)
+	st, ok := status.FromError(err)
+	require.True(t, ok)
+	require.Equal(t, codes.PermissionDenied, st.Code())
+}
+
 func TestMsgServer_ResumeChain(t *testing.T) {
-	keeper, ctx := setupKeeperForTest(t)
-	msgServer := NewMsgServerImpl(keeper)
-
-	// Setup params with authorized keys
-	params := types.DefaultParams()
-	params.EmergencyPauseEnabled = true
-	params.PauseAuthorizedKeys = []string{"admin1", "admin2"}
-	params.PauseRequiredSigners = 1
-	err := keeper.SetParams(ctx, params)
-	require.NoError(t, err)
-
-	// Pause the chain first
-	err = keeper.RequestChainPause(ctx, "admin1", types.PauseLevelFull, "Test", "INC-001", 1*time.Hour)
-	require.NoError(t, err)
-
 	tests := []struct {
 		name    string
 		msg     *types.MsgResumeChain
@@ -251,25 +253,57 @@ func TestMsgServer_ResumeChain(t *testing.T) {
 			name:    "nil message",
 			msg:     nil,
 			wantErr: true,
-			errMsg:  "empty request",
+			errMsg:  "invalidargument",
+		},
+		{
+			name: "unauthorized resumer",
+			msg: &types.MsgResumeChain{
+				Resumer: "unauthorized",
+				Reason:  "Test",
+			},
+			wantErr: true,
+			errMsg:  "permissiondenied",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			resp, err := msgServer.ResumeChain(ctx, tt.msg)
+			freshKeeper, freshCtx := setupKeeperForTest(t)
+			msgServer := NewMsgServerImpl(freshKeeper)
+
+			// Setup params with authorized keys
+			params := types.DefaultParams()
+			params.EmergencyPauseEnabled = true
+			params.PauseAuthorizedKeys = []string{"admin1", "admin2"}
+			params.PauseRequiredSigners = 1
+			err := freshKeeper.SetParams(freshCtx, params)
+			require.NoError(t, err)
+
+			// Pause chain if a message is provided (nil message should still error)
+			if tt.msg != nil {
+				err = freshKeeper.RequestChainPause(freshCtx, "admin1", types.PauseLevelFull, "Test", "INC-001", 1*time.Hour)
+				require.NoError(t, err)
+			}
+
+			resp, err := msgServer.ResumeChain(freshCtx, tt.msg)
 
 			if tt.wantErr {
 				require.Error(t, err)
-				if tt.errMsg != "" {
-					require.Contains(t, err.Error(), tt.errMsg)
+				st, ok := status.FromError(err)
+				if ok {
+					if tt.errMsg == "permissiondenied" {
+						require.Equal(t, codes.PermissionDenied, st.Code())
+					} else {
+						require.Equal(t, codes.InvalidArgument, st.Code())
+					}
 				}
+				require.Contains(t, strings.ToLower(err.Error()), tt.errMsg)
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, resp)
 
 				// Verify chain is resumed
-				pauseState := keeper.GetChainPauseState(ctx)
+				pauseState := freshKeeper.GetChainPauseState(freshCtx)
 				require.False(t, pauseState.IsPaused)
 			}
 		})

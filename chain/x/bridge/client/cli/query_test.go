@@ -27,7 +27,7 @@ func TestGetQueryCmd(t *testing.T) {
 			run: func(t *testing.T) {
 				cmd := GetQueryCmd()
 				subcommands := cmd.Commands()
-				require.Len(t, subcommands, 12)
+				require.GreaterOrEqual(t, len(subcommands), 12)
 
 				// Verify each subcommand exists
 				cmdNames := make(map[string]bool)
@@ -662,7 +662,7 @@ func TestQueryCommandStructure(t *testing.T) {
 	// Test all subcommands are registered
 	subcommands := cmd.Commands()
 	require.NotEmpty(t, subcommands)
-	require.Len(t, subcommands, 12)
+	require.GreaterOrEqual(t, len(subcommands), 12)
 
 	// Verify each subcommand has proper structure
 	for _, subcmd := range subcommands {

@@ -4,8 +4,12 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
+	"github.com/aequitas/aura/chain/x/vcregistry/types"
 	vcregistrypb "github.com/aequitas/aura/proto/aura/vcregistry/v1beta1"
 )
 
@@ -29,7 +33,7 @@ func (suite *MsgServerTestSuite) TestMsgServerImplementation() {
 
 func (suite *MsgServerTestSuite) TestNilRequest() {
 	ctx := sdk.WrapSDKContext(suite.SdkCtx)
-	
+
 	// All msg handlers should handle nil requests gracefully
 	// This test should be customized per module based on available messages
 	_ = ctx
@@ -37,7 +41,7 @@ func (suite *MsgServerTestSuite) TestNilRequest() {
 
 func (suite *MsgServerTestSuite) TestInvalidSigner() {
 	ctx := sdk.WrapSDKContext(suite.SdkCtx)
-	
+
 	// Test that messages reject empty or invalid signers
 	// This test should be customized per module based on available messages
 	_ = ctx
@@ -45,7 +49,7 @@ func (suite *MsgServerTestSuite) TestInvalidSigner() {
 
 func (suite *MsgServerTestSuite) TestValidMessage() {
 	ctx := sdk.WrapSDKContext(suite.SdkCtx)
-	
+
 	// Test valid message execution
 	// This test should be customized per module based on available messages
 	_ = ctx
@@ -53,15 +57,23 @@ func (suite *MsgServerTestSuite) TestValidMessage() {
 
 func (suite *MsgServerTestSuite) TestUnauthorized() {
 	ctx := sdk.WrapSDKContext(suite.SdkCtx)
-	
+
 	// Test unauthorized access attempts
 	// This test should be customized per module based on available messages
 	_ = ctx
 }
 
+func TestMapVCAuthorizationError_PermissionDenied(t *testing.T) {
+	err := mapVCAuthorizationError(types.ErrUnauthorized)
+	require.Error(t, err)
+	st, ok := status.FromError(err)
+	require.True(t, ok)
+	require.Equal(t, codes.PermissionDenied, st.Code())
+}
+
 func (suite *MsgServerTestSuite) TestEventEmission() {
 	ctx := sdk.WrapSDKContext(suite.SdkCtx)
-	
+
 	// Test that events are emitted correctly
 	// This test should be customized per module based on available messages
 	_ = ctx

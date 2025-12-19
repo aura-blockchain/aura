@@ -24,11 +24,14 @@ DURATION_HOURS=$(echo "scale=2; $DURATION_MINUTES / 60" | bc)
 
 # Transaction rate (txs per minute)
 TX_RATE=${TX_RATE:-10}
+# Port offset to avoid conflicts with any running nodes on default ports
+PORT_OFFSET=${PORT_OFFSET:-30000}
 
 echo "==================================================================="
 echo "Phase 7.3: Long-Running Stability Test (Soak Test)"
 echo "Duration: $DURATION_HOURS hours ($DURATION_SECONDS seconds)"
 echo "Transaction rate: $TX_RATE tx/min"
+echo "Port offset base: $PORT_OFFSET"
 echo "==================================================================="
 echo ""
 
@@ -40,6 +43,7 @@ Phase 7.3: Long-Running Stability Test Results
 Timestamp: $(date)
 Duration: $DURATION_HOURS hours
 Transaction Rate: $TX_RATE tx/min
+Port Offset Base: $PORT_OFFSET
 
 EOF
 
@@ -123,20 +127,23 @@ for i in {1..4}; do
     mkdir -p "$NODE_DIR"
 
     log_result "Initializing node$i..."
-    $BINARY init "node$i" --chain-id soak-test --home "$NODE_DIR" &>> "$RESULTS_FILE"
+    # aurad init prints a mnemonic and prompts for Enter; provide a newline to keep this script non-interactive.
+    printf '\n' | $BINARY init "node$i" --chain-id soak-test --home "$NODE_DIR" &>> "$RESULTS_FILE"
 
-    # Configure unique ports
-    RPC_PORT=$((26657 + (i - 1) * 100))
-    P2P_PORT=$((26656 + (i - 1) * 100))
-    GRPC_PORT=$((9090 + (i - 1) * 100))
-    API_PORT=$((1317 + (i - 1) * 100))
-    PROM_PORT=$((26660 + (i - 1) * 100))
+    # Configure unique ports (offset to avoid collisions with running nodes)
+    BASE=$((PORT_OFFSET + (i - 1) * 100))
+    P2P_PORT=$((BASE + 0))
+    RPC_PORT=$((BASE + 1))
+    GRPC_PORT=$((BASE + 2))
+    API_PORT=$((BASE + 3))
+    PROM_PORT=$((BASE + 4))
 
-    sed -i "s/laddr = \"tcp:\/\/127.0.0.1:26657\"/laddr = \"tcp:\/\/127.0.0.1:$RPC_PORT\"/" "$NODE_DIR/config/config.toml"
-    sed -i "s/laddr = \"tcp:\/\/0.0.0.0:26656\"/laddr = \"tcp:\/\/0.0.0.0:$P2P_PORT\"/" "$NODE_DIR/config/config.toml"
-    sed -i "s/address = \"localhost:9090\"/address = \"localhost:$GRPC_PORT\"/" "$NODE_DIR/config/app.toml"
-    sed -i "s/address = \"tcp:\/\/localhost:1317\"/address = \"tcp:\/\/localhost:$API_PORT\"/" "$NODE_DIR/config/app.toml"
-    sed -i "s/prometheus_listen_addr = \":26660\"/prometheus_listen_addr = \":$PROM_PORT\"/" "$NODE_DIR/config/config.toml"
+    perl -pi -e 's|laddr = "tcp://[^"]*:26657"|laddr = "tcp://127.0.0.1:'"$RPC_PORT"'"|g' "$NODE_DIR/config/config.toml"
+    perl -pi -e 's|laddr = "tcp://0.0.0.0:26656"|laddr = "tcp://0.0.0.0:'"$P2P_PORT"'"|g' "$NODE_DIR/config/config.toml"
+    perl -pi -e 's|external_address = ""|external_address = "tcp://127.0.0.1:'"$P2P_PORT"'"|g' "$NODE_DIR/config/config.toml"
+    perl -pi -e 's|address = "localhost:9090"|address = "localhost:'"$GRPC_PORT"'"|g' "$NODE_DIR/config/app.toml"
+    perl -pi -e 's|address = "tcp://localhost:1317"|address = "tcp://localhost:'"$API_PORT"'"|g' "$NODE_DIR/config/app.toml"
+    perl -pi -e 's|prometheus_listen_addr = ":[0-9]+"|prometheus_listen_addr = ":'"$PROM_PORT"'"|g' "$NODE_DIR/config/config.toml"
 
     # Enable Prometheus
     sed -i 's/prometheus = false/prometheus = true/' "$NODE_DIR/config/config.toml"
@@ -177,12 +184,26 @@ for i in {2..4}; do
     cp "$BASE_DIR/node1/config/genesis.json" "$BASE_DIR/node$i/config/genesis.json"
 done
 
-# Get node1's ID for peer configuration
-NODE1_ID=$($BINARY comet show-node-id --home "$BASE_DIR/node1")
+# Configure persistent peers (mesh all nodes together using computed P2P ports)
+declare -A NODE_IDS
+declare -A NODE_P2P_PORTS
+for i in {1..4}; do
+    NODE_IDS[$i]=$($BINARY comet show-node-id --home "$BASE_DIR/node$i")
+    BASE=$((PORT_OFFSET + (i - 1) * 100))
+    NODE_P2P_PORTS[$i]=$BASE
+done
 
-# Configure peers (all nodes connect to node1)
-for i in {2..4}; do
-    sed -i "s/persistent_peers = \"\"/persistent_peers = \"${NODE1_ID}@127.0.0.1:26656\"/" "$BASE_DIR/node$i/config/config.toml"
+PEER_LIST=""
+for i in {1..4}; do
+    for j in {1..4}; do
+        if [ $i -eq $j ]; then
+            continue
+        fi
+        PEER_LIST+="${NODE_IDS[$j]}@127.0.0.1:${NODE_P2P_PORTS[$j]},"
+    done
+    PEER_LIST="${PEER_LIST%,}"
+    sed -i "s/persistent_peers = \"\"/persistent_peers = \"${PEER_LIST}\"/" "$BASE_DIR/node$i/config/config.toml"
+    PEER_LIST=""
 done
 
 log_result "✅ Testnet configured with 4 validators"
@@ -242,12 +263,23 @@ END_TIME=$((START_TIME + DURATION))
 echo "Load generator started at $(date)"
 echo "Target: $TX_RATE tx/min for $((DURATION / 3600)) hours"
 
+# Create a deterministic recipient account in the local keyring.
+RECIPIENT_JSON=$($BINARY keys add soak-recipient --keyring-backend test --home "$NODE_DIR" --output json 2>/dev/null || true)
+if [ -z "$RECIPIENT_JSON" ]; then
+  RECIPIENT_JSON=$($BINARY keys show soak-recipient --keyring-backend test --home "$NODE_DIR" --output json 2>/dev/null || true)
+fi
+RECIPIENT_ADDR=$(echo "$RECIPIENT_JSON" | jq -r '.address // empty' 2>/dev/null || true)
+if [ -z "$RECIPIENT_ADDR" ]; then
+  echo "Failed to create or load soak recipient key" >&2
+  exit 1
+fi
+
 # Calculate sleep time between transactions
 SLEEP_TIME=$(echo "scale=2; 60 / $TX_RATE" | bc)
 
 while [ $(date +%s) -lt $END_TIME ]; do
     # Send a simple bank transfer
-    $BINARY tx bank send validator1 aura1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqnrql8a 1000stake \
+    $BINARY tx bank send validator1 "$RECIPIENT_ADDR" 1000stake \
         --chain-id soak-test \
         --home "$NODE_DIR" \
         --keyring-backend test \
@@ -327,6 +359,7 @@ while [ $(date +%s) -lt $END_TIME ]; do
             INITIAL=${INITIAL_MEM[$i]}
             MEM_GROWTH=$((MEM - INITIAL))
             MEM_GROWTH_PCT=$(echo "scale=1; ($MEM_GROWTH * 100) / $INITIAL" | bc)
+            MEM_GROWTH_PCT_INT=$(printf "%.0f" "$MEM_GROWTH_PCT" 2>/dev/null || echo "0")
 
             # Calculate block rate
             BLOCK_DIFF=$((HEIGHT - ${INITIAL_HEIGHT[$i]}))
@@ -335,7 +368,7 @@ while [ $(date +%s) -lt $END_TIME ]; do
             log_result "Node$i: MEM=${MEM}MB (+${MEM_GROWTH}MB, +${MEM_GROWTH_PCT}%), HEIGHT=$HEIGHT, RATE=${BLOCK_RATE} blk/s"
 
             # Check for memory leak (>50% growth)
-            if [ $MEM_GROWTH_PCT -gt 50 ]; then
+            if [ "$MEM_GROWTH_PCT_INT" -gt 50 ]; then
                 log_result "⚠️  Node$i: Possible memory leak detected (${MEM_GROWTH_PCT}% growth)"
             fi
         else

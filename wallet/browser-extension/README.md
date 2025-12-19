@@ -32,14 +32,18 @@ A comprehensive, secure browser extension wallet for the Aura blockchain network
 
 ### DEX Trading
 - **Swap Tokens**: Execute token swaps through DEX
-- **View Pools**: Browse available liquidity pools
+- **Smart Quotes**: Inline pool quoting with slippage controls + min-received auto-fill
+- **Provide/Remove Liquidity**: UI hooks Lt DexModule Add/Remove liquidity flows
+- **View Pools**: Browse live liquidity pools and depths
 - **Trade History**: Track swap transactions
 
 ### Hardware Wallet Support
-- **Ledger Integration**: Full Ledger device support via WebUSB
+- **Ledger Integration**: Full Ledger device support via WebHID (ledgerjs)
 - **Trezor Framework**: Extensible support for Trezor devices
+- **Keystone QR**: QR-based address/signing flow via Keystone SDK
 - **Address Verification**: Display and verify addresses on device
 - **Transaction Signing**: Sign transactions securely on hardware
+- **Keplr/Leap**: Register Aura chain and expose `window.auraKeplrProvider` shim (getKey/signAmino/signDirect/sendTx) for dApps; WalletConnect v2 auto-uses Keplr when present, otherwise surfaces a clear fallback error until a signer is registered.
 
 ### Security Features
 - **Private Key Encryption**: AES-256-GCM with PBKDF2 key derivation (100,000 iterations)
@@ -152,6 +156,12 @@ Creates `extension.zip` ready for distribution.
 - Voting operations
 - Deposit management
 - Proposal formatting
+
+**src/dex.js**
+- Swap quoting + slippage controls
+- Liquidity pool/orderbook/HTLC transaction builders
+- REST query wrappers for pools/oracle metrics
+- Pool share + pricing utilities
 
 **cosmos-sdk.js**
 - Transaction building

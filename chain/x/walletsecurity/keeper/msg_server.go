@@ -1,10 +1,10 @@
 package keeper
 
 import (
-    "github.com/aequitas/aura/chain/x/common/determinism"
 	"context"
 	"crypto/sha256"
 	"fmt"
+	"github.com/aequitas/aura/chain/x/common/determinism"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -129,13 +129,13 @@ func (ms msgServer) CreateMultiSigWallet(goCtx context.Context, msg *wspb.MsgCre
 	walletID := fmt.Sprintf("multisig_%s_%d", msg.Creator, ctx.BlockHeight())
 
 	wallet := &wspb.MultiSigWallet{
-		WalletId:      walletID,
-		Signers:       msg.Signers,
-		Threshold:     msg.Threshold,
-		TotalSigners:  int32(len(msg.Signers)),
-		CreatedAt:     blockTimeToGogoTimestamp(ctx),
-		Creator:       msg.Creator,
-		SignerWeights: msg.SignerWeights,
+		WalletId:        walletID,
+		Signers:         msg.Signers,
+		Threshold:       msg.Threshold,
+		TotalSigners:    int32(len(msg.Signers)),
+		CreatedAt:       blockTimeToGogoTimestamp(ctx),
+		Creator:         msg.Creator,
+		SignerWeights:   msg.SignerWeights,
 		WeightThreshold: msg.WeightThreshold,
 	}
 
@@ -737,6 +737,10 @@ func (ms msgServer) LockSession(goCtx context.Context, msg *wspb.MsgLockSession)
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	if err := ms.Keeper.requireActiveAuthSession(ctx, msg.SessionId); err != nil {
+		return nil, status.Error(codes.PermissionDenied, err.Error())
+	}
+
 	// Mark session as locked (simplified)
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
@@ -756,7 +760,11 @@ func (ms msgServer) UnlockSession(goCtx context.Context, msg *wspb.MsgUnlockSess
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	expiresAt := blockTimeWithOffsetToGogoTimestamp(ctx, 1 * time.Hour)
+	if err := ms.Keeper.requireActiveAuthSession(ctx, msg.SessionId); err != nil {
+		return nil, status.Error(codes.PermissionDenied, err.Error())
+	}
+
+	expiresAt := blockTimeWithOffsetToGogoTimestamp(ctx, 1*time.Hour)
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
@@ -774,9 +782,10 @@ func (ms msgServer) UnlockSession(goCtx context.Context, msg *wspb.MsgUnlockSess
 // EnrollBiometric enrolls biometric authentication
 //
 // DEPRECATION WARNING:
-//   This function is DEPRECATED and should not be used in production.
-//   True biometric authentication cannot be implemented securely on a blockchain.
-//   See keeper.verifyBiometricTemplate for detailed explanation.
+//
+//	This function is DEPRECATED and should not be used in production.
+//	True biometric authentication cannot be implemented securely on a blockchain.
+//	See keeper.verifyBiometricTemplate for detailed explanation.
 //
 // Security Implementation:
 //   - Enrollment data is hashed with SHA-256 before storage
@@ -848,18 +857,20 @@ func (ms msgServer) EnrollBiometric(goCtx context.Context, msg *wspb.MsgEnrollBi
 // AuthenticateBiometric authenticates using biometric
 //
 // DEPRECATION WARNING:
-//   This function is DEPRECATED and should not be used in production.
-//   See detailed explanation in keeper.verifyBiometricTemplate for why
-//   biometric authentication is fundamentally incompatible with blockchain.
+//
+//	This function is DEPRECATED and should not be used in production.
+//	See detailed explanation in keeper.verifyBiometricTemplate for why
+//	biometric authentication is fundamentally incompatible with blockchain.
 //
 // Security Implementation Notes:
-//   Despite the architectural limitations, this implementation includes:
-//   - Signer verification (prevents unauthorized authentication attempts)
-//   - Minimum proof size validation (prevents trivial bypass attacks)
-//   - Replay protection (prevents reuse of captured proofs)
-//   - Failed attempt tracking (rate limiting)
-//   - Automatic lockout after 5 failed attempts
-//   - Cryptographic proof verification (exact hash matching)
+//
+//	Despite the architectural limitations, this implementation includes:
+//	- Signer verification (prevents unauthorized authentication attempts)
+//	- Minimum proof size validation (prevents trivial bypass attacks)
+//	- Replay protection (prevents reuse of captured proofs)
+//	- Failed attempt tracking (rate limiting)
+//	- Automatic lockout after 5 failed attempts
+//	- Cryptographic proof verification (exact hash matching)
 //
 // What This Implementation DOES:
 //   - Verifies the transaction is signed by the wallet owner
@@ -875,13 +886,14 @@ func (ms msgServer) EnrollBiometric(goCtx context.Context, msg *wspb.MsgEnrollBi
 //   - Provide security beyond pre-shared secret authentication
 //
 // Recommended Alternative:
-//   Use client-side biometric authentication (FaceID, TouchID, etc.) to
-//   unlock the wallet's private key, then sign transactions normally
-//   with Cosmos SDK authentication. This provides:
-//   - True biometric security (hardware-backed, liveness detection)
-//   - Off-chain biometric verification (no consensus issues)
-//   - Standard blockchain authentication (proven security model)
-//   - Privacy (biometric data never leaves the device)
+//
+//	Use client-side biometric authentication (FaceID, TouchID, etc.) to
+//	unlock the wallet's private key, then sign transactions normally
+//	with Cosmos SDK authentication. This provides:
+//	- True biometric security (hardware-backed, liveness detection)
+//	- Off-chain biometric verification (no consensus issues)
+//	- Standard blockchain authentication (proven security model)
+//	- Privacy (biometric data never leaves the device)
 func (ms msgServer) AuthenticateBiometric(goCtx context.Context, msg *wspb.MsgAuthenticateBiometric) (*wspb.MsgAuthenticateBiometricResponse, error) {
 	if msg == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
@@ -1066,14 +1078,14 @@ func (ms msgServer) CreateEncryptedBackup(goCtx context.Context, msg *wspb.MsgCr
 	backupID := fmt.Sprintf("backup_%s_%d", msg.WalletId, ctx.BlockHeight())
 
 	backup := &wspb.EncryptedBackup{
-		BackupId:               backupID,
-		WalletId:               msg.WalletId,
-		EncryptionAlgorithm:    msg.EncryptionAlgorithm,
-		KeyDerivationFunction:  msg.KeyDerivationFunction,
-		Salt:                   msg.Salt,
-		Iterations:             msg.Iterations,
-		Location:               msg.Location,
-		CreatedAt:              blockTimeToGogoTimestamp(ctx),
+		BackupId:              backupID,
+		WalletId:              msg.WalletId,
+		EncryptionAlgorithm:   msg.EncryptionAlgorithm,
+		KeyDerivationFunction: msg.KeyDerivationFunction,
+		Salt:                  msg.Salt,
+		Iterations:            msg.Iterations,
+		Location:              msg.Location,
+		CreatedAt:             blockTimeToGogoTimestamp(ctx),
 	}
 
 	backupBytes, err := ms.Keeper.cdc.Marshal(backup)
@@ -1097,11 +1109,11 @@ func (ms msgServer) ConfigureDustFilter(goCtx context.Context, msg *wspb.MsgConf
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	filter := &wspb.DustAttackFilter{
-		WalletId:                      msg.WalletId,
-		Enabled:                       msg.Enabled,
-		MinimumAmount:                 msg.MinimumAmount,
-		MaxDustTransactionsPerBlock:   msg.MaxDustTransactionsPerBlock,
-		SuspiciousPatternThreshold:    msg.SuspiciousPatternThreshold,
+		WalletId:                    msg.WalletId,
+		Enabled:                     msg.Enabled,
+		MinimumAmount:               msg.MinimumAmount,
+		MaxDustTransactionsPerBlock: msg.MaxDustTransactionsPerBlock,
+		SuspiciousPatternThreshold:  msg.SuspiciousPatternThreshold,
 	}
 
 	filterBytes, err := ms.Keeper.cdc.Marshal(filter)

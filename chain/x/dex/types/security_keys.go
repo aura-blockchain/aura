@@ -3,6 +3,7 @@ package types
 import (
 	"encoding/binary"
 	"fmt"
+	"math"
 )
 
 // Security feature key prefixes
@@ -34,7 +35,7 @@ func TWAPKey(poolID string, blockHeight int64) []byte {
 
 	// Append block height as bytes
 	heightBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(heightBytes, uint64(blockHeight))
+	binary.BigEndian.PutUint64(heightBytes, safeInt64ToUint64(blockHeight))
 	key = append(key, heightBytes...)
 
 	return key
@@ -102,4 +103,14 @@ func LastPriceKey(poolID string) []byte {
 // FormatSecurityKey formats a security key for logging
 func FormatSecurityKey(prefix []byte, parts ...string) string {
 	return fmt.Sprintf("security/%x/%s", prefix, parts)
+}
+
+func safeInt64ToUint64(v int64) uint64 {
+	if v < 0 {
+		return 0
+	}
+	if v > math.MaxInt64 {
+		return math.MaxInt64
+	}
+	return uint64(v)
 }

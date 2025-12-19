@@ -44,10 +44,12 @@ var (
 	ErrOutOfBounds = fmt.Errorf("value out of bounds")
 
 	// Regex patterns for validation
-	hexPattern         = regexp.MustCompile(`^[0-9a-fA-F]+$`)
+	hexPattern          = regexp.MustCompile(`^[0-9a-fA-F]+$`)
 	alphanumericPattern = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 	// DNS-safe pattern for denoms and identifiers
 	denomPattern = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9./\-_]{2,127}$`)
+	// ISO 3166-1 alpha-2 with optional subdivision (e.g., US or US-NY)
+	jurisdictionPattern = regexp.MustCompile(`^[A-Z]{2}(-[A-Z0-9]{2,})?$`)
 )
 
 // ValidateAddress validates a bech32 address
@@ -423,6 +425,21 @@ func containsControlCharacters(s string) bool {
 		}
 	}
 	return false
+}
+
+// ValidateJurisdictionCode enforces ISO 3166-1 alpha-2 (optionally subdivision) format.
+// Accepts 2 uppercase letters or patterns like "US-NY".
+func ValidateJurisdictionCode(code string) error {
+	code = strings.TrimSpace(code)
+	if code == "" {
+		return fmt.Errorf("%w: jurisdiction code cannot be empty", ErrInvalidString)
+	}
+
+	if !jurisdictionPattern.MatchString(code) {
+		return fmt.Errorf("%w: invalid jurisdiction code %s: must be 2-letter ISO code (e.g., 'US') or extended format (e.g., 'US-NY')", ErrInvalidString, code)
+	}
+
+	return nil
 }
 
 // ValidatePercentage validates that a value is a valid percentage (0-100)

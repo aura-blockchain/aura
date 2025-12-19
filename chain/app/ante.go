@@ -106,6 +106,9 @@ func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
 		// Wallet security checks - transaction limits, spending limits
 		NewWalletSecurityDecorator(options.WalletSecurityKeeper),
 
+		// Rate-limit repeated auth failures per block to mitigate brute-force attempts
+		NewAuthRateLimitDecorator(options.WalletSecurityKeeper),
+
 		// Compliance checks - sanctions screening, AML validation
 		NewComplianceDecorator(options.ComplianceKeeper),
 

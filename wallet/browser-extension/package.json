@@ -15,15 +15,23 @@
     "package": "npm run build && cd dist && zip -r ../extension.zip ."
   },
   "dependencies": {
-    "dompurify": "^3.0.8"
+    "@keystonehq/keystone-sdk": "^0.11.6",
+    "@ledgerhq/hw-app-cosmos": "^6.28.7",
+    "@ledgerhq/hw-transport-webhid": "^6.28.7",
+    "@walletconnect/sign-client": "^2.23.1",
+    "dompurify": "^3.0.8",
+    "trezor-connect": "^8.2.12"
   },
   "devDependencies": {
+    "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
+    "@esbuild-plugins/node-modules-polyfill": "^0.2.2",
     "@types/chrome": "^0.0.258",
     "esbuild": "^0.19.11",
     "eslint": "^8.56.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-security": "^2.1.0",
     "html-minifier-terser": "^7.2.0",
+    "jsdom": "^27.3.0",
     "prettier": "^3.1.1",
     "rimraf": "^5.0.5",
     "vitest": "^1.1.0"

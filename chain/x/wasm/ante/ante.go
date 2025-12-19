@@ -2,6 +2,7 @@ package ante
 
 import (
 	"fmt"
+	"math"
 
 	errorsmod "cosmossdk.io/errors"
 	"github.com/aequitas/aura/chain/x/wasm/keeper"
@@ -108,8 +109,8 @@ func (wgd WasmGasDecorator) calculateInstantiateGas(ctx sdk.Context, msg *types.
 // calculateExecuteGas estimates gas cost for contract execution
 func (wgd WasmGasDecorator) calculateExecuteGas(ctx sdk.Context, msg *types.MsgExecuteContract) types.GasEstimate {
 	estimate := types.GasEstimate{
-		StorageGas:     2000,  // Base storage cost for state updates
-		ComputationGas: 5000,  // Base computation cost
+		StorageGas:     2000, // Base storage cost for state updates
+		ComputationGas: 5000, // Base computation cost
 		CallGas:        0,
 	}
 
@@ -151,7 +152,7 @@ func (wgd WasmGasDecorator) validateContractSize(ctx sdk.Context, code []byte) e
 func (wgd WasmGasDecorator) getBlockContractSize(ctx sdk.Context) uint64 {
 	// Use transient store keyed by block height (resets each block)
 	tStore := ctx.TransientStore(wgd.wasmKeeper.GetStoreKey())
-	key := append([]byte("block_contract_size_"), sdk.Uint64ToBigEndian(uint64(ctx.BlockHeight()))...)
+	key := append([]byte("block_contract_size_"), sdk.Uint64ToBigEndian(safeInt64ToUint64(ctx.BlockHeight()))...)
 
 	bz := tStore.Get(key)
 	if bz == nil {
@@ -165,7 +166,7 @@ func (wgd WasmGasDecorator) getBlockContractSize(ctx sdk.Context) uint64 {
 func (wgd WasmGasDecorator) setBlockContractSize(ctx sdk.Context, size uint64) {
 	// Use transient store keyed by block height (resets each block)
 	tStore := ctx.TransientStore(wgd.wasmKeeper.GetStoreKey())
-	key := append([]byte("block_contract_size_"), sdk.Uint64ToBigEndian(uint64(ctx.BlockHeight()))...)
+	key := append([]byte("block_contract_size_"), sdk.Uint64ToBigEndian(safeInt64ToUint64(ctx.BlockHeight()))...)
 
 	tStore.Set(key, sdk.Uint64ToBigEndian(size))
 }
@@ -180,6 +181,16 @@ func NewWasmAuthDecorator(wasmKeeper keeper.Keeper) WasmAuthDecorator {
 	return WasmAuthDecorator{
 		wasmKeeper: wasmKeeper,
 	}
+}
+
+func safeInt64ToUint64(i int64) uint64 {
+	if i < 0 {
+		return 0
+	}
+	if i > math.MaxInt64 {
+		return math.MaxInt64
+	}
+	return uint64(i)
 }
 
 // AnteHandle validates wasm authorization

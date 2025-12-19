@@ -22,11 +22,15 @@ import (
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
+	nodeservice "github.com/cosmos/cosmos-sdk/client/grpc/node"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/runtime"
+	"github.com/cosmos/cosmos-sdk/server"
+	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkmodule "github.com/cosmos/cosmos-sdk/types/module"
 	signingtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
@@ -61,6 +65,9 @@ import (
 	"google.golang.org/grpc"
 
 	// AURA Core Modules (kept as-is)
+	"github.com/aequitas/aura/chain/x/aiassistant"
+	aiassistantkeeper "github.com/aequitas/aura/chain/x/aiassistant/keeper"
+	aiassistanttypes "github.com/aequitas/aura/chain/x/aiassistant/types"
 	aurabindings "github.com/aequitas/aura/chain/x/aura-bindings"
 	aurabindingskeeper "github.com/aequitas/aura/chain/x/aura-bindings/keeper"
 	aurabindingstypes "github.com/aequitas/aura/chain/x/aura-bindings/types"
@@ -162,6 +169,7 @@ var (
 	// DEX can only manage existing tokens (Burner permission for LP tokens)
 	moduleAccountPermissions = map[string][]string{
 		authtypes.FeeCollectorName:     nil,
+		aiassistanttypes.ModuleName:    {authtypes.Burner},
 		stakingtypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
 		stakingtypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
 		distrtypes.ModuleName:          nil,
@@ -174,10 +182,11 @@ var (
 	}
 
 	allowedReceivingModules = map[string]bool{
-		governancetypes.ModuleName: true, // Governance module
-		dextypes.ModuleName:        true,
-		bridgetypes.ModuleName:     true,
-		wasmtypes.ModuleName:       true,
+		governancetypes.ModuleName:  true, // Governance module
+		aiassistanttypes.ModuleName: true,
+		dextypes.ModuleName:         true,
+		bridgetypes.ModuleName:      true,
+		wasmtypes.ModuleName:        true,
 	}
 )
 
@@ -224,6 +233,7 @@ type storeKeys struct {
 	compliance        *storetypes.KVStoreKey
 	dex               *storetypes.KVStoreKey
 	bridge            *storetypes.KVStoreKey
+	aiassistant       *storetypes.KVStoreKey
 	wasm              *storetypes.KVStoreKey
 	contractRegistry  *storetypes.KVStoreKey
 	wasmSecurity      *storetypes.KVStoreKey
@@ -262,6 +272,7 @@ func (s *storeKeys) Names() []string {
 		compliancetypes.StoreKey,
 		dextypes.StoreKey,
 		bridgetypes.StoreKey,
+		aiassistanttypes.StoreKey,
 		wasmtypes.StoreKey,
 		contractregistrytypes.StoreKey,
 		wasmSecurityTypes.StoreKey,
@@ -311,6 +322,7 @@ func (s *storeKeys) AsMap() map[string]*storetypes.KVStoreKey {
 		compliancetypes.StoreKey:       s.compliance,
 		dextypes.StoreKey:              s.dex,
 		bridgetypes.StoreKey:           s.bridge,
+		aiassistanttypes.StoreKey:      s.aiassistant,
 		wasmtypes.StoreKey:             s.wasm,
 		contractregistrytypes.StoreKey: s.contractRegistry,
 		wasmSecurityTypes.StoreKey:     s.wasmSecurity,
@@ -361,6 +373,7 @@ func initStoreKeys() *storeKeys {
 		compliance:        storetypes.NewKVStoreKey(compliancetypes.StoreKey),
 		dex:               storetypes.NewKVStoreKey(dextypes.StoreKey),
 		bridge:            storetypes.NewKVStoreKey(bridgetypes.StoreKey),
+		aiassistant:       storetypes.NewKVStoreKey(aiassistanttypes.StoreKey),
 		wasm:              storetypes.NewKVStoreKey(wasmtypes.StoreKey),
 		contractRegistry:  storetypes.NewKVStoreKey(contractregistrytypes.StoreKey),
 		wasmSecurity:      storetypes.NewKVStoreKey(wasmSecurityTypes.StoreKey),
@@ -414,6 +427,7 @@ type App struct {
 	vcKeeper               *vckeeper.Keeper
 	drKeeper               *drkeeper.Keeper
 	complianceKeeper       *compliancekeeper.Keeper
+	aiassistantKeeper      *aiassistantkeeper.Keeper
 	dexKeeper              *dexkeeper.Keeper
 	bridgeKeeper           *bridgekeeper.Keeper
 	contractRegistryKeeper *contractregistrykeeper.Keeper
@@ -759,6 +773,7 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 		keys.prevalidation,
 	)
 	prevalidationKeeper.SetLogger(logger.With("module", prevalidationtypes.ModuleName))
+	prevalidationKeeper.SetComplianceKeeper(complianceKeeper)
 
 	logger.Info("initializing keepers", "phase", "tier-3-inclusion-routines")
 
@@ -823,6 +838,13 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 
 	// Tier 7: DEX, Bridge, and AI modules (depend on vcregistry)
 	vcAdapter := newVCRegistryKeeperAdapter(vcKeeper)
+
+	aiassistantKeeper := aiassistantkeeper.NewKeeper(
+		encoding.Codec,
+		keys.aiassistant,
+		authorityAddr,
+		bankAdapter,
+	)
 
 	dexKeeper := dexkeeper.NewKeeper(encoding.Codec, keys.dex, bankAdapter, accountAdapter, vcAdapter, securityKeeper)
 
@@ -906,6 +928,7 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 
 	dexModule := dex.NewAppModule(dexKeeper)
 	bridgeModule := bridge.NewAppModule(bridgeKeeper)
+	aiassistantModule := aiassistant.NewAppModule(&aiassistantKeeper)
 	// Contract registry module - must come BEFORE wasm security (dependency order)
 	contractRegistryModule := contractregistry.NewAppModule(encoding.Codec, *contractRegistryKeeper)
 	// WASM security module - wraps wasmd with AURA security controls
@@ -945,6 +968,7 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 		dataModule,
 		dexModule,
 		bridgeModule,
+		aiassistantModule,
 		vcModule,
 		monitoringModule,
 
@@ -1000,6 +1024,7 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 		economicstypes.ModuleName,
 		governancetypes.ModuleName,
 		prevalidationtypes.ModuleName,
+		aiassistanttypes.ModuleName,
 		dextypes.ModuleName,
 		bridgetypes.ModuleName,
 		aurabindingstypes.ModuleName,
@@ -1039,6 +1064,7 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 		banktypes.ModuleName,
 		paramstypes.ModuleName,
 		prevalidationtypes.ModuleName,
+		aiassistanttypes.ModuleName,
 		aurabindingstypes.ModuleName,
 	)
 
@@ -1075,6 +1101,7 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 		paramstypes.ModuleName,
 		genutiltypes.ModuleName,
 		prevalidationtypes.ModuleName,
+		aiassistanttypes.ModuleName,
 		aurabindingstypes.ModuleName,
 	)
 
@@ -1114,6 +1141,7 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 		vcKeeper:               vcKeeper,
 		drKeeper:               drKeeper,
 		complianceKeeper:       complianceKeeper,
+		aiassistantKeeper:      &aiassistantKeeper,
 		dexKeeper:              dexKeeper,
 		bridgeKeeper:           bridgeKeeper,
 		contractRegistryKeeper: contractRegistryKeeper,
@@ -1316,6 +1344,7 @@ func (app *App) allStoreKeys() []storetypes.StoreKey {
 		app.storeKeys.compliance,
 		app.storeKeys.dex,
 		app.storeKeys.bridge,
+		app.storeKeys.aiassistant,
 		app.storeKeys.wasm,
 		app.storeKeys.contractRegistry,
 		app.storeKeys.wasmSecurity,
@@ -1402,6 +1431,22 @@ func (a *App) RegisterTxService(clientCtx client.Context) {
 	tx.RegisterTxService(a.GRPCQueryRouter(), clientCtx, a.BaseApp.Simulate, a.encoding.InterfaceRegistry)
 }
 
+// RegisterTendermintService wires the CometBFT query service into the gRPC router
+// so API/gRPC clients can resolve node status, blocks, and validator sets.
+func (a *App) RegisterTendermintService(clientCtx client.Context) {
+	cmtservice.RegisterTendermintService(
+		clientCtx,
+		a.GRPCQueryRouter(),
+		a.encoding.InterfaceRegistry,
+		server.NewCometABCIWrapper(a).Query,
+	)
+}
+
+// RegisterNodeService exposes the node info/config gRPC service on the router.
+func (a *App) RegisterNodeService(clientCtx client.Context, cfg serverconfig.Config) {
+	nodeservice.RegisterNodeService(clientCtx, a.GRPCQueryRouter(), cfg)
+}
+
 // GRPCServer exposes the app's gRPC server instance.
 func (a *App) GRPCServer() *grpc.Server {
 	return a.grpcServer
@@ -1422,6 +1467,11 @@ func (a *App) Encoding() EncodingConfig {
 // configurator returns the module configurator for migrations and upgrades.
 func (a *App) configurator() sdkmodule.Configurator {
 	return a.moduleConfigurator
+}
+
+// AIAssistantKeeper exposes the AI assistant keeper for integration layers (REST, tooling).
+func (a *App) AIAssistantKeeper() *aiassistantkeeper.Keeper {
+	return a.aiassistantKeeper
 }
 
 // InitBridgeGenesis initializes the bridge module state directly via the keeper.

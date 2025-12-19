@@ -10,9 +10,12 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
+	modtestutil "github.com/aequitas/aura/chain/testutil"
 	dexkeeper "github.com/aequitas/aura/chain/x/dex/keeper"
 	dextypes "github.com/aequitas/aura/chain/x/dex/types"
+	securitytypes "github.com/aequitas/aura/chain/x/security/types"
 	dexpb "github.com/aequitas/aura/proto/aura/dex/v1beta1"
+	securitypb "github.com/aequitas/aura/proto/aura/security/v1beta1"
 )
 
 type IntegrationTestSuite struct {
@@ -145,7 +148,8 @@ func (integrationSecurityKeeper) CheckGuardRateLimit(ctx sdk.Context, key string
 	return nil
 }
 
-func (integrationSecurityKeeper) IncrementGuardRateLimit(ctx sdk.Context, key string, window time.Duration) {}
+func (integrationSecurityKeeper) IncrementGuardRateLimit(ctx sdk.Context, key string, window time.Duration) {
+}
 
 func (integrationSecurityKeeper) ValidateAddress(address string) error {
 	return nil
@@ -285,24 +289,110 @@ func TestPrivatePoolCreation(t *testing.T) {
 // Incident Response + Monitoring Integration Tests
 
 func TestIncidentDetectionAndResponse(t *testing.T) {
-	ctx := freshCtx(t)
+	ctx, keeper := modtestutil.NewSecurityKeeperForTest(t)
+	ctx = ctx.WithBlockTime(time.Now().UTC())
 
-	require.NotNil(t, ctx)
-	require.GreaterOrEqual(t, ctx.BlockHeight(), int64(0))
+	incident := keeper.CreateIncident(ctx, "validator outage", "critical", "2/4 validators offline", "ops")
+	require.NotNil(t, incident)
+	require.Equal(t, securitypb.IncidentStatus_INCIDENT_STATUS_DETECTED, incident.Status)
+
+	err := keeper.PauseSystem(ctx, 2, "halt swaps until validators recover", keeper.GetAuthority())
+	require.NoError(t, err)
+	require.True(t, keeper.IsSystemPaused(ctx))
+
+	txErr := keeper.CheckTransactionAllowed(
+		ctx,
+		keepertest.GenTestAddr().String(),
+		sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(50_000))),
+	)
+	require.ErrorIs(t, txErr, securitytypes.ErrSystemPaused)
+
+	resolveSteps := []string{"rotated validator keys", "restarted validators", "synced state"}
+	require.NoError(t, keeper.ResolveIncident(ctx, incident.IncidentId, resolveSteps))
+	stored, found := keeper.GetIncident(ctx, incident.IncidentId)
+	require.True(t, found)
+	require.Equal(t, securitypb.IncidentStatus_INCIDENT_STATUS_RESOLVED, stored.Status)
+	require.NotNil(t, stored.ResolvedAt)
+
+	require.NoError(t, keeper.ResumeSystem(ctx))
+	require.False(t, keeper.IsSystemPaused(ctx))
+
+	txErr = keeper.CheckTransactionAllowed(
+		ctx,
+		keepertest.GenTestAddr().String(),
+		sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(50_000))),
+	)
+	require.NoError(t, txErr)
 }
 
 func TestCircuitBreakerActivation(t *testing.T) {
-	ctx := freshCtx(t)
+	ctx, keeper := modtestutil.NewSecurityKeeperForTest(t)
+	moduleName := "dex"
+	authority := keeper.GetAuthority()
 
-	require.NotNil(t, ctx)
-	require.GreaterOrEqual(t, ctx.BlockHeight(), int64(0))
+	require.NoError(t, keeper.RequireNotPaused(ctx, moduleName))
+	require.NoError(t, keeper.PauseModule(ctx, moduleName, authority))
+	require.True(t, keeper.IsModulePaused(ctx, moduleName))
+
+	err := keeper.RequireNotPaused(ctx, moduleName)
+	require.ErrorIs(t, err, securitytypes.ErrSystemPaused)
+
+	require.NoError(t, keeper.UnpauseModule(ctx, moduleName, authority))
+	require.NoError(t, keeper.RequireNotPaused(ctx, moduleName))
 }
 
 func TestFraudDetectionChain(t *testing.T) {
-	ctx := freshCtx(t)
+	ctx, keeper := modtestutil.NewSecurityKeeperForTest(t)
+	ctx = ctx.WithBlockTime(time.Now().UTC())
 
-	require.NotNil(t, ctx)
-	require.GreaterOrEqual(t, ctx.BlockHeight(), int64(0))
+	wallet := keepertest.GenTestAddr().String()
+	setAt := ctx.BlockTime()
+	expiresAt := setAt.Add(time.Hour)
+
+	keeper.SetWalletLimit(ctx, &securitytypes.WalletLimit{
+		WalletAddress:  wallet,
+		MaxTxAmount:    "100000",
+		MaxDailyTxs:    3,
+		CooldownPeriod: "1h",
+		SetAt:          &setAt,
+		ExpiresAt:      &expiresAt,
+		Reason:         "elevated risk wallet",
+	})
+
+	// Within limit succeeds
+	err := keeper.CheckTransactionAllowed(
+		ctx,
+		wallet,
+		sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(80_000))),
+	)
+	require.NoError(t, err)
+
+	// Oversized transfer triggers fraud guard
+	err = keeper.CheckTransactionAllowed(
+		ctx,
+		wallet,
+		sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(150_000))),
+	)
+	require.ErrorIs(t, err, securitytypes.ErrWalletLimitExceeded)
+
+	// Expire the limit – next run should clear entry and allow transfer
+	past := setAt.Add(-2 * time.Hour)
+	keeper.SetWalletLimit(ctx, &securitytypes.WalletLimit{
+		WalletAddress: wallet,
+		MaxTxAmount:   "100000",
+		SetAt:         &setAt,
+		ExpiresAt:     &past,
+	})
+
+	err = keeper.CheckTransactionAllowed(
+		ctx,
+		wallet,
+		sdk.NewCoins(sdk.NewCoin("uaura", sdkmath.NewInt(200_000))),
+	)
+	require.NoError(t, err)
+
+	_, hasLimit := keeper.GetWalletLimit(ctx, wallet)
+	require.False(t, hasLimit, "expired limits must be cleared automatically")
 }
 
 // Validator Security + Economic Security Integration

@@ -33,6 +33,7 @@ By participating in this project, you agree to abide by our [Code of Conduct](CO
    ```bash
    cd chain
    go test ./...
+   make test-authz   # quick auth/PermissionDenied checks
    pre-commit run --all-files
    ```
 5. **Commit with clear messages**

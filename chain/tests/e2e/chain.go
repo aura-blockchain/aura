@@ -1,6 +1,7 @@
 package e2e
 
 import (
+	"os"
 	"testing"
 	"time"
 
@@ -231,7 +232,11 @@ func (m *MultiChainTestSuite) SimulateIBCTransfer(
 	to sdk.AccAddress,
 	amount sdk.Coins,
 ) error {
-	// Simulate IBC transfer
+	if os.Getenv("AURA_E2E_ENABLE_IBC") == "" {
+		m.T.Skip("IBC E2E is disabled (Aura testnet keeps IBC disabled); set AURA_E2E_ENABLE_IBC=1 after PAW+Hermes are configured")
+	}
+
+	// Placeholder until PAW + Hermes are deployed.
 	source := m.GetChain(sourceChain)
 	dest := m.GetChain(destChain)
 
@@ -241,7 +246,11 @@ func (m *MultiChainTestSuite) SimulateIBCTransfer(
 
 // WaitForRelayer simulates relayer operations
 func (m *MultiChainTestSuite) WaitForRelayer() error {
-	// Simulate relayer packet relay
+	if os.Getenv("AURA_E2E_ENABLE_IBC") == "" {
+		m.T.Skip("IBC relayer is not configured; set AURA_E2E_ENABLE_IBC=1 after PAW+Hermes are running")
+	}
+
+	// Placeholder until Hermes/relayer is wired to real channels.
 	m.T.Log("Relaying packets...")
 	time.Sleep(100 * time.Millisecond)
 	return nil

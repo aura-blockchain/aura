@@ -100,7 +100,23 @@ describe('TransactionService - Staking Operations', () => {
           sequence: mockSequence,
           chainId: mockChainId,
         })
-      ).rejects.toThrow();
+      ).rejects.toThrow('Invalid delegator address');
+    });
+
+    test('should reject zero or negative undelegate amount', async () => {
+      await expect(
+        TransactionService.undelegate({
+          delegatorAddress: 'aura1delegator',
+          validatorAddress: 'auravaloper1validator',
+          amount: 0,
+          denom: 'uaura',
+          memo: '',
+          privateKeyHex: mockPrivateKey,
+          accountNumber: mockAccountNumber,
+          sequence: mockSequence,
+          chainId: mockChainId,
+        })
+      ).rejects.toThrow('Undelegate amount must be greater than zero');
     });
   });
 
@@ -160,6 +176,20 @@ describe('TransactionService - Staking Operations', () => {
           chainId: mockChainId,
         })
       ).rejects.toThrow('No rewards available');
+    });
+
+    test('should reject missing reward addresses', async () => {
+      await expect(
+        TransactionService.withdrawRewards({
+          delegatorAddress: '',
+          validatorAddress: '',
+          memo: '',
+          privateKeyHex: mockPrivateKey,
+          accountNumber: mockAccountNumber,
+          sequence: mockSequence,
+          chainId: mockChainId,
+        })
+      ).rejects.toThrow('Invalid delegator address');
     });
   });
 
@@ -232,21 +262,12 @@ describe('TransactionService - Staking Operations', () => {
       ).rejects.toThrow('Validator not found');
     });
 
-    test('should validate source and destination validators are different', async () => {
-      const mockBroadcastResult = {
-        code: 0,
-        txhash: 'XYZ123',
-        height: '1003',
-      };
-
-      PawAPI.broadcastTx = jest.fn().mockResolvedValue(mockBroadcastResult);
-
-      // Service should allow this - validation happens on chain
+    test('should reject identical validators during redelegation', async () => {
       await expect(
         TransactionService.redelegate({
           delegatorAddress: 'aura1delegator',
           srcValidatorAddress: 'auravaloper1same',
-          dstValidatorAddress: 'auravaloper1different',
+          dstValidatorAddress: 'auravaloper1same',
           amount: 500000,
           denom: 'uaura',
           memo: '',
@@ -255,7 +276,265 @@ describe('TransactionService - Staking Operations', () => {
           sequence: mockSequence,
           chainId: mockChainId,
         })
-      ).resolves.toBeDefined();
+      ).rejects.toThrow('Source and destination validators must be different');
+    });
+
+    test('should reject non-positive redelegate amount', async () => {
+      await expect(
+        TransactionService.redelegate({
+          delegatorAddress: 'aura1delegator',
+          srcValidatorAddress: 'auravaloper1src',
+          dstValidatorAddress: 'auravaloper1dst',
+          amount: -1,
+          denom: 'uaura',
+          memo: '',
+          privateKeyHex: mockPrivateKey,
+          accountNumber: mockAccountNumber,
+          sequence: mockSequence,
+          chainId: mockChainId,
+        })
+      ).rejects.toThrow('Redelegate amount must be greater than zero');
+    });
+  });
+
+  describe('DEX transactions', () => {
+    test('createDexPool builds correct message payload', async () => {
+      const mockBroadcastResult = {code: 0, txhash: 'POOL123'};
+      PawAPI.broadcastTx = jest.fn().mockResolvedValue(mockBroadcastResult);
+
+      const result = await TransactionService.createDexPool({
+        creatorAddress: 'aura1creator',
+        denomA: 'uaura',
+        denomB: 'usdt',
+        amountA: 1_000_000,
+        amountB: 500_000,
+        memo: 'create pool',
+        privateKeyHex: mockPrivateKey,
+        accountNumber: mockAccountNumber,
+        sequence: mockSequence,
+        chainId: mockChainId,
+      });
+
+      expect(PawAPI.broadcastTx).toHaveBeenCalledWith(
+        expect.objectContaining({
+          body: expect.objectContaining({
+            messages: expect.arrayContaining([
+              expect.objectContaining({
+                type_url: '/aura.dex.v1beta1.MsgCreatePool',
+                value: expect.objectContaining({
+                  creator: 'aura1creator',
+                  denom_a: 'uaura',
+                  denom_b: 'usdt',
+                  amount_a: {denom: 'uaura', amount: '1000000'},
+                  amount_b: {denom: 'usdt', amount: '500000'},
+                }),
+              }),
+            ]),
+          }),
+        }),
+        'sync',
+      );
+      expect(result).toEqual(mockBroadcastResult);
+    });
+
+    test('swapDexExactIn defaults minAmountOut and clamps slippage', async () => {
+      PawAPI.broadcastTx = jest.fn().mockResolvedValue({code: 0});
+
+      await TransactionService.swapDexExactIn({
+        senderAddress: 'aura1trader',
+        poolId: '42',
+        denomIn: 'uaura',
+        amountIn: 1_500_000,
+        minAmountOut: null,
+        maxSlippageBps: 75,
+        memo: 'swap now',
+        privateKeyHex: mockPrivateKey,
+        accountNumber: mockAccountNumber,
+        sequence: mockSequence,
+        chainId: mockChainId,
+      });
+
+      expect(PawAPI.broadcastTx).toHaveBeenCalledWith(
+        expect.objectContaining({
+          body: expect.objectContaining({
+            messages: expect.arrayContaining([
+              expect.objectContaining({
+                type_url: '/aura.dex.v1beta1.MsgSwapExactIn',
+                value: expect.objectContaining({
+                  pool_id: '42',
+                  coin_in: {denom: 'uaura', amount: '1500000'},
+                  min_amount_out: '1500000',
+                  max_slippage_bps: 75,
+                }),
+              }),
+            ]),
+          }),
+        }),
+        'sync',
+      );
+    });
+
+    test('commitDexOrder normalizes commit hash to base64', async () => {
+      PawAPI.broadcastTx = jest.fn().mockResolvedValue({code: 0});
+      const expectedBytes = Buffer.from('aabbccdd', 'hex').toString('base64');
+
+      await TransactionService.commitDexOrder({
+        senderAddress: 'aura1sender',
+        commitHash: '0xaabbccdd',
+        memo: 'commit',
+        privateKeyHex: mockPrivateKey,
+        accountNumber: mockAccountNumber,
+        sequence: mockSequence,
+        chainId: mockChainId,
+      });
+
+      expect(PawAPI.broadcastTx).toHaveBeenCalledWith(
+        expect.objectContaining({
+          body: expect.objectContaining({
+            messages: expect.arrayContaining([
+              expect.objectContaining({
+                type_url: '/aura.dex.v1beta1.MsgCommitOrder',
+                value: expect.objectContaining({
+                  sender: 'aura1sender',
+                  commit_hash: expectedBytes,
+                }),
+              }),
+            ]),
+          }),
+        }),
+        'sync',
+      );
+    });
+
+    test('createDexHTLC builds correct HTLC payload', async () => {
+      const mockBroadcastResult = {code: 0, txhash: 'HTLC123'};
+      PawAPI.broadcastTx = jest.fn().mockResolvedValue(mockBroadcastResult);
+
+      const result = await TransactionService.createDexHTLC({
+        senderAddress: 'aura1sender',
+        recipientAddress: 'aura1recipient',
+        denom: 'uaura',
+        amount: 750000,
+        secretHash: 'secret-hash',
+        timelockDuration: 3600,
+        memo: 'lock funds',
+        privateKeyHex: mockPrivateKey,
+        accountNumber: mockAccountNumber,
+        sequence: mockSequence,
+        chainId: mockChainId,
+      });
+
+      expect(PawAPI.broadcastTx).toHaveBeenCalledWith(
+        expect.objectContaining({
+          body: expect.objectContaining({
+            messages: expect.arrayContaining([
+              expect.objectContaining({
+                type_url: '/aura.dex.v1beta1.MsgCreateHTLC',
+                value: expect.objectContaining({
+                  sender: 'aura1sender',
+                  recipient: 'aura1recipient',
+                  amount: {denom: 'uaura', amount: '750000'},
+                  secret_hash: 'secret-hash',
+                  timelock_duration: '3600',
+                }),
+              }),
+            ]),
+            memo: 'lock funds',
+          }),
+        }),
+        'sync',
+      );
+      expect(result).toEqual(mockBroadcastResult);
+    });
+
+    test('claimDexHTLC requires valid identifiers and secrets', async () => {
+      PawAPI.broadcastTx = jest.fn().mockResolvedValue({code: 0});
+
+      await TransactionService.claimDexHTLC({
+        recipientAddress: 'aura1recipient',
+        htlcId: 42,
+        secret: 'unseal-secret',
+        memo: 'claim',
+        privateKeyHex: mockPrivateKey,
+        accountNumber: mockAccountNumber,
+        sequence: mockSequence,
+        chainId: mockChainId,
+      });
+
+      expect(PawAPI.broadcastTx).toHaveBeenCalledWith(
+        expect.objectContaining({
+          body: expect.objectContaining({
+            messages: expect.arrayContaining([
+              expect.objectContaining({
+                type_url: '/aura.dex.v1beta1.MsgClaimHTLC',
+                value: expect.objectContaining({
+                  recipient: 'aura1recipient',
+                  htlc_id: '42',
+                  secret: 'unseal-secret',
+                }),
+              }),
+            ]),
+          }),
+        }),
+        'sync',
+      );
+
+      await expect(
+        TransactionService.claimDexHTLC({
+          recipientAddress: 'invalid',
+          htlcId: '',
+          secret: '',
+          memo: '',
+          privateKeyHex: mockPrivateKey,
+          accountNumber: mockAccountNumber,
+          sequence: mockSequence,
+          chainId: mockChainId,
+        }),
+      ).rejects.toThrow('Invalid recipient address');
+    });
+
+    test('refundDexHTLC validates sender and HTLC id', async () => {
+      PawAPI.broadcastTx = jest.fn().mockResolvedValue({code: 0});
+
+      await TransactionService.refundDexHTLC({
+        senderAddress: 'aura1sender',
+        htlcId: 84,
+        memo: 'refund',
+        privateKeyHex: mockPrivateKey,
+        accountNumber: mockAccountNumber,
+        sequence: mockSequence,
+        chainId: mockChainId,
+      });
+
+      expect(PawAPI.broadcastTx).toHaveBeenCalledWith(
+        expect.objectContaining({
+          body: expect.objectContaining({
+            messages: expect.arrayContaining([
+              expect.objectContaining({
+                type_url: '/aura.dex.v1beta1.MsgRefundHTLC',
+                value: expect.objectContaining({
+                  sender: 'aura1sender',
+                  htlc_id: '84',
+                }),
+              }),
+            ]),
+            memo: 'refund',
+          }),
+        }),
+        'sync',
+      );
+
+      await expect(
+        TransactionService.refundDexHTLC({
+          senderAddress: '',
+          htlcId: null,
+          memo: '',
+          privateKeyHex: mockPrivateKey,
+          accountNumber: mockAccountNumber,
+          sequence: mockSequence,
+          chainId: mockChainId,
+        }),
+      ).rejects.toThrow('Invalid sender address');
     });
   });
 
@@ -478,6 +757,149 @@ describe('TransactionService - Staking Operations', () => {
         })
       ).rejects.toThrow('Proposal not found');
     });
+
+    test('should reject missing voter address or proposal id', async () => {
+      await expect(
+        TransactionService.vote({
+          voterAddress: '',
+          proposalId: '',
+          option: 'yes',
+          memo: '',
+          privateKeyHex: mockPrivateKey,
+          accountNumber: mockAccountNumber,
+          sequence: mockSequence,
+          chainId: mockChainId,
+        })
+      ).rejects.toThrow('Invalid voter address');
+
+      await expect(
+        TransactionService.vote({
+          voterAddress: 'aura1voter',
+          proposalId: '',
+          option: 'yes',
+          memo: '',
+          privateKeyHex: mockPrivateKey,
+          accountNumber: mockAccountNumber,
+          sequence: mockSequence,
+          chainId: mockChainId,
+        })
+      ).rejects.toThrow('Proposal ID is required');
+
+      await expect(
+        TransactionService.vote({
+          voterAddress: 'aura1voter',
+          proposalId: '1',
+          option: 'yes',
+          memo: '',
+          privateKeyHex: '',
+          accountNumber: mockAccountNumber,
+          sequence: mockSequence,
+          chainId: mockChainId,
+        })
+      ).rejects.toThrow('Private key is required');
+    });
+  });
+
+  describe('deposit', () => {
+    test('should successfully deposit to proposal', async () => {
+      const mockBroadcastResult = {
+        code: 0,
+        txhash: 'DEP123',
+        height: '2001',
+      };
+
+      PawAPI.broadcastTx = jest.fn().mockResolvedValue(mockBroadcastResult);
+
+      const result = await TransactionService.deposit({
+        depositorAddress: 'aura1depositor',
+        proposalId: 9,
+        amount: 2500000,
+        denom: 'uaura',
+        memo: 'fund proposal',
+        privateKeyHex: mockPrivateKey,
+        accountNumber: mockAccountNumber,
+        sequence: mockSequence,
+        chainId: mockChainId,
+      });
+
+      expect(PawAPI.broadcastTx).toHaveBeenCalledWith(
+        expect.objectContaining({
+          body: expect.objectContaining({
+            messages: expect.arrayContaining([
+              expect.objectContaining({
+                type_url: '/cosmos.gov.v1beta1.MsgDeposit',
+                value: expect.objectContaining({
+                  proposal_id: '9',
+                  depositor: 'aura1depositor',
+                  amount: [{denom: 'uaura', amount: '2500000'}],
+                }),
+              }),
+            ]),
+            memo: 'fund proposal',
+          }),
+        }),
+        'sync'
+      );
+      expect(result).toEqual(mockBroadcastResult);
+    });
+
+    test('should validate deposit inputs', async () => {
+      await expect(
+        TransactionService.deposit({
+          depositorAddress: '',
+          proposalId: 1,
+          amount: 10,
+          denom: 'uaura',
+          memo: '',
+          privateKeyHex: mockPrivateKey,
+          accountNumber: mockAccountNumber,
+          sequence: mockSequence,
+          chainId: mockChainId,
+        })
+      ).rejects.toThrow('Invalid depositor address');
+
+      await expect(
+        TransactionService.deposit({
+          depositorAddress: 'aura1depositor',
+          proposalId: 0,
+          amount: 10,
+          denom: 'uaura',
+          memo: '',
+          privateKeyHex: mockPrivateKey,
+          accountNumber: mockAccountNumber,
+          sequence: mockSequence,
+          chainId: mockChainId,
+        })
+      ).rejects.toThrow('Invalid proposal id');
+
+      await expect(
+        TransactionService.deposit({
+          depositorAddress: 'aura1depositor',
+          proposalId: 2,
+          amount: 0,
+          denom: 'uaura',
+          memo: '',
+          privateKeyHex: mockPrivateKey,
+          accountNumber: mockAccountNumber,
+          sequence: mockSequence,
+          chainId: mockChainId,
+        })
+      ).rejects.toThrow('Deposit amount must be greater than zero');
+
+      await expect(
+        TransactionService.deposit({
+          depositorAddress: 'aura1depositor',
+          proposalId: 2,
+          amount: 10,
+          denom: 'uaura',
+          memo: '',
+          privateKeyHex: '',
+          accountNumber: mockAccountNumber,
+          sequence: mockSequence,
+          chainId: mockChainId,
+        })
+      ).rejects.toThrow('Private key is required');
+    });
   });
 
   describe('delegate', () => {
@@ -524,6 +946,64 @@ describe('TransactionService - Staking Operations', () => {
       );
       expect(result).toEqual(mockBroadcastResult);
     });
+
+    test('should reject invalid delegate inputs', async () => {
+      await expect(
+        TransactionService.delegate({
+          delegatorAddress: '',
+          validatorAddress: 'auravaloper1validator',
+          amount: 1000000,
+          denom: 'uaura',
+          memo: '',
+          privateKeyHex: mockPrivateKey,
+          accountNumber: mockAccountNumber,
+          sequence: mockSequence,
+          chainId: mockChainId,
+        })
+      ).rejects.toThrow('Invalid delegator address');
+
+      await expect(
+        TransactionService.delegate({
+          delegatorAddress: 'aura1delegator',
+          validatorAddress: '',
+          amount: 1000000,
+          denom: 'uaura',
+          memo: '',
+          privateKeyHex: mockPrivateKey,
+          accountNumber: mockAccountNumber,
+          sequence: mockSequence,
+          chainId: mockChainId,
+        })
+      ).rejects.toThrow('Invalid validator address');
+
+      await expect(
+        TransactionService.delegate({
+          delegatorAddress: 'aura1delegator',
+          validatorAddress: 'auravaloper1validator',
+          amount: 0,
+          denom: 'uaura',
+          memo: '',
+          privateKeyHex: mockPrivateKey,
+          accountNumber: mockAccountNumber,
+          sequence: mockSequence,
+          chainId: mockChainId,
+        })
+      ).rejects.toThrow('Delegate amount must be greater than zero');
+
+      await expect(
+        TransactionService.delegate({
+          delegatorAddress: 'aura1delegator',
+          validatorAddress: 'auravaloper1validator',
+          amount: 1,
+          denom: 'uaura',
+          memo: '',
+          privateKeyHex: '',
+          accountNumber: mockAccountNumber,
+          sequence: mockSequence,
+          chainId: mockChainId,
+        })
+      ).rejects.toThrow('Private key is required');
+    });
   });
 
   describe('sendTokens', () => {
@@ -566,6 +1046,64 @@ describe('TransactionService - Staking Operations', () => {
         'sync'
       );
       expect(result).toEqual(mockBroadcastResult);
+    });
+
+    test('should reject invalid send inputs', async () => {
+      await expect(
+        TransactionService.sendTokens({
+          fromAddress: '',
+          toAddress: 'aura1recipient',
+          amount: 1,
+          denom: 'uaura',
+          memo: '',
+          privateKeyHex: mockPrivateKey,
+          accountNumber: mockAccountNumber,
+          sequence: mockSequence,
+          chainId: mockChainId,
+        })
+      ).rejects.toThrow('Invalid sender address');
+
+      await expect(
+        TransactionService.sendTokens({
+          fromAddress: 'aura1sender',
+          toAddress: '',
+          amount: 1,
+          denom: 'uaura',
+          memo: '',
+          privateKeyHex: mockPrivateKey,
+          accountNumber: mockAccountNumber,
+          sequence: mockSequence,
+          chainId: mockChainId,
+        })
+      ).rejects.toThrow('Invalid recipient address');
+
+      await expect(
+        TransactionService.sendTokens({
+          fromAddress: 'aura1sender',
+          toAddress: 'aura1recipient',
+          amount: 0,
+          denom: 'uaura',
+          memo: '',
+          privateKeyHex: mockPrivateKey,
+          accountNumber: mockAccountNumber,
+          sequence: mockSequence,
+          chainId: mockChainId,
+        })
+      ).rejects.toThrow('Send amount must be greater than zero');
+
+      await expect(
+        TransactionService.sendTokens({
+          fromAddress: 'aura1sender',
+          toAddress: 'aura1recipient',
+          amount: 1,
+          denom: 'uaura',
+          memo: '',
+          privateKeyHex: '',
+          accountNumber: mockAccountNumber,
+          sequence: mockSequence,
+          chainId: mockChainId,
+        })
+      ).rejects.toThrow('Private key is required');
     });
   });
 
@@ -640,6 +1178,50 @@ describe('TransactionService - Staking Operations', () => {
       expect(voteResult.code).toBe(0);
 
       expect(PawAPI.broadcastTx).toHaveBeenCalledTimes(4);
+    });
+  });
+
+  describe('createSignedTransaction validation', () => {
+    test('should reject missing private key', async () => {
+      await expect(
+        TransactionService.createSignedTransaction({
+          messages: [{}],
+          fee: {},
+          memo: '',
+          accountNumber: mockAccountNumber,
+          sequence: mockSequence,
+          chainId: mockChainId,
+          privateKeyHex: '',
+        })
+      ).rejects.toThrow('Private key is required');
+    });
+
+    test('should reject empty message list', async () => {
+      await expect(
+        TransactionService.createSignedTransaction({
+          messages: [],
+          fee: {},
+          memo: '',
+          accountNumber: mockAccountNumber,
+          sequence: mockSequence,
+          chainId: mockChainId,
+          privateKeyHex: mockPrivateKey,
+        })
+      ).rejects.toThrow('At least one message is required');
+    });
+
+    test('should reject missing chain context', async () => {
+      await expect(
+        TransactionService.createSignedTransaction({
+          messages: [{}],
+          fee: {},
+          memo: '',
+          accountNumber: undefined,
+          sequence: undefined,
+          chainId: '',
+          privateKeyHex: mockPrivateKey,
+        })
+      ).rejects.toThrow('Account number and sequence are required');
     });
   });
 });

@@ -26,6 +26,7 @@ type Keeper struct {
 	cdc          codec.BinaryCodec
 	storeService store.KVStoreService
 	logger       log.Logger
+	authKeeper   types.AuthKeeper
 }
 
 // NewKeeper creates a new wallet security keeper
@@ -39,6 +40,11 @@ func NewKeeper(
 		storeService: storeService,
 		logger:       logger,
 	}
+}
+
+// SetAuthKeeper injects the auth keeper for 2FA/session validation.
+func (k *Keeper) SetAuthKeeper(authKeeper types.AuthKeeper) {
+	k.authKeeper = authKeeper
 }
 
 // Logger returns a module-specific logger

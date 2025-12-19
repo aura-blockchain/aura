@@ -12,16 +12,19 @@
 // Import required crypto libraries (will be included via CDN or bundler)
 // Using noble-secp256k1 for signing
 // Using bech32 for address encoding
+const { CHAIN_CONFIG, COIN, GAS_PRICE_TIERS, REST_ENDPOINTS, RPC_ENDPOINTS } = require('../config/chain');
 
 const COSMOS_SDK = {
-  // Aura Network Configuration
+  // Aura Network Configuration (sourced from chain-registry)
   config: {
-    chainId: 'aura-local',
-    bech32Prefix: 'aura',
-    coinDenom: 'uaura',
-    coinDecimals: 6,
-    restEndpoint: 'http://localhost:1317',
-    rpcEndpoint: 'http://localhost:26657',
+    chainId: CHAIN_CONFIG.chainId,
+    bech32Prefix: CHAIN_CONFIG.bech32Prefix,
+    coinDenom: COIN.base,
+    coinDecimals: COIN.exponent,
+    restEndpoint: REST_ENDPOINTS[0]?.address || 'http://localhost:1317',
+    rpcEndpoint: RPC_ENDPOINTS[0]?.address || 'http://localhost:26657',
+    gasPrice: CHAIN_CONFIG.gasPrice,
+    gasPriceTiers: GAS_PRICE_TIERS,
   },
 
   /**
@@ -101,8 +104,8 @@ const COSMOS_SDK = {
    * @param {string} address - Bech32 address
    * @returns {Promise<Object>} Account info with sequence and account_number
    */
-  async getAccount(address) {
-    const url = `${this.config.restEndpoint}/cosmos/auth/v1beta1/accounts/${address}`;
+  async getAccount(address, apiHost = this.config.restEndpoint) {
+    const url = `${apiHost}/cosmos/auth/v1beta1/accounts/${address}`;
     const response = await fetch(url);
     const data = await response.json();
 
@@ -119,8 +122,8 @@ const COSMOS_SDK = {
    * @param {string} address - Bech32 address
    * @returns {Promise<Array>} Array of coin balances
    */
-  async getBalance(address) {
-    const url = `${this.config.restEndpoint}/cosmos/bank/v1beta1/balances/${address}`;
+  async getBalance(address, apiHost = this.config.restEndpoint) {
+    const url = `${apiHost}/cosmos/bank/v1beta1/balances/${address}`;
     const response = await fetch(url);
     const data = await response.json();
     return data.balances || [];
@@ -210,24 +213,32 @@ const COSMOS_SDK = {
    * @returns {Object} Signed transaction
    */
   async signTx(tx, privateKey, accountInfo, publicKey) {
-    const { accountNumber, sequence } = accountInfo;
+    const { signDoc, signBytes } = this.buildSignDoc(tx, accountInfo, publicKey);
+    const signature = await this.sign(signBytes, privateKey);
+    return this.applySignature(tx, signature, publicKey, accountInfo.sequence);
+  },
 
-    // Build SignDoc
+  /**
+   * Build sign doc and sign bytes for external signers (hardware)
+   */
+  buildSignDoc(tx, accountInfo, publicKey) {
+    const { accountNumber, sequence } = accountInfo;
     const signDoc = {
       body_bytes: this.encodeBody(tx.body),
       auth_info_bytes: this.encodeAuthInfo(tx.auth_info, publicKey, sequence),
       chain_id: this.config.chainId,
       account_number: accountNumber.toString(),
     };
-
-    // Serialize for signing
     const signBytes = this.serializeSignDoc(signDoc);
+    return { signDoc, signBytes };
+  },
 
-    // Sign with secp256k1
-    const signature = await this.sign(signBytes, privateKey);
-
-    // Add signature to transaction
-    tx.signatures = [signature];
+  /**
+   * Apply an external signature to an unsigned tx
+   */
+  applySignature(tx, signatureBytes, publicKey, sequence) {
+    const sig = signatureBytes instanceof Uint8Array ? signatureBytes : new Uint8Array(signatureBytes);
+    tx.signatures = [sig];
     tx.auth_info.signer_infos = [{
       public_key: {
         '@type': '/cosmos.crypto.secp256k1.PubKey',
@@ -238,7 +249,6 @@ const COSMOS_SDK = {
       },
       sequence: sequence.toString(),
     }];
-
     return tx;
   },
 
@@ -301,7 +311,7 @@ const COSMOS_SDK = {
    * @returns {Promise<Array>} List of pools
    */
   async queryPools() {
-    const url = `${this.config.restEndpoint}/paw/dex/v1/pools`;
+    const url = `${this.config.restEndpoint}/aura/dex/v1/pools`;
     const response = await fetch(url);
     const data = await response.json();
     return data.pools || [];
@@ -313,7 +323,7 @@ const COSMOS_SDK = {
    * @returns {Promise<Object>} Pool details
    */
   async queryPool(poolId) {
-    const url = `${this.config.restEndpoint}/paw/dex/v1/pools/${poolId}`;
+    const url = `${this.config.restEndpoint}/aura/dex/v1/pools/${poolId}`;
     const response = await fetch(url);
     const data = await response.json();
     return data.pool;
@@ -324,7 +334,7 @@ const COSMOS_SDK = {
    * @returns {Promise<Array>} Price feeds
    */
   async queryOraclePrices() {
-    const url = `${this.config.restEndpoint}/paw/oracle/v1/prices`;
+    const url = `${this.config.restEndpoint}/aura/oracle/v1/prices`;
     const response = await fetch(url);
     const data = await response.json();
     return data.prices || [];

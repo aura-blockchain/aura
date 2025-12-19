@@ -1,6 +1,9 @@
 package types
 
-import "encoding/binary"
+import (
+	"encoding/binary"
+	"math"
+)
 
 const (
 	// ModuleName defines the module name
@@ -145,7 +148,7 @@ func SignatureSetKey(transferID string, signatureSetHash []byte) []byte {
 // Format: ValidatorSnapshotPrefix + blockHeight (8 bytes big-endian)
 func ValidatorSnapshotKey(blockHeight int64) []byte {
 	heightBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(heightBytes, uint64(blockHeight))
+	binary.BigEndian.PutUint64(heightBytes, safeInt64ToUint64(blockHeight))
 	return append(ValidatorSnapshotPrefix, heightBytes...)
 }
 
@@ -191,8 +194,18 @@ func SignatureUsedKey(signatureHash []byte) []byte {
 // Format: SignatureRateLimitPrefix + address + ":" + windowStart (8 bytes)
 func SignatureRateLimitKey(address string, windowStart int64) []byte {
 	windowBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(windowBytes, uint64(windowStart))
+	binary.BigEndian.PutUint64(windowBytes, safeInt64ToUint64(windowStart))
 	key := append(SignatureRateLimitPrefix, []byte(address)...)
 	key = append(key, byte(':'))
 	return append(key, windowBytes...)
+}
+
+func safeInt64ToUint64(v int64) uint64 {
+	if v < 0 {
+		return 0
+	}
+	if v > math.MaxInt64 {
+		return math.MaxInt64
+	}
+	return uint64(v)
 }

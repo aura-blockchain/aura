@@ -12,6 +12,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/testutil"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/suite"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type MsgServerComprehensiveTestSuite struct {
@@ -105,7 +107,7 @@ func (suite *MsgServerComprehensiveTestSuite) TestRegisterContract_AdminDifferen
 			Description: "Test",
 		},
 		SecurityPolicy: pb.SecurityPolicy{},
-		Compliance: pb.ComplianceRequirements{},
+		Compliance:     pb.ComplianceRequirements{},
 	}
 
 	resp, err := suite.msgServer.RegisterContract(sdk.WrapSDKContext(suite.ctx), msg)
@@ -130,7 +132,7 @@ func (suite *MsgServerComprehensiveTestSuite) TestRegisterContract_AlreadyExists
 			Name: "Test",
 		},
 		SecurityPolicy: pb.SecurityPolicy{},
-		Compliance: pb.ComplianceRequirements{},
+		Compliance:     pb.ComplianceRequirements{},
 	}
 
 	_, err := suite.msgServer.RegisterContract(sdk.WrapSDKContext(suite.ctx), msg)
@@ -150,14 +152,14 @@ func (suite *MsgServerComprehensiveTestSuite) TestRegisterContract_UnauthorizedS
 		Creator:         "cosmos1creator",
 		Admin:           "cosmos1admin",
 		Label:           "test-contract",
-		Metadata: pb.ContractMetadata{Name: "Test"},
-		SecurityPolicy: pb.SecurityPolicy{},
-		Compliance: pb.ComplianceRequirements{},
+		Metadata:        pb.ContractMetadata{Name: "Test"},
+		SecurityPolicy:  pb.SecurityPolicy{},
+		Compliance:      pb.ComplianceRequirements{},
 	}
 
 	_, err := suite.msgServer.RegisterContract(sdk.WrapSDKContext(suite.ctx), msg)
 	suite.Error(err)
-	suite.ErrorIs(err, types.ErrUnauthorized)
+	suite.Equal(codes.PermissionDenied, status.Code(err))
 }
 
 func (suite *MsgServerComprehensiveTestSuite) TestRegisterContract_ExceedMaxContracts() {
@@ -176,9 +178,9 @@ func (suite *MsgServerComprehensiveTestSuite) TestRegisterContract_ExceedMaxCont
 		Creator:         creator,
 		Admin:           creator,
 		Label:           "contract1",
-		Metadata: pb.ContractMetadata{Name: "Contract 1"},
-		SecurityPolicy: pb.SecurityPolicy{},
-		Compliance: pb.ComplianceRequirements{},
+		Metadata:        pb.ContractMetadata{Name: "Contract 1"},
+		SecurityPolicy:  pb.SecurityPolicy{},
+		Compliance:      pb.ComplianceRequirements{},
 	}
 	_, err := suite.msgServer.RegisterContract(sdk.WrapSDKContext(suite.ctx), msg1)
 	suite.NoError(err)
@@ -191,9 +193,9 @@ func (suite *MsgServerComprehensiveTestSuite) TestRegisterContract_ExceedMaxCont
 		Creator:         creator,
 		Admin:           creator,
 		Label:           "contract2",
-		Metadata: pb.ContractMetadata{Name: "Contract 2"},
-		SecurityPolicy: pb.SecurityPolicy{},
-		Compliance: pb.ComplianceRequirements{},
+		Metadata:        pb.ContractMetadata{Name: "Contract 2"},
+		SecurityPolicy:  pb.SecurityPolicy{},
+		Compliance:      pb.ComplianceRequirements{},
 	}
 	_, err = suite.msgServer.RegisterContract(sdk.WrapSDKContext(suite.ctx), msg2)
 	suite.Error(err)
@@ -215,9 +217,9 @@ func (suite *MsgServerComprehensiveTestSuite) TestUpdateContractMetadata_Success
 		Creator:        "cosmos1creator",
 		Admin:          admin,
 		Label:          "test",
-		Metadata: pb.ContractMetadata{Name: "Original"},
+		Metadata:       pb.ContractMetadata{Name: "Original"},
 		SecurityPolicy: pb.SecurityPolicy{},
-		Compliance: pb.ComplianceRequirements{},
+		Compliance:     pb.ComplianceRequirements{},
 		Status:         pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
 	}
 	suite.NoError(suite.keeper.RegisterContract(suite.ctx, info))
@@ -255,9 +257,9 @@ func (suite *MsgServerComprehensiveTestSuite) TestUpdateContractMetadata_NotAdmi
 		Creator:        "cosmos1creator",
 		Admin:          admin,
 		Label:          "test",
-		Metadata: pb.ContractMetadata{Name: "Original"},
+		Metadata:       pb.ContractMetadata{Name: "Original"},
 		SecurityPolicy: pb.SecurityPolicy{},
-		Compliance: pb.ComplianceRequirements{},
+		Compliance:     pb.ComplianceRequirements{},
 		Status:         pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
 	}
 	suite.NoError(suite.keeper.RegisterContract(suite.ctx, info))
@@ -266,19 +268,19 @@ func (suite *MsgServerComprehensiveTestSuite) TestUpdateContractMetadata_NotAdmi
 	msg := &pb.MsgUpdateContractMetadata{
 		Signer:          "cosmos1notadmin",
 		ContractAddress: contractAddr,
-		Metadata: pb.ContractMetadata{Name: "Hacked"},
+		Metadata:        pb.ContractMetadata{Name: "Hacked"},
 	}
 
 	_, err := suite.msgServer.UpdateContractMetadata(sdk.WrapSDKContext(suite.ctx), msg)
 	suite.Error(err)
-	suite.ErrorIs(err, types.ErrNotContractAdmin)
+	suite.Equal(codes.PermissionDenied, status.Code(err))
 }
 
 func (suite *MsgServerComprehensiveTestSuite) TestUpdateContractMetadata_ContractNotFound() {
 	msg := &pb.MsgUpdateContractMetadata{
 		Signer:          "cosmos1admin",
 		ContractAddress: "cosmos1nonexistent",
-		Metadata: pb.ContractMetadata{Name: "Updated"},
+		Metadata:        pb.ContractMetadata{Name: "Updated"},
 	}
 
 	_, err := suite.msgServer.UpdateContractMetadata(sdk.WrapSDKContext(suite.ctx), msg)
@@ -301,9 +303,9 @@ func (suite *MsgServerComprehensiveTestSuite) TestUpdateSecurityPolicy_Success()
 		Creator:        admin,
 		Admin:          admin,
 		Label:          "test",
-		Metadata: pb.ContractMetadata{Name: "Test"},
+		Metadata:       pb.ContractMetadata{Name: "Test"},
 		SecurityPolicy: pb.SecurityPolicy{MaxGasPerTx: 1000000},
-		Compliance: pb.ComplianceRequirements{},
+		Compliance:     pb.ComplianceRequirements{},
 		Status:         pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
 	}
 	suite.NoError(suite.keeper.RegisterContract(suite.ctx, info))
@@ -341,9 +343,9 @@ func (suite *MsgServerComprehensiveTestSuite) TestUpdateSecurityPolicy_NotAdmin(
 		Creator:        admin,
 		Admin:          admin,
 		Label:          "test",
-		Metadata: pb.ContractMetadata{Name: "Test"},
+		Metadata:       pb.ContractMetadata{Name: "Test"},
 		SecurityPolicy: pb.SecurityPolicy{},
-		Compliance: pb.ComplianceRequirements{},
+		Compliance:     pb.ComplianceRequirements{},
 		Status:         pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
 	}
 	suite.NoError(suite.keeper.RegisterContract(suite.ctx, info))
@@ -352,12 +354,12 @@ func (suite *MsgServerComprehensiveTestSuite) TestUpdateSecurityPolicy_NotAdmin(
 	msg := &pb.MsgUpdateSecurityPolicy{
 		Signer:          "cosmos1attacker",
 		ContractAddress: contractAddr,
-		SecurityPolicy: pb.SecurityPolicy{MaxGasPerTx: 999999999},
+		SecurityPolicy:  pb.SecurityPolicy{MaxGasPerTx: 999999999},
 	}
 
 	_, err := suite.msgServer.UpdateSecurityPolicy(sdk.WrapSDKContext(suite.ctx), msg)
 	suite.Error(err)
-	suite.ErrorIs(err, types.ErrNotContractAdmin)
+	suite.Equal(codes.PermissionDenied, status.Code(err))
 }
 
 // ============================
@@ -460,7 +462,7 @@ func (suite *MsgServerComprehensiveTestSuite) TestPauseContract_NotAdmin() {
 
 	_, err := suite.msgServer.PauseContract(sdk.WrapSDKContext(suite.ctx), msg)
 	suite.Error(err)
-	suite.ErrorIs(err, types.ErrUnauthorized)
+	suite.Equal(codes.PermissionDenied, status.Code(err))
 }
 
 // ============================
@@ -514,9 +516,9 @@ func (suite *MsgServerComprehensiveTestSuite) TestUnpauseContract_NotPaused() {
 		Creator:        admin,
 		Admin:          admin,
 		Label:          "test",
-		Metadata: pb.ContractMetadata{Name: "Test"},
+		Metadata:       pb.ContractMetadata{Name: "Test"},
 		SecurityPolicy: pb.SecurityPolicy{},
-		Compliance: pb.ComplianceRequirements{},
+		Compliance:     pb.ComplianceRequirements{},
 		Status:         pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
 	}
 	suite.NoError(suite.keeper.RegisterContract(suite.ctx, info))
@@ -546,9 +548,9 @@ func (suite *MsgServerComprehensiveTestSuite) TestDeprecateContract_Success() {
 		Creator:        admin,
 		Admin:          admin,
 		Label:          "test",
-		Metadata: pb.ContractMetadata{Name: "Test"},
+		Metadata:       pb.ContractMetadata{Name: "Test"},
 		SecurityPolicy: pb.SecurityPolicy{},
-		Compliance: pb.ComplianceRequirements{},
+		Compliance:     pb.ComplianceRequirements{},
 		Status:         pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
 	}
 	suite.NoError(suite.keeper.RegisterContract(suite.ctx, info))
@@ -581,9 +583,9 @@ func (suite *MsgServerComprehensiveTestSuite) TestDeprecateContract_WithoutMigra
 		Creator:        admin,
 		Admin:          admin,
 		Label:          "test",
-		Metadata: pb.ContractMetadata{Name: "Test"},
+		Metadata:       pb.ContractMetadata{Name: "Test"},
 		SecurityPolicy: pb.SecurityPolicy{},
-		Compliance: pb.ComplianceRequirements{},
+		Compliance:     pb.ComplianceRequirements{},
 		Status:         pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
 	}
 	suite.NoError(suite.keeper.RegisterContract(suite.ctx, info))
@@ -612,9 +614,9 @@ func (suite *MsgServerComprehensiveTestSuite) TestDeprecateContract_NotAdmin() {
 		Creator:        admin,
 		Admin:          admin,
 		Label:          "test",
-		Metadata: pb.ContractMetadata{Name: "Test"},
+		Metadata:       pb.ContractMetadata{Name: "Test"},
 		SecurityPolicy: pb.SecurityPolicy{},
-		Compliance: pb.ComplianceRequirements{},
+		Compliance:     pb.ComplianceRequirements{},
 		Status:         pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
 	}
 	suite.NoError(suite.keeper.RegisterContract(suite.ctx, info))
@@ -629,5 +631,5 @@ func (suite *MsgServerComprehensiveTestSuite) TestDeprecateContract_NotAdmin() {
 
 	_, err := suite.msgServer.DeprecateContract(sdk.WrapSDKContext(suite.ctx), msg)
 	suite.Error(err)
-	suite.ErrorIs(err, types.ErrUnauthorized)
+	suite.Equal(codes.PermissionDenied, status.Code(err))
 }

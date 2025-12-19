@@ -47,6 +47,11 @@ test:
 	@echo "Running tests..."
 	@go test -v -parallel=4 -timeout=30m ./...
 
+## test-authz: Run auth-focused PermissionDenied mapping tests
+test-authz:
+	@echo "Running auth-focused tests (PermissionDenied mapping)..."
+	@go test ./x/identity/keeper ./x/incidentresponse/keeper ./x/economicsecurity/keeper ./x/vcregistry/keeper
+
 ## test-coverage: Run tests with coverage
 test-coverage:
 	@echo "Running tests with coverage..."
@@ -119,136 +124,15 @@ test-pkg:
 
 ## test-verbose-less: Run tests with less verbose output
 test-verbose-less:
-	@echo "Running tests (minimal output)..."
-	@go test -parallel=8 -timeout=20m ./...
+	@echo "Running tests with reduced verbosity..."
+	@go test -v -run Test -count=1 ./...
 
-###############################################################################
-###                           WASM Integration                              ###
-###############################################################################
+## deploy-contracts: Deploy contracts using foundry (requires forge)
+deploy-contracts:
+	@echo "Deploying contracts..."
+	@cd contracts && forge script script/Deploy.s.sol:DeployScript --rpc-url $${RPC_URL} --broadcast --verify
 
-## build-wasm: Compile WASM contracts (requires Rust toolchain)
-build-wasm:
-	@echo "Building WASM contracts..."
-	@if [ -d "../contracts" ]; then \
-		cd ../contracts && \
-		for contract in */; do \
-			if [ -f "$$contract/Cargo.toml" ]; then \
-				echo "  Building $$contract..."; \
-				cd "$$contract" && \
-				cargo wasm && \
-				cd ..; \
-			fi; \
-		done; \
-	else \
-		echo "Contracts directory not found. Run 'make init-wasm-structure' first."; \
-	fi
-
-## optimize-wasm: Optimize WASM contracts using rust-optimizer
-optimize-wasm:
-	@echo "Optimizing WASM contracts..."
-	@if command -v docker >/dev/null 2>&1; then \
-		if [ -d "../contracts" ]; then \
-			cd ../contracts && mkdir -p target && \
-			docker run --rm -e CARGO_TARGET_DIR=/target -u "$$(id -u)":"$$(id -g)" -v "$$(pwd)":/code \
-				--mount type=bind,source="$$(pwd)"/target,target=/target \
-				--mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-				--entrypoint /bin/sh \
-				cosmwasm/rust-optimizer:0.17.0 -c '\
-					set -euo pipefail; \
-					cd /code; \
-					echo "  Using target dir: $${CARGO_TARGET_DIR:-/target}"; \
-					mkdir -p artifacts; \
-					rm -f artifacts/*.wasm artifacts/checksums.txt; \
-					for contract in $(CONTRACT_PACKAGES); do \
-						echo "  Building $$contract..."; \
-						cargo build --release --locked --target wasm32-unknown-unknown -p $$contract; \
-					done; \
-					for wasm in /target/wasm32-unknown-unknown/release/*.wasm; do \
-						name=$$(basename $$wasm .wasm); \
-						echo "  Optimizing $$name.wasm..."; \
-						wasm-opt -Os --signext-lowering $$wasm -o artifacts/$$name.wasm; \
-					done; \
-					(cd artifacts && sha256sum -- *.wasm > checksums.txt); \
-					echo "Artifacts written to /code/artifacts"; \
-				'; \
-		else \
-			echo "Contracts directory not found."; \
-		fi; \
-	else \
-		echo "Docker is required for WASM optimization."; \
-		exit 1; \
-	fi
-
-## test-wasm: Run WASM module tests
-test-wasm:
-	@echo "Running WASM module tests..."
-	@go test -v -parallel=4 -timeout=10m ./x/wasm/... ./x/aura-bindings/... ./x/contractregistry/...
-
-## test-wasm-coverage: Run WASM tests with coverage
-test-wasm-coverage:
-	@echo "Running WASM tests with coverage..."
-	@go test -v -coverprofile=coverage_wasm.out ./x/wasm/... ./x/aura-bindings/... ./x/contractregistry/...
-	@go tool cover -func=coverage_wasm.out
-
-## test-contracts: Run Rust contract tests
+## test-contracts: Run contract tests (requires foundry)
 test-contracts:
 	@echo "Running contract tests..."
-	@if [ -d "../contracts" ]; then \
-		cd ../contracts && \
-		for contract in */; do \
-			if [ -f "$$contract/Cargo.toml" ]; then \
-				echo "  Testing $$contract..."; \
-				cd "$$contract" && \
-				cargo test && \
-				cd ..; \
-			fi; \
-		done; \
-	else \
-		echo "Contracts directory not found."; \
-	fi
-
-## schema-contracts: Generate JSON schemas for contracts
-schema-contracts:
-	@echo "Generating contract schemas..."
-	@if [ -d "../contracts" ]; then \
-		cd ../contracts && \
-		for contract in */; do \
-			if [ -f "$$contract/Cargo.toml" ]; then \
-				echo "  Generating schema for $$contract..."; \
-				cd "$$contract" && \
-				cargo schema && \
-				cd ..; \
-			fi; \
-		done; \
-	else \
-		echo "Contracts directory not found."; \
-	fi
-
-## check-rust: Check Rust toolchain and dependencies
-check-rust:
-	@echo "Checking Rust toolchain..."
-	@if ! command -v rustc >/dev/null 2>&1; then \
-		echo "Error: Rust is not installed. Please install from https://rustup.rs/"; \
-		exit 1; \
-	fi
-	@echo "  Rust version: $$(rustc --version)"
-	@if ! rustup target list --installed | grep -q wasm32-unknown-unknown; then \
-		echo "  Installing wasm32-unknown-unknown target..."; \
-		rustup target add wasm32-unknown-unknown; \
-	else \
-		echo "  wasm32-unknown-unknown target: installed"; \
-	fi
-	@if ! command -v cargo-generate >/dev/null 2>&1; then \
-		echo "  Note: cargo-generate not found. Install with: cargo install cargo-generate"; \
-	else \
-		echo "  cargo-generate: $$(cargo-generate --version)"; \
-	fi
-
-## init-wasm-structure: Create initial WASM project structure
-init-wasm-structure:
-	@echo "Creating WASM project structure..."
-	@mkdir -p x/wasm x/aura-bindings x/contractregistry
-	@mkdir -p ../contracts/packages/aura-bindings
-	@mkdir -p ../proto/aura/contractregistry/v1beta1
-	@mkdir -p ../proto/aura/aura-bindings/v1beta1
-	@echo "WASM project structure created."
+	@cd contracts && forge test

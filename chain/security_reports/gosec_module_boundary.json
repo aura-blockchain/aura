@@ -1,0 +1,593 @@
+{
+	"Golang errors": {
+		"": [
+			{
+				"line": 0,
+				"column": 0,
+				"error": "# command-line-arguments\nx/contractregistry/keeper/query_server.go:213:6: clampUint64ToInt redeclared in this block\n\tx/contractregistry/keeper/query_server.go:143:6: other declaration of clampUint64ToInt"
+			},
+			{
+				"line": 0,
+				"column": 0,
+				"error": "# command-line-arguments\nx/walletsecurity/keeper/anomaly_detection.go:8:2: math redeclared in this block\n\tx/walletsecurity/keeper/anomaly_detection.go:6:2: other declaration of math\nx/walletsecurity/keeper/anomaly_detection.go:39:103: undefined: math.Int\nx/walletsecurity/keeper/anomaly_detection.go:85:86: undefined: math.Int\nx/walletsecurity/keeper/anomaly_detection.go:105:35: undefined: math.NewInt\nx/walletsecurity/keeper/anomaly_detection.go:190:81: undefined: math.Int\nx/walletsecurity/keeper/wallet_analytics.go:8:2: math redeclared in this block\n\tx/walletsecurity/keeper/wallet_analytics.go:6:2: other declaration of math\nx/walletsecurity/keeper/wallet_analytics.go:17:30: undefined: math.Int\nx/walletsecurity/keeper/wallet_analytics.go:18:30: undefined: math.Int\nx/walletsecurity/keeper/wallet_analytics.go:70:78: undefined: math.Int\nx/walletsecurity/keeper/wallet_analytics.go:224:6: clampUint64ToInt64 redeclared in this block\n\tx/walletsecurity/keeper/anomaly_detection.go:183:6: other declaration of clampUint64ToInt64\nx/walletsecurity/keeper/anomaly_detection.go:105:35: too many errors"
+			}
+		],
+		"/home/hudson/blockchain-projects/aura/chain/x/bridge/keeper/keeper.go": [
+			{
+				"line": 9,
+				"column": 2,
+				"error": "other declaration of math"
+			},
+			{
+				"line": 16,
+				"column": 2,
+				"error": "\"cosmossdk.io/math\" imported and not used"
+			},
+			{
+				"line": 16,
+				"column": 2,
+				"error": "math redeclared in this block"
+			},
+			{
+				"line": 736,
+				"column": 95,
+				"error": "undefined: math.Int"
+			},
+			{
+				"line": 745,
+				"column": 27,
+				"error": "undefined: math.ZeroInt"
+			},
+			{
+				"line": 746,
+				"column": 27,
+				"error": "undefined: math.LegacyNewDec"
+			},
+			{
+				"line": 1012,
+				"column": 21,
+				"error": "undefined: math.NewIntFromString"
+			},
+			{
+				"line": 1080,
+				"column": 21,
+				"error": "undefined: math.NewIntFromString"
+			},
+			{
+				"line": 1194,
+				"column": 59,
+				"error": "undefined: math.Int"
+			},
+			{
+				"line": 1199,
+				"column": 102,
+				"error": "undefined: math.Int"
+			},
+			{
+				"line": 1265,
+				"column": 30,
+				"error": "undefined: math.ZeroInt"
+			},
+			{
+				"line": 1307,
+				"column": 17,
+				"error": "undefined: math.ZeroInt"
+			},
+			{
+				"line": 1390,
+				"column": 65,
+				"error": "undefined: math.Int"
+			},
+			{
+				"line": 1390,
+				"column": 91,
+				"error": "undefined: math.Int"
+			},
+			{
+				"line": 1393,
+				"column": 15,
+				"error": "undefined: math.ZeroInt"
+			},
+			{
+				"line": 1410,
+				"column": 19,
+				"error": "undefined: math.Int"
+			},
+			{
+				"line": 1447,
+				"column": 18,
+				"error": "undefined: math.ZeroInt"
+			},
+			{
+				"line": 2124,
+				"column": 74,
+				"error": "undefined: math.Int"
+			},
+			{
+				"line": 2126,
+				"column": 15,
+				"error": "undefined: math.ZeroInt"
+			},
+			{
+				"line": 2136,
+				"column": 15,
+				"error": "undefined: math.ZeroInt"
+			},
+			{
+				"line": 2139,
+				"column": 18,
+				"error": "undefined: math.Int"
+			},
+			{
+				"line": 2141,
+				"column": 15,
+				"error": "undefined: math.ZeroInt"
+			},
+			{
+				"line": 2158,
+				"column": 81,
+				"error": "undefined: math.Int"
+			},
+			{
+				"line": 2191,
+				"column": 75,
+				"error": "undefined: math.Int"
+			},
+			{
+				"line": 2193,
+				"column": 15,
+				"error": "undefined: math.ZeroInt"
+			},
+			{
+				"line": 2203,
+				"column": 15,
+				"error": "undefined: math.ZeroInt"
+			},
+			{
+				"line": 2206,
+				"column": 18,
+				"error": "undefined: math.Int"
+			},
+			{
+				"line": 2208,
+				"column": 15,
+				"error": "undefined: math.ZeroInt"
+			},
+			{
+				"line": 2225,
+				"column": 82,
+				"error": "undefined: math.Int"
+			},
+			{
+				"line": 2526,
+				"column": 26,
+				"error": "undefined: math.NewIntFromString"
+			},
+			{
+				"line": 2533,
+				"column": 25,
+				"error": "undefined: math.NewIntFromString"
+			}
+		],
+		"/home/hudson/blockchain-projects/aura/chain/x/contractregistry/keeper/query_server.go": [
+			{
+				"line": 143,
+				"column": 6,
+				"error": "other declaration of clampUint64ToInt"
+			},
+			{
+				"line": 213,
+				"column": 6,
+				"error": "clampUint64ToInt redeclared in this block"
+			}
+		],
+		"/home/hudson/blockchain-projects/aura/chain/x/dex/keeper/orderbook.go": [
+			{
+				"line": 93,
+				"column": 25,
+				"error": "invalid operation: expirationMinutes \u003e math.MaxInt64 / int64(time.Minute) (mismatched types uint64 and int64)"
+			}
+		],
+		"/home/hudson/blockchain-projects/aura/chain/x/dex/module.go": [
+			{
+				"line": 8,
+				"column": 2,
+				"error": "\"time\" imported and not used"
+			}
+		],
+		"/home/hudson/blockchain-projects/aura/chain/x/walletsecurity/keeper/anomaly_detection.go": [
+			{
+				"line": 6,
+				"column": 2,
+				"error": "other declaration of math"
+			},
+			{
+				"line": 8,
+				"column": 2,
+				"error": "math redeclared in this block"
+			},
+			{
+				"line": 8,
+				"column": 2,
+				"error": "\"cosmossdk.io/math\" imported and not used"
+			},
+			{
+				"line": 39,
+				"column": 103,
+				"error": "undefined: math.Int"
+			},
+			{
+				"line": 85,
+				"column": 86,
+				"error": "undefined: math.Int"
+			},
+			{
+				"line": 105,
+				"column": 35,
+				"error": "undefined: math.NewInt"
+			},
+			{
+				"line": 110,
+				"column": 43,
+				"error": "undefined: math.NewInt"
+			},
+			{
+				"line": 110,
+				"column": 67,
+				"error": "undefined: math.NewInt"
+			},
+			{
+				"line": 113,
+				"column": 29,
+				"error": "undefined: math.NewInt"
+			},
+			{
+				"line": 183,
+				"column": 6,
+				"error": "other declaration of clampUint64ToInt64"
+			},
+			{
+				"line": 190,
+				"column": 81,
+				"error": "undefined: math.Int"
+			},
+			{
+				"line": 190,
+				"column": 91,
+				"error": "undefined: math.Int"
+			},
+			{
+				"line": 193,
+				"column": 14,
+				"error": "undefined: math.NewInt"
+			},
+			{
+				"line": 193,
+				"column": 33,
+				"error": "undefined: math.NewInt"
+			}
+		],
+		"/home/hudson/blockchain-projects/aura/chain/x/walletsecurity/keeper/wallet_analytics.go": [
+			{
+				"line": 6,
+				"column": 2,
+				"error": "other declaration of math"
+			},
+			{
+				"line": 8,
+				"column": 2,
+				"error": "\"cosmossdk.io/math\" imported and not used"
+			},
+			{
+				"line": 8,
+				"column": 2,
+				"error": "math redeclared in this block"
+			},
+			{
+				"line": 17,
+				"column": 30,
+				"error": "undefined: math.Int"
+			},
+			{
+				"line": 18,
+				"column": 30,
+				"error": "undefined: math.Int"
+			},
+			{
+				"line": 70,
+				"column": 78,
+				"error": "undefined: math.Int"
+			},
+			{
+				"line": 70,
+				"column": 88,
+				"error": "undefined: math.Int"
+			},
+			{
+				"line": 72,
+				"column": 16,
+				"error": "undefined: math.NewInt"
+			},
+			{
+				"line": 76,
+				"column": 22,
+				"error": "undefined: math.NewInt"
+			},
+			{
+				"line": 79,
+				"column": 28,
+				"error": "undefined: math.NewInt"
+			},
+			{
+				"line": 224,
+				"column": 6,
+				"error": "clampUint64ToInt64 redeclared in this block"
+			}
+		]
+	},
+	"Issues": [
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "190",
+				"url": "https://cwe.mitre.org/data/definitions/190.html"
+			},
+			"rule_id": "G115",
+			"details": "integer overflow conversion int64 -\u003e uint64",
+			"file": "/home/hudson/blockchain-projects/aura/chain/x/dex/types/security_keys.go",
+			"code": "36: \theightBytes := make([]byte, 8)\n37: \tbinary.BigEndian.PutUint64(heightBytes, uint64(blockHeight))\n38: \tkey = append(key, heightBytes...)\n",
+			"line": "37",
+			"column": "48",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "190",
+				"url": "https://cwe.mitre.org/data/definitions/190.html"
+			},
+			"rule_id": "G115",
+			"details": "integer overflow conversion int64 -\u003e uint64",
+			"file": "/home/hudson/blockchain-projects/aura/chain/x/contractregistry/types/keys.go",
+			"code": "317: \tbz := make([]byte, 8)\n318: \tbinary.BigEndian.PutUint64(bz, uint64(windowStart))\n319: \treturn append(key, bz...)\n",
+			"line": "318",
+			"column": "39",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "190",
+				"url": "https://cwe.mitre.org/data/definitions/190.html"
+			},
+			"rule_id": "G115",
+			"details": "integer overflow conversion int64 -\u003e uint64",
+			"file": "/home/hudson/blockchain-projects/aura/chain/x/bridge/types/keys.go",
+			"code": "193: \twindowBytes := make([]byte, 8)\n194: \tbinary.BigEndian.PutUint64(windowBytes, uint64(windowStart))\n195: \tkey := append(SignatureRateLimitPrefix, []byte(address)...)\n",
+			"line": "194",
+			"column": "48",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "190",
+				"url": "https://cwe.mitre.org/data/definitions/190.html"
+			},
+			"rule_id": "G115",
+			"details": "integer overflow conversion int64 -\u003e uint64",
+			"file": "/home/hudson/blockchain-projects/aura/chain/x/bridge/types/keys.go",
+			"code": "147: \theightBytes := make([]byte, 8)\n148: \tbinary.BigEndian.PutUint64(heightBytes, uint64(blockHeight))\n149: \treturn append(ValidatorSnapshotPrefix, heightBytes...)\n",
+			"line": "148",
+			"column": "48",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "190",
+				"url": "https://cwe.mitre.org/data/definitions/190.html"
+			},
+			"rule_id": "G115",
+			"details": "integer overflow conversion int64 -\u003e int32",
+			"file": "/home/hudson/blockchain-projects/aura/chain/x/walletsecurity/client/cli/tx.go",
+			"code": "522: \t\t\t\t\tSeconds: int64(timeout.Seconds()),\n523: \t\t\t\t\tNanos:   int32(timeout.Nanoseconds() % 1e9),\n524: \t\t\t\t},\n",
+			"line": "523",
+			"column": "20",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "190",
+				"url": "https://cwe.mitre.org/data/definitions/190.html"
+			},
+			"rule_id": "G115",
+			"details": "integer overflow conversion int64 -\u003e int32",
+			"file": "/home/hudson/blockchain-projects/aura/chain/x/walletsecurity/client/cli/tx.go",
+			"code": "278: \t\t\t\t\tSeconds: int64(delay.Seconds()),\n279: \t\t\t\t\tNanos:   int32(delay.Nanoseconds() % 1e9),\n280: \t\t\t\t},\n",
+			"line": "279",
+			"column": "20",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "190",
+				"url": "https://cwe.mitre.org/data/definitions/190.html"
+			},
+			"rule_id": "G115",
+			"details": "integer overflow conversion int64 -\u003e int32",
+			"file": "/home/hudson/blockchain-projects/aura/chain/x/walletsecurity/client/cli/tx.go",
+			"code": "170: \t\t\t\t\tSeconds: int64(d.Seconds()),\n171: \t\t\t\t\tNanos:   int32(d.Nanoseconds() % 1e9),\n172: \t\t\t\t}\n",
+			"line": "171",
+			"column": "20",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "190",
+				"url": "https://cwe.mitre.org/data/definitions/190.html"
+			},
+			"rule_id": "G115",
+			"details": "integer overflow conversion int -\u003e uint64",
+			"file": "/home/hudson/blockchain-projects/aura/chain/x/wasm/keeper/contract_hooks.go",
+			"code": "117: \tconsecutiveSuccessBz := make([]byte, 8)\n118: \tbinary.BigEndian.PutUint64(consecutiveSuccessBz, uint64(data.ConsecutiveSuccess))\n119: \tstore.Set(circuitBreakerConsecutiveSuccessKey, consecutiveSuccessBz)\n",
+			"line": "118",
+			"column": "57",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "190",
+				"url": "https://cwe.mitre.org/data/definitions/190.html"
+			},
+			"rule_id": "G115",
+			"details": "integer overflow conversion int -\u003e uint64",
+			"file": "/home/hudson/blockchain-projects/aura/chain/x/wasm/keeper/contract_hooks.go",
+			"code": "99: \tfailureCountBz := make([]byte, 8)\n100: \tbinary.BigEndian.PutUint64(failureCountBz, uint64(data.FailureCount))\n101: \tstore.Set(circuitBreakerFailureCountKey, failureCountBz)\n",
+			"line": "100",
+			"column": "51",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "190",
+				"url": "https://cwe.mitre.org/data/definitions/190.html"
+			},
+			"rule_id": "G115",
+			"details": "integer overflow conversion int -\u003e uint32",
+			"file": "/home/hudson/blockchain-projects/aura/chain/x/security/keeper/privacy.go",
+			"code": "150: \t// Check if we have enough participants to execute mixing\n151: \tif uint32(len(pool.Participants)) \u003e= pool.MinParticipants {\n152: \t\tk.Logger(ctx).Info(\"mixing pool ready for execution\",\n",
+			"line": "151",
+			"column": "11",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "190",
+				"url": "https://cwe.mitre.org/data/definitions/190.html"
+			},
+			"rule_id": "G115",
+			"details": "integer overflow conversion int -\u003e uint32",
+			"file": "/home/hudson/blockchain-projects/aura/chain/x/security/keeper/invariants.go",
+			"code": "290: \t\t\t// Ring members should match ring size\n291: \t\t\tif uint32(len(sig.RingMembers)) != sig.RingSize {\n292: \t\t\t\treturn sdk.FormatInvariant(\n",
+			"line": "291",
+			"column": "13",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "190",
+				"url": "https://cwe.mitre.org/data/definitions/190.html"
+			},
+			"rule_id": "G115",
+			"details": "integer overflow conversion int -\u003e int32",
+			"file": "/home/hudson/blockchain-projects/aura/chain/x/validatorsecurity/keeper/sentry.go",
+			"code": "287: \n288: \t\tif int32(activeCount) \u003c params.MinSentryNodes {\n289: \t\t\treturn types.ErrInsufficientSentryNodes\n",
+			"line": "288",
+			"column": "11",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "190",
+				"url": "https://cwe.mitre.org/data/definitions/190.html"
+			},
+			"rule_id": "G115",
+			"details": "integer overflow conversion int -\u003e int32",
+			"file": "/home/hudson/blockchain-projects/aura/chain/x/validatorsecurity/keeper/sentry.go",
+			"code": "180: \n181: \t\tif int32(activeCount) \u003c params.MinSentryNodes {\n182: \t\t\t// Create critical alert\n",
+			"line": "181",
+			"column": "11",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "190",
+				"url": "https://cwe.mitre.org/data/definitions/190.html"
+			},
+			"rule_id": "G115",
+			"details": "integer overflow conversion int -\u003e int32",
+			"file": "/home/hudson/blockchain-projects/aura/chain/x/validatorsecurity/keeper/monitoring.go",
+			"code": "132: \n133: \t\tif int32(activeCount) \u003c params.MinSentryNodes {\n134: \t\t\talertTime := sdkCtx.BlockTime()\n",
+			"line": "133",
+			"column": "11",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "190",
+				"url": "https://cwe.mitre.org/data/definitions/190.html"
+			},
+			"rule_id": "G115",
+			"details": "integer overflow conversion int -\u003e int32",
+			"file": "/home/hudson/blockchain-projects/aura/chain/x/validatorsecurity/keeper/jailing.go",
+			"code": "106: \t\tsentryNodes := k.GetValidatorSentryNodes(ctx, validatorAddr)\n107: \t\tif int32(len(sentryNodes)) \u003c params.MinSentryNodes {\n108: \t\t\treturn types.ErrInsufficientSentryNodes\n",
+			"line": "107",
+			"column": "11",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "190",
+				"url": "https://cwe.mitre.org/data/definitions/190.html"
+			},
+			"rule_id": "G115",
+			"details": "integer overflow conversion int -\u003e int32",
+			"file": "/home/hudson/blockchain-projects/aura/chain/x/security/keeper/wallet.go",
+			"code": "357: \t}\n358: \tif int32(len(tx.SignedBy)) \u003c tx.CurrentWeight {\n359: \t\treturn types.ErrInsufficientSigs\n",
+			"line": "358",
+			"column": "10",
+			"nosec": false,
+			"suppressions": null
+		}
+	],
+	"Stats": {
+		"files": 170,
+		"lines": 49700,
+		"nosec": 3,
+		"found": 16
+	},
+	"GosecVersion": "dev"
+}

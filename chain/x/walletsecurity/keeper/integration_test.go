@@ -1,9 +1,12 @@
 package keeper_test
 
 import (
+	"crypto/sha256"
 	"testing"
 	"time"
 
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	gogotypes "github.com/cosmos/gogoproto/types"
 	"github.com/stretchr/testify/require"
 
@@ -18,9 +21,14 @@ func TestCompleteWalletSecurityWorkflow(t *testing.T) {
 	suite.SetupTest()
 
 	// 1. Register hardware wallet
-	address := "cosmos1secure123"
+	privKey := secp256k1.GenPrivKey()
+	address := sdk.AccAddress(privKey.PubKey().Address()).String()
 	deviceID := "ledger-nano-x-12345"
-	signature := make([]byte, 64)
+
+	regDigest := sha256.Sum256([]byte("aura-hww:" + address + ":" + deviceID))
+	regSig, err := privKey.Sign(regDigest[:])
+	require.NoError(t, err)
+	signature := append(privKey.PubKey().Bytes(), regSig...)
 
 	hwConfig, err := suite.keeper.RegisterHardwareWallet(
 		suite.ctx,
@@ -37,7 +45,9 @@ func TestCompleteWalletSecurityWorkflow(t *testing.T) {
 
 	// 2. Create multi-sig wallet with the hardware wallet
 	creator := address
-	signers := []string{address, "cosmos1guardian1", "cosmos1guardian2"}
+	guardian1 := sdk.AccAddress(secp256k1.GenPrivKey().PubKey().Address()).String()
+	guardian2 := sdk.AccAddress(secp256k1.GenPrivKey().PubKey().Address()).String()
+	signers := []string{address, guardian1, guardian2}
 
 	multiSigWallet, err := suite.keeper.CreateMultiSigWallet(
 		suite.ctx,
@@ -54,9 +64,9 @@ func TestCompleteWalletSecurityWorkflow(t *testing.T) {
 
 	// 3. Configure social recovery
 	guardians := []*wsproto.Guardian{
-		{Address: "cosmos1guardian1", Name: "Guardian One"},
-		{Address: "cosmos1guardian2", Name: "Guardian Two"},
-		{Address: "cosmos1guardian3", Name: "Guardian Three"},
+		{Address: guardian1, Name: "Guardian One"},
+		{Address: guardian2, Name: "Guardian Two"},
+		{Address: sdk.AccAddress(secp256k1.GenPrivKey().PubKey().Address()).String(), Name: "Guardian Three"},
 	}
 
 	recoveryConfig, err := suite.keeper.ConfigureSocialRecovery(
@@ -64,7 +74,7 @@ func TestCompleteWalletSecurityWorkflow(t *testing.T) {
 		multiSigWallet.WalletId,
 		guardians,
 		2, // 2-of-3 threshold
-		&gogotypes.Duration{Seconds: int64(48*time.Hour.Seconds()), Nanos: int32(48*time.Hour.Nanoseconds() % 1e9)},
+		&gogotypes.Duration{Seconds: int64(48 * time.Hour.Seconds()), Nanos: int32(48 * time.Hour.Nanoseconds() % 1e9)},
 	)
 	require.NoError(t, err)
 	require.NotNil(t, recoveryConfig)
@@ -87,7 +97,7 @@ func TestCompleteWalletSecurityWorkflow(t *testing.T) {
 	sessionConfig, err := suite.keeper.ConfigureSession(
 		suite.ctx,
 		multiSigWallet.WalletId,
-		&gogotypes.Duration{Seconds: int64(30*time.Minute.Seconds()), Nanos: int32(30*time.Minute.Nanoseconds() % 1e9)},
+		&gogotypes.Duration{Seconds: int64(30 * time.Minute.Seconds()), Nanos: int32(30 * time.Minute.Nanoseconds() % 1e9)},
 		true, // auto-lock enabled
 		300,  // 5 minutes inactivity
 	)
@@ -217,7 +227,7 @@ func TestMultiSigWithRecoveryWorkflow(t *testing.T) {
 		wallet.WalletId,
 		guardians,
 		2,
-		&gogotypes.Duration{Seconds: int64(1*time.Second.Seconds()), Nanos: int32(1*time.Second.Nanoseconds() % 1e9)}, // Short delay for testing
+		&gogotypes.Duration{Seconds: int64(1 * time.Second.Seconds()), Nanos: int32(1 * time.Second.Nanoseconds() % 1e9)}, // Short delay for testing
 	)
 	require.NoError(t, err)
 
@@ -268,19 +278,22 @@ func TestSecurityLayeredDefense(t *testing.T) {
 	suite.SetT(t)
 	suite.SetupTest()
 
+	privKey := secp256k1.GenPrivKey()
+	hwAddress := sdk.AccAddress(privKey.PubKey().Address()).String()
 	walletID := "secure_wallet_123"
 
 	// Layer 1: Hardware wallet
 	hwConfig, err := suite.keeper.RegisterHardwareWallet(
 		suite.ctx,
-		"cosmos1secure",
+		hwAddress,
 		wsproto.HardwareWalletType_HARDWARE_WALLET_TYPE_LEDGER,
 		"device123",
 		"2.0.0",
 		"m/44'/118'/0'/0/0",
-		make([]byte, 64),
+		makeRegistrationSig(t, privKey, hwAddress, "device123"),
 	)
 	require.NoError(t, err)
+	walletID = hwConfig.WalletId
 	t.Log("Layer 1: Hardware wallet - ACTIVE")
 
 	// Layer 2: Spending limits
@@ -299,7 +312,7 @@ func TestSecurityLayeredDefense(t *testing.T) {
 	_, err = suite.keeper.ConfigureSession(
 		suite.ctx,
 		walletID,
-		&gogotypes.Duration{Seconds: int64(15*time.Minute.Seconds()), Nanos: int32(15*time.Minute.Nanoseconds() % 1e9)},
+		&gogotypes.Duration{Seconds: int64(15 * time.Minute.Seconds()), Nanos: int32(15 * time.Minute.Nanoseconds() % 1e9)},
 		true,
 		180,
 	)
@@ -332,7 +345,7 @@ func TestSecurityLayeredDefense(t *testing.T) {
 	simulation, err := suite.keeper.SimulateTransaction(
 		suite.ctx,
 		[]byte("suspicious_transaction"),
-		"cosmos1secure",
+		hwAddress,
 	)
 	require.NoError(t, err)
 	t.Logf("Layer 6: Transaction simulation - Risk: %s", simulation.RiskLevel.String())

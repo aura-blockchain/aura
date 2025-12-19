@@ -113,13 +113,14 @@ global.COSMOS_SDK = {
 global.fetch = vi.fn();
 
 describe('Wallet Integration Tests', () => {
-  let WalletCore, StakingModule, GovernanceModule;
+  let WalletCore, StakingModule, GovernanceModule, DexModule;
 
   beforeEach(async () => {
     // Import modules
     WalletCore = (await import('../../src/wallet-core.js')).default || (await import('../../src/wallet-core.js'));
     StakingModule = (await import('../../src/staking.js')).default || (await import('../../src/staking.js'));
     GovernanceModule = (await import('../../src/governance.js')).default || (await import('../../src/governance.js'));
+    DexModule = (await import('../../src/dex.js')).default || (await import('../../src/dex.js'));
 
     // Clear storage
     global.chrome.storage.local.data = {};
@@ -342,6 +343,72 @@ describe('Wallet Integration Tests', () => {
 
       expect(voteTx.body.messages[0]['@type']).toBe('/cosmos.gov.v1beta1.MsgVote');
       expect(voteTx.body.messages[0].option).toBe(1);
+    });
+  });
+
+  describe('DEX Flow', () => {
+    it('should quote swap and build liquidity transactions', async () => {
+      const wallet = await WalletCore.generateWallet();
+      await WalletCore.saveWallet(wallet.privateKeyHex, wallet.address);
+
+      const pool = {
+        pool_id: '1',
+        denom_a: 'uaura',
+        denom_b: 'usdt',
+        reserve_a: '1500000',
+        reserve_b: '500000',
+        total_lp_tokens: '5000000',
+        fee_percentage: '0.003',
+        protocol_fee_percentage: '0.0005',
+      };
+
+      const quote = DexModule.calculateSwapQuote(pool, 'uaura', 100000);
+
+      expect(quote.denomOut).toBe('usdt');
+      expect(parseInt(quote.expectedAmountOut, 10)).toBeGreaterThan(0);
+
+      const swapTx = DexModule.buildSwapExactInTx({
+        sender: wallet.address,
+        poolId: pool.pool_id,
+        denomIn: 'uaura',
+        amountIn: 100000,
+        minAmountOut: quote.minAmountOut,
+        maxSlippageBps: quote.maxSlippageBps,
+        memo: 'DEX swap test',
+      });
+
+      expect(swapTx.body.messages[0]['@type']).toBe('/aura.dex.v1beta1.MsgSwapExactIn');
+      expect(swapTx.body.messages[0].coin_in.amount).toBe('100000');
+
+      const privateKey = COSMOS_SDK.hexToBytes(wallet.privateKeyHex);
+      const publicKey = await COSMOS_SDK.getPublicKey(privateKey);
+      const accountInfo = await COSMOS_SDK.getAccount(wallet.address);
+
+      const signedSwapTx = await COSMOS_SDK.signTx(swapTx, privateKey, accountInfo, publicKey);
+      const swapResult = await COSMOS_SDK.broadcastTx(signedSwapTx);
+
+      expect(swapResult.code).toBe(0);
+
+      const addLiquidityTx = DexModule.buildAddLiquidityTx({
+        provider: wallet.address,
+        poolId: pool.pool_id,
+        amountA: 500000,
+        amountB: 250000,
+        denomA: 'uaura',
+        denomB: 'usdt',
+      });
+
+      expect(addLiquidityTx.body.messages[0]['@type']).toBe('/aura.dex.v1beta1.MsgAddLiquidity');
+      expect(addLiquidityTx.body.messages[0].amount_a.amount).toBe('500000');
+
+      const removeLiquidityTx = DexModule.buildRemoveLiquidityTx({
+        provider: wallet.address,
+        poolId: pool.pool_id,
+        lpTokens: '250000',
+      });
+
+      expect(removeLiquidityTx.body.messages[0]['@type']).toBe('/aura.dex.v1beta1.MsgRemoveLiquidity');
+      expect(removeLiquidityTx.body.messages[0].lp_tokens).toBe('250000');
     });
   });
 

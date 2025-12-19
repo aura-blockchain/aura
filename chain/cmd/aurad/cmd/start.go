@@ -33,6 +33,7 @@ import (
 
 	"github.com/aequitas/aura/chain/app"
 	"github.com/aequitas/aura/chain/cmd/aurad/cmd/security"
+	aitypes "github.com/aequitas/aura/chain/x/aiassistant/types"
 	contractregistrytypes "github.com/aequitas/aura/chain/x/contractregistry/types"
 	contractregistrypb "github.com/aequitas/aura/proto/aura/contractregistry/v1beta1"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -42,21 +43,27 @@ import (
 	"github.com/cometbft/cometbft/p2p"
 	pvm "github.com/cometbft/cometbft/privval"
 	"github.com/cometbft/cometbft/proxy"
+	cmtlocal "github.com/cometbft/cometbft/rpc/client/local"
 	cmttypes "github.com/cometbft/cometbft/types"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
+	"github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
+	nodeservice "github.com/cosmos/cosmos-sdk/client/grpc/node"
+	sdkcodec "github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	genutil "github.com/cosmos/cosmos-sdk/x/genutil"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -358,10 +365,6 @@ func startInProcess(cmd *cobra.Command, auraApp *app.App, logger log.Logger) err
 		return fmt.Errorf("failed to load latest app version: %w", err)
 	}
 
-	if err := registerAppServices(cmd, auraApp); err != nil {
-		return err
-	}
-
 	// Load node key
 	nodeKey, err := p2p.LoadOrGenNodeKey(cmtConfig.NodeKeyFile())
 	if err != nil {
@@ -430,6 +433,21 @@ func startInProcess(cmd *cobra.Command, auraApp *app.App, logger log.Logger) err
 	defer consensusCancel()
 	go consensusCollector.Start(consensusCtx, 5*time.Second)
 
+	appCfg, _, err := loadAppConfig(homeDir, logger)
+	if err != nil {
+		logger.Info("failed to load app config for gRPC service registration, using defaults", "error", err.Error())
+		appCfg = *serverconfig.DefaultConfig()
+	}
+	encodingCfg := auraApp.Encoding()
+	grpcClientCtx := client.Context{}.
+		WithCodec(encodingCfg.Codec).
+		WithInterfaceRegistry(encodingCfg.InterfaceRegistry).
+		WithTxConfig(encodingCfg.TxConfig).
+		WithClient(cmtlocal.New(cmtNode))
+	if err := registerAppServices(auraApp, grpcClientCtx, appCfg); err != nil {
+		return fmt.Errorf("failed to register gRPC services: %w", err)
+	}
+
 	// Create server manager for graceful shutdown
 	serverMgr := security.NewServerManager(secLogger)
 
@@ -451,7 +469,7 @@ func startInProcess(cmd *cobra.Command, auraApp *app.App, logger log.Logger) err
 	if serviceCfg.apiEnabled {
 		logger.Info("starting API server", "address", serviceCfg.apiAddress)
 
-		apiSrv, err = startAPIServer(serviceCfg.apiAddress, serverMgr, secLogger)
+		apiSrv, err = startAPIServer(auraApp, serviceCfg.grpcAddress, serviceCfg.apiAddress, serverMgr, secLogger)
 		if err != nil {
 			// Try to cleanup
 			if grpcSrv != nil {
@@ -500,8 +518,18 @@ func startStandAlone(cmd *cobra.Command, auraApp *app.App, logger log.Logger) er
 		return fmt.Errorf("failed to load latest app version: %w", err)
 	}
 
-	if err := registerAppServices(cmd, auraApp); err != nil {
-		return err
+	appCfg, _, err := loadAppConfig(homeDir, logger)
+	if err != nil {
+		logger.Info("failed to load app config for gRPC service registration, using defaults", "error", err.Error())
+		appCfg = *serverconfig.DefaultConfig()
+	}
+	encodingCfg := auraApp.Encoding()
+	grpcClientCtx := client.Context{}.
+		WithCodec(encodingCfg.Codec).
+		WithInterfaceRegistry(encodingCfg.InterfaceRegistry).
+		WithTxConfig(encodingCfg.TxConfig)
+	if err := registerAppServices(auraApp, grpcClientCtx, appCfg); err != nil {
+		return fmt.Errorf("failed to register gRPC services: %w", err)
 	}
 
 	// Create server manager
@@ -520,7 +548,7 @@ func startStandAlone(cmd *cobra.Command, auraApp *app.App, logger log.Logger) er
 	// Start API server
 	var apiSrv *http.Server
 	if serviceCfg.apiEnabled {
-		apiSrv, err = startAPIServer(serviceCfg.apiAddress, serverMgr, secLogger)
+		apiSrv, err = startAPIServer(auraApp, serviceCfg.grpcAddress, serviceCfg.apiAddress, serverMgr, secLogger)
 		if err != nil {
 			if grpcSrv != nil {
 				grpcSrv.GracefulStop()
@@ -540,17 +568,14 @@ func startStandAlone(cmd *cobra.Command, auraApp *app.App, logger log.Logger) er
 	return waitForShutdown(ctx, nil, grpcSrv, apiSrv, serverMgr, logger)
 }
 
-func registerAppServices(cmd *cobra.Command, auraApp *app.App) error {
+func registerAppServices(auraApp *app.App, clientCtx client.Context, appCfg serverconfig.Config) error {
 	if auraApp == nil {
 		return fmt.Errorf("app instance is nil: cannot register services")
 	}
 
-	clientCtx := client.GetClientContextFromCmd(cmd)
-	if clientCtx.Codec == nil {
-		return fmt.Errorf("client context is not initialized")
-	}
-
 	auraApp.RegisterTxService(clientCtx)
+	auraApp.RegisterTendermintService(clientCtx)
+	auraApp.RegisterNodeService(clientCtx, appCfg)
 	return nil
 }
 
@@ -564,6 +589,7 @@ func startGRPCServer(
 	if auraApp == nil {
 		return nil, fmt.Errorf("app instance is nil: cannot start gRPC server")
 	}
+	homeDir := GetHomeDir()
 
 	// Parse address
 	_, portStr, err := net.SplitHostPort(address)
@@ -583,7 +609,6 @@ func startGRPCServer(
 	}
 
 	// Add TLS if configured (optional for development)
-	homeDir := GetHomeDir()
 	tlsConfig := security.NewTLSConfig(homeDir, GetSecurityLogger())
 	tlsCfg, err := tlsConfig.LoadTLSConfig()
 	if err != nil {
@@ -619,10 +644,34 @@ func startGRPCServer(
 
 // startAPIServer starts the REST API server
 func startAPIServer(
+	auraApp *app.App,
+	grpcAddress string,
 	address string,
 	serverMgr *security.ServerManager,
 	logger security.Logger,
 ) (*http.Server, error) {
+	if auraApp == nil {
+		return nil, fmt.Errorf("app instance is nil: cannot start API server")
+	}
+
+	encoding := auraApp.Encoding()
+	clientCtx := client.Context{}.
+		WithCodec(encoding.Codec).
+		WithInterfaceRegistry(encoding.InterfaceRegistry).
+		WithTxConfig(encoding.TxConfig)
+
+	grpcCodec := sdkcodec.NewProtoCodec(encoding.InterfaceRegistry)
+	grpcConn, err := grpc.DialContext(
+		context.Background(),
+		grpcAddress,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithDefaultCallOptions(grpc.ForceCodec(grpcCodec.GRPCCodec())),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to dial gRPC gateway backend: %w", err)
+	}
+	clientCtx = clientCtx.WithGRPCClient(grpcConn)
+
 	// Create rate limiter
 	rateLimiter := security.NewDefaultRateLimiter(logger)
 
@@ -635,14 +684,156 @@ func startAPIServer(
 	// Create mux
 	mux := http.NewServeMux()
 
+	// Register gRPC-Gateway routes for all modules
+	gatewayMux := runtime.NewServeMux()
+	app.ModuleBasics.RegisterGRPCGatewayRoutes(clientCtx, gatewayMux)
+	authtx.RegisterGRPCGatewayRoutes(clientCtx, gatewayMux)
+	cmtservice.RegisterGRPCGatewayRoutes(clientCtx, gatewayMux)
+	nodeservice.RegisterGRPCGatewayRoutes(clientCtx, gatewayMux)
+
+	aiKeeper := auraApp.AIAssistantKeeper()
+	toRESTAssistant := func(a *aitypes.Assistant) map[string]interface{} {
+		if a == nil {
+			return nil
+		}
+		return map[string]interface{}{
+			"assistant_address":   a.AssistantAddress,
+			"owner_address":       a.OwnerAddress,
+			"locales":             a.Locales,
+			"model_hash":          a.ModelHash,
+			"api_key_fingerprint": a.ApiKeyFingerprint,
+			"stake": map[string]string{
+				"denom":  a.Stake.Denom,
+				"amount": a.Stake.Amount.String(),
+			},
+			"sponsorship_balance": map[string]string{
+				"denom":  a.SponsorshipBalance.Denom,
+				"amount": a.SponsorshipBalance.Amount.String(),
+			},
+			"last_heartbeat":      a.LastHeartbeat.Format(time.RFC3339Nano),
+			"status":              a.Status.String(),
+			"slash_count":         a.SlashCount,
+			"misbehavior_reports": a.MisbehaviorReports,
+			"heartbeat_failures":  a.HeartbeatFailures,
+		}
+	}
+
 	// Register routes
 	mux.Handle("/health", healthChecker.HTTPHealthHandler())
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	mux.Handle("/status", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		// Ignore write error - client may have disconnected
 		_, _ = fmt.Fprintf(w, `{"chain":"aura","status":"running","version":"%s"}`, getVersion())
+	}))
+	assistantsHandler := func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		path := strings.TrimSuffix(r.URL.Path, "/")
+		if path != "/aura/aiassistant/v1beta1/assistants" {
+			address := strings.TrimPrefix(path, "/aura/aiassistant/v1beta1/assistants/")
+			ctx := auraApp.BaseApp.NewContext(true)
+			resp, found := aiKeeper.GetAssistant(ctx, address)
+			if !found {
+				http.Error(w, "assistant not found", http.StatusNotFound)
+				return
+			}
+			body := map[string]interface{}{
+				"assistant": toRESTAssistant(resp),
+			}
+			bz, marshalErr := json.Marshal(body)
+			if marshalErr != nil {
+				http.Error(w, marshalErr.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write(bz)
+			return
+		}
+
+		ctx := auraApp.BaseApp.NewContext(true)
+		resp, pageRes, err := aiKeeper.ListAssistants(ctx, nil)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadGateway)
+			return
+		}
+		assistants := make([]map[string]interface{}, 0, len(resp))
+		for _, a := range resp {
+			assistants = append(assistants, toRESTAssistant(a))
+		}
+		body := map[string]interface{}{
+			"assistants": assistants,
+			"pagination": pageRes,
+		}
+		bz, marshalErr := json.Marshal(body)
+		if marshalErr != nil {
+			http.Error(w, marshalErr.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write(bz)
+	}
+	mux.HandleFunc("/aura/aiassistant/v1beta1/assistants", assistantsHandler)
+	mux.HandleFunc("/aura/aiassistant/v1beta1/assistants/", assistantsHandler)
+	mux.HandleFunc("/aura/aiassistant/v1beta1/locales/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		locale := strings.TrimPrefix(r.URL.Path, "/aura/aiassistant/v1beta1/locales/")
+		ctx := auraApp.BaseApp.NewContext(true)
+		resp, err := aiKeeper.AssistantsByLocale(ctx, locale)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadGateway)
+			return
+		}
+		assistants := make([]map[string]interface{}, 0, len(resp))
+		for _, a := range resp {
+			assistants = append(assistants, toRESTAssistant(a))
+		}
+		body := map[string]interface{}{
+			"locale":     strings.ToLower(locale),
+			"assistants": assistants,
+		}
+		bz, marshalErr := json.Marshal(body)
+		if marshalErr != nil {
+			http.Error(w, marshalErr.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write(bz)
 	})
+	mux.HandleFunc("/aura/aiassistant/v1beta1/params", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		ctx := auraApp.BaseApp.NewContext(true)
+		params := aiKeeper.GetParams(ctx)
+		body := map[string]interface{}{
+			"params": map[string]interface{}{
+				"min_stake": map[string]string{
+					"denom":  params.MinStake.Denom,
+					"amount": params.MinStake.Amount.String(),
+				},
+				"heartbeat_window_seconds":   params.HeartbeatWindowSeconds,
+				"heartbeat_grace_seconds":    params.HeartbeatGraceSeconds,
+				"slash_fraction_downtime":    params.SlashFractionDowntime.String(),
+				"slash_fraction_misbehavior": params.SlashFractionMisbehavior.String(),
+				"max_locales":                params.MaxLocales,
+			},
+		}
+		bz, marshalErr := json.Marshal(body)
+		if marshalErr != nil {
+			http.Error(w, marshalErr.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write(bz)
+	})
+	mux.Handle("/", gatewayMux)
 
 	// Apply middleware
 	handler := security.SecurityHeadersMiddleware(mux)

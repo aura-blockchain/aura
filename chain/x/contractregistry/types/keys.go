@@ -2,6 +2,7 @@ package types
 
 import (
 	"encoding/binary"
+	"math"
 )
 
 const (
@@ -315,7 +316,7 @@ func RateLimitKey(contractAddr string, userAddr string, windowStart int64) []byt
 	key = append(key, []byte(userAddr)...)
 	key = append(key, byte('/'))
 	bz := make([]byte, 8)
-	binary.BigEndian.PutUint64(bz, uint64(windowStart))
+	binary.BigEndian.PutUint64(bz, safeInt64ToUint64(windowStart))
 	return append(key, bz...)
 }
 
@@ -325,4 +326,14 @@ func RateLimitPrefixForContract(contractAddr string, userAddr string) []byte {
 	key = append(key, byte('/'))
 	key = append(key, []byte(userAddr)...)
 	return append(key, byte('/'))
+}
+
+func safeInt64ToUint64(v int64) uint64 {
+	if v < 0 {
+		return 0
+	}
+	if v > math.MaxInt64 {
+		return math.MaxInt64
+	}
+	return uint64(v)
 }

@@ -16,3 +16,96 @@ aura-validator-1
 [0;32m[SUCCESS][0m Validator restarted with snapshots enabled
 [0;32m[TEST][0m Waiting for snapshot to be created at next interval
 Waiting for snapshot at height 4200...
+[0;32m[SUCCESS][0m Reached snapshot height 4200
+[0;32m[TEST][0m Listing available snapshots
+ls: cannot access '/home/aura/.aura/data/snapshots/': No such file or directory
+[1;33m[RESULT][0m No snapshots directory yet
+[0;32m[TEST][0m Creating a new test node (aura-snapshot-test) to restore from snapshot
+[0;32m[TEST][0m Creating test node container
+b7bd5e407e3948c8c59063d1c35e1c3a33a194b7d40b1d81fe0af3d009811c8b
+[0;32m[SUCCESS][0m Test node container created
+[0;32m[TEST][0m Initializing test node
+[SECURITY] {
+  "data": {
+    "original_path": "~/.aura",
+    "resolved_path": "~/.aura"
+  },
+  "timestamp": "2025-12-14T11:56:38Z",
+  "type": "path_validated"
+}
+[SECURITY] {
+  "data": {
+    "original_path": "~/.aura",
+    "resolved_path": "~/.aura"
+  },
+  "timestamp": "2025-12-14T11:56:38Z",
+  "type": "path_validated"
+}
+Initializing Aura node...
+Chain ID: aura-testnet-1
+Moniker: snapshot-test
+Home: /home/aura/.aura
+Created directory: /home/aura/.aura/config (permissions: 750)
+Created directory: /home/aura/.aura/config/tls (permissions: 700)
+Created directory: /home/aura/.aura/data (permissions: 700)
+Created directory: /home/aura/.aura/keys (permissions: 700)
+Created directory: /home/aura/.aura/logs (permissions: 700)
+
+╔══════════════════════════════════════════════════════════════════════╗
+║                    IMPORTANT - SAVE YOUR MNEMONIC                    ║
+╠══════════════════════════════════════════════════════════════════════╣
+║ Write down these 24 words in order and store them securely.          ║
+║ This is the ONLY way to recover your validator key.                  ║
+║                                                                      ║
+║ DO NOT:                                                              ║
+║   - Store digitally (screenshots, files, emails)                     ║
+║   - Share with anyone                                                ║
+║   - Enter on websites                                                ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+   1. wheel
+   2. crop
+   3. dignity
+   4. edge
+   5. protect
+   6. together
+   7. else
+   8. bid
+   9. bar
+  10. sheriff
+  11. talk
+  12. crack
+  13. bridge
+  14. series
+  15. emotion
+  16. option
+  17. spy
+  18. click
+  19. hole
+  20. smile
+  21. rich
+  22. daughter
+  23. average
+  24. aim
+
+Press Enter after you have safely recorded your mnemonic...
+Created private validator key: /home/aura/.aura/config/priv_validator_key.json
+Created private validator state: /home/aura/.aura/data/priv_validator_state.json
+Created config file: /home/aura/.aura/config/config.toml (permissions: 640)
+Created config file: /home/aura/.aura/config/app.toml (permissions: 640)
+Created config file: /home/aura/.aura/config/genesis.json (permissions: 640)
+
+Node initialized successfully!
+Configuration files created in: /home/aura/.aura
+
+Validator Addresses:
+  Account:   aura1xmrv36948ez2l8yzdd3xkg8l74n00aghpc9luf
+  Operator:  auravaloper1xmrv36948ez2l8yzdd3xkg8l74n00agh625hyh
+  Consensus: auravalcons1xmrv36948ez2l8yzdd3xkg8l74n00aghwe8tgk
+
+To start the node, run:
+  aurad start
+[0;32m[TEST][0m Copying genesis.json from validator-1
+[0;32m[SUCCESS][0m Genesis copied
+[0;32m[TEST][0m Configuring state sync on test node
+jq: parse error: Invalid numeric literal at line 1, column 6

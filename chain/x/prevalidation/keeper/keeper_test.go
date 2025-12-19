@@ -112,6 +112,33 @@ func TestValidateTransactionInvalidNonce(t *testing.T) {
 	require.False(t, valid)
 }
 
+type mockComplianceKeeper struct {
+	sanctioned map[string]bool
+}
+
+func (m mockComplianceKeeper) IsAddressSanctioned(_ sdk.Context, address string) bool {
+	return m.sanctioned[address]
+}
+
+func TestValidateTransaction_SanctionedSender(t *testing.T) {
+	input := keepertest.CreateTestInput(t)
+	k := keeper.NewKeeper(input.Cdc, input.StoreKey)
+
+	sender := keepertest.GenTestAddr().String()
+	k.SetComplianceKeeper(mockComplianceKeeper{sanctioned: map[string]bool{sender: true}})
+
+	tx := types.Transaction{
+		Sender:    sender,
+		Recipient: keepertest.GenTestAddr().String(),
+		Amount:    "1000",
+		Nonce:     1,
+	}
+
+	valid, err := k.ValidateTransaction(input.Ctx, tx)
+	require.ErrorIs(t, err, types.ErrSanctionedSender)
+	require.False(t, valid)
+}
+
 // Nonce Management Tests
 
 func TestGetNonce(t *testing.T) {

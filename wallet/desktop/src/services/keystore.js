@@ -9,6 +9,12 @@ export class KeystoreService {
     this.prefix = 'aura';
   }
 
+  setBech32Prefix(prefix) {
+    if (prefix) {
+      this.prefix = prefix;
+    }
+  }
+
   /**
    * Generate a new 24-word mnemonic phrase
    */
@@ -35,6 +41,9 @@ export class KeystoreService {
    */
   async createWallet(mnemonic, password) {
     try {
+      if (!password || password.length < 8) {
+        throw new Error('Password must be at least 8 characters');
+      }
       // Validate mnemonic
       if (!this.validateMnemonic(mnemonic)) {
         throw new Error('Invalid mnemonic phrase');
@@ -120,6 +129,9 @@ export class KeystoreService {
    */
   async unlockWallet(password) {
     try {
+      if (!password || password.length < 8) {
+        throw new Error('Password must be at least 8 characters');
+      }
       let data;
       if (window.electron?.store) {
         data = await window.electron.store.get(this.storageKey);

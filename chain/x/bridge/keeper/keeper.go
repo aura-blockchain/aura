@@ -6,20 +6,22 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	stdmath "math"
 	"math/big"
 	"strconv"
 	"strings"
 	"time"
 
 	"cosmossdk.io/log"
-	"cosmossdk.io/math"
+	sdkmath "cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	secp256k1Curve "github.com/decred/dcrd/dcrec/secp256k1/v4"
 	"github.com/decred/dcrd/dcrec/secp256k1/v4/ecdsa"
-	"golang.org/x/crypto/ripemd160" //nolint:staticcheck // Required for Bitcoin address compatibility
+	// #nosec G507 -- RIPEMD160 is required for Bitcoin/Cosmos-style address derivation compatibility
+	"golang.org/x/crypto/ripemd160" //nolint:staticcheck,gosec
 
 	"github.com/aequitas/aura/chain/x/bridge/types"
 )
@@ -731,7 +733,7 @@ func (k Keeper) getRelayerStats(ctx sdk.Context, relayer string) (*types.Relayer
 	return &stats, true
 }
 
-func (k Keeper) recordRelayerStats(ctx sdk.Context, relayer string, success bool, volume math.Int) {
+func (k Keeper) recordRelayerStats(ctx sdk.Context, relayer string, success bool, volume sdkmath.Int) {
 	if relayer == "" {
 		return
 	}
@@ -740,8 +742,8 @@ func (k Keeper) recordRelayerStats(ctx sdk.Context, relayer string, success bool
 	if stats == nil {
 		stats = &types.RelayerStats{
 			RelayerAddress:   relayer,
-			TotalVolume:      math.ZeroInt(),
-			UptimePercentage: math.LegacyNewDec(100),
+			TotalVolume:      sdkmath.ZeroInt(),
+			UptimePercentage: sdkmath.LegacyNewDec(100),
 			LastRelay:        &blockTime,
 		}
 	}
@@ -1007,7 +1009,7 @@ func (k Keeper) ProcessWithdrawal(ctx sdk.Context, recipient string, amount sdk.
 		return fmt.Errorf("amount cannot be empty")
 	}
 	params := k.GetParams(ctx)
-	maxAmt, ok := math.NewIntFromString(params.MaxTransferAmount)
+	maxAmt, ok := sdkmath.NewIntFromString(params.MaxTransferAmount)
 	if !ok {
 		return fmt.Errorf("invalid max transfer amount param")
 	}
@@ -1020,8 +1022,7 @@ func (k Keeper) ProcessWithdrawal(ctx sdk.Context, recipient string, amount sdk.
 	}
 	transfer.Status = types.TransferStatus_COMPLETED
 	transfer.Timestamp = ctx.BlockTime()
-	k.setTransfer(ctx, transfer)
-	return nil
+	return k.setTransfer(ctx, transfer)
 }
 
 // InitiateTransfer initiates a cross-chain transfer
@@ -1076,7 +1077,7 @@ func (k Keeper) InitiateTransfer(ctx sdk.Context, sender string, recipient strin
 
 	// Validate amount does not exceed maximum
 	params := k.GetParams(ctx)
-	maxAmt, ok := math.NewIntFromString(params.MaxTransferAmount)
+	maxAmt, ok := sdkmath.NewIntFromString(params.MaxTransferAmount)
 	if !ok {
 		return "", fmt.Errorf("invalid max transfer amount param")
 	}
@@ -1102,7 +1103,9 @@ func (k Keeper) InitiateTransfer(ctx sdk.Context, sender string, recipient strin
 	}
 
 	// Store transfer
-	k.setTransfer(ctx, transfer)
+	if err := k.setTransfer(ctx, transfer); err != nil {
+		return "", err
+	}
 
 	// Emit event for transfer initiation
 	ctx.EventManager().EmitEvent(
@@ -1134,8 +1137,7 @@ func (k Keeper) InitiateWithdrawal(ctx sdk.Context, recipient string, amount sdk
 		Status:      types.TransferStatus_PENDING,
 		Timestamp:   ctx.BlockTime(),
 	}
-	k.setTransfer(ctx, transfer)
-	return transferID, nil
+	return transferID, k.setTransfer(ctx, transfer)
 }
 
 // ExecuteWithdrawal executes a withdrawal after timelock
@@ -1154,8 +1156,7 @@ func (k Keeper) ExecuteWithdrawal(ctx sdk.Context, withdrawalID string) error {
 		}
 	}
 	transfer.Status = types.TransferStatus_COMPLETED
-	k.setTransfer(ctx, transfer)
-	return nil
+	return k.setTransfer(ctx, transfer)
 }
 
 func (k Keeper) setFraudProof(ctx sdk.Context, proof *types.FraudProof) error {
@@ -1190,12 +1191,12 @@ func (k Keeper) getFraudProofWindow(ctx sdk.Context) time.Duration {
 	return window
 }
 
-func (k Keeper) getFraudProofReward(ctx sdk.Context) math.Int {
+func (k Keeper) getFraudProofReward(ctx sdk.Context) sdkmath.Int {
 	params := types.DefaultSecurityParams()
 	return params.FraudProofReward
 }
 
-func (k Keeper) payoutFraudProofReward(ctx sdk.Context, challenger string, denom string, reward math.Int) error {
+func (k Keeper) payoutFraudProofReward(ctx sdk.Context, challenger string, denom string, reward sdkmath.Int) error {
 	if !reward.IsPositive() || challenger == "" || denom == "" {
 		return nil
 	}
@@ -1261,7 +1262,7 @@ func (k Keeper) SubmitFraudProof(ctx sdk.Context, transferID string, submitter s
 		Evidence:             proof,
 		Status:               types.FraudProofStatus_FRAUD_PROOF_INVESTIGATING,
 		SubmittedAt:          ctx.BlockTime(),
-		RewardAmount:         math.ZeroInt(),
+		RewardAmount:         sdkmath.ZeroInt(),
 	}
 	if err := k.setFraudProof(ctx, fraudProof); err != nil {
 		return fmt.Errorf("failed to set fraud proof: %w", err)
@@ -1303,7 +1304,7 @@ func (k Keeper) ResolveFraudProof(ctx sdk.Context, transferID string, valid bool
 	}
 	resolvedAt := ctx.BlockTime()
 	proof.ResolvedAt = &resolvedAt
-	reward := math.ZeroInt()
+	reward := sdkmath.ZeroInt()
 	if valid {
 		proof.Status = types.FraudProofStatus_FRAUD_PROOF_VALID
 		reward = k.getFraudProofReward(ctx)
@@ -1386,12 +1387,16 @@ func (k Keeper) DisableChain(ctx sdk.Context, chainID string) error {
 }
 
 // CalculateBridgeFee calculates the bridge fee for a transfer
-func (k Keeper) CalculateBridgeFee(ctx sdk.Context, amount math.Int, chainID string) math.Int {
+func (k Keeper) CalculateBridgeFee(ctx sdk.Context, amount sdkmath.Int, chainID string) sdkmath.Int {
 	params := k.GetParams(ctx)
 	if params.BridgeFeeBasisPoints == 0 {
-		return math.ZeroInt()
+		return sdkmath.ZeroInt()
 	}
-	return amount.MulRaw(int64(params.BridgeFeeBasisPoints)).QuoRaw(10_000)
+	basisPoints := int64(params.BridgeFeeBasisPoints)
+	if params.BridgeFeeBasisPoints > stdmath.MaxInt64 {
+		basisPoints = stdmath.MaxInt64
+	}
+	return amount.MulRaw(basisPoints).QuoRaw(10_000)
 }
 
 // GetCollectedFees returns the total collected fees
@@ -1402,7 +1407,7 @@ func (k Keeper) GetCollectedFees(ctx sdk.Context) sdk.Coins {
 	fees := sdk.NewCoins()
 	for ; iterator.Valid(); iterator.Next() {
 		denom := strings.TrimPrefix(string(iterator.Key()), "collected-fees-")
-		var amount math.Int
+		var amount sdkmath.Int
 		if err := amount.Unmarshal(iterator.Value()); err != nil {
 			k.Logger(ctx).Error("failed to unmarshal collected fee amount",
 				"denom", denom,
@@ -1439,7 +1444,7 @@ func (k Keeper) VerifyXaiAddressOwnership(ctx sdk.Context, auraAddress string, x
 func (k Keeper) AddCollectedFee(ctx sdk.Context, fee sdk.Coin) {
 	store := k.store(ctx)
 	key := []byte("collected-fees-" + fee.Denom)
-	current := math.ZeroInt()
+	current := sdkmath.ZeroInt()
 	if bz := store.Get(key); bz != nil {
 		if err := current.Unmarshal(bz); err != nil {
 			k.Logger(ctx).Error("failed to unmarshal current collected fee, resetting to zero",
@@ -1603,7 +1608,9 @@ func (k Keeper) MarkSignatureSetUsed(ctx sdk.Context, transferID string, signatu
 
 // SetTransfer is a public method to set a cross-chain transfer
 func (k Keeper) SetTransfer(ctx sdk.Context, transfer *types.CrossChainTransfer) {
-	k.setTransfer(ctx, transfer)
+	if err := k.setTransfer(ctx, transfer); err != nil {
+		k.Logger(ctx).Error("failed to set transfer", "transfer_id", transfer.GetTransferId(), "err", err)
+	}
 }
 
 // IndexTransferHash is a public method to index a transfer by hash
@@ -2113,10 +2120,10 @@ func (k Keeper) SetVerifiedBlockHash(ctx sdk.Context, sourceChain string, blockH
 //   - denom: Token denomination to check
 //
 // Returns:
-//   - math.Int: Total amount minted today (zero if none)
-func (k Keeper) GetDailyMintedAmount(ctx sdk.Context, denom string) math.Int {
+//   - sdkmath.Int: Total amount minted today (zero if none)
+func (k Keeper) GetDailyMintedAmount(ctx sdk.Context, denom string) sdkmath.Int {
 	if denom == "" {
-		return math.ZeroInt()
+		return sdkmath.ZeroInt()
 	}
 
 	// Format: YYYYMMDD (e.g., "20250102")
@@ -2126,12 +2133,12 @@ func (k Keeper) GetDailyMintedAmount(ctx sdk.Context, denom string) math.Int {
 
 	bz := store.Get(key)
 	if bz == nil {
-		return math.ZeroInt()
+		return sdkmath.ZeroInt()
 	}
 
-	var amount math.Int
+	var amount sdkmath.Int
 	if err := amount.Unmarshal(bz); err != nil {
-		return math.ZeroInt()
+		return sdkmath.ZeroInt()
 	}
 
 	return amount
@@ -2148,7 +2155,7 @@ func (k Keeper) GetDailyMintedAmount(ctx sdk.Context, denom string) math.Int {
 //   - ctx: SDK context for state access
 //   - denom: Token denomination being minted
 //   - amount: Amount to add to today's total
-func (k Keeper) AddDailyMintedAmount(ctx sdk.Context, denom string, amount math.Int) {
+func (k Keeper) AddDailyMintedAmount(ctx sdk.Context, denom string, amount sdkmath.Int) {
 	if denom == "" || !amount.IsPositive() {
 		return
 	}
@@ -2180,10 +2187,10 @@ func (k Keeper) AddDailyMintedAmount(ctx sdk.Context, denom string, amount math.
 //   - denom: Token denomination to check
 //
 // Returns:
-//   - math.Int: Total amount minted this hour (zero if none)
-func (k Keeper) GetHourlyMintedAmount(ctx sdk.Context, denom string) math.Int {
+//   - sdkmath.Int: Total amount minted this hour (zero if none)
+func (k Keeper) GetHourlyMintedAmount(ctx sdk.Context, denom string) sdkmath.Int {
 	if denom == "" {
-		return math.ZeroInt()
+		return sdkmath.ZeroInt()
 	}
 
 	// Format: YYYYMMDDHH (e.g., "2025010214" for 2PM)
@@ -2193,12 +2200,12 @@ func (k Keeper) GetHourlyMintedAmount(ctx sdk.Context, denom string) math.Int {
 
 	bz := store.Get(key)
 	if bz == nil {
-		return math.ZeroInt()
+		return sdkmath.ZeroInt()
 	}
 
-	var amount math.Int
+	var amount sdkmath.Int
 	if err := amount.Unmarshal(bz); err != nil {
-		return math.ZeroInt()
+		return sdkmath.ZeroInt()
 	}
 
 	return amount
@@ -2215,7 +2222,7 @@ func (k Keeper) GetHourlyMintedAmount(ctx sdk.Context, denom string) math.Int {
 //   - ctx: SDK context for state access
 //   - denom: Token denomination being minted
 //   - amount: Amount to add to this hour's total
-func (k Keeper) AddHourlyMintedAmount(ctx sdk.Context, denom string, amount math.Int) {
+func (k Keeper) AddHourlyMintedAmount(ctx sdk.Context, denom string, amount sdkmath.Int) {
 	if denom == "" || !amount.IsPositive() {
 		return
 	}
@@ -2504,7 +2511,7 @@ func (k Keeper) FinalizeTransfer(ctx sdk.Context, transferID string) error {
 		return fmt.Errorf("invalid recipient address: %w", err)
 	}
 
-	// 5. pending.Amount is already math.Int, use directly
+	// 5. pending.Amount is already sdkmath.Int, use directly
 	amount := pending.Amount
 
 	// Create coin to mint
@@ -2516,14 +2523,14 @@ func (k Keeper) FinalizeTransfer(ctx sdk.Context, transferID string) error {
 	params := k.GetParams(ctx)
 
 	// Check per-transfer maximum
-	maxTransfer, ok := math.NewIntFromString(params.MaxTransferAmount)
+	maxTransfer, ok := sdkmath.NewIntFromString(params.MaxTransferAmount)
 	if ok && amount.GT(maxTransfer) {
 		return fmt.Errorf("amount %s exceeds max transfer limit %s", amount, maxTransfer)
 	}
 
 	// Check per-token supply cap (if configured)
 	if cap, exists := params.SupplyCaps[pending.Denom]; exists {
-		supplyCap, ok := math.NewIntFromString(cap)
+		supplyCap, ok := sdkmath.NewIntFromString(cap)
 		if ok {
 			currentSupply := k.bankKeeper.GetSupply(ctx, pending.Denom).Amount
 			if currentSupply.Add(amount).GT(supplyCap) {
@@ -2566,7 +2573,9 @@ func (k Keeper) FinalizeTransfer(ctx sdk.Context, transferID string) error {
 	if found {
 		transfer.Status = types.TransferStatus_COMPLETED
 		transfer.Timestamp = ctx.BlockTime()
-		k.setTransfer(ctx, transfer)
+		if err := k.setTransfer(ctx, transfer); err != nil {
+			return fmt.Errorf("failed to persist finalized transfer: %w", err)
+		}
 	}
 
 	// 9. Delete pending transfer (cleanup)
@@ -2775,7 +2784,7 @@ func (k Keeper) derivePawAddressFromPubKey(pubKey []byte) string {
 	sha256Hash := sha256.Sum256(pubKey)
 
 	// Step 2: RIPEMD160 hash of SHA256 hash
-	ripemd160Hasher := ripemd160.New()
+	ripemd160Hasher := ripemd160.New() // #nosec G406 -- RIPEMD160 required for Cosmos-style address derivation compatibility
 	ripemd160Hasher.Write(sha256Hash[:])
 	addressHash := ripemd160Hasher.Sum(nil)
 
@@ -2814,7 +2823,7 @@ func (k Keeper) deriveXaiAddressFromPubKey(pubKey []byte) string {
 	sha256Hash := sha256.Sum256(pubKey)
 
 	// Step 2: RIPEMD160 hash of SHA256 hash
-	ripemd160Hasher := ripemd160.New()
+	ripemd160Hasher := ripemd160.New() // #nosec G406 -- RIPEMD160 required for Cosmos-style address derivation compatibility
 	ripemd160Hasher.Write(sha256Hash[:])
 	addressHash := ripemd160Hasher.Sum(nil)
 

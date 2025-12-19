@@ -2,12 +2,16 @@ package types
 
 // Event types for the inclusionroutines module
 const (
-	EventTypeIRCreated     = "ir_created"
-	EventTypeIRActivated   = "ir_activated"
-	EventTypeIRDeactivated = "ir_deactivated"
-	EventTypeIRCompleted   = "ir_completed"
-	EventTypeArenaAssigned = "arena_assigned"
-	EventTypeParamsUpdated = "params_updated"
+	EventTypeIRCreated              = "ir_created"
+	EventTypeIRUpdated              = "ir_updated"
+	EventTypeIRDeleted              = "ir_deleted"
+	EventTypeIRActivated            = "ir_activated"
+	EventTypeIRDeactivated          = "ir_deactivated"
+	EventTypeIRCompleted            = "ir_completed"
+	EventTypeArenaAssigned          = "arena_assigned"
+	EventTypeParamsUpdated          = "params_updated"
+	EventTypeIRRateLimitUpdated     = "ir_rate_limit_updated"
+	EventTypeIRPrerequisitesUpdated = "ir_prerequisites_updated"
 )
 
 // Event attribute keys

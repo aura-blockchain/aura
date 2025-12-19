@@ -53,6 +53,10 @@ describe('WalletCore', () => {
     });
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe('generateWallet', () => {
     it('should generate a new wallet with valid address and private key', async () => {
       const mockPrivateKey = new Uint8Array(32).fill(1);

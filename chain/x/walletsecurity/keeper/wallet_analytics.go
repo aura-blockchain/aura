@@ -4,17 +4,17 @@ import (
 	"context"
 	"fmt"
 
-	"cosmossdk.io/math"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkmath "cosmossdk.io/math"
 	wsproto "github.com/aequitas/aura/proto/aura/walletsecurity/v1beta1"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // WalletAnalytics provides analytics for a wallet
 type WalletAnalytics struct {
 	WalletID               string
 	TotalTransactions      int64
-	TotalVolume            math.Int
-	AverageTransactionSize math.Int
+	TotalVolume            sdkmath.Int
+	AverageTransactionSize sdkmath.Int
 	SecurityScore          float64
 	RiskLevel              string
 	ActiveDevices          int
@@ -60,22 +60,22 @@ func (k Keeper) countTransactions(ctx context.Context, walletID string) int64 {
 
 	countBytes, _ := kvStore.Get(key)
 	if countBytes != nil {
-		return int64(sdk.BigEndianToUint64(countBytes))
+		return clampUint64ToInt64(sdk.BigEndianToUint64(countBytes))
 	}
 
 	return 0
 }
 
-func (k Keeper) calculateVolumes(ctx context.Context, walletID string) (math.Int, math.Int) {
+func (k Keeper) calculateVolumes(ctx context.Context, walletID string) (sdkmath.Int, sdkmath.Int) {
 	// Simplified calculation
-	total := math.NewInt(0)
+	total := sdkmath.NewInt(0)
 	count := k.countTransactions(ctx, walletID)
 
 	if count == 0 {
-		return total, math.NewInt(0)
+		return total, sdkmath.NewInt(0)
 	}
 
-	average := total.Quo(math.NewInt(count))
+	average := total.Quo(sdkmath.NewInt(count))
 	return total, average
 }
 

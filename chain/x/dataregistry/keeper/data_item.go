@@ -7,12 +7,15 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	gogotypes "github.com/cosmos/gogoproto/types"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	"github.com/aequitas/aura/chain/x/dataregistry/ipfs"
 	"github.com/aequitas/aura/chain/x/dataregistry/types"
 )
 
 // StoreDataItem stores a new data item (legacy - uses pre-computed hash and CID)
-func (k *Keeper) StoreDataItem(ctx sdk.Context, 
+func (k *Keeper) StoreDataItem(ctx sdk.Context,
 	ownerAddress string,
 	dataType types.DataItemType,
 	title string,
@@ -177,7 +180,7 @@ func (k *Keeper) RetrieveDataItemContent(sdkCtx sdk.Context, dataID string, requ
 
 	// Check access
 	if !k.CheckAccess(sdkCtx, dataID, requester) {
-		return nil, types.ErrUnauthorized
+		return nil, status.Error(codes.PermissionDenied, types.ErrUnauthorized.Error())
 	}
 
 	// Validate CID format
@@ -220,7 +223,7 @@ func (k *Keeper) UpdateDataItem(ctx sdk.Context,
 
 	// Check ownership
 	if item.OwnerAddress != ownerAddress {
-		return types.ErrUnauthorized
+		return status.Error(codes.PermissionDenied, types.ErrUnauthorized.Error())
 	}
 
 	// Check status

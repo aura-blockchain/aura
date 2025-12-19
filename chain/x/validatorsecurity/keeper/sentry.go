@@ -178,7 +178,7 @@ func (k Keeper) DeactivateSentryNode(ctx context.Context, sentryAddr string) err
 			}
 		}
 
-		if int32(activeCount) < params.MinSentryNodes {
+			if clampIntToInt32(activeCount) < params.MinSentryNodes {
 			// Create critical alert
 			sdkCtx := sdk.UnwrapSDKContext(ctx)
 			blockTime := sdkCtx.BlockTime()
@@ -285,7 +285,7 @@ func (k Keeper) RestoreFromFailover(ctx context.Context, validatorAddr string) e
 			}
 		}
 
-		if int32(activeCount) < params.MinSentryNodes {
+			if clampIntToInt32(activeCount) < params.MinSentryNodes {
 			return types.ErrInsufficientSentryNodes
 		}
 	}

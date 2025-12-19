@@ -18,6 +18,23 @@ All wallet implementations are production-ready with comprehensive feature suppo
 
 ---
 
+## New Install Artifacts & Device Matrix (2025-12-18)
+
+- **Android APK:** `wallet/mobile/dist/aura-wallet-testnet-debug.apk` (SHA256 `3cd7d7295c5cfd9c6120f3f7235747758c6b166ca1ef259ae6641a4d7a5664f4`) packaged via Capacitor from `wallet/web`. Install by enabling unknown sources, sideloading the APK, and verifying gas price `0.025uaura` + bech32 prefix `aura`.
+- **First-run checklist:** import/create mnemonic, confirm chain ID `aura-testnet-1`, set gas price to `0.025uaura`, request funds from faucet (`https://faucet.aura-testnet.com`), send self-transfer, and confirm explorer visibility (`http://localhost:8088` or public explorer).
+- **TestFlight path:** run `npx cap add ios` in `wallet/mobile/capacitor` on macOS, open the generated Xcode project, and archive for TestFlight using the same chain-registry values.
+
+| Device | OS | Status | Notes |
+|--------|----|--------|-------|
+| Pixel 6 | Android 13 | Pending | Install with `aura-wallet-testnet-debug.apk`; validate send/delegate/swap flows |
+| Galaxy S22 | Android 12 | Pending | Verify push notifications disabled (web bundle) and WalletConnect QR deep link |
+| iPhone 13 | iOS 16 | Pending | Build via TestFlight pipeline; confirm WalletConnect handoff |
+| iPhone 14 | iOS 17 | Pending | Validate Keplr/Leap injection in Safari + web bundle UX |
+| Ledger Nano S+/Stax | N/A | Pending | Verify WebHID signing from extension/desktop; not applicable to APK wrapper |
+| Trezor T / Keystone | N/A | Pending | Extension QR/WebUSB flows; APK uses web wallet for signing |
+
+---
+
 ## 1. Desktop Wallet (Electron)
 
 ### Build Status: ✅ SUCCESS

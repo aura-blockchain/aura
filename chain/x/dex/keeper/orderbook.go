@@ -3,6 +3,7 @@ package keeper
 import (
 	"bytes"
 	"fmt"
+	"math"
 	"sort"
 	"time"
 
@@ -88,7 +89,12 @@ func (k Keeper) CreateOrder(
 	orderID := k.GenerateOrderID(ctx, creator)
 
 	// Calculate expiration time
-	expirationTime := ctx.BlockTime().Add(time.Duration(expirationMinutes) * time.Minute)
+	maxExpirationMinutes := uint64(math.MaxInt64 / int64(time.Minute))
+	if expirationMinutes > maxExpirationMinutes {
+		expirationMinutes = maxExpirationMinutes
+	}
+	expirationMinutesInt := int64(expirationMinutes)
+	expirationTime := ctx.BlockTime().Add(time.Duration(expirationMinutesInt) * time.Minute)
 
 	pricePerAura := otherAmount.ToLegacyDec().Quo(auraAmount.ToLegacyDec())
 

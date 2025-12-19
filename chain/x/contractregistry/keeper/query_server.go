@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"math"
 
 	storetypes "cosmossdk.io/store/types"
 	"github.com/aequitas/aura/chain/x/contractregistry/types"
@@ -63,8 +64,8 @@ func (qs queryServer) ContractsByCreator(goCtx context.Context, req *pb.QueryCon
 	// Apply pagination if requested
 	if req.Pagination != nil {
 		// Manual pagination since we're using an index
-		start := int(req.Pagination.Offset)
-		limit := int(req.Pagination.Limit)
+		start := clampUint64ToInt(req.Pagination.Offset)
+		limit := clampUint64ToInt(req.Pagination.Limit)
 		if limit == 0 {
 			limit = 100 // default
 		}
@@ -113,8 +114,8 @@ func (qs queryServer) ContractsByTag(goCtx context.Context, req *pb.QueryContrac
 
 	// Apply pagination if requested
 	if req.Pagination != nil {
-		start := int(req.Pagination.Offset)
-		limit := int(req.Pagination.Limit)
+		start := clampUint64ToInt(req.Pagination.Offset)
+		limit := clampUint64ToInt(req.Pagination.Limit)
 		if limit == 0 {
 			limit = 100
 		}
@@ -200,4 +201,11 @@ func (qs queryServer) ContractMetrics(goCtx context.Context, req *pb.QueryContra
 	return &pb.QueryContractMetricsResponse{
 		Metrics: *metrics,
 	}, nil
+}
+
+func clampUint64ToInt(u uint64) int {
+	if u > math.MaxInt {
+		return math.MaxInt
+	}
+	return int(u)
 }

@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"math"
+
 	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -148,7 +150,7 @@ func (k Keeper) JoinMixingPool(ctx sdk.Context, poolID string) error {
 	k.SetMixingPool(ctx, pool)
 
 	// Check if we have enough participants to execute mixing
-	if uint32(len(pool.Participants)) >= pool.MinParticipants {
+	if clampIntToUint32(len(pool.Participants)) >= pool.MinParticipants {
 		k.Logger(ctx).Info("mixing pool ready for execution",
 			"pool_id", poolID,
 			"participants", len(pool.Participants),
@@ -181,6 +183,16 @@ func (k Keeper) ValidateRingSize(ctx sdk.Context, ringSize uint32) error {
 		return types.ErrRingTooLarge
 	}
 	return nil
+}
+
+func clampIntToUint32(v int) uint32 {
+	if v < 0 {
+		return 0
+	}
+	if v > math.MaxUint32 {
+		return math.MaxUint32
+	}
+	return uint32(v)
 }
 
 // ValidateMixingParticipants validates mixing has enough participants

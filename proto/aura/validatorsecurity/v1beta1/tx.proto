@@ -3,6 +3,8 @@ package aura.validatorsecurity.v1beta1;
 
 import "gogoproto/gogo.proto";
 import "google/protobuf/timestamp.proto";
+import "cosmos/msg/v1/msg.proto";
+import "cosmos_proto/cosmos.proto";
 import "aura/validatorsecurity/v1beta1/validator_security.proto";
 
 option go_package = "github.com/aequitas/aura/proto/aura/validatorsecurity/v1beta1";
@@ -33,7 +35,9 @@ service Msg {
 
 // MsgRegisterValidator registers a validator with security information
 message MsgRegisterValidator {
-  string validator_address = 1;
+  option (cosmos.msg.v1.signer) = "validator_address";
+
+  string validator_address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
   string hot_key = 2;
   string cold_key = 3;
   string region = 4;
@@ -47,7 +51,9 @@ message MsgRegisterValidatorResponse {}
 
 // MsgUpdateSecurityInfo updates validator security information
 message MsgUpdateSecurityInfo {
-  string validator_address = 1;
+  option (cosmos.msg.v1.signer) = "validator_address";
+
+  string validator_address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
   string hot_key = 2;
   string cold_key = 3;
   string region = 4;
@@ -61,7 +67,9 @@ message MsgUpdateSecurityInfoResponse {}
 
 // MsgRegisterSentryNode registers a sentry node
 message MsgRegisterSentryNode {
-  string validator_address = 1;
+  option (cosmos.msg.v1.signer) = "validator_address";
+
+  string validator_address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
   string sentry_address = 2;
   string ip_address = 3;
   int32 port = 4;
@@ -71,8 +79,10 @@ message MsgRegisterSentryNodeResponse {}
 
 // MsgReportDoubleSign reports double signing evidence
 message MsgReportDoubleSign {
-  string reporter_address = 1;
-  string validator_address = 2;
+  option (cosmos.msg.v1.signer) = "reporter_address";
+
+  string reporter_address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string validator_address = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
   int64 height = 3;
   bytes vote_a = 4;
   bytes vote_b = 5;
@@ -85,22 +95,28 @@ message MsgReportDoubleSignResponse {
 
 // MsgUnjail allows a jailed validator to unjail
 message MsgUnjail {
-  string validator_address = 1;
+  option (cosmos.msg.v1.signer) = "validator_address";
+
+  string validator_address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 }
 
 message MsgUnjailResponse {}
 
 // MsgAcknowledgeAlert acknowledges an alert
 message MsgAcknowledgeAlert {
+  option (cosmos.msg.v1.signer) = "acknowledger_address";
+
   string alert_id = 1;
-  string acknowledger_address = 2;
+  string acknowledger_address = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 }
 
 message MsgAcknowledgeAlertResponse {}
 
 // MsgUpdateParams updates module parameters
 message MsgUpdateParams {
-  string authority = 1;
+  option (cosmos.msg.v1.signer) = "authority";
+
+  string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
   ValidatorSecurityParams params = 2 [(gogoproto.nullable) = false];
 }
 

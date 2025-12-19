@@ -1,11 +1,14 @@
 package keeper
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/aequitas/aura/chain/x/incidentresponse/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 var _ types.MsgServer = msgServer{}
@@ -24,7 +27,7 @@ func (ms msgServer) ReportIncident(goCtx interface{}, msg *types.MsgReportIncide
 	ctx := goCtx.(sdk.Context)
 
 	if msg == nil {
-		return nil, fmt.Errorf("empty request")
+		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
 	if err := msg.ValidateBasic(); err != nil {
@@ -63,7 +66,7 @@ func (ms msgServer) UpdateIncidentStatus(goCtx interface{}, msg *types.MsgUpdate
 	ctx := goCtx.(sdk.Context)
 
 	if msg == nil {
-		return nil, fmt.Errorf("empty request")
+		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
 	if err := msg.ValidateBasic(); err != nil {
@@ -99,7 +102,7 @@ func (ms msgServer) RequestChainPause(goCtx interface{}, msg *types.MsgRequestCh
 	ctx := goCtx.(sdk.Context)
 
 	if msg == nil {
-		return nil, fmt.Errorf("empty request")
+		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
 	if err := msg.ValidateBasic(); err != nil {
@@ -117,6 +120,9 @@ func (ms msgServer) RequestChainPause(goCtx interface{}, msg *types.MsgRequestCh
 		duration,
 	)
 	if err != nil {
+		if errors.Is(err, types.ErrUnauthorizedPause) {
+			return nil, mapUnauthorizedPause(err)
+		}
 		return nil, fmt.Errorf("failed to request chain pause: %w", err)
 	}
 
@@ -138,7 +144,7 @@ func (ms msgServer) ResumeChain(goCtx interface{}, msg *types.MsgResumeChain) (*
 	ctx := goCtx.(sdk.Context)
 
 	if msg == nil {
-		return nil, fmt.Errorf("empty request")
+		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
 	if err := msg.ValidateBasic(); err != nil {
@@ -147,6 +153,9 @@ func (ms msgServer) ResumeChain(goCtx interface{}, msg *types.MsgResumeChain) (*
 
 	err := ms.Keeper.ResumeChain(ctx, msg.Resumer, msg.Reason)
 	if err != nil {
+		if errors.Is(err, types.ErrUnauthorizedPause) {
+			return nil, status.Error(codes.PermissionDenied, err.Error())
+		}
 		return nil, fmt.Errorf("failed to resume chain: %w", err)
 	}
 
@@ -167,7 +176,7 @@ func (ms msgServer) SetWalletLimits(goCtx interface{}, msg *types.MsgSetWalletLi
 	ctx := goCtx.(sdk.Context)
 
 	if msg == nil {
-		return nil, fmt.Errorf("empty request")
+		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
 	if err := msg.ValidateBasic(); err != nil {
@@ -202,7 +211,7 @@ func (ms msgServer) CreatePostMortem(goCtx interface{}, msg *types.MsgCreatePost
 	ctx := goCtx.(sdk.Context)
 
 	if msg == nil {
-		return nil, fmt.Errorf("empty request")
+		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
 	if err := msg.ValidateBasic(); err != nil {
@@ -270,7 +279,7 @@ func (ms msgServer) TriggerBackup(goCtx interface{}, msg *types.MsgTriggerBackup
 	ctx := goCtx.(sdk.Context)
 
 	if msg == nil {
-		return nil, fmt.Errorf("empty request")
+		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
 	if err := msg.ValidateBasic(); err != nil {
@@ -302,7 +311,7 @@ func (ms msgServer) TriggerInsuranceClaim(goCtx interface{}, msg *types.MsgTrigg
 	ctx := goCtx.(sdk.Context)
 
 	if msg == nil {
-		return nil, fmt.Errorf("empty request")
+		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
 	if err := msg.ValidateBasic(); err != nil {

@@ -862,6 +862,346 @@ class ExportManager:
             return None
 
 
+# ==================== CORE DATA SERVICE ====================
+
+class BlockchainDataService:
+    """
+    Provides explorer-specific data aggregates for the frontend.
+    Handles pagination, filtering, and caching for blocks, transactions,
+    validators, and summary statistics.
+    """
+
+    def __init__(self, node_url: str, api_url: str, db: ExplorerDatabase):
+        self.node_url = node_url.rstrip("/")
+        self.api_url = api_url.rstrip("/")
+        self.db = db
+        self.max_limit = 50
+
+    # ------- Public API -------
+
+    def get_blocks(self, limit: int = 20, offset: int = 0) -> Dict[str, Any]:
+        """Return paginated block metadata for dashboard views."""
+        limit, offset = self._normalize_pagination(limit, offset)
+        cache_key = f"blocks:{limit}:{offset}"
+        cached = self.db.get_cache(cache_key)
+        if cached:
+            return json.loads(cached)
+
+        try:
+            latest_height = self._get_latest_height()
+            if latest_height == 0:
+                return {"blocks": [], "latest_height": 0}
+
+            end_height = max(1, latest_height - offset)
+            start_height = max(1, end_height - limit + 1)
+            metas = self._fetch_block_metas(start_height, end_height)
+            blocks = [
+                self._format_block_meta(meta)
+                for meta in sorted(
+                    metas,
+                    key=lambda m: int(m["header"]["height"]),
+                    reverse=True
+                )
+            ]
+
+            result = {"blocks": blocks, "latest_height": latest_height}
+            self.db.set_cache(cache_key, json.dumps(result), ttl=5)
+            return result
+        except Exception as e:
+            logger.error(f"Block fetch error: {e}")
+            return {"blocks": [], "error": str(e)}
+
+    def get_transactions(
+        self,
+        limit: int = 20,
+        offset: int = 0,
+        tx_type: Optional[str] = None,
+        status: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Return paginated transaction list with optional filters."""
+        limit, offset = self._normalize_pagination(limit, offset)
+        tx_type_key = (tx_type or "").strip().lower()
+        status_key = (status or "").strip().lower()
+
+        cache_key = f"txs:{limit}:{offset}:{tx_type_key}:{status_key}"
+        cached = self.db.get_cache(cache_key)
+        if cached:
+            return json.loads(cached)
+
+        try:
+            params = {
+                "events": "tx.height>0",
+                "pagination.limit": str(limit),
+                "pagination.offset": str(offset),
+                "order_by": "ORDER_BY_DESC"
+            }
+            response = requests.get(
+                f"{self.api_url}/cosmos/tx/v1beta1/txs",
+                params=params,
+                timeout=10
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            formatted: List[Dict[str, Any]] = []
+            for raw in data.get("tx_responses", []):
+                tx_entry = self._format_transaction(raw)
+                if tx_type_key and tx_entry["type_key"] != tx_type_key:
+                    continue
+                if status_key and tx_entry["status"] != status_key:
+                    continue
+                formatted.append(tx_entry)
+
+            total = int(data.get("pagination", {}).get("total", len(formatted)))
+            result = {"transactions": formatted, "total": total}
+            self.db.set_cache(cache_key, json.dumps(result), ttl=5)
+            return result
+        except Exception as e:
+            logger.error(f"Transaction fetch error: {e}")
+            return {"transactions": [], "error": str(e)}
+
+    def get_validators(self, sort_by: str = "voting_power") -> Dict[str, Any]:
+        """Return validator list sorted by provided metric."""
+        sort_key = sort_by if sort_by in {"voting_power", "commission", "uptime"} else "voting_power"
+        cache_key = f"validators:{sort_key}"
+        cached = self.db.get_cache(cache_key)
+        if cached:
+            return json.loads(cached)
+
+        try:
+            params = {
+                "status": "BOND_STATUS_BONDED",
+                "pagination.limit": "200"
+            }
+            response = requests.get(
+                f"{self.api_url}/cosmos/staking/v1beta1/validators",
+                params=params,
+                timeout=10
+            )
+            response.raise_for_status()
+            validators = []
+
+            for item in response.json().get("validators", []):
+                commission_rate = float(item.get("commission", {})
+                                        .get("commission_rates", {})
+                                        .get("rate", "0"))
+                tokens = int(item.get("tokens", "0"))
+                jailed = item.get("jailed", False)
+                status = item.get("status", "")
+
+                validators.append({
+                    "moniker": item.get("description", {}).get("moniker", "Unknown"),
+                    "address": item.get("operator_address"),
+                    "consensus_address": item.get("consensus_pubkey", {}).get("key"),
+                    "voting_power": tokens,
+                    "commission": commission_rate,
+                    "uptime": 0.0 if jailed else 0.99,
+                    "status": "active" if status == "BOND_STATUS_BONDED" else "inactive"
+                })
+
+            validators.sort(key=lambda v: v[sort_key], reverse=True)
+            result = {"validators": validators, "count": len(validators)}
+            self.db.set_cache(cache_key, json.dumps(result), ttl=30)
+            return result
+        except Exception as e:
+            logger.error(f"Validator fetch error: {e}")
+            return {"validators": [], "error": str(e)}
+
+    def get_core_stats(self) -> Dict[str, Any]:
+        """Return base stats for quick dashboard cards."""
+        cache_key = "core_stats"
+        cached = self.db.get_cache(cache_key)
+        if cached:
+            return json.loads(cached)
+
+        try:
+            latest_height = self._get_latest_height()
+            latest_block = None
+            blocks = self.get_blocks(limit=1, offset=0).get("blocks", [])
+            if blocks:
+                latest_block = blocks[0]
+
+            total_txs = self._get_total_transactions()
+            validator_count = self.get_validators().get("count", 0)
+
+            stats = {
+                "latest_block": latest_block["height"] if latest_block else latest_height,
+                "latest_block_time": latest_block["time"] if latest_block else None,
+                "total_txs": total_txs,
+                "active_validators": validator_count
+            }
+            self.db.set_cache(cache_key, json.dumps(stats), ttl=10)
+            return stats
+        except Exception as e:
+            logger.error(f"Stats fetch error: {e}")
+            return {"latest_block": 0, "total_txs": 0, "active_validators": 0, "error": str(e)}
+
+    # ------- Helpers -------
+
+    def _normalize_pagination(self, limit: int, offset: int) -> Tuple[int, int]:
+        limit = max(1, min(self.max_limit, limit or 20))
+        offset = max(0, offset or 0)
+        return limit, offset
+
+    def _get_latest_height(self) -> int:
+        try:
+            response = requests.get(f"{self.node_url}/status", timeout=5)
+            response.raise_for_status()
+            return int(response.json()
+                       .get("result", {})
+                       .get("sync_info", {})
+                       .get("latest_block_height", 0))
+        except Exception as e:
+            logger.error(f"Status fetch error: {e}")
+            return 0
+
+    def _fetch_block_metas(self, start_height: int, end_height: int) -> List[Dict[str, Any]]:
+        metas: List[Dict[str, Any]] = []
+        cursor = end_height
+        while cursor >= start_height:
+            chunk_end = cursor
+            chunk_start = max(start_height, chunk_end - 19)
+            try:
+                response = requests.get(
+                    f"{self.node_url}/blockchain",
+                    params={"minHeight": str(chunk_start), "maxHeight": str(chunk_end)},
+                    timeout=10
+                )
+                response.raise_for_status()
+                chunk = response.json().get("result", {}).get("block_metas", [])
+                metas.extend(chunk)
+            except Exception as e:
+                logger.error(f"Block meta fetch error ({chunk_start}-{chunk_end}): {e}")
+                break
+            cursor = chunk_start - 1
+        return metas
+
+    def _format_block_meta(self, meta: Dict[str, Any]) -> Dict[str, Any]:
+        header = meta.get("header", {})
+        height = int(header.get("height", 0))
+        timestamp_str = header.get("time")
+        timestamp = timestamp_str
+        if timestamp_str:
+            try:
+                dt = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
+                timestamp = dt.isoformat()
+            except Exception:
+                timestamp = timestamp_str
+
+        return {
+            "height": height,
+            "hash": meta.get("block_id", {}).get("hash"),
+            "time": timestamp,
+            "proposer": header.get("proposer_address"),
+            "num_txs": int(meta.get("num_txs", 0)),
+            "size": meta.get("block_size")
+        }
+
+    def _format_transaction(self, tx_response: Dict[str, Any]) -> Dict[str, Any]:
+        tx_hash = tx_response.get("txhash") or tx_response.get("hash")
+        timestamp = tx_response.get("timestamp")
+        code = tx_response.get("code", 0)
+        status = "success" if code == 0 else "failed"
+        raw_tx = tx_response.get("tx", {})
+        tx_body = raw_tx.get("body") if isinstance(raw_tx, dict) else {}
+        if not isinstance(tx_body, dict):
+            tx_body = {}
+        messages = tx_body.get("messages", [])
+
+        msg_type = messages[0].get("@type", "") if messages else ""
+        friendly_type = self._friendly_type(msg_type)
+        type_key = self._type_key(friendly_type)
+        amount = self._extract_amount(messages)
+        sender, recipient = self._extract_addresses(messages)
+
+        return {
+            "hash": tx_hash,
+            "height": int(tx_response.get("height", 0)),
+            "type": friendly_type,
+            "type_key": type_key,
+            "from": sender,
+            "to": recipient,
+            "amount": amount,
+            "status": status,
+            "fee": self._format_fee(raw_tx),
+            "time": timestamp
+        }
+
+    def _extract_amount(self, messages: List[Dict[str, Any]]) -> Optional[str]:
+        for msg in messages:
+            value = msg.get("amount") or msg.get("token") or msg.get("value")
+            if isinstance(value, list) and value:
+                coin = value[0]
+                denom = coin.get("denom", config.DENOM)
+                return self._format_coin(coin.get("amount", "0"), denom)
+            if isinstance(value, dict) and value.get("denom"):
+                return self._format_coin(value.get("amount", "0"), value.get("denom"))
+        return None
+
+    def _extract_addresses(self, messages: List[Dict[str, Any]]) -> Tuple[Optional[str], Optional[str]]:
+        sender = None
+        recipient = None
+        for msg in messages:
+            sender = sender or msg.get("from_address") or msg.get("sender") or msg.get("signer")
+            recipient = recipient or msg.get("to_address") or msg.get("recipient")
+            if sender and recipient:
+                break
+        return sender, recipient
+
+    def _format_fee(self, raw_tx: Dict[str, Any]) -> Optional[str]:
+        if not isinstance(raw_tx, dict):
+            return None
+        fee = raw_tx.get("auth_info", {}).get("fee", {})
+        if not isinstance(fee, dict):
+            return None
+        amounts = fee.get("amount", [])
+        if not amounts:
+            return None
+        coin = amounts[0]
+        denom = coin.get("denom", config.DENOM)
+        return self._format_coin(coin.get("amount", "0"), denom)
+
+    def _friendly_type(self, raw_type: str) -> str:
+        """Return human-friendly transaction type."""
+        if not raw_type:
+            return "Unknown"
+        clean = raw_type.split(".")[-1]
+        return clean or "Unknown"
+
+    def _type_key(self, friendly_type: str) -> str:
+        key = friendly_type.replace("Msg", "", 1) if friendly_type.lower().startswith("msg") else friendly_type
+        normalized = []
+        for idx, ch in enumerate(key):
+            if idx > 0 and ch.isupper():
+                normalized.append("-")
+            normalized.append(ch.lower())
+        return f"msg-{''.join(normalized)}"
+
+    def _format_coin(self, amount: str, denom: str) -> str:
+        try:
+            value = int(amount)
+            if denom == config.DENOM and value >= 0:
+                aura_amount = value / 1_000_000
+                return f"{aura_amount:.6f} AURA"
+            return f"{value} {denom}"
+        except Exception:
+            return f"{amount} {denom}"
+
+    def _get_total_transactions(self) -> int:
+        try:
+            response = requests.get(
+                f"{self.api_url}/cosmos/tx/v1beta1/txs",
+                params={"events": "tx.height>0", "pagination.limit": "1"},
+                timeout=5
+            )
+            response.raise_for_status()
+            total = response.json().get("pagination", {}).get("total")
+            return int(total) if total is not None else 0
+        except Exception as e:
+            logger.error(f"Total tx fetch error: {e}")
+            return 0
+
+
 # ==================== FLASK APP ====================
 
 app = Flask(__name__)
@@ -870,6 +1210,7 @@ sock = Sock(app)
 
 # Initialize components with AURA configuration
 NODE_URL = config.NODE_RPC_URL
+API_URL = getattr(config, "NODE_API_URL", "http://localhost:1317")
 DB_PATH = config.DB_PATH
 
 db = ExplorerDatabase(DB_PATH)
@@ -877,6 +1218,7 @@ analytics = AnalyticsEngine(NODE_URL, db)
 search_engine = SearchEngine(NODE_URL, db)
 rich_list = RichListManager(NODE_URL, db)
 export_manager = ExportManager(NODE_URL)
+data_service = BlockchainDataService(NODE_URL, API_URL, db)
 
 # WebSocket connections for real-time updates
 ws_clients: Set[Any] = set()
@@ -936,14 +1278,59 @@ def get_analytics_dashboard():
     })
 
 
+# ==================== CORE DATA ENDPOINTS ====================
+
+@app.route("/api/blocks", methods=["GET"])
+def get_blocks_endpoint():
+    """Get paginated blocks for explorer dashboard"""
+    limit = request.args.get("limit", 20, type=int)
+    offset = request.args.get("offset", 0, type=int)
+    return jsonify(data_service.get_blocks(limit, offset))
+
+
+@app.route("/api/transactions", methods=["GET"])
+def get_transactions_endpoint():
+    """Get paginated transactions with filtering"""
+    limit = request.args.get("limit", 20, type=int)
+    offset = request.args.get("offset", 0, type=int)
+    tx_type = request.args.get("type")
+    status = request.args.get("status")
+    return jsonify(data_service.get_transactions(limit, offset, tx_type, status))
+
+
+@app.route("/api/validators", methods=["GET"])
+def get_validators_endpoint():
+    """Get validator list for explorer"""
+    sort_by = request.args.get("sort", "voting_power")
+    return jsonify(data_service.get_validators(sort_by))
+
+
+@app.route("/api/stats", methods=["GET"])
+def get_stats_endpoint():
+    """Get quick stats for dashboard"""
+    core_stats = data_service.get_core_stats()
+    avg_block = analytics.get_average_block_time()
+    return jsonify({
+        "latest_block": core_stats.get("latest_block"),
+        "latest_block_time": core_stats.get("latest_block_time"),
+        "avg_block_time": avg_block.get("average_block_time_seconds"),
+        "total_txs": core_stats.get("total_txs"),
+        "active_validators": core_stats.get("active_validators")
+    })
+
+
 # ==================== SEARCH ENDPOINTS ====================
 
-@app.route("/api/search", methods=["POST"])
+@app.route("/api/search", methods=["POST", "GET"])
 def search_endpoint():
     """Advanced search endpoint"""
-    data = request.json or {}
-    query = data.get("query", "").strip()
-    user_id = data.get("user_id", "anonymous")
+    if request.method == "POST":
+        data = request.json or {}
+        query = data.get("query", "").strip()
+        user_id = data.get("user_id", "anonymous")
+    else:
+        query = request.args.get("q", "").strip()
+        user_id = request.args.get("user_id", "anonymous")
 
     if not query:
         return jsonify({"error": "Query required"}), 400
@@ -1106,15 +1493,20 @@ def health_check():
     try:
         response = requests.get(f"{NODE_URL}/health", timeout=5)
         node_status = response.status_code == 200
-    except:
+    except Exception as e:
+        logger.warning(f"RPC health degraded: {e}")
         node_status = False
 
+    status = "healthy" if node_status else "degraded"
     return jsonify({
-        "status": "healthy" if node_status else "degraded",
+        "status": status,
         "explorer": "running",
-        "node": "connected" if node_status else "disconnected",
+        "node": {
+            "reachable": node_status,
+            "rpc": NODE_URL
+        },
         "timestamp": time.time()
-    }), (200 if node_status else 503)
+    }), 200
 
 
 # ==================== INFO ENDPOINT ====================

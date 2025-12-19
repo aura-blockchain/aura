@@ -173,6 +173,16 @@ func (suite *SecurityGuardsTestSuite) TestPauseGuard_BasicPause() {
 	// Should now be paused
 	suite.Require().True(k.IsModulePaused(ctx, moduleName))
 
+	// Pause should emit monitoring event
+	found := false
+	for _, ev := range ctx.EventManager().Events() {
+		if ev.Type == types.EventTypeSystemPaused {
+			found = true
+			break
+		}
+	}
+	suite.Require().True(found, "pause event should be emitted for monitoring")
+
 	// RequireNotPaused should return error
 	err = k.RequireNotPaused(ctx, moduleName)
 	suite.Require().Error(err)

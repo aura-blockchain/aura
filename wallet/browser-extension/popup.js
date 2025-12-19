@@ -1,3 +1,19 @@
+import DexModule from './src/dex.js';
+import { buildKeplrChainInfo } from './src/keplr';
+import { buildKeplrProvider, ensureKeplrChain } from './src/keplr-provider';
+import { connectWalletConnect, getWalletConnectApproval, onWalletConnectStatus, restoreWalletConnectSession, disconnectWalletConnect, setWalletConnectProvider } from './src/walletconnect';
+const { CHAIN_CONFIG, COIN, GAS_PRICE_TIERS, REST_ENDPOINTS, RPC_ENDPOINTS } = require('../config/chain');
+const HWModule = require('./hardware-wallet');
+let HardwareWalletManager = HWModule;
+if (HWModule && typeof HWModule !== 'function') {
+  HardwareWalletManager = HWModule.default || HWModule.HardwareWalletManager;
+}
+if (typeof HardwareWalletManager !== 'function') {
+  HardwareWalletManager = class {
+    isConnected() { return false; }
+  };
+}
+
 // Import Cosmos SDK module
 /* global COSMOS_SDK */
 
@@ -7,6 +23,17 @@ const SESSION_TOKEN_KEY = 'walletSessionToken';
 const SESSION_SECRET_KEY = 'walletSessionSecret';
 const SESSION_ADDRESS_KEY = 'walletSessionAddress';
 const HKDF_INFO = new TextEncoder().encode('walletconnect-trade');
+const DEFAULT_SLIPPAGE_PERCENT = 0.5;
+const DEFAULT_API_HOST = REST_ENDPOINTS[0]?.address || 'http://localhost:1317';
+const DEFAULT_HW_PATH = `m/44'/${CHAIN_CONFIG.slip44 ?? 118}'/0'/0/0`;
+const hwManager = new HardwareWalletManager();
+const KEPLR_CHAIN_INFO = buildKeplrChainInfo();
+let hwAddress = null;
+let hwPublicKeyHex = null;
+let useHardwareSigning = false;
+
+let dexPoolsCache = [];
+let lastSwapQuote = null;
 
 function bufferToHex(buffer) {
   return Array.from(new Uint8Array(buffer))
@@ -35,6 +62,94 @@ function base64ToBytes(base64) {
   return bytes;
 }
 
+function buildFallbackWalletConnectProvider() {
+  const err = () => Promise.reject(new Error('WalletConnect signing requires Keplr/Leap or an imported/hardware key.'));
+  return {
+    async getKey() {
+      throw new Error('No WalletConnect signer available. Register Keplr/Leap or load hardware key.');
+    },
+    signAmino: err,
+    signDirect: err,
+    sendTx: err,
+  };
+}
+
+function buildLocalSignerProvider() {
+  return {
+    async signDirect(signer, signDoc) {
+      try {
+        const current = $('#walletAddress')?.value?.trim();
+        if (current && signer && signer !== current) {
+          throw new Error('Signer address mismatch. Switch wallet to match request.');
+        }
+        const privateKeyHex = await getPrivateKey();
+        const hasHardware = useHardwareSigning && hwManager.isConnected() && hwPublicKeyHex;
+        if (!privateKeyHex && !hasHardware) {
+          throw new Error('No signer available. Connect hardware wallet or import a key.');
+        }
+        const tx = signDoc?.bodyBytes && signDoc?.authInfoBytes
+          ? COSMOS_SDK.decodeTx(signDoc.bodyBytes, signDoc.authInfoBytes)
+          : signDoc;
+        const signedTx = await signWithAvailableWallet(tx, signer, null, { preferHardware: hasHardware });
+        const sigBytes = signedTx?.signatures?.[0];
+        const pubKeyAny = signedTx?.auth_info?.signer_infos?.[0]?.public_key;
+        const pubKeyHex = pubKeyAny?.value || pubKeyAny?.key || hwPublicKeyHex || '';
+        const signatureHex = Buffer.from(sigBytes || []).toString('hex');
+        return {
+          signed: signDoc,
+          signature: {
+            signature: signatureHex,
+            pub_key: {
+              type: 'tendermint/PubKeySecp256k1',
+              value: pubKeyHex,
+            },
+          },
+        };
+      } catch (err) {
+        showMessage('walletConnectStatus', err.message, true);
+        throw err;
+      }
+    },
+    async signAmino(signer, signDoc) {
+      try {
+        const current = $('#walletAddress')?.value?.trim();
+        if (current && signer && signer !== current) {
+          throw new Error('Signer address mismatch. Switch wallet to match request.');
+        }
+        const privateKeyHex = await getPrivateKey();
+        const hasHardware = useHardwareSigning && hwManager.isConnected() && hwPublicKeyHex;
+        if (!privateKeyHex && !hasHardware) {
+          throw new Error('No signer available. Connect hardware wallet or import a key.');
+        }
+        const tx = signDoc?.msgs ? COSMOS_SDK.encodeAminoTx(signDoc) : signDoc;
+        const signedTx = await signWithAvailableWallet(tx, signer, null, { preferHardware: hasHardware });
+        const sigBytes = signedTx?.signatures?.[0];
+        const pubKeyAny = signedTx?.auth_info?.signer_infos?.[0]?.public_key;
+        const pubKeyHex = pubKeyAny?.value || pubKeyAny?.key || hwPublicKeyHex || '';
+        const signatureHex = Buffer.from(sigBytes || []).toString('hex');
+        return {
+          signed: signDoc,
+          signature: {
+            signature: signatureHex,
+            pub_key: {
+              type: 'tendermint/PubKeySecp256k1',
+              value: pubKeyHex,
+            },
+          },
+        };
+      } catch (err) {
+        showMessage('walletConnectStatus', err.message, true);
+        throw err;
+      }
+    },
+  };
+}
+
+function getHardwareWalletType() {
+  const select = $('#hardwareWalletType');
+  return (select?.value || 'ledger').toLowerCase();
+}
+
 function stableStringify(value) {
   if (value === null) {return 'null';}
   if (Array.isArray(value)) {
@@ -45,6 +160,54 @@ function stableStringify(value) {
     return `{${keys.map(key => `"${key}":${stableStringify(value[key])}`).join(',')}}`;
   }
   return JSON.stringify(value);
+}
+
+function getMicroFactor() {
+  const decimals = Number(COSMOS_SDK?.config?.coinDecimals ?? COIN.exponent ?? 6);
+  return 10 ** decimals;
+}
+
+function amountToBaseUnits(amount) {
+  if (!Number.isFinite(amount) || amount <= 0) {
+    throw new Error('Amount must be greater than zero');
+  }
+  return BigInt(Math.floor(amount * getMicroFactor()));
+}
+
+function baseUnitsToDisplay(value) {
+  const asBigInt = typeof value === 'string' ? BigInt(value) : BigInt(value || 0);
+  return Number(asBigInt) / getMicroFactor();
+}
+
+function normalizeDenom(denom) {
+  return (denom || '').trim().toLowerCase();
+}
+
+async function loadPoolById(poolId) {
+  const idStr = poolId?.toString();
+  if (!idStr) {
+    return null;
+  }
+
+  let pool = dexPoolsCache.find(p => p.pool_id === idStr || p.id === idStr);
+  if (!pool) {
+    pool = await DexModule.queryPool(idStr);
+    if (pool) {
+      dexPoolsCache = [pool, ...dexPoolsCache.filter(existing => (existing.pool_id || existing.id) !== idStr)];
+    }
+  }
+  return pool;
+}
+
+function updateSwapQuoteDetails(quote, denomOut) {
+  const quoteElement = $('#swapQuoteDetails');
+  if (!quoteElement || !quote) {
+    return;
+  }
+
+  const expectedDisplay = baseUnitsToDisplay(quote.expectedAmountOut).toFixed(6);
+  const minDisplay = baseUnitsToDisplay(quote.minAmountOut).toFixed(6);
+  quoteElement.textContent = `Expected: ${expectedDisplay} ${denomOut} | Min: ${minDisplay} ${denomOut} | Price impact: ${quote.priceImpactPercent.toFixed(2)}%`;
 }
 
 async function signPayload(payloadStr, secretHex) {
@@ -216,6 +379,48 @@ async function savePrivateKey(privateKeyHex) {
   });
 }
 
+async function signWithAvailableWallet(tx, signerAddress, messageId = null, options = {}) {
+  const accountInfo = await COSMOS_SDK.getAccount(signerAddress);
+
+  // Prefer hardware if connected and address matches
+  const preferHardware = options.preferHardware || (useHardwareSigning && hwManager.isConnected());
+  if (preferHardware && hwManager.isConnected()) {
+    if (!hwAddress || !hwPublicKeyHex) {
+      updateHardwareStatus('Hardware connected but address not loaded. Click "Get Address" to sync.', true);
+      throw new Error('Hardware wallet connected but address not loaded. Click "Get Address" first.');
+    }
+    if (hwAddress !== signerAddress) {
+      updateHardwareStatus('Hardware address does not match current wallet. Load address again.', true);
+      throw new Error('Hardware wallet address does not match the selected signer address.');
+    }
+    const publicKey = hexToBytes(hwPublicKeyHex);
+    const { signBytes } = COSMOS_SDK.buildSignDoc(tx, accountInfo, publicKey);
+    let sigHex = '';
+    if (hwManager.connectedDevice?.type === 'ledger') {
+      const ledgerSig = await hwManager.signWithLedger(signBytes, DEFAULT_HW_PATH);
+      sigHex = ledgerSig.signature;
+    } else {
+      const resp = await hwManager.signTransaction(signBytes, DEFAULT_HW_PATH);
+      sigHex = resp.signature;
+    }
+    const sigBytes = hexToBytes(sigHex);
+    return COSMOS_SDK.applySignature(tx, sigBytes, publicKey, accountInfo.sequence);
+  }
+
+  // Fallback to software key
+  const privateKeyHex = await getPrivateKey();
+  if (!privateKeyHex) {
+    const errMsg = 'No signing key available. Connect hardware wallet or import a software key.';
+    if (messageId) {
+      showMessage(messageId, errMsg, true);
+    }
+    throw new Error(errMsg);
+  }
+  const privateKey = COSMOS_SDK.hexToBytes(privateKeyHex);
+  const publicKey = await COSMOS_SDK.getPublicKey(privateKey);
+  return COSMOS_SDK.signTx(tx, privateKey, accountInfo, publicKey);
+}
+
 async function generateNewWallet() {
   try {
     // Confirm wallet creation
@@ -370,18 +575,8 @@ async function sendTokens(toAddress, amount, denom = 'upaw') {
     return null;
   }
 
-  const privateKeyHex = await getPrivateKey();
-  if (!privateKeyHex) {
-    showMessage('transactionMessage', 'No private key found. Create or import a wallet first.', true);
-    return null;
-  }
-
   try {
     showMessage('transactionMessage', 'Preparing transaction...');
-
-    const privateKey = COSMOS_SDK.hexToBytes(privateKeyHex);
-    const publicKey = await COSMOS_SDK.getPublicKey(privateKey);
-    const accountInfo = await COSMOS_SDK.getAccount(fromAddress);
 
     const amountInMicroDenom = Math.floor(amount * Math.pow(10, COSMOS_SDK.config.coinDecimals));
 
@@ -398,7 +593,7 @@ async function sendTokens(toAddress, amount, denom = 'upaw') {
     });
 
     showMessage('transactionMessage', 'Signing transaction...');
-    const signedTx = await COSMOS_SDK.signTx(tx, privateKey, accountInfo, publicKey);
+    const signedTx = await signWithAvailableWallet(tx, fromAddress, 'transactionMessage');
 
     showMessage('transactionMessage', 'Broadcasting transaction...');
     const result = await COSMOS_SDK.broadcastTx(signedTx);
@@ -415,7 +610,7 @@ async function sendTokens(toAddress, amount, denom = 'upaw') {
   }
 }
 
-async function executeSwap(poolId, tokenInDenom, tokenInAmount, tokenOutDenom, minAmountOut) {
+async function executeSwap(poolId, tokenInDenom, tokenInAmount, tokenOutDenom, minAmountOut, slippageBps = 50) {
   const sender = $('#walletAddress').value.trim();
 
   // Validation
@@ -444,33 +639,21 @@ async function executeSwap(poolId, tokenInDenom, tokenInAmount, tokenOutDenom, m
     return null;
   }
 
-  const privateKeyHex = await getPrivateKey();
-  if (!privateKeyHex) {
-    showMessage('tradeMessage', 'No private key found. Create or import a wallet first.', true);
-    return null;
-  }
-
   try {
     showMessage('tradeMessage', 'Preparing swap transaction...');
 
-    const privateKey = COSMOS_SDK.hexToBytes(privateKeyHex);
-    const publicKey = await COSMOS_SDK.getPublicKey(privateKey);
-    const accountInfo = await COSMOS_SDK.getAccount(sender);
-
-    const tx = COSMOS_SDK.buildSwapTx({
+    const tx = DexModule.buildSwapExactInTx({
       sender,
-      poolId,
-      tokenIn: {
-        denom: tokenInDenom,
-        amount: tokenInAmount.toString(),
-      },
-      tokenOutDenom,
-      minAmountOut: minAmountOut.toString(),
+      poolId: poolId.toString(),
+      denomIn: normalizeDenom(tokenInDenom),
+      amountIn: tokenInAmount,
+      minAmountOut: minAmountOut,
+      maxSlippageBps: Number(slippageBps) || 50,
       memo: 'DEX Swap from Aura Browser Wallet',
     });
 
     showMessage('tradeMessage', 'Signing swap transaction...');
-    const signedTx = await COSMOS_SDK.signTx(tx, privateKey, accountInfo, publicKey);
+    const signedTx = await signWithAvailableWallet(tx, sender, 'tradeMessage');
 
     showMessage('tradeMessage', 'Broadcasting swap transaction...');
     const result = await COSMOS_SDK.broadcastTx(signedTx);
@@ -488,6 +671,148 @@ async function executeSwap(poolId, tokenInDenom, tokenInAmount, tokenOutDenom, m
   }
 }
 
+async function quoteSwapFromForm() {
+  try {
+    const fromDenom = normalizeDenom($('#swapFromToken').value);
+    const toDenom = normalizeDenom($('#swapToToken').value);
+    const amountFloat = parseFloat($('#swapFromAmount').value);
+    const poolId = $('#swapPoolId').value.trim();
+    const slippagePercent = parseFloat($('#swapSlippage').value || DEFAULT_SLIPPAGE_PERCENT);
+
+    if (!fromDenom || !toDenom || !Number.isFinite(amountFloat) || amountFloat <= 0 || !poolId) {
+      throw new Error('Enter valid pool ID, tokens, and amount before quoting');
+    }
+
+    const pool = await loadPoolById(poolId);
+    if (!pool) {
+      throw new Error('Pool not found');
+    }
+
+    const slippageBps = Math.max(1, Math.round(slippagePercent * 100));
+    const amountIn = amountToBaseUnits(amountFloat);
+
+    const quote = DexModule.calculateSwapQuote(pool, fromDenom, amountIn, slippageBps);
+    lastSwapQuote = {
+      ...quote,
+      slippageBps,
+      denomIn: fromDenom,
+      denomOut: toDenom,
+    };
+
+    const minAmountDisplay = baseUnitsToDisplay(quote.minAmountOut).toFixed(6);
+    $('#swapMinAmount').value = minAmountDisplay;
+    updateSwapQuoteDetails(quote, toDenom);
+    showMessage('tradeMessage', 'Quote updated. Review and execute when ready.');
+  } catch (error) {
+    lastSwapQuote = null;
+    $('#swapQuoteDetails').textContent = `Quote error: ${error.message}`;
+    showMessage('tradeMessage', `Quote failed: ${error.message}`, true);
+  }
+}
+
+async function handleSwapSubmit(event) {
+  event.preventDefault();
+  try {
+    const fromDenom = normalizeDenom($('#swapFromToken').value);
+    const toDenom = normalizeDenom($('#swapToToken').value);
+    const amountFloat = parseFloat($('#swapFromAmount').value);
+    const minAmountFloat = parseFloat($('#swapMinAmount').value);
+    const poolId = parseInt($('#swapPoolId').value, 10);
+    const slippagePercent = parseFloat($('#swapSlippage').value || DEFAULT_SLIPPAGE_PERCENT);
+    const slippageBps = Math.max(1, Math.round(slippagePercent * 100));
+
+    if (!Number.isFinite(amountFloat) || amountFloat <= 0) {
+      throw new Error('Enter a valid from amount before swapping');
+    }
+
+    const amountIn = amountToBaseUnits(amountFloat);
+    const minAmountOut = Number.isFinite(minAmountFloat) && minAmountFloat > 0
+      ? amountToBaseUnits(minAmountFloat)
+      : amountIn;
+
+    await executeSwap(poolId, fromDenom, amountIn, toDenom, minAmountOut, slippageBps);
+  } catch (error) {
+    showMessage('tradeMessage', `Swap failed: ${error.message}`, true);
+  }
+}
+
+async function handleAddLiquiditySubmit(event) {
+  event.preventDefault();
+  try {
+    const provider = $('#walletAddress').value.trim();
+    if (!validateCosmosAddress(provider)) {
+      throw new Error('Enter a valid wallet address before providing liquidity');
+    }
+
+    const poolId = $('#addLiquidityPoolId').value.trim();
+    const denomA = normalizeDenom($('#addLiquidityDenomA').value);
+    const denomB = normalizeDenom($('#addLiquidityDenomB').value);
+    const amountAFloat = parseFloat($('#addLiquidityAmountA').value);
+    const amountBFloat = parseFloat($('#addLiquidityAmountB').value);
+
+    if (!denomA || !denomB || !Number.isFinite(amountAFloat) || !Number.isFinite(amountBFloat)) {
+      throw new Error('Provide both token denoms and amounts');
+    }
+
+    const tx = DexModule.buildAddLiquidityTx({
+      provider,
+      poolId,
+      denomA,
+      denomB,
+      amountA: amountToBaseUnits(amountAFloat),
+      amountB: amountToBaseUnits(amountBFloat),
+      memo: 'Provide liquidity via Aura Browser Wallet',
+    });
+
+    showMessage('liquidityMessage', 'Signing add-liquidity transaction...');
+    const signedTx = await signWithAvailableWallet(tx, provider, 'liquidityMessage');
+
+    showMessage('liquidityMessage', 'Broadcasting add-liquidity transaction...');
+    const result = await COSMOS_SDK.broadcastTx(signedTx);
+
+    showMessage('liquidityMessage', `Liquidity added! Hash: ${result.txhash}`);
+    await refreshPools();
+    await refreshTradeHistory();
+  } catch (error) {
+    showMessage('liquidityMessage', `Add liquidity failed: ${error.message}`, true);
+  }
+}
+
+async function handleRemoveLiquiditySubmit(event) {
+  event.preventDefault();
+  try {
+    const provider = $('#walletAddress').value.trim();
+    if (!validateCosmosAddress(provider)) {
+      throw new Error('Enter a valid wallet address before removing liquidity');
+    }
+
+    const poolId = $('#removeLiquidityPoolId').value.trim();
+    const lpTokensFloat = parseFloat($('#removeLiquidityLpTokens').value);
+    if (!Number.isFinite(lpTokensFloat) || lpTokensFloat <= 0) {
+      throw new Error('Enter LP token amount to withdraw');
+    }
+
+    const tx = DexModule.buildRemoveLiquidityTx({
+      provider,
+      poolId,
+      lpTokens: amountToBaseUnits(lpTokensFloat),
+      memo: 'Remove liquidity via Aura Browser Wallet',
+    });
+
+    showMessage('liquidityMessage', 'Signing remove-liquidity transaction...');
+    const signedTx = await signWithAvailableWallet(tx, provider, 'liquidityMessage');
+
+    showMessage('liquidityMessage', 'Broadcasting remove-liquidity transaction...');
+    const result = await COSMOS_SDK.broadcastTx(signedTx);
+
+    showMessage('liquidityMessage', `Liquidity removed! Hash: ${result.txhash}`);
+    await refreshPools();
+    await refreshTradeHistory();
+  } catch (error) {
+    showMessage('liquidityMessage', `Remove liquidity failed: ${error.message}`, true);
+  }
+}
+
 function showMessage(elementId, message, isError = false) {
   const element = $(`#${elementId}`);
   if (element) {
@@ -500,11 +825,169 @@ function showMessage(elementId, message, isError = false) {
   }
 }
 
+onWalletConnectStatus((status) => {
+  if (!status) return;
+  showMessage('walletConnectStatus', status, status.toLowerCase().includes('fail') || status.toLowerCase().includes('reject'));
+});
+
 async function setApiHost(host) {
   chrome.storage.local.set({ [API_KEY]: host });
   // Update Cosmos SDK config
   COSMOS_SDK.config.restEndpoint = host;
   COSMOS_SDK.config.rpcEndpoint = host.replace('1317', '26657');
+}
+
+/**
+ * Hardware wallet helpers
+ */
+function updateHardwareStatus(message, isError = false) {
+  showMessage('hardwareWalletMessage', message, isError);
+  const status = $('#hardwareWalletStatus');
+  if (status) {
+    status.textContent = message;
+    status.classList.toggle('error', isError);
+  }
+}
+
+function setHardwareInfo(info) {
+  const infoBox = $('#hardwareWalletInfo');
+  const typeEl = $('#hwDeviceType');
+  const nameEl = $('#hwDeviceName');
+  if (infoBox && typeEl && nameEl) {
+    infoBox.classList.remove('hidden');
+    typeEl.textContent = `Type: ${info?.type || 'Unknown'}`;
+    nameEl.textContent = `Device: ${info?.name || 'Unknown'}`;
+  }
+}
+
+async function restoreWalletConnect() {
+  const existing = await restoreWalletConnectSession('aura-local');
+  if (existing?.topic) {
+    showMessage('walletConnectStatus', 'Restored WalletConnect session', false);
+    const uriEl = $('#walletConnectUri');
+    if (uriEl) {
+      uriEl.textContent = `topic:${existing.topic}`;
+    }
+  }
+}
+
+async function suggestKeplrChain() {
+  if (!window.keplr) {
+    updateHardwareStatus('Keplr not detected. Install Keplr to enable dApp provider.', true);
+    return;
+  }
+  try {
+    await ensureKeplrChain();
+    // Expose a lightweight provider shim for dApps if needed
+    const provider = buildKeplrProvider();
+    window.auraKeplrProvider = provider;
+    setWalletConnectProvider(provider);
+    updateHardwareStatus('Keplr/Leap chain info registered.');
+  } catch (err) {
+    updateHardwareStatus(err.message || 'Failed to register chain with Keplr', true);
+  }
+}
+
+async function initiateWalletConnect() {
+  try {
+    showMessage('walletConnectStatus', 'Initializing WalletConnect...', false);
+    const { uri } = await connectWalletConnect({ projectId: 'aura-local' });
+    const uriEl = $('#walletConnectUri');
+    if (uriEl) {
+      uriEl.textContent = uri || 'No URI';
+    }
+    showMessage('walletConnectStatus', 'WalletConnect URI generated. Scan with your wallet.', false);
+    const approval = getWalletConnectApproval();
+    if (approval?.then) {
+      approval.then(() => {
+        showMessage('walletConnectStatus', 'WalletConnect session approved.', false);
+      }).catch(err => {
+        showMessage('walletConnectStatus', err?.message || 'WalletConnect approval failed', true);
+      });
+    }
+  } catch (err) {
+    showMessage('walletConnectStatus', err.message || 'WalletConnect init failed', true);
+  }
+}
+
+async function detectHardwareWallet() {
+  try {
+    const hwType = getHardwareWalletType();
+    if (hwType === 'trezor') {
+      updateHardwareStatus('Trezor detection uses Connect prompt. Click Connect to continue.');
+      return;
+    }
+    updateHardwareStatus('Detecting devices...');
+    const devices = await hwManager.detectDevices();
+    if (!devices.length) {
+      updateHardwareStatus('No hardware wallets found', true);
+      return;
+    }
+    updateHardwareStatus(`Detected ${devices.length} device(s)`);
+  } catch (err) {
+    updateHardwareStatus(err.message || 'Hardware detection failed', true);
+  }
+}
+
+async function connectHardwareWallet() {
+  try {
+    const hwType = getHardwareWalletType();
+    updateHardwareStatus(`Connecting to ${hwType === 'trezor' ? 'Trezor (Connect)' : 'Ledger via WebHID'}...`);
+    const device = await hwManager.connect(hwType);
+    setHardwareInfo(hwManager.getDeviceInfo());
+    updateHardwareStatus(`Connected: ${device.type}`);
+    useHardwareSigning = true;
+    const toggle = $('#useHardwareSigning');
+    if (toggle) {
+      toggle.checked = true;
+    }
+  } catch (err) {
+    updateHardwareStatus(err.message || 'Hardware connection failed', true);
+  }
+}
+
+async function disconnectHardwareWallet() {
+  await hwManager.disconnect();
+  await disconnectWalletConnect();
+  useHardwareSigning = false;
+  hwAddress = null;
+  hwPublicKeyHex = null;
+  updateHardwareStatus('Disconnected');
+  const toggle = $('#useHardwareSigning');
+  if (toggle) {
+    toggle.checked = false;
+  }
+}
+
+async function fetchHardwareAddress() {
+  try {
+    updateHardwareStatus('Requesting address on device...');
+    const hwType = getHardwareWalletType();
+    const resp = await hwManager.getAddress(DEFAULT_HW_PATH, hwType === 'ledger');
+    if (resp?.address) {
+      hwAddress = resp.address;
+      hwPublicKeyHex = resp.publicKey;
+      useHardwareSigning = true;
+      const input = $('#walletAddress');
+      if (input) {
+        input.value = resp.address;
+        chrome.storage.local.set({ walletAddress: resp.address });
+      }
+      updateHardwareStatus(`Address: ${resp.address}`);
+      const status = $('#hardwareSigningStatus');
+      if (status) {
+        status.textContent = 'Hardware signing: enabled';
+      }
+      const toggle = $('#useHardwareSigning');
+      if (toggle) {
+        toggle.checked = true;
+      }
+    } else {
+      updateHardwareStatus('No address returned', true);
+    }
+  } catch (err) {
+    updateHardwareStatus(err.message || 'Failed to fetch address', true);
+  }
 }
 
 /**
@@ -577,7 +1060,7 @@ async function checkNetworkConnection() {
       const data = await response.json();
       return {
         connected: true,
-        chainId: data.result?.node_info?.network,
+        chainId: data.result?.node_info?.network || CHAIN_CONFIG.chainId,
         latestHeight: data.result?.sync_info?.latest_block_height,
       };
     }
@@ -633,32 +1116,34 @@ async function stopMining() {
 }
 
 async function refreshPools() {
-  try {
-    const pools = await COSMOS_SDK.queryPools();
-    const list = $('#ordersList');
-
-    if (pools && pools.length > 0) {
-      list.innerHTML = pools
-        .slice(0, 10)
-        .map(
-          pool => `
-        <div class="entry">
-          <strong>Pool ${pool.id}</strong>
-          <br />
-          ${pool.token0} / ${pool.token1} | Liquidity: ${pool.liquidity || 'N/A'}
-        </div>`
-        )
-        .join('');
-    } else {
-      list.innerHTML = '<div class="list-placeholder">No pools available</div>';
-    }
-  } catch (error) {
-    $('#ordersList').innerHTML = `<div class="list-placeholder">Error loading pools: ${error.message}</div>`;
+  const list = $('#poolsList');
+  if (!list) {
+    return;
   }
-}
 
-async function refreshOrders() {
-  await refreshPools();
+  try {
+    const pools = await DexModule.queryPools();
+    dexPoolsCache = pools || [];
+
+    if (!dexPoolsCache.length) {
+      list.innerHTML = '<h3>Liquidity Pools</h3><div class="list-placeholder">No pools available</div>';
+      return;
+    }
+
+    const entries = dexPoolsCache.slice(0, 5).map(pool => {
+      const formatted = DexModule.formatPool(pool);
+      return `
+        <div class="entry">
+          <strong>Pool #${formatted.poolId}</strong><br />
+          ${formatted.denomA}/${formatted.denomB} · Price ${formatted.priceAB.toFixed(4)} ${formatted.denomB}<br />
+          Depth: ${formatted.depth[formatted.denomA]} ${formatted.denomA} / ${formatted.depth[formatted.denomB]} ${formatted.denomB}
+        </div>`;
+    });
+
+    list.innerHTML = `<h3>Liquidity Pools</h3>${entries.join('')}`;
+  } catch (error) {
+    list.innerHTML = `<h3>Liquidity Pools</h3><div class="list-placeholder">Error loading pools: ${error.message}</div>`;
+  }
 }
 
 async function refreshMatches() {
@@ -780,14 +1265,17 @@ async function submitOrder(event) {
     // For now, use the swap function
     // In a real implementation, this would map to DEX order creation
     const poolId = 1; // Default pool - should be dynamically selected
-    const minAmountOut = Math.floor(amountRequested * 0.95); // 5% slippage tolerance
+    const slippageBps = 500;
+    const amountIn = amountToBaseUnits(amountOffered);
+    const minAmountOut = amountToBaseUnits(amountRequested * 0.95);
 
     const result = await executeSwap(
       poolId,
       tokenOffered,
-      Math.floor(amountOffered * Math.pow(10, COSMOS_SDK.config.coinDecimals)),
+      amountIn,
       tokenRequested,
-      minAmountOut
+      minAmountOut,
+      slippageBps
     );
 
     if (result) {
@@ -943,12 +1431,22 @@ function bindActions() {
   if (stopMiningBtn) stopMiningBtn.addEventListener('click', stopMining);
 
   // Trading
-  const refreshOrdersBtn = $('#refreshOrders');
+  const refreshPoolsBtn = $('#refreshPools');
   const refreshMatchesBtn = $('#refreshMatches');
+  const refreshTradeHistoryBtn = $('#refreshTradeHistory');
+  const swapForm = $('#swapForm');
+  const swapQuoteBtn = $('#swapQuoteBtn');
+  const addLiquidityForm = $('#addLiquidityForm');
+  const removeLiquidityForm = $('#removeLiquidityForm');
   const orderForm = $('#orderForm');
 
-  if (refreshOrdersBtn) refreshOrdersBtn.addEventListener('click', refreshOrders);
+  if (refreshPoolsBtn) refreshPoolsBtn.addEventListener('click', refreshPools);
   if (refreshMatchesBtn) refreshMatchesBtn.addEventListener('click', refreshMatches);
+  if (refreshTradeHistoryBtn) refreshTradeHistoryBtn.addEventListener('click', refreshTradeHistory);
+  if (swapQuoteBtn) swapQuoteBtn.addEventListener('click', quoteSwapFromForm);
+  if (swapForm) swapForm.addEventListener('submit', handleSwapSubmit);
+  if (addLiquidityForm) addLiquidityForm.addEventListener('submit', handleAddLiquiditySubmit);
+  if (removeLiquidityForm) removeLiquidityForm.addEventListener('submit', handleRemoveLiquiditySubmit);
   if (orderForm) orderForm.addEventListener('submit', submitOrder);
 
   // AI Assistant
@@ -961,12 +1459,53 @@ function bindActions() {
   // API Host
   const apiHostInput = $('#apiHost');
   if (apiHostInput) {
+    apiHostInput.placeholder = DEFAULT_API_HOST;
     apiHostInput.addEventListener('change', event => {
       const newHost = event.target.value.trim();
       setApiHost(newHost);
-      // Update Cosmos SDK config
-      COSMOS_SDK.config.restEndpoint = newHost;
-      COSMOS_SDK.config.rpcEndpoint = newHost.replace('1317', '26657');
+      const host = newHost || DEFAULT_API_HOST;
+      COSMOS_SDK.config.restEndpoint = host;
+      COSMOS_SDK.config.rpcEndpoint = host.replace('1317', '26657');
+    });
+  }
+
+  // Hardware wallet actions
+  const detectHwBtn = $('#detectHardwareWallet');
+  const connectHwBtn = $('#connectHardwareWallet');
+  const disconnectHwBtn = $('#disconnectHardwareWallet');
+  const getHwAddressBtn = $('#getHwAddress');
+  const hwStatus = $('#hardwareSigningStatus');
+  const hwToggle = $('#useHardwareSigning');
+  const registerKeplrBtn = $('#registerKeplr');
+  const wcConnectBtn = $('#connectWalletConnect');
+  const wcDisconnectBtn = $('#disconnectWalletConnect');
+  setWalletConnectProvider(buildFallbackWalletConnectProvider());
+  setWalletConnectProvider(buildLocalSignerProvider());
+  restoreWalletConnect();
+  if (window.keplr) {
+    const keplrProvider = buildKeplrProvider();
+    setWalletConnectProvider(keplrProvider);
+  }
+
+  if (detectHwBtn) detectHwBtn.addEventListener('click', detectHardwareWallet);
+  if (connectHwBtn) connectHwBtn.addEventListener('click', connectHardwareWallet);
+  if (disconnectHwBtn) disconnectHwBtn.addEventListener('click', disconnectHardwareWallet);
+  if (getHwAddressBtn) getHwAddressBtn.addEventListener('click', fetchHardwareAddress);
+  if (hwStatus) {
+    hwStatus.textContent = useHardwareSigning ? 'Hardware signing: enabled' : 'Hardware signing: disabled';
+  }
+  if (registerKeplrBtn) registerKeplrBtn.addEventListener('click', suggestKeplrChain);
+  if (wcConnectBtn) wcConnectBtn.addEventListener('click', initiateWalletConnect);
+  if (wcDisconnectBtn) wcDisconnectBtn.addEventListener('click', async () => {
+    await disconnectWalletConnect();
+    showMessage('walletConnectStatus', 'WalletConnect session disconnected', false);
+  });
+  if (hwToggle) {
+    hwToggle.addEventListener('change', event => {
+      useHardwareSigning = Boolean(event.target.checked);
+      if (hwStatus) {
+        hwStatus.textContent = useHardwareSigning ? 'Hardware signing: enabled' : 'Hardware signing: disabled';
+      }
     });
   }
 }
@@ -981,9 +1520,12 @@ function restoreSettings() {
     }
     if (result[API_KEY] && apiHostInput) {
       apiHostInput.value = result[API_KEY];
-      // Update Cosmos SDK config
-      COSMOS_SDK.config.restEndpoint = result[API_KEY];
-      COSMOS_SDK.config.rpcEndpoint = result[API_KEY].replace('1317', '26657');
+      COSMOS_SDK.config.restEndpoint = result[API_KEY] || DEFAULT_API_HOST;
+      COSMOS_SDK.config.rpcEndpoint = (result[API_KEY] || DEFAULT_API_HOST).replace('1317', '26657');
+    } else if (apiHostInput) {
+      apiHostInput.value = DEFAULT_API_HOST;
+      COSMOS_SDK.config.restEndpoint = DEFAULT_API_HOST;
+      COSMOS_SDK.config.rpcEndpoint = DEFAULT_API_HOST.replace('1317', '26657');
     }
   });
 
@@ -1055,6 +1597,9 @@ async function updateNetworkStatus() {
 
 document.addEventListener('DOMContentLoaded', async () => {
   try {
+    // Expose Keplr/Leap provider shim for dApps (chain registration still user-driven)
+    window.auraKeplrProvider = buildKeplrProvider();
+
     bindActions();
     restoreSettings();
 
@@ -1070,7 +1615,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Safe async calls with error handling
     await safeAsyncCall(updateBalance, 'balance update');
-    await safeAsyncCall(refreshOrders, 'pools refresh');
+    await safeAsyncCall(refreshPools, 'pools refresh');
     await safeAsyncCall(refreshMatches, 'prices refresh');
     await safeAsyncCall(updateMiningStatus, 'network status');
     await safeAsyncCall(refreshMinerStats, 'staking stats');
@@ -1091,6 +1636,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     showMessage('walletMessage', `Failed to initialize wallet: ${error.message}`, true);
   }
 });
+
+export {
+  suggestKeplrChain,
+  initiateWalletConnect
+};
 
 /**
  * Safe async call wrapper with error handling

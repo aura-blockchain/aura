@@ -28,7 +28,9 @@ const Settings = ({ onWalletReset }) => {
 
         if (savedApi) setApiEndpoint(savedApi);
         if (savedWs) setWsEndpoint(savedWs);
-        if (savedAutoUpdate !== undefined) setAutoUpdate(savedAutoUpdate);
+        if (typeof savedAutoUpdate === 'boolean') {
+          setAutoUpdate(savedAutoUpdate);
+        }
       }
     } catch (err) {
       console.error('Failed to load settings:', err);

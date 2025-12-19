@@ -92,7 +92,7 @@ func TestSearchAuditLogs_NilTimestamp(t *testing.T) {
 
 // Test CountAuditLogsByActor with no logs
 func TestCountAuditLogsByActor_NotFound(t *testing.T) {
-	k, _ := setupTestKeeper(t)
+	k, ctx := setupTestKeeper(t)
 
 	count := k.CountAuditLogsByActor(ctx, "nonexistent")
 	require.Equal(t, uint64(0), count)

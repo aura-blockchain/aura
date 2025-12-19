@@ -5,10 +5,11 @@
  */
 
 import axios from 'axios';
+const {CHAIN_CONFIG, REST_ENDPOINTS} = require('../../../config/chain');
 
 class PawAPIService {
   constructor() {
-    this.baseURL = 'http://localhost:1317'; // Default to local testnet
+    this.baseURL = REST_ENDPOINTS[0]?.address || 'http://localhost:1317'; // Default to registry-provided REST endpoint
     this.initializeClient();
   }
 

@@ -1,0 +1,46 @@
+=== System Snapshot: Sun Dec 14 01:02:58 PM UTC 2025 ===
+
+=== Docker Containers ===
+NAMES                     STATUS                          SIZE
+aura-block-explorer       Up 4 hours (healthy)            2.04kB (virtual 53.9MB)
+aura-validator-2          Up 3 hours (unhealthy)          182MB (virtual 395MB)
+aura-sentry-2             Restarting (1) 53 seconds ago   0B (virtual 214MB)
+aura-validator-3          Up 3 hours (unhealthy)          182MB (virtual 395MB)
+aura-validator-4          Up 3 hours (unhealthy)          182MB (virtual 395MB)
+aura-sentry-1             Restarting (1) 56 seconds ago   0B (virtual 214MB)
+aura-validator-1          Up About an hour (unhealthy)    182MB (virtual 396MB)
+aura-testnet-grafana      Up 3 hours                      0B (virtual 746MB)
+aura-testnet-prometheus   Up 3 hours                      0B (virtual 378MB)
+aura-testnet-proxy        Up 25 hours (healthy)           2B (virtual 48.3MB)
+aura-faucet-backend       Up 25 hours (unhealthy)         0B (virtual 134MB)
+aura-faucet-redis         Up 25 hours (healthy)           0B (virtual 41.4MB)
+aura-faucet-db            Up 25 hours (healthy)           63B (virtual 274MB)
+
+=== Validator Status ===
+{
+  "latest_block_hash": "AF2AF9462D07B8E901CC6EBED353D224ADBC3CD2928A5B9994687374DC782C8C",
+  "latest_app_hash": "1A5FCC8E93574A57675FA1A856D8F626D3F9E2894257AB52468BDDEFB6C443DB",
+  "latest_block_height": "5362",
+  "latest_block_time": "2025-12-14T13:02:54.046815176Z",
+  "earliest_block_hash": "78A32636FFE211584C59ECD90A31F3AFE671818682D3B5EF809152940C25491B",
+  "earliest_app_hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+  "earliest_block_height": "1",
+  "earliest_block_time": "2025-01-01T00:00:00Z",
+  "catching_up": false
+}
+
+=== Resource Usage ===
+aura-block-explorer       0.00%     13.5MiB / 512MiB      2.64%
+aura-validator-2          5.36%     214.1MiB / 8GiB       2.61%
+aura-sentry-2             0.00%     0B / 0B               0.00%
+aura-validator-3          4.53%     221.3MiB / 8GiB       2.70%
+aura-validator-4          5.02%     211.5MiB / 8GiB       2.58%
+aura-sentry-1             0.00%     0B / 0B               0.00%
+aura-validator-1          4.05%     205.7MiB / 8GiB       2.51%
+aura-testnet-grafana      0.30%     84.42MiB / 512MiB     16.49%
+aura-testnet-prometheus   0.03%     83.34MiB / 1GiB       8.14%
+aura-testnet-proxy        0.00%     5.852MiB / 256MiB     2.29%
+aura-faucet-backend       0.00%     15.57MiB / 512MiB     3.04%
+aura-faucet-redis         2.32%     6.324MiB / 256MiB     2.47%
+aura-faucet-db            0.00%     7.004MiB / 512MiB     1.37%
+

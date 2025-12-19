@@ -20,6 +20,18 @@ type Keeper struct {
 	wasmKeeper       *wasmkeeper.Keeper
 	authority        string // Address of the governance authority
 	contractRegistry *contractregistrykeeper.Keeper // Contract registry for policy enforcement
+	opsFactory       ContractOpsFactory
+}
+
+// ContractOpsFactory creates a contract ops keeper instance. It is exposed so
+// tests can inject deterministic mocks without wiring a full wasmd keeper.
+type ContractOpsFactory func(*wasmkeeper.Keeper) wasmtypes.ContractOpsKeeper
+
+func defaultContractOpsFactory(k *wasmkeeper.Keeper) wasmtypes.ContractOpsKeeper {
+	if k == nil {
+		return nil
+	}
+	return wasmkeeper.NewDefaultPermissionKeeper(k)
 }
 
 // NewKeeper creates a new wasm Keeper instance
@@ -34,6 +46,7 @@ func NewKeeper(
 		storeKey:   storeKey,
 		wasmKeeper: wasmKeeper,
 		authority:  authority,
+		opsFactory: defaultContractOpsFactory,
 	}
 }
 
@@ -50,6 +63,12 @@ func (k Keeper) GetWasmKeeper() *wasmkeeper.Keeper {
 // GetStoreKey returns the store key
 func (k Keeper) GetStoreKey() storetypes.StoreKey {
 	return k.storeKey
+}
+
+// SetContractOpsFactory overrides the contract operations factory. Primarily
+// used by tests to inject mock implementations.
+func (k *Keeper) SetContractOpsFactory(factory ContractOpsFactory) {
+	k.opsFactory = factory
 }
 
 // SetContractRegistry sets the contract registry keeper

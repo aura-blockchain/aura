@@ -10,11 +10,9 @@ E2E tests verify complete system behavior, including multi-node scenarios, cross
 
 ```
 e2e/
-├── chain.go           - Chain and multi-chain test infrastructure
-├── README.md          - This file
-├── bridge_e2e_test.go - Bridge E2E tests
-├── ibc_e2e_test.go    - IBC/cross-chain E2E tests
-└── network_e2e_test.go - Network behavior E2E tests
+├── chain.go      - Chain and multi-chain test infrastructure (in-memory)
+├── IBC_STATUS.md - Notes on why IBC E2E is currently disabled
+└── README.md     - This file
 ```
 
 ## Usage
@@ -76,6 +74,8 @@ func TestCrossChainTransfer(t *testing.T) {
         senderA, receiverB,
         sdk.NewCoins(sdk.NewCoin("uaura", sdk.NewInt(100))),
     )
+    // NOTE: This call will t.Skip() unless AURA_E2E_ENABLE_IBC=1 is set and the
+    // PAW + Hermes infrastructure is configured.
     require.NoError(t, err)
 
     // Wait for relayer
@@ -101,6 +101,10 @@ func TestCrossChainTransfer(t *testing.T) {
 3. **Relayer Behavior**: Packet relay and acknowledgments
 4. **Cross-Chain Governance**: Multi-chain proposals
 5. **Network Partitions**: Handling network splits
+
+> **Note:** The helper methods `SimulateIBCTransfer` / `WaitForRelayer` currently log placeholders because Aura’s public testnet keeps IBC disabled. See `IBC_STATUS.md` in this folder and `chain/docs/IBC_STATUS.md` for the roadmap to enable real cross-chain testing.
+>
+> Set `AURA_E2E_ENABLE_IBC=1` only after bringing up PAW + Hermes relayer per `chain/testing/local/phase6/test_6.1_ibc_setup_guide.md`.
 
 ## Chain Configuration
 

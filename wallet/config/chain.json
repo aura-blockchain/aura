@@ -1,0 +1,46 @@
+{
+  "$schema": "https://raw.githubusercontent.com/chainapsis/chain-registry/master/chain.schema.json",
+  "chain_name": "aura",
+  "chain_id": "aura-testnet-1",
+  "pretty_name": "Aura",
+  "network_type": "testnet",
+  "status": "live",
+  "bech32_prefix": "aura",
+  "daemon_name": "aurad",
+  "node_home": "$HOME/.aura",
+  "slip44": 118,
+  "key_algos": ["secp256k1"],
+  "fees": {
+    "fee_tokens": [
+      {
+        "denom": "uaura",
+        "fixed_min_gas_price": 0.025,
+        "low_gas_price": 0.015,
+        "average_gas_price": 0.025,
+        "high_gas_price": 0.04
+      }
+    ]
+  },
+  "staking": {
+    "bond_denom": "uaura"
+  },
+  "assets": [
+    {
+      "denom": "uaura",
+      "type": "native",
+      "base": "uaura",
+      "name": "Aura",
+      "display": "aura",
+      "symbol": "AURA",
+      "display_exponent": 6
+    }
+  ],
+  "apis": {
+    "rpc": [
+      { "address": "http://localhost:26657", "provider": "local" }
+    ],
+    "rest": [
+      { "address": "http://localhost:1317", "provider": "local" }
+    ]
+  }
+}

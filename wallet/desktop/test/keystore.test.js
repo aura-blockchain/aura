@@ -75,6 +75,13 @@ describe('KeystoreService', () => {
       ).rejects.toThrow();
     });
 
+    test('should reject short password', async () => {
+      const mnemonic = await keystoreService.generateMnemonic();
+      await expect(
+        keystoreService.createWallet(mnemonic, 'short')
+      ).rejects.toThrow('Password must be at least 8 characters');
+    });
+
     test('should save wallet to storage', async () => {
       const mnemonic = await keystoreService.generateMnemonic();
       const password = 'test-password-123';
@@ -132,6 +139,15 @@ describe('KeystoreService', () => {
       await expect(
         keystoreService.unlockWallet('wrong-password')
       ).rejects.toThrow();
+    });
+
+    test('should reject short password input', async () => {
+      const mnemonic = await keystoreService.generateMnemonic();
+      await keystoreService.createWallet(mnemonic, 'longpassword');
+
+      await expect(
+        keystoreService.unlockWallet('short')
+      ).rejects.toThrow('Password must be at least 8 characters');
     });
 
     test('should reject if no wallet exists', async () => {

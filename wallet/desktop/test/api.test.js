@@ -41,6 +41,165 @@ describe('ApiService', () => {
     });
   });
 
+  describe('Send Tokens Validation', () => {
+    test('should reject invalid sender address', async () => {
+      await expect(
+        apiService.sendTokens(
+          'invalid',
+          'aura1recipient',
+          1000,
+          'uaura',
+          '',
+          'mnemonic'
+        )
+      ).rejects.toThrow('Invalid sender address');
+    });
+
+    test('should reject non-positive amounts', async () => {
+      await expect(
+        apiService.sendTokens(
+          'aura1sender',
+          'aura1recipient',
+          0,
+          'uaura',
+          '',
+          'mnemonic'
+        )
+      ).rejects.toThrow('Amount must be greater than zero');
+    });
+
+    test('should reject missing signing key', async () => {
+      await expect(
+        apiService.sendTokens(
+          'aura1sender',
+          'aura1recipient',
+          10,
+          'uaura',
+          '',
+          ''
+        )
+      ).rejects.toThrow('Missing signing key');
+    });
+  });
+
+  describe('Delegate Validation', () => {
+    test('should reject invalid delegator address', async () => {
+      await expect(
+        apiService.delegate(
+          'invalid',
+          'auravaloper1validator',
+          1000,
+          'uaura',
+          '',
+          'mnemonic'
+        )
+      ).rejects.toThrow('Invalid delegator address');
+    });
+
+    test('should reject invalid validator address', async () => {
+      await expect(
+        apiService.delegate(
+          'aura1delegator',
+          'badval',
+          1000,
+          'uaura',
+          '',
+          'mnemonic'
+        )
+      ).rejects.toThrow('Invalid validator address');
+    });
+
+    test('should reject non-positive delegate amount', async () => {
+      await expect(
+        apiService.delegate(
+          'aura1delegator',
+          'auravaloper1validator',
+          0,
+          'uaura',
+          '',
+          'mnemonic'
+        )
+      ).rejects.toThrow('Delegate amount must be greater than zero');
+    });
+  });
+
+  describe('Undelegate Validation', () => {
+    test('should reject invalid undelegate inputs', async () => {
+      await expect(
+        apiService.undelegate(
+          '',
+          'auravaloper1validator',
+          1000,
+          'uaura',
+          '',
+          'mnemonic'
+        )
+      ).rejects.toThrow('Invalid delegator address');
+
+      await expect(
+        apiService.undelegate(
+          'aura1delegator',
+          '',
+          1000,
+          'uaura',
+          '',
+          'mnemonic'
+        )
+      ).rejects.toThrow('Invalid validator address');
+
+      await expect(
+        apiService.undelegate(
+          'aura1delegator',
+          'auravaloper1validator',
+          0,
+          'uaura',
+          '',
+          'mnemonic'
+        )
+      ).rejects.toThrow('Undelegate amount must be greater than zero');
+    });
+  });
+
+  describe('Redelegate Validation', () => {
+    test('should reject invalid redelegate inputs', async () => {
+      await expect(
+        apiService.redelegate(
+          '',
+          'auravaloper1src',
+          'auravaloper1dst',
+          10,
+          'uaura',
+          '',
+          'mnemonic'
+        )
+      ).rejects.toThrow('Invalid delegator address');
+
+      await expect(
+        apiService.redelegate(
+          'aura1delegator',
+          'badval',
+          'auravaloper1dst',
+          10,
+          'uaura',
+          '',
+          'mnemonic'
+        )
+      ).rejects.toThrow('Invalid validator address');
+
+      await expect(
+        apiService.redelegate(
+          'aura1delegator',
+          'auravaloper1src',
+          'auravaloper1dst',
+          0,
+          'uaura',
+          '',
+          'mnemonic'
+        )
+      ).rejects.toThrow('Redelegate amount must be greater than zero');
+    });
+  });
+
   describe('Account', () => {
     test('should fetch account information', async () => {
       const mockAccount = {

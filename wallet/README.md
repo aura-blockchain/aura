@@ -8,3 +8,9 @@ This directory hosts end-user wallet tooling adapted from the PAW and Crypto ref
 - `web/` – Aura Web Wallet (SPA) suitable for embedding into marketing sites or hosted portals.
 
 Each project retains its original README/build scripts, now updated for Aura network prefixes, endpoints, and branding.
+
+## Shared Chain Configuration
+
+- Canonical chain-registry metadata: `docs/chain-registry/aura.json`
+- Shared wallet constants (bech32 prefix, slip44, denom/decimals, gas prices): `wallet/config/chain.js`
+- Integrate by importing `wallet/config/chain.js` and using `CHAIN_CONFIG`/`GAS_PRICE_TIERS` for defaults (RPC/REST, fees, derivation path, bech32).

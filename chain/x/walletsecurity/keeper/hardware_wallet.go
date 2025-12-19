@@ -8,6 +8,9 @@ import (
 
 	"github.com/aequitas/aura/chain/x/walletsecurity/types"
 	wsproto "github.com/aequitas/aura/proto/aura/walletsecurity/v1beta1"
+
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // RegisterHardwareWallet registers a new hardware wallet
@@ -134,18 +137,18 @@ func (k Keeper) ValidateHardwareWalletTransaction(
 
 // validateHardwareWalletSignature validates the device signature during registration
 func (k Keeper) validateHardwareWalletSignature(address, deviceID string, signature []byte) error {
-	if len(signature) == 0 {
+	pubKey, sig, err := parseSecpSignature(signature)
+	if err != nil {
+		return err
+	}
+
+	digest := sha256.Sum256([]byte("aura-hww:" + address + ":" + deviceID))
+	if !pubKey.VerifySignature(digest[:], sig) {
 		return types.ErrInvalidDeviceSignature
 	}
 
-	// In a production implementation, this would:
-	// 1. Verify the signature using the device's public key
-	// 2. Check that the signature is over the expected message (address + deviceID)
-	// 3. Validate the signature format based on the hardware wallet type
-
-	// For this implementation, we perform basic validation
-	if len(signature) < 64 {
-		return types.ErrInvalidDeviceSignature
+	if err := ensureAddressMatchesPubKey(address, pubKey); err != nil {
+		return err
 	}
 
 	k.logger.Info("validated hardware wallet signature",
@@ -158,13 +161,17 @@ func (k Keeper) validateHardwareWalletSignature(address, deviceID string, signat
 
 // validateLedgerSignature validates a Ledger device signature
 func (k Keeper) validateLedgerSignature(txData, signature []byte, address string) error {
-	// In production, this would:
-	// 1. Verify the signature using Ledger's specific signature format
-	// 2. Check the transaction hash
-	// 3. Validate against the registered address
+	pubKey, sig, err := parseSecpSignature(signature)
+	if err != nil {
+		return err
+	}
 
-	if len(signature) < 64 {
+	txDigest := sha256.Sum256(txData)
+	if !pubKey.VerifySignature(txDigest[:], sig) {
 		return types.ErrInvalidDeviceSignature
+	}
+	if err := ensureAddressMatchesPubKey(address, pubKey); err != nil {
+		return err
 	}
 
 	k.logger.Info("validated Ledger signature",
@@ -219,6 +226,30 @@ func (k Keeper) validateColdCardSignature(txData, signature []byte, address stri
 		"tx_size", len(txData),
 	)
 
+	return nil
+}
+
+// parseSecpSignature expects a compressed secp256k1 pubkey (33 bytes) followed by a 64-byte signature.
+func parseSecpSignature(signature []byte) (*secp256k1.PubKey, []byte, error) {
+	if len(signature) != 97 {
+		return nil, nil, types.ErrInvalidDeviceSignature
+	}
+	pubKeyBytes := signature[:33]
+	sig := signature[33:]
+	if len(sig) != 64 {
+		return nil, nil, types.ErrInvalidDeviceSignature
+	}
+
+	pubKey := &secp256k1.PubKey{Key: pubKeyBytes}
+	return pubKey, sig, nil
+}
+
+// ensureAddressMatchesPubKey confirms the bech32 account address matches the provided pubkey.
+func ensureAddressMatchesPubKey(address string, pubKey *secp256k1.PubKey) error {
+	accAddr := sdk.AccAddress(pubKey.Address())
+	if accAddr.String() != address {
+		return types.ErrInvalidDeviceSignature
+	}
 	return nil
 }
 

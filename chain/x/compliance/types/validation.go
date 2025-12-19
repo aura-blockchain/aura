@@ -2,11 +2,12 @@ package types
 
 import (
 	"fmt"
-	"regexp"
 	"strconv"
 	"strings"
 
 	sdkmath "cosmossdk.io/math"
+
+	commonvalidation "github.com/aequitas/aura/chain/x/common/validation"
 )
 
 // ValidateParams validates ComplianceParams
@@ -230,22 +231,10 @@ func validateBlockedJurisdictions(jurisdictions []string) error {
 	return nil
 }
 
-// ValidateJurisdictionCode validates ISO 3166-1 alpha-2 country codes
-// Accepts 2-letter codes and optionally extended formats like "US-NY" for subdivisions
+// ValidateJurisdictionCode validates ISO 3166-1 alpha-2 country codes.
+// Delegates to the shared common validation helper to keep format rules consistent project-wide.
 func ValidateJurisdictionCode(code string) error {
-	code = strings.TrimSpace(code)
-	if code == "" {
-		return fmt.Errorf("jurisdiction code cannot be empty")
-	}
-
-	// Allow ISO 3166-1 alpha-2 (2 letters) or extended formats like "US-NY"
-	// Pattern: 2 uppercase letters, optionally followed by dash and 2+ alphanumeric chars
-	validPattern := regexp.MustCompile(`^[A-Z]{2}(-[A-Z0-9]{2,})?$`)
-	if !validPattern.MatchString(code) {
-		return fmt.Errorf("invalid jurisdiction code %s: must be 2-letter ISO code (e.g., 'US') or extended format (e.g., 'US-NY')", code)
-	}
-
-	return nil
+	return commonvalidation.ValidateJurisdictionCode(code)
 }
 
 // validateTaxYearEndFormat validates tax year end format (MM-DD)
@@ -505,11 +494,11 @@ func DefaultParams() ComplianceParams {
 		SanctionsLists:               []string{},
 		ScreeningCacheHours:          24,
 		// Rate limiting defaults (DoS protection)
-		RateLimitWindowSeconds:       3600,  // 1 hour window
-		SanctionsScreeningLimit:      100,   // 100 screenings per hour
-		KycVerificationLimit:         50,    // 50 verifications per hour
-		AmlProfileQueryLimit:         200,   // 200 profile queries per hour
-		TaxReportGenerationLimit:     10,    // 10 reports per hour (expensive operation)
-		DefaultQueryLimit:            1000,  // 1000 general queries per hour
+		RateLimitWindowSeconds:   3600, // 1 hour window
+		SanctionsScreeningLimit:  100,  // 100 screenings per hour
+		KycVerificationLimit:     50,   // 50 verifications per hour
+		AmlProfileQueryLimit:     200,  // 200 profile queries per hour
+		TaxReportGenerationLimit: 10,   // 10 reports per hour (expensive operation)
+		DefaultQueryLimit:        1000, // 1000 general queries per hour
 	}
 }

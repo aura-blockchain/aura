@@ -3,9 +3,12 @@ package keeper
 import (
 	"context"
 
+	errorsmod "cosmossdk.io/errors"
 	"github.com/aequitas/aura/chain/x/contractregistry/types"
 	pb "github.com/aequitas/aura/proto/aura/contractregistry/v1beta1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 var _ pb.MsgServer = msgServer{}
@@ -26,7 +29,7 @@ func (ms msgServer) RegisterContract(goCtx context.Context, msg *pb.MsgRegisterC
 
 	// Authorization check - signer must be creator or authority
 	if msg.Signer != msg.Creator && msg.Signer != ms.GetAuthority() {
-		return nil, types.ErrUnauthorized
+		return nil, mapAuthzError(types.ErrUnauthorized)
 	}
 
 	// Check max contracts per creator limit
@@ -79,7 +82,7 @@ func (ms msgServer) UpdateContractMetadata(goCtx context.Context, msg *pb.MsgUpd
 
 	// Update metadata - pass pointer to value type
 	if err := ms.Keeper.UpdateContractMetadata(ctx, msg.ContractAddress, msg.Signer, &msg.Metadata); err != nil {
-		return nil, err
+		return nil, mapAuthzError(err)
 	}
 
 	return &pb.MsgUpdateContractMetadataResponse{
@@ -93,7 +96,7 @@ func (ms msgServer) UpdateSecurityPolicy(goCtx context.Context, msg *pb.MsgUpdat
 
 	// Update security policy - pass pointer to value type
 	if err := ms.Keeper.UpdateSecurityPolicy(ctx, msg.ContractAddress, msg.Signer, &msg.SecurityPolicy); err != nil {
-		return nil, err
+		return nil, mapAuthzError(err)
 	}
 
 	return &pb.MsgUpdateSecurityPolicyResponse{
@@ -114,17 +117,17 @@ func (ms msgServer) PauseContract(goCtx context.Context, msg *pb.MsgPauseContrac
 	// Check if pause is allowed by security policy
 	// SecurityPolicy is a value type, always present
 	if !info.SecurityPolicy.AllowPause {
-		return nil, types.ErrUnauthorized
+		return nil, mapAuthzError(types.ErrUnauthorized)
 	}
 
 	// Verify authorization - must be admin or authority
 	if info.Admin != msg.Signer && msg.Signer != ms.GetAuthority() {
-		return nil, types.ErrUnauthorized
+		return nil, mapAuthzError(types.ErrUnauthorized)
 	}
 
 	// Pause contract
 	if err := ms.Keeper.PauseContract(ctx, msg.ContractAddress, msg.Signer, msg.Reason); err != nil {
-		return nil, err
+		return nil, mapAuthzError(err)
 	}
 
 	return &pb.MsgPauseContractResponse{
@@ -149,7 +152,7 @@ func (ms msgServer) UnpauseContract(goCtx context.Context, msg *pb.MsgUnpauseCon
 
 	// Unpause contract
 	if err := ms.Keeper.UnpauseContract(ctx, msg.ContractAddress, msg.Signer); err != nil {
-		return nil, err
+		return nil, mapAuthzError(err)
 	}
 
 	return &pb.MsgUnpauseContractResponse{
@@ -169,15 +172,30 @@ func (ms msgServer) DeprecateContract(goCtx context.Context, msg *pb.MsgDeprecat
 
 	// Verify authorization - must be admin or authority
 	if info.Admin != msg.Signer && msg.Signer != ms.GetAuthority() {
-		return nil, types.ErrUnauthorized
+		return nil, mapAuthzError(types.ErrUnauthorized)
 	}
 
 	// Deprecate contract
 	if err := ms.Keeper.DeprecateContract(ctx, msg.ContractAddress, msg.Signer, msg.Reason, msg.MigrationTarget); err != nil {
-		return nil, err
+		return nil, mapAuthzError(err)
 	}
 
 	return &pb.MsgDeprecateContractResponse{
 		Success: true,
 	}, nil
+}
+
+func mapAuthzError(err error) error {
+	if err == nil {
+		return nil
+	}
+
+	if errorsmod.IsOf(err, types.ErrUnauthorized) ||
+		errorsmod.IsOf(err, types.ErrNotContractAdmin) ||
+		errorsmod.IsOf(err, types.ErrNotContractCreator) ||
+		errorsmod.IsOf(err, types.ErrInvalidSigner) {
+		return status.Error(codes.PermissionDenied, err.Error())
+	}
+
+	return err
 }

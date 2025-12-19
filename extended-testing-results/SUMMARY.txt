@@ -1,0 +1,24 @@
+=== AURA Blockchain Soak Test Summary ===
+==========================================
+
+Test Duration:      2 hours
+Start Time:         2025-12-14 11:57:19
+End Time:           2025-12-14 14:02:08
+
+=== Block Production ===
+Start Height:       4214
+End Height:         6397
+Total Blocks:       2183
+Average Block Time: 3.430s
+
+=== Health Checks ===
+Total Checks:       23
+Failed Checks:      0
+Uptime:             100.00%
+
+=== Results Location ===
+Summary:            /home/hudson/blockchain-projects/aura/extended-testing-results/SUMMARY.txt
+Detailed Log:       /home/hudson/blockchain-projects/aura/extended-testing-results/soak-test.log
+Metrics:            /home/hudson/blockchain-projects/aura/extended-testing-results/metrics/
+Snapshots:          /home/hudson/blockchain-projects/aura/extended-testing-results/snapshots/
+

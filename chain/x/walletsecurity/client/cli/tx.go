@@ -3,6 +3,7 @@ package cli
 import (
 	"encoding/hex"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -149,14 +150,14 @@ Flags:
 				for _, pair := range pairs {
 					kv := strings.SplitN(pair, "=", 2)
 					if len(kv) == 2 {
-						weight, err := strconv.ParseInt(kv[1], 10, 32)
-						if err != nil {
-							return fmt.Errorf("invalid weight for %s: %w", kv[0], err)
+							weight, err := strconv.ParseInt(kv[1], 10, 32)
+							if err != nil {
+								return fmt.Errorf("invalid weight for %s: %w", kv[0], err)
+							}
+							signerWeights[kv[0]] = clampInt64ToInt32(weight)
 						}
-						signerWeights[kv[0]] = int32(weight)
 					}
 				}
-			}
 
 			weightThreshold, _ := cmd.Flags().GetInt32("weight-threshold")
 			timeLockStr, _ := cmd.Flags().GetString("time-lock")
@@ -166,16 +167,16 @@ Flags:
 				if err != nil {
 					return fmt.Errorf("invalid time-lock: %w", err)
 				}
-				timeLock = &types.Duration{
-					Seconds: int64(d.Seconds()),
-					Nanos:   int32(d.Nanoseconds() % 1e9),
+					timeLock = &types.Duration{
+						Seconds: int64(d.Seconds()),
+						Nanos:   clampNanosecondsToInt32(d.Nanoseconds()),
+					}
 				}
-			}
 
 			msg := &v1beta1.MsgCreateMultiSigWallet{
 				Creator:         clientCtx.GetFromAddress().String(),
 				Signers:         signers,
-				Threshold:       int32(threshold),
+					Threshold:       clampInt64ToInt32(threshold),
 				SignerWeights:   signerWeights,
 				WeightThreshold: weightThreshold,
 			}
@@ -252,10 +253,10 @@ The delay specifies how long to wait before recovery can be executed after thres
 
 			walletID := args[0]
 			guardianAddrs := strings.Split(args[1], ",")
-			threshold, err := strconv.ParseInt(args[2], 10, 32)
-			if err != nil {
-				return fmt.Errorf("invalid threshold: %w", err)
-			}
+				threshold, err := strconv.ParseInt(args[2], 10, 32)
+				if err != nil {
+					return fmt.Errorf("invalid threshold: %w", err)
+				}
 
 			delay, err := time.ParseDuration(args[3])
 			if err != nil {
@@ -273,12 +274,12 @@ The delay specifies how long to wait before recovery can be executed after thres
 			msg := &v1beta1.MsgConfigureSocialRecovery{
 				WalletId:          walletID,
 				Guardians:         guardians,
-				RecoveryThreshold: int32(threshold),
-				RecoveryDelay: &types.Duration{
-					Seconds: int64(delay.Seconds()),
-					Nanos:   int32(delay.Nanoseconds() % 1e9),
-				},
-			}
+					RecoveryThreshold: clampInt64ToInt32(threshold),
+					RecoveryDelay: &types.Duration{
+						Seconds: int64(delay.Seconds()),
+						Nanos:   clampNanosecondsToInt32(delay.Nanoseconds()),
+					},
+				}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
 		},
@@ -511,20 +512,20 @@ Examples:
 				return fmt.Errorf("invalid auto-lock: %w", err)
 			}
 
-			inactivityThreshold, err := strconv.ParseInt(args[3], 10, 32)
-			if err != nil {
-				return fmt.Errorf("invalid inactivity threshold: %w", err)
-			}
+				inactivityThreshold, err := strconv.ParseInt(args[3], 10, 32)
+				if err != nil {
+					return fmt.Errorf("invalid inactivity threshold: %w", err)
+				}
 
 			msg := &v1beta1.MsgConfigureSession{
 				WalletId: args[0],
-				TimeoutDuration: &types.Duration{
-					Seconds: int64(timeout.Seconds()),
-					Nanos:   int32(timeout.Nanoseconds() % 1e9),
-				},
-				AutoLockEnabled:            autoLock,
-				InactivityThresholdSeconds: int32(inactivityThreshold),
-			}
+					TimeoutDuration: &types.Duration{
+						Seconds: int64(timeout.Seconds()),
+						Nanos:   clampNanosecondsToInt32(timeout.Nanoseconds()),
+					},
+					AutoLockEnabled:            autoLock,
+					InactivityThresholdSeconds: clampInt64ToInt32(inactivityThreshold),
+				}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
 		},
@@ -866,4 +867,24 @@ Algorithms: EIP55, BECH32, BASE58CHECK
 
 	flags.AddTxFlagsToCmd(cmd)
 	return cmd
+}
+
+func clampInt64ToInt32(v int64) int32 {
+	if v > math.MaxInt32 {
+		return math.MaxInt32
+	}
+	if v < math.MinInt32 {
+		return math.MinInt32
+	}
+	return int32(v)
+}
+
+func clampNanosecondsToInt32(ns int64) int32 {
+	if ns > math.MaxInt32 {
+		return math.MaxInt32
+	}
+	if ns < math.MinInt32 {
+		return math.MinInt32
+	}
+	return int32(ns)
 }

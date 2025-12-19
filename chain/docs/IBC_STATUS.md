@@ -184,9 +184,9 @@ When adding IBC support to a new module in the future:
 ### Current Test Coverage
 
 IBC handler error returns are tested in:
-- `x/identity/ibc_module_test.go` (to be added)
-- `x/bridge/ibc_module_test.go` (to be added)
-- `x/compliance/ibc_module_test.go` (to be added)
+- `chain/x/identity/ibc_module_test.go`
+- `chain/x/bridge/ibc_module_test.go`
+- `chain/x/compliance/ibc_module_test.go`
 
 ## References
 
@@ -201,6 +201,6 @@ For questions about IBC status or roadmap, please open an issue on the Aura GitH
 
 ---
 
-**Last Updated:** 2025-12-09
+**Last Updated:** 2025-12-18
 **Status:** IBC Disabled (Testnet)
 **Target Enablement:** v2.0 Mainnet (Q1 2027)

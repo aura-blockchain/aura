@@ -2,12 +2,17 @@ package keeper
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
-	incidentresponsepb "github.com/aequitas/aura/proto/aura/incidentresponse/v1beta1"
 	"github.com/aequitas/aura/chain/x/incidentresponse/types"
+	incidentresponsepb "github.com/aequitas/aura/proto/aura/incidentresponse/v1beta1"
+	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	metrics "github.com/hashicorp/go-metrics"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 var _ incidentresponsepb.MsgServer = protoMsgServer{}
@@ -118,7 +123,7 @@ func (ms protoMsgServer) RequestChainPause(goCtx context.Context, msg *incidentr
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	if msg == nil {
-		return nil, fmt.Errorf("empty request")
+		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
 	// Validate input
@@ -143,7 +148,7 @@ func (ms protoMsgServer) RequestChainPause(goCtx context.Context, msg *incidentr
 		duration,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to request chain pause: %w", err)
+		return nil, mapUnauthorizedPause(err)
 	}
 
 	// Emit event
@@ -176,7 +181,7 @@ func (ms protoMsgServer) ResumeChain(goCtx context.Context, msg *incidentrespons
 
 	err := ms.keeper.ResumeChain(ctx, msg.ResumedBy, msg.Reason)
 	if err != nil {
-		return nil, fmt.Errorf("failed to resume chain: %w", err)
+		return nil, mapUnauthorizedPause(err)
 	}
 
 	// Emit event
@@ -360,4 +365,18 @@ func (ms protoMsgServer) TriggerInsuranceClaim(goCtx context.Context, msg *incid
 	return &incidentresponsepb.MsgTriggerInsuranceClaimResponse{
 		ClaimId: claimID,
 	}, nil
+}
+
+func mapUnauthorizedPause(err error) error {
+	if errors.Is(err, types.ErrUnauthorizedPause) {
+		telemetry.IncrCounterWithLabels(
+			[]string{"incidentresponse", "auth_denied"},
+			1,
+			[]metrics.Label{
+				{Name: "reason", Value: "pause_unauthorized"},
+			},
+		)
+		return status.Error(codes.PermissionDenied, err.Error())
+	}
+	return fmt.Errorf("failed to process pause action: %w", err)
 }

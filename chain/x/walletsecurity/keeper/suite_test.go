@@ -17,7 +17,11 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/aequitas/aura/chain/x/walletsecurity/types"
+
+	"sync"
 )
+
+var bech32Once sync.Once
 
 // KeeperTestSuite is the base test suite for keeper tests
 type KeeperTestSuite struct {
@@ -46,6 +50,14 @@ func (suite *KeeperTestSuite) SetupTest() {
 		Time:   time.Now(),
 	}
 	sdkCtx := sdk.NewContext(cms, header, false, log.NewNopLogger())
+
+	bech32Once.Do(func() {
+		cfg := sdk.GetConfig()
+		cfg.SetBech32PrefixForAccount("aura", "aurapub")
+		cfg.SetBech32PrefixForValidator("auravaloper", "auravaloperpub")
+		cfg.SetBech32PrefixForConsensusNode("auravalcons", "auravalconspub")
+		cfg.Seal()
+	})
 
 	// Create keeper
 	storeService := runtime.NewKVStoreService(storeKey)

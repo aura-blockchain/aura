@@ -1,0 +1,9 @@
+{
+  "appId": "com.aura.wallet",
+  "appName": "Aura Wallet",
+  "webDir": "../../web",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  }
+}

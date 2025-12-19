@@ -3,8 +3,9 @@ package keeper
 import (
 	"context"
 	"fmt"
+	stdmath "math"
 
-	"cosmossdk.io/math"
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/aequitas/aura/chain/x/common/determinism"
@@ -35,7 +36,7 @@ type AnomalyScore struct {
 }
 
 // DetectTransactionAnomaly detects anomalies in transaction patterns
-func (k Keeper) DetectTransactionAnomaly(ctx context.Context, walletID, recipient string, amount math.Int) (*AnomalyScore, error) {
+func (k Keeper) DetectTransactionAnomaly(ctx context.Context, walletID, recipient string, amount sdkmath.Int) (*AnomalyScore, error) {
 	score := &AnomalyScore{
 		Threshold: AnomalyThresholdBPS,
 		Factors:   make(map[string]uint64),
@@ -81,7 +82,7 @@ func (k Keeper) DetectTransactionAnomaly(ctx context.Context, walletID, recipien
 	return score, nil
 }
 
-func (k Keeper) checkUnusualAmount(ctx context.Context, walletID string, amount math.Int) uint64 {
+func (k Keeper) checkUnusualAmount(ctx context.Context, walletID string, amount sdkmath.Int) uint64 {
 	// Get historical transaction amounts for this wallet
 	avg, stdDev := k.getAmountStatistics(ctx, walletID)
 
@@ -101,15 +102,15 @@ func (k Keeper) checkUnusualAmount(ctx context.Context, walletID string, amount 
 
 	// Calculate z-score scaled by 10000 to avoid decimals
 	// zScore = (absDiff * 10000) / stdDev
-	zScoreScaled := absDiff.Mul(math.NewInt(10000)).Quo(stdDev)
+	zScoreScaled := absDiff.Mul(sdkmath.NewInt(10000)).Quo(stdDev)
 
 	// Normalize to 0-10000 basis points range
 	// Original formula: min(zScore/3.0, 1.0)
 	// Convert to basis points: min((zScoreScaled * 10000) / 30000, 10000)
-	anomalyScoreBPS := zScoreScaled.Mul(math.NewInt(10000)).Quo(math.NewInt(30000))
+	anomalyScoreBPS := zScoreScaled.Mul(sdkmath.NewInt(10000)).Quo(sdkmath.NewInt(30000))
 
 	// Cap at BasisPointsMax (10000)
-	if anomalyScoreBPS.GT(math.NewInt(int64(BasisPointsMax))) {
+	if anomalyScoreBPS.GT(sdkmath.NewInt(int64(BasisPointsMax))) {
 		return BasisPointsMax
 	}
 
@@ -149,7 +150,7 @@ func (k Keeper) checkTransactionFrequency(ctx context.Context, walletID string) 
 
 	var count int64
 	if countBytes != nil {
-		count = int64(sdk.BigEndianToUint64(countBytes))
+		count = clampUint64ToInt64(sdk.BigEndianToUint64(countBytes))
 	}
 
 	count++
@@ -179,10 +180,17 @@ func (k Keeper) checkUnusualTime(ctx context.Context, walletID string) uint64 {
 	return 0
 }
 
-func (k Keeper) getAmountStatistics(ctx context.Context, walletID string) (math.Int, math.Int) {
+func clampUint64ToInt64(u uint64) int64 {
+	if u > stdmath.MaxInt64 {
+		return stdmath.MaxInt64
+	}
+	return int64(u)
+}
+
+func (k Keeper) getAmountStatistics(ctx context.Context, walletID string) (sdkmath.Int, sdkmath.Int) {
 	// Simplified: return placeholder statistics
 	// In production, calculate from transaction history
-	return math.NewInt(1000), math.NewInt(500)
+	return sdkmath.NewInt(1000), sdkmath.NewInt(500)
 }
 
 func (k Keeper) recordAnomaly(ctx context.Context, walletID string, score *AnomalyScore) error {

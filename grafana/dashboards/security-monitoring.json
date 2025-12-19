@@ -23,6 +23,17 @@
       "stack": true
     },
     {
+      "id": 15,
+      "title": "Alerts Generated (24h)",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "increase(aura_monitoring_alerts_total[24h])",
+          "legendFormat": "Alerts"
+        }
+      ]
+    },
+    {
       "id": 2,
       "title": "Security Events by Type",
       "type": "piechart",
@@ -182,6 +193,42 @@
         {
           "expr": "increase(walletsecurity_dust_filter_blocked_total[5m])",
           "legendFormat": "Blocked"
+        }
+      ]
+    },
+    {
+      "id": 31,
+      "title": "Auth Denials (Identity - 5m)",
+      "type": "graph",
+      "stack": true,
+      "targets": [
+        {
+          "expr": "sum by(action)(increase(identity_auth_denied{action!=\"\"}[5m]))",
+          "legendFormat": "{{action}}"
+        }
+      ]
+    },
+    {
+      "id": 32,
+      "title": "Auth Denials (IncidentResponse - 5m)",
+      "type": "graph",
+      "stack": true,
+      "targets": [
+        {
+          "expr": "sum by(reason)(increase(incidentresponse_auth_denied{reason!=\"\"}[5m]))",
+          "legendFormat": "{{reason}}"
+        }
+      ]
+    },
+    {
+      "id": 33,
+      "title": "Auth Denials (EconomicSecurity - 5m)",
+      "type": "graph",
+      "stack": true,
+      "targets": [
+        {
+          "expr": "sum by(action)(increase(economicsecurity_auth_denied{action!=\"\"}[5m]))",
+          "legendFormat": "{{action}}"
         }
       ]
     }

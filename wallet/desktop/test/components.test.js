@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Wallet from '../src/components/Wallet';
 import Send from '../src/components/Send';
@@ -30,25 +30,33 @@ describe('Component Tests', () => {
   });
 
   describe('Wallet Component', () => {
-    test('should render wallet balance', () => {
+    test('should render wallet balance', async () => {
       const mockWalletData = {
         address: 'aura1test123',
         publicKey: '0x123456'
       };
 
-      render(<Wallet walletData={mockWalletData} />);
+      await act(async () => {
+        render(<Wallet walletData={mockWalletData} />);
+        await flushAsync();
+      });
 
-      expect(screen.getByText(/balance/i)).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { name: /balance/i })).toBeInTheDocument();
+        expect(screen.getByText(/no balance found/i)).toBeInTheDocument();
+      });
     });
 
-    test('should display loading state', () => {
-      const mockWalletData = {
-        address: 'aura1test123'
-      };
+    test('should display loading state', async () => {
+      await act(async () => {
+        render(<Wallet />);
+      });
 
-      render(<Wallet walletData={mockWalletData} />);
+      expect(screen.getByText(/loading balance/i)).toBeInTheDocument();
 
-      expect(screen.getByText(/loading/i)).toBeInTheDocument();
+      await act(async () => {
+        await flushAsync();
+      });
     });
   });
 
@@ -74,8 +82,12 @@ describe('Component Tests', () => {
       const recipientInput = screen.getByPlaceholderText(/aura1.../i);
       const previewButton = screen.getByText(/preview/i);
 
-      await userEvent.type(recipientInput, 'invalid-address');
-      fireEvent.click(previewButton);
+      await act(async () => {
+        await userEvent.type(recipientInput, 'invalid-address');
+      });
+      await act(async () => {
+        fireEvent.click(previewButton);
+      });
 
       await waitFor(() => {
         expect(screen.getByText(/invalid/i)).toBeInTheDocument();
@@ -157,17 +169,21 @@ describe('Component Tests', () => {
   });
 
   describe('Settings Component', () => {
-    test('should render settings', () => {
+    test('should render settings', async () => {
       render(<Settings />);
 
-      expect(screen.getByText(/network settings/i)).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText(/network settings/i)).toBeInTheDocument();
+      });
     });
 
     test('should save settings', async () => {
       render(<Settings />);
 
       const saveButton = screen.getByText(/save settings/i);
-      fireEvent.click(saveButton);
+      await act(async () => {
+        fireEvent.click(saveButton);
+      });
 
       await waitFor(() => {
         expect(screen.getByText(/saved/i)).toBeInTheDocument();
@@ -175,3 +191,4 @@ describe('Component Tests', () => {
     });
   });
 });
+const flushAsync = () => new Promise((resolve) => setTimeout(resolve, 0));

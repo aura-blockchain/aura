@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"math"
 	"regexp"
 	"strings"
 	"time"
@@ -28,6 +29,13 @@ const (
 	VerificationStatusExpired    VerificationStatus = "expired"
 	VerificationStatusRevoked    VerificationStatus = "revoked"
 )
+
+func safeUint64ToInt64(u uint64) int64 {
+	if u > math.MaxInt64 {
+		return math.MaxInt64
+	}
+	return int64(u)
+}
 
 // VerificationLevel represents the depth of verification
 type VerificationLevel int
@@ -330,9 +338,9 @@ func (k Keeper) analyzeSourceCode(sourceCode string) SourceCodeAnalysis {
 func (k Keeper) detectReentrancyRisk(sourceCode string) bool {
 	// Pattern: external call followed by state change
 	patterns := []string{
-		`\.call\{.*\}\([^)]*\)[\s\S]*?=`,   // call followed by assignment
-		`\.transfer\([^)]*\)[\s\S]*?=`,     // transfer followed by assignment
-		`\.send\([^)]*\)[\s\S]*?=`,         // send followed by assignment
+		`\.call\{.*\}\([^)]*\)[\s\S]*?=`, // call followed by assignment
+		`\.transfer\([^)]*\)[\s\S]*?=`,   // transfer followed by assignment
+		`\.send\([^)]*\)[\s\S]*?=`,       // send followed by assignment
 	}
 
 	for _, pattern := range patterns {
@@ -638,10 +646,10 @@ func (k Keeper) GetVerificationResult(ctx sdk.Context, contractAddr string) (*Ve
 	result.Level = VerificationLevel(bz[1])
 
 	// Parse timestamp
-	result.Timestamp = time.Unix(int64(binary.BigEndian.Uint64(bz[2:10])), 0)
+	result.Timestamp = time.Unix(safeUint64ToInt64(binary.BigEndian.Uint64(bz[2:10])), 0)
 
 	// Parse expiration
-	result.ExpirationTime = time.Unix(int64(binary.BigEndian.Uint64(bz[10:18])), 0)
+	result.ExpirationTime = time.Unix(safeUint64ToInt64(binary.BigEndian.Uint64(bz[10:18])), 0)
 
 	// Parse length-prefixed strings
 	offset := 18

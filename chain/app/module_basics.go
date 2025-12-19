@@ -23,6 +23,7 @@ import (
 
 	// Aura modules
 	aurabindings "github.com/aequitas/aura/chain/x/aura-bindings"
+	"github.com/aequitas/aura/chain/x/aiassistant"
 	"github.com/aequitas/aura/chain/x/bridge"
 	bridgetypes "github.com/aequitas/aura/chain/x/bridge/types"
 	compliance "github.com/aequitas/aura/chain/x/compliance"
@@ -93,6 +94,7 @@ var ModuleBasics = module.NewBasicManager(
 	incidentresponse.AppModuleBasic{},
 	validatorsecurity.AppModuleBasic{},
 	privacy.AppModuleBasic{},
+	aiassistant.AppModuleBasic{},
 )
 
 // AccountAddressCodec returns the bech32 codec for account addresses using the

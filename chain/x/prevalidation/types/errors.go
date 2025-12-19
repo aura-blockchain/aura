@@ -23,4 +23,5 @@ var (
 	ErrMaxValidationAttempts       = errorsmod.Register("prevalidation", 15, "maximum validation attempts exceeded")
 	ErrInvalidStatus               = errorsmod.Register("prevalidation", 16, "invalid transaction status")
 	ErrUnauthorized                = errorsmod.Register("prevalidation", 17, "unauthorized operation")
+	ErrSanctionedSender            = errorsmod.Register("prevalidation", 18, "sender is sanctioned")
 )

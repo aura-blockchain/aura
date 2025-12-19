@@ -1,4 +1,6 @@
 import * as esbuild from 'esbuild';
+import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfill';
+import { NodeModulesPolyfillPlugin } from '@esbuild-plugins/node-modules-polyfill';
 import { minify } from 'html-minifier-terser';
 import { readFileSync, writeFileSync, mkdirSync, copyFileSync, existsSync } from 'fs';
 import { join } from 'path';
@@ -17,7 +19,15 @@ const buildOptions = {
   platform: 'browser',
   legalComments: 'none',
   treeShaking: true,
+  plugins: [
+    NodeGlobalsPolyfillPlugin({
+      process: true,
+      buffer: true,
+    }),
+    NodeModulesPolyfillPlugin(),
+  ],
   define: {
+    global: 'globalThis',
     'process.env.NODE_ENV': '"production"',
   },
 };

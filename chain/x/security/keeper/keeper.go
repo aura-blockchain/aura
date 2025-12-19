@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"cosmossdk.io/log"
+	sdkmath "cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -199,10 +200,38 @@ func (k Keeper) CheckSpendingLimit(ctx sdk.Context, walletID, denom, amount stri
 		return nil // Different denom, no limit applies
 	}
 
-	// Check daily limit (simple string comparison for now)
-	// In production, this should properly parse and compare math.Int values
-	if limit.DailyLimit != "" && amount > limit.DailyLimit {
-		return fmt.Errorf("daily spending limit exceeded for wallet %s: requested %s, limit %s", walletID, amount, limit.DailyLimit)
+	requested, ok := sdkmath.NewIntFromString(amount)
+	if !ok {
+		return fmt.Errorf("invalid requested amount %q", amount)
+	}
+	if !requested.IsPositive() {
+		return fmt.Errorf("requested amount must be positive")
+	}
+
+	// Parse configured daily limit and apply against current spend
+	if limit.DailyLimit != "" {
+		dailyLimit, ok := sdkmath.NewIntFromString(limit.DailyLimit)
+		if !ok {
+			return fmt.Errorf("invalid daily limit configured for wallet %s: %s", walletID, limit.DailyLimit)
+		}
+
+		current := sdkmath.ZeroInt()
+		if limit.CurrentDailySpent != "" {
+			current, ok = sdkmath.NewIntFromString(limit.CurrentDailySpent)
+			if !ok {
+				return fmt.Errorf("invalid current daily spent value for wallet %s: %s", walletID, limit.CurrentDailySpent)
+			}
+		}
+
+		if current.Add(requested).GT(dailyLimit) {
+			return fmt.Errorf(
+				"daily spending limit exceeded for wallet %s: current %s + requested %s > limit %s",
+				walletID,
+				current.String(),
+				requested.String(),
+				dailyLimit.String(),
+			)
+		}
 	}
 
 	return nil

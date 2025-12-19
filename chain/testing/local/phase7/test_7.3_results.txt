@@ -1,9 +1,10 @@
 =================================================================
 Phase 7.3: Long-Running Stability Test Results
 =================================================================
-Timestamp: Sat Dec 13 02:52:24 PM UTC 2025
-Duration: .16 hours
-Transaction Rate: 5 tx/min
+Timestamp: Thu Dec 18 06:51:08 PM UTC 2025
+Duration: .06 hours
+Transaction Rate: 1 tx/min
+Port Offset Base: 42000
 
 
 Building aurad binary
@@ -18,7 +19,7 @@ Initializing node1...
     "original_path": "~/.aura-soak-test/node1",
     "resolved_path": "~/.aura-soak-test/node1"
   },
-  "timestamp": "2025-12-13T14:52:24Z",
+  "timestamp": "2025-12-18T18:51:08Z",
   "type": "path_validated"
 }
 [SECURITY] {
@@ -26,7 +27,7 @@ Initializing node1...
     "original_path": "~/.aura-soak-test/node1",
     "resolved_path": "~/.aura-soak-test/node1"
   },
-  "timestamp": "2025-12-13T14:52:24Z",
+  "timestamp": "2025-12-18T18:51:08Z",
   "type": "path_validated"
 }
 Initializing Aura node...
@@ -51,30 +52,30 @@ Created directory: /home/hudson/.aura-soak-test/node1/logs (permissions: 700)
 ║   - Enter on websites                                                ║
 ╚══════════════════════════════════════════════════════════════════════╝
 
-   1. denial
-   2. try
-   3. toast
-   4. skin
-   5. undo
-   6. spatial
-   7. prosper
-   8. slim
-   9. battle
-  10. ticket
-  11. chat
-  12. museum
-  13. pilot
-  14. recipe
-  15. gospel
-  16. loyal
-  17. neck
-  18. canal
-  19. process
-  20. zoo
-  21. current
-  22. convince
-  23. describe
-  24. stumble
+   1. midnight
+   2. loud
+   3. harsh
+   4. bounce
+   5. profit
+   6. profit
+   7. flight
+   8. vault
+   9. donor
+  10. junk
+  11. limit
+  12. cereal
+  13. ordinary
+  14. document
+  15. ribbon
+  16. refuse
+  17. goose
+  18. lens
+  19. sting
+  20. viable
+  21. display
+  22. damage
+  23. monkey
+  24. credit
 
 Press Enter after you have safely recorded your mnemonic...
 Created private validator key: /home/hudson/.aura-soak-test/node1/config/priv_validator_key.json
@@ -87,9 +88,9 @@ Node initialized successfully!
 Configuration files created in: /home/hudson/.aura-soak-test/node1
 
 Validator Addresses:
-  Account:   aura1y23trc4r5y7ggp6mlu2v4603p7jtpldyz64jhq
-  Operator:  auravaloper1y23trc4r5y7ggp6mlu2v4603p7jtpldyegy607
-  Consensus: auravalcons1y23trc4r5y7ggp6mlu2v4603p7jtpldydmhxrl
+  Account:   aura1vqg30kljm74r32hketfaqrxrch7fp9drymjrmh
+  Operator:  auravaloper1vqg30kljm74r32hketfaqrxrch7fp9drlfrtrf
+  Consensus: auravalcons1vqg30kljm74r32hketfaqrxrch7fp9drt6sh0g
 
 To start the node, run:
   aurad start
@@ -99,7 +100,7 @@ Initializing node2...
     "original_path": "~/.aura-soak-test/node2",
     "resolved_path": "~/.aura-soak-test/node2"
   },
-  "timestamp": "2025-12-13T14:52:24Z",
+  "timestamp": "2025-12-18T18:51:09Z",
   "type": "path_validated"
 }
 [SECURITY] {
@@ -107,7 +108,7 @@ Initializing node2...
     "original_path": "~/.aura-soak-test/node2",
     "resolved_path": "~/.aura-soak-test/node2"
   },
-  "timestamp": "2025-12-13T14:52:24Z",
+  "timestamp": "2025-12-18T18:51:09Z",
   "type": "path_validated"
 }
 Initializing Aura node...
@@ -132,30 +133,30 @@ Created directory: /home/hudson/.aura-soak-test/node2/logs (permissions: 700)
 ║   - Enter on websites                                                ║
 ╚══════════════════════════════════════════════════════════════════════╝
 
-   1. border
-   2. emerge
-   3. share
-   4. weapon
-   5. caught
-   6. spot
-   7. basic
-   8. pepper
-   9. seminar
-  10. empower
-  11. noise
-  12. around
-  13. minute
-  14. radar
-  15. erode
-  16. radio
-  17. expose
-  18. swarm
-  19. thumb
-  20. clog
-  21. damage
-  22. focus
-  23. useful
-  24. tennis
+   1. notable
+   2. cause
+   3. alien
+   4. worth
+   5. track
+   6. arena
+   7. ability
+   8. position
+   9. undo
+  10. warrior
+  11. shrug
+  12. process
+  13. edit
+  14. arctic
+  15. extend
+  16. enhance
+  17. access
+  18. deny
+  19. earth
+  20. detail
+  21. round
+  22. recycle
+  23. bunker
+  24. monster
 
 Press Enter after you have safely recorded your mnemonic...
 Created private validator key: /home/hudson/.aura-soak-test/node2/config/priv_validator_key.json
@@ -168,9 +169,9 @@ Node initialized successfully!
 Configuration files created in: /home/hudson/.aura-soak-test/node2
 
 Validator Addresses:
-  Account:   aura175xu6up4v3eue6f8ntkwgzrdf8makz4jkup3vk
-  Operator:  auravaloper175xu6up4v3eue6f8ntkwgzrdf8makz4jdwse5g
-  Consensus: auravalcons175xu6up4v3eue6f8ntkwgzrdf8makz4jear9cf
+  Account:   aura17k5ve06mk6w6x0g7nf37lzsv7ww9zelca3ha8m
+  Operator:  auravaloper17k5ve06mk6w6x0g7nf37lzsv7ww9zelcxrx4l9
+  Consensus: auravalcons17k5ve06mk6w6x0g7nf37lzsv7ww9zelcjs4fny
 
 To start the node, run:
   aurad start
@@ -180,7 +181,7 @@ Initializing node3...
     "original_path": "~/.aura-soak-test/node3",
     "resolved_path": "~/.aura-soak-test/node3"
   },
-  "timestamp": "2025-12-13T14:52:24Z",
+  "timestamp": "2025-12-18T18:51:09Z",
   "type": "path_validated"
 }
 [SECURITY] {
@@ -188,7 +189,7 @@ Initializing node3...
     "original_path": "~/.aura-soak-test/node3",
     "resolved_path": "~/.aura-soak-test/node3"
   },
-  "timestamp": "2025-12-13T14:52:24Z",
+  "timestamp": "2025-12-18T18:51:09Z",
   "type": "path_validated"
 }
 Initializing Aura node...
@@ -213,30 +214,30 @@ Created directory: /home/hudson/.aura-soak-test/node3/logs (permissions: 700)
 ║   - Enter on websites                                                ║
 ╚══════════════════════════════════════════════════════════════════════╝
 
-   1. remind
-   2. sunny
-   3. garment
-   4. harvest
-   5. uphold
-   6. split
-   7. burger
-   8. fence
-   9. balcony
-  10. rail
-  11. bus
-  12. foot
-  13. salt
-  14. pluck
-  15. demand
-  16. tissue
-  17. atom
-  18. black
-  19. clerk
-  20. shoulder
-  21. shed
-  22. major
-  23. chuckle
-  24. shed
+   1. blue
+   2. upper
+   3. churn
+   4. body
+   5. rely
+   6. tonight
+   7. direct
+   8. return
+   9. enough
+  10. car
+  11. odor
+  12. flat
+  13. define
+  14. flee
+  15. chimney
+  16. album
+  17. item
+  18. math
+  19. beyond
+  20. museum
+  21. wheat
+  22. tonight
+  23. month
+  24. wrestle
 
 Press Enter after you have safely recorded your mnemonic...
 Created private validator key: /home/hudson/.aura-soak-test/node3/config/priv_validator_key.json
@@ -249,9 +250,9 @@ Node initialized successfully!
 Configuration files created in: /home/hudson/.aura-soak-test/node3
 
 Validator Addresses:
-  Account:   aura1dz8z24pfm9cvrgecgzjn0yreszzy2wrarfhahl
-  Operator:  auravaloper1dz8z24pfm9cvrgecgzjn0yreszzy2wracmx40p
-  Consensus: auravalcons1dz8z24pfm9cvrgecgzjn0yreszzy2wravg4frq
+  Account:   aura15m08zmqmatlymqchparpuzc8c2955lxz8q9lum
+  Operator:  auravaloper15m08zmqmatlymqchparpuzc8c2955lxzuj5hy9
+  Consensus: auravalcons15m08zmqmatlymqchparpuzc8c2955lxzgp8tgy
 
 To start the node, run:
   aurad start
@@ -261,7 +262,7 @@ Initializing node4...
     "original_path": "~/.aura-soak-test/node4",
     "resolved_path": "~/.aura-soak-test/node4"
   },
-  "timestamp": "2025-12-13T14:52:25Z",
+  "timestamp": "2025-12-18T18:51:09Z",
   "type": "path_validated"
 }
 [SECURITY] {
@@ -269,7 +270,7 @@ Initializing node4...
     "original_path": "~/.aura-soak-test/node4",
     "resolved_path": "~/.aura-soak-test/node4"
   },
-  "timestamp": "2025-12-13T14:52:25Z",
+  "timestamp": "2025-12-18T18:51:09Z",
   "type": "path_validated"
 }
 Initializing Aura node...
@@ -294,30 +295,30 @@ Created directory: /home/hudson/.aura-soak-test/node4/logs (permissions: 700)
 ║   - Enter on websites                                                ║
 ╚══════════════════════════════════════════════════════════════════════╝
 
-   1. about
-   2. six
-   3. veteran
-   4. fetch
-   5. reopen
-   6. solution
-   7. movie
-   8. shield
-   9. rose
-  10. universe
-  11. skate
-  12. chicken
-  13. slush
-  14. alert
-  15. echo
-  16. boy
-  17. popular
-  18. pull
-  19. sand
-  20. chimney
-  21. envelope
-  22. gentle
-  23. quit
-  24. buyer
+   1. dolphin
+   2. lizard
+   3. play
+   4. liberty
+   5. eye
+   6. sock
+   7. viable
+   8. march
+   9. film
+  10. hedgehog
+  11. have
+  12. negative
+  13. property
+  14. cake
+  15. praise
+  16. era
+  17. knee
+  18. run
+  19. outside
+  20. fix
+  21. worth
+  22. dish
+  23. practice
+  24. vessel
 
 Press Enter after you have safely recorded your mnemonic...
 Created private validator key: /home/hudson/.aura-soak-test/node4/config/priv_validator_key.json
@@ -330,27 +331,41 @@ Node initialized successfully!
 Configuration files created in: /home/hudson/.aura-soak-test/node4
 
 Validator Addresses:
-  Account:   aura1lnxqj555kcgzcrh8xwr40tpsuuzs2nccxzvk5v
-  Operator:  auravaloper1lnxqj555kcgzcrh8xwr40tpsuuzs2nccasa7vj
-  Consensus: auravalcons1lnxqj555kcgzcrh8xwr40tpsuuzs2nccfrwzqn
+  Account:   aura1w9nanv67y2qvc3xpy6pgrjskcw5srust5a5k04
+  Operator:  auravaloper1w9nanv67y2qvc3xpy6pgrjskcw5srust0097ht
+  Consensus: auravalcons1w9nanv67y2qvc3xpy6pgrjskcw5srustmukzm2
 
 To start the node, run:
   aurad start
 Creating genesis file with 4 validators...
-Node1 address: aura1ls0vuxa6725s754ht7gu32lmgfdrr958fzgntx
-Node2 address: aura16gzxgpzta6r9d2ch7km0f03ch79xk4ztfwr2zt
-Node3 address: aura1z339hqmrnyzk2mfr0nxrfau8rrhwv74nwucsdc
-Node4 address: aura1hf006e90gvf9m4w9et8j0q7n80zl67a2lt2l2t
-Genesis transaction written to "/home/hudson/.aura-soak-test/node1/config/gentx/gentx-bf778fb9e615fe6270b2440b922edc24e6cf33ed.json"
-Genesis transaction written to "/home/hudson/.aura-soak-test/node2/config/gentx/gentx-a4e190ecd081e0f7984c6726e945a68282efd493.json"
-Genesis transaction written to "/home/hudson/.aura-soak-test/node3/config/gentx/gentx-0675f042a503bad9aff797606935b4dfdfa87a20.json"
-Genesis transaction written to "/home/hudson/.aura-soak-test/node4/config/gentx/gentx-1f82cdb4307361387be642564998b4eb5cb39972.json"
+Node1 address: aura1u72ftr598kmekxk5fw9gzav70f84cn0alz22dx
+Node2 address: aura1nc39qcf5e7vpesan3jmt3dph4v53678nlm9hl9
+Node3 address: aura1qqsus62w7gjwuf488w28c204hjhhs0geu7t8vu
+Node4 address: aura1hxsuf5zx3x3cvrhgp0n8nx29w77e5vwnaxn8c4
+Genesis transaction written to "/home/hudson/.aura-soak-test/node1/config/gentx/gentx-677b8930a1e63dbb60591a693e4490a159de74ec.json"
+Genesis transaction written to "/home/hudson/.aura-soak-test/node2/config/gentx/gentx-76c7d6c8d4609b218c2e5311651bd7484f48f296.json"
+Genesis transaction written to "/home/hudson/.aura-soak-test/node3/config/gentx/gentx-e350a8e3bc4f3ebb07f35fc8b5f383e2bdad3773.json"
+Genesis transaction written to "/home/hudson/.aura-soak-test/node4/config/gentx/gentx-de9c753a615903dfd76de2096853ecd7df7fa858.json"
 {
  "moniker": "bcpc",
  "chain_id": "soak-test",
- "node_id": "bf778fb9e615fe6270b2440b922edc24e6cf33ed",
+ "node_id": "677b8930a1e63dbb60591a693e4490a159de74ec",
  "gentxs_dir": "/home/hudson/.aura-soak-test/node1/config/gentx",
  "app_message": {
+  "aiassistant": {
+   "assistants": [],
+   "params": {
+    "min_stake": {
+     "denom": "uaura",
+     "amount": "5000000"
+    },
+    "heartbeat_window_seconds": "600",
+    "heartbeat_grace_seconds": "120",
+    "slash_fraction_downtime": "0.020000000000000000",
+    "slash_fraction_misbehavior": "0.100000000000000000",
+    "max_locales": "5"
+   }
+  },
   "aura_wasm_security": {
    "params": {
     "code_upload_access": {
@@ -382,35 +397,35 @@ Genesis transaction written to "/home/hudson/.aura-soak-test/node4/config/gentx/
    "accounts": [
     {
      "@type": "/cosmos.auth.v1beta1.BaseAccount",
-     "address": "aura1y23trc4r5y7ggp6mlu2v4603p7jtpldyz64jhq",
+     "address": "aura1vqg30kljm74r32hketfaqrxrch7fp9drymjrmh",
      "pub_key": null,
      "account_number": "0",
      "sequence": "0"
     },
     {
      "@type": "/cosmos.auth.v1beta1.BaseAccount",
-     "address": "aura1ls0vuxa6725s754ht7gu32lmgfdrr958fzgntx",
+     "address": "aura1u72ftr598kmekxk5fw9gzav70f84cn0alz22dx",
      "pub_key": null,
      "account_number": "1",
      "sequence": "0"
     },
     {
      "@type": "/cosmos.auth.v1beta1.BaseAccount",
-     "address": "aura16gzxgpzta6r9d2ch7km0f03ch79xk4ztfwr2zt",
+     "address": "aura1nc39qcf5e7vpesan3jmt3dph4v53678nlm9hl9",
      "pub_key": null,
      "account_number": "2",
      "sequence": "0"
     },
     {
      "@type": "/cosmos.auth.v1beta1.BaseAccount",
-     "address": "aura1z339hqmrnyzk2mfr0nxrfau8rrhwv74nwucsdc",
+     "address": "aura1qqsus62w7gjwuf488w28c204hjhhs0geu7t8vu",
      "pub_key": null,
      "account_number": "3",
      "sequence": "0"
     },
     {
      "@type": "/cosmos.auth.v1beta1.BaseAccount",
-     "address": "aura1hf006e90gvf9m4w9et8j0q7n80zl67a2lt2l2t",
+     "address": "aura1hxsuf5zx3x3cvrhgp0n8nx29w77e5vwnaxn8c4",
      "pub_key": null,
      "account_number": "4",
      "sequence": "0"
@@ -424,7 +439,7 @@ Genesis transaction written to "/home/hudson/.aura-soak-test/node4/config/gentx/
    },
    "balances": [
     {
-     "address": "aura1z339hqmrnyzk2mfr0nxrfau8rrhwv74nwucsdc",
+     "address": "aura1qqsus62w7gjwuf488w28c204hjhhs0geu7t8vu",
      "coins": [
       {
        "denom": "stake",
@@ -433,7 +448,7 @@ Genesis transaction written to "/home/hudson/.aura-soak-test/node4/config/gentx/
      ]
     },
     {
-     "address": "aura1y23trc4r5y7ggp6mlu2v4603p7jtpldyz64jhq",
+     "address": "aura1vqg30kljm74r32hketfaqrxrch7fp9drymjrmh",
      "coins": [
       {
        "denom": "stake",
@@ -446,7 +461,7 @@ Genesis transaction written to "/home/hudson/.aura-soak-test/node4/config/gentx/
      ]
     },
     {
-     "address": "aura1hf006e90gvf9m4w9et8j0q7n80zl67a2lt2l2t",
+     "address": "aura1nc39qcf5e7vpesan3jmt3dph4v53678nlm9hl9",
      "coins": [
       {
        "denom": "stake",
@@ -455,7 +470,7 @@ Genesis transaction written to "/home/hudson/.aura-soak-test/node4/config/gentx/
      ]
     },
     {
-     "address": "aura16gzxgpzta6r9d2ch7km0f03ch79xk4ztfwr2zt",
+     "address": "aura1hxsuf5zx3x3cvrhgp0n8nx29w77e5vwnaxn8c4",
      "coins": [
       {
        "denom": "stake",
@@ -464,7 +479,7 @@ Genesis transaction written to "/home/hudson/.aura-soak-test/node4/config/gentx/
      ]
     },
     {
-     "address": "aura1ls0vuxa6725s754ht7gu32lmgfdrr958fzgntx",
+     "address": "aura1u72ftr598kmekxk5fw9gzav70f84cn0alz22dx",
      "coins": [
       {
        "denom": "stake",
@@ -890,10 +905,10 @@ Genesis transaction written to "/home/hudson/.aura-soak-test/node4/config/gentx/
         },
         "min_self_delegation": "1",
         "delegator_address": "",
-        "validator_address": "auravaloper1z339hqmrnyzk2mfr0nxrfau8rrhwv74n4wfc4x",
+        "validator_address": "auravaloper1u72ftr598kmekxk5fw9gzav70f84cn0aysmz4c",
         "pubkey": {
          "@type": "/cosmos.crypto.ed25519.PubKey",
-         "key": "rzjuCfr3acSvIMrddTQ5zPfGihbocZj/7rkXyEfZ4Kg="
+         "key": "OTGnygeu6axLz+zSdGR9MHH7GLiV3J0h5vJ/ZHFiyOg="
         },
         "value": {
          "denom": "stake",
@@ -901,7 +916,7 @@ Genesis transaction written to "/home/hudson/.aura-soak-test/node4/config/gentx/
         }
        }
       ],
-      "memo": "0675f042a503bad9aff797606935b4dfdfa87a20@192.168.100.2:26656",
+      "memo": "677b8930a1e63dbb60591a693e4490a159de74ec@192.168.100.2:26656",
       "timeout_height": "0",
       "unordered": false,
       "timeout_timestamp": null,
@@ -913,7 +928,7 @@ Genesis transaction written to "/home/hudson/.aura-soak-test/node4/config/gentx/
        {
         "public_key": {
          "@type": "/cosmos.crypto.secp256k1.PubKey",
-         "key": "ArfeK+M31aMFwEiL9AZAEUW7tTUp3TpmGXy70ieAEVlB"
+         "key": "Atb+eGwk8p+R7A6psePZ3iIw5ojsd6gxpXmzgfkhGgge"
         },
         "mode_info": {
          "single": {
@@ -932,7 +947,7 @@ Genesis transaction written to "/home/hudson/.aura-soak-test/node4/config/gentx/
       "tip": null
      },
      "signatures": [
-      "5R1xb6vU1ERtAYAXGdLVm0+zJ04D58p19tMynyh8hkpEUvJdhi7/MB+SYcwp699dOkvUkmv7r1LIx9JpOAN1MQ=="
+      "r9WS4t7WNPz22YAtawzEj2ljJuPGLNlsFrQkXkA7mb8lzLq4fUkZFSFRI+A2YAZRFan+v2+FfigYzyWPQaoVTA=="
      ]
     },
     {
@@ -954,10 +969,10 @@ Genesis transaction written to "/home/hudson/.aura-soak-test/node4/config/gentx/
         },
         "min_self_delegation": "1",
         "delegator_address": "",
-        "validator_address": "auravaloper1hf006e90gvf9m4w9et8j0q7n80zl67a2yemhj4",
+        "validator_address": "auravaloper1nc39qcf5e7vpesan3jmt3dph4v53678nyf5l8m",
         "pubkey": {
          "@type": "/cosmos.crypto.ed25519.PubKey",
-         "key": "cv0ZPaEHI+8RywbjlK/8cox7llexyVTM2WZeOs7d0sM="
+         "key": "R2poUN7fVxa53x323SvGs9bqLZNc7oz7nqsYsaWLfPA="
         },
         "value": {
          "denom": "stake",
@@ -965,7 +980,7 @@ Genesis transaction written to "/home/hudson/.aura-soak-test/node4/config/gentx/
         }
        }
       ],
-      "memo": "1f82cdb4307361387be642564998b4eb5cb39972@192.168.100.2:26656",
+      "memo": "76c7d6c8d4609b218c2e5311651bd7484f48f296@192.168.100.2:26656",
       "timeout_height": "0",
       "unordered": false,
       "timeout_timestamp": null,
@@ -977,7 +992,7 @@ Genesis transaction written to "/home/hudson/.aura-soak-test/node4/config/gentx/
        {
         "public_key": {
          "@type": "/cosmos.crypto.secp256k1.PubKey",
-         "key": "Ai+V+JXy3iFLODCisNNlv7wm1qOyBukh/e2Wmdg6vla+"
+         "key": "A+dx2CJPnHGdyfxXlTxqnHhKNsXghaMB1XBX9apZ5OdV"
         },
         "mode_info": {
          "single": {
@@ -996,7 +1011,7 @@ Genesis transaction written to "/home/hudson/.aura-soak-test/node4/config/gentx/
       "tip": null
      },
      "signatures": [
-      "NQrqhqcgCSPeXWcTMk+uw+M7HUX7SmeO+HH1D3Lsl+c0JdYoN1b8icQTMGTfKUtg0vLYN4TtPLmUXUZUBUbrGg=="
+      "yXDCEpDa61sFDkANYu+yjaijk+WU7Ocvs79l4RVXl6oImpbY4CFuVMeKvu6eT21dsSY/pBf/Je8pHJ7DopBB+Q=="
      ]
     },
     {
@@ -1018,10 +1033,10 @@ Genesis transaction written to "/home/hudson/.aura-soak-test/node4/config/gentx/
         },
         "min_self_delegation": "1",
         "delegator_address": "",
-        "validator_address": "auravaloper16gzxgpzta6r9d2ch7km0f03ch79xk4ztjujz64",
+        "validator_address": "auravaloper1hxsuf5zx3x3cvrhgp0n8nx29w77e5vwnx5z0qt",
         "pubkey": {
          "@type": "/cosmos.crypto.ed25519.PubKey",
-         "key": "YStm4WY4J34FcjH4NA6UA0XKuJQFMPQLcNwUM8qjKqs="
+         "key": "Qk2HVSBXXmSa6lHblSMeNrp0F2RleNEmjTgKtouKspA="
         },
         "value": {
          "denom": "stake",
@@ -1029,7 +1044,7 @@ Genesis transaction written to "/home/hudson/.aura-soak-test/node4/config/gentx/
         }
        }
       ],
-      "memo": "a4e190ecd081e0f7984c6726e945a68282efd493@192.168.100.2:26656",
+      "memo": "de9c753a615903dfd76de2096853ecd7df7fa858@192.168.100.2:26656",
       "timeout_height": "0",
       "unordered": false,
       "timeout_timestamp": null,
@@ -1041,7 +1056,7 @@ Genesis transaction written to "/home/hudson/.aura-soak-test/node4/config/gentx/
        {
         "public_key": {
          "@type": "/cosmos.crypto.secp256k1.PubKey",
-         "key": "A21gk4irqHTez0usfB9a6iOPckS2qwNvJAySEui0jaX+"
+         "key": "Ay+0dhUAqfDkVqO6kDAI//q6tAmpigHLls2q7yRt6BE4"
         },
         "mode_info": {
          "single": {
@@ -1060,7 +1075,7 @@ Genesis transaction written to "/home/hudson/.aura-soak-test/node4/config/gentx/
       "tip": null
      },
      "signatures": [
-      "dhI1noxjMBCr+SOk4jPK9meMSzPW3VtI53qYIXSJ6qh7PhIZtCto3DCZlp6f8VTGh+bX4yg7CkphrCumyFNEWg=="
+      "WwXm1/JP68zKHGDqB+7KWps1Bar++SrT1K8VcP38F81Kby64ydLREFvcK7f3x62XAelo7S23tA/BuJZP8hk8XQ=="
      ]
     },
     {
@@ -1082,10 +1097,10 @@ Genesis transaction written to "/home/hudson/.aura-soak-test/node4/config/gentx/
         },
         "min_self_delegation": "1",
         "delegator_address": "",
-        "validator_address": "auravaloper1ls0vuxa6725s754ht7gu32lmgfdrr958jsemnc",
+        "validator_address": "auravaloper1qqsus62w7gjwuf488w28c204hjhhs0ge8v605z",
         "pubkey": {
          "@type": "/cosmos.crypto.ed25519.PubKey",
-         "key": "dTH1iNkV6Ccg2ZH+vucC+OA+ItWzRUr+YzdWVpM1hbg="
+         "key": "hNyuBSQQw2PPclKF7jNyNOarnPzcn9trezHhgD+Q/bw="
         },
         "value": {
          "denom": "stake",
@@ -1093,7 +1108,7 @@ Genesis transaction written to "/home/hudson/.aura-soak-test/node4/config/gentx/
         }
        }
       ],
-      "memo": "bf778fb9e615fe6270b2440b922edc24e6cf33ed@192.168.100.2:26656",
+      "memo": "e350a8e3bc4f3ebb07f35fc8b5f383e2bdad3773@192.168.100.2:26656",
       "timeout_height": "0",
       "unordered": false,
       "timeout_timestamp": null,
@@ -1105,7 +1120,7 @@ Genesis transaction written to "/home/hudson/.aura-soak-test/node4/config/gentx/
        {
         "public_key": {
          "@type": "/cosmos.crypto.secp256k1.PubKey",
-         "key": "Ay3QHvlhkBRPCeQ1uHkPZjxwhAiq48dzBcBh8YuPgPLN"
+         "key": "AyWUeO3p3IT+TpYNIjbFeDgcLkW0ayuzyV3qw1IYn7F9"
         },
         "mode_info": {
          "single": {
@@ -1124,7 +1139,7 @@ Genesis transaction written to "/home/hudson/.aura-soak-test/node4/config/gentx/
       "tip": null
      },
      "signatures": [
-      "ejpBb9ZGKMuw8fyuBEUMtqQLb2JQYKN9ugdHjsI7uL0IZNmnXgzxu4zSoQ9kNruC4ccw7lKa/dK1yezFaQnlKg=="
+      "QoooQjSbzsyIimytDDT3RpHB29XGVucFXFw/zJaTW1M/R+IEV/XQ6fOsvx9cgGBzjjbykmAqj09C8tBllHQ+bA=="
      ]
     }
    ]
@@ -1719,16 +1734,16 @@ Genesis transaction written to "/home/hudson/.aura-soak-test/node4/config/gentx/
    "last_total_power": "900000",
    "last_validator_powers": [
     {
-     "address": "auravaloper1y23trc4r5y7ggp6mlu2v4603p7jtpldyegy607",
+     "address": "auravaloper1vqg30kljm74r32hketfaqrxrch7fp9drlfrtrf",
      "power": "900000"
     }
    ],
    "validators": [
     {
-     "operator_address": "auravaloper1y23trc4r5y7ggp6mlu2v4603p7jtpldyegy607",
+     "operator_address": "auravaloper1vqg30kljm74r32hketfaqrxrch7fp9drlfrtrf",
      "consensus_pubkey": {
       "@type": "/cosmos.crypto.ed25519.PubKey",
-      "key": "dTH1iNkV6Ccg2ZH+vucC+OA+ItWzRUr+YzdWVpM1hbg="
+      "key": "OTGnygeu6axLz+zSdGR9MHH7GLiV3J0h5vJ/ZHFiyOg="
      },
      "jailed": false,
      "status": "BOND_STATUS_BONDED",
@@ -1758,8 +1773,8 @@ Genesis transaction written to "/home/hudson/.aura-soak-test/node4/config/gentx/
    ],
    "delegations": [
     {
-     "delegator_address": "aura1y23trc4r5y7ggp6mlu2v4603p7jtpldyz64jhq",
-     "validator_address": "auravaloper1y23trc4r5y7ggp6mlu2v4603p7jtpldyegy607",
+     "delegator_address": "aura1vqg30kljm74r32hketfaqrxrch7fp9drymjrmh",
+     "validator_address": "auravaloper1vqg30kljm74r32hketfaqrxrch7fp9drlfrtrf",
      "shares": "90000000000.000000000000000000"
     }
    ],
@@ -1881,76 +1896,66 @@ Genesis transaction written to "/home/hudson/.aura-soak-test/node4/config/gentx/
 Starting 4-node testnet
 -----------------------------------------------------------------
 Starting node1...
-Node1 PID: 990152
+Node1 PID: 1433211
 Starting node2...
-Node2 PID: 990157
+Node2 PID: 1433216
 Starting node3...
-Node3 PID: 990168
+Node3 PID: 1433226
 Starting node4...
-Node4 PID: 990178
+Node4 PID: 1433236
 Waiting for network to initialize...
-❌ Node1 failed to start
-✅ Node2 running (height: 0, PID: 990157)
-✅ Node3 running (height: 0, PID: 990168)
-✅ Node4 running (height: 0, PID: 990178)
-✅ Testnet is operational with 3/4 nodes
+✅ Node1 running (height: 12, PID: 1433211)
+✅ Node2 running (height: 12, PID: 1433216)
+✅ Node3 running (height: 12, PID: 1433226)
+✅ Node4 running (height: 12, PID: 1433236)
+✅ Testnet is operational with 4/4 nodes
 
 Starting load generator
 -----------------------------------------------------------------
-✅ Load generator started (PID: 990712)
+✅ Load generator started (PID: 1434163)
 
 Monitoring testnet stability
 -----------------------------------------------------------------
-Monitoring for .16 hours...
+Monitoring for .06 hours...
 Samples will be taken every 5 minutes
 
-=== Sample #1 (Elapsed: 5min, Remaining: 4min) ===
-❌ Node1: Process died
-Node2: MEM=169MB (+17MB, +11.1%), HEIGHT=0, RATE=0 blk/s
-Node3: MEM=174MB (+21MB, +13.7%), HEIGHT=0, RATE=0 blk/s
-Node4: MEM=172MB (+17MB, +10.9%), HEIGHT=0, RATE=0 blk/s
-
-=== Sample #2 (Elapsed: 10min, Remaining: 0min) ===
-❌ Node1: Process died
-Node2: MEM=169MB (+17MB, +11.1%), HEIGHT=0, RATE=0 blk/s
-Node3: MEM=175MB (+22MB, +14.3%), HEIGHT=0, RATE=0 blk/s
-Node4: MEM=172MB (+17MB, +10.9%), HEIGHT=0, RATE=0 blk/s
+=== Sample #1 (Elapsed: 5min, Remaining: -1min) ===
+Node1: MEM=214MB (+48MB, +28.9%), HEIGHT=287, RATE=.91 blk/s
+Node2: MEM=215MB (+43MB, +25.0%), HEIGHT=287, RATE=.91 blk/s
+Node3: MEM=218MB (+56MB, +34.5%), HEIGHT=287, RATE=.91 blk/s
+Node4: MEM=220MB (+45MB, +25.7%), HEIGHT=287, RATE=.91 blk/s
 
 
 Final Assessment
 -----------------------------------------------------------------
 Final node states:
-Node1: ❌ DEAD
-Node2: ✅ ALIVE | Final height: 0 | Blocks produced: 0 | Avg rate: 0 blk/s | Final mem: 169MB
-Node3: ✅ ALIVE | Final height: 0 | Blocks produced: 0 | Avg rate: 0 blk/s | Final mem: 175MB
-Node4: ✅ ALIVE | Final height: 0 | Blocks produced: 0 | Avg rate: 0 blk/s | Final mem: 172MB
+Node1: ✅ ALIVE | Final height: 287 | Blocks produced: 274 | Avg rate: 1.14 blk/s | Final mem: 214MB
+Node2: ✅ ALIVE | Final height: 287 | Blocks produced: 275 | Avg rate: 1.14 blk/s | Final mem: 215MB
+Node3: ✅ ALIVE | Final height: 287 | Blocks produced: 274 | Avg rate: 1.14 blk/s | Final mem: 218MB
+Node4: ✅ ALIVE | Final height: 287 | Blocks produced: 274 | Avg rate: 1.14 blk/s | Final mem: 220MB
 
-Load generator results:  transactions sent
+Load generator results: 4 transactions sent
 
 Test 7.3 Summary
 -----------------------------------------------------------------
-Test Duration: .16 hours
+Test Duration: .06 hours
 Network stayed operational: YES
-Samples collected: 2
+Samples collected: 1
 
 ✅ Binary built successfully
 ✅ Testnet configured with 4 validators
-❌ Node1 failed to start
-✅ Node2 running (height: 0, PID: 990157)
-✅ Node3 running (height: 0, PID: 990168)
-✅ Node4 running (height: 0, PID: 990178)
-✅ Testnet is operational with 3/4 nodes
-✅ Load generator started (PID: 990712)
-❌ Node1: Process died
-Node2: MEM=169MB (+17MB, +11.1%), HEIGHT=0, RATE=0 blk/s
-Node3: MEM=174MB (+21MB, +13.7%), HEIGHT=0, RATE=0 blk/s
-Node4: MEM=172MB (+17MB, +10.9%), HEIGHT=0, RATE=0 blk/s
-❌ Node1: Process died
-Node2: MEM=169MB (+17MB, +11.1%), HEIGHT=0, RATE=0 blk/s
-Node3: MEM=175MB (+22MB, +14.3%), HEIGHT=0, RATE=0 blk/s
-Node4: MEM=172MB (+17MB, +10.9%), HEIGHT=0, RATE=0 blk/s
-Node1: ❌ DEAD
-Node2: ✅ ALIVE | Final height: 0 | Blocks produced: 0 | Avg rate: 0 blk/s | Final mem: 169MB
-Node3: ✅ ALIVE | Final height: 0 | Blocks produced: 0 | Avg rate: 0 blk/s | Final mem: 175MB
-Node4: ✅ ALIVE | Final height: 0 | Blocks produced: 0 | Avg rate: 0 blk/s | Final mem: 172MB
-Test execution completed at: Sat Dec 13 03:02:42 PM UTC 2025
+✅ Node1 running (height: 12, PID: 1433211)
+✅ Node2 running (height: 12, PID: 1433216)
+✅ Node3 running (height: 12, PID: 1433226)
+✅ Node4 running (height: 12, PID: 1433236)
+✅ Testnet is operational with 4/4 nodes
+✅ Load generator started (PID: 1434163)
+Node1: MEM=214MB (+48MB, +28.9%), HEIGHT=287, RATE=.91 blk/s
+Node2: MEM=215MB (+43MB, +25.0%), HEIGHT=287, RATE=.91 blk/s
+Node3: MEM=218MB (+56MB, +34.5%), HEIGHT=287, RATE=.91 blk/s
+Node4: MEM=220MB (+45MB, +25.7%), HEIGHT=287, RATE=.91 blk/s
+Node1: ✅ ALIVE | Final height: 287 | Blocks produced: 274 | Avg rate: 1.14 blk/s | Final mem: 214MB
+Node2: ✅ ALIVE | Final height: 287 | Blocks produced: 275 | Avg rate: 1.14 blk/s | Final mem: 215MB
+Node3: ✅ ALIVE | Final height: 287 | Blocks produced: 274 | Avg rate: 1.14 blk/s | Final mem: 218MB
+Node4: ✅ ALIVE | Final height: 287 | Blocks produced: 274 | Avg rate: 1.14 blk/s | Final mem: 220MB
+Test execution completed at: Thu Dec 18 06:56:27 PM UTC 2025

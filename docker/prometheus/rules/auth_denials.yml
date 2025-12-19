@@ -1,0 +1,10 @@
+groups:
+  - name: auth_denials
+    interval: 30s
+    rules:
+      - record: auth_denials_identity_5m
+        expr: sum by(action)(increase(identity_auth_denied{action!=""}[5m]))
+      - record: auth_denials_incidentresponse_5m
+        expr: sum by(reason)(increase(incidentresponse_auth_denied{reason!=""}[5m]))
+      - record: auth_denials_economicsecurity_5m
+        expr: sum by(action)(increase(economicsecurity_auth_denied{action!=""}[5m]))

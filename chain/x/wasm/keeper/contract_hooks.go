@@ -3,12 +3,13 @@ package keeper
 import (
 	"encoding/binary"
 	"fmt"
+	"math"
 	"sync"
 	"time"
 
 	"github.com/aequitas/aura/chain/x/common/determinism"
-	pb "github.com/aequitas/aura/proto/aura/contractregistry/v1beta1"
 	"github.com/aequitas/aura/chain/x/wasm/types"
+	pb "github.com/aequitas/aura/proto/aura/contractregistry/v1beta1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -18,11 +19,28 @@ import (
 
 // Circuit breaker KV store keys
 var (
-	circuitBreakerFailureCountKey      = []byte("circuit_breaker_failure_count")
-	circuitBreakerLastFailureKey       = []byte("circuit_breaker_last_failure")
-	circuitBreakerStateKey             = []byte("circuit_breaker_state")
+	circuitBreakerFailureCountKey       = []byte("circuit_breaker_failure_count")
+	circuitBreakerLastFailureKey        = []byte("circuit_breaker_last_failure")
+	circuitBreakerStateKey              = []byte("circuit_breaker_state")
 	circuitBreakerConsecutiveSuccessKey = []byte("circuit_breaker_consecutive_success")
 )
+
+func clampUint64ToInt(u uint64) int {
+	if u > math.MaxInt {
+		return math.MaxInt
+	}
+	return int(u)
+}
+
+func clampIntToUint64(v int) uint64 {
+	if v < 0 {
+		return 0
+	}
+	if v > math.MaxInt {
+		return math.MaxUint64
+	}
+	return uint64(v)
+}
 
 const (
 	circuitBreakerThreshold        = 5  // failures before opening
@@ -39,9 +57,9 @@ const (
 
 // circuitBreakerData represents the circuit breaker state (stored in KV store)
 type circuitBreakerData struct {
-	FailureCount      int
-	LastFailure       time.Time
-	State             string
+	FailureCount       int
+	LastFailure        time.Time
+	State              string
 	ConsecutiveSuccess int
 }
 
@@ -52,7 +70,7 @@ func (k Keeper) getCircuitBreakerState(ctx sdk.Context) circuitBreakerData {
 	// Read failure count
 	failureCount := 0
 	if bz := store.Get(circuitBreakerFailureCountKey); bz != nil {
-		failureCount = int(binary.BigEndian.Uint64(bz))
+		failureCount = clampUint64ToInt(binary.BigEndian.Uint64(bz))
 	}
 
 	// Read last failure time
@@ -72,13 +90,13 @@ func (k Keeper) getCircuitBreakerState(ctx sdk.Context) circuitBreakerData {
 	// Read consecutive success count
 	consecutiveSuccess := 0
 	if bz := store.Get(circuitBreakerConsecutiveSuccessKey); bz != nil {
-		consecutiveSuccess = int(binary.BigEndian.Uint64(bz))
+		consecutiveSuccess = clampUint64ToInt(binary.BigEndian.Uint64(bz))
 	}
 
 	return circuitBreakerData{
-		FailureCount:      failureCount,
-		LastFailure:       lastFailure,
-		State:             state,
+		FailureCount:       failureCount,
+		LastFailure:        lastFailure,
+		State:              state,
 		ConsecutiveSuccess: consecutiveSuccess,
 	}
 }
@@ -89,7 +107,7 @@ func (k Keeper) setCircuitBreakerState(ctx sdk.Context, data circuitBreakerData)
 
 	// Write failure count
 	failureCountBz := make([]byte, 8)
-	binary.BigEndian.PutUint64(failureCountBz, uint64(data.FailureCount))
+	binary.BigEndian.PutUint64(failureCountBz, clampIntToUint64(data.FailureCount))
 	store.Set(circuitBreakerFailureCountKey, failureCountBz)
 
 	// Write last failure time
@@ -107,7 +125,7 @@ func (k Keeper) setCircuitBreakerState(ctx sdk.Context, data circuitBreakerData)
 
 	// Write consecutive success count
 	consecutiveSuccessBz := make([]byte, 8)
-	binary.BigEndian.PutUint64(consecutiveSuccessBz, uint64(data.ConsecutiveSuccess))
+	binary.BigEndian.PutUint64(consecutiveSuccessBz, clampIntToUint64(data.ConsecutiveSuccess))
 	store.Set(circuitBreakerConsecutiveSuccessKey, consecutiveSuccessBz)
 }
 
@@ -183,9 +201,9 @@ func (k Keeper) getCircuitBreakerStateString(ctx sdk.Context) string {
 // ============================================================================
 
 type validationCacheEntry struct {
-	allowed    bool
-	error      error
-	timestamp  time.Time
+	allowed     bool
+	error       error
+	timestamp   time.Time
 	blockHeight int64
 }
 
@@ -267,8 +285,8 @@ var (
 )
 
 const (
-	metricsBufferSize     = 50  // flush after this many updates
-	metricsBufferDuration = 10  // flush after this many seconds
+	metricsBufferSize     = 50 // flush after this many updates
+	metricsBufferDuration = 10 // flush after this many seconds
 )
 
 // add adds a metrics update to the buffer
@@ -743,9 +761,9 @@ func (k Keeper) GetCircuitBreakerStatus(ctx sdk.Context) string {
 // ResetCircuitBreaker manually resets the circuit breaker (governance/emergency)
 func (k Keeper) ResetCircuitBreaker(ctx sdk.Context) {
 	data := circuitBreakerData{
-		FailureCount:      0,
-		LastFailure:       time.Time{},
-		State:             circuitBreakerStateClosed,
+		FailureCount:       0,
+		LastFailure:        time.Time{},
+		State:              circuitBreakerStateClosed,
 		ConsecutiveSuccess: 0,
 	}
 	k.setCircuitBreakerState(ctx, data)

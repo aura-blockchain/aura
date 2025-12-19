@@ -5,10 +5,11 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/rpc"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	authcli "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	aiassistantcli "github.com/aequitas/aura/chain/x/aiassistant/client/cli"
 	bridgecli "github.com/aequitas/aura/chain/x/bridge/client/cli"
 	compliancecli "github.com/aequitas/aura/chain/x/compliance/client/cli"
 	confidencescorecli "github.com/aequitas/aura/chain/x/confidencescore/client/cli"
@@ -57,6 +58,7 @@ func QueryCmd() *cobra.Command {
 		dataregistrycli.GetQueryCmd(),
 		dexcli.GetQueryCmd(),
 		economicsecuritycli.GetQueryCmd(),
+		aiassistantcli.NewQueryCmd(),
 		governancecli.GetQueryCmd(),
 		identitychangecli.GetQueryCmd(),
 		monitoringcli.GetQueryCmd(),

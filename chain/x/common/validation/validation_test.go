@@ -831,6 +831,18 @@ func TestValidateID(t *testing.T) {
 	}
 }
 
+func TestValidateJurisdictionCode(t *testing.T) {
+	valid := []string{"US", "GB", "JP", "US-NY", "DE-BW"}
+	for _, code := range valid {
+		require.NoError(t, ValidateJurisdictionCode(code), "expected valid code %s", code)
+	}
+
+	invalid := []string{"", "usa", "U", "USNYC", "1A", "US_", "US--NY", "US-N"}
+	for _, code := range invalid {
+		require.Error(t, ValidateJurisdictionCode(code), "expected invalid code %s", code)
+	}
+}
+
 func TestValidateUint32Positive(t *testing.T) {
 	tests := []struct {
 		name      string

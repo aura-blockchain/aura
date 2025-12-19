@@ -1,6 +1,8 @@
 package keeper_test
 
 import (
+	"crypto/sha256"
+	"fmt"
 	"testing"
 	"time"
 
@@ -12,12 +14,14 @@ import (
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	gogotypes "github.com/cosmos/gogoproto/types"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
+	authproto "github.com/aequitas/aura/proto/aura/auth/v1beta1"
 	"github.com/aequitas/aura/chain/x/walletsecurity/keeper"
 	"github.com/aequitas/aura/chain/x/walletsecurity/types"
 	wsproto "github.com/aequitas/aura/proto/aura/walletsecurity/v1beta1"
@@ -65,9 +69,10 @@ func (suite *KeeperTestSuite) SetupTest() {
 // ============================================================================
 
 func (suite *KeeperTestSuite) TestRegisterHardwareWallet() {
-	address := "cosmos1abc123def456"
+	privKey := secp256k1.GenPrivKey()
+	address := sdk.AccAddress(privKey.PubKey().Address()).String()
 	deviceID := "ledger-nano-s-12345"
-	signature := make([]byte, 64)
+	signature := makeRegistrationSig(suite.T(), privKey, address, deviceID)
 
 	config, err := suite.keeper.RegisterHardwareWallet(
 		suite.ctx,
@@ -87,9 +92,10 @@ func (suite *KeeperTestSuite) TestRegisterHardwareWallet() {
 }
 
 func (suite *KeeperTestSuite) TestRegisterHardwareWallet_DuplicateError() {
-	address := "cosmos1abc123def456"
+	privKey := secp256k1.GenPrivKey()
+	address := sdk.AccAddress(privKey.PubKey().Address()).String()
 	deviceID := "ledger-nano-s-12345"
-	signature := make([]byte, 64)
+	signature := makeRegistrationSig(suite.T(), privKey, address, deviceID)
 
 	// First registration should succeed
 	_, err := suite.keeper.RegisterHardwareWallet(
@@ -118,9 +124,10 @@ func (suite *KeeperTestSuite) TestRegisterHardwareWallet_DuplicateError() {
 }
 
 func (suite *KeeperTestSuite) TestUpdateHardwareWalletUsage() {
-	address := "cosmos1abc123def456"
+	privKey := secp256k1.GenPrivKey()
+	address := sdk.AccAddress(privKey.PubKey().Address()).String()
 	deviceID := "trezor-one-67890"
-	signature := make([]byte, 64)
+	signature := makeRegistrationSig(suite.T(), privKey, address, deviceID)
 
 	config, err := suite.keeper.RegisterHardwareWallet(
 		suite.ctx,
@@ -144,6 +151,14 @@ func (suite *KeeperTestSuite) TestUpdateHardwareWalletUsage() {
 	var updatedConfig wsproto.HardwareWalletConfig
 	suite.cdc.MustUnmarshal(configBytes, &updatedConfig)
 	suite.Require().Equal(int32(1), updatedConfig.SignatureCount)
+}
+
+// makeRegistrationSig produces a pubkey+signature bundle accepted by the keeper validators.
+func makeRegistrationSig(t *testing.T, privKey *secp256k1.PrivKey, address, deviceID string) []byte {
+	digest := sha256.Sum256([]byte("aura-hww:" + address + ":" + deviceID))
+	sig, err := privKey.Sign(digest[:])
+	require.NoError(t, err)
+	return append(privKey.PubKey().Bytes(), sig...)
 }
 
 // ============================================================================
@@ -330,7 +345,7 @@ func (suite *KeeperTestSuite) TestInitiateRecovery() {
 		walletID,
 		guardians,
 		2,
-		&gogotypes.Duration{Seconds: int64(48*time.Hour.Seconds()), Nanos: int32(48*time.Hour.Nanoseconds() % 1e9)},
+		&gogotypes.Duration{Seconds: int64(48 * time.Hour.Seconds()), Nanos: int32(48 * time.Hour.Nanoseconds() % 1e9)},
 	)
 	suite.Require().NoError(err)
 
@@ -369,7 +384,7 @@ func (suite *KeeperTestSuite) TestApproveRecovery_Success() {
 		walletID,
 		guardians,
 		2,
-		&gogotypes.Duration{Seconds: int64(48*time.Hour.Seconds()), Nanos: int32(48*time.Hour.Nanoseconds() % 1e9)},
+		&gogotypes.Duration{Seconds: int64(48 * time.Hour.Seconds()), Nanos: int32(48 * time.Hour.Nanoseconds() % 1e9)},
 	)
 	suite.Require().NoError(err)
 
@@ -422,7 +437,7 @@ func (suite *KeeperTestSuite) TestApproveRecovery_UnauthorizedGuardian() {
 		walletID,
 		guardians,
 		2,
-		&gogotypes.Duration{Seconds: int64(48*time.Hour.Seconds()), Nanos: int32(48*time.Hour.Nanoseconds() % 1e9)},
+		&gogotypes.Duration{Seconds: int64(48 * time.Hour.Seconds()), Nanos: int32(48 * time.Hour.Nanoseconds() % 1e9)},
 	)
 	suite.Require().NoError(err)
 
@@ -471,7 +486,7 @@ func (suite *KeeperTestSuite) TestApproveRecovery_DuplicateApproval() {
 		walletID,
 		guardians,
 		2,
-		&gogotypes.Duration{Seconds: int64(48*time.Hour.Seconds()), Nanos: int32(48*time.Hour.Nanoseconds() % 1e9)},
+		&gogotypes.Duration{Seconds: int64(48 * time.Hour.Seconds()), Nanos: int32(48 * time.Hour.Nanoseconds() % 1e9)},
 	)
 	suite.Require().NoError(err)
 
@@ -519,7 +534,7 @@ func (suite *KeeperTestSuite) TestApproveRecovery_UnconfirmedGuardian() {
 		walletID,
 		guardians,
 		2,
-		&gogotypes.Duration{Seconds: int64(48*time.Hour.Seconds()), Nanos: int32(48*time.Hour.Nanoseconds() % 1e9)},
+		&gogotypes.Duration{Seconds: int64(48 * time.Hour.Seconds()), Nanos: int32(48 * time.Hour.Nanoseconds() % 1e9)},
 	)
 	suite.Require().NoError(err)
 
@@ -895,4 +910,47 @@ func TestValidateAddressChecksum(t *testing.T) {
 			}
 		})
 	}
+}
+
+type mockAuthKeeper struct {
+	sessions map[string]*authproto.Session
+}
+
+func (m mockAuthKeeper) GetSession(_ sdk.Context, sessionID string) (*authproto.Session, error) {
+	if session, ok := m.sessions[sessionID]; ok {
+		return session, nil
+	}
+	return nil, fmt.Errorf("not found")
+}
+
+func (suite *KeeperTestSuite) TestUnlockSessionAfterAuthRequiresActiveAuthSession() {
+	sessionID := "session-auth"
+	blockTime := suite.ctx.BlockTime()
+
+	suite.keeper.SetAuthKeeper(mockAuthKeeper{
+		sessions: map[string]*authproto.Session{
+			sessionID: {
+				SessionId:   sessionID,
+				UserAddress: sdk.AccAddress("owner________________").String(),
+				CreatedAt:   blockTime,
+				ExpiresAt:   blockTime.Add(time.Hour),
+				IsActive:    true,
+			},
+		},
+	})
+
+	startedAt, err := gogotypes.TimestampProto(blockTime)
+	suite.Require().NoError(err)
+	cfg := wsproto.SessionConfig{
+		SessionId:    sessionID,
+		WalletId:     "wallet-1",
+		StartedAt:    startedAt,
+		LastActivity: startedAt,
+	}
+	cfgBytes, err := suite.cdc.Marshal(&cfg)
+	suite.Require().NoError(err)
+	suite.Require().NoError(suite.keeper.SetSessionConfig(suite.ctx, sessionID, cfgBytes))
+
+	err = suite.keeper.UnlockSessionAfterAuth(suite.ctx, sessionID, []byte("proof"))
+	suite.Require().NoError(err)
 }

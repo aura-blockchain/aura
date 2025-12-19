@@ -6,7 +6,9 @@ import (
 	"time"
 
 	errorsmod "cosmossdk.io/errors"
+	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	metrics "github.com/hashicorp/go-metrics"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -78,6 +80,16 @@ func (ms msgServer) ApplyIdentityChange(goCtx context.Context, msg *identitypb.M
 	// Apply change
 	_, err := ms.Keeper.ApplyChange(ctx, msg.RequestId, msg.Requester)
 	if err != nil {
+		if errorsmod.IsOf(err, types.ErrUnauthorized) || errorsmod.IsOf(err, types.ErrInsufficientPermissions) {
+			telemetry.IncrCounterWithLabels(
+				[]string{"identity", "auth_denied"},
+				1,
+				[]metrics.Label{
+					{Name: "action", Value: "apply_change"},
+				},
+			)
+			return nil, status.Error(codes.PermissionDenied, err.Error())
+		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
@@ -95,6 +107,16 @@ func (ms msgServer) RejectIdentityChange(goCtx context.Context, msg *identitypb.
 	// Reject change
 	_, err := ms.Keeper.RejectChange(ctx, msg.RequestId, msg.Actor, msg.Reason)
 	if err != nil {
+		if errorsmod.IsOf(err, types.ErrUnauthorized) || errorsmod.IsOf(err, types.ErrInsufficientPermissions) {
+			telemetry.IncrCounterWithLabels(
+				[]string{"identity", "auth_denied"},
+				1,
+				[]metrics.Label{
+					{Name: "action", Value: "reject_change"},
+				},
+			)
+			return nil, status.Error(codes.PermissionDenied, err.Error())
+		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
@@ -426,7 +448,7 @@ func (ms msgServer) ProposeTimeLockedAction(goCtx context.Context, msg *identity
 
 	// Log audit trail
 	ms.Keeper.LogAudit(ctx, msg.Proposer, "propose_time_locked_action", actionID, "success", map[string]string{
-		"action_type":  msg.ActionType,
+		"action_type":   msg.ActionType,
 		"delay_seconds": fmt.Sprintf("%d", msg.DelaySeconds),
 	}, "")
 

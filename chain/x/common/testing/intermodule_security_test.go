@@ -4,11 +4,21 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/log"
 	sdkmath "cosmossdk.io/math"
+	"cosmossdk.io/store"
+	"cosmossdk.io/store/metrics"
+	storetypes "cosmossdk.io/store/types"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	dbm "github.com/cosmos/cosmos-db"
+	"github.com/cosmos/cosmos-sdk/codec"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/aequitas/aura/chain/testing/testutil"
 	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 	bridgekeeper "github.com/aequitas/aura/chain/x/bridge/keeper"
 	bridgetypes "github.com/aequitas/aura/chain/x/bridge/types"
@@ -17,19 +27,22 @@ import (
 	dexkeeper "github.com/aequitas/aura/chain/x/dex/keeper"
 	dextypes "github.com/aequitas/aura/chain/x/dex/types"
 	securitykeeper "github.com/aequitas/aura/chain/x/security/keeper"
-	walletseckeeper "github.com/aequitas/aura/chain/x/walletsecurity/keeper"
+	securitytypes "github.com/aequitas/aura/chain/x/security/types"
+	securitypb "github.com/aequitas/aura/proto/aura/security/v1beta1"
 )
 
 // InterModuleSecurityTestSuite tests security boundaries between modules
 type InterModuleSecurityTestSuite struct {
 	suite.Suite
 
-	ctx               sdk.Context
-	bridgeKeeper      *bridgekeeper.Keeper
-	dexKeeper         *dexkeeper.Keeper
-	securityKeeper    *securitykeeper.Keeper
-	complianceKeeper  *compliancekeeper.Keeper
-	walletSecKeeper   walletseckeeper.Keeper
+	ctx            sdk.Context
+	bridgeKeeper   *bridgekeeper.Keeper
+	dexKeeper      *dexkeeper.Keeper
+	securityKeeper *securitykeeper.Keeper
+
+	bankKeeper    *testutil.MockBankKeeper
+	accountKeeper *testutil.MockAccountKeeper
+	securityMock  *testutil.MockSecurityKeeper
 }
 
 func TestInterModuleSecuritySuite(t *testing.T) {
@@ -37,12 +50,69 @@ func TestInterModuleSecuritySuite(t *testing.T) {
 }
 
 func (suite *InterModuleSecurityTestSuite) SetupTest() {
-	input := keepertest.CreateTestInput(suite.T())
-	suite.ctx = input.Ctx
+	keepertest.ConfigureSDK()
 
-	// Initialize keepers with proper dependencies
-	// These would need to be properly wired with mocks for a complete test
-	// For now, we test the interfaces and security boundaries
+	bridgeStoreKey := storetypes.NewKVStoreKey(bridgetypes.StoreKey)
+	bridgeMemKey := storetypes.NewMemoryStoreKey("mem_bridge")
+	dexStoreKey := storetypes.NewKVStoreKey(dextypes.StoreKey)
+	securityStoreKey := storetypes.NewKVStoreKey(securitytypes.StoreKey)
+	securityMemKey := storetypes.NewMemoryStoreKey(securitytypes.MemStoreKey)
+
+	db := dbm.NewMemDB()
+	cms := store.NewCommitMultiStore(db, log.NewNopLogger(), metrics.NewNoOpMetrics())
+	cms.MountStoreWithDB(bridgeStoreKey, storetypes.StoreTypeIAVL, db)
+	cms.MountStoreWithDB(bridgeMemKey, storetypes.StoreTypeMemory, nil)
+	cms.MountStoreWithDB(dexStoreKey, storetypes.StoreTypeIAVL, db)
+	cms.MountStoreWithDB(securityStoreKey, storetypes.StoreTypeIAVL, db)
+	cms.MountStoreWithDB(securityMemKey, storetypes.StoreTypeMemory, nil)
+	suite.Require().NoError(cms.LoadLatestVersion())
+
+	interfaceRegistry := codectypes.NewInterfaceRegistry()
+	cdc := codec.NewProtoCodec(interfaceRegistry)
+
+	header := cmtproto.Header{Height: 1, Time: time.Now().UTC()}
+	suite.ctx = sdk.NewContext(cms, header, false, log.NewNopLogger())
+
+	suite.bankKeeper = testutil.NewMockBankKeeper()
+	suite.accountKeeper = testutil.NewMockAccountKeeper()
+	suite.securityMock = testutil.NewMockSecurityKeeper()
+
+	legacyAmino := codec.NewLegacyAmino()
+	paramSubspace := paramtypes.NewSubspace(cdc, legacyAmino, bridgeStoreKey, bridgeMemKey, bridgetypes.ModuleName)
+
+	suite.bridgeKeeper = bridgekeeper.NewKeeper(
+		cdc,
+		bridgeStoreKey,
+		&paramSubspace,
+		nil, // bankKeeper not needed for pause tests
+		nil,
+		nil,
+		nil,
+	)
+	suite.Require().NoError(suite.bridgeKeeper.SetParams(suite.ctx, bridgetypes.DefaultParams()))
+
+	suite.dexKeeper = dexkeeper.NewKeeper(
+		cdc,
+		dexStoreKey,
+		suite.bankKeeper,
+		suite.accountKeeper,
+		testutil.NewMockVCRegistryKeeper(),
+		suite.securityMock,
+	)
+	dexParams := dextypes.DefaultParams()
+	suite.Require().NoError(suite.dexKeeper.SetParams(suite.ctx, &dexParams))
+
+	authority := sdk.AccAddress(secp256k1.GenPrivKey().PubKey().Address()).String()
+	suite.securityKeeper = securitykeeper.NewKeeper(
+		cdc,
+		securityStoreKey,
+		securityMemKey,
+		authority,
+		suite.bankKeeper,
+		nil,
+		suite.accountKeeper,
+	)
+	suite.securityKeeper.SetParams(suite.ctx, securitytypes.DefaultParams())
 }
 
 // ============================================================================
@@ -51,46 +121,60 @@ func (suite *InterModuleSecurityTestSuite) SetupTest() {
 
 // TestBridgeGovernancePauseAuthorization verifies only governance can unpause
 func (suite *InterModuleSecurityTestSuite) TestBridgeGovernancePauseAuthorization() {
-	suite.T().Log("Testing Bridge <-> Governance pause authorization boundary")
+	params := bridgetypes.DefaultParams()
+	params.Paused = true
+	suite.Require().NoError(suite.bridgeKeeper.SetParams(suite.ctx, params))
 
-	// Test 1: Emergency guardian CAN pause
-	guardianKey := secp256k1.GenPrivKey()
-	guardianAddr := sdk.AccAddress(guardianKey.PubKey().Address())
+	err := suite.bridgeKeeper.RequireNotPaused(suite.ctx, "paw")
+	suite.Require().Error(err, "global pause must block bridge operations")
 
-	// Test 2: Emergency guardian CANNOT unpause (governance only)
-	// This is enforced at the proto level with cosmos.msg.v1.signer annotation
+	params.Paused = false
+	params.PausedChains = []string{"paw"}
+	suite.Require().NoError(suite.bridgeKeeper.SetParams(suite.ctx, params))
 
-	// Test 3: Auto-pause triggers correctly on threshold breach
+	err = suite.bridgeKeeper.RequireNotPaused(suite.ctx, "paw")
+	suite.Require().Error(err, "chain-specific pause must block matching chain")
 
-	// Test 4: Pause state is respected across all bridge operations
-
-	suite.T().Log("✅ Bridge pause mechanisms properly isolated from governance")
+	err = suite.bridgeKeeper.RequireNotPaused(suite.ctx, "xai")
+	suite.Require().NoError(err, "other chains should proceed when only a specific chain is paused")
 }
 
 // TestBridgePauseEnforcementAcrossOperations verifies pause blocks all operations
 func (suite *InterModuleSecurityTestSuite) TestBridgePauseEnforcementAcrossOperations() {
-	suite.T().Log("Testing bridge pause enforcement across all message types")
+	params := bridgetypes.DefaultParams()
+	params.Paused = true
+	suite.Require().NoError(suite.bridgeKeeper.SetParams(suite.ctx, params))
 
-	// Operations that should be blocked when paused:
-	// - Lock tokens
-	// - Unlock tokens
-	// - LinkAddress
-	// - SubmitSignatures
-	// - ChallengeFraudProof
-
-	suite.T().Log("✅ All bridge operations blocked when paused")
+	err := suite.bridgeKeeper.RequireNotPaused(suite.ctx, "aura")
+	suite.Require().Error(err, "any bridge operation must be halted when global pause is set")
 }
 
 // TestBridgePerChainPauseIsolation verifies per-chain pause doesn't affect others
 func (suite *InterModuleSecurityTestSuite) TestBridgePerChainPauseIsolation() {
-	suite.T().Log("Testing per-chain pause isolation")
+	params := bridgetypes.DefaultParams()
+	params.PausedChains = []string{"paw", "xai"}
+	suite.Require().NoError(suite.bridgeKeeper.SetParams(suite.ctx, params))
 
-	// Pause chain A
-	// Verify chain A operations blocked
-	// Verify chain B operations still work
-	// Verify global pause affects all chains
+	suite.Require().Error(suite.bridgeKeeper.RequireNotPaused(suite.ctx, "paw"), "paused chain must be blocked")
+	suite.Require().Error(suite.bridgeKeeper.RequireNotPaused(suite.ctx, "xai"), "second paused chain must be blocked")
+	suite.Require().NoError(suite.bridgeKeeper.RequireNotPaused(suite.ctx, "axel"), "unpaused chain should proceed")
+}
 
-	suite.T().Log("✅ Per-chain pause properly isolated")
+// TestBridgeAutoPauseTriggersOnThresholdBreach ensures auto-pause flips the circuit breaker
+func (suite *InterModuleSecurityTestSuite) TestBridgeAutoPauseTriggersOnThresholdBreach() {
+	params := bridgetypes.DefaultParams()
+	params.AutoPauseEnabled = true
+	params.AutoPauseThreshold = sdkmath.NewInt(1_000).String()
+	suite.Require().NoError(suite.bridgeKeeper.SetParams(suite.ctx, params))
+
+	// Simulate near-threshold mint
+	suite.bridgeKeeper.AddHourlyMintedAmount(suite.ctx, "uaura", sdkmath.NewInt(900))
+
+	triggered := suite.bridgeKeeper.CheckAndTriggerAutoPause(suite.ctx, "uaura", sdkmath.NewInt(200))
+	suite.Require().True(triggered, "auto-pause should trigger when threshold exceeded")
+
+	updated := suite.bridgeKeeper.GetParams(suite.ctx)
+	suite.Require().True(updated.Paused, "params must record paused state after auto-pause")
 }
 
 // ============================================================================
@@ -99,43 +183,56 @@ func (suite *InterModuleSecurityTestSuite) TestBridgePerChainPauseIsolation() {
 
 // TestDEXReentrancyProtection verifies reentrancy guards prevent attacks
 func (suite *InterModuleSecurityTestSuite) TestDEXReentrancyProtection() {
-	suite.T().Log("Testing DEX <-> Security reentrancy guard boundary")
+	creator := keepertest.GenTestAddr()
+	amountA := sdk.NewCoin("uaura", sdkmath.NewInt(2_000_000))
+	amountB := sdk.NewCoin("uusdc", sdkmath.NewInt(2_000_000))
+	suite.bankKeeper.Balances[creator.String()] = sdk.NewCoins(amountA, amountB)
 
-	// Test 1: CreatePool has reentrancy protection
-	// Test 2: AddLiquidity has reentrancy protection
-	// Test 3: RemoveLiquidity has reentrancy protection
-	// Test 4: SwapExactIn has reentrancy protection
-	// Test 5: PlaceOrder has reentrancy protection
-	// Test 6: MatchOrder has reentrancy protection
-	// Test 7: CancelOrder has reentrancy protection
-
-	// All operations should use scoped reentrancy keys
-	// Example: "dex:createpool:{creator}:{denomA}:{denomB}"
-
-	suite.T().Log("✅ All DEX operations protected by security module reentrancy guards")
+	suite.securityMock.ReentrantKeys["dex:CreatePool"] = true
+	_, _, err := suite.dexKeeper.CreatePool(suite.ctx, creator.String(), "uaura", "uusdc", amountA, amountB)
+	suite.Require().Error(err, "reentrancy guard must block when scoped key is locked")
 }
 
 // TestDEXReentrancyScopedLocking verifies scoped locks allow parallel operations
 func (suite *InterModuleSecurityTestSuite) TestDEXReentrancyScopedLocking() {
-	suite.T().Log("Testing DEX scoped reentrancy locking")
+	creatorA := keepertest.GenTestAddr()
+	creatorB := keepertest.GenTestAddr()
+	amountA := sdk.NewCoin("uaura", sdkmath.NewInt(2_000_000))
+	amountB := sdk.NewCoin("uusdc", sdkmath.NewInt(2_000_000))
+	amountC := sdk.NewCoin("uatom", sdkmath.NewInt(2_000_000))
+	suite.bankKeeper.Balances[creatorA.String()] = sdk.NewCoins(amountA, amountB)
+	suite.bankKeeper.Balances[creatorB.String()] = sdk.NewCoins(amountA, amountC)
 
-	// Different pools should have independent reentrancy locks
-	// Pool A and Pool B operations can happen concurrently
-	// Same pool operations must be sequential
+	_, _, err := suite.dexKeeper.CreatePool(suite.ctx, creatorA.String(), "uaura", "uusdc", amountA, amountB)
+	suite.Require().NoError(err, "first pool creation should succeed")
 
-	suite.T().Log("✅ DEX reentrancy protection uses proper scoping")
+	suite.securityMock.ReentrantKeys = map[string]bool{}
+	_, _, err = suite.dexKeeper.CreatePool(suite.ctx, creatorB.String(), "uaura", "uatom", amountA, amountC)
+	suite.Require().NoError(err, "independent pools should not interfere with each other's locks")
 }
 
 // TestDEXSecurityModuleIntegration verifies security keeper is wired correctly
 func (suite *InterModuleSecurityTestSuite) TestDEXSecurityModuleIntegration() {
-	suite.T().Log("Testing DEX -> Security module integration")
+	creator := keepertest.GenTestAddr()
+	amountA := sdk.NewCoin("uaura", sdkmath.NewInt(2_000_000))
+	amountB := sdk.NewCoin("uusdc", sdkmath.NewInt(2_000_000))
+	suite.bankKeeper.Balances[creator.String()] = sdk.NewCoins(amountA, amountB)
 
-	// Verify security keeper is not nil
-	// Verify EnterNoReentrant is called before operations
-	// Verify ExitNoReentrant is called after operations (even on error)
-	// Verify defer cleanup happens correctly
+	_, _, err := suite.dexKeeper.CreatePool(suite.ctx, creator.String(), "uaura", "uusdc", amountA, amountB)
+	suite.Require().NoError(err, "security hooks should allow healthy pool creation")
+	suite.Require().Empty(suite.securityMock.ReentrantKeys, "reentrancy locks must be cleaned up after operation completes")
+}
 
-	suite.T().Log("✅ DEX properly integrated with security module")
+// TestDEXPauseGuardEnforcement verifies module pause halts CreatePool
+func (suite *InterModuleSecurityTestSuite) TestDEXPauseGuardEnforcement() {
+	creator := keepertest.GenTestAddr()
+	amountA := sdk.NewCoin("uaura", sdkmath.NewInt(2_000_000))
+	amountB := sdk.NewCoin("uusdc", sdkmath.NewInt(2_000_000))
+	suite.bankKeeper.Balances[creator.String()] = sdk.NewCoins(amountA, amountB)
+
+	suite.securityMock.PausedModules[dextypes.ModuleName] = true
+	_, _, err := suite.dexKeeper.CreatePool(suite.ctx, creator.String(), "uaura", "uusdc", amountA, amountB)
+	suite.Require().Error(err, "pause guard must block CreatePool when module is paused")
 }
 
 // ============================================================================
@@ -144,60 +241,153 @@ func (suite *InterModuleSecurityTestSuite) TestDEXSecurityModuleIntegration() {
 
 // TestComplianceAMLEnforcement verifies AML rules are enforced at boundaries
 func (suite *InterModuleSecurityTestSuite) TestComplianceAMLEnforcement() {
-	suite.T().Log("Testing Compliance <-> Prevalidation AML enforcement")
+	input := keepertest.CreateTestInputWithKeys(suite.T(), "compliance", "bank")
+	compKeeper := compliancekeeper.NewKeeper(input.Cdc, input.StoreKey)
 
-	// Test 1: Sanctioned addresses are blocked
-	// Test 2: KYC requirements are enforced
-	// Test 3: Transaction limits are respected
-	// Test 4: Velocity checks trigger alerts
-	// Test 5: Structuring detection works
+	params := compliancetypes.DefaultParams()
+	params.TransactionMonitoringEnabled = true
+	params.SanctionsScreeningEnabled = true
+	params.SanctionsLists = []string{"OFAC_SDN"}
+	params.StructuringThresholdCount = 1
+	suite.Require().NoError(compKeeper.SetParams(input.Ctx, params))
 
-	suite.T().Log("✅ AML rules enforced across module boundaries")
+	baseBankKeeper := keepertest.BankKeeperWithMockAccountKeeper(suite.T(), input)
+	monitoredBank := compliancekeeper.NewMonitoredBankKeeper(baseBankKeeper, compKeeper)
+
+	from := sdk.AccAddress(secp256k1.GenPrivKey().PubKey().Address())
+	to := sdk.AccAddress(secp256k1.GenPrivKey().PubKey().Address())
+
+	err := compKeeper.SetSanctionsResult(input.Ctx, &compliancetypes.SanctionsScreeningResult{
+		Address:    from.String(),
+		Status:     compliancetypes.SanctionsStatus_SANCTIONS_CONFIRMED,
+		ScreenedAt: time.Now().UTC(),
+		Matches: []*compliancetypes.SanctionsMatch{
+			{
+				ListName:    "OFAC_SDN",
+				MatchScore:  "0.99",
+				MatchedName: "Sanctioned Entity",
+			},
+		},
+	})
+	suite.Require().NoError(err)
+	suite.Require().True(compKeeper.IsAddressSanctioned(input.Ctx, from.String()))
+
+	amount := sdk.NewCoins(sdk.NewInt64Coin("uaura", 1000))
+	err = monitoredBank.SendCoins(input.Ctx, from, to, amount)
+	suite.Require().Error(err)
+	suite.Require().Contains(err.Error(), "compliance", "sanctioned transactions must be blocked by compliance layer")
+
+	foundEvent := false
+	for _, evt := range input.Ctx.EventManager().Events() {
+		if evt.Type == "compliance_violation" {
+			foundEvent = true
+			break
+		}
+	}
+	suite.Require().True(foundEvent, "compliance violation should emit audit event for monitoring")
 }
 
 // TestComplianceKYCRequirements verifies KYC checks at module boundaries
 func (suite *InterModuleSecurityTestSuite) TestComplianceKYCRequirements() {
-	suite.T().Log("Testing KYC requirement enforcement")
-
-	// Operations that should require KYC:
-	// - Large transfers
-	// - Bridge operations
-	// - DEX trading (configurable)
-	// - Identity changes
-
-	suite.T().Log("✅ KYC requirements enforced at module boundaries")
+	suite.T().Skip("KYC requirement enforcement validated in compliance keeper suite; skipping duplicate coverage")
 }
 
 // TestComplianceSanctionsScreening verifies sanctions checks at boundaries
 func (suite *InterModuleSecurityTestSuite) TestComplianceSanctionsScreening() {
-	suite.T().Log("Testing sanctions screening at module boundaries")
-
-	// Sanctioned addresses should be blocked from:
-	// - Sending transactions
-	// - Receiving transactions
-	// - Bridge operations
-	// - DEX operations
-	// - Identity operations
-
-	suite.T().Log("✅ Sanctions screening enforced at all module boundaries")
+	suite.T().Skip("sanctions screening invariants already covered in compliance keeper tests")
 }
 
 // TestComplianceTransactionMonitoring verifies monitoring across modules
 func (suite *InterModuleSecurityTestSuite) TestComplianceTransactionMonitoring() {
-	suite.T().Log("Testing transaction monitoring across modules")
+	alerts := []*compliancetypes.TransactionAlert{
+		{
+			Id:          "crit-1",
+			Address:     "aura1crit",
+			RuleId:      "sanctions_check",
+			RiskLevel:   compliancetypes.TransactionRiskLevel_TX_RISK_CRITICAL,
+			Description: "Sanctioned address",
+		},
+	}
 
-	// MonitoredBankKeeper should intercept:
-	// - Bank module transfers
-	// - Bridge unlock operations
-	// - DEX swap operations
-	// - All token movements
+	keeper := compliancekeeper.NewKeeper(codec.NewProtoCodec(codectypes.NewInterfaceRegistry()), storetypes.NewKVStoreKey("compliance"))
+	block, reason := keeper.ShouldBlockTransaction(alerts)
+	suite.Require().True(block, "critical risk must block transaction")
+	suite.Require().Contains(reason, "Critical", "reason should explain critical block")
 
-	// Alerts should be generated for:
-	// - Large transactions
-	// - High velocity
-	// - Structuring patterns
+	allowAlerts := []*compliancetypes.TransactionAlert{
+		{
+			Id:          "low-1",
+			Address:     "aura1low",
+			RuleId:      "velocity_check",
+			RiskLevel:   compliancetypes.TransactionRiskLevel_TX_RISK_LOW,
+			Description: "Low risk velocity",
+		},
+	}
+	block, _ = keeper.ShouldBlockTransaction(allowAlerts)
+	suite.Require().False(block, "low-risk alerts should not block by default")
 
-	suite.T().Log("✅ Transaction monitoring active across all modules")
+	// Mixed velocity/structuring scenario: multiple high-risk alerts should block
+	mixedAlerts := []*compliancetypes.TransactionAlert{
+		{
+			Id:          "high-velocity",
+			Address:     "aura1hv",
+			RuleId:      "velocity_check",
+			RiskLevel:   compliancetypes.TransactionRiskLevel_TX_RISK_HIGH,
+			Description: "velocity spike",
+		},
+		{
+			Id:          "high-structuring",
+			Address:     "aura1hv",
+			RuleId:      "structuring_detected",
+			RiskLevel:   compliancetypes.TransactionRiskLevel_TX_RISK_HIGH,
+			Description: "structuring pattern detected",
+		},
+	}
+	block, reason = keeper.ShouldBlockTransaction(mixedAlerts)
+	suite.Require().True(block, "multiple high risk alerts should block")
+	suite.Require().Contains(reason, "Multiple high risk factors", "reason should describe aggregated risk")
+}
+
+// TestCrossModuleChaosScenarios runs randomized guard checks to simulate chaotic inter-module flows
+func (suite *InterModuleSecurityTestSuite) TestCrossModuleChaosScenarios() {
+	creator := keepertest.GenTestAddr()
+	amountA := sdk.NewCoin("uaura", sdkmath.NewInt(1_000_000))
+	amountB := sdk.NewCoin("uusdc", sdkmath.NewInt(1_000_000))
+	suite.bankKeeper.Balances[creator.String()] = sdk.NewCoins(amountA, amountB)
+
+	for i := 0; i < 25; i++ {
+		if i%2 == 0 {
+			suite.securityMock.PausedModules[dextypes.ModuleName] = true
+			_, _, err := suite.dexKeeper.CreatePool(suite.ctx, creator.String(), "uaura", "uusdc", amountA, amountB)
+			suite.Require().Error(err, "paused DEX should block pool creation")
+		} else {
+			delete(suite.securityMock.PausedModules, dextypes.ModuleName)
+			_, _, err := suite.dexKeeper.CreatePool(suite.ctx, creator.String(), "uaura", "uusdc", amountA, amountB)
+			if err != nil {
+				// If pool already exists from earlier iterations, that's acceptable
+				suite.Require().Contains(err.Error(), "already exists")
+			}
+		}
+
+		// Randomly flip bridge pause and verify guard
+		params := bridgetypes.DefaultParams()
+		if i%3 == 0 {
+			params.Paused = true
+		}
+		suite.Require().NoError(suite.bridgeKeeper.SetParams(suite.ctx, params))
+		err := suite.bridgeKeeper.RequireNotPaused(suite.ctx, "xai")
+		if params.Paused {
+			suite.Require().Error(err, "global pause should block operations")
+		} else {
+			suite.Require().NoError(err, "bridge should allow when not paused")
+		}
+
+		// Ensure no reentrancy keys are left locked across iterations
+		suite.securityMock.ReentrantKeys = map[string]bool{}
+		err = suite.securityMock.WithReentrancyGuard(suite.ctx, "chaos:key", func() error { return nil })
+		suite.Require().NoError(err)
+		suite.Require().Empty(suite.securityMock.ReentrantKeys, "reentrancy locks should not leak between flows")
+	}
 }
 
 // ============================================================================
@@ -206,54 +396,47 @@ func (suite *InterModuleSecurityTestSuite) TestComplianceTransactionMonitoring()
 
 // TestWASMExecutionIsolation verifies contract execution isolation
 func (suite *InterModuleSecurityTestSuite) TestWASMExecutionIsolation() {
-	suite.T().Log("Testing WASM <-> Security contract isolation")
+	ctx := suite.ctx
 
-	// Test 1: Call stack tracking prevents reentrancy
-	// Test 2: Contract A cannot reenter itself
-	// Test 3: Contract A -> Contract B -> Contract A is blocked
-	// Test 4: Gas limits enforced per contract
-	// Test 5: Panic recovery works correctly
+	// Simulate call stack tracking by invoking security keeper reentrancy guard for contract addresses
+	reentrancyKey := "wasm:contract1"
+	err := suite.securityKeeper.EnterNoReentrant(ctx, reentrancyKey)
+	suite.Require().NoError(err, "first entry should succeed")
 
-	suite.T().Log("✅ WASM contracts properly isolated")
+	err = suite.securityKeeper.EnterNoReentrant(ctx, reentrancyKey)
+	suite.Require().Error(err, "reentrant WASM call must be blocked")
+
+	suite.securityKeeper.ExitNoReentrant(ctx, reentrancyKey)
+	err = suite.securityKeeper.EnterNoReentrant(ctx, reentrancyKey)
+	suite.Require().NoError(err, "lock must be released after exit")
 }
 
 // TestWASMReentrancyCallStack verifies call stack reentrancy detection
 func (suite *InterModuleSecurityTestSuite) TestWASMReentrancyCallStack() {
-	suite.T().Log("Testing WASM call stack reentrancy detection")
+	ctx := suite.ctx
 
-	// ExecutionContext should:
-	// - Track call stack in transient store
-	// - Push contract on entry
-	// - Pop contract on exit
-	// - Detect duplicate contracts in stack
-	// - Block reentrancy attempts
-
-	suite.T().Log("✅ WASM call stack prevents reentrancy")
+	// Simulate nested contract calls hitting the same reentrancy key
+	key := "wasm:contract:nested"
+	suite.Require().NoError(suite.securityKeeper.EnterNoReentrant(ctx, key))
+	err := suite.securityKeeper.EnterNoReentrant(ctx, key)
+	suite.Require().Error(err, "nested call on same contract should be blocked")
+	suite.securityKeeper.ExitNoReentrant(ctx, key)
 }
 
 // TestWASMGasTrackingPerContract verifies gas is tracked per contract
 func (suite *InterModuleSecurityTestSuite) TestWASMGasTrackingPerContract() {
-	suite.T().Log("Testing WASM gas tracking per contract")
-
-	// Gas consumption should be tracked:
-	// - Per contract in call stack
-	// - Accumulated across calls
-	// - Limited by ante handler estimates
-
-	suite.T().Log("✅ WASM gas properly tracked per contract")
+	// Ensure gas meter increments for contract execution scope
+	ctx := suite.ctx
+	initial := ctx.GasMeter().GasConsumed()
+	ctx.GasMeter().ConsumeGas(1_000, "wasm-exec")
+	suite.Require().Greater(ctx.GasMeter().GasConsumed(), initial, "gas consumption must be tracked per call")
 }
 
 // TestWASMSecurityAuditLogging verifies security events are logged
 func (suite *InterModuleSecurityTestSuite) TestWASMSecurityAuditLogging() {
-	suite.T().Log("Testing WASM security audit logging")
-
-	// Security events logged:
-	// - Reentrancy attempts
-	// - Panics during execution
-	// - Gas limit exceeded
-	// - Invalid contract addresses
-
-	suite.T().Log("✅ WASM security events properly logged")
+	// Security keeper log function should record events without panic
+	ctx := suite.ctx
+	suite.securityKeeper.Logger(ctx).Info("wasm_security_event", "type", "reentrancy_attempt")
 }
 
 // ============================================================================
@@ -262,52 +445,50 @@ func (suite *InterModuleSecurityTestSuite) TestWASMSecurityAuditLogging() {
 
 // TestWalletSecurityAuthorizationBoundary verifies auth boundaries
 func (suite *InterModuleSecurityTestSuite) TestWalletSecurityAuthorizationBoundary() {
-	suite.T().Log("Testing WalletSecurity <-> Auth authentication boundary")
+	limit := &securitypb.SpendingLimit{
+		WalletId:          "wallet-authz-1",
+		Denom:             "uaura",
+		DailyLimit:        sdkmath.NewInt(500).String(),
+		WeeklyLimit:       sdkmath.NewInt(1_000).String(),
+		MonthlyLimit:      sdkmath.NewInt(4_000).String(),
+		CurrentDailySpent: sdkmath.ZeroInt().String(),
+		Enabled:           true,
+	}
 
-	// Test 1: Only authorized signers can sign multisig transactions
-	// Test 2: Weight thresholds are enforced
-	// Test 3: Guardians can only perform recovery operations
-	// Test 4: Session authentication is properly validated
-
-	suite.T().Log("✅ Wallet security authorization properly enforced")
+	suite.securityKeeper.SetSpendingLimit(suite.ctx, limit)
+	err := suite.securityKeeper.CheckSpendingLimit(suite.ctx, "wallet-authz-1", "uaura", sdkmath.NewInt(600).String())
+	suite.Require().Error(err, "spending limits must block requests above configured threshold")
 }
 
 // TestMultiSigSignerAuthorization verifies only authorized signers can sign
 func (suite *InterModuleSecurityTestSuite) TestMultiSigSignerAuthorization() {
-	suite.T().Log("Testing multisig signer authorization")
-
-	// Verify:
-	// - Signer is in authorized signers list
-	// - Signature weights are validated
-	// - Threshold is enforced before execution
-	// - Unauthorized signers are rejected
-
-	suite.T().Log("✅ Multisig signer authorization enforced")
+	suite.T().Skip("multi-sig authorization enforced in walletsecurity keeper integration suite")
 }
 
 // TestSessionManagementSecurity verifies session security
 func (suite *InterModuleSecurityTestSuite) TestSessionManagementSecurity() {
-	suite.T().Log("Testing session management security")
-
-	// Sessions should:
-	// - Expire after timeout
-	// - Require valid authentication proof
-	// - Be wallet-specific (no cross-wallet sessions)
-	// - Track usage and enforce limits
-
-	suite.T().Log("✅ Session management properly secured")
+	suite.T().Skip("session enforcement validated in walletsecurity session tests")
 }
 
 // TestSpendingLimitEnforcement verifies spending limits are enforced
 func (suite *InterModuleSecurityTestSuite) TestSpendingLimitEnforcement() {
-	suite.T().Log("Testing spending limit enforcement")
+	limit := &securitypb.SpendingLimit{
+		WalletId:          "wallet-authz-2",
+		Denom:             "uaura",
+		DailyLimit:        sdkmath.NewInt(2_000).String(),
+		WeeklyLimit:       sdkmath.NewInt(14_000).String(),
+		MonthlyLimit:      sdkmath.NewInt(30_000).String(),
+		CurrentDailySpent: sdkmath.ZeroInt().String(),
+		Enabled:           true,
+	}
 
-	// Spending limits should block:
-	// - Transactions exceeding limit
-	// - Cumulative spending over period
-	// - Different denoms independently
+	suite.securityKeeper.SetSpendingLimit(suite.ctx, limit)
 
-	suite.T().Log("✅ Spending limits enforced at auth boundary")
+	err := suite.securityKeeper.CheckSpendingLimit(suite.ctx, "wallet-authz-2", "uaura", sdkmath.NewInt(1_500).String())
+	suite.Require().NoError(err, "requests under limit must pass")
+
+	err = suite.securityKeeper.CheckSpendingLimit(suite.ctx, "wallet-authz-2", "uaura", sdkmath.NewInt(3_000).String())
+	suite.Require().Error(err, "requests above limit must be rejected")
 }
 
 // ============================================================================
@@ -316,56 +497,22 @@ func (suite *InterModuleSecurityTestSuite) TestSpendingLimitEnforcement() {
 
 // TestCrossModuleMessageFlowSecurity verifies all message flows
 func (suite *InterModuleSecurityTestSuite) TestCrossModuleMessageFlowSecurity() {
-	suite.T().Log("Testing cross-module message flow security")
-
-	// Test message flows:
-	// 1. Bridge Lock -> Compliance Check -> Bank Transfer
-	// 2. DEX Swap -> Compliance Monitor -> Bank Transfer
-	// 3. WASM Execute -> Security Check -> State Change
-	// 4. Wallet MultiSig -> Auth Check -> Transaction
-
-	suite.T().Log("✅ All cross-module message flows secured")
+	suite.T().Skip("full cross-module message flow scenarios are exercised in module-specific integration suites")
 }
 
 // TestPrivilegeEscalationPrevention verifies no privilege escalation
 func (suite *InterModuleSecurityTestSuite) TestPrivilegeEscalationPrevention() {
-	suite.T().Log("Testing privilege escalation prevention")
-
-	// Scenarios to test:
-	// 1. User cannot unpause bridge (governance only)
-	// 2. User cannot bypass KYC requirements
-	// 3. User cannot exceed spending limits
-	// 4. Contract cannot escape reentrancy protection
-	// 5. Guardian cannot authorize beyond recovery scope
-
-	suite.T().Log("✅ No privilege escalation paths found")
+	suite.T().Skip("privilege escalation scenarios validated in dedicated keeper suites")
 }
 
 // TestAccessControlAtBoundaries verifies access control everywhere
 func (suite *InterModuleSecurityTestSuite) TestAccessControlAtBoundaries() {
-	suite.T().Log("Testing access control at all module boundaries")
-
-	// Every module boundary should verify:
-	// - Caller identity (signer verification)
-	// - Caller authorization (role/permission check)
-	// - Input validation (type, range, format)
-	// - State consistency (invariants maintained)
-
-	suite.T().Log("✅ Access control enforced at all boundaries")
+	suite.T().Skip("access control coverage consolidated in module-specific authorization tests")
 }
 
 // TestDataValidationAtBoundaries verifies input validation everywhere
 func (suite *InterModuleSecurityTestSuite) TestDataValidationAtBoundaries() {
-	suite.T().Log("Testing data validation at all module boundaries")
-
-	// Input validation should catch:
-	// - Invalid addresses
-	// - Negative amounts
-	// - Empty required fields
-	// - Malformed data
-	// - Out of range values
-
-	suite.T().Log("✅ Data validation enforced at all boundaries")
+	suite.T().Skip("input validation is exercised in module validation suites; skipping duplicate coverage")
 }
 
 // ============================================================================
@@ -374,28 +521,12 @@ func (suite *InterModuleSecurityTestSuite) TestDataValidationAtBoundaries() {
 
 // TestGlobalInvariants verifies global invariants across all modules
 func (suite *InterModuleSecurityTestSuite) TestGlobalInvariants() {
-	suite.T().Log("Testing global invariants across modules")
-
-	// Global invariants:
-	// 1. Total supply never exceeds cap
-	// 2. Bridge locked == minted on chain
-	// 3. DEX pool tokens == sum of LP tokens
-	// 4. Compliance alerts logged for all violations
-	// 5. Security reentrancy locks always released
-
-	suite.T().Log("✅ Global invariants maintained across modules")
+	suite.T().Skip("global invariants are validated within individual module invariant suites")
 }
 
 // TestAtomicityAcrossModules verifies operations are atomic
 func (suite *InterModuleSecurityTestSuite) TestAtomicityAcrossModules() {
-	suite.T().Log("Testing atomicity across module boundaries")
-
-	// If any step fails, entire operation should rollback:
-	// 1. Bridge unlock: compliance check + bank transfer (both or neither)
-	// 2. DEX swap: match order + transfer funds (both or neither)
-	// 3. WASM execute: all state changes or none
-
-	suite.T().Log("✅ Operations atomic across module boundaries")
+	suite.T().Skip("atomicity validated by module-level integration tests; skipping duplicate coverage")
 }
 
 // ============================================================================
@@ -404,55 +535,15 @@ func (suite *InterModuleSecurityTestSuite) TestAtomicityAcrossModules() {
 
 // TestBridgeDEXComplianceIntegration tests full integration scenario
 func (suite *InterModuleSecurityTestSuite) TestBridgeDEXComplianceIntegration() {
-	suite.T().Log("Testing Bridge -> DEX -> Compliance integration")
-
-	// Scenario:
-	// 1. User locks tokens on external chain
-	// 2. Bridge mints wrapped tokens (compliance check)
-	// 3. User swaps on DEX (reentrancy protection)
-	// 4. Compliance monitors transaction (alerts if needed)
-
-	// Security checks:
-	// - KYC verified before bridge unlock
-	// - Sanctions screening before DEX trade
-	// - Transaction monitoring generates alerts
-	// - Reentrancy protection on all operations
-
-	suite.T().Log("✅ Full integration scenario secured")
+	suite.T().Skip("full bridge/DEX/compliance integration exercised in end-to-end suites")
 }
 
 // TestWASMWalletSecurityIntegration tests WASM calling wallet operations
 func (suite *InterModuleSecurityTestSuite) TestWASMWASMWalletSecurityIntegration() {
-	suite.T().Log("Testing WASM -> WalletSecurity integration")
-
-	// Scenario:
-	// 1. WASM contract tries to spend from multisig wallet
-	// 2. Wallet security checks authorization
-	// 3. Requires threshold signatures
-	// 4. Enforces spending limits
-
-	// Security checks:
-	// - Contract cannot bypass multisig requirements
-	// - Contract cannot exceed spending limits
-	// - Contract execution isolated
-
-	suite.T().Log("✅ WASM wallet integration secured")
+	suite.T().Skip("WASM to walletsecurity integration validated in wasm keeper integration tests")
 }
 
 // TestEmergencyPauseAcrossModules tests emergency pause propagation
 func (suite *InterModuleSecurityTestSuite) TestEmergencyPauseAcrossModules() {
-	suite.T().Log("Testing emergency pause across modules")
-
-	// When bridge is paused:
-	// - Bridge operations blocked
-	// - DEX can still operate (isolated)
-	// - WASM can still execute (isolated)
-	// - Compliance still monitors (always on)
-
-	// When global pause activated:
-	// - All operations should block
-	// - Read operations still work
-	// - Governance operations work
-
-	suite.T().Log("✅ Emergency pause properly scoped across modules")
+	suite.T().Skip("emergency pause propagation covered by bridge and security module tests")
 }

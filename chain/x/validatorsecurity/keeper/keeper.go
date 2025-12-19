@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"math"
 
 	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"
@@ -295,14 +296,17 @@ func (k Keeper) getRegionValidatorCount(ctx context.Context, region string) int6
 		return 0
 	}
 
-	return int64(sdk.BigEndianToUint64(bz))
+	return clampUint64ToInt64(sdk.BigEndianToUint64(bz))
 }
 
 func (k Keeper) incrementRegionCount(ctx context.Context, region string) {
 	store := k.getStore(ctx)
 	key := types.GetRegionValidatorCountKey(region)
 	count := k.getRegionValidatorCount(ctx, region)
-	store.Set(key, sdk.Uint64ToBigEndian(uint64(count+1)))
+	if count < math.MaxInt64 {
+		count++
+	}
+	store.Set(key, sdk.Uint64ToBigEndian(safeInt64ToUint64(count)))
 }
 
 func (k Keeper) decrementRegionCount(ctx context.Context, region string) {
@@ -310,6 +314,21 @@ func (k Keeper) decrementRegionCount(ctx context.Context, region string) {
 	key := types.GetRegionValidatorCountKey(region)
 	count := k.getRegionValidatorCount(ctx, region)
 	if count > 0 {
-		store.Set(key, sdk.Uint64ToBigEndian(uint64(count-1)))
+		count--
+		store.Set(key, sdk.Uint64ToBigEndian(safeInt64ToUint64(count)))
 	}
+}
+
+func clampUint64ToInt64(u uint64) int64 {
+	if u > math.MaxInt64 {
+		return math.MaxInt64
+	}
+	return int64(u)
+}
+
+func safeInt64ToUint64(i int64) uint64 {
+	if i < 0 {
+		return 0
+	}
+	return uint64(i)
 }

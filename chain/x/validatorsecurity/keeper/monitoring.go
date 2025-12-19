@@ -130,7 +130,7 @@ func (k Keeper) MonitorValidator(ctx context.Context, validatorAddr string) erro
 			}
 		}
 
-		if int32(activeCount) < params.MinSentryNodes {
+			if clampIntToInt32(activeCount) < params.MinSentryNodes {
 			alertTime := sdkCtx.BlockTime()
 			k.CreateAlert(ctx, types.ValidatorAlert{
 				Id:               fmt.Sprintf("sentry-insufficient-%s-%d", validatorAddr, sdkCtx.BlockHeight()),

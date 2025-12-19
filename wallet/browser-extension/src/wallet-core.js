@@ -5,6 +5,128 @@
 
 const WalletCore = {
   /**
+   * Resolve a crypto implementation that works in both browser (extension)
+   * and Node (tests) environments.
+   */
+  async getCrypto() {
+    if (typeof process !== 'undefined' && process.versions?.node) {
+      if (!this.nodeWebCrypto) {
+        this.nodeWebCrypto = import('node:crypto')
+          .catch(() => import('crypto'))
+          .then(mod => mod.webcrypto)
+          .catch(() => null);
+      }
+
+      const webcrypto = await this.nodeWebCrypto;
+      if (webcrypto?.subtle) {
+        return webcrypto;
+      }
+    }
+
+    if (typeof globalThis.crypto !== 'undefined' && globalThis.crypto.subtle) {
+      return globalThis.crypto;
+    }
+
+    throw new Error('Crypto API unavailable');
+  },
+
+  /**
+   * Node.js crypto fallback (used in tests and CLI tooling).
+   */
+  async getNodeCrypto() {
+    if (typeof process !== 'undefined' && process.versions?.node) {
+      if (!this.nodeCryptoModule) {
+        this.nodeCryptoModule = import('node:crypto')
+          .catch(() => import('crypto'))
+          .catch(() => null);
+      }
+      return this.nodeCryptoModule;
+    }
+    return null;
+  },
+
+  /**
+   * Normalize storage.get to work with both callback and promise APIs.
+   */
+  async storageGet(keys) {
+    return new Promise((resolve, reject) => {
+      try {
+        const storage = chrome?.storage?.local;
+        if (!storage || typeof storage.get !== 'function') {
+          return reject(new Error('Storage API unavailable'));
+        }
+
+        let resolved = false;
+        const done = (result = {}) => {
+          if (resolved) return;
+          resolved = true;
+          resolve(result || {});
+        };
+
+        const maybePromise = storage.get(keys, done);
+
+        if (maybePromise && typeof maybePromise.then === 'function') {
+          maybePromise.then(done).catch(reject);
+        } else if (storage.get.length === 1 && !resolved) {
+          done(maybePromise);
+        }
+      } catch (error) {
+        reject(error);
+      }
+    });
+  },
+
+  /**
+   * Normalize storage.set to work with both callback and promise APIs.
+   */
+  async storageSet(data) {
+    return new Promise((resolve, reject) => {
+      try {
+        const storage = chrome?.storage?.local;
+        if (!storage || typeof storage.set !== 'function') {
+          return reject(new Error('Storage API unavailable'));
+        }
+
+        const done = () => resolve();
+        const maybePromise = storage.set(data, done);
+
+        if (maybePromise && typeof maybePromise.then === 'function') {
+          maybePromise.then(done).catch(reject);
+        } else if (storage.set.length === 1) {
+          done();
+        }
+      } catch (error) {
+        reject(error);
+      }
+    });
+  },
+
+  /**
+   * Normalize storage.remove to work with both callback and promise APIs.
+   */
+  async storageRemove(keys) {
+    return new Promise((resolve, reject) => {
+      try {
+        const storage = chrome?.storage?.local;
+        if (!storage || typeof storage.remove !== 'function') {
+          return reject(new Error('Storage API unavailable'));
+        }
+
+        const done = () => resolve();
+        const maybePromise = storage.remove(keys, done);
+
+        if (maybePromise && typeof maybePromise.then === 'function') {
+          maybePromise.then(done).catch(reject);
+        } else if (storage.remove.length === 1) {
+          done();
+        }
+      } catch (error) {
+        reject(error);
+      }
+    });
+  },
+
+  /**
    * Storage keys
    */
   STORAGE_KEYS: {
@@ -114,7 +236,7 @@ const WalletCore = {
 
       storage[this.STORAGE_KEYS.WALLET_ADDRESS] = address;
 
-      await chrome.storage.local.set(storage);
+      await this.storageSet(storage);
     } catch (error) {
       console.error('Save wallet error:', error);
       throw new Error(`Failed to save wallet: ${error.message}`);
@@ -128,7 +250,7 @@ const WalletCore = {
    */
   async loadWallet(password = null) {
     try {
-      const result = await chrome.storage.local.get([
+      const result = await this.storageGet([
         this.STORAGE_KEYS.PRIVATE_KEY,
         this.STORAGE_KEYS.ENCRYPTED_KEY,
         this.STORAGE_KEYS.KEY_SALT,
@@ -181,7 +303,7 @@ const WalletCore = {
    */
   async deleteWallet() {
     try {
-      await chrome.storage.local.remove([
+      await this.storageRemove([
         this.STORAGE_KEYS.PRIVATE_KEY,
         this.STORAGE_KEYS.ENCRYPTED_KEY,
         this.STORAGE_KEYS.KEY_SALT,
@@ -197,17 +319,37 @@ const WalletCore = {
   /**
    * Encrypt private key with password
    * @param {string} privateKeyHex - Private key in hex
-   * @param {string} password - Password
-   * @returns {Promise<Object>} Encrypted key and salt
-   */
+  * @param {string} password - Password
+  * @returns {Promise<Object>} Encrypted key and salt
+  */
   async encryptPrivateKey(privateKeyHex, password) {
     try {
+      const nodeCrypto = await this.getNodeCrypto();
+
+      if (nodeCrypto) {
+        const salt = nodeCrypto.randomBytes(16);
+        const iv = nodeCrypto.randomBytes(12);
+        const key = nodeCrypto.pbkdf2Sync(password, salt, 100000, 32, 'sha256');
+        const cipher = nodeCrypto.createCipheriv('aes-256-gcm', key, iv);
+
+        const encryptedBuffer = Buffer.concat([cipher.update(privateKeyHex, 'utf8'), cipher.final()]);
+        const tag = cipher.getAuthTag();
+        const combined = Buffer.concat([iv, encryptedBuffer, tag]);
+
+        return {
+          encrypted: this.bytesToBase64(combined),
+          salt: this.bytesToBase64(salt),
+        };
+      }
+
+      const cryptoApi = await this.getCrypto();
+
       // Generate salt
-      const salt = crypto.getRandomValues(new Uint8Array(16));
+      const salt = cryptoApi.getRandomValues(new Uint8Array(16));
 
       // Derive key from password
       const encoder = new TextEncoder();
-      const keyMaterial = await crypto.subtle.importKey(
+      const keyMaterial = await cryptoApi.subtle.importKey(
         'raw',
         encoder.encode(password),
         { name: 'PBKDF2' },
@@ -215,7 +357,7 @@ const WalletCore = {
         ['deriveBits', 'deriveKey']
       );
 
-      const key = await crypto.subtle.deriveKey(
+      const key = await cryptoApi.subtle.deriveKey(
         {
           name: 'PBKDF2',
           salt: salt,
@@ -229,8 +371,8 @@ const WalletCore = {
       );
 
       // Encrypt private key
-      const iv = crypto.getRandomValues(new Uint8Array(12));
-      const encrypted = await crypto.subtle.encrypt(
+      const iv = cryptoApi.getRandomValues(new Uint8Array(12));
+      const encrypted = await cryptoApi.subtle.encrypt(
         { name: 'AES-GCM', iv: iv },
         key,
         encoder.encode(privateKeyHex)
@@ -257,9 +399,49 @@ const WalletCore = {
    * @param {string} saltBase64 - Salt in base64
    * @param {string} password - Password
    * @returns {Promise<string>} Decrypted private key in hex
-   */
+  */
   async decryptPrivateKey(encryptedBase64, saltBase64, password) {
+    const nodeCrypto = await this.getNodeCrypto();
+
+    if (!nodeCrypto && process?.env?.NODE_ENV === 'test') {
+      console.error('Node crypto unavailable in test runtime');
+    }
+
+    if (nodeCrypto) {
+      try {
+        const salt = this.base64ToBytes(saltBase64);
+        const combined = this.base64ToBytes(encryptedBase64);
+        const iv = combined.slice(0, 12);
+        const cipherWithTag = combined.slice(12);
+
+        if (process?.env?.NODE_ENV === 'test') {
+          console.debug('Node decrypt path', {
+            combinedLength: combined.length,
+            cipherLength: cipherWithTag.length,
+            ivLength: iv.length,
+          });
+        }
+
+        if (cipherWithTag.length <= 16) {
+          throw new Error('Invalid encrypted payload');
+        }
+
+        const authTag = cipherWithTag.slice(cipherWithTag.length - 16);
+        const payload = cipherWithTag.slice(0, cipherWithTag.length - 16);
+
+        const key = nodeCrypto.pbkdf2Sync(password, salt, 100000, 32, 'sha256');
+        const decipher = nodeCrypto.createDecipheriv('aes-256-gcm', key, iv);
+        decipher.setAuthTag(authTag);
+
+        const decrypted = Buffer.concat([decipher.update(payload), decipher.final()]);
+        return decrypted.toString('utf8');
+      } catch (fallbackError) {
+        console.error('Node crypto decrypt fallback failed:', fallbackError);
+      }
+    }
+
     try {
+      const cryptoApi = await this.getCrypto();
       const encoder = new TextEncoder();
       const decoder = new TextDecoder();
       const salt = this.base64ToBytes(saltBase64);
@@ -269,8 +451,23 @@ const WalletCore = {
       const iv = combined.slice(0, 12);
       const encrypted = combined.slice(12);
 
+      if (encrypted.length <= 16) {
+        const preview = typeof encryptedBase64 === 'string' ? encryptedBase64.slice(0, 24) : '[non-string]';
+        throw new Error(
+          `Encrypted payload too small (cipherLength=${encrypted.length}, total=${combined.length}, preview=${preview})`
+        );
+      }
+
+      if (process?.env?.NODE_ENV === 'test') {
+        console.error('WebCrypto decrypt path', {
+          combinedLength: combined.length,
+          cipherLength: encrypted.length,
+          ivLength: iv.length,
+        });
+      }
+
       // Derive key from password
-      const keyMaterial = await crypto.subtle.importKey(
+      const keyMaterial = await cryptoApi.subtle.importKey(
         'raw',
         encoder.encode(password),
         { name: 'PBKDF2' },
@@ -278,7 +475,7 @@ const WalletCore = {
         ['deriveBits', 'deriveKey']
       );
 
-      const key = await crypto.subtle.deriveKey(
+      const key = await cryptoApi.subtle.deriveKey(
         {
           name: 'PBKDF2',
           salt: salt,
@@ -292,16 +489,22 @@ const WalletCore = {
       );
 
       // Decrypt
-      const decrypted = await crypto.subtle.decrypt(
-        { name: 'AES-GCM', iv: iv },
-        key,
-        encrypted
+      const ivBuffer = iv.buffer.slice(iv.byteOffset, iv.byteOffset + iv.byteLength);
+      const cipherBuffer = encrypted.buffer.slice(
+        encrypted.byteOffset,
+        encrypted.byteOffset + encrypted.byteLength
       );
+
+      const decrypted = await cryptoApi.subtle
+        .decrypt({ name: 'AES-GCM', iv: ivBuffer }, key, cipherBuffer)
+        .catch(err => {
+          throw new Error(`${err.message} (cipherLength=${encrypted.length}, total=${combined.length})`);
+        });
 
       return decoder.decode(decrypted);
     } catch (error) {
       console.error('Decryption error:', error);
-      throw new Error('Failed to decrypt private key. Wrong password?');
+      throw new Error(`Failed to decrypt private key. ${error.message || 'Wrong password?'}`);
     }
   },
 
@@ -314,8 +517,9 @@ const WalletCore = {
     if (!address || typeof address !== 'string') {
       return false;
     }
-    // Check prefix and length
-    return address.startsWith(COSMOS_SDK.config.bech32Prefix) && address.length >= 39;
+    const prefix = COSMOS_SDK?.config?.bech32Prefix || 'aura';
+    const pattern = new RegExp(`^${prefix}1[0-9a-z]{10,90}$`, 'i');
+    return pattern.test(address);
   },
 
   /**
@@ -324,6 +528,9 @@ const WalletCore = {
    * @returns {string} Base64 string
    */
   bytesToBase64(bytes) {
+    if (typeof Buffer !== 'undefined') {
+      return Buffer.from(bytes).toString('base64');
+    }
     return btoa(String.fromCharCode(...bytes));
   },
 
@@ -333,6 +540,9 @@ const WalletCore = {
    * @returns {Uint8Array} Bytes
    */
   base64ToBytes(base64) {
+    if (typeof Buffer !== 'undefined') {
+      return new Uint8Array(Buffer.from(base64, 'base64'));
+    }
     const binary = atob(base64);
     const bytes = new Uint8Array(binary.length);
     for (let i = 0; i < binary.length; i++) {
@@ -341,6 +551,8 @@ const WalletCore = {
     return bytes;
   },
 };
+
+export default WalletCore;
 
 // Export for use in extension
 if (typeof module !== 'undefined' && module.exports) {

@@ -5,8 +5,8 @@ package keeper
 import (
 	"fmt"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkmath "cosmossdk.io/math"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/aequitas/aura/chain/x/security/types"
 )
@@ -288,7 +288,8 @@ func PrivacyDataConsistencyInvariant(k *Keeper) sdk.Invariant {
 			}
 
 			// Ring members should match ring size
-			if uint32(len(sig.RingMembers)) != sig.RingSize {
+			memberCount := clampIntToUint32(len(sig.RingMembers))
+			if memberCount != sig.RingSize {
 				return sdk.FormatInvariant(
 					types.ModuleName,
 					"privacy-data-consistency",

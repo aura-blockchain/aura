@@ -4,12 +4,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/suite"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/stretchr/testify/suite"
 
 	"github.com/aequitas/aura/chain/testutil/keeper"
 	authkeeper "github.com/aequitas/aura/chain/x/auth/keeper"
-	authproto "github.com/aequitas/aura/proto/aura/auth/v1beta1"
 )
 
 type AuditKVStoreTestSuite struct {
@@ -19,7 +18,7 @@ type AuditKVStoreTestSuite struct {
 }
 
 func (suite *AuditKVStoreTestSuite) SetupTest() {
-	suite.ctx, suite.keeper = keeper.AuthKeeper(suite.T())
+	suite.keeper, suite.ctx = keeper.AuthKeeper(suite.T())
 }
 
 // TestAuditLogKVStorePersistence verifies audit logs are stored in KVStore and persist
@@ -108,7 +107,7 @@ func (suite *AuditKVStoreTestSuite) TestAuditLogFilteringByAction() {
 // TestAuditLogTimeOrdering verifies logs are ordered by timestamp (most recent first)
 func (suite *AuditKVStoreTestSuite) TestAuditLogTimeOrdering() {
 	// Add logs with different timestamps
-	baseTime := suite.ctx.BlockTime()
+	baseTime := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 
 	// Create a new context for each log with incrementing time
 	for i := 0; i < 5; i++ {
@@ -230,7 +229,8 @@ func (suite *AuditKVStoreTestSuite) TestAuditLogDeterministicTimestamp() {
 	suite.keeper.LogAudit(ctx, "user1", "action", "resource", "success", nil, "")
 
 	// Retrieve the log
-	logs := suite.keeper.GetAllAuditLogs(ctx)
+	logs, err := suite.keeper.GetAllAuditLogs(ctx)
+	suite.Require().NoError(err)
 	suite.Require().Len(logs, 1)
 
 	// Verify timestamp matches block time exactly

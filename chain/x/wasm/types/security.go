@@ -107,7 +107,7 @@ func ComputeCodeHash(code []byte) string {
 
 // WASMValidationResult holds results of bytecode validation
 type WASMValidationResult struct {
-	Valid              bool     `json:"valid"`
+	Valid               bool     `json:"valid"`
 	HasValidMagicNumber bool     `json:"has_valid_magic_number"`
 	HasValidFormat      bool     `json:"has_valid_format"`
 	MaliciousPatterns   []string `json:"malicious_patterns"`
@@ -356,11 +356,11 @@ func (cp *ContractPermissions) CanQueryVCsFor(vcType string) bool {
 
 // GasEstimate holds pre-flight gas estimation
 type GasEstimate struct {
-	StorageGas     uint64 `json:"storage_gas"`      // Gas for storage operations
-	ComputationGas uint64 `json:"computation_gas"`  // Gas for computation
-	CallGas        uint64 `json:"call_gas"`         // Gas for contract calls
-	TotalEstimate  uint64 `json:"total_estimate"`   // Total estimated gas
-	SafetyMargin   uint64 `json:"safety_margin"`    // Additional safety margin
+	StorageGas     uint64 `json:"storage_gas"`     // Gas for storage operations
+	ComputationGas uint64 `json:"computation_gas"` // Gas for computation
+	CallGas        uint64 `json:"call_gas"`        // Gas for contract calls
+	TotalEstimate  uint64 `json:"total_estimate"`  // Total estimated gas
+	SafetyMargin   uint64 `json:"safety_margin"`   // Additional safety margin
 }
 
 // CalculateStorageGas calculates gas cost for storing code
@@ -448,6 +448,13 @@ func GetTrustedCodeHashKey(codeHash string) []byte {
 
 // GetSecurityAuditLogKey returns the storage key for security audit log
 func GetSecurityAuditLogKey(blockHeight int64, index uint64) []byte {
-	key := append(SecurityAuditLogPrefix, sdk.Uint64ToBigEndian(uint64(blockHeight))...)
+	key := append(SecurityAuditLogPrefix, sdk.Uint64ToBigEndian(safeInt64ToUint64(blockHeight))...)
 	return append(key, sdk.Uint64ToBigEndian(index)...)
+}
+
+func safeInt64ToUint64(i int64) uint64 {
+	if i < 0 {
+		return 0
+	}
+	return uint64(i)
 }

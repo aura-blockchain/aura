@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/aequitas/aura/chain/x/wasm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -162,13 +162,56 @@ func (k Keeper) ValidateContractExecution(ctx sdk.Context, contractAddr string) 
 	return nil
 }
 
-// StoreCode stores contract code
-func (k Keeper) StoreCode(ctx sdk.Context, sender sdk.AccAddress, code []byte) (uint64, error) {
-	if k.wasmKeeper == nil {
-		return 0, fmt.Errorf("wasm keeper not configured")
+// contractOpsKeeper returns the currently configured contract operations
+// implementation, falling back to the injected factory so tests can supply
+// deterministic mocks without wiring the full wasmd keeper.
+func (k Keeper) contractOpsKeeper() (wasmtypes.ContractOpsKeeper, error) {
+	if k.opsFactory == nil {
+		return nil, fmt.Errorf("wasm keeper not configured")
 	}
 
-	ops := wasmkeeper.NewDefaultPermissionKeeper(k.wasmKeeper)
+	ops := k.opsFactory(k.wasmKeeper)
+	if ops == nil {
+		return nil, fmt.Errorf("wasm keeper not configured")
+	}
+	return ops, nil
+}
+
+// ensureMigrationAdmin enforces RequireAdminForMigrate by checking either the
+// underlying wasmd keeper or the contract registry metadata depending on what
+// is available in the current context.
+func (k Keeper) ensureMigrationAdmin(ctx sdk.Context, contractAddr, caller sdk.AccAddress) error {
+	admin, err := k.lookupContractAdmin(ctx, contractAddr)
+	if err != nil {
+		return err
+	}
+	if admin != caller.String() {
+		return fmt.Errorf("caller %s is not admin for contract %s", caller.String(), contractAddr.String())
+	}
+	return nil
+}
+
+func (k Keeper) lookupContractAdmin(ctx sdk.Context, contractAddr sdk.AccAddress) (string, error) {
+	if k.wasmKeeper != nil {
+		if info := k.wasmKeeper.GetContractInfo(ctx, contractAddr); info != nil {
+			return info.Admin, nil
+		}
+	}
+	if k.contractRegistry != nil {
+		if info, found := k.contractRegistry.GetContractInfo(ctx, contractAddr.String()); found {
+			return info.Admin, nil
+		}
+	}
+	return "", fmt.Errorf("contract %s not found", contractAddr.String())
+}
+
+// StoreCode stores contract code
+func (k Keeper) StoreCode(ctx sdk.Context, sender sdk.AccAddress, code []byte) (uint64, error) {
+	ops, err := k.contractOpsKeeper()
+	if err != nil {
+		return 0, err
+	}
+
 	codeID, _, err := ops.Create(ctx, sender, code, nil)
 	if err != nil {
 		return 0, err
@@ -195,11 +238,11 @@ func (k Keeper) InstantiateContract(
 		return nil, nil, err
 	}
 
-	if k.wasmKeeper == nil {
-		return nil, nil, fmt.Errorf("wasm keeper not configured")
+	ops, err := k.contractOpsKeeper()
+	if err != nil {
+		return nil, nil, err
 	}
 
-	ops := wasmkeeper.NewDefaultPermissionKeeper(k.wasmKeeper)
 	contractAddr, data, err := ops.Instantiate(ctx, codeID, creator, admin, initMsg, label, funds)
 	if err != nil {
 		return nil, nil, err
@@ -226,10 +269,10 @@ func (k Keeper) ExecuteContract(ctx sdk.Context, contractAddr, sender sdk.AccAdd
 		return nil, err
 	}
 
-	if k.wasmKeeper == nil {
-		return nil, fmt.Errorf("wasm keeper not configured")
+	ops, err := k.contractOpsKeeper()
+	if err != nil {
+		return nil, err
 	}
-	ops := wasmkeeper.NewDefaultPermissionKeeper(k.wasmKeeper)
 
 	gasBefore := ctx.GasMeter().GasConsumed()
 	data, err := ops.Execute(ctx, contractAddr, sender, msg, funds)
@@ -246,24 +289,19 @@ func (k Keeper) ExecuteContract(ctx sdk.Context, contractAddr, sender sdk.AccAdd
 
 // Migrate migrates a contract to new code
 func (k Keeper) Migrate(ctx sdk.Context, contractAddr, caller sdk.AccAddress, newCodeID uint64, msg []byte) ([]byte, error) {
-	// Check if wasm keeper is configured
-	if k.wasmKeeper == nil {
-		return nil, fmt.Errorf("wasm keeper not configured")
+	ops, err := k.contractOpsKeeper()
+	if err != nil {
+		return nil, err
 	}
 
 	// Check migration requirements
 	params := k.GetParams(ctx)
 	if params.RequireAdminForMigrate {
-		info := k.wasmKeeper.GetContractInfo(ctx, contractAddr)
-		if info == nil {
-			return nil, fmt.Errorf("contract %s not found", contractAddr.String())
-		}
-		if info.Admin != caller.String() {
-			return nil, fmt.Errorf("caller %s is not admin for contract %s", caller.String(), contractAddr.String())
+		if err := k.ensureMigrationAdmin(ctx, contractAddr, caller); err != nil {
+			return nil, err
 		}
 	}
 
-	ops := wasmkeeper.NewDefaultPermissionKeeper(k.wasmKeeper)
 	data, err := ops.Migrate(ctx, contractAddr, caller, newCodeID, msg)
 	if err != nil {
 		return nil, err

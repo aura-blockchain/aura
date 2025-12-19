@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"time"
 
-	gogotypes "github.com/cosmos/gogoproto/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/aequitas/aura/chain/x/auth/types"
 	"github.com/aequitas/aura/chain/x/common/determinism"
 	"github.com/aequitas/aura/chain/x/walletsecurity/types"
 	wsproto "github.com/aequitas/aura/proto/aura/walletsecurity/v1beta1"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	gogotypes "github.com/cosmos/gogoproto/types"
 )
 
 // CreateSession creates a new wallet session
@@ -152,6 +153,11 @@ func (k Keeper) LockSessionDueToInactivity(ctx context.Context, sessionID string
 
 // UnlockSessionAfterAuth unlocks a locked session after authentication
 func (k Keeper) UnlockSessionAfterAuth(ctx context.Context, sessionID string, authProof []byte) error {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	if err := k.requireActiveAuthSession(sdkCtx, sessionID); err != nil {
+		return err
+	}
+
 	sessionBytes, err := k.GetSessionConfig(ctx, sessionID)
 	if err != nil {
 		return err
@@ -200,4 +206,21 @@ func (k Keeper) TerminateSession(ctx context.Context, sessionID string) error {
 func (k Keeper) verifyAuthProof(session *wsproto.SessionConfig, proof []byte) bool {
 	// In production, verify biometric or password hash
 	return len(proof) > 0
+}
+
+func (k Keeper) requireActiveAuthSession(ctx sdk.Context, sessionID string) error {
+	if k.authKeeper == nil {
+		return nil
+	}
+
+	session, err := k.authKeeper.GetSession(ctx, sessionID)
+	if err != nil || session == nil {
+		return types.ErrInactiveSession
+	}
+
+	if !authtypes.IsSessionActive(session, ctx.BlockTime()) {
+		return types.ErrInactiveSession
+	}
+
+	return nil
 }

@@ -1,3 +1,6 @@
+//go:build pending_proto
+// +build pending_proto
+
 package keeper_test
 
 import (
