@@ -1,45 +1,30 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-vi.mock('@ledgerhq/hw-transport-webhid', () => {
-  const transport = {
-    device: { productName: 'Ledger', manufacturerName: 'Ledger' },
-    close: vi.fn(),
-  };
-  return {
-    default: {
-      create: vi.fn().mockResolvedValue(transport),
-      list: vi.fn().mockResolvedValue([transport.device]),
-    },
-  };
-}, { virtual: true });
+// Create mock objects before vi.mock calls
+const mockTransport = {
+  device: { productName: 'Ledger', manufacturerName: 'Ledger' },
+  close: vi.fn(),
+};
 
-vi.mock('@ledgerhq/hw-app-cosmos', () => {
-  return {
-    default: vi.fn().mockImplementation(() => ({
-      getAddress: vi.fn().mockResolvedValue({
-        bech32_address: 'aura1hwaddress',
-        publicKey: new Uint8Array([1, 2, 3]),
-      }),
-      sign: vi.fn().mockResolvedValue({
-        signature: new Uint8Array([4, 5, 6]),
-      }),
-    })),
-  };
-}, { virtual: true });
+const mockLedgerApp = {
+  getAddress: vi.fn().mockResolvedValue({
+    bech32_address: 'aura1hwaddress',
+    publicKey: new Uint8Array([1, 2, 3]),
+  }),
+  sign: vi.fn().mockResolvedValue({
+    signature: new Uint8Array([4, 5, 6]),
+  }),
+};
 
-vi.mock('@keystonehq/keystone-sdk', () => {
-  return {
-    default: vi.fn().mockImplementation(() => ({
-      getConnectedWalletAddress: vi.fn().mockReturnValue({
-        address: 'aura1keystone',
-        publicKey: 'pub_keystone',
-      }),
-      sign: vi.fn().mockResolvedValue({
-        signature: 'keystone_sig',
-      }),
-    })),
-  };
-}, { virtual: true });
+const mockKeystoneSdk = {
+  getConnectedWalletAddress: vi.fn().mockReturnValue({
+    address: 'aura1keystone',
+    publicKey: 'pub_keystone',
+  }),
+  sign: vi.fn().mockResolvedValue({
+    signature: 'keystone_sig',
+  }),
+};
 
 const trezorMock = {
   manifest: vi.fn(),
@@ -60,7 +45,43 @@ const trezorMock = {
   signTransaction: vi.fn(),
 };
 
-vi.mock('trezor-connect', () => ({ default: trezorMock }), { virtual: true });
+vi.mock('@ledgerhq/hw-transport-webhid', () => ({
+  default: {
+    create: vi.fn().mockResolvedValue({
+      device: { productName: 'Ledger', manufacturerName: 'Ledger' },
+      close: vi.fn(),
+    }),
+    list: vi.fn().mockResolvedValue([{ productName: 'Ledger' }]),
+  },
+}));
+
+vi.mock('@ledgerhq/hw-app-cosmos', () => ({
+  default: class MockCosmosApp {
+    constructor() {}
+    getAddress = vi.fn().mockResolvedValue({
+      bech32_address: 'aura1hwaddress',
+      publicKey: new Uint8Array([1, 2, 3]),
+    });
+    sign = vi.fn().mockResolvedValue({
+      signature: new Uint8Array([4, 5, 6]),
+    });
+  },
+}));
+
+vi.mock('@keystonehq/keystone-sdk', () => ({
+  default: class MockKeystoneSDK {
+    constructor() {}
+    getConnectedWalletAddress = vi.fn().mockReturnValue({
+      address: 'aura1keystone',
+      publicKey: 'pub_keystone',
+    });
+    sign = vi.fn().mockResolvedValue({
+      signature: 'keystone_sig',
+    });
+  },
+}));
+
+vi.mock('trezor-connect', () => ({ default: trezorMock }));
 
 describe('HardwareWalletManager (ledgerjs)', () => {
   let HardwareWalletManager;
