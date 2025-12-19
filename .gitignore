@@ -120,3 +120,11 @@ testnet-data/
 # Mnemonic files (sensitive)
 aurad
 sdk/python/.venv/
+
+# Python virtual environments (prevent accidental commits)
+.venv/
+venv/
+ENV/
+env/
+*.egg-info/
+__pycache__/
