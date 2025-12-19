@@ -119,3 +119,4 @@ testnet-data/
 .deployer.mnemonic
 # Mnemonic files (sensitive)
 aurad
+sdk/python/.venv/
