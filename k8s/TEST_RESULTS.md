@@ -2,7 +2,7 @@
 
 **Date:** 2025-12-20
 **Environment:** KinD 3-node cluster (aura-dev)
-**Deployment Mode:** Mock (nginx simulator)
+**Deployment Mode:** Real (aurad binary)
 **Status:** ✅ ALL TESTS PASSED
 
 ## Final Test Summary
@@ -10,12 +10,12 @@
 | Test Suite | Passed | Failed | Warnings | Skipped | Status |
 |------------|--------|--------|----------|---------|--------|
 | Smoke | 9 | 0 | 6 | 0 | ✅ PASS |
-| Integration | 8 | 0 | 0 | 1 | ✅ PASS |
+| Integration | 7 | 0 | 0 | 2 | ✅ PASS |
 | Security | 14 | 0 | 2 | 0 | ✅ PASS |
 | Network Policy | 8 | 0 | 0 | 0 | ✅ PASS |
 | Blockchain | 4 | 0 | 0 | 0 | ✅ PASS |
 | Chaos | 6 | 0 | 0 | 0 | ✅ PASS |
-| **TOTAL** | **49** | **0** | **8** | **1** | ✅ |
+| **TOTAL** | **48** | **0** | **8** | **2** | ✅ |
 
 ## Infrastructure Deployed
 
@@ -45,16 +45,26 @@
 ## Remaining Warnings/Skips (Informational)
 
 **Smoke Tests (6 warnings):**
-- 2 services without endpoints (gRPC/P2P not exposed by mock)
+- 2 services without endpoints (gRPC/P2P exposed but not load balanced)
 - 2 secrets using ConfigMaps (expected for testnet)
 
-**Integration Tests (1 skip):**
-- Transaction submission skipped (requires real aurad binary, not available in mock)
+**Integration Tests (2 skips):**
+- Transaction submission skipped (requires interactive aurad keys mode)
+- Metrics endpoint skipped (blocked by Linkerd/network policy)
 
 **Security Tests (2 warnings):**
 - ConfigMaps contain key path references (not actual secrets)
 
 **P2P egress tests run successfully** using external validator simulation in separate namespace.
+
+## Real Deployment Details
+
+The testnet uses the real `aurad` binary running in K8s with:
+- 3 validator pods (StatefulSet)
+- 1 active validator in consensus
+- 2 connected peers
+- OrderedReady pod management for DNS stability
+- Linkerd P2P port skip for direct TCP connections
 
 ## Test Commands
 
