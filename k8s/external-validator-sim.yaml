@@ -1,0 +1,108 @@
+# External validator simulation for P2P egress testing
+# Deploys a simple TCP listener on port 26656 to simulate external P2P peers
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: external-validators
+  labels:
+    purpose: p2p-testing
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: external-validator-sim
+  namespace: external-validators
+  labels:
+    app: external-validator
+    role: p2p-peer
+spec:
+  containers:
+  - name: p2p-listener
+    image: nginx:alpine
+    command:
+    - /bin/sh
+    - -c
+    - |
+      cat > /tmp/nginx.conf << 'NGINX'
+      events { worker_connections 1024; }
+      stream {
+        server {
+          listen 26656;
+          return "P2P_HANDSHAKE_OK";
+        }
+      }
+      http {
+        server {
+          listen 8080;
+          location /health { return 200 'OK'; }
+        }
+      }
+      NGINX
+      nginx -c /tmp/nginx.conf -g 'daemon off;'
+    ports:
+    - containerPort: 26656
+      name: p2p
+    - containerPort: 8080
+      name: health
+    resources:
+      limits:
+        cpu: 100m
+        memory: 64Mi
+      requests:
+        cpu: 50m
+        memory: 32Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: external-validator
+  namespace: external-validators
+spec:
+  selector:
+    app: external-validator
+  ports:
+  - name: p2p
+    port: 26656
+    targetPort: 26656
+---
+# Network policy to allow P2P egress from aura validators
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-p2p-external
+  namespace: aura
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: validator
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          purpose: p2p-testing
+    ports:
+    - protocol: TCP
+      port: 26656
+---
+# Network policy to allow netpol-test pod to test P2P
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-netpol-test-p2p
+  namespace: aura
+spec:
+  podSelector:
+    matchLabels:
+      app: netpol-test
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          purpose: p2p-testing
+    ports:
+    - protocol: TCP
+      port: 26656

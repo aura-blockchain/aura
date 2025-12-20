@@ -1,0 +1,80 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: aura-validator-headless
+  namespace: aura
+  labels:
+    app: aura
+    app.kubernetes.io/name: aura
+spec:
+  clusterIP: None
+  selector:
+    app: aura
+    app.kubernetes.io/component: validator
+  ports:
+    - name: p2p
+      port: 26656
+      targetPort: 26656
+    - name: rpc
+      port: 26657
+      targetPort: 26657
+    - name: api
+      port: 1317
+      targetPort: 1317
+    - name: grpc
+      port: 9090
+      targetPort: 9090
+    - name: metrics
+      port: 26660
+      targetPort: 26660
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aura-rpc
+  namespace: aura
+  labels:
+    app: aura
+spec:
+  type: ClusterIP
+  selector:
+    app: aura
+    app.kubernetes.io/component: validator
+  ports:
+    - name: rpc
+      port: 26657
+      targetPort: 26657
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aura-api
+  namespace: aura
+  labels:
+    app: aura
+spec:
+  type: ClusterIP
+  selector:
+    app: aura
+    app.kubernetes.io/component: validator
+  ports:
+    - name: api
+      port: 1317
+      targetPort: 1317
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aura-metrics
+  namespace: aura
+  labels:
+    app: aura
+spec:
+  type: ClusterIP
+  selector:
+    app: aura
+    app.kubernetes.io/component: validator
+  ports:
+    - name: metrics
+      port: 26660
+      targetPort: 26660

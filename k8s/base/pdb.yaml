@@ -1,10 +1,27 @@
+# Pod Disruption Budgets for Aura blockchain - ensures high availability during maintenance
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: aura-validator-pdb
+  namespace: aura
+  labels:
+    app.kubernetes.io/name: aura
+    app.kubernetes.io/component: validator
+spec:
+  # Ensure at least 2/3 validators are always available for consensus
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: validator
+---
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: aura-node-pdb
+  namespace: aura
   labels:
-    app: aura
-    component: node
+    app.kubernetes.io/name: aura
+    app.kubernetes.io/component: node
 spec:
   minAvailable: 2
   selector:
@@ -15,13 +32,27 @@ spec:
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: aura-validator-pdb
+  name: aura-sentry-pdb
+  namespace: aura
   labels:
-    app: aura
-    component: validator
+    app.kubernetes.io/name: aura
+    app.kubernetes.io/component: sentry
 spec:
   minAvailable: 1
   selector:
     matchLabels:
-      app: aura
-      component: validator
+      app.kubernetes.io/component: sentry
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: aura-rpc-pdb
+  namespace: aura
+  labels:
+    app.kubernetes.io/name: aura
+    app.kubernetes.io/component: rpc
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: rpc
