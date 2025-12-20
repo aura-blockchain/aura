@@ -1,9 +1,6 @@
 # Aequitas / AURA Identity Blockchain
 
-![Build](https://github.com/decristofaroj/aura/workflows/Comprehensive%20CI%2FCD%20Pipeline/badge.svg)
-![Coverage](https://codecov.io/gh/decristofaroj/aura/branch/main/graph/badge.svg)
-![Quality](https://sonarcloud.io/api/project_badges/measure?project=decristofaroj_aura&metric=alert_status)
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Build](https://github.com/decristofaroj/aura/workflows/Comprehensive%20CI%2FCD%20Pipeline/badge.svg) ![Coverage](https://codecov.io/gh/decristofaroj/aura/branch/main/graph/badge.svg) ![Quality](https://sonarcloud.io/api/project_badges/measure?project=decristofaroj_aura&metric=alert_status) ![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg) ![Go Version](https://img.shields.io/badge/Go-1.21%2B-00ADD8?logo=go) ![Discord](https://img.shields.io/badge/Discord-Join%20Us-5865F2?logo=discord&logoColor=white&link=https://discord.gg/aura) ![Twitter](https://img.shields.io/badge/Twitter-@AuraNetwork-1DA1F2?logo=twitter&logoColor=white)
 
 ## A Zero-PII Identity Blockchain for Decentralized Trust and W3C Verifiable Credentials
 

@@ -8,7 +8,7 @@ The AURA team takes security vulnerabilities seriously. We appreciate your effor
 
 **Please DO NOT report security vulnerabilities through public GitHub issues.**
 
-Instead, please report them via email to: **security@[project-domain].com**
+Instead, please report them via email to: **security@aura.network**
 
 Include the following information:
 - Type of vulnerability (e.g., reentrancy, overflow, access control)

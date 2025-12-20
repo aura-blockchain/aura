@@ -32,6 +32,9 @@ secrets/
 # Environment files
 .env
 .env.*
+.env.local
+.env*.local
+.env.faucet
 !.env.example
 !.env.template
 
@@ -58,6 +61,9 @@ coverage.html
 # Build artifacts
 **/target/
 **/build/
+/dist/
+/tmp/
+.next/
 *.exe
 !**/cmd/**/
 
