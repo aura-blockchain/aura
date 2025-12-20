@@ -1,0 +1,21 @@
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: aura-validator-vpa
+  namespace: aura
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: StatefulSet
+    name: aura-validator
+  updatePolicy:
+    updateMode: "Off"  # Recommendations only
+  resourcePolicy:
+    containerPolicies:
+      - containerName: aura
+        minAllowed:
+          cpu: 500m
+          memory: 1Gi
+        maxAllowed:
+          cpu: 8000m
+          memory: 16Gi

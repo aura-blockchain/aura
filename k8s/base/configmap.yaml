@@ -2,6 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: aura-config
+  namespace: aura
   labels:
     app: aura
 data:
@@ -16,10 +17,10 @@ data:
     log_level = "info"
     log_format = "json"
     genesis_file = "config/genesis.json"
-    priv_validator_key_file = "config/priv_validator_key.json"
+    priv_validator_key_file = "/secrets/priv_validator_key.json"
     priv_validator_state_file = "data/priv_validator_state.json"
     priv_validator_laddr = ""
-    node_key_file = "config/node_key.json"
+    node_key_file = "/secrets/node_key.json"
     abci = "socket"
 
     [rpc]
@@ -41,7 +42,7 @@ data:
     laddr = "tcp://0.0.0.0:26656"
     external_address = ""
     seeds = ""
-    persistent_peers = ""
+    persistent_peers = "34e047c7e4255b2e7f9d2f1432477cced3bc1a93@aura-validator-0.aura-validator-headless.aura.svc.cluster.local:26656,bd0ace1f9a51ab415644a3c092eec5fa8ab3e960@aura-validator-1.aura-validator-headless.aura.svc.cluster.local:26656,b7299c0b9fa6d6a62ed6908850d476e00dba6fba@aura-validator-2.aura-validator-headless.aura.svc.cluster.local:26656"
     upnp = false
     addr_book_file = "config/addrbook.json"
     addr_book_strict = true

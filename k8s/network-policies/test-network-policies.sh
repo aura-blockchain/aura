@@ -60,7 +60,7 @@ EOF
 
 test_dns() {
     log_test "DNS resolution to kube-system"
-    if kubectl exec -n "$NAMESPACE" netpol-test -- nslookup kubernetes.default.svc.cluster.local > /dev/null 2>&1; then
+    if kubectl exec -n "$NAMESPACE" netpol-test -c curl -- nslookup kubernetes.default.svc.cluster.local > /dev/null 2>&1; then
         log_pass "DNS resolution works"
         PASSED=$((PASSED+1))
     else
@@ -71,7 +71,7 @@ test_dns() {
 
 test_external_blocked() {
     log_test "External network access (should be BLOCKED)"
-    if timeout 5 kubectl exec -n "$NAMESPACE" netpol-test -- curl -s -m 3 http://www.google.com > /dev/null 2>&1; then
+    if timeout 5 kubectl exec -n "$NAMESPACE" netpol-test -c curl -- curl -s -m 3 http://www.google.com > /dev/null 2>&1; then
         log_fail "External network access allowed (security issue!)"
         FAILED=$((FAILED+1))
     else
@@ -84,7 +84,7 @@ test_monitoring_access() {
     log_test "Access to monitoring namespace"
     PROM_IP=$(kubectl get pod -n monitoring -l app.kubernetes.io/name=prometheus -o jsonpath='{.items[0].status.podIP}' 2>/dev/null || echo "")
     if [ -n "$PROM_IP" ]; then
-        if timeout 5 kubectl exec -n "$NAMESPACE" netpol-test -- curl -s -m 3 "http://$PROM_IP:9090/-/healthy" > /dev/null 2>&1; then
+        if timeout 5 kubectl exec -n "$NAMESPACE" netpol-test -c curl -- curl -s -m 3 "http://$PROM_IP:9090/-/healthy" > /dev/null 2>&1; then
             log_pass "Monitoring namespace accessible"
             PASSED=$((PASSED+1))
         else
@@ -99,12 +99,16 @@ test_monitoring_access() {
 
 test_intra_namespace() {
     log_test "Intra-namespace communication"
+    # Try common validator label patterns
     VALIDATOR_IP=$(kubectl get pod -n "$NAMESPACE" -l app.kubernetes.io/component=validator -o jsonpath='{.items[0].status.podIP}' 2>/dev/null || echo "")
     if [ -z "$VALIDATOR_IP" ]; then
         VALIDATOR_IP=$(kubectl get pod -n "$NAMESPACE" -l app=aura-validator -o jsonpath='{.items[0].status.podIP}' 2>/dev/null || echo "")
     fi
+    if [ -z "$VALIDATOR_IP" ]; then
+        VALIDATOR_IP=$(kubectl get pod -n "$NAMESPACE" -l component=validator -o jsonpath='{.items[0].status.podIP}' 2>/dev/null || echo "")
+    fi
     if [ -n "$VALIDATOR_IP" ]; then
-        if timeout 5 kubectl exec -n "$NAMESPACE" netpol-test -- curl -s -m 3 "http://$VALIDATOR_IP:26657/health" > /dev/null 2>&1; then
+        if timeout 5 kubectl exec -n "$NAMESPACE" netpol-test -c curl -- curl -s -m 3 "http://$VALIDATOR_IP:26657/health" > /dev/null 2>&1; then
             log_pass "Intra-namespace communication works"
             PASSED=$((PASSED+1))
         else
@@ -119,7 +123,7 @@ test_intra_namespace() {
 
 test_unauthorized_port() {
     log_test "Access to unauthorized external port"
-    if timeout 5 kubectl exec -n "$NAMESPACE" netpol-test -- curl -s -m 3 http://8.8.8.8:80 > /dev/null 2>&1; then
+    if timeout 5 kubectl exec -n "$NAMESPACE" netpol-test -c curl -- curl -s -m 3 http://8.8.8.8:80 > /dev/null 2>&1; then
         log_fail "Unauthorized egress allowed (security issue!)"
         FAILED=$((FAILED+1))
     else
@@ -143,7 +147,8 @@ test_p2p_external() {
     # Test P2P connectivity from aura namespace to external validator
     # Use curl -v and check for "Connected to" in stderr to verify TCP connection works
     # P2P ports don't speak HTTP, so curl will error but connection proves network policy works
-    CURL_OUTPUT=$(timeout 5 kubectl exec -n "$NAMESPACE" netpol-test -- curl -v --connect-timeout 3 "http://$EXT_VAL_IP:26656" 2>&1 || true)
+    # Note: -c curl required when Linkerd sidecar is injected
+    CURL_OUTPUT=$(timeout 5 kubectl exec -n "$NAMESPACE" netpol-test -c curl -- curl -v --connect-timeout 3 "http://$EXT_VAL_IP:26656" 2>&1 || true)
 
     if echo "$CURL_OUTPUT" | grep -q "Connected to"; then
         log_pass "P2P egress to external validator works ($EXT_VAL_IP:26656)"
@@ -174,7 +179,7 @@ test_vault_access() {
     log_test "Access to Vault namespace"
     VAULT_IP=$(kubectl get pod -n vault -l app.kubernetes.io/name=vault -o jsonpath='{.items[0].status.podIP}' 2>/dev/null || echo "")
     if [ -n "$VAULT_IP" ]; then
-        if timeout 5 kubectl exec -n "$NAMESPACE" netpol-test -- curl -s -m 3 "http://$VAULT_IP:8200/v1/sys/health" > /dev/null 2>&1; then
+        if timeout 5 kubectl exec -n "$NAMESPACE" netpol-test -c curl -- curl -s -m 3 "http://$VAULT_IP:8200/v1/sys/health" > /dev/null 2>&1; then
             log_pass "Vault namespace accessible"
             PASSED=$((PASSED+1))
         else

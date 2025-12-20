@@ -1,0 +1,60 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: servicemonitors.monitoring.coreos.com
+spec:
+  group: monitoring.coreos.com
+  names:
+    kind: ServiceMonitor
+    listKind: ServiceMonitorList
+    plural: servicemonitors
+    singular: servicemonitor
+    shortNames:
+    - sm
+  scope: Namespaced
+  versions:
+  - name: v1
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            properties:
+              selector:
+                type: object
+                properties:
+                  matchLabels:
+                    type: object
+                    additionalProperties:
+                      type: string
+              endpoints:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    port:
+                      type: string
+                    interval:
+                      type: string
+                    path:
+                      type: string
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: aura-nodes
+  namespace: aura
+  labels:
+    app: aura
+spec:
+  selector:
+    matchLabels:
+      app: aura
+  endpoints:
+  - port: prometheus
+    interval: 30s
+    path: /metrics

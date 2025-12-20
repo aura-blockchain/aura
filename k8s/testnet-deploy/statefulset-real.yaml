@@ -1,0 +1,226 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: aura-validator
+  namespace: aura
+  labels:
+    app: aura
+    app.kubernetes.io/name: aura
+    app.kubernetes.io/component: validator
+spec:
+  serviceName: aura-validator-headless
+  replicas: 3
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app: aura
+      app.kubernetes.io/component: validator
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: aura
+        app.kubernetes.io/name: aura
+        app.kubernetes.io/component: validator
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "26660"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: aura-validator
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values: [aura]
+                topologyKey: kubernetes.io/hostname
+
+      initContainers:
+        - name: init-config
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              # Get pod ordinal from hostname (aura-validator-0, aura-validator-1, etc.)
+              ORDINAL=$(echo $HOSTNAME | rev | cut -d'-' -f1 | rev)
+              echo "Initializing validator-$ORDINAL"
+
+              # Create directories
+              mkdir -p /home/aura/.aura/config /home/aura/.aura/data
+
+              # Copy genesis
+              cp /genesis/genesis.json /home/aura/.aura/config/genesis.json
+
+              # Copy config files
+              cp /config/config.toml /home/aura/.aura/config/config.toml
+              cp /config/app.toml /home/aura/.aura/config/app.toml
+
+              # Copy validator keys based on pod ordinal
+              cp /keys-$ORDINAL/priv_validator_key.json /home/aura/.aura/config/priv_validator_key.json
+              cp /keys-$ORDINAL/node_key.json /home/aura/.aura/config/node_key.json
+
+              # Update moniker in config.toml
+              sed -i "s/^moniker = .*/moniker = \"aura-validator-$ORDINAL\"/" /home/aura/.aura/config/config.toml
+
+              # Update persistent_peers from secret
+              PEERS=$(cat /peers/persistent_peers)
+              sed -i "s|^persistent_peers = .*|persistent_peers = \"$PEERS\"|" /home/aura/.aura/config/config.toml
+
+              # Create priv_validator_state.json if it doesn't exist
+              if [ ! -f /home/aura/.aura/data/priv_validator_state.json ]; then
+                cat > /home/aura/.aura/data/priv_validator_state.json << 'STATE'
+              {
+                "height": "0",
+                "round": 0,
+                "step": 0
+              }
+              STATE
+              fi
+
+              # Set permissions
+              chmod 600 /home/aura/.aura/config/priv_validator_key.json
+              chmod 600 /home/aura/.aura/config/node_key.json
+              chmod 600 /home/aura/.aura/data/priv_validator_state.json
+
+              echo "Init complete for validator-$ORDINAL"
+          volumeMounts:
+            - name: aura-home
+              mountPath: /home/aura/.aura
+            - name: genesis
+              mountPath: /genesis
+            - name: config
+              mountPath: /config
+            - name: validator-keys-0
+              mountPath: /keys-0
+            - name: validator-keys-1
+              mountPath: /keys-1
+            - name: validator-keys-2
+              mountPath: /keys-2
+            - name: peers
+              mountPath: /peers
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+
+      containers:
+        - name: aura
+          image: aurad:latest
+          imagePullPolicy: Never  # Use local image loaded into KinD
+          command: ["aurad"]
+          args: ["start", "--home", "/home/aura/.aura"]
+          ports:
+            - name: p2p
+              containerPort: 26656
+              protocol: TCP
+            - name: rpc
+              containerPort: 26657
+              protocol: TCP
+            - name: api
+              containerPort: 1317
+              protocol: TCP
+            - name: grpc
+              containerPort: 9090
+              protocol: TCP
+            - name: metrics
+              containerPort: 26660
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 1000
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: aura-home
+              mountPath: /home/aura/.aura
+          startupProbe:
+            httpGet:
+              path: /health
+              port: rpc
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 60  # 5 minutes to start
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: rpc
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: rpc
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+      volumes:
+        - name: genesis
+          configMap:
+            name: aura-genesis
+        - name: config
+          configMap:
+            name: aura-config
+        - name: peers
+          secret:
+            secretName: aura-peers
+        # Mount all validator keys - init container selects the right one
+        - name: validator-keys-0
+          secret:
+            secretName: aura-validator-keys-0
+        - name: validator-keys-1
+          secret:
+            secretName: aura-validator-keys-1
+        - name: validator-keys-2
+          secret:
+            secretName: aura-validator-keys-2
+
+      terminationGracePeriodSeconds: 30
+
+  volumeClaimTemplates:
+    - metadata:
+        name: aura-home
+        labels:
+          app: aura
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: standard
+        resources:
+          requests:
+            storage: 10Gi

@@ -10,7 +10,10 @@
   <body>
     <div class="container">
       <header>
-        <h1>Aura Browser Wallet</h1>
+        <div class="header-row">
+          <h1>Aura Browser Wallet</h1>
+          <button id="themeToggle" class="icon-btn" title="Toggle theme">🌙</button>
+        </div>
         <p id="networkStatus" class="network-status">Connecting...</p>
       </header>
 
@@ -37,13 +40,38 @@
         <p id="walletMessage" class="status"></p>
       </section>
 
+      <!-- Address Book Section -->
+      <section class="card collapsed">
+        <h2 class="collapsible" id="addressBookToggle">Address Book <span class="toggle-icon">▼</span></h2>
+        <div id="addressBookContent" class="collapsible-content">
+          <div id="addressBookList" class="list-section">
+            <div class="list-placeholder">No saved contacts yet.</div>
+          </div>
+          <form id="addContactForm">
+            <label>
+              Contact Name
+              <input id="contactName" type="text" placeholder="My Exchange" maxlength="32" required />
+            </label>
+            <label>
+              Address
+              <input id="contactAddress" type="text" placeholder="aura1..." required />
+            </label>
+            <button type="submit" class="secondary">Save Contact</button>
+          </form>
+          <p id="addressBookMessage" class="status"></p>
+        </div>
+      </section>
+
       <!-- Send/Receive Section -->
       <section class="card">
         <h2>Send Tokens</h2>
         <form id="sendForm">
           <label>
             Recipient Address
-            <input id="recipientAddress" type="text" placeholder="aura1..." required />
+            <div class="input-with-button">
+              <input id="recipientAddress" type="text" placeholder="aura1..." required />
+              <button type="button" id="selectFromContacts" class="icon-btn" title="Select from contacts">📖</button>
+            </div>
           </label>
           <label>
             Amount (AURA)
@@ -214,6 +242,7 @@
           <h3>Recent Transactions</h3>
           <div class="list-placeholder">No transactions yet.</div>
         </div>
+        <button id="exportCsv" class="secondary" style="margin-top: 8px;">Export History (CSV)</button>
 
         <p id="tradeMessage" class="status"></p>
 
@@ -270,8 +299,9 @@
           </select>
         </label>
         <div class="button-row">
-          <button id="detectHardwareWallet" class="secondary">Detect Device</button>
+          <button id="detectHardwareWallet" class="secondary">Detect</button>
           <button id="connectHardwareWallet" class="primary">Connect</button>
+          <button id="resetHardwareWallet" class="warning">Reset</button>
           <button id="disconnectHardwareWallet" class="danger-outline">Disconnect</button>
         </div>
         <p id="hardwareWalletStatus" class="status">Not connected</p>
@@ -358,6 +388,51 @@
           <p id="advancedMessage" class="status"></p>
         </div>
       </section>
+    </div>
+
+    <!-- Transaction Preview Modal -->
+    <div id="txPreviewModal" class="modal hidden">
+      <div class="modal-content">
+        <h3>Transaction Preview</h3>
+        <div id="txPreviewBody">
+          <div class="preview-row">
+            <span class="preview-label">Action</span>
+            <span id="previewAction" class="preview-value">--</span>
+          </div>
+          <div class="preview-row">
+            <span class="preview-label">From</span>
+            <span id="previewFrom" class="preview-value address">--</span>
+          </div>
+          <div class="preview-row">
+            <span class="preview-label">To</span>
+            <span id="previewTo" class="preview-value address">--</span>
+          </div>
+          <div class="preview-row">
+            <span class="preview-label">Amount</span>
+            <span id="previewAmount" class="preview-value highlight">--</span>
+          </div>
+          <div class="preview-row">
+            <span class="preview-label">Est. Gas Fee</span>
+            <span id="previewGas" class="preview-value">--</span>
+          </div>
+          <div id="previewWarning" class="preview-warning hidden">
+            ⚠️ <span id="previewWarningText"></span>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button id="txPreviewCancel" class="secondary">Cancel</button>
+          <button id="txPreviewConfirm" class="primary">Confirm & Sign</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contact Picker Modal -->
+    <div id="contactPickerModal" class="modal hidden">
+      <div class="modal-content">
+        <h3>Select Contact</h3>
+        <div id="contactPickerList" class="list-section"></div>
+        <button id="contactPickerClose" class="secondary">Cancel</button>
+      </div>
     </div>
 
     <!-- Load Cosmos SDK and main scripts -->

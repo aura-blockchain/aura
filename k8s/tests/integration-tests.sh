@@ -52,6 +52,22 @@ detect_deployment_mode() {
     fi
 }
 
+# Get validator pod IP for making HTTP requests
+get_validator_ip() {
+    local pod=$(get_validator_pod)
+    if [ -z "$pod" ]; then
+        echo ""
+        return
+    fi
+    kubectl get "$pod" -n "$NAMESPACE" -o jsonpath='{.status.podIP}' 2>/dev/null
+}
+
+# Execute curl via netpol-test pod (works for both mock and real modes)
+exec_curl() {
+    local url="$1"
+    kubectl exec -n "$NAMESPACE" netpol-test -- curl -s "$url" 2>/dev/null
+}
+
 test_transaction_submission() {
     log_test "Testing transaction submission..."
 
@@ -81,18 +97,15 @@ test_transaction_submission() {
 test_block_finality() {
     log_test "Testing block finality..."
 
-    local pod=$(get_validator_pod)
-    if [ -z "$pod" ]; then
+    local validator_ip=$(get_validator_ip)
+    if [ -z "$validator_ip" ]; then
         log_fail "No validator pod found"
         return 1
     fi
 
-    # Use rpc-probe container for curl (aura container may not have curl)
-    local curl_container="rpc-probe"
-
     if [ "$MOCK_MODE" = true ]; then
         # For mock mode, verify status endpoint returns valid block height
-        local block=$(kubectl exec -n "$NAMESPACE" "$pod" -c "$curl_container" -- curl -s http://localhost:26657/status 2>/dev/null | jq -r '.result.sync_info.latest_block_height')
+        local block=$(exec_curl "http://${validator_ip}:26657/status" | jq -r '.result.sync_info.latest_block_height')
         if [ -n "$block" ] && [ "$block" != "null" ] && [ "$block" -gt 0 ]; then
             log_pass "Block finality endpoint functional (mock height: $block)"
         else
@@ -101,11 +114,11 @@ test_block_finality() {
         fi
     else
         # For real deployment, verify blocks are advancing
-        local block1=$(kubectl exec -n "$NAMESPACE" "$pod" -c "$curl_container" -- curl -s http://localhost:26657/status 2>/dev/null | jq -r '.result.sync_info.latest_block_height')
+        local block1=$(exec_curl "http://${validator_ip}:26657/status" | jq -r '.result.sync_info.latest_block_height')
         sleep 10
-        local block2=$(kubectl exec -n "$NAMESPACE" "$pod" -c "$curl_container" -- curl -s http://localhost:26657/status 2>/dev/null | jq -r '.result.sync_info.latest_block_height')
+        local block2=$(exec_curl "http://${validator_ip}:26657/status" | jq -r '.result.sync_info.latest_block_height')
 
-        if [ "$block2" -gt "$block1" ]; then
+        if [ -n "$block1" ] && [ -n "$block2" ] && [ "$block2" -gt "$block1" ]; then
             log_pass "Blocks are being finalized ($block1 -> $block2)"
         else
             log_fail "Blocks not advancing ($block1 -> $block2)"

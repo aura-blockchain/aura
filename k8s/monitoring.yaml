@@ -1,0 +1,82 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: aura-validator
+  namespace: aura
+  labels:
+    app: aura
+spec:
+  selector:
+    matchLabels:
+      app: aura
+      component: metrics
+  endpoints:
+    - port: metrics
+      interval: 30s
+      scrapeTimeout: 10s
+      path: /metrics
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: aura-alerts
+  namespace: aura
+  labels:
+    prometheus: kube-prometheus
+spec:
+  groups:
+    - name: aura.validator.rules
+      interval: 30s
+      rules:
+        - alert: AuraValidatorDown
+          expr: up{job="aura-validator"} == 0
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Aura validator down: {{ $labels.pod }}"
+
+        - alert: AuraConsensusStalled
+          expr: increase(tendermint_consensus_height[5m]) == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Aura consensus stalled - no new blocks in 5 minutes"
+
+        - alert: AuraLowPeerCount
+          expr: tendermint_p2p_peers < 2
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Aura validator {{ $labels.pod }} has low peer count: {{ $value }}"
+
+        - alert: AuraCatchingUp
+          expr: tendermint_consensus_catching_up == 1
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Aura validator {{ $labels.pod }} is catching up for >30 minutes"
+
+        - alert: AuraHighMemory
+          expr: |
+            (container_memory_usage_bytes{pod=~"aura-validator-.*"} /
+             container_spec_memory_limit_bytes{pod=~"aura-validator-.*"}) > 0.9
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High memory usage on {{ $labels.pod }}: {{ $value | humanizePercentage }}"
+
+        - alert: AuraDiskUsageHigh
+          expr: |
+            (kubelet_volume_stats_used_bytes{persistentvolumeclaim=~"aura-data-.*"} /
+             kubelet_volume_stats_capacity_bytes{persistentvolumeclaim=~"aura-data-.*"}) > 0.85
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High disk usage on {{ $labels.persistentvolumeclaim }}"

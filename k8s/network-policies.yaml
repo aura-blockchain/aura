@@ -1,0 +1,166 @@
+# Default deny all
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: aura
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+
+---
+# Allow DNS
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns
+  namespace: aura
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+
+---
+# Allow P2P between validators
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-p2p
+  namespace: aura
+spec:
+  podSelector:
+    matchLabels:
+      app: aura
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: aura
+      ports:
+        - port: 26656
+          protocol: TCP
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: aura
+      ports:
+        - port: 26656
+          protocol: TCP
+
+---
+# Allow ingress-nginx
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-nginx
+  namespace: aura
+spec:
+  podSelector:
+    matchLabels:
+      app: aura
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - port: 26657
+          protocol: TCP
+        - port: 1317
+          protocol: TCP
+        - port: 9090
+          protocol: TCP
+
+---
+# Allow monitoring scrape
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-monitoring
+  namespace: aura
+spec:
+  podSelector:
+    matchLabels:
+      app: aura
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - port: 26660
+          protocol: TCP
+
+---
+# Allow Linkerd control plane
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-linkerd
+  namespace: aura
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              linkerd.io/is-control-plane: "true"
+
+---
+# Allow in-namespace RPC/REST/gRPC traffic (validators, probes, sidecars)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-aura-rpc-api
+  namespace: aura
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              project: aura
+        - podSelector: {} # same namespace pods
+      ports:
+        - port: 26657
+          protocol: TCP
+        - port: 1317
+          protocol: TCP
+        - port: 9090
+          protocol: TCP
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              project: aura
+        - podSelector: {} # same namespace pods
+      ports:
+        - port: 26657
+          protocol: TCP
+        - port: 1317
+          protocol: TCP
+        - port: 9090
+          protocol: TCP

@@ -69,6 +69,15 @@ async function build() {
       console.log('✓ CSS files copied');
     }
 
+    // Copy additional JS files loaded separately by HTML
+    const additionalJs = ['cosmos-sdk.js', 'hardware-wallet.js'];
+    for (const jsFile of additionalJs) {
+      if (existsSync(jsFile)) {
+        copyFileSync(jsFile, join('dist', jsFile));
+      }
+    }
+    console.log('✓ Additional JS files copied');
+
     // Copy manifest
     copyFileSync('manifest.json', 'dist/manifest.json');
     console.log('✓ Manifest copied');

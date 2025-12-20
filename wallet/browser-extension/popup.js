@@ -930,9 +930,17 @@ async function detectHardwareWallet() {
 }
 
 async function connectHardwareWallet() {
+  const connectBtn = $('#connectHardwareWallet');
+  const statusEl = $('#hardwareWalletStatus');
   try {
     const hwType = getHardwareWalletType();
-    updateHardwareStatus(`Connecting to ${hwType === 'trezor' ? 'Trezor (Connect)' : 'Ledger via WebHID'}...`);
+    if (connectBtn) {
+      connectBtn.disabled = true;
+      connectBtn.textContent = 'Connecting...';
+      connectBtn.classList.add('hw-connecting');
+    }
+    if (statusEl) statusEl.classList.add('hw-connecting');
+    updateHardwareStatus(`Connecting to ${hwType === 'trezor' ? 'Trezor' : 'Ledger'}... (30s timeout)`);
     const device = await hwManager.connect(hwType);
     setHardwareInfo(hwManager.getDeviceInfo());
     updateHardwareStatus(`Connected: ${device.type}`);
@@ -943,7 +951,32 @@ async function connectHardwareWallet() {
     }
   } catch (err) {
     updateHardwareStatus(err.message || 'Hardware connection failed', true);
+  } finally {
+    if (connectBtn) {
+      connectBtn.disabled = false;
+      connectBtn.textContent = 'Connect';
+      connectBtn.classList.remove('hw-connecting');
+    }
+    if (statusEl) statusEl.classList.remove('hw-connecting');
   }
+}
+
+function resetHardwareWallet() {
+  hwManager.reset();
+  useHardwareSigning = false;
+  hwAddress = null;
+  hwPublicKeyHex = null;
+  updateHardwareStatus('Reset complete. Ready to reconnect.');
+  const toggle = $('#useHardwareSigning');
+  if (toggle) toggle.checked = false;
+  const connectBtn = $('#connectHardwareWallet');
+  if (connectBtn) {
+    connectBtn.disabled = false;
+    connectBtn.textContent = 'Connect';
+    connectBtn.classList.remove('hw-connecting');
+  }
+  const infoBox = $('#hardwareWalletInfo');
+  if (infoBox) infoBox.classList.add('hidden');
 }
 
 async function disconnectHardwareWallet() {
@@ -1456,6 +1489,34 @@ function bindActions() {
   if (runAiSwapBtn) runAiSwapBtn.addEventListener('click', runPersonalAiSwap);
   if (clearAiKeyBtn) clearAiKeyBtn.addEventListener('click', clearStoredAiKey);
 
+  // Theme toggle
+  const themeBtn = $('#themeToggle');
+  if (themeBtn) themeBtn.addEventListener('click', toggleTheme);
+
+  // Address book
+  const addContactForm = $('#addContactForm');
+  const selectContactsBtn = $('#selectFromContacts');
+  const contactPickerClose = $('#contactPickerClose');
+  const addressBookToggle = $('#addressBookToggle');
+  if (addContactForm) addContactForm.addEventListener('submit', handleAddContact);
+  if (selectContactsBtn) selectContactsBtn.addEventListener('click', openContactPicker);
+  if (contactPickerClose) contactPickerClose.addEventListener('click', () => $('#contactPickerModal').classList.add('hidden'));
+  if (addressBookToggle) {
+    addressBookToggle.addEventListener('click', () => {
+      addressBookToggle.closest('.card').classList.toggle('collapsed');
+    });
+  }
+
+  // CSV export
+  const exportCsvBtn = $('#exportCsv');
+  if (exportCsvBtn) exportCsvBtn.addEventListener('click', exportTransactionsCsv);
+
+  // Transaction preview modal
+  const txPreviewCancel = $('#txPreviewCancel');
+  const txPreviewConfirm = $('#txPreviewConfirm');
+  if (txPreviewCancel) txPreviewCancel.addEventListener('click', () => closeTxPreview(false));
+  if (txPreviewConfirm) txPreviewConfirm.addEventListener('click', () => closeTxPreview(true));
+
   // API Host
   const apiHostInput = $('#apiHost');
   if (apiHostInput) {
@@ -1487,8 +1548,10 @@ function bindActions() {
     setWalletConnectProvider(keplrProvider);
   }
 
+  const resetHwBtn = $('#resetHardwareWallet');
   if (detectHwBtn) detectHwBtn.addEventListener('click', detectHardwareWallet);
   if (connectHwBtn) connectHwBtn.addEventListener('click', connectHardwareWallet);
+  if (resetHwBtn) resetHwBtn.addEventListener('click', resetHardwareWallet);
   if (disconnectHwBtn) disconnectHwBtn.addEventListener('click', disconnectHardwareWallet);
   if (getHwAddressBtn) getHwAddressBtn.addEventListener('click', fetchHardwareAddress);
   if (hwStatus) {
@@ -1600,6 +1663,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Expose Keplr/Leap provider shim for dApps (chain registration still user-driven)
     window.auraKeplrProvider = buildKeplrProvider();
 
+    // Load theme and contacts first
+    loadTheme();
+    await loadContacts();
+    renderContactList();
+
     bindActions();
     restoreSettings();
 
@@ -1652,4 +1720,247 @@ async function safeAsyncCall(fn, operationName) {
     console.error(`Error during ${operationName}:`, error);
     // Don't show UI errors for background operations to avoid spam
   }
+}
+
+// ==================== ADDRESS BOOK ====================
+const CONTACTS_KEY = 'walletContacts';
+let contacts = [];
+
+async function loadContacts() {
+  return new Promise(resolve => {
+    chrome.storage.local.get([CONTACTS_KEY], result => {
+      contacts = result[CONTACTS_KEY] || [];
+      resolve(contacts);
+    });
+  });
+}
+
+async function saveContacts() {
+  return new Promise(resolve => {
+    chrome.storage.local.set({ [CONTACTS_KEY]: contacts }, resolve);
+  });
+}
+
+function renderContactList() {
+  const list = $('#addressBookList');
+  if (!list) return;
+
+  if (!contacts.length) {
+    list.innerHTML = '<div class="list-placeholder">No saved contacts yet.</div>';
+    return;
+  }
+
+  list.innerHTML = contacts.map((c, i) => `
+    <div class="entry" data-index="${i}">
+      <div class="contact-info">
+        <div class="contact-name">${escapeHtml(c.name)}</div>
+        <div class="contact-address">${c.address}</div>
+      </div>
+      <div class="contact-actions">
+        <button class="secondary contact-use" data-address="${c.address}">Use</button>
+        <button class="danger-outline contact-delete" data-index="${i}">✗</button>
+      </div>
+    </div>
+  `).join('');
+
+  // Bind use buttons
+  list.querySelectorAll('.contact-use').forEach(btn => {
+    btn.addEventListener('click', e => {
+      const addr = e.target.dataset.address;
+      const input = $('#recipientAddress');
+      if (input) input.value = addr;
+    });
+  });
+
+  // Bind delete buttons
+  list.querySelectorAll('.contact-delete').forEach(btn => {
+    btn.addEventListener('click', async e => {
+      const idx = parseInt(e.target.dataset.index, 10);
+      contacts.splice(idx, 1);
+      await saveContacts();
+      renderContactList();
+      showMessage('addressBookMessage', 'Contact deleted');
+    });
+  });
+}
+
+async function handleAddContact(e) {
+  e.preventDefault();
+  const name = $('#contactName').value.trim();
+  const address = $('#contactAddress').value.trim();
+
+  if (!name || !address) {
+    showMessage('addressBookMessage', 'Name and address required', true);
+    return;
+  }
+
+  if (!validateCosmosAddress(address)) {
+    showMessage('addressBookMessage', 'Invalid address format', true);
+    return;
+  }
+
+  if (contacts.find(c => c.address === address)) {
+    showMessage('addressBookMessage', 'Contact already exists', true);
+    return;
+  }
+
+  contacts.push({ name, address });
+  await saveContacts();
+  renderContactList();
+  $('#contactName').value = '';
+  $('#contactAddress').value = '';
+  showMessage('addressBookMessage', `${name} saved to contacts`);
+}
+
+function openContactPicker() {
+  const modal = $('#contactPickerModal');
+  const list = $('#contactPickerList');
+
+  if (!contacts.length) {
+    list.innerHTML = '<div class="list-placeholder">No contacts saved. Add some in Address Book.</div>';
+  } else {
+    list.innerHTML = contacts.map(c => `
+      <div class="entry contact-pick" data-address="${c.address}">
+        <div class="contact-name">${escapeHtml(c.name)}</div>
+        <div class="contact-address">${c.address}</div>
+      </div>
+    `).join('');
+
+    list.querySelectorAll('.contact-pick').forEach(el => {
+      el.addEventListener('click', () => {
+        const addr = el.dataset.address;
+        $('#recipientAddress').value = addr;
+        modal.classList.add('hidden');
+      });
+    });
+  }
+
+  modal.classList.remove('hidden');
+}
+
+// ==================== THEME TOGGLE ====================
+const THEME_KEY = 'walletTheme';
+
+function loadTheme() {
+  chrome.storage.local.get([THEME_KEY], result => {
+    const theme = result[THEME_KEY] || 'dark';
+    applyTheme(theme);
+  });
+}
+
+function applyTheme(theme) {
+  const btn = $('#themeToggle');
+  if (theme === 'light') {
+    document.body.classList.add('light-theme');
+    if (btn) btn.textContent = '☀️';
+  } else {
+    document.body.classList.remove('light-theme');
+    if (btn) btn.textContent = '🌙';
+  }
+}
+
+function toggleTheme() {
+  const isLight = document.body.classList.contains('light-theme');
+  const newTheme = isLight ? 'dark' : 'light';
+  applyTheme(newTheme);
+  chrome.storage.local.set({ [THEME_KEY]: newTheme });
+}
+
+// ==================== TRANSACTION PREVIEW ====================
+let pendingTxCallback = null;
+
+function showTxPreview(details, onConfirm) {
+  const modal = $('#txPreviewModal');
+  $('#previewAction').textContent = details.action || 'Transfer';
+  $('#previewFrom').textContent = truncateAddress(details.from);
+  $('#previewTo').textContent = truncateAddress(details.to);
+  $('#previewAmount').textContent = `${details.amount} ${details.denom || 'AURA'}`;
+  $('#previewGas').textContent = details.gas || '~0.005 AURA';
+
+  const warning = $('#previewWarning');
+  if (details.warning) {
+    warning.classList.remove('hidden');
+    $('#previewWarningText').textContent = details.warning;
+  } else {
+    warning.classList.add('hidden');
+  }
+
+  pendingTxCallback = onConfirm;
+  modal.classList.remove('hidden');
+}
+
+function closeTxPreview(confirmed) {
+  $('#txPreviewModal').classList.add('hidden');
+  if (confirmed && pendingTxCallback) {
+    pendingTxCallback();
+  }
+  pendingTxCallback = null;
+}
+
+function truncateAddress(addr) {
+  if (!addr || addr.length < 20) return addr || '--';
+  return `${addr.slice(0, 12)}...${addr.slice(-8)}`;
+}
+
+// ==================== CSV EXPORT ====================
+async function exportTransactionsCsv() {
+  const address = $('#walletAddress').value.trim();
+  if (!address) {
+    showMessage('tradeMessage', 'Enter wallet address first', true);
+    return;
+  }
+
+  try {
+    showMessage('tradeMessage', 'Fetching transactions for export...');
+    const url = `${COSMOS_SDK.config.restEndpoint}/cosmos/tx/v1beta1/txs?events=message.sender='${address}'&order_by=ORDER_BY_DESC&limit=100`;
+    const res = await fetch(url);
+
+    if (!res.ok) throw new Error('Failed to fetch transactions');
+
+    const data = await res.json();
+    const txs = data.txs || [];
+
+    if (!txs.length) {
+      showMessage('tradeMessage', 'No transactions to export', true);
+      return;
+    }
+
+    // Build CSV
+    const headers = ['Hash', 'Height', 'Timestamp', 'Type', 'Fee', 'Status'];
+    const rows = txs.map(tx => {
+      const msgs = tx.body?.messages || [];
+      const msgType = msgs[0]?.['@type']?.split('.').pop() || 'Unknown';
+      const fee = tx.auth_info?.fee?.amount?.[0]?.amount || '0';
+      return [
+        tx.txhash,
+        tx.height || '',
+        tx.timestamp || '',
+        msgType,
+        fee,
+        tx.code === 0 ? 'Success' : 'Failed'
+      ].map(v => `"${v}"`).join(',');
+    });
+
+    const csv = [headers.join(','), ...rows].join('\n');
+
+    // Download
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const urlObj = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = urlObj;
+    a.download = `aura-transactions-${Date.now()}.csv`;
+    a.click();
+    URL.revokeObjectURL(urlObj);
+
+    showMessage('tradeMessage', `Exported ${txs.length} transactions`);
+  } catch (error) {
+    showMessage('tradeMessage', `Export failed: ${error.message}`, true);
+  }
+}
+
+// ==================== UTILITY ====================
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
 }

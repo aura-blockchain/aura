@@ -23,6 +23,9 @@ get_validator_pod() {
     if [ -z "$pod" ]; then
         pod=$(kubectl get pods -n "$NAMESPACE" -l app=aura-validator -o name 2>/dev/null | head -1)
     fi
+    if [ -z "$pod" ]; then
+        pod=$(kubectl get pods -n "$NAMESPACE" -l component=validator -o name 2>/dev/null | head -1)
+    fi
     echo "$pod"
 }
 
@@ -64,7 +67,8 @@ check_consensus() {
         return 1
     fi
 
-    local height=$(kubectl exec -n "$NAMESPACE" "$pod" -c aura -- curl -s http://localhost:26657/status 2>/dev/null | jq -r '.result.sync_info.latest_block_height' 2>/dev/null || echo "0")
+    # Use rpc-probe container for curl (aura container may not have curl)
+    local height=$(kubectl exec -n "$NAMESPACE" "$pod" -c rpc-probe -- curl -s http://localhost:26657/status 2>/dev/null | jq -r '.result.sync_info.latest_block_height' 2>/dev/null || echo "0")
 
     if [ "$height" != "0" ] && [ "$height" != "null" ]; then
         log_success "Consensus active at height $height"
@@ -75,13 +79,32 @@ check_consensus() {
     fi
 }
 
-scenario_pod_failure() {
-    log_info "=== SCENARIO: Random Pod Failure ==="
-
+get_all_validator_pods() {
     local pods=$(kubectl get pods -n "$NAMESPACE" -l app.kubernetes.io/component=validator -o name 2>/dev/null)
     if [ -z "$pods" ]; then
         pods=$(kubectl get pods -n "$NAMESPACE" -l app=aura-validator -o name 2>/dev/null)
     fi
+    if [ -z "$pods" ]; then
+        pods=$(kubectl get pods -n "$NAMESPACE" -l component=validator -o name 2>/dev/null)
+    fi
+    echo "$pods"
+}
+
+get_first_validator_name() {
+    local name=$(kubectl get pods -n "$NAMESPACE" -l app.kubernetes.io/component=validator -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+    if [ -z "$name" ]; then
+        name=$(kubectl get pods -n "$NAMESPACE" -l app=aura-validator -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+    fi
+    if [ -z "$name" ]; then
+        name=$(kubectl get pods -n "$NAMESPACE" -l component=validator -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+    fi
+    echo "$name"
+}
+
+scenario_pod_failure() {
+    log_info "=== SCENARIO: Random Pod Failure ==="
+
+    local pods=$(get_all_validator_pods)
     local pod_count=$(echo "$pods" | wc -l)
 
     if [ "$pod_count" -lt 2 ]; then
@@ -112,10 +135,7 @@ scenario_network_partition() {
         return 0
     fi
 
-    local target_pod=$(kubectl get pods -n "$NAMESPACE" -l app.kubernetes.io/component=validator -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
-    if [ -z "$target_pod" ]; then
-        target_pod=$(kubectl get pods -n "$NAMESPACE" -l app=aura-validator -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
-    fi
+    local target_pod=$(get_first_validator_name)
 
     if [ -z "$target_pod" ]; then
         log_warn "No validator pod found"
@@ -157,10 +177,7 @@ EOF
 scenario_high_latency() {
     log_info "=== SCENARIO: High Latency ==="
 
-    local target_pod=$(kubectl get pods -n "$NAMESPACE" -l app.kubernetes.io/component=validator -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
-    if [ -z "$target_pod" ]; then
-        target_pod=$(kubectl get pods -n "$NAMESPACE" -l app=aura-validator -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
-    fi
+    local target_pod=$(get_first_validator_name)
 
     if [ -z "$target_pod" ]; then
         log_warn "No validator pod found"
@@ -188,10 +205,7 @@ scenario_high_latency() {
 scenario_resource_exhaustion() {
     log_info "=== SCENARIO: Memory Pressure ==="
 
-    local target_pod=$(kubectl get pods -n "$NAMESPACE" -l app.kubernetes.io/component=validator -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
-    if [ -z "$target_pod" ]; then
-        target_pod=$(kubectl get pods -n "$NAMESPACE" -l app=aura-validator -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
-    fi
+    local target_pod=$(get_first_validator_name)
 
     if [ -z "$target_pod" ]; then
         log_warn "No validator pod found"
@@ -232,10 +246,7 @@ scenario_rolling_restart() {
 scenario_storage_failure() {
     log_info "=== SCENARIO: Storage Stress ==="
 
-    local target_pod=$(kubectl get pods -n "$NAMESPACE" -l app.kubernetes.io/component=validator -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
-    if [ -z "$target_pod" ]; then
-        target_pod=$(kubectl get pods -n "$NAMESPACE" -l app=aura-validator -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
-    fi
+    local target_pod=$(get_first_validator_name)
 
     if [ -z "$target_pod" ]; then
         log_warn "No validator pod found"
