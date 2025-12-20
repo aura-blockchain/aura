@@ -11,11 +11,11 @@
 |------------|--------|--------|----------|---------|--------|
 | Smoke | 9 | 0 | 6 | 0 | ✅ PASS |
 | Integration | 7 | 0 | 0 | 2 | ✅ PASS |
-| Security | 14 | 0 | 2 | 0 | ✅ PASS |
+| Security | 13 | 0 | 5 | 0 | ✅ PASS |
 | Network Policy | 8 | 0 | 0 | 0 | ✅ PASS |
 | Blockchain | 4 | 0 | 0 | 0 | ✅ PASS |
-| Chaos | 6 | 0 | 0 | 0 | ✅ PASS |
-| **TOTAL** | **48** | **0** | **8** | **2** | ✅ |
+| Chaos | 6 | 0 | 2 | 0 | ✅ PASS |
+| **TOTAL** | **47** | **0** | **13** | **2** | ✅ |
 
 ## Infrastructure Deployed
 

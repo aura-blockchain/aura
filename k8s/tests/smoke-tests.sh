@@ -15,11 +15,66 @@ NC='\033[0m'
 PASSED=0
 FAILED=0
 WARNINGS=0
+TEST_POD=""
 
 log_test() { echo -e "${BLUE}[TEST]${NC} $1"; }
 log_pass() { echo -e "${GREEN}[PASS]${NC} $1"; PASSED=$((PASSED+1)); }
 log_fail() { echo -e "${RED}[FAIL]${NC} $1"; FAILED=$((FAILED+1)); }
 log_warn() { echo -e "${YELLOW}[WARN]${NC} $1"; WARNINGS=$((WARNINGS+1)); }
+
+# Ensure test pod with curl exists for HTTP checks
+ensure_test_pod() {
+    # Check if netpol-test pod exists and is running
+    if kubectl get pod netpol-test -n "$NAMESPACE" &>/dev/null; then
+        local status=$(kubectl get pod netpol-test -n "$NAMESPACE" -o jsonpath='{.status.phase}' 2>/dev/null)
+        if [ "$status" = "Running" ]; then
+            TEST_POD="netpol-test"
+            return 0
+        fi
+    fi
+
+    # Create a temporary test pod with curl
+    log_test "Creating test pod for HTTP checks..."
+    kubectl run smoke-test-curl -n "$NAMESPACE" --image=curlimages/curl:latest \
+        --restart=Never --command -- sleep 3600 &>/dev/null || true
+
+    # Wait for pod to be ready
+    for i in {1..30}; do
+        local status=$(kubectl get pod smoke-test-curl -n "$NAMESPACE" -o jsonpath='{.status.phase}' 2>/dev/null || echo "")
+        if [ "$status" = "Running" ]; then
+            TEST_POD="smoke-test-curl"
+            return 0
+        fi
+        sleep 1
+    done
+
+    log_warn "Could not create test pod for HTTP checks"
+    return 1
+}
+
+# HTTP request via test pod
+http_request() {
+    local url="$1"
+    local output_mode="${2:-status}"  # "status" for HTTP code, "body" for response body
+
+    if [ -z "$TEST_POD" ]; then
+        echo "000"
+        return 1
+    fi
+
+    if [ "$output_mode" = "status" ]; then
+        kubectl exec -n "$NAMESPACE" "$TEST_POD" -- curl -s -o /dev/null -w '%{http_code}' "$url" 2>/dev/null || echo "000"
+    else
+        kubectl exec -n "$NAMESPACE" "$TEST_POD" -- curl -s "$url" 2>/dev/null || echo ""
+    fi
+}
+
+# Cleanup test pod on exit
+cleanup_test_pod() {
+    if [ "$TEST_POD" = "smoke-test-curl" ]; then
+        kubectl delete pod smoke-test-curl -n "$NAMESPACE" --grace-period=0 --force &>/dev/null || true
+    fi
+}
 
 test_namespace_exists() {
     log_test "Checking namespace exists..."
@@ -91,19 +146,13 @@ test_services_have_endpoints() {
 test_rpc_connectivity() {
     log_test "Checking RPC connectivity..."
 
-    local pod=$(kubectl get pods -n "$NAMESPACE" -l app.kubernetes.io/component=validator -o name 2>/dev/null | head -1)
-
-    if [ -z "$pod" ]; then
-        # Try alternate label
-        pod=$(kubectl get pods -n "$NAMESPACE" -l app=aura-validator -o name 2>/dev/null | head -1)
-    fi
-
-    if [ -z "$pod" ]; then
-        log_warn "No validator pod found for RPC test"
+    if [ -z "$TEST_POD" ]; then
+        log_warn "No test pod available for RPC connectivity test"
         return 0
     fi
 
-    local status=$(kubectl exec -n "$NAMESPACE" "$pod" -c aura -- curl -s -o /dev/null -w '%{http_code}' http://localhost:26657/status 2>/dev/null || echo "000")
+    # Use headless service DNS to reach validator-0
+    local status=$(http_request "http://aura-validator-0.aura-validator-headless.${NAMESPACE}.svc.cluster.local:26657/status" "status")
 
     if [ "$status" = "200" ]; then
         log_pass "RPC endpoint is responsive (HTTP $status)"
@@ -116,19 +165,15 @@ test_rpc_connectivity() {
 test_block_production() {
     log_test "Checking block production..."
 
-    local pod=$(kubectl get pods -n "$NAMESPACE" -l app.kubernetes.io/component=validator -o name 2>/dev/null | head -1)
-    if [ -z "$pod" ]; then
-        pod=$(kubectl get pods -n "$NAMESPACE" -l app=aura-validator -o name 2>/dev/null | head -1)
-    fi
-
-    if [ -z "$pod" ]; then
-        log_warn "No validator pod found for block height test"
+    if [ -z "$TEST_POD" ]; then
+        log_warn "No test pod available for block production test"
         return 0
     fi
 
-    local height=$(kubectl exec -n "$NAMESPACE" "$pod" -c aura -- curl -s http://localhost:26657/status 2>/dev/null | jq -r '.result.sync_info.latest_block_height' 2>/dev/null || echo "0")
+    local response=$(http_request "http://aura-validator-0.aura-validator-headless.${NAMESPACE}.svc.cluster.local:26657/status" "body")
+    local height=$(echo "$response" | jq -r '.result.sync_info.latest_block_height' 2>/dev/null || echo "0")
 
-    if [ "$height" != "0" ] && [ "$height" != "null" ]; then
+    if [ "$height" != "0" ] && [ "$height" != "null" ] && [ -n "$height" ]; then
         log_pass "Chain is producing blocks (height: $height)"
     else
         log_warn "Cannot verify block production (height: $height)"
@@ -138,17 +183,12 @@ test_block_production() {
 test_health_endpoint() {
     log_test "Checking health endpoints..."
 
-    local pod=$(kubectl get pods -n "$NAMESPACE" -l app.kubernetes.io/component=validator -o name 2>/dev/null | head -1)
-    if [ -z "$pod" ]; then
-        pod=$(kubectl get pods -n "$NAMESPACE" -l app=aura-validator -o name 2>/dev/null | head -1)
-    fi
-
-    if [ -z "$pod" ]; then
-        log_warn "No validator pod found for health test"
+    if [ -z "$TEST_POD" ]; then
+        log_warn "No test pod available for health endpoint test"
         return 0
     fi
 
-    local health=$(kubectl exec -n "$NAMESPACE" "$pod" -c aura -- curl -s -o /dev/null -w '%{http_code}' http://localhost:26657/health 2>/dev/null || echo "000")
+    local health=$(http_request "http://aura-validator-0.aura-validator-headless.${NAMESPACE}.svc.cluster.local:26657/health" "status")
 
     if [ "$health" = "200" ]; then
         log_pass "Health endpoint is responsive"
@@ -253,6 +293,9 @@ main() {
     echo "Time: $(date)"
     echo ""
 
+    # Setup cleanup trap
+    trap cleanup_test_pod EXIT
+
     test_namespace_exists
     test_pods_running
     test_validators_ready
@@ -261,6 +304,10 @@ main() {
     test_secrets_exist
     test_network_policies
     test_resource_quotas
+
+    # Ensure test pod exists for HTTP-based tests
+    ensure_test_pod
+
     test_rpc_connectivity
     test_health_endpoint
     test_block_production
