@@ -2,6 +2,7 @@
 
 **Date:** 2025-12-20
 **Environment:** KinD 3-node cluster (aura-dev)
+**Deployment Mode:** Mock (nginx simulator)
 **Status:** ✅ ALL TESTS PASSED
 
 ## Final Test Summary
@@ -9,11 +10,12 @@
 | Test Suite | Passed | Failed | Warnings | Skipped | Status |
 |------------|--------|--------|----------|---------|--------|
 | Smoke | 9 | 0 | 6 | 0 | ✅ PASS |
+| Integration | 8 | 0 | 0 | 1 | ✅ PASS |
 | Security | 14 | 0 | 2 | 0 | ✅ PASS |
 | Network Policy | 8 | 0 | 0 | 0 | ✅ PASS |
 | Blockchain | 4 | 0 | 0 | 0 | ✅ PASS |
-| Chaos | 4 | 0 | 0 | 0 | ✅ PASS |
-| **TOTAL** | **39** | **0** | **8** | **0** | ✅ |
+| Chaos | 6 | 0 | 0 | 0 | ✅ PASS |
+| **TOTAL** | **49** | **0** | **8** | **1** | ✅ |
 
 ## Infrastructure Deployed
 
@@ -40,16 +42,19 @@
 - **Rolling Restart**: Zero-downtime
 - **Storage Stress**: Handled without issues
 
-## Remaining Warnings (Informational)
+## Remaining Warnings/Skips (Informational)
 
 **Smoke Tests (6 warnings):**
 - 2 services without endpoints (gRPC/P2P not exposed by mock)
 - 2 secrets using ConfigMaps (expected for testnet)
 
+**Integration Tests (1 skip):**
+- Transaction submission skipped (requires real aurad binary, not available in mock)
+
 **Security Tests (2 warnings):**
 - ConfigMaps contain key path references (not actual secrets)
 
-**All tests now run with zero skips** - P2P egress test uses external validator simulation.
+**P2P egress tests run successfully** using external validator simulation in separate namespace.
 
 ## Test Commands
 
