@@ -27,6 +27,9 @@ spec:
         prometheus.io/scrape: "true"
         prometheus.io/port: "26660"
         prometheus.io/path: "/metrics"
+        # Skip Linkerd for P2P traffic (not HTTP-based)
+        config.linkerd.io/skip-outbound-ports: "26656"
+        config.linkerd.io/skip-inbound-ports: "26656"
     spec:
       serviceAccountName: aura-validator
       securityContext:
