@@ -212,7 +212,8 @@ test_service_discovery() {
         return 1
     fi
 
-    local dns_result=$(kubectl exec -n "$NAMESPACE" "$pod" -c aura -- nslookup aura-validator-headless.aura.svc.cluster.local 2>/dev/null || echo "failed")
+    # Use rpc-probe container which has nslookup
+    local dns_result=$(kubectl exec -n "$NAMESPACE" "$pod" -c rpc-probe -- nslookup aura-validator-headless.aura.svc.cluster.local 2>/dev/null || echo "failed")
 
     if echo "$dns_result" | grep -q "Address"; then
         log_pass "Service discovery working"
