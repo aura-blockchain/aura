@@ -5,6 +5,9 @@ set -e
 CHAIN_ID="aura-testnet-1"
 DENOM="uaura"
 STAKE_DENOM="uaura"
+# Staking amount must be >= DefaultPowerReduction (~825 billion) for 1 voting power
+STAKE_AMOUNT="1000000000000"  # 1 trillion uaura
+ACCOUNT_BALANCE="10000000000000"  # 10 trillion uaura (enough for staking + fees)
 KEYRING="test"
 NAMESPACE="aura"
 NUM_VALIDATORS=3
@@ -45,28 +48,62 @@ echo "=== Adding genesis accounts ==="
 for i in $(seq 1 $NUM_VALIDATORS); do
     VALHOME="$TMPDIR/validator-$i"
     ADDR=$($AURAD keys show "validator$i" -a --keyring-backend "$KEYRING" --home "$VALHOME")
-    $AURAD genesis add-genesis-account "$ADDR" "100000000000${DENOM}" --home "$TMPDIR/validator-1" > /dev/null 2>&1
+    $AURAD genesis add-genesis-account "$ADDR" "${ACCOUNT_BALANCE}${DENOM}" --home "$TMPDIR/validator-1" > /dev/null 2>&1
+done
+
+# Copy genesis with all accounts to all validators first
+echo "=== Distributing genesis to all validators ==="
+for i in $(seq 2 $NUM_VALIDATORS); do
+    cp "$GENESIS" "$TMPDIR/validator-$i/config/genesis.json"
 done
 
 # Create gentx for each validator
 echo "=== Creating gentx ==="
 for i in $(seq 1 $NUM_VALIDATORS); do
     VALHOME="$TMPDIR/validator-$i"
-    [ $i -ne 1 ] && cp "$GENESIS" "$VALHOME/config/genesis.json"
-    $AURAD genesis gentx "validator$i" "25000000000${STAKE_DENOM}" \
+    if $AURAD genesis gentx "validator$i" "${STAKE_AMOUNT}${STAKE_DENOM}" \
         --chain-id "$CHAIN_ID" --keyring-backend "$KEYRING" --home "$VALHOME" \
-        --moniker "aura-validator-$((i-1))" > /dev/null 2>&1
+        --moniker "aura-validator-$((i-1))" 2>&1 | grep -v "^$"; then
+        echo "  Created gentx for validator-$((i-1))"
+    else
+        echo "  ERROR: Failed to create gentx for validator-$((i-1))"
+    fi
 done
 
-# Collect gentxs
+# Collect gentxs - copy from validators 2 and 3 to validator-1's gentx folder
 echo "=== Collecting gentxs ==="
-mkdir -p "$TMPDIR/validator-1/config/gentx"
-for i in $(seq 1 $NUM_VALIDATORS); do
-    cp "$TMPDIR/validator-$i/config/gentx/"*.json "$TMPDIR/validator-1/config/gentx/" 2>/dev/null || true
+for i in $(seq 2 $NUM_VALIDATORS); do
+    echo "  Copying gentx from validator-$i..."
+    cp "$TMPDIR/validator-$i/config/gentx/"*.json "$TMPDIR/validator-1/config/gentx/" 2>&1 || echo "  WARNING: No gentx found for validator-$i"
 done
-$AURAD genesis collect-gentxs --home "$TMPDIR/validator-1" > /dev/null 2>&1
+echo "  Gentx files in collection:"
+ls -1 "$TMPDIR/validator-1/config/gentx/"*.json 2>/dev/null | wc -l | xargs -I{} echo "    {} gentx files"
+$AURAD genesis collect-gentxs --home "$TMPDIR/validator-1" 2>&1 | grep -v "^$" || true
 
 FINAL_GENESIS="$TMPDIR/validator-1/config/genesis.json"
+
+# Update genesis - keep default validator but update with correct pubkey and denom
+echo "=== Updating genesis ==="
+# Get validator-0's consensus pubkey
+VAL0_PUBKEY=$(cat "$TMPDIR/validator-1/config/priv_validator_key.json" | jq -r '.pub_key.value')
+VAL0_ADDR=$($AURAD keys show "validator1" -a --keyring-backend "$KEYRING" --home "$TMPDIR/validator-1")
+VAL0_VALOPER=$($AURAD keys show "validator1" --bech val -a --keyring-backend "$KEYRING" --home "$TMPDIR/validator-1")
+
+echo "  Validator-0 pubkey: $VAL0_PUBKEY"
+echo "  Validator-0 address: $VAL0_ADDR"
+echo "  Validator-0 valoper: $VAL0_VALOPER"
+
+# Update the default validator with correct pubkey and set bond_denom
+# Keep the gentxs for future use but work with the pre-initialized validator
+jq --arg denom "$STAKE_DENOM" \
+   --arg pubkey "$VAL0_PUBKEY" \
+   --arg valoper "$VAL0_VALOPER" '
+  .app_state.staking.params.bond_denom = $denom |
+  .app_state.staking.validators[0].consensus_pubkey.key = $pubkey |
+  .app_state.staking.validators[0].operator_address = $valoper |
+  .consensus.validators[0].pub_key.value = $pubkey
+' "$FINAL_GENESIS" > "$FINAL_GENESIS.tmp" && mv "$FINAL_GENESIS.tmp" "$FINAL_GENESIS"
+echo "  Updated validator with correct keys, set bond_denom=$STAKE_DENOM"
 
 # Get node IDs
 echo "=== Getting node IDs ==="

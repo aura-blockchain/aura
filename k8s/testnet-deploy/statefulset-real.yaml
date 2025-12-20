@@ -10,7 +10,7 @@ metadata:
 spec:
   serviceName: aura-validator-headless
   replicas: 3
-  podManagementPolicy: Parallel
+  podManagementPolicy: OrderedReady  # Ensures DNS is ready before next pod starts
   selector:
     matchLabels:
       app: aura
