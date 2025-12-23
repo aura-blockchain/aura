@@ -42,7 +42,7 @@
 ### Repository Cleanup
 - [x] Remove 170MB `aurad` binary from git (already gitignored, not tracked)
 - [x] Clean test artifacts from root: `bft_test_*.json`, `tmp_*.json` (removed from git)
-- [ ] Populate CHANGELOG.md with actual releases (currently empty template)
+- [x] Populate CHANGELOG.md with release history and version roadmap
 
 ### Documentation
 - [x] Generate OpenAPI/Swagger specs (`docs/api/openapi.json` - 190 endpoints, 732 definitions)
