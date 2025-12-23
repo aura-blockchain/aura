@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -425,4 +426,416 @@ func TestEraseIdentity_PreservesCommitment(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, originalCommitment, erasedRecord.PiiCommitment, "commitment should be preserved after erasure")
 	require.Equal(t, salt, erasedRecord.CommitmentSalt, "salt should be preserved after erasure")
+}
+
+// TestEraseIdentity_CascadeDeletesChangeRequests tests that erasure deletes all associated change requests
+func TestEraseIdentity_CascadeDeletesChangeRequests(t *testing.T) {
+	keeper, ctx := setupKeeperForTest(t)
+
+	// Create identity
+	did := "did:aura:test123"
+	address := "aura1test"
+	now := ctx.BlockTime()
+	record := &types.IdentityRecord{
+		Did:       did,
+		Address:   address,
+		Status:    types.IdentityStatusActive,
+		CreatedAt: now,
+		UpdatedAt: &now,
+	}
+	err := keeper.SetIdentityRecord(ctx, record)
+	require.NoError(t, err)
+
+	// Create multiple change requests for this DID
+	req1 := &types.ChangeRequest{
+		Id:          "req-1",
+		Requester:   address,
+		Did:         did,
+		Status:      types.ChangeStatusPending,
+		RequestedAt: now,
+		ChangeType:  types.ChangeTypeUpdateMetadata,
+	}
+	req2 := &types.ChangeRequest{
+		Id:          "req-2",
+		Requester:   address,
+		Did:         did,
+		Status:      types.ChangeStatusApproved,
+		RequestedAt: now,
+		ChangeType:  types.ChangeTypeUpdateMetadata,
+	}
+	err = keeper.SetChangeRequest(ctx, req1)
+	require.NoError(t, err)
+	err = keeper.SetChangeRequest(ctx, req2)
+	require.NoError(t, err)
+
+	// Verify requests exist before erasure
+	_, err = keeper.GetChangeRequest(ctx, "req-1")
+	require.NoError(t, err)
+	_, err = keeper.GetChangeRequest(ctx, "req-2")
+	require.NoError(t, err)
+
+	// Erase identity
+	err = keeper.EraseIdentity(ctx, did, address, "GDPR request")
+	require.NoError(t, err)
+
+	// Verify change requests are deleted
+	_, err = keeper.GetChangeRequest(ctx, "req-1")
+	require.Error(t, err)
+	require.ErrorIs(t, err, types.ErrChangeRequestNotFound)
+
+	_, err = keeper.GetChangeRequest(ctx, "req-2")
+	require.Error(t, err)
+	require.ErrorIs(t, err, types.ErrChangeRequestNotFound)
+}
+
+// TestEraseIdentity_CascadeDeletesSessions tests that erasure deletes all associated sessions
+func TestEraseIdentity_CascadeDeletesSessions(t *testing.T) {
+	keeper, ctx := setupKeeperForTest(t)
+
+	// Create identity
+	did := "did:aura:test123"
+	address := "aura1test"
+	now := ctx.BlockTime()
+	record := &types.IdentityRecord{
+		Did:       did,
+		Address:   address,
+		Status:    types.IdentityStatusActive,
+		CreatedAt: now,
+		UpdatedAt: &now,
+	}
+	err := keeper.SetIdentityRecord(ctx, record)
+	require.NoError(t, err)
+
+	// Create multiple sessions for this address
+	session1, err := keeper.CreateSession(ctx, address, 3600)
+	require.NoError(t, err)
+	session2, err := keeper.CreateSession(ctx, address, 7200)
+	require.NoError(t, err)
+
+	// Verify sessions exist before erasure
+	_, err = keeper.GetSession(ctx, session1.Id)
+	require.NoError(t, err)
+	_, err = keeper.GetSession(ctx, session2.Id)
+	require.NoError(t, err)
+
+	// Erase identity
+	err = keeper.EraseIdentity(ctx, did, address, "GDPR request")
+	require.NoError(t, err)
+
+	// Verify sessions are deleted
+	_, err = keeper.GetSession(ctx, session1.Id)
+	require.Error(t, err)
+	require.ErrorIs(t, err, types.ErrSessionNotFound)
+
+	_, err = keeper.GetSession(ctx, session2.Id)
+	require.Error(t, err)
+	require.ErrorIs(t, err, types.ErrSessionNotFound)
+}
+
+// TestEraseIdentity_CascadeDeletesRoleAssignments tests that erasure deletes all role assignments
+func TestEraseIdentity_CascadeDeletesRoleAssignments(t *testing.T) {
+	keeper, ctx := setupKeeperForTest(t)
+
+	// Create identity
+	did := "did:aura:test123"
+	address := "aura1test"
+	now := ctx.BlockTime()
+	record := &types.IdentityRecord{
+		Did:       did,
+		Address:   address,
+		Status:    types.IdentityStatusActive,
+		CreatedAt: now,
+		UpdatedAt: &now,
+	}
+	err := keeper.SetIdentityRecord(ctx, record)
+	require.NoError(t, err)
+
+	// Create roles
+	role1 := &types.Role{
+		Name:        "viewer",
+		Permissions: []string{"read"},
+		CreatedAt:   now,
+		CreatedBy:   "admin",
+	}
+	role2 := &types.Role{
+		Name:        "editor",
+		Permissions: []string{"read", "write"},
+		CreatedAt:   now,
+		CreatedBy:   "admin",
+	}
+	err = keeper.SetRole(ctx, role1)
+	require.NoError(t, err)
+	err = keeper.SetRole(ctx, role2)
+	require.NoError(t, err)
+
+	// Assign roles to the identity's address
+	assignment1 := &types.RoleAssignment{
+		Address:    address,
+		RoleName:   "viewer",
+		AssignedBy: "admin",
+		AssignedAt: now,
+	}
+	assignment2 := &types.RoleAssignment{
+		Address:    address,
+		RoleName:   "editor",
+		AssignedBy: "admin",
+		AssignedAt: now,
+	}
+	err = keeper.SetRoleAssignment(ctx, assignment1)
+	require.NoError(t, err)
+	err = keeper.SetRoleAssignment(ctx, assignment2)
+	require.NoError(t, err)
+
+	// Verify assignments exist before erasure
+	assignments, err := keeper.GetRoleAssignments(ctx, address)
+	require.NoError(t, err)
+	require.Len(t, assignments, 2)
+
+	// Erase identity
+	err = keeper.EraseIdentity(ctx, did, address, "GDPR request")
+	require.NoError(t, err)
+
+	// Verify role assignments are deleted
+	assignments, err = keeper.GetRoleAssignments(ctx, address)
+	require.NoError(t, err)
+	require.Len(t, assignments, 0, "all role assignments should be deleted")
+}
+
+// TestEraseIdentity_CascadeDeletesDIDKeyRotations tests that erasure deletes DID key rotation records
+func TestEraseIdentity_CascadeDeletesDIDKeyRotations(t *testing.T) {
+	keeper, ctx := setupKeeperForTest(t)
+
+	// Set up params for grace period
+	params := &types.Params{
+		Auth: types.AuthParams{
+			MaxRolesPerAccount:            10,
+			DefaultRequestsPerMinute:      60,
+			DefaultRequestsPerHour:        3600,
+			DefaultRequestsPerDay:         86400,
+			MultisigProposalExpirySeconds: 604800,
+		},
+		Change: types.IdentityChangeParams{
+			MaxRequestsPerWalletPerMonth:  10,
+			MinConfidenceAfterChange:      50,
+			KeyRotationGracePeriodSeconds: 86400,
+		},
+	}
+	err := keeper.SetParams(ctx, params)
+	require.NoError(t, err)
+
+	// Create identity with verification method
+	did := "did:aura:test123"
+	address := "aura1test"
+	now := ctx.BlockTime()
+	record := &types.IdentityRecord{
+		Did:                 did,
+		Address:             address,
+		Status:              types.IdentityStatusActive,
+		CreatedAt:           now,
+		UpdatedAt:           &now,
+		VerificationMethods: []string{"key1"},
+	}
+	err = keeper.SetIdentityRecord(ctx, record)
+	require.NoError(t, err)
+
+	// Create DID key rotation
+	rotation := &types.DIDKeyRotation{
+		Did:                   did,
+		OldVerificationMethod: "key1",
+		NewVerificationMethod: "key2",
+		RotationTime:          now,
+		InitiatedBy:           address,
+		Reason:                "key compromise",
+		GracePeriodEnd:        now.Add(24 * time.Hour),
+		Status:                types.DIDKeyRotationStatusPending,
+	}
+	err = keeper.SetDIDKeyRotation(ctx, rotation)
+	require.NoError(t, err)
+
+	// Verify rotation exists before erasure
+	_, err = keeper.GetDIDKeyRotation(ctx, did)
+	require.NoError(t, err)
+
+	// Erase identity
+	err = keeper.EraseIdentity(ctx, did, address, "GDPR request")
+	require.NoError(t, err)
+
+	// Verify DID key rotation is deleted
+	_, err = keeper.GetDIDKeyRotation(ctx, did)
+	require.Error(t, err)
+	require.ErrorIs(t, err, types.ErrDIDKeyRotationNotFound)
+}
+
+// TestEraseIdentity_CascadeDeletesAllRelatedData tests comprehensive cascade deletion
+func TestEraseIdentity_CascadeDeletesAllRelatedData(t *testing.T) {
+	keeper, ctx := setupKeeperForTest(t)
+
+	// Set up params
+	params := &types.Params{
+		Auth: types.AuthParams{
+			MaxRolesPerAccount:            10,
+			DefaultRequestsPerMinute:      60,
+			DefaultRequestsPerHour:        3600,
+			DefaultRequestsPerDay:         86400,
+			MultisigProposalExpirySeconds: 604800,
+		},
+		Change: types.IdentityChangeParams{
+			MaxRequestsPerWalletPerMonth:  10,
+			MinConfidenceAfterChange:      50,
+			KeyRotationGracePeriodSeconds: 86400,
+		},
+	}
+	err := keeper.SetParams(ctx, params)
+	require.NoError(t, err)
+
+	// Create identity
+	did := "did:aura:test123"
+	address := "aura1test"
+	now := ctx.BlockTime()
+	record := &types.IdentityRecord{
+		Did:                 did,
+		Address:             address,
+		Status:              types.IdentityStatusActive,
+		CreatedAt:           now,
+		UpdatedAt:           &now,
+		VerificationMethods: []string{"key1"},
+		OffChainDataRef:     "ipfs://QmTest",
+		OffChainDataType:    "ipfs",
+	}
+	err = keeper.SetIdentityRecord(ctx, record)
+	require.NoError(t, err)
+
+	// Create change request
+	changeReq := &types.ChangeRequest{
+		Id:          "req-1",
+		Requester:   address,
+		Did:         did,
+		Status:      types.ChangeStatusPending,
+		RequestedAt: now,
+		ChangeType:  types.ChangeTypeUpdateMetadata,
+	}
+	err = keeper.SetChangeRequest(ctx, changeReq)
+	require.NoError(t, err)
+
+	// Create session
+	session, err := keeper.CreateSession(ctx, address, 3600)
+	require.NoError(t, err)
+
+	// Create role and assignment
+	role := &types.Role{
+		Name:        "admin",
+		Permissions: []string{"manage_all"},
+		CreatedAt:   now,
+		CreatedBy:   "system",
+	}
+	err = keeper.SetRole(ctx, role)
+	require.NoError(t, err)
+
+	assignment := &types.RoleAssignment{
+		Address:    address,
+		RoleName:   "admin",
+		AssignedBy: "system",
+		AssignedAt: now,
+	}
+	err = keeper.SetRoleAssignment(ctx, assignment)
+	require.NoError(t, err)
+
+	// Create DID key rotation
+	rotation := &types.DIDKeyRotation{
+		Did:                   did,
+		OldVerificationMethod: "key1",
+		NewVerificationMethod: "key2",
+		RotationTime:          now,
+		InitiatedBy:           address,
+		Reason:                "regular rotation",
+		GracePeriodEnd:        now.Add(24 * time.Hour),
+		Status:                types.DIDKeyRotationStatusPending,
+	}
+	err = keeper.SetDIDKeyRotation(ctx, rotation)
+	require.NoError(t, err)
+
+	// Verify all data exists before erasure
+	_, err = keeper.GetChangeRequest(ctx, "req-1")
+	require.NoError(t, err)
+	_, err = keeper.GetSession(ctx, session.Id)
+	require.NoError(t, err)
+	assignments, err := keeper.GetRoleAssignments(ctx, address)
+	require.NoError(t, err)
+	require.Len(t, assignments, 1)
+	_, err = keeper.GetDIDKeyRotation(ctx, did)
+	require.NoError(t, err)
+
+	// Erase identity (cascade delete all)
+	err = keeper.EraseIdentity(ctx, did, address, "GDPR Right to Erasure")
+	require.NoError(t, err)
+
+	// Verify identity is marked as erased
+	erasedRecord, err := keeper.GetIdentityRecord(ctx, did)
+	require.NoError(t, err)
+	require.True(t, erasedRecord.Erased)
+	require.Equal(t, types.IdentityStatusErased, erasedRecord.Status)
+	require.Empty(t, erasedRecord.OffChainDataRef)
+	require.Empty(t, erasedRecord.OffChainDataType)
+
+	// Verify all related data is deleted
+	_, err = keeper.GetChangeRequest(ctx, "req-1")
+	require.Error(t, err)
+	require.ErrorIs(t, err, types.ErrChangeRequestNotFound)
+
+	_, err = keeper.GetSession(ctx, session.Id)
+	require.Error(t, err)
+	require.ErrorIs(t, err, types.ErrSessionNotFound)
+
+	assignments, err = keeper.GetRoleAssignments(ctx, address)
+	require.NoError(t, err)
+	require.Len(t, assignments, 0)
+
+	_, err = keeper.GetDIDKeyRotation(ctx, did)
+	require.Error(t, err)
+	require.ErrorIs(t, err, types.ErrDIDKeyRotationNotFound)
+}
+
+// TestEraseIdentity_NoOrphanedData tests that no orphaned data remains after erasure
+func TestEraseIdentity_NoOrphanedData(t *testing.T) {
+	keeper, ctx := setupKeeperForTest(t)
+
+	// Create identity
+	did := "did:aura:test123"
+	address := "aura1test"
+	now := ctx.BlockTime()
+	record := &types.IdentityRecord{
+		Did:       did,
+		Address:   address,
+		Status:    types.IdentityStatusActive,
+		CreatedAt: now,
+		UpdatedAt: &now,
+	}
+	err := keeper.SetIdentityRecord(ctx, record)
+	require.NoError(t, err)
+
+	// Create multiple change requests
+	for i := 1; i <= 5; i++ {
+		req := &types.ChangeRequest{
+			Id:          fmt.Sprintf("req-%d", i),
+			Requester:   address,
+			Did:         did,
+			Status:      types.ChangeStatusPending,
+			RequestedAt: now,
+			ChangeType:  types.ChangeTypeUpdateMetadata,
+		}
+		err = keeper.SetChangeRequest(ctx, req)
+		require.NoError(t, err)
+	}
+
+	// Erase identity
+	err = keeper.EraseIdentity(ctx, did, address, "GDPR request")
+	require.NoError(t, err)
+
+	// Get ALL change requests and verify none reference the erased DID
+	allRequests, err := keeper.GetAllChangeRequests(ctx)
+	require.NoError(t, err)
+
+	for _, req := range allRequests {
+		require.NotEqual(t, did, req.Did, "found orphaned change request: %s", req.Id)
+	}
 }

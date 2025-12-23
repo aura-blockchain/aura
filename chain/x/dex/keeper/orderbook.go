@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
 	"math"
 	"sort"
@@ -575,6 +576,21 @@ func (k Keeper) AddToOrderbook(ctx sdk.Context, order *types.SwapOrder) {
 
 	// Just store the order ID (actual order is in main storage)
 	store.Set(key, []byte(order.OrderId))
+
+	// Add to expiration index for efficient cleanup
+	k.addToExpirationIndex(ctx, order)
+}
+
+// addToExpirationIndex adds an order to the expiration time index
+func (k Keeper) addToExpirationIndex(ctx sdk.Context, order *types.SwapOrder) {
+	if order == nil || order.Status != types.SwapOrderStatus_PENDING {
+		return
+	}
+
+	store := ctx.KVStore(k.storeKey)
+	expirationKey := types.OrderExpirationKey(order.ExpiresAt.Unix(), order.OrderId)
+	// Store orderID as value for easy retrieval
+	store.Set(expirationKey, []byte(order.OrderId))
 }
 
 // RemoveFromOrderbook removes an order from the orderbook index
@@ -589,6 +605,20 @@ func (k Keeper) RemoveFromOrderbook(ctx sdk.Context, orderID string) {
 	store := ctx.KVStore(k.storeKey)
 	key := types.OrderbookKey(pairKey, orderID)
 	store.Delete(key)
+
+	// Remove from expiration index
+	k.removeFromExpirationIndex(ctx, order)
+}
+
+// removeFromExpirationIndex removes an order from the expiration time index
+func (k Keeper) removeFromExpirationIndex(ctx sdk.Context, order *types.SwapOrder) {
+	if order == nil {
+		return
+	}
+
+	store := ctx.KVStore(k.storeKey)
+	expirationKey := types.OrderExpirationKey(order.ExpiresAt.Unix(), order.OrderId)
+	store.Delete(expirationKey)
 }
 
 // GetOrderbookForPair returns all pending orders for a trading pair
@@ -707,6 +737,9 @@ func (k Keeper) CleanupExpiredOrders(ctx sdk.Context) {
 // the number of operations per block. With 10,000+ orders, unbounded cleanup
 // causes block production to exceed timeout, halting the chain.
 //
+// DEPRECATED: Use CleanupExpiredOrdersOptimized for better performance.
+// This function loads ALL pending orders into memory, which is inefficient.
+//
 // Returns: number of orders processed in this batch
 func (k Keeper) CleanupExpiredOrdersBatched(ctx sdk.Context, limit int) int {
 	if limit <= 0 {
@@ -777,6 +810,85 @@ func (k Keeper) CleanupExpiredOrdersBatched(ctx sdk.Context, limit int) int {
 			// Save cursor pointing to last processed order
 			store.Set(cursorKey, []byte(lastProcessedOrderID))
 		}
+	}
+
+	return processed
+}
+
+// CleanupExpiredOrdersOptimized efficiently removes up to 'limit' expired orders
+// using the expiration time index. This function ONLY loads orders that have actually
+// expired, preventing memory exhaustion and consensus timeouts.
+//
+// PERFORMANCE: With 100,000+ orders, this function performs O(limit) operations
+// instead of O(total_orders), reducing cleanup time from seconds to milliseconds.
+//
+// SECURITY: Prevents consensus failure by:
+// 1. Only iterating over expired orders (via time index)
+// 2. Limiting batch size to prevent long-running operations
+// 3. Not loading all pending orders into memory
+//
+// Returns: number of orders processed in this batch
+func (k Keeper) CleanupExpiredOrdersOptimized(ctx sdk.Context, limit int) int {
+	if limit <= 0 {
+		limit = types.MaxOrdersCleanupPerBlock
+	}
+
+	store := ctx.KVStore(k.storeKey)
+	currentTime := ctx.BlockTime().Unix()
+
+	// Create iterator over expiration index up to current time
+	// This only iterates over orders that have actually expired
+	iterator := storetypes.KVStorePrefixIterator(store, types.OrderExpirationPrefix)
+	defer iterator.Close()
+
+	processed := 0
+	for ; iterator.Valid() && processed < limit; iterator.Next() {
+		// Extract expiration time from key
+		key := iterator.Key()
+		if len(key) < len(types.OrderExpirationPrefix)+8 {
+			// Invalid key, skip
+			continue
+		}
+
+		// Parse expiration timestamp (8 bytes after prefix)
+		expiresAtBytes := key[len(types.OrderExpirationPrefix) : len(types.OrderExpirationPrefix)+8]
+		expiresAt := int64(binary.BigEndian.Uint64(expiresAtBytes))
+
+		// Stop if we've reached orders that haven't expired yet
+		// Since the index is time-sorted, all subsequent orders are also not expired
+		if expiresAt > currentTime {
+			break
+		}
+
+		// Extract order ID from value
+		orderID := string(iterator.Value())
+
+		// Get the actual order to verify it's still pending
+		order := k.GetOrder(ctx, orderID)
+		if order == nil {
+			// Order no longer exists, remove stale index entry
+			store.Delete(key)
+			continue
+		}
+
+		// Double-check order is still pending (status might have changed)
+		if order.Status != types.SwapOrderStatus_PENDING {
+			// Order status changed, remove from expiration index
+			store.Delete(key)
+			continue
+		}
+
+		// Cancel expired order
+		if err := k.CancelOrder(ctx, order.OrderId, "expired"); err != nil {
+			// Log error but continue processing other orders
+			ctx.Logger().Error("failed to cancel expired order",
+				"order_id", order.OrderId,
+				"expires_at", order.ExpiresAt,
+				"current_time", ctx.BlockTime(),
+				"error", err)
+		}
+
+		processed++
 	}
 
 	return processed

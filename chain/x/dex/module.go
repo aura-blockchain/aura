@@ -127,7 +127,8 @@ func (m AppModule) EndBlock(ctx sdk.Context) {
 	// Each operation is limited to a safe maximum per block
 
 	// Cleanup expired orders (max 100 per block)
-	ordersProcessed := m.keeper.CleanupExpiredOrdersBatched(ctx, types.MaxOrdersCleanupPerBlock)
+	// Uses optimized expiration index to only process actually expired orders
+	ordersProcessed := m.keeper.CleanupExpiredOrdersOptimized(ctx, types.MaxOrdersCleanupPerBlock)
 	if ordersProcessed > 0 {
 		ctx.Logger().Debug("cleaned up expired orders",
 			"count", ordersProcessed,

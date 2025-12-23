@@ -134,3 +134,18 @@ ENV/
 env/
 *.egg-info/
 __pycache__/
+
+# ============================================================================
+# Review and Analysis Summaries (generated, not source)
+# ============================================================================
+docs/review-summaries/
+*_ANALYSIS*.md
+*_REPORT*.md
+*_SUMMARY*.md
+*_FINDINGS*.md
+
+# Test artifacts in root
+bft_test_*
+trace*.log
+tmp_*.json
+testnet-init.log

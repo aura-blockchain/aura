@@ -55,6 +55,21 @@ func NewKeeper(
 	}
 }
 
+// GetStoreKey returns the store key (used for testing)
+func (k Keeper) GetStoreKey() storetypes.StoreKey {
+	return k.storeKey
+}
+
+// AccountKeeper returns the account keeper (used for testing)
+func (k Keeper) AccountKeeper() types.AccountKeeper {
+	return k.accountKeeper
+}
+
+// BankKeeper returns the bank keeper (used for testing)
+func (k Keeper) BankKeeper() types.BankKeeper {
+	return k.bankKeeper
+}
+
 // GetParams returns the total set of dex parameters.
 func (k Keeper) GetParams(ctx sdk.Context) *types.Params {
 	store := ctx.KVStore(k.storeKey)

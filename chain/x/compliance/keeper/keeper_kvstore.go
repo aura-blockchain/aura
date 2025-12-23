@@ -28,6 +28,7 @@ var (
 	ProcessingRestrictionsKeyPrefix = []byte{0x0B}
 	RateLimitKeyPrefix              = []byte{0x0C}
 	KYCHistoryKeyPrefix             = []byte{0x0D}
+	KYCExpirationIndexKeyPrefix     = []byte{0x0E}
 )
 
 // ============================================================================
@@ -43,6 +44,10 @@ func (k *Keeper) SetKYCRecord(ctx sdk.Context, record *types.KYCRecord) error {
 	}
 	key := append(KYCRecordsKeyPrefix, []byte(record.Address)...)
 	store.Set(key, bz)
+
+	// Update expiration index
+	k.AddToExpirationIndex(ctx, record)
+
 	return nil
 }
 
@@ -122,7 +127,10 @@ func (k *Keeper) UpdateKYCRecord(ctx sdk.Context, newRecord *types.KYCRecord, re
 	existing, err := k.GetKYCRecord(ctx, newRecord.Address)
 
 	if err == nil {
-		// Record exists - archive to history before updating
+		// Record exists - remove old expiration index entry before updating
+		k.RemoveFromExpirationIndex(ctx, existing)
+
+		// Archive to history before updating
 		historyEntry := &types.KYCHistoryEntry{
 			Address:      existing.Address,
 			Version:      existing.Version,
@@ -143,7 +151,7 @@ func (k *Keeper) UpdateKYCRecord(ctx sdk.Context, newRecord *types.KYCRecord, re
 		newRecord.Version = 1
 	}
 
-	// Store updated record
+	// Store updated record (this also adds new expiration index entry)
 	if err := k.SetKYCRecord(ctx, newRecord); err != nil {
 		return fmt.Errorf("failed to set KYC record: %w", err)
 	}
@@ -261,6 +269,146 @@ func (k *Keeper) GetAllKYCHistory(ctx sdk.Context) (map[string][]*types.KYCHisto
 	}
 
 	return history, nil
+}
+
+// ============================================================================
+// KYC Expiration Index Methods
+// ============================================================================
+
+// makeExpirationIndexKey creates a composite key for the expiration index.
+// Format: KYCExpirationIndexKeyPrefix + timestamp (8 bytes, big-endian) + address
+// This ordering allows efficient iteration by expiration time.
+func makeExpirationIndexKey(expiresAt time.Time, address string) []byte {
+	// Convert timestamp to Unix seconds for consistent ordering
+	timestamp := expiresAt.Unix()
+
+	// Encode timestamp as 8-byte big-endian (sortable)
+	timeBz := sdk.Uint64ToBigEndian(uint64(timestamp))
+
+	// Composite key: prefix + timestamp + address
+	key := append(KYCExpirationIndexKeyPrefix, timeBz...)
+	key = append(key, []byte(address)...)
+
+	return key
+}
+
+// AddToExpirationIndex adds a KYC record to the expiration index.
+// This index allows efficient lookup of expired records without full iteration.
+//
+// The index stores: timestamp + address -> empty value (existence check only)
+// This creates a time-ordered index for efficient range queries.
+//
+// Parameters:
+//   - ctx: SDK context for state access
+//   - record: KYC record to index
+//
+// Security considerations:
+//   - Only records with non-nil ExpiresAt are indexed
+//   - Old index entries must be removed when updating records
+//   - Index is deterministic and reproducible
+func (k *Keeper) AddToExpirationIndex(ctx sdk.Context, record *types.KYCRecord) {
+	// Only index records with expiration time
+	if record.ExpiresAt == nil {
+		return
+	}
+
+	store := ctx.KVStore(k.storeKey)
+	key := makeExpirationIndexKey(*record.ExpiresAt, record.Address)
+
+	// Store empty value - we only need the key for existence check
+	store.Set(key, []byte{})
+}
+
+// RemoveFromExpirationIndex removes a KYC record from the expiration index.
+// This must be called when:
+//   - Deleting a KYC record
+//   - Updating a record's expiration time (remove old, add new)
+//
+// Parameters:
+//   - ctx: SDK context for state access
+//   - record: KYC record to remove from index
+func (k *Keeper) RemoveFromExpirationIndex(ctx sdk.Context, record *types.KYCRecord) {
+	// Only records with expiration time can be in the index
+	if record.ExpiresAt == nil {
+		return
+	}
+
+	store := ctx.KVStore(k.storeKey)
+	key := makeExpirationIndexKey(*record.ExpiresAt, record.Address)
+	store.Delete(key)
+}
+
+// IterateExpiredRecords efficiently iterates over expired KYC records up to currentTime.
+// This uses the expiration index to avoid scanning all KYC records.
+//
+// The callback receives the address of each expired record. To get the full record,
+// use GetKYCRecord(ctx, address).
+//
+// Parameters:
+//   - ctx: SDK context for state access
+//   - currentTime: Current block time (records expiring before this are returned)
+//   - maxRecords: Maximum number of records to process (0 = no limit)
+//   - callback: Function called for each expired record address
+//              Returns true to stop iteration, false to continue
+//
+// Returns:
+//   - int: Number of records processed
+//
+// Performance:
+//   - O(k) where k = number of expired records (vs O(n) for full scan)
+//   - Efficient range iteration using time-ordered index
+//   - Gas-bounded via maxRecords parameter
+//
+// Example usage:
+//   processed := k.IterateExpiredRecords(ctx, ctx.BlockTime(), 100, func(address string) bool {
+//       // Process expired record
+//       return false // Continue
+//   })
+func (k *Keeper) IterateExpiredRecords(
+	ctx sdk.Context,
+	currentTime time.Time,
+	maxRecords int,
+	callback func(address string) bool,
+) int {
+	store := ctx.KVStore(k.storeKey)
+
+	// Create end key for range iteration: current timestamp
+	endTimestamp := currentTime.Unix()
+	endTimeBz := sdk.Uint64ToBigEndian(uint64(endTimestamp))
+	endKey := append(KYCExpirationIndexKeyPrefix, endTimeBz...)
+	// Append 0xFF bytes to make it inclusive
+	endKey = append(endKey, 0xFF, 0xFF, 0xFF, 0xFF)
+
+	// Iterate from start of index to current time
+	iterator := store.Iterator(KYCExpirationIndexKeyPrefix, endKey)
+	defer iterator.Close()
+
+	processed := 0
+	for ; iterator.Valid(); iterator.Next() {
+		// Extract address from key
+		// Key format: prefix (1 byte) + timestamp (8 bytes) + address
+		key := iterator.Key()
+		if len(key) <= 9 {
+			// Invalid key format, skip
+			continue
+		}
+
+		address := string(key[9:])
+
+		// Call callback with address
+		if callback(address) {
+			break
+		}
+
+		processed++
+
+		// Check batch limit
+		if maxRecords > 0 && processed >= maxRecords {
+			break
+		}
+	}
+
+	return processed
 }
 
 // ============================================================================

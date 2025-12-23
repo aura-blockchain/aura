@@ -41,6 +41,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data types.GenesisState) error {
 	//   - Counter tracks legacy IDs only (for chains being imported/restored)
 
 	seenTransferIDs := make(map[string]bool)
+	seenSequenceNumbers := make(map[uint64]bool)
 	var maxTransferCounter uint64 = 0
 	legacyIDsFound := false
 
@@ -63,6 +64,9 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data types.GenesisState) error {
 		// Track the maximum counter value from legacy sequential IDs
 		// This is needed for proper counter restoration (max+1, not max)
 		if seq, ok := parseTransferSequence(transfer.TransferId); ok {
+			// Store all sequence numbers to check for counter collision later
+			seenSequenceNumbers[seq] = true
+
 			// Legacy sequential IDs are small values (< 1 trillion threshold)
 			// Hash-based IDs are large (> 1 trillion)
 			const legacyIDThreshold = uint64(1 << 40) // 1 trillion
@@ -89,11 +93,22 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data types.GenesisState) error {
 	//
 	// Edge case: transfer-0 exists → counter should be 1 (0+1)
 	//
-	// Only restore counter if legacy sequential IDs were found in genesis
-	// (chains using only new hash-based IDs don't need counter restoration)
+	// ADDITIONAL SAFETY: Verify counter won't collide with ANY existing ID
+	// This includes hash-based IDs that might happen to have values near the counter
 	if legacyIDsFound {
+		proposedCounter := maxTransferCounter + 1
+
+		// CRITICAL COLLISION CHECK: Ensure proposed counter doesn't collide with existing IDs
+		// While unlikely with hash-based IDs being large numbers, we must verify
+		// in case of database corruption or selective genesis export
+		if seenSequenceNumbers[proposedCounter] {
+			return fmt.Errorf(
+				"counter collision detected: proposed counter %d would collide with existing transfer ID transfer-%d",
+				proposedCounter, proposedCounter)
+		}
+
 		bz := make([]byte, 8)
-		binary.BigEndian.PutUint64(bz, maxTransferCounter+1) // +1 CRITICAL: next available ID
+		binary.BigEndian.PutUint64(bz, proposedCounter) // +1 CRITICAL: next available ID
 		k.store(ctx).Set(types.TransferCounterKey, bz)
 	}
 

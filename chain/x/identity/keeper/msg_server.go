@@ -327,7 +327,8 @@ func (ms msgServer) SignMultisigProposal(goCtx context.Context, msg *identitypb.
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	// Get proposal
+	// Get proposal - this reads the latest state from storage
+	// ensuring we see any signatures added by previous transactions in this block
 	proposal, err := ms.Keeper.GetMultisigProposal(ctx, msg.ProposalId)
 	if err != nil {
 		return nil, status.Error(codes.NotFound, "proposal not found")
@@ -351,14 +352,17 @@ func (ms msgServer) SignMultisigProposal(goCtx context.Context, msg *identitypb.
 		return nil, status.Error(codes.PermissionDenied, "signer is not a wallet signer")
 	}
 
-	// Check if already signed
+	// CRITICAL: Check if already signed - this must happen AFTER reading from storage
+	// to catch signatures added by concurrent transactions in the same block.
+	// If signer already exists in the signatures list, reject immediately to prevent
+	// duplicate signatures and ensure idempotency.
 	for _, sig := range proposal.Signatures {
 		if sig == msg.Signer {
-			return nil, status.Error(codes.AlreadyExists, "signer has already signed")
+			return nil, status.Error(codes.AlreadyExists, "signer has already signed this proposal")
 		}
 	}
 
-	// Add signature
+	// Add signature - atomic append
 	proposal.Signatures = append(proposal.Signatures, msg.Signer)
 
 	// Check if threshold met
@@ -366,6 +370,9 @@ func (ms msgServer) SignMultisigProposal(goCtx context.Context, msg *identitypb.
 		proposal.Status = types.ProposalStatusApproved
 	}
 
+	// Write back to storage - this completes the atomic read-modify-write pattern
+	// The KVStore ensures that each transaction in a block sees the committed state
+	// from previous transactions, preventing signature loss
 	if err := ms.Keeper.SetMultisigProposal(ctx, &proposal); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

@@ -59,6 +59,9 @@ var (
 	OrderCleanupCursorPrefix = []byte{0x0B}
 	HTLCCleanupCursorPrefix  = []byte{0x0C}
 	TWAPCursorPrefix         = []byte{0x0D}
+
+	// Order expiration index (time-sorted for efficient cleanup)
+	OrderExpirationPrefix = []byte{0x0E}
 )
 
 // PoolKey returns the store key for a liquidity pool
@@ -147,4 +150,26 @@ func HTLCCleanupCursorKey() []byte {
 // TWAPCursorKey returns the store key for TWAP update cursor
 func TWAPCursorKey() []byte {
 	return TWAPCursorPrefix
+}
+
+// OrderExpirationKey returns the store key for an order in the expiration index
+// Key format: OrderExpirationPrefix + expiresAt (8 bytes) + orderID
+// This allows efficient iteration over expired orders by time
+func OrderExpirationKey(expiresAt int64, orderID string) []byte {
+	key := OrderExpirationPrefix
+	// Use big-endian encoding for time to maintain sort order
+	tsBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(tsBytes, uint64(expiresAt))
+	key = append(key, tsBytes...)
+	key = append(key, []byte(orderID)...)
+	return key
+}
+
+// OrderExpirationTimePrefix returns the prefix for all orders expiring up to a given time
+func OrderExpirationTimePrefix(maxTime int64) []byte {
+	key := OrderExpirationPrefix
+	tsBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(tsBytes, uint64(maxTime))
+	key = append(key, tsBytes...)
+	return key
 }

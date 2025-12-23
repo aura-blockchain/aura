@@ -319,39 +319,47 @@ func (k Keeper) AddLiquidity(
 		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), err
 	}
 
-	// Update reserves
-	pool.ReserveA = reserveA.Add(actualAmountA)
-	pool.ReserveB = reserveB.Add(actualAmountB)
-	pool.TotalLpTokens = pool.TotalLpTokens.Add(lpTokens)
+	// SECURITY: Atomic pool update pattern - copy, modify, validate, write
+	// This prevents partial state updates if a panic occurs between mutations.
+	// All state changes happen on the copy, then validated, then written atomically.
+	updatedPool := *pool // Shallow copy is sufficient since we're replacing primitive fields
 
-	// Update or add provider
+	// Update reserves on the copy
+	updatedPool.ReserveA = reserveA.Add(actualAmountA)
+	updatedPool.ReserveB = reserveB.Add(actualAmountB)
+	updatedPool.TotalLpTokens = pool.TotalLpTokens.Add(lpTokens)
+
+	// Deep copy Providers slice to avoid mutating original pool
+	updatedPool.Providers = make([]types.LiquidityProvider, len(pool.Providers))
+	copy(updatedPool.Providers, pool.Providers)
+
+	// Update or add provider on the copy
 	found := false
-	for i, p := range pool.Providers {
+	for i, p := range updatedPool.Providers {
 		if p.Address == provider {
-			pool.Providers[i].LpTokens = p.LpTokens.Add(lpTokens)
+			updatedPool.Providers[i].LpTokens = p.LpTokens.Add(lpTokens)
 			found = true
 			break
 		}
 	}
 	if !found {
-		pool.Providers = append(pool.Providers, types.LiquidityProvider{
+		updatedPool.Providers = append(updatedPool.Providers, types.LiquidityProvider{
 			Address:  provider,
 			LpTokens: lpTokens,
 		})
 	}
 
 	// Calculate pool share
-	newTotalLpTokens := pool.TotalLpTokens
-	poolShare := lpTokens.ToLegacyDec().Quo(newTotalLpTokens.ToLegacyDec()).MulInt64(100)
+	poolShare := lpTokens.ToLegacyDec().Quo(updatedPool.TotalLpTokens.ToLegacyDec()).MulInt64(100)
 
-	// SECURITY: Validate LP token invariant after minting new LP tokens
+	// SECURITY: Validate LP token invariant on the copy before persisting
 	// This ensures no accounting errors occurred during liquidity addition
-	if err := k.validateLPTokenInvariant(pool); err != nil {
+	if err := k.validateLPTokenInvariant(&updatedPool); err != nil {
 		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), err
 	}
 
-	// Save pool
-	if err := k.SetPool(ctx, pool); err != nil {
+	// ATOMIC WRITE: Single SetPool call persists all changes
+	if err := k.SetPool(ctx, &updatedPool); err != nil {
 		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), err
 	}
 
@@ -372,7 +380,7 @@ func (k Keeper) AddLiquidity(
 	metrics.LiquidityAdded.WithLabelValues(poolID, pool.DenomB).Inc()
 	metrics.PoolReserves.WithLabelValues(poolID, pool.DenomA).Set(float64(reserveA.Add(actualAmountA).Int64()))
 	metrics.PoolReserves.WithLabelValues(poolID, pool.DenomB).Set(float64(reserveB.Add(actualAmountB).Int64()))
-	metrics.LPTokenSupply.WithLabelValues(poolID).Set(float64(newTotalLpTokens.Int64()))
+	metrics.LPTokenSupply.WithLabelValues(poolID).Set(float64(updatedPool.TotalLpTokens.Int64()))
 
 	return lpTokens, poolShare, nil
 }
@@ -463,31 +471,40 @@ func (k Keeper) RemoveLiquidity(
 	amountA := share.MulInt(reserveA).TruncateInt()
 	amountB := share.MulInt(reserveB).TruncateInt()
 
-	// Update reserves
-	pool.ReserveA = reserveA.Sub(amountA)
-	pool.ReserveB = reserveB.Sub(amountB)
-	pool.TotalLpTokens = totalLpTokens.Sub(lpTokens)
+	// SECURITY: Atomic pool update pattern - copy, modify, validate, write
+	// This prevents partial state updates if a panic occurs between mutations.
+	// All state changes happen on the copy, then validated, then written atomically.
+	updatedPool := *pool // Shallow copy is sufficient since we're replacing primitive fields
 
-	// Update provider
+	// Update reserves on the copy
+	updatedPool.ReserveA = reserveA.Sub(amountA)
+	updatedPool.ReserveB = reserveB.Sub(amountB)
+	updatedPool.TotalLpTokens = totalLpTokens.Sub(lpTokens)
+
+	// Deep copy Providers slice to avoid mutating original pool
+	updatedPool.Providers = make([]types.LiquidityProvider, len(pool.Providers))
+	copy(updatedPool.Providers, pool.Providers)
+
+	// Update provider on the copy
 	newProviderLpTokens := providerLP.LpTokens.Sub(lpTokens)
-	pool.Providers[providerIndex].LpTokens = newProviderLpTokens
+	updatedPool.Providers[providerIndex].LpTokens = newProviderLpTokens
 
 	// Remove provider if they have no LP tokens left
 	if newProviderLpTokens.IsZero() {
-		pool.Providers = append(
-			pool.Providers[:providerIndex],
-			pool.Providers[providerIndex+1:]...,
+		updatedPool.Providers = append(
+			updatedPool.Providers[:providerIndex],
+			updatedPool.Providers[providerIndex+1:]...,
 		)
 	}
 
-	// SECURITY: Validate LP token invariant after burning LP tokens
+	// SECURITY: Validate LP token invariant on the copy before persisting
 	// This ensures no accounting errors occurred during liquidity removal
-	if err := k.validateLPTokenInvariant(pool); err != nil {
+	if err := k.validateLPTokenInvariant(&updatedPool); err != nil {
 		return sdk.Coin{}, sdk.Coin{}, err
 	}
 
-	// Save pool
-	if err := k.SetPool(ctx, pool); err != nil {
+	// ATOMIC WRITE: Single SetPool call persists all changes
+	if err := k.SetPool(ctx, &updatedPool); err != nil {
 		return sdk.Coin{}, sdk.Coin{}, err
 	}
 

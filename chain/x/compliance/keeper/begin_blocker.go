@@ -12,15 +12,17 @@ import (
 // This implements automatic KYC expiry monitoring and enforcement.
 //
 // Processing workflow:
-//   1. Every 50 blocks: Full scan of all KYC records for expiry
-//   2. Check if record has expired (BlockTime > ExpiresAt)
+//   1. Every block: Check expiration index for expired records (O(k) where k = expired count)
+//   2. Batch limit: Process max 100 expired records per block to prevent long blocks
 //   3. Emit EventTypeKYCExpired for each newly expired record
+//   4. Remove processed records from expiration index to prevent re-processing
 //
 // Performance optimization:
-//   - Batched processing every 50 blocks (~5 minutes with 6s blocks)
-//   - Reduces gas cost from O(n) per block to O(n) per 50 blocks
-//   - KYC expiry is not time-critical (50 blocks = ~5 min delay acceptable)
-//   - With 10,000 KYC records: saves ~99% of BeginBlocker gas
+//   - Uses expiration index for O(k) lookup instead of O(n) full scan
+//   - Batch limit prevents chain halt: max 100 records per block
+//   - With 100K+ records: only processes expired ones (typically 0-10 per block)
+//   - Index cleanup prevents re-processing same records
+//   - No longer needs 50-block batching - runs every block efficiently
 //
 // The events emitted allow:
 //   - Off-chain monitoring systems to detect expiry
@@ -32,18 +34,18 @@ import (
 //   - Read-only: Does not modify KYC records (immutable audit trail)
 //   - Time-based: Uses blockchain time (cannot be manipulated)
 //   - Event-driven: External systems react to events
-//   - Gas-bounded: Processing limited by block gas limit
-//   - Batching delay: Max 5 minutes to detect expiry (acceptable for KYC)
+//   - Gas-bounded: Max 100 records per block prevents DoS
+//   - Index cleanup: Prevents duplicate event emission
 //
 // Compliance:
 //   - FinCEN: Continuous KYC status monitoring
 //   - FATF Recommendation 10: Ongoing due diligence enforcement
 //   - BSA: Customer verification status tracking
 //   - Provides immutable audit trail of all expiry events
-//   - 5-minute detection delay is compliant (KYC validity is measured in days/months)
+//   - Real-time detection (no batching delay)
 //
 // Events emitted:
-//   - EventTypeKYCExpired: For each record that has expired since last check
+//   - EventTypeKYCExpired: For each record that has expired
 //     Attributes: address, expired_at, kyc_level, provider
 //
 // Example event consumer (off-chain):
@@ -55,62 +57,108 @@ import (
 //       // Trigger compliance review
 //   }
 func (k *Keeper) BeginBlocker(ctx sdk.Context) {
-	// Batch processing every 50 blocks to reduce gas cost
-	// KYC expiry is not time-critical - a few minutes delay is acceptable
-	// for a compliance metric measured in days/months
-	if ctx.BlockHeight()%50 != 0 {
-		return
-	}
-
 	// Get current block time for expiry checks
 	currentTime := ctx.BlockTime()
 
-	// Track number of expired records for logging
-	expiredCount := 0
+	// Batch limit: process max 100 expired records per block
+	// This prevents long blocks even with 100K+ total records
+	const maxExpiredPerBlock = 100
 
-	// Iterate all KYC records and check for expiry
-	// This only happens every 50 blocks, so the O(n) cost is amortized
-	k.IterateKYCRecords(ctx, func(record types.KYCRecord) bool {
-		// Check if record has expired
-		// ExpiresAt is *time.Time (nullable), need to check for nil and dereference
-		if record.ExpiresAt != nil && currentTime.After(*record.ExpiresAt) {
-			// Emit event for expired KYC record
-			ctx.EventManager().EmitEvent(
-				sdk.NewEvent(
-					types.EventTypeKYCExpired,
-					sdk.NewAttribute(types.AttributeKeyAddress, record.Address),
-					sdk.NewAttribute("expired_at", record.ExpiresAt.Format("2006-01-02 15:04:05 MST")),
-					sdk.NewAttribute("kyc_level", record.KycLevel.String()),
-					sdk.NewAttribute("provider", record.Provider),
-					sdk.NewAttribute("jurisdiction", record.Jurisdiction),
-					sdk.NewAttribute("verified_at", record.VerifiedAt.Format("2006-01-02 15:04:05 MST")),
-					sdk.NewAttribute(types.AttributeKeyBlockHeight, fmt.Sprintf("%d", ctx.BlockHeight())),
-					sdk.NewAttribute(types.AttributeKeyBlockTime, currentTime.Format("2006-01-02 15:04:05 MST")),
-					sdk.NewAttribute(types.AttributeKeyTimestamp, fmt.Sprintf("%d", currentTime.Unix())),
-				),
+	// Track processed records for logging and index cleanup
+	var expiredAddresses []string
+	var expiredRecords []*types.KYCRecord
+
+	// Use expiration index for efficient O(k) lookup
+	// Only iterates over expired records, not all records
+	processedCount := k.IterateExpiredRecords(ctx, currentTime, maxExpiredPerBlock, func(address string) bool {
+		// Get full record to emit complete event
+		record, err := k.GetKYCRecord(ctx, address)
+		if err != nil {
+			// Record not found (may have been deleted) - skip
+			k.logger(ctx).Error(
+				"expired record not found in store",
+				"address", address,
+				"error", err,
 			)
-
-			expiredCount++
-
-			// Log expiry for node operators
-			k.logger(ctx).Info(
-				"KYC record expired",
-				"address", record.Address,
-				"expired_at", record.ExpiresAt.Format("2006-01-02 15:04:05"),
-				"kyc_level", record.KycLevel.String(),
-				"provider", record.Provider,
-			)
+			// Still track address for index cleanup
+			expiredAddresses = append(expiredAddresses, address)
+			return false
 		}
 
-		// Continue iteration (return false)
-		return false
+		// Double-check expiration (defensive programming)
+		if record.ExpiresAt == nil || !currentTime.After(*record.ExpiresAt) {
+			// Not actually expired - index may be stale
+			// This shouldn't happen but handle gracefully
+			return false
+		}
+
+		// Track for event emission and cleanup
+		expiredAddresses = append(expiredAddresses, address)
+		expiredRecords = append(expiredRecords, record)
+
+		return false // Continue processing up to batch limit
 	})
 
-	// Log summary if any records expired
-	if expiredCount > 0 {
+	// Emit events and cleanup index for all expired records
+	for i, record := range expiredRecords {
+		// Emit event for expired KYC record
+		ctx.EventManager().EmitEvent(
+			sdk.NewEvent(
+				types.EventTypeKYCExpired,
+				sdk.NewAttribute(types.AttributeKeyAddress, record.Address),
+				sdk.NewAttribute("expired_at", record.ExpiresAt.Format("2006-01-02 15:04:05 MST")),
+				sdk.NewAttribute("kyc_level", record.KycLevel.String()),
+				sdk.NewAttribute("provider", record.Provider),
+				sdk.NewAttribute("jurisdiction", record.Jurisdiction),
+				sdk.NewAttribute("verified_at", record.VerifiedAt.Format("2006-01-02 15:04:05 MST")),
+				sdk.NewAttribute(types.AttributeKeyBlockHeight, fmt.Sprintf("%d", ctx.BlockHeight())),
+				sdk.NewAttribute(types.AttributeKeyBlockTime, currentTime.Format("2006-01-02 15:04:05 MST")),
+				sdk.NewAttribute(types.AttributeKeyTimestamp, fmt.Sprintf("%d", currentTime.Unix())),
+			),
+		)
+
+		// Log expiry for node operators
+		k.logger(ctx).Info(
+			"KYC record expired",
+			"address", record.Address,
+			"expired_at", record.ExpiresAt.Format("2006-01-02 15:04:05"),
+			"kyc_level", record.KycLevel.String(),
+			"provider", record.Provider,
+		)
+
+		// Remove from expiration index to prevent re-processing
+		// This ensures we don't emit duplicate events
+		k.RemoveFromExpirationIndex(ctx, record)
+
+		// Also remove stale address-only entries
+		if i < len(expiredAddresses) {
+			expiredAddresses[i] = "" // Mark as processed
+		}
+	}
+
+	// Cleanup any remaining stale index entries (records that were deleted)
+	for _, address := range expiredAddresses {
+		if address != "" {
+			// Create dummy record for index key generation
+			// We don't know the exact timestamp, but we can try to clean up
+			// by checking if record still exists
+			if _, err := k.GetKYCRecord(ctx, address); err != nil {
+				// Record deleted - try to clean up index
+				// We can't remove without knowing timestamp, so log for investigation
+				k.logger(ctx).Warn(
+					"stale expiration index entry detected",
+					"address", address,
+					"block_height", ctx.BlockHeight(),
+				)
+			}
+		}
+	}
+
+	// Log summary if any records processed
+	if processedCount > 0 {
 		k.logger(ctx).Info(
 			"BeginBlocker: processed expired KYC records",
-			"count", expiredCount,
+			"count", processedCount,
 			"block_height", ctx.BlockHeight(),
 			"block_time", currentTime.Format("2006-01-02 15:04:05"),
 		)

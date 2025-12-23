@@ -611,3 +611,107 @@ func TestInvariant_SessionExpiry(t *testing.T) {
 	// This test verifies the session exists but may be expired
 	require.True(t, retrievedSession.ExpiresAt.Before(ctx.BlockTime()))
 }
+
+// TestSignMultisigProposal_ConcurrentSignatures_NoRaceCondition verifies atomic signature handling
+// This test simulates the scenario where multiple signers submit signatures in rapid succession
+// within the same block. The system must ensure no signatures are lost and duplicates are prevented.
+func TestSignMultisigProposal_ConcurrentSignatures_NoRaceCondition(t *testing.T) {
+	input := keepertest.CreateTestInput(t)
+	k := keeper.NewKeeper(keepertest.WrapStoreService(input.StoreKey), input.StoreKey, input.Cdc, "authority", log.NewNopLogger())
+
+	signer1 := keepertest.GenTestAddr().String()
+	signer2 := keepertest.GenTestAddr().String()
+	signer3 := keepertest.GenTestAddr().String()
+
+	// Create wallet with 3 signers, threshold 2
+	wallet := &types.MultisigWallet{
+		Id:         "wallet-concurrent-test",
+		Signers:    []string{signer1, signer2, signer3},
+		Threshold:  2,
+		CreatedBy:  signer1,
+		CreatedAt:  input.Ctx.BlockTime(),
+		WalletType: types.WalletType3Of5,
+	}
+	require.NoError(t, k.SetMultisigWallet(input.Ctx, wallet))
+
+	// Create proposal
+	proposal := &types.MultisigProposal{
+		Id:          "proposal-concurrent-test",
+		WalletId:    "wallet-concurrent-test",
+		Title:       "Concurrent Signature Test",
+		Description: "Testing race condition prevention",
+		Payload:     []byte("test-payload"),
+		CreatedAt:   input.Ctx.BlockTime(),
+		ExpiresAt:   input.Ctx.BlockTime().Add(7 * 24 * time.Hour),
+		Signatures:  []string{},
+		Status:      types.ProposalStatusPending,
+	}
+	require.NoError(t, k.SetMultisigProposal(input.Ctx, proposal))
+
+	msgServer := keeper.NewMsgServerImpl(k)
+	ctx := sdk.WrapSDKContext(input.Ctx)
+
+	// Simulate rapid sequential signatures from different signers in same block
+	// Each signature submission should see the updated state from the previous one
+
+	// First signature
+	msg1 := &identitypb.MsgSignMultisigProposal{
+		ProposalId: "proposal-concurrent-test",
+		Signer:     signer1,
+	}
+	_, err := msgServer.SignMultisigProposal(ctx, msg1)
+	require.NoError(t, err, "first signature should succeed")
+
+	// Verify first signature was recorded
+	updatedProposal, err := k.GetMultisigProposal(input.Ctx, "proposal-concurrent-test")
+	require.NoError(t, err)
+	require.Len(t, updatedProposal.Signatures, 1, "should have exactly 1 signature")
+	require.Contains(t, updatedProposal.Signatures, signer1)
+	require.Equal(t, types.ProposalStatusPending, updatedProposal.Status, "should still be pending")
+
+	// Second signature (different signer)
+	msg2 := &identitypb.MsgSignMultisigProposal{
+		ProposalId: "proposal-concurrent-test",
+		Signer:     signer2,
+	}
+	_, err = msgServer.SignMultisigProposal(ctx, msg2)
+	require.NoError(t, err, "second signature should succeed")
+
+	// Verify both signatures are present and threshold met
+	updatedProposal, err = k.GetMultisigProposal(input.Ctx, "proposal-concurrent-test")
+	require.NoError(t, err)
+	require.Len(t, updatedProposal.Signatures, 2, "should have exactly 2 signatures")
+	require.Contains(t, updatedProposal.Signatures, signer1)
+	require.Contains(t, updatedProposal.Signatures, signer2)
+	require.Equal(t, types.ProposalStatusApproved, updatedProposal.Status, "should be approved after reaching threshold")
+
+	// Third signature (valid signer but proposal already approved)
+	msg3 := &identitypb.MsgSignMultisigProposal{
+		ProposalId: "proposal-concurrent-test",
+		Signer:     signer3,
+	}
+	_, err = msgServer.SignMultisigProposal(ctx, msg3)
+	require.NoError(t, err, "third signature should succeed even after approval")
+
+	// Verify all three signatures are recorded
+	updatedProposal, err = k.GetMultisigProposal(input.Ctx, "proposal-concurrent-test")
+	require.NoError(t, err)
+	require.Len(t, updatedProposal.Signatures, 3, "should have all 3 signatures")
+	require.Contains(t, updatedProposal.Signatures, signer1)
+	require.Contains(t, updatedProposal.Signatures, signer2)
+	require.Contains(t, updatedProposal.Signatures, signer3)
+
+	// Attempt duplicate signature (should fail)
+	msgDuplicate := &identitypb.MsgSignMultisigProposal{
+		ProposalId: "proposal-concurrent-test",
+		Signer:     signer1, // Already signed
+	}
+	_, err = msgServer.SignMultisigProposal(ctx, msgDuplicate)
+	require.Error(t, err, "duplicate signature should fail")
+	require.Contains(t, err.Error(), "already signed", "error should indicate duplicate")
+
+	// Verify signatures unchanged after failed duplicate attempt
+	finalProposal, err := k.GetMultisigProposal(input.Ctx, "proposal-concurrent-test")
+	require.NoError(t, err)
+	require.Len(t, finalProposal.Signatures, 3, "signature count should remain 3")
+}

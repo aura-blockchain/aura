@@ -1,0 +1,126 @@
+AURA BLOCKCHAIN TEST COVERAGE BY MODULE
+========================================
+
+LEGEND:
+  █ = 10% coverage
+  ░ = Missing coverage
+  Target: ████████ (80%)
+
+KEEPER COVERAGE
+---------------
+aura-bindings        ███████░░░  72.3%  ✓ Good
+auth                 ███████░░░  70.4%  ✓ Good
+bridge               ██████░░░░  69.6%  ✓ Good
+compliance           ███████░░░  72.0%  ✓ Good
+cryptography         ███████░░░  72.2%  ✓ Good
+economics            ███████░░░  75.7%  ✓ Good
+validatorsecurity    ███████░░░  70.1%  ✓ Good
+wasm                 ██████░░░░  68.4%  ✓ Good
+
+dex                  ██████░░░░  63.6%  ⚠ Moderate
+incidentresponse     ██████░░░░  60.3%  ⚠ Moderate
+vcregistry           █████░░░░░  54.9%  ⚠ Moderate
+identity             █████░░░░░  53.0%  ⚠ Moderate
+monitoring           █████░░░░░  50.0%  ⚠ Moderate
+prevalidation        █████░░░░░  50.1%  ⚠ Moderate
+confidencescore      ████░░░░░░  49.5%  ⚠ Moderate
+inclusionroutines    ████░░░░░░  49.0%  ⚠ Moderate
+networksecurity      ████░░░░░░  48.4%  ⚠ Moderate
+aiassistant          ████░░░░░░  46.8%  ⚠ Moderate
+dataregistry         ████░░░░░░  44.9%  ⚠ Moderate
+contractregistry     ████░░░░░░  43.6%  ⚠ Moderate
+
+identitychange       ███░░░░░░░  39.8%  ✗ Low
+privacy              ███░░░░░░░  35.3%  ✗ Low
+governance           ███░░░░░░░  30.0%  ✗ Low
+walletsecurity       ██░░░░░░░░  28.2%  ✗ Critical
+economicsecurity     █░░░░░░░░░  17.1%  ✗ Critical
+security             █░░░░░░░░░  16.7%  ✗ Critical
+
+
+TYPES COVERAGE
+--------------
+cryptography/types   █████████░  98.5%  ✓ Excellent
+aura-bindings/types  █████████░  95.8%  ✓ Excellent
+compliance/types     ████████░░  85.7%  ✓ Excellent
+economics/types      ██████░░░░  62.4%  ✓ Good
+auth/types           █████░░░░░  52.5%  ⚠ Moderate
+economicsecurity     █████░░░░░  50.3%  ⚠ Moderate
+contractregistry     ████░░░░░░  46.3%  ⚠ Moderate
+confidencescore      ████░░░░░░  42.4%  ⚠ Moderate
+dex/types            ███░░░░░░░  35.2%  ✗ Low
+bridge/types         ██░░░░░░░░  26.5%  ✗ Low
+dataregistry/types   █░░░░░░░░░  13.0%  ✗ Critical
+
+
+CLI COVERAGE
+------------
+contractregistry     ██████████ 100.0%  ✓ Excellent (simple CLI)
+aiassistant          ███░░░░░░░  38.8%  ⚠ Moderate
+dataregistry         ███░░░░░░░  36.5%  ⚠ Moderate
+confidencescore      ██░░░░░░░░  29.8%  ✗ Low
+compliance           ██░░░░░░░░  28.0%  ✗ Low
+economicsecurity     ██░░░░░░░░  27.3%  ✗ Low
+governance           ██░░░░░░░░  27.5%  ✗ Low
+bridge               ██░░░░░░░░  26.7%  ✗ Low
+dex                  ██░░░░░░░░  26.0%  ✗ Low
+auth                 ██░░░░░░░░  25.6%  ✗ Low
+cryptography         ██░░░░░░░░  20.6%  ✗ Critical
+
+
+MODULE ENTRY POINTS
+-------------------
+bridge               ███████░░░  78.6%  ✓ Good
+privacy              ██████░░░░  63.2%  ✓ Good
+compliance           █████░░░░░  53.3%  ⚠ Moderate
+networksecurity      █████░░░░░  50.0%  ⚠ Moderate
+identity             ██░░░░░░░░  29.5%  ✗ Low
+aura-bindings        ██░░░░░░░░  25.2%  ✗ Low
+inclusionroutines    ░░░░░░░░░░   9.1%  ✗ Critical
+identitychange       ░░░░░░░░░░   6.1%  ✗ Critical
+aiassistant          ░░░░░░░░░░   0.0%  ✗ Critical
+auth                 ░░░░░░░░░░   0.0%  ✗ Critical
+confidencescore      ░░░░░░░░░░   0.0%  ✗ Critical
+contractregistry     ░░░░░░░░░░   0.0%  ✗ Critical
+cryptography         ░░░░░░░░░░   0.0%  ✗ Critical
+dataregistry         ░░░░░░░░░░   0.0%  ✗ Critical
+dex                  ░░░░░░░░░░   0.0%  ✗ Critical
+economics            ░░░░░░░░░░   0.0%  ✗ Critical
+economicsecurity     ░░░░░░░░░░   0.0%  ✗ Critical
+governance           ░░░░░░░░░░   0.0%  ✗ Critical
+incidentresponse     ░░░░░░░░░░   0.0%  ✗ Critical
+monitoring           ░░░░░░░░░░   0.0%  ✗ Critical
+prevalidation        ░░░░░░░░░░   0.0%  ✗ Critical
+security             ░░░░░░░░░░   0.0%  ✗ Critical
+validatorsecurity    ░░░░░░░░░░   0.0%  ✗ Critical
+walletsecurity       ░░░░░░░░░░   0.0%  ✗ Critical
+wasm                 ░░░░░░░░░░   0.0%  ✗ Critical
+vcregistry           ░░░░░░░░░░   0.0%  ✗ Critical
+
+
+INTEGRATION/E2E TESTS
+---------------------
+integration          █████████░  97.2%  ✓ Excellent
+e2e                  █████████░  96.8%  ✓ Excellent
+chaos                ██████░░░░  60.3%  ✓ Good
+
+
+OVERALL SUMMARY
+===============
+Total Coverage:      ████░░░░░░  43.1%
+Test Files:          468
+Table-Driven Tests:  403
+Test Suites:         216
+Fuzz/Bench Tests:    16
+
+CRITICAL GAPS:
+- 19 modules with 0% module.go coverage
+- Security modules at 16-28% (critical risk)
+- Privacy module at 35% (high risk)
+- CLI commands avg 28% (poor UX testing)
+
+STRENGTHS:
+- Excellent test infrastructure
+- Strong integration testing (97%)
+- Good keeper coverage (avg 56%)
+- 403 table-driven tests

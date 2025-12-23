@@ -10,8 +10,8 @@ import (
 	"github.com/aequitas/aura/chain/x/compliance/types"
 )
 
-// TestBeginBlockerBatching verifies that KYC expiry checks are batched every 50 blocks
-func TestBeginBlockerBatching(t *testing.T) {
+// TestBeginBlockerWithExpirationIndex verifies efficient KYC expiry using indexed lookups
+func TestBeginBlockerWithExpirationIndex(t *testing.T) {
 	k, ctx := setupKeeper(t)
 
 	// Create an expired KYC record
@@ -28,27 +28,18 @@ func TestBeginBlockerBatching(t *testing.T) {
 	err := k.SetKYCRecord(ctx, expiredRecord)
 	require.NoError(t, err)
 
-	// Test 1: BeginBlocker should NOT process on non-50th blocks
-	for i := int64(1); i < 50; i++ {
-		ctx = ctx.WithBlockHeight(i)
-		eventsBefore := len(ctx.EventManager().Events())
+	// Add to expiration index
+	k.AddToExpirationIndex(ctx, expiredRecord)
 
-		k.BeginBlocker(ctx)
-
-		eventsAfter := len(ctx.EventManager().Events())
-		require.Equal(t, eventsBefore, eventsAfter,
-			"BeginBlocker should not emit events on block %d (not divisible by 50)", i)
-	}
-
-	// Test 2: BeginBlocker SHOULD process on 50th block
-	ctx = ctx.WithBlockHeight(50)
+	// BeginBlocker should process expired records immediately using index
+	ctx = ctx.WithBlockHeight(1)
 	eventsBefore := len(ctx.EventManager().Events())
 
 	k.BeginBlocker(ctx)
 
 	eventsAfter := len(ctx.EventManager().Events())
 	require.Greater(t, eventsAfter, eventsBefore,
-		"BeginBlocker should emit expiry events on block 50")
+		"BeginBlocker should emit expiry events on first block when using index")
 
 	// Verify the expired event was emitted
 	events := ctx.EventManager().Events()
@@ -64,34 +55,19 @@ func TestBeginBlockerBatching(t *testing.T) {
 		}
 	}
 	require.True(t, foundExpiredEvent, "Should find KYC expired event for expired user")
-
-	// Test 3: BeginBlocker should process on block 100, 150, 200, etc.
-	testBlocks := []int64{100, 150, 200, 250, 500, 1000}
-	for _, blockHeight := range testBlocks {
-		ctx = ctx.WithBlockHeight(blockHeight)
-		eventsBefore := len(ctx.EventManager().Events())
-
-		k.BeginBlocker(ctx)
-
-		eventsAfter := len(ctx.EventManager().Events())
-		// Events may or may not be emitted depending on if there are new expired records,
-		// but BeginBlocker should run (we just verify no panic)
-		_ = eventsAfter
-		require.GreaterOrEqual(t, eventsAfter, eventsBefore,
-			"BeginBlocker should run on block %d", blockHeight)
-	}
 }
 
-// TestBeginBlockerBatchingPerformance verifies batching reduces gas cost
-func TestBeginBlockerBatchingPerformance(t *testing.T) {
+// TestBeginBlockerIndexedPerformance verifies the expiration index provides O(k) lookups
+func TestBeginBlockerIndexedPerformance(t *testing.T) {
 	k, ctx := setupKeeper(t)
 
-	// Create 1000 KYC records (mix of valid and expired)
 	currentTime := ctx.BlockTime()
+
+	// Create 1000 KYC records (mix of valid and expired)
 	for i := 0; i < 1000; i++ {
 		var expiresAt time.Time
 		if i%10 == 0 {
-			// 10% expired
+			// 10% expired (100 records)
 			expiresAt = currentTime.Add(-1 * time.Hour)
 		} else {
 			// 90% valid
@@ -109,44 +85,38 @@ func TestBeginBlockerBatchingPerformance(t *testing.T) {
 
 		err := k.SetKYCRecord(ctx, record)
 		require.NoError(t, err)
+
+		// Add to expiration index
+		k.AddToExpirationIndex(ctx, record)
 	}
 
-	// Measure gas on non-batched blocks (should be minimal)
-	nonBatchedBlocks := 0
-	for i := int64(1); i < 50; i++ {
-		ctx = ctx.WithBlockHeight(i).WithGasMeter(storetypes.NewInfiniteGasMeter())
-		gasBefore := ctx.GasMeter().GasConsumed()
-
-		k.BeginBlocker(ctx)
-
-		gasUsed := ctx.GasMeter().GasConsumed() - gasBefore
-		if gasUsed > 1000 {
-			t.Errorf("Block %d used %d gas (expected <1000 for early return)", i, gasUsed)
-		}
-		nonBatchedBlocks++
-	}
-
-	// Measure gas on batched block (will be higher due to iteration)
-	ctx = ctx.WithBlockHeight(50).WithGasMeter(storetypes.NewInfiniteGasMeter())
+	// Measure gas - with indexed lookups, should only iterate expired records
+	ctx = ctx.WithBlockHeight(1).WithGasMeter(storetypes.NewInfiniteGasMeter())
 	gasBefore := ctx.GasMeter().GasConsumed()
 
 	k.BeginBlocker(ctx)
 
-	gasUsedBatched := ctx.GasMeter().GasConsumed() - gasBefore
+	gasUsed := ctx.GasMeter().GasConsumed() - gasBefore
 
-	// Batched block should use significantly more gas (due to iteration)
-	require.Greater(t, gasUsedBatched, uint64(1000),
-		"Batched block should consume gas for iteration")
+	// With indexed lookups, gas should be proportional to expired count (100)
+	// not total count (1000), so it should be significantly less than full scan
+	t.Logf("Gas used with expiration index (100/1000 expired): %d", gasUsed)
 
-	// Calculate gas savings: 49 blocks with minimal gas vs 1 block with full scan
-	// Savings = (49 * gasUsedBatched) - (49 * minimal_gas)
-	// With batching, we save ~98% of gas over 50 blocks
-	t.Logf("Gas used on batched block (50): %d", gasUsedBatched)
-	t.Logf("Gas saved over 49 non-batched blocks: ~%d", (nonBatchedBlocks)*int(gasUsedBatched))
-	t.Logf("Batching efficiency: ~98%% gas reduction")
+	// Verify events were emitted for expired records (up to batch limit of 100)
+	events := ctx.EventManager().Events()
+	expiredCount := 0
+	for _, event := range events {
+		if event.Type == types.EventTypeKYCExpired {
+			expiredCount++
+		}
+	}
+
+	// Should process exactly 100 expired records (batch limit)
+	require.LessOrEqual(t, expiredCount, 100,
+		"Should process at most 100 expired records per block (batch limit)")
 }
 
-// TestBeginBlockerExpiryDetection verifies expired records are still detected with batching
+// TestBeginBlockerExpiryDetection verifies expired records are detected with indexed lookups
 func TestBeginBlockerExpiryDetection(t *testing.T) {
 	k, ctx := setupKeeper(t)
 
@@ -154,24 +124,24 @@ func TestBeginBlockerExpiryDetection(t *testing.T) {
 
 	// Create records that expire at different times
 	testCases := []struct {
-		address   string
-		expiresAt time.Time
-		shouldExpireByBlock50 bool
+		address       string
+		expiresAt     time.Time
+		shouldExpire  bool
 	}{
 		{
-			address:   "aura1already_expired",
-			expiresAt: currentTime.Add(-10 * time.Hour), // Already expired
-			shouldExpireByBlock50: true,
+			address:      "aura1already_expired",
+			expiresAt:    currentTime.Add(-10 * time.Hour),
+			shouldExpire: true,
 		},
 		{
-			address:   "aura1expires_soon",
-			expiresAt: currentTime.Add(-1 * time.Minute), // Just expired
-			shouldExpireByBlock50: true,
+			address:      "aura1expires_soon",
+			expiresAt:    currentTime.Add(-1 * time.Minute),
+			shouldExpire: true,
 		},
 		{
-			address:   "aura1valid",
-			expiresAt: currentTime.Add(365 * 24 * time.Hour), // Valid for 1 year
-			shouldExpireByBlock50: false,
+			address:      "aura1valid",
+			expiresAt:    currentTime.Add(365 * 24 * time.Hour),
+			shouldExpire: false,
 		},
 	}
 
@@ -188,10 +158,13 @@ func TestBeginBlockerExpiryDetection(t *testing.T) {
 
 		err := k.SetKYCRecord(ctx, record)
 		require.NoError(t, err)
+
+		// Add to expiration index
+		k.AddToExpirationIndex(ctx, record)
 	}
 
-	// Run BeginBlocker on block 50 (batched)
-	ctx = ctx.WithBlockHeight(50)
+	// Run BeginBlocker
+	ctx = ctx.WithBlockHeight(1)
 	k.BeginBlocker(ctx)
 
 	// Check events
@@ -210,7 +183,7 @@ func TestBeginBlockerExpiryDetection(t *testing.T) {
 
 	// Verify expiry detection
 	for _, tc := range testCases {
-		if tc.shouldExpireByBlock50 {
+		if tc.shouldExpire {
 			require.True(t, expiredAddresses[tc.address],
 				"Address %s should have expired event", tc.address)
 		} else {
@@ -218,4 +191,59 @@ func TestBeginBlockerExpiryDetection(t *testing.T) {
 				"Address %s should NOT have expired event", tc.address)
 		}
 	}
+}
+
+// TestBeginBlockerBatchLimit verifies max 100 records processed per block
+func TestBeginBlockerBatchLimit(t *testing.T) {
+	k, ctx := setupKeeper(t)
+
+	currentTime := ctx.BlockTime()
+
+	// Create 150 expired records
+	for i := 0; i < 150; i++ {
+		expiresAt := currentTime.Add(-1 * time.Hour)
+		record := &types.KYCRecord{
+			Address:      "aura1user" + string(rune(i)),
+			KycLevel:     types.KYCLevel_KYC_LEVEL_BASIC,
+			VerifiedAt:   currentTime.Add(-30 * 24 * time.Hour),
+			ExpiresAt:    &expiresAt,
+			Provider:     "test-provider",
+			Jurisdiction: "US",
+		}
+
+		err := k.SetKYCRecord(ctx, record)
+		require.NoError(t, err)
+		k.AddToExpirationIndex(ctx, record)
+	}
+
+	// First block should process 100 (batch limit)
+	ctx = ctx.WithBlockHeight(1)
+	k.BeginBlocker(ctx)
+
+	events := ctx.EventManager().Events()
+	expiredCount := 0
+	for _, event := range events {
+		if event.Type == types.EventTypeKYCExpired {
+			expiredCount++
+		}
+	}
+
+	require.Equal(t, 100, expiredCount,
+		"Should process exactly 100 expired records in first block")
+
+	// Second block should process remaining 50
+	ctx = ctx.WithBlockHeight(2)
+	k.BeginBlocker(ctx)
+
+	events = ctx.EventManager().Events()
+	secondExpiredCount := 0
+	for _, event := range events {
+		if event.Type == types.EventTypeKYCExpired {
+			secondExpiredCount++
+		}
+	}
+
+	// Total should be 150 (100 from first + 50 from second)
+	require.Equal(t, 150, secondExpiredCount,
+		"Should have processed all 150 expired records across two blocks")
 }

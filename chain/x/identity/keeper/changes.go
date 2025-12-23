@@ -69,8 +69,9 @@ func (k *Keeper) GetAllIdentityRecords(ctx sdk.Context) ([]*types.IdentityRecord
 	return records, nil
 }
 
-// EraseIdentity implements GDPR Right to Erasure
+// EraseIdentity implements GDPR Right to Erasure with cascade deletion
 // Marks identity as erased while preserving audit trail (commitment)
+// Deletes all associated records: change requests, sessions, role assignments, DID key rotations
 func (k *Keeper) EraseIdentity(ctx sdk.Context, did, requester, reason string) error {
 	// Retrieve existing identity record
 	record, err := k.GetIdentityRecord(ctx, did)
@@ -96,7 +97,63 @@ func (k *Keeper) EraseIdentity(ctx sdk.Context, did, requester, reason string) e
 
 	now := ctx.BlockTime()
 
-	// Mark as erased (keep commitment for audit trail)
+	// Log audit trail BEFORE deletion for GDPR compliance
+	k.LogAudit(ctx, requester, "erase_identity_begin", did, "started", map[string]string{
+		"reason":     reason,
+		"started_at": now.Format(time.RFC3339),
+		"address":    record.Address,
+	}, "")
+
+	// === CASCADE DELETION: Delete all related data ===
+
+	// 1. Delete all change requests referencing this DID
+	changeRequestsDeleted := 0
+	allChangeRequests, err := k.GetAllChangeRequests(ctx)
+	if err == nil {
+		for _, req := range allChangeRequests {
+			if req.Did == did {
+				if deleteErr := k.DeleteChangeRequest(ctx, req.Id); deleteErr == nil {
+					changeRequestsDeleted++
+				}
+			}
+		}
+	}
+
+	// 2. Delete all sessions for the identity's address
+	sessionsDeleted := 0
+	sessionIDs, err := k.GetUserSessions(ctx, record.Address)
+	if err == nil {
+		for _, sessionID := range sessionIDs {
+			if deleteErr := k.DeleteSession(ctx, sessionID); deleteErr == nil {
+				sessionsDeleted++
+			}
+		}
+	}
+
+	// 3. Delete all role assignments for the identity's address
+	rolesDeleted := 0
+	assignments, err := k.GetRoleAssignments(ctx, record.Address)
+	if err == nil {
+		for _, assignment := range assignments {
+			if deleteErr := k.DeleteRoleAssignment(ctx, record.Address, assignment.RoleName); deleteErr == nil {
+				rolesDeleted++
+			}
+		}
+	}
+
+	// 4. Delete DID key rotation records for this DID
+	didKeyRotationsDeleted := 0
+	rotation, err := k.GetDIDKeyRotation(ctx, did)
+	if err == nil {
+		if deleteErr := k.DeleteDIDKeyRotation(ctx, did); deleteErr == nil {
+			didKeyRotationsDeleted++
+		}
+	} else {
+		// If rotation doesn't exist, that's fine (no error)
+		_ = rotation
+	}
+
+	// Mark identity as erased (keep commitment for audit trail)
 	record.Erased = true
 	record.ErasedAt = &now
 	record.Status = types.IdentityStatusErased
@@ -114,10 +171,14 @@ func (k *Keeper) EraseIdentity(ctx sdk.Context, did, requester, reason string) e
 		return fmt.Errorf("failed to update erased identity record: %w", err)
 	}
 
-	// Log audit trail
-	k.LogAudit(ctx, requester, "erase_identity", did, "success", map[string]string{
-		"reason":    reason,
-		"erased_at": now.Format(time.RFC3339),
+	// Log audit trail AFTER deletion with cascade statistics
+	k.LogAudit(ctx, requester, "erase_identity_complete", did, "success", map[string]string{
+		"reason":                    reason,
+		"erased_at":                 now.Format(time.RFC3339),
+		"change_requests_deleted":   fmt.Sprintf("%d", changeRequestsDeleted),
+		"sessions_deleted":          fmt.Sprintf("%d", sessionsDeleted),
+		"role_assignments_deleted":  fmt.Sprintf("%d", rolesDeleted),
+		"did_key_rotations_deleted": fmt.Sprintf("%d", didKeyRotationsDeleted),
 	}, "")
 
 	return nil

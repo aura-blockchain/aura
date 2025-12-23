@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"encoding/binary"
+	"fmt"
 	"testing"
 
 	sdkmath "cosmossdk.io/math"
@@ -879,6 +880,306 @@ func (suite *GenesisTestSuite) TestDuplicateTransferIDDetection() {
 		err := suite.Keeper.InitGenesis(ctx, genesis)
 		suite.Error(err, "InitGenesis should error on first duplicate transfer ID")
 		suite.Contains(err.Error(), "duplicate transfer ID", "Error should mention duplicate ID")
+	})
+}
+
+func (suite *GenesisTestSuite) TestCounterCollisionDetection() {
+	ctx := suite.SdkCtx
+
+	suite.Run("detect duplicate transfer ID collision", func() {
+		// Scenario: Genesis has duplicate transfer IDs (transfer-1 appears twice)
+		// This should be detected and rejected with duplicate ID error
+		genesis := types.GenesisState{
+			Params: bridgepb.BridgeParams{
+				Enabled:                      true,
+				MinConfirmations:             6,
+				BridgeFeeBasisPoints:         30,
+				MaxTransferAmount:            sdkmath.NewInt(1000000000000),
+				ValidatorThresholdPercentage: 67,
+			},
+			Transfers: []bridgepb.CrossChainTransfer{
+				{
+					TransferId:  "transfer-1",
+					SourceChain: "ethereum",
+					TargetChain: "aura",
+					Sender:      "0x123",
+					Recipient:   "aura1test",
+					Amount:      sdkmath.NewInt(1000000),
+					Denom:       "uaura",
+					Status:      types.TransferStatus_PENDING,
+				},
+				{
+					TransferId:  "transfer-2",
+					SourceChain: "polygon",
+					TargetChain: "aura",
+					Sender:      "0x456",
+					Recipient:   "aura1test2",
+					Amount:      sdkmath.NewInt(2000000),
+					Denom:       "uaura",
+					Status:      types.TransferStatus_CONFIRMED,
+				},
+				{
+					TransferId:  "transfer-1", // Duplicate ID - should be rejected
+					SourceChain: "bsc",
+					TargetChain: "aura",
+					Sender:      "0x789",
+					Recipient:   "aura1test3",
+					Amount:      sdkmath.NewInt(3000000),
+					Denom:       "uaura",
+					Status:      types.TransferStatus_PENDING,
+				},
+			},
+		}
+
+		err := suite.Keeper.InitGenesis(ctx, genesis)
+		suite.Error(err, "InitGenesis should detect duplicate transfer IDs")
+		suite.Contains(err.Error(), "duplicate", "Error should mention duplicate")
+	})
+
+	suite.Run("no collision when counter is safe", func() {
+		// Scenario: Genesis has transfer-1, transfer-2, transfer-5
+		// Counter would be set to 5+1=6, and transfer-6 does NOT exist
+		// This should succeed
+		suite.SetupTest()
+		ctx = suite.SdkCtx
+
+		genesis := types.GenesisState{
+			Params: bridgepb.BridgeParams{
+				Enabled:                      true,
+				MinConfirmations:             6,
+				BridgeFeeBasisPoints:         30,
+				MaxTransferAmount:            sdkmath.NewInt(1000000000000),
+				ValidatorThresholdPercentage: 67,
+			},
+			Transfers: []bridgepb.CrossChainTransfer{
+				{
+					TransferId:  "transfer-1",
+					SourceChain: "ethereum",
+					TargetChain: "aura",
+					Sender:      "0x123",
+					Recipient:   "aura1test",
+					Amount:      sdkmath.NewInt(1000000),
+					Denom:       "uaura",
+					Status:      types.TransferStatus_PENDING,
+				},
+				{
+					TransferId:  "transfer-2",
+					SourceChain: "polygon",
+					TargetChain: "aura",
+					Sender:      "0x456",
+					Recipient:   "aura1test2",
+					Amount:      sdkmath.NewInt(2000000),
+					Denom:       "uaura",
+					Status:      types.TransferStatus_CONFIRMED,
+				},
+				{
+					TransferId:  "transfer-5",
+					SourceChain: "bsc",
+					TargetChain: "aura",
+					Sender:      "0x789",
+					Recipient:   "aura1test3",
+					Amount:      sdkmath.NewInt(3000000),
+					Denom:       "uaura",
+					Status:      types.TransferStatus_PENDING,
+				},
+			},
+		}
+
+		err := suite.Keeper.InitGenesis(ctx, genesis)
+		suite.NoError(err, "InitGenesis should succeed when counter is safe")
+
+		// Verify counter was set correctly to 6
+		store := suite.StoreKey
+		storeObj := ctx.KVStore(store)
+		counterBz := storeObj.Get(types.TransferCounterKey)
+		suite.NotNil(counterBz)
+		counter := binary.BigEndian.Uint64(counterBz)
+		suite.Equal(uint64(6), counter, "Counter should be set to 6 (max+1)")
+	})
+
+	suite.Run("sequential legacy IDs have no collision", func() {
+		// Scenario: Sequential legacy IDs (transfer-1, transfer-2, transfer-3, transfer-4)
+		// All are tracked and max becomes 4, counter becomes 5
+		// Since there's no transfer-5, no collision occurs
+		suite.SetupTest()
+		ctx = suite.SdkCtx
+
+		genesis := types.GenesisState{
+			Params: bridgepb.BridgeParams{
+				Enabled:                      true,
+				MinConfirmations:             6,
+				BridgeFeeBasisPoints:         30,
+				MaxTransferAmount:            sdkmath.NewInt(1000000000000),
+				ValidatorThresholdPercentage: 67,
+			},
+			Transfers: []bridgepb.CrossChainTransfer{
+				{
+					TransferId:  "transfer-1",
+					SourceChain: "ethereum",
+					TargetChain: "aura",
+					Sender:      "0x123",
+					Recipient:   "aura1test",
+					Amount:      sdkmath.NewInt(1000000),
+					Denom:       "uaura",
+					Status:      types.TransferStatus_PENDING,
+				},
+				{
+					TransferId:  "transfer-2",
+					SourceChain: "polygon",
+					TargetChain: "aura",
+					Sender:      "0x456",
+					Recipient:   "aura1test2",
+					Amount:      sdkmath.NewInt(2000000),
+					Denom:       "uaura",
+					Status:      types.TransferStatus_CONFIRMED,
+				},
+				{
+					TransferId:  "transfer-3",
+					SourceChain: "bsc",
+					TargetChain: "aura",
+					Sender:      "0x789",
+					Recipient:   "aura1test3",
+					Amount:      sdkmath.NewInt(3000000),
+					Denom:       "uaura",
+					Status:      types.TransferStatus_PENDING,
+				},
+				{
+					TransferId:  "transfer-4",
+					SourceChain: "avalanche",
+					TargetChain: "aura",
+					Sender:      "0xabc",
+					Recipient:   "aura1test4",
+					Amount:      sdkmath.NewInt(4000000),
+					Denom:       "uaura",
+					Status:      types.TransferStatus_PENDING,
+				},
+			},
+		}
+
+		err := suite.Keeper.InitGenesis(ctx, genesis)
+		suite.NoError(err, "Sequential legacy IDs should not cause collision")
+
+		// Verify counter is correctly set to max+1 = 5
+		store := suite.StoreKey
+		storeObj := ctx.KVStore(store)
+		counterBz := storeObj.Get(types.TransferCounterKey)
+		suite.NotNil(counterBz)
+		counter := binary.BigEndian.Uint64(counterBz)
+		suite.Equal(uint64(5), counter, "Counter should be set to 5 (max+1)")
+	})
+
+	suite.Run("no collision with only hash-based IDs", func() {
+		// Scenario: Only hash-based IDs (large numbers > 1 trillion threshold)
+		// No legacy IDs, so counter should not be set at all
+		suite.SetupTest()
+		ctx = suite.SdkCtx
+
+		// Use large ID values that would be typical of hash-based IDs
+		largeID1 := uint64(1) << 50 // Much larger than legacy threshold
+		largeID2 := uint64(1) << 51
+
+		genesis := types.GenesisState{
+			Params: bridgepb.BridgeParams{
+				Enabled:                      true,
+				MinConfirmations:             6,
+				BridgeFeeBasisPoints:         30,
+				MaxTransferAmount:            sdkmath.NewInt(1000000000000),
+				ValidatorThresholdPercentage: 67,
+			},
+			Transfers: []bridgepb.CrossChainTransfer{
+				{
+					TransferId:  fmt.Sprintf("transfer-%d", largeID1),
+					SourceChain: "ethereum",
+					TargetChain: "aura",
+					Sender:      "0x123",
+					Recipient:   "aura1test",
+					Amount:      sdkmath.NewInt(1000000),
+					Denom:       "uaura",
+					Status:      types.TransferStatus_PENDING,
+				},
+				{
+					TransferId:  fmt.Sprintf("transfer-%d", largeID2),
+					SourceChain: "polygon",
+					TargetChain: "aura",
+					Sender:      "0x456",
+					Recipient:   "aura1test2",
+					Amount:      sdkmath.NewInt(2000000),
+					Denom:       "uaura",
+					Status:      types.TransferStatus_CONFIRMED,
+				},
+			},
+		}
+
+		err := suite.Keeper.InitGenesis(ctx, genesis)
+		suite.NoError(err, "Should succeed with only hash-based IDs")
+
+		// Counter should NOT be set (no legacy IDs found)
+		store := suite.StoreKey
+		storeObj := ctx.KVStore(store)
+		counterBz := storeObj.Get(types.TransferCounterKey)
+		suite.Nil(counterBz, "Counter should not be set when only hash-based IDs exist")
+	})
+
+	suite.Run("mixed legacy and hash IDs - counter only tracks legacy", func() {
+		// Scenario: Mix of legacy (small) and hash-based (large) IDs
+		// Counter should only consider legacy IDs for max calculation
+		suite.SetupTest()
+		ctx = suite.SdkCtx
+
+		largeHashID := uint64(1) << 50
+
+		genesis := types.GenesisState{
+			Params: bridgepb.BridgeParams{
+				Enabled:                      true,
+				MinConfirmations:             6,
+				BridgeFeeBasisPoints:         30,
+				MaxTransferAmount:            sdkmath.NewInt(1000000000000),
+				ValidatorThresholdPercentage: 67,
+			},
+			Transfers: []bridgepb.CrossChainTransfer{
+				{
+					TransferId:  "transfer-5", // Legacy
+					SourceChain: "ethereum",
+					TargetChain: "aura",
+					Sender:      "0x123",
+					Recipient:   "aura1test",
+					Amount:      sdkmath.NewInt(1000000),
+					Denom:       "uaura",
+					Status:      types.TransferStatus_PENDING,
+				},
+				{
+					TransferId:  fmt.Sprintf("transfer-%d", largeHashID), // Hash-based
+					SourceChain: "polygon",
+					TargetChain: "aura",
+					Sender:      "0x456",
+					Recipient:   "aura1test2",
+					Amount:      sdkmath.NewInt(2000000),
+					Denom:       "uaura",
+					Status:      types.TransferStatus_CONFIRMED,
+				},
+				{
+					TransferId:  "transfer-10", // Legacy
+					SourceChain: "bsc",
+					TargetChain: "aura",
+					Sender:      "0x789",
+					Recipient:   "aura1test3",
+					Amount:      sdkmath.NewInt(3000000),
+					Denom:       "uaura",
+					Status:      types.TransferStatus_PENDING,
+				},
+			},
+		}
+
+		err := suite.Keeper.InitGenesis(ctx, genesis)
+		suite.NoError(err, "Should handle mixed legacy and hash-based IDs")
+
+		// Counter should be based on max legacy ID (10), not the large hash ID
+		store := suite.StoreKey
+		storeObj := ctx.KVStore(store)
+		counterBz := storeObj.Get(types.TransferCounterKey)
+		suite.NotNil(counterBz)
+		counter := binary.BigEndian.Uint64(counterBz)
+		suite.Equal(uint64(11), counter, "Counter should be 11 (max legacy ID + 1), ignoring hash-based IDs")
 	})
 }
 
