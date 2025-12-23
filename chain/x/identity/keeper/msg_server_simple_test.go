@@ -228,10 +228,9 @@ func TestMsgServerEndSession_Success(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, resp)
 
-	// Verify session is no longer active
-	session, err := keeper.GetSession(ctx, sessionID)
-	require.NoError(t, err)
-	require.False(t, session.IsActive)
+	// Verify session is deleted (RevokeSession deletes the session)
+	_, err = keeper.GetSession(ctx, sessionID)
+	require.Error(t, err, "session should be deleted after ending")
 }
 
 // TestMsgServerEndSession_NotFound tests ending non-existent session

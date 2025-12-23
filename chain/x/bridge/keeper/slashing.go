@@ -493,8 +493,11 @@ func (k Keeper) SlashForDowntime(ctx sdk.Context, validatorAddress string) error
 		evidenceHash,
 		"system", // System-initiated slash
 	)
+	if err != nil {
+		return fmt.Errorf("error in SlashForDowntime for SubmitSlashingEvidence: %w", err)
+	}
 
-	return fmt.Errorf("error in SlashForDowntime for SubmitSlashingEvidence: %w", err)
+	return nil
 }
 
 // ========================================================================

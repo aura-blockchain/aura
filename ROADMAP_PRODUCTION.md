@@ -21,7 +21,7 @@
 ### Test Coverage (43.1% → 85%)
 - [ ] Identity module: 16.7% → 80%
 - [ ] Bridge module: 21.4% → 80%
-- [ ] Privacy module: 35.3% → 80%
+- [x] Privacy module: 35.3% → 81.9% (completed 2025-12-23)
 - [ ] Compliance module: 24.8% → 80%
 
 ---
@@ -59,13 +59,13 @@
 ### Code Quality
 - [ ] Standardize GetParams signatures (8 different patterns across 26 modules)
 - [ ] Create common validation library (`chain/x/common/validation/`)
-- [ ] Wrap 747 unwrapped error returns with context
-- [ ] Deduplicate `verifyPawAddressOwnership()` / `verifyXaiAddressOwnership()` (99% identical)
+- [x] Wrap 879 unwrapped error returns with context (completed 2025-12-23)
+- [x] Deduplicate `verifyPawAddressOwnership()` / `verifyXaiAddressOwnership()` - refactored to `verifyExternalAddressOwnership()`
 
 ### Performance Optimizations
-- [ ] Cache monitoring rules per block (90% reduction in tx processing)
-- [ ] Batch AML profile updates in EndBlocker (50% write reduction)
-- [ ] Add LRU cache for bridge transfer hash lookups
+- [x] Cache monitoring rules per block (completed 2025-12-23)
+- [x] Batch AML profile updates in EndBlocker (completed 2025-12-23)
+- [x] Add LRU cache for bridge transfer hash lookups (implemented in keeper)
 
 ### Testing
 - [ ] Add integration tests for all module entry points (26 modules)
@@ -111,6 +111,12 @@
 - [x] P1 SDK: All 15 Go SDK modules fixed and passing tests
 - [x] P1 SDK: JavaScript SDK ready (31/31 tests)
 - [x] P1 SDK: Python SDK ready (36/36 tests)
+- [x] P2 Code: Error wrapping (879 unwrapped errors fixed)
+- [x] P2 Code: Deduplicated address ownership verification functions
+- [x] P2 Perf: Monitoring rules caching per block
+- [x] P2 Perf: Batch AML profile updates in EndBlocker
+- [x] P2 Perf: LRU cache for bridge transfer lookups
+- [x] P0 Tests: Privacy module coverage 35.3% → 81.9%
 
 ---
 
