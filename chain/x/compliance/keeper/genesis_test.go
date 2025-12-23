@@ -100,11 +100,14 @@ func (suite *GenesisTestSuite) TestGenesisRoundTrip() {
 
 	genesis := &compliancepb.GenesisState{
 		Params: types.ComplianceParams{
-			KycRequired:                 true,
-			KycExpiryDays:               365,
+			KycRequired:                  true,
+			KycExpiryDays:                365,
 			TransactionMonitoringEnabled: true,
-			SanctionsScreeningEnabled:   true,
-			MinimumKycLevel:             compliancepb.KYCLevel_KYC_LEVEL_BASIC,
+			SanctionsScreeningEnabled:    true,
+			MinimumKycLevel:              compliancepb.KYCLevel_KYC_LEVEL_BASIC,
+			StructuringThresholdCount:    3,
+			VelocityLimit_24H:            "1000000",
+			SanctionsLists:               []string{"OFAC", "UN"},
 		},
 		KycRecords: []*compliancepb.KYCRecord{
 			{
