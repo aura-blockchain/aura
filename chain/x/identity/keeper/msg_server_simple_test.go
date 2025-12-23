@@ -7,8 +7,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	"github.com/aequitas/aura/chain/x/identity/types"
 	identitypb "github.com/aequitas/aura/proto/aura/identity/v1beta1"
 )
