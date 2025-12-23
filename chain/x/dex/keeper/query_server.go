@@ -59,7 +59,7 @@ func (qs queryServer) AllPools(ctx context.Context, req *dexpb.QueryAllPoolsRequ
 	pageRes, err := query.Paginate(poolStore, req.Pagination, func(key []byte, value []byte) error {
 		var pool dexpb.LiquidityPool
 		if err := qs.keeper.cdc.Unmarshal(value, &pool); err != nil {
-			return err
+			return fmt.Errorf("error in AllPools for LiquidityPool: %w", err)
 		}
 		pools = append(pools, &pool)
 		return nil

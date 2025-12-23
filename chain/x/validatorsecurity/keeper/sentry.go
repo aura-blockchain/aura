@@ -51,7 +51,7 @@ func (k Keeper) RegisterSentryNode(
 	// Update validator's sentry node list
 	info, err := k.GetValidatorSecurityInfo(ctx, validatorAddr)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get for validator: %w", err)
 	}
 
 	// Check if already registered
@@ -130,7 +130,7 @@ func (k Keeper) UpdateSentryHeartbeat(ctx context.Context, sentryAddr string) er
 
 	node, err := k.GetSentryNodeInfo(ctx, sentryAddr)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	blockTime := sdkCtx.BlockTime()
@@ -145,7 +145,7 @@ func (k Keeper) UpdateSentryHeartbeat(ctx context.Context, sentryAddr string) er
 func (k Keeper) RecordSentryRequest(ctx context.Context, sentryAddr string, blocked bool) error {
 	node, err := k.GetSentryNodeInfo(ctx, sentryAddr)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	node.RequestCount++
@@ -161,7 +161,7 @@ func (k Keeper) RecordSentryRequest(ctx context.Context, sentryAddr string, bloc
 func (k Keeper) DeactivateSentryNode(ctx context.Context, sentryAddr string) error {
 	node, err := k.GetSentryNodeInfo(ctx, sentryAddr)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	node.IsActive = false
@@ -210,7 +210,7 @@ func (k Keeper) TriggerFailover(ctx context.Context, validatorAddr string) error
 
 	info, err := k.GetValidatorSecurityInfo(ctx, validatorAddr)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get for validator: %w", err)
 	}
 
 	// Already in failover
@@ -267,7 +267,7 @@ func (k Keeper) TriggerFailover(ctx context.Context, validatorAddr string) error
 func (k Keeper) RestoreFromFailover(ctx context.Context, validatorAddr string) error {
 	info, err := k.GetValidatorSecurityInfo(ctx, validatorAddr)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get for validator: %w", err)
 	}
 
 	if !info.FailoverActive {

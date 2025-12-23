@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"fmt"
+
 	"sort"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -14,7 +16,7 @@ func (k *Keeper) InitGenesis(ctx sdk.Context, data types.GenesisState) error {
 
 	// Validate genesis state
 	if err := data.Validate(); err != nil {
-		return err
+		return fmt.Errorf("error in InitGenesis for Validate: %w", err)
 	}
 
 	// Import query statistics (deterministic ordering)

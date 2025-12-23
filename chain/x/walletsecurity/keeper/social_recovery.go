@@ -98,7 +98,7 @@ func (k Keeper) ConfirmGuardian(ctx context.Context, walletID, guardianAddress s
 	// Get configuration
 	configBytes, err := k.GetSocialRecoveryConfig(ctx, walletID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	var config wsproto.SocialRecoveryConfig
@@ -287,7 +287,7 @@ func (k Keeper) ExecuteRecovery(ctx context.Context, requestID string) error {
 	// Get recovery request
 	requestBytes, err := k.GetRecoveryRequest(ctx, requestID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	var request wsproto.RecoveryRequest
@@ -305,7 +305,7 @@ func (k Keeper) ExecuteRecovery(ctx context.Context, requestID string) error {
 	// Get configuration
 	configBytes, err := k.GetSocialRecoveryConfig(ctx, request.WalletId)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get for WalletId: %w", err)
 	}
 
 	var config wsproto.SocialRecoveryConfig
@@ -337,7 +337,7 @@ func (k Keeper) ExecuteRecovery(ctx context.Context, requestID string) error {
 	// Store updated request
 	updatedBytes := k.cdc.MustMarshal(&request)
 	if err := k.SetRecoveryRequest(ctx, requestID, updatedBytes); err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 
 	k.logger.Info("executed recovery request",
@@ -354,7 +354,7 @@ func (k Keeper) CancelRecovery(ctx context.Context, requestID string, walletOwne
 	// Get recovery request
 	requestBytes, err := k.GetRecoveryRequest(ctx, requestID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	var request wsproto.RecoveryRequest
@@ -409,7 +409,7 @@ func (k Keeper) generateRecoveryRequestID(walletID, newAddress string) string {
 func (k Keeper) incrementGuardianRecoveryCount(ctx context.Context, walletID, guardianAddress string) error {
 	configBytes, err := k.GetSocialRecoveryConfig(ctx, walletID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	var config wsproto.SocialRecoveryConfig
@@ -436,7 +436,7 @@ func (k Keeper) incrementGuardianRecoveryCount(ctx context.Context, walletID, gu
 func (k Keeper) AddGuardian(ctx context.Context, walletID string, guardian *wsproto.Guardian) error {
 	configBytes, err := k.GetSocialRecoveryConfig(ctx, walletID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	var config wsproto.SocialRecoveryConfig
@@ -474,7 +474,7 @@ func (k Keeper) AddGuardian(ctx context.Context, walletID string, guardian *wspr
 func (k Keeper) RemoveGuardian(ctx context.Context, walletID, guardianAddress string) error {
 	configBytes, err := k.GetSocialRecoveryConfig(ctx, walletID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	var config wsproto.SocialRecoveryConfig

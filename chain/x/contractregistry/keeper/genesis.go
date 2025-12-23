@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"fmt"
+
 	"bytes"
 
 	"github.com/aequitas/aura/chain/x/contractregistry/types"
@@ -17,19 +19,19 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data *pb.GenesisState) error {
 
 	// Validate params
 	if err := types.ValidateParams(&data.Params); err != nil {
-		return err
+		return fmt.Errorf("error in InitGenesis for Validate: %w", err)
 	}
 
 	// Set params (required)
 	if err := k.SetParams(ctx, &data.Params); err != nil {
-		return err
+		return fmt.Errorf("error in InitGenesis for ErrInvalidRequest: %w", err)
 	}
 
 	// Validate and import contracts
 	for i := range data.Contracts {
 		// Validate contract before importing
 		if err := validateContractInfo(&data.Contracts[i]); err != nil {
-			return err
+			return fmt.Errorf("error in InitGenesis for Validate: %w", err)
 		}
 		k.SetContractInfo(ctx, &data.Contracts[i])
 	}
@@ -38,7 +40,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data *pb.GenesisState) error {
 	for i := range data.Metrics {
 		// Validate metrics before importing
 		if err := validateContractMetrics(&data.Metrics[i]); err != nil {
-			return err
+			return fmt.Errorf("error in InitGenesis for validateContractInfo: %w", err)
 		}
 		k.SetContractMetrics(ctx, &data.Metrics[i])
 	}

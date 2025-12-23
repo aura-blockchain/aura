@@ -319,7 +319,7 @@ func (k *Keeper) EnableBoost(ctx sdk.Context, boostType BoostType, enabled bool,
 	params.VelocityBonusEnabled = enabled
 
 	if err := k.SetParams(params); err != nil {
-		return err
+		return fmt.Errorf("error in EnableBoost for individual: %w", err)
 	}
 
 	ctx.EventManager().EmitEvent(

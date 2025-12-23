@@ -25,11 +25,11 @@ func (k Keeper) RecordTWAPObservation(ctx sdk.Context, poolID string) error {
 	// Parse reserves from strings
 	reserveA, err := k.parseReserve(pool.ReserveA)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to parseReserve: %w", err)
 	}
 	reserveB, err := k.parseReserve(pool.ReserveB)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to parseReserve: %w", err)
 	}
 
 	// Calculate spot price

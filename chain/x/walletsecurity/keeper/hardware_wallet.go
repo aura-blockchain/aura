@@ -87,7 +87,7 @@ func (k Keeper) RegisterHardwareWallet(
 func (k Keeper) UpdateHardwareWalletUsage(ctx context.Context, walletID string) error {
 	configBytes, err := k.GetHardwareWallet(ctx, walletID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	var config wsproto.HardwareWalletConfig
@@ -112,7 +112,7 @@ func (k Keeper) ValidateHardwareWalletTransaction(
 	// Get hardware wallet config
 	configBytes, err := k.GetHardwareWallet(ctx, walletID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get for ValidateHardwareWalletTransaction: %w", err)
 	}
 
 	var config wsproto.HardwareWalletConfig
@@ -139,7 +139,7 @@ func (k Keeper) ValidateHardwareWalletTransaction(
 func (k Keeper) validateHardwareWalletSignature(address, deviceID string, signature []byte) error {
 	pubKey, sig, err := parseSecpSignature(signature)
 	if err != nil {
-		return err
+		return fmt.Errorf("error in validateHardwareWalletSignature for validateColdCardSignature: %w", err)
 	}
 
 	digest := sha256.Sum256([]byte("aura-hww:" + address + ":" + deviceID))
@@ -148,7 +148,7 @@ func (k Keeper) validateHardwareWalletSignature(address, deviceID string, signat
 	}
 
 	if err := ensureAddressMatchesPubKey(address, pubKey); err != nil {
-		return err
+		return fmt.Errorf("error in validateHardwareWalletSignature for ErrInvalidDeviceSignature: %w", err)
 	}
 
 	k.logger.Info("validated hardware wallet signature",
@@ -163,7 +163,7 @@ func (k Keeper) validateHardwareWalletSignature(address, deviceID string, signat
 func (k Keeper) validateLedgerSignature(txData, signature []byte, address string) error {
 	pubKey, sig, err := parseSecpSignature(signature)
 	if err != nil {
-		return err
+		return fmt.Errorf("error in validateLedgerSignature for device_id: %w", err)
 	}
 
 	txDigest := sha256.Sum256(txData)
@@ -171,7 +171,7 @@ func (k Keeper) validateLedgerSignature(txData, signature []byte, address string
 		return types.ErrInvalidDeviceSignature
 	}
 	if err := ensureAddressMatchesPubKey(address, pubKey); err != nil {
-		return err
+		return fmt.Errorf("error in validateLedgerSignature for ErrInvalidDeviceSignature: %w", err)
 	}
 
 	k.logger.Info("validated Ledger signature",

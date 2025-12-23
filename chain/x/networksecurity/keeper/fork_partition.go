@@ -410,22 +410,22 @@ func (k Keeper) PerformNetworkHealthCheck(ctx sdk.Context) error {
 
 	// 2. Check for network partition
 	if err := k.DetectPartition(ctx); err != nil {
-		return err
+		return fmt.Errorf("error in PerformNetworkHealthCheck: %w", err)
 	}
 
 	// 3. Check Sybil resistance
 	if err := k.CheckSybilResistance(ctx); err != nil {
-		return err
+		return fmt.Errorf("error in PerformNetworkHealthCheck: %w", err)
 	}
 
 	// 4. Check Eclipse attack
 	if err := k.CheckEclipseAttack(ctx); err != nil {
-		return err
+		return fmt.Errorf("error in PerformNetworkHealthCheck: %w", err)
 	}
 
 	// 5. Check peer diversity
 	if err := k.PerformPeerDiversityCheck(ctx); err != nil {
-		return err
+		return fmt.Errorf("error in PerformNetworkHealthCheck: %w", err)
 	}
 
 	// 6. Update known peer list

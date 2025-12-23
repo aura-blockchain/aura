@@ -88,11 +88,11 @@ func (k *Keeper) RevokeRole(ctx context.Context, revoker string, address string,
 
 	// Check if revoker has permission
 	if err := k.RequirePermission(sdkCtx, revoker, types.PermissionRevokeRole); err != nil {
-		return err
+		return fmt.Errorf("error in RevokeRole: %w", err)
 	}
 
 	if err := k.DeleteRoleAssignment(sdkCtx, address, roleName); err != nil {
-		return err
+		return fmt.Errorf("error in RevokeRole: %w", err)
 	}
 
 	k.LogAudit(sdkCtx, revoker, "revoke_role", fmt.Sprintf("%s->%s", address, roleName), "success", nil, "")
@@ -241,7 +241,7 @@ func (k *Keeper) ExecuteMultisigProposal(ctx context.Context, executor string, p
 	// Get proposal
 	proposal, err := k.GetMultisigProposal(sdkCtx, proposalID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	// Verify proposal is approved
@@ -255,7 +255,7 @@ func (k *Keeper) ExecuteMultisigProposal(ctx context.Context, executor string, p
 	proposal.ExecutedAt = &executedAt
 
 	if err := k.SetMultisigProposal(sdkCtx, proposal); err != nil {
-		return err
+		return fmt.Errorf("error in ExecuteMultisigProposal: %w", err)
 	}
 
 	k.LogAudit(sdkCtx, executor, "execute_multisig_proposal", proposalID, "success", nil, "")
@@ -302,13 +302,13 @@ func (k *Keeper) ExecuteTimeLockedAction(ctx context.Context, executor string, a
 
 	// Check if executor has permission
 	if err := k.RequirePermission(sdkCtx, executor, types.PermissionManageTimeLock); err != nil {
-		return err
+		return fmt.Errorf("error in ExecuteTimeLockedAction: %w", err)
 	}
 
 	// Get action
 	action, err := k.GetTimeLockedAction(sdkCtx, actionID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	// Verify action is ready
@@ -322,7 +322,7 @@ func (k *Keeper) ExecuteTimeLockedAction(ctx context.Context, executor string, a
 	action.ExecutedAt = &now
 
 	if err := k.SetTimeLockedAction(sdkCtx, action); err != nil {
-		return err
+		return fmt.Errorf("error in ExecuteTimeLockedAction: %w", err)
 	}
 
 	k.LogAudit(sdkCtx, executor, "execute_timelock_action", actionID, "success", nil, "")
@@ -335,20 +335,20 @@ func (k *Keeper) CancelTimeLockedAction(ctx context.Context, canceller string, a
 
 	// Check if canceller has permission
 	if err := k.RequirePermission(sdkCtx, canceller, types.PermissionManageTimeLock); err != nil {
-		return err
+		return fmt.Errorf("error in CancelTimeLockedAction: %w", err)
 	}
 
 	// Get action
 	action, err := k.GetTimeLockedAction(sdkCtx, actionID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	// Mark as cancelled
 	action.Status = authproto.ActionStatus_ACTION_STATUS_CANCELLED
 
 	if err := k.SetTimeLockedAction(sdkCtx, action); err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	k.LogAudit(sdkCtx, canceller, "cancel_timelock_action", actionID, "success", nil, "")
@@ -390,19 +390,19 @@ func (k *Keeper) DeactivateEmergencyAdmin(ctx context.Context, deactivator strin
 
 	// Check if deactivator has permission
 	if err := k.RequirePermission(sdkCtx, deactivator, types.PermissionManageEmergency); err != nil {
-		return err
+		return fmt.Errorf("error in DeactivateEmergencyAdmin: %w", err)
 	}
 
 	// Get the emergency admin
 	admin, err := k.GetEmergencyAdmin(sdkCtx, adminAddress)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	// Set IsActive to false instead of deleting
 	admin.IsActive = false
 	if err := k.SetEmergencyAdmin(sdkCtx, admin); err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	k.LogAudit(sdkCtx, deactivator, "deactivate_emergency_admin", adminAddress, "success", nil, "")
@@ -467,7 +467,7 @@ func (k *Keeper) InvalidateSession(ctx context.Context, userAddress string, sess
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
 	if err := k.DeleteSession(sdkCtx, sessionID); err != nil {
-		return err
+		return fmt.Errorf("error in InvalidateSession for InvalidateSession: %w", err)
 	}
 
 	k.LogAudit(sdkCtx, userAddress, "invalidate_session", sessionID, "success", nil, "")
@@ -507,7 +507,7 @@ func (k *Keeper) CompleteValidatorKeyRotation(ctx context.Context, completer str
 
 	// Check if completer has permission
 	if err := k.RequirePermission(sdkCtx, completer, types.PermissionRotateValidatorKey); err != nil {
-		return err
+		return fmt.Errorf("error in CompleteValidatorKeyRotation for initiate_validator_key_rotation: %w", err)
 	}
 
 	// Get rotation record
@@ -521,7 +521,7 @@ func (k *Keeper) CompleteValidatorKeyRotation(ctx context.Context, completer str
 	rotation.RotationTime = sdkCtx.BlockTime()
 
 	if err := k.SetValidatorKeyRotation(sdkCtx, rotation); err != nil {
-		return err
+		return fmt.Errorf("failed to get for GetValidatorKeyRotation: %w", err)
 	}
 
 	k.LogAudit(sdkCtx, completer, "complete_validator_key_rotation", validatorAddress, "success", nil, "")

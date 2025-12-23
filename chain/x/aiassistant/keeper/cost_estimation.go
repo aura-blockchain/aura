@@ -127,7 +127,7 @@ func (k Keeper) SetModelPricing(ctx sdk.Context, pricing ModelPricing) error {
 	store := k.pricingStore(ctx)
 	bz, err := json.Marshal(pricing)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 	store.Set([]byte(strings.ToLower(pricing.ModelHash)), bz)
 	return nil
@@ -235,7 +235,10 @@ const (
 
 // EstimateCost calculates the cost for an AI operation
 func (k Keeper) EstimateCost(ctx sdk.Context, opType AIOperationType, inputSize uint64, modelHash string) (CostEstimate, error) {
-	params := k.GetParams(ctx)
+	params, err := k.GetParams(ctx)
+	if err != nil {
+		return CostEstimate{}, err
+	}
 
 	// Get base cost from params
 	baseCost := sdkmath.NewInt(1000000) // Base cost in smallest denomination
@@ -370,7 +373,7 @@ func (k Keeper) DeductCost(ctx sdk.Context, userAddr sdk.AccAddress, estimate Co
 
 	// Transfer cost to module account
 	if err := k.bankKeeper.SendCoinsFromAccountToModule(ctx, userAddr, types.ModuleName, sdk.NewCoins(cost)); err != nil {
-		return err
+		return fmt.Errorf("error in DeductCost: %w", err)
 	}
 
 	return nil
@@ -431,7 +434,7 @@ func (k Keeper) SetCostDiscount(ctx sdk.Context, discount CostDiscount) error {
 	store := k.discountStore(ctx)
 	bz, err := json.Marshal(discount)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 	store.Set([]byte(discount.Address), bz)
 	return nil
@@ -468,7 +471,7 @@ func (k Keeper) SetPeakHourMultiplier(ctx sdk.Context, multiplier float64) error
 	decStr := fmt.Sprintf("%.4f", multiplier)
 	dec, err := sdkmath.LegacyNewDecFromStr(decStr)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to LegacyNewDecFromStr: %w", err)
 	}
 	store := ctx.KVStore(k.storeKey)
 	bz, _ := dec.Marshal()
@@ -524,7 +527,7 @@ func (k Keeper) SetSubscriptionPlan(ctx sdk.Context, plan SubscriptionPlan) erro
 	store := k.subscriptionStore(ctx)
 	bz, err := json.Marshal(plan)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 	store.Set([]byte(plan.Name), bz)
 	return nil
@@ -539,7 +542,7 @@ func (k Keeper) SetFreeTier(ctx sdk.Context, tier FreeTier) error {
 	store := k.freeTierStore(ctx)
 	bz, err := json.Marshal(tier)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 	store.Set([]byte("config"), bz)
 	return nil

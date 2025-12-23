@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"fmt"
+
 	"context"
 
 	"github.com/aequitas/aura/chain/x/monitoring/types"
@@ -14,7 +16,7 @@ func (k *Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) erro
 
 	// Set parameters
 	if err := k.SetParams(ctx, data.Params); err != nil {
-		return err
+		return fmt.Errorf("error in InitGenesis: %w", err)
 	}
 
 	// Note: Monitoring module primarily tracks runtime metrics and doesn't

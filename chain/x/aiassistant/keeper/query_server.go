@@ -57,7 +57,9 @@ func (q queryServer) AssistantsByLocale(goCtx context.Context, req *types.QueryA
 }
 
 func (q queryServer) Params(goCtx context.Context, _ *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
-	ctx := sdk.UnwrapSDKContext(goCtx)
-	params := q.keeper.GetParams(ctx)
+	params, err := q.keeper.GetParams(goCtx)
+	if err != nil {
+		return nil, err
+	}
 	return &types.QueryParamsResponse{Params: &params}, nil
 }

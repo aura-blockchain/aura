@@ -16,7 +16,7 @@ func (k *Keeper) CreateIR(ctx sdk.Context, ir types.IRDefinition) error {
 	}
 
 	if err := k.validateIR(ir); err != nil {
-		return err
+		return fmt.Errorf("error in CreateIR for validateIR: %w", err)
 	}
 
 	// Set initial status if not set
@@ -37,7 +37,7 @@ func (k *Keeper) UpdateIR(ctx sdk.Context, ir types.IRDefinition) error {
 	}
 
 	if err := k.validateIR(ir); err != nil {
-		return err
+		return fmt.Errorf("error in UpdateIR for validateIR: %w", err)
 	}
 
 	// Preserve certain immutable fields from the existing IR

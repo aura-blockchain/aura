@@ -169,7 +169,7 @@ func (k Keeper) UpdateCertificatePin(
 ) error {
 	pin, err := k.GetCertificatePin(ctx, hostname)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	// Update hashes if provided
@@ -190,7 +190,7 @@ func (k Keeper) UpdateCertificatePin(
 
 	// Store updated pin
 	if err := k.SetCertificatePin(ctx, pin); err != nil {
-		return err
+		return fmt.Errorf("error in UpdateCertificatePin for provided: %w", err)
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -204,7 +204,7 @@ func (k Keeper) UpdateCertificatePin(
 // RemoveCertificatePin removes a certificate pin for a hostname
 func (k Keeper) RemoveCertificatePin(ctx context.Context, hostname string) error {
 	if err := k.DeleteCertificatePin(ctx, hostname); err != nil {
-		return err
+		return fmt.Errorf("error in RemoveCertificatePin: %w", err)
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -219,13 +219,13 @@ func (k Keeper) RemoveCertificatePin(ctx context.Context, hostname string) error
 func (k Keeper) EnableCertificatePin(ctx context.Context, hostname string) error {
 	pin, err := k.GetCertificatePin(ctx, hostname)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	pin.Enabled = true
 
 	if err := k.SetCertificatePin(ctx, pin); err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -238,13 +238,13 @@ func (k Keeper) EnableCertificatePin(ctx context.Context, hostname string) error
 func (k Keeper) DisableCertificatePin(ctx context.Context, hostname string) error {
 	pin, err := k.GetCertificatePin(ctx, hostname)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	pin.Enabled = false
 
 	if err := k.SetCertificatePin(ctx, pin); err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -263,7 +263,7 @@ func (k Keeper) RotateCertificatePin(
 ) error {
 	pin, err := k.GetCertificatePin(ctx, hostname)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	// Validate new hashes
@@ -278,7 +278,7 @@ func (k Keeper) RotateCertificatePin(
 
 	// Store updated pin
 	if err := k.SetCertificatePin(ctx, pin); err != nil {
-		return err
+		return fmt.Errorf("error in RotateCertificatePin for ErrInvalidCertificateHash: %w", err)
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -304,7 +304,7 @@ func (k Keeper) CleanupExpiredPins(ctx context.Context) error {
 
 	for _, hostname := range expired {
 		if err := k.DeleteCertificatePin(ctx, hostname); err != nil {
-			return err
+			return fmt.Errorf("error in CleanupExpiredPins: %w", err)
 		}
 
 		sdkCtx := sdk.UnwrapSDKContext(ctx)

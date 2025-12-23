@@ -216,7 +216,7 @@ func (k Keeper) recordAnomaly(ctx context.Context, walletID string, score *Anoma
 	kvStore := k.getStore(ctx)
 	key := []byte(fmt.Sprintf("anomaly_%s_%d", walletID, determinism.GetBlockTime(ctx).UnixNano()))
 	if err := kvStore.Set(key, anomalyBytes); err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 	return nil
 }

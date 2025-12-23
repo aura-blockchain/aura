@@ -255,7 +255,7 @@ func (k *Keeper) PauseDecayForUser(ctx sdk.Context, walletAddr string, durationD
 	record.LastUpdated = timestampFromTime(ctx.BlockTime())
 
 	if err := k.SetUserRecord(ctx, record); err != nil {
-		return err
+		return fmt.Errorf("error in PauseDecayForUser: %w", err)
 	}
 
 	ctx.EventManager().EmitEvent(
@@ -295,7 +295,7 @@ func (k *Keeper) RestoreDecayedScore(ctx sdk.Context, walletAddr string, amount 
 	}
 
 	if err := k.SetUserRecord(ctx, record); err != nil {
-		return err
+		return fmt.Errorf("error in RestoreDecayedScore: %w", err)
 	}
 
 	if err := k.AddScoreChange(ctx, walletAddr, types.ScoreChange{

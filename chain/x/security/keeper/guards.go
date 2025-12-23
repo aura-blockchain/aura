@@ -69,7 +69,7 @@ func (k Keeper) ExitNoReentrant(ctx sdk.Context, key string) {
 // WithReentrancyGuard executes a function with reentrancy protection
 func (k Keeper) WithReentrancyGuard(ctx sdk.Context, key string, fn func() error) error {
 	if err := k.EnterNoReentrant(ctx, key); err != nil {
-		return err
+		return fmt.Errorf("error in WithReentrancyGuard: %w", err)
 	}
 	defer k.ExitNoReentrant(ctx, key)
 	return fn()

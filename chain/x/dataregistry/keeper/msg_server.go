@@ -346,7 +346,7 @@ func (s *msgServer) validateMsgStoreDataItem(msg *pb.MsgStoreDataItem) error {
 	// Validate access policy if provided
 	if msg.AccessPolicy != nil {
 		if err := validateAccessPolicy(msg.AccessPolicy); err != nil {
-			return err
+			return fmt.Errorf("error in validateMsgStoreDataItem for ErrInvalidContentHash: %w", err)
 		}
 	}
 
@@ -370,7 +370,7 @@ func (s *msgServer) validateMsgUpdateDataItem(msg *pb.MsgUpdateDataItem) error {
 	// Validate access policy if provided
 	if msg.AccessPolicy != nil {
 		if err := validateAccessPolicy(msg.AccessPolicy); err != nil {
-			return err
+			return fmt.Errorf("error in validateMsgUpdateDataItem for provided: %w", err)
 		}
 	}
 

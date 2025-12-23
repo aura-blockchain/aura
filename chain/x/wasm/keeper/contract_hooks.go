@@ -582,7 +582,7 @@ func (k Keeper) BeforeExecuteHook(
 			),
 		)
 
-		return err
+		return fmt.Errorf("operation failed: %w", err)
 	}
 
 	// Increment rate limit counter after successful validation

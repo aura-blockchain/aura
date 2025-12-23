@@ -432,7 +432,7 @@ func (k Keeper) performBasicVerification(ctx sdk.Context, info *pb.ContractInfo,
 func (k Keeper) performStandardVerification(ctx sdk.Context, info *pb.ContractInfo, req VerificationRequest, result *VerificationResult) error {
 	// First perform basic verification
 	if err := k.performBasicVerification(ctx, info, req, result); err != nil {
-		return err
+		return fmt.Errorf("error in performStandardVerification: %w", err)
 	}
 
 	// Verify metadata completeness
@@ -455,7 +455,7 @@ func (k Keeper) performStandardVerification(ctx sdk.Context, info *pb.ContractIn
 func (k Keeper) performFullVerification(ctx sdk.Context, info *pb.ContractInfo, req VerificationRequest, result *VerificationResult) error {
 	// First perform standard verification
 	if err := k.performStandardVerification(ctx, info, req, result); err != nil {
-		return err
+		return fmt.Errorf("error in performFullVerification: %w", err)
 	}
 
 	// Verify audit status via compliance requirements
@@ -496,7 +496,7 @@ func (k Keeper) performFullVerification(ctx sdk.Context, info *pb.ContractInfo, 
 func (k Keeper) performCertifiedVerification(ctx sdk.Context, info *pb.ContractInfo, req VerificationRequest, result *VerificationResult) error {
 	// First perform full verification
 	if err := k.performFullVerification(ctx, info, req, result); err != nil {
-		return err
+		return fmt.Errorf("error in performCertifiedVerification: %w", err)
 	}
 
 	// Require audit for certification

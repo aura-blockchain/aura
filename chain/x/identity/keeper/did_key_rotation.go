@@ -486,7 +486,7 @@ func (k *Keeper) GetCurrentVerificationMethod(ctx sdk.Context, did string) (stri
 func (k *Keeper) ProcessExpiredGracePeriods(ctx sdk.Context) error {
 	rotations, err := k.GetAllDIDKeyRotations(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get for GetAllDIDKeyRotations: %w", err)
 	}
 
 	now := ctx.BlockTime()

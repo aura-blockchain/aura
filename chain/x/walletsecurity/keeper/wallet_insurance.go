@@ -98,7 +98,7 @@ func (k Keeper) ProcessClaim(ctx context.Context, claimID string, approved bool)
 
 	var claim wsproto.InsuranceClaim
 	if err := k.cdc.Unmarshal(claimBytes, &claim); err != nil {
-		return err
+		return fmt.Errorf("error in ProcessClaim: %w", err)
 	}
 
 	if approved {
@@ -118,7 +118,7 @@ func (k Keeper) ProcessClaim(ctx context.Context, claimID string, approved bool)
 
 			updatedPolicyBytes, _ := k.cdc.Marshal(&policy)
 			if err := kvStore.Set(policyKey, updatedPolicyBytes); err != nil {
-				return err
+				return fmt.Errorf("failed to marshal for currentPaid: %w", err)
 			}
 		}
 	} else {
@@ -127,7 +127,7 @@ func (k Keeper) ProcessClaim(ctx context.Context, claimID string, approved bool)
 
 	updatedBytes, err := k.cdc.Marshal(&claim)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 
 	return kvStore.Set(key, updatedBytes)

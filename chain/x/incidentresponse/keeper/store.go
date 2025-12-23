@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"fmt"
+
 	"bytes"
 	"context"
 	"encoding/binary"
@@ -35,7 +37,7 @@ func (s Store) kv(ctx context.Context) storetypes.KVStore {
 func (s Store) SetIncident(ctx context.Context, incident *types.Incident) error {
 	bz, err := json.Marshal(incident)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal for SetIncident: %w", err)
 	}
 	s.kv(ctx).Set(types.IncidentKey(incident.ID), bz)
 	return nil
@@ -83,7 +85,7 @@ func (s Store) IterateIncidents(ctx context.Context) []*types.Incident {
 func (s Store) SetPauseState(ctx context.Context, state *types.ChainPauseState) error {
 	bz, err := json.Marshal(state)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 	s.kv(ctx).Set(types.PauseStateKey, bz)
 	return nil
@@ -150,7 +152,7 @@ func (s Store) DeletePauseVotes(ctx context.Context, pauseRequestID string) {
 func (s Store) SetWalletLimit(ctx context.Context, limits *types.WalletLimits) error {
 	bz, err := json.Marshal(limits)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 	s.kv(ctx).Set(types.WalletLimitKey(limits.Address), bz)
 	return nil
@@ -218,7 +220,7 @@ func (s Store) SetNextIncidentID(ctx context.Context, id uint64) {
 func (s Store) SetParams(ctx context.Context, params *types.IncidentResponseParams) error {
 	bz, err := json.Marshal(params)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal for IncidentResponseParams: %w", err)
 	}
 	s.kv(ctx).Set(types.ParamsKey, bz)
 	return nil

@@ -90,12 +90,12 @@ func (k *Keeper) InitiateAccountMigration(ctx sdk.Context, oldAddr, newAddr, ini
 func (k *Keeper) ApproveAccountMigration(ctx sdk.Context, migrationID, approver string) error {
 	// Check permission
 	if err := k.RequirePermission(ctx, approver, types.PermissionAdmin); err != nil {
-		return err
+		return fmt.Errorf("error in ApproveAccountMigration for migration_id: %w", err)
 	}
 
 	migration, err := k.getAccountMigration(ctx, migrationID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to getAccountMigration: %w", err)
 	}
 
 	if migration.Status != MigrationStatusPending {
@@ -132,12 +132,12 @@ func (k *Keeper) ApproveAccountMigration(ctx sdk.Context, migrationID, approver 
 func (k *Keeper) ExecuteAccountMigration(ctx sdk.Context, migrationID, executor string) error {
 	// Check permission
 	if err := k.RequirePermission(ctx, executor, types.PermissionAdmin); err != nil {
-		return err
+		return fmt.Errorf("error in ExecuteAccountMigration: %w", err)
 	}
 
 	migration, err := k.getAccountMigration(ctx, migrationID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to getAccountMigration: %w", err)
 	}
 
 	if migration.Status != MigrationStatusApproved {
@@ -146,13 +146,13 @@ func (k *Keeper) ExecuteAccountMigration(ctx sdk.Context, migrationID, executor 
 
 	// Migrate roles
 	if err := k.migrateRoles(ctx, migration); err != nil {
-		return err
+		return fmt.Errorf("failed to getAccountMigration: %w", err)
 	}
 	migration.TransferredRoles = true
 
 	// Migrate sessions
 	if err := k.migrateSessions(ctx, migration); err != nil {
-		return err
+		return fmt.Errorf("error in ExecuteAccountMigration: %w", err)
 	}
 	migration.TransferredData = true
 
@@ -177,7 +177,7 @@ func (k *Keeper) ExecuteAccountMigration(ctx sdk.Context, migrationID, executor 
 func (k *Keeper) migrateRoles(ctx sdk.Context, migration *AccountMigration) error {
 	assignments, err := k.GetRoleAssignmentsForAddress(ctx, migration.OldAddress)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	for _, assignment := range assignments {
@@ -190,7 +190,7 @@ func (k *Keeper) migrateRoles(ctx sdk.Context, migration *AccountMigration) erro
 			ExpiresAt:  assignment.ExpiresAt,
 		}
 		if err := k.SetRoleAssignment(ctx, newAssignment); err != nil {
-			return err
+			return fmt.Errorf("error in migrateRoles: %w", err)
 		}
 	}
 
@@ -201,7 +201,7 @@ func (k *Keeper) migrateRoles(ctx sdk.Context, migration *AccountMigration) erro
 func (k *Keeper) migrateSessions(ctx sdk.Context, migration *AccountMigration) error {
 	sessionIDs, err := k.GetUserSessions(ctx, migration.OldAddress)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	for _, sessionID := range sessionIDs {
@@ -213,7 +213,7 @@ func (k *Keeper) migrateSessions(ctx sdk.Context, migration *AccountMigration) e
 		// Update session to new address
 		session.UserAddress = migration.NewAddress
 		if err := k.SetSession(ctx, session); err != nil {
-			return err
+			return fmt.Errorf("failed to get: %w", err)
 		}
 	}
 

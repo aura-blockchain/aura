@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"fmt"
+
 	"context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -45,7 +47,7 @@ func (k *Keeper) CreateAlert(ctx context.Context, alertType types.AlertType, sev
 func (k *Keeper) AcknowledgeAlert(ctx context.Context, alertID, acknowledgedBy string) error {
 	alert, err := k.GetAlert(ctx, alertID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -61,7 +63,7 @@ func (k *Keeper) AcknowledgeAlert(ctx context.Context, alertID, acknowledgedBy s
 func (k *Keeper) ResolveAlert(ctx context.Context, alertID string) error {
 	alert, err := k.GetAlert(ctx, alertID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)

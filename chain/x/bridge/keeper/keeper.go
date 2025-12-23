@@ -20,6 +20,7 @@ import (
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	secp256k1Curve "github.com/decred/dcrd/dcrec/secp256k1/v4"
 	"github.com/decred/dcrd/dcrec/secp256k1/v4/ecdsa"
+	lru "github.com/hashicorp/golang-lru/v2"
 	// #nosec G507 -- RIPEMD160 is required for Bitcoin/Cosmos-style address derivation compatibility
 	"golang.org/x/crypto/ripemd160" //nolint:staticcheck,gosec
 
@@ -27,6 +28,11 @@ import (
 )
 
 const sourceChainAura = "aura"
+
+const (
+	// DefaultTransferCacheSize is the default size of the transfer LRU cache
+	DefaultTransferCacheSize = 1000
+)
 
 // Keeper of the bridge store
 type Keeper struct {
@@ -39,6 +45,9 @@ type Keeper struct {
 	accountKeeper types.AccountKeeper
 	vcKeeper      types.VCRegistryKeeper // For shared identity verification
 	stakingKeeper types.StakingKeeper    // For validator slashing
+
+	// LRU cache for transfer lookups (improves performance for frequent hash-based queries)
+	transferCache *lru.Cache[string, *types.CrossChainTransfer]
 }
 
 // NewKeeper creates a new bridge Keeper instance
@@ -60,6 +69,14 @@ func NewKeeper(
 		}
 	}
 
+	// Initialize transfer cache
+	transferCache, err := lru.New[string, *types.CrossChainTransfer](DefaultTransferCacheSize)
+	if err != nil {
+		// In production, we should handle this error, but for now we'll log and continue without cache
+		// The keeper will still work, just without caching benefits
+		transferCache = nil
+	}
+
 	return &Keeper{
 		storeKey:      storeKey,
 		cdc:           cdc,
@@ -68,6 +85,7 @@ func NewKeeper(
 		accountKeeper: accountKeeper,
 		vcKeeper:      vcKeeper,
 		stakingKeeper: stakingKeeper,
+		transferCache: transferCache,
 	}
 }
 
@@ -186,6 +204,12 @@ func (k Keeper) setTransfer(ctx sdk.Context, transfer *types.CrossChainTransfer)
 		return types.ErrMarshalFailed.Wrapf("failed to marshal transfer %s: %v", transfer.TransferId, err)
 	}
 	k.store(ctx).Set(types.TransferKey(transfer.TransferId), bz)
+
+	// Invalidate cache entry to ensure consistency
+	if k.transferCache != nil {
+		k.transferCache.Remove(transfer.TransferId)
+	}
+
 	return nil
 }
 
@@ -193,6 +217,16 @@ func (k Keeper) getTransfer(ctx sdk.Context, transferID string) (*types.CrossCha
 	if transferID == "" {
 		return nil, false
 	}
+
+	// Check cache first
+	if k.transferCache != nil {
+		if cached, ok := k.transferCache.Get(transferID); ok {
+			// Cache hit - return cached value
+			return cached, true
+		}
+	}
+
+	// Cache miss - fetch from store
 	store := k.store(ctx)
 	bz := store.Get(types.TransferKey(transferID))
 	if bz == nil {
@@ -202,6 +236,12 @@ func (k Keeper) getTransfer(ctx sdk.Context, transferID string) (*types.CrossCha
 	if err := k.cdc.Unmarshal(bz, &transfer); err != nil {
 		return nil, false
 	}
+
+	// Update cache
+	if k.transferCache != nil {
+		k.transferCache.Add(transferID, &transfer)
+	}
+
 	return &transfer, true
 }
 
@@ -215,6 +255,11 @@ func (k Keeper) deleteTransfer(ctx sdk.Context, transferID string) {
 		return
 	}
 	k.store(ctx).Delete(types.TransferKey(transferID))
+
+	// Invalidate cache
+	if k.transferCache != nil {
+		k.transferCache.Remove(transferID)
+	}
 }
 
 func (k Keeper) indexTransferHash(ctx sdk.Context, hash, transferID string) {
@@ -337,13 +382,13 @@ func (k Keeper) findSharedIdentityByLinkedAddress(ctx sdk.Context, chainName str
 	return nil
 }
 
-// verifyPawAddressOwnership verifies that the signer owns the PAW address.
+// verifyExternalAddressOwnership verifies that the signer owns an external chain address.
 //
 // SECURITY CRITICAL: This function verifies cross-chain ownership using cryptographic signatures.
-// The signature proves that the signer has the private key for the PAW address.
+// The signature proves that the signer has the private key for the external chain address.
 //
 // Expected signature format:
-//   - Message: "Link PAW address <pawAddress> to Aura address <auraAddress>"
+//   - Message: "Link <CHAIN> address <externalAddress> to Aura address <auraAddress>"
 //   - Signature: secp256k1 signature (65 bytes: R[32] || S[32] || V[1])
 //   - Recovery ID (V) is used to recover the public key from the signature
 //
@@ -351,18 +396,19 @@ func (k Keeper) findSharedIdentityByLinkedAddress(ctx sdk.Context, chainName str
 //  1. Hash the expected message using SHA256
 //  2. Recover the public key from signature using recovery ID
 //  3. Derive the address from the recovered public key
-//  4. Compare derived address with claimed PAW address
+//  4. Compare derived address with claimed external address
 //
 // Parameters:
 //   - ctx: SDK context (for logging)
+//   - chainName: Name of the external chain (e.g., "paw", "xai") - used for logging and message format
 //   - auraAddress: The Aura address being linked
-//   - pawAddress: The PAW address to verify ownership of
+//   - externalAddress: The external chain address to verify ownership of
 //   - signature: Cryptographic signature proving ownership (65 bytes)
 //
 // Returns:
 //   - true if signature is valid and proves ownership
 //   - false if signature is invalid or address format is wrong
-func (k Keeper) verifyPawAddressOwnership(ctx sdk.Context, auraAddress string, pawAddress string, signature []byte) bool {
+func (k Keeper) verifyExternalAddressOwnership(ctx sdk.Context, chainName string, auraAddress string, externalAddress string, signature []byte) bool {
 	// TELEMETRY: Track signature verification start time
 	// Use ctx.BlockTime() instead of time.Now() for blockchain determinism
 	startTime := ctx.BlockTime()
@@ -372,27 +418,36 @@ func (k Keeper) verifyPawAddressOwnership(ctx sdk.Context, auraAddress string, p
 		_ = duration
 	}()
 
-	if len(signature) == 0 || pawAddress == "" || auraAddress == "" {
-		k.recordSignatureMismatch("paw", "link_address", "empty_input")
-		k.recordSignatureVerification("paw", "link_address", false, ctx.BlockTime().Sub(startTime))
+	// Normalize chain name for message formatting
+	chainNameUpper := chainName
+	if chainName == "paw" {
+		chainNameUpper = "PAW"
+	} else if chainName == "xai" {
+		chainNameUpper = "XAI"
+	}
+
+	if len(signature) == 0 || externalAddress == "" || auraAddress == "" {
+		k.recordSignatureMismatch(chainName, "link_address", "empty_input")
+		k.recordSignatureVerification(chainName, "link_address", false, ctx.BlockTime().Sub(startTime))
 		return false
 	}
 
 	// Validate signature format: secp256k1 signatures are 65 bytes (R[32] || S[32] || V[1])
 	// where V is the recovery ID (0, 1, 2, or 3)
 	if len(signature) != 65 {
-		ctx.Logger().Error("Invalid PAW signature length",
+		ctx.Logger().Error("Invalid signature length",
+			"chain", chainName,
 			"expected", 65,
 			"actual", len(signature),
-			"paw_address", pawAddress)
-		k.recordSignatureMismatch("paw", "link_address", "invalid_signature_length")
-		k.recordSignatureVerification("paw", "link_address", false, ctx.BlockTime().Sub(startTime))
+			"external_address", externalAddress)
+		k.recordSignatureMismatch(chainName, "link_address", "invalid_signature_length")
+		k.recordSignatureVerification(chainName, "link_address", false, ctx.BlockTime().Sub(startTime))
 		return false
 	}
 
 	// Build the expected message that should have been signed
-	// Format: "Link PAW address <pawAddress> to Aura address <auraAddress>"
-	message := fmt.Sprintf("Link PAW address %s to Aura address %s", pawAddress, auraAddress)
+	// Format: "Link <CHAIN> address <externalAddress> to Aura address <auraAddress>"
+	message := fmt.Sprintf("Link %s address %s to Aura address %s", chainNameUpper, externalAddress, auraAddress)
 
 	// Hash the message using SHA256 (standard for Cosmos SDK chains)
 	msgHash := sha256.Sum256([]byte(message))
@@ -405,12 +460,13 @@ func (k Keeper) verifyPawAddressOwnership(ctx sdk.Context, auraAddress string, p
 		recoveryID -= 27
 	}
 	if recoveryID > 7 {
-		ctx.Logger().Error("Invalid recovery ID in PAW signature",
+		ctx.Logger().Error("Invalid recovery ID in signature",
+			"chain", chainName,
 			"recovery_id", recoveryID,
-			"paw_address", pawAddress)
-		k.recordInvalidRecoveryID("paw")
-		k.recordSignatureMismatch("paw", "link_address", "invalid_recovery_id")
-		k.recordSignatureVerification("paw", "link_address", false, ctx.BlockTime().Sub(startTime))
+			"external_address", externalAddress)
+		k.recordInvalidRecoveryID(chainName)
+		k.recordSignatureMismatch(chainName, "link_address", "invalid_recovery_id")
+		k.recordSignatureVerification(chainName, "link_address", false, ctx.BlockTime().Sub(startTime))
 		return false
 	}
 
@@ -421,24 +477,26 @@ func (k Keeper) verifyPawAddressOwnership(ctx sdk.Context, auraAddress string, p
 	// This prevents the same signature from being reused
 	signatureHash := sha256.Sum256(signature)
 	if k.isSignatureUsed(ctx, signatureHash[:]) {
-		ctx.Logger().Error("PAW signature replay attack detected",
-			"paw_address", pawAddress,
+		ctx.Logger().Error("Signature replay attack detected",
+			"chain", chainName,
+			"external_address", externalAddress,
 			"aura_address", auraAddress,
 			"signature_hash", hex.EncodeToString(signatureHash[:]))
-		k.recordSignatureMismatch("paw", "link_address", "signature_replay")
-		k.recordSignatureVerification("paw", "link_address", false, ctx.BlockTime().Sub(startTime))
+		k.recordSignatureMismatch(chainName, "link_address", "signature_replay")
+		k.recordSignatureVerification(chainName, "link_address", false, ctx.BlockTime().Sub(startTime))
 		return false
 	}
 
 	// SECURITY FIX: Check rate limiting before expensive cryptographic operations
 	// This prevents DoS attacks via signature grinding
-	if err := k.checkSignatureRateLimit(ctx, pawAddress); err != nil {
-		ctx.Logger().Error("PAW signature rate limit exceeded",
-			"paw_address", pawAddress,
+	if err := k.checkSignatureRateLimit(ctx, externalAddress); err != nil {
+		ctx.Logger().Error("Signature rate limit exceeded",
+			"chain", chainName,
+			"external_address", externalAddress,
 			"aura_address", auraAddress,
 			"error", err.Error())
-		k.recordSignatureMismatch("paw", "link_address", "rate_limit_exceeded")
-		k.recordSignatureVerification("paw", "link_address", false, ctx.BlockTime().Sub(startTime))
+		k.recordSignatureMismatch(chainName, "link_address", "rate_limit_exceeded")
+		k.recordSignatureVerification(chainName, "link_address", false, ctx.BlockTime().Sub(startTime))
 		return false
 	}
 
@@ -446,212 +504,76 @@ func (k Keeper) verifyPawAddressOwnership(ctx sdk.Context, auraAddress string, p
 	// This prevents signature malleability and DoS amplification attacks
 	pubKey, err := k.recoverPubKeyFromSignature(msgHash[:], sigBytes, recoveryID)
 	if err != nil {
-		ctx.Logger().Error("Failed to recover public key from PAW signature",
-			"paw_address", pawAddress,
+		ctx.Logger().Error("Failed to recover public key from signature",
+			"chain", chainName,
+			"external_address", externalAddress,
 			"aura_address", auraAddress,
 			"recovery_id", recoveryID,
 			"error", err.Error())
-		k.recordPubKeyRecoveryFailure("paw", fmt.Sprintf("%d", recoveryID))
-		k.recordSignatureMismatch("paw", "link_address", "pubkey_recovery_failed")
-		k.recordSignatureVerification("paw", "link_address", false, ctx.BlockTime().Sub(startTime))
+		k.recordPubKeyRecoveryFailure(chainName, fmt.Sprintf("%d", recoveryID))
+		k.recordSignatureMismatch(chainName, "link_address", "pubkey_recovery_failed")
+		k.recordSignatureVerification(chainName, "link_address", false, ctx.BlockTime().Sub(startTime))
 		return false
 	}
 
-	// Derive address from recovered public key
-	derivedAddress := k.derivePawAddressFromPubKey(pubKey)
+	// Derive address from recovered public key using chain-specific derivation
+	derivedAddress := k.deriveExternalAddressFromPubKey(pubKey, chainName)
 
-	// Verify that the derived address matches the claimed PAW address
-	if derivedAddress != pawAddress {
-		ctx.Logger().Error("PAW address mismatch",
-			"claimed", pawAddress,
+	// Verify that the derived address matches the claimed external address
+	if derivedAddress != externalAddress {
+		ctx.Logger().Error("Address mismatch",
+			"chain", chainName,
+			"claimed", externalAddress,
 			"derived", derivedAddress,
 			"recovery_id", recoveryID)
-		k.recordSignatureMismatch("paw", "link_address", "address_mismatch")
-		k.recordSignatureVerification("paw", "link_address", false, ctx.BlockTime().Sub(startTime))
+		k.recordSignatureMismatch(chainName, "link_address", "address_mismatch")
+		k.recordSignatureVerification(chainName, "link_address", false, ctx.BlockTime().Sub(startTime))
 		return false
 	}
 
 	recoveredPubKey := pubKey
 
 	// Additional verification: Verify the signature with the recovered public key
-	// Use ecdsa library directly since external wallets (PAW) use different signature formats
+	// Use ecdsa library directly since external wallets use different signature formats
 	// than Cosmos SDK's native secp256k1 implementation
 	if !k.verifyEcdsaSignature(recoveredPubKey, msgHash[:], sigBytes) {
-		ctx.Logger().Error("PAW signature verification failed",
-			"paw_address", pawAddress,
+		ctx.Logger().Error("Signature verification failed",
+			"chain", chainName,
+			"external_address", externalAddress,
 			"aura_address", auraAddress)
-		k.recordSignatureMismatch("paw", "link_address", "ecdsa_verification_failed")
-		k.recordSignatureVerification("paw", "link_address", false, ctx.BlockTime().Sub(startTime))
+		k.recordSignatureMismatch(chainName, "link_address", "ecdsa_verification_failed")
+		k.recordSignatureVerification(chainName, "link_address", false, ctx.BlockTime().Sub(startTime))
 		return false
 	}
 
-	ctx.Logger().Info("PAW address ownership verified successfully",
-		"paw_address", pawAddress,
+	ctx.Logger().Info("Address ownership verified successfully",
+		"chain", chainName,
+		"external_address", externalAddress,
 		"aura_address", auraAddress)
 
 	// SECURITY FIX: Mark signature as used to prevent replay attacks
 	k.markSignatureUsed(ctx, signatureHash[:], ctx.BlockHeight())
 
 	// TELEMETRY: Record successful verification
-	k.recordSignatureVerification("paw", "link_address", true, ctx.BlockTime().Sub(startTime))
+	k.recordSignatureVerification(chainName, "link_address", true, ctx.BlockTime().Sub(startTime))
 
 	return true
 }
 
+// verifyPawAddressOwnership verifies that the signer owns the PAW address.
+// This is a thin wrapper around verifyExternalAddressOwnership for backwards compatibility.
+//
+// Deprecated: Use verifyExternalAddressOwnership directly for new code.
+func (k Keeper) verifyPawAddressOwnership(ctx sdk.Context, auraAddress string, pawAddress string, signature []byte) bool {
+	return k.verifyExternalAddressOwnership(ctx, "paw", auraAddress, pawAddress, signature)
+}
+
 // verifyXaiAddressOwnership verifies that the signer owns the XAI address.
+// This is a thin wrapper around verifyExternalAddressOwnership for backwards compatibility.
 //
-// SECURITY CRITICAL: This function verifies cross-chain ownership using cryptographic signatures.
-// The signature proves that the signer has the private key for the XAI address.
-//
-// Expected signature format:
-//   - Message: "Link XAI address <xaiAddress> to Aura address <auraAddress>"
-//   - Signature: secp256k1 signature (65 bytes: R[32] || S[32] || V[1])
-//   - Recovery ID (V) is used to recover the public key from the signature
-//
-// Verification process:
-//  1. Hash the expected message using SHA256
-//  2. Recover the public key from signature using recovery ID
-//  3. Derive the address from the recovered public key
-//  4. Compare derived address with claimed XAI address
-//
-// Parameters:
-//   - ctx: SDK context (for logging)
-//   - auraAddress: The Aura address being linked
-//   - xaiAddress: The XAI address to verify ownership of
-//   - signature: Cryptographic signature proving ownership (65 bytes)
-//
-// Returns:
-//   - true if signature is valid and proves ownership
-//   - false if signature is invalid or address format is wrong
+// Deprecated: Use verifyExternalAddressOwnership directly for new code.
 func (k Keeper) verifyXaiAddressOwnership(ctx sdk.Context, auraAddress string, xaiAddress string, signature []byte) bool {
-	// TELEMETRY: Track signature verification start time
-	// Use ctx.BlockTime() instead of time.Now() for blockchain determinism
-	startTime := ctx.BlockTime()
-
-	if len(signature) == 0 || xaiAddress == "" || auraAddress == "" {
-		k.recordSignatureMismatch("xai", "link_address", "empty_input")
-		k.recordSignatureVerification("xai", "link_address", false, ctx.BlockTime().Sub(startTime))
-		return false
-	}
-
-	// Validate signature format: secp256k1 signatures are 65 bytes (R[32] || S[32] || V[1])
-	// where V is the recovery ID (0, 1, 2, or 3)
-	if len(signature) != 65 {
-		ctx.Logger().Error("Invalid XAI signature length",
-			"expected", 65,
-			"actual", len(signature),
-			"xai_address", xaiAddress)
-		k.recordSignatureMismatch("xai", "link_address", "invalid_signature_length")
-		k.recordSignatureVerification("xai", "link_address", false, ctx.BlockTime().Sub(startTime))
-		return false
-	}
-
-	// Build the expected message that should have been signed
-	// Format: "Link XAI address <xaiAddress> to Aura address <auraAddress>"
-	message := fmt.Sprintf("Link XAI address %s to Aura address %s", xaiAddress, auraAddress)
-
-	// Hash the message using SHA256 (standard for Cosmos SDK chains)
-	msgHash := sha256.Sum256([]byte(message))
-
-	// Extract recovery ID (V) from the last byte
-	// Recovery ID can be 0-7 (0-3 for uncompressed, 4-7 for compressed)
-	// Some implementations add 27, making it 27-34
-	recoveryID := signature[64]
-	if recoveryID >= 27 {
-		recoveryID -= 27
-	}
-	if recoveryID > 7 {
-		ctx.Logger().Error("Invalid recovery ID in XAI signature",
-			"recovery_id", recoveryID,
-			"xai_address", xaiAddress)
-		k.recordInvalidRecoveryID("xai")
-		k.recordSignatureMismatch("xai", "link_address", "invalid_recovery_id")
-		k.recordSignatureVerification("xai", "link_address", false, ctx.BlockTime().Sub(startTime))
-		return false
-	}
-
-	// Extract R and S components (first 64 bytes)
-	sigBytes := signature[:64]
-
-	// SECURITY FIX: Check replay protection before attempting signature verification
-	// This prevents the same signature from being reused
-	signatureHash := sha256.Sum256(signature)
-	if k.isSignatureUsed(ctx, signatureHash[:]) {
-		ctx.Logger().Error("XAI signature replay attack detected",
-			"xai_address", xaiAddress,
-			"aura_address", auraAddress,
-			"signature_hash", hex.EncodeToString(signatureHash[:]))
-		k.recordSignatureMismatch("xai", "link_address", "signature_replay")
-		k.recordSignatureVerification("xai", "link_address", false, ctx.BlockTime().Sub(startTime))
-		return false
-	}
-
-	// SECURITY FIX: Check rate limiting before expensive cryptographic operations
-	// This prevents DoS attacks via signature grinding
-	if err := k.checkSignatureRateLimit(ctx, xaiAddress); err != nil {
-		ctx.Logger().Error("XAI signature rate limit exceeded",
-			"xai_address", xaiAddress,
-			"aura_address", auraAddress,
-			"error", err.Error())
-		k.recordSignatureMismatch("xai", "link_address", "rate_limit_exceeded")
-		k.recordSignatureVerification("xai", "link_address", false, ctx.BlockTime().Sub(startTime))
-		return false
-	}
-
-	// SECURITY FIX: Use only the claimed recovery ID, not all possible IDs
-	// This prevents signature malleability and DoS amplification attacks
-	pubKey, err := k.recoverPubKeyFromSignature(msgHash[:], sigBytes, recoveryID)
-	if err != nil {
-		ctx.Logger().Error("Failed to recover public key from XAI signature",
-			"xai_address", xaiAddress,
-			"aura_address", auraAddress,
-			"recovery_id", recoveryID,
-			"error", err.Error())
-		k.recordPubKeyRecoveryFailure("xai", fmt.Sprintf("%d", recoveryID))
-		k.recordSignatureMismatch("xai", "link_address", "pubkey_recovery_failed")
-		k.recordSignatureVerification("xai", "link_address", false, ctx.BlockTime().Sub(startTime))
-		return false
-	}
-
-	// Derive address from recovered public key
-	derivedAddress := k.deriveXaiAddressFromPubKey(pubKey)
-
-	// Verify that the derived address matches the claimed XAI address
-	if derivedAddress != xaiAddress {
-		ctx.Logger().Error("XAI address mismatch",
-			"claimed", xaiAddress,
-			"derived", derivedAddress,
-			"recovery_id", recoveryID)
-		k.recordSignatureMismatch("xai", "link_address", "address_mismatch")
-		k.recordSignatureVerification("xai", "link_address", false, ctx.BlockTime().Sub(startTime))
-		return false
-	}
-
-	recoveredPubKey := pubKey
-
-	// Additional verification: Verify the signature with the recovered public key
-	// Use ecdsa library directly since external wallets (XAI) use different signature formats
-	// than Cosmos SDK's native secp256k1 implementation
-	if !k.verifyEcdsaSignature(recoveredPubKey, msgHash[:], sigBytes) {
-		ctx.Logger().Error("XAI signature verification failed",
-			"xai_address", xaiAddress,
-			"aura_address", auraAddress)
-		k.recordSignatureMismatch("xai", "link_address", "ecdsa_verification_failed")
-		k.recordSignatureVerification("xai", "link_address", false, ctx.BlockTime().Sub(startTime))
-		return false
-	}
-
-	ctx.Logger().Info("XAI address ownership verified successfully",
-		"xai_address", xaiAddress,
-		"aura_address", auraAddress)
-
-	// SECURITY FIX: Mark signature as used to prevent replay attacks
-	k.markSignatureUsed(ctx, signatureHash[:], ctx.BlockHeight())
-
-	// TELEMETRY: Record successful verification
-	k.recordSignatureVerification("xai", "link_address", true, ctx.BlockTime().Sub(startTime))
-
-	return true
+	return k.verifyExternalAddressOwnership(ctx, "xai", auraAddress, xaiAddress, signature)
 }
 
 func (k Keeper) setSwap(ctx sdk.Context, swap *types.CrossChainSwap) error {
@@ -1205,11 +1127,11 @@ func (k Keeper) payoutFraudProofReward(ctx sdk.Context, challenger string, denom
 	}
 	addr, err := sdk.AccAddressFromBech32(challenger)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to AccAddressFromBech32: %w", err)
 	}
 	coin := sdk.NewCoin(denom, reward)
 	if err := k.bankKeeper.MintCoins(ctx, types.ModuleName, sdk.NewCoins(coin)); err != nil {
-		return err
+		return fmt.Errorf("failed to NewCoin: %w", err)
 	}
 	return k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, addr, sdk.NewCoins(coin))
 }
@@ -2759,23 +2681,24 @@ func (k Keeper) recoverPubKeyFromSignature(msgHash []byte, signature []byte, rec
 	return pubKey.SerializeCompressed(), nil
 }
 
-// derivePawAddressFromPubKey derives a PAW (Cosmos SDK) address from a public key.
+// deriveExternalAddressFromPubKey derives an external chain address from a public key.
 //
-// Address derivation process for Cosmos SDK chains:
+// Address derivation process for Cosmos SDK-compatible chains:
 //  1. Take the compressed public key (33 bytes)
 //  2. Hash with SHA256
 //  3. Hash with RIPEMD160
-//  4. Encode with Bech32 using "paw" prefix
+//  4. Encode with Bech32 using chain-specific prefix
 //
 // For simplicity, this implementation returns the hex-encoded hash.
 // In production, you would use the full Bech32 encoding with proper prefix.
 //
 // Parameters:
 //   - pubKey: Compressed secp256k1 public key (33 bytes)
+//   - chainName: Name of the chain (e.g., "paw", "xai") - currently unused but reserved for future Bech32 encoding
 //
 // Returns:
 //   - string: Hex-encoded address (for testing) or Bech32 address (for production)
-func (k Keeper) derivePawAddressFromPubKey(pubKey []byte) string {
+func (k Keeper) deriveExternalAddressFromPubKey(pubKey []byte, chainName string) string {
 	if len(pubKey) != 33 {
 		return ""
 	}
@@ -2788,53 +2711,33 @@ func (k Keeper) derivePawAddressFromPubKey(pubKey []byte) string {
 	ripemd160Hasher.Write(sha256Hash[:])
 	addressHash := ripemd160Hasher.Sum(nil)
 
-	// For production, encode as Bech32 with "paw" prefix
+	// For production, encode as Bech32 with chain-specific prefix
 	// For now, return hex-encoded for testing compatibility
 	// In a full implementation, use:
-	// addr, _ := bech32.ConvertAndEncode("paw", addressHash)
+	// addr, _ := bech32.ConvertAndEncode(chainName, addressHash)
 	// return addr
+
+	// Note: chainName parameter is currently unused but reserved for future Bech32 encoding
+	_ = chainName
 
 	// Return hex-encoded address (20 bytes = 40 hex chars)
 	return hex.EncodeToString(addressHash)
 }
 
+// derivePawAddressFromPubKey derives a PAW (Cosmos SDK) address from a public key.
+// This is a thin wrapper around deriveExternalAddressFromPubKey for backwards compatibility.
+//
+// Deprecated: Use deriveExternalAddressFromPubKey directly for new code.
+func (k Keeper) derivePawAddressFromPubKey(pubKey []byte) string {
+	return k.deriveExternalAddressFromPubKey(pubKey, "paw")
+}
+
 // deriveXaiAddressFromPubKey derives an XAI (Cosmos SDK) address from a public key.
+// This is a thin wrapper around deriveExternalAddressFromPubKey for backwards compatibility.
 //
-// Address derivation process for Cosmos SDK chains:
-//  1. Take the compressed public key (33 bytes)
-//  2. Hash with SHA256
-//  3. Hash with RIPEMD160
-//  4. Encode with Bech32 using "xai" prefix
-//
-// For simplicity, this implementation returns the hex-encoded hash.
-// In production, you would use the full Bech32 encoding with proper prefix.
-//
-// Parameters:
-//   - pubKey: Compressed secp256k1 public key (33 bytes)
-//
-// Returns:
-//   - string: Hex-encoded address (for testing) or Bech32 address (for production)
+// Deprecated: Use deriveExternalAddressFromPubKey directly for new code.
 func (k Keeper) deriveXaiAddressFromPubKey(pubKey []byte) string {
-	if len(pubKey) != 33 {
-		return ""
-	}
-
-	// Step 1: SHA256 hash of public key
-	sha256Hash := sha256.Sum256(pubKey)
-
-	// Step 2: RIPEMD160 hash of SHA256 hash
-	ripemd160Hasher := ripemd160.New() // #nosec G406 -- RIPEMD160 required for Cosmos-style address derivation compatibility
-	ripemd160Hasher.Write(sha256Hash[:])
-	addressHash := ripemd160Hasher.Sum(nil)
-
-	// For production, encode as Bech32 with "xai" prefix
-	// For now, return hex-encoded for testing compatibility
-	// In a full implementation, use:
-	// addr, _ := bech32.ConvertAndEncode("xai", addressHash)
-	// return addr
-
-	// Return hex-encoded address (20 bytes = 40 hex chars)
-	return hex.EncodeToString(addressHash)
+	return k.deriveExternalAddressFromPubKey(pubKey, "xai")
 }
 
 // normalizeLowS normalizes a signature to low-S form for Cosmos SDK compatibility.

@@ -134,3 +134,8 @@ func (am AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {
 func (am AppModule) GetKeeper() *keeper.Keeper {
 	return am.keeper
 }
+
+// BeginBlock is called at the start of each block
+func (am AppModule) BeginBlock(ctx sdk.Context) error {
+	return am.keeper.BeginBlocker(ctx)
+}

@@ -114,7 +114,7 @@ func (k *MonitoredBankKeeper) SendCoins(ctx sdk.Context, from, to sdk.AccAddress
 
 	// Execute the transfer via underlying bank keeper
 	if err := k.Keeper.SendCoins(ctx, from, to, amount); err != nil {
-		return err
+		return fmt.Errorf("error in SendCoins: %w", err)
 	}
 
 	// Update AML profiles after successful transfer
@@ -194,7 +194,7 @@ func (k *MonitoredBankKeeper) InputOutputCoins(ctx sdk.Context, inputs []banktyp
 	// Execute the multi-send via underlying bank keeper
 	for _, input := range inputs {
 		if err := k.Keeper.InputOutputCoins(ctx, input, outputs); err != nil {
-			return err
+			return fmt.Errorf("error in InputOutputCoins: %w", err)
 		}
 	}
 
@@ -281,7 +281,7 @@ func (k *MonitoredBankKeeper) SendCoinsFromModuleToAccount(
 
 	// Execute transfer via underlying keeper
 	if err := k.Keeper.SendCoinsFromModuleToAccount(ctx, senderModule, recipientAddr, amount); err != nil {
-		return err
+		return fmt.Errorf("error in SendCoinsFromModuleToAccount: %w", err)
 	}
 
 	// Update recipient AML profile
@@ -350,7 +350,7 @@ func (k *MonitoredBankKeeper) SendCoinsFromAccountToModule(
 
 	// Execute transfer via underlying keeper
 	if err := k.Keeper.SendCoinsFromAccountToModule(ctx, senderAddr, recipientModule, amount); err != nil {
-		return err
+		return fmt.Errorf("error in SendCoinsFromAccountToModule: %w", err)
 	}
 
 	// Update sender AML profile

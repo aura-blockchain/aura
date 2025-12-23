@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"fmt"
+
 	"context"
 
 	sdkmath "cosmossdk.io/math"
@@ -35,12 +37,12 @@ func (k *Keeper) InitGenesisProto(ctx context.Context, data *privacyproto.Genesi
 
 	// Validate params before setting
 	if err := types.ValidateParams(params); err != nil {
-		return err
+		return fmt.Errorf("error in InitGenesisProto for Validate: %w", err)
 	}
 
 	if err := k.SetParams(ctx, params); err != nil {
 		sdkCtx.Logger().Error("failed to set params", "error", err)
-		return err
+		return fmt.Errorf("error in InitGenesisProto for Validate: %w", err)
 	}
 
 	sdkCtx.Logger().Info("privacy module initialized from genesis")

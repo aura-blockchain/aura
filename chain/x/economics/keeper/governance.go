@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"fmt"
+
 	"context"
 	"encoding/binary"
 	"math/big"
@@ -42,7 +44,7 @@ func (k Keeper) SetProposal(ctx context.Context, proposal *economicspb.Proposal)
 	key := types.GetProposalKey(proposal.Id)
 	bz, err := k.cdc.Marshal(proposal)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 	return store.Set(key, bz)
 }
@@ -78,14 +80,14 @@ func (k Keeper) IterateProposals(ctx context.Context, cb func(proposal *economic
 	store := k.storeService.OpenKVStore(ctx)
 	iterator, err := store.Iterator(types.ProposalPrefix, storeprefixend(types.ProposalPrefix))
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create iterator: %w", err)
 	}
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
 		var proposal economicspb.Proposal
 		if err := k.cdc.Unmarshal(iterator.Value(), &proposal); err != nil {
-			return err
+			return fmt.Errorf("failed to create iterator for Valid: %w", err)
 		}
 		if cb(&proposal) {
 			break
@@ -104,7 +106,7 @@ func (k Keeper) SetVote(ctx context.Context, vote *economicspb.Vote) error {
 	key := types.GetVoteKey(vote.ProposalId, vote.Voter)
 	bz, err := k.cdc.Marshal(vote)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal for ProposalId: %w", err)
 	}
 	return store.Set(key, bz)
 }
@@ -139,14 +141,14 @@ func (k Keeper) IterateVotes(ctx context.Context, proposalID uint64, cb func(vot
 
 	iterator, err := store.Iterator(proposalPrefix, storeprefixend(proposalPrefix))
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create iterator: %w", err)
 	}
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
 		var vote economicspb.Vote
 		if err := k.cdc.Unmarshal(iterator.Value(), &vote); err != nil {
-			return err
+			return fmt.Errorf("failed to create iterator for Valid: %w", err)
 		}
 		if cb(&vote) {
 			break
@@ -165,7 +167,7 @@ func (k Keeper) SetDeposit(ctx context.Context, deposit *economicspb.Deposit) er
 	key := types.GetDepositKey(deposit.ProposalId, deposit.Depositor)
 	bz, err := k.cdc.Marshal(deposit)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal for ProposalId: %w", err)
 	}
 	return store.Set(key, bz)
 }
@@ -200,14 +202,14 @@ func (k Keeper) IterateDeposits(ctx context.Context, proposalID uint64, cb func(
 
 	iterator, err := store.Iterator(proposalPrefix, storeprefixend(proposalPrefix))
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create iterator: %w", err)
 	}
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
 		var deposit economicspb.Deposit
 		if err := k.cdc.Unmarshal(iterator.Value(), &deposit); err != nil {
-			return err
+			return fmt.Errorf("failed to create iterator for Valid: %w", err)
 		}
 		if cb(&deposit) {
 			break
@@ -226,7 +228,7 @@ func (k Keeper) SetVoteDelegation(ctx context.Context, delegation *economicspb.V
 	key := types.GetVoteDelegationKey(delegation.Delegator, delegation.Delegate)
 	bz, err := k.cdc.Marshal(delegation)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 	return store.Set(key, bz)
 }
@@ -373,7 +375,7 @@ func (k Keeper) CalculateTally(ctx context.Context, proposalID uint64) (*economi
 func (k Keeper) UpdateProposalStatus(ctx context.Context, proposalID uint64) error {
 	proposal, err := k.GetProposal(ctx, proposalID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	// Note: Time-based checks would need to use proposal timestamp fields
@@ -382,7 +384,7 @@ func (k Keeper) UpdateProposalStatus(ctx context.Context, proposalID uint64) err
 	// Calculate tally
 	tally, err := k.CalculateTally(ctx, proposalID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to CalculateTally: %w", err)
 	}
 
 	// Update proposal with tally
@@ -423,7 +425,7 @@ func (k Keeper) SetPendingTreasuryTx(ctx context.Context, tx *economicspb.Pendin
 	key := types.GetPendingTreasuryTxKey(tx.TxId)
 	bz, err := k.cdc.Marshal(tx)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal for TxId: %w", err)
 	}
 	return store.Set(key, bz)
 }
@@ -459,14 +461,14 @@ func (k Keeper) IteratePendingTreasuryTxs(ctx context.Context, cb func(tx *econo
 	store := k.storeService.OpenKVStore(ctx)
 	iterator, err := store.Iterator(types.PendingTreasuryTxPrefix, storeprefixend(types.PendingTreasuryTxPrefix))
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create iterator: %w", err)
 	}
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
 		var tx economicspb.PendingTreasuryTx
 		if err := k.cdc.Unmarshal(iterator.Value(), &tx); err != nil {
-			return err
+			return fmt.Errorf("failed to create iterator for Valid: %w", err)
 		}
 		if cb(&tx) {
 			break

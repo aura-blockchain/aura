@@ -17,7 +17,7 @@ func (k Keeper) TrackBlockSign(ctx context.Context, validatorAddr string, signed
 	// Get validator info
 	info, err := k.GetValidatorSecurityInfo(ctx, validatorAddr)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get for validatorsecurity: %w", err)
 	}
 
 	// Don't track if tombstoned
@@ -72,7 +72,7 @@ func (k Keeper) MonitorValidator(ctx context.Context, validatorAddr string) erro
 
 	info, err := k.GetValidatorSecurityInfo(ctx, validatorAddr)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get for MonitorValidator: %w", err)
 	}
 
 	params := k.GetParams(ctx)
@@ -277,7 +277,7 @@ func (k Keeper) AcknowledgeAlert(ctx context.Context, alertID, acknowledgerAddr 
 	var alert types.ValidatorAlert
 	if err := k.cdc.Unmarshal(bz, &alert); err != nil {
 		k.Logger(sdkCtx).Error("failed to unmarshal alert", "error", err)
-		return err
+		return fmt.Errorf("error in AcknowledgeAlert for GetValidatorAlertKey: %w", err)
 	}
 
 	now := sdkCtx.BlockTime()

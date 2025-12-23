@@ -291,10 +291,10 @@ func (k *Keeper) TransferVC(ctx context.Context, vcID string, fromAddress string
 
 	// Update DID documents
 	if err := k.RemoveCredentialFromDID(ctx, oldDID, vcID); err != nil {
-		return err
+		return fmt.Errorf("operation failed: %w", err)
 	}
 	if err := k.AddCredentialToDID(ctx, toDID, vcID); err != nil {
-		return err
+		return fmt.Errorf("operation failed: %w", err)
 	}
 
 	return nil

@@ -256,5 +256,5 @@ func mapIRAuthError(err error) error {
 	if errorsmod.IsOf(err, types.ErrUnauthorized) {
 		return status.Error(codes.PermissionDenied, err.Error())
 	}
-	return err
+	return fmt.Errorf("error in mapIRAuthError: %w", err)
 }

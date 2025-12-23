@@ -33,16 +33,16 @@ func (k Keeper) ConfigureSession(ctx context.Context, walletID string, timeoutDu
 func (k Keeper) LockSession(ctx context.Context, sessionID string) error {
 	configBytes, err := k.GetSessionConfig(ctx, sessionID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get for SessionId: %w", err)
 	}
 	var config wsproto.SessionConfig
 	if err := k.cdc.Unmarshal(configBytes, &config); err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 	config.Locked = true
 	configBytes, err = k.cdc.Marshal(&config)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 	return k.SetSessionConfig(ctx, sessionID, configBytes)
 }
@@ -50,11 +50,11 @@ func (k Keeper) LockSession(ctx context.Context, sessionID string) error {
 func (k Keeper) UnlockSession(ctx context.Context, sessionID string, authProof []byte) error {
 	configBytes, err := k.GetSessionConfig(ctx, sessionID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 	var config wsproto.SessionConfig
 	if err := k.cdc.Unmarshal(configBytes, &config); err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 	if !config.Locked {
 		return fmt.Errorf("session is not locked")
@@ -63,7 +63,7 @@ func (k Keeper) UnlockSession(ctx context.Context, sessionID string, authProof [
 	config.LastActivity = blockTimeToGogoTimestamp(ctx)
 	configBytes, err = k.cdc.Marshal(&config)
 	if err != nil {
-		return err
+		return fmt.Errorf("error in UnlockSession: %w", err)
 	}
 	return k.SetSessionConfig(ctx, sessionID, configBytes)
 }

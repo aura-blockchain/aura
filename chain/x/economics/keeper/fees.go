@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"fmt"
+
 	"context"
 
 	sdkmath "cosmossdk.io/math"
@@ -16,7 +18,7 @@ import (
 func (k Keeper) RecordBlockUtilization(ctx context.Context, utilization uint64) error {
 	params, err := k.GetParams(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	if !params.Fees.DynamicFeesEnabled {
@@ -35,7 +37,7 @@ func (k Keeper) RecordBlockUtilization(ctx context.Context, utilization uint64) 
 func (k Keeper) AdjustDynamicFees(ctx context.Context, currentUtilization uint64) error {
 	params, err := k.GetParams(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get for validators: %w", err)
 	}
 
 	if !params.Fees.DynamicFeesEnabled {
@@ -45,7 +47,7 @@ func (k Keeper) AdjustDynamicFees(ctx context.Context, currentUtilization uint64
 	// Get current fee multiplier from store
 	currentMultiplierStr, err := k.GetFeeMultiplier(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	// Parse current fee multiplier using deterministic LegacyDec
@@ -210,10 +212,10 @@ func (k Keeper) SetTransferTaxConfig(ctx context.Context, enabled bool, rate str
 
 	// Store config in separate KV store
 	if err := k.SetTransferTaxEnabled(ctx, enabled); err != nil {
-		return err
+		return fmt.Errorf("error in SetTransferTaxConfig: %w", err)
 	}
 	if err := k.SetTransferTaxRate(ctx, rate); err != nil {
-		return err
+		return fmt.Errorf("error in SetTransferTaxConfig: %w", err)
 	}
 	return k.setTransferTaxRecipient(ctx, recipient)
 }

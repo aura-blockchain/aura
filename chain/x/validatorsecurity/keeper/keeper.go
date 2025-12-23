@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"fmt"
+
 	"context"
 	"math"
 
@@ -60,7 +62,7 @@ func (k Keeper) GetAuthority() string {
 // SetParams sets the module parameters
 func (k Keeper) SetParams(ctx context.Context, params *types.ValidatorSecurityParams) error {
 	if err := types.ValidateParams(params); err != nil {
-		return err
+		return fmt.Errorf("error in SetParams for ValidatorSecurityParams: %w", err)
 	}
 
 	store := k.getStore(ctx)
@@ -121,7 +123,7 @@ func (k Keeper) RegisterValidator(
 	// Check region capacity if geo distribution is enabled
 	if params.EnableGeoDistribution {
 		if err := k.checkRegionCapacity(ctx, region); err != nil {
-			return err
+			return fmt.Errorf("error in RegisterValidator for Validate: %w", err)
 		}
 	}
 
@@ -168,7 +170,7 @@ func (k Keeper) UpdateValidatorSecurityInfo(
 ) error {
 	info, err := k.GetValidatorSecurityInfo(ctx, validatorAddr)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get for UpdateValidatorSecurityInfo: %w", err)
 	}
 
 	params := k.GetParams(ctx)
@@ -184,7 +186,7 @@ func (k Keeper) UpdateValidatorSecurityInfo(
 
 	if params.EnableGeoDistribution && region != info.Region {
 		if err := k.checkRegionCapacity(ctx, region); err != nil {
-			return err
+			return fmt.Errorf("error in UpdateValidatorSecurityInfo for ErrInvalidKeys: %w", err)
 		}
 	}
 

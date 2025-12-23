@@ -158,7 +158,7 @@ func (k Keeper) StoreInSecureEnclave(ctx sdk.Context, dataID string, data []byte
 	// Encrypt data before storage
 	encryptionKey, err := k.GenerateSecureRandomBytes(32)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to GenerateSecureRandomBytes: %w", err)
 	}
 
 	encryptedData, err := k.encryptAESGCM(data, encryptionKey)

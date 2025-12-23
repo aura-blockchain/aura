@@ -84,7 +84,7 @@ func (k Keeper) RevokeDevice(ctx context.Context, walletID, deviceID string) err
 
 	deviceBytes, err := store.Get(key)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 	if deviceBytes == nil {
 		return fmt.Errorf("device not found")
@@ -92,7 +92,7 @@ func (k Keeper) RevokeDevice(ctx context.Context, walletID, deviceID string) err
 
 	var device wsproto.DeviceFingerprint
 	if err := k.cdc.Unmarshal(deviceBytes, &device); err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	device.Trusted = false
@@ -100,7 +100,7 @@ func (k Keeper) RevokeDevice(ctx context.Context, walletID, deviceID string) err
 
 	updatedBytes, err := k.cdc.Marshal(&device)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 
 	return store.Set(key, updatedBytes)

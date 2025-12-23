@@ -330,7 +330,7 @@ func (s *EncryptionService) EncryptJSON(value interface{}, context string) ([]by
 func (s *EncryptionService) DecryptJSON(ciphertext []byte, context string, target interface{}) error {
 	plaintext, err := s.Decrypt(ciphertext, context)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to Decrypt: %w", err)
 	}
 
 	if err := json.Unmarshal(plaintext, target); err != nil {

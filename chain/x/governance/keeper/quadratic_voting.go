@@ -36,7 +36,7 @@ func (k *Keeper) CastQuadraticVote(
 ) error {
 	proposal, err := k.GetProposal(ctx, proposalID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	// Check if quadratic voting is enabled
@@ -75,12 +75,12 @@ func (k *Keeper) CastQuadraticVote(
 
 	// Deduct vote credits (implicitly tracked via votes)
 	if err := k.DeductVoteCredits(ctx, voter, voteCredits); err != nil {
-		return err
+		return fmt.Errorf("error in CastQuadraticVote: %w", err)
 	}
 
 	// Store vote
 	if err := k.SetVote(ctx, vote); err != nil {
-		return err
+		return fmt.Errorf("operation failed: %w", err)
 	}
 
 	ctx.EventManager().EmitEvent(

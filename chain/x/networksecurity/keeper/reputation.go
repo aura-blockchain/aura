@@ -36,7 +36,7 @@ func (k Keeper) UpdateReputation(ctx sdk.Context, peerID string, score int64, re
 	reputation.LastUpdatedHeight = ctx.BlockHeight()
 
 	if err := k.SetReputation(ctx, reputation); err != nil {
-		return err
+		return fmt.Errorf("error in UpdateReputation: %w", err)
 	}
 
 	k.logger.Info(fmt.Sprintf("Updated reputation for peer %s to %d. Reason: %s", peerID, score, reason))

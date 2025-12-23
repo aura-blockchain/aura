@@ -168,7 +168,7 @@ func (k *Keeper) RevokeDelegation(ctx sdk.Context, delegationID string, caller s
 
 	delegatorRecord.TotalScore += delegation.DelegatedScore
 	if err := k.SetUserRecord(ctx, delegatorRecord); err != nil {
-		return err
+		return fmt.Errorf("error in RevokeDelegation: %w", err)
 	}
 
 	// Deduct from delegate
@@ -180,7 +180,7 @@ func (k *Keeper) RevokeDelegation(ctx sdk.Context, delegationID string, caller s
 			delegateRecord.TotalScore = 0
 		}
 		if err := k.SetUserRecord(ctx, delegateRecord); err != nil {
-			return err
+			return fmt.Errorf("error in RevokeDelegation: %w", err)
 		}
 	}
 
@@ -188,7 +188,7 @@ func (k *Keeper) RevokeDelegation(ctx sdk.Context, delegationID string, caller s
 	delegation.Active = false
 	delegation.LastUpdated = uint64(ctx.BlockHeight())
 	if err := k.storeDelegation(ctx, delegation); err != nil {
-		return err
+		return fmt.Errorf("error in RevokeDelegation: %w", err)
 	}
 
 	// Emit event

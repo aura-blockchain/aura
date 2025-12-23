@@ -37,7 +37,7 @@ func (k *Keeper) SetPrerequisites(ctx sdk.Context, irID string, requiredIRIDs []
 
 	// Check for circular dependencies
 	if err := k.detectCircularDependency(ctx, irID, requiredIRIDs); err != nil {
-		return err
+		return fmt.Errorf("error in SetPrerequisites for IrId: %w", err)
 	}
 
 	return k.SetPrerequisite(ctx, newPrereq)

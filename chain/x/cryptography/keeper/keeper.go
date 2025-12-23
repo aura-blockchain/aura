@@ -69,7 +69,7 @@ func (k Keeper) GetParams(ctx context.Context) (*cryptoproto.Params, error) {
 // SetParams sets the module parameters
 func (k Keeper) SetParams(ctx context.Context, params *cryptoproto.Params) error {
 	if err := types.ValidateParams(params); err != nil {
-		return err
+		return fmt.Errorf("error in SetParams for ValidateParams: %w", err)
 	}
 
 	store := k.getStore(ctx)
@@ -81,7 +81,7 @@ func (k Keeper) SetParams(ctx context.Context, params *cryptoproto.Params) error
 // UpdateParams updates the module parameters
 func (k Keeper) UpdateParams(ctx context.Context, authority string, params *cryptoproto.Params) error {
 	if err := k.ValidateAuthority(authority); err != nil {
-		return err
+		return fmt.Errorf("error in UpdateParams for ValidateAuthority: %w", err)
 	}
 	return k.SetParams(ctx, params)
 }

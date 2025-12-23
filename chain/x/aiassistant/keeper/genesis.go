@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"fmt"
+
 	storeprefix "cosmossdk.io/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -9,10 +11,10 @@ import (
 
 func (k Keeper) InitGenesis(ctx sdk.Context, state types.GenesisState) error {
 	if err := types.ValidateGenesis(state); err != nil {
-		return err
+		return fmt.Errorf("error in InitGenesis for ValidateGenesis: %w", err)
 	}
 	if err := k.SetParams(ctx, state.Params); err != nil {
-		return err
+		return fmt.Errorf("error in InitGenesis for ValidateGenesis: %w", err)
 	}
 	for i := range state.Assistants {
 		assistant := state.Assistants[i]
@@ -22,7 +24,12 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state types.GenesisState) error {
 }
 
 func (k Keeper) ExportGenesis(ctx sdk.Context) types.GenesisState {
-	params := k.GetParams(ctx)
+	params, err := k.GetParams(ctx)
+	if err != nil {
+		ctx.Logger().Error("failed to get params during genesis export, using defaults",
+			"error", err)
+		params = types.DefaultParams()
+	}
 	store := storeprefix.NewStore(ctx.KVStore(k.storeKey), types.AssistantKeyPrefix)
 	iter := store.Iterator(nil, nil)
 	defer iter.Close()

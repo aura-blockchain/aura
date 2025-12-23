@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"fmt"
+
 	"context"
 
 	errorsmod "cosmossdk.io/errors"
@@ -197,5 +199,5 @@ func mapAuthzError(err error) error {
 		return status.Error(codes.PermissionDenied, err.Error())
 	}
 
-	return err
+	return fmt.Errorf("error in mapAuthzError for ErrInvalidSigner: %w", err)
 }

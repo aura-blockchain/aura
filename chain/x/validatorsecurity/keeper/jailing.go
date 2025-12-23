@@ -18,7 +18,7 @@ func (k Keeper) JailValidator(ctx context.Context, validatorAddr string, duratio
 	// Get validator info
 	info, err := k.GetValidatorSecurityInfo(ctx, validatorAddr)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get for validatorsecurity: %w", err)
 	}
 
 	// Cannot jail tombstoned validators
@@ -34,22 +34,22 @@ func (k Keeper) JailValidator(ctx context.Context, validatorAddr string, duratio
 	// Convert to consensus address for jailing
 	valAddr, err := sdk.ValAddressFromBech32(validatorAddr)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to ValAddressFromBech32 for validatorAddr: %w", err)
 	}
 
 	validator, err := k.stakingKeeper.Validator(ctx, valAddr)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to Validator for validatorAddr: %w", err)
 	}
 
 	consAddr, err := validator.GetConsAddr()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get for validator: %w", err)
 	}
 
 	// Jail the validator
 	if err := k.stakingKeeper.Jail(ctx, consAddr); err != nil {
-		return err
+		return fmt.Errorf("failed to get for validator: %w", err)
 	}
 
 	// Set jail time
@@ -76,7 +76,7 @@ func (k Keeper) UnjailValidator(ctx context.Context, validatorAddr string) error
 	// Get validator info
 	info, err := k.GetValidatorSecurityInfo(ctx, validatorAddr)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get for UnjailValidator: %w", err)
 	}
 
 	// Cannot unjail tombstoned validators
@@ -97,7 +97,7 @@ func (k Keeper) UnjailValidator(ctx context.Context, validatorAddr string) error
 
 	// Verify minimum stake requirement
 	if err := k.ValidateMinimumStake(ctx, validatorAddr); err != nil {
-		return err
+		return fmt.Errorf("error in UnjailValidator for ValidateMinimumStake: %w", err)
 	}
 
 	// Verify sentry node requirements
@@ -112,22 +112,22 @@ func (k Keeper) UnjailValidator(ctx context.Context, validatorAddr string) error
 	// Convert to consensus address for unjailing
 	valAddr, err := sdk.ValAddressFromBech32(validatorAddr)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to ValAddressFromBech32 for GetValidatorSentryNodes: %w", err)
 	}
 
 	validator, err := k.stakingKeeper.Validator(ctx, valAddr)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to Validator for validatorAddr: %w", err)
 	}
 
 	consAddr, err := validator.GetConsAddr()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get for validator: %w", err)
 	}
 
 	// Unjail the validator
 	if err := k.stakingKeeper.Unjail(ctx, consAddr); err != nil {
-		return err
+		return fmt.Errorf("failed to get for validator: %w", err)
 	}
 
 	// Reset missed blocks counter
@@ -148,7 +148,7 @@ func (k Keeper) TombstoneValidator(ctx context.Context, validatorAddr string) er
 	// Get validator info
 	info, err := k.GetValidatorSecurityInfo(ctx, validatorAddr)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get for TombstoneValidator: %w", err)
 	}
 
 	// Already tombstoned
@@ -159,29 +159,29 @@ func (k Keeper) TombstoneValidator(ctx context.Context, validatorAddr string) er
 	// Convert to consensus address
 	valAddr, err := sdk.ValAddressFromBech32(validatorAddr)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to ValAddressFromBech32 for validatorAddr: %w", err)
 	}
 
 	validator, err := k.stakingKeeper.Validator(ctx, valAddr)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to Validator for validatorAddr: %w", err)
 	}
 
 	consAddr, err := validator.GetConsAddr()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get for validator: %w", err)
 	}
 
 	// Jail the validator first
 	if !info.IsJailed {
 		if err := k.stakingKeeper.Jail(ctx, consAddr); err != nil {
-			return err
+			return fmt.Errorf("failed to get for validator: %w", err)
 		}
 	}
 
 	// Tombstone via slashing keeper
 	if err := k.slashingKeeper.Tombstone(ctx, consAddr); err != nil {
-		return err
+		return fmt.Errorf("error in TombstoneValidator for validator: %w", err)
 	}
 
 	// Update validator info

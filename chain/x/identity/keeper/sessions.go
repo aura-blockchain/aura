@@ -29,7 +29,7 @@ func (k *Keeper) SetSession(ctx sdk.Context, session *types.Session) error {
 
 	key := types.GetSessionKey(session.Id)
 	if err := store.Set(key, bz); err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	// Update user sessions index
@@ -79,13 +79,13 @@ func (k *Keeper) GetAllSessions(ctx sdk.Context) ([]*types.Session, error) {
 func (k *Keeper) DeleteSession(ctx sdk.Context, sessionID string) error {
 	session, err := k.GetSession(ctx, sessionID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	store := k.storeService.OpenKVStore(ctx)
 	key := types.GetSessionKey(sessionID)
 	if err := store.Delete(key); err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	// Update user sessions index
@@ -100,7 +100,7 @@ func (k *Keeper) addUserSession(ctx sdk.Context, userAddress, sessionID string) 
 	store := k.storeService.OpenKVStore(ctx)
 	bz, err := json.Marshal(types.SessionIDList{SessionIDs: sessions})
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 	key := types.GetUserSessionsKey(userAddress)
 	return store.Set(key, bz)
@@ -125,7 +125,7 @@ func (k *Keeper) removeUserSession(ctx sdk.Context, userAddress, sessionID strin
 
 	bz, err := json.Marshal(types.SessionIDList{SessionIDs: filtered})
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 	return store.Set(key, bz)
 }
@@ -203,7 +203,7 @@ func (k *Keeper) CreateSession(ctx sdk.Context, userAddress string, expirySecond
 func (k *Keeper) RevokeSession(ctx sdk.Context, userAddress, sessionID string) error {
 	session, err := k.GetSession(ctx, sessionID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	if session.Address != userAddress {
@@ -211,7 +211,7 @@ func (k *Keeper) RevokeSession(ctx sdk.Context, userAddress, sessionID string) e
 	}
 
 	if err := k.DeleteSession(ctx, sessionID); err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	k.LogAudit(ctx, userAddress, "revoke_session", sessionID, "success", nil, "")

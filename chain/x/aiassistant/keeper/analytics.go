@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"fmt"
+
 	"encoding/json"
 	"time"
 
@@ -67,7 +69,7 @@ func (k Keeper) RecordAnalytics(ctx sdk.Context, record AnalyticsRecord) error {
 	k.updateAnalytics(&hourlyData, record)
 	bz, err := json.Marshal(&hourlyData)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 	store.Set(hourKey, bz)
 
@@ -77,7 +79,7 @@ func (k Keeper) RecordAnalytics(ctx sdk.Context, record AnalyticsRecord) error {
 	k.updateAnalytics(&dailyData, record)
 	bz, err = json.Marshal(&dailyData)
 	if err != nil {
-		return err
+		return fmt.Errorf("error in RecordAnalytics: %w", err)
 	}
 	store.Set(dayKey, bz)
 
@@ -246,7 +248,7 @@ func (k Keeper) CreateAnalyticsSnapshot(ctx sdk.Context, period AnalyticsPeriod)
 
 	bz, err := json.Marshal(&snapshot)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 
 	store.Set(key, bz)

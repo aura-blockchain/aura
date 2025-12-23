@@ -132,7 +132,7 @@ func (k *Keeper) SetProposal(ctx sdk.Context, proposal *types.Proposal) error {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := k.cdc.Marshal(proposal)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 
 	key := make([]byte, 9)
@@ -204,7 +204,7 @@ func (k *Keeper) SetVote(ctx sdk.Context, vote *types.Vote) error {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := json.Marshal(vote)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 
 	// Key: prefix + proposalID (8 bytes) + voter (variable length)
@@ -276,7 +276,7 @@ func (k *Keeper) SetDeposit(ctx sdk.Context, deposit *types.Deposit) error {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := k.cdc.Marshal(deposit)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 
 	// Pre-allocate to avoid shared underlying arrays with global prefix
@@ -442,7 +442,7 @@ func (k *Keeper) SetVoteDelegation(ctx sdk.Context, delegation *types.VoteDelega
 	store := ctx.KVStore(k.storeKey)
 	bz, err := k.cdc.Marshal(delegation)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 
 	// Build key with separator: prefix | delegator | separator | delegate
@@ -511,7 +511,7 @@ func (k *Keeper) SetVetoRequest(ctx sdk.Context, veto *types.VetoRequest) error 
 	store := ctx.KVStore(k.storeKey)
 	bz, err := k.cdc.Marshal(veto)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 
 	// Pre-allocate to avoid shared underlying arrays with global prefix
@@ -587,7 +587,7 @@ func (k *Keeper) SetSnapshotVote(ctx sdk.Context, vote *types.SnapshotVote) erro
 	store := ctx.KVStore(k.storeKey)
 	bz, err := k.cdc.Marshal(vote)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 
 	// Pre-allocate to avoid shared underlying arrays with global prefix
@@ -838,7 +838,7 @@ func (k *Keeper) SetTokenLock(ctx sdk.Context, lock *types.TokenLock) error {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := k.cdc.Marshal(lock)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 
 	// Key: prefix + owner address + proposal ID

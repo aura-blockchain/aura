@@ -280,7 +280,7 @@ func (k Keeper) AddDeposit(ctx context.Context, proposalID uint64, depositor sdk
 	}
 
 	if err := k.SetDeposit(ctx, deposit); err != nil {
-		return err
+		return fmt.Errorf("error in AddDeposit for ProposalId: %w", err)
 	}
 
 	// Update total deposit
@@ -290,7 +290,7 @@ func (k Keeper) AddDeposit(ctx context.Context, proposalID uint64, depositor sdk
 	// Check if minimum deposit met
 	params, err := k.GetParams(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	if totalDepositCoins.IsAllGTE(params.Governance.MinDeposit) {

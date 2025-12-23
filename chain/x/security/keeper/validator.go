@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"fmt"
+
 	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -166,10 +168,10 @@ func (k Keeper) GetAllSentryNodes(ctx sdk.Context) []*securitypb.SentryNodeInfo 
 func (k Keeper) JailValidator(ctx sdk.Context, valAddr sdk.ValAddress) error {
 	consAddr, err := sdk.ConsAddressFromBech32(valAddr.String())
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to ConsAddressFromBech32 for JailValidator: %w", err)
 	}
 	if err := k.stakingKeeper.Jail(ctx, consAddr); err != nil {
-		return err
+		return fmt.Errorf("failed to ConsAddressFromBech32 for JailValidator: %w", err)
 	}
 	return nil
 }
@@ -178,10 +180,10 @@ func (k Keeper) JailValidator(ctx sdk.Context, valAddr sdk.ValAddress) error {
 func (k Keeper) UnjailValidator(ctx sdk.Context, valAddr sdk.ValAddress) error {
 	consAddr, err := sdk.ConsAddressFromBech32(valAddr.String())
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to ConsAddressFromBech32 for UnjailValidator: %w", err)
 	}
 	if err := k.stakingKeeper.Unjail(ctx, consAddr); err != nil {
-		return err
+		return fmt.Errorf("failed to ConsAddressFromBech32 for UnjailValidator: %w", err)
 	}
 	return nil
 }
@@ -190,10 +192,10 @@ func (k Keeper) UnjailValidator(ctx sdk.Context, valAddr sdk.ValAddress) error {
 func (k Keeper) SlashValidator(ctx sdk.Context, valAddr sdk.ValAddress, height int64, power int64, factor string) error {
 	consAddr, err := sdk.ConsAddressFromBech32(valAddr.String())
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to ConsAddressFromBech32 for SlashValidator: %w", err)
 	}
 	if _, err := k.stakingKeeper.Slash(ctx, consAddr, height, power, factor); err != nil {
-		return err
+		return fmt.Errorf("failed to ConsAddressFromBech32 for SlashValidator: %w", err)
 	}
 	return nil
 }

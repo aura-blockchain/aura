@@ -94,17 +94,17 @@ func (k Keeper) ClaimHTLC(ctx sdk.Context, recipient string, htlcID string, secr
 
 	recipientAddr, err := sdk.AccAddressFromBech32(recipient)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to AccAddressFromBech32: %w", err)
 	}
 
 	if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, recipientAddr, sdk.NewCoins(sdk.NewCoin(htlc.Denom, htlc.Amount))); err != nil {
-		return err
+		return fmt.Errorf("failed to AccAddressFromBech32: %w", err)
 	}
 
 	htlc.Secret = secret
 	htlc.Status = htlcStatusClaimed
 	if err := k.setHTLC(ctx, htlcID, htlc); err != nil {
-		return err
+		return fmt.Errorf("error in ClaimHTLC: %w", err)
 	}
 	return nil
 }
@@ -128,16 +128,16 @@ func (k Keeper) RefundHTLC(ctx sdk.Context, sender string, htlcID string) error 
 
 	senderAddr, err := sdk.AccAddressFromBech32(sender)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to AccAddressFromBech32: %w", err)
 	}
 
 	if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, senderAddr, sdk.NewCoins(sdk.NewCoin(htlc.Denom, htlc.Amount))); err != nil {
-		return err
+		return fmt.Errorf("failed to AccAddressFromBech32: %w", err)
 	}
 
 	htlc.Status = htlcStatusRefunded
 	if err := k.setHTLC(ctx, htlcID, htlc); err != nil {
-		return err
+		return fmt.Errorf("failed to AccAddressFromBech32: %w", err)
 	}
 	return nil
 }

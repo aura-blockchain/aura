@@ -113,7 +113,7 @@ func (k Keeper) SetParams(ctx context.Context, params types.Params) error {
 
 	bz, err := k.cdc.Marshal(protoParams)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 	store.Set(types.ParamsKey, bz)
 	return nil
@@ -426,7 +426,7 @@ func (k Keeper) SetMixingPool(ctx context.Context, pool *privacyproto.MixingPool
 
 	bz, err := k.cdc.Marshal(pool)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal for PoolId: %w", err)
 	}
 
 	store.Set(key, bz)
@@ -482,7 +482,7 @@ func (k Keeper) SetViewKey(ctx context.Context, owner string, viewKey *privacypr
 
 	bz, err := k.cdc.Marshal(viewKey)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 
 	store.Set(key, bz)
@@ -549,7 +549,7 @@ func (k Keeper) SetNetworkPrivacy(ctx context.Context, networkPrivacy *privacypr
 
 	bz, err := k.cdc.Marshal(networkPrivacy)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 
 	// Use a dedicated key for network privacy

@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"fmt"
+
 	"context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -21,7 +23,7 @@ func (k *Keeper) InitGenesis(ctx context.Context, data *cryptoproto.GenesisState
 	if err := k.SetParams(ctx, &data.Params); err != nil {
 		sdkCtx := sdk.UnwrapSDKContext(ctx)
 		k.Logger(sdkCtx).Error("failed to set params", "error", err)
-		return err
+		return fmt.Errorf("error in InitGenesis: %w", err)
 	}
 
 	// Initialize key rotation schedules

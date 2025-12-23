@@ -24,7 +24,7 @@ func (k *Keeper) CommitVote(
 ) error {
 	proposal, err := k.GetProposal(ctx, proposalID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	params := k.GetParams(ctx)
@@ -48,7 +48,7 @@ func (k *Keeper) CommitVote(
 
 	// Store commitment
 	if err := k.setVoteCommitment(ctx, commitment); err != nil {
-		return err
+		return fmt.Errorf("error in CommitVote for ProposalId: %w", err)
 	}
 
 	ctx.EventManager().EmitEvent(
@@ -73,7 +73,7 @@ func (k *Keeper) RevealVote(
 	// Get commitment
 	commitment, err := k.getVoteCommitment(ctx, proposalID, voter)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to getVoteCommitment: %w", err)
 	}
 
 	if commitment.Revealed {
@@ -89,7 +89,7 @@ func (k *Keeper) RevealVote(
 	// Create actual vote
 	votingPower, err := k.GetVotingPower(ctx, voter)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get for ErrInvalidVoteReveal: %w", err)
 	}
 
 	vote := &types.Vote{
@@ -103,7 +103,7 @@ func (k *Keeper) RevealVote(
 
 	// Store vote
 	if err := k.SetVote(ctx, vote); err != nil {
-		return err
+		return fmt.Errorf("error in RevealVote for ProposalId: %w", err)
 	}
 
 	// Mark commitment as revealed
@@ -146,7 +146,7 @@ func (k *Keeper) setVoteCommitment(ctx sdk.Context, commitment *types.VoteCommit
 	// Use JSON marshaling for custom types
 	bz, err := json.Marshal(commitment)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 
 	store.Set(key, bz)

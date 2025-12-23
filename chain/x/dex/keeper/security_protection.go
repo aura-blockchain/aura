@@ -201,7 +201,7 @@ func (k Keeper) CheckMaxTradeSize(
 	// Parse reserve
 	reserveA, err := k.parseReserve(pool.ReserveA)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to parseReserve: %w", err)
 	}
 
 	// MaxTradeSizePercent is already LegacyDec
@@ -293,7 +293,7 @@ func (k Keeper) CreateLiquidityLock(
 	}
 
 	if err := k.SetLiquidityLock(ctx, lock); err != nil {
-		return err
+		return fmt.Errorf("error in CreateLiquidityLock for LiquidityLock: %w", err)
 	}
 
 	ctx.EventManager().EmitEvent(
@@ -334,7 +334,7 @@ func (k Keeper) CheckLiquidityLock(
 	// Lock expired, mark as inactive
 	lock.IsActive = false
 	if err := k.SetLiquidityLock(ctx, lock); err != nil {
-		return err
+		return fmt.Errorf("error in CheckLiquidityLock for liquidity: %w", err)
 	}
 
 	return nil

@@ -239,7 +239,7 @@ func (k Keeper) ExecuteMultiSigTransaction(ctx context.Context, txID string) err
 	// Get pending transaction
 	txBytes, err := k.GetPendingMultiSigTx(ctx, txID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	var pendingTx wsproto.PendingMultiSigTransaction
@@ -255,7 +255,7 @@ func (k Keeper) ExecuteMultiSigTransaction(ctx context.Context, txID string) err
 	// Get wallet configuration
 	walletBytes, err := k.GetMultiSigWallet(ctx, pendingTx.WalletId)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get for WalletId: %w", err)
 	}
 
 	var wallet wsproto.MultiSigWallet
@@ -276,7 +276,7 @@ func (k Keeper) ExecuteMultiSigTransaction(ctx context.Context, txID string) err
 
 	// Remove pending transaction
 	if err := k.DeletePendingMultiSigTx(ctx, txID); err != nil {
-		return err
+		return fmt.Errorf("error in ExecuteMultiSigTransaction: %w", err)
 	}
 
 	k.logger.Info("executed multi-sig transaction",
@@ -358,7 +358,7 @@ func (k Keeper) AddSignerToMultiSigWallet(
 	// Get wallet
 	walletBytes, err := k.GetMultiSigWallet(ctx, walletID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	var wallet wsproto.MultiSigWallet
@@ -394,7 +394,7 @@ func (k Keeper) RemoveSignerFromMultiSigWallet(
 	// Get wallet
 	walletBytes, err := k.GetMultiSigWallet(ctx, walletID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	var wallet wsproto.MultiSigWallet

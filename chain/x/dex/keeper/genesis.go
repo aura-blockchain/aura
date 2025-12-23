@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"fmt"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/aequitas/aura/chain/x/dex/types"
@@ -9,24 +11,24 @@ import (
 // InitGenesis initializes the dex module state from genesis.
 func (k Keeper) InitGenesis(ctx sdk.Context, data types.GenesisState) error {
 	if err := types.ValidateGenesis(&data); err != nil {
-		return err
+		return fmt.Errorf("error in InitGenesis for ValidateGenesis: %w", err)
 	}
 
 	if err := k.SetParams(ctx, &data.Params); err != nil {
-		return err
+		return fmt.Errorf("error in InitGenesis for ValidateGenesis: %w", err)
 	}
 
 	for i := range data.LiquidityPools {
 		pool := &data.LiquidityPools[i]
 		if err := k.SetPool(ctx, pool); err != nil {
-			return err
+			return fmt.Errorf("error in InitGenesis for LiquidityPools: %w", err)
 		}
 	}
 
 	for i := range data.SwapOrders {
 		order := &data.SwapOrders[i]
 		if err := k.SetOrder(ctx, order); err != nil {
-			return err
+			return fmt.Errorf("error in InitGenesis for LiquidityPools: %w", err)
 		}
 		if order.Status == types.SwapOrderStatus_PENDING {
 			k.AddToOrderbook(ctx, order)
@@ -46,14 +48,14 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data types.GenesisState) error {
 	for i := range data.SwapStats {
 		stats := &data.SwapStats[i]
 		if err := k.setSwapStats(ctx, stats); err != nil {
-			return err
+			return fmt.Errorf("error in InitGenesis: %w", err)
 		}
 	}
 
 	for i := range data.MarketPrices {
 		price := &data.MarketPrices[i]
 		if err := k.setMarketPrice(ctx, price); err != nil {
-			return err
+			return fmt.Errorf("error in InitGenesis: %w", err)
 		}
 	}
 
@@ -73,7 +75,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data types.GenesisState) error {
 	for i := range data.OrderCommitments {
 		commitment := &data.OrderCommitments[i]
 		if err := k.SetOrderCommitment(ctx, commitment); err != nil {
-			return err
+			return fmt.Errorf("failed to marshal: %w", err)
 		}
 	}
 
@@ -81,7 +83,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data types.GenesisState) error {
 	for i := range data.QueuedOrders {
 		queuedOrder := &data.QueuedOrders[i]
 		if err := k.QueueOrderForBatch(ctx, &queuedOrder.Order, queuedOrder.Salt); err != nil {
-			return err
+			return fmt.Errorf("operation failed: %w", err)
 		}
 	}
 

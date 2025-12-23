@@ -246,7 +246,7 @@ func (k *Keeper) GetAllRoleAssignments(ctx sdk.Context) ([]*types.RoleAssignment
 func (k *Keeper) DeleteRoleAssignment(ctx sdk.Context, address, roleName string) error {
 	assignments, err := k.GetRoleAssignments(ctx, address)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	filtered := make([]*types.RoleAssignment, 0, 64)
@@ -320,11 +320,11 @@ func (k *Keeper) AssignRole(ctx sdk.Context, assigner, address, roleName string,
 func (k *Keeper) RevokeRole(ctx sdk.Context, revoker, address, roleName string) error {
 	// Check revoker has permission
 	if err := k.RequirePermission(ctx, revoker, types.PermissionRevokeRole); err != nil {
-		return err
+		return fmt.Errorf("error in RevokeRole: %w", err)
 	}
 
 	if err := k.DeleteRoleAssignment(ctx, address, roleName); err != nil {
-		return err
+		return fmt.Errorf("error in RevokeRole: %w", err)
 	}
 
 	// Log audit trail

@@ -40,6 +40,11 @@ type Keeper struct {
 
 	// Metrics (non-consensus, observability only)
 	metrics *metrics.MonitoringMetrics
+
+	// Cache for alert routes (non-consensus, performance optimization)
+	// Invalidated at the start of each block or when routes are modified
+	alertRoutesCache      []*AlertRoute
+	alertRoutesCacheBlock int64
 }
 
 // NewKeeper creates a new monitoring keeper with KV store persistence
@@ -92,13 +97,13 @@ func (k Keeper) GetParams(ctx context.Context) (types.Params, error) {
 // SetParams stores the params in the KV store
 func (k Keeper) SetParams(ctx context.Context, params types.Params) error {
 	if err := types.ValidateParams(params); err != nil {
-		return err
+		return fmt.Errorf("error in SetParams for ValidateParams: %w", err)
 	}
 
 	store := k.storeService.OpenKVStore(ctx)
 	bz, err := json.Marshal(&params)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal for ValidateParams: %w", err)
 	}
 
 	return store.Set(ParamsKey, bz)
@@ -140,7 +145,7 @@ func (k Keeper) SetAlert(ctx context.Context, alert *types.Alert) error {
 
 	bz, err := json.Marshal(alert)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 
 	return store.Set(key, bz)
@@ -158,14 +163,14 @@ func (k Keeper) IterateAlerts(ctx context.Context, fn func(alert *types.Alert) (
 	store := k.storeService.OpenKVStore(ctx)
 	iterator, err := store.Iterator(AlertKeyPrefix, storetypes.PrefixEndBytes(AlertKeyPrefix))
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create iterator: %w", err)
 	}
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
 		var alert types.Alert
 		if err := json.Unmarshal(iterator.Value(), &alert); err != nil {
-			return err
+			return fmt.Errorf("failed to create iterator for Valid: %w", err)
 		}
 		if fn(&alert) {
 			break
@@ -238,7 +243,7 @@ func (k Keeper) SetTransaction(ctx context.Context, tx *types.TransactionMonitor
 
 	bz, err := json.Marshal(tx)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal for ErrInvalidTransaction: %w", err)
 	}
 
 	return store.Set(key, bz)
@@ -256,14 +261,14 @@ func (k Keeper) IterateTransactions(ctx context.Context, fn func(tx *types.Trans
 	store := k.storeService.OpenKVStore(ctx)
 	iterator, err := store.Iterator(TransactionKeyPrefix, storetypes.PrefixEndBytes(TransactionKeyPrefix))
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create iterator: %w", err)
 	}
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
 		var tx types.TransactionMonitorData
 		if err := json.Unmarshal(iterator.Value(), &tx); err != nil {
-			return err
+			return fmt.Errorf("failed to create iterator for Valid: %w", err)
 		}
 		if fn(&tx) {
 			break
@@ -319,7 +324,7 @@ func (k Keeper) SetAnomaly(ctx context.Context, anomaly *types.AnomalyDetection)
 
 	bz, err := json.Marshal(anomaly)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 
 	return store.Set(key, bz)
@@ -337,14 +342,14 @@ func (k Keeper) IterateAnomalies(ctx context.Context, fn func(anomaly *types.Ano
 	store := k.storeService.OpenKVStore(ctx)
 	iterator, err := store.Iterator(AnomalyKeyPrefix, storetypes.PrefixEndBytes(AnomalyKeyPrefix))
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create iterator: %w", err)
 	}
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
 		var anomaly types.AnomalyDetection
 		if err := json.Unmarshal(iterator.Value(), &anomaly); err != nil {
-			return err
+			return fmt.Errorf("failed to create iterator for Valid: %w", err)
 		}
 		if fn(&anomaly) {
 			break
@@ -381,7 +386,7 @@ func (k Keeper) SetValidatorUptime(ctx context.Context, uptime *types.ValidatorU
 
 	bz, err := json.Marshal(uptime)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal for SetValidatorUptime: %w", err)
 	}
 
 	return store.Set(key, bz)
@@ -399,14 +404,14 @@ func (k Keeper) IterateValidatorUptimes(ctx context.Context, fn func(uptime *typ
 	store := k.storeService.OpenKVStore(ctx)
 	iterator, err := store.Iterator(ValidatorUptimeKeyPrefix, storetypes.PrefixEndBytes(ValidatorUptimeKeyPrefix))
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create iterator for ValidatorUptimeKeyPrefix: %w", err)
 	}
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
 		var uptime types.ValidatorUptime
 		if err := json.Unmarshal(iterator.Value(), &uptime); err != nil {
-			return err
+			return fmt.Errorf("failed to create iterator for ValidatorUptimeKeyPrefix: %w", err)
 		}
 		if fn(&uptime) {
 			break
@@ -434,7 +439,7 @@ func (k Keeper) SetNetworkHealth(ctx context.Context, health *types.NetworkHealt
 
 	bz, err := json.Marshal(health)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 
 	return store.Set(NetworkHealthKey, bz)
@@ -456,7 +461,7 @@ func (k Keeper) SetGasPriceTracking(ctx context.Context, tracking *types.GasPric
 
 	bz, err := json.Marshal(tracking)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 
 	return store.Set(GasPriceTrackingKey, bz)
@@ -478,7 +483,7 @@ func (k Keeper) SetTVLMonitoring(ctx context.Context, monitoring *types.TVLMonit
 
 	bz, err := json.Marshal(monitoring)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 
 	return store.Set(TVLMonitoringKey, bz)
@@ -520,7 +525,7 @@ func (k Keeper) SetFailedTxPattern(ctx context.Context, pattern *types.FailedTra
 
 	bz, err := json.Marshal(pattern)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 
 	return store.Set(key, bz)
@@ -538,14 +543,14 @@ func (k Keeper) IterateFailedTxPatterns(ctx context.Context, fn func(pattern *ty
 	store := k.storeService.OpenKVStore(ctx)
 	iterator, err := store.Iterator(FailedTxPatternKeyPrefix, storetypes.PrefixEndBytes(FailedTxPatternKeyPrefix))
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create iterator: %w", err)
 	}
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
 		var pattern types.FailedTransactionPattern
 		if err := json.Unmarshal(iterator.Value(), &pattern); err != nil {
-			return err
+			return fmt.Errorf("failed to create iterator for Valid: %w", err)
 		}
 		if fn(&pattern) {
 			break
@@ -601,7 +606,7 @@ func (k Keeper) SetSecurityEvent(ctx context.Context, event *types.SecurityEvent
 
 	bz, err := json.Marshal(event)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal for ErrSecurityEventInvalid: %w", err)
 	}
 
 	return store.Set(key, bz)
@@ -619,14 +624,14 @@ func (k Keeper) IterateSecurityEvents(ctx context.Context, fn func(event *types.
 	store := k.storeService.OpenKVStore(ctx)
 	iterator, err := store.Iterator(SecurityEventKeyPrefix, storetypes.PrefixEndBytes(SecurityEventKeyPrefix))
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create iterator: %w", err)
 	}
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
 		var event types.SecurityEvent
 		if err := json.Unmarshal(iterator.Value(), &event); err != nil {
-			return err
+			return fmt.Errorf("failed to create iterator for Valid: %w", err)
 		}
 		if fn(&event) {
 			break
@@ -682,7 +687,7 @@ func (k Keeper) SetLogEntry(ctx context.Context, entry *types.LogEntry) error {
 
 	bz, err := json.Marshal(entry)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 
 	return store.Set(key, bz)
@@ -700,14 +705,14 @@ func (k Keeper) IterateLogEntries(ctx context.Context, fn func(entry *types.LogE
 	store := k.storeService.OpenKVStore(ctx)
 	iterator, err := store.Iterator(LogEntryKeyPrefix, storetypes.PrefixEndBytes(LogEntryKeyPrefix))
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create iterator: %w", err)
 	}
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
 		var entry types.LogEntry
 		if err := json.Unmarshal(iterator.Value(), &entry); err != nil {
-			return err
+			return fmt.Errorf("failed to create iterator for Valid: %w", err)
 		}
 		if fn(&entry) {
 			break
@@ -743,7 +748,7 @@ func (k Keeper) SetExplorerIntegration(ctx context.Context, integration *types.E
 
 	bz, err := json.Marshal(integration)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 
 	return store.Set(ExplorerIntegrationKey, bz)
@@ -843,7 +848,7 @@ func (k Keeper) RecordFailedTransaction(ctx context.Context, tx *types.Transacti
 
 	// Store the failed transaction first
 	if err := k.SetTransaction(ctx, tx); err != nil {
-		return err
+		return fmt.Errorf("error in RecordFailedTransaction for ErrInvalidTransaction: %w", err)
 	}
 
 	// Use failure reason as pattern ID for grouping
@@ -956,4 +961,58 @@ func (k Keeper) generateID(ctx context.Context, prefix string) string {
 	_ = store.Set(counterKey, sdk.Uint64ToBigEndian(counter))
 
 	return fmt.Sprintf("%s_%d_%d", prefix, sdkCtx.BlockTime().UnixNano(), counter)
+}
+
+// ============================================================================
+// Alert Routes Cache Management
+// ============================================================================
+
+// GetCachedAlertRoutes retrieves alert routes from cache or refreshes if stale
+// This method is thread-safe for concurrent reads within the same block
+func (k *Keeper) GetCachedAlertRoutes(ctx context.Context) ([]*AlertRoute, error) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	currentHeight := sdkCtx.BlockHeight()
+
+	// Check if cache is valid for current block
+	if k.alertRoutesCacheBlock == currentHeight && k.alertRoutesCache != nil {
+		// Return cached routes (safe because they're read-only during the block)
+		return k.alertRoutesCache, nil
+	}
+
+	// Cache is stale or empty, refresh from store
+	return k.refreshAlertRoutesCache(ctx)
+}
+
+// refreshAlertRoutesCache loads all alert routes from store and caches them
+func (k *Keeper) refreshAlertRoutesCache(ctx context.Context) ([]*AlertRoute, error) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
+	// Load all routes from store
+	routes, err := k.GetAllAlertRoutes(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Update cache
+	k.alertRoutesCache = routes
+	k.alertRoutesCacheBlock = sdkCtx.BlockHeight()
+
+	return routes, nil
+}
+
+// InvalidateAlertRoutesCache invalidates the alert routes cache
+// Called when routes are modified (add/update/delete)
+// Sets the cache block to -1 to force a refresh on next access
+func (k *Keeper) InvalidateAlertRoutesCache() {
+	k.alertRoutesCacheBlock = -1
+}
+
+// BeginBlocker is called at the start of each block to refresh caches
+func (k *Keeper) BeginBlocker(ctx context.Context) error {
+	// Pre-load alert routes cache for the block
+	_, err := k.refreshAlertRoutesCache(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to refresh alert routes cache: %w", err)
+	}
+	return nil
 }

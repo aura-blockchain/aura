@@ -68,7 +68,7 @@ func (k *Keeper) InitializeDefaultRoles(ctx sdk.Context) error {
 		UpdatedAt:   now,
 	}
 	if err := k.SetRole(ctx, adminRole); err != nil {
-		return err
+		return fmt.Errorf("error in InitializeDefaultRoles for PermissionRotateValidatorKey: %w", err)
 	}
 
 	// Moderator role
@@ -85,7 +85,7 @@ func (k *Keeper) InitializeDefaultRoles(ctx sdk.Context) error {
 		UpdatedAt:   now,
 	}
 	if err := k.SetRole(ctx, moderatorRole); err != nil {
-		return err
+		return fmt.Errorf("error in InitializeDefaultRoles: %w", err)
 	}
 
 	// Validator role
@@ -99,7 +99,7 @@ func (k *Keeper) InitializeDefaultRoles(ctx sdk.Context) error {
 		UpdatedAt:   now,
 	}
 	if err := k.SetRole(ctx, validatorRole); err != nil {
-		return err
+		return fmt.Errorf("operation failed: %w", err)
 	}
 
 	// User role
@@ -138,7 +138,7 @@ func (k *Keeper) SetParams(ctx sdk.Context, params *authproto.Params) error {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := k.cdc.Marshal(params)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 	store.Set(ParamsKeyPrefix, bz)
 	return nil
@@ -153,7 +153,7 @@ func (k *Keeper) SetRole(ctx sdk.Context, role *authproto.Role) error {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := k.cdc.Marshal(role)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 	key := append(RolesKeyPrefix, []byte(role.Name)...)
 	store.Set(key, bz)
@@ -228,7 +228,7 @@ func (k *Keeper) SetRoleAssignment(ctx sdk.Context, assignment *authproto.RoleAs
 	// Store all assignments for this address
 	bz, err := k.cdc.Marshal(&authproto.RoleAssignmentList{Assignments: assignments})
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 
 	key := append(RoleAssignmentsKeyPrefix, []byte(assignment.Address)...)
@@ -267,7 +267,7 @@ func (k *Keeper) GetRoleAssignmentsForAddress(ctx sdk.Context, address string) (
 func (k *Keeper) DeleteRoleAssignment(ctx sdk.Context, address, roleName string) error {
 	assignments, err := k.GetRoleAssignmentsForAddress(ctx, address)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	filtered := make([]*authproto.RoleAssignment, 0)
@@ -287,7 +287,7 @@ func (k *Keeper) DeleteRoleAssignment(ctx sdk.Context, address, roleName string)
 
 	bz, err := k.cdc.Marshal(&authproto.RoleAssignmentList{Assignments: filtered})
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 	store.Set(key, bz)
 	return nil
@@ -334,7 +334,7 @@ func (k *Keeper) SetMultisigWallet(ctx sdk.Context, wallet *authproto.MultisigWa
 	store := ctx.KVStore(k.storeKey)
 	bz, err := k.cdc.Marshal(wallet)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal for Validate: %w", err)
 	}
 	key := append(MultisigWalletsKeyPrefix, []byte(wallet.Id)...)
 	store.Set(key, bz)
@@ -390,7 +390,7 @@ func (k *Keeper) SetMultisigProposal(ctx sdk.Context, proposal *authproto.Multis
 	store := ctx.KVStore(k.storeKey)
 	bz, err := k.cdc.Marshal(proposal)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 	key := append(MultisigProposalsKeyPrefix, []byte(proposal.Id)...)
 	store.Set(key, bz)
@@ -446,7 +446,7 @@ func (k *Keeper) SetTimeLockedAction(ctx sdk.Context, action *authproto.TimeLock
 	store := ctx.KVStore(k.storeKey)
 	bz, err := k.cdc.Marshal(action)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 	key := append(TimeLockedActionsKeyPrefix, []byte(action.Id)...)
 	store.Set(key, bz)
@@ -502,7 +502,7 @@ func (k *Keeper) SetEmergencyAdmin(ctx sdk.Context, admin *authproto.EmergencyAd
 	store := ctx.KVStore(k.storeKey)
 	bz, err := k.cdc.Marshal(admin)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 	key := append(EmergencyAdminsKeyPrefix, []byte(admin.Address)...)
 	store.Set(key, bz)
@@ -558,7 +558,7 @@ func (k *Keeper) SetValidatorKeyRotation(ctx sdk.Context, rotation *authproto.Va
 	store := ctx.KVStore(k.storeKey)
 	bz, err := k.cdc.Marshal(rotation)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal for Validator: %w", err)
 	}
 	key := append(ValidatorRotationsKeyPrefix, []byte(rotation.ValidatorAddress)...)
 	store.Set(key, bz)
@@ -614,7 +614,7 @@ func (k *Keeper) SetSession(ctx sdk.Context, session *authproto.Session) error {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := k.cdc.Marshal(session)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 	key := append(SessionsKeyPrefix, []byte(session.SessionId)...)
 	store.Set(key, bz)
@@ -661,7 +661,7 @@ func (k *Keeper) DeleteSession(ctx sdk.Context, sessionID string) error {
 	// Get session to find user address
 	session, err := k.GetSession(ctx, sessionID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	store := ctx.KVStore(k.storeKey)
@@ -680,7 +680,7 @@ func (k *Keeper) addUserSession(ctx sdk.Context, userAddress, sessionID string) 
 	store := ctx.KVStore(k.storeKey)
 	bz, err := k.cdc.Marshal(&authproto.SessionIDList{SessionIds: sessions})
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal for SessionIds: %w", err)
 	}
 	key := append(UserSessionsKeyPrefix, []byte(userAddress)...)
 	store.Set(key, bz)
@@ -707,7 +707,7 @@ func (k *Keeper) removeUserSession(ctx sdk.Context, userAddress, sessionID strin
 
 	bz, err := k.cdc.Marshal(&authproto.SessionIDList{SessionIds: filtered})
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal for SessionIds: %w", err)
 	}
 	store.Set(key, bz)
 	return nil
@@ -738,7 +738,7 @@ func (k *Keeper) SetRateLimitConfig(ctx sdk.Context, config *authproto.RateLimit
 	store := ctx.KVStore(k.storeKey)
 	bz, err := k.cdc.Marshal(config)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 	key := append(RateLimitsKeyPrefix, []byte(config.UserAddress)...)
 	store.Set(key, bz)
@@ -814,7 +814,7 @@ func (k *Keeper) SetAuditLog(ctx sdk.Context, log *authproto.AuditLog) error {
 
 	bz, err := k.cdc.Marshal(log)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 
 	key := append(AuditLogsKeyPrefix, []byte(log.Id)...)
@@ -1002,7 +1002,7 @@ func (k *Keeper) CleanupExpiredProposals(ctx sdk.Context) int {
 func (k *Keeper) ResetRateLimitWindow(ctx sdk.Context, userAddress string) error {
 	config, err := k.GetRateLimitConfig(ctx, userAddress)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	now := ctx.BlockTime()
@@ -1062,7 +1062,7 @@ func (k *Keeper) CheckRateLimit(ctx sdk.Context, userAddress string) error {
 		// No custom config, create default from params
 		params, err := k.GetParams(ctx)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to get: %w", err)
 		}
 
 		config = &authproto.RateLimitConfig{
@@ -1184,7 +1184,7 @@ func (k *Keeper) SetCustomRateLimit(ctx sdk.Context, adminAddress, userAddress s
 
 	// Validate config
 	if err := types.ValidateRateLimitConfig(config); err != nil {
-		return err
+		return fmt.Errorf("operation failed: %w", err)
 	}
 
 	return k.SetRateLimitConfig(ctx, config)

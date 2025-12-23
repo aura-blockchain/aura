@@ -786,7 +786,7 @@ func mapVCAuthorizationError(err error) error {
 		return status.Error(codes.PermissionDenied, err.Error())
 	}
 
-	return err
+	return fmt.Errorf("error in mapVCAuthorizationError: %w", err)
 }
 
 // ============================

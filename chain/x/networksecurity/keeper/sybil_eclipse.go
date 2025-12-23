@@ -354,7 +354,7 @@ func (k Keeper) ValidateNewConnection(ctx sdk.Context, peerInfo types.PeerInfo) 
 func (k Keeper) AcceptConnection(ctx sdk.Context, peerInfo types.PeerInfo) error {
 	// Validate connection
 	if err := k.ValidateNewConnection(ctx, peerInfo); err != nil {
-		return err
+		return fmt.Errorf("error in AcceptConnection for validation: %w", err)
 	}
 
 	// Initialize reputation if not exists
@@ -401,7 +401,7 @@ func (k Keeper) DisconnectPeer(ctx sdk.Context, peerID string) error {
 	// Remove peer info
 	store := k.storeService.OpenKVStore(ctx)
 	if err := store.Delete(types.GetPeerInfoKey(peerID)); err != nil {
-		return err
+		return fmt.Errorf("failed to OpenKVStore: %w", err)
 	}
 
 	// Clean up rate limiter and bandwidth tracker

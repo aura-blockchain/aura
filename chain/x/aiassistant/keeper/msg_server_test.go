@@ -60,7 +60,8 @@ func TestMsgServerHeartbeat(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	params := fx.keeper.GetParams(fx.ctx)
+	params, err := fx.keeper.GetParams(fx.ctx)
+	require.NoError(t, err)
 	expectedNextSlash := fx.ctx.BlockTime().Add(time.Duration(params.HeartbeatWindowSeconds+params.HeartbeatGraceSeconds) * time.Second).Unix()
 	require.Equal(t, expectedNextSlash, int64(resp.NextSlashTime))
 
@@ -104,7 +105,9 @@ func TestMsgServerUpdateParamsAuthorization(t *testing.T) {
 		Params:    params,
 	})
 	require.NoError(t, err)
-	require.Equal(t, uint64(7), k.GetParams(ctx).MaxLocales)
+	updatedParams, err := k.GetParams(ctx)
+	require.NoError(t, err)
+	require.Equal(t, uint64(7), updatedParams.MaxLocales)
 
 	_, err = server.UpdateParams(sdk.WrapSDKContext(ctx), &types.MsgUpdateParams{
 		Authority: randAddr().String(),

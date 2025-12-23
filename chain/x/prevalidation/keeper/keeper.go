@@ -271,7 +271,7 @@ func (k *Keeper) Logger(ctx sdk.Context) log.Logger {
 func (k *Keeper) RunScheduler(ctx sdk.Context) error {
 	params, err := k.GetParams(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get for validation: %w", err)
 	}
 	if params == nil || !params.Enabled {
 		return types.ErrSchedulerDisabled
@@ -366,7 +366,7 @@ func (k *Keeper) CleanupExpiredTransactions(ctx sdk.Context) error {
 func (k *Keeper) UpdateMetrics(ctx sdk.Context) error {
 	params, err := k.GetParams(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get for prevalidation: %w", err)
 	}
 	if params == nil || !params.MetricsEnabled {
 		return nil

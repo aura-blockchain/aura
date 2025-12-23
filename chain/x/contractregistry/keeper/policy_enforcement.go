@@ -36,7 +36,7 @@ func (k Keeper) EnforceSecurityPolicy(ctx sdk.Context, contractAddr, executor st
 		if policy.RateLimitPerUser > 0 {
 			if err := k.CheckRateLimit(ctx, contractAddr, executor, policy.RateLimitPerUser); err != nil {
 				k.IncrementMetricsCounter(ctx, contractAddr, "rate_limit_violation")
-				return err
+				return fmt.Errorf("error in EnforceSecurityPolicy: %w", err)
 			}
 		}
 
@@ -83,7 +83,7 @@ func (k Keeper) EnforceSecurityPolicy(ctx sdk.Context, contractAddr, executor st
 		if metadata.CheckSanctions && k.compliance != nil {
 			isSanctioned, err := k.compliance.ScreenForSanctions(ctx, executor)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to ScreenForSanctions: %w", err)
 			}
 			if isSanctioned {
 				return types.ErrSanctioned
@@ -135,7 +135,7 @@ func (k Keeper) EnforceSecurityPolicy(ctx sdk.Context, contractAddr, executor st
 		if compliance.EnforceSanctionsCheck {
 			isSanctioned, err := k.compliance.ScreenForSanctions(ctx, executor)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to ScreenForSanctions: %w", err)
 			}
 			if isSanctioned {
 				return types.ErrSanctioned
@@ -212,7 +212,7 @@ func (k Keeper) CheckJurisdictionRestrictions(ctx sdk.Context, contractAddr, use
 		// For now, we just check if the user passes basic compliance
 		_, err := k.compliance.GetKYCLevel(ctx, userAddr)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to get: %w", err)
 		}
 	}
 
@@ -231,7 +231,7 @@ func (k Keeper) UpdateComplianceRequirements(ctx sdk.Context, contractAddr, admi
 	}
 
 	if err := k.ValidateComplianceRequirements(ctx, reqs); err != nil {
-		return err
+		return fmt.Errorf("error in UpdateComplianceRequirements for ValidateComplianceRequirements: %w", err)
 	}
 
 	info.Compliance = *reqs

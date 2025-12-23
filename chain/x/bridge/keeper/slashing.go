@@ -474,7 +474,7 @@ func (k Keeper) SlashForDowntime(ctx sdk.Context, validatorAddress string) error
 	// Check liveness first
 	meetsRequirement, err := k.CheckValidatorLiveness(ctx, validatorAddress)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to CheckValidatorLiveness for validatorAddress: %w", err)
 	}
 
 	if meetsRequirement {
@@ -494,7 +494,7 @@ func (k Keeper) SlashForDowntime(ctx sdk.Context, validatorAddress string) error
 		"system", // System-initiated slash
 	)
 
-	return err
+	return fmt.Errorf("error in SlashForDowntime for SubmitSlashingEvidence: %w", err)
 }
 
 // ========================================================================

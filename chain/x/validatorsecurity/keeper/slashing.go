@@ -118,7 +118,7 @@ func (k Keeper) HandleDowntime(ctx context.Context, validatorAddr string) error 
 
 	info, err := k.GetValidatorSecurityInfo(ctx, validatorAddr)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get for validator: %w", err)
 	}
 
 	// Don't slash if already jailed or tombstoned
@@ -142,17 +142,17 @@ func (k Keeper) HandleDowntime(ctx context.Context, validatorAddr string) error 
 	// Convert to validator address for slashing
 	valAddr, err := sdk.ValAddressFromBech32(validatorAddr)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to ValAddressFromBech32 for validator: %w", err)
 	}
 
 	validator, err := k.stakingKeeper.Validator(ctx, valAddr)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to Validator for validator: %w", err)
 	}
 
 	consAddr, err := validator.GetConsAddr()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get for validator: %w", err)
 	}
 
 	// Get validator power
@@ -172,12 +172,12 @@ func (k Keeper) HandleDowntime(ctx context.Context, validatorAddr string) error 
 		slashFraction,
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("operation failed: %w", err)
 	}
 
 	// Jail the validator (DowntimeJailDuration is already a time.Duration)
 	if err := k.JailValidator(ctx, validatorAddr, params.DowntimeJailDuration); err != nil {
-		return err
+		return fmt.Errorf("operation failed: %w", err)
 	}
 
 	// Store infraction
@@ -219,12 +219,12 @@ func (k Keeper) ValidateMinimumStake(ctx context.Context, validatorAddr string) 
 
 	valAddr, err := sdk.ValAddressFromBech32(validatorAddr)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to ValAddressFromBech32 for ValidateMinimumStake: %w", err)
 	}
 
 	validator, err := k.stakingKeeper.Validator(ctx, valAddr)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to Validator for ValidateMinimumStake: %w", err)
 	}
 
 	tokens := validator.GetTokens()

@@ -245,7 +245,7 @@ func (k Keeper) MatchOrder(
 	matchedTime := ctx.BlockTime()
 	order.MatchedAt = &matchedTime
 	if err := k.SetOrder(ctx, order); err != nil {
-		return err
+		return fmt.Errorf("operation failed: %w", err)
 	}
 
 	// Remove from orderbook BEFORE external calls (prevents double-matching)
@@ -298,7 +298,7 @@ func (k Keeper) MatchOrder(
 	// Mark as completed AFTER successful swap
 	order.Status = types.SwapOrderStatus_COMPLETED
 	if err := k.SetOrder(ctx, order); err != nil {
-		return err
+		return fmt.Errorf("operation failed: %w", err)
 	}
 
 	// Emit event (safe - no state changes after this)
@@ -354,7 +354,7 @@ func (k Keeper) CancelOrder(
 	// Update status BEFORE external call
 	order.Status = types.SwapOrderStatus_CANCELLED
 	if err := k.SetOrder(ctx, order); err != nil {
-		return err
+		return fmt.Errorf("error in CancelOrder: %w", err)
 	}
 
 	// Remove from orderbook BEFORE external call
@@ -650,14 +650,14 @@ func (k Keeper) GetOrderbookForPair(ctx sdk.Context, coinA, coinB string) []*typ
 func (k Keeper) LockFundsForOrder(ctx sdk.Context, address string, denom string, amount sdkmath.Int) error {
 	addr, err := sdk.AccAddressFromBech32(address)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to AccAddressFromBech32: %w", err)
 	}
 
 	coins := sdk.NewCoins(sdk.NewCoin(denom, amount))
 
 	// Send from user to DEX module account
 	if err := k.bankKeeper.SendCoinsFromAccountToModule(ctx, addr, types.ModuleName, coins); err != nil {
-		return err
+		return fmt.Errorf("failed to AccAddressFromBech32: %w", err)
 	}
 
 	return nil
@@ -667,7 +667,7 @@ func (k Keeper) LockFundsForOrder(ctx sdk.Context, address string, denom string,
 func (k Keeper) UnlockFundsForOrder(ctx sdk.Context, address string, order *types.SwapOrder) error {
 	addr, err := sdk.AccAddressFromBech32(address)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to AccAddressFromBech32: %w", err)
 	}
 
 	// AuraAmount and OtherAmount are already math.Int types (customtype in proto)
@@ -683,7 +683,7 @@ func (k Keeper) UnlockFundsForOrder(ctx sdk.Context, address string, order *type
 
 	// Send back from DEX module to user
 	if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, addr, coins); err != nil {
-		return err
+		return fmt.Errorf("error in UnlockFundsForOrder: %w", err)
 	}
 
 	return nil
@@ -693,14 +693,14 @@ func (k Keeper) UnlockFundsForOrder(ctx sdk.Context, address string, order *type
 func (k Keeper) TransferLockedFunds(ctx sdk.Context, from, to, denom string, amount sdkmath.Int) error {
 	toAddr, err := sdk.AccAddressFromBech32(to)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to AccAddressFromBech32: %w", err)
 	}
 
 	coins := sdk.NewCoins(sdk.NewCoin(denom, amount))
 
 	// Funds are already in module account, just send to recipient
 	if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, toAddr, coins); err != nil {
-		return err
+		return fmt.Errorf("failed to AccAddressFromBech32: %w", err)
 	}
 
 	return nil

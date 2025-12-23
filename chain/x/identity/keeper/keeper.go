@@ -71,7 +71,7 @@ func (k *Keeper) GetParams(ctx sdk.Context) (*types.Params, error) {
 
 	var params types.Params
 	if err := k.cdc.Unmarshal(bz, &params); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to unmarshal params: %w", err)
 	}
 	return &params, nil
 }
@@ -84,9 +84,12 @@ func (k *Keeper) SetParams(ctx sdk.Context, params *types.Params) error {
 	store := k.storeService.OpenKVStore(ctx)
 	bz, err := k.cdc.Marshal(params)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal params: %w", err)
 	}
-	return store.Set(types.ParamsKey, bz)
+	if err := store.Set(types.ParamsKey, bz); err != nil {
+		return fmt.Errorf("failed to set params in store: %w", err)
+	}
+	return nil
 }
 
 // ============================================================================
@@ -122,7 +125,7 @@ func (k *Keeper) initializeDefaultRoles(ctx sdk.Context) error {
 		UpdatedAt:    &now,
 	}
 	if err := k.SetRole(ctx, adminRole); err != nil {
-		return err
+		return fmt.Errorf("failed to set admin role: %w", err)
 	}
 
 	// Moderator role
@@ -142,7 +145,7 @@ func (k *Keeper) initializeDefaultRoles(ctx sdk.Context) error {
 		UpdatedAt:    &now,
 	}
 	if err := k.SetRole(ctx, moderatorRole); err != nil {
-		return err
+		return fmt.Errorf("failed to set moderator role: %w", err)
 	}
 
 	// Validator role
@@ -158,7 +161,7 @@ func (k *Keeper) initializeDefaultRoles(ctx sdk.Context) error {
 		UpdatedAt:    &now,
 	}
 	if err := k.SetRole(ctx, validatorRole); err != nil {
-		return err
+		return fmt.Errorf("failed to set validator role: %w", err)
 	}
 
 	// User role (basic)

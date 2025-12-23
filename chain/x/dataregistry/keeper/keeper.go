@@ -188,12 +188,12 @@ func (k *Keeper) SetDataItem(ctx sdk.Context, item types.DataItem) error {
 
 	// Index by user (store data ID in user index)
 	if err := k.addToUserIndex(ctx, item.OwnerAddress, item.DataId); err != nil {
-		return err
+		return fmt.Errorf("failed to marshal for DataId: %w", err)
 	}
 
 	// Index by type
 	if err := k.addToTypeIndex(ctx, item.DataType, item.DataId); err != nil {
-		return err
+		return fmt.Errorf("error in SetDataItem for DataId: %w", err)
 	}
 
 	return nil
@@ -224,12 +224,12 @@ func (k *Keeper) DeleteDataItem(ctx sdk.Context, dataID string) error {
 
 	// Remove from user index
 	if err := k.removeFromUserIndex(ctx, item.OwnerAddress, dataID); err != nil {
-		return err
+		return fmt.Errorf("error in DeleteDataItem: %w", err)
 	}
 
 	// Remove from type index
 	if err := k.removeFromTypeIndex(ctx, item.DataType, dataID); err != nil {
-		return err
+		return fmt.Errorf("error in DeleteDataItem: %w", err)
 	}
 
 	return nil

@@ -114,7 +114,7 @@ func (k Keeper) SetVestingSchedule(ctx context.Context, schedule *types.VestingS
 	key := types.GetVestingScheduleKey(schedule.ScheduleId)
 	bz, err := k.cdc.Marshal(schedule)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal for ScheduleId: %w", err)
 	}
 	return store.Set(key, bz)
 }
@@ -158,7 +158,7 @@ func (k Keeper) SetUserVestingIndex(ctx context.Context, userAddress string, sch
 	index := &types.StringList{Values: scheduleIDs}
 	bz, err := k.cdc.Marshal(index)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 	return store.Set(key, bz)
 }
@@ -186,7 +186,7 @@ func (k Keeper) GetUserVestingIndex(ctx context.Context, userAddress string) ([]
 func (k Keeper) AddUserVestingSchedule(ctx context.Context, userAddress, scheduleID string) error {
 	scheduleIDs, err := k.GetUserVestingIndex(ctx, userAddress)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 	scheduleIDs = append(scheduleIDs, scheduleID)
 	return k.SetUserVestingIndex(ctx, userAddress, scheduleIDs)
@@ -202,7 +202,7 @@ func (k Keeper) SetVoteLock(ctx context.Context, lock *types.VoteLock) error {
 	key := types.GetVoteLockKey(lock.LockId)
 	bz, err := k.cdc.Marshal(lock)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal for LockId: %w", err)
 	}
 	return store.Set(key, bz)
 }
@@ -245,7 +245,7 @@ func (k Keeper) SetUserVoteLockIndex(ctx context.Context, userAddress string, lo
 	index := &types.StringList{Values: lockIDs}
 	bz, err := k.cdc.Marshal(index)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 	return store.Set(key, bz)
 }
@@ -273,7 +273,7 @@ func (k Keeper) GetUserVoteLockIndex(ctx context.Context, userAddress string) ([
 func (k Keeper) AddUserVoteLock(ctx context.Context, userAddress, lockID string) error {
 	lockIDs, err := k.GetUserVoteLockIndex(ctx, userAddress)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 	lockIDs = append(lockIDs, lockID)
 	return k.SetUserVoteLockIndex(ctx, userAddress, lockIDs)
@@ -289,7 +289,7 @@ func (k Keeper) SetPendingTreasuryTx(ctx context.Context, tx *types.PendingTreas
 	key := types.GetPendingTreasuryTxKey(tx.TxId)
 	bz, err := k.cdc.Marshal(tx)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal for TxId: %w", err)
 	}
 	return store.Set(key, bz)
 }
@@ -326,14 +326,14 @@ func (k Keeper) IteratePendingTreasuryTxs(ctx context.Context, cb func(tx *types
 	store := k.storeService.OpenKVStore(ctx)
 	iterator, err := store.Iterator(types.PendingTreasuryTxPrefix, storeprefixend(types.PendingTreasuryTxPrefix))
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create iterator: %w", err)
 	}
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
 		var tx types.PendingTreasuryTx
 		if err := k.cdc.Unmarshal(iterator.Value(), &tx); err != nil {
-			return err
+			return fmt.Errorf("failed to create iterator for Valid: %w", err)
 		}
 		if cb(&tx) {
 			break // Callback returned true = stop iteration
@@ -352,7 +352,7 @@ func (k Keeper) SetInflationAlert(ctx context.Context, alert *types.InflationAle
 	key := types.GetInflationAlertKey(alert.AlertId)
 	bz, err := k.cdc.Marshal(alert)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal for AlertId: %w", err)
 	}
 	return store.Set(key, bz)
 }
@@ -382,14 +382,14 @@ func (k Keeper) IterateInflationAlerts(ctx context.Context, cb func(alert *types
 	store := k.storeService.OpenKVStore(ctx)
 	iterator, err := store.Iterator(types.InflationAlertPrefix, storeprefixend(types.InflationAlertPrefix))
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create iterator: %w", err)
 	}
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
 		var alert types.InflationAlert
 		if err := k.cdc.Unmarshal(iterator.Value(), &alert); err != nil {
-			return err
+			return fmt.Errorf("failed to create iterator for Valid: %w", err)
 		}
 		if cb(&alert) {
 			break // Callback returned true = stop iteration
@@ -408,7 +408,7 @@ func (k Keeper) SetLargeTxRecord(ctx context.Context, record *types.LargeTxRecor
 	key := types.GetLargeTxRecordKey(record.TxHash)
 	bz, err := k.cdc.Marshal(record)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 	return store.Set(key, bz)
 }
@@ -438,14 +438,14 @@ func (k Keeper) IterateLargeTxRecords(ctx context.Context, cb func(record *types
 	store := k.storeService.OpenKVStore(ctx)
 	iterator, err := store.Iterator(types.LargeTxRecordPrefix, storeprefixend(types.LargeTxRecordPrefix))
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create iterator: %w", err)
 	}
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
 		var record types.LargeTxRecord
 		if err := k.cdc.Unmarshal(iterator.Value(), &record); err != nil {
-			return err
+			return fmt.Errorf("failed to create iterator for Valid: %w", err)
 		}
 		if cb(&record) {
 			break // Callback returned true = stop iteration
@@ -537,7 +537,7 @@ func (k Keeper) IterateUserMEVBalances(ctx context.Context, cb func(address stri
 	store := k.storeService.OpenKVStore(ctx)
 	iterator, err := store.Iterator(types.UserMEVBalancePrefix, storeprefixend(types.UserMEVBalancePrefix))
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create iterator: %w", err)
 	}
 	defer iterator.Close()
 
@@ -635,14 +635,14 @@ func (k Keeper) IterateVestingSchedules(ctx context.Context, cb func(schedule *t
 	store := k.storeService.OpenKVStore(ctx)
 	iterator, err := store.Iterator(types.VestingSchedulePrefix, storeprefixend(types.VestingSchedulePrefix))
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create iterator: %w", err)
 	}
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
 		var schedule types.VestingSchedule
 		if err := k.cdc.Unmarshal(iterator.Value(), &schedule); err != nil {
-			return err
+			return fmt.Errorf("failed to create iterator for Valid: %w", err)
 		}
 		if cb(&schedule) {
 			break // Callback returned true = stop iteration
@@ -657,14 +657,14 @@ func (k Keeper) IterateVoteLocks(ctx context.Context, cb func(lock *types.VoteLo
 	store := k.storeService.OpenKVStore(ctx)
 	iterator, err := store.Iterator(types.VoteLockPrefix, storeprefixend(types.VoteLockPrefix))
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create iterator: %w", err)
 	}
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
 		var lock types.VoteLock
 		if err := k.cdc.Unmarshal(iterator.Value(), &lock); err != nil {
-			return err
+			return fmt.Errorf("failed to create iterator for Valid: %w", err)
 		}
 		if cb(&lock) {
 			break // Callback returned true = stop iteration

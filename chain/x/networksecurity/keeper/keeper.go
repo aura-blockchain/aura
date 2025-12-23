@@ -86,7 +86,7 @@ func (k Keeper) GetParams(ctx sdk.Context) (types.Params, error) {
 // SetParams sets the module parameters
 func (k Keeper) SetParams(ctx sdk.Context, params types.Params) error {
 	if err := types.ValidateParams(&params); err != nil {
-		return err
+		return fmt.Errorf("error in SetParams for ValidateParams: %w", err)
 	}
 
 	store := k.storeService.OpenKVStore(ctx)
@@ -233,7 +233,7 @@ func (k Keeper) BanPeer(ctx sdk.Context, peerID string, duration int64, reason s
 	rateLimitEntry.BanExpiresAt = &banTime
 
 	if err := k.SetRateLimitEntry(ctx, rateLimitEntry); err != nil {
-		return err
+		return fmt.Errorf("error in BanPeer for PeerId: %w", err)
 	}
 
 	// Log the ban
@@ -252,7 +252,7 @@ func (k Keeper) UnbanPeer(ctx sdk.Context, peerID string) error {
 	rateLimitEntry.IsBanned = false
 	rateLimitEntry.BanExpiresAt = nil
 	if err := k.SetRateLimitEntry(ctx, rateLimitEntry); err != nil {
-		return err
+		return fmt.Errorf("error in UnbanPeer: %w", err)
 	}
 
 	k.logger.Info(fmt.Sprintf("Peer %s unbanned", peerID))

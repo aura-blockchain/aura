@@ -43,7 +43,7 @@ const (
 func (k Keeper) RegisterModel(ctx sdk.Context, model AIModel) error {
 	// Validate model
 	if err := validateModel(model); err != nil {
-		return err
+		return fmt.Errorf("error in RegisterModel for Validate: %w", err)
 	}
 
 	// Check if model already exists

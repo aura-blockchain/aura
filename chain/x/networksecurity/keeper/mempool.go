@@ -113,14 +113,14 @@ func (k Keeper) AddToMempool(ctx sdk.Context, tx sdk.Tx, txBytes []byte, sender 
 	}
 
 	if err := k.SetMempoolStats(ctx, stats); err != nil {
-		return err
+		return fmt.Errorf("error in AddToMempool: %w", err)
 	}
 
 	// Increment account tx count
 	if sender != "" {
 		count := k.GetAccountMempoolTxCount(ctx, sender)
 		if err := k.SetAccountMempoolTxCount(ctx, sender, count+1); err != nil {
-			return err
+			return fmt.Errorf("failed to get: %w", err)
 		}
 	}
 
@@ -140,7 +140,7 @@ func (k Keeper) RemoveFromMempool(ctx sdk.Context, txBytes []byte, sender string
 	}
 
 	if err := k.SetMempoolStats(ctx, stats); err != nil {
-		return err
+		return fmt.Errorf("error in RemoveFromMempool: %w", err)
 	}
 
 	// Decrement account tx count
@@ -148,7 +148,7 @@ func (k Keeper) RemoveFromMempool(ctx sdk.Context, txBytes []byte, sender string
 		count := k.GetAccountMempoolTxCount(ctx, sender)
 		if count > 0 {
 			if err := k.SetAccountMempoolTxCount(ctx, sender, count-1); err != nil {
-				return err
+				return fmt.Errorf("error in RemoveFromMempool: %w", err)
 			}
 		}
 	}
@@ -288,18 +288,18 @@ func (k Keeper) AntiSpamCheck(ctx sdk.Context, tx sdk.Tx, sender string) error {
 func (k Keeper) MempoolSpamProtection(ctx sdk.Context, tx sdk.Tx, txBytes []byte, sender string) error {
 	// 1. Anti-spam checks
 	if err := k.AntiSpamCheck(ctx, tx, sender); err != nil {
-		return err
+		return fmt.Errorf("error in MempoolSpamProtection: %w", err)
 	}
 
 	// 2. Validate transaction for mempool admission
 	if err := k.ValidateTransaction(ctx, tx, txBytes, sender); err != nil {
 		k.RejectTransaction(ctx, err.Error())
-		return err
+		return fmt.Errorf("error in MempoolSpamProtection for Validate: %w", err)
 	}
 
 	// 3. Add to mempool tracking
 	if err := k.AddToMempool(ctx, tx, txBytes, sender); err != nil {
-		return err
+		return fmt.Errorf("error in MempoolSpamProtection for Validate: %w", err)
 	}
 
 	return nil

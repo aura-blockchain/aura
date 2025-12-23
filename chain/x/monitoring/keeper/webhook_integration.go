@@ -102,7 +102,7 @@ func (k Keeper) GetWebhook(ctx context.Context, webhookID string) (*WebhookConfi
 func (k Keeper) UpdateWebhook(ctx context.Context, webhookID string, url string, events []string, enabled bool) error {
 	config, err := k.GetWebhook(ctx, webhookID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	// Update fields
@@ -120,7 +120,7 @@ func (k Keeper) UpdateWebhook(ctx context.Context, webhookID string, url string,
 
 	bz, err := json.Marshal(config)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 
 	return store.Set(key, bz)
@@ -134,7 +134,7 @@ func (k Keeper) RemoveWebhook(ctx context.Context, webhookID string) error {
 	// Check if exists
 	has, err := store.Has(key)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to Has: %w", err)
 	}
 	if !has {
 		return fmt.Errorf("webhook not found: %s", webhookID)
@@ -147,7 +147,7 @@ func (k Keeper) RemoveWebhook(ctx context.Context, webhookID string) error {
 func (k Keeper) TriggerWebhook(ctx context.Context, webhookID string, event *WebhookEvent) error {
 	config, err := k.GetWebhook(ctx, webhookID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	if !config.Enabled {
@@ -170,13 +170,13 @@ func (k Keeper) sendWebhook(config *WebhookConfig, event *WebhookEvent) error {
 	// Prepare payload
 	payload, err := json.Marshal(event)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 
 	// Create HTTP request
 	req, err := http.NewRequest("POST", config.URL, bytes.NewBuffer(payload))
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to NewRequest: %w", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -240,7 +240,7 @@ func (k Keeper) NotifyWebhooks(ctx context.Context, eventType string, data map[s
 	store := k.storeService.OpenKVStore(ctx)
 	iterator, err := store.Iterator(WebhookKeyPrefix, storetypes.PrefixEndBytes(WebhookKeyPrefix))
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create iterator: %w", err)
 	}
 	defer iterator.Close()
 

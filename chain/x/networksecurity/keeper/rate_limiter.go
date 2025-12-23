@@ -131,7 +131,7 @@ func (k Keeper) CheckRateLimit(ctx sdk.Context, peerID string) error {
 			// Too many violations, ban the peer
 			banDurationSecs := int64(params.RateLimit.BanDuration.Seconds())
 			if err := k.BanPeer(ctx, peerID, banDurationSecs, "rate limit violations"); err != nil {
-				return err
+				return fmt.Errorf("failed to Seconds: %w", err)
 			}
 
 			// Penalize reputation
@@ -139,7 +139,7 @@ func (k Keeper) CheckRateLimit(ctx sdk.Context, peerID string) error {
 		}
 
 		if err := k.SetRateLimitEntry(ctx, entry); err != nil {
-			return err
+			return fmt.Errorf("failed to Seconds: %w", err)
 		}
 		return types.ErrRateLimitExceeded
 	}
@@ -154,7 +154,7 @@ func (k Keeper) CheckRateLimit(ctx sdk.Context, peerID string) error {
 	}
 	entry.RequestCount++
 	if err := k.SetRateLimitEntry(ctx, entry); err != nil {
-		return err
+		return fmt.Errorf("operation failed: %w", err)
 	}
 
 	return nil
@@ -272,7 +272,7 @@ func (k Keeper) CheckBandwidthLimit(ctx sdk.Context, peerID string, bytes uint64
 		entry.BytesSent = sent
 		entry.BytesReceived = recv
 		if err := k.SetRateLimitEntry(ctx, entry); err != nil {
-			return err
+			return fmt.Errorf("error in CheckBandwidthLimit for PeerId: %w", err)
 		}
 
 		return types.ErrBandwidthLimitExceeded
@@ -337,13 +337,13 @@ func (k Keeper) DDosProtectionCheck(ctx sdk.Context, peerID string, messageSize 
 	// 2. Check rate limiting
 	if err := k.CheckRateLimit(ctx, peerID); err != nil {
 		k.logger.Warn(fmt.Sprintf("Rate limit check failed for peer %s: %v", peerID, err))
-		return err
+		return fmt.Errorf("error in DDosProtectionCheck: %w", err)
 	}
 
 	// 3. Check bandwidth limits
 	if err := k.CheckBandwidthLimit(ctx, peerID, messageSize, false); err != nil {
 		k.logger.Warn(fmt.Sprintf("Bandwidth check failed for peer %s: %v", peerID, err))
-		return err
+		return fmt.Errorf("error in DDosProtectionCheck for bandwidth: %w", err)
 	}
 
 	// 4. Check message size

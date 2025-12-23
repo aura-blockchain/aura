@@ -53,7 +53,7 @@ type MockBankKeeper struct {
 
 func (m *MockBankKeeper) SendCoinsFromAccountToModule(ctx context.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
 	if err, exists := m.sendErrors[senderAddr.String()]; exists {
-		return err
+		return fmt.Errorf("error in SendCoinsFromAccountToModule: %w", err)
 	}
 
 	// Check if sender has enough balance

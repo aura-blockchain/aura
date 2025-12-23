@@ -84,7 +84,7 @@ func (k Keeper) SetParams(ctx context.Context, params wsproto.WalletSecurityPara
 	store := k.getStore(ctx)
 	paramsBytes, err := k.cdc.Marshal(&params)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 	return store.Set(types.ParamsKey, paramsBytes)
 }
@@ -452,7 +452,7 @@ func (k Keeper) LockWallet(ctx context.Context, addr string, reason string) erro
 	store := k.getStore(ctx)
 	key := append([]byte("locked_wallet_"), []byte(addr)...)
 	if err := store.Set(key, []byte(reason)); err != nil {
-		return err
+		return fmt.Errorf("error in LockWallet: %w", err)
 	}
 	k.logger.Info(fmt.Sprintf("Wallet %s locked. Reason: %s", addr, reason))
 	return nil
@@ -464,7 +464,7 @@ func (k Keeper) UnlockWallet(ctx context.Context, addr string) error {
 	store := k.getStore(ctx)
 	key := append([]byte("locked_wallet_"), []byte(addr)...)
 	if err := store.Delete(key); err != nil {
-		return err
+		return fmt.Errorf("error in UnlockWallet: %w", err)
 	}
 	k.logger.Info(fmt.Sprintf("Wallet %s unlocked", addr))
 	return nil
@@ -619,12 +619,12 @@ func unwrapSDKContextSafe(ctx context.Context) (sdk.Context, bool) {
 func (k Keeper) CheckSpendingLimit(ctx context.Context, walletID, denom, amount string) error {
 	limitBytes, err := k.GetSpendingLimit(ctx, walletID, denom)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	var limit wsproto.SpendingLimit
 	if err := k.cdc.Unmarshal(limitBytes, &limit); err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	if !limit.Enabled {
@@ -633,7 +633,7 @@ func (k Keeper) CheckSpendingLimit(ctx context.Context, walletID, denom, amount 
 
 	spendAmount, err := parseAmountString(amount)
 	if err != nil {
-		return err
+		return fmt.Errorf("error in CheckSpendingLimit: %w", err)
 	}
 	if !spendAmount.IsPositive() {
 		return types.ErrInvalidSpendingLimit
@@ -655,28 +655,28 @@ func (k Keeper) CheckSpendingLimit(ctx context.Context, walletID, denom, amount 
 
 	dailyLimit, err := parseAmountString(limit.DailyLimit)
 	if err != nil {
-		return err
+		return fmt.Errorf("error in CheckSpendingLimit: %w", err)
 	}
 	weeklyLimit, err := parseAmountString(limit.WeeklyLimit)
 	if err != nil {
-		return err
+		return fmt.Errorf("error in CheckSpendingLimit: %w", err)
 	}
 	monthlyLimit, err := parseAmountString(limit.MonthlyLimit)
 	if err != nil {
-		return err
+		return fmt.Errorf("error in CheckSpendingLimit: %w", err)
 	}
 
 	currentDaily, err := parseAmountString(limit.CurrentDailySpent)
 	if err != nil {
-		return err
+		return fmt.Errorf("operation failed: %w", err)
 	}
 	currentWeekly, err := parseAmountString(limit.CurrentWeeklySpent)
 	if err != nil {
-		return err
+		return fmt.Errorf("operation failed: %w", err)
 	}
 	currentMonthly, err := parseAmountString(limit.CurrentMonthlySpent)
 	if err != nil {
-		return err
+		return fmt.Errorf("operation failed: %w", err)
 	}
 
 	proposedDaily := currentDaily.Add(spendAmount)
@@ -702,11 +702,11 @@ func (k Keeper) CheckSpendingLimit(ctx context.Context, walletID, denom, amount 
 
 	updated, err := k.cdc.Marshal(&limit)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 
 	if err := k.storeSpendingLimit(ctx, walletID, denom, updated); err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 
 	trackSpendingLimit(ctx, walletID, denom, amount, types.AttributeValueStatusAllowed, "accepted")

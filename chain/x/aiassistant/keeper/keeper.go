@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"strings"
@@ -67,7 +68,10 @@ func (k Keeper) RegisterAssistant(ctx sdk.Context, msg *types.MsgRegisterAssista
 		return nil, types.ErrAssistantExists
 	}
 
-	params := k.GetParams(ctx)
+	params, err := k.GetParams(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get params: %w", err)
+	}
 	if err := types.ValidateParams(params); err != nil {
 		return nil, types.ErrInvalidParams.Wrap(err.Error())
 	}
@@ -150,7 +154,10 @@ func (k Keeper) UpdateLocales(ctx sdk.Context, msg *types.MsgUpdateLocales) (*ty
 	if assistant.OwnerAddress != msg.OwnerAddress {
 		return nil, types.ErrUnauthorizedOperator
 	}
-	params := k.GetParams(ctx)
+	params, err := k.GetParams(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get params: %w", err)
+	}
 	newLocales, err := normalizeLocales(msg.Locales, int(params.MaxLocales))
 	if err != nil {
 		return nil, err
@@ -179,7 +186,10 @@ func (k Keeper) Heartbeat(ctx sdk.Context, msg *types.MsgHeartbeat) (uint64, err
 		return 0, types.ErrUnauthorizedOperator
 	}
 
-	params := k.GetParams(ctx)
+	params, err := k.GetParams(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get params: %w", err)
+	}
 	window := time.Duration(params.HeartbeatWindowSeconds) * time.Second
 	grace := time.Duration(params.HeartbeatGraceSeconds) * time.Second
 
@@ -218,7 +228,11 @@ func (k Keeper) ReportMisbehavior(ctx sdk.Context, msg *types.MsgReportMisbehavi
 		return nil, sdk.Coin{}, err
 	}
 	assistant.MisbehaviorReports++
-	slashed, err := k.slashAssistant(ctx, assistant, k.GetParams(ctx).SlashFractionMisbehavior)
+	params, err := k.GetParams(ctx)
+	if err != nil {
+		return nil, sdk.Coin{}, fmt.Errorf("failed to get params: %w", err)
+	}
+	slashed, err := k.slashAssistant(ctx, assistant, params.SlashFractionMisbehavior)
 	if err != nil {
 		return nil, sdk.Coin{}, err
 	}
@@ -282,7 +296,7 @@ func (k Keeper) ListAssistants(ctx sdk.Context, pageReq *query.PageRequest) ([]*
 	pageRes, err := query.Paginate(prefixStore, pageReq, func(_, value []byte) error {
 		var assistant types.Assistant
 		if err := k.cdc.Unmarshal(value, &assistant); err != nil {
-			return err
+			return fmt.Errorf("error in ListAssistants: %w", err)
 		}
 		assistants = append(assistants, &assistant)
 		return nil
@@ -361,27 +375,27 @@ func (k Keeper) slashAssistant(ctx sdk.Context, assistant *types.Assistant, frac
 	return slashCoin, nil
 }
 
-func (k Keeper) GetParams(ctx sdk.Context) types.Params {
-	store := ctx.KVStore(k.storeKey)
+func (k Keeper) GetParams(ctx context.Context) (types.Params, error) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	store := sdkCtx.KVStore(k.storeKey)
 	if !store.Has(types.ParamsKey) {
 		def := types.DefaultParams()
 		_ = k.SetParams(ctx, def) // Default params should always be valid
-		return def
+		return def, nil
 	}
 	var params types.Params
 	if err := k.cdc.Unmarshal(store.Get(types.ParamsKey), &params); err != nil {
-		ctx.Logger().Error("failed to unmarshal ai assistant params, returning defaults",
-			"error", err)
-		return types.DefaultParams()
+		return types.Params{}, fmt.Errorf("failed to unmarshal ai assistant params: %w", err)
 	}
-	return params
+	return params, nil
 }
 
-func (k Keeper) SetParams(ctx sdk.Context, params types.Params) error {
+func (k Keeper) SetParams(ctx context.Context, params types.Params) error {
 	if err := types.ValidateParams(params); err != nil {
-		return err
+		return fmt.Errorf("error in SetParams for ValidateParams: %w", err)
 	}
-	store := ctx.KVStore(k.storeKey)
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	store := sdkCtx.KVStore(k.storeKey)
 	bz := k.cdc.MustMarshal(&params)
 	store.Set(types.ParamsKey, bz)
 	return nil

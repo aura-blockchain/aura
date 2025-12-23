@@ -139,7 +139,7 @@ func (k *Keeper) ExecuteTreasurySpend(
 	// Get the transaction
 	tx, err := k.GetPendingTreasuryTx(ctx, txID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	if tx.Executed {
@@ -158,7 +158,7 @@ func (k *Keeper) ExecuteTreasurySpend(
 	// Check if timelock has passed
 	currentTime, err := k.GetCurrentTime(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	executableAt := tx.ExecutableAt.Unix()
@@ -213,7 +213,7 @@ func (k *Keeper) GetAllPendingTreasuryTxs(ctx context.Context) ([]*types.Pending
 func (k *Keeper) RejectTreasurySpend(ctx context.Context, txID string) error {
 	tx, err := k.GetPendingTreasuryTx(ctx, txID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	if tx.Executed {
@@ -276,7 +276,7 @@ func (k *Keeper) GetTreasuryStatistics(ctx context.Context) (
 func (k *Keeper) CleanupExecutedTreasuryTxs(ctx context.Context, retentionPeriod int64) error {
 	currentTime, err := k.GetCurrentTime(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	txsToDelete := make([]string, 0)
@@ -292,13 +292,13 @@ func (k *Keeper) CleanupExecutedTreasuryTxs(ctx context.Context, retentionPeriod
 	})
 
 	if err != nil {
-		return err
+		return fmt.Errorf("error in CleanupExecutedTreasuryTxs for TxId: %w", err)
 	}
 
 	// Delete old transactions
 	for _, txID := range txsToDelete {
 		if err := k.DeletePendingTreasuryTx(ctx, txID); err != nil {
-			return err
+			return fmt.Errorf("failed to delete: %w", err)
 		}
 	}
 

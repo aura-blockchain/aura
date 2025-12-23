@@ -222,7 +222,7 @@ func (k *Keeper) VerifyPIICommitment(ctx sdk.Context, did string, piiData map[st
 func (k *Keeper) UpdatePIICommitment(ctx sdk.Context, did, updater string, salt []byte, offChainRef, offChainType string) error {
 	record, err := k.GetIdentityRecord(ctx, did)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get for side: %w", err)
 	}
 
 	// Check authorization

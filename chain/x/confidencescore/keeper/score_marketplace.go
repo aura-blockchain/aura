@@ -278,7 +278,7 @@ func (k *Keeper) PlaceBid(
 	// Lock bid amount
 	bidderAddr, err := sdk.AccAddressFromBech32(bidder)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to AccAddressFromBech32 for bid: %w", err)
 	}
 
 	bidCoins := sdk.NewCoins(sdk.NewCoin("uaura", bidAmount))

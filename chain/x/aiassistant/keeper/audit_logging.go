@@ -59,7 +59,7 @@ func (k Keeper) LogAIOperation(ctx sdk.Context, log AuditLog) error {
 
 	bz, err := json.Marshal(&log)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 
 	store.Set(key, bz)

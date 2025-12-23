@@ -29,19 +29,25 @@ type Keeper struct {
 	// Encryption service for data at rest (GDPR Article 32 compliance)
 	// Encrypts sensitive PII stored in KVStore with AES-256-GCM
 	encryptionService *EncryptionService
+
+	// Pending AML profile updates (batched in EndBlocker for ~50% write reduction)
+	// Map: address -> profile update to apply
+	// Updates are accumulated during block execution and written once in EndBlocker
+	pendingProfileUpdates map[string]*types.AMLProfile
 }
 
 // NewKeeper creates a new compliance keeper
 func NewKeeper(cdc codec.BinaryCodec, storeKey storetypes.StoreKey) *Keeper {
 	return &Keeper{
-		cdc:                 cdc,
-		storeKey:            storeKey,
-		kycProviders:        make(map[string]KYCProvider),
-		sanctionsProviders:  make(map[string]SanctionsProvider),
-		taxReportGenerators: make(map[string]TaxReportGenerator),
-		sanctionsCache:      make(map[string]time.Time),
-		dataProtection:      NewDataProtectionService(),
-		encryptionService:   nil, // Must be set via SetEncryptionService after initialization
+		cdc:                   cdc,
+		storeKey:              storeKey,
+		kycProviders:          make(map[string]KYCProvider),
+		sanctionsProviders:    make(map[string]SanctionsProvider),
+		taxReportGenerators:   make(map[string]TaxReportGenerator),
+		sanctionsCache:        make(map[string]time.Time),
+		dataProtection:        NewDataProtectionService(),
+		encryptionService:     nil, // Must be set via SetEncryptionService after initialization
+		pendingProfileUpdates: make(map[string]*types.AMLProfile),
 	}
 }
 
@@ -120,7 +126,7 @@ func (k Keeper) StoreKey() storetypes.StoreKey {
 func (k *Keeper) initializeDefaultMonitoringRules(ctx sdk.Context) error {
 	params, err := k.GetParamsFromStore(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	defaultRules := []*types.TransactionMonitoringRule{

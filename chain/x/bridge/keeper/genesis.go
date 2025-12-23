@@ -18,11 +18,11 @@ const transferIDPrefix = "transfer-"
 // InitGenesis initializes the bridge module state from genesis
 func (k Keeper) InitGenesis(ctx sdk.Context, data types.GenesisState) error {
 	if err := types.ValidateGenesis(&data); err != nil {
-		return err
+		return fmt.Errorf("error in InitGenesis for bridge: %w", err)
 	}
 	params := bridgeParamsFromProto(data.Params)
 	if err := k.SetParams(ctx, params); err != nil {
-		return err
+		return fmt.Errorf("error in InitGenesis for bridge: %w", err)
 	}
 
 	// MIGRATION NOTE: With deterministic IDs based on block height + tx hash,
@@ -114,7 +114,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data types.GenesisState) error {
 
 	for _, cfg := range data.ChainConfigs {
 		if err := k.setChainConfig(ctx, cfg); err != nil {
-			return err
+			return fmt.Errorf("operation failed: %w", err)
 		}
 	}
 

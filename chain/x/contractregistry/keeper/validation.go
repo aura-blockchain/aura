@@ -28,7 +28,7 @@ func (k Keeper) ValidateContractExecution(ctx sdk.Context, contractAddr, sender 
 
 	// 3. Check blacklist/whitelist
 	if err := k.checkAddressLists(sender, &info.SecurityPolicy); err != nil {
-		return err
+		return fmt.Errorf("error in ValidateContractExecution for ErrInvalidRequest: %w", err)
 	}
 
 	// 4. Check gas limit
@@ -40,14 +40,14 @@ func (k Keeper) ValidateContractExecution(ctx sdk.Context, contractAddr, sender 
 	if info.SecurityPolicy.RateLimitPerUser > 0 {
 		if err := k.CheckRateLimit(ctx, contractAddr, sender, info.SecurityPolicy.RateLimitPerUser); err != nil {
 			k.IncrementMetricsCounter(ctx, contractAddr, "rate_limit_violation")
-			return err
+			return fmt.Errorf("error in ValidateContractExecution: %w", err)
 		}
 	}
 
 	// 6. Check compliance requirements
 	if err := k.checkCompliance(ctx, sender, &info.Compliance, &info.Metadata); err != nil {
 		k.IncrementMetricsCounter(ctx, contractAddr, "compliance_failure")
-		return err
+		return fmt.Errorf("error in ValidateContractExecution: %w", err)
 	}
 
 	return nil
@@ -160,13 +160,13 @@ func (k Keeper) ValidateContractRegistration(ctx sdk.Context, msg *types.MsgRegi
 		return types.ErrInvalidMetadata
 	}
 	if err := k.ValidateMetadataUpdate(convertToProtoMetadata(msg.Metadata)); err != nil {
-		return err
+		return fmt.Errorf("error in ValidateContractRegistration for Validate: %w", err)
 	}
 
 	// Validate security policy if provided
 	if msg.SecurityPolicy != nil {
 		if err := k.ValidateSecurityPolicyUpdate(convertToProtoSecurityPolicy(msg.SecurityPolicy)); err != nil {
-			return err
+			return fmt.Errorf("error in ValidateContractRegistration for ErrInvalidMetadata: %w", err)
 		}
 	}
 

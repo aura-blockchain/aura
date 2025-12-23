@@ -134,7 +134,7 @@ func (k Keeper) SetQuota(ctx sdk.Context, quota Quota) error {
 
 	bz, err := json.Marshal(&quota)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 
 	store.Set(key, bz)

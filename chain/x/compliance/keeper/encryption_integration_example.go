@@ -65,7 +65,7 @@ func (k *Keeper) SubmitKYCWithCommitmentExample(
 
 	// Store record on-chain (commitment only)
 	if err := k.SetKYCRecord(ctx, record); err != nil {
-		return err
+		return fmt.Errorf("error in SubmitKYCWithCommitmentExample for Provider: %w", err)
 	}
 
 	// NOTE: Provider must separately store offChainPII in their secure
@@ -157,7 +157,7 @@ func (k *Keeper) SetAMLProfileProtectedExample(
 	}
 
 	if err := k.SetAMLProfile(ctx, profile); err != nil {
-		return err
+		return fmt.Errorf("error in SetAMLProfileProtectedExample: %w", err)
 	}
 
 	// Off-chain: Provider stores sensitiveFields mapped to commitments
@@ -198,7 +198,7 @@ func (k *Keeper) ReportSuspiciousActivityProtectedExample(
 	}
 
 	if err := k.SetSuspiciousActivity(ctx, activity); err != nil {
-		return err
+		return fmt.Errorf("error in ReportSuspiciousActivityProtectedExample: %w", err)
 	}
 
 	// Off-chain: Store detailedReport in secure compliance database
@@ -260,7 +260,7 @@ func (k *Keeper) GenerateTaxReportProtectedExample(
 
 	// Store tax reports for address
 	if err := k.SetTaxReport(ctx, report); err != nil {
-		return err
+		return fmt.Errorf("error in GenerateTaxReportProtectedExample: %w", err)
 	}
 
 	// Off-chain: Store detailed transactions

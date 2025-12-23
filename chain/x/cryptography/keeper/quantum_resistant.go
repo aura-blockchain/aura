@@ -135,7 +135,7 @@ func (k Keeper) getQuantumKeyMetadata(algorithm cryptoproto.QuantumResistantAlgo
 func (k Keeper) ValidateQuantumResistantKey(ctx context.Context, keyID string) error {
 	key, err := k.GetQuantumResistantKey(ctx, keyID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get for ValidateQuantumResistantKey: %w", err)
 	}
 
 	// Check expiration

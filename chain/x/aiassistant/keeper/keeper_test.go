@@ -73,7 +73,8 @@ func TestHeartbeatSlash(t *testing.T) {
 	require.NoError(t, err)
 
 	// Move time forward beyond heartbeat window+grace to trigger slash
-	params := k.GetParams(ctx)
+	params, err := k.GetParams(ctx)
+	require.NoError(t, err)
 	advance := time.Duration(params.HeartbeatWindowSeconds+params.HeartbeatGraceSeconds+5) * time.Second
 	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(advance))
 

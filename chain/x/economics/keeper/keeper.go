@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"fmt"
+
 	"context"
 	"encoding/binary"
 
@@ -64,7 +66,7 @@ func (k Keeper) GetParams(ctx context.Context) (*economicspb.Params, error) {
 // SetParams sets new module parameters
 func (k Keeper) SetParams(ctx context.Context, params *economicspb.Params) error {
 	if err := types.ValidateParams(params); err != nil {
-		return err
+		return fmt.Errorf("error in SetParams for ValidateParams: %w", err)
 	}
 
 	store := k.storeService.OpenKVStore(ctx)
@@ -72,7 +74,7 @@ func (k Keeper) SetParams(ctx context.Context, params *economicspb.Params) error
 	buf := proto.NewBuffer(nil)
 	buf.SetDeterministic(true)
 	if err := buf.Marshal(params); err != nil {
-		return err
+		return fmt.Errorf("error in SetParams for ValidateParams: %w", err)
 	}
 	return store.Set(types.ParamsKey, buf.Bytes())
 }
@@ -335,7 +337,7 @@ func (k Keeper) SetTallyResult(ctx context.Context, proposalID uint64, tally *ec
 	key := types.GetTallyResultKey(proposalID)
 	bz, err := k.cdc.Marshal(tally)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 	return store.Set(key, bz)
 }
@@ -443,7 +445,7 @@ func (k Keeper) SetInflationMetrics(ctx context.Context, metrics *economicspb.In
 	store := k.storeService.OpenKVStore(ctx)
 	bz, err := k.cdc.Marshal(metrics)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 	return store.Set(types.InflationMetricsKey, bz)
 }
@@ -476,7 +478,7 @@ func (k Keeper) SetMEVStats(ctx context.Context, stats *economicspb.MEVStats) er
 	store := k.storeService.OpenKVStore(ctx)
 	bz, err := k.cdc.Marshal(stats)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 	return store.Set(types.MEVStatsKey, bz)
 }
@@ -511,7 +513,7 @@ func (k Keeper) SetLiquidityMiningStats(ctx context.Context, stats *economicspb.
 	store := k.storeService.OpenKVStore(ctx)
 	bz, err := k.cdc.Marshal(stats)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal for SetLiquidityMiningStats: %w", err)
 	}
 	return store.Set(types.LiquidityMiningStatsKey, bz)
 }

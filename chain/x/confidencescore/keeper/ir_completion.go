@@ -222,7 +222,7 @@ func (k *Keeper) ValidateIRPrerequisites(ctx sdk.Context, walletAddr, irID strin
 
 	prerequisites, err := k.irRegistry.GetIRPrerequisites(irID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get for ValidateIRPrerequisites: %w", err)
 	}
 
 	for _, prereqID := range prerequisites {

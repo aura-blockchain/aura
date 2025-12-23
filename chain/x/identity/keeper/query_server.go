@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"fmt"
 
 	"cosmossdk.io/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -100,7 +101,7 @@ func (qs queryServer) AllIdentityRecords(goCtx context.Context, req *identitypb.
 	pageRes, err := query.Paginate(identityStore, req.Pagination, func(key, value []byte) error {
 		var record identitypb.IdentityRecord
 		if err := qs.Keeper.cdc.Unmarshal(value, &record); err != nil {
-			return err
+			return fmt.Errorf("failed to unmarshal identity record: %w", err)
 		}
 		records = append(records, record)
 		return nil
@@ -152,7 +153,7 @@ func (qs queryServer) ChangeRequestsByDID(goCtx context.Context, req *identitypb
 	pageRes, err := query.Paginate(changeRequestStore, req.Pagination, func(key, value []byte) error {
 		var request identitypb.ChangeRequest
 		if err := qs.Keeper.cdc.Unmarshal(value, &request); err != nil {
-			return err
+			return fmt.Errorf("failed to unmarshal change request: %w", err)
 		}
 		// Filter by DID
 		if request.Did == req.Did {
@@ -191,7 +192,7 @@ func (qs queryServer) ChangeHistory(goCtx context.Context, req *identitypb.Query
 	pageRes, err := query.Paginate(changeHistoryStore, req.Pagination, func(key, value []byte) error {
 		var entry identitypb.ChangeHistory
 		if err := qs.Keeper.cdc.Unmarshal(value, &entry); err != nil {
-			return err
+			return fmt.Errorf("failed to unmarshal change history entry for DID %s: %w", req.Did, err)
 		}
 		entries = append(entries, entry)
 		return nil
@@ -240,7 +241,7 @@ func (qs queryServer) AllRoles(goCtx context.Context, req *identitypb.QueryAllRo
 	pageRes, err := query.Paginate(roleStore, req.Pagination, func(key, value []byte) error {
 		var role identitypb.Role
 		if err := qs.Keeper.cdc.Unmarshal(value, &role); err != nil {
-			return err
+			return fmt.Errorf("failed to unmarshal role: %w", err)
 		}
 		roles = append(roles, role)
 		return nil
@@ -354,7 +355,7 @@ func (qs queryServer) AllMultisigWallets(goCtx context.Context, req *identitypb.
 	pageRes, err := query.Paginate(walletStore, req.Pagination, func(key, value []byte) error {
 		var wallet identitypb.MultisigWallet
 		if err := qs.Keeper.cdc.Unmarshal(value, &wallet); err != nil {
-			return err
+			return fmt.Errorf("failed to unmarshal multisig wallet: %w", err)
 		}
 		wallets = append(wallets, wallet)
 		return nil
@@ -406,7 +407,7 @@ func (qs queryServer) MultisigProposalsByWallet(goCtx context.Context, req *iden
 	pageRes, err := query.Paginate(proposalStore, req.Pagination, func(key, value []byte) error {
 		var proposal identitypb.MultisigProposal
 		if err := qs.Keeper.cdc.Unmarshal(value, &proposal); err != nil {
-			return err
+			return fmt.Errorf("failed to unmarshal multisig proposal: %w", err)
 		}
 		// Filter by wallet ID
 		if proposal.WalletId == req.WalletId {
@@ -458,7 +459,7 @@ func (qs queryServer) AllTimeLockedActions(goCtx context.Context, req *identityp
 	pageRes, err := query.Paginate(actionStore, req.Pagination, func(key, value []byte) error {
 		var action identitypb.TimeLockedAction
 		if err := qs.Keeper.cdc.Unmarshal(value, &action); err != nil {
-			return err
+			return fmt.Errorf("failed to unmarshal time-locked action: %w", err)
 		}
 		actions = append(actions, action)
 		return nil
@@ -507,7 +508,7 @@ func (qs queryServer) AllEmergencyAdmins(goCtx context.Context, req *identitypb.
 	pageRes, err := query.Paginate(adminStore, req.Pagination, func(key, value []byte) error {
 		var admin identitypb.EmergencyAdmin
 		if err := qs.Keeper.cdc.Unmarshal(value, &admin); err != nil {
-			return err
+			return fmt.Errorf("failed to unmarshal emergency admin: %w", err)
 		}
 		admins = append(admins, admin)
 		return nil
@@ -577,7 +578,7 @@ func (qs queryServer) SessionsByAddress(goCtx context.Context, req *identitypb.Q
 	pageRes, err := query.Paginate(sessionStore, req.Pagination, func(key, value []byte) error {
 		var session identitypb.Session
 		if err := qs.Keeper.cdc.Unmarshal(value, &session); err != nil {
-			return err
+			return fmt.Errorf("failed to unmarshal session: %w", err)
 		}
 		// Filter by address
 		if session.Address == req.Address {
@@ -629,7 +630,7 @@ func (qs queryServer) AuditLogs(goCtx context.Context, req *identitypb.QueryAudi
 	pageRes, err := query.Paginate(auditLogStore, req.Pagination, func(key, value []byte) error {
 		var log identitypb.AuditLog
 		if err := qs.Keeper.cdc.Unmarshal(value, &log); err != nil {
-			return err
+			return fmt.Errorf("failed to unmarshal audit log: %w", err)
 		}
 		logs = append(logs, log)
 		return nil
@@ -663,7 +664,7 @@ func (qs queryServer) AuditLogsByActor(goCtx context.Context, req *identitypb.Qu
 	pageRes, err := query.Paginate(auditLogStore, req.Pagination, func(key, value []byte) error {
 		var log identitypb.AuditLog
 		if err := qs.Keeper.cdc.Unmarshal(value, &log); err != nil {
-			return err
+			return fmt.Errorf("failed to unmarshal audit log for actor %s: %w", req.Actor, err)
 		}
 		// Filter by actor
 		if log.Actor == req.Actor {

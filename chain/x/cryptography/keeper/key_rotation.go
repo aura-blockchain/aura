@@ -133,7 +133,7 @@ func (k Keeper) ProcessScheduledRotations(ctx context.Context) error {
 		return false
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("error in ProcessScheduledRotations: %w", err)
 	}
 
 	// Process rotations
@@ -156,7 +156,7 @@ func (k Keeper) ProcessScheduledRotations(ctx context.Context) error {
 
 		// Update in store
 		if err := k.SetKeyRotationSchedule(ctx, schedule); err != nil {
-			return err
+			return fmt.Errorf("error in ProcessScheduledRotations: %w", err)
 		}
 	}
 
@@ -167,13 +167,13 @@ func (k Keeper) ProcessScheduledRotations(ctx context.Context) error {
 func (k Keeper) DisableKeyRotationSchedule(ctx context.Context, scheduleID string) error {
 	schedule, err := k.GetKeyRotationSchedule(ctx, scheduleID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	schedule.Enabled = false
 
 	if err := k.SetKeyRotationSchedule(ctx, schedule); err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -186,13 +186,13 @@ func (k Keeper) DisableKeyRotationSchedule(ctx context.Context, scheduleID strin
 func (k Keeper) EnableKeyRotationSchedule(ctx context.Context, scheduleID string) error {
 	schedule, err := k.GetKeyRotationSchedule(ctx, scheduleID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get for schedule_id: %w", err)
 	}
 
 	schedule.Enabled = true
 
 	if err := k.SetKeyRotationSchedule(ctx, schedule); err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)

@@ -204,13 +204,13 @@ func (k Keeper) UpdateEnclaveStatus(
 ) error {
 	enclave, err := k.GetSecureEnclave(ctx, enclaveID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	enclave.Status = status
 
 	if err := k.SetSecureEnclaveConfig(ctx, enclave); err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)

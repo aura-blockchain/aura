@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"fmt"
+
 	"context"
 
 	sdkmath "cosmossdk.io/math"
@@ -59,7 +61,7 @@ func (qs queryServer) Proposals(goCtx context.Context, req *govpb.QueryProposals
 	pageRes, err := query.Paginate(proposalStore, req.Pagination, func(key []byte, value []byte) error {
 		var proposal types.Proposal
 		if err := qs.Keeper.cdc.Unmarshal(value, &proposal); err != nil {
-			return err
+			return fmt.Errorf("error in Proposals: %w", err)
 		}
 
 		// Filter by status if provided

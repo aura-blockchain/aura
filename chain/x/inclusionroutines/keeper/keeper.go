@@ -307,19 +307,19 @@ func (k *Keeper) RecordExecution(ctx sdk.Context, walletAddr string, irID string
 	// Increment per-wallet-per-hour counter
 	hourKey := fmt.Sprintf("hour:%d", currentHour)
 	if err := k.IncrementRateLimitUsage(ctx, irID, walletAddr, hourKey); err != nil {
-		return err
+		return fmt.Errorf("failed to Sprintf: %w", err)
 	}
 
 	// Increment per-wallet-per-day counter
 	dayKey := fmt.Sprintf("day:%d", currentDay)
 	if err := k.IncrementRateLimitUsage(ctx, irID, walletAddr, dayKey); err != nil {
-		return err
+		return fmt.Errorf("failed to Sprintf: %w", err)
 	}
 
 	// Increment per-block-global counter
 	blockKey := fmt.Sprintf("block:%d", blockTime)
 	if err := k.IncrementRateLimitUsage(ctx, irID, "global", blockKey); err != nil {
-		return err
+		return fmt.Errorf("failed to Sprintf: %w", err)
 	}
 
 	return nil
@@ -384,7 +384,7 @@ func (k *Keeper) ExecuteIR(ctx sdk.Context, walletAddr string, irID string, comp
 
 	// 4. Record execution
 	if err := k.RecordExecution(ctx, walletAddr, irID); err != nil {
-		return err
+		return fmt.Errorf("operation failed: %w", err)
 	}
 
 	return nil

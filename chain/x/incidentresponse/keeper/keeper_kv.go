@@ -307,7 +307,7 @@ func (k *KeeperKV) executeChainPause(
 	}
 
 	if err := k.store.SetPauseState(ctx, pauseState); err != nil {
-		return err
+		return fmt.Errorf("error in executeChainPause for IncidentID: %w", err)
 	}
 
 	// If linked to an incident, update incident status
@@ -364,7 +364,7 @@ func (k *KeeperKV) ResumeChain(ctx context.Context, resumedBy string, reason str
 	pauseState.PauseLevel = types.PauseLevelNone
 
 	if err := k.store.SetPauseState(ctx, pauseState); err != nil {
-		return err
+		return fmt.Errorf("error in ResumeChain: %w", err)
 	}
 
 	// Update incident if linked

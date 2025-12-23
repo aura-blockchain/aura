@@ -136,12 +136,12 @@ func (k Keeper) ReseedRandomSource(
 ) error {
 	source, err := k.GetRandomSource(ctx, sourceID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	params, err := k.GetParams(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	// Validate entropy
@@ -165,7 +165,7 @@ func (k Keeper) ReseedRandomSource(
 
 	// Store updated source
 	if err := k.SetRandomSource(ctx, source); err != nil {
-		return err
+		return fmt.Errorf("error in ReseedRandomSource: %w", err)
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -185,7 +185,7 @@ func (k Keeper) updateRandomSourceStatus(
 ) error {
 	source, err := k.GetRandomSource(ctx, sourceID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	source.Status = status

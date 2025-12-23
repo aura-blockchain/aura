@@ -102,7 +102,7 @@ func (k *Keeper) IncrementRateLimitCounters(ctx sdk.Context, wallet, irID string
 		currentHour := blockTime / 3600
 		hourKey := fmt.Sprintf("hour:%d", currentHour)
 		if err := k.IncrementRateLimitUsage(ctx, irID, wallet, hourKey); err != nil {
-			return err
+			return fmt.Errorf("failed to Sprintf: %w", err)
 		}
 	}
 
@@ -111,7 +111,7 @@ func (k *Keeper) IncrementRateLimitCounters(ctx sdk.Context, wallet, irID string
 		currentDay := blockTime / 86400
 		dayKey := fmt.Sprintf("day:%d", currentDay)
 		if err := k.IncrementRateLimitUsage(ctx, irID, wallet, dayKey); err != nil {
-			return err
+			return fmt.Errorf("failed to Sprintf: %w", err)
 		}
 	}
 
@@ -119,7 +119,7 @@ func (k *Keeper) IncrementRateLimitCounters(ctx sdk.Context, wallet, irID string
 	if limit.PerBlockGlobal > 0 {
 		blockKey := fmt.Sprintf("block:%d", blockTime)
 		if err := k.IncrementRateLimitUsage(ctx, irID, "global", blockKey); err != nil {
-			return err
+			return fmt.Errorf("failed to Sprintf: %w", err)
 		}
 	}
 

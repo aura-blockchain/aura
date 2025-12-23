@@ -196,7 +196,7 @@ func (k Keeper) ValidateGossipMessage(ctx sdk.Context, msg *GossipMessage) error
 
 	// 6. Perform DDoS protection check
 	if err := k.DDosProtectionCheck(ctx, msg.SenderID, uint64(len(msg.Content))); err != nil {
-		return err
+		return fmt.Errorf("error in ValidateGossipMessage for ErrInvalidPeerReputation: %w", err)
 	}
 
 	// Record valid message
@@ -515,7 +515,7 @@ func (k Keeper) PacketFilter(ctx sdk.Context, packetData []byte, senderID string
 
 	// 3. Perform DDoS check
 	if err := k.DDosProtectionCheck(ctx, senderID, uint64(len(packetData))); err != nil {
-		return err
+		return fmt.Errorf("error in PacketFilter for IsValidPacket: %w", err)
 	}
 
 	return nil
@@ -578,13 +578,13 @@ func (k Keeper) IsValidPacket(data []byte) bool {
 func (k Keeper) GossipProtocolValidation(ctx sdk.Context, msg *GossipMessage) error {
 	// 1. Packet filtering
 	if err := k.PacketFilter(ctx, msg.Content, msg.SenderID); err != nil {
-		return err
+		return fmt.Errorf("error in GossipProtocolValidation for valid: %w", err)
 	}
 
 	// 2. Message validation
 	if err := k.ValidateGossipMessage(ctx, msg); err != nil {
 		k.RecordInvalidMessage(ctx, msg.SenderID)
-		return err
+		return fmt.Errorf("error in GossipProtocolValidation for GossipProtocolValidation: %w", err)
 	}
 
 	// 3. Record valid message

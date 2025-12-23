@@ -32,13 +32,13 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 // SetParams sets the module parameters
 func (k Keeper) SetParams(ctx sdk.Context, params types.Params) error {
 	if err := types.ValidateParams(&params); err != nil {
-		return err
+		return fmt.Errorf("error in SetParams for ValidateParams: %w", err)
 	}
 
 	store := ctx.KVStore(k.storeKey)
 	bz, err := json.Marshal(params)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal for ValidateParams: %w", err)
 	}
 	store.Set(types.ParamsKey, bz)
 	return nil
@@ -183,7 +183,7 @@ func (k Keeper) contractOpsKeeper() (wasmtypes.ContractOpsKeeper, error) {
 func (k Keeper) ensureMigrationAdmin(ctx sdk.Context, contractAddr, caller sdk.AccAddress) error {
 	admin, err := k.lookupContractAdmin(ctx, contractAddr)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to lookupContractAdmin: %w", err)
 	}
 	if admin != caller.String() {
 		return fmt.Errorf("caller %s is not admin for contract %s", caller.String(), contractAddr.String())

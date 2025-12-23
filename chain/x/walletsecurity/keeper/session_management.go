@@ -99,12 +99,12 @@ func (k Keeper) ValidateSession(ctx context.Context, sessionID string) (bool, er
 func (k Keeper) UpdateSessionActivity(ctx context.Context, sessionID string) error {
 	sessionBytes, err := k.GetSessionConfig(ctx, sessionID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	var session wsproto.SessionConfig
 	if err := k.cdc.Unmarshal(sessionBytes, &session); err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	blockTime := determinism.GetBlockTime(ctx)
@@ -112,7 +112,7 @@ func (k Keeper) UpdateSessionActivity(ctx context.Context, sessionID string) err
 
 	updatedBytes, err := k.cdc.Marshal(&session)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 
 	return k.SetSessionConfig(ctx, sessionID, updatedBytes)
@@ -122,23 +122,23 @@ func (k Keeper) UpdateSessionActivity(ctx context.Context, sessionID string) err
 func (k Keeper) LockSessionDueToInactivity(ctx context.Context, sessionID string) error {
 	sessionBytes, err := k.GetSessionConfig(ctx, sessionID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	var session wsproto.SessionConfig
 	if err := k.cdc.Unmarshal(sessionBytes, &session); err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	session.Locked = true
 
 	updatedBytes, err := k.cdc.Marshal(&session)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 
 	if err := k.SetSessionConfig(ctx, sessionID, updatedBytes); err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 
 	// Emit event
@@ -155,17 +155,17 @@ func (k Keeper) LockSessionDueToInactivity(ctx context.Context, sessionID string
 func (k Keeper) UnlockSessionAfterAuth(ctx context.Context, sessionID string, authProof []byte) error {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	if err := k.requireActiveAuthSession(sdkCtx, sessionID); err != nil {
-		return err
+		return fmt.Errorf("failed to UnwrapSDKContext: %w", err)
 	}
 
 	sessionBytes, err := k.GetSessionConfig(ctx, sessionID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	var session wsproto.SessionConfig
 	if err := k.cdc.Unmarshal(sessionBytes, &session); err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	// Verify authentication proof (biometric, password, etc.)
@@ -179,7 +179,7 @@ func (k Keeper) UnlockSessionAfterAuth(ctx context.Context, sessionID string, au
 
 	updatedBytes, err := k.cdc.Marshal(&session)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
 
 	return k.SetSessionConfig(ctx, sessionID, updatedBytes)
@@ -190,7 +190,7 @@ func (k Keeper) TerminateSession(ctx context.Context, sessionID string) error {
 	kvStore := k.getStore(ctx)
 	key := types.GetSessionConfigKey(sessionID)
 	if err := kvStore.Delete(key); err != nil {
-		return err
+		return fmt.Errorf("failed to get: %w", err)
 	}
 
 	// Emit event
