@@ -136,3 +136,20 @@ deploy-contracts:
 test-contracts:
 	@echo "Running contract tests..."
 	@cd contracts && forge test
+
+## proto-gen: Generate Go code from proto files
+proto-gen:
+	@echo "Generating Go code from proto files..."
+	@cd ../proto && buf generate
+	@echo "Proto generation complete"
+
+## proto-swagger: Generate OpenAPI/Swagger specs from proto files
+proto-swagger:
+	@echo "Generating OpenAPI specs from proto files..."
+	@cd ../proto && buf generate --template buf.gen.openapi.yaml
+	@python3 ../scripts/merge-swagger.py
+	@echo "OpenAPI spec generated: docs/api/openapi.json"
+
+## proto-all: Generate all proto outputs (Go code + OpenAPI)
+proto-all: proto-gen proto-swagger
+	@echo "All proto outputs generated"

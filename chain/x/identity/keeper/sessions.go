@@ -64,7 +64,7 @@ func (k *Keeper) GetAllSessions(ctx sdk.Context) ([]*types.Session, error) {
 	}
 	defer iterator.Close()
 
-	var sessions []*types.Session
+	sessions := make([]*types.Session, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var session types.Session
 		if err := json.Unmarshal(iterator.Value(), &session); err != nil {
@@ -109,7 +109,7 @@ func (k *Keeper) addUserSession(ctx sdk.Context, userAddress, sessionID string) 
 // removeUserSession removes a session ID from a user's session list
 func (k *Keeper) removeUserSession(ctx sdk.Context, userAddress, sessionID string) error {
 	sessions, _ := k.GetUserSessions(ctx, userAddress)
-	var filtered []string
+	filtered := make([]string, 0, 64)
 	for _, sid := range sessions {
 		if sid != sessionID {
 			filtered = append(filtered, sid)
@@ -286,7 +286,7 @@ func (k *Keeper) GetAllRateLimitConfigs(ctx sdk.Context) ([]*types.RateLimitConf
 	}
 	defer iterator.Close()
 
-	var configs []*types.RateLimitConfig
+	configs := make([]*types.RateLimitConfig, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var config types.RateLimitConfig
 		if err := json.Unmarshal(iterator.Value(), &config); err != nil {
@@ -344,7 +344,7 @@ func (k *Keeper) GetAllMultisigWallets(ctx sdk.Context) ([]*types.MultisigWallet
 	}
 	defer iterator.Close()
 
-	var wallets []*types.MultisigWallet
+	wallets := make([]*types.MultisigWallet, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var wallet types.MultisigWallet
 		if err := json.Unmarshal(iterator.Value(), &wallet); err != nil {
@@ -391,7 +391,7 @@ func (k *Keeper) GetAllMultisigProposals(ctx sdk.Context) ([]*types.MultisigProp
 	}
 	defer iterator.Close()
 
-	var proposals []*types.MultisigProposal
+	proposals := make([]*types.MultisigProposal, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var proposal types.MultisigProposal
 		if err := json.Unmarshal(iterator.Value(), &proposal); err != nil {
@@ -442,7 +442,7 @@ func (k *Keeper) GetAllTimeLockedActions(ctx sdk.Context) ([]*types.TimeLockedAc
 	}
 	defer iterator.Close()
 
-	var actions []*types.TimeLockedAction
+	actions := make([]*types.TimeLockedAction, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var action types.TimeLockedAction
 		if err := json.Unmarshal(iterator.Value(), &action); err != nil {
@@ -493,7 +493,7 @@ func (k *Keeper) GetAllEmergencyAdmins(ctx sdk.Context) ([]*types.EmergencyAdmin
 	}
 	defer iterator.Close()
 
-	var admins []*types.EmergencyAdmin
+	admins := make([]*types.EmergencyAdmin, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var admin types.EmergencyAdmin
 		if err := json.Unmarshal(iterator.Value(), &admin); err != nil {
@@ -544,7 +544,7 @@ func (k *Keeper) GetAllValidatorRotations(ctx sdk.Context) ([]*types.ValidatorKe
 	}
 	defer iterator.Close()
 
-	var rotations []*types.ValidatorKeyRotation
+	rotations := make([]*types.ValidatorKeyRotation, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var rotation types.ValidatorKeyRotation
 		if err := json.Unmarshal(iterator.Value(), &rotation); err != nil {

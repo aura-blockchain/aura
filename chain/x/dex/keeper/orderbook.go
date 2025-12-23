@@ -508,7 +508,7 @@ func (k Keeper) GetAllOrders(ctx sdk.Context) []*types.SwapOrder {
 	iterator := storetypes.KVStorePrefixIterator(store, types.OrderPrefix)
 	defer iterator.Close()
 
-	var orders []*types.SwapOrder
+	orders := make([]*types.SwapOrder, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var order types.SwapOrder
 		if err := k.cdc.Unmarshal(iterator.Value(), &order); err != nil {
@@ -630,7 +630,7 @@ func (k Keeper) GetOrderbookForPair(ctx sdk.Context, coinA, coinB string) []*typ
 	iterator := storetypes.KVStorePrefixIterator(store, prefix)
 	defer iterator.Close()
 
-	var orders []*types.SwapOrder
+	orders := make([]*types.SwapOrder, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		orderID := string(iterator.Value())
 		order := k.GetOrder(ctx, orderID)

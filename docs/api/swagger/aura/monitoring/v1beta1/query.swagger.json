@@ -1,0 +1,387 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "aura/monitoring/v1beta1/query.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "Query"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/aura/monitoring/v1beta1/alerts": {
+      "get": {
+        "summary": "GetAlerts returns active alerts",
+        "operationId": "Query_GetAlerts",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryAlertsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "severity",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/monitoring/v1beta1/gas_price": {
+      "get": {
+        "summary": "GetGasPriceTracking returns gas price tracking data",
+        "operationId": "Query_GetGasPriceTracking",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryGasPriceResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/monitoring/v1beta1/network_health": {
+      "get": {
+        "summary": "GetNetworkHealth returns network health information",
+        "operationId": "Query_GetNetworkHealth",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryNetworkHealthResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/monitoring/v1beta1/tvl": {
+      "get": {
+        "summary": "GetTVLMonitoring returns TVL monitoring data",
+        "operationId": "Query_GetTVLMonitoring",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryTVLResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/monitoring/v1beta1/validator_uptime/{validatorAddress}": {
+      "get": {
+        "summary": "GetValidatorUptime returns validator uptime information",
+        "operationId": "Query_GetValidatorUptime",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryValidatorUptimeResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "validatorAddress",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "Alert": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/definitions/AlertType"
+        },
+        "severity": {
+          "$ref": "#/definitions/AlertSeverity"
+        },
+        "message": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "int64"
+        },
+        "acknowledged": {
+          "type": "boolean"
+        },
+        "acknowledgedBy": {
+          "type": "string"
+        },
+        "resolved": {
+          "type": "boolean"
+        }
+      },
+      "title": "Alert represents a monitoring alert"
+    },
+    "AlertSeverity": {
+      "type": "string",
+      "enum": [
+        "ALERT_SEVERITY_UNSPECIFIED",
+        "ALERT_SEVERITY_INFO",
+        "ALERT_SEVERITY_WARNING",
+        "ALERT_SEVERITY_ERROR",
+        "ALERT_SEVERITY_CRITICAL"
+      ],
+      "default": "ALERT_SEVERITY_UNSPECIFIED",
+      "title": "AlertSeverity defines the severity level"
+    },
+    "AlertType": {
+      "type": "string",
+      "enum": [
+        "ALERT_TYPE_UNSPECIFIED",
+        "ALERT_TYPE_VALIDATOR_DOWN",
+        "ALERT_TYPE_HIGH_GAS_PRICE",
+        "ALERT_TYPE_LOW_TVL",
+        "ALERT_TYPE_NETWORK_CONGESTION",
+        "ALERT_TYPE_SECURITY_THREAT"
+      ],
+      "default": "ALERT_TYPE_UNSPECIFIED",
+      "title": "AlertType defines the type of alert"
+    },
+    "Any": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "GasPriceTracking": {
+      "type": "object",
+      "properties": {
+        "currentPrice": {
+          "type": "string"
+        },
+        "averagePrice": {
+          "type": "string"
+        },
+        "minPrice": {
+          "type": "string"
+        },
+        "maxPrice": {
+          "type": "string"
+        },
+        "lastUpdated": {
+          "type": "string",
+          "format": "int64"
+        }
+      },
+      "title": "GasPriceTracking represents gas price tracking data"
+    },
+    "NetworkHealth": {
+      "type": "object",
+      "properties": {
+        "isHealthy": {
+          "type": "boolean"
+        },
+        "blockHeight": {
+          "type": "string",
+          "format": "int64"
+        },
+        "blockTimeSeconds": {
+          "type": "number",
+          "format": "double"
+        },
+        "activeValidators": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "networkHashRate": {
+          "type": "number",
+          "format": "double"
+        },
+        "totalTransactions": {
+          "type": "string",
+          "format": "int64"
+        }
+      },
+      "title": "NetworkHealth represents network health metrics"
+    },
+    "QueryAlertsResponse": {
+      "type": "object",
+      "properties": {
+        "alerts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Alert"
+          }
+        }
+      },
+      "title": "QueryAlertsResponse is the response with active alerts"
+    },
+    "QueryGasPriceResponse": {
+      "type": "object",
+      "properties": {
+        "tracking": {
+          "$ref": "#/definitions/GasPriceTracking"
+        }
+      },
+      "title": "QueryGasPriceResponse is the response with gas price tracking"
+    },
+    "QueryNetworkHealthResponse": {
+      "type": "object",
+      "properties": {
+        "health": {
+          "$ref": "#/definitions/NetworkHealth"
+        }
+      },
+      "title": "QueryNetworkHealthResponse is the response with network health"
+    },
+    "QueryTVLResponse": {
+      "type": "object",
+      "properties": {
+        "tvl": {
+          "$ref": "#/definitions/TVLMonitoring"
+        }
+      },
+      "title": "QueryTVLResponse is the response with TVL monitoring"
+    },
+    "QueryValidatorUptimeResponse": {
+      "type": "object",
+      "properties": {
+        "uptime": {
+          "$ref": "#/definitions/ValidatorUptime"
+        }
+      },
+      "title": "QueryValidatorUptimeResponse is the response with validator uptime"
+    },
+    "Status": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Any"
+          }
+        }
+      }
+    },
+    "TVLMonitoring": {
+      "type": "object",
+      "properties": {
+        "totalValueLocked": {
+          "type": "string"
+        },
+        "poolValues": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "lastUpdated": {
+          "type": "string",
+          "format": "int64"
+        }
+      },
+      "title": "TVLMonitoring represents Total Value Locked monitoring"
+    },
+    "ValidatorUptime": {
+      "type": "object",
+      "properties": {
+        "validatorAddress": {
+          "type": "string"
+        },
+        "uptimePercentage": {
+          "type": "number",
+          "format": "double"
+        },
+        "blocksSigned": {
+          "type": "string",
+          "format": "int64"
+        },
+        "blocksMissed": {
+          "type": "string",
+          "format": "int64"
+        },
+        "lastActiveHeight": {
+          "type": "string",
+          "format": "int64"
+        }
+      },
+      "title": "ValidatorUptime represents validator uptime information"
+    }
+  }
+}

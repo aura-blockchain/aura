@@ -687,7 +687,7 @@ func (k Keeper) GetAllSlashingEvents(ctx sdk.Context) []*types.SlashingEvent {
 	iterator := store.Iterator(types.SlashingEventPrefix, storetypes.PrefixEndBytes(types.SlashingEventPrefix))
 	defer iterator.Close()
 
-	var events []*types.SlashingEvent
+	events := make([]*types.SlashingEvent, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var event types.SlashingEvent
 		if err := k.cdc.Unmarshal(iterator.Value(), &event); err != nil {
@@ -713,7 +713,7 @@ func (k Keeper) GetAllSlashingEvents(ctx sdk.Context) []*types.SlashingEvent {
 //   - []*SlashingEvent: List of slashing events for this validator
 func (k Keeper) GetValidatorSlashingHistory(ctx sdk.Context, validatorAddress string) []*types.SlashingEvent {
 	allEvents := k.GetAllSlashingEvents(ctx)
-	var validatorEvents []*types.SlashingEvent
+	validatorEvents := make([]*types.SlashingEvent, 0, 64)
 
 	for _, event := range allEvents {
 		if event != nil && event.ValidatorAddress == validatorAddress {

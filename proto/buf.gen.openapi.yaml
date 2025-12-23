@@ -1,0 +1,8 @@
+version: v1
+plugins:
+  - name: openapiv2
+    out: ../docs/api/swagger
+    opt:
+      - logtostderr=true
+      - openapi_naming_strategy=simple
+      - json_names_for_fields=true

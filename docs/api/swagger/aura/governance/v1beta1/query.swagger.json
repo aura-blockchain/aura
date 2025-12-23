@@ -1,0 +1,652 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "aura/governance/v1beta1/query.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "Query"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {},
+  "definitions": {
+    "Any": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "CategoryParams": {
+      "type": "object",
+      "properties": {
+        "minDeposit": {
+          "type": "string"
+        },
+        "votingPeriod": {
+          "type": "string"
+        },
+        "quorum": {
+          "type": "string"
+        },
+        "threshold": {
+          "type": "string"
+        },
+        "vetoThreshold": {
+          "type": "string"
+        },
+        "executionDelay": {
+          "type": "string"
+        }
+      },
+      "title": "CategoryParams defines category-specific governance parameters"
+    },
+    "GovernanceParams": {
+      "type": "object",
+      "properties": {
+        "minDeposit": {
+          "type": "string",
+          "title": "Deposit parameters"
+        },
+        "maxDepositPeriod": {
+          "type": "string"
+        },
+        "votingPeriod": {
+          "type": "string",
+          "title": "Voting parameters"
+        },
+        "quorum": {
+          "type": "string",
+          "title": "Minimum participation percentage"
+        },
+        "threshold": {
+          "type": "string",
+          "title": "Minimum yes percentage"
+        },
+        "vetoThreshold": {
+          "type": "string",
+          "title": "Minimum veto percentage"
+        },
+        "executionDelay": {
+          "type": "string",
+          "title": "Execution delay (time-lock)"
+        },
+        "emergencyVotingPeriod": {
+          "type": "string",
+          "title": "Emergency fast-track"
+        },
+        "emergencyQuorum": {
+          "type": "string"
+        },
+        "emergencyThreshold": {
+          "type": "string"
+        },
+        "categoryParams": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/CategoryParams"
+          },
+          "title": "Category-specific thresholds"
+        },
+        "vetoCosignersRequired": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Veto parameters"
+        },
+        "vetoAuthorizedAddresses": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "requireTokenLock": {
+          "type": "boolean",
+          "title": "Token lock parameters"
+        },
+        "tokenLockDuration": {
+          "type": "string"
+        },
+        "snapshotVotingEnabled": {
+          "type": "boolean",
+          "title": "Snapshot voting"
+        },
+        "snapshotLookbackBlocks": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "secretBallotEnabled": {
+          "type": "boolean",
+          "title": "Secret ballot"
+        },
+        "revealPeriod": {
+          "type": "string"
+        }
+      },
+      "title": "GovernanceParams defines the parameters for the governance module"
+    },
+    "PageRequest": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "format": "byte",
+          "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set."
+        },
+        "offset": {
+          "type": "string",
+          "format": "uint64",
+          "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set."
+        },
+        "limit": {
+          "type": "string",
+          "format": "uint64",
+          "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app."
+        },
+        "countTotal": {
+          "type": "boolean",
+          "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set."
+        },
+        "reverse": {
+          "type": "boolean",
+          "description": "reverse is set to true if results are to be returned in the descending order."
+        }
+      },
+      "description": "message SomeRequest {\n         Foo some_parameter = 1;\n         PageRequest pagination = 2;\n }",
+      "title": "PageRequest is to be embedded in gRPC request messages for efficient\npagination. Ex:"
+    },
+    "PageResponse": {
+      "type": "object",
+      "properties": {
+        "nextKey": {
+          "type": "string",
+          "format": "byte",
+          "description": "next_key is the key to be passed to PageRequest.key to\nquery the next page most efficiently. It will be empty if\nthere are no more results."
+        },
+        "total": {
+          "type": "string",
+          "format": "uint64",
+          "title": "total is total number of results available if PageRequest.count_total\nwas set, its value is undefined otherwise"
+        }
+      },
+      "description": "PageResponse is to be embedded in gRPC response messages where the\ncorresponding request message has used PageRequest.\n\n message SomeResponse {\n         repeated Bar results = 1;\n         PageResponse page = 2;\n }"
+    },
+    "ProposalCategory": {
+      "type": "string",
+      "enum": [
+        "PROPOSAL_CATEGORY_UNSPECIFIED",
+        "PROPOSAL_CATEGORY_TEXT",
+        "PROPOSAL_CATEGORY_PARAMETER_CHANGE",
+        "PROPOSAL_CATEGORY_SOFTWARE_UPGRADE",
+        "PROPOSAL_CATEGORY_SPENDING",
+        "PROPOSAL_CATEGORY_EMERGENCY",
+        "PROPOSAL_CATEGORY_CONSTITUTION"
+      ],
+      "default": "PROPOSAL_CATEGORY_UNSPECIFIED",
+      "description": "- PROPOSAL_CATEGORY_TEXT: Simple text proposals\n - PROPOSAL_CATEGORY_PARAMETER_CHANGE: Parameter changes\n - PROPOSAL_CATEGORY_SOFTWARE_UPGRADE: Software upgrades\n - PROPOSAL_CATEGORY_SPENDING: Treasury spending\n - PROPOSAL_CATEGORY_EMERGENCY: Emergency proposals (fast-track)\n - PROPOSAL_CATEGORY_CONSTITUTION: Constitution changes (highest threshold)",
+      "title": "ProposalCategory defines the category of a proposal with different thresholds"
+    },
+    "ProposalStatus": {
+      "type": "string",
+      "enum": [
+        "PROPOSAL_STATUS_UNSPECIFIED",
+        "PROPOSAL_STATUS_DEPOSIT_PERIOD",
+        "PROPOSAL_STATUS_VOTING_PERIOD",
+        "PROPOSAL_STATUS_PASSED",
+        "PROPOSAL_STATUS_REJECTED",
+        "PROPOSAL_STATUS_FAILED",
+        "PROPOSAL_STATUS_VETOED",
+        "PROPOSAL_STATUS_EXECUTION_DELAY",
+        "PROPOSAL_STATUS_READY_FOR_EXECUTION",
+        "PROPOSAL_STATUS_EXECUTED"
+      ],
+      "default": "PROPOSAL_STATUS_UNSPECIFIED",
+      "title": "ProposalStatus defines the status of a governance proposal"
+    },
+    "QueryDepositResponse": {
+      "type": "object",
+      "properties": {
+        "deposit": {
+          "$ref": "#/definitions/v1beta1.Deposit"
+        }
+      }
+    },
+    "QueryDepositsResponse": {
+      "type": "object",
+      "properties": {
+        "deposits": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1beta1.Deposit"
+          }
+        }
+      }
+    },
+    "QueryParamsResponse": {
+      "type": "object",
+      "properties": {
+        "params": {
+          "$ref": "#/definitions/GovernanceParams"
+        }
+      }
+    },
+    "QueryProposalResponse": {
+      "type": "object",
+      "properties": {
+        "proposal": {
+          "$ref": "#/definitions/v1beta1.Proposal"
+        }
+      }
+    },
+    "QueryProposalsResponse": {
+      "type": "object",
+      "properties": {
+        "proposals": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1beta1.Proposal"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/PageResponse"
+        }
+      }
+    },
+    "QuerySnapshotVotesResponse": {
+      "type": "object",
+      "properties": {
+        "votes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/SnapshotVote"
+          }
+        }
+      }
+    },
+    "QueryTallyResultResponse": {
+      "type": "object",
+      "properties": {
+        "tally": {
+          "$ref": "#/definitions/v1beta1.TallyResult"
+        }
+      }
+    },
+    "QueryTokenLocksResponse": {
+      "type": "object",
+      "properties": {
+        "locks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/TokenLock"
+          }
+        }
+      }
+    },
+    "QueryVetoRequestsResponse": {
+      "type": "object",
+      "properties": {
+        "vetoRequests": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/VetoRequest"
+          }
+        }
+      }
+    },
+    "QueryVoteDelegationsResponse": {
+      "type": "object",
+      "properties": {
+        "delegations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/VoteDelegation"
+          }
+        }
+      }
+    },
+    "QueryVoteResponse": {
+      "type": "object",
+      "properties": {
+        "vote": {
+          "$ref": "#/definitions/v1beta1.Vote"
+        }
+      }
+    },
+    "QueryVotesResponse": {
+      "type": "object",
+      "properties": {
+        "votes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1beta1.Vote"
+          }
+        }
+      }
+    },
+    "QueryVotingPowerResponse": {
+      "type": "object",
+      "properties": {
+        "votingPower": {
+          "type": "string"
+        },
+        "delegatedPower": {
+          "type": "string"
+        },
+        "totalPower": {
+          "type": "string"
+        }
+      }
+    },
+    "SnapshotVote": {
+      "type": "object",
+      "properties": {
+        "proposalId": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "snapshotHeight": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "voter": {
+          "type": "string"
+        },
+        "option": {
+          "$ref": "#/definitions/VoteOption"
+        },
+        "votingPowerAtSnapshot": {
+          "type": "string"
+        },
+        "signature": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "title": "SnapshotVote represents an off-chain signaling vote"
+    },
+    "Status": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Any"
+          }
+        }
+      }
+    },
+    "TokenLock": {
+      "type": "object",
+      "properties": {
+        "owner": {
+          "type": "string"
+        },
+        "proposalId": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "lockedAmount": {
+          "type": "string"
+        },
+        "lockTime": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "unlockTime": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "title": "TokenLock represents locked tokens during voting"
+    },
+    "VetoRequest": {
+      "type": "object",
+      "properties": {
+        "proposalId": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "vetoer": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "cosigners": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Multi-sig veto support"
+        }
+      },
+      "title": "VetoRequest represents a veto request for emergency situations"
+    },
+    "VoteDelegation": {
+      "type": "object",
+      "properties": {
+        "delegator": {
+          "type": "string"
+        },
+        "delegate": {
+          "type": "string"
+        },
+        "delegationTime": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "delegatedPower": {
+          "type": "string"
+        },
+        "categories": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ProposalCategory"
+          },
+          "title": "Optional: category-specific delegation"
+        }
+      },
+      "title": "VoteDelegation represents delegation of voting power"
+    },
+    "VoteOption": {
+      "type": "string",
+      "enum": [
+        "VOTE_OPTION_UNSPECIFIED",
+        "VOTE_OPTION_YES",
+        "VOTE_OPTION_ABSTAIN",
+        "VOTE_OPTION_NO",
+        "VOTE_OPTION_NO_WITH_VETO"
+      ],
+      "default": "VOTE_OPTION_UNSPECIFIED",
+      "title": "VoteOption defines a vote option"
+    },
+    "v1beta1.Deposit": {
+      "type": "object",
+      "properties": {
+        "proposalId": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "depositor": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "title": "Deposit represents a deposit made on a proposal"
+    },
+    "v1beta1.Proposal": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "category": {
+          "$ref": "#/definitions/ProposalCategory"
+        },
+        "status": {
+          "$ref": "#/definitions/ProposalStatus"
+        },
+        "finalTallyResult": {
+          "$ref": "#/definitions/v1beta1.TallyResult",
+          "title": "Voting details"
+        },
+        "submitTime": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "depositEndTime": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "votingStartTime": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "votingEndTime": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "executionTime": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "deposits": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1beta1.Deposit"
+          },
+          "title": "Deposit tracking"
+        },
+        "totalDeposit": {
+          "type": "string"
+        },
+        "proposer": {
+          "type": "string",
+          "title": "Proposer"
+        },
+        "executionDelay": {
+          "type": "string",
+          "title": "Execution delay (time-lock)"
+        },
+        "isEmergency": {
+          "type": "boolean",
+          "title": "Emergency flag for fast-track"
+        },
+        "snapshotHeight": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Snapshot block height for snapshot voting"
+        },
+        "rejectionReason": {
+          "type": "string",
+          "title": "Rejection reason (if status is REJECTED or FAILED)"
+        }
+      },
+      "title": "Proposal defines a governance proposal"
+    },
+    "v1beta1.TallyResult": {
+      "type": "object",
+      "properties": {
+        "yes": {
+          "type": "string"
+        },
+        "abstain": {
+          "type": "string"
+        },
+        "no": {
+          "type": "string"
+        },
+        "noWithVeto": {
+          "type": "string"
+        },
+        "totalVotingPower": {
+          "type": "string"
+        },
+        "turnoutPercentage": {
+          "type": "string"
+        }
+      },
+      "title": "TallyResult defines the tally of a proposal vote"
+    },
+    "v1beta1.Vote": {
+      "type": "object",
+      "properties": {
+        "proposalId": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "voter": {
+          "type": "string"
+        },
+        "option": {
+          "$ref": "#/definitions/VoteOption"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "isSecret": {
+          "type": "boolean",
+          "title": "Secret ballot support"
+        },
+        "encryptedVote": {
+          "type": "string",
+          "title": "Encrypted vote for secret ballots"
+        },
+        "voteCommitment": {
+          "type": "string",
+          "title": "Commitment hash for secret ballots"
+        },
+        "votingPower": {
+          "type": "string",
+          "title": "Voting power at snapshot height"
+        }
+      },
+      "title": "Vote represents a vote on a proposal"
+    }
+  }
+}

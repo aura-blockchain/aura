@@ -58,7 +58,7 @@ func (k *Keeper) GetAllIdentityRecords(ctx sdk.Context) ([]*types.IdentityRecord
 	}
 	defer iterator.Close()
 
-	var records []*types.IdentityRecord
+	records := make([]*types.IdentityRecord, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var record types.IdentityRecord
 		if err := k.cdc.Unmarshal(iterator.Value(), &record); err != nil {
@@ -310,7 +310,7 @@ func (k *Keeper) GetAllChangeRequests(ctx sdk.Context) ([]*types.ChangeRequest, 
 	}
 	defer iterator.Close()
 
-	var requests []*types.ChangeRequest
+	requests := make([]*types.ChangeRequest, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var request types.ChangeRequest
 		if err := k.cdc.Unmarshal(iterator.Value(), &request); err != nil {
@@ -600,7 +600,7 @@ func (k *Keeper) GetChangeHistory(ctx sdk.Context, did string) ([]*types.ChangeH
 	}
 	defer iterator.Close()
 
-	var entries []*types.ChangeHistory
+	entries := make([]*types.ChangeHistory, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var entry types.ChangeHistory
 		if err := k.cdc.Unmarshal(iterator.Value(), &entry); err != nil {
@@ -621,7 +621,7 @@ func (k *Keeper) GetAllChangeHistory(ctx sdk.Context) ([]*types.ChangeHistory, e
 	}
 	defer iterator.Close()
 
-	var entries []*types.ChangeHistory
+	entries := make([]*types.ChangeHistory, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var entry types.ChangeHistory
 		if err := k.cdc.Unmarshal(iterator.Value(), &entry); err != nil {
@@ -696,7 +696,7 @@ func (k *Keeper) GetAllRecoveryRecords(ctx sdk.Context) ([]types.RecoveryRecord,
 	}
 	defer iterator.Close()
 
-	var records []types.RecoveryRecord
+	records := make([]types.RecoveryRecord, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var record types.RecoveryRecord
 		if err := k.cdc.Unmarshal(iterator.Value(), &record); err != nil {
@@ -740,7 +740,7 @@ func (k *Keeper) GetAllVerificationRecords(ctx sdk.Context) ([]types.Verificatio
 	}
 	defer iterator.Close()
 
-	var records []types.VerificationRecord
+	records := make([]types.VerificationRecord, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var record types.VerificationRecord
 		if err := k.cdc.Unmarshal(iterator.Value(), &record); err != nil {
@@ -770,7 +770,7 @@ func (k *Keeper) GetAllDelegationRecords(ctx sdk.Context) ([]types.DelegationRec
 	}
 	defer iterator.Close()
 
-	var records []types.DelegationRecord
+	records := make([]types.DelegationRecord, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var record types.DelegationRecord
 		if err := k.cdc.Unmarshal(iterator.Value(), &record); err != nil {
@@ -800,7 +800,7 @@ func (k *Keeper) GetAllFederationRecords(ctx sdk.Context) ([]types.FederationRec
 	}
 	defer iterator.Close()
 
-	var records []types.FederationRecord
+	records := make([]types.FederationRecord, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var record types.FederationRecord
 		if err := k.cdc.Unmarshal(iterator.Value(), &record); err != nil {
@@ -830,7 +830,7 @@ func (k *Keeper) GetAllCrossChainLinks(ctx sdk.Context) ([]types.CrossChainLink,
 	}
 	defer iterator.Close()
 
-	var links []types.CrossChainLink
+	links := make([]types.CrossChainLink, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var link types.CrossChainLink
 		if err := k.cdc.Unmarshal(iterator.Value(), &link); err != nil {

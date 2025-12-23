@@ -55,7 +55,7 @@ func (qs queryServer) Proposals(goCtx context.Context, req *govpb.QueryProposals
 	store := ctx.KVStore(qs.Keeper.storeKey)
 	proposalStore := prefix.NewStore(store, ProposalsKeyPrefix)
 
-	var proposals []*types.Proposal
+	proposals := make([]*types.Proposal, 0, 64)
 	pageRes, err := query.Paginate(proposalStore, req.Pagination, func(key []byte, value []byte) error {
 		var proposal types.Proposal
 		if err := qs.Keeper.cdc.Unmarshal(value, &proposal); err != nil {

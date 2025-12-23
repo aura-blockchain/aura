@@ -1,0 +1,644 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "aura/auth/v1beta1/query.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "Query"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {},
+  "definitions": {
+    "ActionStatus": {
+      "type": "string",
+      "enum": [
+        "ACTION_STATUS_UNSPECIFIED",
+        "ACTION_STATUS_PENDING",
+        "ACTION_STATUS_READY",
+        "ACTION_STATUS_EXECUTED",
+        "ACTION_STATUS_CANCELLED"
+      ],
+      "default": "ACTION_STATUS_UNSPECIFIED"
+    },
+    "Any": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "AuditLog": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "actor": {
+          "type": "string",
+          "title": "Who performed the action"
+        },
+        "action": {
+          "type": "string",
+          "title": "What action was performed"
+        },
+        "resource": {
+          "type": "string",
+          "title": "What resource was affected"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "ipAddress": {
+          "type": "string"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "result": {
+          "type": "string",
+          "description": "success, failure, etc."
+        },
+        "errorMessage": {
+          "type": "string"
+        }
+      },
+      "title": "AuditLog represents a comprehensive audit log entry"
+    },
+    "EmergencyAdmin": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string"
+        },
+        "privileges": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "activatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "isActive": {
+          "type": "boolean"
+        },
+        "activatedBy": {
+          "type": "string"
+        }
+      },
+      "title": "EmergencyAdmin represents an emergency admin key with specific privileges"
+    },
+    "MultisigProposal": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "walletId": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "payload": {
+          "type": "string",
+          "format": "byte",
+          "title": "Encoded transaction or action"
+        },
+        "signatures": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Addresses that have signed"
+        },
+        "status": {
+          "$ref": "#/definitions/ProposalStatus"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "executedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "title": "MultisigProposal represents a proposal requiring multiple signatures"
+    },
+    "MultisigWallet": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "signers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "threshold": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Number of signatures required (e.g., 3 for 3-of-5)"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "createdBy": {
+          "type": "string"
+        },
+        "walletType": {
+          "$ref": "#/definitions/WalletType"
+        }
+      },
+      "title": "MultisigWallet represents a multi-signature wallet"
+    },
+    "Params": {
+      "type": "object",
+      "properties": {
+        "sessionTimeoutSeconds": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Default session timeout"
+        },
+        "defaultTimelockDelaySeconds": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Default time delay for admin actions"
+        },
+        "defaultRequestsPerMinute": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "defaultRequestsPerHour": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "defaultRequestsPerDay": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "multisigProposalExpirySeconds": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "auditLoggingEnabled": {
+          "type": "boolean"
+        }
+      },
+      "title": "Params defines the parameters for the auth module"
+    },
+    "ProposalStatus": {
+      "type": "string",
+      "enum": [
+        "PROPOSAL_STATUS_UNSPECIFIED",
+        "PROPOSAL_STATUS_PENDING",
+        "PROPOSAL_STATUS_APPROVED",
+        "PROPOSAL_STATUS_EXECUTED",
+        "PROPOSAL_STATUS_REJECTED",
+        "PROPOSAL_STATUS_EXPIRED"
+      ],
+      "default": "PROPOSAL_STATUS_UNSPECIFIED"
+    },
+    "QueryGetAuditLogsResponse": {
+      "type": "object",
+      "properties": {
+        "logs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/AuditLog"
+          }
+        }
+      }
+    },
+    "QueryGetEmergencyAdminResponse": {
+      "type": "object",
+      "properties": {
+        "admin": {
+          "$ref": "#/definitions/EmergencyAdmin"
+        }
+      }
+    },
+    "QueryGetMultisigProposalResponse": {
+      "type": "object",
+      "properties": {
+        "proposal": {
+          "$ref": "#/definitions/MultisigProposal"
+        }
+      }
+    },
+    "QueryGetMultisigWalletResponse": {
+      "type": "object",
+      "properties": {
+        "wallet": {
+          "$ref": "#/definitions/MultisigWallet"
+        }
+      }
+    },
+    "QueryGetParamsResponse": {
+      "type": "object",
+      "properties": {
+        "params": {
+          "$ref": "#/definitions/Params"
+        }
+      }
+    },
+    "QueryGetRateLimitStatusResponse": {
+      "type": "object",
+      "properties": {
+        "config": {
+          "$ref": "#/definitions/RateLimitConfig"
+        },
+        "isLimited": {
+          "type": "boolean"
+        }
+      }
+    },
+    "QueryGetRoleAssignmentsResponse": {
+      "type": "object",
+      "properties": {
+        "assignments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/RoleAssignment"
+          }
+        }
+      }
+    },
+    "QueryGetRoleResponse": {
+      "type": "object",
+      "properties": {
+        "role": {
+          "$ref": "#/definitions/Role"
+        }
+      }
+    },
+    "QueryGetSessionResponse": {
+      "type": "object",
+      "properties": {
+        "session": {
+          "$ref": "#/definitions/Session"
+        }
+      }
+    },
+    "QueryGetTimeLockedActionResponse": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "$ref": "#/definitions/TimeLockedAction"
+        }
+      }
+    },
+    "QueryGetValidatorKeyRotationResponse": {
+      "type": "object",
+      "properties": {
+        "rotation": {
+          "$ref": "#/definitions/ValidatorKeyRotation"
+        }
+      }
+    },
+    "QueryHasPermissionResponse": {
+      "type": "object",
+      "properties": {
+        "hasPermission": {
+          "type": "boolean"
+        },
+        "matchingRoles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "QueryListEmergencyAdminsResponse": {
+      "type": "object",
+      "properties": {
+        "admins": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/EmergencyAdmin"
+          }
+        }
+      }
+    },
+    "QueryListMultisigProposalsResponse": {
+      "type": "object",
+      "properties": {
+        "proposals": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/MultisigProposal"
+          }
+        }
+      }
+    },
+    "QueryListMultisigWalletsResponse": {
+      "type": "object",
+      "properties": {
+        "wallets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/MultisigWallet"
+          }
+        }
+      }
+    },
+    "QueryListRolesResponse": {
+      "type": "object",
+      "properties": {
+        "roles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Role"
+          }
+        }
+      }
+    },
+    "QueryListSessionsResponse": {
+      "type": "object",
+      "properties": {
+        "sessions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Session"
+          }
+        }
+      }
+    },
+    "QueryListTimeLockedActionsResponse": {
+      "type": "object",
+      "properties": {
+        "actions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/TimeLockedAction"
+          }
+        }
+      }
+    },
+    "RateLimitConfig": {
+      "type": "object",
+      "properties": {
+        "userAddress": {
+          "type": "string"
+        },
+        "requestsPerMinute": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "requestsPerHour": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "requestsPerDay": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "currentMinuteCount": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "currentHourCount": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "currentDayCount": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "windowStart": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "title": "RateLimitConfig represents rate limiting configuration per user"
+    },
+    "Role": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "permissions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "description": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "title": "Role represents a named set of permissions"
+    },
+    "RoleAssignment": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string"
+        },
+        "roleName": {
+          "type": "string"
+        },
+        "assignedBy": {
+          "type": "string"
+        },
+        "assignedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "title": "RoleAssignment assigns a role to an address"
+    },
+    "RotationStatus": {
+      "type": "string",
+      "enum": [
+        "ROTATION_STATUS_UNSPECIFIED",
+        "ROTATION_STATUS_PENDING",
+        "ROTATION_STATUS_COMPLETED",
+        "ROTATION_STATUS_FAILED"
+      ],
+      "default": "ROTATION_STATUS_UNSPECIFIED"
+    },
+    "Session": {
+      "type": "object",
+      "properties": {
+        "sessionId": {
+          "type": "string"
+        },
+        "userAddress": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "lastAccessed": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "ipAddress": {
+          "type": "string"
+        },
+        "isActive": {
+          "type": "boolean"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "title": "Session represents an API session"
+    },
+    "Status": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Any"
+          }
+        }
+      }
+    },
+    "TimeLockedAction": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "actionType": {
+          "type": "string",
+          "title": "e.g., \"UPDATE_PARAMS\", \"CHANGE_ADMIN\""
+        },
+        "payload": {
+          "type": "string",
+          "format": "byte"
+        },
+        "proposer": {
+          "type": "string"
+        },
+        "proposedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "executableAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "executedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "status": {
+          "$ref": "#/definitions/ActionStatus"
+        },
+        "delaySeconds": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Time delay in seconds"
+        }
+      },
+      "title": "TimeLockedAction represents an admin action with time delay"
+    },
+    "ValidatorKeyRotation": {
+      "type": "object",
+      "properties": {
+        "validatorAddress": {
+          "type": "string"
+        },
+        "oldConsensusPubkey": {
+          "type": "string"
+        },
+        "newConsensusPubkey": {
+          "type": "string"
+        },
+        "rotationTime": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "initiatedBy": {
+          "type": "string"
+        },
+        "rotationStatus": {
+          "$ref": "#/definitions/RotationStatus"
+        }
+      },
+      "title": "ValidatorKeyRotation represents a key rotation event"
+    },
+    "WalletType": {
+      "type": "string",
+      "enum": [
+        "WALLET_TYPE_UNSPECIFIED",
+        "WALLET_TYPE_3_OF_5",
+        "WALLET_TYPE_5_OF_7",
+        "WALLET_TYPE_CUSTOM"
+      ],
+      "default": "WALLET_TYPE_UNSPECIFIED"
+    }
+  }
+}

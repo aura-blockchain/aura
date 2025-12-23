@@ -1,0 +1,207 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "aura/wasm/v1beta1/tx.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "Msg"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {},
+  "definitions": {
+    "AccessConfig": {
+      "type": "object",
+      "properties": {
+        "permission": {
+          "$ref": "#/definitions/AccessType"
+        },
+        "address": {
+          "type": "string",
+          "title": "Address is only used when permission is AccessTypeOnlyAddress"
+        },
+        "addresses": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Addresses is only used when permission is AccessTypeAnyOfAddresses"
+        }
+      },
+      "title": "AccessConfig defines access control configuration"
+    },
+    "AccessType": {
+      "type": "string",
+      "enum": [
+        "ACCESS_TYPE_UNSPECIFIED",
+        "ACCESS_TYPE_NOBODY",
+        "ACCESS_TYPE_ONLY_ADDRESS",
+        "ACCESS_TYPE_EVERYBODY",
+        "ACCESS_TYPE_ANY_OF_ADDRESSES"
+      ],
+      "default": "ACCESS_TYPE_UNSPECIFIED",
+      "description": "- ACCESS_TYPE_UNSPECIFIED: ACCESS_TYPE_UNSPECIFIED placeholder for empty value\n - ACCESS_TYPE_NOBODY: ACCESS_TYPE_NOBODY no one can execute this\n - ACCESS_TYPE_ONLY_ADDRESS: ACCESS_TYPE_ONLY_ADDRESS only a specific address can execute\n - ACCESS_TYPE_EVERYBODY: ACCESS_TYPE_EVERYBODY everyone can execute\n - ACCESS_TYPE_ANY_OF_ADDRESSES: ACCESS_TYPE_ANY_OF_ADDRESSES any of the specified addresses can execute",
+      "title": "AccessType defines permission levels for contract code operations"
+    },
+    "Any": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "Coin": {
+      "type": "object",
+      "properties": {
+        "denom": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "string"
+        }
+      },
+      "description": "Coin defines a token with a denomination and an amount.\n\nNOTE: The amount field is an Int which implements the custom method\nsignatures required by gogoproto."
+    },
+    "MsgAuthorizeUploaderResponse": {
+      "type": "object",
+      "title": "MsgAuthorizeUploaderResponse is the response type for Msg/AuthorizeUploader"
+    },
+    "MsgClearAdminResponse": {
+      "type": "object",
+      "title": "MsgClearAdminResponse is the response type for Msg/ClearAdmin"
+    },
+    "MsgExecuteContractResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "string",
+          "format": "byte",
+          "title": "data contains the result data returned from the execute call"
+        }
+      },
+      "title": "MsgExecuteContractResponse is the response type for Msg/ExecuteContract"
+    },
+    "MsgInstantiateContractResponse": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string",
+          "title": "address is the bech32 address of the new contract instance"
+        },
+        "data": {
+          "type": "string",
+          "format": "byte",
+          "title": "data contains the result data returned from the instantiate call"
+        }
+      },
+      "title": "MsgInstantiateContractResponse is the response type for Msg/InstantiateContract"
+    },
+    "MsgMigrateContractResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "string",
+          "format": "byte",
+          "title": "data contains the result data returned from the migrate call"
+        }
+      },
+      "title": "MsgMigrateContractResponse is the response type for Msg/MigrateContract"
+    },
+    "MsgPauseContractResponse": {
+      "type": "object",
+      "title": "MsgPauseContractResponse is the response type for Msg/PauseContract"
+    },
+    "MsgRevokeUploaderResponse": {
+      "type": "object",
+      "title": "MsgRevokeUploaderResponse is the response type for Msg/RevokeUploader"
+    },
+    "MsgStoreCodeResponse": {
+      "type": "object",
+      "properties": {
+        "codeId": {
+          "type": "string",
+          "format": "uint64",
+          "title": "code_id is the unique identifier of the stored code"
+        },
+        "checksum": {
+          "type": "string",
+          "format": "byte",
+          "title": "checksum is the SHA256 hash of the stored code"
+        }
+      },
+      "title": "MsgStoreCodeResponse is the response type for the Msg/StoreCode RPC method"
+    },
+    "MsgUnpauseContractResponse": {
+      "type": "object",
+      "title": "MsgUnpauseContractResponse is the response type for Msg/UnpauseContract"
+    },
+    "MsgUpdateAdminResponse": {
+      "type": "object",
+      "title": "MsgUpdateAdminResponse is the response type for Msg/UpdateAdmin"
+    },
+    "MsgUpdateParamsResponse": {
+      "type": "object",
+      "title": "MsgUpdateParamsResponse is the response type for Msg/UpdateParams"
+    },
+    "Status": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Any"
+          }
+        }
+      }
+    },
+    "v1beta1.Params": {
+      "type": "object",
+      "properties": {
+        "codeUploadAccess": {
+          "$ref": "#/definitions/AccessConfig",
+          "title": "code_upload_access defines access control for code upload"
+        },
+        "instantiateDefaultPermission": {
+          "$ref": "#/definitions/AccessType",
+          "title": "instantiate_default_permission defines default permission for contract instantiation"
+        },
+        "maxWasmCodeSize": {
+          "type": "string",
+          "format": "uint64",
+          "title": "max_wasm_code_size defines maximum allowed wasm code size in bytes"
+        },
+        "maxGasWasmExecution": {
+          "type": "string",
+          "format": "uint64",
+          "title": "max_gas_wasm_execution defines maximum gas for wasm execution"
+        },
+        "securityAnalysisEnabled": {
+          "type": "boolean",
+          "title": "security_analysis_enabled enables on-chain security analysis"
+        },
+        "requireAdminForMigrate": {
+          "type": "boolean",
+          "title": "require_admin_for_migrate requires admin to migrate contracts"
+        }
+      },
+      "title": "Params defines the parameters for the wasm module"
+    }
+  }
+}

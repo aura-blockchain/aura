@@ -1,0 +1,2324 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "aura/identity/v1beta1/query.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "Query"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/aura/identity/v1beta1/audit-logs": {
+      "get": {
+        "summary": "AuditLogs queries audit logs",
+        "operationId": "Query_AuditLogs",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryAuditLogsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "pagination.key",
+            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "pagination.offset",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.countTotal",
+            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pagination.reverse",
+            "description": "reverse is set to true if results are to be returned in the descending order.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/identity/v1beta1/audit-logs/actor/{actor}": {
+      "get": {
+        "summary": "AuditLogsByActor queries audit logs by actor",
+        "operationId": "Query_AuditLogsByActor",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryAuditLogsByActorResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "actor",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "pagination.key",
+            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "pagination.offset",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.countTotal",
+            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pagination.reverse",
+            "description": "reverse is set to true if results are to be returned in the descending order.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/identity/v1beta1/change-history/{did}": {
+      "get": {
+        "summary": "ChangeHistory queries change history for a DID",
+        "operationId": "Query_ChangeHistory",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryChangeHistoryResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "did",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "pagination.key",
+            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "pagination.offset",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.countTotal",
+            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pagination.reverse",
+            "description": "reverse is set to true if results are to be returned in the descending order.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/identity/v1beta1/change-requests/did/{did}": {
+      "get": {
+        "summary": "ChangeRequestsByDID queries change requests for a DID",
+        "operationId": "Query_ChangeRequestsByDID",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryChangeRequestsByDIDResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "did",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "pagination.key",
+            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "pagination.offset",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.countTotal",
+            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pagination.reverse",
+            "description": "reverse is set to true if results are to be returned in the descending order.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/identity/v1beta1/change-requests/{requestId}": {
+      "get": {
+        "summary": "ChangeRequest queries a change request by ID",
+        "operationId": "Query_ChangeRequest",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryChangeRequestResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "requestId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/identity/v1beta1/emergency-admins": {
+      "get": {
+        "summary": "AllEmergencyAdmins queries all emergency admins",
+        "operationId": "Query_AllEmergencyAdmins",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryAllEmergencyAdminsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "pagination.key",
+            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "pagination.offset",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.countTotal",
+            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pagination.reverse",
+            "description": "reverse is set to true if results are to be returned in the descending order.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/identity/v1beta1/emergency-admins/{address}": {
+      "get": {
+        "summary": "EmergencyAdmin queries an emergency admin by address",
+        "operationId": "Query_EmergencyAdmin",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryEmergencyAdminResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/identity/v1beta1/identities": {
+      "get": {
+        "summary": "AllIdentityRecords queries all identity records",
+        "operationId": "Query_AllIdentityRecords",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryAllIdentityRecordsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "pagination.key",
+            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "pagination.offset",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.countTotal",
+            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pagination.reverse",
+            "description": "reverse is set to true if results are to be returned in the descending order.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/identity/v1beta1/identities/address/{address}": {
+      "get": {
+        "summary": "IdentityRecordByAddress queries an identity record by address",
+        "operationId": "Query_IdentityRecordByAddress",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryIdentityRecordByAddressResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/identity/v1beta1/identities/{did}": {
+      "get": {
+        "summary": "IdentityRecord queries an identity record by DID",
+        "operationId": "Query_IdentityRecord",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryIdentityRecordResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "did",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/identity/v1beta1/multisig-proposals/wallet/{walletId}": {
+      "get": {
+        "summary": "MultisigProposalsByWallet queries proposals for a wallet",
+        "operationId": "Query_MultisigProposalsByWallet",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryMultisigProposalsByWalletResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "walletId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "pagination.key",
+            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "pagination.offset",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.countTotal",
+            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pagination.reverse",
+            "description": "reverse is set to true if results are to be returned in the descending order.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/identity/v1beta1/multisig-proposals/{proposalId}": {
+      "get": {
+        "summary": "MultisigProposal queries a multisig proposal by ID",
+        "operationId": "Query_MultisigProposal",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryMultisigProposalResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "proposalId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/identity/v1beta1/multisig-wallets": {
+      "get": {
+        "summary": "AllMultisigWallets queries all multisig wallets",
+        "operationId": "Query_AllMultisigWallets",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryAllMultisigWalletsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "pagination.key",
+            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "pagination.offset",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.countTotal",
+            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pagination.reverse",
+            "description": "reverse is set to true if results are to be returned in the descending order.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/identity/v1beta1/multisig-wallets/{walletId}": {
+      "get": {
+        "summary": "MultisigWallet queries a multisig wallet by ID",
+        "operationId": "Query_MultisigWallet",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryMultisigWalletResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "walletId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/identity/v1beta1/params": {
+      "get": {
+        "summary": "Params queries the module parameters",
+        "operationId": "Query_Params",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryParamsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/identity/v1beta1/permissions/{address}/{permission}": {
+      "get": {
+        "summary": "HasPermission checks if an address has a specific permission",
+        "operationId": "Query_HasPermission",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryHasPermissionResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "permission",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/identity/v1beta1/rate-limits/{address}": {
+      "get": {
+        "summary": "RateLimit queries rate limit config for an address",
+        "operationId": "Query_RateLimit",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryRateLimitResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/identity/v1beta1/role-assignments/{address}": {
+      "get": {
+        "summary": "RoleAssignments queries role assignments for an address",
+        "operationId": "Query_RoleAssignments",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryRoleAssignmentsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/identity/v1beta1/roles": {
+      "get": {
+        "summary": "AllRoles queries all roles",
+        "operationId": "Query_AllRoles",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryAllRolesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "pagination.key",
+            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "pagination.offset",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.countTotal",
+            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pagination.reverse",
+            "description": "reverse is set to true if results are to be returned in the descending order.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/identity/v1beta1/roles/{roleName}": {
+      "get": {
+        "summary": "Role queries a role by name",
+        "operationId": "Query_Role",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryRoleResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "roleName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/identity/v1beta1/sessions/address/{address}": {
+      "get": {
+        "summary": "SessionsByAddress queries sessions for an address",
+        "operationId": "Query_SessionsByAddress",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QuerySessionsByAddressResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "pagination.key",
+            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "pagination.offset",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.countTotal",
+            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pagination.reverse",
+            "description": "reverse is set to true if results are to be returned in the descending order.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/identity/v1beta1/sessions/{sessionId}": {
+      "get": {
+        "summary": "Session queries a session by ID",
+        "operationId": "Query_Session",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QuerySessionResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/identity/v1beta1/time-locked-actions": {
+      "get": {
+        "summary": "AllTimeLockedActions queries all time-locked actions",
+        "operationId": "Query_AllTimeLockedActions",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryAllTimeLockedActionsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "pagination.key",
+            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "pagination.offset",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.countTotal",
+            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pagination.reverse",
+            "description": "reverse is set to true if results are to be returned in the descending order.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/identity/v1beta1/time-locked-actions/{actionId}": {
+      "get": {
+        "summary": "TimeLockedAction queries a time-locked action by ID",
+        "operationId": "Query_TimeLockedAction",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryTimeLockedActionResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "actionId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/identity/v1beta1/validator-rotations/{validatorAddress}": {
+      "get": {
+        "summary": "ValidatorRotation queries a validator rotation by address",
+        "operationId": "Query_ValidatorRotation",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryValidatorRotationResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "validatorAddress",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "ActionStatus": {
+      "type": "string",
+      "enum": [
+        "ACTION_STATUS_UNSPECIFIED",
+        "ACTION_STATUS_PENDING",
+        "ACTION_STATUS_READY",
+        "ACTION_STATUS_EXECUTED",
+        "ACTION_STATUS_CANCELLED"
+      ],
+      "default": "ACTION_STATUS_UNSPECIFIED",
+      "title": "ActionStatus enum"
+    },
+    "Any": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "AuditLog": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "title": "Unique identifier"
+        },
+        "action": {
+          "type": "string",
+          "title": "Action performed"
+        },
+        "actor": {
+          "type": "string",
+          "title": "Actor who performed the action"
+        },
+        "target": {
+          "type": "string",
+          "title": "Target resource or address"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Timestamp of action"
+        },
+        "details": {
+          "type": "string",
+          "title": "Additional details"
+        },
+        "result": {
+          "$ref": "#/definitions/AuditResult",
+          "title": "Result of action"
+        },
+        "ipAddress": {
+          "type": "string",
+          "title": "IP address (if applicable)"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Additional metadata"
+        },
+        "errorMessage": {
+          "type": "string",
+          "title": "Error message (if result is failure)"
+        }
+      },
+      "title": "AuditLog represents a comprehensive audit log entry"
+    },
+    "AuditResult": {
+      "type": "string",
+      "enum": [
+        "AUDIT_RESULT_UNSPECIFIED",
+        "AUDIT_RESULT_SUCCESS",
+        "AUDIT_RESULT_FAILURE",
+        "AUDIT_RESULT_DENIED"
+      ],
+      "default": "AUDIT_RESULT_UNSPECIFIED",
+      "title": "AuditResult enum"
+    },
+    "AuthParams": {
+      "type": "object",
+      "properties": {
+        "enableRbac": {
+          "type": "boolean",
+          "title": "Enable role-based access control"
+        },
+        "maxRolesPerAccount": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Maximum roles per account"
+        },
+        "sessionTimeout": {
+          "type": "string",
+          "title": "Session timeout duration"
+        },
+        "enableAuditLogging": {
+          "type": "boolean",
+          "title": "Enable audit logging"
+        },
+        "defaultTimelockDelaySeconds": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Default time delay for time-locked actions (seconds)"
+        },
+        "defaultRequestsPerMinute": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Default rate limits"
+        },
+        "defaultRequestsPerHour": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "defaultRequestsPerDay": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "multisigProposalExpirySeconds": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Multisig proposal expiry (seconds)"
+        }
+      },
+      "title": "AuthParams for role-based access control and sessions"
+    },
+    "ChangeStatus": {
+      "type": "string",
+      "enum": [
+        "CHANGE_STATUS_UNSPECIFIED",
+        "CHANGE_STATUS_PENDING",
+        "CHANGE_STATUS_APPROVED",
+        "CHANGE_STATUS_REJECTED",
+        "CHANGE_STATUS_EXECUTED",
+        "CHANGE_STATUS_READY_TO_APPLY",
+        "CHANGE_STATUS_PENDING_VERIFICATION"
+      ],
+      "default": "CHANGE_STATUS_UNSPECIFIED",
+      "title": "ChangeStatus enum"
+    },
+    "ChangeType": {
+      "type": "string",
+      "enum": [
+        "CHANGE_TYPE_UNSPECIFIED",
+        "CHANGE_TYPE_UPDATE_ATTRIBUTES",
+        "CHANGE_TYPE_ADD_VERIFICATION_METHOD",
+        "CHANGE_TYPE_REVOKE_VERIFICATION_METHOD",
+        "CHANGE_TYPE_TRANSFER_CONTROL",
+        "CHANGE_TYPE_UPDATE_METADATA"
+      ],
+      "default": "CHANGE_TYPE_UNSPECIFIED",
+      "title": "ChangeType enum"
+    },
+    "IdentityChangeParams": {
+      "type": "object",
+      "properties": {
+        "maxRequestsPerWalletPerMonth": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Maximum requests per wallet per month"
+        },
+        "minConfidenceAfterChange": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Minimum confidence score after change"
+        },
+        "stalenessHeightThreshold": {
+          "type": "string",
+          "format": "int64",
+          "title": "Staleness height threshold"
+        },
+        "assistantSlashOnFalsePositive": {
+          "type": "boolean",
+          "title": "Slash assistant on false positive"
+        },
+        "stalenessInvestigatorChain": {
+          "type": "string",
+          "title": "Staleness investigator chain"
+        },
+        "keyRotationGracePeriodSeconds": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Key rotation grace period (seconds) - old keys remain valid during this time"
+        }
+      },
+      "title": "IdentityChangeParams for identity modification operations"
+    },
+    "IdentityStatus": {
+      "type": "string",
+      "enum": [
+        "IDENTITY_STATUS_UNSPECIFIED",
+        "IDENTITY_STATUS_ACTIVE",
+        "IDENTITY_STATUS_SUSPENDED",
+        "IDENTITY_STATUS_REVOKED",
+        "IDENTITY_STATUS_IDLE",
+        "IDENTITY_STATUS_PENDING_VERIFICATION",
+        "IDENTITY_STATUS_ERASED"
+      ],
+      "default": "IDENTITY_STATUS_UNSPECIFIED",
+      "description": "- IDENTITY_STATUS_ERASED: GDPR erasure completed",
+      "title": "IdentityStatus enum"
+    },
+    "PageRequest": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "format": "byte",
+          "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set."
+        },
+        "offset": {
+          "type": "string",
+          "format": "uint64",
+          "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set."
+        },
+        "limit": {
+          "type": "string",
+          "format": "uint64",
+          "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app."
+        },
+        "countTotal": {
+          "type": "boolean",
+          "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set."
+        },
+        "reverse": {
+          "type": "boolean",
+          "description": "reverse is set to true if results are to be returned in the descending order."
+        }
+      },
+      "description": "message SomeRequest {\n         Foo some_parameter = 1;\n         PageRequest pagination = 2;\n }",
+      "title": "PageRequest is to be embedded in gRPC request messages for efficient\npagination. Ex:"
+    },
+    "PageResponse": {
+      "type": "object",
+      "properties": {
+        "nextKey": {
+          "type": "string",
+          "format": "byte",
+          "description": "next_key is the key to be passed to PageRequest.key to\nquery the next page most efficiently. It will be empty if\nthere are no more results."
+        },
+        "total": {
+          "type": "string",
+          "format": "uint64",
+          "title": "total is total number of results available if PageRequest.count_total\nwas set, its value is undefined otherwise"
+        }
+      },
+      "description": "PageResponse is to be embedded in gRPC response messages where the\ncorresponding request message has used PageRequest.\n\n message SomeResponse {\n         repeated Bar results = 1;\n         PageResponse page = 2;\n }"
+    },
+    "ProposalStatus": {
+      "type": "string",
+      "enum": [
+        "PROPOSAL_STATUS_UNSPECIFIED",
+        "PROPOSAL_STATUS_PENDING",
+        "PROPOSAL_STATUS_APPROVED",
+        "PROPOSAL_STATUS_EXECUTED",
+        "PROPOSAL_STATUS_REJECTED",
+        "PROPOSAL_STATUS_EXPIRED"
+      ],
+      "default": "PROPOSAL_STATUS_UNSPECIFIED",
+      "title": "ProposalStatus enum"
+    },
+    "QueryAllEmergencyAdminsResponse": {
+      "type": "object",
+      "properties": {
+        "admins": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1beta1.EmergencyAdmin"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/PageResponse"
+        }
+      }
+    },
+    "QueryAllIdentityRecordsResponse": {
+      "type": "object",
+      "properties": {
+        "records": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1beta1.IdentityRecord"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/PageResponse"
+        }
+      }
+    },
+    "QueryAllMultisigWalletsResponse": {
+      "type": "object",
+      "properties": {
+        "wallets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1beta1.MultisigWallet"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/PageResponse"
+        }
+      }
+    },
+    "QueryAllRolesResponse": {
+      "type": "object",
+      "properties": {
+        "roles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1beta1.Role"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/PageResponse"
+        }
+      }
+    },
+    "QueryAllTimeLockedActionsResponse": {
+      "type": "object",
+      "properties": {
+        "actions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1beta1.TimeLockedAction"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/PageResponse"
+        }
+      }
+    },
+    "QueryAuditLogsByActorResponse": {
+      "type": "object",
+      "properties": {
+        "logs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/AuditLog"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/PageResponse"
+        }
+      }
+    },
+    "QueryAuditLogsResponse": {
+      "type": "object",
+      "properties": {
+        "logs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/AuditLog"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/PageResponse"
+        }
+      }
+    },
+    "QueryChangeHistoryResponse": {
+      "type": "object",
+      "properties": {
+        "entries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1beta1.ChangeHistory"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/PageResponse"
+        }
+      }
+    },
+    "QueryChangeRequestResponse": {
+      "type": "object",
+      "properties": {
+        "request": {
+          "$ref": "#/definitions/v1beta1.ChangeRequest"
+        }
+      }
+    },
+    "QueryChangeRequestsByDIDResponse": {
+      "type": "object",
+      "properties": {
+        "requests": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1beta1.ChangeRequest"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/PageResponse"
+        }
+      }
+    },
+    "QueryEmergencyAdminResponse": {
+      "type": "object",
+      "properties": {
+        "admin": {
+          "$ref": "#/definitions/v1beta1.EmergencyAdmin"
+        }
+      }
+    },
+    "QueryHasPermissionResponse": {
+      "type": "object",
+      "properties": {
+        "hasPermission": {
+          "type": "boolean"
+        },
+        "roles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Roles that grant this permission"
+        }
+      }
+    },
+    "QueryIdentityRecordByAddressResponse": {
+      "type": "object",
+      "properties": {
+        "record": {
+          "$ref": "#/definitions/v1beta1.IdentityRecord"
+        }
+      }
+    },
+    "QueryIdentityRecordResponse": {
+      "type": "object",
+      "properties": {
+        "record": {
+          "$ref": "#/definitions/v1beta1.IdentityRecord"
+        }
+      }
+    },
+    "QueryMultisigProposalResponse": {
+      "type": "object",
+      "properties": {
+        "proposal": {
+          "$ref": "#/definitions/v1beta1.MultisigProposal"
+        }
+      }
+    },
+    "QueryMultisigProposalsByWalletResponse": {
+      "type": "object",
+      "properties": {
+        "proposals": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1beta1.MultisigProposal"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/PageResponse"
+        }
+      }
+    },
+    "QueryMultisigWalletResponse": {
+      "type": "object",
+      "properties": {
+        "wallet": {
+          "$ref": "#/definitions/v1beta1.MultisigWallet"
+        }
+      }
+    },
+    "QueryParamsResponse": {
+      "type": "object",
+      "properties": {
+        "params": {
+          "$ref": "#/definitions/v1beta1.Params"
+        }
+      }
+    },
+    "QueryRateLimitResponse": {
+      "type": "object",
+      "properties": {
+        "config": {
+          "$ref": "#/definitions/RateLimitConfig"
+        }
+      }
+    },
+    "QueryRoleAssignmentsResponse": {
+      "type": "object",
+      "properties": {
+        "assignments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/RoleAssignment"
+          }
+        }
+      }
+    },
+    "QueryRoleResponse": {
+      "type": "object",
+      "properties": {
+        "role": {
+          "$ref": "#/definitions/v1beta1.Role"
+        }
+      }
+    },
+    "QuerySessionResponse": {
+      "type": "object",
+      "properties": {
+        "session": {
+          "$ref": "#/definitions/v1beta1.Session"
+        }
+      }
+    },
+    "QuerySessionsByAddressResponse": {
+      "type": "object",
+      "properties": {
+        "sessions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1beta1.Session"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/PageResponse"
+        }
+      }
+    },
+    "QueryTimeLockedActionResponse": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "$ref": "#/definitions/v1beta1.TimeLockedAction"
+        }
+      }
+    },
+    "QueryValidatorRotationResponse": {
+      "type": "object",
+      "properties": {
+        "rotation": {
+          "$ref": "#/definitions/ValidatorKeyRotation"
+        }
+      }
+    },
+    "RateLimitConfig": {
+      "type": "object",
+      "properties": {
+        "userAddress": {
+          "type": "string",
+          "title": "User address"
+        },
+        "requestsPerMinute": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Limits"
+        },
+        "requestsPerHour": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "requestsPerDay": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "currentMinuteCount": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Current counts"
+        },
+        "currentHourCount": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "currentDayCount": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "windowStart": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Window start timestamp"
+        }
+      },
+      "title": "RateLimitConfig represents rate limiting configuration per user"
+    },
+    "RoleAssignment": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string",
+          "title": "Address receiving the role"
+        },
+        "roleName": {
+          "type": "string",
+          "title": "Name of the role being assigned"
+        },
+        "assignedAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Timestamp of assignment"
+        },
+        "assignedBy": {
+          "type": "string",
+          "title": "Address that assigned the role"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Optional expiration timestamp"
+        }
+      },
+      "title": "RoleAssignment assigns a role to an address"
+    },
+    "RotationStatus": {
+      "type": "string",
+      "enum": [
+        "ROTATION_STATUS_UNSPECIFIED",
+        "ROTATION_STATUS_PENDING",
+        "ROTATION_STATUS_COMPLETED",
+        "ROTATION_STATUS_FAILED"
+      ],
+      "default": "ROTATION_STATUS_UNSPECIFIED",
+      "title": "RotationStatus enum"
+    },
+    "Status": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Any"
+          }
+        }
+      }
+    },
+    "ValidatorKeyRotation": {
+      "type": "object",
+      "properties": {
+        "validatorAddress": {
+          "type": "string",
+          "title": "Validator address"
+        },
+        "oldConsensusPubkey": {
+          "type": "string",
+          "title": "Old consensus public key"
+        },
+        "newConsensusPubkey": {
+          "type": "string",
+          "title": "New consensus public key"
+        },
+        "rotationTime": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Rotation timestamp"
+        },
+        "initiatedBy": {
+          "type": "string",
+          "title": "Address that initiated rotation"
+        },
+        "rotationStatus": {
+          "$ref": "#/definitions/RotationStatus",
+          "title": "Rotation status"
+        }
+      },
+      "title": "ValidatorKeyRotation represents a key rotation event"
+    },
+    "WalletType": {
+      "type": "string",
+      "enum": [
+        "WALLET_TYPE_UNSPECIFIED",
+        "WALLET_TYPE_3_OF_5",
+        "WALLET_TYPE_5_OF_7",
+        "WALLET_TYPE_CUSTOM"
+      ],
+      "default": "WALLET_TYPE_UNSPECIFIED",
+      "title": "WalletType enum"
+    },
+    "v1beta1.ChangeHistory": {
+      "type": "object",
+      "properties": {
+        "requestId": {
+          "type": "string",
+          "title": "Change request ID"
+        },
+        "targetDid": {
+          "type": "string",
+          "title": "Target DID"
+        },
+        "prevConfidenceScore": {
+          "type": "string",
+          "format": "int64",
+          "title": "Previous confidence score"
+        },
+        "newConfidenceScore": {
+          "type": "string",
+          "format": "int64",
+          "title": "New confidence score"
+        },
+        "transitionReason": {
+          "type": "string",
+          "title": "Reason for transition"
+        },
+        "changedHeight": {
+          "type": "string",
+          "format": "int64",
+          "title": "Block height when changed"
+        },
+        "changedAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Timestamp of change"
+        }
+      },
+      "title": "ChangeHistory tracks historical changes"
+    },
+    "v1beta1.ChangeRequest": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "title": "Unique identifier"
+        },
+        "did": {
+          "type": "string",
+          "title": "Target DID"
+        },
+        "changeType": {
+          "$ref": "#/definitions/ChangeType",
+          "title": "Type of change requested"
+        },
+        "requester": {
+          "type": "string",
+          "title": "Address requesting the change"
+        },
+        "requestedAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Timestamp of request"
+        },
+        "status": {
+          "$ref": "#/definitions/ChangeStatus",
+          "title": "Current status"
+        },
+        "changeData": {
+          "type": "string",
+          "format": "byte",
+          "title": "Serialized change data"
+        },
+        "assistant": {
+          "type": "string",
+          "title": "Assistant address (if applicable)"
+        },
+        "irId": {
+          "type": "string",
+          "title": "Inclusion routine ID"
+        },
+        "proofHash": {
+          "type": "string",
+          "title": "Proof hash"
+        },
+        "metadataHash": {
+          "type": "string",
+          "title": "Metadata hash"
+        },
+        "reason": {
+          "type": "string",
+          "title": "Reason for change"
+        },
+        "createdHeight": {
+          "type": "string",
+          "format": "int64",
+          "title": "Block height when created"
+        },
+        "verdictHeight": {
+          "type": "string",
+          "format": "int64",
+          "title": "Block height of verdict"
+        }
+      },
+      "title": "ChangeRequest for identity updates"
+    },
+    "v1beta1.EmergencyAdmin": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string",
+          "title": "Admin address"
+        },
+        "privileges": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "List of privileges"
+        },
+        "activatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Activation timestamp"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Expiration timestamp"
+        },
+        "isActive": {
+          "type": "boolean",
+          "title": "Active status"
+        },
+        "activatedBy": {
+          "type": "string",
+          "title": "Address that activated this admin"
+        }
+      },
+      "title": "EmergencyAdmin represents an emergency admin key with specific privileges"
+    },
+    "v1beta1.IdentityRecord": {
+      "type": "object",
+      "properties": {
+        "did": {
+          "type": "string",
+          "title": "Decentralized identifier (DID)"
+        },
+        "address": {
+          "type": "string",
+          "title": "Associated blockchain address"
+        },
+        "status": {
+          "$ref": "#/definitions/IdentityStatus",
+          "title": "Current status of identity"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Timestamp when identity was created"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Timestamp when identity was last updated"
+        },
+        "verificationMethods": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "List of verification methods (public keys, not PII)"
+        },
+        "confidenceScore": {
+          "type": "string",
+          "format": "int64",
+          "title": "Confidence score (0-100)"
+        },
+        "metadataHash": {
+          "type": "string",
+          "title": "Metadata hash (hash of off-chain metadata, not the metadata itself)"
+        },
+        "latestIrVersion": {
+          "type": "string",
+          "title": "Latest inclusion routine version"
+        },
+        "lastChangedHeight": {
+          "type": "string",
+          "format": "int64",
+          "title": "Block height of last change"
+        },
+        "piiCommitment": {
+          "type": "string",
+          "format": "byte",
+          "title": "Cryptographic commitment to PII data (SHA-256 hash)\nCommitment = SHA256(sorted_attributes || salt)\nThis allows verification without storing raw PII on-chain"
+        },
+        "commitmentSalt": {
+          "type": "string",
+          "format": "byte",
+          "title": "Salt used in PII commitment (random 32 bytes)\nStored on-chain to allow verification but prevents rainbow table attacks"
+        },
+        "erased": {
+          "type": "boolean",
+          "title": "GDPR Right to Erasure flag\nWhen true, PII has been erased but audit trail (commitment) remains"
+        },
+        "erasedAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Timestamp when identity was erased (GDPR compliance)"
+        },
+        "offChainDataRef": {
+          "type": "string",
+          "title": "Off-chain data reference (IPFS CID, secure URL, or data location hint)\nActual PII stored here, not on-chain"
+        },
+        "offChainDataType": {
+          "type": "string",
+          "title": "Off-chain data reference type (ipfs, https, did-document, etc.)"
+        }
+      },
+      "title": "IdentityRecord represents a decentralized identity\nGDPR-compliant: stores only cryptographic commitments, not raw PII"
+    },
+    "v1beta1.MultisigProposal": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "title": "Unique identifier"
+        },
+        "walletId": {
+          "type": "string",
+          "title": "Associated wallet ID"
+        },
+        "title": {
+          "type": "string",
+          "title": "Proposal title"
+        },
+        "description": {
+          "type": "string",
+          "title": "Detailed description"
+        },
+        "payload": {
+          "type": "string",
+          "format": "byte",
+          "title": "Encoded transaction or action"
+        },
+        "signatures": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Addresses that have signed"
+        },
+        "status": {
+          "$ref": "#/definitions/ProposalStatus",
+          "title": "Current status"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Creation timestamp"
+        },
+        "executedAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Execution timestamp"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Expiration timestamp"
+        }
+      },
+      "title": "MultisigProposal represents a proposal requiring multiple signatures"
+    },
+    "v1beta1.MultisigWallet": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "title": "Unique identifier"
+        },
+        "signers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "List of signer addresses"
+        },
+        "threshold": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Threshold (e.g., 3 for 3-of-5)"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Creation timestamp"
+        },
+        "createdBy": {
+          "type": "string",
+          "title": "Creator address"
+        },
+        "walletType": {
+          "$ref": "#/definitions/WalletType",
+          "title": "Wallet type"
+        }
+      },
+      "title": "MultisigWallet represents a multi-signature wallet"
+    },
+    "v1beta1.Params": {
+      "type": "object",
+      "properties": {
+        "auth": {
+          "$ref": "#/definitions/AuthParams",
+          "title": "Auth-related parameters"
+        },
+        "change": {
+          "$ref": "#/definitions/IdentityChangeParams",
+          "title": "Identity change parameters"
+        }
+      },
+      "title": "Params defines unified identity module parameters"
+    },
+    "v1beta1.Role": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "Role name (e.g., \"admin\", \"moderator\", \"validator\")"
+        },
+        "description": {
+          "type": "string",
+          "title": "Human-readable description"
+        },
+        "permissions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "List of permissions granted"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Timestamp when role was created"
+        },
+        "createdBy": {
+          "type": "string",
+          "title": "Creator address"
+        },
+        "isSystemRole": {
+          "type": "boolean",
+          "title": "Whether this is a system-defined role"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Timestamp when role was last updated"
+        }
+      },
+      "title": "Role represents a named set of permissions"
+    },
+    "v1beta1.Session": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "title": "Unique session identifier"
+        },
+        "address": {
+          "type": "string",
+          "title": "User address"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Creation timestamp"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Expiration timestamp"
+        },
+        "deviceFingerprint": {
+          "type": "string",
+          "title": "Device fingerprint"
+        },
+        "isActive": {
+          "type": "boolean",
+          "title": "Active status"
+        },
+        "lastAccessed": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Last accessed timestamp"
+        },
+        "ipAddress": {
+          "type": "string",
+          "title": "IP address"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Additional metadata"
+        }
+      },
+      "title": "Session management for authentication"
+    },
+    "v1beta1.TimeLockedAction": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "title": "Unique identifier"
+        },
+        "actionType": {
+          "type": "string",
+          "title": "Action type (e.g., \"UPDATE_PARAMS\", \"CHANGE_ADMIN\")"
+        },
+        "payload": {
+          "type": "string",
+          "format": "byte",
+          "title": "Encoded action payload"
+        },
+        "proposer": {
+          "type": "string",
+          "title": "Proposer address"
+        },
+        "proposedAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Proposal timestamp"
+        },
+        "executableAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Executable timestamp"
+        },
+        "executedAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Execution timestamp"
+        },
+        "status": {
+          "$ref": "#/definitions/ActionStatus",
+          "title": "Current status"
+        },
+        "delaySeconds": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Delay in seconds"
+        }
+      },
+      "title": "TimeLockedAction represents an admin action with time delay"
+    }
+  }
+}

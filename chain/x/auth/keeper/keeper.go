@@ -852,7 +852,7 @@ func (k *Keeper) cleanupOldAuditLogs(ctx sdk.Context) {
 
 	// Count total logs
 	var count int
-	var keys [][]byte
+	keys := make([][]byte, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		keys = append(keys, iterator.Key())
 		count++

@@ -1,0 +1,747 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "aura/confidencescore/v1beta1/confidence_score.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "Msg"
+    },
+    {
+      "name": "Query"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {},
+  "definitions": {
+    "AnchorInfo": {
+      "type": "object",
+      "properties": {
+        "completed": {
+          "type": "boolean"
+        },
+        "completedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "verifierPluginHash": {
+          "type": "string",
+          "format": "byte",
+          "title": "SHA256 of verifier plug-in"
+        },
+        "blockHeight": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "proofHash": {
+          "type": "string",
+          "format": "byte",
+          "title": "SHA256 of proof data"
+        }
+      },
+      "title": "AnchorInfo contains metadata about the anchor IR-000 completion"
+    },
+    "Any": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "ArenaScore": {
+      "type": "object",
+      "properties": {
+        "arenaType": {
+          "type": "string",
+          "title": "Arena name (e.g., \"Biometric\")"
+        },
+        "totalScore": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Total score in this arena"
+        },
+        "irCount": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Number of IRs completed"
+        },
+        "focusBonusActive": {
+          "type": "boolean",
+          "title": "Whether arena focus bonus is active (\u003e= 5000 CS)"
+        }
+      },
+      "title": "ArenaScore represents the score details for a specific arena"
+    },
+    "ChangeReason": {
+      "type": "string",
+      "enum": [
+        "CHANGE_REASON_UNSPECIFIED",
+        "CHANGE_REASON_IR_COMPLETION",
+        "CHANGE_REASON_FRAUD_SLASH",
+        "CHANGE_REASON_GOVERNANCE_ADJUSTMENT",
+        "CHANGE_REASON_APPEAL_REVERSAL"
+      ],
+      "default": "CHANGE_REASON_UNSPECIFIED",
+      "description": "- CHANGE_REASON_IR_COMPLETION: IR completion\n - CHANGE_REASON_FRAUD_SLASH: Fraud slash\n - CHANGE_REASON_GOVERNANCE_ADJUSTMENT: Governance adjustment\n - CHANGE_REASON_APPEAL_REVERSAL: Appeal reversal",
+      "title": "ChangeReason represents the reason for a score change"
+    },
+    "IRCompletionStatus": {
+      "type": "string",
+      "enum": [
+        "IR_COMPLETION_STATUS_UNSPECIFIED",
+        "IR_COMPLETION_STATUS_PENDING",
+        "IR_COMPLETION_STATUS_VERIFIED",
+        "IR_COMPLETION_STATUS_REJECTED",
+        "IR_COMPLETION_STATUS_APPEALED"
+      ],
+      "default": "IR_COMPLETION_STATUS_UNSPECIFIED",
+      "description": "- IR_COMPLETION_STATUS_PENDING: Awaiting verification\n - IR_COMPLETION_STATUS_VERIFIED: Successfully verified\n - IR_COMPLETION_STATUS_REJECTED: Rejected by governance\n - IR_COMPLETION_STATUS_APPEALED: Under appeal review",
+      "title": "IRCompletionStatus represents the status of an IR completion"
+    },
+    "MsgAppealSlashResponse": {
+      "type": "object",
+      "properties": {
+        "appealAccepted": {
+          "type": "boolean"
+        },
+        "reviewDeadline": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "MsgRecalculateScoreResponse": {
+      "type": "object",
+      "properties": {
+        "previousScore": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "recalculatedScore": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "discrepancies": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "If any found"
+        }
+      }
+    },
+    "MsgRecordIRCompletionResponse": {
+      "type": "object",
+      "properties": {
+        "scoreEarned": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "newTotalScore": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "verificationAchieved": {
+          "type": "boolean",
+          "title": "True if crossed 10,000"
+        },
+        "velocityMultiplierBps": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Multipliers in basis points (10000 = 1.0x)"
+        },
+        "arenaMultiplierBps": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "jackpotMultiplierBps": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "MsgResolveAppealResponse": {
+      "type": "object",
+      "properties": {
+        "restoredScore": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "depositReturned": {
+          "type": "boolean"
+        }
+      }
+    },
+    "MsgSlashScoreResponse": {
+      "type": "object",
+      "properties": {
+        "previousScore": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "newScore": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "verificationRevoked": {
+          "type": "boolean",
+          "title": "True if dropped below 10,000"
+        },
+        "slashTxHash": {
+          "type": "string"
+        }
+      }
+    },
+    "PageRequest": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "format": "byte",
+          "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set."
+        },
+        "offset": {
+          "type": "string",
+          "format": "uint64",
+          "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set."
+        },
+        "limit": {
+          "type": "string",
+          "format": "uint64",
+          "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app."
+        },
+        "countTotal": {
+          "type": "boolean",
+          "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set."
+        },
+        "reverse": {
+          "type": "boolean",
+          "description": "reverse is set to true if results are to be returned in the descending order."
+        }
+      },
+      "description": "message SomeRequest {\n         Foo some_parameter = 1;\n         PageRequest pagination = 2;\n }",
+      "title": "PageRequest is to be embedded in gRPC request messages for efficient\npagination. Ex:"
+    },
+    "PageResponse": {
+      "type": "object",
+      "properties": {
+        "nextKey": {
+          "type": "string",
+          "format": "byte",
+          "description": "next_key is the key to be passed to PageRequest.key to\nquery the next page most efficiently. It will be empty if\nthere are no more results."
+        },
+        "total": {
+          "type": "string",
+          "format": "uint64",
+          "title": "total is total number of results available if PageRequest.count_total\nwas set, its value is undefined otherwise"
+        }
+      },
+      "description": "PageResponse is to be embedded in gRPC response messages where the\ncorresponding request message has used PageRequest.\n\n message SomeResponse {\n         repeated Bar results = 1;\n         PageResponse page = 2;\n }"
+    },
+    "QueryArenaBreakdownResponse": {
+      "type": "object",
+      "properties": {
+        "arenaScores": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/ArenaScore"
+          }
+        },
+        "focusArenas": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Arenas with \u003e= 5000 CS"
+        }
+      },
+      "title": "QueryArenaBreakdownResponse is the response type for getting a user's arena breakdown"
+    },
+    "QueryIRCompletionResponse": {
+      "type": "object",
+      "properties": {
+        "completion": {
+          "$ref": "#/definitions/v1beta1.IRCompletion"
+        },
+        "completed": {
+          "type": "boolean"
+        }
+      },
+      "title": "QueryIRCompletionResponse is the response type for getting a specific IR completion"
+    },
+    "QueryParamsResponse": {
+      "type": "object",
+      "properties": {
+        "params": {
+          "$ref": "#/definitions/v1beta1.Params"
+        }
+      },
+      "title": "QueryParamsResponse is the response type for getting module parameters"
+    },
+    "QueryScoreHistoryResponse": {
+      "type": "object",
+      "properties": {
+        "changes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/ScoreChange"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/PageResponse"
+        }
+      },
+      "title": "QueryScoreHistoryResponse is the response type for getting a user's score history"
+    },
+    "QuerySlashRecordResponse": {
+      "type": "object",
+      "properties": {
+        "slashRecords": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1beta1.SlashRecord"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/PageResponse"
+        }
+      },
+      "title": "QuerySlashRecordResponse is the response type for getting slash records"
+    },
+    "QueryThresholdsResponse": {
+      "type": "object",
+      "properties": {
+        "verifiedHumanThreshold": {
+          "type": "string",
+          "format": "uint64",
+          "title": "10,000"
+        },
+        "vcThresholds": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "format": "uint64"
+          },
+          "title": "VC type -\u003e threshold"
+        },
+        "arenaFocusThresholds": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "format": "uint64"
+          },
+          "title": "Arena -\u003e threshold"
+        }
+      },
+      "title": "QueryThresholdsResponse is the response type for getting verification thresholds"
+    },
+    "QueryUserCompletionsResponse": {
+      "type": "object",
+      "properties": {
+        "completions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1beta1.IRCompletion"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/PageResponse"
+        }
+      },
+      "title": "QueryUserCompletionsResponse is the response type for getting a user's IR completions"
+    },
+    "QueryUserScoreResponse": {
+      "type": "object",
+      "properties": {
+        "totalScore": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "isVerified": {
+          "type": "boolean",
+          "title": "CS \u003e= 10,000"
+        },
+        "anchorInfo": {
+          "$ref": "#/definitions/AnchorInfo"
+        },
+        "arenaScores": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/ArenaScore"
+          }
+        },
+        "irCount": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "lastUpdated": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "status": {
+          "$ref": "#/definitions/VerificationStatus"
+        },
+        "verificationAchievedHeight": {
+          "type": "string",
+          "format": "uint64"
+        }
+      },
+      "title": "QueryUserScoreResponse is the response type for getting a user's score"
+    },
+    "QueryVerifiedUsersResponse": {
+      "type": "object",
+      "properties": {
+        "walletAddresses": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "scores": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uint64"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/PageResponse"
+        }
+      },
+      "title": "QueryVerifiedUsersResponse is the response type for listing verified users"
+    },
+    "ScoreChange": {
+      "type": "object",
+      "properties": {
+        "walletAddress": {
+          "type": "string",
+          "title": "Bech32 Aura address"
+        },
+        "blockHeight": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "scoreDelta": {
+          "type": "string",
+          "format": "int64",
+          "title": "Can be negative (slashing)"
+        },
+        "newTotal": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "reason": {
+          "$ref": "#/definitions/ChangeReason"
+        },
+        "relatedIrId": {
+          "type": "string",
+          "title": "If applicable"
+        },
+        "txHash": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "previousScore": {
+          "type": "string",
+          "format": "uint64"
+        }
+      },
+      "title": "ScoreChange represents a single score change event"
+    },
+    "SlashReason": {
+      "type": "string",
+      "enum": [
+        "SLASH_REASON_UNSPECIFIED",
+        "SLASH_REASON_FRAUD_DETECTED",
+        "SLASH_REASON_FALSE_ATTESTATION",
+        "SLASH_REASON_COLLUSION",
+        "SLASH_REASON_DUPLICATE_COMPLETION"
+      ],
+      "default": "SLASH_REASON_UNSPECIFIED",
+      "description": "- SLASH_REASON_FRAUD_DETECTED: Fraud detected in verification\n - SLASH_REASON_FALSE_ATTESTATION: Assistant provided false attestation\n - SLASH_REASON_COLLUSION: Collusion detected\n - SLASH_REASON_DUPLICATE_COMPLETION: Duplicate/replay completion",
+      "title": "SlashReason represents the reason for a score slash"
+    },
+    "Status": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Any"
+          }
+        }
+      }
+    },
+    "VerificationStatus": {
+      "type": "string",
+      "enum": [
+        "VERIFICATION_STATUS_UNSPECIFIED",
+        "VERIFICATION_STATUS_UNVERIFIED",
+        "VERIFICATION_STATUS_VERIFIED",
+        "VERIFICATION_STATUS_SUSPENDED",
+        "VERIFICATION_STATUS_REVOKED"
+      ],
+      "default": "VERIFICATION_STATUS_UNSPECIFIED",
+      "description": "- VERIFICATION_STATUS_UNVERIFIED: CS \u003c 10,000\n - VERIFICATION_STATUS_VERIFIED: CS \u003e= 10,000\n - VERIFICATION_STATUS_SUSPENDED: Governance flag\n - VERIFICATION_STATUS_REVOKED: Self-revocation or fraud",
+      "title": "VerificationStatus represents the verification state of a user"
+    },
+    "v1beta1.IRCompletion": {
+      "type": "object",
+      "properties": {
+        "irId": {
+          "type": "string",
+          "title": "e.g., \"IR-102\""
+        },
+        "baseScore": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Base score from IR definition"
+        },
+        "finalScore": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Final score after all multipliers"
+        },
+        "completedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "completedHeight": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Block height of completion"
+        },
+        "assistantAddress": {
+          "type": "string",
+          "title": "AI assistant who verified"
+        },
+        "proofHash": {
+          "type": "string",
+          "format": "byte",
+          "title": "SHA256 of proof data"
+        },
+        "verifierHash": {
+          "type": "string",
+          "format": "byte",
+          "title": "SHA256 of verifier plug-in"
+        },
+        "txHash": {
+          "type": "string",
+          "title": "Transaction hash"
+        },
+        "velocityBonusBps": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Velocity multiplier applied in basis points (10000 = 1.0x, 12500 = 1.25x)"
+        },
+        "arenaBonusBps": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Arena multiplier applied in basis points (10000 = 1.0x, 15000 = 1.5x)"
+        },
+        "jackpotBonusBps": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Jackpot multiplier applied in basis points (10000 = 1.0x, 50000 = 5.0x, 250000 = 25.0x)"
+        },
+        "status": {
+          "$ref": "#/definitions/IRCompletionStatus",
+          "title": "Completion status"
+        },
+        "arena": {
+          "type": "string",
+          "title": "Arena type"
+        }
+      },
+      "title": "IRCompletion represents a single IR completion record"
+    },
+    "v1beta1.Params": {
+      "type": "object",
+      "properties": {
+        "verificationThreshold": {
+          "type": "string",
+          "format": "uint64",
+          "description": "Default: 10,000",
+          "title": "Verification thresholds"
+        },
+        "highAssuranceThreshold": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Default: 15,000"
+        },
+        "arenaFocusThreshold": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Default: 5,000"
+        },
+        "velocityBonusDays": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uint64"
+          },
+          "description": "[7, 30] - days thresholds",
+          "title": "Velocity bonuses (time-based completion bonuses)"
+        },
+        "velocityBonusMultipliersBps": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uint64"
+          },
+          "description": "[12500, 11000] - corresponding multipliers in basis points",
+          "title": "Velocity bonus multipliers in basis points (10000 = 1.0x, 12500 = 1.25x, 11000 = 1.1x)\nUsing uint64 basis points for deterministic consensus instead of float"
+        },
+        "arenaMultipliersBps": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "format": "uint64"
+          },
+          "description": "threshold -\u003e multiplier (3000-\u003e11000, 4000-\u003e12000, 5000-\u003e15000)",
+          "title": "Arena multipliers in basis points (10000 = 1.0x)\nUsing map\u003cuint64, uint64\u003e for deterministic consensus instead of map\u003cuint64, float\u003e\nKeys: CS threshold, Values: multiplier in basis points"
+        },
+        "slashPercentage": {
+          "type": "string",
+          "format": "uint64",
+          "description": "Default: 50% max slash",
+          "title": "Slashing parameters"
+        },
+        "appealDeposit": {
+          "type": "string",
+          "title": "Default: 1000 AURA"
+        },
+        "maxIrsPerDay": {
+          "type": "string",
+          "format": "uint64",
+          "description": "Default: 10",
+          "title": "Rate limiting"
+        },
+        "maxIrsPerHour": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Default: 3"
+        },
+        "jackpotOdds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uint64"
+          },
+          "description": "[100, 1000] - odds for jackpot (1 in N)",
+          "title": "Jackpot probabilities"
+        },
+        "jackpotMultipliersBps": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uint64"
+          },
+          "description": "[50000, 250000] - corresponding multipliers in basis points",
+          "title": "Jackpot multipliers in basis points (10000 = 1.0x, 50000 = 5.0x, 250000 = 25.0x)\nUsing uint64 basis points for deterministic consensus instead of float"
+        },
+        "stalenessEnabled": {
+          "type": "boolean",
+          "description": "Default: false",
+          "title": "Staleness (future)"
+        },
+        "degradationRatePerYear": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Default: 0"
+        },
+        "poiRewardsEnabled": {
+          "type": "boolean",
+          "description": "Default: true",
+          "title": "PoI (Proof-of-Identity) Rewards (Whitepaper Section 12.0)"
+        },
+        "userRewardSplitPercent": {
+          "type": "string",
+          "format": "uint64",
+          "title": "% of reward to user (rest to node operator)"
+        },
+        "velocityBonusEnabled": {
+          "type": "boolean",
+          "title": "Enable VBT (Velocity Bonus Tier)"
+        }
+      },
+      "title": "Params defines the module parameters"
+    },
+    "v1beta1.SlashRecord": {
+      "type": "object",
+      "properties": {
+        "walletAddress": {
+          "type": "string"
+        },
+        "slashAmount": {
+          "type": "string",
+          "format": "uint64",
+          "title": "CS points deducted"
+        },
+        "reason": {
+          "$ref": "#/definitions/SlashReason"
+        },
+        "slashHeight": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Block height of slash"
+        },
+        "slashTime": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "relatedIrId": {
+          "type": "string",
+          "title": "IR being disputed"
+        },
+        "slashTxHash": {
+          "type": "string"
+        },
+        "appealDeadline": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Deadline for appeal"
+        },
+        "appealed": {
+          "type": "boolean",
+          "title": "Whether appeal was filed"
+        },
+        "resolved": {
+          "type": "boolean",
+          "title": "Whether appeal was resolved"
+        },
+        "authority": {
+          "type": "string",
+          "title": "Who executed the slash"
+        },
+        "evidence": {
+          "type": "string",
+          "title": "IPFS hash or metadata"
+        }
+      },
+      "title": "SlashRecord represents a score slash record"
+    }
+  }
+}

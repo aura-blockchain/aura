@@ -124,7 +124,7 @@ func (k *Keeper) GetPriorityTransactions(ctx sdk.Context) []string {
 	iterator := storetypes.KVStorePrefixIterator(store, prefix)
 	defer iterator.Close()
 
-	var txHashes []string
+	txHashes := make([]string, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		txHashes = append(txHashes, string(iterator.Value()))
 	}

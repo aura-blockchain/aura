@@ -1,0 +1,510 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "aura/dataregistry/v1beta1/query.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "Query"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {},
+  "definitions": {
+    "AccessMode": {
+      "type": "string",
+      "enum": [
+        "ACCESS_MODE_PRIVATE",
+        "ACCESS_MODE_WHITELIST",
+        "ACCESS_MODE_PUBLIC",
+        "ACCESS_MODE_VERIFIED_USERS"
+      ],
+      "default": "ACCESS_MODE_PRIVATE",
+      "description": "- ACCESS_MODE_PRIVATE: Owner only\n - ACCESS_MODE_WHITELIST: Allowed addresses only\n - ACCESS_MODE_PUBLIC: Anyone can view\n - ACCESS_MODE_VERIFIED_USERS: Any AURA-verified user",
+      "title": "AccessMode defines visibility policy"
+    },
+    "AccessPolicy": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "$ref": "#/definitions/AccessMode"
+        },
+        "allowedAddresses": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Whitelist"
+        },
+        "deniedAddresses": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Blacklist"
+        },
+        "requireVerifiedIdentity": {
+          "type": "boolean",
+          "title": "Must have AURA VC"
+        },
+        "minConfidenceScore": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Minimum CS required"
+        }
+      },
+      "title": "AccessPolicy controls who can view data"
+    },
+    "Any": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "DataItemStatus": {
+      "type": "string",
+      "enum": [
+        "DATA_ITEM_STATUS_UNSPECIFIED",
+        "DATA_ITEM_STATUS_PENDING_VERIFICATION",
+        "DATA_ITEM_STATUS_VERIFIED",
+        "DATA_ITEM_STATUS_REJECTED",
+        "DATA_ITEM_STATUS_EXPIRED",
+        "DATA_ITEM_STATUS_REVOKED"
+      ],
+      "default": "DATA_ITEM_STATUS_UNSPECIFIED",
+      "title": "DataItemStatus represents lifecycle"
+    },
+    "DataItemType": {
+      "type": "string",
+      "enum": [
+        "DATA_ITEM_TYPE_UNSPECIFIED",
+        "DATA_ITEM_TYPE_VEHICLE_REGISTRATION",
+        "DATA_ITEM_TYPE_VEHICLE_INSURANCE",
+        "DATA_ITEM_TYPE_PROPERTY_DEED",
+        "DATA_ITEM_TYPE_LEASE_AGREEMENT",
+        "DATA_ITEM_TYPE_CONTRACT",
+        "DATA_ITEM_TYPE_RECEIPT",
+        "DATA_ITEM_TYPE_WARRANTY",
+        "DATA_ITEM_TYPE_PHOTO",
+        "DATA_ITEM_TYPE_VIDEO",
+        "DATA_ITEM_TYPE_AUDIO",
+        "DATA_ITEM_TYPE_DOCUMENT_PDF",
+        "DATA_ITEM_TYPE_GOLF_SCORE",
+        "DATA_ITEM_TYPE_TEST_SCORE",
+        "DATA_ITEM_TYPE_CERTIFICATION",
+        "DATA_ITEM_TYPE_ACHIEVEMENT",
+        "DATA_ITEM_TYPE_NFT",
+        "DATA_ITEM_TYPE_DIGITAL_ART",
+        "DATA_ITEM_TYPE_MUSIC_LICENSE",
+        "DATA_ITEM_TYPE_VACCINATION_RECORD",
+        "DATA_ITEM_TYPE_MEDICAL_RECORD",
+        "DATA_ITEM_TYPE_PRESCRIPTION",
+        "DATA_ITEM_TYPE_CUSTOM"
+      ],
+      "default": "DATA_ITEM_TYPE_UNSPECIFIED",
+      "description": "- DATA_ITEM_TYPE_VEHICLE_REGISTRATION: Documents\n - DATA_ITEM_TYPE_PHOTO: Media\n - DATA_ITEM_TYPE_GOLF_SCORE: Scores \u0026 Achievements\n - DATA_ITEM_TYPE_NFT: Digital Assets\n - DATA_ITEM_TYPE_VACCINATION_RECORD: Health\n - DATA_ITEM_TYPE_CUSTOM: Custom",
+      "title": "DataItemType categorizes stored data"
+    },
+    "GeoLocation": {
+      "type": "object",
+      "properties": {
+        "latitude": {
+          "type": "number",
+          "format": "double"
+        },
+        "longitude": {
+          "type": "number",
+          "format": "double"
+        },
+        "altitude": {
+          "type": "number",
+          "format": "double",
+          "title": "Optional"
+        },
+        "accuracyMeters": {
+          "type": "number",
+          "format": "double",
+          "title": "GPS accuracy"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "title": "When location was captured"
+        },
+        "locationName": {
+          "type": "string",
+          "title": "\"Pebble Beach Golf Course\""
+        }
+      },
+      "title": "GeoLocation for geotagged data"
+    },
+    "PageRequest": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "format": "byte",
+          "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set."
+        },
+        "offset": {
+          "type": "string",
+          "format": "uint64",
+          "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set."
+        },
+        "limit": {
+          "type": "string",
+          "format": "uint64",
+          "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app."
+        },
+        "countTotal": {
+          "type": "boolean",
+          "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set."
+        },
+        "reverse": {
+          "type": "boolean",
+          "description": "reverse is set to true if results are to be returned in the descending order."
+        }
+      },
+      "description": "message SomeRequest {\n         Foo some_parameter = 1;\n         PageRequest pagination = 2;\n }",
+      "title": "PageRequest is to be embedded in gRPC request messages for efficient\npagination. Ex:"
+    },
+    "PageResponse": {
+      "type": "object",
+      "properties": {
+        "nextKey": {
+          "type": "string",
+          "format": "byte",
+          "description": "next_key is the key to be passed to PageRequest.key to\nquery the next page most efficiently. It will be empty if\nthere are no more results."
+        },
+        "total": {
+          "type": "string",
+          "format": "uint64",
+          "title": "total is total number of results available if PageRequest.count_total\nwas set, its value is undefined otherwise"
+        }
+      },
+      "description": "PageResponse is to be embedded in gRPC response messages where the\ncorresponding request message has used PageRequest.\n\n message SomeResponse {\n         repeated Bar results = 1;\n         PageResponse page = 2;\n }"
+    },
+    "QueryDataItemResponse": {
+      "type": "object",
+      "properties": {
+        "dataItem": {
+          "$ref": "#/definitions/v1beta1.DataItem"
+        },
+        "exists": {
+          "type": "boolean"
+        },
+        "hasAccess": {
+          "type": "boolean",
+          "title": "Whether requester can view"
+        }
+      }
+    },
+    "QueryDataItemVerificationsResponse": {
+      "type": "object",
+      "properties": {
+        "verifications": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Verification"
+          }
+        }
+      }
+    },
+    "QueryParamsResponse": {
+      "type": "object",
+      "properties": {
+        "params": {
+          "$ref": "#/definitions/v1beta1.Params"
+        }
+      }
+    },
+    "QuerySearchDataItemsResponse": {
+      "type": "object",
+      "properties": {
+        "dataItems": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1beta1.DataItem"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/PageResponse"
+        }
+      }
+    },
+    "QueryStatsResponse": {
+      "type": "object",
+      "properties": {
+        "totalDataItems": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "totalVerifiedItems": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "totalStorageBytes": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "itemsByType": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "format": "uint64"
+          },
+          "title": "Type -\u003e count"
+        },
+        "totalVerifications": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "QueryUserDataItemsResponse": {
+      "type": "object",
+      "properties": {
+        "dataItems": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1beta1.DataItem"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/PageResponse"
+        }
+      }
+    },
+    "Status": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Any"
+          }
+        }
+      }
+    },
+    "Verification": {
+      "type": "object",
+      "properties": {
+        "verifierAddress": {
+          "type": "string",
+          "title": "Who verified"
+        },
+        "level": {
+          "$ref": "#/definitions/VerificationLevel",
+          "title": "What level"
+        },
+        "verifiedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "verificationMethod": {
+          "type": "string",
+          "description": "\"AI OCR\", \"Manual review\", etc."
+        },
+        "confidenceScore": {
+          "type": "string",
+          "format": "uint64",
+          "title": "0-100"
+        },
+        "notes": {
+          "type": "string",
+          "title": "Verifier notes"
+        },
+        "proof": {
+          "type": "string",
+          "format": "byte",
+          "title": "Cryptographic proof (optional)"
+        }
+      },
+      "title": "Verification record"
+    },
+    "VerificationLevel": {
+      "type": "string",
+      "enum": [
+        "VERIFICATION_LEVEL_UNSPECIFIED",
+        "VERIFICATION_LEVEL_SELF_ATTESTED",
+        "VERIFICATION_LEVEL_PEER_VERIFIED",
+        "VERIFICATION_LEVEL_AI_VERIFIED",
+        "VERIFICATION_LEVEL_AUTHORITY_VERIFIED",
+        "VERIFICATION_LEVEL_BLOCKCHAIN_ANCHORED"
+      ],
+      "default": "VERIFICATION_LEVEL_UNSPECIFIED",
+      "description": "- VERIFICATION_LEVEL_SELF_ATTESTED: User claims, not verified\n - VERIFICATION_LEVEL_PEER_VERIFIED: Verified by another user\n - VERIFICATION_LEVEL_AI_VERIFIED: Verified by AI agent\n - VERIFICATION_LEVEL_AUTHORITY_VERIFIED: Verified by official authority\n - VERIFICATION_LEVEL_BLOCKCHAIN_ANCHORED: Anchored with external proof",
+      "title": "VerificationLevel indicates trust level"
+    },
+    "v1beta1.DataItem": {
+      "type": "object",
+      "properties": {
+        "dataId": {
+          "type": "string",
+          "title": "Unique identifier"
+        },
+        "ownerAddress": {
+          "type": "string",
+          "title": "Owner's wallet"
+        },
+        "dataType": {
+          "$ref": "#/definitions/DataItemType",
+          "title": "Type of data"
+        },
+        "dataTypeCustom": {
+          "type": "string",
+          "title": "Custom type name"
+        },
+        "status": {
+          "$ref": "#/definitions/DataItemStatus",
+          "title": "Current status"
+        },
+        "verificationLevel": {
+          "$ref": "#/definitions/VerificationLevel",
+          "title": "How verified"
+        },
+        "contentHash": {
+          "type": "string",
+          "format": "byte",
+          "description": "SHA256 of content",
+          "title": "Content (stored off-chain or encrypted)"
+        },
+        "storageLocation": {
+          "type": "string",
+          "title": "IPFS CID, Arweave TX, or URL"
+        },
+        "isEncrypted": {
+          "type": "boolean",
+          "title": "Is content encrypted"
+        },
+        "encryptionKeyHash": {
+          "type": "string",
+          "format": "byte",
+          "title": "Hash of encryption key (if encrypted)"
+        },
+        "title": {
+          "type": "string",
+          "description": "Human-readable title",
+          "title": "Metadata"
+        },
+        "description": {
+          "type": "string",
+          "title": "Description"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Extensible metadata"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Search tags"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Temporal/Geospatial"
+        },
+        "verifiedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "0 = never"
+        },
+        "geoLocation": {
+          "$ref": "#/definitions/GeoLocation",
+          "title": "Where data was created"
+        },
+        "verifications": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Verification"
+          },
+          "description": "Who verified it",
+          "title": "Verification"
+        },
+        "verifiedBy": {
+          "type": "string",
+          "title": "Primary verifier address"
+        },
+        "accessPolicy": {
+          "$ref": "#/definitions/AccessPolicy",
+          "description": "Who can see it",
+          "title": "Access control"
+        },
+        "previousDataId": {
+          "type": "string",
+          "description": "For versioning/updates",
+          "title": "Provenance"
+        },
+        "version": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Version number"
+        }
+      },
+      "title": "DataItem represents a stored data item"
+    },
+    "v1beta1.Params": {
+      "type": "object",
+      "properties": {
+        "maxDataItemsPerUser": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Default: 1000"
+        },
+        "maxStorageBytes": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Max size per item"
+        },
+        "storageFee": {
+          "type": "string",
+          "title": "Fee in uaura"
+        },
+        "verificationReward": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Reward for verifiers"
+        },
+        "authorizedVerifiers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Official verifier addresses"
+        }
+      },
+      "title": "Params for module configuration"
+    }
+  }
+}

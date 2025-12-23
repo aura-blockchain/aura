@@ -110,7 +110,7 @@ func (k Keeper) GetAllWalletLimits(ctx sdk.Context) []*types.WalletLimit {
 	iterator := storetypes.KVStorePrefixIterator(store, types.WalletLimitKey)
 	defer iterator.Close()
 
-	var limits []*types.WalletLimit
+	limits := make([]*types.WalletLimit, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var limit types.WalletLimit
 		if err := k.cdc.Unmarshal(iterator.Value(), &limit); err != nil {

@@ -1,0 +1,481 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "aura/privacy/v1beta1/tx.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "Msg"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {},
+  "definitions": {
+    "Any": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "ConfidentialTransaction": {
+      "type": "object",
+      "properties": {
+        "commitment": {
+          "type": "string",
+          "format": "byte",
+          "title": "commitment is the Pedersen commitment to the amount"
+        },
+        "rangeProof": {
+          "type": "string",
+          "format": "byte",
+          "title": "range_proof proves the amount is within a valid range"
+        },
+        "blindingFactor": {
+          "type": "string",
+          "format": "byte",
+          "title": "blinding_factor is used to blind the amount"
+        },
+        "encryptedAmount": {
+          "type": "string",
+          "format": "byte",
+          "title": "encrypted_amount is the encrypted transaction amount"
+        },
+        "assetId": {
+          "type": "string",
+          "title": "asset_id identifies the asset being transferred"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "created_at timestamp"
+        }
+      },
+      "title": "ConfidentialTransaction hides transaction amounts using homomorphic encryption"
+    },
+    "EncryptedMemo": {
+      "type": "object",
+      "properties": {
+        "ciphertext": {
+          "type": "string",
+          "format": "byte",
+          "title": "ciphertext is the encrypted memo content"
+        },
+        "nonce": {
+          "type": "string",
+          "format": "byte",
+          "title": "nonce is used for encryption"
+        },
+        "encryptionAlgorithm": {
+          "type": "string",
+          "title": "encryption_algorithm specifies the encryption method (AES-256-GCM, ChaCha20-Poly1305)"
+        },
+        "recipientPublicKey": {
+          "type": "string",
+          "format": "byte",
+          "title": "recipient_public_key is the public key used for encryption"
+        },
+        "ephemeralPublicKey": {
+          "type": "string",
+          "format": "byte",
+          "title": "ephemeral_public_key is the ephemeral key for this encryption"
+        },
+        "authenticationTag": {
+          "type": "string",
+          "format": "byte",
+          "title": "authentication_tag for authenticated encryption"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "created_at timestamp"
+        }
+      },
+      "title": "EncryptedMemo contains encrypted transaction memo data"
+    },
+    "MsgCreateMixingPoolResponse": {
+      "type": "object",
+      "properties": {
+        "poolId": {
+          "type": "string",
+          "title": "pool_id is the unique identifier for the created pool"
+        }
+      },
+      "title": "MsgCreateMixingPoolResponse is the response"
+    },
+    "MsgJoinMixingPoolResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean",
+          "title": "success indicates if the join was successful"
+        },
+        "participantIndex": {
+          "type": "integer",
+          "format": "int64",
+          "title": "participant_index is the participant's index in the pool"
+        }
+      },
+      "title": "MsgJoinMixingPoolResponse is the response"
+    },
+    "MsgRegisterViewKeyResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean",
+          "title": "success indicates if registration was successful"
+        }
+      },
+      "title": "MsgRegisterViewKeyResponse is the response"
+    },
+    "MsgRevokeViewKeyResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean",
+          "title": "success indicates if revocation was successful"
+        }
+      },
+      "title": "MsgRevokeViewKeyResponse is the response"
+    },
+    "MsgSubmitPrivateTransactionResponse": {
+      "type": "object",
+      "properties": {
+        "txHash": {
+          "type": "string",
+          "format": "byte",
+          "title": "tx_hash is the hash of the submitted transaction"
+        },
+        "success": {
+          "type": "boolean",
+          "title": "success indicates if the transaction was accepted"
+        }
+      },
+      "title": "MsgSubmitPrivateTransactionResponse is the response"
+    },
+    "MsgUpdateNetworkPrivacyResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean",
+          "title": "success indicates if the update was successful"
+        }
+      },
+      "title": "MsgUpdateNetworkPrivacyResponse is the response"
+    },
+    "MsgUpdateParamsResponse": {
+      "type": "object",
+      "title": "MsgUpdateParamsResponse is the response"
+    },
+    "NetworkPrivacy": {
+      "type": "object",
+      "properties": {
+        "networkType": {
+          "type": "string",
+          "title": "network_type indicates the privacy network (TOR, I2P, MIXED)"
+        },
+        "onionAddress": {
+          "type": "string",
+          "title": "onion_address is the Tor hidden service address"
+        },
+        "i2pDestination": {
+          "type": "string",
+          "title": "i2p_destination is the I2P destination address"
+        },
+        "proxyEnabled": {
+          "type": "boolean",
+          "title": "proxy_enabled indicates if the proxy is active"
+        },
+        "circuitLifetime": {
+          "type": "string",
+          "format": "uint64",
+          "title": "circuit_lifetime is the lifetime of Tor circuits in seconds"
+        },
+        "streamIsolation": {
+          "type": "boolean",
+          "title": "stream_isolation enables stream isolation for connections"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "created_at timestamp"
+        }
+      },
+      "title": "NetworkPrivacy represents Tor/I2P network integration settings"
+    },
+    "PrivateTransaction": {
+      "type": "object",
+      "properties": {
+        "txId": {
+          "type": "string",
+          "format": "byte",
+          "title": "tx_id is the unique transaction identifier"
+        },
+        "zkProof": {
+          "$ref": "#/definitions/ZKProof",
+          "title": "zk_proof for transaction validity"
+        },
+        "stealthAddress": {
+          "$ref": "#/definitions/StealthAddress",
+          "title": "stealth_address for recipient privacy"
+        },
+        "ringSignature": {
+          "$ref": "#/definitions/RingSignature",
+          "title": "ring_signature for sender anonymity"
+        },
+        "confidentialTransaction": {
+          "$ref": "#/definitions/ConfidentialTransaction",
+          "title": "confidential_transaction for amount privacy"
+        },
+        "encryptedMemo": {
+          "$ref": "#/definitions/EncryptedMemo",
+          "title": "encrypted_memo for private notes"
+        },
+        "networkPrivacy": {
+          "$ref": "#/definitions/NetworkPrivacy",
+          "title": "network_privacy settings"
+        },
+        "mixingPoolId": {
+          "type": "string",
+          "title": "mixing_pool_id if this transaction is part of a mixing pool"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "created_at timestamp"
+        }
+      },
+      "title": "PrivateTransaction combines all privacy features"
+    },
+    "RingSignature": {
+      "type": "object",
+      "properties": {
+        "keyImage": {
+          "type": "string",
+          "format": "byte",
+          "title": "key_image is the unique identifier to prevent double spending"
+        },
+        "ringMembers": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "byte"
+          },
+          "title": "ring_members are the public keys in the ring"
+        },
+        "signatureData": {
+          "type": "string",
+          "format": "byte",
+          "title": "signature_data contains the ring signature"
+        },
+        "ringSize": {
+          "type": "integer",
+          "format": "int64",
+          "title": "ring_size is the number of members in the ring"
+        },
+        "mixinLevel": {
+          "type": "integer",
+          "format": "int64",
+          "title": "mixin_level indicates the anonymity level"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "created_at timestamp"
+        }
+      },
+      "title": "RingSignature provides sender anonymity through ring signatures"
+    },
+    "Status": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Any"
+          }
+        }
+      }
+    },
+    "StealthAddress": {
+      "type": "object",
+      "properties": {
+        "publicSpendKey": {
+          "type": "string",
+          "format": "byte",
+          "title": "public_spend_key is the recipient's public spend key"
+        },
+        "publicViewKey": {
+          "type": "string",
+          "format": "byte",
+          "title": "public_view_key is the recipient's public view key"
+        },
+        "oneTimeAddress": {
+          "type": "string",
+          "format": "byte",
+          "title": "one_time_address is the generated stealth address"
+        },
+        "txPublicKey": {
+          "type": "string",
+          "format": "byte",
+          "title": "tx_public_key is the ephemeral public key for this transaction"
+        },
+        "encryptedAmount": {
+          "type": "string",
+          "format": "byte",
+          "title": "encrypted_amount contains the encrypted transaction amount"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "created_at timestamp"
+        }
+      },
+      "title": "StealthAddress represents a one-time address for private transactions"
+    },
+    "ZKProof": {
+      "type": "object",
+      "properties": {
+        "proofType": {
+          "type": "string",
+          "title": "proof_type indicates the type of ZK proof (GROTH16, PLONK, SNARK, STARK)"
+        },
+        "proofData": {
+          "type": "string",
+          "format": "byte",
+          "title": "proof_data contains the serialized proof data"
+        },
+        "publicInputs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "byte"
+          },
+          "title": "public_inputs are the public parameters of the proof"
+        },
+        "verificationKey": {
+          "type": "string",
+          "format": "byte",
+          "title": "verification_key is the key used to verify this proof"
+        },
+        "circuitId": {
+          "type": "string",
+          "title": "circuit_id identifies the circuit used for this proof"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "created_at timestamp"
+        }
+      },
+      "title": "ZKProof represents a zero-knowledge proof for private transactions"
+    },
+    "v1beta1.Params": {
+      "type": "object",
+      "properties": {
+        "enableZkProofs": {
+          "type": "boolean",
+          "title": "enable_zk_proofs enables zero-knowledge proof verification"
+        },
+        "enableStealthAddresses": {
+          "type": "boolean",
+          "title": "enable_stealth_addresses enables stealth address support"
+        },
+        "enableRingSignatures": {
+          "type": "boolean",
+          "title": "enable_ring_signatures enables ring signature verification"
+        },
+        "enableConfidentialTransactions": {
+          "type": "boolean",
+          "title": "enable_confidential_transactions enables confidential transactions"
+        },
+        "enableNetworkPrivacy": {
+          "type": "boolean",
+          "title": "enable_network_privacy enables Tor/I2P integration"
+        },
+        "enableMixing": {
+          "type": "boolean",
+          "title": "enable_mixing enables coin mixing services"
+        },
+        "minRingSize": {
+          "type": "integer",
+          "format": "int64",
+          "title": "min_ring_size is the minimum size for ring signatures"
+        },
+        "maxRingSize": {
+          "type": "integer",
+          "format": "int64",
+          "title": "max_ring_size is the maximum size for ring signatures"
+        },
+        "minMixingParticipants": {
+          "type": "integer",
+          "format": "int64",
+          "title": "min_mixing_participants is the minimum participants for mixing"
+        },
+        "mixingFee": {
+          "type": "string",
+          "title": "mixing_fee is the fee for using mixing services"
+        },
+        "zkProofVerificationCost": {
+          "type": "string",
+          "format": "uint64",
+          "title": "zk_proof_verification_cost is the computational cost for ZK verification"
+        }
+      },
+      "title": "Params defines the parameters for the privacy module"
+    },
+    "v1beta1.ViewKey": {
+      "type": "object",
+      "properties": {
+        "keyType": {
+          "type": "string",
+          "title": "key_type indicates the type of view key (INCOMING, OUTGOING, AUDIT)"
+        },
+        "publicViewKey": {
+          "type": "string",
+          "format": "byte",
+          "description": "public_view_key is the public component of the view key\nThis is the ONLY key stored on-chain. Private keys are client-side only."
+        },
+        "address": {
+          "type": "string",
+          "format": "byte",
+          "title": "address is the associated address"
+        },
+        "permissions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "permissions define what this view key can access"
+        },
+        "expiration": {
+          "type": "string",
+          "format": "date-time",
+          "title": "expiration is when this view key expires"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "created_at timestamp"
+        }
+      },
+      "description": "ViewKey enables selective disclosure of transaction details\nSECURITY NOTE: Private keys must NEVER be stored on-chain or transmitted in messages.\nPrivate keys are managed client-side only. The blockchain stores only public keys."
+    }
+  }
+}

@@ -1,0 +1,602 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "aura/validatorsecurity/v1beta1/query.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "Query"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/aura/validatorsecurity/v1beta1/alerts/{validatorAddress}": {
+      "get": {
+        "summary": "ValidatorAlerts queries alerts for a validator",
+        "operationId": "Query_ValidatorAlerts",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryValidatorAlertsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "validatorAddress",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/validatorsecurity/v1beta1/evidences": {
+      "get": {
+        "summary": "DoubleSignEvidences queries all double sign evidences",
+        "operationId": "Query_DoubleSignEvidences",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryDoubleSignEvidencesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/validatorsecurity/v1beta1/jailed": {
+      "get": {
+        "summary": "JailedValidators queries all jailed validators",
+        "operationId": "Query_JailedValidators",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryJailedValidatorsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/validatorsecurity/v1beta1/params": {
+      "get": {
+        "summary": "Params queries the module parameters",
+        "operationId": "Query_Params",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryParamsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/validatorsecurity/v1beta1/sentry/{validatorAddress}": {
+      "get": {
+        "summary": "SentryNodes queries sentry nodes for a validator",
+        "operationId": "Query_SentryNodes",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QuerySentryNodesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "validatorAddress",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/validatorsecurity/v1beta1/tombstoned": {
+      "get": {
+        "summary": "TombstonedValidators queries all tombstoned validators",
+        "operationId": "Query_TombstonedValidators",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryTombstonedValidatorsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/validatorsecurity/v1beta1/validators": {
+      "get": {
+        "summary": "AllValidators queries all validator security info",
+        "operationId": "Query_AllValidators",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryAllValidatorsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/validatorsecurity/v1beta1/validators/{validatorAddress}": {
+      "get": {
+        "summary": "ValidatorSecurityInfo queries security info for a validator",
+        "operationId": "Query_ValidatorSecurityInfo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryValidatorSecurityInfoResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "validatorAddress",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "AlertType": {
+      "type": "string",
+      "enum": [
+        "DOWNTIME",
+        "DOUBLE_SIGN",
+        "LOW_STAKE",
+        "SENTRY_NODE_OFFLINE",
+        "GEOGRAPHIC_VIOLATION",
+        "KEY_COMPROMISE",
+        "FAILOVER_TRIGGERED"
+      ],
+      "default": "DOWNTIME"
+    },
+    "Any": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "DoubleSignEvidence": {
+      "type": "object",
+      "properties": {
+        "validatorAddress": {
+          "type": "string"
+        },
+        "height": {
+          "type": "string",
+          "format": "int64"
+        },
+        "time": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "voteA": {
+          "type": "string",
+          "format": "byte"
+        },
+        "voteB": {
+          "type": "string",
+          "format": "byte"
+        },
+        "slashFraction": {
+          "type": "string"
+        }
+      },
+      "title": "DoubleSignEvidence represents evidence of double signing"
+    },
+    "QueryAllValidatorsResponse": {
+      "type": "object",
+      "properties": {
+        "validators": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1beta1.ValidatorSecurityInfo"
+          }
+        }
+      }
+    },
+    "QueryDoubleSignEvidencesResponse": {
+      "type": "object",
+      "properties": {
+        "evidences": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/DoubleSignEvidence"
+          }
+        }
+      }
+    },
+    "QueryJailedValidatorsResponse": {
+      "type": "object",
+      "properties": {
+        "validators": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1beta1.ValidatorSecurityInfo"
+          }
+        }
+      }
+    },
+    "QueryParamsResponse": {
+      "type": "object",
+      "properties": {
+        "params": {
+          "$ref": "#/definitions/ValidatorSecurityParams"
+        }
+      }
+    },
+    "QuerySentryNodesResponse": {
+      "type": "object",
+      "properties": {
+        "nodes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/SentryNodeInfo"
+          }
+        }
+      }
+    },
+    "QueryTombstonedValidatorsResponse": {
+      "type": "object",
+      "properties": {
+        "validators": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1beta1.ValidatorSecurityInfo"
+          }
+        }
+      }
+    },
+    "QueryValidatorAlertsResponse": {
+      "type": "object",
+      "properties": {
+        "alerts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/ValidatorAlert"
+          }
+        }
+      }
+    },
+    "QueryValidatorSecurityInfoResponse": {
+      "type": "object",
+      "properties": {
+        "info": {
+          "$ref": "#/definitions/v1beta1.ValidatorSecurityInfo"
+        }
+      }
+    },
+    "SentryNodeInfo": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string"
+        },
+        "validatorAddress": {
+          "type": "string"
+        },
+        "ipAddress": {
+          "type": "string"
+        },
+        "port": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "isActive": {
+          "type": "boolean"
+        },
+        "lastHeartbeat": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "requestCount": {
+          "type": "string",
+          "format": "int64"
+        },
+        "blockedRequests": {
+          "type": "string",
+          "format": "int64"
+        }
+      },
+      "title": "SentryNodeInfo stores information about sentry nodes"
+    },
+    "Severity": {
+      "type": "string",
+      "enum": [
+        "INFO",
+        "WARNING",
+        "CRITICAL"
+      ],
+      "default": "INFO"
+    },
+    "Status": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Any"
+          }
+        }
+      }
+    },
+    "ValidatorAlert": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "validatorAddress": {
+          "type": "string"
+        },
+        "alertType": {
+          "$ref": "#/definitions/AlertType"
+        },
+        "severity": {
+          "$ref": "#/definitions/Severity"
+        },
+        "message": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "acknowledged": {
+          "type": "boolean"
+        },
+        "acknowledgedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "acknowledgedBy": {
+          "type": "string"
+        }
+      },
+      "title": "ValidatorAlert represents an alert for monitoring"
+    },
+    "ValidatorSecurityParams": {
+      "type": "object",
+      "properties": {
+        "doubleSignSlashFraction": {
+          "type": "string",
+          "title": "Slashing parameters"
+        },
+        "downtimeSlashFraction": {
+          "type": "string"
+        },
+        "signedBlocksWindow": {
+          "type": "string",
+          "format": "int64",
+          "title": "Downtime tracking"
+        },
+        "minSignedPerWindow": {
+          "type": "string"
+        },
+        "downtimeJailDuration": {
+          "type": "string"
+        },
+        "minimumStakeAmount": {
+          "type": "string",
+          "title": "Minimum staking requirements"
+        },
+        "enableGeoDistribution": {
+          "type": "boolean",
+          "title": "Geographical distribution"
+        },
+        "maxValidatorsPerRegion": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "requireSentryNodes": {
+          "type": "boolean",
+          "title": "Sentry node requirements"
+        },
+        "minSentryNodes": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "monitoringInterval": {
+          "type": "string",
+          "title": "Monitoring"
+        },
+        "enableAutoFailover": {
+          "type": "boolean",
+          "title": "Failover"
+        },
+        "failoverTimeout": {
+          "type": "string"
+        }
+      },
+      "title": "ValidatorSecurityParams defines the parameters for validator security"
+    },
+    "v1beta1.ValidatorSecurityInfo": {
+      "type": "object",
+      "properties": {
+        "validatorAddress": {
+          "type": "string"
+        },
+        "hotKey": {
+          "type": "string",
+          "title": "Key separation"
+        },
+        "coldKey": {
+          "type": "string"
+        },
+        "keysSeparated": {
+          "type": "boolean"
+        },
+        "sentryNodeAddresses": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Sentry nodes"
+        },
+        "region": {
+          "type": "string",
+          "title": "Geographic location"
+        },
+        "countryCode": {
+          "type": "string"
+        },
+        "latitude": {
+          "type": "number",
+          "format": "double"
+        },
+        "longitude": {
+          "type": "number",
+          "format": "double"
+        },
+        "isJailed": {
+          "type": "boolean",
+          "title": "Status"
+        },
+        "isTombstoned": {
+          "type": "boolean"
+        },
+        "jailedUntil": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "tombstonedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "missedBlocksCounter": {
+          "type": "string",
+          "format": "int64",
+          "title": "Monitoring"
+        },
+        "indexOffset": {
+          "type": "string",
+          "format": "int64"
+        },
+        "lastSeen": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "backupValidatorAddresses": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Backup validators"
+        },
+        "failoverActive": {
+          "type": "boolean"
+        },
+        "activeBackup": {
+          "type": "string"
+        }
+      },
+      "title": "ValidatorSecurityInfo stores security-related information for a validator"
+    }
+  }
+}

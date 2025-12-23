@@ -201,7 +201,7 @@ func (k *Keeper) GetMempoolTransactions(ctx sdk.Context) []types.Transaction {
 	store := ctx.KVStore(k.storeKey)
 	prefix := []byte("mempool/")
 
-	var transactions []types.Transaction
+	transactions := make([]types.Transaction, 0, 64)
 
 	// Iterate over all mempool entries
 	iterator := storetypes.KVStorePrefixIterator(store, prefix)
@@ -320,7 +320,7 @@ func (k *Keeper) CleanupExpiredTransactions(ctx sdk.Context) error {
 	iterator := storetypes.KVStorePrefixIterator(store, prefix)
 	defer iterator.Close()
 
-	var toDelete []string
+	toDelete := make([]string, 0, 64)
 	currentHeight := ctx.BlockHeight()
 
 	for ; iterator.Valid(); iterator.Next() {

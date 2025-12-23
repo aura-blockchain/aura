@@ -108,7 +108,7 @@ func (k Keeper) GetValidatorSentryNodes(ctx context.Context, validatorAddr strin
 	iterator := storetypes.KVStorePrefixIterator(store, types.SentryNodeInfoKey)
 	defer iterator.Close()
 
-	var nodes []types.SentryNodeInfo
+	nodes := make([]types.SentryNodeInfo, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var node types.SentryNodeInfo
 		if err := k.cdc.Unmarshal(iterator.Value(), &node); err != nil {

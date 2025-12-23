@@ -278,7 +278,7 @@ func (k Keeper) ListAssistants(ctx sdk.Context, pageReq *query.PageRequest) ([]*
 	store := ctx.KVStore(k.storeKey)
 	prefixStore := storeprefix.NewStore(store, types.AssistantKeyPrefix)
 
-	var assistants []*types.Assistant
+	assistants := make([]*types.Assistant, 0, 64)
 	pageRes, err := query.Paginate(prefixStore, pageReq, func(_, value []byte) error {
 		var assistant types.Assistant
 		if err := k.cdc.Unmarshal(value, &assistant); err != nil {

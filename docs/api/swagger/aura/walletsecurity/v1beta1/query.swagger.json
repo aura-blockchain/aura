@@ -1,0 +1,817 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "aura/walletsecurity/v1beta1/query.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "Query"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {},
+  "definitions": {
+    "Any": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "BalanceChange": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string"
+        },
+        "denom": {
+          "type": "string"
+        },
+        "amountBefore": {
+          "type": "string"
+        },
+        "amountAfter": {
+          "type": "string"
+        },
+        "delta": {
+          "type": "string"
+        }
+      },
+      "title": "BalanceChange represents a balance change from simulation"
+    },
+    "DomainVerification": {
+      "type": "object",
+      "properties": {
+        "domain": {
+          "type": "string"
+        },
+        "verified": {
+          "type": "boolean"
+        },
+        "verifiedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "certificateHash": {
+          "type": "string"
+        },
+        "trustedAddresses": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "verifier": {
+          "type": "string"
+        }
+      },
+      "title": "DomainVerification represents verified domain information"
+    },
+    "DustAttackFilter": {
+      "type": "object",
+      "properties": {
+        "walletId": {
+          "type": "string"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "minimumAmount": {
+          "type": "string",
+          "title": "Minimum amount to accept"
+        },
+        "maxDustTransactionsPerBlock": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "blockedSenders": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "suspiciousPatternThreshold": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "lastUpdated": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "title": "DustAttackFilter represents dust attack filtering configuration"
+    },
+    "Guardian": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "contactHash": {
+          "type": "string",
+          "title": "Hash of email/phone for privacy"
+        },
+        "confirmed": {
+          "type": "boolean"
+        },
+        "addedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "confirmedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "recoveryRequestsCount": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "Guardian represents a social recovery guardian"
+    },
+    "HardwareWalletConfig": {
+      "type": "object",
+      "properties": {
+        "walletId": {
+          "type": "string"
+        },
+        "address": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/definitions/HardwareWalletType"
+        },
+        "deviceId": {
+          "type": "string"
+        },
+        "firmwareVersion": {
+          "type": "string"
+        },
+        "derivationPath": {
+          "type": "string"
+        },
+        "requiresPin": {
+          "type": "boolean"
+        },
+        "requiresPassphrase": {
+          "type": "boolean"
+        },
+        "registeredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "lastUsedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "signatureCount": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "title": "HardwareWalletConfig stores hardware wallet configuration"
+    },
+    "HardwareWalletType": {
+      "type": "string",
+      "enum": [
+        "HARDWARE_WALLET_TYPE_UNSPECIFIED",
+        "HARDWARE_WALLET_TYPE_LEDGER",
+        "HARDWARE_WALLET_TYPE_TREZOR",
+        "HARDWARE_WALLET_TYPE_KEEPKEY",
+        "HARDWARE_WALLET_TYPE_COLDCARD"
+      ],
+      "default": "HARDWARE_WALLET_TYPE_UNSPECIFIED",
+      "title": "HardwareWalletType represents supported hardware wallet types"
+    },
+    "MultiSigWallet": {
+      "type": "object",
+      "properties": {
+        "walletId": {
+          "type": "string"
+        },
+        "signers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "threshold": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "totalSigners": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "creator": {
+          "type": "string"
+        },
+        "signerWeights": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "title": "Optional weighted multisig"
+        },
+        "weightThreshold": {
+          "type": "integer",
+          "format": "int32",
+          "title": "For weighted multisig"
+        },
+        "timeLocked": {
+          "type": "boolean"
+        },
+        "unlockTime": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "pendingSigners": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Signers pending confirmation"
+        }
+      },
+      "title": "MultiSigWallet represents a multi-signature wallet"
+    },
+    "PendingMultiSigTransaction": {
+      "type": "object",
+      "properties": {
+        "txId": {
+          "type": "string"
+        },
+        "walletId": {
+          "type": "string"
+        },
+        "txData": {
+          "type": "string",
+          "format": "byte"
+        },
+        "signatures": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "signedBy": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "currentWeight": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "txType": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "simulationResult": {
+          "$ref": "#/definitions/TransactionSimulation"
+        }
+      },
+      "title": "PendingMultiSigTransaction represents a transaction awaiting signatures"
+    },
+    "QueryGetDomainVerificationResponse": {
+      "type": "object",
+      "properties": {
+        "verification": {
+          "$ref": "#/definitions/DomainVerification"
+        }
+      }
+    },
+    "QueryGetDustFilterResponse": {
+      "type": "object",
+      "properties": {
+        "filter": {
+          "$ref": "#/definitions/DustAttackFilter"
+        }
+      }
+    },
+    "QueryGetHardwareWalletResponse": {
+      "type": "object",
+      "properties": {
+        "config": {
+          "$ref": "#/definitions/HardwareWalletConfig"
+        }
+      }
+    },
+    "QueryGetMultiSigWalletResponse": {
+      "type": "object",
+      "properties": {
+        "wallet": {
+          "$ref": "#/definitions/MultiSigWallet"
+        }
+      }
+    },
+    "QueryGetPendingMultiSigTxResponse": {
+      "type": "object",
+      "properties": {
+        "tx": {
+          "$ref": "#/definitions/PendingMultiSigTransaction"
+        }
+      }
+    },
+    "QueryGetRecoveryRequestResponse": {
+      "type": "object",
+      "properties": {
+        "request": {
+          "$ref": "#/definitions/RecoveryRequest"
+        }
+      }
+    },
+    "QueryGetSecurityMetricsResponse": {
+      "type": "object",
+      "properties": {
+        "metrics": {
+          "$ref": "#/definitions/WalletSecurityMetrics"
+        }
+      }
+    },
+    "QueryGetSessionConfigResponse": {
+      "type": "object",
+      "properties": {
+        "config": {
+          "$ref": "#/definitions/SessionConfig"
+        }
+      }
+    },
+    "QueryGetSocialRecoveryConfigResponse": {
+      "type": "object",
+      "properties": {
+        "config": {
+          "$ref": "#/definitions/SocialRecoveryConfig"
+        }
+      }
+    },
+    "QueryGetSpendingLimitResponse": {
+      "type": "object",
+      "properties": {
+        "limit": {
+          "$ref": "#/definitions/SpendingLimit"
+        }
+      }
+    },
+    "QueryParamsResponse": {
+      "type": "object",
+      "properties": {
+        "params": {
+          "$ref": "#/definitions/WalletSecurityParams"
+        }
+      }
+    },
+    "RecoveryRequest": {
+      "type": "object",
+      "properties": {
+        "requestId": {
+          "type": "string"
+        },
+        "walletId": {
+          "type": "string"
+        },
+        "newAddress": {
+          "type": "string"
+        },
+        "approvals": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "approvalsCount": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "initiatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "executableAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "executedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "status": {
+          "$ref": "#/definitions/RecoveryStatus"
+        },
+        "initiator": {
+          "type": "string"
+        }
+      },
+      "title": "RecoveryRequest represents an active recovery request"
+    },
+    "RecoveryStatus": {
+      "type": "string",
+      "enum": [
+        "RECOVERY_STATUS_UNSPECIFIED",
+        "RECOVERY_STATUS_PENDING",
+        "RECOVERY_STATUS_APPROVED",
+        "RECOVERY_STATUS_EXECUTED",
+        "RECOVERY_STATUS_CANCELLED",
+        "RECOVERY_STATUS_EXPIRED"
+      ],
+      "default": "RECOVERY_STATUS_UNSPECIFIED",
+      "title": "RecoveryStatus represents the status of a recovery request"
+    },
+    "SessionConfig": {
+      "type": "object",
+      "properties": {
+        "sessionId": {
+          "type": "string"
+        },
+        "walletId": {
+          "type": "string"
+        },
+        "startedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "lastActivity": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "timeoutDuration": {
+          "type": "string"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "autoLockEnabled": {
+          "type": "boolean"
+        },
+        "inactivityThresholdSeconds": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "deviceFingerprint": {
+          "type": "string"
+        },
+        "locked": {
+          "type": "boolean"
+        }
+      },
+      "title": "SessionConfig represents wallet session configuration"
+    },
+    "SimulationRisk": {
+      "type": "string",
+      "enum": [
+        "SIMULATION_RISK_UNSPECIFIED",
+        "SIMULATION_RISK_LOW",
+        "SIMULATION_RISK_MEDIUM",
+        "SIMULATION_RISK_HIGH",
+        "SIMULATION_RISK_CRITICAL"
+      ],
+      "default": "SIMULATION_RISK_UNSPECIFIED",
+      "title": "SimulationRisk represents risk level from simulation"
+    },
+    "SocialRecoveryConfig": {
+      "type": "object",
+      "properties": {
+        "walletId": {
+          "type": "string"
+        },
+        "guardians": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Guardian"
+          }
+        },
+        "recoveryThreshold": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "recoveryDelay": {
+          "type": "string"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "configuredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "lastModified": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "maxGuardians": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "SocialRecoveryConfig represents social recovery settings"
+    },
+    "SpendingLimit": {
+      "type": "object",
+      "properties": {
+        "walletId": {
+          "type": "string"
+        },
+        "denom": {
+          "type": "string"
+        },
+        "dailyLimit": {
+          "type": "string"
+        },
+        "weeklyLimit": {
+          "type": "string"
+        },
+        "monthlyLimit": {
+          "type": "string"
+        },
+        "currentDailySpent": {
+          "type": "string"
+        },
+        "currentWeeklySpent": {
+          "type": "string"
+        },
+        "currentMonthlySpent": {
+          "type": "string"
+        },
+        "dailyResetAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "weeklyResetAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "monthlyResetAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "enabled": {
+          "type": "boolean"
+        }
+      },
+      "title": "SpendingLimit represents spending limit configuration"
+    },
+    "StateChange": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "oldValue": {
+          "type": "string",
+          "format": "byte"
+        },
+        "newValue": {
+          "type": "string",
+          "format": "byte"
+        },
+        "module": {
+          "type": "string"
+        }
+      },
+      "title": "StateChange represents a state change from simulation"
+    },
+    "Status": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Any"
+          }
+        }
+      }
+    },
+    "TransactionSimulation": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        },
+        "errorMessage": {
+          "type": "string"
+        },
+        "gasUsed": {
+          "type": "string",
+          "format": "int64"
+        },
+        "gasWanted": {
+          "type": "string",
+          "format": "int64"
+        },
+        "stateChanges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/StateChange"
+          }
+        },
+        "balanceChanges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/BalanceChange"
+          }
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "simulatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "riskLevel": {
+          "$ref": "#/definitions/SimulationRisk"
+        }
+      },
+      "title": "TransactionSimulation represents the result of transaction simulation"
+    },
+    "WalletSecurityMetrics": {
+      "type": "object",
+      "properties": {
+        "walletId": {
+          "type": "string"
+        },
+        "securityScore": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "hardwareWalletEnabled": {
+          "type": "boolean"
+        },
+        "multisigEnabled": {
+          "type": "boolean"
+        },
+        "socialRecoveryEnabled": {
+          "type": "boolean"
+        },
+        "spendingLimitsEnabled": {
+          "type": "boolean"
+        },
+        "sessionTimeoutEnabled": {
+          "type": "boolean"
+        },
+        "biometricEnabled": {
+          "type": "boolean"
+        },
+        "secureEnclaveEnabled": {
+          "type": "boolean"
+        },
+        "backupVerified": {
+          "type": "boolean"
+        },
+        "dustFilterEnabled": {
+          "type": "boolean"
+        },
+        "lastSecurityAudit": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "securityWarnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "title": "WalletSecurityMetrics represents security metrics for a wallet"
+    },
+    "WalletSecurityParams": {
+      "type": "object",
+      "properties": {
+        "hardwareWalletEnabled": {
+          "type": "boolean",
+          "title": "Hardware wallet settings"
+        },
+        "supportedHardwareTypes": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "maxSigners": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Multi-sig settings"
+        },
+        "minThreshold": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "maxThreshold": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "socialRecoveryEnabled": {
+          "type": "boolean",
+          "title": "Social recovery settings"
+        },
+        "maxGuardians": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "minRecoveryThreshold": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "defaultRecoveryDelaySeconds": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "defaultSessionTimeoutSeconds": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Session settings"
+        },
+        "maxSessionDurationSeconds": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "spendingLimitsEnabled": {
+          "type": "boolean",
+          "title": "Spending limit settings"
+        },
+        "defaultDailyLimit": {
+          "type": "string"
+        },
+        "biometricEnabled": {
+          "type": "boolean",
+          "title": "Biometric settings"
+        },
+        "maxBiometricAttempts": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "lockoutDurationSeconds": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "dustFilterEnabled": {
+          "type": "boolean",
+          "title": "Dust attack settings"
+        },
+        "minDustAmount": {
+          "type": "string"
+        },
+        "phishingProtectionEnabled": {
+          "type": "boolean",
+          "title": "Phishing protection"
+        },
+        "requireDomainVerification": {
+          "type": "boolean"
+        }
+      },
+      "title": "WalletSecurityParams defines module parameters"
+    }
+  }
+}

@@ -1,0 +1,1052 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "aura/security/v1beta1/tx.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "Msg"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {},
+  "definitions": {
+    "Any": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "BiometricType": {
+      "type": "string",
+      "enum": [
+        "BIOMETRIC_TYPE_UNSPECIFIED",
+        "BIOMETRIC_TYPE_FINGERPRINT",
+        "BIOMETRIC_TYPE_FACE",
+        "BIOMETRIC_TYPE_IRIS",
+        "BIOMETRIC_TYPE_VOICE"
+      ],
+      "default": "BIOMETRIC_TYPE_UNSPECIFIED"
+    },
+    "ConnectionConfig": {
+      "type": "object",
+      "properties": {
+        "maxInboundConnections": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Maximum number of inbound connections"
+        },
+        "maxOutboundConnections": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Maximum number of outbound connections"
+        },
+        "maxConnectionsPerIp": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Maximum connections per IP address"
+        },
+        "connectionTimeout": {
+          "type": "string",
+          "title": "Connection timeout"
+        },
+        "trustedPeersOnly": {
+          "type": "boolean",
+          "title": "Enable trusted peers only mode"
+        },
+        "minPeerDiversity": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Minimum peer diversity (different ASNs)"
+        }
+      }
+    },
+    "CryptographyParams": {
+      "type": "object",
+      "properties": {
+        "defaultRotationIntervalDays": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Key rotation"
+        },
+        "enableAutoRotation": {
+          "type": "boolean"
+        },
+        "minThresholdParticipants": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Threshold signatures"
+        },
+        "maxThresholdParticipants": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "minEntropyBits": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Random number generation"
+        },
+        "minPbkdf2Iterations": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Key stretching"
+        },
+        "minArgon2MemoryKb": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "minArgon2Iterations": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "enforceCertificatePinning": {
+          "type": "boolean",
+          "title": "Certificate pinning"
+        },
+        "certificatePinValidityDays": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "minSaltLengthBytes": {
+          "type": "integer",
+          "format": "int32",
+          "title": "General security"
+        },
+        "minKeyLengthBits": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
+    "ForkDetectionConfig": {
+      "type": "object",
+      "properties": {
+        "enableDetection": {
+          "type": "boolean",
+          "title": "Enable fork detection"
+        },
+        "heightDiffThreshold": {
+          "type": "string",
+          "format": "int64",
+          "title": "Block height difference to trigger alert"
+        },
+        "enableAutoResolution": {
+          "type": "boolean",
+          "title": "Enable automatic fork resolution"
+        },
+        "confirmationDepth": {
+          "type": "string",
+          "format": "int64",
+          "title": "Confirmation depth for finality"
+        }
+      }
+    },
+    "GossipConfig": {
+      "type": "object",
+      "properties": {
+        "verifySignatures": {
+          "type": "boolean",
+          "title": "Enable message signature verification"
+        },
+        "maxMessageSize": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Maximum message size"
+        },
+        "messageTtl": {
+          "type": "string",
+          "title": "Message TTL (time to live)"
+        },
+        "enableRedundancyFilter": {
+          "type": "boolean",
+          "title": "Enable redundancy filtering"
+        },
+        "maxFanout": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Maximum gossip fanout"
+        }
+      }
+    },
+    "Guardian": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "contactHash": {
+          "type": "string"
+        },
+        "confirmed": {
+          "type": "boolean"
+        },
+        "addedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "confirmedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "recoveryRequestsCount": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
+    "HardwareWalletType": {
+      "type": "string",
+      "enum": [
+        "HARDWARE_WALLET_TYPE_UNSPECIFIED",
+        "HARDWARE_WALLET_TYPE_LEDGER",
+        "HARDWARE_WALLET_TYPE_TREZOR",
+        "HARDWARE_WALLET_TYPE_KEEPKEY",
+        "HARDWARE_WALLET_TYPE_COLDCARD"
+      ],
+      "default": "HARDWARE_WALLET_TYPE_UNSPECIFIED"
+    },
+    "IncidentResponseParams": {
+      "type": "object",
+      "properties": {
+        "enableAutoDetection": {
+          "type": "boolean",
+          "title": "Incident detection"
+        },
+        "detectionInterval": {
+          "type": "string"
+        },
+        "enableAutoResponse": {
+          "type": "boolean",
+          "title": "Response automation"
+        },
+        "autoResponseActions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "criticalIncidentThreshold": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Severity thresholds"
+        },
+        "highIncidentThreshold": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "mediumIncidentThreshold": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "notificationEndpoints": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Notification settings"
+        },
+        "enableSmsAlerts": {
+          "type": "boolean"
+        },
+        "enableEmailAlerts": {
+          "type": "boolean"
+        },
+        "enableAuditTrail": {
+          "type": "boolean",
+          "title": "Audit trail"
+        },
+        "auditRetentionDays": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
+    "IncidentSeverity": {
+      "type": "string",
+      "enum": [
+        "INCIDENT_SEVERITY_UNSPECIFIED",
+        "INCIDENT_SEVERITY_LOW",
+        "INCIDENT_SEVERITY_MEDIUM",
+        "INCIDENT_SEVERITY_HIGH",
+        "INCIDENT_SEVERITY_CRITICAL"
+      ],
+      "default": "INCIDENT_SEVERITY_UNSPECIFIED"
+    },
+    "IncidentStatus": {
+      "type": "string",
+      "enum": [
+        "INCIDENT_STATUS_UNSPECIFIED",
+        "INCIDENT_STATUS_DETECTED",
+        "INCIDENT_STATUS_INVESTIGATING",
+        "INCIDENT_STATUS_MITIGATING",
+        "INCIDENT_STATUS_RESOLVED",
+        "INCIDENT_STATUS_CLOSED"
+      ],
+      "default": "INCIDENT_STATUS_UNSPECIFIED"
+    },
+    "KeyRotationPolicy": {
+      "type": "object",
+      "properties": {
+        "maxAgeDays": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "warningDaysBeforeExpiry": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "autoRotate": {
+          "type": "boolean"
+        },
+        "maxRotationAttempts": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "notificationAddresses": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "MempoolConfig": {
+      "type": "object",
+      "properties": {
+        "maxSize": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Maximum mempool size (number of transactions)"
+        },
+        "maxBytes": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Maximum mempool size in bytes"
+        },
+        "minPriorityFee": {
+          "type": "string",
+          "title": "Minimum priority fee to enter mempool"
+        },
+        "maxTxsPerAccount": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Maximum transactions per account in mempool"
+        },
+        "evictionPolicy": {
+          "type": "string",
+          "title": "Mempool eviction policy (oldest, lowest_fee, etc)"
+        },
+        "enablePriorityFees": {
+          "type": "boolean",
+          "title": "Enable priority fee mechanism"
+        }
+      }
+    },
+    "MsgAcknowledgeValidatorAlertResponse": {
+      "type": "object"
+    },
+    "MsgAddAuditLogEntryResponse": {
+      "type": "object",
+      "properties": {
+        "logId": {
+          "type": "string"
+        }
+      }
+    },
+    "MsgAddTrustedPeerResponse": {
+      "type": "object"
+    },
+    "MsgApproveRecoveryResponse": {
+      "type": "object",
+      "properties": {
+        "approvalsCount": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "thresholdReached": {
+          "type": "boolean"
+        }
+      }
+    },
+    "MsgBanPeerResponse": {
+      "type": "object"
+    },
+    "MsgConfigureSocialRecoveryResponse": {
+      "type": "object"
+    },
+    "MsgCreateConfidentialTransactionResponse": {
+      "type": "object",
+      "properties": {
+        "txId": {
+          "type": "string"
+        }
+      }
+    },
+    "MsgCreateIncidentResponse": {
+      "type": "object",
+      "properties": {
+        "incidentId": {
+          "type": "string"
+        }
+      }
+    },
+    "MsgCreateKeyRotationScheduleResponse": {
+      "type": "object",
+      "properties": {
+        "scheduleId": {
+          "type": "string"
+        }
+      }
+    },
+    "MsgCreateMixingPoolResponse": {
+      "type": "object",
+      "properties": {
+        "poolId": {
+          "type": "string"
+        }
+      }
+    },
+    "MsgCreateMultiSigWalletResponse": {
+      "type": "object",
+      "properties": {
+        "walletId": {
+          "type": "string"
+        }
+      }
+    },
+    "MsgCreateRingSignatureResponse": {
+      "type": "object",
+      "properties": {
+        "keyImage": {
+          "type": "string",
+          "format": "byte"
+        },
+        "signatureData": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "MsgCreateThresholdSchemeResponse": {
+      "type": "object",
+      "properties": {
+        "schemeId": {
+          "type": "string"
+        },
+        "publicKey": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "MsgExecuteMixingResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        },
+        "outputs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "byte"
+          }
+        }
+      }
+    },
+    "MsgExecuteMultiSigTransactionResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        },
+        "result": {
+          "type": "string"
+        }
+      }
+    },
+    "MsgExecuteRecoveryResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        }
+      }
+    },
+    "MsgExecuteResponseActionResponse": {
+      "type": "object",
+      "properties": {
+        "actionId": {
+          "type": "string"
+        },
+        "successful": {
+          "type": "boolean"
+        },
+        "result": {
+          "type": "string"
+        }
+      }
+    },
+    "MsgGenerateQuantumResistantKeyResponse": {
+      "type": "object",
+      "properties": {
+        "keyId": {
+          "type": "string"
+        },
+        "publicKey": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "MsgGenerateStealthAddressResponse": {
+      "type": "object",
+      "properties": {
+        "oneTimeAddress": {
+          "type": "string",
+          "format": "byte"
+        },
+        "txPublicKey": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "MsgInitiateRecoveryResponse": {
+      "type": "object",
+      "properties": {
+        "requestId": {
+          "type": "string"
+        }
+      }
+    },
+    "MsgJoinMixingPoolResponse": {
+      "type": "object",
+      "properties": {
+        "poolReady": {
+          "type": "boolean"
+        }
+      }
+    },
+    "MsgProposeMultiSigTransactionResponse": {
+      "type": "object",
+      "properties": {
+        "txId": {
+          "type": "string"
+        }
+      }
+    },
+    "MsgRegisterBiometricResponse": {
+      "type": "object"
+    },
+    "MsgRegisterHardwareWalletResponse": {
+      "type": "object",
+      "properties": {
+        "walletId": {
+          "type": "string"
+        }
+      }
+    },
+    "MsgRegisterSentryNodeResponse": {
+      "type": "object"
+    },
+    "MsgRegisterValidatorSecurityResponse": {
+      "type": "object"
+    },
+    "MsgRegisterZKProofCircuitResponse": {
+      "type": "object",
+      "properties": {
+        "proofId": {
+          "type": "string"
+        }
+      }
+    },
+    "MsgRemoveSentryNodeResponse": {
+      "type": "object"
+    },
+    "MsgRemoveTrustedPeerResponse": {
+      "type": "object"
+    },
+    "MsgReportDoubleSignResponse": {
+      "type": "object",
+      "properties": {
+        "slashed": {
+          "type": "boolean"
+        },
+        "slashAmount": {
+          "type": "string"
+        }
+      }
+    },
+    "MsgResolveForkAlertResponse": {
+      "type": "object"
+    },
+    "MsgResolveIncidentResponse": {
+      "type": "object"
+    },
+    "MsgResolvePartitionAlertResponse": {
+      "type": "object"
+    },
+    "MsgRotateKeyResponse": {
+      "type": "object",
+      "properties": {
+        "rotationId": {
+          "type": "string"
+        },
+        "rotationTime": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "MsgSetSpendingLimitsResponse": {
+      "type": "object"
+    },
+    "MsgSignMultiSigTransactionResponse": {
+      "type": "object",
+      "properties": {
+        "currentWeight": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "thresholdReached": {
+          "type": "boolean"
+        }
+      }
+    },
+    "MsgSubmitThresholdSignatureShareResponse": {
+      "type": "object",
+      "properties": {
+        "sharesCollected": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "thresholdReached": {
+          "type": "boolean"
+        },
+        "combinedSignature": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "MsgSubmitZKProofResponse": {
+      "type": "object",
+      "properties": {
+        "verified": {
+          "type": "boolean"
+        },
+        "verificationId": {
+          "type": "string"
+        }
+      }
+    },
+    "MsgTriggerFailoverResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        }
+      }
+    },
+    "MsgUnbanPeerResponse": {
+      "type": "object"
+    },
+    "MsgUpdateIncidentResponse": {
+      "type": "object"
+    },
+    "MsgUpdateParamsResponse": {
+      "type": "object"
+    },
+    "MsgUpdatePeerReputationResponse": {
+      "type": "object",
+      "properties": {
+        "newReputation": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
+    "MsgUpdateValidatorSecurityResponse": {
+      "type": "object"
+    },
+    "NetworkSecurityParams": {
+      "type": "object",
+      "properties": {
+        "rateLimit": {
+          "$ref": "#/definitions/RateLimitConfig",
+          "title": "Rate limiting parameters"
+        },
+        "connection": {
+          "$ref": "#/definitions/ConnectionConfig",
+          "title": "Connection parameters"
+        },
+        "mempool": {
+          "$ref": "#/definitions/MempoolConfig",
+          "title": "Mempool parameters"
+        },
+        "reputation": {
+          "$ref": "#/definitions/ReputationConfig",
+          "title": "Reputation parameters"
+        },
+        "gossip": {
+          "$ref": "#/definitions/GossipConfig",
+          "title": "Gossip validation parameters"
+        },
+        "forkDetection": {
+          "$ref": "#/definitions/ForkDetectionConfig",
+          "title": "Fork detection parameters"
+        },
+        "partitionDetection": {
+          "$ref": "#/definitions/PartitionDetectionConfig",
+          "title": "Network partitioning detection parameters"
+        }
+      }
+    },
+    "PartitionDetectionConfig": {
+      "type": "object",
+      "properties": {
+        "enableDetection": {
+          "type": "boolean",
+          "title": "Enable partition detection"
+        },
+        "minConnectedPeers": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Minimum connected peers to consider healthy"
+        },
+        "checkInterval": {
+          "type": "string",
+          "title": "Check interval"
+        },
+        "partitionThreshold": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Partition alert threshold (missing peers)"
+        }
+      }
+    },
+    "PrivacyParams": {
+      "type": "object",
+      "properties": {
+        "enableZkProofs": {
+          "type": "boolean",
+          "title": "Enable privacy features"
+        },
+        "enableStealthAddresses": {
+          "type": "boolean"
+        },
+        "enableRingSignatures": {
+          "type": "boolean"
+        },
+        "enableConfidentialTransactions": {
+          "type": "boolean"
+        },
+        "enableNetworkPrivacy": {
+          "type": "boolean"
+        },
+        "enableMixing": {
+          "type": "boolean"
+        },
+        "minRingSize": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Ring signature parameters"
+        },
+        "maxRingSize": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "minMixingParticipants": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Mixing parameters"
+        },
+        "mixingFee": {
+          "type": "string"
+        },
+        "zkProofVerificationCost": {
+          "type": "string",
+          "format": "uint64",
+          "title": "ZK proof verification cost"
+        }
+      }
+    },
+    "QuantumResistantAlgorithm": {
+      "type": "string",
+      "enum": [
+        "QUANTUM_RESISTANT_ALGORITHM_UNSPECIFIED",
+        "QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_DILITHIUM",
+        "QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_KYBER",
+        "QUANTUM_RESISTANT_ALGORITHM_FALCON",
+        "QUANTUM_RESISTANT_ALGORITHM_SPHINCS_PLUS",
+        "QUANTUM_RESISTANT_ALGORITHM_NTRU"
+      ],
+      "default": "QUANTUM_RESISTANT_ALGORITHM_UNSPECIFIED"
+    },
+    "RateLimitConfig": {
+      "type": "object",
+      "properties": {
+        "maxRequestsPerSecond": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Maximum requests per second per peer"
+        },
+        "burstSize": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Burst size for rate limiter"
+        },
+        "windowDuration": {
+          "type": "string",
+          "title": "Window duration for rate limiting"
+        },
+        "banDuration": {
+          "type": "string",
+          "title": "Ban duration for rate limit violations"
+        },
+        "bandwidthLimitPerPeer": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Bandwidth limit per peer (bytes per second)"
+        }
+      }
+    },
+    "ReputationConfig": {
+      "type": "object",
+      "properties": {
+        "enableTracking": {
+          "type": "boolean",
+          "title": "Enable reputation tracking"
+        },
+        "initialScore": {
+          "type": "string",
+          "format": "int64",
+          "title": "Initial reputation score"
+        },
+        "minScoreToConnect": {
+          "type": "string",
+          "format": "int64",
+          "title": "Minimum reputation to connect"
+        },
+        "decayRate": {
+          "type": "string",
+          "format": "int64",
+          "title": "Score decay rate per block"
+        },
+        "maxScore": {
+          "type": "string",
+          "format": "int64",
+          "title": "Maximum reputation score"
+        },
+        "misbehaviorPenalty": {
+          "type": "string",
+          "format": "int64",
+          "title": "Penalty for misbehavior"
+        },
+        "goodBehaviorReward": {
+          "type": "string",
+          "format": "int64",
+          "title": "Reward for good behavior"
+        }
+      }
+    },
+    "Status": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Any"
+          }
+        }
+      }
+    },
+    "ThresholdSchemeType": {
+      "type": "string",
+      "enum": [
+        "THRESHOLD_SCHEME_TYPE_UNSPECIFIED",
+        "THRESHOLD_SCHEME_TYPE_ECDSA",
+        "THRESHOLD_SCHEME_TYPE_EDDSA",
+        "THRESHOLD_SCHEME_TYPE_BLS",
+        "THRESHOLD_SCHEME_TYPE_SCHNORR"
+      ],
+      "default": "THRESHOLD_SCHEME_TYPE_UNSPECIFIED"
+    },
+    "ValidatorSecurityParams": {
+      "type": "object",
+      "properties": {
+        "doubleSignSlashFraction": {
+          "type": "string",
+          "title": "Slashing parameters"
+        },
+        "downtimeSlashFraction": {
+          "type": "string"
+        },
+        "signedBlocksWindow": {
+          "type": "string",
+          "format": "int64",
+          "title": "Downtime tracking"
+        },
+        "minSignedPerWindow": {
+          "type": "string"
+        },
+        "downtimeJailDuration": {
+          "type": "string"
+        },
+        "minimumStakeAmount": {
+          "type": "string",
+          "title": "Minimum staking requirements"
+        },
+        "enableGeoDistribution": {
+          "type": "boolean",
+          "title": "Geographical distribution"
+        },
+        "maxValidatorsPerRegion": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "requireSentryNodes": {
+          "type": "boolean",
+          "title": "Sentry node requirements"
+        },
+        "minSentryNodes": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "monitoringInterval": {
+          "type": "string",
+          "title": "Monitoring"
+        },
+        "enableAutoFailover": {
+          "type": "boolean",
+          "title": "Failover"
+        },
+        "failoverTimeout": {
+          "type": "string"
+        }
+      }
+    },
+    "WalletSecurityParams": {
+      "type": "object",
+      "properties": {
+        "requireHardwareWallet": {
+          "type": "boolean",
+          "title": "Hardware wallet requirements"
+        },
+        "defaultMultisigThreshold": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Multi-signature requirements"
+        },
+        "maxMultisigSigners": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "minRecoveryGuardians": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Social recovery parameters"
+        },
+        "maxRecoveryGuardians": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "recoveryDelay": {
+          "type": "string"
+        },
+        "enableTxSimulation": {
+          "type": "boolean",
+          "title": "Transaction simulation"
+        },
+        "requireSimulationApproval": {
+          "type": "boolean"
+        },
+        "enableSpendingLimits": {
+          "type": "boolean",
+          "title": "Spending limits"
+        },
+        "defaultDailyLimit": {
+          "type": "string"
+        },
+        "defaultSessionTimeout": {
+          "type": "string",
+          "title": "Session management"
+        },
+        "maxConcurrentSessions": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "enablePhishingProtection": {
+          "type": "boolean",
+          "title": "Phishing protection"
+        },
+        "requireDomainVerification": {
+          "type": "boolean"
+        },
+        "enableDustFilter": {
+          "type": "boolean",
+          "title": "Dust attack protection"
+        },
+        "minAcceptableAmount": {
+          "type": "string"
+        }
+      }
+    },
+    "ZKProofType": {
+      "type": "string",
+      "enum": [
+        "ZK_PROOF_TYPE_UNSPECIFIED",
+        "ZK_PROOF_TYPE_GROTH16",
+        "ZK_PROOF_TYPE_PLONK",
+        "ZK_PROOF_TYPE_BULLETPROOFS",
+        "ZK_PROOF_TYPE_STARK"
+      ],
+      "default": "ZK_PROOF_TYPE_UNSPECIFIED"
+    },
+    "v1beta1.Params": {
+      "type": "object",
+      "properties": {
+        "network": {
+          "$ref": "#/definitions/NetworkSecurityParams"
+        },
+        "validator": {
+          "$ref": "#/definitions/ValidatorSecurityParams"
+        },
+        "wallet": {
+          "$ref": "#/definitions/WalletSecurityParams"
+        },
+        "incident": {
+          "$ref": "#/definitions/IncidentResponseParams"
+        },
+        "crypto": {
+          "$ref": "#/definitions/CryptographyParams"
+        },
+        "privacy": {
+          "$ref": "#/definitions/PrivacyParams"
+        }
+      },
+      "title": "Consolidated Params for all security domains"
+    }
+  }
+}

@@ -1,0 +1,275 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "aura/identity/v1beta1/tx.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "Msg"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {},
+  "definitions": {
+    "Any": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "AuthParams": {
+      "type": "object",
+      "properties": {
+        "enableRbac": {
+          "type": "boolean",
+          "title": "Enable role-based access control"
+        },
+        "maxRolesPerAccount": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Maximum roles per account"
+        },
+        "sessionTimeout": {
+          "type": "string",
+          "title": "Session timeout duration"
+        },
+        "enableAuditLogging": {
+          "type": "boolean",
+          "title": "Enable audit logging"
+        },
+        "defaultTimelockDelaySeconds": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Default time delay for time-locked actions (seconds)"
+        },
+        "defaultRequestsPerMinute": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Default rate limits"
+        },
+        "defaultRequestsPerHour": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "defaultRequestsPerDay": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "multisigProposalExpirySeconds": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Multisig proposal expiry (seconds)"
+        }
+      },
+      "title": "AuthParams for role-based access control and sessions"
+    },
+    "IdentityChangeParams": {
+      "type": "object",
+      "properties": {
+        "maxRequestsPerWalletPerMonth": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Maximum requests per wallet per month"
+        },
+        "minConfidenceAfterChange": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Minimum confidence score after change"
+        },
+        "stalenessHeightThreshold": {
+          "type": "string",
+          "format": "int64",
+          "title": "Staleness height threshold"
+        },
+        "assistantSlashOnFalsePositive": {
+          "type": "boolean",
+          "title": "Slash assistant on false positive"
+        },
+        "stalenessInvestigatorChain": {
+          "type": "string",
+          "title": "Staleness investigator chain"
+        },
+        "keyRotationGracePeriodSeconds": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Key rotation grace period (seconds) - old keys remain valid during this time"
+        }
+      },
+      "title": "IdentityChangeParams for identity modification operations"
+    },
+    "MsgActivateEmergencyAdminResponse": {
+      "type": "object"
+    },
+    "MsgApplyIdentityChangeResponse": {
+      "type": "object"
+    },
+    "MsgAssignRoleResponse": {
+      "type": "object"
+    },
+    "MsgCancelTimeLockedActionResponse": {
+      "type": "object"
+    },
+    "MsgCreateMultisigProposalResponse": {
+      "type": "object",
+      "properties": {
+        "proposalId": {
+          "type": "string"
+        }
+      }
+    },
+    "MsgCreateMultisigWalletResponse": {
+      "type": "object",
+      "properties": {
+        "walletId": {
+          "type": "string"
+        }
+      }
+    },
+    "MsgCreateRoleResponse": {
+      "type": "object"
+    },
+    "MsgCreateSessionResponse": {
+      "type": "object",
+      "properties": {
+        "sessionId": {
+          "type": "string"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "MsgDeactivateEmergencyAdminResponse": {
+      "type": "object"
+    },
+    "MsgEndSessionResponse": {
+      "type": "object"
+    },
+    "MsgEraseIdentityResponse": {
+      "type": "object",
+      "properties": {
+        "erasedAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Confirmation timestamp"
+        }
+      }
+    },
+    "MsgExecuteMultisigProposalResponse": {
+      "type": "object"
+    },
+    "MsgExecuteTimeLockedActionResponse": {
+      "type": "object"
+    },
+    "MsgProposeTimeLockedActionResponse": {
+      "type": "object",
+      "properties": {
+        "actionId": {
+          "type": "string"
+        },
+        "executableAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "MsgRejectIdentityChangeResponse": {
+      "type": "object"
+    },
+    "MsgRequestIdentityChangeResponse": {
+      "type": "object",
+      "properties": {
+        "requestId": {
+          "type": "string"
+        }
+      }
+    },
+    "MsgRevokeRoleResponse": {
+      "type": "object"
+    },
+    "MsgRotateDIDKeyResponse": {
+      "type": "object",
+      "properties": {
+        "rotationTime": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Rotation timestamp"
+        },
+        "gracePeriodEnd": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Grace period end timestamp"
+        }
+      }
+    },
+    "MsgRotateValidatorKeyResponse": {
+      "type": "object"
+    },
+    "MsgSignMultisigProposalResponse": {
+      "type": "object"
+    },
+    "MsgSubmitAssistantProofResponse": {
+      "type": "object"
+    },
+    "MsgSuspendIdentityChangesResponse": {
+      "type": "object"
+    },
+    "MsgUpdateParamsResponse": {
+      "type": "object"
+    },
+    "Status": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Any"
+          }
+        }
+      }
+    },
+    "WalletType": {
+      "type": "string",
+      "enum": [
+        "WALLET_TYPE_UNSPECIFIED",
+        "WALLET_TYPE_3_OF_5",
+        "WALLET_TYPE_5_OF_7",
+        "WALLET_TYPE_CUSTOM"
+      ],
+      "default": "WALLET_TYPE_UNSPECIFIED",
+      "title": "WalletType enum"
+    },
+    "v1beta1.Params": {
+      "type": "object",
+      "properties": {
+        "auth": {
+          "$ref": "#/definitions/AuthParams",
+          "title": "Auth-related parameters"
+        },
+        "change": {
+          "$ref": "#/definitions/IdentityChangeParams",
+          "title": "Identity change parameters"
+        }
+      },
+      "title": "Params defines unified identity module parameters"
+    }
+  }
+}

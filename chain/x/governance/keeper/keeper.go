@@ -168,7 +168,7 @@ func (k *Keeper) GetAllProposals(ctx sdk.Context) []*types.Proposal {
 	iterator := storetypes.KVStorePrefixIterator(store, ProposalsKeyPrefix)
 	defer iterator.Close()
 
-	var proposals []*types.Proposal
+	proposals := make([]*types.Proposal, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var proposal types.Proposal
 		if err := k.cdc.Unmarshal(iterator.Value(), &proposal); err != nil {
@@ -256,7 +256,7 @@ func (k *Keeper) GetVotes(ctx sdk.Context, proposalID uint64) []*types.Vote {
 	iterator := storetypes.KVStorePrefixIterator(store, prefix)
 	defer iterator.Close()
 
-	var votes []*types.Vote
+	votes := make([]*types.Vote, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var vote types.Vote
 		if err := json.Unmarshal(iterator.Value(), &vote); err != nil {
@@ -324,7 +324,7 @@ func (k *Keeper) GetDeposits(ctx sdk.Context, proposalID uint64) []*types.Deposi
 	iterator := storetypes.KVStorePrefixIterator(store, prefix)
 	defer iterator.Close()
 
-	var deposits []*types.Deposit
+	deposits := make([]*types.Deposit, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var deposit types.Deposit
 		if err := k.cdc.Unmarshal(iterator.Value(), &deposit); err != nil {
@@ -491,7 +491,7 @@ func (k *Keeper) GetVoteDelegations(ctx sdk.Context, delegator string) []*types.
 	iterator := storetypes.KVStorePrefixIterator(store, prefix)
 	defer iterator.Close()
 
-	var delegations []*types.VoteDelegation
+	delegations := make([]*types.VoteDelegation, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var delegation types.VoteDelegation
 		if err := k.cdc.Unmarshal(iterator.Value(), &delegation); err != nil {
@@ -555,7 +555,7 @@ func (k *Keeper) GetVetoRequests(ctx sdk.Context, proposalID uint64) []*types.Ve
 	iterator := storetypes.KVStorePrefixIterator(store, prefix)
 	defer iterator.Close()
 
-	var vetos []*types.VetoRequest
+	vetos := make([]*types.VetoRequest, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var veto types.VetoRequest
 		if err := k.cdc.Unmarshal(iterator.Value(), &veto); err != nil {
@@ -635,7 +635,7 @@ func (k *Keeper) GetSnapshotVotes(ctx sdk.Context, proposalID uint64) []*types.S
 	iterator := storetypes.KVStorePrefixIterator(store, prefix)
 	defer iterator.Close()
 
-	var votes []*types.SnapshotVote
+	votes := make([]*types.SnapshotVote, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var vote types.SnapshotVote
 		if err := k.cdc.Unmarshal(iterator.Value(), &vote); err != nil {
@@ -866,7 +866,7 @@ func (k *Keeper) GetTokenLocks(ctx sdk.Context, address string) []*types.TokenLo
 	iterator := storetypes.KVStorePrefixIterator(store, prefix)
 	defer iterator.Close()
 
-	var locks []*types.TokenLock
+	locks := make([]*types.TokenLock, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var lock types.TokenLock
 		if err := k.cdc.Unmarshal(iterator.Value(), &lock); err != nil {
@@ -897,7 +897,7 @@ func (k *Keeper) GetAllTokenLocks(ctx sdk.Context) []*types.TokenLock {
 	iterator := storetypes.KVStorePrefixIterator(store, TokenLocksKeyPrefix)
 	defer iterator.Close()
 
-	var locks []*types.TokenLock
+	locks := make([]*types.TokenLock, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var lock types.TokenLock
 		if err := k.cdc.Unmarshal(iterator.Value(), &lock); err != nil {
@@ -915,7 +915,7 @@ func (k *Keeper) GetAllVoteDelegations(ctx sdk.Context) []*types.VoteDelegation 
 	iterator := storetypes.KVStorePrefixIterator(store, DelegationsKeyPrefix)
 	defer iterator.Close()
 
-	var delegations []*types.VoteDelegation
+	delegations := make([]*types.VoteDelegation, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var delegation types.VoteDelegation
 		if err := k.cdc.Unmarshal(iterator.Value(), &delegation); err != nil {
@@ -933,7 +933,7 @@ func (k *Keeper) GetAllVotes(ctx sdk.Context) []*types.Vote {
 	iterator := storetypes.KVStorePrefixIterator(store, VotesKeyPrefix)
 	defer iterator.Close()
 
-	var votes []*types.Vote
+	votes := make([]*types.Vote, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var vote types.Vote
 		if err := json.Unmarshal(iterator.Value(), &vote); err != nil {
@@ -951,7 +951,7 @@ func (k *Keeper) GetAllDeposits(ctx sdk.Context) []*types.Deposit {
 	iterator := storetypes.KVStorePrefixIterator(store, DepositsKeyPrefix)
 	defer iterator.Close()
 
-	var deposits []*types.Deposit
+	deposits := make([]*types.Deposit, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var deposit types.Deposit
 		if err := k.cdc.Unmarshal(iterator.Value(), &deposit); err != nil {
@@ -969,7 +969,7 @@ func (k *Keeper) GetAllVetoRequests(ctx sdk.Context) []*types.VetoRequest {
 	iterator := storetypes.KVStorePrefixIterator(store, VetoRequestsKeyPrefix)
 	defer iterator.Close()
 
-	var vetos []*types.VetoRequest
+	vetos := make([]*types.VetoRequest, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var veto types.VetoRequest
 		if err := k.cdc.Unmarshal(iterator.Value(), &veto); err != nil {

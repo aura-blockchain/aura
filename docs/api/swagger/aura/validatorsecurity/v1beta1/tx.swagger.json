@@ -1,0 +1,133 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "aura/validatorsecurity/v1beta1/tx.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "Msg"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {},
+  "definitions": {
+    "Any": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "MsgAcknowledgeAlertResponse": {
+      "type": "object"
+    },
+    "MsgRegisterSentryNodeResponse": {
+      "type": "object"
+    },
+    "MsgRegisterValidatorResponse": {
+      "type": "object"
+    },
+    "MsgReportDoubleSignResponse": {
+      "type": "object",
+      "properties": {
+        "slashed": {
+          "type": "boolean"
+        },
+        "slashAmount": {
+          "type": "string"
+        }
+      }
+    },
+    "MsgUnjailResponse": {
+      "type": "object"
+    },
+    "MsgUpdateParamsResponse": {
+      "type": "object"
+    },
+    "MsgUpdateSecurityInfoResponse": {
+      "type": "object"
+    },
+    "Status": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Any"
+          }
+        }
+      }
+    },
+    "ValidatorSecurityParams": {
+      "type": "object",
+      "properties": {
+        "doubleSignSlashFraction": {
+          "type": "string",
+          "title": "Slashing parameters"
+        },
+        "downtimeSlashFraction": {
+          "type": "string"
+        },
+        "signedBlocksWindow": {
+          "type": "string",
+          "format": "int64",
+          "title": "Downtime tracking"
+        },
+        "minSignedPerWindow": {
+          "type": "string"
+        },
+        "downtimeJailDuration": {
+          "type": "string"
+        },
+        "minimumStakeAmount": {
+          "type": "string",
+          "title": "Minimum staking requirements"
+        },
+        "enableGeoDistribution": {
+          "type": "boolean",
+          "title": "Geographical distribution"
+        },
+        "maxValidatorsPerRegion": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "requireSentryNodes": {
+          "type": "boolean",
+          "title": "Sentry node requirements"
+        },
+        "minSentryNodes": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "monitoringInterval": {
+          "type": "string",
+          "title": "Monitoring"
+        },
+        "enableAutoFailover": {
+          "type": "boolean",
+          "title": "Failover"
+        },
+        "failoverTimeout": {
+          "type": "string"
+        }
+      },
+      "title": "ValidatorSecurityParams defines the parameters for validator security"
+    }
+  }
+}

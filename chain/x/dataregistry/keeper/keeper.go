@@ -243,7 +243,7 @@ func (k *Keeper) DeleteDataItem(ctx sdk.Context, dataID string) error {
 // Note: For production, consider adding a separate index message type in proto
 func (k *Keeper) getUserDataIDs(ctx sdk.Context, ownerAddress string) []string {
 	store := k.storeService.OpenKVStore(ctx)
-	var dataIDs []string
+	dataIDs := make([]string, 0, 64)
 
 	prefix := types.DataItemKeyPrefix
 	iterator, err := store.Iterator(prefix, storetypes.PrefixEndBytes(prefix))
@@ -329,7 +329,7 @@ func (k *Keeper) ListUserDataItems(ctx sdk.Context, ownerAddress string, typeFil
 // Note: For production, consider adding a separate index message type in proto
 func (k *Keeper) getTypeDataIDs(ctx sdk.Context, dataType types.DataItemType) []string {
 	store := k.storeService.OpenKVStore(ctx)
-	var dataIDs []string
+	dataIDs := make([]string, 0, 64)
 
 	prefix := types.DataItemKeyPrefix
 	iterator, err := store.Iterator(prefix, storetypes.PrefixEndBytes(prefix))

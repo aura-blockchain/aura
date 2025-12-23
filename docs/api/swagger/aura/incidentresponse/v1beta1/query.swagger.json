@@ -1,0 +1,323 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "aura/incidentresponse/v1beta1/query.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "Query"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/aura/incidentresponse/v1beta1/incident/{incidentId}": {
+      "get": {
+        "summary": "GetIncident returns incident details",
+        "operationId": "Query_GetIncident",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryGetIncidentResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "incidentId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/incidentresponse/v1beta1/params": {
+      "get": {
+        "summary": "GetParams returns module parameters",
+        "operationId": "Query_GetParams",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryGetParamsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/incidentresponse/v1beta1/pause_state": {
+      "get": {
+        "summary": "GetChainPauseState returns current chain pause state",
+        "operationId": "Query_GetChainPauseState",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryGetChainPauseStateResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/incidentresponse/v1beta1/wallet_limit/{address}": {
+      "get": {
+        "summary": "CheckWalletLimit checks if an amount is within wallet limits",
+        "operationId": "Query_CheckWalletLimit",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryCheckWalletLimitResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "amount",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "currentBalance",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "Any": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "ChainPauseState": {
+      "type": "object",
+      "properties": {
+        "isPaused": {
+          "type": "boolean"
+        },
+        "pauseLevel": {
+          "type": "string"
+        },
+        "pausedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "pausedBy": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "incidentId": {
+          "type": "string"
+        },
+        "pausedModules": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "estimatedResume": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "title": "ChainPauseState represents the pause state of the chain"
+    },
+    "Incident": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "severity": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "reportedBy": {
+          "type": "string"
+        },
+        "reportedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "resolvedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "affectedSystems": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "responseTeam": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "title": "Incident represents a security incident"
+    },
+    "IncidentResponseParams": {
+      "type": "object",
+      "properties": {
+        "emergencyPauseEnabled": {
+          "type": "boolean"
+        },
+        "pauseAuthorizedKeys": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "pauseRequiredSigners": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "maxPauseDuration": {
+          "type": "string"
+        },
+        "hotWalletLimitsEnabled": {
+          "type": "boolean"
+        },
+        "globalMaxHotWallet": {
+          "type": "string"
+        },
+        "globalDailyLimit": {
+          "type": "string"
+        }
+      },
+      "title": "IncidentResponseParams represents the module parameters"
+    },
+    "QueryCheckWalletLimitResponse": {
+      "type": "object",
+      "properties": {
+        "allowed": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "title": "QueryCheckWalletLimitResponse is the response for wallet limit check"
+    },
+    "QueryGetChainPauseStateResponse": {
+      "type": "object",
+      "properties": {
+        "pauseState": {
+          "$ref": "#/definitions/ChainPauseState"
+        }
+      },
+      "title": "QueryGetChainPauseStateResponse is the response with pause state"
+    },
+    "QueryGetIncidentResponse": {
+      "type": "object",
+      "properties": {
+        "incident": {
+          "$ref": "#/definitions/Incident"
+        }
+      },
+      "title": "QueryGetIncidentResponse is the response with incident details"
+    },
+    "QueryGetParamsResponse": {
+      "type": "object",
+      "properties": {
+        "params": {
+          "$ref": "#/definitions/IncidentResponseParams"
+        }
+      },
+      "title": "QueryGetParamsResponse is the response with module parameters"
+    },
+    "Status": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Any"
+          }
+        }
+      }
+    }
+  }
+}

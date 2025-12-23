@@ -272,7 +272,7 @@ func (k *Keeper) ExportVerifiableScores(ctx sdk.Context) (map[string]interface{}
 
 // Helper function to split key by delimiter
 func splitKey(s, delim string) []string {
-	var result []string
+	result := make([]string, 0, 64)
 	var current string
 	for _, c := range s {
 		if string(c) == delim {

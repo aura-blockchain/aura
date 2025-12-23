@@ -226,7 +226,7 @@ func (k Keeper) IterateKYCRecords(ctx sdk.Context, callback func(record types.KY
 //       // Send notification to user
 //   }
 func (k Keeper) GetExpiringKYCRecords(ctx sdk.Context, withinDuration time.Duration) []*types.KYCRecord {
-	var expiringRecords []*types.KYCRecord
+	expiringRecords := make([]*types.KYCRecord, 0, 64)
 	expiryThreshold := ctx.BlockTime().Add(withinDuration)
 
 	k.IterateKYCRecords(ctx, func(record types.KYCRecord) bool {
@@ -267,7 +267,7 @@ func (k Keeper) GetExpiringKYCRecords(ctx sdk.Context, withinDuration time.Durat
 //       // Emit event or take action
 //   }
 func (k Keeper) GetExpiredKYCRecords(ctx sdk.Context) []*types.KYCRecord {
-	var expiredRecords []*types.KYCRecord
+	expiredRecords := make([]*types.KYCRecord, 0, 64)
 
 	k.IterateKYCRecords(ctx, func(record types.KYCRecord) bool {
 		// ExpiresAt is *time.Time (nullable), check for nil and dereference

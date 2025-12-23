@@ -291,7 +291,7 @@ func (k Keeper) CleanupExpiredRateLimits(ctx sdk.Context) {
 	}
 	defer iterator.Close()
 
-	var toDelete []string
+	toDelete := make([]string, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var entry types.RateLimitEntry
 		if err := k.cdc.Unmarshal(iterator.Value(), &entry); err != nil {

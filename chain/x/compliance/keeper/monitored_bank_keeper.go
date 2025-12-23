@@ -155,7 +155,7 @@ func (k *MonitoredBankKeeper) SendCoins(ctx sdk.Context, from, to sdk.AccAddress
 //   - error: Compliance violation or underlying keeper error
 func (k *MonitoredBankKeeper) InputOutputCoins(ctx sdk.Context, inputs []banktypes.Input, outputs []banktypes.Output) error {
 	// Monitor each input for compliance
-	var allAlerts []*types.TransactionAlert
+	allAlerts := make([]*types.TransactionAlert, 0, 64)
 	for _, input := range inputs {
 		fromAddr := sdk.MustAccAddressFromBech32(input.Address)
 

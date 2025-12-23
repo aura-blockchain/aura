@@ -1,0 +1,1136 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "aura/wasm/v1beta1/query.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "Query"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/aura/wasm/v1beta1/code": {
+      "get": {
+        "summary": "Codes returns all stored contract codes with pagination",
+        "operationId": "Query_Codes",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryCodesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "pagination.key",
+            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "pagination.offset",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.countTotal",
+            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pagination.reverse",
+            "description": "reverse is set to true if results are to be returned in the descending order.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/wasm/v1beta1/code/{codeId}": {
+      "get": {
+        "summary": "Code returns contract code by code ID",
+        "operationId": "Query_Code",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryCodeResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "codeId",
+            "description": "code_id is the unique code identifier",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/wasm/v1beta1/contract/{address}": {
+      "get": {
+        "summary": "ContractInfo returns contract metadata",
+        "operationId": "Query_ContractInfo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryContractInfoResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "address",
+            "description": "address is the bech32 address of the contract",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/wasm/v1beta1/contract/{address}/admin": {
+      "get": {
+        "summary": "ContractAdmin returns the admin of a contract",
+        "operationId": "Query_ContractAdmin",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryContractAdminResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "address",
+            "description": "address is the bech32 address of the contract",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/wasm/v1beta1/contract/{address}/history": {
+      "get": {
+        "summary": "ContractHistory returns the contract's code history",
+        "operationId": "Query_ContractHistory",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryContractHistoryResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "address",
+            "description": "address is the bech32 address of the contract",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "pagination.key",
+            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "pagination.offset",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.countTotal",
+            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pagination.reverse",
+            "description": "reverse is set to true if results are to be returned in the descending order.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/wasm/v1beta1/contract/{address}/raw/{queryData}": {
+      "get": {
+        "summary": "RawContractState returns raw contract state by key",
+        "operationId": "Query_RawContractState",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryRawContractStateResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "address",
+            "description": "address is the bech32 address of the contract",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "queryData",
+            "description": "query_data is the raw key to query in contract state",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "byte"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/wasm/v1beta1/contract/{address}/smart/{queryData}": {
+      "get": {
+        "summary": "SmartContractState executes a smart query against a contract",
+        "operationId": "Query_SmartContractState",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QuerySmartContractStateResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "address",
+            "description": "address is the bech32 address of the contract",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "queryData",
+            "description": "query_data is the JSON encoded query message to send to the contract",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "byte"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/wasm/v1beta1/contract/{address}/state": {
+      "get": {
+        "summary": "AllContractState returns all contract state entries with pagination",
+        "operationId": "Query_AllContractState",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryAllContractStateResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "address",
+            "description": "address is the bech32 address of the contract",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "pagination.key",
+            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "pagination.offset",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.countTotal",
+            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pagination.reverse",
+            "description": "reverse is set to true if results are to be returned in the descending order.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/wasm/v1beta1/params": {
+      "get": {
+        "summary": "Params returns the module parameters",
+        "operationId": "Query_Params",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryParamsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/wasm/v1beta1/security/paused": {
+      "get": {
+        "summary": "PausedContracts returns all paused contracts",
+        "operationId": "Query_PausedContracts",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryPausedContractsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "pagination.key",
+            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "pagination.offset",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.countTotal",
+            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pagination.reverse",
+            "description": "reverse is set to true if results are to be returned in the descending order.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/wasm/v1beta1/security/paused/{address}": {
+      "get": {
+        "summary": "IsContractPaused checks if a contract is paused",
+        "operationId": "Query_IsContractPaused",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryIsContractPausedResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "address",
+            "description": "address is the bech32 address of the contract",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/wasm/v1beta1/security/stats": {
+      "get": {
+        "summary": "SecurityStats returns security statistics for the module",
+        "operationId": "Query_SecurityStats",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QuerySecurityStatsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/wasm/v1beta1/security/uploader/{address}": {
+      "get": {
+        "summary": "IsAuthorizedUploader checks if an address is authorized to upload code",
+        "operationId": "Query_IsAuthorizedUploader",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryIsAuthorizedUploaderResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "address",
+            "description": "address is the bech32 address to check",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/wasm/v1beta1/security/uploaders": {
+      "get": {
+        "summary": "AuthorizedUploaders returns all authorized code uploaders",
+        "operationId": "Query_AuthorizedUploaders",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryAuthorizedUploadersResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "pagination.key",
+            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "pagination.offset",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.countTotal",
+            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pagination.reverse",
+            "description": "reverse is set to true if results are to be returned in the descending order.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "AccessConfig": {
+      "type": "object",
+      "properties": {
+        "permission": {
+          "$ref": "#/definitions/AccessType"
+        },
+        "address": {
+          "type": "string",
+          "title": "Address is only used when permission is AccessTypeOnlyAddress"
+        },
+        "addresses": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Addresses is only used when permission is AccessTypeAnyOfAddresses"
+        }
+      },
+      "title": "AccessConfig defines access control configuration"
+    },
+    "AccessType": {
+      "type": "string",
+      "enum": [
+        "ACCESS_TYPE_UNSPECIFIED",
+        "ACCESS_TYPE_NOBODY",
+        "ACCESS_TYPE_ONLY_ADDRESS",
+        "ACCESS_TYPE_EVERYBODY",
+        "ACCESS_TYPE_ANY_OF_ADDRESSES"
+      ],
+      "default": "ACCESS_TYPE_UNSPECIFIED",
+      "description": "- ACCESS_TYPE_UNSPECIFIED: ACCESS_TYPE_UNSPECIFIED placeholder for empty value\n - ACCESS_TYPE_NOBODY: ACCESS_TYPE_NOBODY no one can execute this\n - ACCESS_TYPE_ONLY_ADDRESS: ACCESS_TYPE_ONLY_ADDRESS only a specific address can execute\n - ACCESS_TYPE_EVERYBODY: ACCESS_TYPE_EVERYBODY everyone can execute\n - ACCESS_TYPE_ANY_OF_ADDRESSES: ACCESS_TYPE_ANY_OF_ADDRESSES any of the specified addresses can execute",
+      "title": "AccessType defines permission levels for contract code operations"
+    },
+    "Any": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "CodeInfo": {
+      "type": "object",
+      "properties": {
+        "codeHash": {
+          "type": "string",
+          "format": "byte",
+          "title": "code_hash is the SHA256 hash of the WASM bytecode"
+        },
+        "creator": {
+          "type": "string",
+          "title": "creator is the address that uploaded the code"
+        },
+        "instantiateConfig": {
+          "$ref": "#/definitions/AccessConfig",
+          "title": "instantiate_config defines access control for instantiation"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "uint64",
+          "title": "created_at is the block height when code was uploaded"
+        },
+        "source": {
+          "type": "string",
+          "title": "source is optional URL to source code repository"
+        },
+        "builder": {
+          "type": "string",
+          "title": "builder is optional docker image used to build"
+        }
+      },
+      "title": "CodeInfo stores metadata about a WASM code"
+    },
+    "ContractCodeHistoryOperationType": {
+      "type": "string",
+      "enum": [
+        "CONTRACT_CODE_HISTORY_OPERATION_TYPE_UNSPECIFIED",
+        "CONTRACT_CODE_HISTORY_OPERATION_TYPE_INIT",
+        "CONTRACT_CODE_HISTORY_OPERATION_TYPE_MIGRATE",
+        "CONTRACT_CODE_HISTORY_OPERATION_TYPE_GENESIS"
+      ],
+      "default": "CONTRACT_CODE_HISTORY_OPERATION_TYPE_UNSPECIFIED",
+      "description": "- CONTRACT_CODE_HISTORY_OPERATION_TYPE_UNSPECIFIED: CONTRACT_CODE_HISTORY_OPERATION_TYPE_UNSPECIFIED placeholder\n - CONTRACT_CODE_HISTORY_OPERATION_TYPE_INIT: CONTRACT_CODE_HISTORY_OPERATION_TYPE_INIT on contract instantiation\n - CONTRACT_CODE_HISTORY_OPERATION_TYPE_MIGRATE: CONTRACT_CODE_HISTORY_OPERATION_TYPE_MIGRATE on contract migration\n - CONTRACT_CODE_HISTORY_OPERATION_TYPE_GENESIS: CONTRACT_CODE_HISTORY_OPERATION_TYPE_GENESIS from genesis",
+      "title": "ContractCodeHistoryOperationType is the type of code update"
+    },
+    "ContractHistoryEntry": {
+      "type": "object",
+      "properties": {
+        "operation": {
+          "$ref": "#/definitions/ContractCodeHistoryOperationType",
+          "title": "operation describes what triggered this entry"
+        },
+        "codeId": {
+          "type": "string",
+          "format": "uint64",
+          "title": "code_id is the code reference at this point"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "uint64",
+          "title": "updated_at is the block height of this update"
+        },
+        "msg": {
+          "type": "string",
+          "format": "byte",
+          "title": "msg contains the initialization/migration message"
+        }
+      },
+      "title": "ContractHistoryEntry describes a single contract state change"
+    },
+    "Model": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "format": "byte"
+        },
+        "value": {
+          "type": "string",
+          "format": "byte"
+        }
+      },
+      "title": "Model represents a single key-value state entry"
+    },
+    "PageRequest": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "format": "byte",
+          "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set."
+        },
+        "offset": {
+          "type": "string",
+          "format": "uint64",
+          "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set."
+        },
+        "limit": {
+          "type": "string",
+          "format": "uint64",
+          "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app."
+        },
+        "countTotal": {
+          "type": "boolean",
+          "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set."
+        },
+        "reverse": {
+          "type": "boolean",
+          "description": "reverse is set to true if results are to be returned in the descending order."
+        }
+      },
+      "description": "message SomeRequest {\n         Foo some_parameter = 1;\n         PageRequest pagination = 2;\n }",
+      "title": "PageRequest is to be embedded in gRPC request messages for efficient\npagination. Ex:"
+    },
+    "PageResponse": {
+      "type": "object",
+      "properties": {
+        "nextKey": {
+          "type": "string",
+          "format": "byte",
+          "description": "next_key is the key to be passed to PageRequest.key to\nquery the next page most efficiently. It will be empty if\nthere are no more results."
+        },
+        "total": {
+          "type": "string",
+          "format": "uint64",
+          "title": "total is total number of results available if PageRequest.count_total\nwas set, its value is undefined otherwise"
+        }
+      },
+      "description": "PageResponse is to be embedded in gRPC response messages where the\ncorresponding request message has used PageRequest.\n\n message SomeResponse {\n         repeated Bar results = 1;\n         PageResponse page = 2;\n }"
+    },
+    "QueryAllContractStateResponse": {
+      "type": "object",
+      "properties": {
+        "models": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Model"
+          },
+          "title": "models is the list of key-value pairs in contract state"
+        },
+        "pagination": {
+          "$ref": "#/definitions/PageResponse",
+          "title": "pagination defines the pagination in the response"
+        }
+      },
+      "title": "QueryAllContractStateResponse is the response type for the Query/AllContractState RPC method"
+    },
+    "QueryAuthorizedUploadersResponse": {
+      "type": "object",
+      "properties": {
+        "uploaders": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "uploaders is the list of authorized uploader addresses"
+        },
+        "pagination": {
+          "$ref": "#/definitions/PageResponse",
+          "title": "pagination defines the pagination in the response"
+        }
+      },
+      "title": "QueryAuthorizedUploadersResponse is the response type for the Query/AuthorizedUploaders RPC method"
+    },
+    "QueryCodeResponse": {
+      "type": "object",
+      "properties": {
+        "codeId": {
+          "type": "string",
+          "format": "uint64",
+          "title": "code_id is the unique code identifier"
+        },
+        "codeInfo": {
+          "$ref": "#/definitions/CodeInfo",
+          "title": "code_info contains metadata about the code"
+        },
+        "data": {
+          "type": "string",
+          "format": "byte",
+          "title": "data is the wasm bytecode"
+        }
+      },
+      "title": "QueryCodeResponse is the response type for the Query/Code RPC method"
+    },
+    "QueryCodesResponse": {
+      "type": "object",
+      "properties": {
+        "codeInfos": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/CodeInfo"
+          },
+          "title": "code_infos is the list of stored code information"
+        },
+        "pagination": {
+          "$ref": "#/definitions/PageResponse",
+          "title": "pagination defines the pagination in the response"
+        }
+      },
+      "title": "QueryCodesResponse is the response type for the Query/Codes RPC method"
+    },
+    "QueryContractAdminResponse": {
+      "type": "object",
+      "properties": {
+        "admin": {
+          "type": "string",
+          "title": "admin is the bech32 address of the contract admin (empty if no admin)"
+        }
+      },
+      "title": "QueryContractAdminResponse is the response type for the Query/ContractAdmin RPC method"
+    },
+    "QueryContractHistoryResponse": {
+      "type": "object",
+      "properties": {
+        "entries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/ContractHistoryEntry"
+          },
+          "title": "entries contains the contract's history entries"
+        },
+        "pagination": {
+          "$ref": "#/definitions/PageResponse",
+          "title": "pagination defines the pagination in the response"
+        }
+      },
+      "title": "QueryContractHistoryResponse is the response type for the Query/ContractHistory RPC method"
+    },
+    "QueryContractInfoResponse": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string",
+          "title": "address is the bech32 address of the contract"
+        },
+        "contractInfo": {
+          "$ref": "#/definitions/v1beta1.ContractInfo",
+          "title": "contract_info contains metadata about the contract"
+        },
+        "isPaused": {
+          "type": "boolean",
+          "title": "is_paused indicates if the contract is currently paused"
+        }
+      },
+      "title": "QueryContractInfoResponse is the response type for the Query/ContractInfo RPC method"
+    },
+    "QueryIsAuthorizedUploaderResponse": {
+      "type": "object",
+      "properties": {
+        "isAuthorized": {
+          "type": "boolean",
+          "title": "is_authorized indicates if the address is authorized to upload code"
+        }
+      },
+      "title": "QueryIsAuthorizedUploaderResponse is the response type for the Query/IsAuthorizedUploader RPC method"
+    },
+    "QueryIsContractPausedResponse": {
+      "type": "object",
+      "properties": {
+        "isPaused": {
+          "type": "boolean",
+          "title": "is_paused indicates if the contract is paused"
+        }
+      },
+      "title": "QueryIsContractPausedResponse is the response type for the Query/IsContractPaused RPC method"
+    },
+    "QueryParamsResponse": {
+      "type": "object",
+      "properties": {
+        "params": {
+          "$ref": "#/definitions/v1beta1.Params",
+          "title": "params holds all the parameters of this module"
+        }
+      },
+      "title": "QueryParamsResponse is the response type for the Query/Params RPC method"
+    },
+    "QueryPausedContractsResponse": {
+      "type": "object",
+      "properties": {
+        "contracts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "contracts is the list of paused contract addresses"
+        },
+        "pagination": {
+          "$ref": "#/definitions/PageResponse",
+          "title": "pagination defines the pagination in the response"
+        }
+      },
+      "title": "QueryPausedContractsResponse is the response type for the Query/PausedContracts RPC method"
+    },
+    "QueryRawContractStateResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "string",
+          "format": "byte",
+          "title": "data is the raw value associated with the key"
+        }
+      },
+      "title": "QueryRawContractStateResponse is the response type for the Query/RawContractState RPC method"
+    },
+    "QuerySecurityStatsResponse": {
+      "type": "object",
+      "properties": {
+        "stats": {
+          "$ref": "#/definitions/v1beta1.SecurityStats",
+          "title": "stats contains the security statistics"
+        }
+      },
+      "title": "QuerySecurityStatsResponse is the response type for the Query/SecurityStats RPC method"
+    },
+    "QuerySmartContractStateResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "string",
+          "format": "byte",
+          "title": "data is the JSON encoded response from the contract"
+        }
+      },
+      "title": "QuerySmartContractStateResponse is the response type for the Query/SmartContractState RPC method"
+    },
+    "Status": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Any"
+          }
+        }
+      }
+    },
+    "v1beta1.ContractInfo": {
+      "type": "object",
+      "properties": {
+        "codeId": {
+          "type": "string",
+          "format": "uint64",
+          "title": "code_id references the code stored on chain"
+        },
+        "creator": {
+          "type": "string",
+          "title": "creator is the address that instantiated the contract"
+        },
+        "admin": {
+          "type": "string",
+          "title": "admin is the address that has admin privileges (can migrate/update)"
+        },
+        "label": {
+          "type": "string",
+          "title": "label is a human-readable name for the contract"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "uint64",
+          "title": "created_at is the block height of instantiation"
+        },
+        "ibcPortId": {
+          "type": "string",
+          "title": "ibc_port_id is the portID for IBC if enabled"
+        },
+        "extension": {
+          "type": "string",
+          "format": "byte",
+          "title": "extension allows storing arbitrary metadata"
+        }
+      },
+      "title": "ContractInfo stores metadata about a contract instance"
+    },
+    "v1beta1.Params": {
+      "type": "object",
+      "properties": {
+        "codeUploadAccess": {
+          "$ref": "#/definitions/AccessConfig",
+          "title": "code_upload_access defines access control for code upload"
+        },
+        "instantiateDefaultPermission": {
+          "$ref": "#/definitions/AccessType",
+          "title": "instantiate_default_permission defines default permission for contract instantiation"
+        },
+        "maxWasmCodeSize": {
+          "type": "string",
+          "format": "uint64",
+          "title": "max_wasm_code_size defines maximum allowed wasm code size in bytes"
+        },
+        "maxGasWasmExecution": {
+          "type": "string",
+          "format": "uint64",
+          "title": "max_gas_wasm_execution defines maximum gas for wasm execution"
+        },
+        "securityAnalysisEnabled": {
+          "type": "boolean",
+          "title": "security_analysis_enabled enables on-chain security analysis"
+        },
+        "requireAdminForMigrate": {
+          "type": "boolean",
+          "title": "require_admin_for_migrate requires admin to migrate contracts"
+        }
+      },
+      "title": "Params defines the parameters for the wasm module"
+    },
+    "v1beta1.SecurityStats": {
+      "type": "object",
+      "properties": {
+        "totalCodesAnalyzed": {
+          "type": "string",
+          "format": "uint64",
+          "title": "total_codes_analyzed is the number of codes that passed security analysis"
+        },
+        "codesRejected": {
+          "type": "string",
+          "format": "uint64",
+          "title": "codes_rejected is the number of codes rejected by security analysis"
+        },
+        "contractsPaused": {
+          "type": "string",
+          "format": "uint64",
+          "title": "contracts_paused is the current number of paused contracts"
+        },
+        "totalExecutions": {
+          "type": "string",
+          "format": "uint64",
+          "title": "total_executions is the total number of contract executions"
+        },
+        "failedExecutions": {
+          "type": "string",
+          "format": "uint64",
+          "title": "failed_executions is the number of failed executions"
+        },
+        "gasConsumedTotal": {
+          "type": "string",
+          "format": "uint64",
+          "title": "gas_consumed_total is the total gas consumed by wasm executions"
+        },
+        "lastSecurityScan": {
+          "type": "string",
+          "format": "uint64",
+          "title": "last_security_scan is the block height of last security scan"
+        }
+      },
+      "title": "SecurityStats tracks security metrics for the WASM module"
+    }
+  }
+}

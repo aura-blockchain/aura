@@ -72,7 +72,8 @@ func (k *Keeper) GetAllKYCRecords(ctx sdk.Context) ([]*types.KYCRecord, error) {
 	iterator := storetypes.KVStorePrefixIterator(store, KYCRecordsKeyPrefix)
 	defer iterator.Close()
 
-	var records []*types.KYCRecord
+	// Pre-allocate with reasonable initial capacity to reduce reallocations
+	records := make([]*types.KYCRecord, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var record types.KYCRecord
 		if err := k.cdc.Unmarshal(iterator.Value(), &record); err != nil {
@@ -446,7 +447,8 @@ func (k *Keeper) GetAllAMLProfiles(ctx sdk.Context) ([]*types.AMLProfile, error)
 	iterator := storetypes.KVStorePrefixIterator(store, AMLProfilesKeyPrefix)
 	defer iterator.Close()
 
-	var profiles []*types.AMLProfile
+	// Pre-allocate with reasonable initial capacity to reduce reallocations
+	profiles := make([]*types.AMLProfile, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var profile types.AMLProfile
 		if err := k.cdc.Unmarshal(iterator.Value(), &profile); err != nil {
@@ -682,7 +684,7 @@ func (k *Keeper) GetAllSuspiciousActivities(ctx sdk.Context) ([]*types.Suspiciou
 	iterator := storetypes.KVStorePrefixIterator(store, SuspiciousActivitiesKeyPrefix)
 	defer iterator.Close()
 
-	var activities []*types.SuspiciousActivity
+	activities := make([]*types.SuspiciousActivity, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var activity types.SuspiciousActivity
 		if err := k.cdc.Unmarshal(iterator.Value(), &activity); err != nil {
@@ -728,7 +730,7 @@ func (k *Keeper) GetAllMonitoringRules(ctx sdk.Context) ([]*types.TransactionMon
 	iterator := storetypes.KVStorePrefixIterator(store, MonitoringRulesKeyPrefix)
 	defer iterator.Close()
 
-	var rules []*types.TransactionMonitoringRule
+	rules := make([]*types.TransactionMonitoringRule, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var rule types.TransactionMonitoringRule
 		if err := k.cdc.Unmarshal(iterator.Value(), &rule); err != nil {
@@ -832,7 +834,7 @@ func (k *Keeper) GetAllSanctionsResults(ctx sdk.Context) ([]*types.SanctionsScre
 	iterator := storetypes.KVStorePrefixIterator(store, SanctionsResultsKeyPrefix)
 	defer iterator.Close()
 
-	var results []*types.SanctionsScreeningResult
+	results := make([]*types.SanctionsScreeningResult, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var result types.SanctionsScreeningResult
 		if err := k.cdc.Unmarshal(iterator.Value(), &result); err != nil {
@@ -944,7 +946,7 @@ func (k *Keeper) GetAllGDPRRequests(ctx sdk.Context) ([]*types.GDPRDataRequest, 
 	iterator := storetypes.KVStorePrefixIterator(store, GDPRRequestsKeyPrefix)
 	defer iterator.Close()
 
-	var requests []*types.GDPRDataRequest
+	requests := make([]*types.GDPRDataRequest, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var request types.GDPRDataRequest
 		if err := k.cdc.Unmarshal(iterator.Value(), &request); err != nil {
@@ -1413,7 +1415,7 @@ func (k *Keeper) GetAllKYCRecordsPaginated(ctx sdk.Context, pagination *query.Pa
 	store := ctx.KVStore(k.storeKey)
 	recordStore := prefix.NewStore(store, KYCRecordsKeyPrefix)
 
-	var records []*types.KYCRecord
+	records := make([]*types.KYCRecord, 0, 64)
 	pageRes, err := query.Paginate(recordStore, pagination, func(key []byte, value []byte) error {
 		var record types.KYCRecord
 		if err := k.cdc.Unmarshal(value, &record); err != nil {
@@ -1434,7 +1436,7 @@ func (k *Keeper) GetAllAMLProfilesPaginated(ctx sdk.Context, pagination *query.P
 	store := ctx.KVStore(k.storeKey)
 	profileStore := prefix.NewStore(store, AMLProfilesKeyPrefix)
 
-	var profiles []*types.AMLProfile
+	profiles := make([]*types.AMLProfile, 0, 64)
 	pageRes, err := query.Paginate(profileStore, pagination, func(key []byte, value []byte) error {
 		var profile types.AMLProfile
 		if err := k.cdc.Unmarshal(value, &profile); err != nil {
@@ -1455,7 +1457,7 @@ func (k *Keeper) GetAllSanctionsResultsPaginated(ctx sdk.Context, pagination *qu
 	store := ctx.KVStore(k.storeKey)
 	resultsStore := prefix.NewStore(store, SanctionsResultsKeyPrefix)
 
-	var results []*types.SanctionsScreeningResult
+	results := make([]*types.SanctionsScreeningResult, 0, 64)
 	pageRes, err := query.Paginate(resultsStore, pagination, func(key []byte, value []byte) error {
 		var result types.SanctionsScreeningResult
 		if err := k.cdc.Unmarshal(value, &result); err != nil {
@@ -1545,7 +1547,7 @@ func (k *Keeper) GetAllGDPRRequestsPaginated(ctx sdk.Context, pagination *query.
 	store := ctx.KVStore(k.storeKey)
 	requestStore := prefix.NewStore(store, GDPRRequestsKeyPrefix)
 
-	var requests []*types.GDPRDataRequest
+	requests := make([]*types.GDPRDataRequest, 0, 64)
 	pageRes, err := query.Paginate(requestStore, pagination, func(key []byte, value []byte) error {
 		var request types.GDPRDataRequest
 		if err := k.cdc.Unmarshal(value, &request); err != nil {

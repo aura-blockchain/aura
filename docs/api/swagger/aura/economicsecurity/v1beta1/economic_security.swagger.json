@@ -1,0 +1,1035 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "aura/economicsecurity/v1beta1/economic_security.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "Msg"
+    },
+    {
+      "name": "Query"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {},
+  "definitions": {
+    "AlertSeverity": {
+      "type": "string",
+      "enum": [
+        "ALERT_SEVERITY_UNSPECIFIED",
+        "ALERT_SEVERITY_INFO",
+        "ALERT_SEVERITY_WARNING",
+        "ALERT_SEVERITY_CRITICAL",
+        "ALERT_SEVERITY_EMERGENCY"
+      ],
+      "default": "ALERT_SEVERITY_UNSPECIFIED",
+      "title": "AlertSeverity defines alert severity levels"
+    },
+    "Any": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "DynamicFeeConfig": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "title": "Whether dynamic fees are enabled"
+        },
+        "baseFee": {
+          "type": "string",
+          "title": "Base fee (in micro units)"
+        },
+        "currentMultiplier": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Current fee multiplier (basis points)"
+        },
+        "minMultiplier": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Minimum fee multiplier"
+        },
+        "maxMultiplier": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Maximum fee multiplier"
+        },
+        "targetUtilization": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Target block utilization percentage (basis points)"
+        },
+        "adjustmentSpeed": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Adjustment speed (how fast fees adjust)"
+        },
+        "recentUtilization": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uint64"
+          },
+          "title": "Recent block utilization (rolling average)"
+        },
+        "utilizationWindow": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Window size for utilization calculation"
+        }
+      },
+      "title": "DynamicFeeConfig defines dynamic fee adjustment parameters"
+    },
+    "GovernanceConfig": {
+      "type": "object",
+      "properties": {
+        "minProposalStake": {
+          "type": "string",
+          "title": "Minimum stake required to create a proposal"
+        },
+        "quadraticVotingEnabled": {
+          "type": "boolean",
+          "title": "Whether quadratic voting is enabled"
+        },
+        "voteLockingEnabled": {
+          "type": "boolean",
+          "title": "Vote locking enabled"
+        },
+        "minLockDuration": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Minimum lock duration for voting power boost (seconds)"
+        },
+        "maxLockDuration": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Maximum lock duration (seconds)"
+        },
+        "lockMultiplierPerYear": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Vote power multiplier per year locked (basis points)"
+        },
+        "proposalDeposit": {
+          "type": "string",
+          "title": "Proposal deposit amount"
+        },
+        "quorumPercentage": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Quorum percentage required (basis points)"
+        },
+        "passThresholdPercentage": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Pass threshold percentage (basis points)"
+        }
+      },
+      "title": "GovernanceConfig defines governance parameters"
+    },
+    "InflationAlert": {
+      "type": "object",
+      "properties": {
+        "alertId": {
+          "type": "string",
+          "title": "Alert ID"
+        },
+        "alertType": {
+          "$ref": "#/definitions/InflationAlertType",
+          "title": "Alert type"
+        },
+        "currentInflationRate": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Current inflation rate when alert triggered"
+        },
+        "targetInflationRate": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Target inflation rate"
+        },
+        "triggeredAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Timestamp when alert was triggered"
+        },
+        "message": {
+          "type": "string",
+          "title": "Alert message"
+        },
+        "severity": {
+          "$ref": "#/definitions/AlertSeverity",
+          "title": "Severity level"
+        },
+        "actionTaken": {
+          "type": "boolean",
+          "title": "Whether action was taken"
+        },
+        "actionDescription": {
+          "type": "string",
+          "title": "Action description"
+        }
+      },
+      "title": "InflationAlert represents an inflation monitoring alert"
+    },
+    "InflationAlertType": {
+      "type": "string",
+      "enum": [
+        "INFLATION_ALERT_TYPE_UNSPECIFIED",
+        "INFLATION_ALERT_TYPE_ABOVE_TARGET",
+        "INFLATION_ALERT_TYPE_BELOW_TARGET",
+        "INFLATION_ALERT_TYPE_ABOVE_MAX",
+        "INFLATION_ALERT_TYPE_BELOW_MIN",
+        "INFLATION_ALERT_TYPE_RAPID_CHANGE"
+      ],
+      "default": "INFLATION_ALERT_TYPE_UNSPECIFIED",
+      "title": "InflationAlertType defines types of inflation alerts"
+    },
+    "LiquidityMiningConfig": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "title": "Whether liquidity mining is enabled"
+        },
+        "totalRewardsAllocated": {
+          "type": "string",
+          "title": "Total rewards allocated for liquidity mining"
+        },
+        "totalRewardsDistributed": {
+          "type": "string",
+          "title": "Total rewards distributed"
+        },
+        "maxRewardsPerEpoch": {
+          "type": "string",
+          "title": "Maximum rewards per epoch"
+        },
+        "currentEpoch": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Current epoch number"
+        },
+        "epochDurationBlocks": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Epoch duration in blocks"
+        },
+        "lastDistributionHeight": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Last distribution block height"
+        },
+        "irVerifiedMultiplier": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Reward multiplier for IR-verified users (basis points)"
+        }
+      },
+      "title": "LiquidityMiningConfig defines liquidity mining parameters"
+    },
+    "MEVConfig": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "title": "Whether MEV redistribution is enabled"
+        },
+        "userRedistributionPercentage": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Percentage of MEV to redistribute to users (basis points)"
+        },
+        "validatorPercentage": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Percentage of MEV to validators (basis points)"
+        },
+        "treasuryPercentage": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Percentage of MEV to treasury (basis points)"
+        },
+        "burnPercentage": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Percentage of MEV to burn (basis points)"
+        },
+        "totalMevCaptured": {
+          "type": "string",
+          "title": "Total MEV captured"
+        },
+        "totalMevRedistributed": {
+          "type": "string",
+          "title": "Total MEV redistributed"
+        },
+        "strategy": {
+          "$ref": "#/definitions/MEVRedistributionStrategy",
+          "title": "MEV redistribution strategy"
+        }
+      },
+      "title": "MEVConfig defines MEV redistribution parameters"
+    },
+    "MEVRedistributionStrategy": {
+      "type": "string",
+      "enum": [
+        "MEV_STRATEGY_UNSPECIFIED",
+        "MEV_STRATEGY_PROPORTIONAL_TO_STAKE",
+        "MEV_STRATEGY_PROPORTIONAL_TO_ACTIVITY",
+        "MEV_STRATEGY_EQUAL_DISTRIBUTION",
+        "MEV_STRATEGY_IR_WEIGHTED"
+      ],
+      "default": "MEV_STRATEGY_UNSPECIFIED",
+      "title": "MEVRedistributionStrategy defines how MEV is redistributed"
+    },
+    "MsgAdjustInflationRateResponse": {
+      "type": "object",
+      "properties": {
+        "oldRate": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "newRate": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "MsgCreateVestingScheduleResponse": {
+      "type": "object",
+      "properties": {
+        "scheduleId": {
+          "type": "string"
+        }
+      }
+    },
+    "MsgExecuteTreasurySpendResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        }
+      }
+    },
+    "MsgLockVotingTokensResponse": {
+      "type": "object",
+      "properties": {
+        "lockId": {
+          "type": "string"
+        },
+        "votingPower": {
+          "type": "string"
+        }
+      }
+    },
+    "MsgProposeTreasurySpendResponse": {
+      "type": "object",
+      "properties": {
+        "txId": {
+          "type": "string"
+        },
+        "executableAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "MsgReleaseVestedTokensResponse": {
+      "type": "object",
+      "properties": {
+        "amountReleased": {
+          "type": "string"
+        }
+      }
+    },
+    "MsgRevokeVestingScheduleResponse": {
+      "type": "object",
+      "properties": {
+        "unvestedAmountReturned": {
+          "type": "string"
+        }
+      }
+    },
+    "MsgSignTreasurySpendResponse": {
+      "type": "object",
+      "properties": {
+        "currentSignatures": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "requiredSignatures": {
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
+    "MsgUnlockVotingTokensResponse": {
+      "type": "object",
+      "properties": {
+        "amountUnlocked": {
+          "type": "string"
+        }
+      }
+    },
+    "MsgUpdateParamsResponse": {
+      "type": "object"
+    },
+    "QueryInflationAlertsResponse": {
+      "type": "object",
+      "properties": {
+        "alerts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/InflationAlert"
+          }
+        }
+      }
+    },
+    "QueryInflationMetricsResponse": {
+      "type": "object",
+      "properties": {
+        "currentInflationRate": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "targetInflationRate": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "inflationChange24h": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "lastAdjustment": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "nextCheck": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "QueryLiquidityMiningStatsResponse": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "totalAllocated": {
+          "type": "string"
+        },
+        "totalDistributed": {
+          "type": "string"
+        },
+        "remainingRewards": {
+          "type": "string"
+        },
+        "currentEpoch": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "rewardsThisEpoch": {
+          "type": "string"
+        },
+        "nextDistributionHeight": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "QueryMEVStatsResponse": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "totalCaptured": {
+          "type": "string"
+        },
+        "totalRedistributed": {
+          "type": "string"
+        },
+        "pendingRedistribution": {
+          "type": "string"
+        },
+        "userRedistributionPercentage": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "strategy": {
+          "$ref": "#/definitions/MEVRedistributionStrategy"
+        }
+      }
+    },
+    "QueryParamsResponse": {
+      "type": "object",
+      "properties": {
+        "params": {
+          "$ref": "#/definitions/v1beta1.Params"
+        }
+      }
+    },
+    "QueryPendingTreasuryTxResponse": {
+      "type": "object",
+      "properties": {
+        "transaction": {
+          "$ref": "#/definitions/v1beta1.PendingTreasuryTx"
+        }
+      }
+    },
+    "QueryPendingTreasuryTxsResponse": {
+      "type": "object",
+      "properties": {
+        "transactions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1beta1.PendingTreasuryTx"
+          }
+        }
+      }
+    },
+    "QueryTokenomicsStatsResponse": {
+      "type": "object",
+      "properties": {
+        "maxSupply": {
+          "type": "string"
+        },
+        "circulatingSupply": {
+          "type": "string"
+        },
+        "totalVested": {
+          "type": "string"
+        },
+        "totalVesting": {
+          "type": "string"
+        },
+        "totalLockedGovernance": {
+          "type": "string"
+        },
+        "treasuryBalance": {
+          "type": "string"
+        },
+        "currentInflationRate": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "totalBurned": {
+          "type": "string"
+        },
+        "whaleProtectionTriggers24h": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "transferTaxCollected24h": {
+          "type": "string"
+        }
+      }
+    },
+    "QueryUserMEVBalanceResponse": {
+      "type": "object",
+      "properties": {
+        "balance": {
+          "type": "string"
+        },
+        "lifetimeReceived": {
+          "type": "string"
+        }
+      }
+    },
+    "QueryVestingScheduleResponse": {
+      "type": "object",
+      "properties": {
+        "schedule": {
+          "$ref": "#/definitions/v1beta1.VestingSchedule"
+        },
+        "vestedAmount": {
+          "type": "string"
+        },
+        "remainingAmount": {
+          "type": "string"
+        },
+        "nextVestTime": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "QueryVestingSchedulesByBeneficiaryResponse": {
+      "type": "object",
+      "properties": {
+        "schedules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1beta1.VestingSchedule"
+          }
+        },
+        "totalVested": {
+          "type": "string"
+        },
+        "totalVesting": {
+          "type": "string"
+        }
+      }
+    },
+    "QueryVoteLockResponse": {
+      "type": "object",
+      "properties": {
+        "lock": {
+          "$ref": "#/definitions/v1beta1.VoteLock"
+        }
+      }
+    },
+    "QueryVoteLocksByOwnerResponse": {
+      "type": "object",
+      "properties": {
+        "locks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1beta1.VoteLock"
+          }
+        },
+        "totalLocked": {
+          "type": "string"
+        },
+        "totalVotingPower": {
+          "type": "string"
+        }
+      }
+    },
+    "QueryVotingPowerResponse": {
+      "type": "object",
+      "properties": {
+        "votingPower": {
+          "type": "string"
+        },
+        "lockedAmount": {
+          "type": "string"
+        },
+        "activeLocks": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "ScheduleType": {
+      "type": "string",
+      "enum": [
+        "SCHEDULE_TYPE_UNSPECIFIED",
+        "SCHEDULE_TYPE_TEAM",
+        "SCHEDULE_TYPE_INVESTOR",
+        "SCHEDULE_TYPE_ADVISOR",
+        "SCHEDULE_TYPE_ECOSYSTEM",
+        "SCHEDULE_TYPE_COMMUNITY"
+      ],
+      "default": "SCHEDULE_TYPE_UNSPECIFIED",
+      "title": "ScheduleType defines who the vesting schedule is for"
+    },
+    "Status": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Any"
+          }
+        }
+      }
+    },
+    "TokenomicsConfig": {
+      "type": "object",
+      "properties": {
+        "maxSupply": {
+          "type": "string",
+          "title": "Maximum supply cap (immutable once set)"
+        },
+        "circulatingSupply": {
+          "type": "string",
+          "title": "Current circulating supply"
+        },
+        "inflationRate": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Current inflation rate (percentage with 2 decimal precision, e.g., 500 = 5.00%)"
+        },
+        "targetInflationRate": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Target inflation rate"
+        },
+        "minInflationRate": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Minimum inflation rate"
+        },
+        "maxInflationRate": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Maximum inflation rate"
+        },
+        "lastInflationAdjustment": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Last inflation adjustment timestamp"
+        },
+        "lastInflationCheck": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Last inflation check timestamp"
+        }
+      },
+      "title": "TokenomicsConfig defines the core tokenomics parameters"
+    },
+    "TransferTaxConfig": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "title": "Whether transfer tax is enabled"
+        },
+        "baseTaxRate": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Base tax rate (basis points, e.g., 100 = 1%)"
+        },
+        "taxRecipient": {
+          "type": "string",
+          "title": "Tax recipient address (treasury, burn, etc.)"
+        },
+        "burnPercentage": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Percentage of tax to burn (basis points)"
+        },
+        "treasuryPercentage": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Percentage of tax to treasury (basis points)"
+        },
+        "redistributePercentage": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Percentage of tax to redistribute (basis points)"
+        },
+        "exemptedAddresses": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Exempted addresses (no tax applied)"
+        },
+        "dynamicAdjustmentEnabled": {
+          "type": "boolean",
+          "title": "Dynamic tax adjustment based on market conditions"
+        },
+        "maxTaxRate": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Maximum tax rate for dynamic adjustment"
+        },
+        "minTaxRate": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Minimum tax rate for dynamic adjustment"
+        }
+      },
+      "title": "TransferTaxConfig defines transfer tax configuration"
+    },
+    "TreasuryMultisig": {
+      "type": "object",
+      "properties": {
+        "treasuryAddress": {
+          "type": "string",
+          "title": "Treasury address"
+        },
+        "threshold": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Required number of signatures"
+        },
+        "signers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "List of authorized signers"
+        },
+        "spendingLimit": {
+          "type": "string",
+          "title": "Spending limit without multisig (for small amounts)"
+        },
+        "timelockDuration": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Timelock duration for large transactions (seconds)"
+        }
+      },
+      "title": "TreasuryMultisig defines multi-signature treasury controls"
+    },
+    "VestingType": {
+      "type": "string",
+      "enum": [
+        "VESTING_TYPE_UNSPECIFIED",
+        "VESTING_TYPE_LINEAR",
+        "VESTING_TYPE_MILESTONE",
+        "VESTING_TYPE_CLIFF_THEN_LINEAR"
+      ],
+      "default": "VESTING_TYPE_UNSPECIFIED",
+      "title": "VestingType defines the type of vesting"
+    },
+    "WhaleProtection": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "title": "Whether whale protection is enabled"
+        },
+        "maxHoldingPercentage": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Maximum percentage of total supply a single address can hold (basis points)"
+        },
+        "maxTxPercentage": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Maximum percentage of total supply for a single transaction (basis points)"
+        },
+        "largeTxCooldown": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Cooldown period between large transactions (seconds)"
+        },
+        "largeTxThreshold": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Threshold for what constitutes a large transaction (percentage in basis points)"
+        },
+        "exemptedAddresses": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Exempted addresses (e.g., DEX contracts, liquidity pools)"
+        }
+      },
+      "title": "WhaleProtection defines anti-whale mechanisms"
+    },
+    "v1beta1.Params": {
+      "type": "object",
+      "properties": {
+        "tokenomics": {
+          "$ref": "#/definitions/TokenomicsConfig",
+          "title": "Tokenomics configuration"
+        },
+        "whaleProtection": {
+          "$ref": "#/definitions/WhaleProtection",
+          "title": "Whale protection configuration"
+        },
+        "transferTax": {
+          "$ref": "#/definitions/TransferTaxConfig",
+          "title": "Transfer tax configuration"
+        },
+        "liquidityMining": {
+          "$ref": "#/definitions/LiquidityMiningConfig",
+          "title": "Liquidity mining configuration"
+        },
+        "governance": {
+          "$ref": "#/definitions/GovernanceConfig",
+          "title": "Governance configuration"
+        },
+        "treasuryMultisig": {
+          "$ref": "#/definitions/TreasuryMultisig",
+          "title": "Treasury multisig configuration"
+        },
+        "dynamicFees": {
+          "$ref": "#/definitions/DynamicFeeConfig",
+          "title": "Dynamic fee configuration"
+        },
+        "mev": {
+          "$ref": "#/definitions/MEVConfig",
+          "title": "MEV configuration"
+        },
+        "inflationAlertThreshold": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Inflation alert threshold (basis points deviation from target)"
+        },
+        "inflationCheckInterval": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Inflation check interval (blocks)"
+        }
+      },
+      "title": "Params defines the parameters for the economic security module"
+    },
+    "v1beta1.PendingTreasuryTx": {
+      "type": "object",
+      "properties": {
+        "txId": {
+          "type": "string",
+          "title": "Transaction ID"
+        },
+        "recipient": {
+          "type": "string",
+          "title": "Recipient address"
+        },
+        "amount": {
+          "type": "string",
+          "title": "Amount to transfer"
+        },
+        "description": {
+          "type": "string",
+          "title": "Description/purpose"
+        },
+        "proposer": {
+          "type": "string",
+          "title": "Proposer address"
+        },
+        "signatures": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "List of addresses that have signed"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Creation time"
+        },
+        "executableAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Execution time (after timelock)"
+        },
+        "executed": {
+          "type": "boolean",
+          "title": "Whether executed"
+        },
+        "rejected": {
+          "type": "boolean",
+          "title": "Whether rejected"
+        }
+      },
+      "title": "PendingTreasuryTx represents a pending treasury transaction"
+    },
+    "v1beta1.VestingSchedule": {
+      "type": "object",
+      "properties": {
+        "scheduleId": {
+          "type": "string",
+          "title": "Unique ID for the vesting schedule"
+        },
+        "beneficiaryAddress": {
+          "type": "string",
+          "title": "Beneficiary address"
+        },
+        "totalAmount": {
+          "type": "string",
+          "title": "Total amount to vest"
+        },
+        "vestedAmount": {
+          "type": "string",
+          "title": "Amount already vested"
+        },
+        "startTime": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Start time of vesting"
+        },
+        "cliffDuration": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Cliff duration in seconds"
+        },
+        "vestingDuration": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Vesting duration in seconds"
+        },
+        "vestingType": {
+          "$ref": "#/definitions/VestingType",
+          "title": "Vesting type (linear, milestone, etc.)"
+        },
+        "scheduleType": {
+          "$ref": "#/definitions/ScheduleType",
+          "title": "Schedule type (team, investor, advisor, etc.)"
+        },
+        "revoked": {
+          "type": "boolean",
+          "title": "Whether the schedule has been revoked"
+        },
+        "revokedAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Revocation time"
+        },
+        "revokedReason": {
+          "type": "string",
+          "title": "Revocation reason"
+        }
+      },
+      "title": "VestingSchedule represents a vesting schedule for tokens"
+    },
+    "v1beta1.VoteLock": {
+      "type": "object",
+      "properties": {
+        "lockId": {
+          "type": "string",
+          "title": "Unique lock ID"
+        },
+        "owner": {
+          "type": "string",
+          "title": "Owner address"
+        },
+        "amount": {
+          "type": "string",
+          "title": "Amount locked"
+        },
+        "lockStart": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Lock start time"
+        },
+        "lockEnd": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Lock end time"
+        },
+        "votingPower": {
+          "type": "string",
+          "title": "Voting power (amount * time multiplier)"
+        },
+        "withdrawn": {
+          "type": "boolean",
+          "title": "Whether the lock has been withdrawn"
+        }
+      },
+      "title": "VoteLock represents a locked voting position"
+    }
+  }
+}

@@ -64,7 +64,7 @@ func (s Store) IterateIncidents(ctx context.Context) []*types.Incident {
 	it := storetypes.KVStorePrefixIterator(s.kv(ctx), types.IncidentKeyPrefix)
 	defer it.Close()
 
-	var incidents []*types.Incident
+	incidents := make([]*types.Incident, 0, 64)
 	for ; it.Valid(); it.Next() {
 		var incident types.Incident
 		if err := json.Unmarshal(it.Value(), &incident); err == nil {
@@ -117,7 +117,7 @@ func (s Store) GetPauseVotes(ctx context.Context, pauseRequestID string) []strin
 	it := storetypes.KVStorePrefixIterator(s.kv(ctx), prefix)
 	defer it.Close()
 
-	var votes []string
+	votes := make([]string, 0, 64)
 	for ; it.Valid(); it.Next() {
 		suffix := bytes.TrimPrefix(it.Key(), prefix)
 		suffix = bytes.TrimPrefix(suffix, []byte{':'})
@@ -179,7 +179,7 @@ func (s Store) IterateWalletLimits(ctx context.Context) []*types.WalletLimits {
 	it := storetypes.KVStorePrefixIterator(s.kv(ctx), types.WalletLimitKeyPrefix)
 	defer it.Close()
 
-	var limits []*types.WalletLimits
+	limits := make([]*types.WalletLimits, 0, 64)
 	for ; it.Valid(); it.Next() {
 		var limit types.WalletLimits
 		if err := json.Unmarshal(it.Value(), &limit); err == nil {

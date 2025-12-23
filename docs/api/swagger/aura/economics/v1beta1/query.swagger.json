@@ -1,0 +1,1920 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "aura/economics/v1beta1/query.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "Query"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/aura/economics/v1beta1/inflation/metrics": {
+      "get": {
+        "summary": "InflationMetrics queries current inflation metrics",
+        "operationId": "Query_InflationMetrics",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryInflationMetricsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/economics/v1beta1/liquidity_mining/stats": {
+      "get": {
+        "summary": "LiquidityMiningStats queries liquidity mining statistics",
+        "operationId": "Query_LiquidityMiningStats",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryLiquidityMiningStatsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/economics/v1beta1/mev/balance/{address}": {
+      "get": {
+        "summary": "UserMEVBalance queries a user's MEV redistribution balance",
+        "operationId": "Query_UserMEVBalance",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryUserMEVBalanceResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/economics/v1beta1/mev/stats": {
+      "get": {
+        "summary": "MEVStats queries MEV redistribution statistics",
+        "operationId": "Query_MEVStats",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryMEVStatsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/economics/v1beta1/params": {
+      "get": {
+        "summary": "Params queries the economics module parameters",
+        "operationId": "Query_Params",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryParamsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/economics/v1beta1/proposals": {
+      "get": {
+        "summary": "Proposals queries all proposals",
+        "operationId": "Query_Proposals",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryProposalsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "PROPOSAL_STATUS_UNSPECIFIED",
+              "PROPOSAL_STATUS_DEPOSIT_PERIOD",
+              "PROPOSAL_STATUS_VOTING_PERIOD",
+              "PROPOSAL_STATUS_PASSED",
+              "PROPOSAL_STATUS_REJECTED",
+              "PROPOSAL_STATUS_FAILED",
+              "PROPOSAL_STATUS_VETOED",
+              "PROPOSAL_STATUS_EXECUTION_DELAY",
+              "PROPOSAL_STATUS_EXECUTED"
+            ],
+            "default": "PROPOSAL_STATUS_UNSPECIFIED"
+          },
+          {
+            "name": "voter",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "depositor",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/economics/v1beta1/proposals/{proposalId}": {
+      "get": {
+        "summary": "Proposal queries a proposal by ID",
+        "operationId": "Query_Proposal",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryProposalResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "proposalId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/economics/v1beta1/proposals/{proposalId}/deposits": {
+      "get": {
+        "summary": "Deposits queries all deposits for a proposal",
+        "operationId": "Query_Deposits",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryDepositsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "proposalId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/economics/v1beta1/proposals/{proposalId}/deposits/{depositor}": {
+      "get": {
+        "summary": "Deposit queries a deposit by proposal ID and depositor",
+        "operationId": "Query_Deposit",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryDepositResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "proposalId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "depositor",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/economics/v1beta1/proposals/{proposalId}/tally": {
+      "get": {
+        "summary": "TallyResult queries the tally of a proposal",
+        "operationId": "Query_TallyResult",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryTallyResultResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "proposalId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/economics/v1beta1/proposals/{proposalId}/votes": {
+      "get": {
+        "summary": "Votes queries all votes for a proposal",
+        "operationId": "Query_Votes",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryVotesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "proposalId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/economics/v1beta1/proposals/{proposalId}/votes/{voter}": {
+      "get": {
+        "summary": "Vote queries a vote by proposal ID and voter",
+        "operationId": "Query_Vote",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryVoteResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "proposalId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "voter",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/economics/v1beta1/tokenomics/stats": {
+      "get": {
+        "summary": "TokenomicsStats queries overall tokenomics statistics",
+        "operationId": "Query_TokenomicsStats",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryTokenomicsStatsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/economics/v1beta1/treasury/pending": {
+      "get": {
+        "summary": "PendingTreasuryTxs queries all pending treasury transactions",
+        "operationId": "Query_PendingTreasuryTxs",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryPendingTreasuryTxsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/economics/v1beta1/treasury/pending/{txId}": {
+      "get": {
+        "summary": "PendingTreasuryTx queries a pending treasury transaction",
+        "operationId": "Query_PendingTreasuryTx",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryPendingTreasuryTxResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "txId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/economics/v1beta1/vesting": {
+      "get": {
+        "summary": "AllVestingSchedules queries all vesting schedules",
+        "operationId": "Query_AllVestingSchedules",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryAllVestingSchedulesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/economics/v1beta1/vesting/address/{address}": {
+      "get": {
+        "summary": "VestingSchedulesByAddress queries all vesting schedules for an address",
+        "operationId": "Query_VestingSchedulesByAddress",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryVestingSchedulesByAddressResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/economics/v1beta1/vesting/{scheduleId}": {
+      "get": {
+        "summary": "VestingSchedule queries a vesting schedule by ID",
+        "operationId": "Query_VestingSchedule",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryVestingScheduleResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "scheduleId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/economics/v1beta1/vote_delegations/{delegator}": {
+      "get": {
+        "summary": "VoteDelegations queries all vote delegations for a delegator",
+        "operationId": "Query_VoteDelegations",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryVoteDelegationsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "delegator",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/economics/v1beta1/vote_locks/owner/{owner}": {
+      "get": {
+        "summary": "VoteLocksByOwner queries all vote locks for an owner",
+        "operationId": "Query_VoteLocksByOwner",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryVoteLocksByOwnerResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "owner",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/economics/v1beta1/vote_locks/{lockId}": {
+      "get": {
+        "summary": "VoteLock queries a vote lock by ID",
+        "operationId": "Query_VoteLock",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryVoteLockResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "lockId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/economics/v1beta1/voting_power/{address}": {
+      "get": {
+        "summary": "VotingPower queries the voting power for an address",
+        "operationId": "Query_VotingPower",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryVotingPowerResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "proposalId",
+            "description": "Optional: for snapshot voting",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "Any": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "Coin": {
+      "type": "object",
+      "properties": {
+        "denom": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "string"
+        }
+      },
+      "description": "Coin defines a token with a denomination and an amount.\n\nNOTE: The amount field is an Int which implements the custom method\nsignatures required by gogoproto."
+    },
+    "FeeParams": {
+      "type": "object",
+      "properties": {
+        "baseFee": {
+          "type": "string",
+          "title": "Base fee for transactions"
+        },
+        "minGasPrice": {
+          "type": "string",
+          "title": "Minimum gas price"
+        },
+        "dynamicFeesEnabled": {
+          "type": "boolean",
+          "title": "Whether dynamic fees are enabled"
+        },
+        "feeBurnPercentage": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Percentage of fees to burn (basis points)"
+        },
+        "minFeeMultiplier": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Fee multiplier range for dynamic adjustment"
+        },
+        "maxFeeMultiplier": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "targetBlockUtilization": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Target block utilization (basis points)"
+        },
+        "feeAdjustmentSpeed": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Fee adjustment speed"
+        }
+      },
+      "title": "FeeParams defines fee-related parameters"
+    },
+    "GovernanceParams": {
+      "type": "object",
+      "properties": {
+        "minDeposit": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Coin"
+          },
+          "title": "Minimum deposit to create proposal"
+        },
+        "maxDepositPeriod": {
+          "type": "string",
+          "title": "Maximum deposit period"
+        },
+        "votingPeriod": {
+          "type": "string",
+          "title": "Voting period"
+        },
+        "quorum": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Quorum percentage (basis points)"
+        },
+        "threshold": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Threshold percentage (basis points)"
+        },
+        "vetoThreshold": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Veto threshold percentage (basis points)"
+        },
+        "executionDelay": {
+          "type": "string",
+          "title": "Execution delay (timelock)"
+        },
+        "emergencyVotingPeriod": {
+          "type": "string",
+          "title": "Emergency voting period (fast-track)"
+        },
+        "emergencyQuorum": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Emergency quorum (basis points)"
+        },
+        "emergencyThreshold": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Emergency threshold (basis points)"
+        },
+        "quadraticVotingEnabled": {
+          "type": "boolean",
+          "title": "Whether quadratic voting is enabled"
+        },
+        "voteLockingEnabled": {
+          "type": "boolean",
+          "title": "Whether vote locking is enabled"
+        },
+        "minLockDuration": {
+          "type": "string",
+          "title": "Minimum lock duration for voting boost"
+        },
+        "maxLockDuration": {
+          "type": "string",
+          "title": "Maximum lock duration"
+        },
+        "lockMultiplierPerYear": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Vote power multiplier per year locked (basis points)"
+        },
+        "snapshotVotingEnabled": {
+          "type": "boolean",
+          "title": "Whether snapshot voting is enabled"
+        },
+        "snapshotLookbackBlocks": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Snapshot lookback blocks"
+        },
+        "secretBallotEnabled": {
+          "type": "boolean",
+          "title": "Whether secret ballot is enabled"
+        },
+        "revealPeriod": {
+          "type": "string",
+          "title": "Reveal period for secret ballots"
+        }
+      },
+      "title": "GovernanceParams defines governance-related parameters"
+    },
+    "LiquidityMiningParams": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "title": "Whether liquidity mining is enabled"
+        },
+        "totalRewardsAllocated": {
+          "type": "string",
+          "title": "Total rewards allocated"
+        },
+        "maxRewardsPerEpoch": {
+          "type": "string",
+          "title": "Maximum rewards per epoch"
+        },
+        "epochDurationBlocks": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Epoch duration in blocks"
+        },
+        "irVerifiedMultiplier": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Reward multiplier for IR-verified users (basis points)"
+        }
+      },
+      "title": "LiquidityMiningParams defines liquidity mining parameters"
+    },
+    "MEVParams": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "title": "Whether MEV protection is enabled"
+        },
+        "maxFrontrunPenalty": {
+          "type": "string",
+          "title": "Maximum frontrun penalty"
+        },
+        "auctionDuration": {
+          "type": "string",
+          "title": "MEV auction duration"
+        },
+        "userRedistributionPercentage": {
+          "type": "string",
+          "format": "uint64",
+          "title": "User redistribution percentage (basis points)"
+        },
+        "validatorPercentage": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Validator percentage (basis points)"
+        },
+        "treasuryPercentage": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Treasury percentage (basis points)"
+        },
+        "burnPercentage": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Burn percentage (basis points)"
+        },
+        "strategy": {
+          "$ref": "#/definitions/MEVRedistributionStrategy",
+          "title": "MEV redistribution strategy"
+        }
+      },
+      "title": "MEVParams defines MEV protection parameters"
+    },
+    "MEVRedistributionStrategy": {
+      "type": "string",
+      "enum": [
+        "MEV_STRATEGY_UNSPECIFIED",
+        "MEV_STRATEGY_PROPORTIONAL_TO_STAKE",
+        "MEV_STRATEGY_PROPORTIONAL_TO_ACTIVITY",
+        "MEV_STRATEGY_EQUAL_DISTRIBUTION",
+        "MEV_STRATEGY_IR_WEIGHTED"
+      ],
+      "default": "MEV_STRATEGY_UNSPECIFIED",
+      "title": "MEVRedistributionStrategy defines how MEV is redistributed"
+    },
+    "ProposalCategory": {
+      "type": "string",
+      "enum": [
+        "PROPOSAL_CATEGORY_UNSPECIFIED",
+        "PROPOSAL_CATEGORY_TEXT",
+        "PROPOSAL_CATEGORY_PARAMETER_CHANGE",
+        "PROPOSAL_CATEGORY_SOFTWARE_UPGRADE",
+        "PROPOSAL_CATEGORY_SPENDING",
+        "PROPOSAL_CATEGORY_EMERGENCY",
+        "PROPOSAL_CATEGORY_CONSTITUTION"
+      ],
+      "default": "PROPOSAL_CATEGORY_UNSPECIFIED",
+      "title": "ProposalCategory defines proposal category"
+    },
+    "ProposalStatus": {
+      "type": "string",
+      "enum": [
+        "PROPOSAL_STATUS_UNSPECIFIED",
+        "PROPOSAL_STATUS_DEPOSIT_PERIOD",
+        "PROPOSAL_STATUS_VOTING_PERIOD",
+        "PROPOSAL_STATUS_PASSED",
+        "PROPOSAL_STATUS_REJECTED",
+        "PROPOSAL_STATUS_FAILED",
+        "PROPOSAL_STATUS_VETOED",
+        "PROPOSAL_STATUS_EXECUTION_DELAY",
+        "PROPOSAL_STATUS_EXECUTED"
+      ],
+      "default": "PROPOSAL_STATUS_UNSPECIFIED",
+      "title": "ProposalStatus defines proposal status"
+    },
+    "QueryAllVestingSchedulesResponse": {
+      "type": "object",
+      "properties": {
+        "schedules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1beta1.VestingSchedule"
+          }
+        }
+      }
+    },
+    "QueryDepositResponse": {
+      "type": "object",
+      "properties": {
+        "deposit": {
+          "$ref": "#/definitions/v1beta1.Deposit"
+        }
+      }
+    },
+    "QueryDepositsResponse": {
+      "type": "object",
+      "properties": {
+        "deposits": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1beta1.Deposit"
+          }
+        }
+      }
+    },
+    "QueryInflationMetricsResponse": {
+      "type": "object",
+      "properties": {
+        "metrics": {
+          "$ref": "#/definitions/v1beta1.InflationMetrics"
+        },
+        "inflationChange24h": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "QueryLiquidityMiningStatsResponse": {
+      "type": "object",
+      "properties": {
+        "stats": {
+          "$ref": "#/definitions/v1beta1.LiquidityMiningStats"
+        },
+        "enabled": {
+          "type": "boolean"
+        }
+      }
+    },
+    "QueryMEVStatsResponse": {
+      "type": "object",
+      "properties": {
+        "stats": {
+          "$ref": "#/definitions/v1beta1.MEVStats"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "strategy": {
+          "$ref": "#/definitions/MEVRedistributionStrategy"
+        }
+      }
+    },
+    "QueryParamsResponse": {
+      "type": "object",
+      "properties": {
+        "params": {
+          "$ref": "#/definitions/v1beta1.Params"
+        }
+      }
+    },
+    "QueryPendingTreasuryTxResponse": {
+      "type": "object",
+      "properties": {
+        "transaction": {
+          "$ref": "#/definitions/v1beta1.PendingTreasuryTx"
+        }
+      }
+    },
+    "QueryPendingTreasuryTxsResponse": {
+      "type": "object",
+      "properties": {
+        "transactions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1beta1.PendingTreasuryTx"
+          }
+        }
+      }
+    },
+    "QueryProposalResponse": {
+      "type": "object",
+      "properties": {
+        "proposal": {
+          "$ref": "#/definitions/v1beta1.Proposal"
+        }
+      }
+    },
+    "QueryProposalsResponse": {
+      "type": "object",
+      "properties": {
+        "proposals": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1beta1.Proposal"
+          }
+        }
+      }
+    },
+    "QueryTallyResultResponse": {
+      "type": "object",
+      "properties": {
+        "tally": {
+          "$ref": "#/definitions/v1beta1.TallyResult"
+        }
+      }
+    },
+    "QueryTokenomicsStatsResponse": {
+      "type": "object",
+      "properties": {
+        "maxSupply": {
+          "type": "string"
+        },
+        "circulatingSupply": {
+          "type": "string"
+        },
+        "totalVested": {
+          "type": "string"
+        },
+        "totalVesting": {
+          "type": "string"
+        },
+        "totalLockedGovernance": {
+          "type": "string"
+        },
+        "treasuryBalance": {
+          "type": "string"
+        },
+        "currentInflationRate": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "totalBurned": {
+          "type": "string"
+        },
+        "whaleProtectionTriggers24h": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "transferTaxCollected24h": {
+          "type": "string"
+        }
+      }
+    },
+    "QueryUserMEVBalanceResponse": {
+      "type": "object",
+      "properties": {
+        "balance": {
+          "type": "string"
+        },
+        "lifetimeReceived": {
+          "type": "string"
+        }
+      }
+    },
+    "QueryVestingScheduleResponse": {
+      "type": "object",
+      "properties": {
+        "schedule": {
+          "$ref": "#/definitions/v1beta1.VestingSchedule"
+        },
+        "vestedAmount": {
+          "type": "string"
+        },
+        "remainingAmount": {
+          "type": "string"
+        }
+      }
+    },
+    "QueryVestingSchedulesByAddressResponse": {
+      "type": "object",
+      "properties": {
+        "schedules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1beta1.VestingSchedule"
+          }
+        },
+        "totalVested": {
+          "type": "string"
+        },
+        "totalVesting": {
+          "type": "string"
+        }
+      }
+    },
+    "QueryVoteDelegationsResponse": {
+      "type": "object",
+      "properties": {
+        "delegations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/VoteDelegation"
+          }
+        }
+      }
+    },
+    "QueryVoteLockResponse": {
+      "type": "object",
+      "properties": {
+        "lock": {
+          "$ref": "#/definitions/v1beta1.VoteLock"
+        }
+      }
+    },
+    "QueryVoteLocksByOwnerResponse": {
+      "type": "object",
+      "properties": {
+        "locks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1beta1.VoteLock"
+          }
+        },
+        "totalLocked": {
+          "type": "string"
+        },
+        "totalVotingPower": {
+          "type": "string"
+        }
+      }
+    },
+    "QueryVoteResponse": {
+      "type": "object",
+      "properties": {
+        "vote": {
+          "$ref": "#/definitions/v1beta1.Vote"
+        }
+      }
+    },
+    "QueryVotesResponse": {
+      "type": "object",
+      "properties": {
+        "votes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1beta1.Vote"
+          }
+        }
+      }
+    },
+    "QueryVotingPowerResponse": {
+      "type": "object",
+      "properties": {
+        "votingPower": {
+          "type": "string"
+        },
+        "lockedAmount": {
+          "type": "string"
+        },
+        "delegatedPower": {
+          "type": "string"
+        },
+        "activeLocks": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "ScheduleType": {
+      "type": "string",
+      "enum": [
+        "SCHEDULE_TYPE_UNSPECIFIED",
+        "SCHEDULE_TYPE_TEAM",
+        "SCHEDULE_TYPE_INVESTOR",
+        "SCHEDULE_TYPE_ADVISOR",
+        "SCHEDULE_TYPE_ECOSYSTEM",
+        "SCHEDULE_TYPE_COMMUNITY"
+      ],
+      "default": "SCHEDULE_TYPE_UNSPECIFIED",
+      "title": "ScheduleType defines who the vesting schedule is for"
+    },
+    "Status": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Any"
+          }
+        }
+      }
+    },
+    "TokenomicsParams": {
+      "type": "object",
+      "properties": {
+        "maxSupply": {
+          "type": "string",
+          "title": "Maximum supply cap"
+        },
+        "targetInflationRate": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Target inflation rate (basis points)"
+        },
+        "minInflationRate": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Minimum inflation rate (basis points)"
+        },
+        "maxInflationRate": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Maximum inflation rate (basis points)"
+        },
+        "inflationCheckInterval": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Inflation check interval (blocks)"
+        },
+        "inflationAlertThreshold": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Inflation alert threshold (basis points deviation from target)"
+        }
+      },
+      "title": "TokenomicsParams defines tokenomics parameters"
+    },
+    "TreasuryParams": {
+      "type": "object",
+      "properties": {
+        "treasuryAddress": {
+          "type": "string",
+          "title": "Treasury address"
+        },
+        "communityPoolPercentage": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Community pool percentage (basis points)"
+        },
+        "burnPercentage": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Burn percentage (basis points)"
+        },
+        "multisigThreshold": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Multi-signature threshold"
+        },
+        "authorizedSigners": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Authorized signers"
+        },
+        "spendingLimit": {
+          "type": "string",
+          "title": "Spending limit without multisig"
+        },
+        "timelockDuration": {
+          "type": "string",
+          "title": "Timelock duration for large transactions"
+        }
+      },
+      "title": "TreasuryParams defines treasury-related parameters"
+    },
+    "VestingParams": {
+      "type": "object",
+      "properties": {
+        "minVestingDuration": {
+          "type": "string",
+          "title": "Minimum vesting duration"
+        },
+        "maxVestingDuration": {
+          "type": "string",
+          "title": "Maximum vesting duration"
+        },
+        "allowEarlyUnlock": {
+          "type": "boolean",
+          "title": "Whether early unlock is allowed"
+        },
+        "earlyUnlockPenalty": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Penalty for early unlock (basis points)"
+        },
+        "minCliffDuration": {
+          "type": "string",
+          "title": "Minimum cliff duration"
+        }
+      },
+      "title": "VestingParams defines vesting-related parameters"
+    },
+    "VestingType": {
+      "type": "string",
+      "enum": [
+        "VESTING_TYPE_UNSPECIFIED",
+        "VESTING_TYPE_LINEAR",
+        "VESTING_TYPE_CLIFF",
+        "VESTING_TYPE_GRADED",
+        "VESTING_TYPE_MILESTONE"
+      ],
+      "default": "VESTING_TYPE_UNSPECIFIED",
+      "title": "VestingType defines the type of vesting"
+    },
+    "VoteDelegation": {
+      "type": "object",
+      "properties": {
+        "delegator": {
+          "type": "string",
+          "title": "Delegator address"
+        },
+        "delegate": {
+          "type": "string",
+          "title": "Delegate address"
+        },
+        "delegationTime": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Delegation time"
+        },
+        "delegatedPower": {
+          "type": "string",
+          "title": "Delegated power"
+        },
+        "categories": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ProposalCategory"
+          },
+          "title": "Categories (empty = all categories)"
+        }
+      },
+      "title": "VoteDelegation represents delegation of voting power"
+    },
+    "VoteOption": {
+      "type": "string",
+      "enum": [
+        "VOTE_OPTION_UNSPECIFIED",
+        "VOTE_OPTION_YES",
+        "VOTE_OPTION_ABSTAIN",
+        "VOTE_OPTION_NO",
+        "VOTE_OPTION_NO_WITH_VETO"
+      ],
+      "default": "VOTE_OPTION_UNSPECIFIED",
+      "title": "VoteOption defines vote options"
+    },
+    "WhaleProtectionParams": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "title": "Whether whale protection is enabled"
+        },
+        "maxSingleTransfer": {
+          "type": "string",
+          "title": "Maximum single transfer"
+        },
+        "dailyTransferLimit": {
+          "type": "string",
+          "title": "Daily transfer limit per address"
+        },
+        "cooldownPeriod": {
+          "type": "string",
+          "title": "Cooldown period between large transfers"
+        },
+        "maxHoldingPercentage": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Maximum holding percentage (basis points of total supply)"
+        },
+        "largeTxThreshold": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Threshold for large transaction (basis points of total supply)"
+        },
+        "exemptedAddresses": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Exempted addresses (e.g., DEX contracts)"
+        }
+      },
+      "title": "WhaleProtectionParams defines whale protection parameters"
+    },
+    "v1beta1.Deposit": {
+      "type": "object",
+      "properties": {
+        "proposalId": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Proposal ID"
+        },
+        "depositor": {
+          "type": "string",
+          "title": "Depositor address"
+        },
+        "amount": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Coin"
+          },
+          "title": "Amount deposited"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Timestamp"
+        }
+      },
+      "title": "Deposit represents a deposit on a proposal"
+    },
+    "v1beta1.InflationMetrics": {
+      "type": "object",
+      "properties": {
+        "currentRate": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Current inflation rate (basis points)"
+        },
+        "circulatingSupply": {
+          "type": "string",
+          "title": "Circulating supply"
+        },
+        "totalVested": {
+          "type": "string",
+          "title": "Total vested"
+        },
+        "totalVesting": {
+          "type": "string",
+          "title": "Total vesting"
+        },
+        "lastAdjustment": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Last adjustment time"
+        },
+        "nextCheck": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Next check time"
+        }
+      },
+      "title": "InflationMetrics tracks inflation statistics"
+    },
+    "v1beta1.LiquidityMiningStats": {
+      "type": "object",
+      "properties": {
+        "currentEpoch": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Current epoch"
+        },
+        "totalDistributed": {
+          "type": "string",
+          "title": "Total distributed"
+        },
+        "remainingRewards": {
+          "type": "string",
+          "title": "Remaining rewards"
+        },
+        "rewardsThisEpoch": {
+          "type": "string",
+          "title": "Rewards this epoch"
+        },
+        "nextDistributionHeight": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Next distribution height"
+        }
+      },
+      "title": "LiquidityMiningStats tracks liquidity mining statistics"
+    },
+    "v1beta1.MEVStats": {
+      "type": "object",
+      "properties": {
+        "totalCaptured": {
+          "type": "string",
+          "title": "Total MEV captured"
+        },
+        "totalRedistributed": {
+          "type": "string",
+          "title": "Total redistributed"
+        },
+        "pendingRedistribution": {
+          "type": "string",
+          "title": "Pending redistribution"
+        }
+      },
+      "title": "MEVStats tracks MEV redistribution statistics"
+    },
+    "v1beta1.Params": {
+      "type": "object",
+      "properties": {
+        "fees": {
+          "$ref": "#/definitions/FeeParams",
+          "title": "Fee-related parameters"
+        },
+        "vesting": {
+          "$ref": "#/definitions/VestingParams",
+          "title": "Vesting-related parameters"
+        },
+        "treasury": {
+          "$ref": "#/definitions/TreasuryParams",
+          "title": "Treasury-related parameters"
+        },
+        "governance": {
+          "$ref": "#/definitions/GovernanceParams",
+          "title": "Governance-related parameters"
+        },
+        "mev": {
+          "$ref": "#/definitions/MEVParams",
+          "title": "MEV protection parameters"
+        },
+        "whaleProtection": {
+          "$ref": "#/definitions/WhaleProtectionParams",
+          "title": "Whale protection parameters"
+        },
+        "liquidityMining": {
+          "$ref": "#/definitions/LiquidityMiningParams",
+          "title": "Liquidity mining parameters"
+        },
+        "tokenomics": {
+          "$ref": "#/definitions/TokenomicsParams",
+          "title": "Tokenomics parameters"
+        }
+      },
+      "title": "Params defines the unified economics module parameters"
+    },
+    "v1beta1.PendingTreasuryTx": {
+      "type": "object",
+      "properties": {
+        "txId": {
+          "type": "string",
+          "title": "Transaction ID"
+        },
+        "recipient": {
+          "type": "string",
+          "title": "Recipient address"
+        },
+        "amount": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Coin"
+          },
+          "title": "Amount"
+        },
+        "description": {
+          "type": "string",
+          "title": "Description"
+        },
+        "proposer": {
+          "type": "string",
+          "title": "Proposer address"
+        },
+        "signatures": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Signatures collected"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Creation time"
+        },
+        "executableAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Executable time (after timelock)"
+        },
+        "executed": {
+          "type": "boolean",
+          "title": "Whether executed"
+        },
+        "rejected": {
+          "type": "boolean",
+          "title": "Whether rejected"
+        }
+      },
+      "title": "PendingTreasuryTx represents a pending treasury transaction"
+    },
+    "v1beta1.Proposal": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Proposal ID"
+        },
+        "title": {
+          "type": "string",
+          "title": "Title"
+        },
+        "description": {
+          "type": "string",
+          "title": "Description"
+        },
+        "proposer": {
+          "type": "string",
+          "title": "Proposer address"
+        },
+        "status": {
+          "$ref": "#/definitions/ProposalStatus",
+          "title": "Proposal status"
+        },
+        "category": {
+          "$ref": "#/definitions/ProposalCategory",
+          "title": "Category"
+        },
+        "submitTime": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Submit time"
+        },
+        "depositEndTime": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Deposit end time"
+        },
+        "votingStartTime": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Voting start time"
+        },
+        "votingEndTime": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Voting end time"
+        },
+        "executionTime": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Execution time"
+        },
+        "totalDeposit": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Coin"
+          },
+          "title": "Total deposit"
+        },
+        "finalTallyResult": {
+          "$ref": "#/definitions/v1beta1.TallyResult",
+          "title": "Final tally result"
+        },
+        "executionDelay": {
+          "type": "string",
+          "title": "Execution delay"
+        },
+        "isEmergency": {
+          "type": "boolean",
+          "title": "Whether this is an emergency proposal"
+        },
+        "snapshotHeight": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Snapshot height for snapshot voting"
+        }
+      },
+      "title": "Proposal represents a governance proposal"
+    },
+    "v1beta1.TallyResult": {
+      "type": "object",
+      "properties": {
+        "yesCount": {
+          "type": "string",
+          "title": "Yes votes"
+        },
+        "abstainCount": {
+          "type": "string",
+          "title": "Abstain votes"
+        },
+        "noCount": {
+          "type": "string",
+          "title": "No votes"
+        },
+        "noWithVetoCount": {
+          "type": "string",
+          "title": "No with veto votes"
+        },
+        "totalVotingPower": {
+          "type": "string",
+          "title": "Total voting power"
+        },
+        "turnoutPercentage": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Turnout percentage (basis points)"
+        }
+      },
+      "title": "TallyResult represents the tally of a proposal"
+    },
+    "v1beta1.VestingSchedule": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "title": "Unique schedule ID"
+        },
+        "address": {
+          "type": "string",
+          "title": "Beneficiary address"
+        },
+        "originalAmount": {
+          "$ref": "#/definitions/Coin",
+          "title": "Original vesting amount"
+        },
+        "vestedAmount": {
+          "$ref": "#/definitions/Coin",
+          "title": "Amount already vested"
+        },
+        "startTime": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Start time"
+        },
+        "endTime": {
+          "type": "string",
+          "format": "date-time",
+          "title": "End time"
+        },
+        "cliffDuration": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Cliff duration (seconds)"
+        },
+        "vestingType": {
+          "$ref": "#/definitions/VestingType",
+          "title": "Vesting type"
+        },
+        "scheduleType": {
+          "$ref": "#/definitions/ScheduleType",
+          "title": "Schedule type (who it's for)"
+        },
+        "revoked": {
+          "type": "boolean",
+          "title": "Whether revoked"
+        },
+        "revokedAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Revocation time"
+        },
+        "revokedReason": {
+          "type": "string",
+          "title": "Revocation reason"
+        }
+      },
+      "title": "VestingSchedule represents a vesting schedule"
+    },
+    "v1beta1.Vote": {
+      "type": "object",
+      "properties": {
+        "proposalId": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Proposal ID"
+        },
+        "voter": {
+          "type": "string",
+          "title": "Voter address"
+        },
+        "option": {
+          "$ref": "#/definitions/VoteOption",
+          "title": "Vote option"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Timestamp"
+        },
+        "votingPower": {
+          "type": "string",
+          "title": "Voting power"
+        },
+        "isSecret": {
+          "type": "boolean",
+          "title": "Whether this is a secret ballot"
+        },
+        "encryptedVote": {
+          "type": "string",
+          "title": "Encrypted vote (for secret ballots)"
+        },
+        "voteCommitment": {
+          "type": "string",
+          "title": "Vote commitment (for secret ballots)"
+        }
+      },
+      "title": "Vote represents a vote on a proposal"
+    },
+    "v1beta1.VoteLock": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "title": "Lock ID"
+        },
+        "owner": {
+          "type": "string",
+          "title": "Owner address"
+        },
+        "amount": {
+          "$ref": "#/definitions/Coin",
+          "title": "Locked amount"
+        },
+        "lockStart": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Lock start time"
+        },
+        "lockEnd": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Lock end time"
+        },
+        "votingPower": {
+          "type": "string",
+          "title": "Voting power (amount * time multiplier)"
+        },
+        "withdrawn": {
+          "type": "boolean",
+          "title": "Whether withdrawn"
+        }
+      },
+      "title": "VoteLock represents locked tokens for voting"
+    }
+  }
+}

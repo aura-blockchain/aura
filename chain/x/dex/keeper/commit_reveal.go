@@ -417,7 +417,7 @@ func (k Keeper) GetAllOrderCommitments(ctx sdk.Context) []*types.OrderCommitment
 	iterator := storetypes.KVStorePrefixIterator(store, types.OrderCommitmentPrefix)
 	defer iterator.Close()
 
-	var commitments []*types.OrderCommitment
+	commitments := make([]*types.OrderCommitment, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var commitment types.OrderCommitment
 		if err := k.cdc.Unmarshal(iterator.Value(), &commitment); err != nil {
@@ -436,7 +436,7 @@ func (k Keeper) GetAllOrderCommitments(ctx sdk.Context) []*types.OrderCommitment
 func (k Keeper) GetCommitmentsBySender(ctx sdk.Context, sender string) []*types.OrderCommitment {
 	allCommitments := k.GetAllOrderCommitments(ctx)
 
-	var senderCommitments []*types.OrderCommitment
+	senderCommitments := make([]*types.OrderCommitment, 0, 64)
 	for _, commitment := range allCommitments {
 		if commitment.Sender == sender {
 			senderCommitments = append(senderCommitments, commitment)
@@ -471,7 +471,7 @@ func (k Keeper) GetAllQueuedOrders(ctx sdk.Context) []*types.QueuedOrder {
 	iterator := storetypes.KVStorePrefixIterator(store, types.QueuedOrderPrefix)
 	defer iterator.Close()
 
-	var queuedOrders []*types.QueuedOrder
+	queuedOrders := make([]*types.QueuedOrder, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var queuedOrder types.QueuedOrder
 		if err := k.cdc.Unmarshal(iterator.Value(), &queuedOrder); err != nil {

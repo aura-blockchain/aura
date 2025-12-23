@@ -177,7 +177,7 @@ func (k Keeper) IterateAlerts(ctx context.Context, fn func(alert *types.Alert) (
 
 // GetAllAlerts retrieves all alerts from the KV store
 func (k Keeper) GetAllAlerts(ctx context.Context) ([]*types.Alert, error) {
-	var alerts []*types.Alert
+	alerts := make([]*types.Alert, 0, 64)
 	err := k.IterateAlerts(ctx, func(alert *types.Alert) bool {
 		alerts = append(alerts, alert)
 		return false
@@ -187,7 +187,7 @@ func (k Keeper) GetAllAlerts(ctx context.Context) ([]*types.Alert, error) {
 
 // GetActiveAlerts returns all unresolved alerts
 func (k Keeper) GetActiveAlerts(ctx context.Context) ([]*types.Alert, error) {
-	var activeAlerts []*types.Alert
+	activeAlerts := make([]*types.Alert, 0, 64)
 	err := k.IterateAlerts(ctx, func(alert *types.Alert) bool {
 		if !alert.Resolved {
 			activeAlerts = append(activeAlerts, alert)
@@ -199,7 +199,7 @@ func (k Keeper) GetActiveAlerts(ctx context.Context) ([]*types.Alert, error) {
 
 // GetAlertsBySeverity returns alerts filtered by severity
 func (k Keeper) GetAlertsBySeverity(ctx context.Context, severity types.AlertSeverity) ([]*types.Alert, error) {
-	var filtered []*types.Alert
+	filtered := make([]*types.Alert, 0, 64)
 	err := k.IterateAlerts(ctx, func(alert *types.Alert) bool {
 		if alert.Severity == severity {
 			filtered = append(filtered, alert)
@@ -211,7 +211,7 @@ func (k Keeper) GetAlertsBySeverity(ctx context.Context, severity types.AlertSev
 
 // GetAlertsByType returns alerts filtered by type
 func (k Keeper) GetAlertsByType(ctx context.Context, alertType types.AlertType) ([]*types.Alert, error) {
-	var filtered []*types.Alert
+	filtered := make([]*types.Alert, 0, 64)
 	err := k.IterateAlerts(ctx, func(alert *types.Alert) bool {
 		if alert.Type == alertType {
 			filtered = append(filtered, alert)
@@ -275,7 +275,7 @@ func (k Keeper) IterateTransactions(ctx context.Context, fn func(tx *types.Trans
 
 // GetAllTransactions retrieves all transactions from the KV store
 func (k Keeper) GetAllTransactions(ctx context.Context) ([]*types.TransactionMonitorData, error) {
-	var transactions []*types.TransactionMonitorData
+	transactions := make([]*types.TransactionMonitorData, 0, 64)
 	err := k.IterateTransactions(ctx, func(tx *types.TransactionMonitorData) bool {
 		transactions = append(transactions, tx)
 		return false
@@ -356,7 +356,7 @@ func (k Keeper) IterateAnomalies(ctx context.Context, fn func(anomaly *types.Ano
 
 // GetAllAnomalies retrieves all anomalies from the KV store
 func (k Keeper) GetAllAnomalies(ctx context.Context) ([]*types.AnomalyDetection, error) {
-	var anomalies []*types.AnomalyDetection
+	anomalies := make([]*types.AnomalyDetection, 0, 64)
 	err := k.IterateAnomalies(ctx, func(anomaly *types.AnomalyDetection) bool {
 		anomalies = append(anomalies, anomaly)
 		return false
@@ -557,7 +557,7 @@ func (k Keeper) IterateFailedTxPatterns(ctx context.Context, fn func(pattern *ty
 
 // GetAllFailedTxPatterns retrieves all failed transaction patterns from the KV store
 func (k Keeper) GetAllFailedTxPatterns(ctx context.Context) ([]*types.FailedTransactionPattern, error) {
-	var patterns []*types.FailedTransactionPattern
+	patterns := make([]*types.FailedTransactionPattern, 0, 64)
 	err := k.IterateFailedTxPatterns(ctx, func(pattern *types.FailedTransactionPattern) bool {
 		patterns = append(patterns, pattern)
 		return false
@@ -638,7 +638,7 @@ func (k Keeper) IterateSecurityEvents(ctx context.Context, fn func(event *types.
 
 // GetAllSecurityEvents retrieves all security events from the KV store
 func (k Keeper) GetAllSecurityEvents(ctx context.Context) ([]*types.SecurityEvent, error) {
-	var events []*types.SecurityEvent
+	events := make([]*types.SecurityEvent, 0, 64)
 	err := k.IterateSecurityEvents(ctx, func(event *types.SecurityEvent) bool {
 		events = append(events, event)
 		return false
@@ -719,7 +719,7 @@ func (k Keeper) IterateLogEntries(ctx context.Context, fn func(entry *types.LogE
 
 // GetAllLogEntries retrieves all log entries from the KV store
 func (k Keeper) GetAllLogEntries(ctx context.Context) ([]*types.LogEntry, error) {
-	var entries []*types.LogEntry
+	entries := make([]*types.LogEntry, 0, 64)
 	err := k.IterateLogEntries(ctx, func(entry *types.LogEntry) bool {
 		entries = append(entries, entry)
 		return false
@@ -778,7 +778,7 @@ func (k Keeper) LogEntry(ctx context.Context, level types.LogLevel, module strin
 
 // GetLogs retrieves log entries filtered by module with pagination limit
 func (k Keeper) GetLogs(ctx context.Context, module string, limit int) ([]*types.LogEntry, error) {
-	var logs []*types.LogEntry
+	logs := make([]*types.LogEntry, 0, 64)
 	count := 0
 
 	err := k.IterateLogEntries(ctx, func(entry *types.LogEntry) bool {
@@ -797,7 +797,7 @@ func (k Keeper) GetLogs(ctx context.Context, module string, limit int) ([]*types
 
 // GetErrorLogs retrieves only error-level log entries with pagination limit
 func (k Keeper) GetErrorLogs(ctx context.Context, limit int) ([]*types.LogEntry, error) {
-	var errorLogs []*types.LogEntry
+	errorLogs := make([]*types.LogEntry, 0, 64)
 	count := 0
 
 	err := k.IterateLogEntries(ctx, func(entry *types.LogEntry) bool {
@@ -816,7 +816,7 @@ func (k Keeper) GetErrorLogs(ctx context.Context, limit int) ([]*types.LogEntry,
 
 // GetLogsByTraceID retrieves all log entries for a specific distributed trace
 func (k Keeper) GetLogsByTraceID(ctx context.Context, traceID string) ([]*types.LogEntry, error) {
-	var tracedLogs []*types.LogEntry
+	tracedLogs := make([]*types.LogEntry, 0, 64)
 
 	err := k.IterateLogEntries(ctx, func(entry *types.LogEntry) bool {
 		if entry.TraceID == traceID {

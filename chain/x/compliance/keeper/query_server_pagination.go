@@ -91,7 +91,7 @@ func (q *queryServer) AllTransactionAlerts(goCtx context.Context, req *types.Que
 	}
 
 	// Convert map to list for response
-	var alertLists []*types.TransactionAlertList
+	alertLists := make([]*types.TransactionAlertList, 0, 64)
 	for address, alertList := range alerts {
 		// Store address in first alert if list is not empty (for reference)
 		// In production, you might want a dedicated wrapper type
@@ -121,7 +121,7 @@ func (q *queryServer) AllGDPRConsents(goCtx context.Context, req *types.QueryAll
 	}
 
 	// Convert map to list for response
-	var consentLists []*types.GDPRConsentList
+	consentLists := make([]*types.GDPRConsentList, 0, 64)
 	for _, consentList := range consents {
 		consentLists = append(consentLists, &types.GDPRConsentList{
 			Consents: consentList,
@@ -148,7 +148,7 @@ func (q *queryServer) AllTaxReports(goCtx context.Context, req *types.QueryAllTa
 	}
 
 	// Convert map to list for response
-	var reportLists []*types.TaxReportList
+	reportLists := make([]*types.TaxReportList, 0, 64)
 	for _, reportList := range reports {
 		reportLists = append(reportLists, &types.TaxReportList{
 			Reports: reportList,

@@ -177,7 +177,7 @@ func (k Keeper) GetAllSecureEnclaves(ctx sdk.Context) []*types.SecureEnclave {
 	iterator := storetypes.KVStorePrefixIterator(store, types.SecureEnclaveKey)
 	defer iterator.Close()
 
-	var enclaves []*types.SecureEnclave
+	enclaves := make([]*types.SecureEnclave, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var enclave types.SecureEnclave
 		if err := k.cdc.Unmarshal(iterator.Value(), &enclave); err != nil {
@@ -261,7 +261,7 @@ func (k Keeper) GetAllRandomSources(ctx sdk.Context) []*types.RandomSource {
 	iterator := storetypes.KVStorePrefixIterator(store, types.RandomSourceKey)
 	defer iterator.Close()
 
-	var sources []*types.RandomSource
+	sources := make([]*types.RandomSource, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var source types.RandomSource
 		if err := k.cdc.Unmarshal(iterator.Value(), &source); err != nil {
@@ -303,7 +303,7 @@ func (k Keeper) GetAllCertificatePins(ctx sdk.Context) []*types.CertificatePin {
 	iterator := storetypes.KVStorePrefixIterator(store, types.CertificatePinKey)
 	defer iterator.Close()
 
-	var pins []*types.CertificatePin
+	pins := make([]*types.CertificatePin, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var pin types.CertificatePin
 		if err := k.cdc.Unmarshal(iterator.Value(), &pin); err != nil {

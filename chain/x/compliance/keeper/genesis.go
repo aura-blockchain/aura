@@ -153,7 +153,7 @@ func (k *Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		k.logger(ctx).Error("failed to get KYC history", "error", err)
 		kycHistoryMap = make(map[string][]*types.KYCHistoryEntry)
 	}
-	var kycHistory []*types.KYCHistoryEntry
+	kycHistory := make([]*types.KYCHistoryEntry, 0, 64)
 	kycHistoryAddrs := make([]string, 0, len(kycHistoryMap))
 	for addr := range kycHistoryMap {
 		kycHistoryAddrs = append(kycHistoryAddrs, addr)
@@ -190,7 +190,7 @@ func (k *Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		k.logger(ctx).Error("failed to get transaction alerts", "error", err)
 		transactionAlertsMap = make(map[string][]*types.TransactionAlert)
 	}
-	var transactionAlerts []*types.TransactionAlert
+	transactionAlerts := make([]*types.TransactionAlert, 0, 64)
 	alertAddrs := make([]string, 0, len(transactionAlertsMap))
 	for addr := range transactionAlertsMap {
 		alertAddrs = append(alertAddrs, addr)
@@ -213,7 +213,7 @@ func (k *Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		k.logger(ctx).Error("failed to get GDPR consents", "error", err)
 		gdprConsentsMap = make(map[string][]*types.GDPRConsent)
 	}
-	var gdprConsents []*types.GDPRConsent
+	gdprConsents := make([]*types.GDPRConsent, 0, 64)
 	gdprConsentAddrs := make([]string, 0, len(gdprConsentsMap))
 	for addr := range gdprConsentsMap {
 		gdprConsentAddrs = append(gdprConsentAddrs, addr)
@@ -236,7 +236,7 @@ func (k *Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		k.logger(ctx).Error("failed to get tax reports", "error", err)
 		taxReportsMap = make(map[string][]*types.TaxReport)
 	}
-	var taxReports []*types.TaxReport
+	taxReports := make([]*types.TaxReport, 0, 64)
 	taxReportAddrs := make([]string, 0, len(taxReportsMap))
 	for addr := range taxReportsMap {
 		taxReportAddrs = append(taxReportAddrs, addr)

@@ -260,7 +260,7 @@ func (k Keeper) getAllChainConfigs(ctx sdk.Context) []types.ChainConfig {
 	store := k.store(ctx)
 	iterator := store.Iterator(types.ChainConfigPrefix, storetypes.PrefixEndBytes(types.ChainConfigPrefix))
 	defer iterator.Close()
-	var configs []types.ChainConfig
+	configs := make([]types.ChainConfig, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var cfg types.ChainConfig
 		if err := k.cdc.Unmarshal(iterator.Value(), &cfg); err != nil {
@@ -706,7 +706,7 @@ func (k Keeper) getAllWrappedTokens(ctx sdk.Context) []types.WrappedToken {
 	store := k.store(ctx)
 	iterator := store.Iterator(types.WrappedTokenPrefix, storetypes.PrefixEndBytes(types.WrappedTokenPrefix))
 	defer iterator.Close()
-	var tokens []types.WrappedToken
+	tokens := make([]types.WrappedToken, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var token types.WrappedToken
 		if err := k.cdc.Unmarshal(iterator.Value(), &token); err != nil {
@@ -788,7 +788,7 @@ func (k Keeper) getAllRelayerStats(ctx sdk.Context) []*types.RelayerStats {
 	store := k.store(ctx)
 	iterator := store.Iterator(types.RelayerPrefix, storetypes.PrefixEndBytes(types.RelayerPrefix))
 	defer iterator.Close()
-	var statsList []*types.RelayerStats
+	statsList := make([]*types.RelayerStats, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var stats types.RelayerStats
 		if err := k.cdc.Unmarshal(iterator.Value(), &stats); err != nil {
@@ -835,7 +835,7 @@ func (k Keeper) getAllValidators(ctx sdk.Context) []*types.BridgeValidator {
 	store := k.store(ctx)
 	iterator := store.Iterator(types.ValidatorPrefix, storetypes.PrefixEndBytes(types.ValidatorPrefix))
 	defer iterator.Close()
-	var validators []*types.BridgeValidator
+	validators := make([]*types.BridgeValidator, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var validator types.BridgeValidator
 		if err := k.cdc.Unmarshal(iterator.Value(), &validator); err != nil {
@@ -855,7 +855,7 @@ func (k Keeper) getAllSharedIdentities(ctx sdk.Context) []*types.SharedIdentity 
 	store := k.store(ctx)
 	iterator := store.Iterator(types.SharedIdentityPrefix, storetypes.PrefixEndBytes(types.SharedIdentityPrefix))
 	defer iterator.Close()
-	var identities []*types.SharedIdentity
+	identities := make([]*types.SharedIdentity, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var identity types.SharedIdentity
 		if err := k.cdc.Unmarshal(iterator.Value(), &identity); err != nil {
@@ -875,7 +875,7 @@ func (k Keeper) getAllSwaps(ctx sdk.Context) []*types.CrossChainSwap {
 	store := k.store(ctx)
 	iterator := store.Iterator(types.SwapPrefix, storetypes.PrefixEndBytes(types.SwapPrefix))
 	defer iterator.Close()
-	var swaps []*types.CrossChainSwap
+	swaps := make([]*types.CrossChainSwap, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var swap types.CrossChainSwap
 		if err := k.cdc.Unmarshal(iterator.Value(), &swap); err != nil {
@@ -895,7 +895,7 @@ func (k Keeper) getAllTransfers(ctx sdk.Context) []*types.CrossChainTransfer {
 	store := k.store(ctx)
 	iterator := store.Iterator(types.TransferPrefix, storetypes.PrefixEndBytes(types.TransferPrefix))
 	defer iterator.Close()
-	var transfers []*types.CrossChainTransfer
+	transfers := make([]*types.CrossChainTransfer, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var transfer types.CrossChainTransfer
 		if err := k.cdc.Unmarshal(iterator.Value(), &transfer); err != nil {
@@ -980,7 +980,7 @@ func (k Keeper) GetAttestations(ctx sdk.Context, transferID string) []string {
 	prefix := append(types.AttestationPrefix, []byte(transferID)...)
 	iterator := store.Iterator(prefix, storetypes.PrefixEndBytes(prefix))
 	defer iterator.Close()
-	var validators []string
+	validators := make([]string, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		parts := strings.Split(string(iterator.Key()), string([]byte{0x00}))
 		if len(parts) == 2 {
@@ -1859,7 +1859,7 @@ func (k Keeper) VerifyMerkleProofBytes(merkleRoot, transactionLeaf, merkleProofB
 
 	// Parse proof bytes: each entry is 1 byte (index) + 32 bytes (hash) = 33 bytes
 	// OR for backward compatibility, try 32-byte chunks (hash only)
-	var proofHashes [][]byte
+	proofHashes := make([][]byte, 0, 64)
 	var indices []uint64
 
 	if len(merkleProofBytes)%33 == 0 {
@@ -2388,7 +2388,7 @@ func (k Keeper) GetAllPendingTransfers(ctx sdk.Context) []*types.PendingTransfer
 	iterator := store.Iterator(types.PendingTransferPrefix, storetypes.PrefixEndBytes(types.PendingTransferPrefix))
 	defer iterator.Close()
 
-	var pendingTransfers []*types.PendingTransfer
+	pendingTransfers := make([]*types.PendingTransfer, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var pending types.PendingTransfer
 		if err := k.cdc.Unmarshal(iterator.Value(), &pending); err != nil {

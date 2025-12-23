@@ -1,0 +1,441 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "aura/aiassistant/v1beta1/tx.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "Msg"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/aura/aiassistant/v1beta1/assistants": {
+      "post": {
+        "operationId": "Msg_RegisterAssistant",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/MsgRegisterAssistantResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/MsgRegisterAssistant"
+            }
+          }
+        ],
+        "tags": [
+          "Msg"
+        ]
+      }
+    },
+    "/aura/aiassistant/v1beta1/assistants/{assistantAddress}/heartbeat": {
+      "post": {
+        "operationId": "Msg_Heartbeat",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/MsgHeartbeatResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "assistantAddress",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/HeartbeatBody"
+            }
+          }
+        ],
+        "tags": [
+          "Msg"
+        ]
+      }
+    },
+    "/aura/aiassistant/v1beta1/assistants/{assistantAddress}/locales": {
+      "post": {
+        "operationId": "Msg_UpdateLocales",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/MsgUpdateLocalesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "assistantAddress",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/UpdateLocalesBody"
+            }
+          }
+        ],
+        "tags": [
+          "Msg"
+        ]
+      }
+    },
+    "/aura/aiassistant/v1beta1/assistants/{assistantAddress}/misbehavior": {
+      "post": {
+        "operationId": "Msg_ReportMisbehavior",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/MsgReportMisbehaviorResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "assistantAddress",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ReportMisbehaviorBody"
+            }
+          }
+        ],
+        "tags": [
+          "Msg"
+        ]
+      }
+    },
+    "/aura/aiassistant/v1beta1/params": {
+      "post": {
+        "operationId": "Msg_UpdateParams",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/MsgUpdateParamsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/MsgUpdateParams"
+            }
+          }
+        ],
+        "tags": [
+          "Msg"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "Any": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "AssistantStatus": {
+      "type": "string",
+      "enum": [
+        "ASSISTANT_STATUS_UNSPECIFIED",
+        "ASSISTANT_STATUS_ACTIVE",
+        "ASSISTANT_STATUS_JAILED",
+        "ASSISTANT_STATUS_TOMBSTONED"
+      ],
+      "default": "ASSISTANT_STATUS_UNSPECIFIED"
+    },
+    "Balance": {
+      "type": "object",
+      "properties": {
+        "denom": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "string"
+        }
+      }
+    },
+    "HeartbeatBody": {
+      "type": "object",
+      "properties": {
+        "operatorAddress": {
+          "type": "string"
+        },
+        "attestationHash": {
+          "type": "string"
+        }
+      }
+    },
+    "MsgHeartbeatResponse": {
+      "type": "object",
+      "properties": {
+        "nextSlashTime": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "MsgRegisterAssistant": {
+      "type": "object",
+      "properties": {
+        "assistantAddress": {
+          "type": "string"
+        },
+        "ownerAddress": {
+          "type": "string"
+        },
+        "locales": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "modelHash": {
+          "type": "string"
+        },
+        "apiKeyFingerprint": {
+          "type": "string"
+        },
+        "stake": {
+          "$ref": "#/definitions/Balance"
+        },
+        "sponsorship": {
+          "$ref": "#/definitions/Balance"
+        }
+      }
+    },
+    "MsgRegisterAssistantResponse": {
+      "type": "object",
+      "properties": {
+        "assistant": {
+          "$ref": "#/definitions/v1beta1.Assistant"
+        }
+      }
+    },
+    "MsgReportMisbehaviorResponse": {
+      "type": "object",
+      "properties": {
+        "assistant": {
+          "$ref": "#/definitions/v1beta1.Assistant"
+        },
+        "slashAmount": {
+          "$ref": "#/definitions/Balance"
+        }
+      }
+    },
+    "MsgUpdateLocalesResponse": {
+      "type": "object",
+      "properties": {
+        "assistant": {
+          "$ref": "#/definitions/v1beta1.Assistant"
+        }
+      }
+    },
+    "MsgUpdateParams": {
+      "type": "object",
+      "properties": {
+        "authority": {
+          "type": "string"
+        },
+        "params": {
+          "$ref": "#/definitions/v1beta1.Params"
+        }
+      }
+    },
+    "MsgUpdateParamsResponse": {
+      "type": "object"
+    },
+    "ReportMisbehaviorBody": {
+      "type": "object",
+      "properties": {
+        "reporter": {
+          "type": "string"
+        },
+        "infraction": {
+          "type": "string"
+        },
+        "evidenceHash": {
+          "type": "string"
+        }
+      }
+    },
+    "Status": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Any"
+          }
+        }
+      }
+    },
+    "UpdateLocalesBody": {
+      "type": "object",
+      "properties": {
+        "ownerAddress": {
+          "type": "string"
+        },
+        "locales": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "v1beta1.Assistant": {
+      "type": "object",
+      "properties": {
+        "assistantAddress": {
+          "type": "string"
+        },
+        "ownerAddress": {
+          "type": "string"
+        },
+        "stake": {
+          "$ref": "#/definitions/Balance"
+        },
+        "sponsorshipBalance": {
+          "$ref": "#/definitions/Balance"
+        },
+        "locales": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "modelHash": {
+          "type": "string"
+        },
+        "apiKeyFingerprint": {
+          "type": "string"
+        },
+        "lastHeartbeat": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "status": {
+          "$ref": "#/definitions/AssistantStatus"
+        },
+        "slashCount": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "misbehaviorReports": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "heartbeatFailures": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "v1beta1.Params": {
+      "type": "object",
+      "properties": {
+        "minStake": {
+          "$ref": "#/definitions/Balance"
+        },
+        "heartbeatWindowSeconds": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "heartbeatGraceSeconds": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "slashFractionDowntime": {
+          "type": "string"
+        },
+        "slashFractionMisbehavior": {
+          "type": "string"
+        },
+        "maxLocales": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    }
+  }
+}

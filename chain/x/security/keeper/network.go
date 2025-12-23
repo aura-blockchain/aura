@@ -182,7 +182,7 @@ func (k Keeper) GetAllBlacklistEntries(ctx sdk.Context) []*types.BlacklistEntry 
 	iterator := storetypes.KVStorePrefixIterator(store, types.BlacklistKey)
 	defer iterator.Close()
 
-	var entries []*types.BlacklistEntry
+	entries := make([]*types.BlacklistEntry, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var entry types.BlacklistEntry
 		if err := k.cdc.Unmarshal(iterator.Value(), &entry); err != nil {

@@ -183,7 +183,7 @@ func (k *Keeper) GetAllDataForPrefix(ctx sdk.Context, prefix []byte) ([][]byte, 
 	}
 	defer iterator.Close()
 
-	var items [][]byte
+	items := make([][]byte, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		items = append(items, iterator.Value())
 	}

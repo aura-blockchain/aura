@@ -1,0 +1,173 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "aura/bridge/v1beta1/tx.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "Msg"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {},
+  "definitions": {
+    "Any": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "Coin": {
+      "type": "object",
+      "properties": {
+        "denom": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "string"
+        }
+      },
+      "description": "Coin defines a token with a denomination and an amount.\n\nNOTE: The amount field is an Int which implements the custom method\nsignatures required by gogoproto."
+    },
+    "MsgBurnTokensResponse": {
+      "type": "object",
+      "properties": {
+        "transferId": {
+          "type": "string"
+        },
+        "estimatedCompletion": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "MsgCrossChainSwapResponse": {
+      "type": "object",
+      "properties": {
+        "swapId": {
+          "type": "string"
+        },
+        "route": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "[\"aura\", \"osmosis\", \"paw\"]"
+        },
+        "estimatedCompletion": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "MsgFinalizeTransferResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        },
+        "amount": {
+          "type": "string",
+          "title": "Amount unlocked/minted"
+        },
+        "recipient": {
+          "type": "string",
+          "title": "Recipient who received the funds"
+        }
+      }
+    },
+    "MsgLinkAddressResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        },
+        "linkedIdentityId": {
+          "type": "string"
+        }
+      }
+    },
+    "MsgLockTokensResponse": {
+      "type": "object",
+      "properties": {
+        "transferId": {
+          "type": "string",
+          "title": "Transfer ID for tracking"
+        },
+        "estimatedCompletion": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Estimated completion time (seconds)"
+        }
+      }
+    },
+    "MsgMintTokensResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        },
+        "wrappedDenom": {
+          "type": "string",
+          "title": "e.g., \"paw.token\" or \"xai.coin\""
+        }
+      }
+    },
+    "MsgRelayTransferResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        }
+      }
+    },
+    "MsgSubmitFraudProofResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        },
+        "fraudProofId": {
+          "type": "string",
+          "title": "Fraud proof ID for tracking"
+        }
+      }
+    },
+    "MsgUnlockTokensResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        }
+      }
+    },
+    "Status": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Any"
+          }
+        }
+      }
+    }
+  }
+}

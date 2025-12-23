@@ -499,8 +499,8 @@ func (q *QueryServer) ValidateMintEligibility(
 	}
 
 	var requiredCS uint64
-	var requiredIRs []string
-	var completedIRs []string
+	requiredIRs := make([]string, 0, 64)
+	completedIRs := make([]string, 0, 64)
 
 	if policy, ok := q.keeper.GetVCPolicy(ctx, vcTypeName); ok {
 		requiredCS = policy.CsThreshold

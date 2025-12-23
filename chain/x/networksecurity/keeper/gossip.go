@@ -466,7 +466,7 @@ func (k Keeper) SelectPeersForGossip(ctx sdk.Context, peers []types.PeerInfo, co
 
 	// Sort by reputation score (simple selection)
 	// In production, implement proper sorting or random selection weighted by reputation
-	var selected []string
+	selected := make([]string, 0, 64)
 	for i := 0; i < count && i < len(candidates); i++ {
 		// Select highest reputation peers
 		maxIdx := i

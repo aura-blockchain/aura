@@ -1,0 +1,381 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "aura/aiassistant/v1beta1/query.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "Query"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/aura/aiassistant/v1beta1/assistants": {
+      "get": {
+        "operationId": "Query_Assistants",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryAssistantsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "pagination.key",
+            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "pagination.offset",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.countTotal",
+            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pagination.reverse",
+            "description": "reverse is set to true if results are to be returned in the descending order.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/aiassistant/v1beta1/assistants/{assistantAddress}": {
+      "get": {
+        "operationId": "Query_Assistant",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryAssistantResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "assistantAddress",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/aiassistant/v1beta1/locales/{locale}": {
+      "get": {
+        "operationId": "Query_AssistantsByLocale",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryAssistantsByLocaleResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "locale",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/aiassistant/v1beta1/params": {
+      "get": {
+        "operationId": "Query_Params",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryParamsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "Any": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "AssistantStatus": {
+      "type": "string",
+      "enum": [
+        "ASSISTANT_STATUS_UNSPECIFIED",
+        "ASSISTANT_STATUS_ACTIVE",
+        "ASSISTANT_STATUS_JAILED",
+        "ASSISTANT_STATUS_TOMBSTONED"
+      ],
+      "default": "ASSISTANT_STATUS_UNSPECIFIED"
+    },
+    "Balance": {
+      "type": "object",
+      "properties": {
+        "denom": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "string"
+        }
+      }
+    },
+    "PageRequest": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "format": "byte",
+          "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set."
+        },
+        "offset": {
+          "type": "string",
+          "format": "uint64",
+          "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set."
+        },
+        "limit": {
+          "type": "string",
+          "format": "uint64",
+          "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app."
+        },
+        "countTotal": {
+          "type": "boolean",
+          "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set."
+        },
+        "reverse": {
+          "type": "boolean",
+          "description": "reverse is set to true if results are to be returned in the descending order."
+        }
+      },
+      "description": "message SomeRequest {\n         Foo some_parameter = 1;\n         PageRequest pagination = 2;\n }",
+      "title": "PageRequest is to be embedded in gRPC request messages for efficient\npagination. Ex:"
+    },
+    "PageResponse": {
+      "type": "object",
+      "properties": {
+        "nextKey": {
+          "type": "string",
+          "format": "byte",
+          "description": "next_key is the key to be passed to PageRequest.key to\nquery the next page most efficiently. It will be empty if\nthere are no more results."
+        },
+        "total": {
+          "type": "string",
+          "format": "uint64",
+          "title": "total is total number of results available if PageRequest.count_total\nwas set, its value is undefined otherwise"
+        }
+      },
+      "description": "PageResponse is to be embedded in gRPC response messages where the\ncorresponding request message has used PageRequest.\n\n message SomeResponse {\n         repeated Bar results = 1;\n         PageResponse page = 2;\n }"
+    },
+    "QueryAssistantResponse": {
+      "type": "object",
+      "properties": {
+        "assistant": {
+          "$ref": "#/definitions/v1beta1.Assistant"
+        }
+      }
+    },
+    "QueryAssistantsByLocaleResponse": {
+      "type": "object",
+      "properties": {
+        "locale": {
+          "type": "string"
+        },
+        "assistants": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1beta1.Assistant"
+          }
+        }
+      }
+    },
+    "QueryAssistantsResponse": {
+      "type": "object",
+      "properties": {
+        "assistants": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1beta1.Assistant"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/PageResponse"
+        }
+      }
+    },
+    "QueryParamsResponse": {
+      "type": "object",
+      "properties": {
+        "params": {
+          "$ref": "#/definitions/v1beta1.Params"
+        }
+      }
+    },
+    "Status": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Any"
+          }
+        }
+      }
+    },
+    "v1beta1.Assistant": {
+      "type": "object",
+      "properties": {
+        "assistantAddress": {
+          "type": "string"
+        },
+        "ownerAddress": {
+          "type": "string"
+        },
+        "stake": {
+          "$ref": "#/definitions/Balance"
+        },
+        "sponsorshipBalance": {
+          "$ref": "#/definitions/Balance"
+        },
+        "locales": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "modelHash": {
+          "type": "string"
+        },
+        "apiKeyFingerprint": {
+          "type": "string"
+        },
+        "lastHeartbeat": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "status": {
+          "$ref": "#/definitions/AssistantStatus"
+        },
+        "slashCount": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "misbehaviorReports": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "heartbeatFailures": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "v1beta1.Params": {
+      "type": "object",
+      "properties": {
+        "minStake": {
+          "$ref": "#/definitions/Balance"
+        },
+        "heartbeatWindowSeconds": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "heartbeatGraceSeconds": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "slashFractionDowntime": {
+          "type": "string"
+        },
+        "slashFractionMisbehavior": {
+          "type": "string"
+        },
+        "maxLocales": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    }
+  }
+}

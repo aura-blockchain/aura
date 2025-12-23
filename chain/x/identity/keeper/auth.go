@@ -59,7 +59,7 @@ func (k *Keeper) GetAllRoles(ctx sdk.Context) ([]*types.Role, error) {
 	}
 	defer iterator.Close()
 
-	var roles []*types.Role
+	roles := make([]*types.Role, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var role types.Role
 		if err := k.cdc.Unmarshal(iterator.Value(), &role); err != nil {
@@ -211,7 +211,7 @@ func (k *Keeper) GetRoleAssignments(ctx sdk.Context, address string) ([]*types.R
 
 	// Filter out expired assignments
 	now := ctx.BlockTime()
-	var filtered []*types.RoleAssignment
+	filtered := make([]*types.RoleAssignment, 0, 64)
 	for _, assignment := range assignmentList.Assignments {
 		if assignment.ExpiresAt != nil && now.After(*assignment.ExpiresAt) {
 			continue
@@ -231,7 +231,7 @@ func (k *Keeper) GetAllRoleAssignments(ctx sdk.Context) ([]*types.RoleAssignment
 	}
 	defer iterator.Close()
 
-	var allAssignments []*types.RoleAssignment
+	allAssignments := make([]*types.RoleAssignment, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var assignmentList types.RoleAssignmentList
 		if err := json.Unmarshal(iterator.Value(), &assignmentList); err != nil {
@@ -249,7 +249,7 @@ func (k *Keeper) DeleteRoleAssignment(ctx sdk.Context, address, roleName string)
 		return err
 	}
 
-	var filtered []*types.RoleAssignment
+	filtered := make([]*types.RoleAssignment, 0, 64)
 	for _, assignment := range assignments {
 		if assignment.RoleName != roleName {
 			filtered = append(filtered, assignment)
@@ -466,7 +466,7 @@ func (k *Keeper) GetAllAuditLogs(ctx sdk.Context) ([]*types.AuditLog, error) {
 	}
 	defer iterator.Close()
 
-	var logs []*types.AuditLog
+	logs := make([]*types.AuditLog, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var log types.AuditLog
 		if err := k.cdc.Unmarshal(iterator.Value(), &log); err != nil {
@@ -486,7 +486,7 @@ func (k *Keeper) cleanupOldAuditLogs(ctx sdk.Context, maxRetained uint64) {
 	}
 	defer iterator.Close()
 
-	var keys [][]byte
+	keys := make([][]byte, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		keys = append(keys, iterator.Key())
 	}

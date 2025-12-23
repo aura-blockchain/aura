@@ -1,0 +1,1400 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "aura/contractregistry/v1beta1/query.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "Query"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/aura/contractregistry/v1beta1/audits/{contractAddress}": {
+      "get": {
+        "summary": "ContractAudits queries audit trail for a contract",
+        "operationId": "Query_ContractAudits",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryContractAuditsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "contractAddress",
+            "description": "Contract address to query",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "limit",
+            "description": "Maximum number of entries to return (0 = all)",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/contractregistry/v1beta1/blacklisted": {
+      "get": {
+        "summary": "BlacklistedContracts queries all blacklisted contracts",
+        "operationId": "Query_BlacklistedContracts",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryBlacklistedContractsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "pagination.key",
+            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "pagination.offset",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.countTotal",
+            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pagination.reverse",
+            "description": "reverse is set to true if results are to be returned in the descending order.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/contractregistry/v1beta1/contracts": {
+      "get": {
+        "summary": "RegisteredContracts queries all registered contracts with pagination",
+        "operationId": "Query_RegisteredContracts",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryRegisteredContractsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "status",
+            "description": "Optional status filter\n\n - CONTRACT_STATUS_UNSPECIFIED: Unspecified (invalid)\n - CONTRACT_STATUS_ACTIVE: Active and operational\n - CONTRACT_STATUS_PAUSED: Temporarily paused\n - CONTRACT_STATUS_DEPRECATED: Deprecated (discouraged use)\n - CONTRACT_STATUS_FROZEN: Frozen (emergency stop)",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "CONTRACT_STATUS_UNSPECIFIED",
+              "CONTRACT_STATUS_ACTIVE",
+              "CONTRACT_STATUS_PAUSED",
+              "CONTRACT_STATUS_DEPRECATED",
+              "CONTRACT_STATUS_FROZEN"
+            ],
+            "default": "CONTRACT_STATUS_UNSPECIFIED"
+          },
+          {
+            "name": "pagination.key",
+            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "pagination.offset",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.countTotal",
+            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pagination.reverse",
+            "description": "reverse is set to true if results are to be returned in the descending order.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/contractregistry/v1beta1/contracts/creator/{creatorAddress}": {
+      "get": {
+        "summary": "ContractsByCreator queries all contracts created by a specific address",
+        "operationId": "Query_ContractsByCreator",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryContractsByCreatorResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "creatorAddress",
+            "description": "Creator address",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "pagination.key",
+            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "pagination.offset",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.countTotal",
+            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pagination.reverse",
+            "description": "reverse is set to true if results are to be returned in the descending order.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/contractregistry/v1beta1/contracts/tag/{tag}": {
+      "get": {
+        "summary": "ContractsByTag queries all contracts with a specific tag",
+        "operationId": "Query_ContractsByTag",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryContractsByTagResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "tag",
+            "description": "Tag to filter by",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "pagination.key",
+            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "pagination.offset",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.countTotal",
+            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pagination.reverse",
+            "description": "reverse is set to true if results are to be returned in the descending order.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/contractregistry/v1beta1/contracts/{contractAddress}": {
+      "get": {
+        "summary": "ContractInfo queries information about a registered contract",
+        "operationId": "Query_ContractInfo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryContractInfoResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "contractAddress",
+            "description": "Contract address to query",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/contractregistry/v1beta1/metrics/{contractAddress}": {
+      "get": {
+        "summary": "ContractMetrics queries usage metrics for a contract",
+        "operationId": "Query_ContractMetrics",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryContractMetricsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "contractAddress",
+            "description": "Contract address",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/contractregistry/v1beta1/params": {
+      "get": {
+        "summary": "Params queries the module parameters",
+        "operationId": "Query_Params",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryParamsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/contractregistry/v1beta1/security-score/{contractAddress}": {
+      "get": {
+        "summary": "ContractSecurityScore queries the security score for a contract",
+        "operationId": "Query_ContractSecurityScore",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryContractSecurityScoreResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "contractAddress",
+            "description": "Contract address to query",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/contractregistry/v1beta1/usage-stats/{contractAddress}": {
+      "get": {
+        "summary": "ContractUsageStats queries detailed usage statistics for a contract",
+        "operationId": "Query_ContractUsageStats",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryContractUsageStatsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "contractAddress",
+            "description": "Contract address to query",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "fromHeight",
+            "description": "Start block height (0 = from beginning)",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "toHeight",
+            "description": "End block height (0 = current)",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/contractregistry/v1beta1/verification/{contractAddress}": {
+      "get": {
+        "summary": "ContractVerification queries verification status for a contract",
+        "operationId": "Query_ContractVerification",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryContractVerificationResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "contractAddress",
+            "description": "Contract address to query",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/contractregistry/v1beta1/whitelisted": {
+      "get": {
+        "summary": "WhitelistedContracts queries all whitelisted contracts",
+        "operationId": "Query_WhitelistedContracts",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryWhitelistedContractsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "pagination.key",
+            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "pagination.offset",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.countTotal",
+            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pagination.reverse",
+            "description": "reverse is set to true if results are to be returned in the descending order.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "Any": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "AuditEntry": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Unique entry ID (auto-assigned)"
+        },
+        "contractAddress": {
+          "type": "string",
+          "title": "Contract address being audited"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "int64",
+          "title": "Unix timestamp of the action"
+        },
+        "action": {
+          "type": "string",
+          "title": "Type of action (e.g., EXECUTE_CONTRACT, STATUS_CHANGE, MIGRATE_FROM)"
+        },
+        "actor": {
+          "type": "string",
+          "title": "Address of the actor performing the action"
+        },
+        "details": {
+          "type": "string",
+          "title": "Detailed description of the action"
+        },
+        "success": {
+          "type": "boolean",
+          "title": "Whether the action succeeded"
+        }
+      },
+      "title": "AuditEntry represents a single audit trail entry for a contract"
+    },
+    "AuditHistoryEntry": {
+      "type": "object",
+      "properties": {
+        "auditorName": {
+          "type": "string",
+          "title": "Name of the auditor or firm"
+        },
+        "auditDate": {
+          "type": "string",
+          "format": "int64",
+          "title": "Unix timestamp of the audit date"
+        },
+        "auditScore": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Audit score (0-100)"
+        },
+        "reportUri": {
+          "type": "string",
+          "title": "URI to the audit report"
+        },
+        "findingsSummary": {
+          "type": "string",
+          "title": "Findings summary"
+        },
+        "criticalIssues": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Number of critical issues found"
+        },
+        "highIssues": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Number of high issues found"
+        },
+        "mediumIssues": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Number of medium issues found"
+        },
+        "lowIssues": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Number of low issues found"
+        }
+      },
+      "title": "AuditHistoryEntry represents a single audit in the contract's history"
+    },
+    "AuditStatistics": {
+      "type": "object",
+      "properties": {
+        "contractAddress": {
+          "type": "string",
+          "title": "Contract address"
+        },
+        "totalEntries": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Total audit entries"
+        },
+        "successCount": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Number of successful actions"
+        },
+        "failureCount": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Number of failed actions"
+        },
+        "actionCounts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "format": "uint64"
+          },
+          "title": "Count of each action type (action -\u003e count)"
+        }
+      },
+      "title": "AuditStatistics aggregates audit trail statistics"
+    },
+    "ComplianceRequirements": {
+      "type": "object",
+      "properties": {
+        "enforceKyc": {
+          "type": "boolean",
+          "title": "Enforce KYC verification"
+        },
+        "minKycLevel": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Minimum KYC level (1 = basic, 2 = intermediate, 3 = advanced)"
+        },
+        "enforceSanctionsCheck": {
+          "type": "boolean",
+          "title": "Enforce sanctions screening"
+        },
+        "enforceSpendingLimits": {
+          "type": "boolean",
+          "title": "Enforce spending limits"
+        },
+        "requireAudit": {
+          "type": "boolean",
+          "title": "Whether audit is required"
+        },
+        "lastAuditDate": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Last audit date"
+        },
+        "auditReportUri": {
+          "type": "string",
+          "title": "Audit report URI"
+        }
+      },
+      "title": "ComplianceRequirements defines regulatory compliance settings"
+    },
+    "ContractMetadata": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "Contract name"
+        },
+        "description": {
+          "type": "string",
+          "title": "Detailed description"
+        },
+        "version": {
+          "type": "string",
+          "title": "Version string (e.g., \"1.0.0\")"
+        },
+        "homepage": {
+          "type": "string",
+          "title": "Homepage URL"
+        },
+        "sourceCodeUrl": {
+          "type": "string",
+          "title": "Source code URL"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Tags for categorization (e.g., \"defi\", \"nft\", \"dao\")"
+        },
+        "requiresVc": {
+          "type": "boolean",
+          "title": "Whether contract requires VCs for interaction"
+        },
+        "requiredVcTypes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Required VC types (empty if no requirement)"
+        },
+        "minConfidenceScore": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Minimum confidence score required (0 = no requirement)"
+        },
+        "requiredKycLevel": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Required KYC level (0 = none, 1 = basic, 2 = intermediate, 3 = advanced)"
+        },
+        "checkSanctions": {
+          "type": "boolean",
+          "title": "Whether sanctions check is required"
+        },
+        "sourceCodeHash": {
+          "type": "string",
+          "title": "SHA256 hash of source code"
+        },
+        "compilerVersion": {
+          "type": "string",
+          "title": "Compiler version used for the contract"
+        },
+        "license": {
+          "type": "string",
+          "title": "License type (e.g., MIT, Apache-2.0)"
+        },
+        "lastVerified": {
+          "type": "string",
+          "format": "int64",
+          "title": "Unix timestamp of last verification"
+        },
+        "auditHistory": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/AuditHistoryEntry"
+          },
+          "title": "Audit history entries"
+        }
+      },
+      "title": "ContractMetadata contains identity and requirement information"
+    },
+    "ContractRegistryParams": {
+      "type": "object",
+      "properties": {
+        "openRegistration": {
+          "type": "boolean",
+          "title": "Whether registration is open to all"
+        },
+        "maxContractsPerCreator": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Maximum number of contracts per creator (0 = unlimited)"
+        },
+        "requireMetadata": {
+          "type": "boolean",
+          "title": "Whether metadata is required for registration"
+        },
+        "requireSecurityPolicy": {
+          "type": "boolean",
+          "title": "Whether security policy is required"
+        },
+        "requireComplianceConfig": {
+          "type": "boolean",
+          "title": "Whether compliance requirements must be specified"
+        },
+        "auditWarningDays": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Minimum audit age (days) before warning"
+        },
+        "defaultRateLimit": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Default rate limit per user per hour"
+        },
+        "defaultMaxGas": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Default max gas per transaction"
+        }
+      },
+      "title": "ContractRegistryParams defines the parameters for the contract registry module"
+    },
+    "ContractStatus": {
+      "type": "string",
+      "enum": [
+        "CONTRACT_STATUS_UNSPECIFIED",
+        "CONTRACT_STATUS_ACTIVE",
+        "CONTRACT_STATUS_PAUSED",
+        "CONTRACT_STATUS_DEPRECATED",
+        "CONTRACT_STATUS_FROZEN"
+      ],
+      "default": "CONTRACT_STATUS_UNSPECIFIED",
+      "description": "- CONTRACT_STATUS_UNSPECIFIED: Unspecified (invalid)\n - CONTRACT_STATUS_ACTIVE: Active and operational\n - CONTRACT_STATUS_PAUSED: Temporarily paused\n - CONTRACT_STATUS_DEPRECATED: Deprecated (discouraged use)\n - CONTRACT_STATUS_FROZEN: Frozen (emergency stop)",
+      "title": "ContractStatus represents the operational status of a contract"
+    },
+    "PageRequest": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "format": "byte",
+          "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set."
+        },
+        "offset": {
+          "type": "string",
+          "format": "uint64",
+          "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set."
+        },
+        "limit": {
+          "type": "string",
+          "format": "uint64",
+          "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app."
+        },
+        "countTotal": {
+          "type": "boolean",
+          "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set."
+        },
+        "reverse": {
+          "type": "boolean",
+          "description": "reverse is set to true if results are to be returned in the descending order."
+        }
+      },
+      "description": "message SomeRequest {\n         Foo some_parameter = 1;\n         PageRequest pagination = 2;\n }",
+      "title": "PageRequest is to be embedded in gRPC request messages for efficient\npagination. Ex:"
+    },
+    "PageResponse": {
+      "type": "object",
+      "properties": {
+        "nextKey": {
+          "type": "string",
+          "format": "byte",
+          "description": "next_key is the key to be passed to PageRequest.key to\nquery the next page most efficiently. It will be empty if\nthere are no more results."
+        },
+        "total": {
+          "type": "string",
+          "format": "uint64",
+          "title": "total is total number of results available if PageRequest.count_total\nwas set, its value is undefined otherwise"
+        }
+      },
+      "description": "PageResponse is to be embedded in gRPC response messages where the\ncorresponding request message has used PageRequest.\n\n message SomeResponse {\n         repeated Bar results = 1;\n         PageResponse page = 2;\n }"
+    },
+    "QueryBlacklistedContractsResponse": {
+      "type": "object",
+      "properties": {
+        "contracts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1beta1.ContractInfo"
+          },
+          "title": "List of blacklisted contracts"
+        },
+        "pagination": {
+          "$ref": "#/definitions/PageResponse",
+          "title": "Pagination response"
+        }
+      },
+      "title": "QueryBlacklistedContractsResponse is the response for BlacklistedContracts query"
+    },
+    "QueryContractAuditsResponse": {
+      "type": "object",
+      "properties": {
+        "entries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/AuditEntry"
+          },
+          "title": "Audit entries"
+        },
+        "statistics": {
+          "$ref": "#/definitions/AuditStatistics",
+          "title": "Statistics about the audit trail"
+        }
+      },
+      "title": "QueryContractAuditsResponse is the response for ContractAudits query"
+    },
+    "QueryContractInfoResponse": {
+      "type": "object",
+      "properties": {
+        "contract": {
+          "$ref": "#/definitions/v1beta1.ContractInfo",
+          "title": "Contract information"
+        }
+      },
+      "title": "QueryContractInfoResponse is the response for ContractInfo query"
+    },
+    "QueryContractMetricsResponse": {
+      "type": "object",
+      "properties": {
+        "metrics": {
+          "$ref": "#/definitions/v1beta1.ContractMetrics",
+          "title": "Contract metrics"
+        }
+      },
+      "title": "QueryContractMetricsResponse is the response for ContractMetrics query"
+    },
+    "QueryContractSecurityScoreResponse": {
+      "type": "object",
+      "properties": {
+        "contractAddress": {
+          "type": "string",
+          "title": "Contract address"
+        },
+        "score": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Security score (0-100)"
+        },
+        "riskLevel": {
+          "type": "string",
+          "title": "Risk level (LOW, MEDIUM, HIGH, CRITICAL)"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Last score update timestamp"
+        }
+      },
+      "title": "QueryContractSecurityScoreResponse is the response for ContractSecurityScore query"
+    },
+    "QueryContractUsageStatsResponse": {
+      "type": "object",
+      "properties": {
+        "contractAddress": {
+          "type": "string",
+          "title": "Contract address"
+        },
+        "totalExecutions": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Total executions in period"
+        },
+        "successfulExecutions": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Successful executions"
+        },
+        "failedExecutions": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Failed executions"
+        },
+        "totalGasUsed": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Total gas used"
+        },
+        "uniqueUsers": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Number of unique users"
+        }
+      },
+      "title": "QueryContractUsageStatsResponse is the response for ContractUsageStats query"
+    },
+    "QueryContractVerificationResponse": {
+      "type": "object",
+      "properties": {
+        "contractAddress": {
+          "type": "string",
+          "title": "Contract address"
+        },
+        "verified": {
+          "type": "boolean",
+          "title": "Whether contract is verified"
+        },
+        "verifiedAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Verification timestamp"
+        },
+        "verifiedBy": {
+          "type": "string",
+          "title": "Verifier address"
+        },
+        "securityScore": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Security score (0-100)"
+        }
+      },
+      "title": "QueryContractVerificationResponse is the response for ContractVerification query"
+    },
+    "QueryContractsByCreatorResponse": {
+      "type": "object",
+      "properties": {
+        "contracts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1beta1.ContractInfo"
+          },
+          "title": "List of contracts"
+        },
+        "pagination": {
+          "$ref": "#/definitions/PageResponse",
+          "title": "Pagination response"
+        }
+      },
+      "title": "QueryContractsByCreatorResponse is the response for ContractsByCreator query"
+    },
+    "QueryContractsByTagResponse": {
+      "type": "object",
+      "properties": {
+        "contracts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1beta1.ContractInfo"
+          },
+          "title": "List of contracts with the tag"
+        },
+        "pagination": {
+          "$ref": "#/definitions/PageResponse",
+          "title": "Pagination response"
+        }
+      },
+      "title": "QueryContractsByTagResponse is the response for ContractsByTag query"
+    },
+    "QueryParamsResponse": {
+      "type": "object",
+      "properties": {
+        "params": {
+          "$ref": "#/definitions/ContractRegistryParams",
+          "title": "Module parameters - uses type from genesis.proto"
+        }
+      },
+      "title": "QueryParamsResponse is the response for Params query\nNote: ContractRegistryParams is imported from genesis.proto"
+    },
+    "QueryRegisteredContractsResponse": {
+      "type": "object",
+      "properties": {
+        "contracts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1beta1.ContractInfo"
+          },
+          "title": "List of all registered contracts"
+        },
+        "pagination": {
+          "$ref": "#/definitions/PageResponse",
+          "title": "Pagination response"
+        }
+      },
+      "title": "QueryRegisteredContractsResponse is the response for RegisteredContracts query"
+    },
+    "QueryWhitelistedContractsResponse": {
+      "type": "object",
+      "properties": {
+        "contracts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1beta1.ContractInfo"
+          },
+          "title": "List of whitelisted contracts"
+        },
+        "pagination": {
+          "$ref": "#/definitions/PageResponse",
+          "title": "Pagination response"
+        }
+      },
+      "title": "QueryWhitelistedContractsResponse is the response for WhitelistedContracts query"
+    },
+    "SecurityPolicy": {
+      "type": "object",
+      "properties": {
+        "allowPause": {
+          "type": "boolean",
+          "title": "Whether contract can be paused by admin"
+        },
+        "allowMigration": {
+          "type": "boolean",
+          "title": "Whether contract can be migrated"
+        },
+        "maxGasPerTx": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Maximum gas per transaction (0 = no limit)"
+        },
+        "rateLimitPerUser": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Rate limit per user per hour (0 = no limit)"
+        },
+        "blacklistedAddresses": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Blacklisted addresses (cannot interact)"
+        },
+        "whitelistedAddresses": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Whitelisted addresses (if non-empty, only these can interact)"
+        },
+        "emergencyPauseEnabled": {
+          "type": "boolean",
+          "title": "Whether emergency pause is enabled for this contract"
+        },
+        "migrationTimelock": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Minimum timelock delay for migrations (in seconds)"
+        },
+        "multisigThreshold": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Multi-sig threshold required for admin operations"
+        },
+        "maxValuePerTx": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Maximum value per transaction (in base denomination, 0 = no limit)"
+        },
+        "dailyTxLimit": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Daily transaction limit (0 = no limit)"
+        }
+      },
+      "title": "SecurityPolicy defines security controls and limits"
+    },
+    "Status": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Any"
+          }
+        }
+      }
+    },
+    "v1beta1.ContractInfo": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string",
+          "title": "Contract address"
+        },
+        "codeId": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Code ID of the contract"
+        },
+        "creator": {
+          "type": "string",
+          "title": "Creator address"
+        },
+        "admin": {
+          "type": "string",
+          "title": "Admin address (can migrate/update)"
+        },
+        "label": {
+          "type": "string",
+          "title": "Human-readable label"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Last updated timestamp"
+        },
+        "metadata": {
+          "$ref": "#/definitions/ContractMetadata",
+          "title": "Contract metadata"
+        },
+        "securityPolicy": {
+          "$ref": "#/definitions/SecurityPolicy",
+          "title": "Security policy"
+        },
+        "compliance": {
+          "$ref": "#/definitions/ComplianceRequirements",
+          "title": "Compliance requirements"
+        },
+        "status": {
+          "$ref": "#/definitions/ContractStatus",
+          "title": "Current status"
+        },
+        "migrationTarget": {
+          "type": "string",
+          "title": "Address of contract this contract was migrated to (if any)"
+        },
+        "migratedFrom": {
+          "type": "string",
+          "title": "Address of contract this contract was migrated from (if any)"
+        },
+        "migratedAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Timestamp of migration (if any)"
+        },
+        "auditHistory": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/AuditHistoryEntry"
+          },
+          "title": "Audit history for this contract"
+        },
+        "securityScore": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Security score (0-100)"
+        },
+        "isVerified": {
+          "type": "boolean",
+          "title": "Whether contract is verified"
+        },
+        "verificationLevel": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Verification level (1-4)"
+        }
+      },
+      "title": "ContractInfo represents a registered smart contract with all metadata and policies"
+    },
+    "v1beta1.ContractMetrics": {
+      "type": "object",
+      "properties": {
+        "contractAddress": {
+          "type": "string",
+          "title": "Contract address"
+        },
+        "totalExecutions": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Total executions"
+        },
+        "successfulExecutions": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Successful executions"
+        },
+        "failedExecutions": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Failed executions"
+        },
+        "totalGasUsed": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Total gas used"
+        },
+        "avgGasPerExecution": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Average gas per execution"
+        },
+        "uniqueUsers": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Unique users"
+        },
+        "rateLimitViolations": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Rate limit violations"
+        },
+        "complianceFailures": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Compliance check failures"
+        },
+        "lastExecution": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Last execution timestamp"
+        }
+      },
+      "title": "ContractMetrics tracks usage statistics for a contract"
+    }
+  }
+}

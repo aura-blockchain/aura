@@ -364,11 +364,11 @@ type VCSearchCriteria struct {
 func (k *Keeper) SearchVCs(ctx context.Context, criteria VCSearchCriteria) ([]types.VCRecord, int) {
 	k.requireStore()
 
-	var results []types.VCRecord
+	results := make([]types.VCRecord, 0, 64)
 	totalMatches := 0
 
 	// If holder address specified, search user's VCs only
-	var searchSet []types.VCRecord
+	searchSet := make([]types.VCRecord, 0, 64)
 	if criteria.HolderAddress != "" {
 		searchSet = k.ListUserVCs(ctx, criteria.HolderAddress, types.VCStatus_VC_STATUS_UNSPECIFIED, types.VCType_VC_TYPE_UNSPECIFIED)
 	} else {
@@ -850,7 +850,7 @@ func (k *Keeper) setVCMetadata(ctx context.Context, vcID string, key string, val
 func (k *Keeper) GetVCsByIssuer(ctx context.Context, issuerAssistant string) []types.VCRecord {
 	k.requireStore()
 
-	var results []types.VCRecord
+	results := make([]types.VCRecord, 0, 64)
 	for _, vcRecord := range k.store.iterateVCRecords(ctx) {
 		if vcRecord.IssuerAssistant == issuerAssistant {
 			results = append(results, vcRecord)
@@ -863,7 +863,7 @@ func (k *Keeper) GetVCsByIssuer(ctx context.Context, issuerAssistant string) []t
 func (k *Keeper) GetVCsByDID(ctx context.Context, did string) []types.VCRecord {
 	k.requireStore()
 
-	var results []types.VCRecord
+	results := make([]types.VCRecord, 0, 64)
 	for _, vcRecord := range k.store.iterateVCRecords(ctx) {
 		if vcRecord.HolderDid == did {
 			results = append(results, vcRecord)

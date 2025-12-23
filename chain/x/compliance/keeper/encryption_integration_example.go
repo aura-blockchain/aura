@@ -361,7 +361,7 @@ func (k *Keeper) AuditKYCRecordsIntegrityExample(
 
 	dataProtection := NewDataProtectionService()
 	verificationResults := make(map[string]bool)
-	var failures []string
+	failures := make([]string, 0, 64)
 
 	// Verify each record
 	for _, record := range records {

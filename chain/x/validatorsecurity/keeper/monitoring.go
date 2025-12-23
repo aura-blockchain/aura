@@ -225,7 +225,7 @@ func (k Keeper) GetValidatorAlerts(ctx context.Context, validatorAddr string) []
 	iterator := storetypes.KVStorePrefixIterator(store, types.ValidatorAlertKey)
 	defer iterator.Close()
 
-	var alerts []types.ValidatorAlert
+	alerts := make([]types.ValidatorAlert, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var alert types.ValidatorAlert
 		if err := k.cdc.Unmarshal(iterator.Value(), &alert); err != nil {
@@ -249,7 +249,7 @@ func (k Keeper) GetAllAlerts(ctx context.Context) []types.ValidatorAlert {
 	iterator := storetypes.KVStorePrefixIterator(store, types.ValidatorAlertKey)
 	defer iterator.Close()
 
-	var alerts []types.ValidatorAlert
+	alerts := make([]types.ValidatorAlert, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var alert types.ValidatorAlert
 		if err := k.cdc.Unmarshal(iterator.Value(), &alert); err != nil {

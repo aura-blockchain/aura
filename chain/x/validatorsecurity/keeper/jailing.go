@@ -213,7 +213,7 @@ func (k Keeper) GetJailedValidators(ctx context.Context) []types.ValidatorSecuri
 	iterator := storetypes.KVStorePrefixIterator(store, types.JailedValidatorsKey)
 	defer iterator.Close()
 
-	var validators []types.ValidatorSecurityInfo
+	validators := make([]types.ValidatorSecurityInfo, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		// Extract validator address from key
 		validatorAddr := string(iterator.Key()[len(types.JailedValidatorsKey):])
@@ -238,7 +238,7 @@ func (k Keeper) GetTombstonedValidators(ctx context.Context) []types.ValidatorSe
 	iterator := storetypes.KVStorePrefixIterator(store, types.TombstonedValidatorsKey)
 	defer iterator.Close()
 
-	var validators []types.ValidatorSecurityInfo
+	validators := make([]types.ValidatorSecurityInfo, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		// Extract validator address from key
 		validatorAddr := string(iterator.Key()[len(types.TombstonedValidatorsKey):])

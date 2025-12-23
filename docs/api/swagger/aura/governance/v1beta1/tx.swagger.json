@@ -1,0 +1,139 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "aura/governance/v1beta1/tx.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "Msg"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {},
+  "definitions": {
+    "Any": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "MsgCosignVetoResponse": {
+      "type": "object",
+      "properties": {
+        "vetoExecuted": {
+          "type": "boolean"
+        }
+      }
+    },
+    "MsgDelegateVoteResponse": {
+      "type": "object"
+    },
+    "MsgDepositResponse": {
+      "type": "object"
+    },
+    "MsgExecuteProposalResponse": {
+      "type": "object"
+    },
+    "MsgRevealSecretVoteResponse": {
+      "type": "object"
+    },
+    "MsgSubmitProposalResponse": {
+      "type": "object",
+      "properties": {
+        "proposalId": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "MsgSubmitSnapshotVoteResponse": {
+      "type": "object"
+    },
+    "MsgSubmitVetoResponse": {
+      "type": "object",
+      "properties": {
+        "vetoExecuted": {
+          "type": "boolean",
+          "title": "True if enough cosigners already"
+        }
+      }
+    },
+    "MsgUndelegateVoteResponse": {
+      "type": "object"
+    },
+    "MsgVoteResponse": {
+      "type": "object"
+    },
+    "MsgVoteWeightedResponse": {
+      "type": "object"
+    },
+    "ProposalCategory": {
+      "type": "string",
+      "enum": [
+        "PROPOSAL_CATEGORY_UNSPECIFIED",
+        "PROPOSAL_CATEGORY_TEXT",
+        "PROPOSAL_CATEGORY_PARAMETER_CHANGE",
+        "PROPOSAL_CATEGORY_SOFTWARE_UPGRADE",
+        "PROPOSAL_CATEGORY_SPENDING",
+        "PROPOSAL_CATEGORY_EMERGENCY",
+        "PROPOSAL_CATEGORY_CONSTITUTION"
+      ],
+      "default": "PROPOSAL_CATEGORY_UNSPECIFIED",
+      "description": "- PROPOSAL_CATEGORY_TEXT: Simple text proposals\n - PROPOSAL_CATEGORY_PARAMETER_CHANGE: Parameter changes\n - PROPOSAL_CATEGORY_SOFTWARE_UPGRADE: Software upgrades\n - PROPOSAL_CATEGORY_SPENDING: Treasury spending\n - PROPOSAL_CATEGORY_EMERGENCY: Emergency proposals (fast-track)\n - PROPOSAL_CATEGORY_CONSTITUTION: Constitution changes (highest threshold)",
+      "title": "ProposalCategory defines the category of a proposal with different thresholds"
+    },
+    "Status": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Any"
+          }
+        }
+      }
+    },
+    "VoteOption": {
+      "type": "string",
+      "enum": [
+        "VOTE_OPTION_UNSPECIFIED",
+        "VOTE_OPTION_YES",
+        "VOTE_OPTION_ABSTAIN",
+        "VOTE_OPTION_NO",
+        "VOTE_OPTION_NO_WITH_VETO"
+      ],
+      "default": "VOTE_OPTION_UNSPECIFIED",
+      "title": "VoteOption defines a vote option"
+    },
+    "WeightedVoteOption": {
+      "type": "object",
+      "properties": {
+        "option": {
+          "$ref": "#/definitions/VoteOption"
+        },
+        "weight": {
+          "type": "string",
+          "title": "Weight between 0 and 1"
+        }
+      },
+      "title": "WeightedVoteOption defines a vote option with weight"
+    }
+  }
+}

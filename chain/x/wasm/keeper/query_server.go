@@ -279,7 +279,7 @@ func (qs queryServer) AuthorizedUploaders(goCtx context.Context, req *types.Quer
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	store := ctx.KVStore(qs.Keeper.storeKey)
 
-	var uploaders []string
+	uploaders := make([]string, 0, 64)
 	iterator := storetypes.KVStorePrefixIterator(store, types.ContractAuthKey)
 	defer iterator.Close()
 
@@ -313,7 +313,7 @@ func (qs queryServer) PausedContracts(goCtx context.Context, req *types.QueryPau
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	store := ctx.KVStore(qs.Keeper.storeKey)
 
-	var contracts []string
+	contracts := make([]string, 0, 64)
 	iterator := storetypes.KVStorePrefixIterator(store, types.ContractPauseKey)
 	defer iterator.Close()
 

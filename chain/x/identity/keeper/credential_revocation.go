@@ -291,7 +291,7 @@ func (k *Keeper) GetAllCredentialRevocations(ctx sdk.Context) ([]*types.Credenti
 	}
 	defer iterator.Close()
 
-	var revocations []*types.CredentialRevocation
+	revocations := make([]*types.CredentialRevocation, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var revocation types.CredentialRevocation
 		if err := k.cdc.Unmarshal(iterator.Value(), &revocation); err != nil {
@@ -309,7 +309,7 @@ func (k *Keeper) GetCredentialRevocationsByDID(ctx sdk.Context, did string) ([]*
 		return nil, err
 	}
 
-	var didRevocations []*types.CredentialRevocation
+	didRevocations := make([]*types.CredentialRevocation, 0, 64)
 	for _, revocation := range allRevocations {
 		if revocation.Did == did {
 			didRevocations = append(didRevocations, revocation)

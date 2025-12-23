@@ -243,7 +243,7 @@ func (k Keeper) GetAllDeviceFingerprints(ctx sdk.Context) []*types.DeviceFingerp
 	iterator := storetypes.KVStorePrefixIterator(store, types.DeviceFingerprintKey)
 	defer iterator.Close()
 
-	var fps []*types.DeviceFingerprint
+	fps := make([]*types.DeviceFingerprint, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var fp types.DeviceFingerprint
 		if err := k.cdc.Unmarshal(iterator.Value(), &fp); err != nil {
@@ -285,7 +285,7 @@ func (k Keeper) GetAllSessions(ctx sdk.Context) []*types.WalletSession {
 	iterator := storetypes.KVStorePrefixIterator(store, types.SessionKey)
 	defer iterator.Close()
 
-	var sessions []*types.WalletSession
+	sessions := make([]*types.WalletSession, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var session types.WalletSession
 		if err := k.cdc.Unmarshal(iterator.Value(), &session); err != nil {
@@ -331,7 +331,7 @@ func (k Keeper) GetAllAnomalyDetections(ctx sdk.Context) []*types.AnomalyDetecti
 	iterator := storetypes.KVStorePrefixIterator(store, types.AnomalyDetectionKey)
 	defer iterator.Close()
 
-	var anomalies []*types.AnomalyDetection
+	anomalies := make([]*types.AnomalyDetection, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var anomaly types.AnomalyDetection
 		if err := k.cdc.Unmarshal(iterator.Value(), &anomaly); err != nil {

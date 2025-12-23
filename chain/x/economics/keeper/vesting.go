@@ -139,7 +139,7 @@ func (k Keeper) GetUserVestingIndex(ctx context.Context, userAddress string) ([]
 	}
 
 	// Simple decoding: split by null bytes
-	var scheduleIDs []string
+	scheduleIDs := make([]string, 0, 64)
 	start := 0
 	for i, b := range bz {
 		if b == 0 {
@@ -370,7 +370,7 @@ func (k Keeper) GetUserVoteLockIndex(ctx context.Context, userAddress string) ([
 	}
 
 	// Simple decoding: split by null bytes
-	var lockIDs []string
+	lockIDs := make([]string, 0, 64)
 	start := 0
 	for i, b := range bz {
 		if b == 0 {

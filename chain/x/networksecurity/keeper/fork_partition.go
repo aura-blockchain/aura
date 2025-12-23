@@ -339,7 +339,7 @@ func (k Keeper) GetMissingPeerIDs(ctx sdk.Context) []string {
 		return []string{}
 	}
 
-	var knownPeers []string
+	knownPeers := make([]string, 0, 64)
 	if err := json.Unmarshal(bz, &knownPeers); err != nil {
 		return []string{}
 	}
@@ -352,7 +352,7 @@ func (k Keeper) GetMissingPeerIDs(ctx sdk.Context) []string {
 	}
 
 	// Find missing peers
-	var missingPeers []string
+	missingPeers := make([]string, 0, 64)
 	for _, peerID := range knownPeers {
 		if !currentPeerMap[peerID] {
 			missingPeers = append(missingPeers, peerID)
@@ -366,7 +366,7 @@ func (k Keeper) GetMissingPeerIDs(ctx sdk.Context) []string {
 func (k Keeper) UpdateKnownPeerList(ctx sdk.Context) {
 	peers := k.GetAllPeers(ctx)
 
-	var peerIDs []string
+	peerIDs := make([]string, 0, 64)
 	for _, peer := range peers {
 		peerIDs = append(peerIDs, peer.PeerId)
 	}

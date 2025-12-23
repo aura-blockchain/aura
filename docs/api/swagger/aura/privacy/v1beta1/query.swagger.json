@@ -1,0 +1,300 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "aura/privacy/v1beta1/query.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "Query"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {},
+  "definitions": {
+    "Any": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "QueryMixingPoolResponse": {
+      "type": "object",
+      "properties": {
+        "mixingPool": {
+          "$ref": "#/definitions/v1beta1.MixingPool",
+          "title": "mixing_pool is the requested pool"
+        }
+      },
+      "title": "QueryMixingPoolResponse is the response"
+    },
+    "QueryMixingPoolsResponse": {
+      "type": "object",
+      "properties": {
+        "mixingPools": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1beta1.MixingPool"
+          },
+          "title": "mixing_pools are all matching pools"
+        }
+      },
+      "title": "QueryMixingPoolsResponse is the response"
+    },
+    "QueryParamsResponse": {
+      "type": "object",
+      "properties": {
+        "params": {
+          "$ref": "#/definitions/v1beta1.Params",
+          "title": "params are the module parameters"
+        }
+      },
+      "title": "QueryParamsResponse is the response type for the Query/Params RPC method"
+    },
+    "QueryVerifyZKProofResponse": {
+      "type": "object",
+      "properties": {
+        "valid": {
+          "type": "boolean",
+          "title": "valid indicates if the proof is valid"
+        },
+        "errorMessage": {
+          "type": "string",
+          "title": "error_message contains details if verification failed"
+        }
+      },
+      "title": "QueryVerifyZKProofResponse is the response"
+    },
+    "QueryViewKeyResponse": {
+      "type": "object",
+      "properties": {
+        "viewKey": {
+          "$ref": "#/definitions/v1beta1.ViewKey",
+          "title": "view_key is the requested key (without private component)"
+        }
+      },
+      "title": "QueryViewKeyResponse is the response"
+    },
+    "QueryViewKeysResponse": {
+      "type": "object",
+      "properties": {
+        "viewKeys": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1beta1.ViewKey"
+          },
+          "title": "view_keys are all keys for the address"
+        }
+      },
+      "title": "QueryViewKeysResponse is the response"
+    },
+    "Status": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Any"
+          }
+        }
+      }
+    },
+    "ZKProof": {
+      "type": "object",
+      "properties": {
+        "proofType": {
+          "type": "string",
+          "title": "proof_type indicates the type of ZK proof (GROTH16, PLONK, SNARK, STARK)"
+        },
+        "proofData": {
+          "type": "string",
+          "format": "byte",
+          "title": "proof_data contains the serialized proof data"
+        },
+        "publicInputs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "byte"
+          },
+          "title": "public_inputs are the public parameters of the proof"
+        },
+        "verificationKey": {
+          "type": "string",
+          "format": "byte",
+          "title": "verification_key is the key used to verify this proof"
+        },
+        "circuitId": {
+          "type": "string",
+          "title": "circuit_id identifies the circuit used for this proof"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "created_at timestamp"
+        }
+      },
+      "title": "ZKProof represents a zero-knowledge proof for private transactions"
+    },
+    "v1beta1.MixingPool": {
+      "type": "object",
+      "properties": {
+        "poolId": {
+          "type": "string",
+          "title": "pool_id is the unique identifier for this mixing pool"
+        },
+        "participants": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "byte"
+          },
+          "title": "participants are the addresses participating in mixing"
+        },
+        "minParticipants": {
+          "type": "integer",
+          "format": "int64",
+          "title": "min_participants is the minimum number of participants required"
+        },
+        "maxParticipants": {
+          "type": "integer",
+          "format": "int64",
+          "title": "max_participants is the maximum number of participants allowed"
+        },
+        "denomination": {
+          "type": "string",
+          "title": "denomination is the standard amount for mixing"
+        },
+        "mixingRounds": {
+          "type": "integer",
+          "format": "int64",
+          "title": "mixing_rounds is the number of mixing rounds to perform"
+        },
+        "status": {
+          "type": "string",
+          "title": "status indicates the current status of the mixing pool"
+        },
+        "deadline": {
+          "type": "string",
+          "format": "date-time",
+          "title": "deadline is when the mixing must be completed"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "created_at timestamp"
+        }
+      },
+      "title": "MixingPool represents a coin mixing/tumbling service"
+    },
+    "v1beta1.Params": {
+      "type": "object",
+      "properties": {
+        "enableZkProofs": {
+          "type": "boolean",
+          "title": "enable_zk_proofs enables zero-knowledge proof verification"
+        },
+        "enableStealthAddresses": {
+          "type": "boolean",
+          "title": "enable_stealth_addresses enables stealth address support"
+        },
+        "enableRingSignatures": {
+          "type": "boolean",
+          "title": "enable_ring_signatures enables ring signature verification"
+        },
+        "enableConfidentialTransactions": {
+          "type": "boolean",
+          "title": "enable_confidential_transactions enables confidential transactions"
+        },
+        "enableNetworkPrivacy": {
+          "type": "boolean",
+          "title": "enable_network_privacy enables Tor/I2P integration"
+        },
+        "enableMixing": {
+          "type": "boolean",
+          "title": "enable_mixing enables coin mixing services"
+        },
+        "minRingSize": {
+          "type": "integer",
+          "format": "int64",
+          "title": "min_ring_size is the minimum size for ring signatures"
+        },
+        "maxRingSize": {
+          "type": "integer",
+          "format": "int64",
+          "title": "max_ring_size is the maximum size for ring signatures"
+        },
+        "minMixingParticipants": {
+          "type": "integer",
+          "format": "int64",
+          "title": "min_mixing_participants is the minimum participants for mixing"
+        },
+        "mixingFee": {
+          "type": "string",
+          "title": "mixing_fee is the fee for using mixing services"
+        },
+        "zkProofVerificationCost": {
+          "type": "string",
+          "format": "uint64",
+          "title": "zk_proof_verification_cost is the computational cost for ZK verification"
+        }
+      },
+      "title": "Params defines the parameters for the privacy module"
+    },
+    "v1beta1.ViewKey": {
+      "type": "object",
+      "properties": {
+        "keyType": {
+          "type": "string",
+          "title": "key_type indicates the type of view key (INCOMING, OUTGOING, AUDIT)"
+        },
+        "publicViewKey": {
+          "type": "string",
+          "format": "byte",
+          "description": "public_view_key is the public component of the view key\nThis is the ONLY key stored on-chain. Private keys are client-side only."
+        },
+        "address": {
+          "type": "string",
+          "format": "byte",
+          "title": "address is the associated address"
+        },
+        "permissions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "permissions define what this view key can access"
+        },
+        "expiration": {
+          "type": "string",
+          "format": "date-time",
+          "title": "expiration is when this view key expires"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "created_at timestamp"
+        }
+      },
+      "description": "ViewKey enables selective disclosure of transaction details\nSECURITY NOTE: Private keys must NEVER be stored on-chain or transmitted in messages.\nPrivate keys are managed client-side only. The blockchain stores only public keys."
+    }
+  }
+}

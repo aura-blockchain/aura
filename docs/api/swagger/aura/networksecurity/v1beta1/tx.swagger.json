@@ -1,0 +1,347 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "aura/networksecurity/v1beta1/tx.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "Msg"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {},
+  "definitions": {
+    "Any": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "ConnectionConfig": {
+      "type": "object",
+      "properties": {
+        "maxInboundConnections": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Maximum number of inbound connections"
+        },
+        "maxOutboundConnections": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Maximum number of outbound connections"
+        },
+        "maxConnectionsPerIp": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Maximum connections per IP address"
+        },
+        "connectionTimeout": {
+          "type": "string",
+          "title": "Connection timeout"
+        },
+        "trustedPeersOnly": {
+          "type": "boolean",
+          "title": "Enable trusted peers only mode"
+        },
+        "minPeerDiversity": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Minimum peer diversity (different ASNs)"
+        }
+      },
+      "title": "ConnectionConfig defines connection management parameters"
+    },
+    "ForkDetectionConfig": {
+      "type": "object",
+      "properties": {
+        "enableDetection": {
+          "type": "boolean",
+          "title": "Enable fork detection"
+        },
+        "heightDiffThreshold": {
+          "type": "string",
+          "format": "int64",
+          "title": "Block height difference to trigger alert"
+        },
+        "enableAutoResolution": {
+          "type": "boolean",
+          "title": "Enable automatic fork resolution"
+        },
+        "confirmationDepth": {
+          "type": "string",
+          "format": "int64",
+          "title": "Confirmation depth for finality"
+        }
+      },
+      "title": "ForkDetectionConfig defines fork detection parameters"
+    },
+    "GossipConfig": {
+      "type": "object",
+      "properties": {
+        "verifySignatures": {
+          "type": "boolean",
+          "title": "Enable message signature verification"
+        },
+        "maxMessageSize": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Maximum message size"
+        },
+        "messageTtl": {
+          "type": "string",
+          "title": "Message TTL (time to live)"
+        },
+        "enableRedundancyFilter": {
+          "type": "boolean",
+          "title": "Enable redundancy filtering"
+        },
+        "maxFanout": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Maximum gossip fanout"
+        }
+      },
+      "title": "GossipConfig defines gossip protocol validation parameters"
+    },
+    "MempoolConfig": {
+      "type": "object",
+      "properties": {
+        "maxSize": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Maximum mempool size (number of transactions)"
+        },
+        "maxBytes": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Maximum mempool size in bytes"
+        },
+        "minPriorityFee": {
+          "type": "string",
+          "title": "Minimum priority fee to enter mempool"
+        },
+        "maxTxsPerAccount": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Maximum transactions per account in mempool"
+        },
+        "evictionPolicy": {
+          "type": "string",
+          "title": "Mempool eviction policy (oldest, lowest_fee, etc)"
+        },
+        "enablePriorityFees": {
+          "type": "boolean",
+          "title": "Enable priority fee mechanism"
+        }
+      },
+      "title": "MempoolConfig defines mempool security parameters"
+    },
+    "MsgAddTrustedPeerResponse": {
+      "type": "object"
+    },
+    "MsgBanPeerResponse": {
+      "type": "object"
+    },
+    "MsgRemoveTrustedPeerResponse": {
+      "type": "object"
+    },
+    "MsgResolveForkAlertResponse": {
+      "type": "object"
+    },
+    "MsgResolvePartitionAlertResponse": {
+      "type": "object"
+    },
+    "MsgUnbanPeerResponse": {
+      "type": "object"
+    },
+    "MsgUpdateParamsResponse": {
+      "type": "object"
+    },
+    "MsgUpdatePeerReputationResponse": {
+      "type": "object"
+    },
+    "PartitionDetectionConfig": {
+      "type": "object",
+      "properties": {
+        "enableDetection": {
+          "type": "boolean",
+          "title": "Enable partition detection"
+        },
+        "minConnectedPeers": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Minimum connected peers to consider healthy"
+        },
+        "checkInterval": {
+          "type": "string",
+          "title": "Check interval"
+        },
+        "partitionThreshold": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Partition alert threshold (missing peers)"
+        }
+      },
+      "title": "PartitionDetectionConfig defines network partitioning detection parameters"
+    },
+    "RateLimitConfig": {
+      "type": "object",
+      "properties": {
+        "maxRequestsPerSecond": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Maximum requests per second per peer"
+        },
+        "burstSize": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Burst size for rate limiter"
+        },
+        "windowDuration": {
+          "type": "string",
+          "title": "Window duration for rate limiting"
+        },
+        "banDuration": {
+          "type": "string",
+          "title": "Ban duration for rate limit violations"
+        },
+        "bandwidthLimitPerPeer": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Bandwidth limit per peer (bytes per second)"
+        }
+      },
+      "title": "RateLimitConfig defines rate limiting parameters"
+    },
+    "ReputationConfig": {
+      "type": "object",
+      "properties": {
+        "enableTracking": {
+          "type": "boolean",
+          "title": "Enable reputation tracking"
+        },
+        "initialScore": {
+          "type": "string",
+          "format": "int64",
+          "title": "Initial reputation score"
+        },
+        "minScoreToConnect": {
+          "type": "string",
+          "format": "int64",
+          "title": "Minimum reputation to connect"
+        },
+        "decayRate": {
+          "type": "string",
+          "format": "int64",
+          "title": "Score decay rate per block"
+        },
+        "maxScore": {
+          "type": "string",
+          "format": "int64",
+          "title": "Maximum reputation score"
+        },
+        "misbehaviorPenalty": {
+          "type": "string",
+          "format": "int64",
+          "title": "Penalty for misbehavior"
+        },
+        "goodBehaviorReward": {
+          "type": "string",
+          "format": "int64",
+          "title": "Reward for good behavior"
+        }
+      },
+      "title": "ReputationConfig defines node reputation parameters"
+    },
+    "Status": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Any"
+          }
+        }
+      }
+    },
+    "TrustedPeer": {
+      "type": "object",
+      "properties": {
+        "peerId": {
+          "type": "string",
+          "title": "Peer ID"
+        },
+        "address": {
+          "type": "string",
+          "title": "IP address or hostname"
+        },
+        "publicKey": {
+          "type": "string",
+          "format": "byte",
+          "title": "Public key"
+        },
+        "description": {
+          "type": "string",
+          "title": "Description"
+        },
+        "addedAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Added at"
+        }
+      },
+      "title": "TrustedPeer represents a trusted peer configuration"
+    },
+    "v1beta1.Params": {
+      "type": "object",
+      "properties": {
+        "rateLimit": {
+          "$ref": "#/definitions/RateLimitConfig",
+          "title": "Rate limiting parameters"
+        },
+        "connection": {
+          "$ref": "#/definitions/ConnectionConfig",
+          "title": "Connection parameters"
+        },
+        "mempool": {
+          "$ref": "#/definitions/MempoolConfig",
+          "title": "Mempool parameters"
+        },
+        "reputation": {
+          "$ref": "#/definitions/ReputationConfig",
+          "title": "Reputation parameters"
+        },
+        "gossip": {
+          "$ref": "#/definitions/GossipConfig",
+          "title": "Gossip validation parameters"
+        },
+        "forkDetection": {
+          "$ref": "#/definitions/ForkDetectionConfig",
+          "title": "Fork detection parameters"
+        },
+        "partitionDetection": {
+          "$ref": "#/definitions/PartitionDetectionConfig",
+          "title": "Network partitioning detection parameters"
+        }
+      },
+      "title": "Params defines the parameters for the network security module"
+    }
+  }
+}

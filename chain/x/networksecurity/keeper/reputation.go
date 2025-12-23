@@ -156,7 +156,7 @@ func (k Keeper) GetHealthyPeers(ctx sdk.Context) []types.PeerInfo {
 	params, _ := k.GetParams(ctx)
 	allPeers := k.GetAllPeers(ctx)
 
-	var healthyPeers []types.PeerInfo
+	healthyPeers := make([]types.PeerInfo, 0, 64)
 	for _, peer := range allPeers {
 		if reputation, found := k.GetReputation(ctx, peer.PeerId); found {
 			if reputation.Score >= params.Reputation.MinScoreToConnect {
@@ -180,7 +180,7 @@ func (k Keeper) GetBannedPeers(ctx sdk.Context) []string {
 	}
 	defer iterator.Close()
 
-	var bannedPeers []string
+	bannedPeers := make([]string, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var entry types.RateLimitEntry
 		if err := k.cdc.Unmarshal(iterator.Value(), &entry); err != nil {

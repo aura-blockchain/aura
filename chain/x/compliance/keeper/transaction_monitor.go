@@ -45,7 +45,7 @@ func (k Keeper) MonitorTransaction(ctx sdk.Context, from, to sdk.AccAddress, amo
 		return nil, nil
 	}
 
-	var alerts []*types.TransactionAlert
+	alerts := make([]*types.TransactionAlert, 0, 64)
 
 	// Get all enabled monitoring rules
 	rules, err := k.GetAllMonitoringRules(ctx)
@@ -262,7 +262,7 @@ func (k Keeper) evaluateLargeTransactionRule(ctx sdk.Context, rule *types.Transa
 
 // checkSanctions verifies addresses against sanctions lists
 func (k Keeper) checkSanctions(ctx sdk.Context, from, to sdk.AccAddress, txCtx *TransactionContext) []*types.TransactionAlert {
-	var alerts []*types.TransactionAlert
+	alerts := make([]*types.TransactionAlert, 0, 64)
 
 	// Check sender
 	if k.IsAddressSanctioned(ctx, from.String()) {

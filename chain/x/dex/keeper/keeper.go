@@ -535,7 +535,7 @@ func (k Keeper) GetAllPools(ctx sdk.Context) []*types.LiquidityPool {
 	iterator := storetypes.KVStorePrefixIterator(store, types.PoolPrefix)
 	defer iterator.Close()
 
-	var pools []*types.LiquidityPool
+	pools := make([]*types.LiquidityPool, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var pool types.LiquidityPool
 		if err := k.cdc.Unmarshal(iterator.Value(), &pool); err != nil {

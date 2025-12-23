@@ -104,7 +104,7 @@ func (k Keeper) GetAllRegisteredViewKeys(ctx sdk.Context) []*types.ViewKey {
 	iterator := storetypes.KVStorePrefixIterator(store, types.ViewKeyKey)
 	defer iterator.Close()
 
-	var viewKeys []*types.ViewKey
+	viewKeys := make([]*types.ViewKey, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var viewKey types.ViewKey
 		if err := k.cdc.Unmarshal(iterator.Value(), &viewKey); err != nil {
@@ -126,7 +126,7 @@ func (k Keeper) DeleteRegisteredViewKey(ctx sdk.Context, id string) {
 // GetViewKeysForWallet returns all view keys for a specific wallet
 func (k Keeper) GetViewKeysForWallet(ctx sdk.Context, walletAddr string) []*types.ViewKey {
 	allKeys := k.GetAllRegisteredViewKeys(ctx)
-	var walletKeys []*types.ViewKey
+	walletKeys := make([]*types.ViewKey, 0, 64)
 	for _, vk := range allKeys {
 		if vk.WalletAddress == walletAddr {
 			walletKeys = append(walletKeys, vk)

@@ -126,7 +126,7 @@ func (k Keeper) GetAllPeers(ctx sdk.Context) []types.PeerInfo {
 	}
 	defer iterator.Close()
 
-	var peers []types.PeerInfo
+	peers := make([]types.PeerInfo, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var peer types.PeerInfo
 		if err := k.cdc.Unmarshal(iterator.Value(), &peer); err != nil {
@@ -186,7 +186,7 @@ func (k Keeper) GetAllTrustedPeers(ctx sdk.Context) []types.TrustedPeer {
 	}
 	defer iterator.Close()
 
-	var peers []types.TrustedPeer
+	peers := make([]types.TrustedPeer, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var peer types.TrustedPeer
 		if err := k.cdc.Unmarshal(iterator.Value(), &peer); err != nil {
@@ -314,7 +314,7 @@ func (k Keeper) GetAllReputations(ctx sdk.Context) []types.NodeReputation {
 	}
 	defer iterator.Close()
 
-	var reputations []types.NodeReputation
+	reputations := make([]types.NodeReputation, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var rep types.NodeReputation
 		if err := k.cdc.Unmarshal(iterator.Value(), &rep); err != nil {
@@ -381,7 +381,7 @@ func (k Keeper) GetAllForkAlerts(ctx sdk.Context, includeResolved bool) []types.
 	}
 	defer iterator.Close()
 
-	var alerts []types.ForkAlert
+	alerts := make([]types.ForkAlert, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var alert types.ForkAlert
 		if err := k.cdc.Unmarshal(iterator.Value(), &alert); err != nil {
@@ -427,7 +427,7 @@ func (k Keeper) GetAllPartitionAlerts(ctx sdk.Context, includeResolved bool) []t
 	}
 	defer iterator.Close()
 
-	var alerts []types.PartitionAlert
+	alerts := make([]types.PartitionAlert, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var alert types.PartitionAlert
 		if err := k.cdc.Unmarshal(iterator.Value(), &alert); err != nil {

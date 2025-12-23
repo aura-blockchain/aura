@@ -1,0 +1,1093 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "aura/dex/v1beta1/query.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "Query"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/aura/dex/v1beta1/coins": {
+      "get": {
+        "summary": "SupportedCoins queries list of supported altcoins",
+        "operationId": "Query_SupportedCoins",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QuerySupportedCoinsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/dex/v1beta1/htlc/{htlcId}": {
+      "get": {
+        "summary": "HTLC queries Hash Time-Locked Contract",
+        "operationId": "Query_HTLC",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryHTLCResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "htlcId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/dex/v1beta1/orderbook/{pair}": {
+      "get": {
+        "summary": "Orderbook queries P2P orderbook",
+        "operationId": "Query_Orderbook",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryOrderbookResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "pair",
+            "description": "e.g., \"AURA/USDT\"",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/dex/v1beta1/orders/user/{address}": {
+      "get": {
+        "summary": "UserOrders queries all orders for user",
+        "operationId": "Query_UserOrders",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryUserOrdersResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "pagination.key",
+            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "pagination.offset",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.countTotal",
+            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pagination.reverse",
+            "description": "reverse is set to true if results are to be returned in the descending order.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/dex/v1beta1/orders/{orderId}": {
+      "get": {
+        "summary": "Order queries specific order",
+        "operationId": "Query_Order",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryOrderResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/dex/v1beta1/params": {
+      "get": {
+        "summary": "Params queries the module parameters",
+        "operationId": "Query_Params",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryParamsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/dex/v1beta1/pools": {
+      "get": {
+        "summary": "AllPools queries all liquidity pools",
+        "operationId": "Query_AllPools",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryAllPoolsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "pagination.key",
+            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "pagination.offset",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.countTotal",
+            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pagination.reverse",
+            "description": "reverse is set to true if results are to be returned in the descending order.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/dex/v1beta1/pools/{poolId}": {
+      "get": {
+        "summary": "Pool queries a liquidity pool by ID",
+        "operationId": "Query_Pool",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryPoolResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "poolId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/dex/v1beta1/pools/{poolId}/stats": {
+      "get": {
+        "summary": "PoolStats queries pool statistics",
+        "operationId": "Query_PoolStats",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryPoolStatsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "poolId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/dex/v1beta1/price/{coin}": {
+      "get": {
+        "summary": "MarketPrice queries current market price",
+        "operationId": "Query_MarketPrice",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryMarketPriceResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "coin",
+            "description": "usdt, btc, eth, etc.",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/dex/v1beta1/quote/{poolId}/{denomIn}/{amountIn}": {
+      "get": {
+        "summary": "GetQuote gets swap quote without executing",
+        "operationId": "Query_GetQuote",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryGetQuoteResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "poolId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "denomIn",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "amountIn",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/dex/v1beta1/spot/{poolId}/{baseDenom}/{quoteDenom}": {
+      "get": {
+        "summary": "SpotPrice queries instantaneous pool price for a pair",
+        "operationId": "Query_SpotPrice",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QuerySpotPriceResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "poolId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "baseDenom",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "quoteDenom",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "Any": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "HTLCData": {
+      "type": "object",
+      "properties": {
+        "secretHash": {
+          "type": "string",
+          "title": "SHA256 hash of secret"
+        },
+        "secret": {
+          "type": "string",
+          "title": "Secret (revealed when claiming)"
+        },
+        "timelock": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Timelock expiration"
+        },
+        "status": {
+          "type": "string",
+          "title": "HTLC status"
+        },
+        "sender": {
+          "type": "string",
+          "title": "Sender locks funds"
+        },
+        "recipient": {
+          "type": "string",
+          "title": "Recipient can claim with secret"
+        },
+        "amount": {
+          "type": "string",
+          "title": "Amount locked"
+        },
+        "denom": {
+          "type": "string",
+          "title": "Coin denomination"
+        },
+        "refundAddress": {
+          "type": "string",
+          "title": "Refund address (if timelock expires)"
+        }
+      },
+      "title": "HTLCData contains Hash Time-Locked Contract information for trustless swaps\nAdapted from simple_swap_gui.py _create_htlc_swap"
+    },
+    "LiquidityPool": {
+      "type": "object",
+      "properties": {
+        "poolId": {
+          "type": "string",
+          "title": "Unique pool identifier"
+        },
+        "denomA": {
+          "type": "string",
+          "title": "Token A denomination (e.g., \"uaura\")"
+        },
+        "denomB": {
+          "type": "string",
+          "title": "Token B denomination (e.g., \"usdt\", \"btc\", \"eth\", \"osmo\")"
+        },
+        "reserveA": {
+          "type": "string",
+          "title": "Reserve of token A (as string for sdk.Int)"
+        },
+        "reserveB": {
+          "type": "string",
+          "title": "Reserve of token B (as string for sdk.Int)"
+        },
+        "totalLpTokens": {
+          "type": "string",
+          "title": "Total LP tokens issued"
+        },
+        "feePercentage": {
+          "type": "string",
+          "title": "Trading fee percentage (0.003 = 0.3%)"
+        },
+        "protocolFeePercentage": {
+          "type": "string",
+          "title": "Protocol fee percentage (0.0005 = 0.05%)"
+        },
+        "totalVolume": {
+          "type": "string",
+          "title": "Total trading volume (all time)"
+        },
+        "totalFeesCollected": {
+          "type": "string",
+          "title": "Total fees collected (all time)"
+        },
+        "swapCount": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Number of swaps executed"
+        },
+        "protocolFeeBalance": {
+          "type": "string",
+          "title": "Protocol fees accumulated (withdrawable by governance)"
+        },
+        "providers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/LiquidityProvider"
+          },
+          "title": "Liquidity providers"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Pool creation time"
+        },
+        "lockedLiquidity": {
+          "type": "string",
+          "title": "Locked liquidity (minimum liquidity burned on pool creation to prevent first depositor attack)"
+        }
+      },
+      "title": "LiquidityPool represents an AMM pool using constant product formula (x * y = k)\nAdapted from liquidity_pools.py"
+    },
+    "LiquidityProvider": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string",
+          "title": "Provider address"
+        },
+        "lpTokens": {
+          "type": "string",
+          "title": "LP tokens held"
+        }
+      },
+      "title": "LiquidityProvider represents a single LP's position"
+    },
+    "MinLiquidityTier": {
+      "type": "object",
+      "properties": {
+        "maxAuraPriceUsd": {
+          "type": "string",
+          "title": "Maximum AURA price (in USD) for this tier\nUse \"0\" for unlimited (highest tier)"
+        },
+        "minLiquidityUsd": {
+          "type": "string",
+          "title": "Minimum liquidity in USD equivalent"
+        },
+        "tierName": {
+          "type": "string",
+          "description": "\"Bootstrap\", \"Growth\", \"Established\"",
+          "title": "Tier name (for display)"
+        }
+      },
+      "title": "MinLiquidityTier defines minimum liquidity requirements that adjust with price"
+    },
+    "PageRequest": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "format": "byte",
+          "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set."
+        },
+        "offset": {
+          "type": "string",
+          "format": "uint64",
+          "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set."
+        },
+        "limit": {
+          "type": "string",
+          "format": "uint64",
+          "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app."
+        },
+        "countTotal": {
+          "type": "boolean",
+          "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set."
+        },
+        "reverse": {
+          "type": "boolean",
+          "description": "reverse is set to true if results are to be returned in the descending order."
+        }
+      },
+      "description": "message SomeRequest {\n         Foo some_parameter = 1;\n         PageRequest pagination = 2;\n }",
+      "title": "PageRequest is to be embedded in gRPC request messages for efficient\npagination. Ex:"
+    },
+    "PageResponse": {
+      "type": "object",
+      "properties": {
+        "nextKey": {
+          "type": "string",
+          "format": "byte",
+          "description": "next_key is the key to be passed to PageRequest.key to\nquery the next page most efficiently. It will be empty if\nthere are no more results."
+        },
+        "total": {
+          "type": "string",
+          "format": "uint64",
+          "title": "total is total number of results available if PageRequest.count_total\nwas set, its value is undefined otherwise"
+        }
+      },
+      "description": "PageResponse is to be embedded in gRPC response messages where the\ncorresponding request message has used PageRequest.\n\n message SomeResponse {\n         repeated Bar results = 1;\n         PageResponse page = 2;\n }"
+    },
+    "QueryAllPoolsResponse": {
+      "type": "object",
+      "properties": {
+        "pools": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/LiquidityPool"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/PageResponse"
+        }
+      }
+    },
+    "QueryGetQuoteResponse": {
+      "type": "object",
+      "properties": {
+        "estimatedOutput": {
+          "type": "string"
+        },
+        "effectivePrice": {
+          "type": "string"
+        },
+        "priceImpactPercent": {
+          "type": "string"
+        },
+        "feeAmount": {
+          "type": "string"
+        }
+      }
+    },
+    "QueryHTLCResponse": {
+      "type": "object",
+      "properties": {
+        "htlc": {
+          "$ref": "#/definitions/HTLCData"
+        }
+      }
+    },
+    "QueryMarketPriceResponse": {
+      "type": "object",
+      "properties": {
+        "price": {
+          "$ref": "#/definitions/v1beta1.MarketPrice"
+        }
+      }
+    },
+    "QueryOrderResponse": {
+      "type": "object",
+      "properties": {
+        "order": {
+          "$ref": "#/definitions/SwapOrder"
+        }
+      }
+    },
+    "QueryOrderbookResponse": {
+      "type": "object",
+      "properties": {
+        "orderbook": {
+          "$ref": "#/definitions/v1beta1.Orderbook"
+        }
+      }
+    },
+    "QueryParamsResponse": {
+      "type": "object",
+      "properties": {
+        "params": {
+          "$ref": "#/definitions/v1beta1.Params"
+        }
+      }
+    },
+    "QueryPoolResponse": {
+      "type": "object",
+      "properties": {
+        "pool": {
+          "$ref": "#/definitions/LiquidityPool"
+        }
+      }
+    },
+    "QueryPoolStatsResponse": {
+      "type": "object",
+      "properties": {
+        "poolId": {
+          "type": "string"
+        },
+        "denomA": {
+          "type": "string"
+        },
+        "denomB": {
+          "type": "string"
+        },
+        "reserveA": {
+          "type": "string"
+        },
+        "reserveB": {
+          "type": "string"
+        },
+        "totalLpTokens": {
+          "type": "string"
+        },
+        "liquidityProvidersCount": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "currentPrice": {
+          "type": "string"
+        },
+        "totalVolume": {
+          "type": "string"
+        },
+        "totalFeesCollected": {
+          "type": "string"
+        },
+        "swapCount": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "tvlA": {
+          "type": "string"
+        },
+        "tvlB": {
+          "type": "string"
+        }
+      }
+    },
+    "QuerySpotPriceResponse": {
+      "type": "object",
+      "properties": {
+        "price": {
+          "type": "string"
+        }
+      }
+    },
+    "QuerySupportedCoinsResponse": {
+      "type": "object",
+      "properties": {
+        "coins": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "[\"usdt\", \"usdc\", \"btc\", \"eth\", \"ltc\", \"doge\", \"osmo\", \"paw\", \"xai\"]"
+        }
+      }
+    },
+    "QueryUserOrdersResponse": {
+      "type": "object",
+      "properties": {
+        "orders": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/SwapOrder"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/PageResponse"
+        }
+      }
+    },
+    "Status": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Any"
+          }
+        }
+      }
+    },
+    "SwapOrder": {
+      "type": "object",
+      "properties": {
+        "orderId": {
+          "type": "string",
+          "title": "Unique order identifier"
+        },
+        "orderType": {
+          "$ref": "#/definitions/SwapOrderType",
+          "title": "Buy or sell"
+        },
+        "auraAmount": {
+          "type": "string",
+          "title": "Amount of AURA"
+        },
+        "otherCoin": {
+          "type": "string",
+          "title": "Other coin denomination (usdt, btc, eth, etc.)"
+        },
+        "otherAmount": {
+          "type": "string",
+          "title": "Amount of other coin"
+        },
+        "userAddress": {
+          "type": "string",
+          "title": "User address"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Order creation time"
+        },
+        "status": {
+          "$ref": "#/definitions/SwapOrderStatus",
+          "title": "Current status"
+        },
+        "matchedWith": {
+          "type": "string",
+          "title": "Matched order ID (if matched)"
+        },
+        "htlcData": {
+          "$ref": "#/definitions/HTLCData",
+          "title": "HTLC data for atomic swap"
+        },
+        "pricePerAura": {
+          "type": "string",
+          "title": "Price per AURA (other_amount / aura_amount)"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Order expiration time"
+        },
+        "matcherAddress": {
+          "type": "string",
+          "title": "Matcher address (who matched this order)"
+        },
+        "matchedAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Time when order was matched"
+        }
+      },
+      "title": "SwapOrder represents a P2P swap order on the orderbook\nAdapted from simple_swap_gui.py SwapOrder class"
+    },
+    "SwapOrderStatus": {
+      "type": "string",
+      "enum": [
+        "PENDING",
+        "MATCHED",
+        "HTLC_CREATED",
+        "COMPLETED",
+        "CANCELLED",
+        "EXPIRED"
+      ],
+      "default": "PENDING",
+      "description": "- PENDING: Waiting for match\n - MATCHED: Found counterparty\n - HTLC_CREATED: Both HTLCs created\n - COMPLETED: Swap finished\n - CANCELLED: User cancelled\n - EXPIRED: Timed out",
+      "title": "SwapOrderStatus represents order lifecycle\nAdapted from simple_swap_gui.py SwapOrderStatus"
+    },
+    "SwapOrderType": {
+      "type": "string",
+      "enum": [
+        "BUY",
+        "SELL"
+      ],
+      "default": "BUY",
+      "description": "- BUY: Buy AURA (sell other coin)\n - SELL: Sell AURA (buy other coin)",
+      "title": "SwapOrderType represents buy or sell order\nAdapted from simple_swap_gui.py SwapOrderType"
+    },
+    "v1beta1.MarketPrice": {
+      "type": "object",
+      "properties": {
+        "coin": {
+          "type": "string",
+          "title": "Coin symbol"
+        },
+        "priceUsd": {
+          "type": "string",
+          "title": "Price in USD (for reference)"
+        },
+        "priceAura": {
+          "type": "string",
+          "title": "Price in AURA"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Last updated"
+        },
+        "sampleSize": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Number of recent swaps used for calculation"
+        }
+      },
+      "title": "MarketPrice tracks price from recent swap history\nAdapted from simple_swap_gui.py MarketPriceTracker"
+    },
+    "v1beta1.Orderbook": {
+      "type": "object",
+      "properties": {
+        "pair": {
+          "type": "string",
+          "title": "Trading pair (e.g., \"AURA/USDT\")"
+        },
+        "buyOrders": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/SwapOrder"
+          },
+          "title": "Buy orders (sorted by price descending)"
+        },
+        "sellOrders": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/SwapOrder"
+          },
+          "title": "Sell orders (sorted by price ascending)"
+        },
+        "totalPending": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Total pending orders"
+        },
+        "bestBid": {
+          "type": "string",
+          "title": "Best bid price"
+        },
+        "bestAsk": {
+          "type": "string",
+          "title": "Best ask price"
+        },
+        "spreadPercent": {
+          "type": "string",
+          "title": "Spread percentage"
+        }
+      },
+      "title": "Orderbook contains all active orders for a trading pair"
+    },
+    "v1beta1.Params": {
+      "type": "object",
+      "properties": {
+        "tradingFee": {
+          "type": "string",
+          "title": "Trading fee percentage (0.003 = 0.3%)"
+        },
+        "protocolFee": {
+          "type": "string",
+          "title": "Protocol fee percentage (0.0005 = 0.05%)"
+        },
+        "minLiquidityTiers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/MinLiquidityTier"
+          },
+          "title": "Dynamic minimum liquidity based on AURA price\nWhen AURA \u003c $0.50: min = $1,000 USD\nWhen AURA \u003c $1.00: min = $3,000 USD\nWhen AURA \u003e= $1.00: min = $6,000 USD"
+        },
+        "maxSlippageBps": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Maximum slippage allowed (in basis points, 10000 = 100%)"
+        },
+        "minSwapAmount": {
+          "type": "string",
+          "title": "Minimum swap amount (to prevent dust attacks)"
+        },
+        "irBoostEnabled": {
+          "type": "boolean",
+          "title": "Enable IR boost for verified users"
+        },
+        "irBoostPercent": {
+          "type": "string",
+          "format": "uint64",
+          "title": "IR boost percentage for verified users (40 = 40% bonus)"
+        },
+        "bondingCurveEnabled": {
+          "type": "boolean",
+          "title": "Enable bonding curve for early LPs"
+        },
+        "buybackBurnEnabled": {
+          "type": "boolean",
+          "title": "Enable protocol fee buyback and burn"
+        },
+        "buybackPercent": {
+          "type": "string",
+          "format": "uint64",
+          "description": "100 = 100% of protocol fees",
+          "title": "Percentage of protocol fees used for buyback (rest goes to treasury)"
+        },
+        "commitRevealThreshold": {
+          "type": "string",
+          "title": "Commit-reveal scheme parameters for front-running protection\nMinimum order size that requires commit-reveal (prevents MEV on large orders)"
+        },
+        "commitRevealWindow": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Time window in seconds for revealing after commitment (typically 30-300 seconds)"
+        },
+        "batchExecutionEnabled": {
+          "type": "boolean",
+          "title": "Enable batch execution of revealed orders"
+        },
+        "batchExecutionInterval": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Batch execution interval in blocks (orders accumulated and executed together)"
+        },
+        "governanceFallbackPrice": {
+          "type": "string",
+          "title": "Governance-controlled fallback price for AURA when TWAP data is insufficient\nThis prevents oracle manipulation by providing a safe fallback that can only\nbe updated through governance proposals. Default: $0.10 USD"
+        }
+      },
+      "title": "Params defines the parameters for the dex module"
+    }
+  }
+}

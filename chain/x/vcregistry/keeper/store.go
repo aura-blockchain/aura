@@ -101,7 +101,7 @@ func (s Store) iterateVCRecords(ctx context.Context) []types.VCRecord {
 	it := storetypes.KVStorePrefixIterator(s.kv(ctx), types.VCRecordKeyPrefix)
 	defer it.Close()
 
-	var recs []types.VCRecord
+	recs := make([]types.VCRecord, 0, 64)
 	count := uint32(0)
 	maxResults := gasConfig.MaxIterationResults
 
@@ -149,7 +149,7 @@ func (s Store) iteratePresentations(ctx context.Context) []types.VCPresentation 
 	it := storetypes.KVStorePrefixIterator(s.kv(ctx), types.PresentationKeyPrefix)
 	defer it.Close()
 
-	var pres []types.VCPresentation
+	pres := make([]types.VCPresentation, 0, 64)
 	count := uint32(0)
 	for ; it.Valid(); it.Next() {
 		if count >= gasConfig.MaxIterationResults {
@@ -202,7 +202,7 @@ func (s Store) appendPendingDisclosure(ctx context.Context, address, requestID s
 func (s Store) listPendingDisclosures(ctx context.Context, address string) []string {
 	it := storetypes.KVStorePrefixIterator(s.kv(ctx), concat(types.PendingDisclosureRequestKeyPrefix, []byte(address)))
 	defer it.Close()
-	var reqs []string
+	reqs := make([]string, 0, 64)
 	for ; it.Valid(); it.Next() {
 		suffix := bytes.TrimPrefix(it.Key(), concat(types.PendingDisclosureRequestKeyPrefix, []byte(address)))
 		suffix = bytes.TrimPrefix(suffix, []byte{':'})
@@ -250,7 +250,7 @@ func (s Store) getAttributeVC(ctx context.Context, avcID string) (types.Attribut
 func (s Store) iterateAttributeVCs(ctx context.Context) []types.AttributeVC {
 	it := storetypes.KVStorePrefixIterator(s.kv(ctx), types.AttributeVCKeyPrefix)
 	defer it.Close()
-	var avcs []types.AttributeVC
+	avcs := make([]types.AttributeVC, 0, 64)
 	for ; it.Valid(); it.Next() {
 		var avc types.AttributeVC
 		if err := s.cdc.Unmarshal(it.Value(), &avc); err == nil {
@@ -299,7 +299,7 @@ func (s Store) getDisclosurePolicy(ctx context.Context, holder string) (types.Di
 func (s Store) iterateDisclosurePolicies(ctx context.Context) []types.DisclosurePolicy {
 	it := storetypes.KVStorePrefixIterator(s.kv(ctx), types.DisclosurePolicyKeyPrefix)
 	defer it.Close()
-	var res []types.DisclosurePolicy
+	res := make([]types.DisclosurePolicy, 0, 64)
 	for ; it.Valid(); it.Next() {
 		var pol types.DisclosurePolicy
 		if err := s.cdc.Unmarshal(it.Value(), &pol); err == nil {
@@ -325,7 +325,7 @@ func (s Store) getDisclosureRequest(ctx context.Context, id string) (types.Discl
 func (s Store) iterateDisclosureRequests(ctx context.Context) []types.DisclosureRequest {
 	it := storetypes.KVStorePrefixIterator(s.kv(ctx), types.DisclosureRequestKeyPrefix)
 	defer it.Close()
-	var res []types.DisclosureRequest
+	res := make([]types.DisclosureRequest, 0, 64)
 	for ; it.Valid(); it.Next() {
 		var req types.DisclosureRequest
 		if err := s.cdc.Unmarshal(it.Value(), &req); err == nil {
@@ -351,7 +351,7 @@ func (s Store) getDisclosureResponse(ctx context.Context, id string) (types.Disc
 func (s Store) iterateDisclosureResponses(ctx context.Context) []types.DisclosureResponse {
 	it := storetypes.KVStorePrefixIterator(s.kv(ctx), types.DisclosureResponseKeyPrefix)
 	defer it.Close()
-	var res []types.DisclosureResponse
+	res := make([]types.DisclosureResponse, 0, 64)
 	for ; it.Valid(); it.Next() {
 		var resp types.DisclosureResponse
 		if err := s.cdc.Unmarshal(it.Value(), &resp); err == nil {
@@ -440,7 +440,7 @@ func (s Store) getVCPolicy(ctx context.Context, vcTypeName string) (types.VCPoli
 }
 
 func (s Store) iterateVCPolicies(ctx context.Context) []types.VCPolicy {
-	var policies []types.VCPolicy
+	policies := make([]types.VCPolicy, 0, 64)
 	it := storetypes.KVStorePrefixIterator(s.kv(ctx), types.VCPolicyKeyPrefix)
 	defer it.Close()
 	for ; it.Valid(); it.Next() {
@@ -494,7 +494,7 @@ func (s Store) listAddressDIDs(ctx context.Context, addr string) []string {
 func (s Store) iterateDIDDocuments(ctx context.Context) []types.DIDDocument {
 	it := storetypes.KVStorePrefixIterator(s.kv(ctx), types.DIDDocumentKeyPrefix)
 	defer it.Close()
-	var docs []types.DIDDocument
+	docs := make([]types.DIDDocument, 0, 64)
 	for ; it.Valid(); it.Next() {
 		var doc types.DIDDocument
 		if err := s.cdc.Unmarshal(it.Value(), &doc); err == nil {

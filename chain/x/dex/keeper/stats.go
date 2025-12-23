@@ -72,7 +72,7 @@ func (k Keeper) GetAllSwapStats(ctx sdk.Context) []*types.SwapStats {
 	iter := storetypes.KVStorePrefixIterator(store, types.SwapStatsPrefix)
 	defer iter.Close()
 
-	var stats []*types.SwapStats
+	stats := make([]*types.SwapStats, 0, 64)
 	for ; iter.Valid(); iter.Next() {
 		var entry types.SwapStats
 		if err := k.cdc.Unmarshal(iter.Value(), &entry); err != nil {
@@ -91,7 +91,7 @@ func (k Keeper) GetAllMarketPrices(ctx sdk.Context) []*types.MarketPrice {
 	iter := storetypes.KVStorePrefixIterator(store, types.MarketPricePrefix)
 	defer iter.Close()
 
-	var prices []*types.MarketPrice
+	prices := make([]*types.MarketPrice, 0, 64)
 	for ; iter.Valid(); iter.Next() {
 		var price types.MarketPrice
 		if err := k.cdc.Unmarshal(iter.Value(), &price); err != nil {

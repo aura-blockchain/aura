@@ -198,7 +198,7 @@ func (k Keeper) GetTWAPObservations(ctx sdk.Context, poolID string, windowBlocks
 	iterator := storetypes.KVStorePrefixIterator(store, prefix)
 	defer iterator.Close()
 
-	var observations []*types.TWAPPrice
+	observations := make([]*types.TWAPPrice, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var obs types.TWAPPrice
 		if err := k.cdc.Unmarshal(iterator.Value(), &obs); err != nil {
@@ -227,7 +227,7 @@ func (k Keeper) PruneTWAPObservations(ctx sdk.Context, poolID string) {
 	iterator := storetypes.KVStorePrefixIterator(store, prefix)
 	defer iterator.Close()
 
-	var keysToDelete [][]byte
+	keysToDelete := make([][]byte, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var obs types.TWAPPrice
 		if err := k.cdc.Unmarshal(iterator.Value(), &obs); err != nil {

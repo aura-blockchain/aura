@@ -261,7 +261,7 @@ func (k Keeper) GetAllValidators(ctx context.Context) []types.ValidatorSecurityI
 	iterator := storetypes.KVStorePrefixIterator(store, types.ValidatorSecurityInfoKey)
 	defer iterator.Close()
 
-	var validators []types.ValidatorSecurityInfo
+	validators := make([]types.ValidatorSecurityInfo, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var info types.ValidatorSecurityInfo
 		if err := k.cdc.Unmarshal(iterator.Value(), &info); err != nil {

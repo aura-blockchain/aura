@@ -1,0 +1,121 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "aura/incidentresponse/v1beta1/tx.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "Msg"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {},
+  "definitions": {
+    "Any": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "MsgCreatePostMortemResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        }
+      },
+      "title": "MsgCreatePostMortemResponse is the response for creating post-mortem"
+    },
+    "MsgReportIncidentResponse": {
+      "type": "object",
+      "properties": {
+        "incidentId": {
+          "type": "string"
+        }
+      },
+      "title": "MsgReportIncidentResponse is the response for reporting an incident"
+    },
+    "MsgRequestChainPauseResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        }
+      },
+      "title": "MsgRequestChainPauseResponse is the response for pause request"
+    },
+    "MsgResumeChainResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        }
+      },
+      "title": "MsgResumeChainResponse is the response for resuming chain"
+    },
+    "MsgSetWalletLimitsResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        }
+      },
+      "title": "MsgSetWalletLimitsResponse is the response for setting limits"
+    },
+    "MsgTriggerBackupResponse": {
+      "type": "object",
+      "properties": {
+        "backupId": {
+          "type": "string"
+        }
+      },
+      "title": "MsgTriggerBackupResponse is the response for backup trigger"
+    },
+    "MsgTriggerInsuranceClaimResponse": {
+      "type": "object",
+      "properties": {
+        "claimId": {
+          "type": "string"
+        }
+      },
+      "title": "MsgTriggerInsuranceClaimResponse is the response for insurance claim"
+    },
+    "MsgUpdateIncidentStatusResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        }
+      },
+      "title": "MsgUpdateIncidentStatusResponse is the response for updating status"
+    },
+    "Status": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Any"
+          }
+        }
+      }
+    }
+  }
+}

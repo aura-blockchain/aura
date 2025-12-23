@@ -65,8 +65,8 @@ func (k *Keeper) BeginBlocker(ctx sdk.Context) {
 	const maxExpiredPerBlock = 100
 
 	// Track processed records for logging and index cleanup
-	var expiredAddresses []string
-	var expiredRecords []*types.KYCRecord
+	expiredAddresses := make([]string, 0, 64)
+	expiredRecords := make([]*types.KYCRecord, 0, 64)
 
 	// Use expiration index for efficient O(k) lookup
 	// Only iterates over expired records, not all records

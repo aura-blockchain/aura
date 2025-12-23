@@ -1,0 +1,342 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "aura/contractregistry/v1beta1/msg.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "Msg"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {},
+  "definitions": {
+    "Any": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "AuditHistoryEntry": {
+      "type": "object",
+      "properties": {
+        "auditorName": {
+          "type": "string",
+          "title": "Name of the auditor or firm"
+        },
+        "auditDate": {
+          "type": "string",
+          "format": "int64",
+          "title": "Unix timestamp of the audit date"
+        },
+        "auditScore": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Audit score (0-100)"
+        },
+        "reportUri": {
+          "type": "string",
+          "title": "URI to the audit report"
+        },
+        "findingsSummary": {
+          "type": "string",
+          "title": "Findings summary"
+        },
+        "criticalIssues": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Number of critical issues found"
+        },
+        "highIssues": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Number of high issues found"
+        },
+        "mediumIssues": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Number of medium issues found"
+        },
+        "lowIssues": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Number of low issues found"
+        }
+      },
+      "title": "AuditHistoryEntry represents a single audit in the contract's history"
+    },
+    "ComplianceRequirements": {
+      "type": "object",
+      "properties": {
+        "enforceKyc": {
+          "type": "boolean",
+          "title": "Enforce KYC verification"
+        },
+        "minKycLevel": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Minimum KYC level (1 = basic, 2 = intermediate, 3 = advanced)"
+        },
+        "enforceSanctionsCheck": {
+          "type": "boolean",
+          "title": "Enforce sanctions screening"
+        },
+        "enforceSpendingLimits": {
+          "type": "boolean",
+          "title": "Enforce spending limits"
+        },
+        "requireAudit": {
+          "type": "boolean",
+          "title": "Whether audit is required"
+        },
+        "lastAuditDate": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Last audit date"
+        },
+        "auditReportUri": {
+          "type": "string",
+          "title": "Audit report URI"
+        }
+      },
+      "title": "ComplianceRequirements defines regulatory compliance settings"
+    },
+    "ContractMetadata": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "Contract name"
+        },
+        "description": {
+          "type": "string",
+          "title": "Detailed description"
+        },
+        "version": {
+          "type": "string",
+          "title": "Version string (e.g., \"1.0.0\")"
+        },
+        "homepage": {
+          "type": "string",
+          "title": "Homepage URL"
+        },
+        "sourceCodeUrl": {
+          "type": "string",
+          "title": "Source code URL"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Tags for categorization (e.g., \"defi\", \"nft\", \"dao\")"
+        },
+        "requiresVc": {
+          "type": "boolean",
+          "title": "Whether contract requires VCs for interaction"
+        },
+        "requiredVcTypes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Required VC types (empty if no requirement)"
+        },
+        "minConfidenceScore": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Minimum confidence score required (0 = no requirement)"
+        },
+        "requiredKycLevel": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Required KYC level (0 = none, 1 = basic, 2 = intermediate, 3 = advanced)"
+        },
+        "checkSanctions": {
+          "type": "boolean",
+          "title": "Whether sanctions check is required"
+        },
+        "sourceCodeHash": {
+          "type": "string",
+          "title": "SHA256 hash of source code"
+        },
+        "compilerVersion": {
+          "type": "string",
+          "title": "Compiler version used for the contract"
+        },
+        "license": {
+          "type": "string",
+          "title": "License type (e.g., MIT, Apache-2.0)"
+        },
+        "lastVerified": {
+          "type": "string",
+          "format": "int64",
+          "title": "Unix timestamp of last verification"
+        },
+        "auditHistory": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/AuditHistoryEntry"
+          },
+          "title": "Audit history entries"
+        }
+      },
+      "title": "ContractMetadata contains identity and requirement information"
+    },
+    "MsgDeprecateContractResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean",
+          "title": "Success indicator"
+        }
+      },
+      "title": "MsgDeprecateContractResponse is the response for DeprecateContract"
+    },
+    "MsgPauseContractResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean",
+          "title": "Success indicator"
+        }
+      },
+      "title": "MsgPauseContractResponse is the response for PauseContract"
+    },
+    "MsgRegisterContractResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean",
+          "title": "Success indicator"
+        },
+        "contractAddress": {
+          "type": "string",
+          "title": "Contract address"
+        }
+      },
+      "title": "MsgRegisterContractResponse is the response for RegisterContract"
+    },
+    "MsgUnpauseContractResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean",
+          "title": "Success indicator"
+        }
+      },
+      "title": "MsgUnpauseContractResponse is the response for UnpauseContract"
+    },
+    "MsgUpdateContractMetadataResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean",
+          "title": "Success indicator"
+        }
+      },
+      "title": "MsgUpdateContractMetadataResponse is the response for UpdateContractMetadata"
+    },
+    "MsgUpdateSecurityPolicyResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean",
+          "title": "Success indicator"
+        }
+      },
+      "title": "MsgUpdateSecurityPolicyResponse is the response for UpdateSecurityPolicy"
+    },
+    "SecurityPolicy": {
+      "type": "object",
+      "properties": {
+        "allowPause": {
+          "type": "boolean",
+          "title": "Whether contract can be paused by admin"
+        },
+        "allowMigration": {
+          "type": "boolean",
+          "title": "Whether contract can be migrated"
+        },
+        "maxGasPerTx": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Maximum gas per transaction (0 = no limit)"
+        },
+        "rateLimitPerUser": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Rate limit per user per hour (0 = no limit)"
+        },
+        "blacklistedAddresses": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Blacklisted addresses (cannot interact)"
+        },
+        "whitelistedAddresses": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Whitelisted addresses (if non-empty, only these can interact)"
+        },
+        "emergencyPauseEnabled": {
+          "type": "boolean",
+          "title": "Whether emergency pause is enabled for this contract"
+        },
+        "migrationTimelock": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Minimum timelock delay for migrations (in seconds)"
+        },
+        "multisigThreshold": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Multi-sig threshold required for admin operations"
+        },
+        "maxValuePerTx": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Maximum value per transaction (in base denomination, 0 = no limit)"
+        },
+        "dailyTxLimit": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Daily transaction limit (0 = no limit)"
+        }
+      },
+      "title": "SecurityPolicy defines security controls and limits"
+    },
+    "Status": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Any"
+          }
+        }
+      }
+    }
+  }
+}

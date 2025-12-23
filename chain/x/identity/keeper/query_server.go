@@ -297,7 +297,7 @@ func (qs queryServer) HasPermission(goCtx context.Context, req *identitypb.Query
 	hasPermission := qs.Keeper.HasPermission(ctx, req.Address, req.Permission)
 
 	// Get roles that grant this permission
-	var grantingRoles []string
+	grantingRoles := make([]string, 0, 64)
 	assignments, err := qs.Keeper.GetRoleAssignments(ctx, req.Address)
 	if err == nil {
 		for _, assignment := range assignments {

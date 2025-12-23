@@ -1,0 +1,302 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "aura/cryptography/v1beta1/tx.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "Msg"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {},
+  "definitions": {
+    "Any": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "CertificatePinType": {
+      "type": "string",
+      "enum": [
+        "CERTIFICATE_PIN_TYPE_UNSPECIFIED",
+        "CERTIFICATE_PIN_TYPE_SPKI",
+        "CERTIFICATE_PIN_TYPE_FULL_CERT",
+        "CERTIFICATE_PIN_TYPE_INTERMEDIATE"
+      ],
+      "default": "CERTIFICATE_PIN_TYPE_UNSPECIFIED",
+      "description": "- CERTIFICATE_PIN_TYPE_SPKI: Subject Public Key Info",
+      "title": "CertificatePinType specifies the type of certificate pinning"
+    },
+    "KeyRotationPolicy": {
+      "type": "object",
+      "properties": {
+        "maxAgeDays": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "warningDaysBeforeExpiry": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "autoRotate": {
+          "type": "boolean"
+        },
+        "maxRotationAttempts": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "notificationAddresses": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "title": "KeyRotationPolicy defines the policy for key rotation"
+    },
+    "MsgAddCertificatePinResponse": {
+      "type": "object",
+      "properties": {
+        "pinId": {
+          "type": "string"
+        }
+      },
+      "title": "MsgAddCertificatePinResponse is the response for AddCertificatePin"
+    },
+    "MsgCreateKeyRotationScheduleResponse": {
+      "type": "object",
+      "properties": {
+        "scheduleId": {
+          "type": "string"
+        }
+      },
+      "title": "MsgCreateKeyRotationScheduleResponse is the response for CreateKeyRotationSchedule"
+    },
+    "MsgCreateThresholdSchemeResponse": {
+      "type": "object",
+      "properties": {
+        "schemeId": {
+          "type": "string"
+        },
+        "publicKey": {
+          "type": "string",
+          "format": "byte"
+        }
+      },
+      "title": "MsgCreateThresholdSchemeResponse is the response for CreateThresholdScheme"
+    },
+    "MsgGenerateQuantumResistantKeyResponse": {
+      "type": "object",
+      "properties": {
+        "keyId": {
+          "type": "string",
+          "title": "The key ID assigned to this registered public key"
+        }
+      },
+      "title": "MsgGenerateQuantumResistantKeyResponse is the response for GenerateQuantumResistantKey"
+    },
+    "MsgRegisterSecureEnclaveResponse": {
+      "type": "object",
+      "properties": {
+        "enclaveId": {
+          "type": "string"
+        }
+      },
+      "title": "MsgRegisterSecureEnclaveResponse is the response for RegisterSecureEnclave"
+    },
+    "MsgRegisterZKProofCircuitResponse": {
+      "type": "object",
+      "properties": {
+        "proofId": {
+          "type": "string"
+        }
+      },
+      "title": "MsgRegisterZKProofCircuitResponse is the response for RegisterZKProofCircuit"
+    },
+    "MsgRotateKeyResponse": {
+      "type": "object",
+      "properties": {
+        "rotationId": {
+          "type": "string"
+        },
+        "rotationTime": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "title": "MsgRotateKeyResponse is the response for RotateKey"
+    },
+    "MsgSubmitThresholdSignatureShareResponse": {
+      "type": "object",
+      "properties": {
+        "sharesCollected": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "thresholdReached": {
+          "type": "boolean"
+        },
+        "combinedSignature": {
+          "type": "string",
+          "format": "byte"
+        }
+      },
+      "title": "MsgSubmitThresholdSignatureShareResponse is the response for SubmitThresholdSignatureShare"
+    },
+    "MsgSubmitZKProofResponse": {
+      "type": "object",
+      "properties": {
+        "verified": {
+          "type": "boolean"
+        },
+        "verificationId": {
+          "type": "string"
+        }
+      },
+      "title": "MsgSubmitZKProofResponse is the response for SubmitZKProof"
+    },
+    "MsgUpdateParamsResponse": {
+      "type": "object",
+      "title": "MsgUpdateParamsResponse is the response for UpdateParams"
+    },
+    "QuantumResistantAlgorithm": {
+      "type": "string",
+      "enum": [
+        "QUANTUM_RESISTANT_ALGORITHM_UNSPECIFIED",
+        "QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_DILITHIUM",
+        "QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_KYBER",
+        "QUANTUM_RESISTANT_ALGORITHM_FALCON",
+        "QUANTUM_RESISTANT_ALGORITHM_SPHINCS_PLUS",
+        "QUANTUM_RESISTANT_ALGORITHM_NTRU"
+      ],
+      "default": "QUANTUM_RESISTANT_ALGORITHM_UNSPECIFIED",
+      "title": "QuantumResistantAlgorithm specifies quantum-resistant algorithms"
+    },
+    "SecureEnclaveType": {
+      "type": "string",
+      "enum": [
+        "SECURE_ENCLAVE_TYPE_UNSPECIFIED",
+        "SECURE_ENCLAVE_TYPE_SGX",
+        "SECURE_ENCLAVE_TYPE_SEV",
+        "SECURE_ENCLAVE_TYPE_TPM",
+        "SECURE_ENCLAVE_TYPE_HSM",
+        "SECURE_ENCLAVE_TYPE_KEYCHAIN"
+      ],
+      "default": "SECURE_ENCLAVE_TYPE_UNSPECIFIED",
+      "title": "SecureEnclaveType specifies the type of secure enclave"
+    },
+    "Status": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Any"
+          }
+        }
+      }
+    },
+    "ThresholdSchemeType": {
+      "type": "string",
+      "enum": [
+        "THRESHOLD_SCHEME_TYPE_UNSPECIFIED",
+        "THRESHOLD_SCHEME_TYPE_ECDSA",
+        "THRESHOLD_SCHEME_TYPE_EDDSA",
+        "THRESHOLD_SCHEME_TYPE_BLS",
+        "THRESHOLD_SCHEME_TYPE_SCHNORR"
+      ],
+      "default": "THRESHOLD_SCHEME_TYPE_UNSPECIFIED",
+      "title": "ThresholdSchemeType specifies the type of threshold signature scheme"
+    },
+    "ZKProofType": {
+      "type": "string",
+      "enum": [
+        "ZK_PROOF_TYPE_UNSPECIFIED",
+        "ZK_PROOF_TYPE_GROTH16",
+        "ZK_PROOF_TYPE_PLONK",
+        "ZK_PROOF_TYPE_BULLETPROOFS",
+        "ZK_PROOF_TYPE_STARK",
+        "ZK_PROOF_TYPE_HALO2"
+      ],
+      "default": "ZK_PROOF_TYPE_UNSPECIFIED",
+      "title": "ZKProofType specifies the type of zero-knowledge proof"
+    },
+    "v1beta1.Params": {
+      "type": "object",
+      "properties": {
+        "defaultRotationIntervalDays": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Key rotation"
+        },
+        "enableAutoRotation": {
+          "type": "boolean"
+        },
+        "minThresholdParticipants": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Threshold signatures"
+        },
+        "maxThresholdParticipants": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "minEntropyBits": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Random number generation"
+        },
+        "minPbkdf2Iterations": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Key stretching"
+        },
+        "minArgon2MemoryKb": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "minArgon2Iterations": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "enforceCertificatePinning": {
+          "type": "boolean",
+          "title": "Certificate pinning"
+        },
+        "certificatePinValidityDays": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "minSaltLengthBytes": {
+          "type": "integer",
+          "format": "int32",
+          "title": "General security"
+        },
+        "minKeyLengthBits": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "Params defines the parameters for the cryptography module"
+    }
+  }
+}

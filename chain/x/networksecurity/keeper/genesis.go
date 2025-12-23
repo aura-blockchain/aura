@@ -123,7 +123,7 @@ func (k Keeper) GetAllRateLimits(ctx sdk.Context) []types.RateLimitEntry {
 	}
 	defer iterator.Close()
 
-	var entries []types.RateLimitEntry
+	entries := make([]types.RateLimitEntry, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var entry types.RateLimitEntry
 		if err := k.cdc.Unmarshal(iterator.Value(), &entry); err != nil {

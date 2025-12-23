@@ -1,0 +1,1265 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "aura/vcregistry/v1beta1/vc_registry.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "Msg"
+    },
+    {
+      "name": "Query"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {},
+  "definitions": {
+    "Any": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "AttributeDisclosure": {
+      "type": "object",
+      "properties": {
+        "attributeType": {
+          "$ref": "#/definitions/AttributeType"
+        },
+        "revealedValue": {
+          "type": "string",
+          "title": "Decrypted value (if full disclosure)"
+        },
+        "zkProof": {
+          "type": "string",
+          "format": "byte",
+          "title": "ZK proof (if selective)"
+        },
+        "isZkProof": {
+          "type": "boolean",
+          "title": "True if using ZK, false if full reveal"
+        }
+      },
+      "title": "Single attribute disclosure"
+    },
+    "AttributeDisclosureRule": {
+      "type": "object",
+      "properties": {
+        "attributeType": {
+          "$ref": "#/definitions/AttributeType"
+        },
+        "mode": {
+          "$ref": "#/definitions/DisclosurePolicyMode"
+        },
+        "allowedVerifiers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Whitelist (optional)"
+        },
+        "maxDisclosuresPerDay": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Rate limit"
+        }
+      },
+      "title": "Rule for disclosing a specific attribute"
+    },
+    "AttributeType": {
+      "type": "string",
+      "enum": [
+        "ATTRIBUTE_TYPE_UNSPECIFIED",
+        "ATTRIBUTE_TYPE_FULL_NAME",
+        "ATTRIBUTE_TYPE_FIRST_NAME",
+        "ATTRIBUTE_TYPE_LAST_NAME",
+        "ATTRIBUTE_TYPE_DATE_OF_BIRTH",
+        "ATTRIBUTE_TYPE_AGE",
+        "ATTRIBUTE_TYPE_GENDER",
+        "ATTRIBUTE_TYPE_EMAIL",
+        "ATTRIBUTE_TYPE_PHONE",
+        "ATTRIBUTE_TYPE_ADDRESS_FULL",
+        "ATTRIBUTE_TYPE_ADDRESS_STREET",
+        "ATTRIBUTE_TYPE_ADDRESS_CITY",
+        "ATTRIBUTE_TYPE_ADDRESS_STATE",
+        "ATTRIBUTE_TYPE_ADDRESS_ZIP",
+        "ATTRIBUTE_TYPE_ADDRESS_COUNTRY",
+        "ATTRIBUTE_TYPE_PASSPORT_NUMBER",
+        "ATTRIBUTE_TYPE_DRIVERS_LICENSE",
+        "ATTRIBUTE_TYPE_SSN",
+        "ATTRIBUTE_TYPE_TAX_ID",
+        "ATTRIBUTE_TYPE_HEIGHT",
+        "ATTRIBUTE_TYPE_WEIGHT",
+        "ATTRIBUTE_TYPE_EYE_COLOR",
+        "ATTRIBUTE_TYPE_HAIR_COLOR",
+        "ATTRIBUTE_TYPE_OCCUPATION",
+        "ATTRIBUTE_TYPE_EMPLOYER",
+        "ATTRIBUTE_TYPE_PROFESSIONAL_LICENSE",
+        "ATTRIBUTE_TYPE_EDUCATION_LEVEL",
+        "ATTRIBUTE_TYPE_DEGREE",
+        "ATTRIBUTE_TYPE_SCUBA_CERTIFIED",
+        "ATTRIBUTE_TYPE_PILOTS_LICENSE",
+        "ATTRIBUTE_TYPE_SECURITY_CLEARANCE",
+        "ATTRIBUTE_TYPE_CUSTOM"
+      ],
+      "default": "ATTRIBUTE_TYPE_UNSPECIFIED",
+      "description": "- ATTRIBUTE_TYPE_FULL_NAME: Personal attributes\n - ATTRIBUTE_TYPE_EMAIL: Contact attributes\n - ATTRIBUTE_TYPE_PASSPORT_NUMBER: Government IDs\n - ATTRIBUTE_TYPE_HEIGHT: Physical attributes\n - ATTRIBUTE_TYPE_OCCUPATION: Professional attributes\n - ATTRIBUTE_TYPE_SCUBA_CERTIFIED: Special certifications\n - ATTRIBUTE_TYPE_CUSTOM: Custom",
+      "title": "AttributeType defines types of identity attributes"
+    },
+    "AttributeVC": {
+      "type": "object",
+      "properties": {
+        "attributeVcId": {
+          "type": "string",
+          "title": "Unique ID"
+        },
+        "holderAddress": {
+          "type": "string",
+          "title": "Owner"
+        },
+        "attributeType": {
+          "$ref": "#/definitions/AttributeType",
+          "title": "What attribute"
+        },
+        "encryptedValue": {
+          "type": "string",
+          "format": "byte",
+          "title": "Encrypted attribute value"
+        },
+        "valueHash": {
+          "type": "string",
+          "format": "byte",
+          "title": "Hash for ZK proofs"
+        },
+        "issuedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "status": {
+          "$ref": "#/definitions/VCStatus"
+        },
+        "issuer": {
+          "type": "string",
+          "title": "Who verified this attribute"
+        },
+        "verificationLevel": {
+          "type": "string",
+          "format": "uint64",
+          "title": "1-100 confidence"
+        }
+      },
+      "title": "AttributeVC represents a single identity attribute as a VC"
+    },
+    "DIDDocument": {
+      "type": "object",
+      "properties": {
+        "did": {
+          "type": "string",
+          "description": "did:aura:mainnet:..."
+        },
+        "controller": {
+          "type": "string",
+          "title": "Bech32 address"
+        },
+        "verificationMethods": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/VerificationMethod"
+          }
+        },
+        "credentialIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "List of active VC IDs"
+        },
+        "created": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "metadataUri": {
+          "type": "string",
+          "title": "Full doc URI (IPFS)"
+        },
+        "serviceEndpoints": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Service endpoint map"
+        }
+      },
+      "title": "DIDDocument represents an on-chain DID document (simplified)"
+    },
+    "DisclosurePolicy": {
+      "type": "object",
+      "properties": {
+        "holderAddress": {
+          "type": "string"
+        },
+        "rules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/AttributeDisclosureRule"
+          }
+        },
+        "defaultMode": {
+          "$ref": "#/definitions/DisclosurePolicyMode",
+          "title": "Default: deny all"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "title": "DisclosurePolicy defines user's disclosure preferences"
+    },
+    "DisclosurePolicyMode": {
+      "type": "string",
+      "enum": [
+        "DISCLOSURE_POLICY_MODE_DENY",
+        "DISCLOSURE_POLICY_MODE_ASK",
+        "DISCLOSURE_POLICY_MODE_ALLOW",
+        "DISCLOSURE_POLICY_MODE_CONDITIONAL"
+      ],
+      "default": "DISCLOSURE_POLICY_MODE_DENY",
+      "description": "- DISCLOSURE_POLICY_MODE_DENY: Never disclose\n - DISCLOSURE_POLICY_MODE_ASK: Prompt user each time\n - DISCLOSURE_POLICY_MODE_ALLOW: Always disclose\n - DISCLOSURE_POLICY_MODE_CONDITIONAL: Allow if conditions met",
+      "title": "DisclosurePolicyMode defines disclosure behavior"
+    },
+    "DisclosureRequest": {
+      "type": "object",
+      "properties": {
+        "requestId": {
+          "type": "string"
+        },
+        "verifierAddress": {
+          "type": "string"
+        },
+        "verifierName": {
+          "type": "string",
+          "description": "\"Joe's Bar\", \"DMV\", etc."
+        },
+        "requestedAttributes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AttributeType"
+          }
+        },
+        "purpose": {
+          "type": "string",
+          "title": "\"Age verification for alcohol\""
+        },
+        "requestedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expiresInSeconds": {
+          "type": "string",
+          "format": "uint64"
+        }
+      },
+      "title": "DisclosureRequest - What verifier is asking for"
+    },
+    "DisclosureResponse": {
+      "type": "object",
+      "properties": {
+        "requestId": {
+          "type": "string"
+        },
+        "holderAddress": {
+          "type": "string"
+        },
+        "approved": {
+          "type": "boolean"
+        },
+        "disclosedAttributes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/AttributeDisclosure"
+          }
+        },
+        "respondedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "title": "DisclosureResponse - User's answer to request"
+    },
+    "MsgAdminRevokeVCResponse": {
+      "type": "object",
+      "properties": {
+        "revokedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "merkleUpdated": {
+          "type": "boolean"
+        }
+      }
+    },
+    "MsgCreateAttributeVCResponse": {
+      "type": "object",
+      "properties": {
+        "attributeVcId": {
+          "type": "string"
+        },
+        "issuedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "MsgCreateDisclosureRequestResponse": {
+      "type": "object",
+      "properties": {
+        "requestId": {
+          "type": "string"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "MsgCreatePresentationResponse": {
+      "type": "object",
+      "properties": {
+        "presentationId": {
+          "type": "string"
+        },
+        "qrCodeData": {
+          "type": "string",
+          "title": "Base64 encoded QR data"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "disclosedAttributes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AttributeType"
+          }
+        }
+      }
+    },
+    "MsgCreateVCPolicyResponse": {
+      "type": "object",
+      "properties": {
+        "policyId": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      }
+    },
+    "MsgDeprecateVCPolicyResponse": {
+      "type": "object",
+      "properties": {
+        "deprecatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "MsgMintVCResponse": {
+      "type": "object",
+      "properties": {
+        "vcId": {
+          "type": "string"
+        },
+        "issuedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "credentialHash": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "MsgReactivateVCResponse": {
+      "type": "object",
+      "properties": {
+        "reactivatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "MsgRegisterDIDResponse": {
+      "type": "object",
+      "properties": {
+        "did": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "MsgRespondToDisclosureRequestResponse": {
+      "type": "object",
+      "properties": {
+        "response": {
+          "$ref": "#/definitions/DisclosureResponse"
+        }
+      }
+    },
+    "MsgRevokeAttributeVCResponse": {
+      "type": "object",
+      "properties": {
+        "revokedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "MsgRevokeVCResponse": {
+      "type": "object",
+      "properties": {
+        "revokedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "merkleUpdated": {
+          "type": "boolean"
+        }
+      }
+    },
+    "MsgSuspendVCResponse": {
+      "type": "object",
+      "properties": {
+        "suspendedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "reactivateAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "If duration specified"
+        }
+      }
+    },
+    "MsgUpdateDIDDocumentResponse": {
+      "type": "object",
+      "properties": {
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "MsgUpdateDisclosurePolicyResponse": {
+      "type": "object",
+      "properties": {
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "MsgUpdateVCPolicyResponse": {
+      "type": "object",
+      "properties": {
+        "newVersion": {
+          "type": "string"
+        }
+      }
+    },
+    "PageRequest": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "format": "byte",
+          "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set."
+        },
+        "offset": {
+          "type": "string",
+          "format": "uint64",
+          "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set."
+        },
+        "limit": {
+          "type": "string",
+          "format": "uint64",
+          "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app."
+        },
+        "countTotal": {
+          "type": "boolean",
+          "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set."
+        },
+        "reverse": {
+          "type": "boolean",
+          "description": "reverse is set to true if results are to be returned in the descending order."
+        }
+      },
+      "description": "message SomeRequest {\n         Foo some_parameter = 1;\n         PageRequest pagination = 2;\n }",
+      "title": "PageRequest is to be embedded in gRPC request messages for efficient\npagination. Ex:"
+    },
+    "PageResponse": {
+      "type": "object",
+      "properties": {
+        "nextKey": {
+          "type": "string",
+          "format": "byte",
+          "description": "next_key is the key to be passed to PageRequest.key to\nquery the next page most efficiently. It will be empty if\nthere are no more results."
+        },
+        "total": {
+          "type": "string",
+          "format": "uint64",
+          "title": "total is total number of results available if PageRequest.count_total\nwas set, its value is undefined otherwise"
+        }
+      },
+      "description": "PageResponse is to be embedded in gRPC response messages where the\ncorresponding request message has used PageRequest.\n\n message SomeResponse {\n         repeated Bar results = 1;\n         PageResponse page = 2;\n }"
+    },
+    "PresentationContext": {
+      "type": "object",
+      "properties": {
+        "showFullName": {
+          "type": "boolean"
+        },
+        "showAge": {
+          "type": "boolean"
+        },
+        "showAgeOver18": {
+          "type": "boolean"
+        },
+        "showAgeOver21": {
+          "type": "boolean"
+        },
+        "showAddress": {
+          "type": "boolean"
+        },
+        "showCityStateOnly": {
+          "type": "boolean"
+        },
+        "showProfessionalLicense": {
+          "type": "boolean"
+        },
+        "customAttributes": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "boolean"
+          },
+          "title": "Extensible"
+        },
+        "selectiveAttributes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AttributeType"
+          },
+          "description": "Specific attributes to show",
+          "title": "Advanced selective disclosure"
+        },
+        "useZkProofs": {
+          "type": "boolean",
+          "title": "Use ZK proofs when applicable"
+        }
+      },
+      "title": "PresentationContext defines what attributes are disclosed"
+    },
+    "QueryAttributeVCsResponse": {
+      "type": "object",
+      "properties": {
+        "attributeVcs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/AttributeVC"
+          }
+        }
+      }
+    },
+    "QueryBatchVCStatusResponse": {
+      "type": "object",
+      "properties": {
+        "statuses": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/VCStatusInfo"
+          }
+        }
+      }
+    },
+    "QueryCheckRevocationResponse": {
+      "type": "object",
+      "properties": {
+        "revoked": {
+          "type": "boolean"
+        },
+        "record": {
+          "$ref": "#/definitions/RevocationRecord"
+        },
+        "merkleProof": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "QueryCheckVCStatusResponse": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "$ref": "#/definitions/VCStatus"
+        },
+        "valid": {
+          "type": "boolean",
+          "title": "Active and not expired"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "revocation": {
+          "$ref": "#/definitions/RevocationRecord",
+          "title": "If revoked"
+        },
+        "merkleProof": {
+          "type": "string",
+          "format": "byte",
+          "title": "For trustless verification"
+        }
+      }
+    },
+    "QueryDisclosurePolicyResponse": {
+      "type": "object",
+      "properties": {
+        "policy": {
+          "$ref": "#/definitions/DisclosurePolicy"
+        },
+        "exists": {
+          "type": "boolean"
+        }
+      }
+    },
+    "QueryDisclosureRequestResponse": {
+      "type": "object",
+      "properties": {
+        "request": {
+          "$ref": "#/definitions/DisclosureRequest"
+        },
+        "exists": {
+          "type": "boolean"
+        }
+      }
+    },
+    "QueryGetAttributeVCResponse": {
+      "type": "object",
+      "properties": {
+        "attributeVc": {
+          "$ref": "#/definitions/AttributeVC"
+        },
+        "exists": {
+          "type": "boolean"
+        }
+      }
+    },
+    "QueryGetDIDByAddressResponse": {
+      "type": "object",
+      "properties": {
+        "dids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Multiple DIDs per address allowed"
+        }
+      }
+    },
+    "QueryGetRevocationListResponse": {
+      "type": "object",
+      "properties": {
+        "revocationList": {
+          "$ref": "#/definitions/RevocationList"
+        }
+      }
+    },
+    "QueryGetVCPolicyResponse": {
+      "type": "object",
+      "properties": {
+        "policy": {
+          "$ref": "#/definitions/VCPolicy"
+        },
+        "exists": {
+          "type": "boolean"
+        }
+      }
+    },
+    "QueryGetVCResponse": {
+      "type": "object",
+      "properties": {
+        "vc": {
+          "$ref": "#/definitions/VCRecord"
+        },
+        "exists": {
+          "type": "boolean"
+        }
+      }
+    },
+    "QueryListUserVCsResponse": {
+      "type": "object",
+      "properties": {
+        "vcs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/VCRecord"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/PageResponse"
+        }
+      }
+    },
+    "QueryListVCPoliciesResponse": {
+      "type": "object",
+      "properties": {
+        "policies": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/VCPolicy"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/PageResponse"
+        }
+      }
+    },
+    "QueryParamsResponse": {
+      "type": "object",
+      "properties": {
+        "params": {
+          "$ref": "#/definitions/v1beta1.Params"
+        }
+      }
+    },
+    "QueryResolveDIDResponse": {
+      "type": "object",
+      "properties": {
+        "didDocument": {
+          "$ref": "#/definitions/DIDDocument"
+        },
+        "exists": {
+          "type": "boolean"
+        },
+        "credentials": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/VCRecord"
+          },
+          "title": "Associated active VCs"
+        }
+      }
+    },
+    "QueryStatsResponse": {
+      "type": "object",
+      "properties": {
+        "totalVcsMinted": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "totalActiveVcs": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "totalRevokedVcs": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "totalExpiredVcs": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "totalDids": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "totalPolicies": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "vcsByType": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "format": "uint64"
+          },
+          "title": "Type -\u003e count"
+        }
+      }
+    },
+    "QueryValidateMintEligibilityResponse": {
+      "type": "object",
+      "properties": {
+        "eligible": {
+          "type": "boolean"
+        },
+        "missingRequirements": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "What's missing"
+        },
+        "currentCs": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "requiredCs": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "completedIrIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "requiredIrIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "RevocationList": {
+      "type": "object",
+      "properties": {
+        "merkleRoot": {
+          "type": "string",
+          "format": "byte",
+          "title": "Current Merkle root"
+        },
+        "totalRevocations": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Total count"
+        },
+        "lastUpdatedHeight": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Last update block"
+        },
+        "lastUpdated": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "title": "RevocationList maintains the Merkle tree of revocations"
+    },
+    "RevocationReason": {
+      "type": "string",
+      "enum": [
+        "REVOCATION_REASON_UNSPECIFIED",
+        "REVOCATION_REASON_USER_REQUEST",
+        "REVOCATION_REASON_FRAUD_DETECTED",
+        "REVOCATION_REASON_CS_BELOW_THRESHOLD",
+        "REVOCATION_REASON_IR_INVALIDATED",
+        "REVOCATION_REASON_EXPIRED",
+        "REVOCATION_REASON_GOVERNANCE",
+        "REVOCATION_REASON_SECURITY_COMPROMISE",
+        "REVOCATION_REASON_POLICY_CHANGE"
+      ],
+      "default": "REVOCATION_REASON_UNSPECIFIED",
+      "description": "- REVOCATION_REASON_USER_REQUEST: User-initiated\n - REVOCATION_REASON_FRAUD_DETECTED: Fraud slash\n - REVOCATION_REASON_CS_BELOW_THRESHOLD: CS dropped below minimum\n - REVOCATION_REASON_IR_INVALIDATED: Required IR was invalidated\n - REVOCATION_REASON_EXPIRED: Natural expiration\n - REVOCATION_REASON_GOVERNANCE: Governance decision\n - REVOCATION_REASON_SECURITY_COMPROMISE: Security incident\n - REVOCATION_REASON_POLICY_CHANGE: Policy deprecated",
+      "title": "RevocationReason represents why a VC was revoked"
+    },
+    "RevocationRecord": {
+      "type": "object",
+      "properties": {
+        "vcId": {
+          "type": "string"
+        },
+        "revokedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "revokedHeight": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "reason": {
+          "$ref": "#/definitions/RevocationReason"
+        },
+        "revoker": {
+          "type": "string",
+          "title": "holder_did or \"governance\""
+        },
+        "evidence": {
+          "type": "string",
+          "title": "IPFS hash or metadata"
+        },
+        "merkleProof": {
+          "type": "string",
+          "format": "byte",
+          "title": "Merkle proof for trustless verification"
+        },
+        "merkleIndex": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Position in Merkle tree"
+        }
+      },
+      "title": "RevocationRecord represents a revoked credential"
+    },
+    "Status": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Any"
+          }
+        }
+      }
+    },
+    "VCPolicy": {
+      "type": "object",
+      "properties": {
+        "vcTypeName": {
+          "type": "string",
+          "title": "Human-readable type name"
+        },
+        "vcTypeEnum": {
+          "$ref": "#/definitions/VCType",
+          "title": "Enum value"
+        },
+        "csThreshold": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Minimum CS required"
+        },
+        "requiredIrIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Required IR completions"
+        },
+        "requiredArena": {
+          "type": "string",
+          "title": "Required arena (if any)"
+        },
+        "requiredArenaScore": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Minimum arena score"
+        },
+        "expiryDurationDays": {
+          "type": "string",
+          "format": "uint64",
+          "title": "0 = no expiry"
+        },
+        "singleton": {
+          "type": "boolean",
+          "title": "Only one active per user"
+        },
+        "requiresAnnualRenewal": {
+          "type": "boolean"
+        },
+        "metadataUri": {
+          "type": "string",
+          "title": "Policy details URI"
+        },
+        "status": {
+          "$ref": "#/definitions/VCPolicyStatus"
+        },
+        "version": {
+          "type": "string",
+          "title": "Policy version"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "createdHeight": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "creator": {
+          "type": "string",
+          "title": "Governance address"
+        }
+      },
+      "title": "VCPolicy defines minting criteria for a VC type"
+    },
+    "VCPolicyStatus": {
+      "type": "string",
+      "enum": [
+        "VC_POLICY_STATUS_UNSPECIFIED",
+        "VC_POLICY_STATUS_DRAFT",
+        "VC_POLICY_STATUS_ACTIVE",
+        "VC_POLICY_STATUS_DEPRECATED"
+      ],
+      "default": "VC_POLICY_STATUS_UNSPECIFIED",
+      "title": "VCPolicyStatus represents the status of a VC policy"
+    },
+    "VCRecord": {
+      "type": "object",
+      "properties": {
+        "vcId": {
+          "type": "string",
+          "title": "Unique identifier"
+        },
+        "vcType": {
+          "$ref": "#/definitions/VCType",
+          "title": "Type of credential"
+        },
+        "vcTypeCustom": {
+          "type": "string",
+          "title": "Custom type name (if VC_TYPE_CUSTOM)"
+        },
+        "holderDid": {
+          "type": "string",
+          "title": "DID of holder"
+        },
+        "holderAddress": {
+          "type": "string",
+          "title": "Bech32 address of holder"
+        },
+        "status": {
+          "$ref": "#/definitions/VCStatus",
+          "title": "Current status"
+        },
+        "issuedAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "When issued"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Expiration (0 = never)"
+        },
+        "issuedHeight": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Block height of issuance"
+        },
+        "credentialHash": {
+          "type": "string",
+          "format": "byte",
+          "title": "SHA256 of full credential"
+        },
+        "verifierPluginHash": {
+          "type": "string",
+          "format": "byte",
+          "title": "Hash of issuing plug-in"
+        },
+        "issuerAssistant": {
+          "type": "string",
+          "title": "AI assistant address"
+        },
+        "prerequisiteIrIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "IRs required for minting"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Extensible metadata"
+        },
+        "csAtMint": {
+          "type": "string",
+          "format": "uint64",
+          "title": "CS value when minted"
+        },
+        "policyVersion": {
+          "type": "string",
+          "title": "Policy version used"
+        }
+      },
+      "title": "VCRecord represents a minted verifiable credential"
+    },
+    "VCStatus": {
+      "type": "string",
+      "enum": [
+        "VC_STATUS_UNSPECIFIED",
+        "VC_STATUS_PENDING",
+        "VC_STATUS_ACTIVE",
+        "VC_STATUS_REVOKED",
+        "VC_STATUS_EXPIRED",
+        "VC_STATUS_SUSPENDED"
+      ],
+      "default": "VC_STATUS_UNSPECIFIED",
+      "description": "- VC_STATUS_PENDING: Minting in progress\n - VC_STATUS_ACTIVE: Valid and usable\n - VC_STATUS_REVOKED: Permanently revoked\n - VC_STATUS_EXPIRED: Passed expiration date\n - VC_STATUS_SUSPENDED: Temporarily suspended by governance",
+      "title": "VCStatus represents the lifecycle status of a credential"
+    },
+    "VCStatusInfo": {
+      "type": "object",
+      "properties": {
+        "vcId": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/definitions/VCStatus"
+        },
+        "valid": {
+          "type": "boolean"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "VCType": {
+      "type": "string",
+      "enum": [
+        "VC_TYPE_UNSPECIFIED",
+        "VC_TYPE_VERIFIED_HUMAN",
+        "VC_TYPE_AGE_OVER_18",
+        "VC_TYPE_AGE_OVER_21",
+        "VC_TYPE_RESIDENT_OF",
+        "VC_TYPE_BIOMETRIC_AUTH",
+        "VC_TYPE_KYC_VERIFICATION",
+        "VC_TYPE_NOTARY_PUBLIC",
+        "VC_TYPE_PROFESSIONAL_LICENSE",
+        "VC_TYPE_BIOMETRIC_FOCUS",
+        "VC_TYPE_SOCIAL_FOCUS",
+        "VC_TYPE_GEOLOCATION_FOCUS",
+        "VC_TYPE_HIGH_ASSURANCE_FOCUS",
+        "VC_TYPE_POSSESSION_FOCUS",
+        "VC_TYPE_KNOWLEDGE_FOCUS",
+        "VC_TYPE_PERSISTENCE_FOCUS",
+        "VC_TYPE_SPECIALIZED_FOCUS",
+        "VC_TYPE_CUSTOM"
+      ],
+      "default": "VC_TYPE_UNSPECIFIED",
+      "description": "- VC_TYPE_VERIFIED_HUMAN: Core credentials\n\nVC:isVerifiedHuman\n - VC_TYPE_AGE_OVER_18: VC:isAgeOver18\n - VC_TYPE_AGE_OVER_21: VC:isAgeOver21\n - VC_TYPE_RESIDENT_OF: VC:isResidentOf\n - VC_TYPE_BIOMETRIC_AUTH: VC:hasBiometricAuth\n - VC_TYPE_KYC_VERIFICATION: VC:hasKYCVerification\n - VC_TYPE_NOTARY_PUBLIC: VC:isNotaryPublic\n - VC_TYPE_PROFESSIONAL_LICENSE: VC:isProfessionalLicense\n - VC_TYPE_BIOMETRIC_FOCUS: Arena focus credentials\n\nVC:BiometricFocus\n - VC_TYPE_SOCIAL_FOCUS: VC:SocialFocus\n - VC_TYPE_GEOLOCATION_FOCUS: VC:GeoLocationFocus\n - VC_TYPE_HIGH_ASSURANCE_FOCUS: VC:HighAssuranceFocus\n - VC_TYPE_POSSESSION_FOCUS: VC:PossessionFocus\n - VC_TYPE_KNOWLEDGE_FOCUS: VC:KnowledgeFocus\n - VC_TYPE_PERSISTENCE_FOCUS: VC:PersistenceFocus\n - VC_TYPE_SPECIALIZED_FOCUS: VC:SpecializedFocus\n - VC_TYPE_CUSTOM: Custom (governance-defined)\n\nCustom VC types start at 100",
+      "title": "VCType represents the type of verifiable credential"
+    },
+    "VerificationMethod": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "title": "Method ID"
+        },
+        "type": {
+          "type": "string",
+          "title": "e.g., \"Ed25519VerificationKey2020\""
+        },
+        "controller": {
+          "type": "string",
+          "title": "DID of controller"
+        },
+        "publicKey": {
+          "type": "string",
+          "format": "byte",
+          "title": "Raw public key bytes"
+        }
+      },
+      "title": "VerificationMethod represents a public key for verification"
+    },
+    "v1beta1.Params": {
+      "type": "object",
+      "properties": {
+        "maxVcsPerUser": {
+          "type": "string",
+          "format": "uint64",
+          "description": "Default: 50",
+          "title": "Minting limits"
+        },
+        "maxMintPerDay": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Default: 5"
+        },
+        "maxMintPerHour": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Default: 2"
+        },
+        "defaultVcExpiryDays": {
+          "type": "string",
+          "format": "uint64",
+          "description": "Default: 365",
+          "title": "Default settings"
+        },
+        "revocationMerkleUpdateFrequency": {
+          "type": "string",
+          "format": "uint64",
+          "description": "Blocks between Merkle updates",
+          "title": "Revocation"
+        },
+        "didPrefix": {
+          "type": "string",
+          "description": "\"did:aura\"",
+          "title": "DID"
+        },
+        "didNetwork": {
+          "type": "string",
+          "title": "\"mainnet\" or \"testnet\""
+        },
+        "mintFee": {
+          "type": "string",
+          "description": "Fee to mint VC (in AURA)",
+          "title": "Fees"
+        },
+        "revokeFee": {
+          "type": "string",
+          "title": "Fee to revoke (usually 0)"
+        },
+        "policyCreationDeposit": {
+          "type": "string",
+          "title": "Governance deposit for new policies"
+        },
+        "rateLimitingEnabled": {
+          "type": "boolean",
+          "description": "Enable/disable rate limits",
+          "title": "Rate limiting"
+        }
+      },
+      "title": "Params defines module parameters"
+    }
+  }
+}

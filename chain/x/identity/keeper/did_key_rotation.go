@@ -315,7 +315,7 @@ func (k *Keeper) GetAllDIDKeyRotations(ctx sdk.Context) ([]*types.DIDKeyRotation
 	}
 	defer iterator.Close()
 
-	var rotations []*types.DIDKeyRotation
+	rotations := make([]*types.DIDKeyRotation, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var rotation types.DIDKeyRotation
 		if err := k.cdc.Unmarshal(iterator.Value(), &rotation); err != nil {
@@ -433,7 +433,7 @@ func (k *Keeper) GetAllDIDKeyHistories(ctx sdk.Context) ([]*types.DIDKeyHistory,
 	}
 	defer iterator.Close()
 
-	var histories []*types.DIDKeyHistory
+	histories := make([]*types.DIDKeyHistory, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var history types.DIDKeyHistory
 		if err := k.cdc.Unmarshal(iterator.Value(), &history); err != nil {

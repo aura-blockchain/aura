@@ -128,7 +128,7 @@ func (k Keeper) GetAllDoubleSignEvidences(ctx context.Context) []types.DoubleSig
 	iterator := storetypes.KVStorePrefixIterator(store, types.DoubleSignEvidenceKey)
 	defer iterator.Close()
 
-	var evidences []types.DoubleSignEvidence
+	evidences := make([]types.DoubleSignEvidence, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var evidence types.DoubleSignEvidence
 		if err := k.cdc.Unmarshal(iterator.Value(), &evidence); err != nil {
@@ -176,7 +176,7 @@ func (k Keeper) GetAllDowntimeInfractions(ctx context.Context) []types.DowntimeI
 	iterator := storetypes.KVStorePrefixIterator(store, types.DowntimeInfractionKey)
 	defer iterator.Close()
 
-	var infractions []types.DowntimeInfraction
+	infractions := make([]types.DowntimeInfraction, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var infraction types.DowntimeInfraction
 		if err := k.cdc.Unmarshal(iterator.Value(), &infraction); err != nil {
@@ -237,7 +237,7 @@ func (k Keeper) GetAllValidatorAlerts(ctx context.Context) []types.ValidatorAler
 	iterator := storetypes.KVStorePrefixIterator(store, types.ValidatorAlertKey)
 	defer iterator.Close()
 
-	var alerts []types.ValidatorAlert
+	alerts := make([]types.ValidatorAlert, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var alert types.ValidatorAlert
 		if err := k.cdc.Unmarshal(iterator.Value(), &alert); err != nil {
@@ -265,7 +265,7 @@ func (k Keeper) GetAllSentryNodes(ctx context.Context) []types.SentryNodeInfo {
 	iterator := storetypes.KVStorePrefixIterator(store, types.SentryNodeKey)
 	defer iterator.Close()
 
-	var sentryNodes []types.SentryNodeInfo
+	sentryNodes := make([]types.SentryNodeInfo, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var node types.SentryNodeInfo
 		if err := k.cdc.Unmarshal(iterator.Value(), &node); err != nil {

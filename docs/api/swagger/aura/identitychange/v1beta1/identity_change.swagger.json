@@ -1,0 +1,287 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "aura/identitychange/v1beta1/identity_change.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "Msg"
+    },
+    {
+      "name": "Query"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {},
+  "definitions": {
+    "Any": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "IdentityChangeStatus": {
+      "type": "string",
+      "enum": [
+        "IDENTITY_CHANGE_STATUS_UNSPECIFIED",
+        "IDENTITY_CHANGE_STATUS_IDLE",
+        "IDENTITY_CHANGE_STATUS_PENDING_VERIFICATION",
+        "IDENTITY_CHANGE_STATUS_READY_TO_APPLY",
+        "IDENTITY_CHANGE_STATUS_REJECTED",
+        "IDENTITY_CHANGE_STATUS_APPLIED",
+        "IDENTITY_CHANGE_STATUS_SUSPENDED"
+      ],
+      "default": "IDENTITY_CHANGE_STATUS_UNSPECIFIED"
+    },
+    "MsgApplyIdentityChangeResponse": {
+      "type": "object"
+    },
+    "MsgRejectIdentityChangeResponse": {
+      "type": "object"
+    },
+    "MsgRequestIdentityChangeResponse": {
+      "type": "object",
+      "properties": {
+        "requestId": {
+          "type": "string"
+        }
+      }
+    },
+    "MsgSubmitAssistantProofResponse": {
+      "type": "object"
+    },
+    "MsgSuspendIdentityChangesResponse": {
+      "type": "object"
+    },
+    "PageRequest": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "format": "byte",
+          "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set."
+        },
+        "offset": {
+          "type": "string",
+          "format": "uint64",
+          "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set."
+        },
+        "limit": {
+          "type": "string",
+          "format": "uint64",
+          "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app."
+        },
+        "countTotal": {
+          "type": "boolean",
+          "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set."
+        },
+        "reverse": {
+          "type": "boolean",
+          "description": "reverse is set to true if results are to be returned in the descending order."
+        }
+      },
+      "description": "message SomeRequest {\n         Foo some_parameter = 1;\n         PageRequest pagination = 2;\n }",
+      "title": "PageRequest is to be embedded in gRPC request messages for efficient\npagination. Ex:"
+    },
+    "PageResponse": {
+      "type": "object",
+      "properties": {
+        "nextKey": {
+          "type": "string",
+          "format": "byte",
+          "description": "next_key is the key to be passed to PageRequest.key to\nquery the next page most efficiently. It will be empty if\nthere are no more results."
+        },
+        "total": {
+          "type": "string",
+          "format": "uint64",
+          "title": "total is total number of results available if PageRequest.count_total\nwas set, its value is undefined otherwise"
+        }
+      },
+      "description": "PageResponse is to be embedded in gRPC response messages where the\ncorresponding request message has used PageRequest.\n\n message SomeResponse {\n         repeated Bar results = 1;\n         PageResponse page = 2;\n }"
+    },
+    "QueryIdentityChangeHistoryResponse": {
+      "type": "object",
+      "properties": {
+        "entries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1beta1.IdentityChangeHistory"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/PageResponse"
+        }
+      }
+    },
+    "QueryIdentityChangeRequestResponse": {
+      "type": "object",
+      "properties": {
+        "request": {
+          "$ref": "#/definitions/v1beta1.IdentityChangeRequest"
+        }
+      }
+    },
+    "QueryIdentityRecordResponse": {
+      "type": "object",
+      "properties": {
+        "record": {
+          "$ref": "#/definitions/v1beta1.IdentityRecord"
+        }
+      }
+    },
+    "QueryParamsResponse": {
+      "type": "object",
+      "properties": {
+        "params": {
+          "$ref": "#/definitions/v1beta1.Params"
+        }
+      }
+    },
+    "Status": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Any"
+          }
+        }
+      }
+    },
+    "v1beta1.IdentityChangeHistory": {
+      "type": "object",
+      "properties": {
+        "requestId": {
+          "type": "string"
+        },
+        "targetDid": {
+          "type": "string"
+        },
+        "prevConfidenceScore": {
+          "type": "string",
+          "format": "int64"
+        },
+        "newConfidenceScore": {
+          "type": "string",
+          "format": "int64"
+        },
+        "transitionReason": {
+          "type": "string"
+        },
+        "changedHeight": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
+    "v1beta1.IdentityChangeRequest": {
+      "type": "object",
+      "properties": {
+        "requestId": {
+          "type": "string"
+        },
+        "targetDid": {
+          "type": "string"
+        },
+        "requester": {
+          "type": "string"
+        },
+        "assistant": {
+          "type": "string"
+        },
+        "irId": {
+          "type": "string"
+        },
+        "proofHash": {
+          "type": "string"
+        },
+        "requestMetaHash": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/definitions/IdentityChangeStatus"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "createdHeight": {
+          "type": "string",
+          "format": "int64"
+        },
+        "verdictHeight": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
+    "v1beta1.IdentityRecord": {
+      "type": "object",
+      "properties": {
+        "did": {
+          "type": "string"
+        },
+        "owner": {
+          "type": "string"
+        },
+        "confidenceScore": {
+          "type": "string",
+          "format": "int64"
+        },
+        "metadataHash": {
+          "type": "string"
+        },
+        "latestIrVersion": {
+          "type": "string"
+        },
+        "lastChangedHeight": {
+          "type": "string",
+          "format": "int64"
+        },
+        "status": {
+          "$ref": "#/definitions/IdentityChangeStatus"
+        }
+      }
+    },
+    "v1beta1.Params": {
+      "type": "object",
+      "properties": {
+        "maxRequestsPerWalletPerMonth": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "minConfidenceAfterChange": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "stalenessHeightThreshold": {
+          "type": "string",
+          "format": "int64"
+        },
+        "assistantSlashOnFalsePositive": {
+          "type": "boolean"
+        },
+        "stalenessInvestigatorChain": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,747 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "aura/cryptography/v1beta1/query.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "Query"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/aura/cryptography/v1beta1/certificate_pin/{hostname}": {
+      "get": {
+        "summary": "CertificatePin queries certificate pinning configuration",
+        "operationId": "Query_CertificatePin",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryCertificatePinResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "hostname",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/cryptography/v1beta1/key_rotation_schedule/{id}": {
+      "get": {
+        "summary": "KeyRotationSchedule queries a key rotation schedule by ID",
+        "operationId": "Query_KeyRotationSchedule",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryKeyRotationScheduleResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/cryptography/v1beta1/params": {
+      "get": {
+        "summary": "Params queries the parameters of the cryptography module",
+        "operationId": "Query_Params",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryParamsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/cryptography/v1beta1/quantum_resistant_key/{keyId}": {
+      "get": {
+        "summary": "QuantumResistantKey queries a quantum-resistant key",
+        "operationId": "Query_QuantumResistantKey",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryQuantumResistantKeyResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "keyId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/cryptography/v1beta1/random_source_status": {
+      "get": {
+        "summary": "RandomSourceStatus queries the status of random sources",
+        "operationId": "Query_RandomSourceStatus",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryRandomSourceStatusResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/cryptography/v1beta1/secure_enclave/{enclaveId}": {
+      "get": {
+        "summary": "SecureEnclave queries secure enclave information",
+        "operationId": "Query_SecureEnclave",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QuerySecureEnclaveResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "enclaveId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/cryptography/v1beta1/threshold_scheme/{schemeId}": {
+      "get": {
+        "summary": "ThresholdScheme queries a threshold signature scheme by ID",
+        "operationId": "Query_ThresholdScheme",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryThresholdSchemeResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "schemeId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/cryptography/v1beta1/verify_zk_proof": {
+      "post": {
+        "summary": "VerifyZKProof verifies a zero-knowledge proof",
+        "operationId": "Query_VerifyZKProof",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryVerifyZKProofResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "proofId",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "proofData",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "publicInputs",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "Any": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "CertificatePinType": {
+      "type": "string",
+      "enum": [
+        "CERTIFICATE_PIN_TYPE_UNSPECIFIED",
+        "CERTIFICATE_PIN_TYPE_SPKI",
+        "CERTIFICATE_PIN_TYPE_FULL_CERT",
+        "CERTIFICATE_PIN_TYPE_INTERMEDIATE"
+      ],
+      "default": "CERTIFICATE_PIN_TYPE_UNSPECIFIED",
+      "description": "- CERTIFICATE_PIN_TYPE_SPKI: Subject Public Key Info",
+      "title": "CertificatePinType specifies the type of certificate pinning"
+    },
+    "CryptoRandomSource": {
+      "type": "object",
+      "properties": {
+        "sourceId": {
+          "type": "string"
+        },
+        "sourceType": {
+          "$ref": "#/definitions/RandomSourceType"
+        },
+        "entropyPoolHash": {
+          "type": "string",
+          "format": "byte",
+          "title": "Hash of entropy pool for verification"
+        },
+        "entropyBits": {
+          "type": "string",
+          "format": "int64"
+        },
+        "lastSeeded": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "status": {
+          "$ref": "#/definitions/v1beta1.RandomSourceStatus"
+        }
+      },
+      "title": "CryptoRandomSource defines a cryptographically secure random number source"
+    },
+    "KeyRotationPolicy": {
+      "type": "object",
+      "properties": {
+        "maxAgeDays": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "warningDaysBeforeExpiry": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "autoRotate": {
+          "type": "boolean"
+        },
+        "maxRotationAttempts": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "notificationAddresses": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "title": "KeyRotationPolicy defines the policy for key rotation"
+    },
+    "QuantumResistantAlgorithm": {
+      "type": "string",
+      "enum": [
+        "QUANTUM_RESISTANT_ALGORITHM_UNSPECIFIED",
+        "QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_DILITHIUM",
+        "QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_KYBER",
+        "QUANTUM_RESISTANT_ALGORITHM_FALCON",
+        "QUANTUM_RESISTANT_ALGORITHM_SPHINCS_PLUS",
+        "QUANTUM_RESISTANT_ALGORITHM_NTRU"
+      ],
+      "default": "QUANTUM_RESISTANT_ALGORITHM_UNSPECIFIED",
+      "title": "QuantumResistantAlgorithm specifies quantum-resistant algorithms"
+    },
+    "QueryCertificatePinResponse": {
+      "type": "object",
+      "properties": {
+        "pin": {
+          "$ref": "#/definitions/v1beta1.CertificatePin"
+        }
+      },
+      "title": "QueryCertificatePinResponse is the response type for the Query/CertificatePin RPC method"
+    },
+    "QueryKeyRotationScheduleResponse": {
+      "type": "object",
+      "properties": {
+        "schedule": {
+          "$ref": "#/definitions/v1beta1.KeyRotationSchedule"
+        }
+      },
+      "title": "QueryKeyRotationScheduleResponse is the response type for the Query/KeyRotationSchedule RPC method"
+    },
+    "QueryParamsResponse": {
+      "type": "object",
+      "properties": {
+        "params": {
+          "$ref": "#/definitions/v1beta1.Params"
+        }
+      },
+      "title": "QueryParamsResponse is the response type for the Query/Params RPC method"
+    },
+    "QueryQuantumResistantKeyResponse": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "$ref": "#/definitions/v1beta1.QuantumResistantKey"
+        }
+      },
+      "title": "QueryQuantumResistantKeyResponse is the response type for the Query/QuantumResistantKey RPC method"
+    },
+    "QueryRandomSourceStatusResponse": {
+      "type": "object",
+      "properties": {
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/CryptoRandomSource"
+          }
+        }
+      },
+      "title": "QueryRandomSourceStatusResponse is the response type for the Query/RandomSourceStatus RPC method"
+    },
+    "QuerySecureEnclaveResponse": {
+      "type": "object",
+      "properties": {
+        "enclave": {
+          "$ref": "#/definitions/SecureEnclaveConfig"
+        }
+      },
+      "title": "QuerySecureEnclaveResponse is the response type for the Query/SecureEnclave RPC method"
+    },
+    "QueryThresholdSchemeResponse": {
+      "type": "object",
+      "properties": {
+        "scheme": {
+          "$ref": "#/definitions/ThresholdSignatureScheme"
+        }
+      },
+      "title": "QueryThresholdSchemeResponse is the response type for the Query/ThresholdScheme RPC method"
+    },
+    "QueryVerifyZKProofResponse": {
+      "type": "object",
+      "properties": {
+        "valid": {
+          "type": "boolean"
+        },
+        "errorMessage": {
+          "type": "string"
+        }
+      },
+      "title": "QueryVerifyZKProofResponse is the response type for the Query/VerifyZKProof RPC method"
+    },
+    "RandomSourceType": {
+      "type": "string",
+      "enum": [
+        "RANDOM_SOURCE_TYPE_UNSPECIFIED",
+        "RANDOM_SOURCE_TYPE_SYSTEM",
+        "RANDOM_SOURCE_TYPE_HARDWARE",
+        "RANDOM_SOURCE_TYPE_QUANTUM",
+        "RANDOM_SOURCE_TYPE_COMBINED"
+      ],
+      "default": "RANDOM_SOURCE_TYPE_UNSPECIFIED",
+      "title": "RandomSourceType specifies the type of random source"
+    },
+    "SecureEnclaveConfig": {
+      "type": "object",
+      "properties": {
+        "enclaveId": {
+          "type": "string"
+        },
+        "enclaveType": {
+          "$ref": "#/definitions/SecureEnclaveType"
+        },
+        "attestationData": {
+          "type": "string",
+          "format": "byte"
+        },
+        "attestationTime": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "status": {
+          "$ref": "#/definitions/SecureEnclaveStatus"
+        },
+        "enclaveMetadata": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "title": "SecureEnclaveConfig defines secure enclave configuration"
+    },
+    "SecureEnclaveStatus": {
+      "type": "string",
+      "enum": [
+        "SECURE_ENCLAVE_STATUS_UNSPECIFIED",
+        "SECURE_ENCLAVE_STATUS_UNINITIALIZED",
+        "SECURE_ENCLAVE_STATUS_READY",
+        "SECURE_ENCLAVE_STATUS_SEALED",
+        "SECURE_ENCLAVE_STATUS_ERROR"
+      ],
+      "default": "SECURE_ENCLAVE_STATUS_UNSPECIFIED",
+      "title": "SecureEnclaveStatus represents the status of a secure enclave"
+    },
+    "SecureEnclaveType": {
+      "type": "string",
+      "enum": [
+        "SECURE_ENCLAVE_TYPE_UNSPECIFIED",
+        "SECURE_ENCLAVE_TYPE_SGX",
+        "SECURE_ENCLAVE_TYPE_SEV",
+        "SECURE_ENCLAVE_TYPE_TPM",
+        "SECURE_ENCLAVE_TYPE_HSM",
+        "SECURE_ENCLAVE_TYPE_KEYCHAIN"
+      ],
+      "default": "SECURE_ENCLAVE_TYPE_UNSPECIFIED",
+      "title": "SecureEnclaveType specifies the type of secure enclave"
+    },
+    "Status": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Any"
+          }
+        }
+      }
+    },
+    "ThresholdSchemeStatus": {
+      "type": "string",
+      "enum": [
+        "THRESHOLD_SCHEME_STATUS_UNSPECIFIED",
+        "THRESHOLD_SCHEME_STATUS_INITIALIZING",
+        "THRESHOLD_SCHEME_STATUS_ACTIVE",
+        "THRESHOLD_SCHEME_STATUS_SUSPENDED",
+        "THRESHOLD_SCHEME_STATUS_REVOKED"
+      ],
+      "default": "THRESHOLD_SCHEME_STATUS_UNSPECIFIED",
+      "title": "ThresholdSchemeStatus represents the status of a threshold scheme"
+    },
+    "ThresholdSchemeType": {
+      "type": "string",
+      "enum": [
+        "THRESHOLD_SCHEME_TYPE_UNSPECIFIED",
+        "THRESHOLD_SCHEME_TYPE_ECDSA",
+        "THRESHOLD_SCHEME_TYPE_EDDSA",
+        "THRESHOLD_SCHEME_TYPE_BLS",
+        "THRESHOLD_SCHEME_TYPE_SCHNORR"
+      ],
+      "default": "THRESHOLD_SCHEME_TYPE_UNSPECIFIED",
+      "title": "ThresholdSchemeType specifies the type of threshold signature scheme"
+    },
+    "ThresholdSignatureScheme": {
+      "type": "object",
+      "properties": {
+        "schemeId": {
+          "type": "string"
+        },
+        "threshold": {
+          "type": "integer",
+          "format": "int32",
+          "title": "t of n"
+        },
+        "totalParticipants": {
+          "type": "integer",
+          "format": "int32",
+          "title": "n"
+        },
+        "participantIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "schemeType": {
+          "$ref": "#/definitions/ThresholdSchemeType"
+        },
+        "publicKey": {
+          "type": "string",
+          "format": "byte"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "status": {
+          "$ref": "#/definitions/ThresholdSchemeStatus"
+        }
+      },
+      "title": "ThresholdSignatureScheme defines threshold signature configuration"
+    },
+    "v1beta1.CertificatePin": {
+      "type": "object",
+      "properties": {
+        "pinId": {
+          "type": "string"
+        },
+        "hostname": {
+          "type": "string"
+        },
+        "certificateHashes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "byte"
+          }
+        },
+        "pinType": {
+          "$ref": "#/definitions/CertificatePinType"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "enabled": {
+          "type": "boolean"
+        }
+      },
+      "title": "CertificatePin defines a certificate pinning configuration"
+    },
+    "v1beta1.KeyRotationSchedule": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "keyId": {
+          "type": "string"
+        },
+        "nextRotationTime": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "rotationIntervalSeconds": {
+          "type": "string",
+          "format": "int64"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "createdBy": {
+          "type": "string"
+        },
+        "policy": {
+          "$ref": "#/definitions/KeyRotationPolicy"
+        },
+        "lastRotation": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "title": "KeyRotationSchedule defines an automated key rotation schedule"
+    },
+    "v1beta1.Params": {
+      "type": "object",
+      "properties": {
+        "defaultRotationIntervalDays": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Key rotation"
+        },
+        "enableAutoRotation": {
+          "type": "boolean"
+        },
+        "minThresholdParticipants": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Threshold signatures"
+        },
+        "maxThresholdParticipants": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "minEntropyBits": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Random number generation"
+        },
+        "minPbkdf2Iterations": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Key stretching"
+        },
+        "minArgon2MemoryKb": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "minArgon2Iterations": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "enforceCertificatePinning": {
+          "type": "boolean",
+          "title": "Certificate pinning"
+        },
+        "certificatePinValidityDays": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "minSaltLengthBytes": {
+          "type": "integer",
+          "format": "int32",
+          "title": "General security"
+        },
+        "minKeyLengthBits": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "Params defines the parameters for the cryptography module"
+    },
+    "v1beta1.QuantumResistantKey": {
+      "type": "object",
+      "properties": {
+        "keyId": {
+          "type": "string"
+        },
+        "algorithm": {
+          "$ref": "#/definitions/QuantumResistantAlgorithm"
+        },
+        "publicKey": {
+          "type": "string",
+          "format": "byte"
+        },
+        "keyMetadata": {
+          "type": "string",
+          "format": "byte"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "title": "QuantumResistantKey defines a quantum-resistant cryptographic key"
+    },
+    "v1beta1.RandomSourceStatus": {
+      "type": "string",
+      "enum": [
+        "RANDOM_SOURCE_STATUS_UNSPECIFIED",
+        "RANDOM_SOURCE_STATUS_HEALTHY",
+        "RANDOM_SOURCE_STATUS_LOW_ENTROPY",
+        "RANDOM_SOURCE_STATUS_FAILED"
+      ],
+      "default": "RANDOM_SOURCE_STATUS_UNSPECIFIED",
+      "title": "RandomSourceStatus represents the status of a random source"
+    }
+  }
+}

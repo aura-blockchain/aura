@@ -1,0 +1,994 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "aura/compliance/v1beta1/compliance.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "Query"
+    },
+    {
+      "name": "Msg"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {},
+  "definitions": {
+    "AMLProfile": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string"
+        },
+        "riskLevel": {
+          "$ref": "#/definitions/AMLRiskLevel"
+        },
+        "riskFactors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "lastAssessment": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "totalTransactions": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "totalVolume": {
+          "type": "string",
+          "title": "Total transaction volume"
+        },
+        "suspiciousActivities": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/SuspiciousActivity"
+          }
+        },
+        "pepStatus": {
+          "type": "boolean",
+          "title": "Politically Exposed Person"
+        },
+        "sourceOfFunds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "occupation": {
+          "type": "string"
+        }
+      },
+      "title": "AMLProfile represents an AML risk profile"
+    },
+    "AMLRiskLevel": {
+      "type": "string",
+      "enum": [
+        "AML_RISK_UNSPECIFIED",
+        "AML_RISK_LOW",
+        "AML_RISK_MEDIUM",
+        "AML_RISK_HIGH",
+        "AML_RISK_SEVERE"
+      ],
+      "default": "AML_RISK_UNSPECIFIED",
+      "title": "AMLRiskLevel defines the AML risk classification"
+    },
+    "Any": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "ComplianceParams": {
+      "type": "object",
+      "properties": {
+        "kycRequired": {
+          "type": "boolean",
+          "title": "KYC/AML settings"
+        },
+        "minimumKycLevel": {
+          "$ref": "#/definitions/KYCLevel"
+        },
+        "kycExpiryDays": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "approvedKycProviders": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Authorized KYC provider addresses"
+        },
+        "blockedJurisdictions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "OFAC-sanctioned country codes (ISO 3166-1 alpha-2)"
+        },
+        "transactionMonitoringEnabled": {
+          "type": "boolean",
+          "title": "Transaction monitoring"
+        },
+        "velocityLimit24h": {
+          "type": "string",
+          "title": "Max transaction volume in 24h"
+        },
+        "singleTransactionLimit": {
+          "type": "string",
+          "title": "Max single transaction amount"
+        },
+        "structuringThresholdCount": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Number of txs to trigger structuring alert"
+        },
+        "sanctionsScreeningEnabled": {
+          "type": "boolean",
+          "title": "Sanctions screening"
+        },
+        "sanctionsLists": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Lists to check (OFAC, EU, UN, etc.)"
+        },
+        "screeningCacheHours": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Cache screening results"
+        },
+        "gdprEnabled": {
+          "type": "boolean",
+          "title": "GDPR"
+        },
+        "dataRetentionDays": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "processingPurposes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "taxReportingEnabled": {
+          "type": "boolean",
+          "title": "Tax reporting"
+        },
+        "taxJurisdictions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "taxYearEnd": {
+          "type": "string",
+          "title": "MM-DD format"
+        },
+        "rateLimitWindowSeconds": {
+          "type": "string",
+          "format": "uint64",
+          "description": "Time window for rate limiting (default: 3600 = 1 hour)",
+          "title": "Rate limiting (DoS protection for expensive operations)"
+        },
+        "sanctionsScreeningLimit": {
+          "type": "string",
+          "format": "int64",
+          "title": "Max sanctions screenings per window per address"
+        },
+        "kycVerificationLimit": {
+          "type": "string",
+          "format": "int64",
+          "title": "Max KYC verifications per window per address"
+        },
+        "amlProfileQueryLimit": {
+          "type": "string",
+          "format": "int64",
+          "title": "Max AML profile queries per window per address"
+        },
+        "taxReportGenerationLimit": {
+          "type": "string",
+          "format": "int64",
+          "title": "Max tax report generations per window per address"
+        },
+        "defaultQueryLimit": {
+          "type": "string",
+          "format": "int64",
+          "title": "Default limit for other expensive queries"
+        }
+      },
+      "title": "ComplianceParams defines module parameters"
+    },
+    "GDPRConsent": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string"
+        },
+        "consentType": {
+          "type": "string",
+          "description": "data_processing, marketing, etc."
+        },
+        "consented": {
+          "type": "boolean"
+        },
+        "consentGivenAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "consentWithdrawnAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "consentVersion": {
+          "type": "string",
+          "title": "Version of privacy policy"
+        },
+        "auditCommitment": {
+          "type": "string",
+          "format": "byte",
+          "title": "SHA-256 hash for audit trail (optional)"
+        }
+      },
+      "title": "GDPRConsent represents GDPR consent record (GDPR-compliant)\nPII (IP address, user agent) removed - stored off-chain if needed for audit"
+    },
+    "GDPRConsentList": {
+      "type": "object",
+      "properties": {
+        "consents": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/GDPRConsent"
+          }
+        }
+      },
+      "title": "GDPRConsentList stores consents keyed by address"
+    },
+    "GDPRDataRequest": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "address": {
+          "type": "string"
+        },
+        "requestType": {
+          "type": "string",
+          "title": "access, rectification, erasure, portability"
+        },
+        "requestedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "completedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "status": {
+          "type": "string",
+          "title": "pending, processing, completed, rejected"
+        },
+        "fulfillmentData": {
+          "type": "string",
+          "title": "JSON data for access requests"
+        },
+        "notes": {
+          "type": "string"
+        }
+      },
+      "title": "GDPRDataRequest represents a GDPR data request"
+    },
+    "KYCHistoryEntry": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "snapshot": {
+          "$ref": "#/definitions/KYCRecord",
+          "title": "Complete KYC record at this version"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedBy": {
+          "type": "string",
+          "title": "Provider that performed the update"
+        },
+        "updateReason": {
+          "type": "string",
+          "title": "Reason for update (audit trail)"
+        }
+      },
+      "title": "KYCHistoryEntry represents a historical snapshot of a KYC record\nUsed for audit trail and version tracking when records are updated"
+    },
+    "KYCLevel": {
+      "type": "string",
+      "enum": [
+        "KYC_LEVEL_UNSPECIFIED",
+        "KYC_LEVEL_NONE",
+        "KYC_LEVEL_BASIC",
+        "KYC_LEVEL_INTERMEDIATE",
+        "KYC_LEVEL_ADVANCED"
+      ],
+      "default": "KYC_LEVEL_UNSPECIFIED",
+      "description": "- KYC_LEVEL_NONE: No KYC verification\n - KYC_LEVEL_BASIC: Basic identity verification\n - KYC_LEVEL_INTERMEDIATE: Government ID verification\n - KYC_LEVEL_ADVANCED: Enhanced due diligence",
+      "title": "KYCLevel defines the level of KYC verification"
+    },
+    "KYCRecord": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string"
+        },
+        "kycLevel": {
+          "$ref": "#/definitions/KYCLevel"
+        },
+        "provider": {
+          "type": "string",
+          "title": "KYC provider name"
+        },
+        "verifiedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "piiCommitment": {
+          "type": "string",
+          "format": "byte",
+          "title": "SHA-256 hash of off-chain PII data"
+        },
+        "enhancedDueDiligence": {
+          "type": "boolean",
+          "title": "EDD required flag"
+        },
+        "jurisdiction": {
+          "type": "string",
+          "title": "ISO 3166-1 alpha-2 country code"
+        },
+        "version": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Auto-incremented on each update (deduplication tracking)"
+        }
+      },
+      "title": "KYCRecord represents a KYC verification record (GDPR-compliant)\nPII is stored off-chain; only cryptographic commitments stored on-chain\nJurisdiction is stored on-chain for OFAC compliance enforcement"
+    },
+    "MsgEraseGDPRDataResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        },
+        "erasureEventId": {
+          "type": "string",
+          "title": "Event ID for audit trail"
+        }
+      }
+    },
+    "MsgGenerateTaxReportResponse": {
+      "type": "object",
+      "properties": {
+        "reportId": {
+          "type": "string"
+        },
+        "filePath": {
+          "type": "string"
+        }
+      }
+    },
+    "MsgRecordGDPRConsentResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        }
+      }
+    },
+    "MsgReportSuspiciousActivityResponse": {
+      "type": "object",
+      "properties": {
+        "activityId": {
+          "type": "string"
+        }
+      }
+    },
+    "MsgRequestGDPRDataResponse": {
+      "type": "object",
+      "properties": {
+        "requestId": {
+          "type": "string"
+        }
+      }
+    },
+    "MsgScreenSanctionsResponse": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "$ref": "#/definitions/SanctionsStatus"
+        },
+        "requiresReview": {
+          "type": "boolean"
+        }
+      }
+    },
+    "MsgSubmitKYCResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    },
+    "PageRequest": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "format": "byte",
+          "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set."
+        },
+        "offset": {
+          "type": "string",
+          "format": "uint64",
+          "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set."
+        },
+        "limit": {
+          "type": "string",
+          "format": "uint64",
+          "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app."
+        },
+        "countTotal": {
+          "type": "boolean",
+          "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set."
+        },
+        "reverse": {
+          "type": "boolean",
+          "description": "reverse is set to true if results are to be returned in the descending order."
+        }
+      },
+      "description": "message SomeRequest {\n         Foo some_parameter = 1;\n         PageRequest pagination = 2;\n }",
+      "title": "PageRequest is to be embedded in gRPC request messages for efficient\npagination. Ex:"
+    },
+    "PageResponse": {
+      "type": "object",
+      "properties": {
+        "nextKey": {
+          "type": "string",
+          "format": "byte",
+          "description": "next_key is the key to be passed to PageRequest.key to\nquery the next page most efficiently. It will be empty if\nthere are no more results."
+        },
+        "total": {
+          "type": "string",
+          "format": "uint64",
+          "title": "total is total number of results available if PageRequest.count_total\nwas set, its value is undefined otherwise"
+        }
+      },
+      "description": "PageResponse is to be embedded in gRPC response messages where the\ncorresponding request message has used PageRequest.\n\n message SomeResponse {\n         repeated Bar results = 1;\n         PageResponse page = 2;\n }"
+    },
+    "QueryAMLProfileResponse": {
+      "type": "object",
+      "properties": {
+        "profile": {
+          "$ref": "#/definitions/AMLProfile"
+        }
+      }
+    },
+    "QueryAllAMLProfilesResponse": {
+      "type": "object",
+      "properties": {
+        "profiles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/AMLProfile"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/PageResponse"
+        }
+      }
+    },
+    "QueryAllGDPRConsentsResponse": {
+      "type": "object",
+      "properties": {
+        "consents": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/GDPRConsentList"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/PageResponse"
+        }
+      }
+    },
+    "QueryAllGDPRRequestsResponse": {
+      "type": "object",
+      "properties": {
+        "requests": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/GDPRDataRequest"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/PageResponse"
+        }
+      }
+    },
+    "QueryAllKYCRecordsResponse": {
+      "type": "object",
+      "properties": {
+        "records": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/KYCRecord"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/PageResponse"
+        }
+      }
+    },
+    "QueryAllSanctionsResultsResponse": {
+      "type": "object",
+      "properties": {
+        "results": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/SanctionsScreeningResult"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/PageResponse"
+        }
+      }
+    },
+    "QueryAllTaxReportsResponse": {
+      "type": "object",
+      "properties": {
+        "reports": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/TaxReportList"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/PageResponse"
+        }
+      }
+    },
+    "QueryAllTransactionAlertsResponse": {
+      "type": "object",
+      "properties": {
+        "alerts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/TransactionAlertList"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/PageResponse"
+        }
+      }
+    },
+    "QueryKYCHistoryResponse": {
+      "type": "object",
+      "properties": {
+        "history": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/KYCHistoryEntry"
+          }
+        }
+      }
+    },
+    "QueryKYCRecordResponse": {
+      "type": "object",
+      "properties": {
+        "record": {
+          "$ref": "#/definitions/KYCRecord"
+        }
+      }
+    },
+    "QueryParamsResponse": {
+      "type": "object",
+      "properties": {
+        "params": {
+          "$ref": "#/definitions/ComplianceParams"
+        }
+      }
+    },
+    "QuerySanctionsScreeningResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/SanctionsScreeningResult"
+        }
+      }
+    },
+    "QueryTaxReportResponse": {
+      "type": "object",
+      "properties": {
+        "report": {
+          "$ref": "#/definitions/v1beta1.TaxReport"
+        }
+      }
+    },
+    "QueryTransactionAlertsResponse": {
+      "type": "object",
+      "properties": {
+        "alerts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/TransactionAlert"
+          }
+        }
+      }
+    },
+    "SanctionsMatch": {
+      "type": "object",
+      "properties": {
+        "listName": {
+          "type": "string",
+          "description": "OFAC SDN, EU, UN, etc."
+        },
+        "matchScore": {
+          "type": "string",
+          "title": "Confidence score"
+        },
+        "matchedName": {
+          "type": "string"
+        },
+        "matchedId": {
+          "type": "string"
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "country": {
+          "type": "string"
+        },
+        "program": {
+          "type": "string",
+          "title": "Sanctions program"
+        },
+        "remarks": {
+          "type": "string"
+        }
+      },
+      "title": "SanctionsMatch represents a potential sanctions list match"
+    },
+    "SanctionsScreeningResult": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/definitions/SanctionsStatus"
+        },
+        "matches": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/SanctionsMatch"
+          }
+        },
+        "screenedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "screeningProvider": {
+          "type": "string"
+        },
+        "requiresManualReview": {
+          "type": "boolean"
+        },
+        "reviewedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "reviewer": {
+          "type": "string"
+        },
+        "reviewDecision": {
+          "type": "string"
+        }
+      },
+      "title": "SanctionsScreeningResult represents a sanctions check result"
+    },
+    "SanctionsStatus": {
+      "type": "string",
+      "enum": [
+        "SANCTIONS_UNSPECIFIED",
+        "SANCTIONS_CLEAR",
+        "SANCTIONS_MATCH",
+        "SANCTIONS_CONFIRMED",
+        "SANCTIONS_PENDING_REVIEW"
+      ],
+      "default": "SANCTIONS_UNSPECIFIED",
+      "description": "- SANCTIONS_CLEAR: Not on any sanctions list\n - SANCTIONS_MATCH: Potential match found\n - SANCTIONS_CONFIRMED: Confirmed sanctions match\n - SANCTIONS_PENDING_REVIEW: Under manual review",
+      "title": "SanctionsStatus defines sanctions screening status"
+    },
+    "Status": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Any"
+          }
+        }
+      }
+    },
+    "SuspiciousActivity": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "address": {
+          "type": "string"
+        },
+        "transactionHash": {
+          "type": "string"
+        },
+        "activityType": {
+          "type": "string",
+          "title": "Type of suspicious activity"
+        },
+        "description": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "string"
+        },
+        "detectedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "reportedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "filedSar": {
+          "type": "boolean",
+          "title": "SAR (Suspicious Activity Report) filed"
+        },
+        "sarReference": {
+          "type": "string",
+          "title": "SAR reference number"
+        },
+        "indicators": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Risk indicators triggered"
+        }
+      },
+      "title": "SuspiciousActivity represents a suspicious activity report"
+    },
+    "TaxReportList": {
+      "type": "object",
+      "properties": {
+        "reports": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1beta1.TaxReport"
+          }
+        }
+      },
+      "title": "TaxReportList stores generated tax reports keyed by address"
+    },
+    "TaxTransaction": {
+      "type": "object",
+      "properties": {
+        "transactionHash": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "transactionType": {
+          "type": "string",
+          "description": "trade, stake, reward, airdrop, etc."
+        },
+        "asset": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "string"
+        },
+        "costBasis": {
+          "type": "string"
+        },
+        "fairMarketValue": {
+          "type": "string"
+        },
+        "gainLoss": {
+          "type": "string"
+        },
+        "isIncome": {
+          "type": "boolean"
+        }
+      },
+      "title": "TaxTransaction represents a taxable transaction"
+    },
+    "TransactionAlert": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "transactionHash": {
+          "type": "string"
+        },
+        "address": {
+          "type": "string"
+        },
+        "ruleId": {
+          "type": "string",
+          "title": "Rule that triggered alert"
+        },
+        "riskLevel": {
+          "$ref": "#/definitions/TransactionRiskLevel"
+        },
+        "description": {
+          "type": "string"
+        },
+        "triggeredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "reviewed": {
+          "type": "boolean"
+        },
+        "reviewedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "reviewer": {
+          "type": "string"
+        },
+        "resolution": {
+          "type": "string",
+          "title": "escalate, dismiss, file_sar"
+        },
+        "notes": {
+          "type": "string"
+        }
+      },
+      "title": "TransactionAlert represents a monitoring alert"
+    },
+    "TransactionAlertList": {
+      "type": "object",
+      "properties": {
+        "alerts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/TransactionAlert"
+          }
+        }
+      },
+      "title": "TransactionAlertList stores alerts keyed by address"
+    },
+    "TransactionRiskLevel": {
+      "type": "string",
+      "enum": [
+        "TX_RISK_UNSPECIFIED",
+        "TX_RISK_LOW",
+        "TX_RISK_MEDIUM",
+        "TX_RISK_HIGH",
+        "TX_RISK_CRITICAL"
+      ],
+      "default": "TX_RISK_UNSPECIFIED",
+      "title": "TransactionRiskLevel defines transaction risk classification"
+    },
+    "v1beta1.TaxReport": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "address": {
+          "type": "string"
+        },
+        "taxYear": {
+          "type": "string"
+        },
+        "jurisdiction": {
+          "type": "string"
+        },
+        "reportType": {
+          "type": "string",
+          "description": "1099-MISC, 1099-K, 8949, etc."
+        },
+        "transactions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/TaxTransaction"
+          }
+        },
+        "totalIncome": {
+          "type": "string"
+        },
+        "totalCapitalGains": {
+          "type": "string"
+        },
+        "totalCapitalLosses": {
+          "type": "string"
+        },
+        "generatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "filePath": {
+          "type": "string",
+          "title": "Path to generated PDF/CSV"
+        },
+        "filed": {
+          "type": "boolean"
+        },
+        "filedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "title": "TaxReport represents a tax reporting record"
+    }
+  }
+}

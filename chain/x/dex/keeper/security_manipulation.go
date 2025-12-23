@@ -794,7 +794,7 @@ func (k Keeper) GetAllPoolCreationRecords(ctx sdk.Context) []*types.PoolCreation
 	iterator := storetypes.KVStorePrefixIterator(store, types.PoolCreationPrefix)
 	defer iterator.Close()
 
-	var records []*types.PoolCreationRecord
+	records := make([]*types.PoolCreationRecord, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var record types.PoolCreationRecord
 		if err := k.cdc.Unmarshal(iterator.Value(), &record); err != nil {

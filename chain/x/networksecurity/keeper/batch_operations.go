@@ -342,7 +342,7 @@ func (k Keeper) UpdateKnownPeerListBatched(ctx sdk.Context) error {
 		return peers[i].PeerId < peers[j].PeerId
 	})
 
-	var peerIDs []string
+	peerIDs := make([]string, 0, 64)
 	for _, peer := range peers {
 		peerIDs = append(peerIDs, peer.PeerId)
 	}

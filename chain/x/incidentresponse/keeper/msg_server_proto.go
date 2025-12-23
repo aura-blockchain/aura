@@ -256,7 +256,7 @@ func (ms protoMsgServer) CreatePostMortem(goCtx context.Context, msg *incidentre
 	}
 
 	// Convert to action items (proto doesn't have full structure, using empty for now)
-	var actionItems []types.ActionItem
+	actionItems := make([]types.ActionItem, 0, 64)
 
 	err := ms.keeper.CreatePostMortem(
 		ctx,

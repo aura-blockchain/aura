@@ -1,0 +1,969 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "aura/bridge/v1beta1/query.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "Query"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/aura/bridge/v1beta1/chains": {
+      "get": {
+        "summary": "AllChains queries all connected chains",
+        "operationId": "Query_AllChains",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryAllChainsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/bridge/v1beta1/chains/{chainId}": {
+      "get": {
+        "summary": "ChainConfig queries configuration for a chain",
+        "operationId": "Query_ChainConfig",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryChainConfigResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "chainId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/bridge/v1beta1/identity/{address}": {
+      "get": {
+        "summary": "SharedIdentity queries shared identity across chains",
+        "operationId": "Query_SharedIdentity",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QuerySharedIdentityResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/bridge/v1beta1/params": {
+      "get": {
+        "summary": "Params queries the module parameters",
+        "operationId": "Query_Params",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryParamsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/bridge/v1beta1/relayers/{relayerAddress}": {
+      "get": {
+        "summary": "RelayerStats queries relayer performance stats",
+        "operationId": "Query_RelayerStats",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryRelayerStatsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "relayerAddress",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/bridge/v1beta1/stats": {
+      "get": {
+        "summary": "BridgeStats queries bridge statistics",
+        "operationId": "Query_BridgeStats",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryBridgeStatsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/bridge/v1beta1/swaps/{swapId}": {
+      "get": {
+        "summary": "CrossChainSwap queries cross-chain swap status",
+        "operationId": "Query_CrossChainSwap",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryCrossChainSwapResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "swapId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/bridge/v1beta1/transfers": {
+      "get": {
+        "summary": "AllTransfers queries all cross-chain transfers",
+        "operationId": "Query_AllTransfers",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryAllTransfersResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "status",
+            "description": "Optional status filter",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/bridge/v1beta1/transfers/user/{address}": {
+      "get": {
+        "summary": "UserTransfers queries transfers for specific user",
+        "operationId": "Query_UserTransfers",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryUserTransfersResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "chain",
+            "description": "Optional chain filter",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/bridge/v1beta1/transfers/{transferId}": {
+      "get": {
+        "summary": "Transfer queries a cross-chain transfer by ID",
+        "operationId": "Query_Transfer",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryTransferResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "transferId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/bridge/v1beta1/validators": {
+      "get": {
+        "summary": "Validators queries active bridge validators",
+        "operationId": "Query_Validators",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryValidatorsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/bridge/v1beta1/wrapped": {
+      "get": {
+        "summary": "AllWrappedTokens queries all wrapped tokens",
+        "operationId": "Query_AllWrappedTokens",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryAllWrappedTokensResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/aura/bridge/v1beta1/wrapped/{wrappedDenom}": {
+      "get": {
+        "summary": "WrappedToken queries wrapped token info",
+        "operationId": "Query_WrappedToken",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/QueryWrappedTokenResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "wrappedDenom",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "Any": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "BridgeParams": {
+      "type": "object",
+      "properties": {
+        "minConfirmations": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Minimum confirmations for transfers"
+        },
+        "bridgeFeeBasisPoints": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Bridge fee percentage (basis points, e.g., 30 = 0.3%)"
+        },
+        "maxTransferAmount": {
+          "type": "string",
+          "title": "Maximum transfer amount per transaction"
+        },
+        "enabled": {
+          "type": "boolean",
+          "title": "Bridge enabled"
+        },
+        "validatorThresholdPercentage": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Required validator threshold for confirmations (percentage)"
+        }
+      },
+      "title": "BridgeParams defines the parameters for the bridge module"
+    },
+    "BridgeValidator": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string",
+          "title": "Validator address on AURA"
+        },
+        "publicKey": {
+          "type": "string",
+          "format": "byte",
+          "title": "Validator public key"
+        },
+        "power": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Voting power / weight"
+        },
+        "active": {
+          "type": "boolean",
+          "title": "Active status"
+        },
+        "chains": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Chains this validator relays for"
+        }
+      },
+      "title": "BridgeValidator represents a validator authorized to relay cross-chain transfers"
+    },
+    "Coin": {
+      "type": "object",
+      "properties": {
+        "denom": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "string"
+        }
+      },
+      "description": "Coin defines a token with a denomination and an amount.\n\nNOTE: The amount field is an Int which implements the custom method\nsignatures required by gogoproto."
+    },
+    "CrossChainTransfer": {
+      "type": "object",
+      "properties": {
+        "transferId": {
+          "type": "string",
+          "title": "Unique transfer identifier"
+        },
+        "sourceChain": {
+          "type": "string",
+          "title": "Source chain (\"aura\", \"paw\", \"xai\")"
+        },
+        "targetChain": {
+          "type": "string",
+          "title": "Target chain (\"aura\", \"paw\", \"xai\")"
+        },
+        "sender": {
+          "type": "string",
+          "title": "Sender address on source chain"
+        },
+        "recipient": {
+          "type": "string",
+          "title": "Recipient address on target chain"
+        },
+        "amount": {
+          "type": "string",
+          "title": "Amount transferred"
+        },
+        "denom": {
+          "type": "string",
+          "title": "Token denomination"
+        },
+        "sourceTxHash": {
+          "type": "string",
+          "title": "Transaction hash on source chain"
+        },
+        "targetTxHash": {
+          "type": "string",
+          "title": "Transaction hash on target chain (once minted)"
+        },
+        "status": {
+          "$ref": "#/definitions/TransferStatus",
+          "title": "Transfer status"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Timestamp of transfer initiation"
+        },
+        "confirmations": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Number of validator confirmations"
+        },
+        "requiredConfirmations": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Required confirmations"
+        },
+        "validatorSignatures": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/ValidatorSignature"
+          },
+          "title": "Validator signatures"
+        }
+      },
+      "title": "CrossChainTransfer represents a transfer between AURA, PAW, or XAI chains"
+    },
+    "QueryAllChainsResponse": {
+      "type": "object",
+      "properties": {
+        "chains": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1beta1.ChainConfig"
+          }
+        }
+      }
+    },
+    "QueryAllTransfersResponse": {
+      "type": "object",
+      "properties": {
+        "transfers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/CrossChainTransfer"
+          }
+        }
+      }
+    },
+    "QueryAllWrappedTokensResponse": {
+      "type": "object",
+      "properties": {
+        "tokens": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1beta1.WrappedToken"
+          }
+        }
+      }
+    },
+    "QueryBridgeStatsResponse": {
+      "type": "object",
+      "properties": {
+        "totalTransfers": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Total transfers processed"
+        },
+        "transfersByStatus": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "format": "uint64"
+          },
+          "title": "Transfers by status"
+        },
+        "volumeByChain": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Total volume by chain"
+        },
+        "totalWrappedTokens": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Total wrapped tokens"
+        },
+        "activeValidators": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Active validators"
+        },
+        "activeRelayers": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Active relayers"
+        },
+        "avgCompletionTime": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Average completion time (seconds)"
+        }
+      }
+    },
+    "QueryChainConfigResponse": {
+      "type": "object",
+      "properties": {
+        "config": {
+          "$ref": "#/definitions/v1beta1.ChainConfig"
+        }
+      }
+    },
+    "QueryCrossChainSwapResponse": {
+      "type": "object",
+      "properties": {
+        "swap": {
+          "$ref": "#/definitions/v1beta1.CrossChainSwap"
+        }
+      }
+    },
+    "QueryParamsResponse": {
+      "type": "object",
+      "properties": {
+        "params": {
+          "$ref": "#/definitions/BridgeParams"
+        }
+      }
+    },
+    "QueryRelayerStatsResponse": {
+      "type": "object",
+      "properties": {
+        "stats": {
+          "$ref": "#/definitions/v1beta1.RelayerStats"
+        }
+      }
+    },
+    "QuerySharedIdentityResponse": {
+      "type": "object",
+      "properties": {
+        "identity": {
+          "$ref": "#/definitions/v1beta1.SharedIdentity"
+        }
+      }
+    },
+    "QueryTransferResponse": {
+      "type": "object",
+      "properties": {
+        "transfer": {
+          "$ref": "#/definitions/CrossChainTransfer"
+        }
+      }
+    },
+    "QueryUserTransfersResponse": {
+      "type": "object",
+      "properties": {
+        "transfers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/CrossChainTransfer"
+          }
+        }
+      }
+    },
+    "QueryValidatorsResponse": {
+      "type": "object",
+      "properties": {
+        "validators": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/BridgeValidator"
+          }
+        }
+      }
+    },
+    "QueryWrappedTokenResponse": {
+      "type": "object",
+      "properties": {
+        "token": {
+          "$ref": "#/definitions/v1beta1.WrappedToken"
+        }
+      }
+    },
+    "Status": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Any"
+          }
+        }
+      }
+    },
+    "TransferStatus": {
+      "type": "string",
+      "enum": [
+        "PENDING",
+        "CONFIRMED",
+        "RELAYED",
+        "COMPLETED",
+        "FAILED",
+        "REFUNDED"
+      ],
+      "default": "PENDING",
+      "description": "- PENDING: Waiting for confirmations\n - CONFIRMED: Confirmed on source chain\n - RELAYED: Relayed to target chain\n - COMPLETED: Minted/unlocked on target chain\n - FAILED: Transfer failed\n - REFUNDED: Tokens refunded to sender",
+      "title": "TransferStatus represents the lifecycle of a cross-chain transfer"
+    },
+    "ValidatorSignature": {
+      "type": "object",
+      "properties": {
+        "validatorAddress": {
+          "type": "string",
+          "title": "Validator address"
+        },
+        "signature": {
+          "type": "string",
+          "format": "byte",
+          "title": "Signature"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Timestamp of signature"
+        }
+      },
+      "title": "ValidatorSignature contains validator's signature for cross-chain transfer"
+    },
+    "v1beta1.ChainConfig": {
+      "type": "object",
+      "properties": {
+        "chainId": {
+          "type": "string",
+          "title": "Chain identifier (\"aura\", \"paw\", \"xai\")"
+        },
+        "chainName": {
+          "type": "string",
+          "title": "Human-readable chain name"
+        },
+        "rpcEndpoint": {
+          "type": "string",
+          "title": "RPC endpoint"
+        },
+        "addressPrefix": {
+          "type": "string",
+          "title": "Address prefix (e.g., \"aura\", \"paw\", \"xai\")"
+        },
+        "bridgeContract": {
+          "type": "string",
+          "title": "Bridge contract address (if applicable)"
+        },
+        "minConfirmations": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Minimum confirmations required"
+        },
+        "validators": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Active validators for this bridge"
+        },
+        "enabled": {
+          "type": "boolean",
+          "title": "Enabled for transfers"
+        },
+        "nativeDenom": {
+          "type": "string",
+          "title": "Native token denomination"
+        }
+      },
+      "title": "ChainConfig contains configuration for each connected chain"
+    },
+    "v1beta1.CrossChainSwap": {
+      "type": "object",
+      "properties": {
+        "swapId": {
+          "type": "string",
+          "title": "Unique swap identifier"
+        },
+        "sourceChain": {
+          "type": "string",
+          "title": "Source chain and token"
+        },
+        "sourceCoin": {
+          "$ref": "#/definitions/Coin"
+        },
+        "targetChain": {
+          "type": "string",
+          "title": "Target chain and token"
+        },
+        "targetDenom": {
+          "type": "string"
+        },
+        "minTargetAmount": {
+          "type": "string"
+        },
+        "sender": {
+          "type": "string",
+          "title": "User addresses"
+        },
+        "recipient": {
+          "type": "string"
+        },
+        "route": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "[\"aura\", \"osmosis\", \"paw\"]",
+          "title": "Route (may involve multiple hops)"
+        },
+        "status": {
+          "type": "string",
+          "title": "Status"
+        },
+        "initiatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Execution details"
+        },
+        "completedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "finalAmount": {
+          "type": "string",
+          "title": "Final amount received"
+        }
+      },
+      "title": "CrossChainSwap represents a swap executed across multiple chains\nExample: Swap AURA on AURA chain for PAW on PAW chain"
+    },
+    "v1beta1.RelayerStats": {
+      "type": "object",
+      "properties": {
+        "relayerAddress": {
+          "type": "string"
+        },
+        "totalTransfersRelayed": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "successfulTransfers": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "failedTransfers": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "totalVolume": {
+          "type": "string"
+        },
+        "lastRelay": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "uptimePercentage": {
+          "type": "string"
+        }
+      },
+      "title": "RelayerStats tracks performance of bridge relayers"
+    },
+    "v1beta1.SharedIdentity": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string",
+          "title": "User address (on any chain)"
+        },
+        "verifiedAura": {
+          "type": "boolean",
+          "title": "Verified on AURA"
+        },
+        "verifiedPaw": {
+          "type": "boolean",
+          "title": "Verified on PAW"
+        },
+        "verifiedXai": {
+          "type": "boolean",
+          "title": "Verified on XAI"
+        },
+        "auraIrScore": {
+          "type": "string",
+          "format": "uint64",
+          "title": "AURA IR score (0-100)"
+        },
+        "linkedAddresses": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "chain_id -\u003e address",
+          "title": "Linked addresses on other chains"
+        },
+        "verifiedAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Verification timestamp"
+        },
+        "reputationScore": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Reputation score (0-1000)"
+        }
+      },
+      "title": "SharedIdentity allows identity verification to work across AURA, PAW, and XAI"
+    },
+    "v1beta1.WrappedToken": {
+      "type": "object",
+      "properties": {
+        "wrappedDenom": {
+          "type": "string",
+          "title": "Wrapped token denomination on AURA (e.g., \"paw.token\", \"xai.coin\")"
+        },
+        "originalDenom": {
+          "type": "string",
+          "title": "Original denomination on source chain"
+        },
+        "sourceChain": {
+          "type": "string",
+          "title": "Source chain"
+        },
+        "totalSupply": {
+          "type": "string",
+          "title": "Total supply of wrapped tokens"
+        },
+        "decimals": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Decimals"
+        },
+        "lockedAmount": {
+          "type": "string",
+          "title": "Locked amount on source chain (for verification)"
+        }
+      },
+      "title": "WrappedToken represents a token from another chain wrapped on AURA"
+    }
+  }
+}

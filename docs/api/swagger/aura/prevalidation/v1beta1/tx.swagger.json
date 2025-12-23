@@ -1,0 +1,361 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "aura/prevalidation/v1beta1/tx.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "Msg"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {},
+  "definitions": {
+    "Any": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "AutoScalingConfig": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "title": "Whether auto-scaling is enabled"
+        },
+        "initialAmounts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "format": "uint64"
+          },
+          "title": "Initial amounts per transaction type"
+        },
+        "targetCacheHitRate": {
+          "type": "string",
+          "title": "Target cache hit rate (percentage) - stored as string for deterministic serialization (sdk.Dec)"
+        },
+        "minCacheHitRate": {
+          "type": "string",
+          "title": "Minimum cache hit rate before scaling down - stored as string for deterministic serialization (sdk.Dec)"
+        },
+        "maxAmounts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "format": "uint64"
+          },
+          "title": "Maximum pre-validations per type"
+        },
+        "scaleUpFactor": {
+          "type": "string",
+          "title": "Scaling factor (multiply by this when scaling up) - stored as string for deterministic serialization (sdk.Dec)"
+        },
+        "scaleDownFactor": {
+          "type": "string",
+          "title": "Scaling factor (multiply by this when scaling down) - stored as string for deterministic serialization (sdk.Dec)"
+        },
+        "cooldownMinutes": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Cooldown period between scaling events (minutes)"
+        },
+        "evaluationPeriodHours": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Evaluation period for scaling decisions (hours)"
+        }
+      },
+      "title": "AutoScalingConfig defines auto-scaling parameters"
+    },
+    "CacheStrategy": {
+      "type": "string",
+      "enum": [
+        "CACHE_STRATEGY_UNSPECIFIED",
+        "CACHE_STRATEGY_LRU",
+        "CACHE_STRATEGY_LFU",
+        "CACHE_STRATEGY_FIFO",
+        "CACHE_STRATEGY_ADAPTIVE"
+      ],
+      "default": "CACHE_STRATEGY_UNSPECIFIED",
+      "description": "- CACHE_STRATEGY_LRU: Least Recently Used\n - CACHE_STRATEGY_LFU: Least Frequently Used\n - CACHE_STRATEGY_FIFO: First In First Out\n - CACHE_STRATEGY_ADAPTIVE: Adaptive based on hit rates",
+      "title": "CacheStrategy defines how pre-validated transactions are cached"
+    },
+    "MsgBatchPreValidateResponse": {
+      "type": "object",
+      "properties": {
+        "results": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/ValidationResult"
+          }
+        }
+      }
+    },
+    "MsgCancelPreValidationResponse": {
+      "type": "object"
+    },
+    "MsgCreateTemplateResponse": {
+      "type": "object",
+      "properties": {
+        "templateId": {
+          "type": "string"
+        }
+      }
+    },
+    "MsgDeactivateTemplateResponse": {
+      "type": "object"
+    },
+    "MsgPreValidateTransaction": {
+      "type": "object",
+      "properties": {
+        "sender": {
+          "type": "string"
+        },
+        "recipient": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "string"
+        },
+        "data": {
+          "type": "string",
+          "format": "byte"
+        },
+        "nonce": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "signature": {
+          "type": "string",
+          "format": "byte"
+        },
+        "txType": {
+          "$ref": "#/definitions/TransactionType"
+        },
+        "templateId": {
+          "type": "string"
+        }
+      },
+      "title": "MsgPreValidateTransaction pre-validates a transaction"
+    },
+    "MsgPreValidateTransactionResponse": {
+      "type": "object",
+      "properties": {
+        "valid": {
+          "type": "boolean"
+        },
+        "gasEstimate": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "txHash": {
+          "type": "string"
+        },
+        "preValidationId": {
+          "type": "string"
+        }
+      }
+    },
+    "MsgSimulateTransactionResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        },
+        "gasUsed": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "gasLimit": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "error": {
+          "type": "string"
+        }
+      }
+    },
+    "MsgUpdateParamsResponse": {
+      "type": "object"
+    },
+    "MsgUpdateTemplateResponse": {
+      "type": "object"
+    },
+    "SchedulerConfig": {
+      "type": "object",
+      "properties": {
+        "offPeakHours": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "title": "Off-peak hours (24-hour format)"
+        },
+        "timezone": {
+          "type": "string",
+          "title": "Timezone for off-peak hours (IANA timezone)"
+        },
+        "enabled": {
+          "type": "boolean",
+          "title": "Whether scheduler is enabled"
+        },
+        "runIntervalMinutes": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Interval between pre-validation runs (minutes)"
+        },
+        "maxPerRun": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Maximum pre-validations per run"
+        },
+        "allowPeakHours": {
+          "type": "boolean",
+          "title": "Whether to run during peak hours (emergency mode)"
+        }
+      },
+      "title": "SchedulerConfig defines when pre-validation runs"
+    },
+    "Status": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Any"
+          }
+        }
+      }
+    },
+    "TransactionType": {
+      "type": "string",
+      "enum": [
+        "TX_TYPE_UNSPECIFIED",
+        "TX_TYPE_IR_COMPLETION",
+        "TX_TYPE_DEX_SWAP",
+        "TX_TYPE_LP_DEPOSIT",
+        "TX_TYPE_LP_WITHDRAWAL",
+        "TX_TYPE_VC_MINT",
+        "TX_TYPE_BRIDGE_TRANSFER",
+        "TX_TYPE_CONFIDENCE_SCORE_UPDATE",
+        "TX_TYPE_IDENTITY_CHANGE"
+      ],
+      "default": "TX_TYPE_UNSPECIFIED",
+      "description": "- TX_TYPE_IR_COMPLETION: Highest frequency - IR completions\n - TX_TYPE_DEX_SWAP: DEX token swaps\n - TX_TYPE_LP_DEPOSIT: Liquidity pool deposits\n - TX_TYPE_LP_WITHDRAWAL: Liquidity pool withdrawals\n - TX_TYPE_VC_MINT: Verifiable credential minting\n - TX_TYPE_BRIDGE_TRANSFER: Cross-chain bridge transfers\n - TX_TYPE_CONFIDENCE_SCORE_UPDATE: Confidence score updates\n - TX_TYPE_IDENTITY_CHANGE: Identity change requests",
+      "title": "TransactionType defines the types of transactions that can be pre-validated"
+    },
+    "ValidationResult": {
+      "type": "object",
+      "properties": {
+        "txHash": {
+          "type": "string"
+        },
+        "valid": {
+          "type": "boolean"
+        },
+        "gasEstimate": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "error": {
+          "type": "string"
+        },
+        "preValidationId": {
+          "type": "string"
+        }
+      }
+    },
+    "v1beta1.Params": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "title": "Whether pre-validation is enabled"
+        },
+        "schedulerConfig": {
+          "$ref": "#/definitions/SchedulerConfig",
+          "title": "Scheduler configuration"
+        },
+        "autoScalingConfig": {
+          "$ref": "#/definitions/AutoScalingConfig",
+          "title": "Auto-scaling configuration"
+        },
+        "cacheStrategy": {
+          "$ref": "#/definitions/CacheStrategy",
+          "title": "Cache strategy"
+        },
+        "maxCacheSize": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Maximum cache size (number of pre-validated transactions)"
+        },
+        "expiryHours": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Pre-validation expiry time (hours)"
+        },
+        "encryptionAlgorithm": {
+          "type": "string",
+          "title": "Encryption algorithm (e.g., \"AES-256-GCM\")"
+        },
+        "controlGroupPercentage": {
+          "type": "string",
+          "title": "Control group percentage (0-100) - stored as string for deterministic serialization (sdk.Dec)"
+        },
+        "minConfidenceScore": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Minimum confidence score required for pre-validation"
+        },
+        "energyCostPerValidationKwh": {
+          "type": "string",
+          "title": "Energy cost per validation (kWh) - stored as string for deterministic serialization (sdk.Dec)"
+        },
+        "energyCostPerExecutionKwh": {
+          "type": "string",
+          "title": "Energy cost per execution (kWh) - stored as string for deterministic serialization (sdk.Dec)"
+        },
+        "metricsEnabled": {
+          "type": "boolean",
+          "title": "Whether to enable metrics collection"
+        },
+        "detailedLogging": {
+          "type": "boolean",
+          "title": "Whether to enable detailed logging"
+        },
+        "maxValidationAttempts": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Maximum validation attempts"
+        },
+        "retryDelaySeconds": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Retry delay (seconds)"
+        }
+      },
+      "title": "Params defines the module parameters"
+    }
+  }
+}
