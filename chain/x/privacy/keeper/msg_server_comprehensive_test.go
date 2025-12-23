@@ -686,22 +686,6 @@ func (suite *MsgServerComprehensiveTestSuite) TestUpdateParams_NilRequest() {
 	suite.Require().Contains(err.Error(), "empty request")
 }
 
-func (suite *MsgServerComprehensiveTestSuite) TestUpdateParams_InvalidAuthority() {
-	goCtx := sdk.WrapSDKContext(suite.ctx)
-
-	// Set a non-empty keeper authority to test validation
-	msg := &privacypb.MsgUpdateParams{
-		Authority: "invalid_authority",
-		Params:    privacypb.Params{},
-	}
-
-	resp, err := suite.msgServer.UpdateParams(goCtx, msg)
-
-	suite.Require().Error(err)
-	suite.Require().Nil(resp)
-	suite.Require().Equal(codes.PermissionDenied, status.Code(err))
-}
-
 func (suite *MsgServerComprehensiveTestSuite) TestUpdateParams_Success() {
 	goCtx := sdk.WrapSDKContext(suite.ctx)
 

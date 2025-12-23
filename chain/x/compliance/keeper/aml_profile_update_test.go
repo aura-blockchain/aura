@@ -33,6 +33,9 @@ func TestUpdateAMLProfileOnTransaction_NewProfile(t *testing.T) {
 	err = keeper.UpdateAMLProfileOnTransaction(ctx, address, amount)
 	require.NoError(t, err)
 
+	// Flush pending updates
+	keeper.EndBlocker(ctx)
+
 	// Verify profile was created
 	profile, err := keeper.GetAMLProfile(ctx, address)
 	require.NoError(t, err)
@@ -73,6 +76,9 @@ func TestUpdateAMLProfileOnTransaction_ExistingProfile(t *testing.T) {
 	err = keeper.UpdateAMLProfileOnTransaction(ctx, address, amount)
 	require.NoError(t, err)
 
+	// Flush pending updates
+	keeper.EndBlocker(ctx)
+
 	// Verify profile was updated
 	profile, err := keeper.GetAMLProfile(ctx, address)
 	require.NoError(t, err)
@@ -105,6 +111,9 @@ func TestUpdateAMLProfileOnTransaction_MultiDenomination(t *testing.T) {
 	err = keeper.UpdateAMLProfileOnTransaction(ctx, address, amount)
 	require.NoError(t, err)
 
+	// Flush pending updates
+	keeper.EndBlocker(ctx)
+
 	// Verify total volume sums all denominations
 	profile, err := keeper.GetAMLProfile(ctx, address)
 	require.NoError(t, err)
@@ -129,6 +138,8 @@ func TestUpdateAMLProfileOnTransaction_RiskLevelProgression(t *testing.T) {
 	err = keeper.UpdateAMLProfileOnTransaction(ctx, address, sdk.NewCoins(sdk.NewInt64Coin("uaura", 1000)))
 	require.NoError(t, err)
 
+	keeper.EndBlocker(ctx)
+
 	profile, err := keeper.GetAMLProfile(ctx, address)
 	require.NoError(t, err)
 	require.Equal(t, types.AMLRiskLevel_AML_RISK_LOW, profile.RiskLevel)
@@ -137,6 +148,8 @@ func TestUpdateAMLProfileOnTransaction_RiskLevelProgression(t *testing.T) {
 	err = keeper.UpdateAMLProfileOnTransaction(ctx, address, sdk.NewCoins(sdk.NewInt64Coin("uaura", 4500)))
 	require.NoError(t, err)
 
+	keeper.EndBlocker(ctx)
+
 	profile, err = keeper.GetAMLProfile(ctx, address)
 	require.NoError(t, err)
 	require.Equal(t, types.AMLRiskLevel_AML_RISK_MEDIUM, profile.RiskLevel)
@@ -144,6 +157,8 @@ func TestUpdateAMLProfileOnTransaction_RiskLevelProgression(t *testing.T) {
 	// Add enough volume to trigger HIGH risk (>=threshold = 10000)
 	err = keeper.UpdateAMLProfileOnTransaction(ctx, address, sdk.NewCoins(sdk.NewInt64Coin("uaura", 5000)))
 	require.NoError(t, err)
+
+	keeper.EndBlocker(ctx)
 
 	profile, err = keeper.GetAMLProfile(ctx, address)
 	require.NoError(t, err)

@@ -158,7 +158,7 @@ func (k Keeper) sendToChannel(ctx context.Context, route AlertRoute, alert *type
 }
 
 // ConfigureAlertRoute configures or updates a custom alert routing rule
-func (k Keeper) ConfigureAlertRoute(ctx context.Context, routeID string, severity types.AlertSeverity, alertTypes []types.AlertType, channels []string) error {
+func (k *Keeper) ConfigureAlertRoute(ctx context.Context, routeID string, severity types.AlertSeverity, alertTypes []types.AlertType, channels []string) error {
 	route := &AlertRoute{
 		ID:       routeID,
 		Severity: severity,
@@ -230,7 +230,7 @@ func (k Keeper) GetAllAlertRoutes(ctx context.Context) ([]*AlertRoute, error) {
 }
 
 // DeleteAlertRoute removes an alert route configuration
-func (k Keeper) DeleteAlertRoute(ctx context.Context, routeID string) error {
+func (k *Keeper) DeleteAlertRoute(ctx context.Context, routeID string) error {
 	store := k.storeService.OpenKVStore(ctx)
 	key := append(AlertRouteKeyPrefix, []byte(routeID)...)
 
@@ -246,7 +246,7 @@ func (k Keeper) DeleteAlertRoute(ctx context.Context, routeID string) error {
 }
 
 // EnableAlertRoute enables a specific alert route
-func (k Keeper) EnableAlertRoute(ctx context.Context, routeID string, enabled bool) error {
+func (k *Keeper) EnableAlertRoute(ctx context.Context, routeID string, enabled bool) error {
 	route, err := k.GetAlertRoute(ctx, routeID)
 	if err != nil {
 		return err

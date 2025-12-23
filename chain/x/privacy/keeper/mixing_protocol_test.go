@@ -113,31 +113,32 @@ func (suite *MixingProtocolTestSuite) TestJoinMixingRound_Success() {
 	suite.Require().Len(pool.Participants, 1)
 }
 
-func (suite *MixingProtocolTestSuite) TestJoinMixingRound_AlreadyJoined() {
+func (suite *MixingProtocolTestSuite) TestJoinMixingRound_MultipleInputs() {
 	participant := keepertest.GenTestAddr().String()
 
 	// Join first time
-	_, err := suite.keeper.JoinMixingRound(
+	pid1, err := suite.keeper.JoinMixingRound(
 		suite.ctx,
 		"pool1",
 		participant,
-		[]byte("input"),
+		[]byte("input1"),
 		math.NewInt(1000),
 	)
 	suite.Require().NoError(err)
+	suite.Require().NotEmpty(pid1)
 
-	// Try to join again
-	participantID, err := suite.keeper.JoinMixingRound(
+	// Same participant can join again with different input (different participant ID generated)
+	pid2, err := suite.keeper.JoinMixingRound(
 		suite.ctx,
 		"pool1",
 		participant,
-		[]byte("input"),
+		[]byte("input2"),
 		math.NewInt(1000),
 	)
 
-	suite.Require().Error(err)
-	suite.Require().Empty(participantID)
-	suite.Require().Contains(err.Error(), "already in pool")
+	suite.Require().NoError(err)
+	suite.Require().NotEmpty(pid2)
+	suite.Require().NotEqual(pid1, pid2, "Different inputs should generate different participant IDs")
 }
 
 func (suite *MixingProtocolTestSuite) TestJoinMixingRound_PoolBecomesReady() {

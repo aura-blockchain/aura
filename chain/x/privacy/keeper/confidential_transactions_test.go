@@ -122,12 +122,12 @@ func (suite *ConfidentialTransactionsTestSuite) TestValidateConfidentialTransact
 	// Create and spend a commitment
 	sender := keepertest.GenTestAddr().String()
 	commitment := []byte("input1")
-	_, err := suite.keeper.CreateCommitment(suite.ctx, sender, commitment)
+	commitmentID, err := suite.keeper.CreateCommitment(suite.ctx, sender, commitment)
 	suite.Require().NoError(err)
 
 	// Mark it as spent
 	ctxTx1 := &keeper.ConfidentialTransaction{
-		InputCommitments:  [][]byte{commitment},
+		InputCommitments:  [][]byte{[]byte(commitmentID)},
 		OutputCommitments: [][]byte{[]byte("output1")},
 		RangeProof:        []byte("proof"),
 		Signature:         []byte("signature"),
@@ -138,7 +138,7 @@ func (suite *ConfidentialTransactionsTestSuite) TestValidateConfidentialTransact
 
 	// Try to spend it again
 	ctxTx2 := &keeper.ConfidentialTransaction{
-		InputCommitments:  [][]byte{commitment},
+		InputCommitments:  [][]byte{[]byte(commitmentID)},
 		OutputCommitments: [][]byte{[]byte("output2")},
 		RangeProof:        []byte("proof"),
 		Signature:         []byte("signature"),
@@ -155,11 +155,11 @@ func (suite *ConfidentialTransactionsTestSuite) TestValidateConfidentialTransact
 func (suite *ConfidentialTransactionsTestSuite) TestValidateConfidentialTransaction_InvalidSignature() {
 	sender := keepertest.GenTestAddr().String()
 	commitment := []byte("input1")
-	_, err := suite.keeper.CreateCommitment(suite.ctx, sender, commitment)
+	commitmentID, err := suite.keeper.CreateCommitment(suite.ctx, sender, commitment)
 	suite.Require().NoError(err)
 
 	ctxTx := &keeper.ConfidentialTransaction{
-		InputCommitments:  [][]byte{commitment},
+		InputCommitments:  [][]byte{[]byte(commitmentID)},
 		OutputCommitments: [][]byte{[]byte("output1")},
 		RangeProof:        []byte("proof"),
 		Signature:         []byte("invalid_signature"), // Invalid signature
@@ -176,11 +176,11 @@ func (suite *ConfidentialTransactionsTestSuite) TestValidateConfidentialTransact
 func (suite *ConfidentialTransactionsTestSuite) TestValidateConfidentialTransaction_Success() {
 	sender := keepertest.GenTestAddr().String()
 	commitment := []byte("input1")
-	_, err := suite.keeper.CreateCommitment(suite.ctx, sender, commitment)
+	commitmentID, err := suite.keeper.CreateCommitment(suite.ctx, sender, commitment)
 	suite.Require().NoError(err)
 
 	ctxTx := &keeper.ConfidentialTransaction{
-		InputCommitments:  [][]byte{commitment},
+		InputCommitments:  [][]byte{[]byte(commitmentID)},
 		OutputCommitments: [][]byte{[]byte("output1")},
 		RangeProof:        []byte("valid_proof"),
 		Signature:         []byte("valid_signature"),

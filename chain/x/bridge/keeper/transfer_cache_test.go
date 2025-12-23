@@ -35,8 +35,7 @@ func TestTransferCache_BasicOperations(t *testing.T) {
 	}
 
 	// First call - should be a cache miss, fetches from store
-	err := k.SetTransfer(ctx, transfer)
-	require.NoError(t, err)
+	k.SetTransfer(ctx, transfer)
 
 	// Second call - should be a cache hit
 	retrieved, found := k.GetTransfer(ctx, "test-transfer-1")
@@ -72,8 +71,7 @@ func TestTransferCache_Invalidation(t *testing.T) {
 		RequiredConfirmations: 6,
 	}
 
-	err := k.SetTransfer(ctx, transfer)
-	require.NoError(t, err)
+	k.SetTransfer(ctx, transfer)
 
 	// Get transfer (cache it)
 	retrieved, found := k.GetTransfer(ctx, "test-transfer-2")
@@ -82,8 +80,7 @@ func TestTransferCache_Invalidation(t *testing.T) {
 
 	// Update transfer (should invalidate cache)
 	transfer.Status = types.TransferStatus_COMPLETED
-	err = k.SetTransfer(ctx, transfer)
-	require.NoError(t, err)
+	k.SetTransfer(ctx, transfer)
 
 	// Get transfer again - should have updated status
 	retrieved2, found := k.GetTransfer(ctx, "test-transfer-2")
@@ -99,7 +96,7 @@ func TestTransferCache_MultipleTransfers(t *testing.T) {
 	// Create multiple transfers
 	transferIDs := make([]string, 10)
 	for i := 1; i <= 10; i++ {
-		transferID := keepertest.GenTestTxHash()
+		transferID := fmt.Sprintf("test-transfer-%d", i)
 		transferIDs[i-1] = transferID
 
 		transfer := &types.CrossChainTransfer{
@@ -110,15 +107,14 @@ func TestTransferCache_MultipleTransfers(t *testing.T) {
 			Recipient:             "aura1recipient",
 			Amount:                sdkmath.NewInt(int64(i * 100)),
 			Denom:                 "uaura",
-			SourceTxHash:          keepertest.GenTestTxHash(),
+			SourceTxHash:          fmt.Sprintf("hash-%d", i),
 			Status:                types.TransferStatus_PENDING,
 			Timestamp:             time.Now(),
 			Confirmations:         0,
 			RequiredConfirmations: 6,
 		}
 
-		err := k.SetTransfer(ctx, transfer)
-		require.NoError(t, err)
+		k.SetTransfer(ctx, transfer)
 	}
 
 	// Retrieve all transfers - first call should cache them
@@ -173,8 +169,7 @@ func TestTransferCache_ClearCache(t *testing.T) {
 		RequiredConfirmations: 6,
 	}
 
-	err := k.SetTransfer(ctx, transfer)
-	require.NoError(t, err)
+	k.SetTransfer(ctx, transfer)
 
 	// Get transfer (cache it)
 	retrieved, found := k.GetTransfer(ctx, "test-transfer-clear")
@@ -216,8 +211,7 @@ func TestTransferCache_Stats(t *testing.T) {
 		RequiredConfirmations: 6,
 	}
 
-	err := k.SetTransfer(ctx, transfer)
-	require.NoError(t, err)
+	k.SetTransfer(ctx, transfer)
 
 	// Get transfer (cache it)
 	_, found := k.GetTransfer(ctx, "test-transfer-stats")
