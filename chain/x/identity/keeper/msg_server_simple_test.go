@@ -114,8 +114,24 @@ func TestMsgServerCreateMultisigWallet_Success(t *testing.T) {
 	msgServer := NewMsgServerImpl(keeper)
 	require.NoError(t, keeper.SetParams(ctx, types.DefaultParams()))
 
+	creator := "aura1creator"
+
+	// Set up role with manage_multisig permission
+	err := keeper.SetRole(ctx, &types.Role{
+		Name:        "multisig_manager",
+		Permissions: []string{types.PermissionManageMultisig},
+	})
+	require.NoError(t, err)
+
+	// Assign role to creator
+	err = keeper.SetRoleAssignment(ctx, &types.RoleAssignment{
+		Address:  creator,
+		RoleName: "multisig_manager",
+	})
+	require.NoError(t, err)
+
 	msg := &identitypb.MsgCreateMultisigWallet{
-		Creator:   "aura1creator",
+		Creator:   creator,
 		Signers:   []string{"aura1owner1", "aura1owner2"},
 		Threshold: 2,
 	}
