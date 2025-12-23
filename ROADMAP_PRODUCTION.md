@@ -35,9 +35,9 @@
 - [ ] Privacy SDK (8h) - ZK proof access
 
 ### Architecture
-- [ ] Add query rate limiting to REST/gRPC endpoints
-- [ ] Document bridge disaster recovery procedures
-- [ ] Implement state pruning strategy for production
+- [x] Add query rate limiting to REST/gRPC endpoints (exists: `cmd/aurad/cmd/security/rate_limiter.go`, wired in start.go:840)
+- [x] Document bridge disaster recovery procedures (`docs/modules/bridge/DISASTER_RECOVERY.md`)
+- [x] Implement state pruning strategy for production (`docs/ops/STATE_PRUNING_STRATEGY.md`)
 
 ### Repository Cleanup
 - [x] Remove 170MB `aurad` binary from git (already gitignored, not tracked)
@@ -46,8 +46,8 @@
 
 ### Documentation
 - [x] Generate OpenAPI/Swagger specs (`docs/api/openapi.json` - 190 endpoints, 732 definitions)
-- [ ] Write CLI reference documentation
-- [ ] Create contributor FAQ
+- [x] Write CLI reference documentation (exists: `docs/development/CLI_*.md`, `docs/archive/root/CLI_QUICK_REFERENCE.md`)
+- [x] Create contributor FAQ (`docs/CONTRIBUTOR_FAQ.md`)
 
 ---
 
