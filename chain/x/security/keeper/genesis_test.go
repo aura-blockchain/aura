@@ -32,17 +32,17 @@ func TestInitGenesisWithData(t *testing.T) {
 	genesis := &securitypb.GenesisState{
 		Params: types.DefaultParams(),
 		NetworkSecurity: securitypb.NetworkSecurityState{
-			RateLimits: []securitypb.RateLimit{
+			RateLimits: []securitypb.RateLimitEntry{
 				{
-					PeerId:         "peer-1",
-					RequestsPerMin: 100,
+					PeerId:       "peer-1",
+					RequestCount: 100,
 				},
 			},
-			Reputations: []securitypb.PeerReputation{
+			Reputations: []securitypb.NodeReputation{
 				{
-					PeerId:     "peer-1",
-					Score:      80,
-					LastUpdate: now,
+					PeerId:            "peer-1",
+					Score:             80,
+					LastUpdatedHeight: 100,
 				},
 			},
 			TrustedPeers: []securitypb.TrustedPeer{
@@ -56,12 +56,13 @@ func TestInitGenesisWithData(t *testing.T) {
 			Validators: []securitypb.ValidatorSecurityInfo{
 				{
 					ValidatorAddress: "auravaloper1test",
-					SecurityScore:    90,
+					HotKey:           "hot-key",
+					ColdKey:          "cold-key",
 				},
 			},
 		},
 		WalletSecurity: securitypb.WalletSecurityState{
-			HardwareWallets: []securitypb.HardwareWallet{
+			HardwareWallets: []securitypb.HardwareWalletConfig{
 				{
 					WalletId: "hw-1",
 					DeviceId: "device-123",
@@ -79,23 +80,27 @@ func TestInitGenesisWithData(t *testing.T) {
 			Incidents: []securitypb.Incident{
 				{
 					IncidentId: "incident-1",
-					Severity:   securitypb.IncidentSeverity_CRITICAL,
-					Status:     securitypb.IncidentStatus_OPEN,
+					Severity:   securitypb.IncidentSeverity_INCIDENT_SEVERITY_CRITICAL,
+					Status:     securitypb.IncidentStatus_INCIDENT_STATUS_DETECTED,
+					DetectedAt: now,
 				},
 			},
 		},
 		Cryptography: securitypb.CryptographyState{
 			KeyRotationSchedules: []securitypb.KeyRotationSchedule{
 				{
-					Id:       "rotation-1",
-					Interval: 86400,
+					Id:                      "rotation-1",
+					KeyId:                   "key-1",
+					RotationIntervalSeconds: 86400,
+					NextRotationTime:        now.Add(24 * time.Hour),
 				},
 			},
-			ThresholdSchemes: []securitypb.ThresholdScheme{
+			ThresholdSchemes: []securitypb.ThresholdSignatureScheme{
 				{
-					SchemeId:  "scheme-1",
-					Threshold: 2,
-					Total:     3,
+					SchemeId:          "scheme-1",
+					Threshold:         2,
+					TotalParticipants: 3,
+					CreatedAt:         now,
 				},
 			},
 		},
@@ -152,26 +157,26 @@ func TestGenesisRoundTrip(t *testing.T) {
 	genesis := &securitypb.GenesisState{
 		Params: types.DefaultParams(),
 		NetworkSecurity: securitypb.NetworkSecurityState{
-			RateLimits: []securitypb.RateLimit{
+			RateLimits: []securitypb.RateLimitEntry{
 				{
-					PeerId:         "peer-1",
-					RequestsPerMin: 100,
+					PeerId:       "peer-1",
+					RequestCount: 100,
 				},
 				{
-					PeerId:         "peer-2",
-					RequestsPerMin: 50,
+					PeerId:       "peer-2",
+					RequestCount: 50,
 				},
 			},
-			Reputations: []securitypb.PeerReputation{
+			Reputations: []securitypb.NodeReputation{
 				{
-					PeerId:     "peer-1",
-					Score:      80,
-					LastUpdate: now,
+					PeerId:            "peer-1",
+					Score:             80,
+					LastUpdatedHeight: 100,
 				},
 				{
-					PeerId:     "peer-2",
-					Score:      90,
-					LastUpdate: now,
+					PeerId:            "peer-2",
+					Score:             90,
+					LastUpdatedHeight: 100,
 				},
 			},
 			TrustedPeers: []securitypb.TrustedPeer{
@@ -186,8 +191,8 @@ func TestGenesisRoundTrip(t *testing.T) {
 			},
 			ForkAlerts: []securitypb.ForkAlert{
 				{
-					AlertId: "fork-1",
-					Height:  100,
+					AlertId:     "fork-1",
+					BlockHeight: 100,
 				},
 			},
 			PartitionAlerts: []securitypb.PartitionAlert{
@@ -200,23 +205,25 @@ func TestGenesisRoundTrip(t *testing.T) {
 			Validators: []securitypb.ValidatorSecurityInfo{
 				{
 					ValidatorAddress: "auravaloper1test1",
-					SecurityScore:    90,
+					HotKey:           "hot-key-1",
+					ColdKey:          "cold-key-1",
 				},
 				{
 					ValidatorAddress: "auravaloper1test2",
-					SecurityScore:    85,
+					HotKey:           "hot-key-2",
+					ColdKey:          "cold-key-2",
 				},
 			},
-			Alerts: []securitypb.ValidatorSecurityAlert{
+			Alerts: []securitypb.ValidatorAlert{
 				{
 					Id:               "alert-1",
 					ValidatorAddress: "auravaloper1test1",
-					Severity:         securitypb.AlertSeverity_ALERT_SEVERITY_HIGH,
+					Severity:         securitypb.ValidatorAlert_CRITICAL,
 				},
 			},
 		},
 		WalletSecurity: securitypb.WalletSecurityState{
-			HardwareWallets: []securitypb.HardwareWallet{
+			HardwareWallets: []securitypb.HardwareWalletConfig{
 				{
 					WalletId: "hw-1",
 					DeviceId: "device-123",
@@ -233,7 +240,7 @@ func TestGenesisRoundTrip(t *testing.T) {
 					Signers:   []string{"signer1", "signer2", "signer3"},
 				},
 			},
-			PendingMultisigTxs: []securitypb.PendingMultiSigTx{
+			PendingMultisigTxs: []securitypb.PendingMultiSigTransaction{
 				{
 					TxId:     "tx-1",
 					WalletId: "multisig-1",
@@ -241,8 +248,9 @@ func TestGenesisRoundTrip(t *testing.T) {
 			},
 			RecoveryRequests: []securitypb.RecoveryRequest{
 				{
-					RequestId: "recovery-1",
-					Address:   "aura1test",
+					RequestId:  "recovery-1",
+					WalletId:   "wallet-1",
+					NewAddress: "aura1test",
 				},
 			},
 		},
@@ -250,13 +258,15 @@ func TestGenesisRoundTrip(t *testing.T) {
 			Incidents: []securitypb.Incident{
 				{
 					IncidentId: "incident-1",
-					Severity:   securitypb.IncidentSeverity_CRITICAL,
-					Status:     securitypb.IncidentStatus_OPEN,
+					Severity:   securitypb.IncidentSeverity_INCIDENT_SEVERITY_CRITICAL,
+					Status:     securitypb.IncidentStatus_INCIDENT_STATUS_DETECTED,
+					DetectedAt: now,
 				},
 				{
 					IncidentId: "incident-2",
-					Severity:   securitypb.IncidentSeverity_HIGH,
-					Status:     securitypb.IncidentStatus_INVESTIGATING,
+					Severity:   securitypb.IncidentSeverity_INCIDENT_SEVERITY_HIGH,
+					Status:     securitypb.IncidentStatus_INCIDENT_STATUS_INVESTIGATING,
+					DetectedAt: now,
 				},
 			},
 			AuditLogs: []securitypb.AuditLogEntry{
@@ -269,20 +279,24 @@ func TestGenesisRoundTrip(t *testing.T) {
 		Cryptography: securitypb.CryptographyState{
 			KeyRotationSchedules: []securitypb.KeyRotationSchedule{
 				{
-					Id:       "rotation-1",
-					Interval: 86400,
+					Id:                      "rotation-1",
+					KeyId:                   "key-1",
+					RotationIntervalSeconds: 86400,
+					NextRotationTime:        now.Add(24 * time.Hour),
 				},
 			},
-			ThresholdSchemes: []securitypb.ThresholdScheme{
+			ThresholdSchemes: []securitypb.ThresholdSignatureScheme{
 				{
-					SchemeId:  "scheme-1",
-					Threshold: 2,
-					Total:     3,
+					SchemeId:          "scheme-1",
+					Threshold:         2,
+					TotalParticipants: 3,
+					CreatedAt:         now,
 				},
 				{
-					SchemeId:  "scheme-2",
-					Threshold: 3,
-					Total:     5,
+					SchemeId:          "scheme-2",
+					Threshold:         3,
+					TotalParticipants: 5,
+					CreatedAt:         now,
 				},
 			},
 			ZkProofConfigs: []securitypb.ZKProofConfig{
@@ -293,7 +307,8 @@ func TestGenesisRoundTrip(t *testing.T) {
 			QuantumResistantKeys: []securitypb.QuantumResistantKey{
 				{
 					KeyId:     "qr-key-1",
-					Algorithm: "CRYSTALS-Kyber",
+					Algorithm: securitypb.QuantumResistantAlgorithm_QUANTUM_RESISTANT_ALGORITHM_CRYSTALS_KYBER,
+					CreatedAt: now,
 				},
 			},
 		},
@@ -371,12 +386,12 @@ func TestGenesisRoundTrip(t *testing.T) {
 	// Verify individual records match
 	for i := range exported1.NetworkSecurity.RateLimits {
 		require.Equal(t, exported1.NetworkSecurity.RateLimits[i].PeerId, exported2.NetworkSecurity.RateLimits[i].PeerId)
-		require.Equal(t, exported1.NetworkSecurity.RateLimits[i].RequestsPerMin, exported2.NetworkSecurity.RateLimits[i].RequestsPerMin)
+		require.Equal(t, exported1.NetworkSecurity.RateLimits[i].RequestCount, exported2.NetworkSecurity.RateLimits[i].RequestCount)
 	}
 
 	for i := range exported1.ValidatorSecurity.Validators {
 		require.Equal(t, exported1.ValidatorSecurity.Validators[i].ValidatorAddress, exported2.ValidatorSecurity.Validators[i].ValidatorAddress)
-		require.Equal(t, exported1.ValidatorSecurity.Validators[i].SecurityScore, exported2.ValidatorSecurity.Validators[i].SecurityScore)
+		require.Equal(t, exported1.ValidatorSecurity.Validators[i].HotKey, exported2.ValidatorSecurity.Validators[i].HotKey)
 	}
 
 	for i := range exported1.WalletSecurity.HardwareWallets {

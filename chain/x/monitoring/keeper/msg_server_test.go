@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -31,7 +32,7 @@ func TestMsgServer_AcknowledgeAlert(t *testing.T) {
 	})
 	require.Error(t, err)
 	require.Nil(t, resp)
-	require.Equal(t, types.ErrAlertNotFound, err)
+	require.True(t, errors.Is(err, types.ErrAlertNotFound))
 
 	// Test with empty acknowledged by
 	resp, err = ms.AcknowledgeAlert(ctx, &monitoringpb.MsgAcknowledgeAlert{
@@ -49,7 +50,7 @@ func TestMsgServer_AcknowledgeAlert(t *testing.T) {
 	})
 	require.Error(t, err)
 	require.Nil(t, resp)
-	require.Equal(t, types.ErrAlertNotFound, err)
+	require.True(t, errors.Is(err, types.ErrAlertNotFound))
 
 	// Create a test alert
 	alert, err := testKeeper.CreateAlert(
@@ -102,7 +103,7 @@ func TestMsgServer_ResolveAlert(t *testing.T) {
 	})
 	require.Error(t, err)
 	require.Nil(t, resp)
-	require.Equal(t, types.ErrAlertNotFound, err)
+	require.True(t, errors.Is(err, types.ErrAlertNotFound))
 
 	// Test with non-existent alert
 	resp, err = ms.ResolveAlert(ctx, &monitoringpb.MsgResolveAlert{
@@ -110,7 +111,7 @@ func TestMsgServer_ResolveAlert(t *testing.T) {
 	})
 	require.Error(t, err)
 	require.Nil(t, resp)
-	require.Equal(t, types.ErrAlertNotFound, err)
+	require.True(t, errors.Is(err, types.ErrAlertNotFound))
 
 	// Create a test alert
 	alert, err := testKeeper.CreateAlert(

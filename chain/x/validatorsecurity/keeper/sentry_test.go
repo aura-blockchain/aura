@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"errors"
 	"time"
 
 	"github.com/aequitas/aura/chain/x/validatorsecurity/types"
@@ -10,7 +11,7 @@ func (suite *KeeperTestSuite) TestRegisterSentryNodeInvalidValidator() {
 	// Try to register sentry for non-existent validator
 	err := suite.keeper.RegisterSentryNode(suite.ctx, "nonexistent", "sentry1", "192.168.1.1", 26656)
 	suite.Require().Error(err)
-	suite.Require().Equal(types.ErrValidatorNotFound, err)
+	suite.Require().True(errors.Is(err, types.ErrValidatorNotFound))
 }
 
 func (suite *KeeperTestSuite) TestRegisterSentryNodeInvalidIP() {
@@ -23,7 +24,7 @@ func (suite *KeeperTestSuite) TestRegisterSentryNodeInvalidIP() {
 	// Try with empty IP
 	err = suite.keeper.RegisterSentryNode(suite.ctx, validatorAddr, "sentry1", "", 26656)
 	suite.Require().Error(err)
-	suite.Require().Equal(types.ErrInvalidSentryNode, err)
+	suite.Require().True(errors.Is(err, types.ErrInvalidSentryNode))
 }
 
 func (suite *KeeperTestSuite) TestRegisterSentryNodeInvalidPort() {
@@ -36,12 +37,12 @@ func (suite *KeeperTestSuite) TestRegisterSentryNodeInvalidPort() {
 	// Try with invalid port
 	err = suite.keeper.RegisterSentryNode(suite.ctx, validatorAddr, "sentry1", "192.168.1.1", 0)
 	suite.Require().Error(err)
-	suite.Require().Equal(types.ErrInvalidSentryNode, err)
+	suite.Require().True(errors.Is(err, types.ErrInvalidSentryNode))
 
 	// Try with port > 65535
 	err = suite.keeper.RegisterSentryNode(suite.ctx, validatorAddr, "sentry1", "192.168.1.1", 70000)
 	suite.Require().Error(err)
-	suite.Require().Equal(types.ErrInvalidSentryNode, err)
+	suite.Require().True(errors.Is(err, types.ErrInvalidSentryNode))
 }
 
 func (suite *KeeperTestSuite) TestRegisterSentryNodeDuplicate() {
@@ -63,13 +64,13 @@ func (suite *KeeperTestSuite) TestRegisterSentryNodeDuplicate() {
 func (suite *KeeperTestSuite) TestGetSentryNodeInfoNotFound() {
 	_, err := suite.keeper.GetSentryNodeInfo(suite.ctx, "nonexistent")
 	suite.Require().Error(err)
-	suite.Require().Equal(types.ErrSentryNodeNotFound, err)
+	suite.Require().True(errors.Is(err, types.ErrSentryNodeNotFound))
 }
 
 func (suite *KeeperTestSuite) TestUpdateSentryHeartbeatNotFound() {
 	err := suite.keeper.UpdateSentryHeartbeat(suite.ctx, "nonexistent")
 	suite.Require().Error(err)
-	suite.Require().Equal(types.ErrSentryNodeNotFound, err)
+	suite.Require().True(errors.Is(err, types.ErrSentryNodeNotFound))
 }
 
 func (suite *KeeperTestSuite) TestRecordSentryRequest() {
@@ -100,7 +101,7 @@ func (suite *KeeperTestSuite) TestRecordSentryRequest() {
 func (suite *KeeperTestSuite) TestRecordSentryRequestNotFound() {
 	err := suite.keeper.RecordSentryRequest(suite.ctx, "nonexistent", false)
 	suite.Require().Error(err)
-	suite.Require().Equal(types.ErrSentryNodeNotFound, err)
+	suite.Require().True(errors.Is(err, types.ErrSentryNodeNotFound))
 }
 
 func (suite *KeeperTestSuite) TestDeactivateSentryNode() {
@@ -134,7 +135,7 @@ func (suite *KeeperTestSuite) TestDeactivateSentryNode() {
 func (suite *KeeperTestSuite) TestDeactivateSentryNodeNotFound() {
 	err := suite.keeper.DeactivateSentryNode(suite.ctx, "nonexistent")
 	suite.Require().Error(err)
-	suite.Require().Equal(types.ErrSentryNodeNotFound, err)
+	suite.Require().True(errors.Is(err, types.ErrSentryNodeNotFound))
 }
 
 func (suite *KeeperTestSuite) TestDeactivateSentryNodeBelowMinimum() {
@@ -216,7 +217,7 @@ func (suite *KeeperTestSuite) TestTriggerFailoverNoBackups() {
 	// Try failover
 	err = suite.keeper.TriggerFailover(suite.ctx, validatorAddr)
 	suite.Require().Error(err)
-	suite.Require().Equal(types.ErrNoBackupValidators, err)
+	suite.Require().True(errors.Is(err, types.ErrNoBackupValidators))
 }
 
 func (suite *KeeperTestSuite) TestTriggerFailoverInvalidBackup() {
@@ -236,7 +237,7 @@ func (suite *KeeperTestSuite) TestTriggerFailoverInvalidBackup() {
 	// Try failover - should fail
 	err = suite.keeper.TriggerFailover(suite.ctx, validatorAddr)
 	suite.Require().Error(err)
-	suite.Require().Equal(types.ErrInvalidBackupValidator, err)
+	suite.Require().True(errors.Is(err, types.ErrInvalidBackupValidator))
 }
 
 func (suite *KeeperTestSuite) TestRestoreFromFailover() {
@@ -310,5 +311,5 @@ func (suite *KeeperTestSuite) TestRestoreFromFailoverInsufficientSentries() {
 	// Try to restore without enough sentries - should fail
 	err = suite.keeper.RestoreFromFailover(suite.ctx, validatorAddr)
 	suite.Require().Error(err)
-	suite.Require().Equal(types.ErrInsufficientSentryNodes, err)
+	suite.Require().True(errors.Is(err, types.ErrInsufficientSentryNodes))
 }

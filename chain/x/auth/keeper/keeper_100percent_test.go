@@ -252,7 +252,8 @@ func TestGetParams_UnmarshalError(t *testing.T) {
 
 	params, err := k.GetParams(ctx)
 	require.Error(t, err)
-	require.Nil(t, params)
+	// GetParams returns zero-value struct on error
+	require.Equal(t, authproto.Params{}, params)
 }
 
 // Test SetParams marshal error path - success case

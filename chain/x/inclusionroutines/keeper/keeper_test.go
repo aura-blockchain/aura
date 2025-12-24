@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -180,7 +181,7 @@ func TestCircularDependency(t *testing.T) {
 
 	// Try to make IR-200 require IR-202 (creates cycle)
 	err := keeper.SetPrerequisites(ctx, "IR-200", []string{"IR-202"})
-	if err != types.ErrCircularDependency {
+	if !errors.Is(err, types.ErrCircularDependency) {
 		t.Errorf("expected circular dependency error, got %v", err)
 	}
 }

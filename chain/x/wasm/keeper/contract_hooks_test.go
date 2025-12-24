@@ -141,7 +141,7 @@ func (suite *ContractHooksTestSuite) TestBeforeInstantiateHook_NoRegistry() {
 
 func (suite *ContractHooksTestSuite) TestBeforeInstantiateHook_CreatorLimit() {
 	// Set low limit
-	params := suite.registryKeeper.GetParams(suite.ctx)
+	params, _ := suite.registryKeeper.GetParams(suite.ctx)
 	params.MaxContractsPerCreator = 1
 	err := suite.registryKeeper.SetParams(suite.ctx, params)
 	require.NoError(suite.T(), err)

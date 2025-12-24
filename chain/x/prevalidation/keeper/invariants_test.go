@@ -22,8 +22,8 @@ func (suite *InvariantsTestSuite) TestParamsValid() {
 	suite.Require().NoError(err)
 	suite.Require().NotNil(params)
 
-	// Validate params
-	validateErr := types.ValidateParams(params)
+	// Validate params (pass pointer since ValidateParams expects *Params)
+	validateErr := types.ValidateParams(&params)
 	suite.Require().NoError(validateErr, "default params should be valid")
 }
 

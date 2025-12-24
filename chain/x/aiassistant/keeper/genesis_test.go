@@ -2,7 +2,9 @@ package keeper_test
 
 import (
 	"testing"
+	"time"
 
+	sdkmath "cosmossdk.io/math"
 	"github.com/stretchr/testify/require"
 
 	"github.com/aequitas/aura/chain/x/aiassistant/types"
@@ -36,26 +38,48 @@ func TestGenesisValidation(t *testing.T) {
 func TestGenesisRoundTrip(t *testing.T) {
 	k, ctx, _ := setupKeeper(t)
 
-	// Create a genesis state with data
+	// Create a genesis state with data using correct Assistant struct
 	genesis := types.DefaultGenesis()
-	genesis.Assistants = []types.AIAssistant{
+	genesis.Assistants = []types.Assistant{
 		{
-			Id:          "assistant-1",
-			Name:        "Test Assistant 1",
-			Description: "First test assistant",
-			Active:      true,
+			AssistantAddress: "aura1assistant1",
+			OwnerAddress:     "aura1owner1",
+			Stake: types.Balance{
+				Denom:  types.DefaultStakeDenom,
+				Amount: sdkmath.NewInt(10000000),
+			},
+			SponsorshipBalance: types.Balance{
+				Denom:  types.DefaultStakeDenom,
+				Amount: sdkmath.ZeroInt(),
+			},
+			Locales:           []string{"en-US"},
+			ModelHash:         "model-hash-1",
+			ApiKeyFingerprint: "fingerprint-1",
+			LastHeartbeat:     time.Now(),
+			Status:            types.AssistantStatus_ACTIVE,
 		},
 		{
-			Id:          "assistant-2",
-			Name:        "Test Assistant 2",
-			Description: "Second test assistant",
-			Active:      false,
+			AssistantAddress: "aura1assistant2",
+			OwnerAddress:     "aura1owner2",
+			Stake: types.Balance{
+				Denom:  types.DefaultStakeDenom,
+				Amount: sdkmath.NewInt(5000000),
+			},
+			SponsorshipBalance: types.Balance{
+				Denom:  types.DefaultStakeDenom,
+				Amount: sdkmath.ZeroInt(),
+			},
+			Locales:           []string{"es-ES"},
+			ModelHash:         "model-hash-2",
+			ApiKeyFingerprint: "fingerprint-2",
+			LastHeartbeat:     time.Now(),
+			Status:            types.AssistantStatus_JAILED,
 		},
 	}
 
 	// Import genesis
 	err := k.InitGenesis(ctx, *genesis)
-	require.NoError(err)
+	require.NoError(t, err)
 
 	// Export genesis (first export)
 	exported1 := k.ExportGenesis(ctx)
@@ -68,7 +92,7 @@ func TestGenesisRoundTrip(t *testing.T) {
 
 	// Re-import the exported genesis
 	err = k2.InitGenesis(ctx2, exported1)
-	require.NoError(err)
+	require.NoError(t, err)
 
 	// Export again (second export)
 	exported2 := k2.ExportGenesis(ctx2)
@@ -80,8 +104,8 @@ func TestGenesisRoundTrip(t *testing.T) {
 
 	// Verify individual assistant records match
 	for i := range exported1.Assistants {
-		require.Equal(t, exported1.Assistants[i].Id, exported2.Assistants[i].Id)
-		require.Equal(t, exported1.Assistants[i].Name, exported2.Assistants[i].Name)
-		require.Equal(t, exported1.Assistants[i].Active, exported2.Assistants[i].Active)
+		require.Equal(t, exported1.Assistants[i].AssistantAddress, exported2.Assistants[i].AssistantAddress)
+		require.Equal(t, exported1.Assistants[i].OwnerAddress, exported2.Assistants[i].OwnerAddress)
+		require.Equal(t, exported1.Assistants[i].Status, exported2.Assistants[i].Status)
 	}
 }

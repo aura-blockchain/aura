@@ -54,23 +54,30 @@ func (suite *GenesisTestSuite) TestInitGenesis_WithData() {
 		},
 		RoleAssignments: []authproto.RoleAssignment{
 			{
-				Address:  "aura1test1",
-				RoleName: "admin",
+				Address:    "aura1test1",
+				RoleName:   "admin",
+				AssignedBy: "aura1assigner",
+				AssignedAt: now,
 			},
 		},
 		MultisigWallets: []authproto.MultisigWallet{
 			{
-				Id:        "wallet-1",
-				Signers:   []string{"aura1test1", "aura1test2"},
-				Threshold: 2,
+				Id:         "wallet-1",
+				Signers:    []string{"aura1test1", "aura1test2"},
+				Threshold:  2,
+				CreatedAt:  now,
+				CreatedBy:  "aura1creator",
+				WalletType: authproto.WalletType_WALLET_TYPE_CUSTOM,
 			},
 		},
 		Sessions: []authproto.Session{
 			{
-				Id:        "session-1",
-				Address:   "aura1test1",
-				CreatedAt: now,
-				ExpiresAt: expiresAt,
+				SessionId:    "session-1",
+				UserAddress:  "aura1test1",
+				CreatedAt:    now,
+				ExpiresAt:    expiresAt,
+				LastAccessed: now,
+				IsActive:     true,
 			},
 		},
 	}
@@ -139,58 +146,82 @@ func (suite *GenesisTestSuite) TestGenesisRoundTrip() {
 		},
 		RoleAssignments: []authproto.RoleAssignment{
 			{
-				Address:  "aura1test1",
-				RoleName: "admin",
+				Address:    "aura1test1",
+				RoleName:   "admin",
+				AssignedBy: "aura1assigner",
+				AssignedAt: now,
 			},
 			{
-				Address:  "aura1test2",
-				RoleName: "moderator",
+				Address:    "aura1test2",
+				RoleName:   "moderator",
+				AssignedBy: "aura1assigner",
+				AssignedAt: now,
 			},
 		},
 		MultisigWallets: []authproto.MultisigWallet{
 			{
-				Id:        "wallet-1",
-				Signers:   []string{"aura1test1", "aura1test2", "aura1test3"},
-				Threshold: 2,
+				Id:         "wallet-1",
+				Signers:    []string{"aura1test1", "aura1test2", "aura1test3"},
+				Threshold:  2,
+				CreatedAt:  now,
+				CreatedBy:  "aura1creator",
+				WalletType: authproto.WalletType_WALLET_TYPE_CUSTOM,
 			},
 			{
-				Id:        "wallet-2",
-				Signers:   []string{"aura1test4", "aura1test5"},
-				Threshold: 2,
+				Id:         "wallet-2",
+				Signers:    []string{"aura1test4", "aura1test5"},
+				Threshold:  2,
+				CreatedAt:  now,
+				CreatedBy:  "aura1creator",
+				WalletType: authproto.WalletType_WALLET_TYPE_CUSTOM,
 			},
 		},
 		MultisigProposals: []authproto.MultisigProposal{
 			{
-				Id:       "proposal-1",
-				WalletId: "wallet-1",
-				Title:    "Test Proposal",
+				Id:        "proposal-1",
+				WalletId:  "wallet-1",
+				Title:     "Test Proposal",
+				Payload:   []byte("test payload"),
+				CreatedAt: now,
+				ExpiresAt: expiresAt,
 			},
 		},
 		TimeLockedActions: []authproto.TimeLockedAction{
 			{
 				Id:           "action-1",
+				ActionType:   "UPDATE_PARAMS",
+				Payload:      []byte("test action payload"),
 				Proposer:     "aura1test1",
 				ProposedAt:   now,
 				ExecutableAt: executableAt,
+				DelaySeconds: 3600, // 1 hour
 			},
 		},
 		EmergencyAdmins: []authproto.EmergencyAdmin{
 			{
-				Address: "aura1emergency",
+				Address:     "aura1emergency",
+				Privileges:  []string{"PAUSE", "UNPAUSE"},
+				ActivatedAt: now,
+				IsActive:    true,
+				ActivatedBy: "aura1activator",
 			},
 		},
 		Sessions: []authproto.Session{
 			{
-				Id:        "session-1",
-				Address:   "aura1test1",
-				CreatedAt: now,
-				ExpiresAt: expiresAt,
+				SessionId:    "session-1",
+				UserAddress:  "aura1test1",
+				CreatedAt:    now,
+				ExpiresAt:    expiresAt,
+				LastAccessed: now,
+				IsActive:     true,
 			},
 			{
-				Id:        "session-2",
-				Address:   "aura1test2",
-				CreatedAt: now,
-				ExpiresAt: expiresAt,
+				SessionId:    "session-2",
+				UserAddress:  "aura1test2",
+				CreatedAt:    now,
+				ExpiresAt:    expiresAt,
+				LastAccessed: now,
+				IsActive:     true,
 			},
 		},
 		RateLimitConfigs: []authproto.RateLimitConfig{
@@ -260,8 +291,8 @@ func (suite *GenesisTestSuite) TestGenesisRoundTrip() {
 	}
 
 	for i := range exported1.Sessions {
-		suite.Equal(exported1.Sessions[i].Id, exported2.Sessions[i].Id)
-		suite.Equal(exported1.Sessions[i].Address, exported2.Sessions[i].Address)
+		suite.Equal(exported1.Sessions[i].SessionId, exported2.Sessions[i].SessionId)
+		suite.Equal(exported1.Sessions[i].UserAddress, exported2.Sessions[i].UserAddress)
 	}
 }
 

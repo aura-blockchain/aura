@@ -1,6 +1,8 @@
 package keeper_test
 
 import (
+	"errors"
+
 	"github.com/aequitas/aura/chain/x/validatorsecurity/types"
 )
 
@@ -176,7 +178,7 @@ func (suite *KeeperTestSuite) TestRegisterValidatorGeoDistribution() {
 	// Try to register third validator - should fail due to capacity
 	err = suite.keeper.RegisterValidator(suite.ctx, "val3", "hot3", "cold3", "testregion", "US", 39.0, -122.0, nil)
 	suite.Require().Error(err)
-	suite.Require().Equal(types.ErrRegionCapacityExceeded, err)
+	suite.Require().True(errors.Is(err, types.ErrRegionCapacityExceeded))
 }
 
 func (suite *KeeperTestSuite) TestTrackBlockSignMissed() {

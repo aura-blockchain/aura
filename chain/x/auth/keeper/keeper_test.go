@@ -488,7 +488,7 @@ func TestRateLimit(t *testing.T) {
 		t.Fatalf("Failed to get params: %v", err)
 	}
 	params.DefaultRequestsPerMinute = 3
-	require.NoError(t, k.SetParams(ctx, params))
+	require.NoError(t, k.SetParams(ctx, &params))
 
 	// First 3 requests should succeed
 	for i := 0; i < 3; i++ {

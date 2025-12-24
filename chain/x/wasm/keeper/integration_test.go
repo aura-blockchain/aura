@@ -516,7 +516,7 @@ func (suite *IntegrationTestSuite) TestErrorRecovery_RegistrationFailure() {
 	existingContract := sdk.AccAddress([]byte("existing_contract"))
 
 	// Set creator limit to 1
-	params := suite.registryKeeper.GetParams(suite.ctx)
+	params, _ := suite.registryKeeper.GetParams(suite.ctx)
 	params.MaxContractsPerCreator = 1 // Only 1 contract allowed per creator
 	err := suite.registryKeeper.SetParams(suite.ctx, params)
 	require.NoError(suite.T(), err)
