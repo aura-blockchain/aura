@@ -172,11 +172,11 @@ func TestQueryUserCompletions(t *testing.T) {
 }
 
 func TestQueryThresholds(t *testing.T) {
-	_, k := setupConfKeeperWithTime(t)
+	ctx, k := setupConfKeeperWithTime(t)
 
-	verifiedThreshold, vcThresholds, arenaThresholds := k.QueryThresholds()
+	verifiedThreshold, vcThresholds, arenaThresholds := k.QueryThresholds(ctx)
 
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 
 	if verifiedThreshold != params.VerificationThreshold {
 		t.Errorf("expected verified threshold %d, got %d",

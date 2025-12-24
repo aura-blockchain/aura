@@ -61,9 +61,9 @@ func (k *KeeperKV) ReportIncident(
 	k.store.SetNextIncidentID(ctx, nextID+1)
 
 	// Get params to get response team
-	params, ok := k.store.GetParams(ctx)
-	if !ok {
-		params = &types.IncidentResponseParams{}
+	params, err := k.store.GetParams(ctx)
+	if err != nil {
+		params = types.IncidentResponseParams{}
 	}
 
 	now := determinism.GetBlockTime(ctx)
@@ -175,9 +175,9 @@ func (k *KeeperKV) RequestChainPause(
 	k.mu.Lock()
 	defer k.mu.Unlock()
 
-	params, ok := k.store.GetParams(ctx)
-	if !ok {
-		params = &types.IncidentResponseParams{}
+	params, err := k.store.GetParams(ctx)
+	if err != nil {
+		params = types.IncidentResponseParams{}
 	}
 
 	if !params.EmergencyPauseEnabled {
@@ -241,9 +241,9 @@ func (k *KeeperKV) ApproveChainPause(
 	k.mu.Lock()
 	defer k.mu.Unlock()
 
-	params, ok := k.store.GetParams(ctx)
-	if !ok {
-		params = &types.IncidentResponseParams{}
+	params, err := k.store.GetParams(ctx)
+	if err != nil {
+		params = types.IncidentResponseParams{}
 	}
 
 	// Verify approver is authorized
@@ -342,9 +342,9 @@ func (k *KeeperKV) ResumeChain(ctx context.Context, resumedBy string, reason str
 		return types.ErrChainNotPaused
 	}
 
-	params, ok := k.store.GetParams(ctx)
-	if !ok {
-		params = &types.IncidentResponseParams{}
+	params, err := k.store.GetParams(ctx)
+	if err != nil {
+		params = types.IncidentResponseParams{}
 	}
 
 	// Verify authorized
@@ -440,8 +440,8 @@ func (k *KeeperKV) CheckWalletLimit(ctx context.Context, address string, amount 
 	k.mu.Lock()
 	defer k.mu.Unlock()
 
-	params, ok := k.store.GetParams(ctx)
-	if !ok || !params.HotWalletLimitsEnabled {
+	params, err := k.store.GetParams(ctx)
+	if err != nil || !params.HotWalletLimitsEnabled {
 		return nil
 	}
 
@@ -519,8 +519,8 @@ func (k *KeeperKV) GetColdStorageConfig(ctx context.Context) types.ColdStorageCo
 	k.mu.RLock()
 	defer k.mu.RUnlock()
 
-	params, ok := k.store.GetParams(ctx)
-	if !ok {
+	params, err := k.store.GetParams(ctx)
+	if err != nil {
 		return types.ColdStorageConfig{}
 	}
 	return params.ColdStorage
@@ -532,8 +532,8 @@ func (k *KeeperKV) ValidateColdStorageTransfer(ctx context.Context, signers []st
 	k.mu.RLock()
 	defer k.mu.RUnlock()
 
-	params, ok := k.store.GetParams(ctx)
-	if !ok || !params.ColdStorage.Enabled {
+	params, err := k.store.GetParams(ctx)
+	if err != nil || !params.ColdStorage.Enabled {
 		return fmt.Errorf("cold storage is not enabled")
 	}
 
@@ -634,8 +634,8 @@ func (k *KeeperKV) TriggerBackup(ctx context.Context, backupType string, trigger
 	k.mu.RLock()
 	defer k.mu.RUnlock()
 
-	params, ok := k.store.GetParams(ctx)
-	if !ok || !params.DisasterRecovery.Enabled {
+	params, err := k.store.GetParams(ctx)
+	if err != nil || !params.DisasterRecovery.Enabled {
 		return "", fmt.Errorf("disaster recovery is not enabled")
 	}
 
@@ -653,8 +653,8 @@ func (k *KeeperKV) GetDisasterRecoveryPlan(ctx context.Context) types.DisasterRe
 	k.mu.RLock()
 	defer k.mu.RUnlock()
 
-	params, ok := k.store.GetParams(ctx)
-	if !ok {
+	params, err := k.store.GetParams(ctx)
+	if err != nil {
 		return types.DisasterRecoveryPlan{}
 	}
 	return params.DisasterRecovery
@@ -670,14 +670,14 @@ func (k *KeeperKV) CheckValidatorHealth(ctx context.Context) error {
 	k.mu.Lock()
 	defer k.mu.Unlock()
 
-	params, ok := k.store.GetParams(ctx)
-	if !ok || !params.BackupValidators.Enabled {
+	params, err := k.store.GetParams(ctx)
+	if err != nil || !params.BackupValidators.Enabled {
 		return nil
 	}
 
 	// Update last health check time
 	params.BackupValidators.LastHealthCheck = determinism.GetBlockTime(ctx)
-	if err := k.store.SetParams(ctx, params); err != nil {
+	if err := k.store.SetParams(ctx, &params); err != nil {
 		return fmt.Errorf("failed to update backup validator params: %w", err)
 	}
 
@@ -696,8 +696,8 @@ func (k *KeeperKV) GetBackupValidatorConfig(ctx context.Context) types.BackupVal
 	k.mu.RLock()
 	defer k.mu.RUnlock()
 
-	params, ok := k.store.GetParams(ctx)
-	if !ok {
+	params, err := k.store.GetParams(ctx)
+	if err != nil {
 		return types.BackupValidatorConfig{}
 	}
 	return params.BackupValidators
@@ -739,8 +739,8 @@ func (k *KeeperKV) GetCommunicationPlan(ctx context.Context) types.Communication
 	k.mu.RLock()
 	defer k.mu.RUnlock()
 
-	params, ok := k.store.GetParams(ctx)
-	if !ok {
+	params, err := k.store.GetParams(ctx)
+	if err != nil {
 		return types.CommunicationPlan{}
 	}
 	return params.Communication
@@ -761,8 +761,8 @@ func (k *KeeperKV) TriggerInsuranceClaim(
 	k.mu.Lock()
 	defer k.mu.Unlock()
 
-	params, ok := k.store.GetParams(ctx)
-	if !ok || !params.Insurance.Enabled {
+	params, err := k.store.GetParams(ctx)
+	if err != nil || !params.Insurance.Enabled {
 		return "", fmt.Errorf("insurance integration is not enabled")
 	}
 
@@ -804,8 +804,8 @@ func (k *KeeperKV) GetInsuranceIntegration(ctx context.Context) types.InsuranceI
 	k.mu.RLock()
 	defer k.mu.RUnlock()
 
-	params, ok := k.store.GetParams(ctx)
-	if !ok {
+	params, err := k.store.GetParams(ctx)
+	if err != nil {
 		return types.InsuranceIntegration{}
 	}
 	return params.Insurance
@@ -817,11 +817,11 @@ func (k *KeeperKV) GetParams(ctx context.Context) types.IncidentResponseParams {
 	k.mu.RLock()
 	defer k.mu.RUnlock()
 
-	params, ok := k.store.GetParams(ctx)
-	if !ok {
+	params, err := k.store.GetParams(ctx)
+	if err != nil {
 		return types.DefaultParams()
 	}
-	return *params
+	return params
 }
 
 // SetParams sets the module parameters

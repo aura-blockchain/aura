@@ -2,6 +2,7 @@ package compliance
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"cosmossdk.io/log"
@@ -18,6 +19,18 @@ import (
 	"github.com/aequitas/aura/chain/x/compliance/keeper"
 	compliancetypes "github.com/aequitas/aura/chain/x/compliance/types"
 )
+
+// mockInvariantRegistry implements sdk.InvariantRegistry for testing
+type mockInvariantRegistry struct {
+	routes map[string]sdk.Invariant
+}
+
+func (m *mockInvariantRegistry) RegisterRoute(moduleName, route string, inv sdk.Invariant) {
+	if m.routes == nil {
+		m.routes = make(map[string]sdk.Invariant)
+	}
+	m.routes[fmt.Sprintf("%s/%s", moduleName, route)] = inv
+}
 
 func setupModule(t *testing.T) (AppModule, *keeper.Keeper, sdk.Context, codec.JSONCodec) {
 	t.Helper()
@@ -212,8 +225,12 @@ func TestAppModule_IsAppModule(t *testing.T) {
 func TestAppModule_RegisterInvariants(t *testing.T) {
 	module, _, _, _ := setupModule(t)
 
-	// RegisterInvariants should not panic
+	// RegisterInvariants should not panic and should register routes
+	registry := &mockInvariantRegistry{}
 	require.NotPanics(t, func() {
-		module.RegisterInvariants(nil)
+		module.RegisterInvariants(registry)
 	})
+
+	// Verify invariants were registered
+	require.NotEmpty(t, registry.routes, "invariants should be registered")
 }

@@ -180,8 +180,9 @@ func fundedTestAddr(mockBank *MockBankKeeper, uaura, uusdt int64) (sdk.AccAddres
 // Params Tests
 
 func (suite *DEXKeeperTestSuite) TestGetParams() {
-	params := suite.keeper.GetParams(suite.ctx)
-	suite.Require().NotNil(params)
+	params, err := suite.keeper.GetParams(suite.ctx)
+	suite.Require().NoError(err)
+	suite.Require().NotZero(params)
 }
 
 func (suite *DEXKeeperTestSuite) TestSetParams() {
@@ -189,7 +190,8 @@ func (suite *DEXKeeperTestSuite) TestSetParams() {
 	err := suite.keeper.SetParams(suite.ctx, &params)
 	suite.Require().NoError(err)
 
-	retrieved := suite.keeper.GetParams(suite.ctx)
+	retrieved, err := suite.keeper.GetParams(suite.ctx)
+	suite.Require().NoError(err)
 	// Compare gogoproto types by comparing their fields instead of using proto.Equal
 	suite.Require().Equal(params.TradingFee, retrieved.TradingFee)
 	suite.Require().Equal(params.ProtocolFee, retrieved.ProtocolFee)

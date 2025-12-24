@@ -350,7 +350,7 @@ func (k *Keeper) calculateConsistency(item types.DataItem) uint64 {
 
 // MintVerificationReward mints reward tokens for data verification
 func (k *Keeper) MintVerificationReward(ctx sdk.Context, verifier string, dataID string, bankKeeper BankKeeper) error {
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 
 	// Calculate reward amount
 	rewardAmount := math.NewInt(int64(params.VerificationReward))

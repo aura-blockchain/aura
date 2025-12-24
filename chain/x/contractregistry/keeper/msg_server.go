@@ -35,7 +35,10 @@ func (ms msgServer) RegisterContract(goCtx context.Context, msg *pb.MsgRegisterC
 	}
 
 	// Check max contracts per creator limit
-	params := ms.Keeper.GetParams(ctx)
+	params, err := ms.Keeper.GetParams(ctx)
+	if err != nil {
+		return nil, err
+	}
 	if params.MaxContractsPerCreator > 0 {
 		creatorContracts := ms.Keeper.GetCreatorContracts(ctx, msg.Creator)
 		if uint64(len(creatorContracts)) >= params.MaxContractsPerCreator {

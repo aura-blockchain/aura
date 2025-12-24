@@ -71,23 +71,19 @@ func (k Keeper) BankKeeper() types.BankKeeper {
 }
 
 // GetParams returns the total set of dex parameters.
-func (k Keeper) GetParams(ctx sdk.Context) *types.Params {
+func (k Keeper) GetParams(ctx sdk.Context) (types.Params, error) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(ParamsKey)
 	if bz == nil {
 		defaults := types.DefaultParams()
-		return &defaults
+		return defaults, nil
 	}
 
 	var params types.Params
 	if err := k.cdc.Unmarshal(bz, &params); err != nil {
-		ctx.Logger().Error("failed to unmarshal DEX params, returning defaults",
-			"error", err,
-			"data_len", len(bz))
-		defaults := types.DefaultParams()
-		return &defaults
+		return types.Params{}, fmt.Errorf("failed to unmarshal DEX params: %w", err)
 	}
-	return &params
+	return params, nil
 }
 
 // SetParams sets the dex parameters to the param space.
@@ -120,7 +116,11 @@ func (k Keeper) SetParams(ctx sdk.Context, params *types.Params) error {
 // Returns:
 //   - Governance fallback price from params, or $0.10 default if not set
 func (k Keeper) GetGovernanceFallbackPrice(ctx sdk.Context) sdkmath.LegacyDec {
-	params := k.GetParams(ctx)
+	params, err := k.GetParams(ctx)
+	if err != nil {
+		ctx.Logger().Error("failed to get params, using default fallback price", "error", err)
+		return sdkmath.LegacyNewDecWithPrec(10, 2) // $0.10
+	}
 
 	// Validate fallback price is positive
 	if params.GovernanceFallbackPrice.IsNil() || params.GovernanceFallbackPrice.IsZero() || params.GovernanceFallbackPrice.IsNegative() {
@@ -198,7 +198,11 @@ func (k Keeper) GetAuraPrice(ctx sdk.Context) sdkmath.LegacyDec {
 
 // GetCurrentMinimumLiquidity returns minimum liquidity based on current AURA price
 func (k Keeper) GetCurrentMinimumLiquidity(ctx sdk.Context) sdkmath.LegacyDec {
-	params := k.GetParams(ctx)
+	params, err := k.GetParams(ctx)
+	if err != nil {
+		ctx.Logger().Error("failed to get params, using default minimum liquidity", "error", err)
+		return sdkmath.LegacyNewDec(1000) // $1,000 default
+	}
 	auraPrice := k.GetAuraPrice(ctx)
 
 	// Find appropriate tier
@@ -302,7 +306,11 @@ func (k Keeper) IsUserVerified(ctx sdk.Context, address string) bool {
 // - Negative boosts
 // - Integer overflow when applied to amounts
 func (k Keeper) CalculateFeeBoost(ctx sdk.Context, address string) sdkmath.LegacyDec {
-	params := k.GetParams(ctx)
+	params, err := k.GetParams(ctx)
+	if err != nil {
+		ctx.Logger().Error("failed to get params, using zero boost", "error", err)
+		return sdkmath.LegacyZeroDec()
+	}
 
 	if !params.IrBoostEnabled {
 		return sdkmath.LegacyZeroDec()
@@ -473,7 +481,10 @@ func (k Keeper) CalculateSwapFee(ctx sdk.Context, amount sdkmath.Int) (sdkmath.I
 		return sdkmath.ZeroInt(), err
 	}
 
-	params := k.GetParams(ctx)
+	params, err := k.GetParams(ctx)
+	if err != nil {
+		return sdkmath.ZeroInt(), fmt.Errorf("failed to get params: %w", err)
+	}
 	feeDec := params.TradingFee
 
 	// Validate fee rate is non-negative

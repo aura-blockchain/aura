@@ -62,7 +62,7 @@ func (k *Keeper) CalculateArenaMultiplier(ctx sdk.Context, walletAddr, arena str
 		return BasisPointsBase // 1.0x
 	}
 
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 
 	// Apply graduated multipliers based on arena score thresholds
 	// Thresholds are stored in descending order, so check from highest to lowest
@@ -164,7 +164,7 @@ func (k *Keeper) RecalculateScore(ctx sdk.Context, walletAddr string) (uint64, u
 		score.TotalScore += completion.FinalScore
 		score.IrCount++
 
-		params := k.GetParams()
+		params, _ := k.GetParams(ctx)
 		score.FocusBonusActive = score.TotalScore >= params.ArenaFocusThreshold
 
 		arenaScores[arena] = score
@@ -198,7 +198,7 @@ func (k *Keeper) RecalculateScore(ctx sdk.Context, walletAddr string) (uint64, u
 		record.ArenaScores = arenaScores
 
 		// Update verification status
-		params := k.GetParams()
+		params, _ := k.GetParams(ctx)
 		if calculatedTotal >= params.VerificationThreshold {
 			if record.Status == types.VerificationStatusUnverified {
 				record.Status = types.VerificationStatusVerified
@@ -228,7 +228,7 @@ func (k *Keeper) CheckVerificationStatus(ctx sdk.Context, walletAddr string) (ty
 		return types.VerificationStatusUnverified, nil
 	}
 
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 
 	// Check for suspended or revoked status (set by governance)
 	if record.Status == types.VerificationStatusSuspended ||
@@ -251,7 +251,7 @@ func (k *Keeper) ApplyArenaFocusBonus(ctx sdk.Context, walletAddr string) ([]str
 		return nil, types.ErrUserRecordNotFound
 	}
 
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 	focusArenas := []string{}
 
 	for arena, score := range record.ArenaScores {
@@ -280,7 +280,7 @@ func (k *Keeper) GetArenaBreakdown(ctx sdk.Context, walletAddr string) (map[stri
 		return nil, nil, types.ErrUserRecordNotFound
 	}
 
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 	focusArenas := []string{}
 
 	for arena, score := range record.ArenaScores {

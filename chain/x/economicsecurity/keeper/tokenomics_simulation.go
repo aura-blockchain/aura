@@ -144,7 +144,7 @@ func (k *Keeper) SimulateTokenomics(ctx context.Context, params SimulationParame
 
 // SimulateSupplyScenarios simulates multiple supply scenarios
 func (k *Keeper) SimulateSupplyScenarios(ctx context.Context) map[string]*SimulationResult {
-	currentParams := k.GetParams()
+	currentParams, _ := k.GetParams(ctx)
 
 	scenarios := make(map[string]*SimulationResult)
 
@@ -213,7 +213,7 @@ func (k *Keeper) SimulateSupplyScenarios(ctx context.Context) map[string]*Simula
 
 // ProjectSupplyGrowth projects supply growth over time periods
 func (k *Keeper) ProjectSupplyGrowth(ctx context.Context, years uint64) (map[string]string, error) {
-	currentParams := k.GetParams()
+	currentParams, _ := k.GetParams(ctx)
 	projections := make(map[string]string)
 
 	currentSupply := new(big.Int)
@@ -249,7 +249,7 @@ func (k *Keeper) ProjectSupplyGrowth(ctx context.Context, years uint64) (map[str
 
 // AnalyzeTokenDistribution analyzes token distribution patterns
 func (k *Keeper) AnalyzeTokenDistribution(ctx context.Context) (map[string]interface{}, error) {
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 
 	totalSupply := new(big.Int)
 	totalSupply.SetString(params.Tokenomics.CirculatingSupply, 10)

@@ -144,7 +144,7 @@ func TestSubmitKYC_BlockedWithoutConsent(t *testing.T) {
 
 	// Setup authorized provider
 	providerAddr := createTestAddressMsg("provider")
-	params := keeper.GetParams(ctx)
+	params, _ := keeper.GetParams(ctx)
 	params.ApprovedKycProviders = []string{providerAddr}
 	err := keeper.SetParams(ctx, params)
 	require.NoError(t, err)
@@ -171,7 +171,7 @@ func TestSubmitKYC_SuccessWithConsent(t *testing.T) {
 
 	// Setup authorized provider
 	providerAddr := createTestAddressMsg("provider")
-	params := keeper.GetParams(ctx)
+	params, _ := keeper.GetParams(ctx)
 	params.ApprovedKycProviders = []string{providerAddr}
 	err := keeper.SetParams(ctx, params)
 	require.NoError(t, err)
@@ -213,7 +213,7 @@ func TestSubmitKYC_BlockedAfterConsentWithdrawal(t *testing.T) {
 
 	// Setup authorized provider
 	providerAddr := createTestAddressMsg("provider")
-	params := keeper.GetParams(ctx)
+	params, _ := keeper.GetParams(ctx)
 	params.ApprovedKycProviders = []string{providerAddr}
 	err := keeper.SetParams(ctx, params)
 	require.NoError(t, err)
@@ -628,7 +628,7 @@ func TestConsentReGrant_AfterWithdrawal(t *testing.T) {
 
 	// Setup authorized provider
 	providerAddr := createTestAddressMsg("provider")
-	params := keeper.GetParams(ctx)
+	params, _ := keeper.GetParams(ctx)
 	params.ApprovedKycProviders = []string{providerAddr}
 	err := keeper.SetParams(ctx, params)
 	require.NoError(t, err)

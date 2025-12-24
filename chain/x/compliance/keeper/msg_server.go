@@ -125,7 +125,7 @@ func (s *msgServer) SubmitKYC(goCtx context.Context, req *types.MsgSubmitKYC) (*
 	//
 	// OFAC compliance: Check if jurisdiction is blocked (sanctioned country)
 	// This validation MUST occur BEFORE provider authorization check
-	params := s.Keeper.GetParams(ctx)
+	params, _ := s.Keeper.GetParams(ctx)
 	if s.Keeper.IsJurisdictionBlocked(ctx, req.Jurisdiction) {
 		return nil, status.Errorf(codes.PermissionDenied,
 			"jurisdiction %s is blocked due to OFAC sanctions", req.Jurisdiction)
@@ -321,7 +321,7 @@ func (s *msgServer) ScreenSanctions(goCtx context.Context, req *types.MsgScreenS
 		} else if result != nil {
 			// Verify cache has not expired (critical for OFAC compliance)
 			// This prevents using stale "CLEAR" status for newly sanctioned addresses
-			params := s.Keeper.GetParams(ctx)
+			params, _ := s.Keeper.GetParams(ctx)
 			if params.ScreeningCacheHours > 0 {
 				cacheAge := ctx.BlockTime().Sub(result.ScreenedAt)
 				maxCacheAge := time.Duration(params.ScreeningCacheHours) * time.Hour

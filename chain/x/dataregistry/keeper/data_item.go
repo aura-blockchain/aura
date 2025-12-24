@@ -40,7 +40,7 @@ func (k *Keeper) StoreDataItem(ctx sdk.Context,
 	}
 
 	// Check user limits
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 	userItems := k.ListUserDataItems(ctx, ownerAddress, types.DataItemType_DATA_ITEM_TYPE_UNSPECIFIED, types.DataItemStatus_DATA_ITEM_STATUS_UNSPECIFIED)
 	if uint64(len(userItems)) >= params.MaxDataItemsPerUser {
 		return "", types.ErrMaxDataItemsExceeded
@@ -113,7 +113,7 @@ func (k *Keeper) StoreDataItemWithContent(sdkCtx sdk.Context,
 	}
 
 	// Check user limits
-	params := k.GetParams()
+	params, _ := k.GetParams(sdkCtx)
 	userItems := k.ListUserDataItems(sdkCtx, ownerAddress, types.DataItemType_DATA_ITEM_TYPE_UNSPECIFIED, types.DataItemStatus_DATA_ITEM_STATUS_UNSPECIFIED)
 	if uint64(len(userItems)) >= params.MaxDataItemsPerUser {
 		return "", types.ErrMaxDataItemsExceeded

@@ -18,7 +18,7 @@ func TestSanctionsCacheExpiryLogic(t *testing.T) {
 	address := "aura1testaddr"
 
 	// Configure cache with 24 hour expiry
-	params := keeper.GetParams(ctx)
+	params, _ := keeper.GetParams(ctx)
 	params.ScreeningCacheHours = 24
 	err := keeper.SetParams(ctx, params)
 	require.NoError(t, err)
@@ -43,7 +43,7 @@ func TestSanctionsCacheExpiryLogic(t *testing.T) {
 	require.NotNil(t, cached)
 
 	// Verify cache validity check
-	params = keeper.GetParams(ctx)
+	params, _ = keeper.GetParams(ctx)
 	cacheAge := ctx.BlockTime().Sub(cached.ScreenedAt)
 	maxCacheAge := time.Duration(params.ScreeningCacheHours) * time.Hour
 	require.True(t, cacheAge <= maxCacheAge, "cache should be valid within expiry window")
@@ -55,7 +55,7 @@ func TestSanctionsCacheExpiryLogic(t *testing.T) {
 	require.NotNil(t, cached)
 
 	// Verify cache would be considered expired
-	params = keeper.GetParams(ctx)
+	params, _ = keeper.GetParams(ctx)
 	cacheAge = ctx.BlockTime().Sub(cached.ScreenedAt)
 	maxCacheAge = time.Duration(params.ScreeningCacheHours) * time.Hour
 	require.True(t, cacheAge > maxCacheAge, "cache should be expired after expiry window")
@@ -68,7 +68,7 @@ func TestSanctionsCacheExpiryBoundary(t *testing.T) {
 	address := "aura1testaddr"
 
 	// Configure cache with 1 hour expiry
-	params := keeper.GetParams(ctx)
+	params, _ := keeper.GetParams(ctx)
 	params.ScreeningCacheHours = 1
 	err := keeper.SetParams(ctx, params)
 	require.NoError(t, err)
@@ -89,7 +89,7 @@ func TestSanctionsCacheExpiryBoundary(t *testing.T) {
 	cached, err := keeper.GetSanctionsResult(ctx59m59s, address)
 	require.NoError(t, err)
 
-	params = keeper.GetParams(ctx59m59s)
+	params, _ = keeper.GetParams(ctx59m59s)
 	cacheAge := ctx59m59s.BlockTime().Sub(cached.ScreenedAt)
 	maxCacheAge := time.Duration(params.ScreeningCacheHours) * time.Hour
 	require.True(t, cacheAge <= maxCacheAge, "cache should be valid at 59m59s")
@@ -99,7 +99,7 @@ func TestSanctionsCacheExpiryBoundary(t *testing.T) {
 	cached, err = keeper.GetSanctionsResult(ctx1h1s, address)
 	require.NoError(t, err)
 
-	params = keeper.GetParams(ctx1h1s)
+	params, _ = keeper.GetParams(ctx1h1s)
 	cacheAge = ctx1h1s.BlockTime().Sub(cached.ScreenedAt)
 	maxCacheAge = time.Duration(params.ScreeningCacheHours) * time.Hour
 	require.True(t, cacheAge > maxCacheAge, "cache should be expired at 1h1s")
@@ -112,7 +112,7 @@ func TestSanctionsCacheExpiryZeroDisablesExpiry(t *testing.T) {
 	address := "aura1testaddr"
 
 	// Configure with zero cache hours (no expiry)
-	params := keeper.GetParams(ctx)
+	params, _ := keeper.GetParams(ctx)
 	params.ScreeningCacheHours = 0
 	err := keeper.SetParams(ctx, params)
 	require.NoError(t, err)
@@ -135,7 +135,7 @@ func TestSanctionsCacheExpiryZeroDisablesExpiry(t *testing.T) {
 	require.NotNil(t, cached)
 
 	// With ScreeningCacheHours=0, cache never expires
-	params = keeper.GetParams(ctxLater)
+	params, _ = keeper.GetParams(ctxLater)
 	require.Equal(t, uint64(0), params.ScreeningCacheHours)
 }
 
@@ -147,7 +147,7 @@ func TestSanctionsCacheExpiryMultipleAddresses(t *testing.T) {
 	address2 := "aura1addr2"
 
 	// Configure cache with 2 hour expiry
-	params := keeper.GetParams(ctx)
+	params, _ := keeper.GetParams(ctx)
 	params.ScreeningCacheHours = 2
 	err := keeper.SetParams(ctx, params)
 	require.NoError(t, err)
@@ -183,7 +183,7 @@ func TestSanctionsCacheExpiryMultipleAddresses(t *testing.T) {
 	// address2: 1h1m old (valid)
 	checkTime := initialTime.Add(2*time.Hour + 1*time.Minute)
 	ctxCheck := ctx.WithBlockTime(checkTime)
-	params = keeper.GetParams(ctxCheck)
+	params, _ = keeper.GetParams(ctxCheck)
 	maxAge := time.Duration(params.ScreeningCacheHours) * time.Hour
 
 	// Verify address1 is expired
@@ -206,7 +206,7 @@ func TestSanctionsCacheExpiryOFACCompliance(t *testing.T) {
 	address := "aura1potential_sanction"
 
 	// Configure short cache for testing (production typically uses 24 hours)
-	params := keeper.GetParams(ctx)
+	params, _ := keeper.GetParams(ctx)
 	params.ScreeningCacheHours = 1
 	params.SanctionsScreeningEnabled = true
 	params.SanctionsLists = []string{"OFAC_SDN", "EU", "UN"}
@@ -233,7 +233,7 @@ func TestSanctionsCacheExpiryOFACCompliance(t *testing.T) {
 	require.Equal(t, types.SanctionsStatus_SANCTIONS_CLEAR, cached.Status)
 
 	// Cache age check shows valid
-	params = keeper.GetParams(ctx30min)
+	params, _ = keeper.GetParams(ctx30min)
 	cacheAge := ctx30min.BlockTime().Sub(cached.ScreenedAt)
 	maxAge := time.Duration(params.ScreeningCacheHours) * time.Hour
 	require.True(t, cacheAge <= maxAge, "cache should be valid within window")
@@ -245,7 +245,7 @@ func TestSanctionsCacheExpiryOFACCompliance(t *testing.T) {
 	require.NoError(t, err)
 
 	// Cache age check shows expired - fresh screening required
-	params = keeper.GetParams(ctx2h)
+	params, _ = keeper.GetParams(ctx2h)
 	cacheAge = ctx2h.BlockTime().Sub(cached.ScreenedAt)
 	maxAge = time.Duration(params.ScreeningCacheHours) * time.Hour
 	require.True(t, cacheAge > maxAge, "cache must be expired to trigger fresh screening")
@@ -261,7 +261,7 @@ func TestSanctionsCacheExpiryManualExpiredEntry(t *testing.T) {
 	address := "aura1manual"
 
 	// Configure cache with 24 hour expiry
-	params := keeper.GetParams(ctx)
+	params, _ := keeper.GetParams(ctx)
 	params.ScreeningCacheHours = 24
 	err := keeper.SetParams(ctx, params)
 	require.NoError(t, err)
@@ -286,7 +286,7 @@ func TestSanctionsCacheExpiryManualExpiredEntry(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cached)
 
-	params = keeper.GetParams(ctx)
+	params, _ = keeper.GetParams(ctx)
 	cacheAge := currentTime.Sub(cached.ScreenedAt)
 	maxAge := time.Duration(params.ScreeningCacheHours) * time.Hour
 	require.True(t, cacheAge > maxAge, "manually set expired entry should be detected as expired")
@@ -346,7 +346,7 @@ func TestSanctionsCacheExpiry_VariousDurations(t *testing.T) {
 			address := "aura1test"
 
 			// Configure cache
-			params := keeper.GetParams(ctx)
+			params, _ := keeper.GetParams(ctx)
 			params.ScreeningCacheHours = tc.cacheHours
 			err := keeper.SetParams(ctx, params)
 			require.NoError(t, err)
@@ -367,7 +367,7 @@ func TestSanctionsCacheExpiry_VariousDurations(t *testing.T) {
 			cached, err := keeper.GetSanctionsResult(ctx, address)
 			require.NoError(t, err)
 
-			params = keeper.GetParams(ctx)
+			params, _ = keeper.GetParams(ctx)
 			cacheAge := ctx.BlockTime().Sub(cached.ScreenedAt)
 			maxAge := time.Duration(params.ScreeningCacheHours) * time.Hour
 

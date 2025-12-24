@@ -198,7 +198,7 @@ func TestAppealSlash_Success(t *testing.T) {
 	)
 
 	// Appeal the slash
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 	appealAccepted, reviewDeadline, err := k.AppealSlash(
 		ctx,
 		walletAddr,
@@ -254,7 +254,7 @@ func TestAppealSlash_AlreadyAppealed(t *testing.T) {
 		"evidence",
 	)
 
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 	_, _, err := k.AppealSlash(ctx, walletAddr, slashTxHash, "evidence", params.AppealDeposit)
 	require.NoError(t, err)
 
@@ -291,7 +291,7 @@ func TestAppealSlash_Expired(t *testing.T) {
 	// Move time forward past appeal deadline (14 days + 1)
 	ctx = ctx.WithBlockTime(currentTime.Add(15 * 24 * time.Hour))
 
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 	_, _, err := k.AppealSlash(ctx, walletAddr, slashTxHash, "evidence", params.AppealDeposit)
 
 	require.ErrorIs(t, err, types.ErrAppealExpired)
@@ -348,7 +348,7 @@ func TestResolveAppeal_RestoreScore(t *testing.T) {
 		"evidence",
 	)
 
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 	_, _, err := k.AppealSlash(ctx, walletAddr, slashTxHash, "counter_evidence", params.AppealDeposit)
 	require.NoError(t, err)
 
@@ -402,7 +402,7 @@ func TestResolveAppeal_DenyAppeal(t *testing.T) {
 		"evidence",
 	)
 
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 	_, _, err := k.AppealSlash(ctx, walletAddr, slashTxHash, "counter_evidence", params.AppealDeposit)
 	require.NoError(t, err)
 
@@ -476,7 +476,7 @@ func TestResolveAppeal_AlreadyResolved(t *testing.T) {
 		"evidence",
 	)
 
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 	_, _, err := k.AppealSlash(ctx, walletAddr, slashTxHash, "evidence", params.AppealDeposit)
 	require.NoError(t, err)
 
@@ -543,7 +543,7 @@ func TestGetPendingAppeals(t *testing.T) {
 
 	// Slash 1: Appealed, not resolved
 	_, _, _, slashTxHash1, _ := k.SlashScore(ctx, walletAddr1, "IR-001", 2000, types.SlashReasonFraudDetected, "gov1", "ev1")
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 	_, _, err := k.AppealSlash(ctx, walletAddr1, slashTxHash1, "counter_ev1", params.AppealDeposit)
 	require.NoError(t, err)
 
@@ -587,7 +587,7 @@ func TestIsSlashAppealed(t *testing.T) {
 	require.False(t, k.IsSlashAppealed(ctx, walletAddr, slashTxHash), "expected slash not to be appealed")
 
 	// Appeal it
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 	_, _, err := k.AppealSlash(ctx, walletAddr, slashTxHash, "evidence", params.AppealDeposit)
 	require.NoError(t, err)
 
@@ -624,7 +624,7 @@ func TestIsSlashResolved(t *testing.T) {
 	require.False(t, k.IsSlashResolved(ctx, walletAddr, slashTxHash), "expected slash not to be resolved")
 
 	// Appeal and resolve
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 	_, _, err := k.AppealSlash(ctx, walletAddr, slashTxHash, "evidence", params.AppealDeposit)
 	require.NoError(t, err)
 	_, _, err = k.ResolveAppeal(ctx, walletAddr, slashTxHash, true, "gov1", "notes")

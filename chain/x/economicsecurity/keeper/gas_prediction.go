@@ -17,7 +17,7 @@ import (
 //
 // All calculations use deterministic integer arithmetic to ensure consensus safety.
 func (k *Keeper) PredictGasPrice(ctx context.Context, blocksAhead uint64) (string, uint64, error) {
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 
 	if !params.DynamicFees.Enabled {
 		return params.DynamicFees.BaseFee, 0, nil
@@ -242,8 +242,8 @@ func (k *Keeper) GetGasPredictionStatistics(ctx context.Context) (price1, price1
 // GetRecommendedGasPrice returns recommended gas price for different priority levels
 // Priority levels: "low", "medium", "high", "urgent"
 // Each level adjusts the base price by a different multiplier
-func (k *Keeper) GetRecommendedGasPrice(priority string) (string, error) {
-	params := k.GetParams()
+func (k *Keeper) GetRecommendedGasPrice(ctx context.Context, priority string) (string, error) {
+	params, _ := k.GetParams(ctx)
 
 	baseFee := new(big.Int)
 	if _, ok := baseFee.SetString(params.DynamicFees.BaseFee, 10); !ok {
@@ -314,8 +314,8 @@ func (k *Keeper) EstimateTransactionCost(ctx context.Context, estimatedGasUsage 
 
 // GetGasPriceTrend analyzes the trend of gas prices
 // Returns: "increasing", "decreasing", "stable" along with the trend strength (0-10000 basis points)
-func (k *Keeper) GetGasPriceTrend() (direction string, strength uint64) {
-	params := k.GetParams()
+func (k *Keeper) GetGasPriceTrend(ctx context.Context) (direction string, strength uint64) {
+	params, _ := k.GetParams(ctx)
 
 	utilizationData := params.DynamicFees.RecentUtilization
 	if len(utilizationData) < 3 {
@@ -395,7 +395,7 @@ func (k *Keeper) GetOptimalSubmissionTime(ctx context.Context, maxBlocksToWait u
 
 	if lowestPrice == "" {
 		// Fallback to current price
-		params := k.GetParams()
+		params, _ := k.GetParams(ctx)
 		lowestPrice = k.calculateCurrentGasPrice(params)
 		optimalBlocks = 0
 	}

@@ -376,9 +376,12 @@ func (qs queryServer) Params(ctx context.Context, req *dexpb.QueryParamsRequest)
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	params := qs.keeper.GetParams(sdkCtx)
+	params, err := qs.keeper.GetParams(sdkCtx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get params: %s", err.Error())
+	}
 
-	return &dexpb.QueryParamsResponse{Params: *params}, nil
+	return &dexpb.QueryParamsResponse{Params: params}, nil
 }
 
 func parsePair(pair string) (string, string) {

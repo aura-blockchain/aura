@@ -28,7 +28,7 @@ func (q *QueryServer) Params(goCtx context.Context, req *confidencescorepb.Query
 		req = &confidencescorepb.QueryParamsRequest{}
 	}
 
-	params := q.keeper.GetParams()
+	params, _ := q.keeper.GetParams(goCtx)
 
 	return &confidencescorepb.QueryParamsResponse{Params: &params}, nil
 }
@@ -52,7 +52,7 @@ func (q *QueryServer) UserScore(goCtx context.Context, req *confidencescorepb.Qu
 		}, nil
 	}
 
-	params := q.keeper.GetParams()
+	params, _ := q.keeper.GetParams(goCtx)
 	isVerified := record.TotalScore >= params.VerificationThreshold &&
 		record.Status == confidencescorepb.VerificationStatus_VERIFICATION_STATUS_VERIFIED
 
@@ -102,7 +102,7 @@ func (q *QueryServer) Thresholds(goCtx context.Context, req *confidencescorepb.Q
 		req = &confidencescorepb.QueryThresholdsRequest{}
 	}
 
-	params := q.keeper.GetParams()
+	params, _ := q.keeper.GetParams(goCtx)
 
 	// Build VC thresholds map
 	// Based on the params structure, we have:
@@ -140,7 +140,7 @@ func (q *QueryServer) VerifiedUsers(goCtx context.Context, req *confidencescorep
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	params := q.keeper.GetParams()
+	params, _ := q.keeper.GetParams(goCtx)
 
 	// Use minimum score from request or default to verification threshold
 	minScore := req.MinScore

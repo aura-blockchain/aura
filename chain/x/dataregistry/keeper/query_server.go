@@ -175,7 +175,7 @@ func (s *queryServer) Params(ctx context.Context, req *pb.QueryParamsRequest) (*
 		return nil, fmt.Errorf("request cannot be nil")
 	}
 
-	params := s.keeper.GetParams()
+	params, _ := s.keeper.GetParams(ctx)
 
 	return &pb.QueryParamsResponse{
 		Params: &params,

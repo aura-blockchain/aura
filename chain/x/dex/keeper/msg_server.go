@@ -342,7 +342,10 @@ func (ms msgServer) RevealOrder(goCtx context.Context, msg *dexpb.MsgRevealOrder
 	}
 
 	// Determine message based on batch execution
-	params := ms.keeper.GetParams(ctx)
+	params, err := ms.keeper.GetParams(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get params: %s", err.Error())
+	}
 	message := "executed immediately"
 	if params.BatchExecutionEnabled {
 		message = "queued for batch execution"

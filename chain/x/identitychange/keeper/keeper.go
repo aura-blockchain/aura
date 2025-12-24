@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"context"
 	"fmt"
 
 	"cosmossdk.io/core/store"
@@ -51,11 +52,11 @@ func (k *Keeper) GetAuthority() string {
 }
 
 // GetParams returns the current module parameters
-func (k *Keeper) GetParams() types.Params {
+func (k Keeper) GetParams(ctx context.Context) (types.Params, error) {
 	if k.paramsStore != nil {
-		return k.paramsStore.GetParams()
+		return k.paramsStore.GetParams(), nil
 	}
-	return types.DefaultParams()
+	return types.DefaultParams(), nil
 }
 
 // SetParams sets new module parameters
@@ -155,7 +156,7 @@ func (k *Keeper) CreateRequest(ctx sdk.Context, request types.IdentityChangeRequ
 	}
 
 	count := k.countRequests(ctx, request.Requester)
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 	if int32(count) >= params.MaxRequestsPerWalletPerMonth {
 		return types.IdentityChangeRequest{}, fmt.Errorf("request limit exceeded for %s", request.Requester)
 	}
@@ -235,7 +236,7 @@ func (k *Keeper) ApplyChange(ctx sdk.Context, requestID string) (types.IdentityR
 	record, _ := k.GetIdentityRecord(ctx, request.TargetDid)
 	prevScore := record.ConfidenceScore
 
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 	if int64(prevScore) < int64(params.MinConfidenceAfterChange) {
 		record.ConfidenceScore = int64(params.MinConfidenceAfterChange)
 	}

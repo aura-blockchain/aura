@@ -42,7 +42,7 @@ func AllInvariants(k *Keeper) sdk.Invariant { //nolint:staticcheck // invariant 
 // ParamsInvariant checks that module parameters are valid
 func ParamsInvariant(k *Keeper) sdk.Invariant {
 	return func(ctx sdk.Context) (string, bool) {
-		params := k.GetParams(ctx)
+		params, _ := k.GetParams(ctx)
 
 		// Validate emergency pause configuration
 		if params.EmergencyPauseEnabled {
@@ -315,7 +315,7 @@ func WalletLimitsValidityInvariant(k *Keeper) sdk.Invariant {
 		// This invariant would iterate through all wallet limits if we had a GetAllWalletLimits method
 		// For now, we just validate that the module is in a consistent state
 
-		params := k.GetParams(ctx)
+		params, _ := k.GetParams(ctx)
 
 		// If hot wallet limits are enabled, verify global max is set
 		if params.HotWalletLimitsEnabled {

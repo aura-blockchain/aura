@@ -92,7 +92,7 @@ func (k *Keeper) CreateRole(ctx sdk.Context, creator, name string, permissions [
 
 	// Validate permissions count
 	params, _ := k.GetParams(ctx)
-	if params != nil && uint32(len(permissions)) > params.Auth.MaxRolesPerAccount {
+	if err == nil && uint32(len(permissions)) > params.Auth.MaxRolesPerAccount {
 		return nil, types.ErrInvalidRole.Wrap("exceeds maximum permissions per role")
 	}
 
@@ -283,9 +283,9 @@ func (k *Keeper) AssignRole(ctx sdk.Context, assigner, address, roleName string,
 	}
 
 	// Check max roles per address
-	params, _ := k.GetParams(ctx)
+	params, err := k.GetParams(ctx)
 	assignments, _ := k.GetRoleAssignments(ctx, address)
-	if params != nil && uint32(len(assignments)) >= params.Auth.MaxRolesPerAccount {
+	if err == nil && uint32(len(assignments)) >= params.Auth.MaxRolesPerAccount {
 		return types.RoleAssignment{}, types.ErrInvalidRoleAssignment.Wrap("exceeds maximum roles per address")
 	}
 
@@ -393,8 +393,8 @@ func (k *Keeper) RequirePermission(ctx sdk.Context, address, permission string) 
 
 // LogAudit creates an audit log entry
 func (k *Keeper) LogAudit(ctx sdk.Context, actor, action, target, result string, metadata map[string]string, errorDetail string) {
-	params, _ := k.GetParams(ctx)
-	if params == nil || !params.Auth.EnableAuditLogging {
+	params, err := k.GetParams(ctx)
+	if err != nil || !params.Auth.EnableAuditLogging {
 		return
 	}
 

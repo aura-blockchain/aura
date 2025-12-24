@@ -141,7 +141,7 @@ func (k *Keeper) ExportGenesis(ctx context.Context) (types.GenesisState, error) 
 	var genesis types.GenesisState
 
 	// Export params
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 	genesis.Params = &params
 
 	// Export all vesting schedules
@@ -220,7 +220,7 @@ func (k *Keeper) ValidateInvariants(ctx context.Context) error {
 	// in the current implementation, we'll just perform basic validation
 
 	// Validate params
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 	if err := types.ValidateParams(&params); err != nil {
 		return fmt.Errorf("invariant check failed - invalid params: %w", err)
 	}

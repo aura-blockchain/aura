@@ -20,7 +20,7 @@ import (
 // This is a comprehensive security system that monitors for various attack patterns
 // including pump & dump, flash loans, sybil attacks, wash trading, and front-running
 func (k *Keeper) DetectEconomicAttacks(ctx context.Context) ([]*types.AttackAlert, error) {
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 	alerts := []*types.AttackAlert{}
 
 	// 1. Detect pump and dump attacks

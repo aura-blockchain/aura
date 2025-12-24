@@ -142,7 +142,10 @@ func (k Keeper) CreatePool(
 	lpTokens := initialLpTokens.Sub(minimumLiquidity)
 
 	// Get parameters
-	params := k.GetParams(ctx)
+	params, err := k.GetParams(ctx)
+	if err != nil {
+		return nil, sdkmath.ZeroInt(), fmt.Errorf("failed to get params: %w", err)
+	}
 
 	// Create pool
 	pool := &types.LiquidityPool{

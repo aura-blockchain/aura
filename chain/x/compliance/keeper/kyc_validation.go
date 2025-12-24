@@ -121,7 +121,7 @@ func (k Keeper) ValidateKYCStatus(ctx sdk.Context, address string) error {
 	}
 
 	// Check if KYC level meets minimum requirement
-	params := k.GetParams(ctx)
+	params, _ := k.GetParams(ctx)
 	if record.KycLevel < params.MinimumKycLevel {
 		return errorsmod.Wrapf(types.ErrInsufficientKYCLevel,
 			"KYC level %s is below minimum required level %s for address %s",

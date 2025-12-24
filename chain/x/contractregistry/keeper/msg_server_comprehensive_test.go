@@ -164,7 +164,8 @@ func (suite *MsgServerComprehensiveTestSuite) TestRegisterContract_UnauthorizedS
 
 func (suite *MsgServerComprehensiveTestSuite) TestRegisterContract_ExceedMaxContracts() {
 	// Set low limit
-	params := suite.keeper.GetParams(suite.ctx)
+	params, err := suite.keeper.GetParams(suite.ctx)
+	suite.NoError(err)
 	params.MaxContractsPerCreator = 1
 	suite.NoError(suite.keeper.SetParams(suite.ctx, params))
 
@@ -182,7 +183,7 @@ func (suite *MsgServerComprehensiveTestSuite) TestRegisterContract_ExceedMaxCont
 		SecurityPolicy:  pb.SecurityPolicy{},
 		Compliance:      pb.ComplianceRequirements{},
 	}
-	_, err := suite.msgServer.RegisterContract(sdk.WrapSDKContext(suite.ctx), msg1)
+	_, err = suite.msgServer.RegisterContract(sdk.WrapSDKContext(suite.ctx), msg1)
 	suite.NoError(err)
 
 	// Try to register second contract

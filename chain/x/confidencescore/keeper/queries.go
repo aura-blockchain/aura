@@ -13,7 +13,7 @@ func (k *Keeper) QueryUserScore(ctx sdk.Context, walletAddr string) (uint64, boo
 		return 0, false, nil, make(map[string]*types.ArenaScore), 0, 0, types.VerificationStatusUnverified, 0, nil
 	}
 
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 	isVerified := record.TotalScore >= params.VerificationThreshold &&
 		record.Status == types.VerificationStatusVerified
 
@@ -70,8 +70,8 @@ func (k *Keeper) QueryUserCompletions(ctx sdk.Context, walletAddr, arenaFilter s
 }
 
 // QueryThresholds returns all verification thresholds
-func (k *Keeper) QueryThresholds() (uint64, map[string]uint64, map[string]uint64) {
-	params := k.GetParams()
+func (k *Keeper) QueryThresholds(ctx sdk.Context) (uint64, map[string]uint64, map[string]uint64) {
+	params, _ := k.GetParams(ctx)
 
 	// VC thresholds
 	vcThresholds := map[string]uint64{

@@ -42,7 +42,10 @@ func (k Keeper) CommitOrder(
 	}
 
 	// Get params
-	params := k.GetParams(ctx)
+	params, err := k.GetParams(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed to get params: %w", err)
+	}
 
 	// Generate unique commitment ID
 	commitID := k.GenerateCommitmentID(ctx, sender)
@@ -174,7 +177,10 @@ func (k Keeper) RevealOrder(
 	k.DeleteOrderCommitment(ctx, commitID)
 
 	// Check if batch execution is enabled
-	params := k.GetParams(ctx)
+	params, err := k.GetParams(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed to get params: %w", err)
+	}
 	if params.BatchExecutionEnabled {
 		// Queue order for batch execution
 		if err := k.QueueOrderForBatch(ctx, order, salt); err != nil {
@@ -256,7 +262,11 @@ func (k Keeper) RevealOrder(
 // RequiresCommitReveal determines if an order requires commit-reveal scheme
 // based on the configured threshold.
 func (k Keeper) RequiresCommitReveal(ctx sdk.Context, amount sdkmath.Int) bool {
-	params := k.GetParams(ctx)
+	params, err := k.GetParams(ctx)
+	if err != nil {
+		ctx.Logger().Error("failed to get params, assuming no commit-reveal required", "error", err)
+		return false
+	}
 
 	// CommitRevealThreshold is already math.Int (customtype in proto)
 	return amount.GTE(params.CommitRevealThreshold)

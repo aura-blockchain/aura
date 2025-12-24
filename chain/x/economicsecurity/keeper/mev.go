@@ -13,7 +13,7 @@ import (
 
 // CaptureMEV captures MEV value for redistribution
 func (k *Keeper) CaptureMEV(ctx context.Context, amount string) error {
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 
 	if !params.Mev.Enabled {
 		return types.ErrMEVRedistributionDisabled
@@ -59,7 +59,7 @@ func (k *Keeper) DistributeMEV(
 	userActivity map[string]uint64,
 	userIRScores map[string]uint64,
 ) (validatorShare string, treasuryShare string, burnShare string, err error) {
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 
 	if !params.Mev.Enabled {
 		return "0", "0", "0", types.ErrMEVRedistributionDisabled
@@ -275,7 +275,7 @@ func (k *Keeper) GetMEVStats(ctx context.Context) (
 	userPercentage uint64,
 	strategy types.MEVRedistributionStrategy,
 ) {
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 
 	if !params.Mev.Enabled {
 		return false, "0", "0", "0", 0, types.MEVRedistributionStrategy_MEV_STRATEGY_UNSPECIFIED

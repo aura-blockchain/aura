@@ -40,7 +40,7 @@ import (
 //   - EventTypeTransactionAlert for each alert generated
 func (k Keeper) MonitorTransaction(ctx sdk.Context, from, to sdk.AccAddress, amount sdk.Coins) ([]*types.TransactionAlert, error) {
 	// Check if monitoring is enabled
-	params := k.GetParams(ctx)
+	params, _ := k.GetParams(ctx)
 	if !params.TransactionMonitoringEnabled {
 		return nil, nil
 	}
@@ -152,7 +152,7 @@ func (k Keeper) evaluateRule(ctx sdk.Context, rule *types.TransactionMonitoringR
 // evaluateVelocityRule checks for high-frequency transaction patterns
 func (k Keeper) evaluateVelocityRule(ctx sdk.Context, rule *types.TransactionMonitoringRule, txCtx *TransactionContext) (*types.TransactionAlert, error) {
 	// Get 24h velocity threshold from parameters
-	params := k.GetParams(ctx)
+	params, _ := k.GetParams(ctx)
 	threshold, err := math.LegacyNewDecFromStr(params.VelocityLimit_24H)
 	if err != nil {
 		return nil, fmt.Errorf("invalid velocity threshold: %w", err)
@@ -201,7 +201,7 @@ func (k Keeper) evaluateVelocityRule(ctx sdk.Context, rule *types.TransactionMon
 
 // evaluateStructuringRule detects potential structuring attempts
 func (k Keeper) evaluateStructuringRule(ctx sdk.Context, rule *types.TransactionMonitoringRule, txCtx *TransactionContext) (*types.TransactionAlert, error) {
-	params := k.GetParams(ctx)
+	params, _ := k.GetParams(ctx)
 
 	// Get sender's AML profile
 	profile, err := k.GetAMLProfile(ctx, txCtx.From.String())
@@ -228,7 +228,7 @@ func (k Keeper) evaluateStructuringRule(ctx sdk.Context, rule *types.Transaction
 
 // evaluateLargeTransactionRule checks for single large transactions
 func (k Keeper) evaluateLargeTransactionRule(ctx sdk.Context, rule *types.TransactionMonitoringRule, txCtx *TransactionContext) (*types.TransactionAlert, error) {
-	params := k.GetParams(ctx)
+	params, _ := k.GetParams(ctx)
 
 	// Parse single transaction limit
 	limitStr := params.SingleTransactionLimit

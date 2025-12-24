@@ -30,7 +30,7 @@ func (k *Keeper) AnalyzeEconomicIncentives(
 	activeUsers uint64,
 	validators uint64,
 ) (*IncentiveAnalysisResult, error) {
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 
 	result := &IncentiveAnalysisResult{
 		RecommendedAdjustments: []string{},
@@ -275,7 +275,7 @@ func (k *Keeper) calculateIncentiveEfficiency(params types.Params, activeUsers u
 
 // GetIncentiveRecommendations returns specific incentive recommendations
 func (k *Keeper) GetIncentiveRecommendations(ctx context.Context) ([]string, error) {
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 	recommendations := []string{}
 
 	// Analyze current state and provide recommendations
@@ -315,7 +315,7 @@ func (k *Keeper) SimulateIncentiveChange(
 	newMEVUserPercentage uint64,
 	newMEVValidatorPercentage uint64,
 ) (string, string, string, error) {
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 
 	// Simulate new distribution
 	totalMEV := new(big.Int)

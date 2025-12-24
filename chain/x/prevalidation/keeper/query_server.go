@@ -29,7 +29,7 @@ func (qs queryServer) Params(goCtx context.Context, req *pb.QueryParamsRequest) 
 	}
 
 	return &pb.QueryParamsResponse{
-		Params: params,
+		Params: &params,
 	}, nil
 }
 

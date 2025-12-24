@@ -21,7 +21,7 @@ func (k *Keeper) CalculateTransferTax(
 	ctx context.Context,
 	sender, amount string,
 ) (totalTax string, burnAmount string, treasuryAmount string, err error) {
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 
 	if params.TransferTax == nil || !params.TransferTax.Enabled {
 		return "0", "0", "0", nil
@@ -170,7 +170,7 @@ func (k *Keeper) GetTransferTaxStats(ctx context.Context) (
 	totalBurned string,
 	exemptedAddressCount uint64,
 ) {
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 
 	if params.TransferTax == nil || !params.TransferTax.Enabled {
 		return false, 0, 0, "0", 0
@@ -195,7 +195,7 @@ func (k *Keeper) GetTransferTaxStats(ctx context.Context) (
 
 // IsAddressExemptFromTax checks if an address is exempt from transfer tax
 func (k *Keeper) IsAddressExemptFromTax(ctx context.Context, address string) bool {
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 
 	if params.TransferTax == nil {
 		return false
@@ -212,7 +212,7 @@ func (k *Keeper) IsAddressExemptFromTax(ctx context.Context, address string) boo
 
 // AddTaxExemption adds an address to the transfer tax exemption list
 func (k *Keeper) AddTaxExemption(ctx context.Context, address string) error {
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 
 	if params.TransferTax == nil {
 		return types.ErrInvalidTaxConfig
@@ -232,7 +232,7 @@ func (k *Keeper) AddTaxExemption(ctx context.Context, address string) error {
 
 // RemoveTaxExemption removes an address from the transfer tax exemption list
 func (k *Keeper) RemoveTaxExemption(ctx context.Context, address string) error {
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 
 	if params.TransferTax == nil {
 		return types.ErrInvalidTaxConfig
@@ -266,7 +266,7 @@ func (k *Keeper) GetTaxDistribution(ctx context.Context, taxAmount string) (
 	redistributeAmount string,
 	err error,
 ) {
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 
 	if params.TransferTax == nil {
 		return "0", "0", "0", types.ErrInvalidTaxConfig

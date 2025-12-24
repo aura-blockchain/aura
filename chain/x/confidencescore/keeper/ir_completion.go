@@ -128,14 +128,14 @@ func (k *Keeper) RecordIRCompletion(
 		arenaScore.IrCount++
 
 		// Check if arena focus bonus is now active
-		params := k.GetParams()
+		params, _ := k.GetParams(ctx)
 		arenaScore.FocusBonusActive = arenaScore.TotalScore >= params.ArenaFocusThreshold
 
 		record.ArenaScores[arena] = arenaScore
 	}
 
 	// Update verification status if threshold crossed
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 	wasVerified := record.Status == types.VerificationStatusVerified
 	if record.TotalScore >= params.VerificationThreshold && !wasVerified {
 		record.Status = types.VerificationStatusVerified
@@ -236,7 +236,7 @@ func (k *Keeper) ValidateIRPrerequisites(ctx sdk.Context, walletAddr, irID strin
 
 // CheckRateLimit enforces hourly and daily rate limits
 func (k *Keeper) CheckRateLimit(ctx sdk.Context, walletAddr string) error {
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 
 	// Check hourly limit
 	hourKey := k.getRateLimitKey(ctx, walletAddr, "hour")
@@ -347,7 +347,7 @@ func (k *Keeper) CalculateVelocityBonus(ctx sdk.Context, walletAddr string) uint
 	}
 
 	// Don't apply velocity bonus if already verified
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 	if record.TotalScore >= params.VerificationThreshold {
 		return BasisPointsBase // 1.0x
 	}
@@ -376,7 +376,7 @@ func (k *Keeper) CalculateVelocityBonus(ctx sdk.Context, walletAddr string) uint
 // CheckJackpotWin checks for probabilistic jackpot bonus in basis points
 // Returns: multiplier in basis points (10000 = 1.0x, 50000 = 5.0x, etc.)
 func (k *Keeper) CheckJackpotWin(ctx sdk.Context, walletAddr, irID string) uint64 {
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 
 	// Generate deterministic but unpredictable seed
 	seedData := fmt.Sprintf("%s:%d:%s", walletAddr, ctx.BlockHeight(), irID)

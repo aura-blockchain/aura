@@ -118,19 +118,19 @@ func (k *Keeper) InitializeDefaultRoles(ctx sdk.Context) error {
 // ============================================================================
 
 // GetParams returns the module parameters
-func (k *Keeper) GetParams(ctx sdk.Context) (*authproto.Params, error) {
+func (k Keeper) GetParams(ctx sdk.Context) (authproto.Params, error) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(ParamsKeyPrefix)
 	if bz == nil {
 		// Return default params if not set
-		return &authproto.Params{}, nil
+		return authproto.Params{}, nil
 	}
 
 	var params authproto.Params
 	if err := k.cdc.Unmarshal(bz, &params); err != nil {
-		return nil, err
+		return authproto.Params{}, err
 	}
-	return &params, nil
+	return params, nil
 }
 
 // SetParams updates the module parameters

@@ -492,7 +492,7 @@ func TestGetParams(t *testing.T) {
 	k := NewKeeper(params)
 	_, ctx := setupTestKeeper(t)
 
-	retrievedParams := k.GetParams(ctx)
+	retrievedParams, _ := k.GetParams(ctx)
 	require.Equal(t, params.EmergencyPauseEnabled, retrievedParams.EmergencyPauseEnabled)
 	require.Equal(t, params.MaxPauseDuration, retrievedParams.MaxPauseDuration)
 }

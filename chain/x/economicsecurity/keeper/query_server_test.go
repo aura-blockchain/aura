@@ -86,7 +86,7 @@ func TestValidQuery(t *testing.T) {
 
 	// Verify query server has access to keeper for queries
 	require.NotNil(t, k)
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 	require.NotNil(t, params)
 }
 

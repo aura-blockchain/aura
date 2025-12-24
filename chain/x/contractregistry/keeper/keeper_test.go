@@ -425,7 +425,8 @@ func (suite *KeeperTestSuite) TestMaxContractsPerCreator() {
 	creator := "cosmos1creator"
 
 	// Set low limit
-	params := suite.keeper.GetParams(suite.ctx)
+	params, err := suite.keeper.GetParams(suite.ctx)
+	suite.NoError(err)
 	params.MaxContractsPerCreator = 2
 	suite.NoError(suite.keeper.SetParams(suite.ctx, params))
 
@@ -475,7 +476,7 @@ func (suite *KeeperTestSuite) TestMaxContractsPerCreator() {
 		Compliance: pb.ComplianceRequirements{},
 		Status:         pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
 	}
-	err := suite.keeper.RegisterContract(suite.ctx, info3)
+	err = suite.keeper.RegisterContract(suite.ctx, info3)
 	suite.ErrorIs(err, types.ErrTooManyContracts)
 }
 

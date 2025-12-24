@@ -20,7 +20,7 @@ func (k *Keeper) ProposeTreasurySpend(
 	ctx context.Context,
 	proposer, recipient, amount, description string,
 ) (txID string, executableAt time.Time, err error) {
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 
 	if params.TreasuryMultisig.TreasuryAddress == "" {
 		return "", time.Time{}, types.ErrInvalidTreasuryAddress
@@ -82,7 +82,7 @@ func (k *Keeper) SignTreasurySpend(
 	ctx context.Context,
 	signer, txID string,
 ) (currentSignatures uint32, requiredThreshold uint32, err error) {
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 
 	// Validate signer
 	isSigner := false
@@ -134,7 +134,7 @@ func (k *Keeper) ExecuteTreasurySpend(
 	executor, txID string,
 	treasuryBalance string,
 ) error {
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 
 	// Get the transaction
 	tx, err := k.GetPendingTreasuryTx(ctx, txID)
@@ -244,7 +244,7 @@ func (k *Keeper) GetTreasuryStatistics(ctx context.Context) (
 	pendingTxCount uint64,
 	executedTxCount uint64,
 ) {
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 
 	if params.TreasuryMultisig.TreasuryAddress == "" {
 		return false, "", 0, 0, 0, 0

@@ -366,7 +366,7 @@ func (k *Keeper) ValidateIdentityOwnership(ctx sdk.Context, did, owner string) e
 
 // IsRequestExpired checks if a request has expired based on params
 func (k *Keeper) IsRequestExpired(ctx sdk.Context, request types.IdentityChangeRequest) bool {
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 
 	if params.StalenessHeightThreshold <= 0 {
 		return false

@@ -170,7 +170,7 @@ func TestSplitPoIReward(t *testing.T) {
 }
 
 func TestCalculateVBTBoost(t *testing.T) {
-	_, k := setupConfKeeperWithTime(t)
+	ctx, k := setupConfKeeperWithTime(t)
 
 	tests := []struct {
 		name               string
@@ -211,7 +211,7 @@ func TestCalculateVBTBoost(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			multiplier := k.CalculateVBTBoost(tt.completionTime, "IR-001")
+			multiplier := k.CalculateVBTBoost(ctx, tt.completionTime, "IR-001")
 
 			if !multiplier.Equal(tt.expectedMultiplier) {
 				t.Errorf("expected multiplier %s, got %s",
@@ -222,14 +222,14 @@ func TestCalculateVBTBoost(t *testing.T) {
 }
 
 func TestCalculateVBTBoost_Disabled(t *testing.T) {
-	_, k := setupConfKeeperWithTime(t)
+	ctx, k := setupConfKeeperWithTime(t)
 
 	// Get params and disable velocity bonus
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 	params.VelocityBonusEnabled = false
 	require.NoError(t, k.SetParams(params))
 
-	multiplier := k.CalculateVBTBoost(1800, "IR-001")
+	multiplier := k.CalculateVBTBoost(ctx, 1800, "IR-001")
 
 	if !multiplier.Equal(math.LegacyOneDec()) {
 		t.Errorf("expected 1.0x when disabled, got %s", multiplier)

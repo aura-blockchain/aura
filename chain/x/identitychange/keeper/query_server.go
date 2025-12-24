@@ -25,7 +25,7 @@ func (qs *QueryServer) Params(ctx context.Context, req *identitychangepb.QueryPa
 		req = &identitychangepb.QueryParamsRequest{}
 	}
 
-	params := qs.keeper.GetParams()
+	params, _ := qs.keeper.GetParams(ctx)
 
 	return &identitychangepb.QueryParamsResponse{Params: &params}, nil
 }

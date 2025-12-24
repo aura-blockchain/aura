@@ -227,14 +227,14 @@ func (s Store) SetParams(ctx context.Context, params *types.IncidentResponsePara
 }
 
 // GetParams retrieves module parameters
-func (s Store) GetParams(ctx context.Context) (*types.IncidentResponseParams, bool) {
+func (s Store) GetParams(ctx context.Context) (types.IncidentResponseParams, error) {
 	bz := s.kv(ctx).Get(types.ParamsKey)
 	if bz == nil {
-		return nil, false
+		return types.IncidentResponseParams{}, fmt.Errorf("params not found")
 	}
 	var params types.IncidentResponseParams
 	if err := json.Unmarshal(bz, &params); err != nil {
-		return nil, false
+		return types.IncidentResponseParams{}, fmt.Errorf("failed to unmarshal params: %w", err)
 	}
-	return &params, true
+	return params, nil
 }

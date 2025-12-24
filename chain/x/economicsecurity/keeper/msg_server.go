@@ -595,7 +595,10 @@ func (m *MsgServer) AdjustInflationRate(
 	}
 
 	// Get current parameters
-	params := m.keeper.GetParams()
+	params, err := m.keeper.GetParams(goCtx)
+	if err != nil {
+		return nil, errorsmod.Wrap(types.ErrInvalidInflationRate, "failed to get params")
+	}
 	if params.Tokenomics == nil {
 		return nil, errorsmod.Wrap(types.ErrInvalidInflationRate, "tokenomics config not initialized")
 	}

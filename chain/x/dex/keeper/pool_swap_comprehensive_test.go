@@ -534,7 +534,7 @@ func (suite *PoolSwapComprehensiveTestSuite) TestFeeCalculation_ZeroFee() {
 	swapper := suite.addr("swapper")
 
 	// Get default params (fee configuration is per-pool, not global)
-	_ = suite.Keeper.GetParams(suite.SdkCtx)
+	_, _ = suite.Keeper.GetParams(suite.SdkCtx)
 	// Note: Fees are configured per pool, not via params
 
 	// Create pool large enough for 1M swap to be <20% and price impact <10%
@@ -574,7 +574,7 @@ func (suite *PoolSwapComprehensiveTestSuite) TestFeeCalculation_MaximumFee() {
 	swapper := suite.addr("swapper")
 
 	// Get default params (fee is part of pool configuration)
-	_ = suite.Keeper.GetParams(suite.SdkCtx)
+	_, _ = suite.Keeper.GetParams(suite.SdkCtx)
 	// Note: Pool has default fee configured
 
 	// Create pool large enough for 1M swap to be <20% and price impact <10%

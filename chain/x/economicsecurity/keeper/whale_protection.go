@@ -18,7 +18,7 @@ import (
 // This function ensures that large token holders (whales) cannot manipulate
 // the market through excessive transactions or holdings
 func (k *Keeper) CheckWhaleProtection(ctx context.Context, sender, recipient, amount string) error {
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 
 	if !params.WhaleProtection.Enabled {
 		return nil
@@ -240,14 +240,14 @@ func (k *Keeper) GetWhaleProtectionStatistics(ctx context.Context) (totalLargeTx
 }
 
 // IsWhaleProtectionActive checks if whale protection is currently active
-func (k *Keeper) IsWhaleProtectionActive() bool {
-	params := k.GetParams()
+func (k *Keeper) IsWhaleProtectionActive(ctx context.Context) bool {
+	params, _ := k.GetParams(ctx)
 	return params.WhaleProtection.Enabled
 }
 
 // GetWhaleHoldingPercentage calculates what percentage of total supply an address holds
 func (k *Keeper) GetWhaleHoldingPercentage(ctx context.Context, address string) (uint64, error) {
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 
 	holdingStr, err := k.GetAddressHolding(ctx, address)
 	if err != nil {

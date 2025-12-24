@@ -67,7 +67,7 @@ type mevAuctionState struct {
 
 // getMEVAuctionState retrieves or initializes MEV auction state
 func (k *Keeper) getMEVAuctionState(ctx context.Context) *mevAuctionState {
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 
 	// Check if MEV is enabled in params
 	enabled := params.Mev != nil && params.Mev.Enabled

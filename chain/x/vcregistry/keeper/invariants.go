@@ -40,7 +40,7 @@ func AllInvariants(k *Keeper) sdk.Invariant {
 // ParamsInvariant checks that module parameters are valid
 func ParamsInvariant(k *Keeper) sdk.Invariant {
 	return func(ctx sdk.Context) (string, bool) {
-		params := k.GetParams()
+		params, _ := k.GetParams(ctx)
 		if err := types.ValidateParams(&params); err != nil {
 			return sdk.FormatInvariant(
 				types.ModuleName,

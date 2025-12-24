@@ -526,7 +526,7 @@ func testAssessRiskLevel(profile *types.AMLProfile) types.AMLRiskLevel {
 func testEvaluateRule(k *Keeper, ctx sdk.Context, rule *types.TransactionMonitoringRule, txCtx *TransactionContext) (*types.TransactionAlert, error) {
 	switch rule.RuleType {
 	case "large_transaction":
-		params := k.GetParams(ctx)
+		params, _ := k.GetParams(ctx)
 		limitStr := params.SingleTransactionLimit
 		if thresholdParam, exists := rule.Parameters["threshold"]; exists {
 			limitStr = thresholdParam

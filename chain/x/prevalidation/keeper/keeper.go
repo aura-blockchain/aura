@@ -40,17 +40,21 @@ func (k *Keeper) SetComplianceKeeper(keeper types.ComplianceKeeper) {
 }
 
 // GetParams returns the current parameters
-func (k *Keeper) GetParams(ctx sdk.Context) (*pb.Params, error) {
+func (k Keeper) GetParams(ctx sdk.Context) (pb.Params, error) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get([]byte("params"))
 	if bz == nil {
-		return types.DefaultParams(), nil
+		defaultParams := types.DefaultParams()
+		if defaultParams == nil {
+			return pb.Params{}, nil
+		}
+		return *defaultParams, nil
 	}
 	var params pb.Params
 	if err := k.cdc.Unmarshal(bz, &params); err != nil {
-		return nil, err
+		return pb.Params{}, err
 	}
-	return &params, nil
+	return params, nil
 }
 
 // SetParams sets the parameters
@@ -273,7 +277,7 @@ func (k *Keeper) RunScheduler(ctx sdk.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to get for validation: %w", err)
 	}
-	if params == nil || !params.Enabled {
+	if err != nil || !params.Enabled {
 		return types.ErrSchedulerDisabled
 	}
 
@@ -368,7 +372,7 @@ func (k *Keeper) UpdateMetrics(ctx sdk.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to get for prevalidation: %w", err)
 	}
-	if params == nil || !params.MetricsEnabled {
+	if err != nil || !params.MetricsEnabled {
 		return nil
 	}
 

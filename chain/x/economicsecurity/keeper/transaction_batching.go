@@ -90,7 +90,7 @@ func (k *Keeper) BatchTransaction(ctx context.Context, sender, recipient, amount
 		Amount:    amount,
 		Priority:  priority,
 		Timestamp: currentTime,
-		GasPrice:  k.CalculateDynamicFee(),
+		GasPrice:  k.CalculateDynamicFee(ctx),
 	}
 
 	// Get or create pending batch
@@ -191,7 +191,7 @@ func (k *Keeper) ProcessBatch(ctx context.Context) (uint64, string, error) {
 	gasSavings := individualGas - batchGas
 
 	// Calculate average gas price from batch
-	avgGasPrice := k.GetAverageUtilization()
+	avgGasPrice := k.GetAverageUtilization(ctx)
 
 	// Create batch record
 	record := BatchRecord{

@@ -138,7 +138,7 @@ func (k *Keeper) InitGenesis(ctx sdk.Context, data *types.GenesisState) error {
 
 // ExportGenesis exports the current module state to genesis
 func (k *Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
-	params := k.GetParams(ctx)
+	params, _ := k.GetParams(ctx)
 
 	// Export KYC records
 	kycRecords, err := k.GetAllKYCRecords(ctx)

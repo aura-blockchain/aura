@@ -38,8 +38,8 @@ type BoostMultiplier struct {
 }
 
 // GetAvailableBoosts returns all configured boost multipliers
-func (k *Keeper) GetAvailableBoosts() []BoostMultiplier {
-	params := k.GetParams()
+func (k *Keeper) GetAvailableBoosts(ctx sdk.Context) []BoostMultiplier {
+	params, _ := k.GetParams(ctx)
 
 	return []BoostMultiplier{
 		{
@@ -103,7 +103,7 @@ func (k *Keeper) CalculateApplicableBoosts(ctx sdk.Context, walletAddr string, i
 	applicableBoosts := []BoostMultiplier{}
 	totalMultiplier := math.LegacyOneDec()
 
-	allBoosts := k.GetAvailableBoosts()
+	allBoosts := k.GetAvailableBoosts(ctx)
 
 	for _, boost := range allBoosts {
 		if !boost.Enabled {
@@ -289,7 +289,7 @@ func (k *Keeper) GetBoostDetails(ctx sdk.Context, walletAddr string) (map[string
 	details := make(map[string]interface{})
 
 	// Check each boost type
-	allBoosts := k.GetAvailableBoosts()
+	allBoosts := k.GetAvailableBoosts(ctx)
 	for _, boost := range allBoosts {
 		if !boost.Enabled {
 			continue
@@ -312,7 +312,7 @@ func (k *Keeper) EnableBoost(ctx sdk.Context, boostType BoostType, enabled bool,
 		return types.ErrUnauthorized
 	}
 
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 
 	// All boost types use the velocity_bonus_enabled flag for now
 	// In future, can add individual flags to params proto

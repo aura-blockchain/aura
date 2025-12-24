@@ -30,7 +30,7 @@ func (qs *QueryServer) Params(ctx context.Context, req *economicsecuritypb.Query
 		return nil, fmt.Errorf("empty request")
 	}
 
-	params := qs.keeper.GetParams()
+	params, _ := qs.keeper.GetParams(ctx)
 	return &economicsecuritypb.QueryParamsResponse{
 		Params: &params,
 	}, nil
@@ -321,7 +321,7 @@ func (qs *QueryServer) InflationMetrics(ctx context.Context, req *economicsecuri
 		return nil, fmt.Errorf("empty request")
 	}
 
-	params := qs.keeper.GetParams()
+	params, _ := qs.keeper.GetParams(ctx)
 	if params.Tokenomics == nil {
 		return nil, fmt.Errorf("tokenomics config not found")
 	}
@@ -414,7 +414,7 @@ func (qs *QueryServer) LiquidityMiningStats(ctx context.Context, req *economicse
 		return nil, fmt.Errorf("empty request")
 	}
 
-	params := qs.keeper.GetParams()
+	params, _ := qs.keeper.GetParams(ctx)
 	if params.LiquidityMining == nil {
 		return nil, fmt.Errorf("liquidity mining config not found")
 	}
@@ -460,7 +460,7 @@ func (qs *QueryServer) MEVStats(ctx context.Context, req *economicsecuritypb.Que
 		return nil, fmt.Errorf("empty request")
 	}
 
-	params := qs.keeper.GetParams()
+	params, _ := qs.keeper.GetParams(ctx)
 	if params.Mev == nil {
 		return nil, fmt.Errorf("MEV config not found")
 	}
@@ -514,7 +514,7 @@ func (qs *QueryServer) TokenomicsStats(ctx context.Context, req *economicsecurit
 		return nil, fmt.Errorf("empty request")
 	}
 
-	params := qs.keeper.GetParams()
+	params, _ := qs.keeper.GetParams(ctx)
 	if params.Tokenomics == nil {
 		return nil, fmt.Errorf("tokenomics config not found")
 	}

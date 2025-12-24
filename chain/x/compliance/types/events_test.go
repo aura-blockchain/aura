@@ -87,50 +87,54 @@ func TestNewSanctionsFlaggedEvent(t *testing.T) {
 }
 
 func TestNewGDPRRequestEvent(t *testing.T) {
+	requester := "cosmos1test"
 	requestID := "req123"
-	addr := "cosmos1test"
 	requestType := "access"
 	blockHeight := int64(100)
 	blockTime := "2024-01-01T00:00:00Z"
 
-	attrs := types.NewGDPRRequestEvent(requestID, addr, requestType, blockHeight, blockTime)
+	attrs := types.NewGDPRRequestEvent(requester, requestID, requestType, blockHeight, blockTime)
 
 	require.NotNil(t, attrs)
+	require.Equal(t, requester, attrs[types.AttributeKeyRequester])
 	require.Equal(t, requestID, attrs[types.AttributeKeyRequestID])
-	require.Equal(t, addr, attrs[types.AttributeKeyAddress])
 	require.Equal(t, requestType, attrs[types.AttributeKeyGDPRRequestType])
 }
 
 func TestNewGDPRCompletedEvent(t *testing.T) {
+	requester := "cosmos1test"
 	requestID := "req123"
-	addr := "cosmos1test"
 	requestType := "erasure"
-	status := "completed"
+	dataExported := true
+	dataDeleted := true
 	blockHeight := int64(100)
 	blockTime := "2024-01-01T00:00:00Z"
 
-	attrs := types.NewGDPRCompletedEvent(requestID, addr, requestType, status, blockHeight, blockTime)
+	attrs := types.NewGDPRCompletedEvent(requester, requestID, requestType, dataExported, dataDeleted, blockHeight, blockTime)
 
 	require.NotNil(t, attrs)
 	require.Equal(t, requestID, attrs[types.AttributeKeyRequestID])
-	require.Equal(t, status, attrs[types.AttributeKeyStatus])
+	require.Equal(t, requester, attrs[types.AttributeKeyRequester])
+	require.Equal(t, "true", attrs[types.AttributeKeyDataExported])
+	require.Equal(t, "true", attrs[types.AttributeKeyDataDeleted])
 }
 
 func TestNewTaxReportGeneratedEvent(t *testing.T) {
-	reportID := "report123"
 	addr := "cosmos1test"
 	taxYear := "2024"
 	jurisdiction := "US"
+	reportType := "annual"
 	transactionCount := 100
 	blockHeight := int64(100)
 	blockTime := "2024-01-01T00:00:00Z"
 
-	attrs := types.NewTaxReportGeneratedEvent(reportID, addr, taxYear, jurisdiction, transactionCount, blockHeight, blockTime)
+	attrs := types.NewTaxReportGeneratedEvent(addr, taxYear, jurisdiction, reportType, transactionCount, blockHeight, blockTime)
 
 	require.NotNil(t, attrs)
-	require.Equal(t, reportID, attrs[types.AttributeKeyReportID])
 	require.Equal(t, addr, attrs[types.AttributeKeyAddress])
+	require.Equal(t, taxYear, attrs[types.AttributeKeyTaxYear])
 	require.Equal(t, jurisdiction, attrs[types.AttributeKeyJurisdiction])
+	require.Equal(t, reportType, attrs[types.AttributeKeyReportType])
 }
 
 func TestNewComplianceViolationEvent(t *testing.T) {
@@ -151,16 +155,18 @@ func TestNewComplianceViolationEvent(t *testing.T) {
 func TestNewSARReportedEvent(t *testing.T) {
 	activityID := "activity123"
 	addr := "cosmos1suspicious"
+	reporter := "cosmos1reporter"
 	activityType := "structuring"
 	transactionHash := "hash123"
 	blockHeight := int64(100)
 	blockTime := "2024-01-01T00:00:00Z"
 
-	attrs := types.NewSARReportedEvent(activityID, addr, activityType, transactionHash, blockHeight, blockTime)
+	attrs := types.NewSARReportedEvent(activityID, addr, reporter, activityType, transactionHash, blockHeight, blockTime)
 
 	require.NotNil(t, attrs)
 	require.Equal(t, activityID, attrs[types.AttributeKeyActivityID])
 	require.Equal(t, addr, attrs[types.AttributeKeyAddress])
+	require.Equal(t, reporter, attrs[types.AttributeKeyReporter])
 	require.Equal(t, activityType, attrs[types.AttributeKeyActivityType])
 }
 
@@ -196,20 +202,20 @@ func TestNewGDPRDataRequestedEvent(t *testing.T) {
 }
 
 func TestNewGDPRDataErasedEvent(t *testing.T) {
-	requestID := "req789"
 	addr := "cosmos1test"
 	erasureEventID := "erasure1"
 	erasureReason := "user_request"
+	erasureTime := "2024-01-01T00:00:00Z"
 	blockHeight := int64(100)
 	blockTime := "2024-01-01T00:00:00Z"
 
-	attrs := types.NewGDPRDataErasedEvent(requestID, addr, erasureEventID, erasureReason, blockHeight, blockTime)
+	attrs := types.NewGDPRDataErasedEvent(addr, erasureEventID, erasureReason, erasureTime, blockHeight, blockTime)
 
 	require.NotNil(t, attrs)
-	require.Equal(t, requestID, attrs[types.AttributeKeyRequestID])
 	require.Equal(t, addr, attrs[types.AttributeKeyAddress])
 	require.Equal(t, erasureEventID, attrs[types.AttributeKeyErasureEventID])
 	require.Equal(t, erasureReason, attrs[types.AttributeKeyErasureReason])
+	require.Equal(t, erasureTime, attrs[types.AttributeKeyErasureTime])
 }
 
 func TestEventConstants(t *testing.T) {

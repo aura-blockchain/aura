@@ -48,12 +48,12 @@ func ParamsInvariant(k *Keeper) sdk.Invariant {
 		// Create cache context for consistent snapshot reads
 		cacheCtx, _ := ctx.CacheContext()
 
-		params := k.GetParams(cacheCtx)
-		if params == nil {
+		_, err := k.GetParams(cacheCtx)
+		if err != nil {
 			return sdk.FormatInvariant(
 				types.ModuleName,
 				"params-valid",
-				"params are nil",
+				fmt.Sprintf("failed to get params: %v", err),
 			), true
 		}
 
@@ -328,11 +328,6 @@ func SecurityLimitsInvariant(k *Keeper) sdk.Invariant {
 	return func(ctx sdk.Context) (string, bool) {
 		// Create cache context for consistent snapshot reads
 		cacheCtx, _ := ctx.CacheContext()
-
-		params := k.GetParams(cacheCtx)
-		if params == nil {
-			return "", false
-		}
 
 		store := cacheCtx.KVStore(k.storeKey)
 		prefixStore := storeprefix.NewStore(store, types.PoolPrefix)

@@ -49,8 +49,8 @@ func (k Keeper) GetAuthority() string {
 // ============================
 
 // GetParams returns the current module parameters
-func (k Keeper) GetParams() types.Params {
-	return k.paramsStore.GetParams()
+func (k Keeper) GetParams(ctx context.Context) (types.Params, error) {
+	return k.paramsStore.GetParams(), nil
 }
 
 // SetParams sets new module parameters

@@ -26,7 +26,7 @@ func TestMsgServerFunctionality(t *testing.T) {
 	require.Equal(t, "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr", authority)
 
 	// Verify keeper params can be accessed through msg server
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 	require.NotNil(t, params.Tokenomics)
 	require.NotNil(t, params.WhaleProtection)
 

@@ -151,12 +151,12 @@ func (k *Keeper) CreateSession(ctx sdk.Context, userAddress string, expirySecond
 	// Get metrics instance
 	metrics := GetIdentityMetrics()
 
-	params, _ := k.GetParams(ctx)
+	params, err := k.GetParams(ctx)
 
 	// Check max sessions per user (use max roles per account as proxy for now)
 	sessions, _ := k.GetUserSessions(ctx, userAddress)
 	maxSessions := uint32(10) // default max sessions
-	if params != nil && params.Auth.MaxRolesPerAccount > 0 {
+	if err == nil && params.Auth.MaxRolesPerAccount > 0 {
 		maxSessions = params.Auth.MaxRolesPerAccount
 	}
 	if uint32(len(sessions)) >= maxSessions {
@@ -254,9 +254,9 @@ func (k *Keeper) GetRateLimitConfig(ctx sdk.Context, userAddress string) (types.
 	bz, err := store.Get(key)
 	if err != nil || bz == nil {
 		// Return default config if not found
-		params, _ := k.GetParams(ctx)
+		params, err := k.GetParams(ctx)
 		var defaultPerMinute, defaultPerHour, defaultPerDay uint64 = 60, 3600, 86400
-		if params != nil {
+		if err == nil {
 			defaultPerMinute = params.Auth.DefaultRequestsPerMinute
 			defaultPerHour = params.Auth.DefaultRequestsPerHour
 			defaultPerDay = params.Auth.DefaultRequestsPerDay

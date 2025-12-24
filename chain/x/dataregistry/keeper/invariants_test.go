@@ -96,7 +96,7 @@ func TestParamsInvariant(t *testing.T) {
 		require.Empty(t, msg, "no invariant violations expected")
 
 		// Verify params were actually set
-		retrieved := k.GetParams()
+		retrieved, _ := k.GetParams(input.Ctx)
 		require.Equal(t, uint64(10000000), retrieved.MaxStorageBytes)
 	})
 }

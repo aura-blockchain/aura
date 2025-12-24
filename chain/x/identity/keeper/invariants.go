@@ -40,20 +40,12 @@ func AllInvariants(k *Keeper) sdk.Invariant { //nolint:staticcheck // invariant 
 // ParamsInvariant checks that module parameters are valid
 func ParamsInvariant(k *Keeper) sdk.Invariant {
 	return func(ctx sdk.Context) (string, bool) {
-		params, err := k.GetParams(ctx)
+		_, err := k.GetParams(ctx)
 		if err != nil {
 			return sdk.FormatInvariant(
 				types.ModuleName,
 				"params-valid",
 				fmt.Sprintf("failed to get params: %s", err.Error()),
-			), true
-		}
-
-		if params == nil {
-			return sdk.FormatInvariant(
-				types.ModuleName,
-				"params-valid",
-				"params are nil",
 			), true
 		}
 

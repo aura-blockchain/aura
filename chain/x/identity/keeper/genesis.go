@@ -444,7 +444,7 @@ func (k *Keeper) ExportGenesis(ctx sdk.Context) (*types.GenesisState, error) {
 	}
 
 	return &types.GenesisState{
-		Params:                   *params,
+		Params:                   params,
 		Roles:                    rolesVal,
 		RoleAssignments:          roleAssignmentsVal,
 		AuditLogs:                auditLogsVal,

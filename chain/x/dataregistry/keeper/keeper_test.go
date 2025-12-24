@@ -27,7 +27,7 @@ func TestKeeperFunctionality(t *testing.T) {
 
 	// Test basic keeper operations
 	t.Run("GetParams", func(t *testing.T) {
-		params := k.GetParams()
+		params, _ := k.GetParams(input.Ctx)
 		require.NotNil(t, params)
 		require.True(t, params.MaxStorageBytes > 0)
 	})
@@ -38,7 +38,7 @@ func TestKeeperFunctionality(t *testing.T) {
 		err := k.SetParams(newParams)
 		require.NoError(t, err)
 
-		retrieved := k.GetParams()
+		retrieved, _ := k.GetParams(input.Ctx)
 		require.Equal(t, uint64(1000000), retrieved.MaxStorageBytes)
 	})
 

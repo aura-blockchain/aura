@@ -224,6 +224,7 @@ func TestTransactionScreening_VelocityThreshold(t *testing.T) {
 	// So we need to manually create the profile first
 	err = k.UpdateAMLProfileOnTransaction(ctx, from.String(), amount1)
 	require.NoError(t, err)
+	k.EndBlocker(ctx) // Flush batched updates
 
 	// Check that profile was created with 600k
 	profile1, err := k.GetAMLProfile(ctx, from.String())
@@ -336,6 +337,7 @@ func TestTransactionScreening_StructuringDetection(t *testing.T) {
 		amount := sdk.NewCoins(sdk.NewInt64Coin("uaura", 9000)) // Just below 10k reporting threshold
 		err = k.UpdateAMLProfileOnTransaction(ctx, from.String(), amount)
 		require.NoError(t, err)
+		k.EndBlocker(ctx) // Flush batched AML profile updates
 
 		alerts, err := k.MonitorTransaction(ctx, from, to, amount)
 		require.NoError(t, err)
@@ -789,6 +791,9 @@ func TestRiskScoring_LowRisk(t *testing.T) {
 	err = k.UpdateAMLProfileOnTransaction(ctx, addr.String(), amount)
 	require.NoError(t, err)
 
+	// Flush batched updates
+	k.EndBlocker(ctx)
+
 	// Check risk level
 	profile, err := k.GetAMLProfile(ctx, addr.String())
 	require.NoError(t, err)
@@ -814,6 +819,7 @@ func TestRiskScoring_MediumRisk(t *testing.T) {
 		amount := sdk.NewCoins(sdk.NewInt64Coin("uaura", 60000))
 		err = k.UpdateAMLProfileOnTransaction(ctx, addr.String(), amount)
 		require.NoError(t, err)
+		k.EndBlocker(ctx) // Flush batched updates
 	}
 
 	// Check risk level (should be medium due to volume: 600k >= 500k medium threshold)

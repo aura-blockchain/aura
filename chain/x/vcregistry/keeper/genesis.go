@@ -237,7 +237,7 @@ func (k *Keeper) ExportGenesis(ctx context.Context) types.GenesisState {
 	k.requireStore()
 
 	// Export params
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 
 	// Export VC records from KV store
 	vcRecords := make([]*types.VCRecord, 0)

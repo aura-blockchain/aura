@@ -705,8 +705,8 @@ func (k *Keeper) GetInsuranceIntegration(ctx sdk.Context) types.InsuranceIntegra
 }
 
 // GetParams returns the module parameters
-func (k *Keeper) GetParams(ctx sdk.Context) types.IncidentResponseParams {
+func (k Keeper) GetParams(ctx sdk.Context) (types.IncidentResponseParams, error) {
 	k.mu.RLock()
 	defer k.mu.RUnlock()
-	return k.params
+	return k.params, nil
 }

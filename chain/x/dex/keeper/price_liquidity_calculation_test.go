@@ -183,14 +183,14 @@ func TestGetCurrentMinimumLiquidity_WithConfiguredTiers(t *testing.T) {
 	k, ctx, mockBank := setupTestKeeper(t)
 
 	// Configure tiers
-	params := k.GetParams(ctx)
+	params, _ := k.GetParams(ctx)
 	params.MinLiquidityTiers = []types.MinLiquidityTier{
 		{MaxAuraPriceUsd: sdkmath.LegacyMustNewDecFromStr("0.20"), MinLiquidityUsd: sdkmath.LegacyMustNewDecFromStr("1000")},   // Bootstrap: < $0.20
 		{MaxAuraPriceUsd: sdkmath.LegacyMustNewDecFromStr("1.00"), MinLiquidityUsd: sdkmath.LegacyMustNewDecFromStr("5000")},   // Growth: $0.20 - $1.00
 		{MaxAuraPriceUsd: sdkmath.LegacyMustNewDecFromStr("5.00"), MinLiquidityUsd: sdkmath.LegacyMustNewDecFromStr("25000")},  // Maturity: $1.00 - $5.00
 		{MaxAuraPriceUsd: sdkmath.LegacyZeroDec(), MinLiquidityUsd: sdkmath.LegacyMustNewDecFromStr("100000")},                 // Scale: > $5.00 (0 = no max)
 	}
-	err := k.SetParams(ctx, params)
+	err := k.SetParams(ctx, &params)
 	require.NoError(t, err)
 
 	// Create pool with $0.50 price (should match growth tier)
@@ -227,14 +227,14 @@ func TestGetCurrentMinimumLiquidity_TierLogic(t *testing.T) {
 	k, ctx, mockBank := setupTestKeeper(t)
 
 	// Configure tiers with specific boundaries
-	params := k.GetParams(ctx)
+	params, _ := k.GetParams(ctx)
 	params.MinLiquidityTiers = []types.MinLiquidityTier{
 		{MaxAuraPriceUsd: sdkmath.LegacyMustNewDecFromStr("0.20"), MinLiquidityUsd: sdkmath.LegacyMustNewDecFromStr("1000")},   // Bootstrap: < $0.20
 		{MaxAuraPriceUsd: sdkmath.LegacyMustNewDecFromStr("1.00"), MinLiquidityUsd: sdkmath.LegacyMustNewDecFromStr("5000")},   // Growth: $0.20 - $1.00
 		{MaxAuraPriceUsd: sdkmath.LegacyMustNewDecFromStr("5.00"), MinLiquidityUsd: sdkmath.LegacyMustNewDecFromStr("25000")},  // Maturity: $1.00 - $5.00
 		{MaxAuraPriceUsd: sdkmath.LegacyZeroDec(), MinLiquidityUsd: sdkmath.LegacyMustNewDecFromStr("100000")},                 // Scale: > $5.00 (0 = no max)
 	}
-	err := k.SetParams(ctx, params)
+	err := k.SetParams(ctx, &params)
 	require.NoError(t, err)
 
 	tests := []struct {

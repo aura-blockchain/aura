@@ -180,9 +180,8 @@ func (k *Keeper) initializeDefaultMonitoringRules(ctx sdk.Context) error {
 // Monitoring rule CRUD operations are implemented in keeper_kvstore.go using proper proto types
 
 // GetParams returns the current module parameters
-func (k *Keeper) GetParams(ctx sdk.Context) types.ComplianceParams {
-	params, _ := k.GetParamsFromStore(ctx)
-	return params
+func (k Keeper) GetParams(ctx sdk.Context) (types.ComplianceParams, error) {
+	return k.GetParamsFromStore(ctx)
 }
 
 // SetParams updates the module parameters
@@ -227,7 +226,7 @@ func (k Keeper) IsJurisdictionBlocked(ctx sdk.Context, jurisdiction string) bool
 		return true // Fail-safe: empty jurisdiction is blocked
 	}
 
-	params := k.GetParams(ctx)
+	params, _ := k.GetParams(ctx)
 
 	// Case-insensitive check for blocked jurisdictions
 	jurisdictionUpper := toUpperASCII(jurisdiction)

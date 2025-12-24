@@ -49,15 +49,7 @@ func ParamsInvariant(k *Keeper) sdk.Invariant {
 			), true
 		}
 
-		if params == nil {
-			return sdk.FormatInvariant(
-				types.ModuleName,
-				"params-valid",
-				"params are nil",
-			), true
-		}
-
-		if err := types.ValidateParams(params); err != nil {
+		if err := types.ValidateParams(&params); err != nil {
 			return sdk.FormatInvariant(
 				types.ModuleName,
 				"params-valid",

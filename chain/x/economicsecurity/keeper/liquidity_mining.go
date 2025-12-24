@@ -13,7 +13,7 @@ import (
 
 // DistributeLiquidityRewards distributes rewards for the current epoch
 func (k *Keeper) DistributeLiquidityRewards(ctx context.Context, recipients map[string]string, irVerifiedUsers map[string]bool) error {
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 
 	if !params.LiquidityMining.Enabled {
 		return types.ErrLiquidityMiningDisabled
@@ -94,8 +94,8 @@ func (k *Keeper) DistributeLiquidityRewards(ctx context.Context, recipients map[
 }
 
 // GetLiquidityMiningStats returns liquidity mining statistics
-func (k *Keeper) GetLiquidityMiningStats() (bool, string, string, string, uint64, uint64) {
-	params := k.GetParams()
+func (k *Keeper) GetLiquidityMiningStats(ctx context.Context) (bool, string, string, string, uint64, uint64) {
+	params, _ := k.GetParams(ctx)
 
 	if !params.LiquidityMining.Enabled {
 		return false, "0", "0", "0", 0, 0
@@ -124,8 +124,8 @@ func (k *Keeper) GetLiquidityMiningStats() (bool, string, string, string, uint64
 }
 
 // CheckLiquidityRewardCap checks if distributing rewards would exceed cap
-func (k *Keeper) CheckLiquidityRewardCap(amount string) error {
-	params := k.GetParams()
+func (k *Keeper) CheckLiquidityRewardCap(ctx context.Context, amount string) error {
+	params, _ := k.GetParams(ctx)
 
 	if !params.LiquidityMining.Enabled {
 		return types.ErrLiquidityMiningDisabled
@@ -156,7 +156,7 @@ func (k *Keeper) CheckLiquidityRewardCap(amount string) error {
 
 // CanDistributeRewards checks if rewards can be distributed in the current epoch
 func (k *Keeper) CanDistributeRewards(ctx context.Context) (bool, error) {
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 
 	if !params.LiquidityMining.Enabled {
 		return false, nil
@@ -173,8 +173,8 @@ func (k *Keeper) CanDistributeRewards(ctx context.Context) (bool, error) {
 }
 
 // GetRemainingRewards returns the amount of rewards remaining to be distributed
-func (k *Keeper) GetRemainingRewards() (string, error) {
-	params := k.GetParams()
+func (k *Keeper) GetRemainingRewards(ctx context.Context) (string, error) {
+	params, _ := k.GetParams(ctx)
 
 	totalAllocated := new(big.Int)
 	if _, ok := totalAllocated.SetString(params.LiquidityMining.TotalRewardsAllocated, 10); !ok {
@@ -191,8 +191,8 @@ func (k *Keeper) GetRemainingRewards() (string, error) {
 }
 
 // CalculateRewardWithMultiplier calculates reward amount with IR multiplier applied
-func (k *Keeper) CalculateRewardWithMultiplier(baseReward string, isIRVerified bool) (string, error) {
-	params := k.GetParams()
+func (k *Keeper) CalculateRewardWithMultiplier(ctx context.Context, baseReward string, isIRVerified bool) (string, error) {
+	params, _ := k.GetParams(ctx)
 
 	reward := new(big.Int)
 	if _, ok := reward.SetString(baseReward, 10); !ok {
@@ -210,7 +210,7 @@ func (k *Keeper) CalculateRewardWithMultiplier(baseReward string, isIRVerified b
 
 // GetEpochInfo returns information about the current epoch
 func (k *Keeper) GetEpochInfo(ctx context.Context) (currentEpoch uint64, lastDistHeight uint64, nextDistHeight uint64, blocksRemaining uint64, err error) {
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 
 	currentHeight, err := k.GetCurrentHeight(ctx)
 	if err != nil {
@@ -231,8 +231,8 @@ func (k *Keeper) GetEpochInfo(ctx context.Context) (currentEpoch uint64, lastDis
 }
 
 // EstimateEpochRewards estimates total rewards for an epoch based on recipient map
-func (k *Keeper) EstimateEpochRewards(recipients map[string]string, irVerifiedUsers map[string]bool) (totalBase string, totalWithMultipliers string, err error) {
-	params := k.GetParams()
+func (k *Keeper) EstimateEpochRewards(ctx context.Context, recipients map[string]string, irVerifiedUsers map[string]bool) (totalBase string, totalWithMultipliers string, err error) {
+	params, _ := k.GetParams(ctx)
 
 	baseRewards := big.NewInt(0)
 	adjustedRewards := big.NewInt(0)
@@ -259,8 +259,8 @@ func (k *Keeper) EstimateEpochRewards(recipients map[string]string, irVerifiedUs
 }
 
 // UpdateLiquidityMiningConfig updates liquidity mining parameters
-func (k *Keeper) UpdateLiquidityMiningConfig(enabled bool, epochDuration uint64, irMultiplier uint64) error {
-	params := k.GetParams()
+func (k *Keeper) UpdateLiquidityMiningConfig(ctx context.Context, enabled bool, epochDuration uint64, irMultiplier uint64) error {
+	params, _ := k.GetParams(ctx)
 
 	if epochDuration == 0 {
 		return types.ErrInvalidDuration
@@ -278,8 +278,8 @@ func (k *Keeper) UpdateLiquidityMiningConfig(enabled bool, epochDuration uint64,
 }
 
 // IncreaseTotalRewardsAllocated increases the total reward allocation
-func (k *Keeper) IncreaseTotalRewardsAllocated(additionalRewards string) error {
-	params := k.GetParams()
+func (k *Keeper) IncreaseTotalRewardsAllocated(ctx context.Context, additionalRewards string) error {
+	params, _ := k.GetParams(ctx)
 
 	currentAllocated := new(big.Int)
 	if _, ok := currentAllocated.SetString(params.LiquidityMining.TotalRewardsAllocated, 10); !ok {

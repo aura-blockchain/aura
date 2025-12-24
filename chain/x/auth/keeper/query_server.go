@@ -424,5 +424,5 @@ func (qs queryServer) GetParams(goCtx context.Context, req *authproto.QueryGetPa
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &authproto.QueryGetParamsResponse{Params: params}, nil
+	return &authproto.QueryGetParamsResponse{Params: &params}, nil
 }

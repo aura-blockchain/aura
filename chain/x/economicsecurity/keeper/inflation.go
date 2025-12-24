@@ -50,7 +50,7 @@ func (k Keeper) AdjustInflationRate(ctx context.Context, authority string, newRa
 	}
 
 	// Get current params to access bounds and current rate
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 	if params.Tokenomics == nil {
 		return 0, fmt.Errorf("tokenomics config not initialized")
 	}
@@ -137,7 +137,7 @@ func (k Keeper) GetInflationMetrics(ctx context.Context) (
 	err error,
 ) {
 	// Get current params
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 	if params.Tokenomics == nil {
 		return 0, 0, 0, time.Time{}, time.Time{}, fmt.Errorf("tokenomics config not initialized")
 	}
@@ -195,7 +195,7 @@ func (k Keeper) GetInflationMetrics(ctx context.Context) (
 //   - Previous rate: 600 (6.00%), Current rate: 500 (5.00%) → Returns: -100
 func (k Keeper) CalculateInflation24hChange(ctx context.Context) (int64, error) {
 	// Get current inflation rate
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 	if params.Tokenomics == nil {
 		return 0, fmt.Errorf("tokenomics config not initialized")
 	}
@@ -231,7 +231,7 @@ func (k Keeper) CalculateInflation24hChange(ctx context.Context) (int64, error) 
 // Returns:
 //   - error: State update errors
 func (k Keeper) UpdateInflationCheckTimestamp(ctx context.Context) error {
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 	if params.Tokenomics == nil {
 		return fmt.Errorf("tokenomics config not initialized")
 	}

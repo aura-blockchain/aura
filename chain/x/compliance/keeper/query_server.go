@@ -180,7 +180,7 @@ func (q *queryServer) Params(goCtx context.Context, req *types.QueryParamsReques
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	params := q.Keeper.GetParams(ctx)
+	params, _ := q.Keeper.GetParams(ctx)
 
 	return &types.QueryParamsResponse{Params: params}, nil
 }

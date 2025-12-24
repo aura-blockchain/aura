@@ -53,7 +53,7 @@ func (k *Keeper) InitGenesis(ctx sdk.Context, genesis types.GenesisState) error 
 
 // ExportGenesis exports the module state to genesis
 func (k *Keeper) ExportGenesis(ctx sdk.Context) types.GenesisState {
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 
 	// Export all data items
 	items := []*types.DataItem{}

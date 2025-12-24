@@ -25,8 +25,8 @@ type DecayConfig struct {
 }
 
 // GetDecayConfig returns current decay configuration from params
-func (k *Keeper) GetDecayConfig() DecayConfig {
-	params := k.GetParams()
+func (k *Keeper) GetDecayConfig(ctx sdk.Context) DecayConfig {
+	params, _ := k.GetParams(ctx)
 
 	// Note: Decay params not yet in proto - using defaults
 	// NOTE: Future enhancement - Add decay params to confidencescore.proto Params message
@@ -43,7 +43,7 @@ func (k *Keeper) GetDecayConfig() DecayConfig {
 // ApplyScoreDecay applies time-based decay to a user's score
 // Returns: (oldScore, newScore, decayAmount, error)
 func (k *Keeper) ApplyScoreDecay(ctx sdk.Context, walletAddr string) (uint64, uint64, uint64, error) {
-	config := k.GetDecayConfig()
+	config := k.GetDecayConfig(ctx)
 
 	if !config.Enabled {
 		return 0, 0, 0, fmt.Errorf("score decay is disabled")
@@ -97,7 +97,7 @@ func (k *Keeper) ApplyScoreDecay(ctx sdk.Context, walletAddr string) (uint64, ui
 
 	// Update record
 	record.TotalScore = newScore
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 
 	// Check verification status
 	if newScore < params.VerificationThreshold && record.Status == types.VerificationStatusVerified {
@@ -128,7 +128,7 @@ func (k *Keeper) ApplyScoreDecay(ctx sdk.Context, walletAddr string) (uint64, ui
 // ApplyBatchDecay applies decay to all eligible users
 // Used in EndBlocker to process decay periodically
 func (k *Keeper) ApplyBatchDecay(ctx sdk.Context) (int, uint64, error) {
-	config := k.GetDecayConfig()
+	config := k.GetDecayConfig(ctx)
 
 	if !config.Enabled {
 		return 0, 0, nil
@@ -176,7 +176,7 @@ func (k *Keeper) ApplyBatchDecay(ctx sdk.Context) (int, uint64, error) {
 
 // ShouldApplyDecay checks if decay should be applied to a user
 func (k *Keeper) ShouldApplyDecay(ctx sdk.Context, walletAddr string) (bool, string) {
-	config := k.GetDecayConfig()
+	config := k.GetDecayConfig(ctx)
 
 	if !config.Enabled {
 		return false, "decay disabled"
@@ -211,7 +211,7 @@ func (k *Keeper) ShouldApplyDecay(ctx sdk.Context, walletAddr string) (bool, str
 
 // GetDecayPreview calculates decay without applying it
 func (k *Keeper) GetDecayPreview(ctx sdk.Context, walletAddr string) (currentScore, projectedScore, decayAmount uint64, err error) {
-	config := k.GetDecayConfig()
+	config := k.GetDecayConfig(ctx)
 
 	record, ok := k.GetUserRecord(ctx, walletAddr)
 	if !ok {
@@ -285,7 +285,7 @@ func (k *Keeper) RestoreDecayedScore(ctx sdk.Context, walletAddr string, amount 
 	previousScore := record.TotalScore
 	record.TotalScore += amount
 
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 	if record.TotalScore >= params.VerificationThreshold {
 		if record.Status == types.VerificationStatusUnverified {
 			record.Status = types.VerificationStatusVerified

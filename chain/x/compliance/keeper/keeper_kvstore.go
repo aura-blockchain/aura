@@ -611,7 +611,7 @@ func (k *Keeper) UpdateAMLProfileOnTransaction(ctx sdk.Context, address string, 
 //   - Multiple factors compound to increase risk level
 //   - Thresholds should be reviewed regularly and adjusted
 func (k *Keeper) calculateRiskLevel(ctx sdk.Context, profile *types.AMLProfile) types.AMLRiskLevel {
-	params := k.GetParams(ctx)
+	params, _ := k.GetParams(ctx)
 
 	// Parse volume as math.Int for comparison
 	totalVolume, ok := math.NewIntFromString(profile.TotalVolume)
@@ -1314,7 +1314,7 @@ func (k *Keeper) DeleteRateLimitEntry(ctx sdk.Context, address string, operation
 // CheckRateLimit enforces per-address, per-operation rate limits to prevent DoS
 // of expensive external API calls (sanctions screening, KYC verification, etc.).
 func (k *Keeper) CheckRateLimit(ctx sdk.Context, address string, operation string) error {
-	params := k.GetParams(ctx)
+	params, _ := k.GetParams(ctx)
 
 	// Get or create rate limit entry
 	entry, found := k.GetRateLimitEntry(ctx, address, operation)

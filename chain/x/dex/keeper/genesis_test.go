@@ -46,7 +46,7 @@ func TestGenesisRoundTrip(t *testing.T) {
 	k2, ctx2, _ := setupTestKeeper(t)
 	require.NoError(t, k2.InitGenesis(ctx2, gen))
 
-	reParams := k2.GetParams(ctx2)
+	reParams, _ := k2.GetParams(ctx2)
 	require.Equal(t, params.TradingFee, reParams.TradingFee)
 
 	pools := k2.GetAllPools(ctx2)

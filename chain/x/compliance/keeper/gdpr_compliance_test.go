@@ -410,7 +410,7 @@ func TestGDPRCompliance_JurisdictionMustBeStored(t *testing.T) {
 
 	t.Run("SanctionedJurisdiction_RejectedOnChain", func(t *testing.T) {
 		// Set up blocked jurisdictions (OFAC sanctioned countries)
-		params := keeper.GetParams(ctx)
+		params, _ := keeper.GetParams(ctx)
 		params.BlockedJurisdictions = []string{"KP", "IR", "SY", "CU"}
 		err := keeper.SetParams(ctx, params)
 		require.NoError(t, err)

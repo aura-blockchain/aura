@@ -34,7 +34,7 @@ func (k *Keeper) SlashScore(
 	}
 
 	previousScore := record.TotalScore
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 
 	// Apply slash (ensuring it doesn't go below 0)
 	var newScore uint64
@@ -135,7 +135,7 @@ func (k *Keeper) AppealSlash(
 	}
 
 	// Validate deposit (in real implementation, would verify actual token deposit)
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 	if deposit != params.AppealDeposit {
 		return false, 0, types.ErrInsufficientDeposit
 	}
@@ -194,7 +194,7 @@ func (k *Keeper) ResolveAppeal(
 		restoredScore = slashRecord.SlashAmount
 
 		// Re-check verification status
-		params := k.GetParams()
+		params, _ := k.GetParams(ctx)
 		if record.TotalScore >= params.VerificationThreshold {
 			if record.Status == types.VerificationStatusUnverified {
 				record.Status = types.VerificationStatusVerified
@@ -240,7 +240,7 @@ func (k *Keeper) CalculateSlashAmount(ctx sdk.Context, walletAddr string, percen
 		return 0, types.ErrUserRecordNotFound
 	}
 
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 
 	// Ensure percentage doesn't exceed max
 	if percentage > params.SlashPercentage {

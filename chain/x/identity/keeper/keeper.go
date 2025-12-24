@@ -59,21 +59,25 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 // ============================================================================
 
 // GetParams retrieves the module parameters
-func (k *Keeper) GetParams(ctx sdk.Context) (*types.Params, error) {
+func (k Keeper) GetParams(ctx sdk.Context) (types.Params, error) {
 	store := k.storeService.OpenKVStore(ctx)
 	bz, err := store.Get(types.ParamsKey)
 	if err != nil {
-		return nil, err
+		return types.Params{}, err
 	}
 	if bz == nil {
-		return types.DefaultParams(), nil
+		defaultParams := types.DefaultParams()
+		if defaultParams == nil {
+			return types.Params{}, nil
+		}
+		return *defaultParams, nil
 	}
 
 	var params types.Params
 	if err := k.cdc.Unmarshal(bz, &params); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal params: %w", err)
+		return types.Params{}, fmt.Errorf("failed to unmarshal params: %w", err)
 	}
-	return &params, nil
+	return params, nil
 }
 
 // SetParams sets the module parameters

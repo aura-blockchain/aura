@@ -1,7 +1,9 @@
 package keeper
 
 import (
+	"context"
 	"encoding/binary"
+	"fmt"
 
 	storetypes "cosmossdk.io/store/types"
 	"github.com/aequitas/aura/chain/x/contractregistry/types"
@@ -54,31 +56,28 @@ func (k *Keeper) GetAuthority() string {
 }
 
 // GetParams returns the current module parameters
-func (k Keeper) GetParams(ctx sdk.Context) types.Params {
-	store := ctx.KVStore(k.storeKey)
+func (k Keeper) GetParams(ctx context.Context) (types.Params, error) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	store := sdkCtx.KVStore(k.storeKey)
 	bz := store.Get(types.ParamsKey)
 	if bz == nil {
 		// Return default params if not set
 		return types.Params{
 			AuditWarningDays:       90,
 			MaxContractsPerCreator: 100,
-		}
+		}, nil
 	}
 
 	var protoParams pb.ContractRegistryParams
 	if err := k.cdc.Unmarshal(bz, &protoParams); err != nil {
-		// Return default params on unmarshal error
-		return types.Params{
-			AuditWarningDays:       90,
-			MaxContractsPerCreator: 100,
-		}
+		return types.Params{}, fmt.Errorf("failed to unmarshal params: %w", err)
 	}
 
 	// Convert proto params to types.Params
 	return types.Params{
 		AuditWarningDays:       protoParams.AuditWarningDays,
 		MaxContractsPerCreator: protoParams.MaxContractsPerCreator,
-	}
+	}, nil
 }
 
 // SetParams sets new module parameters
@@ -343,7 +342,10 @@ func (k Keeper) RegisterContract(ctx sdk.Context, info *pb.ContractInfo) error {
 	}
 
 	// Check max contracts per creator
-	params := k.GetParams(ctx)
+	params, err := k.GetParams(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get params: %w", err)
+	}
 	creatorContracts := k.GetCreatorContracts(ctx, info.Creator)
 	if params.MaxContractsPerCreator > 0 && uint64(len(creatorContracts)) >= params.MaxContractsPerCreator {
 		return types.ErrTooManyContracts

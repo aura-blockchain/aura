@@ -34,7 +34,7 @@ func (k *Keeper) CheckRateLimit(ctx sdk.Context, wallet, irID string) error {
 	limit, hasLimit := k.GetRateLimit(ctx, irID)
 	if !hasLimit {
 		// If no specific rate limit is configured, use default from params
-		params := k.GetParams()
+		params, _ := k.GetParams(ctx)
 		limit = types.IRRateLimit{
 			IrId:             irID,
 			PerWalletPerHour: params.DefaultRateLimitHour,
@@ -86,7 +86,7 @@ func (k *Keeper) IncrementRateLimitCounters(ctx sdk.Context, wallet, irID string
 	limit, hasLimit := k.GetRateLimit(ctx, irID)
 	if !hasLimit {
 		// If no specific rate limit is configured, use default from params
-		params := k.GetParams()
+		params, _ := k.GetParams(ctx)
 		limit = types.IRRateLimit{
 			IrId:             irID,
 			PerWalletPerHour: params.DefaultRateLimitHour,

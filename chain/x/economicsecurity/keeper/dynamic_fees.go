@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"context"
 	"math/big"
 
 	"github.com/aequitas/aura/chain/x/economicsecurity/types"
@@ -11,8 +12,11 @@ import (
 // ============================
 
 // RecordBlockUtilization records block utilization for fee calculation
-func (k *Keeper) RecordBlockUtilization(utilization uint64) error {
-	params := k.GetParams()
+func (k *Keeper) RecordBlockUtilization(ctx context.Context, utilization uint64) error {
+	params, err := k.GetParams(ctx)
+	if err != nil {
+		return err
+	}
 
 	// Get existing utilization data from params (source of truth)
 	blockUtilization := params.DynamicFees.RecentUtilization
@@ -29,8 +33,11 @@ func (k *Keeper) RecordBlockUtilization(utilization uint64) error {
 }
 
 // AdjustDynamicFees adjusts fee multiplier based on network congestion
-func (k *Keeper) AdjustDynamicFees() error {
-	params := k.GetParams()
+func (k *Keeper) AdjustDynamicFees(ctx context.Context) error {
+	params, err := k.GetParams(ctx)
+	if err != nil {
+		return err
+	}
 
 	if !params.DynamicFees.Enabled {
 		return nil
@@ -86,8 +93,11 @@ func (k *Keeper) AdjustDynamicFees() error {
 }
 
 // CalculateDynamicFee calculates the current fee for a transaction
-func (k *Keeper) CalculateDynamicFee() string {
-	params := k.GetParams()
+func (k *Keeper) CalculateDynamicFee(ctx context.Context) string {
+	params, err := k.GetParams(ctx)
+	if err != nil {
+		return ""
+	}
 
 	if !params.DynamicFees.Enabled {
 		return params.DynamicFees.BaseFee
@@ -107,14 +117,20 @@ func (k *Keeper) CalculateDynamicFee() string {
 }
 
 // GetCurrentFeeMultiplier returns the current fee multiplier
-func (k *Keeper) GetCurrentFeeMultiplier() uint64 {
-	params := k.GetParams()
+func (k *Keeper) GetCurrentFeeMultiplier(ctx context.Context) uint64 {
+	params, err := k.GetParams(ctx)
+	if err != nil {
+		return types.BasisPoints // default multiplier
+	}
 	return params.DynamicFees.CurrentMultiplier
 }
 
 // GetAverageUtilization returns the average block utilization
-func (k *Keeper) GetAverageUtilization() uint64 {
-	params := k.GetParams()
+func (k *Keeper) GetAverageUtilization(ctx context.Context) uint64 {
+	params, err := k.GetParams(ctx)
+	if err != nil {
+		return 0
+	}
 	utilizationData := params.DynamicFees.RecentUtilization
 
 	if len(utilizationData) == 0 {
@@ -130,8 +146,11 @@ func (k *Keeper) GetAverageUtilization() uint64 {
 }
 
 // GetFeeMultiplierHistory returns recent fee multiplier adjustments
-func (k *Keeper) GetFeeMultiplierHistory() []uint64 {
-	params := k.GetParams()
+func (k *Keeper) GetFeeMultiplierHistory(ctx context.Context) []uint64 {
+	params, err := k.GetParams(ctx)
+	if err != nil {
+		return nil
+	}
 
 	// Return recent utilization as proxy for fee history
 	// In production, you might store actual multiplier history
@@ -139,8 +158,11 @@ func (k *Keeper) GetFeeMultiplierHistory() []uint64 {
 }
 
 // PredictFee estimates the fee at a future utilization level
-func (k *Keeper) PredictFee(futureUtilization uint64) (string, error) {
-	params := k.GetParams()
+func (k *Keeper) PredictFee(ctx context.Context, futureUtilization uint64) (string, error) {
+	params, err := k.GetParams(ctx)
+	if err != nil {
+		return "", err
+	}
 
 	if !params.DynamicFees.Enabled {
 		return params.DynamicFees.BaseFee, nil
@@ -189,8 +211,11 @@ func (k *Keeper) PredictFee(futureUtilization uint64) (string, error) {
 }
 
 // SetBaseFee updates the base fee (requires governance authority)
-func (k *Keeper) SetBaseFee(baseFee string) error {
-	params := k.GetParams()
+func (k *Keeper) SetBaseFee(ctx context.Context, baseFee string) error {
+	params, err := k.GetParams(ctx)
+	if err != nil {
+		return err
+	}
 
 	// Validate base fee
 	bf := new(big.Int)
@@ -207,8 +232,11 @@ func (k *Keeper) SetBaseFee(baseFee string) error {
 }
 
 // ResetFeeMultiplier resets the fee multiplier to base value
-func (k *Keeper) ResetFeeMultiplier() error {
-	params := k.GetParams()
+func (k *Keeper) ResetFeeMultiplier(ctx context.Context) error {
+	params, err := k.GetParams(ctx)
+	if err != nil {
+		return err
+	}
 
 	// Reset to base multiplier (10000 basis points = 1.0x)
 	params.DynamicFees.CurrentMultiplier = types.BasisPoints
@@ -216,12 +244,15 @@ func (k *Keeper) ResetFeeMultiplier() error {
 }
 
 // GetFeeStatistics returns comprehensive fee statistics
-func (k *Keeper) GetFeeStatistics() (currentFee string, multiplier uint64, avgUtilization uint64, baseFee string) {
-	params := k.GetParams()
+func (k *Keeper) GetFeeStatistics(ctx context.Context) (currentFee string, multiplier uint64, avgUtilization uint64, baseFee string) {
+	params, err := k.GetParams(ctx)
+	if err != nil {
+		return "", types.BasisPoints, 0, ""
+	}
 
-	currentFee = k.CalculateDynamicFee()
+	currentFee = k.CalculateDynamicFee(ctx)
 	multiplier = params.DynamicFees.CurrentMultiplier
-	avgUtilization = k.GetAverageUtilization()
+	avgUtilization = k.GetAverageUtilization(ctx)
 	baseFee = params.DynamicFees.BaseFee
 
 	return

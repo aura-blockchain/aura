@@ -565,7 +565,7 @@ func (q *QueryServer) Params(
 
 	q.syncMetadata(ctx)
 
-	params := q.keeper.GetParams()
+	params, _ := q.keeper.GetParams(ctx)
 
 	return &vcregistrypb.QueryParamsResponse{
 		Params: types.ParamsToProto(&params),

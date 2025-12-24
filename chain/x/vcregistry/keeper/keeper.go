@@ -111,11 +111,11 @@ func (k *Keeper) SetCurrentHeight(height uint64) {
 }
 
 // GetParams returns the current module parameters
-func (k *Keeper) GetParams() types.Params {
+func (k Keeper) GetParams(ctx context.Context) (types.Params, error) {
 	if k.paramsStore != nil {
-		return k.paramsStore.GetParams()
+		return k.paramsStore.GetParams(), nil
 	}
-	return *types.DefaultParams()
+	return *types.DefaultParams(), nil
 }
 
 // SetParams sets new module parameters
@@ -765,7 +765,7 @@ func (k *Keeper) ListVcPolicies(ctx context.Context, statusFilter types.VCPolicy
 
 // CheckMintRateLimit checks if user has exceeded minting rate limits
 func (k *Keeper) CheckMintRateLimit(ctx context.Context, holderAddress string) error {
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 	if !params.RateLimitingEnabled {
 		return nil
 	}

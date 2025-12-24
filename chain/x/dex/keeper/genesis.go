@@ -92,7 +92,11 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data types.GenesisState) error {
 
 // ExportGenesis exports the dex module state to genesis.
 func (k Keeper) ExportGenesis(ctx sdk.Context) types.GenesisState {
-	params := k.GetParams(ctx)
+	params, err := k.GetParams(ctx)
+	if err != nil {
+		ctx.Logger().Error("failed to get params for genesis export, using defaults", "error", err)
+		params = types.DefaultParams()
+	}
 	poolsPtrs := k.GetAllPools(ctx)
 	ordersPtrs := k.GetAllOrders(ctx)
 	orderbooksPtrs := k.exportOrderbooks(ctx)
@@ -144,7 +148,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) types.GenesisState {
 	}
 
 	return types.GenesisState{
-		Params:              *params,
+		Params:              params,
 		LiquidityPools:      pools,
 		SwapOrders:          orders,
 		Orderbooks:          orderbooks,

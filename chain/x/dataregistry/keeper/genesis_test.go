@@ -66,7 +66,7 @@ func TestInitGenesis(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify params were set
-	retrievedParams := k.GetParams()
+	retrievedParams, _ := k.GetParams(input.Ctx)
 	require.Equal(t, defaultParams.MaxStorageBytes, retrievedParams.MaxStorageBytes)
 
 	// Verify data items were stored

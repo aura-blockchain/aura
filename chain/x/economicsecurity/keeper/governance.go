@@ -18,7 +18,7 @@ import (
 
 // CheckProposalStake validates if an address has sufficient stake to create a proposal (Feature 7)
 func (k *Keeper) CheckProposalStake(ctx context.Context, proposer, stakeAmount string) error {
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 
 	minStake := new(big.Int)
 	minStake.SetString(params.Governance.MinProposalStake, 10)
@@ -37,7 +37,7 @@ func (k *Keeper) CheckProposalStake(ctx context.Context, proposer, stakeAmount s
 
 // CalculateQuadraticVotingPower calculates voting power using quadratic voting (Feature 8)
 func (k *Keeper) CalculateQuadraticVotingPower(ctx context.Context, stakeAmount string) (string, error) {
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 
 	if !params.Governance.QuadraticVotingEnabled {
 		// If quadratic voting disabled, return linear voting power
@@ -58,7 +58,7 @@ func (k *Keeper) CalculateQuadraticVotingPower(ctx context.Context, stakeAmount 
 
 // LockVotingTokens locks tokens for voting power boost (Feature 9)
 func (k *Keeper) LockVotingTokens(ctx context.Context, owner, amount string, lockDuration uint64) (string, string, error) {
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 
 	if !params.Governance.VoteLockingEnabled {
 		return "", "0", errors.New("vote locking is disabled")
@@ -339,7 +339,7 @@ func (k *Keeper) CalculateTimeWeightedVotingPower(
 	amount string,
 	lockDuration uint64,
 ) (string, error) {
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 
 	amt := new(big.Int)
 	if _, ok := amt.SetString(amount, 10); !ok {

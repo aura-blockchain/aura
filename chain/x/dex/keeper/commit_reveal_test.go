@@ -192,9 +192,9 @@ func TestRevealOrder_InsufficientBalance(t *testing.T) {
 	sender := suite.TestAccounts[0]
 
 	// Disable batch execution to test immediate execution path
-	params := suite.Keeper.GetParams(ctx)
+	params, _ := suite.Keeper.GetParams(ctx)
 	params.BatchExecutionEnabled = false
-	err := suite.Keeper.SetParams(ctx, params)
+	err := suite.Keeper.SetParams(ctx, &params)
 	require.NoError(t, err)
 
 	// Order details (large amount)
@@ -240,9 +240,9 @@ func TestBatchExecution_PricePriority(t *testing.T) {
 	ctx := suite.Ctx
 
 	// Enable batch execution
-	params := suite.Keeper.GetParams(ctx)
+	params, _ := suite.Keeper.GetParams(ctx)
 	params.BatchExecutionEnabled = true
-	err := suite.Keeper.SetParams(ctx, params)
+	err := suite.Keeper.SetParams(ctx, &params)
 	require.NoError(t, err)
 
 	// Create multiple users
@@ -338,7 +338,7 @@ func TestRequiresCommitReveal(t *testing.T) {
 	suite := SetupKeeperTestSuite(t)
 	ctx := suite.Ctx
 
-	params := suite.Keeper.GetParams(ctx)
+	params, _ := suite.Keeper.GetParams(ctx)
 	// CommitRevealThreshold is already math.Int (customtype applied in proto)
 	threshold := params.CommitRevealThreshold
 
@@ -398,9 +398,9 @@ func TestFrontRunningResistance(t *testing.T) {
 	ctx := suite.Ctx
 
 	// Enable batch execution
-	params := suite.Keeper.GetParams(ctx)
+	params, _ := suite.Keeper.GetParams(ctx)
 	params.BatchExecutionEnabled = true
-	err := suite.Keeper.SetParams(ctx, params)
+	err := suite.Keeper.SetParams(ctx, &params)
 	require.NoError(t, err)
 
 	victim := suite.TestAccounts[0]
@@ -451,9 +451,9 @@ func TestBatchExecution_FailedLocks(t *testing.T) {
 	ctx := suite.Ctx
 
 	// Enable batch execution
-	params := suite.Keeper.GetParams(ctx)
+	params, _ := suite.Keeper.GetParams(ctx)
 	params.BatchExecutionEnabled = true
-	err := suite.Keeper.SetParams(ctx, params)
+	err := suite.Keeper.SetParams(ctx, &params)
 	require.NoError(t, err)
 
 	user1 := suite.TestAccounts[0]

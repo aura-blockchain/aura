@@ -116,7 +116,7 @@ func (k *Keeper) DistributePoIReward(
 	auraPrice math.LegacyDec,
 	bankKeeper BankKeeper,
 ) error {
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 
 	// Check if rewards are enabled
 	if !params.PoiRewardsEnabled {
@@ -175,8 +175,8 @@ func (k *Keeper) DistributePoIReward(
 // CalculateVBTBoost calculates Velocity Bonus Tier multiplier
 // Based on whitepaper Section 7.6
 // Returns multiplier as decimal (1.0 = no boost, 1.5 = 50% boost, etc.)
-func (k *Keeper) CalculateVBTBoost(completionTimeSeconds int64, irID string) math.LegacyDec {
-	params := k.GetParams()
+func (k *Keeper) CalculateVBTBoost(ctx sdk.Context, completionTimeSeconds int64, irID string) math.LegacyDec {
+	params, _ := k.GetParams(ctx)
 
 	if !params.VelocityBonusEnabled {
 		return math.LegacyOneDec() // No boost

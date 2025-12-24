@@ -475,7 +475,7 @@ func (k *Keeper) ApplyChange(ctx sdk.Context, requestID, applier string) (*types
 	record.UpdatedAt = &updatedAt
 
 	// Apply minimum confidence score
-	if params != nil && record.ConfidenceScore < int64(params.Change.MinConfidenceAfterChange) {
+	if err == nil && record.ConfidenceScore < int64(params.Change.MinConfidenceAfterChange) {
 		record.ConfidenceScore = int64(params.Change.MinConfidenceAfterChange)
 	}
 

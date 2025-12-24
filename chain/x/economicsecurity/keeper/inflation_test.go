@@ -15,7 +15,7 @@ func TestAdjustInflationRate_Success(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
 
 	// Set initial params with inflation bounds
-	params := keeper.GetParams()
+	params, _ := keeper.GetParams(ctx)
 	params.Tokenomics = &types.TokenomicsConfig{
 		MaxSupply:           "1000000000", // Required for validation
 		CirculatingSupply:   "100000000",  // Required for validation
@@ -38,7 +38,7 @@ func TestAdjustInflationRate_Success(t *testing.T) {
 	require.Equal(t, uint64(500), oldRate)
 
 	// Verify rate was updated
-	updatedParams := keeper.GetParams()
+	updatedParams, _ := keeper.GetParams(ctx)
 	require.Equal(t, newRate, updatedParams.Tokenomics.InflationRate)
 
 	// Verify previous rate was stored
@@ -92,7 +92,7 @@ func TestAdjustInflationRate_Unauthorized(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
 
 	// Set initial params
-	params := keeper.GetParams()
+	params, _ := keeper.GetParams(ctx)
 	params.Tokenomics = &types.TokenomicsConfig{
 		MaxSupply:           "1000000000",
 		CirculatingSupply:   "100000000",
@@ -112,7 +112,7 @@ func TestAdjustInflationRate_Unauthorized(t *testing.T) {
 	require.ErrorIs(t, err, types.ErrUnauthorized)
 
 	// Verify rate was NOT changed
-	updatedParams := keeper.GetParams()
+	updatedParams, _ := keeper.GetParams(ctx)
 	require.Equal(t, uint64(500), updatedParams.Tokenomics.InflationRate)
 }
 
@@ -120,7 +120,7 @@ func TestAdjustInflationRate_Unauthorized(t *testing.T) {
 func TestAdjustInflationRate_RateTooHigh(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
 
-	params := keeper.GetParams()
+	params, _ := keeper.GetParams(ctx)
 	params.Tokenomics = &types.TokenomicsConfig{
 		MaxSupply:           "1000000000",
 		CirculatingSupply:   "100000000",
@@ -140,7 +140,7 @@ func TestAdjustInflationRate_RateTooHigh(t *testing.T) {
 	require.ErrorIs(t, err, types.ErrInflationRateTooHigh)
 
 	// Verify rate was NOT changed
-	updatedParams := keeper.GetParams()
+	updatedParams, _ := keeper.GetParams(ctx)
 	require.Equal(t, uint64(500), updatedParams.Tokenomics.InflationRate)
 }
 
@@ -148,7 +148,7 @@ func TestAdjustInflationRate_RateTooHigh(t *testing.T) {
 func TestAdjustInflationRate_RateTooLow(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
 
-	params := keeper.GetParams()
+	params, _ := keeper.GetParams(ctx)
 	params.Tokenomics = &types.TokenomicsConfig{
 		MaxSupply:           "1000000000",
 		CirculatingSupply:   "100000000",
@@ -168,7 +168,7 @@ func TestAdjustInflationRate_RateTooLow(t *testing.T) {
 	require.ErrorIs(t, err, types.ErrInflationRateTooLow)
 
 	// Verify rate was NOT changed
-	updatedParams := keeper.GetParams()
+	updatedParams, _ := keeper.GetParams(ctx)
 	require.Equal(t, uint64(500), updatedParams.Tokenomics.InflationRate)
 }
 
@@ -176,7 +176,7 @@ func TestAdjustInflationRate_RateTooLow(t *testing.T) {
 func TestAdjustInflationRate_SameRate(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
 
-	params := keeper.GetParams()
+	params, _ := keeper.GetParams(ctx)
 	params.Tokenomics = &types.TokenomicsConfig{
 		MaxSupply:           "1000000000",
 		CirculatingSupply:   "100000000",
@@ -200,7 +200,7 @@ func TestAdjustInflationRate_SameRate(t *testing.T) {
 func TestAdjustInflationRate_NoReason(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
 
-	params := keeper.GetParams()
+	params, _ := keeper.GetParams(ctx)
 	params.Tokenomics = &types.TokenomicsConfig{
 		MaxSupply:           "1000000000",
 		CirculatingSupply:   "100000000",
@@ -228,7 +228,7 @@ func TestGetInflationMetrics_Success(t *testing.T) {
 	lastAdjustmentTime := time.Now().Add(-12 * time.Hour)
 	lastCheckTime := time.Now().Add(-6 * time.Hour)
 
-	params := keeper.GetParams()
+	params, _ := keeper.GetParams(ctx)
 	params.Tokenomics = &types.TokenomicsConfig{
 		MaxSupply:               "1000000000",
 		CirculatingSupply:       "100000000",
@@ -267,7 +267,7 @@ func TestGetInflationMetrics_Success(t *testing.T) {
 func TestGetInflationMetrics_NoHistory(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
 
-	params := keeper.GetParams()
+	params, _ := keeper.GetParams(ctx)
 	params.Tokenomics = &types.TokenomicsConfig{
 		MaxSupply:           "1000000000",
 		CirculatingSupply:   "100000000",
@@ -295,7 +295,7 @@ func TestGetInflationMetrics_NoHistory(t *testing.T) {
 func TestCalculateInflation24hChange_Increase(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
 
-	params := keeper.GetParams()
+	params, _ := keeper.GetParams(ctx)
 	params.Tokenomics = &types.TokenomicsConfig{
 		MaxSupply:         "1000000000",
 		CirculatingSupply: "100000000",
@@ -315,7 +315,7 @@ func TestCalculateInflation24hChange_Increase(t *testing.T) {
 func TestCalculateInflation24hChange_Decrease(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
 
-	params := keeper.GetParams()
+	params, _ := keeper.GetParams(ctx)
 	params.Tokenomics = &types.TokenomicsConfig{
 		MaxSupply:         "1000000000",
 		CirculatingSupply: "100000000",
@@ -335,7 +335,7 @@ func TestCalculateInflation24hChange_Decrease(t *testing.T) {
 func TestCalculateInflation24hChange_NoChange(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
 
-	params := keeper.GetParams()
+	params, _ := keeper.GetParams(ctx)
 	params.Tokenomics = &types.TokenomicsConfig{
 		MaxSupply:         "1000000000",
 		CirculatingSupply: "100000000",
@@ -354,7 +354,7 @@ func TestCalculateInflation24hChange_NoChange(t *testing.T) {
 func TestCalculateInflation24hChange_NoPreviousData(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
 
-	params := keeper.GetParams()
+	params, _ := keeper.GetParams(ctx)
 	params.Tokenomics = &types.TokenomicsConfig{
 		MaxSupply:         "1000000000",
 		CirculatingSupply: "100000000",
@@ -372,7 +372,7 @@ func TestCalculateInflation24hChange_NoPreviousData(t *testing.T) {
 func TestUpdateInflationCheckTimestamp(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
 
-	params := keeper.GetParams()
+	params, _ := keeper.GetParams(ctx)
 	params.Tokenomics = &types.TokenomicsConfig{
 		MaxSupply:         "1000000000",
 		CirculatingSupply: "100000000",
@@ -386,7 +386,7 @@ func TestUpdateInflationCheckTimestamp(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify timestamp was set
-	updatedParams := keeper.GetParams()
+	updatedParams, _ := keeper.GetParams(ctx)
 	require.False(t, updatedParams.Tokenomics.LastInflationCheck.IsZero())
 
 	// Verify it matches the block time
@@ -398,7 +398,7 @@ func TestUpdateInflationCheckTimestamp(t *testing.T) {
 func TestAdjustInflationRate_BoundaryValues(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
 
-	params := keeper.GetParams()
+	params, _ := keeper.GetParams(ctx)
 	params.Tokenomics = &types.TokenomicsConfig{
 		MaxSupply:           "1000000000",
 		CirculatingSupply:   "100000000",
@@ -415,14 +415,14 @@ func TestAdjustInflationRate_BoundaryValues(t *testing.T) {
 	_, err := keeper.AdjustInflationRate(ctx, authority, 100, "Set to minimum")
 	require.NoError(t, err)
 
-	params = keeper.GetParams()
+	params, _ = keeper.GetParams(ctx)
 	require.Equal(t, uint64(100), params.Tokenomics.InflationRate)
 
 	// Test setting to exact maximum (should succeed)
 	_, err = keeper.AdjustInflationRate(ctx, authority, 1000, "Set to maximum")
 	require.NoError(t, err)
 
-	params = keeper.GetParams()
+	params, _ = keeper.GetParams(ctx)
 	require.Equal(t, uint64(1000), params.Tokenomics.InflationRate)
 
 	// Test one below minimum (should fail)
@@ -439,7 +439,7 @@ func TestInflationFunctions_Integration(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
 
 	// Initialize params
-	params := keeper.GetParams()
+	params, _ := keeper.GetParams(ctx)
 	params.Tokenomics = &types.TokenomicsConfig{
 		MaxSupply:           "1000000000",
 		CirculatingSupply:   "100000000",
@@ -479,7 +479,7 @@ func TestInflationFunctions_Integration(t *testing.T) {
 	require.NoError(t, err)
 
 	// Step 5: Verify timestamp was updated
-	params = keeper.GetParams()
+	params, _ = keeper.GetParams(ctx)
 	require.NotNil(t, params.Tokenomics.LastInflationCheck)
 
 	// Step 6: Calculate 24h change directly

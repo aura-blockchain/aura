@@ -141,7 +141,7 @@ func TestInitGenesis(t *testing.T) {
 	require.Equal(t, "25000", mevBalance2)
 
 	// Verify params were set
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 	require.NotNil(t, params.Tokenomics)
 }
 

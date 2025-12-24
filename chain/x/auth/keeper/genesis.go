@@ -122,11 +122,11 @@ func (k Keeper) ExportGenesis(ctx context.Context) *types.GenesisState {
 	// Export params
 	params, err := k.GetParams(sdkCtx)
 	var paramsValue authproto.Params
-	if err != nil || params == nil {
+	if err != nil {
 		defaultParams := types.DefaultParams()
 		paramsValue = *defaultParams
 	} else {
-		paramsValue = *params
+		paramsValue = params
 	}
 
 	genesis := &types.GenesisState{

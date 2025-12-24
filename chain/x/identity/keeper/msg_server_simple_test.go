@@ -33,7 +33,7 @@ func TestMsgServerUpdateParams_Success(t *testing.T) {
 	// Verify params were updated
 	params, err := keeper.GetParams(ctx)
 	require.NoError(t, err)
-	require.Equal(t, *newParams, *params)
+	require.Equal(t, *newParams, params)
 }
 
 // TestMsgServerUpdateParams_InvalidAuthority tests invalid authority rejection

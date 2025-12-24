@@ -29,7 +29,7 @@ type CircuitBreakerState struct {
 //
 // Note: Circuit breaker state is stored in KV store for persistence
 func (k *Keeper) CheckCircuitBreakers(ctx context.Context) ([]*types.CircuitBreakerEvent, error) {
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 	events := []*types.CircuitBreakerEvent{}
 
 	// Get circuit breaker config (default to all enabled)

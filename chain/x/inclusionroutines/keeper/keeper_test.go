@@ -21,7 +21,7 @@ func TestNewKeeper(t *testing.T) {
 	}
 
 	// validate params are accessible
-	params := keeper.GetParams()
+	params, _ := keeper.GetParams(ctx)
 	if params.MaxIrPerLocale == 0 {
 		t.Errorf("expected default params to be set, got %+v", params)
 	}

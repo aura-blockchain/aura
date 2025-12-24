@@ -285,9 +285,9 @@ func (ms msgServer) CreateMultisigProposal(goCtx context.Context, msg *identityp
 
 	now := ctx.BlockTime()
 	// Get params for expiry
-	params, _ := ms.Keeper.GetParams(ctx)
+	params, err := ms.Keeper.GetParams(ctx)
 	expirySeconds := uint64(604800) // default 7 days
-	if params != nil {
+	if err == nil {
 		expirySeconds = params.Auth.MultisigProposalExpirySeconds
 	}
 	expiresAt := now.Add(time.Duration(expirySeconds) * time.Second)
@@ -655,7 +655,7 @@ func (ms msgServer) CreateSession(goCtx context.Context, msg *identitypb.MsgCrea
 	}
 
 	var sessionDuration uint64 = 3600 // default 1 hour
-	if params != nil && params.Auth.SessionTimeout > 0 {
+	if err == nil && params.Auth.SessionTimeout > 0 {
 		sessionDuration = uint64(params.Auth.SessionTimeout.Seconds())
 	}
 

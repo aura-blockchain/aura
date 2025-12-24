@@ -356,7 +356,7 @@ func (k Keeper) BeforeInstantiateHook(
 	startTime := determinism.GetBlockTime(ctx)
 
 	// Validate that the creator is eligible (check contract limit)
-	params := k.contractRegistry.GetParams(ctx)
+	params, _ := k.contractRegistry.GetParams(ctx)
 	if params.MaxContractsPerCreator > 0 {
 		// Use GetCreatorContracts to count existing contracts
 		contracts := k.contractRegistry.GetCreatorContracts(ctx, creator.String())

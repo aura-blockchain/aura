@@ -26,7 +26,7 @@ func TestSubmitKYC_SignerVerification(t *testing.T) {
 	unauthorizedAddr := sdk.AccAddress([]byte("unauthorized_addr_1")).String()
 
 	// Set up approved provider
-	params := keeper.GetParams(ctx)
+	params, _ := keeper.GetParams(ctx)
 	params.ApprovedKycProviders = []string{providerAddr}
 	err := keeper.SetParams(ctx, params)
 	require.NoError(t, err)
@@ -373,13 +373,13 @@ func TestKYCProviderAuthorization_Integration(t *testing.T) {
 	userAddr := sdk.AccAddress([]byte("user_address_12345")).String()
 
 	t.Run("setup approved providers", func(t *testing.T) {
-		params := keeper.GetParams(ctx)
+		params, _ := keeper.GetParams(ctx)
 		params.ApprovedKycProviders = []string{providerAddr}
 		err := keeper.SetParams(ctx, params)
 		require.NoError(t, err)
 
 		// Verify params were set
-		retrieved := keeper.GetParams(ctx)
+		retrieved, _ := keeper.GetParams(ctx)
 		require.Len(t, retrieved.ApprovedKycProviders, 1)
 		require.Equal(t, providerAddr, retrieved.ApprovedKycProviders[0])
 	})
@@ -398,7 +398,7 @@ func TestKYCProviderAuthorization_Integration(t *testing.T) {
 	})
 
 	t.Run("empty providers list blocks all submissions", func(t *testing.T) {
-		params := keeper.GetParams(ctx)
+		params, _ := keeper.GetParams(ctx)
 		params.ApprovedKycProviders = []string{}
 		err := keeper.SetParams(ctx, params)
 		require.NoError(t, err)

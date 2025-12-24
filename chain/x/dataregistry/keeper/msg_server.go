@@ -215,7 +215,7 @@ func (s *msgServer) VerifyDataItem(ctx context.Context, msg *pb.MsgVerifyDataIte
 	}
 
 	// Get verification reward from params
-	params := s.keeper.GetParams()
+	params, _ := s.keeper.GetParams(ctx)
 
 	verifiedAt := timestampFromTime(sdk.UnwrapSDKContext(ctx).BlockTime())
 
@@ -268,7 +268,7 @@ func (s *msgServer) RevokeDataItem(ctx context.Context, msg *pb.MsgRevokeDataIte
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
-	params := s.keeper.GetParams()
+	params, _ := s.keeper.GetParams(ctx)
 	isAuthorized := false
 
 	for _, authorizedVerifier := range params.AuthorizedVerifiers {

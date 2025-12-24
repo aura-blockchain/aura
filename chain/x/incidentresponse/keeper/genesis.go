@@ -59,10 +59,10 @@ func (k *KeeperKV) ExportGenesis(ctx context.Context) types.GenesisState {
 	defer k.mu.RUnlock()
 
 	// Get params
-	params, ok := k.store.GetParams(ctx)
-	if !ok {
+	params, err := k.store.GetParams(ctx)
+	if err != nil {
 		defaultParams := types.DefaultParams()
-		params = &defaultParams
+		params = defaultParams
 	}
 
 	// Get all incidents
@@ -84,7 +84,7 @@ func (k *KeeperKV) ExportGenesis(ctx context.Context) types.GenesisState {
 	nextIncidentID := k.store.GetNextIncidentID(ctx)
 
 	return types.GenesisState{
-		Params:         params,
+		Params:         &params,
 		Incidents:      incidents,
 		PauseState:     pauseState,
 		WalletLimits:   walletLimits,

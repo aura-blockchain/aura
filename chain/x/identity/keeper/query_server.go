@@ -38,7 +38,7 @@ func (qs queryServer) Params(goCtx context.Context, req *identitypb.QueryParamsR
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &identitypb.QueryParamsResponse{Params: *params}, nil
+	return &identitypb.QueryParamsResponse{Params: params}, nil
 }
 
 // IdentityRecord queries an identity record by DID

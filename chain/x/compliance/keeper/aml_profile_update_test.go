@@ -577,6 +577,9 @@ func TestAMLProfileUpdate_CompleteFlow(t *testing.T) {
 			err := keeper.UpdateAMLProfileOnTransaction(ctx, address, tc.amount)
 			require.NoError(t, err)
 
+			// Flush batched updates
+			keeper.EndBlocker(ctx)
+
 			profile, err := keeper.GetAMLProfile(ctx, address)
 			require.NoError(t, err)
 			require.Equal(t, tc.expectedTxCount, profile.TotalTransactions)
@@ -604,6 +607,9 @@ func TestAMLProfileUpdate_ConcurrentAddresses(t *testing.T) {
 		err := keeper.UpdateAMLProfileOnTransaction(ctx, addr, sdk.NewCoins(sdk.NewInt64Coin("uaura", 5000)))
 		require.NoError(t, err)
 	}
+
+	// Flush batched updates
+	keeper.EndBlocker(ctx)
 
 	// Verify each profile is independent
 	for _, addr := range addresses {

@@ -175,7 +175,7 @@ func TestInitGenesis(t *testing.T) {
 			require.NoError(t, err)
 
 			// Verify params were set
-			p := keeper.GetParams()
+			p, _ := keeper.GetParams(input.Ctx)
 			require.NotNil(t, p)
 
 			// Verify requests were loaded
@@ -317,8 +317,8 @@ func TestGenesisRoundTrip(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify all data was preserved
-	params1 := keeper1.GetParams()
-	params2 := keeper2.GetParams()
+	params1, _ := keeper1.GetParams(input1.Ctx)
+	params2, _ := keeper2.GetParams(input2.Ctx)
 	require.Equal(t, params1.MaxRequestsPerWalletPerMonth, params2.MaxRequestsPerWalletPerMonth)
 	require.Equal(t, params1.MinConfidenceAfterChange, params2.MinConfidenceAfterChange)
 
@@ -371,7 +371,7 @@ func TestDefaultGenesis(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify keeper state after importing default genesis
-	p := keeper.GetParams()
+	p, _ := keeper.GetParams(input.Ctx)
 	require.NotNil(t, p)
 	require.Greater(t, p.MaxRequestsPerWalletPerMonth, int32(0))
 }

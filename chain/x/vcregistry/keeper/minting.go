@@ -89,7 +89,7 @@ func (k *Keeper) ValidateMintEligibility(ctx context.Context, holderAddress stri
 	}
 
 	// 7. Check max VCs per user
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 	allVCs := k.ListUserVCs(ctx, holderAddress, types.VCStatus_VC_STATUS_UNSPECIFIED, types.VCType_VC_TYPE_UNSPECIFIED)
 	if uint64(len(allVCs)) >= params.MaxVcsPerUser {
 		missing = append(missing, fmt.Sprintf("maximum VCs per user exceeded (%d)", params.MaxVcsPerUser))

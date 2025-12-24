@@ -158,7 +158,11 @@ func (m AppModule) EndBlock(ctx sdk.Context) {
 
 	// Execute batch of revealed orders (front-running protection)
 	// ExecuteBatch now internally limits batch size to MaxBatchExecutionSize (100)
-	params := m.keeper.GetParams(ctx)
+	params, err := m.keeper.GetParams(ctx)
+	if err != nil {
+		ctx.Logger().Error("failed to get params in EndBlock", "error", err)
+		return
+	}
 	if params.BatchExecutionEnabled {
 		// Execute batch every N blocks
 		interval := int64(params.BatchExecutionInterval)

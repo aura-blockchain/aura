@@ -26,7 +26,7 @@ func TestKYCSubmission_EventEmitted(t *testing.T) {
 
 	// Setup approved provider
 	providerAddr := createTestAddress("provider_address")
-	params := keeper.GetParams(ctx)
+	params, _ := keeper.GetParams(ctx)
 	params.ApprovedKycProviders = []string{providerAddr}
 	err := keeper.SetParams(ctx, params)
 	require.NoError(t, err)
@@ -470,7 +470,7 @@ func TestMultipleEvents_InSingleTransaction(t *testing.T) {
 
 	// Setup approved provider
 	providerAddr := createTestAddress("multi_provider")
-	params := keeper.GetParams(ctx)
+	params, _ := keeper.GetParams(ctx)
 	params.ApprovedKycProviders = []string{providerAddr}
 	err := keeper.SetParams(ctx, params)
 	require.NoError(t, err)

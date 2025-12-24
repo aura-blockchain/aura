@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -67,11 +68,11 @@ func (k *Keeper) SetIRRegistry(registry IRRegistry) {
 }
 
 // GetParams returns the current module parameters
-func (k *Keeper) GetParams() types.Params {
+func (k Keeper) GetParams(ctx context.Context) (types.Params, error) {
 	if k.paramsStore != nil {
-		return k.paramsStore.GetParams()
+		return k.paramsStore.GetParams(), nil
 	}
-	return types.DefaultParams()
+	return types.DefaultParams(), nil
 }
 
 // SetParams sets new module parameters
@@ -437,7 +438,7 @@ func (k *Keeper) IsVerified(ctx sdk.Context, walletAddr string) bool {
 		return false
 	}
 
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 	return record.TotalScore >= params.VerificationThreshold &&
 		record.Status == types.VerificationStatusVerified
 }
@@ -489,7 +490,7 @@ func (k *Keeper) GetAnchorInfo(ctx sdk.Context, walletAddr string) (interface{},
 // ListVerifiedUsers returns a list of verified users
 func (k *Keeper) ListVerifiedUsers(ctx sdk.Context, minScore uint64, limit int) ([]string, []uint64) {
 	store := k.storeService.OpenKVStore(ctx)
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 
 	if minScore == 0 {
 		minScore = params.VerificationThreshold

@@ -22,7 +22,7 @@ func TestKeeperFunctionality(t *testing.T) {
 	require.Equal(t, "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr", authority)
 
 	// Test params operations
-	params := k.GetParams()
+	params, _ := k.GetParams(ctx)
 	require.NotNil(t, params)
 	require.NotNil(t, params.Tokenomics)
 	require.NotNil(t, params.WhaleProtection)
@@ -34,7 +34,7 @@ func TestKeeperFunctionality(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify params were updated
-	updatedParams := k.GetParams()
+	updatedParams, _ := k.GetParams(ctx)
 	require.Equal(t, uint64(1500), updatedParams.Tokenomics.InflationRate)
 
 	// Test vesting schedule operations

@@ -39,7 +39,7 @@ func TestMsgSubmitKYCStoresRecord(t *testing.T) {
 
 	// Setup approved provider
 	providerAddr := createTestAddressMsg("provider")
-	params := keeper.GetParams(ctx)
+	params, _ := keeper.GetParams(ctx)
 	params.ApprovedKycProviders = []string{providerAddr}
 	err := keeper.SetParams(ctx, params)
 	require.NoError(t, err)

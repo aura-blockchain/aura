@@ -46,7 +46,7 @@ func TestInitGenesisWithState(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, "Genesis IR 1", ir.Name)
 
-	params := keeper.GetParams()
+	params, _ := keeper.GetParams(ctx)
 	require.Equal(t, int32(100), params.MaxIrPerLocale)
 }
 

@@ -53,7 +53,7 @@ func TestSubmitKYC_WithPIICommitment(t *testing.T) {
 
 	// Setup provider
 	providerAddr := sdk.AccAddress([]byte("provider_address_1234")).String()
-	params := keeper.GetParams(ctx)
+	params, _ := keeper.GetParams(ctx)
 	params.ApprovedKycProviders = []string{providerAddr}
 	err = keeper.SetParams(ctx, params)
 	require.NoError(t, err)
@@ -100,7 +100,7 @@ func TestSubmitKYC_InvalidCommitmentSize(t *testing.T) {
 	server := NewMsgServer(keeper)
 
 	providerAddr := sdk.AccAddress([]byte("provider_address_1234")).String()
-	params := keeper.GetParams(ctx)
+	params, _ := keeper.GetParams(ctx)
 	params.ApprovedKycProviders = []string{providerAddr}
 	err := keeper.SetParams(ctx, params)
 	require.NoError(t, err)
@@ -166,7 +166,7 @@ func TestPIICommitmentVerification(t *testing.T) {
 
 	// Setup provider
 	providerAddr := sdk.AccAddress([]byte("provider_address_1234")).String()
-	params := keeper.GetParams(ctx)
+	params, _ := keeper.GetParams(ctx)
 	params.ApprovedKycProviders = []string{providerAddr}
 	err = keeper.SetParams(ctx, params)
 	require.NoError(t, err)
@@ -235,7 +235,7 @@ func TestEraseGDPRData(t *testing.T) {
 	commitment, err := ComputePIICommitment(piiData)
 	require.NoError(t, err)
 
-	params := keeper.GetParams(ctx)
+	params, _ := keeper.GetParams(ctx)
 	params.ApprovedKycProviders = []string{providerAddr}
 	err = keeper.SetParams(ctx, params)
 	require.NoError(t, err)

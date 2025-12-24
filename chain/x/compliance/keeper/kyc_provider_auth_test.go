@@ -41,7 +41,7 @@ func TestKYCProviderAuthorization_UnauthorizedProviderRejection(t *testing.T) {
 	userAddr := sdk.AccAddress([]byte("test_user_12345678")).String()
 
 	// Setup: Approve only one provider
-	params := keeper.GetParams(ctx)
+	params, _ := keeper.GetParams(ctx)
 	params.ApprovedKycProviders = []string{authorizedProvider}
 	err := keeper.SetParams(ctx, params)
 	require.NoError(t, err)
@@ -83,7 +83,7 @@ func TestKYCProviderAuthorization_AddressMatchRequired(t *testing.T) {
 	userAddr := sdk.AccAddress([]byte("test_user_12345678")).String()
 
 	// Setup: Approve the provider address
-	params := keeper.GetParams(ctx)
+	params, _ := keeper.GetParams(ctx)
 	params.ApprovedKycProviders = []string{providerAddr}
 	err := keeper.SetParams(ctx, params)
 	require.NoError(t, err)
@@ -121,7 +121,7 @@ func TestKYCProviderAuthorization_ValidProviderSucceeds(t *testing.T) {
 	userAddr := sdk.AccAddress([]byte("test_user_12345678")).String()
 
 	// Setup: Approve the provider
-	params := keeper.GetParams(ctx)
+	params, _ := keeper.GetParams(ctx)
 	params.ApprovedKycProviders = []string{providerAddr}
 	err := keeper.SetParams(ctx, params)
 	require.NoError(t, err)
@@ -173,7 +173,7 @@ func TestKYCProviderAuthorization_MultipleProviders(t *testing.T) {
 	user3 := sdk.AccAddress([]byte("user_3_123456789012")).String()
 
 	// Setup: Approve multiple providers
-	params := keeper.GetParams(ctx)
+	params, _ := keeper.GetParams(ctx)
 	params.ApprovedKycProviders = []string{provider1, provider2, provider3}
 	err := keeper.SetParams(ctx, params)
 	require.NoError(t, err)
@@ -232,7 +232,7 @@ func TestKYCProviderAuthorization_EmptyProviderList(t *testing.T) {
 	userAddr := sdk.AccAddress([]byte("test_user_12345678")).String()
 
 	// Setup: Empty approved providers list
-	params := keeper.GetParams(ctx)
+	params, _ := keeper.GetParams(ctx)
 	params.ApprovedKycProviders = []string{} // No providers authorized
 	err := keeper.SetParams(ctx, params)
 	require.NoError(t, err)
@@ -267,7 +267,7 @@ func TestKYCProviderAuthorization_ProviderRemoval(t *testing.T) {
 	userAddr2 := sdk.AccAddress([]byte("user_2_123456789012")).String()
 
 	// Setup: Approve provider
-	params := keeper.GetParams(ctx)
+	params, _ := keeper.GetParams(ctx)
 	params.ApprovedKycProviders = []string{providerAddr}
 	err := keeper.SetParams(ctx, params)
 	require.NoError(t, err)
@@ -332,7 +332,7 @@ func TestKYCProviderAuthorization_ProviderAddition(t *testing.T) {
 	userAddr2 := sdk.AccAddress([]byte("user_2_123456789012")).String()
 
 	// Setup: Start with one approved provider
-	params := keeper.GetParams(ctx)
+	params, _ := keeper.GetParams(ctx)
 	params.ApprovedKycProviders = []string{provider1}
 	err := keeper.SetParams(ctx, params)
 	require.NoError(t, err)
@@ -394,7 +394,7 @@ func TestKYCProviderAuthorization_DifferentKYCLevels(t *testing.T) {
 	providerAddr := sdk.AccAddress([]byte("multi_level_provider")).String()
 
 	// Setup: Approve provider
-	params := keeper.GetParams(ctx)
+	params, _ := keeper.GetParams(ctx)
 	params.ApprovedKycProviders = []string{providerAddr}
 	err := keeper.SetParams(ctx, params)
 	require.NoError(t, err)
@@ -443,7 +443,7 @@ func TestKYCProviderAuthorization_BlockedJurisdictionWithAuthorizedProvider(t *t
 	userAddr := sdk.AccAddress([]byte("test_user_12345678")).String()
 
 	// Setup: Approve provider and block a jurisdiction (OFAC sanctioned country)
-	params := keeper.GetParams(ctx)
+	params, _ := keeper.GetParams(ctx)
 	params.ApprovedKycProviders = []string{providerAddr}
 	params.BlockedJurisdictions = []string{"KP", "IR", "SY"} // North Korea, Iran, Syria
 	err := keeper.SetParams(ctx, params)
@@ -480,7 +480,7 @@ func TestKYCProviderAuthorization_AddressFormat(t *testing.T) {
 	userAddr := sdk.AccAddress([]byte("test_user_12345678")).String()
 
 	// Setup: Approve provider with exact address
-	params := keeper.GetParams(ctx)
+	params, _ := keeper.GetParams(ctx)
 	params.ApprovedKycProviders = []string{providerAddr}
 	err := keeper.SetParams(ctx, params)
 	require.NoError(t, err)
@@ -517,7 +517,7 @@ func TestKYCProviderAuthorization_SignerVerification(t *testing.T) {
 	userAddr := sdk.AccAddress([]byte("test_user_12345678")).String()
 
 	// Setup: Approve both addresses (so authorization passes, but signer check should fail)
-	params := keeper.GetParams(ctx)
+	params, _ := keeper.GetParams(ctx)
 	params.ApprovedKycProviders = []string{authorizedProvider, differentSigner}
 	err := keeper.SetParams(ctx, params)
 	require.NoError(t, err)
@@ -557,7 +557,7 @@ func TestKYCProviderAuthorization_ProviderMustSignTransaction(t *testing.T) {
 	userAddr := sdk.AccAddress([]byte("test_user_12345678")).String()
 
 	// Setup: Approve provider
-	params := keeper.GetParams(ctx)
+	params, _ := keeper.GetParams(ctx)
 	params.ApprovedKycProviders = []string{providerAddr}
 	err := keeper.SetParams(ctx, params)
 	require.NoError(t, err)
@@ -599,7 +599,7 @@ func TestKYCProviderAuthorization_ComprehensiveSecurityChecks(t *testing.T) {
 	userAddr := sdk.AccAddress([]byte("test_user_12345678")).String()
 
 	// Setup: Approve provider and configure blocked jurisdictions
-	params := keeper.GetParams(ctx)
+	params, _ := keeper.GetParams(ctx)
 	params.ApprovedKycProviders = []string{providerAddr}
 	params.BlockedJurisdictions = []string{"KP"}
 	err := keeper.SetParams(ctx, params)

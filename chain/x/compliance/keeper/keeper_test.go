@@ -41,7 +41,7 @@ func TestGetSetParams(t *testing.T) {
 	keeper, ctx := setupKeeper(t)
 
 	// Test default params
-	params := keeper.GetParams(ctx)
+	params, _ := keeper.GetParams(ctx)
 	require.NotNil(t, params)
 
 	// Test setting params
@@ -67,7 +67,7 @@ func TestGetSetParams(t *testing.T) {
 	err := keeper.SetParams(ctx, newParams)
 	require.NoError(t, err)
 
-	retrieved := keeper.GetParams(ctx)
+	retrieved, _ := keeper.GetParams(ctx)
 	require.Equal(t, newParams.KycRequired, retrieved.KycRequired)
 	require.Equal(t, newParams.MinimumKycLevel, retrieved.MinimumKycLevel)
 	require.Equal(t, newParams.KycExpiryDays, retrieved.KycExpiryDays)
@@ -78,7 +78,7 @@ func TestGetSetParams(t *testing.T) {
 func TestGetParams_EmptyStore(t *testing.T) {
 	keeper, ctx := setupKeeper(t)
 
-	params := keeper.GetParams(ctx)
+	params, _ := keeper.GetParams(ctx)
 	// Should not panic, should return zero value
 	require.NotNil(t, params)
 }
@@ -383,7 +383,7 @@ func TestKeeper_NilContext(t *testing.T) {
 	keeper, ctx := setupKeeper(t)
 
 	// Test that operations work with valid context
-	params := keeper.GetParams(ctx)
+	params, _ := keeper.GetParams(ctx)
 	require.NotNil(t, params)
 }
 

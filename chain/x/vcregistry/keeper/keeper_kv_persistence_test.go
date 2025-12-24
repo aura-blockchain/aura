@@ -242,7 +242,7 @@ func TestMintRateLimit_KVPersistence(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
 
 	// Enable rate limiting
-	params := keeper.GetParams()
+	params, _ := keeper.GetParams(ctx)
 	params.RateLimitingEnabled = true
 	params.MaxMintPerDay = 5
 	err := keeper.SetParams(params)

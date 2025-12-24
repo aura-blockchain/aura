@@ -811,7 +811,7 @@ func startAPIServer(
 			return
 		}
 		ctx := auraApp.BaseApp.NewContext(true)
-		params := aiKeeper.GetParams(ctx)
+		params, _ := aiKeeper.GetParams(ctx)
 		body := map[string]interface{}{
 			"params": map[string]interface{}{
 				"min_stake": map[string]string{
