@@ -196,7 +196,7 @@ func TestTransferCache_Stats(t *testing.T) {
 	// Initial stats
 	size, capacity := k.GetCacheStats()
 	require.Equal(t, 0, size)
-	require.Equal(t, 1000, capacity) // DefaultTransferCacheSize
+	require.Equal(t, 5000, capacity) // DefaultTransferCacheSize (increased from 1000 to 5000)
 
 	// Add a transfer
 	transfer := &types.CrossChainTransfer{
@@ -223,5 +223,5 @@ func TestTransferCache_Stats(t *testing.T) {
 	// Check stats - should have 1 entry now
 	size, capacity = k.GetCacheStats()
 	require.Equal(t, 1, size)
-	require.Equal(t, 1000, capacity)
+	require.Equal(t, 5000, capacity)
 }

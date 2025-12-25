@@ -187,15 +187,12 @@ func (qs queryServer) Orderbook(ctx context.Context, req *dexpb.QueryOrderbookRe
 		}
 	}
 
+	// Sort using cached PricePerAura to avoid recalculating prices during comparisons
 	sort.Slice(orderbook.BuyOrders, func(i, j int) bool {
-		left := orderPriceDec(&orderbook.BuyOrders[i])
-		right := orderPriceDec(&orderbook.BuyOrders[j])
-		return left.GT(right)
+		return orderbook.BuyOrders[i].PricePerAura.GT(orderbook.BuyOrders[j].PricePerAura)
 	})
 	sort.Slice(orderbook.SellOrders, func(i, j int) bool {
-		left := orderPriceDec(&orderbook.SellOrders[i])
-		right := orderPriceDec(&orderbook.SellOrders[j])
-		return left.LT(right)
+		return orderbook.SellOrders[i].PricePerAura.LT(orderbook.SellOrders[j].PricePerAura)
 	})
 
 	orderbook.BestBid = bestBid

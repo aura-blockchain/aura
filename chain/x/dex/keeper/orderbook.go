@@ -1078,11 +1078,12 @@ func (k Keeper) exportOrderbooks(ctx sdk.Context) []*types.Orderbook {
 			}
 		}
 
+		// Sort using cached PricePerAura to avoid recalculating prices during comparisons
 		sort.Slice(book.BuyOrders, func(i, j int) bool {
-			return orderPriceDec(&book.BuyOrders[i]).GT(orderPriceDec(&book.BuyOrders[j]))
+			return book.BuyOrders[i].PricePerAura.GT(book.BuyOrders[j].PricePerAura)
 		})
 		sort.Slice(book.SellOrders, func(i, j int) bool {
-			return orderPriceDec(&book.SellOrders[i]).LT(orderPriceDec(&book.SellOrders[j]))
+			return book.SellOrders[i].PricePerAura.LT(book.SellOrders[j].PricePerAura)
 		})
 
 		book.BestBid = bestBid
