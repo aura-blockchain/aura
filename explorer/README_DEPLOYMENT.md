@@ -12,7 +12,7 @@ This is a **Ping.pub block explorer** configured for the Aura blockchain testnet
 
 ```bash
 cd /home/decri/blockchain-projects/aura
-./start-explorer.sh
+./scripts/start-explorer.sh
 ```
 
 **Access:** http://localhost:8088
@@ -217,7 +217,7 @@ Dev server runs on http://localhost:5173
 
 ```bash
 # Deploy
-./start-explorer.sh
+./scripts/start-explorer.sh
 
 # Access
 http://localhost:8088

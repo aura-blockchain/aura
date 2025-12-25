@@ -38,7 +38,7 @@ VALIDATOR_INFO=$(curl -s http://localhost:27657/validators | jq -r '.result.vali
 if [ "$VALIDATOR_INFO" == "Failed to get validators" ]; then
     echo -e "${RED}✗ Cannot connect to validator RPC${NC}" | tee -a "$RESULTS_FILE"
     echo "" | tee -a "$RESULTS_FILE"
-    echo "Please ensure testnet is running: cd ~/blockchain-projects/aura && ./launch-testnet.sh" | tee -a "$RESULTS_FILE"
+    echo "Please ensure testnet is running: cd ~/blockchain-projects/aura && ./scripts/launch-testnet.sh" | tee -a "$RESULTS_FILE"
     exit 1
 fi
 

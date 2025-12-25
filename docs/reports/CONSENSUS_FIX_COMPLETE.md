@@ -326,7 +326,7 @@ go test ./x/incidentresponse/keeper/...
 ### Questions?
 - Review: `CONSENSUS_FIX_EXAMPLES.md` for code patterns
 - Review: `CONSENSUS_BUGS_FIXED_REPORT.md` for detailed analysis
-- Run: `./verify_consensus_fix.sh` for verification
+- Run: `./scripts/verify_consensus_fix.sh` for verification
 
 ### Issues?
 1. Check function signatures have `ctx` parameter
@@ -349,7 +349,7 @@ go test ./x/incidentresponse/keeper/...
 
 ```bash
 # Run this to verify the fix
-./verify_consensus_fix.sh
+./scripts/verify_consensus_fix.sh
 
 # Expected output:
 # ✅ No time.Now() in production code

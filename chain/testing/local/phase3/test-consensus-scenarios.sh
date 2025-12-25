@@ -499,7 +499,7 @@ main() {
         print_error "Testnet is not running!"
         print_info "Please start the testnet first:"
         print_info "  cd ${PROJECT_ROOT}"
-        print_info "  ./launch-testnet.sh"
+        print_info "  ./scripts/launch-testnet.sh"
         exit 1
     fi
     print_success "Testnet is running"

@@ -2556,10 +2556,21 @@ func (k Keeper) ProcessExpiredPendingTransfers(ctx sdk.Context) {
 	}
 
 	// Track processing statistics for monitoring
-	var processed, finalized, challenged, errors int
+	var processed, finalized, challenged, errors, skipped int
 
-	// Process each pending transfer
+	// SECURITY: Limit processing to MaxPendingTransfersPerBlock to prevent
+	// unbounded O(n) iteration that could cause chain halts under high load.
+	// Remaining transfers will be processed in subsequent blocks.
+	maxToProcess := types.MaxPendingTransfersPerBlock
+
+	// Process each pending transfer (up to batch limit)
 	for _, pending := range allPending {
+		// Check batch limit - only count actual processing attempts
+		if processed >= maxToProcess {
+			skipped = len(allPending) - processed
+			break
+		}
+
 		processed++
 
 		// Check if transfer has been challenged
@@ -2606,15 +2617,17 @@ func (k Keeper) ProcessExpiredPendingTransfers(ctx sdk.Context) {
 	}
 
 	// Emit summary event if any transfers were processed
-	if finalized > 0 || errors > 0 || challenged > 0 {
+	if finalized > 0 || errors > 0 || challenged > 0 || skipped > 0 {
 		ctx.EventManager().EmitEvent(
 			sdk.NewEvent(
 				"pending_transfers_processed",
 				sdk.NewAttribute("block_height", fmt.Sprintf("%d", ctx.BlockHeight())),
-				sdk.NewAttribute("total_pending", fmt.Sprintf("%d", processed)),
+				sdk.NewAttribute("total_pending", fmt.Sprintf("%d", len(allPending))),
+				sdk.NewAttribute("processed", fmt.Sprintf("%d", processed)),
 				sdk.NewAttribute("finalized", fmt.Sprintf("%d", finalized)),
 				sdk.NewAttribute("challenged", fmt.Sprintf("%d", challenged)),
 				sdk.NewAttribute("errors", fmt.Sprintf("%d", errors)),
+				sdk.NewAttribute("skipped_batch_limit", fmt.Sprintf("%d", skipped)),
 			),
 		)
 	}

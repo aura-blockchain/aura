@@ -17,6 +17,11 @@ const (
 
 	// QuerierRoute defines the module's query routing key
 	QuerierRoute = ModuleName
+
+	// MaxPendingTransfersPerBlock is the maximum number of pending transfers
+	// to process per block in EndBlocker. This prevents unbounded O(n) iteration
+	// that could cause chain halts under high load.
+	MaxPendingTransfersPerBlock = 100
 )
 
 // KVStore key prefixes

@@ -130,7 +130,7 @@ The `launch-testnet.sh` script performs a 6-step launch sequence:
 ### Launch Command
 
 ```bash
-./launch-testnet.sh
+./scripts/launch-testnet.sh
 ```
 
 Expected output:
@@ -338,7 +338,7 @@ curl http://localhost:9091/metrics | grep tendermint_consensus_height
 ```bash
 ./scripts/testnet-manage.sh clean
 ./scripts/testnet-init.sh
-./launch-testnet.sh
+./scripts/launch-testnet.sh
 ```
 
 ### Issue: Nodes at different heights
