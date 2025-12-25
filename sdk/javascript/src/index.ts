@@ -12,6 +12,9 @@ export { GovernanceModule } from './modules/governance';
 // Type exports
 export * from './types';
 
+// Error exports
+export * from './errors';
+
 // Re-export commonly used CosmJS types
 export type { Coin } from '@cosmjs/stargate';
 export type { OfflineDirectSigner } from '@cosmjs/proto-signing';
