@@ -20,6 +20,9 @@ import (
 
 // RegisterZKProofCircuit registers a new ZK proof circuit
 func (k Keeper) RegisterZKProofCircuit(ctx sdk.Context, creator string, proofType cryptoproto.ZKProofType, publicParams []byte, verificationKey []byte, circuitID string) (proofID string, err error) {
+	// Charge gas for circuit registration operation
+	ctx.GasMeter().ConsumeGas(50000, "zk_circuit_registration")
+
 	// Validate inputs
 	if creator == "" {
 		return "", types.ErrUnauthorized
@@ -32,6 +35,10 @@ func (k Keeper) RegisterZKProofCircuit(ctx sdk.Context, creator string, proofTyp
 	if len(verificationKey) == 0 {
 		return "", fmt.Errorf("verification key cannot be empty")
 	}
+
+	// Charge gas for public parameters and verification key storage
+	ctx.GasMeter().ConsumeGas(uint64(len(publicParams)), "zk_circuit_public_params")
+	ctx.GasMeter().ConsumeGas(uint64(len(verificationKey)), "zk_circuit_verification_key")
 
 	// Generate proof ID if not provided
 	if circuitID == "" {
@@ -89,6 +96,13 @@ func (k Keeper) RegisterZKProofCircuit(ctx sdk.Context, creator string, proofTyp
 
 // SubmitZKProof submits a zero-knowledge proof for verification
 func (k Keeper) SubmitZKProof(ctx sdk.Context, submitter string, proofID string, proofData []byte, publicInputs []byte) (verified bool, verificationID string, err error) {
+	// Charge base gas for proof submission
+	ctx.GasMeter().ConsumeGas(10000, "zk_proof_submission")
+
+	// Charge gas for proof data and public inputs
+	ctx.GasMeter().ConsumeGas(uint64(len(proofData)), "zk_proof_data")
+	ctx.GasMeter().ConsumeGas(uint64(len(publicInputs)), "zk_public_inputs")
+
 	// Validate inputs
 	if submitter == "" {
 		return false, "", types.ErrUnauthorized
@@ -111,6 +125,25 @@ func (k Keeper) SubmitZKProof(ctx sdk.Context, submitter string, proofID string,
 
 	// Generate verification ID
 	verificationID = fmt.Sprintf("verify-%s-%s-%d", proofID, submitter, ctx.BlockHeight())
+
+	// Charge gas for ZK proof verification (expensive cryptographic operation)
+	// Gas cost varies by proof type
+	var verificationGas uint64
+	switch config.ProofType {
+	case cryptoproto.ZKProofType_ZK_PROOF_TYPE_GROTH16:
+		verificationGas = 200000 // Groth16 is efficient
+	case cryptoproto.ZKProofType_ZK_PROOF_TYPE_PLONK:
+		verificationGas = 300000 // PLONK is more expensive
+	case cryptoproto.ZKProofType_ZK_PROOF_TYPE_BULLETPROOFS:
+		verificationGas = 350000 // Bulletproofs are expensive
+	case cryptoproto.ZKProofType_ZK_PROOF_TYPE_STARK:
+		verificationGas = 400000 // STARKs are very expensive
+	case cryptoproto.ZKProofType_ZK_PROOF_TYPE_HALO2:
+		verificationGas = 350000 // Halo2 similar to PLONK
+	default:
+		verificationGas = 500000 // Unknown proof types get highest cost
+	}
+	ctx.GasMeter().ConsumeGas(verificationGas, fmt.Sprintf("zk_proof_verify_%s", config.ProofType.String()))
 
 	// Verify the proof
 	sdkCtx := sdk.UnwrapSDKContext(ctx)

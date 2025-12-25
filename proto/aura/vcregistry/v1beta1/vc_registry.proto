@@ -16,22 +16,22 @@ option go_package = "github.com/aequitas/aura/proto/aura/vcregistry/v1beta1";
 
 // VCRecord represents a minted verifiable credential
 message VCRecord {
-  string vc_id = 1;                             // Unique identifier
+  string vc_id = 1;                             // Unique identifier (DID-based or UUID)
   VCType vc_type = 2;                           // Type of credential
   string vc_type_custom = 3;                    // Custom type name (if VC_TYPE_CUSTOM)
   string holder_did = 4;                        // DID of holder
   string holder_address = 5;                    // Bech32 address of holder
-  VCStatus status = 6;                          // Current status
+  VCStatus status = 6;                          // Current status (ACTIVE, REVOKED, SUSPENDED, etc.)
   google.protobuf.Timestamp issued_at = 7;      // When issued
-  google.protobuf.Timestamp expires_at = 8;     // Expiration (0 = never)
-  uint64 issued_height = 9;                     // Block height of issuance
-  bytes credential_hash = 10;                   // SHA256 of full credential
-  bytes verifier_plugin_hash = 11;              // Hash of issuing plug-in
-  string issuer_assistant = 12;                 // AI assistant address
-  repeated string prerequisite_ir_ids = 13;     // IRs required for minting
-  map<string, string> metadata = 14;            // Extensible metadata
-  uint64 cs_at_mint = 15;                       // CS value when minted
-  string policy_version = 16;                   // Policy version used
+  google.protobuf.Timestamp expires_at = 8;     // Expiration (nil = never expires)
+  uint64 issued_height = 9;                     // Block height of issuance (for audit)
+  bytes credential_hash = 10;                   // SHA256 of full credential (tamper detection)
+  bytes verifier_plugin_hash = 11;              // Hash of issuing plug-in (code verification)
+  string issuer_assistant = 12;                 // AI assistant address (IR runner)
+  repeated string prerequisite_ir_ids = 13;     // Inclusion Routines required for minting
+  map<string, string> metadata = 14;            // Extensible metadata (IPFS CID, etc.)
+  uint64 cs_at_mint = 15;                       // Confidence Score at mint time (audit trail)
+  string policy_version = 16;                   // Policy version used (governance tracking)
 }
 
 // RevocationRecord represents a revoked credential
@@ -130,26 +130,26 @@ message Params {
 // GenesisState defines the initial state of the vcregistry module
 message GenesisState {
   Params params = 1 [(gogoproto.nullable) = false];
-  repeated VCRecord vc_records = 2;
-  repeated RevocationRecord revocation_records = 3;
-  RevocationList revocation_list = 4;
-  repeated DIDDocument did_documents = 5;
-  repeated VCPolicy vc_policies = 6;
-  map<string, uint64> user_mint_counts = 7;     // Address -> mint count today
+  repeated VCRecord vc_records = 2;                     // All issued verifiable credentials
+  repeated RevocationRecord revocation_records = 3;     // All revoked VCs
+  RevocationList revocation_list = 4;                   // Merkle tree root for revocation verification
+  repeated DIDDocument did_documents = 5;               // All registered DID documents
+  repeated VCPolicy vc_policies = 6;                    // All VC type policies
+  map<string, uint64> user_mint_counts = 7;             // Address -> daily mint count (rate limiting)
 
   // Presentations and indices
-  repeated VCPresentation presentations = 8;
+  repeated VCPresentation presentations = 8;            // All VC presentations
   map<string, PresentationIds> user_presentation_index = 9; // address -> presentation IDs
 
   // Attribute VCs and indices
-  repeated AttributeVC attribute_vcs = 10;
+  repeated AttributeVC attribute_vcs = 10;              // All attribute-based credentials
   map<string, AttributeVcIds> user_attribute_index = 11; // address -> attribute VC IDs
 
   // Disclosure policies/requests/responses and pending index
-  repeated DisclosurePolicy disclosure_policies = 12;
-  repeated DisclosureRequest disclosure_requests = 13;
-  repeated DisclosureResponse disclosure_responses = 14;
-  map<string, RequestIds> pending_disclosure_index = 15; // address -> request IDs
+  repeated DisclosurePolicy disclosure_policies = 12;   // Selective disclosure policies
+  repeated DisclosureRequest disclosure_requests = 13;  // Pending disclosure requests
+  repeated DisclosureResponse disclosure_responses = 14; // Disclosure responses
+  map<string, RequestIds> pending_disclosure_index = 15; // address -> pending request IDs
 }
 
 // PresentationIds wraps a list of presentation IDs for map values

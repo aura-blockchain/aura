@@ -48,14 +48,14 @@ enum SanctionsStatus {
 // PII is stored off-chain; only cryptographic commitments stored on-chain
 // Jurisdiction is stored on-chain for OFAC compliance enforcement
 message KYCRecord {
-  string address = 1;
-  KYCLevel kyc_level = 2;
-  string provider = 3;                              // KYC provider name
+  string address = 1;                               // Bech32 address of verified user
+  KYCLevel kyc_level = 2;                           // Verification level achieved
+  string provider = 3;                              // KYC provider name (authorized address)
   google.protobuf.Timestamp verified_at = 4 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
-  google.protobuf.Timestamp expires_at = 5 [(gogoproto.stdtime) = true];
+  google.protobuf.Timestamp expires_at = 5 [(gogoproto.stdtime) = true];  // Nil for non-expiring
   bytes pii_commitment = 6;                         // SHA-256 hash of off-chain PII data
-  bool enhanced_due_diligence = 7;                  // EDD required flag
-  string jurisdiction = 8;                          // ISO 3166-1 alpha-2 country code
+  bool enhanced_due_diligence = 7;                  // EDD required flag (high-risk users)
+  string jurisdiction = 8;                          // ISO 3166-1 alpha-2 country code (required for sanctions check)
   uint64 version = 9;                               // Auto-incremented on each update (deduplication tracking)
 }
 
@@ -77,16 +77,16 @@ message KYCHistoryList {
 
 // AMLProfile represents an AML risk profile
 message AMLProfile {
-  string address = 1;
-  AMLRiskLevel risk_level = 2;
-  repeated string risk_factors = 3;
+  string address = 1;                             // Bech32 address of user
+  AMLRiskLevel risk_level = 2;                    // Computed risk level based on activity
+  repeated string risk_factors = 3;               // List of risk indicators (e.g., "high_velocity", "structuring")
   google.protobuf.Timestamp last_assessment = 4 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
-  uint64 total_transactions = 5;
-  string total_volume = 6;                         // Total transaction volume
+  uint64 total_transactions = 5;                  // Lifetime transaction count for this address
+  string total_volume = 6;                        // Total transaction volume in base denom
   repeated SuspiciousActivity suspicious_activities = 7;
-  bool pep_status = 8;                            // Politically Exposed Person
-  repeated string source_of_funds = 9;
-  string occupation = 10;
+  bool pep_status = 8;                            // Politically Exposed Person flag
+  repeated string source_of_funds = 9;            // Off-chain data references (e.g., "salary", "business_income")
+  string occupation = 10;                         // Off-chain data reference
 }
 
 // SuspiciousActivity represents a suspicious activity report
@@ -238,10 +238,10 @@ message RateLimitEntry {
 // ComplianceParams defines module parameters
 message ComplianceParams {
   // KYC/AML settings
-  bool kyc_required = 1;
-  KYCLevel minimum_kyc_level = 2;
-  uint64 kyc_expiry_days = 3;
-  repeated string approved_kyc_providers = 17;    // Authorized KYC provider addresses
+  bool kyc_required = 1;                          // If true, require KYC for all transactions above threshold
+  KYCLevel minimum_kyc_level = 2;                 // Minimum KYC level required for on-chain activity
+  uint64 kyc_expiry_days = 3;                     // KYC validity period (0 = no expiry)
+  repeated string approved_kyc_providers = 17;    // Authorized KYC provider addresses (governance-controlled)
   repeated string blocked_jurisdictions = 18;     // OFAC-sanctioned country codes (ISO 3166-1 alpha-2)
 
   // Transaction monitoring

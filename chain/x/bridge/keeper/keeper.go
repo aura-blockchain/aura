@@ -34,7 +34,8 @@ const sourceChainAura = "aura"
 
 const (
 	// DefaultTransferCacheSize is the default size of the transfer LRU cache
-	DefaultTransferCacheSize = 1000
+	// Increased from 1000 to 5000 for better cache hit rate on high-traffic bridges
+	DefaultTransferCacheSize = 5000
 )
 
 // Keeper of the bridge store

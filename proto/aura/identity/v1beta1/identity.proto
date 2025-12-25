@@ -224,46 +224,46 @@ enum IdentityStatus {
 
 // ChangeRequest for identity updates
 message ChangeRequest {
-  // Unique identifier
+  // Unique identifier (UUID)
   string id = 1;
 
-  // Target DID
+  // Target DID being modified
   string did = 2;
 
   // Type of change requested
   ChangeType change_type = 3;
 
-  // Address requesting the change
+  // Address requesting the change (must be DID controller or authorized)
   string requester = 4;
 
   // Timestamp of request
   google.protobuf.Timestamp requested_at = 5 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
 
-  // Current status
+  // Current status (PENDING, APPROVED, REJECTED, EXECUTED)
   ChangeStatus status = 6;
 
-  // Serialized change data
+  // Serialized change data (protobuf-encoded change details)
   bytes change_data = 7;
 
-  // Assistant address (if applicable)
+  // Assistant address (AI assistant verifying change, if applicable)
   string assistant = 8;
 
-  // Inclusion routine ID
+  // Inclusion routine ID (IR that validated the change)
   string ir_id = 9;
 
-  // Proof hash
+  // Proof hash (cryptographic proof of change validity)
   string proof_hash = 10;
 
-  // Metadata hash
+  // Metadata hash (IPFS CID or SHA256 of supporting documents)
   string metadata_hash = 11;
 
-  // Reason for change
+  // Reason for change (audit trail)
   string reason = 12;
 
   // Block height when created
   int64 created_height = 13;
 
-  // Block height of verdict
+  // Block height of verdict (when approved/rejected)
   int64 verdict_height = 14;
 }
 

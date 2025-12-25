@@ -71,7 +71,7 @@ func (k *Keeper) GetAuditLogs(ctx sdk.Context, actor, action string, startTime, 
 	iterator := storetypes.KVStorePrefixIterator(store, AuditLogsKeyPrefix)
 	defer iterator.Close()
 
-	filtered := make([]*authproto.AuditLog, 0)
+	filtered := make([]*authproto.AuditLog, 0, 64)
 
 	for ; iterator.Valid(); iterator.Next() {
 		var log authproto.AuditLog
@@ -128,7 +128,7 @@ func (k *Keeper) GetAuditLogsByResource(ctx sdk.Context, resource string, limit 
 	iterator := storetypes.KVStorePrefixIterator(store, AuditLogsKeyPrefix)
 	defer iterator.Close()
 
-	filtered := make([]*authproto.AuditLog, 0)
+	filtered := make([]*authproto.AuditLog, 0, 64)
 
 	for ; iterator.Valid(); iterator.Next() {
 		var log authproto.AuditLog
@@ -163,7 +163,7 @@ func (k *Keeper) GetRecentAuditLogs(ctx sdk.Context, limit uint64) []*authproto.
 	iterator := storetypes.KVStorePrefixIterator(store, AuditLogsKeyPrefix)
 	defer iterator.Close()
 
-	all := make([]*authproto.AuditLog, 0)
+	all := make([]*authproto.AuditLog, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		var log authproto.AuditLog
 		if err := k.cdc.Unmarshal(iterator.Value(), &log); err != nil {
@@ -199,7 +199,7 @@ func (k *Keeper) SearchAuditLogs(ctx sdk.Context, criteria map[string]string, li
 	iterator := storetypes.KVStorePrefixIterator(store, AuditLogsKeyPrefix)
 	defer iterator.Close()
 
-	filtered := make([]*authproto.AuditLog, 0)
+	filtered := make([]*authproto.AuditLog, 0, 64)
 
 	for ; iterator.Valid(); iterator.Next() {
 		var log authproto.AuditLog

@@ -59,6 +59,14 @@ func (c *Client) LockTokens(ctx context.Context, params *LockTokensParams) (*typ
 	if params.Recipient == "" {
 		return nil, fmt.Errorf("recipient is required")
 	}
+	// Validate amount is positive
+	if !params.Amount.IsPositive() {
+		return nil, fmt.Errorf("amount must be positive, got %s", params.Amount.String())
+	}
+	// Validate denom is not empty
+	if params.Amount.Denom == "" {
+		return nil, fmt.Errorf("coin denomination cannot be empty")
+	}
 
 	msg := &bridgepb.MsgLockTokens{
 		Sender:      params.Sender,
@@ -112,6 +120,22 @@ func (c *Client) MintTokens(ctx context.Context, params *MintTokensParams) (*typ
 	}
 	if params.SourceChain == "" {
 		return nil, fmt.Errorf("source chain is required")
+	}
+	if params.SourceTxHash == "" {
+		return nil, fmt.Errorf("source transaction hash is required")
+	}
+	if params.Recipient == "" {
+		return nil, fmt.Errorf("recipient is required")
+	}
+	if params.Denom == "" {
+		return nil, fmt.Errorf("denomination is required")
+	}
+	// Validate amount is positive
+	if params.Amount.IsNil() || !params.Amount.IsPositive() {
+		return nil, fmt.Errorf("amount must be positive")
+	}
+	if len(params.ValidatorSignature) == 0 {
+		return nil, fmt.Errorf("validator signature is required")
 	}
 
 	msg := &bridgepb.MsgMintTokens{
@@ -204,6 +228,20 @@ func (c *Client) BurnTokens(ctx context.Context, params *BurnTokensParams) (*typ
 	if params.Sender == "" {
 		return nil, fmt.Errorf("sender is required")
 	}
+	if params.TargetChain == "" {
+		return nil, fmt.Errorf("target chain is required")
+	}
+	if params.Recipient == "" {
+		return nil, fmt.Errorf("recipient is required")
+	}
+	// Validate amount is positive
+	if !params.Amount.IsPositive() {
+		return nil, fmt.Errorf("amount must be positive, got %s", params.Amount.String())
+	}
+	// Validate denom is not empty
+	if params.Amount.Denom == "" {
+		return nil, fmt.Errorf("coin denomination cannot be empty")
+	}
 
 	msg := &bridgepb.MsgBurnTokens{
 		Sender:      params.Sender,
@@ -295,6 +333,34 @@ func (c *Client) CrossChainSwap(ctx context.Context, params *CrossChainSwapParam
 	}
 	if params.Sender == "" {
 		return nil, fmt.Errorf("sender is required")
+	}
+	if params.SourceChain == "" {
+		return nil, fmt.Errorf("source chain is required")
+	}
+	if params.TargetChain == "" {
+		return nil, fmt.Errorf("target chain is required")
+	}
+	if params.TargetDenom == "" {
+		return nil, fmt.Errorf("target denomination is required")
+	}
+	if params.Recipient == "" {
+		return nil, fmt.Errorf("recipient is required")
+	}
+	// Validate input coin amount is positive
+	if !params.InputCoin.IsPositive() {
+		return nil, fmt.Errorf("input amount must be positive, got %s", params.InputCoin.String())
+	}
+	// Validate input denom is not empty
+	if params.InputCoin.Denom == "" {
+		return nil, fmt.Errorf("input coin denomination cannot be empty")
+	}
+	// Validate min target amount is positive
+	if params.MinTargetAmount.IsNil() || !params.MinTargetAmount.IsPositive() {
+		return nil, fmt.Errorf("minimum target amount must be positive")
+	}
+	// Validate max slippage is within bounds (0-10000 basis points = 0-100%)
+	if params.MaxSlippageBPS > 10000 {
+		return nil, fmt.Errorf("max slippage must be between 0 and 10000 basis points, got %d", params.MaxSlippageBPS)
 	}
 
 	msg := &bridgepb.MsgCrossChainSwap{

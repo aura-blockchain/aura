@@ -17,15 +17,27 @@ import (
 
 const (
 	// MaxStringLength is the maximum allowed length for general strings
+	// This should be used as the default limit for any user-provided string fields
+	// in messages and queries to prevent DoS attacks via excessive string lengths.
+	// Use this constant for: generic text fields, metadata values, identifiers
+	// that don't have a more specific limit defined below.
 	MaxStringLength = 10000
+
 	// MaxDescriptionLength is the maximum length for descriptions
+	// Use for: description fields in proposals, entity descriptions, etc.
 	MaxDescriptionLength = 5000
+
 	// MaxNameLength is the maximum length for names
+	// Use for: entity names, role names, contract names, etc.
 	MaxNameLength = 256
+
 	// MaxURLLength is the maximum length for URLs
+	// Use for: URL fields, endpoint addresses, API endpoints
 	MaxURLLength = 2048
+
 	// MinHashLength is the minimum length for hash strings
 	MinHashLength = 32
+
 	// MaxHashLength is the maximum length for hash strings (SHA-512 hex = 128)
 	MaxHashLength = 128
 )

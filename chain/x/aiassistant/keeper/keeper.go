@@ -317,7 +317,7 @@ func (k Keeper) AssistantsByLocale(ctx sdk.Context, locale string) ([]*types.Ass
 	iter := store.Iterator(nil, nil)
 	defer iter.Close()
 
-	assistants := make([]*types.Assistant, 0)
+	assistants := make([]*types.Assistant, 0, 16)
 	for ; iter.Valid(); iter.Next() {
 		addr := string(iter.Value())
 		if asst, ok := k.GetAssistant(ctx, addr); ok {

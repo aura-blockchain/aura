@@ -37,7 +37,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) types.GenesisState {
 	iter := store.Iterator(nil, nil)
 	defer iter.Close()
 
-	assistants := make([]types.Assistant, 0)
+	assistants := make([]types.Assistant, 0, 16)
 	for ; iter.Valid(); iter.Next() {
 		var assistant types.Assistant
 		if err := k.cdc.Unmarshal(iter.Value(), &assistant); err != nil {

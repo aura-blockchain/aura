@@ -255,7 +255,7 @@ func (k *Keeper) GetRoleAssignmentsForAddress(ctx sdk.Context, address string) (
 
 	// Filter out expired assignments
 	now := ctx.BlockTime()
-	filtered := make([]*authproto.RoleAssignment, 0)
+	filtered := make([]*authproto.RoleAssignment, 0, len(assignmentList.Assignments))
 	for _, assignment := range assignmentList.Assignments {
 		if assignment.ExpiresAt != nil && now.After(*assignment.ExpiresAt) {
 			continue
@@ -273,7 +273,7 @@ func (k *Keeper) DeleteRoleAssignment(ctx sdk.Context, address, roleName string)
 		return fmt.Errorf("failed to get: %w", err)
 	}
 
-	filtered := make([]*authproto.RoleAssignment, 0)
+	filtered := make([]*authproto.RoleAssignment, 0, len(assignments))
 	for _, assignment := range assignments {
 		if assignment.RoleName != roleName {
 			filtered = append(filtered, assignment)
@@ -708,7 +708,7 @@ func (k *Keeper) addUserSession(ctx sdk.Context, userAddress, sessionID string) 
 // removeUserSession removes a session ID from a user's session list
 func (k *Keeper) removeUserSession(ctx sdk.Context, userAddress, sessionID string) error {
 	sessions, _ := k.GetUserSessions(ctx, userAddress)
-	filtered := make([]string, 0)
+	filtered := make([]string, 0, len(sessions))
 	for _, sid := range sessions {
 		if sid != sessionID {
 			filtered = append(filtered, sid)

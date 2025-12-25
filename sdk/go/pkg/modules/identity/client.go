@@ -96,6 +96,27 @@ func (c *Client) CreateRole(ctx context.Context, params *CreateRoleParams) (*typ
 	if params.RoleName == "" {
 		return nil, fmt.Errorf("role name is required")
 	}
+	// Validate role name length (max 256 characters for names)
+	if len(params.RoleName) > 256 {
+		return nil, fmt.Errorf("role name exceeds maximum length of 256 characters")
+	}
+	// Validate description length (max 5000 characters for descriptions)
+	if len(params.Description) > 5000 {
+		return nil, fmt.Errorf("description exceeds maximum length of 5000 characters")
+	}
+	// Validate permissions are not empty
+	if len(params.Permissions) == 0 {
+		return nil, fmt.Errorf("at least one permission is required")
+	}
+	// Validate each permission is non-empty
+	for i, perm := range params.Permissions {
+		if perm == "" {
+			return nil, fmt.Errorf("permission at index %d is empty", i)
+		}
+		if len(perm) > 256 {
+			return nil, fmt.Errorf("permission at index %d exceeds maximum length of 256 characters", i)
+		}
+	}
 
 	msg := &identitypb.MsgCreateRole{
 		Creator:     params.Creator,
@@ -190,6 +211,28 @@ func (c *Client) CreateMultisigWallet(ctx context.Context, params *CreateMultisi
 	if params.Threshold == 0 {
 		return nil, fmt.Errorf("threshold must be greater than 0")
 	}
+	// Validate threshold is not greater than number of signers
+	if params.Threshold > uint32(len(params.Signers)) {
+		return nil, fmt.Errorf("threshold (%d) cannot exceed number of signers (%d)", params.Threshold, len(params.Signers))
+	}
+	// Validate each signer address is non-empty
+	for i, signer := range params.Signers {
+		if signer == "" {
+			return nil, fmt.Errorf("signer at index %d is empty", i)
+		}
+		// Validate address format
+		if _, err := sdk.AccAddressFromBech32(signer); err != nil {
+			return nil, fmt.Errorf("invalid signer address at index %d: %w", i, err)
+		}
+	}
+	// Check for duplicate signers
+	signerMap := make(map[string]bool)
+	for i, signer := range params.Signers {
+		if signerMap[signer] {
+			return nil, fmt.Errorf("duplicate signer address at index %d: %s", i, signer)
+		}
+		signerMap[signer] = true
+	}
 
 	msg := &identitypb.MsgCreateMultisigWallet{
 		Creator:    params.Creator,
@@ -231,6 +274,27 @@ func (c *Client) CreateSession(ctx context.Context, params *CreateSessionParams)
 	}
 	if params.Address == "" {
 		return nil, fmt.Errorf("address is required")
+	}
+	// Validate device fingerprint length
+	if len(params.DeviceFingerprint) > 256 {
+		return nil, fmt.Errorf("device fingerprint exceeds maximum length of 256 characters")
+	}
+	// Validate IP address length
+	if len(params.IpAddress) > 45 {
+		return nil, fmt.Errorf("IP address exceeds maximum length of 45 characters")
+	}
+	// Validate metadata map size
+	if len(params.Metadata) > 50 {
+		return nil, fmt.Errorf("metadata cannot contain more than 50 entries")
+	}
+	// Validate metadata key/value lengths
+	for key, value := range params.Metadata {
+		if len(key) > 256 {
+			return nil, fmt.Errorf("metadata key exceeds maximum length of 256 characters")
+		}
+		if len(value) > 1024 {
+			return nil, fmt.Errorf("metadata value for key '%s' exceeds maximum length of 1024 characters", key)
+		}
 	}
 
 	msg := &identitypb.MsgCreateSession{

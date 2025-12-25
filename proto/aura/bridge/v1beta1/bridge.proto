@@ -9,7 +9,7 @@ option go_package = "github.com/aequitas/aura/proto/aura/bridge/v1beta1";
 
 // CrossChainTransfer represents a transfer between AURA, PAW, or XAI chains
 message CrossChainTransfer {
-  // Unique transfer identifier
+  // Unique transfer identifier (generated from source_tx_hash + nonce)
   string transfer_id = 1;
 
   // Source chain ("aura", "paw", "xai")
@@ -24,34 +24,34 @@ message CrossChainTransfer {
   // Recipient address on target chain
   string recipient = 5;
 
-  // Amount transferred
+  // Amount transferred (locked on source, minted on target)
   string amount = 6 [
     (gogoproto.customtype) = "cosmossdk.io/math.Int",
     (gogoproto.nullable) = false
   ];
 
-  // Token denomination
+  // Token denomination (native or wrapped format)
   string denom = 7;
 
-  // Transaction hash on source chain
+  // Transaction hash on source chain (burn/lock tx)
   string source_tx_hash = 8;
 
-  // Transaction hash on target chain (once minted)
+  // Transaction hash on target chain (mint/unlock tx, empty until relayed)
   string target_tx_hash = 9;
 
-  // Transfer status
+  // Transfer status (lifecycle tracking)
   TransferStatus status = 10;
 
   // Timestamp of transfer initiation
   google.protobuf.Timestamp timestamp = 11 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
 
-  // Number of validator confirmations
+  // Number of validator confirmations received
   uint64 confirmations = 12;
 
-  // Required confirmations
+  // Required confirmations (threshold from params)
   uint64 required_confirmations = 13;
 
-  // Validator signatures
+  // Validator signatures (collected to reach threshold)
   repeated ValidatorSignature validator_signatures = 14 [(gogoproto.nullable) = false];
 }
 
@@ -166,16 +166,16 @@ message SharedIdentity {
   // Verified on XAI
   bool verified_xai = 4;
 
-  // AURA IR score (0-100)
+  // AURA IR score (0-100) - Inclusion Routine confidence score from identity module
   uint64 aura_ir_score = 5;
 
-  // Linked addresses on other chains
+  // Linked addresses on other chains (for cross-chain identity portability)
   map<string, string> linked_addresses = 6;  // chain_id -> address
 
   // Verification timestamp
   google.protobuf.Timestamp verified_at = 7 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
 
-  // Reputation score (0-1000)
+  // Reputation score (0-1000) - Cross-chain aggregated reputation
   uint64 reputation_score = 8;
 }
 
