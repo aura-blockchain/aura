@@ -15,6 +15,9 @@ export * from './types';
 // Error exports
 export * from './errors';
 
+// Event exports
+export * from './events';
+
 // Re-export commonly used CosmJS types
 export type { Coin } from '@cosmjs/stargate';
 export type { OfflineDirectSigner } from '@cosmjs/proto-signing';

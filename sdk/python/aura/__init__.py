@@ -43,6 +43,19 @@ from .errors import (
     InvalidAddressError,
     InvalidAmountError,
 )
+from .events import (
+    EventSubscriber,
+    EventFilter,
+    EventType,
+    BlockEvent,
+    TxEvent,
+    TransferEvent,
+    BridgeTransferEvent,
+    IdentityEvent,
+    GovernanceEvent,
+    DEXEvent,
+    create_event_subscriber,
+)
 
 __version__ = "1.0.0"
 __all__ = [
@@ -88,4 +101,16 @@ __all__ = [
     "ValidationError",
     "InvalidAddressError",
     "InvalidAmountError",
+    # Events
+    "EventSubscriber",
+    "EventFilter",
+    "EventType",
+    "BlockEvent",
+    "TxEvent",
+    "TransferEvent",
+    "BridgeTransferEvent",
+    "IdentityEvent",
+    "GovernanceEvent",
+    "DEXEvent",
+    "create_event_subscriber",
 ]
