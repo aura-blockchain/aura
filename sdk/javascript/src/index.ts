@@ -18,6 +18,9 @@ export * from './errors';
 // Event exports
 export * from './events';
 
+// Batch operation exports
+export * from './batch';
+
 // Re-export commonly used CosmJS types
 export type { Coin } from '@cosmjs/stargate';
 export type { OfflineDirectSigner } from '@cosmjs/proto-signing';

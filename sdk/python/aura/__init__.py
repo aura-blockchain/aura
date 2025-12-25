@@ -56,6 +56,19 @@ from .events import (
     DEXEvent,
     create_event_subscriber,
 )
+from .batch import (
+    BatchTransactionBuilder,
+    BatchConfig,
+    BatchResult,
+    BatchQueryResult,
+    BatchTransferItem,
+    batch_queries,
+    batch_queries_sync,
+    create_batch_transfers,
+    validate_batch_size,
+    estimate_batch_gas,
+    chunk,
+)
 
 __version__ = "1.0.0"
 __all__ = [
@@ -113,4 +126,16 @@ __all__ = [
     "GovernanceEvent",
     "DEXEvent",
     "create_event_subscriber",
+    # Batch operations
+    "BatchTransactionBuilder",
+    "BatchConfig",
+    "BatchResult",
+    "BatchQueryResult",
+    "BatchTransferItem",
+    "batch_queries",
+    "batch_queries_sync",
+    "create_batch_transfers",
+    "validate_batch_size",
+    "estimate_batch_gas",
+    "chunk",
 ]
