@@ -114,7 +114,7 @@ if err != nil {
 
 ### 5. Rate Limiting (`rate_limiter.go`)
 
-**Purpose**: Prevents abuse through rate limiting and request throttling.
+**Purpose**: Prevents abuse through rate limiting and request throttling (HTTP/REST API).
 
 **Features**:
 - Per-IP rate limiting (10 req/sec, burst 20)
@@ -140,6 +140,63 @@ handler := rateLimiter.RateLimitMiddleware(nextHandler)
 - `Content-Security-Policy: default-src 'self'`
 - `Referrer-Policy: strict-origin-when-cross-origin`
 - `Permissions-Policy: geolocation=(), microphone=(), camera=()`
+
+### 5b. Query Rate Limiting (`query_rate_limiter.go`)
+
+**Purpose**: Per-address rate limiting for expensive gRPC queries (protects against query abuse).
+
+**Features**:
+- Per-address rate limiting (not per-IP, tracks blockchain addresses)
+- Separate limits for expensive vs. normal queries
+- Expensive queries: 2 req/sec, burst 5 (default)
+- Normal queries: 10 req/sec, burst 20 (default)
+- Automatic cleanup of idle limiters (15 minutes)
+- Configurable expensive query list
+- gRPC unary and stream interceptors
+- Address extraction from metadata or peer IP
+- Statistics tracking for monitoring
+
+**Expensive Queries** (default configuration):
+- DEX: `Orderbook`, `AllPools`, `UserOrders`, `SupportedCoins`
+- Privacy: `VerifyZKProof`, `MixingPools`
+- Cryptography: `VerifyZKProof`
+- VCRegistry: `ResolveDID`, `ListUserVCs`, `BatchVCStatus`, `GetRevocationList`, `VerifyPresentation`
+- Identity: `GetDIDDocument`, `ListDIDsByController`
+- Compliance: `GetAddressStatus`, `GetComplianceScore`, `ListRestrictedAddresses`
+
+**Usage**:
+```go
+config := security.DefaultExpensiveQueryConfig()
+queryRateLimiter := security.NewQueryRateLimiter(config, logger)
+
+grpcOpts := []grpc.ServerOption{
+    grpc.UnaryInterceptor(queryRateLimiter.UnaryServerInterceptor()),
+    grpc.StreamInterceptor(queryRateLimiter.StreamServerInterceptor()),
+}
+grpcSrv := grpc.NewServer(grpcOpts...)
+```
+
+**Configuration** (`~/.aura/config/security.json`):
+```json
+{
+  "query_rate_limiting": {
+    "enabled": true,
+    "expensive_rate": 2.0,
+    "expensive_burst": 5,
+    "normal_rate": 10.0,
+    "normal_burst": 20,
+    "expensive_queries": {
+      "/aura.dex.v1beta1.Query/Orderbook": true,
+      "/aura.privacy.v1beta1.Query/VerifyZKProof": true
+    }
+  }
+}
+```
+
+**Security Events Logged**:
+- `query_rate_limit_exceeded` - Rate limit hit for address
+- `expensive_query_executed` - Expensive query was executed
+- `query_rate_limiter_cleanup` - Cleanup of idle limiters
 
 ### 6. Config Validation (`config_validation.go`)
 

@@ -605,10 +605,32 @@ func startGRPCServer(
 		return nil, fmt.Errorf("failed to listen on %s: %w", address, err)
 	}
 
+	// Load security configuration
+	securityConfig, err := security.LoadSecurityConfig(homeDir)
+	if err != nil {
+		logger.Warn("failed to load security config, using defaults", "error", err.Error())
+		securityConfig = security.DefaultSecurityConfig()
+	}
+
 	// Create gRPC server options
 	grpcOpts := []grpc.ServerOption{
 		grpc.MaxRecvMsgSize(10 * 1024 * 1024), // 10MB
 		grpc.MaxSendMsgSize(10 * 1024 * 1024), // 10MB
+	}
+
+	// Add query rate limiting interceptor (per-address for expensive queries)
+	if securityConfig.QueryRateLimiting.Enabled {
+		queryRateLimiter := security.NewQueryRateLimiter(
+			securityConfig.QueryRateLimiting.ToExpensiveQueryConfig(),
+			GetSecurityLogger(),
+		)
+		grpcOpts = append(grpcOpts,
+			grpc.UnaryInterceptor(queryRateLimiter.UnaryServerInterceptor()),
+			grpc.StreamInterceptor(queryRateLimiter.StreamServerInterceptor()),
+		)
+		logger.Info("gRPC query rate limiting enabled",
+			"expensive_rate", securityConfig.QueryRateLimiting.ExpensiveRate,
+			"normal_rate", securityConfig.QueryRateLimiting.NormalRate)
 	}
 
 	// Add TLS if configured (optional for development)
