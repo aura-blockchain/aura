@@ -196,12 +196,12 @@
 - [x] Add msg_server_test.go for x/identity and x/security modules - identity already has tests, security is all stub handlers
 - [x] Increase identitychange module coverage (6.1% → 36.7%) - module.go functions tested, converters.go unused by design
 - [x] Increase inclusionroutines module coverage (9.1% → 87.9%) - exceeds target
-- [ ] Add integration tests for multi-module interactions
-- [ ] Add IBC channel lifecycle tests (only 3 IBC test files exist)
+- [x] Add integration tests for multi-module interactions - 111 tests in chain/testing/integration/ (verified passing)
+- [x] Add IBC channel lifecycle tests - 3 IBC modules (bridge, identity, compliance) test full lifecycle (12 ops each); IBC disabled by design
 
 #### Code Quality
-- [ ] Centralize mock implementations to chain/testing/testutil/
-- [ ] Extract common test helpers (fundedTestAddr, setupTestKeeper)
+- [x] Centralize mock implementations - chain/testing/testutil/mocks.go has 7 core mocks (Bank, Account, Staking, Slashing, Governance, VCRegistry, Security)
+- [x] Extract common test helpers - chain/testing/testutil/common.go has helpers (TestContext, fixtures, address generators)
 - [x] Review TODO/FIXME markers in test files - all are future enhancement notes, not bugs (8 markers verified)
 
 ---
