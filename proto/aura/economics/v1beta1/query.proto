@@ -5,6 +5,7 @@ option go_package = "github.com/aequitas/aura/proto/aura/economics/v1beta1";
 
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
 import "aura/economics/v1beta1/economics.proto";
 
 // Query defines the gRPC querier service
@@ -148,6 +149,7 @@ message QueryVestingScheduleResponse {
 
 message QueryVestingSchedulesByAddressRequest {
   string address = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
 }
 
 message QueryVestingSchedulesByAddressResponse {
@@ -160,12 +162,16 @@ message QueryVestingSchedulesByAddressResponse {
     (gogoproto.customtype) = "cosmossdk.io/math.Int",
     (gogoproto.nullable) = false
   ];
+  cosmos.base.query.v1beta1.PageResponse pagination = 4;
 }
 
-message QueryAllVestingSchedulesRequest {}
+message QueryAllVestingSchedulesRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
 
 message QueryAllVestingSchedulesResponse {
   repeated VestingSchedule schedules = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 // Governance queries
@@ -182,10 +188,12 @@ message QueryProposalsRequest {
   ProposalStatus status = 1;
   string voter = 2;
   string depositor = 3;
+  cosmos.base.query.v1beta1.PageRequest pagination = 4;
 }
 
 message QueryProposalsResponse {
   repeated Proposal proposals = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 message QueryVoteRequest {
@@ -199,10 +207,12 @@ message QueryVoteResponse {
 
 message QueryVotesRequest {
   uint64 proposal_id = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
 }
 
 message QueryVotesResponse {
   repeated Vote votes = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 message QueryDepositRequest {
@@ -216,10 +226,12 @@ message QueryDepositResponse {
 
 message QueryDepositsRequest {
   uint64 proposal_id = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
 }
 
 message QueryDepositsResponse {
   repeated Deposit deposits = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 message QueryTallyResultRequest {
@@ -242,6 +254,7 @@ message QueryVoteLockResponse {
 
 message QueryVoteLocksByOwnerRequest {
   string owner = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
 }
 
 message QueryVoteLocksByOwnerResponse {
@@ -254,6 +267,7 @@ message QueryVoteLocksByOwnerResponse {
     (gogoproto.customtype) = "cosmossdk.io/math.Int",
     (gogoproto.nullable) = false
   ];
+  cosmos.base.query.v1beta1.PageResponse pagination = 4;
 }
 
 message QueryVotingPowerRequest {
@@ -279,10 +293,12 @@ message QueryVotingPowerResponse {
 
 message QueryVoteDelegationsRequest {
   string delegator = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
 }
 
 message QueryVoteDelegationsResponse {
   repeated VoteDelegation delegations = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 // Treasury queries
@@ -295,10 +311,13 @@ message QueryPendingTreasuryTxResponse {
   PendingTreasuryTx transaction = 1 [(gogoproto.nullable) = false];
 }
 
-message QueryPendingTreasuryTxsRequest {}
+message QueryPendingTreasuryTxsRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
 
 message QueryPendingTreasuryTxsResponse {
   repeated PendingTreasuryTx transactions = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 // Inflation queries
@@ -346,7 +365,9 @@ message QueryLiquidityMiningStatsResponse {
 
 // Tokenomics queries
 
-message QueryTokenomicsStatsRequest {}
+message QueryTokenomicsStatsRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
 
 message QueryTokenomicsStatsResponse {
   string max_supply = 1 [
@@ -383,4 +404,5 @@ message QueryTokenomicsStatsResponse {
     (gogoproto.customtype) = "cosmossdk.io/math.Int",
     (gogoproto.nullable) = false
   ];
+  cosmos.base.query.v1beta1.PageResponse pagination = 11;
 }

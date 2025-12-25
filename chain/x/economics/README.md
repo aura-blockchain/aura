@@ -405,6 +405,7 @@ import (
 economicsKeeper := economicskeeper.NewKeeper(
     appCodec,
     storeService,
+    storeKey,
     authority,
 )
 

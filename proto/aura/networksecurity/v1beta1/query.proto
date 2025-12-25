@@ -84,10 +84,13 @@ message QueryAllPeersResponse {
   cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
-message QueryTrustedPeersRequest {}
+message QueryTrustedPeersRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
 
 message QueryTrustedPeersResponse {
   repeated TrustedPeer peers = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 message QueryPeerReputationRequest {
@@ -114,18 +117,22 @@ message QueryMempoolStatsResponse {
 
 message QueryForkAlertsRequest {
   bool include_resolved = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
 }
 
 message QueryForkAlertsResponse {
   repeated ForkAlert alerts = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 message QueryPartitionAlertsRequest {
   bool include_resolved = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
 }
 
 message QueryPartitionAlertsResponse {
   repeated PartitionAlert alerts = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 message QueryNetworkHealthRequest {}

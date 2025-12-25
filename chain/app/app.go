@@ -693,6 +693,7 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 	networksecurityKeeper := networksecuritykeeper.NewKeeper(
 		encoding.Codec,
 		runtime.NewKVStoreService(keys.networkSecurity),
+		keys.networkSecurity,
 		authorityAddr,
 		logger.With("module", networksecuritytypes.ModuleName),
 	)
@@ -768,6 +769,7 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 	economicsKeeper := economicskeeper.NewKeeper(
 		encoding.Codec,
 		runtime.NewKVStoreService(keys.economics),
+		keys.economics,
 		authorityAddr,
 	)
 

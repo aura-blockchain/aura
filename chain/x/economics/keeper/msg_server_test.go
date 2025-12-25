@@ -66,7 +66,7 @@ func (suite *MsgServerTestSuite) SetupTest() {
 
 	// Create keeper with aura prefix
 	suite.authority = "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr"
-	suite.keeper = NewKeeper(cdc, storeService, suite.authority)
+	suite.keeper = NewKeeper(cdc, storeService, key, suite.authority)
 
 	// Initialize default params
 	params := types.DefaultParams()

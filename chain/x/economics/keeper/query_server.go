@@ -5,11 +5,15 @@ package keeper
 
 import (
 	"context"
+	"encoding/binary"
+	"fmt"
 	"time"
 
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
+	"cosmossdk.io/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/query"
 
 	economicspb "github.com/aequitas/aura/proto/aura/economics/v1beta1"
 	"github.com/aequitas/aura/chain/x/economics/types"
@@ -83,10 +87,11 @@ func (qs queryServer) VestingSchedulesByAddress(goCtx context.Context, req *econ
 		return nil, errorsmod.Wrapf(types.ErrInvalidAddress, "invalid address: %s", err)
 	}
 
-	schedules, err := qs.keeper.GetVestingSchedulesByAddress(ctx, addr)
-	if err != nil {
-		return nil, err
-	}
+	store := ctx.KVStore(qs.keeper.storeKey)
+
+	// Create prefix store for this address's vesting schedules
+	userVestingPrefix := append(types.UserVestingIndexPrefix, addr.Bytes()...)
+	userVestingStore := prefix.NewStore(store, userVestingPrefix)
 
 	// Calculate totals
 	currentTimeUnix, err := qs.keeper.GetCurrentTime(ctx)
@@ -97,51 +102,65 @@ func (qs queryServer) VestingSchedulesByAddress(goCtx context.Context, req *econ
 
 	totalVested := math.ZeroInt()
 	totalVesting := math.ZeroInt()
+	var schedules []economicspb.VestingSchedule
 
-	for _, schedule := range schedules {
+	pageRes, err := query.Paginate(userVestingStore, req.Pagination, func(key, value []byte) error {
+		// Get the schedule ID from the index
+		scheduleID := string(value)
+
+		// Retrieve the actual schedule
+		schedule, err := qs.keeper.GetVestingSchedule(ctx, scheduleID)
+		if err != nil {
+			return fmt.Errorf("failed to get vesting schedule %s: %w", scheduleID, err)
+		}
+
+		// Calculate vested amount for this schedule
 		vestedAmount, err := qs.keeper.CalculateVestedAmount(schedule, currentTime)
 		if err != nil {
-			return nil, err
+			return fmt.Errorf("failed to calculate vested amount: %w", err)
 		}
 		totalVested = totalVested.Add(vestedAmount)
-
 		totalVesting = totalVesting.Add(schedule.OriginalAmount.Amount.Sub(vestedAmount))
-	}
 
-	// Convert from []*VestingSchedule to []VestingSchedule
-	schedulesValues := make([]economicspb.VestingSchedule, len(schedules))
-	for i, schedule := range schedules {
-		if schedule != nil {
-			schedulesValues[i] = *schedule
-		}
+		schedules = append(schedules, *schedule)
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return &economicspb.QueryVestingSchedulesByAddressResponse{
-		Schedules:     schedulesValues,
-		TotalVested:   totalVested,
-		TotalVesting:  totalVesting,
+		Schedules:    schedules,
+		TotalVested:  totalVested,
+		TotalVesting: totalVesting,
+		Pagination:   pageRes,
 	}, nil
 }
 
 // AllVestingSchedules queries all vesting schedules
 func (qs queryServer) AllVestingSchedules(goCtx context.Context, req *economicspb.QueryAllVestingSchedulesRequest) (*economicspb.QueryAllVestingSchedulesResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
+	store := ctx.KVStore(qs.keeper.storeKey)
 
-	schedules, err := qs.keeper.GetAllVestingSchedules(ctx)
+	// Create prefix store for vesting schedules
+	vestingStore := prefix.NewStore(store, types.VestingSchedulePrefix)
+
+	var schedules []economicspb.VestingSchedule
+	pageRes, err := query.Paginate(vestingStore, req.Pagination, func(key, value []byte) error {
+		var schedule economicspb.VestingSchedule
+		if err := qs.keeper.cdc.Unmarshal(value, &schedule); err != nil {
+			return fmt.Errorf("failed to unmarshal vesting schedule: %w", err)
+		}
+		schedules = append(schedules, schedule)
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	// Convert from []*VestingSchedule to []VestingSchedule
-	schedulesValues := make([]economicspb.VestingSchedule, len(schedules))
-	for i, schedule := range schedules {
-		if schedule != nil {
-			schedulesValues[i] = *schedule
-		}
-	}
-
 	return &economicspb.QueryAllVestingSchedulesResponse{
-		Schedules: schedulesValues,
+		Schedules:  schedules,
+		Pagination: pageRes,
 	}, nil
 }
 
@@ -162,57 +181,57 @@ func (qs queryServer) Proposal(goCtx context.Context, req *economicspb.QueryProp
 // Proposals queries all proposals
 func (qs queryServer) Proposals(goCtx context.Context, req *economicspb.QueryProposalsRequest) (*economicspb.QueryProposalsResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
+	store := ctx.KVStore(qs.keeper.storeKey)
 
-	proposals := []*economicspb.Proposal{}
-	err := qs.keeper.IterateProposals(ctx, func(proposal *economicspb.Proposal) bool {
+	// Create prefix store for proposals
+	proposalStore := prefix.NewStore(store, types.ProposalPrefix)
+
+	var proposals []economicspb.Proposal
+	pageRes, err := query.Paginate(proposalStore, req.Pagination, func(key, value []byte) error {
+		var proposal economicspb.Proposal
+		if err := qs.keeper.cdc.Unmarshal(value, &proposal); err != nil {
+			return fmt.Errorf("failed to unmarshal proposal: %w", err)
+		}
+
 		// Filter by status if specified
 		if req.Status != economicspb.ProposalStatus_PROPOSAL_STATUS_UNSPECIFIED && proposal.Status != req.Status {
-			return false
+			return nil
 		}
 
 		// Filter by voter if specified
 		if req.Voter != "" {
-			// Check if voter has voted
 			voterAddr, err := sdk.AccAddressFromBech32(req.Voter)
 			if err != nil {
-				return false
+				return nil
 			}
 			hasVoted, err := qs.keeper.HasVoted(ctx, proposal.Id, voterAddr)
 			if err != nil || !hasVoted {
-				return false
+				return nil
 			}
 		}
 
 		// Filter by depositor if specified
 		if req.Depositor != "" {
-			// Check if depositor has deposited
 			depositorAddr, err := sdk.AccAddressFromBech32(req.Depositor)
 			if err != nil {
-				return false
+				return nil
 			}
 			hasDeposited, err := qs.keeper.HasDeposited(ctx, proposal.Id, depositorAddr)
 			if err != nil || !hasDeposited {
-				return false
+				return nil
 			}
 		}
 
 		proposals = append(proposals, proposal)
-		return false
+		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	// Convert from []*Proposal to []Proposal
-	proposalsValues := make([]economicspb.Proposal, len(proposals))
-	for i, proposal := range proposals {
-		if proposal != nil {
-			proposalsValues[i] = *proposal
-		}
-	}
-	
 	return &economicspb.QueryProposalsResponse{
-		Proposals: proposalsValues,
+		Proposals:  proposals,
+		Pagination: pageRes,
 	}, nil
 }
 
@@ -239,22 +258,30 @@ func (qs queryServer) Vote(goCtx context.Context, req *economicspb.QueryVoteRequ
 // Votes queries all votes for a proposal
 func (qs queryServer) Votes(goCtx context.Context, req *economicspb.QueryVotesRequest) (*economicspb.QueryVotesResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
+	store := ctx.KVStore(qs.keeper.storeKey)
 
-	votes, err := qs.keeper.GetVotes(ctx, req.ProposalId)
+	// Create prefix store for votes on this proposal
+	proposalPrefix := make([]byte, 9)
+	copy(proposalPrefix, types.VotePrefix)
+	binary.BigEndian.PutUint64(proposalPrefix[1:], req.ProposalId)
+	voteStore := prefix.NewStore(store, proposalPrefix)
+
+	var votes []economicspb.Vote
+	pageRes, err := query.Paginate(voteStore, req.Pagination, func(key, value []byte) error {
+		var vote economicspb.Vote
+		if err := qs.keeper.cdc.Unmarshal(value, &vote); err != nil {
+			return fmt.Errorf("failed to unmarshal vote: %w", err)
+		}
+		votes = append(votes, vote)
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	// Convert from []*Vote to []Vote
-	votesValues := make([]economicspb.Vote, len(votes))
-	for i, vote := range votes {
-		if vote != nil {
-			votesValues[i] = *vote
-		}
-	}
-
 	return &economicspb.QueryVotesResponse{
-		Votes: votesValues,
+		Votes:      votes,
+		Pagination: pageRes,
 	}, nil
 }
 
@@ -287,22 +314,30 @@ func (qs queryServer) Deposit(goCtx context.Context, req *economicspb.QueryDepos
 // Deposits queries all deposits for a proposal
 func (qs queryServer) Deposits(goCtx context.Context, req *economicspb.QueryDepositsRequest) (*economicspb.QueryDepositsResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
+	store := ctx.KVStore(qs.keeper.storeKey)
 
-	deposits, err := qs.keeper.GetDeposits(ctx, req.ProposalId)
+	// Create prefix store for deposits on this proposal
+	proposalPrefix := make([]byte, 9)
+	copy(proposalPrefix, types.DepositPrefix)
+	binary.BigEndian.PutUint64(proposalPrefix[1:], req.ProposalId)
+	depositStore := prefix.NewStore(store, proposalPrefix)
+
+	var deposits []economicspb.Deposit
+	pageRes, err := query.Paginate(depositStore, req.Pagination, func(key, value []byte) error {
+		var deposit economicspb.Deposit
+		if err := qs.keeper.cdc.Unmarshal(value, &deposit); err != nil {
+			return fmt.Errorf("failed to unmarshal deposit: %w", err)
+		}
+		deposits = append(deposits, deposit)
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	// Convert from []*Deposit to []Deposit
-	depositsValues := make([]economicspb.Deposit, len(deposits))
-	for i, deposit := range deposits {
-		if deposit != nil {
-			depositsValues[i] = *deposit
-		}
-	}
-
 	return &economicspb.QueryDepositsResponse{
-		Deposits: depositsValues,
+		Deposits:   deposits,
+		Pagination: pageRes,
 	}, nil
 }
 
@@ -344,35 +379,42 @@ func (qs queryServer) VoteLocksByOwner(goCtx context.Context, req *economicspb.Q
 		return nil, errorsmod.Wrapf(types.ErrInvalidAddress, "invalid owner address: %s", err)
 	}
 
-	locks, err := qs.keeper.GetVoteLocksByOwner(ctx, owner)
-	if err != nil {
-		return nil, err
-	}
+	store := ctx.KVStore(qs.keeper.storeKey)
+
+	// Create prefix store for this owner's vote locks
+	userLockPrefix := append(types.UserVoteLockIndexPrefix, owner.Bytes()...)
+	userLockStore := prefix.NewStore(store, userLockPrefix)
 
 	// Calculate totals
 	totalLocked := math.ZeroInt()
 	totalVotingPower := math.ZeroInt()
+	var locks []economicspb.VoteLock
 
-	for _, lock := range locks {
-		totalLocked = totalLocked.Add(lock.Amount.Amount)
+	pageRes, err := query.Paginate(userLockStore, req.Pagination, func(key, value []byte) error {
+		// Get the lock ID from the index
+		lockID := string(value)
 
-		// Parse voting power from string (customtype field)
-		lockVotingPower := lock.VotingPower
-		totalVotingPower = totalVotingPower.Add(lockVotingPower)
-	}
-
-	// Convert from []*VoteLock to []VoteLock
-	locksValues := make([]economicspb.VoteLock, len(locks))
-	for i, lock := range locks {
-		if lock != nil {
-			locksValues[i] = *lock
+		// Retrieve the actual lock
+		lock, err := qs.keeper.GetVoteLock(ctx, lockID)
+		if err != nil {
+			return fmt.Errorf("failed to get vote lock %s: %w", lockID, err)
 		}
+
+		totalLocked = totalLocked.Add(lock.Amount.Amount)
+		totalVotingPower = totalVotingPower.Add(lock.VotingPower)
+
+		locks = append(locks, *lock)
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return &economicspb.QueryVoteLocksByOwnerResponse{
-		Locks:             locksValues,
-		TotalLocked:       totalLocked,
-		TotalVotingPower:  totalVotingPower,
+		Locks:            locks,
+		TotalLocked:      totalLocked,
+		TotalVotingPower: totalVotingPower,
+		Pagination:       pageRes,
 	}, nil
 }
 
@@ -409,21 +451,28 @@ func (qs queryServer) VoteDelegations(goCtx context.Context, req *economicspb.Qu
 		return nil, errorsmod.Wrapf(types.ErrInvalidAddress, "invalid delegator address: %s", err)
 	}
 
-	delegations, err := qs.keeper.GetVoteDelegations(ctx, delegator)
+	store := ctx.KVStore(qs.keeper.storeKey)
+
+	// Create prefix store for this delegator's vote delegations
+	delegatorPrefix := append(types.VoteDelegationPrefix, []byte(delegator.String())...)
+	delegationStore := prefix.NewStore(store, delegatorPrefix)
+
+	var delegations []economicspb.VoteDelegation
+	pageRes, err := query.Paginate(delegationStore, req.Pagination, func(key, value []byte) error {
+		var delegation economicspb.VoteDelegation
+		if err := qs.keeper.cdc.Unmarshal(value, &delegation); err != nil {
+			return fmt.Errorf("failed to unmarshal vote delegation: %w", err)
+		}
+		delegations = append(delegations, delegation)
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	// Convert from []*VoteDelegation to []VoteDelegation
-	delegationsValues := make([]economicspb.VoteDelegation, len(delegations))
-	for i, delegation := range delegations {
-		if delegation != nil {
-			delegationsValues[i] = *delegation
-		}
-	}
-
 	return &economicspb.QueryVoteDelegationsResponse{
-		Delegations: delegationsValues,
+		Delegations: delegations,
+		Pagination:  pageRes,
 	}, nil
 }
 
@@ -444,22 +493,27 @@ func (qs queryServer) PendingTreasuryTx(goCtx context.Context, req *economicspb.
 // PendingTreasuryTxs queries all pending treasury transactions
 func (qs queryServer) PendingTreasuryTxs(goCtx context.Context, req *economicspb.QueryPendingTreasuryTxsRequest) (*economicspb.QueryPendingTreasuryTxsResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
+	store := ctx.KVStore(qs.keeper.storeKey)
 
-	txs, err := qs.keeper.GetAllPendingTreasuryTxs(ctx)
+	// Create prefix store for pending treasury transactions
+	treasuryStore := prefix.NewStore(store, types.PendingTreasuryTxPrefix)
+
+	var txs []economicspb.PendingTreasuryTx
+	pageRes, err := query.Paginate(treasuryStore, req.Pagination, func(key, value []byte) error {
+		var tx economicspb.PendingTreasuryTx
+		if err := qs.keeper.cdc.Unmarshal(value, &tx); err != nil {
+			return fmt.Errorf("failed to unmarshal pending treasury tx: %w", err)
+		}
+		txs = append(txs, tx)
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	// Convert from []*PendingTreasuryTx to []PendingTreasuryTx
-	txsValues := make([]economicspb.PendingTreasuryTx, len(txs))
-	for i, tx := range txs {
-		if tx != nil {
-			txsValues[i] = *tx
-		}
-	}
-	
 	return &economicspb.QueryPendingTreasuryTxsResponse{
-		Transactions: txsValues,
+		Transactions: txs,
+		Pagination:   pageRes,
 	}, nil
 }
 
@@ -634,15 +688,16 @@ func (qs queryServer) TokenomicsStats(goCtx context.Context, req *economicspb.Qu
 	transferTaxCollected24h := math.ZeroInt()
 
 	return &economicspb.QueryTokenomicsStatsResponse{
-		MaxSupply:                  maxSupply,
-		CirculatingSupply:          circulatingSupply,
-		TotalVested:                totalVested,
-		TotalVesting:               totalVesting,
-		TotalLockedGovernance:      totalLockedGovernance,
-		TreasuryBalance:            treasuryBalance,
-		CurrentInflationRate:       currentInflationRate,
-		TotalBurned:                totalBurned,
+		MaxSupply:                   maxSupply,
+		CirculatingSupply:           circulatingSupply,
+		TotalVested:                 totalVested,
+		TotalVesting:                totalVesting,
+		TotalLockedGovernance:       totalLockedGovernance,
+		TreasuryBalance:             treasuryBalance,
+		CurrentInflationRate:        currentInflationRate,
+		TotalBurned:                 totalBurned,
 		WhaleProtectionTriggers_24H: whaleProtectionTriggers24h,
-		TransferTaxCollected_24H:   transferTaxCollected24h,
+		TransferTaxCollected_24H:    transferTaxCollected24h,
+		Pagination:                  nil, // Not applicable for aggregate stats query
 	}, nil
 }

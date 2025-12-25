@@ -5,8 +5,11 @@ package keeper
 
 import (
 	"context"
+	"fmt"
 
+	"cosmossdk.io/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/query"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -49,33 +52,66 @@ func (qs queryServer) PeerInfo(goCtx context.Context, req *types.QueryPeerInfoRe
 	return &types.QueryPeerInfoResponse{Peer: peer}, nil
 }
 
-// AllPeers queries information about all connected peers
+// AllPeers queries information about all connected peers with pagination
 func (qs queryServer) AllPeers(goCtx context.Context, req *types.QueryAllPeersRequest) (*types.QueryAllPeersResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
+	store := ctx.KVStore(qs.Keeper.storeKey)
 
-	// Get all peers using the keeper method
-	allPeers := qs.GetAllPeers(ctx)
+	// Create prefix store for peer info
+	peerStore := prefix.NewStore(store, types.PeerInfoPrefix)
 
-	// Convert to value types for the response
-	peers := make([]types.PeerInfo, len(allPeers))
-	copy(peers, allPeers)
+	var peers []types.PeerInfo
+	pageRes, err := query.Paginate(peerStore, req.Pagination, func(key []byte, value []byte) error {
+		var peer types.PeerInfo
+		if err := qs.Keeper.cdc.Unmarshal(value, &peer); err != nil {
+			return fmt.Errorf("failed to unmarshal peer info: %w", err)
+		}
+		peers = append(peers, peer)
+		return nil
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
 
 	return &types.QueryAllPeersResponse{
-		Peers: peers,
+		Peers:      peers,
+		Pagination: pageRes,
 	}, nil
 }
 
-// TrustedPeers queries all trusted peers
+// TrustedPeers queries all trusted peers with pagination
 func (qs queryServer) TrustedPeers(goCtx context.Context, req *types.QueryTrustedPeersRequest) (*types.QueryTrustedPeersResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid request")
+	}
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
+	store := ctx.KVStore(qs.Keeper.storeKey)
 
-	peers := qs.GetAllTrustedPeers(ctx)
+	// Create prefix store for trusted peers
+	trustedPeerStore := prefix.NewStore(store, types.TrustedPeerPrefix)
 
-	return &types.QueryTrustedPeersResponse{Peers: peers}, nil
+	var peers []types.TrustedPeer
+	pageRes, err := query.Paginate(trustedPeerStore, req.Pagination, func(key []byte, value []byte) error {
+		var peer types.TrustedPeer
+		if err := qs.Keeper.cdc.Unmarshal(value, &peer); err != nil {
+			return fmt.Errorf("failed to unmarshal trusted peer: %w", err)
+		}
+		peers = append(peers, peer)
+		return nil
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &types.QueryTrustedPeersResponse{
+		Peers:      peers,
+		Pagination: pageRes,
+	}, nil
 }
 
 // PeerReputation queries reputation for a specific peer
@@ -114,22 +150,74 @@ func (qs queryServer) MempoolStats(goCtx context.Context, req *types.QueryMempoo
 	return &types.QueryMempoolStatsResponse{Stats: stats}, nil
 }
 
-// ForkAlerts queries active fork alerts
+// ForkAlerts queries active fork alerts with pagination
 func (qs queryServer) ForkAlerts(goCtx context.Context, req *types.QueryForkAlertsRequest) (*types.QueryForkAlertsResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid request")
+	}
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
+	store := ctx.KVStore(qs.Keeper.storeKey)
 
-	alerts := qs.GetAllForkAlerts(ctx, req.IncludeResolved)
+	// Create prefix store for fork alerts
+	forkAlertStore := prefix.NewStore(store, types.ForkAlertPrefix)
 
-	return &types.QueryForkAlertsResponse{Alerts: alerts}, nil
+	var alerts []types.ForkAlert
+	pageRes, err := query.Paginate(forkAlertStore, req.Pagination, func(key []byte, value []byte) error {
+		var alert types.ForkAlert
+		if err := qs.Keeper.cdc.Unmarshal(value, &alert); err != nil {
+			return fmt.Errorf("failed to unmarshal fork alert: %w", err)
+		}
+		// Filter by resolved status if requested
+		if !req.IncludeResolved && alert.Resolved {
+			return nil // Skip resolved alerts
+		}
+		alerts = append(alerts, alert)
+		return nil
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &types.QueryForkAlertsResponse{
+		Alerts:     alerts,
+		Pagination: pageRes,
+	}, nil
 }
 
-// PartitionAlerts queries active partition alerts
+// PartitionAlerts queries active partition alerts with pagination
 func (qs queryServer) PartitionAlerts(goCtx context.Context, req *types.QueryPartitionAlertsRequest) (*types.QueryPartitionAlertsResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid request")
+	}
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
+	store := ctx.KVStore(qs.Keeper.storeKey)
 
-	alerts := qs.GetAllPartitionAlerts(ctx, req.IncludeResolved)
+	// Create prefix store for partition alerts
+	partitionAlertStore := prefix.NewStore(store, types.PartitionAlertPrefix)
 
-	return &types.QueryPartitionAlertsResponse{Alerts: alerts}, nil
+	var alerts []types.PartitionAlert
+	pageRes, err := query.Paginate(partitionAlertStore, req.Pagination, func(key []byte, value []byte) error {
+		var alert types.PartitionAlert
+		if err := qs.Keeper.cdc.Unmarshal(value, &alert); err != nil {
+			return fmt.Errorf("failed to unmarshal partition alert: %w", err)
+		}
+		// Filter by resolved status if requested
+		if !req.IncludeResolved && alert.Resolved {
+			return nil // Skip resolved alerts
+		}
+		alerts = append(alerts, alert)
+		return nil
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &types.QueryPartitionAlertsResponse{
+		Alerts:     alerts,
+		Pagination: pageRes,
+	}, nil
 }
 
 // NetworkHealth queries overall network health status

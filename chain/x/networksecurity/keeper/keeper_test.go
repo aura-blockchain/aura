@@ -53,6 +53,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 	suite.keeper = keeper.NewKeeper(
 		suite.cdc,
 		runtime.NewKVStoreService(storeKey),
+		storeKey,
 		"authority",
 		log.NewNopLogger(),
 	)

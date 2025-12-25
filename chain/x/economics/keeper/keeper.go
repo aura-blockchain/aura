@@ -11,6 +11,7 @@ import (
 
 	"cosmossdk.io/core/store"
 	sdkmath "cosmossdk.io/math"
+	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/gogoproto/proto"
@@ -23,6 +24,7 @@ import (
 type Keeper struct {
 	cdc          codec.BinaryCodec
 	storeService store.KVStoreService
+	storeKey     storetypes.StoreKey
 	authority    string
 }
 
@@ -30,11 +32,13 @@ type Keeper struct {
 func NewKeeper(
 	cdc codec.BinaryCodec,
 	storeService store.KVStoreService,
+	storeKey storetypes.StoreKey,
 	authority string,
 ) *Keeper {
 	return &Keeper{
 		cdc:          cdc,
 		storeService: storeService,
+		storeKey:     storeKey,
 		authority:    authority,
 	}
 }

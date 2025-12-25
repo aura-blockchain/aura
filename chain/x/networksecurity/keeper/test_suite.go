@@ -53,6 +53,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 	suite.Keeper = NewKeeper(
 		suite.Cdc,
 		runtime.NewKVStoreService(storeKey),
+		storeKey,
 		"authority",
 		log.NewNopLogger(),
 	)
@@ -83,6 +84,7 @@ func NewTestKeeperWithContext(t *testing.T) (Keeper, sdk.Context) {
 	keeper := NewKeeper(
 		cdc,
 		runtime.NewKVStoreService(storeKey),
+		storeKey,
 		"authority",
 		log.NewNopLogger(),
 	)

@@ -23,6 +23,7 @@ import (
 type Keeper struct {
 	cdc          codec.BinaryCodec
 	storeService store.KVStoreService
+	storeKey     storetypes.StoreKey
 	authority    string
 	logger       log.Logger
 
@@ -42,12 +43,14 @@ type Keeper struct {
 func NewKeeper(
 	cdc codec.BinaryCodec,
 	storeService store.KVStoreService,
+	storeKey storetypes.StoreKey,
 	authority string,
 	logger log.Logger,
 ) Keeper {
 	return Keeper{
 		cdc:               cdc,
 		storeService:      storeService,
+		storeKey:          storeKey,
 		authority:         authority,
 		logger:            logger,
 		rateLimiters:      make(map[string]*RateLimiter),

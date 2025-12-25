@@ -3,6 +3,7 @@ package aura.bridge.v1beta1;
 
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
 import "aura/bridge/v1beta1/bridge.proto";
 import "aura/bridge/v1beta1/genesis.proto";
 
@@ -88,20 +89,26 @@ message QueryTransferResponse {
 message QueryAllTransfersRequest {
   // Optional status filter
   string status = 1;
+  // Pagination
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
 }
 
 message QueryAllTransfersResponse {
   repeated CrossChainTransfer transfers = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 message QueryUserTransfersRequest {
   string address = 1;
   // Optional chain filter
   string chain = 2;
+  // Pagination
+  cosmos.base.query.v1beta1.PageRequest pagination = 3;
 }
 
 message QueryUserTransfersResponse {
   repeated CrossChainTransfer transfers = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 // Chain config queries
@@ -113,10 +120,14 @@ message QueryChainConfigResponse {
   ChainConfig config = 1 [(gogoproto.nullable) = false];
 }
 
-message QueryAllChainsRequest {}
+message QueryAllChainsRequest {
+  // Pagination
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
 
 message QueryAllChainsResponse {
   repeated ChainConfig chains = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 // Wrapped token queries
@@ -128,10 +139,14 @@ message QueryWrappedTokenResponse {
   WrappedToken token = 1 [(gogoproto.nullable) = false];
 }
 
-message QueryAllWrappedTokensRequest {}
+message QueryAllWrappedTokensRequest {
+  // Pagination
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
 
 message QueryAllWrappedTokensResponse {
   repeated WrappedToken tokens = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 // Shared identity queries
@@ -179,10 +194,14 @@ message QueryBridgeStatsResponse {
 }
 
 // Validator queries
-message QueryValidatorsRequest {}
+message QueryValidatorsRequest {
+  // Pagination
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
 
 message QueryValidatorsResponse {
   repeated BridgeValidator validators = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 // Relayer stats queries

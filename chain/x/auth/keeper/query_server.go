@@ -5,9 +5,12 @@ package keeper
 
 import (
 	"context"
+	"fmt"
 
+	"cosmossdk.io/store/prefix"
 	authproto "github.com/aequitas/aura/proto/aura/auth/v1beta1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/query"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -43,25 +46,35 @@ func (qs queryServer) GetRole(goCtx context.Context, req *authproto.QueryGetRole
 	return &authproto.QueryGetRoleResponse{Role: role}, nil
 }
 
-// ListRoles lists all roles
+// ListRoles lists all roles with pagination
 func (qs queryServer) ListRoles(goCtx context.Context, req *authproto.QueryListRolesRequest) (*authproto.QueryListRolesResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	roles, err := qs.Keeper.GetAllRoles(ctx)
+	store := ctx.KVStore(qs.Keeper.storeKey)
+
+	// Create prefix store for roles
+	roleStore := prefix.NewStore(store, RolesKeyPrefix)
+
+	var roles []*authproto.Role
+	pageRes, err := query.Paginate(roleStore, req.Pagination, func(key, value []byte) error {
+		var role authproto.Role
+		if err := qs.Keeper.cdc.Unmarshal(value, &role); err != nil {
+			return fmt.Errorf("failed to unmarshal role: %w", err)
+		}
+		roles = append(roles, &role)
+		return nil
+	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// Convert value slice to pointer slice
-	result := make([]*authproto.Role, len(roles))
-	for i := range roles {
-		result[i] = &roles[i]
-	}
-
-	return &authproto.QueryListRolesResponse{Roles: result}, nil
+	return &authproto.QueryListRolesResponse{
+		Roles:      roles,
+		Pagination: pageRes,
+	}, nil
 }
 
 // GetRoleAssignments queries role assignments for an address
@@ -150,25 +163,35 @@ func (qs queryServer) GetMultisigWallet(goCtx context.Context, req *authproto.Qu
 	return &authproto.QueryGetMultisigWalletResponse{Wallet: wallet}, nil
 }
 
-// ListMultisigWallets lists all multisig wallets
+// ListMultisigWallets lists all multisig wallets with pagination
 func (qs queryServer) ListMultisigWallets(goCtx context.Context, req *authproto.QueryListMultisigWalletsRequest) (*authproto.QueryListMultisigWalletsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	wallets, err := qs.Keeper.GetAllMultisigWallets(ctx)
+	store := ctx.KVStore(qs.Keeper.storeKey)
+
+	// Create prefix store for multisig wallets
+	walletStore := prefix.NewStore(store, MultisigWalletsKeyPrefix)
+
+	var wallets []*authproto.MultisigWallet
+	pageRes, err := query.Paginate(walletStore, req.Pagination, func(key, value []byte) error {
+		var wallet authproto.MultisigWallet
+		if err := qs.Keeper.cdc.Unmarshal(value, &wallet); err != nil {
+			return fmt.Errorf("failed to unmarshal multisig wallet: %w", err)
+		}
+		wallets = append(wallets, &wallet)
+		return nil
+	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// Convert value slice to pointer slice
-	result := make([]*authproto.MultisigWallet, len(wallets))
-	for i := range wallets {
-		result[i] = &wallets[i]
-	}
-
-	return &authproto.QueryListMultisigWalletsResponse{Wallets: result}, nil
+	return &authproto.QueryListMultisigWalletsResponse{
+		Wallets:    wallets,
+		Pagination: pageRes,
+	}, nil
 }
 
 // GetMultisigProposal queries a multisig proposal
@@ -190,29 +213,44 @@ func (qs queryServer) GetMultisigProposal(goCtx context.Context, req *authproto.
 	return &authproto.QueryGetMultisigProposalResponse{Proposal: proposal}, nil
 }
 
-// ListMultisigProposals lists multisig proposals for a wallet
+// ListMultisigProposals lists multisig proposals with optional filtering and pagination
 func (qs queryServer) ListMultisigProposals(goCtx context.Context, req *authproto.QueryListMultisigProposalsRequest) (*authproto.QueryListMultisigProposalsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
+	store := ctx.KVStore(qs.Keeper.storeKey)
 
-	// Get all proposals
-	allProposals, err := qs.Keeper.GetAllMultisigProposals(ctx)
+	// Create prefix store for multisig proposals
+	proposalStore := prefix.NewStore(store, MultisigProposalsKeyPrefix)
+
+	var proposals []*authproto.MultisigProposal
+	pageRes, err := query.Paginate(proposalStore, req.Pagination, func(key, value []byte) error {
+		var proposal authproto.MultisigProposal
+		if err := qs.Keeper.cdc.Unmarshal(value, &proposal); err != nil {
+			return fmt.Errorf("failed to unmarshal multisig proposal: %w", err)
+		}
+
+		// Apply optional filters
+		if req.WalletId != "" && proposal.WalletId != req.WalletId {
+			return nil // Skip this proposal
+		}
+		if req.Status != authproto.ProposalStatus_PROPOSAL_STATUS_UNSPECIFIED && proposal.Status != req.Status {
+			return nil // Skip this proposal
+		}
+
+		proposals = append(proposals, &proposal)
+		return nil
+	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// Filter by wallet_id if specified and convert to pointer slice for response
-	var result []*authproto.MultisigProposal
-	for i := range allProposals {
-		if req.WalletId == "" || allProposals[i].WalletId == req.WalletId {
-			result = append(result, &allProposals[i])
-		}
-	}
-
-	return &authproto.QueryListMultisigProposalsResponse{Proposals: result}, nil
+	return &authproto.QueryListMultisigProposalsResponse{
+		Proposals:  proposals,
+		Pagination: pageRes,
+	}, nil
 }
 
 // GetTimeLockedAction queries a time-locked action
@@ -234,25 +272,41 @@ func (qs queryServer) GetTimeLockedAction(goCtx context.Context, req *authproto.
 	return &authproto.QueryGetTimeLockedActionResponse{Action: action}, nil
 }
 
-// ListTimeLockedActions lists all time-locked actions
+// ListTimeLockedActions lists all time-locked actions with optional filtering and pagination
 func (qs queryServer) ListTimeLockedActions(goCtx context.Context, req *authproto.QueryListTimeLockedActionsRequest) (*authproto.QueryListTimeLockedActionsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	actions, err := qs.Keeper.GetAllTimeLockedActions(ctx)
+	store := ctx.KVStore(qs.Keeper.storeKey)
+
+	// Create prefix store for time-locked actions
+	actionStore := prefix.NewStore(store, TimeLockedActionsKeyPrefix)
+
+	var actions []*authproto.TimeLockedAction
+	pageRes, err := query.Paginate(actionStore, req.Pagination, func(key, value []byte) error {
+		var action authproto.TimeLockedAction
+		if err := qs.Keeper.cdc.Unmarshal(value, &action); err != nil {
+			return fmt.Errorf("failed to unmarshal time-locked action: %w", err)
+		}
+
+		// Apply optional status filter
+		if req.Status != authproto.ActionStatus_ACTION_STATUS_UNSPECIFIED && action.Status != req.Status {
+			return nil // Skip this action
+		}
+
+		actions = append(actions, &action)
+		return nil
+	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// Convert value slice to pointer slice
-	result := make([]*authproto.TimeLockedAction, len(actions))
-	for i := range actions {
-		result[i] = &actions[i]
-	}
-
-	return &authproto.QueryListTimeLockedActionsResponse{Actions: result}, nil
+	return &authproto.QueryListTimeLockedActionsResponse{
+		Actions:    actions,
+		Pagination: pageRes,
+	}, nil
 }
 
 // GetEmergencyAdmin queries emergency admin status
@@ -274,25 +328,35 @@ func (qs queryServer) GetEmergencyAdmin(goCtx context.Context, req *authproto.Qu
 	return &authproto.QueryGetEmergencyAdminResponse{Admin: admin}, nil
 }
 
-// ListEmergencyAdmins lists all emergency admins
+// ListEmergencyAdmins lists all emergency admins with pagination
 func (qs queryServer) ListEmergencyAdmins(goCtx context.Context, req *authproto.QueryListEmergencyAdminsRequest) (*authproto.QueryListEmergencyAdminsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	admins, err := qs.Keeper.GetAllEmergencyAdmins(ctx)
+	store := ctx.KVStore(qs.Keeper.storeKey)
+
+	// Create prefix store for emergency admins
+	adminStore := prefix.NewStore(store, EmergencyAdminsKeyPrefix)
+
+	var admins []*authproto.EmergencyAdmin
+	pageRes, err := query.Paginate(adminStore, req.Pagination, func(key, value []byte) error {
+		var admin authproto.EmergencyAdmin
+		if err := qs.Keeper.cdc.Unmarshal(value, &admin); err != nil {
+			return fmt.Errorf("failed to unmarshal emergency admin: %w", err)
+		}
+		admins = append(admins, &admin)
+		return nil
+	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// Convert to pointer slice for response
-	result := make([]*authproto.EmergencyAdmin, len(admins))
-	for i := range admins {
-		result[i] = &admins[i]
-	}
-
-	return &authproto.QueryListEmergencyAdminsResponse{Admins: result}, nil
+	return &authproto.QueryListEmergencyAdminsResponse{
+		Admins:     admins,
+		Pagination: pageRes,
+	}, nil
 }
 
 // GetValidatorKeyRotation queries validator key rotation status
@@ -333,7 +397,7 @@ func (qs queryServer) GetSession(goCtx context.Context, req *authproto.QueryGetS
 	return &authproto.QueryGetSessionResponse{Session: session}, nil
 }
 
-// ListSessions lists sessions for a user
+// ListSessions lists sessions for a user with pagination
 func (qs queryServer) ListSessions(goCtx context.Context, req *authproto.QueryListSessionsRequest) (*authproto.QueryListSessionsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
@@ -344,25 +408,34 @@ func (qs queryServer) ListSessions(goCtx context.Context, req *authproto.QueryLi
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
+	store := ctx.KVStore(qs.Keeper.storeKey)
 
-	// Get all session IDs for the user
-	sessionIDs, err := qs.Keeper.GetUserSessions(ctx, req.UserAddress)
+	// Create prefix store for sessions
+	sessionStore := prefix.NewStore(store, SessionsKeyPrefix)
+
+	var sessions []*authproto.Session
+	pageRes, err := query.Paginate(sessionStore, req.Pagination, func(key, value []byte) error {
+		var session authproto.Session
+		if err := qs.Keeper.cdc.Unmarshal(value, &session); err != nil {
+			return fmt.Errorf("failed to unmarshal session: %w", err)
+		}
+
+		// Filter by user address
+		if session.UserAddress != req.UserAddress {
+			return nil // Skip this session
+		}
+
+		sessions = append(sessions, &session)
+		return nil
+	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// Retrieve full session objects
-	sessions := make([]*authproto.Session, 0, len(sessionIDs))
-	for _, sessionID := range sessionIDs {
-		session, err := qs.Keeper.GetSession(ctx, sessionID)
-		if err != nil {
-			// Skip sessions that can't be found (may have been deleted)
-			continue
-		}
-		sessions = append(sessions, session)
-	}
-
-	return &authproto.QueryListSessionsResponse{Sessions: sessions}, nil
+	return &authproto.QueryListSessionsResponse{
+		Sessions:   sessions,
+		Pagination: pageRes,
+	}, nil
 }
 
 // GetRateLimitStatus queries rate limit status for a user

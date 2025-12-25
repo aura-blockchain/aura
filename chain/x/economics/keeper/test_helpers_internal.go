@@ -60,6 +60,7 @@ func setupKeeperForTest(t *testing.T) (*Keeper, sdk.Context) {
 	k := NewKeeper(
 		cdc,
 		runtime.NewKVStoreService(storeKey),
+		storeKey,
 		authority,
 	)
 

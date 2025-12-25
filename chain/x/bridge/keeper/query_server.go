@@ -9,10 +9,12 @@ import (
 	"strings"
 
 	sdkmath "cosmossdk.io/math"
+	"cosmossdk.io/store/prefix"
 	storetypes "cosmossdk.io/store/types"
 	"github.com/aequitas/aura/chain/x/bridge/types"
 	bridgeproto "github.com/aequitas/aura/proto/aura/bridge/v1beta1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/query"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -48,7 +50,7 @@ func (qs queryServer) Transfer(goCtx context.Context, req *bridgeproto.QueryTran
 	return &bridgeproto.QueryTransferResponse{Transfer: *transfer}, nil
 }
 
-// AllTransfers queries all cross-chain transfers
+// AllTransfers queries all cross-chain transfers with pagination
 func (qs queryServer) AllTransfers(goCtx context.Context, req *bridgeproto.QueryAllTransfersRequest) (*bridgeproto.QueryAllTransfersResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
@@ -70,18 +72,33 @@ func (qs queryServer) AllTransfers(goCtx context.Context, req *bridgeproto.Query
 		hasStatus = true
 	}
 
+	store := ctx.KVStore(qs.Keeper.storeKey)
+	transferStore := prefix.NewStore(store, types.TransferPrefix)
+
 	var transfers []bridgeproto.CrossChainTransfer
-	for _, transfer := range qs.Keeper.getAllTransfers(ctx) {
-		if hasStatus && transfer.Status != statusValue {
-			continue
+	pageRes, err := query.Paginate(transferStore, req.Pagination, func(key, value []byte) error {
+		var transfer bridgeproto.CrossChainTransfer
+		if err := qs.Keeper.cdc.Unmarshal(value, &transfer); err != nil {
+			return err
 		}
-		transfers = append(transfers, *transfer)
+		// Apply status filter if specified
+		if hasStatus && transfer.Status != statusValue {
+			return nil
+		}
+		transfers = append(transfers, transfer)
+		return nil
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &bridgeproto.QueryAllTransfersResponse{Transfers: transfers}, nil
+	return &bridgeproto.QueryAllTransfersResponse{
+		Transfers:  transfers,
+		Pagination: pageRes,
+	}, nil
 }
 
-// UserTransfers queries transfers for specific user
+// UserTransfers queries transfers for specific user with pagination
 func (qs queryServer) UserTransfers(goCtx context.Context, req *bridgeproto.QueryUserTransfersRequest) (*bridgeproto.QueryUserTransfersResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
@@ -93,26 +110,39 @@ func (qs queryServer) UserTransfers(goCtx context.Context, req *bridgeproto.Quer
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	chainFilter := normalizeChain(strings.TrimSpace(req.Chain))
-	var transfers []bridgeproto.CrossChainTransfer
 
-	for _, transfer := range qs.Keeper.getAllTransfers(ctx) {
-		if transfer == nil {
-			continue
+	store := ctx.KVStore(qs.Keeper.storeKey)
+	transferStore := prefix.NewStore(store, types.TransferPrefix)
+
+	var transfers []bridgeproto.CrossChainTransfer
+	pageRes, err := query.Paginate(transferStore, req.Pagination, func(key, value []byte) error {
+		var transfer bridgeproto.CrossChainTransfer
+		if err := qs.Keeper.cdc.Unmarshal(value, &transfer); err != nil {
+			return err
 		}
+		// Filter by address (sender or recipient)
 		if transfer.Sender != req.Address && transfer.Recipient != req.Address {
-			continue
+			return nil
 		}
+		// Apply chain filter if specified
 		if chainFilter != "" {
 			source := normalizeChain(transfer.SourceChain)
 			target := normalizeChain(transfer.TargetChain)
 			if source != chainFilter && target != chainFilter {
-				continue
+				return nil
 			}
 		}
-		transfers = append(transfers, *transfer)
+		transfers = append(transfers, transfer)
+		return nil
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &bridgeproto.QueryUserTransfersResponse{Transfers: transfers}, nil
+	return &bridgeproto.QueryUserTransfersResponse{
+		Transfers:  transfers,
+		Pagination: pageRes,
+	}, nil
 }
 
 // ChainConfig queries configuration for a chain
@@ -134,20 +164,33 @@ func (qs queryServer) ChainConfig(goCtx context.Context, req *bridgeproto.QueryC
 	return &bridgeproto.QueryChainConfigResponse{Config: config}, nil
 }
 
-// AllChains queries all connected chains
+// AllChains queries all connected chains with pagination
 func (qs queryServer) AllChains(goCtx context.Context, req *bridgeproto.QueryAllChainsRequest) (*bridgeproto.QueryAllChainsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	chainConfigs := qs.Keeper.getAllChainConfigs(ctx)
-	configs := make([]bridgeproto.ChainConfig, 0, len(chainConfigs))
-	for i := range chainConfigs {
-		configs = append(configs, chainConfigs[i])
+	store := ctx.KVStore(qs.Keeper.storeKey)
+	chainStore := prefix.NewStore(store, types.ChainConfigPrefix)
+
+	var chains []bridgeproto.ChainConfig
+	pageRes, err := query.Paginate(chainStore, req.Pagination, func(key, value []byte) error {
+		var config bridgeproto.ChainConfig
+		if err := qs.Keeper.cdc.Unmarshal(value, &config); err != nil {
+			return err
+		}
+		chains = append(chains, config)
+		return nil
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &bridgeproto.QueryAllChainsResponse{Chains: configs}, nil
+	return &bridgeproto.QueryAllChainsResponse{
+		Chains:     chains,
+		Pagination: pageRes,
+	}, nil
 }
 
 // WrappedToken queries wrapped token info
@@ -169,20 +212,33 @@ func (qs queryServer) WrappedToken(goCtx context.Context, req *bridgeproto.Query
 	return &bridgeproto.QueryWrappedTokenResponse{Token: *token}, nil
 }
 
-// AllWrappedTokens queries all wrapped tokens
+// AllWrappedTokens queries all wrapped tokens with pagination
 func (qs queryServer) AllWrappedTokens(goCtx context.Context, req *bridgeproto.QueryAllWrappedTokensRequest) (*bridgeproto.QueryAllWrappedTokensResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	storedTokens := qs.Keeper.getAllWrappedTokens(ctx)
-	tokens := make([]bridgeproto.WrappedToken, 0, len(storedTokens))
-	for i := range storedTokens {
-		tokens = append(tokens, storedTokens[i])
+	store := ctx.KVStore(qs.Keeper.storeKey)
+	tokenStore := prefix.NewStore(store, types.WrappedTokenPrefix)
+
+	var tokens []bridgeproto.WrappedToken
+	pageRes, err := query.Paginate(tokenStore, req.Pagination, func(key, value []byte) error {
+		var token bridgeproto.WrappedToken
+		if err := qs.Keeper.cdc.Unmarshal(value, &token); err != nil {
+			return err
+		}
+		tokens = append(tokens, token)
+		return nil
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &bridgeproto.QueryAllWrappedTokensResponse{Tokens: tokens}, nil
+	return &bridgeproto.QueryAllWrappedTokensResponse{
+		Tokens:     tokens,
+		Pagination: pageRes,
+	}, nil
 }
 
 // SharedIdentity queries shared identity across chains
@@ -283,20 +339,40 @@ func (qs queryServer) Validators(goCtx context.Context, req *bridgeproto.QueryVa
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	validatorPtrs := qs.collectValidators(ctx)
-	if len(validatorPtrs) == 0 {
-		validatorPtrs = qs.validatorsFromChains(ctx)
+	store := ctx.KVStore(qs.Keeper.storeKey)
+	validatorStore := prefix.NewStore(store, types.ValidatorPrefix)
+
+	var validators []bridgeproto.BridgeValidator
+	pageRes, err := query.Paginate(validatorStore, req.Pagination, func(key, value []byte) error {
+		var validator bridgeproto.BridgeValidator
+		if err := qs.Keeper.cdc.Unmarshal(value, &validator); err != nil {
+			// Log corrupted data but continue iteration
+			qs.Keeper.Logger(ctx).Error("failed to unmarshal validator in paginated query",
+				"key", hex.EncodeToString(key),
+				"error", err.Error())
+			return nil
+		}
+		validators = append(validators, validator)
+		return nil
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// Convert pointers to values for proto response
-	validators := make([]bridgeproto.BridgeValidator, 0, len(validatorPtrs))
-	for _, v := range validatorPtrs {
-		if v != nil {
-			validators = append(validators, *v)
+	// If no validators found in store, fall back to deriving from chain configs
+	if len(validators) == 0 {
+		validatorPtrs := qs.validatorsFromChains(ctx)
+		for _, v := range validatorPtrs {
+			if v != nil {
+				validators = append(validators, *v)
+			}
 		}
 	}
 
-	return &bridgeproto.QueryValidatorsResponse{Validators: validators}, nil
+	return &bridgeproto.QueryValidatorsResponse{
+		Validators: validators,
+		Pagination: pageRes,
+	}, nil
 }
 
 // RelayerStats queries relayer performance stats

@@ -2,6 +2,7 @@ syntax = "proto3";
 package aura.auth.v1beta1;
 
 import "gogoproto/gogo.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
 import "aura/auth/v1beta1/auth.proto";
 
 option go_package = "github.com/aequitas/aura/proto/aura/auth/v1beta1";
@@ -71,10 +72,13 @@ message QueryGetRoleResponse {
   Role role = 1;
 }
 
-message QueryListRolesRequest {}
+message QueryListRolesRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
 
 message QueryListRolesResponse {
   repeated Role roles = 1;
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 message QueryGetRoleAssignmentsRequest {
@@ -103,10 +107,13 @@ message QueryGetMultisigWalletResponse {
   MultisigWallet wallet = 1;
 }
 
-message QueryListMultisigWalletsRequest {}
+message QueryListMultisigWalletsRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
 
 message QueryListMultisigWalletsResponse {
   repeated MultisigWallet wallets = 1;
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 message QueryGetMultisigProposalRequest {
@@ -120,10 +127,12 @@ message QueryGetMultisigProposalResponse {
 message QueryListMultisigProposalsRequest {
   string wallet_id = 1;
   ProposalStatus status = 2; // Optional filter
+  cosmos.base.query.v1beta1.PageRequest pagination = 3;
 }
 
 message QueryListMultisigProposalsResponse {
   repeated MultisigProposal proposals = 1;
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 message QueryGetTimeLockedActionRequest {
@@ -136,10 +145,12 @@ message QueryGetTimeLockedActionResponse {
 
 message QueryListTimeLockedActionsRequest {
   ActionStatus status = 1; // Optional filter
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
 }
 
 message QueryListTimeLockedActionsResponse {
   repeated TimeLockedAction actions = 1;
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 message QueryGetEmergencyAdminRequest {
@@ -150,10 +161,13 @@ message QueryGetEmergencyAdminResponse {
   EmergencyAdmin admin = 1;
 }
 
-message QueryListEmergencyAdminsRequest {}
+message QueryListEmergencyAdminsRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
 
 message QueryListEmergencyAdminsResponse {
   repeated EmergencyAdmin admins = 1;
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 message QueryGetValidatorKeyRotationRequest {
@@ -174,10 +188,12 @@ message QueryGetSessionResponse {
 
 message QueryListSessionsRequest {
   string user_address = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
 }
 
 message QueryListSessionsResponse {
   repeated Session sessions = 1;
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 message QueryGetRateLimitStatusRequest {
