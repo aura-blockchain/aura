@@ -59,6 +59,26 @@ func (k *Keeper) AssignRole(ctx context.Context, assigner string, address string
 		return nil, err
 	}
 
+	// CRITICAL SECURITY FIX: Prevent self-escalation attack
+	// User cannot assign roles to themselves to prevent privilege escalation
+	if assigner == address {
+		k.LogAudit(sdkCtx, assigner, "assign_role", fmt.Sprintf("%s->%s", address, roleName), "denied", nil, "self-assignment not allowed")
+		return nil, fmt.Errorf("cannot assign role to yourself - use another admin to assign roles")
+	}
+
+	// CRITICAL SECURITY FIX: Require admin permission for protected roles
+	// Prevent users with only PermissionAssignRole from elevating to admin
+	protectedRoles := []string{types.RoleAdmin}
+	for _, protectedRole := range protectedRoles {
+		if roleName == protectedRole {
+			// For protected roles, assigner must have admin permission
+			if !k.HasPermission(sdkCtx, assigner, types.PermissionAdmin) {
+				k.LogAudit(sdkCtx, assigner, "assign_role", fmt.Sprintf("%s->%s", address, roleName), "denied", nil, "insufficient permissions for protected role")
+				return nil, fmt.Errorf("assigning %s role requires admin permission", roleName)
+			}
+		}
+	}
+
 	// Verify role exists
 	if _, err := k.GetRoleFromStore(sdkCtx, roleName); err != nil {
 		return nil, fmt.Errorf("role not found: %s", roleName)

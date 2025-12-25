@@ -276,12 +276,6 @@ func (ms msgServer) MintTokens(goCtx context.Context, msg *bridgepb.MsgMintToken
 		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}
 
-	// CRITICAL SECURITY: Check auto-pause threshold BEFORE minting
-	// This prevents excessive minting in case of exploit
-	if ms.Keeper.CheckAndTriggerAutoPause(ctx, msg.Denom, amount) {
-		return nil, status.Error(codes.FailedPrecondition,
-			"auto-pause triggered - hourly mint threshold exceeded")
-	}
 	transferID, hasIndex := ms.Keeper.transferIDByHash(ctx, msg.SourceTxHash)
 	if !hasIndex {
 		var err error
@@ -312,6 +306,19 @@ func (ms msgServer) MintTokens(goCtx context.Context, msg *bridgepb.MsgMintToken
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if ms.Keeper.CheckAttestationThreshold(ctx, transferID) && transfer.Status != bridgepb.TransferStatus_COMPLETED {
+		// CRITICAL SECURITY FIX: Check auto-pause threshold and record amount atomically
+		// This must happen BEFORE minting to prevent concurrent validators from bypassing limits.
+		// Both the check and record are in the same SDK transaction, making them atomic.
+		ms.Keeper.RecordMintedAmount(ctx, msg.Denom, amount)
+
+		// Check if threshold exceeded (GetHourlyMintedAmount now includes the amount we just recorded)
+		if ms.Keeper.CheckAndTriggerAutoPause(ctx, msg.Denom, sdkmath.ZeroInt()) {
+			// Auto-pause triggered - reject this mint
+			// The amount stays recorded (prevents retry attacks from bypassing threshold)
+			return nil, status.Error(codes.FailedPrecondition,
+				"auto-pause triggered - hourly mint threshold exceeded")
+		}
+
 		recipient, err := sdk.AccAddressFromBech32(transfer.Recipient)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -319,6 +326,7 @@ func (ms msgServer) MintTokens(goCtx context.Context, msg *bridgepb.MsgMintToken
 		coin := sdk.NewCoin(msg.Denom, amount)
 		if ms.Keeper.bankKeeper != nil {
 			coins := sdk.NewCoins(coin)
+
 			if err := ms.Keeper.bankKeeper.MintCoins(ctx, types.ModuleName, coins); err != nil {
 				return nil, status.Error(codes.Internal, err.Error())
 			}
@@ -332,9 +340,6 @@ func (ms msgServer) MintTokens(goCtx context.Context, msg *bridgepb.MsgMintToken
 		if err := ms.Keeper.setTransfer(ctx, transfer); err != nil {
 			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to update transfer status: %v", err))
 		}
-
-		// CRITICAL SECURITY: Record minted amount for hourly tracking (auto-pause detection)
-		ms.Keeper.RecordMintedAmount(ctx, msg.Denom, amount)
 	}
 	wrappedDenom := fmt.Sprintf("%s.%s", normalizedChain, msg.Denom)
 	token, _ := ms.Keeper.getWrappedToken(ctx, wrappedDenom)

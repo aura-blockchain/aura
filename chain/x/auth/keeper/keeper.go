@@ -626,7 +626,7 @@ func (k *Keeper) SetSession(ctx sdk.Context, session *authproto.Session) error {
 	return k.addUserSession(ctx, session.UserAddress, session.SessionId)
 }
 
-// GetSession retrieves a session by ID
+// GetSession retrieves a session by ID and validates expiry
 func (k *Keeper) GetSession(ctx sdk.Context, sessionID string) (*authproto.Session, error) {
 	store := ctx.KVStore(k.storeKey)
 	key := append(SessionsKeyPrefix, []byte(sessionID)...)
@@ -639,6 +639,14 @@ func (k *Keeper) GetSession(ctx sdk.Context, sessionID string) (*authproto.Sessi
 	if err := k.cdc.Unmarshal(bz, &session); err != nil {
 		return nil, err
 	}
+
+	// CRITICAL SECURITY FIX: Enforce session expiry
+	// Sessions must not be usable after they expire, even if not yet cleaned up
+	now := ctx.BlockTime()
+	if !session.ExpiresAt.IsZero() && now.After(session.ExpiresAt) {
+		return nil, types.ErrSessionExpired
+	}
+
 	return &session, nil
 }
 
