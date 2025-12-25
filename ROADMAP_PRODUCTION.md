@@ -311,7 +311,7 @@ Multi-agent analysis covering security, performance, code patterns, repository o
 - [ ] Query rate limiting per-address for expensive queries
 
 #### Code Quality
-- [x] Code duplication extraction (27 GetParams implementations) - Evaluated: intentional Cosmos SDK pattern, documented in GETPARAMS_DUPLICATION_ANALYSIS.md (2025-12-25)
+- [x] Code duplication extraction (27 GetParams implementations) - Evaluated: intentional Cosmos SDK pattern, documented in GETPARAMS_DUPLICATION_DECISION.md (2025-12-25)
 - [x] Naming convention standardization - Verified: all 800+ events use consistent snake_case (2025-12-25)
 - [x] Proto message field documentation - Added docs to 15 high-impact fields in 4 modules (2025-12-25)
 - [ ] Test pattern standardization (table-driven for all)
