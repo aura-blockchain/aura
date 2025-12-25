@@ -109,18 +109,19 @@ func TestMultiValidatorConsensus_InsufficientValidatorsRejected(t *testing.T) {
 			sourceChain := "paw"
 
 			// Create message to sign
-			msgToSign := fmt.Sprintf("%s:%s:%s:%s:%s",
+			msgBase := fmt.Sprintf("%s:%s:%s:%s:%s",
 				transfer.SourceChain,
 				burnTxHash,
 				sender,
 				amount,
 				denom,
 			)
-			msgHash := sha256.Sum256([]byte(msgToSign))
 
 			// Generate signatures from the specified number of validators
 			var signatures [][]byte
 			for i := 0; i < tc.signaturesProvided && i < len(validators); i++ {
+				msgWithValidator := fmt.Sprintf("%s:validator:%s", msgBase, validators[i].Address)
+				msgHash := sha256.Sum256([]byte(msgWithValidator))
 				sig := signMessageWithValidator(t, validators[i].PrivKey, msgHash[:])
 				signatures = append(signatures, sig)
 			}
@@ -227,28 +228,31 @@ func TestMultiValidatorConsensus_DuplicateValidatorSignaturesRejected(t *testing
 			sourceChain := "paw"
 
 			// Create message to sign
-			msgToSign := fmt.Sprintf("%s:%s:%s:%s:%s",
+			msgBase := fmt.Sprintf("%s:%s:%s:%s:%s",
 				transfer.SourceChain,
 				burnTxHash,
 				sender,
 				amount,
 				denom,
 			)
-			msgHash := sha256.Sum256([]byte(msgToSign))
 
 			// Generate signatures with duplicates
 			var signatures [][]byte
 
 			// Add unique signatures
 			for i := 0; i < tc.uniqueCount && i < len(validators); i++ {
+				msgWithValidator := fmt.Sprintf("%s:validator:%s", msgBase, validators[i].Address)
+				msgHash := sha256.Sum256([]byte(msgWithValidator))
 				sig := signMessageWithValidator(t, validators[i].PrivKey, msgHash[:])
 				signatures = append(signatures, sig)
 			}
 
 			// Add duplicate signatures (reuse first validator)
 			if tc.duplicateCount > 0 && len(validators) > 0 {
+				msgWithVal0 := fmt.Sprintf("%s:validator:%s", msgBase, validators[0].Address)
+				msgHash0 := sha256.Sum256([]byte(msgWithVal0))
 				for i := 0; i < tc.duplicateCount; i++ {
-					sig := signMessageWithValidator(t, validators[0].PrivKey, msgHash[:])
+					sig := signMessageWithValidator(t, validators[0].PrivKey, msgHash0[:])
 					signatures = append(signatures, sig)
 				}
 			}
@@ -354,18 +358,19 @@ func TestMultiValidatorConsensus_MinimumThresholdEnforced(t *testing.T) {
 			sourceChain := "paw"
 
 			// Create message to sign
-			msgToSign := fmt.Sprintf("%s:%s:%s:%s:%s",
+			msgBase := fmt.Sprintf("%s:%s:%s:%s:%s",
 				transfer.SourceChain,
 				burnTxHash,
 				sender,
 				amount,
 				denom,
 			)
-			msgHash := sha256.Sum256([]byte(msgToSign))
 
 			// Generate signatures
 			var signatures [][]byte
 			for i := 0; i < tc.signaturesProvided && i < len(validators); i++ {
+				msgWithValidator := fmt.Sprintf("%s:validator:%s", msgBase, validators[i].Address)
+				msgHash := sha256.Sum256([]byte(msgWithValidator))
 				sig := signMessageWithValidator(t, validators[i].PrivKey, msgHash[:])
 				signatures = append(signatures, sig)
 			}
@@ -488,24 +493,27 @@ func TestMultiValidatorConsensus_InactiveValidatorsNotCounted(t *testing.T) {
 			sourceChain := "paw"
 
 			// Create message to sign
-			msgToSign := fmt.Sprintf("%s:%s:%s:%s:%s",
+			msgBase := fmt.Sprintf("%s:%s:%s:%s:%s",
 				transfer.SourceChain,
 				burnTxHash,
 				sender,
 				amount,
 				denom,
 			)
-			msgHash := sha256.Sum256([]byte(msgToSign))
 
-			// Generate signatures from active validators
+			// Generate signatures from active validators - each with validator address
 			var signatures [][]byte
 			for i := 0; i < tc.sigFromActive && i < len(activeVals); i++ {
+				msgWithVal := fmt.Sprintf("%s:validator:%s", msgBase, activeVals[i].Address)
+				msgHash := sha256.Sum256([]byte(msgWithVal))
 				sig := signMessageWithValidator(t, activeVals[i].PrivKey, msgHash[:])
 				signatures = append(signatures, sig)
 			}
 
-			// Generate signatures from inactive validators
+			// Generate signatures from inactive validators - each with validator address
 			for i := 0; i < tc.sigFromInactive && i < len(inactiveVals); i++ {
+				msgWithVal := fmt.Sprintf("%s:validator:%s", msgBase, inactiveVals[i].Address)
+				msgHash := sha256.Sum256([]byte(msgWithVal))
 				sig := signMessageWithValidator(t, inactiveVals[i].PrivKey, msgHash[:])
 				signatures = append(signatures, sig)
 			}

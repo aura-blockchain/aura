@@ -25,7 +25,6 @@ import (
 
 	"github.com/aequitas/aura/chain/x/identity/client/cli"
 	"github.com/aequitas/aura/chain/x/identity/keeper"
-	// "github.com/aequitas/aura/chain/x/identity/migrations"
 	"github.com/aequitas/aura/chain/x/identity/types"
 )
 
@@ -128,13 +127,6 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 
 	// Register Query service
 	types.RegisterQueryServer(cfg.QueryServer(), keeper.NewQueryServerImpl(am.keeper))
-
-	// Register migration handlers
-	// Uncomment when storeKey is available in keeper
-	// m := migrations.NewMigrator(*am.keeper)
-	// if err := cfg.RegisterMigration(types.ModuleName, 1, m.Migrate1to2); err != nil {
-	// 	panic(fmt.Sprintf("failed to register migration: %s", err))
-	// }
 }
 
 // RegisterInvariants registers the identity module invariants.

@@ -52,12 +52,15 @@ func TestUnlockTokens_ValidatorAuthorization(t *testing.T) {
 
 		// Create unlock message with message hash - MUST match keeper format exactly:
 		// transfer.SourceChain:msg.BurnTxHash:msg.Sender:msg.Amount:msg.Denom
-		msgToSign := fmt.Sprintf("%s:%s:%s:%s:%s", "paw", burnTxHash, sender, amount, "uaura")
-		msgHash := sha256.Sum256([]byte(msgToSign))
+		msgBase := fmt.Sprintf("%s:%s:%s:%s:%s", "paw", burnTxHash, sender, amount, "uaura")
 
 		// Get signatures from both validators
-		sig1 := signMessageWithValidatorKey(t, activeVal.PrivKey, msgHash[:])
-		sig2 := signMessageWithValidatorKey(t, inactiveVal.PrivKey, msgHash[:])
+		msgWithValidator1 := fmt.Sprintf("%s:validator:%s", msgBase, activeVal.Address)
+		msgHash1 := sha256.Sum256([]byte(msgWithValidator1))
+		sig1 := signMessageWithValidatorKey(t, activeVal.PrivKey, msgHash1[:])
+		msgWithValidator2 := fmt.Sprintf("%s:validator:%s", msgBase, inactiveVal.Address)
+		msgHash2 := sha256.Sum256([]byte(msgWithValidator2))
+		sig2 := signMessageWithValidatorKey(t, inactiveVal.PrivKey, msgHash2[:])
 
 		msg := &bridgepb.MsgUnlockTokens{
 			Sender:              sender,
@@ -95,10 +98,11 @@ func TestUnlockTokens_ValidatorAuthorization(t *testing.T) {
 		unregisteredPrivKey := secp256k1.GenPrivKey()
 
 		// Create unlock message
-		msgToSign := fmt.Sprintf("%s:%s:%s:%s:%s", "paw", burnTxHash, sender, amount, "uaura")
-		msgHash := sha256.Sum256([]byte(msgToSign))
+		msgBase := fmt.Sprintf("%s:%s:%s:%s:%s", "paw", burnTxHash, sender, amount, "uaura")
 
 		// Get signatures from active and unregistered validators
+		msgWithValidator := fmt.Sprintf("%s:validator:%s", msgBase, activeVal.Address)
+		msgHash := sha256.Sum256([]byte(msgWithValidator))
 		sig1 := signMessageWithValidatorKey(t, activeVal.PrivKey, msgHash[:])
 		sig2 := signMessageWithValidatorKey(t, unregisteredPrivKey, msgHash[:])
 
@@ -141,15 +145,24 @@ func TestUnlockTokens_ValidatorAuthorization(t *testing.T) {
 		inactiveVal2 := createTestValidatorWithStatus(t, input, k, false)
 
 		// Create unlock message - MUST match keeper format
-		msgToSign := fmt.Sprintf("%s:%s:%s:%s:%s", "paw", burnTxHash, sender, amount, "uaura")
-		msgHash := sha256.Sum256([]byte(msgToSign))
+		msgBase := fmt.Sprintf("%s:%s:%s:%s:%s", "paw", burnTxHash, sender, amount, "uaura")
 
 		// Get signatures from all validators (active and inactive)
-		sig1 := signMessageWithValidatorKey(t, activeVal1.PrivKey, msgHash[:])
-		sig2 := signMessageWithValidatorKey(t, activeVal2.PrivKey, msgHash[:])
-		sig3 := signMessageWithValidatorKey(t, activeVal3.PrivKey, msgHash[:])
-		sig4 := signMessageWithValidatorKey(t, inactiveVal1.PrivKey, msgHash[:])
-		sig5 := signMessageWithValidatorKey(t, inactiveVal2.PrivKey, msgHash[:])
+		msgWithValidator1 := fmt.Sprintf("%s:validator:%s", msgBase, activeVal1.Address)
+		msgHash1 := sha256.Sum256([]byte(msgWithValidator1))
+		sig1 := signMessageWithValidatorKey(t, activeVal1.PrivKey, msgHash1[:])
+		msgWithValidator2 := fmt.Sprintf("%s:validator:%s", msgBase, activeVal2.Address)
+		msgHash2 := sha256.Sum256([]byte(msgWithValidator2))
+		sig2 := signMessageWithValidatorKey(t, activeVal2.PrivKey, msgHash2[:])
+		msgWithValidator3 := fmt.Sprintf("%s:validator:%s", msgBase, activeVal3.Address)
+		msgHash3 := sha256.Sum256([]byte(msgWithValidator3))
+		sig3 := signMessageWithValidatorKey(t, activeVal3.PrivKey, msgHash3[:])
+		msgWithValidator4 := fmt.Sprintf("%s:validator:%s", msgBase, inactiveVal1.Address)
+		msgHash4 := sha256.Sum256([]byte(msgWithValidator4))
+		sig4 := signMessageWithValidatorKey(t, inactiveVal1.PrivKey, msgHash4[:])
+		msgWithValidator5 := fmt.Sprintf("%s:validator:%s", msgBase, inactiveVal2.Address)
+		msgHash5 := sha256.Sum256([]byte(msgWithValidator5))
+		sig5 := signMessageWithValidatorKey(t, inactiveVal2.PrivKey, msgHash5[:])
 
 		msg := &bridgepb.MsgUnlockTokens{
 			Sender:              sender,
@@ -188,11 +201,12 @@ func TestUnlockTokens_ValidatorAuthorization(t *testing.T) {
 		}
 
 		// Create unlock message
-		msgToSign := fmt.Sprintf("%s:%s:%s:%s:%s", "paw", burnTxHash, sender, amount, "uaura")
-		msgHash := sha256.Sum256([]byte(msgToSign))
+		msgBase := fmt.Sprintf("%s:%s:%s:%s:%s", "paw", burnTxHash, sender, amount, "uaura")
 
 		// Provide only 1 signature (below MinAllowedConfirmations = 3)
-		sig1 := signMessageWithValidatorKey(t, activeVals[0].PrivKey, msgHash[:])
+		msgWithVal := fmt.Sprintf("%s:validator:%s", msgBase, activeVals[0].Address)
+		msgHashVal := sha256.Sum256([]byte(msgWithVal))
+		sig1 := signMessageWithValidatorKey(t, activeVals[0].PrivKey, msgHashVal[:])
 
 		msg := &bridgepb.MsgUnlockTokens{
 			Sender:              sender,
@@ -238,13 +252,14 @@ func TestUnlockTokens_SignatureSetReplay(t *testing.T) {
 		}
 
 		// Create unlock message - MUST match keeper format
-		msgToSign := fmt.Sprintf("%s:%s:%s:%s:%s", "paw", burnTxHash, sender, amount, "uaura")
-		msgHash := sha256.Sum256([]byte(msgToSign))
+		msgBase := fmt.Sprintf("%s:%s:%s:%s:%s", "paw", burnTxHash, sender, amount, "uaura")
 
-		// Get signatures from validators
+		// Get signatures from validators - each signs with their validator address
 		sigs := make([][]byte, 3)
 		for i := 0; i < 3; i++ {
-			sigs[i] = signMessageWithValidatorKey(t, validators[i].PrivKey, msgHash[:])
+			msgWithVal := fmt.Sprintf("%s:validator:%s", msgBase, validators[i].Address)
+			msgHashVal := sha256.Sum256([]byte(msgWithVal))
+			sigs[i] = signMessageWithValidatorKey(t, validators[i].PrivKey, msgHashVal[:])
 		}
 
 		msg := &bridgepb.MsgUnlockTokens{
@@ -355,12 +370,13 @@ func TestUnlockTokens_ValidatorRotation(t *testing.T) {
 		}
 
 		// Unlock with signatures from set B (current active set)
-		msgToSign := fmt.Sprintf("%s:%s:%s:%s:%s", "paw", burnTxHash, sender, amount, "uaura")
-		msgHash := sha256.Sum256([]byte(msgToSign))
+		msgBase := fmt.Sprintf("%s:%s:%s:%s:%s", "paw", burnTxHash, sender, amount, "uaura")
 
 		sigs := make([][]byte, 3)
 		for i := 0; i < 3; i++ {
-			sigs[i] = signMessageWithValidatorKey(t, validatorSetB[i].PrivKey, msgHash[:])
+			msgWithVal := fmt.Sprintf("%s:validator:%s", msgBase, validatorSetB[i].Address)
+			msgHashVal := sha256.Sum256([]byte(msgWithVal))
+			sigs[i] = signMessageWithValidatorKey(t, validatorSetB[i].PrivKey, msgHashVal[:])
 		}
 
 		msg := &bridgepb.MsgUnlockTokens{
@@ -409,12 +425,13 @@ func TestUnlockTokens_ValidatorRotation(t *testing.T) {
 		_ = createTestValidatorWithStatus(t, input, k, true)
 
 		// Try to unlock with signatures from deactivated set A
-		msgToSign := fmt.Sprintf("%s:%s:%s:%s:%s", "paw", burnTxHash, sender, amount, "uaura")
-		msgHash := sha256.Sum256([]byte(msgToSign))
+		msgBase := fmt.Sprintf("%s:%s:%s:%s:%s", "paw", burnTxHash, sender, amount, "uaura")
 
 		sigs := make([][]byte, 2)
 		for i := 0; i < 2; i++ {
-			sigs[i] = signMessageWithValidatorKey(t, validatorSetA[i].PrivKey, msgHash[:])
+			msgWithVal := fmt.Sprintf("%s:validator:%s", msgBase, validatorSetA[i].Address)
+			msgHashVal := sha256.Sum256([]byte(msgWithVal))
+			sigs[i] = signMessageWithValidatorKey(t, validatorSetA[i].PrivKey, msgHashVal[:])
 		}
 
 		msg := &bridgepb.MsgUnlockTokens{
@@ -454,14 +471,19 @@ func TestUnlockTokens_ValidatorRotation(t *testing.T) {
 		newValidator2 := createTestValidatorWithStatus(t, input, k, true)
 
 		// Unlock with signatures including new validators
-		msgToSign := fmt.Sprintf("%s:%s:%s:%s:%s", "paw", burnTxHash, sender, amount, "uaura")
-		msgHash := sha256.Sum256([]byte(msgToSign))
+		msgBase := fmt.Sprintf("%s:%s:%s:%s:%s", "paw", burnTxHash, sender, amount, "uaura")
 
-		// All 3 active validators sign
+		// All 3 active validators sign - each with their validator address
 		sigs := make([][]byte, 3)
-		sigs[0] = signMessageWithValidatorKey(t, initialVal.PrivKey, msgHash[:])
-		sigs[1] = signMessageWithValidatorKey(t, newValidator1.PrivKey, msgHash[:])
-		sigs[2] = signMessageWithValidatorKey(t, newValidator2.PrivKey, msgHash[:])
+		msgWithVal0 := fmt.Sprintf("%s:validator:%s", msgBase, initialVal.Address)
+		msgHash0 := sha256.Sum256([]byte(msgWithVal0))
+		sigs[0] = signMessageWithValidatorKey(t, initialVal.PrivKey, msgHash0[:])
+		msgWithVal1 := fmt.Sprintf("%s:validator:%s", msgBase, newValidator1.Address)
+		msgHash1 := sha256.Sum256([]byte(msgWithVal1))
+		sigs[1] = signMessageWithValidatorKey(t, newValidator1.PrivKey, msgHash1[:])
+		msgWithVal2 := fmt.Sprintf("%s:validator:%s", msgBase, newValidator2.Address)
+		msgHash2 := sha256.Sum256([]byte(msgWithVal2))
+		sigs[2] = signMessageWithValidatorKey(t, newValidator2.PrivKey, msgHash2[:])
 
 		msg := &bridgepb.MsgUnlockTokens{
 			Sender:              sender,
@@ -510,13 +532,14 @@ func TestUnlockTokens_CombinedSecurityChecks(t *testing.T) {
 		}
 
 		// Create unlock message - MUST match keeper format
-		msgToSign := fmt.Sprintf("%s:%s:%s:%s:%s", "paw", burnTxHash, sender, amount, "uaura")
-		msgHash := sha256.Sum256([]byte(msgToSign))
+		msgBase := fmt.Sprintf("%s:%s:%s:%s:%s", "paw", burnTxHash, sender, amount, "uaura")
 
-		// Get signatures from all 3 validators
+		// Get signatures from all 3 validators - each with their validator address
 		sigs := make([][]byte, 3)
 		for i := 0; i < 3; i++ {
-			sigs[i] = signMessageWithValidatorKey(t, validators[i].PrivKey, msgHash[:])
+			msgWithVal := fmt.Sprintf("%s:validator:%s", msgBase, validators[i].Address)
+			msgHashVal := sha256.Sum256([]byte(msgWithVal))
+			sigs[i] = signMessageWithValidatorKey(t, validators[i].PrivKey, msgHashVal[:])
 		}
 
 		msg := &bridgepb.MsgUnlockTokens{
@@ -563,12 +586,15 @@ func TestUnlockTokens_CombinedSecurityChecks(t *testing.T) {
 		inactiveVal := createTestValidatorWithStatus(t, input, k, false)
 
 		// Create unlock message - MUST match keeper format
-		msgToSign := fmt.Sprintf("%s:%s:%s:%s:%s", "paw", burnTxHash, sender, amount, "uaura")
-		msgHash := sha256.Sum256([]byte(msgToSign))
+		msgBase := fmt.Sprintf("%s:%s:%s:%s:%s", "paw", burnTxHash, sender, amount, "uaura")
 
 		// ATTACK: Use valid signatures, but one is from inactive validator
-		sig1 := signMessageWithValidatorKey(t, activeVal.PrivKey, msgHash[:])
-		sig2 := signMessageWithValidatorKey(t, inactiveVal.PrivKey, msgHash[:])
+		msgWithValidator1 := fmt.Sprintf("%s:validator:%s", msgBase, activeVal.Address)
+		msgHash1 := sha256.Sum256([]byte(msgWithValidator1))
+		sig1 := signMessageWithValidatorKey(t, activeVal.PrivKey, msgHash1[:])
+		msgWithValidator2 := fmt.Sprintf("%s:validator:%s", msgBase, inactiveVal.Address)
+		msgHash2 := sha256.Sum256([]byte(msgWithValidator2))
+		sig2 := signMessageWithValidatorKey(t, inactiveVal.PrivKey, msgHash2[:])
 
 		msg := &bridgepb.MsgUnlockTokens{
 			Sender:              sender,
@@ -608,13 +634,14 @@ func TestUnlockTokens_CombinedSecurityChecks(t *testing.T) {
 		}
 
 		// Create unlock message - MUST match keeper format
-		msgToSign := fmt.Sprintf("%s:%s:%s:%s:%s", "paw", burnTxHash, sender, amount, "uaura")
-		msgHash := sha256.Sum256([]byte(msgToSign))
+		msgBase := fmt.Sprintf("%s:%s:%s:%s:%s", "paw", burnTxHash, sender, amount, "uaura")
 
-		// Get valid signatures
+		// Get valid signatures - each with validator address
 		sigs := make([][]byte, 3)
 		for i := 0; i < 3; i++ {
-			sigs[i] = signMessageWithValidatorKey(t, validators[i].PrivKey, msgHash[:])
+			msgWithVal := fmt.Sprintf("%s:validator:%s", msgBase, validators[i].Address)
+			msgHashVal := sha256.Sum256([]byte(msgWithVal))
+			sigs[i] = signMessageWithValidatorKey(t, validators[i].PrivKey, msgHashVal[:])
 		}
 
 		msg := &bridgepb.MsgUnlockTokens{
@@ -660,12 +687,13 @@ func TestUnlockTokens_CombinedSecurityChecks(t *testing.T) {
 		}
 
 		// Create first unlock message - MUST match keeper format
-		msgToSign := fmt.Sprintf("%s:%s:%s:%s:%s", "paw", burnTxHash, sender, amount, "uaura")
-		msgHash := sha256.Sum256([]byte(msgToSign))
+		msgBase := fmt.Sprintf("%s:%s:%s:%s:%s", "paw", burnTxHash, sender, amount, "uaura")
 
 		sigs := make([][]byte, 3)
 		for i := 0; i < 3; i++ {
-			sigs[i] = signMessageWithValidatorKey(t, validators[i].PrivKey, msgHash[:])
+			msgWithVal := fmt.Sprintf("%s:validator:%s", msgBase, validators[i].Address)
+			msgHashVal := sha256.Sum256([]byte(msgWithVal))
+			sigs[i] = signMessageWithValidatorKey(t, validators[i].PrivKey, msgHashVal[:])
 		}
 
 		msg := &bridgepb.MsgUnlockTokens{
@@ -862,13 +890,14 @@ func BenchmarkVerifyValidatorSignatures(b *testing.B) {
 	}
 
 	// Create message to sign
-	msgToSign := "test:0xbench1234:sender:1000:uaura"
-	msgHash := sha256.Sum256([]byte(msgToSign))
+	msgBase := "test:0xbench1234:sender:1000:uaura"
 
-	// Get signatures
+	// Get signatures - each with validator address
 	sigs := make([][]byte, 5)
 	for i := 0; i < 5; i++ {
-		sigs[i] = signMessageWithValidatorKey(&testing.T{}, validators[i].PrivKey, msgHash[:])
+		msgWithVal := fmt.Sprintf("%s:validator:%s", msgBase, validators[i].Address)
+		msgHashVal := sha256.Sum256([]byte(msgWithVal))
+		sigs[i] = signMessageWithValidatorKey(&testing.T{}, validators[i].PrivKey, msgHashVal[:])
 	}
 
 	// Create unlock message

@@ -442,17 +442,17 @@ func (ms msgServer) UnlockTokens(goCtx context.Context, msg *bridgepb.MsgUnlockT
 		),
 	)
 
-	// Build deterministic message hash for signature verification
+	// Build deterministic message base for signature verification
 	// Format: sourceChain:burnTxHash:recipient:amount:denom
-	// This format ensures uniqueness per transaction on the source chain
-	msgToSign := fmt.Sprintf("%s:%s:%s:%s:%s",
+	// SECURITY FIX: Validators will append ":validator:validatorAddr" before signing
+	// This format ensures uniqueness per transaction on the source chain AND per validator
+	msgBase := fmt.Sprintf("%s:%s:%s:%s:%s",
 		transfer.SourceChain,
 		msg.BurnTxHash,
 		msg.Sender,
 		msg.Amount,
 		msg.Denom,
 	)
-	msgHash := sha256.Sum256([]byte(msgToSign))
 
 	// CRITICAL SECURITY FIX #2: Check if this signature set has been used before
 	// This prevents replay attacks where the same valid signatures are reused
@@ -472,32 +472,36 @@ func (ms msgServer) UnlockTokens(goCtx context.Context, msg *bridgepb.MsgUnlockT
 	//   - Checks validator authorization - ONLY ACTIVE validators from current set (prevents unauthorized signing)
 	//   - Counts UNIQUE validators - prevents duplicate counting same validator
 	//   - Enforces minimum threshold - never less than MinAllowedConfirmations (prevents single validator control)
+	//   - SECURITY FIX: Each validator signs message with their address included (prevents order-dependency ambiguity)
 	//
 	// The verifyRawValidatorSignatures function will:
 	//   1. Call getActiveValidators() to get the current governance-approved validator list
 	//   2. For each signature, verify it cryptographically using validator's public key
-	//   3. Ensure the validator is in the ACTIVE set (not slashed/jailed/removed)
-	//   4. Count only unique validators (prevent same validator being counted twice)
-	//   5. Require at least 'required' unique active validators
+	//   3. Build validator-specific message: "msgBase:validator:validatorAddr"
+	//   4. Ensure the validator is in the ACTIVE set (not slashed/jailed/removed)
+	//   5. Count only unique validators (prevent same validator being counted twice)
+	//   6. Require at least 'required' unique active validators
 	//
 	// Attack prevented: Multiple attack vectors blocked:
 	//   - Unauthorized validators cannot provide valid signatures (not in active set)
 	//   - Compromised then removed validators rejected (active set check)
 	//   - Forged signatures rejected (cryptographic verification)
 	//   - Duplicate signatures rejected (unique validator counting)
-	validCount, err := ms.verifyRawValidatorSignatures(ctx, msg.ValidatorSignatures, msgHash[:], required)
+	//   - Order-dependency ambiguity eliminated (validator address in signed message)
+	validCount, err := ms.verifyRawValidatorSignatures(ctx, msg.ValidatorSignatures, msgBase, required)
 	if err != nil {
 		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 
 	// Log successful signature verification for audit trail
+	msgBaseHash := sha256.Sum256([]byte(msgBase))
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			"unlock_signatures_verified",
 			sdk.NewAttribute("transfer_id", transferID),
 			sdk.NewAttribute("valid_signature_count", fmt.Sprintf("%d", validCount)),
 			sdk.NewAttribute("required_count", fmt.Sprintf("%d", required)),
-			sdk.NewAttribute("message_hash", fmt.Sprintf("%x", msgHash)),
+			sdk.NewAttribute("message_base_hash", fmt.Sprintf("%x", msgBaseHash)),
 			sdk.NewAttribute("signature_set_hash", fmt.Sprintf("%x", signatureSetHash)),
 		),
 	)
@@ -893,7 +897,11 @@ func (ms msgServer) CrossChainSwap(goCtx context.Context, msg *bridgepb.MsgCross
 		return nil, status.Error(codes.InvalidArgument, "input amount required")
 	}
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	swapID := fmt.Sprintf("swap-%s", ms.Keeper.nextTransferID(ctx))
+	transferID, err := ms.Keeper.nextTransferID(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	swapID := fmt.Sprintf("swap-%s", transferID)
 	swap := &bridgepb.CrossChainSwap{
 		SwapId:      swapID,
 		Sender:      msg.Sender,

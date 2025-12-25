@@ -1020,7 +1020,10 @@ func (k Keeper) InitiateTransfer(ctx sdk.Context, sender string, recipient strin
 	}
 
 	// Generate unique transfer ID
-	transferID := k.nextTransferID(ctx)
+	transferID, err := k.nextTransferID(ctx)
+	if err != nil {
+		return "", err
+	}
 
 	// Create cross-chain transfer record
 	transfer := &types.CrossChainTransfer{
@@ -1058,7 +1061,10 @@ func (k Keeper) InitiateTransfer(ctx sdk.Context, sender string, recipient strin
 
 // InitiateWithdrawal stores a pending withdrawal with timestamp metadata
 func (k Keeper) InitiateWithdrawal(ctx sdk.Context, recipient string, amount sdk.Coins) (string, error) {
-	transferID := k.nextTransferID(ctx)
+	transferID, err := k.nextTransferID(ctx)
+	if err != nil {
+		return "", err
+	}
 	transfer := &types.CrossChainTransfer{
 		TransferId:  transferID,
 		SourceChain: sourceChainAura,

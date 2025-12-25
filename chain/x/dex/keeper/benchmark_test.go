@@ -324,6 +324,67 @@ func BenchmarkGetAllPools(b *testing.B) {
 }
 
 // ============================================================================
+// Orderbook Query Benchmarks
+// ============================================================================
+
+// BenchmarkGetOrderbookForPair_10Orders benchmarks orderbook retrieval with 10 orders
+func BenchmarkGetOrderbookForPair_10Orders(b *testing.B) {
+	k, ctx := setupDEXBenchmark(b)
+	creator := "aura1qyqszqgpqyqszqgpqyqszqgpqyqszqgpj4w6"
+
+	// Create 10 orders for the uaura-usdt pair
+	for i := 0; i < 10; i++ {
+		_, _ = k.CreateOrder(ctx, creator, types.SwapOrderType_SELL,
+			sdkmath.NewInt(1000000), "usdt", sdkmath.NewInt(500000), 60)
+	}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		_ = k.GetOrderbookForPair(ctx, "uaura", "usdt")
+	}
+}
+
+// BenchmarkGetOrderbookForPair_100Orders benchmarks orderbook retrieval with 100 orders
+func BenchmarkGetOrderbookForPair_100Orders(b *testing.B) {
+	k, ctx := setupDEXBenchmark(b)
+	creator := "aura1qyqszqgpqyqszqgpqyqszqgpqyqszqgpj4w6"
+
+	// Create 100 orders for the uaura-usdt pair
+	for i := 0; i < 100; i++ {
+		_, _ = k.CreateOrder(ctx, creator, types.SwapOrderType_SELL,
+			sdkmath.NewInt(1000000), "usdt", sdkmath.NewInt(500000), 60)
+	}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		_ = k.GetOrderbookForPair(ctx, "uaura", "usdt")
+	}
+}
+
+// BenchmarkGetOrderbookForPair_1000Orders benchmarks orderbook retrieval with 1000 orders
+func BenchmarkGetOrderbookForPair_1000Orders(b *testing.B) {
+	k, ctx := setupDEXBenchmark(b)
+	creator := "aura1qyqszqgpqyqszqgpqyqszqgpqyqszqgpj4w6"
+
+	// Create 1000 orders for the uaura-usdt pair
+	for i := 0; i < 1000; i++ {
+		_, _ = k.CreateOrder(ctx, creator, types.SwapOrderType_SELL,
+			sdkmath.NewInt(1000000), "usdt", sdkmath.NewInt(500000), 60)
+	}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		_ = k.GetOrderbookForPair(ctx, "uaura", "usdt")
+	}
+}
+
+// ============================================================================
 // Minimum Liquidity Calculation Benchmarks
 // ============================================================================
 

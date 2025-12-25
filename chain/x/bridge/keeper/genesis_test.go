@@ -593,7 +593,8 @@ func (suite *GenesisTestSuite) TestTransferCounterOffByOneError() {
 		// Note: nextTransferID now returns hash-based IDs (deterministic), not sequential IDs
 		// The counter is maintained for backward compatibility with legacy sequential IDs
 		// but new IDs are generated using block height + tx hash for determinism
-		nextID := suite.Keeper.nextTransferID(ctx)
+		nextID, err := suite.Keeper.nextTransferID(ctx)
+		suite.Require().NoError(err)
 		suite.NotEmpty(nextID, "Next transfer should have a valid ID")
 		suite.Contains(nextID, "transfer-", "Next transfer ID should have transfer- prefix")
 	})
@@ -635,7 +636,8 @@ func (suite *GenesisTestSuite) TestTransferCounterOffByOneError() {
 		suite.Equal(uint64(101), counter, "Counter must be set to MAX+1 (101) to prevent duplicate with transfer-100")
 
 		// Note: nextTransferID now returns hash-based IDs, not sequential
-		nextID := suite.Keeper.nextTransferID(ctx)
+		nextID, err := suite.Keeper.nextTransferID(ctx)
+		suite.Require().NoError(err)
 		suite.NotEmpty(nextID, "Next transfer should have a valid ID")
 		suite.Contains(nextID, "transfer-", "Next transfer ID should have transfer- prefix")
 	})
@@ -665,7 +667,8 @@ func (suite *GenesisTestSuite) TestTransferCounterOffByOneError() {
 		suite.Nil(counterBz, "Counter should not be set with no transfers")
 
 		// New transfers use deterministic hash-based IDs, not sequential
-		nextID := suite.Keeper.nextTransferID(ctx)
+		nextID, err := suite.Keeper.nextTransferID(ctx)
+		suite.Require().NoError(err)
 		suite.NotEmpty(nextID, "First transfer should have a valid ID")
 		suite.Contains(nextID, "transfer-", "First transfer ID should have transfer- prefix")
 	})
@@ -727,7 +730,8 @@ func (suite *GenesisTestSuite) TestTransferCounterOffByOneError() {
 		suite.Equal(uint64(26), counter, "Counter should be set to MAX+1 (26) to prevent duplicate with transfer-25")
 
 		// Note: nextTransferID now returns hash-based IDs, not sequential
-		nextID := suite.Keeper.nextTransferID(ctx)
+		nextID, err := suite.Keeper.nextTransferID(ctx)
+		suite.Require().NoError(err)
 		suite.NotEmpty(nextID, "Next transfer should have a valid ID")
 		suite.Contains(nextID, "transfer-", "Next transfer ID should have transfer- prefix")
 	})

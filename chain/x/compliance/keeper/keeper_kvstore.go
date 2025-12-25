@@ -387,6 +387,9 @@ func (k *Keeper) IterateExpiredRecords(
 	iterator := store.Iterator(KYCExpirationIndexKeyPrefix, endKey)
 	defer iterator.Close()
 
+	// Collect stale keys for cleanup (can't delete during iteration)
+	staleKeys := make([][]byte, 0)
+
 	processed := 0
 	for ; iterator.Valid(); iterator.Next() {
 		// Extract address from key
@@ -399,6 +402,15 @@ func (k *Keeper) IterateExpiredRecords(
 
 		address := string(key[9:])
 
+		// Check if the record still exists - if not, mark key for cleanup
+		if _, err := k.GetKYCRecord(ctx, address); err != nil {
+			// Record was deleted but index entry remains - mark for cleanup
+			keyCopy := make([]byte, len(key))
+			copy(keyCopy, key)
+			staleKeys = append(staleKeys, keyCopy)
+			continue // Skip stale entry
+		}
+
 		// Call callback with address
 		if callback(address) {
 			break
@@ -410,6 +422,11 @@ func (k *Keeper) IterateExpiredRecords(
 		if maxRecords > 0 && processed >= maxRecords {
 			break
 		}
+	}
+
+	// Clean up stale index entries after iteration completes
+	for _, staleKey := range staleKeys {
+		store.Delete(staleKey)
 	}
 
 	return processed

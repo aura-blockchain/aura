@@ -37,8 +37,10 @@ func (suite *TransferIDTestSuite) TestTransferIDDeterministic() {
 	testCtx := ctx.WithBlockHeight(100).WithTxBytes([]byte("test-tx-1"))
 
 	// Generate ID twice with same context
-	transferID1 := suite.Keeper.nextTransferID(testCtx)
-	transferID2 := suite.Keeper.nextTransferID(testCtx)
+	transferID1, err := suite.Keeper.nextTransferID(testCtx)
+	suite.Require().NoError(err)
+	transferID2, err := suite.Keeper.nextTransferID(testCtx)
+	suite.Require().NoError(err)
 
 	// Should be deterministic
 	suite.Equal(transferID1, transferID2,
@@ -59,7 +61,8 @@ func (suite *TransferIDTestSuite) TestTransferIDUniqueness() {
 		for txNum := 0; txNum < 10; txNum++ {
 			txBytes := []byte(fmt.Sprintf("tx-%d-%d", height, txNum))
 			testCtx := ctx.WithBlockHeight(height).WithTxBytes(txBytes)
-			transferID := suite.Keeper.nextTransferID(testCtx)
+			transferID, err := suite.Keeper.nextTransferID(testCtx)
+		suite.Require().NoError(err)
 
 			// Check for uniqueness
 			if _, exists := seenIDs[transferID]; exists {
@@ -97,7 +100,8 @@ func (suite *TransferIDTestSuite) TestTransferIDConcurrency() {
 				txBytes := []byte(fmt.Sprintf("tx-%d-%d", routineID, j))
 
 				testCtx := ctx.WithBlockHeight(height).WithTxBytes(txBytes)
-				transferID := suite.Keeper.nextTransferID(testCtx)
+				transferID, err := suite.Keeper.nextTransferID(testCtx)
+		suite.Require().NoError(err)
 
 				idsChan <- transferID
 			}
@@ -202,7 +206,8 @@ func (suite *TransferIDTestSuite) TestTransferIDDifferentBlocks() {
 	ids := make([]string, 0, 10)
 	for height := int64(1); height <= 10; height++ {
 		testCtx := ctx.WithBlockHeight(height).WithTxBytes(txBytes)
-		transferID := suite.Keeper.nextTransferID(testCtx)
+		transferID, err := suite.Keeper.nextTransferID(testCtx)
+		suite.Require().NoError(err)
 		ids = append(ids, transferID)
 	}
 
@@ -225,7 +230,8 @@ func (suite *TransferIDTestSuite) TestTransferIDDifferentTxBytes() {
 	for i := 0; i < 10; i++ {
 		txBytes := []byte(fmt.Sprintf("tx-%d", i))
 		testCtx := ctx.WithBlockHeight(height).WithTxBytes(txBytes)
-		transferID := suite.Keeper.nextTransferID(testCtx)
+		transferID, err := suite.Keeper.nextTransferID(testCtx)
+		suite.Require().NoError(err)
 		ids = append(ids, transferID)
 	}
 
@@ -265,7 +271,8 @@ func (suite *TransferIDTestSuite) TestTransferIDNoRaceConditionRealWorld() {
 					// IMPORTANT: Same tx bytes for same block+index across all validators
 					txBytes := []byte(fmt.Sprintf("tx-block%d-idx%d", block, txIdx))
 					testCtx := ctx.WithBlockHeight(block).WithTxBytes(txBytes)
-					transferID := suite.Keeper.nextTransferID(testCtx)
+					transferID, err := suite.Keeper.nextTransferID(testCtx)
+		suite.Require().NoError(err)
 					localIDs[transferID] = true
 				}
 			}
@@ -306,7 +313,8 @@ func (suite *TransferIDTestSuite) TestTransferIDDuplicateDetection() {
 	testCtx := ctx.WithBlockHeight(100).WithTxBytes(txBytes)
 
 	// First call - should succeed
-	transferID1 := suite.Keeper.nextTransferID(testCtx)
+	transferID1, err := suite.Keeper.nextTransferID(testCtx)
+	suite.Require().NoError(err)
 
 	// Create and store a transfer with this ID
 	transfer := &types.CrossChainTransfer{
@@ -323,7 +331,8 @@ func (suite *TransferIDTestSuite) TestTransferIDDuplicateDetection() {
 
 	// Second call with same context - should return DIFFERENT ID
 	// The function detects collision and adds nonce to generate unique ID
-	transferID2 := suite.Keeper.nextTransferID(testCtx)
+	transferID2, err := suite.Keeper.nextTransferID(testCtx)
+	suite.Require().NoError(err)
 
 	// IDs should be DIFFERENT (collision avoidance working correctly)
 	suite.NotEqual(transferID1, transferID2, "Should generate new ID when collision detected")
@@ -338,7 +347,8 @@ func (suite *TransferIDTestSuite) TestTransferIDEmptyTxBytes() {
 	ids := make([]string, 0, 5)
 	for height := int64(1); height <= 5; height++ {
 		testCtx := ctx.WithBlockHeight(height).WithTxBytes([]byte{})
-		transferID := suite.Keeper.nextTransferID(testCtx)
+		transferID, err := suite.Keeper.nextTransferID(testCtx)
+		suite.Require().NoError(err)
 		ids = append(ids, transferID)
 	}
 
@@ -355,7 +365,8 @@ func (suite *TransferIDTestSuite) TestTransferIDFormat() {
 	ctx := suite.SdkCtx
 
 	testCtx := ctx.WithBlockHeight(100).WithTxBytes([]byte("test-tx"))
-	transferID := suite.Keeper.nextTransferID(testCtx)
+	transferID, err := suite.Keeper.nextTransferID(testCtx)
+		suite.Require().NoError(err)
 
 	// Verify format: "transfer-{number}"
 	suite.Contains(transferID, "transfer-", "ID should have transfer prefix")
@@ -388,10 +399,12 @@ func TestTransferIDSimple(t *testing.T) {
 	ctx := input.Ctx.WithBlockHeight(100).WithTxBytes([]byte("test"))
 
 	// First call generates ID
-	id1 := keeper.nextTransferID(ctx)
+	id1, err := keeper.nextTransferID(ctx)
+	require.NoError(t, err)
 
 	// Second call with SAME context (no storage in between) should generate SAME ID
-	id2 := keeper.nextTransferID(ctx)
+	id2, err := keeper.nextTransferID(ctx)
+	require.NoError(t, err)
 
 	require.Equal(t, id1, id2, "Deterministic IDs should match when context is identical")
 	require.Contains(t, id1, "transfer-")

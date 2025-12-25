@@ -147,14 +147,15 @@ func TestMsgServerUnlockTokens_CompletesTransfer(t *testing.T) {
 	k.IndexTransferHash(ctx, burnTxHash, transferID)
 
 	// STEP 4: Build message to sign (must match msg_server.go format)
-	msgToSign := fmt.Sprintf("%s:%s:%s:%s:%s",
+	msgBase := fmt.Sprintf("%s:%s:%s:%s:%s",
 		sourceChain, burnTxHash, sender, amount, denom)
-	msgHash := sha256.Sum256([]byte(msgToSign))
 
 	// STEP 5: Test with 3 signatures (should succeed)
 	t.Run("with_3_signatures_succeeds", func(t *testing.T) {
 		var signatures [][]byte
 		for i := 0; i < 3; i++ {
+			msgWithValidator := fmt.Sprintf("%s:validator:%s", msgBase, validators[i].Address)
+			msgHash := sha256.Sum256([]byte(msgWithValidator))
 			sig, err := validators[i].PrivKey.Sign(msgHash[:])
 			require.NoError(t, err)
 			signatures = append(signatures, sig)
@@ -203,13 +204,14 @@ func TestMsgServerUnlockTokens_CompletesTransfer(t *testing.T) {
 		k.IndexTransferHash(ctx, burnTxHash2, transferID2)
 
 		// Build message to sign for the second transfer
-		msgToSign2 := fmt.Sprintf("%s:%s:%s:%s:%s",
+		msgBase2 := fmt.Sprintf("%s:%s:%s:%s:%s",
 			sourceChain, burnTxHash2, sender, amount, denom)
-		msgHash2 := sha256.Sum256([]byte(msgToSign2))
 
 		var signatures [][]byte
 		for i := 0; i < 2; i++ { // Only 2 signatures
-			sig, err := validators[i].PrivKey.Sign(msgHash2[:])
+			msgWithValidator := fmt.Sprintf("%s:validator:%s", msgBase2, validators[i].Address)
+			msgHash := sha256.Sum256([]byte(msgWithValidator))
+			sig, err := validators[i].PrivKey.Sign(msgHash[:])
 			require.NoError(t, err)
 			signatures = append(signatures, sig)
 		}

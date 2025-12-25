@@ -67,43 +67,41 @@ func (k *Keeper) BeginBlocker(ctx sdk.Context) {
 	// This prevents long blocks even with 100K+ total records
 	const maxExpiredPerBlock = 100
 
-	// Track processed records for logging and index cleanup
-	expiredAddresses := make([]string, 0, 64)
-	expiredRecords := make([]*types.KYCRecord, 0, 64)
+	// Track processed records for event emission and index cleanup
+	// Pre-allocate based on max processed per block to avoid reallocations
+	expiredRecords := make([]*types.KYCRecord, 0, maxExpiredPerBlock)
 
 	// Use expiration index for efficient O(k) lookup
 	// Only iterates over expired records, not all records
+	// Note: IterateExpiredRecords automatically cleans up stale index entries
 	processedCount := k.IterateExpiredRecords(ctx, currentTime, maxExpiredPerBlock, func(address string) bool {
 		// Get full record to emit complete event
+		// Note: IterateExpiredRecords already verified record exists
 		record, err := k.GetKYCRecord(ctx, address)
 		if err != nil {
-			// Record not found (may have been deleted) - skip
+			// This shouldn't happen since IterateExpiredRecords verifies existence
 			k.logger(ctx).Error(
-				"expired record not found in store",
+				"unexpected: expired record not found in store",
 				"address", address,
 				"error", err,
 			)
-			// Still track address for index cleanup
-			expiredAddresses = append(expiredAddresses, address)
 			return false
 		}
 
 		// Double-check expiration (defensive programming)
 		if record.ExpiresAt == nil || !currentTime.After(*record.ExpiresAt) {
 			// Not actually expired - index may be stale
-			// This shouldn't happen but handle gracefully
 			return false
 		}
 
 		// Track for event emission and cleanup
-		expiredAddresses = append(expiredAddresses, address)
 		expiredRecords = append(expiredRecords, record)
 
 		return false // Continue processing up to batch limit
 	})
 
 	// Emit events and cleanup index for all expired records
-	for i, record := range expiredRecords {
+	for _, record := range expiredRecords {
 		// Emit event for expired KYC record
 		ctx.EventManager().EmitEvent(
 			sdk.NewEvent(
@@ -132,30 +130,10 @@ func (k *Keeper) BeginBlocker(ctx sdk.Context) {
 		// Remove from expiration index to prevent re-processing
 		// This ensures we don't emit duplicate events
 		k.RemoveFromExpirationIndex(ctx, record)
-
-		// Also remove stale address-only entries
-		if i < len(expiredAddresses) {
-			expiredAddresses[i] = "" // Mark as processed
-		}
 	}
 
-	// Cleanup any remaining stale index entries (records that were deleted)
-	for _, address := range expiredAddresses {
-		if address != "" {
-			// Create dummy record for index key generation
-			// We don't know the exact timestamp, but we can try to clean up
-			// by checking if record still exists
-			if _, err := k.GetKYCRecord(ctx, address); err != nil {
-				// Record deleted - try to clean up index
-				// We can't remove without knowing timestamp, so log for investigation
-				k.logger(ctx).Warn(
-					"stale expiration index entry detected",
-					"address", address,
-					"block_height", ctx.BlockHeight(),
-				)
-			}
-		}
-	}
+	// Note: Stale index entries (records deleted but index remaining)
+	// are automatically cleaned up by IterateExpiredRecords
 
 	// Log summary if any records processed
 	if processedCount > 0 {
