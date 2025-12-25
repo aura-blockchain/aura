@@ -36,10 +36,12 @@ func (suite *QueryServerTestSuite) TestAllPeersPagination() {
 	for i := 0; i < 15; i++ {
 		peerID := "peer" + string(rune('A'+i))
 		peer := types.PeerInfo{
-			PeerId:        peerID,
-			Address:       "192.168.1." + string(rune('1'+i)),
-			LastSeen:      time.Now().Unix(),
-			ConnectionQuality: 100,
+			PeerId:          peerID,
+			IpAddress:       "192.168.1." + string(rune('1'+i)),
+			ConnectionType:  "inbound",
+			ConnectedAt:     time.Now(),
+			ReputationScore: 100,
+			IsTrusted:       false,
 		}
 		suite.Keeper.SetPeerInfo(suite.SdkCtx, peer)
 	}
@@ -76,9 +78,11 @@ func (suite *QueryServerTestSuite) TestTrustedPeersPagination() {
 	for i := 0; i < 12; i++ {
 		peerID := "trusted" + string(rune('A'+i))
 		peer := types.TrustedPeer{
-			PeerId:    peerID,
-			PublicKey: []byte("pubkey" + string(rune('A'+i))),
-			AddedAt:   time.Now().Unix(),
+			PeerId:      peerID,
+			Address:     "192.168.1." + string(rune('1'+i)),
+			PublicKey:   []byte("pubkey" + string(rune('A'+i))),
+			Description: "test peer",
+			AddedAt:     time.Now(),
 		}
 		suite.Keeper.SetTrustedPeer(suite.SdkCtx, peer)
 	}
@@ -104,11 +108,12 @@ func (suite *QueryServerTestSuite) TestForkAlertsPagination() {
 	for i := 0; i < 10; i++ {
 		alertID := "fork" + string(rune('A'+i))
 		alert := types.ForkAlert{
-			AlertId:      alertID,
-			Height:       int64(100 + i),
-			DetectedAt:   time.Now().Unix(),
-			Resolved:     i%2 == 0, // Alternate resolved/unresolved
-			ConflictingBlockHashes: []string{"hash1", "hash2"},
+			AlertId:     alertID,
+			BlockHeight: int64(100 + i),
+			ChainAHash:  []byte("hash1"),
+			ChainBHash:  []byte("hash2"),
+			DetectedAt:  time.Now(),
+			Resolved:    i%2 == 0, // Alternate resolved/unresolved
 		}
 		suite.Keeper.SetForkAlert(suite.SdkCtx, alert)
 	}
@@ -136,10 +141,12 @@ func (suite *QueryServerTestSuite) TestPartitionAlertsPagination() {
 	for i := 0; i < 8; i++ {
 		alertID := "partition" + string(rune('A'+i))
 		alert := types.PartitionAlert{
-			AlertId:     alertID,
-			DetectedAt:  time.Now().Unix(),
-			Resolved:    i >= 5, // Last 3 resolved
-			AffectedPeers: []string{"peer1", "peer2"},
+			AlertId:        alertID,
+			ConnectedPeers: uint32(5),
+			ExpectedPeers:  uint32(10),
+			MissingPeerIds: []string{"peer1", "peer2"},
+			DetectedAt:     time.Now(),
+			Resolved:       i >= 5, // Last 3 resolved
 		}
 		suite.Keeper.SetPartitionAlert(suite.SdkCtx, alert)
 	}

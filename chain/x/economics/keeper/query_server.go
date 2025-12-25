@@ -87,13 +87,13 @@ func (qs queryServer) VestingSchedulesByAddress(goCtx context.Context, req *econ
 		return nil, errorsmod.Wrapf(types.ErrInvalidAddress, "invalid address: %s", err)
 	}
 
-	store := ctx.KVStore(qs.keeper.storeKey)
+	// Get all schedules for this address
+	allSchedules, err := qs.keeper.GetVestingSchedulesByAddress(ctx, addr)
+	if err != nil {
+		return nil, err
+	}
 
-	// Create prefix store for this address's vesting schedules
-	userVestingPrefix := append(types.UserVestingIndexPrefix, addr.Bytes()...)
-	userVestingStore := prefix.NewStore(store, userVestingPrefix)
-
-	// Calculate totals
+	// Calculate totals and prepare for pagination
 	currentTimeUnix, err := qs.keeper.GetCurrentTime(ctx)
 	if err != nil {
 		return nil, err
@@ -102,32 +102,47 @@ func (qs queryServer) VestingSchedulesByAddress(goCtx context.Context, req *econ
 
 	totalVested := math.ZeroInt()
 	totalVesting := math.ZeroInt()
-	var schedules []economicspb.VestingSchedule
 
-	pageRes, err := query.Paginate(userVestingStore, req.Pagination, func(key, value []byte) error {
-		// Get the schedule ID from the index
-		scheduleID := string(value)
-
-		// Retrieve the actual schedule
-		schedule, err := qs.keeper.GetVestingSchedule(ctx, scheduleID)
-		if err != nil {
-			return fmt.Errorf("failed to get vesting schedule %s: %w", scheduleID, err)
-		}
-
-		// Calculate vested amount for this schedule
+	for _, schedule := range allSchedules {
 		vestedAmount, err := qs.keeper.CalculateVestedAmount(schedule, currentTime)
 		if err != nil {
-			return fmt.Errorf("failed to calculate vested amount: %w", err)
+			return nil, err
 		}
 		totalVested = totalVested.Add(vestedAmount)
 		totalVesting = totalVesting.Add(schedule.OriginalAmount.Amount.Sub(vestedAmount))
-
-		schedules = append(schedules, *schedule)
-		return nil
-	})
-	if err != nil {
-		return nil, err
 	}
+
+	// Apply in-memory pagination
+	var schedules []economicspb.VestingSchedule
+	total := uint64(len(allSchedules))
+
+	// Parse pagination params
+	var offset, limit uint64
+	if req.Pagination != nil {
+		offset = req.Pagination.Offset
+		limit = req.Pagination.Limit
+		if limit == 0 {
+			limit = query.DefaultLimit
+		}
+	} else {
+		limit = query.DefaultLimit
+	}
+
+	// Apply offset and limit
+	start := offset
+	end := offset + limit
+	if end > total {
+		end = total
+	}
+
+	for i := start; i < end; i++ {
+		if allSchedules[i] != nil {
+			schedules = append(schedules, *allSchedules[i])
+		}
+	}
+
+	// Build pagination response
+	pageRes := &query.PageResponse{Total: total}
 
 	return &economicspb.QueryVestingSchedulesByAddressResponse{
 		Schedules:    schedules,
@@ -379,36 +394,52 @@ func (qs queryServer) VoteLocksByOwner(goCtx context.Context, req *economicspb.Q
 		return nil, errorsmod.Wrapf(types.ErrInvalidAddress, "invalid owner address: %s", err)
 	}
 
-	store := ctx.KVStore(qs.keeper.storeKey)
-
-	// Create prefix store for this owner's vote locks
-	userLockPrefix := append(types.UserVoteLockIndexPrefix, owner.Bytes()...)
-	userLockStore := prefix.NewStore(store, userLockPrefix)
+	// Get all locks for this owner
+	allLocks, err := qs.keeper.GetVoteLocksByOwner(ctx, owner)
+	if err != nil {
+		return nil, err
+	}
 
 	// Calculate totals
 	totalLocked := math.ZeroInt()
 	totalVotingPower := math.ZeroInt()
-	var locks []economicspb.VoteLock
 
-	pageRes, err := query.Paginate(userLockStore, req.Pagination, func(key, value []byte) error {
-		// Get the lock ID from the index
-		lockID := string(value)
-
-		// Retrieve the actual lock
-		lock, err := qs.keeper.GetVoteLock(ctx, lockID)
-		if err != nil {
-			return fmt.Errorf("failed to get vote lock %s: %w", lockID, err)
-		}
-
+	for _, lock := range allLocks {
 		totalLocked = totalLocked.Add(lock.Amount.Amount)
 		totalVotingPower = totalVotingPower.Add(lock.VotingPower)
-
-		locks = append(locks, *lock)
-		return nil
-	})
-	if err != nil {
-		return nil, err
 	}
+
+	// Apply in-memory pagination
+	var locks []economicspb.VoteLock
+	total := uint64(len(allLocks))
+
+	// Parse pagination params
+	var offset, limit uint64
+	if req.Pagination != nil {
+		offset = req.Pagination.Offset
+		limit = req.Pagination.Limit
+		if limit == 0 {
+			limit = query.DefaultLimit
+		}
+	} else {
+		limit = query.DefaultLimit
+	}
+
+	// Apply offset and limit
+	start := offset
+	end := offset + limit
+	if end > total {
+		end = total
+	}
+
+	for i := start; i < end; i++ {
+		if allLocks[i] != nil {
+			locks = append(locks, *allLocks[i])
+		}
+	}
+
+	// Build pagination response
+	pageRes := &query.PageResponse{Total: total}
 
 	return &economicspb.QueryVoteLocksByOwnerResponse{
 		Locks:            locks,
