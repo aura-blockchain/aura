@@ -6,9 +6,11 @@ package keeper
 import (
 	"context"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/query"
+
 	"github.com/aequitas/aura/chain/x/cryptography/types"
 	cryptoproto "github.com/aequitas/aura/proto/aura/cryptography/v1beta1"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 var _ cryptoproto.QueryServer = queryServer{}
@@ -124,10 +126,45 @@ func (qs queryServer) RandomSourceStatus(goCtx context.Context, req *cryptoproto
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	sources := qs.Keeper.GetRandomSourceStatus(ctx)
+	allSources := qs.Keeper.GetRandomSourceStatus(ctx)
+
+	// Apply in-memory pagination
+	total := uint64(len(allSources))
+	var offset, limit uint64
+	if req.Pagination != nil {
+		offset = req.Pagination.Offset
+		limit = req.Pagination.Limit
+		if limit == 0 {
+			limit = query.DefaultLimit
+		}
+	} else {
+		limit = query.DefaultLimit
+	}
+
+	// Calculate pagination bounds
+	start := offset
+	end := offset + limit
+	if end > total {
+		end = total
+	}
+	if start > total {
+		start = total
+	}
+
+	// Apply pagination
+	var paginatedSources []*cryptoproto.CryptoRandomSource
+	for i := start; i < end; i++ {
+		paginatedSources = append(paginatedSources, allSources[i])
+	}
+
+	// Ensure sources is never nil
+	if paginatedSources == nil {
+		paginatedSources = []*cryptoproto.CryptoRandomSource{}
+	}
 
 	return &cryptoproto.QueryRandomSourceStatusResponse{
-		Sources: sources,
+		Sources:    paginatedSources,
+		Pagination: &query.PageResponse{Total: total},
 	}, nil
 }
 

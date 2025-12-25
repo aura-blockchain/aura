@@ -1,6 +1,7 @@
 syntax = "proto3";
 package aura.aurabindings.v1beta1;
 
+import "cosmos/base/query/v1beta1/pagination.proto";
 import "google/protobuf/timestamp.proto";
 import "aura/vcregistry/v1beta1/types.proto";
 import "aura/compliance/v1beta1/compliance.proto";
@@ -78,12 +79,16 @@ message QueryUserVCs {
   string holder_address = 1;  // User's bech32 address
   aura.vcregistry.v1beta1.VCStatus status_filter = 2;  // Optional: filter by status
   aura.vcregistry.v1beta1.VCType type_filter = 3;  // Optional: filter by type
+  // pagination defines optional pagination parameters
+  cosmos.base.query.v1beta1.PageRequest pagination = 4;
 }
 
 // QueryUserVCsResponse returns list of VCs for a user
 message QueryUserVCsResponse {
   repeated VCRecord vcs = 1;  // List of matching VCs
   uint64 total_count = 2;  // Total number of VCs (before pagination)
+  // pagination defines the pagination response
+  cosmos.base.query.v1beta1.PageResponse pagination = 3;
 }
 
 // VCRecord is a simplified VC record for contract queries
@@ -156,11 +161,15 @@ message QueryGetDisclosurePolicyResponse {
 // QueryListPendingDisclosures lists pending disclosure requests for a user
 message QueryListPendingDisclosures {
   string holder_address = 1;  // User address
+  // pagination defines optional pagination parameters
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
 }
 
 // QueryListPendingDisclosuresResponse returns pending requests
 message QueryListPendingDisclosuresResponse {
   repeated DisclosureRequest requests = 1;  // Pending requests
+  // pagination defines the pagination response
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 // DisclosureRequest represents a pending disclosure request
@@ -267,11 +276,15 @@ message QueryCheckPermissionResponse {
 // QueryGetRoleAssignments gets all role assignments for a user
 message QueryGetRoleAssignments {
   string address = 1;  // User address
+  // pagination defines optional pagination parameters
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
 }
 
 // QueryGetRoleAssignmentsResponse returns role assignments
 message QueryGetRoleAssignmentsResponse {
   repeated RoleAssignment roles = 1;  // All role assignments
+  // pagination defines the pagination response
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 // RoleAssignment represents a role assigned to a user
@@ -392,12 +405,16 @@ message QueryListUserDataItems {
   string owner = 1;  // Owner address
   string type_filter = 2;  // Optional: filter by type
   string status_filter = 3;  // Optional: filter by status
+  // pagination defines optional pagination parameters
+  cosmos.base.query.v1beta1.PageRequest pagination = 4;
 }
 
 // QueryListUserDataItemsResponse returns list of data items
 message QueryListUserDataItemsResponse {
   repeated DataItemSummary items = 1;  // List of data items
   uint64 total_count = 2;  // Total count
+  // pagination defines the pagination response
+  cosmos.base.query.v1beta1.PageResponse pagination = 3;
 }
 
 // DataItemSummary is a summary of a data item

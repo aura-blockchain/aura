@@ -7,10 +7,13 @@ import (
 	"context"
 
 	sdkmath "cosmossdk.io/math"
+	"cosmossdk.io/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/query"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/aequitas/aura/chain/x/privacy/types"
 	privacypb "github.com/aequitas/aura/proto/aura/privacy/v1beta1"
 )
 
@@ -78,27 +81,38 @@ func (qs queryServer) MixingPool(goCtx context.Context, req *privacypb.QueryMixi
 	return &privacypb.QueryMixingPoolResponse{MixingPool: pool}, nil
 }
 
-// MixingPools queries all mixing pools
+// MixingPools queries all mixing pools with pagination
 func (qs queryServer) MixingPools(goCtx context.Context, req *privacypb.QueryMixingPoolsRequest) (*privacypb.QueryMixingPoolsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	pools := qs.Keeper.GetAllMixingPools(ctx)
+	store := ctx.KVStore(qs.Keeper.storeKey)
+	poolStore := prefix.NewStore(store, types.MixingPoolPrefix)
 
-	// Filter by status if provided
-	if req.Status != "" {
-		var filtered []*privacypb.MixingPool
-		for _, pool := range pools {
-			if pool.Status == req.Status {
-				filtered = append(filtered, pool)
-			}
+	// Initialize to empty slice (not nil) so response always has a valid array
+	pools := make([]*privacypb.MixingPool, 0)
+	pageRes, err := query.Paginate(poolStore, req.Pagination, func(key, value []byte) error {
+		var pool privacypb.MixingPool
+		if err := qs.Keeper.cdc.Unmarshal(value, &pool); err != nil {
+			return err
 		}
-		pools = filtered
+		// Filter by status if provided
+		if req.Status != "" && pool.Status != req.Status {
+			return nil
+		}
+		pools = append(pools, &pool)
+		return nil
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &privacypb.QueryMixingPoolsResponse{MixingPools: pools}, nil
+	return &privacypb.QueryMixingPoolsResponse{
+		MixingPools: pools,
+		Pagination:  pageRes,
+	}, nil
 }
 
 // ViewKey queries a specific view key
@@ -120,7 +134,7 @@ func (qs queryServer) ViewKey(goCtx context.Context, req *privacypb.QueryViewKey
 	return &privacypb.QueryViewKeyResponse{ViewKey: viewKey}, nil
 }
 
-// ViewKeys queries all view keys for an address
+// ViewKeys queries all view keys for an address with pagination
 func (qs queryServer) ViewKeys(goCtx context.Context, req *privacypb.QueryViewKeysRequest) (*privacypb.QueryViewKeysResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
@@ -131,9 +145,29 @@ func (qs queryServer) ViewKeys(goCtx context.Context, req *privacypb.QueryViewKe
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	viewKeys := qs.Keeper.GetViewKeys(ctx, req.Address)
+	store := ctx.KVStore(qs.Keeper.storeKey)
+	// Create prefix for this address's view keys
+	addressPrefix := append(types.ViewKeyPrefix, []byte(req.Address)...)
+	viewKeyStore := prefix.NewStore(store, addressPrefix)
 
-	return &privacypb.QueryViewKeysResponse{ViewKeys: viewKeys}, nil
+	// Initialize to empty slice (not nil) so response always has a valid array
+	viewKeys := make([]*privacypb.ViewKey, 0)
+	pageRes, err := query.Paginate(viewKeyStore, req.Pagination, func(key, value []byte) error {
+		var viewKey privacypb.ViewKey
+		if err := qs.Keeper.cdc.Unmarshal(value, &viewKey); err != nil {
+			return err
+		}
+		viewKeys = append(viewKeys, &viewKey)
+		return nil
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &privacypb.QueryViewKeysResponse{
+		ViewKeys:   viewKeys,
+		Pagination: pageRes,
+	}, nil
 }
 
 // VerifyZKProof verifies a zero-knowledge proof

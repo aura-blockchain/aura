@@ -46,6 +46,7 @@ func NetworkSecurityKeeper(t *testing.T) (keeper.Keeper, sdk.Context) {
 	k := keeper.NewKeeper(
 		cdc,
 		runtime.NewKVStoreService(storeKey),
+		storeKey,
 		authority,
 		logger,
 	)

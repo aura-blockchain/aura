@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package aura.cryptography.v1beta1;
 
+import "cosmos/base/query/v1beta1/pagination.proto";
 import "google/api/annotations.proto";
 import "aura/cryptography/v1beta1/cryptography.proto";
 
@@ -112,11 +113,16 @@ message QueryQuantumResistantKeyResponse {
 }
 
 // QueryRandomSourceStatusRequest is the request type for the Query/RandomSourceStatus RPC method
-message QueryRandomSourceStatusRequest {}
+message QueryRandomSourceStatusRequest {
+  // pagination defines optional pagination parameters
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
 
 // QueryRandomSourceStatusResponse is the response type for the Query/RandomSourceStatus RPC method
 message QueryRandomSourceStatusResponse {
   repeated CryptoRandomSource sources = 1;
+  // pagination defines the pagination response
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 // QueryCertificatePinRequest is the request type for the Query/CertificatePin RPC method

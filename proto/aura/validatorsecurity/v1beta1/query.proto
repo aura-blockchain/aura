@@ -3,6 +3,7 @@ package aura.validatorsecurity.v1beta1;
 
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
 import "aura/validatorsecurity/v1beta1/validator_security.proto";
 
 option go_package = "github.com/aequitas/aura/proto/aura/validatorsecurity/v1beta1";
@@ -64,42 +65,58 @@ message QueryValidatorSecurityInfoResponse {
   ValidatorSecurityInfo info = 1 [(gogoproto.nullable) = false];
 }
 
-message QueryAllValidatorsRequest {}
+message QueryAllValidatorsRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
 
 message QueryAllValidatorsResponse {
   repeated ValidatorSecurityInfo validators = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
-message QueryJailedValidatorsRequest {}
+message QueryJailedValidatorsRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
 
 message QueryJailedValidatorsResponse {
   repeated ValidatorSecurityInfo validators = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
-message QueryTombstonedValidatorsRequest {}
+message QueryTombstonedValidatorsRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
 
 message QueryTombstonedValidatorsResponse {
   repeated ValidatorSecurityInfo validators = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
-message QueryDoubleSignEvidencesRequest {}
+message QueryDoubleSignEvidencesRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
 
 message QueryDoubleSignEvidencesResponse {
   repeated DoubleSignEvidence evidences = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 message QueryValidatorAlertsRequest {
   string validator_address = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
 }
 
 message QueryValidatorAlertsResponse {
   repeated ValidatorAlert alerts = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 message QuerySentryNodesRequest {
   string validator_address = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
 }
 
 message QuerySentryNodesResponse {
   repeated SentryNodeInfo nodes = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }

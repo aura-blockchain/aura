@@ -7,6 +7,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/cosmos/cosmos-sdk/types/query"
+
 	"github.com/aequitas/aura/chain/x/monitoring/types"
 	monitoringpb "github.com/aequitas/aura/proto/aura/monitoring/v1beta1"
 )
@@ -57,56 +59,83 @@ func (qs *QueryServer) GetValidatorUptime(ctx context.Context, req *monitoringpb
 	}, nil
 }
 
-// GetAlerts returns active alerts, optionally filtered by severity and/or type
+// GetAlerts returns active alerts, optionally filtered by severity and/or type with pagination
 func (qs *QueryServer) GetAlerts(ctx context.Context, req *monitoringpb.QueryAlertsRequest) (*monitoringpb.QueryAlertsResponse, error) {
 	if req == nil {
 		req = &monitoringpb.QueryAlertsRequest{}
 	}
 
-	var alerts []*monitoringpb.Alert
+	var allAlerts []*types.Alert
+	var err error
 
-	// If both filters are empty, return all active alerts
+	// Fetch all matching alerts based on filters
 	if req.Severity == "" && req.Type == "" {
-		typeAlerts, err := qs.keeper.GetActiveAlerts(ctx)
+		allAlerts, err = qs.keeper.GetActiveAlerts(ctx)
 		if err != nil {
 			return nil, err
 		}
-		// Convert types.Alert to monitoringpb.Alert
-		alerts = convertAlertsToProto(typeAlerts)
 	} else if req.Severity != "" && req.Type != "" {
 		// Filter by both severity and type
-		allAlerts, err := qs.keeper.GetActiveAlerts(ctx)
+		allAlerts, err = qs.keeper.GetActiveAlerts(ctx)
 		if err != nil {
 			return nil, err
 		}
+		var filtered []*types.Alert
 		for _, alert := range allAlerts {
 			if string(alert.Severity) == req.Severity && string(alert.Type) == req.Type {
-				alerts = append(alerts, convertAlertToProto(alert))
+				filtered = append(filtered, alert)
 			}
 		}
+		allAlerts = filtered
 	} else if req.Severity != "" {
-		// Filter by severity only
-		typeAlerts, err := qs.keeper.GetAlertsBySeverity(ctx, types.AlertSeverity(req.Severity))
+		allAlerts, err = qs.keeper.GetAlertsBySeverity(ctx, types.AlertSeverity(req.Severity))
 		if err != nil {
 			return nil, err
 		}
-		alerts = convertAlertsToProto(typeAlerts)
 	} else if req.Type != "" {
-		// Filter by type only
-		typeAlerts, err := qs.keeper.GetAlertsByType(ctx, types.AlertType(req.Type))
+		allAlerts, err = qs.keeper.GetAlertsByType(ctx, types.AlertType(req.Type))
 		if err != nil {
 			return nil, err
 		}
-		alerts = convertAlertsToProto(typeAlerts)
+	}
+
+	// Apply in-memory pagination
+	total := uint64(len(allAlerts))
+	var offset, limit uint64
+	if req.Pagination != nil {
+		offset = req.Pagination.Offset
+		limit = req.Pagination.Limit
+		if limit == 0 {
+			limit = query.DefaultLimit
+		}
+	} else {
+		limit = query.DefaultLimit
+	}
+
+	// Calculate pagination bounds
+	start := offset
+	end := offset + limit
+	if end > total {
+		end = total
+	}
+	if start > total {
+		start = total
+	}
+
+	// Apply pagination
+	var paginatedAlerts []*monitoringpb.Alert
+	for i := start; i < end; i++ {
+		paginatedAlerts = append(paginatedAlerts, convertAlertToProto(allAlerts[i]))
 	}
 
 	// Ensure alerts is never nil, return empty slice instead
-	if alerts == nil {
-		alerts = []*monitoringpb.Alert{}
+	if paginatedAlerts == nil {
+		paginatedAlerts = []*monitoringpb.Alert{}
 	}
 
 	return &monitoringpb.QueryAlertsResponse{
-		Alerts: alerts,
+		Alerts:     paginatedAlerts,
+		Pagination: &query.PageResponse{Total: total},
 	}, nil
 }
 

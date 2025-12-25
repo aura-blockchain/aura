@@ -3,6 +3,7 @@ syntax = "proto3";
 package aura.privacy.v1beta1;
 
 import "aura/privacy/v1beta1/privacy.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
 import "gogoproto/gogo.proto";
 
 option go_package = "github.com/aequitas/aura/proto/aura/privacy/v1beta1";
@@ -57,12 +58,16 @@ message QueryMixingPoolResponse {
 message QueryMixingPoolsRequest {
   // status filters pools by status (optional)
   string status = 1;
+  // pagination defines optional pagination parameters
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
 }
 
 // QueryMixingPoolsResponse is the response
 message QueryMixingPoolsResponse {
   // mixing_pools are all matching pools
   repeated MixingPool mixing_pools = 1;
+  // pagination defines the pagination response
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 // QueryViewKeyRequest is the request for a specific view key
@@ -81,12 +86,16 @@ message QueryViewKeyResponse {
 message QueryViewKeysRequest {
   // address is the address to query
   string address = 1;
+  // pagination defines optional pagination parameters
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
 }
 
 // QueryViewKeysResponse is the response
 message QueryViewKeysResponse {
   // view_keys are all keys for the address
   repeated ViewKey view_keys = 1;
+  // pagination defines the pagination response
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 // QueryVerifyZKProofRequest is the request to verify a ZK proof

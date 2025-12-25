@@ -5,6 +5,7 @@ option go_package = "github.com/aequitas/aura/proto/aura/security/v1beta1";
 
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
 import "aura/security/v1beta1/security.proto";
 
 // Query defines the gRPC querier service for the consolidated security module
@@ -277,16 +278,22 @@ message QueryPeerInfoResponse {
   PeerInfo peer = 1 [(gogoproto.nullable) = false];
 }
 
-message QueryAllPeersRequest {}
+message QueryAllPeersRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
 
 message QueryAllPeersResponse {
   repeated PeerInfo peers = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
-message QueryTrustedPeersRequest {}
+message QueryTrustedPeersRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
 
 message QueryTrustedPeersResponse {
   repeated TrustedPeer peers = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 message QueryPeerReputationRequest {
@@ -313,18 +320,22 @@ message QueryMempoolStatsResponse {
 
 message QueryForkAlertsRequest {
   bool include_resolved = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
 }
 
 message QueryForkAlertsResponse {
   repeated ForkAlert alerts = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 message QueryPartitionAlertsRequest {
   bool include_resolved = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
 }
 
 message QueryPartitionAlertsResponse {
   repeated PartitionAlert alerts = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 message QueryNetworkHealthRequest {}
@@ -351,43 +362,54 @@ message QueryValidatorSecurityInfoResponse {
   ValidatorSecurityInfo info = 1 [(gogoproto.nullable) = false];
 }
 
-message QueryAllValidatorSecurityInfoRequest {}
+message QueryAllValidatorSecurityInfoRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
 
 message QueryAllValidatorSecurityInfoResponse {
   repeated ValidatorSecurityInfo validators = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 message QueryValidatorAlertsRequest {
   string validator_address = 1;
   bool include_acknowledged = 2;
+  cosmos.base.query.v1beta1.PageRequest pagination = 3;
 }
 
 message QueryValidatorAlertsResponse {
   repeated ValidatorAlert alerts = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 message QueryDoubleSignEvidencesRequest {
   string validator_address = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
 }
 
 message QueryDoubleSignEvidencesResponse {
   repeated DoubleSignEvidence evidences = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 message QueryDowntimeInfractionsRequest {
   string validator_address = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
 }
 
 message QueryDowntimeInfractionsResponse {
   repeated DowntimeInfraction infractions = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 message QuerySentryNodesRequest {
   string validator_address = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
 }
 
 message QuerySentryNodesResponse {
   repeated SentryNodeInfo sentry_nodes = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 // ========================================
@@ -481,30 +503,33 @@ message QueryIncidentResponse {
 message QueryAllIncidentsRequest {
   bool include_resolved = 1;
   IncidentSeverity min_severity = 2;
+  cosmos.base.query.v1beta1.PageRequest pagination = 3;
 }
 
 message QueryAllIncidentsResponse {
   repeated Incident incidents = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 message QueryAuditLogRequest {
   string event_type = 1;
   string actor = 2;
-  int64 limit = 3;
-  int64 offset = 4;
+  cosmos.base.query.v1beta1.PageRequest pagination = 3;
 }
 
 message QueryAuditLogResponse {
   repeated AuditLogEntry entries = 1 [(gogoproto.nullable) = false];
-  int64 total = 2;
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 message QueryResponseActionsRequest {
   string incident_id = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
 }
 
 message QueryResponseActionsResponse {
   repeated ResponseAction actions = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 // ========================================
@@ -519,10 +544,13 @@ message QueryKeyRotationScheduleResponse {
   KeyRotationSchedule schedule = 1 [(gogoproto.nullable) = false];
 }
 
-message QueryAllKeyRotationSchedulesRequest {}
+message QueryAllKeyRotationSchedulesRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
 
 message QueryAllKeyRotationSchedulesResponse {
   repeated KeyRotationSchedule schedules = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 message QueryThresholdSchemeRequest {
@@ -566,10 +594,12 @@ message QueryMixingPoolResponse {
 
 message QueryAllMixingPoolsRequest {
   string status = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
 }
 
 message QueryAllMixingPoolsResponse {
   repeated MixingPool pools = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 message QueryStealthAddressRequest {

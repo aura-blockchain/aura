@@ -1,6 +1,7 @@
 syntax = "proto3";
 package aura.monitoring.v1beta1;
 
+import "cosmos/base/query/v1beta1/pagination.proto";
 import "google/api/annotations.proto";
 import "aura/monitoring/v1beta1/monitoring.proto";
 
@@ -75,11 +76,15 @@ message ValidatorUptime {
 message QueryAlertsRequest {
   string severity = 1;
   string type = 2;
+  // pagination defines optional pagination parameters
+  cosmos.base.query.v1beta1.PageRequest pagination = 3;
 }
 
 // QueryAlertsResponse is the response with active alerts
 message QueryAlertsResponse {
   repeated Alert alerts = 1;
+  // pagination defines the pagination response
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 // Alert represents a monitoring alert
