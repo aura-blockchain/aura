@@ -1,3 +1,6 @@
+// Copyright 2024-2025 Aequitas Foundation
+// SPDX-License-Identifier: Apache-2.0
+
 // Package testutil provides helpers for creating correctly-typed test data.
 //
 // IMPORTANT: This project uses gogoproto annotations that transform proto types.

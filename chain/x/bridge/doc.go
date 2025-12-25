@@ -1,3 +1,6 @@
+// Copyright 2024-2025 Aequitas Foundation
+// SPDX-License-Identifier: Apache-2.0
+
 // Package bridge implements secure cross-chain asset transfer functionality for the AURA blockchain.
 //
 // The bridge module enables trustless asset transfers between AURA and other blockchain networks

@@ -1,3 +1,6 @@
+// Copyright 2024-2025 Aequitas Foundation
+// SPDX-License-Identifier: Apache-2.0
+
 package inclusionroutines
 
 //lint:file-ignore SA1019 -- module still registers legacy invariants until SDK migration

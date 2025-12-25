@@ -1,3 +1,6 @@
+// Copyright 2024-2025 Aequitas Foundation
+// SPDX-License-Identifier: Apache-2.0
+
 package keeper
 
 import (
@@ -49,10 +52,18 @@ func normalizeChain(chain string) string {
 //   - Cryptographic verification using validator's registered public key
 //   - Minimum required threshold enforced (never less than MinAllowedConfirmations)
 //
+// SECURITY FIX: Validators must sign messages that include their validator address.
+// This prevents order-dependency ambiguity where the same signature could match
+// multiple validators. The message format must include the validator address:
+//   "sourceChain:burnTxHash:sender:amount:denom:validator:validatorAddr"
+//
+// Each validator signs a unique message (with their own address), so each signature
+// can only match one specific validator, eliminating ambiguity.
+//
 // Parameters:
 //   - ctx: SDK context for state access
 //   - signatures: Raw signature bytes from validators
-//   - msgHash: Hash of the message that was signed
+//   - msgBase: Base message string (without validator address suffix)
 //   - minRequired: Minimum number of valid signatures required
 //
 // Returns:
@@ -61,7 +72,7 @@ func normalizeChain(chain string) string {
 func (ms msgServer) verifyRawValidatorSignatures(
 	ctx sdk.Context,
 	signatures [][]byte,
-	msgHash []byte,
+	msgBase string,
 	minRequired uint64,
 ) (validCount int, err error) {
 	if len(signatures) < int(minRequired) {
@@ -106,8 +117,9 @@ func (ms msgServer) verifyRawValidatorSignatures(
 			continue
 		}
 
-		// Try to match this signature against ACTIVE validators only
-		// Iterate in deterministic order to ensure consensus
+		// SECURITY FIX: Try to match this signature against ACTIVE validators
+		// Each validator should have signed a message that includes their own address,
+		// so we try each validator's specific message format
 		for _, addr := range sortedValidatorAddrs {
 			validator := activeValidatorMap[addr]
 			// Skip if validator already matched (prevent duplicate counting)
@@ -132,8 +144,13 @@ func (ms msgServer) verifyRawValidatorSignatures(
 				continue
 			}
 
-			// CRITICAL: Verify the cryptographic signature
-			if pubKey.VerifySignature(msgHash, sigBytes) {
+			// SECURITY FIX: Build validator-specific message including their address
+			// This ensures each signature can only match one specific validator
+			msgWithValidator := fmt.Sprintf("%s:validator:%s", msgBase, addr)
+			msgHash := sha256.Sum256([]byte(msgWithValidator))
+
+			// CRITICAL: Verify the cryptographic signature against validator-specific message
+			if pubKey.VerifySignature(msgHash[:], sigBytes) {
 				// Valid signature from active validator found
 				usedValidators[addr] = true
 				validCount++
@@ -196,7 +213,10 @@ func (ms msgServer) LockTokens(goCtx context.Context, msg *bridgepb.MsgLockToken
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 	}
-	transferID := ms.Keeper.nextTransferID(ctx)
+	transferID, err := ms.Keeper.nextTransferID(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
 	transfer := &bridgepb.CrossChainTransfer{
 		TransferId:            transferID,
 		SourceChain:           sourceChainAura,
@@ -264,7 +284,11 @@ func (ms msgServer) MintTokens(goCtx context.Context, msg *bridgepb.MsgMintToken
 	}
 	transferID, hasIndex := ms.Keeper.transferIDByHash(ctx, msg.SourceTxHash)
 	if !hasIndex {
-		transferID = ms.Keeper.nextTransferID(ctx)
+		var err error
+		transferID, err = ms.Keeper.nextTransferID(ctx)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
 	}
 	transfer, found := ms.Keeper.getTransfer(ctx, transferID)
 	if !found {
@@ -692,7 +716,10 @@ func (ms msgServer) BurnTokens(goCtx context.Context, msg *bridgepb.MsgBurnToken
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 	}
-	transferID := ms.Keeper.nextTransferID(ctx)
+	transferID, err := ms.Keeper.nextTransferID(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
 	transfer := &bridgepb.CrossChainTransfer{
 		TransferId:  transferID,
 		SourceChain: sourceChainAura,

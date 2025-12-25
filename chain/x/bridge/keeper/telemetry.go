@@ -1,3 +1,6 @@
+// Copyright 2024-2025 Aequitas Foundation
+// SPDX-License-Identifier: Apache-2.0
+
 package keeper
 
 //lint:file-ignore U1000 // telemetry metrics reserved for observability wiring; may be unused in tests

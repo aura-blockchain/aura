@@ -1,3 +1,6 @@
+// Copyright 2024-2025 Aequitas Foundation
+// SPDX-License-Identifier: Apache-2.0
+
 package monitoring
 
 //lint:file-ignore SA1019 -- monitoring module still registers legacy invariants until SDK migration

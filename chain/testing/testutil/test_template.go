@@ -1,3 +1,6 @@
+// Copyright 2024-2025 Aequitas Foundation
+// SPDX-License-Identifier: Apache-2.0
+
 package testutil
 
 // This file provides test templates for generating comprehensive tests for all modules

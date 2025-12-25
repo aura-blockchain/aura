@@ -1,3 +1,6 @@
+// Copyright 2024-2025 Aequitas Foundation
+// SPDX-License-Identifier: Apache-2.0
+
 package types
 
 import (
@@ -85,6 +88,10 @@ var (
 
 	// Signature rate limiting (address -> attempt count + window)
 	SignatureRateLimitPrefix = []byte{0x25}
+
+	// Processing source hashes (atomic check-and-set for replay prevention)
+	// Separate from ProcessedSourceHashPrefix to distinguish "processing" from "completed"
+	ProcessingSourceHashPrefix = []byte{0x26}
 )
 
 // TransferKey returns the store key for a cross-chain transfer
@@ -139,6 +146,14 @@ func SwapKey(swapID string) []byte {
 func ProcessedSourceHashKey(sourceChain, sourceHash string) []byte {
 	compositeKey := sourceChain + ":" + sourceHash
 	return append(ProcessedSourceHashPrefix, []byte(compositeKey)...)
+}
+
+// ProcessingSourceHashKey returns the store key for a source hash being processed
+// Format: ProcessingSourceHashPrefix + sourceChain:sourceHash
+// This is used for atomic check-and-set to prevent race conditions
+func ProcessingSourceHashKey(sourceChain, sourceHash string) []byte {
+	compositeKey := sourceChain + ":" + sourceHash
+	return append(ProcessingSourceHashPrefix, []byte(compositeKey)...)
 }
 
 // SignatureSetKey returns the store key for a signature set hash

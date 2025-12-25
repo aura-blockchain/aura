@@ -1,3 +1,6 @@
+// Copyright 2024-2025 Aequitas Foundation
+// SPDX-License-Identifier: Apache-2.0
+
 // Package types defines the types for the consolidated security module.
 // This module combines: networksecurity, validatorsecurity, walletsecurity,
 // incidentresponse, cryptography, and privacy into a unified security layer.

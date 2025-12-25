@@ -1,3 +1,6 @@
+// Copyright 2024-2025 Aequitas Foundation
+// SPDX-License-Identifier: Apache-2.0
+
 package keeper
 
 import (
@@ -116,7 +119,8 @@ func (k Keeper) store(ctx sdk.Context) storetypes.KVStore {
 //
 // Returns:
 //   - string: Deterministic transfer ID in format "transfer-{id}"
-func (k Keeper) nextTransferID(ctx sdk.Context) string {
+//   - error: Error if unable to generate unique ID after max retries
+func (k Keeper) nextTransferID(ctx sdk.Context) (string, error) {
 	blockHeight := ctx.BlockHeight()
 	headerHash := ctx.HeaderHash()
 	txBytes := ctx.TxBytes()
@@ -145,25 +149,32 @@ func (k Keeper) nextTransferID(ctx sdk.Context) string {
 
 	// DEFENSIVE: Check for duplicate IDs in store (extremely unlikely with SHA256)
 	// This is a safety check to detect any potential collisions
-	idStr := fmt.Sprintf("transfer-%d", transferID)
-	if _, found := k.getTransfer(ctx, idStr); found {
-		// CRITICAL: If collision detected, append nonce and rehash
+	// If collision detected, retry with additional entropy up to maxRetries
+	const maxRetries = 10
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		idStr := fmt.Sprintf("transfer-%d", transferID)
+		if _, found := k.getTransfer(ctx, idStr); !found {
+			return idStr, nil // Unique ID found
+		}
+
+		// CRITICAL: Collision detected, add entropy and retry
 		// This should never happen with SHA256 but we handle it defensively
 		ctx.Logger().Error("RARE: Transfer ID collision detected, regenerating with nonce",
 			"transfer_id", idStr,
-			"block_height", blockHeight)
+			"block_height", blockHeight,
+			"attempt", attempt+1,
+			"max_retries", maxRetries)
 
-		// Add timestamp nonce and regenerate
+		// Add timestamp nonce with attempt number for additional entropy
 		nonceBytes := make([]byte, 8)
-		binary.BigEndian.PutUint64(nonceBytes, uint64(ctx.BlockTime().UnixNano()))
+		binary.BigEndian.PutUint64(nonceBytes, uint64(ctx.BlockTime().UnixNano()+int64(attempt)))
 		hashInput = append(hashInput, nonceBytes...)
 
 		hash = sha256.Sum256(hashInput)
 		transferID = binary.BigEndian.Uint64(hash[:8])
-		idStr = fmt.Sprintf("transfer-%d", transferID)
 	}
 
-	return idStr
+	return "", fmt.Errorf("failed to generate unique transfer ID after %d attempts", maxRetries)
 }
 
 // extractBlockHeightFromTransferID extracts information from a deterministic transfer ID.
@@ -1448,6 +1459,105 @@ func (k Keeper) MarkSourceHashProcessed(ctx sdk.Context, sourceChain, sourceHash
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			"source_hash_marked_processed",
+			sdk.NewAttribute("source_chain", sourceChain),
+			sdk.NewAttribute("source_hash", sourceHash),
+			sdk.NewAttribute("block_height", fmt.Sprintf("%d", ctx.BlockHeight())),
+		),
+	)
+}
+
+// TryMarkSourceHashProcessing atomically checks if a source hash is already processed or processing,
+// and if not, marks it as currently being processed. This prevents race conditions where multiple
+// transactions with the same burn hash in the same block could all pass the replay check.
+//
+// This implements an atomic check-and-set pattern that is critical for preventing replay attacks
+// in scenarios where multiple transactions are submitted in the same block.
+//
+// Parameters:
+//   - ctx: SDK context for state access
+//   - sourceChain: Chain identifier where the transaction originated
+//   - sourceHash: Transaction hash from the source chain
+//
+// Returns:
+//   - bool: true if successfully marked as processing (safe to proceed), false if already processed/processing
+//
+// Security: This function MUST be called at the very start of unlock processing, before any
+// expensive validation or signature verification. The processing marker will be converted to
+// a permanent processed marker by FinalizeSourceHashProcessing after successful completion.
+func (k Keeper) TryMarkSourceHashProcessing(ctx sdk.Context, sourceChain, sourceHash string) bool {
+	// Normalize inputs to prevent bypass via case sensitivity
+	sourceChain = strings.ToLower(strings.TrimSpace(sourceChain))
+	sourceHash = strings.ToLower(strings.TrimSpace(sourceHash))
+
+	if sourceChain == "" || sourceHash == "" {
+		return false
+	}
+
+	store := k.store(ctx)
+
+	// Check if already fully processed (permanent marker)
+	processedKey := types.ProcessedSourceHashKey(sourceChain, sourceHash)
+	if store.Has(processedKey) {
+		return false // Already processed, reject
+	}
+
+	// Check if currently being processed by another tx in this block
+	processingKey := types.ProcessingSourceHashKey(sourceChain, sourceHash)
+	if store.Has(processingKey) {
+		return false // Already being processed, reject to prevent race
+	}
+
+	// Atomically mark as processing
+	// This ensures only one transaction can proceed past this point
+	store.Set(processingKey, []byte{1})
+
+	// Emit event for audit trail
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			"source_hash_marked_processing",
+			sdk.NewAttribute("source_chain", sourceChain),
+			sdk.NewAttribute("source_hash", sourceHash),
+			sdk.NewAttribute("block_height", fmt.Sprintf("%d", ctx.BlockHeight())),
+		),
+	)
+
+	return true // Safe to proceed with processing
+}
+
+// FinalizeSourceHashProcessing converts a processing marker to a permanent processed marker
+// and removes the temporary processing flag. This should be called after successful completion
+// of the unlock operation.
+//
+// Parameters:
+//   - ctx: SDK context for state access
+//   - sourceChain: Chain identifier where the transaction originated
+//   - sourceHash: Transaction hash from the source chain
+//
+// Security: This function completes the atomic check-and-set pattern by making the
+// replay protection permanent. After this call, the source hash can never be processed again.
+func (k Keeper) FinalizeSourceHashProcessing(ctx sdk.Context, sourceChain, sourceHash string) {
+	// Normalize inputs to ensure consistent storage
+	sourceChain = strings.ToLower(strings.TrimSpace(sourceChain))
+	sourceHash = strings.ToLower(strings.TrimSpace(sourceHash))
+
+	if sourceChain == "" || sourceHash == "" {
+		return
+	}
+
+	store := k.store(ctx)
+
+	// Set permanent processed marker
+	processedKey := types.ProcessedSourceHashKey(sourceChain, sourceHash)
+	store.Set(processedKey, []byte{1})
+
+	// Remove temporary processing marker
+	processingKey := types.ProcessingSourceHashKey(sourceChain, sourceHash)
+	store.Delete(processingKey)
+
+	// Emit event for audit trail
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			"source_hash_processing_finalized",
 			sdk.NewAttribute("source_chain", sourceChain),
 			sdk.NewAttribute("source_hash", sourceHash),
 			sdk.NewAttribute("block_height", fmt.Sprintf("%d", ctx.BlockHeight())),

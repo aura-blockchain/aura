@@ -1,3 +1,6 @@
+// Copyright 2024-2025 Aequitas Foundation
+// SPDX-License-Identifier: Apache-2.0
+
 package keeper
 
 import (
@@ -476,12 +479,21 @@ func (k Keeper) GetOrder(ctx sdk.Context, orderID string) *types.SwapOrder {
 	return &order
 }
 
-// SetOrder stores an order
+// SetOrder stores an order and maintains status index
 func (k Keeper) SetOrder(ctx sdk.Context, order *types.SwapOrder) error {
 	store := ctx.KVStore(k.storeKey)
 	key := types.OrderKey(order.OrderId)
 
 	isNew := store.Get(key) == nil
+
+	// If updating existing order, check if status changed
+	var oldStatus *types.SwapOrderStatus
+	if !isNew {
+		oldOrder := k.GetOrder(ctx, order.OrderId)
+		if oldOrder != nil && oldOrder.Status != order.Status {
+			oldStatus = &oldOrder.Status
+		}
+	}
 
 	bz, err := k.cdc.Marshal(order)
 	if err != nil {
@@ -491,12 +503,26 @@ func (k Keeper) SetOrder(ctx sdk.Context, order *types.SwapOrder) error {
 
 	if isNew {
 		k.indexUserOrder(ctx, order)
+		// Add to status index
+		k.addOrderToStatusIndex(ctx, order)
+	} else if oldStatus != nil {
+		// Status changed - remove old index entry and add new one
+		k.removeOrderFromStatusIndex(ctx, *oldStatus, order.OrderId)
+		k.addOrderToStatusIndex(ctx, order)
 	}
+
 	return nil
 }
 
-// DeleteOrder removes an order
+// DeleteOrder removes an order and its status index entry
 func (k Keeper) DeleteOrder(ctx sdk.Context, orderID string) {
+	// Get order first to know its status
+	order := k.GetOrder(ctx, orderID)
+	if order != nil {
+		// Remove from status index
+		k.removeOrderFromStatusIndex(ctx, order.Status, orderID)
+	}
+
 	store := ctx.KVStore(k.storeKey)
 	key := types.OrderKey(orderID)
 	store.Delete(key)
@@ -523,18 +549,28 @@ func (k Keeper) GetAllOrders(ctx sdk.Context) []*types.SwapOrder {
 	return orders
 }
 
-// GetOrdersByStatus returns orders filtered by status
+// GetOrdersByStatus returns orders filtered by status using O(k) status index
+// where k = number of orders with the given status
 func (k Keeper) GetOrdersByStatus(ctx sdk.Context, status types.SwapOrderStatus) []*types.SwapOrder {
-	allOrders := k.GetAllOrders(ctx)
+	store := ctx.KVStore(k.storeKey)
+	prefix := types.OrderStatusPrefixByStatus(status)
+	iterator := storetypes.KVStorePrefixIterator(store, prefix)
+	defer iterator.Close()
 
-	filtered := []*types.SwapOrder{}
-	for _, order := range allOrders {
-		if order.Status == status {
-			filtered = append(filtered, order)
+	orders := make([]*types.SwapOrder, 0, 64)
+	for ; iterator.Valid(); iterator.Next() {
+		// Extract orderID from key (skip prefix + status byte)
+		keyLen := len(prefix)
+		orderID := string(iterator.Key()[keyLen:])
+
+		// Fetch full order from main store
+		order := k.GetOrder(ctx, orderID)
+		if order != nil {
+			orders = append(orders, order)
 		}
 	}
 
-	return filtered
+	return orders
 }
 
 // GetOrdersByUser returns all orders created by a user

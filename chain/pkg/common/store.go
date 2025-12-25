@@ -1,3 +1,6 @@
+// Copyright 2024-2025 Aequitas Foundation
+// SPDX-License-Identifier: Apache-2.0
+
 //lint:file-ignore SA1019 -- generic helpers intentionally use codec.ProtoMarshaler until SDK codecs are upgraded
 package common
 

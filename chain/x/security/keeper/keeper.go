@@ -1,3 +1,6 @@
+// Copyright 2024-2025 Aequitas Foundation
+// SPDX-License-Identifier: Apache-2.0
+
 // Package keeper implements the consolidated security module keeper.
 // This keeper combines functionality from: networksecurity, validatorsecurity,
 // walletsecurity, incidentresponse, cryptography, and privacy modules.

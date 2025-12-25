@@ -1,3 +1,6 @@
+// Copyright 2024-2025 Aequitas Foundation
+// SPDX-License-Identifier: Apache-2.0
+
 // Package auth provides comprehensive authentication and authorization functionality for the AURA blockchain.
 //
 // The auth module implements role-based access control (RBAC), multi-signature wallets, time-locked

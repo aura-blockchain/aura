@@ -1,3 +1,6 @@
+// Copyright 2024-2025 Aequitas Foundation
+// SPDX-License-Identifier: Apache-2.0
+
 package types
 
 import "encoding/binary"
@@ -62,6 +65,9 @@ var (
 
 	// Order expiration index (time-sorted for efficient cleanup)
 	OrderExpirationPrefix = []byte{0x0E}
+
+	// Order status index (status-sorted for efficient filtering)
+	OrderStatusPrefix = []byte{0x0F}
 )
 
 // PoolKey returns the store key for a liquidity pool
@@ -172,4 +178,18 @@ func OrderExpirationTimePrefix(maxTime int64) []byte {
 	binary.BigEndian.PutUint64(tsBytes, uint64(maxTime))
 	key = append(key, tsBytes...)
 	return key
+}
+
+// OrderStatusKey returns the store key for an order in the status index
+// Key format: OrderStatusPrefix + status (1 byte) + orderID
+// This allows efficient iteration over orders by status - O(k) where k = orders with specific status
+func OrderStatusKey(status SwapOrderStatus, orderID string) []byte {
+	key := append(OrderStatusPrefix, byte(status))
+	key = append(key, []byte(orderID)...)
+	return key
+}
+
+// OrderStatusPrefixByStatus returns the prefix for all orders with a given status
+func OrderStatusPrefixByStatus(status SwapOrderStatus) []byte {
+	return append(OrderStatusPrefix, byte(status))
 }

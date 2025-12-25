@@ -1,3 +1,6 @@
+// Copyright 2024-2025 Aequitas Foundation
+// SPDX-License-Identifier: Apache-2.0
+
 package privacy
 
 // This file implements OFF-CHAIN memo encryption utilities for privacy-preserving messages.

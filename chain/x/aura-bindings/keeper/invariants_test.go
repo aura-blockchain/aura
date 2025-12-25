@@ -1,3 +1,6 @@
+// Copyright 2024-2025 Aequitas Foundation
+// SPDX-License-Identifier: Apache-2.0
+
 package keeper_test
 
 //nolint:staticcheck // Invariants use deprecated SDK types until crisis module is removed

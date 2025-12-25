@@ -1,3 +1,6 @@
+// Copyright 2024-2025 Aequitas Foundation
+// SPDX-License-Identifier: Apache-2.0
+
 // Package types provides WASM module type definitions.
 // This file re-exports generated protobuf types from the proto package
 // for use throughout the WASM module implementation.

@@ -398,7 +398,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ## License
 
-MIT License - See [LICENSE](LICENSE) file for complete text.
+Apache License 2.0 - See [LICENSE](LICENSE) file for complete text.
 
 ## Contact & Support
 
