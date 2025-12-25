@@ -236,8 +236,12 @@ func (k *Keeper) InitGenesis(ctx sdk.Context, gs *types.GenesisState) error {
 		return fmt.Errorf("failed to set audit log counter: %w", err)
 	}
 
-	// Note: NextChangeRequestId not in proto yet, defaulting to 1
-	if err := store.Set(types.ChangeRequestCounterPrefix, sdk.Uint64ToBigEndian(1)); err != nil {
+	// Set change request counter from genesis (defaults to 1 if not set)
+	nextChangeReqID := gs.NextChangeRequestId
+	if nextChangeReqID == 0 {
+		nextChangeReqID = 1
+	}
+	if err := store.Set(types.ChangeRequestCounterPrefix, sdk.Uint64ToBigEndian(nextChangeReqID)); err != nil {
 		return fmt.Errorf("failed to set change request counter: %w", err)
 	}
 
@@ -363,7 +367,11 @@ func (k *Keeper) ExportGenesis(ctx sdk.Context) (*types.GenesisState, error) {
 		nextAuditLogID = sdk.BigEndianToUint64(bz)
 	}
 
-	// nextChangeRequestID counter skipped - not in proto yet
+	// Get change request counter
+	nextChangeRequestID := uint64(1)
+	if bz, err := store.Get(types.ChangeRequestCounterPrefix); err == nil && bz != nil {
+		nextChangeRequestID = sdk.BigEndianToUint64(bz)
+	}
 
 	// Convert pointer slices to value slices for GenesisState
 	rolesVal := make([]types.Role, len(roles))
@@ -466,5 +474,6 @@ func (k *Keeper) ExportGenesis(ctx sdk.Context) (*types.GenesisState, error) {
 		ChangeHistory:            changeHistoryVal,
 		IdentityChangesSuspended: suspended,
 		NextAuditLogId:           nextAuditLogID,
+		NextChangeRequestId:      nextChangeRequestID,
 	}, nil
 }

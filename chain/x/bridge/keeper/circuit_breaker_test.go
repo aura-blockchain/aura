@@ -348,32 +348,56 @@ func TestCircuitBreaker_HourlyMintTracking(t *testing.T) {
 }
 
 // TestCircuitBreaker_MintTokensAutopauses verifies that MintTokens operation
-// triggers auto-pause when threshold is exceeded.
+// triggers auto-pause when threshold is exceeded after attestation threshold is reached.
+// SECURITY FIX 2025-12-25: Auto-pause now happens atomically with minting after attestation
+// threshold is reached, preventing race conditions where concurrent validators bypass limits.
 func TestCircuitBreaker_MintTokensAutopauses(t *testing.T) {
 	k, input := setupKeeperForCircuitBreaker(t)
 	ctx := input.Ctx
 	ms := keeper.NewMsgServerImpl(k)
 
+	// Add supported chain
+	require.NoError(t, k.AddSupportedChain(ctx, types.ChainConfig{ChainId: "paw", Enabled: true}))
+
 	// Enable auto-pause with low threshold
 	params := k.GetParams(ctx)
 	params.AutoPauseEnabled = true
-	params.AutoPauseThreshold = "1000000" // 1 million threshold
+	params.AutoPauseThreshold = "1000000"  // 1 million threshold
+	params.MinConfirmations = 2            // Two validators needed for threshold (security minimum)
 	params.Paused = false
 	params.BridgeEnabled = true
 	require.NoError(t, k.SetParams(ctx, params))
 
-	// First mint attempt (should trigger auto-pause check and trigger)
+	// Submit first attestation (doesn't trigger minting yet - need 2)
+	validator1 := keepertest.GenTestAddr().String()
+	recipient := keepertest.GenTestAddr().String()
 	mintMsg := &types.MsgMintTokens{
-		Validator:    keepertest.GenTestAddr().String(),
+		Validator:    validator1,
 		SourceChain:  "paw",
 		SourceTxHash: "0xtest123",
-		Recipient:    keepertest.GenTestAddr().String(),
+		Recipient:    recipient,
+		Amount:       sdkmath.NewInt(2000000), // 2 million (exceeds threshold)
+		Denom:        "upaw",
+	}
+
+	// First attestation - doesn't reach threshold yet
+	_, err := ms.MintTokens(sdk.WrapSDKContext(ctx), mintMsg)
+	require.NoError(t, err, "first attestation should succeed (not at threshold yet)")
+
+	// Second attestation from different validator - reaches threshold and triggers auto-pause
+	validator2 := keepertest.GenTestAddr().String()
+	mintMsg2 := &types.MsgMintTokens{
+		Validator:    validator2,
+		SourceChain:  "paw",
+		SourceTxHash: "0xtest123", // Same source tx
+		Recipient:    recipient,
 		Amount:       sdkmath.NewInt(2000000), // 2 million (exceeds threshold)
 		Denom:        "upaw",
 	}
 
 	// This should trigger auto-pause because amount (2M) > threshold (1M)
-	_, err := ms.MintTokens(sdk.WrapSDKContext(ctx), mintMsg)
+	// The auto-pause now happens atomically within the attestation threshold block
+	_, err = ms.MintTokens(sdk.WrapSDKContext(ctx), mintMsg2)
 	require.Error(t, err, "should fail due to auto-pause trigger")
 	require.Contains(t, err.Error(), "auto-pause triggered")
 

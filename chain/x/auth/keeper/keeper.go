@@ -669,14 +669,21 @@ func (k *Keeper) GetAllSessions(ctx sdk.Context) ([]authproto.Session, error) {
 
 // DeleteSession removes a session
 func (k *Keeper) DeleteSession(ctx sdk.Context, sessionID string) error {
-	// Get session to find user address
-	session, err := k.GetSession(ctx, sessionID)
-	if err != nil {
-		return fmt.Errorf("failed to get: %w", err)
-	}
-
+	// Read directly from store to get user address (bypasses expiry check)
+	// This allows cleanup of expired sessions
 	store := ctx.KVStore(k.storeKey)
 	key := append(SessionsKeyPrefix, []byte(sessionID)...)
+	bz := store.Get(key)
+	if bz == nil {
+		return fmt.Errorf("session not found: %s", sessionID)
+	}
+
+	var session authproto.Session
+	if err := k.cdc.Unmarshal(bz, &session); err != nil {
+		return fmt.Errorf("failed to unmarshal session: %w", err)
+	}
+
+	// Delete the session
 	store.Delete(key)
 
 	// Also update user sessions index

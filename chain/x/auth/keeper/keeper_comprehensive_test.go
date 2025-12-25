@@ -885,22 +885,25 @@ func TestCleanupOldAuditLogs(t *testing.T) {
 func TestCleanupExpiredSessions(t *testing.T) {
 	k, ctx := setupTestKeeper(t)
 
-	// Create expired session
+	// Use context's block time for consistency (not time.Now())
+	blockTime := ctx.BlockTime()
+
+	// Create expired session (1 hour before block time)
 	expiredSession := &authproto.Session{
 		SessionId:   "expired_session",
 		UserAddress: "user1",
-		CreatedAt:   time.Now().Add(-2 * time.Hour),
-		ExpiresAt:   time.Now().Add(-1 * time.Hour),
+		CreatedAt:   blockTime.Add(-2 * time.Hour),
+		ExpiresAt:   blockTime.Add(-1 * time.Hour),
 	}
 	err := k.SetSession(ctx, expiredSession)
 	require.NoError(t, err)
 
-	// Create active session
+	// Create active session (expires 1 hour after block time)
 	activeSession := &authproto.Session{
 		SessionId:   "active_session",
 		UserAddress: "user1",
-		CreatedAt:   time.Now(),
-		ExpiresAt:   time.Now().Add(1 * time.Hour),
+		CreatedAt:   blockTime,
+		ExpiresAt:   blockTime.Add(1 * time.Hour),
 	}
 	err = k.SetSession(ctx, activeSession)
 	require.NoError(t, err)

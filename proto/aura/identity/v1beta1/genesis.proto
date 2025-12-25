@@ -64,4 +64,7 @@ message GenesisState {
 
   // Credential revocations
   repeated CredentialRevocation credential_revocations = 19 [(gogoproto.nullable) = false];
+
+  // Next change request ID counter
+  uint64 next_change_request_id = 20;
 }
