@@ -67,3 +67,48 @@ Filter assistants by supported locale.
 
 ### QueryParams
 Get module parameters.
+
+## Events
+
+### EventRegisterAssistant
+Emitted when new AI assistant is registered.
+
+**Attributes**: `assistant_address`, `owner_address`, `model_hash`, `stake_amount`, `locales`
+
+### EventUpdateLocales
+Emitted when assistant updates supported locales.
+
+**Attributes**: `assistant_address`, `old_locales`, `new_locales`
+
+### EventHeartbeat
+Emitted on successful heartbeat submission.
+
+**Attributes**: `assistant_address`, `heartbeat_latency`, `next_slash_time`
+
+### EventHeartbeatFailure
+Emitted when assistant misses heartbeat and is slashed.
+
+**Attributes**: `assistant_address`, `failure_count`, `slashed_amount`
+
+### EventReportMisbehavior
+Emitted when misbehavior is reported and slashing occurs.
+
+**Attributes**: `assistant_address`, `reporter_address`, `reason`, `slashed_amount`, `new_status`
+
+### EventSlashAssistant
+Emitted when assistant is slashed for any reason.
+
+**Attributes**: `assistant_address`, `slash_fraction`, `slashed_amount`, `remaining_stake`
+
+### EventStatusChange
+Emitted when assistant status changes (ACTIVE/JAILED/TOMBSTONED).
+
+**Attributes**: `assistant_address`, `old_status`, `new_status`
+
+## Integration Notes
+
+- Assistants must maintain minimum stake to remain active
+- Heartbeat failures result in automatic slashing and jailing
+- Misbehavior reports require evidence and can lead to permanent tombstoning
+- Locale filtering enables users to find assistants in their language/region
+- Reputation scoring affects assistant visibility and rewards

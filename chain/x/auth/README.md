@@ -122,3 +122,65 @@ Create API session with timeout.
 Revoke active session.
 
 **Fields**: `user_address`, `session_id`
+
+## Events
+
+### EventRoleCreated
+Emitted when new role is created.
+
+**Attributes**: `role_id`, `creator`, `permissions`
+
+### EventRoleAssigned
+Emitted when role is assigned to address.
+
+**Attributes**: `role_id`, `address`, `granter`
+
+### EventRoleRevoked
+Emitted when role is revoked from address.
+
+**Attributes**: `role_id`, `address`, `revoker`
+
+### EventMultisigWalletCreated
+Emitted when multi-sig wallet is created.
+
+**Attributes**: `wallet_address`, `threshold`, `signers`
+
+### EventMultisigProposalCreated
+Emitted when multi-sig transaction is proposed.
+
+**Attributes**: `proposal_id`, `wallet`, `proposer`
+
+### EventMultisigSignatureAdded
+Emitted when signature is added to multi-sig proposal.
+
+**Attributes**: `proposal_id`, `signer`
+
+### EventMultisigExecuted
+Emitted when multi-sig transaction is executed.
+
+**Attributes**: `proposal_id`, `executor`
+
+### EventTimeLockCreated
+Emitted when time-locked transaction is created.
+
+**Attributes**: `timelock_id`, `unlock_time`
+
+### EventTimeLockExecuted
+Emitted when time-lock expires and transaction executes.
+
+**Attributes**: `timelock_id`, `executor`
+
+### EventValidatorKeyRotated
+Emitted when validator rotates consensus key.
+
+**Attributes**: `validator`, `old_key`, `new_key`
+
+### EventSessionCreated
+Emitted when user session is created.
+
+**Attributes**: `address`, `session_id`, `expires_at`
+
+### EventRateLimitHit
+Emitted when rate limit is exceeded.
+
+**Attributes**: `address`, `action`, `limit`

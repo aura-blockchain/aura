@@ -100,3 +100,45 @@ Sign pending treasury spend proposal.
 Execute approved treasury spend.
 
 **Fields**: `executor`, `tx_id`
+
+## Events
+
+### EventFeeAdjusted
+Emitted when dynamic fees are automatically adjusted.
+
+**Attributes**: `old_fee`, `new_fee`, `utilization`
+
+### EventMEVDetected
+Emitted when MEV activity is detected.
+
+**Attributes**: `tx_hash`, `mev_type`, `value`
+
+### EventMEVPrevented
+Emitted when MEV attack is blocked.
+
+**Attributes**: `attacker`, `mev_type`, `blocked_value`
+
+### EventWhaleLimitTriggered
+Emitted when large transaction exceeds whale protection threshold.
+
+**Attributes**: `address`, `amount`, `threshold`
+
+### EventCircuitBreakerTriggered
+Emitted when circuit breaker activates.
+
+**Attributes**: `trigger_type`, `threshold`, `current_value`
+
+### EventCircuitBreakerReset
+Emitted when circuit breaker is manually reset.
+
+**Attributes**: `resetter`, `reason`
+
+### EventCongestionDetected
+Emitted when network congestion is detected.
+
+**Attributes**: `utilization`, `gas_price`
+
+### EventInflationAdjusted
+Emitted when inflation rate is adjusted.
+
+**Attributes**: `old_rate`, `new_rate`, `reason`

@@ -100,3 +100,35 @@ Cosign emergency veto.
 Execute passed proposal after delay.
 
 **Fields**: `proposal_id`, `executor`
+
+## Events
+
+### EventProposalSubmitted
+Emitted when new proposal is submitted.
+
+**Attributes**: `proposal_id`, `proposer`, `category`, `title`
+
+### EventProposalDeposit
+Emitted when deposit is added to proposal.
+
+**Attributes**: `proposal_id`, `depositor`, `amount`
+
+### EventVoteCast
+Emitted when vote is submitted.
+
+**Attributes**: `proposal_id`, `voter`, `option`
+
+### EventProposalPassed
+Emitted when proposal reaches quorum and passes.
+
+**Attributes**: `proposal_id`, `yes_votes`, `total_votes`
+
+### EventProposalRejected
+Emitted when proposal fails to reach threshold.
+
+**Attributes**: `proposal_id`, `no_votes`, `total_votes`
+
+### EventProposalExpired
+Emitted when proposal expires without sufficient votes.
+
+**Attributes**: `proposal_id`, `expiry_time`

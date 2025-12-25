@@ -88,6 +88,48 @@ Get spending limits for a wallet.
 ### QueryDisasterRecoveryPlan
 Get backup and recovery configuration.
 
+## Events
+
+### EventIncidentReported
+Emitted when new security incident is created.
+
+**Attributes**: `incident_id`, `severity`, `reporter`
+
+### EventIncidentStatusUpdated
+Emitted when incident status changes.
+
+**Attributes**: `incident_id`, `old_status`, `new_status`
+
+### EventChainPauseRequested
+Emitted when chain pause is requested.
+
+**Attributes**: `requester`, `pause_level`, `reason`
+
+### EventChainResumed
+Emitted when chain is resumed after pause.
+
+**Attributes**: `resumer`, `incident_id`
+
+### EventWalletLimitsSet
+Emitted when wallet spending limits are configured.
+
+**Attributes**: `address`, `max_balance`, `max_tx_size`
+
+### EventPostMortemCreated
+Emitted when post-mortem analysis is completed.
+
+**Attributes**: `incident_id`, `root_cause`
+
+### EventIncidentClosed
+Emitted when incident is fully resolved and closed.
+
+**Attributes**: `incident_id`, `resolution`
+
+### EventBackupTriggered
+Emitted when disaster recovery backup is initiated.
+
+**Attributes**: `backup_id`, `timestamp`
+
 ## Integration Notes
 
 - Chain pause requires multi-signature approval from authorized keys

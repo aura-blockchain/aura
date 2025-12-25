@@ -276,10 +276,41 @@ irKeeper.InitGenesis(irs, prereqs, limits)
 - Circular dependency detection prevents invalid graph states
 - Comprehensive input validation prevents malformed data
 
+## Events
+
+### EventIRCreated
+Emitted when inclusion routine is created.
+
+**Attributes**: `ir_id`, `creator`, `name`
+
+### EventIRUpdated
+Emitted when inclusion routine is updated.
+
+**Attributes**: `ir_id`, `updated_by`
+
+### EventIRActivated
+Emitted when inclusion routine is activated.
+
+**Attributes**: `ir_id`, `activated_by`
+
+### EventIRDeactivated
+Emitted when inclusion routine is deactivated.
+
+**Attributes**: `ir_id`, `reason`
+
+### EventIRCompleted
+Emitted when inclusion routine completes execution.
+
+**Attributes**: `ir_id`, `completion_time`, `result`
+
+### EventArenaAssigned
+Emitted when arena is assigned to inclusion routine.
+
+**Attributes**: `ir_id`, `arena_id`
+
 ## Future Enhancements
 
 - Persistent storage backend (currently in-memory)
-- Event emission for state changes
 - Metrics and monitoring hooks
 - Advanced querying (by score range, multiple filters)
 - IR versioning and migration support

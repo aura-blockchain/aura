@@ -454,6 +454,38 @@ go test ./chain/x/privacy -v
 5. **Quantum Resistance**: Lattice-based cryptography
 6. **Hardware Wallet Support**: Secure key management
 
+## Events
+
+### EventEncryptionKeyGenerated
+Emitted when encryption key pair is generated.
+
+**Attributes**: `address`, `public_key_hash`
+
+### EventEncryptionKeyRotated
+Emitted when encryption key is rotated.
+
+**Attributes**: `address`, `old_key_hash`, `new_key_hash`
+
+### EventMixingPoolCreated
+Emitted when new mixing pool is created.
+
+**Attributes**: `pool_id`, `denomination`, `min_participants`
+
+### EventMixingCompleted
+Emitted when mixing process completes.
+
+**Attributes**: `pool_id`, `participants_count`
+
+### EventRingSignatureCreated
+Emitted when ring signature is generated.
+
+**Attributes**: `ring_size`, `signer_index`
+
+### EventPrivateTransaction
+Emitted when confidential transaction is submitted.
+
+**Attributes**: `tx_hash`, `encrypted_amount`
+
 ## References
 
 1. Groth16: "On the Size of Pairing-based Non-interactive Arguments"

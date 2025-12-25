@@ -165,6 +165,48 @@ The WASM module integrates with the existing wasmd keeper in `app.go`:
 - [wasmd Repository](https://github.com/CosmWasm/wasmd)
 - [AURA Smart Contract Guide](../../../docs/developers/smart-contracts/)
 
+## Events
+
+### EventStoreCode
+Emitted when WASM bytecode is stored.
+
+**Attributes**: `code_id`, `creator`, `checksum`
+
+### EventInstantiate
+Emitted when contract is instantiated.
+
+**Attributes**: `contract_address`, `code_id`, `creator`
+
+### EventExecute
+Emitted when contract is executed.
+
+**Attributes**: `contract_address`, `sender`
+
+### EventMigrate
+Emitted when contract is migrated to new code.
+
+**Attributes**: `contract_address`, `old_code_id`, `new_code_id`
+
+### EventUpdateAdmin
+Emitted when contract admin is updated.
+
+**Attributes**: `contract_address`, `old_admin`, `new_admin`
+
+### EventAuthorizeUploader
+Emitted when uploader is authorized.
+
+**Attributes**: `uploader`, `authorized_by`
+
+### EventPauseContract
+Emitted when contract is paused.
+
+**Attributes**: `contract_address`, `paused_by`
+
+### EventUnpauseContract
+Emitted when contract is unpaused.
+
+**Attributes**: `contract_address`, `unpaused_by`
+
 ## Version Compatibility
 
 - **wasmd**: v0.50.0+

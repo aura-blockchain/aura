@@ -177,6 +177,33 @@ aura-bindings/
 - [Message Types Reference](../../../docs/developers/smart-contracts/message-reference.md)
 - [Security Best Practices](../../../docs/developers/smart-contracts/security.md)
 
+## Events
+
+### EventCustomQuery
+Emitted when custom query is executed.
+
+**Attributes**: `query_type`, `contract_address`
+
+### EventCustomMessage
+Emitted when custom message is processed.
+
+**Attributes**: `message_type`, `sender`, `contract_address`
+
+### EventRateLimitHit
+Emitted when rate limit is exceeded.
+
+**Attributes**: `contract_address`, `limit_type`
+
+### EventQueryStats
+Emitted for query statistics.
+
+**Attributes**: `query_count`, `avg_gas_used`
+
+### EventMessageStats
+Emitted for message execution statistics.
+
+**Attributes**: `message_count`, `total_gas_used`
+
 ## Version Compatibility
 
 - **CosmWasm**: 1.5+

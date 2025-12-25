@@ -327,6 +327,33 @@ aurad query contractregistry contract <contract-address>
 - **Performance Tests**: Test rate limiting under load
 - **Compliance Tests**: Verify enforcement of all compliance rules
 
+## Events
+
+### EventContractRegistered
+Emitted when smart contract is registered.
+
+**Attributes**: `contract_address`, `owner`, `name`, `version`
+
+### EventContractUpdated
+Emitted when contract metadata is updated.
+
+**Attributes**: `contract_address`, `updated_by`
+
+### EventContractVerified
+Emitted when contract source is verified.
+
+**Attributes**: `contract_address`, `verifier`, `compiler_version`
+
+### EventContractDeprecated
+Emitted when contract is marked as deprecated.
+
+**Attributes**: `contract_address`, `reason`
+
+### EventContractRemoved
+Emitted when contract is removed from registry.
+
+**Attributes**: `contract_address`, `removed_by`
+
 ## Documentation
 
 - [Contract Registry Guide](../../../docs/operators/smart-contracts/contract-registry.md)

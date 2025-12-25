@@ -422,6 +422,38 @@ valid, err := keeper.VerifyCertificatePin(
 9. **ZK Proofs**: Verify all proofs against registered circuits
 10. **Monitoring**: Regularly check entropy health and rotation status
 
+## Events
+
+### EventKeyGenerated
+Emitted when cryptographic key is generated.
+
+**Attributes**: `key_type`, `key_id`, `algorithm`
+
+### EventKeyRotated
+Emitted when key is rotated.
+
+**Attributes**: `key_id`, `old_key_hash`, `new_key_hash`
+
+### EventSignatureCreated
+Emitted when digital signature is created.
+
+**Attributes**: `signer`, `message_hash`, `signature_type`
+
+### EventSignatureVerified
+Emitted when signature verification completes.
+
+**Attributes**: `message_hash`, `valid`, `signer`
+
+### EventEncryptionPerformed
+Emitted when data is encrypted.
+
+**Attributes**: `algorithm`, `key_id`, `data_size`
+
+### EventDecryptionPerformed
+Emitted when data is decrypted.
+
+**Attributes**: `algorithm`, `key_id`
+
 ## Dependencies
 
 - `golang.org/x/crypto`: Core cryptographic primitives

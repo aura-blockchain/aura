@@ -151,3 +151,55 @@ Configure dust attack filtering.
 Validate address checksum.
 
 **Fields**: `address`, `algorithm`
+
+## Events
+
+### EventSpendingLimitCheck
+Emitted when spending limit is checked.
+
+**Attributes**: `wallet_id`, `amount`, `limit`, `passed`
+
+### EventMultiSigWallet
+Emitted for multi-sig wallet operations.
+
+**Attributes**: `wallet_id`, `action`, `signer`
+
+### EventSocialRecovery
+Emitted when social recovery is configured.
+
+**Attributes**: `wallet_id`, `guardian_count`, `threshold`
+
+### EventInitiateRecovery
+Emitted when wallet recovery process begins.
+
+**Attributes**: `wallet_id`, `initiator`
+
+### EventExecuteRecovery
+Emitted when wallet recovery completes.
+
+**Attributes**: `wallet_id`, `new_owner`
+
+### EventSessionCreated
+Emitted when wallet session is created.
+
+**Attributes**: `wallet_id`, `session_id`, `expires_at`
+
+### EventSessionLocked
+Emitted when wallet session is locked.
+
+**Attributes**: `wallet_id`, `reason`
+
+### EventEnrollBiometric
+Emitted when biometric authentication is enrolled.
+
+**Attributes**: `wallet_id`, `biometric_type`
+
+### EventRegisterHardwareWallet
+Emitted when hardware wallet is registered.
+
+**Attributes**: `wallet_id`, `device_type`, `device_id`
+
+### EventDustTransaction
+Emitted when dust attack is detected.
+
+**Attributes**: `wallet_id`, `amount`, `blocked`

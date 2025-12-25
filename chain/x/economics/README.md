@@ -458,6 +458,58 @@ The module provides comprehensive error definitions in `types/errors.go`:
 - **Type Definitions**: 30+
 - **Parameters**: 35+
 
+## Events
+
+### EventCreateVestingSchedule
+Emitted when vesting schedule is created.
+
+**Attributes**: `beneficiary`, `total_amount`, `vesting_type`
+
+### EventReleaseVestedTokens
+Emitted when vested tokens are released.
+
+**Attributes**: `beneficiary`, `amount`, `schedule_id`
+
+### EventRevokeVestingSchedule
+Emitted when vesting schedule is revoked.
+
+**Attributes**: `schedule_id`, `beneficiary`, `revoker`
+
+### EventSubmitProposal
+Emitted when governance proposal is submitted.
+
+**Attributes**: `proposal_id`, `proposer`, `category`
+
+### EventVote
+Emitted when vote is cast on proposal.
+
+**Attributes**: `proposal_id`, `voter`, `option`
+
+### EventDelegateVote
+Emitted when voting power is delegated.
+
+**Attributes**: `delegator`, `delegate`
+
+### EventLockVotingTokens
+Emitted when tokens are locked for voting power.
+
+**Attributes**: `owner`, `amount`, `lock_duration`
+
+### EventProposeTreasurySpend
+Emitted when treasury spend is proposed.
+
+**Attributes**: `tx_id`, `proposer`, `amount`, `recipient`
+
+### EventExecuteTreasurySpend
+Emitted when treasury spend is executed.
+
+**Attributes**: `tx_id`, `amount`, `recipient`
+
+### EventAdjustInflationRate
+Emitted when inflation rate is adjusted.
+
+**Attributes**: `old_rate`, `new_rate`, `reason`
+
 ## Cosmos SDK Patterns
 
 This module follows Cosmos SDK v0.50+ patterns:

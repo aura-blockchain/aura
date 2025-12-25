@@ -68,6 +68,33 @@ Get verification history for a data item.
 ### QueryStats
 Get registry statistics (total items, verified items, storage bytes, items by type).
 
+## Events
+
+### EventDataItemStored
+Emitted when new data item is stored.
+
+**Attributes**: `data_id`, `data_type`, `owner`, `storage_location`
+
+### EventDataItemUpdated
+Emitted when data item metadata is updated.
+
+**Attributes**: `data_id`, `owner`
+
+### EventDataItemDeleted
+Emitted when data item is deleted and unpinned.
+
+**Attributes**: `data_id`, `owner`
+
+### EventDataItemVerified
+Emitted when verification is added to data item.
+
+**Attributes**: `data_id`, `verifier`, `verification_level`, `confidence_score`
+
+### EventDataItemRevoked
+Emitted when data item verification is revoked.
+
+**Attributes**: `data_id`, `authority`
+
 ## Integration Notes
 
 - Data content is stored off-chain on IPFS; only metadata and hashes are on-chain

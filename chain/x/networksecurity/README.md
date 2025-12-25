@@ -380,6 +380,33 @@ app.ModuleManager = module.NewManager(
 )
 ```
 
+## Events
+
+### EventPeerBanned
+Emitted when peer is banned.
+
+**Attributes**: `peer_id`, `reason`, `duration`
+
+### EventPeerUnbanned
+Emitted when peer ban is lifted.
+
+**Attributes**: `peer_id`, `unbanned_by`
+
+### EventSybilDetected
+Emitted when sybil attack is detected.
+
+**Attributes**: `attacker_ids`, `confidence_score`
+
+### EventRateLimitExceeded
+Emitted when peer exceeds rate limit.
+
+**Attributes**: `peer_id`, `limit_type`, `current_rate`
+
+### EventDDoSDetected
+Emitted when DDoS attack is detected.
+
+**Attributes**: `attack_type`, `source_count`, `mitigation_applied`
+
 ## Future Enhancements
 
 1. Machine learning-based anomaly detection

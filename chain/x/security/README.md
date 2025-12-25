@@ -101,6 +101,48 @@ The Security module consolidates six security domains into a unified layer: netw
 - Clean up expired sessions
 - Finalize security metrics
 
+## Events
+
+### EventPeerBanned
+Emitted when malicious peer is banned.
+
+**Attributes**: `peer_id`, `reason`, `duration`
+
+### EventDoubleSignReported
+Emitted when double-signing evidence is submitted.
+
+**Attributes**: `validator`, `height`, `slash_amount`
+
+### EventMultiSigTransactionProposed
+Emitted when multi-sig transaction is proposed.
+
+**Attributes**: `wallet_id`, `tx_id`, `proposer`
+
+### EventMultiSigTransactionSigned
+Emitted when multi-sig transaction receives signature.
+
+**Attributes**: `wallet_id`, `tx_id`, `signer`, `signatures_count`
+
+### EventSocialRecoveryInitiated
+Emitted when wallet recovery process begins.
+
+**Attributes**: `wallet`, `initiator`, `required_approvals`
+
+### EventKeyRotated
+Emitted when cryptographic key is rotated.
+
+**Attributes**: `key_id`, `old_key_hash`, `new_key_hash`
+
+### EventMixingPoolCreated
+Emitted when new privacy mixing pool is created.
+
+**Attributes**: `pool_id`, `min_participants`, `denomination`
+
+### EventStealthAddressGenerated
+Emitted when stealth address is generated.
+
+**Attributes**: `recipient`, `stealth_address`
+
 ## Integration Notes
 
 - Multi-sig transactions require threshold signatures before execution

@@ -436,6 +436,33 @@ The 24/7 Security Operations Center framework includes:
    params.RequireSOCApproval = false
    ```
 
+## Events
+
+### EventAlertTriggered
+Emitted when monitoring alert is triggered.
+
+**Attributes**: `alert_id`, `severity`, `metric`, `threshold`
+
+### EventAlertResolved
+Emitted when alert condition is resolved.
+
+**Attributes**: `alert_id`, `resolution_time`
+
+### EventAnomalyDetected
+Emitted when anomaly is detected.
+
+**Attributes**: `metric`, `expected_value`, `actual_value`
+
+### EventMetricRecorded
+Emitted when metric is recorded.
+
+**Attributes**: `metric_name`, `value`, `timestamp`
+
+### EventThresholdBreach
+Emitted when metric exceeds threshold.
+
+**Attributes**: `metric`, `threshold`, `current_value`
+
 ## Support
 
 For issues and feature requests, please open an issue in the repository.
