@@ -3,7 +3,10 @@
 
 package types
 
-import "fmt"
+import (
+	"encoding/binary"
+	"fmt"
+)
 
 const (
 	// ModuleName defines the module name
@@ -93,8 +96,12 @@ func ArenaCompletionStoreKey(arena, walletAddr, irID string) string {
 
 // ScoreHistoryStoreKey returns the store key for score history
 // Format: history/{wallet}/{block_height}
+// Block height is encoded as 8-byte big-endian for proper ordering and to avoid
+// corruption with heights > 1,114,111 (which would occur with string(rune(height)))
 func ScoreHistoryStoreKey(walletAddr string, blockHeight uint64) string {
-	return ScoreHistoryStoreKeyPrefix + walletAddr + "/" + string(rune(blockHeight))
+	heightBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(heightBytes, blockHeight)
+	return ScoreHistoryStoreKeyPrefix + walletAddr + "/" + string(heightBytes)
 }
 
 // RateLimitStoreKey returns the store key for rate limit counters

@@ -3,6 +3,8 @@
 
 package types
 
+import "encoding/binary"
+
 const (
 	// ModuleName defines the module name
 	ModuleName = "identitychange"
@@ -59,8 +61,12 @@ func RequestStoreKey(requestID string) string {
 
 // HistoryStoreKey returns the store key for identity change history
 // Format: history/{did}/{height}
+// Height is encoded as 8-byte big-endian for proper ordering and to avoid
+// corruption with heights > 1,114,111 (which would occur with string(rune(height)))
 func HistoryStoreKey(did string, height uint64) string {
-	return HistoryStoreKeyPrefix + did + "/" + string(rune(height))
+	heightBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(heightBytes, height)
+	return HistoryStoreKeyPrefix + did + "/" + string(heightBytes)
 }
 
 // RecoveryStoreKey returns the store key for identity recovery

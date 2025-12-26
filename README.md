@@ -346,7 +346,7 @@ cat docs/economics/models/economics-scenarios.ipynb
 
 ## Documentation
 
-- **[Technical Specification](Auquitas AURAcoin Blockchain.md)** - Complete protocol details
+- **[Technical Specification](docs/Aequitas_AURAcoin_Blockchain.md)** - Complete protocol details
 - **[Project Status](PROJECT_STATUS.md)** - Current milestones and progress
 - **[RFCs](docs/rfcs/)** - Technical specifications and design documents
 - **[Economics Models](docs/economics/models/)** - Tokenomics and financial scenarios

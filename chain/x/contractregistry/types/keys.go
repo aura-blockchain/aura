@@ -28,7 +28,8 @@ var (
 	ContractInfoPrefix = []byte{0x01}
 
 	// ContractMetadataKeyPrefix is the prefix for contract metadata
-	ContractMetadataKeyPrefix = []byte{0x01}
+	// NOTE: Changed from 0x01 to 0x1A to avoid collision with ContractInfoPrefix
+	ContractMetadataKeyPrefix = []byte{0x1A}
 
 	// ContractAddressIndexKeyPrefix is the prefix for contract address index
 	ContractAddressIndexKeyPrefix = []byte{0x02}
