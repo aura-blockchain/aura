@@ -23,12 +23,12 @@ A clear and concise description of what you expected to happen.
 What actually happened instead.
 
 ## Environment Details
-- **PHP Version**: [e.g., 8.1, 8.2]
-- **Node.js Version**: [e.g., 18.x, 20.x]
+- **Go Version**: [e.g., 1.21, 1.22]
+- **Cosmos SDK Version**: [e.g., v0.50.x]
 - **OS**: [e.g., Ubuntu 22.04, macOS 13, Windows 11]
-- **Project Version**: [e.g., v1.0.0]
-- **Blockchain Network**: [e.g., Mainnet, Testnet]
-- **Framework/Library Versions**: [e.g., Laravel, React, Vue]
+- **Aura Version**: [e.g., v1.0.0]
+- **Network**: [e.g., Mainnet, Testnet, Local]
+- **Node Type**: [e.g., Validator, Full Node, Light Client]
 
 ## Error Logs
 If applicable, paste relevant error messages or logs here:

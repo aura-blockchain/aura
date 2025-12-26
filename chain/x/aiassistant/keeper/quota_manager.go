@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	sdkerrors "cosmossdk.io/errors"
+	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
 	"cosmossdk.io/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -155,25 +155,25 @@ func (k Keeper) CheckQuota(ctx sdk.Context, address string, estimate CostEstimat
 
 	// Check daily limit
 	if quota.DailyUsed >= quota.DailyLimit {
-		return sdkerrors.Wrap(types.ErrInvalidParams,
+		return errorsmod.Wrap(types.ErrInvalidParams,
 			fmt.Sprintf("daily quota exceeded: %d/%d", quota.DailyUsed, quota.DailyLimit))
 	}
 
 	// Check monthly limit
 	if quota.MonthlyUsed >= quota.MonthlyLimit {
-		return sdkerrors.Wrap(types.ErrInvalidParams,
+		return errorsmod.Wrap(types.ErrInvalidParams,
 			fmt.Sprintf("monthly quota exceeded: %d/%d", quota.MonthlyUsed, quota.MonthlyLimit))
 	}
 
 	// Check compute limit
 	if quota.ComputeUsed+estimate.ComputeUnits > quota.ComputeLimit {
-		return sdkerrors.Wrap(types.ErrInvalidParams,
+		return errorsmod.Wrap(types.ErrInvalidParams,
 			fmt.Sprintf("compute quota exceeded: %d/%d", quota.ComputeUsed, quota.ComputeLimit))
 	}
 
 	// Check token allowance
 	if quota.TokenSpent.Add(estimate.TokenCost).GT(quota.TokenAllowance) {
-		return sdkerrors.Wrap(types.ErrInvalidParams,
+		return errorsmod.Wrap(types.ErrInvalidParams,
 			fmt.Sprintf("token allowance exceeded: %s/%s", quota.TokenSpent, quota.TokenAllowance))
 	}
 

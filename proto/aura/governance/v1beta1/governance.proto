@@ -98,6 +98,15 @@ message Vote {
 
   // Voting power at snapshot height
   string voting_power = 8;
+
+  // Weighted voting options (for weighted votes)
+  repeated WeightedVoteOption weighted_options = 9;
+}
+
+// WeightedVoteOption defines a vote option with weight
+message WeightedVoteOption {
+  VoteOption option = 1;
+  string weight = 2;  // Weight between 0 and 1 as decimal string
 }
 
 // TallyResult defines the tally of a proposal vote

@@ -781,106 +781,6 @@ func (k Keeper) GenerateOrderID(ctx sdk.Context, creator string) string {
 	return fmt.Sprintf("order-%s-%d", creator, ctx.BlockHeight())
 }
 
-// CleanupExpiredOrders removes expired orders (should be called in EndBlocker)
-// DEPRECATED: Use CleanupExpiredOrdersBatched for production to prevent consensus failure
-func (k Keeper) CleanupExpiredOrders(ctx sdk.Context) {
-	orders := k.GetOrdersByStatus(ctx, types.SwapOrderStatus_PENDING)
-
-	for _, order := range orders {
-		if ctx.BlockTime().After(order.ExpiresAt) {
-			if err := k.CancelOrder(ctx, order.OrderId, "expired"); err != nil {
-				ctx.Logger().Error("failed to cancel expired order", "order_id", order.OrderId, "err", err)
-			}
-		}
-	}
-}
-
-// CleanupExpiredOrdersBatched removes up to 'limit' expired orders per call.
-// Uses cursor-based pagination to track progress across blocks, ensuring
-// all expired orders are eventually processed without blocking consensus.
-//
-// SECURITY: This function is designed to prevent consensus failure by limiting
-// the number of operations per block. With 10,000+ orders, unbounded cleanup
-// causes block production to exceed timeout, halting the chain.
-//
-// DEPRECATED: Use CleanupExpiredOrdersOptimized for better performance.
-// This function loads ALL pending orders into memory, which is inefficient.
-//
-// Returns: number of orders processed in this batch
-func (k Keeper) CleanupExpiredOrdersBatched(ctx sdk.Context, limit int) int {
-	if limit <= 0 {
-		limit = types.MaxOrdersCleanupPerBlock
-	}
-
-	store := ctx.KVStore(k.storeKey)
-
-	// Get cursor (last processed order ID)
-	cursorKey := types.OrderCleanupCursorKey()
-	cursorBytes := store.Get(cursorKey)
-	cursor := cursorBytes
-
-	// Get all pending orders starting from cursor
-	orders := k.GetOrdersByStatus(ctx, types.SwapOrderStatus_PENDING)
-	if len(orders) == 0 {
-		// No orders to process, reset cursor
-		store.Delete(cursorKey)
-		return 0
-	}
-
-	// Find start position based on cursor
-	startIdx := 0
-	if cursor != nil {
-		cursorOrderID := string(cursor)
-		for i, order := range orders {
-			if order.OrderId == cursorOrderID {
-				// Start from next order after cursor
-				startIdx = i + 1
-				break
-			}
-		}
-	}
-
-	// If cursor points beyond end of list, reset and start from beginning
-	if startIdx >= len(orders) {
-		startIdx = 0
-	}
-
-	// Process up to 'limit' orders
-	processed := 0
-	var lastProcessedOrderID string
-
-	for i := startIdx; i < len(orders) && processed < limit; i++ {
-		order := orders[i]
-		lastProcessedOrderID = order.OrderId
-
-		// Check if order expired
-		if ctx.BlockTime().After(order.ExpiresAt) {
-			// Cancel expired order
-			if err := k.CancelOrder(ctx, order.OrderId, "expired"); err != nil {
-				// Log error but continue processing other orders
-				ctx.Logger().Error("failed to cancel expired order",
-					"order_id", order.OrderId,
-					"error", err)
-			}
-		}
-
-		processed++
-	}
-
-	// Update cursor for next block
-	if processed > 0 {
-		if startIdx+processed >= len(orders) {
-			// Completed full pass, reset cursor for next iteration
-			store.Delete(cursorKey)
-		} else {
-			// Save cursor pointing to last processed order
-			store.Set(cursorKey, []byte(lastProcessedOrderID))
-		}
-	}
-
-	return processed
-}
-
 // CleanupExpiredOrdersOptimized efficiently removes up to 'limit' expired orders
 // using the expiration time index. This function ONLY loads orders that have actually
 // expired, preventing memory exhaustion and consensus timeouts.
@@ -1015,7 +915,13 @@ func (k Keeper) exportOrderbooks(ctx sdk.Context) []*types.Orderbook {
 	iterator := storetypes.KVStorePrefixIterator(store, types.OrderbookPrefix)
 	defer iterator.Close()
 
-	pairs := make(map[string][]*types.SwapOrder)
+	// Collect orders by pair, separating buy/sell upfront to avoid re-iteration
+	type pairOrders struct {
+		buys  []types.SwapOrder
+		sells []types.SwapOrder
+	}
+	pairs := make(map[string]*pairOrders)
+
 	for ; iterator.Valid(); iterator.Next() {
 		key := iterator.Key()[len(types.OrderbookPrefix):]
 		sep := bytes.IndexByte(key, 0x00)
@@ -1030,13 +936,28 @@ func (k Keeper) exportOrderbooks(ctx sdk.Context) []*types.Orderbook {
 			continue
 		}
 
-		pairs[pairKey] = append(pairs[pairKey], order)
+		po := pairs[pairKey]
+		if po == nil {
+			po = &pairOrders{
+				buys:  make([]types.SwapOrder, 0, 32),
+				sells: make([]types.SwapOrder, 0, 32),
+			}
+			pairs[pairKey] = po
+		}
+
+		// Separate buy/sell orders during collection (single pass)
+		if order.OrderType == types.SwapOrderType_BUY {
+			po.buys = append(po.buys, *order)
+		} else {
+			po.sells = append(po.sells, *order)
+		}
 	}
 
 	if len(pairs) == 0 {
 		return nil
 	}
 
+	// Sort pair keys for deterministic output
 	pairKeys := make([]string, 0, len(pairs))
 	for pair := range pairs {
 		pairKeys = append(pairKeys, pair)
@@ -1045,49 +966,36 @@ func (k Keeper) exportOrderbooks(ctx sdk.Context) []*types.Orderbook {
 
 	orderbooks := make([]*types.Orderbook, 0, len(pairKeys))
 	for _, pair := range pairKeys {
-		orders := pairs[pair]
-		book := &types.Orderbook{
-			Pair:         pair,
-			BuyOrders:    []types.SwapOrder{},
-			SellOrders:   []types.SwapOrder{},
-			TotalPending: uint64(len(orders)),
-		}
+		po := pairs[pair]
 
+		// Sort each order type once (using cached PricePerAura for efficiency)
+		// Buy orders: highest price first (best bid at index 0)
+		sort.Slice(po.buys, func(i, j int) bool {
+			return po.buys[i].PricePerAura.GT(po.buys[j].PricePerAura)
+		})
+		// Sell orders: lowest price first (best ask at index 0)
+		sort.Slice(po.sells, func(i, j int) bool {
+			return po.sells[i].PricePerAura.LT(po.sells[j].PricePerAura)
+		})
+
+		// After sorting, best bid/ask are at index 0 (no need to track during iteration)
 		bestBid := sdkmath.LegacyZeroDec()
 		bestAsk := sdkmath.LegacyZeroDec()
-		firstBid := true
-		firstAsk := true
-
-		for _, order := range orders {
-			price := orderPriceDec(order)
-
-			if order.OrderType == types.SwapOrderType_BUY {
-				// Dereference pointer to append value
-				book.BuyOrders = append(book.BuyOrders, *order)
-				if firstBid || price.GT(bestBid) {
-					bestBid = price
-					firstBid = false
-				}
-			} else {
-				// Dereference pointer to append value
-				book.SellOrders = append(book.SellOrders, *order)
-				if firstAsk || price.LT(bestAsk) || bestAsk.IsZero() {
-					bestAsk = price
-					firstAsk = false
-				}
-			}
+		if len(po.buys) > 0 {
+			bestBid = po.buys[0].PricePerAura
+		}
+		if len(po.sells) > 0 {
+			bestAsk = po.sells[0].PricePerAura
 		}
 
-		// Sort using cached PricePerAura to avoid recalculating prices during comparisons
-		sort.Slice(book.BuyOrders, func(i, j int) bool {
-			return book.BuyOrders[i].PricePerAura.GT(book.BuyOrders[j].PricePerAura)
-		})
-		sort.Slice(book.SellOrders, func(i, j int) bool {
-			return book.SellOrders[i].PricePerAura.LT(book.SellOrders[j].PricePerAura)
-		})
-
-		book.BestBid = bestBid
-		book.BestAsk = bestAsk
+		book := &types.Orderbook{
+			Pair:         pair,
+			BuyOrders:    po.buys,
+			SellOrders:   po.sells,
+			TotalPending: uint64(len(po.buys) + len(po.sells)),
+			BestBid:      bestBid,
+			BestAsk:      bestAsk,
+		}
 
 		if !bestAsk.IsZero() && !bestBid.IsZero() {
 			book.SpreadPercent = bestAsk.Sub(bestBid).Quo(bestAsk).MulInt64(100)

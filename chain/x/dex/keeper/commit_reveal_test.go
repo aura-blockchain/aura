@@ -28,7 +28,7 @@ func TestCommitOrder_Success(t *testing.T) {
 	auraAmount := sdkmath.NewInt(10000000000) // 10,000 AURA
 	otherCoin := "usdt"
 	otherAmount := sdkmath.NewInt(50000000000) // 50,000 USDT
-	salt := []byte("random_salt_12345")
+	salt := []byte("random_salt_12345_with_sufficient_entropy_32_bytes!")
 
 	commitHash := suite.Keeper.ComputeOrderHash(orderType, auraAmount, otherCoin, otherAmount, salt)
 
@@ -103,7 +103,7 @@ func TestRevealOrder_Success(t *testing.T) {
 	auraAmount := sdkmath.NewInt(10000000000) // 10,000 AURA
 	otherCoin := "usdt"
 	otherAmount := sdkmath.NewInt(50000000000) // 50,000 USDT
-	salt := []byte("random_salt_12345")
+	salt := []byte("random_salt_12345_with_sufficient_entropy_32_bytes!")
 
 	// Compute and commit hash
 	commitHash := suite.Keeper.ComputeOrderHash(orderType, auraAmount, otherCoin, otherAmount, salt)
@@ -141,7 +141,7 @@ func TestRevealOrder_HashMismatch(t *testing.T) {
 	auraAmount := sdkmath.NewInt(10000000000)
 	otherCoin := "usdt"
 	otherAmount := sdkmath.NewInt(50000000000)
-	salt := []byte("random_salt_12345")
+	salt := []byte("random_salt_12345_with_sufficient_entropy_32_bytes!")
 
 	// Commit with original details
 	commitHash := suite.Keeper.ComputeOrderHash(orderType, auraAmount, otherCoin, otherAmount, salt)
@@ -167,7 +167,7 @@ func TestRevealOrder_ExpiredDeadline(t *testing.T) {
 	auraAmount := sdkmath.NewInt(10000000000)
 	otherCoin := "usdt"
 	otherAmount := sdkmath.NewInt(50000000000)
-	salt := []byte("random_salt_12345")
+	salt := []byte("random_salt_12345_with_sufficient_entropy_32_bytes!")
 
 	// Commit order
 	commitHash := suite.Keeper.ComputeOrderHash(orderType, auraAmount, otherCoin, otherAmount, salt)
@@ -205,7 +205,7 @@ func TestRevealOrder_InsufficientBalance(t *testing.T) {
 	auraAmount := sdkmath.NewInt(10000000000)
 	otherCoin := "usdt"
 	otherAmount := sdkmath.NewInt(50000000000)
-	salt := []byte("random_salt_12345")
+	salt := []byte("random_salt_12345_with_sufficient_entropy_32_bytes!")
 
 	// Commit order
 	commitHash := suite.Keeper.ComputeOrderHash(orderType, auraAmount, otherCoin, otherAmount, salt)
@@ -229,7 +229,7 @@ func TestRevealOrder_CommitmentNotFound(t *testing.T) {
 	auraAmount := sdkmath.NewInt(10000000000)
 	otherCoin := "usdt"
 	otherAmount := sdkmath.NewInt(50000000000)
-	salt := []byte("random_salt_12345")
+	salt := []byte("random_salt_12345_with_sufficient_entropy_32_bytes!")
 
 	// Try to reveal without committing
 	_, err := suite.Keeper.RevealOrder(ctx, "nonexistent", sender.String(), orderType, auraAmount, otherCoin, otherAmount, salt)
@@ -263,20 +263,20 @@ func TestBatchExecution_PricePriority(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	// User 0: Low price sell order
-	salt0 := []byte("salt_0")
+	// User 0: Low price sell order (salt must be 32+ bytes for entropy)
+	salt0 := []byte("salt_0_with_32_bytes_of_entropy!")
 	commitHash0 := suite.Keeper.ComputeOrderHash(types.SwapOrderType_SELL, sdkmath.NewInt(10000000000), "usdt", sdkmath.NewInt(40000000000), salt0)
 	commitID0, err := suite.Keeper.CommitOrder(ctx, users[0].String(), commitHash0)
 	require.NoError(t, err)
 
-	// User 1: High price sell order
-	salt1 := []byte("salt_1")
+	// User 1: High price sell order (salt must be 32+ bytes for entropy)
+	salt1 := []byte("salt_1_with_32_bytes_of_entropy!")
 	commitHash1 := suite.Keeper.ComputeOrderHash(types.SwapOrderType_SELL, sdkmath.NewInt(10000000000), "usdt", sdkmath.NewInt(60000000000), salt1)
 	commitID1, err := suite.Keeper.CommitOrder(ctx, users[1].String(), commitHash1)
 	require.NoError(t, err)
 
-	// User 2: Medium price sell order
-	salt2 := []byte("salt_2")
+	// User 2: Medium price sell order (salt must be 32+ bytes for entropy)
+	salt2 := []byte("salt_2_with_32_bytes_of_entropy!")
 	commitHash2 := suite.Keeper.ComputeOrderHash(types.SwapOrderType_SELL, sdkmath.NewInt(10000000000), "usdt", sdkmath.NewInt(50000000000), salt2)
 	commitID2, err := suite.Keeper.CommitOrder(ctx, users[2].String(), commitHash2)
 	require.NoError(t, err)
@@ -365,7 +365,7 @@ func TestComputeOrderHash_Consistency(t *testing.T) {
 	auraAmount := sdkmath.NewInt(10000000000)
 	otherCoin := "usdt"
 	otherAmount := sdkmath.NewInt(50000000000)
-	salt := []byte("random_salt_12345")
+	salt := []byte("random_salt_12345_with_sufficient_entropy_32_bytes!")
 
 	// Compute hash twice
 	hash1 := suite.Keeper.ComputeOrderHash(orderType, auraAmount, otherCoin, otherAmount, salt)
@@ -422,7 +422,8 @@ func TestFrontRunningResistance(t *testing.T) {
 	}
 
 	// Victim commits a large order (hidden from attacker)
-	victimSalt := []byte("victim_salt")
+	// Salt must be at least 32 bytes for entropy validation
+	victimSalt := []byte("victim_salt_with_32_bytes_min!!!")
 	victimHash := suite.Keeper.ComputeOrderHash(types.SwapOrderType_SELL, sdkmath.NewInt(10000000000), "usdt", sdkmath.NewInt(50000000000), victimSalt)
 	victimCommitID, err := suite.Keeper.CommitOrder(ctx, victim.String(), victimHash)
 	require.NoError(t, err)
@@ -435,7 +436,7 @@ func TestFrontRunningResistance(t *testing.T) {
 
 	// Attacker cannot derive order details from hash
 	// If they try to guess and reveal with wrong details, they'll get hash mismatch
-	attackerSalt := []byte("attacker_salt")
+	attackerSalt := []byte("attacker_salt_with_32_bytes_ok!!")
 	attackerGuess := suite.Keeper.ComputeOrderHash(types.SwapOrderType_SELL, sdkmath.NewInt(10000000000), "usdt", sdkmath.NewInt(55000000000), attackerSalt)
 	require.NotEqual(t, hex.EncodeToString(commitment.CommitHash), hex.EncodeToString(attackerGuess))
 
@@ -473,7 +474,8 @@ func TestBatchExecution_FailedLocks(t *testing.T) {
 	require.NoError(t, err)
 
 	// User1 commits and reveals (should succeed)
-	salt1 := []byte("salt_1")
+	// Salt must be at least 32 bytes for entropy validation
+	salt1 := []byte("salt_1_with_sufficient_32_bytes!")
 	hash1 := suite.Keeper.ComputeOrderHash(types.SwapOrderType_SELL, sdkmath.NewInt(10000000000), "usdt", sdkmath.NewInt(50000000000), salt1)
 	commitID1, err := suite.Keeper.CommitOrder(ctx, user1.String(), hash1)
 	require.NoError(t, err)
@@ -481,7 +483,8 @@ func TestBatchExecution_FailedLocks(t *testing.T) {
 	require.NoError(t, err)
 
 	// User2 commits and reveals (no funds, should fail during batch execution)
-	salt2 := []byte("salt_2")
+	// Salt must be at least 32 bytes for entropy validation
+	salt2 := []byte("salt_2_with_sufficient_32_bytes!")
 	hash2 := suite.Keeper.ComputeOrderHash(types.SwapOrderType_SELL, sdkmath.NewInt(10000000000), "usdt", sdkmath.NewInt(50000000000), salt2)
 	commitID2, err := suite.Keeper.CommitOrder(ctx, user2.String(), hash2)
 	require.NoError(t, err)

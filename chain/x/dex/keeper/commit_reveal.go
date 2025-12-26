@@ -112,6 +112,14 @@ func (k Keeper) RevealOrder(
 ) (string, error) {
 	// === 1. CHECKS - Validate all inputs and state ===
 
+	// SECURITY: Validate salt has minimum entropy (32 bytes = 256 bits)
+	// This prevents weak salts that could be brute-forced to reveal order details
+	// before the reveal phase, defeating the purpose of commit-reveal
+	const MinSaltLength = 32
+	if len(salt) < MinSaltLength {
+		return "", fmt.Errorf("salt must be at least %d bytes for sufficient entropy, got %d bytes", MinSaltLength, len(salt))
+	}
+
 	// Get commitment
 	commitment, found := k.GetOrderCommitment(ctx, commitID)
 	if !found {

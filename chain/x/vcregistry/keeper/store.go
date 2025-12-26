@@ -611,6 +611,37 @@ func (s Store) getMetadata(ctx context.Context, key string) (string, bool) {
 	return string(bz), true
 }
 
+// Nonces for replay attack protection
+func (s Store) setUsedNonce(ctx context.Context, nonce uint64) {
+	key := types.NonceKey(nonce)
+	// Store a marker byte to indicate the nonce is used
+	s.kv(ctx).Set(key, []byte{1})
+}
+
+func (s Store) isNonceUsed(ctx context.Context, nonce uint64) bool {
+	key := types.NonceKey(nonce)
+	return s.kv(ctx).Has(key)
+}
+
+// iterateUsedNonces returns all used nonces in deterministic order
+func (s Store) iterateUsedNonces(ctx context.Context) []uint64 {
+	it := storetypes.KVStorePrefixIterator(s.kv(ctx), types.NonceKeyPrefix)
+	defer it.Close()
+
+	nonces := make([]uint64, 0, 256)
+	for ; it.Valid(); it.Next() {
+		// Extract nonce from key
+		keyBytes := it.Key()
+		if len(keyBytes) < len(types.NonceKeyPrefix)+8 {
+			continue
+		}
+		nonceBytes := keyBytes[len(types.NonceKeyPrefix):]
+		nonce := binary.BigEndian.Uint64(nonceBytes)
+		nonces = append(nonces, nonce)
+	}
+	return nonces
+}
+
 // Remove a VC from user's list
 func (s Store) removeUserVC(ctx context.Context, holderAddress string, vcID string) {
 	existing := s.listUserVCs(ctx, holderAddress)

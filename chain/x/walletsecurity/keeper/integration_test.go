@@ -108,17 +108,8 @@ func TestCompleteWalletSecurityWorkflow(t *testing.T) {
 	require.NotNil(t, sessionConfig)
 	t.Logf("Session configured: %s", sessionConfig.SessionId)
 
-	// 6. Enroll biometric authentication
-	biometricData := []byte("fingerprint_template_hash")
-	biometricAuth, err := suite.keeper.EnrollBiometric(
-		suite.ctx,
-		multiSigWallet.WalletId,
-		wsproto.BiometricType_BIOMETRIC_TYPE_FINGERPRINT,
-		biometricData,
-	)
-	require.NoError(t, err)
-	require.NotNil(t, biometricAuth)
-	t.Logf("Biometric enrolled: %s", biometricAuth.Type.String())
+	// 6. Biometric authentication - REMOVED (deprecated)
+	// See BIOMETRIC_DEPRECATION.md for details on why this cannot work on blockchain.
 
 	// 7. Store in secure enclave
 	encryptedKey := make([]byte, 256)
@@ -322,15 +313,9 @@ func TestSecurityLayeredDefense(t *testing.T) {
 	require.NoError(t, err)
 	t.Log("Layer 3: Session timeout - ACTIVE")
 
-	// Layer 4: Biometric authentication
-	_, err = suite.keeper.EnrollBiometric(
-		suite.ctx,
-		walletID,
-		wsproto.BiometricType_BIOMETRIC_TYPE_FINGERPRINT,
-		[]byte("biometric_hash"),
-	)
-	require.NoError(t, err)
-	t.Log("Layer 4: Biometric auth - ACTIVE")
+	// Layer 4: Biometric authentication - REMOVED (deprecated)
+	// See BIOMETRIC_DEPRECATION.md for details on why this cannot work on blockchain.
+	t.Log("Layer 4: Biometric auth - SKIPPED (deprecated)")
 
 	// Layer 5: Dust filter
 	_, err = suite.keeper.ConfigureDustFilter(
@@ -357,48 +342,9 @@ func TestSecurityLayeredDefense(t *testing.T) {
 	t.Logf("Wallet %s is now maximally protected", hwConfig.WalletId)
 }
 
-// TestBiometricLockout tests biometric authentication lockout
-func TestBiometricLockout(t *testing.T) {
-	suite := new(KeeperTestSuite)
-	suite.SetT(t)
-	suite.SetupTest()
-
-	walletID := "biometric_test_wallet"
-	correctData := []byte("correct_biometric_data")
-	wrongData := []byte("wrong_biometric_data")
-
-	// Enroll biometric
-	_, err := suite.keeper.EnrollBiometric(
-		suite.ctx,
-		walletID,
-		wsproto.BiometricType_BIOMETRIC_TYPE_FINGERPRINT,
-		correctData,
-	)
-	require.NoError(t, err)
-
-	// Attempt with correct data - should succeed
-	authenticated, err := suite.keeper.AuthenticateBiometric(suite.ctx, walletID, correctData)
-	require.NoError(t, err)
-	require.True(t, authenticated)
-	t.Log("Correct biometric authentication succeeded")
-
-	// Attempt 5 times with wrong data - should trigger lockout
-	for i := 0; i < 5; i++ {
-		authenticated, err = suite.keeper.AuthenticateBiometric(suite.ctx, walletID, wrongData)
-		require.NoError(t, err)
-		require.False(t, authenticated)
-		t.Logf("Failed attempt %d/5", i+1)
-	}
-
-	// Next attempt should return lockout error
-	authBytes, err := suite.keeper.GetBiometricAuth(suite.ctx, walletID)
-	require.NoError(t, err)
-
-	var auth wsproto.BiometricAuth
-	suite.cdc.MustUnmarshal(authBytes, &auth)
-	require.True(t, auth.LockedOut)
-	t.Log("Biometric authentication locked out after 5 failed attempts")
-}
+// TestBiometricLockout - REMOVED
+// Biometric authentication tests have been removed as the feature is deprecated.
+// See BIOMETRIC_DEPRECATION.md for details on why this cannot work on blockchain.
 
 // TestSpendingLimitEnforcement tests spending limit enforcement
 func TestSpendingLimitEnforcement(t *testing.T) {

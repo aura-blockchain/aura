@@ -188,7 +188,11 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *securitypb.GenesisState) 
 		seenLogIDs[ir.AuditLogs[i].LogId] = true
 		k.SetAuditLogEntry(ctx, &ir.AuditLogs[i])
 	}
-	// Note: NextIncidentId is stored separately in KV store, not imported from genesis
+
+	// Import NextIncidentId counter (critical for deterministic ID generation after restart)
+	if ir.NextIncidentId > 0 {
+		k.SetNextIncidentID(ctx, ir.NextIncidentId)
+	}
 
 	// Initialize cryptography state (value type, always present)
 	crypto := genState.Cryptography
@@ -292,10 +296,9 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *securitypb.GenesisState {
 			SpendingLimits:        dereferenceSlice(k.GetAllSpendingLimits(ctx)),
 		},
 		IncidentResponse: securitypb.IncidentResponseState{
-			Incidents: dereferenceSlice(k.GetAllIncidents(ctx)),
-			AuditLogs: dereferenceSlice(k.GetAllAuditLogEntries(ctx)),
-			// Note: NextIncidentId is not part of IncidentResponseState proto
-			// It's stored separately in KV store
+			Incidents:      dereferenceSlice(k.GetAllIncidents(ctx)),
+			AuditLogs:      dereferenceSlice(k.GetAllAuditLogEntries(ctx)),
+			NextIncidentId: k.GetNextIncidentID(ctx),
 		},
 		Cryptography: securitypb.CryptographyState{
 			KeyRotationSchedules: dereferenceSlice(k.GetAllKeyRotationSchedules(ctx)),

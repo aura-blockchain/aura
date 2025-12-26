@@ -374,85 +374,23 @@ func (k *Keeper) ExportGenesis(ctx sdk.Context) (*types.GenesisState, error) {
 	}
 
 	// Convert pointer slices to value slices for GenesisState
-	rolesVal := make([]types.Role, len(roles))
-	for i, r := range roles {
-		rolesVal[i] = *r
-	}
-
-	roleAssignmentsVal := make([]types.RoleAssignment, len(roleAssignments))
-	for i, ra := range roleAssignments {
-		roleAssignmentsVal[i] = *ra
-	}
-
-	auditLogsVal := make([]types.AuditLog, len(auditLogs))
-	for i, al := range auditLogs {
-		auditLogsVal[i] = *al
-	}
-
-	sessionsVal := make([]types.Session, len(sessions))
-	for i, s := range sessions {
-		sessionsVal[i] = *s
-	}
-
-	rateLimitConfigsVal := make([]types.RateLimitConfig, len(rateLimitConfigs))
-	for i, rlc := range rateLimitConfigs {
-		rateLimitConfigsVal[i] = *rlc
-	}
-
-	multisigWalletsVal := make([]types.MultisigWallet, len(multisigWallets))
-	for i, mw := range multisigWallets {
-		multisigWalletsVal[i] = *mw
-	}
-
-	multisigProposalsVal := make([]types.MultisigProposal, len(multisigProposals))
-	for i, mp := range multisigProposals {
-		multisigProposalsVal[i] = *mp
-	}
-
-	timeLockedActionsVal := make([]types.TimeLockedAction, len(timeLockedActions))
-	for i, tla := range timeLockedActions {
-		timeLockedActionsVal[i] = *tla
-	}
-
-	emergencyAdminsVal := make([]types.EmergencyAdmin, len(emergencyAdmins))
-	for i, ea := range emergencyAdmins {
-		emergencyAdminsVal[i] = *ea
-	}
-
-	validatorRotationsVal := make([]types.ValidatorKeyRotation, len(validatorRotations))
-	for i, vr := range validatorRotations {
-		validatorRotationsVal[i] = *vr
-	}
-
-	identityRecordsVal := make([]types.IdentityRecord, len(identityRecords))
-	for i, ir := range identityRecords {
-		identityRecordsVal[i] = *ir
-	}
-
-	credentialRevocationsVal := make([]types.CredentialRevocation, len(credentialRevocations))
-	for i, cr := range credentialRevocations {
-		credentialRevocationsVal[i] = *cr
-	}
-
-	didKeyRotationsVal := make([]types.DIDKeyRotation, len(didKeyRotations))
-	for i, dkr := range didKeyRotations {
-		didKeyRotationsVal[i] = *dkr
-	}
-
-	didKeyHistoriesVal := make([]types.DIDKeyHistory, len(didKeyHistories))
-	for i, dkh := range didKeyHistories {
-		didKeyHistoriesVal[i] = *dkh
-	}
-
-	changeRequestsVal := make([]types.ChangeRequest, len(changeRequests))
-	for i, cr := range changeRequests {
-		changeRequestsVal[i] = *cr
-	}
-
-	changeHistoryVal := make([]types.ChangeHistory, len(changeHistory))
-	for i, ch := range changeHistory {
-		changeHistoryVal[i] = *ch
-	}
+	// Pre-allocate all slices with exact capacity for efficient memory usage
+	rolesVal := derefSlice(roles)
+	roleAssignmentsVal := derefSlice(roleAssignments)
+	auditLogsVal := derefSlice(auditLogs)
+	sessionsVal := derefSlice(sessions)
+	rateLimitConfigsVal := derefSlice(rateLimitConfigs)
+	multisigWalletsVal := derefSlice(multisigWallets)
+	multisigProposalsVal := derefSlice(multisigProposals)
+	timeLockedActionsVal := derefSlice(timeLockedActions)
+	emergencyAdminsVal := derefSlice(emergencyAdmins)
+	validatorRotationsVal := derefSlice(validatorRotations)
+	identityRecordsVal := derefSlice(identityRecords)
+	credentialRevocationsVal := derefSlice(credentialRevocations)
+	didKeyRotationsVal := derefSlice(didKeyRotations)
+	didKeyHistoriesVal := derefSlice(didKeyHistories)
+	changeRequestsVal := derefSlice(changeRequests)
+	changeHistoryVal := derefSlice(changeHistory)
 
 	return &types.GenesisState{
 		Params:                   params,
@@ -476,4 +414,19 @@ func (k *Keeper) ExportGenesis(ctx sdk.Context) (*types.GenesisState, error) {
 		NextAuditLogId:           nextAuditLogID,
 		NextChangeRequestId:      nextChangeRequestID,
 	}, nil
+}
+
+// derefSlice is a generic helper function that converts a slice of pointers
+// to a slice of values. This consolidates the 16 separate copy loops into a
+// single efficient operation using Go generics.
+// Performance: Pre-allocates exact capacity, single pass O(n) iteration.
+func derefSlice[T any](ptrs []*T) []T {
+	if len(ptrs) == 0 {
+		return nil
+	}
+	vals := make([]T, len(ptrs))
+	for i, p := range ptrs {
+		vals[i] = *p
+	}
+	return vals
 }

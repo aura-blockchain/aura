@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	sdkerrors "cosmossdk.io/errors"
+	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -51,14 +51,14 @@ func (k Keeper) RegisterModel(ctx sdk.Context, model AIModel) error {
 
 	// Check if model already exists
 	if _, exists := k.GetModel(ctx, model.ModelHash); exists {
-		return sdkerrors.Wrap(types.ErrInvalidParams, "model already registered")
+		return errorsmod.Wrap(types.ErrInvalidParams, "model already registered")
 	}
 
 	// If this is an update, link to previous version
 	if model.PreviousHash != "" {
 		prevModel, exists := k.GetModel(ctx, model.PreviousHash)
 		if !exists {
-			return sdkerrors.Wrap(types.ErrInvalidParams, "previous model version not found")
+			return errorsmod.Wrap(types.ErrInvalidParams, "previous model version not found")
 		}
 		// Optionally deprecate previous version
 		if prevModel.Status == ModelStatusActive {
@@ -179,11 +179,11 @@ func (k Keeper) ListActiveModels(ctx sdk.Context) []AIModel {
 func (k Keeper) DeprecateModel(ctx sdk.Context, modelHash string) error {
 	model, exists := k.GetModel(ctx, modelHash)
 	if !exists {
-		return sdkerrors.Wrap(types.ErrInvalidParams, "model not found")
+		return errorsmod.Wrap(types.ErrInvalidParams, "model not found")
 	}
 
 	if model.Status == ModelStatusRetired {
-		return sdkerrors.Wrap(types.ErrInvalidParams, "model already retired")
+		return errorsmod.Wrap(types.ErrInvalidParams, "model already retired")
 	}
 
 	now := ctx.BlockTime()
@@ -200,7 +200,7 @@ func (k Keeper) DeprecateModel(ctx sdk.Context, modelHash string) error {
 func (k Keeper) RetireModel(ctx sdk.Context, modelHash string) error {
 	model, exists := k.GetModel(ctx, modelHash)
 	if !exists {
-		return sdkerrors.Wrap(types.ErrInvalidParams, "model not found")
+		return errorsmod.Wrap(types.ErrInvalidParams, "model not found")
 	}
 
 	model.Status = ModelStatusRetired

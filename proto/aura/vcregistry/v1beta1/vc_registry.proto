@@ -150,6 +150,9 @@ message GenesisState {
   repeated DisclosureRequest disclosure_requests = 13;  // Pending disclosure requests
   repeated DisclosureResponse disclosure_responses = 14; // Disclosure responses
   map<string, RequestIds> pending_disclosure_index = 15; // address -> pending request IDs
+
+  // Used nonces for replay attack protection (presentation verification)
+  repeated uint64 used_nonces = 16;
 }
 
 // PresentationIds wraps a list of presentation IDs for map values

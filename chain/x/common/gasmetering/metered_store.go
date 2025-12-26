@@ -11,14 +11,21 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-// MeteredStore wraps a KVStore with automatic gas metering
+// MeteredStore wraps a KVStore with automatic gas metering.
+//
+// Deprecated: MeteredStore is not currently used in production code.
+// Modules should use DefaultGasConfig() and consume gas directly via
+// sdkCtx.GasMeter().ConsumeGas() for better control and clarity.
+// This type is retained for potential future use or removal.
 type MeteredStore struct {
 	store  storetypes.KVStore
 	ctx    sdk.Context
 	config GasConfig
 }
 
-// NewMeteredStore creates a new gas-metered store wrapper
+// NewMeteredStore creates a new gas-metered store wrapper.
+//
+// Deprecated: See MeteredStore deprecation notice.
 func NewMeteredStore(ctx context.Context, store storetypes.KVStore, config GasConfig) *MeteredStore {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	return &MeteredStore{
@@ -146,7 +153,12 @@ func (mi *meteredIterator) GetCount() uint32 {
 	return mi.count
 }
 
-// IterateWithLimit iterates with a result limit and gas metering
+// IterateWithLimit iterates with a result limit and gas metering.
+//
+// Deprecated: IterateWithLimit is not currently used in production code.
+// Modules should implement their own iteration with gas metering using
+// storetypes.KVStorePrefixIterator and manual GasMeter calls for better
+// control. This function is retained for potential future use or removal.
 func IterateWithLimit(
 	ctx context.Context,
 	store storetypes.KVStore,

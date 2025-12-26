@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	sdkerrors "cosmossdk.io/errors"
+	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -65,15 +65,15 @@ func (k Keeper) CheckRateLimit(ctx sdk.Context, address string) error {
 
 	// Check rate limits
 	if usage.LastMinute >= config.MaxQueriesPerMinute {
-		return sdkerrors.Wrap(types.ErrInvalidParams,
+		return errorsmod.Wrap(types.ErrInvalidParams,
 			fmt.Sprintf("rate limit exceeded: %d queries per minute", config.MaxQueriesPerMinute))
 	}
 	if usage.LastHour >= config.MaxQueriesPerHour {
-		return sdkerrors.Wrap(types.ErrInvalidParams,
+		return errorsmod.Wrap(types.ErrInvalidParams,
 			fmt.Sprintf("rate limit exceeded: %d queries per hour", config.MaxQueriesPerHour))
 	}
 	if usage.LastDay >= config.MaxQueriesPerDay {
-		return sdkerrors.Wrap(types.ErrInvalidParams,
+		return errorsmod.Wrap(types.ErrInvalidParams,
 			fmt.Sprintf("rate limit exceeded: %d queries per day", config.MaxQueriesPerDay))
 	}
 

@@ -4,6 +4,7 @@
 package keeper
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"sort"
 
@@ -377,15 +378,25 @@ func (k Keeper) UpdateKnownPeerListBatched(ctx sdk.Context) error {
 	return nil
 }
 
-// calculatePeerListHash creates a deterministic hash of peer IDs
+// calculatePeerListHash creates a deterministic hash of peer IDs using SHA-256
 func calculatePeerListHash(peerIDs []string) []byte {
-	// Simple concatenation hash - in production use a proper hash function
-	data := []byte{}
-	for _, id := range peerIDs {
-		data = append(data, []byte(id)...)
+	// Sort peer IDs for deterministic ordering
+	sortedIDs := make([]string, len(peerIDs))
+	copy(sortedIDs, peerIDs)
+	sort.Strings(sortedIDs)
+
+	// Use SHA-256 for proper cryptographic hashing
+	h := sha256.New()
+	for _, id := range sortedIDs {
+		// Write length prefix to prevent ambiguity in concatenation
+		lenBytes := make([]byte, 4)
+		lenBytes[0] = byte(len(id) >> 24)
+		lenBytes[1] = byte(len(id) >> 16)
+		lenBytes[2] = byte(len(id) >> 8)
+		lenBytes[3] = byte(len(id))
+		h.Write(lenBytes)
+		h.Write([]byte(id))
 	}
 
-	// Use SDK's built-in hash for determinism
-	hash := sdk.Uint64ToBigEndian(uint64(len(data)))
-	return hash
+	return h.Sum(nil)
 }

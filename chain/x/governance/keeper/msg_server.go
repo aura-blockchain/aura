@@ -369,6 +369,17 @@ func (ms msgServer) VoteWeighted(goCtx context.Context, msg *govpb.MsgVoteWeight
 		return nil, status.Error(codes.FailedPrecondition, "proposal not in voting period")
 	}
 
+	// Convert message options to vote weighted options
+	// SECURITY: Store ALL weighted options, not just the first one
+	// This is critical for proper weighted voting where users can split their vote
+	weightedOptions := make([]*govpb.WeightedVoteOption, len(msg.Options))
+	for i, opt := range msg.Options {
+		weightedOptions[i] = &govpb.WeightedVoteOption{
+			Option: opt.Option,
+			Weight: opt.Weight,
+		}
+	}
+
 	// Check for existing vote to prevent double voting or allow vote update
 	existingVote, err := ms.Keeper.GetVote(ctx, msg.ProposalId, msg.Voter)
 	if err == nil && existingVote != nil {
@@ -376,6 +387,7 @@ func (ms msgServer) VoteWeighted(goCtx context.Context, msg *govpb.MsgVoteWeight
 		// Use ctx.BlockTime() for determinism - NEVER use time.Now() in consensus code
 		voteWeightedUpdateNow := ctx.BlockTime()
 		existingVote.Option = msg.Options[0].Option
+		existingVote.WeightedOptions = weightedOptions // Store ALL weighted options
 		existingVote.Timestamp = &gogotypes.Timestamp{Seconds: voteWeightedUpdateNow.Unix(), Nanos: int32(voteWeightedUpdateNow.Nanosecond())}
 
 		if err := ms.Keeper.SetVote(ctx, existingVote); err != nil {
@@ -395,14 +407,15 @@ func (ms msgServer) VoteWeighted(goCtx context.Context, msg *govpb.MsgVoteWeight
 		return &govpb.MsgVoteWeightedResponse{}, nil
 	}
 
-	// Create new weighted vote (simplified: store first option only)
+	// Create new weighted vote with ALL options stored
 	// Use ctx.BlockTime() for determinism - NEVER use time.Now() in consensus code
 	voteWeightedNow := ctx.BlockTime()
 	vote := &types.Vote{
-		ProposalId: msg.ProposalId,
-		Voter:      msg.Voter,
-		Option:     msg.Options[0].Option,
-		Timestamp:  &gogotypes.Timestamp{Seconds: voteWeightedNow.Unix(), Nanos: int32(voteWeightedNow.Nanosecond())},
+		ProposalId:      msg.ProposalId,
+		Voter:           msg.Voter,
+		Option:          msg.Options[0].Option,          // Primary option for backward compatibility
+		WeightedOptions: weightedOptions,                 // ALL weighted options for proper tallying
+		Timestamp:       &gogotypes.Timestamp{Seconds: voteWeightedNow.Unix(), Nanos: int32(voteWeightedNow.Nanosecond())},
 	}
 
 	if err := ms.Keeper.SetVote(ctx, vote); err != nil {
@@ -591,6 +604,13 @@ func (ms msgServer) CosignVeto(goCtx context.Context, msg *govpb.MsgCosignVeto) 
 	veto, err := ms.Keeper.GetVetoRequest(ctx, msg.ProposalId)
 	if err != nil {
 		return nil, status.Error(codes.NotFound, "veto request not found")
+	}
+
+	// Check for duplicate cosigner - prevent same address from cosigning twice
+	for _, existingCosigner := range veto.Cosigners {
+		if existingCosigner == msg.Cosigner {
+			return nil, status.Error(codes.AlreadyExists, types.ErrDuplicateCosigner.Error())
+		}
 	}
 
 	// Add cosigner

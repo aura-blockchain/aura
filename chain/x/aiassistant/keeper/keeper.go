@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	sdkerrors "cosmossdk.io/errors"
+	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
 	storeprefix "cosmossdk.io/store/prefix"
 	storetypes "cosmossdk.io/store/types"
@@ -62,7 +62,7 @@ func NewKeeper(cdc codec.BinaryCodec, key storetypes.StoreKey, authority string,
 
 func (k Keeper) RegisterAssistant(ctx sdk.Context, msg *types.MsgRegisterAssistant) (*types.Assistant, error) {
 	if msg == nil {
-		return nil, sdkerrors.Wrap(types.ErrAssistantExists, "message cannot be nil")
+		return nil, errorsmod.Wrap(types.ErrAssistantExists, "message cannot be nil")
 	}
 	if _, err := sdk.AccAddressFromBech32(msg.AssistantAddress); err != nil {
 		return nil, err
@@ -95,10 +95,10 @@ func (k Keeper) RegisterAssistant(ctx sdk.Context, msg *types.MsgRegisterAssista
 		return nil, err
 	}
 	if stakeCoin.Denom != minStake.Denom {
-		return nil, sdkerrors.Wrapf(types.ErrInsufficientStake, "expected denom %s", minStake.Denom)
+		return nil, errorsmod.Wrapf(types.ErrInsufficientStake, "expected denom %s", minStake.Denom)
 	}
 	if stakeCoin.Amount.LT(minStake.Amount) {
-		return nil, sdkerrors.Wrapf(types.ErrInsufficientStake, "minimum %s%s required", minStake.Amount, minStake.Denom)
+		return nil, errorsmod.Wrapf(types.ErrInsufficientStake, "minimum %s%s required", minStake.Amount, minStake.Denom)
 	}
 
 	sponsorshipCoin, err := balanceToCoin(msg.Sponsorship)
@@ -117,7 +117,7 @@ func (k Keeper) RegisterAssistant(ctx sdk.Context, msg *types.MsgRegisterAssista
 	}
 	if sponsorshipCoin.Amount.IsPositive() {
 		if sponsorshipCoin.Denom != stakeCoin.Denom {
-			return nil, sdkerrors.Wrapf(types.ErrInvalidLocale, "sponsorship denom mismatch %s", sponsorshipCoin.Denom)
+			return nil, errorsmod.Wrapf(types.ErrInvalidLocale, "sponsorship denom mismatch %s", sponsorshipCoin.Denom)
 		}
 		toTransfer = toTransfer.Add(sponsorshipCoin)
 	}
@@ -186,7 +186,7 @@ func (k Keeper) Heartbeat(ctx sdk.Context, msg *types.MsgHeartbeat) (uint64, err
 		return 0, err
 	}
 	if assistant.Status != types.AssistantStatus_ACTIVE {
-		return 0, sdkerrors.Wrapf(types.ErrAssistantNotFound, "assistant is not active: %s", assistant.Status.String())
+		return 0, errorsmod.Wrapf(types.ErrAssistantNotFound, "assistant is not active: %s", assistant.Status.String())
 	}
 
 	if msg.OperatorAddress != assistant.OwnerAddress && msg.OperatorAddress != assistant.AssistantAddress {
@@ -362,7 +362,7 @@ func (k Keeper) slashAssistant(ctx sdk.Context, assistant *types.Assistant, frac
 		return sdk.Coin{}, nil
 	}
 	if fraction.IsNegative() {
-		return sdk.Coin{}, sdkerrors.Wrap(types.ErrInvalidParams, "slash fraction negative")
+		return sdk.Coin{}, errorsmod.Wrap(types.ErrInvalidParams, "slash fraction negative")
 	}
 	if fraction.IsZero() {
 		return sdk.Coin{}, nil
@@ -419,7 +419,7 @@ func normalizeLocales(locales []string, max int) ([]string, error) {
 	for _, loc := range locales {
 		normalized := normalizeLocaleString(loc)
 		if normalized == "" {
-			return nil, sdkerrors.Wrap(types.ErrInvalidLocale, loc)
+			return nil, errorsmod.Wrap(types.ErrInvalidLocale, loc)
 		}
 		normalizedSet[normalized] = struct{}{}
 	}

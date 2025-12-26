@@ -27,7 +27,7 @@ var (
 	RecoveryRequestPrefix    = []byte{0x05}
 	SpendingLimitPrefix      = []byte{0x06}
 	SessionPrefix            = []byte{0x07}
-	SessionConfigPrefix      = []byte{0x07} // Session configuration storage (same as SessionPrefix for backward compatibility)
+	SessionConfigPrefix      = []byte{0x14} // Session configuration storage (unique prefix to avoid collision with SessionPrefix)
 	BiometricAuthPrefix      = []byte{0x08}
 	SecureEnclavePrefix      = []byte{0x09}
 	EncryptedBackupPrefix    = []byte{0x0a}
@@ -79,7 +79,7 @@ func GetSessionKey(sessionID string) []byte {
 
 // GetSessionConfigKey returns the store key for session configuration
 func GetSessionConfigKey(sessionID string) []byte {
-	return append(SessionPrefix, []byte(sessionID)...)
+	return append(SessionConfigPrefix, []byte(sessionID)...)
 }
 
 // GetDeviceFingerprintKey returns the store key for device fingerprint

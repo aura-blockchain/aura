@@ -41,6 +41,17 @@ var (
 	JailingKeyPrefix              = []byte{0x0e}
 	SlashingKeyPrefix             = []byte{0x0f}
 	SentryNodeKeyPrefix           = []byte{0x10}
+	// Secondary index: alerts by validator address for O(1) lookup
+	ValidatorAlertByAddrKey       = []byte{0x11}
+	// Cursor for batched monitoring operations
+	MonitoringCursorKey           = []byte{0x12}
+)
+
+// Default batching limits for EndBlocker operations
+const (
+	// MaxValidatorsPerMonitoringBatch limits validators monitored per block
+	// to prevent consensus timeout with large validator sets
+	MaxValidatorsPerMonitoringBatch = 50
 )
 
 // GetValidatorSecurityInfoKey creates the key for validator security info
@@ -83,4 +94,21 @@ func GetValidatorMissedBlockBitKey(validatorAddr string, index int64) []byte {
 // GetRegionValidatorCountKey creates the key for region validator count
 func GetRegionValidatorCountKey(region string) []byte {
 	return append(RegionValidatorCountKey, []byte(region)...)
+}
+
+// GetValidatorAlertByAddrKey creates a secondary index key for alerts by validator address.
+// Format: prefix + validatorAddr + 0x00 + alertID
+// This enables O(1) lookup of all alerts for a specific validator.
+func GetValidatorAlertByAddrKey(validatorAddr, alertID string) []byte {
+	key := append(ValidatorAlertByAddrKey, []byte(validatorAddr)...)
+	key = append(key, 0x00) // separator
+	return append(key, []byte(alertID)...)
+}
+
+// GetValidatorAlertByAddrPrefix returns the prefix for iterating alerts by validator.
+// Use with KVStorePrefixIterator to get all alerts for a validator in O(k) time
+// where k = number of alerts for that validator.
+func GetValidatorAlertByAddrPrefix(validatorAddr string) []byte {
+	key := append(ValidatorAlertByAddrKey, []byte(validatorAddr)...)
+	return append(key, 0x00) // separator
 }

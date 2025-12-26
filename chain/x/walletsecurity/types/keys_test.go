@@ -51,7 +51,8 @@ func TestKeyPrefixes_Values(t *testing.T) {
 	require.Equal(t, byte(0x04), SocialRecoveryPrefix[0])
 	require.Equal(t, byte(0x05), RecoveryRequestPrefix[0])
 	require.Equal(t, byte(0x06), SpendingLimitPrefix[0])
-	require.Equal(t, byte(0x07), SessionConfigPrefix[0])
+	require.Equal(t, byte(0x07), SessionPrefix[0])
+	require.Equal(t, byte(0x14), SessionConfigPrefix[0]) // Unique value to avoid collision with SessionPrefix
 	require.Equal(t, byte(0x08), BiometricAuthPrefix[0])
 	require.Equal(t, byte(0x09), SecureEnclavePrefix[0])
 	require.Equal(t, byte(0x0a), EncryptedBackupPrefix[0])

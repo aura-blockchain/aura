@@ -6,7 +6,7 @@ package keeper
 import (
 	"context"
 
-	sdkerrors "cosmossdk.io/errors"
+	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -65,7 +65,7 @@ func (m msgServer) ReportMisbehavior(goCtx context.Context, msg *types.MsgReport
 func (m msgServer) UpdateParams(goCtx context.Context, msg *types.MsgUpdateParams) (*types.MsgUpdateParamsResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	if msg.Authority != m.keeper.authority {
-		return nil, status.Error(codes.PermissionDenied, sdkerrors.Wrapf(types.ErrUnauthorizedOperator, "expected %s", m.keeper.authority).Error())
+		return nil, status.Error(codes.PermissionDenied, errorsmod.Wrapf(types.ErrUnauthorizedOperator, "expected %s", m.keeper.authority).Error())
 	}
 	if err := types.ValidateParams(msg.Params); err != nil {
 		return nil, err

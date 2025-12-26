@@ -709,73 +709,11 @@ func (suite *KeeperTestSuite) TestLockAndUnlockSession() {
 }
 
 // ============================================================================
-// Biometric Authentication Tests
+// Biometric Authentication Tests - REMOVED
 // ============================================================================
-
-func (suite *KeeperTestSuite) TestEnrollBiometric() {
-	walletID := "wallet123"
-	enrollmentData := []byte("fingerprint_data_hash")
-
-	auth, err := suite.keeper.EnrollBiometric(
-		suite.ctx,
-		walletID,
-		wsproto.BiometricType_BIOMETRIC_TYPE_FINGERPRINT,
-		enrollmentData,
-	)
-
-	suite.Require().NoError(err)
-	suite.Require().NotNil(auth)
-	suite.Require().Equal(walletID, auth.WalletId)
-	suite.Require().Equal(wsproto.BiometricType_BIOMETRIC_TYPE_FINGERPRINT, auth.Type)
-	suite.Require().True(auth.Enabled)
-}
-
-func (suite *KeeperTestSuite) TestAuthenticateBiometric_Success() {
-	walletID := "wallet123"
-	enrollmentData := []byte("fingerprint_data_hash")
-
-	_, err := suite.keeper.EnrollBiometric(
-		suite.ctx,
-		walletID,
-		wsproto.BiometricType_BIOMETRIC_TYPE_FINGERPRINT,
-		enrollmentData,
-	)
-	suite.Require().NoError(err)
-
-	// Authenticate with same data
-	authenticated, err := suite.keeper.AuthenticateBiometric(
-		suite.ctx,
-		walletID,
-		enrollmentData,
-	)
-
-	suite.Require().NoError(err)
-	suite.Require().True(authenticated)
-}
-
-func (suite *KeeperTestSuite) TestAuthenticateBiometric_Failure() {
-	walletID := "wallet123"
-	enrollmentData := []byte("fingerprint_data_hash")
-
-	_, err := suite.keeper.EnrollBiometric(
-		suite.ctx,
-		walletID,
-		wsproto.BiometricType_BIOMETRIC_TYPE_FINGERPRINT,
-		enrollmentData,
-	)
-	suite.Require().NoError(err)
-
-	// Authenticate with different data
-	wrongData := []byte("wrong_fingerprint_data")
-	authenticated, err := suite.keeper.AuthenticateBiometric(
-		suite.ctx,
-		walletID,
-		wrongData,
-	)
-
-	suite.Require().NoError(err)
-	suite.Require().False(authenticated)
-}
+// Biometric authentication functions have been deprecated and removed.
+// See BIOMETRIC_DEPRECATION.md for details on why this cannot work on blockchain.
+// Tests for EnrollBiometric and AuthenticateBiometric have been removed.
 
 // ============================================================================
 // Transaction Simulation Tests

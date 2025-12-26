@@ -5,6 +5,8 @@ package keeper
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -94,8 +96,14 @@ func (ms msgServer) CreateMixingPool(goCtx context.Context, msg *privacypb.MsgCr
 		return nil, status.Error(codes.InvalidArgument, "max participants must be >= min participants")
 	}
 
-	// Create mixing pool
-	poolID := fmt.Sprintf("pool_%s_%d", msg.Creator, ctx.BlockHeight())
+	// Create mixing pool with entropy from content hash
+	// SECURITY: Adding hash component prevents predictable pool IDs
+	// which could be exploited for front-running or ID collision attacks
+	poolContent := fmt.Sprintf("%s_%d_%d_%d_%s_%d",
+		msg.Creator, ctx.BlockHeight(), msg.MinParticipants,
+		msg.MaxParticipants, msg.Denomination, msg.MixingRounds)
+	contentHash := sha256.Sum256([]byte(poolContent))
+	poolID := fmt.Sprintf("pool_%s_%d_%s", msg.Creator, ctx.BlockHeight(), hex.EncodeToString(contentHash[:4]))
 
 	pool := &privacypb.MixingPool{
 		PoolId:          poolID,

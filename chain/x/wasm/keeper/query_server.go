@@ -75,8 +75,9 @@ func (qs queryServer) Codes(goCtx context.Context, req *types.QueryCodesRequest)
 
 	ctx.Logger().Info("wasmd keeper is available")
 
-	// Initialize with empty slice (not nil) to ensure proper JSON marshaling
-	codeInfos := make([]types.CodeInfo, 0)
+	// Initialize with pre-allocated capacity for efficiency.
+	// maxCodeID of 100 is a reasonable upper limit for initial implementation.
+	codeInfos := make([]types.CodeInfo, 0, 100)
 
 	// Iterate through all code IDs by trying sequential IDs
 	// wasmd stores codes with sequential IDs starting from 1

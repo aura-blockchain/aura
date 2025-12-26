@@ -119,8 +119,8 @@ func (k *Keeper) CreatePresentation(
 	k.store.setPresentation(ctx, types.VCPresentation(*presentation))
 	k.store.appendUserPresentation(ctx, holderAddress, presentation.PresentationId)
 
-	// Mark nonce as used
-	k.markNonceUsed(nonce)
+	// Mark nonce as used for replay protection
+	k.markNonceUsed(ctx, nonce)
 
 	return presentation, qrData, nil
 }
@@ -160,7 +160,7 @@ func (k *Keeper) VerifyPresentation(
 	}
 
 	// Check nonce (prevent replay attacks)
-	if k.isNonceUsed(qrData.Nonce) {
+	if k.isNonceUsed(ctx, qrData.Nonce) {
 		return &vcregistrypb.VerificationResult{
 			IsValid:           false,
 			HolderDid:         qrData.HolderDID,
@@ -456,20 +456,16 @@ func (k *Keeper) storePresentationTemp(presentation *vcregistrypb.VCPresentation
 	// (it reads VCs directly from the chain)
 }
 
-// markNonceUsed marks a nonce as used
-func (k *Keeper) markNonceUsed(nonce uint64) {
-	// Store nonce with expiration timestamp
-	// In production, this would be in the KV store
-	// For simplicity, we're not implementing a full nonce store here
-	// as nonces are time-limited by presentation expiration
+// markNonceUsed marks a nonce as used in the KV store for replay protection
+func (k *Keeper) markNonceUsed(ctx context.Context, nonce uint64) {
+	k.requireStore()
+	k.store.setUsedNonce(ctx, nonce)
 }
 
-// isNonceUsed checks if a nonce has been used
-func (k *Keeper) isNonceUsed(nonce uint64) bool {
-	// Check if nonce exists in store
-	// For now, return false (accept all nonces)
-	// In production, this would check the KV store
-	return false
+// isNonceUsed checks if a nonce has been used (replay attack protection)
+func (k *Keeper) isNonceUsed(ctx context.Context, nonce uint64) bool {
+	k.requireStore()
+	return k.store.isNonceUsed(ctx, nonce)
 }
 
 // GetPresentation retrieves a presentation by ID (if stored)

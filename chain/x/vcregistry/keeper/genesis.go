@@ -232,6 +232,11 @@ func (k *Keeper) InitGenesis(ctx context.Context, data types.GenesisState) error
 		}
 	}
 
+	// Import used nonces for replay protection (deterministic ordering from proto)
+	for _, nonce := range data.UsedNonces {
+		k.store.setUsedNonce(ctx, nonce)
+	}
+
 	return nil
 }
 
@@ -374,6 +379,9 @@ func (k *Keeper) ExportGenesis(ctx context.Context) types.GenesisState {
 		}
 	}
 
+	// Export used nonces for replay protection
+	usedNonces := k.store.iterateUsedNonces(ctx)
+
 	return types.GenesisState{
 		Params:                 params,
 		VcRecords:              vcRecords,
@@ -390,5 +398,6 @@ func (k *Keeper) ExportGenesis(ctx context.Context) types.GenesisState {
 		DisclosureRequests:     disclosureRequests,
 		DisclosureResponses:    disclosureResponses,
 		PendingDisclosureIndex: pendingDisclosures,
+		UsedNonces:             usedNonces,
 	}
 }

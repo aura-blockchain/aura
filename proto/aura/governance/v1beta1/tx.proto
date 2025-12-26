@@ -91,12 +91,6 @@ message MsgVote {
 
 message MsgVoteResponse {}
 
-// WeightedVoteOption defines a vote option with weight
-message WeightedVoteOption {
-  VoteOption option = 1;
-  string weight = 2;  // Weight between 0 and 1
-}
-
 // MsgVoteWeighted defines a message to cast a weighted vote
 message MsgVoteWeighted {
   option (cosmos.msg.v1.signer) = "voter";

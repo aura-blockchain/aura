@@ -34,6 +34,7 @@ var (
 	ErrInsufficientVetoCosigners = errorsmod.Register(ModuleName, 51, "insufficient veto cosigners")
 	ErrInvalidVeto               = errorsmod.Register(ModuleName, 52, "invalid veto")
 	ErrExecutionDelayNotPassed   = errorsmod.Register(ModuleName, 53, "execution delay has not passed")
+	ErrDuplicateCosigner         = errorsmod.Register(ModuleName, 54, "cosigner has already signed this veto")
 
 	// Delegation errors (60-69)
 	ErrInvalidDelegation  = errorsmod.Register(ModuleName, 60, "invalid vote delegation")

@@ -104,14 +104,24 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data types.GenesisState) error {
 		// CRITICAL COLLISION CHECK: Ensure proposed counter doesn't collide with existing IDs
 		// While unlikely with hash-based IDs being large numbers, we must verify
 		// in case of database corruption or selective genesis export
-		if seenSequenceNumbers[proposedCounter] {
-			return fmt.Errorf(
-				"counter collision detected: proposed counter %d would collide with existing transfer ID transfer-%d",
-				proposedCounter, proposedCounter)
+		//
+		// SECURITY: Use retry loop to find first non-colliding counter value
+		// This handles edge cases where multiple consecutive IDs exist in genesis
+		const maxRetries = 1000 // Prevent infinite loop in pathological cases
+		for i := 0; i < maxRetries; i++ {
+			if !seenSequenceNumbers[proposedCounter] {
+				break // Found a non-colliding counter
+			}
+			proposedCounter++
+			if i == maxRetries-1 {
+				return fmt.Errorf(
+					"counter collision detected: unable to find non-colliding counter after %d attempts starting from %d",
+					maxRetries, maxTransferCounter+1)
+			}
 		}
 
 		bz := make([]byte, 8)
-		binary.BigEndian.PutUint64(bz, proposedCounter) // +1 CRITICAL: next available ID
+		binary.BigEndian.PutUint64(bz, proposedCounter) // First available non-colliding ID
 		k.store(ctx).Set(types.TransferCounterKey, bz)
 	}
 

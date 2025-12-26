@@ -382,9 +382,11 @@ func (k *Keeper) GetAllVoteLocks(ctx context.Context) ([]*economicspb.VoteLock, 
 	return locks, nil
 }
 
-// GetVoteDelegations retrieves all vote delegations for a delegator
+// GetVoteDelegations retrieves all vote delegations for a delegator.
+// For large datasets, prefer GetVoteDelegationsPaginated which supports pagination.
 func (k *Keeper) GetVoteDelegations(ctx context.Context, delegator sdk.AccAddress) ([]*economicspb.VoteDelegation, error) {
-	delegations := []*economicspb.VoteDelegation{}
+	// Pre-allocate with reasonable capacity (most users have few delegations)
+	delegations := make([]*economicspb.VoteDelegation, 0, 16)
 
 	store := k.storeService.OpenKVStore(ctx)
 	delegatorPrefix := append(types.VoteDelegationPrefix, []byte(delegator.String())...)
@@ -404,6 +406,59 @@ func (k *Keeper) GetVoteDelegations(ctx context.Context, delegator sdk.AccAddres
 	}
 
 	return delegations, nil
+}
+
+// GetVoteDelegationsPaginated retrieves vote delegations for a delegator with pagination.
+// This is the preferred method for query handlers to avoid loading all delegations into memory.
+func (k *Keeper) GetVoteDelegationsPaginated(ctx context.Context, delegator sdk.AccAddress, offset, limit uint64) ([]*economicspb.VoteDelegation, uint64, error) {
+	if limit == 0 {
+		limit = 100 // Default limit
+	}
+	if limit > 1000 {
+		limit = 1000 // Max limit to prevent abuse
+	}
+
+	// Pre-allocate with exact capacity
+	delegations := make([]*economicspb.VoteDelegation, 0, limit)
+
+	store := k.storeService.OpenKVStore(ctx)
+	delegatorPrefix := append(types.VoteDelegationPrefix, []byte(delegator.String())...)
+
+	iterator, err := store.Iterator(delegatorPrefix, storeprefixend(delegatorPrefix))
+	if err != nil {
+		return nil, 0, err
+	}
+	defer iterator.Close()
+
+	var total uint64
+	var skipped uint64
+
+	for ; iterator.Valid(); iterator.Next() {
+		total++
+
+		// Skip until we reach offset
+		if skipped < offset {
+			skipped++
+			continue
+		}
+
+		// Stop if we've collected enough
+		if uint64(len(delegations)) >= limit {
+			// Count remaining items for total
+			for ; iterator.Valid(); iterator.Next() {
+				total++
+			}
+			break
+		}
+
+		var delegation economicspb.VoteDelegation
+		if err := k.cdc.Unmarshal(iterator.Value(), &delegation); err != nil {
+			return nil, 0, err
+		}
+		delegations = append(delegations, &delegation)
+	}
+
+	return delegations, total, nil
 }
 
 // GetAllPendingTreasuryTxs retrieves all pending treasury transactions

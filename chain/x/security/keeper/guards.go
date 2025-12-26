@@ -227,7 +227,8 @@ func (k Keeper) CheckGuardRateLimit(ctx sdk.Context, key string, limit uint64, w
 	windowStart := currentTime.Add(-window)
 
 	// Clean up old timestamps outside the window
-	validTimestamps := make([]time.Time, 0)
+	// Pre-allocate with estimated capacity (most timestamps should be valid)
+	validTimestamps := make([]time.Time, 0, len(rl.Timestamps))
 	for _, ts := range rl.Timestamps {
 		if ts.After(windowStart) {
 			validTimestamps = append(validTimestamps, ts)
@@ -274,7 +275,8 @@ func (k Keeper) IncrementGuardRateLimit(ctx sdk.Context, key string, window time
 	}
 
 	// Clean up old timestamps and add current one
-	validTimestamps := make([]time.Time, 0)
+	// Pre-allocate with capacity for existing timestamps plus one new entry
+	validTimestamps := make([]time.Time, 0, len(rl.Timestamps)+1)
 	for _, ts := range rl.Timestamps {
 		if ts.After(windowStart) {
 			validTimestamps = append(validTimestamps, ts)

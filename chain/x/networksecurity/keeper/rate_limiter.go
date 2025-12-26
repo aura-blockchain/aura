@@ -5,7 +5,6 @@ package keeper
 
 import (
 	"fmt"
-	"sync"
 	"time"
 
 	storetypes "cosmossdk.io/store/types"
@@ -14,9 +13,18 @@ import (
 	"github.com/aequitas/aura/chain/x/networksecurity/types"
 )
 
-// RateLimiter implements token bucket algorithm for rate limiting
+// RateLimiter implements token bucket algorithm for rate limiting.
+//
+// Thread Safety: This struct does NOT use sync.Mutex because Cosmos SDK
+// transaction execution is single-threaded per block. All calls to this
+// rate limiter occur within the deterministic ABCI execution flow where
+// only one goroutine processes transactions at a time. Adding mutex would
+// only add unnecessary overhead without providing any benefit.
+//
+// If this type is ever used outside of Cosmos SDK's ABCI handlers (e.g.,
+// in concurrent gRPC query handlers), callers must provide their own
+// synchronization.
 type RateLimiter struct {
-	mu               sync.Mutex
 	maxRate          uint64        // Maximum requests per second
 	burstSize        uint64        // Burst capacity
 	tokens           uint64        // Current available tokens
@@ -42,10 +50,8 @@ func NewRateLimiter(maxRate, burstSize uint64, windowDuration time.Duration, cur
 // Allow checks if a request should be allowed.
 // currentTime must be ctx.BlockTime() from Cosmos SDK context for deterministic consensus.
 // Uses integer math for deterministic consensus.
+// Note: No mutex needed - Cosmos SDK ABCI execution is single-threaded.
 func (rl *RateLimiter) Allow(currentTime time.Time) bool {
-	rl.mu.Lock()
-	defer rl.mu.Unlock()
-
 	// Refill tokens based on elapsed time using integer math
 	elapsed := currentTime.Sub(rl.lastRefill)
 	// Convert to seconds using integer division (nanoseconds / 1e9)
@@ -76,10 +82,8 @@ func (rl *RateLimiter) Allow(currentTime time.Time) bool {
 
 // Reset resets the rate limiter.
 // currentTime must be ctx.BlockTime() from Cosmos SDK context for deterministic consensus.
+// Note: No mutex needed - Cosmos SDK ABCI execution is single-threaded.
 func (rl *RateLimiter) Reset(currentTime time.Time) {
-	rl.mu.Lock()
-	defer rl.mu.Unlock()
-
 	rl.tokens = rl.burstSize
 	rl.lastRefill = currentTime
 	rl.windowStart = currentTime
@@ -163,9 +167,11 @@ func (k Keeper) CheckRateLimit(ctx sdk.Context, peerID string) error {
 	return nil
 }
 
-// BandwidthTracker tracks bandwidth usage per peer
+// BandwidthTracker tracks bandwidth usage per peer.
+//
+// Thread Safety: No mutex needed - see RateLimiter documentation above.
+// Cosmos SDK ABCI execution is single-threaded per block.
 type BandwidthTracker struct {
-	mu          sync.Mutex
 	bytesSent   uint64
 	bytesRecv   uint64
 	windowStart time.Time
@@ -186,9 +192,6 @@ func NewBandwidthTracker(limit uint64, windowSize time.Duration, currentTime tim
 // RecordSent records bytes sent.
 // currentTime must be ctx.BlockTime() from Cosmos SDK context for deterministic consensus.
 func (bt *BandwidthTracker) RecordSent(bytes uint64, currentTime time.Time) {
-	bt.mu.Lock()
-	defer bt.mu.Unlock()
-
 	if currentTime.Sub(bt.windowStart) > bt.windowSize {
 		bt.bytesSent = 0
 		bt.bytesRecv = 0
@@ -201,9 +204,6 @@ func (bt *BandwidthTracker) RecordSent(bytes uint64, currentTime time.Time) {
 // RecordReceived records bytes received.
 // currentTime must be ctx.BlockTime() from Cosmos SDK context for deterministic consensus.
 func (bt *BandwidthTracker) RecordReceived(bytes uint64, currentTime time.Time) {
-	bt.mu.Lock()
-	defer bt.mu.Unlock()
-
 	if currentTime.Sub(bt.windowStart) > bt.windowSize {
 		bt.bytesSent = 0
 		bt.bytesRecv = 0
@@ -215,9 +215,6 @@ func (bt *BandwidthTracker) RecordReceived(bytes uint64, currentTime time.Time) 
 
 // CheckLimit checks if bandwidth limit is exceeded
 func (bt *BandwidthTracker) CheckLimit() bool {
-	bt.mu.Lock()
-	defer bt.mu.Unlock()
-
 	totalBytes := bt.bytesSent + bt.bytesRecv
 	limitBytes := bt.limit * uint64(bt.windowSize.Seconds())
 	return totalBytes <= limitBytes
@@ -225,8 +222,6 @@ func (bt *BandwidthTracker) CheckLimit() bool {
 
 // GetStats returns current bandwidth statistics
 func (bt *BandwidthTracker) GetStats() (sent, recv uint64) {
-	bt.mu.Lock()
-	defer bt.mu.Unlock()
 	return bt.bytesSent, bt.bytesRecv
 }
 

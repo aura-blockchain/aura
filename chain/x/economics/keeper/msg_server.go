@@ -9,6 +9,8 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	economicspb "github.com/aequitas/aura/proto/aura/economics/v1beta1"
 	"github.com/aequitas/aura/chain/x/economics/types"
@@ -28,6 +30,37 @@ func NewMsgServer(keeper *Keeper) economicspb.MsgServer {
 	return &msgServer{keeper: keeper}
 }
 
+// verifySigner checks that the claimed address matches the transaction signer.
+// This prevents unauthorized operations where an attacker could specify another
+// user's address in the message without being the actual transaction signer.
+//
+// Security: This is critical for preventing authorization bypass attacks.
+func verifySigner(msg sdk.Msg, claimedAddr string) error {
+	// Type assert to get access to GetSigners method
+	signerMsg, ok := msg.(interface{ GetSigners() []sdk.AccAddress })
+	if !ok {
+		return status.Error(codes.Internal, "message does not implement GetSigners")
+	}
+
+	signers := signerMsg.GetSigners()
+	if len(signers) == 0 {
+		return status.Error(codes.Unauthenticated, "no signers in transaction")
+	}
+
+	claimed, err := sdk.AccAddressFromBech32(claimedAddr)
+	if err != nil {
+		return status.Errorf(codes.InvalidArgument, "invalid address format: %s", err.Error())
+	}
+
+	if !claimed.Equals(signers[0]) {
+		return status.Errorf(codes.PermissionDenied,
+			"sender must be transaction signer (claimed: %s, signer: %s)",
+			claimed.String(), signers[0].String())
+	}
+
+	return nil
+}
+
 // CreateVestingSchedule creates a new vesting schedule
 func (ms msgServer) CreateVestingSchedule(goCtx context.Context, msg *economicspb.MsgCreateVestingSchedule) (*economicspb.MsgCreateVestingScheduleResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
@@ -35,6 +68,11 @@ func (ms msgServer) CreateVestingSchedule(goCtx context.Context, msg *economicsp
 	// Validate message is not nil
 	if msg == nil {
 		return nil, errorsmod.Wrap(types.ErrInvalidRequest, "message cannot be nil")
+	}
+
+	// Verify that the message creator is the transaction signer
+	if err := verifySigner(msg, msg.Creator); err != nil {
+		return nil, err
 	}
 
 	// Validate creator address
@@ -85,6 +123,11 @@ func (ms msgServer) CreateVestingSchedule(goCtx context.Context, msg *economicsp
 func (ms msgServer) ReleaseVestedTokens(goCtx context.Context, msg *economicspb.MsgReleaseVestedTokens) (*economicspb.MsgReleaseVestedTokensResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	// Verify that the message beneficiary is the transaction signer
+	if err := verifySigner(msg, msg.Beneficiary); err != nil {
+		return nil, err
+	}
+
 	// Validate beneficiary address
 	beneficiary, err := sdk.AccAddressFromBech32(msg.Beneficiary)
 	if err != nil {
@@ -115,6 +158,11 @@ func (ms msgServer) ReleaseVestedTokens(goCtx context.Context, msg *economicspb.
 // RevokeVestingSchedule revokes a vesting schedule
 func (ms msgServer) RevokeVestingSchedule(goCtx context.Context, msg *economicspb.MsgRevokeVestingSchedule) (*economicspb.MsgRevokeVestingScheduleResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// Verify that the message revoker is the transaction signer
+	if err := verifySigner(msg, msg.Revoker); err != nil {
+		return nil, err
+	}
 
 	// Validate revoker address
 	revoker, err := sdk.AccAddressFromBech32(msg.Revoker)
@@ -147,6 +195,11 @@ func (ms msgServer) RevokeVestingSchedule(goCtx context.Context, msg *economicsp
 // SubmitProposal submits a new governance proposal
 func (ms msgServer) SubmitProposal(goCtx context.Context, msg *economicspb.MsgSubmitProposal) (*economicspb.MsgSubmitProposalResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// Verify that the message proposer is the transaction signer
+	if err := verifySigner(msg, msg.Proposer); err != nil {
+		return nil, err
+	}
 
 	// Validate proposer address
 	proposer, err := sdk.AccAddressFromBech32(msg.Proposer)
@@ -190,6 +243,11 @@ func (ms msgServer) SubmitProposal(goCtx context.Context, msg *economicspb.MsgSu
 func (ms msgServer) Deposit(goCtx context.Context, msg *economicspb.MsgDeposit) (*economicspb.MsgDepositResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	// Verify that the message depositor is the transaction signer
+	if err := verifySigner(msg, msg.Depositor); err != nil {
+		return nil, err
+	}
+
 	// Validate depositor address
 	depositor, err := sdk.AccAddressFromBech32(msg.Depositor)
 	if err != nil {
@@ -226,6 +284,11 @@ func (ms msgServer) Deposit(goCtx context.Context, msg *economicspb.MsgDeposit) 
 func (ms msgServer) Vote(goCtx context.Context, msg *economicspb.MsgVote) (*economicspb.MsgVoteResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	// Verify that the message voter is the transaction signer
+	if err := verifySigner(msg, msg.Voter); err != nil {
+		return nil, err
+	}
+
 	// Validate voter address
 	voter, err := sdk.AccAddressFromBech32(msg.Voter)
 	if err != nil {
@@ -253,6 +316,11 @@ func (ms msgServer) Vote(goCtx context.Context, msg *economicspb.MsgVote) (*econ
 // VoteWeighted casts a weighted vote on a proposal
 func (ms msgServer) VoteWeighted(goCtx context.Context, msg *economicspb.MsgVoteWeighted) (*economicspb.MsgVoteWeightedResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// Verify that the message voter is the transaction signer
+	if err := verifySigner(msg, msg.Voter); err != nil {
+		return nil, err
+	}
 
 	// Validate voter address
 	voter, err := sdk.AccAddressFromBech32(msg.Voter)
@@ -288,6 +356,11 @@ func (ms msgServer) VoteWeighted(goCtx context.Context, msg *economicspb.MsgVote
 func (ms msgServer) DelegateVote(goCtx context.Context, msg *economicspb.MsgDelegateVote) (*economicspb.MsgDelegateVoteResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	// Verify that the message delegator is the transaction signer
+	if err := verifySigner(msg, msg.Delegator); err != nil {
+		return nil, err
+	}
+
 	// Validate addresses
 	delegator, err := sdk.AccAddressFromBech32(msg.Delegator)
 	if err != nil {
@@ -319,6 +392,11 @@ func (ms msgServer) DelegateVote(goCtx context.Context, msg *economicspb.MsgDele
 // UndelegateVote removes vote delegation
 func (ms msgServer) UndelegateVote(goCtx context.Context, msg *economicspb.MsgUndelegateVote) (*economicspb.MsgUndelegateVoteResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// Verify that the message delegator is the transaction signer
+	if err := verifySigner(msg, msg.Delegator); err != nil {
+		return nil, err
+	}
 
 	// Validate addresses
 	delegator, err := sdk.AccAddressFromBech32(msg.Delegator)
@@ -352,6 +430,11 @@ func (ms msgServer) UndelegateVote(goCtx context.Context, msg *economicspb.MsgUn
 func (ms msgServer) ExecuteProposal(goCtx context.Context, msg *economicspb.MsgExecuteProposal) (*economicspb.MsgExecuteProposalResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	// Verify that the message executor is the transaction signer
+	if err := verifySigner(msg, msg.Executor); err != nil {
+		return nil, err
+	}
+
 	// Validate executor address
 	executor, err := sdk.AccAddressFromBech32(msg.Executor)
 	if err != nil {
@@ -378,6 +461,11 @@ func (ms msgServer) ExecuteProposal(goCtx context.Context, msg *economicspb.MsgE
 // RevealSecretVote reveals a secret ballot vote
 func (ms msgServer) RevealSecretVote(goCtx context.Context, msg *economicspb.MsgRevealSecretVote) (*economicspb.MsgRevealSecretVoteResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// Verify that the message voter is the transaction signer
+	if err := verifySigner(msg, msg.Voter); err != nil {
+		return nil, err
+	}
 
 	// Validate voter address
 	voter, err := sdk.AccAddressFromBech32(msg.Voter)
@@ -406,6 +494,11 @@ func (ms msgServer) RevealSecretVote(goCtx context.Context, msg *economicspb.Msg
 // LockVotingTokens locks tokens for voting power boost
 func (ms msgServer) LockVotingTokens(goCtx context.Context, msg *economicspb.MsgLockVotingTokens) (*economicspb.MsgLockVotingTokensResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// Verify that the message owner is the transaction signer
+	if err := verifySigner(msg, msg.Owner); err != nil {
+		return nil, err
+	}
 
 	// Validate owner address
 	owner, err := sdk.AccAddressFromBech32(msg.Owner)
@@ -440,6 +533,11 @@ func (ms msgServer) LockVotingTokens(goCtx context.Context, msg *economicspb.Msg
 func (ms msgServer) UnlockVotingTokens(goCtx context.Context, msg *economicspb.MsgUnlockVotingTokens) (*economicspb.MsgUnlockVotingTokensResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	// Verify that the message owner is the transaction signer
+	if err := verifySigner(msg, msg.Owner); err != nil {
+		return nil, err
+	}
+
 	// Validate owner address
 	owner, err := sdk.AccAddressFromBech32(msg.Owner)
 	if err != nil {
@@ -470,6 +568,11 @@ func (ms msgServer) UnlockVotingTokens(goCtx context.Context, msg *economicspb.M
 // ProposeTreasurySpend proposes a treasury spend
 func (ms msgServer) ProposeTreasurySpend(goCtx context.Context, msg *economicspb.MsgProposeTreasurySpend) (*economicspb.MsgProposeTreasurySpendResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// Verify that the message proposer is the transaction signer
+	if err := verifySigner(msg, msg.Proposer); err != nil {
+		return nil, err
+	}
 
 	// Validate proposer address
 	proposer, err := sdk.AccAddressFromBech32(msg.Proposer)
@@ -513,6 +616,11 @@ func (ms msgServer) ProposeTreasurySpend(goCtx context.Context, msg *economicspb
 func (ms msgServer) SignTreasurySpend(goCtx context.Context, msg *economicspb.MsgSignTreasurySpend) (*economicspb.MsgSignTreasurySpendResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	// Verify that the message signer is the transaction signer
+	if err := verifySigner(msg, msg.Signer); err != nil {
+		return nil, err
+	}
+
 	// Validate signer address
 	signer, err := sdk.AccAddressFromBech32(msg.Signer)
 	if err != nil {
@@ -545,6 +653,11 @@ func (ms msgServer) SignTreasurySpend(goCtx context.Context, msg *economicspb.Ms
 func (ms msgServer) ExecuteTreasurySpend(goCtx context.Context, msg *economicspb.MsgExecuteTreasurySpend) (*economicspb.MsgExecuteTreasurySpendResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	// Verify that the message executor is the transaction signer
+	if err := verifySigner(msg, msg.Executor); err != nil {
+		return nil, err
+	}
+
 	// Validate executor address
 	executor, err := sdk.AccAddressFromBech32(msg.Executor)
 	if err != nil {
@@ -576,6 +689,11 @@ func (ms msgServer) ExecuteTreasurySpend(goCtx context.Context, msg *economicspb
 func (ms msgServer) UpdateParams(goCtx context.Context, msg *economicspb.MsgUpdateParams) (*economicspb.MsgUpdateParamsResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	// Verify that the message authority is the transaction signer
+	if err := verifySigner(msg, msg.Authority); err != nil {
+		return nil, err
+	}
+
 	// Validate authority address
 	authority, err := sdk.AccAddressFromBech32(msg.Authority)
 	if err != nil {
@@ -601,6 +719,11 @@ func (ms msgServer) UpdateParams(goCtx context.Context, msg *economicspb.MsgUpda
 // AdjustInflationRate manually adjusts inflation rate (governance only)
 func (ms msgServer) AdjustInflationRate(goCtx context.Context, msg *economicspb.MsgAdjustInflationRate) (*economicspb.MsgAdjustInflationRateResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// Verify that the message authority is the transaction signer
+	if err := verifySigner(msg, msg.Authority); err != nil {
+		return nil, err
+	}
 
 	// Validate authority address
 	authority, err := sdk.AccAddressFromBech32(msg.Authority)

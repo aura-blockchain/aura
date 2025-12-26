@@ -27,6 +27,7 @@ func TestGovernanceErrors(t *testing.T) {
 		{"ErrDepositPeriodEnded", ErrDepositPeriodEnded, "deposit period has ended"},
 		{"ErrUnauthorizedVeto", ErrUnauthorizedVeto, "unauthorized veto"},
 		{"ErrInsufficientVetoCosigners", ErrInsufficientVetoCosigners, "insufficient veto cosigners"},
+		{"ErrDuplicateCosigner", ErrDuplicateCosigner, "cosigner has already signed this veto"},
 		{"ErrExecutionDelayNotPassed", ErrExecutionDelayNotPassed, "execution delay has not passed"},
 		{"ErrProposalNotPassed", ErrProposalNotPassed, "proposal has not passed"},
 		{"ErrAlreadyExecuted", ErrAlreadyExecuted, "proposal already executed"},

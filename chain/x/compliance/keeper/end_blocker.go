@@ -84,7 +84,17 @@ func (k *Keeper) EndBlocker(ctx sdk.Context) {
 
 	// Clear pending updates map for next block
 	// This must happen even if there were errors, to prevent memory leak
-	k.pendingProfileUpdates = make(map[string]*types.AMLProfile)
+	// Performance: Reuse map by clearing entries instead of reallocating when small.
+	// For large maps, reallocation is more efficient than iterating through all keys.
+	if len(k.pendingProfileUpdates) < 256 {
+		// Clear in-place for small maps (more efficient than new allocation)
+		for key := range k.pendingProfileUpdates {
+			delete(k.pendingProfileUpdates, key)
+		}
+	} else {
+		// For large maps, allocate new map with estimated capacity from previous block
+		k.pendingProfileUpdates = make(map[string]*types.AMLProfile, totalUpdates)
+	}
 
 	// Log summary if there were any updates
 	if totalUpdates > 0 {

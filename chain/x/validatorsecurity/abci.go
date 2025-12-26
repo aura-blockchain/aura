@@ -22,14 +22,28 @@ func BeginBlocker(ctx context.Context, k keeper.Keeper) error {
 }
 
 // EndBlocker is called at the end of every block
+//
+// CRITICAL CONSENSUS SAFETY: This function uses batched operations to prevent
+// consensus failure. With 1000+ validators, unbounded monitoring causes block
+// production to exceed timeout, halting the chain.
+//
+// Solution: Cap validators monitored per block using cursor-based pagination.
+// All validators are eventually monitored across multiple blocks without risking
+// consensus failure.
 func EndBlocker(ctx context.Context, k keeper.Keeper) error {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	params := k.GetParams(ctx)
 
-	// Run monitoring checks at intervals
+	// Run monitoring checks at intervals using batched operations
+	// Monitors up to MaxValidatorsPerMonitoringBatch validators per block
 	monitoringInterval := params.MonitoringInterval
 	if shouldRunMonitoring(sdkCtx, monitoringInterval) {
-		k.MonitorAllValidators(ctx)
+		processed := k.MonitorValidatorsBatched(ctx, 0) // 0 uses default limit
+		if processed > 0 {
+			k.Logger(sdkCtx).Debug("monitored validators batch",
+				"count", processed,
+				"block_height", sdkCtx.BlockHeight())
+		}
 	}
 
 	// Auto-unjail validators whose jail period has expired

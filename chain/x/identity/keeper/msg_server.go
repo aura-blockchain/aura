@@ -5,6 +5,8 @@ package keeper
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"time"
 
@@ -283,8 +285,11 @@ func (ms msgServer) CreateMultisigProposal(goCtx context.Context, msg *identityp
 		return nil, status.Error(codes.PermissionDenied, "proposer is not a wallet signer")
 	}
 
-	// Generate proposal ID
-	proposalID := fmt.Sprintf("msprop-%s-%d", msg.WalletId, ctx.BlockTime().Unix())
+	// Generate proposal ID with entropy from content hash
+	// SECURITY: Adding hash of content prevents predictable proposal IDs
+	// which could be exploited for front-running or ID collision attacks
+	contentHash := sha256.Sum256([]byte(msg.WalletId + msg.Title + msg.Description + string(msg.Payload)))
+	proposalID := fmt.Sprintf("msprop-%s-%d-%s", msg.WalletId, ctx.BlockTime().Unix(), hex.EncodeToString(contentHash[:4]))
 
 	now := ctx.BlockTime()
 	// Get params for expiry

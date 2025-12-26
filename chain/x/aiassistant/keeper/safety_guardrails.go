@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 
-	sdkerrors "cosmossdk.io/errors"
+	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/aequitas/aura/chain/x/aiassistant/types"
@@ -146,7 +146,7 @@ func (k Keeper) CheckSafety(ctx sdk.Context, input, output string) (SafetyCheckR
 
 	// Return error if blocked
 	if result.Blocked {
-		return result, sdkerrors.Wrap(types.ErrInvalidParams, "safety check failed: critical violation detected")
+		return result, errorsmod.Wrap(types.ErrInvalidParams, "safety check failed: critical violation detected")
 	}
 
 	return result, nil

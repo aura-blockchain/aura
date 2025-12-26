@@ -438,41 +438,24 @@ func (m *MsgServerImpl) UnlockSession(
 	}, nil
 }
 
+// EnrollBiometric is DEPRECATED and returns an error.
+// Biometric authentication cannot work on blockchain due to determinism requirements.
+// See BIOMETRIC_DEPRECATION.md for alternatives (hardware wallet, multi-sig, social recovery).
 func (m *MsgServerImpl) EnrollBiometric(
 	ctx context.Context,
 	req *wsproto.MsgEnrollBiometric,
 ) (*wsproto.MsgEnrollBiometricResponse, error) {
-	auth, err := m.keeper.EnrollBiometric(
-		ctx,
-		req.WalletId,
-		req.Type,
-		req.EnrollmentData,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return &wsproto.MsgEnrollBiometricResponse{
-		Auth: auth,
-	}, nil
+	return nil, fmt.Errorf("biometric authentication is deprecated and has been removed; see BIOMETRIC_DEPRECATION.md for alternatives")
 }
 
+// AuthenticateBiometric is DEPRECATED and returns an error.
+// Biometric authentication cannot work on blockchain due to determinism requirements.
+// See BIOMETRIC_DEPRECATION.md for alternatives (hardware wallet, multi-sig, social recovery).
 func (m *MsgServerImpl) AuthenticateBiometric(
 	ctx context.Context,
 	req *wsproto.MsgAuthenticateBiometric,
 ) (*wsproto.MsgAuthenticateBiometricResponse, error) {
-	authenticated, err := m.keeper.AuthenticateBiometric(
-		ctx,
-		req.WalletId,
-		req.BiometricProof,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return &wsproto.MsgAuthenticateBiometricResponse{
-		Authenticated: authenticated,
-	}, nil
+	return nil, fmt.Errorf("biometric authentication is deprecated and has been removed; see BIOMETRIC_DEPRECATION.md for alternatives")
 }
 
 func (m *MsgServerImpl) StoreInSecureEnclave(
