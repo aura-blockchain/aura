@@ -47,6 +47,16 @@ func TestMsgServerTestSuite(t *testing.T) {
 }
 
 func (suite *MsgServerTestSuite) SetupTest() {
+	// Configure SDK with proper bech32 prefix for address validation
+	// Use sync.Once to ensure this only happens once across all tests
+	setupSDKConfigOnce.Do(func() {
+		cfg := sdk.GetConfig()
+		cfg.SetBech32PrefixForAccount("aura", "aurapub")
+		cfg.SetBech32PrefixForValidator("auravaloper", "auravaloperpub")
+		cfg.SetBech32PrefixForConsensusNode("auravalcons", "auravalconspub")
+		cfg.Seal()
+	})
+
 	// Create test context
 	key := storetypes.NewKVStoreKey("economics")
 	storeService := runtime.NewKVStoreService(key)
@@ -130,7 +140,7 @@ func (suite *MsgServerTestSuite) TestMsgCreateVestingSchedule() {
 				VestingType:     economicspb.VestingType_VESTING_TYPE_LINEAR,
 			},
 			shouldErr: true,
-			errMsg:    "invalid creator address",
+			errMsg:    "invalid address format", // verifySigner validates empty address before GetSigners()
 		},
 		{
 			name: "invalid - empty beneficiary",
@@ -244,7 +254,7 @@ func (suite *MsgServerTestSuite) TestMsgReleaseVestedTokens() {
 				ScheduleId:  scheduleID,
 			},
 			shouldErr: true,
-			errMsg:    "invalid beneficiary",
+			errMsg:    "invalid address format", // verifySigner validates empty address before GetSigners()
 		},
 		{
 			name: "invalid - empty schedule ID",
@@ -329,7 +339,7 @@ func (suite *MsgServerTestSuite) TestMsgRevokeVestingSchedule() {
 				Reason:     "Test revocation",
 			},
 			shouldErr: true,
-			errMsg:    "invalid revoker",
+			errMsg:    "invalid address format", // verifySigner validates empty address before GetSigners()
 		},
 		{
 			name: "invalid - non-existent schedule",
@@ -442,7 +452,7 @@ func (suite *MsgServerTestSuite) TestMsgSubmitProposal() {
 				InitialDeposit: sdk.Coins{sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(1000000)}},
 			},
 			shouldErr: true,
-			errMsg:    "invalid proposer",
+			errMsg:    "invalid address format", // verifySigner validates empty address before GetSigners()
 		},
 	}
 
@@ -504,7 +514,7 @@ func (suite *MsgServerTestSuite) TestMsgDeposit() {
 				Amount:     sdk.Coins{sdk.Coin{Denom: "uaura", Amount: sdkmath.NewInt(100000)}},
 			},
 			shouldErr: true,
-			errMsg:    "invalid depositor",
+			errMsg:    "invalid address format", // verifySigner validates empty address before GetSigners()
 		},
 		{
 			name: "invalid - zero amount",
@@ -630,7 +640,7 @@ func (suite *MsgServerTestSuite) TestMsgVote() {
 				Option:     economicspb.VoteOption_VOTE_OPTION_YES,
 			},
 			shouldErr: true,
-			errMsg:    "invalid voter",
+			errMsg:    "invalid address format", // verifySigner validates empty address before GetSigners()
 		},
 		{
 			name: "invalid - unspecified option",
@@ -727,7 +737,7 @@ func (suite *MsgServerTestSuite) TestMsgVoteWeighted() {
 				},
 			},
 			shouldErr: true,
-			errMsg:    "invalid voter",
+			errMsg:    "invalid address format", // verifySigner validates empty address before GetSigners()
 		},
 		{
 			name: "invalid - empty options",
@@ -809,7 +819,7 @@ func (suite *MsgServerTestSuite) TestMsgDelegateVote() {
 				Categories: []economicspb.ProposalCategory{},
 			},
 			shouldErr: true,
-			errMsg:    "invalid delegator",
+			errMsg:    "invalid address format", // verifySigner validates empty address before GetSigners()
 		},
 		{
 			name: "invalid - empty delegate",
@@ -900,7 +910,7 @@ func (suite *MsgServerTestSuite) TestMsgUndelegateVote() {
 				Categories: []economicspb.ProposalCategory{},
 			},
 			shouldErr: true,
-			errMsg:    "invalid delegator",
+			errMsg:    "invalid address format", // verifySigner validates empty address before GetSigners()
 		},
 		{
 			name: "invalid - non-existent delegation",
@@ -969,7 +979,7 @@ func (suite *MsgServerTestSuite) TestMsgExecuteProposal() {
 				Executor:   "",
 			},
 			shouldErr: true,
-			errMsg:    "invalid executor",
+			errMsg:    "invalid address format", // verifySigner validates empty address before GetSigners()
 		},
 		{
 			name: "invalid - non-existent proposal",
@@ -1070,7 +1080,7 @@ func (suite *MsgServerTestSuite) TestMsgRevealSecretVote() {
 				RevealKey:  "reveal_key_123",
 			},
 			shouldErr: true,
-			errMsg:    "invalid voter",
+			errMsg:    "invalid address format", // verifySigner validates empty address before GetSigners()
 		},
 		{
 			name: "invalid - empty reveal key",
@@ -1149,7 +1159,7 @@ func (suite *MsgServerTestSuite) TestMsgLockVotingTokens() {
 				LockDuration: 365 * 24 * 3600,
 			},
 			shouldErr: true,
-			errMsg:    "invalid owner",
+			errMsg:    "invalid address format", // verifySigner validates empty address before GetSigners()
 		},
 		{
 			name: "invalid - zero amount",
@@ -1239,7 +1249,7 @@ func (suite *MsgServerTestSuite) TestMsgUnlockVotingTokens() {
 				LockId: lockID,
 			},
 			shouldErr: true,
-			errMsg:    "invalid owner",
+			errMsg:    "invalid address format", // verifySigner validates empty address before GetSigners()
 		},
 		{
 			name: "invalid - non-existent lock",
@@ -1301,7 +1311,7 @@ func (suite *MsgServerTestSuite) TestMsgProposeTreasurySpend() {
 				Description: "Test",
 			},
 			shouldErr: true,
-			errMsg:    "invalid proposer",
+			errMsg:    "invalid address format", // verifySigner validates empty address before GetSigners()
 		},
 		{
 			name: "invalid - empty recipient",
@@ -1392,7 +1402,7 @@ func (suite *MsgServerTestSuite) TestMsgSignTreasurySpend() {
 				TxId:   txID,
 			},
 			shouldErr: true,
-			errMsg:    "invalid signer",
+			errMsg:    "invalid address format", // verifySigner validates empty address before GetSigners()
 		},
 		{
 			name: "invalid - non-existent tx",
@@ -1460,7 +1470,7 @@ func (suite *MsgServerTestSuite) TestMsgExecuteTreasurySpend() {
 				TxId:     txID,
 			},
 			shouldErr: true,
-			errMsg:    "invalid executor",
+			errMsg:    "invalid address format", // verifySigner validates empty address before GetSigners()
 		},
 		{
 			name: "invalid - non-existent tx",
@@ -1530,7 +1540,7 @@ func (suite *MsgServerTestSuite) TestMsgUpdateParams() {
 				Params:    *newParams,
 			},
 			shouldErr: true,
-			errMsg:    "invalid authority",
+			errMsg:    "invalid address format", // verifySigner validates empty address before GetSigners()
 		},
 	}
 

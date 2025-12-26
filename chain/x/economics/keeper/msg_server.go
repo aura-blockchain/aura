@@ -36,6 +36,17 @@ func NewMsgServer(keeper *Keeper) economicspb.MsgServer {
 //
 // Security: This is critical for preventing authorization bypass attacks.
 func verifySigner(msg sdk.Msg, claimedAddr string) error {
+	// CRITICAL: Validate claimed address format FIRST before calling GetSigners(),
+	// because GetSigners() may internally call AccAddressFromBech32 which panics on empty strings.
+	if claimedAddr == "" {
+		return status.Error(codes.InvalidArgument, "invalid address format: empty address")
+	}
+
+	claimed, err := sdk.AccAddressFromBech32(claimedAddr)
+	if err != nil {
+		return status.Errorf(codes.InvalidArgument, "invalid address format: %s", err.Error())
+	}
+
 	// Type assert to get access to GetSigners method
 	signerMsg, ok := msg.(interface{ GetSigners() []sdk.AccAddress })
 	if !ok {
@@ -45,11 +56,6 @@ func verifySigner(msg sdk.Msg, claimedAddr string) error {
 	signers := signerMsg.GetSigners()
 	if len(signers) == 0 {
 		return status.Error(codes.Unauthenticated, "no signers in transaction")
-	}
-
-	claimed, err := sdk.AccAddressFromBech32(claimedAddr)
-	if err != nil {
-		return status.Errorf(codes.InvalidArgument, "invalid address format: %s", err.Error())
 	}
 
 	if !claimed.Equals(signers[0]) {
