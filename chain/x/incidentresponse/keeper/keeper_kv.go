@@ -35,7 +35,10 @@ func NewKeeperKV(storeKey storetypes.StoreKey, cdc codec.BinaryCodec) *KeeperKV 
 	}
 }
 
-// requireStore panics if store is not initialized (production safety check)
+// requireStore panics if store is not initialized.
+// This is a production safety check that fires during app init if the keeper wasn't wired correctly.
+// Panic is intentional: operating without a store would cause silent data loss.
+// See chain/docs/security/COSMOS_PANIC_PATTERNS.md
 func (k *KeeperKV) requireStore() {
 	if k.store == nil {
 		panic("incidentresponse keeper: KV store not initialized")

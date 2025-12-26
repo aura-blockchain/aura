@@ -298,7 +298,7 @@ func (k *Keeper) GetIncentiveRecommendations(ctx context.Context) ([]string, err
 	largeTxCount := uint64(0)
 	err := k.IterateLargeTxRecords(ctx, func(record *types.LargeTxRecord) bool {
 		largeTxCount++
-		return true
+		return false // Continue iterating
 	})
 	if err != nil {
 		return nil, err

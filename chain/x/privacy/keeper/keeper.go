@@ -80,17 +80,17 @@ func (k *Keeper) SetMemoEncryptor(memoEncryptor types.MemoEncryptor) {
 }
 
 // GetAuthority returns the module authority
-func (k Keeper) GetAuthority() string {
+func (k *Keeper) GetAuthority() string {
 	return k.authority
 }
 
 // Logger returns a module-specific logger
-func (k Keeper) Logger(ctx sdk.Context) log.Logger {
+func (k *Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", "x/"+types.ModuleName)
 }
 
 // SetParams sets the privacy module parameters
-func (k Keeper) SetParams(ctx context.Context, params types.Params) error {
+func (k *Keeper) SetParams(ctx context.Context, params types.Params) error {
 	store := k.getStore(ctx)
 
 	// Convert to proto for storage
@@ -123,7 +123,7 @@ func (k Keeper) SetParams(ctx context.Context, params types.Params) error {
 }
 
 // GetParams gets the privacy module parameters
-func (k Keeper) GetParams(ctx context.Context) types.Params {
+func (k *Keeper) GetParams(ctx context.Context) types.Params {
 	store := k.getStore(ctx)
 	bz := store.Get(types.ParamsKey)
 	if bz == nil {
@@ -151,18 +151,18 @@ func (k Keeper) GetParams(ctx context.Context) types.Params {
 }
 
 // getStore returns the KVStore for the privacy module
-func (k Keeper) getStore(ctx context.Context) storetypes.KVStore {
+func (k *Keeper) getStore(ctx context.Context) storetypes.KVStore {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	return sdkCtx.KVStore(k.storeKey)
 }
 
 // GetStoreKey returns the store key for testing purposes
-func (k Keeper) GetStoreKey() storetypes.StoreKey {
+func (k *Keeper) GetStoreKey() storetypes.StoreKey {
 	return k.storeKey
 }
 
 // GetCodec returns the codec for testing purposes
-func (k Keeper) GetCodec() codec.BinaryCodec {
+func (k *Keeper) GetCodec() codec.BinaryCodec {
 	return k.cdc
 }
 
@@ -180,7 +180,7 @@ type CommitmentRecord struct {
 // In a real implementation, the commitment would be C = H(secret) + value
 // For testing, the commitment parameter is expected to be the secret value
 // We hash it to create the actual commitment
-func (k Keeper) CreateCommitment(ctx context.Context, sender string, commitment []byte) (string, error) {
+func (k *Keeper) CreateCommitment(ctx context.Context, sender string, commitment []byte) (string, error) {
 	if len(commitment) == 0 {
 		return "", types.ErrInvalidCommitment
 	}
@@ -199,7 +199,7 @@ func (k Keeper) CreateCommitment(ctx context.Context, sender string, commitment 
 }
 
 // GetCommitment retrieves a commitment by ID
-func (k Keeper) GetCommitment(ctx context.Context, commitmentID string) (*CommitmentRecord, bool) {
+func (k *Keeper) GetCommitment(ctx context.Context, commitmentID string) (*CommitmentRecord, bool) {
 	store := k.getStore(ctx)
 	key := append(types.CommitmentPrefix, []byte(commitmentID)...)
 	bz := store.Get(key)
@@ -217,7 +217,7 @@ func (k Keeper) GetCommitment(ctx context.Context, commitmentID string) (*Commit
 // For proper implementation, this would verify C = H(secret) + value
 // For this test implementation: verify by hashing the commitment+secret
 // and checking if it matches a predetermined pattern
-func (k Keeper) VerifyCommitment(ctx context.Context, commitmentID string, secret []byte) bool {
+func (k *Keeper) VerifyCommitment(ctx context.Context, commitmentID string, secret []byte) bool {
 	record, found := k.GetCommitment(ctx, commitmentID)
 	if !found {
 		return false
@@ -231,7 +231,7 @@ func (k Keeper) VerifyCommitment(ctx context.Context, commitmentID string, secre
 // Nullifier management
 
 // CreateNullifier creates a new nullifier
-func (k Keeper) CreateNullifier(ctx context.Context, nullifier []byte) error {
+func (k *Keeper) CreateNullifier(ctx context.Context, nullifier []byte) error {
 	if k.NullifierExists(ctx, nullifier) {
 		return types.ErrNullifierExists
 	}
@@ -243,7 +243,7 @@ func (k Keeper) CreateNullifier(ctx context.Context, nullifier []byte) error {
 }
 
 // NullifierExists checks if a nullifier exists
-func (k Keeper) NullifierExists(ctx context.Context, nullifier []byte) bool {
+func (k *Keeper) NullifierExists(ctx context.Context, nullifier []byte) bool {
 	store := k.getStore(ctx)
 	key := append(types.NullifierPrefix, nullifier...)
 	return store.Has(key)
@@ -252,7 +252,7 @@ func (k Keeper) NullifierExists(ctx context.Context, nullifier []byte) bool {
 // Merkle tree management
 
 // AddLeaf adds a leaf to the merkle tree
-func (k Keeper) AddLeaf(ctx context.Context, leaf []byte) (uint64, error) {
+func (k *Keeper) AddLeaf(ctx context.Context, leaf []byte) (uint64, error) {
 	store := k.getStore(ctx)
 
 	// Get current leaf count
@@ -274,7 +274,7 @@ func (k Keeper) AddLeaf(ctx context.Context, leaf []byte) (uint64, error) {
 }
 
 // GetLeaf retrieves a leaf by index
-func (k Keeper) GetLeaf(ctx context.Context, index uint64) ([]byte, bool) {
+func (k *Keeper) GetLeaf(ctx context.Context, index uint64) ([]byte, bool) {
 	store := k.getStore(ctx)
 	leafKey := append(types.MerkleTreePrefix, sdk.Uint64ToBigEndian(index)...)
 	bz := store.Get(leafKey)
@@ -285,7 +285,7 @@ func (k Keeper) GetLeaf(ctx context.Context, index uint64) ([]byte, bool) {
 }
 
 // GetMerkleRoot returns the merkle root
-func (k Keeper) GetMerkleRoot(ctx context.Context) []byte {
+func (k *Keeper) GetMerkleRoot(ctx context.Context) []byte {
 	// Simplified implementation - return hash of all leaves
 	store := k.getStore(ctx)
 	countKey := append(types.MerkleTreePrefix, []byte("count")...)
@@ -306,13 +306,13 @@ func (k Keeper) GetMerkleRoot(ctx context.Context) []byte {
 }
 
 // GetMerklePath returns the merkle path for a leaf
-func (k Keeper) GetMerklePath(ctx context.Context, index uint64) [][]byte {
+func (k *Keeper) GetMerklePath(ctx context.Context, index uint64) [][]byte {
 	// Simplified implementation
 	return [][]byte{}
 }
 
 // VerifyMerklePath verifies a merkle path
-func (k Keeper) VerifyMerklePath(ctx context.Context, leaf []byte, path [][]byte, index uint64) bool {
+func (k *Keeper) VerifyMerklePath(ctx context.Context, leaf []byte, path [][]byte, index uint64) bool {
 	// Simplified implementation
 	return true
 }
@@ -329,7 +329,7 @@ type ZKProofRecord struct {
 }
 
 // SubmitZKProof submits a ZK proof
-func (k Keeper) SubmitZKProof(ctx context.Context, prover string, proof []byte, publicInputs []byte) (string, error) {
+func (k *Keeper) SubmitZKProof(ctx context.Context, prover string, proof []byte, publicInputs []byte) (string, error) {
 	store := k.getStore(ctx)
 
 	// Generate proof ID
@@ -343,7 +343,7 @@ func (k Keeper) SubmitZKProof(ctx context.Context, prover string, proof []byte, 
 }
 
 // VerifyZKProof verifies a ZK proof
-func (k Keeper) VerifyZKProof(ctx context.Context, proofID string) bool {
+func (k *Keeper) VerifyZKProof(ctx context.Context, proofID string) bool {
 	store := k.getStore(ctx)
 	key := append(types.ZKProofPrefix, []byte(proofID)...)
 	proof := store.Get(key)
@@ -364,7 +364,7 @@ type ShieldedTransferRecord struct {
 }
 
 // ShieldedTransfer performs a shielded transfer
-func (k Keeper) ShieldedTransfer(ctx context.Context, sender string, amount sdkmath.Int, commitment []byte, proof []byte) (string, error) {
+func (k *Keeper) ShieldedTransfer(ctx context.Context, sender string, amount sdkmath.Int, commitment []byte, proof []byte) (string, error) {
 	if amount.IsZero() || amount.IsNegative() {
 		return "", fmt.Errorf("invalid transfer amount")
 	}
@@ -382,7 +382,7 @@ func (k Keeper) ShieldedTransfer(ctx context.Context, sender string, amount sdkm
 }
 
 // GetShieldedTransfer retrieves a shielded transfer
-func (k Keeper) GetShieldedTransfer(ctx context.Context, transferID string) (*ShieldedTransferRecord, bool) {
+func (k *Keeper) GetShieldedTransfer(ctx context.Context, transferID string) (*ShieldedTransferRecord, bool) {
 	store := k.getStore(ctx)
 	key := append(types.ShieldedTxPrefix, []byte(transferID)...)
 	bz := store.Get(key)
@@ -397,7 +397,7 @@ func (k Keeper) GetShieldedTransfer(ctx context.Context, transferID string) (*Sh
 }
 
 // Unshield performs an unshield operation
-func (k Keeper) Unshield(ctx context.Context, recipient string, amount sdkmath.Int, nullifier []byte, proof []byte) error {
+func (k *Keeper) Unshield(ctx context.Context, recipient string, amount sdkmath.Int, nullifier []byte, proof []byte) error {
 	if k.NullifierExists(ctx, nullifier) {
 		return types.ErrNullifierExists
 	}
@@ -407,12 +407,12 @@ func (k Keeper) Unshield(ctx context.Context, recipient string, amount sdkmath.I
 }
 
 // InitGenesis initializes the module from genesis state
-func (k Keeper) InitGenesis(ctx context.Context, data types.GenesisState) error {
+func (k *Keeper) InitGenesis(ctx context.Context, data types.GenesisState) error {
 	return k.SetParams(ctx, data.Params)
 }
 
 // ExportGenesis exports the module state
-func (k Keeper) ExportGenesis(ctx context.Context) types.GenesisState {
+func (k *Keeper) ExportGenesis(ctx context.Context) types.GenesisState {
 	return types.GenesisState{
 		Params: k.GetParams(ctx),
 	}
@@ -423,7 +423,7 @@ func (k Keeper) ExportGenesis(ctx context.Context) types.GenesisState {
 // ============================================================================
 
 // SetMixingPool stores a mixing pool
-func (k Keeper) SetMixingPool(ctx context.Context, pool *privacyproto.MixingPool) error {
+func (k *Keeper) SetMixingPool(ctx context.Context, pool *privacyproto.MixingPool) error {
 	store := k.getStore(ctx)
 	key := append(types.MixingPoolPrefix, []byte(pool.PoolId)...)
 
@@ -437,7 +437,7 @@ func (k Keeper) SetMixingPool(ctx context.Context, pool *privacyproto.MixingPool
 }
 
 // GetMixingPool retrieves a mixing pool by ID
-func (k Keeper) GetMixingPool(ctx context.Context, poolID string) (*privacyproto.MixingPool, error) {
+func (k *Keeper) GetMixingPool(ctx context.Context, poolID string) (*privacyproto.MixingPool, error) {
 	store := k.getStore(ctx)
 	key := append(types.MixingPoolPrefix, []byte(poolID)...)
 
@@ -455,7 +455,7 @@ func (k Keeper) GetMixingPool(ctx context.Context, poolID string) (*privacyproto
 }
 
 // GetAllMixingPools retrieves all mixing pools
-func (k Keeper) GetAllMixingPools(ctx context.Context) []*privacyproto.MixingPool {
+func (k *Keeper) GetAllMixingPools(ctx context.Context) []*privacyproto.MixingPool {
 	store := k.getStore(ctx)
 	iterator := storetypes.KVStorePrefixIterator(store, types.MixingPoolPrefix)
 	defer iterator.Close()
@@ -478,7 +478,7 @@ func (k Keeper) GetAllMixingPools(ctx context.Context) []*privacyproto.MixingPoo
 // ============================================================================
 
 // SetViewKey stores a view key for an owner
-func (k Keeper) SetViewKey(ctx context.Context, owner string, viewKey *privacyproto.ViewKey) error {
+func (k *Keeper) SetViewKey(ctx context.Context, owner string, viewKey *privacyproto.ViewKey) error {
 	store := k.getStore(ctx)
 	key := append(types.ViewKeyPrefix, []byte(owner)...)
 	key = append(key, viewKey.PublicViewKey...)
@@ -493,7 +493,7 @@ func (k Keeper) SetViewKey(ctx context.Context, owner string, viewKey *privacypr
 }
 
 // GetViewKeyByPublic retrieves a view key by public key
-func (k Keeper) GetViewKeyByPublic(ctx context.Context, publicViewKey []byte) (*privacyproto.ViewKey, error) {
+func (k *Keeper) GetViewKeyByPublic(ctx context.Context, publicViewKey []byte) (*privacyproto.ViewKey, error) {
 	store := k.getStore(ctx)
 	iterator := storetypes.KVStorePrefixIterator(store, types.ViewKeyPrefix)
 	defer iterator.Close()
@@ -513,7 +513,7 @@ func (k Keeper) GetViewKeyByPublic(ctx context.Context, publicViewKey []byte) (*
 }
 
 // GetViewKeys retrieves all view keys for an owner
-func (k Keeper) GetViewKeys(ctx context.Context, owner string) []*privacyproto.ViewKey {
+func (k *Keeper) GetViewKeys(ctx context.Context, owner string) []*privacyproto.ViewKey {
 	store := k.getStore(ctx)
 	prefix := append(types.ViewKeyPrefix, []byte(owner)...)
 	iterator := storetypes.KVStorePrefixIterator(store, prefix)
@@ -533,7 +533,7 @@ func (k Keeper) GetViewKeys(ctx context.Context, owner string) []*privacyproto.V
 }
 
 // DeleteViewKey deletes a view key
-func (k Keeper) DeleteViewKey(ctx context.Context, owner string, publicViewKey []byte) error {
+func (k *Keeper) DeleteViewKey(ctx context.Context, owner string, publicViewKey []byte) error {
 	store := k.getStore(ctx)
 	key := append(types.ViewKeyPrefix, []byte(owner)...)
 	key = append(key, publicViewKey...)
@@ -547,7 +547,7 @@ func (k Keeper) DeleteViewKey(ctx context.Context, owner string, publicViewKey [
 // ============================================================================
 
 // SetNetworkPrivacy stores network privacy settings
-func (k Keeper) SetNetworkPrivacy(ctx context.Context, networkPrivacy *privacyproto.NetworkPrivacy) error {
+func (k *Keeper) SetNetworkPrivacy(ctx context.Context, networkPrivacy *privacyproto.NetworkPrivacy) error {
 	store := k.getStore(ctx)
 
 	bz, err := k.cdc.Marshal(networkPrivacy)
@@ -562,7 +562,7 @@ func (k Keeper) SetNetworkPrivacy(ctx context.Context, networkPrivacy *privacypr
 }
 
 // GetNetworkPrivacy retrieves network privacy settings
-func (k Keeper) GetNetworkPrivacy(ctx context.Context) (*privacyproto.NetworkPrivacy, error) {
+func (k *Keeper) GetNetworkPrivacy(ctx context.Context) (*privacyproto.NetworkPrivacy, error) {
 	store := k.getStore(ctx)
 	key := []byte("network_privacy")
 	bz := store.Get(key)
@@ -583,7 +583,7 @@ func (k Keeper) GetNetworkPrivacy(ctx context.Context) (*privacyproto.NetworkPri
 // ============================================================================
 
 // VerifyZKProofSimple performs simplified ZK proof verification
-func (k Keeper) VerifyZKProofSimple(ctx context.Context, proof *privacyproto.ZKProof) bool {
+func (k *Keeper) VerifyZKProofSimple(ctx context.Context, proof *privacyproto.ZKProof) bool {
 	if proof == nil || len(proof.ProofData) == 0 {
 		return false
 	}

@@ -65,7 +65,7 @@ func (k *Keeper) GetKYCRecord(ctx sdk.Context, address string) (*types.KYCRecord
 	var record types.KYCRecord
 	// Use codec for gogoproto-generated types
 	if err := k.cdc.Unmarshal(bz, &record); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("GetKYCRecord: failed to unmarshal record for %s: %w", address, err)
 	}
 	return &record, nil
 }
@@ -80,7 +80,7 @@ func (k *Keeper) GetAllKYCRecords(ctx sdk.Context) ([]*types.KYCRecord, error) {
 	for ; iterator.Valid(); iterator.Next() {
 		var record types.KYCRecord
 		if err := k.cdc.Unmarshal(iterator.Value(), &record); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("GetAllKYCRecords: failed to unmarshal record: %w", err)
 		}
 		records = append(records, &record)
 	}
@@ -245,7 +245,7 @@ func (k *Keeper) GetKYCHistory(ctx sdk.Context, address string) ([]*types.KYCHis
 	var list types.KYCHistoryList
 	// Use codec for gogoproto-generated types
 	if err := k.cdc.Unmarshal(bz, &list); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("GetKYCHistory: failed to unmarshal history for %s: %w", address, err)
 	}
 
 	return list.Entries, nil
@@ -267,7 +267,7 @@ func (k *Keeper) GetAllKYCHistory(ctx sdk.Context) (map[string][]*types.KYCHisto
 		address := string(iterator.Key()[len(KYCHistoryKeyPrefix):])
 		var list types.KYCHistoryList
 		if err := k.cdc.Unmarshal(iterator.Value(), &list); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("GetAllKYCHistory: failed to unmarshal history for %s: %w", address, err)
 		}
 		history[address] = list.Entries
 	}
@@ -457,7 +457,7 @@ func (k *Keeper) GetAMLProfile(ctx sdk.Context, address string) (*types.AMLProfi
 
 	var profile types.AMLProfile
 	if err := k.cdc.Unmarshal(bz, &profile); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("GetAMLProfile: failed to unmarshal profile for %s: %w", address, err)
 	}
 	return &profile, nil
 }
@@ -472,7 +472,7 @@ func (k *Keeper) GetAllAMLProfiles(ctx sdk.Context) ([]*types.AMLProfile, error)
 	for ; iterator.Valid(); iterator.Next() {
 		var profile types.AMLProfile
 		if err := k.cdc.Unmarshal(iterator.Value(), &profile); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("GetAllAMLProfiles: failed to unmarshal profile: %w", err)
 		}
 		profiles = append(profiles, &profile)
 	}
@@ -709,7 +709,7 @@ func (k *Keeper) GetSuspiciousActivity(ctx sdk.Context, id string) (*types.Suspi
 
 	var activity types.SuspiciousActivity
 	if err := k.cdc.Unmarshal(bz, &activity); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("GetSuspiciousActivity: failed to unmarshal activity %s: %w", id, err)
 	}
 	return &activity, nil
 }
@@ -723,7 +723,7 @@ func (k *Keeper) GetAllSuspiciousActivities(ctx sdk.Context) ([]*types.Suspiciou
 	for ; iterator.Valid(); iterator.Next() {
 		var activity types.SuspiciousActivity
 		if err := k.cdc.Unmarshal(iterator.Value(), &activity); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("GetAllSuspiciousActivities: failed to unmarshal activity: %w", err)
 		}
 		activities = append(activities, &activity)
 	}
@@ -755,7 +755,7 @@ func (k *Keeper) GetMonitoringRule(ctx sdk.Context, id string) (*types.Transacti
 
 	var rule types.TransactionMonitoringRule
 	if err := k.cdc.Unmarshal(bz, &rule); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("GetMonitoringRule: failed to unmarshal rule %s: %w", id, err)
 	}
 	return &rule, nil
 }
@@ -769,7 +769,7 @@ func (k *Keeper) GetAllMonitoringRules(ctx sdk.Context) ([]*types.TransactionMon
 	for ; iterator.Valid(); iterator.Next() {
 		var rule types.TransactionMonitoringRule
 		if err := k.cdc.Unmarshal(iterator.Value(), &rule); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("GetAllMonitoringRules: failed to unmarshal rule: %w", err)
 		}
 		rules = append(rules, &rule)
 	}
@@ -806,7 +806,7 @@ func (k *Keeper) GetTransactionAlerts(ctx sdk.Context, address string) ([]*types
 	}
 	var list types.TransactionAlertList
 	if err := k.cdc.Unmarshal(bz, &list); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("GetTransactionAlerts: failed to unmarshal alerts for %s: %w", address, err)
 	}
 	return list.Alerts, nil
 }
@@ -827,7 +827,7 @@ func (k *Keeper) GetAllTransactionAlerts(ctx sdk.Context) (map[string][]*types.T
 		address := string(iterator.Key()[len(TransactionAlertsKeyPrefix):])
 		var list types.TransactionAlertList
 		if err := k.cdc.Unmarshal(iterator.Value(), &list); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("GetAllTransactionAlerts: failed to unmarshal alerts for %s: %w", address, err)
 		}
 		alerts[address] = list.Alerts
 	}
@@ -859,7 +859,7 @@ func (k *Keeper) GetSanctionsResult(ctx sdk.Context, address string) (*types.San
 
 	var result types.SanctionsScreeningResult
 	if err := k.cdc.Unmarshal(bz, &result); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("GetSanctionsResult: failed to unmarshal result for %s: %w", address, err)
 	}
 	return &result, nil
 }
@@ -873,7 +873,7 @@ func (k *Keeper) GetAllSanctionsResults(ctx sdk.Context) ([]*types.SanctionsScre
 	for ; iterator.Valid(); iterator.Next() {
 		var result types.SanctionsScreeningResult
 		if err := k.cdc.Unmarshal(iterator.Value(), &result); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("GetAllSanctionsResults: failed to unmarshal result: %w", err)
 		}
 		results = append(results, &result)
 	}
@@ -923,7 +923,7 @@ func (k *Keeper) GetGDPRConsents(ctx sdk.Context, address string) ([]*types.GDPR
 	}
 	var list types.GDPRConsentList
 	if err := k.cdc.Unmarshal(bz, &list); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("GetGDPRConsents: failed to unmarshal consents for %s: %w", address, err)
 	}
 	return list.Consents, nil
 }
@@ -939,7 +939,7 @@ func (k *Keeper) GetAllGDPRConsents(ctx sdk.Context) (map[string][]*types.GDPRCo
 		address := string(iterator.Key()[len(GDPRConsentsKeyPrefix):])
 		var list types.GDPRConsentList
 		if err := k.cdc.Unmarshal(iterator.Value(), &list); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("GetAllGDPRConsents: failed to unmarshal consents for %s: %w", address, err)
 		}
 		consents[address] = list.Consents
 	}
@@ -971,7 +971,7 @@ func (k *Keeper) GetGDPRRequest(ctx sdk.Context, requestID string) (*types.GDPRD
 
 	var request types.GDPRDataRequest
 	if err := k.cdc.Unmarshal(bz, &request); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("GetGDPRRequest: failed to unmarshal request %s: %w", requestID, err)
 	}
 	return &request, nil
 }
@@ -985,7 +985,7 @@ func (k *Keeper) GetAllGDPRRequests(ctx sdk.Context) ([]*types.GDPRDataRequest, 
 	for ; iterator.Valid(); iterator.Next() {
 		var request types.GDPRDataRequest
 		if err := k.cdc.Unmarshal(iterator.Value(), &request); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("GetAllGDPRRequests: failed to unmarshal request: %w", err)
 		}
 		requests = append(requests, &request)
 	}
@@ -1035,7 +1035,7 @@ func (k *Keeper) GetTaxReports(ctx sdk.Context, address string) ([]*types.TaxRep
 	}
 	var list types.TaxReportList
 	if err := k.cdc.Unmarshal(bz, &list); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("GetTaxReports: failed to unmarshal reports for %s: %w", address, err)
 	}
 	return list.Reports, nil
 }
@@ -1051,7 +1051,7 @@ func (k *Keeper) GetAllTaxReports(ctx sdk.Context) (map[string][]*types.TaxRepor
 		address := string(iterator.Key()[len(TaxReportsKeyPrefix):])
 		var list types.TaxReportList
 		if err := k.cdc.Unmarshal(iterator.Value(), &list); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("GetAllTaxReports: failed to unmarshal reports for %s: %w", address, err)
 		}
 		reports[address] = list.Reports
 	}
@@ -1071,7 +1071,7 @@ func (k *Keeper) GetParamsFromStore(ctx sdk.Context) (types.ComplianceParams, er
 
 	var params types.ComplianceParams
 	if err := k.cdc.Unmarshal(bz, &params); err != nil {
-		return types.ComplianceParams{}, err
+		return types.ComplianceParams{}, fmt.Errorf("GetParamsFromStore: failed to unmarshal params: %w", err)
 	}
 	return params, nil
 }

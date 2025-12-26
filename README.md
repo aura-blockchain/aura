@@ -400,6 +400,15 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 Apache License 2.0 - See [LICENSE](LICENSE) file for complete text.
 
+## Community
+
+Join the Aequitas community:
+
+- **Discord**: [discord.gg/aura](https://discord.gg/aura) - Chat with developers and community
+- **Twitter/X**: [@AuraNetwork](https://twitter.com/AuraNetwork) - Updates and announcements
+- **Telegram**: [t.me/auranetwork](https://t.me/auranetwork) - Community discussion
+- **GitHub Discussions**: [Community Q&A](https://github.com/decristofaroj/aura/discussions)
+
 ## Contact & Support
 
 - **GitHub Issues**: [Report bugs and feature requests](https://github.com/decristofaroj/aura/issues)

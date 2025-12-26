@@ -62,7 +62,10 @@ func (k *Keeper) WithStore(storeKey storetypes.StoreKey, cdc codec.BinaryCodec) 
 	return k
 }
 
-// requireStore panics if store is not initialized (production safety check)
+// requireStore panics if store is not initialized.
+// This is a production safety check that fires during app init if WithStore() wasn't called.
+// Panic is intentional: operating without a store would cause silent data loss.
+// See chain/docs/security/COSMOS_PANIC_PATTERNS.md
 func (k *Keeper) requireStore() {
 	if k.store == nil {
 		panic("vcregistry keeper: KV store not initialized. Call WithStore() first.")

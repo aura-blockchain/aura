@@ -8,12 +8,33 @@ import (
 	"testing"
 )
 
+// mustGenerateSalt is a test helper that generates salt and fails test on error
+func mustGenerateSalt(t testing.TB) []byte {
+	t.Helper()
+	salt, err := GenerateCommitmentSalt()
+	if err != nil {
+		t.Fatalf("GenerateCommitmentSalt failed: %v", err)
+	}
+	return salt
+}
+
 // TestGenerateCommitmentSalt tests salt generation
 func TestGenerateCommitmentSalt(t *testing.T) {
 	// Generate multiple salts
-	salt1 := GenerateCommitmentSalt()
-	salt2 := GenerateCommitmentSalt()
-	salt3 := GenerateCommitmentSalt()
+	salt1, err1 := GenerateCommitmentSalt()
+	salt2, err2 := GenerateCommitmentSalt()
+	salt3, err3 := GenerateCommitmentSalt()
+
+	// Verify no errors
+	if err1 != nil {
+		t.Fatalf("salt1 generation failed: %v", err1)
+	}
+	if err2 != nil {
+		t.Fatalf("salt2 generation failed: %v", err2)
+	}
+	if err3 != nil {
+		t.Fatalf("salt3 generation failed: %v", err3)
+	}
 
 	// Verify length
 	if len(salt1) != 32 {
@@ -225,7 +246,7 @@ func TestVerifyPIICommitment_Valid(t *testing.T) {
 		"dob":   "1990-01-01",
 	}
 
-	salt := GenerateCommitmentSalt()
+	salt := mustGenerateSalt(t)
 	commitment := ComputePIICommitment(piiData, salt)
 
 	// Verify with same data
@@ -246,7 +267,7 @@ func TestVerifyPIICommitment_Invalid(t *testing.T) {
 		"email": "bob@example.com",
 	}
 
-	salt := GenerateCommitmentSalt()
+	salt := mustGenerateSalt(t)
 	commitment := ComputePIICommitment(originalData, salt)
 
 	// Verify with wrong data
@@ -262,8 +283,8 @@ func TestVerifyPIICommitment_WrongSalt(t *testing.T) {
 		"email": "alice@example.com",
 	}
 
-	correctSalt := GenerateCommitmentSalt()
-	wrongSalt := GenerateCommitmentSalt()
+	correctSalt := mustGenerateSalt(t)
+	wrongSalt := mustGenerateSalt(t)
 
 	commitment := ComputePIICommitment(piiData, correctSalt)
 
@@ -287,7 +308,7 @@ func TestVerifyPIICommitment_ModifiedValue(t *testing.T) {
 		"dob":   "1990-01-02", // Modified
 	}
 
-	salt := GenerateCommitmentSalt()
+	salt := mustGenerateSalt(t)
 	commitment := ComputePIICommitment(originalData, salt)
 
 	// Should detect modification
@@ -310,7 +331,7 @@ func TestVerifyPIICommitment_MissingAttribute(t *testing.T) {
 		// "dob" missing
 	}
 
-	salt := GenerateCommitmentSalt()
+	salt := mustGenerateSalt(t)
 	commitment := ComputePIICommitment(fullData, salt)
 
 	// Should detect missing attribute
@@ -332,7 +353,7 @@ func TestVerifyPIICommitment_ExtraAttribute(t *testing.T) {
 		"dob":   "1990-01-01", // Extra attribute
 	}
 
-	salt := GenerateCommitmentSalt()
+	salt := mustGenerateSalt(t)
 	commitment := ComputePIICommitment(originalData, salt)
 
 	// Should detect extra attribute
@@ -348,7 +369,7 @@ func TestComputePIICommitment_LargeData(t *testing.T) {
 		largeData[string(rune('a'+i%26))+string(rune('0'+i%10))] = "value" + string(rune('0'+i))
 	}
 
-	salt := GenerateCommitmentSalt()
+	salt := mustGenerateSalt(t)
 	commitment1 := ComputePIICommitment(largeData, salt)
 	commitment2 := ComputePIICommitment(largeData, salt)
 
@@ -373,7 +394,7 @@ func TestComputePIICommitment_LongValues(t *testing.T) {
 		"longdata": string(longValue),
 	}
 
-	salt := GenerateCommitmentSalt()
+	salt := mustGenerateSalt(t)
 	commitment := ComputePIICommitment(data, salt)
 
 	if len(commitment) != 32 {
@@ -383,7 +404,7 @@ func TestComputePIICommitment_LongValues(t *testing.T) {
 
 // TestComputePIICommitment_CollisionResistance tests different data produces different commitments
 func TestComputePIICommitment_CollisionResistance(t *testing.T) {
-	salt := GenerateCommitmentSalt()
+	salt := mustGenerateSalt(t)
 	commitments := make(map[string]bool)
 
 	// Generate many commitments with slightly different data
@@ -412,7 +433,7 @@ func BenchmarkComputePIICommitment(b *testing.B) {
 		"address": "123 Main St",
 		"phone":   "+1234567890",
 	}
-	salt := GenerateCommitmentSalt()
+	salt := mustGenerateSalt(b)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -429,7 +450,7 @@ func BenchmarkVerifyPIICommitment(b *testing.B) {
 		"address": "123 Main St",
 		"phone":   "+1234567890",
 	}
-	salt := GenerateCommitmentSalt()
+	salt := mustGenerateSalt(b)
 	commitment := ComputePIICommitment(piiData, salt)
 
 	b.ResetTimer()
@@ -441,6 +462,6 @@ func BenchmarkVerifyPIICommitment(b *testing.B) {
 // BenchmarkGenerateCommitmentSalt benchmarks salt generation
 func BenchmarkGenerateCommitmentSalt(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		GenerateCommitmentSalt()
+		_, _ = GenerateCommitmentSalt()
 	}
 }

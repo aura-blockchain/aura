@@ -51,17 +51,17 @@ func (k *Keeper) SetAuthKeeper(authKeeper types.AuthKeeper) {
 }
 
 // Logger returns a module-specific logger
-func (k Keeper) Logger(ctx sdk.Context) log.Logger {
+func (k *Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", "x/"+types.ModuleName)
 }
 
 // getStore returns the KVStore for this module
-func (k Keeper) getStore(ctx context.Context) store.KVStore {
+func (k *Keeper) getStore(ctx context.Context) store.KVStore {
 	return k.storeService.OpenKVStore(ctx)
 }
 
 // GetParams returns the module parameters
-func (k Keeper) GetParams(ctx context.Context) (wsproto.WalletSecurityParams, error) {
+func (k *Keeper) GetParams(ctx context.Context) (wsproto.WalletSecurityParams, error) {
 	store := k.getStore(ctx)
 	var params wsproto.WalletSecurityParams
 
@@ -83,7 +83,7 @@ func (k Keeper) GetParams(ctx context.Context) (wsproto.WalletSecurityParams, er
 }
 
 // SetParams sets the module parameters
-func (k Keeper) SetParams(ctx context.Context, params wsproto.WalletSecurityParams) error {
+func (k *Keeper) SetParams(ctx context.Context, params wsproto.WalletSecurityParams) error {
 	store := k.getStore(ctx)
 	paramsBytes, err := k.cdc.Marshal(&params)
 	if err != nil {
@@ -93,14 +93,14 @@ func (k Keeper) SetParams(ctx context.Context, params wsproto.WalletSecurityPara
 }
 
 // SetHardwareWallet stores a hardware wallet configuration
-func (k Keeper) SetHardwareWallet(ctx context.Context, walletID string, config []byte) error {
+func (k *Keeper) SetHardwareWallet(ctx context.Context, walletID string, config []byte) error {
 	store := k.getStore(ctx)
 	key := types.GetHardwareWalletKey(walletID)
 	return store.Set(key, config)
 }
 
 // GetHardwareWallet retrieves a hardware wallet configuration
-func (k Keeper) GetHardwareWallet(ctx context.Context, walletID string) ([]byte, error) {
+func (k *Keeper) GetHardwareWallet(ctx context.Context, walletID string) ([]byte, error) {
 	store := k.getStore(ctx)
 	key := types.GetHardwareWalletKey(walletID)
 	value, _ := store.Get(key)
@@ -111,14 +111,14 @@ func (k Keeper) GetHardwareWallet(ctx context.Context, walletID string) ([]byte,
 }
 
 // SetMultiSigWallet stores a multi-sig wallet configuration
-func (k Keeper) SetMultiSigWallet(ctx context.Context, walletID string, wallet []byte) error {
+func (k *Keeper) SetMultiSigWallet(ctx context.Context, walletID string, wallet []byte) error {
 	store := k.getStore(ctx)
 	key := types.GetMultiSigWalletKey(walletID)
 	return store.Set(key, wallet)
 }
 
 // GetMultiSigWallet retrieves a multi-sig wallet configuration
-func (k Keeper) GetMultiSigWallet(ctx context.Context, walletID string) ([]byte, error) {
+func (k *Keeper) GetMultiSigWallet(ctx context.Context, walletID string) ([]byte, error) {
 	store := k.getStore(ctx)
 	key := types.GetMultiSigWalletKey(walletID)
 	value, _ := store.Get(key)
@@ -129,14 +129,14 @@ func (k Keeper) GetMultiSigWallet(ctx context.Context, walletID string) ([]byte,
 }
 
 // SetPendingMultiSigTx stores a pending multi-sig transaction
-func (k Keeper) SetPendingMultiSigTx(ctx context.Context, txID string, tx []byte) error {
+func (k *Keeper) SetPendingMultiSigTx(ctx context.Context, txID string, tx []byte) error {
 	store := k.getStore(ctx)
 	key := types.GetPendingMultiSigTxKey(txID)
 	return store.Set(key, tx)
 }
 
 // GetPendingMultiSigTx retrieves a pending multi-sig transaction
-func (k Keeper) GetPendingMultiSigTx(ctx context.Context, txID string) ([]byte, error) {
+func (k *Keeper) GetPendingMultiSigTx(ctx context.Context, txID string) ([]byte, error) {
 	store := k.getStore(ctx)
 	key := types.GetPendingMultiSigTxKey(txID)
 	value, _ := store.Get(key)
@@ -147,21 +147,21 @@ func (k Keeper) GetPendingMultiSigTx(ctx context.Context, txID string) ([]byte, 
 }
 
 // DeletePendingMultiSigTx removes a pending multi-sig transaction
-func (k Keeper) DeletePendingMultiSigTx(ctx context.Context, txID string) error {
+func (k *Keeper) DeletePendingMultiSigTx(ctx context.Context, txID string) error {
 	store := k.getStore(ctx)
 	key := types.GetPendingMultiSigTxKey(txID)
 	return store.Delete(key)
 }
 
 // SetSocialRecoveryConfig stores social recovery configuration
-func (k Keeper) SetSocialRecoveryConfig(ctx context.Context, walletID string, config []byte) error {
+func (k *Keeper) SetSocialRecoveryConfig(ctx context.Context, walletID string, config []byte) error {
 	store := k.getStore(ctx)
 	key := types.GetSocialRecoveryKey(walletID)
 	return store.Set(key, config)
 }
 
 // GetSocialRecoveryConfig retrieves social recovery configuration
-func (k Keeper) GetSocialRecoveryConfig(ctx context.Context, walletID string) ([]byte, error) {
+func (k *Keeper) GetSocialRecoveryConfig(ctx context.Context, walletID string) ([]byte, error) {
 	store := k.getStore(ctx)
 	key := types.GetSocialRecoveryKey(walletID)
 	value, _ := store.Get(key)
@@ -172,14 +172,14 @@ func (k Keeper) GetSocialRecoveryConfig(ctx context.Context, walletID string) ([
 }
 
 // SetRecoveryRequest stores a recovery request
-func (k Keeper) SetRecoveryRequest(ctx context.Context, requestID string, request []byte) error {
+func (k *Keeper) SetRecoveryRequest(ctx context.Context, requestID string, request []byte) error {
 	store := k.getStore(ctx)
 	key := types.GetRecoveryRequestKey(requestID)
 	return store.Set(key, request)
 }
 
 // GetRecoveryRequest retrieves a recovery request
-func (k Keeper) GetRecoveryRequest(ctx context.Context, requestID string) ([]byte, error) {
+func (k *Keeper) GetRecoveryRequest(ctx context.Context, requestID string) ([]byte, error) {
 	store := k.getStore(ctx)
 	key := types.GetRecoveryRequestKey(requestID)
 	value, _ := store.Get(key)
@@ -190,14 +190,14 @@ func (k Keeper) GetRecoveryRequest(ctx context.Context, requestID string) ([]byt
 }
 
 // storeSpendingLimit stores spending limit configuration
-func (k Keeper) storeSpendingLimit(ctx context.Context, walletID, denom string, limit []byte) error {
+func (k *Keeper) storeSpendingLimit(ctx context.Context, walletID, denom string, limit []byte) error {
 	store := k.getStore(ctx)
 	key := types.GetSpendingLimitKey(walletID, denom)
 	return store.Set(key, limit)
 }
 
 // GetSpendingLimit retrieves spending limit configuration
-func (k Keeper) GetSpendingLimit(ctx context.Context, walletID, denom string) ([]byte, error) {
+func (k *Keeper) GetSpendingLimit(ctx context.Context, walletID, denom string) ([]byte, error) {
 	store := k.getStore(ctx)
 	key := types.GetSpendingLimitKey(walletID, denom)
 	value, _ := store.Get(key)
@@ -208,14 +208,14 @@ func (k Keeper) GetSpendingLimit(ctx context.Context, walletID, denom string) ([
 }
 
 // SetSessionConfig stores session configuration
-func (k Keeper) SetSessionConfig(ctx context.Context, sessionID string, config []byte) error {
+func (k *Keeper) SetSessionConfig(ctx context.Context, sessionID string, config []byte) error {
 	store := k.getStore(ctx)
 	key := types.GetSessionConfigKey(sessionID)
 	return store.Set(key, config)
 }
 
 // GetSessionConfig retrieves session configuration
-func (k Keeper) GetSessionConfig(ctx context.Context, sessionID string) ([]byte, error) {
+func (k *Keeper) GetSessionConfig(ctx context.Context, sessionID string) ([]byte, error) {
 	store := k.getStore(ctx)
 	key := types.GetSessionConfigKey(sessionID)
 	value, _ := store.Get(key)
@@ -226,14 +226,14 @@ func (k Keeper) GetSessionConfig(ctx context.Context, sessionID string) ([]byte,
 }
 
 // SetBiometricAuth stores biometric authentication configuration
-func (k Keeper) SetBiometricAuth(ctx context.Context, walletID string, auth []byte) error {
+func (k *Keeper) SetBiometricAuth(ctx context.Context, walletID string, auth []byte) error {
 	store := k.getStore(ctx)
 	key := types.GetBiometricAuthKey(walletID)
 	return store.Set(key, auth)
 }
 
 // GetBiometricAuth retrieves biometric authentication configuration
-func (k Keeper) GetBiometricAuth(ctx context.Context, walletID string) ([]byte, error) {
+func (k *Keeper) GetBiometricAuth(ctx context.Context, walletID string) ([]byte, error) {
 	store := k.getStore(ctx)
 	key := types.GetBiometricAuthKey(walletID)
 	value, _ := store.Get(key)
@@ -244,14 +244,14 @@ func (k Keeper) GetBiometricAuth(ctx context.Context, walletID string) ([]byte, 
 }
 
 // SetSecureEnclaveConfig stores secure enclave configuration
-func (k Keeper) SetSecureEnclaveConfig(ctx context.Context, walletID string, config []byte) error {
+func (k *Keeper) SetSecureEnclaveConfig(ctx context.Context, walletID string, config []byte) error {
 	store := k.getStore(ctx)
 	key := types.GetSecureEnclaveKey(walletID)
 	return store.Set(key, config)
 }
 
 // GetSecureEnclaveConfig retrieves secure enclave configuration
-func (k Keeper) GetSecureEnclaveConfig(ctx context.Context, walletID string) ([]byte, error) {
+func (k *Keeper) GetSecureEnclaveConfig(ctx context.Context, walletID string) ([]byte, error) {
 	store := k.getStore(ctx)
 	key := types.GetSecureEnclaveKey(walletID)
 	value, _ := store.Get(key)
@@ -262,14 +262,14 @@ func (k Keeper) GetSecureEnclaveConfig(ctx context.Context, walletID string) ([]
 }
 
 // SetEncryptedBackup stores encrypted backup
-func (k Keeper) SetEncryptedBackup(ctx context.Context, backupID string, backup []byte) error {
+func (k *Keeper) SetEncryptedBackup(ctx context.Context, backupID string, backup []byte) error {
 	store := k.getStore(ctx)
 	key := types.GetEncryptedBackupKey(backupID)
 	return store.Set(key, backup)
 }
 
 // GetEncryptedBackup retrieves encrypted backup
-func (k Keeper) GetEncryptedBackup(ctx context.Context, backupID string) ([]byte, error) {
+func (k *Keeper) GetEncryptedBackup(ctx context.Context, backupID string) ([]byte, error) {
 	store := k.getStore(ctx)
 	key := types.GetEncryptedBackupKey(backupID)
 	value, _ := store.Get(key)
@@ -280,14 +280,14 @@ func (k Keeper) GetEncryptedBackup(ctx context.Context, backupID string) ([]byte
 }
 
 // SetDustFilter stores dust filter configuration
-func (k Keeper) SetDustFilter(ctx context.Context, walletID string, filter []byte) error {
+func (k *Keeper) SetDustFilter(ctx context.Context, walletID string, filter []byte) error {
 	store := k.getStore(ctx)
 	key := types.GetDustFilterKey(walletID)
 	return store.Set(key, filter)
 }
 
 // GetDustFilter retrieves dust filter configuration
-func (k Keeper) GetDustFilter(ctx context.Context, walletID string) ([]byte, error) {
+func (k *Keeper) GetDustFilter(ctx context.Context, walletID string) ([]byte, error) {
 	store := k.getStore(ctx)
 	key := types.GetDustFilterKey(walletID)
 	value, _ := store.Get(key)
@@ -298,14 +298,14 @@ func (k Keeper) GetDustFilter(ctx context.Context, walletID string) ([]byte, err
 }
 
 // SetDomainVerification stores domain verification
-func (k Keeper) SetDomainVerification(ctx context.Context, domain string, verification []byte) error {
+func (k *Keeper) SetDomainVerification(ctx context.Context, domain string, verification []byte) error {
 	store := k.getStore(ctx)
 	key := types.GetDomainVerificationKey(domain)
 	return store.Set(key, verification)
 }
 
 // GetDomainVerification retrieves domain verification
-func (k Keeper) GetDomainVerification(ctx context.Context, domain string) ([]byte, error) {
+func (k *Keeper) GetDomainVerification(ctx context.Context, domain string) ([]byte, error) {
 	store := k.getStore(ctx)
 	key := types.GetDomainVerificationKey(domain)
 	value, _ := store.Get(key)
@@ -316,14 +316,14 @@ func (k Keeper) GetDomainVerification(ctx context.Context, domain string) ([]byt
 }
 
 // SetSecurityMetrics stores security metrics
-func (k Keeper) SetSecurityMetrics(ctx context.Context, walletID string, metrics []byte) error {
+func (k *Keeper) SetSecurityMetrics(ctx context.Context, walletID string, metrics []byte) error {
 	store := k.getStore(ctx)
 	key := types.GetSecurityMetricsKey(walletID)
 	return store.Set(key, metrics)
 }
 
 // GetSecurityMetrics retrieves security metrics
-func (k Keeper) GetSecurityMetrics(ctx context.Context, walletID string) ([]byte, error) {
+func (k *Keeper) GetSecurityMetrics(ctx context.Context, walletID string) ([]byte, error) {
 	store := k.getStore(ctx)
 	key := types.GetSecurityMetricsKey(walletID)
 	value, _ := store.Get(key)
@@ -335,14 +335,14 @@ func (k Keeper) GetSecurityMetrics(ctx context.Context, walletID string) ([]byte
 }
 
 // SetDustTransaction stores a dust transaction record
-func (k Keeper) SetDustTransaction(ctx context.Context, txHash string, tx []byte) error {
+func (k *Keeper) SetDustTransaction(ctx context.Context, txHash string, tx []byte) error {
 	store := k.getStore(ctx)
 	key := types.GetDustTransactionKey(txHash)
 	return store.Set(key, tx)
 }
 
 // GetDustTransaction retrieves a dust transaction record
-func (k Keeper) GetDustTransaction(ctx context.Context, txHash string) ([]byte, error) {
+func (k *Keeper) GetDustTransaction(ctx context.Context, txHash string) ([]byte, error) {
 	store := k.getStore(ctx)
 	key := types.GetDustTransactionKey(txHash)
 	value, _ := store.Get(key)
@@ -353,7 +353,7 @@ func (k Keeper) GetDustTransaction(ctx context.Context, txHash string) ([]byte, 
 }
 
 // CheckDustTransaction evaluates whether the transaction should be blocked as dust.
-func (k Keeper) CheckDustTransaction(ctx context.Context, walletID, txHash, fromAddress, toAddress, amount, denom string) (bool, error) {
+func (k *Keeper) CheckDustTransaction(ctx context.Context, walletID, txHash, fromAddress, toAddress, amount, denom string) (bool, error) {
 	filterBytes, err := k.GetDustFilter(ctx, walletID)
 	if err != nil {
 		if errors.Is(err, types.ErrDustFilterNotEnabled) {
@@ -427,7 +427,7 @@ func (k Keeper) CheckDustTransaction(ctx context.Context, walletID, txHash, from
 }
 
 // ValidateWallet checks if a wallet meets security criteria
-func (k Keeper) ValidateWallet(ctx context.Context, addr string) error {
+func (k *Keeper) ValidateWallet(ctx context.Context, addr string) error {
 	// Validate wallet address format
 	if addr == "" {
 		return fmt.Errorf("wallet address cannot be empty")
@@ -449,7 +449,7 @@ func (k Keeper) ValidateWallet(ctx context.Context, addr string) error {
 }
 
 // LockWallet locks a wallet for security reasons
-func (k Keeper) LockWallet(ctx context.Context, addr string, reason string) error {
+func (k *Keeper) LockWallet(ctx context.Context, addr string, reason string) error {
 	// Lock wallet functionality
 	// Store lock state in KV store
 	store := k.getStore(ctx)
@@ -462,7 +462,7 @@ func (k Keeper) LockWallet(ctx context.Context, addr string, reason string) erro
 }
 
 // UnlockWallet unlocks a previously locked wallet
-func (k Keeper) UnlockWallet(ctx context.Context, addr string) error {
+func (k *Keeper) UnlockWallet(ctx context.Context, addr string) error {
 	// Unlock wallet functionality
 	store := k.getStore(ctx)
 	key := append([]byte("locked_wallet_"), []byte(addr)...)
@@ -474,7 +474,7 @@ func (k Keeper) UnlockWallet(ctx context.Context, addr string) error {
 }
 
 // SimulateTransaction simulates a transaction and returns simulation result
-func (k Keeper) SimulateTransaction(ctx context.Context, txData []byte, sender string) (*wsproto.TransactionSimulation, error) {
+func (k *Keeper) SimulateTransaction(ctx context.Context, txData []byte, sender string) (*wsproto.TransactionSimulation, error) {
 	// Create simulation result
 	simulation := &wsproto.TransactionSimulation{
 		Success:      true,
@@ -488,7 +488,7 @@ func (k Keeper) SimulateTransaction(ctx context.Context, txData []byte, sender s
 }
 
 // VerifyDomain verifies a domain and returns verification result
-func (k Keeper) VerifyDomain(ctx context.Context, domain string, certificateHash string, verifier string) (*wsproto.DomainVerification, error) {
+func (k *Keeper) VerifyDomain(ctx context.Context, domain string, certificateHash string, verifier string) (*wsproto.DomainVerification, error) {
 	verification := &wsproto.DomainVerification{
 		Domain:          domain,
 		Verified:        true,
@@ -512,7 +512,7 @@ func (k Keeper) VerifyDomain(ctx context.Context, domain string, certificateHash
 }
 
 // SetSpendingLimit sets spending limits and returns the limit configuration
-func (k Keeper) SetSpendingLimit(ctx context.Context, walletID string, denom string, dailyLimit string, weeklyLimit string, monthlyLimit string) (*wsproto.SpendingLimit, error) {
+func (k *Keeper) SetSpendingLimit(ctx context.Context, walletID string, denom string, dailyLimit string, weeklyLimit string, monthlyLimit string) (*wsproto.SpendingLimit, error) {
 	limit := &wsproto.SpendingLimit{
 		WalletId:            walletID,
 		Denom:               denom,
@@ -619,7 +619,7 @@ func unwrapSDKContextSafe(ctx context.Context) (sdk.Context, bool) {
 }
 
 // CheckSpendingLimit enforces the configured spending windows for the wallet.
-func (k Keeper) CheckSpendingLimit(ctx context.Context, walletID, denom, amount string) error {
+func (k *Keeper) CheckSpendingLimit(ctx context.Context, walletID, denom, amount string) error {
 	limitBytes, err := k.GetSpendingLimit(ctx, walletID, denom)
 	if err != nil {
 		return fmt.Errorf("failed to get: %w", err)
@@ -717,7 +717,7 @@ func (k Keeper) CheckSpendingLimit(ctx context.Context, walletID, denom, amount 
 }
 
 // IsBiometricProofUsed checks if a biometric proof hash has already been used (replay protection)
-func (k Keeper) IsBiometricProofUsed(ctx context.Context, walletID string, proofHash []byte) bool {
+func (k *Keeper) IsBiometricProofUsed(ctx context.Context, walletID string, proofHash []byte) bool {
 	store := k.getStore(ctx)
 	key := types.GetBiometricProofKey(walletID, proofHash)
 	value, _ := store.Get(key)
@@ -725,7 +725,7 @@ func (k Keeper) IsBiometricProofUsed(ctx context.Context, walletID string, proof
 }
 
 // MarkBiometricProofUsed marks a biometric proof hash as used (replay protection)
-func (k Keeper) MarkBiometricProofUsed(ctx context.Context, walletID string, proofHash []byte) error {
+func (k *Keeper) MarkBiometricProofUsed(ctx context.Context, walletID string, proofHash []byte) error {
 	store := k.getStore(ctx)
 	key := types.GetBiometricProofKey(walletID, proofHash)
 
@@ -803,7 +803,7 @@ func (k Keeper) MarkBiometricProofUsed(ctx context.Context, walletID string, pro
 //   - It does NOT provide true biometric security
 //   - It does NOT prevent replay attacks at the biometric level
 //   - Replay protection is handled at the transaction level (see AuthenticateBiometric)
-func (k Keeper) verifyBiometricTemplate(enrollmentHash string, biometricProof []byte) bool {
+func (k *Keeper) verifyBiometricTemplate(enrollmentHash string, biometricProof []byte) bool {
 	// CRITICAL: Hash the provided proof
 	proofHash := sha256.Sum256(biometricProof)
 	proofHashStr := hex.EncodeToString(proofHash[:])

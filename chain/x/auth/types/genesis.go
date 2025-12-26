@@ -37,43 +37,43 @@ func ValidateGenesis(gen *GenesisState) error {
 
     for i := range gen.Roles {
         if err := ValidateRole(&gen.Roles[i]); err != nil {
-            return err
+            return fmt.Errorf("ValidateGenesis: invalid role at index %d: %w", i, err)
         }
     }
 
     for i := range gen.RoleAssignments {
         if err := ValidateRoleAssignment(&gen.RoleAssignments[i]); err != nil {
-            return err
+            return fmt.Errorf("ValidateGenesis: invalid role assignment at index %d: %w", i, err)
         }
     }
 
     for i := range gen.MultisigWallets {
         if err := ValidateMultisigWallet(&gen.MultisigWallets[i]); err != nil {
-            return err
+            return fmt.Errorf("ValidateGenesis: invalid multisig wallet at index %d: %w", i, err)
         }
     }
 
     for i := range gen.MultisigProposals {
         if err := ValidateMultisigProposal(&gen.MultisigProposals[i]); err != nil {
-            return err
+            return fmt.Errorf("ValidateGenesis: invalid multisig proposal at index %d: %w", i, err)
         }
     }
 
     for i := range gen.TimeLockedActions {
         if err := ValidateTimeLockedAction(&gen.TimeLockedActions[i]); err != nil {
-            return err
+            return fmt.Errorf("ValidateGenesis: invalid time-locked action at index %d: %w", i, err)
         }
     }
 
     for i := range gen.EmergencyAdmins {
         if err := ValidateEmergencyAdmin(&gen.EmergencyAdmins[i]); err != nil {
-            return err
+            return fmt.Errorf("ValidateGenesis: invalid emergency admin at index %d: %w", i, err)
         }
     }
 
     for i := range gen.Sessions {
         if err := ValidateSession(&gen.Sessions[i]); err != nil {
-            return err
+            return fmt.Errorf("ValidateGenesis: invalid session at index %d: %w", i, err)
         }
     }
 

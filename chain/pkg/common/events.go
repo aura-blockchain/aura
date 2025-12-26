@@ -1,6 +1,20 @@
 // Copyright 2024-2025 Aequitas Foundation
 // SPDX-License-Identifier: Apache-2.0
 
+// Package common provides shared utilities for Aura chain modules.
+//
+// EVENT HELPERS: This package provides consistent event emission helpers.
+// Import as: import "github.com/aequitas/aura/chain/pkg/common"
+//
+// Available functions:
+//   - EmitEvent: Emit event with attribute map
+//   - EmitTypedEvent: Emit protobuf typed event
+//   - EmitSuccessEvent: Standard success event with module/action/actor
+//   - EmitErrorEvent: Standard error event with error message
+//   - EmitTransferEvent: Standard token transfer event
+//
+// Note: Modules may continue using ctx.EventManager() directly for simple cases.
+// These helpers add structure and consistency for indexing and auditing.
 package common
 
 import (

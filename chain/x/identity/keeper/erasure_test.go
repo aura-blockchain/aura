@@ -55,7 +55,7 @@ func TestEraseIdentity_Success(t *testing.T) {
 		"name":  "Alice Smith",
 		"email": "alice@example.com",
 	}
-	salt := types.GenerateCommitmentSalt()
+	salt := mustGenerateSalt(t)
 	commitment := types.ComputePIICommitment(piiData, salt)
 
 	record := &types.IdentityRecord{
@@ -170,7 +170,7 @@ func TestVerifyPIICommitment_Success(t *testing.T) {
 		"name":  "Alice Smith",
 		"email": "alice@example.com",
 	}
-	salt := types.GenerateCommitmentSalt()
+	salt := mustGenerateSalt(t)
 	commitment := types.ComputePIICommitment(piiData, salt)
 
 	now := ctx.BlockTime()
@@ -208,7 +208,7 @@ func TestVerifyPIICommitment_WrongData(t *testing.T) {
 		"email": "bob@example.com",
 	}
 
-	salt := types.GenerateCommitmentSalt()
+	salt := mustGenerateSalt(t)
 	commitment := types.ComputePIICommitment(correctData, salt)
 
 	now := ctx.BlockTime()
@@ -242,7 +242,7 @@ func TestVerifyPIICommitment_ErasedIdentity(t *testing.T) {
 		"name":  "Alice Smith",
 		"email": "alice@example.com",
 	}
-	salt := types.GenerateCommitmentSalt()
+	salt := mustGenerateSalt(t)
 	commitment := types.ComputePIICommitment(piiData, salt)
 
 	now := ctx.BlockTime()
@@ -281,7 +281,7 @@ func TestUpdatePIICommitment_Success(t *testing.T) {
 		"name":  "Alice Smith",
 		"email": "alice@example.com",
 	}
-	oldSalt := types.GenerateCommitmentSalt()
+	oldSalt := mustGenerateSalt(t)
 	oldCommitment := types.ComputePIICommitment(oldData, oldSalt)
 
 	now := ctx.BlockTime()
@@ -303,7 +303,7 @@ func TestUpdatePIICommitment_Success(t *testing.T) {
 		"name":  "Alice Johnson",
 		"email": "alice.johnson@example.com",
 	}
-	newSalt := types.GenerateCommitmentSalt()
+	newSalt := mustGenerateSalt(t)
 	newCommitment := types.ComputePIICommitment(newData, newSalt)
 
 	err = keeper.UpdatePIICommitment(ctx, did, address, newSalt, "ipfs://QmNew", "ipfs")
@@ -352,7 +352,7 @@ func TestUpdatePIICommitment_ErasedIdentity(t *testing.T) {
 	require.NoError(t, err)
 
 	// Attempt update (should fail)
-	newSalt := types.GenerateCommitmentSalt()
+	newSalt := mustGenerateSalt(t)
 	err = keeper.UpdatePIICommitment(ctx, did, address, newSalt, "ipfs://QmNew", "ipfs")
 	require.Error(t, err)
 	require.ErrorIs(t, err, types.ErrIdentityErased)
@@ -380,7 +380,7 @@ func TestUpdatePIICommitment_Unauthorized(t *testing.T) {
 	require.NoError(t, err)
 
 	// Attempt update by non-owner (should fail without admin permission)
-	newSalt := types.GenerateCommitmentSalt()
+	newSalt := mustGenerateSalt(t)
 	err = keeper.UpdatePIICommitment(ctx, did, attacker, newSalt, "ipfs://QmEvil", "ipfs")
 	require.Error(t, err)
 	require.ErrorIs(t, err, types.ErrUnauthorized)
@@ -397,7 +397,7 @@ func TestEraseIdentity_PreservesCommitment(t *testing.T) {
 		"name":  "Alice Smith",
 		"email": "alice@example.com",
 	}
-	salt := types.GenerateCommitmentSalt()
+	salt := mustGenerateSalt(t)
 	commitment := types.ComputePIICommitment(piiData, salt)
 
 	now := ctx.BlockTime()

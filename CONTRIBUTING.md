@@ -117,6 +117,21 @@ When modifying Cosmos SDK modules in `chain/x/`:
 5. Address review feedback
 6. Squash commits if requested
 
+## Good First Issues
+
+New to the project? These beginner-friendly tasks are great starting points:
+
+1. **Add unit tests to auth module** - Increase coverage for `chain/x/auth/keeper/`
+2. **Improve error messages in identity module** - Make errors in `chain/x/identity/types/errors.go` more descriptive
+3. **Add CLI help examples** - Expand `--help` text in `chain/x/governance/client/cli/`
+4. **Document a keeper method** - Add godoc comments to unexported functions in any `x/*/keeper/`
+5. **Add validation tests** - Write tests for `ValidateBasic()` methods in `chain/x/*/types/msgs.go`
+6. **Improve logging** - Add structured logging to `chain/x/compliance/keeper/`
+7. **Add table-driven tests** - Convert simple tests to table-driven format in any module
+8. **Fix linter warnings** - Run `golangci-lint` and fix reported issues
+
+Look for issues labeled `good first issue` or `help wanted` on GitHub.
+
 ## Questions?
 
 - Open a GitHub Discussion

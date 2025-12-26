@@ -157,6 +157,13 @@ func (k Keeper) GetUserVestingIndex(ctx context.Context, userAddress string) ([]
 }
 
 // AddUserVestingSchedule adds a schedule ID to a user's vesting index
+//
+// ATOMICITY NOTE: This function performs a read-modify-write on the user's vesting index.
+// The operation is atomic within a single transaction because Cosmos SDK processes
+// transactions serially and the KVStore changes are committed atomically.
+// However, if this function fails after modifying the index but before the caller
+// stores the schedule, the index may reference a non-existent schedule.
+// Callers should ensure the schedule is stored BEFORE calling this function.
 func (k Keeper) AddUserVestingSchedule(ctx context.Context, userAddress, scheduleID string) error {
 	scheduleIDs, err := k.GetUserVestingIndex(ctx, userAddress)
 	if err != nil {
@@ -388,6 +395,13 @@ func (k Keeper) GetUserVoteLockIndex(ctx context.Context, userAddress string) ([
 }
 
 // AddUserVoteLock adds a lock ID to a user's vote lock index
+//
+// ATOMICITY NOTE: This function performs a read-modify-write on the user's vote lock index.
+// The operation is atomic within a single transaction because Cosmos SDK processes
+// transactions serially and the KVStore changes are committed atomically.
+// However, if this function fails after modifying the index but before the caller
+// stores the lock, the index may reference a non-existent lock.
+// Callers should ensure the lock is stored BEFORE calling this function.
 func (k Keeper) AddUserVoteLock(ctx context.Context, userAddress, lockID string) error {
 	lockIDs, err := k.GetUserVoteLockIndex(ctx, userAddress)
 	if err != nil {

@@ -176,11 +176,11 @@ func (k *Keeper) GetLargeTxRecords(ctx context.Context, limit uint64) ([]*types.
 
 	err := k.IterateLargeTxRecords(ctx, func(record *types.LargeTxRecord) bool {
 		if count >= limit {
-			return false
+			return true // Stop iteration - reached limit
 		}
 		records = append(records, record)
 		count++
-		return true
+		return false // Continue iterating
 	})
 
 	if err != nil {
@@ -205,7 +205,7 @@ func (k *Keeper) GetWhaleProtectionTriggers24h(ctx context.Context) (uint64, err
 		if record.Timestamp.Unix() >= cutoff && record.Flagged {
 			count++
 		}
-		return true
+		return false // Continue iterating
 	})
 
 	if err != nil {
@@ -228,7 +228,7 @@ func (k *Keeper) GetWhaleProtectionStatistics(ctx context.Context) (totalLargeTx
 		if record.Flagged {
 			flaggedTx++
 		}
-		return true
+		return false // Continue iterating
 	})
 
 	if err != nil {

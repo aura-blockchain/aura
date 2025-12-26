@@ -60,17 +60,17 @@ func NewKeeper(
 }
 
 // GetAuthority returns the module's authority
-func (k Keeper) GetAuthority() string {
+func (k *Keeper) GetAuthority() string {
 	return k.authority
 }
 
 // Logger returns the module logger
-func (k Keeper) Logger(ctx sdk.Context) log.Logger {
+func (k *Keeper) Logger(ctx sdk.Context) log.Logger {
 	return k.logger
 }
 
 // GetParams returns the current module parameters
-func (k Keeper) GetParams(ctx sdk.Context) (types.Params, error) {
+func (k *Keeper) GetParams(ctx sdk.Context) (types.Params, error) {
 	store := k.storeService.OpenKVStore(ctx)
 	bz, err := store.Get(types.ParamsKey)
 	if err != nil {
@@ -90,7 +90,7 @@ func (k Keeper) GetParams(ctx sdk.Context) (types.Params, error) {
 }
 
 // SetParams sets the module parameters
-func (k Keeper) SetParams(ctx sdk.Context, params types.Params) error {
+func (k *Keeper) SetParams(ctx sdk.Context, params types.Params) error {
 	if err := types.ValidateParams(&params); err != nil {
 		return fmt.Errorf("error in SetParams for ValidateParams: %w", err)
 	}
@@ -101,7 +101,7 @@ func (k Keeper) SetParams(ctx sdk.Context, params types.Params) error {
 }
 
 // GetPeerInfo retrieves peer information
-func (k Keeper) GetPeerInfo(ctx sdk.Context, peerID string) (types.PeerInfo, bool) {
+func (k *Keeper) GetPeerInfo(ctx sdk.Context, peerID string) (types.PeerInfo, bool) {
 	store := k.storeService.OpenKVStore(ctx)
 	bz, err := store.Get(types.GetPeerInfoKey(peerID))
 	if err != nil || bz == nil {
@@ -117,14 +117,14 @@ func (k Keeper) GetPeerInfo(ctx sdk.Context, peerID string) (types.PeerInfo, boo
 }
 
 // SetPeerInfo stores peer information
-func (k Keeper) SetPeerInfo(ctx sdk.Context, peerInfo types.PeerInfo) error {
+func (k *Keeper) SetPeerInfo(ctx sdk.Context, peerInfo types.PeerInfo) error {
 	store := k.storeService.OpenKVStore(ctx)
 	bz := k.cdc.MustMarshal(&peerInfo)
 	return store.Set(types.GetPeerInfoKey(peerInfo.PeerId), bz)
 }
 
 // GetAllPeers retrieves all connected peers
-func (k Keeper) GetAllPeers(ctx sdk.Context) []types.PeerInfo {
+func (k *Keeper) GetAllPeers(ctx sdk.Context) []types.PeerInfo {
 	store := k.storeService.OpenKVStore(ctx)
 	iterator, err := store.Iterator(types.PeerInfoPrefix, storetypes.PrefixEndBytes(types.PeerInfoPrefix))
 	if err != nil {
@@ -145,7 +145,7 @@ func (k Keeper) GetAllPeers(ctx sdk.Context) []types.PeerInfo {
 }
 
 // IsTrustedPeer checks if a peer is trusted
-func (k Keeper) IsTrustedPeer(ctx sdk.Context, peerID string) bool {
+func (k *Keeper) IsTrustedPeer(ctx sdk.Context, peerID string) bool {
 	store := k.storeService.OpenKVStore(ctx)
 	has, err := store.Has(types.GetTrustedPeerKey(peerID))
 	if err != nil {
@@ -155,7 +155,7 @@ func (k Keeper) IsTrustedPeer(ctx sdk.Context, peerID string) bool {
 }
 
 // GetTrustedPeer retrieves a trusted peer
-func (k Keeper) GetTrustedPeer(ctx sdk.Context, peerID string) (types.TrustedPeer, bool) {
+func (k *Keeper) GetTrustedPeer(ctx sdk.Context, peerID string) (types.TrustedPeer, bool) {
 	store := k.storeService.OpenKVStore(ctx)
 	bz, err := store.Get(types.GetTrustedPeerKey(peerID))
 	if err != nil || bz == nil {
@@ -171,20 +171,20 @@ func (k Keeper) GetTrustedPeer(ctx sdk.Context, peerID string) (types.TrustedPee
 }
 
 // SetTrustedPeer adds a trusted peer
-func (k Keeper) SetTrustedPeer(ctx sdk.Context, peer types.TrustedPeer) error {
+func (k *Keeper) SetTrustedPeer(ctx sdk.Context, peer types.TrustedPeer) error {
 	store := k.storeService.OpenKVStore(ctx)
 	bz := k.cdc.MustMarshal(&peer)
 	return store.Set(types.GetTrustedPeerKey(peer.PeerId), bz)
 }
 
 // RemoveTrustedPeer removes a trusted peer
-func (k Keeper) RemoveTrustedPeer(ctx sdk.Context, peerID string) error {
+func (k *Keeper) RemoveTrustedPeer(ctx sdk.Context, peerID string) error {
 	store := k.storeService.OpenKVStore(ctx)
 	return store.Delete(types.GetTrustedPeerKey(peerID))
 }
 
 // GetAllTrustedPeers retrieves all trusted peers
-func (k Keeper) GetAllTrustedPeers(ctx sdk.Context) []types.TrustedPeer {
+func (k *Keeper) GetAllTrustedPeers(ctx sdk.Context) []types.TrustedPeer {
 	store := k.storeService.OpenKVStore(ctx)
 	iterator, err := store.Iterator(types.TrustedPeerPrefix, storetypes.PrefixEndBytes(types.TrustedPeerPrefix))
 	if err != nil {
@@ -205,7 +205,7 @@ func (k Keeper) GetAllTrustedPeers(ctx sdk.Context) []types.TrustedPeer {
 }
 
 // IsBanned checks if a peer is currently banned
-func (k Keeper) IsBanned(ctx sdk.Context, peerID string) bool {
+func (k *Keeper) IsBanned(ctx sdk.Context, peerID string) bool {
 	rateLimitEntry, found := k.GetRateLimitEntry(ctx, peerID)
 	if !found {
 		return false
@@ -226,7 +226,7 @@ func (k Keeper) IsBanned(ctx sdk.Context, peerID string) bool {
 }
 
 // BanPeer bans a peer until the specified time
-func (k Keeper) BanPeer(ctx sdk.Context, peerID string, duration int64, reason string) error {
+func (k *Keeper) BanPeer(ctx sdk.Context, peerID string, duration int64, reason string) error {
 	rateLimitEntry, found := k.GetRateLimitEntry(ctx, peerID)
 	if !found {
 		rateLimitEntry = types.RateLimitEntry{
@@ -249,7 +249,7 @@ func (k Keeper) BanPeer(ctx sdk.Context, peerID string, duration int64, reason s
 }
 
 // UnbanPeer removes a ban from a peer
-func (k Keeper) UnbanPeer(ctx sdk.Context, peerID string) error {
+func (k *Keeper) UnbanPeer(ctx sdk.Context, peerID string) error {
 	rateLimitEntry, found := k.GetRateLimitEntry(ctx, peerID)
 	if !found {
 		return nil
@@ -266,7 +266,7 @@ func (k Keeper) UnbanPeer(ctx sdk.Context, peerID string) error {
 }
 
 // GetRateLimitEntry retrieves rate limit entry for a peer
-func (k Keeper) GetRateLimitEntry(ctx sdk.Context, peerID string) (types.RateLimitEntry, bool) {
+func (k *Keeper) GetRateLimitEntry(ctx sdk.Context, peerID string) (types.RateLimitEntry, bool) {
 	store := k.storeService.OpenKVStore(ctx)
 	bz, err := store.Get(types.GetRateLimitKey(peerID))
 	if err != nil || bz == nil {
@@ -282,14 +282,14 @@ func (k Keeper) GetRateLimitEntry(ctx sdk.Context, peerID string) (types.RateLim
 }
 
 // SetRateLimitEntry stores rate limit entry
-func (k Keeper) SetRateLimitEntry(ctx sdk.Context, entry types.RateLimitEntry) error {
+func (k *Keeper) SetRateLimitEntry(ctx sdk.Context, entry types.RateLimitEntry) error {
 	store := k.storeService.OpenKVStore(ctx)
 	bz := k.cdc.MustMarshal(&entry)
 	return store.Set(types.GetRateLimitKey(entry.PeerId), bz)
 }
 
 // GetReputation retrieves reputation for a peer
-func (k Keeper) GetReputation(ctx sdk.Context, peerID string) (types.NodeReputation, bool) {
+func (k *Keeper) GetReputation(ctx sdk.Context, peerID string) (types.NodeReputation, bool) {
 	store := k.storeService.OpenKVStore(ctx)
 	bz, err := store.Get(types.GetReputationKey(peerID))
 	if err != nil || bz == nil {
@@ -305,14 +305,14 @@ func (k Keeper) GetReputation(ctx sdk.Context, peerID string) (types.NodeReputat
 }
 
 // SetReputation stores reputation for a peer
-func (k Keeper) SetReputation(ctx sdk.Context, reputation types.NodeReputation) error {
+func (k *Keeper) SetReputation(ctx sdk.Context, reputation types.NodeReputation) error {
 	store := k.storeService.OpenKVStore(ctx)
 	bz := k.cdc.MustMarshal(&reputation)
 	return store.Set(types.GetReputationKey(reputation.PeerId), bz)
 }
 
 // GetAllReputations retrieves all reputations
-func (k Keeper) GetAllReputations(ctx sdk.Context) []types.NodeReputation {
+func (k *Keeper) GetAllReputations(ctx sdk.Context) []types.NodeReputation {
 	store := k.storeService.OpenKVStore(ctx)
 	iterator, err := store.Iterator(types.ReputationPrefix, storetypes.PrefixEndBytes(types.ReputationPrefix))
 	if err != nil {
@@ -333,7 +333,7 @@ func (k Keeper) GetAllReputations(ctx sdk.Context) []types.NodeReputation {
 }
 
 // GetMempoolStats retrieves mempool statistics
-func (k Keeper) GetMempoolStats(ctx sdk.Context) types.MempoolStats {
+func (k *Keeper) GetMempoolStats(ctx sdk.Context) types.MempoolStats {
 	store := k.storeService.OpenKVStore(ctx)
 	bz, err := store.Get(types.MempoolStatsKey)
 	if err != nil || bz == nil {
@@ -349,14 +349,14 @@ func (k Keeper) GetMempoolStats(ctx sdk.Context) types.MempoolStats {
 }
 
 // SetMempoolStats stores mempool statistics
-func (k Keeper) SetMempoolStats(ctx sdk.Context, stats types.MempoolStats) error {
+func (k *Keeper) SetMempoolStats(ctx sdk.Context, stats types.MempoolStats) error {
 	store := k.storeService.OpenKVStore(ctx)
 	bz := k.cdc.MustMarshal(&stats)
 	return store.Set(types.MempoolStatsKey, bz)
 }
 
 // GetForkAlert retrieves a fork alert
-func (k Keeper) GetForkAlert(ctx sdk.Context, alertID string) (types.ForkAlert, bool) {
+func (k *Keeper) GetForkAlert(ctx sdk.Context, alertID string) (types.ForkAlert, bool) {
 	store := k.storeService.OpenKVStore(ctx)
 	bz, err := store.Get(types.GetForkAlertKey(alertID))
 	if err != nil || bz == nil {
@@ -372,14 +372,14 @@ func (k Keeper) GetForkAlert(ctx sdk.Context, alertID string) (types.ForkAlert, 
 }
 
 // SetForkAlert stores a fork alert
-func (k Keeper) SetForkAlert(ctx sdk.Context, alert types.ForkAlert) error {
+func (k *Keeper) SetForkAlert(ctx sdk.Context, alert types.ForkAlert) error {
 	store := k.storeService.OpenKVStore(ctx)
 	bz := k.cdc.MustMarshal(&alert)
 	return store.Set(types.GetForkAlertKey(alert.AlertId), bz)
 }
 
 // GetAllForkAlerts retrieves all fork alerts
-func (k Keeper) GetAllForkAlerts(ctx sdk.Context, includeResolved bool) []types.ForkAlert {
+func (k *Keeper) GetAllForkAlerts(ctx sdk.Context, includeResolved bool) []types.ForkAlert {
 	store := k.storeService.OpenKVStore(ctx)
 	iterator, err := store.Iterator(types.ForkAlertPrefix, storetypes.PrefixEndBytes(types.ForkAlertPrefix))
 	if err != nil {
@@ -402,7 +402,7 @@ func (k Keeper) GetAllForkAlerts(ctx sdk.Context, includeResolved bool) []types.
 }
 
 // GetPartitionAlert retrieves a partition alert
-func (k Keeper) GetPartitionAlert(ctx sdk.Context, alertID string) (types.PartitionAlert, bool) {
+func (k *Keeper) GetPartitionAlert(ctx sdk.Context, alertID string) (types.PartitionAlert, bool) {
 	store := k.storeService.OpenKVStore(ctx)
 	bz, err := store.Get(types.GetPartitionAlertKey(alertID))
 	if err != nil || bz == nil {
@@ -418,14 +418,14 @@ func (k Keeper) GetPartitionAlert(ctx sdk.Context, alertID string) (types.Partit
 }
 
 // SetPartitionAlert stores a partition alert
-func (k Keeper) SetPartitionAlert(ctx sdk.Context, alert types.PartitionAlert) error {
+func (k *Keeper) SetPartitionAlert(ctx sdk.Context, alert types.PartitionAlert) error {
 	store := k.storeService.OpenKVStore(ctx)
 	bz := k.cdc.MustMarshal(&alert)
 	return store.Set(types.GetPartitionAlertKey(alert.AlertId), bz)
 }
 
 // GetAllPartitionAlerts retrieves all partition alerts
-func (k Keeper) GetAllPartitionAlerts(ctx sdk.Context, includeResolved bool) []types.PartitionAlert {
+func (k *Keeper) GetAllPartitionAlerts(ctx sdk.Context, includeResolved bool) []types.PartitionAlert {
 	store := k.storeService.OpenKVStore(ctx)
 	iterator, err := store.Iterator(types.PartitionAlertPrefix, storetypes.PrefixEndBytes(types.PartitionAlertPrefix))
 	if err != nil {
@@ -448,7 +448,7 @@ func (k Keeper) GetAllPartitionAlerts(ctx sdk.Context, includeResolved bool) []t
 }
 
 // GetConnectionCount retrieves connection count for an IP
-func (k Keeper) GetConnectionCount(ctx sdk.Context, ipAddress string) uint32 {
+func (k *Keeper) GetConnectionCount(ctx sdk.Context, ipAddress string) uint32 {
 	store := k.storeService.OpenKVStore(ctx)
 	bz, err := store.Get(types.GetConnectionCountKey(ipAddress))
 	if err != nil || bz == nil {
@@ -465,7 +465,7 @@ func (k Keeper) GetConnectionCount(ctx sdk.Context, ipAddress string) uint32 {
 
 // SetConnectionCount sets connection count for an IP
 // SetConnectionCount sets connection count for an IP
-func (k Keeper) SetConnectionCount(ctx sdk.Context, ipAddress string, count uint32) error {
+func (k *Keeper) SetConnectionCount(ctx sdk.Context, ipAddress string, count uint32) error {
 	store := k.storeService.OpenKVStore(ctx)
 	// Encode as binary uint32
 	bz := make([]byte, 4)
@@ -477,13 +477,13 @@ func (k Keeper) SetConnectionCount(ctx sdk.Context, ipAddress string, count uint
 }
 
 // IncrementConnectionCount increments connection count for an IP
-func (k Keeper) IncrementConnectionCount(ctx sdk.Context, ipAddress string) error {
+func (k *Keeper) IncrementConnectionCount(ctx sdk.Context, ipAddress string) error {
 	count := k.GetConnectionCount(ctx, ipAddress)
 	return k.SetConnectionCount(ctx, ipAddress, count+1)
 }
 
 // DecrementConnectionCount decrements connection count for an IP
-func (k Keeper) DecrementConnectionCount(ctx sdk.Context, ipAddress string) error {
+func (k *Keeper) DecrementConnectionCount(ctx sdk.Context, ipAddress string) error {
 	count := k.GetConnectionCount(ctx, ipAddress)
 	if count > 0 {
 		return k.SetConnectionCount(ctx, ipAddress, count-1)
@@ -500,7 +500,7 @@ func (k Keeper) DecrementConnectionCount(ctx sdk.Context, ipAddress string) erro
 // CheckGossipMessage hashes the provided message payload and reports whether it
 // has already been seen. The boolean return value is true when the payload was
 // added to the cache, and false when ErrDuplicateMessage indicates a cache hit.
-func (k Keeper) CheckGossipMessage(ctx sdk.Context, messageData []byte) (bool, string, error) {
+func (k *Keeper) CheckGossipMessage(ctx sdk.Context, messageData []byte) (bool, string, error) {
 	// Hash the message
 	hash := sha256.Sum256(messageData)
 	messageHash := hex.EncodeToString(hash[:])
@@ -521,7 +521,7 @@ func (k Keeper) CheckGossipMessage(ctx sdk.Context, messageData []byte) (bool, s
 // ValidateGossipMessage performs comprehensive gossip message validation
 
 // GetMessageCacheStats returns statistics about the message cache
-func (k Keeper) GetMessageCacheStats() MessageCacheStats {
+func (k *Keeper) GetMessageCacheStats() MessageCacheStats {
 	return k.messageCache.Stats()
 }
 
@@ -533,7 +533,7 @@ const (
 )
 
 // GetBatchCursor retrieves a batch processing cursor from state
-func (k Keeper) GetBatchCursor(ctx sdk.Context, cursorKey []byte) (uint64, error) {
+func (k *Keeper) GetBatchCursor(ctx sdk.Context, cursorKey []byte) (uint64, error) {
 	store := k.storeService.OpenKVStore(ctx)
 	bz, err := store.Get(cursorKey)
 	if err != nil || bz == nil {
@@ -547,13 +547,13 @@ func (k Keeper) GetBatchCursor(ctx sdk.Context, cursorKey []byte) (uint64, error
 }
 
 // SetBatchCursor stores a batch processing cursor in state
-func (k Keeper) SetBatchCursor(ctx sdk.Context, cursorKey []byte, cursor uint64) error {
+func (k *Keeper) SetBatchCursor(ctx sdk.Context, cursorKey []byte, cursor uint64) error {
 	store := k.storeService.OpenKVStore(ctx)
 	bz := sdk.Uint64ToBigEndian(cursor)
 	return store.Set(cursorKey, bz)
 }
 
 // KVStoreService returns the keeper's store service (for testing)
-func (k Keeper) KVStoreService() store.KVStoreService {
+func (k *Keeper) KVStoreService() store.KVStoreService {
 	return k.storeService
 }

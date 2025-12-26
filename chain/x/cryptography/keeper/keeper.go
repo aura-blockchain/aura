@@ -43,18 +43,18 @@ func NewKeeper(
 }
 
 // Logger returns a module-specific logger
-func (k Keeper) Logger(ctx sdk.Context) log.Logger {
+func (k *Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", "x/"+types.ModuleName)
 }
 
 // getStore returns the KVStore
-func (k Keeper) getStore(ctx context.Context) storetypes.KVStore {
+func (k *Keeper) getStore(ctx context.Context) storetypes.KVStore {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	return sdkCtx.KVStore(k.storeKey)
 }
 
 // GetParams gets the module parameters
-func (k Keeper) GetParams(ctx context.Context) (*cryptoproto.Params, error) {
+func (k *Keeper) GetParams(ctx context.Context) (*cryptoproto.Params, error) {
 	store := k.getStore(ctx)
 	bz := store.Get(types.ParamsKey)
 	if bz == nil {
@@ -70,7 +70,7 @@ func (k Keeper) GetParams(ctx context.Context) (*cryptoproto.Params, error) {
 }
 
 // SetParams sets the module parameters
-func (k Keeper) SetParams(ctx context.Context, params *cryptoproto.Params) error {
+func (k *Keeper) SetParams(ctx context.Context, params *cryptoproto.Params) error {
 	if err := types.ValidateParams(params); err != nil {
 		return fmt.Errorf("error in SetParams for ValidateParams: %w", err)
 	}
@@ -82,7 +82,7 @@ func (k Keeper) SetParams(ctx context.Context, params *cryptoproto.Params) error
 }
 
 // UpdateParams updates the module parameters
-func (k Keeper) UpdateParams(ctx context.Context, authority string, params *cryptoproto.Params) error {
+func (k *Keeper) UpdateParams(ctx context.Context, authority string, params *cryptoproto.Params) error {
 	if err := k.ValidateAuthority(authority); err != nil {
 		return fmt.Errorf("error in UpdateParams for ValidateAuthority: %w", err)
 	}
@@ -90,7 +90,7 @@ func (k Keeper) UpdateParams(ctx context.Context, authority string, params *cryp
 }
 
 // ValidateAuthority checks if the signer is the module authority
-func (k Keeper) ValidateAuthority(signer string) error {
+func (k *Keeper) ValidateAuthority(signer string) error {
 	if signer != k.authority {
 		return types.ErrUnauthorized
 	}
@@ -102,7 +102,7 @@ func (k Keeper) ValidateAuthority(signer string) error {
 // ============================================================================
 
 // GetQuantumResistantKey retrieves a quantum-resistant key from KV store
-func (k Keeper) GetQuantumResistantKey(ctx context.Context, keyID string) (*cryptoproto.QuantumResistantKey, error) {
+func (k *Keeper) GetQuantumResistantKey(ctx context.Context, keyID string) (*cryptoproto.QuantumResistantKey, error) {
 	store := k.getStore(ctx)
 	bz := store.Get(types.GetQuantumResistantKeyKey(keyID))
 	if bz == nil {
@@ -124,7 +124,7 @@ func (k Keeper) GetQuantumResistantKey(ctx context.Context, keyID string) (*cryp
 }
 
 // SetQuantumResistantKey stores a quantum-resistant key
-func (k Keeper) SetQuantumResistantKey(ctx context.Context, key *cryptoproto.QuantumResistantKey) error {
+func (k *Keeper) SetQuantumResistantKey(ctx context.Context, key *cryptoproto.QuantumResistantKey) error {
 	if key == nil {
 		return nil
 	}
@@ -136,7 +136,7 @@ func (k Keeper) SetQuantumResistantKey(ctx context.Context, key *cryptoproto.Qua
 }
 
 // DeleteQuantumResistantKey deletes a quantum-resistant key
-func (k Keeper) DeleteQuantumResistantKey(ctx context.Context, keyID string) error {
+func (k *Keeper) DeleteQuantumResistantKey(ctx context.Context, keyID string) error {
 	store := k.getStore(ctx)
 	store.Delete(types.GetQuantumResistantKeyKey(keyID))
 
@@ -146,7 +146,7 @@ func (k Keeper) DeleteQuantumResistantKey(ctx context.Context, keyID string) err
 }
 
 // IterateQuantumKeys iterates over all quantum-resistant keys
-func (k Keeper) IterateQuantumKeys(ctx context.Context, fn func(key *cryptoproto.QuantumResistantKey) bool) error {
+func (k *Keeper) IterateQuantumKeys(ctx context.Context, fn func(key *cryptoproto.QuantumResistantKey) bool) error {
 	store := k.getStore(ctx)
 	iterator := storetypes.KVStorePrefixIterator(store, types.QuantumResistantKeyPrefix)
 	defer iterator.Close()
@@ -170,7 +170,7 @@ func (k Keeper) IterateQuantumKeys(ctx context.Context, fn func(key *cryptoproto
 // ============================================================================
 
 // GetCertificatePin retrieves a certificate pin from KV store
-func (k Keeper) GetCertificatePin(ctx context.Context, hostname string) (*cryptoproto.CertificatePin, error) {
+func (k *Keeper) GetCertificatePin(ctx context.Context, hostname string) (*cryptoproto.CertificatePin, error) {
 	store := k.getStore(ctx)
 	bz := store.Get(types.GetCertificatePinKey(hostname))
 	if bz == nil {
@@ -185,7 +185,7 @@ func (k Keeper) GetCertificatePin(ctx context.Context, hostname string) (*crypto
 }
 
 // SetCertificatePin stores a certificate pin
-func (k Keeper) SetCertificatePin(ctx context.Context, pin *cryptoproto.CertificatePin) error {
+func (k *Keeper) SetCertificatePin(ctx context.Context, pin *cryptoproto.CertificatePin) error {
 	if pin == nil {
 		return nil
 	}
@@ -197,14 +197,14 @@ func (k Keeper) SetCertificatePin(ctx context.Context, pin *cryptoproto.Certific
 }
 
 // DeleteCertificatePin deletes a certificate pin
-func (k Keeper) DeleteCertificatePin(ctx context.Context, hostname string) error {
+func (k *Keeper) DeleteCertificatePin(ctx context.Context, hostname string) error {
 	store := k.getStore(ctx)
 	store.Delete(types.GetCertificatePinKey(hostname))
 	return nil
 }
 
 // IterateCertificatePins iterates over all certificate pins
-func (k Keeper) IterateCertificatePins(ctx context.Context, fn func(pin *cryptoproto.CertificatePin) bool) error {
+func (k *Keeper) IterateCertificatePins(ctx context.Context, fn func(pin *cryptoproto.CertificatePin) bool) error {
 	store := k.getStore(ctx)
 	iterator := storetypes.KVStorePrefixIterator(store, types.CertificatePinPrefix)
 	defer iterator.Close()
@@ -224,7 +224,7 @@ func (k Keeper) IterateCertificatePins(ctx context.Context, fn func(pin *cryptop
 }
 
 // ListCertificatePins returns all certificate pins
-func (k Keeper) ListCertificatePins(ctx context.Context) []*cryptoproto.CertificatePin {
+func (k *Keeper) ListCertificatePins(ctx context.Context) []*cryptoproto.CertificatePin {
 	pins := make([]*cryptoproto.CertificatePin, 0)
 	_ = k.IterateCertificatePins(ctx, func(pin *cryptoproto.CertificatePin) bool {
 		pins = append(pins, pin)
@@ -238,7 +238,7 @@ func (k Keeper) ListCertificatePins(ctx context.Context) []*cryptoproto.Certific
 // ============================================================================
 
 // GetKeyRotationSchedule retrieves a key rotation schedule from KV store
-func (k Keeper) GetKeyRotationSchedule(ctx context.Context, scheduleID string) (*cryptoproto.KeyRotationSchedule, error) {
+func (k *Keeper) GetKeyRotationSchedule(ctx context.Context, scheduleID string) (*cryptoproto.KeyRotationSchedule, error) {
 	store := k.getStore(ctx)
 	bz := store.Get(types.GetKeyRotationScheduleKey(scheduleID))
 	if bz == nil {
@@ -253,7 +253,7 @@ func (k Keeper) GetKeyRotationSchedule(ctx context.Context, scheduleID string) (
 }
 
 // SetKeyRotationSchedule stores a key rotation schedule
-func (k Keeper) SetKeyRotationSchedule(ctx context.Context, schedule *cryptoproto.KeyRotationSchedule) error {
+func (k *Keeper) SetKeyRotationSchedule(ctx context.Context, schedule *cryptoproto.KeyRotationSchedule) error {
 	if schedule == nil {
 		return nil
 	}
@@ -265,14 +265,14 @@ func (k Keeper) SetKeyRotationSchedule(ctx context.Context, schedule *cryptoprot
 }
 
 // DeleteKeyRotationSchedule deletes a key rotation schedule
-func (k Keeper) DeleteKeyRotationSchedule(ctx context.Context, scheduleID string) error {
+func (k *Keeper) DeleteKeyRotationSchedule(ctx context.Context, scheduleID string) error {
 	store := k.getStore(ctx)
 	store.Delete(types.GetKeyRotationScheduleKey(scheduleID))
 	return nil
 }
 
 // IterateKeyRotationSchedules iterates over all key rotation schedules
-func (k Keeper) IterateKeyRotationSchedules(ctx context.Context, fn func(schedule *cryptoproto.KeyRotationSchedule) bool) error {
+func (k *Keeper) IterateKeyRotationSchedules(ctx context.Context, fn func(schedule *cryptoproto.KeyRotationSchedule) bool) error {
 	store := k.getStore(ctx)
 	iterator := storetypes.KVStorePrefixIterator(store, types.KeyRotationSchedulePrefix)
 	defer iterator.Close()
@@ -292,7 +292,7 @@ func (k Keeper) IterateKeyRotationSchedules(ctx context.Context, fn func(schedul
 }
 
 // GetAllKeyRotationSchedules retrieves all key rotation schedules
-func (k Keeper) GetAllKeyRotationSchedules(ctx context.Context) []*cryptoproto.KeyRotationSchedule {
+func (k *Keeper) GetAllKeyRotationSchedules(ctx context.Context) []*cryptoproto.KeyRotationSchedule {
 	schedules := make([]*cryptoproto.KeyRotationSchedule, 0)
 	_ = k.IterateKeyRotationSchedules(ctx, func(schedule *cryptoproto.KeyRotationSchedule) bool {
 		schedules = append(schedules, schedule)
@@ -302,7 +302,7 @@ func (k Keeper) GetAllKeyRotationSchedules(ctx context.Context) []*cryptoproto.K
 }
 
 // GetSchedulesForKey returns all rotation schedules for a given key
-func (k Keeper) GetSchedulesForKey(ctx context.Context, keyID string) []*cryptoproto.KeyRotationSchedule {
+func (k *Keeper) GetSchedulesForKey(ctx context.Context, keyID string) []*cryptoproto.KeyRotationSchedule {
 	schedules := make([]*cryptoproto.KeyRotationSchedule, 0)
 	_ = k.IterateKeyRotationSchedules(ctx, func(schedule *cryptoproto.KeyRotationSchedule) bool {
 		if schedule.KeyId == keyID {
@@ -318,7 +318,7 @@ func (k Keeper) GetSchedulesForKey(ctx context.Context, keyID string) []*cryptop
 // ============================================================================
 
 // GetKeyStretchingConfig retrieves a key stretching config from KV store
-func (k Keeper) GetKeyStretchingConfig(ctx context.Context, configID string) (*cryptoproto.KeyStretchingConfig, error) {
+func (k *Keeper) GetKeyStretchingConfig(ctx context.Context, configID string) (*cryptoproto.KeyStretchingConfig, error) {
 	store := k.getStore(ctx)
 	bz := store.Get(types.GetKeyStretchingConfigKey(configID))
 	if bz == nil {
@@ -335,7 +335,7 @@ func (k Keeper) GetKeyStretchingConfig(ctx context.Context, configID string) (*c
 // SetKeyStretchingConfig and DeleteKeyStretchingConfig are in key_stretching.go
 
 // IterateKeyStretchingConfigs iterates over all key stretching configs
-func (k Keeper) IterateKeyStretchingConfigs(ctx context.Context, fn func(config *cryptoproto.KeyStretchingConfig) bool) error {
+func (k *Keeper) IterateKeyStretchingConfigs(ctx context.Context, fn func(config *cryptoproto.KeyStretchingConfig) bool) error {
 	store := k.getStore(ctx)
 	iterator := storetypes.KVStorePrefixIterator(store, types.KeyStretchingConfigPrefix)
 	defer iterator.Close()
@@ -359,7 +359,7 @@ func (k Keeper) IterateKeyStretchingConfigs(ctx context.Context, fn func(config 
 // ============================================================================
 
 // GetSecureEnclave retrieves a secure enclave from KV store
-func (k Keeper) GetSecureEnclave(ctx context.Context, enclaveID string) (*cryptoproto.SecureEnclaveConfig, error) {
+func (k *Keeper) GetSecureEnclave(ctx context.Context, enclaveID string) (*cryptoproto.SecureEnclaveConfig, error) {
 	store := k.getStore(ctx)
 	bz := store.Get(types.GetSecureEnclaveKey(enclaveID))
 	if bz == nil {
@@ -374,7 +374,7 @@ func (k Keeper) GetSecureEnclave(ctx context.Context, enclaveID string) (*crypto
 }
 
 // SetSecureEnclaveConfig stores a secure enclave config
-func (k Keeper) SetSecureEnclaveConfig(ctx context.Context, config *cryptoproto.SecureEnclaveConfig) error {
+func (k *Keeper) SetSecureEnclaveConfig(ctx context.Context, config *cryptoproto.SecureEnclaveConfig) error {
 	if config == nil {
 		return nil
 	}
@@ -386,14 +386,14 @@ func (k Keeper) SetSecureEnclaveConfig(ctx context.Context, config *cryptoproto.
 }
 
 // DeleteSecureEnclave deletes a secure enclave
-func (k Keeper) DeleteSecureEnclave(ctx context.Context, enclaveID string) error {
+func (k *Keeper) DeleteSecureEnclave(ctx context.Context, enclaveID string) error {
 	store := k.getStore(ctx)
 	store.Delete(types.GetSecureEnclaveKey(enclaveID))
 	return nil
 }
 
 // IterateSecureEnclaves iterates over all secure enclaves
-func (k Keeper) IterateSecureEnclaves(ctx context.Context, fn func(enclave *cryptoproto.SecureEnclaveConfig) bool) error {
+func (k *Keeper) IterateSecureEnclaves(ctx context.Context, fn func(enclave *cryptoproto.SecureEnclaveConfig) bool) error {
 	store := k.getStore(ctx)
 	iterator := storetypes.KVStorePrefixIterator(store, types.SecureEnclavePrefix)
 	defer iterator.Close()
@@ -413,7 +413,7 @@ func (k Keeper) IterateSecureEnclaves(ctx context.Context, fn func(enclave *cryp
 }
 
 // ListSecureEnclaves returns all registered secure enclaves
-func (k Keeper) ListSecureEnclaves(ctx context.Context) []*cryptoproto.SecureEnclaveConfig {
+func (k *Keeper) ListSecureEnclaves(ctx context.Context) []*cryptoproto.SecureEnclaveConfig {
 	enclaves := make([]*cryptoproto.SecureEnclaveConfig, 0)
 	_ = k.IterateSecureEnclaves(ctx, func(enclave *cryptoproto.SecureEnclaveConfig) bool {
 		enclaves = append(enclaves, enclave)
@@ -427,7 +427,7 @@ func (k Keeper) ListSecureEnclaves(ctx context.Context) []*cryptoproto.SecureEnc
 // ============================================================================
 
 // GetRandomSource retrieves a random source from KV store
-func (k Keeper) GetRandomSource(ctx context.Context, sourceID string) (*cryptoproto.CryptoRandomSource, error) {
+func (k *Keeper) GetRandomSource(ctx context.Context, sourceID string) (*cryptoproto.CryptoRandomSource, error) {
 	store := k.getStore(ctx)
 	bz := store.Get(types.GetCryptoRandomSourceKey(sourceID))
 	if bz == nil {
@@ -442,7 +442,7 @@ func (k Keeper) GetRandomSource(ctx context.Context, sourceID string) (*cryptopr
 }
 
 // SetRandomSource stores a random source
-func (k Keeper) SetRandomSource(ctx context.Context, source *cryptoproto.CryptoRandomSource) error {
+func (k *Keeper) SetRandomSource(ctx context.Context, source *cryptoproto.CryptoRandomSource) error {
 	if source == nil {
 		return nil
 	}
@@ -454,14 +454,14 @@ func (k Keeper) SetRandomSource(ctx context.Context, source *cryptoproto.CryptoR
 }
 
 // DeleteRandomSource deletes a random source
-func (k Keeper) DeleteRandomSource(ctx context.Context, sourceID string) error {
+func (k *Keeper) DeleteRandomSource(ctx context.Context, sourceID string) error {
 	store := k.getStore(ctx)
 	store.Delete(types.GetCryptoRandomSourceKey(sourceID))
 	return nil
 }
 
 // IterateRandomSources iterates over all random sources
-func (k Keeper) IterateRandomSources(ctx context.Context, fn func(source *cryptoproto.CryptoRandomSource) bool) error {
+func (k *Keeper) IterateRandomSources(ctx context.Context, fn func(source *cryptoproto.CryptoRandomSource) bool) error {
 	store := k.getStore(ctx)
 	iterator := storetypes.KVStorePrefixIterator(store, types.CryptoRandomSourcePrefix)
 	defer iterator.Close()
@@ -481,7 +481,7 @@ func (k Keeper) IterateRandomSources(ctx context.Context, fn func(source *crypto
 }
 
 // GetRandomSourceStatus returns the status of all random sources
-func (k Keeper) GetRandomSourceStatus(ctx context.Context) []*cryptoproto.CryptoRandomSource {
+func (k *Keeper) GetRandomSourceStatus(ctx context.Context) []*cryptoproto.CryptoRandomSource {
 	sources := make([]*cryptoproto.CryptoRandomSource, 0)
 	_ = k.IterateRandomSources(ctx, func(source *cryptoproto.CryptoRandomSource) bool {
 		sources = append(sources, source)
@@ -495,7 +495,7 @@ func (k Keeper) GetRandomSourceStatus(ctx context.Context) []*cryptoproto.Crypto
 // ============================================================================
 
 // GetThresholdScheme retrieves a threshold signature scheme from KV store
-func (k Keeper) GetThresholdScheme(ctx context.Context, schemeID string) (*cryptoproto.ThresholdSignatureScheme, error) {
+func (k *Keeper) GetThresholdScheme(ctx context.Context, schemeID string) (*cryptoproto.ThresholdSignatureScheme, error) {
 	store := k.getStore(ctx)
 	bz := store.Get(types.GetThresholdSchemeKey(schemeID))
 	if bz == nil {
@@ -510,7 +510,7 @@ func (k Keeper) GetThresholdScheme(ctx context.Context, schemeID string) (*crypt
 }
 
 // SetThresholdScheme stores a threshold signature scheme
-func (k Keeper) SetThresholdScheme(ctx context.Context, scheme *cryptoproto.ThresholdSignatureScheme) error {
+func (k *Keeper) SetThresholdScheme(ctx context.Context, scheme *cryptoproto.ThresholdSignatureScheme) error {
 	if scheme == nil {
 		return nil
 	}
@@ -522,14 +522,14 @@ func (k Keeper) SetThresholdScheme(ctx context.Context, scheme *cryptoproto.Thre
 }
 
 // DeleteThresholdScheme deletes a threshold signature scheme
-func (k Keeper) DeleteThresholdScheme(ctx context.Context, schemeID string) error {
+func (k *Keeper) DeleteThresholdScheme(ctx context.Context, schemeID string) error {
 	store := k.getStore(ctx)
 	store.Delete(types.GetThresholdSchemeKey(schemeID))
 	return nil
 }
 
 // IterateThresholdSchemes iterates over all threshold signature schemes
-func (k Keeper) IterateThresholdSchemes(ctx context.Context, fn func(scheme *cryptoproto.ThresholdSignatureScheme) bool) error {
+func (k *Keeper) IterateThresholdSchemes(ctx context.Context, fn func(scheme *cryptoproto.ThresholdSignatureScheme) bool) error {
 	store := k.getStore(ctx)
 	iterator := storetypes.KVStorePrefixIterator(store, types.ThresholdSchemePrefix)
 	defer iterator.Close()
@@ -549,7 +549,7 @@ func (k Keeper) IterateThresholdSchemes(ctx context.Context, fn func(scheme *cry
 }
 
 // GetAllThresholdSchemes retrieves all threshold signature schemes
-func (k Keeper) GetAllThresholdSchemes(ctx context.Context) []*cryptoproto.ThresholdSignatureScheme {
+func (k *Keeper) GetAllThresholdSchemes(ctx context.Context) []*cryptoproto.ThresholdSignatureScheme {
 	schemes := make([]*cryptoproto.ThresholdSignatureScheme, 0)
 	_ = k.IterateThresholdSchemes(ctx, func(scheme *cryptoproto.ThresholdSignatureScheme) bool {
 		schemes = append(schemes, scheme)
@@ -563,7 +563,7 @@ func (k Keeper) GetAllThresholdSchemes(ctx context.Context) []*cryptoproto.Thres
 // ============================================================================
 
 // GetThresholdSignatureShare retrieves a threshold signature share from KV store
-func (k Keeper) GetThresholdSignatureShare(ctx context.Context, schemeID, participantID string) (*cryptoproto.ThresholdSignatureShare, error) {
+func (k *Keeper) GetThresholdSignatureShare(ctx context.Context, schemeID, participantID string) (*cryptoproto.ThresholdSignatureShare, error) {
 	store := k.getStore(ctx)
 	bz := store.Get(types.GetThresholdSignatureShareKey(schemeID, participantID))
 	if bz == nil {
@@ -578,7 +578,7 @@ func (k Keeper) GetThresholdSignatureShare(ctx context.Context, schemeID, partic
 }
 
 // SetThresholdSignatureShare stores a threshold signature share
-func (k Keeper) SetThresholdSignatureShare(ctx context.Context, share *cryptoproto.ThresholdSignatureShare) error {
+func (k *Keeper) SetThresholdSignatureShare(ctx context.Context, share *cryptoproto.ThresholdSignatureShare) error {
 	if share == nil {
 		return nil
 	}
@@ -590,14 +590,14 @@ func (k Keeper) SetThresholdSignatureShare(ctx context.Context, share *cryptopro
 }
 
 // DeleteThresholdSignatureShare deletes a threshold signature share
-func (k Keeper) DeleteThresholdSignatureShare(ctx context.Context, schemeID, participantID string) error {
+func (k *Keeper) DeleteThresholdSignatureShare(ctx context.Context, schemeID, participantID string) error {
 	store := k.getStore(ctx)
 	store.Delete(types.GetThresholdSignatureShareKey(schemeID, participantID))
 	return nil
 }
 
 // GetThresholdSignatureSharesForScheme retrieves all shares for a scheme
-func (k Keeper) GetThresholdSignatureSharesForScheme(ctx context.Context, schemeID string, messageHash []byte) []*cryptoproto.ThresholdSignatureShare {
+func (k *Keeper) GetThresholdSignatureSharesForScheme(ctx context.Context, schemeID string, messageHash []byte) []*cryptoproto.ThresholdSignatureShare {
 	shares := make([]*cryptoproto.ThresholdSignatureShare, 0)
 	store := k.getStore(ctx)
 
@@ -635,7 +635,7 @@ func (k Keeper) GetThresholdSignatureSharesForScheme(ctx context.Context, scheme
 // ============================================================================
 
 // GetZKProof retrieves a ZK proof from KV store
-func (k Keeper) GetZKProof(ctx context.Context, proofID string) (*cryptoproto.ZKProof, error) {
+func (k *Keeper) GetZKProof(ctx context.Context, proofID string) (*cryptoproto.ZKProof, error) {
 	store := k.getStore(ctx)
 	bz := store.Get(types.GetZKProofKey(proofID))
 	if bz == nil {
@@ -650,7 +650,7 @@ func (k Keeper) GetZKProof(ctx context.Context, proofID string) (*cryptoproto.ZK
 }
 
 // SetZKProof stores a ZK proof
-func (k Keeper) SetZKProof(ctx context.Context, proof *cryptoproto.ZKProof) error {
+func (k *Keeper) SetZKProof(ctx context.Context, proof *cryptoproto.ZKProof) error {
 	if proof == nil {
 		return nil
 	}
@@ -662,14 +662,14 @@ func (k Keeper) SetZKProof(ctx context.Context, proof *cryptoproto.ZKProof) erro
 }
 
 // DeleteZKProof deletes a ZK proof
-func (k Keeper) DeleteZKProof(ctx context.Context, proofID string) error {
+func (k *Keeper) DeleteZKProof(ctx context.Context, proofID string) error {
 	store := k.getStore(ctx)
 	store.Delete(types.GetZKProofKey(proofID))
 	return nil
 }
 
 // IterateZKProofs iterates over all ZK proofs
-func (k Keeper) IterateZKProofs(ctx context.Context, fn func(proof *cryptoproto.ZKProof) bool) error {
+func (k *Keeper) IterateZKProofs(ctx context.Context, fn func(proof *cryptoproto.ZKProof) bool) error {
 	store := k.getStore(ctx)
 	iterator := storetypes.KVStorePrefixIterator(store, types.ZKProofPrefix)
 	defer iterator.Close()
@@ -693,7 +693,7 @@ func (k Keeper) IterateZKProofs(ctx context.Context, fn func(proof *cryptoproto.
 // ============================================================================
 
 // GetZKProofVerification retrieves a ZK proof verification from KV store
-func (k Keeper) GetZKProofVerification(ctx context.Context, verificationID string) (*cryptoproto.ZKProofVerification, error) {
+func (k *Keeper) GetZKProofVerification(ctx context.Context, verificationID string) (*cryptoproto.ZKProofVerification, error) {
 	store := k.getStore(ctx)
 	bz := store.Get(types.GetZKProofVerificationKey(verificationID))
 	if bz == nil {
@@ -708,7 +708,7 @@ func (k Keeper) GetZKProofVerification(ctx context.Context, verificationID strin
 }
 
 // SetZKProofVerification stores a ZK proof verification
-func (k Keeper) SetZKProofVerification(ctx context.Context, verification *cryptoproto.ZKProofVerification) error {
+func (k *Keeper) SetZKProofVerification(ctx context.Context, verification *cryptoproto.ZKProofVerification) error {
 	if verification == nil {
 		return nil
 	}
@@ -720,14 +720,14 @@ func (k Keeper) SetZKProofVerification(ctx context.Context, verification *crypto
 }
 
 // DeleteZKProofVerification deletes a ZK proof verification
-func (k Keeper) DeleteZKProofVerification(ctx context.Context, verificationID string) error {
+func (k *Keeper) DeleteZKProofVerification(ctx context.Context, verificationID string) error {
 	store := k.getStore(ctx)
 	store.Delete(types.GetZKProofVerificationKey(verificationID))
 	return nil
 }
 
 // IterateZKProofVerifications iterates over all ZK proof verifications
-func (k Keeper) IterateZKProofVerifications(ctx context.Context, fn func(verification *cryptoproto.ZKProofVerification) bool) error {
+func (k *Keeper) IterateZKProofVerifications(ctx context.Context, fn func(verification *cryptoproto.ZKProofVerification) bool) error {
 	store := k.getStore(ctx)
 	iterator := storetypes.KVStorePrefixIterator(store, types.ZKProofVerificationPrefix)
 	defer iterator.Close()
@@ -747,7 +747,7 @@ func (k Keeper) IterateZKProofVerifications(ctx context.Context, fn func(verific
 }
 
 // GetAllZKProofVerifications retrieves all verifications for a proof
-func (k Keeper) GetAllZKProofVerifications(ctx context.Context, proofID string) []*cryptoproto.ZKProofVerification {
+func (k *Keeper) GetAllZKProofVerifications(ctx context.Context, proofID string) []*cryptoproto.ZKProofVerification {
 	verifications := make([]*cryptoproto.ZKProofVerification, 0)
 	_ = k.IterateZKProofVerifications(ctx, func(verification *cryptoproto.ZKProofVerification) bool {
 		if proofID == "" || verification.ProofId == proofID {
@@ -763,7 +763,7 @@ func (k Keeper) GetAllZKProofVerifications(ctx context.Context, proofID string) 
 // ============================================================================
 
 // GetSaltedHash retrieves a salted hash from KV store
-func (k Keeper) GetSaltedHash(ctx context.Context, hashID string) (*cryptoproto.SaltedHash, error) {
+func (k *Keeper) GetSaltedHash(ctx context.Context, hashID string) (*cryptoproto.SaltedHash, error) {
 	store := k.getStore(ctx)
 	bz := store.Get(types.GetSaltedHashKey(hashID))
 	if bz == nil {
@@ -778,7 +778,7 @@ func (k Keeper) GetSaltedHash(ctx context.Context, hashID string) (*cryptoproto.
 }
 
 // SetSaltedHash stores a salted hash
-func (k Keeper) SetSaltedHash(ctx context.Context, hash *cryptoproto.SaltedHash) error {
+func (k *Keeper) SetSaltedHash(ctx context.Context, hash *cryptoproto.SaltedHash) error {
 	if hash == nil {
 		return nil
 	}
@@ -790,14 +790,14 @@ func (k Keeper) SetSaltedHash(ctx context.Context, hash *cryptoproto.SaltedHash)
 }
 
 // DeleteSaltedHash deletes a salted hash
-func (k Keeper) DeleteSaltedHash(ctx context.Context, hashID string) error {
+func (k *Keeper) DeleteSaltedHash(ctx context.Context, hashID string) error {
 	store := k.getStore(ctx)
 	store.Delete(types.GetSaltedHashKey(hashID))
 	return nil
 }
 
 // IterateSaltedHashes iterates over all salted hashes
-func (k Keeper) IterateSaltedHashes(ctx context.Context, fn func(hash *cryptoproto.SaltedHash) bool) error {
+func (k *Keeper) IterateSaltedHashes(ctx context.Context, fn func(hash *cryptoproto.SaltedHash) bool) error {
 	store := k.getStore(ctx)
 	iterator := storetypes.KVStorePrefixIterator(store, types.SaltedHashPrefix)
 	defer iterator.Close()
@@ -821,7 +821,7 @@ func (k Keeper) IterateSaltedHashes(ctx context.Context, fn func(hash *cryptopro
 // ============================================================================
 
 // GetHDKeyDerivation retrieves an HD key derivation from KV store
-func (k Keeper) GetHDKeyDerivation(ctx context.Context, masterKeyID string) (*cryptoproto.HDKeyDerivation, error) {
+func (k *Keeper) GetHDKeyDerivation(ctx context.Context, masterKeyID string) (*cryptoproto.HDKeyDerivation, error) {
 	store := k.getStore(ctx)
 	bz := store.Get(types.GetHDKeyDerivationKey(masterKeyID))
 	if bz == nil {
@@ -836,7 +836,7 @@ func (k Keeper) GetHDKeyDerivation(ctx context.Context, masterKeyID string) (*cr
 }
 
 // SetHDKeyDerivation stores an HD key derivation
-func (k Keeper) SetHDKeyDerivation(ctx context.Context, derivation *cryptoproto.HDKeyDerivation) error {
+func (k *Keeper) SetHDKeyDerivation(ctx context.Context, derivation *cryptoproto.HDKeyDerivation) error {
 	if derivation == nil {
 		return nil
 	}
@@ -848,7 +848,7 @@ func (k Keeper) SetHDKeyDerivation(ctx context.Context, derivation *cryptoproto.
 }
 
 // DeleteHDKeyDerivation deletes an HD key derivation
-func (k Keeper) DeleteHDKeyDerivation(ctx context.Context, masterKeyID string) error {
+func (k *Keeper) DeleteHDKeyDerivation(ctx context.Context, masterKeyID string) error {
 	store := k.getStore(ctx)
 	store.Delete(types.GetHDKeyDerivationKey(masterKeyID))
 	return nil
@@ -865,10 +865,20 @@ func (k Keeper) DeleteHDKeyDerivation(ctx context.Context, masterKeyID string) e
 //
 // DO NOT call this from message handlers. This is for client-side utilities only.
 //
+// SAFE TO USE:
+// - CLI commands (key generation, client-side encryption)
+// - Query handlers (read-only, no state changes)
+// - Off-chain services (relayers, indexers)
+//
+// DO NOT USE:
+// - MsgServer handlers (breaks consensus - validators get different values)
+// - InitGenesis/ExportGenesis (non-deterministic state)
+// - Any code path that modifies chain state
+//
 // For on-chain operations that need randomness:
 // - Require the client to provide randomness in the message (generated off-chain)
 // - Use deterministic sources like block hash, tx hash, or VRF if available
-func (k Keeper) GenerateSecureRandomBytes(length int) ([]byte, error) {
+func (k *Keeper) GenerateSecureRandomBytes(length int) ([]byte, error) {
 	if length < 1 {
 		return nil, types.ErrInsufficientEntropy
 	}
@@ -884,7 +894,7 @@ func (k Keeper) GenerateSecureRandomBytes(length int) ([]byte, error) {
 }
 
 // GenerateSecureRandomInt generates a cryptographically secure random integer
-func (k Keeper) GenerateSecureRandomInt(max int64) (int64, error) {
+func (k *Keeper) GenerateSecureRandomInt(max int64) (int64, error) {
 	if max < 1 {
 		return 0, types.ErrInsufficientEntropy
 	}

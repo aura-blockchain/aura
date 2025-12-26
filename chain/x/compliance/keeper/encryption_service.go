@@ -372,7 +372,7 @@ func (s *EncryptionService) EncryptString(plaintext string, context string) ([]b
 func (s *EncryptionService) DecryptString(ciphertext []byte, context string) (string, error) {
 	plaintext, err := s.Decrypt(ciphertext, context)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("DecryptString: %w", err)
 	}
 	return string(plaintext), nil
 }
@@ -391,7 +391,7 @@ func (s *EncryptionService) DecryptString(ciphertext []byte, context string) (st
 func (s *EncryptionService) EncryptToBase64(plaintext []byte, context string) (string, error) {
 	ciphertext, err := s.Encrypt(plaintext, context)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("EncryptToBase64: %w", err)
 	}
 	return base64.StdEncoding.EncodeToString(ciphertext), nil
 }

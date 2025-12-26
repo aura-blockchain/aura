@@ -24,14 +24,16 @@ import (
 //   - NEVER: In keeper methods, message handlers, or any on-chain code
 //
 // For on-chain operations, the salt MUST be provided as a parameter from the client.
-func GenerateCommitmentSalt() []byte {
+//
+// Returns:
+//   - salt: 32-byte cryptographically random salt
+//   - error: non-nil if crypto/rand fails (should never happen on modern systems)
+func GenerateCommitmentSalt() ([]byte, error) {
 	salt := make([]byte, 32)
 	if _, err := rand.Read(salt); err != nil {
-		// Fallback to deterministic but less secure method if crypto/rand fails
-		// This should never happen in practice on modern systems
-		panic("failed to generate cryptographic random salt: " + err.Error())
+		return nil, err
 	}
-	return salt
+	return salt, nil
 }
 
 // ComputePIICommitment computes a cryptographic commitment to PII data

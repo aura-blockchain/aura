@@ -185,13 +185,13 @@ func ValidateGenesis(g *GenesisState) error {
 
 	// Validate main thresholds (percentage values between 0.0 and 1.0)
 	if err := validateThreshold("quorum", g.Params.Quorum); err != nil {
-		return err
+		return fmt.Errorf("ValidateGenesis: %w", err)
 	}
 	if err := validateThreshold("threshold", g.Params.Threshold); err != nil {
-		return err
+		return fmt.Errorf("ValidateGenesis: %w", err)
 	}
 	if err := validateThreshold("veto_threshold", g.Params.VetoThreshold); err != nil {
-		return err
+		return fmt.Errorf("ValidateGenesis: %w", err)
 	}
 
 	// Parse thresholds for logical consistency checks
@@ -206,12 +206,12 @@ func ValidateGenesis(g *GenesisState) error {
 	// Validate emergency thresholds
 	if g.Params.EmergencyQuorum != "" {
 		if err := validateThreshold("emergency_quorum", g.Params.EmergencyQuorum); err != nil {
-			return err
+			return fmt.Errorf("ValidateGenesis: %w", err)
 		}
 	}
 	if g.Params.EmergencyThreshold != "" {
 		if err := validateThreshold("emergency_threshold", g.Params.EmergencyThreshold); err != nil {
-			return err
+			return fmt.Errorf("ValidateGenesis: %w", err)
 		}
 	}
 
@@ -229,20 +229,20 @@ func ValidateGenesis(g *GenesisState) error {
 		return fmt.Errorf("max_deposit_period cannot be nil")
 	}
 	if err := validatePeriod("max_deposit_period", g.Params.MaxDepositPeriod.Seconds); err != nil {
-		return err
+		return fmt.Errorf("ValidateGenesis: %w", err)
 	}
 
 	if g.Params.VotingPeriod == nil {
 		return fmt.Errorf("voting_period cannot be nil")
 	}
 	if err := validatePeriod("voting_period", g.Params.VotingPeriod.Seconds); err != nil {
-		return err
+		return fmt.Errorf("ValidateGenesis: %w", err)
 	}
 
 	// Validate emergency voting period if set
 	if g.Params.EmergencyVotingPeriod != nil {
 		if err := validatePeriod("emergency_voting_period", g.Params.EmergencyVotingPeriod.Seconds); err != nil {
-			return err
+			return fmt.Errorf("ValidateGenesis: %w", err)
 		}
 	}
 
@@ -290,7 +290,7 @@ func ValidateGenesis(g *GenesisState) error {
 	for _, category := range categoryNames {
 		params := g.Params.CategoryParams[category]
 		if err := validateCategoryParams(category, params); err != nil {
-			return err
+			return fmt.Errorf("ValidateGenesis: %w", err)
 		}
 	}
 
@@ -334,13 +334,13 @@ func validateCategoryParams(category string, params *pb.CategoryParams) error {
 
 	// Validate thresholds
 	if err := validateThreshold(fmt.Sprintf("category[%s].quorum", category), params.Quorum); err != nil {
-		return err
+		return fmt.Errorf("validateCategoryParams: %w", err)
 	}
 	if err := validateThreshold(fmt.Sprintf("category[%s].threshold", category), params.Threshold); err != nil {
-		return err
+		return fmt.Errorf("validateCategoryParams: %w", err)
 	}
 	if err := validateThreshold(fmt.Sprintf("category[%s].veto_threshold", category), params.VetoThreshold); err != nil {
-		return err
+		return fmt.Errorf("validateCategoryParams: %w", err)
 	}
 
 	// Parse thresholds for logical consistency
@@ -366,7 +366,7 @@ func validateCategoryParams(category string, params *pb.CategoryParams) error {
 	// Validate voting period
 	if params.VotingPeriod != nil {
 		if err := validatePeriod(fmt.Sprintf("category[%s].voting_period", category), params.VotingPeriod.Seconds); err != nil {
-			return err
+			return fmt.Errorf("validateCategoryParams: %w", err)
 		}
 	}
 

@@ -264,6 +264,13 @@ func (s Store) iterateAttributeVCs(ctx context.Context) []types.AttributeVC {
 }
 
 // User attribute VC index
+//
+// ATOMICITY NOTE: appendUserAttributeVC performs a read-modify-write on the user's attribute VC index.
+// The operation is atomic within a single transaction because Cosmos SDK processes
+// transactions serially and the KVStore changes are committed atomically.
+// However, if this function is called after storing the attribute VC and then fails,
+// the attribute VC exists but is not indexed. The CreateAttributeVC function in keeper.go
+// handles both operations together to maintain consistency.
 func (s Store) appendUserAttributeVC(ctx context.Context, address, avcID string) {
 	key := types.UserAttributeVCIndexKey(address)
 	buf := appendLine(s.kv(ctx).Get(key), avcID)
@@ -365,6 +372,13 @@ func (s Store) iterateDisclosureResponses(ctx context.Context) []types.Disclosur
 }
 
 // User VC index
+//
+// ATOMICITY NOTE: appendUserVC performs a read-modify-write on the user's VC index.
+// The operation is atomic within a single transaction because Cosmos SDK processes
+// transactions serially and the KVStore changes are committed atomically.
+// However, if this function is called after storing the VC record and then fails,
+// the VC exists but is not indexed. Callers should use SetVCRecord which handles
+// both operations to maintain consistency.
 func (s Store) appendUserVC(ctx context.Context, address, vcID string) {
 	key := types.UserVCIndexKey(address)
 	// store as length-prefixed list of vcIDs (simple append)
@@ -469,6 +483,13 @@ func (s Store) getDIDDocument(ctx context.Context, did string) (types.DIDDocumen
 }
 
 // DID address index (controller -> DIDs)
+//
+// ATOMICITY NOTE: appendAddressDID performs a read-modify-write on the address-to-DID index.
+// The operation is atomic within a single transaction because Cosmos SDK processes
+// transactions serially and the KVStore changes are committed atomically.
+// However, if this function is called after storing the DID document and then fails,
+// the DID exists but is not indexed. The RegisterDID function in keeper.go handles
+// both operations together to maintain consistency.
 func (s Store) appendAddressDID(ctx context.Context, addr, did string) {
 	key := types.AddressToDIDIndexKey(addr)
 	existing := s.kv(ctx).Get(key)

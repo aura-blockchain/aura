@@ -44,7 +44,7 @@ func NewKeeper(
 }
 
 // GetAuthority returns the module authority
-func (k Keeper) GetAuthority() string {
+func (k *Keeper) GetAuthority() string {
 	return k.authority
 }
 
@@ -53,7 +53,7 @@ func (k Keeper) GetAuthority() string {
 // ============================
 
 // GetParams returns the current module parameters
-func (k Keeper) GetParams(ctx context.Context) (*economicspb.Params, error) {
+func (k *Keeper) GetParams(ctx context.Context) (*economicspb.Params, error) {
 	store := k.storeService.OpenKVStore(ctx)
 	bz, err := store.Get(types.ParamsKey)
 	if err != nil {
@@ -71,7 +71,7 @@ func (k Keeper) GetParams(ctx context.Context) (*economicspb.Params, error) {
 }
 
 // SetParams sets new module parameters
-func (k Keeper) SetParams(ctx context.Context, params *economicspb.Params) error {
+func (k *Keeper) SetParams(ctx context.Context, params *economicspb.Params) error {
 	if err := types.ValidateParams(params); err != nil {
 		return fmt.Errorf("error in SetParams for ValidateParams: %w", err)
 	}
@@ -97,7 +97,7 @@ func (k Keeper) SetParams(ctx context.Context, params *economicspb.Params) error
 // ============================
 
 // SetCurrentHeight sets the current block height
-func (k Keeper) SetCurrentHeight(ctx context.Context, height uint64) error {
+func (k *Keeper) SetCurrentHeight(ctx context.Context, height uint64) error {
 	store := k.storeService.OpenKVStore(ctx)
 	bz := make([]byte, 8)
 	binary.BigEndian.PutUint64(bz, height)
@@ -105,7 +105,7 @@ func (k Keeper) SetCurrentHeight(ctx context.Context, height uint64) error {
 }
 
 // GetCurrentHeight gets the current block height
-func (k Keeper) GetCurrentHeight(ctx context.Context) (uint64, error) {
+func (k *Keeper) GetCurrentHeight(ctx context.Context) (uint64, error) {
 	store := k.storeService.OpenKVStore(ctx)
 	bz, err := store.Get(types.CurrentHeightKey)
 	if err != nil {
@@ -118,7 +118,7 @@ func (k Keeper) GetCurrentHeight(ctx context.Context) (uint64, error) {
 }
 
 // SetCurrentTime sets the current block time
-func (k Keeper) SetCurrentTime(ctx context.Context, t int64) error {
+func (k *Keeper) SetCurrentTime(ctx context.Context, t int64) error {
 	store := k.storeService.OpenKVStore(ctx)
 	bz := make([]byte, 8)
 	binary.BigEndian.PutUint64(bz, uint64(t))
@@ -126,7 +126,7 @@ func (k Keeper) SetCurrentTime(ctx context.Context, t int64) error {
 }
 
 // GetCurrentTime gets the current block time
-func (k Keeper) GetCurrentTime(ctx context.Context) (int64, error) {
+func (k *Keeper) GetCurrentTime(ctx context.Context) (int64, error) {
 	store := k.storeService.OpenKVStore(ctx)
 	bz, err := store.Get(types.CurrentTimeKey)
 	if err != nil {
@@ -160,13 +160,13 @@ func storeprefixend(prefix []byte) []byte {
 // ============================
 
 // SetFeeMultiplier stores the current fee multiplier
-func (k Keeper) SetFeeMultiplier(ctx context.Context, multiplier string) error {
+func (k *Keeper) SetFeeMultiplier(ctx context.Context, multiplier string) error {
 	store := k.storeService.OpenKVStore(ctx)
 	return store.Set(types.FeeMultiplierKey, []byte(multiplier))
 }
 
 // GetFeeMultiplier retrieves the current fee multiplier
-func (k Keeper) GetFeeMultiplier(ctx context.Context) (string, error) {
+func (k *Keeper) GetFeeMultiplier(ctx context.Context) (string, error) {
 	store := k.storeService.OpenKVStore(ctx)
 	bz, err := store.Get(types.FeeMultiplierKey)
 	if err != nil {
@@ -183,7 +183,7 @@ func (k Keeper) GetFeeMultiplier(ctx context.Context) (string, error) {
 // ============================
 
 // SetTransferTaxEnabled stores the transfer tax enabled flag
-func (k Keeper) SetTransferTaxEnabled(ctx context.Context, enabled bool) error {
+func (k *Keeper) SetTransferTaxEnabled(ctx context.Context, enabled bool) error {
 	store := k.storeService.OpenKVStore(ctx)
 	var bz []byte
 	if enabled {
@@ -195,7 +195,7 @@ func (k Keeper) SetTransferTaxEnabled(ctx context.Context, enabled bool) error {
 }
 
 // GetTransferTaxEnabled retrieves the transfer tax enabled flag
-func (k Keeper) GetTransferTaxEnabled(ctx context.Context) (bool, error) {
+func (k *Keeper) GetTransferTaxEnabled(ctx context.Context) (bool, error) {
 	store := k.storeService.OpenKVStore(ctx)
 	bz, err := store.Get(append(types.TransferTaxConfigKey, []byte("enabled")...))
 	if err != nil {
@@ -208,13 +208,13 @@ func (k Keeper) GetTransferTaxEnabled(ctx context.Context) (bool, error) {
 }
 
 // SetTransferTaxRate stores the transfer tax rate
-func (k Keeper) SetTransferTaxRate(ctx context.Context, rate string) error {
+func (k *Keeper) SetTransferTaxRate(ctx context.Context, rate string) error {
 	store := k.storeService.OpenKVStore(ctx)
 	return store.Set(append(types.TransferTaxConfigKey, []byte("rate")...), []byte(rate))
 }
 
 // GetTransferTaxRate retrieves the transfer tax rate
-func (k Keeper) GetTransferTaxRate(ctx context.Context) (string, error) {
+func (k *Keeper) GetTransferTaxRate(ctx context.Context) (string, error) {
 	store := k.storeService.OpenKVStore(ctx)
 	bz, err := store.Get(append(types.TransferTaxConfigKey, []byte("rate")...))
 	if err != nil {
@@ -227,13 +227,13 @@ func (k Keeper) GetTransferTaxRate(ctx context.Context) (string, error) {
 }
 
 // setTransferTaxRecipient stores the transfer tax recipient address
-func (k Keeper) setTransferTaxRecipient(ctx context.Context, recipient string) error {
+func (k *Keeper) setTransferTaxRecipient(ctx context.Context, recipient string) error {
 	store := k.storeService.OpenKVStore(ctx)
 	return store.Set(append(types.TransferTaxConfigKey, []byte("recipient")...), []byte(recipient))
 }
 
 // getTransferTaxRecipient retrieves the transfer tax recipient address
-func (k Keeper) getTransferTaxRecipient(ctx context.Context) (string, error) {
+func (k *Keeper) getTransferTaxRecipient(ctx context.Context) (string, error) {
 	store := k.storeService.OpenKVStore(ctx)
 	bz, err := store.Get(append(types.TransferTaxConfigKey, []byte("recipient")...))
 	if err != nil {
@@ -250,7 +250,7 @@ func (k Keeper) getTransferTaxRecipient(ctx context.Context) (string, error) {
 // ============================
 
 // GetVestingSchedulesByAddress retrieves all vesting schedules for an address
-func (k Keeper) GetVestingSchedulesByAddress(ctx context.Context, address sdk.AccAddress) ([]*economicspb.VestingSchedule, error) {
+func (k *Keeper) GetVestingSchedulesByAddress(ctx context.Context, address sdk.AccAddress) ([]*economicspb.VestingSchedule, error) {
 	scheduleIDs, err := k.GetUserVestingIndex(ctx, address.String())
 	if err != nil {
 		return nil, err
@@ -270,7 +270,7 @@ func (k Keeper) GetVestingSchedulesByAddress(ctx context.Context, address sdk.Ac
 }
 
 // GetAllVestingSchedules retrieves all vesting schedules in the system
-func (k Keeper) GetAllVestingSchedules(ctx context.Context) ([]*economicspb.VestingSchedule, error) {
+func (k *Keeper) GetAllVestingSchedules(ctx context.Context) ([]*economicspb.VestingSchedule, error) {
 	schedules := []*economicspb.VestingSchedule{}
 	err := k.IterateVestingSchedules(ctx, func(schedule *economicspb.VestingSchedule) bool {
 		schedules = append(schedules, schedule)
@@ -283,7 +283,7 @@ func (k Keeper) GetAllVestingSchedules(ctx context.Context) ([]*economicspb.Vest
 }
 
 // GetAllProposals retrieves all proposals in the system
-func (k Keeper) GetAllProposals(ctx context.Context) ([]*economicspb.Proposal, error) {
+func (k *Keeper) GetAllProposals(ctx context.Context) ([]*economicspb.Proposal, error) {
 	proposals := []*economicspb.Proposal{}
 	err := k.IterateProposals(ctx, func(proposal *economicspb.Proposal) bool {
 		proposals = append(proposals, proposal)
@@ -296,7 +296,7 @@ func (k Keeper) GetAllProposals(ctx context.Context) ([]*economicspb.Proposal, e
 }
 
 // GetVotes retrieves all votes for a proposal
-func (k Keeper) GetVotes(ctx context.Context, proposalID uint64) ([]*economicspb.Vote, error) {
+func (k *Keeper) GetVotes(ctx context.Context, proposalID uint64) ([]*economicspb.Vote, error) {
 	votes := []*economicspb.Vote{}
 	err := k.IterateVotes(ctx, proposalID, func(vote *economicspb.Vote) bool {
 		votes = append(votes, vote)
@@ -309,7 +309,7 @@ func (k Keeper) GetVotes(ctx context.Context, proposalID uint64) ([]*economicspb
 }
 
 // GetDeposits retrieves all deposits for a proposal
-func (k Keeper) GetDeposits(ctx context.Context, proposalID uint64) ([]*economicspb.Deposit, error) {
+func (k *Keeper) GetDeposits(ctx context.Context, proposalID uint64) ([]*economicspb.Deposit, error) {
 	deposits := []*economicspb.Deposit{}
 	err := k.IterateDeposits(ctx, proposalID, func(deposit *economicspb.Deposit) bool {
 		deposits = append(deposits, deposit)
@@ -322,7 +322,7 @@ func (k Keeper) GetDeposits(ctx context.Context, proposalID uint64) ([]*economic
 }
 
 // GetTallyResult retrieves or calculates the tally result for a proposal
-func (k Keeper) GetTallyResult(ctx context.Context, proposalID uint64) (*economicspb.TallyResult, error) {
+func (k *Keeper) GetTallyResult(ctx context.Context, proposalID uint64) (*economicspb.TallyResult, error) {
 	// First check if the proposal has a stored tally result
 	proposal, err := k.GetProposal(ctx, proposalID)
 	if err != nil {
@@ -339,7 +339,7 @@ func (k Keeper) GetTallyResult(ctx context.Context, proposalID uint64) (*economi
 }
 
 // SetTallyResult stores a tally result for a proposal
-func (k Keeper) SetTallyResult(ctx context.Context, proposalID uint64, tally *economicspb.TallyResult) error {
+func (k *Keeper) SetTallyResult(ctx context.Context, proposalID uint64, tally *economicspb.TallyResult) error {
 	store := k.storeService.OpenKVStore(ctx)
 	key := types.GetTallyResultKey(proposalID)
 	bz, err := k.cdc.Marshal(tally)
@@ -350,7 +350,7 @@ func (k Keeper) SetTallyResult(ctx context.Context, proposalID uint64, tally *ec
 }
 
 // GetVoteLocksByOwner retrieves all vote locks for an owner
-func (k Keeper) GetVoteLocksByOwner(ctx context.Context, owner sdk.AccAddress) ([]*economicspb.VoteLock, error) {
+func (k *Keeper) GetVoteLocksByOwner(ctx context.Context, owner sdk.AccAddress) ([]*economicspb.VoteLock, error) {
 	lockIDs, err := k.GetUserVoteLockIndex(ctx, owner.String())
 	if err != nil {
 		return nil, err
@@ -370,7 +370,7 @@ func (k Keeper) GetVoteLocksByOwner(ctx context.Context, owner sdk.AccAddress) (
 }
 
 // GetAllVoteLocks retrieves all vote locks in the system
-func (k Keeper) GetAllVoteLocks(ctx context.Context) ([]*economicspb.VoteLock, error) {
+func (k *Keeper) GetAllVoteLocks(ctx context.Context) ([]*economicspb.VoteLock, error) {
 	locks := []*economicspb.VoteLock{}
 	err := k.IterateVoteLocks(ctx, func(lock *economicspb.VoteLock) bool {
 		locks = append(locks, lock)
@@ -383,7 +383,7 @@ func (k Keeper) GetAllVoteLocks(ctx context.Context) ([]*economicspb.VoteLock, e
 }
 
 // GetVoteDelegations retrieves all vote delegations for a delegator
-func (k Keeper) GetVoteDelegations(ctx context.Context, delegator sdk.AccAddress) ([]*economicspb.VoteDelegation, error) {
+func (k *Keeper) GetVoteDelegations(ctx context.Context, delegator sdk.AccAddress) ([]*economicspb.VoteDelegation, error) {
 	delegations := []*economicspb.VoteDelegation{}
 
 	store := k.storeService.OpenKVStore(ctx)
@@ -407,7 +407,7 @@ func (k Keeper) GetVoteDelegations(ctx context.Context, delegator sdk.AccAddress
 }
 
 // GetAllPendingTreasuryTxs retrieves all pending treasury transactions
-func (k Keeper) GetAllPendingTreasuryTxs(ctx context.Context) ([]*economicspb.PendingTreasuryTx, error) {
+func (k *Keeper) GetAllPendingTreasuryTxs(ctx context.Context) ([]*economicspb.PendingTreasuryTx, error) {
 	txs := []*economicspb.PendingTreasuryTx{}
 	err := k.IteratePendingTreasuryTxs(ctx, func(tx *economicspb.PendingTreasuryTx) bool {
 		txs = append(txs, tx)
@@ -424,7 +424,7 @@ func (k Keeper) GetAllPendingTreasuryTxs(ctx context.Context) ([]*economicspb.Pe
 // ============================
 
 // GetInflationMetrics retrieves inflation metrics
-func (k Keeper) GetInflationMetrics(ctx context.Context) (*economicspb.InflationMetrics, error) {
+func (k *Keeper) GetInflationMetrics(ctx context.Context) (*economicspb.InflationMetrics, error) {
 	store := k.storeService.OpenKVStore(ctx)
 	bz, err := store.Get(types.InflationMetricsKey)
 	if err != nil {
@@ -448,7 +448,7 @@ func (k Keeper) GetInflationMetrics(ctx context.Context) (*economicspb.Inflation
 }
 
 // SetInflationMetrics stores inflation metrics
-func (k Keeper) SetInflationMetrics(ctx context.Context, metrics *economicspb.InflationMetrics) error {
+func (k *Keeper) SetInflationMetrics(ctx context.Context, metrics *economicspb.InflationMetrics) error {
 	store := k.storeService.OpenKVStore(ctx)
 	bz, err := k.cdc.Marshal(metrics)
 	if err != nil {
@@ -458,7 +458,7 @@ func (k Keeper) SetInflationMetrics(ctx context.Context, metrics *economicspb.In
 }
 
 // GetMEVStats retrieves MEV statistics
-func (k Keeper) GetMEVStats(ctx context.Context) (*economicspb.MEVStats, error) {
+func (k *Keeper) GetMEVStats(ctx context.Context) (*economicspb.MEVStats, error) {
 	store := k.storeService.OpenKVStore(ctx)
 	bz, err := store.Get(types.MEVStatsKey)
 	if err != nil {
@@ -481,7 +481,7 @@ func (k Keeper) GetMEVStats(ctx context.Context) (*economicspb.MEVStats, error) 
 }
 
 // SetMEVStats stores MEV statistics
-func (k Keeper) SetMEVStats(ctx context.Context, stats *economicspb.MEVStats) error {
+func (k *Keeper) SetMEVStats(ctx context.Context, stats *economicspb.MEVStats) error {
 	store := k.storeService.OpenKVStore(ctx)
 	bz, err := k.cdc.Marshal(stats)
 	if err != nil {
@@ -491,7 +491,7 @@ func (k Keeper) SetMEVStats(ctx context.Context, stats *economicspb.MEVStats) er
 }
 
 // GetLiquidityMiningStats retrieves liquidity mining statistics
-func (k Keeper) GetLiquidityMiningStats(ctx context.Context) (*economicspb.LiquidityMiningStats, error) {
+func (k *Keeper) GetLiquidityMiningStats(ctx context.Context) (*economicspb.LiquidityMiningStats, error) {
 	store := k.storeService.OpenKVStore(ctx)
 	bz, err := store.Get(types.LiquidityMiningStatsKey)
 	if err != nil {
@@ -516,7 +516,7 @@ func (k Keeper) GetLiquidityMiningStats(ctx context.Context) (*economicspb.Liqui
 }
 
 // SetLiquidityMiningStats stores liquidity mining statistics
-func (k Keeper) SetLiquidityMiningStats(ctx context.Context, stats *economicspb.LiquidityMiningStats) error {
+func (k *Keeper) SetLiquidityMiningStats(ctx context.Context, stats *economicspb.LiquidityMiningStats) error {
 	store := k.storeService.OpenKVStore(ctx)
 	bz, err := k.cdc.Marshal(stats)
 	if err != nil {
@@ -530,7 +530,7 @@ func (k Keeper) SetLiquidityMiningStats(ctx context.Context, stats *economicspb.
 // ============================
 
 // HasVoted checks if a voter has voted on a proposal
-func (k Keeper) HasVoted(ctx context.Context, proposalID uint64, voter sdk.AccAddress) (bool, error) {
+func (k *Keeper) HasVoted(ctx context.Context, proposalID uint64, voter sdk.AccAddress) (bool, error) {
 	_, err := k.GetVote(ctx, proposalID, voter.String())
 	if err != nil {
 		if err == types.ErrInvalidVote {
@@ -542,7 +542,7 @@ func (k Keeper) HasVoted(ctx context.Context, proposalID uint64, voter sdk.AccAd
 }
 
 // HasDeposited checks if a depositor has deposited on a proposal
-func (k Keeper) HasDeposited(ctx context.Context, proposalID uint64, depositor sdk.AccAddress) (bool, error) {
+func (k *Keeper) HasDeposited(ctx context.Context, proposalID uint64, depositor sdk.AccAddress) (bool, error) {
 	_, err := k.GetDeposit(ctx, proposalID, depositor.String())
 	if err != nil {
 		if err == types.ErrInvalidDeposit {
@@ -558,7 +558,7 @@ func (k Keeper) HasDeposited(ctx context.Context, proposalID uint64, depositor s
 // ============================
 
 // CalculateVotingPower calculates total voting power for an address including locks and delegations
-func (k Keeper) CalculateVotingPower(ctx context.Context, address sdk.AccAddress, proposalID uint64) (votingPower, lockedAmount, delegatedPower sdkmath.Int, activeLocks uint64, err error) {
+func (k *Keeper) CalculateVotingPower(ctx context.Context, address sdk.AccAddress, proposalID uint64) (votingPower, lockedAmount, delegatedPower sdkmath.Int, activeLocks uint64, err error) {
 	votingPower = sdkmath.ZeroInt()
 	lockedAmount = sdkmath.ZeroInt()
 	delegatedPower = sdkmath.ZeroInt()

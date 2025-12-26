@@ -43,7 +43,7 @@ func NewKeeper(
 }
 
 // GetAuthority returns the module authority
-func (k Keeper) GetAuthority() string {
+func (k *Keeper) GetAuthority() string {
 	return k.authority
 }
 
@@ -52,12 +52,12 @@ func (k Keeper) GetAuthority() string {
 // ============================
 
 // GetParams returns the current module parameters
-func (k Keeper) GetParams(ctx context.Context) (types.Params, error) {
+func (k *Keeper) GetParams(ctx context.Context) (types.Params, error) {
 	return k.paramsStore.GetParams(), nil
 }
 
 // SetParams sets new module parameters
-func (k Keeper) SetParams(params types.Params) error {
+func (k *Keeper) SetParams(params types.Params) error {
 	return k.paramsStore.SetParams(params)
 }
 
@@ -66,7 +66,7 @@ func (k Keeper) SetParams(params types.Params) error {
 // ============================
 
 // SetCurrentHeight sets the current block height
-func (k Keeper) SetCurrentHeight(ctx context.Context, height uint64) error {
+func (k *Keeper) SetCurrentHeight(ctx context.Context, height uint64) error {
 	store := k.storeService.OpenKVStore(ctx)
 	bz := make([]byte, 8)
 	binary.BigEndian.PutUint64(bz, height)
@@ -74,7 +74,7 @@ func (k Keeper) SetCurrentHeight(ctx context.Context, height uint64) error {
 }
 
 // GetCurrentHeight gets the current block height
-func (k Keeper) GetCurrentHeight(ctx context.Context) (uint64, error) {
+func (k *Keeper) GetCurrentHeight(ctx context.Context) (uint64, error) {
 	store := k.storeService.OpenKVStore(ctx)
 	bz, err := store.Get(types.CurrentHeightKey)
 	if err != nil {
@@ -87,7 +87,7 @@ func (k Keeper) GetCurrentHeight(ctx context.Context) (uint64, error) {
 }
 
 // SetCurrentTime sets the current block time
-func (k Keeper) SetCurrentTime(ctx context.Context, t int64) error {
+func (k *Keeper) SetCurrentTime(ctx context.Context, t int64) error {
 	store := k.storeService.OpenKVStore(ctx)
 	bz := make([]byte, 8)
 	binary.BigEndian.PutUint64(bz, uint64(t))
@@ -95,7 +95,7 @@ func (k Keeper) SetCurrentTime(ctx context.Context, t int64) error {
 }
 
 // GetCurrentTime gets the current block time
-func (k Keeper) GetCurrentTime(ctx context.Context) (int64, error) {
+func (k *Keeper) GetCurrentTime(ctx context.Context) (int64, error) {
 	store := k.storeService.OpenKVStore(ctx)
 	bz, err := store.Get(types.CurrentTimeKey)
 	if err != nil {
@@ -112,7 +112,7 @@ func (k Keeper) GetCurrentTime(ctx context.Context) (int64, error) {
 // ============================
 
 // SetVestingSchedule stores a vesting schedule
-func (k Keeper) SetVestingSchedule(ctx context.Context, schedule *types.VestingSchedule) error {
+func (k *Keeper) SetVestingSchedule(ctx context.Context, schedule *types.VestingSchedule) error {
 	store := k.storeService.OpenKVStore(ctx)
 	key := types.GetVestingScheduleKey(schedule.ScheduleId)
 	bz, err := k.cdc.Marshal(schedule)
@@ -123,7 +123,7 @@ func (k Keeper) SetVestingSchedule(ctx context.Context, schedule *types.VestingS
 }
 
 // GetVestingSchedule retrieves a vesting schedule
-func (k Keeper) GetVestingSchedule(ctx context.Context, scheduleID string) (*types.VestingSchedule, error) {
+func (k *Keeper) GetVestingSchedule(ctx context.Context, scheduleID string) (*types.VestingSchedule, error) {
 	store := k.storeService.OpenKVStore(ctx)
 	key := types.GetVestingScheduleKey(scheduleID)
 	bz, err := store.Get(key)
@@ -142,7 +142,7 @@ func (k Keeper) GetVestingSchedule(ctx context.Context, scheduleID string) (*typ
 }
 
 // DeleteVestingSchedule removes a vesting schedule
-func (k Keeper) DeleteVestingSchedule(ctx context.Context, scheduleID string) error {
+func (k *Keeper) DeleteVestingSchedule(ctx context.Context, scheduleID string) error {
 	store := k.storeService.OpenKVStore(ctx)
 	key := types.GetVestingScheduleKey(scheduleID)
 	return store.Delete(key)
@@ -153,7 +153,7 @@ func (k Keeper) DeleteVestingSchedule(ctx context.Context, scheduleID string) er
 // ============================
 
 // SetUserVestingIndex stores the list of vesting schedule IDs for a user
-func (k Keeper) SetUserVestingIndex(ctx context.Context, userAddress string, scheduleIDs []string) error {
+func (k *Keeper) SetUserVestingIndex(ctx context.Context, userAddress string, scheduleIDs []string) error {
 	store := k.storeService.OpenKVStore(ctx)
 	key := types.GetUserVestingIndexKey(userAddress)
 
@@ -167,7 +167,7 @@ func (k Keeper) SetUserVestingIndex(ctx context.Context, userAddress string, sch
 }
 
 // GetUserVestingIndex retrieves the list of vesting schedule IDs for a user
-func (k Keeper) GetUserVestingIndex(ctx context.Context, userAddress string) ([]string, error) {
+func (k *Keeper) GetUserVestingIndex(ctx context.Context, userAddress string) ([]string, error) {
 	store := k.storeService.OpenKVStore(ctx)
 	key := types.GetUserVestingIndexKey(userAddress)
 	bz, err := store.Get(key)
@@ -186,7 +186,14 @@ func (k Keeper) GetUserVestingIndex(ctx context.Context, userAddress string) ([]
 }
 
 // AddUserVestingSchedule adds a schedule ID to a user's vesting index
-func (k Keeper) AddUserVestingSchedule(ctx context.Context, userAddress, scheduleID string) error {
+//
+// ATOMICITY NOTE: This function performs a read-modify-write on the user's vesting index.
+// The operation is atomic within a single transaction because Cosmos SDK processes
+// transactions serially and the KVStore changes are committed atomically.
+// However, if this function fails after modifying the index but before the caller
+// stores the schedule, the index may reference a non-existent schedule.
+// Callers should ensure the schedule is stored BEFORE calling this function.
+func (k *Keeper) AddUserVestingSchedule(ctx context.Context, userAddress, scheduleID string) error {
 	scheduleIDs, err := k.GetUserVestingIndex(ctx, userAddress)
 	if err != nil {
 		return fmt.Errorf("failed to get: %w", err)
@@ -200,7 +207,7 @@ func (k Keeper) AddUserVestingSchedule(ctx context.Context, userAddress, schedul
 // ============================
 
 // SetVoteLock stores a vote lock
-func (k Keeper) SetVoteLock(ctx context.Context, lock *types.VoteLock) error {
+func (k *Keeper) SetVoteLock(ctx context.Context, lock *types.VoteLock) error {
 	store := k.storeService.OpenKVStore(ctx)
 	key := types.GetVoteLockKey(lock.LockId)
 	bz, err := k.cdc.Marshal(lock)
@@ -211,7 +218,7 @@ func (k Keeper) SetVoteLock(ctx context.Context, lock *types.VoteLock) error {
 }
 
 // GetVoteLock retrieves a vote lock
-func (k Keeper) GetVoteLock(ctx context.Context, lockID string) (*types.VoteLock, error) {
+func (k *Keeper) GetVoteLock(ctx context.Context, lockID string) (*types.VoteLock, error) {
 	store := k.storeService.OpenKVStore(ctx)
 	key := types.GetVoteLockKey(lockID)
 	bz, err := store.Get(key)
@@ -230,7 +237,7 @@ func (k Keeper) GetVoteLock(ctx context.Context, lockID string) (*types.VoteLock
 }
 
 // DeleteVoteLock removes a vote lock
-func (k Keeper) DeleteVoteLock(ctx context.Context, lockID string) error {
+func (k *Keeper) DeleteVoteLock(ctx context.Context, lockID string) error {
 	store := k.storeService.OpenKVStore(ctx)
 	key := types.GetVoteLockKey(lockID)
 	return store.Delete(key)
@@ -241,7 +248,7 @@ func (k Keeper) DeleteVoteLock(ctx context.Context, lockID string) error {
 // ============================
 
 // SetUserVoteLockIndex stores the list of vote lock IDs for a user
-func (k Keeper) SetUserVoteLockIndex(ctx context.Context, userAddress string, lockIDs []string) error {
+func (k *Keeper) SetUserVoteLockIndex(ctx context.Context, userAddress string, lockIDs []string) error {
 	store := k.storeService.OpenKVStore(ctx)
 	key := types.GetUserVoteLockIndexKey(userAddress)
 
@@ -254,7 +261,7 @@ func (k Keeper) SetUserVoteLockIndex(ctx context.Context, userAddress string, lo
 }
 
 // GetUserVoteLockIndex retrieves the list of vote lock IDs for a user
-func (k Keeper) GetUserVoteLockIndex(ctx context.Context, userAddress string) ([]string, error) {
+func (k *Keeper) GetUserVoteLockIndex(ctx context.Context, userAddress string) ([]string, error) {
 	store := k.storeService.OpenKVStore(ctx)
 	key := types.GetUserVoteLockIndexKey(userAddress)
 	bz, err := store.Get(key)
@@ -273,7 +280,14 @@ func (k Keeper) GetUserVoteLockIndex(ctx context.Context, userAddress string) ([
 }
 
 // AddUserVoteLock adds a lock ID to a user's vote lock index
-func (k Keeper) AddUserVoteLock(ctx context.Context, userAddress, lockID string) error {
+//
+// ATOMICITY NOTE: This function performs a read-modify-write on the user's vote lock index.
+// The operation is atomic within a single transaction because Cosmos SDK processes
+// transactions serially and the KVStore changes are committed atomically.
+// However, if this function fails after modifying the index but before the caller
+// stores the lock, the index may reference a non-existent lock.
+// Callers should ensure the lock is stored BEFORE calling this function.
+func (k *Keeper) AddUserVoteLock(ctx context.Context, userAddress, lockID string) error {
 	lockIDs, err := k.GetUserVoteLockIndex(ctx, userAddress)
 	if err != nil {
 		return fmt.Errorf("failed to get: %w", err)
@@ -287,7 +301,7 @@ func (k Keeper) AddUserVoteLock(ctx context.Context, userAddress, lockID string)
 // ============================
 
 // SetPendingTreasuryTx stores a pending treasury transaction
-func (k Keeper) SetPendingTreasuryTx(ctx context.Context, tx *types.PendingTreasuryTx) error {
+func (k *Keeper) SetPendingTreasuryTx(ctx context.Context, tx *types.PendingTreasuryTx) error {
 	store := k.storeService.OpenKVStore(ctx)
 	key := types.GetPendingTreasuryTxKey(tx.TxId)
 	bz, err := k.cdc.Marshal(tx)
@@ -298,7 +312,7 @@ func (k Keeper) SetPendingTreasuryTx(ctx context.Context, tx *types.PendingTreas
 }
 
 // GetPendingTreasuryTx retrieves a pending treasury transaction
-func (k Keeper) GetPendingTreasuryTx(ctx context.Context, txID string) (*types.PendingTreasuryTx, error) {
+func (k *Keeper) GetPendingTreasuryTx(ctx context.Context, txID string) (*types.PendingTreasuryTx, error) {
 	store := k.storeService.OpenKVStore(ctx)
 	key := types.GetPendingTreasuryTxKey(txID)
 	bz, err := store.Get(key)
@@ -317,7 +331,7 @@ func (k Keeper) GetPendingTreasuryTx(ctx context.Context, txID string) (*types.P
 }
 
 // DeletePendingTreasuryTx removes a pending treasury transaction
-func (k Keeper) DeletePendingTreasuryTx(ctx context.Context, txID string) error {
+func (k *Keeper) DeletePendingTreasuryTx(ctx context.Context, txID string) error {
 	store := k.storeService.OpenKVStore(ctx)
 	key := types.GetPendingTreasuryTxKey(txID)
 	return store.Delete(key)
@@ -325,7 +339,7 @@ func (k Keeper) DeletePendingTreasuryTx(ctx context.Context, txID string) error 
 
 // IteratePendingTreasuryTxs iterates over all pending treasury transactions
 // The callback should return true to stop iteration, false to continue
-func (k Keeper) IteratePendingTreasuryTxs(ctx context.Context, cb func(tx *types.PendingTreasuryTx) bool) error {
+func (k *Keeper) IteratePendingTreasuryTxs(ctx context.Context, cb func(tx *types.PendingTreasuryTx) bool) error {
 	store := k.storeService.OpenKVStore(ctx)
 	iterator, err := store.Iterator(types.PendingTreasuryTxPrefix, storeprefixend(types.PendingTreasuryTxPrefix))
 	if err != nil {
@@ -350,7 +364,7 @@ func (k Keeper) IteratePendingTreasuryTxs(ctx context.Context, cb func(tx *types
 // ============================
 
 // SetInflationAlert stores an inflation alert
-func (k Keeper) SetInflationAlert(ctx context.Context, alert *types.InflationAlert) error {
+func (k *Keeper) SetInflationAlert(ctx context.Context, alert *types.InflationAlert) error {
 	store := k.storeService.OpenKVStore(ctx)
 	key := types.GetInflationAlertKey(alert.AlertId)
 	bz, err := k.cdc.Marshal(alert)
@@ -361,7 +375,7 @@ func (k Keeper) SetInflationAlert(ctx context.Context, alert *types.InflationAle
 }
 
 // GetInflationAlert retrieves an inflation alert
-func (k Keeper) GetInflationAlert(ctx context.Context, alertID string) (*types.InflationAlert, error) {
+func (k *Keeper) GetInflationAlert(ctx context.Context, alertID string) (*types.InflationAlert, error) {
 	store := k.storeService.OpenKVStore(ctx)
 	key := types.GetInflationAlertKey(alertID)
 	bz, err := store.Get(key)
@@ -381,7 +395,7 @@ func (k Keeper) GetInflationAlert(ctx context.Context, alertID string) (*types.I
 
 // IterateInflationAlerts iterates over all inflation alerts
 // The callback should return true to stop iteration, false to continue
-func (k Keeper) IterateInflationAlerts(ctx context.Context, cb func(alert *types.InflationAlert) bool) error {
+func (k *Keeper) IterateInflationAlerts(ctx context.Context, cb func(alert *types.InflationAlert) bool) error {
 	store := k.storeService.OpenKVStore(ctx)
 	iterator, err := store.Iterator(types.InflationAlertPrefix, storeprefixend(types.InflationAlertPrefix))
 	if err != nil {
@@ -406,7 +420,7 @@ func (k Keeper) IterateInflationAlerts(ctx context.Context, cb func(alert *types
 // ============================
 
 // SetLargeTxRecord stores a large transaction record
-func (k Keeper) SetLargeTxRecord(ctx context.Context, record *types.LargeTxRecord) error {
+func (k *Keeper) SetLargeTxRecord(ctx context.Context, record *types.LargeTxRecord) error {
 	store := k.storeService.OpenKVStore(ctx)
 	key := types.GetLargeTxRecordKey(record.TxHash)
 	bz, err := k.cdc.Marshal(record)
@@ -417,7 +431,7 @@ func (k Keeper) SetLargeTxRecord(ctx context.Context, record *types.LargeTxRecor
 }
 
 // GetLargeTxRecord retrieves a large transaction record
-func (k Keeper) GetLargeTxRecord(ctx context.Context, txHash string) (*types.LargeTxRecord, error) {
+func (k *Keeper) GetLargeTxRecord(ctx context.Context, txHash string) (*types.LargeTxRecord, error) {
 	store := k.storeService.OpenKVStore(ctx)
 	key := types.GetLargeTxRecordKey(txHash)
 	bz, err := store.Get(key)
@@ -437,7 +451,7 @@ func (k Keeper) GetLargeTxRecord(ctx context.Context, txHash string) (*types.Lar
 
 // IterateLargeTxRecords iterates over all large tx records
 // The callback should return true to stop iteration, false to continue
-func (k Keeper) IterateLargeTxRecords(ctx context.Context, cb func(record *types.LargeTxRecord) bool) error {
+func (k *Keeper) IterateLargeTxRecords(ctx context.Context, cb func(record *types.LargeTxRecord) bool) error {
 	store := k.storeService.OpenKVStore(ctx)
 	iterator, err := store.Iterator(types.LargeTxRecordPrefix, storeprefixend(types.LargeTxRecordPrefix))
 	if err != nil {
@@ -462,7 +476,7 @@ func (k Keeper) IterateLargeTxRecords(ctx context.Context, cb func(record *types
 // ============================
 
 // SetLastLargeTxTime stores the last large transaction time for an address
-func (k Keeper) SetLastLargeTxTime(ctx context.Context, address string, timestamp int64) error {
+func (k *Keeper) SetLastLargeTxTime(ctx context.Context, address string, timestamp int64) error {
 	store := k.storeService.OpenKVStore(ctx)
 	key := types.GetLastLargeTxTimeKey(address)
 	bz := make([]byte, 8)
@@ -471,7 +485,7 @@ func (k Keeper) SetLastLargeTxTime(ctx context.Context, address string, timestam
 }
 
 // GetLastLargeTxTime retrieves the last large transaction time for an address
-func (k Keeper) GetLastLargeTxTime(ctx context.Context, address string) (int64, error) {
+func (k *Keeper) GetLastLargeTxTime(ctx context.Context, address string) (int64, error) {
 	store := k.storeService.OpenKVStore(ctx)
 	key := types.GetLastLargeTxTimeKey(address)
 	bz, err := store.Get(key)
@@ -489,14 +503,14 @@ func (k Keeper) GetLastLargeTxTime(ctx context.Context, address string) (int64, 
 // ============================
 
 // SetAddressHolding stores the holding amount for an address
-func (k Keeper) SetAddressHolding(ctx context.Context, address string, amount string) error {
+func (k *Keeper) SetAddressHolding(ctx context.Context, address string, amount string) error {
 	store := k.storeService.OpenKVStore(ctx)
 	key := types.GetAddressHoldingKey(address)
 	return store.Set(key, []byte(amount))
 }
 
 // GetAddressHolding retrieves the holding amount for an address
-func (k Keeper) GetAddressHolding(ctx context.Context, address string) (string, error) {
+func (k *Keeper) GetAddressHolding(ctx context.Context, address string) (string, error) {
 	store := k.storeService.OpenKVStore(ctx)
 	key := types.GetAddressHoldingKey(address)
 	bz, err := store.Get(key)
@@ -514,14 +528,14 @@ func (k Keeper) GetAddressHolding(ctx context.Context, address string) (string, 
 // ============================
 
 // SetUserMEVBalance stores the MEV balance for a user
-func (k Keeper) SetUserMEVBalance(ctx context.Context, address string, balance string) error {
+func (k *Keeper) SetUserMEVBalance(ctx context.Context, address string, balance string) error {
 	store := k.storeService.OpenKVStore(ctx)
 	key := types.GetUserMEVBalanceKey(address)
 	return store.Set(key, []byte(balance))
 }
 
 // GetUserMEVBalance retrieves the MEV balance for a user
-func (k Keeper) GetUserMEVBalance(ctx context.Context, address string) (string, error) {
+func (k *Keeper) GetUserMEVBalance(ctx context.Context, address string) (string, error) {
 	store := k.storeService.OpenKVStore(ctx)
 	key := types.GetUserMEVBalanceKey(address)
 	bz, err := store.Get(key)
@@ -536,7 +550,7 @@ func (k Keeper) GetUserMEVBalance(ctx context.Context, address string) (string, 
 
 // IterateUserMEVBalances iterates over all user MEV balances
 // The callback should return true to stop iteration, false to continue
-func (k Keeper) IterateUserMEVBalances(ctx context.Context, cb func(address string, balance string) bool) error {
+func (k *Keeper) IterateUserMEVBalances(ctx context.Context, cb func(address string, balance string) bool) error {
 	store := k.storeService.OpenKVStore(ctx)
 	iterator, err := store.Iterator(types.UserMEVBalancePrefix, storeprefixend(types.UserMEVBalancePrefix))
 	if err != nil {
@@ -562,13 +576,13 @@ func (k Keeper) IterateUserMEVBalances(ctx context.Context, cb func(address stri
 // ============================
 
 // SetTotalMEVPending stores the total pending MEV amount
-func (k Keeper) SetTotalMEVPending(ctx context.Context, amount string) error {
+func (k *Keeper) SetTotalMEVPending(ctx context.Context, amount string) error {
 	store := k.storeService.OpenKVStore(ctx)
 	return store.Set(types.TotalMEVPendingKey, []byte(amount))
 }
 
 // GetTotalMEVPending retrieves the total pending MEV amount
-func (k Keeper) GetTotalMEVPending(ctx context.Context) (string, error) {
+func (k *Keeper) GetTotalMEVPending(ctx context.Context) (string, error) {
 	store := k.storeService.OpenKVStore(ctx)
 	bz, err := store.Get(types.TotalMEVPendingKey)
 	if err != nil {
@@ -585,13 +599,13 @@ func (k Keeper) GetTotalMEVPending(ctx context.Context) (string, error) {
 // ============================
 
 // SetTotalBurned stores the total burned amount
-func (k Keeper) SetTotalBurned(ctx context.Context, amount string) error {
+func (k *Keeper) SetTotalBurned(ctx context.Context, amount string) error {
 	store := k.storeService.OpenKVStore(ctx)
 	return store.Set(types.TotalBurnedKey, []byte(amount))
 }
 
 // GetTotalBurned retrieves the total burned amount
-func (k Keeper) GetTotalBurned(ctx context.Context) (string, error) {
+func (k *Keeper) GetTotalBurned(ctx context.Context) (string, error) {
 	store := k.storeService.OpenKVStore(ctx)
 	bz, err := store.Get(types.TotalBurnedKey)
 	if err != nil {
@@ -608,7 +622,7 @@ func (k Keeper) GetTotalBurned(ctx context.Context) (string, error) {
 // ============================
 
 // SetPreviousInflation stores the previous inflation rate
-func (k Keeper) SetPreviousInflation(ctx context.Context, rate uint64) error {
+func (k *Keeper) SetPreviousInflation(ctx context.Context, rate uint64) error {
 	store := k.storeService.OpenKVStore(ctx)
 	bz := make([]byte, 8)
 	binary.BigEndian.PutUint64(bz, rate)
@@ -616,7 +630,7 @@ func (k Keeper) SetPreviousInflation(ctx context.Context, rate uint64) error {
 }
 
 // GetPreviousInflation retrieves the previous inflation rate
-func (k Keeper) GetPreviousInflation(ctx context.Context) (uint64, error) {
+func (k *Keeper) GetPreviousInflation(ctx context.Context) (uint64, error) {
 	store := k.storeService.OpenKVStore(ctx)
 	bz, err := store.Get(types.PreviousInflationKey)
 	if err != nil {
@@ -634,7 +648,7 @@ func (k Keeper) GetPreviousInflation(ctx context.Context) (uint64, error) {
 
 // IterateVestingSchedules iterates over all vesting schedules
 // The callback should return true to stop iteration, false to continue
-func (k Keeper) IterateVestingSchedules(ctx context.Context, cb func(schedule *types.VestingSchedule) bool) error {
+func (k *Keeper) IterateVestingSchedules(ctx context.Context, cb func(schedule *types.VestingSchedule) bool) error {
 	store := k.storeService.OpenKVStore(ctx)
 	iterator, err := store.Iterator(types.VestingSchedulePrefix, storeprefixend(types.VestingSchedulePrefix))
 	if err != nil {
@@ -656,7 +670,7 @@ func (k Keeper) IterateVestingSchedules(ctx context.Context, cb func(schedule *t
 
 // IterateVoteLocks iterates over all vote locks
 // The callback should return true to stop iteration, false to continue
-func (k Keeper) IterateVoteLocks(ctx context.Context, cb func(lock *types.VoteLock) bool) error {
+func (k *Keeper) IterateVoteLocks(ctx context.Context, cb func(lock *types.VoteLock) bool) error {
 	store := k.storeService.OpenKVStore(ctx)
 	iterator, err := store.Iterator(types.VoteLockPrefix, storeprefixend(types.VoteLockPrefix))
 	if err != nil {

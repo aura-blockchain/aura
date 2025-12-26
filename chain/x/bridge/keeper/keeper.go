@@ -94,11 +94,11 @@ func NewKeeper(
 }
 
 // Logger returns a module-specific logger
-func (k Keeper) Logger(ctx sdk.Context) log.Logger {
+func (k *Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", "x/"+types.ModuleName)
 }
 
-func (k Keeper) store(ctx sdk.Context) storetypes.KVStore {
+func (k *Keeper) store(ctx sdk.Context) storetypes.KVStore {
 	return ctx.KVStore(k.storeKey)
 }
 
@@ -121,7 +121,7 @@ func (k Keeper) store(ctx sdk.Context) storetypes.KVStore {
 // Returns:
 //   - string: Deterministic transfer ID in format "transfer-{id}"
 //   - error: Error if unable to generate unique ID after max retries
-func (k Keeper) nextTransferID(ctx sdk.Context) (string, error) {
+func (k *Keeper) nextTransferID(ctx sdk.Context) (string, error) {
 	blockHeight := ctx.BlockHeight()
 	headerHash := ctx.HeaderHash()
 	txBytes := ctx.TxBytes()
@@ -181,7 +181,7 @@ func (k Keeper) nextTransferID(ctx sdk.Context) (string, error) {
 // extractBlockHeightFromTransferID extracts information from a deterministic transfer ID.
 // Note: With hash-based IDs, we cannot extract the original block height.
 // Returns (0, 0, false) for new deterministic IDs, (height, 0, true) for legacy sequential IDs.
-func (k Keeper) extractBlockHeightFromTransferID(transferID string) (int64, int64, bool) {
+func (k *Keeper) extractBlockHeightFromTransferID(transferID string) (int64, int64, bool) {
 	// Parse transfer ID: "transfer-{id}"
 	if !strings.HasPrefix(transferID, "transfer-") {
 		return 0, 0, false
@@ -207,7 +207,7 @@ func (k Keeper) extractBlockHeightFromTransferID(transferID string) (int64, int6
 	return 0, 0, false
 }
 
-func (k Keeper) setTransfer(ctx sdk.Context, transfer *types.CrossChainTransfer) error {
+func (k *Keeper) setTransfer(ctx sdk.Context, transfer *types.CrossChainTransfer) error {
 	if transfer == nil || transfer.TransferId == "" {
 		return nil
 	}
@@ -225,7 +225,7 @@ func (k Keeper) setTransfer(ctx sdk.Context, transfer *types.CrossChainTransfer)
 	return nil
 }
 
-func (k Keeper) getTransfer(ctx sdk.Context, transferID string) (*types.CrossChainTransfer, bool) {
+func (k *Keeper) getTransfer(ctx sdk.Context, transferID string) (*types.CrossChainTransfer, bool) {
 	if transferID == "" {
 		return nil, false
 	}
@@ -258,11 +258,11 @@ func (k Keeper) getTransfer(ctx sdk.Context, transferID string) (*types.CrossCha
 }
 
 // GetTransfer is a public exported method for getting a transfer (for tests).
-func (k Keeper) GetTransfer(ctx sdk.Context, transferID string) (*types.CrossChainTransfer, bool) {
+func (k *Keeper) GetTransfer(ctx sdk.Context, transferID string) (*types.CrossChainTransfer, bool) {
 	return k.getTransfer(ctx, transferID)
 }
 
-func (k Keeper) deleteTransfer(ctx sdk.Context, transferID string) {
+func (k *Keeper) deleteTransfer(ctx sdk.Context, transferID string) {
 	if transferID == "" {
 		return
 	}
@@ -274,14 +274,23 @@ func (k Keeper) deleteTransfer(ctx sdk.Context, transferID string) {
 	}
 }
 
-func (k Keeper) indexTransferHash(ctx sdk.Context, hash, transferID string) {
+// indexTransferHash indexes a transfer by its hash for fast lookup.
+//
+// ATOMICITY NOTE: This function creates an index entry mapping hash -> transferID.
+// The operation is atomic within a single transaction because Cosmos SDK processes
+// transactions serially and the KVStore changes are committed atomically.
+// However, if this function is called after storing the transfer and then a subsequent
+// operation fails, the index may point to a valid transfer that the transaction
+// should have rolled back. Callers should ensure all related operations succeed
+// or the transaction fails atomically.
+func (k *Keeper) indexTransferHash(ctx sdk.Context, hash, transferID string) {
 	if hash == "" || transferID == "" {
 		return
 	}
 	k.store(ctx).Set(types.TransferHashIndexKey(strings.ToLower(hash)), []byte(transferID))
 }
 
-func (k Keeper) transferIDByHash(ctx sdk.Context, hash string) (string, bool) {
+func (k *Keeper) transferIDByHash(ctx sdk.Context, hash string) (string, bool) {
 	if hash == "" {
 		return "", false
 	}
@@ -292,7 +301,7 @@ func (k Keeper) transferIDByHash(ctx sdk.Context, hash string) (string, bool) {
 	return string(bz), true
 }
 
-func (k Keeper) setChainConfig(ctx sdk.Context, config types.ChainConfig) error {
+func (k *Keeper) setChainConfig(ctx sdk.Context, config types.ChainConfig) error {
 	bz, err := k.cdc.Marshal(&config)
 	if err != nil {
 		return types.ErrMarshalFailed.Wrapf("failed to marshal chain config %s: %v", config.ChainId, err)
@@ -301,7 +310,7 @@ func (k Keeper) setChainConfig(ctx sdk.Context, config types.ChainConfig) error 
 	return nil
 }
 
-func (k Keeper) getChainConfig(ctx sdk.Context, chainID string) (types.ChainConfig, bool) {
+func (k *Keeper) getChainConfig(ctx sdk.Context, chainID string) (types.ChainConfig, bool) {
 	bz := k.store(ctx).Get(types.ChainConfigKey(strings.ToLower(chainID)))
 	if bz == nil {
 		return types.ChainConfig{}, false
@@ -313,7 +322,7 @@ func (k Keeper) getChainConfig(ctx sdk.Context, chainID string) (types.ChainConf
 	return cfg, true
 }
 
-func (k Keeper) getAllChainConfigs(ctx sdk.Context) []types.ChainConfig {
+func (k *Keeper) getAllChainConfigs(ctx sdk.Context) []types.ChainConfig {
 	store := k.store(ctx)
 	iterator := store.Iterator(types.ChainConfigPrefix, storetypes.PrefixEndBytes(types.ChainConfigPrefix))
 	defer iterator.Close()
@@ -332,7 +341,7 @@ func (k Keeper) getAllChainConfigs(ctx sdk.Context) []types.ChainConfig {
 	return configs
 }
 
-func (k Keeper) setSharedIdentity(ctx sdk.Context, identity *types.SharedIdentity) error {
+func (k *Keeper) setSharedIdentity(ctx sdk.Context, identity *types.SharedIdentity) error {
 	if identity == nil || identity.Address == "" {
 		return nil
 	}
@@ -344,7 +353,7 @@ func (k Keeper) setSharedIdentity(ctx sdk.Context, identity *types.SharedIdentit
 	return nil
 }
 
-func (k Keeper) getSharedIdentity(ctx sdk.Context, address string) (*types.SharedIdentity, bool) {
+func (k *Keeper) getSharedIdentity(ctx sdk.Context, address string) (*types.SharedIdentity, bool) {
 	bz := k.store(ctx).Get(types.SharedIdentityKey(address))
 	if bz == nil {
 		return nil, false
@@ -371,7 +380,7 @@ func (k Keeper) getSharedIdentity(ctx sdk.Context, address string) (*types.Share
 //
 // Returns:
 //   - SharedIdentity if found, nil otherwise
-func (k Keeper) findSharedIdentityByLinkedAddress(ctx sdk.Context, chainName string, address string) *types.SharedIdentity {
+func (k *Keeper) findSharedIdentityByLinkedAddress(ctx sdk.Context, chainName string, address string) *types.SharedIdentity {
 	if chainName == "" || address == "" {
 		return nil
 	}
@@ -420,7 +429,7 @@ func (k Keeper) findSharedIdentityByLinkedAddress(ctx sdk.Context, chainName str
 // Returns:
 //   - true if signature is valid and proves ownership
 //   - false if signature is invalid or address format is wrong
-func (k Keeper) verifyExternalAddressOwnership(ctx sdk.Context, chainName string, auraAddress string, externalAddress string, signature []byte) bool {
+func (k *Keeper) verifyExternalAddressOwnership(ctx sdk.Context, chainName string, auraAddress string, externalAddress string, signature []byte) bool {
 	// TELEMETRY: Track signature verification start time
 	// Use ctx.BlockTime() instead of time.Now() for blockchain determinism
 	startTime := ctx.BlockTime()
@@ -576,7 +585,7 @@ func (k Keeper) verifyExternalAddressOwnership(ctx sdk.Context, chainName string
 // This is a thin wrapper around verifyExternalAddressOwnership for backwards compatibility.
 //
 // Deprecated: Use verifyExternalAddressOwnership directly for new code.
-func (k Keeper) verifyPawAddressOwnership(ctx sdk.Context, auraAddress string, pawAddress string, signature []byte) bool {
+func (k *Keeper) verifyPawAddressOwnership(ctx sdk.Context, auraAddress string, pawAddress string, signature []byte) bool {
 	return k.verifyExternalAddressOwnership(ctx, "paw", auraAddress, pawAddress, signature)
 }
 
@@ -584,11 +593,11 @@ func (k Keeper) verifyPawAddressOwnership(ctx sdk.Context, auraAddress string, p
 // This is a thin wrapper around verifyExternalAddressOwnership for backwards compatibility.
 //
 // Deprecated: Use verifyExternalAddressOwnership directly for new code.
-func (k Keeper) verifyXaiAddressOwnership(ctx sdk.Context, auraAddress string, xaiAddress string, signature []byte) bool {
+func (k *Keeper) verifyXaiAddressOwnership(ctx sdk.Context, auraAddress string, xaiAddress string, signature []byte) bool {
 	return k.verifyExternalAddressOwnership(ctx, "xai", auraAddress, xaiAddress, signature)
 }
 
-func (k Keeper) setSwap(ctx sdk.Context, swap *types.CrossChainSwap) error {
+func (k *Keeper) setSwap(ctx sdk.Context, swap *types.CrossChainSwap) error {
 	if swap == nil || swap.SwapId == "" {
 		return nil
 	}
@@ -600,7 +609,7 @@ func (k Keeper) setSwap(ctx sdk.Context, swap *types.CrossChainSwap) error {
 	return nil
 }
 
-func (k Keeper) getSwap(ctx sdk.Context, swapID string) (*types.CrossChainSwap, bool) {
+func (k *Keeper) getSwap(ctx sdk.Context, swapID string) (*types.CrossChainSwap, bool) {
 	bz := k.store(ctx).Get(types.SwapKey(swapID))
 	if bz == nil {
 		return nil, false
@@ -612,7 +621,7 @@ func (k Keeper) getSwap(ctx sdk.Context, swapID string) (*types.CrossChainSwap, 
 	return &swap, true
 }
 
-func (k Keeper) getWrappedToken(ctx sdk.Context, denom string) (*types.WrappedToken, bool) {
+func (k *Keeper) getWrappedToken(ctx sdk.Context, denom string) (*types.WrappedToken, bool) {
 	bz := k.store(ctx).Get(types.WrappedTokenKey(denom))
 	if bz == nil {
 		return nil, false
@@ -624,7 +633,7 @@ func (k Keeper) getWrappedToken(ctx sdk.Context, denom string) (*types.WrappedTo
 	return &token, true
 }
 
-func (k Keeper) setWrappedToken(ctx sdk.Context, token *types.WrappedToken) error {
+func (k *Keeper) setWrappedToken(ctx sdk.Context, token *types.WrappedToken) error {
 	if token == nil || token.WrappedDenom == "" {
 		return nil
 	}
@@ -636,7 +645,7 @@ func (k Keeper) setWrappedToken(ctx sdk.Context, token *types.WrappedToken) erro
 	return nil
 }
 
-func (k Keeper) getAllWrappedTokens(ctx sdk.Context) []types.WrappedToken {
+func (k *Keeper) getAllWrappedTokens(ctx sdk.Context) []types.WrappedToken {
 	store := k.store(ctx)
 	iterator := store.Iterator(types.WrappedTokenPrefix, storetypes.PrefixEndBytes(types.WrappedTokenPrefix))
 	defer iterator.Close()
@@ -655,7 +664,7 @@ func (k Keeper) getAllWrappedTokens(ctx sdk.Context) []types.WrappedToken {
 	return tokens
 }
 
-func (k Keeper) getRelayerStats(ctx sdk.Context, relayer string) (*types.RelayerStats, bool) {
+func (k *Keeper) getRelayerStats(ctx sdk.Context, relayer string) (*types.RelayerStats, bool) {
 	bz := k.store(ctx).Get(types.RelayerKey(relayer))
 	if bz == nil {
 		return nil, false
@@ -667,7 +676,7 @@ func (k Keeper) getRelayerStats(ctx sdk.Context, relayer string) (*types.Relayer
 	return &stats, true
 }
 
-func (k Keeper) recordRelayerStats(ctx sdk.Context, relayer string, success bool, volume sdkmath.Int) {
+func (k *Keeper) recordRelayerStats(ctx sdk.Context, relayer string, success bool, volume sdkmath.Int) {
 	if relayer == "" {
 		return
 	}
@@ -693,7 +702,7 @@ func (k Keeper) recordRelayerStats(ctx sdk.Context, relayer string, success bool
 	_ = k.setRelayerStats(ctx, stats) // Best effort, stats are non-critical
 }
 
-func (k Keeper) setRelayerStats(ctx sdk.Context, stats *types.RelayerStats) error {
+func (k *Keeper) setRelayerStats(ctx sdk.Context, stats *types.RelayerStats) error {
 	if stats == nil || stats.RelayerAddress == "" {
 		return nil
 	}
@@ -705,7 +714,7 @@ func (k Keeper) setRelayerStats(ctx sdk.Context, stats *types.RelayerStats) erro
 	return nil
 }
 
-func (k Keeper) markTransferFraudulent(ctx sdk.Context, transferID string) (*types.CrossChainTransfer, error) {
+func (k *Keeper) markTransferFraudulent(ctx sdk.Context, transferID string) (*types.CrossChainTransfer, error) {
 	transfer, found := k.getTransfer(ctx, transferID)
 	if !found {
 		return nil, types.ErrTransferNotFound
@@ -718,7 +727,7 @@ func (k Keeper) markTransferFraudulent(ctx sdk.Context, transferID string) (*typ
 	return transfer, nil
 }
 
-func (k Keeper) getAllRelayerStats(ctx sdk.Context) []*types.RelayerStats {
+func (k *Keeper) getAllRelayerStats(ctx sdk.Context) []*types.RelayerStats {
 	store := k.store(ctx)
 	iterator := store.Iterator(types.RelayerPrefix, storetypes.PrefixEndBytes(types.RelayerPrefix))
 	defer iterator.Close()
@@ -738,7 +747,7 @@ func (k Keeper) getAllRelayerStats(ctx sdk.Context) []*types.RelayerStats {
 	return statsList
 }
 
-func (k Keeper) setValidator(ctx sdk.Context, validator *types.BridgeValidator) error {
+func (k *Keeper) setValidator(ctx sdk.Context, validator *types.BridgeValidator) error {
 	if validator == nil || validator.Address == "" {
 		return nil
 	}
@@ -750,7 +759,7 @@ func (k Keeper) setValidator(ctx sdk.Context, validator *types.BridgeValidator) 
 	return nil
 }
 
-func (k Keeper) getValidator(ctx sdk.Context, address string) (*types.BridgeValidator, bool) {
+func (k *Keeper) getValidator(ctx sdk.Context, address string) (*types.BridgeValidator, bool) {
 	if address == "" {
 		return nil, false
 	}
@@ -765,7 +774,7 @@ func (k Keeper) getValidator(ctx sdk.Context, address string) (*types.BridgeVali
 	return &validator, true
 }
 
-func (k Keeper) getAllValidators(ctx sdk.Context) []*types.BridgeValidator {
+func (k *Keeper) getAllValidators(ctx sdk.Context) []*types.BridgeValidator {
 	store := k.store(ctx)
 	iterator := store.Iterator(types.ValidatorPrefix, storetypes.PrefixEndBytes(types.ValidatorPrefix))
 	defer iterator.Close()
@@ -785,7 +794,7 @@ func (k Keeper) getAllValidators(ctx sdk.Context) []*types.BridgeValidator {
 	return validators
 }
 
-func (k Keeper) getAllSharedIdentities(ctx sdk.Context) []*types.SharedIdentity {
+func (k *Keeper) getAllSharedIdentities(ctx sdk.Context) []*types.SharedIdentity {
 	store := k.store(ctx)
 	iterator := store.Iterator(types.SharedIdentityPrefix, storetypes.PrefixEndBytes(types.SharedIdentityPrefix))
 	defer iterator.Close()
@@ -805,7 +814,7 @@ func (k Keeper) getAllSharedIdentities(ctx sdk.Context) []*types.SharedIdentity 
 	return identities
 }
 
-func (k Keeper) getAllSwaps(ctx sdk.Context) []*types.CrossChainSwap {
+func (k *Keeper) getAllSwaps(ctx sdk.Context) []*types.CrossChainSwap {
 	store := k.store(ctx)
 	iterator := store.Iterator(types.SwapPrefix, storetypes.PrefixEndBytes(types.SwapPrefix))
 	defer iterator.Close()
@@ -825,7 +834,7 @@ func (k Keeper) getAllSwaps(ctx sdk.Context) []*types.CrossChainSwap {
 	return swaps
 }
 
-func (k Keeper) getAllTransfers(ctx sdk.Context) []*types.CrossChainTransfer {
+func (k *Keeper) getAllTransfers(ctx sdk.Context) []*types.CrossChainTransfer {
 	store := k.store(ctx)
 	iterator := store.Iterator(types.TransferPrefix, storetypes.PrefixEndBytes(types.TransferPrefix))
 	defer iterator.Close()
@@ -846,7 +855,7 @@ func (k Keeper) getAllTransfers(ctx sdk.Context) []*types.CrossChainTransfer {
 }
 
 // GetParams returns the total set of bridge parameters.
-func (k Keeper) GetParams(ctx sdk.Context) (params types.Params) {
+func (k *Keeper) GetParams(ctx sdk.Context) (params types.Params) {
 	if k.paramstore.HasKeyTable() {
 		defer func() {
 			if r := recover(); r != nil {
@@ -860,7 +869,7 @@ func (k Keeper) GetParams(ctx sdk.Context) (params types.Params) {
 }
 
 // SetParams sets bridge parameters in the param store.
-func (k Keeper) SetParams(ctx sdk.Context, params types.Params) error {
+func (k *Keeper) SetParams(ctx sdk.Context, params types.Params) error {
 	if k.paramstore.HasKeyTable() {
 		k.paramstore.SetParamSet(ctx, &params)
 	}
@@ -868,7 +877,7 @@ func (k Keeper) SetParams(ctx sdk.Context, params types.Params) error {
 }
 
 // ensureBridgeEnabled returns error if the bridge is disabled.
-func (k Keeper) ensureBridgeEnabled(ctx sdk.Context) error {
+func (k *Keeper) ensureBridgeEnabled(ctx sdk.Context) error {
 	params := k.GetParams(ctx)
 	if !params.BridgeEnabled {
 		return fmt.Errorf("bridge disabled")
@@ -877,7 +886,7 @@ func (k Keeper) ensureBridgeEnabled(ctx sdk.Context) error {
 }
 
 // SubmitAttestation records a validator's attestation for a transfer
-func (k Keeper) SubmitAttestation(ctx sdk.Context, transferID string, validator string, approved bool) error {
+func (k *Keeper) SubmitAttestation(ctx sdk.Context, transferID string, validator string, approved bool) error {
 	if validator == "" {
 		return fmt.Errorf("validator address required")
 	}
@@ -909,7 +918,7 @@ func (k Keeper) SubmitAttestation(ctx sdk.Context, transferID string, validator 
 }
 
 // GetAttestations returns all validator addresses that attested a transfer
-func (k Keeper) GetAttestations(ctx sdk.Context, transferID string) []string {
+func (k *Keeper) GetAttestations(ctx sdk.Context, transferID string) []string {
 	store := k.store(ctx)
 	prefix := append(types.AttestationPrefix, []byte(transferID)...)
 	iterator := store.Iterator(prefix, storetypes.PrefixEndBytes(prefix))
@@ -925,7 +934,7 @@ func (k Keeper) GetAttestations(ctx sdk.Context, transferID string) []string {
 }
 
 // CheckAttestationThreshold returns true if a transfer has enough attestations
-func (k Keeper) CheckAttestationThreshold(ctx sdk.Context, transferID string) bool {
+func (k *Keeper) CheckAttestationThreshold(ctx sdk.Context, transferID string) bool {
 	transfer, found := k.getTransfer(ctx, transferID)
 	if !found {
 		return false
@@ -938,7 +947,7 @@ func (k Keeper) CheckAttestationThreshold(ctx sdk.Context, transferID string) bo
 }
 
 // ProcessWithdrawal processes a withdrawal request
-func (k Keeper) ProcessWithdrawal(ctx sdk.Context, recipient string, amount sdk.Coins, transferID string) error {
+func (k *Keeper) ProcessWithdrawal(ctx sdk.Context, recipient string, amount sdk.Coins, transferID string) error {
 	if amount.Empty() {
 		return fmt.Errorf("amount cannot be empty")
 	}
@@ -980,7 +989,7 @@ func (k Keeper) ProcessWithdrawal(ctx sdk.Context, recipient string, amount sdk.
 //   - Chain validation: Target chain must be supported and enabled
 //   - Amount limits: Transfer amount must not exceed configured maximum
 //   - Bridge status: Bridge must be enabled in params
-func (k Keeper) InitiateTransfer(ctx sdk.Context, sender string, recipient string, amount sdk.Coins, targetChain string) (string, error) {
+func (k *Keeper) InitiateTransfer(ctx sdk.Context, sender string, recipient string, amount sdk.Coins, targetChain string) (string, error) {
 	// Validate inputs
 	if sender == "" {
 		return "", fmt.Errorf("sender address required")
@@ -1061,7 +1070,7 @@ func (k Keeper) InitiateTransfer(ctx sdk.Context, sender string, recipient strin
 }
 
 // InitiateWithdrawal stores a pending withdrawal with timestamp metadata
-func (k Keeper) InitiateWithdrawal(ctx sdk.Context, recipient string, amount sdk.Coins) (string, error) {
+func (k *Keeper) InitiateWithdrawal(ctx sdk.Context, recipient string, amount sdk.Coins) (string, error) {
 	transferID, err := k.nextTransferID(ctx)
 	if err != nil {
 		return "", err
@@ -1081,7 +1090,7 @@ func (k Keeper) InitiateWithdrawal(ctx sdk.Context, recipient string, amount sdk
 }
 
 // ExecuteWithdrawal executes a withdrawal after timelock
-func (k Keeper) ExecuteWithdrawal(ctx sdk.Context, withdrawalID string) error {
+func (k *Keeper) ExecuteWithdrawal(ctx sdk.Context, withdrawalID string) error {
 	transfer, found := k.getTransfer(ctx, withdrawalID)
 	if !found {
 		return types.ErrWithdrawalNotFound
@@ -1099,7 +1108,7 @@ func (k Keeper) ExecuteWithdrawal(ctx sdk.Context, withdrawalID string) error {
 	return k.setTransfer(ctx, transfer)
 }
 
-func (k Keeper) setFraudProof(ctx sdk.Context, proof *types.FraudProof) error {
+func (k *Keeper) setFraudProof(ctx sdk.Context, proof *types.FraudProof) error {
 	if proof == nil || proof.ChallengedTransferId == "" {
 		return nil
 	}
@@ -1111,7 +1120,7 @@ func (k Keeper) setFraudProof(ctx sdk.Context, proof *types.FraudProof) error {
 	return nil
 }
 
-func (k Keeper) getFraudProof(ctx sdk.Context, transferID string) (*types.FraudProof, bool) {
+func (k *Keeper) getFraudProof(ctx sdk.Context, transferID string) (*types.FraudProof, bool) {
 	bz := k.store(ctx).Get(types.FraudProofKey(transferID))
 	if bz == nil {
 		return nil, false
@@ -1123,7 +1132,7 @@ func (k Keeper) getFraudProof(ctx sdk.Context, transferID string) (*types.FraudP
 	return &proof, true
 }
 
-func (k Keeper) getFraudProofWindow(ctx sdk.Context) time.Duration {
+func (k *Keeper) getFraudProofWindow(ctx sdk.Context) time.Duration {
 	window := types.DefaultFraudProofWindow
 	if window <= 0 {
 		return 0
@@ -1131,12 +1140,12 @@ func (k Keeper) getFraudProofWindow(ctx sdk.Context) time.Duration {
 	return window
 }
 
-func (k Keeper) getFraudProofReward(ctx sdk.Context) sdkmath.Int {
+func (k *Keeper) getFraudProofReward(ctx sdk.Context) sdkmath.Int {
 	params := types.DefaultSecurityParams()
 	return params.FraudProofReward
 }
 
-func (k Keeper) payoutFraudProofReward(ctx sdk.Context, challenger string, denom string, reward sdkmath.Int) error {
+func (k *Keeper) payoutFraudProofReward(ctx sdk.Context, challenger string, denom string, reward sdkmath.Int) error {
 	if !reward.IsPositive() || challenger == "" || denom == "" {
 		return nil
 	}
@@ -1158,7 +1167,7 @@ func (k Keeper) payoutFraudProofReward(ctx sdk.Context, challenger string, denom
 //
 // CRITICAL SECURITY ENHANCEMENT: This function now also marks the pending transfer
 // as challenged, preventing finalization while the fraud proof is investigated.
-func (k Keeper) SubmitFraudProof(ctx sdk.Context, transferID string, submitter string, proof []byte) error {
+func (k *Keeper) SubmitFraudProof(ctx sdk.Context, transferID string, submitter string, proof []byte) error {
 	transferID = strings.TrimSpace(transferID)
 	submitter = strings.TrimSpace(submitter)
 	if transferID == "" || submitter == "" {
@@ -1224,7 +1233,7 @@ func (k Keeper) SubmitFraudProof(ctx sdk.Context, transferID string, submitter s
 //  2. Slashes ALL validators who signed the fraudulent transfer
 //  3. Pays out reward to the fraud proof challenger
 //  4. Prevents the transfer from being finalized
-func (k Keeper) ResolveFraudProof(ctx sdk.Context, transferID string, valid bool) (types.FraudProof, error) {
+func (k *Keeper) ResolveFraudProof(ctx sdk.Context, transferID string, valid bool) (types.FraudProof, error) {
 	proof, found := k.getFraudProof(ctx, transferID)
 	if !found {
 		return types.FraudProof{}, types.ErrFraudProofNotFound
@@ -1277,7 +1286,7 @@ func (k Keeper) ResolveFraudProof(ctx sdk.Context, transferID string, valid bool
 }
 
 // GetFraudProof retrieves a fraud proof for a transfer
-func (k Keeper) GetFraudProof(ctx sdk.Context, transferID string) (types.FraudProof, bool) {
+func (k *Keeper) GetFraudProof(ctx sdk.Context, transferID string) (types.FraudProof, bool) {
 	proof, found := k.getFraudProof(ctx, transferID)
 	if !found {
 		return types.FraudProof{}, false
@@ -1286,7 +1295,7 @@ func (k Keeper) GetFraudProof(ctx sdk.Context, transferID string) (types.FraudPr
 }
 
 // IsInFraudProofWindow checks if a transfer is still in the fraud proof window
-func (k Keeper) IsInFraudProofWindow(ctx sdk.Context, transferID string) bool {
+func (k *Keeper) IsInFraudProofWindow(ctx sdk.Context, transferID string) bool {
 	transfer, found := k.getTransfer(ctx, transferID)
 	if !found || transfer.Timestamp.IsZero() {
 		return false
@@ -1299,7 +1308,7 @@ func (k Keeper) IsInFraudProofWindow(ctx sdk.Context, transferID string) bool {
 }
 
 // AddSupportedChain adds a new supported chain configuration
-func (k Keeper) AddSupportedChain(ctx sdk.Context, chainConfig types.ChainConfig) error {
+func (k *Keeper) AddSupportedChain(ctx sdk.Context, chainConfig types.ChainConfig) error {
 	if chainConfig.ChainId == "" {
 		return types.ErrInvalidParam
 	}
@@ -1307,17 +1316,17 @@ func (k Keeper) AddSupportedChain(ctx sdk.Context, chainConfig types.ChainConfig
 }
 
 // GetSupportedChain retrieves a supported chain configuration
-func (k Keeper) GetSupportedChain(ctx sdk.Context, chainID string) (types.ChainConfig, bool) {
+func (k *Keeper) GetSupportedChain(ctx sdk.Context, chainID string) (types.ChainConfig, bool) {
 	return k.getChainConfig(ctx, chainID)
 }
 
 // RemoveSupportedChain removes a supported chain
-func (k Keeper) RemoveSupportedChain(ctx sdk.Context, chainID string) {
+func (k *Keeper) RemoveSupportedChain(ctx sdk.Context, chainID string) {
 	k.store(ctx).Delete(types.ChainConfigKey(strings.ToLower(chainID)))
 }
 
 // DisableChain disables a supported chain
-func (k Keeper) DisableChain(ctx sdk.Context, chainID string) error {
+func (k *Keeper) DisableChain(ctx sdk.Context, chainID string) error {
 	config, found := k.getChainConfig(ctx, chainID)
 	if !found {
 		return types.ErrChainNotFound
@@ -1327,7 +1336,7 @@ func (k Keeper) DisableChain(ctx sdk.Context, chainID string) error {
 }
 
 // CalculateBridgeFee calculates the bridge fee for a transfer
-func (k Keeper) CalculateBridgeFee(ctx sdk.Context, amount sdkmath.Int, chainID string) sdkmath.Int {
+func (k *Keeper) CalculateBridgeFee(ctx sdk.Context, amount sdkmath.Int, chainID string) sdkmath.Int {
 	params := k.GetParams(ctx)
 	if params.BridgeFeeBasisPoints == 0 {
 		return sdkmath.ZeroInt()
@@ -1340,7 +1349,7 @@ func (k Keeper) CalculateBridgeFee(ctx sdk.Context, amount sdkmath.Int, chainID 
 }
 
 // GetCollectedFees returns the total collected fees
-func (k Keeper) GetCollectedFees(ctx sdk.Context) sdk.Coins {
+func (k *Keeper) GetCollectedFees(ctx sdk.Context) sdk.Coins {
 	store := k.store(ctx)
 	iterator := store.Iterator([]byte("collected-fees-"), []byte("collected-fees-\xff"))
 	defer iterator.Close()
@@ -1361,27 +1370,27 @@ func (k Keeper) GetCollectedFees(ctx sdk.Context) sdk.Coins {
 }
 
 // GetSharedIdentity is a public exported method for getting a shared identity
-func (k Keeper) GetSharedIdentity(ctx sdk.Context, address string) (*types.SharedIdentity, bool) {
+func (k *Keeper) GetSharedIdentity(ctx sdk.Context, address string) (*types.SharedIdentity, bool) {
 	return k.getSharedIdentity(ctx, address)
 }
 
 // FindSharedIdentityByLinkedAddress is a public exported method for finding identities by linked address
-func (k Keeper) FindSharedIdentityByLinkedAddress(ctx sdk.Context, chainName string, address string) *types.SharedIdentity {
+func (k *Keeper) FindSharedIdentityByLinkedAddress(ctx sdk.Context, chainName string, address string) *types.SharedIdentity {
 	return k.findSharedIdentityByLinkedAddress(ctx, chainName, address)
 }
 
 // VerifyPawAddressOwnership is a public exported method for PAW signature verification
-func (k Keeper) VerifyPawAddressOwnership(ctx sdk.Context, auraAddress string, pawAddress string, signature []byte) bool {
+func (k *Keeper) VerifyPawAddressOwnership(ctx sdk.Context, auraAddress string, pawAddress string, signature []byte) bool {
 	return k.verifyPawAddressOwnership(ctx, auraAddress, pawAddress, signature)
 }
 
 // VerifyXaiAddressOwnership is a public exported method for XAI signature verification
-func (k Keeper) VerifyXaiAddressOwnership(ctx sdk.Context, auraAddress string, xaiAddress string, signature []byte) bool {
+func (k *Keeper) VerifyXaiAddressOwnership(ctx sdk.Context, auraAddress string, xaiAddress string, signature []byte) bool {
 	return k.verifyXaiAddressOwnership(ctx, auraAddress, xaiAddress, signature)
 }
 
 // AddCollectedFee adds a collected fee to the total
-func (k Keeper) AddCollectedFee(ctx sdk.Context, fee sdk.Coin) {
+func (k *Keeper) AddCollectedFee(ctx sdk.Context, fee sdk.Coin) {
 	store := k.store(ctx)
 	key := []byte("collected-fees-" + fee.Denom)
 	current := sdkmath.ZeroInt()
@@ -1420,7 +1429,7 @@ func (k Keeper) AddCollectedFee(ctx sdk.Context, fee sdk.Coin) {
 //
 // Security: This is a CRITICAL function for preventing replay attacks.
 // Always call this BEFORE processing any unlock/mint operation.
-func (k Keeper) IsSourceHashProcessed(ctx sdk.Context, sourceChain, sourceHash string) bool {
+func (k *Keeper) IsSourceHashProcessed(ctx sdk.Context, sourceChain, sourceHash string) bool {
 	// Normalize inputs to prevent bypass via case sensitivity
 	sourceChain = strings.ToLower(strings.TrimSpace(sourceChain))
 	sourceHash = strings.ToLower(strings.TrimSpace(sourceHash))
@@ -1448,7 +1457,7 @@ func (k Keeper) IsSourceHashProcessed(ctx sdk.Context, sourceChain, sourceHash s
 //   - Follows checks-effects-interactions pattern (mark before external call)
 //   - State change is atomic and irreversible
 //   - The hash is stored permanently in state (no expiration)
-func (k Keeper) MarkSourceHashProcessed(ctx sdk.Context, sourceChain, sourceHash string) {
+func (k *Keeper) MarkSourceHashProcessed(ctx sdk.Context, sourceChain, sourceHash string) {
 	// Normalize inputs to ensure consistent storage
 	sourceChain = strings.ToLower(strings.TrimSpace(sourceChain))
 	sourceHash = strings.ToLower(strings.TrimSpace(sourceHash))
@@ -1491,7 +1500,7 @@ func (k Keeper) MarkSourceHashProcessed(ctx sdk.Context, sourceChain, sourceHash
 // Security: This function MUST be called at the very start of unlock processing, before any
 // expensive validation or signature verification. The processing marker will be converted to
 // a permanent processed marker by FinalizeSourceHashProcessing after successful completion.
-func (k Keeper) TryMarkSourceHashProcessing(ctx sdk.Context, sourceChain, sourceHash string) bool {
+func (k *Keeper) TryMarkSourceHashProcessing(ctx sdk.Context, sourceChain, sourceHash string) bool {
 	// Normalize inputs to prevent bypass via case sensitivity
 	sourceChain = strings.ToLower(strings.TrimSpace(sourceChain))
 	sourceHash = strings.ToLower(strings.TrimSpace(sourceHash))
@@ -1542,7 +1551,7 @@ func (k Keeper) TryMarkSourceHashProcessing(ctx sdk.Context, sourceChain, source
 //
 // Security: This function completes the atomic check-and-set pattern by making the
 // replay protection permanent. After this call, the source hash can never be processed again.
-func (k Keeper) FinalizeSourceHashProcessing(ctx sdk.Context, sourceChain, sourceHash string) {
+func (k *Keeper) FinalizeSourceHashProcessing(ctx sdk.Context, sourceChain, sourceHash string) {
 	// Normalize inputs to ensure consistent storage
 	sourceChain = strings.ToLower(strings.TrimSpace(sourceChain))
 	sourceHash = strings.ToLower(strings.TrimSpace(sourceHash))
@@ -1574,7 +1583,7 @@ func (k Keeper) FinalizeSourceHashProcessing(ctx sdk.Context, sourceChain, sourc
 
 // GetAllProcessedSourceHashes returns all processed source hashes for genesis export.
 // Returns a map of "sourceChain:sourceHash" -> true for all processed hashes.
-func (k Keeper) GetAllProcessedSourceHashes(ctx sdk.Context) map[string]bool {
+func (k *Keeper) GetAllProcessedSourceHashes(ctx sdk.Context) map[string]bool {
 	store := k.store(ctx)
 	iterator := store.Iterator(
 		types.ProcessedSourceHashPrefix,
@@ -1595,7 +1604,7 @@ func (k Keeper) GetAllProcessedSourceHashes(ctx sdk.Context) map[string]bool {
 
 // SetProcessedSourceHash sets a processed source hash (for genesis import).
 // The compositeKey should be in format "sourceChain:sourceHash".
-func (k Keeper) SetProcessedSourceHash(ctx sdk.Context, compositeKey string) {
+func (k *Keeper) SetProcessedSourceHash(ctx sdk.Context, compositeKey string) {
 	if compositeKey == "" {
 		return
 	}
@@ -1621,39 +1630,39 @@ func (k Keeper) SetProcessedSourceHash(ctx sdk.Context, compositeKey string) {
 // Public exported methods for external access
 
 // SetValidator is a public method to set a bridge validator
-func (k Keeper) SetValidator(ctx sdk.Context, validator *types.BridgeValidator) error {
+func (k *Keeper) SetValidator(ctx sdk.Context, validator *types.BridgeValidator) error {
 	return k.setValidator(ctx, validator)
 }
 
 // GetActiveValidatorSet is a public exported method for getting active validators (for tests)
-func (k Keeper) GetActiveValidatorSet(ctx sdk.Context, blockHeight int64) []string {
+func (k *Keeper) GetActiveValidatorSet(ctx sdk.Context, blockHeight int64) []string {
 	return k.getActiveValidatorSet(ctx, blockHeight)
 }
 
 // ComputeSignatureSetHash is a public exported method for computing signature set hash (for tests)
-func (k Keeper) ComputeSignatureSetHash(signatures [][]byte) []byte {
+func (k *Keeper) ComputeSignatureSetHash(signatures [][]byte) []byte {
 	return k.computeSignatureSetHash(signatures)
 }
 
 // IsSignatureSetUsed is a public exported method for checking if signature set is used (for tests)
-func (k Keeper) IsSignatureSetUsed(ctx sdk.Context, transferID string, signatureSetHash []byte) bool {
+func (k *Keeper) IsSignatureSetUsed(ctx sdk.Context, transferID string, signatureSetHash []byte) bool {
 	return k.isSignatureSetUsed(ctx, transferID, signatureSetHash)
 }
 
 // MarkSignatureSetUsed is a public exported method for marking signature set as used (for tests)
-func (k Keeper) MarkSignatureSetUsed(ctx sdk.Context, transferID string, signatureSetHash []byte) {
+func (k *Keeper) MarkSignatureSetUsed(ctx sdk.Context, transferID string, signatureSetHash []byte) {
 	k.markSignatureSetUsed(ctx, transferID, signatureSetHash)
 }
 
 // SetTransfer is a public method to set a cross-chain transfer
-func (k Keeper) SetTransfer(ctx sdk.Context, transfer *types.CrossChainTransfer) {
+func (k *Keeper) SetTransfer(ctx sdk.Context, transfer *types.CrossChainTransfer) {
 	if err := k.setTransfer(ctx, transfer); err != nil {
 		k.Logger(ctx).Error("failed to set transfer", "transfer_id", transfer.GetTransferId(), "err", err)
 	}
 }
 
 // IndexTransferHash is a public method to index a transfer by hash
-func (k Keeper) IndexTransferHash(ctx sdk.Context, hash, transferID string) {
+func (k *Keeper) IndexTransferHash(ctx sdk.Context, hash, transferID string) {
 	k.indexTransferHash(ctx, hash, transferID)
 }
 
@@ -1667,7 +1676,7 @@ func (k Keeper) IndexTransferHash(ctx sdk.Context, hash, transferID string) {
 //
 // Returns:
 //   - List of active validator addresses
-func (k Keeper) getActiveValidators(ctx sdk.Context) []string {
+func (k *Keeper) getActiveValidators(ctx sdk.Context) []string {
 	allValidators := k.getAllValidators(ctx)
 	activeAddresses := make([]string, 0, len(allValidators))
 
@@ -1693,7 +1702,7 @@ func (k Keeper) getActiveValidators(ctx sdk.Context) []string {
 //
 // Returns:
 //   - bool: true if validator is active and authorized
-func (k Keeper) IsValidatorActive(ctx sdk.Context, validatorAddr string) bool {
+func (k *Keeper) IsValidatorActive(ctx sdk.Context, validatorAddr string) bool {
 	if validatorAddr == "" {
 		return false
 	}
@@ -1732,7 +1741,7 @@ func (k Keeper) IsValidatorActive(ctx sdk.Context, validatorAddr string) bool {
 //
 // Returns:
 //   - bool: true if this signature set has been used before
-func (k Keeper) isSignatureSetUsed(ctx sdk.Context, transferID string, signatureSetHash []byte) bool {
+func (k *Keeper) isSignatureSetUsed(ctx sdk.Context, transferID string, signatureSetHash []byte) bool {
 	if transferID == "" || len(signatureSetHash) == 0 {
 		return false
 	}
@@ -1754,7 +1763,7 @@ func (k Keeper) isSignatureSetUsed(ctx sdk.Context, transferID string, signature
 //   - ctx: SDK context for state access
 //   - transferID: Unique identifier of the transfer
 //   - signatureSetHash: Hash of the signature set
-func (k Keeper) markSignatureSetUsed(ctx sdk.Context, transferID string, signatureSetHash []byte) {
+func (k *Keeper) markSignatureSetUsed(ctx sdk.Context, transferID string, signatureSetHash []byte) {
 	if transferID == "" || len(signatureSetHash) == 0 {
 		return
 	}
@@ -1785,7 +1794,7 @@ func (k Keeper) markSignatureSetUsed(ctx sdk.Context, transferID string, signatu
 //
 // Returns:
 //   - []byte: SHA256 hash of the signature set
-func (k Keeper) computeSignatureSetHash(signatures [][]byte) []byte {
+func (k *Keeper) computeSignatureSetHash(signatures [][]byte) []byte {
 	if len(signatures) == 0 {
 		return nil
 	}
@@ -1838,7 +1847,7 @@ func (k Keeper) computeSignatureSetHash(signatures [][]byte) []byte {
 //
 // Note: Currently uses the current validator set. In the future, this could be enhanced
 // to support historical validator set snapshots if the validator set is persisted per block.
-func (k Keeper) getActiveValidatorSet(ctx sdk.Context, blockHeight int64) []string {
+func (k *Keeper) getActiveValidatorSet(ctx sdk.Context, blockHeight int64) []string {
 	// For now, return the current active validator set
 	// In a production implementation with high validator rotation, you might:
 	// 1. Store validator set snapshots per block
@@ -1885,7 +1894,7 @@ func (k Keeper) getActiveValidatorSet(ctx sdk.Context, blockHeight int64) []stri
 //
 // Returns:
 //   - bool: true if the proof is valid and the transaction is in the block
-func (k Keeper) VerifyMerkleProofBytes(merkleRoot, transactionLeaf, merkleProofBytes []byte) bool {
+func (k *Keeper) VerifyMerkleProofBytes(merkleRoot, transactionLeaf, merkleProofBytes []byte) bool {
 	if len(merkleRoot) == 0 || len(transactionLeaf) == 0 {
 		return false
 	}
@@ -1966,7 +1975,7 @@ func (k Keeper) VerifyMerkleProofBytes(merkleRoot, transactionLeaf, merkleProofB
 //
 // NOTE: This approach tries 2^n possible paths for n proof elements, which is
 // exponential. For production use, proofs should include indices.
-func (k Keeper) verifyMerkleProofBruteForce(merkleRoot, transactionLeaf []byte, proofHashes [][]byte) bool {
+func (k *Keeper) verifyMerkleProofBruteForce(merkleRoot, transactionLeaf []byte, proofHashes [][]byte) bool {
 	// For small proofs (< 10 levels), try all 2^n possible orderings
 	if len(proofHashes) > 10 {
 		return false // Too many possibilities to brute force
@@ -2025,7 +2034,7 @@ func (k Keeper) verifyMerkleProofBruteForce(merkleRoot, transactionLeaf []byte, 
 //
 // Returns:
 //   - []byte: SHA256 hash of the transaction data
-func (k Keeper) ConstructTransactionLeaf(sourceChain, burnTxHash, sender, amount, denom string) []byte {
+func (k *Keeper) ConstructTransactionLeaf(sourceChain, burnTxHash, sender, amount, denom string) []byte {
 	// Build deterministic transaction data string
 	// Format matches what source chain should use for Merkle tree construction
 	txData := fmt.Sprintf("%s:%s:%s:%s:%s",
@@ -2060,7 +2069,7 @@ func (k Keeper) ConstructTransactionLeaf(sourceChain, burnTxHash, sender, amount
 //
 // Returns:
 //   - bool: true if block hash is verified for this height
-func (k Keeper) VerifySourceBlock(ctx sdk.Context, sourceChain string, blockHeight uint64, blockHash []byte) bool {
+func (k *Keeper) VerifySourceBlock(ctx sdk.Context, sourceChain string, blockHeight uint64, blockHash []byte) bool {
 	if sourceChain == "" || blockHeight == 0 || len(blockHash) == 0 {
 		return false
 	}
@@ -2101,7 +2110,7 @@ func (k Keeper) VerifySourceBlock(ctx sdk.Context, sourceChain string, blockHeig
 //
 // Returns:
 //   - []byte: Verified block hash, or nil if not found
-func (k Keeper) GetVerifiedBlockHash(ctx sdk.Context, sourceChain string, blockHeight uint64) []byte {
+func (k *Keeper) GetVerifiedBlockHash(ctx sdk.Context, sourceChain string, blockHeight uint64) []byte {
 	sourceChain = strings.ToLower(strings.TrimSpace(sourceChain))
 	if sourceChain == "" || blockHeight == 0 {
 		return nil
@@ -2126,7 +2135,7 @@ func (k Keeper) GetVerifiedBlockHash(ctx sdk.Context, sourceChain string, blockH
 //   - sourceChain: Chain identifier
 //   - blockHeight: Block height
 //   - blockHash: Verified block hash to store
-func (k Keeper) SetVerifiedBlockHash(ctx sdk.Context, sourceChain string, blockHeight uint64, blockHash []byte) {
+func (k *Keeper) SetVerifiedBlockHash(ctx sdk.Context, sourceChain string, blockHeight uint64, blockHash []byte) {
 	sourceChain = strings.ToLower(strings.TrimSpace(sourceChain))
 	if sourceChain == "" || blockHeight == 0 || len(blockHash) == 0 {
 		return
@@ -2160,7 +2169,7 @@ func (k Keeper) SetVerifiedBlockHash(ctx sdk.Context, sourceChain string, blockH
 //
 // Returns:
 //   - sdkmath.Int: Total amount minted today (zero if none)
-func (k Keeper) GetDailyMintedAmount(ctx sdk.Context, denom string) sdkmath.Int {
+func (k *Keeper) GetDailyMintedAmount(ctx sdk.Context, denom string) sdkmath.Int {
 	if denom == "" {
 		return sdkmath.ZeroInt()
 	}
@@ -2194,7 +2203,7 @@ func (k Keeper) GetDailyMintedAmount(ctx sdk.Context, denom string) sdkmath.Int 
 //   - ctx: SDK context for state access
 //   - denom: Token denomination being minted
 //   - amount: Amount to add to today's total
-func (k Keeper) AddDailyMintedAmount(ctx sdk.Context, denom string, amount sdkmath.Int) {
+func (k *Keeper) AddDailyMintedAmount(ctx sdk.Context, denom string, amount sdkmath.Int) {
 	if denom == "" || !amount.IsPositive() {
 		return
 	}
@@ -2227,7 +2236,7 @@ func (k Keeper) AddDailyMintedAmount(ctx sdk.Context, denom string, amount sdkma
 //
 // Returns:
 //   - sdkmath.Int: Total amount minted this hour (zero if none)
-func (k Keeper) GetHourlyMintedAmount(ctx sdk.Context, denom string) sdkmath.Int {
+func (k *Keeper) GetHourlyMintedAmount(ctx sdk.Context, denom string) sdkmath.Int {
 	if denom == "" {
 		return sdkmath.ZeroInt()
 	}
@@ -2261,7 +2270,7 @@ func (k Keeper) GetHourlyMintedAmount(ctx sdk.Context, denom string) sdkmath.Int
 //   - ctx: SDK context for state access
 //   - denom: Token denomination being minted
 //   - amount: Amount to add to this hour's total
-func (k Keeper) AddHourlyMintedAmount(ctx sdk.Context, denom string, amount sdkmath.Int) {
+func (k *Keeper) AddHourlyMintedAmount(ctx sdk.Context, denom string, amount sdkmath.Int) {
 	if denom == "" || !amount.IsPositive() {
 		return
 	}
@@ -2287,7 +2296,7 @@ func (k Keeper) AddHourlyMintedAmount(ctx sdk.Context, denom string, amount sdkm
 //   - Allows fresh daily limit after reset
 //   - Only resets counters for the previous day
 //   - Prevents accumulation of stale data
-func (k Keeper) ResetDailyMint(ctx sdk.Context) {
+func (k *Keeper) ResetDailyMint(ctx sdk.Context) {
 	store := k.store(ctx)
 	currentDate := ctx.BlockTime().UTC().Format("20060102")
 
@@ -2316,7 +2325,7 @@ func (k Keeper) ResetDailyMint(ctx sdk.Context) {
 //   - Allows fresh hourly limit after reset
 //   - Only resets counters for previous hours
 //   - Prevents accumulation of stale data
-func (k Keeper) ResetHourlyMint(ctx sdk.Context) {
+func (k *Keeper) ResetHourlyMint(ctx sdk.Context) {
 	store := k.store(ctx)
 	currentDatetime := ctx.BlockTime().UTC().Format("2006010215")
 
@@ -2353,7 +2362,7 @@ func (k Keeper) ResetHourlyMint(ctx sdk.Context) {
 // Parameters:
 //   - ctx: SDK context for state access
 //   - pendingTransfer: The pending transfer to store
-func (k Keeper) setPendingTransfer(ctx sdk.Context, pendingTransfer *types.PendingTransfer) error {
+func (k *Keeper) setPendingTransfer(ctx sdk.Context, pendingTransfer *types.PendingTransfer) error {
 	if pendingTransfer == nil || pendingTransfer.TransferId == "" {
 		return nil
 	}
@@ -2368,7 +2377,7 @@ func (k Keeper) setPendingTransfer(ctx sdk.Context, pendingTransfer *types.Pendi
 }
 
 // SetPendingTransfer is a public exported method for setting pending transfers (for tests).
-func (k Keeper) SetPendingTransfer(ctx sdk.Context, pendingTransfer *types.PendingTransfer) error {
+func (k *Keeper) SetPendingTransfer(ctx sdk.Context, pendingTransfer *types.PendingTransfer) error {
 	return k.setPendingTransfer(ctx, pendingTransfer)
 }
 
@@ -2381,7 +2390,7 @@ func (k Keeper) SetPendingTransfer(ctx sdk.Context, pendingTransfer *types.Pendi
 // Returns:
 //   - *PendingTransfer: The pending transfer if found
 //   - bool: true if found, false otherwise
-func (k Keeper) GetPendingTransfer(ctx sdk.Context, transferID string) (*types.PendingTransfer, bool) {
+func (k *Keeper) GetPendingTransfer(ctx sdk.Context, transferID string) (*types.PendingTransfer, bool) {
 	if transferID == "" {
 		return nil, false
 	}
@@ -2409,7 +2418,7 @@ func (k Keeper) GetPendingTransfer(ctx sdk.Context, transferID string) (*types.P
 // Parameters:
 //   - ctx: SDK context for state access
 //   - transferID: Unique identifier of the transfer to delete
-func (k Keeper) deletePendingTransfer(ctx sdk.Context, transferID string) {
+func (k *Keeper) deletePendingTransfer(ctx sdk.Context, transferID string) {
 	if transferID == "" {
 		return
 	}
@@ -2422,7 +2431,7 @@ func (k Keeper) deletePendingTransfer(ctx sdk.Context, transferID string) {
 //
 // Returns:
 //   - []*PendingTransfer: List of all pending transfers
-func (k Keeper) GetAllPendingTransfers(ctx sdk.Context) []*types.PendingTransfer {
+func (k *Keeper) GetAllPendingTransfers(ctx sdk.Context) []*types.PendingTransfer {
 	store := k.store(ctx)
 	iterator := store.Iterator(types.PendingTransferPrefix, storetypes.PrefixEndBytes(types.PendingTransferPrefix))
 	defer iterator.Close()
@@ -2456,7 +2465,7 @@ func (k Keeper) GetAllPendingTransfers(ctx sdk.Context) []*types.PendingTransfer
 //
 // Returns:
 //   - bool: true if window has expired and transfer can be finalized
-func (k Keeper) IsPendingTransferExpired(ctx sdk.Context, pendingTransfer *types.PendingTransfer) bool {
+func (k *Keeper) IsPendingTransferExpired(ctx sdk.Context, pendingTransfer *types.PendingTransfer) bool {
 	if pendingTransfer == nil || pendingTransfer.UnlockTime.IsZero() {
 		return false
 	}
@@ -2478,7 +2487,7 @@ func (k Keeper) IsPendingTransferExpired(ctx sdk.Context, pendingTransfer *types
 //
 // Returns:
 //   - error: If transfer not found or already challenged
-func (k Keeper) MarkPendingTransferChallenged(ctx sdk.Context, transferID string, fraudProofID string) error {
+func (k *Keeper) MarkPendingTransferChallenged(ctx sdk.Context, transferID string, fraudProofID string) error {
 	pending, found := k.GetPendingTransfer(ctx, transferID)
 	if !found {
 		return types.ErrTransferNotFound
@@ -2525,7 +2534,7 @@ func (k Keeper) MarkPendingTransferChallenged(ctx sdk.Context, transferID string
 //
 // Returns:
 //   - error: If transfer cannot be finalized (window not expired, challenged, not found, etc.)
-func (k Keeper) FinalizeTransfer(ctx sdk.Context, transferID string) error {
+func (k *Keeper) FinalizeTransfer(ctx sdk.Context, transferID string) error {
 	// 1. Retrieve pending transfer
 	pending, found := k.GetPendingTransfer(ctx, transferID)
 	if !found {
@@ -2663,7 +2672,7 @@ func (k Keeper) FinalizeTransfer(ctx sdk.Context, transferID string) error {
 //
 // Parameters:
 //   - ctx: SDK context for current block time and state access
-func (k Keeper) ProcessExpiredPendingTransfers(ctx sdk.Context) {
+func (k *Keeper) ProcessExpiredPendingTransfers(ctx sdk.Context) {
 	// Get all pending transfers
 	allPending := k.GetAllPendingTransfers(ctx)
 
@@ -2773,7 +2782,7 @@ func (k Keeper) ProcessExpiredPendingTransfers(ctx sdk.Context) {
 // Returns:
 //   - []byte: Compressed public key (33 bytes) on success
 //   - error: If recovery fails (invalid signature, invalid recovery ID, etc.)
-func (k Keeper) recoverPubKeyFromSignature(msgHash []byte, signature []byte, recoveryID byte) ([]byte, error) {
+func (k *Keeper) recoverPubKeyFromSignature(msgHash []byte, signature []byte, recoveryID byte) ([]byte, error) {
 	// Validate input lengths
 	if len(msgHash) != 32 {
 		return nil, fmt.Errorf("invalid message hash length: expected 32, got %d", len(msgHash))
@@ -2828,7 +2837,7 @@ func (k Keeper) recoverPubKeyFromSignature(msgHash []byte, signature []byte, rec
 //
 // Returns:
 //   - string: Hex-encoded address (for testing) or Bech32 address (for production)
-func (k Keeper) deriveExternalAddressFromPubKey(pubKey []byte, chainName string) string {
+func (k *Keeper) deriveExternalAddressFromPubKey(pubKey []byte, chainName string) string {
 	if len(pubKey) != 33 {
 		return ""
 	}
@@ -2858,7 +2867,7 @@ func (k Keeper) deriveExternalAddressFromPubKey(pubKey []byte, chainName string)
 // This is a thin wrapper around deriveExternalAddressFromPubKey for backwards compatibility.
 //
 // Deprecated: Use deriveExternalAddressFromPubKey directly for new code.
-func (k Keeper) derivePawAddressFromPubKey(pubKey []byte) string {
+func (k *Keeper) derivePawAddressFromPubKey(pubKey []byte) string {
 	return k.deriveExternalAddressFromPubKey(pubKey, "paw")
 }
 
@@ -2866,7 +2875,7 @@ func (k Keeper) derivePawAddressFromPubKey(pubKey []byte) string {
 // This is a thin wrapper around deriveExternalAddressFromPubKey for backwards compatibility.
 //
 // Deprecated: Use deriveExternalAddressFromPubKey directly for new code.
-func (k Keeper) deriveXaiAddressFromPubKey(pubKey []byte) string {
+func (k *Keeper) deriveXaiAddressFromPubKey(pubKey []byte) string {
 	return k.deriveExternalAddressFromPubKey(pubKey, "xai")
 }
 
@@ -2883,7 +2892,7 @@ func (k Keeper) deriveXaiAddressFromPubKey(pubKey []byte) string {
 //
 // Returns:
 //   - []byte: Normalized signature (64 bytes) in low-S form
-func (k Keeper) normalizeLowS(signature []byte) []byte {
+func (k *Keeper) normalizeLowS(signature []byte) []byte {
 	if len(signature) != 64 {
 		return signature // Invalid length, return as-is
 	}
@@ -2972,7 +2981,7 @@ func (k Keeper) normalizeLowS(signature []byte) []byte {
 // Returns:
 //   - true if signature is cryptographically valid
 //   - false if signature is invalid or parameters are malformed
-func (k Keeper) verifyEcdsaSignature(pubKeyBytes []byte, msgHash []byte, signature []byte) bool {
+func (k *Keeper) verifyEcdsaSignature(pubKeyBytes []byte, msgHash []byte, signature []byte) bool {
 	// Validate input lengths
 	if len(pubKeyBytes) != 33 {
 		return false
@@ -3029,7 +3038,7 @@ func (k Keeper) verifyEcdsaSignature(pubKeyBytes []byte, msgHash []byte, signatu
 //
 // Returns:
 //   - bool: true if signature has been used before, false if it's fresh
-func (k Keeper) isSignatureUsed(ctx sdk.Context, signatureHash []byte) bool {
+func (k *Keeper) isSignatureUsed(ctx sdk.Context, signatureHash []byte) bool {
 	if len(signatureHash) != 32 {
 		return true // Invalid hash length, reject to be safe
 	}
@@ -3060,7 +3069,7 @@ func (k Keeper) isSignatureUsed(ctx sdk.Context, signatureHash []byte) bool {
 // Implementation note: The block height is stored for potential future cleanup
 // of old signature records, though this is not currently implemented to maintain
 // maximum security (no automatic deletion of replay protection data).
-func (k Keeper) markSignatureUsed(ctx sdk.Context, signatureHash []byte, blockHeight int64) {
+func (k *Keeper) markSignatureUsed(ctx sdk.Context, signatureHash []byte, blockHeight int64) {
 	if len(signatureHash) != 32 {
 		// Invalid hash length, log error but don't panic
 		// This should never happen if called correctly
@@ -3109,7 +3118,7 @@ func (k Keeper) markSignatureUsed(ctx sdk.Context, signatureHash []byte, blockHe
 //
 // Returns:
 //   - error: ErrSignatureRateLimit if rate limit exceeded, nil otherwise
-func (k Keeper) checkSignatureRateLimit(ctx sdk.Context, address string) error {
+func (k *Keeper) checkSignatureRateLimit(ctx sdk.Context, address string) error {
 	const (
 		// Rate limit parameters
 		maxAttemptsPerWindow = 10  // Maximum signature attempts per window

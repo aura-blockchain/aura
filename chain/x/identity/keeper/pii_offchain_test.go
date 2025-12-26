@@ -12,6 +12,16 @@ import (
 	"github.com/aequitas/aura/chain/x/identity/types"
 )
 
+// mustGenerateSalt is a test helper that generates salt and fails test on error
+func mustGenerateSalt(t testing.TB) []byte {
+	t.Helper()
+	salt, err := types.GenerateCommitmentSalt()
+	if err != nil {
+		t.Fatalf("GenerateCommitmentSalt failed: %v", err)
+	}
+	return salt
+}
+
 // TestPIIOffChain_OnlyCommitmentsStored verifies that only commitments are stored on-chain
 func TestPIIOffChain_OnlyCommitmentsStored(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
@@ -30,7 +40,7 @@ func TestPIIOffChain_OnlyCommitmentsStored(t *testing.T) {
 	}
 
 	// Generate commitment
-	salt := types.GenerateCommitmentSalt()
+	salt := mustGenerateSalt(t)
 	commitment := types.ComputePIICommitment(piiData, salt)
 
 	// Store identity with only commitment (PII stored off-chain)
@@ -84,7 +94,7 @@ func TestPIIOffChain_VerificationWorksWithCommitments(t *testing.T) {
 	}
 
 	// Create commitment
-	salt := types.GenerateCommitmentSalt()
+	salt := mustGenerateSalt(t)
 	commitment := types.ComputePIICommitment(piiData, salt)
 
 	// Store identity with commitment only
@@ -138,7 +148,7 @@ func TestPIIOffChain_ErasureCompliance(t *testing.T) {
 		"phone": "+1-555-9999",
 	}
 
-	salt := types.GenerateCommitmentSalt()
+	salt := mustGenerateSalt(t)
 	commitment := types.ComputePIICommitment(piiData, salt)
 
 	// Create identity
@@ -189,7 +199,7 @@ func TestPIIOffChain_ErasureCompliance(t *testing.T) {
 	require.False(t, valid)
 
 	// Verify cannot update after erasure
-	newSalt := types.GenerateCommitmentSalt()
+	newSalt := mustGenerateSalt(t)
 	err = keeper.UpdatePIICommitment(ctx, did, address, newSalt, "ipfs://QmNew", "ipfs")
 	require.Error(t, err, "update should fail for erased identity")
 	require.ErrorIs(t, err, types.ErrIdentityErased)
@@ -210,7 +220,7 @@ func TestPIIOffChain_DataCannotBeRecovered(t *testing.T) {
 		"biometric":       "fingerprint:abc123def456",
 	}
 
-	salt := types.GenerateCommitmentSalt()
+	salt := mustGenerateSalt(t)
 	commitment := types.ComputePIICommitment(sensitivePII, salt)
 
 	record := &types.IdentityRecord{
@@ -266,7 +276,7 @@ func TestPIIOffChain_MultipleAttributeChanges(t *testing.T) {
 		"email": "eve@example.com",
 		"city":  "Boston",
 	}
-	salt1 := types.GenerateCommitmentSalt()
+	salt1 := mustGenerateSalt(t)
 	commitment1 := types.ComputePIICommitment(pii1, salt1)
 
 	record := &types.IdentityRecord{
@@ -294,7 +304,7 @@ func TestPIIOffChain_MultipleAttributeChanges(t *testing.T) {
 		"email": "eve.adams@newdomain.com",
 		"city":  "San Francisco",
 	}
-	salt2 := types.GenerateCommitmentSalt()
+	salt2 := mustGenerateSalt(t)
 	commitment2 := types.ComputePIICommitment(pii2, salt2)
 
 	// Update commitment
@@ -334,7 +344,7 @@ func TestPIIOffChain_UnauthorizedAccess(t *testing.T) {
 		"name":  "Frank Miller",
 		"email": "frank@example.com",
 	}
-	salt := types.GenerateCommitmentSalt()
+	salt := mustGenerateSalt(t)
 	commitment := types.ComputePIICommitment(piiData, salt)
 
 	record := &types.IdentityRecord{
@@ -350,7 +360,7 @@ func TestPIIOffChain_UnauthorizedAccess(t *testing.T) {
 	require.NoError(t, err)
 
 	// Attacker tries to update PII commitment
-	attackerSalt := types.GenerateCommitmentSalt()
+	attackerSalt := mustGenerateSalt(t)
 
 	err = keeper.UpdatePIICommitment(ctx, did, attacker, attackerSalt, "ipfs://QmEvil", "ipfs")
 	require.Error(t, err, "unauthorized update should fail")
@@ -376,7 +386,7 @@ func TestPIIOffChain_UnauthorizedAccess(t *testing.T) {
 func TestPIIOffChain_CommitmentCollisionResistance(t *testing.T) {
 	// Generate many different PII records and ensure no commitment collisions
 	commitments := make(map[string]bool)
-	salt := types.GenerateCommitmentSalt()
+	salt := mustGenerateSalt(t)
 
 	for i := 0; i < 10000; i++ {
 		pii := map[string]string{
@@ -457,7 +467,7 @@ func TestPIIOffChain_AuditTrailPreservation(t *testing.T) {
 		"role": "Computer Scientist",
 	}
 
-	salt := types.GenerateCommitmentSalt()
+	salt := mustGenerateSalt(t)
 	commitment := types.ComputePIICommitment(piiData, salt)
 	originalCommitment := make([]byte, len(commitment))
 	copy(originalCommitment, commitment)
@@ -539,7 +549,7 @@ func TestPIIOffChain_OffChainStorageReferences(t *testing.T) {
 			address := "aura1storage" + string(rune(i))
 
 			piiData := map[string]string{"name": "User" + string(rune(i))}
-			salt := types.GenerateCommitmentSalt()
+			salt := mustGenerateSalt(t)
 			commitment := types.ComputePIICommitment(piiData, salt)
 
 			record := &types.IdentityRecord{

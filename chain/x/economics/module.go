@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"cosmossdk.io/core/appmodule"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -60,7 +61,7 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncod
 	}
 	var genesis types.GenesisState
 	if err := cdc.UnmarshalJSON(bz, &genesis); err != nil {
-		return err
+		return fmt.Errorf("ValidateGenesis: failed to unmarshal genesis JSON: %w", err)
 	}
 	return types.ValidateGenesisState(&genesis)
 }
@@ -134,17 +135,17 @@ func (am AppModule) BeginBlock(ctx context.Context) error {
 
 	// Set deterministic block state
 	if err := am.keeper.SetCurrentHeight(sdkCtx, height); err != nil {
-		return err
+		return fmt.Errorf("BeginBlock: failed to set current height %d: %w", height, err)
 	}
 	if err := am.keeper.SetCurrentTime(sdkCtx, blockTime); err != nil {
-		return err
+		return fmt.Errorf("BeginBlock: failed to set current time %d: %w", blockTime, err)
 	}
 
 	// Process block utilization for dynamic fees
 	// In production, would calculate actual block utilization
 	utilization := uint64(50) // Placeholder
 	if err := am.keeper.RecordBlockUtilization(sdkCtx, utilization); err != nil {
-		return err
+		return fmt.Errorf("BeginBlock: failed to record block utilization: %w", err)
 	}
 
 	// Check and update proposal statuses
@@ -152,7 +153,7 @@ func (am AppModule) BeginBlock(ctx context.Context) error {
 	// For now, this is a placeholder for the logic
 	params, err := am.keeper.GetParams(sdkCtx)
 	if err != nil {
-		return err
+		return fmt.Errorf("BeginBlock: failed to get params: %w", err)
 	}
 
 	// Check inflation periodically
@@ -179,7 +180,7 @@ func (am AppModule) EndBlock(ctx context.Context) error {
 
 	currentTime, err := am.keeper.GetCurrentTime(sdkCtx)
 	if err != nil {
-		return err
+		return fmt.Errorf("EndBlock: failed to get current time: %w", err)
 	}
 
 	// Check for proposals that need status updates
@@ -193,7 +194,7 @@ func (am AppModule) EndBlock(ctx context.Context) error {
 	})
 
 	if err != nil {
-		return err
+		return fmt.Errorf("EndBlock: failed to iterate proposals: %w", err)
 	}
 
 	return nil

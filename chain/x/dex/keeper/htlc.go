@@ -74,6 +74,14 @@ func (k Keeper) CreateHTLC(
 }
 
 // ClaimHTLC releases funds to the recipient when the secret is revealed.
+//
+// SECURITY - Secret Storage Considerations:
+// Upon successful claim, the plaintext secret is stored on-chain in HTLCData.Secret.
+// This is intentional and required for atomic swap protocols - the counterparty chain
+// needs to observe the revealed secret to claim their side of the swap. The secret
+// becomes public knowledge once revealed; its security value is in proving preimage
+// knowledge before the timelock expires, not in remaining secret afterward.
+// The secret hash remains stored for audit trail and historical verification.
 func (k Keeper) ClaimHTLC(ctx sdk.Context, recipient string, htlcID string, secret string) error {
 	htlc, found := k.GetHTLC(ctx, htlcID)
 	if !found {

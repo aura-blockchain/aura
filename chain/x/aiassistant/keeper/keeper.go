@@ -34,18 +34,22 @@ type Keeper struct {
 	bankKeeper types.BankKeeper
 }
 
+// NewKeeper creates a new AI assistant keeper.
+// Panics on nil dependencies are intentional - these fire during app init (not tx processing)
+// and indicate fundamentally broken app wiring that cannot be recovered from.
+// See chain/docs/security/COSMOS_PANIC_PATTERNS.md
 func NewKeeper(cdc codec.BinaryCodec, key storetypes.StoreKey, authority string, bankKeeper types.BankKeeper) Keeper {
 	if cdc == nil {
-		panic("aiassistant keeper requires codec")
+		panic("aiassistant keeper requires codec") // App init panic - see COSMOS_PANIC_PATTERNS.md
 	}
 	if key == nil {
-		panic("aiassistant keeper requires store key")
+		panic("aiassistant keeper requires store key") // App init panic - see COSMOS_PANIC_PATTERNS.md
 	}
 	if authority == "" {
 		authority = authtypes.NewModuleAddress(types.ModuleName).String()
 	}
 	if bankKeeper == nil {
-		panic("aiassistant keeper requires bank keeper")
+		panic("aiassistant keeper requires bank keeper") // App init panic - see COSMOS_PANIC_PATTERNS.md
 	}
 
 	return Keeper{

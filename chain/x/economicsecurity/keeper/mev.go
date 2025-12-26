@@ -303,7 +303,7 @@ func (k *Keeper) GetAllUserMEVBalances(ctx context.Context) (map[string]string, 
 
 	err := k.IterateUserMEVBalances(ctx, func(address string, balance string) bool {
 		balances[address] = balance
-		return true
+		return false // Continue iterating
 	})
 
 	return balances, err

@@ -20,6 +20,7 @@ func RegisterInvariants(ir sdk.InvariantRegistry, k *Keeper) {
 	ir.RegisterRoute(types.ModuleName, "liquidity-provider-consistency", LiquidityProviderConsistencyInvariant(k))
 	ir.RegisterRoute(types.ModuleName, "security-limits", SecurityLimitsInvariant(k))
 	ir.RegisterRoute(types.ModuleName, "htlc-validity", HTLCValidityInvariant(k))
+	ir.RegisterRoute(types.ModuleName, "order-pool-integrity", OrderPoolIntegrityInvariant(k))
 }
 
 // AllInvariants runs all invariants of the dex module
@@ -32,6 +33,7 @@ func AllInvariants(k *Keeper) sdk.Invariant {
 			LiquidityProviderConsistencyInvariant(k),
 			SecurityLimitsInvariant(k),
 			HTLCValidityInvariant(k),
+			OrderPoolIntegrityInvariant(k),
 		}
 
 		for _, inv := range invariants {

@@ -88,7 +88,7 @@ func (k *Keeper) detectPumpAndDump(ctx context.Context, params types.Params) (*t
 		if record.Timestamp.Unix() >= cutoff {
 			recentLargeTxs++
 		}
-		return true
+		return false // Continue iterating
 	})
 	if err != nil {
 		return nil, err
@@ -126,7 +126,7 @@ func (k *Keeper) detectFlashLoanAttack(ctx context.Context, params types.Params)
 		if record.Timestamp.Unix() >= cutoff {
 			addressTxCounts[record.Sender]++
 		}
-		return true
+		return false // Continue iterating
 	})
 	if err != nil {
 		return nil, err
@@ -174,7 +174,7 @@ func (k *Keeper) detectSybilAttack(ctx context.Context, params types.Params) (*t
 		// Get the actual holding for better analysis
 		holding, err := k.GetAddressHolding(ctx, address)
 		if err != nil || holding == "0" {
-			return true
+			return false // Continue iterating
 		}
 
 		// Bucket into ranges using first 4 significant digits
@@ -182,7 +182,7 @@ func (k *Keeper) detectSybilAttack(ctx context.Context, params types.Params) (*t
 			rangeKey := holding[:4]
 			rangeCount[rangeKey]++
 		}
-		return true
+		return false // Continue iterating
 	})
 	if err != nil {
 		return nil, err
@@ -246,11 +246,11 @@ func (k *Keeper) detectWashTrading(ctx context.Context, params types.Params) (*t
 
 			// Check if there's reverse trading
 			if pairCounts[reversePair] > 0 && pairCounts[pair] > 2 {
-				// Found wash trading pattern
-				return false
+				// Found wash trading pattern - stop iterating
+				return true
 			}
 		}
-		return true
+		return false // Continue iterating
 	})
 	if err != nil {
 		return nil, err

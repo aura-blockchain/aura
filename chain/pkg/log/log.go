@@ -1,6 +1,19 @@
 // Copyright 2024-2025 Aequitas Foundation
 // SPDX-License-Identifier: Apache-2.0
 
+// Package log provides structured logging helpers for Aura chain modules.
+//
+// USAGE: These helpers are available for all modules to provide consistent,
+// structured logging. Import as: import auralog "github.com/aequitas/aura/chain/pkg/log"
+//
+// Available functions:
+//   - TxStart, TxSuccess, TxError: Transaction lifecycle logging
+//   - SecurityEvent: Security-relevant event logging
+//   - StateChange, StateChangeWithAttrs: State modification logging
+//   - Debug, Info, Warn: General purpose logging
+//
+// Note: Modules may continue using ctx.Logger() directly for simple cases.
+// These helpers add structure and consistency for security auditing.
 package log
 
 import (

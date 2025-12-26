@@ -110,7 +110,7 @@ func (k *Keeper) checkPriceVolatilityBreaker(ctx context.Context, params types.P
 		if record.Timestamp.Unix() >= cutoff {
 			recentTxs = append(recentTxs, record)
 		}
-		return true
+		return false // Continue iterating
 	})
 	if err != nil {
 		return nil, err
@@ -163,10 +163,10 @@ func (k *Keeper) checkLargeTransactionBreaker(ctx context.Context, params types.
 			// If transaction >5% of supply (500 basis points), trigger breaker
 			if record.PercentageOfSupply > 500 {
 				largestTx = record
-				return false // Stop iteration
+				return true // Stop iteration - found what we need
 			}
 		}
-		return true
+		return false // Continue iterating
 	})
 	if err != nil {
 		return nil, err
