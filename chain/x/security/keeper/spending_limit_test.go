@@ -4,7 +4,9 @@
 package keeper
 
 import (
+	"sync"
 	"testing"
+	"time"
 
 	"cosmossdk.io/log"
 	sdkmath "cosmossdk.io/math"
@@ -23,8 +25,19 @@ import (
 	securitypb "github.com/aequitas/aura/proto/aura/security/v1beta1"
 )
 
+var setupSDKConfigOnce sync.Once
+
 func newTestSecurityKeeper(t *testing.T) (Keeper, sdk.Context) {
 	t.Helper()
+
+	// Configure bech32 prefixes for "aura" chain
+	setupSDKConfigOnce.Do(func() {
+		cfg := sdk.GetConfig()
+		cfg.SetBech32PrefixForAccount("aura", "aurapub")
+		cfg.SetBech32PrefixForValidator("auravaloper", "auravaloperpub")
+		cfg.SetBech32PrefixForConsensusNode("auravalcons", "auravalconspub")
+		cfg.Seal()
+	})
 
 	storeKey := storetypes.NewKVStoreKey(types.StoreKey)
 	memKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)
@@ -34,7 +47,7 @@ func newTestSecurityKeeper(t *testing.T) (Keeper, sdk.Context) {
 	cms.MountStoreWithDB(memKey, storetypes.StoreTypeMemory, nil)
 	require.NoError(t, cms.LoadLatestVersion())
 
-	header := cmtproto.Header{Height: 1}
+	header := cmtproto.Header{Height: 1, Time: time.Now()}
 	ctx := sdk.NewContext(cms, header, false, log.NewNopLogger())
 
 	registry := codectypes.NewInterfaceRegistry()
@@ -44,7 +57,7 @@ func newTestSecurityKeeper(t *testing.T) (Keeper, sdk.Context) {
 		cdc,
 		storeKey,
 		memKey,
-		"authority",
+		"aura1v96hg6r0wf5hg72lta047h6lta047h6lxkle3a", // valid bech32 test authority
 		testutil.NewMockBankKeeper(),
 		nil,
 		testutil.NewMockAccountKeeper(),

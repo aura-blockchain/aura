@@ -401,8 +401,8 @@ func (suite *SecurityGuardsTestSuite) TestRateLimit_SlidingWindow() {
 func (suite *SecurityGuardsTestSuite) TestValidateAddress() {
 	k := suite.keeper
 
-	// Valid address (cosmos prefix is used by SDK by default)
-	validAddr := "cosmos1w3jhxazlv9jxgun9wde47vfjxv6r2d3hzswckl"
+	// Valid address with aura prefix
+	validAddr := "aura1v96hg6r0wf5hg72lta047h6lta047h6lxkle3a"
 	err := k.ValidateAddress(validAddr)
 	suite.Require().NoError(err)
 
