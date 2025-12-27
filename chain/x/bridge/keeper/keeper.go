@@ -8,6 +8,7 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	stdmath "math"
 	"math/big"
@@ -211,6 +212,10 @@ func (k *Keeper) setTransfer(ctx sdk.Context, transfer *types.CrossChainTransfer
 	if transfer == nil || transfer.TransferId == "" {
 		return nil
 	}
+
+	// Get old transfer for stats update (if exists)
+	oldTransfer, existed := k.getTransfer(ctx, transfer.TransferId)
+
 	bz, err := k.cdc.Marshal(transfer)
 	if err != nil {
 		return types.ErrMarshalFailed.Wrapf("failed to marshal transfer %s: %v", transfer.TransferId, err)
@@ -220,6 +225,17 @@ func (k *Keeper) setTransfer(ctx sdk.Context, transfer *types.CrossChainTransfer
 	// Invalidate cache entry to ensure consistency
 	if k.transferCache != nil {
 		k.transferCache.Remove(transfer.TransferId)
+	}
+
+	// Update cached bridge stats (P1 performance optimization)
+	if existed {
+		k.UpdateBridgeStatsForTransfer(ctx, oldTransfer, transfer)
+	} else {
+		k.UpdateBridgeStatsForTransfer(ctx, nil, transfer)
+		// Index new transfer by sender for O(1) user query
+		if transfer.Sender != "" {
+			k.IndexUserTransfer(ctx, transfer.Sender, transfer.TransferId)
+		}
 	}
 
 	return nil
@@ -3166,4 +3182,199 @@ func (k *Keeper) checkSignatureRateLimit(ctx sdk.Context, address string) error 
 	}
 
 	return nil
+}
+
+// =============================================================================
+// Cached Bridge Stats (P1 Performance Optimization)
+// =============================================================================
+
+// GetCachedBridgeStats retrieves pre-computed bridge statistics from the store.
+// Returns nil if no cached stats exist (first-time access).
+func (k *Keeper) GetCachedBridgeStats(ctx sdk.Context) *types.CachedBridgeStats {
+	store := k.store(ctx)
+	bz := store.Get(types.BridgeStatsKey)
+	if bz == nil {
+		return nil
+	}
+
+	var stats types.CachedBridgeStats
+	if err := json.Unmarshal(bz, &stats); err != nil {
+		k.Logger(ctx).Error("failed to unmarshal cached bridge stats", "err", err)
+		return nil
+	}
+	return &stats
+}
+
+// SetCachedBridgeStats stores pre-computed bridge statistics.
+func (k *Keeper) SetCachedBridgeStats(ctx sdk.Context, stats *types.CachedBridgeStats) {
+	if stats == nil {
+		return
+	}
+	stats.LastUpdatedHeight = ctx.BlockHeight()
+	bz, err := json.Marshal(stats)
+	if err != nil {
+		k.Logger(ctx).Error("failed to marshal cached bridge stats", "err", err)
+		return
+	}
+	store := k.store(ctx)
+	store.Set(types.BridgeStatsKey, bz)
+}
+
+// UpdateBridgeStatsForTransfer updates cached stats when a transfer is created or modified.
+// oldTransfer can be nil for new transfers.
+func (k *Keeper) UpdateBridgeStatsForTransfer(ctx sdk.Context, oldTransfer, newTransfer *types.CrossChainTransfer) {
+	if newTransfer == nil {
+		return
+	}
+
+	stats := k.GetCachedBridgeStats(ctx)
+	if stats == nil {
+		// Initialize stats - this should be rare (first transfer or after genesis)
+		stats = &types.CachedBridgeStats{
+			TransfersByStatus: make(map[string]uint64),
+			VolumeByChain:     make(map[string]string),
+		}
+	}
+
+	// Ensure maps are initialized
+	if stats.TransfersByStatus == nil {
+		stats.TransfersByStatus = make(map[string]uint64)
+	}
+	if stats.VolumeByChain == nil {
+		stats.VolumeByChain = make(map[string]string)
+	}
+
+	// Handle status change
+	if oldTransfer == nil {
+		// New transfer
+		stats.TotalTransfers++
+		newStatus := newTransfer.Status.String()
+		stats.TransfersByStatus[newStatus]++
+
+		// Add volume (skip if amount is nil/zero)
+		if !newTransfer.Amount.IsNil() && newTransfer.Amount.IsPositive() {
+			chainID := normalizeChainForStats(newTransfer.SourceChain)
+			currentVolume := sdkmath.ZeroInt()
+			if existing, ok := sdkmath.NewIntFromString(stats.VolumeByChain[chainID]); ok {
+				currentVolume = existing
+			}
+			stats.VolumeByChain[chainID] = currentVolume.Add(newTransfer.Amount).String()
+		}
+	} else if oldTransfer.Status != newTransfer.Status {
+		// Status changed - decrement old, increment new
+		oldStatus := oldTransfer.Status.String()
+		newStatus := newTransfer.Status.String()
+		if stats.TransfersByStatus[oldStatus] > 0 {
+			stats.TransfersByStatus[oldStatus]--
+		}
+		stats.TransfersByStatus[newStatus]++
+	}
+
+	k.SetCachedBridgeStats(ctx, stats)
+}
+
+// RecomputeBridgeStats fully recomputes stats from scratch.
+// Called during genesis import or when stats need to be rebuilt.
+func (k *Keeper) RecomputeBridgeStats(ctx sdk.Context) *types.CachedBridgeStats {
+	transfers := k.getAllTransfers(ctx)
+	wrappedTokens := k.getAllWrappedTokens(ctx)
+	chainConfigs := k.getAllChainConfigs(ctx)
+
+	stats := &types.CachedBridgeStats{
+		TotalTransfers:     uint64(len(transfers)),
+		TransfersByStatus:  make(map[string]uint64),
+		VolumeByChain:      make(map[string]string),
+		TotalWrappedTokens: uint64(len(wrappedTokens)),
+		LastUpdatedHeight:  ctx.BlockHeight(),
+	}
+
+	for _, transfer := range transfers {
+		if transfer == nil {
+			continue
+		}
+		statusStr := transfer.Status.String()
+		stats.TransfersByStatus[statusStr]++
+
+		// Add volume (skip if amount is nil/zero)
+		if !transfer.Amount.IsNil() && transfer.Amount.IsPositive() {
+			chainID := normalizeChainForStats(transfer.SourceChain)
+			currentVolume := sdkmath.ZeroInt()
+			if existing, ok := sdkmath.NewIntFromString(stats.VolumeByChain[chainID]); ok {
+				currentVolume = existing
+			}
+			stats.VolumeByChain[chainID] = currentVolume.Add(transfer.Amount).String()
+		}
+	}
+
+	// Count unique validators across all chains
+	validatorSet := make(map[string]struct{})
+	for _, cfg := range chainConfigs {
+		for _, val := range cfg.Validators {
+			addr := strings.ToLower(strings.TrimSpace(val))
+			if addr != "" {
+				validatorSet[addr] = struct{}{}
+			}
+		}
+	}
+	stats.ActiveValidators = uint64(len(validatorSet))
+	stats.ActiveRelayers = k.countRelayers(ctx)
+
+	k.SetCachedBridgeStats(ctx, stats)
+	return stats
+}
+
+// normalizeChainForStats normalizes chain identifier for consistent stats aggregation.
+func normalizeChainForStats(chain string) string {
+	chain = strings.TrimSpace(strings.ToLower(chain))
+	if chain == "" {
+		return "unknown"
+	}
+	return chain
+}
+
+// countRelayers counts total number of registered relayers.
+func (k *Keeper) countRelayers(ctx sdk.Context) uint64 {
+	store := k.store(ctx)
+	iterator := storetypes.KVStorePrefixIterator(store, types.RelayerPrefix)
+	defer iterator.Close()
+	var count uint64
+	for ; iterator.Valid(); iterator.Next() {
+		count++
+	}
+	return count
+}
+
+// IndexUserTransfer adds a secondary index for user address -> transfer lookup.
+// This enables O(1) query of user's transfers instead of O(n) full table scan.
+func (k *Keeper) IndexUserTransfer(ctx sdk.Context, address, transferID string) {
+	if address == "" || transferID == "" {
+		return
+	}
+	store := k.store(ctx)
+	key := types.UserTransferIndexKey(address, transferID)
+	store.Set(key, []byte{1})
+}
+
+// GetUserTransferIDs returns all transfer IDs for a given user address.
+// Uses secondary index for O(m) where m is user's transfer count, not O(n) total.
+func (k *Keeper) GetUserTransferIDs(ctx sdk.Context, address string) []string {
+	if address == "" {
+		return nil
+	}
+
+	store := k.store(ctx)
+	prefix := types.UserTransferIndexPrefixKey(address)
+	iterator := storetypes.KVStorePrefixIterator(store, prefix)
+	defer iterator.Close()
+
+	var transferIDs []string
+	for ; iterator.Valid(); iterator.Next() {
+		// Extract transfer ID from key: prefix + address + 0x00 + transferID
+		key := iterator.Key()
+		if len(key) > len(prefix) {
+			transferID := string(key[len(prefix):])
+			transferIDs = append(transferIDs, transferID)
+		}
+	}
+	return transferIDs
 }

@@ -98,7 +98,8 @@ func (qs queryServer) AllTransfers(goCtx context.Context, req *bridgeproto.Query
 	}, nil
 }
 
-// UserTransfers queries transfers for specific user with pagination
+// UserTransfers queries transfers for specific user with pagination.
+// Uses secondary index for O(m) where m is user's transfer count, not O(n) total.
 func (qs queryServer) UserTransfers(goCtx context.Context, req *bridgeproto.QueryUserTransfersRequest) (*bridgeproto.QueryUserTransfersResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
@@ -111,6 +112,65 @@ func (qs queryServer) UserTransfers(goCtx context.Context, req *bridgeproto.Quer
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	chainFilter := normalizeChain(strings.TrimSpace(req.Chain))
 
+	// Use secondary index to get user's transfer IDs (O(m) instead of O(n))
+	transferIDs := qs.Keeper.GetUserTransferIDs(ctx, req.Address)
+
+	// If no indexed transfers, fall back to scanning (for backwards compatibility)
+	if len(transferIDs) == 0 {
+		return qs.userTransfersFallback(ctx, req, chainFilter)
+	}
+
+	// Apply pagination to the indexed results
+	var transfers []bridgeproto.CrossChainTransfer
+	offset := uint64(0)
+	limit := uint64(100) // default limit
+	if req.Pagination != nil {
+		offset = req.Pagination.Offset
+		if req.Pagination.Limit > 0 {
+			limit = req.Pagination.Limit
+		}
+	}
+
+	total := uint64(0)
+	for i, transferID := range transferIDs {
+		transfer, found := qs.Keeper.getTransfer(ctx, transferID)
+		if !found {
+			continue
+		}
+
+		// Apply chain filter if specified
+		if chainFilter != "" {
+			source := normalizeChain(transfer.SourceChain)
+			target := normalizeChain(transfer.TargetChain)
+			if source != chainFilter && target != chainFilter {
+				continue
+			}
+		}
+
+		total++
+		// Apply pagination
+		if uint64(i) < offset {
+			continue
+		}
+		if uint64(len(transfers)) >= limit {
+			continue
+		}
+		transfers = append(transfers, *transfer)
+	}
+
+	pageRes := &query.PageResponse{
+		Total: total,
+	}
+
+	return &bridgeproto.QueryUserTransfersResponse{
+		Transfers:  transfers,
+		Pagination: pageRes,
+	}, nil
+}
+
+// userTransfersFallback is the legacy O(n) implementation for backwards compatibility.
+// Used when secondary index is empty (e.g., for transfers created before index existed).
+func (qs queryServer) userTransfersFallback(ctx sdk.Context, req *bridgeproto.QueryUserTransfersRequest, chainFilter string) (*bridgeproto.QueryUserTransfersResponse, error) {
 	store := ctx.KVStore(qs.Keeper.storeKey)
 	transferStore := prefix.NewStore(store, types.TransferPrefix)
 
@@ -279,55 +339,44 @@ func (qs queryServer) CrossChainSwap(goCtx context.Context, req *bridgeproto.Que
 	return &bridgeproto.QueryCrossChainSwapResponse{Swap: *swap}, nil
 }
 
-// BridgeStats queries bridge statistics
+// BridgeStats queries bridge statistics using cached pre-computed values.
+// Falls back to full recomputation if cache is empty or stale.
 func (qs queryServer) BridgeStats(goCtx context.Context, req *bridgeproto.QueryBridgeStatsRequest) (*bridgeproto.QueryBridgeStatsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	transfers := qs.Keeper.getAllTransfers(ctx)
-	transfersByStatus := make(map[string]uint64)
-	volumeByChain := make(map[string]string)
 
-	for _, transfer := range transfers {
-		if transfer == nil {
-			continue
-		}
-		statusStr := transfer.Status.String()
-		transfersByStatus[statusStr]++
-		chainID := normalizeChain(transfer.SourceChain)
-		if chainID == "" {
-			chainID = "unknown"
-		}
-		amount := transfer.Amount
-		if existing, ok := sdkmath.NewIntFromString(volumeByChain[chainID]); ok {
-			volumeByChain[chainID] = existing.Add(amount).String()
-		} else {
-			volumeByChain[chainID] = amount.String()
-		}
+	// Try to use cached stats (O(1) instead of O(n) scan)
+	cachedStats := qs.Keeper.GetCachedBridgeStats(ctx)
+
+	// If no cache exists, recompute (happens on first query after genesis)
+	if cachedStats == nil {
+		cachedStats = qs.Keeper.RecomputeBridgeStats(ctx)
 	}
 
-	wrappedTokens := qs.Keeper.getAllWrappedTokens(ctx)
+	// Update validator and relayer counts (these can change without transfers)
 	chainConfigs := qs.Keeper.getAllChainConfigs(ctx)
 	validatorSet := make(map[string]struct{})
 	for _, cfg := range chainConfigs {
 		for _, val := range cfg.Validators {
 			addr := strings.ToLower(strings.TrimSpace(val))
-			if addr == "" {
-				continue
+			if addr != "" {
+				validatorSet[addr] = struct{}{}
 			}
-			validatorSet[addr] = struct{}{}
 		}
 	}
+	activeValidators := uint64(len(validatorSet))
+	activeRelayers := qs.countRelayers(ctx)
 
 	return &bridgeproto.QueryBridgeStatsResponse{
-		TotalTransfers:     uint64(len(transfers)),
-		TransfersByStatus:  transfersByStatus,
-		VolumeByChain:      volumeByChain,
-		TotalWrappedTokens: uint64(len(wrappedTokens)),
-		ActiveValidators:   uint64(len(validatorSet)),
-		ActiveRelayers:     qs.countRelayers(ctx),
+		TotalTransfers:     cachedStats.TotalTransfers,
+		TransfersByStatus:  cachedStats.TransfersByStatus,
+		VolumeByChain:      cachedStats.VolumeByChain,
+		TotalWrappedTokens: cachedStats.TotalWrappedTokens,
+		ActiveValidators:   activeValidators,
+		ActiveRelayers:     activeRelayers,
 		AvgCompletionTime:  0,
 	}, nil
 }
@@ -439,14 +488,7 @@ func (qs queryServer) validatorsFromChains(ctx sdk.Context) []*bridgeproto.Bridg
 }
 
 func (qs queryServer) countRelayers(ctx sdk.Context) uint64 {
-	store := ctx.KVStore(qs.Keeper.storeKey)
-	iterator := store.Iterator(types.RelayerPrefix, storetypes.PrefixEndBytes(types.RelayerPrefix))
-	defer iterator.Close()
-	var count uint64
-	for ; iterator.Valid(); iterator.Next() {
-		count++
-	}
-	return count
+	return qs.Keeper.countRelayers(ctx)
 }
 
 // Params queries the module parameters

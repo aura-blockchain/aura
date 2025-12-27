@@ -178,3 +178,22 @@ const (
 	TimeLockStatus_TIMELOCK_CHALLENGED = pb.TimeLockStatus_TIMELOCK_CHALLENGED
 	TimeLockStatus_TIMELOCK_CANCELLED  = pb.TimeLockStatus_TIMELOCK_CANCELLED
 )
+
+// CachedBridgeStats stores pre-computed bridge statistics for O(1) query performance.
+// Updated incrementally when transfers are created/modified instead of scanning all records.
+type CachedBridgeStats struct {
+	// TotalTransfers is the total count of all transfers
+	TotalTransfers uint64 `json:"total_transfers"`
+	// TransfersByStatus maps status string to count
+	TransfersByStatus map[string]uint64 `json:"transfers_by_status"`
+	// VolumeByChain maps chain ID to total volume (as string for big int)
+	VolumeByChain map[string]string `json:"volume_by_chain"`
+	// TotalWrappedTokens is count of wrapped token types
+	TotalWrappedTokens uint64 `json:"total_wrapped_tokens"`
+	// ActiveValidators is count of active bridge validators
+	ActiveValidators uint64 `json:"active_validators"`
+	// ActiveRelayers is count of active relayers
+	ActiveRelayers uint64 `json:"active_relayers"`
+	// LastUpdatedHeight tracks when stats were last computed
+	LastUpdatedHeight int64 `json:"last_updated_height"`
+}

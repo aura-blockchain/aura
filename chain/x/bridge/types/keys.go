@@ -92,6 +92,13 @@ var (
 	// Processing source hashes (atomic check-and-set for replay prevention)
 	// Separate from ProcessedSourceHashPrefix to distinguish "processing" from "completed"
 	ProcessingSourceHashPrefix = []byte{0x26}
+
+	// Cached bridge stats (pre-computed aggregates for O(1) query performance)
+	BridgeStatsKey = []byte{0x27}
+
+	// User transfer index (secondary index: address -> transfer IDs)
+	// Format: UserTransferPrefix + address + 0x00 + transferID
+	UserTransferIndexPrefix = []byte{0x28}
 )
 
 // TransferKey returns the store key for a cross-chain transfer
@@ -228,4 +235,20 @@ func safeInt64ToUint64(v int64) uint64 {
 		return math.MaxInt64
 	}
 	return uint64(v)
+}
+
+// UserTransferIndexKey returns the store key for indexing transfers by user address
+// Format: UserTransferIndexPrefix + address + 0x00 + transferID
+// This enables O(1) lookup of user's transfers instead of O(n) full table scan
+func UserTransferIndexKey(address, transferID string) []byte {
+	key := append(UserTransferIndexPrefix, []byte(address)...)
+	key = append(key, byte(0x00))
+	return append(key, []byte(transferID)...)
+}
+
+// UserTransferIndexPrefixKey returns the prefix for all transfers by a user
+// Used for iteration over a user's transfers
+func UserTransferIndexPrefixKey(address string) []byte {
+	key := append(UserTransferIndexPrefix, []byte(address)...)
+	return append(key, byte(0x00))
 }
