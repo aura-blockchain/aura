@@ -37,8 +37,8 @@ func (suite *KeeperTestSuite) TestGetJailedValidatorsWithPrefix() {
 	suite.Require().NoError(suite.keeper.JailValidator(suite.ctx, val1, 3600000000000)) // 1 hour in nanoseconds
 	suite.Require().NoError(suite.keeper.JailValidator(suite.ctx, val2, 3600000000000))
 
-	// Get jailed validators - test the iterator
-	jailed := suite.keeper.GetJailedValidators(suite.ctx)
+	// Get jailed validators - test the iterator (0 = unbounded for testing)
+	jailed := suite.keeper.GetJailedValidators(suite.ctx, 0)
 	suite.Require().GreaterOrEqual(len(jailed), 2)
 }
 

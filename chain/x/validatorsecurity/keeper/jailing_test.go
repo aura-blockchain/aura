@@ -164,8 +164,8 @@ func (suite *KeeperTestSuite) TestGetJailedValidators() {
 	err = suite.keeper.JailValidator(suite.ctx, val2, time.Hour)
 	suite.Require().NoError(err)
 
-	// Get jailed validators
-	jailed := suite.keeper.GetJailedValidators(suite.ctx)
+	// Get jailed validators (0 = unbounded for testing)
+	jailed := suite.keeper.GetJailedValidators(suite.ctx, 0)
 	suite.Require().GreaterOrEqual(len(jailed), 2)
 }
 

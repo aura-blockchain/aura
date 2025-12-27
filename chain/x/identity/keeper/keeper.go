@@ -47,7 +47,7 @@ func (k *Keeper) GetAuthority() string {
 }
 
 // Logger returns the module logger
-func (k Keeper) Logger(ctx sdk.Context) log.Logger {
+func (k *Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", "x/"+types.ModuleName)
 }
 
@@ -62,7 +62,7 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 // ============================================================================
 
 // GetParams retrieves the module parameters
-func (k Keeper) GetParams(ctx sdk.Context) (types.Params, error) {
+func (k *Keeper) GetParams(ctx sdk.Context) (types.Params, error) {
 	store := k.storeService.OpenKVStore(ctx)
 	bz, err := store.Get(types.ParamsKey)
 	if err != nil {
