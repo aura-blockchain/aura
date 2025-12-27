@@ -325,16 +325,29 @@ func (k Keeper) DeleteCertificatePin(ctx sdk.Context, id string) {
 	store.Delete(key)
 }
 
-// CheckKeyRotationDue checks if any keys need rotation
+// MaxKeyRotationsPerBlock limits the number of key rotations processed per block
+// to prevent chain halt under high load (P1 performance fix).
+const MaxKeyRotationsPerBlock = 50
+
+// CheckKeyRotationDue checks if any keys need rotation.
+// Returns at most MaxKeyRotationsPerBlock schedules to prevent chain halt.
 func (k Keeper) CheckKeyRotationDue(ctx sdk.Context) []*securitypb.KeyRotationSchedule {
-	schedules := k.GetAllKeyRotationSchedules(ctx)
+	store := k.GetStore(ctx)
+	iterator := storetypes.KVStorePrefixIterator(store, types.KeyRotationScheduleKey)
+	defer iterator.Close()
+
 	var dueForRotation []*securitypb.KeyRotationSchedule
 	blockTime := ctx.BlockTime()
 
-	for _, schedule := range schedules {
+	// Iterate with early exit when batch limit is reached
+	for ; iterator.Valid() && len(dueForRotation) < MaxKeyRotationsPerBlock; iterator.Next() {
+		var schedule securitypb.KeyRotationSchedule
+		if err := k.cdc.Unmarshal(iterator.Value(), &schedule); err != nil {
+			continue
+		}
 		if schedule.Enabled && !schedule.NextRotationTime.IsZero() {
 			if blockTime.After(schedule.NextRotationTime) {
-				dueForRotation = append(dueForRotation, schedule)
+				dueForRotation = append(dueForRotation, &schedule)
 			}
 		}
 	}

@@ -104,8 +104,11 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *pb.GenesisState {
 		return false
 	})
 
+	// Export actual stored params (not defaults) to preserve governance changes
+	params := k.GetProtoParams(ctx)
+
 	return &pb.GenesisState{
-		Params:    *types.DefaultParams(),
+		Params:    params,
 		Contracts: contracts,
 		Metrics:   metrics,
 	}

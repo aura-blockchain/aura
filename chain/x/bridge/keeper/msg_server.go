@@ -109,6 +109,40 @@ func (ms msgServer) verifyRawValidatorSignatures(
 	}
 	sort.Strings(sortedValidatorAddrs)
 
+	// P1 PERFORMANCE FIX: Pre-compute message hashes and parse pubkeys once
+	// This reduces O(s*v) SHA256 operations to O(v) + O(s*v) signature verifications
+	type validatorVerifyInfo struct {
+		addr    string
+		pubKey  cryptotypes.PubKey
+		msgHash [32]byte
+	}
+	verifyInfos := make([]validatorVerifyInfo, 0, len(sortedValidatorAddrs))
+
+	for _, addr := range sortedValidatorAddrs {
+		validator := activeValidatorMap[addr]
+		if len(validator.PublicKey) == 0 {
+			continue
+		}
+
+		var pubKey cryptotypes.PubKey
+		if err := ms.Keeper.cdc.UnmarshalInterface(validator.PublicKey, &pubKey); err != nil {
+			continue
+		}
+		if pubKey == nil {
+			continue
+		}
+
+		// Pre-compute validator-specific message hash
+		msgWithValidator := fmt.Sprintf("%s:validator:%s", msgBase, addr)
+		msgHash := sha256.Sum256([]byte(msgWithValidator))
+
+		verifyInfos = append(verifyInfos, validatorVerifyInfo{
+			addr:    addr,
+			pubKey:  pubKey,
+			msgHash: msgHash,
+		})
+	}
+
 	// Track which validators have been matched (prevent counting same validator twice)
 	usedValidators := make(map[string]bool)
 
@@ -117,42 +151,24 @@ func (ms msgServer) verifyRawValidatorSignatures(
 			continue
 		}
 
+		// P1 PERFORMANCE FIX: Early exit when we have enough valid signatures
+		if validCount >= int(minRequired) {
+			break
+		}
+
 		// SECURITY FIX: Try to match this signature against ACTIVE validators
-		// Each validator should have signed a message that includes their own address,
-		// so we try each validator's specific message format
-		for _, addr := range sortedValidatorAddrs {
-			validator := activeValidatorMap[addr]
+		// Each validator should have signed a message that includes their own address
+		for i := range verifyInfos {
+			info := &verifyInfos[i]
 			// Skip if validator already matched (prevent duplicate counting)
-			if usedValidators[addr] {
+			if usedValidators[info.addr] {
 				continue
 			}
-
-			// Parse the validator's public key
-			if len(validator.PublicKey) == 0 {
-				continue
-			}
-
-			var pubKey cryptotypes.PubKey
-			// Unmarshal the public key
-			err := ms.Keeper.cdc.UnmarshalInterface(validator.PublicKey, &pubKey)
-			if err != nil {
-				// Skip this validator if pubkey can't be parsed
-				continue
-			}
-
-			if pubKey == nil {
-				continue
-			}
-
-			// SECURITY FIX: Build validator-specific message including their address
-			// This ensures each signature can only match one specific validator
-			msgWithValidator := fmt.Sprintf("%s:validator:%s", msgBase, addr)
-			msgHash := sha256.Sum256([]byte(msgWithValidator))
 
 			// CRITICAL: Verify the cryptographic signature against validator-specific message
-			if pubKey.VerifySignature(msgHash[:], sigBytes) {
+			if info.pubKey.VerifySignature(info.msgHash[:], sigBytes) {
 				// Valid signature from active validator found
-				usedValidators[addr] = true
+				usedValidators[info.addr] = true
 				validCount++
 				break // Move to next signature
 			}

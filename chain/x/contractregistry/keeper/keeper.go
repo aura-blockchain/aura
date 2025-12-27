@@ -83,6 +83,21 @@ func (k Keeper) GetParams(ctx context.Context) (types.Params, error) {
 	}, nil
 }
 
+// GetProtoParams returns the raw proto params for genesis export
+func (k Keeper) GetProtoParams(ctx sdk.Context) pb.ContractRegistryParams {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.ParamsKey)
+	if bz == nil {
+		return *types.DefaultParams()
+	}
+
+	var protoParams pb.ContractRegistryParams
+	if err := k.cdc.Unmarshal(bz, &protoParams); err != nil {
+		return *types.DefaultParams()
+	}
+	return protoParams
+}
+
 // SetParams sets new module parameters
 func (k Keeper) SetParams(ctx sdk.Context, params interface{}) error {
 	store := ctx.KVStore(k.storeKey)

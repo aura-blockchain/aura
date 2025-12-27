@@ -34,6 +34,21 @@ func NewMsgServerImpl(k *Keeper) identitypb.MsgServer {
 	return &msgServer{Keeper: k}
 }
 
+// verifySigner validates that the signer address is valid and non-empty.
+// This is a P1 security fix to ensure all message handlers properly validate
+// claimed addresses before processing operations.
+func (ms msgServer) verifySigner(ctx sdk.Context, signer string) error {
+	if signer == "" {
+		return status.Error(codes.InvalidArgument, "signer address cannot be empty")
+	}
+	// Validate signer is a valid bech32 address
+	_, err := sdk.AccAddressFromBech32(signer)
+	if err != nil {
+		return status.Error(codes.InvalidArgument, "invalid signer address format")
+	}
+	return nil
+}
+
 // RequestIdentityChange handles identity change requests
 func (ms msgServer) RequestIdentityChange(goCtx context.Context, msg *identitypb.MsgRequestIdentityChange) (*identitypb.MsgRequestIdentityChangeResponse, error) {
 	if msg == nil {
@@ -41,6 +56,12 @@ func (ms msgServer) RequestIdentityChange(goCtx context.Context, msg *identitypb
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// P1 Security: Verify signer address
+	if err := ms.verifySigner(ctx, msg.Requester); err != nil {
+		return nil, err
+	}
+
 	log.TxStart(ctx, "MsgRequestIdentityChange", msg.Requester)
 
 	// Create change request
@@ -65,6 +86,11 @@ func (ms msgServer) SubmitAssistantProof(goCtx context.Context, msg *identitypb.
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	// P1 Security: Verify signer address
+	if err := ms.verifySigner(ctx, msg.Assistant); err != nil {
+		return nil, err
+	}
+
 	// Submit verification
 	_, err := ms.Keeper.SubmitVerification(ctx, msg.RequestId, msg.Assistant, msg.Success, "")
 	if err != nil {
@@ -81,6 +107,11 @@ func (ms msgServer) ApplyIdentityChange(goCtx context.Context, msg *identitypb.M
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// P1 Security: Verify signer address
+	if err := ms.verifySigner(ctx, msg.Requester); err != nil {
+		return nil, err
+	}
 
 	// Apply change
 	_, err := ms.Keeper.ApplyChange(ctx, msg.RequestId, msg.Requester)
@@ -108,6 +139,11 @@ func (ms msgServer) RejectIdentityChange(goCtx context.Context, msg *identitypb.
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// P1 Security: Verify signer address
+	if err := ms.verifySigner(ctx, msg.Actor); err != nil {
+		return nil, err
+	}
 
 	// Reject change
 	_, err := ms.Keeper.RejectChange(ctx, msg.RequestId, msg.Actor, msg.Reason)
@@ -162,6 +198,11 @@ func (ms msgServer) CreateRole(goCtx context.Context, msg *identitypb.MsgCreateR
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	// P1 Security: Verify signer address
+	if err := ms.verifySigner(ctx, msg.Creator); err != nil {
+		return nil, err
+	}
+
 	// Create role
 	_, err := ms.Keeper.CreateRole(ctx, msg.Creator, msg.RoleName, msg.Permissions, msg.Description)
 	if err != nil {
@@ -178,6 +219,11 @@ func (ms msgServer) AssignRole(goCtx context.Context, msg *identitypb.MsgAssignR
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// P1 Security: Verify signer address
+	if err := ms.verifySigner(ctx, msg.Assigner); err != nil {
+		return nil, err
+	}
 
 	// Calculate expiry in seconds
 	var expirySeconds uint64
@@ -205,6 +251,11 @@ func (ms msgServer) RevokeRole(goCtx context.Context, msg *identitypb.MsgRevokeR
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	// P1 Security: Verify signer address
+	if err := ms.verifySigner(ctx, msg.Revoker); err != nil {
+		return nil, err
+	}
+
 	// Revoke role
 	if err := ms.Keeper.RevokeRole(ctx, msg.Revoker, msg.Address, msg.RoleName); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -226,6 +277,11 @@ func (ms msgServer) CreateMultisigWallet(goCtx context.Context, msg *identitypb.
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// P1 Security: Verify signer address
+	if err := ms.verifySigner(ctx, msg.Creator); err != nil {
+		return nil, err
+	}
 
 	// Check creator has permission
 	if err := ms.Keeper.RequirePermission(ctx, msg.Creator, types.PermissionManageMultisig); err != nil {
@@ -267,6 +323,11 @@ func (ms msgServer) CreateMultisigProposal(goCtx context.Context, msg *identityp
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// P1 Security: Verify signer address
+	if err := ms.verifySigner(ctx, msg.Proposer); err != nil {
+		return nil, err
+	}
 
 	// Get wallet and verify proposer is a signer
 	wallet, err := ms.Keeper.GetMultisigWallet(ctx, msg.WalletId)
@@ -335,6 +396,11 @@ func (ms msgServer) SignMultisigProposal(goCtx context.Context, msg *identitypb.
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	// P1 Security: Verify signer address
+	if err := ms.verifySigner(ctx, msg.Signer); err != nil {
+		return nil, err
+	}
+
 	// Get proposal - this reads the latest state from storage
 	// ensuring we see any signatures added by previous transactions in this block
 	proposal, err := ms.Keeper.GetMultisigProposal(ctx, msg.ProposalId)
@@ -401,6 +467,11 @@ func (ms msgServer) ExecuteMultisigProposal(goCtx context.Context, msg *identity
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	// P1 Security: Verify signer address
+	if err := ms.verifySigner(ctx, msg.Executor); err != nil {
+		return nil, err
+	}
+
 	// Get proposal
 	proposal, err := ms.Keeper.GetMultisigProposal(ctx, msg.ProposalId)
 	if err != nil {
@@ -434,6 +505,11 @@ func (ms msgServer) ProposeTimeLockedAction(goCtx context.Context, msg *identity
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// P1 Security: Verify signer address
+	if err := ms.verifySigner(ctx, msg.Proposer); err != nil {
+		return nil, err
+	}
 
 	// Check proposer has permission
 	if err := ms.Keeper.RequirePermission(ctx, msg.Proposer, types.PermissionManageTimeLock); err != nil {
@@ -481,6 +557,11 @@ func (ms msgServer) ExecuteTimeLockedAction(goCtx context.Context, msg *identity
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	// P1 Security: Verify signer address
+	if err := ms.verifySigner(ctx, msg.Executor); err != nil {
+		return nil, err
+	}
+
 	// Get action
 	action, err := ms.Keeper.GetTimeLockedAction(ctx, msg.ActionId)
 	if err != nil {
@@ -520,6 +601,11 @@ func (ms msgServer) CancelTimeLockedAction(goCtx context.Context, msg *identityp
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	// P1 Security: Verify signer address
+	if err := ms.verifySigner(ctx, msg.Canceller); err != nil {
+		return nil, err
+	}
+
 	// Get action
 	action, err := ms.Keeper.GetTimeLockedAction(ctx, msg.ActionId)
 	if err != nil {
@@ -557,6 +643,11 @@ func (ms msgServer) ActivateEmergencyAdmin(goCtx context.Context, msg *identityp
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	// P1 Security: Verify signer address
+	if err := ms.verifySigner(ctx, msg.Activator); err != nil {
+		return nil, err
+	}
+
 	// Check activator has permission
 	if err := ms.Keeper.RequirePermission(ctx, msg.Activator, types.PermissionManageEmergency); err != nil {
 		return nil, status.Error(codes.PermissionDenied, err.Error())
@@ -592,6 +683,11 @@ func (ms msgServer) DeactivateEmergencyAdmin(goCtx context.Context, msg *identit
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	// P1 Security: Verify signer address
+	if err := ms.verifySigner(ctx, msg.Deactivator); err != nil {
+		return nil, err
+	}
+
 	// Check deactivator has permission
 	if err := ms.Keeper.RequirePermission(ctx, msg.Deactivator, types.PermissionManageEmergency); err != nil {
 		return nil, status.Error(codes.PermissionDenied, err.Error())
@@ -623,6 +719,11 @@ func (ms msgServer) RotateValidatorKey(goCtx context.Context, msg *identitypb.Ms
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// P1 Security: Verify signer address
+	if err := ms.verifySigner(ctx, msg.ValidatorAddress); err != nil {
+		return nil, err
+	}
 
 	// Check validator has permission
 	if err := ms.Keeper.RequirePermission(ctx, msg.ValidatorAddress, types.PermissionRotateValidatorKey); err != nil {
@@ -656,6 +757,11 @@ func (ms msgServer) CreateSession(goCtx context.Context, msg *identitypb.MsgCrea
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	// P1 Security: Verify signer address
+	if err := ms.verifySigner(ctx, msg.Address); err != nil {
+		return nil, err
+	}
+
 	// Get params for default session duration
 	params, err := ms.Keeper.GetParams(ctx)
 	if err != nil {
@@ -686,6 +792,11 @@ func (ms msgServer) EndSession(goCtx context.Context, msg *identitypb.MsgEndSess
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// P1 Security: Verify signer address
+	if err := ms.verifySigner(ctx, msg.Address); err != nil {
+		return nil, err
+	}
 
 	// Revoke session
 	if err := ms.Keeper.RevokeSession(ctx, msg.Address, msg.SessionId); err != nil {
@@ -734,6 +845,11 @@ func (ms msgServer) EraseIdentity(goCtx context.Context, msg *identitypb.MsgEras
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	// P1 Security: Verify signer address
+	if err := ms.verifySigner(ctx, msg.Requester); err != nil {
+		return nil, err
+	}
+
 	// Erase identity
 	if err := ms.Keeper.EraseIdentity(ctx, msg.Did, msg.Requester, msg.Reason); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -758,6 +874,11 @@ func (ms msgServer) RotateDIDKey(goCtx context.Context, msg *identitypb.MsgRotat
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// P1 Security: Verify signer address
+	if err := ms.verifySigner(ctx, msg.Initiator); err != nil {
+		return nil, err
+	}
 
 	// Rotate DID key
 	rotation, err := ms.Keeper.RotateDIDKey(ctx, msg.Did, msg.Initiator, msg.NewVerificationMethod, msg.Reason)

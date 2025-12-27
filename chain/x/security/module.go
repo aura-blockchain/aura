@@ -287,25 +287,20 @@ func (am AppModule) EndBlock(ctx context.Context) error {
 // BeginBlock/EndBlock helper functions
 // ----------------------------------------------------------------------------
 
-// processKeyRotations handles scheduled cryptographic key rotations
+// processKeyRotations handles scheduled cryptographic key rotations.
+// Uses CheckKeyRotationDue to get only due schedules (P1 performance fix).
 func (am AppModule) processKeyRotations(ctx sdk.Context) error {
-	// Process any scheduled key rotations for cryptographic operations
-	schedules := am.keeper.GetAllKeyRotationSchedules(ctx)
-	blockTime := ctx.BlockTime()
+	// Get only schedules that are due (filters in keeper)
+	dueSchedules := am.keeper.CheckKeyRotationDue(ctx)
 
-	for _, schedule := range schedules {
-		if !schedule.NextRotationTime.IsZero() && schedule.Enabled {
-			nextRotation := schedule.NextRotationTime
-			if nextRotation.Before(blockTime) || nextRotation.Equal(blockTime) {
-				// Key rotation logic would be implemented here
-				// For now, just log that rotation is due
-				am.keeper.Logger(ctx).Info(
-					"key rotation due",
-					"key_id", schedule.KeyId,
-					"scheduled_time", nextRotation,
-				)
-			}
-		}
+	for _, schedule := range dueSchedules {
+		// Key rotation logic would be implemented here
+		// For now, just log that rotation is due
+		am.keeper.Logger(ctx).Info(
+			"key rotation due",
+			"key_id", schedule.KeyId,
+			"scheduled_time", schedule.NextRotationTime,
+		)
 	}
 	return nil
 }
