@@ -28,7 +28,7 @@ const userOrderHistoryLimit = 200
 //
 // SECURITY: Protected with reentrancy guard and follows Checks-Effects-Interactions pattern
 // to prevent manipulation through callbacks during external calls
-func (k Keeper) CreateOrder(
+func (k *Keeper) CreateOrder(
 	ctx sdk.Context,
 	creator string,
 	orderType types.SwapOrderType,
@@ -167,7 +167,7 @@ func (k Keeper) CreateOrder(
 // SECURITY: Protected with reentrancy guard and follows Checks-Effects-Interactions pattern
 // State changes (order status, indexing) occur BEFORE external transfers to prevent
 // reentrancy attacks where callbacks could manipulate order state during execution
-func (k Keeper) MatchOrder(
+func (k *Keeper) MatchOrder(
 	ctx sdk.Context,
 	matcher string,
 	orderID string,
@@ -321,7 +321,7 @@ func (k Keeper) MatchOrder(
 //
 // SECURITY: Protected with reentrancy guard and follows Checks-Effects-Interactions pattern
 // State changes occur BEFORE external calls to prevent reentrancy attacks
-func (k Keeper) CancelOrder(
+func (k *Keeper) CancelOrder(
 	ctx sdk.Context,
 	orderID string,
 	reason string,
@@ -392,7 +392,7 @@ func (k Keeper) CancelOrder(
 // We validate invariants and execute transfers in the correct order to prevent manipulation.
 //
 // Note: This function should ONLY be called from within MatchOrder's reentrancy-protected section.
-func (k Keeper) ExecuteSwap(ctx sdk.Context, order *types.SwapOrder) error {
+func (k *Keeper) ExecuteSwap(ctx sdk.Context, order *types.SwapOrder) error {
 	// === 1. CHECKS - Parse and validate amounts ===
 
 	// AuraAmount and OtherAmount are already math.Int types (customtype in proto)
@@ -459,7 +459,7 @@ func (k Keeper) ExecuteSwap(ctx sdk.Context, order *types.SwapOrder) error {
 // ============================
 
 // GetOrder returns an order by ID
-func (k Keeper) GetOrder(ctx sdk.Context, orderID string) *types.SwapOrder {
+func (k *Keeper) GetOrder(ctx sdk.Context, orderID string) *types.SwapOrder {
 	store := ctx.KVStore(k.storeKey)
 	key := types.OrderKey(orderID)
 
@@ -480,7 +480,7 @@ func (k Keeper) GetOrder(ctx sdk.Context, orderID string) *types.SwapOrder {
 }
 
 // SetOrder stores an order and maintains status index
-func (k Keeper) SetOrder(ctx sdk.Context, order *types.SwapOrder) error {
+func (k *Keeper) SetOrder(ctx sdk.Context, order *types.SwapOrder) error {
 	store := ctx.KVStore(k.storeKey)
 	key := types.OrderKey(order.OrderId)
 
@@ -515,7 +515,7 @@ func (k Keeper) SetOrder(ctx sdk.Context, order *types.SwapOrder) error {
 }
 
 // DeleteOrder removes an order and its status index entry
-func (k Keeper) DeleteOrder(ctx sdk.Context, orderID string) {
+func (k *Keeper) DeleteOrder(ctx sdk.Context, orderID string) {
 	// Get order first to know its status
 	order := k.GetOrder(ctx, orderID)
 	if order != nil {
@@ -529,7 +529,7 @@ func (k Keeper) DeleteOrder(ctx sdk.Context, orderID string) {
 }
 
 // GetAllOrders returns all orders
-func (k Keeper) GetAllOrders(ctx sdk.Context) []*types.SwapOrder {
+func (k *Keeper) GetAllOrders(ctx sdk.Context) []*types.SwapOrder {
 	store := ctx.KVStore(k.storeKey)
 	iterator := storetypes.KVStorePrefixIterator(store, types.OrderPrefix)
 	defer iterator.Close()
@@ -551,7 +551,7 @@ func (k Keeper) GetAllOrders(ctx sdk.Context) []*types.SwapOrder {
 
 // GetOrdersByStatus returns orders filtered by status using O(k) status index
 // where k = number of orders with the given status
-func (k Keeper) GetOrdersByStatus(ctx sdk.Context, status types.SwapOrderStatus) []*types.SwapOrder {
+func (k *Keeper) GetOrdersByStatus(ctx sdk.Context, status types.SwapOrderStatus) []*types.SwapOrder {
 	store := ctx.KVStore(k.storeKey)
 	prefix := types.OrderStatusPrefixByStatus(status)
 	iterator := storetypes.KVStorePrefixIterator(store, prefix)
@@ -574,7 +574,7 @@ func (k Keeper) GetOrdersByStatus(ctx sdk.Context, status types.SwapOrderStatus)
 }
 
 // GetOrdersByUser returns all orders created by a user
-func (k Keeper) GetOrdersByUser(ctx sdk.Context, userAddress string) []*types.SwapOrder {
+func (k *Keeper) GetOrdersByUser(ctx sdk.Context, userAddress string) []*types.SwapOrder {
 	store := ctx.KVStore(k.storeKey)
 	prefix := types.UserOrderAddressPrefix(userAddress)
 	iterator := storetypes.KVStorePrefixIterator(store, prefix)
@@ -603,7 +603,7 @@ func (k Keeper) GetOrdersByUser(ctx sdk.Context, userAddress string) []*types.Sw
 // ============================
 
 // AddToOrderbook adds an order to the orderbook index
-func (k Keeper) AddToOrderbook(ctx sdk.Context, order *types.SwapOrder) {
+func (k *Keeper) AddToOrderbook(ctx sdk.Context, order *types.SwapOrder) {
 	// Index by trading pair
 	pairKey := fmt.Sprintf("%s-%s", "uaura", order.OtherCoin)
 
@@ -618,7 +618,7 @@ func (k Keeper) AddToOrderbook(ctx sdk.Context, order *types.SwapOrder) {
 }
 
 // addToExpirationIndex adds an order to the expiration time index
-func (k Keeper) addToExpirationIndex(ctx sdk.Context, order *types.SwapOrder) {
+func (k *Keeper) addToExpirationIndex(ctx sdk.Context, order *types.SwapOrder) {
 	if order == nil || order.Status != types.SwapOrderStatus_PENDING {
 		return
 	}
@@ -630,7 +630,7 @@ func (k Keeper) addToExpirationIndex(ctx sdk.Context, order *types.SwapOrder) {
 }
 
 // RemoveFromOrderbook removes an order from the orderbook index
-func (k Keeper) RemoveFromOrderbook(ctx sdk.Context, orderID string) {
+func (k *Keeper) RemoveFromOrderbook(ctx sdk.Context, orderID string) {
 	order := k.GetOrder(ctx, orderID)
 	if order == nil {
 		return
@@ -647,7 +647,7 @@ func (k Keeper) RemoveFromOrderbook(ctx sdk.Context, orderID string) {
 }
 
 // removeFromExpirationIndex removes an order from the expiration time index
-func (k Keeper) removeFromExpirationIndex(ctx sdk.Context, order *types.SwapOrder) {
+func (k *Keeper) removeFromExpirationIndex(ctx sdk.Context, order *types.SwapOrder) {
 	if order == nil {
 		return
 	}
@@ -659,7 +659,7 @@ func (k Keeper) removeFromExpirationIndex(ctx sdk.Context, order *types.SwapOrde
 
 // GetOrderbookForPair returns all pending orders for a trading pair
 // OPTIMIZED: Uses batch lookup to eliminate N+1 query pattern
-func (k Keeper) GetOrderbookForPair(ctx sdk.Context, coinA, coinB string) []*types.SwapOrder {
+func (k *Keeper) GetOrderbookForPair(ctx sdk.Context, coinA, coinB string) []*types.SwapOrder {
 	pairKey := fmt.Sprintf("%s-%s", coinA, coinB)
 
 	store := ctx.KVStore(k.storeKey)
@@ -667,23 +667,10 @@ func (k Keeper) GetOrderbookForPair(ctx sdk.Context, coinA, coinB string) []*typ
 	iterator := storetypes.KVStorePrefixIterator(store, prefix)
 	defer iterator.Close()
 
-	// Phase 1: Collect all order IDs for this pair (single index scan)
-	orderIDs := make([]string, 0, 64)
+	// Single pass: collect order IDs, fetch, filter, and populate in one iteration
+	orders := make([]*types.SwapOrder, 0, 64)
 	for ; iterator.Valid(); iterator.Next() {
 		orderID := string(iterator.Value())
-		orderIDs = append(orderIDs, orderID)
-	}
-
-	// Early return if no orders found
-	if len(orderIDs) == 0 {
-		return []*types.SwapOrder{}
-	}
-
-	// Phase 2: Batch fetch all orders with sequential reads
-	// This eliminates the N+1 query pattern by collecting IDs first,
-	// then doing all fetches together with better cache locality
-	orders := make([]*types.SwapOrder, 0, len(orderIDs))
-	for _, orderID := range orderIDs {
 		key := types.OrderKey(orderID)
 		bz := store.Get(key)
 		if bz == nil {
@@ -699,7 +686,7 @@ func (k Keeper) GetOrderbookForPair(ctx sdk.Context, coinA, coinB string) []*typ
 			continue
 		}
 
-		// Only include pending orders
+		// Only include pending orders - filter inline during single pass
 		if order.Status == types.SwapOrderStatus_PENDING {
 			orders = append(orders, &order)
 		}
@@ -713,7 +700,7 @@ func (k Keeper) GetOrderbookForPair(ctx sdk.Context, coinA, coinB string) []*typ
 // ============================
 
 // LockFundsForOrder locks funds for an order
-func (k Keeper) LockFundsForOrder(ctx sdk.Context, address string, denom string, amount sdkmath.Int) error {
+func (k *Keeper) LockFundsForOrder(ctx sdk.Context, address string, denom string, amount sdkmath.Int) error {
 	addr, err := sdk.AccAddressFromBech32(address)
 	if err != nil {
 		return fmt.Errorf("failed to AccAddressFromBech32: %w", err)
@@ -730,7 +717,7 @@ func (k Keeper) LockFundsForOrder(ctx sdk.Context, address string, denom string,
 }
 
 // UnlockFundsForOrder unlocks funds for a cancelled order
-func (k Keeper) UnlockFundsForOrder(ctx sdk.Context, address string, order *types.SwapOrder) error {
+func (k *Keeper) UnlockFundsForOrder(ctx sdk.Context, address string, order *types.SwapOrder) error {
 	addr, err := sdk.AccAddressFromBech32(address)
 	if err != nil {
 		return fmt.Errorf("failed to AccAddressFromBech32: %w", err)
@@ -756,7 +743,7 @@ func (k Keeper) UnlockFundsForOrder(ctx sdk.Context, address string, order *type
 }
 
 // TransferLockedFunds transfers locked funds between users
-func (k Keeper) TransferLockedFunds(ctx sdk.Context, from, to, denom string, amount sdkmath.Int) error {
+func (k *Keeper) TransferLockedFunds(ctx sdk.Context, from, to, denom string, amount sdkmath.Int) error {
 	toAddr, err := sdk.AccAddressFromBech32(to)
 	if err != nil {
 		return fmt.Errorf("failed to AccAddressFromBech32: %w", err)
@@ -777,7 +764,7 @@ func (k Keeper) TransferLockedFunds(ctx sdk.Context, from, to, denom string, amo
 // ============================
 
 // GenerateOrderID generates a unique order ID
-func (k Keeper) GenerateOrderID(ctx sdk.Context, creator string) string {
+func (k *Keeper) GenerateOrderID(ctx sdk.Context, creator string) string {
 	return fmt.Sprintf("order-%s-%d", creator, ctx.BlockHeight())
 }
 
@@ -794,7 +781,7 @@ func (k Keeper) GenerateOrderID(ctx sdk.Context, creator string) string {
 // 3. Not loading all pending orders into memory
 //
 // Returns: number of orders processed in this batch
-func (k Keeper) CleanupExpiredOrdersOptimized(ctx sdk.Context, limit int) int {
+func (k *Keeper) CleanupExpiredOrdersOptimized(ctx sdk.Context, limit int) int {
 	if limit <= 0 {
 		limit = types.MaxOrdersCleanupPerBlock
 	}
@@ -860,7 +847,7 @@ func (k Keeper) CleanupExpiredOrdersOptimized(ctx sdk.Context, limit int) int {
 	return processed
 }
 
-func (k Keeper) indexUserOrder(ctx sdk.Context, order *types.SwapOrder) {
+func (k *Keeper) indexUserOrder(ctx sdk.Context, order *types.SwapOrder) {
 	if order == nil || order.UserAddress == "" || order.OrderId == "" {
 		return
 	}
@@ -878,7 +865,7 @@ func (k Keeper) indexUserOrder(ctx sdk.Context, order *types.SwapOrder) {
 	k.enforceUserOrderLimit(ctx, order.UserAddress)
 }
 
-func (k Keeper) enforceUserOrderLimit(ctx sdk.Context, address string) {
+func (k *Keeper) enforceUserOrderLimit(ctx sdk.Context, address string) {
 	store := ctx.KVStore(k.storeKey)
 	prefix := types.UserOrderAddressPrefix(address)
 	iterator := storetypes.KVStorePrefixIterator(store, prefix)
@@ -894,7 +881,7 @@ func (k Keeper) enforceUserOrderLimit(ctx sdk.Context, address string) {
 	}
 }
 
-func (k Keeper) addPendingOrderToIndex(ctx sdk.Context, order *types.SwapOrder) {
+func (k *Keeper) addPendingOrderToIndex(ctx sdk.Context, order *types.SwapOrder) {
 	if order == nil || order.OrderId == "" {
 		return
 	}
@@ -910,18 +897,21 @@ func (k Keeper) addPendingOrderToIndex(ctx sdk.Context, order *types.SwapOrder) 
 	k.AddToOrderbook(ctx, stored)
 }
 
-func (k Keeper) exportOrderbooks(ctx sdk.Context) []*types.Orderbook {
+func (k *Keeper) exportOrderbooks(ctx sdk.Context) []*types.Orderbook {
 	store := ctx.KVStore(k.storeKey)
 	iterator := storetypes.KVStorePrefixIterator(store, types.OrderbookPrefix)
 	defer iterator.Close()
 
-	// Collect orders by pair, separating buy/sell upfront to avoid re-iteration
+	// Collect orders by pair, separating buy/sell and tracking best bid/ask upfront
 	type pairOrders struct {
-		buys  []types.SwapOrder
-		sells []types.SwapOrder
+		buys    []types.SwapOrder
+		sells   []types.SwapOrder
+		bestBid sdkmath.LegacyDec
+		bestAsk sdkmath.LegacyDec
 	}
 	pairs := make(map[string]*pairOrders)
 
+	// Single pass: collect, separate, and track extremes
 	for ; iterator.Valid(); iterator.Next() {
 		key := iterator.Key()[len(types.OrderbookPrefix):]
 		sep := bytes.IndexByte(key, 0x00)
@@ -939,17 +929,28 @@ func (k Keeper) exportOrderbooks(ctx sdk.Context) []*types.Orderbook {
 		po := pairs[pairKey]
 		if po == nil {
 			po = &pairOrders{
-				buys:  make([]types.SwapOrder, 0, 32),
-				sells: make([]types.SwapOrder, 0, 32),
+				buys:    make([]types.SwapOrder, 0, 32),
+				sells:   make([]types.SwapOrder, 0, 32),
+				bestBid: sdkmath.LegacyZeroDec(),
+				bestAsk: sdkmath.LegacyZeroDec(),
 			}
 			pairs[pairKey] = po
 		}
 
+		price := orderPriceDec(order)
 		// Separate buy/sell orders during collection (single pass)
 		if order.OrderType == types.SwapOrderType_BUY {
 			po.buys = append(po.buys, *order)
+			// Track best bid (highest price) on the fly
+			if po.bestBid.IsZero() || price.GT(po.bestBid) {
+				po.bestBid = price
+			}
 		} else {
 			po.sells = append(po.sells, *order)
+			// Track best ask (lowest price) on the fly
+			if po.bestAsk.IsZero() || price.LT(po.bestAsk) {
+				po.bestAsk = price
+			}
 		}
 	}
 
@@ -978,27 +979,17 @@ func (k Keeper) exportOrderbooks(ctx sdk.Context) []*types.Orderbook {
 			return po.sells[i].PricePerAura.LT(po.sells[j].PricePerAura)
 		})
 
-		// After sorting, best bid/ask are at index 0 (no need to track during iteration)
-		bestBid := sdkmath.LegacyZeroDec()
-		bestAsk := sdkmath.LegacyZeroDec()
-		if len(po.buys) > 0 {
-			bestBid = po.buys[0].PricePerAura
-		}
-		if len(po.sells) > 0 {
-			bestAsk = po.sells[0].PricePerAura
-		}
-
 		book := &types.Orderbook{
 			Pair:         pair,
 			BuyOrders:    po.buys,
 			SellOrders:   po.sells,
 			TotalPending: uint64(len(po.buys) + len(po.sells)),
-			BestBid:      bestBid,
-			BestAsk:      bestAsk,
+			BestBid:      po.bestBid,
+			BestAsk:      po.bestAsk,
 		}
 
-		if !bestAsk.IsZero() && !bestBid.IsZero() {
-			book.SpreadPercent = bestAsk.Sub(bestBid).Quo(bestAsk).MulInt64(100)
+		if !po.bestAsk.IsZero() && !po.bestBid.IsZero() {
+			book.SpreadPercent = po.bestAsk.Sub(po.bestBid).Quo(po.bestAsk).MulInt64(100)
 		}
 
 		orderbooks = append(orderbooks, book)
@@ -1012,7 +1003,7 @@ func (k Keeper) exportOrderbooks(ctx sdk.Context) []*types.Orderbook {
 // ============================
 
 // addOrderToStatusIndex adds an order to the status index
-func (k Keeper) addOrderToStatusIndex(ctx sdk.Context, order *types.SwapOrder) {
+func (k *Keeper) addOrderToStatusIndex(ctx sdk.Context, order *types.SwapOrder) {
 	store := ctx.KVStore(k.storeKey)
 	key := types.OrderStatusKey(order.Status, order.OrderId)
 	// Store a marker byte (we only need the key, not the value)
@@ -1020,7 +1011,7 @@ func (k Keeper) addOrderToStatusIndex(ctx sdk.Context, order *types.SwapOrder) {
 }
 
 // removeOrderFromStatusIndex removes an order from the status index
-func (k Keeper) removeOrderFromStatusIndex(ctx sdk.Context, status types.SwapOrderStatus, orderID string) {
+func (k *Keeper) removeOrderFromStatusIndex(ctx sdk.Context, status types.SwapOrderStatus, orderID string) {
 	store := ctx.KVStore(k.storeKey)
 	key := types.OrderStatusKey(status, orderID)
 	store.Delete(key)

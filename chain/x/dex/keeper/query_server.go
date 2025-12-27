@@ -153,18 +153,11 @@ func (qs queryServer) Orderbook(ctx context.Context, req *dexpb.QueryOrderbookRe
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	orders := qs.keeper.GetOrderbookForPair(sdkCtx, base, quote)
 
-	orderbook := &dexpb.Orderbook{
-		Pair:         fmt.Sprintf("%s-%s", base, quote),
-		BuyOrders:    []dexpb.SwapOrder{},
-		SellOrders:   []dexpb.SwapOrder{},
-		TotalPending: uint64(len(orders)),
-	}
-
-	// Initialize to zero to prevent nil pointer dereference on empty orderbook
+	// Separate buy/sell orders and calculate best bid/ask in single pass
+	buyOrders := make([]dexpb.SwapOrder, 0, len(orders)/2)
+	sellOrders := make([]dexpb.SwapOrder, 0, len(orders)/2)
 	bestBid := sdkmath.LegacyZeroDec()
 	bestAsk := sdkmath.LegacyZeroDec()
-	firstBid := true
-	firstAsk := true
 
 	for _, order := range orders {
 		price := orderPriceDec(order)
@@ -173,30 +166,36 @@ func (qs queryServer) Orderbook(ctx context.Context, req *dexpb.QueryOrderbookRe
 		orderCopy.PricePerAura = price
 
 		if order.OrderType == dexpb.SwapOrderType_BUY {
-			orderbook.BuyOrders = append(orderbook.BuyOrders, orderCopy)
-			if firstBid || price.GT(bestBid) {
+			buyOrders = append(buyOrders, orderCopy)
+			// Track best bid (highest price) for buy orders
+			if bestBid.IsZero() || price.GT(bestBid) {
 				bestBid = price
-				firstBid = false
 			}
 		} else {
-			orderbook.SellOrders = append(orderbook.SellOrders, orderCopy)
-			if firstAsk || price.LT(bestAsk) || bestAsk.IsZero() {
+			sellOrders = append(sellOrders, orderCopy)
+			// Track best ask (lowest price) for sell orders
+			if bestAsk.IsZero() || price.LT(bestAsk) {
 				bestAsk = price
-				firstAsk = false
 			}
 		}
 	}
 
 	// Sort using cached PricePerAura to avoid recalculating prices during comparisons
-	sort.Slice(orderbook.BuyOrders, func(i, j int) bool {
-		return orderbook.BuyOrders[i].PricePerAura.GT(orderbook.BuyOrders[j].PricePerAura)
+	sort.Slice(buyOrders, func(i, j int) bool {
+		return buyOrders[i].PricePerAura.GT(buyOrders[j].PricePerAura)
 	})
-	sort.Slice(orderbook.SellOrders, func(i, j int) bool {
-		return orderbook.SellOrders[i].PricePerAura.LT(orderbook.SellOrders[j].PricePerAura)
+	sort.Slice(sellOrders, func(i, j int) bool {
+		return sellOrders[i].PricePerAura.LT(sellOrders[j].PricePerAura)
 	})
 
-	orderbook.BestBid = bestBid
-	orderbook.BestAsk = bestAsk
+	orderbook := &dexpb.Orderbook{
+		Pair:         fmt.Sprintf("%s-%s", base, quote),
+		BuyOrders:    buyOrders,
+		SellOrders:   sellOrders,
+		TotalPending: uint64(len(orders)),
+		BestBid:      bestBid,
+		BestAsk:      bestAsk,
+	}
 
 	if !bestAsk.IsZero() && !bestBid.IsZero() {
 		orderbook.SpreadPercent = bestAsk.Sub(bestBid).Quo(bestAsk).MulInt64(100)
@@ -332,10 +331,19 @@ func (qs queryServer) SpotPrice(ctx context.Context, req *dexpb.QuerySpotPriceRe
 
 func (qs queryServer) SupportedCoins(ctx context.Context, _ *dexpb.QuerySupportedCoinsRequest) (*dexpb.QuerySupportedCoinsResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	pools := qs.keeper.GetAllPools(sdkCtx)
-	coins := make(map[string]struct{})
+	store := sdkCtx.KVStore(qs.keeper.storeKey)
+	iterator := prefix.NewStore(store, types.PoolPrefix).Iterator(nil, nil)
+	defer iterator.Close()
 
-	for _, pool := range pools {
+	// Single pass: iterate pools and extract supported coins
+	coins := make(map[string]struct{})
+	for ; iterator.Valid(); iterator.Next() {
+		var pool dexpb.LiquidityPool
+		if err := qs.keeper.cdc.Unmarshal(iterator.Value(), &pool); err != nil {
+			continue
+		}
+
+		// Add non-AURA coins to set (case-insensitive)
 		if strings.ToLower(pool.DenomA) != "uaura" {
 			coins[strings.ToLower(pool.DenomA)] = struct{}{}
 		}
@@ -344,12 +352,13 @@ func (qs queryServer) SupportedCoins(ctx context.Context, _ *dexpb.QuerySupporte
 		}
 	}
 
+	// Convert set to sorted slice
 	list := make([]string, 0, len(coins))
 	for denom := range coins {
 		list = append(list, denom)
 	}
-
 	sort.Strings(list)
+
 	return &dexpb.QuerySupportedCoinsResponse{Coins: list}, nil
 }
 
