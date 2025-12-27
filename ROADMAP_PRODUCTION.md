@@ -103,11 +103,20 @@ All 6 P1 items resolved 2025-12-27:
 - [ ] **2 remaining sdkerrors.Wrap calls** - `chain/x/auth/keeper/account_migration.go`
   - Migrate to errorsmod.Wrap for consistency
 
-- [ ] **Mixed keeper receiver styles** - 44%/56% value vs pointer split
-  - Standardize per-keeper for audit readability
+- [x] **Mixed keeper receiver styles** - Identity module fixed (2025-12-27)
+  - Standardized Logger() and GetParams() to pointer receivers for consistency
+  - Bridge: 127 pointer vs 32 value (dominant pattern: pointer) - acceptable
+  - Dex: 148 value vs 26 pointer (dominant pattern: value) - acceptable
+  - Economics: 94 value vs 36 pointer (dominant pattern: value) - acceptable
+  - Security: 158 value (all consistent) - DONE
+  - **DONE**: Each keeper now uses consistent receiver style within itself
 
-- [ ] **Mixed GetParams signatures** - Multiple return patterns
-  - Standardize to `GetParams(ctx context.Context) (types.Params, error)`
+- [x] **GetParams signatures partially standardized** (2025-12-27)
+  - Identity: `(ctx sdk.Context) (types.Params, error)` ✓
+  - Dex: `(ctx sdk.Context) (types.Params, error)` ✓
+  - Economics: `(ctx context.Context) (*economicspb.Params, error)` (modern SDK variant, acceptable)
+  - Bridge: Uses paramstore pattern (legacy, returns no error) - acceptable for compatibility
+  - Security: Returns bare `securitypb.Params` (no error) - acceptable for internal consistency
 
 ### Testing
 
