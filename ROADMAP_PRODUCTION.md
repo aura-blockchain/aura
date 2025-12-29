@@ -62,7 +62,7 @@ Cosmos SDK invariants lack context parameter. Params validated at other layers (
 
 ### P4.1 - SDK & Developer Tools
 - [x] Fix Go SDK compilation errors (networksecurity, privacy, validatorsecurity return types)
-- [ ] Add SDK integration tests (requires testnet)
+- [x] Add SDK integration tests (requires testnet)
 - [ ] Complete docs-site with user tutorials and module guides
 
 ### P4.2 - Wallet Completeness
