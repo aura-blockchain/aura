@@ -18,7 +18,7 @@ This guide will help you get all three AURA dashboards up and running in minutes
 #### Validator Dashboard (Port 8080)
 
 ```bash
-cd dashboards/dashboards/validator
+cd dashboards/validator
 npm install
 npm start
 ```
@@ -28,7 +28,7 @@ Open browser: http://localhost:8080
 #### Staking Dashboard (Port 8081)
 
 ```bash
-cd dashboards/dashboards/staking
+cd dashboards/staking
 npm install
 npm start
 ```
@@ -38,7 +38,7 @@ Open browser: http://localhost:8081
 #### Governance Dashboard (Port 8082)
 
 ```bash
-cd dashboards/dashboards/governance
+cd dashboards/governance
 npm install
 npm start
 ```
@@ -55,7 +55,7 @@ Create a file `start-all-dashboards.sh`:
 echo "Starting all AURA dashboards..."
 
 # Start Validator Dashboard
-cd dashboards/dashboards/validator
+cd dashboards/validator
 npm install
 npm start &
 VALIDATOR_PID=$!
@@ -135,15 +135,15 @@ npm start
 
 ```bash
 # Validator Dashboard
-cd dashboards/dashboards/validator
+cd dashboards/validator
 npm test
 
 # Staking Dashboard
-cd dashboards/dashboards/staking
+cd dashboards/staking
 npm test
 
 # Governance Dashboard
-cd dashboards/dashboards/governance
+cd dashboards/governance
 npm test
 ```
 
@@ -164,7 +164,7 @@ npm run test:coverage
 ### Validator Dashboard
 
 ```bash
-cd dashboards/dashboards/validator
+cd dashboards/validator
 docker-compose up -d
 ```
 

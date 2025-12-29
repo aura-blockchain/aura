@@ -14,7 +14,7 @@ Define the staking/oracle model, attestation signer, and GUI that allow geograph
 - ✅ Wallet tooling (`wallet-tools`) can now query DEX telemetry, create wallets, and delegate stake, providing the operational glue for assistant operators.
 - ✅ Cross-platform GUI (`ai-assistant/gui`) shells into `aurad`/`aura-voucher` for heartbeats, voucher issuance/redemption, and status dashboards so non-technical operators can participate securely.
 - ✅ Sponsorship vouchers (`ai-assistant/vouchers`) introduce cryptographically signed credits, encrypted key storage, and Pushgateway metrics so ROI dashboards stay up to date.
-- ✅ Assistant telemetry dashboard (`dashboards/dashboards/aiassistant/assistant-dashboard.json`) + `docs/economics/assistant-telemetry.md` tie heartbeat/voucher metrics straight into the economics workbook.
+- ✅ Assistant telemetry dashboard (`grafana/dashboards/aiassistant-monitoring.json`) + `docs/economics/assistant-telemetry.md` tie heartbeat/voucher metrics straight into the economics workbook.
 
 ## Next steps
 1. Harden the GUI for packaging (code signing, auto-updaters, OS keyring integration for voucher passphrases).

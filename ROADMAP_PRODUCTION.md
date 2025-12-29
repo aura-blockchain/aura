@@ -320,7 +320,7 @@ Full codebase audit for stubs, TODOs, placeholders, and unfinished implementatio
 |----------|-------|----------|--------|
 | `dashboards/governance/services/governanceAPI.js` | Vote/Deposit/Submit | P3 | ✅ COMPLETE (CosmJS implemented) |
 | `dashboards/validator/services/validatorAPI.js` | Commission/Update | P3 | ✅ COMPLETE (CosmJS implemented) |
-| `dashboards/dashboards/*` | Nested duplicate with old stubs | P4 | Cleanup optional |
+| `dashboards/dashboards/*` | Nested duplicate with old stubs | P4 | ✅ REMOVED (Grafana dashboards moved to grafana/dashboards/) |
 
 ### Explorer Code
 

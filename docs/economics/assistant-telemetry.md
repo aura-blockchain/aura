@@ -2,7 +2,7 @@
 
 The assistant ROI spreadsheet (`docs/economics/models/assistant-roi-scenarios.csv`) now ties directly into on-chain/off-chain telemetry:
 
-1. **Heartbeats** – The `chain/x/aiassistant` keeper emits `aiassistant_heartbeat_success_total` and `aiassistant_heartbeat_age_seconds` whenever assistants submit heartbeats. Import the `AI Assistant Ops Dashboard` (`dashboards/dashboards/aiassistant/assistant-dashboard.json`) into Grafana to visualize uptime and SLA breaches.
+1. **Heartbeats** – The `chain/x/aiassistant` keeper emits `aiassistant_heartbeat_success_total` and `aiassistant_heartbeat_age_seconds` whenever assistants submit heartbeats. Import the `AI Assistant Ops Dashboard` (`grafana/dashboards/aiassistant-monitoring.json`) into Grafana to visualize uptime and SLA breaches.
 2. **Voucher lifecycle** – The `aura-voucher` CLI pushes `assistant_voucher_issue_total` / `assistant_voucher_redeem_total` to Prometheus (via Pushgateway) whenever you issue or redeem sponsorship credits. These feed into ROI sheets so finance teams can reconcile how much subsidy remains for each locale or campaign.
 3. **Misbehavior tracking** – `aiassistant_msg_misbehavior_total` increments whenever governance/layers report malicious assistants. Tie this into your risk scorecards to adjust revenue projections for bad actors.
 
