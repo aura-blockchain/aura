@@ -261,7 +261,6 @@ if [ $FAILED -eq 0 ]; then
         echo ""
         echo "Known Issues:"
         echo "  1. Bank query module not registered"
-        echo "  2. Confidence score params query not implemented"
         exit 0
     fi
 else

@@ -165,3 +165,114 @@ func (q *QueryServer) VerifiedUsers(goCtx context.Context, req *confidencescorep
 		Scores:          scores,
 	}, nil
 }
+
+// UserCompletions returns a user's IR completion history
+func (q *QueryServer) UserCompletions(goCtx context.Context, req *confidencescorepb.QueryUserCompletionsRequest) (*confidencescorepb.QueryUserCompletionsResponse, error) {
+	if req == nil || req.WalletAddress == "" {
+		return nil, types.ErrInvalidWalletAddress
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	record, ok := q.keeper.GetUserRecord(ctx, req.WalletAddress)
+	if !ok {
+		return &confidencescorepb.QueryUserCompletionsResponse{
+			Completions: []*confidencescorepb.IRCompletion{},
+		}, nil
+	}
+
+	// Filter by arena if specified
+	completions := record.CompletedIrs
+	if req.ArenaFilter != "" {
+		filtered := make([]*confidencescorepb.IRCompletion, 0)
+		for _, c := range completions {
+			if c.Arena == req.ArenaFilter {
+				filtered = append(filtered, c)
+			}
+		}
+		completions = filtered
+	}
+
+	return &confidencescorepb.QueryUserCompletionsResponse{
+		Completions: completions,
+	}, nil
+}
+
+// ArenaBreakdown returns a user's score breakdown by arena
+func (q *QueryServer) ArenaBreakdown(goCtx context.Context, req *confidencescorepb.QueryArenaBreakdownRequest) (*confidencescorepb.QueryArenaBreakdownResponse, error) {
+	if req == nil || req.WalletAddress == "" {
+		return nil, types.ErrInvalidWalletAddress
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	record, ok := q.keeper.GetUserRecord(ctx, req.WalletAddress)
+	if !ok {
+		return &confidencescorepb.QueryArenaBreakdownResponse{
+			ArenaScores:  make(map[string]*confidencescorepb.ArenaScore),
+			FocusArenas:  []string{},
+		}, nil
+	}
+
+	params, _ := q.keeper.GetParams(goCtx)
+
+	// Build list of arenas with focus bonus (>= arena focus threshold)
+	focusArenas := make([]string, 0)
+	for arenaType, arenaScore := range record.ArenaScores {
+		if arenaScore.TotalScore >= params.ArenaFocusThreshold {
+			focusArenas = append(focusArenas, arenaType)
+		}
+	}
+
+	return &confidencescorepb.QueryArenaBreakdownResponse{
+		ArenaScores:  record.ArenaScores,
+		FocusArenas:  focusArenas,
+	}, nil
+}
+
+// SlashRecord returns slash records for a user
+func (q *QueryServer) SlashRecord(goCtx context.Context, req *confidencescorepb.QuerySlashRecordRequest) (*confidencescorepb.QuerySlashRecordResponse, error) {
+	if req == nil || req.WalletAddress == "" {
+		return nil, types.ErrInvalidWalletAddress
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	slashRecords := q.keeper.GetSlashRecords(ctx, req.WalletAddress)
+
+	// Convert []SlashRecord to []*SlashRecord for proto response
+	recordPtrs := make([]*confidencescorepb.SlashRecord, len(slashRecords))
+	for i := range slashRecords {
+		recordPtrs[i] = &slashRecords[i]
+	}
+
+	return &confidencescorepb.QuerySlashRecordResponse{
+		SlashRecords: recordPtrs,
+	}, nil
+}
+
+// IRCompletion returns a specific IR completion record
+func (q *QueryServer) IRCompletion(goCtx context.Context, req *confidencescorepb.QueryIRCompletionRequest) (*confidencescorepb.QueryIRCompletionResponse, error) {
+	if req == nil || req.WalletAddress == "" || req.IrId == "" {
+		return nil, types.ErrInvalidWalletAddress
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	record, ok := q.keeper.GetUserRecord(ctx, req.WalletAddress)
+	if !ok {
+		return &confidencescorepb.QueryIRCompletionResponse{
+			Completed: false,
+		}, nil
+	}
+
+	// Search for the specific IR completion
+	for _, completion := range record.CompletedIrs {
+		if completion.IrId == req.IrId {
+			return &confidencescorepb.QueryIRCompletionResponse{
+				Completion: completion,
+				Completed:  true,
+			}, nil
+		}
+	}
+
+	return &confidencescorepb.QueryIRCompletionResponse{
+		Completed: false,
+	}, nil
+}
