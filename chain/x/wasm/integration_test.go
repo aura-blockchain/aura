@@ -6,142 +6,136 @@ package wasm_test
 import (
 	"testing"
 
+	"github.com/aequitas/aura/chain/x/wasm/types"
 	"github.com/stretchr/testify/require"
 )
 
-// TestWASMModuleIntegration tests that the WASM module integrates correctly with wasmd
-// This is a placeholder for integration tests that would be run with the full app context
-func TestWASMModuleIntegration(t *testing.T) {
-	// This test would require the full app setup
-	// For now, we verify the module compiles and types are correct
-	t.Log("WASM module integration test placeholder")
-	t.Log("Full integration tests would require app setup with:")
-	t.Log("  - wasmd keeper initialization")
-	t.Log("  - contract upload/instantiate/execute flow")
-	t.Log("  - custom bindings verification")
-	t.Log("  - security controls validation")
+// TestWASMModuleTypes verifies that WASM module types are correctly defined
+func TestWASMModuleTypes(t *testing.T) {
+	// Verify store key is defined
+	require.NotEmpty(t, types.StoreKey, "StoreKey should be defined")
+	require.Equal(t, "aura_wasm_security", types.StoreKey)
+
+	// Verify module name
+	require.NotEmpty(t, types.ModuleName, "ModuleName should be defined")
+	require.Equal(t, "aura_wasm_security", types.ModuleName)
 }
 
-// TestSecurityControls verifies security features work in integration
-func TestSecurityControls(t *testing.T) {
-	t.Log("Security controls test placeholder")
-	t.Log("Tests to implement:")
-	t.Log("  1. Contract upload requires authorization")
-	t.Log("  2. Paused contracts cannot execute")
-	t.Log("  3. Gas limits are enforced")
-	t.Log("  4. Contract size limits are enforced")
-	t.Log("  5. Migration can be disabled")
+// TestWASMParamsDefaults verifies default parameters are valid
+func TestWASMParamsDefaults(t *testing.T) {
+	params := types.DefaultParams()
+
+	// Verify code size limits are set
+	require.Greater(t, params.MaxWasmCodeSize, uint64(0), "Max WASM code size should be positive")
+	require.Equal(t, uint64(600*1024), params.MaxWasmCodeSize, "Default max code size should be 600KB")
+
+	// Verify gas limits are set
+	require.Greater(t, params.MaxGasWasmExecution, uint64(0), "Max gas execution should be positive")
+	require.Equal(t, uint64(10_000_000), params.MaxGasWasmExecution, "Default max gas should be 10M")
+
+	// Verify security settings
+	require.True(t, params.SecurityAnalysisEnabled, "Security analysis should be enabled by default")
+	require.True(t, params.RequireAdminForMigrate, "Admin should be required for migration by default")
 }
 
-// TestCustomBindings verifies custom AURA bindings work
-func TestCustomBindings(t *testing.T) {
-	t.Log("Custom bindings test placeholder")
-	t.Log("Tests to implement:")
-	t.Log("  1. VCRegistry query binding works")
-	t.Log("  2. VCRegistry message binding works")
-	t.Log("  3. Future bindings (compliance, auth, etc.)")
+// TestWASMParamsValidation verifies parameter validation
+func TestWASMParamsValidation(t *testing.T) {
+	tests := []struct {
+		name        string
+		params      *types.Params
+		expectError bool
+	}{
+		{
+			name:        "default params are valid",
+			params:      types.DefaultParams(),
+			expectError: false,
+		},
+		{
+			name: "zero gas limit is invalid",
+			params: &types.Params{
+				CodeUploadAccess:             types.AccessConfig{Permission: types.AccessTypeEverybody},
+				InstantiateDefaultPermission: types.AccessTypeEverybody,
+				MaxWasmCodeSize:              600 * 1024,
+				MaxGasWasmExecution:          0, // Invalid
+				SecurityAnalysisEnabled:      true,
+				RequireAdminForMigrate:       true,
+			},
+			expectError: true,
+		},
+		{
+			name: "zero contract size is invalid",
+			params: &types.Params{
+				CodeUploadAccess:             types.AccessConfig{Permission: types.AccessTypeEverybody},
+				InstantiateDefaultPermission: types.AccessTypeEverybody,
+				MaxWasmCodeSize:              0, // Invalid
+				MaxGasWasmExecution:          10_000_000,
+				SecurityAnalysisEnabled:      true,
+				RequireAdminForMigrate:       true,
+			},
+			expectError: true,
+		},
+		{
+			name: "excessive contract size is invalid",
+			params: &types.Params{
+				CodeUploadAccess:             types.AccessConfig{Permission: types.AccessTypeEverybody},
+				InstantiateDefaultPermission: types.AccessTypeEverybody,
+				MaxWasmCodeSize:              20 * 1024 * 1024, // 20MB - exceeds 10MB limit
+				MaxGasWasmExecution:          10_000_000,
+				SecurityAnalysisEnabled:      true,
+				RequireAdminForMigrate:       true,
+			},
+			expectError: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := types.ValidateParams(tc.params)
+			if tc.expectError {
+				require.Error(t, err, "Expected validation error")
+			} else {
+				require.NoError(t, err, "Expected no validation error")
+			}
+		})
+	}
 }
 
-// TestContractLifecycle tests full contract lifecycle
-func TestContractLifecycle(t *testing.T) {
-	t.Log("Contract lifecycle test placeholder")
-	t.Log("Full lifecycle test steps:")
-	t.Log("  1. Authorize uploader")
-	t.Log("  2. Upload contract code")
-	t.Log("  3. Instantiate contract")
-	t.Log("  4. Execute contract")
-	t.Log("  5. Query contract")
-	t.Log("  6. Pause contract")
-	t.Log("  7. Verify execution fails when paused")
-	t.Log("  8. Unpause contract")
-	t.Log("  9. Verify execution succeeds")
-	t.Log("  10. Migrate contract (if enabled)")
+// TestWASMSecuritySettings verifies security-related settings
+func TestWASMSecuritySettings(t *testing.T) {
+	params := types.DefaultParams()
+
+	// Security: Security analysis enabled by default
+	require.True(t, params.SecurityAnalysisEnabled,
+		"SECURITY: Security analysis should be enabled by default")
+
+	// Security: Admin required for migration by default
+	require.True(t, params.RequireAdminForMigrate,
+		"SECURITY: Admin should be required for contract migration")
+
+	// Security: Reasonable gas limits
+	require.LessOrEqual(t, params.MaxGasWasmExecution, uint64(100_000_000),
+		"SECURITY: Gas limit should have reasonable upper bound")
+
+	// Security: Contract size limits
+	require.LessOrEqual(t, params.MaxWasmCodeSize, uint64(10*1024*1024),
+		"SECURITY: Contract size should be limited (10MB max)")
 }
 
-// TestGasMetering verifies gas metering works correctly
-func TestGasMetering(t *testing.T) {
-	t.Log("Gas metering test placeholder")
-	t.Log("Gas tests to implement:")
-	t.Log("  1. Instantiate gas limit enforced")
-	t.Log("  2. Execute gas limit enforced")
-	t.Log("  3. Query gas limit enforced")
-	t.Log("  4. Gas consumption tracked correctly")
+// TestWASMAccessTypes verifies access type constants
+func TestWASMAccessTypes(t *testing.T) {
+	// Verify access types are defined
+	require.NotEqual(t, types.AccessTypeUnspecified, types.AccessTypeNobody)
+	require.NotEqual(t, types.AccessTypeNobody, types.AccessTypeOnlyAddress)
+	require.NotEqual(t, types.AccessTypeOnlyAddress, types.AccessTypeEverybody)
 }
 
-// TestParameterGovernance tests parameter updates via governance
-func TestParameterGovernance(t *testing.T) {
-	t.Log("Parameter governance test placeholder")
-	t.Log("Governance tests to implement:")
-	t.Log("  1. Only authority can update params")
-	t.Log("  2. Invalid params are rejected")
-	t.Log("  3. Param updates take effect immediately")
-}
-
-// Document what full integration tests would look like
-func TestDocumentedIntegrationFlow(t *testing.T) {
-	// This documents the expected integration flow for when full tests are implemented
-
-	require.NotNil(t, t, "Integration test documentation")
-
-	t.Log("=== WASM Module Integration Test Flow ===")
-	t.Log("")
-	t.Log("1. APP INITIALIZATION")
-	t.Log("   - Create test app with all keepers")
-	t.Log("   - Initialize wasmd keeper with AURA bindings")
-	t.Log("   - Initialize AURA wasm keeper wrapper")
-	t.Log("   - Set default params (authorization required)")
-	t.Log("")
-	t.Log("2. AUTHORIZATION SETUP")
-	t.Log("   - Create test uploader account")
-	t.Log("   - Authorize uploader via governance")
-	t.Log("   - Verify authorization status")
-	t.Log("")
-	t.Log("3. CONTRACT UPLOAD")
-	t.Log("   - Load binding-tester WASM contract")
-	t.Log("   - Attempt upload by unauthorized user (should fail)")
-	t.Log("   - Upload by authorized user (should succeed)")
-	t.Log("   - Verify contract code stored")
-	t.Log("   - Verify stats updated (TotalContractsUploaded++)")
-	t.Log("")
-	t.Log("4. CONTRACT INSTANTIATION")
-	t.Log("   - Instantiate uploaded contract")
-	t.Log("   - Verify contract address created")
-	t.Log("   - Verify init message processed")
-	t.Log("   - Verify stats updated (TotalContractsInstantiated++)")
-	t.Log("")
-	t.Log("5. CONTRACT EXECUTION")
-	t.Log("   - Execute RegisterVC message")
-	t.Log("   - Verify custom binding called")
-	t.Log("   - Verify VC registered in vcregistry")
-	t.Log("   - Verify stats updated (TotalExecutions++)")
-	t.Log("")
-	t.Log("6. CONTRACT QUERIES")
-	t.Log("   - Query GetVC")
-	t.Log("   - Verify custom query binding works")
-	t.Log("   - Verify correct data returned")
-	t.Log("")
-	t.Log("7. CONTRACT PAUSE/UNPAUSE")
-	t.Log("   - Pause contract via governance")
-	t.Log("   - Attempt execution (should fail)")
-	t.Log("   - Attempt query (should fail)")
-	t.Log("   - Unpause contract")
-	t.Log("   - Verify execution works again")
-	t.Log("")
-	t.Log("8. CONTRACT MIGRATION (if enabled)")
-	t.Log("   - Enable migration via governance")
-	t.Log("   - Upload new contract code")
-	t.Log("   - Migrate contract to new code")
-	t.Log("   - Verify migration successful")
-	t.Log("")
-	t.Log("9. SECURITY VALIDATIONS")
-	t.Log("   - Test contract size limit enforcement")
-	t.Log("   - Test gas limit enforcement")
-	t.Log("   - Test unauthorized upload rejection")
-	t.Log("   - Verify security stats accurate")
-	t.Log("")
-	t.Log("10. GENESIS EXPORT/IMPORT")
-	t.Log("   - Export genesis state")
-	t.Log("   - Verify all data exported")
-	t.Log("   - Import to new chain")
-	t.Log("   - Verify state restored correctly")
-}
+// Note: Full integration tests are in chain/x/wasm/keeper/integration_test.go
+// These include:
+// - TestFullContractLifecycle: Complete contract instantiation, execution, pause/unpause flow
+// - TestPolicyEnforcement_Blacklist: Sender blacklist enforcement
+// - TestPolicyEnforcement_Whitelist: Sender whitelist enforcement
+// - TestSecurityValidation: Security controls and limits
+// - TestMetricsTracking: Gas and execution metrics
+// - TestCircuitBreaker: Circuit breaker functionality
+//
+// Run with: go test -v ./chain/x/wasm/keeper/...

@@ -4,6 +4,7 @@
 package keeper
 
 import (
+	"container/heap"
 	"context"
 	"fmt"
 	"sort"
@@ -22,6 +23,70 @@ import (
 	"github.com/aequitas/aura/chain/x/dex/types"
 	dexpb "github.com/aequitas/aura/proto/aura/dex/v1beta1"
 )
+
+// Query limits to prevent DoS via unbounded iteration
+const (
+	// maxOrderbookOrders limits total orders processed per orderbook query
+	maxOrderbookOrders = 10000
+	// defaultOrderbookPrealloc is the default pre-allocation size for order slices
+	defaultOrderbookPrealloc = 256
+)
+
+// orderHeap implements a min-heap for efficient top-N selection
+type orderHeap struct {
+	orders []dexpb.SwapOrder
+	less   func(a, b dexpb.SwapOrder) bool
+}
+
+func (h orderHeap) Len() int           { return len(h.orders) }
+func (h orderHeap) Less(i, j int) bool { return h.less(h.orders[i], h.orders[j]) }
+func (h orderHeap) Swap(i, j int)      { h.orders[i], h.orders[j] = h.orders[j], h.orders[i] }
+func (h *orderHeap) Push(x any)        { h.orders = append(h.orders, x.(dexpb.SwapOrder)) }
+func (h *orderHeap) Pop() any {
+	old := h.orders
+	n := len(old)
+	x := old[n-1]
+	h.orders = old[0 : n-1]
+	return x
+}
+
+// topNOrders returns the top N orders using a heap for O(n log k) complexity
+// instead of O(n log n) for full sort. If limit is 0, returns all orders sorted.
+func topNOrders(orders []dexpb.SwapOrder, limit int, less func(a, b dexpb.SwapOrder) bool) []dexpb.SwapOrder {
+	if len(orders) == 0 {
+		return orders
+	}
+
+	// If no limit or limit >= len, just sort all
+	if limit <= 0 || limit >= len(orders) {
+		sort.Slice(orders, func(i, j int) bool { return less(orders[i], orders[j]) })
+		return orders
+	}
+
+	// Use a min-heap of size k to find top k elements in O(n log k)
+	// We invert the comparison to get a min-heap that evicts the smallest
+	h := &orderHeap{
+		orders: make([]dexpb.SwapOrder, 0, limit),
+		less:   func(a, b dexpb.SwapOrder) bool { return !less(a, b) }, // inverted
+	}
+
+	for i := range orders {
+		if h.Len() < limit {
+			heap.Push(h, orders[i])
+		} else if less(orders[i], h.orders[0]) {
+			// New order is better than worst in heap, replace
+			h.orders[0] = orders[i]
+			heap.Fix(h, 0)
+		}
+	}
+
+	// Extract in reverse order and reverse at end
+	result := make([]dexpb.SwapOrder, h.Len())
+	for i := len(result) - 1; i >= 0; i-- {
+		result[i] = heap.Pop(h).(dexpb.SwapOrder)
+	}
+	return result
+}
 
 type queryServer struct {
 	keeper *Keeper
@@ -144,6 +209,8 @@ func (qs queryServer) PoolStats(ctx context.Context, req *dexpb.QueryPoolStatsRe
 	}, nil
 }
 
+// Orderbook queries the orderbook for a trading pair.
+// Uses bounded iteration and smart pre-allocation to prevent DoS.
 func (qs queryServer) Orderbook(ctx context.Context, req *dexpb.QueryOrderbookRequest) (*dexpb.QueryOrderbookResponse, error) {
 	if req == nil || req.Pair == "" {
 		return nil, status.Error(codes.InvalidArgument, "pair required")
@@ -153,13 +220,36 @@ func (qs queryServer) Orderbook(ctx context.Context, req *dexpb.QueryOrderbookRe
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	orders := qs.keeper.GetOrderbookForPair(sdkCtx, base, quote)
 
+	// Get limit from request (0 means default limit for safety)
+	limit := int(req.Limit)
+	if limit <= 0 {
+		limit = 100 // Default limit when not specified
+	}
+
+	// Hard cap on total orders processed to prevent DoS
+	totalOrders := len(orders)
+	if totalOrders > maxOrderbookOrders {
+		totalOrders = maxOrderbookOrders
+	}
+
+	// Smart pre-allocation: use limit if specified, otherwise use bounded default
+	prealloc := limit
+	if prealloc > defaultOrderbookPrealloc {
+		prealloc = defaultOrderbookPrealloc
+	}
+
 	// Separate buy/sell orders and calculate best bid/ask in single pass
-	buyOrders := make([]dexpb.SwapOrder, 0, len(orders)/2)
-	sellOrders := make([]dexpb.SwapOrder, 0, len(orders)/2)
+	buyOrders := make([]dexpb.SwapOrder, 0, prealloc)
+	sellOrders := make([]dexpb.SwapOrder, 0, prealloc)
 	bestBid := sdkmath.LegacyZeroDec()
 	bestAsk := sdkmath.LegacyZeroDec()
 
-	for _, order := range orders {
+	for i, order := range orders {
+		// Hard cap on iteration
+		if i >= totalOrders {
+			break
+		}
+
 		price := orderPriceDec(order)
 		// Create a copy and update PricePerAura
 		orderCopy := *order
@@ -180,12 +270,14 @@ func (qs queryServer) Orderbook(ctx context.Context, req *dexpb.QueryOrderbookRe
 		}
 	}
 
-	// Sort using cached PricePerAura to avoid recalculating prices during comparisons
-	sort.Slice(buyOrders, func(i, j int) bool {
-		return buyOrders[i].PricePerAura.GT(buyOrders[j].PricePerAura)
+	// Use heap-based partial sort when limit is specified for O(n log k) instead of O(n log n)
+	// Buy orders: highest price first (best bid at index 0)
+	buyOrders = topNOrders(buyOrders, limit, func(a, b dexpb.SwapOrder) bool {
+		return a.PricePerAura.GT(b.PricePerAura)
 	})
-	sort.Slice(sellOrders, func(i, j int) bool {
-		return sellOrders[i].PricePerAura.LT(sellOrders[j].PricePerAura)
+	// Sell orders: lowest price first (best ask at index 0)
+	sellOrders = topNOrders(sellOrders, limit, func(a, b dexpb.SwapOrder) bool {
+		return a.PricePerAura.LT(b.PricePerAura)
 	})
 
 	orderbook := &dexpb.Orderbook{
@@ -331,35 +423,10 @@ func (qs queryServer) SpotPrice(ctx context.Context, req *dexpb.QuerySpotPriceRe
 
 func (qs queryServer) SupportedCoins(ctx context.Context, _ *dexpb.QuerySupportedCoinsRequest) (*dexpb.QuerySupportedCoinsResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	store := sdkCtx.KVStore(qs.keeper.storeKey)
-	iterator := prefix.NewStore(store, types.PoolPrefix).Iterator(nil, nil)
-	defer iterator.Close()
-
-	// Single pass: iterate pools and extract supported coins
-	coins := make(map[string]struct{})
-	for ; iterator.Valid(); iterator.Next() {
-		var pool dexpb.LiquidityPool
-		if err := qs.keeper.cdc.Unmarshal(iterator.Value(), &pool); err != nil {
-			continue
-		}
-
-		// Add non-AURA coins to set (case-insensitive)
-		if strings.ToLower(pool.DenomA) != "uaura" {
-			coins[strings.ToLower(pool.DenomA)] = struct{}{}
-		}
-		if strings.ToLower(pool.DenomB) != "uaura" {
-			coins[strings.ToLower(pool.DenomB)] = struct{}{}
-		}
-	}
-
-	// Convert set to sorted slice
-	list := make([]string, 0, len(coins))
-	for denom := range coins {
-		list = append(list, denom)
-	}
-	sort.Strings(list)
-
-	return &dexpb.QuerySupportedCoinsResponse{Coins: list}, nil
+	// Use the pre-built index for O(k) lookup where k = number of supported coins
+	// instead of O(n) where n = number of pools
+	coins := qs.keeper.GetSupportedCoins(sdkCtx)
+	return &dexpb.QuerySupportedCoinsResponse{Coins: coins}, nil
 }
 
 func (qs queryServer) HTLC(ctx context.Context, req *dexpb.QueryHTLCRequest) (*dexpb.QueryHTLCResponse, error) {

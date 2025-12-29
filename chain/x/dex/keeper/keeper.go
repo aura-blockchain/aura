@@ -5,6 +5,7 @@ package keeper
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	sdkmath "cosmossdk.io/math"
@@ -523,7 +524,7 @@ func (k Keeper) GetCollectedFees(ctx sdk.Context, poolID string) (sdkmath.Int, e
 	return fees, nil
 }
 
-// SetPool stores a pool
+// SetPool stores a pool and updates the supported coins index
 func (k Keeper) SetPool(ctx sdk.Context, pool *types.LiquidityPool) error {
 	store := ctx.KVStore(k.storeKey)
 	key := types.PoolKey(pool.PoolId)
@@ -533,7 +534,43 @@ func (k Keeper) SetPool(ctx sdk.Context, pool *types.LiquidityPool) error {
 		return types.ErrMarshalFailed.Wrapf("failed to marshal pool %s: %v", pool.PoolId, err)
 	}
 	store.Set(key, bz)
+
+	// Update supported coins index (incremental, only adds new coins)
+	k.addSupportedCoin(ctx, pool.DenomA)
+	k.addSupportedCoin(ctx, pool.DenomB)
+
 	return nil
+}
+
+// addSupportedCoin adds a coin to the supported coins index if not already present
+func (k Keeper) addSupportedCoin(ctx sdk.Context, denom string) {
+	// Skip AURA as it's always implied
+	if strings.ToLower(denom) == "uaura" {
+		return
+	}
+
+	store := ctx.KVStore(k.storeKey)
+	key := types.SupportedCoinKey(strings.ToLower(denom))
+	if !store.Has(key) {
+		store.Set(key, []byte{0x01}) // marker byte
+	}
+}
+
+// GetSupportedCoins returns all supported coins from the index (O(k) where k = number of coins)
+func (k Keeper) GetSupportedCoins(ctx sdk.Context) []string {
+	store := ctx.KVStore(k.storeKey)
+	iterator := storetypes.KVStorePrefixIterator(store, types.SupportedCoinsPrefix)
+	defer iterator.Close()
+
+	coins := make([]string, 0, 16)
+	for ; iterator.Valid(); iterator.Next() {
+		denom := string(iterator.Key()[len(types.SupportedCoinsPrefix):])
+		coins = append(coins, denom)
+	}
+
+	// Sort for deterministic output
+	sort.Strings(coins)
+	return coins
 }
 
 // DeletePool removes a pool

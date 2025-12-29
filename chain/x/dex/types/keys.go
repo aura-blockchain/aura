@@ -68,6 +68,10 @@ var (
 
 	// Order status index (status-sorted for efficient filtering)
 	OrderStatusPrefix = []byte{0x0F}
+
+	// Supported coins index (incrementally updated on pool creation)
+	// NOTE: Uses 0x20 to avoid collision with security_keys.go prefixes (0x10-0x19)
+	SupportedCoinsPrefix = []byte{0x20}
 )
 
 // PoolKey returns the store key for a liquidity pool
@@ -192,4 +196,9 @@ func OrderStatusKey(status SwapOrderStatus, orderID string) []byte {
 // OrderStatusPrefixByStatus returns the prefix for all orders with a given status
 func OrderStatusPrefixByStatus(status SwapOrderStatus) []byte {
 	return append(OrderStatusPrefix, byte(status))
+}
+
+// SupportedCoinKey returns the store key for a supported coin
+func SupportedCoinKey(denom string) []byte {
+	return append(SupportedCoinsPrefix, []byte(denom)...)
 }

@@ -17,6 +17,18 @@ import (
 	"github.com/aequitas/aura/chain/x/validatorsecurity/types"
 )
 
+// Query limits to prevent DoS via unbounded iteration
+const (
+	// maxJailedValidatorQuery limits jailed validator queries
+	maxJailedValidatorQuery = 500
+	// maxTombstonedValidatorQuery limits tombstoned validator queries
+	maxTombstonedValidatorQuery = 500
+	// maxAlertQuery limits alert queries per validator
+	maxAlertQuery = 100
+	// maxSentryNodeQuery limits sentry node queries per validator
+	maxSentryNodeQuery = 50
+)
+
 type queryServer struct {
 	Keeper
 	v1beta1.UnimplementedQueryServer
@@ -82,43 +94,41 @@ func (qs queryServer) AllValidators(ctx context.Context, req *v1beta1.QueryAllVa
 	}, nil
 }
 
+// JailedValidators queries jailed validators with store-based pagination.
+// Uses direct iterator with early termination to avoid loading all validators into memory.
 func (qs queryServer) JailedValidators(ctx context.Context, req *v1beta1.QueryJailedValidatorsRequest) (*v1beta1.QueryJailedValidatorsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "request cannot be nil")
 	}
 
-	// Get all jailed validators and apply in-memory pagination
-	allJailed := qs.GetJailedValidators(ctx)
-	total := uint64(len(allJailed))
-
-	// Parse pagination params
-	var offset, limit uint64
-	if req.Pagination != nil {
-		offset = req.Pagination.Offset
-		limit = req.Pagination.Limit
-		if limit == 0 {
-			limit = query.DefaultLimit
-		}
-	} else {
-		limit = query.DefaultLimit
-	}
-
-	// Apply offset and limit
-	start := offset
-	end := offset + limit
-	if start > total {
-		start = total
-	}
-	if end > total {
-		end = total
-	}
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	store := sdkCtx.KVStore(qs.storeKey)
+	jailedStore := prefix.NewStore(store, types.JailedValidatorsKey)
 
 	var validators []v1beta1.ValidatorSecurityInfo
-	for i := start; i < end; i++ {
-		validators = append(validators, allJailed[i])
-	}
+	count := 0
 
-	pageRes := &query.PageResponse{Total: total}
+	pageRes, err := query.Paginate(jailedStore, req.Pagination, func(key, value []byte) error {
+		// Hard cap to prevent DoS
+		if count >= maxJailedValidatorQuery {
+			return nil
+		}
+		count++
+
+		// Key contains the validator address
+		validatorAddr := string(key)
+		info, err := qs.GetValidatorSecurityInfo(ctx, validatorAddr)
+		if err != nil {
+			return nil // Skip invalid entries
+		}
+		if info.IsJailed {
+			validators = append(validators, info)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
 
 	return &v1beta1.QueryJailedValidatorsResponse{
 		Validators: validators,
@@ -126,43 +136,41 @@ func (qs queryServer) JailedValidators(ctx context.Context, req *v1beta1.QueryJa
 	}, nil
 }
 
+// TombstonedValidators queries tombstoned validators with store-based pagination.
+// Uses direct iterator with early termination to avoid loading all validators into memory.
 func (qs queryServer) TombstonedValidators(ctx context.Context, req *v1beta1.QueryTombstonedValidatorsRequest) (*v1beta1.QueryTombstonedValidatorsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "request cannot be nil")
 	}
 
-	// Get all tombstoned validators and apply in-memory pagination
-	allTombstoned := qs.GetTombstonedValidators(ctx)
-	total := uint64(len(allTombstoned))
-
-	// Parse pagination params
-	var offset, limit uint64
-	if req.Pagination != nil {
-		offset = req.Pagination.Offset
-		limit = req.Pagination.Limit
-		if limit == 0 {
-			limit = query.DefaultLimit
-		}
-	} else {
-		limit = query.DefaultLimit
-	}
-
-	// Apply offset and limit
-	start := offset
-	end := offset + limit
-	if start > total {
-		start = total
-	}
-	if end > total {
-		end = total
-	}
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	store := sdkCtx.KVStore(qs.storeKey)
+	tombstonedStore := prefix.NewStore(store, types.TombstonedValidatorsKey)
 
 	var validators []v1beta1.ValidatorSecurityInfo
-	for i := start; i < end; i++ {
-		validators = append(validators, allTombstoned[i])
-	}
+	count := 0
 
-	pageRes := &query.PageResponse{Total: total}
+	pageRes, err := query.Paginate(tombstonedStore, req.Pagination, func(key, value []byte) error {
+		// Hard cap to prevent DoS
+		if count >= maxTombstonedValidatorQuery {
+			return nil
+		}
+		count++
+
+		// Key contains the validator address
+		validatorAddr := string(key)
+		info, err := qs.GetValidatorSecurityInfo(ctx, validatorAddr)
+		if err != nil {
+			return nil // Skip invalid entries
+		}
+		if info.IsTombstoned {
+			validators = append(validators, info)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
 
 	return &v1beta1.QueryTombstonedValidatorsResponse{
 		Validators: validators,
@@ -198,43 +206,48 @@ func (qs queryServer) DoubleSignEvidences(ctx context.Context, req *v1beta1.Quer
 	}, nil
 }
 
+// ValidatorAlerts queries alerts for a validator with store-based pagination.
+// Uses the secondary index for efficient lookup by validator address.
 func (qs queryServer) ValidatorAlerts(ctx context.Context, req *v1beta1.QueryValidatorAlertsRequest) (*v1beta1.QueryValidatorAlertsResponse, error) {
 	if req == nil || req.ValidatorAddress == "" {
 		return nil, status.Error(codes.InvalidArgument, "validator address required")
 	}
 
-	// Get all alerts for validator and apply in-memory pagination
-	allAlerts := qs.GetValidatorAlerts(ctx, req.ValidatorAddress)
-	total := uint64(len(allAlerts))
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	store := sdkCtx.KVStore(qs.storeKey)
 
-	// Parse pagination params
-	var offset, limit uint64
-	if req.Pagination != nil {
-		offset = req.Pagination.Offset
-		limit = req.Pagination.Limit
-		if limit == 0 {
-			limit = query.DefaultLimit
-		}
-	} else {
-		limit = query.DefaultLimit
-	}
-
-	// Apply offset and limit
-	start := offset
-	end := offset + limit
-	if start > total {
-		start = total
-	}
-	if end > total {
-		end = total
-	}
+	// Use secondary index prefix for this validator's alerts
+	alertPrefix := types.GetValidatorAlertByAddrPrefix(req.ValidatorAddress)
+	alertStore := prefix.NewStore(store, alertPrefix)
 
 	var alerts []v1beta1.ValidatorAlert
-	for i := start; i < end; i++ {
-		alerts = append(alerts, allAlerts[i])
-	}
+	count := 0
 
-	pageRes := &query.PageResponse{Total: total}
+	pageRes, err := query.Paginate(alertStore, req.Pagination, func(key, value []byte) error {
+		// Hard cap to prevent DoS
+		if count >= maxAlertQuery {
+			return nil
+		}
+		count++
+
+		// Value contains the alert ID - fetch full alert
+		alertID := string(value)
+		alertKey := types.GetValidatorAlertKey(alertID)
+		bz := store.Get(alertKey)
+		if bz == nil {
+			return nil // Stale index entry
+		}
+
+		var alert v1beta1.ValidatorAlert
+		if err := qs.cdc.Unmarshal(bz, &alert); err != nil {
+			return nil // Skip invalid entries
+		}
+		alerts = append(alerts, alert)
+		return nil
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
 
 	return &v1beta1.QueryValidatorAlertsResponse{
 		Alerts:     alerts,
@@ -242,43 +255,49 @@ func (qs queryServer) ValidatorAlerts(ctx context.Context, req *v1beta1.QueryVal
 	}, nil
 }
 
+// SentryNodes queries sentry nodes for a validator with store-based pagination.
+// Uses bounded iteration with early termination.
 func (qs queryServer) SentryNodes(ctx context.Context, req *v1beta1.QuerySentryNodesRequest) (*v1beta1.QuerySentryNodesResponse, error) {
 	if req == nil || req.ValidatorAddress == "" {
 		return nil, status.Error(codes.InvalidArgument, "validator address required")
 	}
 
-	// Get all sentry nodes for validator and apply in-memory pagination
-	allNodes := qs.GetValidatorSentryNodes(ctx, req.ValidatorAddress)
-	total := uint64(len(allNodes))
-
-	// Parse pagination params
-	var offset, limit uint64
-	if req.Pagination != nil {
-		offset = req.Pagination.Offset
-		limit = req.Pagination.Limit
-		if limit == 0 {
-			limit = query.DefaultLimit
-		}
-	} else {
-		limit = query.DefaultLimit
-	}
-
-	// Apply offset and limit
-	start := offset
-	end := offset + limit
-	if start > total {
-		start = total
-	}
-	if end > total {
-		end = total
-	}
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	store := sdkCtx.KVStore(qs.storeKey)
+	sentryStore := prefix.NewStore(store, types.SentryNodeInfoKey)
 
 	var nodes []v1beta1.SentryNodeInfo
-	for i := start; i < end; i++ {
-		nodes = append(nodes, allNodes[i])
-	}
+	count := 0
+	matchCount := 0
 
-	pageRes := &query.PageResponse{Total: total}
+	pageRes, err := query.Paginate(sentryStore, req.Pagination, func(key, value []byte) error {
+		// Hard cap total iterations to prevent DoS
+		count++
+		if count > maxSentryNodeQuery*10 { // Allow some scan overhead for filtering
+			return nil
+		}
+
+		var node v1beta1.SentryNodeInfo
+		if err := qs.cdc.Unmarshal(value, &node); err != nil {
+			return nil // Skip invalid entries
+		}
+
+		// Filter by validator address
+		if node.ValidatorAddress != req.ValidatorAddress {
+			return nil
+		}
+
+		// Cap matched results
+		if matchCount >= maxSentryNodeQuery {
+			return nil
+		}
+		matchCount++
+		nodes = append(nodes, node)
+		return nil
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
 
 	return &v1beta1.QuerySentryNodesResponse{
 		Nodes:      nodes,

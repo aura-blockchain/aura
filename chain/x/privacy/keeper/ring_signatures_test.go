@@ -4,6 +4,10 @@
 package keeper_test
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"fmt"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -14,6 +18,23 @@ import (
 	"github.com/aequitas/aura/chain/x/privacy/keeper"
 	"github.com/aequitas/aura/chain/x/privacy/types"
 )
+
+// generateTestKeys generates n ECDSA key pairs for testing ring signatures
+func generateTestKeys(t *testing.T, n int) ([]*ecdsa.PrivateKey, [][]byte) {
+	t.Helper()
+	curve := elliptic.P256()
+	privateKeys := make([]*ecdsa.PrivateKey, n)
+	publicKeys := make([][]byte, n)
+
+	for i := 0; i < n; i++ {
+		key, err := ecdsa.GenerateKey(curve, rand.Reader)
+		require.NoError(t, err)
+		privateKeys[i] = key
+		publicKeys[i] = elliptic.Marshal(curve, key.PublicKey.X, key.PublicKey.Y)
+	}
+
+	return privateKeys, publicKeys
+}
 
 type RingSignaturesTestSuite struct {
 	suite.Suite
@@ -45,19 +66,27 @@ func (suite *RingSignaturesTestSuite) SetupTest() {
 	suite.Require().NoError(err)
 }
 
-// Helper to create valid ring signature
+// Helper to create valid ring signature using real cryptography
 func (suite *RingSignaturesTestSuite) createValidRingSignature(ringSize int) *keeper.RingSignature {
+	curve := elliptic.P256()
+	privateKeys := make([]*ecdsa.PrivateKey, ringSize)
 	publicKeys := make([][]byte, ringSize)
+
 	for i := 0; i < ringSize; i++ {
-		publicKeys[i] = []byte("public_key_" + string(rune('0'+i)))
+		key, err := ecdsa.GenerateKey(curve, rand.Reader)
+		suite.Require().NoError(err)
+		privateKeys[i] = key
+		publicKeys[i] = elliptic.Marshal(curve, key.PublicKey.X, key.PublicKey.Y)
 	}
 
-	return &keeper.RingSignature{
-		PublicKeys: publicKeys,
-		Signature:  []byte("valid_signature"),
-		KeyImage:   []byte("unique_key_image"),
-		Message:    []byte("test_message"),
-	}
+	message := []byte("test_message")
+	secretIndex := 0 // Signer is at first position
+
+	// Generate real ring signature
+	signature, err := suite.keeper.GenerateRingSignature(suite.ctx, message, publicKeys, privateKeys[secretIndex], secretIndex)
+	suite.Require().NoError(err)
+
+	return signature
 }
 
 // VerifyRingSignature Tests
@@ -213,15 +242,13 @@ func TestGenerateRingSignature(t *testing.T) {
 	input := keepertest.CreateTestInput(t)
 	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil)
 
+	// Generate test keys
+	privateKeys, publicKeys := generateTestKeys(t, 3)
+
 	message := []byte("test_message")
-	publicKeys := [][]byte{
-		[]byte("public_key_0"),
-		[]byte("public_key_1"),
-		[]byte("public_key_2"),
-	}
 	secretIndex := 1
 
-	signature, err := k.GenerateRingSignature(input.Ctx, message, publicKeys, secretIndex)
+	signature, err := k.GenerateRingSignature(input.Ctx, message, publicKeys, privateKeys[secretIndex], secretIndex)
 
 	require.NoError(t, err)
 	require.NotNil(t, signature)
@@ -328,15 +355,14 @@ func TestRingSignatureFlow_Complete(t *testing.T) {
 	err := k.SetParams(input.Ctx, params)
 	require.NoError(t, err)
 
-	// Generate signature
-	message := []byte("test_message")
-	publicKeys := [][]byte{
-		[]byte("public_key_0"),
-		[]byte("public_key_1"),
-		[]byte("public_key_2"),
-	}
+	// Generate test keys
+	privateKeys, publicKeys := generateTestKeys(t, 3)
 
-	signature, err := k.GenerateRingSignature(input.Ctx, message, publicKeys, 1)
+	// Generate signature (signer is at index 1)
+	message := []byte("test_message")
+	secretIndex := 1
+
+	signature, err := k.GenerateRingSignature(input.Ctx, message, publicKeys, privateKeys[secretIndex], secretIndex)
 	require.NoError(t, err)
 
 	// Verify signature
@@ -374,17 +400,25 @@ func TestRingSignature_DifferentRingSizes(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		t.Run(string(rune('0'+tc.ringSize)), func(t *testing.T) {
-			publicKeys := make([][]byte, tc.ringSize)
-			for i := 0; i < tc.ringSize; i++ {
-				publicKeys[i] = []byte("public_key_" + string(rune('0'+i)) + "_size_" + string(rune('0'+tc.ringSize)))
-			}
+		t.Run(fmt.Sprintf("size_%d", tc.ringSize), func(t *testing.T) {
+			// Generate real keys
+			privateKeys, publicKeys := generateTestKeys(t, tc.ringSize)
 
-			signature := &keeper.RingSignature{
-				PublicKeys: publicKeys,
-				Signature:  []byte("valid_signature"),
-				KeyImage:   []byte("key_image_size_" + string(rune('0'+tc.ringSize))),
-				Message:    []byte("message"),
+			// Generate real signature if we expect success
+			var signature *keeper.RingSignature
+			var sigErr error
+
+			if !tc.shouldErr {
+				signature, sigErr = k.GenerateRingSignature(input.Ctx, []byte("message"), publicKeys, privateKeys[0], 0)
+				require.NoError(t, sigErr)
+			} else {
+				// For error cases, use mock signature (will fail size check before crypto)
+				signature = &keeper.RingSignature{
+					PublicKeys: publicKeys,
+					Signature:  []byte("mock_signature"),
+					KeyImage:   []byte("mock_key_image"),
+					Message:    []byte("message"),
+				}
 			}
 
 			valid, err := k.VerifyRingSignature(input.Ctx, signature)

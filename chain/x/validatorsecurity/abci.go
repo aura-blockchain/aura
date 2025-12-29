@@ -46,8 +46,10 @@ func EndBlocker(ctx context.Context, k keeper.Keeper) error {
 		}
 	}
 
-	// Auto-unjail validators whose jail period has expired
-	jailedValidators := k.GetJailedValidators(ctx)
+	// Auto-unjail validators whose jail period has expired (batched to prevent consensus timeout)
+	// Process up to MaxValidatorsPerMonitoringBatch validators per block
+	const jailedBatchLimit = 50 // Use same batch limit as MonitorValidatorsBatched
+	jailedValidators := k.GetJailedValidators(ctx, jailedBatchLimit)
 	for _, val := range jailedValidators {
 		if val.JailedUntil != nil && sdkCtx.BlockTime().After(*val.JailedUntil) {
 			// Don't auto-unjail, just log that they can unjail themselves

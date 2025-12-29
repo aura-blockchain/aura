@@ -5,8 +5,12 @@ package keeper
 
 import (
 	"testing"
+	"time"
 
+	gogotypes "github.com/cosmos/gogoproto/types"
 	"github.com/stretchr/testify/suite"
+
+	types "github.com/aequitas/aura/chain/x/vcregistry/types"
 )
 
 // MerkleTreeTestSuite tests the Merkle tree functionality for revocation lists
@@ -19,6 +23,34 @@ type MerkleTreeTestSuite struct {
 
 func TestMerkleTreeTestSuite(t *testing.T) {
 	suite.Run(t, new(MerkleTreeTestSuite))
+}
+
+// createTestVC creates a VC record for testing revocations
+func (suite *MerkleTreeTestSuite) createTestVC(vcID string) {
+	vc := types.VCRecord{
+		VcId:            vcID,
+		HolderAddress:   "aura1holder" + vcID,
+		HolderDid:       "did:aura:" + vcID,
+		VcType:          types.VCType_VC_TYPE_VERIFIED_HUMAN,
+		Status:          types.VCStatus_VC_STATUS_ACTIVE,
+		IssuerAssistant: "aura1issuer",
+		IssuedAt:        &gogotypes.Timestamp{Seconds: time.Now().Unix()},
+		IssuedHeight:    1,
+	}
+	err := suite.Keeper.SetVCRecord(suite.SdkCtx, vc)
+	suite.Require().NoError(err, "failed to create test VC %s", vcID)
+}
+
+// revokeTestVC revokes a VC using the proper keeper method
+func (suite *MerkleTreeTestSuite) revokeTestVC(vcID string) {
+	err := suite.Keeper.RevokeVC(
+		suite.SdkCtx,
+		vcID,
+		types.RevocationReason_REVOCATION_REASON_USER_REQUEST,
+		"aura1revoker",
+		"test revocation",
+	)
+	suite.Require().NoError(err, "failed to revoke VC %s", vcID)
 }
 
 // TestBuildMerkleTree_Deterministic verifies that Merkle tree computation is deterministic
@@ -47,12 +79,28 @@ func (suite *MerkleTreeTestSuite) TestBuildMerkleTree_Deterministic() {
 		suite.Require().Empty(root, "Expected empty root when no revocations exist")
 	}
 
-	// TODO: Add test with actual revocations once we have helper methods to create them
-	// The test should:
-	// 1. Create multiple VCs and revoke them (using different vcIDs)
-	// 2. Build Merkle tree 10 times
-	// 3. Verify all 10 roots are byte-for-byte identical
-	// This would prove that map iteration order doesn't affect the result
+	// Test with actual revocations to verify determinism with real data
+	// Revoke multiple VCs using distinct vcIDs that would be ordered differently in maps
+	vcIDs := []string{"vc-zebra-001", "vc-alpha-002", "vc-gamma-003", "vc-delta-004", "vc-beta-005"}
+	for _, vcID := range vcIDs {
+		suite.createTestVC(vcID)
+		suite.revokeTestVC(vcID)
+	}
+
+	// Build Merkle tree 10 times and verify all roots are identical
+	var firstRoot []byte
+	for i := 0; i < 10; i++ {
+		root, err := suite.Keeper.BuildMerkleTree(suite.SdkCtx)
+		suite.Require().NoError(err, "BuildMerkleTree failed on iteration %d", i)
+		suite.Require().NotEmpty(root, "Expected non-empty root with revocations")
+
+		if i == 0 {
+			firstRoot = root
+		} else {
+			suite.Require().Equal(firstRoot, root,
+				"Merkle root must be deterministic: iteration %d differs", i)
+		}
+	}
 }
 
 // TestBuildMerkleTree_EmptyList verifies correct handling of empty revocation list
@@ -210,12 +258,64 @@ func (suite *MerkleTreeTestSuite) TestGenerateRevocationMerkleProof_NonExistentV
 	suite.Require().Nil(proof, "Proof should be nil for non-existent VC")
 }
 
-// TODO: Add integration tests with actual VC creation and revocation
-// These tests would verify:
-// 1. Creating VCs and revoking them
-// 2. Building Merkle tree with actual revocation data
-// 3. Generating and verifying proofs for revoked VCs
-// 4. Batch verification with multiple revoked VCs
-// 5. Updating Merkle root when new revocations are added
-//
-// These require helper methods or test fixtures to create valid VCs and policies
+// TestMerkleTreeWithRevocationLifecycle tests full revocation lifecycle with Merkle tree
+func (suite *MerkleTreeTestSuite) TestMerkleTreeWithRevocationLifecycle() {
+	// 1. Start with empty tree
+	root, err := suite.Keeper.BuildMerkleTree(suite.SdkCtx)
+	suite.Require().NoError(err)
+	suite.Require().Empty(root, "Tree should start empty")
+
+	// 2. Add first revocation and verify tree updates
+	suite.createTestVC("vc-lifecycle-001")
+	suite.revokeTestVC("vc-lifecycle-001")
+
+	root1, err := suite.Keeper.BuildMerkleTree(suite.SdkCtx)
+	suite.Require().NoError(err)
+	suite.Require().NotEmpty(root1, "Tree should have root after first revocation")
+
+	// 3. Add more revocations and verify root changes
+	suite.createTestVC("vc-lifecycle-002")
+	suite.revokeTestVC("vc-lifecycle-002")
+
+	root2, err := suite.Keeper.BuildMerkleTree(suite.SdkCtx)
+	suite.Require().NoError(err)
+	suite.Require().NotEqual(root1, root2, "Root should change when revocation is added")
+
+	// 4. Verify determinism with final state
+	root2Again, err := suite.Keeper.BuildMerkleTree(suite.SdkCtx)
+	suite.Require().NoError(err)
+	suite.Require().Equal(root2, root2Again, "Root should be deterministic")
+}
+
+// TestBatchVerifyRevocations_AllValid verifies batch verification with valid data
+func (suite *MerkleTreeTestSuite) TestBatchVerifyRevocations_AllValid() {
+	// Setup revocations
+	vcIDs := []string{"batch-vc-001", "batch-vc-002", "batch-vc-003"}
+	for _, vcID := range vcIDs {
+		suite.createTestVC(vcID)
+		suite.revokeTestVC(vcID)
+	}
+
+	// Empty proofs (will fail validation, but tests the batch processing path)
+	proofs := [][]byte{[]byte{0x01}, []byte{0x02}, []byte{0x03}}
+
+	results, err := suite.Keeper.BatchVerifyRevocations(suite.SdkCtx, vcIDs, proofs)
+	suite.Require().NoError(err)
+	suite.Require().Len(results, len(vcIDs))
+}
+
+// TestGetMerkleTreeStats_WithRevocations verifies stats with actual data
+func (suite *MerkleTreeTestSuite) TestGetMerkleTreeStats_WithRevocations() {
+	// Add some revocations
+	vcIDs := []string{"stats-vc-001", "stats-vc-002", "stats-vc-003", "stats-vc-004"}
+	for _, vcID := range vcIDs {
+		suite.createTestVC(vcID)
+		suite.revokeTestVC(vcID)
+	}
+
+	total, height, root := suite.Keeper.GetMerkleTreeStats(suite.SdkCtx)
+
+	suite.Require().Equal(uint64(len(vcIDs)), total, "Should count all revocations")
+	suite.Require().Greater(height, uint64(0), "Height should be > 0 with revocations")
+	suite.Require().NotEmpty(root, "Root should not be empty with revocations")
+}

@@ -128,7 +128,7 @@ func (qs queryServer) ContractInfo(goCtx context.Context, req *types.QueryContra
 		return nil, types.ErrInvalidContractAddress.Wrap("address cannot be empty")
 	}
 
-	_, err := sdk.AccAddressFromBech32(req.Address)
+	contractAddr, err := sdk.AccAddressFromBech32(req.Address)
 	if err != nil {
 		return nil, types.ErrInvalidContractAddress.Wrapf("invalid address: %s", err)
 	}
@@ -138,12 +138,42 @@ func (qs queryServer) ContractInfo(goCtx context.Context, req *types.QueryContra
 	// Check if contract is paused
 	isPaused := qs.Keeper.IsContractPaused(ctx, req.Address)
 
-	// Note: In production, this would query wasmd keeper
-	// For now, return stub response with pause status
-	return &types.QueryContractInfoResponse{
+	// Build response from available sources
+	response := &types.QueryContractInfoResponse{
 		Address:  req.Address,
 		IsPaused: isPaused,
-	}, nil
+	}
+
+	// Try to get info from wasmd keeper first
+	if qs.Keeper.wasmKeeper != nil {
+		if wasmInfo := qs.Keeper.wasmKeeper.GetContractInfo(ctx, contractAddr); wasmInfo != nil {
+			response.ContractInfo.CodeId = wasmInfo.CodeID
+			response.ContractInfo.Creator = wasmInfo.Creator
+			response.ContractInfo.Admin = wasmInfo.Admin
+			response.ContractInfo.Label = wasmInfo.Label
+		}
+	}
+
+	// Supplement/override with contract registry data if available
+	if qs.Keeper.contractRegistry != nil {
+		if registryInfo, found := qs.Keeper.contractRegistry.GetContractInfo(ctx, req.Address); found {
+			// Use registry data when wasmd data is not available
+			if response.ContractInfo.CodeId == 0 {
+				response.ContractInfo.CodeId = registryInfo.CodeId
+			}
+			if response.ContractInfo.Creator == "" {
+				response.ContractInfo.Creator = registryInfo.Creator
+			}
+			if response.ContractInfo.Admin == "" {
+				response.ContractInfo.Admin = registryInfo.Admin
+			}
+			if response.ContractInfo.Label == "" {
+				response.ContractInfo.Label = registryInfo.Label
+			}
+		}
+	}
+
+	return response, nil
 }
 
 // ContractHistory returns contract history

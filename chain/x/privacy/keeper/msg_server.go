@@ -99,11 +99,14 @@ func (ms msgServer) CreateMixingPool(goCtx context.Context, msg *privacypb.MsgCr
 	// Create mixing pool with entropy from content hash
 	// SECURITY: Adding hash component prevents predictable pool IDs
 	// which could be exploited for front-running or ID collision attacks
-	poolContent := fmt.Sprintf("%s_%d_%d_%d_%s_%d",
+	// Using 16 bytes (128 bits) of hash provides strong collision resistance
+	// (birthday bound ~2^64 operations for collision)
+	poolContent := fmt.Sprintf("%s_%d_%d_%d_%s_%d_%d",
 		msg.Creator, ctx.BlockHeight(), msg.MinParticipants,
-		msg.MaxParticipants, msg.Denomination, msg.MixingRounds)
+		msg.MaxParticipants, msg.Denomination, msg.MixingRounds,
+		ctx.BlockTime().UnixNano())
 	contentHash := sha256.Sum256([]byte(poolContent))
-	poolID := fmt.Sprintf("pool_%s_%d_%s", msg.Creator, ctx.BlockHeight(), hex.EncodeToString(contentHash[:4]))
+	poolID := fmt.Sprintf("pool_%s_%d_%s", msg.Creator, ctx.BlockHeight(), hex.EncodeToString(contentHash[:16]))
 
 	pool := &privacypb.MixingPool{
 		PoolId:          poolID,

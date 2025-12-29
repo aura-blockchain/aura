@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	sdkerrors "cosmossdk.io/errors"
+	errorsmod "cosmossdk.io/errors"
 	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -51,10 +51,10 @@ var (
 func (k *Keeper) InitiateAccountMigration(ctx sdk.Context, oldAddr, newAddr, initiator, reason string) (*AccountMigration, error) {
 	// Validate addresses
 	if _, err := sdk.AccAddressFromBech32(oldAddr); err != nil {
-		return nil, sdkerrors.Wrap(types.ErrInvalidAddress, "invalid old address")
+		return nil, errorsmod.Wrap(types.ErrInvalidAddress, "invalid old address")
 	}
 	if _, err := sdk.AccAddressFromBech32(newAddr); err != nil {
-		return nil, sdkerrors.Wrap(types.ErrInvalidAddress, "invalid new address")
+		return nil, errorsmod.Wrap(types.ErrInvalidAddress, "invalid new address")
 	}
 
 	// Check permission

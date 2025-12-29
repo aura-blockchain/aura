@@ -69,6 +69,10 @@ var (
 	CurrentHeightKey = []byte{0x60}
 	CurrentTimeKey   = []byte{0x61}
 	ParamsKey        = []byte{0x62}
+
+	// 24h metrics keys
+	WhaleProtectionTriggers24hKey = []byte{0x70}
+	TransferTaxCollected24hKey    = []byte{0x71}
 )
 
 // GetVestingScheduleKey returns the store key for a vesting schedule

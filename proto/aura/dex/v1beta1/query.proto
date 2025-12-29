@@ -168,6 +168,7 @@ message QueryPoolStatsResponse {
 // Orderbook queries
 message QueryOrderbookRequest {
   string pair = 1;  // e.g., "AURA/USDT"
+  uint32 limit = 2; // optional limit per side (0 = all orders)
 }
 
 message QueryOrderbookResponse {

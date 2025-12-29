@@ -307,36 +307,98 @@ func (am AppModule) processKeyRotations(ctx sdk.Context) error {
 
 // updateNetworkMetrics updates network security metrics
 func (am AppModule) updateNetworkMetrics(ctx sdk.Context) error {
-	// Update peer reputation scores, rate limits, etc.
-	// This is a placeholder for actual metric calculation logic
+	// Clean up expired rate limit bans
+	blockTime := ctx.BlockTime()
+	rateLimits := am.keeper.GetAllRateLimits(ctx)
+	for _, rl := range rateLimits {
+		// Check if ban has expired
+		if rl.IsBanned && rl.BanExpiresAt != nil && rl.BanExpiresAt.Before(blockTime) {
+			rl.IsBanned = false
+			am.keeper.SetRateLimit(ctx, rl)
+			am.keeper.Logger(ctx).Info("rate limit ban expired", "peer_id", rl.PeerId)
+		}
+	}
+
 	return nil
 }
 
 // checkValidatorSecurity checks validator security health
 func (am AppModule) checkValidatorSecurity(ctx sdk.Context) error {
-	// Check for double-signing, downtime, and other validator security issues
-	// This is a placeholder for actual validator security checks
+	// Log count of active validator alerts for monitoring
+	alerts := am.keeper.GetAllValidatorAlerts(ctx)
+	if len(alerts) > 0 {
+		am.keeper.Logger(ctx).Debug("validator alerts check", "total_alerts", len(alerts))
+	}
+
+	// Log double-signing evidence for monitoring
+	evidence := am.keeper.GetAllDoubleSignEvidence(ctx)
+	if len(evidence) > 0 {
+		am.keeper.Logger(ctx).Debug("double-sign evidence check", "total_evidence", len(evidence))
+	}
+
 	return nil
 }
 
 // processWalletSecurity processes wallet security checks
 func (am AppModule) processWalletSecurity(ctx sdk.Context) error {
-	// Process pending multi-sig transactions, recovery requests, etc.
-	// This is a placeholder for actual wallet security processing
+	blockTime := ctx.BlockTime()
+
+	// Check for expired pending multi-sig transactions
+	pendingTxs := am.keeper.GetAllPendingMultiSigTxs(ctx)
+	for _, tx := range pendingTxs {
+		if tx.ExpiresAt != nil && tx.ExpiresAt.Before(blockTime) {
+			am.keeper.DeletePendingMultiSigTx(ctx, tx.TxId)
+			am.keeper.Logger(ctx).Info(
+				"expired pending multi-sig transaction removed",
+				"tx_id", tx.TxId,
+				"wallet_id", tx.WalletId,
+			)
+		}
+	}
+
+	// Log recovery request status for monitoring
+	recoveryRequests := am.keeper.GetAllRecoveryRequests(ctx)
+	if len(recoveryRequests) > 0 {
+		am.keeper.Logger(ctx).Debug("recovery requests check", "total_requests", len(recoveryRequests))
+	}
+
 	return nil
 }
 
 // updateIncidentState updates incident response state
 func (am AppModule) updateIncidentState(ctx sdk.Context) error {
-	// Update incident statuses, check for auto-resolution conditions, etc.
-	// This is a placeholder for actual incident state updates
+	blockTime := ctx.BlockTime()
+
+	// Log incident status for monitoring
+	incidents := am.keeper.GetAllIncidents(ctx)
+	if len(incidents) > 0 {
+		am.keeper.Logger(ctx).Debug("incidents check", "total_incidents", len(incidents))
+	}
+
+	// Check if system pause has exceeded maximum duration
+	pauseState := am.keeper.GetPauseState(ctx)
+	if pauseState != nil && pauseState.IsPaused && pauseState.PausedAt != nil {
+		pauseDuration := blockTime.Sub(*pauseState.PausedAt)
+		if pauseDuration.Hours() > 24 {
+			am.keeper.Logger(ctx).Warn(
+				"system pause exceeds 24 hours - review needed",
+				"paused_at", pauseState.PausedAt,
+				"duration_hours", pauseDuration.Hours(),
+			)
+		}
+	}
+
 	return nil
 }
 
 // refreshPrivacyPools refreshes privacy mixing pools
 func (am AppModule) refreshPrivacyPools(ctx sdk.Context) error {
-	// Refresh mixing pools, clean up completed mixes, etc.
-	// This is a placeholder for actual privacy pool management
+	// Log mixing pool status for monitoring
+	pools := am.keeper.GetAllMixingPools(ctx)
+	if len(pools) > 0 {
+		am.keeper.Logger(ctx).Debug("mixing pools check", "total_pools", len(pools))
+	}
+
 	return nil
 }
 
@@ -361,7 +423,24 @@ func (am AppModule) cleanupExpiredSessions(ctx sdk.Context) error {
 
 // finalizeSecurityMetrics finalizes security metrics for the block
 func (am AppModule) finalizeSecurityMetrics(ctx sdk.Context) error {
-	// Aggregate security metrics, emit events, etc.
-	// This is a placeholder for actual metrics finalization
+	// Aggregate and emit security metrics for the block
+	incidents := am.keeper.GetAllIncidents(ctx)
+	pauseState := am.keeper.GetPauseState(ctx)
+	isPaused := pauseState != nil && pauseState.IsPaused
+	trustedPeers := am.keeper.GetAllTrustedPeers(ctx)
+	blacklistEntries := am.keeper.GetAllBlacklistEntries(ctx)
+
+	// Emit security metrics event
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			"security_metrics",
+			sdk.NewAttribute("total_incidents", fmt.Sprintf("%d", len(incidents))),
+			sdk.NewAttribute("system_paused", fmt.Sprintf("%v", isPaused)),
+			sdk.NewAttribute("trusted_peers", fmt.Sprintf("%d", len(trustedPeers))),
+			sdk.NewAttribute("blacklist_entries", fmt.Sprintf("%d", len(blacklistEntries))),
+			sdk.NewAttribute("block_height", fmt.Sprintf("%d", ctx.BlockHeight())),
+		),
+	)
+
 	return nil
 }

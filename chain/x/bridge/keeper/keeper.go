@@ -696,9 +696,10 @@ func (k *Keeper) recordRelayerStats(ctx sdk.Context, relayer string, success boo
 	if relayer == "" {
 		return
 	}
-	stats, _ := k.getRelayerStats(ctx, relayer)
+	stats, exists := k.getRelayerStats(ctx, relayer)
 	blockTime := ctx.BlockTime()
-	if stats == nil {
+	isNewRelayer := stats == nil
+	if isNewRelayer {
 		stats = &types.RelayerStats{
 			RelayerAddress:   relayer,
 			TotalVolume:      sdkmath.ZeroInt(),
@@ -716,6 +717,11 @@ func (k *Keeper) recordRelayerStats(ctx sdk.Context, relayer string, success boo
 	stats.TotalVolume = stats.TotalVolume.Add(volume)
 	stats.LastRelay = &blockTime
 	_ = k.setRelayerStats(ctx, stats) // Best effort, stats are non-critical
+
+	// Increment relayer count if this is a new relayer
+	if isNewRelayer && !exists {
+		k.incrementRelayerCount(ctx)
+	}
 }
 
 func (k *Keeper) setRelayerStats(ctx sdk.Context, stats *types.RelayerStats) error {
@@ -3332,16 +3338,50 @@ func normalizeChainForStats(chain string) string {
 	return chain
 }
 
-// countRelayers counts total number of registered relayers.
+// countRelayers returns the total number of registered relayers using cached counter.
+// If counter doesn't exist (migration case), it rebuilds from iterator and caches.
 func (k *Keeper) countRelayers(ctx sdk.Context) uint64 {
 	store := k.store(ctx)
+
+	// Try to get cached count first (O(1))
+	bz := store.Get(types.RelayerCountKey)
+	if bz != nil && len(bz) == 8 {
+		return binary.BigEndian.Uint64(bz)
+	}
+
+	// Migration case: rebuild count from iterator and cache it
 	iterator := storetypes.KVStorePrefixIterator(store, types.RelayerPrefix)
 	defer iterator.Close()
 	var count uint64
 	for ; iterator.Valid(); iterator.Next() {
 		count++
 	}
+
+	// Cache the count for future O(1) lookups
+	k.setRelayerCount(ctx, count)
 	return count
+}
+
+// getRelayerCount returns the cached relayer count, or 0 if not set.
+func (k *Keeper) getRelayerCount(ctx sdk.Context) uint64 {
+	bz := k.store(ctx).Get(types.RelayerCountKey)
+	if bz == nil || len(bz) != 8 {
+		return 0
+	}
+	return binary.BigEndian.Uint64(bz)
+}
+
+// setRelayerCount sets the cached relayer count.
+func (k *Keeper) setRelayerCount(ctx sdk.Context, count uint64) {
+	bz := make([]byte, 8)
+	binary.BigEndian.PutUint64(bz, count)
+	k.store(ctx).Set(types.RelayerCountKey, bz)
+}
+
+// incrementRelayerCount atomically increments the relayer count.
+func (k *Keeper) incrementRelayerCount(ctx sdk.Context) {
+	count := k.getRelayerCount(ctx)
+	k.setRelayerCount(ctx, count+1)
 }
 
 // IndexUserTransfer adds a secondary index for user address -> transfer lookup.
@@ -3367,7 +3407,8 @@ func (k *Keeper) GetUserTransferIDs(ctx sdk.Context, address string) []string {
 	iterator := storetypes.KVStorePrefixIterator(store, prefix)
 	defer iterator.Close()
 
-	var transferIDs []string
+	// Pre-allocate with reasonable capacity for typical user transfer counts
+	transferIDs := make([]string, 0, 32)
 	for ; iterator.Valid(); iterator.Next() {
 		// Extract transfer ID from key: prefix + address + 0x00 + transferID
 		key := iterator.Key()

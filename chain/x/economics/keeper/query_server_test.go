@@ -915,6 +915,68 @@ func TestQueryInflationMetricsDefault(t *testing.T) {
 	require.NotNil(t, resp.Metrics)
 }
 
+func TestQueryInflationMetrics24hChange(t *testing.T) {
+	keeper, ctx, server := setupQueryServer(t)
+
+	// Set previous inflation rate (simulating rate before adjustment)
+	err := keeper.SetPreviousInflation(ctx, 400) // 4% previous rate
+	require.NoError(t, err)
+
+	// Use a fixed reference time for test (context block time may be zero)
+	// Set context with a proper block time for this test
+	refTime := time.Date(2025, 1, 15, 12, 0, 0, 0, time.UTC)
+	ctx = ctx.WithBlockTime(refTime)
+
+	// Set current inflation metrics with a recent adjustment (within 24h of block time)
+	metrics := &economicspb.InflationMetrics{
+		CurrentRate:       500, // 5% current rate
+		CirculatingSupply: math.NewInt(100000000),
+		TotalVested:       math.NewInt(50000000),
+		TotalVesting:      math.NewInt(25000000),
+		LastAdjustment:    refTime.Add(-1 * time.Hour), // 1 hour before block time
+		NextCheck:         refTime.Add(23 * time.Hour),
+	}
+	err = keeper.SetInflationMetrics(ctx, metrics)
+	require.NoError(t, err)
+
+	// Query inflation metrics - should show 100 bps (1%) change
+	resp, err := server.InflationMetrics(sdk.WrapSDKContext(ctx), &economicspb.QueryInflationMetricsRequest{})
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	require.Equal(t, uint64(500), resp.Metrics.CurrentRate)
+	require.Equal(t, uint64(100), resp.InflationChange_24H, "Expected 100 bps change (5% - 4%)")
+}
+
+func TestQueryInflationMetrics24hChangeOldAdjustment(t *testing.T) {
+	keeper, ctx, server := setupQueryServer(t)
+
+	// Set previous inflation rate
+	err := keeper.SetPreviousInflation(ctx, 400) // 4% previous rate
+	require.NoError(t, err)
+
+	// Use a fixed reference time for test (context block time may be zero)
+	refTime := time.Date(2025, 1, 15, 12, 0, 0, 0, time.UTC)
+	ctx = ctx.WithBlockTime(refTime)
+
+	// Set current inflation metrics with an old adjustment (more than 24h ago relative to block time)
+	metrics := &economicspb.InflationMetrics{
+		CurrentRate:       500, // 5% current rate
+		CirculatingSupply: math.NewInt(100000000),
+		TotalVested:       math.NewInt(50000000),
+		TotalVesting:      math.NewInt(25000000),
+		LastAdjustment:    refTime.Add(-48 * time.Hour), // 48 hours before block time
+		NextCheck:         refTime.Add(24 * time.Hour),
+	}
+	err = keeper.SetInflationMetrics(ctx, metrics)
+	require.NoError(t, err)
+
+	// Query inflation metrics - should show 0 change (adjustment > 24h ago)
+	resp, err := server.InflationMetrics(sdk.WrapSDKContext(ctx), &economicspb.QueryInflationMetricsRequest{})
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	require.Equal(t, uint64(0), resp.InflationChange_24H, "Expected 0 change for old adjustment")
+}
+
 // ============================
 // MEV STATS QUERY TESTS
 // ============================

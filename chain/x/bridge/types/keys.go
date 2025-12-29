@@ -99,6 +99,9 @@ var (
 	// User transfer index (secondary index: address -> transfer IDs)
 	// Format: UserTransferPrefix + address + 0x00 + transferID
 	UserTransferIndexPrefix = []byte{0x28}
+
+	// Relayer count (pre-computed counter for O(1) query performance)
+	RelayerCountKey = []byte{0x29}
 )
 
 // TransferKey returns the store key for a cross-chain transfer

@@ -1,7 +1,24 @@
 /**
  * AURA Governance API Service
  * Handles all API interactions for governance operations
+ *
+ * Uses @cosmjs/stargate for transaction signing and broadcasting.
+ * Install dependencies: npm install @cosmjs/stargate @cosmjs/proto-signing
  */
+
+// Import CosmJS modules (available via npm or CDN)
+// In production, these would be bundled via webpack/rollup
+let SigningStargateClient, GasPrice, coins;
+try {
+    // Try importing as ES modules (bundled environment)
+    const cosmjs = window.CosmJS || {};
+    SigningStargateClient = cosmjs.SigningStargateClient;
+    GasPrice = cosmjs.GasPrice;
+    coins = cosmjs.coins;
+} catch (e) {
+    // Modules will be loaded dynamically if not available
+    console.log('CosmJS modules will be loaded on demand');
+}
 
 class GovernanceAPI {
     constructor() {
@@ -9,6 +26,35 @@ class GovernanceAPI {
         this.rpcURL = 'http://localhost:26657'; // RPC endpoint
         this.connected = false;
         this.mockMode = true; // Enable mock mode for development
+        this.signingClient = null;
+        this.chainId = 'aura-testnet-1';
+        this.gasPrice = '0.025aura';
+    }
+
+    /**
+     * Initialize CosmJS signing client with a signer (e.g., Keplr wallet)
+     * @param {OfflineSigner} signer - The wallet signer from Keplr or similar
+     */
+    async initSigningClient(signer) {
+        if (!SigningStargateClient) {
+            throw new Error('CosmJS not loaded. Include @cosmjs/stargate in your build.');
+        }
+
+        this.signingClient = await SigningStargateClient.connectWithSigner(
+            this.rpcURL,
+            signer,
+            { gasPrice: GasPrice.fromString(this.gasPrice) }
+        );
+        this.mockMode = false;
+        console.log('Signing client initialized');
+    }
+
+    /**
+     * Get the connected wallet address
+     */
+    async getWalletAddress(signer) {
+        const accounts = await signer.getAccounts();
+        return accounts[0]?.address;
     }
 
     /**
@@ -162,6 +208,9 @@ class GovernanceAPI {
 
     /**
      * Submit a new proposal
+     * @param {Object} proposalData - The proposal content (title, description, type)
+     * @param {Array} initialDeposit - Initial deposit coins [{denom: 'aura', amount: '10000000'}]
+     * @param {string} proposerAddress - The proposer's bech32 address
      */
     async submitProposal(proposalData, initialDeposit, proposerAddress) {
         try {
@@ -174,18 +223,85 @@ class GovernanceAPI {
                 };
             }
 
-            // In production, this would broadcast a transaction
-            const tx = {
-                type: 'cosmos-sdk/MsgSubmitProposal',
+            if (!this.signingClient) {
+                throw new Error('Signing client not initialized. Call initSigningClient first.');
+            }
+
+            // Format the proposal message based on type
+            let typeUrl, content;
+            switch (proposalData.type) {
+                case 'text':
+                    typeUrl = '/cosmos.gov.v1beta1.TextProposal';
+                    content = {
+                        title: proposalData.title,
+                        description: proposalData.description
+                    };
+                    break;
+                case 'parameter_change':
+                    typeUrl = '/cosmos.params.v1beta1.ParameterChangeProposal';
+                    content = {
+                        title: proposalData.title,
+                        description: proposalData.description,
+                        changes: proposalData.changes || []
+                    };
+                    break;
+                case 'software_upgrade':
+                    typeUrl = '/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal';
+                    content = {
+                        title: proposalData.title,
+                        description: proposalData.description,
+                        plan: proposalData.plan
+                    };
+                    break;
+                default:
+                    typeUrl = '/cosmos.gov.v1beta1.TextProposal';
+                    content = {
+                        title: proposalData.title,
+                        description: proposalData.description
+                    };
+            }
+
+            const msg = {
+                typeUrl: '/cosmos.gov.v1beta1.MsgSubmitProposal',
                 value: {
-                    content: proposalData,
-                    initial_deposit: initialDeposit,
+                    content: {
+                        typeUrl: typeUrl,
+                        value: content
+                    },
+                    initialDeposit: initialDeposit,
                     proposer: proposerAddress
                 }
             };
 
-            // This would use CosmJS or similar to broadcast
-            throw new Error('Not implemented - use CosmJS to broadcast transaction');
+            const result = await this.signingClient.signAndBroadcast(
+                proposerAddress,
+                [msg],
+                'auto',
+                'Submitted via Aura Governance Dashboard'
+            );
+
+            if (result.code !== 0) {
+                throw new Error(`Transaction failed: ${result.rawLog}`);
+            }
+
+            // Extract proposal_id from events
+            let proposalId = null;
+            for (const event of result.events || []) {
+                if (event.type === 'submit_proposal') {
+                    const attr = event.attributes.find(a => a.key === 'proposal_id');
+                    if (attr) {
+                        proposalId = attr.value;
+                        break;
+                    }
+                }
+            }
+
+            return {
+                success: true,
+                proposal_id: proposalId,
+                txhash: result.transactionHash,
+                height: result.height
+            };
         } catch (error) {
             console.error('Failed to submit proposal:', error);
             throw error;
@@ -194,6 +310,9 @@ class GovernanceAPI {
 
     /**
      * Vote on a proposal
+     * @param {string} proposalId - The proposal ID
+     * @param {string|number} option - Vote option: 1=Yes, 2=Abstain, 3=No, 4=NoWithVeto or string
+     * @param {string} voterAddress - The voter's bech32 address
      */
     async vote(proposalId, option, voterAddress) {
         try {
@@ -205,17 +324,53 @@ class GovernanceAPI {
                 };
             }
 
-            // In production, this would broadcast a vote transaction
-            const tx = {
-                type: 'cosmos-sdk/MsgVote',
+            if (!this.signingClient) {
+                throw new Error('Signing client not initialized. Call initSigningClient first.');
+            }
+
+            // Convert string options to numeric values
+            let voteOption;
+            if (typeof option === 'string') {
+                const optionMap = {
+                    'VOTE_OPTION_YES': 1,
+                    'VOTE_OPTION_ABSTAIN': 2,
+                    'VOTE_OPTION_NO': 3,
+                    'VOTE_OPTION_NO_WITH_VETO': 4,
+                    'yes': 1,
+                    'abstain': 2,
+                    'no': 3,
+                    'no_with_veto': 4
+                };
+                voteOption = optionMap[option] || optionMap[option.toLowerCase()] || 1;
+            } else {
+                voteOption = option;
+            }
+
+            const msg = {
+                typeUrl: '/cosmos.gov.v1beta1.MsgVote',
                 value: {
-                    proposal_id: proposalId,
+                    proposalId: Long.fromString(proposalId.toString()),
                     voter: voterAddress,
-                    option: option
+                    option: voteOption
                 }
             };
 
-            throw new Error('Not implemented - use CosmJS to broadcast transaction');
+            const result = await this.signingClient.signAndBroadcast(
+                voterAddress,
+                [msg],
+                'auto',
+                'Voted via Aura Governance Dashboard'
+            );
+
+            if (result.code !== 0) {
+                throw new Error(`Transaction failed: ${result.rawLog}`);
+            }
+
+            return {
+                success: true,
+                txhash: result.transactionHash,
+                height: result.height
+            };
         } catch (error) {
             console.error('Failed to vote:', error);
             throw error;
@@ -224,28 +379,52 @@ class GovernanceAPI {
 
     /**
      * Deposit to a proposal
+     * @param {string} proposalId - The proposal ID
+     * @param {Array} amount - Deposit coins [{denom: 'aura', amount: '1000000'}]
+     * @param {string} depositorAddress - The depositor's bech32 address
      */
     async deposit(proposalId, amount, depositorAddress) {
         try {
             if (this.mockMode) {
-                console.log(`Mock: Depositing ${amount} to proposal ${proposalId}`);
+                console.log(`Mock: Depositing ${JSON.stringify(amount)} to proposal ${proposalId}`);
                 return {
                     success: true,
                     txhash: 'mock_' + Math.random().toString(36).substring(7)
                 };
             }
 
-            // In production, this would broadcast a deposit transaction
-            const tx = {
-                type: 'cosmos-sdk/MsgDeposit',
+            if (!this.signingClient) {
+                throw new Error('Signing client not initialized. Call initSigningClient first.');
+            }
+
+            // Normalize amount format
+            const depositAmount = Array.isArray(amount) ? amount : [{ denom: 'aura', amount: amount.toString() }];
+
+            const msg = {
+                typeUrl: '/cosmos.gov.v1beta1.MsgDeposit',
                 value: {
-                    proposal_id: proposalId,
+                    proposalId: Long.fromString(proposalId.toString()),
                     depositor: depositorAddress,
-                    amount: amount
+                    amount: depositAmount
                 }
             };
 
-            throw new Error('Not implemented - use CosmJS to broadcast transaction');
+            const result = await this.signingClient.signAndBroadcast(
+                depositorAddress,
+                [msg],
+                'auto',
+                'Deposit via Aura Governance Dashboard'
+            );
+
+            if (result.code !== 0) {
+                throw new Error(`Transaction failed: ${result.rawLog}`);
+            }
+
+            return {
+                success: true,
+                txhash: result.transactionHash,
+                height: result.height
+            };
         } catch (error) {
             console.error('Failed to deposit:', error);
             throw error;

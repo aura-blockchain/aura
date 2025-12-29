@@ -208,21 +208,29 @@ func (k Keeper) TombstoneValidator(ctx context.Context, validatorAddr string) er
 	return nil
 }
 
-// GetJailedValidators returns all jailed validators in deterministic order.
-// Results are ordered lexicographically by validator address to ensure
-// consensus determinism across all nodes.
-func (k Keeper) GetJailedValidators(ctx context.Context) []types.ValidatorSecurityInfo {
+// GetJailedValidators returns jailed validators in deterministic order, limited to 'limit' validators.
+// Results are ordered lexicographically by validator address to ensure consensus determinism.
+// If limit is 0 or negative, returns all jailed validators (unbounded).
+func (k Keeper) GetJailedValidators(ctx context.Context, limit int) []types.ValidatorSecurityInfo {
 	store := k.getStore(ctx)
 	iterator := storetypes.KVStorePrefixIterator(store, types.JailedValidatorsKey)
 	defer iterator.Close()
 
 	validators := make([]types.ValidatorSecurityInfo, 0, 64)
+	processed := 0
+
 	for ; iterator.Valid(); iterator.Next() {
+		// Check batch limit if specified
+		if limit > 0 && processed >= limit {
+			break
+		}
+
 		// Extract validator address from key
 		validatorAddr := string(iterator.Key()[len(types.JailedValidatorsKey):])
 		if info, err := k.GetValidatorSecurityInfo(ctx, validatorAddr); err == nil {
 			if info.IsJailed {
 				validators = append(validators, info)
+				processed++
 			}
 		}
 	}

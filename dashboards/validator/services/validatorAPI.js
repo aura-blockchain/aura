@@ -1,8 +1,24 @@
 // ValidatorAPI Service - Handles all API calls to AURA blockchain
+//
+// Uses @cosmjs/stargate for transaction signing and broadcasting.
+// Install dependencies: npm install @cosmjs/stargate @cosmjs/proto-signing
+
+// Import CosmJS modules (available via npm or CDN)
+let SigningStargateClient, GasPrice;
+try {
+    const cosmjs = window.CosmJS || {};
+    SigningStargateClient = cosmjs.SigningStargateClient;
+    GasPrice = cosmjs.GasPrice;
+} catch (e) {
+    console.log('CosmJS modules will be loaded on demand');
+}
 
 class ValidatorAPI {
     static baseURL = 'http://localhost:1317'; // Default LCD endpoint
+    static rpcURL = 'http://localhost:26657'; // RPC endpoint
     static timeout = 10000; // 10 seconds
+    static signingClient = null;
+    static gasPrice = '0.025aura';
 
     static async request(endpoint, options = {}) {
         const url = `${this.baseURL}${endpoint}`;
@@ -194,26 +210,255 @@ class ValidatorAPI {
         }
     }
 
-    // Update commission rate
-    static async updateCommission(validatorAddress, newRate) {
-        // This would require transaction signing
-        // For now, this is a placeholder
-        console.log(`Updating commission for ${validatorAddress} to ${newRate}`);
+    // Initialize signing client for transaction broadcasting
+    static async initSigningClient(signer) {
+        if (!SigningStargateClient) {
+            throw new Error('CosmJS SigningStargateClient not available. Please load @cosmjs/stargate.');
+        }
 
-        // In production, this would:
-        // 1. Create MsgEditValidator transaction
-        // 2. Sign with validator's key
-        // 3. Broadcast to network
-
-        throw new Error('Commission updates require transaction signing - not implemented in web interface');
+        try {
+            this.signingClient = await SigningStargateClient.connectWithSigner(
+                this.rpcURL,
+                signer,
+                { gasPrice: GasPrice.fromString(this.gasPrice) }
+            );
+            return true;
+        } catch (error) {
+            console.error('Failed to initialize signing client:', error);
+            throw new Error(`Failed to connect to RPC: ${error.message}`);
+        }
     }
 
-    // Update validator information
-    static async updateValidatorInfo(validatorAddress, info) {
-        // This would require transaction signing
-        console.log(`Updating validator info for ${validatorAddress}:`, info);
+    // Disconnect signing client
+    static disconnectSigningClient() {
+        if (this.signingClient) {
+            this.signingClient.disconnect();
+            this.signingClient = null;
+        }
+    }
 
-        throw new Error('Validator updates require transaction signing - not implemented in web interface');
+    // Update commission rate using MsgEditValidator
+    static async updateCommission(validatorAddress, newRate, signer) {
+        if (!this.signingClient) {
+            if (!signer) {
+                throw new Error('Signer required to initialize signing client');
+            }
+            await this.initSigningClient(signer);
+        }
+
+        // Validate commission rate (must be between 0 and 1)
+        const rate = parseFloat(newRate);
+        if (isNaN(rate) || rate < 0 || rate > 1) {
+            throw new Error('Commission rate must be between 0 and 1');
+        }
+
+        // Get current validator info to preserve other fields
+        const currentInfo = await this.getValidatorInfo(validatorAddress);
+
+        // Build MsgEditValidator message
+        const msg = {
+            typeUrl: '/cosmos.staking.v1beta1.MsgEditValidator',
+            value: {
+                validatorAddress: validatorAddress,
+                description: {
+                    moniker: currentInfo.moniker || '',
+                    identity: currentInfo.identity || '',
+                    website: currentInfo.website || '',
+                    securityContact: '',
+                    details: currentInfo.details || ''
+                },
+                commissionRate: (rate * 1e18).toString(), // Convert to SDK decimal format
+                minSelfDelegation: null // Don't change
+            }
+        };
+
+        try {
+            const accounts = await this.signingClient.getAccounts();
+            const signerAddress = accounts[0]?.address;
+
+            if (!signerAddress) {
+                throw new Error('No signer address available');
+            }
+
+            const result = await this.signingClient.signAndBroadcast(
+                signerAddress,
+                [msg],
+                'auto',
+                `Update commission rate to ${(rate * 100).toFixed(2)}%`
+            );
+
+            if (result.code !== 0) {
+                throw new Error(`Transaction failed: ${result.rawLog}`);
+            }
+
+            return {
+                success: true,
+                transactionHash: result.transactionHash,
+                height: result.height,
+                gasUsed: result.gasUsed,
+                newCommissionRate: rate
+            };
+        } catch (error) {
+            console.error('Error updating commission:', error);
+            throw new Error(`Failed to update commission: ${error.message}`);
+        }
+    }
+
+    // Update validator information using MsgEditValidator
+    static async updateValidatorInfo(validatorAddress, info, signer) {
+        if (!this.signingClient) {
+            if (!signer) {
+                throw new Error('Signer required to initialize signing client');
+            }
+            await this.initSigningClient(signer);
+        }
+
+        // Validate input
+        if (!info || typeof info !== 'object') {
+            throw new Error('Info object required with fields: moniker, website, details, identity');
+        }
+
+        // Build MsgEditValidator message
+        const msg = {
+            typeUrl: '/cosmos.staking.v1beta1.MsgEditValidator',
+            value: {
+                validatorAddress: validatorAddress,
+                description: {
+                    moniker: info.moniker || '',
+                    identity: info.identity || '',
+                    website: info.website || '',
+                    securityContact: info.securityContact || '',
+                    details: info.details || ''
+                },
+                commissionRate: null, // Don't change commission
+                minSelfDelegation: info.minSelfDelegation || null
+            }
+        };
+
+        try {
+            const accounts = await this.signingClient.getAccounts();
+            const signerAddress = accounts[0]?.address;
+
+            if (!signerAddress) {
+                throw new Error('No signer address available');
+            }
+
+            const result = await this.signingClient.signAndBroadcast(
+                signerAddress,
+                [msg],
+                'auto',
+                `Update validator info for ${info.moniker || validatorAddress}`
+            );
+
+            if (result.code !== 0) {
+                throw new Error(`Transaction failed: ${result.rawLog}`);
+            }
+
+            return {
+                success: true,
+                transactionHash: result.transactionHash,
+                height: result.height,
+                gasUsed: result.gasUsed,
+                updatedFields: Object.keys(info).filter(k => info[k])
+            };
+        } catch (error) {
+            console.error('Error updating validator info:', error);
+            throw new Error(`Failed to update validator info: ${error.message}`);
+        }
+    }
+
+    // Unjail validator using MsgUnjail
+    static async unjailValidator(validatorAddress, signer) {
+        if (!this.signingClient) {
+            if (!signer) {
+                throw new Error('Signer required to initialize signing client');
+            }
+            await this.initSigningClient(signer);
+        }
+
+        const msg = {
+            typeUrl: '/cosmos.slashing.v1beta1.MsgUnjail',
+            value: {
+                validatorAddr: validatorAddress
+            }
+        };
+
+        try {
+            const accounts = await this.signingClient.getAccounts();
+            const signerAddress = accounts[0]?.address;
+
+            if (!signerAddress) {
+                throw new Error('No signer address available');
+            }
+
+            const result = await this.signingClient.signAndBroadcast(
+                signerAddress,
+                [msg],
+                'auto',
+                'Unjail validator'
+            );
+
+            if (result.code !== 0) {
+                throw new Error(`Transaction failed: ${result.rawLog}`);
+            }
+
+            return {
+                success: true,
+                transactionHash: result.transactionHash,
+                height: result.height,
+                gasUsed: result.gasUsed
+            };
+        } catch (error) {
+            console.error('Error unjailing validator:', error);
+            throw new Error(`Failed to unjail validator: ${error.message}`);
+        }
+    }
+
+    // Withdraw validator commission using MsgWithdrawValidatorCommission
+    static async withdrawCommission(validatorAddress, signer) {
+        if (!this.signingClient) {
+            if (!signer) {
+                throw new Error('Signer required to initialize signing client');
+            }
+            await this.initSigningClient(signer);
+        }
+
+        const msg = {
+            typeUrl: '/cosmos.distribution.v1beta1.MsgWithdrawValidatorCommission',
+            value: {
+                validatorAddress: validatorAddress
+            }
+        };
+
+        try {
+            const accounts = await this.signingClient.getAccounts();
+            const signerAddress = accounts[0]?.address;
+
+            if (!signerAddress) {
+                throw new Error('No signer address available');
+            }
+
+            const result = await this.signingClient.signAndBroadcast(
+                signerAddress,
+                [msg],
+                'auto',
+                'Withdraw validator commission'
+            );
+
+            if (result.code !== 0) {
+                throw new Error(`Transaction failed: ${result.rawLog}`);
+            }
+
+            return {
+                success: true,
+                transactionHash: result.transactionHash,
+                height: result.height,
+                gasUsed: result.gasUsed
+            };
+        } catch (error) {
+            console.error('Error withdrawing commission:', error);
+            throw new Error(`Failed to withdraw commission: ${error.message}`);
+        }
     }
 
     // Helper methods

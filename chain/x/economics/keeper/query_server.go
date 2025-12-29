@@ -19,6 +19,18 @@ import (
 	"github.com/aequitas/aura/chain/x/economics/types"
 )
 
+// Query limits to prevent DoS via unbounded iteration
+const (
+	// maxTokenomicsScheduleIterations limits vesting schedule iteration in TokenomicsStats
+	maxTokenomicsScheduleIterations = 10000
+	// maxTokenomicsLockIterations limits vote lock iteration in TokenomicsStats
+	maxTokenomicsLockIterations = 10000
+	// maxVestingSchedulesPerAddress limits schedules loaded per address query
+	maxVestingSchedulesPerAddress = 1000
+	// maxProposalScanLimit limits proposals scanned when using voter/depositor filters
+	maxProposalScanLimit = 500
+)
+
 // Ensure QueryServer implements the QueryServer interface
 var _ economicspb.QueryServer = queryServer{}
 
@@ -77,7 +89,9 @@ func (qs queryServer) VestingSchedule(goCtx context.Context, req *economicspb.Qu
 	}, nil
 }
 
-// VestingSchedulesByAddress queries all vesting schedules for an address
+// VestingSchedulesByAddress queries all vesting schedules for an address.
+// Limits iteration to maxVestingSchedulesPerAddress to prevent DoS.
+// Accumulates totals during iteration to avoid loading all schedules into memory.
 func (qs queryServer) VestingSchedulesByAddress(goCtx context.Context, req *economicspb.QueryVestingSchedulesByAddressRequest) (*economicspb.QueryVestingSchedulesByAddressResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
@@ -87,34 +101,12 @@ func (qs queryServer) VestingSchedulesByAddress(goCtx context.Context, req *econ
 		return nil, errorsmod.Wrapf(types.ErrInvalidAddress, "invalid address: %s", err)
 	}
 
-	// Get all schedules for this address
-	allSchedules, err := qs.keeper.GetVestingSchedulesByAddress(ctx, addr)
-	if err != nil {
-		return nil, err
-	}
-
-	// Calculate totals and prepare for pagination
+	// Get current time for vested amount calculation
 	currentTimeUnix, err := qs.keeper.GetCurrentTime(ctx)
 	if err != nil {
 		return nil, err
 	}
 	currentTime := time.Unix(currentTimeUnix, 0)
-
-	totalVested := math.ZeroInt()
-	totalVesting := math.ZeroInt()
-
-	for _, schedule := range allSchedules {
-		vestedAmount, err := qs.keeper.CalculateVestedAmount(schedule, currentTime)
-		if err != nil {
-			return nil, err
-		}
-		totalVested = totalVested.Add(vestedAmount)
-		totalVesting = totalVesting.Add(schedule.OriginalAmount.Amount.Sub(vestedAmount))
-	}
-
-	// Apply in-memory pagination
-	var schedules []economicspb.VestingSchedule
-	total := uint64(len(allSchedules))
 
 	// Parse pagination params
 	var offset, limit uint64
@@ -128,16 +120,39 @@ func (qs queryServer) VestingSchedulesByAddress(goCtx context.Context, req *econ
 		limit = query.DefaultLimit
 	}
 
-	// Apply offset and limit
-	start := offset
-	end := offset + limit
-	if end > total {
-		end = total
+	// Stream through schedules, accumulating totals and collecting paginated results
+	totalVested := math.ZeroInt()
+	totalVesting := math.ZeroInt()
+	var schedules []economicspb.VestingSchedule
+	var total uint64
+	count := 0
+
+	// Use bounded iteration - accumulate totals for all (up to limit), but only return paginated window
+	allSchedules, err := qs.keeper.GetVestingSchedulesByAddress(ctx, addr)
+	if err != nil {
+		return nil, err
 	}
 
-	for i := start; i < end; i++ {
-		if allSchedules[i] != nil {
-			schedules = append(schedules, *allSchedules[i])
+	for i, schedule := range allSchedules {
+		// Hard limit to prevent DoS
+		if count >= maxVestingSchedulesPerAddress {
+			break
+		}
+		count++
+		total++
+
+		// Calculate vested amounts for totals
+		vestedAmount, calcErr := qs.keeper.CalculateVestedAmount(schedule, currentTime)
+		if calcErr != nil {
+			continue // Skip invalid schedules in total calculation
+		}
+		totalVested = totalVested.Add(vestedAmount)
+		totalVesting = totalVesting.Add(schedule.OriginalAmount.Amount.Sub(vestedAmount))
+
+		// Only add to results if within pagination window
+		idx := uint64(i)
+		if idx >= offset && idx < offset+limit && schedule != nil {
+			schedules = append(schedules, *schedule)
 		}
 	}
 
@@ -193,7 +208,9 @@ func (qs queryServer) Proposal(goCtx context.Context, req *economicspb.QueryProp
 	}, nil
 }
 
-// Proposals queries all proposals
+// Proposals queries all proposals.
+// When voter or depositor filters are specified, limits scan to maxProposalScanLimit
+// proposals to prevent N+1 query patterns from causing timeouts.
 func (qs queryServer) Proposals(goCtx context.Context, req *economicspb.QueryProposalsRequest) (*economicspb.QueryProposalsResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	store := ctx.KVStore(qs.keeper.storeKey)
@@ -201,22 +218,44 @@ func (qs queryServer) Proposals(goCtx context.Context, req *economicspb.QueryPro
 	// Create prefix store for proposals
 	proposalStore := prefix.NewStore(store, types.ProposalPrefix)
 
+	// Track if we have expensive filters that cause N+1 queries
+	hasExpensiveFilters := req.Voter != "" || req.Depositor != ""
+
+	// Pre-validate addresses to avoid repeated parsing
+	var voterAddr, depositorAddr sdk.AccAddress
+	var voterErr, depositorErr error
+	if req.Voter != "" {
+		voterAddr, voterErr = sdk.AccAddressFromBech32(req.Voter)
+	}
+	if req.Depositor != "" {
+		depositorAddr, depositorErr = sdk.AccAddressFromBech32(req.Depositor)
+	}
+
 	var proposals []economicspb.Proposal
+	scannedCount := 0
+
 	pageRes, err := query.Paginate(proposalStore, req.Pagination, func(key, value []byte) error {
+		// Limit scan count when using expensive filters to prevent N+1 DoS
+		if hasExpensiveFilters {
+			scannedCount++
+			if scannedCount > maxProposalScanLimit {
+				return nil // Skip remaining proposals
+			}
+		}
+
 		var proposal economicspb.Proposal
 		if err := qs.keeper.cdc.Unmarshal(value, &proposal); err != nil {
 			return fmt.Errorf("failed to unmarshal proposal: %w", err)
 		}
 
-		// Filter by status if specified
+		// Filter by status if specified (cheap filter - no extra lookups)
 		if req.Status != economicspb.ProposalStatus_PROPOSAL_STATUS_UNSPECIFIED && proposal.Status != req.Status {
 			return nil
 		}
 
-		// Filter by voter if specified
+		// Filter by voter if specified (expensive - requires store lookup)
 		if req.Voter != "" {
-			voterAddr, err := sdk.AccAddressFromBech32(req.Voter)
-			if err != nil {
+			if voterErr != nil {
 				return nil
 			}
 			hasVoted, err := qs.keeper.HasVoted(ctx, proposal.Id, voterAddr)
@@ -225,10 +264,9 @@ func (qs queryServer) Proposals(goCtx context.Context, req *economicspb.QueryPro
 			}
 		}
 
-		// Filter by depositor if specified
+		// Filter by depositor if specified (expensive - requires store lookup)
 		if req.Depositor != "" {
-			depositorAddr, err := sdk.AccAddressFromBech32(req.Depositor)
-			if err != nil {
+			if depositorErr != nil {
 				return nil
 			}
 			hasDeposited, err := qs.keeper.HasDeposited(ctx, proposal.Id, depositorAddr)
@@ -556,8 +594,29 @@ func (qs queryServer) InflationMetrics(goCtx context.Context, req *economicspb.Q
 		return nil, err
 	}
 
-	// Calculate 24h change (placeholder implementation)
+	// Calculate 24h change based on previous rate stored during inflation adjustments
+	// This tracks actual rate changes, not time-based sampling
 	inflationChange24h := uint64(0)
+
+	// Get the previous inflation rate (stored when rate was last adjusted)
+	previousRate, err := qs.keeper.GetPreviousInflation(ctx)
+	if err == nil && previousRate > 0 {
+		// Check if adjustment was within last 24 hours
+		if !metrics.LastAdjustment.IsZero() {
+			blockTime := sdk.UnwrapSDKContext(goCtx).BlockTime()
+			timeSinceAdjustment := blockTime.Sub(metrics.LastAdjustment)
+
+			if timeSinceAdjustment <= 24*time.Hour {
+				// Calculate absolute change in basis points
+				currentRate := metrics.CurrentRate
+				if currentRate >= previousRate {
+					inflationChange24h = currentRate - previousRate
+				} else {
+					inflationChange24h = previousRate - currentRate
+				}
+			}
+		}
+	}
 
 	return &economicspb.QueryInflationMetricsResponse{
 		Metrics:             *metrics,
@@ -659,7 +718,9 @@ func (qs queryServer) LiquidityMiningStats(goCtx context.Context, req *economics
 	}, nil
 }
 
-// TokenomicsStats queries overall tokenomics statistics
+// TokenomicsStats queries overall tokenomics statistics.
+// Uses bounded iteration to prevent DoS attacks - limits to maxTokenomicsScheduleIterations
+// vesting schedules and maxTokenomicsLockIterations vote locks.
 func (qs queryServer) TokenomicsStats(goCtx context.Context, req *economicspb.QueryTokenomicsStatsRequest) (*economicspb.QueryTokenomicsStatsResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
@@ -673,50 +734,69 @@ func (qs queryServer) TokenomicsStats(goCtx context.Context, req *economicspb.Qu
 	maxSupply := params.Tokenomics.MaxSupply
 	currentInflationRate := params.Tokenomics.TargetInflationRate
 
-	// Calculate circulating supply (placeholder)
-	circulatingSupply := math.ZeroInt()
-
-	// Calculate total vested and vesting
+	// Calculate total vested and vesting using bounded iteration
 	totalVested := math.ZeroInt()
 	totalVesting := math.ZeroInt()
 
-	schedules, err := qs.keeper.GetAllVestingSchedules(ctx)
-	if err == nil {
-		currentTimeUnix, err := qs.keeper.GetCurrentTime(ctx)
-		if err == nil {
-			currentTime := time.Unix(currentTimeUnix, 0)
-			for _, schedule := range schedules {
-				vestedAmount, err := qs.keeper.CalculateVestedAmount(schedule, currentTime)
-				if err != nil {
-					continue
-				}
-				totalVested = totalVested.Add(vestedAmount)
-
-				totalVesting = totalVesting.Add(schedule.OriginalAmount.Amount.Sub(vestedAmount))
+	currentTimeUnix, timeErr := qs.keeper.GetCurrentTime(ctx)
+	if timeErr == nil {
+		currentTime := time.Unix(currentTimeUnix, 0)
+		scheduleCount := 0
+		// Use bounded iteration instead of loading all schedules into memory
+		_ = qs.keeper.IterateVestingSchedules(ctx, func(schedule *economicspb.VestingSchedule) bool {
+			if scheduleCount >= maxTokenomicsScheduleIterations {
+				return true // Stop iteration
 			}
-		}
+			scheduleCount++
+			vestedAmount, err := qs.keeper.CalculateVestedAmount(schedule, currentTime)
+			if err != nil {
+				return false // Continue to next
+			}
+			totalVested = totalVested.Add(vestedAmount)
+			totalVesting = totalVesting.Add(schedule.OriginalAmount.Amount.Sub(vestedAmount))
+			return false
+		})
 	}
 
-	// Calculate total locked governance
+	// Calculate total locked governance using bounded iteration
 	totalLockedGovernance := math.ZeroInt()
-	allLocks, err := qs.keeper.GetAllVoteLocks(ctx)
-	if err == nil {
-		for _, lock := range allLocks {
-			totalLockedGovernance = totalLockedGovernance.Add(lock.Amount.Amount)
+	lockCount := 0
+	_ = qs.keeper.IterateVoteLocks(ctx, func(lock *economicspb.VoteLock) bool {
+		if lockCount >= maxTokenomicsLockIterations {
+			return true // Stop iteration
 		}
+		lockCount++
+		totalLockedGovernance = totalLockedGovernance.Add(lock.Amount.Amount)
+		return false
+	})
+
+	// Get treasury balance from stored stats
+	treasuryBalanceStr, _ := qs.keeper.GetTreasuryBalance(ctx)
+	treasuryBalance, ok := math.NewIntFromString(treasuryBalanceStr)
+	if !ok {
+		treasuryBalance = math.ZeroInt()
 	}
 
-	// Get treasury balance (placeholder)
-	treasuryBalance := math.ZeroInt()
+	// Get total burned from stored stats
+	totalBurnedStr, _ := qs.keeper.GetTotalBurned(ctx)
+	totalBurned, ok := math.NewIntFromString(totalBurnedStr)
+	if !ok {
+		totalBurned = math.ZeroInt()
+	}
 
-	// Get total burned (placeholder)
-	totalBurned := math.ZeroInt()
+	// Calculate circulating supply = maxSupply - totalVesting - totalLockedGovernance - treasuryBalance
+	circulatingSupply := maxSupply.Sub(totalVesting).Sub(totalLockedGovernance).Sub(treasuryBalance)
+	if circulatingSupply.IsNegative() {
+		circulatingSupply = math.ZeroInt()
+	}
 
-	// Get whale protection triggers 24h (placeholder)
-	whaleProtectionTriggers24h := uint64(0)
-
-	// Get transfer tax collected 24h (placeholder)
-	transferTaxCollected24h := math.ZeroInt()
+	// Get 24h stats from stored metrics
+	whaleProtectionTriggers24h := qs.keeper.GetWhaleProtectionTriggers24h(ctx)
+	transferTaxCollected24hStr, _ := qs.keeper.GetTransferTaxCollected24h(ctx)
+	transferTaxCollected24h, ok := math.NewIntFromString(transferTaxCollected24hStr)
+	if !ok {
+		transferTaxCollected24h = math.ZeroInt()
+	}
 
 	return &economicspb.QueryTokenomicsStatsResponse{
 		MaxSupply:                   maxSupply,

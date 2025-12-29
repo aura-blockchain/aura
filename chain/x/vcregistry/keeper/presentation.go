@@ -10,6 +10,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/aequitas/aura/chain/x/common/determinism"
 	"github.com/aequitas/aura/chain/x/vcregistry/types"
@@ -216,7 +218,7 @@ func (k *Keeper) VerifyPresentation(
 	}
 
 	// Extract disclosed attributes based on context
-	attributes := k.extractDiscloseableAttributes(qrData, vcDetails)
+	attributes := k.extractDiscloseableAttributes(ctx, qrData, vcDetails)
 
 	result := &vcregistrypb.VerificationResult{
 		IsValid:    allValid,
@@ -408,44 +410,182 @@ func (k *Keeper) verifySignatureWithKey(pubKey cryptotypes.PubKey, message, sign
 	}
 }
 
-// extractDiscloseableAttributes extracts attributes based on context
+// extractDiscloseableAttributes extracts actual attributes from VCs based on context.
+// It looks up each VC from the store and extracts data from the metadata field.
 func (k *Keeper) extractDiscloseableAttributes(
+	ctx context.Context,
 	qrData *QRCodeData,
 	vcDetails []*vcregistrypb.VCVerificationDetail,
 ) *vcregistrypb.DiscloseableAttributes {
 	attributes := &vcregistrypb.DiscloseableAttributes{
-		CustomAttributes: make(map[string]string),
+		CustomAttributes:  make(map[string]string),
+		AttributeValues:   make(map[string]string),
 	}
 
-	// Extract attributes from VCs based on context
-	// This is a simplified implementation
-	// In production, would extract actual data from VC claims
+	// Collect metadata from all VCs in the presentation
+	aggregatedMetadata := make(map[string]string)
+	for _, detail := range vcDetails {
+		if !detail.IsValid {
+			continue // Skip invalid VCs
+		}
 
+		// Retrieve the full VC record from store
+		vcRecord, found := k.GetVCRecord(ctx, detail.VcId)
+		if !found {
+			continue
+		}
+
+		// Aggregate metadata from this VC
+		for key, value := range vcRecord.Metadata {
+			aggregatedMetadata[key] = value
+		}
+	}
+
+	// Extract attributes based on context flags and actual VC data
 	if qrData.Context["show_full_name"] {
-		attributes.FullName = "John Doe" // Placeholder
+		if name, ok := aggregatedMetadata["full_name"]; ok {
+			attributes.FullName = name
+		} else if firstName, ok := aggregatedMetadata["first_name"]; ok {
+			lastName := aggregatedMetadata["last_name"]
+			attributes.FullName = strings.TrimSpace(firstName + " " + lastName)
+		}
 	}
 
 	if qrData.Context["show_age"] {
-		attributes.Age = 25 // Placeholder
+		if ageStr, ok := aggregatedMetadata["age"]; ok {
+			if age, err := strconv.ParseUint(ageStr, 10, 32); err == nil {
+				attributes.Age = uint32(age)
+			}
+		} else if dobStr, ok := aggregatedMetadata["date_of_birth"]; ok {
+			// Calculate age from date of birth if available
+			attributes.Age = k.calculateAgeFromDOB(ctx, dobStr)
+		}
 	}
 
 	if qrData.Context["show_age_over_18"] {
-		attributes.IsOver_18 = true
+		age := k.getAgeFromMetadata(ctx, aggregatedMetadata)
+		attributes.IsOver_18 = age >= 18
 	}
 
 	if qrData.Context["show_age_over_21"] {
-		attributes.IsOver_21 = true
+		age := k.getAgeFromMetadata(ctx, aggregatedMetadata)
+		attributes.IsOver_21 = age >= 21
 	}
 
 	if qrData.Context["show_address"] {
-		attributes.FullAddress = "123 Main St, City, State 12345" // Placeholder
+		if addr, ok := aggregatedMetadata["address"]; ok {
+			attributes.FullAddress = addr
+		} else {
+			// Construct from components
+			street := aggregatedMetadata["street"]
+			city := aggregatedMetadata["city"]
+			state := aggregatedMetadata["state"]
+			zip := aggregatedMetadata["postal_code"]
+			if street != "" || city != "" {
+				attributes.FullAddress = k.formatAddress(street, city, state, zip)
+			}
+		}
 	}
 
 	if qrData.Context["show_city_state_only"] {
-		attributes.CityState = "City, State" // Placeholder
+		city := aggregatedMetadata["city"]
+		state := aggregatedMetadata["state"]
+		if city != "" || state != "" {
+			attributes.CityState = strings.TrimSpace(city + ", " + state)
+		}
+	}
+
+	// Copy any requested custom attributes
+	for key, shouldShow := range qrData.Context {
+		if shouldShow && strings.HasPrefix(key, "attr_") {
+			attrKey := strings.TrimPrefix(key, "attr_")
+			if value, ok := aggregatedMetadata[attrKey]; ok {
+				attributes.CustomAttributes[attrKey] = value
+			}
+		}
+	}
+
+	// Copy all attribute values for AttributeVCs
+	for key, value := range aggregatedMetadata {
+		if strings.HasPrefix(key, "attribute_") {
+			attrType := strings.TrimPrefix(key, "attribute_")
+			attributes.AttributeValues[attrType] = value
+		}
 	}
 
 	return attributes
+}
+
+// getAgeFromMetadata extracts age from metadata, calculating from DOB if needed
+func (k *Keeper) getAgeFromMetadata(ctx context.Context, metadata map[string]string) uint32 {
+	if ageStr, ok := metadata["age"]; ok {
+		if age, err := strconv.ParseUint(ageStr, 10, 32); err == nil {
+			return uint32(age)
+		}
+	}
+	if dobStr, ok := metadata["date_of_birth"]; ok {
+		return k.calculateAgeFromDOB(ctx, dobStr)
+	}
+	return 0
+}
+
+// calculateAgeFromDOB calculates age from date of birth string (format: YYYY-MM-DD)
+func (k *Keeper) calculateAgeFromDOB(ctx context.Context, dob string) uint32 {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	blockTime := sdkCtx.BlockTime()
+
+	// Parse DOB (expected format: YYYY-MM-DD)
+	parts := strings.Split(dob, "-")
+	if len(parts) != 3 {
+		return 0
+	}
+
+	year, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return 0
+	}
+	month, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return 0
+	}
+	day, err := strconv.Atoi(parts[2])
+	if err != nil {
+		return 0
+	}
+
+	// Calculate age
+	currentYear := blockTime.Year()
+	currentMonth := int(blockTime.Month())
+	currentDay := blockTime.Day()
+
+	age := currentYear - year
+	if currentMonth < month || (currentMonth == month && currentDay < day) {
+		age-- // Birthday hasn't occurred yet this year
+	}
+
+	if age < 0 {
+		return 0
+	}
+	return uint32(age)
+}
+
+// formatAddress formats address components into a single string
+func (k *Keeper) formatAddress(street, city, state, zip string) string {
+	var parts []string
+	if street != "" {
+		parts = append(parts, street)
+	}
+	if city != "" {
+		parts = append(parts, city)
+	}
+	if state != "" && zip != "" {
+		parts = append(parts, state+" "+zip)
+	} else if state != "" {
+		parts = append(parts, state)
+	} else if zip != "" {
+		parts = append(parts, zip)
+	}
+	return strings.Join(parts, ", ")
 }
 
 // storePresentationTemp stores a presentation temporarily for verification

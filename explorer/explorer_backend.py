@@ -465,7 +465,7 @@ class AnalyticsEngine:
             return json.loads(cached)
 
         try:
-            response = requests.get(f"{self.node_url}/transactions", timeout=5)
+            response = requests.get(f"{self.node_url}/transactions", timeout=15)
             response.raise_for_status()
             data = response.json()
 
@@ -517,7 +517,7 @@ class AnalyticsEngine:
         """Fetch stats from Cosmos SDK node"""
         try:
             # Get blockchain info from Cosmos SDK RPC
-            response = requests.get(f"{self.node_url}/blockchain", timeout=5)
+            response = requests.get(f"{self.node_url}/blockchain", timeout=15)
             response.raise_for_status()
             data = response.json()
 
@@ -538,7 +538,7 @@ class AnalyticsEngine:
             # Get latest blockchain info
             blockchain_response = requests.get(
                 f"{self.node_url}/blockchain?minHeight=1&maxHeight={limit}",
-                timeout=10
+                timeout=30
             )
             blockchain_response.raise_for_status()
             data = blockchain_response.json()
@@ -654,7 +654,7 @@ class SearchEngine:
             # Use Cosmos SDK RPC endpoint
             response = requests.get(
                 f"{self.node_url}/block?height={height}",
-                timeout=5
+                timeout=15
             )
             if response.status_code == 200:
                 data = response.json()
@@ -678,7 +678,7 @@ class SearchEngine:
             # Use Cosmos SDK RPC to get block by hash
             response = requests.get(
                 f"{self.node_url}/block_by_hash?hash=0x{block_hash}",
-                timeout=5
+                timeout=15
             )
             if response.status_code == 200:
                 data = response.json()
@@ -701,7 +701,7 @@ class SearchEngine:
             # Use Cosmos SDK RPC to get transaction
             response = requests.get(
                 f"{self.node_url}/tx?hash=0x{txid}",
-                timeout=5
+                timeout=15
             )
             if response.status_code == 200:
                 data = response.json()
@@ -718,7 +718,7 @@ class SearchEngine:
             api_url = config.NODE_API_URL if hasattr(config, 'NODE_API_URL') else "http://localhost:1317"
             balance_response = requests.get(
                 f"{api_url}/cosmos/bank/v1beta1/balances/{address}",
-                timeout=5
+                timeout=15
             )
 
             if balance_response.status_code == 200:
@@ -778,7 +778,7 @@ class RichListManager:
     def _calculate_rich_list(self, limit: int) -> List[Dict[str, Any]]:
         """Calculate rich list from blockchain"""
         try:
-            blocks_response = requests.get(f"{self.node_url}/blocks?limit=10000", timeout=10)
+            blocks_response = requests.get(f"{self.node_url}/blocks?limit=10000", timeout=30)
             blocks_response.raise_for_status()
             blocks = blocks_response.json().get("blocks", [])
 
@@ -834,7 +834,7 @@ class ExportManager:
     def export_transactions_csv(self, address: str) -> Optional[str]:
         """Export address transactions as CSV"""
         try:
-            history_response = requests.get(f"{self.node_url}/history/{address}", timeout=5)
+            history_response = requests.get(f"{self.node_url}/history/{address}", timeout=15)
             if history_response.status_code != 200:
                 return None
 
@@ -938,7 +938,7 @@ class BlockchainDataService:
             response = requests.get(
                 f"{self.api_url}/cosmos/tx/v1beta1/txs",
                 params=params,
-                timeout=10
+                timeout=30
             )
             response.raise_for_status()
             data = response.json()
@@ -976,7 +976,7 @@ class BlockchainDataService:
             response = requests.get(
                 f"{self.api_url}/cosmos/staking/v1beta1/validators",
                 params=params,
-                timeout=10
+                timeout=30
             )
             response.raise_for_status()
             validators = []
@@ -1045,7 +1045,7 @@ class BlockchainDataService:
 
     def _get_latest_height(self) -> int:
         try:
-            response = requests.get(f"{self.node_url}/status", timeout=5)
+            response = requests.get(f"{self.node_url}/status", timeout=15)
             response.raise_for_status()
             return int(response.json()
                        .get("result", {})
@@ -1065,7 +1065,7 @@ class BlockchainDataService:
                 response = requests.get(
                     f"{self.node_url}/blockchain",
                     params={"minHeight": str(chunk_start), "maxHeight": str(chunk_end)},
-                    timeout=10
+                    timeout=30
                 )
                 response.raise_for_status()
                 chunk = response.json().get("result", {}).get("block_metas", [])
@@ -1192,7 +1192,7 @@ class BlockchainDataService:
             response = requests.get(
                 f"{self.api_url}/cosmos/tx/v1beta1/txs",
                 params={"events": "tx.height>0", "pagination.limit": "1"},
-                timeout=5
+                timeout=15
             )
             response.raise_for_status()
             total = response.json().get("pagination", {}).get("total")
@@ -1491,7 +1491,7 @@ def get_metric_history(metric_type):
 def health_check():
     """Health check"""
     try:
-        response = requests.get(f"{NODE_URL}/health", timeout=5)
+        response = requests.get(f"{NODE_URL}/health", timeout=10)
         node_status = response.status_code == 200
     except Exception as e:
         logger.warning(f"RPC health degraded: {e}")

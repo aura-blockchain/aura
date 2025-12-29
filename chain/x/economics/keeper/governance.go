@@ -622,3 +622,60 @@ func (k Keeper) GetPreviousInflation(ctx context.Context) (uint64, error) {
 	}
 	return binary.BigEndian.Uint64(bz), nil
 }
+
+// GetWhaleProtectionTriggers24h retrieves the count of whale protection triggers in the last 24h
+func (k Keeper) GetWhaleProtectionTriggers24h(ctx context.Context) uint64 {
+	store := k.storeService.OpenKVStore(ctx)
+	bz, err := store.Get(types.WhaleProtectionTriggers24hKey)
+	if err != nil || bz == nil {
+		return 0
+	}
+	return binary.BigEndian.Uint64(bz)
+}
+
+// SetWhaleProtectionTriggers24h stores the count of whale protection triggers
+func (k Keeper) SetWhaleProtectionTriggers24h(ctx context.Context, count uint64) error {
+	store := k.storeService.OpenKVStore(ctx)
+	bz := make([]byte, 8)
+	binary.BigEndian.PutUint64(bz, count)
+	return store.Set(types.WhaleProtectionTriggers24hKey, bz)
+}
+
+// IncrementWhaleProtectionTriggers24h increments the whale protection trigger count
+func (k Keeper) IncrementWhaleProtectionTriggers24h(ctx context.Context) error {
+	current := k.GetWhaleProtectionTriggers24h(ctx)
+	return k.SetWhaleProtectionTriggers24h(ctx, current+1)
+}
+
+// GetTransferTaxCollected24h retrieves the transfer tax collected in the last 24h
+func (k Keeper) GetTransferTaxCollected24h(ctx context.Context) (string, error) {
+	store := k.storeService.OpenKVStore(ctx)
+	bz, err := store.Get(types.TransferTaxCollected24hKey)
+	if err != nil {
+		return "0", err
+	}
+	if bz == nil {
+		return "0", nil
+	}
+	return string(bz), nil
+}
+
+// SetTransferTaxCollected24h stores the transfer tax collected amount
+func (k Keeper) SetTransferTaxCollected24h(ctx context.Context, amount string) error {
+	store := k.storeService.OpenKVStore(ctx)
+	return store.Set(types.TransferTaxCollected24hKey, []byte(amount))
+}
+
+// AddTransferTaxCollected24h adds to the transfer tax collected amount
+func (k Keeper) AddTransferTaxCollected24h(ctx context.Context, amount string) error {
+	currentStr, _ := k.GetTransferTaxCollected24h(ctx)
+	current, ok := math.NewIntFromString(currentStr)
+	if !ok {
+		current = math.ZeroInt()
+	}
+	add, ok := math.NewIntFromString(amount)
+	if !ok {
+		return nil
+	}
+	return k.SetTransferTaxCollected24h(ctx, current.Add(add).String())
+}

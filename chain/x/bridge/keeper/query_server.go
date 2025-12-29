@@ -19,6 +19,16 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// Query limits to prevent DoS via unbounded iteration
+const (
+	// maxUserTransferFallbackScan limits the fallback O(n) scan for user transfers
+	maxUserTransferFallbackScan = 1000
+	// maxValidatorQueryLimit limits validator collection queries
+	maxValidatorQueryLimit = 500
+	// maxRelayerQueryLimit limits relayer counting queries
+	maxRelayerQueryLimit = 500
+)
+
 var _ bridgeproto.QueryServer = queryServer{}
 
 type queryServer struct {
@@ -170,12 +180,21 @@ func (qs queryServer) UserTransfers(goCtx context.Context, req *bridgeproto.Quer
 
 // userTransfersFallback is the legacy O(n) implementation for backwards compatibility.
 // Used when secondary index is empty (e.g., for transfers created before index existed).
+// Limited to maxUserTransferFallbackScan iterations to prevent DoS.
 func (qs queryServer) userTransfersFallback(ctx sdk.Context, req *bridgeproto.QueryUserTransfersRequest, chainFilter string) (*bridgeproto.QueryUserTransfersResponse, error) {
 	store := ctx.KVStore(qs.Keeper.storeKey)
 	transferStore := prefix.NewStore(store, types.TransferPrefix)
 
 	var transfers []bridgeproto.CrossChainTransfer
+	scannedCount := 0
+
 	pageRes, err := query.Paginate(transferStore, req.Pagination, func(key, value []byte) error {
+		// Hard cap to prevent DoS on fallback path
+		scannedCount++
+		if scannedCount > maxUserTransferFallbackScan {
+			return nil // Stop scanning
+		}
+
 		var transfer bridgeproto.CrossChainTransfer
 		if err := qs.Keeper.cdc.Unmarshal(value, &transfer); err != nil {
 			return err
@@ -443,12 +462,22 @@ func (qs queryServer) RelayerStats(goCtx context.Context, req *bridgeproto.Query
 	return &bridgeproto.QueryRelayerStatsResponse{Stats: *stats}, nil
 }
 
+// collectValidators collects validators from store with bounded iteration.
+// Limited to maxValidatorQueryLimit to prevent DoS.
 func (qs queryServer) collectValidators(ctx sdk.Context) []*bridgeproto.BridgeValidator {
 	store := ctx.KVStore(qs.Keeper.storeKey)
 	iterator := store.Iterator(types.ValidatorPrefix, storetypes.PrefixEndBytes(types.ValidatorPrefix))
 	defer iterator.Close()
-	var validators []*bridgeproto.BridgeValidator
+	// Pre-allocate with reasonable capacity
+	validators := make([]*bridgeproto.BridgeValidator, 0, 64)
+	count := 0
 	for ; iterator.Valid(); iterator.Next() {
+		// Hard cap to prevent DoS
+		if count >= maxValidatorQueryLimit {
+			break
+		}
+		count++
+
 		var validator bridgeproto.BridgeValidator
 		if err := qs.Keeper.cdc.Unmarshal(iterator.Value(), &validator); err != nil {
 			// Log corrupted data but continue iteration
@@ -463,12 +492,21 @@ func (qs queryServer) collectValidators(ctx sdk.Context) []*bridgeproto.BridgeVa
 	return validators
 }
 
+// validatorsFromChains derives validators from chain configs with bounded iteration.
+// Limited to maxValidatorQueryLimit to prevent DoS.
 func (qs queryServer) validatorsFromChains(ctx sdk.Context) []*bridgeproto.BridgeValidator {
 	cfgs := qs.Keeper.getAllChainConfigs(ctx)
-	seen := make(map[string]struct{})
-	var validators []*bridgeproto.BridgeValidator
+	// Pre-allocate maps and slices based on expected sizes
+	seen := make(map[string]struct{}, 64)
+	validators := make([]*bridgeproto.BridgeValidator, 0, 64)
+	count := 0
 	for _, cfg := range cfgs {
 		for _, addr := range cfg.Validators {
+			// Hard cap to prevent DoS
+			if count >= maxValidatorQueryLimit {
+				return validators
+			}
+
 			normalized := strings.ToLower(strings.TrimSpace(addr))
 			if normalized == "" {
 				continue
@@ -477,6 +515,7 @@ func (qs queryServer) validatorsFromChains(ctx sdk.Context) []*bridgeproto.Bridg
 				continue
 			}
 			seen[normalized] = struct{}{}
+			count++
 			validators = append(validators, &bridgeproto.BridgeValidator{
 				Address: addr,
 				Active:  true,

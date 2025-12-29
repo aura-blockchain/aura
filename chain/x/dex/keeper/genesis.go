@@ -31,22 +31,17 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data types.GenesisState) error {
 	for i := range data.SwapOrders {
 		order := &data.SwapOrders[i]
 		if err := k.SetOrder(ctx, order); err != nil {
-			return fmt.Errorf("error in InitGenesis for LiquidityPools: %w", err)
+			return fmt.Errorf("error in InitGenesis for SwapOrders: %w", err)
 		}
 		if order.Status == types.SwapOrderStatus_PENDING {
 			k.AddToOrderbook(ctx, order)
 		}
 	}
 
-	for i := range data.Orderbooks {
-		book := &data.Orderbooks[i]
-		for j := range book.BuyOrders {
-			k.addPendingOrderToIndex(ctx, &book.BuyOrders[j])
-		}
-		for j := range book.SellOrders {
-			k.addPendingOrderToIndex(ctx, &book.SellOrders[j])
-		}
-	}
+	// NOTE: Orderbooks from genesis state are not re-indexed here.
+	// The orderbook index is already built from SwapOrders above (pending orders are added via AddToOrderbook).
+	// The Orderbooks field in genesis is for export completeness only - the authoritative source is SwapOrders.
+	// Removed redundant indexing that was causing pending orders to be indexed twice.
 
 	for i := range data.SwapStats {
 		stats := &data.SwapStats[i]

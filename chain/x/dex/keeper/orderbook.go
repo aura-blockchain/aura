@@ -660,6 +660,13 @@ func (k *Keeper) removeFromExpirationIndex(ctx sdk.Context, order *types.SwapOrd
 // GetOrderbookForPair returns all pending orders for a trading pair
 // OPTIMIZED: Uses batch lookup to eliminate N+1 query pattern
 func (k *Keeper) GetOrderbookForPair(ctx sdk.Context, coinA, coinB string) []*types.SwapOrder {
+	return k.GetOrderbookForPairWithLimit(ctx, coinA, coinB, 0)
+}
+
+// GetOrderbookForPairWithLimit returns pending orders for a trading pair with an optional limit.
+// If limit is 0 or negative, returns all orders.
+// OPTIMIZED: Single-pass with inline filtering
+func (k *Keeper) GetOrderbookForPairWithLimit(ctx sdk.Context, coinA, coinB string, limit int) []*types.SwapOrder {
 	pairKey := fmt.Sprintf("%s-%s", coinA, coinB)
 
 	store := ctx.KVStore(k.storeKey)
@@ -667,9 +674,19 @@ func (k *Keeper) GetOrderbookForPair(ctx sdk.Context, coinA, coinB string) []*ty
 	iterator := storetypes.KVStorePrefixIterator(store, prefix)
 	defer iterator.Close()
 
-	// Single pass: collect order IDs, fetch, filter, and populate in one iteration
-	orders := make([]*types.SwapOrder, 0, 64)
+	// Pre-allocate with reasonable capacity
+	capacity := 64
+	if limit > 0 && limit < capacity {
+		capacity = limit
+	}
+	orders := make([]*types.SwapOrder, 0, capacity)
+
 	for ; iterator.Valid(); iterator.Next() {
+		// Check limit before processing more orders
+		if limit > 0 && len(orders) >= limit {
+			break
+		}
+
 		orderID := string(iterator.Value())
 		key := types.OrderKey(orderID)
 		bz := store.Get(key)
@@ -912,6 +929,7 @@ func (k *Keeper) exportOrderbooks(ctx sdk.Context) []*types.Orderbook {
 	pairs := make(map[string]*pairOrders)
 
 	// Single pass: collect, separate, and track extremes
+	// OPTIMIZED: Inline order lookup to avoid function call overhead
 	for ; iterator.Valid(); iterator.Next() {
 		key := iterator.Key()[len(types.OrderbookPrefix):]
 		sep := bytes.IndexByte(key, 0x00)
@@ -921,8 +939,19 @@ func (k *Keeper) exportOrderbooks(ctx sdk.Context) []*types.Orderbook {
 		pairKey := string(key[:sep])
 		orderID := string(key[sep+1:])
 
-		order := k.GetOrder(ctx, orderID)
-		if order == nil || order.Status != types.SwapOrderStatus_PENDING {
+		// Inline order lookup (avoids GetOrder function call overhead)
+		orderKey := types.OrderKey(orderID)
+		bz := store.Get(orderKey)
+		if bz == nil {
+			continue
+		}
+
+		var order types.SwapOrder
+		if err := k.cdc.Unmarshal(bz, &order); err != nil {
+			continue
+		}
+
+		if order.Status != types.SwapOrderStatus_PENDING {
 			continue
 		}
 
@@ -937,16 +966,16 @@ func (k *Keeper) exportOrderbooks(ctx sdk.Context) []*types.Orderbook {
 			pairs[pairKey] = po
 		}
 
-		price := orderPriceDec(order)
+		price := orderPriceDec(&order)
 		// Separate buy/sell orders during collection (single pass)
 		if order.OrderType == types.SwapOrderType_BUY {
-			po.buys = append(po.buys, *order)
+			po.buys = append(po.buys, order)
 			// Track best bid (highest price) on the fly
 			if po.bestBid.IsZero() || price.GT(po.bestBid) {
 				po.bestBid = price
 			}
 		} else {
-			po.sells = append(po.sells, *order)
+			po.sells = append(po.sells, order)
 			// Track best ask (lowest price) on the fly
 			if po.bestAsk.IsZero() || price.LT(po.bestAsk) {
 				po.bestAsk = price

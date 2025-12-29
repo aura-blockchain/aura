@@ -236,6 +236,17 @@ func (k Keeper) AddLiquidity(
 	// SECURITY CHECK 3: Rate limiting - Prevent spam
 	rateLimitKey := fmt.Sprintf("addliquidity:%s", provider)
 	if err := k.securityKeeper.CheckGuardRateLimit(ctx, rateLimitKey, 100, time.Minute); err != nil {
+		// Emit rate limit event for operational monitoring
+		ctx.EventManager().EmitEvent(
+			sdk.NewEvent(
+				"dex_rate_limit_exceeded",
+				sdk.NewAttribute("operation", "add_liquidity"),
+				sdk.NewAttribute("address", provider),
+				sdk.NewAttribute("pool_id", poolID),
+				sdk.NewAttribute("limit", "100/min"),
+				sdk.NewAttribute("block_height", fmt.Sprintf("%d", ctx.BlockHeight())),
+			),
+		)
 		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), errors.Wrap(err, "rate limit exceeded")
 	}
 	defer k.securityKeeper.IncrementGuardRateLimit(ctx, rateLimitKey, time.Minute)
@@ -418,6 +429,17 @@ func (k Keeper) RemoveLiquidity(
 	// SECURITY CHECK 3: Rate limiting - Prevent spam
 	rateLimitKey := fmt.Sprintf("removeliquidity:%s", provider)
 	if err := k.securityKeeper.CheckGuardRateLimit(ctx, rateLimitKey, 100, time.Minute); err != nil {
+		// Emit rate limit event for operational monitoring
+		ctx.EventManager().EmitEvent(
+			sdk.NewEvent(
+				"dex_rate_limit_exceeded",
+				sdk.NewAttribute("operation", "remove_liquidity"),
+				sdk.NewAttribute("address", provider),
+				sdk.NewAttribute("pool_id", poolID),
+				sdk.NewAttribute("limit", "100/min"),
+				sdk.NewAttribute("block_height", fmt.Sprintf("%d", ctx.BlockHeight())),
+			),
+		)
 		return sdk.Coin{}, sdk.Coin{}, errors.Wrap(err, "rate limit exceeded")
 	}
 	defer k.securityKeeper.IncrementGuardRateLimit(ctx, rateLimitKey, time.Minute)
@@ -574,6 +596,18 @@ func (k Keeper) SwapExactIn(
 	// SECURITY CHECK 3: Rate limiting - Prevent spam and flash loan attacks
 	rateLimitKey := fmt.Sprintf("swap:%s", sender)
 	if err := k.securityKeeper.CheckGuardRateLimit(ctx, rateLimitKey, 1000, time.Minute); err != nil {
+		// Emit rate limit event for operational monitoring
+		ctx.EventManager().EmitEvent(
+			sdk.NewEvent(
+				"dex_rate_limit_exceeded",
+				sdk.NewAttribute("operation", "swap"),
+				sdk.NewAttribute("address", sender),
+				sdk.NewAttribute("pool_id", poolID),
+				sdk.NewAttribute("denom_in", coinIn.Denom),
+				sdk.NewAttribute("limit", "1000/min"),
+				sdk.NewAttribute("block_height", fmt.Sprintf("%d", ctx.BlockHeight())),
+			),
+		)
 		return sdkmath.ZeroInt(), sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec(), errors.Wrap(err, "rate limit exceeded")
 	}
 	defer k.securityKeeper.IncrementGuardRateLimit(ctx, rateLimitKey, time.Minute)

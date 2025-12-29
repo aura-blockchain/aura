@@ -704,37 +704,10 @@ func TestCircuitBreakerPriceDeviation(t *testing.T) {
 	}
 }
 
-// Position Tests
-// TODO: Implement these methods in keeper
-/*
-func TestGetUserPosition(t *testing.T) {
-	k, ctx, _ := setupTestKeeper(t)
-
-	creator := keepertest.GenTestAddr().String()
-	pool, _, err := k.CreatePool(ctx, creator, "uaura", "uusdt", sdk.NewCoin("uaura", math.NewInt(1000000)), sdk.NewCoin("uusdt", math.NewInt(1000000)))
-	require.NoError(t, err)
-
-	position := k.GetUserPosition(ctx, pool.PoolId, creator)
-	require.NotNil(t, position)
-	require.True(t, position.LPTokens.GT(math.ZeroInt()))
-}
-
-func TestGetUserPositions(t *testing.T) {
-	k, ctx, _ := setupTestKeeper(t)
-
-	creator := keepertest.GenTestAddr().String()
-
-	// Create multiple pools with liquidity
-	for i := 0; i < 3; i++ {
-		token := "token" + string(rune('A'+i))
-		_, _, err := k.CreatePool(ctx, creator, token, "uaura", sdk.NewCoin(token, math.NewInt(1000000)), sdk.NewCoin("uaura", math.NewInt(1000000)))
-		require.NoError(t, err)
-	}
-
-	positions := k.GetUserPositions(ctx, creator)
-	require.GreaterOrEqual(t, len(positions), 3)
-}
-*/
+// Position Tests - Planned Enhancement
+// These tests require GetUserPosition and GetUserPositions methods to be added to the keeper.
+// The methods would track LP token balances per user per pool for portfolio management features.
+// Implementation deferred until LP token tracking is prioritized in roadmap.
 
 // Genesis Tests
 
