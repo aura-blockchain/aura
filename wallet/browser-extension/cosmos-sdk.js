@@ -13,6 +13,9 @@
 // Using noble-secp256k1 for signing
 // Using bech32 for address encoding
 const { CHAIN_CONFIG, COIN, GAS_PRICE_TIERS, REST_ENDPOINTS, RPC_ENDPOINTS } = require('../config/chain');
+const { sha256: sha256Noble } = require('@noble/hashes/sha256');
+const { ripemd160: ripemd160Noble } = require('@noble/hashes/ripemd160');
+const { bech32 } = require('@scure/base');
 
 const COSMOS_SDK = {
   // Aura Network Configuration (sourced from chain-registry)
@@ -73,30 +76,67 @@ const COSMOS_SDK = {
   },
 
   /**
-   * SHA-256 hash
+   * SHA-256 hash using @noble/hashes
+   * @param {Uint8Array} data - Input data
+   * @returns {Uint8Array} 32-byte SHA-256 hash
    */
   sha256(data) {
-    // Simplified - in production use crypto.subtle.digest
-    // For now, return placeholder
-    return new Uint8Array(32);
+    return sha256Noble(data);
   },
 
   /**
-   * RIPEMD-160 hash
+   * RIPEMD-160 hash using @noble/hashes
+   * @param {Uint8Array} data - Input data
+   * @returns {Uint8Array} 20-byte RIPEMD-160 hash
    */
   ripemd160(data) {
-    // Simplified - in production use proper RIPEMD-160 library
-    // For now, return placeholder
-    return new Uint8Array(20);
+    return ripemd160Noble(data);
   },
 
   /**
-   * Bech32 encode
+   * Bech32 encode using @scure/base
+   * @param {string} prefix - Bech32 prefix (e.g., 'aura', 'paw')
+   * @param {Uint8Array} data - 20-byte address hash
+   * @returns {string} Bech32 encoded address
    */
   bech32Encode(prefix, data) {
-    // Simplified - in production use bech32 library
-    // For now, return placeholder
-    return `${prefix}1${this.bytesToHex(data)}`;
+    // Convert 8-bit data to 5-bit words for bech32 encoding
+    const words = bech32.toWords(data);
+    return bech32.encode(prefix, words);
+  },
+
+  /**
+   * Bech32 decode using @scure/base
+   * @param {string} address - Bech32 encoded address
+   * @returns {Object} Object with prefix and data { prefix: string, data: Uint8Array }
+   * @throws {Error} If address is invalid
+   */
+  bech32Decode(address) {
+    const decoded = bech32.decode(address);
+    const data = bech32.fromWords(decoded.words);
+    return {
+      prefix: decoded.prefix,
+      data: new Uint8Array(data),
+    };
+  },
+
+  /**
+   * Validate a bech32 address
+   * @param {string} address - Bech32 address to validate
+   * @param {string} expectedPrefix - Expected prefix (optional)
+   * @returns {boolean} True if valid
+   */
+  validateAddress(address, expectedPrefix = null) {
+    try {
+      const decoded = this.bech32Decode(address);
+      if (expectedPrefix && decoded.prefix !== expectedPrefix) {
+        return false;
+      }
+      // Cosmos addresses are 20 bytes
+      return decoded.data.length === 20;
+    } catch (error) {
+      return false;
+    }
   },
 
   /**

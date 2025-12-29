@@ -164,8 +164,6 @@ func TestQueryServerValidateMintEligibilityEdgeCases(t *testing.T) {
 }
 
 func TestQueryServerAttributeDisclosureIndexing(t *testing.T) {
-	t.Skip("Skipping test: GetDisclosureRequest query method not yet implemented")
-
 	k, ctx := setupMsgServerKeeper(t)
 	srv := keeper.NewMsgServer(k)
 	query := keeper.NewQueryServer(k)

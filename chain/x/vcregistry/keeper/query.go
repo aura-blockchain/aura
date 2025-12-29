@@ -575,6 +575,43 @@ func (q *QueryServer) Params(
 	}, nil
 }
 
+// ============================
+// ATTRIBUTE DISCLOSURE QUERIES
+// ============================
+
+// GetDisclosureRequest retrieves a disclosure request by request ID
+func (q *QueryServer) GetDisclosureRequest(
+	ctx context.Context,
+	req *vcregistrypb.QueryDisclosureRequestRequest,
+) (*vcregistrypb.QueryDisclosureRequestResponse, error) {
+	if req == nil {
+		return nil, fmt.Errorf("request required")
+	}
+
+	q.syncMetadata(ctx)
+
+	if req.RequestId == "" {
+		return nil, fmt.Errorf("request_id required")
+	}
+
+	// Get the disclosure request from the keeper
+	disclosureReq, exists := q.keeper.GetDisclosureRequest(ctx, req.RequestId)
+	if !exists {
+		return &vcregistrypb.QueryDisclosureRequestResponse{
+			Request: nil,
+			Exists:  false,
+		}, nil
+	}
+
+	// Return the disclosure request
+	// Since types.DisclosureRequest is re-exported from vcregistrypb.DisclosureRequest,
+	// we can use it directly without conversion
+	return &vcregistrypb.QueryDisclosureRequestResponse{
+		Request: &disclosureReq,
+		Exists:  true,
+	}, nil
+}
+
 // mustEmbedUnimplementedQueryServer implements the proto interface requirement
 //nolint:unused // kept to satisfy generated gRPC interface
 func (*QueryServer) mustEmbedUnimplementedQueryServer() {}
