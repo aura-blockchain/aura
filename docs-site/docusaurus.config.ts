@@ -79,6 +79,12 @@ const config: Config = {
         },
         {
           type: 'docSidebar',
+          sidebarId: 'modulesSidebar',
+          position: 'left',
+          label: 'Modules',
+        },
+        {
+          type: 'docSidebar',
           sidebarId: 'validatorsSidebar',
           position: 'left',
           label: 'Validators',
@@ -99,6 +105,14 @@ const config: Config = {
             {
               label: 'Getting Started',
               to: '/docs/intro',
+            },
+            {
+              label: 'Tutorials',
+              to: '/docs/tutorials',
+            },
+            {
+              label: 'Module Reference',
+              to: '/docs/modules',
             },
             {
               label: 'Developers',

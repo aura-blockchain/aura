@@ -23,6 +23,18 @@ const sidebars: SidebarsConfig = {
         'getting-started/quick-start',
       ],
     },
+    {
+      type: 'category',
+      label: 'Tutorials',
+      items: [
+        'tutorials/index',
+        'tutorials/create-did',
+        'tutorials/issue-credential',
+        'tutorials/stake-tokens',
+        'tutorials/governance',
+        'tutorials/dex-trading',
+      ],
+    },
   ],
 
   developersSidebar: [
@@ -33,6 +45,22 @@ const sidebars: SidebarsConfig = {
       items: [
         'developers/module-development',
         'developers/sdk-integration',
+      ],
+    },
+  ],
+
+  modulesSidebar: [
+    'modules/index',
+    {
+      type: 'category',
+      label: 'Module Reference',
+      items: [
+        'modules/identity',
+        'modules/privacy',
+        'modules/defi',
+        'modules/security',
+        'modules/governance',
+        'modules/infrastructure',
       ],
     },
   ],
