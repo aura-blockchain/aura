@@ -233,10 +233,9 @@ if curl -s "$NODE/status" > /dev/null 2>&1; then
         "coins" \
         "WARN"
 
-    test_command "Confidence score params (KNOWN ISSUE)" \
+    test_command "Confidence score params query" \
         "$AURAD query confidencescore params --node $NODE --output json 2>&1" \
-        "not implemented" \
-        "WARN"
+        "params"
 else
     echo -e "${YELLOW}⚠ Node not accessible at $NODE - skipping integration tests${NC}"
     echo "  Start testnet or verify RPC endpoint"

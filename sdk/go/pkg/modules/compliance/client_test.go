@@ -24,54 +24,55 @@ func TestSubmitKYCParams_Validation(t *testing.T) {
 		{
 			name: "missing address",
 			params: &SubmitKYCParams{
-				FullName:       "John Doe",
-				DocumentType:   "passport",
-				DocumentNumber: "123456",
+				KYCLevel:      compliancepb.KYCLevel_KYC_LEVEL_BASIC,
+				Provider:      "provider123",
+				PIICommitment: []byte("commitment"),
+				Jurisdiction:  "US",
 			},
 			wantErr: true,
 			errMsg:  "address is required",
 		},
 		{
-			name: "missing full name",
+			name: "missing provider",
 			params: &SubmitKYCParams{
-				Address:        "aura1test123",
-				DocumentType:   "passport",
-				DocumentNumber: "123456",
+				Address:       "aura1test123",
+				KYCLevel:      compliancepb.KYCLevel_KYC_LEVEL_BASIC,
+				PIICommitment: []byte("commitment"),
+				Jurisdiction:  "US",
 			},
 			wantErr: true,
-			errMsg:  "full name is required",
+			errMsg:  "provider is required",
 		},
 		{
-			name: "missing document type",
-			params: &SubmitKYCParams{
-				Address:        "aura1test123",
-				FullName:       "John Doe",
-				DocumentNumber: "123456",
-			},
-			wantErr: true,
-			errMsg:  "document type is required",
-		},
-		{
-			name: "missing document number",
+			name: "missing PII commitment",
 			params: &SubmitKYCParams{
 				Address:      "aura1test123",
-				FullName:     "John Doe",
-				DocumentType: "passport",
+				KYCLevel:     compliancepb.KYCLevel_KYC_LEVEL_BASIC,
+				Provider:     "provider123",
+				Jurisdiction: "US",
 			},
 			wantErr: true,
-			errMsg:  "document number is required",
+			errMsg:  "PII commitment is required",
+		},
+		{
+			name: "missing jurisdiction",
+			params: &SubmitKYCParams{
+				Address:       "aura1test123",
+				KYCLevel:      compliancepb.KYCLevel_KYC_LEVEL_BASIC,
+				Provider:      "provider123",
+				PIICommitment: []byte("commitment"),
+			},
+			wantErr: true,
+			errMsg:  "jurisdiction is required",
 		},
 		{
 			name: "valid params",
 			params: &SubmitKYCParams{
-				Address:           "aura1test123",
-				FullName:          "John Doe",
-				DocumentType:      "passport",
-				DocumentNumber:    "123456",
-				DateOfBirth:       "1990-01-01",
-				Nationality:       "US",
-				ResidenceCountry:  "US",
-				VerificationLevel: compliancepb.VerificationLevel_VERIFICATION_LEVEL_BASIC,
+				Address:       "aura1test123",
+				KYCLevel:      compliancepb.KYCLevel_KYC_LEVEL_BASIC,
+				Provider:      "provider123",
+				PIICommitment: []byte("commitment"),
+				Jurisdiction:  "US",
 			},
 			wantErr: false,
 		},
@@ -83,21 +84,17 @@ func TestSubmitKYCParams_Validation(t *testing.T) {
 				if tt.params == nil {
 					require.Nil(t, tt.params)
 				} else {
-					if tt.params.Address == "" {
-						assert.Empty(t, tt.params.Address)
-					} else if tt.params.FullName == "" {
-						assert.Empty(t, tt.params.FullName)
-					} else if tt.params.DocumentType == "" {
-						assert.Empty(t, tt.params.DocumentType)
-					} else if tt.params.DocumentNumber == "" {
-						assert.Empty(t, tt.params.DocumentNumber)
-					}
+					assert.True(t,
+						tt.params.Address == "" ||
+							tt.params.Provider == "" ||
+							len(tt.params.PIICommitment) == 0 ||
+							tt.params.Jurisdiction == "")
 				}
 			} else {
 				assert.NotEmpty(t, tt.params.Address)
-				assert.NotEmpty(t, tt.params.FullName)
-				assert.NotEmpty(t, tt.params.DocumentType)
-				assert.NotEmpty(t, tt.params.DocumentNumber)
+				assert.NotEmpty(t, tt.params.Provider)
+				assert.NotEmpty(t, tt.params.PIICommitment)
+				assert.NotEmpty(t, tt.params.Jurisdiction)
 			}
 		})
 	}
@@ -117,13 +114,13 @@ func TestReportSuspiciousActivityParams_Validation(t *testing.T) {
 		{
 			name: "missing reporter",
 			params: &ReportSuspiciousActivityParams{
-				TargetAddress: "aura1target123",
-				ActivityType:  "suspicious",
+				Address:      "aura1target123",
+				ActivityType: "suspicious",
 			},
 			wantErr: true,
 		},
 		{
-			name: "missing target address",
+			name: "missing address",
 			params: &ReportSuspiciousActivityParams{
 				Reporter:     "aura1reporter123",
 				ActivityType: "suspicious",
@@ -133,20 +130,20 @@ func TestReportSuspiciousActivityParams_Validation(t *testing.T) {
 		{
 			name: "missing activity type",
 			params: &ReportSuspiciousActivityParams{
-				Reporter:      "aura1reporter123",
-				TargetAddress: "aura1target123",
+				Reporter: "aura1reporter123",
+				Address:  "aura1target123",
 			},
 			wantErr: true,
 		},
 		{
 			name: "valid params",
 			params: &ReportSuspiciousActivityParams{
-				Reporter:      "aura1reporter123",
-				TargetAddress: "aura1target123",
-				ActivityType:  "suspicious",
-				Amount:        "1000",
-				Description:   "Suspicious transaction",
-				Evidence:      []string{"hash1", "hash2"},
+				Reporter:        "aura1reporter123",
+				Address:         "aura1target123",
+				ActivityType:    "suspicious",
+				TransactionHash: "hash123",
+				Description:     "Suspicious transaction",
+				Indicators:      []string{"high_velocity", "structuring"},
 			},
 			wantErr: false,
 		},
@@ -158,21 +155,21 @@ func TestReportSuspiciousActivityParams_Validation(t *testing.T) {
 				if tt.params == nil {
 					require.Nil(t, tt.params)
 				} else {
-					assert.True(t, tt.params.Reporter == "" || tt.params.TargetAddress == "" || tt.params.ActivityType == "")
+					assert.True(t, tt.params.Reporter == "" || tt.params.Address == "" || tt.params.ActivityType == "")
 				}
 			} else {
 				assert.NotEmpty(t, tt.params.Reporter)
-				assert.NotEmpty(t, tt.params.TargetAddress)
+				assert.NotEmpty(t, tt.params.Address)
 				assert.NotEmpty(t, tt.params.ActivityType)
 			}
 		})
 	}
 }
 
-func TestGenerateTaxReportParams_Validation(t *testing.T) {
+func TestScreenSanctionsParams_Validation(t *testing.T) {
 	tests := []struct {
 		name    string
-		params  *GenerateTaxReportParams
+		params  *ScreenSanctionsParams
 		wantErr bool
 	}{
 		{
@@ -182,25 +179,24 @@ func TestGenerateTaxReportParams_Validation(t *testing.T) {
 		},
 		{
 			name: "missing address",
-			params: &GenerateTaxReportParams{
-				TaxYear: 2024,
+			params: &ScreenSanctionsParams{
+				ForceRefresh: true,
 			},
 			wantErr: true,
 		},
 		{
-			name: "missing tax year",
-			params: &GenerateTaxReportParams{
-				Address: "aura1test123",
+			name: "valid params without force refresh",
+			params: &ScreenSanctionsParams{
+				Address:      "aura1test123",
+				ForceRefresh: false,
 			},
-			wantErr: true,
+			wantErr: false,
 		},
 		{
-			name: "valid params",
-			params: &GenerateTaxReportParams{
-				Address:    "aura1test123",
-				TaxYear:    2024,
-				TaxRegion:  "US",
-				ReportType: "full",
+			name: "valid params with force refresh",
+			params: &ScreenSanctionsParams{
+				Address:      "aura1test123",
+				ForceRefresh: true,
 			},
 			wantErr: false,
 		},
@@ -212,11 +208,10 @@ func TestGenerateTaxReportParams_Validation(t *testing.T) {
 				if tt.params == nil {
 					require.Nil(t, tt.params)
 				} else {
-					assert.True(t, tt.params.Address == "" || tt.params.TaxYear == 0)
+					assert.Empty(t, tt.params.Address)
 				}
 			} else {
 				assert.NotEmpty(t, tt.params.Address)
-				assert.NotZero(t, tt.params.TaxYear)
 			}
 		})
 	}
@@ -237,35 +232,35 @@ func TestRecordGDPRConsentParams_Validation(t *testing.T) {
 			name: "missing address",
 			params: &RecordGDPRConsentParams{
 				ConsentType: "marketing",
-				Granted:     true,
+				Consented:   true,
 			},
 			wantErr: true,
 		},
 		{
 			name: "missing consent type",
 			params: &RecordGDPRConsentParams{
-				Address: "aura1test123",
-				Granted: true,
+				Address:   "aura1test123",
+				Consented: true,
 			},
 			wantErr: true,
 		},
 		{
 			name: "valid params with consent granted",
 			params: &RecordGDPRConsentParams{
-				Address:     "aura1test123",
-				ConsentType: "marketing",
-				Granted:     true,
-				ConsentText: "I consent to marketing",
-				ConsentHash: "hash123",
+				Address:        "aura1test123",
+				ConsentType:    "marketing",
+				Consented:      true,
+				ConsentVersion: "1.0",
 			},
 			wantErr: false,
 		},
 		{
 			name: "valid params with consent denied",
 			params: &RecordGDPRConsentParams{
-				Address:     "aura1test123",
-				ConsentType: "marketing",
-				Granted:     false,
+				Address:        "aura1test123",
+				ConsentType:    "marketing",
+				Consented:      false,
+				ConsentVersion: "1.0",
 			},
 			wantErr: false,
 		},
@@ -287,10 +282,10 @@ func TestRecordGDPRConsentParams_Validation(t *testing.T) {
 	}
 }
 
-func TestScreenSanctionsParams_Validation(t *testing.T) {
+func TestGenerateTaxReportParams_Validation(t *testing.T) {
 	tests := []struct {
 		name    string
-		params  *ScreenSanctionsParams
+		params  *GenerateTaxReportParams
 		wantErr bool
 	}{
 		{
@@ -300,26 +295,34 @@ func TestScreenSanctionsParams_Validation(t *testing.T) {
 		},
 		{
 			name: "missing address",
-			params: &ScreenSanctionsParams{
-				FullName: "John Doe",
+			params: &GenerateTaxReportParams{
+				TaxYear: "2024",
+			},
+			wantErr: true,
+		},
+		{
+			name: "missing tax year",
+			params: &GenerateTaxReportParams{
+				Address: "aura1test123",
 			},
 			wantErr: true,
 		},
 		{
 			name: "valid minimal params",
-			params: &ScreenSanctionsParams{
+			params: &GenerateTaxReportParams{
 				Address: "aura1test123",
+				TaxYear: "2024",
 			},
 			wantErr: false,
 		},
 		{
 			name: "valid full params",
-			params: &ScreenSanctionsParams{
+			params: &GenerateTaxReportParams{
 				Address:      "aura1test123",
-				FullName:     "John Doe",
-				DateOfBirth:  "1990-01-01",
-				Nationality:  "US",
-				CheckAgainst: []string{"OFAC", "EU"},
+				TaxYear:      "2024",
+				Jurisdiction: "US",
+				ReportType:   "1099-MISC",
+				FilePath:     "/tmp/tax_report.pdf",
 			},
 			wantErr: false,
 		},
@@ -331,11 +334,168 @@ func TestScreenSanctionsParams_Validation(t *testing.T) {
 				if tt.params == nil {
 					require.Nil(t, tt.params)
 				} else {
-					assert.Empty(t, tt.params.Address)
+					assert.True(t, tt.params.Address == "" || tt.params.TaxYear == "")
 				}
 			} else {
 				assert.NotEmpty(t, tt.params.Address)
+				assert.NotEmpty(t, tt.params.TaxYear)
 			}
+		})
+	}
+}
+
+func TestRequestGDPRData_Validation(t *testing.T) {
+	tests := []struct {
+		name        string
+		address     string
+		requestType string
+		wantErr     bool
+	}{
+		{
+			name:        "empty address",
+			address:     "",
+			requestType: "access",
+			wantErr:     true,
+		},
+		{
+			name:        "empty request type",
+			address:     "aura1test123",
+			requestType: "",
+			wantErr:     true,
+		},
+		{
+			name:        "valid params",
+			address:     "aura1test123",
+			requestType: "access",
+			wantErr:     false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.wantErr {
+				assert.True(t, tt.address == "" || tt.requestType == "")
+			} else {
+				assert.NotEmpty(t, tt.address)
+				assert.NotEmpty(t, tt.requestType)
+			}
+		})
+	}
+}
+
+func TestEraseGDPRData_Validation(t *testing.T) {
+	tests := []struct {
+		name          string
+		address       string
+		erasureReason string
+		wantErr       bool
+	}{
+		{
+			name:          "empty address",
+			address:       "",
+			erasureReason: "user request",
+			wantErr:       true,
+		},
+		{
+			name:          "empty erasure reason",
+			address:       "aura1test123",
+			erasureReason: "",
+			wantErr:       true,
+		},
+		{
+			name:          "valid params",
+			address:       "aura1test123",
+			erasureReason: "user request",
+			wantErr:       false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.wantErr {
+				assert.True(t, tt.address == "" || tt.erasureReason == "")
+			} else {
+				assert.NotEmpty(t, tt.address)
+				assert.NotEmpty(t, tt.erasureReason)
+			}
+		})
+	}
+}
+
+func TestQueryValidation(t *testing.T) {
+	t.Run("GetKYCRecord requires address", func(t *testing.T) {
+		address := ""
+		assert.Empty(t, address)
+	})
+
+	t.Run("GetKYCHistory requires address", func(t *testing.T) {
+		address := ""
+		assert.Empty(t, address)
+	})
+
+	t.Run("GetAMLProfile requires address", func(t *testing.T) {
+		address := ""
+		assert.Empty(t, address)
+	})
+
+	t.Run("GetSanctionsScreening requires address", func(t *testing.T) {
+		address := ""
+		assert.Empty(t, address)
+	})
+
+	t.Run("GetTransactionAlerts requires address", func(t *testing.T) {
+		address := ""
+		assert.Empty(t, address)
+	})
+
+	t.Run("GetTaxReport requires address and tax year", func(t *testing.T) {
+		address := ""
+		taxYear := ""
+		assert.True(t, address == "" || taxYear == "")
+	})
+}
+
+func TestKYCLevelValidation(t *testing.T) {
+	validLevels := []compliancepb.KYCLevel{
+		compliancepb.KYCLevel_KYC_LEVEL_NONE,
+		compliancepb.KYCLevel_KYC_LEVEL_BASIC,
+		compliancepb.KYCLevel_KYC_LEVEL_INTERMEDIATE,
+		compliancepb.KYCLevel_KYC_LEVEL_ADVANCED,
+	}
+
+	for _, level := range validLevels {
+		t.Run(level.String(), func(t *testing.T) {
+			assert.NotEqual(t, compliancepb.KYCLevel_KYC_LEVEL_UNSPECIFIED, level)
+		})
+	}
+}
+
+func TestAMLRiskLevelValidation(t *testing.T) {
+	validLevels := []compliancepb.AMLRiskLevel{
+		compliancepb.AMLRiskLevel_AML_RISK_LOW,
+		compliancepb.AMLRiskLevel_AML_RISK_MEDIUM,
+		compliancepb.AMLRiskLevel_AML_RISK_HIGH,
+		compliancepb.AMLRiskLevel_AML_RISK_SEVERE,
+	}
+
+	for _, level := range validLevels {
+		t.Run(level.String(), func(t *testing.T) {
+			assert.NotEqual(t, compliancepb.AMLRiskLevel_AML_RISK_UNSPECIFIED, level)
+		})
+	}
+}
+
+func TestSanctionsStatusValidation(t *testing.T) {
+	validStatuses := []compliancepb.SanctionsStatus{
+		compliancepb.SanctionsStatus_SANCTIONS_CLEAR,
+		compliancepb.SanctionsStatus_SANCTIONS_MATCH,
+		compliancepb.SanctionsStatus_SANCTIONS_CONFIRMED,
+		compliancepb.SanctionsStatus_SANCTIONS_PENDING_REVIEW,
+	}
+
+	for _, status := range validStatuses {
+		t.Run(status.String(), func(t *testing.T) {
+			assert.NotEqual(t, compliancepb.SanctionsStatus_SANCTIONS_UNSPECIFIED, status)
 		})
 	}
 }

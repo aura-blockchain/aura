@@ -344,7 +344,7 @@ func (c *Client) GetKYCRecord(ctx context.Context, address string) (*compliancep
 		return nil, fmt.Errorf("failed to get KYC record: %w", err)
 	}
 
-	return &resp.Record, nil
+	return resp.Record, nil
 }
 
 // GetKYCHistory retrieves KYC history for an address
@@ -380,11 +380,11 @@ func (c *Client) GetAMLProfile(ctx context.Context, address string) (*compliance
 		return nil, fmt.Errorf("failed to get AML profile: %w", err)
 	}
 
-	return &resp.Profile, nil
+	return resp.Profile, nil
 }
 
 // GetSanctionsScreening retrieves sanctions screening results for an address
-func (c *Client) GetSanctionsScreening(ctx context.Context, address string) (*compliancepb.SanctionsScreening, error) {
+func (c *Client) GetSanctionsScreening(ctx context.Context, address string) (*compliancepb.SanctionsScreeningResult, error) {
 	if address == "" {
 		return nil, fmt.Errorf("address is required")
 	}
@@ -398,18 +398,18 @@ func (c *Client) GetSanctionsScreening(ctx context.Context, address string) (*co
 		return nil, fmt.Errorf("failed to get sanctions screening: %w", err)
 	}
 
-	return &resp.Screening, nil
+	return resp.Result, nil
 }
 
 // GetTransactionAlerts retrieves transaction alerts for an address
-func (c *Client) GetTransactionAlerts(ctx context.Context, address string, limit uint32) ([]*compliancepb.TransactionAlert, error) {
+func (c *Client) GetTransactionAlerts(ctx context.Context, address string, unreviewedOnly bool) ([]*compliancepb.TransactionAlert, error) {
 	if address == "" {
 		return nil, fmt.Errorf("address is required")
 	}
 
 	req := &compliancepb.QueryTransactionAlertsRequest{
-		Address: address,
-		Limit:   limit,
+		Address:        address,
+		UnreviewedOnly: unreviewedOnly,
 	}
 
 	resp, err := c.queryClient.TransactionAlerts(ctx, req)
@@ -421,11 +421,11 @@ func (c *Client) GetTransactionAlerts(ctx context.Context, address string, limit
 }
 
 // GetTaxReport retrieves a tax report
-func (c *Client) GetTaxReport(ctx context.Context, address string, taxYear uint32) (*compliancepb.TaxReport, error) {
+func (c *Client) GetTaxReport(ctx context.Context, address string, taxYear string) (*compliancepb.TaxReport, error) {
 	if address == "" {
 		return nil, fmt.Errorf("address is required")
 	}
-	if taxYear == 0 {
+	if taxYear == "" {
 		return nil, fmt.Errorf("tax year is required")
 	}
 
@@ -439,7 +439,7 @@ func (c *Client) GetTaxReport(ctx context.Context, address string, taxYear uint3
 		return nil, fmt.Errorf("failed to get tax report: %w", err)
 	}
 
-	return &resp.Report, nil
+	return resp.Report, nil
 }
 
 // ListAllKYCRecords lists all KYC records with pagination
@@ -467,7 +467,7 @@ func (c *Client) ListAllAMLProfiles(ctx context.Context) ([]*compliancepb.AMLPro
 }
 
 // ListAllSanctionsResults lists all sanctions screening results with pagination
-func (c *Client) ListAllSanctionsResults(ctx context.Context) ([]*compliancepb.SanctionsScreening, error) {
+func (c *Client) ListAllSanctionsResults(ctx context.Context) ([]*compliancepb.SanctionsScreeningResult, error) {
 	req := &compliancepb.QueryAllSanctionsResultsRequest{}
 
 	resp, err := c.queryClient.AllSanctionsResults(ctx, req)
@@ -479,7 +479,7 @@ func (c *Client) ListAllSanctionsResults(ctx context.Context) ([]*compliancepb.S
 }
 
 // ListAllTransactionAlerts lists all transaction alerts with pagination
-func (c *Client) ListAllTransactionAlerts(ctx context.Context) ([]*compliancepb.TransactionAlert, error) {
+func (c *Client) ListAllTransactionAlerts(ctx context.Context) ([]*compliancepb.TransactionAlertList, error) {
 	req := &compliancepb.QueryAllTransactionAlertsRequest{}
 
 	resp, err := c.queryClient.AllTransactionAlerts(ctx, req)
@@ -491,7 +491,7 @@ func (c *Client) ListAllTransactionAlerts(ctx context.Context) ([]*compliancepb.
 }
 
 // ListAllGDPRConsents lists all GDPR consents with pagination
-func (c *Client) ListAllGDPRConsents(ctx context.Context) ([]*compliancepb.GDPRConsent, error) {
+func (c *Client) ListAllGDPRConsents(ctx context.Context) ([]*compliancepb.GDPRConsentList, error) {
 	req := &compliancepb.QueryAllGDPRConsentsRequest{}
 
 	resp, err := c.queryClient.AllGDPRConsents(ctx, req)
@@ -503,7 +503,7 @@ func (c *Client) ListAllGDPRConsents(ctx context.Context) ([]*compliancepb.GDPRC
 }
 
 // ListAllTaxReports lists all tax reports with pagination
-func (c *Client) ListAllTaxReports(ctx context.Context) ([]*compliancepb.TaxReport, error) {
+func (c *Client) ListAllTaxReports(ctx context.Context) ([]*compliancepb.TaxReportList, error) {
 	req := &compliancepb.QueryAllTaxReportsRequest{}
 
 	resp, err := c.queryClient.AllTaxReports(ctx, req)
@@ -515,7 +515,7 @@ func (c *Client) ListAllTaxReports(ctx context.Context) ([]*compliancepb.TaxRepo
 }
 
 // ListAllGDPRRequests lists all GDPR requests with pagination
-func (c *Client) ListAllGDPRRequests(ctx context.Context) ([]*compliancepb.GDPRRequest, error) {
+func (c *Client) ListAllGDPRRequests(ctx context.Context) ([]*compliancepb.GDPRDataRequest, error) {
 	req := &compliancepb.QueryAllGDPRRequestsRequest{}
 
 	resp, err := c.queryClient.AllGDPRRequests(ctx, req)
@@ -527,7 +527,7 @@ func (c *Client) ListAllGDPRRequests(ctx context.Context) ([]*compliancepb.GDPRR
 }
 
 // GetParams retrieves module parameters
-func (c *Client) GetParams(ctx context.Context) (*compliancepb.Params, error) {
+func (c *Client) GetParams(ctx context.Context) (*compliancepb.ComplianceParams, error) {
 	req := &compliancepb.QueryParamsRequest{}
 
 	resp, err := c.queryClient.Params(ctx, req)
