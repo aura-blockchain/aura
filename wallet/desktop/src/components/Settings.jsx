@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { KeystoreService } from '../services/keystore';
+import HardwareWallet from './HardwareWallet';
 
 const Settings = ({ onWalletReset }) => {
   const [apiEndpoint, setApiEndpoint] = useState('http://localhost:1317');
@@ -169,6 +170,8 @@ const Settings = ({ onWalletReset }) => {
           Save Settings
         </button>
       </div>
+
+      <HardwareWallet />
 
       <div className="card">
         <h3 className="card-header">Wallet Backup</h3>

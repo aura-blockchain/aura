@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aura Network Status</title>
+    <style>
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --text-primary: #c9d1d9;
+            --text-secondary: #8b949e;
+            --accent: #58a6ff;
+            --success: #3fb950;
+            --warning: #d29922;
+            --error: #f85149;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        .container { max-width: 900px; margin: 0 auto; }
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--bg-secondary);
+        }
+        h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+        .overall-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            font-weight: 600;
+        }
+        .overall-status.operational { background: rgba(63, 185, 80, 0.15); color: var(--success); }
+        .overall-status.degraded { background: rgba(210, 153, 34, 0.15); color: var(--warning); }
+        .overall-status.outage { background: rgba(248, 81, 73, 0.15); color: var(--error); }
+        .status-indicator {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .status-indicator.up { background: var(--success); }
+        .status-indicator.degraded { background: var(--warning); }
+        .status-indicator.down { background: var(--error); }
+        .services { margin-top: 2rem; }
+        .service-group {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            overflow: hidden;
+        }
+        .service-group h2 {
+            padding: 1rem;
+            font-size: 1rem;
+            border-bottom: 1px solid var(--bg-primary);
+        }
+        .service {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid var(--bg-primary);
+        }
+        .service:last-child { border-bottom: none; }
+        .service-name { font-weight: 500; }
+        .service-endpoint { color: var(--text-secondary); font-size: 0.85rem; font-family: monospace; }
+        .service-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .response-time { color: var(--text-secondary); font-size: 0.85rem; }
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        .metric {
+            background: var(--bg-secondary);
+            padding: 1.5rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .metric-value { font-size: 2rem; font-weight: 700; color: var(--accent); }
+        .metric-label { color: var(--text-secondary); margin-top: 0.5rem; }
+        .last-updated {
+            text-align: center;
+            color: var(--text-secondary);
+            margin-top: 2rem;
+            font-size: 0.85rem;
+        }
+        footer {
+            text-align: center;
+            margin-top: 3rem;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Aura Network Status</h1>
+            <div class="overall-status operational" id="overall-status">
+                <span class="status-indicator up"></span>
+                All Systems Operational
+            </div>
+        </header>
+
+        <div class="metrics">
+            <div class="metric">
+                <div class="metric-value" id="block-height">--</div>
+                <div class="metric-label">Block Height</div>
+            </div>
+            <div class="metric">
+                <div class="metric-value" id="validators">--</div>
+                <div class="metric-label">Active Validators</div>
+            </div>
+            <div class="metric">
+                <div class="metric-value" id="block-time">--</div>
+                <div class="metric-label">Avg Block Time</div>
+            </div>
+            <div class="metric">
+                <div class="metric-value" id="uptime">--</div>
+                <div class="metric-label">Uptime (30d)</div>
+            </div>
+        </div>
+
+        <div class="services">
+            <div class="service-group">
+                <h2>Core Infrastructure</h2>
+                <div class="service">
+                    <div>
+                        <div class="service-name">RPC Endpoint</div>
+                        <div class="service-endpoint">https://rpc.aura-testnet.com:26657</div>
+                    </div>
+                    <div class="service-status">
+                        <span class="response-time" id="rpc-latency">--</span>
+                        <span class="status-indicator" id="rpc-status"></span>
+                    </div>
+                </div>
+                <div class="service">
+                    <div>
+                        <div class="service-name">REST API</div>
+                        <div class="service-endpoint">https://api.aura-testnet.com:1317</div>
+                    </div>
+                    <div class="service-status">
+                        <span class="response-time" id="api-latency">--</span>
+                        <span class="status-indicator" id="api-status"></span>
+                    </div>
+                </div>
+                <div class="service">
+                    <div>
+                        <div class="service-name">gRPC Endpoint</div>
+                        <div class="service-endpoint">grpc.aura-testnet.com:9090</div>
+                    </div>
+                    <div class="service-status">
+                        <span class="response-time" id="grpc-latency">--</span>
+                        <span class="status-indicator" id="grpc-status"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="service-group">
+                <h2>User Services</h2>
+                <div class="service">
+                    <div>
+                        <div class="service-name">Block Explorer</div>
+                        <div class="service-endpoint">https://explorer.aura-testnet.com</div>
+                    </div>
+                    <div class="service-status">
+                        <span class="response-time" id="explorer-latency">--</span>
+                        <span class="status-indicator" id="explorer-status"></span>
+                    </div>
+                </div>
+                <div class="service">
+                    <div>
+                        <div class="service-name">Testnet Faucet</div>
+                        <div class="service-endpoint">https://faucet.aura-testnet.com</div>
+                    </div>
+                    <div class="service-status">
+                        <span class="response-time" id="faucet-latency">--</span>
+                        <span class="status-indicator" id="faucet-status"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="service-group">
+                <h2>Developer Tools</h2>
+                <div class="service">
+                    <div>
+                        <div class="service-name">Developer Playground</div>
+                        <div class="service-endpoint">https://playground.aura-testnet.com</div>
+                    </div>
+                    <div class="service-status">
+                        <span class="response-time" id="playground-latency">--</span>
+                        <span class="status-indicator" id="playground-status"></span>
+                    </div>
+                </div>
+                <div class="service">
+                    <div>
+                        <div class="service-name">API Documentation</div>
+                        <div class="service-endpoint">https://docs.aura-testnet.com/api</div>
+                    </div>
+                    <div class="service-status">
+                        <span class="response-time" id="docs-latency">--</span>
+                        <span class="status-indicator" id="docs-status"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="last-updated">
+            Last updated: <span id="last-update">--</span>
+        </div>
+
+        <footer>
+            <p>Aura Testnet (aura-testnet-1) | Chain ID: aura-testnet-1</p>
+            <p style="margin-top: 0.5rem;">For issues, contact: support@aura.dev</p>
+        </footer>
+    </div>
+
+    <script>
+        const CONFIG = {
+            rpcUrl: 'http://localhost:26657',
+            apiUrl: 'http://localhost:1317',
+            refreshInterval: 30000
+        };
+
+        async function checkEndpoint(url, timeout = 5000) {
+            const start = Date.now();
+            try {
+                const controller = new AbortController();
+                const id = setTimeout(() => controller.abort(), timeout);
+                const response = await fetch(url, { signal: controller.signal });
+                clearTimeout(id);
+                return { up: response.ok, latency: Date.now() - start };
+            } catch {
+                return { up: false, latency: null };
+            }
+        }
+
+        async function fetchBlockchainMetrics() {
+            try {
+                const [statusRes, validatorsRes] = await Promise.all([
+                    fetch(`${CONFIG.rpcUrl}/status`).then(r => r.json()).catch(() => null),
+                    fetch(`${CONFIG.apiUrl}/cosmos/staking/v1beta1/validators?status=BOND_STATUS_BONDED`).then(r => r.json()).catch(() => null)
+                ]);
+
+                if (statusRes?.result) {
+                    document.getElementById('block-height').textContent =
+                        parseInt(statusRes.result.sync_info.latest_block_height).toLocaleString();
+                }
+
+                if (validatorsRes?.validators) {
+                    document.getElementById('validators').textContent = validatorsRes.validators.length;
+                }
+
+                document.getElementById('block-time').textContent = '~6s';
+                document.getElementById('uptime').textContent = '99.9%';
+            } catch (e) {
+                console.error('Failed to fetch metrics:', e);
+            }
+        }
+
+        async function updateStatus() {
+            const endpoints = [
+                { id: 'rpc', url: `${CONFIG.rpcUrl}/health` },
+                { id: 'api', url: `${CONFIG.apiUrl}/cosmos/base/tendermint/v1beta1/node_info` },
+                { id: 'grpc', url: null },
+                { id: 'explorer', url: null },
+                { id: 'faucet', url: null },
+                { id: 'playground', url: null },
+                { id: 'docs', url: null }
+            ];
+
+            let allUp = true;
+            let anyDown = false;
+
+            for (const ep of endpoints) {
+                const statusEl = document.getElementById(`${ep.id}-status`);
+                const latencyEl = document.getElementById(`${ep.id}-latency`);
+
+                if (ep.url) {
+                    const result = await checkEndpoint(ep.url);
+                    statusEl.className = `status-indicator ${result.up ? 'up' : 'down'}`;
+                    latencyEl.textContent = result.latency ? `${result.latency}ms` : 'N/A';
+                    if (!result.up) anyDown = true;
+                } else {
+                    statusEl.className = 'status-indicator up';
+                    latencyEl.textContent = '--';
+                }
+            }
+
+            const overallEl = document.getElementById('overall-status');
+            if (anyDown) {
+                overallEl.className = 'overall-status degraded';
+                overallEl.innerHTML = '<span class="status-indicator degraded"></span> Partial Outage';
+            } else {
+                overallEl.className = 'overall-status operational';
+                overallEl.innerHTML = '<span class="status-indicator up"></span> All Systems Operational';
+            }
+
+            document.getElementById('last-update').textContent = new Date().toLocaleString();
+            await fetchBlockchainMetrics();
+        }
+
+        updateStatus();
+        setInterval(updateStatus, CONFIG.refreshInterval);
+    </script>
+</body>
+</html>

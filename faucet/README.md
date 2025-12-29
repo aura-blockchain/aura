@@ -95,7 +95,7 @@ go run main.go
 | `PORT` | Server port | `8080` |
 | `ENVIRONMENT` | Environment (development/production) | `development` |
 | `NODE_RPC` | AURA node RPC endpoint | `http://localhost:26657` |
-| `CHAIN_ID` | Chain ID | `paw-testnet-1` |
+| `CHAIN_ID` | Chain ID | `aura-testnet-1` |
 | `FAUCET_MNEMONIC` | Faucet wallet mnemonic | Required |
 | `FAUCET_ADDRESS` | Faucet wallet address | Required |
 | `AMOUNT_PER_REQUEST` | Amount to send per request (in micro-units) | `100000000` |
@@ -125,7 +125,7 @@ Returns the health status of the faucet service.
 ```json
 {
   "status": "healthy",
-  "network": "paw-testnet-1",
+  "network": "aura-testnet-1",
   "height": "12345"
 }
 ```
@@ -145,7 +145,7 @@ Returns faucet configuration and statistics.
   "total_distributed": 50000000000,
   "unique_recipients": 125,
   "requests_last_24h": 45,
-  "chain_id": "paw-testnet-1"
+  "chain_id": "aura-testnet-1"
 }
 ```
 

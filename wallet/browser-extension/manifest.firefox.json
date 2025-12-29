@@ -1,0 +1,48 @@
+{
+  "manifest_version": 2,
+  "name": "Aura Network Wallet",
+  "description": "Complete wallet for Aura blockchain: send, stake, vote, and trade AURA tokens",
+  "version": "1.0.0",
+  "author": "Aura Team",
+  "browser_action": {
+    "default_title": "Aura Wallet",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": false
+  },
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "permissions": [
+    "storage",
+    "alarms",
+    "unlimitedStorage",
+    "http://localhost:*/*",
+    "http://127.0.0.1:*/*",
+    "https://*.aura.network/*"
+  ],
+  "optional_permissions": [
+    "usb"
+  ],
+  "content_security_policy": "script-src 'self'; object-src 'self'; connect-src 'self' http://localhost:* http://127.0.0.1:* https://*.aura.network;",
+  "web_accessible_resources": [
+    "icons/*"
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "wallet@aura.network",
+      "strict_min_version": "109.0"
+    }
+  }
+}

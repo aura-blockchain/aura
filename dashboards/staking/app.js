@@ -1,4 +1,5 @@
 // AURA Staking Dashboard - Main Application
+// Integrates with Keplr wallet for real transaction signing
 
 import { StakingAPI } from './services/stakingAPI.js';
 import { ValidatorList } from './components/ValidatorList.js';
@@ -8,10 +9,12 @@ import { DelegationPanel } from './components/DelegationPanel.js';
 import { RewardsPanel } from './components/RewardsPanel.js';
 import { PortfolioView } from './components/PortfolioView.js';
 import { showToast, showLoading, hideLoading } from './utils/ui.js';
+import { AuraWalletConnector, WalletError, WalletErrorCodes } from '../wallet-connector.js';
 
 class StakingDashboard {
     constructor() {
         this.api = new StakingAPI();
+        this.wallet = new AuraWalletConnector();
         this.walletAddress = null;
         this.components = {};
         this.init();
@@ -19,6 +22,7 @@ class StakingDashboard {
 
     async init() {
         this.setupEventListeners();
+        this.setupWalletEvents();
         this.initializeComponents();
         await this.loadNetworkStats();
         this.checkWalletConnection();
@@ -56,15 +60,35 @@ class StakingDashboard {
         });
     }
 
+    setupWalletEvents() {
+        // Handle wallet events
+        this.wallet.on('connect', ({ address }) => {
+            console.log('Wallet connected:', address);
+        });
+
+        this.wallet.on('disconnect', () => {
+            console.log('Wallet disconnected');
+            this.handleWalletDisconnect();
+        });
+
+        this.wallet.on('accountChange', async ({ address }) => {
+            console.log('Account changed:', address);
+            this.walletAddress = address;
+            this.updateWalletUI(address);
+            await this.components.portfolio?.render(address);
+            showToast('Account changed', 'info');
+        });
+    }
+
     initializeComponents() {
-        // Initialize all components
+        // Initialize all components with wallet reference
         this.components = {
             validatorList: new ValidatorList(this.api),
             validatorComparison: new ValidatorComparison(this.api),
             stakingCalculator: new StakingCalculator(this.api),
-            delegationPanel: new DelegationPanel(this.api),
-            rewardsPanel: new RewardsPanel(this.api),
-            portfolio: new PortfolioView(this.api)
+            delegationPanel: new DelegationPanel(this.api, this.wallet),
+            rewardsPanel: new RewardsPanel(this.api, this.wallet),
+            portfolio: new PortfolioView(this.api, this.wallet)
         };
 
         // Set up component event listeners
@@ -130,35 +154,20 @@ class StakingDashboard {
             showLoading('Connecting wallet...');
 
             // Check if Keplr is installed
-            if (!window.keplr) {
-                throw new Error('Keplr wallet not found. Please install Keplr extension.');
+            if (!AuraWalletConnector.isKeplrInstalled()) {
+                hideLoading();
+                this.showInstallKeplrPrompt();
+                return;
             }
 
-            // Request chain add (if needed)
-            await this.suggestChain();
-
-            // Enable wallet
-            await window.keplr.enable('aura-testnet');
-
-            // Get offline signer
-            const offlineSigner = window.keplr.getOfflineSigner('aura-testnet');
-            const accounts = await offlineSigner.getAccounts();
-
-            if (accounts.length === 0) {
-                throw new Error('No accounts found in wallet');
-            }
-
-            this.walletAddress = accounts[0].address;
+            // Connect using the wallet connector
+            this.walletAddress = await this.wallet.connect();
 
             // Update UI
-            document.getElementById('connect-wallet').style.display = 'none';
-            const walletConnected = document.getElementById('wallet-connected');
-            walletConnected.style.display = 'flex';
-            walletConnected.querySelector('.wallet-address').textContent =
-                this.formatAddress(this.walletAddress);
+            this.updateWalletUI(this.walletAddress);
 
-            // Save to localStorage
-            localStorage.setItem('aura_wallet_address', this.walletAddress);
+            // Save to localStorage for reconnection
+            localStorage.setItem('aura_wallet_connected', 'true');
 
             // Load portfolio
             await this.components.portfolio.render(this.walletAddress);
@@ -168,79 +177,104 @@ class StakingDashboard {
         } catch (error) {
             hideLoading();
             console.error('Wallet connection failed:', error);
-            showToast(error.message || 'Failed to connect wallet', 'error');
+
+            if (error instanceof WalletError) {
+                switch (error.code) {
+                    case WalletErrorCodes.KEPLR_NOT_INSTALLED:
+                        this.showInstallKeplrPrompt();
+                        break;
+                    case WalletErrorCodes.USER_REJECTED:
+                        showToast('Connection request was rejected', 'warning');
+                        break;
+                    case WalletErrorCodes.NO_ACCOUNTS:
+                        showToast('No accounts found in wallet', 'error');
+                        break;
+                    default:
+                        showToast(error.message, 'error');
+                }
+            } else {
+                showToast(error.message || 'Failed to connect wallet', 'error');
+            }
         }
     }
 
-    async suggestChain() {
-        const chainConfig = {
-            chainId: 'aura-testnet',
-            chainName: 'AURA Testnet',
-            rpc: 'http://localhost:26657',
-            rest: 'http://localhost:1317',
-            bip44: {
-                coinType: 118,
-            },
-            bech32Config: {
-                bech32PrefixAccAddr: 'aura',
-                bech32PrefixAccPub: 'aurapub',
-                bech32PrefixValAddr: 'auravaloper',
-                bech32PrefixValPub: 'auravaloperpub',
-                bech32PrefixConsAddr: 'auravalcons',
-                bech32PrefixConsPub: 'auravalconspub',
-            },
-            currencies: [
-                {
-                    coinDenom: 'AURA',
-                    coinMinimalDenom: 'uaura',
-                    coinDecimals: 6,
-                },
-            ],
-            feeCurrencies: [
-                {
-                    coinDenom: 'AURA',
-                    coinMinimalDenom: 'uaura',
-                    coinDecimals: 6,
-                },
-            ],
-            stakeCurrency: {
-                coinDenom: 'AURA',
-                coinMinimalDenom: 'uaura',
-                coinDecimals: 6,
-            },
-        };
+    showInstallKeplrPrompt() {
+        const modal = document.createElement('div');
+        modal.className = 'modal active';
+        modal.id = 'keplr-install-modal';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 400px;">
+                <div class="modal-header">
+                    <h3>Install Keplr Wallet</h3>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body" style="text-align: center; padding: 2rem;">
+                    <i class="fas fa-wallet" style="font-size: 3rem; color: var(--primary-color); margin-bottom: 1rem;"></i>
+                    <p style="margin-bottom: 1.5rem;">
+                        Keplr wallet is required to interact with the Aura blockchain.
+                        Please install the Keplr browser extension to continue.
+                    </p>
+                    <a href="https://www.keplr.app" target="_blank" rel="noopener noreferrer"
+                       class="btn btn-primary" style="width: 100%;">
+                        <i class="fas fa-external-link-alt"></i> Install Keplr
+                    </a>
+                    <button class="btn btn-secondary" style="width: 100%; margin-top: 0.5rem;"
+                            onclick="this.closest('.modal').remove();">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
 
-        try {
-            await window.keplr.experimentalSuggestChain(chainConfig);
-        } catch (error) {
-            console.error('Failed to suggest chain:', error);
-        }
+        modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.remove();
+        });
+    }
+
+    updateWalletUI(address) {
+        document.getElementById('connect-wallet').style.display = 'none';
+        const walletConnected = document.getElementById('wallet-connected');
+        walletConnected.style.display = 'flex';
+        walletConnected.querySelector('.wallet-address').textContent =
+            AuraWalletConnector.formatAddress(address);
     }
 
     disconnectWallet() {
+        this.wallet.disconnect();
         this.walletAddress = null;
-        localStorage.removeItem('aura_wallet_address');
+        localStorage.removeItem('aura_wallet_connected');
+        this.handleWalletDisconnect();
+        showToast('Wallet disconnected', 'info');
+    }
 
+    handleWalletDisconnect() {
         document.getElementById('connect-wallet').style.display = 'flex';
         document.getElementById('wallet-connected').style.display = 'none';
 
         // Clear portfolio view
         document.getElementById('portfolio-content').innerHTML =
             '<p class="text-center">Please connect your wallet to view your staking portfolio.</p>';
-
-        showToast('Wallet disconnected', 'info');
     }
 
-    checkWalletConnection() {
-        const savedAddress = localStorage.getItem('aura_wallet_address');
-        if (savedAddress && window.keplr) {
-            this.connectWallet();
+    async checkWalletConnection() {
+        const wasConnected = localStorage.getItem('aura_wallet_connected');
+        if (wasConnected && AuraWalletConnector.isKeplrInstalled()) {
+            // Auto-reconnect
+            try {
+                await this.connectWallet();
+            } catch (error) {
+                // Silent fail - user can reconnect manually
+                console.log('Auto-reconnect failed:', error.message);
+                localStorage.removeItem('aura_wallet_connected');
+            }
         }
     }
 
     showDelegationModal(validator) {
         if (!this.walletAddress) {
-            showToast('Please connect your wallet first', 'error');
+            showToast('Please connect your wallet first', 'warning');
             return;
         }
 
@@ -251,7 +285,7 @@ class StakingDashboard {
 
     showRewardsModal() {
         if (!this.walletAddress) {
-            showToast('Please connect your wallet first', 'error');
+            showToast('Please connect your wallet first', 'warning');
             return;
         }
 
@@ -265,8 +299,7 @@ class StakingDashboard {
     }
 
     formatAddress(address) {
-        if (!address) return '';
-        return `${address.slice(0, 10)}...${address.slice(-6)}`;
+        return AuraWalletConnector.formatAddress(address);
     }
 
     formatNumber(num) {
@@ -274,6 +307,13 @@ class StakingDashboard {
         if (num >= 1e6) return `${(num / 1e6).toFixed(2)}M`;
         if (num >= 1e3) return `${(num / 1e3).toFixed(2)}K`;
         return num.toFixed(2);
+    }
+
+    /**
+     * Get the wallet connector instance (for external access)
+     */
+    getWallet() {
+        return this.wallet;
     }
 }
 

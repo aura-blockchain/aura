@@ -6,13 +6,15 @@
   "type": "module",
   "scripts": {
     "build": "node build.js",
+    "build:firefox": "node build.js --firefox",
     "watch": "node build.js --watch",
     "lint": "eslint . --ext js --fix",
     "format": "prettier --write \"**/*.{js,json,html,css}\"",
     "test": "vitest",
     "security:audit": "npm audit --audit-level=moderate",
-    "clean": "rimraf dist",
-    "package": "npm run build && cd dist && zip -r ../extension.zip ."
+    "clean": "rimraf dist dist-firefox",
+    "package": "npm run build && cd dist && zip -r ../extension.zip .",
+    "package:firefox": "npm run build:firefox && cd dist-firefox && zip -r ../extension-firefox.zip ."
   },
   "dependencies": {
     "@keystonehq/keystone-sdk": "^0.11.6",

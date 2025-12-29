@@ -1,10 +1,13 @@
 // Delegation Panel Component
+// Handles delegate, undelegate, and redelegate transactions with Keplr wallet
 
 import { formatAmount, validateAmount, showToast, showLoading, hideLoading } from '../utils/ui.js';
+import { AuraWalletConnector, WalletError } from '../../wallet-connector.js';
 
 export class DelegationPanel {
-    constructor(api) {
+    constructor(api, wallet) {
         this.api = api;
+        this.wallet = wallet;
         this.validator = null;
         this.delegatorAddress = null;
         this.actionType = 'delegate'; // delegate, undelegate, redelegate
@@ -61,14 +64,17 @@ export class DelegationPanel {
                 <div id="delegate-form">
                     <div class="form-group">
                         <label for="delegate-amount">Amount to Delegate</label>
-                        <input
-                            type="number"
-                            id="delegate-amount"
-                            placeholder="0.00"
-                            min="0"
-                            step="0.000001"
-                            required
-                        >
+                        <div class="input-group">
+                            <input
+                                type="number"
+                                id="delegate-amount"
+                                placeholder="0.00"
+                                min="0"
+                                step="0.000001"
+                                required
+                            >
+                            <button type="button" class="btn btn-secondary max-btn" id="delegate-max-btn">MAX</button>
+                        </div>
                         <small>Available: ${formatAmount(balance * 1e6)} AURA</small>
                     </div>
                 </div>
@@ -76,14 +82,17 @@ export class DelegationPanel {
                 <div id="undelegate-form" style="display: none;">
                     <div class="form-group">
                         <label for="undelegate-amount">Amount to Undelegate</label>
-                        <input
-                            type="number"
-                            id="undelegate-amount"
-                            placeholder="0.00"
-                            min="0"
-                            step="0.000001"
-                            required
-                        >
+                        <div class="input-group">
+                            <input
+                                type="number"
+                                id="undelegate-amount"
+                                placeholder="0.00"
+                                min="0"
+                                step="0.000001"
+                                required
+                            >
+                            <button type="button" class="btn btn-secondary max-btn" id="undelegate-max-btn">MAX</button>
+                        </div>
                         <small>
                             Delegated: ${currentDelegation ? formatAmount(currentDelegation.balance * 1e6) : '0'} AURA
                         </small>
@@ -103,17 +112,24 @@ export class DelegationPanel {
                     </div>
                     <div class="form-group">
                         <label for="redelegate-amount">Amount to Redelegate</label>
-                        <input
-                            type="number"
-                            id="redelegate-amount"
-                            placeholder="0.00"
-                            min="0"
-                            step="0.000001"
-                            required
-                        >
+                        <div class="input-group">
+                            <input
+                                type="number"
+                                id="redelegate-amount"
+                                placeholder="0.00"
+                                min="0"
+                                step="0.000001"
+                                required
+                            >
+                            <button type="button" class="btn btn-secondary max-btn" id="redelegate-max-btn">MAX</button>
+                        </div>
                         <small>
                             Delegated: ${currentDelegation ? formatAmount(currentDelegation.balance * 1e6) : '0'} AURA
                         </small>
+                    </div>
+                    <div style="background: var(--bg-tertiary); padding: 1rem; border-radius: var(--radius); margin-top: 1rem;">
+                        <i class="fas fa-info-circle"></i>
+                        <small>Redelegation is immediate but you cannot redelegate again from the destination validator for 21 days.</small>
                     </div>
                 </div>
 
@@ -122,6 +138,11 @@ export class DelegationPanel {
                     <div id="estimated-rewards" style="font-size: 1.25rem; color: var(--success-color); font-weight: bold;">
                         0 AURA
                     </div>
+                </div>
+
+                <div id="tx-fee-estimate" style="display: flex; justify-content: space-between; padding: 0.5rem 0; font-size: 0.875rem; color: var(--text-secondary); border-top: 1px solid var(--border-color); margin-bottom: 1rem;">
+                    <span>Estimated Fee:</span>
+                    <span id="fee-amount">~0.006 AURA</span>
                 </div>
 
                 <button type="submit" class="btn btn-primary" style="width: 100%;" id="submit-btn">
@@ -150,6 +171,28 @@ export class DelegationPanel {
                 this.actionType = e.target.dataset.action;
                 this.showActionForm(this.actionType);
             });
+        });
+
+        // Max buttons
+        document.getElementById('delegate-max-btn')?.addEventListener('click', () => {
+            // Leave some for fees
+            const maxAmount = Math.max(0, balance - 0.01);
+            document.getElementById('delegate-amount').value = maxAmount.toFixed(6);
+            this.updateEstimation();
+        });
+
+        document.getElementById('undelegate-max-btn')?.addEventListener('click', () => {
+            if (currentDelegation) {
+                document.getElementById('undelegate-amount').value = currentDelegation.balance.toFixed(6);
+                this.updateEstimation();
+            }
+        });
+
+        document.getElementById('redelegate-max-btn')?.addEventListener('click', () => {
+            if (currentDelegation) {
+                document.getElementById('redelegate-amount').value = currentDelegation.balance.toFixed(6);
+                this.updateEstimation();
+            }
         });
 
         // Amount input estimation
@@ -205,7 +248,20 @@ export class DelegationPanel {
             undelegate: 'fa-minus-circle',
             redelegate: 'fa-exchange-alt'
         };
-        submitBtn.innerHTML = `<i class="fas ${icons[action]}"></i> ${action === 'delegate' ? 'Delegate' : action === 'undelegate' ? 'Undelegate' : 'Redelegate'}`;
+        const labels = {
+            delegate: 'Delegate',
+            undelegate: 'Undelegate',
+            redelegate: 'Redelegate'
+        };
+        submitBtn.innerHTML = `<i class="fas ${icons[action]}"></i> ${labels[action]}`;
+
+        // Update fee estimate based on action
+        const feeEstimates = {
+            delegate: '~0.006 AURA',
+            undelegate: '~0.006 AURA',
+            redelegate: '~0.009 AURA'
+        };
+        document.getElementById('fee-amount').textContent = feeEstimates[action];
 
         this.updateEstimation();
     }
@@ -227,10 +283,10 @@ export class DelegationPanel {
         const annualRewards = Math.abs(amount) * (apy / 100);
 
         if (this.actionType === 'undelegate') {
-            estimationEl.textContent = `-${formatAmount(annualRewards * 1e6)} AURA`;
+            estimationEl.textContent = `-${formatAmount(annualRewards * 1e6)} AURA/year`;
             estimationEl.style.color = 'var(--danger-color)';
         } else {
-            estimationEl.textContent = `${formatAmount(annualRewards * 1e6)} AURA`;
+            estimationEl.textContent = `+${formatAmount(annualRewards * 1e6)} AURA/year`;
             estimationEl.style.color = 'var(--success-color)';
         }
     }
@@ -263,17 +319,53 @@ export class DelegationPanel {
             return;
         }
 
-        try {
-            showLoading('Processing transaction...');
+        // Check wallet connection
+        if (!this.wallet || !this.wallet.connected) {
+            showToast('Please connect your wallet first', 'warning');
+            return;
+        }
 
-            // In a real implementation, this would call the actual chain
-            await this.simulateTransaction(amount);
+        try {
+            showLoading(`Processing ${this.actionType} transaction...`);
+
+            // Convert amount to micro units (uaura)
+            const microAmount = AuraWalletConnector.toMicroUnits(amount);
+            let result;
+
+            switch (this.actionType) {
+                case 'delegate':
+                    result = await this.wallet.delegate(
+                        this.validator.operatorAddress,
+                        microAmount
+                    );
+                    break;
+
+                case 'undelegate':
+                    result = await this.wallet.undelegate(
+                        this.validator.operatorAddress,
+                        microAmount
+                    );
+                    break;
+
+                case 'redelegate':
+                    const newValidator = document.getElementById('redelegate-validator').value;
+                    result = await this.wallet.redelegate(
+                        this.validator.operatorAddress,
+                        newValidator,
+                        microAmount
+                    );
+                    break;
+            }
 
             hideLoading();
-            showToast(`Successfully ${this.actionType}d ${amount} AURA`, 'success');
 
-            // Close modal
-            document.getElementById('delegation-modal').classList.remove('active');
+            // Show success with transaction link
+            this.showTransactionSuccess(result, amount);
+
+            // Close modal after a delay
+            setTimeout(() => {
+                document.getElementById('delegation-modal').classList.remove('active');
+            }, 3000);
 
             // Refresh portfolio
             if (window.stakingDashboard?.components?.portfolio) {
@@ -281,21 +373,49 @@ export class DelegationPanel {
             }
         } catch (error) {
             hideLoading();
-            showToast(error.message || 'Transaction failed', 'error');
+            console.error('Transaction failed:', error);
+
+            if (error instanceof WalletError) {
+                if (error.code === 'USER_REJECTED') {
+                    showToast('Transaction was rejected', 'warning');
+                } else {
+                    showToast(error.message, 'error');
+                }
+            } else {
+                showToast(error.message || 'Transaction failed', 'error');
+            }
         }
     }
 
-    async simulateTransaction(amount) {
-        // Simulate network delay
-        return new Promise((resolve, reject) => {
-            setTimeout(() => {
-                if (Math.random() > 0.1) { // 90% success rate for testing
-                    resolve();
-                } else {
-                    reject(new Error('Transaction simulation failed'));
-                }
-            }, 2000);
-        });
+    showTransactionSuccess(result, amount) {
+        const actionLabels = {
+            delegate: 'Delegated',
+            undelegate: 'Undelegated',
+            redelegate: 'Redelegated'
+        };
+
+        // Create success notification with explorer link
+        const container = document.getElementById('delegation-panel');
+        const successHtml = `
+            <div class="tx-success" style="text-align: center; padding: 2rem;">
+                <i class="fas fa-check-circle" style="font-size: 3rem; color: var(--success-color); margin-bottom: 1rem;"></i>
+                <h3 style="margin-bottom: 0.5rem;">Transaction Successful!</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                    ${actionLabels[this.actionType]} ${amount.toFixed(6)} AURA
+                </p>
+                <div style="background: var(--bg-tertiary); padding: 0.75rem; border-radius: var(--radius); margin-bottom: 1rem;">
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Transaction Hash</div>
+                    <code style="font-size: 0.8rem; word-break: break-all;">${result.transactionHash}</code>
+                </div>
+                <a href="${this.wallet.getExplorerUrl(result.transactionHash)}" target="_blank"
+                   class="btn btn-secondary" style="width: 100%;">
+                    <i class="fas fa-external-link-alt"></i> View in Explorer
+                </a>
+            </div>
+        `;
+        container.innerHTML = successHtml;
+
+        showToast(`Successfully ${actionLabels[this.actionType].toLowerCase()} ${amount.toFixed(6)} AURA`, 'success');
     }
 }
 

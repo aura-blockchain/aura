@@ -1,10 +1,13 @@
 // Rewards Panel Component
+// Handles claiming staking rewards with Keplr wallet
 
 import { formatAmount, showToast, showLoading, hideLoading } from '../utils/ui.js';
+import { AuraWalletConnector, WalletError } from '../../wallet-connector.js';
 
 export class RewardsPanel {
-    constructor(api) {
+    constructor(api, wallet) {
         this.api = api;
+        this.wallet = wallet;
         this.delegatorAddress = null;
         this.rewards = null;
     }
@@ -36,6 +39,11 @@ export class RewardsPanel {
                     </div>
                 </div>
 
+                <div id="fee-info" style="display: flex; justify-content: space-between; padding: 0.75rem; background: var(--bg-tertiary); border-radius: var(--radius); margin-bottom: 1rem; font-size: 0.875rem;">
+                    <span>Estimated Fee (claim all):</span>
+                    <span>~${(0.0075 * Math.max(1, this.rewards.rewards?.length || 1)).toFixed(4)} AURA</span>
+                </div>
+
                 <h4 style="margin-bottom: 1rem;">Rewards by Validator</h4>
                 <div id="rewards-list">
                     ${this.renderRewardsList(delegations)}
@@ -43,10 +51,13 @@ export class RewardsPanel {
 
                 ${totalRewards > 0 ? `
                     <div style="margin-top: 2rem; padding: 1rem; background: var(--bg-tertiary); border-radius: var(--radius);">
-                        <label class="checkbox-label">
+                        <label class="checkbox-label" style="display: flex; align-items: center; gap: 0.5rem;">
                             <input type="checkbox" id="auto-compound-checkbox">
-                            Auto-compound rewards (stake immediately after claiming)
+                            <span>Auto-compound rewards (re-stake immediately after claiming)</span>
                         </label>
+                        <small style="display: block; margin-top: 0.5rem; color: var(--text-secondary);">
+                            This will send two transactions: claim rewards, then delegate to your largest validator.
+                        </small>
                     </div>
                 ` : ''}
             `;
@@ -80,7 +91,7 @@ export class RewardsPanel {
             const rewardAmount = auraReward ? auraReward.amount : 0;
 
             return `
-                <div class="delegation-item">
+                <div class="delegation-item" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: var(--bg-secondary); border-radius: var(--radius); margin-bottom: 0.5rem;">
                     <div>
                         <div style="font-weight: 600; margin-bottom: 0.25rem;">
                             ${r.validatorAddress.slice(0, 20)}...
@@ -121,68 +132,154 @@ export class RewardsPanel {
     }
 
     async claimAllRewards() {
+        // Check wallet connection
+        if (!this.wallet || !this.wallet.connected) {
+            showToast('Please connect your wallet first', 'warning');
+            return;
+        }
+
         const autoCompound = document.getElementById('auto-compound-checkbox')?.checked || false;
+        const validatorAddresses = this.rewards.rewards
+            .filter(r => r.reward.some(rw => rw.denom === 'uaura' && rw.amount > 0))
+            .map(r => r.validatorAddress);
+
+        if (validatorAddresses.length === 0) {
+            showToast('No rewards to claim', 'info');
+            return;
+        }
 
         try {
             showLoading('Claiming all rewards...');
 
-            // In a real implementation, this would broadcast the transaction
-            await this.simulateClaim();
+            // Claim all rewards in a single transaction
+            const result = await this.wallet.claimAllRewards(validatorAddresses);
 
             if (autoCompound) {
                 showLoading('Auto-compounding rewards...');
-                await this.simulateCompound();
+                await this.autoCompoundRewards();
             }
 
             hideLoading();
-            showToast('Successfully claimed all rewards!', 'success');
+            this.showClaimSuccess(result, autoCompound);
 
-            // Close modal and refresh
-            document.getElementById('rewards-modal').classList.remove('active');
+            // Close modal after delay
+            setTimeout(() => {
+                document.getElementById('rewards-modal').classList.remove('active');
+            }, 3000);
+
+            // Refresh portfolio
             if (window.stakingDashboard?.components?.portfolio) {
                 window.stakingDashboard.components.portfolio.refresh();
             }
         } catch (error) {
             hideLoading();
-            showToast(error.message || 'Failed to claim rewards', 'error');
+            console.error('Claim failed:', error);
+
+            if (error instanceof WalletError) {
+                if (error.code === 'USER_REJECTED') {
+                    showToast('Transaction was rejected', 'warning');
+                } else {
+                    showToast(error.message, 'error');
+                }
+            } else {
+                showToast(error.message || 'Failed to claim rewards', 'error');
+            }
         }
     }
 
     async claimRewards(validatorAddress) {
+        // Check wallet connection
+        if (!this.wallet || !this.wallet.connected) {
+            showToast('Please connect your wallet first', 'warning');
+            return;
+        }
+
         try {
             showLoading('Claiming rewards...');
 
-            // In a real implementation, this would broadcast the transaction
-            await this.simulateClaim(validatorAddress);
+            const result = await this.wallet.claimRewardsFromValidator(validatorAddress);
 
             hideLoading();
             showToast('Successfully claimed rewards!', 'success');
 
-            // Refresh rewards display
-            await this.render(this.delegatorAddress);
+            // Show mini success in the button area
+            const btn = document.querySelector(`[data-validator="${validatorAddress}"]`);
+            if (btn) {
+                btn.innerHTML = '<i class="fas fa-check"></i> Claimed';
+                btn.disabled = true;
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-secondary');
+            }
+
+            // Refresh rewards display after a short delay
+            setTimeout(() => this.render(this.delegatorAddress), 1500);
         } catch (error) {
             hideLoading();
-            showToast(error.message || 'Failed to claim rewards', 'error');
+            console.error('Claim failed:', error);
+
+            if (error instanceof WalletError) {
+                if (error.code === 'USER_REJECTED') {
+                    showToast('Transaction was rejected', 'warning');
+                } else {
+                    showToast(error.message, 'error');
+                }
+            } else {
+                showToast(error.message || 'Failed to claim rewards', 'error');
+            }
         }
     }
 
-    async simulateClaim(validatorAddress = null) {
-        // Simulate network delay
-        return new Promise((resolve, reject) => {
-            setTimeout(() => {
-                if (Math.random() > 0.05) { // 95% success rate
-                    resolve();
-                } else {
-                    reject(new Error('Transaction simulation failed'));
-                }
-            }, 2000);
-        });
+    async autoCompoundRewards() {
+        // Get delegations to find the largest validator
+        const delegations = await this.api.getDelegations(this.delegatorAddress);
+        if (delegations.length === 0) {
+            showToast('No existing delegations for auto-compound', 'warning');
+            return;
+        }
+
+        // Find validator with largest delegation
+        const largestDelegation = delegations.reduce((max, d) =>
+            d.balance > max.balance ? d : max, delegations[0]
+        );
+
+        // Get current balance (should include newly claimed rewards)
+        const balance = await this.wallet.getBalance();
+
+        // Leave some for fees
+        const amountToStake = Math.max(0, parseFloat(balance.amount) - 10000); // Keep 0.01 AURA for fees
+
+        if (amountToStake <= 0) {
+            showToast('Insufficient balance for auto-compound', 'warning');
+            return;
+        }
+
+        // Delegate the claimed rewards
+        await this.wallet.delegate(
+            largestDelegation.validatorAddress,
+            String(Math.floor(amountToStake)),
+            'Auto-compounded rewards via Aura Dashboard'
+        );
     }
 
-    async simulateCompound() {
-        return new Promise((resolve) => {
-            setTimeout(() => resolve(), 1500);
-        });
+    showClaimSuccess(result, compounded) {
+        const container = document.getElementById('rewards-panel');
+        container.innerHTML = `
+            <div class="tx-success" style="text-align: center; padding: 2rem;">
+                <i class="fas fa-check-circle" style="font-size: 3rem; color: var(--success-color); margin-bottom: 1rem;"></i>
+                <h3 style="margin-bottom: 0.5rem;">Rewards Claimed!</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                    ${compounded ? 'Rewards claimed and auto-compounded' : 'All pending rewards have been claimed'}
+                </p>
+                <div style="background: var(--bg-tertiary); padding: 0.75rem; border-radius: var(--radius); margin-bottom: 1rem;">
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Transaction Hash</div>
+                    <code style="font-size: 0.8rem; word-break: break-all;">${result.transactionHash}</code>
+                </div>
+                <a href="${this.wallet.getExplorerUrl(result.transactionHash)}" target="_blank"
+                   class="btn btn-secondary" style="width: 100%;">
+                    <i class="fas fa-external-link-alt"></i> View in Explorer
+                </a>
+            </div>
+        `;
     }
 }
 

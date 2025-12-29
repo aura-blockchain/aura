@@ -51,7 +51,7 @@ func Load() (*Config, error) {
 		CORSOrigins: strings.Split(getEnv("CORS_ORIGINS", "*"), ","),
 
 		NodeRPC:         getEnv("NODE_RPC", "http://localhost:26657"),
-		ChainID:         getEnv("CHAIN_ID", "paw-testnet-1"),
+		ChainID:         getEnv("CHAIN_ID", "aura-testnet-1"),
 		FaucetMnemonic:  getEnv("FAUCET_MNEMONIC", ""),
 		FaucetAddress:   getEnv("FAUCET_ADDRESS", ""),
 		Denom:           getEnv("DENOM", "uaura"),

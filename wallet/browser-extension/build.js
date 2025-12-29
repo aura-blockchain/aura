@@ -6,6 +6,8 @@ import { readFileSync, writeFileSync, mkdirSync, copyFileSync, existsSync, readd
 import { join } from 'path';
 
 const isWatch = process.argv.includes('--watch');
+const isFirefox = process.argv.includes('--firefox');
+const outDir = isFirefox ? 'dist-firefox' : 'dist';
 
 // Build configuration
 const buildOptions = {
@@ -14,7 +16,7 @@ const buildOptions = {
   minify: true,
   sourcemap: false,
   target: ['chrome108', 'firefox108'],
-  outdir: 'dist',
+  outdir: outDir,
   format: 'esm',
   platform: 'browser',
   legalComments: 'none',
@@ -34,11 +36,11 @@ const buildOptions = {
 
 async function build() {
   try {
-    console.log('Building extension...');
+    console.log(`Building extension${isFirefox ? ' for Firefox' : ''}...`);
 
-    // Create dist directory
-    if (!existsSync('dist')) {
-      mkdirSync('dist', { recursive: true });
+    // Create output directory
+    if (!existsSync(outDir)) {
+      mkdirSync(outDir, { recursive: true });
     }
 
     // Build JavaScript files
@@ -59,13 +61,13 @@ async function build() {
         minifyCSS: true,
         minifyJS: true,
       });
-      writeFileSync(join('dist', file), minified);
+      writeFileSync(join(outDir, file), minified);
     }
     console.log('✓ HTML files minified and copied');
 
     // Copy CSS files
     if (existsSync('styles.css')) {
-      copyFileSync('styles.css', 'dist/styles.css');
+      copyFileSync('styles.css', join(outDir, 'styles.css'));
       console.log('✓ CSS files copied');
     }
 
@@ -73,23 +75,25 @@ async function build() {
     const additionalJs = ['cosmos-sdk.js', 'hardware-wallet.js'];
     for (const jsFile of additionalJs) {
       if (existsSync(jsFile)) {
-        copyFileSync(jsFile, join('dist', jsFile));
+        copyFileSync(jsFile, join(outDir, jsFile));
       }
     }
     console.log('✓ Additional JS files copied');
 
-    // Copy manifest
-    copyFileSync('manifest.json', 'dist/manifest.json');
-    console.log('✓ Manifest copied');
+    // Copy manifest (Firefox uses manifest.firefox.json)
+    const manifestSrc = isFirefox ? 'manifest.firefox.json' : 'manifest.json';
+    copyFileSync(manifestSrc, join(outDir, 'manifest.json'));
+    console.log(`✓ Manifest copied (${isFirefox ? 'Firefox v2' : 'Chrome v3'})`);
 
     // Copy icons
     if (existsSync('icons')) {
-      if (!existsSync('dist/icons')) {
-        mkdirSync('dist/icons', { recursive: true });
+      const iconsDir = join(outDir, 'icons');
+      if (!existsSync(iconsDir)) {
+        mkdirSync(iconsDir, { recursive: true });
       }
       const icons = readdirSync('icons').filter(f => f.endsWith('.png'));
       for (const icon of icons) {
-        copyFileSync(join('icons', icon), join('dist/icons', icon));
+        copyFileSync(join('icons', icon), join(iconsDir, icon));
       }
       console.log('✓ Icons copied');
     }

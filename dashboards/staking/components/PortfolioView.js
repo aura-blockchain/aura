@@ -1,10 +1,12 @@
 // Portfolio View Component
+// Displays staking portfolio with wallet-connected actions
 
 import { formatAmount, formatPercent, formatDate } from '../utils/ui.js';
 
 export class PortfolioView {
-    constructor(api) {
+    constructor(api, wallet = null) {
         this.api = api;
+        this.wallet = wallet;
         this.delegatorAddress = null;
         this.eventHandlers = {};
     }
@@ -59,6 +61,7 @@ export class PortfolioView {
 
     renderSummary(balance, totalDelegated, totalUnbonding, totalRewards) {
         const totalValue = balance + totalDelegated + totalUnbonding + totalRewards;
+        const stakedPercent = totalValue > 0 ? (totalDelegated / totalValue) * 100 : 0;
 
         return `
             <div class="portfolio-summary">
@@ -105,13 +108,20 @@ export class PortfolioView {
                     <div class="stat-label">Total Portfolio Value</div>
                     <div class="stat-value">${formatAmount(totalValue * 1e6)} AURA</div>
                     <div style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.25rem;">
-                        ${formatPercent((totalDelegated / totalValue) * 100)} staked
+                        ${formatPercent(stakedPercent)} staked
                     </div>
                 </div>
                 <button class="btn btn-primary" id="claim-rewards-btn" ${totalRewards === 0 ? 'disabled' : ''}>
                     <i class="fas fa-gift"></i> Claim Rewards
                 </button>
             </div>
+
+            ${this.wallet?.connected ? `
+                <div class="wallet-status" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem; background: var(--bg-tertiary); border-radius: var(--radius); margin-bottom: 1rem; font-size: 0.875rem;">
+                    <i class="fas fa-check-circle" style="color: var(--success-color);"></i>
+                    <span>Wallet connected - transactions will be signed with Keplr</span>
+                </div>
+            ` : ''}
         `;
     }
 
@@ -162,10 +172,10 @@ export class PortfolioView {
                     ` : ''}
                 </div>
                 <div class="delegation-actions">
-                    <button class="btn btn-sm btn-primary add-delegation-btn" data-validator="${delegation.validatorAddress}">
+                    <button class="btn btn-sm btn-primary add-delegation-btn" data-validator="${delegation.validatorAddress}" title="Delegate more">
                         <i class="fas fa-plus"></i>
                     </button>
-                    <button class="btn btn-sm btn-secondary remove-delegation-btn" data-validator="${delegation.validatorAddress}">
+                    <button class="btn btn-sm btn-secondary remove-delegation-btn" data-validator="${delegation.validatorAddress}" title="Undelegate">
                         <i class="fas fa-minus"></i>
                     </button>
                 </div>
@@ -185,26 +195,32 @@ export class PortfolioView {
     }
 
     renderUnbondingItem(unbonding) {
-        return unbonding.entries.map(entry => `
-            <div class="delegation-item">
-                <div style="flex: 1;">
-                    <div style="font-weight: 600; margin-bottom: 0.25rem;">
-                        ${unbonding.validatorAddress.slice(0, 25)}...
+        return unbonding.entries.map(entry => {
+            const completionDate = new Date(entry.completionTime);
+            const now = new Date();
+            const daysRemaining = Math.ceil((completionDate - now) / (1000 * 60 * 60 * 24));
+
+            return `
+                <div class="delegation-item">
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; margin-bottom: 0.25rem;">
+                            ${unbonding.validatorAddress.slice(0, 25)}...
+                        </div>
+                        <div style="font-size: 0.875rem; color: var(--text-secondary);">
+                            Amount: ${formatAmount(entry.balance * 1e6)} AURA
+                        </div>
+                        <div style="font-size: 0.875rem; color: var(--warning-color); margin-top: 0.25rem;">
+                            <i class="fas fa-clock"></i> ${daysRemaining > 0 ? `${daysRemaining} days remaining` : 'Complete'} (${formatDate(entry.completionTime)})
+                        </div>
                     </div>
-                    <div style="font-size: 0.875rem; color: var(--text-secondary);">
-                        Amount: ${formatAmount(entry.balance * 1e6)} AURA
-                    </div>
-                    <div style="font-size: 0.875rem; color: var(--warning-color); margin-top: 0.25rem;">
-                        <i class="fas fa-clock"></i> Completes: ${formatDate(entry.completionTime)}
+                    <div class="delegation-actions">
+                        <span class="status-badge" style="background: var(--bg-tertiary); color: var(--text-primary);">
+                            Unbonding
+                        </span>
                     </div>
                 </div>
-                <div class="delegation-actions">
-                    <span class="status-badge" style="background: var(--bg-tertiary); color: var(--text-primary);">
-                        Unbonding
-                    </span>
-                </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     }
 
     renderHistory() {
@@ -225,7 +241,7 @@ export class PortfolioView {
                                 ${h.action}
                             </div>
                             <div style="font-size: 0.875rem; color: var(--text-secondary);">
-                                ${h.validator} • ${formatDate(h.date)}
+                                ${h.validator} - ${formatDate(h.date)}
                             </div>
                         </div>
                         <div style="text-align: right;">

@@ -198,7 +198,7 @@ Binary Size:      15MB  Optimized
 ### Required Environment Variables
 ```bash
 NODE_RPC=http://localhost:26657
-CHAIN_ID=paw-testnet-1
+CHAIN_ID=aura-testnet-1
 FAUCET_MNEMONIC=your-mnemonic-here
 DATABASE_URL=postgres://...
 REDIS_URL=redis://...

@@ -4,6 +4,8 @@ import Send from './components/Send';
 import Receive from './components/Receive';
 import History from './components/History';
 import AddressBook from './components/AddressBook';
+import Staking from './components/Staking';
+import Governance from './components/Governance';
 import Settings from './components/Settings';
 import Setup from './components/Setup';
 import { KeystoreService } from './services/keystore';
@@ -63,6 +65,12 @@ const App = () => {
             break;
           case 'address-book':
             setCurrentView('addressBook');
+            break;
+          case 'staking':
+            setCurrentView('staking');
+            break;
+          case 'governance':
+            setCurrentView('governance');
             break;
           case 'settings':
             setCurrentView('settings');
@@ -151,6 +159,10 @@ const App = () => {
         return <History walletData={walletData} />;
       case 'addressBook':
         return <AddressBook />;
+      case 'staking':
+        return <Staking walletData={walletData} onSuccess={initializeWallet} />;
+      case 'governance':
+        return <Governance walletData={walletData} onSuccess={initializeWallet} />;
       case 'settings':
         return <Settings onWalletReset={() => {
           setWalletData(null);
@@ -216,6 +228,18 @@ const App = () => {
               onClick={() => setCurrentView('addressBook')}
             >
               Address Book
+            </div>
+            <div
+              className={`nav-item ${currentView === 'staking' ? 'active' : ''}`}
+              onClick={() => setCurrentView('staking')}
+            >
+              Staking
+            </div>
+            <div
+              className={`nav-item ${currentView === 'governance' ? 'active' : ''}`}
+              onClick={() => setCurrentView('governance')}
+            >
+              Governance
             </div>
             <div
               className={`nav-item ${currentView === 'settings' ? 'active' : ''}`}
