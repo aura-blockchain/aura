@@ -101,63 +101,216 @@ class MemoryCache:
 
 
 class RedisCache:
-    """Redis-based cache (stub - would use actual Redis)"""
+    """Redis-based cache with automatic fallback to MemoryCache"""
 
-    def __init__(self, redis_url: str = "redis://localhost:6379"):
-        self.redis_url = redis_url
+    def __init__(
+        self,
+        redis_url: Optional[str] = None,
+        fallback_cache: Optional[MemoryCache] = None,
+        key_prefix: str = "aura:",
+    ):
+        """
+        Initialize Redis cache with optional fallback
+
+        Args:
+            redis_url: Redis connection URL (default: from REDIS_URL env var or localhost)
+            fallback_cache: Fallback cache to use if Redis is unavailable
+            key_prefix: Prefix for all cache keys to avoid collisions
+        """
+        import os
+
+        self.redis_url = redis_url or os.getenv(
+            "REDIS_URL", "redis://localhost:6379/0"
+        )
+        self.key_prefix = key_prefix
         self.enabled = False
-        # In production, you would:
-        # import redis
-        # self.client = redis.from_url(redis_url)
-        # self.enabled = True
+        self.client = None
+        self.fallback_cache = fallback_cache or MemoryCache(max_size=1000)
+        self.fallback_mode = False
+
+        # Try to initialize Redis connection
+        try:
+            import redis
+
+            self.client = redis.from_url(
+                self.redis_url,
+                decode_responses=True,
+                socket_connect_timeout=2,
+                socket_timeout=2,
+                retry_on_timeout=True,
+            )
+            # Test connection
+            self.client.ping()
+            self.enabled = True
+            logger.info(f"Redis cache initialized: {self.redis_url}")
+        except ImportError:
+            logger.warning("redis-py not installed, using fallback MemoryCache")
+            self.fallback_mode = True
+        except Exception as e:
+            logger.warning(
+                f"Redis connection failed ({e}), using fallback MemoryCache"
+            )
+            self.fallback_mode = True
+            self.client = None
+
+    def _get_key(self, key: str) -> str:
+        """Add prefix to cache key"""
+        return f"{self.key_prefix}{key}"
+
+    def test_connection(self) -> bool:
+        """Test Redis connection"""
+        if not self.enabled or self.client is None:
+            return False
+
+        try:
+            self.client.ping()
+            return True
+        except Exception as e:
+            logger.error(f"Redis connection test failed: {e}")
+            # Switch to fallback mode
+            if not self.fallback_mode:
+                logger.warning("Switching to fallback MemoryCache")
+                self.fallback_mode = True
+            return False
 
     def get(self, key: str) -> Optional[Any]:
-        """Get value from Redis"""
-        if not self.enabled:
+        """Get value from Redis or fallback cache"""
+        if self.fallback_mode:
+            return self.fallback_cache.get(key)
+
+        if not self.enabled or self.client is None:
             return None
 
         try:
-            # value = self.client.get(key)
-            # if value:
-            #     return json.loads(value)
+            prefixed_key = self._get_key(key)
+            value = self.client.get(prefixed_key)
+            if value:
+                return json.loads(value)
+            return None
+        except json.JSONDecodeError as e:
+            logger.error(f"Redis JSON decode error for key {key}: {e}")
+            self.client.delete(self._get_key(key))
             return None
         except Exception as e:
-            logger.error(f"Redis get error: {e}")
-            return None
+            logger.error(f"Redis get error for key {key}: {e}")
+            # Attempt fallback
+            self.fallback_mode = True
+            return self.fallback_cache.get(key)
 
     def set(self, key: str, value: Any, ttl: int = 300) -> None:
-        """Set value in Redis"""
-        if not self.enabled:
+        """Set value in Redis or fallback cache"""
+        if self.fallback_mode:
+            self.fallback_cache.set(key, value, ttl)
+            return
+
+        if not self.enabled or self.client is None:
             return
 
         try:
-            # serialized = json.dumps(value)
-            # self.client.setex(key, ttl, serialized)
-            pass
+            prefixed_key = self._get_key(key)
+            serialized = json.dumps(value)
+            self.client.setex(prefixed_key, ttl, serialized)
+        except (TypeError, ValueError) as e:
+            logger.error(f"Redis serialization error for key {key}: {e}")
         except Exception as e:
-            logger.error(f"Redis set error: {e}")
+            logger.error(f"Redis set error for key {key}: {e}")
+            # Attempt fallback
+            self.fallback_mode = True
+            self.fallback_cache.set(key, value, ttl)
 
     def delete(self, key: str) -> None:
-        """Delete key from Redis"""
-        if not self.enabled:
+        """Delete key from Redis or fallback cache"""
+        if self.fallback_mode:
+            self.fallback_cache.delete(key)
+            return
+
+        if not self.enabled or self.client is None:
             return
 
         try:
-            # self.client.delete(key)
-            pass
+            prefixed_key = self._get_key(key)
+            self.client.delete(prefixed_key)
         except Exception as e:
-            logger.error(f"Redis delete error: {e}")
+            logger.error(f"Redis delete error for key {key}: {e}")
+            # Attempt fallback
+            self.fallback_mode = True
+            self.fallback_cache.delete(key)
 
     def clear(self) -> None:
-        """Clear all cache"""
-        if not self.enabled:
+        """Clear all cache with matching prefix"""
+        if self.fallback_mode:
+            self.fallback_cache.clear()
+            return
+
+        if not self.enabled or self.client is None:
             return
 
         try:
-            # self.client.flushdb()
-            pass
+            # Use pattern matching to only delete keys with our prefix
+            pattern = f"{self.key_prefix}*"
+            cursor = 0
+            while True:
+                cursor, keys = self.client.scan(cursor, match=pattern, count=100)
+                if keys:
+                    self.client.delete(*keys)
+                if cursor == 0:
+                    break
         except Exception as e:
             logger.error(f"Redis clear error: {e}")
+            # Attempt fallback
+            self.fallback_mode = True
+            self.fallback_cache.clear()
+
+    def get_stats(self) -> dict:
+        """Get cache statistics"""
+        if self.fallback_mode:
+            stats = self.fallback_cache.get_stats()
+            stats["mode"] = "fallback"
+            return stats
+
+        if not self.enabled or self.client is None:
+            return {"enabled": False, "mode": "disabled"}
+
+        try:
+            info = self.client.info("stats")
+            keyspace = self.client.info("keyspace")
+
+            # Count keys with our prefix
+            pattern = f"{self.key_prefix}*"
+            cursor = 0
+            key_count = 0
+            while True:
+                cursor, keys = self.client.scan(cursor, match=pattern, count=100)
+                key_count += len(keys)
+                if cursor == 0:
+                    break
+
+            return {
+                "enabled": True,
+                "mode": "redis",
+                "url": self.redis_url,
+                "key_count": key_count,
+                "key_prefix": self.key_prefix,
+                "total_connections": info.get("total_connections_received", 0),
+                "total_commands": info.get("total_commands_processed", 0),
+                "keyspace_hits": info.get("keyspace_hits", 0),
+                "keyspace_misses": info.get("keyspace_misses", 0),
+                "used_memory_human": self.client.info("memory").get(
+                    "used_memory_human", "unknown"
+                ),
+            }
+        except Exception as e:
+            logger.error(f"Redis stats error: {e}")
+            return {"enabled": True, "mode": "redis", "error": str(e)}
+
+    def close(self) -> None:
+        """Close Redis connection"""
+        if self.client:
+            try:
+                self.client.close()
+                logger.info("Redis connection closed")
+            except Exception as e:
+                logger.error(f"Error closing Redis connection: {e}")
 
 
 class MultiTierCache:
