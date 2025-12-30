@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"math/big"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/aequitas/aura/chain/x/economicsecurity/types"
@@ -268,11 +269,12 @@ func (k *Keeper) detectWashTrading(ctx context.Context, params types.Params) (*t
 		count := pairCounts[pair]
 		reversePair := reversePairMap[pair]
 		if pairCounts[reversePair] > 0 && count > 2 {
-			// Extract addresses
-			var sender, recipient string
-			if _, err := fmt.Sscanf(pair, "%s:%s", &sender, &recipient); err != nil {
-				return nil, fmt.Errorf("failed to parse pair %s: %w", pair, err)
+			// Extract addresses using strings.Split (not Sscanf, which stops at whitespace)
+			parts := strings.SplitN(pair, ":", 2)
+			if len(parts) != 2 {
+				return nil, fmt.Errorf("failed to parse pair %s: invalid format", pair)
 			}
+			sender, recipient := parts[0], parts[1]
 
 			return k.createAttackAlert(
 				ctx,

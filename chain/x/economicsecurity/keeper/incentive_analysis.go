@@ -79,6 +79,17 @@ func (k *Keeper) analyzeStakingIncentives(params types.Params, totalStaked strin
 	totalSupply := new(big.Int)
 	totalSupply.SetString(params.Tokenomics.CirculatingSupply, 10)
 
+	// Handle zero supply gracefully
+	if totalSupply.Sign() == 0 {
+		return struct {
+			rewards         string
+			recommendations []string
+		}{
+			rewards:         "0",
+			recommendations: []string{"Circulating supply is zero - cannot calculate staking incentives"},
+		}
+	}
+
 	// Calculate staking ratio
 	stakingRatio := new(big.Int).Mul(staked, big.NewInt(10000))
 	stakingRatio.Div(stakingRatio, totalSupply)

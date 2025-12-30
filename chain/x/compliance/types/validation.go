@@ -88,10 +88,28 @@ func validateKYCParams(p ComplianceParams) error {
 	return nil
 }
 
+// isDecimalNumericString checks if a string contains only decimal digits (0-9)
+// This rejects hex (0x...), scientific notation (1e18), and other non-decimal formats
+func isDecimalNumericString(s string) bool {
+	if s == "" {
+		return false
+	}
+	for _, r := range s {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return true
+}
+
 // validateTransactionMonitoringParams validates transaction monitoring parameters
 func validateTransactionMonitoringParams(p ComplianceParams) error {
-	// Validate velocity limit (must be non-negative numeric string)
+	// Validate velocity limit (must be non-negative decimal numeric string)
 	if p.VelocityLimit_24H != "" {
+		// Security: Reject hex, scientific notation, and other non-decimal formats
+		if !isDecimalNumericString(p.VelocityLimit_24H) {
+			return fmt.Errorf("velocity_limit_24h must be a decimal integer: %s", p.VelocityLimit_24H)
+		}
 		amount, ok := sdkmath.NewIntFromString(p.VelocityLimit_24H)
 		if !ok {
 			return fmt.Errorf("velocity_limit_24h is not a valid integer: %s", p.VelocityLimit_24H)
@@ -101,8 +119,12 @@ func validateTransactionMonitoringParams(p ComplianceParams) error {
 		}
 	}
 
-	// Validate single transaction limit (must be non-negative numeric string)
+	// Validate single transaction limit (must be non-negative decimal numeric string)
 	if p.SingleTransactionLimit != "" {
+		// Security: Reject hex, scientific notation, and other non-decimal formats
+		if !isDecimalNumericString(p.SingleTransactionLimit) {
+			return fmt.Errorf("single_transaction_limit must be a decimal integer: %s", p.SingleTransactionLimit)
+		}
 		amount, ok := sdkmath.NewIntFromString(p.SingleTransactionLimit)
 		if !ok {
 			return fmt.Errorf("single_transaction_limit is not a valid integer: %s", p.SingleTransactionLimit)

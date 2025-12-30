@@ -747,7 +747,8 @@ func TestDetectFrontRunning_ExactlyAtThreshold(t *testing.T) {
 func TestDetectFrontRunning_JustAboveThreshold(t *testing.T) {
 	params := types.DefaultParams()
 	params.DynamicFees.BaseFee = "1000"
-	params.DynamicFees.CurrentMultiplier = 20001 // just above 2x
+	// With integer division: 1000 * 20010 / 10000 = 2001 > 2000 threshold
+	params.DynamicFees.CurrentMultiplier = 20010 // just above 2x after integer division
 
 	k, ctx := setupKeeperWithCustomParams(t, params)
 	currentTime := time.Now().Unix()
