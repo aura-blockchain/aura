@@ -584,14 +584,15 @@ func (ms msgServer) CosignVeto(goCtx context.Context, msg *govpb.MsgCosignVeto) 
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	signers := msg.GetSigners()
-	if len(signers) == 0 {
-		return nil, status.Error(codes.Unauthenticated, "no signers")
-	}
-
+	// Validate address BEFORE calling GetSigners() to avoid panic
 	cosignerAddr, err := sdk.AccAddressFromBech32(msg.Cosigner)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	signers := msg.GetSigners()
+	if len(signers) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "no signers")
 	}
 
 	if !cosignerAddr.Equals(signers[0]) {
@@ -774,14 +775,15 @@ func (ms msgServer) RevealSecretVote(goCtx context.Context, msg *govpb.MsgReveal
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	signers := msg.GetSigners()
-	if len(signers) == 0 {
-		return nil, status.Error(codes.Unauthenticated, "no signers")
-	}
-
+	// Validate address BEFORE calling GetSigners() to avoid panic
 	voterAddr, err := sdk.AccAddressFromBech32(msg.Voter)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	signers := msg.GetSigners()
+	if len(signers) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "no signers")
 	}
 
 	if !voterAddr.Equals(signers[0]) {

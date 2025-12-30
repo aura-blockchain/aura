@@ -145,7 +145,7 @@ func (k Keeper) InitGenesis(ctx context.Context, data *pb.GenesisState) error {
 		if err != nil {
 			return fmt.Errorf("failed to marshal session config: %w", err)
 		}
-		key := types.GetSessionKey(sc.SessionId)
+		key := types.GetSessionConfigKey(sc.SessionId)
 		if err := store.Set(key, scBytes); err != nil {
 			return fmt.Errorf("failed to store session config: %w", err)
 		}
@@ -357,7 +357,7 @@ func (k Keeper) ExportGenesis(ctx context.Context) *pb.GenesisState {
 	}
 
 	// Export all session configs
-	iter = storetypes.KVStorePrefixIterator(sdkCtx.KVStore(kvStore.(storetypes.StoreKey)), types.SessionPrefix)
+	iter = storetypes.KVStorePrefixIterator(sdkCtx.KVStore(kvStore.(storetypes.StoreKey)), types.SessionConfigPrefix)
 	defer iter.Close()
 	for ; iter.Valid(); iter.Next() {
 		var sc pb.SessionConfig
