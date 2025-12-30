@@ -47,11 +47,11 @@ Current coverage audit (2025-12-30):
 | security/keeper | 69.2% | -11% |
 | economicsecurity/keeper | 68.0% | -12% |
 | cryptography/keeper | 71.7% | -8% |
-| governance/keeper | 29.9% | -50% |
+| governance/keeper | 49.2% | -31% |
 | walletsecurity/keeper | 62.5% | -18% |
 
 ### P5.1 - Keeper Coverage (Priority)
-- [ ] governance/keeper: 29.9% → 80% (largest gap)
+- [ ] governance/keeper: 49.2% → 80% (improved from 29.9%, 4 new test files added)
 - [ ] walletsecurity/keeper: Fix genesis_extended_test.go failure
 - [ ] bridge/keeper: 64.8% → 80%
 - [ ] economicsecurity/keeper: 68.0% → 80%
