@@ -21,7 +21,34 @@ All core roadmap items complete. User-facing components production-ready. Awaiti
 
 1. **External security audit** - Required before mainnet
 2. **Community feedback** - From public testnet
-3. **Test coverage improvement** - IN PROGRESS (see below)
+
+---
+
+## Test Coverage Tasks (Remaining)
+
+### P1: Security Module Tests
+- [ ] x/security module_test.go - Create module lifecycle tests (has keeper tests only)
+- [x] x/security/internal_functions_test.go - Test internal keeper functions (1,071 lines)
+- [ ] x/economicsecurity/keeper/incentive_analysis_test.go - Expand (4 functions at 0%)
+
+### P1: CLI Coverage (28% → 80%)
+Priority modules: cryptography (20.6%), auth (25.6%), dex (26.0%), bridge (26.7%), governance (27.5%), economicsecurity (27.3%), compliance (28.0%)
+
+### P1: Types Coverage (Significant Progress)
+- [~] x/dataregistry/types - 1,278 lines across 6 test files (needs verification)
+- [~] x/dex/types - 3,076 lines across 11 test files (needs verification)
+- [~] x/bridge/types - 5,443 lines across 14 test files (needs verification)
+
+### P2: Fuzz Testing (3 → 15+ tests) ✅
+- [x] x/cryptography/keeper/crypto_fuzz_test.go - Signature verification, key generation (665 lines)
+- [x] x/privacy/keeper/zk_fuzz_test.go - ZK proof, ring signature fuzzing (757 lines)
+- [x] x/compliance/keeper/validation_fuzz_test.go - Input sanitization (833 lines)
+
+### P2: Benchmark Coverage (4 → 20+ files) ✅
+- [x] x/dex/keeper/benchmark_test.go - Expand liquidity/swap benchmarks (691 lines)
+- [x] x/bridge/keeper/benchmark_test.go - Cross-chain transfer benchmarks (480 lines)
+- [x] x/privacy/keeper/benchmark_test.go - Ring sig, ZK proof benchmarks (761 lines)
+- [x] x/cryptography/keeper/benchmark_test.go - Signature, encryption benchmarks (900 lines)
 
 ---
 
