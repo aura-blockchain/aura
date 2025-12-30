@@ -329,7 +329,7 @@ func TestValidateParams_InvalidVelocityLimitFormat(t *testing.T) {
 	}
 	err := ValidateParams(params)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "velocity_limit_24h is not a valid integer")
+	require.Contains(t, err.Error(), "velocity_limit_24h must be a decimal integer")
 }
 
 func TestValidateParams_NegativeSingleTransactionLimit(t *testing.T) {
@@ -347,7 +347,7 @@ func TestValidateParams_InvalidSingleTransactionLimitFormat(t *testing.T) {
 	}
 	err := ValidateParams(params)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "single_transaction_limit is not a valid integer")
+	require.Contains(t, err.Error(), "single_transaction_limit must be a decimal integer")
 }
 
 func TestValidateParams_SingleTransactionExceedsVelocity(t *testing.T) {

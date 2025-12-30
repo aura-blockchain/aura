@@ -88,14 +88,23 @@ func validateKYCParams(p ComplianceParams) error {
 	return nil
 }
 
-// isDecimalNumericString checks if a string contains only decimal digits (0-9)
+// isDecimalNumericString checks if a string is a valid decimal integer (optional leading minus, then digits)
 // This rejects hex (0x...), scientific notation (1e18), and other non-decimal formats
+// Allows negative numbers so they can be caught by IsNegative() check with proper error message
 func isDecimalNumericString(s string) bool {
 	if s == "" {
 		return false
 	}
-	for _, r := range s {
-		if r < '0' || r > '9' {
+	start := 0
+	// Allow optional leading minus sign for negative numbers
+	if s[0] == '-' {
+		if len(s) == 1 {
+			return false // Just "-" is not valid
+		}
+		start = 1
+	}
+	for i := start; i < len(s); i++ {
+		if s[i] < '0' || s[i] > '9' {
 			return false
 		}
 	}

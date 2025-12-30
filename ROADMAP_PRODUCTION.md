@@ -24,7 +24,50 @@ All core roadmap items complete. User-facing components production-ready. Awaiti
 
 ---
 
-## Test Coverage Tasks (Remaining)
+## P5: Test Coverage Gaps (Target: 80%+)
+
+Current coverage audit (2025-12-30):
+
+### High Coverage (≥80%) ✅
+| Package | Coverage |
+|---------|----------|
+| cryptography/types | 98.5% |
+| bridge/types | 97.4% |
+| compliance/types | 97.0% |
+| dex/types | 97.0% |
+| security (module) | 86.7% |
+| compliance (module) | 84.8% |
+| privacy/keeper | 81.0% |
+| privacy/migrations | 80.0% |
+
+### Below 80% - Needs Improvement
+| Package | Current | Gap |
+|---------|---------|-----|
+| bridge/keeper | 64.8% | -15% |
+| security/keeper | 69.2% | -11% |
+| economicsecurity/keeper | 68.0% | -12% |
+| cryptography/keeper | 71.7% | -8% |
+| governance/keeper | 29.9% | -50% |
+| walletsecurity/keeper | 62.5% | -18% |
+
+### P5.1 - Keeper Coverage (Priority)
+- [ ] governance/keeper: 29.9% → 80% (largest gap)
+- [ ] walletsecurity/keeper: Fix genesis_extended_test.go failure
+- [ ] bridge/keeper: 64.8% → 80%
+- [ ] economicsecurity/keeper: 68.0% → 80%
+- [ ] security/keeper: 69.2% → 80%
+
+### P5.2 - Types Coverage
+- [ ] governance/types: 50.0% → 80%
+- [ ] economicsecurity/types: 50.3% → 80%
+- [ ] walletsecurity/types: 42.4% → 80%
+
+### P5.3 - CLI Coverage (all ~20-28%)
+CLI tests exist but coverage is low due to cobra command structure. Consider integration tests.
+
+---
+
+## Test Coverage Tasks (Completed)
 
 ### P1: Security Module Tests ✅
 - [x] x/security/module_test.go - Module lifecycle tests (193 lines, all pass)
