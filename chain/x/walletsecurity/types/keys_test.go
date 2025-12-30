@@ -254,3 +254,150 @@ func TestKeyFunctions_UniqueKeys(t *testing.T) {
 	key2 = GetMultiSigWalletKey(id2)
 	require.NotEqual(t, key1, key2)
 }
+
+func TestGetSessionKey(t *testing.T) {
+	sessionID := "session123"
+	key := GetSessionKey(sessionID)
+
+	require.NotEmpty(t, key)
+	require.Equal(t, SessionPrefix[0], key[0])
+	require.Contains(t, string(key), sessionID)
+}
+
+func TestGetSessionKey_EmptyInput(t *testing.T) {
+	key := GetSessionKey("")
+	require.NotEmpty(t, key)
+	require.Len(t, key, 1) // Only prefix
+}
+
+func TestGetDeviceFingerprintKey(t *testing.T) {
+	deviceID := "device456"
+	key := GetDeviceFingerprintKey(deviceID)
+
+	require.NotEmpty(t, key)
+	require.Equal(t, DeviceFingerprintPrefix[0], key[0])
+	require.Contains(t, string(key), deviceID)
+}
+
+func TestGetDeviceFingerprintKey_EmptyInput(t *testing.T) {
+	key := GetDeviceFingerprintKey("")
+	require.NotEmpty(t, key)
+	require.Len(t, key, 1)
+}
+
+func TestGetAnomalyKey(t *testing.T) {
+	anomalyID := "anomaly789"
+	key := GetAnomalyKey(anomalyID)
+
+	require.NotEmpty(t, key)
+	require.Equal(t, AnomalyPrefix[0], key[0])
+	require.Contains(t, string(key), anomalyID)
+}
+
+func TestGetAnomalyKey_EmptyInput(t *testing.T) {
+	key := GetAnomalyKey("")
+	require.NotEmpty(t, key)
+	require.Len(t, key, 1)
+}
+
+func TestGetWalletAnalyticsKey(t *testing.T) {
+	walletID := "analytics123"
+	key := GetWalletAnalyticsKey(walletID)
+
+	require.NotEmpty(t, key)
+	require.Equal(t, WalletAnalyticsPrefix[0], key[0])
+	require.Contains(t, string(key), walletID)
+}
+
+func TestGetWalletAnalyticsKey_EmptyInput(t *testing.T) {
+	key := GetWalletAnalyticsKey("")
+	require.NotEmpty(t, key)
+	require.Len(t, key, 1)
+}
+
+func TestGetInsurancePolicyKey(t *testing.T) {
+	policyID := "policy456"
+	key := GetInsurancePolicyKey(policyID)
+
+	require.NotEmpty(t, key)
+	require.Equal(t, InsurancePolicyPrefix[0], key[0])
+	require.Contains(t, string(key), policyID)
+}
+
+func TestGetInsurancePolicyKey_EmptyInput(t *testing.T) {
+	key := GetInsurancePolicyKey("")
+	require.NotEmpty(t, key)
+	require.Len(t, key, 1)
+}
+
+func TestGetBiometricProofKey(t *testing.T) {
+	walletID := "wallet789"
+	proofHash := []byte("proof123hash")
+	key := GetBiometricProofKey(walletID, proofHash)
+
+	require.NotEmpty(t, key)
+	require.Equal(t, BiometricProofPrefix[0], key[0])
+	require.Contains(t, string(key), walletID)
+	require.Contains(t, string(key), ":")
+	require.Contains(t, string(key), string(proofHash))
+}
+
+func TestGetBiometricProofKey_EmptyInputs(t *testing.T) {
+	tests := []struct {
+		name      string
+		walletID  string
+		proofHash []byte
+	}{
+		{"empty wallet", "", []byte("proof")},
+		{"empty proof", "wallet", nil},
+		{"both empty", "", nil},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			key := GetBiometricProofKey(tt.walletID, tt.proofHash)
+			require.NotEmpty(t, key)
+			require.Contains(t, string(key), ":")
+		})
+	}
+}
+
+func TestGetBiometricProofKey_DifferentProofs(t *testing.T) {
+	walletID := "wallet1"
+	proof1 := []byte("proof1")
+	proof2 := []byte("proof2")
+
+	key1 := GetBiometricProofKey(walletID, proof1)
+	key2 := GetBiometricProofKey(walletID, proof2)
+
+	require.NotEqual(t, key1, key2)
+}
+
+func TestGetAuthRateLimitKey(t *testing.T) {
+	blockHeight := int64(12345)
+	address := "aura1test123"
+	key := GetAuthRateLimitKey(blockHeight, address)
+
+	require.NotEmpty(t, key)
+	require.Contains(t, string(key), AuthRateLimitPrefix)
+	require.Contains(t, string(key), "12345")
+	require.Contains(t, string(key), address)
+}
+
+func TestGetAuthRateLimitKey_DifferentHeights(t *testing.T) {
+	address := "aura1test"
+
+	key1 := GetAuthRateLimitKey(100, address)
+	key2 := GetAuthRateLimitKey(200, address)
+
+	require.NotEqual(t, key1, key2)
+}
+
+func TestGetAuthRateLimitKey_DifferentAddresses(t *testing.T) {
+	blockHeight := int64(100)
+
+	key1 := GetAuthRateLimitKey(blockHeight, "addr1")
+	key2 := GetAuthRateLimitKey(blockHeight, "addr2")
+
+	require.NotEqual(t, key1, key2)
+}
