@@ -47,20 +47,25 @@ Current coverage audit (2025-12-30):
 | security/keeper | 69.2% | -11% |
 | economicsecurity/keeper | 68.0% | -12% |
 | cryptography/keeper | 71.7% | -8% |
-| governance/keeper | 49.2% | -31% |
-| walletsecurity/keeper | 62.5% | -18% |
+
+### Recently Fixed (Now ≥80%) ✅
+| Package | Before | After |
+|---------|--------|-------|
+| governance/keeper | 49.2% | 80.1% |
+| governance/types | 50.0% | 84.5% |
+| walletsecurity/types | 42.4% | 100% |
 
 ### P5.1 - Keeper Coverage (Priority)
-- [ ] governance/keeper: 49.2% → 80% (improved from 29.9%, 4 new test files added)
-- [ ] walletsecurity/keeper: Fix genesis_extended_test.go failure
+- [x] governance/keeper: 49.2% → 80.1% ✅ (achieved 2025-12-30)
+- [x] walletsecurity/keeper: Fixed genesis_extended_test.go ✅ (key mismatch bug)
 - [ ] bridge/keeper: 64.8% → 80%
 - [ ] economicsecurity/keeper: 68.0% → 80%
 - [ ] security/keeper: 69.2% → 80%
 
 ### P5.2 - Types Coverage
-- [ ] governance/types: 50.0% → 80%
+- [x] governance/types: 50.0% → 84.5% ✅ (achieved 2025-12-30)
 - [ ] economicsecurity/types: 50.3% → 80%
-- [ ] walletsecurity/types: 42.4% → 80%
+- [x] walletsecurity/types: 42.4% → 100% ✅ (achieved 2025-12-30)
 
 ### P5.3 - CLI Coverage (all ~20-28%)
 CLI tests exist but coverage is low due to cobra command structure. Consider integration tests.
