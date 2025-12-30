@@ -390,3 +390,56 @@ func TestRecordAttackAlert(t *testing.T) {
 	err := k.RecordAttackAlert(ctx, alert)
 	require.NoError(t, err)
 }
+
+func TestGetAttackAlerts(t *testing.T) {
+	k, _ := setupKeeperForTest(t)
+
+	// Test with no filter
+	alerts := k.GetAttackAlerts(10, types.AlertSeverity_ALERT_SEVERITY_UNSPECIFIED)
+	require.NotNil(t, alerts)
+	require.Len(t, alerts, 0) // Stub implementation returns empty
+
+	// Test with severity filter
+	alerts = k.GetAttackAlerts(5, types.AlertSeverity_ALERT_SEVERITY_CRITICAL)
+	require.NotNil(t, alerts)
+	require.Len(t, alerts, 0)
+}
+
+func TestGetAttackStatistics(t *testing.T) {
+	k, _ := setupKeeperForTest(t)
+
+	totalDetected, totalMitigated, criticalCount, warningCount := k.GetAttackStatistics()
+
+	// Stub implementation returns zeros
+	require.Equal(t, uint64(0), totalDetected)
+	require.Equal(t, uint64(0), totalMitigated)
+	require.Equal(t, uint64(0), criticalCount)
+	require.Equal(t, uint64(0), warningCount)
+}
+
+func TestGetAttacksByType(t *testing.T) {
+	k, _ := setupKeeperForTest(t)
+
+	testCases := []types.AttackType{
+		types.AttackTypePumpAndDump,
+		types.AttackTypeFlashLoan,
+		types.AttackTypeSybil,
+		types.AttackTypeWashTrading,
+		types.AttackTypeFrontRunning,
+	}
+
+	for _, attackType := range testCases {
+		alerts := k.GetAttacksByType(attackType)
+		require.NotNil(t, alerts)
+		require.Len(t, alerts, 0) // Stub implementation returns empty
+	}
+}
+
+func TestGetRecentCriticalAttacks(t *testing.T) {
+	k, ctx := setupKeeperForTest(t)
+
+	alerts, err := k.GetRecentCriticalAttacks(ctx)
+	require.NoError(t, err)
+	require.NotNil(t, alerts)
+	require.Len(t, alerts, 0) // Stub implementation returns empty
+}
