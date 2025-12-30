@@ -584,3 +584,307 @@ func TestValidateGenesis_EmergencyThresholds(t *testing.T) {
 		}
 	})
 }
+
+func TestValidateGenesis_ProposalValidation(t *testing.T) {
+	t.Run("nil proposal in list", func(t *testing.T) {
+		genesis := validTestGenesis()
+		genesis.Proposals = []*Proposal{nil}
+		err := ValidateGenesis(genesis)
+		if err == nil {
+			t.Error("expected error for nil proposal")
+		}
+	})
+
+	t.Run("proposal with zero ID", func(t *testing.T) {
+		genesis := validTestGenesis()
+		genesis.Proposals = []*Proposal{{Id: 0, Title: "Test", Proposer: "aura1test"}}
+		err := ValidateGenesis(genesis)
+		if err == nil {
+			t.Error("expected error for proposal with ID 0")
+		}
+	})
+
+	t.Run("duplicate proposal ID", func(t *testing.T) {
+		genesis := validTestGenesis()
+		genesis.Proposals = []*Proposal{
+			{Id: 1, Title: "Test1", Proposer: "aura1qy352eufqy352eufqy352eufqy3lllllk7u9k0"},
+			{Id: 1, Title: "Test2", Proposer: "aura1qy352eufqy352eufqy352eufqy3lllllk7u9k0"},
+		}
+		err := ValidateGenesis(genesis)
+		if err == nil {
+			t.Error("expected error for duplicate proposal ID")
+		}
+	})
+
+	t.Run("proposal with empty title", func(t *testing.T) {
+		genesis := validTestGenesis()
+		genesis.Proposals = []*Proposal{{Id: 1, Title: "", Proposer: "aura1test"}}
+		err := ValidateGenesis(genesis)
+		if err == nil {
+			t.Error("expected error for empty title")
+		}
+	})
+
+	t.Run("proposal with empty proposer", func(t *testing.T) {
+		genesis := validTestGenesis()
+		genesis.Proposals = []*Proposal{{Id: 1, Title: "Test", Proposer: ""}}
+		err := ValidateGenesis(genesis)
+		if err == nil {
+			t.Error("expected error for empty proposer")
+		}
+	})
+
+	t.Run("proposal with invalid proposer address", func(t *testing.T) {
+		genesis := validTestGenesis()
+		genesis.Proposals = []*Proposal{{Id: 1, Title: "Test", Proposer: "invalid"}}
+		err := ValidateGenesis(genesis)
+		if err == nil {
+			t.Error("expected error for invalid proposer address")
+		}
+	})
+}
+
+func TestValidateGenesis_DepositValidation(t *testing.T) {
+	t.Run("nil deposit in list", func(t *testing.T) {
+		genesis := validTestGenesis()
+		genesis.Deposits = []*Deposit{nil}
+		err := ValidateGenesis(genesis)
+		if err == nil {
+			t.Error("expected error for nil deposit")
+		}
+	})
+
+	t.Run("deposit with zero proposal ID", func(t *testing.T) {
+		genesis := validTestGenesis()
+		genesis.Deposits = []*Deposit{{ProposalId: 0, Depositor: "aura1test", Amount: "100aura"}}
+		err := ValidateGenesis(genesis)
+		if err == nil {
+			t.Error("expected error for deposit with proposal ID 0")
+		}
+	})
+
+	t.Run("deposit with empty depositor", func(t *testing.T) {
+		genesis := validTestGenesis()
+		genesis.Deposits = []*Deposit{{ProposalId: 1, Depositor: "", Amount: "100aura"}}
+		err := ValidateGenesis(genesis)
+		if err == nil {
+			t.Error("expected error for empty depositor")
+		}
+	})
+
+	t.Run("deposit with invalid depositor address", func(t *testing.T) {
+		genesis := validTestGenesis()
+		genesis.Deposits = []*Deposit{{ProposalId: 1, Depositor: "invalid", Amount: "100aura"}}
+		err := ValidateGenesis(genesis)
+		if err == nil {
+			t.Error("expected error for invalid depositor address")
+		}
+	})
+
+	t.Run("deposit with empty amount", func(t *testing.T) {
+		genesis := validTestGenesis()
+		genesis.Deposits = []*Deposit{{ProposalId: 1, Depositor: "aura1qy352eufqy352eufqy352eufqy3lllllk7u9k0", Amount: ""}}
+		err := ValidateGenesis(genesis)
+		if err == nil {
+			t.Error("expected error for empty amount")
+		}
+	})
+
+	t.Run("deposit with invalid amount format", func(t *testing.T) {
+		genesis := validTestGenesis()
+		genesis.Deposits = []*Deposit{{ProposalId: 1, Depositor: "aura1qy352eufqy352eufqy352eufqy3lllllk7u9k0", Amount: "invalid"}}
+		err := ValidateGenesis(genesis)
+		if err == nil {
+			t.Error("expected error for invalid amount format")
+		}
+	})
+}
+
+func TestValidateGenesis_VoteValidation(t *testing.T) {
+	t.Run("nil vote in list", func(t *testing.T) {
+		genesis := validTestGenesis()
+		genesis.Votes = []*Vote{nil}
+		err := ValidateGenesis(genesis)
+		if err == nil {
+			t.Error("expected error for nil vote")
+		}
+	})
+
+	t.Run("vote with zero proposal ID", func(t *testing.T) {
+		genesis := validTestGenesis()
+		genesis.Votes = []*Vote{{ProposalId: 0, Voter: "aura1test", Option: 1}}
+		err := ValidateGenesis(genesis)
+		if err == nil {
+			t.Error("expected error for vote with proposal ID 0")
+		}
+	})
+
+	t.Run("vote with empty voter", func(t *testing.T) {
+		genesis := validTestGenesis()
+		genesis.Votes = []*Vote{{ProposalId: 1, Voter: "", Option: 1}}
+		err := ValidateGenesis(genesis)
+		if err == nil {
+			t.Error("expected error for empty voter")
+		}
+	})
+
+	t.Run("vote with invalid voter address", func(t *testing.T) {
+		genesis := validTestGenesis()
+		genesis.Votes = []*Vote{{ProposalId: 1, Voter: "invalid", Option: 1}}
+		err := ValidateGenesis(genesis)
+		if err == nil {
+			t.Error("expected error for invalid voter address")
+		}
+	})
+
+	t.Run("vote with invalid option", func(t *testing.T) {
+		genesis := validTestGenesis()
+		genesis.Votes = []*Vote{{ProposalId: 1, Voter: "aura1qy352eufqy352eufqy352eufqy3lllllk7u9k0", Option: 5}}
+		err := ValidateGenesis(genesis)
+		if err == nil {
+			t.Error("expected error for invalid vote option")
+		}
+	})
+}
+
+func TestValidateGenesis_VoteDelegationValidation(t *testing.T) {
+	t.Run("nil vote delegation in list", func(t *testing.T) {
+		genesis := validTestGenesis()
+		genesis.VoteDelegations = []*VoteDelegation{nil}
+		err := ValidateGenesis(genesis)
+		if err == nil {
+			t.Error("expected error for nil vote delegation")
+		}
+	})
+
+	t.Run("delegation with empty delegator", func(t *testing.T) {
+		genesis := validTestGenesis()
+		genesis.VoteDelegations = []*VoteDelegation{{Delegator: "", Delegate: "aura1test"}}
+		err := ValidateGenesis(genesis)
+		if err == nil {
+			t.Error("expected error for empty delegator")
+		}
+	})
+
+	t.Run("delegation with empty delegate", func(t *testing.T) {
+		genesis := validTestGenesis()
+		genesis.VoteDelegations = []*VoteDelegation{{Delegator: "aura1test", Delegate: ""}}
+		err := ValidateGenesis(genesis)
+		if err == nil {
+			t.Error("expected error for empty delegate")
+		}
+	})
+
+	t.Run("delegation with self-delegation", func(t *testing.T) {
+		genesis := validTestGenesis()
+		addr := "aura1qy352eufqy352eufqy352eufqy3lllllk7u9k0"
+		genesis.VoteDelegations = []*VoteDelegation{{Delegator: addr, Delegate: addr}}
+		err := ValidateGenesis(genesis)
+		if err == nil {
+			t.Error("expected error for self-delegation")
+		}
+	})
+}
+
+func TestValidateGenesis_TokenLockValidationExtended(t *testing.T) {
+	t.Run("nil token lock in list", func(t *testing.T) {
+		genesis := validTestGenesis()
+		genesis.TokenLocks = []*TokenLock{nil}
+		err := ValidateGenesis(genesis)
+		if err == nil {
+			t.Error("expected error for nil token lock")
+		}
+	})
+
+	t.Run("lock with empty owner", func(t *testing.T) {
+		genesis := validTestGenesis()
+		genesis.TokenLocks = []*TokenLock{{Owner: "", ProposalId: 1, LockedAmount: "100aura"}}
+		err := ValidateGenesis(genesis)
+		if err == nil {
+			t.Error("expected error for empty owner")
+		}
+	})
+
+	t.Run("lock with invalid owner address", func(t *testing.T) {
+		genesis := validTestGenesis()
+		genesis.TokenLocks = []*TokenLock{{Owner: "invalid", ProposalId: 1, LockedAmount: "100aura"}}
+		err := ValidateGenesis(genesis)
+		if err == nil {
+			t.Error("expected error for invalid owner address")
+		}
+	})
+
+	t.Run("lock with zero proposal ID", func(t *testing.T) {
+		genesis := validTestGenesis()
+		genesis.TokenLocks = []*TokenLock{{Owner: "aura1qy352eufqy352eufqy352eufqy3lllllk7u9k0", ProposalId: 0, LockedAmount: "100aura"}}
+		err := ValidateGenesis(genesis)
+		if err == nil {
+			t.Error("expected error for zero proposal ID")
+		}
+	})
+
+	t.Run("lock with empty locked amount", func(t *testing.T) {
+		genesis := validTestGenesis()
+		genesis.TokenLocks = []*TokenLock{{Owner: "aura1qy352eufqy352eufqy352eufqy3lllllk7u9k0", ProposalId: 1, LockedAmount: ""}}
+		err := ValidateGenesis(genesis)
+		if err == nil {
+			t.Error("expected error for empty locked amount")
+		}
+	})
+}
+
+func TestValidateGenesis_VetoRequestValidationExtended(t *testing.T) {
+	t.Run("nil veto request in list", func(t *testing.T) {
+		genesis := validTestGenesis()
+		genesis.VetoRequests = []*VetoRequest{nil}
+		err := ValidateGenesis(genesis)
+		if err == nil {
+			t.Error("expected error for nil veto request")
+		}
+	})
+
+	t.Run("veto with zero proposal ID", func(t *testing.T) {
+		genesis := validTestGenesis()
+		genesis.VetoRequests = []*VetoRequest{{ProposalId: 0, Vetoer: "aura1test"}}
+		err := ValidateGenesis(genesis)
+		if err == nil {
+			t.Error("expected error for zero proposal ID")
+		}
+	})
+
+	t.Run("veto with empty vetoer", func(t *testing.T) {
+		genesis := validTestGenesis()
+		genesis.VetoRequests = []*VetoRequest{{ProposalId: 1, Vetoer: ""}}
+		err := ValidateGenesis(genesis)
+		if err == nil {
+			t.Error("expected error for empty vetoer")
+		}
+	})
+
+	t.Run("veto with invalid vetoer address", func(t *testing.T) {
+		genesis := validTestGenesis()
+		genesis.VetoRequests = []*VetoRequest{{ProposalId: 1, Vetoer: "invalid"}}
+		err := ValidateGenesis(genesis)
+		if err == nil {
+			t.Error("expected error for invalid vetoer address")
+		}
+	})
+
+	t.Run("veto with empty cosigner", func(t *testing.T) {
+		genesis := validTestGenesis()
+		genesis.VetoRequests = []*VetoRequest{{ProposalId: 1, Vetoer: "aura1qy352eufqy352eufqy352eufqy3lllllk7u9k0", Cosigners: []string{""}}}
+		err := ValidateGenesis(genesis)
+		if err == nil {
+			t.Error("expected error for empty cosigner")
+		}
+	})
+
+	t.Run("veto with invalid cosigner address", func(t *testing.T) {
+		genesis := validTestGenesis()
+		genesis.VetoRequests = []*VetoRequest{{ProposalId: 1, Vetoer: "aura1qy352eufqy352eufqy352eufqy3lllllk7u9k0", Cosigners: []string{"invalid"}}}
+		err := ValidateGenesis(genesis)
+		if err == nil {
+			t.Error("expected error for invalid cosigner address")
+		}
+	})
+}
