@@ -476,7 +476,3 @@ const DexModule = {
 };
 
 export default DexModule;
-
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = DexModule;
-}

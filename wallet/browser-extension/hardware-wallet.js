@@ -360,9 +360,4 @@ class HardwareWalletManager {
   }
 }
 
-// Export for use in extension
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = HardwareWalletManager;
-  module.exports.default = HardwareWalletManager;
-  module.exports.HardwareWalletManager = HardwareWalletManager;
-}
+export default HardwareWalletManager;

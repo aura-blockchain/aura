@@ -553,8 +553,3 @@ const WalletCore = {
 };
 
 export default WalletCore;
-
-// Export for use in extension
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = WalletCore;
-}

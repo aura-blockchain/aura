@@ -45,6 +45,4 @@ function buildKeplrChainInfo() {
   };
 }
 
-module.exports = {
-  buildKeplrChainInfo,
-};
+export { buildKeplrChainInfo };

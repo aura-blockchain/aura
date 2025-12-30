@@ -436,7 +436,4 @@ const COSMOS_SDK = {
   },
 };
 
-// Export for use in extension
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = COSMOS_SDK;
-}
+export default COSMOS_SDK;

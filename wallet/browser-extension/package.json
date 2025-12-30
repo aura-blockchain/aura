@@ -1,6 +1,6 @@
 {
   "name": "aura-browser-wallet-extension",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Aura Browser Wallet - Lightweight wallet and staking/DEX controls",
   "private": true,
   "type": "module",
