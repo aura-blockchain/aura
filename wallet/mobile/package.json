@@ -24,6 +24,7 @@
   "author": "Aura Blockchain Team",
   "license": "MIT",
   "dependencies": {
+    "@ledgerhq/hw-app-cosmos": "^6.29.15",
     "@react-native-async-storage/async-storage": "^1.21.0",
     "@react-native-community/clipboard": "^1.5.1",
     "@react-native-community/netinfo": "^11.1.0",
@@ -40,6 +41,7 @@
     "react": "18.2.0",
     "react-native": "0.72.6",
     "react-native-biometrics": "^3.0.1",
+    "react-native-ble-plx": "^2.0.3",
     "react-native-camera": "^4.2.1",
     "react-native-device-info": "^10.11.0",
     "react-native-gesture-handler": "^2.14.0",
@@ -61,6 +63,7 @@
     "@react-native/eslint-config": "^0.72.2",
     "@react-native/metro-config": "^0.72.11",
     "@testing-library/react-native": "^12.4.1",
+    "@types/jest": "^30.0.0",
     "@types/react": "^18.2.45",
     "@types/react-test-renderer": "^18.0.7",
     "babel-jest": "^29.7.0",
@@ -68,7 +71,9 @@
     "jest": "^29.7.0",
     "metro-react-native-babel-preset": "^0.77.0",
     "prettier": "^3.1.0",
-    "react-test-renderer": "18.2.0"
+    "react-test-renderer": "18.2.0",
+    "ts-jest": "^29.1.1",
+    "typescript": "^5.3.3"
   },
   "engines": {
     "node": ">=18",
@@ -79,15 +84,33 @@
     "setupFilesAfterEnv": [
       "<rootDir>/__tests__/setup.js"
     ],
+    "transform": {
+      "^.+\\.tsx?$": [
+        "ts-jest",
+        {
+          "tsconfig": {
+            "jsx": "react",
+            "esModuleInterop": true
+          }
+        }
+      ]
+    },
     "transformIgnorePatterns": [
-      "node_modules/(?!(react-native|@react-native|@react-navigation|react-native-vector-icons|react-native-biometrics|react-native-keychain)/)"
+      "node_modules/(?!(react-native|@react-native|@react-navigation|react-native-vector-icons|react-native-biometrics|react-native-keychain|react-native-ble-plx)/)"
     ],
     "testMatch": [
-      "**/__tests__/**/*.test.js"
+      "**/__tests__/**/*.test.{js,ts}"
+    ],
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js",
+      "jsx",
+      "json"
     ],
     "collectCoverageFrom": [
-      "src/**/*.{js,jsx}",
-      "!src/**/*.test.{js,jsx}",
+      "src/**/*.{js,jsx,ts,tsx}",
+      "!src/**/*.test.{js,jsx,ts,tsx}",
       "!**/node_modules/**"
     ]
   }

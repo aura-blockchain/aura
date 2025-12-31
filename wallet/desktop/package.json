@@ -30,8 +30,12 @@
   "dependencies": {
     "@cosmjs/crypto": "^0.32.2",
     "@cosmjs/encoding": "^0.32.2",
+    "@cosmjs/ledger-amino": "^0.32.2",
     "@cosmjs/proto-signing": "^0.32.2",
     "@cosmjs/stargate": "^0.32.2",
+    "@ledgerhq/hw-app-cosmos": "^6.29.15",
+    "@ledgerhq/hw-transport-node-hid": "^6.29.15",
+    "@ledgerhq/hw-transport-webhid": "^6.29.15",
     "axios": "^1.6.2",
     "bech32": "^2.0.0",
     "bip39": "^3.1.0",
