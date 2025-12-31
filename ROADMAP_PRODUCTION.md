@@ -38,14 +38,14 @@ Current coverage audit (2025-12-30):
 | security (module) | 86.7% |
 | compliance (module) | 84.8% |
 | privacy/keeper | 81.0% |
+| security/keeper | 80.5% |
+| economicsecurity/keeper | 80.6% |
 | privacy/migrations | 80.0% |
 
 ### Below 80% - Needs Improvement
 | Package | Current | Gap |
 |---------|---------|-----|
 | bridge/keeper | 64.8% | -15% |
-| security/keeper | 69.2% | -11% |
-| economicsecurity/keeper | 68.0% | -12% |
 | cryptography/keeper | 71.7% | -8% |
 
 ### Recently Fixed (Now ≥80%) ✅
@@ -55,13 +55,15 @@ Current coverage audit (2025-12-30):
 | governance/types | 50.0% | 84.5% |
 | walletsecurity/types | 42.4% | 100% |
 | economicsecurity/types | 50.3% | 95.7% |
+| security/keeper | 69.2% | 80.5% |
+| economicsecurity/keeper | 68.0% | 80.6% |
 
 ### P5.1 - Keeper Coverage (Priority)
 - [x] governance/keeper: 49.2% → 80.1% ✅ (achieved 2025-12-30)
 - [x] walletsecurity/keeper: Fixed genesis_extended_test.go ✅ (key mismatch bug)
+- [x] security/keeper: 69.2% → 80.5% ✅ (achieved 2025-12-30)
+- [x] economicsecurity/keeper: 68.0% → 80.6% ✅ (achieved 2025-12-31)
 - [ ] bridge/keeper: 64.8% → 80%
-- [ ] economicsecurity/keeper: 68.0% → 80%
-- [ ] security/keeper: 69.2% → 80%
 
 ### P5.2 - Types Coverage
 - [x] governance/types: 50.0% → 84.5% ✅ (achieved 2025-12-30)
