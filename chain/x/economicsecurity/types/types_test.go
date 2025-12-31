@@ -87,3 +87,47 @@ func TestEnumConstants(t *testing.T) {
 	_ = AlertSeverity_ALERT_SEVERITY_WARNING
 	_ = AlertSeverity_ALERT_SEVERITY_CRITICAL
 }
+
+func TestCircuitBreakerType_String(t *testing.T) {
+	tests := []struct {
+		input    CircuitBreakerType
+		expected string
+	}{
+		{CircuitBreakerTypeUnspecified, "UNSPECIFIED"},
+		{CircuitBreakerTypePriceVolatility, "PRICE_VOLATILITY"},
+		{CircuitBreakerTypeLargeTransaction, "LARGE_TRANSACTION"},
+		{CircuitBreakerTypeSupplyChange, "SUPPLY_CHANGE"},
+		{CircuitBreakerTypeLiquidityCrisis, "LIQUIDITY_CRISIS"},
+		{CircuitBreakerTypeGasSpike, "GAS_SPIKE"},
+		{CircuitBreakerType(999), "UNSPECIFIED"}, // Unknown value
+	}
+
+	for _, tt := range tests {
+		result := tt.input.String()
+		if result != tt.expected {
+			t.Errorf("CircuitBreakerType(%d).String() = %q, want %q", tt.input, result, tt.expected)
+		}
+	}
+}
+
+func TestAttackType_String(t *testing.T) {
+	tests := []struct {
+		input    AttackType
+		expected string
+	}{
+		{AttackTypeUnspecified, "UNSPECIFIED"},
+		{AttackTypePumpAndDump, "PUMP_AND_DUMP"},
+		{AttackTypeFlashLoan, "FLASH_LOAN"},
+		{AttackTypeSybil, "SYBIL"},
+		{AttackTypeWashTrading, "WASH_TRADING"},
+		{AttackTypeFrontRunning, "FRONT_RUNNING"},
+		{AttackType(999), "UNSPECIFIED"}, // Unknown value
+	}
+
+	for _, tt := range tests {
+		result := tt.input.String()
+		if result != tt.expected {
+			t.Errorf("AttackType(%d).String() = %q, want %q", tt.input, result, tt.expected)
+		}
+	}
+}
