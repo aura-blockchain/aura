@@ -54,6 +54,7 @@ Current coverage audit (2025-12-30):
 | governance/keeper | 49.2% | 80.1% |
 | governance/types | 50.0% | 84.5% |
 | walletsecurity/types | 42.4% | 100% |
+| economicsecurity/types | 50.3% | 95.7% |
 
 ### P5.1 - Keeper Coverage (Priority)
 - [x] governance/keeper: 49.2% → 80.1% ✅ (achieved 2025-12-30)
@@ -64,7 +65,7 @@ Current coverage audit (2025-12-30):
 
 ### P5.2 - Types Coverage
 - [x] governance/types: 50.0% → 84.5% ✅ (achieved 2025-12-30)
-- [ ] economicsecurity/types: 50.3% → 80%
+- [x] economicsecurity/types: 50.3% → 95.7% ✅ (achieved 2025-12-30)
 - [x] walletsecurity/types: 42.4% → 100% ✅ (achieved 2025-12-30)
 
 ### P5.3 - CLI Coverage (all ~20-28%)
