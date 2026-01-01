@@ -2,84 +2,85 @@
 
 ## Program Overview
 
-The Aura Blockchain Bug Bounty Program rewards security researchers and developers who responsibly disclose vulnerabilities in the Aura blockchain ecosystem. We are committed to protecting our users and maintaining the highest security standards.
+The Aura Bug Bounty Program invites security researchers to help protect the Aura blockchain ecosystem. As a community-driven project with limited resources, all rewards are paid exclusively in **AURA tokens** from our development fund.
+
+### Community-First Approach
+
+Aura is built by and for its community. Our bug bounty reflects this:
+
+- **AURA Token Rewards**: All bounties paid in native AURA tokens
+- **Vesting for Alignment**: Large rewards include vesting periods
+- **Recognition Focus**: Hall of Fame, badges, and community acknowledgment
+- **Collaborative Process**: We work with researchers as partners
 
 ## Scope
 
 ### In Scope
 
-The following components are eligible for bug bounty rewards:
-
-#### 1. Core Blockchain Components
+#### Core Blockchain
 - Consensus mechanism
 - Block production and validation
 - State machine execution
 - Transaction processing
 - Network protocol (P2P, RPC, gRPC)
 
-#### 2. Custom Modules
-- **Identity Change Module** - Identity management and updates
-- **VC Registry Module** - Verifiable Credentials issuance and verification
-- **Data Registry Module** - Data storage and IPFS integration
-- **Inclusion Routines Module** - Data processing and scoring
-- **Confidence Score Module** - Scoring algorithms
-- **Prevalidation Module** - Data validation logic
-- **DEX Module** - Decentralized exchange and liquidity pools
-- **Bridge Module** - Cross-chain asset transfers
-- **Validator Security Module** - Validator operations and slashing
-- **Cryptography Module** - Cryptographic operations
-- **Economic Security Module** - Economic incentives and penalties
-- **Governance Module** - On-chain governance
+#### Custom Modules
+- **Identity Module**: Identity management and updates
+- **VC Registry Module**: Verifiable Credentials issuance/verification
+- **Data Registry Module**: Data storage and IPFS integration
+- **Inclusion Routines Module**: Data processing and scoring
+- **Confidence Score Module**: Scoring algorithms
+- **Prevalidation Module**: Data validation logic
+- **DEX Module**: Decentralized exchange and liquidity pools
+- **Bridge Module**: Cross-chain asset transfers
+- **Validator Security Module**: Validator operations and slashing
+- **Governance Module**: On-chain governance
 
-#### 3. Smart Contracts
-- All deployed smart contracts on Aura blockchain
-- Contract upgrade mechanisms
-- Contract interaction patterns
-
-#### 4. APIs and Services
+#### Other Components
+- Smart contracts deployed on Aura
 - REST API endpoints
 - gRPC services
-- WebSocket connections
-- Query services
-
-#### 5. Cryptography
-- Key generation and management
-- Signature schemes
-- Hash functions
-- Encryption algorithms
-- Zero-knowledge proofs
+- Cryptographic operations
 
 ### Out of Scope
-
-The following are explicitly out of scope:
 
 - Third-party services and integrations
 - Social engineering attacks
 - Physical attacks
-- Denial of Service (DoS) attacks (unless critical)
-- Issues in third-party dependencies (report to respective projects)
-- Theoretical vulnerabilities without proof of concept
-- Bugs already known to the team
-- Issues discovered during official audits
+- Volumetric DoS attacks
+- Third-party dependency bugs (report upstream)
+- Theoretical vulnerabilities without PoC
+- Already known issues
 
-## Severity Classification
+## Reward Structure
 
-### Critical (Up to $50,000)
+All rewards paid in **AURA tokens** from the development fund.
 
-**Impact**: Complete compromise of the blockchain or loss of user funds
+### Severity Tiers
+
+| Severity | AURA Tokens | Vesting |
+|----------|-------------|---------|
+| Critical | 50,000 - 100,000 AURA | 6-month linear vest |
+| High | 15,000 - 50,000 AURA | 3-month linear vest |
+| Medium | 5,000 - 15,000 AURA | None |
+| Low | 1,000 - 5,000 AURA | None |
+| Informational | Recognition only | N/A |
+
+### Critical
+
+**Complete compromise or loss of user funds**
 
 Examples:
 - Consensus failure or chain halt
-- Unauthorized token minting or burning
+- Unauthorized token minting/burning
 - Private key extraction
-- Byzantine fault exploitation
 - Cross-chain bridge asset theft
 - Smart contract fund drain
-- Cryptographic primitive breaks
+- Byzantine fault exploitation
 
-### High (Up to $25,000)
+### High
 
-**Impact**: Significant security vulnerability affecting multiple users
+**Significant vulnerability affecting multiple users**
 
 Examples:
 - Authorization bypass in critical modules
@@ -87,91 +88,80 @@ Examples:
 - Transaction replay attacks
 - Double-spend vulnerabilities
 - Validator set manipulation
-- Identity theft or impersonation
-- VC forgery or unauthorized revocation
+- Identity theft or VC forgery
 
-### Medium (Up to $10,000)
+### Medium
 
-**Impact**: Limited security vulnerability affecting individual users
+**Limited vulnerability affecting individual users**
 
 Examples:
-- Information disclosure (sensitive data)
-- Authentication bypass (non-critical)
+- Sensitive information disclosure
+- Non-critical authentication bypass
 - Gas manipulation exploits
-- Denial of service (specific modules)
+- Module-specific DoS
 - Race conditions in state transitions
-- Improper validation leading to unexpected behavior
 
-### Low (Up to $2,500)
+### Low
 
-**Impact**: Minor security issues with limited impact
+**Minor issues with limited impact**
 
 Examples:
-- Information disclosure (non-sensitive)
+- Non-sensitive information disclosure
 - Timing attacks (low impact)
 - Minor input validation issues
-- Logging of sensitive information
 - Configuration issues
 
-### Informational (Recognition Only)
+### Informational
 
-**Impact**: No immediate security risk
-
-Examples:
+**No immediate security risk**
 - Code quality improvements
-- Best practice violations
+- Best practice suggestions
 - Documentation errors
-- Performance optimizations
 
-## Submission Guidelines
+### Reward Modifiers
+
+| Condition | Modifier |
+|-----------|----------|
+| High-quality report with PoC | +25% |
+| Actionable fix suggestion | +15% |
+| Fix PR included | +50% |
+| First critical finding | +25% |
+| Incomplete report | -25% to -50% |
+
+## Vesting Terms
+
+To protect AURA token economics and align long-term incentives:
+
+- **Critical**: 6-month linear vesting (monthly releases)
+- **High**: 3-month linear vesting
+- **Medium/Low**: Immediate transfer
+
+Vesting begins after fix deployment to mainnet. Researchers may opt for 50% immediate payment instead of vesting.
+
+## Submission Process
 
 ### How to Submit
 
-1. **Email**: security@aura-blockchain.io
-2. **PGP Key**: Available at https://aura-blockchain.io/pgp-key.txt
-3. **HackerOne** (if available): https://hackerone.com/aura-blockchain
+**Email**: security@aura-blockchain.io
+**PGP Key**: https://aura-blockchain.io/pgp-key.txt
 
 ### Required Information
-
-Your submission should include:
-
-1. **Vulnerability Description**
-   - Clear description of the vulnerability
-   - Affected components/modules
-   - Impact assessment
-
-2. **Proof of Concept**
-   - Step-by-step reproduction instructions
-   - Test code or exploit script (if applicable)
-   - Screenshots or video demonstration
-   - Test transaction hashes or block heights
-
-3. **Suggested Fix**
-   - Proposed remediation (optional but appreciated)
-   - Alternative approaches (if any)
-
-4. **Researcher Information**
-   - Name or pseudonym
-   - Contact information
-   - Payment address (Ethereum, Bitcoin, or Aura address)
-
-### Submission Template
 
 ```markdown
 # Vulnerability Report
 
 ## Summary
-[Brief description of the vulnerability]
+Brief description of the vulnerability
 
 ## Severity
-[Your assessment: Critical/High/Medium/Low]
+Your assessment: Critical/High/Medium/Low
 
 ## Affected Components
 - Component 1
 - Component 2
 
 ## Vulnerability Details
-[Detailed technical description]
+Detailed technical description
 
 ## Reproduction Steps
 1. Step 1
@@ -179,227 +169,132 @@ Your submission should include:
 3. ...
 
 ## Proof of Concept
-[Code, commands, or scripts]
+Code, commands, or scripts
 
 ## Impact
-[Description of potential impact]
+Description of potential impact
 
-## Suggested Fix
-[Your proposed remediation]
+## Suggested Fix (Optional)
+Proposed remediation
 
-## Researcher Information
-- Name: [Your name/pseudonym]
-- Contact: [Email]
-- Payment Address: [Crypto address]
+## Contact
+- Name/Handle
+- AURA address for payment
 ```
 
-## Responsible Disclosure Policy
+### Response Timeline
 
-We expect security researchers to:
+| Stage | Timeframe |
+|-------|-----------|
+| Acknowledgment | 3 business days |
+| Severity Assessment | 7 days |
+| Status Updates | Weekly |
+| Remediation | 30-90 days |
+| Reward Payment | 30 days after fix |
 
-1. **Act in Good Faith**
-   - Make every effort to avoid privacy violations
-   - Do not exploit vulnerabilities beyond what is necessary to demonstrate the issue
-   - Do not intentionally harm the network or users
+## Responsible Disclosure
 
-2. **Provide Sufficient Time**
-   - Allow us 90 days to remediate the issue before public disclosure
-   - Coordinate disclosure timing with our security team
+### Expectations
 
-3. **Keep Information Confidential**
-   - Do not publicly disclose the vulnerability until it is fixed
-   - Do not share the vulnerability with others
+- Act in good faith
+- Avoid privacy violations
+- Do not exploit beyond demonstrating the issue
+- Allow 90 days for remediation before public disclosure
+- Keep information confidential until fixed
+- Test only on testnets or local instances
 
-4. **Comply with Laws**
-   - Only test on testnets or your own local instances
-   - Do not violate any laws or regulations
+### Our Commitments
 
-## Our Commitments
-
-We commit to:
-
-1. **Acknowledge Receipt**
-   - Respond to your submission within 3 business days
-   - Provide a timeline for evaluation
-
-2. **Transparent Communication**
-   - Keep you updated on the status of your submission
-   - Explain our severity assessment
-
-3. **Fair Rewards**
-   - Process valid submissions promptly
-   - Pay rewards within 30 days of fix deployment
-
-4. **Recognition**
-   - Credit researchers in our security advisories (if desired)
-   - Maintain a Hall of Fame for contributors
-
-5. **No Legal Action**
-   - Not pursue legal action against researchers who follow these guidelines
-   - Advocate for you if third parties take action
-
-## Evaluation Process
-
-1. **Initial Triage** (1-3 days)
-   - Verify the report is valid and in scope
-   - Acknowledge receipt
-
-2. **Severity Assessment** (3-7 days)
-   - Evaluate impact and exploitability
-   - Determine severity classification
-   - Assess reward amount
-
-3. **Remediation** (30-90 days)
-   - Develop and test fix
-   - Deploy to testnet
-   - Deploy to mainnet
-
-4. **Reward Payment** (7-30 days after fix)
-   - Finalize reward amount
-   - Process payment
-   - Public disclosure (if applicable)
-
-## Reward Criteria
-
-Rewards are determined based on:
-
-1. **Severity**
-   - Potential impact on the network
-   - Number of users affected
-   - Ease of exploitation
-
-2. **Quality of Report**
-   - Clarity and completeness
-   - Reproduction steps
-   - Suggested fixes
-
-3. **Novelty**
-   - First report of the issue
-   - Unique insight or approach
-
-4. **Cooperation**
-   - Responsiveness during evaluation
-   - Willingness to retest after fix
-
-## Exclusions
-
-The following do not qualify for rewards:
-
-- Bugs found during official security audits
-- Issues already reported by others
-- Known issues in our security advisory
-- Theoretical vulnerabilities without working PoC
-- Spam or invalid reports
-- Issues in third-party code (report to original project)
-- Social engineering
-- Physical attacks
-
-## Payment Methods
-
-We support the following payment methods:
-
-- **Cryptocurrency**: AURA, ETH, BTC, USDC
-- **Bank Transfer**: For researchers in supported jurisdictions
-- **Donation**: Option to donate reward to charity
-
-## Tax Considerations
-
-- Rewards may be subject to tax reporting requirements
-- Researchers are responsible for tax compliance in their jurisdiction
-- We may require tax documentation for payments over $600 USD
+- Acknowledge receipt within 3 business days
+- Provide transparent communication on status
+- Process valid submissions promptly
+- Credit researchers in advisories (if desired)
+- Not pursue legal action against good-faith researchers
 
 ## Legal Safe Harbor
 
-Aura provides a legal safe harbor for security research conducted under this program. We will not pursue civil or criminal action against researchers who:
+Aura provides legal safe harbor for security research under this program. We will not pursue action against researchers who:
 
 1. Follow the responsible disclosure policy
 2. Act in good faith
 3. Comply with program terms
-4. Do not cause harm to users or the network
+4. Do not cause harm to users or network
 
-## Hall of Fame
+## Recognition
 
-Top contributors will be recognized in our Hall of Fame:
+### Hall of Fame
 
-### 2025
-- [To be announced]
+Contributors recognized by tier:
 
-### 2024
-- [To be announced]
+| Tier | Criteria |
+|------|----------|
+| Guardian | Critical vulnerability found |
+| Champion | 3+ High severity findings |
+| Contributor | Any valid finding |
 
-## Examples of Past Vulnerabilities
+### Recognition Options
 
-### Critical: Consensus Failure via Malformed Block
-**Reporter**: Anonymous Researcher
-**Reward**: $45,000
-**Description**: A carefully crafted block could cause validator nodes to crash, halting consensus.
+- Hall of Fame listing
+- Security advisory credit
+- Community contributor badge
+- Recommendation letter on request
+- Anonymous recognition if preferred
 
-### High: VC Registry Authorization Bypass
-**Reporter**: Security Team Alpha
-**Reward**: $20,000
-**Description**: Improper access control allowed unauthorized VC revocation.
+## Program Rules
 
-### Medium: DEX Price Manipulation
-**Reporter**: DeFi Researcher
-**Reward**: $8,000
-**Description**: A series of trades could temporarily manipulate pool prices.
+### Eligibility
 
-## Contact Information
+- Open globally (subject to legal restrictions)
+- 18+ or parental consent required
+- Aura team members ineligible
+- First valid report receives reward
+
+### Payment
+
+- AURA tokens only
+- Transfer to provided AURA address
+- Subject to vesting for larger rewards
+- Researcher responsible for taxes
+
+### Exclusions
+
+- Bugs found during official audits
+- Issues already reported
+- Theoretical vulnerabilities without PoC
+- Third-party code issues
+
+### Modifications
+
+- Program may be updated with 30 days notice
+- Pending submissions use terms at submission time
+
+## Contact
 
 - **Security Email**: security@aura-blockchain.io
 - **PGP Key**: https://aura-blockchain.io/pgp-key.txt
-- **Security Portal**: https://security.aura-blockchain.io
-- **Emergency Contact**: +1-555-AURA-911 (verified researchers only)
+- **Response**: 3 business days
 
-## Updates and Changes
+## FAQ
 
-This bug bounty program may be updated at any time. Significant changes will be announced via:
+**Q: Why AURA tokens only?**
+A: As a community-funded project, our development fund holds AURA. Token rewards align researcher incentives with project success.
 
-- Blog: https://blog.aura-blockchain.io
-- Twitter: @AuraBlockchain
-- Discord: #security-announcements
+**Q: What's the vesting period for?**
+A: Large rewards vest over time to protect token economics and show long-term commitment.
 
-Last Updated: January 13, 2025
+**Q: Can I test on mainnet?**
+A: No. Use testnets or local instances only. Mainnet exploitation disqualifies you.
 
-## Frequently Asked Questions
+**Q: Can I remain anonymous?**
+A: Yes. We respect researcher privacy and will credit you as preferred.
 
-### Q: Can I test on mainnet?
-**A**: No. All testing must be done on testnets or local instances. Testing on mainnet without explicit permission may result in legal action.
-
-### Q: What if I find a vulnerability in a dependency?
-**A**: Report it to the original project's security team. If it affects Aura specifically, you may also inform us so we can coordinate.
-
-### Q: How long does evaluation take?
-**A**: Initial triage takes 1-3 days. Full evaluation can take up to 7 days. Complex issues may require more time.
-
-### Q: Can I submit multiple vulnerabilities?
-**A**: Yes! Each unique vulnerability is evaluated separately.
-
-### Q: What if my submission is rejected?
-**A**: We'll provide an explanation. Common reasons include: duplicate submission, out of scope, insufficient impact, or invalid proof of concept.
-
-### Q: Can I remain anonymous?
-**A**: Yes. We respect researcher privacy. You can use a pseudonym and we'll credit you as you prefer.
-
-### Q: Do you offer bonuses?
-**A**: Yes. Exceptional reports with detailed analysis, working exploits, and suggested fixes may receive bonus rewards.
-
-### Q: How do I know if an issue is already known?
-**A**: Check our security advisories at https://security.aura-blockchain.io/advisories. If in doubt, submit anyway - we'll let you know.
-
-## Program Statistics
-
-- **Total Researchers**: TBD
-- **Total Reports**: TBD
-- **Valid Vulnerabilities**: TBD
-- **Total Rewards Paid**: TBD
-- **Average Response Time**: TBD
-- **Average Resolution Time**: TBD
-
-## Acknowledgments
-
-We thank all security researchers who contribute to making Aura blockchain more secure. Your efforts help protect our community and advance the security of decentralized systems.
+**Q: What if I find a dependency vulnerability?**
+A: Report to the upstream project. If it has Aura-specific impact, inform us for potential reduced reward.
 
 ---
 
-**Note**: This bug bounty program is subject to change without notice. Participation constitutes acceptance of all terms and conditions outlined in this document.
+**Last Updated**: January 1, 2026
+**Program Version**: 2.0
+**Program Status**: Active
+
+*Thank you for helping keep Aura secure!*
