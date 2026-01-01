@@ -684,3 +684,282 @@ func (suite *InvariantsComprehensiveTestSuite) TestBalanceInvariantWithMocksZero
 // 	bz := suite.Keeper.cdc.MustMarshal(channel)
 // 	store.Set(append(types.ChannelKeyPrefix, []byte(channel.ChannelId)...), bz)
 // }
+
+// =============================================================================
+// ChannelStateInvariant Comprehensive Tests (via ChainConfig)
+// =============================================================================
+
+func (suite *InvariantsComprehensiveTestSuite) TestChannelStateInvariant_ValidConfig() {
+	// Add a properly configured chain using the setChainConfig method
+	config := types.ChainConfig{
+		ChainId:          "ethereum",
+		ChainName:        "Ethereum Mainnet",
+		AddressPrefix:    "0x",
+		MinConfirmations: 12,
+		Enabled:          true,
+		Validators:       []string{"val1", "val2"},
+	}
+	suite.Keeper.setChainConfig(suite.SdkCtx, config)
+
+	inv := ChannelStateInvariant(*suite.Keeper)
+	msg, broken := inv(suite.SdkCtx)
+	suite.False(broken, "valid chain config should not break invariant")
+	suite.Empty(msg)
+}
+
+func (suite *InvariantsComprehensiveTestSuite) TestChannelStateInvariant_EmptyChainId_Direct() {
+	// Store directly to trigger the empty chain ID check
+	store := suite.SdkCtx.KVStore(suite.Keeper.storeKey)
+	config := types.ChainConfig{
+		ChainId:          "",
+		ChainName:        "Test Chain",
+		AddressPrefix:    "test",
+		MinConfirmations: 10,
+	}
+	bz, _ := suite.Keeper.cdc.Marshal(&config)
+	store.Set(append(types.ChainConfigPrefix, []byte("testkey")...), bz)
+
+	inv := ChannelStateInvariant(*suite.Keeper)
+	msg, broken := inv(suite.SdkCtx)
+	suite.True(broken, "chain config with empty ID should break invariant")
+	suite.Contains(msg, "empty ID")
+}
+
+func (suite *InvariantsComprehensiveTestSuite) TestChannelStateInvariant_EmptyChainName_Direct() {
+	store := suite.SdkCtx.KVStore(suite.Keeper.storeKey)
+	config := types.ChainConfig{
+		ChainId:          "testchain_name",
+		ChainName:        "",
+		AddressPrefix:    "test",
+		MinConfirmations: 10,
+	}
+	bz, _ := suite.Keeper.cdc.Marshal(&config)
+	store.Set(append(types.ChainConfigPrefix, []byte("testchain_name")...), bz)
+
+	inv := ChannelStateInvariant(*suite.Keeper)
+	msg, broken := inv(suite.SdkCtx)
+	suite.True(broken, "chain config with empty name should break invariant")
+	suite.Contains(msg, "empty name")
+}
+
+func (suite *InvariantsComprehensiveTestSuite) TestChannelStateInvariant_EmptyAddressPrefix_Direct() {
+	store := suite.SdkCtx.KVStore(suite.Keeper.storeKey)
+	config := types.ChainConfig{
+		ChainId:          "testchain_prefix",
+		ChainName:        "Test Chain Prefix",
+		AddressPrefix:    "",
+		MinConfirmations: 10,
+	}
+	bz, _ := suite.Keeper.cdc.Marshal(&config)
+	store.Set(append(types.ChainConfigPrefix, []byte("testchain_prefix")...), bz)
+
+	inv := ChannelStateInvariant(*suite.Keeper)
+	msg, broken := inv(suite.SdkCtx)
+	suite.True(broken, "chain config with empty address prefix should break invariant")
+	suite.Contains(msg, "empty address prefix")
+}
+
+func (suite *InvariantsComprehensiveTestSuite) TestChannelStateInvariant_ZeroConfirmations_Direct() {
+	store := suite.SdkCtx.KVStore(suite.Keeper.storeKey)
+	config := types.ChainConfig{
+		ChainId:          "testchain_conf",
+		ChainName:        "Test Chain Conf",
+		AddressPrefix:    "test",
+		MinConfirmations: 0,
+	}
+	bz, _ := suite.Keeper.cdc.Marshal(&config)
+	store.Set(append(types.ChainConfigPrefix, []byte("testchain_conf")...), bz)
+
+	inv := ChannelStateInvariant(*suite.Keeper)
+	msg, broken := inv(suite.SdkCtx)
+	suite.True(broken, "chain config with zero confirmations should break invariant")
+	suite.Contains(msg, "zero min confirmations")
+}
+
+func (suite *InvariantsComprehensiveTestSuite) TestChannelStateInvariant_ExcessiveConfirmations_Direct() {
+	store := suite.SdkCtx.KVStore(suite.Keeper.storeKey)
+	config := types.ChainConfig{
+		ChainId:          "testchain_excess",
+		ChainName:        "Test Chain Excess",
+		AddressPrefix:    "test",
+		MinConfirmations: 5000, // > 1000 limit
+	}
+	bz, _ := suite.Keeper.cdc.Marshal(&config)
+	store.Set(append(types.ChainConfigPrefix, []byte("testchain_excess")...), bz)
+
+	inv := ChannelStateInvariant(*suite.Keeper)
+	msg, broken := inv(suite.SdkCtx)
+	suite.True(broken, "chain config with excessive confirmations should break invariant")
+	suite.Contains(msg, "excessive min confirmations")
+}
+
+func (suite *InvariantsComprehensiveTestSuite) TestChannelStateInvariant_MultipleConfigs() {
+	// Add multiple valid configs
+	config1 := types.ChainConfig{
+		ChainId:          "ethereum",
+		ChainName:        "Ethereum",
+		AddressPrefix:    "0x",
+		MinConfirmations: 12,
+		Enabled:          true,
+	}
+	suite.Keeper.setChainConfig(suite.SdkCtx, config1)
+
+	config2 := types.ChainConfig{
+		ChainId:          "polygon",
+		ChainName:        "Polygon",
+		AddressPrefix:    "0x",
+		MinConfirmations: 256,
+		Enabled:          true,
+	}
+	suite.Keeper.setChainConfig(suite.SdkCtx, config2)
+
+	inv := ChannelStateInvariant(*suite.Keeper)
+	msg, broken := inv(suite.SdkCtx)
+	suite.False(broken, "multiple valid configs should not break invariant")
+	suite.Empty(msg)
+}
+
+// =============================================================================
+// TransferChainIntegrityInvariant Comprehensive Tests
+// =============================================================================
+
+func (suite *InvariantsComprehensiveTestSuite) TestTransferChainIntegrityInvariant_NoTransfers() {
+	inv := TransferChainIntegrityInvariant(*suite.Keeper)
+	msg, broken := inv(suite.SdkCtx)
+	suite.False(broken, "no transfers should not break invariant")
+	suite.Empty(msg)
+}
+
+func (suite *InvariantsComprehensiveTestSuite) TestTransferChainIntegrityInvariant_ValidWithChainConfig() {
+	// Add chain config first
+	config := types.ChainConfig{
+		ChainId:          "ethereum",
+		ChainName:        "Ethereum",
+		AddressPrefix:    "0x",
+		MinConfirmations: 12,
+		Enabled:          true,
+	}
+	suite.Keeper.setChainConfig(suite.SdkCtx, config)
+
+	// Create transfer referencing the config
+	transfer := &bridgepb.CrossChainTransfer{
+		TransferId:  "integrity-valid-1",
+		SourceChain: "aura",
+		TargetChain: "ethereum",
+		Sender:      sdk.AccAddress("sender____________").String(),
+		Recipient:   "0x123",
+		Amount:      sdkmath.NewInt(1000),
+		Denom:       "uaura",
+		Status:      bridgepb.TransferStatus_PENDING,
+		Timestamp:   time.Now(),
+	}
+	suite.Keeper.SetTransfer(suite.SdkCtx, transfer)
+
+	inv := TransferChainIntegrityInvariant(*suite.Keeper)
+	msg, broken := inv(suite.SdkCtx)
+	suite.False(broken, "transfer with valid chain config should not break invariant")
+	suite.Empty(msg)
+}
+
+func (suite *InvariantsComprehensiveTestSuite) TestTransferChainIntegrityInvariant_AuraToAura() {
+	// Local transfers shouldn't require chain configs
+	transfer := &bridgepb.CrossChainTransfer{
+		TransferId:  "integrity-local-aura",
+		SourceChain: "aura",
+		TargetChain: "aura",
+		Sender:      sdk.AccAddress("sender____________").String(),
+		Recipient:   sdk.AccAddress("recipient_________").String(),
+		Amount:      sdkmath.NewInt(1000),
+		Denom:       "uaura",
+		Status:      bridgepb.TransferStatus_PENDING,
+		Timestamp:   time.Now(),
+	}
+	suite.Keeper.SetTransfer(suite.SdkCtx, transfer)
+
+	inv := TransferChainIntegrityInvariant(*suite.Keeper)
+	msg, broken := inv(suite.SdkCtx)
+	suite.False(broken, "aura to aura transfer should not require chain config")
+	suite.Empty(msg)
+}
+
+func (suite *InvariantsComprehensiveTestSuite) TestTransferChainIntegrityInvariant_MissingTargetConfig() {
+	// Create transfer to non-existent chain
+	transfer := &bridgepb.CrossChainTransfer{
+		TransferId:  "integrity-missing-target",
+		SourceChain: "aura",
+		TargetChain: "nonexistent_chain",
+		Sender:      sdk.AccAddress("sender____________").String(),
+		Recipient:   "0x123",
+		Amount:      sdkmath.NewInt(1000),
+		Denom:       "uaura",
+		Status:      bridgepb.TransferStatus_PENDING,
+		Timestamp:   time.Now(),
+	}
+	suite.Keeper.SetTransfer(suite.SdkCtx, transfer)
+
+	inv := TransferChainIntegrityInvariant(*suite.Keeper)
+	msg, broken := inv(suite.SdkCtx)
+	suite.True(broken, "transfer with missing target chain config should break invariant")
+	suite.Contains(msg, "non-existent target chain")
+}
+
+func (suite *InvariantsComprehensiveTestSuite) TestTransferChainIntegrityInvariant_MissingSourceConfig() {
+	// Create transfer from non-existent chain (not aura)
+	transfer := &bridgepb.CrossChainTransfer{
+		TransferId:  "integrity-missing-source",
+		SourceChain: "nonexistent_source",
+		TargetChain: "aura",
+		Sender:      "0xexternal",
+		Recipient:   sdk.AccAddress("recipient_________").String(),
+		Amount:      sdkmath.NewInt(1000),
+		Denom:       "uaura",
+		Status:      bridgepb.TransferStatus_PENDING,
+		Timestamp:   time.Now(),
+	}
+	suite.Keeper.SetTransfer(suite.SdkCtx, transfer)
+
+	inv := TransferChainIntegrityInvariant(*suite.Keeper)
+	msg, broken := inv(suite.SdkCtx)
+	suite.True(broken, "transfer with missing source chain config should break invariant")
+	suite.Contains(msg, "non-existent source chain")
+}
+
+func (suite *InvariantsComprehensiveTestSuite) TestTransferChainIntegrityInvariant_ExternalToExternal() {
+	// Add chain configs
+	ethConfig := types.ChainConfig{
+		ChainId:          "ethereum",
+		ChainName:        "Ethereum",
+		AddressPrefix:    "0x",
+		MinConfirmations: 12,
+		Enabled:          true,
+	}
+	suite.Keeper.setChainConfig(suite.SdkCtx, ethConfig)
+
+	polyConfig := types.ChainConfig{
+		ChainId:          "polygon",
+		ChainName:        "Polygon",
+		AddressPrefix:    "0x",
+		MinConfirmations: 256,
+		Enabled:          true,
+	}
+	suite.Keeper.setChainConfig(suite.SdkCtx, polyConfig)
+
+	// Create transfer between two external chains
+	transfer := &bridgepb.CrossChainTransfer{
+		TransferId:  "integrity-external-external",
+		SourceChain: "ethereum",
+		TargetChain: "polygon",
+		Sender:      "0xsender",
+		Recipient:   "0xrecipient",
+		Amount:      sdkmath.NewInt(1000),
+		Denom:       "weth",
+		Status:      bridgepb.TransferStatus_PENDING,
+		Timestamp:   time.Now(),
+	}
+	suite.Keeper.SetTransfer(suite.SdkCtx, transfer)
+
+	inv := TransferChainIntegrityInvariant(*suite.Keeper)
+	msg, broken := inv(suite.SdkCtx)
+	suite.False(broken, "transfer between two valid external chains should not break invariant")
+	suite.Empty(msg)
+}

@@ -1,6 +1,6 @@
 # Aura Production Readiness Roadmap
 
-**Status: MAINNET READY** (pending external audit) | **Last Updated:** 2025-12-30
+**Status: MAINNET READY** (pending external audit) | **Last Updated:** 2026-01-01
 
 ---
 
@@ -40,13 +40,14 @@ Current coverage audit (2025-12-30):
 | privacy/keeper | 81.0% |
 | security/keeper | 80.5% |
 | economicsecurity/keeper | 80.6% |
+| bridge/keeper | 82.3% |
+| cryptography/keeper | 82.4% |
 | privacy/migrations | 80.0% |
 
 ### Below 80% - Needs Improvement
 | Package | Current | Gap |
 |---------|---------|-----|
-| bridge/keeper | 64.8% | -15% |
-| cryptography/keeper | 71.7% | -8% |
+| (none) | - | - |
 
 ### Recently Fixed (Now ≥80%) ✅
 | Package | Before | After |
@@ -57,13 +58,16 @@ Current coverage audit (2025-12-30):
 | economicsecurity/types | 50.3% | 95.7% |
 | security/keeper | 69.2% | 80.5% |
 | economicsecurity/keeper | 68.0% | 80.6% |
+| bridge/keeper | 73.8% | 82.3% |
+| cryptography/keeper | 71.7% | 82.4% |
 
 ### P5.1 - Keeper Coverage (Priority)
 - [x] governance/keeper: 49.2% → 80.1% ✅ (achieved 2025-12-30)
 - [x] walletsecurity/keeper: Fixed genesis_extended_test.go ✅ (key mismatch bug)
 - [x] security/keeper: 69.2% → 80.5% ✅ (achieved 2025-12-30)
 - [x] economicsecurity/keeper: 68.0% → 80.6% ✅ (achieved 2025-12-31)
-- [ ] bridge/keeper: 64.8% → 80%
+- [x] bridge/keeper: 73.8% → 82.3% ✅ (achieved 2025-12-31)
+- [x] cryptography/keeper: 71.7% → 82.4% ✅ (achieved 2026-01-01)
 
 ### P5.2 - Types Coverage
 - [x] governance/types: 50.0% → 84.5% ✅ (achieved 2025-12-30)
@@ -221,3 +225,24 @@ Cosmos SDK invariants lack context parameter. Params validated at other layers (
 - P2: All crypto verified production-ready (ring sigs, ZK proofs, threshold sigs)
 - P3: SDK clients, browser extension, Redis cache, dashboard APIs
 - P4: User-facing components (wallets, dashboards, status page)
+
+---
+
+## ✅ COMPLETE: cryptography/keeper Coverage (71.7% → 82.4%)
+
+**Completed:** 2026-01-01
+
+### Test Files Created
+1. `x/cryptography/keeper/kv_operations_test.go` - Tests all Delete/Get/Set operations (10 test functions, 42 sub-tests)
+2. `x/cryptography/keeper/zk_threshold_extended_test.go` - Tests ZK proof config and threshold signature functions (28 test cases)
+3. `x/cryptography/keeper/advanced_crypto_extended_test.go` - Tests PinCertificate, encryptAESGCM, extractSPKIHash, updateRandomSourceStatus, RegisterInvariants (25 test cases)
+4. `x/cryptography/keeper/exported_test_helpers.go` - Exports private functions for testing
+
+### Functions Now Covered
+- All Delete/Get/Set operations in keeper.go ✅
+- RegisterInvariants, AllInvariants ✅
+- PinCertificate, encryptAESGCM ✅
+- extractSPKIHash ✅
+- updateRandomSourceStatus ✅
+- HashToG1, GenerateThresholdSignatureShare, VerifyThresholdSignature ✅
+- SetZKProofConfig, GetProofStatistics ✅
