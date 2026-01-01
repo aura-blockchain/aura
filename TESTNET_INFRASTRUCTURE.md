@@ -1,7 +1,8 @@
 # AURA Blockchain Testnet Infrastructure
 
 > **Last Updated**: 2026-01-01
-> **Maintainer**: AI Agents via Claude Code
+> **Maintainer**: Jeff DeCristofaro <info@aurablockchain.org>
+> **License**: Apache 2.0
 
 ## Quick Reference
 
@@ -404,8 +405,22 @@ cp ~/.aura/config/node_key.json /secure/backup/
 
 ---
 
-## 15. Related Documentation
+## 15. Contact & Support
+
+| Resource | Link |
+|----------|------|
+| **Maintainer** | Jeff DeCristofaro |
+| **Email** | info@aurablockchain.org |
+| **Bug Reports** | GitHub Issues |
+| **Security Issues** | See SECURITY.md |
+
+---
+
+## 16. Related Documentation
 
 - [Cosmos SDK Docs](https://docs.cosmos.network)
 - [CometBFT Docs](https://docs.cometbft.com)
-- [AURA GitHub Repository](https://github.com/aura-blockchain/aura)
+- [CONTRIBUTING.md](./CONTRIBUTING.md) - Contribution guidelines
+- [LICENSE](./LICENSE) - Apache 2.0 License
+- [AUTHORS](./AUTHORS) - Project authors and contributors
+- [SECURITY.md](./SECURITY.md) - Security policy and reporting
