@@ -56,10 +56,9 @@ As a blockchain project, we hold ourselves to additional standards:
 
 - **No scam promotion**: Do not promote scams, rug pulls, pump-and-dump schemes,
   or any fraudulent financial activity
-- **No financial advice**: Do not provide investment, financial, tax, or legal
-  advice; always recommend consulting qualified professionals
-- **No token shilling**: Do not promote tokens, NFTs, or investments for
-  personal gain within community spaces
+- **No financial advice**: Do not provide financial, tax, or legal advice;
+  always recommend consulting qualified professionals
+- **No token promotion**: Do not promote tokens or NFTs for personal gain
 - **No false claims**: Do not make false or misleading claims about the project,
   its technology, partnerships, or capabilities
 - **No market manipulation**: Do not coordinate or encourage market manipulation
