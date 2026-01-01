@@ -74,8 +74,16 @@ Current coverage audit (2025-12-30):
 - [x] economicsecurity/types: 50.3% → 95.7% ✅ (achieved 2025-12-30)
 - [x] walletsecurity/types: 42.4% → 100% ✅ (achieved 2025-12-30)
 
-### P5.3 - CLI Coverage (all ~20-28%)
-CLI tests exist but coverage is low due to cobra command structure. Consider integration tests.
+### P5.3 - CLI Coverage (Improved 2026-01-01)
+CLI utility function tests added. Coverage improved for testable helper functions:
+| Module | Before | After | Gain |
+|--------|--------|-------|------|
+| governance | 27.5% | 35.8% | +8.3% |
+| auth | 25.6% | 29.5% | +3.9% |
+| walletsecurity | 23.7% | 26.1% | +2.4% |
+| dataregistry | 36.5% | 37.2% | +0.7% |
+
+Note: Remaining coverage gap is due to cobra command execution requiring gRPC mocks or integration tests.
 
 ---
 
