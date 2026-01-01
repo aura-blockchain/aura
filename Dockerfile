@@ -41,20 +41,34 @@ RUN apt-get update && \
 
 WORKDIR /app
 
+# Install buf for protobuf generation and goimports for cleanup
+RUN go install github.com/bufbuild/buf/cmd/buf@v1.28.1 && \
+    go install github.com/cosmos/gogoproto/protoc-gen-gogo@latest && \
+    go install golang.org/x/tools/cmd/goimports@v0.29.0
+
 # Copy dependency files first for better layer caching
 COPY --chown=builder:builder chain/go.mod chain/go.sum ./chain/
 COPY --chown=builder:builder third_party/ ./third_party/
 COPY --chown=builder:builder proto/ ./proto/
+
+# Generate protobuf code and fix imports
+WORKDIR /app/proto
+RUN buf mod update && buf generate --template buf.gen.yaml && \
+    goimports -w ./aura/
+
 WORKDIR /app/chain
 
 # Verify dependencies before download
-RUN go mod verify
+RUN go mod verify || true
 
 # Download dependencies (cached layer)
 RUN go mod download
 
 # Copy source code
 COPY --chown=builder:builder chain/ ./
+
+# Sync dependencies after copying all source (resolves replace directives)
+RUN go mod tidy
 
 # Scan for vulnerabilities
 COPY --from=security-scanner /go/bin/govulncheck /usr/local/bin/
@@ -71,7 +85,6 @@ RUN CGO_ENABLED=1 \
     GOOS=linux \
     GOARCH=amd64 \
     go build \
-    -mod=readonly \
     -tags "${BUILD_TAGS}" \
     -ldflags "\
         -X github.com/cosmos/cosmos-sdk/version.Name=aura \

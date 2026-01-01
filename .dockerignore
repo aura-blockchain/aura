@@ -241,7 +241,4 @@ Makefile
 # ============================================================================
 # Proto Files (only need compiled output)
 # ============================================================================
-proto/**/*.proto
-proto/buf.yaml
-proto/buf.gen.yaml
 proto/buf.lock
