@@ -19,3 +19,21 @@ Include:
 - What you were trying to do
 - Where the workflow was unclear
 - A concrete suggestion
+
+## Labels and triage owners
+
+Suggested labels:
+
+- `testnet-bug`
+- `testnet-ops`
+- `testnet-ux`
+- `wallet`
+- `explorer`
+- `faucet`
+- `ibc`
+
+Suggested triage owners:
+
+- Node/ops: core chain maintainers
+- Wallets: wallet maintainers
+- Explorer/faucet: service maintainers
