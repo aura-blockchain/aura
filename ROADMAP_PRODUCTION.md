@@ -18,5 +18,14 @@ Last updated: 2026-01-01
 
 ## Next milestones
 
-- Public testnet feedback collection
-- External security review before mainnet
+### Public testnet feedback collection
+
+- [x] Publish feedback intake guide and link from testnet docs
+- [ ] Define issue labels and triage owners for testnet feedback
+- [ ] Run first feedback triage and summarize outcomes
+
+### External security review before mainnet
+
+- [ ] Identify audit scope and target dates
+- [ ] Select audit firm and finalize SOW
+- [ ] Track remediation and publish summary

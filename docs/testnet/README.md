@@ -50,6 +50,7 @@ scripts/join-aura-testnet.sh
    aurad keys add mykey --home ~/.aura
    ```
 
+<<<<<<< HEAD
 2. Request tokens from the faucet:
    - Visit https://testnet-faucet.aurablockchain.org
    - Or use the CLI: `aurad tx faucet request --from mykey --home ~/.aura`
@@ -58,6 +59,10 @@ scripts/join-aura-testnet.sh
    ```bash
    aurad query bank balances $(aurad keys show mykey -a --home ~/.aura) --home ~/.aura
    ```
+
+## Feedback
+
+Use `docs/testnet/FEEDBACK.md` for bug reports and testnet feedback.
 
 ## Quick Commands
 
