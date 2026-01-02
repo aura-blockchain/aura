@@ -1,7 +1,7 @@
 {
   "chain_name": "aura",
   "chain_id": "aura-testnet-1",
-  "pretty_name": "Aura",
+  "pretty_name": "Aura Testnet",
   "network_type": "testnet",
   "status": "live",
   "bech32_prefix": "aura",
@@ -44,24 +44,33 @@
   ],
   "apis": {
     "rpc": [
-      { "address": "http://localhost:26657", "provider": "local" },
-      { "address": "https://rpc.aura-testnet.com", "provider": "public-rpc" }
+      { "address": "https://testnet-rpc.aurablockchain.org", "provider": "Aura Foundation" },
+      { "address": "http://158.69.119.76:26657", "provider": "direct" }
     ],
     "rest": [
-      { "address": "http://localhost:1317", "provider": "local" },
-      { "address": "https://api.aura-testnet.com", "provider": "public-api" }
+      { "address": "https://testnet-api.aurablockchain.org", "provider": "Aura Foundation" },
+      { "address": "http://158.69.119.76:1317", "provider": "direct" }
     ],
     "grpc": [
-      { "address": "grpc.aura-testnet.com:443", "provider": "public-grpc" }
+      { "address": "testnet-rpc.aurablockchain.org:9090", "provider": "Aura Foundation" },
+      { "address": "158.69.119.76:9090", "provider": "direct" }
     ]
   },
   "explorers": [
-    { "url": "http://localhost:8088", "kind": "local", "tx_page": "http://localhost:8088/transactions/${txHash}" }
+    {
+      "kind": "Aura Explorer",
+      "url": "https://testnet-explorer.aurablockchain.org",
+      "tx_page": "https://testnet-explorer.aurablockchain.org/transactions/${txHash}",
+      "account_page": "https://testnet-explorer.aurablockchain.org/accounts/${accountAddress}"
+    }
   ],
+  "faucet": {
+    "url": "https://testnet-faucet.aurablockchain.org"
+  },
   "contacts": [
     {
       "name": "Aura Team",
-      "email": "support@aura.dev"
+      "email": "support@aurablockchain.org"
     }
   ]
 }
