@@ -2,11 +2,6 @@
 
 Last updated: 2026-01-01
 
-## Current focus
-
-- Public testnet readiness
-- Documentation cleanup
-
 ## Next milestones
 
 ### External security review before mainnet
