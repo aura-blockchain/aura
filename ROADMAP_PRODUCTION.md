@@ -22,7 +22,7 @@ Last updated: 2026-01-01
 
 - [x] Publish feedback intake guide and link from testnet docs
 - [x] Define issue labels and triage owners for testnet feedback
-- [ ] Run first feedback triage and summarize outcomes
+- [x] Run first feedback triage and summarize outcomes
 
 ### External security review before mainnet
 
