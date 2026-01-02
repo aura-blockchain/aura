@@ -1,6 +1,7 @@
 syntax = "proto3";
 package aura.vcregistry.v1beta1;
 
+import "cosmos/msg/v1/msg.proto";
 import "google/protobuf/timestamp.proto";
 import "aura/vcregistry/v1beta1/types.proto";
 import "aura/vcregistry/v1beta1/attributes.proto";
@@ -90,6 +91,8 @@ message DiscloseableAttributes {
 
 // MsgCreatePresentation - User creates a QR code presentation
 message MsgCreatePresentation {
+  option (cosmos.msg.v1.signer) = "creator";
+
   string creator = 1;                      // User's address
   repeated string vc_ids = 2;              // VCs to present
   PresentationContext context = 3;         // What to show

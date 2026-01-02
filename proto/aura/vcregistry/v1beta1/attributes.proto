@@ -1,6 +1,7 @@
 syntax = "proto3";
 package aura.vcregistry.v1beta1;
 
+import "cosmos/msg/v1/msg.proto";
 import "google/protobuf/timestamp.proto";
 import "aura/vcregistry/v1beta1/types.proto";
 
@@ -82,6 +83,8 @@ message VoiceCommand {
 
 // MsgCreateAttributeVC creates a new attribute VC
 message MsgCreateAttributeVC {
+  option (cosmos.msg.v1.signer) = "creator";
+
   string creator = 1;
   AttributeType attribute_type = 2;
   bytes encrypted_value = 3;
@@ -97,6 +100,8 @@ message MsgCreateAttributeVCResponse {
 
 // MsgUpdateDisclosurePolicy updates user's disclosure policy
 message MsgUpdateDisclosurePolicy {
+  option (cosmos.msg.v1.signer) = "creator";
+
   string creator = 1;
   repeated AttributeDisclosureRule rules = 2;
   DisclosurePolicyMode default_mode = 3;
@@ -108,6 +113,8 @@ message MsgUpdateDisclosurePolicyResponse {
 
 // MsgRespondToDisclosureRequest responds to a disclosure request
 message MsgRespondToDisclosureRequest {
+  option (cosmos.msg.v1.signer) = "creator";
+
   string creator = 1;
   string request_id = 2;
   bool approved = 3;
@@ -120,6 +127,8 @@ message MsgRespondToDisclosureRequestResponse {
 
 // MsgCreateDisclosureRequest creates a disclosure request
 message MsgCreateDisclosureRequest {
+  option (cosmos.msg.v1.signer) = "verifier";
+
   string verifier = 1;
   string holder_address = 2;
   string verifier_name = 3;
@@ -135,6 +144,8 @@ message MsgCreateDisclosureRequestResponse {
 
 // MsgRevokeAttributeVC revokes an attribute VC
 message MsgRevokeAttributeVC {
+  option (cosmos.msg.v1.signer) = "creator";
+
   string creator = 1;
   string attribute_vc_id = 2;
   string reason = 3;

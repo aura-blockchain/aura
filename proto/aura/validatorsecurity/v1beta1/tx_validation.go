@@ -3,7 +3,7 @@ package v1beta1
 import (
 	"fmt"
 
-	"github.com/aequitas/aura/chain/x/common/validation"
+	"github.com/aequitas/aura/proto/common/validation"
 )
 
 const (

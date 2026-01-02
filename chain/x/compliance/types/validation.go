@@ -10,7 +10,7 @@ import (
 
 	sdkmath "cosmossdk.io/math"
 
-	commonvalidation "github.com/aequitas/aura/chain/x/common/validation"
+	commonvalidation "github.com/aequitas/aura/proto/common/validation"
 )
 
 // ValidateParams validates ComplianceParams

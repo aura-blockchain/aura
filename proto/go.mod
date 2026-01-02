@@ -4,7 +4,6 @@ go 1.23.2
 
 require (
 	cosmossdk.io/math v1.5.3
-	github.com/aequitas/aura/chain v0.0.0-00010101000000-000000000000
 	github.com/cosmos/cosmos-proto v1.0.0-beta.5
 	github.com/cosmos/cosmos-sdk v0.53.4
 	github.com/cosmos/gogoproto v1.7.2
@@ -105,4 +104,3 @@ require (
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
 
-replace github.com/aequitas/aura/chain => ../chain

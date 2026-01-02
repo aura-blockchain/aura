@@ -19,7 +19,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 
-	"github.com/aequitas/aura/chain/x/common/validation"
+	"github.com/aequitas/aura/proto/common/validation"
 	"github.com/aequitas/aura/chain/x/compliance/keeper"
 	"github.com/aequitas/aura/chain/x/compliance/types"
 )

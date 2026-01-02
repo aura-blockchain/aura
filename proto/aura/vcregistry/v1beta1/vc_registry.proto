@@ -2,6 +2,7 @@ syntax = "proto3";
 package aura.vcregistry.v1beta1;
 
 import "cosmos/base/query/v1beta1/pagination.proto";
+import "cosmos/msg/v1/msg.proto";
 import "google/protobuf/timestamp.proto";
 import "gogoproto/gogo.proto";
 import "aura/vcregistry/v1beta1/types.proto";
@@ -176,6 +177,8 @@ message RequestIds {
 
 // MsgMintVC mints a new verifiable credential
 message MsgMintVC {
+  option (cosmos.msg.v1.signer) = "holder_address";
+
   string holder_address = 1;                    // Signer
   string holder_did = 2;                        // DID to bind credential to
   VCType vc_type = 3;                           // Type of VC to mint
@@ -192,6 +195,8 @@ message MsgMintVCResponse {
 
 // MsgRevokeVC revokes a credential (user-initiated)
 message MsgRevokeVC {
+  option (cosmos.msg.v1.signer) = "holder_address";
+
   string holder_address = 1;                    // Signer (must be holder)
   string vc_id = 2;                             // VC to revoke
   string reason_text = 3;                       // Optional reason description
@@ -206,6 +211,8 @@ message MsgRevokeVCResponse {
 
 // MsgAdminRevokeVC revokes a credential (governance)
 message MsgAdminRevokeVC {
+  option (cosmos.msg.v1.signer) = "authority";
+
   string authority = 1;                         // Governance module address
   string vc_id = 2;
   RevocationReason reason = 3;
@@ -219,6 +226,8 @@ message MsgAdminRevokeVCResponse {
 
 // MsgSuspendVC temporarily suspends a credential
 message MsgSuspendVC {
+  option (cosmos.msg.v1.signer) = "authority";
+
   string authority = 1;                         // Governance module address
   string vc_id = 2;
   string reason = 3;
@@ -232,6 +241,8 @@ message MsgSuspendVCResponse {
 
 // MsgReactivateVC reactivates a suspended credential
 message MsgReactivateVC {
+  option (cosmos.msg.v1.signer) = "authority";
+
   string authority = 1;                         // Governance module address
   string vc_id = 2;
 }
@@ -242,6 +253,8 @@ message MsgReactivateVCResponse {
 
 // MsgCreateVCPolicy creates a new VC policy (governance)
 message MsgCreateVCPolicy {
+  option (cosmos.msg.v1.signer) = "authority";
+
   string authority = 1;                         // Governance module address
   string vc_type_name = 2;
   VCType vc_type_enum = 3;
@@ -262,6 +275,8 @@ message MsgCreateVCPolicyResponse {
 
 // MsgUpdateVCPolicy updates an existing policy (creates new version)
 message MsgUpdateVCPolicy {
+  option (cosmos.msg.v1.signer) = "authority";
+
   string authority = 1;                         // Governance module address
   string vc_type_name = 2;
   uint64 cs_threshold = 3;
@@ -280,6 +295,8 @@ message MsgUpdateVCPolicyResponse {
 
 // MsgDeprecateVCPolicy deprecates a policy (no new mints)
 message MsgDeprecateVCPolicy {
+  option (cosmos.msg.v1.signer) = "authority";
+
   string authority = 1;                         // Governance module address
   string vc_type_name = 2;
   string reason = 3;
@@ -291,6 +308,8 @@ message MsgDeprecateVCPolicyResponse {
 
 // MsgRegisterDID registers a new DID document
 message MsgRegisterDID {
+  option (cosmos.msg.v1.signer) = "controller";
+
   string controller = 1;                        // Signer
   string did = 2;                               // Desired DID (validated for uniqueness)
   repeated VerificationMethod verification_methods = 3;
@@ -304,6 +323,8 @@ message MsgRegisterDIDResponse {
 
 // MsgUpdateDIDDocument updates a DID document
 message MsgUpdateDIDDocument {
+  option (cosmos.msg.v1.signer) = "controller";
+
   string controller = 1;                        // Signer
   string did = 2;
   repeated VerificationMethod verification_methods = 3;
