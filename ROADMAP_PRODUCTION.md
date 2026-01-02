@@ -14,6 +14,7 @@ Last updated: 2026-01-01
 - [x] Rewrite or trim core public docs for accuracy, brevity, and compliance
 - [x] Audit remaining docs against code/config for correctness and remove prohibited language
 - [x] Refresh documentation index references and finalize audit notes
+- [x] Publish Hermes example config and point operators to it
 
 ## Next milestones
 

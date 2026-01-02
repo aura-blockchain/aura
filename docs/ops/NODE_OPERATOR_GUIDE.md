@@ -36,3 +36,7 @@ curl -s http://localhost:26657/status | jq '.result.sync_info'
 ## Logs
 
 Run in a terminal or configure systemd for long-running nodes.
+
+## Hermes relayer (example)
+
+If you operate IBC relayers, start from the example config at `config/hermes/config.toml.example` and update endpoints and keys for your environment.
