@@ -1,0 +1,99 @@
+[global]
+log_level = 'info'
+
+[mode]
+[mode.clients]
+enabled = true
+refresh = true
+misbehaviour = true
+[mode.connections]
+enabled = true
+[mode.channels]
+enabled = true
+[mode.packets]
+enabled = true
+clear_interval = 50
+clear_on_start = true
+tx_confirmation = true
+
+[rest]
+enabled = true
+host = '127.0.0.1'
+port = 3000
+
+[telemetry]
+enabled = false
+host = '127.0.0.1'
+port = 3001
+
+[[chains]]
+id = 'aura-local-4'
+type = 'CosmosSdk'
+rpc_addr = 'http://localhost:10657'
+grpc_addr = 'http://localhost:10091'
+event_source = { mode = 'push', url = 'ws://localhost:10657/websocket', batch_delay = '200ms' }
+rpc_timeout = '10s'
+trusted_node = false
+account_prefix = 'aura'
+key_name = 'relayer-aura'
+store_prefix = 'ibc'
+default_gas = 300000
+max_gas = 800000
+gas_multiplier = 1.2
+max_msg_num = 15
+max_tx_size = 180000
+clock_drift = '10s'
+max_block_time = '10s'
+trusting_period = '14days'
+trust_threshold = { numerator = '1', denominator = '3' }
+gas_price = { price = 0.025, denom = 'uaura' }
+packet_filter = { policy = 'allow', list = [ ['transfer', '*'] ] }
+address_type = { derivation = 'cosmos' }
+
+[[chains]]
+id = 'paw-testnet-1'
+type = 'CosmosSdk'
+rpc_addr = 'http://localhost:11657'
+grpc_addr = 'http://localhost:11091'
+event_source = { mode = 'push', url = 'ws://localhost:11657/websocket', batch_delay = '200ms' }
+rpc_timeout = '10s'
+trusted_node = false
+account_prefix = 'paw'
+key_name = 'relayer-paw'
+store_prefix = 'ibc'
+default_gas = 300000
+max_gas = 3000000
+gas_multiplier = 1.2
+max_msg_num = 15
+max_tx_size = 180000
+clock_drift = '10s'
+max_block_time = '10s'
+trusting_period = '14days'
+trust_threshold = { numerator = '1', denominator = '3' }
+gas_price = { price = 0.001, denom = 'upaw' }
+packet_filter = { policy = 'allow', list = [ ['transfer', '*'], ['dex', '*'] ] }
+address_type = { derivation = 'cosmos' }
+
+[[chains]]
+id = 'aura-counter-1'
+type = 'CosmosSdk'
+rpc_addr = 'http://localhost:29657'
+grpc_addr = 'http://localhost:12092'
+event_source = { mode = 'push', url = 'ws://localhost:29657/websocket', batch_delay = '200ms' }
+rpc_timeout = '10s'
+trusted_node = false
+account_prefix = 'aura'
+key_name = 'relayer-counter'
+store_prefix = 'ibc'
+default_gas = 300000
+max_gas = 800000
+gas_multiplier = 1.2
+max_msg_num = 15
+max_tx_size = 180000
+clock_drift = '10s'
+max_block_time = '10s'
+trusting_period = '14days'
+trust_threshold = { numerator = '1', denominator = '3' }
+gas_price = { price = 0.025, denom = 'stake' }
+packet_filter = { policy = 'allow', list = [ ['transfer', '*'] ] }
+address_type = { derivation = 'cosmos' }

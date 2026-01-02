@@ -30,3 +30,7 @@ scripts/join-aura-testnet.sh
 ## Keys and funding
 
 Create keys with `aurad keys add` and request test tokens from the faucet service (see `faucet/README.md`).
+
+## Hermes config (example)
+
+An example Hermes config is available at `config/hermes/config.toml.example`. Copy it to `config.toml` and update RPC/GRPC endpoints and keys for your environment.
