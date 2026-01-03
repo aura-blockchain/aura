@@ -18,8 +18,15 @@ cd chain
 ./build/aurad start --home "$HOME/.aura"
 ```
 
-## Join the public testnet
+## Public Testnet
 
+To join the AURA public testnet, see the [testnets repository](https://github.com/aura-blockchain/testnets) for genesis files, peer lists, and network details.
+
+| Network | Chain ID | Status |
+|---------|----------|--------|
+| [aura-testnet-1](https://github.com/aura-blockchain/testnets/tree/main/aura-testnet-1) | `aura-testnet-1` | Active |
+
+**Quick join:**
 ```bash
 scripts/join-aura-testnet.sh
 ```
