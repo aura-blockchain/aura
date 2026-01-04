@@ -1,0 +1,10 @@
+[Unit]
+Description=Publish Aura Testnet Docs
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+Group=ubuntu
+ExecStart=/usr/local/bin/publish-docs

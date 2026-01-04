@@ -130,8 +130,8 @@
                 <div class="metric-label">Avg Block Time</div>
             </div>
             <div class="metric">
-                <div class="metric-value" id="uptime">--</div>
-                <div class="metric-label">Uptime (30d)</div>
+                <div class="metric-value" id="tps">--</div>
+                <div class="metric-label">TPS (avg)</div>
             </div>
         </div>
 
@@ -141,7 +141,7 @@
                 <div class="service">
                     <div>
                         <div class="service-name">RPC Endpoint</div>
-                        <div class="service-endpoint">https://rpc.aura-testnet.com:26657</div>
+                        <div class="service-endpoint">https://testnet-rpc.aurablockchain.org</div>
                     </div>
                     <div class="service-status">
                         <span class="response-time" id="rpc-latency">--</span>
@@ -151,7 +151,7 @@
                 <div class="service">
                     <div>
                         <div class="service-name">REST API</div>
-                        <div class="service-endpoint">https://api.aura-testnet.com:1317</div>
+                        <div class="service-endpoint">https://testnet-api.aurablockchain.org</div>
                     </div>
                     <div class="service-status">
                         <span class="response-time" id="api-latency">--</span>
@@ -161,7 +161,7 @@
                 <div class="service">
                     <div>
                         <div class="service-name">gRPC Endpoint</div>
-                        <div class="service-endpoint">grpc.aura-testnet.com:9090</div>
+                        <div class="service-endpoint">testnet-rpc.aurablockchain.org:9090</div>
                     </div>
                     <div class="service-status">
                         <span class="response-time" id="grpc-latency">--</span>
@@ -175,7 +175,7 @@
                 <div class="service">
                     <div>
                         <div class="service-name">Block Explorer</div>
-                        <div class="service-endpoint">https://explorer.aura-testnet.com</div>
+                        <div class="service-endpoint">https://testnet-explorer.aurablockchain.org</div>
                     </div>
                     <div class="service-status">
                         <span class="response-time" id="explorer-latency">--</span>
@@ -185,11 +185,21 @@
                 <div class="service">
                     <div>
                         <div class="service-name">Testnet Faucet</div>
-                        <div class="service-endpoint">https://faucet.aura-testnet.com</div>
+                        <div class="service-endpoint">https://testnet-faucet.aurablockchain.org</div>
                     </div>
                     <div class="service-status">
                         <span class="response-time" id="faucet-latency">--</span>
                         <span class="status-indicator" id="faucet-status"></span>
+                    </div>
+                </div>
+                <div class="service">
+                    <div>
+                        <div class="service-name">GraphQL</div>
+                        <div class="service-endpoint">https://testnet-graphql.aurablockchain.org/graphql</div>
+                    </div>
+                    <div class="service-status">
+                        <span class="response-time" id="graphql-latency">--</span>
+                        <span class="status-indicator" id="graphql-status"></span>
                     </div>
                 </div>
             </div>
@@ -198,8 +208,8 @@
                 <h2>Developer Tools</h2>
                 <div class="service">
                     <div>
-                        <div class="service-name">Developer Playground</div>
-                        <div class="service-endpoint">https://playground.aura-testnet.com</div>
+                        <div class="service-name">Grafana</div>
+                        <div class="service-endpoint">https://testnet-status.aurablockchain.org/grafana</div>
                     </div>
                     <div class="service-status">
                         <span class="response-time" id="playground-latency">--</span>
@@ -208,12 +218,46 @@
                 </div>
                 <div class="service">
                     <div>
-                        <div class="service-name">API Documentation</div>
-                        <div class="service-endpoint">https://docs.aura-testnet.com/api</div>
+                        <div class="service-name">Docs Site</div>
+                        <div class="service-endpoint">https://testnet-docs.aurablockchain.org</div>
+                    </div>
+                    <div class="service-status">
+                        <span class="response-time" id="docs-site-latency">--</span>
+                        <span class="status-indicator" id="docs-site-status"></span>
+                    </div>
+                </div>
+                <div class="service">
+                    <div>
+                        <div class="service-name">Genesis + Seeds</div>
+                        <div class="service-endpoint">https://testnet-status.aurablockchain.org/genesis.json</div>
                     </div>
                     <div class="service-status">
                         <span class="response-time" id="docs-latency">--</span>
                         <span class="status-indicator" id="docs-status"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="service-group">
+                <h2>Resources</h2>
+                <div class="service">
+                    <div>
+                        <div class="service-name">Chain Registry</div>
+                        <div class="service-endpoint">https://testnet-status.aurablockchain.org/chain-registry.json</div>
+                    </div>
+                    <div class="service-status">
+                        <span class="response-time" id="registry-latency">--</span>
+                        <span class="status-indicator" id="registry-status"></span>
+                    </div>
+                </div>
+                <div class="service">
+                    <div>
+                        <div class="service-name">Swagger Docs</div>
+                        <div class="service-endpoint">https://testnet-status.aurablockchain.org/swagger/</div>
+                    </div>
+                    <div class="service-status">
+                        <span class="response-time" id="swagger-latency">--</span>
+                        <span class="status-indicator" id="swagger-status"></span>
                     </div>
                 </div>
             </div>
@@ -231,17 +275,22 @@
 
     <script>
         const CONFIG = {
-            rpcUrl: 'http://localhost:26657',
-            apiUrl: 'http://localhost:1317',
+            rpcUrl: 'https://testnet-rpc.aurablockchain.org',
+            apiUrl: 'https://testnet-api.aurablockchain.org',
             refreshInterval: 30000
         };
 
-        async function checkEndpoint(url, timeout = 5000) {
+        async function checkEndpoint(url, timeout = 5000, method = 'GET', body = null) {
             const start = Date.now();
             try {
                 const controller = new AbortController();
                 const id = setTimeout(() => controller.abort(), timeout);
-                const response = await fetch(url, { signal: controller.signal });
+                const response = await fetch(url, {
+                    signal: controller.signal,
+                    method,
+                    headers: body ? { 'Content-Type': 'application/json' } : undefined,
+                    body
+                });
                 clearTimeout(id);
                 return { up: response.ok, latency: Date.now() - start };
             } catch {
@@ -257,16 +306,37 @@
                 ]);
 
                 if (statusRes?.result) {
+                    const latestHeight = parseInt(statusRes.result.sync_info.latest_block_height, 10);
                     document.getElementById('block-height').textContent =
-                        parseInt(statusRes.result.sync_info.latest_block_height).toLocaleString();
+                        latestHeight.toLocaleString();
+
+                    if (latestHeight > 1) {
+                        const [latestBlockRes, prevBlockRes] = await Promise.all([
+                            fetch(`${CONFIG.rpcUrl}/block?height=${latestHeight}`).then(r => r.json()).catch(() => null),
+                            fetch(`${CONFIG.rpcUrl}/block?height=${latestHeight - 1}`).then(r => r.json()).catch(() => null)
+                        ]);
+
+                        const latestTime = latestBlockRes?.result?.block?.header?.time;
+                        const prevTime = prevBlockRes?.result?.block?.header?.time;
+                        const txCount = latestBlockRes?.result?.block?.data?.txs?.length ?? 0;
+
+                        if (latestTime && prevTime) {
+                            const diffSeconds = Math.max(
+                                (new Date(latestTime).getTime() - new Date(prevTime).getTime()) / 1000,
+                                0
+                            );
+                            if (diffSeconds > 0) {
+                                document.getElementById('block-time').textContent = `${diffSeconds.toFixed(2)}s`;
+                                const tps = txCount / diffSeconds;
+                                document.getElementById('tps').textContent = tps.toFixed(2);
+                            }
+                        }
+                    }
                 }
 
                 if (validatorsRes?.validators) {
                     document.getElementById('validators').textContent = validatorsRes.validators.length;
                 }
-
-                document.getElementById('block-time').textContent = '~6s';
-                document.getElementById('uptime').textContent = '99.9%';
             } catch (e) {
                 console.error('Failed to fetch metrics:', e);
             }
@@ -277,10 +347,19 @@
                 { id: 'rpc', url: `${CONFIG.rpcUrl}/health` },
                 { id: 'api', url: `${CONFIG.apiUrl}/cosmos/base/tendermint/v1beta1/node_info` },
                 { id: 'grpc', url: null },
-                { id: 'explorer', url: null },
-                { id: 'faucet', url: null },
-                { id: 'playground', url: null },
-                { id: 'docs', url: null }
+                { id: 'explorer', url: 'https://testnet-explorer.aurablockchain.org' },
+                { id: 'faucet', url: 'https://testnet-faucet.aurablockchain.org/api/v1/health' },
+                {
+                    id: 'graphql',
+                    url: 'https://testnet-graphql.aurablockchain.org/graphql',
+                    method: 'POST',
+                    body: JSON.stringify({ query: '{ latestBlockHeight }' })
+                },
+                { id: 'playground', url: 'https://testnet-status.aurablockchain.org/grafana/' },
+                { id: 'docs-site', url: 'https://testnet-docs.aurablockchain.org' },
+                { id: 'docs', url: 'https://testnet-status.aurablockchain.org/genesis.json' },
+                { id: 'registry', url: 'https://testnet-status.aurablockchain.org/chain-registry.json' },
+                { id: 'swagger', url: 'https://testnet-status.aurablockchain.org/swagger/' }
             ];
 
             let allUp = true;
@@ -291,7 +370,7 @@
                 const latencyEl = document.getElementById(`${ep.id}-latency`);
 
                 if (ep.url) {
-                    const result = await checkEndpoint(ep.url);
+                    const result = await checkEndpoint(ep.url, 5000, ep.method, ep.body);
                     statusEl.className = `status-indicator ${result.up ? 'up' : 'down'}`;
                     latencyEl.textContent = result.latency ? `${result.latency}ms` : 'N/A';
                     if (!result.up) anyDown = true;

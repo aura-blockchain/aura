@@ -16,11 +16,11 @@ type Config struct {
 	CORSOrigins []string
 
 	// Blockchain configuration
-	NodeRPC         string
-	ChainID         string
-	FaucetMnemonic  string
-	FaucetAddress   string
-	Denom           string
+	NodeRPC          string
+	ChainID          string
+	FaucetMnemonic   string
+	FaucetAddress    string
+	Denom            string
 	AmountPerRequest int64
 
 	// Database configuration
@@ -34,27 +34,34 @@ type Config struct {
 	RateLimitPerAddress int
 	RateLimitWindow     time.Duration
 
+	// Access control configuration
+	MaxRecipientBalance int64
+	AllowedIPs          []string
+	AllowedAddresses    []string
+
 	// Captcha configuration
 	HCaptchaSecret string
+	RequireCaptcha bool
 
 	// Transaction configuration
-	GasLimit       uint64
-	GasPrice       string
+	GasLimit        uint64
+	GasPrice        string
 	TransactionMemo string
 }
 
 // Load loads configuration from environment variables
 func Load() (*Config, error) {
+	environment := getEnv("ENVIRONMENT", "development")
 	cfg := &Config{
 		Port:        getEnv("PORT", "8080"),
-		Environment: getEnv("ENVIRONMENT", "development"),
+		Environment: environment,
 		CORSOrigins: strings.Split(getEnv("CORS_ORIGINS", "*"), ","),
 
-		NodeRPC:         getEnv("NODE_RPC", "http://localhost:26657"),
-		ChainID:         getEnv("CHAIN_ID", "aura-testnet-1"),
-		FaucetMnemonic:  getEnv("FAUCET_MNEMONIC", ""),
-		FaucetAddress:   getEnv("FAUCET_ADDRESS", ""),
-		Denom:           getEnv("DENOM", "uaura"),
+		NodeRPC:          getEnv("NODE_RPC", "http://localhost:26657"),
+		ChainID:          getEnv("CHAIN_ID", "aura-testnet-1"),
+		FaucetMnemonic:   getEnv("FAUCET_MNEMONIC", ""),
+		FaucetAddress:    getEnv("FAUCET_ADDRESS", ""),
+		Denom:            getEnv("DENOM", "uaura"),
 		AmountPerRequest: getEnvAsInt64("AMOUNT_PER_REQUEST", 100000000), // 100 AURA
 
 		DatabaseURL: getEnv("DATABASE_URL", "postgres://faucet:faucet@localhost:5432/faucet?sslmode=disable"),
@@ -65,9 +72,14 @@ func Load() (*Config, error) {
 		RateLimitWindow:     time.Duration(getEnvAsInt("RATE_LIMIT_WINDOW_HOURS", 24)) * time.Hour,
 
 		HCaptchaSecret: getEnv("HCAPTCHA_SECRET", ""),
+		RequireCaptcha: getEnvAsBool("HCAPTCHA_REQUIRED", strings.ToLower(environment) == "production"),
 
-		GasLimit:       uint64(getEnvAsInt("GAS_LIMIT", 200000)),
-		GasPrice:       getEnv("GAS_PRICE", "0.025uaura"),
+		MaxRecipientBalance: getEnvAsInt64("MAX_RECIPIENT_BALANCE", 0),
+		AllowedIPs:          splitCSV(getEnv("FAUCET_ALLOWED_IPS", "")),
+		AllowedAddresses:    splitCSV(getEnv("FAUCET_ALLOWED_ADDRESSES", "")),
+
+		GasLimit:        uint64(getEnvAsInt("GAS_LIMIT", 200000)),
+		GasPrice:        getEnv("GAS_PRICE", "0.025uaura"),
 		TransactionMemo: getEnv("TRANSACTION_MEMO", "AURA Testnet Faucet"),
 	}
 
@@ -100,8 +112,12 @@ func (c *Config) Validate() error {
 		return errors.New("AMOUNT_PER_REQUEST must be positive")
 	}
 
-	if c.Environment == "production" && c.HCaptchaSecret == "" {
-		return errors.New("HCAPTCHA_SECRET is required in production")
+	if c.RequireCaptcha && c.HCaptchaSecret == "" {
+		return errors.New("HCAPTCHA_SECRET is required when captcha is enabled")
+	}
+
+	if c.MaxRecipientBalance < 0 {
+		return errors.New("MAX_RECIPIENT_BALANCE must be zero or positive")
 	}
 
 	return nil
@@ -140,4 +156,37 @@ func getEnvAsInt64(key string, defaultValue int64) int64 {
 		return value
 	}
 	return defaultValue
+}
+
+// getEnvAsBool gets an environment variable as a bool or returns a default value
+func getEnvAsBool(key string, defaultValue bool) bool {
+	valueStr := strings.ToLower(strings.TrimSpace(getEnv(key, "")))
+	if valueStr == "" {
+		return defaultValue
+	}
+
+	switch valueStr {
+	case "1", "true", "yes", "y", "on":
+		return true
+	case "0", "false", "no", "n", "off":
+		return false
+	default:
+		return defaultValue
+	}
+}
+
+func splitCSV(value string) []string {
+	if value == "" {
+		return []string{}
+	}
+
+	parts := strings.Split(value, ",")
+	out := make([]string, 0, len(parts))
+	for _, part := range parts {
+		trimmed := strings.TrimSpace(part)
+		if trimmed != "" {
+			out = append(out, trimmed)
+		}
+	}
+	return out
 }

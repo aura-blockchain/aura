@@ -4,7 +4,7 @@
 | Role | IP | VPN | SSH |
 |------|-----|-----|-----|
 | Primary | 158.69.119.76 | 10.10.0.1 | `ssh aura-testnet` |
-| Secondary | 139.99.149.160 | - | `ssh services-testnet` |
+| Secondary | 139.99.149.160 | 10.10.0.4 | `ssh services-testnet` |
 
 **Chain ID:** `aura-testnet-1` | **Binary:** `~/.aura/cosmovisor/genesis/bin/aurad` | **Home:** `~/.aura`
 
@@ -26,7 +26,7 @@ pkill -f aurad
 nohup ~/.aura/cosmovisor/genesis/bin/aurad start --home ~/.aura > ~/.aura/logs/node.log 2>&1 &
 
 # Verify sync
-curl -s localhost:26657/status | jq '.result.sync_info'
+curl -s http://127.0.0.1:10657/status | jq '.result.sync_info'
 ```
 
 ---
@@ -54,10 +54,10 @@ aurad tx slashing unjail --from validator --chain-id aura-testnet-1 --home ~/.au
 
 ```bash
 # 1. Confirm halt (check multiple nodes)
-curl -s http://158.69.119.76:26657/status | jq '.result.sync_info.latest_block_height'
+curl -s http://127.0.0.1:10657/status | jq '.result.sync_info.latest_block_height'
 
 # 2. Check consensus state
-curl -s localhost:26657/dump_consensus_state | jq '.result.round_state.height_vote_set'
+curl -s http://127.0.0.1:10657/dump_consensus_state | jq '.result.round_state.height_vote_set'
 
 # 3. Coordinate with other validators (Discord/Telegram)
 # 4. If >2/3 validators agree, export state and restart:
@@ -145,7 +145,7 @@ nohup aurad start --home ~/.aura > ~/.aura/logs/node.log 2>&1 &
 # Edit ~/.aura/config/config.toml:
 # [statesync]
 # enable = true
-# rpc_servers = "peer1:26657,peer2:26657"
+# rpc_servers = "peer1:10657,peer2:10657"
 # trust_height = <RECENT_HEIGHT>
 # trust_hash = "<BLOCK_HASH>"
 aurad tendermint unsafe-reset-all --home ~/.aura --keep-addr-book
@@ -187,7 +187,7 @@ aurad keys add validator-new --home ~/.aura
 
 ```bash
 # 1. Identify correct chain (check with trusted peers)
-curl -s http://TRUSTED_PEER:26657/status | jq '.result.sync_info'
+curl -s http://TRUSTED_PEER:10657/status | jq '.result.sync_info'
 
 # 2. Compare block hashes
 aurad query block <HEIGHT> --home ~/.aura | jq '.block_id.hash'
@@ -201,7 +201,7 @@ aurad tendermint unsafe-reset-all --home ~/.aura --keep-addr-book
 
 # 5. Restart and monitor
 nohup aurad start --home ~/.aura > ~/.aura/logs/node.log 2>&1 &
-curl -s localhost:26657/status | jq '.result.sync_info'
+curl -s http://127.0.0.1:10657/status | jq '.result.sync_info'
 ```
 
 ---
@@ -223,7 +223,7 @@ curl -s localhost:26657/status | jq '.result.sync_info'
 
 | Service | URL |
 |---------|-----|
-| Node Status | `curl -s http://158.69.119.76:26657/status` |
+| Node Status | `curl -s http://127.0.0.1:10657/status` |
 | Netdata (bcpc) | http://192.168.100.2:19999 |
 | Block Explorer | http://139.99.149.160:4000 (if running) |
 | Prometheus | http://158.69.119.76:26660/metrics |
@@ -232,7 +232,7 @@ curl -s localhost:26657/status | jq '.result.sync_info'
 **Quick Health Check:**
 ```bash
 # One-liner status check
-ssh aura-testnet 'curl -s localhost:26657/status | jq "{catching_up: .result.sync_info.catching_up, latest_height: .result.sync_info.latest_block_height, peers: .result.n_peers}"'
+ssh aura-testnet 'curl -s http://127.0.0.1:10657/status | jq "{catching_up: .result.sync_info.catching_up, latest_height: .result.sync_info.latest_block_height, peers: .result.n_peers}"'
 ```
 
 ---
@@ -244,7 +244,7 @@ ssh aura-testnet 'curl -s localhost:26657/status | jq "{catching_up: .result.syn
 tail -f ~/.aura/logs/node.log
 
 # Check peers
-curl -s localhost:26657/net_info | jq '.result.n_peers'
+curl -s http://127.0.0.1:10657/net_info | jq '.result.n_peers'
 
 # Get validator address
 aurad tendermint show-address --home ~/.aura

@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -18,10 +20,10 @@ import (
 
 // Handler handles HTTP requests
 type Handler struct {
-	cfg          *config.Config
-	faucet       *faucet.Service
-	rateLimiter  *ratelimit.RateLimiter
-	db           *database.DB
+	cfg         *config.Config
+	faucet      *faucet.Service
+	rateLimiter *ratelimit.RateLimiter
+	db          *database.DB
 }
 
 // TokenRequest represents a faucet token request
@@ -108,13 +110,14 @@ func (h *Handler) GetFaucetInfo(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"amount_per_request": h.cfg.AmountPerRequest,
-		"denom":              h.cfg.Denom,
-		"balance":            balance,
-		"total_distributed":  stats.TotalDistributed,
-		"unique_recipients":  stats.UniqueRecipients,
-		"requests_last_24h":  stats.RequestsLast24h,
-		"chain_id":           h.cfg.ChainID,
+		"amount_per_request":    h.cfg.AmountPerRequest,
+		"denom":                 h.cfg.Denom,
+		"balance":               balance,
+		"max_recipient_balance": h.cfg.MaxRecipientBalance,
+		"total_distributed":     stats.TotalDistributed,
+		"unique_recipients":     stats.UniqueRecipients,
+		"requests_last_24h":     stats.RequestsLast24h,
+		"chain_id":              h.cfg.ChainID,
 	})
 }
 
@@ -174,8 +177,22 @@ func (h *Handler) RequestTokens(c *gin.Context) {
 		return
 	}
 
-	// Verify captcha (skip in development mode)
-	if h.cfg.Environment == "production" {
+	// Enforce allowlists when configured (devnet access control)
+	if !addressAllowed(req.Address, h.cfg.AllowedAddresses) {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error": "Address is not allowed to use this faucet",
+		})
+		return
+	}
+	if !ipAllowed(clientIP, h.cfg.AllowedIPs) {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error": "IP is not allowed to use this faucet",
+		})
+		return
+	}
+
+	// Verify captcha when required
+	if h.cfg.RequireCaptcha {
 		if !h.verifyCaptcha(req.CaptchaToken, clientIP) {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"error": "Captcha verification failed",
@@ -228,6 +245,24 @@ func (h *Handler) RequestTokens(c *gin.Context) {
 			"error": "This address has already received tokens in the last 24 hours.",
 		})
 		return
+	}
+
+	// Check recipient balance cap
+	if h.cfg.MaxRecipientBalance > 0 {
+		balance, err := h.faucet.GetAddressBalance(req.Address)
+		if err != nil {
+			log.WithError(err).Error("Failed to check recipient balance")
+			c.JSON(http.StatusServiceUnavailable, gin.H{
+				"error": "Unable to verify recipient balance at this time",
+			})
+			return
+		}
+		if balance >= h.cfg.MaxRecipientBalance {
+			c.JSON(http.StatusTooManyRequests, gin.H{
+				"error": "Address balance is above faucet eligibility threshold",
+			})
+			return
+		}
 	}
 
 	// Send tokens
@@ -316,4 +351,40 @@ func (h *Handler) verifyCaptcha(token, remoteIP string) bool {
 	}
 
 	return true
+}
+
+func addressAllowed(address string, allowlist []string) bool {
+	if len(allowlist) == 0 {
+		return true
+	}
+
+	for _, allowed := range allowlist {
+		if address == allowed {
+			return true
+		}
+	}
+	return false
+}
+
+func ipAllowed(ip string, allowlist []string) bool {
+	if len(allowlist) == 0 {
+		return true
+	}
+
+	parsedIP := net.ParseIP(ip)
+	for _, allowed := range allowlist {
+		if allowed == ip {
+			return true
+		}
+		if strings.Contains(allowed, "/") {
+			_, network, err := net.ParseCIDR(allowed)
+			if err != nil || parsedIP == nil {
+				continue
+			}
+			if network.Contains(parsedIP) {
+				return true
+			}
+		}
+	}
+	return false
 }

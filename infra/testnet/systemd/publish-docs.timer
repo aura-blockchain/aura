@@ -1,0 +1,9 @@
+[Unit]
+Description=Publish Aura Testnet Docs Weekly
+
+[Timer]
+OnCalendar=Sun *-*-* 04:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

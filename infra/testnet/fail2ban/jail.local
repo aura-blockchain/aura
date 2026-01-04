@@ -1,0 +1,21 @@
+[DEFAULT]
+bantime = 1h
+findtime = 10m
+maxretry = 5
+destemail = root@localhost
+sender = fail2ban@aura-testnet
+action = %(action_mwl)s
+
+[sshd]
+enabled = true
+port = ssh
+logpath = %(sshd_log)s
+
+[nginx-http-auth]
+enabled = true
+
+[nginx-limit-req]
+enabled = true
+
+[nginx-botsearch]
+enabled = true

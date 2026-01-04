@@ -1,0 +1,11 @@
+[Unit]
+Description=Aura Testnet Publish Seed Nodes
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+Group=ubuntu
+Environment=AURA_HOME=/home/ubuntu/.aura
+ExecStart=/home/ubuntu/blockchain-projects/aura/infra/testnet/public/publish-seeds.sh

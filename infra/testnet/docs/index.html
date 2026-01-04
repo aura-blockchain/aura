@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Aura Testnet Docs</title>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --panel: #161b22;
+            --text: #c9d1d9;
+            --muted: #8b949e;
+            --accent: #58a6ff;
+        }
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+        header {
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid var(--panel);
+        }
+        header h1 {
+            margin: 0 0 0.25rem 0;
+        }
+        header p {
+            margin: 0;
+            color: var(--muted);
+        }
+        main {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 1.5rem;
+            padding: 1.5rem 2rem 3rem;
+        }
+        nav {
+            background: var(--panel);
+            padding: 1rem;
+            border-radius: 8px;
+            height: fit-content;
+        }
+        nav h2 {
+            font-size: 1rem;
+            margin: 0 0 0.75rem 0;
+        }
+        nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        nav li {
+            margin-bottom: 0.5rem;
+        }
+        nav a {
+            color: var(--text);
+            text-decoration: none;
+        }
+        nav a:hover {
+            color: var(--accent);
+        }
+        article {
+            background: var(--panel);
+            padding: 2rem;
+            border-radius: 8px;
+            min-height: 600px;
+        }
+        article h1, article h2, article h3 {
+            color: var(--accent);
+        }
+        pre {
+            background: #0b0f14;
+            padding: 1rem;
+            overflow-x: auto;
+            border-radius: 6px;
+        }
+        code {
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+        }
+        .doc-meta {
+            color: var(--muted);
+            margin-bottom: 1rem;
+        }
+        @media (max-width: 900px) {
+            main {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <header>
+        <h1>Aura Testnet Documentation</h1>
+        <p>Lightweight docs viewer for Aura testnet operators.</p>
+    </header>
+
+    <main>
+        <nav>
+            <h2>Docs</h2>
+            <ul id="doc-list"></ul>
+        </nav>
+
+        <article>
+            <div class="doc-meta" id="doc-meta">Loading…</div>
+            <div id="doc-content"></div>
+        </article>
+    </main>
+
+    <script>
+        const DOCS = [
+            { label: 'Getting Started', file: 'GETTING_STARTED.md' },
+            { label: 'Testnet Guide', file: 'testnet/README.md' },
+            { label: 'Node Operator Guide', file: 'ops/NODE_OPERATOR_GUIDE.md' },
+            { label: 'Validator Setup Guide', file: 'ops/VALIDATOR_SETUP_GUIDE.md' },
+            { label: 'Upgrade Procedures', file: 'ops/UPGRADE_PROCEDURES.md' },
+            { label: 'Troubleshooting', file: 'ops/TROUBLESHOOTING.md' },
+            { label: 'Architecture', file: 'ARCHITECTURE.md' },
+            { label: 'Development', file: 'DEVELOPMENT.md' },
+            { label: 'Governance', file: 'GOVERNANCE.md' },
+            { label: 'Security', file: 'SECURITY.md' },
+            { label: 'Contributing', file: 'CONTRIBUTING.md' }
+        ];
+
+        const params = new URLSearchParams(window.location.search);
+        const activeFile = params.get('doc') || DOCS[0].file;
+        const list = document.getElementById('doc-list');
+
+        DOCS.forEach((doc) => {
+            const li = document.createElement('li');
+            const link = document.createElement('a');
+            link.href = `?doc=${encodeURIComponent(doc.file)}`;
+            link.textContent = doc.label;
+            if (doc.file === activeFile) {
+                link.style.color = '#58a6ff';
+            }
+            li.appendChild(link);
+            list.appendChild(li);
+        });
+
+        async function loadDoc(file) {
+            const meta = document.getElementById('doc-meta');
+            const content = document.getElementById('doc-content');
+            meta.textContent = `Loading ${file}…`;
+            try {
+                const response = await fetch(file);
+                if (!response.ok) {
+                    throw new Error(`Failed to load ${file}`);
+                }
+                const markdown = await response.text();
+                content.innerHTML = marked.parse(markdown);
+                meta.textContent = file;
+            } catch (error) {
+                content.innerHTML = `<p>Unable to load ${file}. ${error.message}</p>`;
+                meta.textContent = 'Error';
+            }
+        }
+
+        loadDoc(activeFile);
+    </script>
+</body>
+</html>
