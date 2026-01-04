@@ -957,8 +957,60 @@ class BlockchainDataService:
             self.db.set_cache(cache_key, json.dumps(result), ttl=5)
             return result
         except Exception as e:
-            logger.error(f"Transaction fetch error: {e}")
-            return {"transactions": [], "error": str(e)}
+            logger.warning(f"Transaction fetch error (REST), falling back to RPC: {e}")
+
+        try:
+            page = max(1, (offset // limit) + 1)
+            rpc_params = {
+                "query": '"tx.height>0"',
+                "prove": "false",
+                "page": str(page),
+                "per_page": str(limit),
+                "order_by": '"desc"'
+            }
+            rpc_response = requests.get(
+                f"{self.node_url}/tx_search",
+                params=rpc_params,
+                timeout=30
+            )
+            rpc_response.raise_for_status()
+            rpc_data = rpc_response.json().get("result", {})
+
+            formatted: List[Dict[str, Any]] = []
+            for raw in rpc_data.get("txs", []):
+                tx_hash = raw.get("hash")
+                if not tx_hash:
+                    continue
+                try:
+                    tx_detail = requests.get(
+                        f"{self.api_url}/cosmos/tx/v1beta1/txs/{tx_hash}",
+                        timeout=30
+                    )
+                    tx_detail.raise_for_status()
+                    tx_response = tx_detail.json().get("tx_response", {})
+                    formatted.append(self._format_transaction(tx_response))
+                except Exception as tx_err:
+                    logger.error(f"Transaction detail fetch error ({tx_hash}): {tx_err}")
+                    formatted.append({
+                        "hash": tx_hash,
+                        "height": int(raw.get("height", 0)),
+                        "type": "Unknown",
+                        "type_key": "unknown",
+                        "from": None,
+                        "to": None,
+                        "amount": None,
+                        "status": "success" if raw.get("tx_result", {}).get("code", 0) == 0 else "failed",
+                        "fee": None,
+                        "time": None
+                    })
+
+            total = int(rpc_data.get("total_count", len(formatted)))
+            result = {"transactions": formatted, "total": total}
+            self.db.set_cache(cache_key, json.dumps(result), ttl=5)
+            return result
+        except Exception as rpc_error:
+            logger.error(f"Transaction fetch error (RPC fallback): {rpc_error}")
+            return {"transactions": [], "error": str(rpc_error)}
 
     def get_validators(self, sort_by: str = "voting_power") -> Dict[str, Any]:
         """Return validator list sorted by provided metric."""
@@ -1004,8 +1056,38 @@ class BlockchainDataService:
             self.db.set_cache(cache_key, json.dumps(result), ttl=30)
             return result
         except Exception as e:
-            logger.error(f"Validator fetch error: {e}")
-            return {"validators": [], "error": str(e)}
+            logger.warning(f"Validator fetch error (REST), falling back to RPC: {e}")
+
+        try:
+            rpc_params = {"page": "1", "per_page": "200"}
+            rpc_response = requests.get(
+                f"{self.node_url}/validators",
+                params=rpc_params,
+                timeout=15
+            )
+            rpc_response.raise_for_status()
+            validators = []
+
+            for item in rpc_response.json().get("result", {}).get("validators", []):
+                voting_power = int(item.get("voting_power", 0))
+                consensus_addr = item.get("address")
+                validators.append({
+                    "moniker": consensus_addr or "Unknown",
+                    "address": None,
+                    "consensus_address": consensus_addr,
+                    "voting_power": voting_power,
+                    "commission": 0.0,
+                    "uptime": 0.99 if voting_power > 0 else 0.0,
+                    "status": "active" if voting_power > 0 else "inactive"
+                })
+
+            validators.sort(key=lambda v: v[sort_key], reverse=True)
+            result = {"validators": validators, "count": len(validators)}
+            self.db.set_cache(cache_key, json.dumps(result), ttl=30)
+            return result
+        except Exception as rpc_error:
+            logger.error(f"Validator fetch error (RPC fallback): {rpc_error}")
+            return {"validators": [], "error": str(rpc_error)}
 
     def get_core_stats(self) -> Dict[str, Any]:
         """Return base stats for quick dashboard cards."""
@@ -1198,7 +1280,25 @@ class BlockchainDataService:
             total = response.json().get("pagination", {}).get("total")
             return int(total) if total is not None else 0
         except Exception as e:
-            logger.error(f"Total tx fetch error: {e}")
+            logger.warning(f"Total tx fetch error (REST), falling back to RPC: {e}")
+
+        try:
+            rpc_response = requests.get(
+                f"{self.node_url}/tx_search",
+                params={
+                    "query": '"tx.height>0"',
+                    "prove": "false",
+                    "page": "1",
+                    "per_page": "1",
+                    "order_by": '"desc"'
+                },
+                timeout=15
+            )
+            rpc_response.raise_for_status()
+            total = rpc_response.json().get("result", {}).get("total_count")
+            return int(total) if total is not None else 0
+        except Exception as rpc_error:
+            logger.error(f"Total tx fetch error (RPC fallback): {rpc_error}")
             return 0
 
 
