@@ -22,6 +22,7 @@ import requests
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_sock import Sock
+from flasgger import Swagger
 
 # Import AURA configuration
 try:
@@ -1784,6 +1785,55 @@ app = Flask(__name__)
 CORS(app)
 sock = Sock(app)
 
+# ==================== SWAGGER CONFIGURATION ====================
+
+swagger_config = {
+    "headers": [],
+    "specs": [
+        {
+            "endpoint": 'apispec',
+            "route": '/apispec.json',
+            "rule_filter": lambda rule: True,
+            "model_filter": lambda tag: True,
+        }
+    ],
+    "static_url_path": "/flasgger_static",
+    "swagger_ui": True,
+    "specs_route": "/api/docs"
+}
+
+swagger_template = {
+    "info": {
+        "title": "AURA Blockchain Explorer API",
+        "description": "API for exploring the AURA blockchain - blocks, transactions, accounts, staking, governance, and IBC",
+        "version": "1.0.0",
+        "contact": {
+            "name": "AURA Blockchain",
+            "url": "https://aurablockchain.org"
+        }
+    },
+    "host": "explorer.aurablockchain.org",
+    "basePath": "/",
+    "schemes": ["https", "http"],
+    "tags": [
+        {"name": "Health", "description": "Health check endpoints"},
+        {"name": "Blocks", "description": "Block data endpoints"},
+        {"name": "Transactions", "description": "Transaction endpoints"},
+        {"name": "Accounts", "description": "Account/address endpoints"},
+        {"name": "Staking", "description": "Staking and delegation endpoints"},
+        {"name": "Governance", "description": "Governance proposal endpoints"},
+        {"name": "Validators", "description": "Validator endpoints"},
+        {"name": "IBC", "description": "Inter-Blockchain Communication endpoints"},
+        {"name": "Analytics", "description": "Analytics and statistics endpoints"},
+        {"name": "Search", "description": "Search and discovery endpoints"},
+        {"name": "RichList", "description": "Top holders endpoints"},
+        {"name": "Supply", "description": "Token supply endpoints"},
+        {"name": "Export", "description": "Data export endpoints"}
+    ]
+}
+
+swagger = Swagger(app, config=swagger_config, template=swagger_template)
+
 # Initialize components with AURA configuration
 NODE_URL = config.NODE_RPC_URL
 API_URL = getattr(config, "NODE_API_URL", "http://localhost:1317")
@@ -1807,44 +1857,232 @@ ws_lock = threading.RLock()
 
 @app.route("/api/analytics/hashrate", methods=["GET"])
 def get_hashrate_endpoint():
-    """Get network hashrate"""
+    """
+    Get network hashrate
+    ---
+    tags:
+      - Analytics
+    responses:
+      200:
+        description: Network hashrate information
+        schema:
+          type: object
+          properties:
+            hashrate:
+              type: number
+              description: Estimated network hashrate
+            difficulty:
+              type: number
+              description: Current network difficulty
+            block_height:
+              type: integer
+              description: Current block height
+            unit:
+              type: string
+              description: Unit of measurement
+            timestamp:
+              type: number
+              description: Unix timestamp
+      500:
+        description: Server error
+    """
     return jsonify(analytics.get_network_hashrate())
 
 
 @app.route("/api/analytics/tx-volume", methods=["GET"])
 def get_tx_volume_endpoint():
-    """Get transaction volume"""
+    """
+    Get transaction volume
+    ---
+    tags:
+      - Analytics
+    parameters:
+      - name: period
+        in: query
+        type: string
+        default: "24h"
+        enum: ["24h", "7d", "30d"]
+        description: Time period for volume calculation
+    responses:
+      200:
+        description: Transaction volume metrics
+        schema:
+          type: object
+          properties:
+            period:
+              type: string
+              description: Time period
+            total_transactions:
+              type: integer
+              description: Total transaction count
+            unique_transactions:
+              type: integer
+              description: Unique transaction count
+            average_tx_per_block:
+              type: number
+              description: Average transactions per block
+            total_fees_collected:
+              type: number
+              description: Total fees collected
+            timestamp:
+              type: number
+              description: Unix timestamp
+      500:
+        description: Server error
+    """
     period = request.args.get("period", "24h")
     return jsonify(analytics.get_transaction_volume(period))
 
 
 @app.route("/api/analytics/active-addresses", methods=["GET"])
 def get_active_addresses_endpoint():
-    """Get active addresses count"""
+    """
+    Get active addresses count
+    ---
+    tags:
+      - Analytics
+    responses:
+      200:
+        description: Active addresses count
+        schema:
+          type: object
+          properties:
+            total_unique_addresses:
+              type: integer
+              description: Total unique active addresses
+            timestamp:
+              type: number
+              description: Unix timestamp
+      500:
+        description: Server error
+    """
     return jsonify(analytics.get_active_addresses())
 
 
 @app.route("/api/analytics/block-time", methods=["GET"])
 def get_block_time_endpoint():
-    """Get average block time"""
+    """
+    Get average block time
+    ---
+    tags:
+      - Analytics
+    responses:
+      200:
+        description: Average block time information
+        schema:
+          type: object
+          properties:
+            average_block_time_seconds:
+              type: number
+              description: Average time between blocks in seconds
+            blocks_sampled:
+              type: integer
+              description: Number of blocks used for calculation
+            timestamp:
+              type: number
+              description: Unix timestamp
+      500:
+        description: Server error
+    """
     return jsonify(analytics.get_average_block_time())
 
 
 @app.route("/api/analytics/mempool", methods=["GET"])
 def get_mempool_endpoint():
-    """Get mempool size"""
+    """
+    Get mempool size
+    ---
+    tags:
+      - Analytics
+    responses:
+      200:
+        description: Mempool (pending transactions) information
+        schema:
+          type: object
+          properties:
+            pending_transactions:
+              type: integer
+              description: Number of pending transactions
+            total_value:
+              type: number
+              description: Total value of pending transactions
+            total_fees:
+              type: number
+              description: Total fees of pending transactions
+            avg_fee:
+              type: number
+              description: Average fee per transaction
+            timestamp:
+              type: number
+              description: Unix timestamp
+      500:
+        description: Server error
+    """
     return jsonify(analytics.get_mempool_size())
 
 
 @app.route("/api/analytics/difficulty", methods=["GET"])
 def get_difficulty_endpoint():
-    """Get network difficulty"""
+    """
+    Get network difficulty
+    ---
+    tags:
+      - Analytics
+    responses:
+      200:
+        description: Network difficulty information
+        schema:
+          type: object
+          properties:
+            current_difficulty:
+              type: number
+              description: Current network difficulty
+            timestamp:
+              type: number
+              description: Unix timestamp
+      500:
+        description: Server error
+    """
     return jsonify(analytics.get_network_difficulty())
 
 
 @app.route("/api/analytics/dashboard", methods=["GET"])
 def get_analytics_dashboard():
-    """Get all analytics for dashboard"""
+    """
+    Get all analytics for dashboard
+    ---
+    tags:
+      - Analytics
+    responses:
+      200:
+        description: Complete analytics dashboard data
+        schema:
+          type: object
+          properties:
+            hashrate:
+              type: object
+              description: Network hashrate data
+            transaction_volume:
+              type: object
+              description: Transaction volume data
+            active_addresses:
+              type: object
+              description: Active addresses data
+            average_block_time:
+              type: object
+              description: Block time data
+            mempool:
+              type: object
+              description: Mempool data
+            difficulty:
+              type: object
+              description: Network difficulty data
+            timestamp:
+              type: number
+              description: Unix timestamp
+      500:
+        description: Server error
+    """
     return jsonify({
         "hashrate": analytics.get_network_hashrate(),
         "transaction_volume": analytics.get_transaction_volume(),
@@ -1860,7 +2098,57 @@ def get_analytics_dashboard():
 
 @app.route("/api/blocks", methods=["GET"])
 def get_blocks_endpoint():
-    """Get paginated blocks for explorer dashboard"""
+    """
+    Get paginated blocks for explorer dashboard
+    ---
+    tags:
+      - Blocks
+    parameters:
+      - name: limit
+        in: query
+        type: integer
+        default: 20
+        description: Number of blocks to return (max 50)
+      - name: offset
+        in: query
+        type: integer
+        default: 0
+        description: Offset for pagination
+    responses:
+      200:
+        description: List of recent blocks
+        schema:
+          type: object
+          properties:
+            blocks:
+              type: array
+              items:
+                type: object
+                properties:
+                  height:
+                    type: integer
+                    description: Block height
+                  hash:
+                    type: string
+                    description: Block hash
+                  time:
+                    type: string
+                    description: Block timestamp (ISO format)
+                  proposer:
+                    type: string
+                    description: Proposer address
+                  num_txs:
+                    type: integer
+                    description: Number of transactions in block
+                  size:
+                    type: integer
+                    description: Block size in bytes
+            latest_height:
+              type: integer
+              description: Latest block height on chain
+      500:
+        description: Server error
+    """
     limit = request.args.get("limit", 20, type=int)
     offset = request.args.get("offset", 0, type=int)
     return jsonify(data_service.get_blocks(limit, offset))
@@ -1868,7 +2156,78 @@ def get_blocks_endpoint():
 
 @app.route("/api/transactions", methods=["GET"])
 def get_transactions_endpoint():
-    """Get paginated transactions with filtering"""
+    """
+    Get paginated transactions with filtering
+    ---
+    tags:
+      - Transactions
+    parameters:
+      - name: limit
+        in: query
+        type: integer
+        default: 20
+        description: Number of transactions to return (max 50)
+      - name: offset
+        in: query
+        type: integer
+        default: 0
+        description: Offset for pagination
+      - name: type
+        in: query
+        type: string
+        description: Filter by transaction type (e.g., msg-send, msg-delegate)
+      - name: status
+        in: query
+        type: string
+        enum: ["success", "failed"]
+        description: Filter by transaction status
+    responses:
+      200:
+        description: List of transactions
+        schema:
+          type: object
+          properties:
+            transactions:
+              type: array
+              items:
+                type: object
+                properties:
+                  hash:
+                    type: string
+                    description: Transaction hash
+                  height:
+                    type: integer
+                    description: Block height
+                  type:
+                    type: string
+                    description: Transaction type (friendly name)
+                  type_key:
+                    type: string
+                    description: Transaction type key
+                  from:
+                    type: string
+                    description: Sender address
+                  to:
+                    type: string
+                    description: Recipient address
+                  amount:
+                    type: string
+                    description: Transaction amount formatted
+                  status:
+                    type: string
+                    description: Transaction status (success/failed)
+                  fee:
+                    type: string
+                    description: Transaction fee formatted
+                  time:
+                    type: string
+                    description: Transaction timestamp
+            total:
+              type: integer
+              description: Total transaction count
+      500:
+        description: Server error
+    """
     limit = request.args.get("limit", 20, type=int)
     offset = request.args.get("offset", 0, type=int)
     tx_type = request.args.get("type")
@@ -1878,14 +2237,91 @@ def get_transactions_endpoint():
 
 @app.route("/api/validators", methods=["GET"])
 def get_validators_endpoint():
-    """Get validator list for explorer"""
+    """
+    Get validator list for explorer
+    ---
+    tags:
+      - Validators
+    parameters:
+      - name: sort
+        in: query
+        type: string
+        default: "voting_power"
+        enum: ["voting_power", "commission", "uptime"]
+        description: Sort validators by field
+    responses:
+      200:
+        description: List of validators
+        schema:
+          type: object
+          properties:
+            validators:
+              type: array
+              items:
+                type: object
+                properties:
+                  moniker:
+                    type: string
+                    description: Validator moniker/name
+                  address:
+                    type: string
+                    description: Operator address
+                  consensus_address:
+                    type: string
+                    description: Consensus public key
+                  voting_power:
+                    type: integer
+                    description: Voting power in tokens
+                  commission:
+                    type: number
+                    description: Commission rate (0-1)
+                  uptime:
+                    type: number
+                    description: Uptime percentage (0-1)
+                  status:
+                    type: string
+                    description: Validator status (active/inactive)
+            count:
+              type: integer
+              description: Total validator count
+      500:
+        description: Server error
+    """
     sort_by = request.args.get("sort", "voting_power")
     return jsonify(data_service.get_validators(sort_by))
 
 
 @app.route("/api/stats", methods=["GET"])
 def get_stats_endpoint():
-    """Get quick stats for dashboard"""
+    """
+    Get quick stats for dashboard
+    ---
+    tags:
+      - Analytics
+    responses:
+      200:
+        description: Quick dashboard statistics
+        schema:
+          type: object
+          properties:
+            latest_block:
+              type: integer
+              description: Latest block height
+            latest_block_time:
+              type: string
+              description: Latest block timestamp
+            avg_block_time:
+              type: number
+              description: Average block time in seconds
+            total_txs:
+              type: integer
+              description: Total transaction count
+            active_validators:
+              type: integer
+              description: Active validator count
+      500:
+        description: Server error
+    """
     core_stats = data_service.get_core_stats()
     avg_block = analytics.get_average_block_time()
     return jsonify({
@@ -1920,7 +2356,52 @@ def _fetch_with_retry(url, max_retries=3, timeout=15):
 
 @app.route("/api/account/<address>", methods=["GET"])
 def api_account(address):
-    """Get account details including balances and account info."""
+    """
+    Get account details including balances and account info
+    ---
+    tags:
+      - Accounts
+    parameters:
+      - name: address
+        in: path
+        type: string
+        required: true
+        description: AURA address (bech32 format, e.g., aura1...)
+    responses:
+      200:
+        description: Account details
+        schema:
+          type: object
+          properties:
+            address:
+              type: string
+              description: Account address
+            balances:
+              type: array
+              items:
+                type: object
+                properties:
+                  denom:
+                    type: string
+                    description: Token denomination
+                  amount:
+                    type: string
+                    description: Raw amount
+                  amount_formatted:
+                    type: string
+                    description: Formatted amount (e.g., "100.000000 AURA")
+            account_number:
+              type: string
+              description: Account number
+            sequence:
+              type: string
+              description: Account sequence (nonce)
+            account_type:
+              type: string
+              description: Account type (BaseAccount, VestingAccount, etc.)
+      500:
+        description: Server error
+    """
     try:
         account_type = "Unknown"
         account_number = None
@@ -1984,7 +2465,68 @@ def api_account(address):
 
 @app.route("/api/account/<address>/transactions", methods=["GET"])
 def api_account_transactions(address):
-    """Get transaction history for an account."""
+    """
+    Get transaction history for an account
+    ---
+    tags:
+      - Accounts
+    parameters:
+      - name: address
+        in: path
+        type: string
+        required: true
+        description: AURA address (bech32 format)
+      - name: page
+        in: query
+        type: integer
+        default: 1
+        description: Page number
+      - name: limit
+        in: query
+        type: integer
+        default: 20
+        description: Number of transactions per page (max 100)
+    responses:
+      200:
+        description: Account transaction history
+        schema:
+          type: object
+          properties:
+            address:
+              type: string
+              description: Account address
+            transactions:
+              type: array
+              items:
+                type: object
+                properties:
+                  hash:
+                    type: string
+                    description: Transaction hash
+                  height:
+                    type: integer
+                    description: Block height
+                  timestamp:
+                    type: string
+                    description: Transaction timestamp
+                  type:
+                    type: string
+                    description: Transaction type
+                  status:
+                    type: string
+                    description: Transaction status
+            total:
+              type: integer
+              description: Total transaction count
+            page:
+              type: integer
+              description: Current page
+            limit:
+              type: integer
+              description: Page size
+      500:
+        description: Server error
+    """
     try:
         page = request.args.get("page", 1, type=int)
         limit = request.args.get("limit", 20, type=int)
@@ -2073,7 +2615,63 @@ def api_account_transactions(address):
 
 @app.route("/api/blocks/<int:height>", methods=["GET"])
 def api_block_by_height(height):
-    """Get specific block by height."""
+    """
+    Get specific block by height
+    ---
+    tags:
+      - Blocks
+    parameters:
+      - name: height
+        in: path
+        type: integer
+        required: true
+        description: Block height
+    responses:
+      200:
+        description: Block details
+        schema:
+          type: object
+          properties:
+            height:
+              type: integer
+              description: Block height
+            hash:
+              type: string
+              description: Block hash
+            time:
+              type: string
+              description: Block timestamp
+            proposer:
+              type: string
+              description: Proposer consensus address
+            proposer_moniker:
+              type: string
+              description: Proposer moniker (if available)
+            num_txs:
+              type: integer
+              description: Number of transactions
+            transactions:
+              type: array
+              items:
+                type: object
+                properties:
+                  hash:
+                    type: string
+                    description: Transaction hash
+            chain_id:
+              type: string
+              description: Chain ID
+            app_hash:
+              type: string
+              description: Application hash
+            last_block_hash:
+              type: string
+              description: Previous block hash
+      404:
+        description: Block not found
+      500:
+        description: Server error
+    """
     try:
         # Fetch block from RPC
         response = requests.get(
@@ -2133,7 +2731,69 @@ def api_block_by_height(height):
 
 @app.route("/api/transactions/<tx_hash>", methods=["GET"])
 def api_transaction_by_hash(tx_hash):
-    """Get specific transaction by hash."""
+    """
+    Get specific transaction by hash
+    ---
+    tags:
+      - Transactions
+    parameters:
+      - name: tx_hash
+        in: path
+        type: string
+        required: true
+        description: Transaction hash (hex string, with or without 0x prefix)
+    responses:
+      200:
+        description: Transaction details
+        schema:
+          type: object
+          properties:
+            hash:
+              type: string
+              description: Transaction hash
+            height:
+              type: integer
+              description: Block height
+            timestamp:
+              type: string
+              description: Transaction timestamp
+            type:
+              type: string
+              description: Transaction type
+            status:
+              type: string
+              description: Transaction status (success/failed)
+            messages:
+              type: array
+              items:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    description: Message type
+                  content:
+                    type: object
+                    description: Message content
+            fee:
+              type: string
+              description: Transaction fee formatted
+            memo:
+              type: string
+              description: Transaction memo
+            gas_wanted:
+              type: integer
+              description: Gas requested
+            gas_used:
+              type: integer
+              description: Gas consumed
+            log:
+              type: string
+              description: Error log (if failed)
+      404:
+        description: Transaction not found
+      500:
+        description: Server error
+    """
     try:
         # Normalize hash format (remove 0x prefix if present, ensure uppercase)
         clean_hash = tx_hash.upper()
@@ -2247,7 +2907,91 @@ def api_transaction_by_hash(tx_hash):
 
 @app.route("/api/validators/<address>", methods=["GET"])
 def api_validator_by_address(address):
-    """Get individual validator details."""
+    """
+    Get individual validator details
+    ---
+    tags:
+      - Validators
+    parameters:
+      - name: address
+        in: path
+        type: string
+        required: true
+        description: Validator operator address (auravaloper1...)
+    responses:
+      200:
+        description: Validator details
+        schema:
+          type: object
+          properties:
+            operator_address:
+              type: string
+              description: Operator address
+            consensus_pubkey:
+              type: object
+              description: Consensus public key
+            moniker:
+              type: string
+              description: Validator name
+            identity:
+              type: string
+              description: Keybase identity
+            website:
+              type: string
+              description: Validator website
+            security_contact:
+              type: string
+              description: Security contact email
+            details:
+              type: string
+              description: Validator description
+            status:
+              type: string
+              description: Validator status (Active/Inactive/Unbonding)
+            status_raw:
+              type: string
+              description: Raw Cosmos SDK status
+            jailed:
+              type: boolean
+              description: Whether validator is jailed
+            tokens:
+              type: integer
+              description: Total staked tokens
+            tokens_formatted:
+              type: string
+              description: Formatted staked amount
+            delegator_shares:
+              type: string
+              description: Delegator shares
+            commission:
+              type: object
+              properties:
+                rate:
+                  type: number
+                  description: Current commission rate
+                max_rate:
+                  type: number
+                  description: Maximum commission rate
+                max_change_rate:
+                  type: number
+                  description: Maximum daily commission change
+                update_time:
+                  type: string
+                  description: Last commission update time
+            min_self_delegation:
+              type: string
+              description: Minimum self-delegation
+            unbonding_height:
+              type: string
+              description: Height when unbonding started
+            unbonding_time:
+              type: string
+              description: Time when unbonding completes
+      404:
+        description: Validator not found
+      500:
+        description: Server error
+    """
     try:
         validator = None
 
@@ -2330,7 +3074,69 @@ def api_validator_by_address(address):
 
 @app.route("/api/ibc/transfers", methods=["GET"])
 def api_ibc_transfers():
-    """Get IBC transfer history."""
+    """
+    Get IBC transfer history
+    ---
+    tags:
+      - IBC
+    parameters:
+      - name: page
+        in: query
+        type: integer
+        default: 1
+        description: Page number
+      - name: limit
+        in: query
+        type: integer
+        default: 20
+        description: Number of transfers per page (max 100)
+    responses:
+      200:
+        description: IBC transfer history
+        schema:
+          type: object
+          properties:
+            transfers:
+              type: array
+              items:
+                type: object
+                properties:
+                  hash:
+                    type: string
+                    description: Transaction hash
+                  height:
+                    type: integer
+                    description: Block height
+                  timestamp:
+                    type: string
+                    description: Transfer timestamp
+                  sender:
+                    type: string
+                    description: Sender address
+                  receiver:
+                    type: string
+                    description: Receiver address
+                  amount:
+                    type: string
+                    description: Transfer amount
+                  channel:
+                    type: string
+                    description: IBC channel ID
+                  status:
+                    type: string
+                    description: Transfer status
+            total:
+              type: integer
+              description: Total transfer count
+            page:
+              type: integer
+              description: Current page
+            limit:
+              type: integer
+              description: Page size
+      500:
+        description: Server error
+    """
     try:
         page = request.args.get("page", 1, type=int)
         limit = request.args.get("limit", 20, type=int)
@@ -2435,7 +3241,57 @@ def api_ibc_transfers():
 
 @app.route("/api/ibc/channels", methods=["GET"])
 def api_ibc_channels():
-    """Get IBC channel status."""
+    """
+    Get IBC channel status
+    ---
+    tags:
+      - IBC
+    responses:
+      200:
+        description: List of IBC channels
+        schema:
+          type: object
+          properties:
+            channels:
+              type: array
+              items:
+                type: object
+                properties:
+                  channel_id:
+                    type: string
+                    description: Channel ID (e.g., channel-0)
+                  port_id:
+                    type: string
+                    description: Port ID (e.g., transfer)
+                  state:
+                    type: string
+                    description: Channel state (STATE_OPEN, STATE_CLOSED, etc.)
+                  ordering:
+                    type: string
+                    description: Channel ordering (ORDER_ORDERED, ORDER_UNORDERED)
+                  version:
+                    type: string
+                    description: IBC version
+                  counterparty:
+                    type: object
+                    properties:
+                      channel_id:
+                        type: string
+                        description: Counterparty channel ID
+                      port_id:
+                        type: string
+                        description: Counterparty port ID
+                  connection_hops:
+                    type: array
+                    items:
+                      type: string
+                    description: Connection IDs
+            count:
+              type: integer
+              description: Total channel count
+      500:
+        description: Server error
+    """
     try:
         # Fetch channels from REST API with retry
         try:
@@ -2482,7 +3338,43 @@ def api_ibc_channels():
 
 @app.route("/api/supply", methods=["GET"])
 def api_supply():
-    """Get token supply information."""
+    """
+    Get token supply information
+    ---
+    tags:
+      - Supply
+    responses:
+      200:
+        description: Token supply information
+        schema:
+          type: object
+          properties:
+            total_supply:
+              type: array
+              items:
+                type: object
+                properties:
+                  denom:
+                    type: string
+                    description: Token denomination
+                  amount:
+                    type: string
+                    description: Raw amount
+                  amount_formatted:
+                    type: string
+                    description: Formatted amount for AURA denom
+            primary_denom:
+              type: string
+              description: Primary denomination (uaura)
+            primary_supply:
+              type: integer
+              description: Total supply of primary token
+            primary_supply_formatted:
+              type: string
+              description: Formatted primary supply
+      500:
+        description: Server error
+    """
     try:
         import base64
 
@@ -2570,7 +3462,57 @@ def api_supply():
 
 @app.route("/api/search", methods=["POST", "GET"])
 def search_endpoint():
-    """Advanced search endpoint"""
+    """
+    Advanced search endpoint
+    ---
+    tags:
+      - Search
+    parameters:
+      - name: q
+        in: query
+        type: string
+        description: Search query (GET method)
+      - name: user_id
+        in: query
+        type: string
+        description: Optional user ID for search history
+      - name: body
+        in: body
+        schema:
+          type: object
+          properties:
+            query:
+              type: string
+              description: Search query (POST method)
+            user_id:
+              type: string
+              description: Optional user ID
+    responses:
+      200:
+        description: Search results
+        schema:
+          type: object
+          properties:
+            query:
+              type: string
+              description: Original search query
+            type:
+              type: string
+              description: Detected query type (block_height, block_hash, transaction_id, address)
+            results:
+              type: object
+              description: Search results based on query type
+            found:
+              type: boolean
+              description: Whether results were found
+            timestamp:
+              type: number
+              description: Unix timestamp
+      400:
+        description: Query required
+      500:
+        description: Server error
+    """
     if request.method == "POST":
         data = request.json or {}
         query = data.get("query", "").strip()
@@ -2587,7 +3529,34 @@ def search_endpoint():
 
 @app.route("/api/search/autocomplete", methods=["GET"])
 def autocomplete_endpoint():
-    """Get autocomplete suggestions"""
+    """
+    Get autocomplete suggestions
+    ---
+    tags:
+      - Search
+    parameters:
+      - name: prefix
+        in: query
+        type: string
+        required: true
+        description: Search prefix for suggestions
+      - name: limit
+        in: query
+        type: integer
+        default: 10
+        description: Maximum number of suggestions
+    responses:
+      200:
+        description: Autocomplete suggestions
+        schema:
+          type: object
+          properties:
+            suggestions:
+              type: array
+              items:
+                type: string
+              description: List of suggested queries
+    """
     prefix = request.args.get("prefix", "").strip()
     limit = request.args.get("limit", 10, type=int)
 
@@ -2601,7 +3570,38 @@ def autocomplete_endpoint():
 
 @app.route("/api/search/recent", methods=["GET"])
 def recent_searches_endpoint():
-    """Get recent searches"""
+    """
+    Get recent searches
+    ---
+    tags:
+      - Search
+    parameters:
+      - name: limit
+        in: query
+        type: integer
+        default: 10
+        description: Number of recent searches to return
+    responses:
+      200:
+        description: Recent search history
+        schema:
+          type: object
+          properties:
+            recent:
+              type: array
+              items:
+                type: object
+                properties:
+                  query:
+                    type: string
+                    description: Search query
+                  type:
+                    type: string
+                    description: Query type
+                  timestamp:
+                    type: number
+                    description: Search timestamp
+    """
     limit = request.args.get("limit", 10, type=int)
     return jsonify({
         "recent": search_engine.get_recent_searches(limit)
@@ -2612,7 +3612,49 @@ def recent_searches_endpoint():
 
 @app.route("/api/richlist", methods=["GET"])
 def richlist_endpoint():
-    """Get top address holders"""
+    """
+    Get top address holders
+    ---
+    tags:
+      - RichList
+    parameters:
+      - name: limit
+        in: query
+        type: integer
+        default: 100
+        description: Number of addresses to return (max 1000)
+    responses:
+      200:
+        description: Rich list of top holders
+        schema:
+          type: object
+          properties:
+            richlist:
+              type: array
+              items:
+                type: object
+                properties:
+                  rank:
+                    type: integer
+                    description: Rank position
+                  address:
+                    type: string
+                    description: Account address
+                  balance:
+                    type: number
+                    description: Token balance
+                  label:
+                    type: string
+                    description: Address label (if available)
+                  category:
+                    type: string
+                    description: Address category (exchange, pool, whale, etc.)
+                  percentage_of_supply:
+                    type: number
+                    description: Percentage of total supply
+      500:
+        description: Server error
+    """
     limit = request.args.get("limit", 100, type=int)
     limit = min(limit, 1000)  # Cap at 1000
 
@@ -2623,7 +3665,31 @@ def richlist_endpoint():
 
 @app.route("/api/richlist/refresh", methods=["POST"])
 def richlist_refresh_endpoint():
-    """Force refresh rich list"""
+    """
+    Force refresh rich list
+    ---
+    tags:
+      - RichList
+    parameters:
+      - name: limit
+        in: query
+        type: integer
+        default: 100
+        description: Number of addresses to return (max 1000)
+    responses:
+      200:
+        description: Refreshed rich list
+        schema:
+          type: object
+          properties:
+            richlist:
+              type: array
+              items:
+                type: object
+                description: Rich list entries
+      500:
+        description: Server error
+    """
     limit = request.args.get("limit", 100, type=int)
     limit = min(limit, 1000)
 
@@ -2636,7 +3702,39 @@ def richlist_refresh_endpoint():
 
 @app.route("/api/address/<address>/label", methods=["GET"])
 def get_address_label(address):
-    """Get address label"""
+    """
+    Get address label
+    ---
+    tags:
+      - Accounts
+    parameters:
+      - name: address
+        in: path
+        type: string
+        required: true
+        description: AURA address
+    responses:
+      200:
+        description: Address label information
+        schema:
+          type: object
+          properties:
+            address:
+              type: string
+              description: Address
+            label:
+              type: string
+              description: Address label
+            category:
+              type: string
+              description: Category (exchange, pool, whale, contract, etc.)
+            description:
+              type: string
+              description: Label description
+            created_at:
+              type: number
+              description: Creation timestamp
+    """
     label = db.get_address_label(address)
     if label:
         return jsonify(asdict(label))
@@ -2645,7 +3743,48 @@ def get_address_label(address):
 
 @app.route("/api/address/<address>/label", methods=["POST"])
 def set_address_label(address):
-    """Set address label (admin endpoint)"""
+    """
+    Set address label (admin endpoint)
+    ---
+    tags:
+      - Accounts
+    parameters:
+      - name: address
+        in: path
+        type: string
+        required: true
+        description: AURA address
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          required:
+            - label
+          properties:
+            label:
+              type: string
+              description: Label for the address
+            category:
+              type: string
+              description: Category (exchange, pool, whale, contract, etc.)
+            description:
+              type: string
+              description: Additional description
+    responses:
+      200:
+        description: Label set successfully
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+            label:
+              type: object
+              description: The created label
+      400:
+        description: Label required
+    """
     # In production, this should have authentication
     data = request.json or {}
 
@@ -2667,7 +3806,27 @@ def set_address_label(address):
 
 @app.route("/api/export/transactions/<address>", methods=["GET"])
 def export_transactions(address):
-    """Export address transactions as CSV"""
+    """
+    Export address transactions as CSV
+    ---
+    tags:
+      - Export
+    parameters:
+      - name: address
+        in: path
+        type: string
+        required: true
+        description: AURA address to export transactions for
+    produces:
+      - text/csv
+    responses:
+      200:
+        description: CSV file download
+        schema:
+          type: file
+      404:
+        description: Unable to export (no transactions or error)
+    """
     csv_data = export_manager.export_transactions_csv(address)
     if csv_data:
         return csv_data, 200, {
@@ -2681,7 +3840,74 @@ def export_transactions(address):
 
 @app.route("/api/governance/proposals", methods=["GET"])
 def get_proposals_endpoint():
-    """Get list of governance proposals"""
+    """
+    Get list of governance proposals
+    ---
+    tags:
+      - Governance
+    parameters:
+      - name: limit
+        in: query
+        type: integer
+        default: 20
+        description: Number of proposals to return
+      - name: offset
+        in: query
+        type: integer
+        default: 0
+        description: Offset for pagination
+      - name: status
+        in: query
+        type: string
+        enum: ["voting", "passed", "rejected", "deposit", "failed"]
+        description: Filter by proposal status
+    responses:
+      200:
+        description: List of governance proposals
+        schema:
+          type: object
+          properties:
+            proposals:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: Proposal ID
+                  title:
+                    type: string
+                    description: Proposal title
+                  description:
+                    type: string
+                    description: Proposal description
+                  type:
+                    type: string
+                    description: Proposal type
+                  status:
+                    type: string
+                    description: Proposal status
+                  submit_time:
+                    type: string
+                    description: Submission timestamp
+                  voting_start_time:
+                    type: string
+                    description: Voting start timestamp
+                  voting_end_time:
+                    type: string
+                    description: Voting end timestamp
+                  total_deposit:
+                    type: string
+                    description: Total deposit amount
+                  tally:
+                    type: object
+                    description: Tally results
+            total:
+              type: integer
+              description: Total proposal count
+      500:
+        description: Server error
+    """
     limit = request.args.get("limit", 20, type=int)
     offset = request.args.get("offset", 0, type=int)
     status = request.args.get("status")
@@ -2690,13 +3916,119 @@ def get_proposals_endpoint():
 
 @app.route("/api/governance/proposals/<int:proposal_id>", methods=["GET"])
 def get_proposal_endpoint(proposal_id):
-    """Get single proposal details"""
+    """
+    Get single proposal details
+    ---
+    tags:
+      - Governance
+    parameters:
+      - name: proposal_id
+        in: path
+        type: integer
+        required: true
+        description: Proposal ID
+    responses:
+      200:
+        description: Proposal details
+        schema:
+          type: object
+          properties:
+            id:
+              type: string
+              description: Proposal ID
+            title:
+              type: string
+              description: Proposal title
+            description:
+              type: string
+              description: Proposal description
+            type:
+              type: string
+              description: Proposal type
+            status:
+              type: string
+              description: Proposal status
+            tally:
+              type: object
+              properties:
+                yes:
+                  type: integer
+                  description: Yes votes
+                no:
+                  type: integer
+                  description: No votes
+                abstain:
+                  type: integer
+                  description: Abstain votes
+                no_with_veto:
+                  type: integer
+                  description: No with veto votes
+                total:
+                  type: integer
+                  description: Total votes
+                yes_percent:
+                  type: number
+                  description: Yes percentage
+      404:
+        description: Proposal not found
+      500:
+        description: Server error
+    """
     return jsonify(governance_service.get_proposal(proposal_id))
 
 
 @app.route("/api/governance/proposals/<int:proposal_id>/votes", methods=["GET"])
 def get_proposal_votes_endpoint(proposal_id):
-    """Get votes for a proposal"""
+    """
+    Get votes for a proposal
+    ---
+    tags:
+      - Governance
+    parameters:
+      - name: proposal_id
+        in: path
+        type: integer
+        required: true
+        description: Proposal ID
+      - name: limit
+        in: query
+        type: integer
+        default: 50
+        description: Number of votes to return
+      - name: offset
+        in: query
+        type: integer
+        default: 0
+        description: Offset for pagination
+    responses:
+      200:
+        description: List of votes for proposal
+        schema:
+          type: object
+          properties:
+            votes:
+              type: array
+              items:
+                type: object
+                properties:
+                  voter:
+                    type: string
+                    description: Voter address
+                  option:
+                    type: string
+                    description: Vote option (Yes, No, Abstain, No with Veto)
+                  option_raw:
+                    type: string
+                    description: Raw vote option
+            total:
+              type: integer
+              description: Total vote count
+            proposal_id:
+              type: integer
+              description: Proposal ID
+      500:
+        description: Server error
+    """
     limit = request.args.get("limit", 50, type=int)
     offset = request.args.get("offset", 0, type=int)
     return jsonify(governance_service.get_proposal_votes(proposal_id, limit, offset))
@@ -2704,7 +4036,29 @@ def get_proposal_votes_endpoint(proposal_id):
 
 @app.route("/api/governance/params", methods=["GET"])
 def get_governance_params_endpoint():
-    """Get governance parameters"""
+    """
+    Get governance parameters
+    ---
+    tags:
+      - Governance
+    responses:
+      200:
+        description: Governance parameters
+        schema:
+          type: object
+          properties:
+            deposit:
+              type: object
+              description: Deposit parameters
+            voting:
+              type: object
+              description: Voting parameters
+            tallying:
+              type: object
+              description: Tallying parameters
+      500:
+        description: Server error
+    """
     return jsonify(governance_service.get_governance_params())
 
 
@@ -2712,31 +4066,250 @@ def get_governance_params_endpoint():
 
 @app.route("/api/staking/pool", methods=["GET"])
 def get_staking_pool_endpoint():
-    """Get staking pool information"""
+    """
+    Get staking pool information
+    ---
+    tags:
+      - Staking
+    responses:
+      200:
+        description: Staking pool information
+        schema:
+          type: object
+          properties:
+            bonded_tokens:
+              type: integer
+              description: Total bonded tokens
+            not_bonded_tokens:
+              type: integer
+              description: Total unbonded tokens
+            total_tokens:
+              type: integer
+              description: Total tokens
+            bonded_ratio:
+              type: number
+              description: Percentage of tokens bonded
+            bonded_formatted:
+              type: string
+              description: Formatted bonded amount
+            not_bonded_formatted:
+              type: string
+              description: Formatted unbonded amount
+            total_formatted:
+              type: string
+              description: Formatted total amount
+      500:
+        description: Server error
+    """
     return jsonify(staking_service.get_staking_pool())
 
 
 @app.route("/api/staking/delegations/<address>", methods=["GET"])
 def get_delegations_endpoint(address):
-    """Get delegations for an address"""
+    """
+    Get delegations for an address
+    ---
+    tags:
+      - Staking
+    parameters:
+      - name: address
+        in: path
+        type: string
+        required: true
+        description: Delegator address (aura1...)
+    responses:
+      200:
+        description: Delegation information
+        schema:
+          type: object
+          properties:
+            delegations:
+              type: array
+              items:
+                type: object
+                properties:
+                  validator_address:
+                    type: string
+                    description: Validator operator address
+                  delegator_address:
+                    type: string
+                    description: Delegator address
+                  shares:
+                    type: string
+                    description: Delegation shares
+                  amount:
+                    type: integer
+                    description: Delegation amount
+                  amount_formatted:
+                    type: string
+                    description: Formatted delegation amount
+                  denom:
+                    type: string
+                    description: Token denomination
+            total_staked:
+              type: integer
+              description: Total staked amount
+            total_staked_formatted:
+              type: string
+              description: Formatted total staked
+            count:
+              type: integer
+              description: Number of delegations
+      500:
+        description: Server error
+    """
     return jsonify(staking_service.get_delegations(address))
 
 
 @app.route("/api/staking/unbonding/<address>", methods=["GET"])
 def get_unbonding_endpoint(address):
-    """Get unbonding delegations for an address"""
+    """
+    Get unbonding delegations for an address
+    ---
+    tags:
+      - Staking
+    parameters:
+      - name: address
+        in: path
+        type: string
+        required: true
+        description: Delegator address (aura1...)
+    responses:
+      200:
+        description: Unbonding delegation information
+        schema:
+          type: object
+          properties:
+            unbonding_delegations:
+              type: array
+              items:
+                type: object
+                properties:
+                  validator_address:
+                    type: string
+                    description: Validator operator address
+                  delegator_address:
+                    type: string
+                    description: Delegator address
+                  creation_height:
+                    type: string
+                    description: Height when unbonding started
+                  completion_time:
+                    type: string
+                    description: Time when unbonding completes
+                  initial_balance:
+                    type: integer
+                    description: Initial unbonding amount
+                  balance:
+                    type: integer
+                    description: Current unbonding amount
+                  balance_formatted:
+                    type: string
+                    description: Formatted unbonding amount
+            total_unbonding:
+              type: integer
+              description: Total unbonding amount
+            total_unbonding_formatted:
+              type: string
+              description: Formatted total unbonding
+            count:
+              type: integer
+              description: Number of unbonding delegations
+      500:
+        description: Server error
+    """
     return jsonify(staking_service.get_unbonding_delegations(address))
 
 
 @app.route("/api/staking/rewards/<address>", methods=["GET"])
 def get_rewards_endpoint(address):
-    """Get pending rewards for an address"""
+    """
+    Get pending rewards for an address
+    ---
+    tags:
+      - Staking
+    parameters:
+      - name: address
+        in: path
+        type: string
+        required: true
+        description: Delegator address (aura1...)
+    responses:
+      200:
+        description: Pending rewards information
+        schema:
+          type: object
+          properties:
+            rewards_by_validator:
+              type: array
+              items:
+                type: object
+                properties:
+                  validator_address:
+                    type: string
+                    description: Validator operator address
+                  rewards:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        amount:
+                          type: number
+                          description: Reward amount
+                        denom:
+                          type: string
+                          description: Token denomination
+                        amount_formatted:
+                          type: string
+                          description: Formatted reward amount
+            total_rewards:
+              type: array
+              items:
+                type: object
+                description: Total rewards by denomination
+            total_amount:
+              type: number
+              description: Total reward amount
+            total_formatted:
+              type: string
+              description: Formatted total rewards
+      500:
+        description: Server error
+    """
     return jsonify(staking_service.get_rewards(address))
 
 
 @app.route("/api/staking/params", methods=["GET"])
 def get_staking_params_endpoint():
-    """Get staking parameters"""
+    """
+    Get staking parameters
+    ---
+    tags:
+      - Staking
+    responses:
+      200:
+        description: Staking parameters
+        schema:
+          type: object
+          properties:
+            unbonding_time:
+              type: string
+              description: Unbonding duration
+            max_validators:
+              type: integer
+              description: Maximum number of validators
+            max_entries:
+              type: integer
+              description: Maximum unbonding entries
+            historical_entries:
+              type: integer
+              description: Number of historical entries
+            bond_denom:
+              type: string
+              description: Staking token denomination
+      500:
+        description: Server error
+    """
     return jsonify(staking_service.get_staking_params())
 
 
@@ -2785,7 +4358,51 @@ def broadcast_update(update_type: str, data: Dict[str, Any]) -> None:
 
 @app.route("/api/metrics/<metric_type>", methods=["GET"])
 def get_metric_history(metric_type):
-    """Get metric history"""
+    """
+    Get metric history
+    ---
+    tags:
+      - Analytics
+    parameters:
+      - name: metric_type
+        in: path
+        type: string
+        required: true
+        description: Type of metric (hashrate, tx_volume_24h, active_addresses, etc.)
+      - name: hours
+        in: query
+        type: integer
+        default: 24
+        description: Number of hours of history to return
+    responses:
+      200:
+        description: Metric history data
+        schema:
+          type: object
+          properties:
+            metric_type:
+              type: string
+              description: Metric type
+            period_hours:
+              type: integer
+              description: Time period in hours
+            data:
+              type: array
+              items:
+                type: object
+                properties:
+                  timestamp:
+                    type: number
+                    description: Unix timestamp
+                  value:
+                    type: number
+                    description: Metric value
+                  data:
+                    type: object
+                    description: Additional metric data
+      500:
+        description: Server error
+    """
     hours = request.args.get("hours", 24, type=int)
     metrics = db.get_metrics(metric_type, hours)
     return jsonify({
@@ -2799,7 +4416,36 @@ def get_metric_history(metric_type):
 
 @app.route("/health", methods=["GET"])
 def health_check():
-    """Health check"""
+    """
+    Health check
+    ---
+    tags:
+      - Health
+    responses:
+      200:
+        description: Health status
+        schema:
+          type: object
+          properties:
+            status:
+              type: string
+              description: Overall health status (healthy/degraded)
+            explorer:
+              type: string
+              description: Explorer service status
+            node:
+              type: object
+              properties:
+                reachable:
+                  type: boolean
+                  description: Whether blockchain node is reachable
+                rpc:
+                  type: string
+                  description: RPC URL
+            timestamp:
+              type: number
+              description: Unix timestamp
+    """
     try:
         response = requests.get(f"{NODE_URL}/health", timeout=10)
         node_status = response.status_code == 200
@@ -2823,7 +4469,42 @@ def health_check():
 
 @app.route("/", methods=["GET"])
 def explorer_info():
-    """Explorer information"""
+    """
+    Explorer information
+    ---
+    tags:
+      - Health
+    responses:
+      200:
+        description: Explorer service information
+        schema:
+          type: object
+          properties:
+            name:
+              type: string
+              description: Explorer name
+            version:
+              type: string
+              description: API version
+            chain_id:
+              type: string
+              description: Blockchain chain ID
+            denom:
+              type: string
+              description: Primary token denomination
+            features:
+              type: object
+              description: Enabled features
+            endpoints:
+              type: object
+              description: Available API endpoints
+            node_url:
+              type: string
+              description: Connected node URL
+            timestamp:
+              type: number
+              description: Unix timestamp
+    """
     return jsonify({
         "name": "AURA Block Explorer",
         "version": "2.0.0",
@@ -2849,7 +4530,9 @@ def explorer_info():
             "websocket": "/api/ws/updates",
             "health": "/health",
             "governance": "/api/governance/*",
-            "staking": "/api/staking/*"
+            "staking": "/api/staking/*",
+            "swagger_docs": "/api/docs",
+            "openapi_spec": "/apispec.json"
         },
         "node_url": NODE_URL,
         "timestamp": time.time()
