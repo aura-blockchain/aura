@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Aura Verifier Portal</title>
+  <title>Aura Verifier Portal - Devnet</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,12 +12,23 @@
 </head>
 
 <body>
+  <!-- Devnet Banner -->
+  <div class="devnet-banner">
+    <span class="devnet-badge">DEVNET</span>
+    <span>This is an invite-only development network. Data shown is from the aura-testnet-1 chain.</span>
+    <a href="https://discord.gg/RwQ8pma6" target="_blank" class="devnet-link">Apply via Discord</a>
+  </div>
+
   <header>
     <div>
-      <h1>Aura Verifier Portal</h1>
+      <h1>Aura Verifier Portal <span class="network-tag">Devnet</span></h1>
       <p>Real-time intelligence for assistant operators, compliance responders, and IR reviewers.</p>
     </div>
-    <button id="btnRefreshAll">Refresh all</button>
+    <div class="header-actions">
+      <a href="https://artifacts.aurablockchain.org" target="_blank" class="btn-link">Artifacts</a>
+      <a href="https://grafana.aurablockchain.org" target="_blank" class="btn-link">Network Status</a>
+      <button id="btnRefreshAll">Refresh all</button>
+    </div>
   </header>
 
   <section class="card">
@@ -106,6 +117,23 @@
       </table>
     </div>
   </section>
+
+  <footer>
+    <div class="footer-content">
+      <div class="footer-brand">
+        <strong>AURA Blockchain</strong>
+        <span>Verifiable AI Compute on Chain</span>
+      </div>
+      <div class="footer-links">
+        <a href="https://github.com/aura-blockchain" target="_blank">GitHub</a>
+        <a href="https://discord.gg/RwQ8pma6" target="_blank">Discord</a>
+        <a href="https://twitter.com/AURABlockchain" target="_blank">Twitter</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      Chain ID: aura-testnet-1 | Network: Devnet
+    </div>
+  </footer>
 
   <script src="app.js" type="module"></script>
 </body>

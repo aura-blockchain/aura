@@ -14,11 +14,11 @@ import (
 	"github.com/joho/godotenv"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/aura-chain/paw/faucet/pkg/api"
-	"github.com/aura-chain/paw/faucet/pkg/config"
-	"github.com/aura-chain/paw/faucet/pkg/database"
-	"github.com/aura-chain/paw/faucet/pkg/faucet"
-	"github.com/aura-chain/paw/faucet/pkg/ratelimit"
+	"github.com/aura-chain/aura/faucet/pkg/api"
+	"github.com/aura-chain/aura/faucet/pkg/config"
+	"github.com/aura-chain/aura/faucet/pkg/database"
+	"github.com/aura-chain/aura/faucet/pkg/faucet"
+	"github.com/aura-chain/aura/faucet/pkg/ratelimit"
 )
 
 func init() {

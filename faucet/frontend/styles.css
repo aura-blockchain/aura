@@ -497,7 +497,7 @@ footer {
 }
 
 /* Captcha container */
-.h-captcha {
+.cf-turnstile {
     margin: 1rem 0;
 }
 
@@ -527,4 +527,82 @@ footer {
 
 ::-webkit-scrollbar-thumb:hover {
     background: var(--primary-color);
+}
+
+/* Devnet Banner */
+.devnet-banner {
+    background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    font-size: 0.875rem;
+}
+
+.devnet-badge {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    font-size: 0.75rem;
+}
+
+.devnet-link {
+    color: white;
+    text-decoration: underline;
+    font-weight: 500;
+}
+
+.devnet-link:hover {
+    color: #fef3c7;
+}
+
+.network-tag {
+    display: inline-block;
+    background: rgba(99, 102, 241, 0.2);
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-left: 0.5rem;
+    color: var(--primary-light);
+}
+
+.header-links {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.header-link {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 50px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.875rem;
+    transition: all 0.2s;
+}
+
+.header-link:hover {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+@media (max-width: 768px) {
+    .devnet-banner {
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: center;
+    }
+
+    .header-links {
+        justify-content: center;
+    }
 }

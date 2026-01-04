@@ -11,9 +11,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/aura-chain/paw/faucet/pkg/api"
-	"github.com/aura-chain/paw/faucet/pkg/config"
-	"github.com/aura-chain/paw/faucet/pkg/faucet"
+	"github.com/aura-chain/aura/faucet/pkg/api"
+	"github.com/aura-chain/aura/faucet/pkg/config"
+	"github.com/aura-chain/aura/faucet/pkg/faucet"
 )
 
 func setupTestRouter(t *testing.T) *gin.Engine {
@@ -37,6 +37,7 @@ func setupTestRouter(t *testing.T) *gin.Engine {
 	{
 		v1.GET("/health", handler.Health)
 		v1.GET("/faucet/info", handler.GetFaucetInfo)
+		v1.POST("/faucet/request", handler.RequestTokens)
 	}
 
 	return router

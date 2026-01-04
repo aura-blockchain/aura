@@ -14,11 +14,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/aura-chain/paw/faucet/pkg/api"
-	"github.com/aura-chain/paw/faucet/pkg/config"
-	"github.com/aura-chain/paw/faucet/pkg/database"
-	"github.com/aura-chain/paw/faucet/pkg/faucet"
-	"github.com/aura-chain/paw/faucet/pkg/ratelimit"
+	"github.com/aura-chain/aura/faucet/pkg/api"
+	"github.com/aura-chain/aura/faucet/pkg/config"
+	"github.com/aura-chain/aura/faucet/pkg/database"
+	"github.com/aura-chain/aura/faucet/pkg/faucet"
+	"github.com/aura-chain/aura/faucet/pkg/ratelimit"
 )
 
 // TestE2EFaucetFlow tests the complete faucet flow

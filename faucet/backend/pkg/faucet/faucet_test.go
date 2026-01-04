@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/aura-chain/paw/faucet/pkg/config"
+	"github.com/aura-chain/aura/faucet/pkg/config"
 )
 
 func TestValidateAddress(t *testing.T) {

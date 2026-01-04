@@ -262,7 +262,7 @@ FAUCET_RATE_WINDOW=24                # Rate limit window in hours
 FAUCET_DB_PASSWORD=faucet_secure_password_change_me
 
 # Captcha Configuration (optional for local testnet)
-FAUCET_HCAPTCHA_SECRET=
+FAUCET_TURNSTILE_SECRET=
 
 # ============================================================================
 # Advanced Configuration (usually no need to change)

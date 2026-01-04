@@ -6,12 +6,13 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/aura-chain/paw/faucet/pkg/config"
-	"github.com/aura-chain/paw/faucet/pkg/database"
+	"github.com/aura-chain/aura/faucet/pkg/config"
+	"github.com/aura-chain/aura/faucet/pkg/database"
 )
 
 // Service handles faucet operations
@@ -268,7 +269,7 @@ func (s *Service) ValidateAddress(address string) error {
 		return fmt.Errorf("invalid address length")
 	}
 
-	if address[:4] != "aura1" {
+	if !strings.HasPrefix(address, "aura1") {
 		return fmt.Errorf("address must start with aura1")
 	}
 

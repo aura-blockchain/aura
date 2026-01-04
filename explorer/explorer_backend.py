@@ -862,6 +862,482 @@ class ExportManager:
             return None
 
 
+# ==================== GOVERNANCE SERVICE ====================
+
+class GovernanceService:
+    """
+    Governance data service for proposals and voting.
+    Uses Cosmos SDK REST API endpoints.
+    """
+
+    def __init__(self, api_url: str, db: ExplorerDatabase):
+        self.api_url = api_url.rstrip("/")
+        self.db = db
+
+    def get_proposals(
+        self,
+        status: Optional[str] = None,
+        limit: int = 20,
+        offset: int = 0
+    ) -> Dict[str, Any]:
+        """Get list of governance proposals with optional status filter."""
+        cache_key = f"proposals:{status or 'all'}:{limit}:{offset}"
+        cached = self.db.get_cache(cache_key)
+        if cached:
+            return json.loads(cached)
+
+        try:
+            params = {
+                "pagination.limit": str(limit),
+                "pagination.offset": str(offset),
+                "pagination.reverse": "true"
+            }
+            if status:
+                # Map friendly status to Cosmos SDK status
+                status_map = {
+                    "voting": "PROPOSAL_STATUS_VOTING_PERIOD",
+                    "passed": "PROPOSAL_STATUS_PASSED",
+                    "rejected": "PROPOSAL_STATUS_REJECTED",
+                    "deposit": "PROPOSAL_STATUS_DEPOSIT_PERIOD",
+                    "failed": "PROPOSAL_STATUS_FAILED"
+                }
+                cosmos_status = status_map.get(status.lower(), status)
+                params["proposal_status"] = cosmos_status
+
+            response = requests.get(
+                f"{self.api_url}/cosmos/gov/v1beta1/proposals",
+                params=params,
+                timeout=30
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            proposals = []
+            for prop in data.get("proposals", []):
+                proposals.append(self._format_proposal(prop))
+
+            total = int(data.get("pagination", {}).get("total", len(proposals)))
+            result = {"proposals": proposals, "total": total}
+            self.db.set_cache(cache_key, json.dumps(result), ttl=30)
+            return result
+        except Exception as e:
+            logger.error(f"Proposals fetch error: {e}")
+            return {"proposals": [], "error": str(e)}
+
+    def get_proposal(self, proposal_id: int) -> Dict[str, Any]:
+        """Get single proposal details."""
+        cache_key = f"proposal:{proposal_id}"
+        cached = self.db.get_cache(cache_key)
+        if cached:
+            return json.loads(cached)
+
+        try:
+            response = requests.get(
+                f"{self.api_url}/cosmos/gov/v1beta1/proposals/{proposal_id}",
+                timeout=30
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            proposal = self._format_proposal(data.get("proposal", {}))
+
+            # Also fetch tally results
+            tally_response = requests.get(
+                f"{self.api_url}/cosmos/gov/v1beta1/proposals/{proposal_id}/tally",
+                timeout=30
+            )
+            if tally_response.status_code == 200:
+                tally_data = tally_response.json()
+                proposal["tally"] = self._format_tally(tally_data.get("tally", {}))
+
+            self.db.set_cache(cache_key, json.dumps(proposal), ttl=30)
+            return proposal
+        except Exception as e:
+            logger.error(f"Proposal {proposal_id} fetch error: {e}")
+            return {"error": str(e)}
+
+    def get_proposal_votes(
+        self,
+        proposal_id: int,
+        limit: int = 50,
+        offset: int = 0
+    ) -> Dict[str, Any]:
+        """Get votes for a proposal."""
+        cache_key = f"votes:{proposal_id}:{limit}:{offset}"
+        cached = self.db.get_cache(cache_key)
+        if cached:
+            return json.loads(cached)
+
+        try:
+            params = {
+                "pagination.limit": str(limit),
+                "pagination.offset": str(offset)
+            }
+            response = requests.get(
+                f"{self.api_url}/cosmos/gov/v1beta1/proposals/{proposal_id}/votes",
+                params=params,
+                timeout=30
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            votes = []
+            for vote in data.get("votes", []):
+                votes.append(self._format_vote(vote))
+
+            total = int(data.get("pagination", {}).get("total", len(votes)))
+            result = {"votes": votes, "total": total, "proposal_id": proposal_id}
+            self.db.set_cache(cache_key, json.dumps(result), ttl=30)
+            return result
+        except Exception as e:
+            logger.error(f"Votes fetch error for proposal {proposal_id}: {e}")
+            return {"votes": [], "error": str(e)}
+
+    def get_governance_params(self) -> Dict[str, Any]:
+        """Get governance parameters."""
+        cache_key = "gov_params"
+        cached = self.db.get_cache(cache_key)
+        if cached:
+            return json.loads(cached)
+
+        try:
+            params = {}
+            for param_type in ["deposit", "voting", "tallying"]:
+                response = requests.get(
+                    f"{self.api_url}/cosmos/gov/v1beta1/params/{param_type}",
+                    timeout=15
+                )
+                if response.status_code == 200:
+                    data = response.json()
+                    params[param_type] = data.get(f"{param_type}_params", {})
+
+            self.db.set_cache(cache_key, json.dumps(params), ttl=300)
+            return params
+        except Exception as e:
+            logger.error(f"Governance params fetch error: {e}")
+            return {"error": str(e)}
+
+    def _format_proposal(self, prop: Dict[str, Any]) -> Dict[str, Any]:
+        """Format proposal data for frontend."""
+        content = prop.get("content", {})
+        status = prop.get("status", "")
+        status_friendly = self._friendly_status(status)
+
+        # Parse timestamps
+        submit_time = prop.get("submit_time")
+        deposit_end = prop.get("deposit_end_time")
+        voting_start = prop.get("voting_start_time")
+        voting_end = prop.get("voting_end_time")
+
+        # Get final tally result if available
+        final_tally = prop.get("final_tally_result", {})
+
+        return {
+            "id": prop.get("proposal_id"),
+            "title": content.get("title", "Untitled Proposal"),
+            "description": content.get("description", ""),
+            "type": content.get("@type", "").split(".")[-1],
+            "status": status_friendly,
+            "status_raw": status,
+            "submit_time": submit_time,
+            "deposit_end_time": deposit_end,
+            "voting_start_time": voting_start,
+            "voting_end_time": voting_end,
+            "total_deposit": self._format_coins(prop.get("total_deposit", [])),
+            "tally": self._format_tally(final_tally) if final_tally else None
+        }
+
+    def _format_tally(self, tally: Dict[str, Any]) -> Dict[str, Any]:
+        """Format tally results."""
+        yes = int(tally.get("yes", "0"))
+        no = int(tally.get("no", "0"))
+        abstain = int(tally.get("abstain", "0"))
+        no_with_veto = int(tally.get("no_with_veto", "0"))
+        total = yes + no + abstain + no_with_veto
+
+        return {
+            "yes": yes,
+            "no": no,
+            "abstain": abstain,
+            "no_with_veto": no_with_veto,
+            "total": total,
+            "yes_percent": (yes / total * 100) if total > 0 else 0,
+            "no_percent": (no / total * 100) if total > 0 else 0,
+            "abstain_percent": (abstain / total * 100) if total > 0 else 0,
+            "veto_percent": (no_with_veto / total * 100) if total > 0 else 0
+        }
+
+    def _format_vote(self, vote: Dict[str, Any]) -> Dict[str, Any]:
+        """Format vote data."""
+        option = vote.get("option", "")
+        option_friendly = {
+            "VOTE_OPTION_YES": "Yes",
+            "VOTE_OPTION_NO": "No",
+            "VOTE_OPTION_ABSTAIN": "Abstain",
+            "VOTE_OPTION_NO_WITH_VETO": "No with Veto"
+        }.get(option, option)
+
+        return {
+            "voter": vote.get("voter"),
+            "option": option_friendly,
+            "option_raw": option
+        }
+
+    def _friendly_status(self, status: str) -> str:
+        """Convert Cosmos SDK status to friendly name."""
+        status_map = {
+            "PROPOSAL_STATUS_DEPOSIT_PERIOD": "Deposit",
+            "PROPOSAL_STATUS_VOTING_PERIOD": "Voting",
+            "PROPOSAL_STATUS_PASSED": "Passed",
+            "PROPOSAL_STATUS_REJECTED": "Rejected",
+            "PROPOSAL_STATUS_FAILED": "Failed"
+        }
+        return status_map.get(status, status)
+
+    def _format_coins(self, coins: List[Dict[str, Any]]) -> str:
+        """Format coin amounts."""
+        if not coins:
+            return "0"
+        parts = []
+        for coin in coins:
+            amount = int(coin.get("amount", "0"))
+            denom = coin.get("denom", config.DENOM)
+            if denom == config.DENOM:
+                aura_amount = amount / 1_000_000
+                parts.append(f"{aura_amount:.6f} AURA")
+            else:
+                parts.append(f"{amount} {denom}")
+        return ", ".join(parts) if parts else "0"
+
+
+# ==================== STAKING SERVICE ====================
+
+class StakingService:
+    """
+    Staking data service for delegations, rewards, and pool info.
+    Uses Cosmos SDK REST API endpoints.
+    """
+
+    def __init__(self, api_url: str, db: ExplorerDatabase):
+        self.api_url = api_url.rstrip("/")
+        self.db = db
+
+    def get_staking_pool(self) -> Dict[str, Any]:
+        """Get staking pool information."""
+        cache_key = "staking_pool"
+        cached = self.db.get_cache(cache_key)
+        if cached:
+            return json.loads(cached)
+
+        try:
+            response = requests.get(
+                f"{self.api_url}/cosmos/staking/v1beta1/pool",
+                timeout=15
+            )
+            response.raise_for_status()
+            data = response.json()
+            pool = data.get("pool", {})
+
+            bonded = int(pool.get("bonded_tokens", "0"))
+            not_bonded = int(pool.get("not_bonded_tokens", "0"))
+            total = bonded + not_bonded
+
+            result = {
+                "bonded_tokens": bonded,
+                "not_bonded_tokens": not_bonded,
+                "total_tokens": total,
+                "bonded_ratio": (bonded / total * 100) if total > 0 else 0,
+                "bonded_formatted": f"{bonded / 1_000_000:.2f} AURA",
+                "not_bonded_formatted": f"{not_bonded / 1_000_000:.2f} AURA",
+                "total_formatted": f"{total / 1_000_000:.2f} AURA"
+            }
+
+            self.db.set_cache(cache_key, json.dumps(result), ttl=60)
+            return result
+        except Exception as e:
+            logger.error(f"Staking pool fetch error: {e}")
+            return {"error": str(e)}
+
+    def get_delegations(self, address: str) -> Dict[str, Any]:
+        """Get delegations for an address."""
+        cache_key = f"delegations:{address}"
+        cached = self.db.get_cache(cache_key)
+        if cached:
+            return json.loads(cached)
+
+        try:
+            response = requests.get(
+                f"{self.api_url}/cosmos/staking/v1beta1/delegations/{address}",
+                params={"pagination.limit": "100"},
+                timeout=30
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            delegations = []
+            total_staked = 0
+
+            for item in data.get("delegation_responses", []):
+                delegation = item.get("delegation", {})
+                balance = item.get("balance", {})
+                amount = int(balance.get("amount", "0"))
+                total_staked += amount
+
+                delegations.append({
+                    "validator_address": delegation.get("validator_address"),
+                    "delegator_address": delegation.get("delegator_address"),
+                    "shares": delegation.get("shares"),
+                    "amount": amount,
+                    "amount_formatted": f"{amount / 1_000_000:.6f} AURA",
+                    "denom": balance.get("denom", config.DENOM)
+                })
+
+            result = {
+                "delegations": delegations,
+                "total_staked": total_staked,
+                "total_staked_formatted": f"{total_staked / 1_000_000:.6f} AURA",
+                "count": len(delegations)
+            }
+
+            self.db.set_cache(cache_key, json.dumps(result), ttl=30)
+            return result
+        except Exception as e:
+            logger.error(f"Delegations fetch error for {address}: {e}")
+            return {"delegations": [], "error": str(e)}
+
+    def get_unbonding_delegations(self, address: str) -> Dict[str, Any]:
+        """Get unbonding delegations for an address."""
+        cache_key = f"unbonding:{address}"
+        cached = self.db.get_cache(cache_key)
+        if cached:
+            return json.loads(cached)
+
+        try:
+            response = requests.get(
+                f"{self.api_url}/cosmos/staking/v1beta1/delegators/{address}/unbonding_delegations",
+                params={"pagination.limit": "100"},
+                timeout=30
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            unbondings = []
+            total_unbonding = 0
+
+            for item in data.get("unbonding_responses", []):
+                validator = item.get("validator_address")
+                for entry in item.get("entries", []):
+                    balance = int(entry.get("balance", "0"))
+                    total_unbonding += balance
+                    unbondings.append({
+                        "validator_address": validator,
+                        "delegator_address": item.get("delegator_address"),
+                        "creation_height": entry.get("creation_height"),
+                        "completion_time": entry.get("completion_time"),
+                        "initial_balance": int(entry.get("initial_balance", "0")),
+                        "balance": balance,
+                        "balance_formatted": f"{balance / 1_000_000:.6f} AURA"
+                    })
+
+            result = {
+                "unbonding_delegations": unbondings,
+                "total_unbonding": total_unbonding,
+                "total_unbonding_formatted": f"{total_unbonding / 1_000_000:.6f} AURA",
+                "count": len(unbondings)
+            }
+
+            self.db.set_cache(cache_key, json.dumps(result), ttl=30)
+            return result
+        except Exception as e:
+            logger.error(f"Unbonding fetch error for {address}: {e}")
+            return {"unbonding_delegations": [], "error": str(e)}
+
+    def get_rewards(self, address: str) -> Dict[str, Any]:
+        """Get pending rewards for an address."""
+        cache_key = f"rewards:{address}"
+        cached = self.db.get_cache(cache_key)
+        if cached:
+            return json.loads(cached)
+
+        try:
+            response = requests.get(
+                f"{self.api_url}/cosmos/distribution/v1beta1/delegators/{address}/rewards",
+                timeout=30
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            rewards_by_validator = []
+            for item in data.get("rewards", []):
+                validator_rewards = []
+                for reward in item.get("reward", []):
+                    amount = float(reward.get("amount", "0"))
+                    validator_rewards.append({
+                        "amount": amount,
+                        "denom": reward.get("denom", config.DENOM),
+                        "amount_formatted": f"{amount / 1_000_000:.6f} AURA"
+                    })
+                rewards_by_validator.append({
+                    "validator_address": item.get("validator_address"),
+                    "rewards": validator_rewards
+                })
+
+            # Total rewards
+            total_rewards = []
+            total_amount = 0
+            for reward in data.get("total", []):
+                amount = float(reward.get("amount", "0"))
+                total_amount += amount
+                total_rewards.append({
+                    "amount": amount,
+                    "denom": reward.get("denom", config.DENOM),
+                    "amount_formatted": f"{amount / 1_000_000:.6f} AURA"
+                })
+
+            result = {
+                "rewards_by_validator": rewards_by_validator,
+                "total_rewards": total_rewards,
+                "total_amount": total_amount,
+                "total_formatted": f"{total_amount / 1_000_000:.6f} AURA"
+            }
+
+            self.db.set_cache(cache_key, json.dumps(result), ttl=30)
+            return result
+        except Exception as e:
+            logger.error(f"Rewards fetch error for {address}: {e}")
+            return {"rewards_by_validator": [], "total_rewards": [], "error": str(e)}
+
+    def get_staking_params(self) -> Dict[str, Any]:
+        """Get staking parameters."""
+        cache_key = "staking_params"
+        cached = self.db.get_cache(cache_key)
+        if cached:
+            return json.loads(cached)
+
+        try:
+            response = requests.get(
+                f"{self.api_url}/cosmos/staking/v1beta1/params",
+                timeout=15
+            )
+            response.raise_for_status()
+            data = response.json()
+            params = data.get("params", {})
+
+            result = {
+                "unbonding_time": params.get("unbonding_time"),
+                "max_validators": int(params.get("max_validators", 0)),
+                "max_entries": int(params.get("max_entries", 0)),
+                "historical_entries": int(params.get("historical_entries", 0)),
+                "bond_denom": params.get("bond_denom", config.DENOM)
+            }
+
+            self.db.set_cache(cache_key, json.dumps(result), ttl=300)
+            return result
+        except Exception as e:
+            logger.error(f"Staking params fetch error: {e}")
+            return {"error": str(e)}
+
+
 # ==================== CORE DATA SERVICE ====================
 
 class BlockchainDataService:
@@ -1319,6 +1795,8 @@ search_engine = SearchEngine(NODE_URL, db)
 rich_list = RichListManager(NODE_URL, db)
 export_manager = ExportManager(NODE_URL)
 data_service = BlockchainDataService(NODE_URL, API_URL, db)
+governance_service = GovernanceService(API_URL, db)
+staking_service = StakingService(API_URL, db)
 
 # WebSocket connections for real-time updates
 ws_clients: Set[Any] = set()
@@ -1530,6 +2008,69 @@ def export_transactions(address):
     return jsonify({"error": "Unable to export"}), 404
 
 
+# ==================== GOVERNANCE ENDPOINTS ====================
+
+@app.route("/api/governance/proposals", methods=["GET"])
+def get_proposals_endpoint():
+    """Get list of governance proposals"""
+    limit = request.args.get("limit", 20, type=int)
+    offset = request.args.get("offset", 0, type=int)
+    status = request.args.get("status")
+    return jsonify(governance_service.get_proposals(status, limit, offset))
+
+
+@app.route("/api/governance/proposals/<int:proposal_id>", methods=["GET"])
+def get_proposal_endpoint(proposal_id):
+    """Get single proposal details"""
+    return jsonify(governance_service.get_proposal(proposal_id))
+
+
+@app.route("/api/governance/proposals/<int:proposal_id>/votes", methods=["GET"])
+def get_proposal_votes_endpoint(proposal_id):
+    """Get votes for a proposal"""
+    limit = request.args.get("limit", 50, type=int)
+    offset = request.args.get("offset", 0, type=int)
+    return jsonify(governance_service.get_proposal_votes(proposal_id, limit, offset))
+
+
+@app.route("/api/governance/params", methods=["GET"])
+def get_governance_params_endpoint():
+    """Get governance parameters"""
+    return jsonify(governance_service.get_governance_params())
+
+
+# ==================== STAKING ENDPOINTS ====================
+
+@app.route("/api/staking/pool", methods=["GET"])
+def get_staking_pool_endpoint():
+    """Get staking pool information"""
+    return jsonify(staking_service.get_staking_pool())
+
+
+@app.route("/api/staking/delegations/<address>", methods=["GET"])
+def get_delegations_endpoint(address):
+    """Get delegations for an address"""
+    return jsonify(staking_service.get_delegations(address))
+
+
+@app.route("/api/staking/unbonding/<address>", methods=["GET"])
+def get_unbonding_endpoint(address):
+    """Get unbonding delegations for an address"""
+    return jsonify(staking_service.get_unbonding_delegations(address))
+
+
+@app.route("/api/staking/rewards/<address>", methods=["GET"])
+def get_rewards_endpoint(address):
+    """Get pending rewards for an address"""
+    return jsonify(staking_service.get_rewards(address))
+
+
+@app.route("/api/staking/params", methods=["GET"])
+def get_staking_params_endpoint():
+    """Get staking parameters"""
+    return jsonify(staking_service.get_staking_params())
+
+
 # ==================== WEBSOCKET REAL-TIME UPDATES ====================
 
 @sock.route("/api/ws/updates")
@@ -1627,7 +2168,9 @@ def explorer_info():
             "csv_export": True,
             "websocket_updates": True,
             "address_labeling": True,
-            "cosmos_sdk_compatible": True
+            "cosmos_sdk_compatible": True,
+            "governance": True,
+            "staking": True
         },
         "endpoints": {
             "analytics": "/api/analytics/*",
@@ -1635,7 +2178,9 @@ def explorer_info():
             "richlist": "/api/richlist",
             "export": "/api/export/*",
             "websocket": "/api/ws/updates",
-            "health": "/health"
+            "health": "/health",
+            "governance": "/api/governance/*",
+            "staking": "/api/staking/*"
         },
         "node_url": NODE_URL,
         "timestamp": time.time()

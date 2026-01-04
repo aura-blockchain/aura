@@ -124,7 +124,8 @@ services:
       RATE_LIMIT_WINDOW_HOURS: "${FAUCET_RATE_WINDOW:-24}"
 
       # Captcha (optional for local testnet)
-      HCAPTCHA_SECRET: "${FAUCET_HCAPTCHA_SECRET:-}"
+      TURNSTILE_SECRET: "${FAUCET_TURNSTILE_SECRET:-}"
+      TURNSTILE_REQUIRED: "${FAUCET_TURNSTILE_REQUIRED:-}"
 
       # Transaction settings
       GAS_LIMIT: "200000"
