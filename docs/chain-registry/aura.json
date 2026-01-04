@@ -44,16 +44,13 @@
   ],
   "apis": {
     "rpc": [
-      { "address": "https://testnet-rpc.aurablockchain.org", "provider": "Aura Foundation" },
-      { "address": "http://158.69.119.76:26657", "provider": "direct" }
+      { "address": "https://testnet-rpc.aurablockchain.org", "provider": "Aura Foundation" }
     ],
     "rest": [
-      { "address": "https://testnet-api.aurablockchain.org", "provider": "Aura Foundation" },
-      { "address": "http://158.69.119.76:1317", "provider": "direct" }
+      { "address": "https://testnet-api.aurablockchain.org", "provider": "Aura Foundation" }
     ],
     "grpc": [
-      { "address": "testnet-rpc.aurablockchain.org:9090", "provider": "Aura Foundation" },
-      { "address": "158.69.119.76:9090", "provider": "direct" }
+      { "address": "testnet-grpc.aurablockchain.org:443", "provider": "Aura Foundation" }
     ]
   },
   "explorers": [

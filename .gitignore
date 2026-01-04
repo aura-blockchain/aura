@@ -4,6 +4,7 @@ node_modules/
 
 # Large binaries (compiled executables)
 chain/aurad
+aurad
 *.exe
 /build/
 /bin/
@@ -16,6 +17,20 @@ C:*
 # Proto generated files - only keep in chain/x/*/types/
 proto/aura/**/*.pb.go
 proto/aura/**/*_grpc.pb.go
+
+# ============================================================================
+# Claude Code / AI Assistant directories
+# ============================================================================
+.claude/
+CLAUDE.md
+
+# ============================================================================
+# Internal infrastructure docs (not for public release)
+# ============================================================================
+TESTNET_INFRASTRUCTURE.md
+infra/testnet/
+docs/testnet/
+docs/INCIDENT_RESPONSE_RUNBOOK.md
 
 # ============================================================================
 # SECURITY: Secrets and Credentials - NEVER COMMIT
@@ -37,8 +52,11 @@ secrets/
 .env.local
 .env*.local
 .env.faucet
+.env.light-client
 !.env.example
 !.env.template
+!.env.faucet.example
+!.env.light-client.example
 
 # Credentials
 credentials.json
