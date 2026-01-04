@@ -1897,6 +1897,675 @@ def get_stats_endpoint():
     })
 
 
+# ==================== ACCOUNT ENDPOINTS ====================
+
+def _fetch_with_retry(url, max_retries=3, timeout=15):
+    """Fetch URL with retry logic for REST API connection issues."""
+    import time as time_module
+    for attempt in range(max_retries):
+        try:
+            response = requests.get(
+                url,
+                headers={"Connection": "close"},
+                timeout=timeout
+            )
+            return response
+        except (requests.exceptions.ConnectionError, requests.exceptions.ChunkedEncodingError) as e:
+            if attempt < max_retries - 1:
+                time_module.sleep(0.5)
+                continue
+            raise e
+    return None
+
+
+@app.route("/api/account/<address>", methods=["GET"])
+def api_account(address):
+    """Get account details including balances and account info."""
+    try:
+        account_type = "Unknown"
+        account_number = None
+        sequence = None
+
+        # Fetch account info from auth module with retry
+        try:
+            account_response = _fetch_with_retry(
+                f"{config.NODE_API_URL}/cosmos/auth/v1beta1/accounts/{address}"
+            )
+            if account_response and account_response.status_code == 200:
+                result = account_response.json()
+                account = result.get("account", {})
+                account_type = account.get("@type", "").split(".")[-1]
+                account_number = account.get("account_number")
+                sequence = account.get("sequence")
+                # Handle nested base_account for vesting accounts
+                if account.get("base_account"):
+                    base = account["base_account"]
+                    account_number = base.get("account_number")
+                    sequence = base.get("sequence")
+        except Exception as auth_err:
+            logger.warning(f"Account info fetch failed: {auth_err}")
+
+        # Fetch balances with retry
+        balances = []
+        try:
+            balance_response = _fetch_with_retry(
+                f"{config.NODE_API_URL}/cosmos/bank/v1beta1/balances/{address}"
+            )
+            if balance_response and balance_response.status_code == 200:
+                balance_data = balance_response.json()
+                balances = balance_data.get("balances", [])
+        except Exception as bal_err:
+            logger.warning(f"Balance fetch failed: {bal_err}")
+
+        # Format balances with AURA conversion
+        formatted_balances = []
+        for bal in balances:
+            denom = bal.get("denom", "")
+            amount = int(bal.get("amount", "0"))
+            formatted = {
+                "denom": denom,
+                "amount": str(amount)
+            }
+            if denom == config.DENOM:
+                formatted["amount_formatted"] = f"{amount / 1_000_000:.6f} AURA"
+            formatted_balances.append(formatted)
+
+        return jsonify({
+            "address": address,
+            "balances": formatted_balances,
+            "account_number": account_number,
+            "sequence": sequence,
+            "account_type": account_type
+        })
+    except Exception as e:
+        logger.error(f"Account fetch error for {address}: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/account/<address>/transactions", methods=["GET"])
+def api_account_transactions(address):
+    """Get transaction history for an account."""
+    try:
+        page = request.args.get("page", 1, type=int)
+        limit = request.args.get("limit", 20, type=int)
+        limit = min(limit, 100)  # Cap at 100
+
+        # Search for transactions where address is sender
+        sender_params = {
+            "query": f'"message.sender=\'{address}\'"',
+            "prove": "false",
+            "page": str(page),
+            "per_page": str(limit),
+            "order_by": '"desc"'
+        }
+        sender_response = requests.get(
+            f"{config.NODE_RPC_URL}/tx_search",
+            params=sender_params,
+            timeout=30
+        )
+
+        transactions = []
+        total_count = 0
+
+        if sender_response.status_code == 200:
+            result = sender_response.json().get("result", {})
+            total_count = int(result.get("total_count", "0"))
+
+            for tx in result.get("txs", []):
+                tx_hash = tx.get("hash", "")
+                height = int(tx.get("height", "0"))
+                tx_result = tx.get("tx_result", {})
+                code = tx_result.get("code", 0)
+                status = "success" if code == 0 else "failed"
+
+                # Get timestamp from block
+                timestamp = None
+                try:
+                    block_resp = requests.get(
+                        f"{config.NODE_RPC_URL}/block?height={height}",
+                        timeout=10
+                    )
+                    if block_resp.status_code == 200:
+                        block_data = block_resp.json().get("result", {}).get("block", {})
+                        timestamp = block_data.get("header", {}).get("time")
+                except Exception:
+                    pass
+
+                # Parse transaction type from events
+                tx_type = "Unknown"
+                events = tx_result.get("events", [])
+                for event in events:
+                    if event.get("type") == "message":
+                        for attr in event.get("attributes", []):
+                            if attr.get("key") == "action" or attr.get("key") == "YWN0aW9u":
+                                action = attr.get("value", "")
+                                # Handle base64 encoded values
+                                if action:
+                                    try:
+                                        import base64
+                                        decoded = base64.b64decode(action).decode("utf-8")
+                                        tx_type = decoded.split(".")[-1]
+                                    except Exception:
+                                        tx_type = action.split(".")[-1]
+                                break
+
+                transactions.append({
+                    "hash": tx_hash,
+                    "height": height,
+                    "timestamp": timestamp,
+                    "type": tx_type,
+                    "status": status
+                })
+
+        return jsonify({
+            "address": address,
+            "transactions": transactions,
+            "total": total_count,
+            "page": page,
+            "limit": limit
+        })
+    except Exception as e:
+        logger.error(f"Account transactions fetch error for {address}: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+# ==================== BLOCK DETAIL ENDPOINT ====================
+
+@app.route("/api/blocks/<int:height>", methods=["GET"])
+def api_block_by_height(height):
+    """Get specific block by height."""
+    try:
+        # Fetch block from RPC
+        response = requests.get(
+            f"{config.NODE_RPC_URL}/block?height={height}",
+            timeout=15
+        )
+
+        if response.status_code != 200:
+            return jsonify({"error": f"Block {height} not found"}), 404
+
+        data = response.json()
+        if not data.get("result"):
+            return jsonify({"error": f"Block {height} not found"}), 404
+
+        block = data["result"]["block"]
+        block_id = data["result"].get("block_id", {})
+        header = block.get("header", {})
+        txs = block.get("data", {}).get("txs", [])
+
+        # Parse timestamp
+        timestamp = header.get("time")
+
+        # Get proposer moniker if possible
+        proposer_address = header.get("proposer_address", "")
+        proposer_moniker = proposer_address  # Default to address
+
+        # Build transaction list with hashes
+        import hashlib
+        import base64
+        tx_list = []
+        for tx_b64 in txs:
+            try:
+                tx_bytes = base64.b64decode(tx_b64)
+                tx_hash = hashlib.sha256(tx_bytes).hexdigest().upper()
+                tx_list.append({"hash": tx_hash})
+            except Exception:
+                tx_list.append({"hash": "unknown"})
+
+        return jsonify({
+            "height": int(header.get("height", height)),
+            "hash": block_id.get("hash", ""),
+            "time": timestamp,
+            "proposer": proposer_address,
+            "proposer_moniker": proposer_moniker,
+            "num_txs": len(txs),
+            "transactions": tx_list,
+            "chain_id": header.get("chain_id", config.CHAIN_ID),
+            "app_hash": header.get("app_hash", ""),
+            "last_block_hash": header.get("last_block_id", {}).get("hash", "")
+        })
+    except Exception as e:
+        logger.error(f"Block fetch error for height {height}: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+# ==================== TRANSACTION DETAIL ENDPOINT ====================
+
+@app.route("/api/transactions/<tx_hash>", methods=["GET"])
+def api_transaction_by_hash(tx_hash):
+    """Get specific transaction by hash."""
+    try:
+        # Normalize hash format (remove 0x prefix if present, ensure uppercase)
+        clean_hash = tx_hash.upper()
+        if clean_hash.startswith("0X"):
+            clean_hash = clean_hash[2:]
+
+        # Fetch transaction from RPC
+        response = requests.get(
+            f"{config.NODE_RPC_URL}/tx?hash=0x{clean_hash}",
+            timeout=15
+        )
+
+        if response.status_code != 200:
+            return jsonify({"error": f"Transaction {tx_hash} not found"}), 404
+
+        data = response.json()
+        result = data.get("result")
+        if not result:
+            return jsonify({"error": f"Transaction {tx_hash} not found"}), 404
+
+        height = int(result.get("height", "0"))
+        tx_result = result.get("tx_result", {})
+        code = tx_result.get("code", 0)
+        status = "success" if code == 0 else "failed"
+        gas_wanted = int(tx_result.get("gas_wanted", "0"))
+        gas_used = int(tx_result.get("gas_used", "0"))
+        log = tx_result.get("log", "")
+
+        # Get timestamp from block
+        timestamp = None
+        try:
+            block_resp = requests.get(
+                f"{config.NODE_RPC_URL}/block?height={height}",
+                timeout=10
+            )
+            if block_resp.status_code == 200:
+                block_data = block_resp.json().get("result", {}).get("block", {})
+                timestamp = block_data.get("header", {}).get("time")
+        except Exception:
+            pass
+
+        # Parse transaction body for messages, fee, memo
+        import base64
+        messages = []
+        fee = None
+        memo = ""
+        tx_type = "Unknown"
+
+        tx_b64 = result.get("tx")
+        if tx_b64:
+            try:
+                # Try to get detailed tx info from REST API
+                rest_response = requests.get(
+                    f"{config.NODE_API_URL}/cosmos/tx/v1beta1/txs/{clean_hash}",
+                    headers={"Connection": "close"},
+                    timeout=15
+                )
+                if rest_response.status_code == 200:
+                    rest_data = rest_response.json()
+                    tx_response = rest_data.get("tx_response", {})
+                    raw_tx = rest_data.get("tx", {})
+
+                    # Extract messages
+                    body = raw_tx.get("body", {})
+                    raw_messages = body.get("messages", [])
+                    for msg in raw_messages:
+                        msg_type = msg.get("@type", "").split(".")[-1]
+                        messages.append({
+                            "type": msg_type,
+                            "content": msg
+                        })
+                    if messages:
+                        tx_type = messages[0]["type"]
+
+                    memo = body.get("memo", "")
+
+                    # Extract fee
+                    auth_info = raw_tx.get("auth_info", {})
+                    fee_info = auth_info.get("fee", {})
+                    fee_amounts = fee_info.get("amount", [])
+                    if fee_amounts:
+                        fee_coin = fee_amounts[0]
+                        fee_amount = int(fee_coin.get("amount", "0"))
+                        fee_denom = fee_coin.get("denom", config.DENOM)
+                        if fee_denom == config.DENOM:
+                            fee = f"{fee_amount / 1_000_000:.6f} AURA"
+                        else:
+                            fee = f"{fee_amount} {fee_denom}"
+            except Exception as parse_err:
+                logger.warning(f"Could not parse tx details: {parse_err}")
+
+        return jsonify({
+            "hash": clean_hash,
+            "height": height,
+            "timestamp": timestamp,
+            "type": tx_type,
+            "status": status,
+            "messages": messages,
+            "fee": fee,
+            "memo": memo,
+            "gas_wanted": gas_wanted,
+            "gas_used": gas_used,
+            "log": log if code != 0 else None
+        })
+    except Exception as e:
+        logger.error(f"Transaction fetch error for {tx_hash}: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+# ==================== VALIDATOR DETAIL ENDPOINT ====================
+
+@app.route("/api/validators/<address>", methods=["GET"])
+def api_validator_by_address(address):
+    """Get individual validator details."""
+    try:
+        validator = None
+
+        # Try REST API first with retry
+        try:
+            response = _fetch_with_retry(
+                f"{config.NODE_API_URL}/cosmos/staking/v1beta1/validators/{address}"
+            )
+            if response and response.status_code == 200:
+                data = response.json()
+                validator = data.get("validator")
+        except Exception as rest_err:
+            logger.warning(f"REST validator fetch failed: {rest_err}")
+
+        # If REST failed, try to find in genesis validators
+        if not validator:
+            try:
+                genesis_response = requests.get(
+                    f"{config.NODE_RPC_URL}/genesis",
+                    timeout=30
+                )
+                if genesis_response.status_code == 200:
+                    genesis_data = genesis_response.json()
+                    genesis_validators = genesis_data.get("result", {}).get("genesis", {}).get("app_state", {}).get("staking", {}).get("validators", [])
+                    for v in genesis_validators:
+                        if v.get("operator_address") == address:
+                            validator = v
+                            break
+            except Exception as genesis_err:
+                logger.warning(f"Genesis validator fetch failed: {genesis_err}")
+
+        if not validator:
+            return jsonify({"error": f"Validator {address} not found"}), 404
+
+        description = validator.get("description", {})
+        commission = validator.get("commission", {})
+        commission_rates = commission.get("commission_rates", {})
+        tokens = int(validator.get("tokens", "0"))
+        status = validator.get("status", "")
+        jailed = validator.get("jailed", False)
+
+        # Map status to friendly name
+        status_map = {
+            "BOND_STATUS_BONDED": "Active",
+            "BOND_STATUS_UNBONDING": "Unbonding",
+            "BOND_STATUS_UNBONDED": "Inactive"
+        }
+        status_friendly = status_map.get(status, status)
+
+        return jsonify({
+            "operator_address": validator.get("operator_address"),
+            "consensus_pubkey": validator.get("consensus_pubkey"),
+            "moniker": description.get("moniker", "Unknown"),
+            "identity": description.get("identity", ""),
+            "website": description.get("website", ""),
+            "security_contact": description.get("security_contact", ""),
+            "details": description.get("details", ""),
+            "status": status_friendly,
+            "status_raw": status,
+            "jailed": jailed,
+            "tokens": tokens,
+            "tokens_formatted": f"{tokens / 1_000_000:.2f} AURA",
+            "delegator_shares": validator.get("delegator_shares"),
+            "commission": {
+                "rate": float(commission_rates.get("rate", "0")),
+                "max_rate": float(commission_rates.get("max_rate", "0")),
+                "max_change_rate": float(commission_rates.get("max_change_rate", "0")),
+                "update_time": commission.get("update_time")
+            },
+            "min_self_delegation": validator.get("min_self_delegation"),
+            "unbonding_height": validator.get("unbonding_height"),
+            "unbonding_time": validator.get("unbonding_time")
+        })
+    except Exception as e:
+        logger.error(f"Validator fetch error for {address}: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+# ==================== IBC ENDPOINTS ====================
+
+@app.route("/api/ibc/transfers", methods=["GET"])
+def api_ibc_transfers():
+    """Get IBC transfer history."""
+    try:
+        page = request.args.get("page", 1, type=int)
+        limit = request.args.get("limit", 20, type=int)
+        limit = min(limit, 100)
+
+        # Search for IBC transfer transactions
+        params = {
+            "query": '"message.action=\'/ibc.applications.transfer.v1.MsgTransfer\'"',
+            "prove": "false",
+            "page": str(page),
+            "per_page": str(limit),
+            "order_by": '"desc"'
+        }
+        response = requests.get(
+            f"{config.NODE_RPC_URL}/tx_search",
+            params=params,
+            timeout=30
+        )
+
+        transfers = []
+        total_count = 0
+
+        if response.status_code == 200:
+            result = response.json().get("result", {})
+            total_count = int(result.get("total_count", "0"))
+
+            for tx in result.get("txs", []):
+                tx_hash = tx.get("hash", "")
+                height = int(tx.get("height", "0"))
+                tx_result = tx.get("tx_result", {})
+                code = tx_result.get("code", 0)
+                status = "success" if code == 0 else "failed"
+
+                # Parse transfer details from events
+                sender = None
+                receiver = None
+                amount = None
+                channel = None
+
+                events = tx_result.get("events", [])
+                for event in events:
+                    event_type = event.get("type", "")
+                    if event_type == "send_packet" or event_type == "ibc_transfer":
+                        for attr in event.get("attributes", []):
+                            key = attr.get("key", "")
+                            value = attr.get("value", "")
+                            # Handle base64 encoded keys/values
+                            try:
+                                import base64
+                                key = base64.b64decode(key).decode("utf-8")
+                            except Exception:
+                                pass
+                            try:
+                                import base64
+                                value = base64.b64decode(value).decode("utf-8")
+                            except Exception:
+                                pass
+
+                            if key == "sender":
+                                sender = value
+                            elif key == "receiver":
+                                receiver = value
+                            elif key == "amount":
+                                amount = value
+                            elif key == "packet_src_channel":
+                                channel = value
+
+                # Get timestamp
+                timestamp = None
+                try:
+                    block_resp = requests.get(
+                        f"{config.NODE_RPC_URL}/block?height={height}",
+                        timeout=10
+                    )
+                    if block_resp.status_code == 200:
+                        block_data = block_resp.json().get("result", {}).get("block", {})
+                        timestamp = block_data.get("header", {}).get("time")
+                except Exception:
+                    pass
+
+                transfers.append({
+                    "hash": tx_hash,
+                    "height": height,
+                    "timestamp": timestamp,
+                    "sender": sender,
+                    "receiver": receiver,
+                    "amount": amount,
+                    "channel": channel,
+                    "status": status
+                })
+
+        return jsonify({
+            "transfers": transfers,
+            "total": total_count,
+            "page": page,
+            "limit": limit
+        })
+    except Exception as e:
+        logger.error(f"IBC transfers fetch error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/ibc/channels", methods=["GET"])
+def api_ibc_channels():
+    """Get IBC channel status."""
+    try:
+        # Fetch channels from REST API with retry
+        try:
+            response = _fetch_with_retry(
+                f"{config.NODE_API_URL}/ibc/core/channel/v1/channels?pagination.limit=100",
+                max_retries=2,
+                timeout=30
+            )
+        except Exception:
+            response = None
+
+        if not response or response.status_code != 200:
+            return jsonify({"channels": [], "error": "IBC module not available or no channels"}), 200
+
+        data = response.json()
+        raw_channels = data.get("channels", [])
+
+        channels = []
+        for ch in raw_channels:
+            counterparty = ch.get("counterparty", {})
+            channels.append({
+                "channel_id": ch.get("channel_id"),
+                "port_id": ch.get("port_id"),
+                "state": ch.get("state"),
+                "ordering": ch.get("ordering"),
+                "version": ch.get("version"),
+                "counterparty": {
+                    "channel_id": counterparty.get("channel_id"),
+                    "port_id": counterparty.get("port_id")
+                },
+                "connection_hops": ch.get("connection_hops", [])
+            })
+
+        return jsonify({
+            "channels": channels,
+            "count": len(channels)
+        })
+    except Exception as e:
+        logger.error(f"IBC channels fetch error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+# ==================== SUPPLY ENDPOINT ====================
+
+@app.route("/api/supply", methods=["GET"])
+def api_supply():
+    """Get token supply information."""
+    try:
+        import base64
+
+        # Use RPC ABCI query which is more reliable than REST for supply
+        response = requests.get(
+            f"{config.NODE_RPC_URL}/abci_query",
+            params={"path": '"/cosmos.bank.v1beta1.Query/TotalSupply"'},
+            timeout=15
+        )
+
+        if response.status_code != 200:
+            return jsonify({"error": "Failed to fetch supply"}), 500
+
+        data = response.json()
+        result = data.get("result", {}).get("response", {})
+
+        if result.get("code", 0) != 0:
+            return jsonify({"error": "ABCI query failed"}), 500
+
+        # Decode the protobuf response - parse simple format
+        value_b64 = result.get("value", "")
+        if not value_b64:
+            return jsonify({"error": "No supply data"}), 500
+
+        raw_bytes = base64.b64decode(value_b64)
+
+        # Parse the protobuf manually for coin entries
+        # Format: repeated Coin { string denom = 1; string amount = 2; }
+        formatted_supply = []
+        total_aura = 0
+        i = 0
+
+        while i < len(raw_bytes):
+            if raw_bytes[i] == 0x0a:  # Field 1, wire type 2 (length-delimited)
+                i += 1
+                coin_len = raw_bytes[i]
+                i += 1
+                coin_data = raw_bytes[i:i + coin_len]
+                i += coin_len
+
+                # Parse coin: denom at field 1, amount at field 2
+                j = 0
+                denom = ""
+                amount = 0
+
+                while j < len(coin_data):
+                    field_tag = coin_data[j]
+                    j += 1
+                    if field_tag == 0x0a:  # Field 1 (denom)
+                        denom_len = coin_data[j]
+                        j += 1
+                        denom = coin_data[j:j + denom_len].decode('utf-8')
+                        j += denom_len
+                    elif field_tag == 0x12:  # Field 2 (amount as string)
+                        amount_len = coin_data[j]
+                        j += 1
+                        amount = int(coin_data[j:j + amount_len].decode('utf-8'))
+                        j += amount_len
+                    else:
+                        break
+
+                entry = {
+                    "denom": denom,
+                    "amount": str(amount)
+                }
+                if denom == config.DENOM:
+                    total_aura = amount
+                    entry["amount_formatted"] = f"{amount / 1_000_000:.2f} AURA"
+                formatted_supply.append(entry)
+            else:
+                i += 1
+
+        return jsonify({
+            "total_supply": formatted_supply,
+            "primary_denom": config.DENOM,
+            "primary_supply": total_aura,
+            "primary_supply_formatted": f"{total_aura / 1_000_000:.2f} AURA"
+        })
+    except Exception as e:
+        logger.error(f"Supply fetch error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
 # ==================== SEARCH ENDPOINTS ====================
 
 @app.route("/api/search", methods=["POST", "GET"])
