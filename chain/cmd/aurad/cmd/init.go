@@ -37,11 +37,6 @@ import (
 )
 
 const (
-	// Bech32 address prefixes for AURA chain
-	Bech32MainPrefix      = "aura"
-	Bech32ValidatorPrefix = "auravaloper"
-	Bech32ConsensusPrefix = "auravalcons"
-
 	// BIP44 derivation path for Cosmos-based chains
 	// m/44'/118'/0'/0/0 is the standard Cosmos derivation path
 	DefaultHDPath = "m/44'/118'/0'/0/0"
@@ -498,17 +493,17 @@ func deriveValidatorAddresses(pubKey ed25519PubKey) (*ValidatorKeyInfo, error) {
 	pubKeyBase64 := base64.StdEncoding.EncodeToString(pubKeyBytes)
 
 	// Encode to bech32 addresses
-	accountAddr, err := bech32Encode(Bech32MainPrefix, addrBytes)
+	accountAddr, err := bech32Encode(app.Bech32MainPrefix, addrBytes)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode account address: %w", err)
 	}
 
-	operatorAddr, err := bech32Encode(Bech32ValidatorPrefix, addrBytes)
+	operatorAddr, err := bech32Encode(app.Bech32ValidatorPrefix, addrBytes)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode operator address: %w", err)
 	}
 
-	consensusAddr, err := bech32Encode(Bech32ConsensusPrefix, addrBytes)
+	consensusAddr, err := bech32Encode(app.Bech32ConsensusPrefix, addrBytes)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode consensus address: %w", err)
 	}
