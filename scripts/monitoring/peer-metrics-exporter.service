@@ -1,0 +1,19 @@
+[Unit]
+Description=Cosmos Peer Metrics Exporter
+Documentation=https://github.com/aequitas/aura
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+ExecStart=/usr/bin/python3 /opt/peer-metrics-exporter/peer-metrics-exporter.py --rpc ${RPC_URL} --port ${METRICS_PORT} --chain ${CHAIN_ID} --network ${NETWORK}
+EnvironmentFile=/etc/default/peer-metrics-exporter
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
