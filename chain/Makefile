@@ -22,12 +22,19 @@ LDFLAGS=-ldflags "\
 
 all: build
 
-## build: Build the aurad binary
+## build: Build the aurad binary (mainnet prefix: aura1)
 build:
-	@echo "Building $(BINARY_NAME)..."
+	@echo "Building $(BINARY_NAME) (mainnet)..."
 	@mkdir -p $(BUILD_DIR)
 	@go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) ./cmd/aurad
 	@echo "Binary built: $(BUILD_DIR)/$(BINARY_NAME)"
+
+## build-testnet: Build the aurad binary with testnet prefix (auratest1)
+build-testnet:
+	@echo "Building $(BINARY_NAME) (testnet prefix: auratest1)..."
+	@mkdir -p $(BUILD_DIR)
+	@go build -tags=testnet $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) ./cmd/aurad
+	@echo "Testnet binary built: $(BUILD_DIR)/$(BINARY_NAME)"
 
 ## install: Install the aurad binary to $GOPATH/bin
 install:

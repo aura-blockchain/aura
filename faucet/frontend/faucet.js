@@ -55,7 +55,7 @@ class AuraFaucet {
 
   validateAddress(address) {
     const addressInput = document.getElementById('addressInput');
-    const isValid = /^aura1[a-z0-9]{38}$/.test(address);
+    const isValid = /^auratest1[a-z0-9]{38}$/.test(address);
 
     if (address.length > 0) {
       if (isValid) {

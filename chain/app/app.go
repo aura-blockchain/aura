@@ -160,10 +160,10 @@ import (
 )
 
 const (
-	appName               = "aura"
-	bech32MainPrefix      = "aura"
-	bech32ValidatorPrefix = "auravaloper"
-	bech32ConsensusPrefix = "auravalcons"
+	appName = "aura"
+	// Bech32 prefixes are defined in prefix.go (mainnet) and prefix_testnet.go (testnet)
+	// Build with -tags=testnet for testnet prefix (auratest1)
+	// Build without tags for mainnet prefix (aura1)
 )
 
 var (
@@ -551,9 +551,9 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 	paramsKeeper := paramskeeper.NewKeeper(encoding.Codec, codec.NewLegacyAmino(), keys.params, paramsTKey) //nolint:staticcheck // Params keeper deprecated but still required for bridge subspace
 	bridgeSubspace := paramsKeeper.Subspace(bridgetypes.ModuleName)
 
-	accountCodec := address.NewBech32Codec(bech32MainPrefix)
-	validatorCodec := address.NewBech32Codec(bech32ValidatorPrefix)
-	consensusCodec := address.NewBech32Codec(bech32ConsensusPrefix)
+	accountCodec := address.NewBech32Codec(Bech32MainPrefix)
+	validatorCodec := address.NewBech32Codec(Bech32ValidatorPrefix)
+	consensusCodec := address.NewBech32Codec(Bech32ConsensusPrefix)
 	authorityAddr := authtypes.NewModuleAddress(governancetypes.ModuleName).String() // Using governance module
 
 	accountKeeper := authkeeper.NewAccountKeeper(
@@ -562,7 +562,7 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 		authtypes.ProtoBaseAccount,
 		moduleAccountPermissions,
 		accountCodec,
-		bech32MainPrefix,
+		Bech32MainPrefix,
 		authorityAddr,
 	)
 
@@ -1606,8 +1606,8 @@ func MakeEncodingConfig() EncodingConfig {
 	// This sets the Bech32 prefixes (aura, auravaloper, auravalcons) for address encoding
 	ensureSDKConfig()
 
-	addrCodec := address.NewBech32Codec(bech32MainPrefix)
-	valCodec := address.NewBech32Codec(bech32ValidatorPrefix)
+	addrCodec := address.NewBech32Codec(Bech32MainPrefix)
+	valCodec := address.NewBech32Codec(Bech32ValidatorPrefix)
 	interfaceRegistry, err := codectypes.NewInterfaceRegistryWithOptions(codectypes.InterfaceRegistryOptions{
 		ProtoFiles: proto.HybridResolver,
 		SigningOptions: txsigning.Options{
@@ -1670,12 +1670,13 @@ func MakeEncodingConfig() EncodingConfig {
 }
 
 // ensureSDKConfig sets the Bech32 prefixes once for the process.
+// Prefixes are defined in prefix.go (mainnet: aura) and prefix_testnet.go (testnet: auratest)
 func ensureSDKConfig() {
 	sdkConfigOnce.Do(func() {
 		cfg := sdk.GetConfig()
-		cfg.SetBech32PrefixForAccount(bech32MainPrefix, bech32MainPrefix+"pub")
-		cfg.SetBech32PrefixForValidator(bech32ValidatorPrefix, bech32ValidatorPrefix+"pub")
-		cfg.SetBech32PrefixForConsensusNode(bech32ConsensusPrefix, bech32ConsensusPrefix+"pub")
+		cfg.SetBech32PrefixForAccount(Bech32MainPrefix, Bech32MainPrefix+"pub")
+		cfg.SetBech32PrefixForValidator(Bech32ValidatorPrefix, Bech32ValidatorPrefix+"pub")
+		cfg.SetBech32PrefixForConsensusNode(Bech32ConsensusPrefix, Bech32ConsensusPrefix+"pub")
 		cfg.Seal()
 	})
 }

@@ -1,6 +1,8 @@
 module github.com/aura-chain/aura/faucet
 
-go 1.25
+go 1.24.0
+
+toolchain go1.24.11
 
 require (
 	github.com/gin-contrib/cors v1.7.2
@@ -10,6 +12,7 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.11.1
+	golang.org/x/image v0.34.0
 )
 
 require (
@@ -39,7 +42,6 @@ require (
 	github.com/ugorji/go/codec v1.2.12 // indirect
 	golang.org/x/arch v0.8.0 // indirect
 	golang.org/x/crypto v0.23.0 // indirect
-	golang.org/x/image v0.34.0 // indirect
 	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/sys v0.20.0 // indirect
 	golang.org/x/text v0.32.0 // indirect

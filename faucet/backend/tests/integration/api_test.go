@@ -22,7 +22,7 @@ func setupTestRouter(t *testing.T) *gin.Engine {
 	cfg := &config.Config{
 		NodeRPC:         "http://localhost:26657",
 		ChainID:         "test-chain",
-		FaucetAddress:   "aura1test",
+		FaucetAddress:   "auratest1test",
 		AmountPerRequest: 100000000,
 		Environment:     "development",
 	}
@@ -95,7 +95,7 @@ func TestRequestTokensValidation(t *testing.T) {
 		{
 			name: "missing captcha",
 			payload: map[string]string{
-				"address": "aura1test",
+				"address": "auratest1test",
 			},
 			expectedStatus: http.StatusBadRequest,
 		},

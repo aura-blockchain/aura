@@ -263,14 +263,14 @@ func (s *Service) broadcastTransaction(txData map[string]interface{}) (string, e
 	return mockTxHash, nil
 }
 
-// ValidateAddress validates a AURA address
+// ValidateAddress validates a AURA testnet address
 func (s *Service) ValidateAddress(address string) error {
-	if len(address) < 40 || len(address) > 60 {
+	if len(address) < 44 || len(address) > 64 {
 		return fmt.Errorf("invalid address length")
 	}
 
-	if !strings.HasPrefix(address, "aura1") {
-		return fmt.Errorf("address must start with aura1")
+	if !strings.HasPrefix(address, "auratest1") {
+		return fmt.Errorf("address must start with auratest1")
 	}
 
 	// Additional validation could be added here
