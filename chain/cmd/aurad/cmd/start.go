@@ -66,6 +66,7 @@ import (
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	gateway "github.com/cosmos/gogogateway"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -710,7 +711,13 @@ func startAPIServer(
 	mux := http.NewServeMux()
 
 	// Register gRPC-Gateway routes for all modules
-	gatewayMux := runtime.NewServeMux()
+	// Use gogogateway marshaler to properly handle Cosmos SDK types (math.Int, time.Time)
+	gatewayMux := runtime.NewServeMux(
+		runtime.WithMarshalerOption(runtime.MIMEWildcard, &gateway.JSONPb{
+			EmitDefaults: true,
+			OrigName:     true,
+		}),
+	)
 	app.ModuleBasics.RegisterGRPCGatewayRoutes(clientCtx, gatewayMux)
 	authtx.RegisterGRPCGatewayRoutes(clientCtx, gatewayMux)
 	cmtservice.RegisterGRPCGatewayRoutes(clientCtx, gatewayMux)

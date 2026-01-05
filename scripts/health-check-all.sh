@@ -41,12 +41,12 @@ log_warn() { log "${YELLOW}⚠${NC} $*"; }
 log_fail() { log "${RED}✗${NC} $*"; OVERALL_HEALTHY=false; }
 
 # ============================================================================
-# Service Endpoints
+# Service Endpoints (must match server config)
 # ============================================================================
 declare -A SERVICES=(
     ["aurad-rpc"]="http://127.0.0.1:10657/status"
-    ["aurad-api"]="http://127.0.0.1:10317/cosmos/base/tendermint/v1beta1/syncing"
-    ["aurad-grpc"]="127.0.0.1:10090"
+    ["aurad-api"]="http://127.0.0.1:1317/cosmos/base/tendermint/v1beta1/syncing"
+    ["aurad-grpc"]="127.0.0.1:9190"
     ["prometheus"]="http://127.0.0.1:9090/-/healthy"
     ["grafana"]="http://127.0.0.1:3000/api/health"
 )
@@ -109,16 +109,16 @@ check_grpc() {
     log "${BLUE}=== gRPC ===${NC}"
 
     if command -v grpcurl &>/dev/null; then
-        if grpcurl -plaintext 127.0.0.1:10090 list &>/dev/null; then
-            log_ok "gRPC endpoint responding on :10090"
+        if grpcurl -plaintext 127.0.0.1:9190 list &>/dev/null; then
+            log_ok "gRPC endpoint responding on :9190"
         else
             log_warn "gRPC endpoint not responding"
         fi
     else
-        if nc -z 127.0.0.1 10090 &>/dev/null; then
-            log_ok "gRPC port 10090 is open"
+        if nc -z 127.0.0.1 9190 &>/dev/null; then
+            log_ok "gRPC port 9190 is open"
         else
-            log_fail "gRPC port 10090 not accessible"
+            log_fail "gRPC port 9190 not accessible"
         fi
     fi
 }
@@ -131,10 +131,10 @@ check_api() {
     log "${BLUE}=== REST API ===${NC}"
 
     local syncing
-    syncing=$(curl -sf --max-time 5 "http://127.0.0.1:10317/cosmos/base/tendermint/v1beta1/syncing" 2>/dev/null)
+    syncing=$(curl -sf --max-time 5 "http://127.0.0.1:1317/cosmos/base/tendermint/v1beta1/syncing" 2>/dev/null)
 
     if [ -n "$syncing" ]; then
-        log_ok "REST API responding on :10317"
+        log_ok "REST API responding on :1317"
     else
         log_warn "REST API not responding"
     fi
