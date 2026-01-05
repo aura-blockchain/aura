@@ -7,6 +7,7 @@ package monitoring
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 
 	"cosmossdk.io/core/appmodule"
@@ -23,10 +24,11 @@ import (
 )
 
 var (
-	_ module.AppModuleBasic = AppModuleBasic{}
-	_ module.HasGenesis     = AppModule{}
-	_ module.HasServices    = AppModule{}
-	_ appmodule.AppModule   = AppModule{}
+	_ module.AppModuleBasic      = AppModuleBasic{}
+	_ module.HasGenesis          = AppModule{}
+	_ module.HasServices         = AppModule{}
+	_ appmodule.AppModule        = AppModule{}
+	_ appmodule.HasBeginBlocker  = AppModule{}
 )
 
 // AppModuleBasic implements the AppModuleBasic interface
@@ -139,6 +141,6 @@ func (am AppModule) GetKeeper() *keeper.Keeper {
 }
 
 // BeginBlock is called at the start of each block
-func (am AppModule) BeginBlock(ctx sdk.Context) error {
+func (am AppModule) BeginBlock(ctx context.Context) error {
 	return am.keeper.BeginBlocker(ctx)
 }

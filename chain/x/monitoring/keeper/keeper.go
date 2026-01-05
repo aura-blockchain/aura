@@ -44,6 +44,9 @@ type Keeper struct {
 	// Metrics (non-consensus, observability only)
 	metrics *metrics.MonitoringMetrics
 
+	// Network health collector (non-consensus, queries local RPC for metrics)
+	healthCollector *NetworkHealthCollector
+
 	// Cache for alert routes (non-consensus, performance optimization)
 	// Invalidated at the start of each block or when routes are modified
 	alertRoutesCache      []*AlertRoute
@@ -57,10 +60,19 @@ func NewKeeper(
 	authority string,
 ) *Keeper {
 	return &Keeper{
-		cdc:          cdc,
-		storeService: storeService,
-		authority:    authority,
-		metrics:      metrics.NewMonitoringMetrics(),
+		cdc:             cdc,
+		storeService:    storeService,
+		authority:       authority,
+		metrics:         metrics.NewMonitoringMetrics(),
+		healthCollector: NewNetworkHealthCollector("http://localhost:26657"),
+	}
+}
+
+// SetRPCEndpoint configures the RPC endpoint for network health collection.
+// This should be called after keeper creation if the RPC port is non-standard.
+func (k *Keeper) SetRPCEndpoint(endpoint string) {
+	if k.healthCollector != nil {
+		k.healthCollector.SetRPCEndpoint(endpoint)
 	}
 }
 
@@ -1010,12 +1022,29 @@ func (k *Keeper) InvalidateAlertRoutesCache() {
 	k.alertRoutesCacheBlock = -1
 }
 
-// BeginBlocker is called at the start of each block to refresh caches
+// BeginBlocker is called at the start of each block to refresh caches and collect metrics
 func (k *Keeper) BeginBlocker(ctx context.Context) error {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
 	// Pre-load alert routes cache for the block
 	_, err := k.refreshAlertRoutesCache(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to refresh alert routes cache: %w", err)
 	}
+
+	// Collect and update network health metrics
+	// This is non-consensus (observability only) so errors are logged but don't halt the chain
+	if k.healthCollector != nil {
+		health, err := k.healthCollector.CollectNetworkHealth(ctx)
+		if err != nil {
+			sdkCtx.Logger().Debug("monitoring: failed to collect network health", "error", err)
+		} else if health != nil {
+			// Update the network health in store and metrics
+			if updateErr := k.UpdateNetworkHealth(ctx, health); updateErr != nil {
+				sdkCtx.Logger().Debug("monitoring: failed to update network health", "error", updateErr)
+			}
+		}
+	}
+
 	return nil
 }
