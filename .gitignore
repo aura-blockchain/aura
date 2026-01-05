@@ -169,3 +169,4 @@ bft_test_*
 trace*.log
 tmp_*.json
 testnet-init.log
+AGENTS.md
