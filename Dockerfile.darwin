@@ -1,0 +1,30 @@
+FROM goreleaser/goreleaser-cross:v1.22 AS builder
+
+WORKDIR /src
+
+# Copy entire aura project including third_party and proto
+COPY . .
+
+ARG VERSION=v0.1.0
+ARG COMMIT=unknown
+ARG BUILD_DATE=unknown
+ARG GOARCH=amd64
+
+# Build for darwin
+WORKDIR /src/chain
+
+# Set CC based on GOARCH (o64-clang for amd64, oa64-clang for arm64)
+RUN if [ "${GOARCH}" = "amd64" ]; then \
+      CC=o64-clang CXX=o64-clang++ CGO_ENABLED=1 GOOS=darwin GOARCH=${GOARCH} \
+      go build -tags=testnet \
+      -ldflags "-X github.com/aequitas/aura/chain/cmd/aurad/cmd.Version=${VERSION} -X github.com/aequitas/aura/chain/cmd/aurad/cmd.Commit=${COMMIT} -X github.com/aequitas/aura/chain/cmd/aurad/cmd.BuildDate=${BUILD_DATE}" \
+      -o /aurad-darwin-${GOARCH} ./cmd/aurad; \
+    else \
+      CC=oa64-clang CXX=oa64-clang++ CGO_ENABLED=1 GOOS=darwin GOARCH=${GOARCH} \
+      go build -tags=testnet \
+      -ldflags "-X github.com/aequitas/aura/chain/cmd/aurad/cmd.Version=${VERSION} -X github.com/aequitas/aura/chain/cmd/aurad/cmd.Commit=${COMMIT} -X github.com/aequitas/aura/chain/cmd/aurad/cmd.BuildDate=${BUILD_DATE}" \
+      -o /aurad-darwin-${GOARCH} ./cmd/aurad; \
+    fi
+
+FROM scratch AS export
+COPY --from=builder /aurad-darwin-* /

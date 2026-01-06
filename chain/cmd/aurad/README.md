@@ -289,7 +289,7 @@ When a node is running, the following endpoints are available:
 ## Support
 
 - **Documentation**: [https://docs.aura.network](https://docs.aura.network)
-- **Discord**: [https://discord.gg/aura](https://discord.gg/aura)
+- **Discord**: [https://discord.gg/RwQ8pma6](https://discord.gg/RwQ8pma6)
 - **GitHub Issues**: [https://github.com/aequitas/aura/issues](https://github.com/aequitas/aura/issues)
 
 ## License

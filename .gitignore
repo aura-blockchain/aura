@@ -170,3 +170,4 @@ trace*.log
 tmp_*.json
 testnet-init.log
 AGENTS.md
+.playwright-mcp/
