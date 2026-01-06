@@ -132,3 +132,10 @@ curl -s https://testnet-api.aurablockchain.org/cosmos/auth/v1beta1/params | jq '
 # Query identity module
 aurad query identity params --home ~/.aura
 ```
+
+---
+
+## Security Baseline
+
+See `docs/PUBLIC_TESTNET_SECURITY.md` for expected security controls and
+`scripts/public-testnet-health-check.sh` for automated checks of public endpoints.

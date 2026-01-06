@@ -1,0 +1,33 @@
+server {
+    if ($host = testnet-grpc.aurablockchain.org) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+
+    listen 80;
+    server_name testnet-grpc.aurablockchain.org;
+    return 301 https://$host$request_uri;
+
+
+}
+
+server {
+    listen 443 ssl http2;
+    server_name testnet-grpc.aurablockchain.org;
+    server_tokens off;
+    ssl_certificate /etc/letsencrypt/live/testnet-ws.aurablockchain.org/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/testnet-ws.aurablockchain.org/privkey.pem; # managed by Certbot
+
+
+    location / {
+        limit_req zone=testnet_grpc_limit burst=50 nodelay;
+        limit_conn testnet_conn_limit 200;
+
+        grpc_pass grpc://127.0.0.1:10090;
+        grpc_set_header Host $host;
+        grpc_set_header X-Real-IP $remote_addr;
+        grpc_read_timeout 300s;
+        grpc_send_timeout 300s;
+    }
+
+}
