@@ -85,6 +85,12 @@ coverage.html
 /tmp/
 .next/
 *.exe
+*.apk
+*.aab
+*.ipa
+*.deb
+*.rpm
+*.AppImage
 !**/cmd/**/
 
 # Backup files

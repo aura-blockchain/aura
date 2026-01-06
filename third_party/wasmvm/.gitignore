@@ -7,6 +7,8 @@
 
 # no static libraries (35MB+)
 /internal/api/lib*.a
+# no dynamic libraries (built locally)
+/internal/api/libwasmvm.*
 
 # artifacts from compile tests
 /build/

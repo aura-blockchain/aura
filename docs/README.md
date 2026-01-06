@@ -16,6 +16,7 @@
 
 - `docs/api/openapi.json` (OpenAPI spec)
 - `docs/chain-registry/aura.json` (chain registry)
+- `docs/RELEASE_ARTIFACTS.md` (release artifacts policy)
 
 ## Project docs
 

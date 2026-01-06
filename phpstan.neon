@@ -9,5 +9,4 @@ parameters:
     - wallet/desktop/node_modules
     - wallet/mobile/node_modules
     - wallet/browser-extension/node_modules
-    - wallet/shared/node_modules
   inferPrivatePropertyTypeFromConstructor: true
