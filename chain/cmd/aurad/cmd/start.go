@@ -412,16 +412,23 @@ func startInProcess(cmd *cobra.Command, auraApp *app.App, logger log.Logger) err
 		return fmt.Errorf("failed to start node: %w", err)
 	}
 
-	// Start Prometheus metrics HTTP server
-	metricsPort := 26660
-	go func() {
-		http.Handle("/metrics", promhttp.Handler())
-		metricsAddr := fmt.Sprintf(":%d", metricsPort)
-		logger.Info("starting Prometheus metrics server", "address", metricsAddr)
-		if err := http.ListenAndServe(metricsAddr, nil); err != nil {
-			logger.Error("metrics server failed", "error", err)
-		}
-	}()
+	// Start Prometheus metrics HTTP server using configured address from config.toml
+	// CometBFT's DefaultMetricsProvider already starts a server if instrumentation is enabled,
+	// so we only start our own if prometheus is disabled in CometBFT config or to serve custom metrics
+	if cmtConfig.Instrumentation.Prometheus {
+		logger.Info("Prometheus metrics enabled via CometBFT instrumentation",
+			"address", cmtConfig.Instrumentation.PrometheusListenAddr)
+	} else {
+		// Fallback: start our own metrics server if CometBFT instrumentation is disabled
+		go func() {
+			http.Handle("/metrics", promhttp.Handler())
+			metricsAddr := ":26660"
+			logger.Info("starting fallback Prometheus metrics server", "address", metricsAddr)
+			if err := http.ListenAndServe(metricsAddr, nil); err != nil {
+				logger.Error("metrics server failed", "error", err)
+			}
+		}()
+	}
 
 	// Start consensus metrics collector
 	rpcAddr := cmtConfig.RPC.ListenAddress

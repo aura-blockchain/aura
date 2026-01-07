@@ -17,12 +17,12 @@ import (
 	cmtlog "github.com/cometbft/cometbft/libs/log"
 )
 
-// CometBFT Consensus Metrics
+// AURA Consensus Metrics (custom metrics with aura_ prefix to avoid conflicts with CometBFT built-in metrics)
 var (
 	// Round metrics
 	consensusRound = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "cometbft_consensus_round",
+			Name: "aura_consensus_round",
 			Help: "Current consensus round for the given height",
 		},
 		[]string{"validator"},
@@ -30,7 +30,7 @@ var (
 
 	consensusStep = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "cometbft_consensus_step",
+			Name: "aura_consensus_step",
 			Help: "Current consensus step (0=NewHeight, 1=NewRound, 2=Propose, 3=Prevote, 4=PrevoteWait, 5=Precommit, 6=PrecommitWait, 7=Commit)",
 		},
 		[]string{"validator"},
@@ -39,7 +39,7 @@ var (
 	// Vote metrics
 	consensusPrevotesReceived = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "cometbft_consensus_prevotes_received",
+			Name: "aura_consensus_prevotes_received",
 			Help: "Number of prevotes received in current round",
 		},
 		[]string{"validator", "round"},
@@ -47,7 +47,7 @@ var (
 
 	consensusPrecommitsReceived = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "cometbft_consensus_precommits_received",
+			Name: "aura_consensus_precommits_received",
 			Help: "Number of precommits received in current round",
 		},
 		[]string{"validator", "round"},
@@ -55,7 +55,7 @@ var (
 
 	consensusPrevotesPower = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "cometbft_consensus_prevotes_voting_power",
+			Name: "aura_consensus_prevotes_voting_power",
 			Help: "Total voting power of prevotes received (out of total)",
 		},
 		[]string{"validator", "round"},
@@ -63,7 +63,7 @@ var (
 
 	consensusPrecommitsPower = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "cometbft_consensus_precommits_voting_power",
+			Name: "aura_consensus_precommits_voting_power",
 			Help: "Total voting power of precommits received (out of total)",
 		},
 		[]string{"validator", "round"},
@@ -72,7 +72,7 @@ var (
 	// Height tracking
 	consensusHeight = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "cometbft_consensus_height",
+			Name: "aura_consensus_height",
 			Help: "Current consensus height",
 		},
 		[]string{"validator"},
@@ -80,7 +80,7 @@ var (
 
 	consensusHeightRate = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "cometbft_consensus_height_rate",
+			Name: "aura_consensus_height_rate",
 			Help: "Rate of height increase (blocks per minute)",
 		},
 		[]string{"validator"},
@@ -89,7 +89,7 @@ var (
 	// Proposer tracking
 	consensusIsProposer = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "cometbft_consensus_is_proposer",
+			Name: "aura_consensus_is_proposer",
 			Help: "Whether this validator is the proposer for current round (1=yes, 0=no)",
 		},
 		[]string{"validator"},
@@ -97,7 +97,7 @@ var (
 
 	consensusProposerIndex = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "cometbft_consensus_proposer_index",
+			Name: "aura_consensus_proposer_index",
 			Help: "Index of the current proposer",
 		},
 		[]string{"validator"},
@@ -106,7 +106,7 @@ var (
 	// Block proposal status
 	consensusHasProposal = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "cometbft_consensus_has_proposal",
+			Name: "aura_consensus_has_proposal",
 			Help: "Whether a block proposal has been received (1=yes, 0=no)",
 		},
 		[]string{"validator"},
@@ -114,7 +114,7 @@ var (
 
 	consensusLockedBlockHash = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "cometbft_consensus_has_locked_block",
+			Name: "aura_consensus_has_locked_block",
 			Help: "Whether this validator has locked on a block (1=yes, 0=no)",
 		},
 		[]string{"validator"},
@@ -122,7 +122,7 @@ var (
 
 	consensusValidBlockHash = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "cometbft_consensus_has_valid_block",
+			Name: "aura_consensus_has_valid_block",
 			Help: "Whether this validator has a valid block (1=yes, 0=no)",
 		},
 		[]string{"validator"},
@@ -131,7 +131,7 @@ var (
 	// Validator participation
 	consensusValidatorMissedBlocks = promauto.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "cometbft_consensus_validator_missed_blocks_total",
+			Name: "aura_consensus_validator_missed_blocks_total",
 			Help: "Total number of blocks missed by validator (based on nil votes)",
 		},
 		[]string{"validator", "validator_address"},
@@ -139,7 +139,7 @@ var (
 
 	consensusValidatorParticipation = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "cometbft_consensus_validator_participation",
+			Name: "aura_consensus_validator_participation",
 			Help: "Validator participation rate in consensus (0-1)",
 		},
 		[]string{"validator", "validator_address"},
@@ -148,7 +148,7 @@ var (
 	// Round duration tracking
 	consensusRoundDuration = promauto.NewHistogramVec(
 		prometheus.HistogramOpts{
-			Name:    "cometbft_consensus_round_duration_seconds",
+			Name:    "aura_consensus_round_duration_seconds",
 			Help:    "Duration of consensus rounds in seconds",
 			Buckets: []float64{0.5, 1, 2, 5, 10, 30, 60, 120},
 		},
@@ -158,7 +158,7 @@ var (
 	// Consensus failures
 	consensusTimeouts = promauto.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "cometbft_consensus_timeouts_total",
+			Name: "aura_consensus_timeouts_total",
 			Help: "Total number of consensus timeouts",
 		},
 		[]string{"validator", "timeout_type"},
