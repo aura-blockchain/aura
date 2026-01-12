@@ -478,3 +478,275 @@ func (s *DataItemTestSuite) TestDataItemEncrypted() {
 	s.Require().True(found)
 	s.Require().True(item.IsEncrypted)
 }
+
+// ===== STORE DATA ITEM WITH CONTENT TESTS =====
+
+func (s *DataItemTestSuite) TestStoreDataItemWithContent_Success() {
+	content := []byte("This is the actual content to upload to IPFS")
+	metadata := map[string]string{"author": "test"}
+
+	dataID, err := s.keeper.StoreDataItemWithContent(
+		s.input.Ctx,
+		"aura1owner",
+		types.DataItemType_DATA_ITEM_TYPE_DOCUMENT_PDF,
+		"Content Document",
+		"A document with actual content",
+		content,
+		false,
+		nil,
+		metadata,
+		&types.AccessPolicy{Mode: types.AccessMode_ACCESS_MODE_PUBLIC},
+		[]string{"content", "test"},
+	)
+
+	s.Require().NoError(err)
+	s.Require().NotEmpty(dataID)
+
+	// Verify the item was stored
+	item, found := s.keeper.GetDataItem(s.input.Ctx, dataID)
+	s.Require().True(found)
+	s.Require().Equal("aura1owner", item.OwnerAddress)
+	s.Require().Equal("Content Document", item.Title)
+	s.Require().NotEmpty(item.StorageLocation) // Should have IPFS CID
+	s.Require().NotEmpty(item.ContentHash)     // Should have hash
+}
+
+func (s *DataItemTestSuite) TestStoreDataItemWithContent_EmptyOwner() {
+	_, err := s.keeper.StoreDataItemWithContent(
+		s.input.Ctx,
+		"", // Empty owner
+		types.DataItemType_DATA_ITEM_TYPE_PHOTO,
+		"Test",
+		"Description",
+		[]byte("content"),
+		false, nil, nil, nil, nil,
+	)
+
+	s.Require().Error(err)
+	s.Require().ErrorIs(err, types.ErrInvalidOwner)
+}
+
+func (s *DataItemTestSuite) TestStoreDataItemWithContent_EmptyContent() {
+	_, err := s.keeper.StoreDataItemWithContent(
+		s.input.Ctx,
+		"aura1owner",
+		types.DataItemType_DATA_ITEM_TYPE_PHOTO,
+		"Test",
+		"Description",
+		[]byte{}, // Empty content
+		false, nil, nil, nil, nil,
+	)
+
+	s.Require().Error(err)
+	s.Require().Contains(err.Error(), "content cannot be empty")
+}
+
+func (s *DataItemTestSuite) TestStoreDataItemWithContent_WithGeoLocation() {
+	geo := &types.GeoLocation{
+		Latitude:  51.5074,
+		Longitude: -0.1278,
+	}
+
+	dataID, err := s.keeper.StoreDataItemWithContent(
+		s.input.Ctx,
+		"aura1owner",
+		types.DataItemType_DATA_ITEM_TYPE_PHOTO,
+		"London Photo",
+		"Photo from London",
+		[]byte("london image content"),
+		false,
+		geo,
+		nil, nil, nil,
+	)
+
+	s.Require().NoError(err)
+	s.Require().NotEmpty(dataID)
+
+	item, found := s.keeper.GetDataItem(s.input.Ctx, dataID)
+	s.Require().True(found)
+	s.Require().NotNil(item.GeoLocation)
+	s.Require().Equal(51.5074, item.GeoLocation.Latitude)
+}
+
+func (s *DataItemTestSuite) TestStoreDataItemWithContent_Encrypted() {
+	dataID, err := s.keeper.StoreDataItemWithContent(
+		s.input.Ctx,
+		"aura1owner",
+		types.DataItemType_DATA_ITEM_TYPE_DOCUMENT_PDF,
+		"Encrypted Doc",
+		"Encrypted content",
+		[]byte("encrypted content bytes"),
+		true, // Is encrypted
+		nil, nil, nil, nil,
+	)
+
+	s.Require().NoError(err)
+	item, found := s.keeper.GetDataItem(s.input.Ctx, dataID)
+	s.Require().True(found)
+	s.Require().True(item.IsEncrypted)
+}
+
+// ===== RETRIEVE DATA ITEM CONTENT TESTS =====
+
+func (s *DataItemTestSuite) TestRetrieveDataItemContent_Success() {
+	// First store with content
+	originalContent := []byte("Original content to retrieve")
+	dataID, err := s.keeper.StoreDataItemWithContent(
+		s.input.Ctx,
+		"aura1owner",
+		types.DataItemType_DATA_ITEM_TYPE_DOCUMENT_PDF,
+		"Retrievable Doc",
+		"Document with retrievable content",
+		originalContent,
+		false,
+		nil, nil,
+		&types.AccessPolicy{Mode: types.AccessMode_ACCESS_MODE_PUBLIC},
+		nil,
+	)
+	s.Require().NoError(err)
+
+	// Retrieve the content as owner
+	retrieved, err := s.keeper.RetrieveDataItemContent(s.input.Ctx, dataID, "aura1owner")
+	s.Require().NoError(err)
+	s.Require().Equal(originalContent, retrieved)
+}
+
+func (s *DataItemTestSuite) TestRetrieveDataItemContent_NotFound() {
+	_, err := s.keeper.RetrieveDataItemContent(s.input.Ctx, "nonexistent-id", "aura1requester")
+	s.Require().Error(err)
+	s.Require().ErrorIs(err, types.ErrDataItemNotFound)
+}
+
+func (s *DataItemTestSuite) TestRetrieveDataItemContent_AccessDenied() {
+	// Store with private access
+	dataID, err := s.keeper.StoreDataItemWithContent(
+		s.input.Ctx,
+		"aura1owner",
+		types.DataItemType_DATA_ITEM_TYPE_DOCUMENT_PDF,
+		"Private Doc",
+		"Private document",
+		[]byte("private content"),
+		false,
+		nil, nil,
+		&types.AccessPolicy{Mode: types.AccessMode_ACCESS_MODE_PRIVATE},
+		nil,
+	)
+	s.Require().NoError(err)
+
+	// Try to retrieve as different user
+	_, err = s.keeper.RetrieveDataItemContent(s.input.Ctx, dataID, "aura1attacker")
+	s.Require().Error(err)
+	s.Require().Contains(err.Error(), "unauthorized")
+}
+
+func (s *DataItemTestSuite) TestRetrieveDataItemContent_InvalidCID() {
+	// Directly store an item with invalid storage location
+	item := types.DataItem{
+		DataId:          "invalid-cid-item",
+		OwnerAddress:    "aura1owner",
+		DataType:        types.DataItemType_DATA_ITEM_TYPE_DOCUMENT_PDF,
+		ContentHash:     []byte("hash"),
+		StorageLocation: "not-a-valid-cid", // Invalid CID
+		Status:          types.DataItemStatus_DATA_ITEM_STATUS_PENDING_VERIFICATION,
+		AccessPolicy:    &types.AccessPolicy{Mode: types.AccessMode_ACCESS_MODE_PUBLIC},
+	}
+	s.Require().NoError(s.keeper.SetDataItem(s.input.Ctx, item))
+
+	// Try to retrieve
+	_, err := s.keeper.RetrieveDataItemContent(s.input.Ctx, "invalid-cid-item", "aura1owner")
+	s.Require().Error(err)
+	s.Require().Contains(err.Error(), "invalid storage location")
+}
+
+// ===== CHECK ACCESS TESTS =====
+
+func (s *DataItemTestSuite) TestCheckAccess_WhitelistMode_Allowed() {
+	// Create item with whitelist access
+	item := types.DataItem{
+		DataId:       "whitelist-test",
+		OwnerAddress: "aura1owner",
+		DataType:     types.DataItemType_DATA_ITEM_TYPE_DOCUMENT_PDF,
+		ContentHash:  []byte("hash"),
+		Status:       types.DataItemStatus_DATA_ITEM_STATUS_VERIFIED,
+		AccessPolicy: &types.AccessPolicy{
+			Mode:             types.AccessMode_ACCESS_MODE_WHITELIST,
+			AllowedAddresses: []string{"aura1allowed1", "aura1allowed2", "aura1allowed3"},
+		},
+	}
+	s.Require().NoError(s.keeper.SetDataItem(s.input.Ctx, item))
+
+	// Owner should have access
+	s.Require().True(s.keeper.CheckAccess(s.input.Ctx, "whitelist-test", "aura1owner"))
+
+	// Whitelisted address should have access
+	s.Require().True(s.keeper.CheckAccess(s.input.Ctx, "whitelist-test", "aura1allowed1"))
+	s.Require().True(s.keeper.CheckAccess(s.input.Ctx, "whitelist-test", "aura1allowed2"))
+	s.Require().True(s.keeper.CheckAccess(s.input.Ctx, "whitelist-test", "aura1allowed3"))
+
+	// Non-whitelisted address should NOT have access
+	s.Require().False(s.keeper.CheckAccess(s.input.Ctx, "whitelist-test", "aura1notallowed"))
+}
+
+func (s *DataItemTestSuite) TestCheckAccess_VerifiedUsersMode() {
+	// Create item with verified users access
+	item := types.DataItem{
+		DataId:       "verified-users-test",
+		OwnerAddress: "aura1owner",
+		DataType:     types.DataItemType_DATA_ITEM_TYPE_DOCUMENT_PDF,
+		ContentHash:  []byte("hash"),
+		Status:       types.DataItemStatus_DATA_ITEM_STATUS_VERIFIED,
+		AccessPolicy: &types.AccessPolicy{
+			Mode: types.AccessMode_ACCESS_MODE_VERIFIED_USERS,
+		},
+	}
+	s.Require().NoError(s.keeper.SetDataItem(s.input.Ctx, item))
+
+	// In current implementation, verified users mode allows anyone
+	// (production would check AURA VC)
+	s.Require().True(s.keeper.CheckAccess(s.input.Ctx, "verified-users-test", "aura1anyuser"))
+}
+
+func (s *DataItemTestSuite) TestCheckAccess_NilAccessPolicy() {
+	// Create item with nil access policy
+	item := types.DataItem{
+		DataId:       "nil-policy-test",
+		OwnerAddress: "aura1owner",
+		DataType:     types.DataItemType_DATA_ITEM_TYPE_DOCUMENT_PDF,
+		ContentHash:  []byte("hash"),
+		Status:       types.DataItemStatus_DATA_ITEM_STATUS_VERIFIED,
+		AccessPolicy: nil, // Nil access policy
+	}
+	s.Require().NoError(s.keeper.SetDataItem(s.input.Ctx, item))
+
+	// Owner should still have access
+	s.Require().True(s.keeper.CheckAccess(s.input.Ctx, "nil-policy-test", "aura1owner"))
+
+	// Others should not have access (nil policy = no access)
+	s.Require().False(s.keeper.CheckAccess(s.input.Ctx, "nil-policy-test", "aura1other"))
+}
+
+func (s *DataItemTestSuite) TestCheckAccess_ItemNotFound() {
+	// Non-existent item should return false
+	s.Require().False(s.keeper.CheckAccess(s.input.Ctx, "nonexistent-item", "aura1anyone"))
+}
+
+func (s *DataItemTestSuite) TestCheckAccess_DefaultMode() {
+	// Create item with invalid/default access mode (tests default case in switch)
+	item := types.DataItem{
+		DataId:       "default-mode-test",
+		OwnerAddress: "aura1owner",
+		DataType:     types.DataItemType_DATA_ITEM_TYPE_DOCUMENT_PDF,
+		ContentHash:  []byte("hash"),
+		Status:       types.DataItemStatus_DATA_ITEM_STATUS_VERIFIED,
+		AccessPolicy: &types.AccessPolicy{
+			Mode: 99, // Invalid mode value triggers default case
+		},
+	}
+	s.Require().NoError(s.keeper.SetDataItem(s.input.Ctx, item))
+
+	// Owner should still have access (checked before switch)
+	s.Require().True(s.keeper.CheckAccess(s.input.Ctx, "default-mode-test", "aura1owner"))
+
+	// Default case should deny access for non-owners
+	s.Require().False(s.keeper.CheckAccess(s.input.Ctx, "default-mode-test", "aura1other"))
+}
