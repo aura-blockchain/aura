@@ -36,6 +36,47 @@ build-testnet:
 	@go build -tags=testnet $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) ./cmd/aurad
 	@echo "Testnet binary built: $(BUILD_DIR)/$(BINARY_NAME)"
 
+## build-mvp: Build aurad with MVP modules only (mainnet prefix)
+build-mvp:
+	@echo "Building $(BINARY_NAME) (MVP release)..."
+	@mkdir -p $(BUILD_DIR)
+	@go build -tags=mvp $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-mvp ./cmd/aurad
+	@echo "MVP binary built: $(BUILD_DIR)/$(BINARY_NAME)-mvp"
+
+## build-mvp-testnet: Build MVP with testnet prefix (auratest1)
+build-mvp-testnet:
+	@echo "Building $(BINARY_NAME) (MVP testnet)..."
+	@mkdir -p $(BUILD_DIR)
+	@go build -tags="mvp,testnet" $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-mvp ./cmd/aurad
+	@echo "MVP testnet binary built: $(BUILD_DIR)/$(BINARY_NAME)-mvp"
+
+## test-mvp: Run tests for MVP modules only
+test-mvp:
+	@echo "Running MVP module tests..."
+	@go test -v -cover \
+		./x/auth/... \
+		./x/governance/... \
+		./x/identity/... \
+		./x/vcregistry/... \
+		./x/dataregistry/... \
+		./x/compliance/... \
+		./x/prevalidation/... \
+		./x/wasm/...
+
+## test-mvp-coverage: Run MVP tests with coverage report
+test-mvp-coverage:
+	@echo "Running MVP tests with coverage..."
+	@go test -coverprofile=coverage-mvp.out \
+		./x/auth/... \
+		./x/governance/... \
+		./x/identity/... \
+		./x/vcregistry/... \
+		./x/dataregistry/... \
+		./x/compliance/... \
+		./x/prevalidation/... \
+		./x/wasm/...
+	@go tool cover -func=coverage-mvp.out | grep total
+
 ## install: Install the aurad binary to $GOPATH/bin
 install:
 	@echo "Installing $(BINARY_NAME)..."
