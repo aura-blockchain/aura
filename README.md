@@ -2,13 +2,29 @@
 
 Aura is a Cosmos SDK chain with custom modules for identity, compliance, privacy, governance, and exchange functionality. This repository also contains the supporting services used for testnet operations (explorer, faucet, wallets, dashboards) and client SDKs.
 
-## Build the node
+## Build the Node
+
+### Full Build (All Modules)
 
 ```bash
 cd chain
 make build
 ./build/aurad version
 ```
+
+### MVP Build (12 Essential Modules)
+
+The MVP release includes only the core modules needed for credential verification:
+
+```bash
+cd chain
+make build-mvp
+./build/aurad-mvp version
+```
+
+**MVP Modules:** auth, bank, staking, slashing, distribution, governance, identity, vcregistry, dataregistry, compliance, prevalidation, wasm
+
+See [docs/MVP_MODULES.md](docs/MVP_MODULES.md) for full MVP documentation.
 
 ## Run a local node
 
@@ -33,11 +49,19 @@ scripts/join-aura-testnet.sh
 
 ## Documentation
 
-- `docs/GETTING_STARTED.md`
-- `docs/ops/NODE_OPERATOR_GUIDE.md`
-- `docs/ops/VALIDATOR_SETUP_GUIDE.md`
-- `docs/ops/UPGRADE_PROCEDURES.md`
-- `docs/ops/TROUBLESHOOTING.md`
+- `docs/MVP_MODULES.md` - MVP module reference
+- `docs/GETTING_STARTED.md` - Quick start guide
+- `docs/ops/NODE_OPERATOR_GUIDE.md` - Running a node
+- `docs/ops/VALIDATOR_SETUP_GUIDE.md` - Validator setup
+- `docs/ops/UPGRADE_PROCEDURES.md` - Upgrade procedures
+- `docs/ops/TROUBLESHOOTING.md` - Common issues
+
+## Release Versions
+
+| Version | Type | Modules | Status |
+|---------|------|---------|--------|
+| v1.0.0-mvp | MVP | 12 | Current |
+| v2.0.0 | Full | 28+ | Planned |
 
 ## Repository layout
 
