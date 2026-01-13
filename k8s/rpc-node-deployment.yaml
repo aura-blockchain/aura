@@ -99,7 +99,7 @@ spec:
             - |
               if [ ! -f /root/.aura/config/genesis.json ]; then
                 echo "Initializing Aura node..."
-                aurad init rpc-node --chain-id aura-testnet-1 --home /root/.aura
+                aurad init rpc-node --chain-id aura-mvp-1 --home /root/.aura
                 # Copy configuration files
                 cp /config/config.toml /root/.aura/config/config.toml
                 cp /config/app.toml /root/.aura/config/app.toml
@@ -152,7 +152,7 @@ spec:
             - name: AURA_HOME
               value: "/root/.aura"
             - name: AURA_CHAIN_ID
-              value: "aura-testnet-1"
+              value: "aura-mvp-1"
 
           resources:
             requests:

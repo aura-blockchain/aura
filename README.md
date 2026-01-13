@@ -40,7 +40,7 @@ To join the AURA devnet, see the [networks repository](https://github.com/aura-b
 
 | Network | Chain ID | Status |
 |---------|----------|--------|
-| [aura-testnet-1](https://github.com/aura-blockchain/testnets/tree/main/aura-testnet-1) | `aura-testnet-1` | Devnet |
+| [aura-mvp-1](https://github.com/aura-blockchain/testnets/tree/main/aura-mvp-1) | `aura-mvp-1` | Devnet |
 
 **Quick join:**
 ```bash

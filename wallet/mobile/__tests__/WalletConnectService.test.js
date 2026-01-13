@@ -81,12 +81,12 @@ describe('WalletConnectService', () => {
       topic: 'topic-1',
       id: 7,
       params: {
-        chainId: 'cosmos:aura-testnet-1',
+        chainId: 'cosmos:aura-mvp-1',
         request: {
           method: 'cosmos_signDirect',
           params: {
             signerAddress: 'aura1signed',
-            signDoc: { chain_id: 'aura-testnet-1', account_number: '1', sequence: '0', fee: {}, msgs: [] },
+            signDoc: { chain_id: 'aura-mvp-1', account_number: '1', sequence: '0', fee: {}, msgs: [] },
           },
         },
       },
@@ -104,7 +104,7 @@ describe('WalletConnectService', () => {
       topic: 'topic-1',
       id: 8,
       params: {
-        chainId: 'cosmos:aura-testnet-1',
+        chainId: 'cosmos:aura-mvp-1',
         request: { method: 'cosmos_signDirect', params: { signerAddress: 'aura1other', signDoc: {} } },
       },
     });

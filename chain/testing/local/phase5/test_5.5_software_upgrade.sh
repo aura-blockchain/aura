@@ -114,7 +114,7 @@ PROPOSAL_RESULT=$(docker exec aura-validator-1 aurad tx gov submit-legacy-propos
     --upgrade-info "${UPGRADE_INFO}" \
     --deposit ${MIN_DEPOSIT}${DEPOSIT_DENOM} \
     --from ${VALIDATOR_KEY} \
-    --chain-id aura-testnet-1 \
+    --chain-id aura-mvp-1 \
     --keyring-backend test \
     --fees 5000uaura \
     --yes \
@@ -133,7 +133,7 @@ if echo "${PROPOSAL_RESULT}" | grep -q "LEGACY_FAILED"; then
         --type Text \
         --deposit ${MIN_DEPOSIT}${DEPOSIT_DENOM} \
         --from ${VALIDATOR_KEY} \
-        --chain-id aura-testnet-1 \
+        --chain-id aura-mvp-1 \
         --keyring-backend test \
         --fees 5000uaura \
         --yes \
@@ -190,7 +190,7 @@ for KEY in ${KEYS}; do
     log_test "Voting YES with key: ${KEY}"
     docker exec aura-validator-1 aurad tx gov vote ${PROPOSAL_ID} yes \
         --from ${KEY} \
-        --chain-id aura-testnet-1 \
+        --chain-id aura-mvp-1 \
         --keyring-backend test \
         --fees 5000uaura \
         --yes \

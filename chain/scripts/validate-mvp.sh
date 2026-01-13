@@ -10,7 +10,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CHAIN_DIR="$(dirname "$SCRIPT_DIR")"
 BUILD_DIR="${CHAIN_DIR}/build"
-TESTNETS_DIR="$(dirname "$(dirname "$CHAIN_DIR")")/testnets/aura-testnet-1"
+TESTNETS_DIR="$(dirname "$(dirname "$CHAIN_DIR")")/testnets/aura-mvp-1"
 TEMP_HOME="${CHAIN_DIR}/.mvp-validate-temp"
 
 QUICK_MODE=false

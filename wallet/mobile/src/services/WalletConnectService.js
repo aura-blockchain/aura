@@ -125,7 +125,7 @@ class WalletConnectService {
     });
   }
 
-  async connect(requiredChainId = 'aura-testnet-1', projectId = 'aura-mobile') {
+  async connect(requiredChainId = 'aura-mvp-1', projectId = 'aura-mobile') {
     const client = await this.init(projectId);
     const { uri, approval } = await client.connect({
       requiredNamespaces: {

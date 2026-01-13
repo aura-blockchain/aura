@@ -12,7 +12,7 @@ services:
 
     environment:
       - AURA_HOME=/root/.aura
-      - AURA_CHAIN_ID=aura-testnet-1
+      - AURA_CHAIN_ID=aura-mvp-1
       - LOG_LEVEL=info
       - LOG_FORMAT=json
 

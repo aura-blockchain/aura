@@ -71,7 +71,7 @@ describe('walletconnect module', () => {
       topic: 't',
       id: 1,
       params: {
-        chainId: 'cosmos:aura-testnet-1',
+        chainId: 'cosmos:aura-mvp-1',
         request: { method: 'cosmos_signDirect', params: { signerAddress: 'aura1', signDoc: {} } },
       },
     });
@@ -91,7 +91,7 @@ describe('walletconnect module', () => {
       topic: 't',
       id: 2,
       params: {
-        chainId: 'cosmos:aura-testnet-1',
+        chainId: 'cosmos:aura-mvp-1',
         request: { method: 'cosmos_signDirect', params: { signerAddress: 'aura1', signDoc: {} } },
       },
     });
@@ -109,7 +109,7 @@ describe('walletconnect module', () => {
       topic: 't',
       id: 3,
       params: {
-        chainId: 'cosmos:aura-testnet-1',
+        chainId: 'cosmos:aura-mvp-1',
         request: { method: 'unknown_method', params: {} },
       },
     });

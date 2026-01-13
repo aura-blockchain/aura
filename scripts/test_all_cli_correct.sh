@@ -5,7 +5,7 @@
 AURAD="/home/hudson/blockchain-projects/aura/chain/aurad"
 NODE="tcp://localhost:10501"
 HOME="$HOME/.aura"
-CHAIN_ID="aura-testnet-1"
+CHAIN_ID="aura-mvp-1"
 TEST_ADDR="aura1g2nnl0x5hgvarpgfuwnyxfztss7h62yyj24k5p"
 
 # Colors for output

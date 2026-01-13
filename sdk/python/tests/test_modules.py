@@ -19,7 +19,7 @@ from aura.types import (
 def mock_client():
     """Create a mock AuraClient."""
     config = ChainConfig(
-        chain_id="aura-testnet-1",
+        chain_id="aura-mvp-1",
         rpc_endpoint="http://localhost:26657",
         rest_endpoint="http://localhost:1317"
     )

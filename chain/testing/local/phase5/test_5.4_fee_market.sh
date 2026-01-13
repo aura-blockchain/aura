@@ -76,7 +76,7 @@ log_result "Receiver: ${RECEIVER_ADDR}"
 log_test "Funding sender with 100000000uaura"
 VALIDATOR_KEY=$(docker exec aura-validator-1 aurad keys list --keyring-backend test --output json 2>&1 | jq -r '.[0].name')
 docker exec aura-validator-1 aurad tx bank send ${VALIDATOR_KEY} ${SENDER_ADDR} 100000000uaura \
-    --chain-id aura-testnet-1 \
+    --chain-id aura-mvp-1 \
     --keyring-backend test \
     --fees 5000uaura \
     --yes \
@@ -95,7 +95,7 @@ fi
 # Test 3: Send transaction with sufficient fees
 log_test "Test 3: Sending transaction with sufficient fees (5000uaura)"
 TX_RESULT=$(docker exec aura-validator-1 aurad tx bank send ${SENDER} ${RECEIVER_ADDR} 1000000uaura \
-    --chain-id aura-testnet-1 \
+    --chain-id aura-mvp-1 \
     --keyring-backend test \
     --fees 5000uaura \
     --yes \
@@ -127,7 +127,7 @@ log_test "Test 4: Attempting transaction with zero fees"
 
 if [[ ${MIN_GAS_AMOUNT} -gt 0 ]]; then
     TX_RESULT=$(docker exec aura-validator-1 aurad tx bank send ${SENDER} ${RECEIVER_ADDR} 1000000uaura \
-        --chain-id aura-testnet-1 \
+        --chain-id aura-mvp-1 \
         --keyring-backend test \
         --gas auto \
         --yes \
@@ -152,7 +152,7 @@ log_test "Test 5: Attempting transaction with insufficient fees (1uaura)"
 
 if [[ ${MIN_GAS_AMOUNT} -gt 1 ]]; then
     TX_RESULT=$(docker exec aura-validator-1 aurad tx bank send ${SENDER} ${RECEIVER_ADDR} 1000000uaura \
-        --chain-id aura-testnet-1 \
+        --chain-id aura-mvp-1 \
         --keyring-backend test \
         --fees 1uaura \
         --yes \
@@ -179,7 +179,7 @@ for FEE in "${FEE_AMOUNTS[@]}"; do
     log_test "  Trying fee: ${FEE}uaura"
 
     TX_RESULT=$(docker exec aura-validator-1 aurad tx bank send ${SENDER} ${RECEIVER_ADDR} 100000uaura \
-        --chain-id aura-testnet-1 \
+        --chain-id aura-mvp-1 \
         --keyring-backend test \
         --fees ${FEE}uaura \
         --yes \
@@ -197,7 +197,7 @@ done
 # Test 7: Test gas estimation
 log_test "Test 7: Testing automatic gas estimation"
 TX_RESULT=$(docker exec aura-validator-1 aurad tx bank send ${SENDER} ${RECEIVER_ADDR} 100000uaura \
-    --chain-id aura-testnet-1 \
+    --chain-id aura-mvp-1 \
     --keyring-backend test \
     --gas auto \
     --gas-adjustment 1.5 \
@@ -245,21 +245,21 @@ log_result "Higher fee transactions are included in blocks first"
 log_test "Sending 3 transactions with different fees"
 
 docker exec aura-validator-1 aurad tx bank send ${SENDER} ${RECEIVER_ADDR} 1000uaura \
-    --chain-id aura-testnet-1 \
+    --chain-id aura-mvp-1 \
     --keyring-backend test \
     --fees 1000uaura \
     --yes \
     --broadcast-mode async 2>&1 | tee -a "${RESULTS_FILE}" &
 
 docker exec aura-validator-1 aurad tx bank send ${SENDER} ${RECEIVER_ADDR} 1000uaura \
-    --chain-id aura-testnet-1 \
+    --chain-id aura-mvp-1 \
     --keyring-backend test \
     --fees 10000uaura \
     --yes \
     --broadcast-mode async 2>&1 | tee -a "${RESULTS_FILE}" &
 
 docker exec aura-validator-1 aurad tx bank send ${SENDER} ${RECEIVER_ADDR} 1000uaura \
-    --chain-id aura-testnet-1 \
+    --chain-id aura-mvp-1 \
     --keyring-backend test \
     --fees 5000uaura \
     --yes \

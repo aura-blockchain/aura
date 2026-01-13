@@ -144,7 +144,7 @@ log_success "Test node container created"
 
 # Initialize test node
 log_test "Initializing test node"
-docker exec ${TEST_NODE_NAME} aurad init snapshot-test --chain-id aura-testnet-1 --home /root/.aura 2>&1 | tee -a "${RESULTS_FILE}"
+docker exec ${TEST_NODE_NAME} aurad init snapshot-test --chain-id aura-mvp-1 --home /root/.aura 2>&1 | tee -a "${RESULTS_FILE}"
 
 # Copy genesis from validator-1
 log_test "Copying genesis.json from validator-1"

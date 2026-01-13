@@ -39,7 +39,7 @@ cat <<EOF
 TRUST_HEIGHT=${TRUST_HEIGHT}
 TRUST_HASH=${TRUST_HASH}
 # Example .env.light-client overrides:
-# CHAIN_ID=aura-testnet-1
+# CHAIN_ID=aura-mvp-1
 # PRIMARY_RPC=${RPC}
 # WITNESS_RPC=${RPC}
 EOF

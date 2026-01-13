@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================================
-# AURA Public Testnet Health Check (aura-testnet-1)
+# AURA Public Testnet Health Check (aura-mvp-1)
 # ============================================================================
 # Checks public endpoints for the AURA testnet only (no XAI/PAW).
 # Uses the registered Cloudflare URLs from docs/TESTNET_ENDPOINTS.md.
@@ -21,7 +21,7 @@ set -uo pipefail
 # ----------------------------------------------------------------------------
 # Endpoints (registered URLs only)
 # ----------------------------------------------------------------------------
-CHAIN_ID="aura-testnet-1"
+CHAIN_ID="aura-mvp-1"
 
 RPC_URL="https://testnet-rpc.aurablockchain.org"
 API_URL="https://testnet-api.aurablockchain.org"

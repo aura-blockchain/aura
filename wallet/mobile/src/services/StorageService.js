@@ -83,7 +83,7 @@ class StorageServiceClass {
     return await this.getItem(`${STORAGE_PREFIX}network`, {
       name: CHAIN_CONFIG.chainName || 'Aura',
       rpcUrl: REST_ENDPOINTS[0]?.address || 'http://localhost:1317',
-      chainId: CHAIN_CONFIG.chainId || 'aura-testnet-1',
+      chainId: CHAIN_CONFIG.chainId || 'aura-mvp-1',
     });
   }
 

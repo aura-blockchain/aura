@@ -4,7 +4,7 @@
 
 set -euo pipefail
 
-CHAIN_ID="${CHAIN_ID:-aura-testnet-1}"
+CHAIN_ID="${CHAIN_ID:-aura-mvp-1}"
 MONIKER="${MONIKER:-aura-$(hostname)}"
 AURA_HOME="${AURA_HOME:-$HOME/.aura}"
 RPC_ENDPOINT="${RPC_ENDPOINT:-https://rpc.aura-testnet.com}"

@@ -2,7 +2,7 @@
 # ============================================================================
 # AURA Testnet Health Check (Public vs Local)
 # ============================================================================
-# Defaults to PUBLIC testnet health check (aura-testnet-1).
+# Defaults to PUBLIC testnet health check (aura-mvp-1).
 # Use --local to target the local 4-validator docker testnet.
 #
 # Usage:

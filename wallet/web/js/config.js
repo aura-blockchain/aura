@@ -4,7 +4,7 @@
  */
 const AuraConfig = {
   // Chain identification
-  chainId: 'aura-testnet-1',
+  chainId: 'aura-mvp-1',
   chainName: 'Aura',
   bech32Prefix: 'aura',
   slip44: 118,

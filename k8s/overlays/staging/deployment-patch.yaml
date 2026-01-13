@@ -9,7 +9,7 @@ spec:
         - name: init-config
           env:
             - name: CHAIN_ID
-              value: "aura-testnet-1"
+              value: "aura-mvp-1"
       containers:
         - name: aura
           image: aequitas/aura:testnet

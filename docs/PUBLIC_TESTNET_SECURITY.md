@@ -1,6 +1,6 @@
 # AURA Public Testnet Security Baseline
 
-This document summarizes the expected security controls for the public AURA testnet (aura-testnet-1)
+This document summarizes the expected security controls for the public AURA testnet (aura-mvp-1)
 exposed via registered endpoints and a reverse proxy.
 
 ## Scope

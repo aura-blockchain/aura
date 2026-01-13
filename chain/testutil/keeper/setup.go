@@ -64,7 +64,7 @@ func SetupTestApp(t *testing.T) (*TestApp, sdk.Context) {
 
 	// Create context
 	ctx := sdk.NewContext(stateStore, cmtproto.Header{
-		ChainID: "aura-testnet-1",
+		ChainID: "aura-mvp-1",
 		Height:  1,
 		Time:    time.Now().UTC(),
 	}, false, log.NewNopLogger())
@@ -212,7 +212,7 @@ func NewTestContext(t *testing.T) sdk.Context {
 	cms := store.NewCommitMultiStore(db, log.NewNopLogger(), metrics.NewNoOpMetrics())
 
 	ctx := sdk.NewContext(cms, cmtproto.Header{
-		ChainID: "aura-testnet-1",
+		ChainID: "aura-mvp-1",
 		Height:  1,
 		Time:    time.Now().UTC(),
 	}, false, log.NewNopLogger())
@@ -228,7 +228,7 @@ func NewTestContextWithHeight(t *testing.T, height int64) sdk.Context {
 	cms := store.NewCommitMultiStore(db, log.NewNopLogger(), metrics.NewNoOpMetrics())
 
 	ctx := sdk.NewContext(cms, cmtproto.Header{
-		ChainID: "aura-testnet-1",
+		ChainID: "aura-mvp-1",
 		Height:  height,
 		Time:    time.Now().UTC(),
 	}, false, log.NewNopLogger())

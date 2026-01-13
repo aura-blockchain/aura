@@ -2,7 +2,7 @@
 
 ## Chain ID
 
-`aura-testnet-1`
+`aura-mvp-1`
 
 ## Network Status
 
@@ -17,7 +17,7 @@
 {
   "$schema": "../chain.schema.json",
   "chain_name": "aura",
-  "chain_id": "aura-testnet-1",
+  "chain_id": "aura-mvp-1",
   "pretty_name": "AURA Testnet",
   "network_type": "testnet",
   "status": "live",

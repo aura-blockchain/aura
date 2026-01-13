@@ -39,7 +39,7 @@ echo "1. Initializing chain..."
 "$BINARY" init mvp-genesis-node --chain-id "$CHAIN_ID" --home "$TEMP_HOME" > /dev/null 2>&1
 
 # Check if template exists
-TEMPLATE="${TESTNETS_DIR}/aura-testnet-1/genesis-mvp-template.json"
+TEMPLATE="${TESTNETS_DIR}/aura-mvp-1/genesis-mvp-template.json"
 if [ -f "$TEMPLATE" ]; then
     echo "2. Using MVP template: $TEMPLATE"
 

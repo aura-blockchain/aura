@@ -11,7 +11,7 @@
 - Tests, Makefiles, Dockerfiles
 - General docs (README, CONTRIBUTING)
 
-### Save to TESTNET REPO (aura-testnets/aura-testnet-1/)
+### Save to TESTNET REPO (aura-testnets/aura-mvp-1/)
 - genesis.json, chain.json, assetlist.json, versions.json
 - peers.txt, seeds.txt
 - config/app.toml, config/config.toml

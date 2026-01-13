@@ -12,7 +12,7 @@ make build
 Initialize and configure the node:
 
 ```bash
-./build/aurad init <moniker> --chain-id aura-testnet-1
+./build/aurad init <moniker> --chain-id aura-mvp-1
 ```
 
 For testnet, the quickest path is:

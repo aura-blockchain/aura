@@ -23,7 +23,7 @@ kubectl apply -k k8s/overlays/staging/ --namespace aura-testnet --validate=false
 
 cat <<'EOF'
 Deployment initiated. Ensure the following prerequisites are in place:
-- ConfigMap `aura-config` (genesis/config/app toml) is valid for aura-testnet-1.
+- ConfigMap `aura-config` (genesis/config/app toml) is valid for aura-mvp-1.
 - Secret `aura-testnet-tls` contains TLS certs for api.testnet.aura.network, rpc.testnet.aura.network, grpc.testnet.aura.network.
 - The `aequitas/aura:testnet` image includes the latest `aurad` binary built with genesis helpers.
 

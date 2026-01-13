@@ -1,6 +1,6 @@
 {
   "chain_name": "aura",
-  "chain_id": "aura-testnet-1",
+  "chain_id": "aura-mvp-1",
   "pretty_name": "Aura Testnet",
   "network_type": "testnet",
   "status": "live",
@@ -25,7 +25,7 @@
   },
   "codebase": {
     "genesis": {
-      "chain_id": "aura-testnet-1"
+      "chain_id": "aura-mvp-1"
     }
   },
   "assets": [

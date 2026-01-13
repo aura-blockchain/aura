@@ -138,7 +138,7 @@ export async function connectWalletConnect(options = {}) {
     requiredNamespaces: {
       cosmos: {
         methods: ['cosmos_signDirect', 'cosmos_signAmino'],
-        chains: [`cosmos:${provider.chainId || 'aura-testnet-1'}`],
+        chains: [`cosmos:${provider.chainId || 'aura-mvp-1'}`],
         events: [],
       },
     },

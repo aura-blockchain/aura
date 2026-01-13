@@ -9,7 +9,7 @@ data:
       "app_name": "<appd>",
       "app_version": "",
       "genesis_time": "2025-12-19T10:28:11Z",
-      "chain_id": "aura-testnet-1",
+      "chain_id": "aura-mvp-1",
       "initial_height": 1,
       "app_hash": "",
       "app_state": {

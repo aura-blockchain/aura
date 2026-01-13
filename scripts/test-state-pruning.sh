@@ -73,7 +73,7 @@ log_success "Test node container created"
 
 # Initialize
 log_test "Initializing test node"
-docker exec ${TEST_NODE} aurad init pruning-test --chain-id aura-testnet-1 --home ${AURA_HOME} 2>&1 | tee -a "${RESULTS_FILE}"
+docker exec ${TEST_NODE} aurad init pruning-test --chain-id aura-mvp-1 --home ${AURA_HOME} 2>&1 | tee -a "${RESULTS_FILE}"
 
 # Copy genesis
 docker exec aura-validator-1 cat ${AURA_HOME}/config/genesis.json > /tmp/genesis.json

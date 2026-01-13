@@ -157,7 +157,7 @@ prometheus-retention-time = 60
 # GlobalLabels defines a global set of name/value label tuples applied to all
 # metrics emitted using the wrapper functions defined in telemetry package.
 global-labels = [
-  ["chain_id", "aura-testnet-1"],
+  ["chain_id", "aura-mvp-1"],
   ["node_type", "rpc"],
 ]
 

@@ -13,7 +13,7 @@ describe('TransactionService - Staking Operations', () => {
   const mockPrivateKey = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
   const mockAccountNumber = '1234';
   const mockSequence = '5';
-  const mockChainId = 'aura-testnet-1';
+  const mockChainId = 'aura-mvp-1';
 
   beforeEach(() => {
     jest.clearAllMocks();

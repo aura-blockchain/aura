@@ -5,7 +5,7 @@
 set -e
 
 AURA_HOME="${AURA_HOME:-/root/.aura}"
-CHAIN_ID="${AURA_CHAIN_ID:-aura-testnet-1}"
+CHAIN_ID="${AURA_CHAIN_ID:-aura-mvp-1}"
 MONIKER="${MONIKER:-aura-rpc-node}"
 
 echo "Initializing Aura RPC Node..."

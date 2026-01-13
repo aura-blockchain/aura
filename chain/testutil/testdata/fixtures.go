@@ -94,7 +94,7 @@ var (
 
 // Test strings
 var (
-	TestChainID       = "aura-testnet-1"
+	TestChainID       = "aura-mvp-1"
 	TestMemo          = "test memo"
 	TestDescription   = "test description"
 	TestMoniker       = "test-validator"

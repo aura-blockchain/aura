@@ -22,7 +22,7 @@ services:
         if [ -n "${WITNESS_RPC:-}" ]; then
           WITNESS_ARG="--witnesses ${WITNESS_RPC}";
         fi;
-        cometbft light ${CHAIN_ID:-aura-testnet-1} \
+        cometbft light ${CHAIN_ID:-aura-mvp-1} \
           --primary ${PRIMARY_RPC:-https://rpc.aura-testnet.com} \
           $${WITNESS_ARG} \
           --trust-level ${TRUST_LEVEL:-1/3} \

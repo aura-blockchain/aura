@@ -27,7 +27,7 @@ class GovernanceAPI {
         this.connected = false;
         this.mockMode = true; // Enable mock mode for development
         this.signingClient = null;
-        this.chainId = 'aura-testnet-1';
+        this.chainId = 'aura-mvp-1';
         this.gasPrice = '0.025aura';
     }
 

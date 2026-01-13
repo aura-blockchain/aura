@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/chainapsis/chain-registry/master/chain.schema.json",
   "chain_name": "aura",
-  "chain_id": "aura-testnet-1",
+  "chain_id": "aura-mvp-1",
   "pretty_name": "Aura",
   "network_type": "testnet",
   "status": "live",

@@ -21,7 +21,7 @@ func main() {
 	config := auraclient.Config{
 		RPCEndpoint:  "http://localhost:26657",
 		GRPCEndpoint: "localhost:9090",
-		ChainID:      "aura-testnet-1",
+		ChainID:      "aura-mvp-1",
 		Prefix:       "aura",
 	}
 

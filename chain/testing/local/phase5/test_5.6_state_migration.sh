@@ -109,7 +109,7 @@ log_result "Test account: ${TEST_ADDR}"
 # Fund account
 VALIDATOR_KEY=$(docker exec aura-validator-1 aurad keys list --keyring-backend test --output json 2>&1 | jq -r '.[0].name')
 docker exec aura-validator-1 aurad tx bank send ${VALIDATOR_KEY} ${TEST_ADDR} 50000000uaura \
-    --chain-id aura-testnet-1 \
+    --chain-id aura-mvp-1 \
     --keyring-backend test \
     --fees 5000uaura \
     --yes \
@@ -125,7 +125,7 @@ if [[ -n "${VALIDATOR_ADDR}" ]] && [[ "${VALIDATOR_ADDR}" != "null" ]]; then
     log_test "Creating delegation as test state"
     docker exec aura-validator-1 aurad tx staking delegate ${VALIDATOR_ADDR} 10000000uaura \
         --from ${TEST_ACCOUNT} \
-        --chain-id aura-testnet-1 \
+        --chain-id aura-mvp-1 \
         --keyring-backend test \
         --fees 5000uaura \
         --yes \

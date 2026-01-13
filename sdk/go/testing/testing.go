@@ -23,7 +23,7 @@ type TestConfig struct {
 // DefaultTestConfig returns default test configuration
 func DefaultTestConfig() TestConfig {
 	return TestConfig{
-		ChainID:      "aura-testnet-1",
+		ChainID:      "aura-mvp-1",
 		RPCEndpoint:  "http://localhost:26657",
 		GRPCEndpoint: "localhost:9090",
 		TestMnemonic: "", // Should be set by test

@@ -5,7 +5,7 @@
 set -e
 
 AURA_HOME="$HOME/.aura-testnet"
-CHAIN_ID="aura-testnet-1"
+CHAIN_ID="aura-mvp-1"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 

@@ -15,7 +15,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RESULTS_FILE="${SCRIPT_DIR}/test_6.2.2_results.txt"
 RPC_ENDPOINT="http://localhost:27657"
-CHAIN_ID="aura-testnet-1"
+CHAIN_ID="aura-mvp-1"
 BTC_CLI="bitcoin-cli -regtest -rpcwallet=testwallet"
 
 # Colors

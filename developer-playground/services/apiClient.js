@@ -11,7 +11,7 @@ export class APIClient {
         };
         this.chainIds = {
             local: 'aura-local',
-            testnet: 'aura-testnet-1',
+            testnet: 'aura-mvp-1',
             mainnet: 'aura-1'
         };
     }

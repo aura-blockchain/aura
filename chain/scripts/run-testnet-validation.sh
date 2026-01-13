@@ -25,7 +25,7 @@ RESULTS_DIR="$HOME/testnet-validation-results"
 RESULTS_FILE="$RESULTS_DIR/validation-$(date +%Y%m%d-%H%M%S).log"
 
 # Default values
-CHAIN_ID="${CHAIN_ID:-aura-testnet-1}"
+CHAIN_ID="${CHAIN_ID:-aura-mvp-1}"
 NODE="${NODE:-http://localhost:26657}"
 VALIDATOR_HOME="${VALIDATOR_HOME:-$HOME/.testnets/aura-testnet/node0/aurad}"
 VALIDATOR_KEY="${VALIDATOR_KEY:-validator0}"
@@ -444,7 +444,7 @@ Options:
     --help              Show this help message
 
 Environment Variables:
-    CHAIN_ID            Chain ID (default: aura-testnet-1)
+    CHAIN_ID            Chain ID (default: aura-mvp-1)
     NODE                Node RPC URL (default: http://localhost:26657)
     VALIDATOR_HOME      Validator home directory (default: ~/.testnets/aura-testnet/node0/aurad)
     VALIDATOR_KEY       Validator key name (default: validator0)

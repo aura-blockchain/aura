@@ -8,7 +8,7 @@
 
 set -e
 
-CHAIN_ID="aura-testnet-1"
+CHAIN_ID="aura-mvp-1"
 DENOM="uaura"
 TOTAL_SUPPLY="1000000000000000"  # 1 billion tokens
 VALIDATOR_STAKE="250000000000"    # 250k tokens per validator (25% each)

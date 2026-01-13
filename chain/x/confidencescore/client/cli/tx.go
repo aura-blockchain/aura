@@ -66,7 +66,7 @@ Example:
       aura1user... IR-102 \
       a1b2c3d4e5f6... 9f8e7d6c5b4a... \
       --from assistant-key \
-      --chain-id aura-testnet-1
+      --chain-id aura-mvp-1
 
 Response includes:
 - Score earned (with all multipliers applied)

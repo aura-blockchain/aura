@@ -16,7 +16,7 @@
 
 // Chain configuration for Aura testnet
 const AURA_CHAIN_CONFIG = {
-    chainId: 'aura-testnet-1',
+    chainId: 'aura-mvp-1',
     chainName: 'Aura Testnet',
     rpc: 'http://localhost:26657',
     rest: 'http://localhost:1317',

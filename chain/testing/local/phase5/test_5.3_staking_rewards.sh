@@ -104,7 +104,7 @@ log_result "Delegator address: ${DELEGATOR_ADDR}"
 log_test "Funding delegator with 100000000uaura"
 VALIDATOR_KEY=$(docker exec aura-validator-1 aurad keys list --keyring-backend test --output json 2>&1 | jq -r '.[0].name')
 docker exec aura-validator-1 aurad tx bank send ${VALIDATOR_KEY} ${DELEGATOR_ADDR} 100000000uaura \
-    --chain-id aura-testnet-1 \
+    --chain-id aura-mvp-1 \
     --keyring-backend test \
     --fees 5000uaura \
     --yes \
@@ -127,7 +127,7 @@ DELEGATION_AMOUNT="50000000"
 
 docker exec aura-validator-1 aurad tx staking delegate ${VALIDATOR_ADDR} ${DELEGATION_AMOUNT}uaura \
     --from ${TEST_DELEGATOR} \
-    --chain-id aura-testnet-1 \
+    --chain-id aura-mvp-1 \
     --keyring-backend test \
     --fees 5000uaura \
     --yes \
@@ -248,7 +248,7 @@ BALANCE_BEFORE=$(docker exec aura-validator-1 aurad q bank balances ${DELEGATOR_
 
 docker exec aura-validator-1 aurad tx distribution withdraw-rewards ${VALIDATOR_ADDR} \
     --from ${TEST_DELEGATOR} \
-    --chain-id aura-testnet-1 \
+    --chain-id aura-mvp-1 \
     --keyring-backend test \
     --fees 5000uaura \
     --yes \
@@ -288,7 +288,7 @@ UNDELEGATE_AMOUNT="10000000"
 
 docker exec aura-validator-1 aurad tx staking undelegate ${VALIDATOR_ADDR} ${UNDELEGATE_AMOUNT}uaura \
     --from ${TEST_DELEGATOR} \
-    --chain-id aura-testnet-1 \
+    --chain-id aura-mvp-1 \
     --keyring-backend test \
     --fees 5000uaura \
     --yes \

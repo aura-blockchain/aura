@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('../../config/chain', () => ({
-  CHAIN_CONFIG: { chainId: 'aura-testnet-1', chainName: 'Aura', bech32Prefix: 'aura', slip44: 118 },
+  CHAIN_CONFIG: { chainId: 'aura-mvp-1', chainName: 'Aura', bech32Prefix: 'aura', slip44: 118 },
   COIN: { base: 'uaura', display: 'aura', symbol: 'AURA', exponent: 6 },
   GAS_PRICE_TIERS: { low: 0.015, average: 0.025, high: 0.04 },
   REST_ENDPOINTS: [{ address: 'http://localhost:1317' }],

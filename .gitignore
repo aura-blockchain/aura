@@ -177,3 +177,5 @@ tmp_*.json
 testnet-init.log
 AGENTS.md
 .playwright-mcp/
+chain/release-*/
+.fresh-testnet/

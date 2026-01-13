@@ -316,7 +316,7 @@ Native bridge for non-IBC chains:
 | SDK Version | Cosmos SDK v0.50+ |
 | Token Denom | uaura |
 | Address Prefix | aura |
-| Chain ID (Testnet) | aura-testnet-1 |
+| Chain ID (Testnet) | aura-mvp-1 |
 | DID Method | did:aura |
 
 ---

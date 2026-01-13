@@ -155,7 +155,7 @@ func loadProfiles() (*ProfileConfig, error) {
 				"default": {
 					Name:     "default",
 					NodeURL:  "http://localhost:26657",
-					ChainID:  "aura-testnet-1",
+					ChainID:  "aura-mvp-1",
 					Settings: make(map[string]string),
 				},
 			},
@@ -254,7 +254,7 @@ func profileAddCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&nodeURL, "node", "http://localhost:26657", "Node RPC URL")
-	cmd.Flags().StringVar(&chainID, "chain-id", "aura-testnet-1", "Chain ID")
+	cmd.Flags().StringVar(&chainID, "chain-id", "aura-mvp-1", "Chain ID")
 
 	return cmd
 }

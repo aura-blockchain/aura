@@ -23,7 +23,7 @@ Use the faucet or a funded account to send tokens to the validator address:
   --amount 1000000uaura \
   --pubkey $(./build/aurad tendermint show-validator) \
   --moniker "<moniker>" \
-  --chain-id aura-testnet-1 \
+  --chain-id aura-mvp-1 \
   --commission-rate 0.10 \
   --commission-max-rate 0.20 \
   --commission-max-change-rate 0.01 \

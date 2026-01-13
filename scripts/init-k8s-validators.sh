@@ -2,7 +2,7 @@
 # Initialize 3-validator testnet for Kubernetes
 set -e
 
-CHAIN_ID="aura-testnet-1"
+CHAIN_ID="aura-mvp-1"
 DENOM="uaura"
 STAKE_DENOM="uaura"
 # Staking amount must be >= DefaultPowerReduction (~825 billion) for 1 voting power
