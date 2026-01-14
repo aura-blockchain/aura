@@ -14,9 +14,8 @@ nul
 proto/nul
 C:*
 
-# Proto generated files - only keep in chain/x/*/types/
-proto/aura/**/*.pb.go
-proto/aura/**/*_grpc.pb.go
+# Proto generated files are now committed for CI builds
+# (Previously excluded, but CI needs them)
 
 # ============================================================================
 # Claude Code / AI Assistant directories
