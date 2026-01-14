@@ -10,6 +10,7 @@ on:
       - 'chain/**/*.go'
   schedule:
     - cron: '0 4 * * 0'  # Weekly on Sunday
+  workflow_dispatch:
 
 permissions:
   contents: read
