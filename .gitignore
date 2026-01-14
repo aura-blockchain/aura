@@ -161,13 +161,28 @@ env/
 __pycache__/
 
 # ============================================================================
-# Review and Analysis Summaries (generated, not source)
+# AI-Generated Reports and Summaries - Never Commit
 # ============================================================================
 docs/review-summaries/
 *_ANALYSIS*.md
 *_REPORT*.md
 *_SUMMARY*.md
 *_FINDINGS*.md
+*IMPLEMENTATION*.md
+*IMPLEMENTATION*.txt
+*EXECUTIVE*.md
+*EXECUTIVE*.txt
+*COMPLETE*.md
+*COMPLETE*.txt
+*FIXES_SUMMARY*.txt
+COPY_SUMMARY.txt
+FINAL_INTEGRATION_REPORT.txt
+jscpd-report.json
+
+# Coverage reports (generated, not source)
+**/coverage/
+**/lcov-report/
+lcov.info
 
 # Test artifacts in root
 bft_test_*

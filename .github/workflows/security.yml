@@ -21,7 +21,7 @@ permissions:
 
 jobs:
   gosec:
-    name: gosec - Security Scanning
+    name: gosec - Cosmos Security Scanning
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -38,37 +38,86 @@ jobs:
           go-version: '1.23'
           cache-dependency-path: ${{ matrix.module }}/go.sum
 
-      - name: Install gosec
-        run: |
-          curl -sfL https://raw.githubusercontent.com/securego/gosec/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.21.4
+      # Use Cosmos SDK's gosec fork with Cosmos-specific security rules
+      # See: https://github.com/cosmos/gosec
+      - name: Run Cosmos Gosec Security Scanner
+        uses: cosmos/gosec@master
+        with:
+          # G104: redundant with errcheck linter in golangci-lint
+          # G204: test utilities legitimately use exec (annotate production code)
+          # G702: incorrectly flags crypto/rand as blocklisted
+          # Exclude non-production directories
+          args: -exclude=G104,G204,G702 -exclude-dir=tests -exclude-dir=testutil -exclude-dir=archive -fmt=json -out=${{ matrix.module }}/gosec-results.json ./${{ matrix.module }}/...
+        continue-on-error: true
 
-      - name: Run gosec security scanner
+      - name: Check for high/medium severity issues
+        id: severity-check
         working-directory: ${{ matrix.module }}
         run: |
-          gosec -fmt=sarif -out=gosec-results.sarif -exclude-dir=tests -exclude-dir=testutil ./...
-        continue-on-error: true
+          if [ -f gosec-results.json ]; then
+            # Count HIGH and MEDIUM severity issues (fail CI on these)
+            HIGH_MED_COUNT=$(jq '[.Issues[] | select(.severity == "HIGH" or .severity == "MEDIUM")] | length' gosec-results.json 2>/dev/null || echo "0")
+            LOW_COUNT=$(jq '[.Issues[] | select(.severity == "LOW")] | length' gosec-results.json 2>/dev/null || echo "0")
+
+            echo "High/Medium severity issues: $HIGH_MED_COUNT"
+            echo "Low severity issues (warnings only): $LOW_COUNT"
+            echo "high_med_count=$HIGH_MED_COUNT" >> $GITHUB_OUTPUT
+
+            if [ "$HIGH_MED_COUNT" -gt 0 ]; then
+              echo "::error::Found $HIGH_MED_COUNT high/medium severity security issues in ${{ matrix.module }}"
+              echo "### High/Medium Severity Issues:" >> $GITHUB_STEP_SUMMARY
+              jq -r '.Issues[] | select(.severity == "HIGH" or .severity == "MEDIUM") | "- [\(.severity)] \(.rule_id): \(.details) in \(.file):\(.line)"' gosec-results.json >> $GITHUB_STEP_SUMMARY
+            fi
+
+            if [ "$LOW_COUNT" -gt 0 ]; then
+              echo "::warning::Found $LOW_COUNT low severity issues (warnings only)"
+            fi
+          fi
+
+      - name: Generate SARIF report
+        working-directory: ${{ matrix.module }}
+        if: always()
+        run: |
+          # Install standard gosec for SARIF output (cosmos/gosec action doesn't support SARIF)
+          curl -sfL https://raw.githubusercontent.com/securego/gosec/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.21.4
+          gosec -exclude=G104,G204,G702 -exclude-dir=tests -exclude-dir=testutil -exclude-dir=archive -fmt=sarif -out=gosec-results.sarif ./... || true
 
       - name: Upload gosec SARIF results
         uses: github/codeql-action/upload-sarif@v3
+        if: always()
         with:
           sarif_file: ${{ matrix.module }}/gosec-results.sarif
           category: gosec-${{ matrix.module }}
 
       - name: Generate human-readable report
         working-directory: ${{ matrix.module }}
+        if: always()
         run: |
-          gosec -fmt=json -out=gosec-report.json -exclude-dir=tests -exclude-dir=testutil ./... || true
-          gosec -fmt=text -exclude-dir=tests -exclude-dir=testutil ./... > gosec-report.txt || true
+          if [ -f gosec-results.json ]; then
+            # Convert JSON to readable text format
+            echo "=== AURA Security Scan Report ===" > gosec-report.txt
+            echo "Module: ${{ matrix.module }}" >> gosec-report.txt
+            echo "Date: $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> gosec-report.txt
+            echo "" >> gosec-report.txt
+            jq -r '.Issues[] | "[\(.severity)] \(.rule_id): \(.details)\n  File: \(.file):\(.line)\n  Code: \(.code)\n"' gosec-results.json >> gosec-report.txt 2>/dev/null || echo "No issues found" >> gosec-report.txt
+          fi
 
       - name: Upload security artifacts
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: security-gosec-${{ matrix.module }}
           path: |
             ${{ matrix.module }}/gosec-results.sarif
-            ${{ matrix.module }}/gosec-report.json
+            ${{ matrix.module }}/gosec-results.json
             ${{ matrix.module }}/gosec-report.txt
           retention-days: 90
+
+      - name: Fail on high/medium severity issues
+        if: steps.severity-check.outputs.high_med_count > 0
+        run: |
+          echo "Failing CI due to ${{ steps.severity-check.outputs.high_med_count }} high/medium severity security issues"
+          exit 1
 
   govulncheck:
     name: govulncheck - Vulnerability Scanning
