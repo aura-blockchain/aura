@@ -1,5 +1,5 @@
 version: v1beta1
-name: buf.build/aequitas/aura
+name: buf.build/aura-blockchain/aura
 build:
   roots:
     - .

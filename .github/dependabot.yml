@@ -1,35 +1,45 @@
 version: 2
 updates:
-  - package-ecosystem: "composer"
-    directory: "/"
+  - package-ecosystem: "gomod"
+    directory: "/chain"
     schedule:
       interval: "weekly"
       day: "monday"
-      time: "03:00"
-    open-pull-requests-limit: 5
-    reviewers:
-      - "owner"
+    open-pull-requests-limit: 10
     labels:
       - "dependencies"
-      - "php"
+      - "go"
     commit-message:
-      prefix: "chore(deps):"
-    allow:
-      - dependency-type: "all"
+      prefix: "deps(go)"
+    groups:
+      cosmos-sdk:
+        patterns:
+          - "github.com/cosmos/*"
+          - "cosmossdk.io/*"
+      ibc:
+        patterns:
+          - "github.com/cosmos/ibc-go/*"
 
   - package-ecosystem: "npm"
-    directory: "/"
+    directory: "/docs-site"
     schedule:
       interval: "weekly"
-      day: "monday"
-      time: "04:00"
-    open-pull-requests-limit: 5
-    reviewers:
-      - "owner"
     labels:
       - "dependencies"
       - "javascript"
-    commit-message:
-      prefix: "chore(deps):"
-    allow:
-      - dependency-type: "all"
+
+  - package-ecosystem: "docker"
+    directory: "/chain"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "docker"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "ci"

@@ -1,0 +1,82 @@
+name: Performance Benchmarks
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'chain/**/*.go'
+  pull_request:
+    paths:
+      - 'chain/**/*.go'
+  schedule:
+    - cron: '0 4 * * 0'  # Weekly on Sunday
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  benchmarks:
+    name: Run Benchmarks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache-dependency-path: chain/go.sum
+
+      - name: Run benchmarks
+        working-directory: chain
+        run: |
+          go test -bench=. -benchmem -run=^$ ./... 2>&1 | tee benchmark-results.txt
+
+      - name: Store benchmark results
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: 'go'
+          output-file-path: chain/benchmark-results.txt
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          alert-threshold: '150%'
+          comment-on-alert: true
+          fail-on-alert: false
+
+      - name: Upload benchmark artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: chain/benchmark-results.txt
+          retention-days: 90
+
+  memory-profile:
+    name: Memory Profiling
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache-dependency-path: chain/go.sum
+
+      - name: Build with profiling
+        working-directory: chain
+        run: go build -o aurad-profile ./cmd/aurad
+
+      - name: Run memory profile test
+        working-directory: chain
+        run: |
+          go test -memprofile=mem.prof -run TestMemoryIntensive ./app/... || true
+
+      - name: Upload memory profile
+        uses: actions/upload-artifact@v4
+        with:
+          name: memory-profile
+          path: chain/mem.prof
+          retention-days: 30
