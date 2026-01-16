@@ -34,11 +34,11 @@ type Config struct {
 
 // Client provides helper methods for interacting with AURA blockchain
 type Client struct {
-	config     Config
-	grpcConn   *grpc.ClientConn
-	clientCtx  client.Context
-	txFactory  tx.Factory
-	keyring    keyring.Keyring
+	config    Config
+	grpcConn  *grpc.ClientConn
+	clientCtx client.Context
+	txFactory tx.Factory
+	keyring   keyring.Keyring
 }
 
 // NewClient creates a new AURA client
@@ -69,13 +69,19 @@ func NewClient(config Config) (*Client, error) {
 		return nil, fmt.Errorf("failed to connect to GRPC: %w", err)
 	}
 
+	// Prepare encoding config used across contexts
+	encCfg := MakeEncodingConfig()
+
 	// Create keyring
-	kr := keyring.NewInMemory(MakeEncodingConfig().Codec)
+	kr := keyring.NewInMemory(encCfg.Codec)
 
 	// Create client context
 	clientCtx := client.Context{}.
 		WithGRPCClient(grpcConn).
 		WithChainID(config.ChainID).
+		WithTxConfig(encCfg.TxConfig).
+		WithCodec(encCfg.Codec).
+		WithInterfaceRegistry(encCfg.InterfaceRegistry).
 		WithKeyring(kr).
 		WithBroadcastMode(flags.BroadcastSync)
 

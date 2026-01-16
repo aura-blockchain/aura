@@ -15,17 +15,58 @@ import (
 	identitypb "github.com/aequitas/aura/proto/aura/identity/v1beta1"
 )
 
+type testAddresses struct {
+	requester      string
+	assistant      string
+	admin          string
+	user           string
+	signer1        string
+	signer2        string
+	signerOutsider string
+	proposer       string
+	executor       string
+	initiator      string
+	emergencyAdmin string
+	validator      string
+	creator        string
+	canceller      string
+	deactivator    string
+	owner          string
+}
+
+func newTestAddresses() testAddresses {
+	return testAddresses{
+		requester:      testAddr(40),
+		assistant:      testAddr(41),
+		admin:          testAddr(42),
+		user:           testAddr(43),
+		signer1:        testAddr(44),
+		signer2:        testAddr(45),
+		signerOutsider: testAddr(46),
+		proposer:       testAddr(44),
+		executor:       testAddr(45),
+		initiator:      testAddr(47),
+		emergencyAdmin: testAddr(48),
+		validator:      testAddr(49),
+		creator:        testAddr(50),
+		canceller:      testAddr(51),
+		deactivator:    testAddr(52),
+		owner:          testAddr(53),
+	}
+}
+
 // ========================
 // REQUEST IDENTITY CHANGE
 // ========================
 
 func TestMsgServerRequestIdentityChange_Success(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
+	addrs := newTestAddresses()
 	msgServer := NewMsgServerImpl(keeper)
 	require.NoError(t, keeper.SetParams(ctx, types.DefaultParams()))
 
 	msg := &identitypb.MsgRequestIdentityChange{
-		Requester:    "aura1requester",
+		Requester:    addrs.requester,
 		TargetDid:    "did:aura:target123",
 		IrId:         "ir-001",
 		MetadataHash: "hash123",
@@ -56,6 +97,7 @@ func TestMsgServerSubmitAssistantProof_Success(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
 	msgServer := NewMsgServerImpl(keeper)
 	require.NoError(t, keeper.SetParams(ctx, types.DefaultParams()))
+	addrs := newTestAddresses()
 
 	// Set up assistant with verify_identity permission
 	require.NoError(t, keeper.SetRole(ctx, &types.Role{
@@ -63,13 +105,13 @@ func TestMsgServerSubmitAssistantProof_Success(t *testing.T) {
 		Permissions: []string{types.PermissionVerifyIdentity},
 	}))
 	require.NoError(t, keeper.SetRoleAssignment(ctx, &types.RoleAssignment{
-		Address:  "assistant1",
+		Address:  addrs.assistant,
 		RoleName: "verifier",
 	}))
 
 	// First create a change request
 	createMsg := &identitypb.MsgRequestIdentityChange{
-		Requester:    "aura1requester",
+		Requester:    addrs.requester,
 		TargetDid:    "did:aura:target123",
 		IrId:         "ir-001",
 		MetadataHash: "hash123",
@@ -80,7 +122,7 @@ func TestMsgServerSubmitAssistantProof_Success(t *testing.T) {
 	// Submit assistant proof
 	msg := &identitypb.MsgSubmitAssistantProof{
 		RequestId: createResp.RequestId,
-		Assistant: "assistant1",
+		Assistant: addrs.assistant,
 		Success:   true,
 	}
 
@@ -146,6 +188,7 @@ func TestMsgServerSuspendIdentityChanges_InvalidAuthority(t *testing.T) {
 
 func TestMsgServerCreateRole_Success(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
+	addrs := newTestAddresses()
 	msgServer := NewMsgServerImpl(keeper)
 	require.NoError(t, keeper.SetParams(ctx, types.DefaultParams()))
 
@@ -155,12 +198,12 @@ func TestMsgServerCreateRole_Success(t *testing.T) {
 		Permissions: []string{types.PermissionAdmin},
 	}))
 	require.NoError(t, keeper.SetRoleAssignment(ctx, &types.RoleAssignment{
-		Address:  "aura1admin",
+		Address:  addrs.admin,
 		RoleName: "admin",
 	}))
 
 	msg := &identitypb.MsgCreateRole{
-		Creator:     "aura1admin",
+		Creator:     addrs.admin,
 		RoleName:    "test_role",
 		Permissions: []string{types.PermissionViewAuditLogs},
 		Description: "Test role description",
@@ -190,6 +233,7 @@ func TestMsgServerCreateRole_NilRequest(t *testing.T) {
 
 func TestMsgServerAssignRole_Success(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
+	addrs := newTestAddresses()
 	msgServer := NewMsgServerImpl(keeper)
 	require.NoError(t, keeper.SetParams(ctx, types.DefaultParams()))
 
@@ -199,7 +243,7 @@ func TestMsgServerAssignRole_Success(t *testing.T) {
 		Permissions: []string{types.PermissionAdmin},
 	}))
 	require.NoError(t, keeper.SetRoleAssignment(ctx, &types.RoleAssignment{
-		Address:  "aura1admin",
+		Address:  addrs.admin,
 		RoleName: "admin",
 	}))
 
@@ -210,8 +254,8 @@ func TestMsgServerAssignRole_Success(t *testing.T) {
 	}))
 
 	msg := &identitypb.MsgAssignRole{
-		Assigner: "aura1admin",
-		Address:  "aura1user",
+		Assigner: addrs.admin,
+		Address:  addrs.user,
 		RoleName: "viewer",
 	}
 
@@ -234,6 +278,7 @@ func TestMsgServerAssignRole_NilRequest(t *testing.T) {
 
 func TestMsgServerRevokeRole_Success(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
+	addrs := newTestAddresses()
 	msgServer := NewMsgServerImpl(keeper)
 	require.NoError(t, keeper.SetParams(ctx, types.DefaultParams()))
 
@@ -243,7 +288,7 @@ func TestMsgServerRevokeRole_Success(t *testing.T) {
 		Permissions: []string{types.PermissionAdmin},
 	}))
 	require.NoError(t, keeper.SetRoleAssignment(ctx, &types.RoleAssignment{
-		Address:  "aura1admin",
+		Address:  addrs.admin,
 		RoleName: "admin",
 	}))
 
@@ -253,13 +298,13 @@ func TestMsgServerRevokeRole_Success(t *testing.T) {
 		Permissions: []string{types.PermissionViewAuditLogs},
 	}))
 	require.NoError(t, keeper.SetRoleAssignment(ctx, &types.RoleAssignment{
-		Address:  "aura1user",
+		Address:  addrs.user,
 		RoleName: "viewer",
 	}))
 
 	msg := &identitypb.MsgRevokeRole{
-		Revoker:  "aura1admin",
-		Address:  "aura1user",
+		Revoker:  addrs.admin,
+		Address:  addrs.user,
 		RoleName: "viewer",
 	}
 
@@ -274,6 +319,7 @@ func TestMsgServerRevokeRole_Success(t *testing.T) {
 
 func TestMsgServerCreateMultisigProposal_Success(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
+	addrs := newTestAddresses()
 	msgServer := NewMsgServerImpl(keeper)
 	require.NoError(t, keeper.SetParams(ctx, types.DefaultParams()))
 
@@ -281,16 +327,16 @@ func TestMsgServerCreateMultisigProposal_Success(t *testing.T) {
 	now := ctx.BlockTime()
 	wallet := &types.MultisigWallet{
 		Id:        "mswallet-test",
-		Signers:   []string{"aura1signer1", "aura1signer2"},
+		Signers:   []string{addrs.signer1, addrs.signer2},
 		Threshold: 2,
 		CreatedAt: now,
-		CreatedBy: "aura1creator",
+		CreatedBy: addrs.creator,
 	}
 	require.NoError(t, keeper.SetMultisigWallet(ctx, wallet))
 
 	msg := &identitypb.MsgCreateMultisigProposal{
 		WalletId:    "mswallet-test",
-		Proposer:    "aura1signer1",
+		Proposer:    addrs.signer1,
 		Title:       "Test Proposal",
 		Description: "A test proposal",
 		Payload:     []byte("test payload"),
@@ -304,6 +350,7 @@ func TestMsgServerCreateMultisigProposal_Success(t *testing.T) {
 
 func TestMsgServerCreateMultisigProposal_NotSigner(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
+	addrs := newTestAddresses()
 	msgServer := NewMsgServerImpl(keeper)
 	require.NoError(t, keeper.SetParams(ctx, types.DefaultParams()))
 
@@ -311,16 +358,16 @@ func TestMsgServerCreateMultisigProposal_NotSigner(t *testing.T) {
 	now := ctx.BlockTime()
 	wallet := &types.MultisigWallet{
 		Id:        "mswallet-test",
-		Signers:   []string{"aura1signer1", "aura1signer2"},
+		Signers:   []string{addrs.signer1, addrs.signer2},
 		Threshold: 2,
 		CreatedAt: now,
-		CreatedBy: "aura1creator",
+		CreatedBy: addrs.creator,
 	}
 	require.NoError(t, keeper.SetMultisigWallet(ctx, wallet))
 
 	msg := &identitypb.MsgCreateMultisigProposal{
 		WalletId:    "mswallet-test",
-		Proposer:    "aura1outsider",
+		Proposer:    addrs.signerOutsider,
 		Title:       "Test",
 		Description: "Unauthorized",
 	}
@@ -338,6 +385,7 @@ func TestMsgServerCreateMultisigProposal_NotSigner(t *testing.T) {
 
 func TestMsgServerSignMultisigProposal_Success(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
+	addrs := newTestAddresses()
 	msgServer := NewMsgServerImpl(keeper)
 	require.NoError(t, keeper.SetParams(ctx, types.DefaultParams()))
 
@@ -345,7 +393,7 @@ func TestMsgServerSignMultisigProposal_Success(t *testing.T) {
 	now := ctx.BlockTime()
 	wallet := &types.MultisigWallet{
 		Id:        "mswallet-test",
-		Signers:   []string{"aura1signer1", "aura1signer2"},
+		Signers:   []string{addrs.signer1, addrs.signer2},
 		Threshold: 2,
 		CreatedAt: now,
 	}
@@ -362,7 +410,7 @@ func TestMsgServerSignMultisigProposal_Success(t *testing.T) {
 
 	msg := &identitypb.MsgSignMultisigProposal{
 		ProposalId: "msprop-test",
-		Signer:     "aura1signer1",
+		Signer:     addrs.signer1,
 	}
 
 	resp, err := msgServer.SignMultisigProposal(ctx, msg)
@@ -372,11 +420,12 @@ func TestMsgServerSignMultisigProposal_Success(t *testing.T) {
 	// Verify signature was added
 	updated, err := keeper.GetMultisigProposal(ctx, "msprop-test")
 	require.NoError(t, err)
-	require.Contains(t, updated.Signatures, "aura1signer1")
+	require.Contains(t, updated.Signatures, addrs.signer1)
 }
 
 func TestMsgServerSignMultisigProposal_DuplicateSignature(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
+	addrs := newTestAddresses()
 	msgServer := NewMsgServerImpl(keeper)
 	require.NoError(t, keeper.SetParams(ctx, types.DefaultParams()))
 
@@ -384,7 +433,7 @@ func TestMsgServerSignMultisigProposal_DuplicateSignature(t *testing.T) {
 	now := ctx.BlockTime()
 	wallet := &types.MultisigWallet{
 		Id:        "mswallet-test",
-		Signers:   []string{"aura1signer1", "aura1signer2"},
+		Signers:   []string{addrs.signer1, addrs.signer2},
 		Threshold: 2,
 		CreatedAt: now,
 	}
@@ -395,13 +444,13 @@ func TestMsgServerSignMultisigProposal_DuplicateSignature(t *testing.T) {
 		Id:         "msprop-test",
 		WalletId:   "mswallet-test",
 		Status:     types.ProposalStatusPending,
-		Signatures: []string{"aura1signer1"},
+		Signatures: []string{addrs.signer1},
 	}
 	require.NoError(t, keeper.SetMultisigProposal(ctx, proposal))
 
 	msg := &identitypb.MsgSignMultisigProposal{
 		ProposalId: "msprop-test",
-		Signer:     "aura1signer1",
+		Signer:     addrs.signer1,
 	}
 
 	_, err := msgServer.SignMultisigProposal(ctx, msg)
@@ -417,6 +466,7 @@ func TestMsgServerSignMultisigProposal_DuplicateSignature(t *testing.T) {
 
 func TestMsgServerExecuteMultisigProposal_Success(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
+	addrs := newTestAddresses()
 	msgServer := NewMsgServerImpl(keeper)
 	require.NoError(t, keeper.SetParams(ctx, types.DefaultParams()))
 
@@ -425,13 +475,13 @@ func TestMsgServerExecuteMultisigProposal_Success(t *testing.T) {
 		Id:         "msprop-test",
 		WalletId:   "mswallet-test",
 		Status:     types.ProposalStatusApproved,
-		Signatures: []string{"signer1", "signer2"},
+		Signatures: []string{addrs.signer1, addrs.signer2},
 	}
 	require.NoError(t, keeper.SetMultisigProposal(ctx, proposal))
 
 	msg := &identitypb.MsgExecuteMultisigProposal{
 		ProposalId: "msprop-test",
-		Executor:   "aura1executor",
+		Executor:   addrs.executor,
 	}
 
 	resp, err := msgServer.ExecuteMultisigProposal(ctx, msg)
@@ -446,6 +496,7 @@ func TestMsgServerExecuteMultisigProposal_Success(t *testing.T) {
 
 func TestMsgServerExecuteMultisigProposal_NotApproved(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
+	addrs := newTestAddresses()
 	msgServer := NewMsgServerImpl(keeper)
 	require.NoError(t, keeper.SetParams(ctx, types.DefaultParams()))
 
@@ -459,7 +510,7 @@ func TestMsgServerExecuteMultisigProposal_NotApproved(t *testing.T) {
 
 	msg := &identitypb.MsgExecuteMultisigProposal{
 		ProposalId: "msprop-test",
-		Executor:   "aura1executor",
+		Executor:   addrs.executor,
 	}
 
 	_, err := msgServer.ExecuteMultisigProposal(ctx, msg)
@@ -475,6 +526,7 @@ func TestMsgServerExecuteMultisigProposal_NotApproved(t *testing.T) {
 
 func TestMsgServerProposeTimeLockedAction_Success(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
+	addrs := newTestAddresses()
 	msgServer := NewMsgServerImpl(keeper)
 	require.NoError(t, keeper.SetParams(ctx, types.DefaultParams()))
 
@@ -484,12 +536,12 @@ func TestMsgServerProposeTimeLockedAction_Success(t *testing.T) {
 		Permissions: []string{types.PermissionManageTimeLock},
 	}))
 	require.NoError(t, keeper.SetRoleAssignment(ctx, &types.RoleAssignment{
-		Address:  "aura1proposer",
+		Address:  addrs.proposer,
 		RoleName: "timelock_manager",
 	}))
 
 	msg := &identitypb.MsgProposeTimeLockedAction{
-		Proposer:     "aura1proposer",
+		Proposer:     addrs.proposer,
 		ActionType:   "upgrade",
 		Payload:      []byte("upgrade payload"),
 		DelaySeconds: 3600,
@@ -508,6 +560,7 @@ func TestMsgServerProposeTimeLockedAction_Success(t *testing.T) {
 
 func TestMsgServerExecuteTimeLockedAction_Success(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
+	addrs := newTestAddresses()
 	msgServer := NewMsgServerImpl(keeper)
 	require.NoError(t, keeper.SetParams(ctx, types.DefaultParams()))
 
@@ -523,7 +576,7 @@ func TestMsgServerExecuteTimeLockedAction_Success(t *testing.T) {
 
 	msg := &identitypb.MsgExecuteTimeLockedAction{
 		ActionId: "tlaction-test",
-		Executor: "aura1executor",
+		Executor: addrs.executor,
 	}
 
 	resp, err := msgServer.ExecuteTimeLockedAction(ctx, msg)
@@ -538,6 +591,7 @@ func TestMsgServerExecuteTimeLockedAction_Success(t *testing.T) {
 
 func TestMsgServerExecuteTimeLockedAction_DelayNotElapsed(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
+	addrs := newTestAddresses()
 	msgServer := NewMsgServerImpl(keeper)
 	require.NoError(t, keeper.SetParams(ctx, types.DefaultParams()))
 
@@ -553,7 +607,7 @@ func TestMsgServerExecuteTimeLockedAction_DelayNotElapsed(t *testing.T) {
 
 	msg := &identitypb.MsgExecuteTimeLockedAction{
 		ActionId: "tlaction-test",
-		Executor: "aura1executor",
+		Executor: addrs.executor,
 	}
 
 	_, err := msgServer.ExecuteTimeLockedAction(ctx, msg)
@@ -569,6 +623,7 @@ func TestMsgServerExecuteTimeLockedAction_DelayNotElapsed(t *testing.T) {
 
 func TestMsgServerCancelTimeLockedAction_Success(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
+	addrs := newTestAddresses()
 	msgServer := NewMsgServerImpl(keeper)
 	require.NoError(t, keeper.SetParams(ctx, types.DefaultParams()))
 
@@ -578,7 +633,7 @@ func TestMsgServerCancelTimeLockedAction_Success(t *testing.T) {
 		Permissions: []string{types.PermissionManageTimeLock},
 	}))
 	require.NoError(t, keeper.SetRoleAssignment(ctx, &types.RoleAssignment{
-		Address:  "aura1canceller",
+		Address:  addrs.canceller,
 		RoleName: "timelock_manager",
 	}))
 
@@ -594,7 +649,7 @@ func TestMsgServerCancelTimeLockedAction_Success(t *testing.T) {
 
 	msg := &identitypb.MsgCancelTimeLockedAction{
 		ActionId:  "tlaction-test",
-		Canceller: "aura1canceller",
+		Canceller: addrs.canceller,
 	}
 
 	resp, err := msgServer.CancelTimeLockedAction(ctx, msg)
@@ -613,6 +668,7 @@ func TestMsgServerCancelTimeLockedAction_Success(t *testing.T) {
 
 func TestMsgServerActivateEmergencyAdmin_Success(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
+	addrs := newTestAddresses()
 	msgServer := NewMsgServerImpl(keeper)
 	require.NoError(t, keeper.SetParams(ctx, types.DefaultParams()))
 
@@ -622,15 +678,15 @@ func TestMsgServerActivateEmergencyAdmin_Success(t *testing.T) {
 		Permissions: []string{types.PermissionManageEmergency},
 	}))
 	require.NoError(t, keeper.SetRoleAssignment(ctx, &types.RoleAssignment{
-		Address:  "aura1activator",
+		Address:  addrs.initiator,
 		RoleName: "emergency_manager",
 	}))
 
 	now := ctx.BlockTime()
 	expiresAt := now.Add(24 * time.Hour)
 	msg := &identitypb.MsgActivateEmergencyAdmin{
-		Activator:    "aura1activator",
-		AdminAddress: "aura1emergency",
+		Activator:    addrs.initiator,
+		AdminAddress: addrs.emergencyAdmin,
 		Privileges:   []string{"pause_system", "freeze_accounts"},
 		ExpiresAt:    &expiresAt,
 	}
@@ -640,7 +696,7 @@ func TestMsgServerActivateEmergencyAdmin_Success(t *testing.T) {
 	require.NotNil(t, resp)
 
 	// Verify admin was created
-	admin, err := keeper.GetEmergencyAdmin(ctx, "aura1emergency")
+	admin, err := keeper.GetEmergencyAdmin(ctx, addrs.emergencyAdmin)
 	require.NoError(t, err)
 	require.True(t, admin.IsActive)
 }
@@ -651,6 +707,7 @@ func TestMsgServerActivateEmergencyAdmin_Success(t *testing.T) {
 
 func TestMsgServerDeactivateEmergencyAdmin_Success(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
+	addrs := newTestAddresses()
 	msgServer := NewMsgServerImpl(keeper)
 	require.NoError(t, keeper.SetParams(ctx, types.DefaultParams()))
 
@@ -660,22 +717,22 @@ func TestMsgServerDeactivateEmergencyAdmin_Success(t *testing.T) {
 		Permissions: []string{types.PermissionManageEmergency},
 	}))
 	require.NoError(t, keeper.SetRoleAssignment(ctx, &types.RoleAssignment{
-		Address:  "aura1deactivator",
+		Address:  addrs.deactivator,
 		RoleName: "emergency_manager",
 	}))
 
 	// Create active emergency admin
 	now := ctx.BlockTime()
 	admin := &types.EmergencyAdmin{
-		Address:     "aura1emergency",
+		Address:     addrs.emergencyAdmin,
 		IsActive:    true,
 		ActivatedAt: now,
 	}
 	require.NoError(t, keeper.SetEmergencyAdmin(ctx, admin))
 
 	msg := &identitypb.MsgDeactivateEmergencyAdmin{
-		Deactivator:  "aura1deactivator",
-		AdminAddress: "aura1emergency",
+		Deactivator:  addrs.deactivator,
+		AdminAddress: addrs.emergencyAdmin,
 	}
 
 	resp, err := msgServer.DeactivateEmergencyAdmin(ctx, msg)
@@ -683,7 +740,7 @@ func TestMsgServerDeactivateEmergencyAdmin_Success(t *testing.T) {
 	require.NotNil(t, resp)
 
 	// Verify admin was deactivated
-	updated, err := keeper.GetEmergencyAdmin(ctx, "aura1emergency")
+	updated, err := keeper.GetEmergencyAdmin(ctx, addrs.emergencyAdmin)
 	require.NoError(t, err)
 	require.False(t, updated.IsActive)
 }
@@ -694,6 +751,7 @@ func TestMsgServerDeactivateEmergencyAdmin_Success(t *testing.T) {
 
 func TestMsgServerRotateValidatorKey_Success(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
+	addrs := newTestAddresses()
 	msgServer := NewMsgServerImpl(keeper)
 	require.NoError(t, keeper.SetParams(ctx, types.DefaultParams()))
 
@@ -703,12 +761,12 @@ func TestMsgServerRotateValidatorKey_Success(t *testing.T) {
 		Permissions: []string{types.PermissionRotateValidatorKey},
 	}))
 	require.NoError(t, keeper.SetRoleAssignment(ctx, &types.RoleAssignment{
-		Address:  "aura1validator",
+		Address:  addrs.validator,
 		RoleName: "validator",
 	}))
 
 	msg := &identitypb.MsgRotateValidatorKey{
-		ValidatorAddress:   "aura1validator",
+		ValidatorAddress:   addrs.validator,
 		NewConsensusPubkey: "newpubkey123",
 	}
 
@@ -723,6 +781,7 @@ func TestMsgServerRotateValidatorKey_Success(t *testing.T) {
 
 func TestMsgServerRotateDIDKey_Success(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
+	addrs := newTestAddresses()
 	msgServer := NewMsgServerImpl(keeper)
 	require.NoError(t, keeper.SetParams(ctx, types.DefaultParams()))
 
@@ -731,7 +790,7 @@ func TestMsgServerRotateDIDKey_Success(t *testing.T) {
 	now := ctx.BlockTime()
 	record := &types.IdentityRecord{
 		Did:       did,
-		Address:   "aura1owner",
+		Address:   addrs.owner,
 		Status:    types.IdentityStatusActive,
 		CreatedAt: now,
 	}
@@ -739,7 +798,7 @@ func TestMsgServerRotateDIDKey_Success(t *testing.T) {
 
 	msg := &identitypb.MsgRotateDIDKey{
 		Did:                   did,
-		Initiator:             "aura1owner",
+		Initiator:             addrs.owner,
 		NewVerificationMethod: "newkey123",
 		Reason:                "security rotation",
 	}
@@ -753,12 +812,13 @@ func TestMsgServerRotateDIDKey_Success(t *testing.T) {
 
 func TestMsgServerRotateDIDKey_EmptyDID(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
+	addrs := newTestAddresses()
 	msgServer := NewMsgServerImpl(keeper)
 	require.NoError(t, keeper.SetParams(ctx, types.DefaultParams()))
 
 	msg := &identitypb.MsgRotateDIDKey{
 		Did:                   "",
-		Initiator:             "aura1owner",
+		Initiator:             addrs.owner,
 		NewVerificationMethod: "newkey123",
 	}
 

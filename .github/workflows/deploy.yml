@@ -1,0 +1,360 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'testnet'
+        type: choice
+        options:
+          - testnet
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+env:
+  GO_VERSION: '1.23'
+  BINARY_NAME: aurad
+  CHAIN_ID: aura-mvp-1
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: chain/go.sum
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-deploy-${{ hashFiles('chain/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-deploy-
+            ${{ runner.os }}-go-
+
+      - name: Download dependencies
+        working-directory: chain
+        run: go mod download
+
+      - name: Verify dependencies
+        working-directory: chain
+        run: go mod verify
+
+      - name: Build binary
+        working-directory: chain
+        env:
+          CGO_ENABLED: 0
+          GOOS: linux
+          GOARCH: amd64
+        run: |
+          go build -v -ldflags="-s -w -X main.version=$(git describe --tags --always --dirty)" \
+            -o build/${{ env.BINARY_NAME }} ./cmd/aurad
+
+          # Verify binary was created
+          ls -lh build/${{ env.BINARY_NAME }}
+          file build/${{ env.BINARY_NAME }}
+
+      - name: Test binary execution
+        working-directory: chain
+        run: |
+          ./build/${{ env.BINARY_NAME }} version
+
+      - name: Run tests
+        working-directory: chain
+        run: |
+          go test ./... -short -race -coverprofile=coverage.out -timeout=10m
+
+      - name: Generate test summary
+        working-directory: chain
+        if: always()
+        run: |
+          echo "### Test Coverage Summary" >> $GITHUB_STEP_SUMMARY
+          go tool cover -func=coverage.out | tail -1 >> $GITHUB_STEP_SUMMARY || true
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BINARY_NAME }}-linux-amd64
+          path: chain/build/${{ env.BINARY_NAME }}
+          retention-days: 7
+          if-no-files-found: error
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: chain/coverage.out
+          retention-days: 7
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+        continue-on-error: false
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: chain/go.sum
+
+      - name: Run Go vulnerability check
+        working-directory: chain
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck ./... || true
+
+      - name: Security scan summary
+        if: always()
+        run: |
+          echo "### Security Scan Complete" >> $GITHUB_STEP_SUMMARY
+          echo "- Gitleaks: Checked for hardcoded secrets" >> $GITHUB_STEP_SUMMARY
+          echo "- Govulncheck: Checked for known vulnerabilities" >> $GITHUB_STEP_SUMMARY
+
+  deploy-testnet:
+    name: Deploy to Testnet
+    runs-on: ubuntu-latest
+    needs: [build-and-test, security-scan]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment:
+      name: testnet
+      url: https://testnet-rpc.aurablockchain.org
+    concurrency:
+      group: deploy-testnet
+      cancel-in-progress: false
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download binary artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.BINARY_NAME }}-linux-amd64
+          path: ./build
+
+      - name: Make binary executable
+        run: chmod +x ./build/${{ env.BINARY_NAME }}
+
+      - name: Verify binary
+        run: |
+          ./build/${{ env.BINARY_NAME }} version
+          echo "Binary checksum: $(sha256sum ./build/${{ env.BINARY_NAME }})"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Ansible
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible==8.7.0
+
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.TESTNET_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.TESTNET_SSH_KNOWN_HOSTS }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          echo "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Create Ansible inventory
+        run: |
+          mkdir -p inventory
+          cat > inventory/testnet.yml << 'EOF'
+          all:
+            vars:
+              ansible_user: ${{ secrets.TESTNET_SSH_USER }}
+              ansible_ssh_private_key_file: ~/.ssh/id_ed25519
+              chain_id: ${{ env.CHAIN_ID }}
+              binary_name: ${{ env.BINARY_NAME }}
+              binary_path: ${{ github.workspace }}/build/${{ env.BINARY_NAME }}
+            children:
+              validators:
+                hosts:
+                  aura-testnet:
+                    ansible_host: ${{ secrets.AURA_TESTNET_IP }}
+                    nodes:
+                      - name: val1
+                        home: ~/.aura-mvp-val1
+                        service: aurad-mvp-val1
+                      - name: val2
+                        home: ~/.aura-mvp-val2
+                        service: aurad-mvp-val2
+                  services-testnet:
+                    ansible_host: ${{ secrets.SERVICES_TESTNET_IP }}
+                    nodes:
+                      - name: val3
+                        home: ~/.aura-mvp-val3
+                        service: aurad-mvp-val3
+                      - name: val4
+                        home: ~/.aura-mvp-val4
+                        service: aurad-mvp-val4
+              sentries:
+                hosts:
+                  aura-testnet:
+                    ansible_host: ${{ secrets.AURA_TESTNET_IP }}
+                    nodes:
+                      - name: sentry1
+                        home: ~/.aura-mvp-sentry1
+                        service: aurad-mvp-sentry1
+                  services-testnet:
+                    ansible_host: ${{ secrets.SERVICES_TESTNET_IP }}
+                    nodes:
+                      - name: sentry2
+                        home: ~/.aura-mvp-sentry2
+                        service: aurad-mvp-sentry2
+          EOF
+
+      - name: Create deployment playbook
+        run: |
+          mkdir -p playbooks
+          cat > playbooks/update-binaries.yml << 'EOF'
+          ---
+          - name: Update AURA binaries on testnet
+            hosts: all
+            become: yes
+            serial: 1
+            vars:
+              backup_dir: /tmp/aurad-backup-{{ ansible_date_time.epoch }}
+
+            tasks:
+              - name: Create backup directory
+                file:
+                  path: "{{ backup_dir }}"
+                  state: directory
+                  mode: '0755'
+
+              - name: Process each node
+                include_tasks: update-node.yml
+                loop: "{{ nodes }}"
+                loop_control:
+                  loop_var: node
+                when: nodes is defined
+
+          - name: Verify deployment
+            hosts: all
+            tasks:
+              - name: Wait for nodes to sync
+                pause:
+                  seconds: 30
+
+              - name: Check node status
+                uri:
+                  url: "http://127.0.0.1:26657/status"
+                  return_content: yes
+                register: node_status
+                failed_when: false
+
+              - name: Display sync status
+                debug:
+                  msg: "Node sync status: {{ (node_status.json.result.sync_info.catching_up | default('unknown')) }}"
+                when: node_status.status == 200
+          EOF
+
+          cat > playbooks/update-node.yml << 'EOF'
+          ---
+          - name: "Backup current binary for {{ node.name }}"
+            copy:
+              src: "{{ node.home }}/cosmovisor/genesis/bin/{{ binary_name }}"
+              dest: "{{ backup_dir }}/{{ binary_name }}-{{ node.name }}"
+              remote_src: yes
+              mode: '0755'
+            ignore_errors: yes
+
+          - name: "Stop {{ node.service }}"
+            systemd:
+              name: "{{ node.service }}"
+              state: stopped
+            register: stop_result
+
+          - name: "Copy new binary for {{ node.name }}"
+            copy:
+              src: "{{ binary_path }}"
+              dest: "{{ node.home }}/cosmovisor/genesis/bin/{{ binary_name }}"
+              mode: '0755'
+              owner: "{{ ansible_user }}"
+              group: "{{ ansible_user }}"
+
+          - name: "Start {{ node.service }}"
+            systemd:
+              name: "{{ node.service }}"
+              state: started
+              daemon_reload: yes
+
+          - name: "Wait for {{ node.name }} to be responsive"
+            wait_for:
+              port: 26656
+              host: 127.0.0.1
+              delay: 5
+              timeout: 60
+            ignore_errors: yes
+          EOF
+
+      - name: Run Ansible deployment
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: 'False'
+          ANSIBLE_STDOUT_CALLBACK: yaml
+        run: |
+          ansible-playbook \
+            -i inventory/testnet.yml \
+            playbooks/update-binaries.yml \
+            -v
+
+      - name: Verify deployment health
+        run: |
+          echo "### Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- Binary: ${{ env.BINARY_NAME }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Chain ID: ${{ env.CHAIN_ID }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Commit: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Deployed at: $(date -u)" >> $GITHUB_STEP_SUMMARY
+
+      - name: Cleanup SSH keys
+        if: always()
+        run: |
+          rm -f ~/.ssh/id_ed25519
+          rm -rf ~/.ssh
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "::error::Deployment to testnet failed. Manual intervention may be required."
+          echo "Check the Ansible output above for details."

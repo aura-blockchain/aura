@@ -25,6 +25,12 @@ import (
 
 // setupKeeperForTest creates a keeper for testing
 func setupKeeperForTest(t *testing.T) (*Keeper, sdk.Context) {
+	// Ensure bech32 prefixes match test addresses (aura1...).
+	cfg := sdk.GetConfig()
+	cfg.SetBech32PrefixForAccount("aura", "aurapub")
+	cfg.SetBech32PrefixForValidator("auravaloper", "auravaloperpub")
+	cfg.SetBech32PrefixForConsensusNode("auravalcons", "auravalconspub")
+
 	storeKey := storetypes.NewKVStoreKey(types.StoreKey)
 	db := dbm.NewMemDB()
 	stateStore := store.NewCommitMultiStore(db, log.NewNopLogger(), storemetrics.NewNoOpMetrics())

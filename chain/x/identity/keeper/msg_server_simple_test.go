@@ -70,7 +70,7 @@ func TestMsgServerEraseIdentity_Success(t *testing.T) {
 	now := ctx.BlockTime()
 	record := &types.IdentityRecord{
 		Did:       did,
-		Address:   "aura1test",
+		Address:   testAddr(1),
 		Status:    types.IdentityStatusActive,
 		CreatedAt: now,
 		UpdatedAt: &now,
@@ -79,7 +79,7 @@ func TestMsgServerEraseIdentity_Success(t *testing.T) {
 
 	// Erase identity
 	msg := &identitypb.MsgEraseIdentity{
-		Requester: "aura1test",
+		Requester: testAddr(1),
 		Did:       did,
 		Reason:    "GDPR request",
 	}
@@ -102,7 +102,7 @@ func TestMsgServerEraseIdentity_NotFound(t *testing.T) {
 	require.NoError(t, keeper.SetParams(ctx, types.DefaultParams()))
 
 	msg := &identitypb.MsgEraseIdentity{
-		Requester: "aura1test",
+		Requester: testAddr(2),
 		Did:       "did:aura:nonexistent",
 		Reason:    "Test",
 	}
@@ -117,7 +117,7 @@ func TestMsgServerCreateMultisigWallet_Success(t *testing.T) {
 	msgServer := NewMsgServerImpl(keeper)
 	require.NoError(t, keeper.SetParams(ctx, types.DefaultParams()))
 
-	creator := "aura1creator"
+	creator := testAddr(3)
 
 	// Set up role with manage_multisig permission
 	err := keeper.SetRole(ctx, &types.Role{
@@ -135,7 +135,7 @@ func TestMsgServerCreateMultisigWallet_Success(t *testing.T) {
 
 	msg := &identitypb.MsgCreateMultisigWallet{
 		Creator:   creator,
-		Signers:   []string{"aura1owner1", "aura1owner2"},
+		Signers:   []string{testAddr(4), testAddr(5)},
 		Threshold: 2,
 	}
 
@@ -159,8 +159,8 @@ func TestMsgServerCreateMultisigWallet_InvalidThreshold(t *testing.T) {
 
 	// Threshold exceeds number of signers
 	msg := &identitypb.MsgCreateMultisigWallet{
-		Creator:   "aura1creator",
-		Signers:   []string{"aura1owner1", "aura1owner2"},
+		Creator:   testAddr(6),
+		Signers:   []string{testAddr(7), testAddr(8)},
 		Threshold: 3,
 	}
 
@@ -175,8 +175,8 @@ func TestMsgServerCreateMultisigWallet_ZeroThreshold(t *testing.T) {
 	require.NoError(t, keeper.SetParams(ctx, types.DefaultParams()))
 
 	msg := &identitypb.MsgCreateMultisigWallet{
-		Creator:   "aura1creator",
-		Signers:   []string{"aura1owner1", "aura1owner2"},
+		Creator:   testAddr(9),
+		Signers:   []string{testAddr(10), testAddr(11)},
 		Threshold: 0,
 	}
 
@@ -191,7 +191,7 @@ func TestMsgServerCreateMultisigWallet_EmptySigners(t *testing.T) {
 	require.NoError(t, keeper.SetParams(ctx, types.DefaultParams()))
 
 	msg := &identitypb.MsgCreateMultisigWallet{
-		Creator:   "aura1creator",
+		Creator:   testAddr(12),
 		Signers:   []string{},
 		Threshold: 1,
 	}
@@ -207,7 +207,7 @@ func TestMsgServerCreateSession_Success(t *testing.T) {
 	require.NoError(t, keeper.SetParams(ctx, types.DefaultParams()))
 
 	msg := &identitypb.MsgCreateSession{
-		Address: "aura1test",
+		Address: testAddr(13),
 	}
 
 	resp, err := msgServer.CreateSession(ctx, msg)
@@ -219,7 +219,7 @@ func TestMsgServerCreateSession_Success(t *testing.T) {
 	session, err := keeper.GetSession(ctx, resp.SessionId)
 	require.NoError(t, err)
 	require.True(t, session.IsActive)
-	require.Equal(t, "aura1test", session.Address)
+	require.Equal(t, testAddr(13), session.Address)
 }
 
 // TestMsgServerEndSession_Success tests successful session termination
@@ -230,7 +230,7 @@ func TestMsgServerEndSession_Success(t *testing.T) {
 
 	// Create session first
 	createMsg := &identitypb.MsgCreateSession{
-		Address: "aura1test",
+		Address: testAddr(13),
 	}
 
 	createResp, err := msgServer.CreateSession(ctx, createMsg)
@@ -239,7 +239,7 @@ func TestMsgServerEndSession_Success(t *testing.T) {
 
 	// End session
 	endMsg := &identitypb.MsgEndSession{
-		Address:   "aura1test",
+		Address:   testAddr(13),
 		SessionId: sessionID,
 	}
 
@@ -259,7 +259,7 @@ func TestMsgServerEndSession_NotFound(t *testing.T) {
 	require.NoError(t, keeper.SetParams(ctx, types.DefaultParams()))
 
 	msg := &identitypb.MsgEndSession{
-		Address:   "aura1test",
+		Address:   testAddr(13),
 		SessionId: "nonexistent",
 	}
 

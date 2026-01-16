@@ -23,7 +23,7 @@ func TestMsgServerApplyIdentityChange_PermissionDenied(t *testing.T) {
 
 	_, err := msgServer.ApplyIdentityChange(ctx, &identitypb.MsgApplyIdentityChange{
 		RequestId: "req-unauthorized",
-		Requester: "aura1unauth",
+		Requester: testAddr(20),
 	})
 	require.Error(t, err)
 	st, ok := status.FromError(err)
@@ -38,7 +38,7 @@ func TestMsgServerRejectIdentityChange_PermissionDenied(t *testing.T) {
 
 	_, err := msgServer.RejectIdentityChange(ctx, &identitypb.MsgRejectIdentityChange{
 		RequestId: "req-unauthorized",
-		Actor:     "aura1unauth",
+		Actor:     testAddr(21),
 		Reason:    "not allowed",
 	})
 	require.Error(t, err)

@@ -1,294 +1,141 @@
 package prevalidation
 
 import (
+	"context"
+	"net"
 	"testing"
 
+	prevalidationpb "github.com/aequitas/aura/proto/aura/prevalidation/v1beta1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	prevalidationpb "github.com/aequitas/aura/proto/aura/prevalidation/v1beta1"
+	"google.golang.org/grpc"
 )
 
-func TestEstimateGasParams_Validation(t *testing.T) {
-	tests := []struct {
-		name    string
-		params  *EstimateGasParams
-		wantErr bool
-		errMsg  string
-	}{
-		{
-			name:    "nil params",
-			params:  nil,
-			wantErr: true,
-			errMsg:  "params cannot be nil",
-		},
-		{
-			name: "missing sender",
-			params: &EstimateGasParams{
-				Recipient: "aura1recipient123",
-				Amount:    "1000",
-			},
-			wantErr: true,
-			errMsg:  "sender is required",
-		},
-		{
-			name: "valid minimal params",
-			params: &EstimateGasParams{
-				Sender: "aura1sender123",
-			},
-			wantErr: false,
-		},
-		{
-			name: "valid full params",
-			params: &EstimateGasParams{
-				Sender:    "aura1sender123",
-				Recipient: "aura1recipient123",
-				Amount:    "1000",
-				Data:      []byte("transaction data"),
-				TxType:    prevalidationpb.TransactionType_TX_TYPE_DEX_SWAP,
-			},
-			wantErr: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if tt.wantErr {
-				if tt.params == nil {
-					require.Nil(t, tt.params)
-				} else {
-					assert.Empty(t, tt.params.Sender)
-				}
-			} else {
-				assert.NotEmpty(t, tt.params.Sender)
-			}
-		})
-	}
+type prevalidationQueryServer struct {
+	prevalidationpb.UnimplementedQueryServer
+	estimateResp *prevalidationpb.QueryEstimateGasResponse
+	validateResp *prevalidationpb.QueryValidateTransactionResponse
+	nonce        uint64
+	err          error
 }
 
-func TestValidateTransactionParams_Validation(t *testing.T) {
-	tests := []struct {
-		name    string
-		params  *ValidateTransactionParams
-		wantErr bool
-	}{
-		{
-			name:    "nil params",
-			params:  nil,
-			wantErr: true,
-		},
-		{
-			name: "missing sender",
-			params: &ValidateTransactionParams{
-				Recipient: "aura1recipient123",
-				Amount:    "1000",
-				Nonce:     1,
-			},
-			wantErr: true,
-		},
-		{
-			name: "valid minimal params",
-			params: &ValidateTransactionParams{
-				Sender: "aura1sender123",
-				Nonce:  1,
-			},
-			wantErr: false,
-		},
-		{
-			name: "valid full params",
-			params: &ValidateTransactionParams{
-				Sender:    "aura1sender123",
-				Recipient: "aura1recipient123",
-				Amount:    "1000",
-				Data:      []byte("transaction data"),
-				Nonce:     1,
-				TxType:    prevalidationpb.TransactionType_TX_TYPE_IR_COMPLETION,
-			},
-			wantErr: false,
-		},
+func (s *prevalidationQueryServer) EstimateGas(ctx context.Context, req *prevalidationpb.QueryEstimateGasRequest) (*prevalidationpb.QueryEstimateGasResponse, error) {
+	if s.err != nil {
+		return nil, s.err
 	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if tt.wantErr {
-				if tt.params == nil {
-					require.Nil(t, tt.params)
-				} else {
-					assert.Empty(t, tt.params.Sender)
-				}
-			} else {
-				assert.NotEmpty(t, tt.params.Sender)
-			}
-		})
-	}
+	return s.estimateResp, nil
 }
 
-func TestValidateTransactionResponse(t *testing.T) {
-	tests := []struct {
-		name     string
-		response *ValidateTransactionResponse
-	}{
-		{
-			name: "valid transaction",
-			response: &ValidateTransactionResponse{
-				Valid:             true,
-				GasEstimate:       21000,
-				Error:             "",
-				SufficientBalance: true,
-			},
-		},
-		{
-			name: "invalid transaction - insufficient balance",
-			response: &ValidateTransactionResponse{
-				Valid:             false,
-				GasEstimate:       21000,
-				Error:             "insufficient balance",
-				SufficientBalance: false,
-			},
-		},
-		{
-			name: "invalid transaction - validation error",
-			response: &ValidateTransactionResponse{
-				Valid:             false,
-				GasEstimate:       0,
-				Error:             "invalid nonce",
-				SufficientBalance: true,
-			},
-		},
+func (s *prevalidationQueryServer) ValidateTransaction(ctx context.Context, req *prevalidationpb.QueryValidateTransactionRequest) (*prevalidationpb.QueryValidateTransactionResponse, error) {
+	if s.err != nil {
+		return nil, s.err
 	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if tt.response.Valid {
-				assert.True(t, tt.response.Valid)
-				assert.Empty(t, tt.response.Error)
-				assert.True(t, tt.response.SufficientBalance)
-				assert.Greater(t, tt.response.GasEstimate, uint64(0))
-			} else {
-				assert.False(t, tt.response.Valid)
-				assert.NotEmpty(t, tt.response.Error)
-			}
-		})
-	}
+	return s.validateResp, nil
 }
 
-func TestTransactionTypeValidation(t *testing.T) {
-	validTypes := []prevalidationpb.TransactionType{
-		prevalidationpb.TransactionType_TX_TYPE_IR_COMPLETION,
-		prevalidationpb.TransactionType_TX_TYPE_DEX_SWAP,
-		prevalidationpb.TransactionType_TX_TYPE_LP_DEPOSIT,
-		prevalidationpb.TransactionType_TX_TYPE_LP_WITHDRAWAL,
-		prevalidationpb.TransactionType_TX_TYPE_VC_MINT,
-		prevalidationpb.TransactionType_TX_TYPE_BRIDGE_TRANSFER,
-		prevalidationpb.TransactionType_TX_TYPE_CONFIDENCE_SCORE_UPDATE,
-		prevalidationpb.TransactionType_TX_TYPE_IDENTITY_CHANGE,
+func (s *prevalidationQueryServer) GetNonce(ctx context.Context, req *prevalidationpb.QueryGetNonceRequest) (*prevalidationpb.QueryGetNonceResponse, error) {
+	if s.err != nil {
+		return nil, s.err
 	}
-
-	for _, txType := range validTypes {
-		t.Run(txType.String(), func(t *testing.T) {
-			assert.NotEqual(t, prevalidationpb.TransactionType_TX_TYPE_UNSPECIFIED, txType)
-		})
-	}
+	return &prevalidationpb.QueryGetNonceResponse{Nonce: s.nonce}, nil
 }
 
-func TestValidationStatusTypes(t *testing.T) {
-	validStatuses := []prevalidationpb.ValidationStatus{
-		prevalidationpb.ValidationStatus_VALIDATION_STATUS_PENDING,
-		prevalidationpb.ValidationStatus_VALIDATION_STATUS_VALIDATED,
-		prevalidationpb.ValidationStatus_VALIDATION_STATUS_EXPIRED,
-		prevalidationpb.ValidationStatus_VALIDATION_STATUS_EXECUTED,
-		prevalidationpb.ValidationStatus_VALIDATION_STATUS_FAILED,
-	}
+func startPrevalidationServer(t *testing.T, srv prevalidationpb.QueryServer) (string, func()) {
+	t.Helper()
+	lis, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
 
-	for _, status := range validStatuses {
-		t.Run(status.String(), func(t *testing.T) {
-			assert.NotEqual(t, prevalidationpb.ValidationStatus_VALIDATION_STATUS_UNSPECIFIED, status)
-		})
-	}
+	grpcServer := grpc.NewServer()
+	prevalidationpb.RegisterQueryServer(grpcServer, srv)
+	go grpcServer.Serve(lis)
+
+	return lis.Addr().String(), grpcServer.Stop
+}
+
+func TestEstimateGasValidation(t *testing.T) {
+	c := &Client{queryClient: nil}
+	_, _, err := c.EstimateGas(context.Background(), nil)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "params cannot be nil")
+
+	_, _, err = c.EstimateGas(context.Background(), &EstimateGasParams{Sender: ""})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "sender is required")
+}
+
+func TestEstimateGasSuccess(t *testing.T) {
+	addr, stop := startPrevalidationServer(t, &prevalidationQueryServer{
+		estimateResp: &prevalidationpb.QueryEstimateGasResponse{
+			GasEstimate: 50000,
+			GasLimit:    60000,
+		},
+	})
+	defer stop()
+
+	conn, err := grpc.Dial(addr, grpc.WithInsecure())
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = conn.Close() })
+
+	c := &Client{queryClient: prevalidationpb.NewQueryClient(conn)}
+
+	estimate, limit, err := c.EstimateGas(context.Background(), &EstimateGasParams{Sender: "aura1sender"})
+	assert.NoError(t, err)
+	assert.Equal(t, uint64(50000), estimate)
+	assert.Equal(t, uint64(60000), limit)
+}
+
+func TestValidateTransactionValidation(t *testing.T) {
+	c := &Client{queryClient: nil}
+	_, err := c.ValidateTransaction(context.Background(), nil)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "params cannot be nil")
+
+	_, err = c.ValidateTransaction(context.Background(), &ValidateTransactionParams{Sender: ""})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "sender is required")
+}
+
+func TestValidateTransactionSuccess(t *testing.T) {
+	addr, stop := startPrevalidationServer(t, &prevalidationQueryServer{
+		validateResp: &prevalidationpb.QueryValidateTransactionResponse{
+			Valid:             true,
+			GasEstimate:       70000,
+			Error:             "",
+			SufficientBalance: true,
+		},
+	})
+	defer stop()
+
+	conn, err := grpc.Dial(addr, grpc.WithInsecure())
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = conn.Close() })
+
+	c := &Client{queryClient: prevalidationpb.NewQueryClient(conn)}
+
+	resp, err := c.ValidateTransaction(context.Background(), &ValidateTransactionParams{Sender: "aura1sender"})
+	assert.NoError(t, err)
+	assert.True(t, resp.Valid)
+	assert.Equal(t, uint64(70000), resp.GasEstimate)
 }
 
 func TestGetNonceValidation(t *testing.T) {
-	tests := []struct {
-		name    string
-		address string
-		wantErr bool
-	}{
-		{
-			name:    "empty address",
-			address: "",
-			wantErr: true,
-		},
-		{
-			name:    "valid address",
-			address: "aura1test123",
-			wantErr: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if tt.wantErr {
-				assert.Empty(t, tt.address)
-			} else {
-				assert.NotEmpty(t, tt.address)
-			}
-		})
-	}
+	c := &Client{queryClient: nil}
+	_, err := c.GetNonce(context.Background(), "")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "address is required")
 }
 
-func TestGetPreValidatedTransactionValidation(t *testing.T) {
-	tests := []struct {
-		name    string
-		id      string
-		wantErr bool
-	}{
-		{
-			name:    "empty id",
-			id:      "",
-			wantErr: true,
-		},
-		{
-			name:    "valid id",
-			id:      "tx_12345",
-			wantErr: false,
-		},
-	}
+func TestGetNonceSuccess(t *testing.T) {
+	addr, stop := startPrevalidationServer(t, &prevalidationQueryServer{nonce: 9})
+	defer stop()
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if tt.wantErr {
-				assert.Empty(t, tt.id)
-			} else {
-				assert.NotEmpty(t, tt.id)
-			}
-		})
-	}
-}
+	conn, err := grpc.Dial(addr, grpc.WithInsecure())
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = conn.Close() })
 
-func TestGetTemplateValidation(t *testing.T) {
-	tests := []struct {
-		name       string
-		templateID string
-		wantErr    bool
-	}{
-		{
-			name:       "empty template id",
-			templateID: "",
-			wantErr:    true,
-		},
-		{
-			name:       "valid template id",
-			templateID: "template_ir_completion",
-			wantErr:    false,
-		},
-	}
+	c := &Client{queryClient: prevalidationpb.NewQueryClient(conn)}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if tt.wantErr {
-				assert.Empty(t, tt.templateID)
-			} else {
-				assert.NotEmpty(t, tt.templateID)
-			}
-		})
-	}
+	nonce, err := c.GetNonce(context.Background(), "aura1addr")
+	assert.NoError(t, err)
+	assert.Equal(t, uint64(9), nonce)
 }

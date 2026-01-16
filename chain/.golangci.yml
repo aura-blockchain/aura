@@ -1,0 +1,115 @@
+# golangci-lint configuration for AURA blockchain
+# Follows Cosmos SDK community standards
+# See: https://github.com/cosmos/gosec
+
+run:
+  timeout: 10m
+  tests: false
+  skip-dirs:
+    - tests
+    - testutil
+    - testing
+    - archive
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - gosec
+    - gosimple
+    - goconst
+    - gofmt
+    - goimports
+    - misspell
+    - unconvert
+    - unparam
+
+linters-settings:
+  errcheck:
+    # Report about assignment of errors to blank identifiers
+    check-blank: false
+    # Report about not checking errors in type assertions
+    check-type-assertions: false
+
+  gosec:
+    # gosec rule exclusions aligned with security.yml workflow
+    excludes:
+      # G104: Redundant with errcheck linter (LOW severity, thousands of false positives)
+      - G104
+      # G204: Test utilities legitimately use exec.Command
+      # Annotate production code with #nosec G204 if needed
+      - G204
+      # G702: cosmos/gosec incorrectly flags crypto/rand as blocklisted
+      # crypto/rand is actually the secure random source
+      - G702
+    config:
+      # G101: Hardcoded credentials detection
+      G101:
+        # Pattern to match potential credentials
+        pattern: "(?i)passwd|pass|password|pwd|secret|token|apikey|api_key|private_key"
+        ignore_entropy: false
+        entropy_threshold: "80.0"
+        # Reduce false positives by requiring longer strings
+        per_char_threshold: "3.0"
+        truncate: "32"
+
+  govet:
+    enable-all: true
+    disable:
+      - shadow
+      - fieldalignment
+
+  staticcheck:
+    checks:
+      - all
+      - -SA1019  # Deprecated usage (handled separately)
+
+  goconst:
+    min-len: 3
+    min-occurrences: 3
+
+  misspell:
+    locale: US
+
+issues:
+  # Maximum issues count per linter
+  max-issues-per-linter: 50
+  # Maximum same issues reported
+  max-same-issues: 10
+
+  exclude-rules:
+    # Exclude some linters from running on tests files
+    - path: _test\.go
+      linters:
+        - gosec
+        - errcheck
+        - goconst
+
+    # Exclude test utilities
+    - path: testutil/
+      linters:
+        - gosec
+        - errcheck
+
+    # Exclude generated protobuf files
+    - path: \.pb\.go$
+      linters:
+        - gosec
+        - govet
+        - staticcheck
+
+    # Allow hardcoded test values in test files
+    - path: _test\.go
+      text: "G101:"
+      linters:
+        - gosec
+
+severity:
+  # Set severity for security issues
+  default-severity: warning
+  rules:
+    - linters:
+        - gosec
+      severity: error

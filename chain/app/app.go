@@ -1674,6 +1674,9 @@ func MakeEncodingConfig() EncodingConfig {
 func ensureSDKConfig() {
 	sdkConfigOnce.Do(func() {
 		cfg := sdk.GetConfig()
+		if cfg.IsSealed() {
+			return
+		}
 		cfg.SetBech32PrefixForAccount(Bech32MainPrefix, Bech32MainPrefix+"pub")
 		cfg.SetBech32PrefixForValidator(Bech32ValidatorPrefix, Bech32ValidatorPrefix+"pub")
 		cfg.SetBech32PrefixForConsensusNode(Bech32ConsensusPrefix, Bech32ConsensusPrefix+"pub")

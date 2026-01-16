@@ -193,3 +193,6 @@ AGENTS.md
 .playwright-mcp/
 chain/release-*/
 .fresh-testnet/
+
+# Archives (local backups)
+.archive/

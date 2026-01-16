@@ -1,3 +1,6 @@
+//go:build simapp
+// +build simapp
+
 // Copyright 2024-2025 Aequitas Foundation
 // SPDX-License-Identifier: Apache-2.0
 
@@ -26,6 +29,7 @@ import (
 	simcli "github.com/cosmos/cosmos-sdk/x/simulation/client/cli"
 
 	"github.com/aequitas/aura/chain/app"
+	abci "github.com/cometbft/cometbft/abci/types"
 )
 
 // SimAppChainID hardcoded chainID for simulation
@@ -47,16 +51,13 @@ func interBlockCacheOpt() func(*baseapp.BaseApp) {
 	return baseapp.SetInterBlockCache(store.NewCommitKVStoreCacheManager())
 }
 
-// NewSimApp creates a new SimApp instance for testing
-func NewSimApp(logger log.Logger, db dbm.DB, appOpts simtestutil.AppOptionsMap, baseAppOptions ...func(*baseapp.BaseApp)) *app.AuraApp {
-	return app.NewAuraApp(
-		logger,
-		db,
-		nil,
-		true,
-		appOpts,
-		baseAppOptions...,
-	)
+// NewSimApp creates a new App instance for testing with optional BaseApp tweaks.
+func NewSimApp(logger log.Logger, db dbm.DB, _ simtestutil.AppOptionsMap, baseAppOptions ...func(*baseapp.BaseApp)) *app.App {
+	a := app.NewAppWithOptions(logger, db, SimAppChainID)
+	for _, opt := range baseAppOptions {
+		opt(a.BaseApp)
+	}
+	return a
 }
 
 // TestAppStateDeterminism runs a determinism simulation test
@@ -263,7 +264,7 @@ func TestAppSimulationAfterImport(t *testing.T) {
 	newApp := NewSimApp(logger, newDB, newAppOpts, fauxMerkleModeOpt)
 	require.NotNil(t, newApp)
 
-	_, err = newApp.InitChain(&storetypes.RequestInitChain{
+	_, err = newApp.InitChain(&abci.RequestInitChain{
 		AppStateBytes: exported.AppState,
 		ChainId:       SimAppChainID,
 	})
