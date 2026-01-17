@@ -19,19 +19,19 @@ import (
 
 // KVStore key prefixes
 var (
-	AlertKeyPrefix            = []byte{0x01}
-	TransactionKeyPrefix      = []byte{0x02}
-	AnomalyKeyPrefix          = []byte{0x03}
-	ValidatorUptimeKeyPrefix  = []byte{0x04}
-	NetworkHealthKey          = []byte{0x05} // Single entry
-	GasPriceTrackingKey       = []byte{0x06} // Single entry
-	TVLMonitoringKey          = []byte{0x07} // Single entry
-	FailedTxPatternKeyPrefix  = []byte{0x08}
-	SecurityEventKeyPrefix    = []byte{0x09}
-	LogEntryKeyPrefix         = []byte{0x0A}
-	ParamsKey                 = []byte{0x0B} // Single entry
-	ExplorerIntegrationKey    = []byte{0x0C} // Single entry
-	LogCounterKey             = []byte{0x0D} // Single entry - log ID counter
+	AlertKeyPrefix           = []byte{0x01}
+	TransactionKeyPrefix     = []byte{0x02}
+	AnomalyKeyPrefix         = []byte{0x03}
+	ValidatorUptimeKeyPrefix = []byte{0x04}
+	NetworkHealthKey         = []byte{0x05} // Single entry
+	GasPriceTrackingKey      = []byte{0x06} // Single entry
+	TVLMonitoringKey         = []byte{0x07} // Single entry
+	FailedTxPatternKeyPrefix = []byte{0x08}
+	SecurityEventKeyPrefix   = []byte{0x09}
+	LogEntryKeyPrefix        = []byte{0x0A}
+	ParamsKey                = []byte{0x0B} // Single entry
+	ExplorerIntegrationKey   = []byte{0x0C} // Single entry
+	LogCounterKey            = []byte{0x0D} // Single entry - log ID counter
 )
 
 // Keeper handles all monitoring operations with persistent KV store.
@@ -1032,17 +1032,31 @@ func (k *Keeper) BeginBlocker(ctx context.Context) error {
 		return fmt.Errorf("failed to refresh alert routes cache: %w", err)
 	}
 
-	// Collect and update network health metrics
-	// This is non-consensus (observability only) so errors are logged but don't halt the chain
-	if k.healthCollector != nil {
-		health, err := k.healthCollector.CollectNetworkHealth(ctx)
-		if err != nil {
-			sdkCtx.Logger().Debug("monitoring: failed to collect network health", "error", err)
-		} else if health != nil {
-			// Update the network health in store and metrics
-			if updateErr := k.UpdateNetworkHealth(ctx, health); updateErr != nil {
-				sdkCtx.Logger().Debug("monitoring: failed to update network health", "error", updateErr)
+	params, err := k.GetParams(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get monitoring params: %w", err)
+	}
+
+	if params.EnableNetworkHealthMonitoring && k.healthCollector != nil {
+		// 1) Deterministic state persisted to KV
+		if detHealth, err := k.healthCollector.CollectDeterministicHealth(ctx); err == nil {
+			if updateErr := k.UpdateNetworkHealth(ctx, detHealth); updateErr != nil {
+				sdkCtx.Logger().Debug("monitoring: failed to update deterministic network health", "error", updateErr)
 			}
+		} else {
+			sdkCtx.Logger().Debug("monitoring: failed to collect deterministic network health", "error", err)
+		}
+
+		// 2) Observability metrics only (node-local RPC); do NOT persist to consensus
+		if obsHealth, err := k.healthCollector.CollectObservabilityHealth(ctx); err == nil && k.metrics != nil {
+			k.metrics.BlockTime.Set(obsHealth.BlockTime)
+			k.metrics.TransactionsPerSecond.Set(obsHealth.TPS)
+			k.metrics.MempoolSize.Set(float64(obsHealth.MempoolSize))
+			k.metrics.PeerCount.Set(float64(obsHealth.PeerCount))
+			k.metrics.NetworkCongestion.Set(obsHealth.NetworkCongestion)
+			k.metrics.ConsensusHealth.Set(obsHealth.ConsensusHealth)
+		} else if err != nil {
+			sdkCtx.Logger().Debug("monitoring: failed to collect observability health", "error", err)
 		}
 	}
 

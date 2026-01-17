@@ -140,7 +140,7 @@ The command will:
 Example:
   $ aurad tx confidencescore recalculate-score aura1abc... \
       --from governance-key \
-      --chain-id aura-mainnet-1
+      --chain-id aura-mvp-1
 
 Response includes:
 - Previous score
@@ -195,7 +195,7 @@ Example:
       aura1user... IR-305 5000 fraud_detected \
       --evidence QmX3d9f2h... \
       --from governance-key \
-      --chain-id aura-mainnet-1
+      --chain-id aura-mvp-1
 
 Response includes:
 - Previous score
@@ -266,7 +266,7 @@ Example:
       A1B2C3D4E5F6... 1000aeq \
       --evidence QmY4e8g3k... \
       --from user-key \
-      --chain-id aura-mainnet-1
+      --chain-id aura-mvp-1
 
 Response includes:
 - Whether appeal was accepted
@@ -324,14 +324,14 @@ Example (restore score):
       aura1user... A1B2C3D4E5F6... true \
       --notes "Evidence validates user claim" \
       --from governance-key \
-      --chain-id aura-mainnet-1
+      --chain-id aura-mvp-1
 
 Example (deny appeal):
   $ aurad tx confidencescore resolve-appeal \
       aura1user... A1B2C3D4E5F6... false \
       --notes "Insufficient evidence provided" \
       --from governance-key \
-      --chain-id aura-mainnet-1
+      --chain-id aura-mvp-1
 
 Response includes:
 - Amount restored (if applicable)

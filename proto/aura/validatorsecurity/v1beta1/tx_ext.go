@@ -37,11 +37,12 @@ func (m *MsgReportDoubleSign) GetSigners() []sdk.AccAddress {
 }
 
 func (m *MsgUnjail) GetSigners() []sdk.AccAddress {
-	addr, err := sdk.AccAddressFromBech32(m.ValidatorAddress)
+	// ValidatorAddress is a valoper address, convert to operator account address
+	valAddr, err := sdk.ValAddressFromBech32(m.ValidatorAddress)
 	if err != nil {
 		panic(err)
 	}
-	return []sdk.AccAddress{addr}
+	return []sdk.AccAddress{sdk.AccAddress(valAddr)}
 }
 
 func (m *MsgAcknowledgeAlert) GetSigners() []sdk.AccAddress {

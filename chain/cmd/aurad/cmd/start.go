@@ -304,6 +304,14 @@ func startInProcess(cmd *cobra.Command, auraApp *app.App, logger log.Logger) err
 		return fmt.Errorf("failed to load CometBFT config: %w", err)
 	}
 
+	// Validate P2P settings against common misconfigurations (sentry/validator setups)
+	if err := validateP2PConfig(cmtConfig); err != nil {
+		return err
+	}
+	if err := validatePortCollisions(cmtConfig); err != nil {
+		return err
+	}
+
 	serviceCfg, err := loadStartServiceConfig(cmd, homeDir, logger)
 	if err != nil {
 		return fmt.Errorf("failed to load service configuration: %w", err)
@@ -1038,6 +1046,114 @@ func loadCometConfig(homeDir string) (*cmtcfg.Config, error) {
 	}
 
 	return cmtConfig, nil
+}
+
+// validateP2PConfig checks for common misconfigurations that prevent a node from peering.
+// It is intentionally conservative and fails fast with actionable guidance.
+func validateP2PConfig(cfg *cmtcfg.Config) error {
+	var problems []string
+
+	// If PEX is disabled and no seeds/persistent peers are provided the node cannot discover peers.
+	if !cfg.P2P.PexReactor && cfg.P2P.Seeds == "" && cfg.P2P.PersistentPeers == "" {
+		problems = append(problems, "pex=false but both seeds and persistent_peers are empty; the node will never connect")
+	}
+
+	peers := parsePeerHosts(cfg.P2P.PersistentPeers)
+
+	// addr_book_strict=true rejects private/VPN addresses that we rely on in sentry architectures.
+	if cfg.P2P.AddrBookStrict {
+		for _, host := range peers {
+			if isPrivateIP(host) {
+				problems = append(problems, fmt.Sprintf("addr_book_strict=true blocks private peer %s; set addr_book_strict=false for VPN/private sentry links", host))
+				break
+			}
+		}
+	}
+
+	// Multiple validators behind the same IP need allow_duplicate_ip=true to avoid dropped connections.
+	if !cfg.P2P.AllowDuplicateIP && hasDuplicateIP(peers) {
+		problems = append(problems, "allow_duplicate_ip=false but multiple persistent peers share the same IP; set allow_duplicate_ip=true when running multiple nodes on one host")
+	}
+
+	if len(problems) > 0 {
+		return fmt.Errorf("invalid P2P configuration: %s", strings.Join(problems, "; "))
+	}
+	return nil
+}
+
+// validatePortCollisions ensures obvious intra-node port conflicts are caught before startup.
+func validatePortCollisions(cfg *cmtcfg.Config) error {
+	rpcHost, rpcPort := splitAddress(cfg.RPC.ListenAddress)
+	p2pHost, p2pPort := splitAddress(cfg.P2P.ListenAddress)
+
+	// RPC and P2P should never share the same port on the same host.
+	if rpcPort != "" && p2pPort != "" && rpcHost == p2pHost && rpcPort == p2pPort {
+		return fmt.Errorf("rpc.listen_address (%s) and p2p.laddr (%s) share the same port; choose distinct ports to avoid conflicts", cfg.RPC.ListenAddress, cfg.P2P.ListenAddress)
+	}
+
+	return nil
+}
+
+// parsePeerHosts extracts host addresses from a persistent_peers string.
+func parsePeerHosts(peers string) []string {
+	if peers == "" {
+		return nil
+	}
+
+	parts := strings.Split(peers, ",")
+	hosts := make([]string, 0, len(parts))
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p == "" {
+			continue
+		}
+		at := strings.LastIndex(p, "@")
+		if at >= 0 && at < len(p)-1 {
+			p = p[at+1:]
+		}
+		host, _, err := net.SplitHostPort(p)
+		if err == nil {
+			hosts = append(hosts, host)
+		}
+	}
+	return hosts
+}
+
+// isPrivateIP returns true for RFC1918/loopback addresses.
+func isPrivateIP(host string) bool {
+	ip := net.ParseIP(host)
+	if ip == nil {
+		return false
+	}
+	return ip.IsPrivate() || ip.IsLoopback()
+}
+
+// hasDuplicateIP reports whether the slice contains the same IP more than once.
+func hasDuplicateIP(hosts []string) bool {
+	seen := make(map[string]int, len(hosts))
+	for _, h := range hosts {
+		if h == "" {
+			continue
+		}
+		seen[h]++
+		if seen[h] > 1 {
+			return true
+		}
+	}
+	return false
+}
+
+// splitAddress strips common scheme prefixes and returns host, port.
+func splitAddress(addr string) (string, string) {
+	addr = strings.TrimSpace(addr)
+	addr = strings.TrimPrefix(addr, "tcp://")
+	addr = strings.TrimPrefix(addr, "http://")
+	addr = strings.TrimPrefix(addr, "https://")
+	host, port, err := net.SplitHostPort(addr)
+	if err != nil {
+		return "", ""
+	}
+	return host, port
 }
 
 // loadOrGenPrivValidator loads or generates a private validator

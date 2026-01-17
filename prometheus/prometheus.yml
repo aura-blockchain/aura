@@ -4,7 +4,7 @@ global:
   scrape_interval: 15s
   evaluation_interval: 15s
   external_labels:
-    cluster: 'aura-mainnet'
+    cluster: 'aura-mvp-1'
     monitor: 'aura-monitoring'
 
 # Alertmanager configuration

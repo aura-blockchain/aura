@@ -3,6 +3,8 @@ package v1beta1
 import (
 	"fmt"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	"github.com/aequitas/aura/proto/common/validation"
 )
 
@@ -186,8 +188,8 @@ func (m *MsgReportDoubleSign) ValidateBasic() error {
 
 // ValidateBasic implements the sdk.Msg interface for MsgUnjail
 func (m *MsgUnjail) ValidateBasic() error {
-	// Validate validator address
-	if err := validation.ValidateAccAddress(m.ValidatorAddress); err != nil {
+	// Validate validator operator address (valoper prefix)
+	if _, err := sdk.ValAddressFromBech32(m.ValidatorAddress); err != nil {
 		return fmt.Errorf("validator_address: %w", err)
 	}
 

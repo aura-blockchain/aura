@@ -14,6 +14,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/aequitas/aura/proto/aura/validatorsecurity/v1beta1"
 )
@@ -273,7 +274,7 @@ Examples:
 			}
 
 			msg := &v1beta1.MsgUnjail{
-				ValidatorAddress: clientCtx.GetFromAddress().String(),
+				ValidatorAddress: sdk.ValAddress(clientCtx.GetFromAddress()).String(),
 			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)

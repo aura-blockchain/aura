@@ -924,7 +924,7 @@ data:
             "min_confidence_after_change": 30,
             "staleness_height_threshold": "100000",
             "assistant_slash_on_false_positive": true,
-            "staleness_investigator_chain": "aura-mainnet"
+            "staleness_investigator_chain": "aura-mvp-1"
           },
           "records": [],
           "requests": [],

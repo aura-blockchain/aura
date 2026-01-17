@@ -49,12 +49,12 @@ func (k Keeper) UpdateNetworkHealth(ctx context.Context, health *types.NetworkHe
 		return fmt.Errorf("network health data cannot be nil")
 	}
 
-	// Persist to KV store
+	// Persist deterministically to KV store
 	if err := k.SetNetworkHealth(ctx, health); err != nil {
 		return err
 	}
 
-	// Update Prometheus metrics (non-consensus, observability only)
+	// Deterministic Prometheus metrics (based on deterministic health)
 	if k.metrics != nil {
 		k.metrics.BlockTime.Set(health.BlockTime)
 		k.metrics.TransactionsPerSecond.Set(health.TPS)
@@ -63,19 +63,6 @@ func (k Keeper) UpdateNetworkHealth(ctx context.Context, health *types.NetworkHe
 		k.metrics.NetworkCongestion.Set(health.NetworkCongestion)
 		k.metrics.ConsensusHealth.Set(health.ConsensusHealth)
 	}
-
-	// Check for congestion alerts
-	if health.NetworkCongestion >= params.CongestionThreshold {
-		if params.EnableAlerts {
-			if err := k.createNetworkCongestionAlert(ctx, health); err != nil {
-				// Log error but don't fail the update
-				return nil
-			}
-		}
-	}
-
-	// Run anomaly detection (if anomaly detection module is available)
-	// NOTE: DetectNetworkAnomaly would be implemented in anomaly_detection.go if needed
 
 	return nil
 }
@@ -96,12 +83,12 @@ func (k Keeper) createNetworkCongestionAlert(ctx context.Context, health *types.
 		Severity: k.determineCongestionSeverity(health.NetworkCongestion),
 		Message:  fmt.Sprintf("Network congestion detected: %.2f%%", health.NetworkCongestion*100),
 		Details: map[string]interface{}{
-			"congestion":     health.NetworkCongestion,
-			"threshold":      params.CongestionThreshold,
-			"mempool_size":   health.MempoolSize,
-			"tps":            health.TPS,
-			"block_time":     health.BlockTime,
-			"block_height":   health.BlockHeight,
+			"congestion":   health.NetworkCongestion,
+			"threshold":    params.CongestionThreshold,
+			"mempool_size": health.MempoolSize,
+			"tps":          health.TPS,
+			"block_time":   health.BlockTime,
+			"block_height": health.BlockHeight,
 		},
 		Timestamp:        blockTime,
 		Acknowledged:     false,

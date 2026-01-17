@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -18,20 +19,16 @@ import (
 	"github.com/aequitas/aura/chain/x/monitoring/types"
 )
 
-// NetworkHealthCollector collects real network health metrics from the node.
-// It queries the local CometBFT RPC endpoint to gather peer count, block info,
-// and other metrics that cannot be obtained from within the Cosmos SDK context.
+// NetworkHealthCollector collects network health metrics.
+// Two modes:
+// 1) Deterministic (consensus-safe) derived from block header time/height.
+// 2) Observability (metrics-only) via node-local RPC; not persisted to consensus.
 type NetworkHealthCollector struct {
 	rpcEndpoint string
 	httpClient  *http.Client
 
-	// Cache to avoid hammering the RPC endpoint
+	// Block time calculation (deterministic: uses block headers)
 	mu              sync.RWMutex
-	cachedHealth    *types.NetworkHealth
-	cacheExpiry     time.Time
-	cacheDuration   time.Duration
-
-	// Block time calculation
 	lastBlockHeight int64
 	lastBlockTime   time.Time
 	blockTimes      []float64 // Rolling window for average calculation
@@ -42,7 +39,6 @@ type NetworkHealthCollector struct {
 // rpcEndpoint should be the local CometBFT RPC endpoint (e.g., "http://localhost:26657")
 // The endpoint can be overridden via the MONITORING_RPC_ENDPOINT environment variable.
 func NewNetworkHealthCollector(rpcEndpoint string) *NetworkHealthCollector {
-	// Allow override via environment variable
 	if envEndpoint := os.Getenv("MONITORING_RPC_ENDPOINT"); envEndpoint != "" {
 		rpcEndpoint = envEndpoint
 	}
@@ -52,7 +48,6 @@ func NewNetworkHealthCollector(rpcEndpoint string) *NetworkHealthCollector {
 		httpClient: &http.Client{
 			Timeout: 5 * time.Second,
 		},
-		cacheDuration: 10 * time.Second, // Cache for 10 seconds
 		blockTimes:    make([]float64, 0, 100),
 		maxBlockTimes: 100, // Keep last 100 block times for averaging
 	}
@@ -116,21 +111,10 @@ type rpcValidatorsResponse struct {
 	} `json:"result"`
 }
 
-// CollectNetworkHealth gathers network health metrics from the local RPC endpoint.
-// This should be called from BeginBlocker to update metrics each block.
-func (c *NetworkHealthCollector) CollectNetworkHealth(ctx context.Context) (*types.NetworkHealth, error) {
+// CollectDeterministicHealth gathers consensus-safe metrics (no RPC, no wall-clock).
+func (c *NetworkHealthCollector) CollectDeterministicHealth(ctx context.Context) (*types.NetworkHealth, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
-	// Check cache first
-	c.mu.RLock()
-	if c.cachedHealth != nil && time.Now().Before(c.cacheExpiry) {
-		cached := c.cachedHealth
-		c.mu.RUnlock()
-		return cached, nil
-	}
-	c.mu.RUnlock()
-
-	// Collect fresh data
 	health := &types.NetworkHealth{
 		Timestamp:   sdkCtx.BlockTime(),
 		BlockHeight: sdkCtx.BlockHeight(),
@@ -140,40 +124,45 @@ func (c *NetworkHealthCollector) CollectNetworkHealth(ctx context.Context) (*typ
 	c.updateBlockTime(sdkCtx.BlockHeight(), sdkCtx.BlockTime())
 	health.BlockTime = c.getAverageBlockTime()
 
-	// Fetch peer count from RPC
-	peerCount, err := c.fetchPeerCount()
-	if err != nil {
-		// Log but don't fail - use 0 as fallback
-		sdkCtx.Logger().Debug("failed to fetch peer count", "error", err)
+	// Deterministic placeholders for non-consensus-friendly fields
+	health.PeerCount = 0
+	health.MempoolSize = 0
+	health.TPS = 0
+	health.ActiveValidators = 0
+	health.TotalValidators = 0
+	health.NetworkHashRate = 0
+	health.AverageGasPrice = 0
+	health.NetworkCongestion = 0
+	health.ConsensusHealth = 1 // assume healthy; deterministic constant
+
+	return health, nil
+}
+
+// CollectObservabilityHealth gathers richer node-local metrics for Prometheus.
+// DO NOT persist this to consensus state.
+func (c *NetworkHealthCollector) CollectObservabilityHealth(ctx context.Context) (*types.NetworkHealth, error) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
+	health := &types.NetworkHealth{
+		Timestamp:   sdkCtx.BlockTime(),
+		BlockHeight: sdkCtx.BlockHeight(),
 	}
+
+	// Deterministic block-time stats
+	c.updateBlockTime(sdkCtx.BlockHeight(), sdkCtx.BlockTime())
+	health.BlockTime = c.getAverageBlockTime()
+
+	peerCount, _ := c.fetchPeerCount()
+	mempoolSize, _ := c.fetchMempoolSize()
+	activeVals, totalVals, _ := c.fetchValidatorCounts()
+
 	health.PeerCount = peerCount
-
-	// Fetch mempool size from RPC
-	mempoolSize, err := c.fetchMempoolSize()
-	if err != nil {
-		sdkCtx.Logger().Debug("failed to fetch mempool size", "error", err)
-	}
 	health.MempoolSize = mempoolSize
-
-	// Fetch validator count from RPC
-	activeValidators, totalValidators, err := c.fetchValidatorCounts()
-	if err != nil {
-		sdkCtx.Logger().Debug("failed to fetch validator counts", "error", err)
-	}
-	health.ActiveValidators = activeValidators
-	health.TotalValidators = totalValidators
-
-	// Calculate consensus health based on available data
+	health.ActiveValidators = activeVals
+	health.TotalValidators = totalVals
+	health.TPS = 0
+	health.NetworkCongestion = c.calculateCongestion(mempoolSize)
 	health.ConsensusHealth = c.calculateConsensusHealth(health)
-
-	// Calculate network congestion (simplified: based on mempool size)
-	health.NetworkCongestion = c.calculateCongestion(health.MempoolSize)
-
-	// Cache the result
-	c.mu.Lock()
-	c.cachedHealth = health
-	c.cacheExpiry = time.Now().Add(c.cacheDuration)
-	c.mu.Unlock()
 
 	return health, nil
 }
@@ -199,23 +188,7 @@ func (c *NetworkHealthCollector) updateBlockTime(height int64, blockTime time.Ti
 	c.lastBlockTime = blockTime
 }
 
-// getAverageBlockTime calculates the average block time from recent blocks
-func (c *NetworkHealthCollector) getAverageBlockTime() float64 {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
-	if len(c.blockTimes) == 0 {
-		return 0
-	}
-
-	var sum float64
-	for _, t := range c.blockTimes {
-		sum += t
-	}
-	return sum / float64(len(c.blockTimes))
-}
-
-// fetchPeerCount queries the /net_info endpoint for peer count
+// fetchPeerCount queries the /net_info endpoint for peer count (metrics only)
 func (c *NetworkHealthCollector) fetchPeerCount() (int, error) {
 	c.mu.RLock()
 	endpoint := c.rpcEndpoint
@@ -245,12 +218,11 @@ func (c *NetworkHealthCollector) fetchPeerCount() (int, error) {
 		return 0, fmt.Errorf("failed to parse net_info: %w", err)
 	}
 
-	var peerCount int
-	fmt.Sscanf(netInfo.Result.NPeers, "%d", &peerCount)
+	peerCount, _ := strconv.Atoi(netInfo.Result.NPeers)
 	return peerCount, nil
 }
 
-// fetchMempoolSize queries the /unconfirmed_txs endpoint for mempool size
+// fetchMempoolSize queries /unconfirmed_txs (metrics only)
 func (c *NetworkHealthCollector) fetchMempoolSize() (int, error) {
 	c.mu.RLock()
 	endpoint := c.rpcEndpoint
@@ -280,12 +252,11 @@ func (c *NetworkHealthCollector) fetchMempoolSize() (int, error) {
 		return 0, fmt.Errorf("failed to parse unconfirmed_txs: %w", err)
 	}
 
-	var total int
-	fmt.Sscanf(txs.Result.Total, "%d", &total)
+	total, _ := strconv.Atoi(txs.Result.Total)
 	return total, nil
 }
 
-// fetchValidatorCounts queries the /validators endpoint for validator counts
+// fetchValidatorCounts queries /validators (metrics only)
 func (c *NetworkHealthCollector) fetchValidatorCounts() (active int, total int, err error) {
 	c.mu.RLock()
 	endpoint := c.rpcEndpoint
@@ -315,49 +286,37 @@ func (c *NetworkHealthCollector) fetchValidatorCounts() (active int, total int, 
 		return 0, 0, fmt.Errorf("failed to parse validators: %w", err)
 	}
 
-	fmt.Sscanf(validators.Result.Total, "%d", &total)
-	// Active validators = validators with voting power > 0
-	// For simplicity, we assume all returned validators are active
+	total, _ = strconv.Atoi(validators.Result.Total)
 	active = total
-
 	return active, total, nil
 }
 
-// calculateConsensusHealth calculates a health score from 0-1
+// calculateConsensusHealth computes a 0-1 health score (metrics only)
 func (c *NetworkHealthCollector) calculateConsensusHealth(health *types.NetworkHealth) float64 {
 	score := 1.0
-
-	// Penalize for no peers
 	if health.PeerCount == 0 {
 		score -= 0.3
 	} else if health.PeerCount < 3 {
 		score -= 0.1
 	}
-
-	// Penalize for slow block times (> 5s is concerning)
 	if health.BlockTime > 10 {
 		score -= 0.3
 	} else if health.BlockTime > 5 {
 		score -= 0.1
 	}
-
-	// Penalize for large mempool
 	if health.MempoolSize > 1000 {
 		score -= 0.2
 	} else if health.MempoolSize > 100 {
 		score -= 0.1
 	}
-
-	// Clamp to 0-1
 	if score < 0 {
-		score = 0
+		return 0
 	}
 	return score
 }
 
-// calculateCongestion calculates network congestion from 0-1 based on mempool
+// calculateCongestion estimates congestion from mempool size (metrics only)
 func (c *NetworkHealthCollector) calculateCongestion(mempoolSize int) float64 {
-	// Simple linear scaling: 0 at 0 txs, 1.0 at 10000+ txs
 	if mempoolSize <= 0 {
 		return 0
 	}
@@ -365,4 +324,20 @@ func (c *NetworkHealthCollector) calculateCongestion(mempoolSize int) float64 {
 		return 1.0
 	}
 	return float64(mempoolSize) / 10000.0
+}
+
+// getAverageBlockTime calculates the average block time from recent blocks
+func (c *NetworkHealthCollector) getAverageBlockTime() float64 {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	if len(c.blockTimes) == 0 {
+		return 0
+	}
+
+	var sum float64
+	for _, t := range c.blockTimes {
+		sum += t
+	}
+	return sum / float64(len(c.blockTimes))
 }

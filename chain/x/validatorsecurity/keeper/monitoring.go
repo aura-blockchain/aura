@@ -69,6 +69,32 @@ func (k Keeper) TrackBlockSign(ctx context.Context, validatorAddr string, signed
 	return nil
 }
 
+// TrackSigningFromVote tracks block signing using consensus address from vote info
+// This is called by BeginBlocker to process CometBFT last commit votes
+func (k Keeper) TrackSigningFromVote(ctx context.Context, consAddr sdk.ConsAddress, signed bool) error {
+	// Look up validator by consensus address
+	validator, err := k.stakingKeeper.ValidatorByConsAddr(ctx, consAddr)
+	if err != nil {
+		// Validator not found in staking - may not be bonded, skip
+		return nil
+	}
+
+	valAddr := validator.GetOperator()
+	if valAddr == nil {
+		return nil
+	}
+
+	validatorAddr := valAddr.String()
+
+	// Check if registered in validatorsecurity
+	if !k.HasValidatorSecurityInfo(ctx, validatorAddr) {
+		// Not registered, skip tracking
+		return nil
+	}
+
+	return k.TrackBlockSign(ctx, validatorAddr, signed)
+}
+
 // MonitorValidator performs comprehensive monitoring checks
 func (k Keeper) MonitorValidator(ctx context.Context, validatorAddr string) error {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)

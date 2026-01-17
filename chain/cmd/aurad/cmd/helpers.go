@@ -275,7 +275,7 @@ func GetQuickStartGuide() string {
 AURA Blockchain - Quick Start Guide
 
 1. Initialize your node:
-   aurad init <moniker> --chain-id aura-mainnet
+   aurad init <moniker> --chain-id aura-mvp-1
 
 2. Create or import a key:
    aurad keys add mykey

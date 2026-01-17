@@ -87,9 +87,31 @@ func (k Keeper) UnjailValidator(ctx context.Context, validatorAddr string) error
 		return types.ErrValidatorTombstoned
 	}
 
-	// Not jailed
-	if !info.IsJailed {
+	// Convert to validator address to check staking module state
+	valAddr, err := sdk.ValAddressFromBech32(validatorAddr)
+	if err != nil {
+		return fmt.Errorf("failed to ValAddressFromBech32 for validatorAddr: %w", err)
+	}
+
+	validator, err := k.stakingKeeper.Validator(ctx, valAddr)
+	if err != nil {
+		return fmt.Errorf("failed to get validator from staking: %w", err)
+	}
+
+	// Check staking module jailed status (status 1 = BOND_STATUS_UNBONDING due to jail)
+	// This handles validators that were jailed before registering in validatorsecurity module
+	stakingJailed := validator.GetStatus() == 2 // BOND_STATUS_UNBONDING
+
+	// Not jailed in either module
+	if !info.IsJailed && !stakingJailed {
 		return types.ErrCannotUnjail
+	}
+
+	// Sync validatorsecurity state if needed (validator was jailed before registration)
+	if !info.IsJailed && stakingJailed {
+		k.Logger(sdkCtx).Info("syncing jailed state from staking module", "validator", validatorAddr)
+		info.IsJailed = true
+		// Don't set JailedUntil since we don't know when it was originally jailed
 	}
 
 	// Check if jail period has passed
@@ -112,20 +134,10 @@ func (k Keeper) UnjailValidator(ctx context.Context, validatorAddr string) error
 		}
 	}
 
-	// Convert to consensus address for unjailing
-	valAddr, err := sdk.ValAddressFromBech32(validatorAddr)
-	if err != nil {
-		return fmt.Errorf("failed to ValAddressFromBech32 for GetValidatorSentryNodes: %w", err)
-	}
-
-	validator, err := k.stakingKeeper.Validator(ctx, valAddr)
-	if err != nil {
-		return fmt.Errorf("failed to Validator for validatorAddr: %w", err)
-	}
-
+	// Get consensus address for unjailing (reuse validator from above)
 	consAddr, err := validator.GetConsAddr()
 	if err != nil {
-		return fmt.Errorf("failed to get for validator: %w", err)
+		return fmt.Errorf("failed to get consensus address: %w", err)
 	}
 
 	// Unjail the validator

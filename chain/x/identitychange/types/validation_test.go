@@ -26,8 +26,8 @@ func TestDefaultParams(t *testing.T) {
 		t.Error("expected AssistantSlashOnFalsePositive to be true")
 	}
 
-	if params.StalenessInvestigatorChain != "aura-mainnet" {
-		t.Errorf("expected StalenessInvestigatorChain to be 'aura-mainnet', got %s", params.StalenessInvestigatorChain)
+	if params.StalenessInvestigatorChain != "aura-mvp-1" {
+		t.Errorf("expected StalenessInvestigatorChain to be 'aura-mvp-1', got %s", params.StalenessInvestigatorChain)
 	}
 }
 

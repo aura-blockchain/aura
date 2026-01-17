@@ -41,7 +41,7 @@ Download the latest release from the [releases page](https://github.com/aequitas
 aurad init my-node
 
 # Initialize with custom chain ID
-aurad init my-node --chain-id aura-mainnet-1
+aurad init my-node --chain-id aura-mvp-1
 ```
 
 This creates the necessary configuration files in `~/.aura/`:

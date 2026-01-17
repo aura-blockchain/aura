@@ -24,7 +24,7 @@ func DefaultParams() Params {
 		MinConfidenceAfterChange:      30,
 		StalenessHeightThreshold:      100000, // ~1 day at 1 block/sec
 		AssistantSlashOnFalsePositive: true,
-		StalenessInvestigatorChain:    "aura-mainnet",
+		StalenessInvestigatorChain:    "aura-mvp-1",
 	}
 }
 
