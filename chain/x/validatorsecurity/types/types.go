@@ -83,7 +83,7 @@ type (
 	// ValidatorMonitoring represents validator monitoring data
 	ValidatorMonitoring struct {
 		ValidatorAddress  string
-		UptimePercentage  float64
+		UptimeBasisPoints uint64 // 10000 = 100%, deterministic integer arithmetic
 		MissedBlocks      int64
 		TotalBlocks       int64
 		LastUpdated       *timestamppb.Timestamp

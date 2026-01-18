@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"cosmossdk.io/math"
 	"github.com/aequitas/aura/chain/x/economicsecurity/types"
 )
 
@@ -17,11 +18,15 @@ import (
 
 // IncentiveAnalysisResult contains the results of incentive analysis
 type IncentiveAnalysisResult struct {
-	ValidatorRewards       string
-	UserRewards            string
-	TreasuryAllocation     string
-	BurnAmount             string
-	IncentiveEfficiency    float64
+	ValidatorRewards   string
+	UserRewards        string
+	TreasuryAllocation string
+	BurnAmount         string
+	// IncentiveEfficiencyBps stores the incentive efficiency score in basis points (0-10000 = 0-100%)
+	// DETERMINISM: Using integer basis points instead of float64 ensures cross-platform
+	// consistency. Float operations can produce different results on different CPU architectures,
+	// causing consensus failures in blockchain state machines.
+	IncentiveEfficiencyBps uint64
 	RecommendedAdjustments []string
 }
 
@@ -63,7 +68,7 @@ func (k *Keeper) AnalyzeEconomicIncentives(
 	result.RecommendedAdjustments = append(result.RecommendedAdjustments, burnAnalysis.recommendations...)
 
 	// 5. Calculate overall incentive efficiency
-	result.IncentiveEfficiency = k.calculateIncentiveEfficiency(params, activeUsers, validators)
+	result.IncentiveEfficiencyBps = k.calculateIncentiveEfficiencyBps(params, activeUsers, validators)
 
 	return result, nil
 }
@@ -236,55 +241,66 @@ func (k *Keeper) analyzeBurnEconomics(ctx context.Context, params types.Params) 
 	}, nil
 }
 
-// calculateIncentiveEfficiency calculates overall incentive efficiency score (0-100)
-func (k *Keeper) calculateIncentiveEfficiency(params types.Params, activeUsers uint64, validators uint64) float64 {
-	score := float64(100)
+// calculateIncentiveEfficiencyBps calculates overall incentive efficiency score in basis points (0-10000)
+// DETERMINISM: This function uses math.LegacyDec for all calculations to ensure cross-platform
+// consistency. Float64 operations can produce different results on different CPU architectures
+// (x86 vs ARM, different FPU implementations), causing app hash mismatches and consensus failures
+// during chain replay or state sync. The result is returned as basis points (integer) for storage.
+func (k *Keeper) calculateIncentiveEfficiencyBps(params types.Params, activeUsers uint64, validators uint64) uint64 {
+	// Start with 100% score (10000 basis points)
+	score := math.LegacyNewDec(10000)
 
-	// Deduct points for inefficiencies
+	// Deduct points for inefficiencies (all deductions in basis points)
 
-	// 1. Check inflation alignment (max -20 points)
+	// 1. Check inflation alignment (max -2000 bps = 20 points)
 	inflationDelta := int64(params.Tokenomics.InflationRate) - int64(params.Tokenomics.TargetInflationRate)
 	if inflationDelta < 0 {
 		inflationDelta = -inflationDelta
 	}
 	if inflationDelta > 100 { // More than 1% off target
-		score -= float64(inflationDelta) / 10
-		if score < 80 {
-			score = 80
+		// Deduct inflationDelta/10 points, converted to basis points (*100)
+		// inflationDelta is in basis points already, so deduction = inflationDelta * 10 (to convert to score bps)
+		deduction := math.LegacyNewDec(inflationDelta).QuoInt64(10).MulInt64(100)
+		score = score.Sub(deduction)
+		minScore := math.LegacyNewDec(8000) // Minimum 80% (8000 bps)
+		if score.LT(minScore) {
+			score = minScore
 		}
 	}
 
-	// 2. Check user participation (max -20 points)
+	// 2. Check user participation (max -2000 bps = 20 points)
 	if activeUsers < 100 {
-		score -= 20
+		score = score.Sub(math.LegacyNewDec(2000))
 	} else if activeUsers < 500 {
-		score -= 10
+		score = score.Sub(math.LegacyNewDec(1000))
 	}
 
-	// 3. Check MEV distribution efficiency (max -20 points)
+	// 3. Check MEV distribution efficiency (max -2000 bps = 20 points)
 	if params.Mev.Strategy == types.MEVStrategyEqualDistribution {
-		score -= 10 // Equal distribution is less efficient
+		score = score.Sub(math.LegacyNewDec(1000)) // Equal distribution is less efficient
 	}
 
-	// 4. Check treasury balance (max -20 points)
+	// 4. Check treasury balance (max -2000 bps = 20 points)
 	if params.Mev.TreasuryPercentage < 1000 {
-		score -= 15
+		score = score.Sub(math.LegacyNewDec(1500))
 	} else if params.Mev.TreasuryPercentage > 3000 {
-		score -= 10
+		score = score.Sub(math.LegacyNewDec(1000))
 	}
 
-	// 5. Check validator count (max -20 points)
+	// 5. Check validator count (max -2000 bps = 20 points)
 	if validators < 10 {
-		score -= 20 // Very few validators
+		score = score.Sub(math.LegacyNewDec(2000)) // Very few validators
 	} else if validators < 50 {
-		score -= 10
+		score = score.Sub(math.LegacyNewDec(1000))
 	}
 
-	if score < 0 {
-		score = 0
+	// Ensure score doesn't go negative
+	if score.IsNegative() {
+		score = math.LegacyZeroDec()
 	}
 
-	return score
+	// Return as uint64 (truncate any remaining decimal)
+	return uint64(score.TruncateInt64())
 }
 
 // GetIncentiveRecommendations returns specific incentive recommendations
@@ -354,10 +370,14 @@ func (k *Keeper) SimulateIncentiveChange(
 }
 
 // CalculateOptimalIncentiveDistribution calculates optimal incentive distribution across stakeholders
+// DETERMINISM: This function uses math.LegacyDec and integer basis points for all calculations
+// to ensure cross-platform consistency. Float64 operations can produce different results on
+// different CPU architectures, causing consensus failures in blockchain state machines.
+// stakingRatioBps is the staking ratio in basis points (e.g., 3000 = 30%)
 func (k *Keeper) CalculateOptimalIncentiveDistribution(
 	ctx context.Context,
 	totalRewards string,
-	stakingRatio float64,
+	stakingRatioBps uint64,
 	activeUserCount uint64,
 	validatorCount uint64,
 ) (map[string]string, error) {
@@ -368,46 +388,53 @@ func (k *Keeper) CalculateOptimalIncentiveDistribution(
 
 	distribution := make(map[string]string)
 
-	// Optimal distribution based on network health
-	// Base allocation: 40% validators, 30% users, 20% treasury, 10% burn
+	// Optimal distribution based on network health (all percentages in basis points)
+	// Base allocation: 40% validators (4000 bps), 30% users (3000 bps), 20% treasury (2000 bps), 10% burn (1000 bps)
 
-	// Adjust based on staking ratio
-	validatorPercentage := float64(40)
-	if stakingRatio < 0.3 {
-		validatorPercentage = 50 // Increase to incentivize staking
-	} else if stakingRatio > 0.7 {
-		validatorPercentage = 30 // Decrease as already high
+	// Adjust based on staking ratio (using basis points for comparison)
+	validatorPercentageBps := uint64(4000) // 40%
+	if stakingRatioBps < 3000 {            // Less than 30% staked
+		validatorPercentageBps = 5000 // Increase to 50% to incentivize staking
+	} else if stakingRatioBps > 7000 { // More than 70% staked
+		validatorPercentageBps = 3000 // Decrease to 30% as already high
 	}
 
 	// Adjust based on user activity
-	userPercentage := float64(30)
+	userPercentageBps := uint64(3000) // 30%
 	if activeUserCount < 100 {
-		userPercentage = 40 // Increase to attract users
+		userPercentageBps = 4000 // Increase to 40% to attract users
 	}
 
-	// Treasury gets remainder to balance
-	treasuryPercentage := 100 - validatorPercentage - userPercentage - 10
+	// Burn is fixed at 10% (1000 bps)
+	burnPercentageBps := uint64(1000)
 
-	// Calculate amounts
-	validatorRewards := new(big.Int).Mul(rewards, big.NewInt(int64(validatorPercentage*100)))
-	validatorRewards.Div(validatorRewards, big.NewInt(10000))
-	distribution["validators"] = validatorRewards.String()
+	// Treasury gets remainder to balance (10000 - validators - users - burn)
+	treasuryPercentageBps := uint64(10000) - validatorPercentageBps - userPercentageBps - burnPercentageBps
 
-	userRewards := new(big.Int).Mul(rewards, big.NewInt(int64(userPercentage*100)))
-	userRewards.Div(userRewards, big.NewInt(10000))
-	distribution["users"] = userRewards.String()
+	// Calculate amounts using math.LegacyDec for deterministic division
+	rewardsDec := math.LegacyNewDecFromBigInt(rewards)
 
-	treasuryRewards := new(big.Int).Mul(rewards, big.NewInt(int64(treasuryPercentage*100)))
-	treasuryRewards.Div(treasuryRewards, big.NewInt(10000))
-	distribution["treasury"] = treasuryRewards.String()
+	validatorRewardsDec := rewardsDec.MulInt64(int64(validatorPercentageBps)).QuoInt64(10000)
+	distribution["validators"] = validatorRewardsDec.TruncateInt().String()
 
-	burnAmount := new(big.Int).Mul(rewards, big.NewInt(1000)) // 10%
-	burnAmount.Div(burnAmount, big.NewInt(10000))
-	distribution["burn"] = burnAmount.String()
+	userRewardsDec := rewardsDec.MulInt64(int64(userPercentageBps)).QuoInt64(10000)
+	distribution["users"] = userRewardsDec.TruncateInt().String()
+
+	treasuryRewardsDec := rewardsDec.MulInt64(int64(treasuryPercentageBps)).QuoInt64(10000)
+	distribution["treasury"] = treasuryRewardsDec.TruncateInt().String()
+
+	burnAmountDec := rewardsDec.MulInt64(int64(burnPercentageBps)).QuoInt64(10000)
+	distribution["burn"] = burnAmountDec.TruncateInt().String()
+
+	// Convert basis points to percentages for display (integer division for determinism)
+	validatorPct := validatorPercentageBps / 100
+	userPct := userPercentageBps / 100
+	treasuryPct := treasuryPercentageBps / 100
+	stakingPct := stakingRatioBps / 100
 
 	distribution["reasoning"] = fmt.Sprintf(
-		"Optimal distribution: Validators %.1f%%, Users %.1f%%, Treasury %.1f%%, Burn 10%% (based on staking ratio %.2f and %d active users)",
-		validatorPercentage, userPercentage, treasuryPercentage, stakingRatio, activeUserCount,
+		"Optimal distribution: Validators %d%%, Users %d%%, Treasury %d%%, Burn 10%% (based on staking ratio %d%% and %d active users)",
+		validatorPct, userPct, treasuryPct, stakingPct, activeUserCount,
 	)
 
 	return distribution, nil

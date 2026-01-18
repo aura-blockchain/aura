@@ -218,10 +218,11 @@ func (k Keeper) IsSuspiciousSyncPeer(ctx sdk.Context, peerID string) bool {
 		return false
 	}
 
-	// Check invalid message ratio
+	// Check invalid message ratio using basis points (10000 = 100%) for determinism
 	if reputation.MessagesReceived > 10 {
-		invalidRatio := float64(reputation.InvalidMessages) / float64(reputation.MessagesReceived)
-		if invalidRatio > 0.5 { // More than 50% invalid messages
+		// Calculate ratio in basis points: (invalid * 10000) / total
+		invalidRatioBps := (reputation.InvalidMessages * 10000) / reputation.MessagesReceived
+		if invalidRatioBps > 5000 { // More than 50% (5000 basis points) invalid messages
 			return true
 		}
 	}
@@ -266,14 +267,15 @@ func (k Keeper) DetectPartition(ctx sdk.Context) error {
 		k.logger.Warn(fmt.Sprintf("Low peer count detected: %d (min: %d)",
 			currentPeerCount, params.PartitionDetection.MinConnectedPeers))
 
-		// Check if this is a sudden drop
+		// Check if this is a sudden drop using basis points (10000 = 100%) for determinism
 		expectedPeers := k.GetExpectedPeerCount(ctx)
-		if expectedPeers > 0 {
-			dropPercent := float64(expectedPeers-currentPeerCount) / float64(expectedPeers) * 100
+		if expectedPeers > 0 && currentPeerCount < expectedPeers {
+			// Calculate drop percentage in basis points: ((expected - current) * 10000) / expected
+			dropPercentBps := ((expectedPeers - currentPeerCount) * 10000) / expectedPeers
 
-			if dropPercent > 50.0 { // More than 50% drop
+			if dropPercentBps > 5000 { // More than 50% drop (5000 basis points)
 				// Potential partition detected
-				k.logger.Error(fmt.Sprintf("Potential network partition: %.1f%% peer drop", dropPercent))
+				k.logger.Error(fmt.Sprintf("Potential network partition: %d.%02d%% peer drop", dropPercentBps/100, dropPercentBps%100))
 
 				// Create partition alert
 				detectedAt := ctx.BlockTime()
@@ -319,11 +321,12 @@ func (k Keeper) GetExpectedPeerCount(ctx sdk.Context) uint32 {
 func (k Keeper) UpdateExpectedPeerCount(ctx sdk.Context, currentCount uint32) {
 	expectedCount := k.GetExpectedPeerCount(ctx)
 
-	// Calculate running average (80% old, 20% new)
+	// Calculate running average (80% old, 20% new) using integer math for determinism
+	// Formula: new_expected = (old * 8 + current * 2) / 10
 	if expectedCount == 0 {
 		expectedCount = currentCount
 	} else {
-		expectedCount = uint32(float64(expectedCount)*0.8 + float64(currentCount)*0.2)
+		expectedCount = (expectedCount*8 + currentCount*2) / 10
 	}
 
 	store := k.storeService.OpenKVStore(ctx)

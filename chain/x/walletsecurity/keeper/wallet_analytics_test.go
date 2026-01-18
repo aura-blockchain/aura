@@ -52,8 +52,9 @@ func (suite *WalletAnalyticsTestSuite) TestCalculateSecurityScore_NewWallet() {
 
 	// New wallet with no features should have reduced score
 	score := k.calculateSecurityScore(ctx, "new-wallet-score")
-	// No multisig (-20), no hardware wallet (-15), no social recovery (-10), no biometric (-10) = 45
-	suite.Require().Equal(45.0, score)
+	// Score is in basis points (10000 = 100%)
+	// No multisig (-2000), no hardware wallet (-1500), no social recovery (-1000), no biometric (-1000) = 4500 basis points (45%)
+	suite.Require().Equal(int64(4500), score)
 }
 
 func (suite *WalletAnalyticsTestSuite) TestCalculateSecurityScore_WithMultiSig() {
@@ -67,41 +68,45 @@ func (suite *WalletAnalyticsTestSuite) TestCalculateSecurityScore_WithMultiSig()
 
 	// Check security score using the actual wallet ID
 	score := k.calculateSecurityScore(ctx, msWallet.WalletId)
-	// With multisig (+20) but no hardware wallet (-15), no social recovery (-10), no biometric (-10) = 65
-	suite.Require().Equal(65.0, score)
+	// Score is in basis points (10000 = 100%)
+	// With multisig (no deduction) but no hardware wallet (-1500), no social recovery (-1000), no biometric (-1000) = 6500 basis points (65%)
+	suite.Require().Equal(int64(6500), score)
 }
 
 func (suite *WalletAnalyticsTestSuite) TestDetermineRiskLevel_LowRisk() {
 	k := suite.GetKeeper()
 
-	// High score = low risk
-	suite.Require().Equal("low", k.determineRiskLevel(85))
-	suite.Require().Equal("low", k.determineRiskLevel(100))
-	suite.Require().Equal("low", k.determineRiskLevel(80))
+	// Score is in basis points (10000 = 100%), >=80% (8000 basis points) = low risk
+	suite.Require().Equal("low", k.determineRiskLevel(8500))  // 85%
+	suite.Require().Equal("low", k.determineRiskLevel(10000)) // 100%
+	suite.Require().Equal("low", k.determineRiskLevel(8000))  // 80% (boundary)
 }
 
 func (suite *WalletAnalyticsTestSuite) TestDetermineRiskLevel_MediumRisk() {
 	k := suite.GetKeeper()
 
-	suite.Require().Equal("medium", k.determineRiskLevel(79))
-	suite.Require().Equal("medium", k.determineRiskLevel(65))
-	suite.Require().Equal("medium", k.determineRiskLevel(60))
+	// Score is in basis points, 60-79% (6000-7999 basis points) = medium risk
+	suite.Require().Equal("medium", k.determineRiskLevel(7900)) // 79%
+	suite.Require().Equal("medium", k.determineRiskLevel(6500)) // 65%
+	suite.Require().Equal("medium", k.determineRiskLevel(6000)) // 60% (boundary)
 }
 
 func (suite *WalletAnalyticsTestSuite) TestDetermineRiskLevel_HighRisk() {
 	k := suite.GetKeeper()
 
-	suite.Require().Equal("high", k.determineRiskLevel(59))
-	suite.Require().Equal("high", k.determineRiskLevel(45))
-	suite.Require().Equal("high", k.determineRiskLevel(40))
+	// Score is in basis points, 40-59% (4000-5999 basis points) = high risk
+	suite.Require().Equal("high", k.determineRiskLevel(5900)) // 59%
+	suite.Require().Equal("high", k.determineRiskLevel(4500)) // 45%
+	suite.Require().Equal("high", k.determineRiskLevel(4000)) // 40% (boundary)
 }
 
 func (suite *WalletAnalyticsTestSuite) TestDetermineRiskLevel_CriticalRisk() {
 	k := suite.GetKeeper()
 
-	suite.Require().Equal("critical", k.determineRiskLevel(39))
-	suite.Require().Equal("critical", k.determineRiskLevel(20))
-	suite.Require().Equal("critical", k.determineRiskLevel(0))
+	// Score is in basis points, <40% (<4000 basis points) = critical risk
+	suite.Require().Equal("critical", k.determineRiskLevel(3900)) // 39%
+	suite.Require().Equal("critical", k.determineRiskLevel(2000)) // 20%
+	suite.Require().Equal("critical", k.determineRiskLevel(0))    // 0%
 }
 
 func (suite *WalletAnalyticsTestSuite) TestGetEnabledFeatures_Empty() {
@@ -155,15 +160,16 @@ func (suite *WalletAnalyticsTestSuite) TestGenerateSecurityReport_WithRecommenda
 	report, err := k.GenerateSecurityReport(ctx, "wallet-needs-recs")
 	suite.Require().NoError(err)
 	suite.Require().NotNil(report)
-	// Score is 45, below 80, so should have recommendations
+	// Score is 4500 basis points (45%), below 8000 (80%), so should have recommendations
 	suite.Require().True(len(report.Recommendations) > 0)
 }
 
 func (suite *WalletAnalyticsTestSuite) TestGenerateRecommendations_LowScore() {
 	k := suite.GetKeeper()
 
+	// Score is in basis points (4500 = 45%)
 	analytics := &WalletAnalytics{
-		SecurityScore:   45,
+		SecurityScore:   4500,
 		EnabledFeatures: []string{},
 	}
 
@@ -177,8 +183,9 @@ func (suite *WalletAnalyticsTestSuite) TestGenerateRecommendations_LowScore() {
 func (suite *WalletAnalyticsTestSuite) TestGenerateRecommendations_HighScore() {
 	k := suite.GetKeeper()
 
+	// Score is in basis points (9500 = 95%)
 	analytics := &WalletAnalytics{
-		SecurityScore:   95,
+		SecurityScore:   9500,
 		EnabledFeatures: []string{"multisig", "hardware_wallet", "social_recovery", "biometric"},
 	}
 

@@ -4,17 +4,17 @@
 package keeper
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"time"
 
 	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
+
+// PendingWebhookKeyPrefix is the key prefix for pending webhook events in the KV store
+var PendingWebhookKeyPrefix = []byte{0x0E}
 
 // WebhookConfig represents a webhook configuration stored in the KV store
 type WebhookConfig struct {
@@ -146,86 +146,188 @@ func (k Keeper) RemoveWebhook(ctx context.Context, webhookID string) error {
 	return store.Delete(key)
 }
 
-// TriggerWebhook sends an event to a webhook (non-blocking)
+// PendingWebhookEvent represents a webhook event queued for off-chain delivery.
+// These events are stored in the KV store and emitted via SDK events for
+// off-chain processors to pick up and deliver.
+type PendingWebhookEvent struct {
+	ID          string                 `json:"id"`
+	WebhookID   string                 `json:"webhook_id"`
+	WebhookURL  string                 `json:"webhook_url"`
+	Secret      string                 `json:"secret"`
+	Headers     map[string]string      `json:"headers,omitempty"`
+	Event       *WebhookEvent          `json:"event"`
+	RetryCount  int                    `json:"retry_count"`
+	Timeout     int64                  `json:"timeout"`
+	CreatedAt   time.Time              `json:"created_at"`
+	BlockHeight int64                  `json:"block_height"`
+}
+
+// TriggerWebhook queues a webhook event for off-chain delivery.
+//
+// CONSENSUS SAFETY: This function does NOT make HTTP calls. External HTTP calls
+// are inherently non-deterministic because:
+//   - Network conditions vary between validators
+//   - External service responses differ across nodes
+//   - Timing and latency vary unpredictably
+//
+// Instead, webhook events are:
+//  1. Stored in the KV store as pending events (deterministic)
+//  2. Emitted via SDK events for off-chain processors to consume
+//  3. Delivered by off-chain relay services outside consensus
+//
+// This ensures all validators reach the same state while still enabling
+// webhook notifications through off-chain infrastructure.
 func (k Keeper) TriggerWebhook(ctx context.Context, webhookID string, event *WebhookEvent) error {
 	config, err := k.GetWebhook(ctx, webhookID)
 	if err != nil {
-		return fmt.Errorf("failed to get: %w", err)
+		return fmt.Errorf("failed to get webhook: %w", err)
 	}
 
 	if !config.Enabled {
 		return fmt.Errorf("webhook is disabled")
 	}
 
+	return k.queueWebhookEvent(ctx, config, event)
+}
+
+// queueWebhookEvent stores a webhook event for off-chain delivery and emits an SDK event.
+// This is consensus-safe because it only performs deterministic operations:
+// - Stores data in the KV store (deterministic)
+// - Emits SDK events (deterministic)
+// The actual HTTP delivery happens off-chain via relay services.
+func (k Keeper) queueWebhookEvent(ctx context.Context, config *WebhookConfig, event *WebhookEvent) error {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	// Send webhook asynchronously (non-consensus operation)
-	go func() {
-		if err := k.sendWebhook(config, event); err != nil {
-			sdkCtx.Logger().Error("webhook send failed", "webhook_id", webhookID, "error", err)
-		}
-	}()
+
+	// Generate unique ID for the pending event
+	pendingID := k.generateID(ctx, "pending_webhook")
+
+	pending := &PendingWebhookEvent{
+		ID:          pendingID,
+		WebhookID:   config.ID,
+		WebhookURL:  config.URL,
+		Secret:      config.Secret,
+		Headers:     config.Headers,
+		Event:       event,
+		RetryCount:  config.RetryCount,
+		Timeout:     config.Timeout,
+		CreatedAt:   sdkCtx.BlockTime(),
+		BlockHeight: sdkCtx.BlockHeight(),
+	}
+
+	// Store in KV store for persistence and queryability
+	store := k.storeService.OpenKVStore(ctx)
+	key := append(PendingWebhookKeyPrefix, []byte(pendingID)...)
+
+	bz, err := json.Marshal(pending)
+	if err != nil {
+		return fmt.Errorf("failed to marshal pending webhook: %w", err)
+	}
+
+	if err := store.Set(key, bz); err != nil {
+		return fmt.Errorf("failed to store pending webhook: %w", err)
+	}
+
+	// Emit SDK event for off-chain relay services to consume.
+	// Off-chain indexers/relayers can listen for these events and deliver webhooks.
+	eventPayload, _ := json.Marshal(event)
+	sdkCtx.EventManager().EmitEvent(sdk.NewEvent(
+		"webhook_queued",
+		sdk.NewAttribute("pending_id", pendingID),
+		sdk.NewAttribute("webhook_id", config.ID),
+		sdk.NewAttribute("webhook_url", config.URL),
+		sdk.NewAttribute("event_type", event.Type),
+		sdk.NewAttribute("event_id", event.ID),
+		sdk.NewAttribute("payload", string(eventPayload)),
+		sdk.NewAttribute("block_height", fmt.Sprintf("%d", sdkCtx.BlockHeight())),
+	))
 
 	return nil
 }
 
-// sendWebhook sends a webhook HTTP request with retries
-func (k Keeper) sendWebhook(config *WebhookConfig, event *WebhookEvent) error {
-	// Prepare payload
-	payload, err := json.Marshal(event)
+// GetPendingWebhook retrieves a pending webhook event from the KV store
+func (k Keeper) GetPendingWebhook(ctx context.Context, pendingID string) (*PendingWebhookEvent, error) {
+	store := k.storeService.OpenKVStore(ctx)
+	key := append(PendingWebhookKeyPrefix, []byte(pendingID)...)
+
+	bz, err := store.Get(key)
 	if err != nil {
-		return fmt.Errorf("failed to marshal: %w", err)
+		return nil, err
+	}
+	if bz == nil {
+		return nil, fmt.Errorf("pending webhook not found: %s", pendingID)
 	}
 
-	// Create HTTP request
-	req, err := http.NewRequest("POST", config.URL, bytes.NewBuffer(payload))
-	if err != nil {
-		return fmt.Errorf("failed to NewRequest: %w", err)
+	var pending PendingWebhookEvent
+	if err := json.Unmarshal(bz, &pending); err != nil {
+		return nil, err
 	}
 
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-Webhook-Secret", config.Secret)
-	req.Header.Set("X-Webhook-ID", config.ID)
-	req.Header.Set("X-Event-Type", event.Type)
-
-	// Apply custom headers
-	for key, value := range config.Headers {
-		req.Header.Set(key, value)
-	}
-
-	// Create HTTP client with timeout
-	client := &http.Client{
-		Timeout: time.Duration(config.Timeout) * time.Second,
-	}
-
-	// Send request with retries
-	var lastErr error
-	maxRetries := config.RetryCount
-	if maxRetries <= 0 {
-		maxRetries = 3
-	}
-
-	for i := 0; i < maxRetries; i++ {
-		resp, err := client.Do(req)
-		if err != nil {
-			lastErr = err
-			time.Sleep(time.Duration(i+1) * time.Second)
-			continue
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-			return nil
-		}
-
-		body, _ := io.ReadAll(resp.Body)
-		lastErr = fmt.Errorf("webhook failed with status %d: %s", resp.StatusCode, string(body))
-		time.Sleep(time.Duration(i+1) * time.Second)
-	}
-
-	return lastErr
+	return &pending, nil
 }
 
-// NotifyWebhooks sends an event to all registered webhooks for a specific event type
+// MarkWebhookDelivered removes a pending webhook after successful off-chain delivery.
+// This should be called by governance or an authorized relayer to clean up delivered events.
+func (k Keeper) MarkWebhookDelivered(ctx context.Context, pendingID string) error {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	store := k.storeService.OpenKVStore(ctx)
+	key := append(PendingWebhookKeyPrefix, []byte(pendingID)...)
+
+	// Verify it exists
+	has, err := store.Has(key)
+	if err != nil {
+		return fmt.Errorf("failed to check pending webhook: %w", err)
+	}
+	if !has {
+		return fmt.Errorf("pending webhook not found: %s", pendingID)
+	}
+
+	if err := store.Delete(key); err != nil {
+		return fmt.Errorf("failed to delete pending webhook: %w", err)
+	}
+
+	sdkCtx.EventManager().EmitEvent(sdk.NewEvent(
+		"webhook_delivered",
+		sdk.NewAttribute("pending_id", pendingID),
+	))
+
+	return nil
+}
+
+// GetAllPendingWebhooks retrieves all pending webhook events for off-chain processing
+func (k Keeper) GetAllPendingWebhooks(ctx context.Context) ([]*PendingWebhookEvent, error) {
+	var pending []*PendingWebhookEvent
+
+	store := k.storeService.OpenKVStore(ctx)
+	iterator, err := store.Iterator(PendingWebhookKeyPrefix, storetypes.PrefixEndBytes(PendingWebhookKeyPrefix))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create iterator: %w", err)
+	}
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		var event PendingWebhookEvent
+		if err := json.Unmarshal(iterator.Value(), &event); err != nil {
+			continue
+		}
+		pending = append(pending, &event)
+	}
+
+	return pending, nil
+}
+
+// NotifyWebhooks queues events to all registered webhooks for a specific event type.
+//
+// CONSENSUS SAFETY: This function does NOT make HTTP calls. External HTTP calls
+// are inherently non-deterministic because network conditions, external service
+// responses, and timing vary between validators.
+//
+// Instead, webhook events are queued deterministically:
+//  1. Each matching webhook gets a pending event stored in the KV store
+//  2. SDK events are emitted for off-chain relay services to consume
+//  3. Actual HTTP delivery happens off-chain, outside consensus
+//
+// This ensures all validators reach the same state while enabling webhook
+// notifications through off-chain infrastructure.
 func (k Keeper) NotifyWebhooks(ctx context.Context, eventType string, data map[string]interface{}) error {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
@@ -255,11 +357,12 @@ func (k Keeper) NotifyWebhooks(ctx context.Context, eventType string, data map[s
 
 		// Check if webhook is interested in this event
 		if config.Enabled && k.webhookInterestedInEvent(&config, eventType) {
-			go func(cfg WebhookConfig) {
-				if err := k.sendWebhook(&cfg, event); err != nil {
-					sdkCtx.Logger().Error("webhook broadcast failed", "webhook_id", cfg.ID, "error", err)
-				}
-			}(config)
+			// Queue for off-chain delivery - NO HTTP calls during consensus
+			if err := k.queueWebhookEvent(ctx, &config, event); err != nil {
+				sdkCtx.Logger().Error("failed to queue webhook event", "webhook_id", config.ID, "error", err)
+				// Continue processing other webhooks - individual queue failures
+				// should not block other notifications
+			}
 		}
 	}
 

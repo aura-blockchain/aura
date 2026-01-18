@@ -90,16 +90,22 @@ const (
 
 // ValidatorUptime represents validator uptime tracking
 type ValidatorUptime struct {
-	ValidatorAddress string        `json:"validator_address"`
-	Moniker          string        `json:"moniker"`
-	TotalBlocks      int64         `json:"total_blocks"`
-	SignedBlocks     int64         `json:"signed_blocks"`
-	MissedBlocks     int64         `json:"missed_blocks"`
-	UptimePercentage float64       `json:"uptime_percentage"`
-	LastSeen         time.Time     `json:"last_seen"`
-	Status           string        `json:"status"` // active, jailed, unbonding
-	ConsecutiveMisses int64        `json:"consecutive_misses"`
-	Jailed           bool          `json:"jailed"`
+	ValidatorAddress  string    `json:"validator_address"`
+	Moniker           string    `json:"moniker"`
+	TotalBlocks       int64     `json:"total_blocks"`
+	SignedBlocks      int64     `json:"signed_blocks"`
+	MissedBlocks      int64     `json:"missed_blocks"`
+	UptimeBasisPoints uint64    `json:"uptime_basis_points"` // 10000 = 100%, deterministic integer arithmetic
+	LastSeen          time.Time `json:"last_seen"`
+	Status            string    `json:"status"` // active, jailed, unbonding
+	ConsecutiveMisses int64     `json:"consecutive_misses"`
+	Jailed            bool      `json:"jailed"`
+}
+
+// UptimePercentage returns the uptime as a float64 percentage for display/metrics only.
+// This should only be used for external APIs and Prometheus metrics, never for consensus state.
+func (v *ValidatorUptime) UptimePercentage() float64 {
+	return float64(v.UptimeBasisPoints) / 100.0
 }
 
 // NetworkHealth represents overall network health metrics
@@ -139,13 +145,13 @@ type GasPricePoint struct {
 
 // TVLMonitoring represents Total Value Locked monitoring
 type TVLMonitoring struct {
-	Timestamp       time.Time          `json:"timestamp"`
-	TotalTVL        uint64             `json:"total_tvl"`
-	TVLByModule     map[string]uint64  `json:"tvl_by_module"`
-	TVLChange24h    float64            `json:"tvl_change_24h"` // percentage
-	TVLChange7d     float64            `json:"tvl_change_7d"`
-	TVLHistory      []TVLPoint         `json:"tvl_history"`
-	LargestPools    []PoolTVL          `json:"largest_pools"`
+	Timestamp           time.Time          `json:"timestamp"`
+	TotalTVL            uint64             `json:"total_tvl"`
+	TVLByModule         map[string]uint64  `json:"tvl_by_module"`
+	TVLChange24hBps     int64              `json:"tvl_change_24h_bps"` // basis points (10000 = 100%)
+	TVLChange7dBps      int64              `json:"tvl_change_7d_bps"`  // basis points (10000 = 100%)
+	TVLHistory          []TVLPoint         `json:"tvl_history"`
+	LargestPools        []PoolTVL          `json:"largest_pools"`
 }
 
 // TVLPoint represents a single TVL data point
@@ -156,10 +162,10 @@ type TVLPoint struct {
 
 // PoolTVL represents TVL for a specific pool
 type PoolTVL struct {
-	PoolID      string `json:"pool_id"`
-	PoolName    string `json:"pool_name"`
-	TVL         uint64 `json:"tvl"`
-	Percentage  float64 `json:"percentage"`
+	PoolID         string `json:"pool_id"`
+	PoolName       string `json:"pool_name"`
+	TVL            uint64 `json:"tvl"`
+	PercentageBps  int64  `json:"percentage_bps"` // basis points (10000 = 100%)
 }
 
 // FailedTransactionPattern represents analysis of failed transaction patterns

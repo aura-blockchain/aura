@@ -132,10 +132,17 @@ func (ad *AnomalyDetector) DetectTransactionAnomaly(ctx context.Context, tx *typ
 	// Add to training data (non-consensus: used only for model updates)
 	ad.addTrainingData(featuresInt, detection.IsAnomaly)
 
-	// Retrain if needed (non-consensus: runs in background)
-	if time.Since(ad.lastTraining) > ad.trainingInterval {
-		go ad.retrain()
-	}
+	// NOTE: Automatic retraining has been removed from consensus code.
+	// The previous implementation used time.Since() which calls time.Now() (non-deterministic)
+	// and spawned a goroutine which causes race conditions and non-determinism.
+	//
+	// Model retraining should be triggered via:
+	// - Off-chain monitoring services that periodically call RetrainModel()
+	// - CLI commands (e.g., `aurad tx monitoring retrain-model`)
+	// - Scheduled cron jobs outside the consensus path
+	//
+	// The lastTraining field should use block time (ctx.BlockTime()) if tracking
+	// is needed for on-chain logic, but retraining itself must remain off-chain.
 
 	return detection, nil
 }
@@ -294,8 +301,21 @@ func (ad *AnomalyDetector) addTrainingData(features map[string]uint64, isAnomaly
 	}
 }
 
+// RetrainModel is the public method for triggering model retraining.
+// This should ONLY be called from off-chain mechanisms such as:
+// - CLI commands
+// - Off-chain monitoring services
+// - Scheduled cron jobs
+//
+// DO NOT call this from consensus code (BeginBlocker, EndBlocker, message handlers)
+// as it uses wall-clock time and would cause non-determinism.
+func (ad *AnomalyDetector) RetrainModel() {
+	ad.retrain()
+}
+
 // retrain updates the model statistics based on training data
-// NOTE: Training uses wall-clock time as it's for ML model updates (non-consensus)
+// NOTE: This is an internal method. Use RetrainModel() for external calls.
+// Training uses wall-clock time as it's for ML model updates (non-consensus)
 // Uses deterministic integer arithmetic for all calculations
 func (ad *AnomalyDetector) retrain() {
 	ad.mu.Lock()

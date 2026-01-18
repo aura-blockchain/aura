@@ -1022,7 +1022,15 @@ func (k *Keeper) InvalidateAlertRoutesCache() {
 	k.alertRoutesCacheBlock = -1
 }
 
-// BeginBlocker is called at the start of each block to refresh caches and collect metrics
+// BeginBlocker is called at the start of each block to refresh caches and collect metrics.
+//
+// CONSENSUS SAFETY: This method ONLY performs deterministic operations:
+//   - Cache refresh from KV store
+//   - Deterministic health metrics from block context
+//
+// Non-deterministic observability metrics (HTTP calls to RPC) are NOT collected here.
+// Those should be collected by a separate background goroutine or external process.
+// See CollectObservabilityHealthAsync for off-chain metric collection.
 func (k *Keeper) BeginBlocker(ctx context.Context) error {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
@@ -1038,7 +1046,7 @@ func (k *Keeper) BeginBlocker(ctx context.Context) error {
 	}
 
 	if params.EnableNetworkHealthMonitoring && k.healthCollector != nil {
-		// 1) Deterministic state persisted to KV
+		// DETERMINISTIC ONLY: Collect health metrics from block context (no HTTP, no I/O)
 		if detHealth, err := k.healthCollector.CollectDeterministicHealth(ctx); err == nil {
 			if updateErr := k.UpdateNetworkHealth(ctx, detHealth); updateErr != nil {
 				sdkCtx.Logger().Debug("monitoring: failed to update deterministic network health", "error", updateErr)
@@ -1047,18 +1055,70 @@ func (k *Keeper) BeginBlocker(ctx context.Context) error {
 			sdkCtx.Logger().Debug("monitoring: failed to collect deterministic network health", "error", err)
 		}
 
-		// 2) Observability metrics only (node-local RPC); do NOT persist to consensus
-		if obsHealth, err := k.healthCollector.CollectObservabilityHealth(ctx); err == nil && k.metrics != nil {
-			k.metrics.BlockTime.Set(obsHealth.BlockTime)
-			k.metrics.TransactionsPerSecond.Set(obsHealth.TPS)
-			k.metrics.MempoolSize.Set(float64(obsHealth.MempoolSize))
-			k.metrics.PeerCount.Set(float64(obsHealth.PeerCount))
-			k.metrics.NetworkCongestion.Set(obsHealth.NetworkCongestion)
-			k.metrics.ConsensusHealth.Set(obsHealth.ConsensusHealth)
-		} else if err != nil {
-			sdkCtx.Logger().Debug("monitoring: failed to collect observability health", "error", err)
-		}
+		// NOTE: Observability metrics (peer count, mempool size, etc.) are NOT collected here
+		// because they require HTTP calls which are non-deterministic.
+		// Use CollectObservabilityMetrics() from a background goroutine instead.
 	}
 
 	return nil
+}
+
+// CollectObservabilityMetrics collects non-deterministic observability metrics
+// by making HTTP calls to the local RPC endpoint.
+//
+// OFF-CHAIN ONLY - DO NOT CALL DURING CONSENSUS
+//
+// This method should be called from a background goroutine or external process,
+// NOT from BeginBlocker, EndBlocker, or message handlers.
+//
+// Example usage in app.go or a separate monitoring service:
+//
+//	go func() {
+//	    ticker := time.NewTicker(10 * time.Second)
+//	    for range ticker.C {
+//	        k.CollectObservabilityMetrics()
+//	    }
+//	}()
+func (k *Keeper) CollectObservabilityMetrics() {
+	if k.healthCollector == nil || k.metrics == nil {
+		return
+	}
+
+	peerCount, mempoolSize, activeVals, totalVals, _ := k.healthCollector.CollectObservabilityMetricsOffChain()
+
+	// Update Prometheus metrics (these are node-local, not consensus state)
+	k.metrics.PeerCount.Set(float64(peerCount))
+	k.metrics.MempoolSize.Set(float64(mempoolSize))
+
+	// Calculate and set derived metrics
+	congestion := float64(0)
+	if mempoolSize > 0 {
+		if mempoolSize >= 10000 {
+			congestion = 1.0
+		} else {
+			congestion = float64(mempoolSize) / 10000.0
+		}
+	}
+	k.metrics.NetworkCongestion.Set(congestion)
+
+	// Calculate consensus health score
+	score := 1.0
+	if peerCount == 0 {
+		score -= 0.3
+	} else if peerCount < 3 {
+		score -= 0.1
+	}
+	if mempoolSize > 1000 {
+		score -= 0.2
+	} else if mempoolSize > 100 {
+		score -= 0.1
+	}
+	if score < 0 {
+		score = 0
+	}
+	k.metrics.ConsensusHealth.Set(score)
+
+	// Note: activeVals and totalVals could be used for additional metrics
+	_ = activeVals
+	_ = totalVals
 }

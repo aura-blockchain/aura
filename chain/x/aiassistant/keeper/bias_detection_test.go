@@ -3,7 +3,11 @@
 
 package keeper
 
-import "testing"
+import (
+	"testing"
+
+	sdkmath "cosmossdk.io/math"
+)
 
 func TestDetectBias(t *testing.T) {
 	k, ctx := setupKeeper(t)
@@ -64,8 +68,9 @@ func TestBiasSeverityLevels(t *testing.T) {
 		if result.Severity != tc.expected {
 			t.Errorf("expected severity %s for text %q, got %s", tc.expected, tc.text, result.Severity)
 		}
-		if result.BiasScore < 0 || result.BiasScore > 1 {
-			t.Errorf("bias score should be normalized, got %f", result.BiasScore)
+		// BiasScore is now LegacyDec; check it's in valid range [0, 1]
+		if result.BiasScore.IsNegative() || result.BiasScore.GT(sdkmath.LegacyOneDec()) {
+			t.Errorf("bias score should be normalized, got %s", result.BiasScore.String())
 		}
 	}
 }

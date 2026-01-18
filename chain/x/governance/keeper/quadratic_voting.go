@@ -253,10 +253,13 @@ func (k *Keeper) GetQuadraticVotingStats(ctx sdk.Context, proposalID uint64) *ty
 		avgCreditsPerVoter = tally.TotalCreditsSpent / tally.UniqueVoters
 	}
 
-	// Calculate cost efficiency (power per credit)
-	costEfficiency := float64(0)
+	// Calculate cost efficiency (power per credit) using sdk.Dec for determinism
+	// DETERMINISM FIX: Replaced float64 with sdkmath.LegacyDec to ensure consistent
+	// results across all platforms (ARM, x86, etc.) and prevent state divergence
+	costEfficiency := sdkmath.LegacyZeroDec()
 	if tally.TotalCreditsSpent > 0 {
-		costEfficiency = float64(totalPower) / float64(tally.TotalCreditsSpent)
+		costEfficiency = sdkmath.LegacyNewDec(int64(totalPower)).Quo(
+			sdkmath.LegacyNewDec(int64(tally.TotalCreditsSpent)))
 	}
 
 	return &types.QuadraticVotingStats{
@@ -265,18 +268,21 @@ func (k *Keeper) GetQuadraticVotingStats(ctx sdk.Context, proposalID uint64) *ty
 		TotalCreditsSpent:      tally.TotalCreditsSpent,
 		UniqueVoters:           tally.UniqueVoters,
 		AverageCreditsPerVoter: avgCreditsPerVoter,
-		CostEfficiency:         costEfficiency,
+		CostEfficiency:         costEfficiency.String(),
 		QuadraticAdvantage:     k.calculateQuadraticAdvantage(tally),
 	}
 }
 
 // calculateQuadraticAdvantage calculates how much quadratic voting reduced influence concentration
-func (k *Keeper) calculateQuadraticAdvantage(tally *types.QuadraticTallyResult) float64 {
+// Returns a string representation of sdk.Dec for determinism
+// DETERMINISM FIX: Replaced float64 with sdkmath.LegacyDec to ensure consistent
+// results across all platforms (ARM, x86, etc.) and prevent state divergence
+func (k *Keeper) calculateQuadraticAdvantage(tally *types.QuadraticTallyResult) string {
 	// Compare to what it would be with linear voting
 	// Advantage = reduction in large holder influence
 	// Simplified calculation
 	if tally.TotalCreditsSpent == 0 {
-		return 0
+		return sdkmath.LegacyZeroDec().String()
 	}
 
 	// If all credits were used linearly, total power = total credits
@@ -285,9 +291,15 @@ func (k *Keeper) calculateQuadraticAdvantage(tally *types.QuadraticTallyResult) 
 
 	// Advantage = how much we reduced from linear (as percentage)
 	if linearPower == 0 {
-		return 0
+		return sdkmath.LegacyZeroDec().String()
 	}
 
-	reduction := float64(linearPower-quadraticPower) / float64(linearPower)
-	return reduction * 100 // As percentage
+	// Calculate reduction using sdk.Dec for deterministic decimal math
+	// reduction = (linearPower - quadraticPower) / linearPower * 100
+	linearDec := sdkmath.LegacyNewDec(int64(linearPower))
+	quadraticDec := sdkmath.LegacyNewDec(int64(quadraticPower))
+	hundred := sdkmath.LegacyNewDec(100)
+
+	reduction := linearDec.Sub(quadraticDec).Quo(linearDec).Mul(hundred)
+	return reduction.String()
 }

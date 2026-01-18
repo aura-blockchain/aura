@@ -12,13 +12,16 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
+// SecurityScoreBasisPoints represents 100% as 10000 basis points for deterministic calculations
+const SecurityScoreBasisPoints = int64(10000)
+
 // WalletAnalytics provides analytics for a wallet
 type WalletAnalytics struct {
 	WalletID               string
 	TotalTransactions      int64
 	TotalVolume            sdkmath.Int
 	AverageTransactionSize sdkmath.Int
-	SecurityScore          float64
+	SecurityScore          int64 // Basis points (10000 = 100%)
 	RiskLevel              string
 	ActiveDevices          int
 	EnabledFeatures        []string
@@ -82,36 +85,44 @@ func (k Keeper) calculateVolumes(ctx context.Context, walletID string) (sdkmath.
 	return total, average
 }
 
-func (k Keeper) calculateSecurityScore(ctx context.Context, walletID string) float64 {
-	score := 100.0
+// calculateSecurityScore returns the security score in basis points (10000 = 100%)
+// Uses integer arithmetic for deterministic cross-platform consensus
+func (k Keeper) calculateSecurityScore(ctx context.Context, walletID string) int64 {
+	// Start with 100% (10000 basis points)
+	score := SecurityScoreBasisPoints
 
-	// Deduct for missing features
+	// Deduct for missing features (in basis points)
+	// 20% = 2000 basis points
 	if !k.hasMultiSig(ctx, walletID) {
-		score -= 20
+		score -= 2000
 	}
 
+	// 15% = 1500 basis points
 	if !k.hasHardwareWallet(ctx, walletID) {
-		score -= 15
+		score -= 1500
 	}
 
+	// 10% = 1000 basis points
 	if !k.hasSocialRecovery(ctx, walletID) {
-		score -= 10
+		score -= 1000
 	}
 
+	// 10% = 1000 basis points
 	if !k.hasBiometric(ctx, walletID) {
-		score -= 10
+		score -= 1000
 	}
 
 	// Deduct for anomalies
 	anomalies, _ := k.GetAnomalies(ctx, walletID)
-	unresolvedAnomalies := 0
+	unresolvedAnomalies := int64(0)
 	for _, a := range anomalies {
 		if !a.Resolved {
 			unresolvedAnomalies++
 		}
 	}
 
-	score -= float64(unresolvedAnomalies) * 5
+	// 5% per anomaly = 500 basis points per anomaly
+	score -= unresolvedAnomalies * 500
 
 	if score < 0 {
 		score = 0
@@ -120,12 +131,14 @@ func (k Keeper) calculateSecurityScore(ctx context.Context, walletID string) flo
 	return score
 }
 
-func (k Keeper) determineRiskLevel(score float64) string {
-	if score >= 80 {
+// determineRiskLevel converts a score in basis points to a risk level
+// 80% = 8000 basis points, 60% = 6000 basis points, 40% = 4000 basis points
+func (k Keeper) determineRiskLevel(score int64) string {
+	if score >= 8000 {
 		return "low"
-	} else if score >= 60 {
+	} else if score >= 6000 {
 		return "medium"
-	} else if score >= 40 {
+	} else if score >= 4000 {
 		return "high"
 	}
 	return "critical"
@@ -180,9 +193,12 @@ func (k Keeper) GenerateSecurityReport(ctx context.Context, walletID string) (*w
 		return nil, err
 	}
 
+	// Convert basis points to percentage for report (10000 basis points = 100%)
+	scorePercent := int32(analytics.SecurityScore / 100)
+
 	report := &wsproto.SecurityReport{
 		WalletId:        walletID,
-		SecurityScore:   int32(analytics.SecurityScore),
+		SecurityScore:   scorePercent,
 		Recommendations: k.generateRecommendations(analytics),
 		ActiveDevices:   int32(analytics.ActiveDevices),
 	}
@@ -190,10 +206,13 @@ func (k Keeper) GenerateSecurityReport(ctx context.Context, walletID string) (*w
 	return report, nil
 }
 
+// generateRecommendations creates recommendations based on security score
+// Score is in basis points (10000 = 100%), so 80% = 8000 basis points
 func (k Keeper) generateRecommendations(analytics *WalletAnalytics) []string {
 	recommendations := []string{}
 
-	if analytics.SecurityScore < 80 {
+	// 80% = 8000 basis points
+	if analytics.SecurityScore < 8000 {
 		if !k.contains(analytics.EnabledFeatures, "multisig") {
 			recommendations = append(recommendations, "Enable multi-signature protection")
 		}

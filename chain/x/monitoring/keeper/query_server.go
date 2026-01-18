@@ -264,10 +264,11 @@ func convertValidatorUptimeToProto(uptime *types.ValidatorUptime) *monitoringpb.
 		return nil
 	}
 	return &monitoringpb.ValidatorUptime{
-		ValidatorAddress:  uptime.ValidatorAddress,
-		UptimePercentage:  uptime.UptimePercentage,
-		BlocksSigned:      uptime.SignedBlocks,
-		BlocksMissed:      uptime.MissedBlocks,
-		LastActiveHeight:  uptime.LastSeen.Unix(),
+		ValidatorAddress: uptime.ValidatorAddress,
+		// Convert basis points to percentage for proto API (display only, not stored)
+		UptimePercentage: uptime.UptimePercentage(),
+		BlocksSigned:     uptime.SignedBlocks,
+		BlocksMissed:     uptime.MissedBlocks,
+		LastActiveHeight: uptime.LastSeen.Unix(),
 	}
 }

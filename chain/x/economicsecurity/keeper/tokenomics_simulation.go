@@ -28,6 +28,8 @@ type SimulationParameters struct {
 }
 
 // SimulationResult contains the results of tokenomics simulation
+// DETERMINISM: SupplyGrowthRateBps uses basis points (0-10000) instead of float64
+// to ensure cross-platform consistency
 type SimulationResult struct {
 	FinalSupply          string
 	TotalMinted          string
@@ -36,7 +38,7 @@ type SimulationResult struct {
 	TotalMEVGenerated    string
 	TotalFeesCollected   string
 	AverageInflationRate uint64
-	SupplyGrowthRate     float64
+	SupplyGrowthRateBps  int64 // Basis points, e.g., 500 = 5% growth, -200 = 2% deflation
 	Projections          []*SimulationSnapshot
 }
 
@@ -131,14 +133,16 @@ func (k *Keeper) SimulateTokenomics(ctx context.Context, params SimulationParame
 	result.TotalMEVGenerated = totalMEVGenerated.String()
 	result.TotalFeesCollected = totalFeesCollected.String()
 
-	// Calculate average inflation rate
+	// Calculate average inflation rate using deterministic integer arithmetic
+	// DETERMINISM: Use big.Int arithmetic instead of big.Float to ensure cross-platform consistency
 	initialSupply := new(big.Int)
 	initialSupply.SetString(params.InitialSupply, 10)
 
 	supplyChange := new(big.Int).Sub(currentSupply, initialSupply)
-	growthRate := new(big.Float).Quo(new(big.Float).SetInt(supplyChange), new(big.Float).SetInt(initialSupply))
-	growthRateFloat, _ := growthRate.Float64()
-	result.SupplyGrowthRate = growthRateFloat
+	// Calculate growth rate in basis points: (supplyChange * 10000) / initialSupply
+	supplyChangeBps := new(big.Int).Mul(supplyChange, big.NewInt(10000))
+	supplyChangeBps.Div(supplyChangeBps, initialSupply)
+	result.SupplyGrowthRateBps = supplyChangeBps.Int64()
 
 	result.AverageInflationRate = params.InflationRate
 
@@ -305,14 +309,15 @@ func (k *Keeper) AnalyzeTokenDistribution(ctx context.Context) (map[string]inter
 }
 
 // OptimizeTokenomicsParameters suggests optimal tokenomics parameters
-func (k *Keeper) OptimizeTokenomicsParameters(ctx context.Context, targetSupplyGrowth float64, years uint64) map[string]uint64 {
+// DETERMINISM: targetSupplyGrowthBps is in basis points (e.g., 500 = 5% growth)
+func (k *Keeper) OptimizeTokenomicsParameters(ctx context.Context, targetSupplyGrowthBps int64, years uint64) map[string]uint64 {
 	recommendations := make(map[string]uint64)
 
 	// Run simulations with different parameters to find optimal settings
 	bestInflation := uint64(500) // 5%
 	bestBurn := uint64(500)      // 5%
 
-	minDiff := float64(1000000.0)
+	minDiff := int64(1000000) // Large initial value
 
 	// Test different combinations
 	for inflation := uint64(200); inflation <= 1000; inflation += 100 {
@@ -333,7 +338,8 @@ func (k *Keeper) OptimizeTokenomicsParameters(ctx context.Context, targetSupplyG
 				continue
 			}
 
-			diff := result.SupplyGrowthRate - targetSupplyGrowth
+			// Calculate difference using integer arithmetic
+			diff := result.SupplyGrowthRateBps - targetSupplyGrowthBps
 			if diff < 0 {
 				diff = -diff
 			}

@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"cosmossdk.io/math"
 	"github.com/aequitas/aura/chain/x/economicsecurity/types"
 )
 
@@ -41,21 +42,28 @@ type TransactionBatch struct {
 
 // BatchRecord represents historical batch processing data
 type BatchRecord struct {
-	BatchID          string  `json:"batch_id"`
-	TransactionCount uint64  `json:"transaction_count"`
-	TotalAmount      string  `json:"total_amount"`
-	ProcessedAt      int64   `json:"processed_at"`
-	GasSaved         uint64  `json:"gas_saved"`
-	AverageGasPrice  uint64  `json:"average_gas_price"`
-	CompressionRatio float32 `json:"compression_ratio"`
+	BatchID          string `json:"batch_id"`
+	TransactionCount uint64 `json:"transaction_count"`
+	TotalAmount      string `json:"total_amount"`
+	ProcessedAt      int64  `json:"processed_at"`
+	GasSaved         uint64 `json:"gas_saved"`
+	AverageGasPrice  uint64 `json:"average_gas_price"`
+	// CompressionRatioBps stores the compression ratio in basis points (e.g., 7142 = 71.42%)
+	// DETERMINISM: Using integer basis points instead of float32 ensures cross-platform
+	// consistency. Float operations can produce different results on different CPU architectures,
+	// causing consensus failures in blockchain state machines.
+	CompressionRatioBps uint64 `json:"compression_ratio_bps"`
 }
 
 // BatchStatistics represents aggregate batching statistics
 type BatchStatistics struct {
-	TotalBatchesProcessed      uint64 `json:"total_batches_processed"`
-	TotalTransactionsBatched   uint64 `json:"total_transactions_batched"`
-	TotalGasSaved              string `json:"total_gas_saved"`
-	AverageCompressionRatio    float32 `json:"average_compression_ratio"`
+	TotalBatchesProcessed    uint64 `json:"total_batches_processed"`
+	TotalTransactionsBatched uint64 `json:"total_transactions_batched"`
+	TotalGasSaved            string `json:"total_gas_saved"`
+	// AverageCompressionRatioBps stores the average compression ratio in basis points
+	// DETERMINISM: Using integer basis points instead of float32 ensures cross-platform
+	// consistency in consensus-critical code.
+	AverageCompressionRatioBps uint64 `json:"average_compression_ratio_bps"`
 }
 
 // KV Store keys for batch processing
@@ -197,14 +205,21 @@ func (k *Keeper) ProcessBatch(ctx context.Context) (uint64, string, error) {
 	avgGasPrice := k.GetAverageUtilization(ctx)
 
 	// Create batch record
+	// DETERMINISM: Calculate compression ratio using math.LegacyDec for cross-platform consistency.
+	// Float32 division can produce different results on different CPU architectures (x86 vs ARM),
+	// causing app hash mismatches and consensus failures during chain replay or state sync.
+	// We store the result in basis points (10000 = 100%) as an integer for deterministic storage.
+	compressionRatioDec := math.LegacyNewDec(int64(batchGas)).Quo(math.LegacyNewDec(int64(individualGas)))
+	compressionRatioBps := compressionRatioDec.MulInt64(10000).TruncateInt64()
+
 	record := BatchRecord{
-		BatchID:          batch.BatchID,
-		TransactionCount: count,
-		TotalAmount:      batch.TotalAmount,
-		ProcessedAt:      currentTime,
-		GasSaved:         gasSavings,
-		AverageGasPrice:  avgGasPrice,
-		CompressionRatio: float32(batchGas) / float32(individualGas),
+		BatchID:             batch.BatchID,
+		TransactionCount:    count,
+		TotalAmount:         batch.TotalAmount,
+		ProcessedAt:         currentTime,
+		GasSaved:            gasSavings,
+		AverageGasPrice:     avgGasPrice,
+		CompressionRatioBps: uint64(compressionRatioBps),
 	}
 
 	// Save batch record to history
@@ -248,10 +263,11 @@ func (k *Keeper) GetPendingBatch() (uint64, string, string) {
 }
 
 // GetBatchStatistics returns batching statistics
-func (k *Keeper) GetBatchStatistics() (uint64, uint64, string, float32) {
+// Returns: total batches processed, total transactions batched, total gas saved, average compression ratio in basis points
+func (k *Keeper) GetBatchStatistics() (uint64, uint64, string, uint64) {
 	// This is a simplified version for queries without context
 	// For full functionality, use GetBatchStatisticsData with context
-	return 0, 0, "0", 0.0
+	return 0, 0, "0", 0
 }
 
 // ShouldProcessBatch determines if the pending batch should be processed
@@ -374,10 +390,10 @@ func (k *Keeper) GetBatchStatisticsData(ctx context.Context) (*BatchStatistics, 
 	if bz == nil {
 		// Return default statistics
 		return &BatchStatistics{
-			TotalBatchesProcessed:    0,
-			TotalTransactionsBatched: 0,
-			TotalGasSaved:            "0",
-			AverageCompressionRatio:  0.0,
+			TotalBatchesProcessed:      0,
+			TotalTransactionsBatched:   0,
+			TotalGasSaved:              "0",
+			AverageCompressionRatioBps: 0,
 		}, nil
 	}
 

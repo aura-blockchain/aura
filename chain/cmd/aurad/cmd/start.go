@@ -1050,13 +1050,9 @@ func loadCometConfig(homeDir string) (*cmtcfg.Config, error) {
 
 // validateP2PConfig checks for common misconfigurations that prevent a node from peering.
 // It is intentionally conservative and fails fast with actionable guidance.
+// Note: Single-validator bootstrap (pex=false, no peers) is explicitly allowed for testnet setup.
 func validateP2PConfig(cfg *cmtcfg.Config) error {
 	var problems []string
-
-	// If PEX is disabled and no seeds/persistent peers are provided the node cannot discover peers.
-	if !cfg.P2P.PexReactor && cfg.P2P.Seeds == "" && cfg.P2P.PersistentPeers == "" {
-		problems = append(problems, "pex=false but both seeds and persistent_peers are empty; the node will never connect")
-	}
 
 	peers := parsePeerHosts(cfg.P2P.PersistentPeers)
 

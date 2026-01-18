@@ -51,8 +51,8 @@ func TestAnalyzeEconomicIncentives_BasicScenario(t *testing.T) {
 	require.NotEmpty(t, result.UserRewards)
 	require.NotEmpty(t, result.TreasuryAllocation)
 	require.NotEmpty(t, result.BurnAmount)
-	require.GreaterOrEqual(t, result.IncentiveEfficiency, float64(0))
-	require.LessOrEqual(t, result.IncentiveEfficiency, float64(100))
+	// IncentiveEfficiencyBps is now in basis points (0-10000)
+	require.LessOrEqual(t, result.IncentiveEfficiencyBps, uint64(10000))
 }
 
 func TestAnalyzeEconomicIncentives_LowStakingRatio(t *testing.T) {
@@ -448,7 +448,7 @@ func TestAnalyzeBurnEconomics_HighBurnRate(t *testing.T) {
 // calculateIncentiveEfficiency Tests
 // =============================================================================
 
-func TestCalculateIncentiveEfficiency_OptimalConditions(t *testing.T) {
+func TestCalculateIncentiveEfficiencyBps_OptimalConditions(t *testing.T) {
 	k, _ := setupKeeperForTest(t)
 
 	params := types.DefaultParams()
@@ -457,13 +457,13 @@ func TestCalculateIncentiveEfficiency_OptimalConditions(t *testing.T) {
 	params.Mev.TreasuryPercentage = 2000
 	params.Mev.Strategy = types.MEVStrategyProportionalToStake
 
-	efficiency := k.calculateIncentiveEfficiency(*params, 1000, 100)
+	efficiencyBps := k.calculateIncentiveEfficiencyBps(*params, 1000, 100)
 
-	// Should be relatively high for optimal conditions
-	require.GreaterOrEqual(t, efficiency, float64(70))
+	// Should be relatively high for optimal conditions (7000 bps = 70%)
+	require.GreaterOrEqual(t, efficiencyBps, uint64(7000))
 }
 
-func TestCalculateIncentiveEfficiency_PoorConditions(t *testing.T) {
+func TestCalculateIncentiveEfficiencyBps_PoorConditions(t *testing.T) {
 	k, _ := setupKeeperForTest(t)
 
 	params := types.DefaultParams()
@@ -472,13 +472,13 @@ func TestCalculateIncentiveEfficiency_PoorConditions(t *testing.T) {
 	params.Mev.TreasuryPercentage = 500          // Very low
 	params.Mev.Strategy = types.MEVStrategyEqualDistribution
 
-	efficiency := k.calculateIncentiveEfficiency(*params, 10, 5)
+	efficiencyBps := k.calculateIncentiveEfficiencyBps(*params, 10, 5)
 
-	// Should be lower for poor conditions
-	require.Less(t, efficiency, float64(70))
+	// Should be lower for poor conditions (less than 7000 bps = 70%)
+	require.Less(t, efficiencyBps, uint64(7000))
 }
 
-func TestCalculateIncentiveEfficiency_NeverNegative(t *testing.T) {
+func TestCalculateIncentiveEfficiencyBps_NeverNegative(t *testing.T) {
 	k, _ := setupKeeperForTest(t)
 
 	// Set up worst case scenario
@@ -488,12 +488,13 @@ func TestCalculateIncentiveEfficiency_NeverNegative(t *testing.T) {
 	params.Mev.TreasuryPercentage = 0
 	params.Mev.Strategy = types.MEVStrategyEqualDistribution
 
-	efficiency := k.calculateIncentiveEfficiency(*params, 0, 0)
+	efficiencyBps := k.calculateIncentiveEfficiencyBps(*params, 0, 0)
 
-	require.GreaterOrEqual(t, efficiency, float64(0))
+	// uint64 is always >= 0, but this tests the logic doesn't overflow
+	require.LessOrEqual(t, efficiencyBps, uint64(10000))
 }
 
-func TestCalculateIncentiveEfficiency_NeverExceeds100(t *testing.T) {
+func TestCalculateIncentiveEfficiencyBps_NeverExceeds10000(t *testing.T) {
 	k, _ := setupKeeperForTest(t)
 
 	params := types.DefaultParams()
@@ -502,9 +503,9 @@ func TestCalculateIncentiveEfficiency_NeverExceeds100(t *testing.T) {
 	params.Mev.TreasuryPercentage = 2000
 	params.Mev.Strategy = types.MEVStrategyProportionalToStake
 
-	efficiency := k.calculateIncentiveEfficiency(*params, 100000, 1000)
+	efficiencyBps := k.calculateIncentiveEfficiencyBps(*params, 100000, 1000)
 
-	require.LessOrEqual(t, efficiency, float64(100))
+	require.LessOrEqual(t, efficiencyBps, uint64(10000))
 }
 
 // =============================================================================
@@ -704,7 +705,7 @@ func TestCalculateOptimalIncentiveDistribution_LowStakingRatio(t *testing.T) {
 	distribution, err := k.CalculateOptimalIncentiveDistribution(
 		ctx,
 		"1000000000000", // 1T total rewards
-		0.2,             // 20% staking ratio (low)
+		uint64(2000),    // 20% staking ratio in basis points (low)
 		uint64(500),     // 500 active users
 		uint64(100),     // 100 validators
 	)
@@ -727,7 +728,7 @@ func TestCalculateOptimalIncentiveDistribution_HighStakingRatio(t *testing.T) {
 	distribution, err := k.CalculateOptimalIncentiveDistribution(
 		ctx,
 		"1000000000000",
-		0.8, // 80% staking ratio (high)
+		uint64(8000), // 80% staking ratio in basis points (high)
 		uint64(500),
 		uint64(100),
 	)
@@ -749,8 +750,8 @@ func TestCalculateOptimalIncentiveDistribution_LowUserCount(t *testing.T) {
 	distribution, err := k.CalculateOptimalIncentiveDistribution(
 		ctx,
 		"1000000000000",
-		0.5, // 50% staking ratio
-		uint64(50), // Very low user count
+		uint64(5000), // 50% staking ratio in basis points
+		uint64(50),   // Very low user count
 		uint64(100),
 	)
 
@@ -777,7 +778,7 @@ func TestCalculateOptimalIncentiveDistribution_InvalidAmount(t *testing.T) {
 	_, err := k.CalculateOptimalIncentiveDistribution(
 		ctx,
 		"invalid",
-		0.5,
+		uint64(5000), // 50% in basis points
 		uint64(500),
 		uint64(100),
 	)
@@ -792,7 +793,7 @@ func TestCalculateOptimalIncentiveDistribution_ZeroRewards(t *testing.T) {
 	distribution, err := k.CalculateOptimalIncentiveDistribution(
 		ctx,
 		"0",
-		0.5,
+		uint64(5000), // 50% in basis points
 		uint64(500),
 		uint64(100),
 	)
@@ -959,7 +960,7 @@ func TestAnalyzeEconomicIncentives_MaxValues(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, result)
-	require.GreaterOrEqual(t, result.IncentiveEfficiency, float64(0))
+	require.LessOrEqual(t, result.IncentiveEfficiencyBps, uint64(10000))
 }
 
 func TestAnalyzeEconomicIncentives_BoundaryStakingRatios(t *testing.T) {
@@ -1041,7 +1042,7 @@ func FuzzAnalyzeStakingIncentives_NoOverflow(f *testing.F) {
 	})
 }
 
-func FuzzCalculateIncentiveEfficiency_ValidRange(f *testing.F) {
+func FuzzCalculateIncentiveEfficiencyBps_ValidRange(f *testing.F) {
 	f.Add(uint64(0), uint64(0))
 	f.Add(uint64(100), uint64(50))
 	f.Add(uint64(10000), uint64(1000))
@@ -1056,10 +1057,10 @@ func FuzzCalculateIncentiveEfficiency_ValidRange(f *testing.F) {
 		params.Mev.TreasuryPercentage = 2000
 		params.Mev.Strategy = types.MEVStrategyProportionalToStake
 
-		efficiency := k.calculateIncentiveEfficiency(*params, activeUsers, validators)
+		efficiencyBps := k.calculateIncentiveEfficiencyBps(*params, activeUsers, validators)
 
-		require.GreaterOrEqual(t, efficiency, float64(0), "efficiency must be >= 0")
-		require.LessOrEqual(t, efficiency, float64(100), "efficiency must be <= 100")
+		// uint64 is always >= 0, just verify it's within valid range (0-10000 bps)
+		require.LessOrEqual(t, efficiencyBps, uint64(10000), "efficiency must be <= 10000 bps")
 	})
 }
 

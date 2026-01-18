@@ -147,6 +147,22 @@ type EncryptedAMLProfileData struct {
 	Occupation           string   `json:"occupation,omitempty"`
 }
 
+// EncryptedSuspiciousActivityData represents encrypted sensitive suspicious activity data.
+// Using a struct instead of map[string]interface{} ensures deterministic JSON marshaling.
+type EncryptedSuspiciousActivityData struct {
+	Description string   `json:"description"`
+	Indicators  []string `json:"indicators"`
+}
+
+// EncryptedGDPRConsentAuditData represents encrypted GDPR consent audit data.
+// Using a struct instead of map[string]interface{} ensures deterministic JSON marshaling.
+// Time fields are stored as RFC3339 strings for deterministic serialization.
+type EncryptedGDPRConsentAuditData struct {
+	ConsentGivenAt     string `json:"consent_given_at"`
+	ConsentWithdrawnAt string `json:"consent_withdrawn_at,omitempty"`
+	ConsentVersion     string `json:"consent_version"`
+}
+
 // SetAMLProfileEncrypted stores an AML profile with encrypted sensitive fields.
 //
 // Encrypted fields:
@@ -317,10 +333,10 @@ func (k *Keeper) SetSuspiciousActivityEncrypted(ctx sdk.Context, activity *types
 		Indicators:  nil,
 	}
 
-	// Prepare sensitive data for encryption
-	sensitiveData := map[string]interface{}{
-		"description": activity.Description,
-		"indicators":  activity.Indicators,
+	// Prepare sensitive data for encryption using struct for deterministic JSON marshaling
+	sensitiveData := EncryptedSuspiciousActivityData{
+		Description: activity.Description,
+		Indicators:  activity.Indicators,
 	}
 
 	// Encrypt sensitive data
@@ -373,24 +389,15 @@ func (k *Keeper) GetSuspiciousActivityEncrypted(ctx sdk.Context, id string) (*ty
 			return nil, fmt.Errorf("failed to decode encrypted suspicious activity data: %w", err)
 		}
 
-		// Decrypt JSON
-		var sensitiveData map[string]interface{}
+		// Decrypt JSON using struct for type safety
+		var sensitiveData EncryptedSuspiciousActivityData
 		if err := encService.DecryptJSON(encryptedData, encryptionContext, &sensitiveData); err != nil {
 			return nil, fmt.Errorf("failed to decrypt suspicious activity data: %w", err)
 		}
 
 		// Restore decrypted fields
-		if desc, ok := sensitiveData["description"].(string); ok {
-			activity.Description = desc
-		}
-		if indicators, ok := sensitiveData["indicators"].([]interface{}); ok {
-			activity.Indicators = make([]string, len(indicators))
-			for i, ind := range indicators {
-				if indStr, ok := ind.(string); ok {
-					activity.Indicators[i] = indStr
-				}
-			}
-		}
+		activity.Description = sensitiveData.Description
+		activity.Indicators = sensitiveData.Indicators
 	}
 
 	return activity, nil
@@ -438,11 +445,16 @@ func (k *Keeper) SetGDPRConsentEncrypted(ctx sdk.Context, consent *types.GDPRCon
 		AuditCommitment: nil,
 	}
 
-	// Create audit data to encrypt (timestamps, version)
-	auditData := map[string]interface{}{
-		"consent_given_at":    consent.ConsentGivenAt,
-		"consent_withdrawn_at": consent.ConsentWithdrawnAt,
-		"consent_version":     consent.ConsentVersion,
+	// Create audit data to encrypt using struct for deterministic JSON marshaling
+	// Convert time values to RFC3339 strings for deterministic serialization
+	consentWithdrawnAtStr := ""
+	if consent.ConsentWithdrawnAt != nil {
+		consentWithdrawnAtStr = consent.ConsentWithdrawnAt.Format("2006-01-02T15:04:05.000000000Z07:00")
+	}
+	auditData := EncryptedGDPRConsentAuditData{
+		ConsentGivenAt:     consent.ConsentGivenAt.Format("2006-01-02T15:04:05.000000000Z07:00"),
+		ConsentWithdrawnAt: consentWithdrawnAtStr,
+		ConsentVersion:     consent.ConsentVersion,
 	}
 
 	// Encrypt audit data
@@ -486,8 +498,8 @@ func (k *Keeper) GetGDPRConsentsEncrypted(ctx sdk.Context, address string) ([]*t
 		if len(consent.AuditCommitment) > 0 {
 			encryptionContext := fmt.Sprintf("gdpr:%s:%s", address, consent.ConsentType)
 
-			// Try to decrypt audit data
-			var auditData map[string]interface{}
+			// Try to decrypt audit data using struct for type safety
+			var auditData EncryptedGDPRConsentAuditData
 			if err := encService.DecryptJSON(consent.AuditCommitment, encryptionContext, &auditData); err == nil {
 				// Successfully decrypted - nothing else to restore currently
 				continue

@@ -126,7 +126,10 @@ func TestValidatorUptime(t *testing.T) {
 	assert.Equal(t, int64(105), uptime.TotalBlocks)
 	assert.Equal(t, int64(100), uptime.SignedBlocks)
 	assert.Equal(t, int64(5), uptime.MissedBlocks)
-	assert.InDelta(t, 95.24, uptime.UptimePercentage, 0.1)
+	// 100 signed / 105 total * 10000 = 9523 basis points (95.23%)
+	assert.Equal(t, uint64(9523), uptime.UptimeBasisPoints)
+	// Verify the percentage method returns expected value
+	assert.InDelta(t, 95.23, uptime.UptimePercentage(), 0.1)
 }
 
 func TestNetworkHealthUpdate(t *testing.T) {

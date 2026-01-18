@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	sdkmath "cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	gogotypes "github.com/cosmos/gogoproto/types"
@@ -39,9 +40,9 @@ func TestGetGovernanceAnalytics_EmptyState(t *testing.T) {
 	require.NotNil(t, analytics)
 	require.Equal(t, uint64(0), analytics.TotalProposals)
 	require.Equal(t, "0", analytics.AverageVotingPower)
-	require.Equal(t, float64(0), analytics.ParticipationRate)
-	require.Equal(t, float64(0), analytics.PassRate)
-	require.Equal(t, float64(0), analytics.VetoRate)
+	require.True(t, analytics.ParticipationRate.Equal(sdkmath.LegacyZeroDec()))
+	require.True(t, analytics.PassRate.Equal(sdkmath.LegacyZeroDec()))
+	require.True(t, analytics.VetoRate.Equal(sdkmath.LegacyZeroDec()))
 }
 
 func TestGetGovernanceAnalytics_WithProposals(t *testing.T) {
@@ -106,8 +107,8 @@ func TestGetGovernanceAnalytics_WithProposals(t *testing.T) {
 	require.Equal(t, uint64(5), analytics.TotalProposals)
 	require.NotEmpty(t, analytics.ProposalsByStatus)
 	require.NotEmpty(t, analytics.ProposalsByType)
-	require.Greater(t, analytics.PassRate, float64(0))
-	require.Greater(t, analytics.VetoRate, float64(0))
+	require.True(t, analytics.PassRate.GT(sdkmath.LegacyZeroDec()))
+	require.True(t, analytics.VetoRate.GT(sdkmath.LegacyZeroDec()))
 }
 
 func TestCountProposalsByStatus(t *testing.T) {
@@ -254,7 +255,7 @@ func TestCalculatePassRate(t *testing.T) {
 
 	// Test empty proposals
 	passRate := keeper.calculatePassRate([]*types.Proposal{})
-	require.Equal(t, float64(0), passRate)
+	require.True(t, passRate.Equal(sdkmath.LegacyZeroDec()))
 
 	// Test with proposals
 	proposals := []*types.Proposal{
@@ -265,7 +266,8 @@ func TestCalculatePassRate(t *testing.T) {
 	}
 
 	passRate = keeper.calculatePassRate(proposals)
-	require.Equal(t, float64(50), passRate) // 2 passed out of 4
+	// 2 passed out of 4 = 50%
+	require.True(t, passRate.Equal(sdkmath.LegacyNewDec(50)))
 }
 
 func TestCalculateVetoRate(t *testing.T) {
@@ -275,7 +277,7 @@ func TestCalculateVetoRate(t *testing.T) {
 
 	// Test empty proposals
 	vetoRate := keeper.calculateVetoRate([]*types.Proposal{})
-	require.Equal(t, float64(0), vetoRate)
+	require.True(t, vetoRate.Equal(sdkmath.LegacyZeroDec()))
 
 	// Test with proposals
 	proposals := []*types.Proposal{
@@ -286,7 +288,8 @@ func TestCalculateVetoRate(t *testing.T) {
 	}
 
 	vetoRate = keeper.calculateVetoRate(proposals)
-	require.Equal(t, float64(25), vetoRate) // 1 rejected out of 4
+	// 1 rejected out of 4 = 25%
+	require.True(t, vetoRate.Equal(sdkmath.LegacyNewDec(25)))
 }
 
 func TestCalculateParticipationRate(t *testing.T) {
@@ -296,7 +299,7 @@ func TestCalculateParticipationRate(t *testing.T) {
 
 	// Test empty proposals
 	rate := keeper.calculateParticipationRate(ctx, []*types.Proposal{})
-	require.Equal(t, float64(0), rate)
+	require.True(t, rate.Equal(sdkmath.LegacyZeroDec()))
 
 	// Create proposal with votes
 	proposal := &types.Proposal{
@@ -324,7 +327,7 @@ func TestCalculateParticipationRate(t *testing.T) {
 
 	proposals := keeper.GetAllProposals(ctx)
 	rate = keeper.calculateParticipationRate(ctx, proposals)
-	require.Greater(t, rate, float64(0))
+	require.True(t, rate.GT(sdkmath.LegacyZeroDec()))
 }
 
 func TestCalculateAverageProposalDuration(t *testing.T) {
@@ -392,7 +395,8 @@ func TestGetProposerAnalytics(t *testing.T) {
 	require.Equal(t, uint64(1), analytics.ExecutedProposals)
 	require.Equal(t, uint64(1), analytics.FailedProposals)
 	require.Equal(t, uint64(1), analytics.RejectedProposals)
-	require.Equal(t, float64(50), analytics.SuccessRate)
+	// 2 passed out of 4 = 50%
+	require.True(t, analytics.SuccessRate.Equal(sdkmath.LegacyNewDec(50)))
 }
 
 func TestGetProposerAnalytics_NoProposals(t *testing.T) {
@@ -405,7 +409,7 @@ func TestGetProposerAnalytics_NoProposals(t *testing.T) {
 
 	require.NotNil(t, analytics)
 	require.Equal(t, uint64(0), analytics.TotalProposals)
-	require.Equal(t, float64(0), analytics.SuccessRate)
+	require.True(t, analytics.SuccessRate.Equal(sdkmath.LegacyZeroDec()))
 }
 
 func TestCountByStatus(t *testing.T) {

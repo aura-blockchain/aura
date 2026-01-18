@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -83,7 +84,14 @@ func (k *Keeper) ValidateVCAgainstSchema(ctx context.Context, vcType string, vcD
 	}
 
 	// Validate field types
-	for field, value := range vcData {
+	// Sorted iteration required for consensus determinism
+	vcDataKeys := make([]string, 0, len(vcData))
+	for field := range vcData {
+		vcDataKeys = append(vcDataKeys, field)
+	}
+	sort.Strings(vcDataKeys)
+	for _, field := range vcDataKeys {
+		value := vcData[field]
 		expectedType, hasType := schema.FieldTypes[field]
 		if !hasType {
 			continue // Field not in schema, skip
@@ -206,11 +214,24 @@ func (k *Keeper) MintVCFromTemplate(ctx context.Context, templateID string, hold
 	}
 
 	// Merge metadata
+	// Sorted iteration required for consensus determinism
 	metadata := make(map[string]string)
-	for k, v := range template.DefaultMetadata {
+	defaultMetadataKeys := make([]string, 0, len(template.DefaultMetadata))
+	for k := range template.DefaultMetadata {
+		defaultMetadataKeys = append(defaultMetadataKeys, k)
+	}
+	sort.Strings(defaultMetadataKeys)
+	for _, k := range defaultMetadataKeys {
+		v := template.DefaultMetadata[k]
 		metadata[k] = v
 	}
-	for k, v := range overrides {
+	overrideKeys := make([]string, 0, len(overrides))
+	for k := range overrides {
+		overrideKeys = append(overrideKeys, k)
+	}
+	sort.Strings(overrideKeys)
+	for _, k := range overrideKeys {
+		v := overrides[k]
 		metadata[k] = v
 	}
 	metadata["template_id"] = templateID
@@ -436,11 +457,18 @@ func (k *Keeper) matchesSearchCriteria(ctx context.Context, vc types.VCRecord, c
 	}
 
 	// Metadata match filter
+	// Sorted iteration required for consensus determinism
 	if len(criteria.MetadataMatch) > 0 {
 		if vc.Metadata == nil {
 			return false
 		}
-		for key, value := range criteria.MetadataMatch {
+		metadataMatchKeys := make([]string, 0, len(criteria.MetadataMatch))
+		for key := range criteria.MetadataMatch {
+			metadataMatchKeys = append(metadataMatchKeys, key)
+		}
+		sort.Strings(metadataMatchKeys)
+		for _, key := range metadataMatchKeys {
+			value := criteria.MetadataMatch[key]
 			if vc.Metadata[key] != value {
 				return false
 			}
@@ -573,8 +601,15 @@ func (k *Keeper) GetVCAnalytics(ctx context.Context, lookbackDays int) VCAnalyti
 
 // getTopHolders returns top holders by total VC count
 func (k *Keeper) getTopHolders(holderMap map[string]*HolderStats, limit int) []HolderStats {
+	// Sorted iteration required for consensus determinism
+	holderAddresses := make([]string, 0, len(holderMap))
+	for addr := range holderMap {
+		holderAddresses = append(holderAddresses, addr)
+	}
+	sort.Strings(holderAddresses)
 	holders := make([]HolderStats, 0, len(holderMap))
-	for _, stats := range holderMap {
+	for _, addr := range holderAddresses {
+		stats := holderMap[addr]
 		holders = append(holders, *stats)
 	}
 
@@ -598,7 +633,15 @@ func (k *Keeper) getTopHolders(holderMap map[string]*HolderStats, limit int) []H
 func (k *Keeper) getRecentRevocations(ctx context.Context, limit int) []RevocationStats {
 	revocations := make([]RevocationStats, 0)
 
-	for vcID, revRecord := range k.store.iterateRevocationRecords(ctx) {
+	// Sorted iteration required for consensus determinism
+	revocationRecords := k.store.iterateRevocationRecords(ctx)
+	revocationKeys := make([]string, 0, len(revocationRecords))
+	for vcID := range revocationRecords {
+		revocationKeys = append(revocationKeys, vcID)
+	}
+	sort.Strings(revocationKeys)
+	for _, vcID := range revocationKeys {
+		revRecord := revocationRecords[vcID]
 		vc, ok := k.store.getVCRecord(ctx, vcID)
 		vcType := "unknown"
 		if ok {
@@ -746,6 +789,13 @@ func (k *Keeper) CleanupExpiredVCs(ctx context.Context) (int, error) {
 // VC SELECTIVE DISCLOSURE & ZKP
 // ============================
 
+// selectiveDisclosureProof is a deterministically ordered struct for proof generation
+type selectiveDisclosureProof struct {
+	DisclosedFields []string `json:"disclosed_fields"`
+	Timestamp       int64    `json:"timestamp"`
+	VcID            string   `json:"vc_id"`
+}
+
 // GenerateSelectiveDisclosureProof generates a proof for selective disclosure
 func (k *Keeper) GenerateSelectiveDisclosureProof(ctx context.Context, vcID string, disclosedFields []string) ([]byte, error) {
 	// Simplified implementation
@@ -756,11 +806,16 @@ func (k *Keeper) GenerateSelectiveDisclosureProof(ctx context.Context, vcID stri
 		return nil, types.ErrVCNotFound
 	}
 
-	// Create proof structure
-	proof := map[string]interface{}{
-		"vc_id":            vcID,
-		"disclosed_fields": disclosedFields,
-		"timestamp":        k.getCurrentTime(ctx),
+	// Sort disclosed fields for deterministic output
+	sortedFields := make([]string, len(disclosedFields))
+	copy(sortedFields, disclosedFields)
+	sort.Strings(sortedFields)
+
+	// Create proof structure using deterministically ordered struct
+	proof := selectiveDisclosureProof{
+		DisclosedFields: sortedFields,
+		Timestamp:       k.getCurrentTime(ctx),
+		VcID:            vcID,
 	}
 
 	// Hash the proof
@@ -793,20 +848,31 @@ func (k *Keeper) VerifySelectiveDisclosureProof(ctx context.Context, vcID string
 // VC CREDENTIAL EXCHANGE
 // ============================
 
+// vcExchangeRequest is a deterministically ordered struct for exchange storage
+type vcExchangeRequest struct {
+	CreatedAt       int64          `json:"created_at"`
+	ExchangeID      string         `json:"exchange_id"`
+	ExpiresAt       int64          `json:"expires_at"`
+	HolderAddress   string         `json:"holder_address"`
+	RequestedTypes  []types.VCType `json:"requested_types"`
+	Status          string         `json:"status"`
+	VerifierAddress string         `json:"verifier_address"`
+}
+
 // InitiateVCExchange initiates a credential exchange protocol
 func (k *Keeper) InitiateVCExchange(ctx context.Context, holderAddress string, verifierAddress string, requestedTypes []types.VCType) (string, error) {
 	// Create exchange request
 	exchangeID := k.generateExchangeID(ctx, holderAddress, verifierAddress)
 
-	// Store exchange request
-	exchange := map[string]interface{}{
-		"exchange_id":      exchangeID,
-		"holder_address":   holderAddress,
-		"verifier_address": verifierAddress,
-		"requested_types":  requestedTypes,
-		"status":           "pending",
-		"created_at":       k.getCurrentTime(ctx),
-		"expires_at":       k.getCurrentTime(ctx) + 3600, // 1 hour
+	// Store exchange request using deterministically ordered struct
+	exchange := vcExchangeRequest{
+		CreatedAt:       k.getCurrentTime(ctx),
+		ExchangeID:      exchangeID,
+		ExpiresAt:       k.getCurrentTime(ctx) + 3600, // 1 hour
+		HolderAddress:   holderAddress,
+		RequestedTypes:  requestedTypes,
+		Status:          "pending",
+		VerifierAddress: verifierAddress,
 	}
 
 	exchangeJSON, _ := json.Marshal(exchange)
@@ -875,15 +941,24 @@ func (k *Keeper) GetVCsByDID(ctx context.Context, did string) []types.VCRecord {
 	return results
 }
 
+// vcExportData is a deterministically ordered struct for VC backup export
+type vcExportData struct {
+	ExportedAt    int64            `json:"exported_at"`
+	HolderAddress string           `json:"holder_address"`
+	VcCount       int              `json:"vc_count"`
+	Vcs           []types.VCRecord `json:"vcs"`
+}
+
 // ExportVCsForBackup exports VCs for backup/migration
 func (k *Keeper) ExportVCsForBackup(ctx context.Context, holderAddress string) (string, error) {
 	vcs := k.ListUserVCs(ctx, holderAddress, types.VCStatus_VC_STATUS_UNSPECIFIED, types.VCType_VC_TYPE_UNSPECIFIED)
 
-	export := map[string]interface{}{
-		"holder_address": holderAddress,
-		"exported_at":    k.getCurrentTime(ctx),
-		"vc_count":       len(vcs),
-		"vcs":            vcs,
+	// Use deterministically ordered struct for export
+	export := vcExportData{
+		ExportedAt:    k.getCurrentTime(ctx),
+		HolderAddress: holderAddress,
+		VcCount:       len(vcs),
+		Vcs:           vcs,
 	}
 
 	exportJSON, err := json.Marshal(export)
@@ -920,8 +995,15 @@ func (k *Keeper) GetVCHistory(ctx context.Context, vcID string) ([]map[string]st
 	history := []map[string]string{}
 
 	// Extract history from metadata
+	// Sorted iteration required for consensus determinism
 	if vcRecord.Metadata != nil {
-		for key, value := range vcRecord.Metadata {
+		metadataKeys := make([]string, 0, len(vcRecord.Metadata))
+		for key := range vcRecord.Metadata {
+			metadataKeys = append(metadataKeys, key)
+		}
+		sort.Strings(metadataKeys)
+		for _, key := range metadataKeys {
+			value := vcRecord.Metadata[key]
 			if strings.HasSuffix(key, "_at") || strings.HasSuffix(key, "_count") {
 				history = append(history, map[string]string{
 					"event": key,

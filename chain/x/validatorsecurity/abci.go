@@ -66,7 +66,12 @@ func EndBlocker(ctx context.Context, k keeper.Keeper) error {
 func shouldRunMonitoring(ctx sdk.Context, interval time.Duration) bool {
 	// Run monitoring every N blocks based on interval
 	// Convert interval to approximate block count (assuming ~6 second blocks)
-	blocksPerInterval := int64(interval.Seconds() / 6)
+	//
+	// DETERMINISM: Use integer arithmetic (nanoseconds) instead of floating-point
+	// to ensure identical results across all validator machines. Floating-point
+	// division (interval.Seconds() / 6) can produce different results on different
+	// CPU architectures, causing consensus divergence and chain halts.
+	blocksPerInterval := interval.Nanoseconds() / 6_000_000_000
 	if blocksPerInterval == 0 {
 		blocksPerInterval = 1
 	}

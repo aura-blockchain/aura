@@ -132,12 +132,14 @@ type QuadraticTallyResult struct {
 }
 
 // QuadraticVotingStats represents statistics for quadratic voting
+// NOTE: CostEfficiency and QuadraticAdvantage use string representation of sdk.Dec
+// to ensure deterministic decimal math across all platforms (no float64 non-determinism)
 type QuadraticVotingStats struct {
 	ProposalId             uint64
 	TotalVotingPower       uint64
 	TotalCreditsSpent      uint64
 	UniqueVoters           uint64
 	AverageCreditsPerVoter uint64
-	CostEfficiency         float64
-	QuadraticAdvantage     float64
+	CostEfficiency         string // sdk.Dec string representation for determinism
+	QuadraticAdvantage     string // sdk.Dec string representation for determinism
 }

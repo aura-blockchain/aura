@@ -18,6 +18,8 @@
 package common
 
 import (
+	"sort"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -43,8 +45,16 @@ import (
 //   })
 func EmitEvent(ctx sdk.Context, eventType string, attributes map[string]string) {
 	attrs := make([]sdk.Attribute, 0, len(attributes))
-	for key, value := range attributes {
-		attrs = append(attrs, sdk.NewAttribute(key, value))
+
+	// Sorted iteration ensures deterministic event attribute ordering for consensus.
+	keys := make([]string, 0, len(attributes))
+	for k := range attributes {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		v := attributes[k]
+		attrs = append(attrs, sdk.NewAttribute(k, v))
 	}
 
 	event := sdk.NewEvent(eventType, attrs...)
@@ -114,8 +124,15 @@ func EmitSuccessEvent(ctx sdk.Context, module, action, actor string, details map
 		sdk.NewAttribute("success", "true"),
 	}
 
-	for key, value := range details {
-		attrs = append(attrs, sdk.NewAttribute(key, value))
+	// Sorted iteration ensures deterministic event attribute ordering for consensus.
+	keys := make([]string, 0, len(details))
+	for k := range details {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		v := details[k]
+		attrs = append(attrs, sdk.NewAttribute(k, v))
 	}
 
 	event := sdk.NewEvent(module+"."+action, attrs...)
@@ -161,8 +178,15 @@ func EmitErrorEvent(ctx sdk.Context, module, action, actor, errorMsg string, det
 		attrs = append(attrs, sdk.NewAttribute("actor", actor))
 	}
 
-	for key, value := range details {
-		attrs = append(attrs, sdk.NewAttribute(key, value))
+	// Sorted iteration ensures deterministic event attribute ordering for consensus.
+	keys := make([]string, 0, len(details))
+	for k := range details {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		v := details[k]
+		attrs = append(attrs, sdk.NewAttribute(k, v))
 	}
 
 	event := sdk.NewEvent(module+"."+action, attrs...)

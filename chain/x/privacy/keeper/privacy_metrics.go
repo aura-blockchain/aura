@@ -14,14 +14,17 @@ import (
 )
 
 // PrivacyMetrics tracks privacy-related metrics
+// DETERMINISM: All percentage/decimal fields use basis points (0-10000) instead of float64
+// to ensure cross-platform consistency. Float64 operations can produce different results
+// on different CPU architectures, causing consensus failures.
 type PrivacyMetrics struct {
-	TotalShieldedTxs      int64
-	TotalRingSignatures   int64
-	TotalMixingRounds     int64
-	AveragePrivacyScore   float64
-	AverageRingSize       float64
-	AnonymitySetSize      int64
-	LastUpdated           time.Time
+	TotalShieldedTxs        int64
+	TotalRingSignatures     int64
+	TotalMixingRounds       int64
+	AveragePrivacyScoreBps  uint64 // Basis points (0-10000)
+	AverageRingSizeBps      uint64 // Ring size scaled by 100 (e.g., 750 = 7.5 ring members)
+	AnonymitySetSize        int64
+	LastUpdated             time.Time
 }
 
 // TrackPrivacyMetrics tracks privacy metrics
@@ -36,7 +39,7 @@ func (k Keeper) TrackPrivacyMetrics(ctx context.Context) error {
 	metrics.TotalShieldedTxs = k.countShieldedTransactions(ctx)
 	metrics.TotalRingSignatures = k.countRingSignatures(ctx)
 	metrics.TotalMixingRounds = k.countMixingRounds(ctx)
-	metrics.AverageRingSize = k.calculateAverageRingSize(ctx)
+	metrics.AverageRingSizeBps = k.calculateAverageRingSizeBps(ctx)
 	metrics.AnonymitySetSize = k.getAnonymitySetSize(ctx)
 
 	// Store metrics
@@ -86,9 +89,13 @@ func (k Keeper) countMixingRounds(ctx context.Context) int64 {
 	return count
 }
 
-func (k Keeper) calculateAverageRingSize(ctx context.Context) float64 {
+// calculateAverageRingSizeBps calculates average ring size scaled by 100 for precision.
+// DETERMINISM: Uses integer arithmetic instead of float64 division.
+// Returns ring size * 100, e.g., if min=5, max=10, returns (5+10)*100/2 = 750 (representing 7.5)
+func (k Keeper) calculateAverageRingSizeBps(ctx context.Context) uint64 {
 	params := k.GetParams(ctx)
-	return float64(params.MinRingSize+params.MaxRingSize) / 2.0
+	// Scale by 100 before division to maintain precision
+	return uint64((params.MinRingSize + params.MaxRingSize) * 100 / 2)
 }
 
 func (k Keeper) getAnonymitySetSize(ctx context.Context) int64 {
@@ -109,11 +116,12 @@ func (k Keeper) storePrivacyMetrics(ctx context.Context, metrics *PrivacyMetrics
 	store := k.getStore(ctx)
 	key := []byte("privacy_metrics")
 
-	data := []byte(fmt.Sprintf("%d,%d,%d,%.2f,%d",
+	// DETERMINISM: Store all values as integers - no float formatting which can vary by platform
+	data := []byte(fmt.Sprintf("%d,%d,%d,%d,%d",
 		metrics.TotalShieldedTxs,
 		metrics.TotalRingSignatures,
 		metrics.TotalMixingRounds,
-		metrics.AverageRingSize,
+		metrics.AverageRingSizeBps,
 		metrics.AnonymitySetSize,
 	))
 
@@ -131,7 +139,7 @@ func (k Keeper) GetPrivacyMetrics(ctx context.Context) *PrivacyMetrics {
 		TotalShieldedTxs:    k.countShieldedTransactions(ctx),
 		TotalRingSignatures: k.countRingSignatures(ctx),
 		TotalMixingRounds:   k.countMixingRounds(ctx),
-		AverageRingSize:     k.calculateAverageRingSize(ctx),
+		AverageRingSizeBps:  k.calculateAverageRingSizeBps(ctx),
 		AnonymitySetSize:    k.getAnonymitySetSize(ctx),
 	}
 

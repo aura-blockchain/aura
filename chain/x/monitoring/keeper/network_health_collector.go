@@ -19,10 +19,33 @@ import (
 	"github.com/aequitas/aura/chain/x/monitoring/types"
 )
 
+// ============================================================================
+// OFF-CHAIN COMPONENT - NOT CONSENSUS SAFE
+// ============================================================================
+//
+// NetworkHealthCollector provides two distinct operational modes:
+//
+// 1. DETERMINISTIC MODE (CollectDeterministicHealth):
+//    - Safe to call during consensus (BeginBlocker/EndBlocker)
+//    - Uses ONLY data from ctx.BlockTime() and ctx.BlockHeight()
+//    - No external I/O, no HTTP calls, no network access
+//    - Results can be persisted to consensus state
+//
+// 2. OFF-CHAIN MODE (CollectObservabilityHealth, fetchPeerCount, etc.):
+//    - MUST NOT be called during consensus (BeginBlocker/EndBlocker/MsgHandler)
+//    - Makes HTTP requests to local RPC endpoints
+//    - Non-deterministic: results vary by node, network conditions, timing
+//    - For Prometheus metrics, operator dashboards, and external monitoring only
+//    - Should be called from a separate goroutine or sidecar process
+//
+// WARNING: The HTTP-based methods (fetchPeerCount, fetchMempoolSize,
+// fetchValidatorCounts, CollectObservabilityHealth) are NON-DETERMINISTIC
+// and will cause consensus failures if their results affect state.
+//
+// ============================================================================
+
 // NetworkHealthCollector collects network health metrics.
-// Two modes:
-// 1) Deterministic (consensus-safe) derived from block header time/height.
-// 2) Observability (metrics-only) via node-local RPC; not persisted to consensus.
+// See package-level documentation for consensus safety guidelines.
 type NetworkHealthCollector struct {
 	rpcEndpoint string
 	httpClient  *http.Client
@@ -111,7 +134,13 @@ type rpcValidatorsResponse struct {
 	} `json:"result"`
 }
 
-// CollectDeterministicHealth gathers consensus-safe metrics (no RPC, no wall-clock).
+// CollectDeterministicHealth gathers CONSENSUS-SAFE metrics derived only from
+// the block context (ctx.BlockTime, ctx.BlockHeight). This method:
+//   - Makes NO HTTP calls
+//   - Makes NO external I/O
+//   - Uses NO wall-clock time
+//   - Is SAFE to call from BeginBlocker/EndBlocker
+//   - Results CAN be persisted to consensus state
 func (c *NetworkHealthCollector) CollectDeterministicHealth(ctx context.Context) (*types.NetworkHealth, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
@@ -139,7 +168,21 @@ func (c *NetworkHealthCollector) CollectDeterministicHealth(ctx context.Context)
 }
 
 // CollectObservabilityHealth gathers richer node-local metrics for Prometheus.
-// DO NOT persist this to consensus state.
+//
+// OFF-CHAIN ONLY - DO NOT CALL DURING CONSENSUS
+//
+// This method makes HTTP requests to local RPC endpoints and is NON-DETERMINISTIC:
+//   - Network conditions vary between nodes
+//   - RPC response times differ
+//   - Results will differ across validators
+//
+// This method should ONLY be called from:
+//   - Background goroutines for Prometheus scraping
+//   - External monitoring sidecars
+//   - Operator CLI tools
+//
+// NEVER call from BeginBlocker, EndBlocker, or message handlers.
+// NEVER persist results to consensus state.
 func (c *NetworkHealthCollector) CollectObservabilityHealth(ctx context.Context) (*types.NetworkHealth, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
@@ -188,7 +231,10 @@ func (c *NetworkHealthCollector) updateBlockTime(height int64, blockTime time.Ti
 	c.lastBlockTime = blockTime
 }
 
-// fetchPeerCount queries the /net_info endpoint for peer count (metrics only)
+// fetchPeerCount queries the /net_info endpoint for peer count.
+//
+// OFF-CHAIN ONLY - NON-DETERMINISTIC
+// Makes HTTP request to local RPC. Do not call during consensus.
 func (c *NetworkHealthCollector) fetchPeerCount() (int, error) {
 	c.mu.RLock()
 	endpoint := c.rpcEndpoint
@@ -222,7 +268,10 @@ func (c *NetworkHealthCollector) fetchPeerCount() (int, error) {
 	return peerCount, nil
 }
 
-// fetchMempoolSize queries /unconfirmed_txs (metrics only)
+// fetchMempoolSize queries /unconfirmed_txs for mempool transaction count.
+//
+// OFF-CHAIN ONLY - NON-DETERMINISTIC
+// Makes HTTP request to local RPC. Do not call during consensus.
 func (c *NetworkHealthCollector) fetchMempoolSize() (int, error) {
 	c.mu.RLock()
 	endpoint := c.rpcEndpoint
@@ -256,7 +305,10 @@ func (c *NetworkHealthCollector) fetchMempoolSize() (int, error) {
 	return total, nil
 }
 
-// fetchValidatorCounts queries /validators (metrics only)
+// fetchValidatorCounts queries /validators for validator counts.
+//
+// OFF-CHAIN ONLY - NON-DETERMINISTIC
+// Makes HTTP request to local RPC. Do not call during consensus.
 func (c *NetworkHealthCollector) fetchValidatorCounts() (active int, total int, err error) {
 	c.mu.RLock()
 	endpoint := c.rpcEndpoint
@@ -340,4 +392,22 @@ func (c *NetworkHealthCollector) getAverageBlockTime() float64 {
 		sum += t
 	}
 	return sum / float64(len(c.blockTimes))
+}
+
+// ============================================================================
+// OFF-CHAIN OBSERVABILITY HELPERS
+// ============================================================================
+
+// CollectObservabilityMetricsOffChain collects non-deterministic metrics for
+// Prometheus/observability purposes. This is a convenience method that returns
+// only the observability data without requiring a context.
+//
+// OFF-CHAIN ONLY - Call from background goroutines, not during consensus.
+//
+// Returns peer count, mempool size, active validators, total validators, and any error.
+func (c *NetworkHealthCollector) CollectObservabilityMetricsOffChain() (peerCount int, mempoolSize int, activeVals int, totalVals int, err error) {
+	peerCount, _ = c.fetchPeerCount()
+	mempoolSize, _ = c.fetchMempoolSize()
+	activeVals, totalVals, _ = c.fetchValidatorCounts()
+	return peerCount, mempoolSize, activeVals, totalVals, nil
 }

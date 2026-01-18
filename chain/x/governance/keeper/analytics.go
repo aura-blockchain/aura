@@ -6,6 +6,7 @@ package keeper
 import (
 	"math/big"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/aequitas/aura/chain/x/governance/types"
@@ -95,14 +96,17 @@ func (k *Keeper) calculateAverageVotingPower(ctx sdk.Context, proposals []*types
 	return avgPower.String()
 }
 
-// calculateParticipationRate calculates voter participation rate
-func (k *Keeper) calculateParticipationRate(ctx sdk.Context, proposals []*types.Proposal) float64 {
+// calculateParticipationRate calculates voter participation rate using deterministic decimal math.
+// Returns sdkmath.LegacyDec for consensus-safe cross-platform calculations.
+// Note: Uses sdkmath.LegacyDec instead of float64 to prevent non-deterministic floating point
+// operations that could cause state divergence across different validator hardware/platforms.
+func (k *Keeper) calculateParticipationRate(ctx sdk.Context, proposals []*types.Proposal) sdkmath.LegacyDec {
 	if len(proposals) == 0 {
-		return 0
+		return sdkmath.LegacyZeroDec()
 	}
 
-	totalParticipation := float64(0)
-	votedProposals := 0
+	totalParticipation := sdkmath.LegacyZeroDec()
+	votedProposals := int64(0)
 
 	for _, proposal := range proposals {
 		if proposal.Status == types.StatusVotingPeriod ||
@@ -114,17 +118,18 @@ func (k *Keeper) calculateParticipationRate(ctx sdk.Context, proposals []*types.
 			votes := k.GetVotes(ctx, proposal.Id)
 			if len(votes) > 0 {
 				// Simplified - would calculate actual participation rate
-				totalParticipation += float64(len(votes))
+				totalParticipation = totalParticipation.Add(sdkmath.LegacyNewDec(int64(len(votes))))
 				votedProposals++
 			}
 		}
 	}
 
 	if votedProposals == 0 {
-		return 0
+		return sdkmath.LegacyZeroDec()
 	}
 
-	return (totalParticipation / float64(votedProposals)) * 10 // Simplified
+	// Calculate: (totalParticipation / votedProposals) * 10
+	return totalParticipation.Quo(sdkmath.LegacyNewDec(votedProposals)).MulInt64(10)
 }
 
 // calculateAverageProposalDuration calculates average proposal duration
@@ -156,14 +161,17 @@ func (k *Keeper) calculateAverageProposalDuration(proposals []*types.Proposal) u
 	return totalDuration / uint64(completedProposals)
 }
 
-// calculatePassRate calculates proposal pass rate
-func (k *Keeper) calculatePassRate(proposals []*types.Proposal) float64 {
+// calculatePassRate calculates proposal pass rate using deterministic decimal math.
+// Returns sdkmath.LegacyDec for consensus-safe cross-platform calculations.
+// Note: Uses sdkmath.LegacyDec instead of float64 to prevent non-deterministic floating point
+// operations that could cause state divergence across different validator hardware/platforms.
+func (k *Keeper) calculatePassRate(proposals []*types.Proposal) sdkmath.LegacyDec {
 	if len(proposals) == 0 {
-		return 0
+		return sdkmath.LegacyZeroDec()
 	}
 
-	passed := 0
-	total := 0
+	passed := int64(0)
+	total := int64(0)
 
 	for _, proposal := range proposals {
 		if proposal.Status == types.StatusPassed ||
@@ -179,20 +187,24 @@ func (k *Keeper) calculatePassRate(proposals []*types.Proposal) float64 {
 	}
 
 	if total == 0 {
-		return 0
+		return sdkmath.LegacyZeroDec()
 	}
 
-	return (float64(passed) / float64(total)) * 100
+	// Calculate: (passed / total) * 100
+	return sdkmath.LegacyNewDec(passed).Quo(sdkmath.LegacyNewDec(total)).MulInt64(100)
 }
 
-// calculateVetoRate calculates proposal veto rate
-func (k *Keeper) calculateVetoRate(proposals []*types.Proposal) float64 {
+// calculateVetoRate calculates proposal veto rate using deterministic decimal math.
+// Returns sdkmath.LegacyDec for consensus-safe cross-platform calculations.
+// Note: Uses sdkmath.LegacyDec instead of float64 to prevent non-deterministic floating point
+// operations that could cause state divergence across different validator hardware/platforms.
+func (k *Keeper) calculateVetoRate(proposals []*types.Proposal) sdkmath.LegacyDec {
 	if len(proposals) == 0 {
-		return 0
+		return sdkmath.LegacyZeroDec()
 	}
 
-	vetoed := 0
-	total := 0
+	vetoed := int64(0)
+	total := int64(0)
 
 	for _, proposal := range proposals {
 		if proposal.Status == types.StatusPassed ||
@@ -208,10 +220,11 @@ func (k *Keeper) calculateVetoRate(proposals []*types.Proposal) float64 {
 	}
 
 	if total == 0 {
-		return 0
+		return sdkmath.LegacyZeroDec()
 	}
 
-	return (float64(vetoed) / float64(total)) * 100
+	// Calculate: (vetoed / total) * 100
+	return sdkmath.LegacyNewDec(vetoed).Quo(sdkmath.LegacyNewDec(total)).MulInt64(100)
 }
 
 // GetProposerAnalytics returns analytics for a specific proposer

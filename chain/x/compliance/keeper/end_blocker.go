@@ -5,6 +5,7 @@ package keeper
 
 import (
 	"fmt"
+	"sort"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -66,7 +67,15 @@ func (k *Keeper) EndBlocker(ctx sdk.Context) {
 	errorCount := 0
 
 	// Flush all pending AML profile updates to storage
-	for address, profile := range k.pendingProfileUpdates {
+	// Extract and sort keys for deterministic iteration order
+	addresses := make([]string, 0, len(k.pendingProfileUpdates))
+	for address := range k.pendingProfileUpdates {
+		addresses = append(addresses, address)
+	}
+	sort.Strings(addresses)
+
+	for _, address := range addresses {
+		profile := k.pendingProfileUpdates[address]
 		if err := k.SetAMLProfile(ctx, profile); err != nil {
 			// Log error but continue processing other updates
 			// This prevents one bad update from blocking all others
@@ -88,7 +97,8 @@ func (k *Keeper) EndBlocker(ctx sdk.Context) {
 	// For large maps, reallocation is more efficient than iterating through all keys.
 	if len(k.pendingProfileUpdates) < 256 {
 		// Clear in-place for small maps (more efficient than new allocation)
-		for key := range k.pendingProfileUpdates {
+		// Use sorted addresses slice for deterministic iteration order
+		for _, key := range addresses {
 			delete(k.pendingProfileUpdates, key)
 		}
 	} else {

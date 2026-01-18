@@ -282,13 +282,13 @@ func TestAddBatchRecord_Success(t *testing.T) {
 	k, ctx := setupKeeperForTest(t)
 
 	record := &BatchRecord{
-		BatchID:          "test-batch-id",
-		TransactionCount: 10,
-		TotalAmount:      "10000000",
-		ProcessedAt:      1000,
-		GasSaved:         50000,
-		AverageGasPrice:  100,
-		CompressionRatio: 0.75,
+		BatchID:             "test-batch-id",
+		TransactionCount:    10,
+		TotalAmount:         "10000000",
+		ProcessedAt:         1000,
+		GasSaved:            50000,
+		AverageGasPrice:     100,
+		CompressionRatioBps: 7500, // 75% in basis points
 	}
 
 	err := k.AddBatchRecord(ctx, record)
@@ -310,10 +310,10 @@ func TestSetBatchStatistics_Success(t *testing.T) {
 	k, ctx := setupKeeperForTest(t)
 
 	stats := &BatchStatistics{
-		TotalBatchesProcessed:    100,
-		TotalTransactionsBatched: 5000,
-		TotalGasSaved:            "1000000000",
-		AverageCompressionRatio:  0.8,
+		TotalBatchesProcessed:      100,
+		TotalTransactionsBatched:   5000,
+		TotalGasSaved:              "1000000000",
+		AverageCompressionRatioBps: 8000, // 80% in basis points
 	}
 
 	err := k.SetBatchStatistics(ctx, stats)
@@ -447,11 +447,11 @@ func TestGetPendingBatch_SimplifiedVersion(t *testing.T) {
 func TestGetBatchStatistics_SimplifiedVersion(t *testing.T) {
 	k, _ := setupKeeperForTest(t)
 
-	batches, txs, gasSaved, compression := k.GetBatchStatistics()
+	batches, txs, gasSaved, compressionBps := k.GetBatchStatistics()
 	require.Equal(t, uint64(0), batches)
 	require.Equal(t, uint64(0), txs)
 	require.Equal(t, "0", gasSaved)
-	require.Equal(t, float32(0.0), compression)
+	require.Equal(t, uint64(0), compressionBps) // Basis points instead of float32
 }
 
 func TestTransactionBatching_FullWorkflow(t *testing.T) {
@@ -549,29 +549,30 @@ func TestTransactionBatch_JSONSerialization(t *testing.T) {
 
 func TestBatchRecord_Fields(t *testing.T) {
 	record := BatchRecord{
-		BatchID:          "test-batch-id",
-		TransactionCount: 10,
-		TotalAmount:      "10000000",
-		ProcessedAt:      1000,
-		GasSaved:         50000,
-		AverageGasPrice:  100,
-		CompressionRatio: 0.75,
+		BatchID:             "test-batch-id",
+		TransactionCount:    10,
+		TotalAmount:         "10000000",
+		ProcessedAt:         1000,
+		GasSaved:            50000,
+		AverageGasPrice:     100,
+		CompressionRatioBps: 7500, // 75% in basis points
 	}
 
 	require.Equal(t, "test-batch-id", record.BatchID)
 	require.Equal(t, uint64(10), record.TransactionCount)
-	require.Equal(t, float32(0.75), record.CompressionRatio)
+	require.Equal(t, uint64(7500), record.CompressionRatioBps)
 }
 
 func TestBatchStatistics_Fields(t *testing.T) {
 	stats := BatchStatistics{
-		TotalBatchesProcessed:    100,
-		TotalTransactionsBatched: 5000,
-		TotalGasSaved:            "1000000000",
-		AverageCompressionRatio:  0.8,
+		TotalBatchesProcessed:      100,
+		TotalTransactionsBatched:   5000,
+		TotalGasSaved:              "1000000000",
+		AverageCompressionRatioBps: 8000, // 80% in basis points
 	}
 
 	require.Equal(t, uint64(100), stats.TotalBatchesProcessed)
 	require.Equal(t, uint64(5000), stats.TotalTransactionsBatched)
 	require.Equal(t, "1000000000", stats.TotalGasSaved)
+	require.Equal(t, uint64(8000), stats.AverageCompressionRatioBps)
 }

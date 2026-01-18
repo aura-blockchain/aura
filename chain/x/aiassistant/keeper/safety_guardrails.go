@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	errorsmod "cosmossdk.io/errors"
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/aequitas/aura/chain/x/aiassistant/types"
@@ -62,7 +63,7 @@ type SafetyViolation struct {
 type SafetyCheckResult struct {
 	Passed       bool
 	Violations   []SafetyViolation
-	OverallScore float64
+	OverallScore sdkmath.LegacyDec // Deterministic decimal for consensus safety
 	Blocked      bool
 }
 
@@ -324,28 +325,33 @@ func checkPrivacy(ctx sdk.Context, input, output string) SafetyViolation {
 	return violation
 }
 
-// calculateSafetyScore calculates overall safety score
-func (k Keeper) calculateSafetyScore(violations []SafetyViolation) float64 {
+// calculateSafetyScore calculates overall safety score using deterministic decimal arithmetic
+func (k Keeper) calculateSafetyScore(violations []SafetyViolation) sdkmath.LegacyDec {
 	if len(violations) == 0 {
-		return 1.0 // Perfect score
+		return sdkmath.LegacyOneDec() // Perfect score
 	}
 
-	severityWeights := map[SafetySeverity]float64{
-		SafetySeverityLow:      0.1,
-		SafetySeverityMedium:   0.3,
-		SafetySeverityHigh:     0.6,
-		SafetySeverityCritical: 1.0,
+	// Weights as basis points (10 = 0.1, 30 = 0.3, 60 = 0.6, 100 = 1.0)
+	severityWeightsBasisPoints := map[SafetySeverity]int64{
+		SafetySeverityLow:      10,
+		SafetySeverityMedium:   30,
+		SafetySeverityHigh:     60,
+		SafetySeverityCritical: 100,
 	}
 
-	totalPenalty := 0.0
+	totalPenalty := sdkmath.LegacyZeroDec()
 	for _, v := range violations {
-		totalPenalty += severityWeights[v.Severity]
+		weightBP := severityWeightsBasisPoints[v.Severity]
+		penalty := sdkmath.LegacyNewDec(weightBP).QuoInt64(100)
+		totalPenalty = totalPenalty.Add(penalty)
 	}
 
 	// Score from 0 to 1, where 1 is safest
-	score := 1.0 - (totalPenalty / float64(len(violations)))
-	if score < 0 {
-		score = 0
+	// score = 1.0 - (totalPenalty / numViolations)
+	avgPenalty := totalPenalty.QuoInt64(int64(len(violations)))
+	score := sdkmath.LegacyOneDec().Sub(avgPenalty)
+	if score.IsNegative() {
+		score = sdkmath.LegacyZeroDec()
 	}
 
 	return score
@@ -354,12 +360,19 @@ func (k Keeper) calculateSafetyScore(violations []SafetyViolation) float64 {
 // logSafetyCheck logs safety check results
 func (k Keeper) logSafetyCheck(ctx sdk.Context, result SafetyCheckResult) {
 	if len(result.Violations) > 0 {
+		// Format score with 2 decimal places using deterministic string conversion
+		scoreStr := result.OverallScore.MulInt64(100).TruncateInt64()
+		formattedScore := fmt.Sprintf("%d.%02d", scoreStr/100, scoreStr%100)
+		if scoreStr < 0 {
+			formattedScore = "0.00"
+		}
+
 		ctx.EventManager().EmitEvent(
 			sdk.NewEvent(
 				"safety_check",
 				sdk.NewAttribute("passed", fmt.Sprintf("%t", result.Passed)),
 				sdk.NewAttribute("violations", fmt.Sprintf("%d", len(result.Violations))),
-				sdk.NewAttribute("score", fmt.Sprintf("%.2f", result.OverallScore)),
+				sdk.NewAttribute("score", formattedScore),
 				sdk.NewAttribute("blocked", fmt.Sprintf("%t", result.Blocked)),
 			),
 		)

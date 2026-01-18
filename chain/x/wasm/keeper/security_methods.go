@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/aequitas/aura/chain/x/wasm/types"
@@ -464,8 +465,14 @@ func (k Keeper) LogSecurityEvent(ctx sdk.Context, event types.SecurityAuditEvent
 	}
 
 	if len(event.AdditionalData) > 0 {
-		for k, v := range event.AdditionalData {
-			attrs = append(attrs, sdk.NewAttribute(k, fmt.Sprintf("%v", v)))
+		// Sort keys for deterministic iteration order
+		keys := make([]string, 0, len(event.AdditionalData))
+		for k := range event.AdditionalData {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			attrs = append(attrs, sdk.NewAttribute(k, fmt.Sprintf("%v", event.AdditionalData[k])))
 		}
 	}
 

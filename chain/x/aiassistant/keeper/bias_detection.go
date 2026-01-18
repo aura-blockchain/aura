@@ -8,17 +8,18 @@ import (
 	"regexp"
 	"strings"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // BiasDetectionResult represents the result of bias detection
 type BiasDetectionResult struct {
-	HasBias           bool
-	BiasScore         float64 // 0.0 to 1.0
-	BiasTypes         []string
+	HasBias            bool
+	BiasScore          sdkmath.LegacyDec // 0.0 to 1.0 using deterministic decimal
+	BiasTypes          []string
 	ProblematicPhrases []string
-	Recommendations   []string
-	Severity          BiasSeverity
+	Recommendations    []string
+	Severity           BiasSeverity
 }
 
 // BiasSeverity defines bias severity levels
@@ -138,44 +139,54 @@ func (k Keeper) DetectBias(ctx sdk.Context, text string) BiasDetectionResult {
 	return result
 }
 
-// calculateBiasScore calculates overall bias score
-func calculateBiasScore(scores map[BiasSeverity]int) float64 {
-	weights := map[BiasSeverity]float64{
-		SeverityLow:    0.25,
-		SeverityMedium: 0.50,
-		SeverityHigh:   1.00,
+// calculateBiasScore calculates overall bias score using deterministic decimal arithmetic
+func calculateBiasScore(scores map[BiasSeverity]int) sdkmath.LegacyDec {
+	// Weights as basis points (25 = 0.25, 50 = 0.50, 100 = 1.00)
+	weightsBasisPoints := map[BiasSeverity]int64{
+		SeverityLow:    25,
+		SeverityMedium: 50,
+		SeverityHigh:   100,
 	}
 
-	totalScore := 0.0
-	totalWeight := 0.0
+	totalScore := sdkmath.LegacyZeroDec()
+	totalCount := int64(0)
 
-	for severity, count := range scores {
-		weight := weights[severity]
-		totalScore += float64(count) * weight
-		totalWeight += float64(count)
+	// Process severities in deterministic order
+	for _, severity := range []BiasSeverity{SeverityLow, SeverityMedium, SeverityHigh} {
+		count, exists := scores[severity]
+		if !exists || count == 0 {
+			continue
+		}
+		weight := sdkmath.LegacyNewDec(weightsBasisPoints[severity]).QuoInt64(100)
+		contribution := weight.MulInt64(int64(count))
+		totalScore = totalScore.Add(contribution)
+		totalCount += int64(count)
 	}
 
-	if totalWeight == 0 {
-		return 0.0
+	if totalCount == 0 {
+		return sdkmath.LegacyZeroDec()
 	}
 
-	// Normalize to 0-1 range
-	score := totalScore / (totalWeight * 1.0)
-	if score > 1.0 {
-		score = 1.0
+	// Normalize to 0-1 range: score = totalScore / totalCount
+	score := totalScore.QuoInt64(totalCount)
+	if score.GT(sdkmath.LegacyOneDec()) {
+		score = sdkmath.LegacyOneDec()
 	}
 
 	return score
 }
 
-// determineSeverity determines overall severity from score
-func determineSeverity(score float64) BiasSeverity {
+// determineSeverity determines overall severity from score using deterministic decimal comparison
+func determineSeverity(score sdkmath.LegacyDec) BiasSeverity {
+	lowThreshold := sdkmath.LegacyNewDecWithPrec(3, 1)  // 0.3
+	medThreshold := sdkmath.LegacyNewDecWithPrec(7, 1)  // 0.7
+
 	switch {
-	case score == 0:
+	case score.IsZero():
 		return SeverityNone
-	case score < 0.3:
+	case score.LT(lowThreshold):
 		return SeverityLow
-	case score < 0.7:
+	case score.LT(medThreshold):
 		return SeverityMedium
 	default:
 		return SeverityHigh
@@ -193,11 +204,17 @@ func (k Keeper) ValidateResponseForBias(ctx sdk.Context, response string) error 
 
 	// Warn for medium bias
 	if result.Severity == SeverityMedium {
+		// Format score with 2 decimal places using deterministic string conversion
+		scoreStr := result.BiasScore.MulInt64(100).TruncateInt64()
+		formattedScore := fmt.Sprintf("%d.%02d", scoreStr/100, scoreStr%100)
+		if scoreStr < 0 {
+			formattedScore = "0.00"
+		}
 		ctx.EventManager().EmitEvent(
 			sdk.NewEvent(
 				"bias_warning",
 				sdk.NewAttribute("severity", string(result.Severity)),
-				sdk.NewAttribute("score", fmt.Sprintf("%.2f", result.BiasScore)),
+				sdk.NewAttribute("score", formattedScore),
 			),
 		)
 	}
@@ -207,10 +224,17 @@ func (k Keeper) ValidateResponseForBias(ctx sdk.Context, response string) error 
 
 // logBiasDetection logs bias detection for monitoring
 func (k Keeper) logBiasDetection(ctx sdk.Context, result BiasDetectionResult) {
+	// Format score with 2 decimal places using deterministic string conversion
+	scoreStr := result.BiasScore.MulInt64(100).TruncateInt64()
+	formattedScore := fmt.Sprintf("%d.%02d", scoreStr/100, scoreStr%100)
+	if scoreStr < 0 {
+		formattedScore = "0.00"
+	}
+
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			"bias_detected",
-			sdk.NewAttribute("score", fmt.Sprintf("%.2f", result.BiasScore)),
+			sdk.NewAttribute("score", formattedScore),
 			sdk.NewAttribute("severity", string(result.Severity)),
 			sdk.NewAttribute("types", strings.Join(result.BiasTypes, ",")),
 		),
@@ -221,7 +245,7 @@ func (k Keeper) logBiasDetection(ctx sdk.Context, result BiasDetectionResult) {
 		OperationType: "bias_detection",
 		Success:       true,
 		Metadata: map[string]string{
-			"bias_score": fmt.Sprintf("%.2f", result.BiasScore),
+			"bias_score": formattedScore,
 			"severity":   string(result.Severity),
 			"types":      strings.Join(result.BiasTypes, ","),
 		},
@@ -244,5 +268,5 @@ type BiasStatistics struct {
 	TotalDetections uint64
 	ByCategoryCount map[BiasCategory]uint64
 	BySeverityCount map[BiasSeverity]uint64
-	AverageSeverity float64
+	AverageSeverity sdkmath.LegacyDec // Deterministic decimal for consensus safety
 }

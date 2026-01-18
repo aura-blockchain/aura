@@ -177,22 +177,30 @@ func TestAnomalyDetectionStruct(t *testing.T) {
 }
 
 func TestValidatorUptimeStruct(t *testing.T) {
+	// 9500 basis points = 95%
 	uptime := ValidatorUptime{
 		ValidatorAddress:  "auravaloper1test",
 		Moniker:           "Test Validator",
 		TotalBlocks:       1000,
 		SignedBlocks:      950,
 		MissedBlocks:      50,
-		UptimePercentage:  95.0,
+		UptimeBasisPoints: 9500, // 95% in basis points
 		LastSeen:          time.Now(),
 		Status:            "active",
 		ConsecutiveMisses: 2,
 		Jailed:            false,
 	}
 
-	expectedUptime := float64(uptime.SignedBlocks) / float64(uptime.TotalBlocks) * 100
-	if uptime.UptimePercentage != 95.0 {
-		t.Errorf("expected uptime to be 95.0, got %f (calculated: %f)", uptime.UptimePercentage, expectedUptime)
+	// Verify basis points calculation: SignedBlocks * 10000 / TotalBlocks = 950 * 10000 / 1000 = 9500
+	expectedBps := uint64(uptime.SignedBlocks) * 10000 / uint64(uptime.TotalBlocks)
+	if uptime.UptimeBasisPoints != expectedBps {
+		t.Errorf("expected uptime basis points to be %d, got %d", expectedBps, uptime.UptimeBasisPoints)
+	}
+
+	// Verify the percentage method converts correctly
+	expectedPercent := 95.0
+	if uptime.UptimePercentage() != expectedPercent {
+		t.Errorf("expected UptimePercentage() to be %f, got %f", expectedPercent, uptime.UptimePercentage())
 	}
 
 	if uptime.Jailed {

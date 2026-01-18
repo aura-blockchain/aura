@@ -210,12 +210,13 @@ func (sm *SIEMManager) GetSecurityStats() map[string]interface{} {
 	return stats
 }
 
-// CleanupOldEvents removes old security events
-func (sm *SIEMManager) CleanupOldEvents(retentionPeriod time.Duration) int {
+// CleanupOldEvents removes old security events using deterministic block time
+func (sm *SIEMManager) CleanupOldEvents(ctx context.Context, retentionPeriod time.Duration) int {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 
-	now := time.Now()
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	now := sdkCtx.BlockTime()
 	cleaned := 0
 
 	for id, event := range sm.events {
@@ -228,12 +229,13 @@ func (sm *SIEMManager) CleanupOldEvents(retentionPeriod time.Duration) int {
 	return cleaned
 }
 
-// AnalyzeThreatTrends analyzes threat trends over time
-func (sm *SIEMManager) AnalyzeThreatTrends(duration time.Duration) map[string]interface{} {
+// AnalyzeThreatTrends analyzes threat trends over time using deterministic block time
+func (sm *SIEMManager) AnalyzeThreatTrends(ctx context.Context, duration time.Duration) map[string]interface{} {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
 
-	now := time.Now()
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	now := sdkCtx.BlockTime()
 	cutoff := now.Add(-duration)
 
 	recentEvents := 0

@@ -142,7 +142,8 @@ func TestAnalyzeTokenDistribution(t *testing.T) {
 func TestOptimizeTokenomicsParameters(t *testing.T) {
 	k, ctx := setupKeeperForTest(t)
 
-	optimization := k.OptimizeTokenomicsParameters(ctx, 0.05, 5) // 5% target growth, 5 years
+	// Target growth is in basis points: 500 = 5% growth
+	optimization := k.OptimizeTokenomicsParameters(ctx, 500, 5) // 500 basis points (5%) target growth, 5 years
 	require.NotNil(t, optimization)
 }
 

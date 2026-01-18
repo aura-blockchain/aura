@@ -86,9 +86,10 @@ func (sd *SybilDetector) AnalyzePeerDistribution(peers []types.PeerInfo) (isSybi
 	sort.Strings(subnets)
 	for _, subnet := range subnets {
 		count := sd.subnetCounts[subnet]
-		percentage := float64(count) / float64(totalPeers) * 100
-		if percentage > 30.0 {
-			return true, fmt.Sprintf("suspicious peer concentration: %.1f%% from subnet %s", percentage, subnet)
+		// Calculate percentage in basis points (10000 = 100%) for determinism
+		percentageBps := (count * 10000) / uint32(totalPeers)
+		if percentageBps > 3000 { // More than 30% (3000 basis points)
+			return true, fmt.Sprintf("suspicious peer concentration: %d.%02d%% from subnet %s", percentageBps/100, percentageBps%100, subnet)
 		}
 	}
 
@@ -101,9 +102,10 @@ func (sd *SybilDetector) AnalyzePeerDistribution(peers []types.PeerInfo) (isSybi
 	sort.Slice(asns, func(i, j int) bool { return asns[i] < asns[j] })
 	for _, asn := range asns {
 		count := sd.asnCounts[asn]
-		percentage := float64(count) / float64(totalPeers) * 100
-		if percentage > 40.0 {
-			return true, fmt.Sprintf("suspicious peer concentration: %.1f%% from ASN %d", percentage, asn)
+		// Calculate percentage in basis points (10000 = 100%) for determinism
+		percentageBps := (count * 10000) / uint32(totalPeers)
+		if percentageBps > 4000 { // More than 40% (4000 basis points)
+			return true, fmt.Sprintf("suspicious peer concentration: %d.%02d%% from ASN %d", percentageBps/100, percentageBps%100, asn)
 		}
 	}
 
@@ -116,9 +118,10 @@ func (sd *SybilDetector) AnalyzePeerDistribution(peers []types.PeerInfo) (isSybi
 	sort.Strings(regions)
 	for _, region := range regions {
 		count := sd.regionCounts[region]
-		percentage := float64(count) / float64(totalPeers) * 100
-		if percentage > 50.0 {
-			return true, fmt.Sprintf("suspicious peer concentration: %.1f%% from region %s", percentage, region)
+		// Calculate percentage in basis points (10000 = 100%) for determinism
+		percentageBps := (count * 10000) / uint32(totalPeers)
+		if percentageBps > 5000 { // More than 50% (5000 basis points)
+			return true, fmt.Sprintf("suspicious peer concentration: %d.%02d%% from region %s", percentageBps/100, percentageBps%100, region)
 		}
 	}
 
@@ -204,6 +207,8 @@ func (ed *EclipseDetector) DetectEclipse(peers []types.PeerInfo, trustedPeers []
 
 	// 3. Check for concentration from single ASN
 	totalPeers := len(peers)
+	// Convert maxConcentration to basis points for comparison (e.g., 40.0 -> 4000)
+	maxConcentrationBps := uint32(ed.maxConcentration * 100)
 	// Sort ASNs for deterministic iteration order
 	asns := make([]uint32, 0, len(asnCounts))
 	for asn := range asnCounts {
@@ -212,9 +217,10 @@ func (ed *EclipseDetector) DetectEclipse(peers []types.PeerInfo, trustedPeers []
 	sort.Slice(asns, func(i, j int) bool { return asns[i] < asns[j] })
 	for _, asn := range asns {
 		count := asnCounts[asn]
-		concentration := float64(count) / float64(totalPeers) * 100
-		if concentration > ed.maxConcentration {
-			return true, fmt.Sprintf("excessive concentration from ASN %d: %.1f%%", asn, concentration)
+		// Calculate concentration in basis points (10000 = 100%) for determinism
+		concentrationBps := (count * 10000) / uint32(totalPeers)
+		if concentrationBps > maxConcentrationBps {
+			return true, fmt.Sprintf("excessive concentration from ASN %d: %d.%02d%%", asn, concentrationBps/100, concentrationBps%100)
 		}
 	}
 
@@ -237,9 +243,10 @@ func (ed *EclipseDetector) DetectEclipse(peers []types.PeerInfo, trustedPeers []
 		sort.Strings(subnets)
 		for _, subnet := range subnets {
 			count := ipCounts[subnet]
-			concentration := float64(count) / float64(totalPeers) * 100
-			if concentration > 30.0 { // Max 30% from single /24 subnet
-				return true, fmt.Sprintf("excessive concentration from subnet %s: %.1f%%", subnet, concentration)
+			// Calculate concentration in basis points (10000 = 100%) for determinism
+			concentrationBps := (count * 10000) / uint32(totalPeers)
+			if concentrationBps > 3000 { // Max 30% (3000 basis points) from single /24 subnet
+				return true, fmt.Sprintf("excessive concentration from subnet %s: %d.%02d%%", subnet, concentrationBps/100, concentrationBps%100)
 			}
 		}
 	}
@@ -443,7 +450,8 @@ func isValidIP(ipAddr string) bool {
 }
 
 // CalculatePeerDiversity calculates the diversity score of connected peers
-func (k Keeper) CalculatePeerDiversity(ctx sdk.Context) (diversityScore float64) {
+// Returns score in basis points (0-10000, where 10000 = 100%) for determinism
+func (k Keeper) CalculatePeerDiversity(ctx sdk.Context) (diversityScoreBps uint32) {
 	peers := k.GetAllPeers(ctx)
 	if len(peers) == 0 {
 		return 0
@@ -466,15 +474,18 @@ func (k Keeper) CalculatePeerDiversity(ctx sdk.Context) (diversityScore float64)
 		}
 	}
 
-	totalPeers := float64(len(peers))
-	asnDiversity := float64(len(asnSet)) / totalPeers
-	regionDiversity := float64(len(regionSet)) / totalPeers
-	subnetDiversity := float64(len(subnetSet)) / totalPeers
+	totalPeers := uint32(len(peers))
 
-	// Weighted average of diversity metrics
-	diversityScore = (asnDiversity*0.5 + regionDiversity*0.3 + subnetDiversity*0.2) * 100
+	// Calculate diversity ratios in basis points (10000 = 100%)
+	asnDiversityBps := (uint32(len(asnSet)) * 10000) / totalPeers
+	regionDiversityBps := (uint32(len(regionSet)) * 10000) / totalPeers
+	subnetDiversityBps := (uint32(len(subnetSet)) * 10000) / totalPeers
 
-	return diversityScore
+	// Weighted average: 50% ASN + 30% region + 20% subnet
+	// Using integer math: (asn*5 + region*3 + subnet*2) / 10
+	diversityScoreBps = (asnDiversityBps*5 + regionDiversityBps*3 + subnetDiversityBps*2) / 10
+
+	return diversityScoreBps
 }
 
 // PerformPeerDiversityCheck checks if peer diversity is sufficient

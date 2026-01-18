@@ -58,7 +58,7 @@ func (k Keeper) UpdateValidatorUptime(ctx context.Context, validatorAddr, monike
 			TotalBlocks:       0,
 			SignedBlocks:      0,
 			MissedBlocks:      0,
-			UptimePercentage:  0,
+			UptimeBasisPoints: 0,
 			LastSeen:          blockTime,
 			Status:            "active",
 			ConsecutiveMisses: 0,
@@ -95,9 +95,10 @@ func (k Keeper) UpdateValidatorUptime(ctx context.Context, validatorAddr, monike
 		}
 	}
 
-	// Calculate uptime percentage
+	// Calculate uptime in basis points using deterministic integer arithmetic
+	// 10000 basis points = 100%
 	if uptime.TotalBlocks > 0 {
-		uptime.UptimePercentage = float64(uptime.SignedBlocks) / float64(uptime.TotalBlocks) * 100
+		uptime.UptimeBasisPoints = uint64(uptime.SignedBlocks) * 10000 / uint64(uptime.TotalBlocks)
 	}
 
 	// Persist to KV store
@@ -105,9 +106,9 @@ func (k Keeper) UpdateValidatorUptime(ctx context.Context, validatorAddr, monike
 		return err
 	}
 
-	// Update Prometheus metrics
+	// Update Prometheus metrics (convert to percentage for display)
 	if k.metrics != nil {
-		k.metrics.ValidatorUptime.WithLabelValues(validatorAddr, moniker).Set(uptime.UptimePercentage)
+		k.metrics.ValidatorUptime.WithLabelValues(validatorAddr, moniker).Set(uptime.UptimePercentage())
 	}
 
 	return nil
@@ -150,12 +151,13 @@ func (k Keeper) createValidatorDownAlert(ctx context.Context, uptime *types.Vali
 		Severity: types.SeverityHigh,
 		Message:  fmt.Sprintf("Validator %s is down after %d consecutive misses", uptime.Moniker, uptime.ConsecutiveMisses),
 		Details: map[string]interface{}{
-			"validator_address":  uptime.ValidatorAddress,
-			"moniker":            uptime.Moniker,
-			"consecutive_misses": uptime.ConsecutiveMisses,
-			"uptime_percentage":  uptime.UptimePercentage,
-			"total_blocks":       uptime.TotalBlocks,
-			"missed_blocks":      uptime.MissedBlocks,
+			"validator_address":   uptime.ValidatorAddress,
+			"moniker":             uptime.Moniker,
+			"consecutive_misses":  uptime.ConsecutiveMisses,
+			"uptime_basis_points": uptime.UptimeBasisPoints,
+			"uptime_percentage":   uptime.UptimePercentage(), // for display only
+			"total_blocks":        uptime.TotalBlocks,
+			"missed_blocks":       uptime.MissedBlocks,
 		},
 		Timestamp:        blockTime,
 		Acknowledged:     false,
@@ -182,7 +184,7 @@ func (k Keeper) GetValidatorStats(ctx context.Context) (map[string]interface{}, 
 	totalValidators := 0
 	activeValidators := 0
 	jailedValidators := 0
-	var avgUptime float64
+	var totalUptimeBps uint64 // Sum of basis points for averaging
 
 	err := k.IterateValidatorUptimes(ctx, func(uptime *types.ValidatorUptime) bool {
 		totalValidators++
@@ -192,7 +194,7 @@ func (k Keeper) GetValidatorStats(ctx context.Context) (map[string]interface{}, 
 		if uptime.Jailed {
 			jailedValidators++
 		}
-		avgUptime += uptime.UptimePercentage
+		totalUptimeBps += uptime.UptimeBasisPoints
 		return false
 	})
 
@@ -200,15 +202,18 @@ func (k Keeper) GetValidatorStats(ctx context.Context) (map[string]interface{}, 
 		return nil, err
 	}
 
+	// Calculate average uptime in basis points using integer arithmetic
+	var avgUptimeBps uint64
 	if totalValidators > 0 {
-		avgUptime /= float64(totalValidators)
+		avgUptimeBps = totalUptimeBps / uint64(totalValidators)
 	}
 
 	return map[string]interface{}{
-		"total_validators":  totalValidators,
-		"active_validators": activeValidators,
-		"jailed_validators": jailedValidators,
-		"average_uptime":    avgUptime,
+		"total_validators":        totalValidators,
+		"active_validators":       activeValidators,
+		"jailed_validators":       jailedValidators,
+		"average_uptime_bps":      avgUptimeBps,
+		"average_uptime_percent":  float64(avgUptimeBps) / 100.0, // for display only
 	}, nil
 }
 
@@ -234,14 +239,15 @@ func (k Keeper) ExportValidatorMetrics(ctx context.Context) (map[string]interfac
 
 	err := k.IterateValidatorUptimes(ctx, func(uptime *types.ValidatorUptime) bool {
 		metrics[uptime.ValidatorAddress] = map[string]interface{}{
-			"moniker":            uptime.Moniker,
-			"uptime_percentage":  uptime.UptimePercentage,
-			"total_blocks":       uptime.TotalBlocks,
-			"signed_blocks":      uptime.SignedBlocks,
-			"missed_blocks":      uptime.MissedBlocks,
-			"consecutive_misses": uptime.ConsecutiveMisses,
-			"jailed":             uptime.Jailed,
-			"status":             uptime.Status,
+			"moniker":             uptime.Moniker,
+			"uptime_basis_points": uptime.UptimeBasisPoints,
+			"uptime_percentage":   uptime.UptimePercentage(), // for display only
+			"total_blocks":        uptime.TotalBlocks,
+			"signed_blocks":       uptime.SignedBlocks,
+			"missed_blocks":       uptime.MissedBlocks,
+			"consecutive_misses":  uptime.ConsecutiveMisses,
+			"jailed":              uptime.Jailed,
+			"status":              uptime.Status,
 		}
 		return false
 	})

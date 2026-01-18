@@ -6,7 +6,6 @@ package keeper
 import (
 	"encoding/json"
 	"fmt"
-	"math"
 	"strings"
 	"time"
 
@@ -166,7 +165,11 @@ func (k Keeper) EstimateComputeUnits(_ sdk.Context, _ string, inputLength uint64
 	default:
 		base = 20
 	}
-	sizeFactor := uint64(math.Max(1, float64(inputLength)/100.0))
+	// Deterministic integer division: sizeFactor = max(1, inputLength / 100)
+	sizeFactor := inputLength / 100
+	if sizeFactor < 1 {
+		sizeFactor = 1
+	}
 	return base * sizeFactor
 }
 

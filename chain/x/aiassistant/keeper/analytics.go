@@ -17,6 +17,9 @@ import (
 )
 
 // UsageAnalytics represents usage analytics data
+// DETERMINISM: All rate/percentage fields use basis points (0-10000) instead of float64
+// to ensure cross-platform consistency. Float64 operations can produce different results
+// on different CPU architectures, causing consensus failures.
 type UsageAnalytics struct {
 	Period              AnalyticsPeriod
 	TotalQueries        uint64
@@ -28,8 +31,10 @@ type UsageAnalytics struct {
 	ModelUsage          map[string]uint64
 	OperationTypes      map[string]uint64
 	PeakUsageTime       time.Time
-	CacheHitRate        float64
-	SuccessRate         float64
+	CacheHitRateBps     uint64 // Basis points (0-10000 = 0%-100%)
+	SuccessRateBps      uint64 // Basis points (0-10000 = 0%-100%)
+	CacheHits           uint64 // Raw count for calculation
+	SuccessCount        uint64 // Raw count for calculation
 	AverageResponseTime uint64
 	TopUsers            []UserUsageStats
 }
@@ -90,6 +95,7 @@ func (k Keeper) RecordAnalytics(ctx sdk.Context, record AnalyticsRecord) error {
 }
 
 // updateAnalytics updates analytics data with new record
+// DETERMINISM: All rate calculations use integer arithmetic with basis points
 func (k Keeper) updateAnalytics(data *UsageAnalytics, record AnalyticsRecord) {
 	data.TotalQueries++
 	data.TotalCost = data.TotalCost.Add(record.Cost)
@@ -105,10 +111,21 @@ func (k Keeper) updateAnalytics(data *UsageAnalytics, record AnalyticsRecord) {
 	}
 	data.OperationTypes[record.OperationType]++
 
-	// Update averages
+	// Track cache hits and success count
+	if record.CacheHit {
+		data.CacheHits++
+	}
+	if record.Success {
+		data.SuccessCount++
+	}
+
+	// Update averages and rates using deterministic integer arithmetic
 	if data.TotalQueries > 0 {
 		data.AverageCost = data.TotalCost.Quo(sdkmath.NewInt(int64(data.TotalQueries)))
 		data.AverageComputeUnits = data.TotalComputeUnits / data.TotalQueries
+		// Calculate rates in basis points: (count * 10000) / totalQueries
+		data.CacheHitRateBps = (data.CacheHits * 10000) / data.TotalQueries
+		data.SuccessRateBps = (data.SuccessCount * 10000) / data.TotalQueries
 	}
 }
 

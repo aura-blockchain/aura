@@ -533,8 +533,10 @@ func TestGetQuadraticVotingStats(t *testing.T) {
 	require.Equal(t, uint64(725), stats.TotalCreditsSpent)      // 100 + 400 + 225
 	require.Equal(t, uint64(241), stats.AverageCreditsPerVoter) // 725 / 3 = 241
 	require.Greater(t, stats.TotalVotingPower, uint64(0))
-	require.Greater(t, stats.CostEfficiency, float64(0))
-	require.Greater(t, stats.QuadraticAdvantage, float64(0))
+	// CostEfficiency and QuadraticAdvantage are now strings (sdk.Dec) for determinism
+	// They should be non-zero (not "0.000000000000000000")
+	require.NotEqual(t, "0.000000000000000000", stats.CostEfficiency)
+	require.NotEqual(t, "0.000000000000000000", stats.QuadraticAdvantage)
 }
 
 // TestGetQuadraticVotingStats_NoVotes tests stats with no votes
@@ -561,18 +563,20 @@ func TestGetQuadraticVotingStats_NoVotes(t *testing.T) {
 	require.Equal(t, uint64(0), stats.UniqueVoters)
 	require.Equal(t, uint64(0), stats.TotalCreditsSpent)
 	require.Equal(t, uint64(0), stats.AverageCreditsPerVoter)
-	require.Equal(t, float64(0), stats.CostEfficiency)
-	require.Equal(t, float64(0), stats.QuadraticAdvantage)
+	// CostEfficiency and QuadraticAdvantage are now strings (sdk.Dec) for determinism
+	require.Equal(t, "0.000000000000000000", stats.CostEfficiency)
+	require.Equal(t, "0.000000000000000000", stats.QuadraticAdvantage)
 }
 
 // TestCalculateQuadraticAdvantage tests the quadratic advantage calculation
+// The function now returns a string representation of sdk.Dec for determinism
 func TestCalculateQuadraticAdvantage(t *testing.T) {
 	keeper, _ := setupQuadraticVotingKeeper(t)
 
 	tests := []struct {
 		name   string
 		tally  *types.QuadraticTallyResult
-		expect float64
+		expect string // sdk.Dec string representation
 	}{
 		{
 			name: "no votes",
@@ -584,7 +588,7 @@ func TestCalculateQuadraticAdvantage(t *testing.T) {
 				TotalCreditsSpent: 0,
 				UniqueVoters:      0,
 			},
-			expect: 0,
+			expect: "0.000000000000000000", // sdk.Dec zero
 		},
 		{
 			name: "typical quadratic advantage",
@@ -597,15 +601,15 @@ func TestCalculateQuadraticAdvantage(t *testing.T) {
 				UniqueVoters:      10,
 			},
 			// Linear = 1000000, Quadratic = 100000
-			// Reduction = (1000000 - 100000) / 1000000 = 0.9 = 90%
-			expect: 90.0,
+			// Reduction = (1000000 - 100000) / 1000000 * 100 = 90%
+			expect: "90.000000000000000000", // 90% as sdk.Dec
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			advantage := keeper.calculateQuadraticAdvantage(tt.tally)
-			require.InDelta(t, tt.expect, advantage, 0.01)
+			require.Equal(t, tt.expect, advantage)
 		})
 	}
 }

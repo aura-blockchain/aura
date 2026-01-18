@@ -4,6 +4,7 @@
 package types
 
 import (
+	sdkmath "cosmossdk.io/math"
 	gogotypes "github.com/cosmos/gogoproto/types"
 )
 
@@ -49,18 +50,20 @@ type ExecutionStatistics struct {
 }
 
 // GovernanceAnalytics represents governance analytics data
+// Note: Rate fields use sdkmath.LegacyDec for deterministic cross-platform calculations
 type GovernanceAnalytics struct {
 	TotalProposals          uint64
 	ProposalsByStatus       map[string]uint64
 	ProposalsByType         map[string]uint64
 	AverageVotingPower      string
-	ParticipationRate       float64
+	ParticipationRate       sdkmath.LegacyDec // Deterministic decimal for consensus-safe calculations
 	AverageProposalDuration uint64
-	PassRate                float64
-	VetoRate                float64
+	PassRate                sdkmath.LegacyDec // Deterministic decimal for consensus-safe calculations
+	VetoRate                sdkmath.LegacyDec // Deterministic decimal for consensus-safe calculations
 }
 
 // ProposerAnalytics represents analytics for a specific proposer
+// Note: SuccessRate uses sdkmath.LegacyDec for deterministic cross-platform calculations
 type ProposerAnalytics struct {
 	Proposer          string
 	TotalProposals    uint64
@@ -68,7 +71,7 @@ type ProposerAnalytics struct {
 	FailedProposals   uint64
 	RejectedProposals uint64
 	ExecutedProposals uint64
-	SuccessRate       float64
+	SuccessRate       sdkmath.LegacyDec // Deterministic decimal for consensus-safe calculations
 }
 
 // ParameterValidationRules represents parameter validation rules

@@ -87,13 +87,14 @@ func ValidatorMonitoringConsistencyInvariant(k *Keeper) sdk.Invariant {
 				), true
 			}
 
-			// Check uptime percentage is in valid range (0-100)
-			if monitoring.UptimePercentage < 0 || monitoring.UptimePercentage > 100 {
+			// Check uptime basis points is in valid range (0-10000)
+			// 10000 basis points = 100%
+			if monitoring.UptimeBasisPoints > 10000 {
 				return sdk.FormatInvariant(
 					types.ModuleName,
 					"validator-monitoring-consistency",
-					fmt.Sprintf("validator %s has invalid uptime: %f",
-						monitoring.ValidatorAddress, monitoring.UptimePercentage),
+					fmt.Sprintf("validator %s has invalid uptime basis points: %d (max 10000)",
+						monitoring.ValidatorAddress, monitoring.UptimeBasisPoints),
 				), true
 			}
 

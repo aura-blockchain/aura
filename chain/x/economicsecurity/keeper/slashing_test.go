@@ -200,8 +200,8 @@ func TestAnalyzeEconomicIncentives_Success(t *testing.T) {
 	// Verify treasury allocation
 	require.NotEmpty(t, result.TreasuryAllocation)
 
-	// Verify incentive efficiency score
-	require.True(t, result.IncentiveEfficiency >= 0 && result.IncentiveEfficiency <= 100)
+	// Verify incentive efficiency score (now in basis points: 0-10000)
+	require.LessOrEqual(t, result.IncentiveEfficiencyBps, uint64(10000))
 }
 
 func TestAnalyzeEconomicIncentives_LowUserCount(t *testing.T) {
@@ -245,8 +245,8 @@ func TestAnalyzeEconomicIncentives_LowValidatorCount(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, result)
 
-	// Efficiency should be lower with few validators
-	require.Less(t, result.IncentiveEfficiency, float64(100))
+	// Efficiency should be lower with few validators (less than 10000 bps = 100%)
+	require.Less(t, result.IncentiveEfficiencyBps, uint64(10000))
 }
 
 func TestAnalyzeEconomicIncentives_LowTreasuryPercentage(t *testing.T) {
@@ -314,7 +314,7 @@ func TestAnalyzeEconomicIncentives_HighTreasuryPercentage(t *testing.T) {
 func TestCalculateOptimalIncentiveDistribution_NormalConditions(t *testing.T) {
 	k, ctx := setupKeeperForTest(t)
 
-	distribution, err := k.CalculateOptimalIncentiveDistribution(ctx, "1000000", 0.5, 500, 50)
+	distribution, err := k.CalculateOptimalIncentiveDistribution(ctx, "1000000", uint64(5000), 500, 50) // 50% in basis points
 	require.NoError(t, err)
 	require.NotNil(t, distribution)
 
@@ -347,7 +347,7 @@ func TestCalculateOptimalIncentiveDistribution_LargeRewards(t *testing.T) {
 	k, ctx := setupKeeperForTest(t)
 
 	// Very large reward amount
-	distribution, err := k.CalculateOptimalIncentiveDistribution(ctx, "1000000000000000000000000", 0.5, 500, 50)
+	distribution, err := k.CalculateOptimalIncentiveDistribution(ctx, "1000000000000000000000000", uint64(5000), 500, 50) // 50% in basis points
 	require.NoError(t, err)
 	require.NotNil(t, distribution)
 
@@ -469,10 +469,10 @@ func TestGetIncentiveRecommendations_HighGasPrices(t *testing.T) {
 }
 
 // =============================================================================
-// calculateIncentiveEfficiency Tests
+// calculateIncentiveEfficiencyBps Tests
 // =============================================================================
 
-func TestCalculateIncentiveEfficiency_PerfectScore(t *testing.T) {
+func TestCalculateIncentiveEfficiencyBps_PerfectScore(t *testing.T) {
 	k, _ := setupKeeperForTest(t)
 
 	params := types.DefaultParams()
@@ -481,13 +481,13 @@ func TestCalculateIncentiveEfficiency_PerfectScore(t *testing.T) {
 	params.Mev.Strategy = types.MEVStrategyProportionalToStake
 	params.Mev.TreasuryPercentage = 2000
 
-	efficiency := k.calculateIncentiveEfficiency(*params, 1000, 100)
+	efficiencyBps := k.calculateIncentiveEfficiencyBps(*params, 1000, 100)
 
-	// Should be high with aligned inflation, good strategy, balanced treasury
-	require.Greater(t, efficiency, float64(50))
+	// Should be high with aligned inflation, good strategy, balanced treasury (> 5000 bps = 50%)
+	require.Greater(t, efficiencyBps, uint64(5000))
 }
 
-func TestCalculateIncentiveEfficiency_LowUserCount(t *testing.T) {
+func TestCalculateIncentiveEfficiencyBps_LowUserCount(t *testing.T) {
 	k, _ := setupKeeperForTest(t)
 
 	params := types.DefaultParams()
@@ -497,13 +497,13 @@ func TestCalculateIncentiveEfficiency_LowUserCount(t *testing.T) {
 	params.Mev.TreasuryPercentage = 2000
 
 	// Very low user count
-	efficiency := k.calculateIncentiveEfficiency(*params, 50, 100)
+	efficiencyBps := k.calculateIncentiveEfficiencyBps(*params, 50, 100)
 
-	// Should be lower due to low user count
-	require.Less(t, efficiency, float64(100))
+	// Should be lower due to low user count (< 10000 bps = 100%)
+	require.Less(t, efficiencyBps, uint64(10000))
 }
 
-func TestCalculateIncentiveEfficiency_LowValidatorCount(t *testing.T) {
+func TestCalculateIncentiveEfficiencyBps_LowValidatorCount(t *testing.T) {
 	k, _ := setupKeeperForTest(t)
 
 	params := types.DefaultParams()
@@ -513,13 +513,13 @@ func TestCalculateIncentiveEfficiency_LowValidatorCount(t *testing.T) {
 	params.Mev.TreasuryPercentage = 2000
 
 	// Very low validator count
-	efficiency := k.calculateIncentiveEfficiency(*params, 1000, 5)
+	efficiencyBps := k.calculateIncentiveEfficiencyBps(*params, 1000, 5)
 
-	// Should be much lower due to very few validators
-	require.Less(t, efficiency, float64(90))
+	// Should be much lower due to very few validators (< 9000 bps = 90%)
+	require.Less(t, efficiencyBps, uint64(9000))
 }
 
-func TestCalculateIncentiveEfficiency_MisalignedInflation(t *testing.T) {
+func TestCalculateIncentiveEfficiencyBps_MisalignedInflation(t *testing.T) {
 	k, _ := setupKeeperForTest(t)
 
 	params := types.DefaultParams()
@@ -528,13 +528,13 @@ func TestCalculateIncentiveEfficiency_MisalignedInflation(t *testing.T) {
 	params.Mev.Strategy = types.MEVStrategyProportionalToStake
 	params.Mev.TreasuryPercentage = 2000
 
-	efficiency := k.calculateIncentiveEfficiency(*params, 1000, 100)
+	efficiencyBps := k.calculateIncentiveEfficiencyBps(*params, 1000, 100)
 
-	// Should be lower due to inflation misalignment
-	require.Less(t, efficiency, float64(100))
+	// Should be lower due to inflation misalignment (< 10000 bps = 100%)
+	require.Less(t, efficiencyBps, uint64(10000))
 }
 
-func TestCalculateIncentiveEfficiency_EqualDistributionStrategy(t *testing.T) {
+func TestCalculateIncentiveEfficiencyBps_EqualDistributionStrategy(t *testing.T) {
 	k, _ := setupKeeperForTest(t)
 
 	params := types.DefaultParams()
@@ -543,13 +543,13 @@ func TestCalculateIncentiveEfficiency_EqualDistributionStrategy(t *testing.T) {
 	params.Mev.Strategy = types.MEVStrategyEqualDistribution  // Less efficient
 	params.Mev.TreasuryPercentage = 2000
 
-	efficiency := k.calculateIncentiveEfficiency(*params, 1000, 100)
+	efficiencyBps := k.calculateIncentiveEfficiencyBps(*params, 1000, 100)
 
-	// Should be somewhat lower due to equal distribution
-	require.LessOrEqual(t, efficiency, float64(100))
+	// Should be somewhat lower due to equal distribution (<= 10000 bps = 100%)
+	require.LessOrEqual(t, efficiencyBps, uint64(10000))
 }
 
-func TestCalculateIncentiveEfficiency_LowTreasuryPercentage(t *testing.T) {
+func TestCalculateIncentiveEfficiencyBps_LowTreasuryPercentage(t *testing.T) {
 	k, _ := setupKeeperForTest(t)
 
 	params := types.DefaultParams()
@@ -558,13 +558,13 @@ func TestCalculateIncentiveEfficiency_LowTreasuryPercentage(t *testing.T) {
 	params.Mev.Strategy = types.MEVStrategyProportionalToStake
 	params.Mev.TreasuryPercentage = 500  // Very low
 
-	efficiency := k.calculateIncentiveEfficiency(*params, 1000, 100)
+	efficiencyBps := k.calculateIncentiveEfficiencyBps(*params, 1000, 100)
 
-	// Should be lower due to low treasury
-	require.Less(t, efficiency, float64(100))
+	// Should be lower due to low treasury (< 10000 bps = 100%)
+	require.Less(t, efficiencyBps, uint64(10000))
 }
 
-func TestCalculateIncentiveEfficiency_HighTreasuryPercentage(t *testing.T) {
+func TestCalculateIncentiveEfficiencyBps_HighTreasuryPercentage(t *testing.T) {
 	k, _ := setupKeeperForTest(t)
 
 	params := types.DefaultParams()
@@ -573,13 +573,13 @@ func TestCalculateIncentiveEfficiency_HighTreasuryPercentage(t *testing.T) {
 	params.Mev.Strategy = types.MEVStrategyProportionalToStake
 	params.Mev.TreasuryPercentage = 4000  // Too high
 
-	efficiency := k.calculateIncentiveEfficiency(*params, 1000, 100)
+	efficiencyBps := k.calculateIncentiveEfficiencyBps(*params, 1000, 100)
 
-	// Should be lower due to high treasury
-	require.Less(t, efficiency, float64(100))
+	// Should be lower due to high treasury (< 10000 bps = 100%)
+	require.Less(t, efficiencyBps, uint64(10000))
 }
 
-func TestCalculateIncentiveEfficiency_FloorAtZero(t *testing.T) {
+func TestCalculateIncentiveEfficiencyBps_FloorAtZero(t *testing.T) {
 	k, _ := setupKeeperForTest(t)
 
 	params := types.DefaultParams()
@@ -589,10 +589,10 @@ func TestCalculateIncentiveEfficiency_FloorAtZero(t *testing.T) {
 	params.Mev.TreasuryPercentage = 500  // Low
 
 	// Worst case scenario: very few users and validators
-	efficiency := k.calculateIncentiveEfficiency(*params, 10, 2)
+	efficiencyBps := k.calculateIncentiveEfficiencyBps(*params, 10, 2)
 
-	// Should never go below 0
-	require.GreaterOrEqual(t, efficiency, float64(0))
+	// uint64 is always >= 0, verify it stays within bounds (<= 10000 bps)
+	require.LessOrEqual(t, efficiencyBps, uint64(10000))
 }
 
 // =============================================================================
@@ -723,13 +723,8 @@ func FuzzCalculateOptimalIncentiveDistribution(f *testing.F) {
 	f.Fuzz(func(t *testing.T, rewards string, stakingRatioBps, users, validators uint64) {
 		k, ctx := setupKeeperForTest(t)
 
-		// Bound staking ratio to valid range
-		stakingRatio := float64(stakingRatioBps) / 10000.0
-		if stakingRatio > 1.0 {
-			stakingRatio = 1.0
-		}
-
-		distribution, err := k.CalculateOptimalIncentiveDistribution(ctx, rewards, stakingRatio, users, validators)
+		// stakingRatioBps is now directly in basis points, no conversion needed
+		distribution, err := k.CalculateOptimalIncentiveDistribution(ctx, rewards, stakingRatioBps, users, validators)
 
 		// Should not panic regardless of input
 		if err == nil {

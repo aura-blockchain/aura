@@ -11,6 +11,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"sort"
 	"sync"
 	"time"
 
@@ -101,11 +102,22 @@ func (mc *MessageCache) Add(ctx sdk.Context, messageID, senderID string) {
 }
 
 // removeOldest removes the oldest message from cache
+// DETERMINISM: Uses sorted key iteration to ensure consistent eviction order
+// across all validators, preventing AppHash divergence.
 func (mc *MessageCache) removeOldest() {
 	var oldestID string
 	var oldestTime time.Time
 
-	for id, msg := range mc.messages {
+	// Extract keys and sort them for deterministic iteration
+	keys := make([]string, 0, len(mc.messages))
+	for id := range mc.messages {
+		keys = append(keys, id)
+	}
+	sort.Strings(keys)
+
+	// Iterate in sorted order for deterministic selection
+	for _, id := range keys {
+		msg := mc.messages[id]
 		if oldestID == "" || msg.Timestamp.Before(oldestTime) {
 			oldestID = id
 			oldestTime = msg.Timestamp
@@ -124,7 +136,17 @@ func (mc *MessageCache) Cleanup(ctx sdk.Context, ttl time.Duration) {
 	defer mc.mu.Unlock()
 
 	now := determinism.GetBlockTime(ctx)
-	for id, msg := range mc.messages {
+
+	// Extract keys and sort them for deterministic iteration
+	keys := make([]string, 0, len(mc.messages))
+	for id := range mc.messages {
+		keys = append(keys, id)
+	}
+	sort.Strings(keys)
+
+	// Iterate in sorted order for deterministic deletion
+	for _, id := range keys {
+		msg := mc.messages[id]
 		if now.Sub(msg.Timestamp) > ttl {
 			delete(mc.messages, id)
 		}
