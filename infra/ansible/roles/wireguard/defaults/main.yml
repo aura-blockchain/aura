@@ -1,5 +1,0 @@
----
-# Default variables for wireguard role
-
-wireguard_port: 51820
-wireguard_interface: wg0

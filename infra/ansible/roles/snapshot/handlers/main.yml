@@ -1,3 +1,0 @@
----
-# Handlers for snapshot role
-# Currently no handlers defined - snapshots are run via cron, not triggered by changes
