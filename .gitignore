@@ -196,3 +196,5 @@ chain/release-*/
 
 # Archives (local backups)
 .archive/
+tmp-*
+extended-testing-results/
