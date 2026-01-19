@@ -10,16 +10,63 @@
 # Environment overrides:
 #   RPC_ENDPOINT, API_ENDPOINT, GRPC_ENDPOINT, METRICS_ENDPOINT
 #   CHAIN_ID, TIMEOUT, MAX_BLOCK_AGE, MIN_PEERS, EXPECTED_VALIDATORS
+#
+# Port Configuration:
+#   Ports can be configured via environment variables or config file.
+#   Config file: /etc/aura/local-testnet-ports.conf
+#
+#   PORT SENTINEL INTEGRATION
+#   -------------------------
+#   For production, ports should be verified via Port Sentinel:
+#     python scripts/port_sentinel.py verify
+#     python scripts/port_sentinel.py status
 # ============================================================================
 
 set -uo pipefail
 
-VALIDATORS=("validator-1" "validator-2" "validator-3" "validator-4")
-RPC_PORTS=(27657 27757 27857 27957)
-API_PORTS=(2317 2417 2517 2617)
-GRPC_PORTS=(10090 10190 10290 10390)
-METRICS_PORTS=(27660 27760 27860 27960)
+# ----------------------------------------------------------------------------
+# Port Configuration (Port Sentinel compliant)
+# ----------------------------------------------------------------------------
+# Load port config from file if it exists
+AURA_PORT_CONFIG="${AURA_PORT_CONFIG:-/etc/aura/local-testnet-ports.conf}"
+if [[ -f "$AURA_PORT_CONFIG" ]]; then
+    # shellcheck source=/dev/null
+    source "$AURA_PORT_CONFIG"
+fi
 
+VALIDATORS=("validator-1" "validator-2" "validator-3" "validator-4")
+
+# RPC ports - override via VAL1_RPC_PORT, VAL2_RPC_PORT, etc.
+VAL1_RPC_PORT="${VAL1_RPC_PORT:-27657}"
+VAL2_RPC_PORT="${VAL2_RPC_PORT:-27757}"
+VAL3_RPC_PORT="${VAL3_RPC_PORT:-27857}"
+VAL4_RPC_PORT="${VAL4_RPC_PORT:-27957}"
+RPC_PORTS=("$VAL1_RPC_PORT" "$VAL2_RPC_PORT" "$VAL3_RPC_PORT" "$VAL4_RPC_PORT")
+
+# API ports - override via VAL1_API_PORT, VAL2_API_PORT, etc.
+VAL1_API_PORT="${VAL1_API_PORT:-2317}"
+VAL2_API_PORT="${VAL2_API_PORT:-2417}"
+VAL3_API_PORT="${VAL3_API_PORT:-2517}"
+VAL4_API_PORT="${VAL4_API_PORT:-2617}"
+API_PORTS=("$VAL1_API_PORT" "$VAL2_API_PORT" "$VAL3_API_PORT" "$VAL4_API_PORT")
+
+# gRPC ports - override via VAL1_GRPC_PORT, VAL2_GRPC_PORT, etc.
+VAL1_GRPC_PORT="${VAL1_GRPC_PORT:-10090}"
+VAL2_GRPC_PORT="${VAL2_GRPC_PORT:-10190}"
+VAL3_GRPC_PORT="${VAL3_GRPC_PORT:-10290}"
+VAL4_GRPC_PORT="${VAL4_GRPC_PORT:-10390}"
+GRPC_PORTS=("$VAL1_GRPC_PORT" "$VAL2_GRPC_PORT" "$VAL3_GRPC_PORT" "$VAL4_GRPC_PORT")
+
+# Metrics ports - override via VAL1_METRICS_PORT, VAL2_METRICS_PORT, etc.
+VAL1_METRICS_PORT="${VAL1_METRICS_PORT:-27660}"
+VAL2_METRICS_PORT="${VAL2_METRICS_PORT:-27760}"
+VAL3_METRICS_PORT="${VAL3_METRICS_PORT:-27860}"
+VAL4_METRICS_PORT="${VAL4_METRICS_PORT:-27960}"
+METRICS_PORTS=("$VAL1_METRICS_PORT" "$VAL2_METRICS_PORT" "$VAL3_METRICS_PORT" "$VAL4_METRICS_PORT")
+
+# ----------------------------------------------------------------------------
+# Defaults
+# ----------------------------------------------------------------------------
 CHAIN_ID="${CHAIN_ID:-aura-local-4}"
 TIMEOUT="${TIMEOUT:-5}"
 MAX_BLOCK_AGE="${MAX_BLOCK_AGE:-30}"
@@ -147,7 +194,8 @@ if [[ -z "$RPC_ENDPOINT" ]]; then
     if [[ "$idx_for_validator" -ge 0 ]]; then
         RPC_ENDPOINT="http://localhost:${RPC_PORTS[$idx_for_validator]}"
     else
-        RPC_ENDPOINT="http://localhost:27657"
+        # DEV DEFAULT - use first port
+        RPC_ENDPOINT="http://localhost:${VAL1_RPC_PORT}"
     fi
 fi
 
@@ -155,7 +203,8 @@ if [[ -z "$API_ENDPOINT" ]]; then
     if [[ "$idx_for_validator" -ge 0 ]]; then
         API_ENDPOINT="http://localhost:${API_PORTS[$idx_for_validator]}"
     else
-        API_ENDPOINT="http://localhost:2317"
+        # DEV DEFAULT - use first port
+        API_ENDPOINT="http://localhost:${VAL1_API_PORT}"
     fi
 fi
 
@@ -163,7 +212,8 @@ if [[ -z "$GRPC_ENDPOINT" ]]; then
     if [[ "$idx_for_validator" -ge 0 ]]; then
         GRPC_ENDPOINT="localhost:${GRPC_PORTS[$idx_for_validator]}"
     else
-        GRPC_ENDPOINT="localhost:10090"
+        # DEV DEFAULT - use first port
+        GRPC_ENDPOINT="localhost:${VAL1_GRPC_PORT}"
     fi
 fi
 
@@ -171,7 +221,8 @@ if [[ -z "$METRICS_ENDPOINT" ]]; then
     if [[ "$idx_for_validator" -ge 0 ]]; then
         METRICS_ENDPOINT="http://localhost:${METRICS_PORTS[$idx_for_validator]}"
     else
-        METRICS_ENDPOINT="http://localhost:27660"
+        # DEV DEFAULT - use first port
+        METRICS_ENDPOINT="http://localhost:${VAL1_METRICS_PORT}"
     fi
 fi
 

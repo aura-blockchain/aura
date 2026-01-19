@@ -19,28 +19,86 @@
 #   CHECK_DOCKER (default: true)
 #   CHECK_LOGS (default: true)
 #   LOG_LINES (default: 200)
+#
+# Port Configuration:
+#   Ports can be configured via environment variables or config file.
+#   Config file: /etc/aura/local-testnet-ports.conf
+#
+#   PORT SENTINEL INTEGRATION
+#   -------------------------
+#   For production, ports should be verified via Port Sentinel:
+#     python scripts/port_sentinel.py verify
+#     python scripts/port_sentinel.py status
 # ============================================================================
 
 set -uo pipefail
 
 # ----------------------------------------------------------------------------
+# Port Configuration (Port Sentinel compliant)
+# ----------------------------------------------------------------------------
+# Load port config from file if it exists
+AURA_PORT_CONFIG="${AURA_PORT_CONFIG:-/etc/aura/local-testnet-ports.conf}"
+if [[ -f "$AURA_PORT_CONFIG" ]]; then
+    # shellcheck source=/dev/null
+    source "$AURA_PORT_CONFIG"
+fi
+
+# Validator names
+VALIDATORS=("validator-1" "validator-2" "validator-3" "validator-4")
+
+# RPC ports - override via VAL1_RPC_PORT, VAL2_RPC_PORT, etc.
+VAL1_RPC_PORT="${VAL1_RPC_PORT:-27657}"
+VAL2_RPC_PORT="${VAL2_RPC_PORT:-27757}"
+VAL3_RPC_PORT="${VAL3_RPC_PORT:-27857}"
+VAL4_RPC_PORT="${VAL4_RPC_PORT:-27957}"
+RPC_PORTS=("$VAL1_RPC_PORT" "$VAL2_RPC_PORT" "$VAL3_RPC_PORT" "$VAL4_RPC_PORT")
+
+# API ports - override via VAL1_API_PORT, VAL2_API_PORT, etc.
+VAL1_API_PORT="${VAL1_API_PORT:-2317}"
+VAL2_API_PORT="${VAL2_API_PORT:-2417}"
+VAL3_API_PORT="${VAL3_API_PORT:-2517}"
+VAL4_API_PORT="${VAL4_API_PORT:-2617}"
+API_PORTS=("$VAL1_API_PORT" "$VAL2_API_PORT" "$VAL3_API_PORT" "$VAL4_API_PORT")
+
+# gRPC ports - override via VAL1_GRPC_PORT, VAL2_GRPC_PORT, etc.
+VAL1_GRPC_PORT="${VAL1_GRPC_PORT:-10090}"
+VAL2_GRPC_PORT="${VAL2_GRPC_PORT:-10190}"
+VAL3_GRPC_PORT="${VAL3_GRPC_PORT:-10290}"
+VAL4_GRPC_PORT="${VAL4_GRPC_PORT:-10390}"
+GRPC_PORTS=("$VAL1_GRPC_PORT" "$VAL2_GRPC_PORT" "$VAL3_GRPC_PORT" "$VAL4_GRPC_PORT")
+
+# Metrics ports - override via VAL1_METRICS_PORT, VAL2_METRICS_PORT, etc.
+VAL1_METRICS_PORT="${VAL1_METRICS_PORT:-27660}"
+VAL2_METRICS_PORT="${VAL2_METRICS_PORT:-27760}"
+VAL3_METRICS_PORT="${VAL3_METRICS_PORT:-27860}"
+VAL4_METRICS_PORT="${VAL4_METRICS_PORT:-27960}"
+METRICS_PORTS=("$VAL1_METRICS_PORT" "$VAL2_METRICS_PORT" "$VAL3_METRICS_PORT" "$VAL4_METRICS_PORT")
+
+# Sentry nodes (public-facing, protect validators from DDoS)
+SENTRY_NODES=("sentry-1" "sentry-2")
+SENTRY1_RPC_PORT="${SENTRY1_RPC_PORT:-28659}"
+SENTRY2_RPC_PORT="${SENTRY2_RPC_PORT:-28663}"
+SENTRY_RPC_PORTS=("$SENTRY1_RPC_PORT" "$SENTRY2_RPC_PORT")
+
+SENTRY1_API_PORT="${SENTRY1_API_PORT:-2320}"
+SENTRY2_API_PORT="${SENTRY2_API_PORT:-2321}"
+SENTRY_API_PORTS=("$SENTRY1_API_PORT" "$SENTRY2_API_PORT")
+
+SENTRY1_GRPC_PORT="${SENTRY1_GRPC_PORT:-11091}"
+SENTRY2_GRPC_PORT="${SENTRY2_GRPC_PORT:-11092}"
+SENTRY_GRPC_PORTS=("$SENTRY1_GRPC_PORT" "$SENTRY2_GRPC_PORT")
+
+SENTRY1_METRICS_PORT="${SENTRY1_METRICS_PORT:-28661}"
+SENTRY2_METRICS_PORT="${SENTRY2_METRICS_PORT:-28664}"
+SENTRY_METRICS_PORTS=("$SENTRY1_METRICS_PORT" "$SENTRY2_METRICS_PORT")
+
+# Monitoring stack
+PROMETHEUS_PORT="${PROMETHEUS_PORT:-9094}"
+GRAFANA_PORT="${GRAFANA_PORT:-3002}"
+
+# ----------------------------------------------------------------------------
 # Defaults
 # ----------------------------------------------------------------------------
-VALIDATORS=("validator-1" "validator-2" "validator-3" "validator-4")
-RPC_PORTS=(27657 27757 27857 27957)
-API_PORTS=(2317 2417 2517 2617)
-GRPC_PORTS=(10090 10190 10290 10390)
-METRICS_PORTS=(27660 27760 27860 27960)
-
-SENTRY_NODES=("sentry-1" "sentry-2")
-SENTRY_RPC_PORTS=(28659 28663)
-SENTRY_API_PORTS=(2320 2321)
-SENTRY_GRPC_PORTS=(11091 11092)
-SENTRY_METRICS_PORTS=(28661 28664)
-
-PROMETHEUS_PORT=9094
-GRAFANA_PORT=3002
-
 CHAIN_ID="${CHAIN_ID:-aura-local-4}"
 RPC_HOST="${RPC_HOST:-localhost}"
 TIMEOUT="${TIMEOUT:-5}"
@@ -350,7 +408,7 @@ check_validator() {
 }
 
 # ----------------------------------------------------------------------------
-# Optional Node Check (Sentries)
+# Sentry Node Check (public-facing nodes that protect validators)
 # ----------------------------------------------------------------------------
 check_sentry() {
     local idx="$1"
@@ -562,8 +620,11 @@ check_chain_id_consistency() {
 main() {
     if [[ "$JSON_OUTPUT" == "false" ]]; then
         log "======================================================================"
-        log "AURA Testnet Health Check - ${TIMESTAMP_UTC}"
+        log "AURA Local Testnet Health Check - ${TIMESTAMP_UTC}"
         log "======================================================================"
+        log "Chain ID: ${CHAIN_ID}"
+        log ""
+        log "Validators (private - hermit mode):"
     fi
 
     for i in "${!VALIDATORS[@]}"; do
@@ -584,6 +645,10 @@ main() {
     fi
 
     if [[ -z "$VALIDATOR_FILTER" ]]; then
+        if [[ "$JSON_OUTPUT" == "false" ]]; then
+            log ""
+            log "Sentries (public-facing - protect validators):"
+        fi
         for i in "${!SENTRY_NODES[@]}"; do
             check_sentry "$i"
         done
