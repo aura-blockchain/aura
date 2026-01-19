@@ -1,0 +1,1609 @@
+{
+    "_ansible_facts_gathered": true,
+    "ansible_all_ipv4_addresses": [
+        "100.118.43.32",
+        "172.17.0.1",
+        "10.10.0.4",
+        "139.99.149.160"
+    ],
+    "ansible_all_ipv6_addresses": [
+        "fd7a:115c:a1e0::8e35:2b20",
+        "fe80::633:50c4:2b9f:f270",
+        "2402:1f00:8101:1a0::1",
+        "fe80::ec4:7aff:fee1:8ece"
+    ],
+    "ansible_apparmor": {
+        "status": "enabled"
+    },
+    "ansible_architecture": "x86_64",
+    "ansible_bios_date": "05/07/2021",
+    "ansible_bios_vendor": "American Megatrends Inc.",
+    "ansible_bios_version": "2.3",
+    "ansible_board_asset_tag": "To be filled by O.E.M.",
+    "ansible_board_name": "X10SDD-F",
+    "ansible_board_serial": "ZM167S037188",
+    "ansible_board_vendor": "Supermicro",
+    "ansible_board_version": "1.01",
+    "ansible_chassis_asset_tag": "To Be Filled By O.E.M.",
+    "ansible_chassis_serial": "C9380AF42AI0110",
+    "ansible_chassis_vendor": "Supermicro",
+    "ansible_chassis_version": "0123456789",
+    "ansible_cmdline": {
+        "BOOT_IMAGE": "/vmlinuz-6.8.0-90-generic",
+        "console": "ttyS1,115200n8",
+        "iommu": "pt",
+        "nomodeset": true,
+        "ro": true,
+        "root": "UUID=81414dbf-5d85-4c58-9083-73b448bdc62a"
+    },
+    "ansible_date_time": {
+        "date": "2026-01-15",
+        "day": "15",
+        "epoch": "1768514244",
+        "epoch_int": "1768514244",
+        "hour": "21",
+        "iso8601": "2026-01-15T21:57:24Z",
+        "iso8601_basic": "20260115T215724528730",
+        "iso8601_basic_short": "20260115T215724",
+        "iso8601_micro": "2026-01-15T21:57:24.528730Z",
+        "minute": "57",
+        "month": "01",
+        "second": "24",
+        "time": "21:57:24",
+        "tz": "UTC",
+        "tz_dst": "UTC",
+        "tz_offset": "+0000",
+        "weekday": "Thursday",
+        "weekday_number": "4",
+        "weeknumber": "02",
+        "year": "2026"
+    },
+    "ansible_default_ipv4": {
+        "address": "139.99.149.160",
+        "alias": "ens1f0",
+        "broadcast": "",
+        "gateway": "139.99.149.254",
+        "interface": "ens1f0",
+        "macaddress": "0c:c4:7a:e1:8e:ce",
+        "mtu": 1500,
+        "netmask": "255.255.255.0",
+        "network": "139.99.149.0",
+        "prefix": "24",
+        "type": "ether"
+    },
+    "ansible_default_ipv6": {
+        "address": "2402:1f00:8101:1a0::1",
+        "gateway": "2402:1f00:8101:1ff:ff:ff:ff:ff",
+        "interface": "ens1f0",
+        "macaddress": "0c:c4:7a:e1:8e:ce",
+        "mtu": 1500,
+        "prefix": "128",
+        "scope": "global",
+        "type": "ether"
+    },
+    "ansible_device_links": {
+        "ids": {
+            "md2": [
+                "md-name-md2",
+                "md-uuid-cbab8d1d:45ceacb2:61bcdc28:a217d864"
+            ],
+            "md3": [
+                "md-name-md3",
+                "md-uuid-77662609:7fcbb078:1c04ae21:b2f9c9fc"
+            ],
+            "nvme0n1": [
+                "nvme-SAMSUNG_MZ1LV480HCHP-00003_S2DYNAAH700134",
+                "nvme-SAMSUNG_MZ1LV480HCHP-00003_S2DYNAAH700134_1",
+                "nvme-nvme.144d-533244594e414148373030313334-53414d53554e47204d5a314c56343830484348502d3030303033-00000001"
+            ],
+            "nvme0n1p1": [
+                "nvme-SAMSUNG_MZ1LV480HCHP-00003_S2DYNAAH700134-part1",
+                "nvme-SAMSUNG_MZ1LV480HCHP-00003_S2DYNAAH700134_1-part1",
+                "nvme-nvme.144d-533244594e414148373030313334-53414d53554e47204d5a314c56343830484348502d3030303033-00000001-part1"
+            ],
+            "nvme0n1p2": [
+                "nvme-SAMSUNG_MZ1LV480HCHP-00003_S2DYNAAH700134-part2",
+                "nvme-SAMSUNG_MZ1LV480HCHP-00003_S2DYNAAH700134_1-part2",
+                "nvme-nvme.144d-533244594e414148373030313334-53414d53554e47204d5a314c56343830484348502d3030303033-00000001-part2"
+            ],
+            "nvme0n1p3": [
+                "nvme-SAMSUNG_MZ1LV480HCHP-00003_S2DYNAAH700134-part3",
+                "nvme-SAMSUNG_MZ1LV480HCHP-00003_S2DYNAAH700134_1-part3",
+                "nvme-nvme.144d-533244594e414148373030313334-53414d53554e47204d5a314c56343830484348502d3030303033-00000001-part3"
+            ],
+            "nvme0n1p4": [
+                "nvme-SAMSUNG_MZ1LV480HCHP-00003_S2DYNAAH700134-part4",
+                "nvme-SAMSUNG_MZ1LV480HCHP-00003_S2DYNAAH700134_1-part4",
+                "nvme-nvme.144d-533244594e414148373030313334-53414d53554e47204d5a314c56343830484348502d3030303033-00000001-part4"
+            ],
+            "nvme1n1": [
+                "nvme-SAMSUNG_MZ1LV480HCHP-00003_S2DYNAAH700185",
+                "nvme-SAMSUNG_MZ1LV480HCHP-00003_S2DYNAAH700185_1",
+                "nvme-nvme.144d-533244594e414148373030313835-53414d53554e47204d5a314c56343830484348502d3030303033-00000001"
+            ],
+            "nvme1n1p1": [
+                "nvme-SAMSUNG_MZ1LV480HCHP-00003_S2DYNAAH700185-part1",
+                "nvme-SAMSUNG_MZ1LV480HCHP-00003_S2DYNAAH700185_1-part1",
+                "nvme-nvme.144d-533244594e414148373030313835-53414d53554e47204d5a314c56343830484348502d3030303033-00000001-part1"
+            ],
+            "nvme1n1p2": [
+                "nvme-SAMSUNG_MZ1LV480HCHP-00003_S2DYNAAH700185-part2",
+                "nvme-SAMSUNG_MZ1LV480HCHP-00003_S2DYNAAH700185_1-part2",
+                "nvme-nvme.144d-533244594e414148373030313835-53414d53554e47204d5a314c56343830484348502d3030303033-00000001-part2"
+            ],
+            "nvme1n1p3": [
+                "nvme-SAMSUNG_MZ1LV480HCHP-00003_S2DYNAAH700185-part3",
+                "nvme-SAMSUNG_MZ1LV480HCHP-00003_S2DYNAAH700185_1-part3",
+                "nvme-nvme.144d-533244594e414148373030313835-53414d53554e47204d5a314c56343830484348502d3030303033-00000001-part3"
+            ],
+            "nvme1n1p4": [
+                "nvme-SAMSUNG_MZ1LV480HCHP-00003_S2DYNAAH700185-part4",
+                "nvme-SAMSUNG_MZ1LV480HCHP-00003_S2DYNAAH700185_1-part4",
+                "nvme-nvme.144d-533244594e414148373030313835-53414d53554e47204d5a314c56343830484348502d3030303033-00000001-part4"
+            ],
+            "nvme1n1p5": [
+                "nvme-SAMSUNG_MZ1LV480HCHP-00003_S2DYNAAH700185-part5",
+                "nvme-SAMSUNG_MZ1LV480HCHP-00003_S2DYNAAH700185_1-part5",
+                "nvme-nvme.144d-533244594e414148373030313835-53414d53554e47204d5a314c56343830484348502d3030303033-00000001-part5"
+            ],
+            "sda": [
+                "ata-HGST_HUS726020ALA610_N4G8D5PY",
+                "scsi-0ATA_HGST_HUS726020AL_N4G8D5PY",
+                "scsi-1ATA_HGST_HUS726020ALA610_N4G8D5PY",
+                "scsi-35000cca245c3d0b4",
+                "scsi-SATA_HGST_HUS726020AL_N4G8D5PY",
+                "wwn-0x5000cca245c3d0b4"
+            ],
+            "sdb": [
+                "ata-HGST_HUS726020ALA610_N4G82TJY",
+                "scsi-0ATA_HGST_HUS726020AL_N4G82TJY",
+                "scsi-1ATA_HGST_HUS726020ALA610_N4G82TJY",
+                "scsi-35000cca245c3ad72",
+                "scsi-SATA_HGST_HUS726020AL_N4G82TJY",
+                "wwn-0x5000cca245c3ad72"
+            ]
+        },
+        "labels": {
+            "md2": [
+                "boot"
+            ],
+            "md3": [
+                "root"
+            ],
+            "nvme0n1p4": [
+                "swap-nvme1n1p4"
+            ],
+            "nvme1n1p1": [
+                "EFI_SYSPART"
+            ],
+            "nvme1n1p4": [
+                "swap-nvme0n1p4"
+            ],
+            "nvme1n1p5": [
+                "config-2"
+            ]
+        },
+        "masters": {
+            "nvme0n1p2": [
+                "md2"
+            ],
+            "nvme0n1p3": [
+                "md3"
+            ],
+            "nvme1n1p2": [
+                "md2"
+            ],
+            "nvme1n1p3": [
+                "md3"
+            ]
+        },
+        "uuids": {
+            "md2": [
+                "74977720-6777-4c7d-8f14-16b4b167c2ee"
+            ],
+            "md3": [
+                "81414dbf-5d85-4c58-9083-73b448bdc62a"
+            ],
+            "nvme0n1p1": [
+                "9BD6-E21B"
+            ],
+            "nvme0n1p4": [
+                "fe136deb-ee66-4064-90f4-e8a7523fa28f"
+            ],
+            "nvme1n1p1": [
+                "9BB4-DC04"
+            ],
+            "nvme1n1p4": [
+                "3f370e4b-2fc6-48ff-a25a-9e6797d6f04b"
+            ],
+            "nvme1n1p5": [
+                "2026-01-02-22-42-37-00"
+            ]
+        }
+    },
+    "ansible_devices": {
+        "loop0": {
+            "holders": [],
+            "host": "",
+            "links": {
+                "ids": [],
+                "labels": [],
+                "masters": [],
+                "uuids": []
+            },
+            "model": null,
+            "partitions": {},
+            "removable": "0",
+            "rotational": "0",
+            "sas_address": null,
+            "sas_device_handle": null,
+            "scheduler_mode": "none",
+            "sectors": "0",
+            "sectorsize": "512",
+            "size": "0.00 Bytes",
+            "support_discard": "4096",
+            "vendor": null,
+            "virtual": 1
+        },
+        "loop1": {
+            "holders": [],
+            "host": "",
+            "links": {
+                "ids": [],
+                "labels": [],
+                "masters": [],
+                "uuids": []
+            },
+            "model": null,
+            "partitions": {},
+            "removable": "0",
+            "rotational": "1",
+            "sas_address": null,
+            "sas_device_handle": null,
+            "scheduler_mode": "none",
+            "sectors": "0",
+            "sectorsize": "512",
+            "size": "0.00 Bytes",
+            "support_discard": "512",
+            "vendor": null,
+            "virtual": 1
+        },
+        "loop2": {
+            "holders": [],
+            "host": "",
+            "links": {
+                "ids": [],
+                "labels": [],
+                "masters": [],
+                "uuids": []
+            },
+            "model": null,
+            "partitions": {},
+            "removable": "0",
+            "rotational": "1",
+            "sas_address": null,
+            "sas_device_handle": null,
+            "scheduler_mode": "none",
+            "sectors": "0",
+            "sectorsize": "512",
+            "size": "0.00 Bytes",
+            "support_discard": "512",
+            "vendor": null,
+            "virtual": 1
+        },
+        "loop3": {
+            "holders": [],
+            "host": "",
+            "links": {
+                "ids": [],
+                "labels": [],
+                "masters": [],
+                "uuids": []
+            },
+            "model": null,
+            "partitions": {},
+            "removable": "0",
+            "rotational": "1",
+            "sas_address": null,
+            "sas_device_handle": null,
+            "scheduler_mode": "none",
+            "sectors": "0",
+            "sectorsize": "512",
+            "size": "0.00 Bytes",
+            "support_discard": "512",
+            "vendor": null,
+            "virtual": 1
+        },
+        "loop4": {
+            "holders": [],
+            "host": "",
+            "links": {
+                "ids": [],
+                "labels": [],
+                "masters": [],
+                "uuids": []
+            },
+            "model": null,
+            "partitions": {},
+            "removable": "0",
+            "rotational": "1",
+            "sas_address": null,
+            "sas_device_handle": null,
+            "scheduler_mode": "none",
+            "sectors": "0",
+            "sectorsize": "512",
+            "size": "0.00 Bytes",
+            "support_discard": "512",
+            "vendor": null,
+            "virtual": 1
+        },
+        "loop5": {
+            "holders": [],
+            "host": "",
+            "links": {
+                "ids": [],
+                "labels": [],
+                "masters": [],
+                "uuids": []
+            },
+            "model": null,
+            "partitions": {},
+            "removable": "0",
+            "rotational": "1",
+            "sas_address": null,
+            "sas_device_handle": null,
+            "scheduler_mode": "none",
+            "sectors": "0",
+            "sectorsize": "512",
+            "size": "0.00 Bytes",
+            "support_discard": "512",
+            "vendor": null,
+            "virtual": 1
+        },
+        "loop6": {
+            "holders": [],
+            "host": "",
+            "links": {
+                "ids": [],
+                "labels": [],
+                "masters": [],
+                "uuids": []
+            },
+            "model": null,
+            "partitions": {},
+            "removable": "0",
+            "rotational": "1",
+            "sas_address": null,
+            "sas_device_handle": null,
+            "scheduler_mode": "none",
+            "sectors": "0",
+            "sectorsize": "512",
+            "size": "0.00 Bytes",
+            "support_discard": "512",
+            "vendor": null,
+            "virtual": 1
+        },
+        "loop7": {
+            "holders": [],
+            "host": "",
+            "links": {
+                "ids": [],
+                "labels": [],
+                "masters": [],
+                "uuids": []
+            },
+            "model": null,
+            "partitions": {},
+            "removable": "0",
+            "rotational": "1",
+            "sas_address": null,
+            "sas_device_handle": null,
+            "scheduler_mode": "none",
+            "sectors": "0",
+            "sectorsize": "512",
+            "size": "0.00 Bytes",
+            "support_discard": "512",
+            "vendor": null,
+            "virtual": 1
+        },
+        "md2": {
+            "holders": [],
+            "host": "",
+            "links": {
+                "ids": [
+                    "md-name-md2",
+                    "md-uuid-cbab8d1d:45ceacb2:61bcdc28:a217d864"
+                ],
+                "labels": [
+                    "boot"
+                ],
+                "masters": [],
+                "uuids": [
+                    "74977720-6777-4c7d-8f14-16b4b167c2ee"
+                ]
+            },
+            "model": null,
+            "partitions": {},
+            "removable": "0",
+            "rotational": "0",
+            "sas_address": null,
+            "sas_device_handle": null,
+            "scheduler_mode": "",
+            "sectors": "2093056",
+            "sectorsize": "512",
+            "size": "1022.00 MB",
+            "support_discard": "512",
+            "vendor": null,
+            "virtual": 1
+        },
+        "md3": {
+            "holders": [],
+            "host": "",
+            "links": {
+                "ids": [
+                    "md-name-md3",
+                    "md-uuid-77662609:7fcbb078:1c04ae21:b2f9c9fc"
+                ],
+                "labels": [
+                    "root"
+                ],
+                "masters": [],
+                "uuids": [
+                    "81414dbf-5d85-4c58-9083-73b448bdc62a"
+                ]
+            },
+            "model": null,
+            "partitions": {},
+            "removable": "0",
+            "rotational": "0",
+            "sas_address": null,
+            "sas_device_handle": null,
+            "scheduler_mode": "",
+            "sectors": "933238784",
+            "sectorsize": "512",
+            "size": "445.00 GB",
+            "support_discard": "512",
+            "vendor": null,
+            "virtual": 1
+        },
+        "nvme0n1": {
+            "holders": [],
+            "host": "Non-Volatile memory controller: Samsung Electronics Co Ltd NVMe SSD Controller SM951/PM951 (rev 01)",
+            "links": {
+                "ids": [
+                    "nvme-SAMSUNG_MZ1LV480HCHP-00003_S2DYNAAH700134",
+                    "nvme-SAMSUNG_MZ1LV480HCHP-00003_S2DYNAAH700134_1",
+                    "nvme-nvme.144d-533244594e414148373030313334-53414d53554e47204d5a314c56343830484348502d3030303033-00000001"
+                ],
+                "labels": [],
+                "masters": [],
+                "uuids": []
+            },
+            "model": "SAMSUNG MZ1LV480HCHP-00003",
+            "partitions": {
+                "nvme0n1p1": {
+                    "holders": [],
+                    "links": {
+                        "ids": [
+                            "nvme-SAMSUNG_MZ1LV480HCHP-00003_S2DYNAAH700134-part1",
+                            "nvme-SAMSUNG_MZ1LV480HCHP-00003_S2DYNAAH700134_1-part1",
+                            "nvme-nvme.144d-533244594e414148373030313334-53414d53554e47204d5a314c56343830484348502d3030303033-00000001-part1"
+                        ],
+                        "labels": [],
+                        "masters": [],
+                        "uuids": [
+                            "9BD6-E21B"
+                        ]
+                    },
+                    "sectors": "1046528",
+                    "sectorsize": 512,
+                    "size": "511.00 MB",
+                    "start": "2048",
+                    "uuid": "9BD6-E21B"
+                },
+                "nvme0n1p2": {
+                    "holders": [],
+                    "links": {
+                        "ids": [
+                            "nvme-SAMSUNG_MZ1LV480HCHP-00003_S2DYNAAH700134-part2",
+                            "nvme-SAMSUNG_MZ1LV480HCHP-00003_S2DYNAAH700134_1-part2",
+                            "nvme-nvme.144d-533244594e414148373030313334-53414d53554e47204d5a314c56343830484348502d3030303033-00000001-part2"
+                        ],
+                        "labels": [],
+                        "masters": [
+                            "md2"
+                        ],
+                        "uuids": []
+                    },
+                    "sectors": "2097152",
+                    "sectorsize": 512,
+                    "size": "1.00 GB",
+                    "start": "1048576",
+                    "uuid": null
+                },
+                "nvme0n1p3": {
+                    "holders": [],
+                    "links": {
+                        "ids": [
+                            "nvme-SAMSUNG_MZ1LV480HCHP-00003_S2DYNAAH700134-part3",
+                            "nvme-SAMSUNG_MZ1LV480HCHP-00003_S2DYNAAH700134_1-part3",
+                            "nvme-nvme.144d-533244594e414148373030313334-53414d53554e47204d5a314c56343830484348502d3030303033-00000001-part3"
+                        ],
+                        "labels": [],
+                        "masters": [
+                            "md3"
+                        ],
+                        "uuids": []
+                    },
+                    "sectors": "933502976",
+                    "sectorsize": 512,
+                    "size": "445.13 GB",
+                    "start": "3145728",
+                    "uuid": null
+                },
+                "nvme0n1p4": {
+                    "holders": [],
+                    "links": {
+                        "ids": [
+                            "nvme-SAMSUNG_MZ1LV480HCHP-00003_S2DYNAAH700134-part4",
+                            "nvme-SAMSUNG_MZ1LV480HCHP-00003_S2DYNAAH700134_1-part4",
+                            "nvme-nvme.144d-533244594e414148373030313334-53414d53554e47204d5a314c56343830484348502d3030303033-00000001-part4"
+                        ],
+                        "labels": [
+                            "swap-nvme1n1p4"
+                        ],
+                        "masters": [],
+                        "uuids": [
+                            "fe136deb-ee66-4064-90f4-e8a7523fa28f"
+                        ]
+                    },
+                    "sectors": "1048576",
+                    "sectorsize": 512,
+                    "size": "512.00 MB",
+                    "start": "936648704",
+                    "uuid": "fe136deb-ee66-4064-90f4-e8a7523fa28f"
+                }
+            },
+            "removable": "0",
+            "rotational": "0",
+            "sas_address": null,
+            "sas_device_handle": null,
+            "scheduler_mode": "none",
+            "sectors": "937703088",
+            "sectorsize": "512",
+            "serial": "S2DYNAAH700134",
+            "size": "447.13 GB",
+            "support_discard": "512",
+            "vendor": null,
+            "virtual": 1
+        },
+        "nvme1n1": {
+            "holders": [],
+            "host": "Non-Volatile memory controller: Samsung Electronics Co Ltd NVMe SSD Controller SM951/PM951 (rev 01)",
+            "links": {
+                "ids": [
+                    "nvme-SAMSUNG_MZ1LV480HCHP-00003_S2DYNAAH700185",
+                    "nvme-SAMSUNG_MZ1LV480HCHP-00003_S2DYNAAH700185_1",
+                    "nvme-nvme.144d-533244594e414148373030313835-53414d53554e47204d5a314c56343830484348502d3030303033-00000001"
+                ],
+                "labels": [],
+                "masters": [],
+                "uuids": []
+            },
+            "model": "SAMSUNG MZ1LV480HCHP-00003",
+            "partitions": {
+                "nvme1n1p1": {
+                    "holders": [],
+                    "links": {
+                        "ids": [
+                            "nvme-SAMSUNG_MZ1LV480HCHP-00003_S2DYNAAH700185-part1",
+                            "nvme-SAMSUNG_MZ1LV480HCHP-00003_S2DYNAAH700185_1-part1",
+                            "nvme-nvme.144d-533244594e414148373030313835-53414d53554e47204d5a314c56343830484348502d3030303033-00000001-part1"
+                        ],
+                        "labels": [
+                            "EFI_SYSPART"
+                        ],
+                        "masters": [],
+                        "uuids": [
+                            "9BB4-DC04"
+                        ]
+                    },
+                    "sectors": "1046528",
+                    "sectorsize": 512,
+                    "size": "511.00 MB",
+                    "start": "2048",
+                    "uuid": "9BB4-DC04"
+                },
+                "nvme1n1p2": {
+                    "holders": [],
+                    "links": {
+                        "ids": [
+                            "nvme-SAMSUNG_MZ1LV480HCHP-00003_S2DYNAAH700185-part2",
+                            "nvme-SAMSUNG_MZ1LV480HCHP-00003_S2DYNAAH700185_1-part2",
+                            "nvme-nvme.144d-533244594e414148373030313835-53414d53554e47204d5a314c56343830484348502d3030303033-00000001-part2"
+                        ],
+                        "labels": [],
+                        "masters": [
+                            "md2"
+                        ],
+                        "uuids": []
+                    },
+                    "sectors": "2097152",
+                    "sectorsize": 512,
+                    "size": "1.00 GB",
+                    "start": "1048576",
+                    "uuid": null
+                },
+                "nvme1n1p3": {
+                    "holders": [],
+                    "links": {
+                        "ids": [
+                            "nvme-SAMSUNG_MZ1LV480HCHP-00003_S2DYNAAH700185-part3",
+                            "nvme-SAMSUNG_MZ1LV480HCHP-00003_S2DYNAAH700185_1-part3",
+                            "nvme-nvme.144d-533244594e414148373030313835-53414d53554e47204d5a314c56343830484348502d3030303033-00000001-part3"
+                        ],
+                        "labels": [],
+                        "masters": [
+                            "md3"
+                        ],
+                        "uuids": []
+                    },
+                    "sectors": "933502976",
+                    "sectorsize": 512,
+                    "size": "445.13 GB",
+                    "start": "3145728",
+                    "uuid": null
+                },
+                "nvme1n1p4": {
+                    "holders": [],
+                    "links": {
+                        "ids": [
+                            "nvme-SAMSUNG_MZ1LV480HCHP-00003_S2DYNAAH700185-part4",
+                            "nvme-SAMSUNG_MZ1LV480HCHP-00003_S2DYNAAH700185_1-part4",
+                            "nvme-nvme.144d-533244594e414148373030313835-53414d53554e47204d5a314c56343830484348502d3030303033-00000001-part4"
+                        ],
+                        "labels": [
+                            "swap-nvme0n1p4"
+                        ],
+                        "masters": [],
+                        "uuids": [
+                            "3f370e4b-2fc6-48ff-a25a-9e6797d6f04b"
+                        ]
+                    },
+                    "sectors": "1048576",
+                    "sectorsize": 512,
+                    "size": "512.00 MB",
+                    "start": "936648704",
+                    "uuid": "3f370e4b-2fc6-48ff-a25a-9e6797d6f04b"
+                },
+                "nvme1n1p5": {
+                    "holders": [],
+                    "links": {
+                        "ids": [
+                            "nvme-SAMSUNG_MZ1LV480HCHP-00003_S2DYNAAH700185-part5",
+                            "nvme-SAMSUNG_MZ1LV480HCHP-00003_S2DYNAAH700185_1-part5",
+                            "nvme-nvme.144d-533244594e414148373030313835-53414d53554e47204d5a314c56343830484348502d3030303033-00000001-part5"
+                        ],
+                        "labels": [
+                            "config-2"
+                        ],
+                        "masters": [],
+                        "uuids": [
+                            "2026-01-02-22-42-37-00"
+                        ]
+                    },
+                    "sectors": "4063",
+                    "sectorsize": 512,
+                    "size": "1.98 MB",
+                    "start": "937698992",
+                    "uuid": "2026-01-02-22-42-37-00"
+                }
+            },
+            "removable": "0",
+            "rotational": "0",
+            "sas_address": null,
+            "sas_device_handle": null,
+            "scheduler_mode": "none",
+            "sectors": "937703088",
+            "sectorsize": "512",
+            "serial": "S2DYNAAH700185",
+            "size": "447.13 GB",
+            "support_discard": "512",
+            "vendor": null,
+            "virtual": 1
+        },
+        "sda": {
+            "holders": [],
+            "host": "SATA controller: Intel Corporation 8 Series/C220 Series Chipset Family 6-port SATA Controller 1 [AHCI mode] (rev 05)",
+            "links": {
+                "ids": [
+                    "ata-HGST_HUS726020ALA610_N4G8D5PY",
+                    "scsi-0ATA_HGST_HUS726020AL_N4G8D5PY",
+                    "scsi-1ATA_HGST_HUS726020ALA610_N4G8D5PY",
+                    "scsi-35000cca245c3d0b4",
+                    "scsi-SATA_HGST_HUS726020AL_N4G8D5PY",
+                    "wwn-0x5000cca245c3d0b4"
+                ],
+                "labels": [],
+                "masters": [],
+                "uuids": []
+            },
+            "model": "HGST HUS726020AL",
+            "partitions": {},
+            "removable": "0",
+            "rotational": "1",
+            "sas_address": null,
+            "sas_device_handle": null,
+            "scheduler_mode": "mq-deadline",
+            "sectors": "3907029168",
+            "sectorsize": "512",
+            "serial": "N4G8D5PY",
+            "size": "1.82 TB",
+            "support_discard": "512",
+            "vendor": "ATA",
+            "virtual": 1,
+            "wwn": "0x5000cca245c3d0b4"
+        },
+        "sdb": {
+            "holders": [],
+            "host": "SATA controller: Intel Corporation 8 Series/C220 Series Chipset Family 6-port SATA Controller 1 [AHCI mode] (rev 05)",
+            "links": {
+                "ids": [
+                    "ata-HGST_HUS726020ALA610_N4G82TJY",
+                    "scsi-0ATA_HGST_HUS726020AL_N4G82TJY",
+                    "scsi-1ATA_HGST_HUS726020ALA610_N4G82TJY",
+                    "scsi-35000cca245c3ad72",
+                    "scsi-SATA_HGST_HUS726020AL_N4G82TJY",
+                    "wwn-0x5000cca245c3ad72"
+                ],
+                "labels": [],
+                "masters": [],
+                "uuids": []
+            },
+            "model": "HGST HUS726020AL",
+            "partitions": {},
+            "removable": "0",
+            "rotational": "1",
+            "sas_address": null,
+            "sas_device_handle": null,
+            "scheduler_mode": "mq-deadline",
+            "sectors": "3907029168",
+            "sectorsize": "512",
+            "serial": "N4G82TJY",
+            "size": "1.82 TB",
+            "support_discard": "512",
+            "vendor": "ATA",
+            "virtual": 1,
+            "wwn": "0x5000cca245c3ad72"
+        }
+    },
+    "ansible_distribution": "Ubuntu",
+    "ansible_distribution_file_parsed": true,
+    "ansible_distribution_file_path": "/etc/os-release",
+    "ansible_distribution_file_variety": "Debian",
+    "ansible_distribution_major_version": "24",
+    "ansible_distribution_release": "noble",
+    "ansible_distribution_version": "24.04",
+    "ansible_dns": {
+        "nameservers": [
+            "127.0.0.53"
+        ],
+        "options": {
+            "edns0": true,
+            "trust-ad": true
+        },
+        "search": [
+            "tail52a98b.ts.net"
+        ]
+    },
+    "ansible_docker0": {
+        "active": false,
+        "device": "docker0",
+        "features": {
+            "esp_hw_offload": "off [fixed]",
+            "esp_tx_csum_hw_offload": "off [fixed]",
+            "fcoe_mtu": "off [fixed]",
+            "generic_receive_offload": "on",
+            "generic_segmentation_offload": "on",
+            "highdma": "on",
+            "hsr_dup_offload": "off [fixed]",
+            "hsr_fwd_offload": "off [fixed]",
+            "hsr_tag_ins_offload": "off [fixed]",
+            "hsr_tag_rm_offload": "off [fixed]",
+            "hw_tc_offload": "off [fixed]",
+            "l2_fwd_offload": "off [fixed]",
+            "large_receive_offload": "off [fixed]",
+            "loopback": "off [fixed]",
+            "macsec_hw_offload": "off [fixed]",
+            "netns_local": "on [fixed]",
+            "ntuple_filters": "off [fixed]",
+            "receive_hashing": "off [fixed]",
+            "rx_all": "off [fixed]",
+            "rx_checksumming": "off [fixed]",
+            "rx_fcs": "off [fixed]",
+            "rx_gro_hw": "off [fixed]",
+            "rx_gro_list": "off",
+            "rx_udp_gro_forwarding": "off",
+            "rx_udp_tunnel_port_offload": "off [fixed]",
+            "rx_vlan_filter": "off [fixed]",
+            "rx_vlan_offload": "off [fixed]",
+            "rx_vlan_stag_filter": "off [fixed]",
+            "rx_vlan_stag_hw_parse": "off [fixed]",
+            "scatter_gather": "on",
+            "tcp_segmentation_offload": "on",
+            "tls_hw_record": "off [fixed]",
+            "tls_hw_rx_offload": "off [fixed]",
+            "tls_hw_tx_offload": "off [fixed]",
+            "tx_checksum_fcoe_crc": "off [fixed]",
+            "tx_checksum_ip_generic": "on",
+            "tx_checksum_ipv4": "off [fixed]",
+            "tx_checksum_ipv6": "off [fixed]",
+            "tx_checksum_sctp": "off [fixed]",
+            "tx_checksumming": "on",
+            "tx_esp_segmentation": "on",
+            "tx_fcoe_segmentation": "on",
+            "tx_gre_csum_segmentation": "on",
+            "tx_gre_segmentation": "on",
+            "tx_gso_list": "on",
+            "tx_gso_partial": "on",
+            "tx_gso_robust": "on",
+            "tx_ipxip4_segmentation": "on",
+            "tx_ipxip6_segmentation": "on",
+            "tx_lockless": "on [fixed]",
+            "tx_nocache_copy": "off",
+            "tx_scatter_gather": "on",
+            "tx_scatter_gather_fraglist": "on",
+            "tx_sctp_segmentation": "on",
+            "tx_tcp6_segmentation": "on",
+            "tx_tcp_ecn_segmentation": "on",
+            "tx_tcp_mangleid_segmentation": "on",
+            "tx_tcp_segmentation": "on",
+            "tx_tunnel_remcsum_segmentation": "on",
+            "tx_udp_segmentation": "on",
+            "tx_udp_tnl_csum_segmentation": "on",
+            "tx_udp_tnl_segmentation": "on",
+            "tx_vlan_offload": "on",
+            "tx_vlan_stag_hw_insert": "on",
+            "vlan_challenged": "off [fixed]"
+        },
+        "hw_timestamp_filters": [],
+        "id": "8000.a67470da064b",
+        "interfaces": [],
+        "ipv4": {
+            "address": "172.17.0.1",
+            "broadcast": "172.17.255.255",
+            "netmask": "255.255.0.0",
+            "network": "172.17.0.0",
+            "prefix": "16"
+        },
+        "macaddress": "a6:74:70:da:06:4b",
+        "mtu": 1500,
+        "promisc": false,
+        "speed": -1,
+        "stp": false,
+        "timestamping": [],
+        "type": "bridge"
+    },
+    "ansible_domain": "",
+    "ansible_effective_group_id": 0,
+    "ansible_effective_user_id": 0,
+    "ansible_ens1f0": {
+        "active": true,
+        "device": "ens1f0",
+        "features": {
+            "esp_hw_offload": "off [fixed]",
+            "esp_tx_csum_hw_offload": "off [fixed]",
+            "fcoe_mtu": "off [fixed]",
+            "generic_receive_offload": "on",
+            "generic_segmentation_offload": "on",
+            "highdma": "on [fixed]",
+            "hsr_dup_offload": "off [fixed]",
+            "hsr_fwd_offload": "off [fixed]",
+            "hsr_tag_ins_offload": "off [fixed]",
+            "hsr_tag_rm_offload": "off [fixed]",
+            "hw_tc_offload": "on",
+            "l2_fwd_offload": "off [fixed]",
+            "large_receive_offload": "off [fixed]",
+            "loopback": "off [fixed]",
+            "macsec_hw_offload": "off [fixed]",
+            "netns_local": "off [fixed]",
+            "ntuple_filters": "off",
+            "receive_hashing": "on",
+            "rx_all": "off",
+            "rx_checksumming": "on",
+            "rx_fcs": "off [fixed]",
+            "rx_gro_hw": "off [fixed]",
+            "rx_gro_list": "off",
+            "rx_udp_gro_forwarding": "off",
+            "rx_udp_tunnel_port_offload": "off [fixed]",
+            "rx_vlan_filter": "on [fixed]",
+            "rx_vlan_offload": "on",
+            "rx_vlan_stag_filter": "off [fixed]",
+            "rx_vlan_stag_hw_parse": "off [fixed]",
+            "scatter_gather": "on",
+            "tcp_segmentation_offload": "on",
+            "tls_hw_record": "off [fixed]",
+            "tls_hw_rx_offload": "off [fixed]",
+            "tls_hw_tx_offload": "off [fixed]",
+            "tx_checksum_fcoe_crc": "off [fixed]",
+            "tx_checksum_ip_generic": "on",
+            "tx_checksum_ipv4": "off [fixed]",
+            "tx_checksum_ipv6": "off [fixed]",
+            "tx_checksum_sctp": "on",
+            "tx_checksumming": "on",
+            "tx_esp_segmentation": "off [fixed]",
+            "tx_fcoe_segmentation": "off [fixed]",
+            "tx_gre_csum_segmentation": "on",
+            "tx_gre_segmentation": "on",
+            "tx_gso_list": "off [fixed]",
+            "tx_gso_partial": "on",
+            "tx_gso_robust": "off [fixed]",
+            "tx_ipxip4_segmentation": "on",
+            "tx_ipxip6_segmentation": "on",
+            "tx_lockless": "off [fixed]",
+            "tx_nocache_copy": "off",
+            "tx_scatter_gather": "on",
+            "tx_scatter_gather_fraglist": "off [fixed]",
+            "tx_sctp_segmentation": "off [fixed]",
+            "tx_tcp6_segmentation": "on",
+            "tx_tcp_ecn_segmentation": "off [fixed]",
+            "tx_tcp_mangleid_segmentation": "off",
+            "tx_tcp_segmentation": "on",
+            "tx_tunnel_remcsum_segmentation": "off [fixed]",
+            "tx_udp_segmentation": "on",
+            "tx_udp_tnl_csum_segmentation": "on",
+            "tx_udp_tnl_segmentation": "on",
+            "tx_vlan_offload": "on",
+            "tx_vlan_stag_hw_insert": "off [fixed]",
+            "vlan_challenged": "off [fixed]"
+        },
+        "hw_timestamp_filters": [],
+        "ipv4": {
+            "address": "139.99.149.160",
+            "broadcast": "",
+            "netmask": "255.255.255.0",
+            "network": "139.99.149.0",
+            "prefix": "24"
+        },
+        "ipv6": [
+            {
+                "address": "2402:1f00:8101:1a0::1",
+                "prefix": "128",
+                "scope": "global"
+            },
+            {
+                "address": "fe80::ec4:7aff:fee1:8ece",
+                "prefix": "64",
+                "scope": "link"
+            }
+        ],
+        "macaddress": "0c:c4:7a:e1:8e:ce",
+        "module": "igb",
+        "mtu": 1500,
+        "pciid": "0000:05:00.0",
+        "phc_index": 0,
+        "promisc": false,
+        "speed": 1000,
+        "timestamping": [],
+        "type": "ether"
+    },
+    "ansible_ens1f1": {
+        "active": false,
+        "device": "ens1f1",
+        "features": {
+            "esp_hw_offload": "off [fixed]",
+            "esp_tx_csum_hw_offload": "off [fixed]",
+            "fcoe_mtu": "off [fixed]",
+            "generic_receive_offload": "on",
+            "generic_segmentation_offload": "on",
+            "highdma": "on [fixed]",
+            "hsr_dup_offload": "off [fixed]",
+            "hsr_fwd_offload": "off [fixed]",
+            "hsr_tag_ins_offload": "off [fixed]",
+            "hsr_tag_rm_offload": "off [fixed]",
+            "hw_tc_offload": "on",
+            "l2_fwd_offload": "off [fixed]",
+            "large_receive_offload": "off [fixed]",
+            "loopback": "off [fixed]",
+            "macsec_hw_offload": "off [fixed]",
+            "netns_local": "off [fixed]",
+            "ntuple_filters": "off",
+            "receive_hashing": "on",
+            "rx_all": "off",
+            "rx_checksumming": "on",
+            "rx_fcs": "off [fixed]",
+            "rx_gro_hw": "off [fixed]",
+            "rx_gro_list": "off",
+            "rx_udp_gro_forwarding": "off",
+            "rx_udp_tunnel_port_offload": "off [fixed]",
+            "rx_vlan_filter": "on [fixed]",
+            "rx_vlan_offload": "on",
+            "rx_vlan_stag_filter": "off [fixed]",
+            "rx_vlan_stag_hw_parse": "off [fixed]",
+            "scatter_gather": "on",
+            "tcp_segmentation_offload": "on",
+            "tls_hw_record": "off [fixed]",
+            "tls_hw_rx_offload": "off [fixed]",
+            "tls_hw_tx_offload": "off [fixed]",
+            "tx_checksum_fcoe_crc": "off [fixed]",
+            "tx_checksum_ip_generic": "on",
+            "tx_checksum_ipv4": "off [fixed]",
+            "tx_checksum_ipv6": "off [fixed]",
+            "tx_checksum_sctp": "on",
+            "tx_checksumming": "on",
+            "tx_esp_segmentation": "off [fixed]",
+            "tx_fcoe_segmentation": "off [fixed]",
+            "tx_gre_csum_segmentation": "on",
+            "tx_gre_segmentation": "on",
+            "tx_gso_list": "off [fixed]",
+            "tx_gso_partial": "on",
+            "tx_gso_robust": "off [fixed]",
+            "tx_ipxip4_segmentation": "on",
+            "tx_ipxip6_segmentation": "on",
+            "tx_lockless": "off [fixed]",
+            "tx_nocache_copy": "off",
+            "tx_scatter_gather": "on",
+            "tx_scatter_gather_fraglist": "off [fixed]",
+            "tx_sctp_segmentation": "off [fixed]",
+            "tx_tcp6_segmentation": "on",
+            "tx_tcp_ecn_segmentation": "off [fixed]",
+            "tx_tcp_mangleid_segmentation": "off",
+            "tx_tcp_segmentation": "on",
+            "tx_tunnel_remcsum_segmentation": "off [fixed]",
+            "tx_udp_segmentation": "on",
+            "tx_udp_tnl_csum_segmentation": "on",
+            "tx_udp_tnl_segmentation": "on",
+            "tx_vlan_offload": "on",
+            "tx_vlan_stag_hw_insert": "off [fixed]",
+            "vlan_challenged": "off [fixed]"
+        },
+        "hw_timestamp_filters": [],
+        "macaddress": "0c:c4:7a:e1:8e:cf",
+        "module": "igb",
+        "mtu": 1500,
+        "pciid": "0000:05:00.1",
+        "phc_index": 1,
+        "promisc": false,
+        "timestamping": [],
+        "type": "ether"
+    },
+    "ansible_env": {
+        "HOME": "/root",
+        "LANG": "C.UTF-8",
+        "LOGNAME": "root",
+        "MAIL": "/var/mail/root",
+        "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin",
+        "PWD": "/home/ubuntu",
+        "SHELL": "/bin/bash",
+        "SUDO_COMMAND": "/bin/sh -c echo BECOME-SUCCESS-zpfsbtjjpyrarujrrazmzjhyxllqgtov ; /usr/bin/python3",
+        "SUDO_GID": "1000",
+        "SUDO_UID": "1000",
+        "SUDO_USER": "ubuntu",
+        "TERM": "unknown",
+        "USER": "root"
+    },
+    "ansible_fibre_channel_wwn": [],
+    "ansible_fips": false,
+    "ansible_form_factor": "Other",
+    "ansible_fqdn": "testnet-4",
+    "ansible_hostname": "testnet-4",
+    "ansible_hostnqn": "nqn.2014-08.org.nvmexpress:uuid:00000000-0000-0000-0000-0cc47ae18ece",
+    "ansible_interfaces": [
+        "docker0",
+        "lo",
+        "wg0",
+        "ens1f0",
+        "tailscale0",
+        "ens1f1"
+    ],
+    "ansible_is_chroot": false,
+    "ansible_iscsi_iqn": "",
+    "ansible_kernel": "6.8.0-90-generic",
+    "ansible_kernel_version": "#91-Ubuntu SMP PREEMPT_DYNAMIC Tue Nov 18 14:14:30 UTC 2025",
+    "ansible_lo": {
+        "active": true,
+        "device": "lo",
+        "features": {
+            "esp_hw_offload": "off [fixed]",
+            "esp_tx_csum_hw_offload": "off [fixed]",
+            "fcoe_mtu": "off [fixed]",
+            "generic_receive_offload": "on",
+            "generic_segmentation_offload": "on",
+            "highdma": "on [fixed]",
+            "hsr_dup_offload": "off [fixed]",
+            "hsr_fwd_offload": "off [fixed]",
+            "hsr_tag_ins_offload": "off [fixed]",
+            "hsr_tag_rm_offload": "off [fixed]",
+            "hw_tc_offload": "off [fixed]",
+            "l2_fwd_offload": "off [fixed]",
+            "large_receive_offload": "off [fixed]",
+            "loopback": "on [fixed]",
+            "macsec_hw_offload": "off [fixed]",
+            "netns_local": "on [fixed]",
+            "ntuple_filters": "off [fixed]",
+            "receive_hashing": "off [fixed]",
+            "rx_all": "off [fixed]",
+            "rx_checksumming": "on [fixed]",
+            "rx_fcs": "off [fixed]",
+            "rx_gro_hw": "off [fixed]",
+            "rx_gro_list": "off",
+            "rx_udp_gro_forwarding": "off",
+            "rx_udp_tunnel_port_offload": "off [fixed]",
+            "rx_vlan_filter": "off [fixed]",
+            "rx_vlan_offload": "off [fixed]",
+            "rx_vlan_stag_filter": "off [fixed]",
+            "rx_vlan_stag_hw_parse": "off [fixed]",
+            "scatter_gather": "on",
+            "tcp_segmentation_offload": "on",
+            "tls_hw_record": "off [fixed]",
+            "tls_hw_rx_offload": "off [fixed]",
+            "tls_hw_tx_offload": "off [fixed]",
+            "tx_checksum_fcoe_crc": "off [fixed]",
+            "tx_checksum_ip_generic": "on [fixed]",
+            "tx_checksum_ipv4": "off [fixed]",
+            "tx_checksum_ipv6": "off [fixed]",
+            "tx_checksum_sctp": "on [fixed]",
+            "tx_checksumming": "on",
+            "tx_esp_segmentation": "off [fixed]",
+            "tx_fcoe_segmentation": "off [fixed]",
+            "tx_gre_csum_segmentation": "off [fixed]",
+            "tx_gre_segmentation": "off [fixed]",
+            "tx_gso_list": "on",
+            "tx_gso_partial": "off [fixed]",
+            "tx_gso_robust": "off [fixed]",
+            "tx_ipxip4_segmentation": "off [fixed]",
+            "tx_ipxip6_segmentation": "off [fixed]",
+            "tx_lockless": "on [fixed]",
+            "tx_nocache_copy": "off [fixed]",
+            "tx_scatter_gather": "on [fixed]",
+            "tx_scatter_gather_fraglist": "on [fixed]",
+            "tx_sctp_segmentation": "on",
+            "tx_tcp6_segmentation": "on",
+            "tx_tcp_ecn_segmentation": "on",
+            "tx_tcp_mangleid_segmentation": "on",
+            "tx_tcp_segmentation": "on",
+            "tx_tunnel_remcsum_segmentation": "off [fixed]",
+            "tx_udp_segmentation": "on",
+            "tx_udp_tnl_csum_segmentation": "off [fixed]",
+            "tx_udp_tnl_segmentation": "off [fixed]",
+            "tx_vlan_offload": "off [fixed]",
+            "tx_vlan_stag_hw_insert": "off [fixed]",
+            "vlan_challenged": "on [fixed]"
+        },
+        "hw_timestamp_filters": [],
+        "ipv4": {
+            "address": "127.0.0.1",
+            "broadcast": "",
+            "netmask": "255.0.0.0",
+            "network": "127.0.0.0",
+            "prefix": "8"
+        },
+        "ipv6": [
+            {
+                "address": "::1",
+                "prefix": "128",
+                "scope": "host"
+            }
+        ],
+        "mtu": 65536,
+        "promisc": false,
+        "timestamping": [],
+        "type": "loopback"
+    },
+    "ansible_loadavg": {
+        "15m": 1.49072265625,
+        "1m": 1.66845703125,
+        "5m": 1.56298828125
+    },
+    "ansible_local": {},
+    "ansible_locally_reachable_ips": {
+        "ipv4": [
+            "10.10.0.4",
+            "100.118.43.32",
+            "127.0.0.0/8",
+            "127.0.0.1",
+            "139.99.149.160",
+            "172.17.0.1"
+        ],
+        "ipv6": [
+            "::1",
+            "2402:1f00:8101:1a0::1",
+            "fd7a:115c:a1e0::8e35:2b20",
+            "fe80::633:50c4:2b9f:f270",
+            "fe80::ec4:7aff:fee1:8ece"
+        ]
+    },
+    "ansible_lsb": {
+        "codename": "noble",
+        "description": "Ubuntu 24.04.3 LTS",
+        "id": "Ubuntu",
+        "major_release": "24",
+        "release": "24.04"
+    },
+    "ansible_lvm": {
+        "lvs": {},
+        "pvs": {},
+        "vgs": {}
+    },
+    "ansible_machine": "x86_64",
+    "ansible_machine_id": "491ba7822cea4a3a8aa2af86f18c73c8",
+    "ansible_memfree_mb": 723,
+    "ansible_memory_mb": {
+        "nocache": {
+            "free": 56664,
+            "used": 7532
+        },
+        "real": {
+            "free": 723,
+            "total": 64196,
+            "used": 63473
+        },
+        "swap": {
+            "cached": 0,
+            "free": 1022,
+            "total": 1023,
+            "used": 1
+        }
+    },
+    "ansible_memtotal_mb": 64196,
+    "ansible_mounts": [
+        {
+            "block_available": 80255907,
+            "block_size": 4096,
+            "block_total": 114542892,
+            "block_used": 34286985,
+            "device": "/dev/md3",
+            "fstype": "ext4",
+            "inode_available": 28789532,
+            "inode_total": 29171712,
+            "inode_used": 382180,
+            "mount": "/",
+            "options": "rw,relatime",
+            "size_available": 328728195072,
+            "size_total": 469167685632,
+            "uuid": "81414dbf-5d85-4c58-9083-73b448bdc62a"
+        },
+        {
+            "block_available": 206267,
+            "block_size": 4096,
+            "block_total": 252787,
+            "block_used": 46520,
+            "device": "/dev/md2",
+            "fstype": "ext4",
+            "inode_available": 64809,
+            "inode_total": 65408,
+            "inode_used": 599,
+            "mount": "/boot",
+            "options": "rw,relatime",
+            "size_available": 844869632,
+            "size_total": 1035415552,
+            "uuid": "74977720-6777-4c7d-8f14-16b4b167c2ee"
+        },
+        {
+            "block_available": 64719,
+            "block_size": 8192,
+            "block_total": 65373,
+            "block_used": 654,
+            "device": "/dev/nvme0n1p1",
+            "fstype": "vfat",
+            "inode_available": 0,
+            "inode_total": 0,
+            "inode_used": 0,
+            "mount": "/boot/efi",
+            "options": "rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=iso8859-1,shortname=mixed,errors=remount-ro",
+            "size_available": 530178048,
+            "size_total": 535535616,
+            "uuid": "9BD6-E21B"
+        }
+    ],
+    "ansible_nodename": "testnet-4",
+    "ansible_os_family": "Debian",
+    "ansible_pkg_mgr": "apt",
+    "ansible_proc_cmdline": {
+        "BOOT_IMAGE": "/vmlinuz-6.8.0-90-generic",
+        "console": [
+            "tty0",
+            "ttyS1,115200n8"
+        ],
+        "iommu": "pt",
+        "nomodeset": true,
+        "ro": true,
+        "root": "UUID=81414dbf-5d85-4c58-9083-73b448bdc62a"
+    },
+    "ansible_processor": [
+        "0",
+        "GenuineIntel",
+        "Intel(R) Xeon(R) CPU D-1541 @ 2.10GHz",
+        "1",
+        "GenuineIntel",
+        "Intel(R) Xeon(R) CPU D-1541 @ 2.10GHz",
+        "2",
+        "GenuineIntel",
+        "Intel(R) Xeon(R) CPU D-1541 @ 2.10GHz",
+        "3",
+        "GenuineIntel",
+        "Intel(R) Xeon(R) CPU D-1541 @ 2.10GHz",
+        "4",
+        "GenuineIntel",
+        "Intel(R) Xeon(R) CPU D-1541 @ 2.10GHz",
+        "5",
+        "GenuineIntel",
+        "Intel(R) Xeon(R) CPU D-1541 @ 2.10GHz",
+        "6",
+        "GenuineIntel",
+        "Intel(R) Xeon(R) CPU D-1541 @ 2.10GHz",
+        "7",
+        "GenuineIntel",
+        "Intel(R) Xeon(R) CPU D-1541 @ 2.10GHz",
+        "8",
+        "GenuineIntel",
+        "Intel(R) Xeon(R) CPU D-1541 @ 2.10GHz",
+        "9",
+        "GenuineIntel",
+        "Intel(R) Xeon(R) CPU D-1541 @ 2.10GHz",
+        "10",
+        "GenuineIntel",
+        "Intel(R) Xeon(R) CPU D-1541 @ 2.10GHz",
+        "11",
+        "GenuineIntel",
+        "Intel(R) Xeon(R) CPU D-1541 @ 2.10GHz",
+        "12",
+        "GenuineIntel",
+        "Intel(R) Xeon(R) CPU D-1541 @ 2.10GHz",
+        "13",
+        "GenuineIntel",
+        "Intel(R) Xeon(R) CPU D-1541 @ 2.10GHz",
+        "14",
+        "GenuineIntel",
+        "Intel(R) Xeon(R) CPU D-1541 @ 2.10GHz",
+        "15",
+        "GenuineIntel",
+        "Intel(R) Xeon(R) CPU D-1541 @ 2.10GHz"
+    ],
+    "ansible_processor_cores": 8,
+    "ansible_processor_count": 1,
+    "ansible_processor_nproc": 16,
+    "ansible_processor_threads_per_core": 2,
+    "ansible_processor_vcpus": 16,
+    "ansible_product_name": "SYS-3U8NHGST-01-OS017",
+    "ansible_product_serial": "A255474X6B01712",
+    "ansible_product_uuid": "00000000-0000-0000-0000-0cc47ae18ece",
+    "ansible_product_version": "0123456789",
+    "ansible_python": {
+        "executable": "/usr/bin/python3",
+        "has_sslcontext": true,
+        "type": "cpython",
+        "version": {
+            "major": 3,
+            "micro": 3,
+            "minor": 12,
+            "releaselevel": "final",
+            "serial": 0
+        },
+        "version_info": [
+            3,
+            12,
+            3,
+            "final",
+            0
+        ]
+    },
+    "ansible_python_version": "3.12.3",
+    "ansible_real_group_id": 0,
+    "ansible_real_user_id": 0,
+    "ansible_selinux": {
+        "status": "disabled"
+    },
+    "ansible_selinux_python_present": true,
+    "ansible_service_mgr": "systemd",
+    "ansible_ssh_host_key_ecdsa_public": "AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBOV6f1nlvRKSQm0V9GQLbH/nYsD9qQiKljdxvy6i1BSPN0ansCpIRbY/XWe+OQu5w0vd/G+h7KIOrzXnxs94azo=",
+    "ansible_ssh_host_key_ecdsa_public_keytype": "ecdsa-sha2-nistp256",
+    "ansible_ssh_host_key_ed25519_public": "AAAAC3NzaC1lZDI1NTE5AAAAIJ8WxX9O22vnXaCl6f5HlZgFxCKXjfsVV5Et+mLhVUJ8",
+    "ansible_ssh_host_key_ed25519_public_keytype": "ssh-ed25519",
+    "ansible_ssh_host_key_rsa_public": "AAAAB3NzaC1yc2EAAAADAQABAAABgQCrhI2uxKI+kvwQUAoi63BSuuWflSF9Jb3B7yGOAkkuOXo5365TgU6bViIh8miS9190vVmGC3FN4AAUiVFEGOafHwyxBQDByWkGPyWj2g/LJt1GNZgEfifIBUjraPdhZOYsshbNT0p4G0abnacVHoDF4KjuVAbg6nHAbcWHGS4Uz1xGQGqJ/4TyE3h2Etb8Di5KCSMADyKomB3W5Vs0oRWIuN4GK4S+6F+JebmqOZm0FXSkpJQLm2zsZYFZz1Ld2gp1/fS1ZWX2kE9263hQ6q1gOGjj7EJVarGic5QbbC4kY3lmh6S3mhQflp8k2jb41za+/PPz3kZeWDBLTfAdnb26n8DLld9dohy7ZrhqR0PNKKhA36LXiA2L4Fl9Y5bOv+1wJ/Nlq/f6hwkWfnfv8Ikp3ZdLUJx+HQok7sSAF14ANvKpSxvd4RFc4F55A/KrA4lLdzcG4VlFbhAC+nxYJ10GjHZQYYftPiTiULcEe0EiqWyEznfMBhcu5h+01clJwrU=",
+    "ansible_ssh_host_key_rsa_public_keytype": "ssh-rsa",
+    "ansible_swapfree_mb": 1022,
+    "ansible_swaptotal_mb": 1023,
+    "ansible_system": "Linux",
+    "ansible_system_capabilities": [],
+    "ansible_system_capabilities_enforced": "False",
+    "ansible_system_vendor": "Supermicro",
+    "ansible_tailscale0": {
+        "active": true,
+        "device": "tailscale0",
+        "features": {
+            "esp_hw_offload": "off [fixed]",
+            "esp_tx_csum_hw_offload": "off [fixed]",
+            "fcoe_mtu": "off [fixed]",
+            "generic_receive_offload": "on",
+            "generic_segmentation_offload": "on",
+            "highdma": "off [fixed]",
+            "hsr_dup_offload": "off [fixed]",
+            "hsr_fwd_offload": "off [fixed]",
+            "hsr_tag_ins_offload": "off [fixed]",
+            "hsr_tag_rm_offload": "off [fixed]",
+            "hw_tc_offload": "off [fixed]",
+            "l2_fwd_offload": "off [fixed]",
+            "large_receive_offload": "off [fixed]",
+            "loopback": "off [fixed]",
+            "macsec_hw_offload": "off [fixed]",
+            "netns_local": "off [fixed]",
+            "ntuple_filters": "off [fixed]",
+            "receive_hashing": "off [fixed]",
+            "rx_all": "off [fixed]",
+            "rx_checksumming": "off [fixed]",
+            "rx_fcs": "off [fixed]",
+            "rx_gro_hw": "off [fixed]",
+            "rx_gro_list": "off",
+            "rx_udp_gro_forwarding": "off",
+            "rx_udp_tunnel_port_offload": "off [fixed]",
+            "rx_vlan_filter": "off [fixed]",
+            "rx_vlan_offload": "off [fixed]",
+            "rx_vlan_stag_filter": "off [fixed]",
+            "rx_vlan_stag_hw_parse": "off [fixed]",
+            "scatter_gather": "on",
+            "tcp_segmentation_offload": "on",
+            "tls_hw_record": "off [fixed]",
+            "tls_hw_rx_offload": "off [fixed]",
+            "tls_hw_tx_offload": "off [fixed]",
+            "tx_checksum_fcoe_crc": "off [fixed]",
+            "tx_checksum_ip_generic": "on",
+            "tx_checksum_ipv4": "off [fixed]",
+            "tx_checksum_ipv6": "off [fixed]",
+            "tx_checksum_sctp": "off [fixed]",
+            "tx_checksumming": "on",
+            "tx_esp_segmentation": "off [fixed]",
+            "tx_fcoe_segmentation": "off [fixed]",
+            "tx_gre_csum_segmentation": "off [fixed]",
+            "tx_gre_segmentation": "off [fixed]",
+            "tx_gso_list": "off [fixed]",
+            "tx_gso_partial": "off [fixed]",
+            "tx_gso_robust": "off [fixed]",
+            "tx_ipxip4_segmentation": "off [fixed]",
+            "tx_ipxip6_segmentation": "off [fixed]",
+            "tx_lockless": "on [fixed]",
+            "tx_nocache_copy": "off",
+            "tx_scatter_gather": "on",
+            "tx_scatter_gather_fraglist": "on",
+            "tx_sctp_segmentation": "off [fixed]",
+            "tx_tcp6_segmentation": "on",
+            "tx_tcp_ecn_segmentation": "off",
+            "tx_tcp_mangleid_segmentation": "off",
+            "tx_tcp_segmentation": "on",
+            "tx_tunnel_remcsum_segmentation": "off [fixed]",
+            "tx_udp_segmentation": "on",
+            "tx_udp_tnl_csum_segmentation": "off [fixed]",
+            "tx_udp_tnl_segmentation": "off [fixed]",
+            "tx_vlan_offload": "on",
+            "tx_vlan_stag_hw_insert": "on",
+            "vlan_challenged": "off [fixed]"
+        },
+        "hw_timestamp_filters": [],
+        "ipv4": {
+            "address": "100.118.43.32",
+            "broadcast": "",
+            "netmask": "255.255.255.255",
+            "network": "100.118.43.32",
+            "prefix": "32"
+        },
+        "ipv6": [
+            {
+                "address": "fd7a:115c:a1e0::8e35:2b20",
+                "prefix": "128",
+                "scope": "global"
+            },
+            {
+                "address": "fe80::633:50c4:2b9f:f270",
+                "prefix": "64",
+                "scope": "link"
+            }
+        ],
+        "mtu": 1280,
+        "promisc": false,
+        "speed": -1,
+        "timestamping": [],
+        "type": "tunnel"
+    },
+    "ansible_uptime_seconds": 1120164,
+    "ansible_user_dir": "/root",
+    "ansible_user_gecos": "root",
+    "ansible_user_gid": 0,
+    "ansible_user_id": "root",
+    "ansible_user_shell": "/bin/bash",
+    "ansible_user_uid": 0,
+    "ansible_userspace_architecture": "x86_64",
+    "ansible_userspace_bits": "64",
+    "ansible_virtualization_role": "host",
+    "ansible_virtualization_tech_guest": [],
+    "ansible_virtualization_tech_host": [
+        "kvm"
+    ],
+    "ansible_virtualization_type": "kvm",
+    "ansible_wg0": {
+        "active": true,
+        "device": "wg0",
+        "features": {
+            "esp_hw_offload": "off [fixed]",
+            "esp_tx_csum_hw_offload": "off [fixed]",
+            "fcoe_mtu": "off [fixed]",
+            "generic_receive_offload": "on",
+            "generic_segmentation_offload": "on",
+            "highdma": "on",
+            "hsr_dup_offload": "off [fixed]",
+            "hsr_fwd_offload": "off [fixed]",
+            "hsr_tag_ins_offload": "off [fixed]",
+            "hsr_tag_rm_offload": "off [fixed]",
+            "hw_tc_offload": "off [fixed]",
+            "l2_fwd_offload": "off [fixed]",
+            "large_receive_offload": "off [fixed]",
+            "loopback": "off [fixed]",
+            "macsec_hw_offload": "off [fixed]",
+            "netns_local": "off [fixed]",
+            "ntuple_filters": "off [fixed]",
+            "receive_hashing": "off [fixed]",
+            "rx_all": "off [fixed]",
+            "rx_checksumming": "on",
+            "rx_fcs": "off [fixed]",
+            "rx_gro_hw": "off [fixed]",
+            "rx_gro_list": "off",
+            "rx_udp_gro_forwarding": "off",
+            "rx_udp_tunnel_port_offload": "off [fixed]",
+            "rx_vlan_filter": "off [fixed]",
+            "rx_vlan_offload": "off [fixed]",
+            "rx_vlan_stag_filter": "off [fixed]",
+            "rx_vlan_stag_hw_parse": "off [fixed]",
+            "scatter_gather": "on",
+            "tcp_segmentation_offload": "on",
+            "tls_hw_record": "off [fixed]",
+            "tls_hw_rx_offload": "off [fixed]",
+            "tls_hw_tx_offload": "off [fixed]",
+            "tx_checksum_fcoe_crc": "off [fixed]",
+            "tx_checksum_ip_generic": "on",
+            "tx_checksum_ipv4": "off [fixed]",
+            "tx_checksum_ipv6": "off [fixed]",
+            "tx_checksum_sctp": "off [fixed]",
+            "tx_checksumming": "on",
+            "tx_esp_segmentation": "off [fixed]",
+            "tx_fcoe_segmentation": "off [fixed]",
+            "tx_gre_csum_segmentation": "off [fixed]",
+            "tx_gre_segmentation": "off [fixed]",
+            "tx_gso_list": "on",
+            "tx_gso_partial": "off [fixed]",
+            "tx_gso_robust": "off [fixed]",
+            "tx_ipxip4_segmentation": "off [fixed]",
+            "tx_ipxip6_segmentation": "off [fixed]",
+            "tx_lockless": "on [fixed]",
+            "tx_nocache_copy": "off",
+            "tx_scatter_gather": "on",
+            "tx_scatter_gather_fraglist": "off [fixed]",
+            "tx_sctp_segmentation": "on",
+            "tx_tcp6_segmentation": "on",
+            "tx_tcp_ecn_segmentation": "on",
+            "tx_tcp_mangleid_segmentation": "on",
+            "tx_tcp_segmentation": "on",
+            "tx_tunnel_remcsum_segmentation": "off [fixed]",
+            "tx_udp_segmentation": "on",
+            "tx_udp_tnl_csum_segmentation": "off [fixed]",
+            "tx_udp_tnl_segmentation": "off [fixed]",
+            "tx_vlan_offload": "off [fixed]",
+            "tx_vlan_stag_hw_insert": "off [fixed]",
+            "vlan_challenged": "off [fixed]"
+        },
+        "hw_timestamp_filters": [],
+        "ipv4": {
+            "address": "10.10.0.4",
+            "broadcast": "",
+            "netmask": "255.255.255.0",
+            "network": "10.10.0.0",
+            "prefix": "24"
+        },
+        "mtu": 1420,
+        "promisc": false,
+        "timestamping": [],
+        "type": "tunnel"
+    },
+    "gather_subset": [
+        "all"
+    ],
+    "module_setup": true
+}
