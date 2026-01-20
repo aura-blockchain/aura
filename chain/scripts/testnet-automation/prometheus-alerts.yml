@@ -1,0 +1,147 @@
+# AURA Testnet Prometheus Alert Rules
+# Deploy to Prometheus server: /etc/prometheus/rules/aura-testnet.yml
+#
+# Enable in prometheus.yml:
+#   rule_files:
+#     - /etc/prometheus/rules/aura-testnet.yml
+
+groups:
+  - name: aura_critical
+    interval: 15s
+    rules:
+      # Chain has stopped producing blocks
+      - alert: AuraChainHalted
+        expr: |
+          (max(cometbft_consensus_height{chain_id="aura-mvp-1"})
+           - max(cometbft_consensus_height{chain_id="aura-mvp-1"} offset 2m)) == 0
+        for: 3m
+        labels:
+          severity: critical
+          chain: aura-mvp-1
+        annotations:
+          summary: "AURA chain has halted"
+          description: "No new blocks produced in the last 3 minutes. Current height: {{ $value }}"
+
+      # Validator not signing blocks
+      - alert: AuraValidatorNotSigning
+        expr: |
+          increase(cometbft_consensus_validator_missed_blocks{chain_id="aura-mvp-1"}[5m]) > 10
+        for: 2m
+        labels:
+          severity: critical
+          chain: aura-mvp-1
+        annotations:
+          summary: "Validator {{ $labels.validator_address }} missing blocks"
+          description: "Validator has missed {{ $value }} blocks in the last 5 minutes"
+
+      # Node completely down
+      - alert: AuraNodeDown
+        expr: up{job=~"aura.*"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          chain: aura-mvp-1
+        annotations:
+          summary: "AURA node {{ $labels.instance }} is down"
+          description: "Node has been unreachable for more than 1 minute"
+
+      # Consensus failure
+      - alert: AuraConsensusFailed
+        expr: cometbft_consensus_rounds{chain_id="aura-mvp-1"} > 3
+        for: 5m
+        labels:
+          severity: critical
+          chain: aura-mvp-1
+        annotations:
+          summary: "Consensus taking multiple rounds"
+          description: "Consensus is on round {{ $value }}, indicating potential issues"
+
+  - name: aura_warning
+    interval: 30s
+    rules:
+      # Node falling behind
+      - alert: AuraNodeOutOfSync
+        expr: |
+          abs(cometbft_consensus_height{chain_id="aura-mvp-1"}
+              - ignoring(instance) group_left max(cometbft_consensus_height{chain_id="aura-mvp-1"})) > 10
+        for: 5m
+        labels:
+          severity: warning
+          chain: aura-mvp-1
+        annotations:
+          summary: "Node {{ $labels.instance }} is behind"
+          description: "Node is {{ $value }} blocks behind the network"
+
+      # Low peer count
+      - alert: AuraLowPeerCount
+        expr: cometbft_p2p_peers{chain_id="aura-mvp-1"} < 2
+        for: 10m
+        labels:
+          severity: warning
+          chain: aura-mvp-1
+        annotations:
+          summary: "Low peer count on {{ $labels.instance }}"
+          description: "Node has only {{ $value }} peers connected"
+
+      # High mempool size
+      - alert: AuraMempoolBacklog
+        expr: cometbft_mempool_size{chain_id="aura-mvp-1"} > 1000
+        for: 5m
+        labels:
+          severity: warning
+          chain: aura-mvp-1
+        annotations:
+          summary: "Mempool backlog on {{ $labels.instance }}"
+          description: "Mempool has {{ $value }} pending transactions"
+
+      # Disk space low
+      - alert: AuraDiskSpaceLow
+        expr: |
+          (node_filesystem_size_bytes{mountpoint="/"} - node_filesystem_free_bytes{mountpoint="/"})
+          / node_filesystem_size_bytes{mountpoint="/"} > 0.85
+        for: 15m
+        labels:
+          severity: warning
+          chain: aura-mvp-1
+        annotations:
+          summary: "Disk space low on {{ $labels.instance }}"
+          description: "Disk usage is at {{ $value | humanizePercentage }}"
+
+      # High memory usage
+      - alert: AuraHighMemoryUsage
+        expr: |
+          (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes)
+          / node_memory_MemTotal_bytes > 0.90
+        for: 10m
+        labels:
+          severity: warning
+          chain: aura-mvp-1
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is at {{ $value | humanizePercentage }}"
+
+  - name: aura_info
+    interval: 60s
+    rules:
+      # Slow block time
+      - alert: AuraSlowBlockTime
+        expr: |
+          rate(cometbft_consensus_height{chain_id="aura-mvp-1"}[5m]) < 0.1
+        for: 10m
+        labels:
+          severity: info
+          chain: aura-mvp-1
+        annotations:
+          summary: "Slow block production"
+          description: "Block production rate is {{ $value }} blocks/second"
+
+      # Node restarted
+      - alert: AuraNodeRestarted
+        expr: |
+          changes(process_start_time_seconds{job=~"aura.*"}[10m]) > 0
+        labels:
+          severity: info
+          chain: aura-mvp-1
+        annotations:
+          summary: "Node {{ $labels.instance }} was restarted"
+          description: "Node has been restarted within the last 10 minutes"
