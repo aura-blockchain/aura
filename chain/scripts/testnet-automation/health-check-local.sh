@@ -1,8 +1,9 @@
 #!/bin/bash
 # AURA Testnet Local Health Check Script
 # Runs on each server to check local nodes only (no SSH)
+# Version: 2.0 - Updated with industry-standard thresholds
 #
-# Usage: ./health-check-local.sh [--alert] [--json]
+# Usage: ./aura-health-monitor.sh [--alert] [--json]
 
 set -euo pipefail
 
@@ -15,6 +16,14 @@ HOSTNAME=$(hostname)
 # Sentries should have at least 4 external peers
 VALIDATOR_EXPECTED_PEERS=2
 SENTRY_MIN_PEERS=4
+
+# Industry-standard thresholds
+# Disk: <70% healthy, 70-85% warning, >85% critical
+DISK_WARN_PERCENT=70
+DISK_CRIT_PERCENT=85
+# Memory: <80% healthy, 80-90% warning, >90% critical
+MEM_WARN_PERCENT=80
+MEM_CRIT_PERCENT=90
 
 # Detect which nodes are on this server based on existing directories
 declare -A LOCAL_NODES=()
@@ -68,6 +77,40 @@ send_alert() {
             }" >/dev/null 2>&1 || true
     fi
     echo "[$(date -u '+%Y-%m-%d %H:%M:%S UTC')] [$severity] $title: $message" >> /tmp/aura-health-check.log
+}
+
+# Check disk usage
+check_disk() {
+    local disk_percent=$(df / | awk 'NR==2 {gsub(/%/,""); print $5}')
+    local disk_status="healthy"
+    local disk_issue=""
+
+    if [[ "$disk_percent" -ge "$DISK_CRIT_PERCENT" ]]; then
+        disk_status="critical"
+        disk_issue="CRITICAL: Disk usage ${disk_percent}% (>${DISK_CRIT_PERCENT}%)"
+    elif [[ "$disk_percent" -ge "$DISK_WARN_PERCENT" ]]; then
+        disk_status="warning"
+        disk_issue="WARNING: Disk usage ${disk_percent}% (>${DISK_WARN_PERCENT}%)"
+    fi
+
+    echo "$disk_percent:$disk_status:$disk_issue"
+}
+
+# Check memory usage
+check_memory() {
+    local mem_info=$(free | awk 'NR==2 {printf "%.0f", $3/$2 * 100}')
+    local mem_status="healthy"
+    local mem_issue=""
+
+    if [[ "$mem_info" -ge "$MEM_CRIT_PERCENT" ]]; then
+        mem_status="critical"
+        mem_issue="CRITICAL: Memory usage ${mem_info}% (>${MEM_CRIT_PERCENT}%)"
+    elif [[ "$mem_info" -ge "$MEM_WARN_PERCENT" ]]; then
+        mem_status="warning"
+        mem_issue="WARNING: Memory usage ${mem_info}% (>${MEM_WARN_PERCENT}%)"
+    fi
+
+    echo "$mem_info:$mem_status:$mem_issue"
 }
 
 main() {
@@ -141,7 +184,10 @@ main() {
             if [[ ${#node_issues[@]} -gt 0 ]]; then
                 issues_json="[$(printf '"%s",' "${node_issues[@]}" | sed 's/,$//')]"
             fi
-            json_results+=("{\"node\":\"$node_name\",\"height\":$height,\"peers\":$n_peers,\"catching_up\":$catching_up,\"status\":\"$node_status\",\"issues\":$issues_json}")
+            # Ensure catching_up is a proper JSON boolean
+            local catching_up_json="false"
+            [[ "$catching_up" == "true" ]] && catching_up_json="true"
+            json_results+=("{\"node\":\"$node_name\",\"height\":$height,\"peers\":$n_peers,\"catching_up\":$catching_up_json,\"status\":\"$node_status\",\"issues\":$issues_json}")
         else
             local color="$GREEN"
             [[ "$node_status" == "warning" ]] && color="$YELLOW"
@@ -155,11 +201,45 @@ main() {
         [[ "$node_status" != "healthy" ]] && [[ "$node_status" != "syncing" ]] && issues+=("$node_name: ${node_issues[*]:-$node_status}")
     done
 
+    # System resource checks
+    local disk_result=$(check_disk)
+    local disk_percent=$(echo "$disk_result" | cut -d: -f1)
+    local disk_status=$(echo "$disk_result" | cut -d: -f2)
+    local disk_issue=$(echo "$disk_result" | cut -d: -f3-)
+
+    local mem_result=$(check_memory)
+    local mem_percent=$(echo "$mem_result" | cut -d: -f1)
+    local mem_status=$(echo "$mem_result" | cut -d: -f2)
+    local mem_issue=$(echo "$mem_result" | cut -d: -f3-)
+
+    # Add system issues to the list
+    if [[ "$disk_status" != "healthy" ]]; then
+        issues+=("System: $disk_issue")
+        all_healthy=false
+    fi
+    if [[ "$mem_status" != "healthy" ]]; then
+        issues+=("System: $mem_issue")
+        all_healthy=false
+    fi
+
     if [[ "$JSON_OUTPUT" == "true" ]]; then
-        echo "{\"timestamp\":\"$(date -u '+%Y-%m-%dT%H:%M:%SZ')\",\"host\":\"$HOSTNAME\",\"max_height\":$max_height,\"healthy\":$all_healthy,\"nodes\":[$(IFS=,; echo "${json_results[*]}")]}"
+        echo "{\"timestamp\":\"$(date -u '+%Y-%m-%dT%H:%M:%SZ')\",\"host\":\"$HOSTNAME\",\"max_height\":$max_height,\"healthy\":$all_healthy,\"system\":{\"disk_percent\":$disk_percent,\"disk_status\":\"$disk_status\",\"mem_percent\":$mem_percent,\"mem_status\":\"$mem_status\"},\"nodes\":[$(IFS=,; echo "${json_results[*]}")]}"
     else
         echo ""
         echo "Max Height: $max_height"
+
+        # Display system resources
+        local disk_color="$GREEN"
+        [[ "$disk_status" == "warning" ]] && disk_color="$YELLOW"
+        [[ "$disk_status" == "critical" ]] && disk_color="$RED"
+        printf "Disk:        ${disk_color}%s%%${NC} (%s)\n" "$disk_percent" "$disk_status"
+
+        local mem_color="$GREEN"
+        [[ "$mem_status" == "warning" ]] && mem_color="$YELLOW"
+        [[ "$mem_status" == "critical" ]] && mem_color="$RED"
+        printf "Memory:      ${mem_color}%s%%${NC} (%s)\n" "$mem_percent" "$mem_status"
+
+        echo ""
         if [[ "$all_healthy" == "true" ]]; then
             echo -e "${GREEN}All local nodes healthy${NC}"
         else
