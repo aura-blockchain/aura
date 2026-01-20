@@ -14,7 +14,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SERVERS=("aura-testnet" "services-testnet")
-REMOTE_SCRIPTS_DIR="/home/ubuntu/scripts/testnet-automation"
+REMOTE_SCRIPTS_DIR="/opt/aura/scripts"
 
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"
@@ -25,13 +25,15 @@ deploy_scripts() {
     local server="$1"
     log "Deploying scripts to $server..."
 
-    # Create directory
-    ssh "$server" "mkdir -p $REMOTE_SCRIPTS_DIR"
+    # Create directory (requires sudo for /opt)
+    ssh "$server" "sudo mkdir -p $REMOTE_SCRIPTS_DIR && sudo chown ubuntu:ubuntu $REMOTE_SCRIPTS_DIR"
 
-    # Copy scripts
-    scp -q "$SCRIPT_DIR/health-check.sh" "$server:$REMOTE_SCRIPTS_DIR/"
-    scp -q "$SCRIPT_DIR/auto-recovery.sh" "$server:$REMOTE_SCRIPTS_DIR/"
+    # Copy local scripts (these run directly on the server without SSH)
+    scp -q "$SCRIPT_DIR/aura-health-monitor.sh" "$server:$REMOTE_SCRIPTS_DIR/"
+    scp -q "$SCRIPT_DIR/health-check-local.sh" "$server:$REMOTE_SCRIPTS_DIR/"
+    scp -q "$SCRIPT_DIR/auto-recovery-local.sh" "$server:$REMOTE_SCRIPTS_DIR/"
     scp -q "$SCRIPT_DIR/backup.sh" "$server:$REMOTE_SCRIPTS_DIR/"
+    scp -q "$SCRIPT_DIR/disk-maintenance.sh" "$server:$REMOTE_SCRIPTS_DIR/"
     scp -q "$SCRIPT_DIR/prometheus-alerts.yml" "$server:$REMOTE_SCRIPTS_DIR/"
 
     # Make executable
@@ -49,17 +51,17 @@ setup_cron() {
 # AURA Testnet Automation Cron Jobs
 # Managed by setup-automation.sh - manual edits may be overwritten
 
-# Health check every 2 minutes
-*/2 * * * * /home/ubuntu/scripts/testnet-automation/health-check.sh --json >> /var/log/aura-health.log 2>&1
+# Health check every 2 minutes (local script, no SSH)
+*/2 * * * * /opt/aura/scripts/aura-health-monitor.sh --json >> /var/log/aura-health.log 2>&1
 
-# Auto-recovery every 5 minutes
-*/5 * * * * /home/ubuntu/scripts/testnet-automation/auto-recovery.sh >> /var/log/aura-recovery.log 2>&1
+# Auto-recovery every 5 minutes (local script, no SSH)
+*/5 * * * * /opt/aura/scripts/auto-recovery-local.sh >> /var/log/aura-recovery.log 2>&1
 
 # Daily config backup at 2 AM UTC
-0 2 * * * /home/ubuntu/scripts/testnet-automation/backup.sh >> /var/log/aura-backup.log 2>&1
+0 2 * * * /opt/aura/scripts/backup.sh >> /var/log/aura-backup.log 2>&1
 
 # Weekly full backup on Sunday at 3 AM UTC
-0 3 * * 0 /home/ubuntu/scripts/testnet-automation/backup.sh --full >> /var/log/aura-backup.log 2>&1
+0 3 * * 0 /opt/aura/scripts/backup.sh --full >> /var/log/aura-backup.log 2>&1
 
 # Log rotation check daily at 1 AM
 0 1 * * * /usr/sbin/logrotate /etc/logrotate.d/aura-testnet 2>/dev/null || true
@@ -176,10 +178,10 @@ verify_deployment() {
     local checks_failed=0
 
     # Check scripts exist
-    if ssh "$server" "test -x $REMOTE_SCRIPTS_DIR/health-check.sh"; then
+    if ssh "$server" "test -x $REMOTE_SCRIPTS_DIR/aura-health-monitor.sh"; then
         ((checks_passed++))
     else
-        log "FAIL: health-check.sh not executable"
+        log "FAIL: aura-health-monitor.sh not executable"
         ((checks_failed++))
     fi
 
@@ -208,7 +210,7 @@ test_health_check() {
     local server="$1"
     log "Running test health check on $server..."
 
-    ssh "$server" "$REMOTE_SCRIPTS_DIR/health-check.sh" || {
+    ssh "$server" "$REMOTE_SCRIPTS_DIR/aura-health-monitor.sh" || {
         log "WARNING: Health check reported issues (this may be expected)"
     }
 }
