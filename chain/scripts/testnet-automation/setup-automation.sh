@@ -47,21 +47,24 @@ setup_cron() {
     local server="$1"
     log "Setting up cron jobs on $server..."
 
+    # First create the log directory with proper permissions
+    ssh "$server" "sudo mkdir -p /var/log/aura && sudo chown ubuntu:ubuntu /var/log/aura"
+
     ssh "$server" 'cat > /tmp/aura-cron << "CRON_EOF"
 # AURA Testnet Automation Cron Jobs
 # Managed by setup-automation.sh - manual edits may be overwritten
 
 # Health check every 2 minutes (local script, no SSH)
-*/2 * * * * /opt/aura/scripts/aura-health-monitor.sh --json >> /var/log/aura-health.log 2>&1
+*/2 * * * * /opt/aura/scripts/aura-health-monitor.sh --json >> /var/log/aura/health.log 2>&1
 
 # Auto-recovery every 5 minutes (local script, no SSH)
-*/5 * * * * /opt/aura/scripts/auto-recovery-local.sh >> /var/log/aura-recovery.log 2>&1
+*/5 * * * * /opt/aura/scripts/auto-recovery-local.sh >> /var/log/aura/recovery.log 2>&1
 
 # Daily config backup at 2 AM UTC
-0 2 * * * /opt/aura/scripts/backup.sh >> /var/log/aura-backup.log 2>&1
+0 2 * * * /opt/aura/scripts/backup.sh >> /var/log/aura/backup.log 2>&1
 
 # Weekly full backup on Sunday at 3 AM UTC
-0 3 * * 0 /opt/aura/scripts/backup.sh --full >> /var/log/aura-backup.log 2>&1
+0 3 * * 0 /opt/aura/scripts/backup.sh --full >> /var/log/aura/backup.log 2>&1
 
 # Log rotation check daily at 1 AM
 0 1 * * * /usr/sbin/logrotate /etc/logrotate.d/aura-testnet 2>/dev/null || true
@@ -81,7 +84,7 @@ setup_logrotate() {
     log "Setting up log rotation on $server..."
 
     ssh "$server" 'sudo tee /etc/logrotate.d/aura-testnet > /dev/null << "LOGROTATE_EOF"
-/var/log/aura-*.log {
+/var/log/aura/*.log {
     daily
     rotate 7
     compress
@@ -144,12 +147,15 @@ setup_systemd_improvements() {
     if systemctl list-unit-files | grep -q "$service"; then
         sudo mkdir -p "/etc/systemd/system/${service}.service.d"
         sudo tee "/etc/systemd/system/${service}.service.d/override.conf" > /dev/null << EOF
-[Service]
-# Restart improvements
-Restart=always
-RestartSec=5
+[Unit]
+# Rate limiting for restarts (must be in [Unit] section)
 StartLimitIntervalSec=300
 StartLimitBurst=5
+
+[Service]
+# Restart behavior
+Restart=always
+RestartSec=5
 
 # Resource limits
 LimitNOFILE=65535
