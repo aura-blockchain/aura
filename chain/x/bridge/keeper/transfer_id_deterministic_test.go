@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"cosmossdk.io/math"
+	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/stretchr/testify/require"
@@ -95,13 +96,17 @@ func (suite *TransferIDTestSuite) TestTransferIDConcurrency() {
 		go func(routineID int) {
 			defer wg.Done()
 
+			// Each goroutine gets its own gas meter to avoid race conditions
+			// (in real blockchain, each transaction has its own context)
+			localCtx := ctx.WithGasMeter(storetypes.NewInfiniteGasMeter())
+
 			for j := 0; j < numTxsPerRoutine; j++ {
 				height := int64(routineID*10 + j)
 				txBytes := []byte(fmt.Sprintf("tx-%d-%d", routineID, j))
 
-				testCtx := ctx.WithBlockHeight(height).WithTxBytes(txBytes)
+				testCtx := localCtx.WithBlockHeight(height).WithTxBytes(txBytes)
 				transferID, err := suite.Keeper.nextTransferID(testCtx)
-		suite.Require().NoError(err)
+				suite.Require().NoError(err)
 
 				idsChan <- transferID
 			}
@@ -263,6 +268,9 @@ func (suite *TransferIDTestSuite) TestTransferIDNoRaceConditionRealWorld() {
 		go func(vID int) {
 			defer wg.Done()
 
+			// Each validator (goroutine) gets its own gas meter to avoid race conditions
+			// (in real blockchain, each validator has its own independent state machine)
+			localCtx := ctx.WithGasMeter(storetypes.NewInfiniteGasMeter())
 			localIDs := make(map[string]bool)
 
 			// Each validator processes all blocks with same transactions
@@ -270,9 +278,9 @@ func (suite *TransferIDTestSuite) TestTransferIDNoRaceConditionRealWorld() {
 				for txIdx := int64(0); txIdx < txsPerBlock; txIdx++ {
 					// IMPORTANT: Same tx bytes for same block+index across all validators
 					txBytes := []byte(fmt.Sprintf("tx-block%d-idx%d", block, txIdx))
-					testCtx := ctx.WithBlockHeight(block).WithTxBytes(txBytes)
+					testCtx := localCtx.WithBlockHeight(block).WithTxBytes(txBytes)
 					transferID, err := suite.Keeper.nextTransferID(testCtx)
-		suite.Require().NoError(err)
+					suite.Require().NoError(err)
 					localIDs[transferID] = true
 				}
 			}
